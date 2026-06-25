@@ -26,6 +26,9 @@ When active, announce nothing ceremonial — just behave per the overrides below
 
 On the phone there is no terminal, so the "hand Daniel the command" default does not work. Instead:
 
+- **Sync first (always).** Before committing, `git fetch` and pull `--ff-only` if the branch is behind
+  origin — phone and desktop share branches, so never commit on a stale one. If it has diverged, STOP
+  and flag it. (Full rule → `git-policy.md` → "Sync-first".)
 - **Commit and push for him.** After approved work, commit your OWN files and push to the designated
   feature branch — no waiting for a terminal that does not exist.
 - **Keep the safe-commit mechanics from `git-policy.md`.** Explicit paths only (`git add path/one path/two`);

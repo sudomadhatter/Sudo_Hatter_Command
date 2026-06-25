@@ -28,6 +28,23 @@ If Daniel explicitly tells you to run a specific commit or push in that moment (
 this", "you push it"), you may — for that action only. A standing approval does NOT carry to the next
 commit; each delegation is one-time. When delegated, follow the safe-commit mechanics below.
 
+## Sync-first — always check the remote before you commit (or recommend the commit)
+
+Phone and desktop share branches, so a commit made on a **stale** branch is what causes the
+diverge → rejected-push tangle. Before you produce the "Your Actions" commit recommendation (desktop)
+**or** commit/push yourself (mobile / delegated), ALWAYS check the remote first:
+
+1. **Fetch and compare:** `git fetch origin <branch>`, then check whether the local branch is behind
+   origin (e.g. `git status -sb` shows `behind`, or `git rev-list --count <branch>..origin/<branch>` > 0).
+2. **If behind, lead with the pull.** The recommended command block (or your own sequence) MUST start
+   with `git pull --ff-only origin <branch>` *before* `git add`/`commit`/`push`, so neither machine ever
+   commits on top of a stale branch.
+3. **If the branches have DIVERGED** (a fast-forward pull isn't possible), **STOP and flag it** — hand
+   Daniel the situation. Do NOT recommend or run a blind merge/rebase, and never force-push.
+
+This is the written form of the desktop habit "pull before you work": the agent checks for you and
+bakes the pull into the recommendation whenever the branch is behind.
+
 ## Safe-commit mechanics (apply ONLY when delegated)
 
 - **Commit your OWN work via explicit paths:** `git add path/one path/two …`.
@@ -43,5 +60,7 @@ commit; each delegation is one-time. When delegated, follow the safe-commit mech
 
 ## Always
 
+- **Check the remote first** (Sync-first above) — the "Your Actions" command block leads with
+  `git pull --ff-only` whenever the branch is behind, before add/commit/push.
 - The `walkthrough.md` "Your Actions" documents the exact `git add` (explicit paths) + `commit` +
   `push` commands either way — so the record exists whether Daniel or (by delegation) you run them.
