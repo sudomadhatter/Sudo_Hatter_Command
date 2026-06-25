@@ -31,11 +31,16 @@
 | a project's `Projects/<name>/AGENTS.md` | When you go work inside that project (not this file) |
 | `_my_resources/open_tasks/` | Daniel asks "what do we do next / what's left" — read his todo + saved plans/PRPs (read-only) |
 
-**GitNexus (lobby graph — Tier-2, on-demand):** the home base is indexed as `SUDO_HATTER_COMMAND`
-(`.gitnexusignore` scopes it: lobby infra + each project shown via its top-level `AGENTS.md`/`README.md`,
-**no** project source files; `.agents/` is excluded — GitNexus hard-skips dot-folders). Re-index:
-`$env:GITNEXUS_NO_GITIGNORE="1"; gitnexus analyze . --index-only --name SUDO_HATTER_COMMAND -f`.
-Tooling is Tier-2/disposable — the maps above stay canonical (see `_my_resources/.../gitnexus-usage-guide.md`).
+**GitNexus (Tier-2 graph — on-demand, disposable).** ONE index: **`SUDO_COMMAND`** = the command center
+itself — all of `.agents/` (rules · workflows · commands · skills · scripts; ~17k nodes). Rooted directly at
+`.agents/` (with `--skip-git`) to bypass GitNexus's dot-folder skip. This is "the one everything points to,"
+not the pointer/adapter copies (`.claude/`/`.opencode/` mirrors are excluded). Re-index after editing any
+rule/workflow (no commit-tracking, so do it manually):
+`$env:GITNEXUS_NO_GITIGNORE="1"; gitnexus analyze .agents --skip-git --index-only --name SUDO_COMMAND -f`.
+Tier-2/disposable — the maps above stay canonical (see `_my_resources/.../gitnexus-usage-guide.md`).
+> Note: the markdown rule/workflow files yield few cross-file edges (GitNexus extracts headings, not
+> doc references) — the graph is strong for the `.py`/`.ps1` scripts, thin for the prose; trust the files for
+> "what references what." No project source is indexed here (projects are cherry-picked as their own repos).
 
 **Drift:** checked at SessionStart by `.agents/scripts/check-repo-map-drift.ps1 -MapPath _docs/repo-map.md` — it
 nags if a new top-level folder isn't named here. Rebuild the AUTO body:
