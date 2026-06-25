@@ -28,14 +28,14 @@ Phase A + rename-day restructure DONE. **Workspace Standard + repo-map hybrid + 
   github.com/sudomadhatter/Sudo_Hatter_Command, private; `Projects/` gitignored); all 7 project repos
   committed/pushed to their own remotes.
 - 5.4 BLOCKED:
-  - **`Projects/clean-bmad-workspace` is OFF-LIMITS** — another team is working in it. Do NOT touch until Daniel
-    clears it AND you've reviewed what they did. This blocks: lab-proving the repo-map there, wiring its hook,
-    seeding the template, and `/sync-agents` into it. (Its `CLAUDE.md` was made a thin adapter mid-session —
-    conversion is progressing in parallel.)
+  - **CORRECTED 2026-06-25:** the earlier "clean-bmad is OFF-LIMITS / another team" note was wrong.
+    `Projects/clean-bmad-workspace` is **Daniel's own clean-shell template** (the project he clones to start a
+    new one). It is fully editable. Active work: `_artifacts/clean-bmad-workspace/2026-06-25_workspace-standard-cleanup/`
+    (standard-conformance + repo-map index; `_01_My/` → protected `_my_resources/`).
   - 5 venvs still hardcode the old path; recreate per-project when next used.
-- 5.5 Best next move: (1) wait for clearance on clean-bmad-workspace, then review the other team's work; (2)
-  lab-prove the repo-map hybrid there (generate `docs/repo-map.md`, wire its SessionStart hook); (3) seed the
-  generator + standard + hook into the project template and `/sync-agents`; (4) tackle the retire-list follow-up
+- 5.5 Best next move: (1) finish the clean-bmad workspace-standard cleanup (AGENTS.md renumber, vendor
+  workspace-standard + generator, build `docs/repo-map.md`, protect `_my_resources/`); (2) seed the
+  generator + standard + hook into the project template and `/sync-agents`; (3) tackle the retire-list follow-up
   (autopilot `.ps1` + `1_*` commands still reference `_claude_artifacts/` — engine-coupled, check engine first).
 
 ## 6. HAND OFF  (verified state at this checkpoint)

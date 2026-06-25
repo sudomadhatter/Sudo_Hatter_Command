@@ -112,7 +112,7 @@ GitNexus is **PolyForm Noncommercial**. Your call (2026‑06‑24): index Aviati
 
 **Hard stop:** the day AviationChat starts charging / goes for‑profit → **stop indexing it, delete its `.gitnexus/`,** and either get a commercial quote from akonlabs or swap Tier‑2 to a permissive/MIT engine. The two‑tier design is engine‑swappable for exactly this reason — your maps survive the swap.
 
-**Never index:** `jetChat` (already commercial), `clean-bmad-workspace` (another team, off‑limits).
+**Never index:** `jetChat` (already commercial). (`clean-bmad-workspace` is **not** off‑limits and **not** another team's — it's Daniel's own clean‑shell template for cloning new projects, a near‑empty skeleton with no real code to graph, so there's simply nothing worth indexing there.)
 
 ---
 

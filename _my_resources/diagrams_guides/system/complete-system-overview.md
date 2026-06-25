@@ -208,7 +208,7 @@ flowchart TD
 **Status (2026-06-24):** Phase A complete and the day-restructure done (7 projects moved under `Projects/`,
 paths fixed, home-base repo pushed). The Workspace Standard, repo-map hybrid, unified git policy, and lobby
 artifacts parity all landed this session (home-base portion). clean-bmad-workspace has been converted to the
-`.agents` format (Phase B in progress; currently worked by another team, so off-limits until cleared).
+`.agents` format (Phase B in progress). It is **Daniel's own clean-shell template** — the project he clones to start a new one — not another team's and not off-limits.
 Pending: cross-LLM canary runs (opencode + Antigravity), scaling to the rest, and finishing the builder/gates.
 
 ---

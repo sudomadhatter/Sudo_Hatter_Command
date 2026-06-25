@@ -65,7 +65,7 @@ flowchart TD
     PLAN --> C["Part C: LOBBY PARITY\nAGENTS.md gate + new settings.json hook"]
     PLAN --> B["Part B: GENERATOR\nauthor generate_repo_map.py"]
     B --> PROVE["Proven read-only on ingestion\n514 to 192 lines"]
-    B --> BLOCK["BLOCKED: lab-prove in clean-bmad\nand propagate (other team in there)"]
+    B --> BLOCK["NEXT: lab-prove in clean-bmad\n(Daniel's clean-shell template) + propagate"]
 
     classDef done fill:#d4f7d4,stroke:#2e7d32,color:#000
     classDef blocked fill:#ffd6d6,stroke:#c62828,color:#000
@@ -163,7 +163,7 @@ routing is correct (use the cold-route test for that).
 
 | Done (home base) | Blocked / next |
 |---|---|
-| Rename, rule reconciliation, standard doc, org scheme, lobby gate + hook, generator (proven 514 to 192) | Lab-prove the repo-map in `clean-bmad-workspace` + propagate to projects — waiting on clearance (other team is in there) |
+| Rename, rule reconciliation, standard doc, org scheme, lobby gate + hook, generator (proven 514 to 192) | Lab-prove the repo-map in `clean-bmad-workspace` (Daniel's clean-shell template) + propagate to projects |
 |  | Retire-list follow-up: autopilot workflow + `1_*` commands still reference `_claude_artifacts/` (engine-coupled) |
 |  | Home-base changes are UNCOMMITTED — git command is in the session `walkthrough.md` |
 ```

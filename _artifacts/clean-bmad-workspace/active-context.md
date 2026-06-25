@@ -2,10 +2,19 @@
 
 > Continuity brief for the home base's `clean-bmad-workspace` workspace. "pick up" reads this.
 
-## 1. Current state (2026-06-24)
-clean-bmad-workspace has been **converted to the home-base `.agents` format** — the first project
-conversion (router.md had it as "first conversion (next)"). It is now the reference pattern for the 6
-queued projects. Full session: `2026-06-24_agents-format-conversion/` (plan · playbook · walkthrough).
+## 1. Current state (2026-06-25)
+clean-bmad-workspace is now **fully workspace-standard compliant + repo-map indexed** — the rehearsal that
+proves the recipe before it's applied to the live aviationChat project. It is **Daniel's clean-shell
+clone-template** (NOT another team's — the old "off-limits" notes were corrected this session).
+Session: `2026-06-25_workspace-standard-cleanup/` (plan · walkthrough · task-list).
+- AGENTS.md rewritten to the 9-section standard; `docs/repo-map.md` built (curated header + generated body);
+  vendored `docs/workspace-standard.md` + `scripts/generate_repo_map.py`.
+- `_01_My/` → **`_my_resources/`** (protected personal area: agents don't edit/reference unless Daniel
+  says/links — see its README + AGENTS.md §8). `_claude_artifacts/` marked deprecated (folder kept until the
+  master repoint pass).
+
+**Prior (2026-06-24):** converted to the home-base `.agents` format — first project conversion; the reference
+pattern for the queued projects. Session: `2026-06-24_agents-format-conversion/`.
 
 ## 2. What the new format looks like here
 - Root: thin `CLAUDE.md` + `GEMINI.md` ("Read AGENTS.md") + a generic Layer-2 `AGENTS.md` map.
@@ -32,7 +41,11 @@ queued projects. Full session: `2026-06-24_agents-format-conversion/` (plan · p
   wins over old `.agent/skills`.
 
 ## 5. Open / pending (Daniel)
-- Live **opencode routing test** on clean-bmad (the real proof) — not yet run.
+- **Commit + push BOTH repos** (clean-bmad repo + home-base) — agents don't push; exact commands in
+  `2026-06-25_workspace-standard-cleanup/walkthrough.md`.
+- **Next milestone:** clean-bmad verified ✓ → apply the same recipe to the live **aviationChat** project
+  (its own assessment + implementation_plan + approval).
+- **Master pass (deferred):** repoint vendored cmds + `scripts/autopilot-dev-story.ps1` off `_claude_artifacts/`
+  → home-base `_artifacts/` (check the engine's `$RepoRoot` first), then delete `_claude_artifacts/`.
+- Optional: live opencode routing test + re-run `_routing-canary/` (AGENTS.md renumber = routing-structure change).
 - Fate of the 3 preserved old workflows (promote to master / archive).
-- Commit + push (clean-bmad repo + home-base master toolkit changes) — agents don't push; see walkthrough.
-- Then: apply the playbook to aviationChat-AGY (convert LAST per router) + the other queued projects.

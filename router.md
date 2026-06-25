@@ -10,7 +10,7 @@ Any workspace may send you BACK here ("if not here, go to root router").
 | If the work is about… | Go to | Read first | Status |
 |---|---|---|---|
 | Aviation ground-school app (FastAPI / ADK / Gemini, voice CFI) | `Projects/aviationChat-AGY/` | its `AGENTS.md` | reference donor — convert LAST |
-| Clean BMAD baseline / sandbox | `Projects/clean-bmad-workspace/` | its `AGENTS.md` | first conversion (next) |
+| Clean BMAD baseline / clone-template (Daniel's clean shell) | `Projects/clean-bmad-workspace/` | its `AGENTS.md` | converted · standard-compliant (repo-map indexed) |
 | jetChat app | `Projects/jetChat-AGY/` | its `AGENTS.md` | pending |
 | B&L WorldWide | `Projects/B&L WorldWide/` | its `AGENTS.md` | pending |
 | NEXGen Films | `Projects/NEXGen Films/` | its `AGENTS.md` | pending |
