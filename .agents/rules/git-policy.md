@@ -15,6 +15,10 @@ description: "Git default: NEVER run commit/push yourself — hand Daniel the ex
 section hands Daniel the exact command(s) to run. This holds at every stage — mid-work AND at
 close-out. The record of the command exists whether Daniel runs it or (by exception) delegates it.
 
+> **Web/mobile sessions are the exception.** On a phone there is no terminal to paste into, so the
+> `mobile-mode.md` lane takes over: the agent commits/pushes its own files (same safe-commit mechanics
+> below) and **asks before opening a PR**. See `mobile-mode.md` → Override 1.
+
 This pairs with the plan-first gate: no project-file edits without an approved `implementation_plan.md`
 (see `artifacts-always-first`), and "done" is earned, not implied (see `completion-not-illusion`).
 

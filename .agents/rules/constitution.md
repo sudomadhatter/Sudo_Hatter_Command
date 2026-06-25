@@ -15,8 +15,8 @@ project-agnostic core shared across the whole workspace.
 ## 🚫 Hard Stops
 
 - Never modify any project file (source code, story files, sprint-status, configs, YAML — everything outside the artifact directory) without an approved `implementation_plan.md` — see `artifacts-always-first` rule
-- Never treat "ok", "perfect", "continue", or "ready-for-dev" as authorization — require explicit approval
-- **Never run `git commit` or `git push` yourself — provide the exact command for Daniel to run.** The ONLY exception: Daniel explicitly delegates a specific commit/push to you in that moment. Never `git add -A`/`git add .` (it can sweep other parallel work). Full policy → the `git-policy` rule
+- Never treat "ok", "perfect", "continue", or "ready-for-dev" as authorization — require explicit approval (on web/mobile, a tap-to-approve chip is the explicit approval → `mobile-mode` rule)
+- **Never run `git commit` or `git push` yourself — provide the exact command for Daniel to run.** The ONLY exception: Daniel explicitly delegates a specific commit/push to you in that moment. Never `git add -A`/`git add .` (it can sweep other parallel work). Full policy → the `git-policy` rule. (Web/mobile sessions: the agent commits/pushes and asks before the PR → `mobile-mode` rule.)
 - Never fabricate citations or references — defer to verified sources or say "I don't know"
 - Never instantiate a duplicate client for a shared resource (database, auth, cache) — use the project's singleton/factory
 - Never hardcode secrets, API keys, or credentials

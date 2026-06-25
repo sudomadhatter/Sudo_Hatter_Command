@@ -1,9 +1,12 @@
 # ACTIVE CONTEXT — _home  (you own this, not a vendor)
 
 ## 1. PRIME STATE
-Current workspace: `_home` (lobby at `C:\Sudo_Hatter_Command`)   |   Last session: 2026-06-24
+Current workspace: `_home` (lobby at `C:\Sudo_Hatter_Command`)   |   Last session: 2026-06-25
 Phase A + rename-day restructure DONE. **Workspace Standard + repo-map hybrid + artifacts parity landed
 (home-base portion).** `_experiment/` is now `_routing-canary/`. One canonical git policy.
+**2026-06-25: mobile-mode lane added** — the command center is now driven from a phone; `.agents/rules/mobile-mode.md`
+adapts git (agent commits/pushes, asks before PR), the approval gate (tap-to-approve), artifacts (TL;DR-first),
+and verification (agent runs in-container) for web/mobile sessions. See `_artifacts/_home/2026-06-25_mobile-mode-rule/`.
 
 ## 5. PICK UP  (read-only brief)
 - 5.1 Doing: building the home base (folder-as-workspace routing). Latest session executed the approved plan

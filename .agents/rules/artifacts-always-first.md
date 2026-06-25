@@ -49,6 +49,9 @@ The approval phrase is: **"approved"**
 
 NOT approval: "ok", "sure", "looks good", "continue", "ready-for-dev", "let's go".
 
+> **On web/mobile**, typing "approved" is replaced by a **tap-to-approve chip** (`AskUserQuestion`) — a
+> tap on Approve IS the gate. See `mobile-mode.md` → Override 2.
+
 A plan from a prior session is NOT pre-approved. Re-present it and get fresh sign-off.
 
 ## The Sequence

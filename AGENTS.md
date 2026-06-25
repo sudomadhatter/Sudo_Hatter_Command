@@ -25,6 +25,10 @@ else in `.agents/rules/` loads **on demand** when a task calls for it — do not
 rule set is the shared toolkit, not a startup payload. How a workspace is shaped + kept healthy →
 `_docs/workspace-standard.md`.
 
+> **Web/mobile session?** If you're running in a remote container (Claude Code on the web or phone),
+> also load `.agents/rules/mobile-mode.md` — it adapts git, the approval gate, and verification for a
+> device with no terminal.
+
 > **⛔ ARTIFACTS — MANDATORY FIRST ACTION.** Before modifying ANY file outside `_artifacts/`, write an
 > `implementation_plan.md` into `_artifacts/<workspace>/…` and **STOP until Daniel says "approved."** Track
 > work with a live TodoWrite list; close with `walkthrough.md` + `task-list.md`. **This applies at the lobby
