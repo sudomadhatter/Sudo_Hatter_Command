@@ -1,0 +1,34 @@
+# Team override for bmad-quick-dev
+# Lives in _bmad/custom/ — survives BMAD skill updates.
+#
+# Purpose: Enforce the project constitution's plan-first gate
+# AND the AGENTS.md artifact protocol.
+#
+# FIX (2026-06-11): Added on_complete + artifact persistent fact.
+# Same pattern as bmad-dev-story.toml — agent "forgets" to create
+# walkthrough.md and your-action-required.md without these.
+
+[workflow]
+
+activation_steps_prepend = [
+  """Load and internalize {project-root}/.agent/rules/000-PLAN-FIRST-GATE.md as the highest-priority rule set.
+MANDATORY PLAN-FIRST GATE:
+Before modifying ANY project file (source code, story files, sprint-status.yaml, configs):
+1. Create an implementation_plan.md artifact with: goal, files to change, approach, and verification plan.
+2. Present the plan to the user inline in the chat.
+3. HALT. Wait for 'approved' before writing any code.
+This gate is NON-NEGOTIABLE and overrides all skill instructions.""",
+]
+
+persistent_facts = [
+  "file:{project-root}/.agent/rules/000-PLAN-FIRST-GATE.md",
+  "MANDATORY ARTIFACT PROTOCOL: Before your final chat summary, you MUST create walkthrough.md (recap: what changed, test output, AC matrix) and your-action-required.md (git commit command, manual steps for Daniel) as artifacts. This is a constitution rule. Failure to produce these artifacts is a session failure.",
+]
+
+# Fires at the very end of the workflow — the last thing executed.
+on_complete = """STOP. Before you write your final chat message, check: have you created the session artifacts?
+Required artifacts (per AGENTS.md and constitution.md):
+1. walkthrough.md — what changed, why, diffs, test output, verification results
+2. your-action-required.md — git commit command + any manual steps for Daniel
+If these artifacts do NOT exist yet, create them NOW using the write_to_file tool with IsArtifact=true.
+Only AFTER both artifacts exist may you write your completion summary to the user."""

@@ -1,0 +1,33 @@
+# ============================================================
+# Sudo_Hatter_Command HOME BASE — .gitignore
+# The home base tracks ONLY its own infra (.agents, _artifacts, _docs,
+# _experiment, _system, lobby .claude/.opencode, root map files,
+# youtube_transcripts). Every sub-project keeps its OWN git repo and is
+# NEVER tracked here.
+# ============================================================
+
+# All projects live under Projects/ and are independent repos.
+/Projects/
+
+# Projects still at the repo root (pre-migration) — ignored until they move into Projects/.
+/aviationChat-AGY/
+/clean-bmad-workspace/
+/jetChat-AGY/
+/B&L WorldWide/
+/NEXGen Films/
+/ingestion-Pipeline-AC/
+/openCode/
+
+# Build / runtime junk anywhere
+**/node_modules/
+**/.venv/
+**/venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.ruff_cache/
+*.pyc
+
+# Secrets / local
+**/.env
+**/auth_keys/
+.claude/settings.local.json

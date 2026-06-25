@@ -1,0 +1,40 @@
+---
+name: constitution
+description: "Hard stops, confirmation gates, and partnership boundaries (shared, project-agnostic). For behavioral coding principles, see karpathy-guidelines.md. Project-specific hard stops live in each project's local constitution.project.md."
+activation: Always On
+---
+
+# Agent Constitution (shared)
+
+Hard-stop rules that protect every project and the partnership. Behavioral coding principles
+(think before coding, simplicity, surgical changes, goal-driven execution) live in
+`karpathy-guidelines.md`. **Project-specific** hard stops (a particular DB client, an event
+contract, a deploy gate) live in that project's local `constitution.project.md` — this file is the
+project-agnostic core shared across the whole workspace.
+
+## 🚫 Hard Stops
+
+- Never modify any project file (source code, story files, sprint-status, configs, YAML — everything outside the artifact directory) without an approved `implementation_plan.md` — see `artifacts-always-first` rule
+- Never treat "ok", "perfect", "continue", or "ready-for-dev" as authorization — require explicit approval
+- Never commit/push mid-work, and never `git add -A`/`git add .` (it can sweep other parallel work). At **close-out** (review passed) you MAY commit your OWN work via explicit paths, then **ask before `git push`** — see the `git-closeout-commits` rule
+- Never fabricate citations or references — defer to verified sources or say "I don't know"
+- Never instantiate a duplicate client for a shared resource (database, auth, cache) — use the project's singleton/factory
+- Never hardcode secrets, API keys, or credentials
+- Never change a cross-boundary contract (an API or event schema shared by backend + frontend) without updating BOTH sides
+
+## ⚠️ Ask First
+
+- Before deleting any file or removing any agent
+- Before installing or upgrading dependencies (see `dependency-awareness` rule)
+- Before changing database schemas, security rules, or data topology
+- Before modifying CI/CD, deployment, or environment configs
+- Before any architectural change that crosses component boundaries
+- Before approving a story that modifies both backend AND frontend in one unit — flag for decomposition
+
+## ✅ Always
+
+- Always read the workspace's active-context (`_artifacts/<workspace>/active-context.md`) AND any relevant spec BEFORE writing code
+- Always update the workspace's active-context at session end (the "hand off")
+- Always physically edit the `.md` story file status after completing a story
+- Always perform at least one live QA pass per epic before marking it done
+- Always save code-review output as a `code-review.md` artifact in the session folder — inline-only findings are not allowed (see `artifacts-always-first` rule)
