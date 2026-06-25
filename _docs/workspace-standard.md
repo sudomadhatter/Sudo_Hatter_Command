@@ -55,7 +55,7 @@ A compliant workspace has these, and nothing it doesn't need.
   6. **ROUTING TABLE** — the heart (Layer 2, below).
   7. **NAMING CONVENTIONS** — dates/versions/slugs; replaces a database.
   8. **GATES** — routing gate + risk gate → `.agents/rules/constitution.md`.
-  9. **PERSISTENCE** — pickup/handoff → `_artifacts/<workspace>/`.
+  9. **PERSISTENCE** — pickup/handoff → the right `_artifacts/` for where you work from (Part 2).
 
 ### Layer 2 — the routing table (the single most important thing)
 A plain-English table in `AGENTS.md`: **task → read these / skip these / skills**. It is what makes
@@ -68,7 +68,7 @@ that call them. Never load skills globally.
 
 ### Supporting files every workspace carries
 - **`docs/repo-map.md`** — the navigation index (Part 3).
-- **`_artifacts/<workspace>/active-context.md`** — continuity (numbered: `1 PRIME`, `5 PICK UP`, `6 HAND OFF`).
+- **`active-context.md`** (home-base bucket or project-local, per Part 2) — continuity (numbered: `1 PRIME`, `5 PICK UP`, `6 HAND OFF`).
 - **`.agents/`** — the vendored master toolkit (rules, commands, skills, workflows, scripts, templates).
 - **`opencode.json`** — `instructions` = the slim least-context set (`AGENTS.md` + the always-load rules);
   `skills.paths` = `[".agents/skills"]`.
@@ -81,7 +81,7 @@ that call them. Never load skills globally.
 | ☐ | `AGENTS.md` numbered, with Map/Mission/Support + a real routing table + up-route |
 | ☐ | `.agents/` vendored; `opencode.json` points at `.agents/` paths |
 | ☐ | `docs/repo-map.md` present and current (Part 3) |
-| ☐ | `_artifacts/<workspace>/active-context.md` exists |
+| ☐ | the workspace's `active-context.md` exists (home-base bucket or project-local) |
 | ☐ | registered as a row in the root `router.md` |
 | ☐ | vendored `docs/workspace-standard.md` present |
 
@@ -108,18 +108,22 @@ Every non-trivial, file-touching task: research read-only → write `implementat
 `task-list.md` snapshot → append one row to `_artifacts/INDEX.md` → update `active-context.md` (the hand-off).
 Full rule → `.agents/rules/artifacts-always-first.md`.
 
-**Artifact organization — artifacts live WITH the work they're about (Daniel, 2026-06-25):**
-- **Project work** (the work is about a `Projects/<name>/` repo — even if launched from the home base) →
-  **PROJECT-LOCAL** `Projects/<name>/_artifacts/`. The project owns its history so it travels with the repo;
-  Daniel works inside each project directly. Each project keeps its own `_artifacts/active-context.md`
-  (+ optional `_artifacts/INDEX.md`).
-- **Home-base / cross-project work** (the work is about the home base itself — routing, the toolkit, multi-project)
-  → home base `_artifacts/_home/<YYYY-MM-DD>_<slug>/`, logged in the home-base `_artifacts/INDEX.md`.
-- **The test is what the work is ABOUT, not where you launched it.** The lab where you *test* is not the bucket.
+**Artifact organization — artifacts go WHERE YOU WORK FROM (Daniel, 2026-06-25):**
+The deciding factor is the workspace you have open (your cwd), not only what the work is about.
+- **Working from the home base** (`Sudo_Hatter_Command/` is your cwd) → home-base `_artifacts/`:
+  - **project work** → a per-project bucket `_artifacts/<project-folder-name>/<YYYY-MM-DD>_<slug>/`
+    (e.g. `_artifacts/aviationChat-AGY/`, `_artifacts/clean-bmad-workspace/`; the bucket name = the
+    `Projects/<name>/` folder name).
+  - **home-base / cross-project work** (routing, the `.agents/` toolkit, multi-project) →
+    `_artifacts/_home/<YYYY-MM-DD>_<slug>/`.
+  - Either way, log a row in the home-base `_artifacts/INDEX.md`.
+- **Working from inside a project** (`Projects/<name>/` is your cwd) → **follow THAT project's rules**:
+  project-local `Projects/<name>/_artifacts/`, with the project's own `_artifacts/active-context.md`
+  (+ `_artifacts/INDEX.md`). The project owns this history so it travels with the repo.
 - Within either location: **random task** → `<YYYY-MM-DD>_<slug>/`; **story** → `<epic>/<story>/` (epic folder
   houses its stories); retired history → `_archived/`.
-- **The home base finds a project's history** at `Projects/<name>/_artifacts/` (+ that project's
-  `active-context.md`). The home-base `_artifacts/` holds only `_home/` — not per-project buckets.
+- **Finding a project's history:** look in BOTH the home-base bucket `_artifacts/<project>/` (sessions run
+  from the home base) AND the project-local `Projects/<name>/_artifacts/` (sessions run inside the project).
 
 ### Routing canary — the regression cadence
 `_routing-canary/` is a permanent check, not a one-time demo. **Re-run it when** you change routing structure
@@ -177,7 +181,8 @@ This standard replaces months of contradictory, duplicated rules. State as of 20
 
 **Resolved (at the master `.agents/` source):**
 - One git policy (`git-policy.md`, formerly the contradictory `git-closeout-commits.md`).
-- `constitution.md` + `artifacts-always-first.md` reconciled to it; both write to `_artifacts/<workspace>/`.
+- `constitution.md` + `artifacts-always-first.md` reconciled to it (both wrote to `_artifacts/<workspace>/`;
+  **later superseded 2026-06-25 by the work-from-cwd model** — see Part 2).
 - `prose-formatting.md` repointed off the dead `_claude_artifacts/` store.
 - `_experiment/` → `_routing-canary/`.
 

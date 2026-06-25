@@ -6,11 +6,12 @@ activation: Always On
 
 # Artifacts — Always First
 
-> **Shared memory.** All artifacts go to the home-base store `_artifacts/<workspace>/…` (where
-> `<workspace>` is the project name, or `_home` for root/cross-project work). This one store is
-> written by ALL tools — Claude, opencode, Antigravity/Gemini — so any agent can read past chats and
-> work. Each session also appends one line to `_artifacts/INDEX.md` (date · workspace · slug ·
-> summary · status), and continuity lives in `_artifacts/<workspace>/active-context.md`.
+> **Shared memory.** Artifacts go **where you work FROM** (your cwd). **From the home base** → home-base
+> `_artifacts/`: project work → a per-project bucket `_artifacts/<project>/…`; home-base / cross-project work →
+> `_artifacts/_home/…`; either way append a row to `_artifacts/INDEX.md`. **From inside a project**
+> (`Projects/<name>/` is cwd) → that project's own `_artifacts/` + its `active-context.md`/`INDEX.md` (its rules,
+> not this ledger). The store is written by ALL tools — Claude, opencode, Antigravity/Gemini — so any agent can
+> read past chats. Full model → `_docs/workspace-standard.md`.
 
 ## The Lean Artifact Set
 
@@ -61,20 +62,20 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
 
 ### 2. Create the artifact folder + plan
 
-**Pick the workspace bucket first.** `<workspace>` = the project whose files the work *primarily changes*.
-Use `_home` for home-base / cross-project work (the standard, the master `.agents/`, the router, lobby
-wiring). The lab where you happen to test something is NOT automatically the bucket — file by what the work
-changes, not where you ran it.
+**Pick the location by where you work FROM (your cwd):**
+- **From the home base** (`Sudo_Hatter_Command/` is cwd) → home-base `_artifacts/`: project work → a per-project
+  bucket `_artifacts/<project-folder-name>/…`; home-base / cross-project work (the standard, master `.agents/`,
+  the router, lobby wiring) → `_artifacts/_home/…`. Append a row to `_artifacts/INDEX.md`.
+- **From inside a project** (`Projects/<name>/` is cwd) → project-local `Projects/<name>/_artifacts/…` + that
+  project's own `active-context.md`/`INDEX.md` (follow its rules, not the home-base ledger).
 
-**Then name the folder by task type:**
-- **Random task** → `_artifacts/<workspace>/<YYYY-MM-DD>_<slug>/` — date FIRST, slug LAST so they sort
-  chronologically (e.g. `2026-06-24_workspace-standard-and-repo-map`). Slug: lowercase, hyphen-separated,
-  max 6 words, from Daniel's first concrete request.
-- **Story** → `_artifacts/<workspace>/<epic>/<story>/` — an **epic folder houses all of its stories**, so
-  stories group under their parent epic instead of scattering flat (e.g. `epic-9/story-9.4-ios-shell/`).
-  Story folders are epic-scoped, not date-prefixed.
-
-Also append a one-line entry to `_artifacts/INDEX.md`.
+**Then name the folder by task type (in either location):**
+- **Random task** → `<YYYY-MM-DD>_<slug>/` — date FIRST, slug LAST so they sort chronologically
+  (e.g. `2026-06-25_artifacts-policy-finish`). Slug: lowercase, hyphen-separated, max 6 words, from Daniel's
+  first concrete request.
+- **Story** → `<epic>/<story>/` — an **epic folder houses all of its stories** (create the epic folder if it
+  isn't there yet), so stories group under their parent epic (e.g. `epic-9/story-9.4-ios-shell/`). Epic-scoped,
+  not date-prefixed.
 
 Start the **TodoWrite task list** (this is the task tracker — no `task.md` file), then write
 `implementation_plan.md` (goal, every file touched with links, execution order, open questions,
@@ -120,7 +121,7 @@ terse — it is the list, not a second walkthrough.
 
 ### 6. Write `code-review.md` (whenever a code review runs)
 **Any code review — `/code-review`, `bmad-code-review`, or an ad-hoc review — MUST be saved as
-a `code-review.md` artifact in the current session's `_artifacts/<workspace>/<YYYY-MM-DD>_<slug>/` folder**
+a `code-review.md` artifact in the current session's `<YYYY-MM-DD>_<slug>/` folder**
 (use `code-review-N.md` if a session runs more than one). Presenting findings only inline in the
 chat is NOT sufficient. The artifact captures: scope (files/diff reviewed), method/effort, every
 finding (file:line, severity, failure scenario, suggested fix), and a disposition checklist
@@ -130,7 +131,7 @@ Frontmatter `type: code_review`.
 ### 7. Write `self-audit-stress-test.md` (whenever the pre-dev audit runs)
 **Every run of the `/1_self-audit-stress-test` workflow — on a plan, a story, or another agent's
 audit — MUST be saved as a `self-audit-stress-test.md` artifact in the current session's
-`_artifacts/<workspace>/<YYYY-MM-DD>_<slug>/` folder** (use `self-audit-stress-test-N.md` if a session
+`<YYYY-MM-DD>_<slug>/` folder** (use `self-audit-stress-test-N.md` if a session
 runs more than one). Presenting findings only inline in the chat is NOT sufficient. The artifact
 captures: targets reviewed, audit level (Skip/Light/Full), the Phase 0–4 walk, every finding
 (`file:line`, severity, failure scenario, suggested fix), and the final Go / No-Go verdict.

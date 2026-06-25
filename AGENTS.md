@@ -30,7 +30,7 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 > device with no terminal.
 
 > **⛔ ARTIFACTS — MANDATORY FIRST ACTION.** Before modifying ANY file outside `_artifacts/`, write an
-> `implementation_plan.md` into `_artifacts/<workspace>/…` and **STOP until Daniel says "approved."** Track
+> `implementation_plan.md` into the right `_artifacts/` for where you work from (§5) and **STOP until Daniel says "approved."** Track
 > work with a live TodoWrite list; close with `walkthrough.md` + `task-list.md`. **This applies at the lobby
 > too — not only inside projects.** Full protocol → `.agents/rules/artifacts-always-first.md`. (Skip only for
 > read-only/investigatory asks and trivial one-liners.)
@@ -50,10 +50,14 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 ## 5. NAMING CONVENTIONS  (this replaces a database)
 - Dated output: `YYYY-MM-DD_<slug>.md`
 - Versioned drafts: `<slug>_draft.md`, `<slug>_v2.md`, `<slug>_final.md`
-- Artifacts live **WITH the work they're about**: project work → **project-local** `Projects/<name>/_artifacts/<YYYY-MM-DD>_<slug>/`
-  (the project owns its history; Daniel works inside projects directly); home-base / cross-project work →
-  `_artifacts/_home/<YYYY-MM-DD>_<slug>/`. Stories → `<epic>/<story>/`. The home base finds a project's history
-  at `Projects/<name>/_artifacts/`. (Full model → `_docs/workspace-standard.md`.)
+- Artifacts go **where you work FROM** (not just what the work is about):
+  - **From the home base** (this folder is your cwd) → home-base `_artifacts/`: project work → a per-project
+    bucket `_artifacts/<project-folder-name>/<YYYY-MM-DD>_<slug>/` (e.g. `_artifacts/aviationChat-AGY/`,
+    `_artifacts/clean-bmad-workspace/`; the bucket = the `Projects/<name>/` folder name); home-base /
+    cross-project work → `_artifacts/_home/<YYYY-MM-DD>_<slug>/`. Append a row to `_artifacts/INDEX.md`.
+  - **From inside a project** (`Projects/<name>/` is your cwd) → **follow THAT project's rules**: project-local
+    `Projects/<name>/_artifacts/<YYYY-MM-DD>_<slug>/` + its own `active-context.md`/`INDEX.md`.
+  - Stories → `<epic>/<story>/`; retired → `_archived/`. (Full model → `_docs/workspace-standard.md`.)
 - Memory / active-context sections are NUMBERED (e.g. 5.2) so agents **skip-to-N** instead of reading all.
 
 ## 6. GATES  (consult before acting)
@@ -63,11 +67,12 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 - Full hard stops + "ask first" list → `.agents/rules/constitution.md`.
 
 ## 7. PERSISTENCE  (you own this — not a vendor)
-- **Where it lives:** project continuity → **project-local** `Projects/<name>/_artifacts/active-context.md`
-  (each project owns its history + optional local `INDEX.md`); home-base continuity → `_artifacts/_home/active-context.md`
-  + the home-base `_artifacts/INDEX.md` ledger.
-- **"pick up"** → read-only continuity brief from the right `active-context.md` for the workspace you're in
-  (project-local for a project, `_home` for the lobby). Don't change anything; don't explain the obvious.
+- **Where it lives — decided by where you work FROM.** Working **from the home base** → home-base `_artifacts/`
+  (`_artifacts/<project>/active-context.md` for a project worked on from here; `_artifacts/_home/active-context.md`
+  for home-base work) + the home-base `_artifacts/INDEX.md` ledger. Working **from inside a project**
+  (`Projects/<name>/` open) → that project's own `_artifacts/active-context.md` + `INDEX.md` (follow its rules).
+- **"pick up"** → read-only continuity brief from the right `active-context.md` for where you're working from.
+  Don't change anything; don't explain the obvious.
 - **"hand off"** → write current state to that `active-context.md`, append a row to the matching `INDEX.md`,
   then read it back and verify without relying on chat memory.
 - Full protocol → `.agents/rules/artifacts-always-first.md`. Full model → `_docs/workspace-standard.md`.

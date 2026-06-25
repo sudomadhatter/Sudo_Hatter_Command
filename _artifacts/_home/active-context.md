@@ -7,6 +7,17 @@ Phase A + rename-day restructure DONE. **Workspace Standard + repo-map hybrid + 
 **2026-06-25: mobile-mode lane added** — the command center is now driven from a phone; `.agents/rules/mobile-mode.md`
 adapts git (agent commits/pushes, asks before PR), the approval gate (tap-to-approve), artifacts (TL;DR-first),
 and verification (agent runs in-container) for web/mobile sessions. See `_artifacts/_home/2026-06-25_mobile-mode-rule/`.
+**2026-06-25: WS7 + artifact-rule.** The home base now has its own `_docs/repo-map.md` + a SessionStart drift hook
+(master `check-repo-map-drift.ps1` gained `-Root`/`-MapPath`; direct `.claude/settings.json` edit worked).
+**Artifact rule revised → "artifacts go WHERE YOU WORK FROM"** (cwd decides): from the home base → a per-project
+bucket `_artifacts/<project>/` or `_artifacts/_home/`; inside a project → project-local (AGENTS §5/§7, workspace-standard,
+INDEX, memory). This session also ran aviationChat **Phase 2** (collapsed `.agent/`→`.agents/`, deleted 1,059 files,
+removed forked `.claude/rules/`, GitNexus zero-code) — it lives in `_artifacts/aviationChat-AGY/2026-06-25_ws7-and-phase2/`.
+**2026-06-25: artifacts-policy reconciliation FINISHED** — wrote `_artifacts/README.md` (the how-to), reconciled
+the last stale `_artifacts/<workspace>/` refs (`AGENTS.md` §3 · `workspace-standard.md` Part 1 + appendix · master
+`artifacts-always-first.md`) to **work-from-cwd**, refreshed `_docs/repo-map.md` (`--mode content`, drift clean),
+and renamed the policy memory → `artifacts-go-where-you-work-from`. Session:
+`_artifacts/_home/2026-06-25_artifacts-policy-finish-and-drift-backport/` (commit pending — see its walkthrough).
 
 ## 5. PICK UP  (read-only brief)
 - 5.1 Doing: building the home base (folder-as-workspace routing). Latest session executed the approved plan
