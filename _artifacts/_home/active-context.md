@@ -2,6 +2,15 @@
 
 ## 1. PRIME STATE
 Current workspace: `_home` (lobby at `C:\Sudo_Hatter_Command`)   |   Last session: 2026-06-25
+**2026-06-25 (latest): `_my_resources/open_tasks/` standardized as the "what's next" check.** Asking "what's next /
+open tasks / what's left" now reads Daniel's notes for **where you work FROM** (lobby → home-base folder; inside a
+converted project → that project's own) — on-demand, READ-ONLY, no SessionStart hook. Executed for converted
+projects only: **aviationChat-AGY** (`git mv`'d 5 notes `_Open_Task/`→`open_tasks/`, removed empty dir, seeded
+`todo_list.md`, added READ-ONLY routing row to `AGENTS.md`); **clean-bmad-workspace** (seeded `open_tasks/todo_list.md`
++ routing row); **lobby** `router.md` row 20 + `_docs/repo-map.md` resolve by where-you-work-from; **memory**
+`my-resources-personal-area-protected` carve-out upgraded to system-wide. Committed on origin/main as `fa8bf1b`.
+Session: `_artifacts/_home/2026-06-25_open-tasks-standard/`. Maps/indexes verified current this pass (router ✓,
+repo-map drift exit 0 ✓, INDEX row ✓).
 Phase A + rename-day restructure DONE. **Workspace Standard + repo-map hybrid + artifacts parity landed
 (home-base portion).** `_experiment/` is now `_routing-canary/`. One canonical git policy.
 **2026-06-25: mobile-mode lane added** — the command center is now driven from a phone; `.agents/rules/mobile-mode.md`
@@ -74,5 +83,5 @@ already bundled this session's first-pass repo edits with the prior self-audit w
   opencode + Antigravity still to run.
 - 6.4 Related links: `_docs/workspace-standard.md`, `_docs/master-implementation-plan.md`,
   `_artifacts/_home/2026-06-24_workspace-standard-and-repo-map/` (plan + walkthrough + task-list).
-- 6.5 Git: home-base changes are UNCOMMITTED — exact `git add` (explicit paths) + commit command is in this
-  session's `walkthrough.md` "Your Actions". I did not commit (per the git policy).
+- 6.5 Git: working tree CLEAN. The recent home-base sessions (maps/GitNexus, open-tasks standard) are committed on
+  origin/main — latest `fa8bf1b`. Per-session "Your Actions" git commands remain in each `walkthrough.md` for the record.
