@@ -40,7 +40,8 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 |---|---|---|
 | Master toolkit | `.agents/` | rules · commands · skills · workflows · bmad · scripts · templates (single source of authorship) |
 | Shared memory | `_artifacts/` | every agent's plans/walkthroughs/handoffs; `INDEX.md` ledger; per-workspace `active-context.md` |
-| Docs | `_docs/` | home-base documentation (the master implementation plan, etc.) |
+| Docs | `_docs/` | home-base documentation (master implementation plan, workspace standard) |
+| Navigation index | `_docs/repo-map.md` | the lobby's repo-map (curated header + auto body); drift-checked at SessionStart |
 | Routing canary | `_routing-canary/` | model-agnostic proof the routing works (Claude/opencode/Antigravity) |
 | System builder | `_system/` | how to add/maintain workspaces (`/new-project`, `/sync-agents`) |
 | Lobby tool dirs | `.claude/`, `.opencode/` | synced copies of the master so `/commands` + skills resolve here |
@@ -49,7 +50,10 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 ## 5. NAMING CONVENTIONS  (this replaces a database)
 - Dated output: `YYYY-MM-DD_<slug>.md`
 - Versioned drafts: `<slug>_draft.md`, `<slug>_v2.md`, `<slug>_final.md`
-- Artifacts: `_artifacts/<workspace>/<YYYY-MM-DD>_<slug>/…`  (`<workspace>` = project name, or `_home`)
+- Artifacts live **WITH the work they're about**: project work → **project-local** `Projects/<name>/_artifacts/<YYYY-MM-DD>_<slug>/`
+  (the project owns its history; Daniel works inside projects directly); home-base / cross-project work →
+  `_artifacts/_home/<YYYY-MM-DD>_<slug>/`. Stories → `<epic>/<story>/`. The home base finds a project's history
+  at `Projects/<name>/_artifacts/`. (Full model → `_docs/workspace-standard.md`.)
 - Memory / active-context sections are NUMBERED (e.g. 5.2) so agents **skip-to-N** instead of reading all.
 
 ## 6. GATES  (consult before acting)
@@ -59,9 +63,14 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 - Full hard stops + "ask first" list → `.agents/rules/constitution.md`.
 
 ## 7. PERSISTENCE  (you own this — not a vendor)
-- **"pick up"** → read-only continuity brief from `_artifacts/<workspace>/active-context.md` (+ recent `INDEX.md` rows). Don't change anything; don't explain the obvious.
-- **"hand off"** → write current state to `_artifacts/<workspace>/active-context.md`, append a row to `_artifacts/INDEX.md`, then read it back and verify without relying on chat memory.
-- Full protocol → `.agents/rules/artifacts-always-first.md`.
+- **Where it lives:** project continuity → **project-local** `Projects/<name>/_artifacts/active-context.md`
+  (each project owns its history + optional local `INDEX.md`); home-base continuity → `_artifacts/_home/active-context.md`
+  + the home-base `_artifacts/INDEX.md` ledger.
+- **"pick up"** → read-only continuity brief from the right `active-context.md` for the workspace you're in
+  (project-local for a project, `_home` for the lobby). Don't change anything; don't explain the obvious.
+- **"hand off"** → write current state to that `active-context.md`, append a row to the matching `INDEX.md`,
+  then read it back and verify without relying on chat memory.
+- Full protocol → `.agents/rules/artifacts-always-first.md`. Full model → `_docs/workspace-standard.md`.
 
 ## 8. PORTABILITY
 `AGENTS.md` is the universal contract; `CLAUDE.md` and `GEMINI.md` are one-line adapters that point

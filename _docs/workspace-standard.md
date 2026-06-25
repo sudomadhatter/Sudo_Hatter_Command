@@ -108,11 +108,18 @@ Every non-trivial, file-touching task: research read-only → write `implementat
 `task-list.md` snapshot → append one row to `_artifacts/INDEX.md` → update `active-context.md` (the hand-off).
 Full rule → `.agents/rules/artifacts-always-first.md`.
 
-**Artifact organization (where the folder goes):**
-- **Bucket** = the workspace whose files the work primarily changes; `_home` for home-base / cross-project work.
-  The lab where you *test* something is not automatically the bucket.
-- **Random task** → `_artifacts/<workspace>/<YYYY-MM-DD>_<slug>/`.
-- **Story** → `_artifacts/<workspace>/<epic>/<story>/` — an epic folder houses all its stories.
+**Artifact organization — artifacts live WITH the work they're about (Daniel, 2026-06-25):**
+- **Project work** (the work is about a `Projects/<name>/` repo — even if launched from the home base) →
+  **PROJECT-LOCAL** `Projects/<name>/_artifacts/`. The project owns its history so it travels with the repo;
+  Daniel works inside each project directly. Each project keeps its own `_artifacts/active-context.md`
+  (+ optional `_artifacts/INDEX.md`).
+- **Home-base / cross-project work** (the work is about the home base itself — routing, the toolkit, multi-project)
+  → home base `_artifacts/_home/<YYYY-MM-DD>_<slug>/`, logged in the home-base `_artifacts/INDEX.md`.
+- **The test is what the work is ABOUT, not where you launched it.** The lab where you *test* is not the bucket.
+- Within either location: **random task** → `<YYYY-MM-DD>_<slug>/`; **story** → `<epic>/<story>/` (epic folder
+  houses its stories); retired history → `_archived/`.
+- **The home base finds a project's history** at `Projects/<name>/_artifacts/` (+ that project's
+  `active-context.md`). The home-base `_artifacts/` holds only `_home/` — not per-project buckets.
 
 ### Routing canary — the regression cadence
 `_routing-canary/` is a permanent check, not a one-time demo. **Re-run it when** you change routing structure
