@@ -17,7 +17,8 @@
 | Home-base docs (this map · workspace standard · master plan) | `_docs/` |
 | How to add / maintain workspaces (`/new-project`, `/sync-agents`) | `_system/` |
 | Model-agnostic proof the routing works | `_routing-canary/` |
-| Daniel's personal area — **PROTECTED** (don't edit/reference unless he says/links) | `_my_resources/` |
+| Daniel's personal area — **PROTECTED** (don't edit/reference unless he says/links) | `_my_resources/` — **EXCEPT** `open_tasks/` (read-only carve-out below) |
+| **"What do we do next" / open tasks / Daniel's plans & PRPs** — READ-ONLY, never edit | `_my_resources/open_tasks/` (start at `todo_list.md`; cross-check vs live project files) |
 
 ## Knowledge map (which doc to read when)
 | Doc | Read it when |
@@ -28,6 +29,13 @@
 | `_docs/master-implementation-plan.md` | The home-base build plan |
 | `_artifacts/INDEX.md` | The session ledger — "pick up" scans it, "hand off" appends to it |
 | a project's `Projects/<name>/AGENTS.md` | When you go work inside that project (not this file) |
+| `_my_resources/open_tasks/` | Daniel asks "what do we do next / what's left" — read his todo + saved plans/PRPs (read-only) |
+
+**GitNexus (lobby graph — Tier-2, on-demand):** the home base is indexed as `SUDO_HATTER_COMMAND`
+(`.gitnexusignore` scopes it: lobby infra + each project shown via its top-level `AGENTS.md`/`README.md`,
+**no** project source files; `.agents/` is excluded — GitNexus hard-skips dot-folders). Re-index:
+`$env:GITNEXUS_NO_GITIGNORE="1"; gitnexus analyze . --index-only --name SUDO_HATTER_COMMAND -f`.
+Tooling is Tier-2/disposable — the maps above stay canonical (see `_my_resources/.../gitnexus-usage-guide.md`).
 
 **Drift:** checked at SessionStart by `.agents/scripts/check-repo-map-drift.ps1 -MapPath _docs/repo-map.md` — it
 nags if a new top-level folder isn't named here. Rebuild the AUTO body:

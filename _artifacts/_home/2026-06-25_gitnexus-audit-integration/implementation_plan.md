@@ -2,7 +2,7 @@
 
 **Workspace:** `_home` (Sudo_Hatter_Command), crossing into `Projects/aviationChat-AGY`
 **Date:** 2026-06-25
-**Status:** ⏸️ ON HOLD (2026-06-25) — aviationChat-AGY is being restructured. Do NOT edit yet. When the update lands, re-inspect the new setup (workflow path, the CLAUDE.md GitNexus section, any new `.mcp.json`/settings) and REVISE this plan before seeking approval. The §3/§4 file paths below are pre-restructure and may move.
+**Status:** ✅ EXECUTED 2026-06-25 (approved + built). 3 files written per §9. See `walkthrough.md`. Both repos uncommitted (Your Actions in walkthrough). Sections 3–4 SUPERSEDED by §8; §9 was the build spec.
 **Follows:** `_artifacts/_home/2026-06-24_gitnexus-adoption-spike/` (GitNexus adopted, MCP live in interactive sessions). This is spike bridge #3 ("blast-radius into the gate").
 
 ---
@@ -51,4 +51,60 @@ The existing grep one-liner + the blast-radius table + the contract/reinvention/
 - Enabling GitNexus MCP in headless autopilot (Daniel: skip).
 - `ingestion-Pipeline-AC` (also indexed) — same edit could apply; **offered as a follow-on**, not in this plan.
 - `jetChat` — NEVER-INDEX (commercial); no change.
-- Any home-base toolkit "master workflow" restructuring (the per-project body is the durable target today).
+- Any home-base toolkit "master workflow" restructuring (the per-project body is the durable target today). **[SUPERSEDED — see §8: the per-project body is now gone; the master IS the target.]**
+
+---
+
+## 8. POST-CONVERSION RE-SCAN (2026-06-25) — revised approach
+
+aviationChat was converted to the **workspace standard** (`_artifacts/2026-06-25_workspace-standard-conversion/`, Phase 1). Re-scan findings:
+
+1. **The self-audit workflow BODY is gone from aviationChat.** The new command adapter (`.claude/commands/1_self-audit-stress-test.md`) points at `@.agents/workflows/1_self-audit-stress-test.md`, but that file does **not exist** — `.agents/workflows/` holds only `autopilot_bmad_dev_loop.md` + `INDEX.md`. The old `.agent/workflows/` (singular) body was retired in the conversion. **The command currently dangles.**
+2. **The master `.agents/` toolkit never had the self-audit body either** (home base `.agents/workflows/` has the same two files only). So this is a **systemic gap**: converting a project to the standard *loses* the self-audit workflow, because the master it vendors from is missing it. The body survives only in the two UNCONVERTED projects (`jetChat`, `ingestion-Pipeline-AC`) under old `.agent/workflows/`.
+3. **GitNexus survived into `AGENTS.md`** (always-load, sentinel block `<!-- gitnexus:start/end -->`): still mandates `impact` before edits, `detect_changes` before commits; §3 ALWAYS-LOAD names the code-graph. Strong, but framed around *code edits* — a pre-dev *plan* audit still needs its own explicit Phase-1 nudge.
+4. **Headless unchanged:** no `.mcp.json` in aviationChat, no `enabledMcpjsonServers` → autopilot `_AP` still cannot call GitNexus. Keep the Phase-1 step **conditional** (graph if available, else grep).
+5. **Artifact location for the aviationChat edit** is now its local `_artifacts/<date>_<slug>/` (the repo adopted `_artifacts/`; `_claude_artifacts/` is gone).
+
+### Revised scope = restore the body in the master, with GitNexus baked in
+The task is no longer "edit Phase 1 of an existing file." It is: **(re)create `.agents/workflows/1_self-audit-stress-test.md` in the home-base master**, recovering the full Phase 0–5 content (source: ingestion-Pipeline-AC's surviving copy / the pre-conversion aviationChat body), with the **GitNexus-aware, conditional Phase 1** (the §4 lead-in). Then sync the master into aviationChat so its dangling command resolves. This fixes the conversion gap AND lands the integration in one move, and propagates to every future converted project.
+
+### Open DECISION for Daniel (pick a direction before I touch anything)
+- **A (recommended):** Restore the body into the **master** `.agents/workflows/` (GitNexus Phase 1 baked in) + sync to aviationChat. Fixes the dangling command everywhere; single-source-correct.
+- **B:** Patch **aviationChat only** (recreate its local body). Narrower, but fights the single-source standard and leaves the master + home-base gap.
+- **C:** **Fold into your conversion Phase 2** — Phase 2 already plans to "repoint `1_*` writers / retire old `.agent/`"; restoring the self-audit body belongs there. I just hand you the GitNexus Phase-1 block to drop in then.
+
+Also confirm this restore doesn't collide with whatever your conversion Phase 2 intends for workflow bodies.
+
+---
+
+## 9. EXECUTION (Option A — concrete build spec)
+
+**Source for the body:** ingestion-Pipeline-AC's surviving `.agent/workflows/1_self-audit-stress-test.md` (= the pre-conversion aviationChat body, verified identical). Full Phase 0–5 recovered.
+
+**Generalization (light — recommended):** the master serves all projects, so soften the few hardest aviationChat-only tokens to generic-with-example form, keeping all rigor:
+- "a new Firestore client instead of `get_db()`" → "a new DB client instead of the shared singleton (e.g. `get_db()`)"
+- "SSE/WebSocket event, API schema, Firestore doc shape" → "SSE/WebSocket event, API schema, DB doc/row shape, function signature"
+- Phase 3 "simultaneous SSE / Firestore" examples kept as *examples*, not hard requirements.
+- Everything else (Phase 0 right-size gate, Phase 2 over-engineering tripwires, Phase 4 verdict, Phase 5 copy-paste block) stays verbatim. aviationChat/ingestion lose nothing — the examples still apply.
+
+**The new conditional GitNexus Phase 1 lead-in (generic — no hardcoded repo name):**
+> **Graph-first when the repo is GitNexus-indexed and the MCP tools are present.** If AGENTS.md has a "GitNexus — Code Intelligence" section, use the graph for the authoritative blast radius instead of grepping blind:
+> - `impact({ target: "Symbol", direction: "upstream", summaryOnly: true })` — who breaks if this changes (the upstream/downstream columns, from the real call graph). Add `repo: "<IndexName>"` when >1 repo is indexed.
+> - `context({ name: "Symbol" })` — callers/callees + the flows it participates in.
+> - **Read confidence:** code edges ≈ 1.0; doc/story-file mentions ≈ 0.8 (breadcrumbs, not code).
+> - **Caveat:** GitNexus links repos only via HTTP contracts — it will NOT show coupling through a shared DB/data store; the Contract two-sidedness check below still needs manual reasoning.
+>
+> **Fall back to the `grep` below** when the tools aren't available (headless autopilot, or a non-indexed repo); keep grep as a cross-check for dynamic/string references the AST graph can miss.
+
+This sits ABOVE the existing grep block; the grep one-liner, the blast-radius table, and all other bullets stay as-is.
+
+**Files touched (3):**
+1. **CREATE** `c:\Sudo_Hatter_Command\.agents\workflows\1_self-audit-stress-test.md` — the master body (generalized + GitNexus Phase 1). This is the durable single source.
+2. **CREATE** `Projects\aviationChat-AGY\.agents\workflows\1_self-audit-stress-test.md` — same content, so aviationChat's command (`@.agents/workflows/...`) resolves. (Its `.agents/` is a vendored copy; this is the "sync".)
+3. **EDIT (optional, flagged)** `c:\Sudo_Hatter_Command\.agents\commands\1_self-audit-stress-test.md` — repoint `@.agent/workflows/` → `@.agents/workflows/` so the home base's OWN command resolves to the new master body. (Pre-existing dangle, not caused by us. Skip if you'd rather fold all home-base adapter repointing into your conversion work.)
+
+**NOT in scope (flagged for your Phase 2 / later):** the home-base `.claude/` + `.opencode/` command copies still say `.agent/` (singular); ingestion + jetChat keep their own old-style bodies (unconverted). Propagating the master to those is a broader sync, not this task.
+
+**Gate / artifacts:** this home-base plan is the sign-off and **explicitly lists the aviationChat file (#2)**, so "approved" covers that cross-repo write. Closing `walkthrough.md` lands in THIS home-base folder with a "Your Actions" git section for BOTH repos. I do not commit.
+
+**Verification (done =):** after writing, confirm file #2 exists at the exact path aviationChat's command references; spot-read both new files to confirm the GitNexus lead-in + Phase 0–5 are intact and the curated content is unchanged.

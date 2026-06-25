@@ -18,6 +18,9 @@
 /ingestion-Pipeline-AC/
 /openCode/
 
+# GitNexus code-graph index (disposable Tier-2 accelerator — never committed).
+**/.gitnexus/
+
 # Build / runtime junk anywhere
 **/node_modules/
 **/.venv/

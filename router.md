@@ -17,4 +17,5 @@ Any workspace may send you BACK here ("if not here, go to root router").
 | AviationChat ingestion pipeline | `Projects/ingestion-Pipeline-AC/` | its `AGENTS.md` | pending |
 | openCode workspace | `Projects/openCode/` | its `AGENTS.md` | pending |
 | Maintaining THIS home-base system | `_system/` | `_system/AGENTS.md` | active |
+| **"What do we do next" / open tasks / what's left / Daniel's plans & PRPs** | `_my_resources/open_tasks/` | `todo_list.md` (+ any plan/PRP files there) | active · **READ-ONLY** (Daniel's notes — never edit; cross-check vs live project files) |
 | Reference: routing theory + transcripts | `_docs/`, `youtube_transcripts/` | `_docs/master-implementation-plan.md` | reference |
