@@ -57,10 +57,21 @@ A plan from a prior session is NOT pre-approved. Re-present it and get fresh sig
 Read, grep, run non-mutating commands. Understand the problem. Write to NO project file.
 
 ### 2. Create the artifact folder + plan
-Folder: `_artifacts/<workspace>/<YYYY-MM-DD>_<slug>/` — date FIRST, slug LAST so they sort
-chronologically (e.g. `2026-05-29_epic-9-ios-shell-meta`). `<workspace>` = the project name, or
-`_home` for root-level work. Slug: lowercase, hyphen-separated, max 6 words, from Daniel's first
-concrete request. Also append a one-line entry to `_artifacts/INDEX.md`.
+
+**Pick the workspace bucket first.** `<workspace>` = the project whose files the work *primarily changes*.
+Use `_home` for home-base / cross-project work (the standard, the master `.agents/`, the router, lobby
+wiring). The lab where you happen to test something is NOT automatically the bucket — file by what the work
+changes, not where you ran it.
+
+**Then name the folder by task type:**
+- **Random task** → `_artifacts/<workspace>/<YYYY-MM-DD>_<slug>/` — date FIRST, slug LAST so they sort
+  chronologically (e.g. `2026-06-24_workspace-standard-and-repo-map`). Slug: lowercase, hyphen-separated,
+  max 6 words, from Daniel's first concrete request.
+- **Story** → `_artifacts/<workspace>/<epic>/<story>/` — an **epic folder houses all of its stories**, so
+  stories group under their parent epic instead of scattering flat (e.g. `epic-9/story-9.4-ios-shell/`).
+  Story folders are epic-scoped, not date-prefixed.
+
+Also append a one-line entry to `_artifacts/INDEX.md`.
 
 Start the **TodoWrite task list** (this is the task tracker — no `task.md` file), then write
 `implementation_plan.md` (goal, every file touched with links, execution order, open questions,
@@ -134,7 +145,7 @@ needs the audit on disk, not just in chat. Frontmatter `type: self_audit`.
 - NEVER claim the walkthrough is done without actual test output.
 - NEVER finish a `walkthrough.md` without its "Your Actions" section + the git commit command.
 - NEVER close out a task without snapshotting the final task list into `task-list.md` (§5b).
-- NEVER commit mid-work or `git add -A` (sweeps other teams' work). At close-out you MAY commit your OWN work via explicit paths, then **ask before `git push`** — see the `git-closeout-commits` rule. The "Your Actions" git command is still documented either way.
+- NEVER run `git commit`/`git push` yourself — the `walkthrough.md` "Your Actions" section hands Daniel the exact command. The ONLY exception: Daniel explicitly delegates a specific commit/push to you in that moment (then: your own files only, explicit paths, never `git add -A`). Full policy → the `git-policy` rule.
 - NEVER deliver code-review findings inline-only — always persist them as a `code-review.md` artifact.
 - NEVER deliver `/1_self-audit-stress-test` findings inline-only — always persist them as a
   `self-audit-stress-test.md` artifact (`type: self_audit`), even though the audit writes no code.

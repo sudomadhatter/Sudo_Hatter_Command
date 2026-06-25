@@ -1,3 +1,8 @@
+---
+name: collaborative-debug-first
+description: "Activates when you cannot directly observe runtime behavior (browser console, network, Firestore, UI) but Daniel can. Instrument with one targeted debug log and ask him to report back instead of guessing."
+---
+
 # Rule: Collaborative Debug-First (Ask the Pilot)
 
 ## When This Applies

@@ -1,4 +1,4 @@
-# _experiment/control/agent.md — hop 2 (the work)
+# _routing-canary/control/agent.md — hop 2 (the work)
 
 Write three words into `../Power.md`, in order, forming a single line: `<word1> <word2> <word3>`.
 

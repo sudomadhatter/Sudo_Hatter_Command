@@ -1,3 +1,8 @@
+---
+name: bmad_code_review_fast_path
+description: "Activates when the bmad-code-review skill or workflow runs in this solo-agent setup. Run all review layers yourself sequentially (no subagents), do not stop at checkpoints, and persist findings to code-review.md."
+---
+
 # BMAD Code Review — Solo Agent Auto-Pilot
 
 **Activates when:** The `bmad-code-review` skill or workflow is invoked.

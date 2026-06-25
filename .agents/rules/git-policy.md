@@ -1,38 +1,43 @@
-# Git at Story Close-Out (Multi-Team Repo)
+---
+name: git-policy
+description: "Git default: NEVER run commit/push yourself — hand Daniel the exact command. Only commit/push when Daniel explicitly delegates that specific action; then commit your OWN files via explicit paths, never git add -A."
+---
 
-> **Context:** A project may be worked by multiple agents/teams in parallel on the same branch.
-> At any moment several agents' uncommitted changes can coexist in the working tree.
-> These rules keep history clean and each team's work independently revertable. This rule
-> supersedes the old blanket "never run git commit/push — provide the command" hard-stop.
+# Git Policy
 
-## When you may commit
+> The single, canonical git rule for the whole workspace. Supersedes the older "commit at story
+> close-out" stance — there is only one policy now: **you hand Daniel the command** unless he
+> explicitly delegates a specific commit/push to you.
 
-ONLY at **story close-out** — after the code review has passed and the story is ready to flip to
-`done`. NEVER commit mid-work, and never as a substitute for the plan-approval gate. (Mid-work, the
-old discipline stands: no commits.)
+## Default — you do NOT run git
 
-## Commit ONLY your own work — explicit paths
+**Never run `git commit` or `git push` yourself.** Instead, the `walkthrough.md` "Your Actions"
+section hands Daniel the exact command(s) to run. This holds at every stage — mid-work AND at
+close-out. The record of the command exists whether Daniel runs it or (by exception) delegates it.
 
-- Stage with **explicit paths** for the files YOU changed this session:
-  `git add path/one path/two …`.
-- **NEVER `git add -A`, `git add .`, or `git add -u`** — they sweep the other parallel teams'
-  uncommitted work into your commit. This is the single most important rule here.
-- Before committing, **verify the staged set**: `git diff --cached --stat` must show ONLY your
-  files. If anything else appears, unstage it (`git restore --staged <path>`) before continuing.
-- Scope the commit message to your story only.
+This pairs with the plan-first gate: no project-file edits without an approved `implementation_plan.md`
+(see `artifacts-always-first`), and "done" is earned, not implied (see `completion-not-illusion`).
 
-## Ask before pushing — push separately
+## The only exception — Daniel explicitly delegates
 
-- After committing, **ASK Daniel before you `git push`.** The commit is yours to make at close-out;
-  the push is the outward, shared action and gets an explicit go-ahead.
-- Push your work as **its own commit, separate** from other teams' changes — never bundle.
-- If the push is rejected (remote moved under you), **STOP and report**. Do not force-push, and do
-  not blind-rebase while other teams' uncommitted work sits in the tree.
+If Daniel explicitly tells you to run a specific commit or push in that moment ("go ahead and commit
+this", "you push it"), you may — for that action only. A standing approval does NOT carry to the next
+commit; each delegation is one-time. When delegated, follow the safe-commit mechanics below.
 
-## What still holds
+## Safe-commit mechanics (apply ONLY when delegated)
 
-- **Plan-first gate unchanged:** no project-file edits without an approved `implementation_plan.md`.
-- **Close-out is earned:** only commit when the story is genuinely review-passed and ready for `done`
-  (see `completion-not-illusion`).
-- The `walkthrough.md` "Your Actions" still documents the exact commit + push, so the record exists
-  whether you run it or Daniel does.
+- **Commit your OWN work via explicit paths:** `git add path/one path/two …`.
+- **NEVER `git add -A`, `git add .`, or `git add -u`** — they sweep other parallel work (other
+  agents/teams, or Daniel's own uncommitted changes) into your commit. This is the most important rule.
+- **Verify the staged set first:** `git diff --cached --stat` must show ONLY your files. If anything
+  else appears, unstage it (`git restore --staged <path>`) before committing.
+- **Scope the commit message** to your task/story only.
+- **Push only if the push was also delegated** — it is a distinct outward action needing its own
+  go-ahead. Push your work as its own commit; never bundle other work.
+- **If a push is rejected** (remote moved under you), **STOP and report.** Do not force-push, and do
+  not blind-rebase while other uncommitted work sits in the tree.
+
+## Always
+
+- The `walkthrough.md` "Your Actions" documents the exact `git add` (explicit paths) + `commit` +
+  `push` commands either way — so the record exists whether Daniel or (by delegation) you run them.

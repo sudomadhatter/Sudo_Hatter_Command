@@ -48,16 +48,16 @@ sources:
 | `router.md` = master map, categories→workspaces, routes up & down | **New root file.** Categories → `Projects/<name>`; each workspace routes back up to it. |
 | Layer-3 `skills/` referenced only where needed | `.agents/skills/` (BMAD + dev skills), pulled per workspace routing table. |
 | `_memory/` (active-context + handoffs, numbered) | **Folded into `_artifacts/`**: `_artifacts/<ws>/active-context.md` + session folders + global `INDEX.md` ledger. |
-| `_experiment/` routing smoke test | `C:\Sudo_Hatter_Command\_experiment\` — permanent model-agnostic CI (Claude + opencode + Antigravity). |
+| `_routing-canary/` routing smoke test | `C:\Sudo_Hatter_Command\_routing-canary\` — permanent model-agnostic CI (Claude + opencode + Antigravity). |
 | `_system/` builder agent | The home base itself: `.agents/commands/{new-project,sync-agents}` + `.agents/scripts/` + `.agents/templates/project-template/` (+ a `_system/AGENTS.md` builder note). |
 | Workspace `AGENTS.md` + routing table | Each `Projects/<name>/AGENTS.md`: Map/Mission/Support + task→read/skip/skills table + "go up to `../../router.md`." |
 | Naming-conventions-as-database | Documented in root `AGENTS.md`; `_artifacts/INDEX.md` is the scannable ledger. |
 | Pickup / Handoff codewords | Implemented against `_artifacts/` (read-only brief / write+verify). |
 | Gates (routing + risk) | Surfaced in root `AGENTS.md`, backed by `.agents/rules/constitution.md`. |
-| Start small (2 workspaces before scaling) | Prove on `_experiment` + `clean-bmad-workspace` before the rest. |
+| Start small (2 workspaces before scaling) | Prove on `_routing-canary` + `clean-bmad-workspace` before the rest. |
 
 **Net new vs the earlier applied plan:** add `router.md` (split from AGENTS.md), the Map/Mission/Support
-framing, the `_experiment/` CI, numbered skip-to-N memory sections, and an explicit `_system/` builder note.
+framing, the `_routing-canary/` CI, numbered skip-to-N memory sections, and an explicit `_system/` builder note.
 
 ---
 
@@ -84,7 +84,7 @@ C:\Sudo_Hatter_Command\                         ← HOME BASE (lobby) · own git
 │       ├─ active-context.md  numbered sections (1 PRIME · 5 PICK UP · 6 HAND OFF)
 │       └─ <YYYY-MM-DD>_<slug>\  implementation_plan · walkthrough · task-list · code-review …
 │
-├─ _experiment\              ← routing CI: CLAUDE→agent→control→skill→Power.md=="control your agent"
+├─ _routing-canary\              ← routing CI: CLAUDE→agent→control→skill→Power.md=="control your agent"
 ├─ _system\                  ← builder note (how to add/maintain workspaces) → AGENTS.md
 ├─ .claude\  .opencode\      ← LOBBY tool dirs (synced copies of master)
 ├─ youtube_transcripts\      ← reference (tracked)
@@ -102,7 +102,7 @@ C:\Sudo_Hatter_Command\                         ← HOME BASE (lobby) · own git
 | Phase | Theory phase | Goal | Done when |
 |---|---|---|---|
 | **A — Spine** | 0 | Root adapters + `AGENTS.md` + `router.md`; `.agents` master (rules/commands/skills/bmad harvested from aviationChat, genericized); `_artifacts/` memory + `INDEX.md`; `opencode.json`; lobby `.claude`/`.opencode` synced; `.gitignore` + `git init`. | Cold session at root reads the entry map and states the structure back; `/sync-agents` + a BMAD command resolve. |
-| **A2 — Prove routing** | 1 | Build `_experiment/`; run the word test. | `Power.md == "control your agent"` in **Claude, opencode, and Antigravity** with no instruction beyond the entry file. |
+| **A2 — Prove routing** | 1 | Build `_routing-canary/`; run the word test. | `Power.md == "control your agent"` in **Claude, opencode, and Antigravity** with no instruction beyond the entry file. |
 | **B — First workspace** | 2–4 | Convert `clean-bmad-workspace`: move into `Projects/` (+path-fix +`.venv` recreate), pointer/`AGENTS.md` with routing table, consume master, register in `router.md`; pickup/handoff via `_artifacts/`. | "work on clean-bmad-workspace" cold-routes from root and inside; out-of-domain routes back up; handoff→pickup round-trips. |
 | **B2 — Second workspace** | 2 | Stand up one more workspace (a lightweight 2nd, or `jetChat-AGY`) so routing is proven on **two**. | Two workspaces route cleanly; the negative test routes up, not hallucinate. |
 | **C — Scale** | 6 | Roll remaining projects one at a time; **convert aviationChat last**; verify on a 2nd/3rd LLM. | Real work runs here; agent/tool swap loses nothing. |
@@ -141,7 +141,7 @@ Rule line: "If not listed, ask — don't guess. Any workspace may send you BACK 
 skip these / skills) + "if not here, GO BACK to `../../router.md`." Project-specific rules stay local;
 shared rules referenced from the vendored `.agents/rules/`.
 
-**`_experiment/`** — `CLAUDE.md`→`agent.md`→`control/agent.md` (write 3 words to `../Power.md`, fetch each
+**`_routing-canary/`** — `CLAUDE.md`→`agent.md`→`control/agent.md` (write 3 words to `../Power.md`, fetch each
 from `../skills/skill.md`: 1=control 2=your 3=agent)→ reply "done boss". Permanent CI; re-runnable any time.
 
 **`_artifacts/` persistence** — `active-context.md` per workspace, numbered: `1 PRIME STATE`, `5 PICK UP`
@@ -193,7 +193,7 @@ written to `_docs/`.
 **Next (on go-ahead) — finish Phase A + A2:**
 1. Finish harvest (skills, commands, BMAD core) + genericize `constitution.md` / `git-closeout-commits.md` + repoint `artifacts-always-first` to `_artifacts/`.
 2. Write the root spine: `CLAUDE.md`, `GEMINI.md`, `AGENTS.md`, `router.md`, `opencode.json`.
-3. Build `_experiment/` and run the model-agnostic word test (Claude, opencode, Antigravity).
+3. Build `_routing-canary/` and run the model-agnostic word test (Claude, opencode, Antigravity).
 4. Build `/sync-agents` (+ `/new-project`), wire the lobby `.claude`/`.opencode`.
 5. `.gitignore` + `git init` (no commit until Daniel approves).
 6. Report for the "top first" verification checkpoint before converting `clean-bmad-workspace`.

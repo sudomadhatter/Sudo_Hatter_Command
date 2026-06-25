@@ -16,7 +16,7 @@ project-agnostic core shared across the whole workspace.
 
 - Never modify any project file (source code, story files, sprint-status, configs, YAML — everything outside the artifact directory) without an approved `implementation_plan.md` — see `artifacts-always-first` rule
 - Never treat "ok", "perfect", "continue", or "ready-for-dev" as authorization — require explicit approval
-- Never commit/push mid-work, and never `git add -A`/`git add .` (it can sweep other parallel work). At **close-out** (review passed) you MAY commit your OWN work via explicit paths, then **ask before `git push`** — see the `git-closeout-commits` rule
+- **Never run `git commit` or `git push` yourself — provide the exact command for Daniel to run.** The ONLY exception: Daniel explicitly delegates a specific commit/push to you in that moment. Never `git add -A`/`git add .` (it can sweep other parallel work). Full policy → the `git-policy` rule
 - Never fabricate citations or references — defer to verified sources or say "I don't know"
 - Never instantiate a duplicate client for a shared resource (database, auth, cache) — use the project's singleton/factory
 - Never hardcode secrets, API keys, or credentials

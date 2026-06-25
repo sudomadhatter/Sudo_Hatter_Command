@@ -1,3 +1,8 @@
+---
+name: prose-formatting
+description: "Activates on conversational chat replies. Prefer prose over bullets and scaffolding; minimum formatting for clarity. Does not govern structured deliverable docs (artifacts, specs, tables)."
+---
+
 # Chat Response Formatting — Prose Over Scaffolding
 
 > Distilled from the Claude Fable 5 consumer-prompt `lists_and_bullets` doctrine (2026-06-16).
@@ -21,7 +26,7 @@ the nuance and softens the blow.
 ## Carve-Out (do NOT prose-ify these)
 
 This rule governs *chat answers*. It does NOT override the structured conventions for project
-artifacts. Tables, headers, and checklists remain correct and expected in: `_claude_artifacts/*`
+artifacts. Tables, headers, and checklists remain correct and expected in: `_artifacts/<workspace>/*`
 (plans, walkthroughs, task-lists, code-reviews), component specs, story files, `docs/repo-map.md`,
 `sprint-status.yaml`, and any doc whose value IS its structure. When in doubt: chat = prose,
 deliverable docs = whatever structure serves the reader.

@@ -2,19 +2,52 @@
 
 ## 1. PRIME STATE
 Current workspace: `_home` (lobby at `C:\Sudo_Hatter_Command`)   |   Last session: 2026-06-24
-Restructure DONE: projects relocated under `Projects\`; all paths fixed to `Sudo_Hatter_Command`.
+Phase A + rename-day restructure DONE. **Workspace Standard + repo-map hybrid + artifacts parity landed
+(home-base portion).** `_experiment/` is now `_routing-canary/`. One canonical git policy.
 
 ## 5. PICK UP  (read-only brief)
-- 5.1 Doing: Standing up the home base (folder-as-workspace routing system). **Phase A COMPLETE. Rename-day restructure COMPLETE.**
-- 5.2 Changed recently: ran `_system\rename-fix.ps1 -Apply` — (1) moved all 7 projects into `Projects\` (aviationChat-AGY, clean-bmad-workspace, jetChat-AGY, B&L WorldWide, NEXGen Films, ingestion-Pipeline-AC, openCode); (2) rewrote old root name → `Sudo_Hatter_Command` (project refs → `…\Projects\<name>`) across **262 text files**: home-base spine + every project's own files + user-global `~\.claude\settings.json`. Verified: **zero stale `AGY-Projects` refs remain** in the tree. First had to make the script run on Windows PowerShell 5.1 (it was authored for pwsh 7): `(try{}catch{})` expression → `$(try{}catch{})` on lines 85/116, and ASCII-normalized 4 smart chars (em-dash/ellipsis). No move/replace logic changed. NOTE: the script rewrote its own `$OldName` default → it is now a spent/no-op tool.
-- 5.3 Open decisions: RESOLVED (rename + bulk-move done in a single pass).
-- 5.3b GitHub: home-base repo committed (`036ae32`, 2223 files, branch **main**) and **pushed** to `origin` = `https://github.com/sudomadhatter/Sudo_Hatter_Command` (private). `Projects/` is gitignored — NOT in this repo. Auth via cached GCM creds.
-- 5.3c Project repos — ALL 7 committed + pushed + clean/in-sync (each its OWN repo+remote): aviationChat-AGY→AGY_AVIATIONCHAT (main_debug), clean-bmad-workspace→Fresh_Workspace_BMAD (main), **B&L WorldWide→B-L-WorldWide (FIXED: origin was wrongly shared with clean-bmad; repointed; pushed fine as FF — the feared divergence was a non-issue)** (main). jetChat-AGY→AGY_JETCHAT (updated_file_structures_) and NEXGen Films→NEXGen-Films (main): per Daniel, committed **everything incl. pre-existing WIP** (jetChat had 171 non-rename lines + 6 untracked .claude/_claude_artifacts/CLAUDE.md; NEXGen 1113 non-rename lines) and pushed. ingestion-Pipeline-AC→RAG_Pipeline_AC and openCode→OpenChat-Openrouter were STALE (behind 11/6); naive pull conflicted, so: reset --hard origin/main to take the newer remote work, then — ingestion's remote still had old AGY-Projects refs so re-applied path-fix (39 files) + committed + pushed; openCode's remote was already path-clean so just fast-forwarded (nothing to push). Discarded only our own reproducible local path-fix commit; no real work lost.
-- 5.4 Blocked / needs approval: (a) **5 venvs kept, NOT removed** (Daniel chose "Apply, keep venvs") — they still hardcode the old path and must be recreated per-project when next used: `Projects\NEXGen Films\.venv`, `Projects\jetChat-AGY\backend\venv`, `Projects\clean-bmad-workspace\.venv`, `Projects\B&L WorldWide\.venv`, `Projects\aviationChat-AGY\backend\.venv`. (b) IDE reload recommended (settings paths changed).
-- 5.5 Best next move (THE immediate step): (1) Reload the IDE window so it picks up new `Projects\` paths + rewritten settings. (2) Recreate each project's venv as you enter it (`uv sync` or `python -m venv .venv`). (3) Begin **Phase B**: convert `Projects\clean-bmad-workspace` first.
+- 5.1 Doing: building the home base (folder-as-workspace routing). Latest session executed the approved plan
+  `_artifacts/_home/2026-06-24_workspace-standard-and-repo-map/` — Parts F, E, D, A, C + the home-base portion
+  of B. Lab-prove + propagation are BLOCKED (see 5.4).
+- 5.2 Changed this session:
+  - **Rename:** `_experiment/` → `_routing-canary/` (git mv); README rewritten with "when to run" triggers.
+  - **Git policy LOCKED (canonical):** never run `git commit`/`push` yourself — hand Daniel the command;
+    only commit/push when he explicitly delegates it in the moment. Lives in `.agents/rules/git-policy.md`
+    (renamed from the contradictory `git-closeout-commits.md`); `constitution.md` + `artifacts-always-first.md`
+    + `AGENTS.md` §6 reconciled to it.
+  - **New canonical doc:** `_docs/workspace-standard.md` (how to FORMAT + UPKEEP a workspace; repo-map two
+    modes; retire-list appendix). To be vendored into every project's `docs/` later.
+  - **Artifacts org scheme** (in `artifacts-always-first.md` §2): bucket rule (file under the workspace the work
+    changes; `_home` for cross-project) + random-task `<date>_<slug>` vs story `<epic>/<story>` folders.
+  - **Lobby parity:** `AGENTS.md` now has the mandatory artifacts gate + always-loads `artifacts-always-first`;
+    NEW `.claude/settings.json` SessionStart hook injects this file + the gate (verified, UTF-8).
+  - **Repo-map generator:** `.agents/scripts/generate_repo_map.py` (AST + collapse + curated-header sentinels).
+    Proven read-only on ingestion: **514 → 192 lines**, data dirs collapsed.
+- 5.3 Earlier (still true): Phase A spine + master toolkit done; rename-day restructure moved 7 projects into
+  `Projects\` + path-fixed 262 files; home-base repo pushed (`036ae32`, branch `main`, origin
+  github.com/sudomadhatter/Sudo_Hatter_Command, private; `Projects/` gitignored); all 7 project repos
+  committed/pushed to their own remotes.
+- 5.4 BLOCKED:
+  - **`Projects/clean-bmad-workspace` is OFF-LIMITS** — another team is working in it. Do NOT touch until Daniel
+    clears it AND you've reviewed what they did. This blocks: lab-proving the repo-map there, wiring its hook,
+    seeding the template, and `/sync-agents` into it. (Its `CLAUDE.md` was made a thin adapter mid-session —
+    conversion is progressing in parallel.)
+  - 5 venvs still hardcode the old path; recreate per-project when next used.
+- 5.5 Best next move: (1) wait for clearance on clean-bmad-workspace, then review the other team's work; (2)
+  lab-prove the repo-map hybrid there (generate `docs/repo-map.md`, wire its SessionStart hook); (3) seed the
+  generator + standard + hook into the project template and `/sync-agents`; (4) tackle the retire-list follow-up
+  (autopilot `.ps1` + `1_*` commands still reference `_claude_artifacts/` — engine-coupled, check engine first).
 
 ## 6. HAND OFF  (verified state at this checkpoint)
-- 6.1 Completed: Phase A home-base spine + master toolkit + `_experiment/` + engines + lobby sync + `git init`. **Rename-day restructure applied & verified** (move + 262-file path-fix; 0 stale refs). `rename-fix.ps1` made 5.1-safe.
-- 6.2 In progress: nothing executing. Awaiting Daniel's IDE reload + per-project venv recreation, then Phase B.
-- 6.3 Open tasks / trade-offs: Phase B (convert clean-bmad-workspace), Phase C (remaining projects, aviationChat last), Phase D (gates + scaffolder finalize). Cross-LLM cold test of `_experiment/` in opencode + Antigravity still to run. Decide whether/when to `git commit` the restructure (per-project repos affected).
-- 6.4 Related links: `_docs/master-implementation-plan.md`.
+- 6.1 Completed: Phase A; rename-day restructure; **this session's home-base Parts F/E/D/A/C/B-home** (see 5.2),
+  all verified (hook output + generator 514→192 proof pasted in the session walkthrough).
+- 6.2 In progress: nothing executing. Plan `2026-06-24_workspace-standard-and-repo-map` is closed for its
+  home-base scope; its lab/propagation scope is parked pending clearance.
+- 6.3 Open tasks / trade-offs: lab-prove + propagate the repo-map/standard once clean-bmad is cleared; vendor
+  `workspace-standard.md` into each project; retire-list follow-up (autopilot/commands `_claude_artifacts/`);
+  per-project rule reconciliation happens during each conversion; cross-LLM cold test of `_routing-canary/` in
+  opencode + Antigravity still to run.
+- 6.4 Related links: `_docs/workspace-standard.md`, `_docs/master-implementation-plan.md`,
+  `_artifacts/_home/2026-06-24_workspace-standard-and-repo-map/` (plan + walkthrough + task-list).
+- 6.5 Git: home-base changes are UNCOMMITTED — exact `git add` (explicit paths) + commit command is in this
+  session's `walkthrough.md` "Your Actions". I did not commit (per the git policy).

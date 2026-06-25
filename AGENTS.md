@@ -11,6 +11,7 @@ the program; you **become** the agent the workspace describes.
 3. Working inside a project → read THAT project's `AGENTS.md` (its workspace map), not this file.
 4. Before any risky/irreversible action → see §6 GATES.
 5. Continuity ("pick up" / "hand off") → see §7 PERSISTENCE.
+6. Before editing any file outside `_artifacts/` → an approved `implementation_plan.md` is required (see §3 gate).
 
 ## 2. MAP / MISSION / SUPPORT  (answer these for every task — then you're never lost)
 - **MAP** — where am I, where can I go?   → `router.md` (lobby) → a workspace `AGENTS.md` (floor)
@@ -18,9 +19,17 @@ the program; you **become** the agent the workspace describes.
 - **SUPPORT** — what tools/skills/context? → `.agents/skills/`, `.agents/commands/`, pulled per the table
 
 ## 3. ALWAYS-LOAD  (small by design)
-Load now: `.agents/rules/constitution.md` (hard stops + gates) and `.agents/rules/karpathy-guidelines.md`
-(how to work). Everything else in `.agents/rules/` loads **on demand** when a task calls for it — do
-not preload the rest. The full rule set is the shared toolkit, not a startup payload.
+Load now: `.agents/rules/constitution.md` (hard stops + gates), `.agents/rules/karpathy-guidelines.md`
+(how to work), and `.agents/rules/artifacts-always-first.md` (the plan-first gate — see below). Everything
+else in `.agents/rules/` loads **on demand** when a task calls for it — do not preload the rest. The full
+rule set is the shared toolkit, not a startup payload. How a workspace is shaped + kept healthy →
+`_docs/workspace-standard.md`.
+
+> **⛔ ARTIFACTS — MANDATORY FIRST ACTION.** Before modifying ANY file outside `_artifacts/`, write an
+> `implementation_plan.md` into `_artifacts/<workspace>/…` and **STOP until Daniel says "approved."** Track
+> work with a live TodoWrite list; close with `walkthrough.md` + `task-list.md`. **This applies at the lobby
+> too — not only inside projects.** Full protocol → `.agents/rules/artifacts-always-first.md`. (Skip only for
+> read-only/investigatory asks and trivial one-liners.)
 
 ## 4. WHAT LIVES WHERE  (home-base infrastructure)
 | Area | Path | Purpose |
@@ -28,7 +37,7 @@ not preload the rest. The full rule set is the shared toolkit, not a startup pay
 | Master toolkit | `.agents/` | rules · commands · skills · workflows · bmad · scripts · templates (single source of authorship) |
 | Shared memory | `_artifacts/` | every agent's plans/walkthroughs/handoffs; `INDEX.md` ledger; per-workspace `active-context.md` |
 | Docs | `_docs/` | home-base documentation (the master implementation plan, etc.) |
-| Routing CI | `_experiment/` | model-agnostic proof the routing works (Claude/opencode/Antigravity) |
+| Routing canary | `_routing-canary/` | model-agnostic proof the routing works (Claude/opencode/Antigravity) |
 | System builder | `_system/` | how to add/maintain workspaces (`/new-project`, `/sync-agents`) |
 | Lobby tool dirs | `.claude/`, `.opencode/` | synced copies of the master so `/commands` + skills resolve here |
 | Projects | `Projects/<name>/` | the actual projects, each its own git repo |
@@ -41,7 +50,8 @@ not preload the rest. The full rule set is the shared toolkit, not a startup pay
 
 ## 6. GATES  (consult before acting)
 - **ROUTING GATE**: confirm the target workspace via `router.md` before touching files in it.
-- **RISK GATE**: never delete / overwrite / publish / commit-push without explicit go-ahead.
+- **RISK GATE**: never delete / overwrite / publish without explicit go-ahead. Never run `git commit`/`push`
+  yourself — hand Daniel the command unless he delegates it in the moment (→ `.agents/rules/git-policy.md`).
 - Full hard stops + "ask first" list → `.agents/rules/constitution.md`.
 
 ## 7. PERSISTENCE  (you own this — not a vendor)
