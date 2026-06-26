@@ -4,7 +4,7 @@ description: Pre-dev plan/story audit — run BEFORE coding. Pressure-tests an i
 
 # /1_self-audit-stress-test — Pre-Dev Adversarial Audit
 
-Execute the workflow defined in @.agent/workflows/1_self-audit-stress-test.md.
+Execute the workflow defined in @.agents/workflows/1_self-audit-stress-test.md.
 
 Target the plan or story just produced in this chat (an `implementation_plan.md` or a story file) —
 this is a **pre-dev gate**, run BEFORE any code is written. Honor the Phase 0 right-size gate (a Light

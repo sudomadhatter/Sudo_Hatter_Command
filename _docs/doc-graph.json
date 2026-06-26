@@ -1,27 +1,27 @@
 {
   "root": "C:\\Sudo_Hatter_Command\\.agents",
   "counts": {
-    "files": 979,
-    "edges": 2427,
+    "files": 983,
+    "edges": 2445,
     "external": 21,
-    "ambiguous": 516,
-    "dangling": 510,
-    "broken_paths": 79,
-    "unresolved_names": 431
+    "ambiguous": 511,
+    "dangling": 531,
+    "broken_paths": 80,
+    "unresolved_names": 451
   },
   "nodes": [
     {
+      "path": "AGENTS.md",
+      "in": 17,
+      "out": 0
+    },
+    {
+      "path": "CLAUDE.md",
+      "in": 5,
+      "out": 0
+    },
+    {
       "path": "bmad/tea/workflows/testarch/README.md",
-      "in": 0,
-      "out": 0
-    },
-    {
-      "path": "commands/1_ccps_boot-context.md",
-      "in": 0,
-      "out": 0
-    },
-    {
-      "path": "commands/1_ccps_update-active-context.md",
       "in": 0,
       "out": 0
     },
@@ -96,9 +96,19 @@
       "out": 0
     },
     {
-      "path": "commands/autopilot.md",
+      "path": "commands/autopilot_claude.md",
       "in": 2,
       "out": 0
+    },
+    {
+      "path": "commands/autopilot_mobile.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": "commands/autopilot_opencode.md",
+      "in": 0,
+      "out": 1
     },
     {
       "path": "commands/bmad-code-review_AP.md",
@@ -121,6 +131,11 @@
       "out": 0
     },
     {
+      "path": "commands/boot-sprint-context.md",
+      "in": 0,
+      "out": 0
+    },
+    {
       "path": "commands/dev.md",
       "in": 1,
       "out": 0
@@ -128,7 +143,7 @@
     {
       "path": "commands/new-project.md",
       "in": 0,
-      "out": 2
+      "out": 3
     },
     {
       "path": "commands/pm.md",
@@ -171,6 +186,11 @@
       "out": 0
     },
     {
+      "path": "commands/update-sprint-context.md",
+      "in": 0,
+      "out": 1
+    },
+    {
       "path": "commands/ux-designer.md",
       "in": 1,
       "out": 0
@@ -183,57 +203,57 @@
     {
       "path": "opencode-agents/bmad-analyst.md",
       "in": 0,
-      "out": 2
+      "out": 3
     },
     {
       "path": "opencode-agents/bmad-architect.md",
       "in": 0,
-      "out": 2
+      "out": 3
     },
     {
       "path": "opencode-agents/bmad-dev.md",
       "in": 0,
-      "out": 2
+      "out": 3
     },
     {
       "path": "opencode-agents/bmad-master.md",
       "in": 0,
-      "out": 1
+      "out": 2
     },
     {
       "path": "opencode-agents/bmad-pm.md",
       "in": 0,
-      "out": 2
+      "out": 3
     },
     {
       "path": "opencode-agents/bmad-qa.md",
       "in": 0,
-      "out": 2
+      "out": 3
     },
     {
       "path": "opencode-agents/bmad-quick-flow.md",
       "in": 0,
-      "out": 2
+      "out": 3
     },
     {
       "path": "opencode-agents/bmad-sm.md",
       "in": 0,
-      "out": 2
+      "out": 3
     },
     {
       "path": "opencode-agents/bmad-tea.md",
       "in": 0,
-      "out": 2
+      "out": 3
     },
     {
       "path": "opencode-agents/bmad-tech-writer.md",
       "in": 0,
-      "out": 2
+      "out": 3
     },
     {
       "path": "opencode-agents/bmad-ux-designer.md",
       "in": 0,
-      "out": 2
+      "out": 3
     },
     {
       "path": "opencode-agents/opus-auditor.md",
@@ -248,7 +268,7 @@
     {
       "path": "rules/INDEX.md",
       "in": 2,
-      "out": 13
+      "out": 14
     },
     {
       "path": "rules/artifacts-always-first.md",
@@ -4813,7 +4833,7 @@
     {
       "path": "skills/systematic-debugging/CREATION-LOG.md",
       "in": 0,
-      "out": 1
+      "out": 0
     },
     {
       "path": "skills/systematic-debugging/SKILL.md",
@@ -4873,11 +4893,11 @@
     {
       "path": "templates/project-template/AGENTS.md",
       "in": 2,
-      "out": 2
+      "out": 3
     },
     {
       "path": "templates/project-template/CLAUDE.md",
-      "in": 6,
+      "in": 0,
       "out": 1
     },
     {
@@ -4887,22 +4907,22 @@
     },
     {
       "path": "workflows/1_self-audit-stress-test.md",
-      "in": 2,
-      "out": 1
+      "in": 3,
+      "out": 2
     },
     {
       "path": "workflows/1_update-maps.md",
       "in": 2,
-      "out": 4
+      "out": 5
     },
     {
       "path": "workflows/INDEX.md",
       "in": 1,
-      "out": 2
+      "out": 3
     },
     {
       "path": "workflows/autopilot_bmad_dev_loop.md",
-      "in": 1,
+      "in": 2,
       "out": 2
     }
   ],
@@ -4958,18 +4978,28 @@
       "kind": "ref"
     },
     {
+      "from": "commands/autopilot_opencode.md",
+      "to": "workflows/autopilot_bmad_dev_loop.md",
+      "kind": "ref"
+    },
+    {
       "from": "commands/bmad-code-review_AP.md",
       "to": "rules/bmad_code_review_fast_path.md",
       "kind": "ref"
     },
     {
       "from": "commands/bmad-dev-story_AP.md",
-      "to": "templates/project-template/CLAUDE.md",
+      "to": "CLAUDE.md",
       "kind": "ref"
     },
     {
       "from": "commands/new-project.md",
-      "to": "templates/project-template/CLAUDE.md",
+      "to": "AGENTS.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/new-project.md",
+      "to": "CLAUDE.md",
       "kind": "ref"
     },
     {
@@ -4978,8 +5008,18 @@
       "kind": "ref"
     },
     {
+      "from": "commands/update-sprint-context.md",
+      "to": "AGENTS.md",
+      "kind": "ref"
+    },
+    {
       "from": "opencode-agents/bmad-analyst.md",
       "to": "rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "opencode-agents/bmad-analyst.md",
+      "to": "AGENTS.md",
       "kind": "ref"
     },
     {
@@ -4994,12 +5034,22 @@
     },
     {
       "from": "opencode-agents/bmad-architect.md",
+      "to": "AGENTS.md",
+      "kind": "ref"
+    },
+    {
+      "from": "opencode-agents/bmad-architect.md",
       "to": "commands/architect.md",
       "kind": "ref"
     },
     {
       "from": "opencode-agents/bmad-dev.md",
       "to": "rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "opencode-agents/bmad-dev.md",
+      "to": "AGENTS.md",
       "kind": "ref"
     },
     {
@@ -5013,8 +5063,18 @@
       "kind": "ref"
     },
     {
+      "from": "opencode-agents/bmad-master.md",
+      "to": "AGENTS.md",
+      "kind": "ref"
+    },
+    {
       "from": "opencode-agents/bmad-pm.md",
       "to": "rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "opencode-agents/bmad-pm.md",
+      "to": "AGENTS.md",
       "kind": "ref"
     },
     {
@@ -5029,12 +5089,22 @@
     },
     {
       "from": "opencode-agents/bmad-qa.md",
+      "to": "AGENTS.md",
+      "kind": "ref"
+    },
+    {
+      "from": "opencode-agents/bmad-qa.md",
       "to": "commands/qa.md",
       "kind": "ref"
     },
     {
       "from": "opencode-agents/bmad-quick-flow.md",
       "to": "rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "opencode-agents/bmad-quick-flow.md",
+      "to": "AGENTS.md",
       "kind": "ref"
     },
     {
@@ -5049,12 +5119,22 @@
     },
     {
       "from": "opencode-agents/bmad-sm.md",
+      "to": "AGENTS.md",
+      "kind": "ref"
+    },
+    {
+      "from": "opencode-agents/bmad-sm.md",
       "to": "commands/sm.md",
       "kind": "ref"
     },
     {
       "from": "opencode-agents/bmad-tea.md",
       "to": "rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "opencode-agents/bmad-tea.md",
+      "to": "AGENTS.md",
       "kind": "ref"
     },
     {
@@ -5069,12 +5149,22 @@
     },
     {
       "from": "opencode-agents/bmad-tech-writer.md",
+      "to": "AGENTS.md",
+      "kind": "ref"
+    },
+    {
+      "from": "opencode-agents/bmad-tech-writer.md",
       "to": "commands/tech-writer.md",
       "kind": "ref"
     },
     {
       "from": "opencode-agents/bmad-ux-designer.md",
       "to": "rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "opencode-agents/bmad-ux-designer.md",
+      "to": "AGENTS.md",
       "kind": "ref"
     },
     {
@@ -5095,6 +5185,11 @@
     {
       "from": "opencode-agents/opus-reviewer.md",
       "to": "rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "rules/INDEX.md",
+      "to": "AGENTS.md",
       "kind": "ref"
     },
     {
@@ -5514,7 +5609,7 @@
     },
     {
       "from": "skills/bmad-code-review/SKILL.md",
-      "to": "templates/project-template/CLAUDE.md",
+      "to": "CLAUDE.md",
       "kind": "ref"
     },
     {
@@ -5884,7 +5979,7 @@
     },
     {
       "from": "skills/bmad-quick-dev/SKILL.md",
-      "to": "templates/project-template/CLAUDE.md",
+      "to": "CLAUDE.md",
       "kind": "ref"
     },
     {
@@ -16963,11 +17058,6 @@
       "kind": "ref"
     },
     {
-      "from": "skills/systematic-debugging/CREATION-LOG.md",
-      "to": "templates/project-template/CLAUDE.md",
-      "kind": "ref"
-    },
-    {
       "from": "skills/systematic-debugging/SKILL.md",
       "to": "skills/systematic-debugging/condition-based-waiting.md",
       "kind": "ref"
@@ -16980,6 +17070,11 @@
     {
       "from": "skills/systematic-debugging/SKILL.md",
       "to": "skills/systematic-debugging/root-cause-tracing.md",
+      "kind": "ref"
+    },
+    {
+      "from": "templates/project-template/AGENTS.md",
+      "to": "AGENTS.md",
       "kind": "ref"
     },
     {
@@ -17004,7 +17099,12 @@
     },
     {
       "from": "workflows/1_self-audit-stress-test.md",
-      "to": "templates/project-template/CLAUDE.md",
+      "to": "AGENTS.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/1_self-audit-stress-test.md",
+      "to": "CLAUDE.md",
       "kind": "ref"
     },
     {
@@ -17024,7 +17124,17 @@
     },
     {
       "from": "workflows/1_update-maps.md",
+      "to": "AGENTS.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/1_update-maps.md",
       "to": "workflows/INDEX.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/INDEX.md",
+      "to": "workflows/1_self-audit-stress-test.md",
       "kind": "ref"
     },
     {
@@ -17039,7 +17149,7 @@
     },
     {
       "from": "workflows/autopilot_bmad_dev_loop.md",
-      "to": "commands/autopilot.md",
+      "to": "commands/autopilot_claude.md",
       "kind": "link"
     }
   ],
@@ -17051,26 +17161,6 @@
     {
       "from": "bmad/tea/workflows/testarch/README.md",
       "target": "docs/explanation/subagent-architecture.md"
-    },
-    {
-      "from": "commands/1_ccps_boot-context.md",
-      "target": "_bmad-output/active-context/active-context.md"
-    },
-    {
-      "from": "commands/1_ccps_update-active-context.md",
-      "target": "/walkthrough.md"
-    },
-    {
-      "from": "commands/1_ccps_update-active-context.md",
-      "target": "_bmad-output/active-context/active-context.md"
-    },
-    {
-      "from": "commands/1_ccps_update-active-context.md",
-      "target": "active-context.md"
-    },
-    {
-      "from": "commands/1_ccps_update-active-context.md",
-      "target": "your-action-required.md"
     },
     {
       "from": "commands/1_check-for-tech-stack-updates.md",
@@ -17125,27 +17215,83 @@
       "target": "docs/repo-map.md"
     },
     {
-      "from": "commands/autopilot.md",
+      "from": "commands/autopilot_claude.md",
       "target": "_RUN-STATUS.md"
     },
     {
-      "from": "commands/autopilot.md",
+      "from": "commands/autopilot_claude.md",
       "target": "code-review.md"
     },
     {
-      "from": "commands/autopilot.md",
+      "from": "commands/autopilot_claude.md",
       "target": "decisions-log.md"
     },
     {
-      "from": "commands/autopilot.md",
+      "from": "commands/autopilot_claude.md",
       "target": "implementation_plan.md"
     },
     {
-      "from": "commands/autopilot.md",
+      "from": "commands/autopilot_claude.md",
       "target": "self-audit-stress-test.md"
     },
     {
-      "from": "commands/autopilot.md",
+      "from": "commands/autopilot_claude.md",
+      "target": "walkthrough.md"
+    },
+    {
+      "from": "commands/autopilot_mobile.md",
+      "target": "/_RUN-STATUS.md"
+    },
+    {
+      "from": "commands/autopilot_mobile.md",
+      "target": "/decisions-log.md"
+    },
+    {
+      "from": "commands/autopilot_mobile.md",
+      "target": "/walkthrough.md"
+    },
+    {
+      "from": "commands/autopilot_mobile.md",
+      "target": "_RUN-STATUS.md"
+    },
+    {
+      "from": "commands/autopilot_mobile.md",
+      "target": "code-review.md"
+    },
+    {
+      "from": "commands/autopilot_mobile.md",
+      "target": "decisions-log.md"
+    },
+    {
+      "from": "commands/autopilot_mobile.md",
+      "target": "implementation_plan.md"
+    },
+    {
+      "from": "commands/autopilot_mobile.md",
+      "target": "self-audit-stress-test.md"
+    },
+    {
+      "from": "commands/autopilot_mobile.md",
+      "target": "walkthrough.md"
+    },
+    {
+      "from": "commands/autopilot_opencode.md",
+      "target": "_RUN-STATUS.md"
+    },
+    {
+      "from": "commands/autopilot_opencode.md",
+      "target": "code-review.md"
+    },
+    {
+      "from": "commands/autopilot_opencode.md",
+      "target": "implementation_plan.md"
+    },
+    {
+      "from": "commands/autopilot_opencode.md",
+      "target": "self-audit-stress-test.md"
+    },
+    {
+      "from": "commands/autopilot_opencode.md",
       "target": "walkthrough.md"
     },
     {
@@ -17183,10 +17329,54 @@
     {
       "from": "commands/bmad-dev-story_AP.md",
       "target": "walkthrough.md"
+    },
+    {
+      "from": "commands/boot-sprint-context.md",
+      "target": "_bmad-output/active-context/active-context.md"
     },
     {
       "from": "commands/quick-flow-solo-dev.md",
       "target": "implementation_plan.md"
+    },
+    {
+      "from": "commands/update-sprint-context.md",
+      "target": "/walkthrough.md"
+    },
+    {
+      "from": "commands/update-sprint-context.md",
+      "target": "MEMORY.md"
+    },
+    {
+      "from": "commands/update-sprint-context.md",
+      "target": "_bmad-output/active-context/active-context.md"
+    },
+    {
+      "from": "commands/update-sprint-context.md",
+      "target": "_bmad-output/project-context.md"
+    },
+    {
+      "from": "commands/update-sprint-context.md",
+      "target": "active-context.md"
+    },
+    {
+      "from": "commands/update-sprint-context.md",
+      "target": "implementation_plan.md"
+    },
+    {
+      "from": "commands/update-sprint-context.md",
+      "target": "project-context.md"
+    },
+    {
+      "from": "commands/update-sprint-context.md",
+      "target": "task-list.md"
+    },
+    {
+      "from": "commands/update-sprint-context.md",
+      "target": "walkthrough.md"
+    },
+    {
+      "from": "commands/update-sprint-context.md",
+      "target": "your-action-required.md"
     },
     {
       "from": "opencode-agents/bmad-architect.md",
@@ -19057,6 +19247,10 @@
       "target": "docs/repo-map.md"
     },
     {
+      "from": "workflows/INDEX.md",
+      "target": "implementation_plan.md"
+    },
+    {
       "from": "workflows/autopilot_bmad_dev_loop.md",
       "target": "_RUN-STATUS.md"
     },
@@ -19172,6 +19366,1098 @@
     }
   ],
   "ambiguous": [
+    {
+      "from": "AGENTS.md",
+      "target": ".claude/skills/gitnexus/gitnexus-cli/SKILL.md",
+      "candidates": [
+        "skills/3_voice-ai-development/SKILL.md",
+        "skills/4_sse-streaming-patterns/SKILL.md",
+        "skills/5_adk_skills/adk-agent-development/SKILL.md",
+        "skills/5_adk_skills/adk-testing-patterns/SKILL.md",
+        "skills/6_dual-store-rag-patterns/SKILL.md",
+        "skills/adk-prompting/SKILL.md",
+        "skills/agent-handoff-patterns/SKILL.md",
+        "skills/architectural-propagation/SKILL.md",
+        "skills/backend-dev-guidelines/SKILL.md",
+        "skills/bmad-advanced-elicitation/SKILL.md",
+        "skills/bmad-agent-analyst/SKILL.md",
+        "skills/bmad-agent-architect/SKILL.md",
+        "skills/bmad-agent-dev/SKILL.md",
+        "skills/bmad-agent-pm/SKILL.md",
+        "skills/bmad-agent-tech-writer/SKILL.md",
+        "skills/bmad-agent-ux-designer/SKILL.md",
+        "skills/bmad-brainstorming/SKILL.md",
+        "skills/bmad-check-implementation-readiness/SKILL.md",
+        "skills/bmad-checkpoint-preview/SKILL.md",
+        "skills/bmad-code-review/SKILL.md",
+        "skills/bmad-correct-course/SKILL.md",
+        "skills/bmad-create-architecture/SKILL.md",
+        "skills/bmad-create-epics-and-stories/SKILL.md",
+        "skills/bmad-create-prd/SKILL.md",
+        "skills/bmad-create-story/SKILL.md",
+        "skills/bmad-customize/SKILL.md",
+        "skills/bmad-dev-story/SKILL.md",
+        "skills/bmad-document-project/SKILL.md",
+        "skills/bmad-domain-research/SKILL.md",
+        "skills/bmad-edit-prd/SKILL.md",
+        "skills/bmad-editorial-review-prose/SKILL.md",
+        "skills/bmad-editorial-review-structure/SKILL.md",
+        "skills/bmad-generate-project-context/SKILL.md",
+        "skills/bmad-help/SKILL.md",
+        "skills/bmad-index-docs/SKILL.md",
+        "skills/bmad-investigate/SKILL.md",
+        "skills/bmad-market-research/SKILL.md",
+        "skills/bmad-party-mode/SKILL.md",
+        "skills/bmad-prd/SKILL.md",
+        "skills/bmad-prfaq/SKILL.md",
+        "skills/bmad-product-brief/SKILL.md",
+        "skills/bmad-qa-generate-e2e-tests/SKILL.md",
+        "skills/bmad-quick-dev/SKILL.md",
+        "skills/bmad-retrospective/SKILL.md",
+        "skills/bmad-review-adversarial-general/SKILL.md",
+        "skills/bmad-review-edge-case-hunter/SKILL.md",
+        "skills/bmad-shard-doc/SKILL.md",
+        "skills/bmad-spec/SKILL.md",
+        "skills/bmad-sprint-planning/SKILL.md",
+        "skills/bmad-sprint-status/SKILL.md",
+        "skills/bmad-tea/SKILL.md",
+        "skills/bmad-teach-me-testing/SKILL.md",
+        "skills/bmad-technical-research/SKILL.md",
+        "skills/bmad-testarch-atdd/SKILL.md",
+        "skills/bmad-testarch-automate/SKILL.md",
+        "skills/bmad-testarch-ci/SKILL.md",
+        "skills/bmad-testarch-framework/SKILL.md",
+        "skills/bmad-testarch-nfr/SKILL.md",
+        "skills/bmad-testarch-test-design/SKILL.md",
+        "skills/bmad-testarch-test-review/SKILL.md",
+        "skills/bmad-testarch-trace/SKILL.md",
+        "skills/bmad-ux/SKILL.md",
+        "skills/bmad-validate-prd/SKILL.md",
+        "skills/deploy-backend/SKILL.md",
+        "skills/firebase-ai-logic-basics/SKILL.md",
+        "skills/firebase-app-hosting-basics/SKILL.md",
+        "skills/firebase-auth-basics/SKILL.md",
+        "skills/firebase-basics/SKILL.md",
+        "skills/firebase-data-connect-basics/SKILL.md",
+        "skills/firebase-firestore-basics/SKILL.md",
+        "skills/firebase-hosting-basics/SKILL.md",
+        "skills/gcp-cloud-run/SKILL.md",
+        "skills/gemini-live-api/SKILL.md",
+        "skills/hr-agent-schema-guide/SKILL.md",
+        "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/python-patterns/SKILL.md",
+        "skills/python_inter_venv_fix/SKILL.md",
+        "skills/rag-implementation/SKILL.md",
+        "skills/react-best-practices/SKILL.md",
+        "skills/regulatory-verification-protocol/SKILL.md",
+        "skills/specialist_agents_team/SKILL.md",
+        "skills/systematic-debugging/SKILL.md",
+        "skills/troubleshoot-cloudrun-deployment/SKILL.md",
+        "skills/ui-ux-pro-max/SKILL.md",
+        "skills/v3-prompt-architecture/SKILL.md"
+      ]
+    },
+    {
+      "from": "AGENTS.md",
+      "target": ".claude/skills/gitnexus/gitnexus-debugging/SKILL.md",
+      "candidates": [
+        "skills/3_voice-ai-development/SKILL.md",
+        "skills/4_sse-streaming-patterns/SKILL.md",
+        "skills/5_adk_skills/adk-agent-development/SKILL.md",
+        "skills/5_adk_skills/adk-testing-patterns/SKILL.md",
+        "skills/6_dual-store-rag-patterns/SKILL.md",
+        "skills/adk-prompting/SKILL.md",
+        "skills/agent-handoff-patterns/SKILL.md",
+        "skills/architectural-propagation/SKILL.md",
+        "skills/backend-dev-guidelines/SKILL.md",
+        "skills/bmad-advanced-elicitation/SKILL.md",
+        "skills/bmad-agent-analyst/SKILL.md",
+        "skills/bmad-agent-architect/SKILL.md",
+        "skills/bmad-agent-dev/SKILL.md",
+        "skills/bmad-agent-pm/SKILL.md",
+        "skills/bmad-agent-tech-writer/SKILL.md",
+        "skills/bmad-agent-ux-designer/SKILL.md",
+        "skills/bmad-brainstorming/SKILL.md",
+        "skills/bmad-check-implementation-readiness/SKILL.md",
+        "skills/bmad-checkpoint-preview/SKILL.md",
+        "skills/bmad-code-review/SKILL.md",
+        "skills/bmad-correct-course/SKILL.md",
+        "skills/bmad-create-architecture/SKILL.md",
+        "skills/bmad-create-epics-and-stories/SKILL.md",
+        "skills/bmad-create-prd/SKILL.md",
+        "skills/bmad-create-story/SKILL.md",
+        "skills/bmad-customize/SKILL.md",
+        "skills/bmad-dev-story/SKILL.md",
+        "skills/bmad-document-project/SKILL.md",
+        "skills/bmad-domain-research/SKILL.md",
+        "skills/bmad-edit-prd/SKILL.md",
+        "skills/bmad-editorial-review-prose/SKILL.md",
+        "skills/bmad-editorial-review-structure/SKILL.md",
+        "skills/bmad-generate-project-context/SKILL.md",
+        "skills/bmad-help/SKILL.md",
+        "skills/bmad-index-docs/SKILL.md",
+        "skills/bmad-investigate/SKILL.md",
+        "skills/bmad-market-research/SKILL.md",
+        "skills/bmad-party-mode/SKILL.md",
+        "skills/bmad-prd/SKILL.md",
+        "skills/bmad-prfaq/SKILL.md",
+        "skills/bmad-product-brief/SKILL.md",
+        "skills/bmad-qa-generate-e2e-tests/SKILL.md",
+        "skills/bmad-quick-dev/SKILL.md",
+        "skills/bmad-retrospective/SKILL.md",
+        "skills/bmad-review-adversarial-general/SKILL.md",
+        "skills/bmad-review-edge-case-hunter/SKILL.md",
+        "skills/bmad-shard-doc/SKILL.md",
+        "skills/bmad-spec/SKILL.md",
+        "skills/bmad-sprint-planning/SKILL.md",
+        "skills/bmad-sprint-status/SKILL.md",
+        "skills/bmad-tea/SKILL.md",
+        "skills/bmad-teach-me-testing/SKILL.md",
+        "skills/bmad-technical-research/SKILL.md",
+        "skills/bmad-testarch-atdd/SKILL.md",
+        "skills/bmad-testarch-automate/SKILL.md",
+        "skills/bmad-testarch-ci/SKILL.md",
+        "skills/bmad-testarch-framework/SKILL.md",
+        "skills/bmad-testarch-nfr/SKILL.md",
+        "skills/bmad-testarch-test-design/SKILL.md",
+        "skills/bmad-testarch-test-review/SKILL.md",
+        "skills/bmad-testarch-trace/SKILL.md",
+        "skills/bmad-ux/SKILL.md",
+        "skills/bmad-validate-prd/SKILL.md",
+        "skills/deploy-backend/SKILL.md",
+        "skills/firebase-ai-logic-basics/SKILL.md",
+        "skills/firebase-app-hosting-basics/SKILL.md",
+        "skills/firebase-auth-basics/SKILL.md",
+        "skills/firebase-basics/SKILL.md",
+        "skills/firebase-data-connect-basics/SKILL.md",
+        "skills/firebase-firestore-basics/SKILL.md",
+        "skills/firebase-hosting-basics/SKILL.md",
+        "skills/gcp-cloud-run/SKILL.md",
+        "skills/gemini-live-api/SKILL.md",
+        "skills/hr-agent-schema-guide/SKILL.md",
+        "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/python-patterns/SKILL.md",
+        "skills/python_inter_venv_fix/SKILL.md",
+        "skills/rag-implementation/SKILL.md",
+        "skills/react-best-practices/SKILL.md",
+        "skills/regulatory-verification-protocol/SKILL.md",
+        "skills/specialist_agents_team/SKILL.md",
+        "skills/systematic-debugging/SKILL.md",
+        "skills/troubleshoot-cloudrun-deployment/SKILL.md",
+        "skills/ui-ux-pro-max/SKILL.md",
+        "skills/v3-prompt-architecture/SKILL.md"
+      ]
+    },
+    {
+      "from": "AGENTS.md",
+      "target": ".claude/skills/gitnexus/gitnexus-exploring/SKILL.md",
+      "candidates": [
+        "skills/3_voice-ai-development/SKILL.md",
+        "skills/4_sse-streaming-patterns/SKILL.md",
+        "skills/5_adk_skills/adk-agent-development/SKILL.md",
+        "skills/5_adk_skills/adk-testing-patterns/SKILL.md",
+        "skills/6_dual-store-rag-patterns/SKILL.md",
+        "skills/adk-prompting/SKILL.md",
+        "skills/agent-handoff-patterns/SKILL.md",
+        "skills/architectural-propagation/SKILL.md",
+        "skills/backend-dev-guidelines/SKILL.md",
+        "skills/bmad-advanced-elicitation/SKILL.md",
+        "skills/bmad-agent-analyst/SKILL.md",
+        "skills/bmad-agent-architect/SKILL.md",
+        "skills/bmad-agent-dev/SKILL.md",
+        "skills/bmad-agent-pm/SKILL.md",
+        "skills/bmad-agent-tech-writer/SKILL.md",
+        "skills/bmad-agent-ux-designer/SKILL.md",
+        "skills/bmad-brainstorming/SKILL.md",
+        "skills/bmad-check-implementation-readiness/SKILL.md",
+        "skills/bmad-checkpoint-preview/SKILL.md",
+        "skills/bmad-code-review/SKILL.md",
+        "skills/bmad-correct-course/SKILL.md",
+        "skills/bmad-create-architecture/SKILL.md",
+        "skills/bmad-create-epics-and-stories/SKILL.md",
+        "skills/bmad-create-prd/SKILL.md",
+        "skills/bmad-create-story/SKILL.md",
+        "skills/bmad-customize/SKILL.md",
+        "skills/bmad-dev-story/SKILL.md",
+        "skills/bmad-document-project/SKILL.md",
+        "skills/bmad-domain-research/SKILL.md",
+        "skills/bmad-edit-prd/SKILL.md",
+        "skills/bmad-editorial-review-prose/SKILL.md",
+        "skills/bmad-editorial-review-structure/SKILL.md",
+        "skills/bmad-generate-project-context/SKILL.md",
+        "skills/bmad-help/SKILL.md",
+        "skills/bmad-index-docs/SKILL.md",
+        "skills/bmad-investigate/SKILL.md",
+        "skills/bmad-market-research/SKILL.md",
+        "skills/bmad-party-mode/SKILL.md",
+        "skills/bmad-prd/SKILL.md",
+        "skills/bmad-prfaq/SKILL.md",
+        "skills/bmad-product-brief/SKILL.md",
+        "skills/bmad-qa-generate-e2e-tests/SKILL.md",
+        "skills/bmad-quick-dev/SKILL.md",
+        "skills/bmad-retrospective/SKILL.md",
+        "skills/bmad-review-adversarial-general/SKILL.md",
+        "skills/bmad-review-edge-case-hunter/SKILL.md",
+        "skills/bmad-shard-doc/SKILL.md",
+        "skills/bmad-spec/SKILL.md",
+        "skills/bmad-sprint-planning/SKILL.md",
+        "skills/bmad-sprint-status/SKILL.md",
+        "skills/bmad-tea/SKILL.md",
+        "skills/bmad-teach-me-testing/SKILL.md",
+        "skills/bmad-technical-research/SKILL.md",
+        "skills/bmad-testarch-atdd/SKILL.md",
+        "skills/bmad-testarch-automate/SKILL.md",
+        "skills/bmad-testarch-ci/SKILL.md",
+        "skills/bmad-testarch-framework/SKILL.md",
+        "skills/bmad-testarch-nfr/SKILL.md",
+        "skills/bmad-testarch-test-design/SKILL.md",
+        "skills/bmad-testarch-test-review/SKILL.md",
+        "skills/bmad-testarch-trace/SKILL.md",
+        "skills/bmad-ux/SKILL.md",
+        "skills/bmad-validate-prd/SKILL.md",
+        "skills/deploy-backend/SKILL.md",
+        "skills/firebase-ai-logic-basics/SKILL.md",
+        "skills/firebase-app-hosting-basics/SKILL.md",
+        "skills/firebase-auth-basics/SKILL.md",
+        "skills/firebase-basics/SKILL.md",
+        "skills/firebase-data-connect-basics/SKILL.md",
+        "skills/firebase-firestore-basics/SKILL.md",
+        "skills/firebase-hosting-basics/SKILL.md",
+        "skills/gcp-cloud-run/SKILL.md",
+        "skills/gemini-live-api/SKILL.md",
+        "skills/hr-agent-schema-guide/SKILL.md",
+        "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/python-patterns/SKILL.md",
+        "skills/python_inter_venv_fix/SKILL.md",
+        "skills/rag-implementation/SKILL.md",
+        "skills/react-best-practices/SKILL.md",
+        "skills/regulatory-verification-protocol/SKILL.md",
+        "skills/specialist_agents_team/SKILL.md",
+        "skills/systematic-debugging/SKILL.md",
+        "skills/troubleshoot-cloudrun-deployment/SKILL.md",
+        "skills/ui-ux-pro-max/SKILL.md",
+        "skills/v3-prompt-architecture/SKILL.md"
+      ]
+    },
+    {
+      "from": "AGENTS.md",
+      "target": ".claude/skills/gitnexus/gitnexus-guide/SKILL.md",
+      "candidates": [
+        "skills/3_voice-ai-development/SKILL.md",
+        "skills/4_sse-streaming-patterns/SKILL.md",
+        "skills/5_adk_skills/adk-agent-development/SKILL.md",
+        "skills/5_adk_skills/adk-testing-patterns/SKILL.md",
+        "skills/6_dual-store-rag-patterns/SKILL.md",
+        "skills/adk-prompting/SKILL.md",
+        "skills/agent-handoff-patterns/SKILL.md",
+        "skills/architectural-propagation/SKILL.md",
+        "skills/backend-dev-guidelines/SKILL.md",
+        "skills/bmad-advanced-elicitation/SKILL.md",
+        "skills/bmad-agent-analyst/SKILL.md",
+        "skills/bmad-agent-architect/SKILL.md",
+        "skills/bmad-agent-dev/SKILL.md",
+        "skills/bmad-agent-pm/SKILL.md",
+        "skills/bmad-agent-tech-writer/SKILL.md",
+        "skills/bmad-agent-ux-designer/SKILL.md",
+        "skills/bmad-brainstorming/SKILL.md",
+        "skills/bmad-check-implementation-readiness/SKILL.md",
+        "skills/bmad-checkpoint-preview/SKILL.md",
+        "skills/bmad-code-review/SKILL.md",
+        "skills/bmad-correct-course/SKILL.md",
+        "skills/bmad-create-architecture/SKILL.md",
+        "skills/bmad-create-epics-and-stories/SKILL.md",
+        "skills/bmad-create-prd/SKILL.md",
+        "skills/bmad-create-story/SKILL.md",
+        "skills/bmad-customize/SKILL.md",
+        "skills/bmad-dev-story/SKILL.md",
+        "skills/bmad-document-project/SKILL.md",
+        "skills/bmad-domain-research/SKILL.md",
+        "skills/bmad-edit-prd/SKILL.md",
+        "skills/bmad-editorial-review-prose/SKILL.md",
+        "skills/bmad-editorial-review-structure/SKILL.md",
+        "skills/bmad-generate-project-context/SKILL.md",
+        "skills/bmad-help/SKILL.md",
+        "skills/bmad-index-docs/SKILL.md",
+        "skills/bmad-investigate/SKILL.md",
+        "skills/bmad-market-research/SKILL.md",
+        "skills/bmad-party-mode/SKILL.md",
+        "skills/bmad-prd/SKILL.md",
+        "skills/bmad-prfaq/SKILL.md",
+        "skills/bmad-product-brief/SKILL.md",
+        "skills/bmad-qa-generate-e2e-tests/SKILL.md",
+        "skills/bmad-quick-dev/SKILL.md",
+        "skills/bmad-retrospective/SKILL.md",
+        "skills/bmad-review-adversarial-general/SKILL.md",
+        "skills/bmad-review-edge-case-hunter/SKILL.md",
+        "skills/bmad-shard-doc/SKILL.md",
+        "skills/bmad-spec/SKILL.md",
+        "skills/bmad-sprint-planning/SKILL.md",
+        "skills/bmad-sprint-status/SKILL.md",
+        "skills/bmad-tea/SKILL.md",
+        "skills/bmad-teach-me-testing/SKILL.md",
+        "skills/bmad-technical-research/SKILL.md",
+        "skills/bmad-testarch-atdd/SKILL.md",
+        "skills/bmad-testarch-automate/SKILL.md",
+        "skills/bmad-testarch-ci/SKILL.md",
+        "skills/bmad-testarch-framework/SKILL.md",
+        "skills/bmad-testarch-nfr/SKILL.md",
+        "skills/bmad-testarch-test-design/SKILL.md",
+        "skills/bmad-testarch-test-review/SKILL.md",
+        "skills/bmad-testarch-trace/SKILL.md",
+        "skills/bmad-ux/SKILL.md",
+        "skills/bmad-validate-prd/SKILL.md",
+        "skills/deploy-backend/SKILL.md",
+        "skills/firebase-ai-logic-basics/SKILL.md",
+        "skills/firebase-app-hosting-basics/SKILL.md",
+        "skills/firebase-auth-basics/SKILL.md",
+        "skills/firebase-basics/SKILL.md",
+        "skills/firebase-data-connect-basics/SKILL.md",
+        "skills/firebase-firestore-basics/SKILL.md",
+        "skills/firebase-hosting-basics/SKILL.md",
+        "skills/gcp-cloud-run/SKILL.md",
+        "skills/gemini-live-api/SKILL.md",
+        "skills/hr-agent-schema-guide/SKILL.md",
+        "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/python-patterns/SKILL.md",
+        "skills/python_inter_venv_fix/SKILL.md",
+        "skills/rag-implementation/SKILL.md",
+        "skills/react-best-practices/SKILL.md",
+        "skills/regulatory-verification-protocol/SKILL.md",
+        "skills/specialist_agents_team/SKILL.md",
+        "skills/systematic-debugging/SKILL.md",
+        "skills/troubleshoot-cloudrun-deployment/SKILL.md",
+        "skills/ui-ux-pro-max/SKILL.md",
+        "skills/v3-prompt-architecture/SKILL.md"
+      ]
+    },
+    {
+      "from": "AGENTS.md",
+      "target": ".claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md",
+      "candidates": [
+        "skills/3_voice-ai-development/SKILL.md",
+        "skills/4_sse-streaming-patterns/SKILL.md",
+        "skills/5_adk_skills/adk-agent-development/SKILL.md",
+        "skills/5_adk_skills/adk-testing-patterns/SKILL.md",
+        "skills/6_dual-store-rag-patterns/SKILL.md",
+        "skills/adk-prompting/SKILL.md",
+        "skills/agent-handoff-patterns/SKILL.md",
+        "skills/architectural-propagation/SKILL.md",
+        "skills/backend-dev-guidelines/SKILL.md",
+        "skills/bmad-advanced-elicitation/SKILL.md",
+        "skills/bmad-agent-analyst/SKILL.md",
+        "skills/bmad-agent-architect/SKILL.md",
+        "skills/bmad-agent-dev/SKILL.md",
+        "skills/bmad-agent-pm/SKILL.md",
+        "skills/bmad-agent-tech-writer/SKILL.md",
+        "skills/bmad-agent-ux-designer/SKILL.md",
+        "skills/bmad-brainstorming/SKILL.md",
+        "skills/bmad-check-implementation-readiness/SKILL.md",
+        "skills/bmad-checkpoint-preview/SKILL.md",
+        "skills/bmad-code-review/SKILL.md",
+        "skills/bmad-correct-course/SKILL.md",
+        "skills/bmad-create-architecture/SKILL.md",
+        "skills/bmad-create-epics-and-stories/SKILL.md",
+        "skills/bmad-create-prd/SKILL.md",
+        "skills/bmad-create-story/SKILL.md",
+        "skills/bmad-customize/SKILL.md",
+        "skills/bmad-dev-story/SKILL.md",
+        "skills/bmad-document-project/SKILL.md",
+        "skills/bmad-domain-research/SKILL.md",
+        "skills/bmad-edit-prd/SKILL.md",
+        "skills/bmad-editorial-review-prose/SKILL.md",
+        "skills/bmad-editorial-review-structure/SKILL.md",
+        "skills/bmad-generate-project-context/SKILL.md",
+        "skills/bmad-help/SKILL.md",
+        "skills/bmad-index-docs/SKILL.md",
+        "skills/bmad-investigate/SKILL.md",
+        "skills/bmad-market-research/SKILL.md",
+        "skills/bmad-party-mode/SKILL.md",
+        "skills/bmad-prd/SKILL.md",
+        "skills/bmad-prfaq/SKILL.md",
+        "skills/bmad-product-brief/SKILL.md",
+        "skills/bmad-qa-generate-e2e-tests/SKILL.md",
+        "skills/bmad-quick-dev/SKILL.md",
+        "skills/bmad-retrospective/SKILL.md",
+        "skills/bmad-review-adversarial-general/SKILL.md",
+        "skills/bmad-review-edge-case-hunter/SKILL.md",
+        "skills/bmad-shard-doc/SKILL.md",
+        "skills/bmad-spec/SKILL.md",
+        "skills/bmad-sprint-planning/SKILL.md",
+        "skills/bmad-sprint-status/SKILL.md",
+        "skills/bmad-tea/SKILL.md",
+        "skills/bmad-teach-me-testing/SKILL.md",
+        "skills/bmad-technical-research/SKILL.md",
+        "skills/bmad-testarch-atdd/SKILL.md",
+        "skills/bmad-testarch-automate/SKILL.md",
+        "skills/bmad-testarch-ci/SKILL.md",
+        "skills/bmad-testarch-framework/SKILL.md",
+        "skills/bmad-testarch-nfr/SKILL.md",
+        "skills/bmad-testarch-test-design/SKILL.md",
+        "skills/bmad-testarch-test-review/SKILL.md",
+        "skills/bmad-testarch-trace/SKILL.md",
+        "skills/bmad-ux/SKILL.md",
+        "skills/bmad-validate-prd/SKILL.md",
+        "skills/deploy-backend/SKILL.md",
+        "skills/firebase-ai-logic-basics/SKILL.md",
+        "skills/firebase-app-hosting-basics/SKILL.md",
+        "skills/firebase-auth-basics/SKILL.md",
+        "skills/firebase-basics/SKILL.md",
+        "skills/firebase-data-connect-basics/SKILL.md",
+        "skills/firebase-firestore-basics/SKILL.md",
+        "skills/firebase-hosting-basics/SKILL.md",
+        "skills/gcp-cloud-run/SKILL.md",
+        "skills/gemini-live-api/SKILL.md",
+        "skills/hr-agent-schema-guide/SKILL.md",
+        "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/python-patterns/SKILL.md",
+        "skills/python_inter_venv_fix/SKILL.md",
+        "skills/rag-implementation/SKILL.md",
+        "skills/react-best-practices/SKILL.md",
+        "skills/regulatory-verification-protocol/SKILL.md",
+        "skills/specialist_agents_team/SKILL.md",
+        "skills/systematic-debugging/SKILL.md",
+        "skills/troubleshoot-cloudrun-deployment/SKILL.md",
+        "skills/ui-ux-pro-max/SKILL.md",
+        "skills/v3-prompt-architecture/SKILL.md"
+      ]
+    },
+    {
+      "from": "AGENTS.md",
+      "target": ".claude/skills/gitnexus/gitnexus-refactoring/SKILL.md",
+      "candidates": [
+        "skills/3_voice-ai-development/SKILL.md",
+        "skills/4_sse-streaming-patterns/SKILL.md",
+        "skills/5_adk_skills/adk-agent-development/SKILL.md",
+        "skills/5_adk_skills/adk-testing-patterns/SKILL.md",
+        "skills/6_dual-store-rag-patterns/SKILL.md",
+        "skills/adk-prompting/SKILL.md",
+        "skills/agent-handoff-patterns/SKILL.md",
+        "skills/architectural-propagation/SKILL.md",
+        "skills/backend-dev-guidelines/SKILL.md",
+        "skills/bmad-advanced-elicitation/SKILL.md",
+        "skills/bmad-agent-analyst/SKILL.md",
+        "skills/bmad-agent-architect/SKILL.md",
+        "skills/bmad-agent-dev/SKILL.md",
+        "skills/bmad-agent-pm/SKILL.md",
+        "skills/bmad-agent-tech-writer/SKILL.md",
+        "skills/bmad-agent-ux-designer/SKILL.md",
+        "skills/bmad-brainstorming/SKILL.md",
+        "skills/bmad-check-implementation-readiness/SKILL.md",
+        "skills/bmad-checkpoint-preview/SKILL.md",
+        "skills/bmad-code-review/SKILL.md",
+        "skills/bmad-correct-course/SKILL.md",
+        "skills/bmad-create-architecture/SKILL.md",
+        "skills/bmad-create-epics-and-stories/SKILL.md",
+        "skills/bmad-create-prd/SKILL.md",
+        "skills/bmad-create-story/SKILL.md",
+        "skills/bmad-customize/SKILL.md",
+        "skills/bmad-dev-story/SKILL.md",
+        "skills/bmad-document-project/SKILL.md",
+        "skills/bmad-domain-research/SKILL.md",
+        "skills/bmad-edit-prd/SKILL.md",
+        "skills/bmad-editorial-review-prose/SKILL.md",
+        "skills/bmad-editorial-review-structure/SKILL.md",
+        "skills/bmad-generate-project-context/SKILL.md",
+        "skills/bmad-help/SKILL.md",
+        "skills/bmad-index-docs/SKILL.md",
+        "skills/bmad-investigate/SKILL.md",
+        "skills/bmad-market-research/SKILL.md",
+        "skills/bmad-party-mode/SKILL.md",
+        "skills/bmad-prd/SKILL.md",
+        "skills/bmad-prfaq/SKILL.md",
+        "skills/bmad-product-brief/SKILL.md",
+        "skills/bmad-qa-generate-e2e-tests/SKILL.md",
+        "skills/bmad-quick-dev/SKILL.md",
+        "skills/bmad-retrospective/SKILL.md",
+        "skills/bmad-review-adversarial-general/SKILL.md",
+        "skills/bmad-review-edge-case-hunter/SKILL.md",
+        "skills/bmad-shard-doc/SKILL.md",
+        "skills/bmad-spec/SKILL.md",
+        "skills/bmad-sprint-planning/SKILL.md",
+        "skills/bmad-sprint-status/SKILL.md",
+        "skills/bmad-tea/SKILL.md",
+        "skills/bmad-teach-me-testing/SKILL.md",
+        "skills/bmad-technical-research/SKILL.md",
+        "skills/bmad-testarch-atdd/SKILL.md",
+        "skills/bmad-testarch-automate/SKILL.md",
+        "skills/bmad-testarch-ci/SKILL.md",
+        "skills/bmad-testarch-framework/SKILL.md",
+        "skills/bmad-testarch-nfr/SKILL.md",
+        "skills/bmad-testarch-test-design/SKILL.md",
+        "skills/bmad-testarch-test-review/SKILL.md",
+        "skills/bmad-testarch-trace/SKILL.md",
+        "skills/bmad-ux/SKILL.md",
+        "skills/bmad-validate-prd/SKILL.md",
+        "skills/deploy-backend/SKILL.md",
+        "skills/firebase-ai-logic-basics/SKILL.md",
+        "skills/firebase-app-hosting-basics/SKILL.md",
+        "skills/firebase-auth-basics/SKILL.md",
+        "skills/firebase-basics/SKILL.md",
+        "skills/firebase-data-connect-basics/SKILL.md",
+        "skills/firebase-firestore-basics/SKILL.md",
+        "skills/firebase-hosting-basics/SKILL.md",
+        "skills/gcp-cloud-run/SKILL.md",
+        "skills/gemini-live-api/SKILL.md",
+        "skills/hr-agent-schema-guide/SKILL.md",
+        "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/python-patterns/SKILL.md",
+        "skills/python_inter_venv_fix/SKILL.md",
+        "skills/rag-implementation/SKILL.md",
+        "skills/react-best-practices/SKILL.md",
+        "skills/regulatory-verification-protocol/SKILL.md",
+        "skills/specialist_agents_team/SKILL.md",
+        "skills/systematic-debugging/SKILL.md",
+        "skills/troubleshoot-cloudrun-deployment/SKILL.md",
+        "skills/ui-ux-pro-max/SKILL.md",
+        "skills/v3-prompt-architecture/SKILL.md"
+      ]
+    },
+    {
+      "from": "CLAUDE.md",
+      "target": ".claude/skills/gitnexus/gitnexus-cli/SKILL.md",
+      "candidates": [
+        "skills/3_voice-ai-development/SKILL.md",
+        "skills/4_sse-streaming-patterns/SKILL.md",
+        "skills/5_adk_skills/adk-agent-development/SKILL.md",
+        "skills/5_adk_skills/adk-testing-patterns/SKILL.md",
+        "skills/6_dual-store-rag-patterns/SKILL.md",
+        "skills/adk-prompting/SKILL.md",
+        "skills/agent-handoff-patterns/SKILL.md",
+        "skills/architectural-propagation/SKILL.md",
+        "skills/backend-dev-guidelines/SKILL.md",
+        "skills/bmad-advanced-elicitation/SKILL.md",
+        "skills/bmad-agent-analyst/SKILL.md",
+        "skills/bmad-agent-architect/SKILL.md",
+        "skills/bmad-agent-dev/SKILL.md",
+        "skills/bmad-agent-pm/SKILL.md",
+        "skills/bmad-agent-tech-writer/SKILL.md",
+        "skills/bmad-agent-ux-designer/SKILL.md",
+        "skills/bmad-brainstorming/SKILL.md",
+        "skills/bmad-check-implementation-readiness/SKILL.md",
+        "skills/bmad-checkpoint-preview/SKILL.md",
+        "skills/bmad-code-review/SKILL.md",
+        "skills/bmad-correct-course/SKILL.md",
+        "skills/bmad-create-architecture/SKILL.md",
+        "skills/bmad-create-epics-and-stories/SKILL.md",
+        "skills/bmad-create-prd/SKILL.md",
+        "skills/bmad-create-story/SKILL.md",
+        "skills/bmad-customize/SKILL.md",
+        "skills/bmad-dev-story/SKILL.md",
+        "skills/bmad-document-project/SKILL.md",
+        "skills/bmad-domain-research/SKILL.md",
+        "skills/bmad-edit-prd/SKILL.md",
+        "skills/bmad-editorial-review-prose/SKILL.md",
+        "skills/bmad-editorial-review-structure/SKILL.md",
+        "skills/bmad-generate-project-context/SKILL.md",
+        "skills/bmad-help/SKILL.md",
+        "skills/bmad-index-docs/SKILL.md",
+        "skills/bmad-investigate/SKILL.md",
+        "skills/bmad-market-research/SKILL.md",
+        "skills/bmad-party-mode/SKILL.md",
+        "skills/bmad-prd/SKILL.md",
+        "skills/bmad-prfaq/SKILL.md",
+        "skills/bmad-product-brief/SKILL.md",
+        "skills/bmad-qa-generate-e2e-tests/SKILL.md",
+        "skills/bmad-quick-dev/SKILL.md",
+        "skills/bmad-retrospective/SKILL.md",
+        "skills/bmad-review-adversarial-general/SKILL.md",
+        "skills/bmad-review-edge-case-hunter/SKILL.md",
+        "skills/bmad-shard-doc/SKILL.md",
+        "skills/bmad-spec/SKILL.md",
+        "skills/bmad-sprint-planning/SKILL.md",
+        "skills/bmad-sprint-status/SKILL.md",
+        "skills/bmad-tea/SKILL.md",
+        "skills/bmad-teach-me-testing/SKILL.md",
+        "skills/bmad-technical-research/SKILL.md",
+        "skills/bmad-testarch-atdd/SKILL.md",
+        "skills/bmad-testarch-automate/SKILL.md",
+        "skills/bmad-testarch-ci/SKILL.md",
+        "skills/bmad-testarch-framework/SKILL.md",
+        "skills/bmad-testarch-nfr/SKILL.md",
+        "skills/bmad-testarch-test-design/SKILL.md",
+        "skills/bmad-testarch-test-review/SKILL.md",
+        "skills/bmad-testarch-trace/SKILL.md",
+        "skills/bmad-ux/SKILL.md",
+        "skills/bmad-validate-prd/SKILL.md",
+        "skills/deploy-backend/SKILL.md",
+        "skills/firebase-ai-logic-basics/SKILL.md",
+        "skills/firebase-app-hosting-basics/SKILL.md",
+        "skills/firebase-auth-basics/SKILL.md",
+        "skills/firebase-basics/SKILL.md",
+        "skills/firebase-data-connect-basics/SKILL.md",
+        "skills/firebase-firestore-basics/SKILL.md",
+        "skills/firebase-hosting-basics/SKILL.md",
+        "skills/gcp-cloud-run/SKILL.md",
+        "skills/gemini-live-api/SKILL.md",
+        "skills/hr-agent-schema-guide/SKILL.md",
+        "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/python-patterns/SKILL.md",
+        "skills/python_inter_venv_fix/SKILL.md",
+        "skills/rag-implementation/SKILL.md",
+        "skills/react-best-practices/SKILL.md",
+        "skills/regulatory-verification-protocol/SKILL.md",
+        "skills/specialist_agents_team/SKILL.md",
+        "skills/systematic-debugging/SKILL.md",
+        "skills/troubleshoot-cloudrun-deployment/SKILL.md",
+        "skills/ui-ux-pro-max/SKILL.md",
+        "skills/v3-prompt-architecture/SKILL.md"
+      ]
+    },
+    {
+      "from": "CLAUDE.md",
+      "target": ".claude/skills/gitnexus/gitnexus-debugging/SKILL.md",
+      "candidates": [
+        "skills/3_voice-ai-development/SKILL.md",
+        "skills/4_sse-streaming-patterns/SKILL.md",
+        "skills/5_adk_skills/adk-agent-development/SKILL.md",
+        "skills/5_adk_skills/adk-testing-patterns/SKILL.md",
+        "skills/6_dual-store-rag-patterns/SKILL.md",
+        "skills/adk-prompting/SKILL.md",
+        "skills/agent-handoff-patterns/SKILL.md",
+        "skills/architectural-propagation/SKILL.md",
+        "skills/backend-dev-guidelines/SKILL.md",
+        "skills/bmad-advanced-elicitation/SKILL.md",
+        "skills/bmad-agent-analyst/SKILL.md",
+        "skills/bmad-agent-architect/SKILL.md",
+        "skills/bmad-agent-dev/SKILL.md",
+        "skills/bmad-agent-pm/SKILL.md",
+        "skills/bmad-agent-tech-writer/SKILL.md",
+        "skills/bmad-agent-ux-designer/SKILL.md",
+        "skills/bmad-brainstorming/SKILL.md",
+        "skills/bmad-check-implementation-readiness/SKILL.md",
+        "skills/bmad-checkpoint-preview/SKILL.md",
+        "skills/bmad-code-review/SKILL.md",
+        "skills/bmad-correct-course/SKILL.md",
+        "skills/bmad-create-architecture/SKILL.md",
+        "skills/bmad-create-epics-and-stories/SKILL.md",
+        "skills/bmad-create-prd/SKILL.md",
+        "skills/bmad-create-story/SKILL.md",
+        "skills/bmad-customize/SKILL.md",
+        "skills/bmad-dev-story/SKILL.md",
+        "skills/bmad-document-project/SKILL.md",
+        "skills/bmad-domain-research/SKILL.md",
+        "skills/bmad-edit-prd/SKILL.md",
+        "skills/bmad-editorial-review-prose/SKILL.md",
+        "skills/bmad-editorial-review-structure/SKILL.md",
+        "skills/bmad-generate-project-context/SKILL.md",
+        "skills/bmad-help/SKILL.md",
+        "skills/bmad-index-docs/SKILL.md",
+        "skills/bmad-investigate/SKILL.md",
+        "skills/bmad-market-research/SKILL.md",
+        "skills/bmad-party-mode/SKILL.md",
+        "skills/bmad-prd/SKILL.md",
+        "skills/bmad-prfaq/SKILL.md",
+        "skills/bmad-product-brief/SKILL.md",
+        "skills/bmad-qa-generate-e2e-tests/SKILL.md",
+        "skills/bmad-quick-dev/SKILL.md",
+        "skills/bmad-retrospective/SKILL.md",
+        "skills/bmad-review-adversarial-general/SKILL.md",
+        "skills/bmad-review-edge-case-hunter/SKILL.md",
+        "skills/bmad-shard-doc/SKILL.md",
+        "skills/bmad-spec/SKILL.md",
+        "skills/bmad-sprint-planning/SKILL.md",
+        "skills/bmad-sprint-status/SKILL.md",
+        "skills/bmad-tea/SKILL.md",
+        "skills/bmad-teach-me-testing/SKILL.md",
+        "skills/bmad-technical-research/SKILL.md",
+        "skills/bmad-testarch-atdd/SKILL.md",
+        "skills/bmad-testarch-automate/SKILL.md",
+        "skills/bmad-testarch-ci/SKILL.md",
+        "skills/bmad-testarch-framework/SKILL.md",
+        "skills/bmad-testarch-nfr/SKILL.md",
+        "skills/bmad-testarch-test-design/SKILL.md",
+        "skills/bmad-testarch-test-review/SKILL.md",
+        "skills/bmad-testarch-trace/SKILL.md",
+        "skills/bmad-ux/SKILL.md",
+        "skills/bmad-validate-prd/SKILL.md",
+        "skills/deploy-backend/SKILL.md",
+        "skills/firebase-ai-logic-basics/SKILL.md",
+        "skills/firebase-app-hosting-basics/SKILL.md",
+        "skills/firebase-auth-basics/SKILL.md",
+        "skills/firebase-basics/SKILL.md",
+        "skills/firebase-data-connect-basics/SKILL.md",
+        "skills/firebase-firestore-basics/SKILL.md",
+        "skills/firebase-hosting-basics/SKILL.md",
+        "skills/gcp-cloud-run/SKILL.md",
+        "skills/gemini-live-api/SKILL.md",
+        "skills/hr-agent-schema-guide/SKILL.md",
+        "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/python-patterns/SKILL.md",
+        "skills/python_inter_venv_fix/SKILL.md",
+        "skills/rag-implementation/SKILL.md",
+        "skills/react-best-practices/SKILL.md",
+        "skills/regulatory-verification-protocol/SKILL.md",
+        "skills/specialist_agents_team/SKILL.md",
+        "skills/systematic-debugging/SKILL.md",
+        "skills/troubleshoot-cloudrun-deployment/SKILL.md",
+        "skills/ui-ux-pro-max/SKILL.md",
+        "skills/v3-prompt-architecture/SKILL.md"
+      ]
+    },
+    {
+      "from": "CLAUDE.md",
+      "target": ".claude/skills/gitnexus/gitnexus-exploring/SKILL.md",
+      "candidates": [
+        "skills/3_voice-ai-development/SKILL.md",
+        "skills/4_sse-streaming-patterns/SKILL.md",
+        "skills/5_adk_skills/adk-agent-development/SKILL.md",
+        "skills/5_adk_skills/adk-testing-patterns/SKILL.md",
+        "skills/6_dual-store-rag-patterns/SKILL.md",
+        "skills/adk-prompting/SKILL.md",
+        "skills/agent-handoff-patterns/SKILL.md",
+        "skills/architectural-propagation/SKILL.md",
+        "skills/backend-dev-guidelines/SKILL.md",
+        "skills/bmad-advanced-elicitation/SKILL.md",
+        "skills/bmad-agent-analyst/SKILL.md",
+        "skills/bmad-agent-architect/SKILL.md",
+        "skills/bmad-agent-dev/SKILL.md",
+        "skills/bmad-agent-pm/SKILL.md",
+        "skills/bmad-agent-tech-writer/SKILL.md",
+        "skills/bmad-agent-ux-designer/SKILL.md",
+        "skills/bmad-brainstorming/SKILL.md",
+        "skills/bmad-check-implementation-readiness/SKILL.md",
+        "skills/bmad-checkpoint-preview/SKILL.md",
+        "skills/bmad-code-review/SKILL.md",
+        "skills/bmad-correct-course/SKILL.md",
+        "skills/bmad-create-architecture/SKILL.md",
+        "skills/bmad-create-epics-and-stories/SKILL.md",
+        "skills/bmad-create-prd/SKILL.md",
+        "skills/bmad-create-story/SKILL.md",
+        "skills/bmad-customize/SKILL.md",
+        "skills/bmad-dev-story/SKILL.md",
+        "skills/bmad-document-project/SKILL.md",
+        "skills/bmad-domain-research/SKILL.md",
+        "skills/bmad-edit-prd/SKILL.md",
+        "skills/bmad-editorial-review-prose/SKILL.md",
+        "skills/bmad-editorial-review-structure/SKILL.md",
+        "skills/bmad-generate-project-context/SKILL.md",
+        "skills/bmad-help/SKILL.md",
+        "skills/bmad-index-docs/SKILL.md",
+        "skills/bmad-investigate/SKILL.md",
+        "skills/bmad-market-research/SKILL.md",
+        "skills/bmad-party-mode/SKILL.md",
+        "skills/bmad-prd/SKILL.md",
+        "skills/bmad-prfaq/SKILL.md",
+        "skills/bmad-product-brief/SKILL.md",
+        "skills/bmad-qa-generate-e2e-tests/SKILL.md",
+        "skills/bmad-quick-dev/SKILL.md",
+        "skills/bmad-retrospective/SKILL.md",
+        "skills/bmad-review-adversarial-general/SKILL.md",
+        "skills/bmad-review-edge-case-hunter/SKILL.md",
+        "skills/bmad-shard-doc/SKILL.md",
+        "skills/bmad-spec/SKILL.md",
+        "skills/bmad-sprint-planning/SKILL.md",
+        "skills/bmad-sprint-status/SKILL.md",
+        "skills/bmad-tea/SKILL.md",
+        "skills/bmad-teach-me-testing/SKILL.md",
+        "skills/bmad-technical-research/SKILL.md",
+        "skills/bmad-testarch-atdd/SKILL.md",
+        "skills/bmad-testarch-automate/SKILL.md",
+        "skills/bmad-testarch-ci/SKILL.md",
+        "skills/bmad-testarch-framework/SKILL.md",
+        "skills/bmad-testarch-nfr/SKILL.md",
+        "skills/bmad-testarch-test-design/SKILL.md",
+        "skills/bmad-testarch-test-review/SKILL.md",
+        "skills/bmad-testarch-trace/SKILL.md",
+        "skills/bmad-ux/SKILL.md",
+        "skills/bmad-validate-prd/SKILL.md",
+        "skills/deploy-backend/SKILL.md",
+        "skills/firebase-ai-logic-basics/SKILL.md",
+        "skills/firebase-app-hosting-basics/SKILL.md",
+        "skills/firebase-auth-basics/SKILL.md",
+        "skills/firebase-basics/SKILL.md",
+        "skills/firebase-data-connect-basics/SKILL.md",
+        "skills/firebase-firestore-basics/SKILL.md",
+        "skills/firebase-hosting-basics/SKILL.md",
+        "skills/gcp-cloud-run/SKILL.md",
+        "skills/gemini-live-api/SKILL.md",
+        "skills/hr-agent-schema-guide/SKILL.md",
+        "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/python-patterns/SKILL.md",
+        "skills/python_inter_venv_fix/SKILL.md",
+        "skills/rag-implementation/SKILL.md",
+        "skills/react-best-practices/SKILL.md",
+        "skills/regulatory-verification-protocol/SKILL.md",
+        "skills/specialist_agents_team/SKILL.md",
+        "skills/systematic-debugging/SKILL.md",
+        "skills/troubleshoot-cloudrun-deployment/SKILL.md",
+        "skills/ui-ux-pro-max/SKILL.md",
+        "skills/v3-prompt-architecture/SKILL.md"
+      ]
+    },
+    {
+      "from": "CLAUDE.md",
+      "target": ".claude/skills/gitnexus/gitnexus-guide/SKILL.md",
+      "candidates": [
+        "skills/3_voice-ai-development/SKILL.md",
+        "skills/4_sse-streaming-patterns/SKILL.md",
+        "skills/5_adk_skills/adk-agent-development/SKILL.md",
+        "skills/5_adk_skills/adk-testing-patterns/SKILL.md",
+        "skills/6_dual-store-rag-patterns/SKILL.md",
+        "skills/adk-prompting/SKILL.md",
+        "skills/agent-handoff-patterns/SKILL.md",
+        "skills/architectural-propagation/SKILL.md",
+        "skills/backend-dev-guidelines/SKILL.md",
+        "skills/bmad-advanced-elicitation/SKILL.md",
+        "skills/bmad-agent-analyst/SKILL.md",
+        "skills/bmad-agent-architect/SKILL.md",
+        "skills/bmad-agent-dev/SKILL.md",
+        "skills/bmad-agent-pm/SKILL.md",
+        "skills/bmad-agent-tech-writer/SKILL.md",
+        "skills/bmad-agent-ux-designer/SKILL.md",
+        "skills/bmad-brainstorming/SKILL.md",
+        "skills/bmad-check-implementation-readiness/SKILL.md",
+        "skills/bmad-checkpoint-preview/SKILL.md",
+        "skills/bmad-code-review/SKILL.md",
+        "skills/bmad-correct-course/SKILL.md",
+        "skills/bmad-create-architecture/SKILL.md",
+        "skills/bmad-create-epics-and-stories/SKILL.md",
+        "skills/bmad-create-prd/SKILL.md",
+        "skills/bmad-create-story/SKILL.md",
+        "skills/bmad-customize/SKILL.md",
+        "skills/bmad-dev-story/SKILL.md",
+        "skills/bmad-document-project/SKILL.md",
+        "skills/bmad-domain-research/SKILL.md",
+        "skills/bmad-edit-prd/SKILL.md",
+        "skills/bmad-editorial-review-prose/SKILL.md",
+        "skills/bmad-editorial-review-structure/SKILL.md",
+        "skills/bmad-generate-project-context/SKILL.md",
+        "skills/bmad-help/SKILL.md",
+        "skills/bmad-index-docs/SKILL.md",
+        "skills/bmad-investigate/SKILL.md",
+        "skills/bmad-market-research/SKILL.md",
+        "skills/bmad-party-mode/SKILL.md",
+        "skills/bmad-prd/SKILL.md",
+        "skills/bmad-prfaq/SKILL.md",
+        "skills/bmad-product-brief/SKILL.md",
+        "skills/bmad-qa-generate-e2e-tests/SKILL.md",
+        "skills/bmad-quick-dev/SKILL.md",
+        "skills/bmad-retrospective/SKILL.md",
+        "skills/bmad-review-adversarial-general/SKILL.md",
+        "skills/bmad-review-edge-case-hunter/SKILL.md",
+        "skills/bmad-shard-doc/SKILL.md",
+        "skills/bmad-spec/SKILL.md",
+        "skills/bmad-sprint-planning/SKILL.md",
+        "skills/bmad-sprint-status/SKILL.md",
+        "skills/bmad-tea/SKILL.md",
+        "skills/bmad-teach-me-testing/SKILL.md",
+        "skills/bmad-technical-research/SKILL.md",
+        "skills/bmad-testarch-atdd/SKILL.md",
+        "skills/bmad-testarch-automate/SKILL.md",
+        "skills/bmad-testarch-ci/SKILL.md",
+        "skills/bmad-testarch-framework/SKILL.md",
+        "skills/bmad-testarch-nfr/SKILL.md",
+        "skills/bmad-testarch-test-design/SKILL.md",
+        "skills/bmad-testarch-test-review/SKILL.md",
+        "skills/bmad-testarch-trace/SKILL.md",
+        "skills/bmad-ux/SKILL.md",
+        "skills/bmad-validate-prd/SKILL.md",
+        "skills/deploy-backend/SKILL.md",
+        "skills/firebase-ai-logic-basics/SKILL.md",
+        "skills/firebase-app-hosting-basics/SKILL.md",
+        "skills/firebase-auth-basics/SKILL.md",
+        "skills/firebase-basics/SKILL.md",
+        "skills/firebase-data-connect-basics/SKILL.md",
+        "skills/firebase-firestore-basics/SKILL.md",
+        "skills/firebase-hosting-basics/SKILL.md",
+        "skills/gcp-cloud-run/SKILL.md",
+        "skills/gemini-live-api/SKILL.md",
+        "skills/hr-agent-schema-guide/SKILL.md",
+        "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/python-patterns/SKILL.md",
+        "skills/python_inter_venv_fix/SKILL.md",
+        "skills/rag-implementation/SKILL.md",
+        "skills/react-best-practices/SKILL.md",
+        "skills/regulatory-verification-protocol/SKILL.md",
+        "skills/specialist_agents_team/SKILL.md",
+        "skills/systematic-debugging/SKILL.md",
+        "skills/troubleshoot-cloudrun-deployment/SKILL.md",
+        "skills/ui-ux-pro-max/SKILL.md",
+        "skills/v3-prompt-architecture/SKILL.md"
+      ]
+    },
+    {
+      "from": "CLAUDE.md",
+      "target": ".claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md",
+      "candidates": [
+        "skills/3_voice-ai-development/SKILL.md",
+        "skills/4_sse-streaming-patterns/SKILL.md",
+        "skills/5_adk_skills/adk-agent-development/SKILL.md",
+        "skills/5_adk_skills/adk-testing-patterns/SKILL.md",
+        "skills/6_dual-store-rag-patterns/SKILL.md",
+        "skills/adk-prompting/SKILL.md",
+        "skills/agent-handoff-patterns/SKILL.md",
+        "skills/architectural-propagation/SKILL.md",
+        "skills/backend-dev-guidelines/SKILL.md",
+        "skills/bmad-advanced-elicitation/SKILL.md",
+        "skills/bmad-agent-analyst/SKILL.md",
+        "skills/bmad-agent-architect/SKILL.md",
+        "skills/bmad-agent-dev/SKILL.md",
+        "skills/bmad-agent-pm/SKILL.md",
+        "skills/bmad-agent-tech-writer/SKILL.md",
+        "skills/bmad-agent-ux-designer/SKILL.md",
+        "skills/bmad-brainstorming/SKILL.md",
+        "skills/bmad-check-implementation-readiness/SKILL.md",
+        "skills/bmad-checkpoint-preview/SKILL.md",
+        "skills/bmad-code-review/SKILL.md",
+        "skills/bmad-correct-course/SKILL.md",
+        "skills/bmad-create-architecture/SKILL.md",
+        "skills/bmad-create-epics-and-stories/SKILL.md",
+        "skills/bmad-create-prd/SKILL.md",
+        "skills/bmad-create-story/SKILL.md",
+        "skills/bmad-customize/SKILL.md",
+        "skills/bmad-dev-story/SKILL.md",
+        "skills/bmad-document-project/SKILL.md",
+        "skills/bmad-domain-research/SKILL.md",
+        "skills/bmad-edit-prd/SKILL.md",
+        "skills/bmad-editorial-review-prose/SKILL.md",
+        "skills/bmad-editorial-review-structure/SKILL.md",
+        "skills/bmad-generate-project-context/SKILL.md",
+        "skills/bmad-help/SKILL.md",
+        "skills/bmad-index-docs/SKILL.md",
+        "skills/bmad-investigate/SKILL.md",
+        "skills/bmad-market-research/SKILL.md",
+        "skills/bmad-party-mode/SKILL.md",
+        "skills/bmad-prd/SKILL.md",
+        "skills/bmad-prfaq/SKILL.md",
+        "skills/bmad-product-brief/SKILL.md",
+        "skills/bmad-qa-generate-e2e-tests/SKILL.md",
+        "skills/bmad-quick-dev/SKILL.md",
+        "skills/bmad-retrospective/SKILL.md",
+        "skills/bmad-review-adversarial-general/SKILL.md",
+        "skills/bmad-review-edge-case-hunter/SKILL.md",
+        "skills/bmad-shard-doc/SKILL.md",
+        "skills/bmad-spec/SKILL.md",
+        "skills/bmad-sprint-planning/SKILL.md",
+        "skills/bmad-sprint-status/SKILL.md",
+        "skills/bmad-tea/SKILL.md",
+        "skills/bmad-teach-me-testing/SKILL.md",
+        "skills/bmad-technical-research/SKILL.md",
+        "skills/bmad-testarch-atdd/SKILL.md",
+        "skills/bmad-testarch-automate/SKILL.md",
+        "skills/bmad-testarch-ci/SKILL.md",
+        "skills/bmad-testarch-framework/SKILL.md",
+        "skills/bmad-testarch-nfr/SKILL.md",
+        "skills/bmad-testarch-test-design/SKILL.md",
+        "skills/bmad-testarch-test-review/SKILL.md",
+        "skills/bmad-testarch-trace/SKILL.md",
+        "skills/bmad-ux/SKILL.md",
+        "skills/bmad-validate-prd/SKILL.md",
+        "skills/deploy-backend/SKILL.md",
+        "skills/firebase-ai-logic-basics/SKILL.md",
+        "skills/firebase-app-hosting-basics/SKILL.md",
+        "skills/firebase-auth-basics/SKILL.md",
+        "skills/firebase-basics/SKILL.md",
+        "skills/firebase-data-connect-basics/SKILL.md",
+        "skills/firebase-firestore-basics/SKILL.md",
+        "skills/firebase-hosting-basics/SKILL.md",
+        "skills/gcp-cloud-run/SKILL.md",
+        "skills/gemini-live-api/SKILL.md",
+        "skills/hr-agent-schema-guide/SKILL.md",
+        "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/python-patterns/SKILL.md",
+        "skills/python_inter_venv_fix/SKILL.md",
+        "skills/rag-implementation/SKILL.md",
+        "skills/react-best-practices/SKILL.md",
+        "skills/regulatory-verification-protocol/SKILL.md",
+        "skills/specialist_agents_team/SKILL.md",
+        "skills/systematic-debugging/SKILL.md",
+        "skills/troubleshoot-cloudrun-deployment/SKILL.md",
+        "skills/ui-ux-pro-max/SKILL.md",
+        "skills/v3-prompt-architecture/SKILL.md"
+      ]
+    },
+    {
+      "from": "CLAUDE.md",
+      "target": ".claude/skills/gitnexus/gitnexus-refactoring/SKILL.md",
+      "candidates": [
+        "skills/3_voice-ai-development/SKILL.md",
+        "skills/4_sse-streaming-patterns/SKILL.md",
+        "skills/5_adk_skills/adk-agent-development/SKILL.md",
+        "skills/5_adk_skills/adk-testing-patterns/SKILL.md",
+        "skills/6_dual-store-rag-patterns/SKILL.md",
+        "skills/adk-prompting/SKILL.md",
+        "skills/agent-handoff-patterns/SKILL.md",
+        "skills/architectural-propagation/SKILL.md",
+        "skills/backend-dev-guidelines/SKILL.md",
+        "skills/bmad-advanced-elicitation/SKILL.md",
+        "skills/bmad-agent-analyst/SKILL.md",
+        "skills/bmad-agent-architect/SKILL.md",
+        "skills/bmad-agent-dev/SKILL.md",
+        "skills/bmad-agent-pm/SKILL.md",
+        "skills/bmad-agent-tech-writer/SKILL.md",
+        "skills/bmad-agent-ux-designer/SKILL.md",
+        "skills/bmad-brainstorming/SKILL.md",
+        "skills/bmad-check-implementation-readiness/SKILL.md",
+        "skills/bmad-checkpoint-preview/SKILL.md",
+        "skills/bmad-code-review/SKILL.md",
+        "skills/bmad-correct-course/SKILL.md",
+        "skills/bmad-create-architecture/SKILL.md",
+        "skills/bmad-create-epics-and-stories/SKILL.md",
+        "skills/bmad-create-prd/SKILL.md",
+        "skills/bmad-create-story/SKILL.md",
+        "skills/bmad-customize/SKILL.md",
+        "skills/bmad-dev-story/SKILL.md",
+        "skills/bmad-document-project/SKILL.md",
+        "skills/bmad-domain-research/SKILL.md",
+        "skills/bmad-edit-prd/SKILL.md",
+        "skills/bmad-editorial-review-prose/SKILL.md",
+        "skills/bmad-editorial-review-structure/SKILL.md",
+        "skills/bmad-generate-project-context/SKILL.md",
+        "skills/bmad-help/SKILL.md",
+        "skills/bmad-index-docs/SKILL.md",
+        "skills/bmad-investigate/SKILL.md",
+        "skills/bmad-market-research/SKILL.md",
+        "skills/bmad-party-mode/SKILL.md",
+        "skills/bmad-prd/SKILL.md",
+        "skills/bmad-prfaq/SKILL.md",
+        "skills/bmad-product-brief/SKILL.md",
+        "skills/bmad-qa-generate-e2e-tests/SKILL.md",
+        "skills/bmad-quick-dev/SKILL.md",
+        "skills/bmad-retrospective/SKILL.md",
+        "skills/bmad-review-adversarial-general/SKILL.md",
+        "skills/bmad-review-edge-case-hunter/SKILL.md",
+        "skills/bmad-shard-doc/SKILL.md",
+        "skills/bmad-spec/SKILL.md",
+        "skills/bmad-sprint-planning/SKILL.md",
+        "skills/bmad-sprint-status/SKILL.md",
+        "skills/bmad-tea/SKILL.md",
+        "skills/bmad-teach-me-testing/SKILL.md",
+        "skills/bmad-technical-research/SKILL.md",
+        "skills/bmad-testarch-atdd/SKILL.md",
+        "skills/bmad-testarch-automate/SKILL.md",
+        "skills/bmad-testarch-ci/SKILL.md",
+        "skills/bmad-testarch-framework/SKILL.md",
+        "skills/bmad-testarch-nfr/SKILL.md",
+        "skills/bmad-testarch-test-design/SKILL.md",
+        "skills/bmad-testarch-test-review/SKILL.md",
+        "skills/bmad-testarch-trace/SKILL.md",
+        "skills/bmad-ux/SKILL.md",
+        "skills/bmad-validate-prd/SKILL.md",
+        "skills/deploy-backend/SKILL.md",
+        "skills/firebase-ai-logic-basics/SKILL.md",
+        "skills/firebase-app-hosting-basics/SKILL.md",
+        "skills/firebase-auth-basics/SKILL.md",
+        "skills/firebase-basics/SKILL.md",
+        "skills/firebase-data-connect-basics/SKILL.md",
+        "skills/firebase-firestore-basics/SKILL.md",
+        "skills/firebase-hosting-basics/SKILL.md",
+        "skills/gcp-cloud-run/SKILL.md",
+        "skills/gemini-live-api/SKILL.md",
+        "skills/hr-agent-schema-guide/SKILL.md",
+        "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/python-patterns/SKILL.md",
+        "skills/python_inter_venv_fix/SKILL.md",
+        "skills/rag-implementation/SKILL.md",
+        "skills/react-best-practices/SKILL.md",
+        "skills/regulatory-verification-protocol/SKILL.md",
+        "skills/specialist_agents_team/SKILL.md",
+        "skills/systematic-debugging/SKILL.md",
+        "skills/troubleshoot-cloudrun-deployment/SKILL.md",
+        "skills/ui-ux-pro-max/SKILL.md",
+        "skills/v3-prompt-architecture/SKILL.md"
+      ]
+    },
     {
       "from": "bmad/tea/workflows/testarch/README.md",
       "target": "SKILL.md",
@@ -19343,22 +20629,6 @@
       ]
     },
     {
-      "from": "commands/1_ccps_boot-context.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        "skills/react-best-practices/AGENTS.md",
-        "templates/project-template/AGENTS.md"
-      ]
-    },
-    {
-      "from": "commands/1_ccps_update-active-context.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        "skills/react-best-practices/AGENTS.md",
-        "templates/project-template/AGENTS.md"
-      ]
-    },
-    {
       "from": "commands/1_push-to-main-and-deploy.md",
       "target": ".agent/skills/deploy-backend/SKILL.md",
       "candidates": [
@@ -19460,107 +20730,11 @@
       ]
     },
     {
-      "from": "commands/new-project.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        "skills/react-best-practices/AGENTS.md",
-        "templates/project-template/AGENTS.md"
-      ]
-    },
-    {
-      "from": "opencode-agents/bmad-analyst.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        "skills/react-best-practices/AGENTS.md",
-        "templates/project-template/AGENTS.md"
-      ]
-    },
-    {
-      "from": "opencode-agents/bmad-architect.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        "skills/react-best-practices/AGENTS.md",
-        "templates/project-template/AGENTS.md"
-      ]
-    },
-    {
-      "from": "opencode-agents/bmad-dev.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        "skills/react-best-practices/AGENTS.md",
-        "templates/project-template/AGENTS.md"
-      ]
-    },
-    {
-      "from": "opencode-agents/bmad-master.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        "skills/react-best-practices/AGENTS.md",
-        "templates/project-template/AGENTS.md"
-      ]
-    },
-    {
       "from": "opencode-agents/bmad-master.md",
       "target": "_bmad/core/agents/bmad-master.md",
       "candidates": [
         "commands/bmad-master.md",
         "opencode-agents/bmad-master.md"
-      ]
-    },
-    {
-      "from": "opencode-agents/bmad-pm.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        "skills/react-best-practices/AGENTS.md",
-        "templates/project-template/AGENTS.md"
-      ]
-    },
-    {
-      "from": "opencode-agents/bmad-qa.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        "skills/react-best-practices/AGENTS.md",
-        "templates/project-template/AGENTS.md"
-      ]
-    },
-    {
-      "from": "opencode-agents/bmad-quick-flow.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        "skills/react-best-practices/AGENTS.md",
-        "templates/project-template/AGENTS.md"
-      ]
-    },
-    {
-      "from": "opencode-agents/bmad-sm.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        "skills/react-best-practices/AGENTS.md",
-        "templates/project-template/AGENTS.md"
-      ]
-    },
-    {
-      "from": "opencode-agents/bmad-tea.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        "skills/react-best-practices/AGENTS.md",
-        "templates/project-template/AGENTS.md"
-      ]
-    },
-    {
-      "from": "opencode-agents/bmad-tech-writer.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        "skills/react-best-practices/AGENTS.md",
-        "templates/project-template/AGENTS.md"
-      ]
-    },
-    {
-      "from": "opencode-agents/bmad-ux-designer.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        "skills/react-best-practices/AGENTS.md",
-        "templates/project-template/AGENTS.md"
       ]
     },
     {
@@ -19577,14 +20751,6 @@
       "candidates": [
         "bmad/tea/workflows/testarch/README.md",
         "skills/react-best-practices/README.md"
-      ]
-    },
-    {
-      "from": "rules/INDEX.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        "skills/react-best-practices/AGENTS.md",
-        "templates/project-template/AGENTS.md"
       ]
     },
     {
@@ -29218,6 +30384,14 @@
     },
     {
       "from": "skills/systematic-debugging/CREATION-LOG.md",
+      "target": "/Users/jesse/.claude/CLAUDE.md",
+      "candidates": [
+        "CLAUDE.md",
+        "templates/project-template/CLAUDE.md"
+      ]
+    },
+    {
+      "from": "skills/systematic-debugging/CREATION-LOG.md",
       "target": "skill-creation/SKILL.md",
       "candidates": [
         "skills/3_voice-ai-development/SKILL.md",
@@ -29305,14 +30479,6 @@
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
         "skills/ui-ux-pro-max/SKILL.md",
         "skills/v3-prompt-architecture/SKILL.md"
-      ]
-    },
-    {
-      "from": "templates/project-template/AGENTS.md",
-      "target": "../../AGENTS.md",
-      "candidates": [
-        "skills/react-best-practices/AGENTS.md",
-        "templates/project-template/AGENTS.md"
       ]
     },
     {
@@ -29407,14 +30573,6 @@
       ]
     },
     {
-      "from": "workflows/1_self-audit-stress-test.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        "skills/react-best-practices/AGENTS.md",
-        "templates/project-template/AGENTS.md"
-      ]
-    },
-    {
       "from": "workflows/1_update-maps.md",
       "target": "/INDEX.md",
       "candidates": [
@@ -29422,14 +30580,6 @@
         "rules/INDEX.md",
         "skills/INDEX.md",
         "workflows/INDEX.md"
-      ]
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        "skills/react-best-practices/AGENTS.md",
-        "templates/project-template/AGENTS.md"
       ]
     },
     {

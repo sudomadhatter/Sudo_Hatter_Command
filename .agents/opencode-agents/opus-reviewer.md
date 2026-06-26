@@ -117,7 +117,7 @@ If any are missing, HALT and report which.
 8. **DO NOT flip sprint-status to done.** This is the critical override to the
    `bmad_code_review_fast_path` close-out. Leave the story file Status at `review`
    and DO NOT touch `sprint-status.yaml`. The human sign-off gate (Stage 5 of the
-   loop) + `/1_ccps_update-active-context` owns the final `done` flip.
+   loop) + `/update-sprint-context` owns the final `done` flip.
 
 9. **Patch findings:** Per the fast-path rule, since `{spec_file}` is set, leave
    patches as action items in the story file (do NOT auto-apply code fixes).

@@ -187,7 +187,7 @@ This standard replaces months of contradictory, duplicated rules. State as of 20
 - `_experiment/` → `_routing-canary/`.
 
 **Retire-list (follow-up reconcile pass — NOT yet done; some are engine-coupled):**
-- `.agents/workflows/autopilot_bmad_dev_loop.md` + `.agents/commands/{autopilot, 1_ccps_update-active-context,
+- `.agents/workflows/autopilot_bmad_dev_loop.md` + `.agents/commands/{autopilot_claude,
   1_check-for-tech-stack-updates, 1_run-all-tests-back_front, 1_make-workflow-from-chat}` still reference
   `_claude_artifacts/` and (some) `@.agent/` singular paths + `your-action-required.md`. **The autopilot engine
   (`autopilot-dev-story.ps1`) must be checked before moving its artifact paths** — docs and engine must move
