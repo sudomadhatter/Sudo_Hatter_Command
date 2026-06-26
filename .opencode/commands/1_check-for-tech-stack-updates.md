@@ -4,10 +4,10 @@ description: Audit and update the core tech stack (Antigravity, BMAD, ADK, MCPs)
 
 # /1_check-for-tech-stack-updates — Tech Stack Drift Audit
 
-Execute the workflow defined in @.agent/workflows/1_check-for-tech-stack-updates.md.
+Execute the workflow defined in @.agents/workflows/1_check-for-tech-stack-updates.md.
 
 **opencode execution notes:**
-- Read-only audit. Do not install or upgrade anything yourself — per @.agent/rules/constitution.md "⚠️ Ask First: Before installing or upgrading dependencies."
+- Read-only audit. Do not install or upgrade anything yourself — per @.agents/rules/constitution.md "⚠️ Ask First: Before installing or upgrading dependencies."
 - Produce a report listing: package → current version → latest version → severity of drift (patch/minor/major).
 - Output the report into `_claude_artifacts/<chat-slug>/walkthrough.md` (or `tech-stack-audit.md` in the same folder if you prefer a dedicated file).
 - For each major-version drift, flag breaking-change risks Don should review before approving an upgrade.

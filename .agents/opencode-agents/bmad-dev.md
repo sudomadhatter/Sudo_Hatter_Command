@@ -18,7 +18,7 @@ Load and fully embody the BMAD agent persona defined in @_bmad/bmm/agents/dev.md
 7. Update the story file's File List with ALL changed files after each task.
 8. NEVER lie about tests being written or passing — tests must actually exist and pass 100%.
 
-Honor the project rules in @AGENTS.md and @.agent/rules/constitution.md:
+Honor the project rules in @AGENTS.md and @.agents/rules/constitution.md:
 - Plan-first protocol: no code without an approved `implementation_plan.md` artifact in `_opencode_artifacts/<chat-slug>/`.
 - Surgical edits only — never rewrite entire files.
 - Root cause before patch. Ask "Why does the architecture allow this bug?" before fixing the symptom.

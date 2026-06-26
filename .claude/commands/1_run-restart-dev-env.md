@@ -4,7 +4,7 @@ description: Kills existing node/python/uvicorn processes and restarts the backe
 
 # /1_run-restart-dev-env — Restart Dev Environment
 
-Execute the workflow defined in @.agent/workflows/1_run-restart-dev-env.md.
+Execute the workflow defined in @.agents/workflows/1_run-restart-dev-env.md.
 
 **opencode execution notes:**
 - `taskkill` is gated behind `permission.bash` `ask` — Don will be prompted for each kill. That's intentional; he should confirm before zombie processes are reaped.

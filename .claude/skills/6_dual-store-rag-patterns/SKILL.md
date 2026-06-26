@@ -624,8 +624,8 @@ async def test_bridge_key_flow():
 
 ## Related Skills
 
-- [multi-agent-orchestration.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/multi-agent-orchestration/SKILL.md) - How Experts A/B/C use these tools
-- [regulatory-verification-protocol.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/regulatory-verification-protocol/SKILL.md) - How to verify citations
+- [multi-agent-orchestration.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/multi-agent-orchestration/SKILL.md) - How Experts A/B/C use these tools
+- [regulatory-verification-protocol.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/regulatory-verification-protocol/SKILL.md) - How to verify citations
 
 ---
 

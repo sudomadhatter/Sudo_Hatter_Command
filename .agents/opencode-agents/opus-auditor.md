@@ -34,13 +34,13 @@ If any of these are missing, HALT and report which.
 
 ## Your Job
 
-1. **Load the audit workflow:** Read `.agent/workflows/1_self-audit-stress-test.md` and
+1. **Load the audit workflow:** Read `.agents/workflows/1_self-audit-stress-test.md` and
    follow it exactly. This is a pre-dev gate — it audits the *plan*, never a code diff.
    There is no code yet.
 
 2. **Load supporting context (read-only):**
    - `_bmad-output/project-context.md` — architecture rules (Rules 1–8 are critical)
-   - `.agent/rules/constitution.md` — hard stops
+   - `.agents/rules/constitution.md` — hard stops
    - The story file at `story_path` — extract Acceptance Criteria and Dev Notes
    - The plan at `plan_path` — your audit target
 

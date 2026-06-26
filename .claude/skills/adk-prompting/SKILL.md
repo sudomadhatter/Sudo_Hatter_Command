@@ -1,12 +1,12 @@
 ---
 name: adk-prompting
-description: "Antigravity prompt architecture guide. Use when the user asks to create or fix a rule, workflow, or skill for the .agent/ directory. Covers taxonomy routing, YAML frontmatter standards, and generation guidelines."
+description: "Antigravity prompt architecture guide. Use when the user asks to create or fix a rule, workflow, or skill for the .agents/ directory. Covers taxonomy routing, YAML frontmatter standards, and generation guidelines."
 ---
 
 # Antigravity Prompt Architecture Guide
 
 ## When To Use This Skill
-The user asks you to create or fix a rule, workflow, or skill for the `.agent/` directory.
+The user asks you to create or fix a rule, workflow, or skill for the `.agents/` directory.
 
 ## Control Construct Routing
 
@@ -14,9 +14,9 @@ Catigorize the user's issue before generating:
 
 | Type | Location | Use For |
 |---|---|---|
-| **Rule** | `.agent/rules/` | Passive constraints, formatting mandates, negative boundaries |
-| **Workflow** | `.agent/workflows/` | Active, sequential multi-step playbooks |
-| **Skill** | `.agent/skills/` | Domain expertise, executable tools, capability extensions |
+| **Rule** | `.agents/rules/` | Passive constraints, formatting mandates, negative boundaries |
+| **Workflow** | `.agents/workflows/` | Active, sequential multi-step playbooks |
+| **Skill** | `.agents/skills/` | Domain expertise, executable tools, capability extensions |
 
 ## Generation Standards
 

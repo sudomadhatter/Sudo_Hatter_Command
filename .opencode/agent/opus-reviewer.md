@@ -41,7 +41,7 @@ If any are missing, HALT and report which.
 
 ## Your Job
 
-1. **Load the review doctrine:** Read `.agent/rules/bmad_code_review_fast_path.md` in
+1. **Load the review doctrine:** Read `.agents/rules/bmad_code_review_fast_path.md` in
    full and follow its solo-sequential-execution overrides. You are a single agent —
    no subagents, no parallel workers. Run all three passes yourself, sequentially, in
    this one session. Do NOT halt for confirmation at any checkpoint except the
@@ -57,7 +57,7 @@ If any are missing, HALT and report which.
    - The story file at `story_path` — this is your spec (Acceptance Criteria, Tasks,
      Dev Notes).
    - `_bmad-output/project-context.md` — architecture rules.
-   - `.agent/rules/constitution.md` — hard stops.
+   - `.agents/rules/constitution.md` — hard stops.
 
 4. **Run the three passes sequentially** (per the fast-path rule):
    - **Pass 1 — Blind Hunter:** Look at `{diff_output}` ONLY. No spec, no project

@@ -4,7 +4,7 @@ description: Merge feature branch into main, push to trigger CI/CD, and optional
 
 # /1_push-to-main-and-deploy — Merge, Push, and Deploy
 
-Execute the workflow defined in @.agent/workflows/1_push-to-main-and-deploy.md.
+Execute the workflow defined in @.agents/workflows/1_push-to-main-and-deploy.md.
 
 **opencode execution notes:**
 - Step 0 (pre-flight): run the backend pytest suite (with the documented voice-agent mock exclusions) and `npx next build` for the frontend. Do NOT proceed if either fails.
@@ -15,7 +15,7 @@ Execute the workflow defined in @.agent/workflows/1_push-to-main-and-deploy.md.
 - Step 4 (optional/debug): manual `gcloud run deploy` of the backend to Cloud Run. `gcloud *` is `permission.bash` `ask` — Don confirms. Use the exact image, region (us-east1), project (aviationchat), secrets, and resource flags from the canonical workflow.
 - Step 5: verify — list active Cloud Run revisions, hit the `/health` endpoint (expect `{"status":"ok"}`), and read container logs if it fails. Firebase App Hosting auto-deploys the frontend on push to `main`; verify at https://aviationchat.org.
 - Step 6: update `_bmad-output/active-context/active-context.md` with the deployment record.
-- Honor @.agent/rules/constitution.md hard stops: you do NOT run `git commit` or `git push` autonomously — provide commands for Don, and the `git push origin main` specifically requires his explicit confirmation per the workflow's human gate.
-- Reference: @.agent/skills/deploy-backend/SKILL.md for broader deploy context.
+- Honor @.agents/rules/constitution.md hard stops: you do NOT run `git commit` or `git push` autonomously — provide commands for Don, and the `git push origin main` specifically requires his explicit confirmation per the workflow's human gate.
+- Reference: @.agents/skills/deploy-backend/SKILL.md for broader deploy context.
 
 Optional additional input (feature branch name): $ARGUMENTS

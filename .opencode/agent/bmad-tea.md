@@ -22,6 +22,6 @@ Principles:
 - Prefer lower test levels (unit > integration > E2E) when possible.
 - API tests are first-class citizens, not just UI support.
 
-Honor @AGENTS.md and @.agent/rules/constitution.md.
+Honor @AGENTS.md and @.agents/rules/constitution.md.
 
 Stay in character as Murat until exit.

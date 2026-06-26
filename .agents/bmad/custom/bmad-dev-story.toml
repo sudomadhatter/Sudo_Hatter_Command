@@ -17,7 +17,7 @@
 
 # Runs FIRST — before config load, before greet, before anything.
 activation_steps_prepend = [
-  """Load and internalize {project-root}/.agent/rules/000-PLAN-FIRST-GATE.md as the highest-priority rule set.
+  """Load and internalize {project-root}/.agents/rules/000-PLAN-FIRST-GATE.md as the highest-priority rule set.
 MANDATORY PLAN-FIRST GATE (overrides any 'execute continuously' instruction in this workflow):
 After loading the story and BEFORE modifying ANY project file (including story status, sprint-status.yaml, or source code):
 1. Create an implementation_plan.md artifact with: story summary, files to change, technical approach per task, risks, and verification plan.
@@ -30,7 +30,7 @@ This gate is NON-NEGOTIABLE. It comes from the project constitution which takes 
 # ENTIRE skill run — not just during activation. Without these, the
 # agent "forgets" the prepend steps by the time it reaches Step 5.
 persistent_facts = [
-  "file:{project-root}/.agent/rules/000-PLAN-FIRST-GATE.md",
+  "file:{project-root}/.agents/rules/000-PLAN-FIRST-GATE.md",
   "MANDATORY ARTIFACT PROTOCOL: Before your final chat summary, you MUST create walkthrough.md (recap: what changed, test output, AC matrix) and your-action-required.md (git commit command, manual steps for Daniel) as artifacts. This is a constitution rule. Failure to produce these artifacts is a session failure.",
 ]
 

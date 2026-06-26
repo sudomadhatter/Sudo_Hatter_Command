@@ -660,8 +660,8 @@ service cloud.firestore {
 
 ## Related Skills
 
-- [multi-agent-orchestration.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/multi-agent-orchestration/SKILL.md) - How agents coordinate
-- [agent-handoff-patterns.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/agent-handoff-patterns/SKILL.md) - Context transfer protocols
+- [multi-agent-orchestration.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/multi-agent-orchestration/SKILL.md) - How agents coordinate
+- [agent-handoff-patterns.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/agent-handoff-patterns/SKILL.md) - Context transfer protocols
 
 ---
 

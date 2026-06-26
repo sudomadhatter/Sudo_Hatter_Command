@@ -380,9 +380,9 @@ except Exception as e:
 
 ## Related Skills
 
-- [dual-store-rag-patterns.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/dual-store-rag-patterns/SKILL.md) - How to query DB1 vs DB2
-- [sse-streaming-patterns.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/sse-streaming-patterns/SKILL.md) - How to implement Swap events
-- [regulatory-verification-protocol.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/regulatory-verification-protocol/SKILL.md) - What to verify
+- [dual-store-rag-patterns.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/dual-store-rag-patterns/SKILL.md) - How to query DB1 vs DB2
+- [sse-streaming-patterns.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/sse-streaming-patterns/SKILL.md) - How to implement Swap events
+- [regulatory-verification-protocol.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/regulatory-verification-protocol/SKILL.md) - What to verify
 
 ---
 

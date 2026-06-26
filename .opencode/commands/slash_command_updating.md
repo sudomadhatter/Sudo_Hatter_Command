@@ -4,14 +4,14 @@ description: Sync project slash commands to both the Antigravity global cache AN
 
 # /slash_command_updating — Sync Slash Commands (Antigravity + opencode)
 
-This is an **adapted** version of the Antigravity workflow at @.agent/workflows/slash_command_updating.md. It now also syncs the opencode global commands directory.
+This is an **adapted** version of the Antigravity workflow at @.agents/workflows/slash_command_updating.md. It now also syncs the opencode global commands directory.
 
 ## Execute this PowerShell unconditionally
 
 ```powershell
 # ---- Paths ----
 $ProjectRoot           = "$env:CD"
-$LocalAntigravityWf    = "$ProjectRoot\.agent\workflows"
+$LocalAntigravityWf    = "$ProjectRoot\.agents\workflows"
 $LocalOpencodeCmds     = "$ProjectRoot\.opencode\commands"
 $GlobalAntigravityWf   = "$env:USERPROFILE\.gemini\antigravity\global_workflows"
 $GlobalOpencodeCmds    = "$env:USERPROFILE\.config\opencode\commands"
