@@ -1,8 +1,18 @@
 # ACTIVE CONTEXT — _home  (you own this, not a vendor)
 
 ## 1. PRIME STATE
-Current workspace: `_home` (lobby at `C:\Sudo_Hatter_Command`)   |   Last session: 2026-06-25
-**2026-06-25 (latest): `_my_resources/open_tasks/` standardized as the "what's next" check.** Asking "what's next /
+Current workspace: `_home` (lobby at `C:\Sudo_Hatter_Command`)   |   Last session: 2026-06-26
+**2026-06-26 (latest): owned doc-wiring graph extractor built.** Filled the prose "what references what" layer
+GitNexus is blind to (it extracts headings, not doc refs) — surfaced when comparing GitNexus (= our own
+`gitnexus@1.6.8`, abhigyanpatwari upstream — we're on latest) vs **graphify** (safishamsi, MIT). Chose owned /
+deterministic / no-LLM / $0 over graphify's LLM layer. New `.agents/scripts/generate_doc_graph.py` (mirrors
+`generate_repo_map.py`) → `_docs/doc-graph.md` (human: hubs + broken-path/ambiguous/orphan reports) +
+`_docs/doc-graph.json` (full): **979 docs / 2427 edges**. Report-only. **Partially addresses the open `.agent/`
+(singular) dangling-refs item below** — it auto-surfaces some (`bmad-sm.md → .agent/gemini.md` + 2 ambiguous), but
+basename fallback masks others, so a grep sweep is still the exhaustive route. Session:
+`_artifacts/_home/2026-06-26_doc-graph-extractor/` (UNCOMMITTED — cmd in walkthrough). graphify noted as the named
+MIT break-glass engine for the GitNexus license tripwire.
+**2026-06-25: `_my_resources/open_tasks/` standardized as the "what's next" check.** Asking "what's next /
 open tasks / what's left" now reads Daniel's notes for **where you work FROM** (lobby → home-base folder; inside a
 converted project → that project's own) — on-demand, READ-ONLY, no SessionStart hook. Executed for converted
 projects only: **aviationChat-AGY** (`git mv`'d 5 notes `_Open_Task/`→`open_tasks/`, removed empty dir, seeded
@@ -83,5 +93,7 @@ already bundled this session's first-pass repo edits with the prior self-audit w
   opencode + Antigravity still to run.
 - 6.4 Related links: `_docs/workspace-standard.md`, `_docs/master-implementation-plan.md`,
   `_artifacts/_home/2026-06-24_workspace-standard-and-repo-map/` (plan + walkthrough + task-list).
-- 6.5 Git: working tree CLEAN. The recent home-base sessions (maps/GitNexus, open-tasks standard) are committed on
-  origin/main — latest `fa8bf1b`. Per-session "Your Actions" git commands remain in each `walkthrough.md` for the record.
+- 6.5 Git: prior home-base sessions (maps/GitNexus, open-tasks standard) are committed on origin/main — latest
+  `fa8bf1b`. **UNCOMMITTED now:** the 2026-06-26 doc-graph-extractor session (new `generate_doc_graph.py`,
+  `_docs/doc-graph.{md,json}`, `repo-map.md` pointer, this active-context + INDEX). Commit cmd in its `walkthrough.md`.
+  Per-session "Your Actions" git commands remain in each `walkthrough.md` for the record.

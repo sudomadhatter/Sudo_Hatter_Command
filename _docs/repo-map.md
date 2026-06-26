@@ -41,6 +41,11 @@ Tier-2/disposable — the maps above stay canonical (see `_my_resources/.../gitn
 > Note: the markdown rule/workflow files yield few cross-file edges (GitNexus extracts headings, not
 > doc references) — the graph is strong for the `.py`/`.ps1` scripts, thin for the prose; trust the files for
 > "what references what." No project source is indexed here (projects are cherry-picked as their own repos).
+>
+> **Doc wiring (the prose layer GitNexus misses):** `_docs/doc-graph.md` (+ `doc-graph.json`) is the owned,
+> deterministic, no-LLM map of which `.md` references which across `.agents/` — hubs, plus a broken-path /
+> ambiguous-ref report. Rebuild after editing rules/workflows:
+> `python .agents/scripts/generate_doc_graph.py`. Source: `.agents/scripts/generate_doc_graph.py`.
 
 **Drift:** checked at SessionStart by `.agents/scripts/check-repo-map-drift.ps1 -MapPath _docs/repo-map.md` — it
 nags if a new top-level folder isn't named here. Rebuild the AUTO body:
