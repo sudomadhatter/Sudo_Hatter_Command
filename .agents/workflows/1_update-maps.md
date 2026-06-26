@@ -73,9 +73,11 @@ edit it). `_bmad/` (if present) is regenerated — never hand-edit.
    block and produces a junk diff. This repo is **`mode=content`** (folder-level only).
 2. Run the generator with that mode and the established ignore list:
    ```bash
-   python .agents/scripts/generate_repo_map.py --output _docs/repo-map.md --ignore Projects,_my_resources --mode content
+   python .agents/scripts/generate_repo_map.py --root . --output _docs/repo-map.md --ignore Projects,_my_resources --mode content
    ```
-   (Use `--mode auto` only if the sentinel says so.)
+   (Use `--mode auto` only if the sentinel says so.) **`--root .` is required at the home base:** the master
+   generator lives at `.agents/scripts/`, so its default root resolves to `.agents/` (it assumes the vendored
+   `<project>/scripts/` location) — without `--root .` it maps only the `.agents/` subtree, not the lobby.
 3. `git diff _docs/repo-map.md`. Three outcomes:
    - **No diff** → the folder structure is unchanged; the AUTO block was already current. Good.
    - **Diff present** → new/removed/renamed top-level folders exist on disk. Keep it; note the changed

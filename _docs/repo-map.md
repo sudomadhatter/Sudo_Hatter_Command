@@ -49,7 +49,7 @@ Tier-2/disposable — the maps above stay canonical (see `_my_resources/.../gitn
 
 **Drift:** checked at SessionStart by `.agents/scripts/check-repo-map-drift.ps1 -MapPath _docs/repo-map.md` — it
 nags if a new top-level folder isn't named here. Rebuild the AUTO body:
-`python .agents/scripts/generate_repo_map.py --output _docs/repo-map.md --mode content --ignore Projects,_my_resources`.
+`python .agents/scripts/generate_repo_map.py --root . --output _docs/repo-map.md --mode content --ignore Projects,_my_resources` (`--root .` is required here — the master generator lives at `.agents/scripts/`, so its default root would otherwise resolve to `.agents/`).
 <!-- REPO-MAP:CURATED-END -->
 
 <!-- REPO-MAP:AUTO-START -->
@@ -59,7 +59,7 @@ nags if a new top-level folder isn't named here. Rebuild the AUTO body:
 ```text
 Sudo_Hatter_Command/
   _docs/
-      [3 files: .mdx3 | e.g. master-implementation-plan.md]
+      [5 files: .mdx4, .jsonx1 | e.g. doc-graph.json]
   _routing-canary/
     control/
         [1 files: .mdx1 | e.g. agent.md]

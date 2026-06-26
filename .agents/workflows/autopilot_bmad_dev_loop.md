@@ -5,7 +5,7 @@
 > finished-but-uncommitted work back to Daniel for close-out.
 >
 > **Engine:** [`scripts/autopilot-dev-story.ps1`](../../scripts/autopilot-dev-story.ps1) ·
-> **Trigger:** `/autopilot <story>` ([`.claude/commands/autopilot.md`](../../.claude/commands/autopilot.md)) ·
+> **Trigger:** `/autopilot_claude <story>` ([`.claude/commands/autopilot_claude.md`](../../.claude/commands/autopilot_claude.md)) ·
 > **Status:** v2, hardened — anchored matcher, evidence-gated (no verdict tokens), dedicated `_AP`
 > commands, independent test gate, auto story→`review`. Proven end-to-end on **Story 14.2** (full
 > 4-stage run, $9.00, clean APPROVE, backend 1723 passed / frontend 270 passed).
@@ -58,7 +58,7 @@ command file.
 
 ```mermaid
 flowchart TD
-    D(["Daniel: /autopilot 14.2"]) --> M1["orchestrator mints dev UUID -> sessions.json"]
+    D(["Daniel: /autopilot_claude 14.2"]) --> M1["orchestrator mints dev UUID -> sessions.json"]
     M1 --> S1["Stage 1 PLAN — NEW dev session (Amelia, Opus 4.8)<br/>/bmad-dev-story_AP plan"]
     S1 -->|"writes implementation_plan.md"| F[("shared run folder")]
     F --> M2["orchestrator mints qa UUID -> sessions.json"]
@@ -135,7 +135,7 @@ story-dependent, not a law.
 | **Agents** | Dedicated headless **`_AP` commands** | Prompts invoke `/bmad-dev-story_AP plan`, `/1_self-audit-stress-test_AP`, `/bmad-dev-story_AP implement`, `/bmad-code-review_AP` (agent-tuned variants of the interactive BMAD skills). |
 | **Models** | Opus 4.8 (Dev) · Opus 4.8 (QA) | Both default to `claude-opus-4-8`; independence is the *separate session + persona*, not a stronger model. Pin asymmetrically via `-DevModel` / `-AuditModel`. |
 | **Test gate** | `pytest` + `vitest`, run by the script | After Stage 4 the orchestrator re-runs the suites itself (`-TestScope auto` derives backend/frontend from the baseline diff). It refuses to stamp COMPLETE on red. |
-| **Handoff** | Artifact files | One canonical `_claude_artifacts/<date>_autopilot-<story>/` folder; `_pipeline/` holds raw JSON + `sessions.json` + a self-contained `run.log` transcript. |
+| **Handoff** | Artifact files | One canonical `_artifacts/<date>_autopilot-<story>/` folder; `_pipeline/` holds raw JSON + `sessions.json` + a self-contained `run.log` transcript. |
 | **Telemetry** | Parsed from result JSON | `.total_cost_usd`, `.num_turns`, `.is_error`, cache token counts. |
 
 **The exact call** (from `Invoke-Stage`):
@@ -265,7 +265,7 @@ Everything for a run lives in one place; the resumed agents read these files ins
 re-deriving:
 
 ```
-_claude_artifacts/<date>_autopilot-<story>/
+_artifacts/<date>_autopilot-<story>/
 ├── implementation_plan.md        (Stage 1 — Dev)
 ├── self-audit-stress-test.md     (Stage 2 — QA, findings + proposed fixes)
 ├── walkthrough.md                (Stage 3 — Dev; Stage 4 prepends QA CLOSE-OUT to the TOP)
@@ -280,8 +280,8 @@ _claude_artifacts/<date>_autopilot-<story>/
     └── gate-tests-*.txt          (independent test-gate output: backend / frontend)
 ```
 
-> **The run is self-contained.** The global live-tail log lives at `_claude_artifacts/_autopilot-run.log`
-> (the stable path the `/autopilot` skill tails), but the folder *also* keeps its own `_pipeline/run.log`
+> **The run is self-contained.** The global live-tail log lives at `_artifacts/_autopilot-run.log`
+> (the stable path the `/autopilot_claude` skill tails), but the folder *also* keeps its own `_pipeline/run.log`
 > copy — so opening just the run folder shows the whole story without hunting for the global log.
 
 The artifact-presence map *is* the resume logic: `1=implementation_plan.md`,
@@ -408,7 +408,7 @@ Each of these is a real bug or insight from the shakedown runs, now baked into t
 .\scripts\autopilot-dev-story.ps1 -Story 13.4 -ResumeFrom 4
 ```
 
-Or trigger via the slash command: **`/autopilot 13.4`**.
+Or trigger via the slash command: **`/autopilot_claude 13.4`**.
 
 | Parameter | Default | Purpose |
 |---|---|---|
@@ -463,5 +463,5 @@ headless command expansion, and the anchored matcher / clean folder slug.
 
 ---
 
-*Source of truth is always the script + `.claude/commands/autopilot.md`. This doc is the map, not
+*Source of truth is always the script + `.claude/commands/autopilot_claude.md`. This doc is the map, not
 the territory — if they disagree, the script wins.*
