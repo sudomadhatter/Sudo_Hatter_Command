@@ -36,6 +36,11 @@ Keep it minimal — only these per session:
 > allowed completion snapshot — it is NOT the same as a live `task.md`.) The rest of the flow is
 > identical for normal dev and stories.
 
+> **🔗 Link every artifact in the chat — always.** The moment you write or update ANY artifact (plan,
+> walkthrough, task-list, bug-list, code-review, self-audit), post a **clickable link to it in the chat**
+> that same turn, with a one-line note of what it is. Daniel reviews from the conversation — an artifact he
+> can't open from chat may as well not exist. This generalizes the plan-link rule below to the whole set.
+
 ## The Rule
 
 **Do NOT modify any project file until Daniel has approved a plan in the current conversation.**
@@ -146,6 +151,8 @@ needs the audit on disk, not just in chat. Frontmatter `type: self_audit`.
 ## Hard Stops
 - NEVER modify any project file before `implementation_plan.md` is approved.
 - NEVER skip the artifact folder for a "quick" change (outside the Skip cases above).
+- NEVER write or update an artifact without posting a clickable link to it in the chat that same turn
+  (see the "Link every artifact in the chat" rule above).
 - NEVER claim the walkthrough is done without actual test output.
 - NEVER finish a `walkthrough.md` without its "Your Actions" section + the git commit command.
 - NEVER close out a task without snapshotting the final task list into `task-list.md` (§5b).
