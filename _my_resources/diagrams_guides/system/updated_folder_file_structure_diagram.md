@@ -3,7 +3,7 @@
 > **What this is.** A one-look reference to the home-base system and the file-change strategy executed on
 > 2026-06-24 (the `workspace-standard-and-repo-map` session). Green = NEW this session, Yellow = CHANGED this
 > session, Red = BLOCKED / not done. Full detail lives in
-> `_artifacts/_home/2026-06-24_workspace-standard-and-repo-map/` and `_docs/workspace-standard.md`.
+> `_artifacts/_main/2026-06-24_workspace-standard-and-repo-map/` and `_docs/workspace-standard.md`.
 
 ---
 
@@ -27,7 +27,7 @@ flowchart TD
 
     subgraph MEM ["_artifacts/ — SHARED MEMORY (you own it)"]
         INDEX["INDEX.md (session ledger)"]
-        STORE["_home/ and (project)/\nactive-context.md + session folders"]
+        STORE["_main/ and (project)/ and opencode/\nactive-context.md + session folders"]
     end
 
     DOCS["_docs/\nmaster-implementation-plan.md\nNEW: workspace-standard.md"]
@@ -97,7 +97,7 @@ flowchart LR
 ```mermaid
 flowchart TD
     REQ["Task arrives"] --> RES["1. Research (read-only)"]
-    RES --> PW["2. Write implementation_plan.md\npick bucket: _home OR the project changed"]
+    RES --> PW["2. Write implementation_plan.md\npick bucket by where you work FROM: _main OR the project"]
     PW --> GATE{"3. STOP — did Daniel say 'approved'?"}
     GATE -- "No" --> WAIT["wait / revise (no file edits)"]
     GATE -- "Yes" --> EX["4. Execute with live TodoWrite"]
@@ -111,7 +111,8 @@ flowchart TD
 **Artifact folder naming (the org scheme):**
 - Random task: `_artifacts/(workspace)/(YYYY-MM-DD)_(slug)/`
 - Story: `_artifacts/(workspace)/(epic)/(story)/`  — epic folder houses all its stories
-- Bucket = the workspace the work primarily changes; `_home` for cross-project/home-base work.
+- Bucket = decided by **where you work FROM** (your cwd): the project's bucket for project work, `_main` for
+  home-base/cross-project work. Create the bucket/epic folder if missing. opencode mirrors this under `opencode/`.
 
 ---
 

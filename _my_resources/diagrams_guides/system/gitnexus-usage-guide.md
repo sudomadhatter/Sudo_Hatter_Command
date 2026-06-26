@@ -2,14 +2,14 @@
 
 **What it is:** a *code knowledge graph* for your repos that Claude Code can query **live** while we work. It reads your source with a deterministic parser (tree‑sitter — no LLM guessing), builds a graph of every symbol and how they connect (calls, imports, inherits), and serves it to me through one MCP server. When you ask "what breaks if I change this?", I get a real answer from the graph instead of guessing from a few greps.
 
-**Status:** adopted and live as of 2026‑06‑25. Indexed repos: **`AGY_AVIATIONCHAT`**, **`RAG_Pipeline_AC`** (the ingestion pipeline), and **`SUDO_COMMAND`** (the home‑base command center — added 2026‑06‑25). Validated in the spike at `_artifacts/_home/2026-06-24_gitnexus-adoption-spike/`.
+**Status:** adopted and live as of 2026‑06‑25. Indexed repos: **`AGY_AVIATIONCHAT`**, **`RAG_Pipeline_AC`** (the ingestion pipeline), and **`SUDO_COMMAND`** (the home‑base command center — added 2026‑06‑25). Validated in the spike at `_artifacts/_main/2026-06-24_gitnexus-adoption-spike/`.
 
 > **`SUDO_COMMAND` = the command center itself.** It indexes ALL of `.agents/` — rules · workflows · commands · skills · scripts (~17k nodes; 14 top‑level rules, 3 top‑level workflows). This is "the one everything points to," NOT the pointer/adapter copies (`.claude/`/`.opencode/` mirrors are excluded by construction — only `.agents/` is indexed). GitNexus hard‑skips dot‑folders, so the index is **rooted directly at `.agents/`** (`--skip-git`), which bypasses the skip.
 > - **Caveat 1:** `--skip-git` disables commit‑staleness tracking → **re‑index manually after you change any rule/workflow.**
 > - **Caveat 2:** GitNexus extracts *headings*, not doc cross‑references, from markdown — so `impact`/`context`/`trace` give few edges *between* rule/workflow `.md` files. The graph is strong on the `.py`/`.ps1` scripts, thin on the prose wiring. For "what references what" in the toolkit, read/grep the files.
 > - (An earlier thin "portfolio map" view — projects as nodes — was tried and **dropped** in favor of this single command‑center index named `SUDO_COMMAND`.)
 >
-> Full record: `_artifacts/_home/2026-06-25_home-base-maps-gitnexus-opentasks/`.
+> Full record: `_artifacts/_main/2026-06-25_home-base-maps-gitnexus-opentasks/`.
 
 **The one rule to remember:** GitNexus is a **disposable accelerator, never a source of truth.** Your markdown maps, AGENTS.md, and the code itself are canonical. If GitNexus vanished tomorrow, nothing breaks — you'd just lose a fast lookup. (This is the "Tier‑2" idea below.)
 
@@ -135,4 +135,4 @@ GitNexus is **PolyForm Noncommercial**. Your call (2026‑06‑24): index Aviati
 - **Trust the code and the maps over the graph, always.**
 
 ---
-*Source of truth for the adoption decision, evidence, and findings: `_artifacts/_home/2026-06-24_gitnexus-adoption-spike/` (implementation_plan.md + walkthrough.md). Memory: `tooling-gitnexus-shannon-tracks`.*
+*Source of truth for the adoption decision, evidence, and findings: `_artifacts/_main/2026-06-24_gitnexus-adoption-spike/` (implementation_plan.md + walkthrough.md). Memory: `tooling-gitnexus-shannon-tracks`.*

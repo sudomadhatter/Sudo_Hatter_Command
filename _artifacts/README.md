@@ -4,13 +4,16 @@ Plans, walkthroughs, and continuity for work done **from the home base**. The se
 [`INDEX.md`](./INDEX.md) (placement rules live in its header); the full model is `_docs/workspace-standard.md`;
 the plan-first protocol is `.agents/rules/artifacts-always-first.md`.
 
-## Where a session folder goes — by where you WORK FROM
+## Where a session folder goes — three rules, by where you WORK FROM
 The deciding factor is your **cwd**, not only what the work is about (full rules → the [`INDEX.md`](./INDEX.md) header):
-- **From the home base** (cwd = `Sudo_Hatter_Command/`) → **here**: project work → a per-project bucket
-  `_artifacts/<project>/…` (the bucket name = the `Projects/<name>/` folder); home-base / cross-project work →
-  `_artifacts/_home/…`. Either way, log a row in `INDEX.md`.
+1. **Project work** → a per-project bucket `_artifacts/<project>/…` (bucket name = the `Projects/<name>/` folder).
+   **Create the bucket if it isn't there yet; otherwise reuse it.**
+2. **Main / home-base / cross-project work** → `_artifacts/_main/…` (formerly `_home`).
+3. **Stories** → nest under the parent **epic folder** `<epic>/<story>/` (create the epic folder if missing).
+- **From the home base** (cwd = `Sudo_Hatter_Command/`) → **here**, per rules 1–3; log a row in `INDEX.md`.
 - **From inside a project** (cwd = `Projects/<name>/`) → that project's own `Projects/<name>/_artifacts/` and its
-  own `active-context.md` / `INDEX.md` (follow its rules — not this ledger).
+  own `active-context.md` / `INDEX.md` (follow its rules — not this ledger). No `_main` inside a project.
+- **opencode** writes under [`opencode/`](./opencode/README.md), applying the same three rules inside it.
 - **Finding history:** look in BOTH the home-base bucket `_artifacts/<project>/` and the project-local one.
 
 ## How to structure the folder
@@ -28,4 +31,4 @@ The deciding factor is your **cwd**, not only what the work is about (full rules
 | `code-review.md` / `self-audit-stress-test.md` / `bug-list.md` | when those run |
 
 **Continuity:** `active-context.md` is the pickup/handoff brief for that location —
-`_artifacts/<project>/active-context.md` (a project worked on from here) or `_artifacts/_home/active-context.md`.
+`_artifacts/<project>/active-context.md` (a project worked on from here) or `_artifacts/_main/active-context.md`.

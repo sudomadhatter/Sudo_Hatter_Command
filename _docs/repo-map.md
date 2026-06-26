@@ -13,7 +13,7 @@
 | The actual projects (each its own git repo + own repo-map) | `Projects/<name>/` → read that project's `docs/repo-map.md` |
 | Master toolkit (single source of authorship) | `.agents/` — rules · commands · skills · workflows · bmad · scripts · templates |
 | Synced engine mirrors (so `/commands` + skills resolve here) | `.claude/`, `.opencode/` |
-| Shared memory (plans · walkthroughs · handoffs · ledger) | `_artifacts/` (`_home/` = home-base work; per-project history lives in each project) |
+| Shared memory (plans · walkthroughs · handoffs · ledger) | `_artifacts/` (`_main/` = home-base work; `<project>/` = per-project; `opencode/` = opencode's mirror) |
 | Home-base docs (this map · workspace standard · master plan) | `_docs/` |
 | How to add / maintain workspaces (`/new-project`, `/sync-agents`) | `_system/` |
 | Model-agnostic proof the routing works | `_routing-canary/` |

@@ -7,11 +7,13 @@ activation: Always On
 # Artifacts — Always First
 
 > **Shared memory.** Artifacts go **where you work FROM** (your cwd). **From the home base** → home-base
-> `_artifacts/`: project work → a per-project bucket `_artifacts/<project>/…`; home-base / cross-project work →
-> `_artifacts/_home/…`; either way append a row to `_artifacts/INDEX.md`. **From inside a project**
-> (`Projects/<name>/` is cwd) → that project's own `_artifacts/` + its `active-context.md`/`INDEX.md` (its rules,
-> not this ledger). The store is written by ALL tools — Claude, opencode, Antigravity/Gemini — so any agent can
-> read past chats. Full model → `_docs/workspace-standard.md`.
+> `_artifacts/`: project work → a per-project bucket `_artifacts/<project>/…` (**create it if missing**, else
+> reuse); main / home-base / cross-project work → `_artifacts/_main/…` (formerly `_home`); either way append a
+> row to `_artifacts/INDEX.md`. **From inside a project** (`Projects/<name>/` is cwd) → that project's own
+> `_artifacts/` + its `active-context.md`/`INDEX.md` (its rules, not this ledger). The store is written by ALL
+> tools — Claude, opencode, Antigravity/Gemini — so any agent can read past chats. **opencode** writes under its
+> own `_artifacts/opencode/` namespace, applying the **same rules inside it** (`opencode/<project>/`,
+> `opencode/_main/`, `opencode/<project>/<epic>/<story>/`). Full model → `_docs/workspace-standard.md`.
 
 ## The Lean Artifact Set
 
@@ -69,10 +71,14 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
 
 **Pick the location by where you work FROM (your cwd):**
 - **From the home base** (`Sudo_Hatter_Command/` is cwd) → home-base `_artifacts/`: project work → a per-project
-  bucket `_artifacts/<project-folder-name>/…`; home-base / cross-project work (the standard, master `.agents/`,
-  the router, lobby wiring) → `_artifacts/_home/…`. Append a row to `_artifacts/INDEX.md`.
+  bucket `_artifacts/<project-folder-name>/…` (**create the bucket if it isn't there yet, else reuse it**);
+  main / home-base / cross-project work (the standard, master `.agents/`, the router, lobby wiring) →
+  `_artifacts/_main/…` (formerly `_home`). Append a row to `_artifacts/INDEX.md`.
 - **From inside a project** (`Projects/<name>/` is cwd) → project-local `Projects/<name>/_artifacts/…` + that
-  project's own `active-context.md`/`INDEX.md` (follow its rules, not the home-base ledger).
+  project's own `active-context.md`/`INDEX.md` (follow its rules, not the home-base ledger). There is no `_main`
+  inside a project — every task there is that project's work.
+- **opencode** writes under `_artifacts/opencode/` and applies these same rules inside it: project →
+  `opencode/<project>/`, main → `opencode/_main/`, story → `opencode/<project>/<epic>/<story>/`.
 
 **Then name the folder by task type (in either location):**
 - **Random task** → `<YYYY-MM-DD>_<slug>/` — date FIRST, slug LAST so they sort chronologically

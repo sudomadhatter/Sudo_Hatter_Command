@@ -153,8 +153,9 @@ flowchart TD
 ```
 
 **Artifact organization:** random task -> `_artifacts/(workspace)/(YYYY-MM-DD)_(slug)/`; story ->
-`_artifacts/(workspace)/(epic)/(story)/` (epic folder houses its stories). Bucket = the workspace the work
-primarily changes; `_home` for cross-project work.
+`_artifacts/(workspace)/(epic)/(story)/` (epic folder houses its stories — create it if missing). Bucket =
+decided by **where you work FROM** (your cwd): the project's bucket for project work, `_main` for
+home-base/cross-project work. opencode mirrors the same rules under `_artifacts/opencode/`.
 
 ---
 

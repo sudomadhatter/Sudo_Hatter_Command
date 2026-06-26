@@ -114,14 +114,18 @@ The deciding factor is the workspace you have open (your cwd), not only what the
   - **project work** → a per-project bucket `_artifacts/<project-folder-name>/<YYYY-MM-DD>_<slug>/`
     (e.g. `_artifacts/aviationChat-AGY/`, `_artifacts/clean-bmad-workspace/`; the bucket name = the
     `Projects/<name>/` folder name).
-  - **home-base / cross-project work** (routing, the `.agents/` toolkit, multi-project) →
-    `_artifacts/_home/<YYYY-MM-DD>_<slug>/`.
+  - **main / home-base / cross-project work** (routing, the `.agents/` toolkit, multi-project) →
+    `_artifacts/_main/<YYYY-MM-DD>_<slug>/` (formerly `_home`).
+  - For project work, **create the per-project bucket if it isn't there yet; otherwise reuse it.**
   - Either way, log a row in the home-base `_artifacts/INDEX.md`.
 - **Working from inside a project** (`Projects/<name>/` is your cwd) → **follow THAT project's rules**:
   project-local `Projects/<name>/_artifacts/`, with the project's own `_artifacts/active-context.md`
-  (+ `_artifacts/INDEX.md`). The project owns this history so it travels with the repo.
+  (+ `_artifacts/INDEX.md`). The project owns this history so it travels with the repo. (There is no `_main`
+  inside a project — every task there is that project's work.)
+- **opencode** writes under its own `_artifacts/opencode/` namespace and applies the **same rules inside it**:
+  `opencode/<project>/`, `opencode/_main/`, `opencode/<project>/<epic>/<story>/`.
 - Within either location: **random task** → `<YYYY-MM-DD>_<slug>/`; **story** → `<epic>/<story>/` (epic folder
-  houses its stories); retired history → `_archived/`.
+  houses its stories — create the epic folder if missing); retired history → `_archived/`.
 - **Finding a project's history:** look in BOTH the home-base bucket `_artifacts/<project>/` (sessions run
   from the home base) AND the project-local `Projects/<name>/_artifacts/` (sessions run inside the project).
 
