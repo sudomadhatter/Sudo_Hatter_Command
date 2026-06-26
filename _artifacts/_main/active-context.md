@@ -2,7 +2,16 @@
 
 ## 1. PRIME STATE
 Current workspace: `_main` (lobby at `C:\Sudo_Hatter_Command`; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-06-26
-**2026-06-26 (latest): owned doc-wiring graph extractor built.** Filled the prose "what references what" layer
+**2026-06-26 (latest): artifact-placement standard codified as 3 rules + `_home`→`_main` rename.** (1) project
+work → `_artifacts/<project>/` (create-if-missing), (2) main/cross-project → `_artifacts/_main/` (renamed from
+`_home` via `git mv`), (3) stories → under the parent epic folder. **opencode** mirrors all 3 inside its own
+`_artifacts/opencode/` namespace. Updated every live standard doc (`AGENTS.md` §5/§7, master
+`artifacts-always-first.md`, `workspace-standard.md`, `repo-map.md`, `INDEX.md`) + the SessionStart hook path +
+all artifact READMEs (added `_main/` + `clean-bmad-workspace/` ones). Re-vendored the standard into aviationChat-AGY
++ clean-bmad (aviationChat's copy was stale pre-work-from-cwd — re-vendor fixed it). Fixed the 3 `_my_resources/`
+diagrams. Zero live `_home` refs remain. Session: `_artifacts/_main/2026-06-26_artifact-placement-standard/`
+(UNCOMMITTED — home + both project repos; cmds in walkthrough).
+**2026-06-26: owned doc-wiring graph extractor built.** Filled the prose "what references what" layer
 GitNexus is blind to (it extracts headings, not doc refs) — surfaced when comparing GitNexus (= our own
 `gitnexus@1.6.8`, abhigyanpatwari upstream — we're on latest) vs **graphify** (safishamsi, MIT). Chose owned /
 deterministic / no-LLM / $0 over graphify's LLM layer. New `.agents/scripts/generate_doc_graph.py` (mirrors
