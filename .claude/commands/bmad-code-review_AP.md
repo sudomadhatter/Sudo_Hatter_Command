@@ -1,5 +1,6 @@
 ---
 description: Autopilot (headless) Review+Fix command — review the implementation in the shared autopilot run folder, apply fixes, and hand to Daniel. Modeled off /bmad-code-review but tuned for agent-to-agent handoff. NOT for interactive use; the autopilot orchestrator invokes it.
+platforms: [claude]
 ---
 
 # /bmad-code-review_AP — Autopilot Review + Fix (Murat)

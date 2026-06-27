@@ -122,6 +122,31 @@ def continuity_briefs(root, is_home, is_bmad):
     return found
 
 
+def default_regen_ignore(is_home, is_bmad):
+    """The regen-comparison ignore set, matched PER WORKSPACE (must mirror that map header's documented
+    command). Home base ignores Projects+_my_resources; a project ignores _my_resources and, if BMAD, _bmad.
+    `--ignore` overrides this for every workspace in the run."""
+    if is_home:
+        return DEFAULT_REGEN_IGNORE                     # "Projects,_my_resources"
+    parts = ["_my_resources"]
+    if is_bmad:
+        parts.append("_bmad")
+    return ",".join(parts)
+
+
+def fan_out_targets(home_root):
+    """Home-base fan-out worklist: the lobby itself FIRST, then every `Projects/<name>` that is an actual
+    workspace (marker = it carries an `AGENTS.md`). Non-workspace folders (no brain) are returned separately
+    so the caller can print a one-line skip instead of linting junk. Returns (targets, skipped)."""
+    targets = [home_root]
+    skipped = []
+    pdir = home_root / "Projects"
+    if pdir.is_dir():
+        for child in sorted((p for p in pdir.iterdir() if p.is_dir()), key=lambda p: p.name):
+            (targets if (child / "AGENTS.md").exists() else skipped).append(child)
+    return targets, skipped
+
+
 # --- check 1: AUTO-block freshness -------------------------------------------------------------------
 def declared_mode(map_text):
     m = re.search(r"mode=(content|auto)", map_text)
@@ -313,34 +338,22 @@ def check_conformance(root, is_home, is_bmad, map_path):
     return [f"NOT conformant - missing {m}" for m in missing]
 
 
-def main():
-    here = Path(__file__).resolve()
-    # Workspace root, robust to vendored location: the script lives at `<root>/.agents/scripts/` (master +
-    # vendored) or a legacy `<root>/scripts/`. Strip the scripts dir, and the `.agents` dir if present, to
-    # land on the root — so the SAME file works from either location (decision: byte-identical synced copies).
-    _scripts = here.parent
-    default_root = _scripts.parent.parent if _scripts.parent.name == ".agents" else _scripts.parent
-    ap = argparse.ArgumentParser(description="Drift linter for repo-map + INDEX.md (any conformant workspace)")
-    ap.add_argument("--root", default=str(default_root), help="workspace to lint (lobby or a Projects/<name>)")
-    ap.add_argument("--ignore", default=DEFAULT_REGEN_IGNORE, help="extra dirs for the regen comparison")
-    ap.add_argument("--set-anchor", action="store_true", help="record HEAD as the reconciled baseline and exit")
-    args = ap.parse_args()
-    root = Path(args.root).resolve()
-
+def lint_one(root, ignore_override=None):
+    """Run all six checks + the hygiene nag for ONE workspace, print its section, and return has_drift (bool).
+    The fan-out loop calls this once per workspace; a single-workspace run calls it once. The final verdict
+    line is printed by main() (once, combined) so a fan-out shows one overall pass/fail."""
     is_home, is_bmad = detect_mode(root)
     map_path = find_map_path(root)
     state_path = map_path.parent / STATE_BASENAME
     mode_label = "home base" if is_home else ("BMAD project" if is_bmad else "project")
-
-    if args.set_anchor:
-        sys.exit(set_anchor(root, state_path))
+    ignore = ignore_override if ignore_override is not None else default_regen_ignore(is_home, is_bmad)
 
     top_level = top_level_names(root)
     drift = {}
 
     if map_path.exists():
         map_text = map_path.read_text(encoding="utf-8")
-        drift["AUTO block freshness"], _ = check_auto_block(root, map_path, args.ignore)
+        drift["AUTO block freshness"], _ = check_auto_block(root, map_path, ignore)
         # path check on the CURATED block only (the AUTO block is machine-generated, trusted)
         curated = map_text.split(grm.AUTO_START)[0] if grm.AUTO_START in map_text else map_text
         drift["repo-map paths"] = [f"repo-map.md (CURATED): dead path `{d}`"
@@ -361,8 +374,8 @@ def main():
     git_notes, _ = check_git(root, state_path)
     hygiene = check_context_hygiene(root, is_home, is_bmad)
 
-    # ---- report ----
-    print("=" * 78)
+    # ---- report (one section per workspace) ----
+    print("\n" + "=" * 78)
     print(f"MAP & INDEX DRIFT LINT  ({mode_label}: {root.name})")
     print("=" * 78)
     print("\n[git] change detection")
@@ -387,8 +400,59 @@ def main():
     else:
         print("  [ok] continuity brief + INDEX within the prune window")
 
+    return has_drift
+
+
+def main():
+    here = Path(__file__).resolve()
+    # Workspace root, robust to vendored location: the script lives at `<root>/.agents/scripts/` (master +
+    # vendored) or a legacy `<root>/scripts/`. Strip the scripts dir, and the `.agents` dir if present, to
+    # land on the root — so the SAME file works from either location (decision: byte-identical synced copies).
+    _scripts = here.parent
+    default_root = _scripts.parent.parent if _scripts.parent.name == ".agents" else _scripts.parent
+    ap = argparse.ArgumentParser(description="Drift linter for repo-map + INDEX.md (any conformant workspace)")
+    ap.add_argument("--root", default=str(default_root), help="workspace to lint (lobby or a Projects/<name>)")
+    ap.add_argument("--ignore", default=None, help="extra dirs for the regen comparison (default: auto per workspace)")
+    ap.add_argument("--all", action="store_true", dest="fan_out",
+                    help="home base: fan out across the lobby + every conformant Projects/<name> in one run")
+    ap.add_argument("--set-anchor", action="store_true", help="record HEAD as the reconciled baseline and exit")
+    args = ap.parse_args()
+    root = Path(args.root).resolve()
+    is_home, _ = detect_mode(root)
+
+    # Worklist: `--all` at a home base fans out (lobby first, then each conformant project); otherwise the
+    # single --root. `--all` outside a home base is a harmless no-op so the SAME command is safe everywhere.
+    if args.fan_out and is_home:
+        targets, skipped = fan_out_targets(root)
+    else:
+        targets, skipped = [root], []
+        if args.fan_out and not is_home:
+            print("(--all has no effect outside a home base; linting this single workspace)")
+
+    # --set-anchor honors the worklist: re-anchor the lobby + each project in one go (each is its own repo,
+    # so each gets its own .maps-state.json at its own docs dir).
+    if args.set_anchor:
+        rc = 0
+        for t in targets:
+            rc |= set_anchor(t, find_map_path(t).parent / STATE_BASENAME)
+        sys.exit(rc)
+
+    multi = len(targets) > 1
+    any_drift = False
+    for t in targets:
+        any_drift |= lint_one(t, args.ignore)
+    for s in skipped:
+        print(f"\n[skip] Projects/{s.name} — not a workspace (no AGENTS.md), nothing to reconcile")
+
+    if multi:
+        tail = f"FAN-OUT COMPLETE — {len(targets)} workspace(s) linted"
+        if skipped:
+            tail += f", {len(skipped)} skipped"
+        print("\n" + "=" * 78)
+        print(tail)
+
     print("\n" + "=" * 78)
-    if has_drift:
+    if any_drift:
         print("DRIFT FOUND - run /1_update-maps to reconcile (it supplies the prose a script can't).")
         sys.exit(1)
     print("All maps & INDEXes agree with disk. [ok]")

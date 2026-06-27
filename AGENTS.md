@@ -44,7 +44,7 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 | Navigation index | `_docs/repo-map.md` | the lobby's repo-map (curated header + auto body); drift-checked at SessionStart |
 | Routing canary | `_routing-canary/` | model-agnostic proof the routing works (Claude/opencode/Antigravity) |
 | System builder | `_system/` | how to add/maintain workspaces (`/new-project`, `/sync-agents`) |
-| Lobby tool dirs | `.claude/`, `.opencode/` | synced copies of the master so `/commands` + skills resolve here |
+| Lobby tool dirs | `.claude/`, `.opencode/` | synced copies of the master so `/commands` + skills resolve here. `/sync-agents` mirrors `.agents/commands/` to all three platforms (incl. the opencode + Antigravity machine-global caches); `platforms:` frontmatter limits a command's reach |
 | Projects | `Projects/<name>/` | the actual projects, each its own git repo |
 
 ## 5. NAMING CONVENTIONS  (this replaces a database)
@@ -101,4 +101,6 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 ## 8. PORTABILITY
 `AGENTS.md` is the universal contract; `CLAUDE.md` and `GEMINI.md` are one-line adapters that point
 here. Nothing model-specific lives in shared files — so Claude, opencode, and Antigravity all drive
-the same system, and your work is saved to **your** files, not a vendor's memory.
+the same system, and your work is saved to **your** files, not a vendor's memory. One canonical command
+set (`.agents/commands/`) mirrors to all three via `/sync-agents`; a command opts out of a platform with
+`platforms:` frontmatter (default = everywhere). Full model → `_docs/workspace-standard.md`.

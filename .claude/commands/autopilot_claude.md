@@ -1,5 +1,6 @@
 ---
 description: Autopilot Dev-Story Loop (v2, CLAUDE) - autonomous dev/QA team in TWO continuous chats (Dev plans+implements, QA audits+reviews+fixes). Resilient (retries transient errors), resumable (just re-run; finished stages auto-detect), human-in-the-loop (never crashes on agent output). CLAUDE-ONLY (needs the claude CLI). The /autopilot_opencode variant is a separate, opencode-native pipeline.
+platforms: [claude]
 ---
 
 # /autopilot_claude - Autonomous Story Pipeline (v2: two continuous teams)

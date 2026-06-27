@@ -2,7 +2,14 @@
 
 Router for `.agents/commands/`. **Scan to dispatch.** Each command is invoked as `/<name>` (or by
 natural-language intent) and carries its own frontmatter `description:`; this groups them by purpose.
-Synced into `.claude/commands/` + `.opencode/commands/` by `/sync-agents`.
+This is the **single canonical invocable set** — `/sync-agents` mirrors it to every platform: Claude
+(`.claude/commands/`), opencode (`.opencode/commands/` + global `~/.config/opencode/commands`), and
+Antigravity/Gemini (global `~/.gemini/antigravity/global_workflows` — it calls our commands "workflows").
+
+**Platform reach.** A command may add `platforms: [claude, opencode, antigravity]` to its frontmatter to
+limit where it syncs. **Absent = universal** (all three). Tagged today: `autopilot_claude`, `autopilot_mobile`,
+`bmad-dev-story_AP`, `1_self-audit-stress-test_AP`, `bmad-code-review_AP` → `[claude]`; `autopilot_opencode`
+→ `[opencode]`.
 
 | Group | Commands | Reach for it when… |
 |---|---|---|
@@ -15,5 +22,6 @@ Synced into `.claude/commands/` + `.opencode/commands/` by `/sync-agents`.
 | **System builder** (lobby) | `new-project` · `sync-agents` · `slash_command_updating` | scaffold a workspace, push the master toolkit into a target, or refresh global command caches. |
 | **Media** | `webm-alpha-video` | convert a green-screen MP4 to alpha WebM. |
 
-**Adding a command:** create `<name>.md` with a `description:` frontmatter stating when it fires, add it
-to the right group above, and re-run `/sync-agents`.
+**Adding a command:** create `<name>.md` with a `description:` frontmatter stating when it fires (add an
+optional `platforms:` line only if it's not universal), add it to the right group above, and re-run
+`/sync-agents` to propagate to all platforms + the global caches.

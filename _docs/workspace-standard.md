@@ -134,6 +134,27 @@ Formatting is one-time; upkeep is forever. Who does what, and when.
 - **Project-specific hard-stops** live in that project's local `constitution.project.md` — never by editing a
   vendored generic rule. This is the anti-fork rule that prevents the drift this whole standard exists to fix.
 
+### Command sync & platform reach — one master, three platforms
+The **single canonical invocable set is `.agents/commands/`**. It mirrors to every platform via one command,
+`/sync-agents` (engine: `.agents/scripts/sync-agents.ps1`) — there is no second sync tool to drift against.
+
+- **Surfaces it feeds.** Local tool dirs `.claude/{commands,skills}` + `.opencode/{commands,agent}`; and, on a
+  **lobby** sync, the two **machine-global** caches `~/.config/opencode/commands` and
+  `~/.gemini/antigravity/global_workflows`. (A project sync vendors `.agents/` and refreshes that project's
+  local dirs; it does **not** touch the globals — globals reflect the lobby's canonical set.)
+- **`commands/` vs `workflows/`.** `.agents/commands/` are the invocable `/slash` units that mirror out.
+  `.agents/workflows/` are **in-repo reference process-docs** read via routing tables — they are NOT pushed to
+  any command cache. *(Antigravity confusingly calls its invocable units "workflows," but our source is always
+  `commands/` — name-matching that to `.agents/workflows/` is the exact bug this rule prevents.)*
+- **Platform reach.** A command declares scope with frontmatter `platforms: [claude, opencode, antigravity]`.
+  **Absent = universal** (all three). The sync copies a command only to the platforms it lists, so a tool that
+  can't run it (e.g. `/autopilot_claude` needs the `claude` CLI) never appears in the wrong surface.
+- **Purge policy.** Local tool dirs purge only master-managed-but-now-ineligible commands (a project's own
+  commands are left alone). Global caches are **mirror-exact** — stale ghosts purged — **except `bmad-*`**,
+  which BMAD installs globally and is never ours to delete.
+- **Gemini is global-only.** Antigravity has no project-local command dir; it reads from the global cache. That
+  asymmetry is a platform constraint, not a defect — the same canonical set still reaches it.
+
 ### Git — one policy
 Never run `git commit`/`git push` yourself; the `walkthrough.md` "Your Actions" hands Daniel the exact command.
 The only exception is when Daniel explicitly delegates a specific commit/push in the moment. Full rule →

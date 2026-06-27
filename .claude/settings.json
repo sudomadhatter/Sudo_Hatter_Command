@@ -14,7 +14,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/require-push-approval.py",
+            "command": "powershell -NoProfile -Command \"python (Join-Path $env:CLAUDE_PROJECT_DIR '.claude/hooks/require-push-approval.py')\"",
             "timeout": 10
           }
         ]

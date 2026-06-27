@@ -1,5 +1,6 @@
 ---
 description: Mobile-native autopilot — the web/cloud port of /autopilot_claude. Runs the same 4-stage Dev/QA story pipeline (Plan -> Audit -> Implement -> Review+Fix) on the Workflow engine instead of PowerShell, so it works on Claude Code web + mobile. Each stage is a fresh-context Opus subagent at high reasoning effort. Never commits, never marks the story done.
+platforms: [claude]
 ---
 
 # /autopilot_mobile — Autonomous Story Pipeline (cloud/mobile)

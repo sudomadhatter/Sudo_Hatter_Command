@@ -1,14 +1,26 @@
 ---
-description: Sync the master .agents toolkit into a target's tool dirs (lobby or a project).
+description: Sync the master .agents toolkit into every command surface — local tool dirs (lobby or a project) AND the opencode + Antigravity global caches. One command, three platforms.
 ---
 
 # /sync-agents
 
-Push the master `.agents/` toolkit (commands, skills, opencode-agents) into a target's `.claude/`
-and `.opencode/` dirs. For a project target it also vendors the whole `.agents/` so the repo is
-clone-safe. **Authorship stays single-source — always edit `.agents/`, never the copies.**
+Push the master `.agents/` toolkit into every place a command/skill can resolve. The canonical invocable set
+is `.agents/commands/` and it mirrors to **all three platforms** (Claude, opencode, Antigravity/Gemini).
+**Authorship stays single-source — always edit `.agents/`, never the copies.**
 
-Argument (`$ARGUMENTS`): optional target path. No argument = sync the home-base lobby (root).
+What it touches:
+- **Local tool dirs** — `.claude/{commands,skills}`, `.opencode/{commands,agent}`.
+- **Machine-global caches** (on a LOBBY sync) — `~/.config/opencode/commands` and
+  `~/.gemini/antigravity/global_workflows`, so opencode + Antigravity see the same set Claude does.
+- **Project target** — also vendors the whole `.agents/` so the repo is clone-safe. (A project sync does NOT
+  touch the global caches; globals reflect the lobby's canonical set.)
+
+**Platform reach.** A command may declare `platforms: [claude, opencode, antigravity]` in its frontmatter.
+**Absent = universal** (all three). The sync copies a command only to the platforms it lists — e.g.
+`/autopilot_claude` (claude-only) never lands in the opencode/gemini surfaces. Global caches are
+**mirror-exact** (stale ghosts purged) except `bmad-*` (BMAD's own global install is preserved).
+
+Argument (`$ARGUMENTS`): optional target path. No argument = sync the home-base lobby (root) + globals.
 
 Run (PowerShell):
 
@@ -18,5 +30,9 @@ Run (PowerShell):
 
 (If `$ARGUMENTS` is empty, run `& ".agents/scripts/sync-agents.ps1"` with no `-Target`.)
 
-After it runs, report which dirs were updated (`.claude/commands`, `.claude/skills`,
-`.opencode/commands`, `.opencode/agent`, and — for a project — the vendored `.agents/`).
+Switches: `-GlobalsOnly` (refresh only the two global caches — what `/slash_command_updating` delegates to) ·
+`-NoGlobals` (local tool dirs only).
+
+After it runs, report the per-surface counts it prints (`.claude/commands`, `.opencode/commands`, opencode
+global, antigravity global, and — for a project — the vendored `.agents/`). On a globals refresh, remind Daniel
+to **restart opencode** so the global commands are picked up in other projects.

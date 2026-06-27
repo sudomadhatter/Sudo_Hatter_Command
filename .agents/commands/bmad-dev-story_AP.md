@@ -1,5 +1,6 @@
 ---
 description: Autopilot (headless) Dev command — PLAN or IMPLEMENT a story inside the shared autopilot run folder. Modeled off /bmad-dev-story but tuned for agent-to-agent handoff. NOT for interactive use; the autopilot orchestrator invokes it.
+platforms: [claude]
 ---
 
 # /bmad-dev-story_AP — Autopilot Dev (Amelia)

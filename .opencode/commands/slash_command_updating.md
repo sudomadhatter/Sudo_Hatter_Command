@@ -1,55 +1,30 @@
 ---
-description: Sync project slash commands to both the Antigravity global cache AND the opencode global commands directory. Purges ghosts; copies fresh.
+description: Refresh the machine-global command caches (Antigravity global_workflows + opencode global commands) from the canonical master. Thin alias for `/sync-agents -GlobalsOnly`; purges ghosts, preserves bmad-*.
 ---
 
-# /slash_command_updating — Sync Slash Commands (Antigravity + opencode)
+# /slash_command_updating — refresh the global command caches
 
-This is an **adapted** version of the Antigravity workflow at @.agents/workflows/slash_command_updating.md. It now also syncs the opencode global commands directory.
+**This is now a thin alias.** The global caches are refreshed by the one unified engine, `sync-agents.ps1`
+(see `/sync-agents`). This command runs the **globals-only** pass — the canonical `.agents/commands/` set
+(the same 36 Claude uses) is mirror-synced into:
 
-## Execute this PowerShell unconditionally
+- `~/.gemini/antigravity/global_workflows` (Antigravity calls our commands "workflows")
+- `~/.config/opencode/commands`
+
+Mirror-exact: stale ghosts are purged, `bmad-*` (BMAD's own global install) is preserved, and per-command
+`platforms:` frontmatter is honored (a claude-only command is not pushed to the gemini/opencode caches).
+
+## Run (PowerShell)
 
 ```powershell
-# ---- Paths ----
-$ProjectRoot           = "$env:CD"
-$LocalAntigravityWf    = "$ProjectRoot\.agents\workflows"
-$LocalOpencodeCmds     = "$ProjectRoot\.opencode\commands"
-$GlobalAntigravityWf   = "$env:USERPROFILE\.gemini\antigravity\global_workflows"
-$GlobalOpencodeCmds    = "$env:USERPROFILE\.config\opencode\commands"
-
-# Ensure global dirs exist
-New-Item -ItemType Directory -Force -Path $GlobalAntigravityWf | Out-Null
-New-Item -ItemType Directory -Force -Path $GlobalOpencodeCmds  | Out-Null
-
-# ==== 1. Antigravity sync (legacy bug-fix logic preserved) ====
-$LocalAgFiles = Get-ChildItem -Path $LocalAntigravityWf -Filter "*.md" -ErrorAction SilentlyContinue |
-                Select-Object -ExpandProperty Name
-Get-ChildItem -Path $GlobalAntigravityWf -Filter "*.md" -ErrorAction SilentlyContinue | Where-Object {
-    ($_.Name -notmatch '^bmad-') -and ($LocalAgFiles -notcontains $_.Name)
-} | Remove-Item -Force
-if ($LocalAgFiles) {
-    Copy-Item -Path "$LocalAntigravityWf\*.md" -Destination $GlobalAntigravityWf -Force
-}
-
-# ==== 2. opencode sync ====
-$LocalOcFiles = Get-ChildItem -Path $LocalOpencodeCmds -Filter "*.md" -ErrorAction SilentlyContinue |
-                Select-Object -ExpandProperty Name
-# Purge global opencode ghosts that are not in the project (no bmad-* exclusion needed —
-# all opencode bmad commands are project-canonical in .opencode/commands/)
-Get-ChildItem -Path $GlobalOpencodeCmds -Filter "*.md" -ErrorAction SilentlyContinue | Where-Object {
-    $LocalOcFiles -notcontains $_.Name
-} | Remove-Item -Force
-if ($LocalOcFiles) {
-    Copy-Item -Path "$LocalOpencodeCmds\*.md" -Destination $GlobalOpencodeCmds -Force
-}
-
-Write-Host "✅ Antigravity workflows: $($LocalAgFiles.Count) synced → $GlobalAntigravityWf"
-Write-Host "✅ opencode commands:     $($LocalOcFiles.Count) synced → $GlobalOpencodeCmds"
-Write-Host "🧹 Ghosts purged from both global directories."
+& ".agents/scripts/sync-agents.ps1" -GlobalsOnly
 ```
 
-**Notes for opencode execution:**
-- `external_directory` permission allows `~/.config/opencode/**` so the opencode global copies write through. Antigravity's `.gemini/antigravity/global_workflows` will trigger an `external_directory: ask` prompt — confirm to Don.
-- After running, remind Don to **restart opencode** so the global config + commands are picked up if he opens another project.
-- This command is also runnable directly: `pwsh scripts/mirror-opencode-commands.ps1` (for the opencode half only).
+**Notes:**
+- Writing to `~/.config/opencode/**` and `~/.gemini/antigravity/**` may trigger an `external_directory: ask`
+  prompt under opencode/Antigravity — confirm it.
+- After running, **restart opencode** so the refreshed global config + commands are picked up in other projects.
+- Prefer plain `/sync-agents` (no args) when you also want the lobby's local `.claude/`/`.opencode/` dirs
+  refreshed in the same pass — it does both the locals and the globals.
 
 Optional additional input: $ARGUMENTS

@@ -1,5 +1,6 @@
 ---
 description: "[STUB — not yet implemented] Autopilot Dev-Story Loop, opencode-native variant. The opencode-native sibling of /autopilot_claude — a separate pipeline that drives opencode (not headless `claude -p`) for the same 4-stage Dev/QA relay (Plan → Audit → Implement → Review+Fix). Does NOT exist yet; this file is the spec/placeholder."
+platforms: [opencode]
 ---
 
 # /autopilot_opencode — Autonomous Story Pipeline (opencode-native) — **STUB**
