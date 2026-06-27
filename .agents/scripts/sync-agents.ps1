@@ -5,9 +5,9 @@
 
 .DESCRIPTION
   Single source of authorship = <home>\.agents. The canonical invocable set is .agents\commands\ — it mirrors
-  to ALL three platforms. This copies commands / skills / opencode-agents into the target's .claude and
-  .opencode dirs (Claude /commands + skills resolve there) and, for a LOBBY sync, also refreshes the two
-  machine-global caches so opencode and Antigravity see the same set Claude does.
+  to ALL three platforms. This copies commands / skills / hooks / opencode-agents into the target's .claude
+  and .opencode dirs (Claude /commands + skills + hooks resolve there) and, for a LOBBY sync, also refreshes
+  the two machine-global caches so opencode and Antigravity see the same set Claude does.
 
   PLATFORM REACH. A command may declare its reach with frontmatter `platforms: [claude, opencode, antigravity]`.
   Absent = universal (all three). The sync copies a command only to the platforms it lists, so e.g.
@@ -16,7 +16,7 @@
   PURGE POLICY.
     - Local tool dirs (.claude, .opencode): copy eligible commands; purge only commands that ARE master-managed
       but are no longer eligible for that platform. Files the master doesn't own (a project's own commands) are
-      left alone. Skills / opencode-agents are an additive robocopy (no delete).
+      left alone. Skills / hooks / opencode-agents are an additive robocopy (no delete).
     - Global caches: MIRROR-EXACT — copy eligible, purge anything not eligible, EXCEPT `bmad-*` (BMAD installs
       its own global agents/workflows; never ours to delete).
 
@@ -120,6 +120,7 @@ if (-not $GlobalsOnly) {
 
   $cl = Sync-CommandDir $cmdDir (Join-Path $Target ".claude\commands")  "claude"
   Sync-Dir (Join-Path $src "skills")          (Join-Path $Target ".claude\skills")
+  Sync-Dir (Join-Path $src "hooks")           (Join-Path $Target ".claude\hooks")
   $oc = Sync-CommandDir $cmdDir (Join-Path $Target ".opencode\commands") "opencode"
   Sync-Dir (Join-Path $src "opencode-agents") (Join-Path $Target ".opencode\agent")
 

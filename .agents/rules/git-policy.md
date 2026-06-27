@@ -9,6 +9,29 @@ description: "Git default: NEVER run commit/push yourself — hand Daniel the ex
 > close-out" stance — there is only one policy now: **you hand Daniel the command** unless he
 > explicitly delegates a specific commit/push to you.
 
+## Branch model — `main_debug` → `main` (THE dev standard)
+
+> The one source of truth for the branch model. Every workspace (home base + every project) uses it;
+> per-workspace `AGENTS.md` GATES sections point here rather than restating it.
+
+- **`main` is LIVE PRODUCTION — never work on it, never auto-target it.** It stays deployable.
+- **All day-to-day work flows through `main_debug`** (the shared integration branch): a `claude/*`
+  session branch → PR → **`main_debug`**. This is the "one place to send everything."
+- **Promotion `main_debug` → `main` is Daniel's deliberate, manual decision** — done only when he is
+  happy and confident it won't break production. An agent never promotes to `main` on its own.
+
+### Write-approval gate — free on your OWN branch; the button on the owner's
+The gate keys on **where a write lands**, not the act of pushing:
+- **FREE:** push freely to your own `claude/*` session branch (loops/retries fine); open/update PRs.
+- **APPROVAL (per-action, never carries forward):** any write to an **owner branch** —
+  `main_debug` or `main` — i.e. a direct `git push` to either, or merging a PR into them. `main` is
+  **extra-protected**: never push/PR/merge to it directly; reach it only via the manual promotion above.
+- **Enforcement:** the `require-push-approval.py` PreToolUse hook (canonical source `.agents/hooks/`,
+  deployed to every `.claude/hooks/` by `/sync-agents`) forces the approval prompt on any `git push`
+  targeting `main_debug`/`main` however it's wrapped; `merge_pull_request` (+ GitHub write tools) is
+  gated in `.claude/settings.json`. Approve a merge into `main_debug` by invoking `/merge_main_debug` —
+  invoking it IS the per-action approval.
+
 ## Default — you do NOT run git
 
 **Never run `git commit` or `git push` yourself.** Instead, the `walkthrough.md` "Your Actions"

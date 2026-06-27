@@ -11,6 +11,14 @@ If what you need isn't here, GO BACK to the home-base root `../../router.md` (or
 - `.agents/rules/constitution.md` + `.agents/rules/karpathy-guidelines.md`.
 - Project-specific hard stops: `constitution.project.md` (create it only if this project needs any).
 
+## GATES (consult before acting)
+- **GIT — the dev standard is `main_debug` → `main`** (canonical → `.agents/rules/git-policy.md` § "Branch
+  model"). `main` is LIVE PRODUCTION — never work on it; all dev flows `claude/*` → PR → **`main_debug`**;
+  promoting to `main` is Daniel's deliberate manual call. Agents **never** run `git commit`/`push` themselves
+  unless Daniel delegates it in the moment. The push-approval hook (`.claude/hooks/`) gates `main_debug`/`main`.
+- **ROUTING + RISK:** confirm the target before touching files; never delete/overwrite/publish without an
+  explicit go-ahead. Full hard stops → `.agents/rules/constitution.md`.
+
 ## ROUTING TABLE  (the most important thing — task → read these / skip these / skills)
 | Task | Read these | Skip these | Skills |
 |---|---|---|---|

@@ -1,24 +1,29 @@
 ---
-description: Reconcile the home-base repo map and every INDEX.md against what's actually on disk. Regenerates _docs/repo-map.md (mode-preserving), drift-checks the curated tables, audits each INDEX, then reports for approval before editing. Read-mostly; never commits.
+description: From the home base, fan out and reconcile the lobby + every conformant project against disk — repo-map (mode-preserving), every INDEX.md, the context-hygiene prune, and the open-tasks list (todo_list.md → ## Open Work). Reports for approval before editing; read-mostly, never commits. Inside a project it reconciles just that one workspace, unchanged.
 ---
 
-# /1_update-maps — Update the Maps & INDEX.md files (home base)
+# /1_update-maps — Update the Maps, INDEXes & open-tasks list
 
 Execute the workflow defined in @.agents/workflows/1_update-maps.md.
 
 **Execution notes:**
-- Steps 0–3 are read-only: use git (`git status --short`, `git diff --name-status`) to detect what moved,
-  regenerate the repo-map AUTO block **in its declared mode** (this repo = `--mode content`), drift-check the
-  curated tables both directions, and reconcile every home-base `INDEX.md` against its real folder.
-- Run the deterministic linter first — it does the mechanical detection:
-  `python .agents/scripts/check_maps.py` (no vendored `scripts/` copy here; the home base runs the master).
-- Step 4 is a hard STOP: present the findings report and wait for approval before editing anything outside
-  `_artifacts/` (per @.agents/rules/artifacts-always-first.md).
-- **`Projects/` are SEPARATE repos** — each has its own `docs/repo-map.md` + its own `/1_update-maps`. This
-  workflow never descends into them; it reconciles the LOBBY only.
-- `.agents/*/INDEX.md` are the MASTER here (editable) — fix them, then `/sync-agents` pushes the copies to
-  `.claude/`/`.opencode/`.
-- `_my_resources/` is off-limits EXCEPT `open_tasks/` (read-only). Never commit/push — hand Daniel the git
-  command (git-policy).
+- **Scope is mode-driven.** Run from the **home base** (a `Projects/` dir exists) → it **fans out**: the lobby
+  **and** every conformant `Projects/<name>` (one with an `AGENTS.md`). Run from **inside a project** → just that
+  one workspace, exactly as before. Scope to a single workspace from the lobby with the focus arg below.
+- **Lead with the linter** — it does the mechanical detection. From the home base use `--all`:
+  `python .agents/scripts/check_maps.py --all` (lobby + every conformant project, one combined report); inside a
+  project just `python .agents/scripts/check_maps.py`. It runs six checks per workspace + a context/open-tasks hint.
+- Steps 0–3 are read-only (detect via git + the linter, regenerate each AUTO block **in its declared mode**,
+  drift-check the curated tables both ways, audit every `INDEX.md`). Steps 3.5–3.6 **propose edits** — the
+  context-hygiene **prune** and the **open-tasks refresh** — gated by Step 4.
+- Step 4 is a hard STOP: present one findings report (grouped by workspace in a fan-out) and wait for approval
+  before editing anything outside `_artifacts/` (per @.agents/rules/artifacts-always-first.md).
+- **Each project is its own repo** → in a fan-out, edits land per repo and the close-out hands Daniel **one
+  commit + one `--set-anchor` per touched repo** (never cross-commit). `--set-anchor --all` re-anchors them all.
+- `.agents/*/INDEX.md` are the MASTER at the home base (editable) — fix them, then `/sync-agents` pushes copies
+  to `.claude/`/`.opencode/`. (In a project they're vendored: fix at master, re-sync.)
+- `_my_resources/` is off-limits **except one surgical write** — the `## Open Work` file-list in
+  `todo_list.md` (Step 3.6 mirrors it to the `open_tasks/*.md` files). His `## Todo list` prose + the task files
+  stay untouched. Never commit/push — hand Daniel the git command (git-policy).
 
-Optional input: $ARGUMENTS  (focus folder, or `--dry-run` to stop after the report).
+Optional input: $ARGUMENTS  (focus a single workspace — a project name, or `.` for lobby-only — or `--dry-run` to stop after the report).

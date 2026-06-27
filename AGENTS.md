@@ -71,14 +71,16 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 - **ROUTING GATE**: confirm the target workspace via `router.md` before touching files in it.
 - **RISK GATE**: never delete / overwrite / publish without explicit go-ahead. Never run `git commit`/`push`
   yourself — hand Daniel the command unless he delegates it in the moment (→ `.agents/rules/git-policy.md`).
-- **GIT WRITE APPROVAL — free on your OWN branch; the button on the owner's.** The gate keys on WHERE a
-  write lands, not the act of pushing.
+- **GIT WRITE APPROVAL — free on your OWN branch; the button on the owner's.** (Canonical source of the
+  branch model → `.agents/rules/git-policy.md` § "Branch model — `main_debug` → `main`".) The gate keys on
+  WHERE a write lands, not the act of pushing.
   - **FREE**: push freely to your own `claude/*` session branch; open/update PRs. (Loops/retries are fine.)
   - **APPROVAL** (per-action, never carries forward): any write to the owner's branches — a direct
     `git push` to `main_debug`/`main`, or merging a PR into them.
   - `main` is extra-protected: never push/PR/merge to it; promoting `main_debug` → `main` is the owner's
     deliberate manual decision.
-  - *Enforcement note:* a PreToolUse hook (`.claude/hooks/require-push-approval.py`) forces the prompt on
+  - *Enforcement note:* a PreToolUse hook (canonical `.agents/hooks/require-push-approval.py`, deployed to
+    every `.claude/hooks/` by `/sync-agents`) forces the prompt on
     any `git push` targeting `main`/`main_debug` however wrapped; `merge_pull_request` is gated in
     `.claude/settings.json`. Pushes to `claude/*` and PR create/update are NOT gated. Approve a merge into
     `main_debug` by invoking `/merge_main_debug` — invoking it IS the per-action approval.
