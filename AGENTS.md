@@ -90,7 +90,10 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
   for home-base work) + the home-base `_artifacts/INDEX.md` ledger. Working **from inside a project**
   (`Projects/<name>/` open) → that project's own `_artifacts/active-context.md` + `INDEX.md` (follow its rules).
 - **"pick up"** → read-only continuity brief from the right `active-context.md` for where you're working from.
-  Don't change anything; don't explain the obvious.
+  Don't change anything; don't explain the obvious. **Also surface open tasks:** after the `active-context.md`
+  brief, read this workspace's `_my_resources/open_tasks/todo_list.md` (+ any plan/PRP `.md` notes alongside it)
+  and add a one-line "what's queued." **READ-ONLY** — Daniel's notes; never edit; cross-check vs live files.
+  (Same source the "what's next / open tasks / what's left" routing trigger uses → `router.md`.)
 - **"hand off"** → write current state to that `active-context.md`, append a row to the matching `INDEX.md`,
   then read it back and verify without relying on chat memory.
 - Full protocol → `.agents/rules/artifacts-always-first.md`. Full model → `_docs/workspace-standard.md`.

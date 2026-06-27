@@ -55,7 +55,9 @@ A compliant workspace has these, and nothing it doesn't need.
   6. **ROUTING TABLE** — the heart (Layer 2, below).
   7. **NAMING CONVENTIONS** — dates/versions/slugs; replaces a database.
   8. **GATES** — routing gate + risk gate → `.agents/rules/constitution.md`.
-  9. **PERSISTENCE** — pickup/handoff → the right `_artifacts/` for where you work from (Part 2).
+  9. **PERSISTENCE** — pickup/handoff → the right `_artifacts/` for where you work from (Part 2). **"pick up"
+     also surfaces `_my_resources/open_tasks/todo_list.md`** (READ-ONLY) — the same notes the routing-table
+     "what's next / open tasks" row serves, so both triggers land on one source.
 
 ### Layer 2 — the routing table (the single most important thing)
 A plain-English table in `AGENTS.md`: **task → read these / skip these / skills**. It is what makes
@@ -69,6 +71,7 @@ that call them. Never load skills globally.
 ### Supporting files every workspace carries
 - **`docs/repo-map.md`** — the navigation index (Part 3).
 - **`active-context.md`** (home-base bucket or project-local, per Part 2) — continuity (numbered: `1 PRIME`, `5 PICK UP`, `6 HAND OFF`).
+- **`_my_resources/open_tasks/todo_list.md`** — Daniel's **READ-ONLY** "what's next" queue (+ any plan/PRP `.md` notes alongside). Surfaced by BOTH the routing-table "what's next" row AND on "pick up." Agents never edit it; cross-check vs live files.
 - **`.agents/`** — the vendored master toolkit (rules, commands, skills, workflows, scripts, templates).
 - **`opencode.json`** — `instructions` = the slim least-context set (`AGENTS.md` + the always-load rules);
   `skills.paths` = `[".agents/skills"]`.
@@ -82,8 +85,42 @@ that call them. Never load skills globally.
 | ☐ | `.agents/` vendored; `opencode.json` points at `.agents/` paths |
 | ☐ | `docs/repo-map.md` present and current (Part 3) |
 | ☐ | the workspace's `active-context.md` exists (home-base bucket or project-local) |
+| ☐ | `_my_resources/open_tasks/todo_list.md` present (READ-ONLY); wired into BOTH the "what's next" routing row AND "pick up" |
 | ☐ | registered as a row in the root `router.md` |
 | ☐ | vendored `docs/workspace-standard.md` present |
+
+### The PATH CONTRACT (exact files & where they live — what the tooling verifies)
+This is the machine-checkable heart of the standard: the **exact path** of every standard element, in the two
+**modes** a workspace can run in. `check_maps.py` reads this contract to (a) confirm a workspace is conformant
+and (b) know what to reconcile/prune — which is what lets **one generic `/1_update-maps` serve every workspace**
+instead of a per-repo fork. Keep workspaces matching this table and the generic tool just works.
+
+| Element | Home base (LOBBY) mode | Project (`Projects/<name>/`) mode | Notes |
+|---|---|---|---|
+| Entry adapters | `CLAUDE.md` · `GEMINI.md` (1-line) | same | identical everywhere |
+| Brain | `AGENTS.md` | `AGENTS.md` | numbered §1–§9 |
+| Toolkit | `.agents/` (**MASTER** here) | `.agents/` (**vendored**, synced) | one source of authorship |
+| Navigation index | `_docs/repo-map.md` | `docs/repo-map.md` | **`_docs/` (lobby) vs `docs/` (project)** — the tool auto-detects both |
+| Structure standard | `_docs/workspace-standard.md` | `docs/workspace-standard.md` | this file; vendored copy per project |
+| Maintenance scripts | `.agents/scripts/{check_maps,generate_repo_map}.py` | same (synced copies) | run central with `--root <path>`; synced copy is for standalone use |
+| Drift baseline | `_docs/.maps-state.json` | `docs/.maps-state.json` | sits beside the repo-map |
+| Continuity store | `_artifacts/` (buckets: `_main/`, `<project>/`) | `_artifacts/` (project-local) | **"artifacts go where you work FROM"** |
+| Pickup/handoff brief (**prune target**) | `_artifacts/<bucket>/active-context.md` | **BMAD project:** `_bmad-output/active-context/active-context.md` (the live brief; `_artifacts/` holds *session history* only) | the file the **prune** trims |
+| Context archive (prune overflow) | `_artifacts/<bucket>/active-context-archive.md` | `_bmad-output/active-context/_archive/` | created on first prune |
+| Session ledger | `_artifacts/INDEX.md` | `_artifacts/INDEX.md` | one row per session; archive overflow → `INDEX-archive.md` |
+| Retired artifacts | `_artifacts/_archived/` | `_artifacts/_archived/` | — |
+| Open tasks ("what's next") | `_my_resources/open_tasks/todo_list.md` (+ plan/PRP notes) | same | **READ-ONLY**; surfaced on pickup + "what's next" |
+| Personal area (protected) | `_my_resources/` | `_my_resources/` | off-limits except `open_tasks/` (read-only) |
+| BMAD (if present) | — | `_bmad/` (owned, regenerated) · `_bmad-output/` (state) | `_bmad-output/active-context/active-context.md` **IS** the continuity brief above; `_bmad/` itself is never hand-edited |
+
+**Two modes, one rule.** The only legitimate home-base↔project differences are: (1) the docs folder is `_docs/`
+at the lobby, `docs/` in a project; (2) the lobby's `_artifacts/` is split into **buckets** (`_main/`,
+`<project>/`) because work from the lobby is filed by *which workspace it changes*, whereas a project's
+`_artifacts/` is flat history; (3) the **continuity brief** that pickup reads and the prune trims lives at
+`_artifacts/<bucket>/active-context.md` at the lobby but at **`_bmad-output/active-context/active-context.md`**
+in a BMAD project (a project's `_artifacts/` holds *session history* — folders + `INDEX.md` — not the brief).
+Everything else is identical. `check_maps.py` detects the mode by the presence of a `Projects/` directory (and
+a `_bmad-output/` directory) and applies the right column.
 
 ---
 
@@ -140,6 +177,16 @@ test ("work on X" from a fresh session lands in the right workspace). Full how/w
 - Repo-map: the SessionStart hook *detects* drift and nags; the human/agent *supplies the purpose line* at
   end-of-task — and only when a top-level folder or an agent was added/removed (Part 3).
 
+### Context hygiene — prune the continuity brief (don't let it grow forever)
+A **session** = one pick-up→hand-off; each hand-off prepends one dated block (`**YYYY-MM-DD: …**`) to the
+continuity `active-context.md` and one row to `INDEX.md`. Left alone these grow without bound and bloat every
+pickup. `/1_update-maps` carries a **prune** step: keep the **newest ~10 session blocks** in the brief, archive
+older ones to the context archive (`active-context-archive.md` at the lobby; `_bmad-output/active-context/_archive/`
+in a BMAD project); keep the newest **~25** `INDEX.md` rows, archive older to `INDEX-archive.md`. `check_maps.py`
+only *nags* past ~12 blocks (hysteresis — not every session), and the prune is approval-gated like every other
+edit. Session **folders** under `_artifacts/` are disk-only (never auto-loaded into context) → archive them on
+epic close, not on a schedule.
+
 ### End-of-Task checklist (before saying "done" on anything that produced changes)
 - ☐ `walkthrough.md` (what changed + real pasted test output + "Your Actions" with the exact git command)
 - ☐ `task-list.md` snapshot of the final TodoWrite list
@@ -190,12 +237,16 @@ This standard replaces months of contradictory, duplicated rules. State as of 20
 - `prose-formatting.md` repointed off the dead `_claude_artifacts/` store.
 - `_experiment/` → `_routing-canary/`.
 
+**Resolved 2026-06-27 — `_claude_artifacts/` fully retired:**
+- The `1_*` commands (`1_run-all-tests-back_front`, `1_make-workflow-from-chat`, `1_check-for-tech-stack-updates`)
+  and the `autopilot-dev-story.ps1` engine were repointed off `_claude_artifacts/` → `_artifacts/` at the master
+  `.agents/` source and across every synced copy. Fresh-workspace (clean-bmad-workspace) was converted to the
+  project-local `_artifacts/` model (matching aviationChat) and its dead `_claude_artifacts/` store was deleted.
+  Ignore-lists keep the name defensively; historical mentions (a skill's origin-session paths) are left as
+  accurate history.
+
 **Retire-list (follow-up reconcile pass — NOT yet done; some are engine-coupled):**
-- `.agents/workflows/autopilot_bmad_dev_loop.md` + `.agents/commands/{autopilot_claude,
-  1_check-for-tech-stack-updates, 1_run-all-tests-back_front, 1_make-workflow-from-chat}` still reference
-  `_claude_artifacts/` and (some) `@.agent/` singular paths + `your-action-required.md`. **The autopilot engine
-  (`autopilot-dev-story.ps1`) must be checked before moving its artifact paths** — docs and engine must move
-  together or a new contradiction is created.
-- Per-project copies still carrying `_claude_artifacts/`, the opposite git policy, `mandatory-session-artifacts.md`,
-  or dead gate files — retired/re-vendored during each project's conversion (separate propagation plan).
+- Cleanup unrelated to the artifact store: `(some) @.agent/` singular paths + `your-action-required.md` in the
+  autopilot docs; per-project copies carrying the opposite git policy, `mandatory-session-artifacts.md`, or dead
+  gate files — retired/re-vendored during each project's conversion (separate propagation plan).
 - Anti-fork rule (Part 2) is the standing guard so this can't re-accumulate.

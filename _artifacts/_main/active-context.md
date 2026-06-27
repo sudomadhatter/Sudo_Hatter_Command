@@ -88,8 +88,9 @@ already bundled this session's first-pass repo edits with the prior self-audit w
   - 5 venvs still hardcode the old path; recreate per-project when next used.
 - 5.5 Best next move: (1) finish the clean-bmad workspace-standard cleanup (AGENTS.md renumber, vendor
   workspace-standard + generator, build `docs/repo-map.md`, protect `_my_resources/`); (2) seed the
-  generator + standard + hook into the project template and `/sync-agents`; (3) tackle the retire-list follow-up
-  (autopilot `.ps1` + `1_*` commands still reference `_claude_artifacts/` — engine-coupled, check engine first).
+  generator + standard + hook into the project template and `/sync-agents`. ((3) retire-list `_claude_artifacts/`
+  follow-up — ✓ DONE 2026-06-27: autopilot `.ps1` + `1_*` commands repointed to `_artifacts/`, fresh-workspace
+  converted to project-local, dead store deleted.)
 
 ## 6. HAND OFF  (verified state at this checkpoint)
 - 6.1 Completed: Phase A; rename-day restructure; **this session's home-base Parts F/E/D/A/C/B-home** (see 5.2),
@@ -97,7 +98,7 @@ already bundled this session's first-pass repo edits with the prior self-audit w
 - 6.2 In progress: nothing executing. Plan `2026-06-24_workspace-standard-and-repo-map` is closed for its
   home-base scope; its lab/propagation scope is parked pending clearance.
 - 6.3 Open tasks / trade-offs: lab-prove + propagate the repo-map/standard once clean-bmad is cleared; vendor
-  `workspace-standard.md` into each project; retire-list follow-up (autopilot/commands `_claude_artifacts/`);
+  `workspace-standard.md` into each project; retire-list `_claude_artifacts/` follow-up ✓ done 2026-06-27;
   per-project rule reconciliation happens during each conversion; cross-LLM cold test of `_routing-canary/` in
   opencode + Antigravity still to run.
 - 6.4 Related links: `_docs/workspace-standard.md`, `_docs/master-implementation-plan.md`,

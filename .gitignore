@@ -11,11 +11,11 @@
 
 # Projects still at the repo root (pre-migration) — ignored until they move into Projects/.
 /aviationChat-AGY/
-/clean-bmad-workspace/
+/fresh-workspace-bmad/
 /jetChat-AGY/
 /B&L WorldWide/
 /NEXGen Films/
-/ingestion-Pipeline-AC/
+/ingestion-Pipeline-AAvCh/
 /openCode/
 
 # GitNexus code-graph index (disposable Tier-2 accelerator — never committed).

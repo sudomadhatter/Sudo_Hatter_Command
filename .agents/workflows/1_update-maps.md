@@ -1,15 +1,24 @@
-# Workflow — Update the Maps & INDEX.md files (home base / LOBBY)
+# Workflow — Update the Maps & INDEX.md files (any workspace)
 
-> **Goal.** Bring every navigation artifact in the LOBBY back into agreement with what's *actually on
-> disk*: the repo map (`_docs/repo-map.md`) and every home-base `INDEX.md`. Detect drift accurately (use
-> git, not a blind re-walk), fix what's safe to fix, and flag what isn't yours to edit.
+> **Goal.** Bring every navigation artifact in a workspace back into agreement with what's *actually on
+> disk*: the repo map (`_docs/repo-map.md` at the lobby, `docs/repo-map.md` in a project), every `INDEX.md`,
+> and — new — the size of the continuity `active-context.md` (**context hygiene / prune**). Detect drift
+> accurately (use git, not a blind re-walk), fix what's safe to fix, and flag what isn't yours to edit.
 >
-> **This is an upkeep/maintenance workflow.** It edits docs only — it never touches code, never commits,
-> never pushes (per `.agents/rules/git-policy.md`). It is read-mostly until the approval gate.
+> **This is an upkeep/maintenance workflow.** It edits docs/markdown only — never code, never commits,
+> never pushes (per `.agents/rules/git-policy.md`). Read-mostly until the approval gate.
 >
-> **Scope = the LOBBY only.** `Projects/<name>/` are SEPARATE git repos, each with its own
-> `docs/repo-map.md` and its own `/1_update-maps`. **Do not descend into them** to reconcile their maps —
-> run this workflow from inside the project instead. Here you only reconcile the home base.
+> **ONE generic tool, every workspace — NOT per-repo.** The same `check_maps.py` + this workflow reconcile
+> the lobby OR any conformant project, because every workspace follows the **PATH CONTRACT** in
+> `workspace-standard.md` (the script auto-detects the *mode* — home base vs project, BMAD vs not — and
+> applies the right paths). Target a workspace with `--root`:
+> ```bash
+> python .agents/scripts/check_maps.py                                # the repo holding the script (lobby)
+> python .agents/scripts/check_maps.py --root Projects/AGY_AVIATIONCHAT
+> python .agents/scripts/check_maps.py --root Projects/Fresh_Workspace_BMAD
+> ```
+> `Projects/<name>/` are separate git repos: run from the lobby with no `--root` they are NOT descended;
+> reconcile a project by pointing `--root` at it (or run its byte-identical synced copy from inside).
 
 ---
 
@@ -35,17 +44,26 @@ edit it). `_bmad/` (if present) is regenerated — never hand-edit.
 ## Step 0 — Preflight + run the drift linter
 
 1. Confirm the working directory is the LOBBY root (the folder holding `AGENTS.md` + `_docs/repo-map.md`).
-2. **Run the deterministic linter first — it does the mechanical detection for you:**
+2. **Run the deterministic linter first — it does the mechanical detection for you** (add `--root Projects/<name>`
+   to target a project instead of the lobby):
    ```bash
-   python .agents/scripts/check_maps.py
+   python .agents/scripts/check_maps.py                       # lobby
+   python .agents/scripts/check_maps.py --root Projects/<name>   # a project
    ```
-   It runs four checks and exits non-zero on drift: **AUTO-block freshness** (regenerates the map body in
-   memory, mode-preserving, and diffs), **path existence** (every path *promised* in a repo-map/INDEX table
-   row resolves on disk), **top-level folder coverage** (every real top-level folder is documented — the
-   SessionStart hook's check, centralized), and **git baseline** (adds/deletes/**renames** since the last
-   reconciled SHA in `_docs/.maps-state.json`). It is high-precision: it only flags table-row paths with a
-   real top-level first segment, so prose/cross-repo mentions don't generate noise. It skips `Projects/`
-   (separate repos) and `_my_resources/` (protected).
+   It runs **six** checks. Four are **fatal drift** (exit non-zero): **AUTO-block freshness** (regenerates the
+   map body in memory, mode-preserving, and diffs), **path existence** (every path *promised* in a
+   repo-map/INDEX table row resolves on disk), **top-level folder coverage** (every real top-level folder is
+   documented), and **git baseline** (adds/deletes/**renames** since the last reconciled SHA in
+   `<docs>/.maps-state.json`). One is the **structure-conformance** gate (also fatal) — the workspace carries
+   the standard files in the standard places per the PATH CONTRACT (this is the "verify the structures stay
+   standard" check that makes one generic tool safe). One is **context hygiene** — a **NON-FATAL hint** when the
+   continuity `active-context.md` is over the prune window or `INDEX.md` is over the row cap (drives Step 3.5).
+   High-precision: it only flags table-row paths with a real top-level first segment, so prose/cross-repo
+   mentions don't generate noise. From the lobby it skips `Projects/` (separate repos) and `_my_resources/`
+   (protected); with `--root` it lints that workspace directly.
+   - **`--ignore` per workspace:** the freshness regen defaults to `Projects,_my_resources` (lobby). A project
+     whose `docs/repo-map.md` was generated with a different ignore set (e.g. `_bmad`) needs that passed —
+     `--ignore _bmad` — or the freshness check will false-positive. Match the map header's documented command.
    - **Clean exit (0)** → the deterministic layer is satisfied; you only need Steps 2–3's *judgment* checks
      (purpose lines for genuinely new folders, INDEX categorisation) and can often skip to a short report.
    - **Non-zero** → the linter already told you *which* map, *which* path, *which* folder. Use its output to
@@ -125,6 +143,35 @@ reconciliation:
 
 ---
 
+## Step 3.5 — Context hygiene (prune the continuity brief)
+
+The linter's `[context hygiene]` section is a **non-fatal nag**: it counts session blocks in the workspace's
+continuity `active-context.md` and rows in `INDEX.md`. If nothing is over its window, **skip this step**. If it
+nags, propose a prune (it is an *edit*, so it goes through the Step 4 gate like everything else):
+
+1. **Find the continuity brief** for this mode (PATH CONTRACT in `workspace-standard.md`):
+   - **home base** → each `_artifacts/<bucket>/active-context.md` (e.g. `_main`, `<project>` buckets);
+   - **BMAD project** → `_bmad-output/active-context/active-context.md` (the live brief; `_artifacts/` is history);
+   - **non-BMAD project** → `_artifacts/active-context.md`.
+   A **session block** is one dated `**YYYY-MM-DD: …**` lead in §1 PRIME STATE (= one pick-up→hand-off).
+2. **Keep the newest ~10 blocks; archive the rest.** Move the oldest blocks (verbatim, in order) out of the
+   brief and into the **context archive**, creating it if missing:
+   - home base → `_artifacts/<bucket>/active-context-archive.md`;
+   - BMAD project → `_bmad-output/active-context/_archive/active-context-log_<YYYY-MM-DD>.md` (the pattern that
+     dir already uses).
+   Leave §5 PICK UP / §6 HAND OFF (they describe only the latest state — not a growing stack). Never *summarise
+   away* a block — archiving is a move, not a rewrite; the history stays readable, just out of the hot path.
+3. **INDEX.md** over ~25 rows → move the oldest rows into `INDEX-archive.md` (same folder), keeping the header
+   + newest ~25. The ledger stays scannable; old rows stay findable.
+4. **Session folders** under `_artifacts/` are disk-only (never auto-loaded into context) → do **not** prune them
+   here; archive them to `_artifacts/_archived/` on epic close, not on a size trigger.
+
+> Window numbers live as constants in `check_maps.py` (`PRUNE_KEEP_BLOCKS` etc.) and in `workspace-standard.md`
+> → "Context hygiene." Tune in one place. The nag uses hysteresis (keep ~10, nag at 12) so it doesn't fire every
+> session.
+
+---
+
 ## Step 4 — Findings report + approval gate (STOP)
 
 Present a single, scannable report before changing any file **outside `_artifacts/`** (the artifacts gate,
@@ -144,6 +191,10 @@ Present a single, scannable report before changing any file **outside `_artifact
 ### 🚩 Flagged — NOT mine to edit (needs you / another tool)
 - _my_resources/... reference looks stale                   → Daniel's protected area, confirm with him
 
+### 🧹 Context hygiene (prune) — only if the linter nagged
+- active-context.md: 14 blocks → archive oldest 4 to <archive>, keep newest 10   [reason: over window]
+- INDEX.md: 38 rows → archive oldest 13 to INDEX-archive.md, keep newest 25       [reason: over cap]
+
 ### AUTO block
 - Regenerated (mode=content): <no change | N folders added/removed>
 ```
@@ -158,7 +209,9 @@ say so and proceed (a regen that produces no diff needs no approval).
 1. Apply the curated `_docs/repo-map.md` edits (purpose lines for new folders; fix dead paths).
 2. Apply the `_artifacts/INDEX.md` rows.
 3. Apply any `.agents/*/INDEX.md` fixes, then remind Daniel to run `/sync-agents`.
-4. **Re-run the generator** if you edited the curated block, so the file is internally consistent, and
+4. **Apply the prune** (Step 3.5) if approved: move the old blocks/rows into their archive files (a *move*,
+   verbatim — never a rewrite), and confirm the brief now opens on the newest ~10 blocks.
+5. **Re-run the generator** if you edited the curated block, so the file is internally consistent, and
    re-diff to confirm only the intended lines changed.
 
 ---
@@ -182,10 +235,16 @@ say so and proceed (a regen that produces no diff needs no approval).
 
 ## Guardrails (recap)
 
-- **Lobby only** — never reconcile a `Projects/<name>/` map from here; that's the project's own `/1_update-maps`.
-- **Mode-preserving regen** — read the sentinel, match the `--mode`. Never let the AUTO block flip modes.
+- **One workspace at a time** — reconcile the lobby OR one project per run; target a project with `--root`
+  (or run its synced copy from inside). From the lobby with no `--root`, `Projects/` are NOT descended.
+- **Conformance first** — if the structure-conformance check fails (missing standard files), fixing *that* comes
+  before reconciling the map; a non-conformant workspace is why a generic tool would otherwise mis-resolve paths.
+- **Mode-preserving regen** — read the sentinel, match the `--mode`; pass the workspace's documented `--ignore`
+  (lobby `Projects,_my_resources`; a project may need `_bmad`). Never let the AUTO block flip modes.
 - **Folder-level map is intentional** — don't "improve" it to file-level; that's what keeps it valid for months.
-- **`.agents/*` INDEXes are MASTER here** — fix them, then `/sync-agents` (the opposite of the project rule).
+- **`.agents/*` INDEXes are MASTER at the home base** — fix them, then `/sync-agents`. In a *project* they are
+  vendored (verify-only); fix at master and re-sync.
+- **Prune is a MOVE, never a rewrite** — archived blocks/rows stay verbatim; never summarise history away.
 - **`_my_resources/` is untouchable** except `open_tasks/` (read-only). `_bmad/` is regenerated.
 - **Never commit/push** — hand off the command.
 

@@ -58,8 +58,11 @@ pattern for the queued projects. Session: `2026-06-24_agents-format-conversion/`
   *home base's* own SessionStart hook to it, so home base + projects share one drift mechanism.
 - **Prune aviationChat skills from the vendored `.agents/` set** — define a generic-skeleton sync profile at
   master + `/sync-agents` (biggest remaining aviationChat-DNA removal; anti-fork, master-level).
-- **Master pass (deferred):** repoint vendored cmds + `scripts/autopilot-dev-story.ps1` off `_claude_artifacts/`
-  → home-base `_artifacts/` (check `$RepoRoot` first), then delete `_claude_artifacts/`.
+- **Master pass (DONE 2026-06-27):** repointed the `1_*` commands + `scripts/autopilot-dev-story.ps1` off
+  `_claude_artifacts/` → `_artifacts/` (master `.agents/` + every synced copy), converted fresh-workspace to the
+  **project-local `_artifacts/`** model (AGENTS.md §5/§7/§9 + a new `docs/file_structure_rules/README.md` + an
+  `_artifacts/` scaffold, mirroring aviationChat), updated the project-template, and deleted the dead
+  `_claude_artifacts/` store.
 - **aviationChat milestone (separate track):** apply the workspace-standard recipe to the live aviationChat repo
   (its own assessment + plan + approval).
 - Tiny/optional: genericize the "sully" example slug in `scripts/autopilot-dev-story.ps1:168`; re-run
