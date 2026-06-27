@@ -9,17 +9,22 @@ The deciding factor is your **cwd**, not only what the work is about (full rules
 1. **Project work** → a per-project bucket `_artifacts/<project>/…` (bucket name = the `Projects/<name>/` folder).
    **Create the bucket if it isn't there yet; otherwise reuse it.**
 2. **Main / home-base / cross-project work** → `_artifacts/_main/…` (formerly `_home`).
-3. **Stories** → nest under the parent **epic folder** `<epic>/<story>/` (create the epic folder if missing).
+3. **Stories** → nest under the parent **epic folder** `epic_<E>/<story>/` (create `epic_<E>/` if missing) —
+   **any** story (autopilot, BMAD, or hand-dev'd); the parent is decided by the story id, not the tool.
 - **From the home base** (cwd = `Sudo_Hatter_Command/`) → **here**, per rules 1–3; log a row in `INDEX.md`.
 - **From inside a project** (cwd = `Projects/<name>/`) → that project's own `Projects/<name>/_artifacts/` and its
-  own `active-context.md` / `INDEX.md` (follow its rules — not this ledger). No `_main` inside a project.
+  own `active-context.md` / `INDEX.md` (follow its rules — not this ledger). No *cross-project* `_main` inside a
+  project — but a project keeps a **local `_main/`** for its own system/infra work.
 - **opencode** writes under [`opencode/`](./opencode/README.md), applying the same three rules inside it.
 - **Finding history:** look in BOTH the home-base bucket `_artifacts/<project>/` and the project-local one.
 
 ## How to structure the folder
-- **Random / system task** → `<YYYY-MM-DD>_<slug>/` (date first so they sort; slug = lowercase-hyphenated, ≤6 words).
-- **Story** → `<epic>/<story>/` — **the epic folder houses all of its stories. Create the epic folder if it isn't
-  there yet**, then nest the story inside (e.g. `epic-9/story-9.4-ios-shell/`). Story folders are epic-scoped, not date-prefixed.
+- **Story** → `epic_<E>/<story>/` — **the epic folder houses all of its stories. Create `epic_<E>/` if it isn't
+  there yet**, then nest the story inside (e.g. `epic_9/story-9.4-ios-shell/`, or an autopilot run
+  `epic_14/2026-06-27_autopilot-14-6/`). Epic-scoped, not date-prefixed. Holds for **any** story — the parent is
+  the story id, not the tool.
+- **System / infrastructure** ("systems things": the agent system, rules, scripts, CI) → `_main/<YYYY-MM-DD>_<slug>/`.
+- **Random one-off** → `<YYYY-MM-DD>_<slug>/` (date first so they sort; slug = lowercase-hyphenated, ≤6 words).
 - **Retired** → `_archived/` — archive history, don't delete it.
 
 ## What each session folder carries

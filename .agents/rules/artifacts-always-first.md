@@ -75,18 +75,24 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
   main / home-base / cross-project work (the standard, master `.agents/`, the router, lobby wiring) →
   `_artifacts/_main/…` (formerly `_home`). Append a row to `_artifacts/INDEX.md`.
 - **From inside a project** (`Projects/<name>/` is cwd) → project-local `Projects/<name>/_artifacts/…` + that
-  project's own `active-context.md`/`INDEX.md` (follow its rules, not the home-base ledger). There is no `_main`
-  inside a project — every task there is that project's work.
+  project's own `active-context.md`/`INDEX.md` (follow its rules, not the home-base ledger). There is no
+  *cross-project* `_main` here — but the project keeps a **local `_main/`** for its own system/infrastructure
+  work (the agent system, rules, scripts, CI). Story work nests under `epic_<N>/`; random one-offs are dated at
+  the root.
 - **opencode** writes under `_artifacts/opencode/` and applies these same rules inside it: project →
   `opencode/<project>/`, main → `opencode/_main/`, story → `opencode/<project>/<epic>/<story>/`.
 
-**Then name the folder by task type (in either location):**
-- **Random task** → `<YYYY-MM-DD>_<slug>/` — date FIRST, slug LAST so they sort chronologically
-  (e.g. `2026-06-25_artifacts-policy-finish`). Slug: lowercase, hyphen-separated, max 6 words, from Daniel's
-  first concrete request.
-- **Story** → `<epic>/<story>/` — an **epic folder houses all of its stories** (create the epic folder if it
-  isn't there yet), so stories group under their parent epic (e.g. `epic-9/story-9.4-ios-shell/`). Epic-scoped,
-  not date-prefixed.
+**Then find the parent and name the folder by task type — pick the FIRST that matches (in either location):**
+- **Story** (work tied to a story id `E.S`) → `epic_<E>/<story>/` — an **epic folder houses all of its
+  stories** (create `epic_<E>/` if it isn't there yet), so stories group under their parent epic
+  (e.g. `epic_14/story-14.6-graph-insight/`, or an autopilot run `epic_14/2026-06-27_autopilot-14-6/`).
+  Epic-scoped, not date-prefixed at the root. This holds for **any** story — whether the autopilot, a BMAD
+  flow, or Daniel devs it by hand; the parent is decided by the story id, **not** by the tool.
+- **System / infrastructure** ("systems things": the agent system, rules, scripts, CI, cross-cutting config)
+  → `_main/<YYYY-MM-DD>_<slug>/`.
+- **Random one-off** (everything else) → `<YYYY-MM-DD>_<slug>/` at the root — date FIRST, slug LAST so they
+  sort chronologically (e.g. `2026-06-25_artifacts-policy-finish`). Slug: lowercase, hyphen-separated, max 6
+  words, from Daniel's first concrete request.
 
 Start the **TodoWrite task list** (this is the task tracker — no `task.md` file), then write
 `implementation_plan.md` (goal, every file touched with links, execution order, open questions,

@@ -71,7 +71,7 @@ Launch the autopilot pipeline for the story in `$ARGUMENTS` (a story id like `11
      the orchestrator advanced the story to `review` (story file + sprint-status). Daniel still owns review->done.
 
 5. When the watch ends, mark the last stage `completed`, read the canonical artifact folder
-   `_artifacts/<date>_autopilot-<id>/`, and give the final debrief: total cost, artifacts
+   `_artifacts/epic_<epic>/<date>_autopilot-<id>/`, and give the final debrief: total cost, artifacts
    written, and - most importantly - the **OUT-OF-SPEC DECISIONS** and **OPEN QUESTIONS FOR DANIEL**
    sections at the top of `walkthrough.md` plus `decisions-log.md` (the choices the team made on
    Daniel's behalf, and anything QA is asking him). State whether it finished all stages (**COMPLETE**),
@@ -82,12 +82,15 @@ Launch the autopilot pipeline for the story in `$ARGUMENTS` (a story id like `11
    `<run-folder>/_pipeline/run.log`), and `_RUN-STATUS.md` in the folder shows the final state.
 
 > **On-demand status** also works anytime: while a run is going, just ask "status" and Claude reads
-> `_RUN-STATUS.md` - which is now re-stamped after every stage with the running cost + current stage.
+> `_RUN-STATUS.md` - which is now re-stamped after every stage with the running cost + current stage, and
+> carries the **orchestrator PID** for a liveness check: if the headline still says `IN PROGRESS` /
+> `TEST GATE` but that PID is not a running process, the run died mid-flight (a hard kill / closed
+> terminal bypasses the `CRASHED` stamp) - treat it as crashed and re-run with no flags to resume.
 
 ## What this runs (for context)
 
 A 4-stage chain across **two persistent sessions**, handing off via artifacts in the one shared folder
-`_artifacts/<date>_autopilot-<id>/`. Each team does its codebase deep-dive once and **resumes its
+`_artifacts/epic_<epic>/<date>_autopilot-<id>/`. Each team does its codebase deep-dive once and **resumes its
 own chat** for its second stage (so it never re-researches). Models come from `-DevModel`/`-AuditModel`
 (both default `claude-opus-4-8`); each stage runs a dedicated headless `_AP` command that carries its
 behavior (the script just points it at the shared folder):

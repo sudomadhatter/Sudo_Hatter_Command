@@ -31,9 +31,12 @@ Run the pipeline for the story in `$ARGUMENTS` (a story id like `11.16`, or a pa
 
 ### 2. Resolve the canonical artifact folder
 - Slug = `autopilot-<id>` with non-alphanumerics collapsed to `-` (e.g. `autopilot-8-15`).
-- Reuse an existing `_artifacts/*_<slug>/` folder if one exists (prefer the one that already
-  holds `implementation_plan.md`) so a resume finds prior artifacts; otherwise mint
-  `_artifacts/<today>_<slug>/`. Create the folder.
+- Epic = the leading number of the story id (`14.6` → `14`). A story **nests under its epic bucket**
+  `_artifacts/epic_<epic>/` — **create the epic folder if it isn't there yet** (per `artifacts-always-first`:
+  stories live under their epic). If the id has no leading epic number, fall back to the `_artifacts/` root.
+- Reuse an existing `_artifacts/epic_<epic>/*_<slug>/` folder (or a pre-fix `_artifacts/*_<slug>/` at the
+  root) if one exists — prefer the one that already holds `implementation_plan.md` — so a resume finds prior
+  artifacts; otherwise mint `_artifacts/epic_<epic>/<today>_<slug>/`. Create the folder.
 
 ### 3. Compute the resume start-stage (artifact-presence skip)
 A stage is "complete" iff its handoff artifact exists on disk:
