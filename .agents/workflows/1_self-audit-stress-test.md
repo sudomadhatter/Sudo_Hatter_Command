@@ -135,20 +135,6 @@ re-run only the phases the change touched.
 
 ---
 
-## Phase 5 — Deliver the Findings as a Copy-Paste Block (MANDATORY)
-
-Present the audit's results in the chat **wrapped in a single fenced code block** so Daniel can copy
-the whole thing in one action (to paste into a plan, a story, or a dev-agent prompt). The block
-carries the verdict, the findings table, the three quick gates, and the final Go / No-Go — the same
-content as the Phase 4 summary, not a re-derivation.
-
-- Use a **4-backtick outer fence** (```` ```` ````) so any 3-backtick code blocks inside the summary
-  survive intact, and tag it ` ```markdown ` so it renders on paste.
-- Keep prose commentary (recommendations, the "want me to bake these in?" offer) **outside** the
-  code block so the copyable block stays clean.
-
----
-
 ## Notes
 - Guilty until proven innocent — but right-sized. A prompt tweak gets a Light pass; an SSE state
   machine gets the Full pass.

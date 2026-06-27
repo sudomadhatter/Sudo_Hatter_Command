@@ -48,6 +48,17 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 | Lobby tool dirs | `.claude/`, `.opencode/` | synced copies of the master so `/commands` + skills resolve here. `/sync-agents` mirrors `.agents/commands/` to all three platforms (incl. the opencode + Antigravity machine-global caches); `platforms:` frontmatter limits a command's reach |
 | Projects | `Projects/<name>/` | the actual projects, each its own git repo |
 
+> **⚠️ SEARCHING THE TREE — `Projects/` IS INVISIBLE TO GREP (lobby-only gotcha).** `Projects/` is
+> **gitignored** here (each project is its own git repo nested under the lobby). The **Grep tool runs
+> ripgrep, which honors `.gitignore`** — so it **silently skips everything under `Projects/`** and returns
+> zero hits from inside the project repos. A grep that finds a master file in `.agents/` is **not** proof
+> it's the only copy: that same file is **vendored** into each `Projects/<name>/.agents/`, and Grep can't
+> see those. To audit/compare across the vendored project copies, use the **Bash tool**, not Grep:
+> `find Projects -name '<file>'`, then `grep`/`diff` each hit (confirm with `git check-ignore <path>`).
+> Canonical fix path is unchanged: edit the master `.agents/`, then `/sync-agents <project>` to re-vendor.
+> *(This caveat is lobby-specific — inside a project you're past the ignore boundary, so don't carry it
+> into a project's `AGENTS.md`.)*
+
 ## 5. NAMING CONVENTIONS  (this replaces a database)
 - Dated output: `YYYY-MM-DD_<slug>.md`
 - Versioned drafts: `<slug>_draft.md`, `<slug>_v2.md`, `<slug>_final.md`
