@@ -25,9 +25,10 @@ else in `.agents/rules/` loads **on demand** when a task calls for it — do not
 rule set is the shared toolkit, not a startup payload. How a workspace is shaped + kept healthy →
 `_docs/workspace-standard.md`.
 
-> **Web/mobile session?** If you're running in a remote container (Claude Code on the web or phone),
-> also load `.agents/rules/mobile-mode.md` — it adapts git, the approval gate, and verification for a
-> device with no terminal.
+> **Web/mobile session?** When env **`CLAUDE_CODE_REMOTE=true`** (Claude Code on the web or phone), also
+> load `.agents/rules/mobile-mode.md` — the web/mobile lane: it adapts git, the approval gate, artifacts,
+> and verification for a device with no terminal. On a desktop IDE session the var is unset → ignore it and
+> use the desktop defaults. `mobile-mode.md` owns the trigger (single source for the lane boundary).
 
 > **⛔ ARTIFACTS — MANDATORY FIRST ACTION.** Before modifying ANY file outside `_artifacts/`, write an
 > `implementation_plan.md` into the right `_artifacts/` for where you work from (§5) and **STOP until Daniel says "approved."** Track
@@ -69,8 +70,11 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 
 ## 6. GATES  (consult before acting)
 - **ROUTING GATE**: confirm the target workspace via `router.md` before touching files in it.
-- **RISK GATE**: never delete / overwrite / publish without explicit go-ahead. Never run `git commit`/`push`
-  yourself — hand Daniel the command unless he delegates it in the moment (→ `.agents/rules/git-policy.md`).
+- **RISK GATE**: never delete / overwrite / publish without explicit go-ahead. **GIT — desktop default:**
+  never run `git commit`/`push` yourself — hand Daniel the command unless he delegates it in the moment
+  (→ `.agents/rules/git-policy.md`). On **web/mobile** (`CLAUDE_CODE_REMOTE=true`) the agent owns git
+  delivery instead (commits/pushes its own files, asks before the PR) → `.agents/rules/mobile-mode.md`; on
+  desktop the var is unset → ignore that file.
 - **GIT WRITE APPROVAL — free on your OWN branch; the button on the owner's.** (Canonical source of the
   branch model → `.agents/rules/git-policy.md` § "Branch model — `main_debug` → `main`".) The gate keys on
   WHERE a write lands, not the act of pushing.
@@ -78,7 +82,7 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
   - **APPROVAL** (per-action, never carries forward): any write to the owner's branches — a direct
     `git push` to `main_debug`/`main`, or merging a PR into them.
   - `main` is extra-protected: never push/PR/merge to it; promoting `main_debug` → `main` is the owner's
-    deliberate manual decision.
+    deliberate manual decision. (Web/mobile clone/fork specifics → `.agents/rules/mobile-mode.md`.)
   - *Enforcement note:* a PreToolUse hook (canonical `.agents/hooks/require-push-approval.py`, deployed to
     every `.claude/hooks/` by `/sync-agents`) forces the prompt on
     any `git push` targeting `main`/`main_debug` however wrapped; `merge_pull_request` is gated in

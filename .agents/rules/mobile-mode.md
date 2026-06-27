@@ -1,6 +1,6 @@
 ---
 name: mobile-mode
-description: "The web/mobile lane. Activates automatically when the session runs in a remote/cloud container (Claude Code on the web or phone), or when Daniel says 'mobile'. Adapts git, the approval gate, artifacts, and verification for a phone — where there is no terminal to paste into and typing is expensive. Overrides the desktop defaults in git-policy.md and artifacts-always-first.md for the duration of the session."
+description: "The web/mobile lane. Activates automatically when env `CLAUDE_CODE_REMOTE=true` (Claude Code on the web or phone), or when Daniel says 'mobile'. Adapts git, the approval gate, artifacts, and verification for a phone — where there is no terminal to paste into and typing is expensive. This rule is the single source of truth for the lane boundary (when mobile is on vs. desktop). Overrides the desktop defaults in git-policy.md and artifacts-always-first.md for the duration of the session."
 activation: On Demand (auto on web/mobile)
 ---
 
@@ -14,13 +14,16 @@ activation: On Demand (auto on web/mobile)
 
 ## When this lane is active
 
-- **Auto:** the session runs in a remote / cloud container (Claude Code on the web or the mobile app).
-  This is the normal case for phone use.
+- **Auto:** the session runs in a remote / cloud container (Claude Code on the web or the mobile app),
+  detected by the environment variable **`CLAUDE_CODE_REMOTE=true`** (the flag Claude Code sets on
+  web/mobile — the same one `autopilot_mobile.md` keys on). This is the normal case for phone use.
 - **Manual:** Daniel says "mobile" / "mobile mode" in any session.
-- **Off:** a local desktop session — the desktop defaults (`git-policy.md`, `artifacts-always-first.md`)
-  apply unchanged.
+- **Off (desktop):** a local desktop IDE session — `CLAUDE_CODE_REMOTE` is unset, so the desktop defaults
+  (`git-policy.md`, `artifacts-always-first.md`) apply **unchanged**. Ignore this rule entirely.
 
-When active, announce nothing ceremonial — just behave per the overrides below.
+This rule is the **single source of truth for the lane boundary**: every workspace `AGENTS.md` points here
+for *when* mobile mode is on (`CLAUDE_CODE_REMOTE=true`) rather than restating the trigger itself. When
+active, announce nothing ceremonial — just behave per the overrides below.
 
 ## Override 1 — Git  (supersedes `git-policy.md` "Default")
 
@@ -29,8 +32,9 @@ On the phone there is no terminal, so the "hand Daniel the command" default does
 - **Sync first (always).** Before committing, `git fetch` and pull `--ff-only` if the branch is behind
   origin — phone and desktop share branches, so never commit on a stale one. If it has diverged, STOP
   and flag it. (Full rule → `git-policy.md` → "Sync-first".)
-- **Commit and push for him.** After approved work, commit your OWN files and push to the designated
-  feature branch — no waiting for a terminal that does not exist.
+- **Commit and push for him.** After approved work, commit your OWN files and push them to your own
+  **`claude/*` session branch** — no waiting for a terminal that does not exist. Pushing to `claude/*` is
+  FREE (no approval), per `git-policy.md` → "Branch model"; never push directly to `main_debug`/`main`.
 - **Keep the safe-commit mechanics from `git-policy.md`.** Explicit paths only (`git add path/one path/two`);
   **NEVER `git add -A` / `git add .` / `git add -u`**; verify `git diff --cached --stat` shows only your
   files before committing; scope the message to this task.
@@ -38,7 +42,8 @@ On the phone there is no terminal, so the "hand Daniel the command" default does
   `git push -u origin <branch>`. If the push is rejected because the remote moved, STOP and report — do
   not force-push or blind-rebase.
 - **Ask before the PR.** Opening / converting a draft PR is an outward action — present it as a
-  **tap-confirm** (see Override 2) and wait for the tap before creating it.
+  **tap-confirm** (see Override 2) and wait for the tap before creating it. The PR targets **`main_debug`**
+  (the shared integration branch), **never `main`** — see `git-policy.md` → "Branch model".
 - **"Your Actions" becomes "review the PR."** The `walkthrough.md` closing section links the pushed
   branch / draft PR (`review PR #N`) instead of pasting a git command Daniel can't run.
 
