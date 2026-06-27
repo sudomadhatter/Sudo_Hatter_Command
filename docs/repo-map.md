@@ -14,7 +14,7 @@
 | Master toolkit (single source of authorship) | `.agents/` — rules · commands · skills · workflows · bmad · scripts · templates |
 | Synced engine mirrors (so `/commands` + skills resolve here) | `.claude/`, `.opencode/` |
 | Shared memory (plans · walkthroughs · handoffs · ledger) | `_artifacts/` (`_main/` = home-base work; `<project>/` = per-project; `opencode/` = opencode's mirror) |
-| Home-base docs (this map · workspace standard · master plan) | `_docs/` |
+| Home-base docs (this map · workspace standard · master plan) | `docs/` |
 | How to add / maintain workspaces (`/new-project`, `/sync-agents`) | `_system/` |
 | Model-agnostic proof the routing works | `_routing-canary/` |
 | Daniel's personal area — **PROTECTED** (don't edit/reference unless he says/links) | `_my_resources/` — **EXCEPT** `open_tasks/` (read-only carve-out below) |
@@ -25,8 +25,8 @@
 |---|---|
 | `router.md` | Routing / ownership / "where does this go" |
 | `AGENTS.md` | The home-base operating contract (gates, artifacts, persistence) |
-| `_docs/workspace-standard.md` | How a workspace is shaped + kept healthy (repo-map, artifacts, naming) |
-| `_docs/master-implementation-plan.md` | The home-base build plan |
+| `docs/workspace-standard.md` | How a workspace is shaped + kept healthy (repo-map, artifacts, naming) |
+| `_my_resources/docs/master-implementation-plan.md` | The home-base build plan |
 | `_artifacts/INDEX.md` | The session ledger — "pick up" scans it, "hand off" appends to it |
 | a project's `Projects/<name>/AGENTS.md` | When you go work inside that project (not this file) |
 | `_my_resources/open_tasks/` | Daniel asks "what do we do next / what's left" — read his todo + saved plans/PRPs (read-only) |
@@ -42,14 +42,14 @@ Tier-2/disposable — the maps above stay canonical (see `_my_resources/.../gitn
 > doc references) — the graph is strong for the `.py`/`.ps1` scripts, thin for the prose; trust the files for
 > "what references what." No project source is indexed here (projects are cherry-picked as their own repos).
 >
-> **Doc wiring (the prose layer GitNexus misses):** `_docs/doc-graph.md` (+ `doc-graph.json`) is the owned,
+> **Doc wiring (the prose layer GitNexus misses):** `docs/doc-graph.md` (+ `doc-graph.json`) is the owned,
 > deterministic, no-LLM map of which `.md` references which across `.agents/` — hubs, plus a broken-path /
 > ambiguous-ref report. Rebuild after editing rules/workflows:
 > `python .agents/scripts/generate_doc_graph.py`. Source: `.agents/scripts/generate_doc_graph.py`.
 
-**Drift:** checked at SessionStart by `.agents/scripts/check-repo-map-drift.ps1 -MapPath _docs/repo-map.md` — it
+**Drift:** checked at SessionStart by `.agents/scripts/check-repo-map-drift.ps1 -MapPath docs/repo-map.md` — it
 nags if a new top-level folder isn't named here. Rebuild the AUTO body:
-`python .agents/scripts/generate_repo_map.py --root . --output _docs/repo-map.md --mode content --ignore Projects,_my_resources` (`--root .` is required here — the master generator lives at `.agents/scripts/`, so its default root would otherwise resolve to `.agents/`).
+`python .agents/scripts/generate_repo_map.py --root . --output docs/repo-map.md --mode content --ignore Projects,_my_resources` (`--root .` is required here — the master generator lives at `.agents/scripts/`, so its default root would otherwise resolve to `.agents/`).
 <!-- REPO-MAP:CURATED-END -->
 
 <!-- REPO-MAP:AUTO-START -->
@@ -58,8 +58,6 @@ nags if a new top-level folder isn't named here. Rebuild the AUTO body:
 
 ```text
 Sudo_Hatter_Command/
-  _docs/
-      [5 files: .mdx4, .jsonx1 | e.g. doc-graph.json]
   _routing-canary/
     control/
         [1 files: .mdx1 | e.g. agent.md]
@@ -68,6 +66,8 @@ Sudo_Hatter_Command/
       [6 files: .mdx6 | e.g. AGENTS.md]
   _system/
       [2 files: .mdx1, .ps1x1 | e.g. AGENTS.md]
+  docs/
+      [4 files: .mdx3, .jsonx1 | e.g. doc-graph.json]
     [5 files: .mdx4, .jsonx1 | e.g. AGENTS.md]
 ```
 <!-- REPO-MAP:AUTO-END -->

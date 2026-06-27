@@ -23,7 +23,7 @@ Load now: `.agents/rules/constitution.md` (hard stops + gates), `.agents/rules/k
 (how to work), and `.agents/rules/artifacts-always-first.md` (the plan-first gate — see below). Everything
 else in `.agents/rules/` loads **on demand** when a task calls for it — do not preload the rest. The full
 rule set is the shared toolkit, not a startup payload. How a workspace is shaped + kept healthy →
-`_docs/workspace-standard.md`.
+`docs/workspace-standard.md`.
 
 > **Web/mobile session?** When env **`CLAUDE_CODE_REMOTE=true`** (Claude Code on the web or phone), also
 > load `.agents/rules/mobile-mode.md` — the web/mobile lane: it adapts git, the approval gate, artifacts,
@@ -41,8 +41,8 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 |---|---|---|
 | Master toolkit | `.agents/` | rules · commands · skills · workflows · bmad · scripts · templates (single source of authorship) |
 | Shared memory | `_artifacts/` | every agent's plans/walkthroughs/handoffs; `INDEX.md` ledger; per-workspace `active-context.md` |
-| Docs | `_docs/` | home-base documentation (master implementation plan, workspace standard) |
-| Navigation index | `_docs/repo-map.md` | the lobby's repo-map (curated header + auto body); drift-checked at SessionStart |
+| Docs | `docs/` | home-base documentation (master implementation plan, workspace standard) |
+| Navigation index | `docs/repo-map.md` | the lobby's repo-map (curated header + auto body); drift-checked at SessionStart |
 | Routing canary | `_routing-canary/` | model-agnostic proof the routing works (Claude/opencode/Antigravity) |
 | System builder | `_system/` | how to add/maintain workspaces (`/new-project`, `/sync-agents`) |
 | Lobby tool dirs | `.claude/`, `.opencode/` | synced copies of the master so `/commands` + skills resolve here. `/sync-agents` mirrors `.agents/commands/` to all three platforms (incl. the opencode + Antigravity machine-global caches); `platforms:` frontmatter limits a command's reach |
@@ -65,7 +65,7 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
     `_main` inside a project — every task there is that project's work).
   - **opencode** writes under its own `_artifacts/opencode/` namespace and applies the **same three rules inside
     it**: `opencode/<project>/`, `opencode/_main/`, `opencode/<project>/<epic>/<story>/`.
-  - Full model → `_docs/workspace-standard.md`.
+  - Full model → `docs/workspace-standard.md`.
 - Memory / active-context sections are NUMBERED (e.g. 5.2) so agents **skip-to-N** instead of reading all.
 
 ## 6. GATES  (consult before acting)
@@ -102,11 +102,11 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
   (Same source the "what's next / open tasks / what's left" routing trigger uses → `router.md`.)
 - **"hand off"** → write current state to that `active-context.md`, append a row to the matching `INDEX.md`,
   then read it back and verify without relying on chat memory.
-- Full protocol → `.agents/rules/artifacts-always-first.md`. Full model → `_docs/workspace-standard.md`.
+- Full protocol → `.agents/rules/artifacts-always-first.md`. Full model → `docs/workspace-standard.md`.
 
 ## 8. PORTABILITY
 `AGENTS.md` is the universal contract; `CLAUDE.md` and `GEMINI.md` are one-line adapters that point
 here. Nothing model-specific lives in shared files — so Claude, opencode, and Antigravity all drive
 the same system, and your work is saved to **your** files, not a vendor's memory. One canonical command
 set (`.agents/commands/`) mirrors to all three via `/sync-agents`; a command opts out of a platform with
-`platforms:` frontmatter (default = everywhere). Full model → `_docs/workspace-standard.md`.
+`platforms:` frontmatter (default = everywhere). Full model → `docs/workspace-standard.md`.

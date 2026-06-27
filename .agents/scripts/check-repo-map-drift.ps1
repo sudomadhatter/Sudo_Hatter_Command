@@ -17,13 +17,13 @@
 param(
     [string]$IgnoreExtra = '',              # comma-separated EXTRA folder names to skip (match the map's --ignore)
     [string]$Root = '',                     # override the auto-detected root (default: parent of scripts/)
-    [string]$MapPath = 'docs/repo-map.md'   # repo-map path relative to root (the home base passes _docs/repo-map.md)
+    [string]$MapPath = 'docs/repo-map.md'   # repo-map path relative to root (lobby and project both use docs/)
 )
 
 $ErrorActionPreference = 'SilentlyContinue'
 
 # Projects vendor this at <project>/scripts/ and auto-detect root; the home base calls the master copy
-# in .agents/scripts/ directly and passes -Root/-MapPath (its map lives at _docs/repo-map.md, not docs/).
+# in .agents/scripts/ directly and passes -Root/-MapPath (its map lives at docs/repo-map.md, same as a project).
 if ($Root) { $root = $Root } else { $root = Split-Path -Parent $PSScriptRoot }   # <project>/scripts -> <project>
 $map  = Join-Path $root $MapPath
 

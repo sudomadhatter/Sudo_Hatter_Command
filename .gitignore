@@ -1,6 +1,6 @@
 # ============================================================
 # Sudo_Hatter_Command HOME BASE — .gitignore
-# The home base tracks ONLY its own infra (.agents, _artifacts, _docs,
+# The home base tracks ONLY its own infra (.agents, _artifacts, docs,
 # _experiment, _system, lobby .claude/.opencode, root map files,
 # youtube_transcripts). Every sub-project keeps its OWN git repo and is
 # NEVER tracked here.

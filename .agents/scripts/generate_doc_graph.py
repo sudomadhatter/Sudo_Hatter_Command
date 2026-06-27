@@ -3,7 +3,7 @@
 
 Closes the gap that GitNexus is structurally blind to: GitNexus extracts headings, not
 doc-to-doc references, so the prose toolkit (rules / workflows / skills / commands) shows
-few cross-file edges (see the note in _docs/repo-map.md). This script reads every .md under
+few cross-file edges (see the note in docs/repo-map.md). This script reads every .md under
 a root, extracts the references that actually dominate these files -- markdown links
 `](rules/x.md)` and inline/backtick path tokens `router.md`, `.agents/rules/x.md` -- resolves
 each against the real file set, and emits a deterministic, no-LLM, ~$0 wiring map. There are
@@ -15,10 +15,10 @@ file OUTSIDE the indexed scope (e.g. the lobby `router.md`) is reported as EXTER
 so the dangling list stays trustworthy.
 
 Outputs (mirrors generate_repo_map.py's sentinel-splice contract):
-  - <lobby>/_docs/doc-graph.md   human-readable: hubs, orphans, dangling, ambiguous, externals.
+  - <lobby>/docs/doc-graph.md   human-readable: hubs, orphans, dangling, ambiguous, externals.
     Only the region between <!-- DOC-GRAPH:AUTO-START --> / <!-- DOC-GRAPH:AUTO-END --> is rewritten;
     the curated header above it is never touched. A scaffold is created on first run.
-  - <lobby>/_docs/doc-graph.json machine-readable {nodes, edges, dangling, external, ambiguous}.
+  - <lobby>/docs/doc-graph.json machine-readable {nodes, edges, dangling, external, ambiguous}.
 
 Master copy lives in .agents/scripts/ ; run from the lobby. ASCII-only on purpose (PowerShell 5.1
 reads BOM-less files as Windows-1252). stdlib only.
@@ -296,15 +296,15 @@ def main():
     lobby = default_root.parent
     ap = argparse.ArgumentParser(description="Generate the doc-wiring graph for the .agents/ toolkit")
     ap.add_argument("--root", default=str(default_root), help="dir to scan (default: .agents/)")
-    ap.add_argument("--output", default=None, help="markdown out (default <lobby>/_docs/doc-graph.md)")
-    ap.add_argument("--json", default=None, help="json out (default <lobby>/_docs/doc-graph.json)")
+    ap.add_argument("--output", default=None, help="markdown out (default <lobby>/docs/doc-graph.md)")
+    ap.add_argument("--json", default=None, help="json out (default <lobby>/docs/doc-graph.json)")
     ap.add_argument("--ignore", default="", help="comma-separated extra dir names to skip")
     ap.add_argument("--top", type=int, default=15, help="how many hubs to list")
     args = ap.parse_args()
 
     root = Path(args.root).resolve()
-    output = Path(args.output) if args.output else lobby / "_docs" / "doc-graph.md"
-    json_out = Path(args.json) if args.json else lobby / "_docs" / "doc-graph.json"
+    output = Path(args.output) if args.output else lobby / "docs" / "doc-graph.md"
+    json_out = Path(args.json) if args.json else lobby / "docs" / "doc-graph.json"
     ignores = set(DEFAULT_IGNORES)
     ignores.update(x.strip() for x in args.ignore.split(",") if x.strip())
 

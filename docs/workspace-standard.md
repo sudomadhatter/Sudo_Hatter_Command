@@ -4,10 +4,10 @@ type: reference-doc
 date: 2026-06-24
 owner: Daniel
 status: canonical
-canonical_location: _docs/workspace-standard.md (home base) — vendored copy in each Projects/<name>/docs/
+canonical_location: docs/workspace-standard.md (home base) — vendored copy in each Projects/<name>/docs/
 sources:
   - _my_resources/youtube_transcripts/implementation-plan_folder-as-workspace-routing-system.md  # theory
-  - _docs/master-implementation-plan.md                                                          # the rollout
+  - _my_resources/docs/master-implementation-plan.md                                             # the rollout
 ---
 
 # Workspace Standard
@@ -17,7 +17,7 @@ sources:
 > rollout; **this** is the standing spec an agent consults whenever it creates, converts, or maintains a
 > workspace. It is model-agnostic — it serves Claude, opencode, and Antigravity/Gemini equally.
 >
-> **Where it lives.** Canonically at `_docs/workspace-standard.md`. A **vendored copy** travels in each
+> **Where it lives.** Canonically at `docs/workspace-standard.md`. A **vendored copy** travels in each
 > `Projects/<name>/docs/` (same model as `.agents/rules/*`), so every repo is self-contained. Edit the
 > canonical copy; re-distribute with `/sync-agents`. Never hand-edit a vendored copy.
 
@@ -100,10 +100,10 @@ instead of a per-repo fork. Keep workspaces matching this table and the generic 
 | Entry adapters | `CLAUDE.md` · `GEMINI.md` (1-line) | same | identical everywhere |
 | Brain | `AGENTS.md` | `AGENTS.md` | numbered §1–§9 |
 | Toolkit | `.agents/` (**MASTER** here) | `.agents/` (**vendored**, synced) | one source of authorship |
-| Navigation index | `_docs/repo-map.md` | `docs/repo-map.md` | **`_docs/` (lobby) vs `docs/` (project)** — the tool auto-detects both |
-| Structure standard | `_docs/workspace-standard.md` | `docs/workspace-standard.md` | this file; vendored copy per project |
+| Navigation index | `docs/repo-map.md` | `docs/repo-map.md` | plain `docs/` everywhere — one form, no underscore |
+| Structure standard | `docs/workspace-standard.md` | `docs/workspace-standard.md` | this file; vendored copy per project |
 | Maintenance scripts | `.agents/scripts/{check_maps,generate_repo_map}.py` | same (synced copies) | run central with `--root <path>`; synced copy is for standalone use |
-| Drift baseline | `_docs/.maps-state.json` | `docs/.maps-state.json` | sits beside the repo-map |
+| Drift baseline | `docs/.maps-state.json` | `docs/.maps-state.json` | sits beside the repo-map |
 | Continuity store | `_artifacts/` (buckets: `_main/`, `<project>/`) | `_artifacts/` (project-local) | **"artifacts go where you work FROM"** |
 | Pickup/handoff brief (**prune target**) | `_artifacts/<bucket>/active-context.md` | **BMAD project:** `_bmad-output/active-context/active-context.md` (the live brief; `_artifacts/` holds *session history* only) | the file the **prune** trims |
 | Context archive (prune overflow) | `_artifacts/<bucket>/active-context-archive.md` | `_bmad-output/active-context/_archive/` | created on first prune |
@@ -113,10 +113,11 @@ instead of a per-repo fork. Keep workspaces matching this table and the generic 
 | Personal area (protected) | `_my_resources/` | `_my_resources/` | off-limits **except** the `## Open Work` manifest in `open_tasks/todo_list.md` (maintained by `/1_update-maps`) |
 | BMAD (if present) | — | `_bmad/` (owned, regenerated) · `_bmad-output/` (state) | `_bmad-output/active-context/active-context.md` **IS** the continuity brief above; `_bmad/` itself is never hand-edited |
 
-**Two modes, one rule.** The only legitimate home-base↔project differences are: (1) the docs folder is `_docs/`
-at the lobby, `docs/` in a project; (2) the lobby's `_artifacts/` is split into **buckets** (`_main/`,
+**Two modes, one rule.** Every workspace — lobby and project — uses a plain `docs/` folder (no underscore) for
+its navigation index and standard; the old `_docs/` lobby form is retired. The only legitimate
+home-base↔project differences left are: (1) the lobby's `_artifacts/` is split into **buckets** (`_main/`,
 `<project>/`) because work from the lobby is filed by *which workspace it changes*, whereas a project's
-`_artifacts/` is flat history; (3) the **continuity brief** that pickup reads and the prune trims lives at
+`_artifacts/` is flat history; (2) the **continuity brief** that pickup reads and the prune trims lives at
 `_artifacts/<bucket>/active-context.md` at the lobby but at **`_bmad-output/active-context/active-context.md`**
 in a BMAD project (a project's `_artifacts/` holds *session history* — folders + `INDEX.md` — not the brief).
 Everything else is identical. `check_maps.py` detects the mode by the presence of a `Projects/` directory (and

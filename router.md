@@ -18,4 +18,4 @@ Any workspace may send you BACK here ("if not here, go to root router").
 | openCode workspace | `Projects/openCode/` | its `AGENTS.md` | pending |
 | Maintaining THIS home-base system | `_system/` | `_system/AGENTS.md` | active |
 | **"What do we do next" / open tasks / what's left / Daniel's plans & PRPs** | `_my_resources/open_tasks/` **for where you work FROM** (lobby → home-base `_my_resources/open_tasks/`; inside a converted project → that project's `_my_resources/open_tasks/`) | `todo_list.md` (+ any plan/PRP files there) | active · **READ-ONLY** (Daniel's notes — never edit; cross-check vs live project files) |
-| Reference: routing theory + transcripts | `_docs/`, `youtube_transcripts/` | `_docs/master-implementation-plan.md` | reference |
+| Reference: routing theory + transcripts | `docs/`, `youtube_transcripts/` | `_my_resources/docs/master-implementation-plan.md` | reference |

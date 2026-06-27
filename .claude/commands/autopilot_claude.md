@@ -24,7 +24,7 @@ Launch the autopilot pipeline for the story in `$ARGUMENTS` (a story id like `11
    a live notification (Monitor avoids the foreground timeout AND drives the todo updates below).
    Call Monitor with:
 
-   - **command:** `LOG="_artifacts/_autopilot-run.log"; powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/autopilot-dev-story.ps1 -Story $ARGUMENTS > "$LOG" 2>&1 & APID=$!; tail --pid=$APID -f -n +1 "$LOG" | grep --line-buffered -E ">>> STAGE|TEST GATE|STORY STATUS|done in|PAUSED|AUTOPILOT|Total cost|CRASHED|retrying|MODEL MISMATCH|! WARNING|TESTS|COST CEILING|REVIEW INCOMPLETE"`
+   - **command:** `LOG="_artifacts/_autopilot-run.log"; powershell.exe -NoProfile -File scripts/autopilot-dev-story.ps1 -Story $ARGUMENTS > "$LOG" 2>&1 & APID=$!; tail --pid=$APID -f -n +1 "$LOG" | grep --line-buffered -E ">>> STAGE|TEST GATE|STORY STATUS|done in|PAUSED|AUTOPILOT|Total cost|CRASHED|retrying|MODEL MISMATCH|! WARNING|TESTS|COST CEILING|REVIEW INCOMPLETE"`
    - **description:** `autopilot $ARGUMENTS - stage progress (tailing _autopilot-run.log)`
    - **persistent:** `true`  (tail exits when the script PID dies)
 
@@ -110,7 +110,8 @@ behavior (the script just points it at the shared folder):
   human-only call). The audit's findings + fixes always flow into Stage 3.
 - **QA owns the loop close:** Stage 4 reviews AND applies fixes itself - no separate fix stage. As the
   last agent before the human, it writes **OUT-OF-SPEC DECISIONS** + **OPEN QUESTIONS FOR DANIEL** at the
-  top of `walkthrough.md` and may ask Daniel directly there.
+  top of `walkthrough.md` (and may ask Daniel directly there), and appends a **`## Close-Out Handoff`** block
+  at the bottom — the pre-routed learnings (incl. memory candidates) that `/update-sprint-context` lifts at close-out.
 - **Session continuity:** each team resumes its own chat (`--session-id` on the first call, `--resume`
   on the second). The two session ids are deterministic (generated up front, saved to
   `_pipeline/sessions.json`) so a crash is still resumable. Sessions are **persisted** (this is the

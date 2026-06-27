@@ -13,7 +13,7 @@ activation: Always On
 > `_artifacts/` + its `active-context.md`/`INDEX.md` (its rules, not this ledger). The store is written by ALL
 > tools — Claude, opencode, Antigravity/Gemini — so any agent can read past chats. **opencode** writes under its
 > own `_artifacts/opencode/` namespace, applying the **same rules inside it** (`opencode/<project>/`,
-> `opencode/_main/`, `opencode/<project>/<epic>/<story>/`). Full model → `_docs/workspace-standard.md`.
+> `opencode/_main/`, `opencode/<project>/<epic>/<story>/`). Full model → `docs/workspace-standard.md`.
 
 ## The Lean Artifact Set
 

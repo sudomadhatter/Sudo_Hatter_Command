@@ -14,7 +14,7 @@ SAME script reconciles the lobby OR any conformant project. Point it at a worksp
     python .agents/scripts/check_maps.py --set-anchor                   # record HEAD as the reconciled baseline
 
 Mode detection (PATH CONTRACT, two columns):
-  - HOME BASE  — has a `Projects/` dir. Map at `_docs/repo-map.md`; continuity briefs at
+  - HOME BASE  — has a `Projects/` dir. Map at `docs/repo-map.md`; continuity briefs at
                  `_artifacts/<bucket>/active-context.md`; `Projects/` are separate repos (never descended).
   - PROJECT    — no `Projects/`. Map at `docs/repo-map.md`. A BMAD project (`_bmad-output/` present) keeps
                  its continuity brief at `_bmad-output/active-context/active-context.md` and uses `_artifacts/`
@@ -90,12 +90,8 @@ def sh(args, cwd):
 
 # --- mode + path detection (genericity: one tool, any conformant workspace) ---------------------------
 def find_map_path(root):
-    """Repo-map lives at _docs/repo-map.md (lobby) or docs/repo-map.md (project). Prefer the one that exists."""
-    for cand in ("_docs/repo-map.md", "docs/repo-map.md"):
-        if (root / cand).exists():
-            return root / cand
-    # neither present yet — point at the mode-appropriate default so the 'missing' message is right
-    return root / ("_docs" if (root / "Projects").is_dir() else "docs") / "repo-map.md"
+    """Repo-map lives at docs/repo-map.md in every conformant workspace — lobby and project alike."""
+    return root / "docs" / "repo-map.md"
 
 
 def detect_mode(root):
@@ -313,7 +309,7 @@ def check_context_hygiene(root, is_home, is_bmad):
 # --- check 6: structure conformance (the contract gate — 'verify structures stay standard') -----------
 def check_conformance(root, is_home, is_bmad, map_path):
     """Confirm the workspace carries the standard files in the standard places (workspace-standard.md PATH CONTRACT)."""
-    docs = map_path.parent  # _docs (lobby) or docs (project)
+    docs = map_path.parent  # docs/ — same in lobby and project
     missing = []
 
     def need(rel, label):

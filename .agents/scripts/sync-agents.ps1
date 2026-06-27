@@ -19,9 +19,18 @@
       left alone. Skills / hooks / opencode-agents are an additive robocopy (no delete).
     - Global caches: MIRROR-EXACT — copy eligible, purge anything not eligible, EXCEPT `bmad-*` (BMAD installs
       its own global agents/workflows; never ours to delete).
+    - Project .agents vendor: ADDITIVE. The vendored .agents is a HYBRID (master toolkit + project-owned
+      rules\ and skills\), so it is NEVER mirrored/purged wholesale. The lone deletion is a narrow prune of
+      stale workflows\ command-ghosts — a workflows\ file whose name is a master COMMAND but not a master
+      WORKFLOW (a leftover from when commands lived in workflows\). That test provably never hits rules\,
+      skills\, or a project-authored workflow.
 
-  For a PROJECT target (not the lobby root) it ALSO vendors the whole .agents into the project so the repo is
-  clone-safe. A project sync does NOT touch the machine-global caches (globals reflect the lobby's canonical set).
+  For a PROJECT target (not the lobby root) it ALSO vendors master's .agents into the project so the repo is
+  clone-safe. That vendor is ADDITIVE (/E, no purge): a project's .agents is a HYBRID — master toolkit copied
+  in, layered OVER project-OWNED content master does NOT have (notably .agents\rules\ and project-specific
+  .agents\skills\). So NEVER /MIR or blanket-/PURGE the vendored .agents — that deletes the project's own
+  files. The only deletion here is the narrow workflows\ command-ghost prune (see PURGE POLICY). A project
+  sync does NOT touch the machine-global caches (globals reflect the lobby's canonical set).
 
   Always edit the master; never hand-edit the copies. Re-run this to propagate changes.
 
@@ -111,8 +120,23 @@ Write-Host "sync-agents: target=$Target (lobby=$IsLobby)"
 
 # --- local tool dirs ----------------------------------------------------------
 if (-not $GlobalsOnly) {
-  # Project target → vendor the whole master so the repo is self-contained.
-  if (-not $IsLobby) { Sync-Dir $Master (Join-Path $Target ".agents") }
+  # Project target → vendor master's .agents into the project ADDITIVELY (Sync-Dir = /E, no purge). The
+  # project's .agents is a HYBRID: master toolkit layered over project-OWNED rules\ + project skills\ that
+  # master does NOT have. Do NOT change this to /MIR or a blanket /PURGE — it deletes the project's own files.
+  if (-not $IsLobby) {
+    Sync-Dir $Master (Join-Path $Target ".agents")
+    # Prune stale command-ghosts from the vendored workflows/: a file that is a master COMMAND but NOT a
+    # master workflow is a leftover from the old layout (commands used to live in workflows/). This is the
+    # ONLY purge on the vendored .agents and it is provably safe — it can never touch rules/, skills/, or a
+    # project-authored workflow (none of those are master commands). Everything else stays additive (/E).
+    $mWf  = @(Get-ChildItem (Join-Path $Master "workflows") -Filter *.md -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
+    $mCmd = @(Get-ChildItem (Join-Path $Master "commands")  -Filter *.md -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
+    $purged = 0
+    Get-ChildItem (Join-Path $Target ".agents\workflows") -Filter *.md -File -ErrorAction SilentlyContinue |
+      Where-Object { ($mWf -notcontains $_.Name) -and ($mCmd -contains $_.Name) } |
+      ForEach-Object { Remove-Item $_.FullName -Force; $purged++ }
+    if ($purged) { Write-Host "sync-agents: purged $purged stale workflows/ command-ghost(s) from the vendor" }
+  }
 
   # Source of truth for this target's tool dirs: master for the lobby, vendored copy for a project.
   $src    = if ($IsLobby) { $Master } else { Join-Path $Target ".agents" }

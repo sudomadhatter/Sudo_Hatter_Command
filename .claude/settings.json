@@ -25,13 +25,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -NoProfile -Command \"[Console]::OutputEncoding=[System.Text.Encoding]::UTF8; $d=$env:CLAUDE_PROJECT_DIR; $ac = Join-Path $d '_artifacts/_main/active-context.md'; Write-Output '# Home-base continuity + gate (auto-injected at SessionStart)'; if (Test-Path $ac) { Get-Content -Raw -Encoding UTF8 $ac }; Write-Output ''; Write-Output 'ARTIFACTS GATE: no edits outside _artifacts/ without an approved implementation_plan.md (see AGENTS.md section 3). GIT: hand Daniel the exact command; never commit/push yourself unless he delegates it in the moment (git-policy).'; $rm = Join-Path $d '_docs/repo-map.md'; if (Test-Path $rm) { Write-Output ''; Write-Output '# Repo map (navigation index):'; Get-Content -Raw -Encoding UTF8 $rm }\"",
+            "command": "powershell -NoProfile -Command \"[Console]::OutputEncoding=[System.Text.Encoding]::UTF8; $d=$env:CLAUDE_PROJECT_DIR; $ac = Join-Path $d '_artifacts/_main/active-context.md'; Write-Output '# Home-base continuity + gate (auto-injected at SessionStart)'; if (Test-Path $ac) { Get-Content -Raw -Encoding UTF8 $ac }; Write-Output ''; Write-Output 'ARTIFACTS GATE: no edits outside _artifacts/ without an approved implementation_plan.md (see AGENTS.md section 3). GIT: hand Daniel the exact command; never commit/push yourself unless he delegates it in the moment (git-policy).'; $rm = Join-Path $d 'docs/repo-map.md'; if (Test-Path $rm) { Write-Output ''; Write-Output '# Repo map (navigation index):'; Get-Content -Raw -Encoding UTF8 $rm }\"",
             "timeout": 10,
             "statusMessage": "Loading continuity + repo-map..."
           },
           {
             "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& (Join-Path $env:CLAUDE_PROJECT_DIR '.agents/scripts/check-repo-map-drift.ps1') -Root $env:CLAUDE_PROJECT_DIR -MapPath '_docs/repo-map.md'\"",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& (Join-Path $env:CLAUDE_PROJECT_DIR '.agents/scripts/check-repo-map-drift.ps1') -Root $env:CLAUDE_PROJECT_DIR -MapPath 'docs/repo-map.md'\"",
             "timeout": 10,
             "statusMessage": "Checking repo-map drift..."
           }

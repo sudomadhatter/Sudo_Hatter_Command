@@ -40,6 +40,17 @@ no halting for confirmation).
     silent on, the call, why, reversible-at-close-out y/n).
   - `## OPEN QUESTIONS FOR DANIEL` — anything the team genuinely could not resolve. You MAY ask Daniel
     directly here. Write "none" if empty.
+- **Append a `## Close-Out Handoff` block at the BOTTOM of `walkthrough.md`** — the pre-routed learnings
+  `/update-sprint-context` lifts at close-out so it never re-derives. You have the full picture (plan + audit
+  + diff + your own fixes), so harvest from Dev's walkthrough body, `decisions-log.md`, and your review. Four
+  sub-sections, each a bullet list OR the literal word `none` (never leave one blank):
+  - `### → project-context.md` — new app-wide architecture rule / invariant.
+  - `### → component-specs/<spec>.md` — new component pitfall / gotcha / failure mode (name the spec).
+  - `### → active-context.md Active Tasks` — a bug found THIS run that is still open.
+  - `### → Claude memory` — a cross-session fact / recurring pitfall / Daniel preference that is NOT
+    component-scoped. One line per candidate: `name: <kebab-slug> | type: user|feedback|project|reference |
+    fact: <one line> | why cross-session: <one line>`. These are PROPOSALS — Daniel approves the write at
+    close-out; you NEVER write memory yourself.
 
 ## If you are genuinely blocked
 End your final message with exactly one line: `PIPELINE_BLOCKER: <reason>` — only for something truly

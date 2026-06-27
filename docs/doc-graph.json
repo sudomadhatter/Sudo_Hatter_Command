@@ -1,18 +1,18 @@
 {
-  "root": "C:\\Sudo_Hatter_Command\\.agents",
+  "root": "C:\\Users\\dlohn\\.gemini\\antigravity\\scratch\\Sudo_Hatter_Command\\.agents",
   "counts": {
-    "files": 983,
-    "edges": 2445,
-    "external": 21,
-    "ambiguous": 511,
-    "dangling": 531,
-    "broken_paths": 80,
-    "unresolved_names": 451
+    "files": 984,
+    "edges": 2454,
+    "external": 22,
+    "ambiguous": 510,
+    "dangling": 544,
+    "broken_paths": 79,
+    "unresolved_names": 465
   },
   "nodes": [
     {
       "path": "AGENTS.md",
-      "in": 17,
+      "in": 20,
       "out": 0
     },
     {
@@ -53,7 +53,7 @@
     {
       "path": "commands/1_push-to-main-and-deploy.md",
       "in": 0,
-      "out": 1
+      "out": 2
     },
     {
       "path": "commands/1_run-all-tests-back_front.md",
@@ -78,7 +78,7 @@
     {
       "path": "commands/1_update-maps.md",
       "in": 0,
-      "out": 3
+      "out": 4
     },
     {
       "path": "commands/INDEX.md",
@@ -102,7 +102,7 @@
     },
     {
       "path": "commands/autopilot_mobile.md",
-      "in": 0,
+      "in": 1,
       "out": 0
     },
     {
@@ -138,6 +138,11 @@
     {
       "path": "commands/dev.md",
       "in": 1,
+      "out": 0
+    },
+    {
+      "path": "commands/merge_main_debug.md",
+      "in": 0,
       "out": 0
     },
     {
@@ -258,7 +263,7 @@
     {
       "path": "opencode-agents/opus-auditor.md",
       "in": 0,
-      "out": 1
+      "out": 2
     },
     {
       "path": "opencode-agents/opus-reviewer.md",
@@ -272,7 +277,7 @@
     },
     {
       "path": "rules/artifacts-always-first.md",
-      "in": 4,
+      "in": 5,
       "out": 2
     },
     {
@@ -307,8 +312,8 @@
     },
     {
       "path": "rules/git-policy.md",
-      "in": 3,
-      "out": 1
+      "in": 4,
+      "out": 2
     },
     {
       "path": "rules/karpathy-guidelines.md",
@@ -322,8 +327,8 @@
     },
     {
       "path": "rules/mobile-mode.md",
-      "in": 3,
-      "out": 5
+      "in": 5,
+      "out": 7
     },
     {
       "path": "rules/powershell-encoding-safety.md",
@@ -4387,7 +4392,7 @@
     },
     {
       "path": "skills/deploy-backend/SKILL.md",
-      "in": 0,
+      "in": 1,
       "out": 0
     },
     {
@@ -4893,7 +4898,7 @@
     {
       "path": "templates/project-template/AGENTS.md",
       "in": 2,
-      "out": 3
+      "out": 7
     },
     {
       "path": "templates/project-template/CLAUDE.md",
@@ -4907,7 +4912,7 @@
     },
     {
       "path": "workflows/1_self-audit-stress-test.md",
-      "in": 3,
+      "in": 4,
       "out": 2
     },
     {
@@ -4948,6 +4953,11 @@
       "kind": "ref"
     },
     {
+      "from": "commands/1_push-to-main-and-deploy.md",
+      "to": "skills/deploy-backend/SKILL.md",
+      "kind": "ref"
+    },
+    {
       "from": "commands/1_run-all-tests-back_front.md",
       "to": "rules/constitution.md",
       "kind": "ref"
@@ -4970,6 +4980,11 @@
     {
       "from": "commands/1_update-maps.md",
       "to": "workflows/1_update-maps.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/1_update-maps.md",
+      "to": "AGENTS.md",
       "kind": "ref"
     },
     {
@@ -5178,6 +5193,11 @@
       "kind": "ref"
     },
     {
+      "from": "opencode-agents/opus-auditor.md",
+      "to": "workflows/1_self-audit-stress-test.md",
+      "kind": "ref"
+    },
+    {
       "from": "opencode-agents/opus-reviewer.md",
       "to": "rules/bmad_code_review_fast_path.md",
       "kind": "ref"
@@ -5274,7 +5294,17 @@
     },
     {
       "from": "rules/git-policy.md",
+      "to": "AGENTS.md",
+      "kind": "ref"
+    },
+    {
+      "from": "rules/git-policy.md",
       "to": "rules/mobile-mode.md",
+      "kind": "ref"
+    },
+    {
+      "from": "rules/mobile-mode.md",
+      "to": "AGENTS.md",
       "kind": "ref"
     },
     {
@@ -5285,6 +5315,11 @@
     {
       "from": "rules/mobile-mode.md",
       "to": "rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "rules/mobile-mode.md",
+      "to": "commands/autopilot_mobile.md",
       "kind": "ref"
     },
     {
@@ -17079,12 +17114,27 @@
     },
     {
       "from": "templates/project-template/AGENTS.md",
+      "to": "rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "templates/project-template/AGENTS.md",
       "to": "rules/constitution.md",
       "kind": "ref"
     },
     {
       "from": "templates/project-template/AGENTS.md",
+      "to": "rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "templates/project-template/AGENTS.md",
       "to": "rules/karpathy-guidelines.md",
+      "kind": "ref"
+    },
+    {
+      "from": "templates/project-template/AGENTS.md",
+      "to": "rules/mobile-mode.md",
       "kind": "ref"
     },
     {
@@ -17212,7 +17262,7 @@
     },
     {
       "from": "commands/1_update-maps.md",
-      "target": "docs/repo-map.md"
+      "target": "todo_list.md"
     },
     {
       "from": "commands/autopilot_claude.md",
@@ -17396,7 +17446,7 @@
     },
     {
       "from": "opencode-agents/bmad-sm.md",
-      "target": ".agent/gemini.md"
+      "target": ".agents/gemini.md"
     },
     {
       "from": "opencode-agents/bmad-tech-writer.md",
@@ -17545,10 +17595,6 @@
     {
       "from": "rules/mobile-mode.md",
       "target": "walkthrough.md"
-    },
-    {
-      "from": "rules/prose-formatting.md",
-      "target": "docs/repo-map.md"
     },
     {
       "from": "skills/4_sse-streaming-patterns/SKILL.md",
@@ -19232,11 +19278,19 @@
     },
     {
       "from": "templates/project-template/AGENTS.md",
-      "target": "active-context.md"
+      "target": "_final.md"
+    },
+    {
+      "from": "templates/project-template/AGENTS.md",
+      "target": "_v2.md"
     },
     {
       "from": "templates/project-template/AGENTS.md",
       "target": "constitution.project.md"
+    },
+    {
+      "from": "templates/project-template/AGENTS.md",
+      "target": "todo_list.md"
     },
     {
       "from": "workflows/1_self-audit-stress-test.md",
@@ -19244,11 +19298,59 @@
     },
     {
       "from": "workflows/1_update-maps.md",
-      "target": "docs/repo-map.md"
+      "target": "/active-context-archive.md"
+    },
+    {
+      "from": "workflows/1_update-maps.md",
+      "target": "/active-context.md"
+    },
+    {
+      "from": "workflows/1_update-maps.md",
+      "target": "INDEX-archive.md"
+    },
+    {
+      "from": "workflows/1_update-maps.md",
+      "target": "_artifacts/active-context.md"
+    },
+    {
+      "from": "workflows/1_update-maps.md",
+      "target": "_bmad-output/active-context/active-context.md"
+    },
+    {
+      "from": "workflows/1_update-maps.md",
+      "target": "active-context.md"
+    },
+    {
+      "from": "workflows/1_update-maps.md",
+      "target": "new-prp.md"
+    },
+    {
+      "from": "workflows/1_update-maps.md",
+      "target": "shipped-task.md"
+    },
+    {
+      "from": "workflows/1_update-maps.md",
+      "target": "slug.md"
+    },
+    {
+      "from": "workflows/1_update-maps.md",
+      "target": "todo_list.md"
+    },
+    {
+      "from": "workflows/1_update-maps.md",
+      "target": "workspace-standard.md"
     },
     {
       "from": "workflows/INDEX.md",
       "target": "implementation_plan.md"
+    },
+    {
+      "from": "workflows/INDEX.md",
+      "target": "repo-map.md"
+    },
+    {
+      "from": "workflows/INDEX.md",
+      "target": "todo_list.md"
     },
     {
       "from": "workflows/autopilot_bmad_dev_loop.md",
@@ -19281,16 +19383,16 @@
   ],
   "external": [
     {
-      "from": "commands/1_update-maps.md",
-      "target": "_docs/repo-map.md"
-    },
-    {
       "from": "commands/new-project.md",
       "target": "router.md"
     },
     {
       "from": "rules/artifacts-always-first.md",
-      "target": "_docs/workspace-standard.md"
+      "target": "docs/workspace-standard.md"
+    },
+    {
+      "from": "rules/prose-formatting.md",
+      "target": "docs/repo-map.md"
     },
     {
       "from": "skills/bmad-testarch-atdd/validation-report-20260127-095021.md",
@@ -19357,12 +19459,16 @@
       "target": "Workflow-plan.md"
     },
     {
-      "from": "workflows/1_update-maps.md",
-      "target": "_docs/repo-map.md"
+      "from": "templates/project-template/AGENTS.md",
+      "target": "_my_resources/open_tasks/todo_list.md"
     },
     {
-      "from": "workflows/INDEX.md",
-      "target": "_docs/repo-map.md"
+      "from": "workflows/1_update-maps.md",
+      "target": "_my_resources/open_tasks/todo_list.md"
+    },
+    {
+      "from": "workflows/1_update-maps.md",
+      "target": "docs/repo-map.md"
     }
   ],
   "ambiguous": [
@@ -20629,97 +20735,6 @@
       ]
     },
     {
-      "from": "commands/1_push-to-main-and-deploy.md",
-      "target": ".agent/skills/deploy-backend/SKILL.md",
-      "candidates": [
-        "skills/3_voice-ai-development/SKILL.md",
-        "skills/4_sse-streaming-patterns/SKILL.md",
-        "skills/5_adk_skills/adk-agent-development/SKILL.md",
-        "skills/5_adk_skills/adk-testing-patterns/SKILL.md",
-        "skills/6_dual-store-rag-patterns/SKILL.md",
-        "skills/adk-prompting/SKILL.md",
-        "skills/agent-handoff-patterns/SKILL.md",
-        "skills/architectural-propagation/SKILL.md",
-        "skills/backend-dev-guidelines/SKILL.md",
-        "skills/bmad-advanced-elicitation/SKILL.md",
-        "skills/bmad-agent-analyst/SKILL.md",
-        "skills/bmad-agent-architect/SKILL.md",
-        "skills/bmad-agent-dev/SKILL.md",
-        "skills/bmad-agent-pm/SKILL.md",
-        "skills/bmad-agent-tech-writer/SKILL.md",
-        "skills/bmad-agent-ux-designer/SKILL.md",
-        "skills/bmad-brainstorming/SKILL.md",
-        "skills/bmad-check-implementation-readiness/SKILL.md",
-        "skills/bmad-checkpoint-preview/SKILL.md",
-        "skills/bmad-code-review/SKILL.md",
-        "skills/bmad-correct-course/SKILL.md",
-        "skills/bmad-create-architecture/SKILL.md",
-        "skills/bmad-create-epics-and-stories/SKILL.md",
-        "skills/bmad-create-prd/SKILL.md",
-        "skills/bmad-create-story/SKILL.md",
-        "skills/bmad-customize/SKILL.md",
-        "skills/bmad-dev-story/SKILL.md",
-        "skills/bmad-document-project/SKILL.md",
-        "skills/bmad-domain-research/SKILL.md",
-        "skills/bmad-edit-prd/SKILL.md",
-        "skills/bmad-editorial-review-prose/SKILL.md",
-        "skills/bmad-editorial-review-structure/SKILL.md",
-        "skills/bmad-generate-project-context/SKILL.md",
-        "skills/bmad-help/SKILL.md",
-        "skills/bmad-index-docs/SKILL.md",
-        "skills/bmad-investigate/SKILL.md",
-        "skills/bmad-market-research/SKILL.md",
-        "skills/bmad-party-mode/SKILL.md",
-        "skills/bmad-prd/SKILL.md",
-        "skills/bmad-prfaq/SKILL.md",
-        "skills/bmad-product-brief/SKILL.md",
-        "skills/bmad-qa-generate-e2e-tests/SKILL.md",
-        "skills/bmad-quick-dev/SKILL.md",
-        "skills/bmad-retrospective/SKILL.md",
-        "skills/bmad-review-adversarial-general/SKILL.md",
-        "skills/bmad-review-edge-case-hunter/SKILL.md",
-        "skills/bmad-shard-doc/SKILL.md",
-        "skills/bmad-spec/SKILL.md",
-        "skills/bmad-sprint-planning/SKILL.md",
-        "skills/bmad-sprint-status/SKILL.md",
-        "skills/bmad-tea/SKILL.md",
-        "skills/bmad-teach-me-testing/SKILL.md",
-        "skills/bmad-technical-research/SKILL.md",
-        "skills/bmad-testarch-atdd/SKILL.md",
-        "skills/bmad-testarch-automate/SKILL.md",
-        "skills/bmad-testarch-ci/SKILL.md",
-        "skills/bmad-testarch-framework/SKILL.md",
-        "skills/bmad-testarch-nfr/SKILL.md",
-        "skills/bmad-testarch-test-design/SKILL.md",
-        "skills/bmad-testarch-test-review/SKILL.md",
-        "skills/bmad-testarch-trace/SKILL.md",
-        "skills/bmad-ux/SKILL.md",
-        "skills/bmad-validate-prd/SKILL.md",
-        "skills/deploy-backend/SKILL.md",
-        "skills/firebase-ai-logic-basics/SKILL.md",
-        "skills/firebase-app-hosting-basics/SKILL.md",
-        "skills/firebase-auth-basics/SKILL.md",
-        "skills/firebase-basics/SKILL.md",
-        "skills/firebase-data-connect-basics/SKILL.md",
-        "skills/firebase-firestore-basics/SKILL.md",
-        "skills/firebase-hosting-basics/SKILL.md",
-        "skills/gcp-cloud-run/SKILL.md",
-        "skills/gemini-live-api/SKILL.md",
-        "skills/hr-agent-schema-guide/SKILL.md",
-        "skills/mermaid-diagram-standards/SKILL.md",
-        "skills/python-patterns/SKILL.md",
-        "skills/python_inter_venv_fix/SKILL.md",
-        "skills/rag-implementation/SKILL.md",
-        "skills/react-best-practices/SKILL.md",
-        "skills/regulatory-verification-protocol/SKILL.md",
-        "skills/specialist_agents_team/SKILL.md",
-        "skills/systematic-debugging/SKILL.md",
-        "skills/troubleshoot-cloudrun-deployment/SKILL.md",
-        "skills/ui-ux-pro-max/SKILL.md",
-        "skills/v3-prompt-architecture/SKILL.md"
-      ]
-    },
-    {
       "from": "commands/1_update-maps.md",
       "target": "/INDEX.md",
       "candidates": [
@@ -20735,14 +20750,6 @@
       "candidates": [
         "commands/bmad-master.md",
         "opencode-agents/bmad-master.md"
-      ]
-    },
-    {
-      "from": "opencode-agents/opus-auditor.md",
-      "target": ".agent/workflows/1_self-audit-stress-test.md",
-      "candidates": [
-        "commands/1_self-audit-stress-test.md",
-        "workflows/1_self-audit-stress-test.md"
       ]
     },
     {
@@ -20765,7 +20772,7 @@
     },
     {
       "from": "skills/4_sse-streaming-patterns/SKILL.md",
-      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/multi-agent-orchestration/SKILL.md",
+      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/multi-agent-orchestration/SKILL.md",
       "candidates": [
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
@@ -20856,7 +20863,7 @@
     },
     {
       "from": "skills/4_sse-streaming-patterns/SKILL.md",
-      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/regulatory-verification-protocol/SKILL.md",
+      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/regulatory-verification-protocol/SKILL.md",
       "candidates": [
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
@@ -21038,7 +21045,7 @@
     },
     {
       "from": "skills/6_dual-store-rag-patterns/SKILL.md",
-      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/multi-agent-orchestration/SKILL.md",
+      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/multi-agent-orchestration/SKILL.md",
       "candidates": [
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
@@ -21129,7 +21136,7 @@
     },
     {
       "from": "skills/6_dual-store-rag-patterns/SKILL.md",
-      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/regulatory-verification-protocol/SKILL.md",
+      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/regulatory-verification-protocol/SKILL.md",
       "candidates": [
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
@@ -21402,7 +21409,7 @@
     },
     {
       "from": "skills/agent-handoff-patterns/SKILL.md",
-      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/firestore-schema-guide/SKILL.md",
+      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/firestore-schema-guide/SKILL.md",
       "candidates": [
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
@@ -21493,7 +21500,7 @@
     },
     {
       "from": "skills/agent-handoff-patterns/SKILL.md",
-      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/multi-agent-orchestration/SKILL.md",
+      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/multi-agent-orchestration/SKILL.md",
       "candidates": [
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
@@ -29201,7 +29208,7 @@
     },
     {
       "from": "skills/gcp-cloud-run/SKILL.md",
-      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/backend-dev-guidelines/SKILL.md",
+      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/backend-dev-guidelines/SKILL.md",
       "candidates": [
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
@@ -29292,7 +29299,7 @@
     },
     {
       "from": "skills/gcp-cloud-run/SKILL.md",
-      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/sse-streaming-patterns/SKILL.md",
+      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/sse-streaming-patterns/SKILL.md",
       "candidates": [
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
@@ -29383,7 +29390,7 @@
     },
     {
       "from": "skills/hr-agent-schema-guide/SKILL.md",
-      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/agent-handoff-patterns/SKILL.md",
+      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/agent-handoff-patterns/SKILL.md",
       "candidates": [
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
@@ -29474,7 +29481,7 @@
     },
     {
       "from": "skills/hr-agent-schema-guide/SKILL.md",
-      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/multi-agent-orchestration/SKILL.md",
+      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/multi-agent-orchestration/SKILL.md",
       "candidates": [
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
@@ -29565,7 +29572,7 @@
     },
     {
       "from": "skills/rag-implementation/SKILL.md",
-      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/dual-store-rag-patterns/SKILL.md",
+      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/dual-store-rag-patterns/SKILL.md",
       "candidates": [
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
@@ -29656,7 +29663,7 @@
     },
     {
       "from": "skills/rag-implementation/SKILL.md",
-      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/multi-agent-orchestration/SKILL.md",
+      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/multi-agent-orchestration/SKILL.md",
       "candidates": [
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
@@ -29747,7 +29754,7 @@
     },
     {
       "from": "skills/rag-implementation/SKILL.md",
-      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/regulatory-verification-protocol/SKILL.md",
+      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/regulatory-verification-protocol/SKILL.md",
       "candidates": [
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
@@ -29838,7 +29845,7 @@
     },
     {
       "from": "skills/regulatory-verification-protocol/SKILL.md",
-      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/dual-store-rag-patterns/SKILL.md",
+      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/dual-store-rag-patterns/SKILL.md",
       "candidates": [
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
@@ -29929,7 +29936,7 @@
     },
     {
       "from": "skills/regulatory-verification-protocol/SKILL.md",
-      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/multi-agent-orchestration/SKILL.md",
+      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/multi-agent-orchestration/SKILL.md",
       "candidates": [
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
@@ -30020,7 +30027,7 @@
     },
     {
       "from": "skills/regulatory-verification-protocol/SKILL.md",
-      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/sse-streaming-patterns/SKILL.md",
+      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/sse-streaming-patterns/SKILL.md",
       "candidates": [
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
@@ -30111,7 +30118,7 @@
     },
     {
       "from": "skills/specialist_agents_team/SKILL.md",
-      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/dual-store-rag-patterns/SKILL.md",
+      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/dual-store-rag-patterns/SKILL.md",
       "candidates": [
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
@@ -30202,7 +30209,7 @@
     },
     {
       "from": "skills/specialist_agents_team/SKILL.md",
-      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/regulatory-verification-protocol/SKILL.md",
+      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/regulatory-verification-protocol/SKILL.md",
       "candidates": [
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
@@ -30293,7 +30300,7 @@
     },
     {
       "from": "skills/specialist_agents_team/SKILL.md",
-      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agent/skills/sse-streaming-patterns/SKILL.md",
+      "target": "/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/sse-streaming-patterns/SKILL.md",
       "candidates": [
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
@@ -30570,6 +30577,16 @@
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
         "skills/ui-ux-pro-max/SKILL.md",
         "skills/v3-prompt-architecture/SKILL.md"
+      ]
+    },
+    {
+      "from": "templates/project-template/AGENTS.md",
+      "target": "_artifacts/INDEX.md",
+      "candidates": [
+        "commands/INDEX.md",
+        "rules/INDEX.md",
+        "skills/INDEX.md",
+        "workflows/INDEX.md"
       ]
     },
     {

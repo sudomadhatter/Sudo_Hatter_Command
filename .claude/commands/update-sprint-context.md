@@ -18,7 +18,7 @@ Read:
 2. `_bmad-output/implementation-artifacts/sprint-status.yaml` — **Grep for THIS story's id + read only its epic block + line**, NOT all 400+ lines (that file is ~27k tokens; reading it whole is the single biggest waste in this command).
 3. List `_bmad-output/component-specs/` — names only. Open a spec only when you have a learning to route into it (Step 3).
 4. `_bmad-output/project-context.md` — open ONLY if a session learning looks app-wide (to check for an existing rule before adding one). Otherwise skip; its rules were loaded at boot.
-5. This session's `_artifacts/<YYYY-MM-DD>_<slug>/` — `implementation_plan.md`, `walkthrough.md`, `task-list.md`. **Skip any artifact you already read earlier THIS session** (e.g. right after an /autopilot run the walkthrough + code-review are already in context — don't re-read them).
+5. This session's `_artifacts/<YYYY-MM-DD>_<slug>/` — `implementation_plan.md`, `walkthrough.md`, `task-list.md`. **Skip any artifact you already read earlier THIS session** (e.g. right after an /autopilot run the walkthrough + code-review are already in context — don't re-read them). **If `walkthrough.md` ends with a `## Close-Out Handoff` block** (autopilot Stage 4 writes one), that block is the AUTHORITATIVE, pre-routed list of this run's learnings — Step 3 lifts it instead of re-deriving.
 6. **Cross-reference `implementation_plan.md` vs `walkthrough.md`** for plan-vs-built deltas — unless you already surfaced those deltas this session.
 
 Report: sprint objective, this story's status, plan-vs-walkthrough deltas, # known pitfalls.
@@ -32,7 +32,11 @@ carryovers (pending live-QA / deploy) can't be advanced by a grep — leave them
 to move to `## Completed Tasks`.
 
 ## Step 3 — Route each learning to the RIGHT home (the 4 homes)
-Categorize every learning from the session and send it to exactly one home:
+**If `walkthrough.md` has a `## Close-Out Handoff` block, LIFT it:** its four sub-sections map 1:1 to the four
+homes below — route each listed item to its tagged home (a sub-section that says `none` = nothing for that
+home). The block is pre-sorted by the agent that did the work, so do NOT re-derive — the Step 2 code-verify is
+enough. **Only if there is NO such block** (e.g. a manual, non-autopilot session) categorize every learning
+yourself from the artifacts:
 - **New architecture rule / invariant (app-wide)** → `_bmad-output/project-context.md` (`## Critical Architecture Rules`)
 - **New component pitfall / gotcha / failure mode** → `_bmad-output/component-specs/<spec>.md`
 - **New bug discovered (still open)** → `active-context.md` (`## Active Tasks`)
@@ -60,13 +64,17 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
     `/update-sprint-context` is Daniel-invoked, so it owns the `review → done` advance.)
 - **Last Updated**: set to today's date at the top of `active-context.md`.
 
-## Step 5 — Prune & cap (this is what keeps boot cheap)
-- **`active-context.md` hard cap ≈ 150 lines of LIVE state.** If history has crept in, move it to
+## Step 5 — Prune & cap (this is what keeps boot cheap) — AUTOMATIC, never ask
+This whole step is an unconditional *apply* (same tier as Step 4): prune and cap **without asking**.
+Active-context is project-scoped and reversible (history survives in `_artifacts/` + git), so there is
+NO permission gate here. The only two gates in this command are the live-test story→done check (Step 4)
+and the memory write (Step 6) — everything else just applies.
+- **`active-context.md` hard cap ≈ 250 lines of LIVE state.** If history has crept in, move it to
   `_artifacts/<date>_<slug>/walkthrough.md` / git — do not keep narrative logs here.
 - **Completed tasks > 5** → delete the oldest (history lives in `_artifacts/` + git).
 - **Pitfall staleness** — ALWAYS re-check the pitfalls you added/touched this session. Run the FULL
   staleness sweep over EVERY `## Known V2 Pitfalls` entry ONLY when `active-context.md` is over its
-  ~150-line cap (that grep-per-entry pass is expensive and mostly returns "keep", so it only earns its
+  ~250-line cap (that grep-per-entry pass is expensive and mostly returns "keep", so it only earns its
   cost when the file actually needs trimming). For each entry checked:
   1. References a story dependency and that story is `done` in sprint-status → **stale, remove**.
   2. Describes a temporary degraded state ("degraded until Story Y") and Y is `done` → **stale, remove**.
@@ -85,9 +93,17 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
   > - ✅ Moved to Completed: [tasks]
   > - 🧠 Learnings: [rule/pitfall] → [file]
   > - 🧹 Pruned: [stale pitfalls / old completed]
-  > - 🧠 Memory proposed (awaiting OK): [name → one-line]
-- **Ask Daniel:** *"Saved the session updates from the codebase + artifacts. Any manual learnings, new
-  bugs, or sprint-objective changes — and shall I write the proposed memory file(s)?"*
-  Apply any additions; write the approved memory files (+ `MEMORY.md` pointers). Otherwise the save is done.
+- **Memory (the ONE gated write) — never ask blind, never ask when empty:**
+  - **If there are ≥1 memory candidates** (from the Close-Out Handoff `→ Claude memory` bucket, or one you
+    derived in Step 3): show each one IN FULL *before* asking — proposed `name`, the exact one-line fact,
+    `metadata.type`, and WHY it's cross-session (not just this story). Then ask:
+    *"These would go to permanent auto-memory — loaded into the top of EVERY future session. Write them? (per-candidate y/n)"*
+    Write only the approved files (one fact per file, `name`/`description`/`metadata.type` frontmatter) + their
+    `MEMORY.md` pointers.
+  - **If there are zero candidates, do NOT ask the memory question at all.** Print `🧠 Memory: nothing
+    cross-session this session — unchanged` and move on. (This is MOST sessions — project learnings already
+    routed to specs / active-context / rules in Steps 3–4; memory is only for durable, non-component facts.)
+- **Then ask Daniel (always, separate from memory):** *"Saved the session updates from the codebase +
+  artifacts. Any manual learnings, new bugs, or sprint-objective changes to add?"* Apply any additions. Done.
 
 Optional additional input: $ARGUMENTS

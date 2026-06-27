@@ -9,7 +9,7 @@
     1. Moves each known project from the home-base root into  <NewName>\Projects\<project>.
     2. Rewrites every absolute reference in TEXT files straight to the FINAL path:
          <OldName>\<project>\...   ->  <NewName>\Projects\<project>\...
-         <OldName>\<infra>\...     ->  <NewName>\<infra>\...   (.agents, _artifacts, _docs, etc.)
+         <OldName>\<infra>\...     ->  <NewName>\<infra>\...   (.agents, _artifacts, docs, etc.)
          bare "<OldName>"          ->  "<NewName>"             (names in prose)
        ...in the home base AND your user ~/.claude/settings.json.
     3. Lists virtual envs to recreate (they hardcode the old path).
