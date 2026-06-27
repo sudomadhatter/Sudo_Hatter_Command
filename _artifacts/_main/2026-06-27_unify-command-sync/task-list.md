@@ -21,10 +21,11 @@ ArtifactMetadata:
 - [x] Fix bug B — over-broad `^bmad-` preserve → check master-managed first
 - [x] Close-out — INDEX row, walkthrough (with real output + Your Actions), this snapshot
 
+- [x] Fix opencode junction (Daniel authorized) — restored target `scratch\OpenCode`, populated opencode global = 31 cmds
+
 ## Pending (Daniel)
 - [ ] Run the surgical commit (walkthrough → Your Actions #1)
-- [ ] Restore/repoint the opencode junction target, then `/sync-agents -GlobalsOnly` + restart opencode (#2/#3)
+- [ ] Restart opencode to pick up the refreshed global commands (#3)
 
 ## Out of scope → item 3 (fix clean-workspace mirroring)
 - [ ] Re-vendor `.agents/` (new sync engine + tagged commands) into both projects
-- [ ] Broken opencode junction is environmental — restore vs repoint is Daniel's call

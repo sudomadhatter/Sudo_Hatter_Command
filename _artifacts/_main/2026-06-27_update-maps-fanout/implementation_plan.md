@@ -72,3 +72,33 @@ pick up the new command/workflow text.
 
 Home-base `/1_update-maps` will **default to all** (lobby + every project), per your ask. The focus
 `$ARGUMENTS` (e.g. a project name, or `.` for lobby-only) is the escape hatch to scope a single workspace.
+
+---
+
+## Scope add (2026-06-27, mid-build) — keep the open-tasks list fresh
+
+**Daniel's follow-up:** *"have the /command update `todo_list.md` with the open tasks … there should be one
+in every project (a standard) … just update the INDEX and README so it knows to update the todo list under
+the open-task section of it."*
+
+**Read:** keep `_my_resources/open_tasks/todo_list.md`'s **`## Open Work`** section mirroring the actual
+plan/PRP `<slug>.md` files in `open_tasks/` (Daniel drops them in, moves them out when he picks one up).
+**Light touch — no sentinels, no linter machinery** (he steered me off that): document the behavior so
+`/1_update-maps` *does* it, and never touch his hand-written numbered notes or the task files themselves.
+
+**The contract (only thing the command ever writes in `_my_resources/`):** the file-list under `## Open Work`
+in `todo_list.md`. Daniel owns the prose notes (`## Todo list`) and the task files; the command owns only that
+manifest line. It rides the same Step-4 approval gate as every other edit. Fan-out means each project's
+`todo_list.md` refreshes too (→ "one in every project").
+
+| File | Change |
+|---|---|
+| `.agents/workflows/1_update-maps.md` | New short step **"Refresh the open-tasks list"** — per workspace, rewrite the `## Open Work` file-list in `todo_list.md` to the current `open_tasks/*.md` (excl. `todo_list.md`); preserve the `## Todo list` prose; never edit the task files. (The executable instruction — what makes the command "know.") |
+| `.agents/commands/INDEX.md` · `.agents/workflows/INDEX.md` | The `/1_update-maps` rows: add "refreshes the open-tasks list" (and fix the stale "lobby-only / 4 checks" → fan-out / 6 checks). **(the INDEX)** |
+| `_my_resources/README.md` (lobby + each project) | Note the `todo_list.md` `## Open Work` section is auto-refreshed by `/1_update-maps`; carve that one exception into the "agents don't edit `_my_resources/`" rule. **(the README)** |
+
+**Guardrail moved (flagging explicitly):** `_my_resources/` was *read-only/off-limits*. This grants
+`/1_update-maps` write access to **exactly one thing** — the `## Open Work` manifest in `todo_list.md` — and
+nothing else in `_my_resources/` (the rest stays untouchable; task files stay Daniel's). The conformance check
+already requires `_my_resources/open_tasks/todo_list.md` in every workspace, so the "one per project" standard
+is enforced (Ingestion + OpenCode are flagged for lacking it).

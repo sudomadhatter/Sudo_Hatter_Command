@@ -71,7 +71,7 @@ that call them. Never load skills globally.
 ### Supporting files every workspace carries
 - **`docs/repo-map.md`** — the navigation index (Part 3).
 - **`active-context.md`** (home-base bucket or project-local, per Part 2) — continuity (numbered: `1 PRIME`, `5 PICK UP`, `6 HAND OFF`).
-- **`_my_resources/open_tasks/todo_list.md`** — Daniel's **READ-ONLY** "what's next" queue (+ any plan/PRP `.md` notes alongside). Surfaced by BOTH the routing-table "what's next" row AND on "pick up." Agents never edit it; cross-check vs live files.
+- **`_my_resources/open_tasks/todo_list.md`** — Daniel's "what's next" queue (+ any plan/PRP `.md` notes alongside). Surfaced by BOTH the routing-table "what's next" row AND on "pick up." **READ-ONLY for agents — with one exception:** `/1_update-maps` refreshes the **`## Open Work` file-list** to mirror the task files beside it (Daniel's `## Todo list` prose and the task files stay his). Cross-check vs live files.
 - **`.agents/`** — the vendored master toolkit (rules, commands, skills, workflows, scripts, templates).
 - **`opencode.json`** — `instructions` = the slim least-context set (`AGENTS.md` + the always-load rules);
   `skills.paths` = `[".agents/skills"]`.
@@ -109,8 +109,8 @@ instead of a per-repo fork. Keep workspaces matching this table and the generic 
 | Context archive (prune overflow) | `_artifacts/<bucket>/active-context-archive.md` | `_bmad-output/active-context/_archive/` | created on first prune |
 | Session ledger | `_artifacts/INDEX.md` | `_artifacts/INDEX.md` | one row per session; archive overflow → `INDEX-archive.md` |
 | Retired artifacts | `_artifacts/_archived/` | `_artifacts/_archived/` | — |
-| Open tasks ("what's next") | `_my_resources/open_tasks/todo_list.md` (+ plan/PRP notes) | same | **READ-ONLY**; surfaced on pickup + "what's next" |
-| Personal area (protected) | `_my_resources/` | `_my_resources/` | off-limits except `open_tasks/` (read-only) |
+| Open tasks ("what's next") | `_my_resources/open_tasks/todo_list.md` (+ plan/PRP notes) | same | **READ-ONLY for context**, but `/1_update-maps` refreshes its `## Open Work` file-list; surfaced on pickup + "what's next" |
+| Personal area (protected) | `_my_resources/` | `_my_resources/` | off-limits **except** the `## Open Work` manifest in `open_tasks/todo_list.md` (maintained by `/1_update-maps`) |
 | BMAD (if present) | — | `_bmad/` (owned, regenerated) · `_bmad-output/` (state) | `_bmad-output/active-context/active-context.md` **IS** the continuity brief above; `_bmad/` itself is never hand-edited |
 
 **Two modes, one rule.** The only legitimate home-base↔project differences are: (1) the docs folder is `_docs/`
@@ -207,6 +207,17 @@ in a BMAD project); keep the newest **~25** `INDEX.md` rows, archive older to `I
 only *nags* past ~12 blocks (hysteresis — not every session), and the prune is approval-gated like every other
 edit. Session **folders** under `_artifacts/` are disk-only (never auto-loaded into context) → archive them on
 epic close, not on a schedule.
+
+The same command also **refreshes the open-tasks list**: it rewrites the `## Open Work` file-list in
+`_my_resources/open_tasks/todo_list.md` to mirror the plan/PRP `.md` files actually sitting in `open_tasks/`
+(Daniel drops them in; moves them out when he picks one up). It touches only that manifest — his `## Todo list`
+prose and the task files stay his — and it's approval-gated like the prune.
+
+**Run scope — fan-out.** `/1_update-maps` is **mode-driven**: from the **home base** (a `Projects/` dir exists)
+it fans out — `check_maps.py --all` reconciles the lobby **and every conformant project** (one with an
+`AGENTS.md`) in one run, so a single command from the top cleans + prunes + refreshes the open-tasks list
+everywhere. From **inside a project** it reconciles just that workspace. Each repo commits and re-anchors
+(`--set-anchor`) separately.
 
 ### End-of-Task checklist (before saying "done" on anything that produced changes)
 - ☐ `walkthrough.md` (what changed + real pasted test output + "Your Actions" with the exact git command)

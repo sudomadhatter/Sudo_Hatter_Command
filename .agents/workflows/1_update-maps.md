@@ -2,8 +2,9 @@
 
 > **Goal.** Bring every navigation artifact in a workspace back into agreement with what's *actually on
 > disk*: the repo map (`_docs/repo-map.md` at the lobby, `docs/repo-map.md` in a project), every `INDEX.md`,
-> and — new — the size of the continuity `active-context.md` (**context hygiene / prune**). Detect drift
-> accurately (use git, not a blind re-walk), fix what's safe to fix, and flag what isn't yours to edit.
+> the size of the continuity `active-context.md` (**context hygiene / prune**), and the **open-tasks list**
+> (`_my_resources/open_tasks/todo_list.md`'s `## Open Work` section, kept mirroring the task files beside it).
+> Detect drift accurately (use git, not a blind re-walk), fix what's safe to fix, and flag what isn't yours to edit.
 >
 > **This is an upkeep/maintenance workflow.** It edits docs/markdown only — never code, never commits,
 > never pushes (per `.agents/rules/git-policy.md`). Read-mostly until the approval gate.
@@ -11,14 +12,16 @@
 > **ONE generic tool, every workspace — NOT per-repo.** The same `check_maps.py` + this workflow reconcile
 > the lobby OR any conformant project, because every workspace follows the **PATH CONTRACT** in
 > `workspace-standard.md` (the script auto-detects the *mode* — home base vs project, BMAD vs not — and
-> applies the right paths). Target a workspace with `--root`:
+> applies the right paths). Target a single workspace with `--root`, or **fan out from the home base with `--all`**:
 > ```bash
-> python .agents/scripts/check_maps.py                                # the repo holding the script (lobby)
-> python .agents/scripts/check_maps.py --root Projects/AGY_AVIATIONCHAT
-> python .agents/scripts/check_maps.py --root Projects/Fresh_Workspace_BMAD
+> python .agents/scripts/check_maps.py --all                          # HOME BASE: lobby + every conformant project
+> python .agents/scripts/check_maps.py                                # the repo holding the script (lobby only)
+> python .agents/scripts/check_maps.py --root Projects/AGY_AVIATIONCHAT   # one project
 > ```
-> `Projects/<name>/` are separate git repos: run from the lobby with no `--root` they are NOT descended;
-> reconcile a project by pointing `--root` at it (or run its byte-identical synced copy from inside).
+> **Fan-out (the home-base default for this workflow).** `Projects/<name>/` are separate git repos. Run from the
+> lobby, `--all` reconciles the **lobby AND each `Projects/<name>` that is a workspace** (has an `AGENTS.md`) —
+> so one `/1_update-maps` at the top cleans everything. Run from *inside* a project (no `Projects/` dir) it's a
+> single-workspace pass — **identical to before**. Each repo still commits + re-anchors **separately** (Step 6).
 
 ---
 
@@ -30,10 +33,13 @@
 | `_docs/repo-map.md` — **CURATED** block (the `To find X` + `Knowledge map` tables) | hand-written | **Verify** every referenced path exists; edit only if a **top-level folder** was added/removed. |
 | `_artifacts/INDEX.md` | session ledger (inside `_artifacts/`) | **Editable** — reconcile rows against real session folders. |
 | `.agents/{rules,workflows,skills,commands}/INDEX.md` | **MASTER** family maps (this repo is the source) | **Editable here** — fix drift, then `/sync-agents` to push copies to `.claude/`/`.opencode/`. |
+| `_my_resources/open_tasks/todo_list.md` — the **`## Open Work`** file-list | Daniel's hand-written notes **plus** an auto manifest of the task files | **Refresh ONLY the `## Open Work` file-list** to mirror the `open_tasks/*.md` plan/PRP files beside it. Leave his `## Todo list` prose and the task files themselves untouched (Step 3.6). |
 
-**Off-limits the whole time:** anything under `_my_resources/` (Daniel's protected area — `AGENTS.md` §5).
-The ONE carve-out is `_my_resources/open_tasks/` — **read-only** (you may read it for "what's next", never
-edit it). `_bmad/` (if present) is regenerated — never hand-edit.
+**Off-limits the whole time:** anything under `_my_resources/` (Daniel's protected area — `AGENTS.md` §5)
+**except one surgical carve-out:** the **`## Open Work` file-list inside `todo_list.md`**, which this workflow
+keeps in sync with the `open_tasks/*.md` files (Step 3.6). Everything else under `_my_resources/` — including
+Daniel's `## Todo list` prose and every task file — stays **read-only** (you may read `open_tasks/` for
+"what's next", never edit it). `_bmad/` (if present) is regenerated — never hand-edit.
 
 > **Home base vs project — the key difference.** In a *project*, `.agents/*` is VENDORED (verify-only,
 > fix-at-master). **Here at the home base, `.agents/*` IS the master** — so you fix its INDEXes directly,
@@ -43,14 +49,18 @@ edit it). `_bmad/` (if present) is regenerated — never hand-edit.
 
 ## Step 0 — Preflight + run the drift linter
 
-1. Confirm the working directory is the LOBBY root (the folder holding `AGENTS.md` + `_docs/repo-map.md`).
-2. **Run the deterministic linter first — it does the mechanical detection for you** (add `--root Projects/<name>`
-   to target a project instead of the lobby):
+1. **Work out where you are** (it decides the scope — see Step 0.5):
+   - **Home base** = a `Projects/` dir exists beside `AGENTS.md` + `_docs/repo-map.md`. This run **fans out**:
+     the lobby **and** every conformant project.
+   - **Inside a project** = no `Projects/` dir (`docs/repo-map.md`). Single-workspace run — unchanged.
+2. **Run the deterministic linter first — it does the mechanical detection for you.** From the home base lead
+   with `--all` (lobby + every conformant project in one combined report); inside a project just run it bare:
    ```bash
-   python .agents/scripts/check_maps.py                       # lobby
-   python .agents/scripts/check_maps.py --root Projects/<name>   # a project
+   python .agents/scripts/check_maps.py --all                 # HOME BASE: lobby + every conformant project
+   python .agents/scripts/check_maps.py                       # one workspace (lobby, or run from inside a project)
+   python .agents/scripts/check_maps.py --root Projects/<name>   # one specific project from the lobby
    ```
-   It runs **six** checks. Four are **fatal drift** (exit non-zero): **AUTO-block freshness** (regenerates the
+   Per workspace it runs **six** checks. Four are **fatal drift** (exit non-zero): **AUTO-block freshness** (regenerates the
    map body in memory, mode-preserving, and diffs), **path existence** (every path *promised* in a
    repo-map/INDEX table row resolves on disk), **top-level folder coverage** (every real top-level folder is
    documented), and **git baseline** (adds/deletes/**renames** since the last reconciled SHA in
@@ -81,6 +91,34 @@ edit it). `_bmad/` (if present) is regenerated — never hand-edit.
 > *reliably* — exists/missing/changed. This workflow does what it *can't* — write the one-line **purpose**
 > for a new folder, decide which **family** a new command/skill belongs to, judge whether an INDEX omission
 > is intentional. Trust the linter for detection; spend your judgment on the prose.
+
+---
+
+## Step 0.5 — Fan-out: which workspaces this run covers
+
+**Inside a project** (no `Projects/` dir) → skip this step; you have exactly one workspace. Do Steps 1–3.6
+for it and close out (Step 6) for that one repo. This is the unchanged single-workspace path.
+
+**At the home base** (a `Projects/` dir exists) → this run reconciles **the lobby AND every conformant
+project**, because Daniel's `/1_update-maps` from the top is meant to clean everything in one go:
+
+1. **Build the worklist.** The `--all` lint already printed one section per target: the **lobby first**, then
+   each `Projects/<name>` that carries an `AGENTS.md` (the workspace marker). Folders without one (e.g. a
+   non-workspace like `OpenCode`) are printed as `[skip]` — ignore them. A half-built workspace (an `AGENTS.md`
+   but missing map/`.agents/`) shows as **NOT conformant** — that's real signal; flag it in the report, don't
+   try to force a reconcile on a workspace that isn't standard yet (Guardrails: "conformance first").
+2. **Do Steps 1–3.6 PER workspace**, using that workspace's own paths (the lobby map is `_docs/repo-map.md`;
+   a project's is `docs/repo-map.md`; each has its own `INDEX.md`s, its own `active-context.md`, its own
+   `_my_resources/open_tasks/todo_list.md`). The linter's per-section output tells you exactly which workspace
+   needs which fix. Regenerate each map **in that workspace's declared mode + documented `--ignore`** (Step 1).
+3. **Each project is its own git repo.** You may *edit* its docs from the lobby, but the AUTO regen, the INDEX
+   rows, the prune, and the open-tasks refresh land in that repo — so the close-out (Step 6) hands Daniel a
+   **separate** commit + `--set-anchor` per touched repo. Never cross-commit.
+4. **One combined report.** Roll every workspace's findings into the single Step 4 report, grouped by workspace,
+   and STOP once for approval — not N times.
+
+> Scope a single workspace even from the lobby by passing a focus arg (`$ARGUMENTS` = a project name, or `.`
+> for lobby-only). Default from the home base is **all**.
 
 ---
 
@@ -172,71 +210,119 @@ nags, propose a prune (it is an *edit*, so it goes through the Step 4 gate like 
 
 ---
 
+## Step 3.6 — Refresh the open-tasks list (`todo_list.md` → `## Open Work`)
+
+Every workspace carries `_my_resources/open_tasks/todo_list.md` (a **standard** — the conformance check fails
+without it). Daniel keeps his task notes there by hand and drops plan/PRP `<slug>.md` files in beside it; when
+he picks one up he **moves it out** into the folder he's working from. This step keeps the list honest by
+mirroring the **`## Open Work`** section to the files actually present — and **nothing else in that file.**
+
+**The one surgical edit (the only write this workflow makes under `_my_resources/`):**
+
+1. List the task files: every `*.md` in `_my_resources/open_tasks/` **except `todo_list.md` itself**.
+2. In `todo_list.md`, under the **`## Open Work`** heading, rewrite the **file manifest** to exactly that set,
+   one entry per file (keep it a simple labelled list, e.g. a comment line
+   `<!-- open_tasks files — auto-listed by /1_update-maps -->` followed by `` - `slug.md` `` bullets). A file
+   gone since last run (Daniel moved it into his working folder) **drops off**; a new file **gets added**.
+3. **Preserve everything else verbatim:** the `## Todo list` section and any numbered prose Daniel wrote under
+   `## Open Work` are HIS — never reword, reorder, or delete them. You are only reconciling the file manifest.
+4. **Never open or edit the task files themselves**, and never touch any other path under `_my_resources/`.
+5. It's an edit → it goes in the Step 4 report and waits for approval like everything else. In a fan-out, do
+   this for **each** workspace's own `todo_list.md`.
+
+> Why prose, not a script: `check_maps.py` stays read-only (it never mutates `_my_resources/`). The reconcile is
+> a tiny, well-bounded rewrite the agent does under the approval gate — same split as the rest of this workflow.
+
+---
+
 ## Step 4 — Findings report + approval gate (STOP)
 
 Present a single, scannable report before changing any file **outside `_artifacts/`** (the artifacts gate,
-`.agents/rules/artifacts-always-first.md`). Structure it:
+`.agents/rules/artifacts-always-first.md`). **In a home-base fan-out, group the report by workspace** (one
+block per repo: `### Lobby`, `### Projects/AGY_AVIATIONCHAT`, …) and STOP **once** for all of them. Structure
+each block:
 
 ```
 ## Map & INDEX audit — <date>
 
-### ✅ Accurate (no action)
+### <workspace>  (repeat per workspace in a fan-out)
+
+#### ✅ Accurate (no action)
 - <what's already correct>
 
-### ✏️ Proposed edits (I will apply on approval)
+#### ✏️ Proposed edits (I will apply on approval)
 - _docs/repo-map.md (CURATED): add row "<need> → <folder>"  [reason: new folder <x>]
 - _artifacts/INDEX.md: fix dead path <old> → <new>          [reason: moved/renamed]
 - .agents/commands/INDEX.md: add row for /<new-cmd>         [reason: command exists, no row] (then /sync-agents)
 
-### 🚩 Flagged — NOT mine to edit (needs you / another tool)
-- _my_resources/... reference looks stale                   → Daniel's protected area, confirm with him
+#### 🗂️ Open-tasks list (`todo_list.md` → ## Open Work)
+- add `new-prp.md`, drop `shipped-task.md`                  [reason: matches open_tasks/ on disk]  (manifest only — prose untouched)
 
-### 🧹 Context hygiene (prune) — only if the linter nagged
+#### 🚩 Flagged — NOT mine to edit (needs you / another tool)
+- _my_resources/... (outside the Open Work manifest)        → Daniel's protected area, confirm with him
+
+#### 🧹 Context hygiene (prune) — only if the linter nagged
 - active-context.md: 14 blocks → archive oldest 4 to <archive>, keep newest 10   [reason: over window]
 - INDEX.md: 38 rows → archive oldest 13 to INDEX-archive.md, keep newest 25       [reason: over cap]
 
-### AUTO block
+#### AUTO block
 - Regenerated (mode=content): <no change | N folders added/removed>
 ```
 
-Wait for explicit approval. If the only change is a clean AUTO-block regen with no curated/INDEX edits,
-say so and proceed (a regen that produces no diff needs no approval).
+Wait for explicit approval. If the only change is a clean AUTO-block regen with no curated/INDEX/open-tasks
+edits, say so and proceed (a regen that produces no diff needs no approval).
 
 ---
 
 ## Step 5 — Apply approved edits
 
-1. Apply the curated `_docs/repo-map.md` edits (purpose lines for new folders; fix dead paths).
+(In a fan-out, apply these per workspace, against that workspace's own paths.)
+
+1. Apply the curated repo-map edits (purpose lines for new folders; fix dead paths).
 2. Apply the `_artifacts/INDEX.md` rows.
 3. Apply any `.agents/*/INDEX.md` fixes, then remind Daniel to run `/sync-agents`.
 4. **Apply the prune** (Step 3.5) if approved: move the old blocks/rows into their archive files (a *move*,
    verbatim — never a rewrite), and confirm the brief now opens on the newest ~10 blocks.
-5. **Re-run the generator** if you edited the curated block, so the file is internally consistent, and
+5. **Apply the open-tasks refresh** (Step 3.6) if approved: rewrite ONLY the `## Open Work` file manifest in
+   `todo_list.md` to match `open_tasks/*.md`; re-read to confirm the `## Todo list` prose is byte-for-byte intact.
+6. **Re-run the generator** if you edited the curated block, so the file is internally consistent, and
    re-diff to confirm only the intended lines changed.
 
 ---
 
 ## Step 6 — Close out
 
-- Re-run `python .agents/scripts/check_maps.py` to confirm it now exits clean (0). Anything still flagged is
-  either a 🚩 deferred item or a real miss — say which.
-- Summarise what changed (files + line counts) and what was flagged.
-- **Do not commit or push.** Per `.agents/rules/git-policy.md`, hand Daniel the exact command, e.g.:
+- Re-run the linter to confirm it now exits clean (0) — `--all` from the home base so every workspace is
+  re-checked. Anything still flagged is either a 🚩 deferred item or a real miss — say which.
   ```bash
-  git add _docs/repo-map.md _artifacts/INDEX.md _docs/.maps-state.json && \
-    git commit -m "docs: refresh repo-map + INDEX after <change>"
+  python .agents/scripts/check_maps.py --all      # home base; or bare / --root <proj> for one workspace
   ```
-- **Tell Daniel to re-anchor the baseline *after* he commits** (so the next run's git-diff starts from a
-  clean point): `python .agents/scripts/check_maps.py --set-anchor`. (Do not anchor before the commit —
-  you'd be baselining against an un-committed state.)
+- Summarise what changed (files + line counts) and what was flagged, **grouped by repo**.
+- **Do not commit or push.** Per `.agents/rules/git-policy.md`, hand Daniel the exact command(s). **Each
+  workspace is its own git repo → one commit per touched repo** (run git inside that repo). E.g.:
+  ```bash
+  # lobby
+  git add _docs/repo-map.md _artifacts/INDEX.md _my_resources/open_tasks/todo_list.md _docs/.maps-state.json && \
+    git commit -m "docs: refresh repo-map + INDEX + open-tasks after <change>"
+  # a touched project (separate repo)
+  git -C Projects/AGY_AVIATIONCHAT add docs/repo-map.md _my_resources/open_tasks/todo_list.md docs/.maps-state.json && \
+    git -C Projects/AGY_AVIATIONCHAT commit -m "docs: refresh maps + open-tasks"
+  ```
+- **Re-anchor *after* he commits** (so the next run's git-diff starts clean). One command re-anchors every
+  workspace it covered (each gets its own `.maps-state.json` at its own docs dir):
+  ```bash
+  python .agents/scripts/check_maps.py --set-anchor --all     # home base: lobby + each project
+  ```
+  Do not anchor before committing — you'd baseline an un-committed state.
 - If you fixed any `.agents/*/INDEX.md`, remind him those need `/sync-agents` to reach `.claude`/`.opencode`.
 
 ---
 
 ## Guardrails (recap)
 
-- **One workspace at a time** — reconcile the lobby OR one project per run; target a project with `--root`
-  (or run its synced copy from inside). From the lobby with no `--root`, `Projects/` are NOT descended.
+- **Fan out from the home base; single inside a project** — at the home base `--all` reconciles the lobby +
+  every conformant project in one run (each its own repo → its own commit + anchor, Step 6); inside a project
+  (no `Projects/`) it's a single-workspace pass, unchanged. Scope to one workspace with a focus arg / `--root`.
 - **Conformance first** — if the structure-conformance check fails (missing standard files), fixing *that* comes
   before reconciling the map; a non-conformant workspace is why a generic tool would otherwise mis-resolve paths.
 - **Mode-preserving regen** — read the sentinel, match the `--mode`; pass the workspace's documented `--ignore`
@@ -245,7 +331,9 @@ say so and proceed (a regen that produces no diff needs no approval).
 - **`.agents/*` INDEXes are MASTER at the home base** — fix them, then `/sync-agents`. In a *project* they are
   vendored (verify-only); fix at master and re-sync.
 - **Prune is a MOVE, never a rewrite** — archived blocks/rows stay verbatim; never summarise history away.
-- **`_my_resources/` is untouchable** except `open_tasks/` (read-only). `_bmad/` is regenerated.
-- **Never commit/push** — hand off the command.
+- **`_my_resources/` is untouchable** with **one surgical exception** — the `## Open Work` file manifest in
+  `todo_list.md`, which Step 3.6 refreshes to match `open_tasks/*.md`. His `## Todo list` prose, the task files,
+  and everything else under `_my_resources/` stay off-limits. `_bmad/` is regenerated.
+- **Never commit/push** — hand off the command, one per repo.
 
 Optional input: $ARGUMENTS  (e.g. a folder to focus on, or `--dry-run` to stop after the report).

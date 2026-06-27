@@ -442,10 +442,10 @@ def main():
     for t in targets:
         any_drift |= lint_one(t, args.ignore)
     for s in skipped:
-        print(f"\n[skip] Projects/{s.name} — not a workspace (no AGENTS.md), nothing to reconcile")
+        print(f"\n[skip] Projects/{s.name} - not a workspace (no AGENTS.md), nothing to reconcile")
 
     if multi:
-        tail = f"FAN-OUT COMPLETE — {len(targets)} workspace(s) linted"
+        tail = f"FAN-OUT COMPLETE - {len(targets)} workspace(s) linted"
         if skipped:
             tail += f", {len(skipped)} skipped"
         print("\n" + "=" * 78)

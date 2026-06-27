@@ -94,18 +94,13 @@ git commit -m "feat(sync): one canonical command master mirrored to claude+openc
 # do NOT add: .claude/settings.json (pre-existing, not this work) or _artifacts/_main/2026-06-27_update-maps-fanout/ (separate)
 ```
 
-**2 — Fix the broken opencode junction, then refresh its global cache** (optional, only affects opencode in
-*other* projects — this project's `.opencode/commands` already works):
-```powershell
-# Inspect: junction ~/.config/opencode -> ...\scratch\OpenCode (target missing)
-New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.gemini\antigravity\scratch\OpenCode"  # restore target
-& ".agents/scripts/sync-agents.ps1" -GlobalsOnly                                                    # then populate
-# (or repoint the junction if OpenCode lives elsewhere now)
-```
+**2 — Opencode junction — ✅ DONE (you authorized "fix 2").** Restored the missing junction *target*
+`…\scratch\OpenCode` (kept your junction, did not replace it with a plain dir), confirmed it resolves +
+is writable, then `/sync-agents -GlobalsOnly` populated **opencode global = 31 cmds** (autopilot_opencode
+present; all 5 claude-only absent; universals present).
 
-**3 — Restart opencode** so it picks up the refreshed global commands.
+**3 — Restart opencode** so it picks up the refreshed global commands. *(You said you'll do this.)*
 
 ## Flagged for item 3 (not done here)
-- The broken opencode junction is environmental — restoring vs repointing is your decision.
 - Re-vendoring `.agents/` into the two projects (so they get the new sync engine + tagged commands) is a
   separate propagation pass — belongs with item 3 (fix clean-workspace mirroring).
