@@ -44,10 +44,10 @@ itself rather than trusting any pasted "tests green."
 ## 3. The four-stage relay
 
 ```
-Stage 1  Plan        Dev/Amelia 4.8  NEW dev     /bmad-dev-story_AP plan       -> implementation_plan.md
-Stage 2  Audit       QA /Murat  4.8  NEW qa      /1_self-audit-stress-test_AP  -> self-audit-stress-test.md
-Stage 3  Implement   Dev/Amelia 4.8  RESUME dev  /bmad-dev-story_AP implement  -> code + walkthrough.md
-Stage 4  Review+Fix  QA /Murat  4.8  RESUME qa   /bmad-code-review_AP          -> code-review.md + fixes
+Stage 1  Plan        Dev/Amelia 4.8  NEW dev     /sudo-dev-story-tests_AP plan       -> implementation_plan.md
+Stage 2  Audit       QA /Murat  4.8  NEW qa      /sudo-self-audit_AP  -> self-audit-stress-test.md
+Stage 3  Implement   Dev/Amelia 4.8  RESUME dev  /sudo-dev-story-tests_AP implement  -> code + walkthrough.md
+Stage 4  Review+Fix  QA /Murat  4.8  RESUME qa   /sudo-code-review_AP          -> code-review.md + fixes
   then   TEST GATE   orchestrator (no LLM) re-runs pytest+vitest -> green: flip story to review -> Daniel
 ```
 
@@ -59,14 +59,14 @@ command file.
 ```mermaid
 flowchart TD
     D(["Daniel: /autopilot_claude 14.2"]) --> M1["orchestrator mints dev UUID -> sessions.json"]
-    M1 --> S1["Stage 1 PLAN — NEW dev session (Amelia, Opus 4.8)<br/>/bmad-dev-story_AP plan"]
+    M1 --> S1["Stage 1 PLAN — NEW dev session (Amelia, Opus 4.8)<br/>/sudo-dev-story-tests_AP plan"]
     S1 -->|"writes implementation_plan.md"| F[("shared run folder")]
     F --> M2["orchestrator mints qa UUID -> sessions.json"]
-    M2 --> S2["Stage 2 AUDIT — NEW qa session (Murat, Opus 4.8)<br/>/1_self-audit-stress-test_AP"]
+    M2 --> S2["Stage 2 AUDIT — NEW qa session (Murat, Opus 4.8)<br/>/sudo-self-audit_AP"]
     S2 -->|"reads plan -> writes self-audit-stress-test.md (findings + fixes)"| F
-    F --> S3["Stage 3 IMPLEMENT — RESUME dev (plan still in context)<br/>/bmad-dev-story_AP implement"]
+    F --> S3["Stage 3 IMPLEMENT — RESUME dev (plan still in context)<br/>/sudo-dev-story-tests_AP implement"]
     S3 -->|"reads audit -> writes source code + walkthrough.md"| F
-    F --> S4["Stage 4 REVIEW+FIX — RESUME qa (audit still in context)<br/>/bmad-code-review_AP"]
+    F --> S4["Stage 4 REVIEW+FIX — RESUME qa (audit still in context)<br/>/sudo-code-review_AP"]
     S4 -->|"reads diff -> re-runs tests, applies fixes, writes code-review.md + OUT-OF-SPEC + OPEN QUESTIONS"| F
     F --> G{"orchestrator TEST GATE<br/>independent pytest + vitest"}
     G -->|"RED"| RED["TESTS RED — exit 4<br/>(resume -ResumeFrom 4)"]
@@ -79,10 +79,10 @@ flowchart TD
 
 | Stage | Command invoked | May write | Must NOT |
 |---|---|---|---|
-| 1 Plan | `/bmad-dev-story_AP plan` | `implementation_plan.md`, `decisions-log.md` | touch source code |
-| 2 Audit | `/1_self-audit-stress-test_AP` | `self-audit-stress-test.md`, `decisions-log.md` | hard-halt on findings (fixes flow to S3) |
-| 3 Implement | `/bmad-dev-story_AP implement` | source, tests, `walkthrough.md` | re-plan; commit; touch story status |
-| 4 Review+Fix | `/bmad-code-review_AP` | `code-review.md`, fixes, walkthrough sections | commit; touch story status / `sprint-status.yaml` (the **orchestrator** owns the `review` flip) |
+| 1 Plan | `/sudo-dev-story-tests_AP plan` | `implementation_plan.md`, `decisions-log.md` | touch source code |
+| 2 Audit | `/sudo-self-audit_AP` | `self-audit-stress-test.md`, `decisions-log.md` | hard-halt on findings (fixes flow to S3) |
+| 3 Implement | `/sudo-dev-story-tests_AP implement` | source, tests, `walkthrough.md` | re-plan; commit; touch story status |
+| 4 Review+Fix | `/sudo-code-review_AP` | `code-review.md`, fixes, walkthrough sections | commit; touch story status / `sprint-status.yaml` (the **orchestrator** owns the `review` flip) |
 
 ---
 
@@ -132,7 +132,7 @@ story-dependent, not a law.
 | **Orchestrator** | Windows PowerShell 5.1 | One script, no external deps. Plain control flow — the "coordinator" is `if`/`for`, not an LLM. |
 | **Worker** | `claude` CLI (headless) | `claude -p <prompt> --model <id> --permission-mode bypassPermissions --output-format json` |
 | **Continuity** | CLI session flags | `--session-id <uuid>` + `--name <label>` (first call) · `--resume <uuid>` (second call) |
-| **Agents** | Dedicated headless **`_AP` commands** | Prompts invoke `/bmad-dev-story_AP plan`, `/1_self-audit-stress-test_AP`, `/bmad-dev-story_AP implement`, `/bmad-code-review_AP` (agent-tuned variants of the interactive BMAD skills). |
+| **Agents** | Dedicated headless **`_AP` commands** | Prompts invoke `/sudo-dev-story-tests_AP plan`, `/sudo-self-audit_AP`, `/sudo-dev-story-tests_AP implement`, `/sudo-code-review_AP` (agent-tuned variants of the interactive BMAD skills). |
 | **Models** | Opus 4.8 (Dev) · Opus 4.8 (QA) | Both default to `claude-opus-4-8`; independence is the *separate session + persona*, not a stronger model. Pin asymmetrically via `-DevModel` / `-AuditModel`. |
 | **Test gate** | `pytest` + `vitest`, run by the script | After Stage 4 the orchestrator re-runs the suites itself (`-TestScope auto` derives scope from the baseline diff: backend-only / frontend-only / both — and a shared-contract change (schemas / models / OpenAPI / generated types) forces both, so a cross-stack break can't slip through). It refuses to stamp COMPLETE on red. |
 | **Handoff** | Artifact files | One canonical `_artifacts/<date>_autopilot-<story>/` folder; `_pipeline/` holds raw JSON + `sessions.json` + a self-contained `run.log` transcript. |

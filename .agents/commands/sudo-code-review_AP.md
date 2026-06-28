@@ -1,9 +1,9 @@
 ---
-description: Autopilot (headless) Review+Fix command — review the implementation in the shared autopilot run folder, apply fixes, and hand to Daniel. Modeled off /bmad-code-review but tuned for agent-to-agent handoff. NOT for interactive use; the autopilot orchestrator invokes it.
+description: Autopilot (headless) Review+Fix+Gate command — review the implementation in the shared autopilot run folder, apply fixes, run the TEA test gate, and hand to Daniel. Modeled off /sudo-code-review but tuned for agent-to-agent handoff. NOT for interactive use; the autopilot orchestrator invokes it.
 platforms: [claude]
 ---
 
-# /bmad-code-review_AP — Autopilot Review + Fix (Murat)
+# /sudo-code-review_AP — Autopilot Review + Fix + Test Gate (Murat)
 
 > **Headless autopilot teammate, and the LAST agent before Daniel.** Your launch context (just above)
 > names the **shared run folder** and the **target story**. Everything you need is in that folder.
@@ -14,7 +14,7 @@ no halting for confirmation).
 
 ## Your direction (read fresh from the shared folder)
 - `implementation_plan.md` — the plan.
-- `self-audit-stress-test.md` — your own earlier audit.
+- `self-audit-stress-test.md` — your own earlier audit (from `/sudo-self-audit_AP`).
 - `walkthrough.md` — the Dev stage's implementation notes.
 - the target story (for the acceptance pass).
 
@@ -27,11 +27,35 @@ no halting for confirmation).
    relevant suite(s) until green and paste the **actual** output. If you change nothing, you do not need
    to run tests.
 
+## The test gate (TEA traceability / nfr / test-quality verdict layer)
+After review + fix, run the gate and record the verdict INSIDE `code-review.md`.
+
+> **Scope:** the PowerShell orchestrator already runs its own deterministic pytest/vitest suite gate
+> AFTER this stage, so do NOT duplicate the full suite run here. The gate you add is the TEA
+> traceability / nfr / test-quality verdict layer only — never block on a full-suite run.
+
+1. **Opt-in check** — read `_bmad-output/sudo-tests.yaml`.
+   - **Absent** → the project has no test baseline → verdict **`WAIVED`** (do NOT block). Skip to the
+     verdict and record `WAIVED`.
+   - **Present** → it defines `required_tiers · l1_coverage_min · agent_bearing · nfr · waive`. Continue.
+2. **`bmad-testarch-trace`** — requirements→tests traceability + coverage vs `l1_coverage_min`.
+3. **`bmad-testarch-nfr`** — perf / security / reliability (when `nfr: true` or `agent_bearing: true`).
+4. **`bmad-testarch-test-review`** — quality/flake of the tests themselves.
+5. **Verdict** — combine into **PASS / CONCERNS / FAIL / WAIVED**:
+   - **FAIL** = a required tier missing or a traceability/nfr/test-quality breach a fix cannot resolve.
+   - **CONCERNS** = soft issues only.
+   - **PASS** = all required tiers green.
+   - **WAIVED** = no `sudo-tests.yaml` baseline.
+
+   Record the verdict, the **story id**, and the current `git HEAD` ref (so `/sudo-update-sprint-memory`
+   can detect a stale verdict) INSIDE `code-review.md`.
+
 ## Stay in your lane / human-in-the-loop
 - Never `git commit`/`push`; never set the story to `done` or edit `sprint-status.yaml` — human close-out.
 - Write **`code-review.md`** in the shared folder (REQUIRED even if the review is clean): scope, the 3
-  passes, every finding with `file:line` + severity + disposition, your independent test output, and — if
-  you changed nothing — an explicit "Changes applied: none — implementation is correct as-is."
+  passes, every finding with `file:line` + severity + disposition, your independent test output, the test
+  gate's per-check results + overall verdict (with story id + current git HEAD ref), and — if you changed
+  nothing — an explicit "Changes applied: none — implementation is correct as-is."
 - **Update `walkthrough.md`** so its "Your Actions" git command ends with the line:
   `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`
 - Put these TWO sections at the **TOP** of `walkthrough.md` (you are the last agent before Daniel; mirror
@@ -41,9 +65,9 @@ no halting for confirmation).
   - `## OPEN QUESTIONS FOR DANIEL` — anything the team genuinely could not resolve. You MAY ask Daniel
     directly here. Write "none" if empty.
 - **Append a `## Close-Out Handoff` block at the BOTTOM of `walkthrough.md`** — the pre-routed learnings
-  `/update-sprint-context` lifts at close-out so it never re-derives. You have the full picture (plan + audit
-  + diff + your own fixes), so harvest from Dev's walkthrough body, `decisions-log.md`, and your review. Four
-  sub-sections, each a bullet list OR the literal word `none` (never leave one blank):
+  `/sudo-update-sprint-memory` lifts at close-out so it never re-derives. You have the full picture (plan + audit
+  + diff + your own fixes + the test gate), so harvest from Dev's walkthrough body, `decisions-log.md`, and your
+  review. Four sub-sections, each a bullet list OR the literal word `none` (never leave one blank):
   - `### → project-context.md` — new app-wide architecture rule / invariant.
   - `### → component-specs/<spec>.md` — new component pitfall / gotcha / failure mode (name the spec).
   - `### → active-context.md Active Tasks` — a bug found THIS run that is still open.

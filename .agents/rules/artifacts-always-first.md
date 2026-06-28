@@ -36,7 +36,7 @@ Keep it minimal — only these per session:
    `task-list.md` or `your-action-required.md` files — extra closing docs are wasted space and time.
 4. **`bug-list.md`** — ONLY for debugging / live-testing sessions. A simple bug list.
 5. **`code-review.md`** — whenever a code review runs (see §6).
-6. **`self-audit-stress-test.md`** — whenever the `/1_self-audit-stress-test` pre-dev audit runs
+6. **`self-audit-stress-test.md`** — whenever the `/sudo-self-audit` pre-dev audit runs
    (see §7). Inline-only findings are NOT sufficient — the audit is always persisted.
 
 > Do NOT create: a parallel hand-maintained `task.md` during work, a standalone `task-list.md`, a
@@ -45,10 +45,12 @@ Keep it minimal — only these per session:
 > inside `walkthrough.md` — one closing doc, not three. The rest of the flow is identical for normal
 > dev and stories.
 
-> **🔗 Link every artifact in the chat — always.** The moment you write or update ANY artifact (plan,
-> walkthrough, bug-list, code-review, self-audit), post a **clickable link to it in the chat**
-> that same turn, with a one-line note of what it is. Daniel reviews from the conversation — an artifact he
-> can't open from chat may as well not exist. This generalizes the plan-link rule below to the whole set.
+> **🔗 Link every artifact — and every file — in the chat, always.** The moment you write or update ANY
+> artifact (plan, walkthrough, bug-list, code-review, self-audit) — or name / hand over ANY file or path —
+> post a **clickable Markdown link `[label](relative/path)`** in the chat that same turn, with a one-line
+> note of what it is. Daniel reviews from the conversation — a file he can't open from chat may as well not
+> exist. This is the always-on **"clickable links, never bare paths"** rule from `constitution.md`, applied
+> to the artifact set (and every file path alongside it).
 
 ## The Rule
 
@@ -158,7 +160,7 @@ finding (file:line, severity, failure scenario, suggested fix), and a dispositio
 Frontmatter `type: code_review`.
 
 ### 7. Write `self-audit-stress-test.md` (whenever the pre-dev audit runs)
-**Every run of the `/1_self-audit-stress-test` workflow — on a plan, a story, or another agent's
+**Every run of the `/sudo-self-audit` workflow — on a plan, a story, or another agent's
 audit — MUST be saved as a `self-audit-stress-test.md` artifact in the current session's
 `<YYYY-MM-DD>_<slug>/` folder** (use `self-audit-stress-test-N.md` if a session
 runs more than one). Presenting findings only inline in the chat is NOT sufficient. The artifact
@@ -175,14 +177,14 @@ needs the audit on disk, not just in chat. Frontmatter `type: self_audit`.
 ## Hard Stops
 - NEVER modify any project file before `implementation_plan.md` is approved.
 - NEVER skip the artifact folder for a "quick" change (outside the Skip cases above).
-- NEVER write or update an artifact without posting a clickable link to it in the chat that same turn
-  (see the "Link every artifact in the chat" rule above).
+- NEVER write/update an artifact — or name a file or path in chat — without posting a clickable Markdown
+  link to it that same turn (see the "Link every artifact — and every file — in the chat" rule above).
 - NEVER claim the walkthrough is done without actual test output.
 - NEVER finish a `walkthrough.md` without its `## Task Checklist` and `## Your Actions` sections (the git commit command lives in the latter).
 - NEVER write the final task checklist or the "Your Actions" steps as separate files — they are sections inside `walkthrough.md` (§5).
 - NEVER run `git commit`/`git push` yourself — the `walkthrough.md` "Your Actions" section hands Daniel the exact command. The ONLY exception: Daniel explicitly delegates a specific commit/push to you in that moment (then: your own files only, explicit paths, never `git add -A`). Full policy → the `git-policy` rule.
 - NEVER deliver code-review findings inline-only — always persist them as a `code-review.md` artifact.
-- NEVER deliver `/1_self-audit-stress-test` findings inline-only — always persist them as a
+- NEVER deliver `/sudo-self-audit` findings inline-only — always persist them as a
   `self-audit-stress-test.md` artifact (`type: self_audit`), even though the audit writes no code.
 
 ## Why this matters

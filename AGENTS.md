@@ -48,14 +48,20 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 | Lobby tool dirs | `.claude/`, `.opencode/` | synced copies of the master so `/commands` + skills resolve here. `/sync-agents` mirrors `.agents/commands/` to all three platforms (incl. the opencode + Antigravity machine-global caches); `platforms:` frontmatter limits a command's reach |
 | Projects | `Projects/<name>/` | the actual projects, each its own git repo |
 
-> **⚠️ SEARCHING THE TREE — `Projects/` IS INVISIBLE TO GREP (lobby-only gotcha).** `Projects/` is
-> **gitignored** here (each project is its own git repo nested under the lobby). The **Grep tool runs
-> ripgrep, which honors `.gitignore`** — so it **silently skips everything under `Projects/`** and returns
-> zero hits from inside the project repos. A grep that finds a master file in `.agents/` is **not** proof
-> it's the only copy: that same file is **vendored** into each `Projects/<name>/.agents/`, and Grep can't
-> see those. To audit/compare across the vendored project copies, use the **Bash tool**, not Grep:
-> `find Projects -name '<file>'`, then `grep`/`diff` each hit (confirm with `git check-ignore <path>`).
-> Canonical fix path is unchanged: edit the master `.agents/`, then `/sync-agents <project>` to re-vendor.
+> **⚠️ SEARCHING THE TREE — GREP IS BLIND TO `Projects/` ONLY FROM THE LOBBY ROOT (lobby-only gotcha).**
+> `Projects/` is **gitignored** here (each project is its own git repo nested under the lobby). The **Grep
+> tool runs ripgrep, which honors `.gitignore`** — so a Grep whose `path` is the lobby root (or unset)
+> **silently skips everything under `Projects/`** and returns zero hits from the project repos. A grep that
+> finds a master file in `.agents/` is **not** proof it's the only copy: that same file is **vendored** into
+> each `Projects/<name>/.agents/`, and a root-level Grep can't see those.
+> **The fix is to go one level down.** Point the Grep tool's `path` *directly at a project repo*
+> (`Projects/<name>/` or deeper) and it works fine — that directory is its **own git repo root**, so
+> ripgrep starts a fresh ignore context there and never applies the lobby's parent `.gitignore`. So:
+> **single project → use the Grep tool with `path: Projects/<name>`** (fast, indexed). **One sweep across
+> ALL projects at once → use the Bash tool** (`find Projects -name '<file>'`, then `grep`/`diff` each hit;
+> confirm with `git check-ignore <path>`), since a single root-level Grep is blind and you'd otherwise have
+> to loop Grep per project. Canonical fix path is unchanged: edit the master `.agents/`, then
+> `/sync-agents <project>` to re-vendor.
 > *(This caveat is lobby-specific — inside a project you're past the ignore boundary, so don't carry it
 > into a project's `AGENTS.md`.)*
 
@@ -81,6 +87,14 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 
 ## 6. GATES  (consult before acting)
 - **ROUTING GATE**: confirm the target workspace via `router.md` before touching files in it.
+- **SEARCH GATE (lobby) — the Grep tool is blind to `Projects/` ONLY from the lobby root.** A Grep whose
+  `path` is the root (or unset) silently returns zero hits from the nested project repos (ripgrep honors
+  the lobby's `.gitignore`), which reads as "clean" when it is not. Two valid ways through: **(a)** point
+  the Grep tool's `path` *one level down*, directly at a project (`Projects/<name>`) — it's its own repo
+  root so the lobby ignore no longer applies; or **(b)** for one sweep across **all** projects at once, use
+  the **Bash** tool (`find`/`grep`), since a single root Grep can't see them. Never trust a root-level Grep
+  for a cross-project "is this the only copy?" question. (Full mechanics → §4; memory:
+  `grep-skips-gitignored-projects`.)
 - **RISK GATE**: never delete / overwrite / publish without explicit go-ahead. **GIT — desktop default:**
   never run `git commit`/`push` yourself — hand Daniel the command unless he delegates it in the moment
   (→ `.agents/rules/git-policy.md`). On **web/mobile** (`CLAUDE_CODE_REMOTE=true`) the agent owns git

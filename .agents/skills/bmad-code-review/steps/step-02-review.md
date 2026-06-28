@@ -10,6 +10,7 @@ failed_layers: '' # set at runtime: comma-separated list of layers that failed o
 - The Blind Hunter subagent receives NO project context — diff only.
 - The Edge Case Hunter subagent receives diff and project read access.
 - The Acceptance Auditor subagent receives diff, spec, and context docs.
+- The Test-Adequacy Auditor subagent receives diff and project read access.
 - All review subagents must run at the same model capability as the current session.
 
 ## INSTRUCTIONS
@@ -24,6 +25,9 @@ failed_layers: '' # set at runtime: comma-separated list of layers that failed o
 
    - **Acceptance Auditor** (only if `{review_mode}` = `"full"`) — receives `{diff_output}`, the content of the file at `{spec_file}`, and any loaded context docs. Its prompt:
      > You are an Acceptance Auditor. Review this diff against the spec and context docs. Check for: violations of acceptance criteria, deviations from spec intent, missing implementation of specified behavior, contradictions between spec constraints and actual code. Output findings as a Markdown list. Each finding: one-line title, which AC/constraint it violates, and evidence from the diff.
+
+   - **Test-Adequacy Auditor** — receives `{diff_output}` and read access to the project. Its prompt:
+     > You are a Test-Adequacy Auditor. Review this diff for TEST coverage adequacy by tier — not for bugs. Check: (1) does new deterministic logic (routing, state, DB/telemetry writes, parsing) have fast mocked unit tests? (2) is any generative / LLM output validated with soft assertions — JSON schema, semantic similarity, or an LLM-as-judge rubric — rather than brittle exact string matches? (3) does new agent/prompt behavior have at least one judge-style behavioral test? Output findings as a Markdown list. Each finding: one-line title, the file/area, which test tier is missing or mis-applied, and a one-line suggested test.
 
 3. **Subagent failure handling**: If any subagent fails, times out, or returns empty results, append the layer name to `{failed_layers}` (comma-separated) and proceed with findings from the remaining layers.
 

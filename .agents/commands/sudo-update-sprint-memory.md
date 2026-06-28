@@ -1,8 +1,8 @@
 ---
-description: End-of-session / story close-out save — advance the closed story to done (gated only on explicit live-test notes), code-verify, route learnings to specs/rules/memory, prune active-context. Run as the LAST step when closing a story or any session.
+description: End-of-session / story close-out save — advance the closed story to done (gated on the /sudo-code-review test verdict + explicit live-test notes), code-verify, route learnings to specs/rules/memory, prune active-context. Run as the LAST step when closing a story or any session.
 ---
 
-# /update-sprint-context — Session End (G1 close-out)
+# /sudo-update-sprint-memory — Session End (G1 close-out)
 
 Self-contained — no external workflow file. Project-scoped: targets THIS repo's `_bmad-output/`.
 Run as the last step when closing a story (or any dev / brainstorm / research session).
@@ -10,7 +10,7 @@ Run as the last step when closing a story (or any dev / brainstorm / research se
 > **Active-context holds STATE, not history.** Session narratives belong in
 > `_artifacts/<date>_<slug>/walkthrough.md` + git — never in `active-context.md`. Durable cross-session
 > facts belong in Claude's auto-memory. This command routes each learning to its correct home and keeps
-> `active-context.md` small so `/boot-sprint-context` stays cheap.
+> `active-context.md` small so `/sudo-boot-sprint-memory` stays cheap.
 
 ## Step 1 — Read current state & this session's artifacts (scoped — don't read whole files you don't need whole)
 Read:
@@ -53,6 +53,13 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
   to `done` in BOTH the story file (`_bmad/bmm/stories/…` frontmatter) AND `sprint-status.yaml` — by
   DEFAULT, without asking. Idempotent: only `ready-for-dev`/`in-progress`/`review` advance to `done`;
   never downgrade a status.
+  - **GATE — test verdict (the `/sudo-code-review` gate).** Before flipping, read this story's verdict at
+    `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md`. **PASS** → flip (still subject to
+    the live-test gate below). **CONCERNS** → flip, but record the concerns in the close-out summary.
+    **FAIL** → do NOT flip; tell Daniel to run `/sudo-code-review` (a new test regression or a required
+    tier is missing). **WAIVED** / **missing** (no `sudo-tests.yaml` baseline, or the gate wasn't run) /
+    **stale** (verdict HEAD ref ≠ current HEAD) → no test block; fall through to the live-test gate exactly
+    as before. Fail-open: a gate-read error never blocks close-out.
   - **"commit owed" is NOT a blocker.** Agents never commit, so almost every freshly-built story owes a
     commit; Daniel commits right after close-out. Flip to `done` anyway.
   - **GATE — pause and double-check with Daniel BEFORE flipping** only when the story / its sprint-status
@@ -61,7 +68,7 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
     item, `await Daniel`, "I need to test it", or an explicit "stays review until X". Then leave the
     status as-is and ask; flip only on Daniel's OK.
   - (This does NOT contradict /autopilot, which is autonomous and deliberately stops at `review`.
-    `/update-sprint-context` is Daniel-invoked, so it owns the `review → done` advance.)
+    `/sudo-update-sprint-memory` is Daniel-invoked, so it owns the `review → done` advance.)
 - **Last Updated**: set to today's date at the top of `active-context.md`.
 
 ## Step 5 — Prune & cap (this is what keeps boot cheap) — AUTOMATIC, never ask

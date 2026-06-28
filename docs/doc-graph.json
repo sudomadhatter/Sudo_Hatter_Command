@@ -1,18 +1,18 @@
 {
   "root": "C:\\Users\\dlohn\\.gemini\\antigravity\\scratch\\Sudo_Hatter_Command\\.agents",
   "counts": {
-    "files": 984,
-    "edges": 2461,
-    "external": 22,
+    "files": 987,
+    "edges": 2463,
+    "external": 23,
     "ambiguous": 506,
-    "dangling": 544,
+    "dangling": 545,
     "broken_paths": 79,
-    "unresolved_names": 465
+    "unresolved_names": 466
   },
   "nodes": [
     {
       "path": "AGENTS.md",
-      "in": 20,
+      "in": 21,
       "out": 0
     },
     {
@@ -66,16 +66,6 @@
       "out": 0
     },
     {
-      "path": "commands/1_self-audit-stress-test.md",
-      "in": 0,
-      "out": 1
-    },
-    {
-      "path": "commands/1_self-audit-stress-test_AP.md",
-      "in": 0,
-      "out": 1
-    },
-    {
       "path": "commands/1_update-maps.md",
       "in": 0,
       "out": 4
@@ -111,27 +101,12 @@
       "out": 1
     },
     {
-      "path": "commands/bmad-code-review_AP.md",
-      "in": 0,
-      "out": 1
-    },
-    {
-      "path": "commands/bmad-dev-story_AP.md",
-      "in": 0,
-      "out": 1
-    },
-    {
       "path": "commands/bmad-help.md",
       "in": 0,
       "out": 0
     },
     {
       "path": "commands/bmad-master.md",
-      "in": 0,
-      "out": 0
-    },
-    {
-      "path": "commands/boot-sprint-context.md",
       "in": 0,
       "out": 0
     },
@@ -176,6 +151,51 @@
       "out": 0
     },
     {
+      "path": "commands/sudo-boot-sprint-memory.md",
+      "in": 0,
+      "out": 1
+    },
+    {
+      "path": "commands/sudo-code-review.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": "commands/sudo-code-review_AP.md",
+      "in": 0,
+      "out": 1
+    },
+    {
+      "path": "commands/sudo-dev-story-tests.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": "commands/sudo-dev-story-tests_AP.md",
+      "in": 0,
+      "out": 1
+    },
+    {
+      "path": "commands/sudo-self-audit.md",
+      "in": 0,
+      "out": 1
+    },
+    {
+      "path": "commands/sudo-self-audit_AP.md",
+      "in": 0,
+      "out": 1
+    },
+    {
+      "path": "commands/sudo-update-sprint-memory.md",
+      "in": 0,
+      "out": 1
+    },
+    {
+      "path": "commands/sudo-write-story-tests.md",
+      "in": 0,
+      "out": 0
+    },
+    {
       "path": "commands/sync-agents.md",
       "in": 0,
       "out": 0
@@ -189,11 +209,6 @@
       "path": "commands/tech-writer.md",
       "in": 1,
       "out": 0
-    },
-    {
-      "path": "commands/update-sprint-context.md",
-      "in": 0,
-      "out": 1
     },
     {
       "path": "commands/ux-designer.md",
@@ -278,7 +293,7 @@
     {
       "path": "rules/artifacts-always-first.md",
       "in": 5,
-      "out": 2
+      "out": 3
     },
     {
       "path": "rules/bmad_code_review_fast_path.md",
@@ -302,7 +317,7 @@
     },
     {
       "path": "rules/constitution.md",
-      "in": 20,
+      "in": 21,
       "out": 1
     },
     {
@@ -4963,16 +4978,6 @@
       "kind": "ref"
     },
     {
-      "from": "commands/1_self-audit-stress-test.md",
-      "to": "workflows/1_self-audit-stress-test.md",
-      "kind": "ref"
-    },
-    {
-      "from": "commands/1_self-audit-stress-test_AP.md",
-      "to": "workflows/1_self-audit-stress-test.md",
-      "kind": "ref"
-    },
-    {
       "from": "commands/1_update-maps.md",
       "to": "rules/artifacts-always-first.md",
       "kind": "ref"
@@ -5003,16 +5008,6 @@
       "kind": "ref"
     },
     {
-      "from": "commands/bmad-code-review_AP.md",
-      "to": "rules/bmad_code_review_fast_path.md",
-      "kind": "ref"
-    },
-    {
-      "from": "commands/bmad-dev-story_AP.md",
-      "to": "CLAUDE.md",
-      "kind": "ref"
-    },
-    {
       "from": "commands/new-project.md",
       "to": "AGENTS.md",
       "kind": "ref"
@@ -5028,7 +5023,32 @@
       "kind": "ref"
     },
     {
-      "from": "commands/update-sprint-context.md",
+      "from": "commands/sudo-boot-sprint-memory.md",
+      "to": "AGENTS.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/sudo-code-review_AP.md",
+      "to": "rules/bmad_code_review_fast_path.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/sudo-dev-story-tests_AP.md",
+      "to": "CLAUDE.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/sudo-self-audit.md",
+      "to": "workflows/1_self-audit-stress-test.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/sudo-self-audit_AP.md",
+      "to": "workflows/1_self-audit-stress-test.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/sudo-update-sprint-memory.md",
       "to": "AGENTS.md",
       "kind": "ref"
     },
@@ -5285,6 +5305,11 @@
     {
       "from": "rules/artifacts-always-first.md",
       "to": "rules/INDEX.md",
+      "kind": "ref"
+    },
+    {
+      "from": "rules/artifacts-always-first.md",
+      "to": "rules/constitution.md",
       "kind": "ref"
     },
     {
@@ -17276,26 +17301,6 @@
       "target": "_bmad-output/active-context/active-context.md"
     },
     {
-      "from": "commands/1_self-audit-stress-test.md",
-      "target": "implementation_plan.md"
-    },
-    {
-      "from": "commands/1_self-audit-stress-test_AP.md",
-      "target": "decisions-log.md"
-    },
-    {
-      "from": "commands/1_self-audit-stress-test_AP.md",
-      "target": "implementation_plan.md"
-    },
-    {
-      "from": "commands/1_self-audit-stress-test_AP.md",
-      "target": "self-audit-stress-test.md"
-    },
-    {
-      "from": "commands/1_self-audit-stress-test_AP.md",
-      "target": "walkthrough.md"
-    },
-    {
       "from": "commands/1_update-maps.md",
       "target": "todo_list.md"
     },
@@ -17380,95 +17385,119 @@
       "target": "walkthrough.md"
     },
     {
-      "from": "commands/bmad-code-review_AP.md",
-      "target": "active-context.md"
-    },
-    {
-      "from": "commands/bmad-code-review_AP.md",
-      "target": "code-review.md"
-    },
-    {
-      "from": "commands/bmad-code-review_AP.md",
-      "target": "decisions-log.md"
-    },
-    {
-      "from": "commands/bmad-code-review_AP.md",
-      "target": "implementation_plan.md"
-    },
-    {
-      "from": "commands/bmad-code-review_AP.md",
-      "target": "project-context.md"
-    },
-    {
-      "from": "commands/bmad-code-review_AP.md",
-      "target": "self-audit-stress-test.md"
-    },
-    {
-      "from": "commands/bmad-code-review_AP.md",
-      "target": "walkthrough.md"
-    },
-    {
-      "from": "commands/bmad-dev-story_AP.md",
-      "target": "decisions-log.md"
-    },
-    {
-      "from": "commands/bmad-dev-story_AP.md",
-      "target": "implementation_plan.md"
-    },
-    {
-      "from": "commands/bmad-dev-story_AP.md",
-      "target": "self-audit-stress-test.md"
-    },
-    {
-      "from": "commands/bmad-dev-story_AP.md",
-      "target": "walkthrough.md"
-    },
-    {
-      "from": "commands/boot-sprint-context.md",
-      "target": "_bmad-output/active-context/active-context.md"
-    },
-    {
       "from": "commands/quick-flow-solo-dev.md",
       "target": "implementation_plan.md"
     },
     {
-      "from": "commands/update-sprint-context.md",
-      "target": "/walkthrough.md"
-    },
-    {
-      "from": "commands/update-sprint-context.md",
-      "target": "MEMORY.md"
-    },
-    {
-      "from": "commands/update-sprint-context.md",
+      "from": "commands/sudo-boot-sprint-memory.md",
       "target": "_bmad-output/active-context/active-context.md"
     },
     {
-      "from": "commands/update-sprint-context.md",
-      "target": "_bmad-output/project-context.md"
-    },
-    {
-      "from": "commands/update-sprint-context.md",
+      "from": "commands/sudo-code-review_AP.md",
       "target": "active-context.md"
     },
     {
-      "from": "commands/update-sprint-context.md",
+      "from": "commands/sudo-code-review_AP.md",
+      "target": "code-review.md"
+    },
+    {
+      "from": "commands/sudo-code-review_AP.md",
+      "target": "decisions-log.md"
+    },
+    {
+      "from": "commands/sudo-code-review_AP.md",
       "target": "implementation_plan.md"
     },
     {
-      "from": "commands/update-sprint-context.md",
+      "from": "commands/sudo-code-review_AP.md",
       "target": "project-context.md"
     },
     {
-      "from": "commands/update-sprint-context.md",
-      "target": "task-list.md"
+      "from": "commands/sudo-code-review_AP.md",
+      "target": "self-audit-stress-test.md"
     },
     {
-      "from": "commands/update-sprint-context.md",
+      "from": "commands/sudo-code-review_AP.md",
       "target": "walkthrough.md"
     },
     {
-      "from": "commands/update-sprint-context.md",
+      "from": "commands/sudo-dev-story-tests.md",
+      "target": "implementation_plan.md"
+    },
+    {
+      "from": "commands/sudo-dev-story-tests_AP.md",
+      "target": "decisions-log.md"
+    },
+    {
+      "from": "commands/sudo-dev-story-tests_AP.md",
+      "target": "implementation_plan.md"
+    },
+    {
+      "from": "commands/sudo-dev-story-tests_AP.md",
+      "target": "self-audit-stress-test.md"
+    },
+    {
+      "from": "commands/sudo-dev-story-tests_AP.md",
+      "target": "walkthrough.md"
+    },
+    {
+      "from": "commands/sudo-self-audit.md",
+      "target": "implementation_plan.md"
+    },
+    {
+      "from": "commands/sudo-self-audit_AP.md",
+      "target": "decisions-log.md"
+    },
+    {
+      "from": "commands/sudo-self-audit_AP.md",
+      "target": "implementation_plan.md"
+    },
+    {
+      "from": "commands/sudo-self-audit_AP.md",
+      "target": "self-audit-stress-test.md"
+    },
+    {
+      "from": "commands/sudo-self-audit_AP.md",
+      "target": "walkthrough.md"
+    },
+    {
+      "from": "commands/sudo-update-sprint-memory.md",
+      "target": "/walkthrough.md"
+    },
+    {
+      "from": "commands/sudo-update-sprint-memory.md",
+      "target": "MEMORY.md"
+    },
+    {
+      "from": "commands/sudo-update-sprint-memory.md",
+      "target": "_bmad-output/active-context/active-context.md"
+    },
+    {
+      "from": "commands/sudo-update-sprint-memory.md",
+      "target": "_bmad-output/project-context.md"
+    },
+    {
+      "from": "commands/sudo-update-sprint-memory.md",
+      "target": "active-context.md"
+    },
+    {
+      "from": "commands/sudo-update-sprint-memory.md",
+      "target": "implementation_plan.md"
+    },
+    {
+      "from": "commands/sudo-update-sprint-memory.md",
+      "target": "project-context.md"
+    },
+    {
+      "from": "commands/sudo-update-sprint-memory.md",
+      "target": "task-list.md"
+    },
+    {
+      "from": "commands/sudo-update-sprint-memory.md",
+      "target": "walkthrough.md"
+    },
+    {
+      "from": "commands/sudo-update-sprint-memory.md",
       "target": "your-action-required.md"
     },
     {
@@ -19419,6 +19448,10 @@
   "external": [
     {
       "from": "commands/new-project.md",
+      "target": "router.md"
+    },
+    {
+      "from": "commands/sudo-boot-sprint-memory.md",
       "target": "router.md"
     },
     {

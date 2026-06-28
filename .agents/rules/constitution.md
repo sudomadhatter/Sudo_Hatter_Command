@@ -38,3 +38,4 @@ project-agnostic core shared across the whole workspace.
 - Always physically edit the `.md` story file status after completing a story
 - Always perform at least one live QA pass per epic before marking it done
 - Always save code-review output as a `code-review.md` artifact in the session folder — inline-only findings are not allowed (see `artifacts-always-first` rule)
+- Always hand Daniel **clickable links, never bare paths** — any file, artifact, or path you name or deliver in chat must be a Markdown link `[label](relative/path)` he can click to open. Applies to every session, including read-only / investigatory answers (the `artifacts-always-first` rule applies this to the artifact set)

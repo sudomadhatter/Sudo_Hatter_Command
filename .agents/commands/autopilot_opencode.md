@@ -29,10 +29,10 @@ that contract.
 
 | Stage | Teammate | Command → artifact |
 |---|---|---|
-| 1 Plan | Amelia (Dev) | `/bmad-dev-story_AP plan` → `implementation_plan.md` |
-| 2 Audit | Murat (QA) | `/1_self-audit-stress-test_AP` → `self-audit-stress-test.md` |
-| 3 Implement | Amelia (Dev) | `/bmad-dev-story_AP implement` → `walkthrough.md` |
-| 4 Review+Fix | Murat (QA) | `/bmad-code-review_AP` → `code-review.md` |
+| 1 Plan | Amelia (Dev) | `/sudo-dev-story-tests_AP plan` → `implementation_plan.md` |
+| 2 Audit | Murat (QA) | `/sudo-self-audit_AP` → `self-audit-stress-test.md` |
+| 3 Implement | Amelia (Dev) | `/sudo-dev-story-tests_AP implement` → `walkthrough.md` |
+| 4 Review+Fix | Murat (QA) | `/sudo-code-review_AP` → `code-review.md` |
 
 ### Open design questions before building
 - **Session continuity:** does opencode expose a resume/continue primitive equivalent to

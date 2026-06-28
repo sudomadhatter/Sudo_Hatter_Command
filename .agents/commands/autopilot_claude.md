@@ -99,10 +99,10 @@ behavior (the script just points it at the shared folder):
 
 | Stage | Session | Teammate | Command -> artifact |
 |---|---|---|---|
-| 1 Plan | dev (new) | Amelia (Dev) | `/bmad-dev-story_AP plan` -> `implementation_plan.md` |
-| 2 Audit | qa (new) | Murat (QA) | `/1_self-audit-stress-test_AP` -> `self-audit-stress-test.md` |
-| 3 Implement | dev (resume) | Amelia (Dev) | `/bmad-dev-story_AP implement` (applies audit, develops, tests) -> `walkthrough.md` |
-| 4 Review+Fix | qa (resume) | Murat (QA) | `/bmad-code-review_AP` (verifies + reviews + applies fixes + retests) -> `code-review.md`, hands to Daniel |
+| 1 Plan | dev (new) | Amelia (Dev) | `/sudo-dev-story-tests_AP plan` -> `implementation_plan.md` |
+| 2 Audit | qa (new) | Murat (QA) | `/sudo-self-audit_AP` -> `self-audit-stress-test.md` |
+| 3 Implement | dev (resume) | Amelia (Dev) | `/sudo-dev-story-tests_AP implement` (applies audit, develops, tests) -> `walkthrough.md` |
+| 4 Review+Fix | qa (resume) | Murat (QA) | `/sudo-code-review_AP` (verifies + reviews + applies fixes + retests) -> `code-review.md`, hands to Daniel |
 
 ## Guardrails (already built into the script - do not override)
 
@@ -113,7 +113,7 @@ behavior (the script just points it at the shared folder):
 - **QA owns the loop close:** Stage 4 reviews AND applies fixes itself - no separate fix stage. As the
   last agent before the human, it writes **OUT-OF-SPEC DECISIONS** + **OPEN QUESTIONS FOR DANIEL** at the
   top of `walkthrough.md` (and may ask Daniel directly there), and appends a **`## Close-Out Handoff`** block
-  at the bottom — the pre-routed learnings (incl. memory candidates) that `/update-sprint-context` lifts at close-out.
+  at the bottom — the pre-routed learnings (incl. memory candidates) that `/sudo-update-sprint-memory` lifts at close-out.
 - **Session continuity:** each team resumes its own chat (`--session-id` on the first call, `--resume`
   on the second). The two session ids are deterministic (generated up front, saved to
   `_pipeline/sessions.json`) so a crash is still resumable. Sessions are **persisted** (this is the
@@ -150,5 +150,5 @@ behavior (the script just points it at the shared folder):
 1. Review `walkthrough.md` - start with **OUT-OF-SPEC DECISIONS** + **OPEN QUESTIONS FOR DANIEL** at
    the top - AND `decisions-log.md` (every choice the team made on your behalf).
 2. Answer any open questions. The story is already at **`review`** (the orchestrator flipped it on the
-   green gate); run `/update-sprint-context`, then flip `review -> done` when you're satisfied.
+   green gate); run `/sudo-update-sprint-memory`, then flip `review -> done` when you're satisfied.
 3. Commit when satisfied.

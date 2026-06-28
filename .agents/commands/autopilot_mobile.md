@@ -105,7 +105,7 @@ paste the full walkthrough. (CLAUDE_CODE_REMOTE is true on web/mobile — summar
 ## After it completes — Daniel's close-out (not automated)
 
 1. Review `walkthrough.md` (OUT-OF-SPEC DECISIONS + OPEN QUESTIONS) and `decisions-log.md`.
-2. Answer open questions; run `/update-sprint-context` to close the story.
+2. Answer open questions; run `/sudo-update-sprint-memory` to close the story.
 3. Commit when satisfied (the pipeline never commits).
 
 ## On-demand status
