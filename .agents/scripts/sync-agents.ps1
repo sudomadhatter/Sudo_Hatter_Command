@@ -20,16 +20,19 @@
     - Global caches: MIRROR-EXACT — copy eligible, purge anything not eligible, EXCEPT `bmad-*` (BMAD installs
       its own global agents/workflows; never ours to delete).
     - Project .agents vendor: ADDITIVE. The vendored .agents is a HYBRID (master toolkit + project-owned
-      rules\ and skills\), so it is NEVER mirrored/purged wholesale. The lone deletion is a narrow prune of
+      rules\, skills\, and bmad\), so it is NEVER mirrored/purged wholesale. bmad\ is EXCLUDED from the vendor
+      robocopy entirely (BMAD's module config is project-identity — each repo's own `project_name` — and BMAD
+      self-installs per project; master must never overwrite it). The lone deletion is a narrow prune of
       stale workflows\ command-ghosts — a workflows\ file whose name is a master COMMAND but not a master
       WORKFLOW (a leftover from when commands lived in workflows\). That test provably never hits rules\,
-      skills\, or a project-authored workflow.
+      skills\, bmad\, or a project-authored workflow.
 
   For a PROJECT target (not the lobby root) it ALSO vendors master's .agents into the project so the repo is
   clone-safe. That vendor is ADDITIVE (/E, no purge): a project's .agents is a HYBRID — master toolkit copied
   in, layered OVER project-OWNED content master does NOT have (notably .agents\rules\ and project-specific
-  .agents\skills\). So NEVER /MIR or blanket-/PURGE the vendored .agents — that deletes the project's own
-  files. The only deletion here is the narrow workflows\ command-ghost prune (see PURGE POLICY). A project
+  .agents\skills\). .agents\bmad\ is EXCLUDED from the vendor (project-owned identity; see PURGE POLICY). So
+  NEVER /MIR or blanket-/PURGE the vendored .agents — that deletes the project's own files. The only deletion
+  here is the narrow workflows\ command-ghost prune (see PURGE POLICY). A project
   sync does NOT touch the machine-global caches (globals reflect the lobby's canonical set).
 
   Always edit the master; never hand-edit the copies. Re-run this to propagate changes.
@@ -61,10 +64,11 @@ $AllPlatforms = @('claude','opencode','antigravity')
 
 # --- helpers ------------------------------------------------------------------
 
-function Sync-Dir($src, $dst) {
+function Sync-Dir($src, $dst, [string[]]$ExcludeDirs) {
   if (-not (Test-Path $src)) { return }
   New-Item -ItemType Directory -Force -Path $dst | Out-Null
-  robocopy $src $dst /E /XD node_modules /NFL /NDL /NJH /NJS /NC /NS | Out-Null
+  $xd = @('node_modules') + (@($ExcludeDirs) | Where-Object { $_ })
+  robocopy $src $dst /E /XD @xd /NFL /NDL /NJH /NJS /NC /NS | Out-Null
   if ($LASTEXITCODE -ge 8) { throw "robocopy failed ($src -> $dst), rc=$LASTEXITCODE" }
 }
 
@@ -124,7 +128,10 @@ if (-not $GlobalsOnly) {
   # project's .agents is a HYBRID: master toolkit layered over project-OWNED rules\ + project skills\ that
   # master does NOT have. Do NOT change this to /MIR or a blanket /PURGE — it deletes the project's own files.
   if (-not $IsLobby) {
-    Sync-Dir $Master (Join-Path $Target ".agents")
+    # Exclude bmad\ from the vendor: BMAD's module config is PROJECT-OWNED (each repo carries its own
+    # `project_name` etc.) and BMAD self-installs per project, so it must NOT be overwritten from master.
+    # This keeps it project-owned the same way rules\ already are (additive vendor, master never clobbers it).
+    Sync-Dir $Master (Join-Path $Target ".agents") @((Join-Path $Master 'bmad'))
     # Prune stale command-ghosts from the vendored workflows/: a file that is a master COMMAND but NOT a
     # master workflow is a leftover from the old layout (commands used to live in workflows/). This is the
     # ONLY purge on the vendored .agents and it is provably safe — it can never touch rules/, skills/, or a

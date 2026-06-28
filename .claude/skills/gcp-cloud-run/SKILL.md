@@ -469,8 +469,8 @@ async def chat(message: str):
 
 ## Related Skills
 
-- [sse-streaming-patterns.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/sse-streaming-patterns/SKILL.md) - FastAPI SSE implementation
-- [backend-dev-guidelines.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/backend-dev-guidelines/SKILL.md) - Node.js patterns (if migrating)
+- [sse-streaming-patterns.md](../sse-streaming-patterns/SKILL.md) - FastAPI SSE implementation
+- [backend-dev-guidelines.md](../backend-dev-guidelines/SKILL.md) - Node.js patterns (if migrating)
 
 ---
 

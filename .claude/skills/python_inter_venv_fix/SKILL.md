@@ -14,7 +14,7 @@ The user reports any of:
 ## The #1 root cause (check this FIRST)
 **Config files contain absolute paths to an OLD project location.** This repo has been moved
 between folders (e.g. `c:\Sudo_Hatter_Command\Projects\aviationChat-AGY\` → the current
-`c:\Users\dlohn\.gemini\antigravity\scratch\AGY_AVIATIONCHAT\`). Hard-coded absolute paths in
+`c:\Users\dlohn\.gemini\antigravity\scratch\Sudo_Hatter_Command\Projects\AGY_AVIATIONCHAT\`). Hard-coded absolute paths in
 the tooling configs die the moment the project folder changes, so VS Code is pointed at a venv
 that no longer exists.
 

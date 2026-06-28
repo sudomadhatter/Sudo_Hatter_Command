@@ -507,9 +507,9 @@ def prioritize_claims(claims: list) -> list:
 
 ## Related Skills
 
-- [multi-agent-orchestration.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/multi-agent-orchestration/SKILL.md) - Lane 3 (Verifier) in the 3-lane pattern
-- [dual-store-rag-patterns.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/dual-store-rag-patterns/SKILL.md) - How to query DB2 for evidence
-- [sse-streaming-patterns.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/sse-streaming-patterns/SKILL.md) - How to send Swap events
+- [multi-agent-orchestration.md](../multi-agent-orchestration/SKILL.md) - Lane 3 (Verifier) in the 3-lane pattern
+- [dual-store-rag-patterns.md](../dual-store-rag-patterns/SKILL.md) - How to query DB2 for evidence
+- [sse-streaming-patterns.md](../sse-streaming-patterns/SKILL.md) - How to send Swap events
 
 ---
 

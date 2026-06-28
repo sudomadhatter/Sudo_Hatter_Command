@@ -34,7 +34,7 @@ ADK 1.26.0 provides **three testing layers**:
 ```powershell
 # 1. Edit backend/agent.py to select agent
 # 2. Start the web UI
-cd C:\Sudo_Hatter_Command\Projects\aviationChat-AGY
+cd C:\Users\dlohn\.gemini\antigravity\scratch\Sudo_Hatter_Command\Projects\AGY_AVIATIONCHAT
 backend\.venv\Scripts\adk.exe web --port 8001
 ```
 

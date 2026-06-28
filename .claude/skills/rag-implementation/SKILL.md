@@ -21,7 +21,7 @@ AviationChat uses **TWO separate databases** for different purposes:
 - ✅ **Verify from law** (DB2 regulatory text)
 - ✅ **Prevent hallucinations** (cross-reference between databases)
 
-See [dual-store-rag-patterns.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/dual-store-rag-patterns/SKILL.md) for complete implementation.
+See [dual-store-rag-patterns.md](../dual-store-rag-patterns/SKILL.md) for complete implementation.
 
 ---
 
@@ -391,9 +391,9 @@ results = search_library_hybrid("14 CFR 91.205", doc_type="regulation")
 
 ## Related Skills
 
-- [dual-store-rag-patterns.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/dual-store-rag-patterns/SKILL.md) - Complete dual-store implementation
-- [multi-agent-orchestration.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/multi-agent-orchestration/SKILL.md) - How Investigation Swarm uses RAG
-- [regulatory-verification-protocol.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/regulatory-verification-protocol/SKILL.md) - Using DB2 for verification
+- [dual-store-rag-patterns.md](../dual-store-rag-patterns/SKILL.md) - Complete dual-store implementation
+- [multi-agent-orchestration.md](../multi-agent-orchestration/SKILL.md) - How Investigation Swarm uses RAG
+- [regulatory-verification-protocol.md](../regulatory-verification-protocol/SKILL.md) - Using DB2 for verification
 
 ---
 

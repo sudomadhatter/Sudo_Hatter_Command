@@ -9,8 +9,8 @@ description: A research guide and outline on how to use, create, and manage Agen
 Skills are **markdown files** that teach your AI agent how to perform specific, often complex, tasks. Think of them as "knowledge cartridges" or "playbooks". When you have a skill for a topic (e.g., `react-patterns.md`), the agent can read it to instantly become an expert in that domain, following the exact best practices and steps you've defined.
 
 ## 📂 Where do they live?
-All skills reside in your `.agent/skills/` directory.
-- **Path**: `C:\Sudo_Hatter_Command\Projects\aviationChat-AGY\.agent\skills\`
+All skills reside in your `.agents/skills/` directory.
+- **Path**: `.agents/skills/` (relative to the workspace root)
 - **Extension**: `.md` (Markdown)
 
 ## 🛠️ How to Use a Skill

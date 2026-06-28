@@ -508,8 +508,8 @@ function SpecialistChat() {
 
 ## Related Skills
 
-- [multi-agent-orchestration.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/multi-agent-orchestration/SKILL.md) - How agents coordinate in 3-lane pattern
-- [firestore-schema-guide.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/firestore-schema-guide/SKILL.md) - What data to pass (profile schemas)
+- [multi-agent-orchestration.md](../multi-agent-orchestration/SKILL.md) - How agents coordinate in 3-lane pattern
+- [firestore-schema-guide.md](../firestore-schema-guide/SKILL.md) - What data to pass (profile schemas)
 
 ---
 

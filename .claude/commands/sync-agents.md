@@ -13,10 +13,11 @@ What it touches:
 - **Machine-global caches** (on a LOBBY sync) — `~/.config/opencode/commands` and
   `~/.gemini/antigravity/global_workflows`, so opencode + Antigravity see the same set Claude does.
 - **Project target** — also vendors master's `.agents/` into the repo so it's clone-safe. The vendor is
-  **additive**: a project's `.agents/` is a **hybrid** (master toolkit **plus** project-owned `rules/` and
-  project `skills/` that master lacks), so it is **never** mirror/purged wholesale — the only deletion is the
-  narrow stale-`workflows/`-command-ghost prune. (A project sync does NOT touch the global caches; globals
-  reflect the lobby's canonical set.)
+  **additive**: a project's `.agents/` is a **hybrid** (master toolkit **plus** project-owned `rules/`,
+  `skills/`, and `bmad/` that master lacks/owns-per-project), so it is **never** mirror/purged wholesale — the
+  only deletion is the narrow stale-`workflows/`-command-ghost prune. **`bmad/` is excluded from the vendor
+  entirely** — its `project_name` is per-project identity and BMAD self-installs per repo, so master never
+  overwrites it. (A project sync does NOT touch the global caches; globals reflect the lobby's canonical set.)
 
 **Platform reach.** A command may declare `platforms: [claude, opencode, antigravity]` in its frontmatter.
 **Absent = universal** (all three). The sync copies a command only to the platforms it lists — e.g.

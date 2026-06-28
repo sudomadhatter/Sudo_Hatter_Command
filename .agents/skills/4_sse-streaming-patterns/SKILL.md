@@ -667,8 +667,8 @@ useEffect(() => {
 
 ## Related Skills
 
-- [multi-agent-orchestration.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/multi-agent-orchestration/SKILL.md) - 3-lane pattern that generates these events
-- [regulatory-verification-protocol.md](file:///C:/Sudo_Hatter_Command/Projects/aviationChat-AGY/.agents/skills/regulatory-verification-protocol/SKILL.md) - When to send swap events
+- [multi-agent-orchestration.md](../multi-agent-orchestration/SKILL.md) - 3-lane pattern that generates these events
+- [regulatory-verification-protocol.md](../regulatory-verification-protocol/SKILL.md) - When to send swap events
 
 ---
 
