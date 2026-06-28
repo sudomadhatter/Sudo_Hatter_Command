@@ -24,21 +24,23 @@ Launch the autopilot pipeline for the story in `$ARGUMENTS` (a story id like `11
    a live notification (Monitor avoids the foreground timeout AND drives the todo updates below).
    Call Monitor with:
 
-   - **command:** `LOG="_artifacts/_autopilot-run.log"; powershell.exe -NoProfile -File scripts/autopilot-dev-story.ps1 -Story $ARGUMENTS > "$LOG" 2>&1 & APID=$!; tail --pid=$APID -f -n +1 "$LOG" | grep --line-buffered -E ">>> STAGE|TEST GATE|STORY STATUS|done in|PAUSED|AUTOPILOT|Total cost|CRASHED|retrying|MODEL MISMATCH|! WARNING|TESTS|COST CEILING|REVIEW INCOMPLETE"`
-   - **description:** `autopilot $ARGUMENTS - stage progress (tailing _autopilot-run.log)`
+   - **command:** `LOG_SLUG=$(printf '%s' "$ARGUMENTS" | tr -c 'A-Za-z0-9' '-' | sed 's/--*/-/g; s/^-//; s/-$//'); LOG="_artifacts/_autopilot-run-$LOG_SLUG.log"; powershell.exe -NoProfile -File scripts/autopilot-dev-story.ps1 -Story "$ARGUMENTS" > "$LOG" 2>&1 & APID=$!; tail --pid=$APID -f -n +1 "$LOG" | grep --line-buffered -E ">>> STAGE|TEST GATE|STORY STATUS|done in|PAUSED|AUTOPILOT|Total cost|CRASHED|retrying|MODEL MISMATCH|! WARNING|TESTS|COST CEILING|REVIEW INCOMPLETE"`
+   - **description:** `autopilot $ARGUMENTS - stage progress (per-story log _autopilot-run-<story>.log)`
    - **persistent:** `true`  (tail exits when the script PID dies)
 
    This **tails a real log file** instead of piping the live PowerShell straight through `grep` (the old
-   way swallowed every startup error and could make a healthy run look dead). The FULL transcript is
-   always at `_artifacts/_autopilot-run.log` — if the run errors before the first stage, read that
-   log to see exactly why. The `grep` here only filters what STREAMS into the chat; the log keeps
+   way swallowed every startup error and could make a healthy run look dead). The global log is now
+   **per-story** — `_artifacts/_autopilot-run-<story>.log` (the `<story>` slug is derived from
+   `$ARGUMENTS`), so two autopilots running at once never cross-wire each other's stream into one file.
+   The FULL transcript is always at that per-story path — if the run errors before the first stage, read
+   that log to see exactly why. The `grep` here only filters what STREAMS into the chat; the log keeps
    everything. Stage transitions still arrive as live notifications, so the TodoWrite updates below work
    exactly as before. The filter now also streams the `>>> TEST GATE` heartbeat (so the ~100s gate phase
    after Stage 4 isn't a silent gap that looks hung) and the `>>> STORY STATUS` flip; the `WARNING` token
    is anchored to the script's own `! WARNING` prefix so it no longer false-fires on pytest's
    `DeprecationWarning` noise during the gate. (The run folder ALSO keeps its own self-contained copy of
-   the transcript at `<run-folder>/_pipeline/run.log` — the global log above is just the stable, known-
-   upfront path to tail live.)
+   the transcript at `<run-folder>/_pipeline/run.log` — the per-story global log above is just the stable,
+   known-upfront path to tail live.)
 
    For a cheap plan+audit trial, append `-MaxStage 2`. Model overrides: `-DevModel`/`-AuditModel`.
    **Resume a crashed run:** `-ResumeFrom <N>` (1-4) (or just re-run with no flags - completed stages
@@ -78,7 +80,7 @@ Launch the autopilot pipeline for the story in `$ARGUMENTS` (a story id like `11
    **PAUSED** on a `PIPELINE_BLOCKER` (needs Daniel), or **CRASHED** on a genuine error (re-run with no
    flags; finished stages auto-detect from the folder and skip). On a clean **COMPLETE**, also tell Daniel
    the story was auto-advanced to **`review`** (story file + sprint-status) — he owns the `review -> done`
-   flip. The full transcript is at `_artifacts/_autopilot-run.log` (and a self-contained copy in
+   flip. The full transcript is at `_artifacts/_autopilot-run-<story>.log` (and a self-contained copy in
    `<run-folder>/_pipeline/run.log`), and `_RUN-STATUS.md` in the folder shows the final state.
 
 > **On-demand status** also works anytime: while a run is going, just ask "status" and Claude reads
@@ -133,6 +135,15 @@ behavior (the script just points it at the shared folder):
   BMAD "Dev finishes -> review" step. It **never** flips to `done` (the human owns `review -> done`), and
   it is best-effort (a flip hiccup warns, never crashes a finished run). The agents themselves still never
   touch status — the orchestrator owns the flip, gated on its own green test result.
+- **Concurrency-safe (run as many stories at once as you want).** Every run is isolated by its story id:
+  a per-story global log (`_autopilot-run-<story>.log`), a per-story `CLAUDE_CONFIG_DIR` (so the headless
+  `claude` children never race on the shared `~/.claude` session store — the bug that corrupted concurrent
+  14-7/14-8 runs), and a per-story lockfile (`<run-folder>/_pipeline/.run.lock`) that refuses to start a
+  SECOND run of the SAME story while one is live. Different stories run fully in parallel; the same story
+  can't double-run.
+- A missing handoff artifact is a **hard stop** (CRASHED, resumable), never a silent "continue to the next
+  stage" — so a corrupted stage (e.g. Stage 1 producing no plan) halts immediately instead of burning
+  spend on empty downstream stages. Re-run with no flags to resume; finished stages auto-skip.
 - The pipeline **never** runs `git commit`/`push` and **never** marks the story `done`.
 
 ## After it completes - Daniel's close-out (not automated)
