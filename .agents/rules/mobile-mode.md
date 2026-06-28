@@ -61,9 +61,15 @@ Typing the exact word "approved" on a phone keyboard is the worst part of mobile
 
 ## Override 3 — Lighter, chat-first artifacts
 
-The artifact set from `artifacts-always-first.md` still applies — `implementation_plan.md`,
-`walkthrough.md`, `task-list.md`, plus the `INDEX.md` row and `active-context.md` update. But on mobile:
+The artifact set from `artifacts-always-first.md` still applies — `implementation_plan.md` and the single
+`walkthrough.md` (which carries the `## Task Checklist` + `## Your Actions` sections), plus the `INDEX.md`
+row and `active-context.md` update. But on mobile:
 
+- **📱 Tag every artifact as mobile-made — so Daniel can find them later.** On a phone he can't fully
+  review a walkthrough, so flag every mobile run for a proper desktop re-pass: add **`mobile: true`** under
+  each artifact's `ArtifactMetadata` frontmatter, **and** prefix the `walkthrough.md` H1 title and the
+  `_artifacts/INDEX.md` row with **📱**. Later, `grep -rl 'mobile: true' _artifacts/` (or scanning
+  `INDEX.md` for 📱) surfaces every mobile-produced run in one shot. This tag is mandatory on mobile.
 - **TL;DR-first and terse.** Lead every artifact and every chat reply with the headline; details below.
 - **Chat replies stay short** — a summary plus the PR/branch link, not a file dump. Daniel reads the
   chat on a small screen; he opens files only when he wants to.

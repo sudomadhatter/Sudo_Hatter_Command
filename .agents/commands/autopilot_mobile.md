@@ -47,8 +47,11 @@ will be skipped.
 ### 4. Live task list + run-status marker
 - Create a TaskCreate list mirroring the four stages; mark `startStage` `in_progress`, the rest
   `pending` (skip the already-complete ones as `completed`).
-- Write `<folder>/_RUN-STATUS.md` = **IN PROGRESS — NOT FINISHED** (so a crashed/partial run can never
-  read as a finished story).
+- Write `<folder>/_RUN-STATUS.md` = **📱 MOBILE RUN — IN PROGRESS — NOT FINISHED** (so a crashed/partial
+  run can never read as a finished story, and the run is flagged as mobile-made).
+- **Tag the run as mobile-made** (`mobile-mode.md` Override 3): this is a `CLAUDE_CODE_REMOTE` run, so add
+  `mobile: true` to each artifact's `ArtifactMetadata` frontmatter and prefix the `_artifacts/INDEX.md`
+  row (and `walkthrough.md` H1) with **📱**, so Daniel can find mobile runs later for a desktop re-pass.
 
 ### 5. Launch the workflow
 Call the **Workflow** tool with the committed orchestrator and the resolved args:

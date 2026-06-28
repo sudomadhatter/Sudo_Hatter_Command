@@ -10,8 +10,18 @@
 #
 # FIX (2026-06-11): Added on_complete + artifact persistent fact.
 # Without this, the agent finishes the story and gives a chat summary
-# but "forgets" to create walkthrough.md and your-action-required.md.
+# but "forgets" to write the closing walkthrough.md.
 # on_complete fires at workflow termination — impossible to skip.
+#
+# FIX (2026-06-27): Baked the EXPLICIT artifact folder into the persistent
+# fact + on_complete. The BMAD flow never loads the global placement rule
+# (_artifacts/README.md / artifacts-always-first.md), so with only a path-less
+# "create artifacts" instruction the agent drifted to the RETIRED
+# _claude_artifacts/ store (story 14.7). The path now travels with the
+# instruction and the dead store is explicitly rejected. Same pass aligned the
+# close-out to the one-doc model: a single walkthrough.md ending in
+# `## Task Checklist` + `## Your Actions` — no separate your-action-required.md
+# or task-list.md (artifacts-always-first.md §5).
 
 [workflow]
 
@@ -31,15 +41,14 @@ This gate is NON-NEGOTIABLE. It comes from the project constitution which takes 
 # agent "forgets" the prepend steps by the time it reaches Step 5.
 persistent_facts = [
   "file:{project-root}/.agents/rules/000-PLAN-FIRST-GATE.md",
-  "MANDATORY ARTIFACT PROTOCOL: Before your final chat summary, you MUST create walkthrough.md (recap: what changed, test output, AC matrix) and your-action-required.md (git commit command, manual steps for Daniel) as artifacts. This is a constitution rule. Failure to produce these artifacts is a session failure.",
+  "MANDATORY ARTIFACT PROTOCOL: Session artifacts live in THIS project's `_artifacts/` store — for a story `E.S` the folder is `_artifacts/epic_<E>/story-<E.S>-<slug>/` (create `epic_<E>/` if it is missing). NEVER write them to `_claude_artifacts/` (RETIRED/DELETED) or `_bmad-output/` (that is BMAD's own store, not the session store). The folder layout is defined in this project's `_artifacts/README.md`. In that folder you MUST write ONE closing doc — `walkthrough.md` (recap: what changed, pasted test output, AC matrix) — ending with a `## Task Checklist` section (the final TodoWrite snapshot) and then a `## Your Actions` section (manual steps + the exact git commit command). Do NOT write a separate `your-action-required.md` or `task-list.md` — everything final lives in `walkthrough.md` (per artifacts-always-first.md §5). Producing it in the wrong store — or not at all — is a session failure.",
 ]
 
 # Fires at the very end of Step 10 — the last thing the workflow does.
 # This is the terminal instruction and cannot be forgotten or skipped.
-on_complete = """STOP. Before you write your final chat message, check: have you created the session artifacts?
-Required artifacts (per AGENTS.md and constitution.md):
-1. walkthrough.md — what changed, why, diffs, test output, AC verification matrix
-2. your-action-required.md — git commit command + any manual steps for Daniel
-If these artifacts do NOT exist yet, create them NOW using the write_to_file tool with IsArtifact=true.
-Only AFTER both artifacts exist may you write your completion summary to the user."""
+on_complete = """STOP. Before you write your final chat message, check the session artifacts.
+ARTIFACT LOCATION (non-negotiable): THIS project's own `_artifacts/` store. For a story `E.S` that is `_artifacts/epic_<E>/story-<E.S>-<slug>/` (create `epic_<E>/` if it is missing). NEVER `_claude_artifacts/` (RETIRED/DELETED) and NEVER `_bmad-output/`. The layout is defined in `_artifacts/README.md`.
+Required (per AGENTS.md and constitution.md): ONE closing doc, `walkthrough.md`, IN THAT FOLDER — narrative + pasted test output + AC matrix, ENDING with a `## Task Checklist` section (final TodoWrite snapshot) and then a `## Your Actions` section (git commit command + manual steps). Do NOT write a separate `your-action-required.md` or `task-list.md`; both are sections inside `walkthrough.md`.
+If it does NOT yet exist in the correct `_artifacts/epic_<E>/…` folder, create it NOW using the write_to_file tool with IsArtifact=true. If you already wrote artifacts somewhere else (e.g. `_claude_artifacts/`), MOVE them into the correct folder.
+Only AFTER `walkthrough.md` exists in the right place may you write your completion summary to the user."""
 

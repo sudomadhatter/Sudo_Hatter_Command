@@ -2,9 +2,9 @@
   "root": "C:\\Users\\dlohn\\.gemini\\antigravity\\scratch\\Sudo_Hatter_Command\\.agents",
   "counts": {
     "files": 984,
-    "edges": 2454,
+    "edges": 2455,
     "external": 22,
-    "ambiguous": 510,
+    "ambiguous": 512,
     "dangling": 544,
     "broken_paths": 79,
     "unresolved_names": 465
@@ -103,7 +103,7 @@
     {
       "path": "commands/autopilot_mobile.md",
       "in": 1,
-      "out": 0
+      "out": 1
     },
     {
       "path": "commands/autopilot_opencode.md",
@@ -327,7 +327,7 @@
     },
     {
       "path": "rules/mobile-mode.md",
-      "in": 5,
+      "in": 6,
       "out": 7
     },
     {
@@ -4990,6 +4990,11 @@
     {
       "from": "commands/1_update-maps.md",
       "to": "commands/INDEX.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/autopilot_mobile.md",
+      "to": "rules/mobile-mode.md",
       "kind": "ref"
     },
     {
@@ -17346,6 +17351,10 @@
     },
     {
       "from": "commands/bmad-code-review_AP.md",
+      "target": "active-context.md"
+    },
+    {
+      "from": "commands/bmad-code-review_AP.md",
       "target": "code-review.md"
     },
     {
@@ -17355,6 +17364,10 @@
     {
       "from": "commands/bmad-code-review_AP.md",
       "target": "implementation_plan.md"
+    },
+    {
+      "from": "commands/bmad-code-review_AP.md",
+      "target": "project-context.md"
     },
     {
       "from": "commands/bmad-code-review_AP.md",
@@ -17587,10 +17600,6 @@
     {
       "from": "rules/mobile-mode.md",
       "target": "implementation_plan.md"
-    },
-    {
-      "from": "rules/mobile-mode.md",
-      "target": "task-list.md"
     },
     {
       "from": "rules/mobile-mode.md",
@@ -19374,10 +19383,6 @@
     },
     {
       "from": "workflows/autopilot_bmad_dev_loop.md",
-      "target": "task-list.md"
-    },
-    {
-      "from": "workflows/autopilot_bmad_dev_loop.md",
       "target": "walkthrough.md"
     }
   ],
@@ -20745,6 +20750,16 @@
       ]
     },
     {
+      "from": "commands/autopilot_mobile.md",
+      "target": "_artifacts/INDEX.md",
+      "candidates": [
+        "commands/INDEX.md",
+        "rules/INDEX.md",
+        "skills/INDEX.md",
+        "workflows/INDEX.md"
+      ]
+    },
+    {
       "from": "opencode-agents/bmad-master.md",
       "target": "_bmad/core/agents/bmad-master.md",
       "candidates": [
@@ -20762,6 +20777,16 @@
     },
     {
       "from": "rules/artifacts-always-first.md",
+      "target": "_artifacts/INDEX.md",
+      "candidates": [
+        "commands/INDEX.md",
+        "rules/INDEX.md",
+        "skills/INDEX.md",
+        "workflows/INDEX.md"
+      ]
+    },
+    {
+      "from": "rules/mobile-mode.md",
       "target": "_artifacts/INDEX.md",
       "candidates": [
         "commands/INDEX.md",

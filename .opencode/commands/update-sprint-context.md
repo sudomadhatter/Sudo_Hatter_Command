@@ -18,7 +18,7 @@ Read:
 2. `_bmad-output/implementation-artifacts/sprint-status.yaml` — **Grep for THIS story's id + read only its epic block + line**, NOT all 400+ lines (that file is ~27k tokens; reading it whole is the single biggest waste in this command).
 3. List `_bmad-output/component-specs/` — names only. Open a spec only when you have a learning to route into it (Step 3).
 4. `_bmad-output/project-context.md` — open ONLY if a session learning looks app-wide (to check for an existing rule before adding one). Otherwise skip; its rules were loaded at boot.
-5. This session's `_artifacts/<YYYY-MM-DD>_<slug>/` — `implementation_plan.md`, `walkthrough.md`, `task-list.md`. **Skip any artifact you already read earlier THIS session** (e.g. right after an /autopilot run the walkthrough + code-review are already in context — don't re-read them). **If `walkthrough.md` ends with a `## Close-Out Handoff` block** (autopilot Stage 4 writes one), that block is the AUTHORITATIVE, pre-routed list of this run's learnings — Step 3 lifts it instead of re-deriving.
+5. This session's `_artifacts/<YYYY-MM-DD>_<slug>/` — `implementation_plan.md` and `walkthrough.md` (its `## Task Checklist` + `## Your Actions` are sections of it, not separate files). **Skip any artifact you already read earlier THIS session** (e.g. right after an /autopilot run the walkthrough + code-review are already in context — don't re-read them). **If `walkthrough.md` ends with a `## Close-Out Handoff` block** (autopilot Stage 4 writes one), that block is the AUTHORITATIVE, pre-routed list of this run's learnings — Step 3 lifts it instead of re-deriving.
 6. **Cross-reference `implementation_plan.md` vs `walkthrough.md`** for plan-vs-built deltas — unless you already surfaced those deltas this session.
 
 Report: sprint objective, this story's status, plan-vs-walkthrough deltas, # known pitfalls.
@@ -40,10 +40,10 @@ yourself from the artifacts:
 - **New architecture rule / invariant (app-wide)** → `_bmad-output/project-context.md` (`## Critical Architecture Rules`)
 - **New component pitfall / gotcha / failure mode** → `_bmad-output/component-specs/<spec>.md`
 - **New bug discovered (still open)** → `active-context.md` (`## Active Tasks`)
-- **Cross-session fact / recurring pitfall / Daniel preference (NOT component-scoped)** → **PROPOSE** a
-  Claude auto-memory file (one fact per file, with `name` / `description` / `metadata.type` frontmatter)
-  **+ a one-line `MEMORY.md` pointer. Do NOT write memory yet — list the proposals and write only after
-  Daniel says OK in Step 6.**
+- **Cross-session fact / recurring pitfall / Daniel preference (NOT component-scoped)** → a Claude
+  auto-memory file (one fact per file, with `name` / `description` / `metadata.type` frontmatter) **+ a
+  one-line `MEMORY.md` pointer. Collect the candidates here; they are validated, cross-checked against
+  existing memory, and written automatically in Step 6 — no approval gate.**
 
 Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: session artifacts)`.
 
@@ -67,8 +67,8 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
 ## Step 5 — Prune & cap (this is what keeps boot cheap) — AUTOMATIC, never ask
 This whole step is an unconditional *apply* (same tier as Step 4): prune and cap **without asking**.
 Active-context is project-scoped and reversible (history survives in `_artifacts/` + git), so there is
-NO permission gate here. The only two gates in this command are the live-test story→done check (Step 4)
-and the memory write (Step 6) — everything else just applies.
+NO permission gate here. The ONLY gate in this command is the live-test story→done check (Step 4) —
+everything else, including the memory write (Step 6), just applies.
 - **`active-context.md` hard cap ≈ 250 lines of LIVE state.** If history has crept in, move it to
   `_artifacts/<date>_<slug>/walkthrough.md` / git — do not keep narrative logs here.
 - **Completed tasks > 5** → delete the oldest (history lives in `_artifacts/` + git).
@@ -85,24 +85,33 @@ and the memory write (Step 6) — everything else just applies.
 - **Normalize encoding** of any line you touch (no `â€"` mojibake — use real `—` `→` `⚠️`).
 
 ## Step 6 — §5 artifacts, summary & manual catch
-- Ensure this session's `_artifacts/<date>_<slug>/` has **`walkthrough.md`** (with a **"Your Actions"**
-  section: manual steps + the exact `git` command — agents never commit) and a **`task-list.md`** snapshot,
-  per AGENTS.md §5. (There is no `your-action-required.md`.)
+- Ensure this session's `_artifacts/<date>_<slug>/` has the single **`walkthrough.md`** ending with a
+  **`## Task Checklist`** section (final task snapshot) and a **`## Your Actions`** section (manual steps +
+  the exact `git` command — agents never commit), per AGENTS.md §5. (There is no separate `task-list.md`
+  or `your-action-required.md` — both are sections of the walkthrough.)
 - Print a summary:
   > **Session save applied:**
   > - ✅ Moved to Completed: [tasks]
   > - 🧠 Learnings: [rule/pitfall] → [file]
   > - 🧹 Pruned: [stale pitfalls / old completed]
-- **Memory (the ONE gated write) — never ask blind, never ask when empty:**
-  - **If there are ≥1 memory candidates** (from the Close-Out Handoff `→ Claude memory` bucket, or one you
-    derived in Step 3): show each one IN FULL *before* asking — proposed `name`, the exact one-line fact,
-    `metadata.type`, and WHY it's cross-session (not just this story). Then ask:
-    *"These would go to permanent auto-memory — loaded into the top of EVERY future session. Write them? (per-candidate y/n)"*
-    Write only the approved files (one fact per file, `name`/`description`/`metadata.type` frontmatter) + their
-    `MEMORY.md` pointers.
-  - **If there are zero candidates, do NOT ask the memory question at all.** Print `🧠 Memory: nothing
-    cross-session this session — unchanged` and move on. (This is MOST sessions — project learnings already
-    routed to specs / active-context / rules in Steps 3–4; memory is only for durable, non-component facts.)
+- **Memory (AUTOMATIC — validate, cross-check, write; no approval gate):** For each candidate (from the
+  Close-Out Handoff `→ Claude memory` bucket, or one you derived in Step 3), self-validate and write it
+  WITHOUT asking. Run this check per candidate:
+  1. **Valid to store?** It must be a durable, cross-session fact — a recurring pitfall, an architecture
+     invariant, or a Daniel preference — NOT a one-off detail of this story and NOT something already
+     captured in a spec / rule / active-context in Steps 3–4. If it fails this, drop it (don't write).
+  2. **Cross-check against existing memory.** Read `MEMORY.md` and any same-topic memory file. If a memory
+     already covers this fact, UPDATE that file in place (don't duplicate); if the new learning CONTRADICTS
+     an existing memory, the new one wins — rewrite the stale file to match reality. Only create a NEW file
+     when nothing existing covers it.
+  3. **Write it.** One fact per file with `name` / `description` / `metadata.type` frontmatter + a one-line
+     `MEMORY.md` pointer. New file → add the pointer; updated file → leave/refresh its pointer; superseded
+     file → keep its single pointer line accurate.
+  - **If there are zero valid candidates,** print `🧠 Memory: nothing cross-session this session — unchanged`
+    and move on. (This is MOST sessions — project learnings already routed to specs / active-context / rules
+    in Steps 3–4; memory is only for durable, non-component facts.)
+  - In the summary, list what was written/updated, e.g. `🧠 Memory: wrote [name] (new) · updated [name]
+    (superseded stale entry)`.
 - **Then ask Daniel (always, separate from memory):** *"Saved the session updates from the codebase +
   artifacts. Any manual learnings, new bugs, or sprint-objective changes to add?"* Apply any additions. Done.
 

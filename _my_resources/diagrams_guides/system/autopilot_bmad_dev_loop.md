@@ -5,10 +5,12 @@
 > finished-but-uncommitted work back to Daniel for close-out.
 >
 > **Engine:** [`scripts/autopilot-dev-story.ps1`](../../scripts/autopilot-dev-story.ps1) ·
-> **Trigger:** `/autopilot_claude <story>` ([`.claude/commands/autopilot_claude.md`](../../.claude/commands/autopilot_claude.md)) ·
-> **Status:** v2, hardened — anchored matcher, evidence-gated (no verdict tokens), dedicated `_AP`
-> commands, independent test gate, auto story→`review`. Proven end-to-end on **Story 14.2** (full
-> 4-stage run, $9.00, clean APPROVE, backend 1723 passed / frontend 270 passed).
+> **Trigger:** `<story> /autopilot_claude` ([`.claude/commands/autopilot_claude.md`](../../.claude/commands/autopilot_claude.md)) ·
+> **Status:** v2, hardened — anchored matcher, evidence-gated (no verdict tokens), hard-stop artifact
+> gate, dedicated `_AP` commands, independent test gate, auto story→`review`, and **concurrency-safe**
+> (run as many stories at once as you want). Proven end-to-end on **Story 14.2** (full 4-stage run,
+> $9.00, clean APPROVE, backend 1723 passed / frontend 270 passed); concurrency hardening landed
+> 2026-06-27.
 
 ---
 
@@ -21,7 +23,8 @@ implement it. The **QA** (Murat, Opus 4.8) audits the plan *before any code exis
 the same session* to review the finished code, apply fixes itself, and write Daniel a report. The
 two teams hand off through **files in one folder**, never by talking directly. After its own
 independent test gate goes green, the script flips the story to `review` — but it **never commits
-and never marks the story `done`**; that last mile is always human.
+and never marks the story `done`**; that last mile is always human. Every run is keyed entirely by
+its **story id**, so you can fire many at once and they never touch each other.
 
 ---
 
@@ -54,13 +57,17 @@ Stage 4  Review+Fix  QA /Murat  4.8  RESUME qa   /bmad-code-review_AP          -
 Each stage runs a dedicated headless **`_AP`** command (a lean, agent-to-agent variant of the
 interactive BMAD skill, stripped of its "wait for a human" checkpoints). The orchestrator prompt is a
 thin pointer: it names the `_AP` command + the shared folder + the story; the behaviour lives in the
-command file.
+command file. **A stage only counts as done when its handoff file lands on disk** — a missing
+Stage 1–3 artifact halts the run hard (§6), so a corrupted stage never advances and burns spend on
+empty downstream work.
 
 ```mermaid
 flowchart TD
-    D(["Daniel: /autopilot_claude 14.2"]) --> M1["orchestrator mints dev UUID -> sessions.json"]
+    D(["Daniel: 14.2 /autopilot_claude"]) --> LK{"per-story lock<br/>_pipeline/.run.lock"}
+    LK -->|"same story already live"| X7["ALREADY RUNNING — exit 7<br/>(refuse the double-run)"]
+    LK -->|"lock acquired"| M1["orchestrator mints dev UUID -> sessions.json"]
     M1 --> S1["Stage 1 PLAN — NEW dev session (Amelia, Opus 4.8)<br/>/bmad-dev-story_AP plan"]
-    S1 -->|"writes implementation_plan.md"| F[("shared run folder")]
+    S1 -->|"writes implementation_plan.md"| F[("shared run folder<br/>_artifacts/epic_N/&lt;date&gt;_autopilot-&lt;id&gt;/")]
     F --> M2["orchestrator mints qa UUID -> sessions.json"]
     M2 --> S2["Stage 2 AUDIT — NEW qa session (Murat, Opus 4.8)<br/>/1_self-audit-stress-test_AP"]
     S2 -->|"reads plan -> writes self-audit-stress-test.md (findings + fixes)"| F
@@ -70,7 +77,8 @@ flowchart TD
     S4 -->|"reads diff -> re-runs tests, applies fixes, writes code-review.md + OUT-OF-SPEC + OPEN QUESTIONS"| F
     F --> G{"orchestrator TEST GATE<br/>independent pytest + vitest"}
     G -->|"RED"| RED["TESTS RED — exit 4<br/>(resume -ResumeFrom 4)"]
-    G -->|"green"| RV["flip story -> review<br/>(story .md + sprint-status.yaml)"]
+    G -->|"green, no code-review.md"| RI["REVIEW INCOMPLETE — exit 6<br/>(story NOT advanced; resume -ResumeFrom 4)"]
+    G -->|"green + review present"| RV["flip story -> review<br/>(story .md + sprint-status.yaml)"]
     RV --> DONE["PIPELINE COMPLETE<br/>not committed, not 'done'"]
     DONE --> D2(["Daniel: ratify decisions, commit, flip review -> done"])
 ```
@@ -83,6 +91,16 @@ flowchart TD
 | 2 Audit | `/1_self-audit-stress-test_AP` | `self-audit-stress-test.md`, `decisions-log.md` | hard-halt on findings (fixes flow to S3) |
 | 3 Implement | `/bmad-dev-story_AP implement` | source, tests, `walkthrough.md` | re-plan; commit; touch story status |
 | 4 Review+Fix | `/bmad-code-review_AP` | `code-review.md`, fixes, walkthrough sections | commit; touch story status / `sprint-status.yaml` (the **orchestrator** owns the `review` flip) |
+
+### The Pre-Dev Audit (`/1_self-audit-stress-test`) Breakdown
+
+The Stage 2 audit is an adversarial review of the `implementation_plan.md` *before any code is written*. It runs in five phases to catch flaws while fixing them costs nothing:
+
+- **Phase 0 — Scope, Right-Size & AC Coverage:** Maps every Acceptance Criterion to a concrete plan step (catching unfulfilled ACs and scope creep). Right-sizes the audit (skip, light, full) based on the plan's complexity.
+- **Phase 1 — Blast-Radius Trace:** Analyzes upstream setters and downstream readers that break if the target symbol changes. Checks for one-sided contract changes (e.g., backend event without frontend consumer) and reinvented utilities. Uses the GitNexus graph if available.
+- **Phase 2 — Over-Engineering Gate (STRICT NO-GO):** Trips on unjustified abstractions, feature flags, generalizing for N=1, or new dependencies. Complexity must trace to a *current* AC; if it doesn't, the plan is flagged for cuts.
+- **Phase 3 — Adversarial Scenarios / Pre-Mortem:** Assumes the shipped code silently corrupted user state and traces why. Evaluates edge cases: rehydration, timeout paths, concurrent events, missing auth, and type-union exhaustiveness.
+- **Phase 4 — Verdict:** Renders `SAFE`, `NEEDS REVISION`, or `UNSAFE` per item. If revision is needed, the findings are baked directly into the plan/story file so the Dev agent (Stage 3) reads and implements the fixes in-context.
 
 ---
 
@@ -111,7 +129,7 @@ that team's first stage runs**, persists it to `_pipeline/sessions.json`, and pa
 the second. Because the ids are ours (not parsed out of the model's output), a crashed run is still
 resumable — we just re-issue `--resume`.
 
-> **Minting on-run, not up-front, is deliberate** (a collision fix — see §8). If both ids were
+> **Minting on-run, not up-front, is deliberate** (a collision fix — see §9). If both ids were
 > generated once at startup, a forced redo (`-ResumeFrom 1`) would re-issue `--session-id` with an
 > id that *already exists*, and the CLI's behaviour on a duplicate id is undocumented.
 
@@ -134,8 +152,9 @@ story-dependent, not a law.
 | **Continuity** | CLI session flags | `--session-id <uuid>` + `--name <label>` (first call) · `--resume <uuid>` (second call) |
 | **Agents** | Dedicated headless **`_AP` commands** | Prompts invoke `/bmad-dev-story_AP plan`, `/1_self-audit-stress-test_AP`, `/bmad-dev-story_AP implement`, `/bmad-code-review_AP` (agent-tuned variants of the interactive BMAD skills). |
 | **Models** | Opus 4.8 (Dev) · Opus 4.8 (QA) | Both default to `claude-opus-4-8`; independence is the *separate session + persona*, not a stronger model. Pin asymmetrically via `-DevModel` / `-AuditModel`. |
-| **Test gate** | `pytest` + `vitest`, run by the script | After Stage 4 the orchestrator re-runs the suites itself (`-TestScope auto` derives scope from the baseline diff: backend-only / frontend-only / both — and a shared-contract change (schemas / models / OpenAPI / generated types) forces both, so a cross-stack break can't slip through). It refuses to stamp COMPLETE on red. |
-| **Handoff** | Artifact files | One canonical `_artifacts/<date>_autopilot-<story>/` folder; `_pipeline/` holds raw JSON + `sessions.json` + a self-contained `run.log` transcript. |
+| **Test gate** | `pytest` + `vitest`, run by the script | After Stage 4 the orchestrator re-runs the suites itself (`-TestScope auto` derives backend/frontend from the baseline diff). It refuses to stamp COMPLETE on red. |
+| **Handoff** | Artifact files | One canonical `_artifacts/epic_<epic>/<date>_autopilot-<id>/` folder; `_pipeline/` holds raw JSON + `sessions.json` + a self-contained `run.log` + the `.run.lock`. |
+| **Concurrency** | Story-id keying | Per-story run folder, per-story monitoring log (`_artifacts/_autopilot-run-<id>.log`), and a per-story `.run.lock` — so N stories run fully in parallel and the **same** story can't double-run. |
 | **Telemetry** | Parsed from result JSON | `.total_cost_usd`, `.num_turns`, `.is_error`, cache token counts. |
 
 **The exact call** (from `Invoke-Stage`):
@@ -148,43 +167,12 @@ else                        { $cargs += @('--resume', $SessionId) }
 $raw = $null | & $Claude @cargs 2>$null | Out-String   # empty stdin; drop PS stderr-wrapping
 ```
 
-### 5a. Engine vs. harness — what "model-agnostic" actually means here
-
-The orchestrator is **not the model you are chatting with.** It is a PowerShell script that spawns its
-**own** headless workers. So you can launch it from a Claude Code session, an **opencode** session, an
-**Antigravity** session, or a bare terminal, and it **still runs Opus 4.8** — the worker model is the
-script's `-DevModel` / `-AuditModel`, completely independent of whatever harness you triggered it from.
-
-That splits "works for all LLMs" into two independent things:
-
-- **Harness-agnostic (done):** the `_AP` commands and this doc live in the shared `.agents/` toolkit, so
-  **any** LLM session can read, understand, and trigger the loop. The engine reaches past your harness
-  to Anthropic regardless.
-- **Worker-engine (deliberately NOT built):** swapping the worker binary off the `claude` CLI would only
-  buy **non-Claude brains** — which is exactly what we don't want — and it costs more (API per-token vs
-  the Claude-subscription CLI path). It also throws away the per-role **effort** lever below, which is
-  Claude-native.
-
-**Engine Adapter** — the seam a second engine would plug into is `Invoke-Stage` (the call above):
-
-| Engine | Headless call | Session new / resume | Telemetry | Status |
-|---|---|---|---|---|
-| **Claude** (`claude` CLI) | `claude -p … --output-format json` | `--session-id`+`--name` / `--resume` | result JSON (`.total_cost_usd`, `.num_turns`, `.is_error`) | **proven runtime** |
-| **opencode** | `opencode run …` | its own session id / `--continue` | different JSON schema → needs a parse adapter | optional future seam — *point at the Anthropic provider, NOT OpenRouter*; **not built** |
-| **Antigravity / Gemini** | — | — | — | IDE-bound, not headless-scriptable; **out of scope** |
-
-> **CURRENT RUNTIME: the `claude` CLI on Opus 4.8 — and it should stay there.** The relay, file-handoff,
-> test gate, and resilience model (the rest of this doc) are already vendor-neutral; only this one call is
-> Claude-bound, by choice.
-
-### 5b. Tuning lever — per-role EFFORT on one model, not per-role model
-
-The asymmetry that matters is **effort, not model.** Both teams default to `claude-opus-4-8`; the script
-dials *thinking effort per role via prompt keywords* — Dev-Plan says "think hard" (med), Dev-Implement has
-no keyword (low), QA Audit/Review both say "think hard". We tried `-DevModel claude-sonnet-4-6` to save
-cost and found **Opus-4.8-at-lower-effort is the same cost with better results** — so prefer dialing the
-keyword down over downgrading the model. (`-DevModel`/`-AuditModel` still exist for pinning a *successor*
-model when one ships, not for trading down.)
+> **CLAUDE-ONLY.** This depends on the `claude` CLI's `-p`/session flags and cannot run under
+> Gemini/opencode.
+>
+> The long `-p <prompt>` argument is also the one surface that can **truncate** when two headless
+> runs launch near-simultaneously (see §9). The hard-stop artifact gate (§6) is the net that catches
+> it: a truncated Stage 1 writes no plan, so the gate crashes the run cleanly instead of advancing.
 
 ---
 
@@ -192,53 +180,70 @@ model when one ships, not for trading down.)
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Running
+    [*] --> LockCheck
+    LockCheck --> AlreadyRunning: same story already live (lock held)
+    LockCheck --> Running: lock acquired (pid|startTicks written)
     Running --> Retry: transient API error<br/>(idle timeout / 529 / 429 / overloaded)
     Retry --> Running: backoff 5s,15s,30s<br/>(<= MaxRetries)
     Retry --> CRASHED: retries exhausted
     Running --> PAUSED: stage emits PIPELINE_BLOCKER
-    Running --> CRASHED: unparseable output / throw
+    Running --> CRASHED: missing Stage 1-3 artifact<br/>(hard stop) / unparseable / throw
     Running --> CostCeiling: spend over -MaxCost
     Running --> NextStage: artifact present<br/>(no verdict token — trust the file)
     NextStage --> Running: re-stamp cost + stage
     NextStage --> TestGate: all 4 stages done
-    TestGate --> TestsRed: suite fails
-    TestGate --> ReviewFlip: suites green -> flip story to review
+    TestGate --> TestsRed: new regressions vs baseline
+    TestGate --> ReviewIncomplete: green gate but no code-review.md
+    TestGate --> ReviewFlip: green + review present -> flip story to review
     ReviewFlip --> COMPLETE: stamp PIPELINE COMPLETE
     COMPLETE --> [*]: exit 0 (human close-out required)
+    AlreadyRunning --> [*]: exit 7 (a run for this story is live)
     PAUSED --> [*]: exit 2 (needs Daniel)
     CRASHED --> [*]: exit 3 (resume with -ResumeFrom)
     TestsRed --> [*]: exit 4 (resume -ResumeFrom 4)
     CostCeiling --> [*]: exit 5 (raise -MaxCost)
+    ReviewIncomplete --> [*]: exit 6 (resume -ResumeFrom 4)
 ```
 
-Seven guarantees, each earned by a real incident:
+Eight guarantees, each earned by a real incident:
 
 1. **Transient errors retry before failing.** A regex classifies idle-timeout / overload / 429 /
    503 / 529 / generic API errors as transient and retries with `5s,15s,30s` backoff
    (`-MaxRetries`, default 3). A *non-transient* error (e.g. a bad model id) fails fast — no
    pointless retry.
 2. **A crash is loud, never silent.** Any hard failure is caught and stamps
-   `CRASHED - NOT FINISHED` into `_RUN-STATUS.md` (exit 3). The status file *never* lies "IN
-   PROGRESS" after the process dies.
+   `CRASHED - NOT FINISHED` into `_RUN-STATUS.md` (exit 3), which also carries the orchestrator PID
+   for a liveness check. The status file *never* lies "IN PROGRESS" after the process dies.
 3. **Mid-run status is accurate.** After every stage *and before the test gate* the script re-stamps
    `_RUN-STATUS.md` with the running cost + which phase is next, so "ask status" mid-run is truthful —
-   including during the ~100s gate (this was a bug — see §8).
+   including during the ~100s gate (this was a bug — see §9).
 4. **Runs are resumable.** A stage counts as done iff its artifact exists on disk; the orchestrator
    auto-detects the first incomplete stage and skips the rest, reusing the saved session ids.
    `-ResumeFrom N` forces a start stage; `-DryRun` prints the whole resume plan for $0.
-5. **Only a genuine blocker stops the flow — and it PAUSES, it doesn't crash.** Findings never halt
-   the run (audit fixes flow into the next stage). The *only* mid-run stop is a stage emitting a
+5. **Only a genuine blocker stops the flow mid-run — and it PAUSES, it doesn't crash.** Findings never
+   halt the run (audit fixes flow into the next stage). The *only* mid-run stop is a stage emitting a
    `PIPELINE_BLOCKER:` line — reserved for contradictory ACs, a missing dependency, or a product call
    only a human can make. It stamps a *graceful* `PAUSED - NEEDS DANIEL` (exit 2), not a red crash.
-6. **Evidence over tokens.** A stage is "done" iff its handoff artifact lands on disk — there is **no
-   verdict-token gate** (the old `Assert-Verdict` crashed complete, tests-green stages over a missing
-   string; it was removed). A missing artifact is a *warning*, not a crash; the human reviews the
-   folder. This is a human-in-the-loop pipeline: it trusts the artifacts, not a phrase.
+6. **Evidence over tokens — but a missing artifact is a HARD STOP.** There is **no verdict-token gate**
+   (the old `Assert-Verdict` crashed complete, tests-green stages over a missing phrase string; it was
+   removed — trust the *file*, not a token). A stage is "done" iff its handoff artifact lands on disk.
+   And a **missing Stage 1–3 artifact is a hard stop** (CRASHED, exit 3, resumable) — *not* a silent
+   "continue to the next stage" — so a corrupted/truncated Stage 1 that writes no plan halts
+   immediately instead of burning spend on empty downstream stages. **Stage 4 is the one exception:**
+   a missing `code-review.md` is a soft warning at the stage, then — only if the independent gate is
+   green — a dedicated check stamps **REVIEW INCOMPLETE** (exit 6) and *holds the story at its current
+   status* (the code is provably green; only QA's written review is missing, so it's a "redo the
+   review" state, not a crash). Re-run `-ResumeFrom 4`.
 7. **The pipeline verifies green itself.** After Stage 4 the orchestrator re-runs the suites
    independently (`pytest` + `vitest`, scoped by `-TestScope`) rather than trusting the agents' pasted
-   "tests green." A red gate stamps `TESTS RED` (exit 4); only a green gate advances the story to
-   `review` and stamps `COMPLETE`. (A missing runner stamps `TESTS UNVERIFIED` rather than a false green.)
+   "tests green." It snapshots the pre-existing red tests *before* Stage 3 so the final gate fails only
+   on **new** regressions this run introduced, not on already-broken tests. A red gate stamps
+   `TESTS RED` (exit 4); only a green gate advances the story to `review` and stamps `COMPLETE`. (A
+   missing runner stamps `TESTS UNVERIFIED` rather than a false green.)
+8. **Concurrency-safe by story id (run as many at once as you want).** Each run is keyed entirely by
+   its story id — its own folder, its own monitoring log, and a per-story `.run.lock` (PID + process
+   start-ticks). Different stories run fully in parallel; a second launch of the **same** live story is
+   refused (`ALREADY RUNNING`, exit 7). See §7.
 
 **Per-stage runner logic:**
 
@@ -249,39 +254,88 @@ flowchart TD
     C -- yes --> D["add cost; return result text"]
     C -- no --> E{"transient<br/>& attempt < MaxRetries?"}
     E -- yes --> F["sleep backoff"] --> B
-    E -- no --> G["throw -> CRASHED stamp"]
+    E -- no --> G["throw -> CRASHED stamp (exit 3)"]
     D --> H{"result has<br/>PIPELINE_BLOCKER?"}
     H -- yes --> I["PAUSED stamp, exit 2<br/>(needs Daniel, not a crash)"]
     H -- no --> J{"handoff artifact<br/>on disk?"}
-    J -- missing --> W["! WARNING (no crash)"] --> K
-    J -- present --> K["Set-Progress; next stage"]
+    J -- "missing (Stage 1-3)" --> X["throw -> CRASHED (exit 3)<br/>resumable; never advances"]
+    J -- "missing (Stage 4)" --> Y["! WARNING -> REVIEW INCOMPLETE<br/>after a green gate (exit 6)"]
+    J -- present --> K["re-stamp status; next stage"]
 ```
 
 ---
 
-## 7. The artifact handoff folder
+## 7. Running many stories at once (the concurrency model)
+
+The whole design is keyed off **one thing: the story id** (`14.2` → normalized `14-2`). Nothing is
+keyed off a chat name, a tab, or a global file — so two autopilots have nothing to collide on. You
+fire each the way you always do: `<story> /autopilot_claude`.
+
+```mermaid
+flowchart TB
+    subgraph A["14.2 /autopilot_claude"]
+        LA[".run.lock = pid|ticks"] --> RA["_artifacts/epic_14/&lt;date&gt;_autopilot-14-2/"]
+        RA --> GA["_autopilot-run-14-2.log"]
+    end
+    subgraph B["15.3 /autopilot_claude"]
+        LB[".run.lock = pid|ticks"] --> RB["_artifacts/epic_15/&lt;date&gt;_autopilot-15-3/"]
+        RB --> GB["_autopilot-run-15-3.log"]
+    end
+    subgraph C["9.1 /autopilot_claude"]
+        LC[".run.lock = pid|ticks"] --> RC["_artifacts/epic_9/&lt;date&gt;_autopilot-9-1/"]
+        RC --> GC["_autopilot-run-9-1.log"]
+    end
+    DUP(["2nd '14.2 /autopilot_claude'<br/>while 14.2 is still live"]) -.->|"lock held by live PID<br/>=> ALREADY RUNNING, exit 7"| LA
+```
+
+Three things make this safe, and nothing more (the design was deliberately trimmed back to exactly
+these — see §9):
+
+- **Per-story run folder.** `_artifacts/epic_<epic>/<date>_autopilot-<id>/` — derived from the
+  resolved story id. Each story's artifacts, `_pipeline/`, sessions, and stage logs live only here.
+- **Per-story monitoring log.** `_artifacts/_autopilot-run-<id>.log` — the stable, known-up-front path
+  the `/autopilot_claude` skill tails for live stage notifications. It's **per story**, so two runs
+  streaming at once never cross-wire into one file. (The run folder also keeps a self-contained copy at
+  `_pipeline/run.log`.)
+- **Per-story lock.** `_pipeline/.run.lock` holds `"<pid>|<startTicks>"`. A second run of the **same**
+  story refuses to start while that PID is alive (`exit 7`). The start-ticks defeat PID reuse — a dead
+  orchestrator's recycled PID has a different start time, so a stale lock is reclaimed, never mistaken
+  for "still live." **Different** stories never see each other's lock.
+
+> **What this does and doesn't fix.** Story-keying guarantees runs don't cross-wire and the same story
+> can't double-run. It does **not** cure the underlying CLI prompt-truncation race (§9) — that's below
+> the level of anything we key by story. The hard-stop artifact gate (§6 #6) is the net for that: if a
+> concurrent launch truncates a Stage-1 prompt, the run crashes clean and resumable, and a plain re-run
+> almost always succeeds (the collision is intermittent).
+
+---
+
+## 8. The artifact handoff folder
 
 Everything for a run lives in one place; the resumed agents read these files instead of
 re-deriving:
 
 ```
-_artifacts/<date>_autopilot-<story>/
+_artifacts/epic_<epic>/<date>_autopilot-<id>/
 ├── implementation_plan.md        (Stage 1 — Dev)
 ├── self-audit-stress-test.md     (Stage 2 — QA, findings + proposed fixes)
-├── walkthrough.md                (Stage 3 — Dev; ends with ## Task Checklist + ## Your Actions; Stage 4 prepends QA CLOSE-OUT to the TOP)
+├── walkthrough.md                (Stage 3 — Dev; Stage 4 prepends QA CLOSE-OUT to the TOP)
 ├── code-review.md                (Stage 4 — QA, the formal review artifact)
 ├── decisions-log.md              (any stage — every story-silent call the team made)
-├── _RUN-STATUS.md                (live status: IN PROGRESS / TEST GATE / COMPLETE / PAUSED / TESTS RED / CRASHED)
+├── task-list.md                  (final task snapshot)
+├── _RUN-STATUS.md                (live status: IN PROGRESS / TEST GATE / COMPLETE / PAUSED / TESTS RED / REVIEW INCOMPLETE / CRASHED; carries the orchestrator PID)
 └── _pipeline/
     ├── sessions.json             ({"dev":"<uuid>","qa":"<uuid>"})
+    ├── .run.lock                 ("<pid>|<startTicks>" — per-story double-run guard)
     ├── run.log                   (self-contained transcript — stage headers + each result + final banner)
     ├── stage{1..4}-*.json        (raw CLI result JSON per stage — cost, turns, etc.)
     └── gate-tests-*.txt          (independent test-gate output: backend / frontend)
 ```
 
-> **The run is self-contained.** The global live-tail log lives at `_artifacts/_autopilot-run.log`
-> (the stable path the `/autopilot_claude` skill tails), but the folder *also* keeps its own `_pipeline/run.log`
-> copy — so opening just the run folder shows the whole story without hunting for the global log.
+> **The run is self-contained.** The live-tail monitoring log lives at the per-story path
+> `_artifacts/_autopilot-run-<id>.log` (the stable path the `/autopilot_claude` skill tails), but the
+> folder *also* keeps its own `_pipeline/run.log` copy — so opening just the run folder shows the whole
+> story without hunting for the global log.
 
 The artifact-presence map *is* the resume logic: `1=implementation_plan.md`,
 `2=self-audit-stress-test.md`, `3=walkthrough.md`, `4=code-review.md`.
@@ -296,7 +350,7 @@ spotlight sections at the **top** of `walkthrough.md`:
 
 ---
 
-## 8. Things we discovered building it (the war stories)
+## 9. Things we discovered building it (the war stories)
 
 Each of these is a real bug or insight from the shakedown runs, now baked into the design:
 
@@ -356,25 +410,52 @@ Each of these is a real bug or insight from the shakedown runs, now baked into t
   is always the clean `…_autopilot-14-2` (the old code slugified the whole *path* →
   `…_autopilot-bmad-bmm-stories-story-14-1-…-md`).
 
-- **The verdict-token gate crashed complete, tests-green work (R1 — the reason §6 guarantee 6 exists).**
+- **The verdict-token gate crashed complete, tests-green work (R1 — the reason §6 #6 exists).**
   The old `Assert-Verdict` demanded a literal `PIPELINE_*_OK` string; a stage that did everything right
   but phrased its verdict in natural language got stamped CRASHED. Removed entirely — a stage is done
   iff its artifact is on disk. The first principle: **trust the artifacts, not a token.**
 
-- **The orchestrator was too rigid about form when it already had the substance (R1).** The fix above
-  generalised: the run no longer hard-fails on a missing handoff artifact either (it *warns*), because
-  this is human-in-the-loop — Daniel reviews the folder. The only stop is a genuine `PIPELINE_BLOCKER`,
-  and even that PAUSES gracefully rather than crashing.
+- **…but "trust the artifact" still means the artifact must EXIST (the hard-stop reversal).** We
+  briefly relaxed a *missing* handoff artifact to a mere warning. The concurrency shakedown reversed
+  that for Stages 1–3: a truncated Stage 1 that writes no `implementation_plan.md` must **not** advance
+  and pay for empty downstream stages — so a missing Stage 1–3 artifact is now a **hard stop**
+  (CRASHED, exit 3, resumable). Stage 4 keeps the soft path because the independent gate already proved
+  the code green; a missing `code-review.md` there becomes **REVIEW INCOMPLETE** (exit 6), which holds
+  the story instead of crashing. Form follows substance *except* when the substance itself is missing.
+
+- **The real root cause of the concurrent-run failure: the CLI truncates a long `-p` prompt under
+  load.** Two autopilots launched near-simultaneously and one run's Stage-1 prompt arrived **cut off
+  mid-sentence** — the agent never saw its task and produced no plan. We first suspected the runs were
+  racing on the shared `~/.claude` session store and built a per-story `CLAUDE_CONFIG_DIR` isolation
+  (copying auth/trust into a temp dir per story). **It did not fix the truncation** — the cut happens
+  in the CLI's handling of the long `-p <arg>` itself, below the level of session/config isolation — so
+  that complexity was **removed** as over-engineering (it also copied the OAuth token around and hid the
+  worker chats for no proven benefit). What actually makes concurrency safe is the cheap, story-keyed
+  set: **per-story log + per-story lock + the hard-stop gate** that catches the truncated stage cleanly.
+  A plain re-run of the crashed story almost always succeeds (the collision is intermittent).
+
+- **A bare PID is an unsafe lock (PID reuse).** A first cut of the per-story lock stored just the
+  orchestrator PID; the OS recycles a dead run's PID for an unrelated process, which would make a stale
+  lock look "alive" and **falsely refuse a legitimate re-run**. Fix: the lock stores
+  `"<pid>|<startTicks>"` — a reused PID has a different process start time, so a stale lock is reclaimed
+  instead of trusted.
+
+- **A self-healing diagnostic write (don't crash a good stage over a log file).** A headless agent once
+  ran a `git clean`-style command mid-stage that wiped the untracked `_pipeline/` dir; the next
+  diagnostic `WriteAllText` then threw and killed an otherwise-successful, already-paid-for stage. Fix:
+  the stage-log write recreates the dir if it vanished and is wrapped non-fatally — the artifact-presence
+  gate is what decides pass/fail, never a diagnostic write.
 
 - **The folder-vs-log split sent the human to the wrong directory (R2).** The live transcript lived
   OUTSIDE the run folder; mid-run, a *parallel team's* folder changed and read as the autopilot's
-  output. Fix: mirror the transcript into `_pipeline/run.log` so the run folder is self-contained.
+  output. Fix: mirror the transcript into `_pipeline/run.log` so the run folder is self-contained, and
+  make the global monitoring log **per-story** so concurrent runs never share one stream.
 
 - **The ~100s "silent gap" at the test gate (R2).** Between Stage 4 and COMPLETE the gate runs both
   suites with almost no output — it looked hung, and `_RUN-STATUS.md` read a stage stale. Fix: a
   pre-gate `IN PROGRESS - TEST GATE` re-stamp + the monitor now streams the `>>> TEST GATE` heartbeat.
-  (Bonus: a bare `WARNING` monitor token false-fired on pytest's `_GENERIC_LOAD_METHOD_WARNING`;
-  anchored it to the script's own `! WARNING` prefix.)
+  (Bonus: a bare `WARNING` monitor token false-fired on pytest's `DeprecationWarning`; anchored it to
+  the script's own `! WARNING` prefix.)
 
 - **The pipeline left the story at `ready-for-dev` — the human had to flip it (R2).** On the 14.2 run,
   close-out meant manually setting the story to `review`. That *is* the BMAD "Dev finishes → review"
@@ -391,7 +472,7 @@ Each of these is a real bug or insight from the shakedown runs, now baked into t
 
 ---
 
-## 9. How to run it
+## 10. How to run it
 
 ```powershell
 # Full run
@@ -407,7 +488,8 @@ Each of these is a real bug or insight from the shakedown runs, now baked into t
 .\scripts\autopilot-dev-story.ps1 -Story 13.4 -ResumeFrom 4
 ```
 
-Or trigger via the slash command: **`/autopilot_claude 13.4`**.
+Or trigger via the slash command: **`13.4 /autopilot_claude`** (state the story, then the command).
+Fire as many at once as you like — each is keyed by its story id and runs independently (§7).
 
 | Parameter | Default | Purpose |
 |---|---|---|
@@ -418,15 +500,17 @@ Or trigger via the slash command: **`/autopilot_claude 13.4`**.
 | `-ResumeFrom` | `0` (auto) | force a start stage (1–4) |
 | `-MaxRetries` | `3` | transient-error attempts per stage |
 | `-MaxCost` | `30` | $ ceiling; halts if spend crosses it (`0` disables) |
-| `-TestScope` | `auto` | independent gate: `auto` (scope from baseline diff: backend-only / frontend-only / both; a shared-contract change forces both) / `backend` / `frontend` / `both` / `none` |
+| `-TestScope` | `auto` | independent gate: `auto` (from baseline diff) / `backend` / `frontend` / `both` / `none` |
 | `-DryRun` | off | print the plan + sessions, no spend |
 
 **Exit codes:** `0` complete · `2` paused on a blocker · `3` crashed (resume with `-ResumeFrom`) ·
-`4` test gate red (resume `-ResumeFrom 4`) · `5` cost ceiling hit (raise `-MaxCost`).
+`4` test gate red (resume `-ResumeFrom 4`) · `5` cost ceiling hit (raise `-MaxCost`) · `6` review
+incomplete — green gate but no `code-review.md` (resume `-ResumeFrom 4`) · `7` already running — a
+run for this **same** story is live (the per-story lock refused a double-run).
 
 ---
 
-## 10. The human close-out (always required)
+## 11. The human close-out (always required)
 
 The pipeline stops at "developed + reviewed + fixed, gate-verified green, story advanced to
 `review`." On a green gate it **does** flip the story to `review` (both the story `.md` and
@@ -437,28 +521,30 @@ The pipeline stops at "developed + reviewed + fixed, gate-verified green, story 
 - make the judgment calls on the team's out-of-spec decisions.
 
 Daniel's close-out: read the **QA CLOSE-OUT** + **OUT-OF-SPEC DECISIONS** + **OPEN QUESTIONS FOR
-DANIEL** at the top of `walkthrough.md`, ratify (or reverse) the team's story-silent calls, run the
-git command from the walkthrough's "Your Actions," and flip `review → done`. That last mile is the
-point — the autopilot does the labor and parks the story at `review`; the human owns the judgment,
-the `done` flip, and the commit.
+DANIEL** at the top of `walkthrough.md`, ratify (or reverse) the team's story-silent calls, run
+`/update-sprint-context`, run the git command from the walkthrough's "Your Actions," and flip
+`review → done`. That last mile is the point — the autopilot does the labor and parks the story at
+`review`; the human owns the judgment, the `done` flip, and the commit.
 
 ---
 
-## 11. What is NOT yet proven
+## 12. What is NOT yet proven
 
 - **The retry *loop* firing live.** The backoff path is verified by code inspection + a regex
   classification test, but no real transient failure has been forced on demand (a bad model id is
   correctly *non-transient*, so it never enters the loop).
-- **The story→`review` auto-flip firing on a real green gate (R2).** Verified at $0 — clean parse, and
-  the two flip regexes unit-tested against the real `sprint-status.yaml` line format (idempotent,
-  comment-preserving, no `14-2`/`14-20` prefix collision). It is deterministic PowerShell (not headless
-  command expansion), so risk is low; the next real run exercises it and prints
-  `>>> STORY STATUS - … flipped to review`.
+- **The concurrent prompt-truncation race is caught, not cured.** The hard-stop gate (§6 #6)
+  demonstrably catches a truncated Stage 1 (it crashed cleanly and resumed on a re-run), and the
+  per-story log/lock keep parallel runs from cross-wiring. But the truncation itself is intermittent
+  and lives in the CLI, so it can still cost an occasional crash-and-resume on heavy concurrency. The
+  net is reliable; the underlying race is not eliminated.
 
 **Now proven (previously open):** the full four-stage relay **and** the independent test gate ran
 end-to-end on **Story 14.2** — including the Stage-4 "required `code-review.md` even on a clean review"
 gate (Stage 4 produced `code-review.md` on a clean APPROVE and stamped `PIPELINE COMPLETE`), the `_AP`
-headless command expansion, and the anchored matcher / clean folder slug.
+headless command expansion, and the anchored matcher / clean folder slug. The story→`review` auto-flip
+is deterministic PowerShell (idempotent, comment-preserving, no `14-2`/`14-20` prefix collision),
+verified at $0 and exercised on real runs (`>>> STORY STATUS - … flipped to review`).
 
 ---
 

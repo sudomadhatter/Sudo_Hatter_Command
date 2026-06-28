@@ -4,6 +4,10 @@ Plans, walkthroughs, and continuity for work done **from the home base**. The se
 [`INDEX.md`](./INDEX.md) (placement rules live in its header); the full model is `_docs/workspace-standard.md`;
 the plan-first protocol is `.agents/rules/artifacts-always-first.md`.
 
+> **⛔ The store is `_artifacts/` — never `_claude_artifacts/` or `_opencode_artifacts/`** (both retired/deleted).
+> Every agent and tool writes here — `/bmad-dev-story`, `/bmad-quick-dev`, autopilot, or a hand session alike.
+> If a story's `source:` line or an old note points at `_claude_artifacts/`, that is dead history — write here.
+
 ## Where a session folder goes — three rules, by where you WORK FROM
 The deciding factor is your **cwd**, not only what the work is about (full rules → the [`INDEX.md`](./INDEX.md) header):
 1. **Project work** → a per-project bucket `_artifacts/<project>/…` (bucket name = the `Projects/<name>/` folder).

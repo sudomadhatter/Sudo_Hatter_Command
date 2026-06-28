@@ -1,6 +1,6 @@
 ---
 name: artifacts-always-first
-description: "The single source of truth for the plan-first artifact protocol. Create implementation_plan.md and get explicit approval BEFORE modifying ANY project file. Track with the live TodoWrite task list. Close with walkthrough.md (includes Your Actions). No exceptions."
+description: "The single source of truth for the plan-first artifact protocol. Create implementation_plan.md and get explicit approval BEFORE modifying ANY project file. Track with the live TodoWrite task list. Close with ONE walkthrough.md that holds the narrative + Task Checklist + Your Actions (no separate task-list.md / your-action-required.md). No exceptions."
 activation: Always On
 ---
 
@@ -14,32 +14,39 @@ activation: Always On
 > tools — Claude, opencode, Antigravity/Gemini — so any agent can read past chats. **opencode** writes under its
 > own `_artifacts/opencode/` namespace, applying the **same rules inside it** (`opencode/<project>/`,
 > `opencode/_main/`, `opencode/<project>/<epic>/<story>/`). Full model → `docs/workspace-standard.md`.
+>
+> **⛔ The store is ALWAYS `_artifacts/`.** The old names `_claude_artifacts/` and `_opencode_artifacts/` are
+> **RETIRED/DELETED** — **never create them**, whatever tool or skill you are running (`/bmad-dev-story`,
+> `/bmad-quick-dev`, autopilot, or a hand session). If an instruction or a story's `source:` line mentions
+> `_claude_artifacts/`, that is dead history — write to `_artifacts/` (a story → `_artifacts/epic_<E>/<story>/`).
 
 ## The Lean Artifact Set
 
 Keep it minimal — only these per session:
 
 1. **Task list** — DURING work, the live `TodoWrite` list is the single tracker (Daniel watches it
-   update live). AT COMPLETION, snapshot the final list into a **`task-list.md`** artifact so the
-   finished checklist is persisted and reviewable after the TodoWrite panel is gone (see §5b). Do NOT
-   hand-maintain a parallel `task.md` during work — TodoWrite is the live tracker; `task-list.md` is
-   only its end-state snapshot.
+   update live). AT COMPLETION, the final checklist is captured as a **`## Task Checklist` section
+   INSIDE `walkthrough.md`** (see §5) — never a separate file. Do NOT hand-maintain a parallel
+   `task.md` during work, and do NOT write a standalone `task-list.md`: TodoWrite is the live tracker;
+   its end-state lives in the walkthrough.
 2. **`implementation_plan.md`** — the plan Daniel signs off on (the "approved" gate).
-3. **`walkthrough.md`** — the closing doc. It MUST include a **"Your Actions"** section (manual
-   steps + the exact git commit command). Do NOT write a separate `your-action-required.md`.
-4. **`task-list.md`** — the end-of-session snapshot of the completed TodoWrite list (see §5b).
-5. **`bug-list.md`** — ONLY for debugging / live-testing sessions. A simple bug list.
-6. **`code-review.md`** — whenever a code review runs (see §6).
-7. **`self-audit-stress-test.md`** — whenever the `/1_self-audit-stress-test` pre-dev audit runs
+3. **`walkthrough.md`** — the SINGLE closing doc; it holds everything final. It MUST end with a
+   **`## Task Checklist`** section (the final TodoWrite snapshot) and then a **`## Your Actions`**
+   section (manual steps + the exact git commit command). Do NOT split these off into separate
+   `task-list.md` or `your-action-required.md` files — extra closing docs are wasted space and time.
+4. **`bug-list.md`** — ONLY for debugging / live-testing sessions. A simple bug list.
+5. **`code-review.md`** — whenever a code review runs (see §6).
+6. **`self-audit-stress-test.md`** — whenever the `/1_self-audit-stress-test` pre-dev audit runs
    (see §7). Inline-only findings are NOT sufficient — the audit is always persisted.
 
-> Do NOT create: a parallel hand-maintained `task.md` during work, `your-action-required.md`,
-> index/`00_artifacts-list.md` files, or the verbose `debug-watch-log.md`. (`task-list.md` is the
-> allowed completion snapshot — it is NOT the same as a live `task.md`.) The rest of the flow is
-> identical for normal dev and stories.
+> Do NOT create: a parallel hand-maintained `task.md` during work, a standalone `task-list.md`, a
+> separate `your-action-required.md`, index/`00_artifacts-list.md` files, or the verbose
+> `debug-watch-log.md`. The final task checklist AND the "Your Actions" steps both live as sections
+> inside `walkthrough.md` — one closing doc, not three. The rest of the flow is identical for normal
+> dev and stories.
 
 > **🔗 Link every artifact in the chat — always.** The moment you write or update ANY artifact (plan,
-> walkthrough, task-list, bug-list, code-review, self-audit), post a **clickable link to it in the chat**
+> walkthrough, bug-list, code-review, self-audit), post a **clickable link to it in the chat**
 > that same turn, with a one-line note of what it is. Daniel reviews from the conversation — an artifact he
 > can't open from chat may as well not exist. This generalizes the plan-link rule below to the whole set.
 
@@ -103,10 +110,14 @@ verification plan). Use the `Write` tool. Frontmatter on every artifact file:
 IsArtifact: true
 ArtifactMetadata:
   title: <title>
-  type: implementation_plan | walkthrough | bug_list | code_review | self_audit | task_list
+  type: implementation_plan | walkthrough | bug_list | code_review | self_audit
   date: <YYYY-MM-DD>
 ---
 ```
+
+> **On mobile/web runs** (`CLAUDE_CODE_REMOTE=true`), also add **`mobile: true`** under `ArtifactMetadata`
+> and prefix the artifact's title + `INDEX.md` row with **📱**, so mobile-made artifacts are findable later
+> for a desktop re-pass — see `mobile-mode.md` Override 3.
 
 Present the plan's key points **inline in the chat** AND link the artifact. Daniel signs off
 on a plan he can see in the conversation, not just a file on disk.
@@ -122,19 +133,20 @@ epic-level plan is NOT a license to implement stories without per-story approval
 Now — and only now — modify project files. Update the TodoWrite list (`pending` → `in_progress`
 → `completed`) as you go so Daniel can watch progress live.
 
-### 5. Write `walkthrough.md` (after completion)
+### 5. Write `walkthrough.md` (after completion — the ONE closing doc)
 A dev journal, not a diff dump: what you did step by step, what fought back and how you
 solved it (say so plainly if it went clean), what changed file-by-file and why, **actual
-test output pasted** (never fabricated), and any deviations from the plan. End with a
-**"Your Actions"** section — Daniel's manual steps + the exact `git add / commit / push` command.
-(No separate `your-action-required.md`.)
+test output pasted** (never fabricated), and any deviations from the plan. This is the **single**
+closing document — it carries everything final, in this order:
 
-### 5b. Write `task-list.md` (after completion — snapshot the task list)
-When the work is done, snapshot the final `TodoWrite` list into `task-list.md`. It is just the
-end-state checklist — every task with its final status (`[x]` done / `[ ]` deferred, with a one-line
-reason for anything not completed). Frontmatter `type: task_list`. This is a quick-scan record of
-exactly what was tackled, so Daniel can see the list after the live TodoWrite panel is gone. Keep it
-terse — it is the list, not a second walkthrough.
+1. **The narrative** above (what changed & why + pasted test output).
+2. **`## Task Checklist`** — the final `TodoWrite` snapshot: every task with its end status
+   (`[x]` done / `[ ]` deferred, one-line reason for anything not finished). Terse — it is the list,
+   not a second walkthrough; it replaces the old standalone `task-list.md`.
+3. **`## Your Actions`** (LAST) — Daniel's manual steps + the exact `git add / commit / push` command.
+
+Do NOT split the checklist or the actions into separate files (`task-list.md`,
+`your-action-required.md`) — one doc holds the walkthrough, the task list, and the actions.
 
 ### 6. Write `code-review.md` (whenever a code review runs)
 **Any code review — `/code-review`, `bmad-code-review`, or an ad-hoc review — MUST be saved as
@@ -166,8 +178,8 @@ needs the audit on disk, not just in chat. Frontmatter `type: self_audit`.
 - NEVER write or update an artifact without posting a clickable link to it in the chat that same turn
   (see the "Link every artifact in the chat" rule above).
 - NEVER claim the walkthrough is done without actual test output.
-- NEVER finish a `walkthrough.md` without its "Your Actions" section + the git commit command.
-- NEVER close out a task without snapshotting the final task list into `task-list.md` (§5b).
+- NEVER finish a `walkthrough.md` without its `## Task Checklist` and `## Your Actions` sections (the git commit command lives in the latter).
+- NEVER write the final task checklist or the "Your Actions" steps as separate files — they are sections inside `walkthrough.md` (§5).
 - NEVER run `git commit`/`git push` yourself — the `walkthrough.md` "Your Actions" section hands Daniel the exact command. The ONLY exception: Daniel explicitly delegates a specific commit/push to you in that moment (then: your own files only, explicit paths, never `git add -A`). Full policy → the `git-policy` rule.
 - NEVER deliver code-review findings inline-only — always persist them as a `code-review.md` artifact.
 - NEVER deliver `/1_self-audit-stress-test` findings inline-only — always persist them as a

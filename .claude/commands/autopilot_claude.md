@@ -135,12 +135,11 @@ behavior (the script just points it at the shared folder):
   BMAD "Dev finishes -> review" step. It **never** flips to `done` (the human owns `review -> done`), and
   it is best-effort (a flip hiccup warns, never crashes a finished run). The agents themselves still never
   touch status — the orchestrator owns the flip, gated on its own green test result.
-- **Concurrency-safe (run as many stories at once as you want).** Every run is isolated by its story id:
-  a per-story global log (`_autopilot-run-<story>.log`), a per-story `CLAUDE_CONFIG_DIR` (so the headless
-  `claude` children never race on the shared `~/.claude` session store — the bug that corrupted concurrent
-  14-7/14-8 runs), and a per-story lockfile (`<run-folder>/_pipeline/.run.lock`) that refuses to start a
-  SECOND run of the SAME story while one is live. Different stories run fully in parallel; the same story
-  can't double-run.
+- **Concurrency-safe (run as many stories at once as you want).** Every run is keyed by its story id:
+  a per-story monitoring log (`_autopilot-run-<story>.log`) so concurrent runs never cross-wire, and a
+  per-story lockfile (`<run-folder>/_pipeline/.run.lock`) that refuses to start a SECOND run of the SAME
+  story while one is live. Different stories run fully in parallel (each writes to its own story folder,
+  log, and session store); the same story can't double-run.
 - A missing handoff artifact is a **hard stop** (CRASHED, resumable), never a silent "continue to the next
   stage" — so a corrupted stage (e.g. Stage 1 producing no plan) halts immediately instead of burning
   spend on empty downstream stages. Re-run with no flags to resume; finished stages auto-skip.

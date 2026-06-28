@@ -9,3 +9,4 @@ Reference guides and system diagrams for the Sudo_Hatter_Command home base.
 - [system/complete-system-overview.md](system/complete-system-overview.md) — full system overview.
 - [system/updated_folder_file_structure_diagram.md](system/updated_folder_file_structure_diagram.md) — current folder/file structure diagram.
 - [system/git_walkthrough_settings.md](system/git_walkthrough_settings.md) — git walkthrough + settings.
+- [system/autopilot_bmad_dev_loop.md](system/autopilot_bmad_dev_loop.md) — the `/autopilot_claude` autonomous dev+QA pipeline: four-stage relay, two-session continuity, resilience + hard-stop gate, and the concurrency model (run many stories at once). Mermaid throughout.

@@ -131,3 +131,49 @@ dirs. Capture as a short note (optionally a committed smoke check).
 1. Step 0 probe → confirm/branch. 2. Skill (A) + `/sync-agents`. 3. AGY script (B, C, D).
 4. Fresh script (B, C, D + add `Set-WorkspaceTrust`). 5. Verification (E). 6. Hand back to Daniel
    (no commit — pipeline + Daniel's git policy own that).
+
+---
+
+## 8. VERIFICATION RESULTS + CORRECTED ROOT CAUSE (2026-06-27, post-implementation)
+
+**What shipped (all 3 repos, on disk + auto-committed by an automation during the session):**
+- A per-story log, B per-run `CLAUDE_CONFIG_DIR`, C hard-fail-on-missing-artifact, D per-story lock
+  (hardened to PID+start-time to defeat PID reuse), plus a self-heal for the stage-log write.
+
+**Probe (Step 0): PASSED** — seeded per-story `CLAUDE_CONFIG_DIR` authenticates, is trusted, isolates
+sessions to TEMP (`~/.claude/projects` stayed at 145), and resumes. So B works as designed.
+
+**Concurrent pipeline test (14-7 + 14-9, both real Stage 1): exposed the TRUE root cause.**
+- 14-7's Stage-1 `claude` call **succeeded** (`is_error=false`, 10 turns, $0.59) but wrote **no plan**.
+  The persisted session transcript shows the delivered prompt was **truncated to 1204 chars, ending
+  mid-word at "A soft I"** — the *exact* cut point named in the original incident. The agent received
+  only a partial team-preamble (no `/bmad-dev-story_AP plan`, no "You are Amelia", no story id) and
+  wandered off "getting oriented with the run state" instead of planning.
+- **RC#2 is PROMPT TRUNCATION under concurrent `claude -p`, NOT shared `~/.claude` state.** The config
+  dirs were fully isolated and it STILL truncated → the original spec's RC#2 hypothesis was incomplete.
+- **C (hard-fail) caught it cleanly** → CRASHED + resumable, no march-forward, no wasted downstream
+  spend. This is the practical win: concurrency is now **SAFE**.
+- A cheap haiku probe could NOT reproduce the truncation (intermittent race; only surfaced under two
+  heavy concurrent Opus runs), so `-p`-arg vs stdin was **inconclusive**.
+
+**Net status:** concurrent autopilot runs are now **SAFE** (no silent garbage, clean crash + cheap
+resume) but not yet 100% **RELIABLE** — a concurrent stage can still occasionally get a truncated prompt
+and need a re-run.
+
+## 9. PHASE 2 — make it reliable (proposed, needs go-ahead + a little test spend)
+1. **Auto-retry on no-artifact (in our control, recommended).** In `Invoke-Stage`, if the `claude` call
+   returns success but the stage's expected artifact is absent, treat it like a transient error and
+   RETRY within the existing `-MaxRetries` loop (re-mint the session id for new-session stages 1/2 to
+   avoid `--session-id` collision). Turns an intermittent truncation into a transparent retry that
+   almost always lands on the next attempt. Pairs with C (C becomes the last-resort stop after retries).
+2. **stdin prompt delivery (likely the actual cure).** Pass the prompt via a per-process STDIN pipe
+   (`$prompt | & $Claude -p ...`) instead of a giant `-p <arg>`; a per-process pipe has no shared path
+   to truncate. Architecturally sound; needs a concurrent repro to confirm.
+3. Verify either/both with a 2–3× concurrent `-MaxStage 1` repro.
+
+## 10. Heads-up (not a fix)
+- An automation committed these edits to `main_debug` in the AGY + home-base + Fresh repos mid-session
+  (commits authored "Daniel Lohn", ~20:29, e.g. AGY `ba87cf6`, home-base `6b6323a`). My edits are
+  committed cleanly + consistently (working trees match HEAD), but flag whether that auto-commit/push
+  to `main_debug` is intended.
+- Test API spend: ~$1.5–2 (probe + two concurrent Stage-1 runs).

@@ -163,8 +163,9 @@ The only exception is when Daniel explicitly delegates a specific commit/push in
 
 ### Artifacts — the plan-first discipline
 Every non-trivial, file-touching task: research read-only → write `implementation_plan.md` and **STOP for
-"approved"** → execute with a live TodoWrite list → close with `walkthrough.md` (+ "Your Actions") and a
-`task-list.md` snapshot → append one row to `_artifacts/INDEX.md` → update `active-context.md` (the hand-off).
+"approved"** → execute with a live TodoWrite list → close with a single `walkthrough.md` (narrative + a
+`## Task Checklist` snapshot + a `## Your Actions` section — no separate `task-list.md`) → append one row
+to `_artifacts/INDEX.md` → update `active-context.md` (the hand-off).
 Full rule → `.agents/rules/artifacts-always-first.md`.
 
 **Artifact organization — artifacts go WHERE YOU WORK FROM (Daniel, 2026-06-25):**
@@ -221,8 +222,8 @@ everywhere. From **inside a project** it reconciles just that workspace. Each re
 (`--set-anchor`) separately.
 
 ### End-of-Task checklist (before saying "done" on anything that produced changes)
-- ☐ `walkthrough.md` (what changed + real pasted test output + "Your Actions" with the exact git command)
-- ☐ `task-list.md` snapshot of the final TodoWrite list
+- ☐ `walkthrough.md` — the single closing doc: what changed + real pasted test output + a `## Task Checklist`
+  (final TodoWrite snapshot) + a `## Your Actions` section with the exact git command
 - ☐ `active-context.md` updated (the hand-off)
 - ☐ `INDEX.md` row appended
 - ☐ `docs/repo-map.md` updated **only if** a top-level folder/agent was added/removed

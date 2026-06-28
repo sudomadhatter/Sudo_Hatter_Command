@@ -27,6 +27,6 @@ the nuance and softens the blow.
 
 This rule governs *chat answers*. It does NOT override the structured conventions for project
 artifacts. Tables, headers, and checklists remain correct and expected in: `_artifacts/<workspace>/*`
-(plans, walkthroughs, task-lists, code-reviews), component specs, story files, `docs/repo-map.md`,
+(plans, walkthroughs, code-reviews), component specs, story files, `docs/repo-map.md`,
 `sprint-status.yaml`, and any doc whose value IS its structure. When in doubt: chat = prose,
 deliverable docs = whatever structure serves the reader.

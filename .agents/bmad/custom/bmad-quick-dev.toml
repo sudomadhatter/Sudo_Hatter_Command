@@ -5,8 +5,16 @@
 # AND the AGENTS.md artifact protocol.
 #
 # FIX (2026-06-11): Added on_complete + artifact persistent fact.
-# Same pattern as bmad-dev-story.toml — agent "forgets" to create
-# walkthrough.md and your-action-required.md without these.
+# Same pattern as bmad-dev-story.toml — agent "forgets" to write the
+# closing walkthrough.md without these.
+#
+# FIX (2026-06-27): Baked the EXPLICIT artifact folder into the persistent
+# fact + on_complete (see bmad-dev-story.toml for the why — the BMAD flow
+# never loads the global placement rule, so a path-less instruction let the
+# agent drift to the RETIRED _claude_artifacts/ store). Same pass aligned the
+# close-out to the one-doc model: a single walkthrough.md ending in
+# `## Task Checklist` + `## Your Actions` — no separate your-action-required.md
+# or task-list.md (artifacts-always-first.md §5).
 
 [workflow]
 
@@ -22,13 +30,12 @@ This gate is NON-NEGOTIABLE and overrides all skill instructions.""",
 
 persistent_facts = [
   "file:{project-root}/.agents/rules/000-PLAN-FIRST-GATE.md",
-  "MANDATORY ARTIFACT PROTOCOL: Before your final chat summary, you MUST create walkthrough.md (recap: what changed, test output, AC matrix) and your-action-required.md (git commit command, manual steps for Daniel) as artifacts. This is a constitution rule. Failure to produce these artifacts is a session failure.",
+  "MANDATORY ARTIFACT PROTOCOL: Session artifacts live in THIS project's `_artifacts/` store, per its `_artifacts/README.md` — a story `E.S` goes in `_artifacts/epic_<E>/story-<E.S>-<slug>/` (create `epic_<E>/` if it is missing); other work goes in `_artifacts/<YYYY-MM-DD>_<slug>/`. NEVER write them to `_claude_artifacts/` (RETIRED/DELETED) or `_bmad-output/` (that is BMAD's own store, not the session store). In that folder you MUST write ONE closing doc — `walkthrough.md` (recap: what changed, pasted test output, AC matrix) — ending with a `## Task Checklist` section (the final TodoWrite snapshot) and then a `## Your Actions` section (manual steps + the exact git commit command). Do NOT write a separate `your-action-required.md` or `task-list.md` — everything final lives in `walkthrough.md` (per artifacts-always-first.md §5). Producing it in the wrong store — or not at all — is a session failure.",
 ]
 
 # Fires at the very end of the workflow — the last thing executed.
-on_complete = """STOP. Before you write your final chat message, check: have you created the session artifacts?
-Required artifacts (per AGENTS.md and constitution.md):
-1. walkthrough.md — what changed, why, diffs, test output, verification results
-2. your-action-required.md — git commit command + any manual steps for Daniel
-If these artifacts do NOT exist yet, create them NOW using the write_to_file tool with IsArtifact=true.
-Only AFTER both artifacts exist may you write your completion summary to the user."""
+on_complete = """STOP. Before you write your final chat message, check the session artifacts.
+ARTIFACT LOCATION (non-negotiable): THIS project's own `_artifacts/` store, per `_artifacts/README.md` — a story `E.S` → `_artifacts/epic_<E>/story-<E.S>-<slug>/` (create `epic_<E>/` if missing); other work → `_artifacts/<YYYY-MM-DD>_<slug>/`. NEVER `_claude_artifacts/` (RETIRED/DELETED) and NEVER `_bmad-output/`.
+Required (per AGENTS.md and constitution.md): ONE closing doc, `walkthrough.md`, IN THAT FOLDER — narrative + pasted test output, ENDING with a `## Task Checklist` section (final TodoWrite snapshot) and then a `## Your Actions` section (git commit command + manual steps). Do NOT write a separate `your-action-required.md` or `task-list.md`; both are sections inside `walkthrough.md`.
+If it does NOT yet exist in the correct folder, create it NOW using the write_to_file tool with IsArtifact=true. If you already wrote artifacts somewhere else (e.g. `_claude_artifacts/`), MOVE them there.
+Only AFTER `walkthrough.md` exists in the right place may you write your completion summary to the user."""
