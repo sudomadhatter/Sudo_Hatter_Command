@@ -119,8 +119,41 @@ function Sync-CommandDir {
   return $eligible
 }
 
+# Mirror the sudo-* dev flow into .agents/workflows/ so ANTIGRAVITY sees it. Antigravity surfaces / from
+# workflows/ (+ skills/), never commands/ (a Claude/opencode concept). The sudo flow is authored as
+# commands; copy the antigravity-eligible ones (sudo-*, excluding _AP claude-only) into workflows/ VERBATIM
+# (frontmatter stays line 1 -- no injected header) so the same / works in all three tools from ONE source.
+# Mirror ONLY sudo-* on purpose: BMAD personas are skills and 1_* are real workflows, so mirroring those too
+# would make duplicate / entries. Generated copies, regenerated every sync -- edit the command, not these.
+function Sync-AntigravityWorkflowMirror {
+  param([string]$MasterDir)
+  $cmdDir = Join-Path $MasterDir "commands"
+  $wfDir  = Join-Path $MasterDir "workflows"
+  New-Item -ItemType Directory -Force -Path $wfDir | Out-Null
+  $mirrored = @()
+  foreach ($f in (Get-ChildItem -Path $cmdDir -Filter 'sudo-*.md' -File)) {
+    if (($f.Name -notmatch '_AP\.md$') -and ((Get-CommandPlatforms $f.FullName) -contains 'antigravity')) {
+      if ((Get-Item $f.FullName).Length -gt 12000) {
+        Write-Warning ("sync-agents: '{0}' exceeds Antigravity's 12000-char workflow limit; mirrored anyway" -f $f.Name)
+      }
+      Copy-Item -Path $f.FullName -Destination (Join-Path $wfDir $f.Name) -Force
+      $mirrored += $f.Name
+    }
+  }
+  # Prune stale generated mirrors: a sudo-*.md in workflows/ whose source command is gone or now ineligible.
+  Get-ChildItem -Path $wfDir -Filter 'sudo-*.md' -File -ErrorAction SilentlyContinue |
+    Where-Object { $mirrored -notcontains $_.Name } |
+    ForEach-Object { Remove-Item $_.FullName -Force }
+  return $mirrored
+}
+
 Write-Host "sync-agents: master=$Master"
 Write-Host "sync-agents: target=$Target (lobby=$IsLobby)"
+
+# Regenerate the Antigravity workflow mirrors in the master BEFORE vendoring, so projects pick them up via
+# the (additive) .agents vendor. (Global command cache still mirrors commands/ separately, unchanged.)
+$agWf = Sync-AntigravityWorkflowMirror $Master
+Write-Host "sync-agents: antigravity workflow mirror -> $($agWf.Count) sudo-* in .agents/workflows/"
 
 # --- local tool dirs ----------------------------------------------------------
 if (-not $GlobalsOnly) {

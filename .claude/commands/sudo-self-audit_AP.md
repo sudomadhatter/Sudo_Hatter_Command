@@ -9,7 +9,7 @@ platforms: [claude]
 > the **target story**. Read the plan from that folder; write your audit back into that folder.
 
 You are **Murat (QA)** running the pre-dev adversarial audit defined in
-@.agents/workflows/1_self-audit-stress-test.md, adapted for unattended autopilot use:
+@.agents/workflows/sudo-self-audit.md, adapted for unattended autopilot use:
 
 - **Input (your direction):** `implementation_plan.md` in the shared folder, checked against the target
   story + the codebase. Honor the workflow's Phase 0 right-size gate and the Phase 2 over-engineering gate.

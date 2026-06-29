@@ -1,16 +1,17 @@
 ---
-description: Pre-dev plan/story audit — run BEFORE coding. Pressure-tests an implementation_plan.md or story against the codebase and the ACs to catch gaps, over-engineering, and contract breaks before they're built.
+description: Pre-dev plan/story audit — run BEFORE coding. Pressure-tests an implementation_plan.md or story against the codebase and the ACs to catch gaps, over-engineering, and contract breaks before they're built. Auto-invoked by /sudo-dev-story-tests right after the plan is written.
 ---
 
-<!-- Master toolkit workflow. Synced into each project's .agents/workflows/. Edit the master here; do not hand-edit project copies. -->
-
-# Self-Audit Stress Test (Pre-Dev Gate)
+# /sudo-self-audit — Pre-Dev Adversarial Audit
 
 Adversarial review of an `implementation_plan.md` or story **before any code is written.** The goal:
 catch flaws while fixing them still costs nothing. Assume the plan is wrong somewhere, then try to
 prove it. **Default to the leanest pass that covers the real risk** — the Phase 0 right-size gate is
-the point; brute-forcing every phase on a trivial plan is the slow, expensive path this workflow
-exists to avoid.
+the point; brute-forcing every phase on a trivial plan is the slow, expensive path this exists to avoid.
+
+Target the plan or story just produced in this chat — a **pre-dev gate**, run BEFORE any code. Honor the
+Phase 0 right-size gate (a Light plan does not get the Full pass) and the Phase 2 over-engineering gate
+(strict — default NO-GO).
 
 > No build commands here — there is no code yet. This audits the *plan*, not a diff. For shipped code,
 > use `bmad-code-review`.

@@ -37,8 +37,25 @@ Combine into **PASS / CONCERNS / FAIL / WAIVED** and write
 - **FAIL** = a new test regression or a required tier missing. **CONCERNS** = soft issues only.
   **PASS** = all required tiers green. **WAIVED** = no baseline (Step 2).
 
+## Step 5 — Update the story walkthrough (REQUIRED whenever you found or fixed anything)
+The single closing doc for this story is `_artifacts/<epic>/<story>/walkthrough.md` (per the
+`artifacts-always-first` rule — the ONE doc holding the narrative + `## Task Checklist` + `## Your
+Actions`). The verdict file from Step 4 is an addendum; the **walkthrough is the living source of truth**,
+so reflect the review back INTO it in place — never leave it stale (old status, old test count, no
+findings):
+- Append a `## Code Review (<date>)` section to the body: the verdict, each finding with `file:line` +
+  disposition (applied / deferred / dismissed), and a link to `sudo-code-review-<story>.md`. If you changed
+  nothing, say so ("Changes applied: none — implementation correct as-is").
+- If you changed code: refresh the parts of the body your fixes made stale — the AC/test matrix + test
+  counts, the pasted **actual** suite totals, and the `## Task Checklist` (tick the rows your fixes
+  completed).
+- If your fixes changed the files to commit, update the exact `git add … && git commit` line in
+  `## Your Actions` (keep its `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>` trailer).
+- **Hard rule: NEVER finish `/sudo-code-review` with the walkthrough body left stale after applying fixes.**
+
 ## Stay in lane
 Never `git commit`/`push`; never flip the story status or edit `sprint-status.yaml` — that is
-`sudo-update-sprint-memory`'s job (it reads this verdict first).
+`sudo-update-sprint-memory`'s job (it reads this verdict first). Updating `walkthrough.md` (Step 5) is IN
+lane — that is documenting the review, not flipping status or committing.
 
 Optional additional input: $ARGUMENTS

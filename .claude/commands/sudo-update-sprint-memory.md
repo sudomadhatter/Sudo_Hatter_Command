@@ -1,5 +1,5 @@
 ---
-description: End-of-session / story close-out save — advance the closed story to done (gated on the /sudo-code-review test verdict + explicit live-test notes), code-verify, route learnings to specs/rules/memory, prune active-context. Run as the LAST step when closing a story or any session.
+description: End-of-session / story close-out save — advance the closed story to done (running this command IS Daniel's sign-off; only objectively-red /sudo-code-review tests block the flip), code-verify, route learnings to specs/rules/memory, prune active-context. Run as the LAST step when closing a story or any session.
 ---
 
 # /sudo-update-sprint-memory — Session End (G1 close-out)
@@ -49,26 +49,29 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
 
 ## Step 4 — Apply updates (specs / rules / active-context now; memory waits for Step 6)
 - **Completed tasks**: move `✅` items to `## Completed Tasks` with `- **Resolved:** YYYY-MM-DD`.
-- **Story-status → `done` (a PRIMARY purpose of this command).** For the story you just closed, flip it
-  to `done` in BOTH the story file (`_bmad/bmm/stories/…` frontmatter) AND `sprint-status.yaml` — by
-  DEFAULT, without asking. Idempotent: only `ready-for-dev`/`in-progress`/`review` advance to `done`;
-  never downgrade a status.
-  - **GATE — test verdict (the `/sudo-code-review` gate).** Before flipping, read this story's verdict at
-    `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md`. **PASS** → flip (still subject to
-    the live-test gate below). **CONCERNS** → flip, but record the concerns in the close-out summary.
-    **FAIL** → do NOT flip; tell Daniel to run `/sudo-code-review` (a new test regression or a required
-    tier is missing). **WAIVED** / **missing** (no `sudo-tests.yaml` baseline, or the gate wasn't run) /
-    **stale** (verdict HEAD ref ≠ current HEAD) → no test block; fall through to the live-test gate exactly
-    as before. Fail-open: a gate-read error never blocks close-out.
+- **Story-status → `done` (THE PRIMARY purpose of this command).** Daniel invoking this command **IS his
+  sign-off that the story is done** — so for the story you just closed, **close it out: flip it to `done`
+  by default, without asking** — in BOTH the story file (`_bmad/bmm/stories/…` frontmatter) AND
+  `sprint-status.yaml`. Echo it: print `Closing <story>: review → done`. Idempotent: only
+  `ready-for-dev`/`in-progress`/`review` advance to `done`; never downgrade a status.
+  - **The ONLY thing that blocks the flip is objectively-red tests.** Read this story's verdict at
+    `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md`. **FAIL** (a NEW test regression or
+    a missing required tier — tests are actually red) → do NOT flip; tell Daniel to run `/sudo-code-review`,
+    fix the red, then re-run this command. **Every other verdict closes the story:** **PASS** → flip;
+    **CONCERNS** → flip + record the concerns in the close-out summary; **WAIVED / missing** (no
+    `sudo-tests.yaml` baseline, or the gate wasn't run) **/ stale** (verdict HEAD ref ≠ current HEAD) →
+    flip (no gate to block on). Fail-open: a gate-read error never blocks close-out.
+  - **Do NOT punt the flip back to Daniel — there is no "leave it at review and ask" branch.** If the
+    story, its sprint-status note, or active-context mentions a pending **live-test / live-verify / live-QA
+    / live-checkride** or "stays review until X", that is NOT a blocker here: Daniel running this command is
+    the sign-off that resolves it. Flip anyway and just NOTE it in the close-out summary
+    (`note: story flagged a pending live-test — closed on your invocation`). The red-tests **FAIL** above
+    is the only refusal.
   - **"commit owed" is NOT a blocker.** Agents never commit, so almost every freshly-built story owes a
     commit; Daniel commits right after close-out. Flip to `done` anyway.
-  - **GATE — pause and double-check with Daniel BEFORE flipping** only when the story / its sprint-status
-    note / active-context carries an explicit *"not done yet"* signal: a pending or DEFERRED
-    **live-test / live-verify / live-QA / manual-pass / live-checkride**, an `OPEN (Daniel, live-only)`
-    item, `await Daniel`, "I need to test it", or an explicit "stays review until X". Then leave the
-    status as-is and ask; flip only on Daniel's OK.
-  - (This does NOT contradict /autopilot, which is autonomous and deliberately stops at `review`.
-    `/sudo-update-sprint-memory` is Daniel-invoked, so it owns the `review → done` advance.)
+  - (This does NOT contradict /autopilot, which is autonomous and deliberately stops at `review` because no
+    human is in the loop. `/sudo-update-sprint-memory` is Daniel-invoked — the human IS the loop — so it
+    owns the `review → done` advance.)
 - **Last Updated**: set to today's date at the top of `active-context.md`.
 
 ## Step 5 — Prune & cap (this is what keeps boot cheap) — AUTOMATIC, never ask

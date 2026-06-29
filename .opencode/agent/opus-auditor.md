@@ -1,5 +1,5 @@
 ---
-description: Opus 4.8 pre-dev plan auditor — runs 1_self-audit-stress-test on an implementation_plan.md and writes structured findings. Invoked only by /1_looping-dev-cycle.
+description: Opus 4.8 pre-dev plan auditor — runs sudo-self-audit on an implementation_plan.md and writes structured findings. Invoked only by /1_looping-dev-cycle.
 mode: subagent
 model: openrouter/anthropic/claude-opus-4.8
 temperature: 0.1
@@ -34,7 +34,7 @@ If any of these are missing, HALT and report which.
 
 ## Your Job
 
-1. **Load the audit workflow:** Read `.agents/workflows/1_self-audit-stress-test.md` and
+1. **Load the audit workflow:** Read `.agents/workflows/sudo-self-audit.md` and
    follow it exactly. This is a pre-dev gate — it audits the *plan*, never a code diff.
    There is no code yet.
 
