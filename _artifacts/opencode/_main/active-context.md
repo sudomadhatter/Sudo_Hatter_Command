@@ -4,7 +4,7 @@
 This is the continuity brief for opencode sessions working on home-base / cross-project infrastructure in `Sudo_Hatter_Command`. It lives at `_artifacts/opencode/_main/active-context.md`.
 
 ## 5. PICK UP
-No prior opencode home-base session. Read `_artifacts/opencode/main/INDEX.md` for session history and `_my_resources/open_tasks/todo_list.md` for Daniel's queue.
+No prior opencode home-base session. Read `_artifacts/opencode/_main/INDEX.md` for session history and `_my_resources/open_tasks/todo_list.md` for Daniel's queue.
 
 ## 6. HAND OFF
 
@@ -18,5 +18,5 @@ No prior opencode home-base session. Read `_artifacts/opencode/main/INDEX.md` fo
   - `AGENTS.md` and `.agents/rules/artifacts-always-first.md` now explicitly direct opencode artifacts to `_artifacts/opencode/_main/` (or `opencode/<project>/`), not `_artifacts/_main/`.
 - Live smoke tests passed: `sync-agents -WhatIf`, globals-only `-WhatIf`, `bmad-help` skill reachable, `check_maps.py --all` fan-out.
 - `.opencode/node_modules/` deleted per Daniel approval; `.opencode/package.json` + `package-lock.json` preserved.
-- Project-code changes committed as `ec791b2`; Daniel will push `main_debug` and optionally commit the remaining opencode artifacts (`_artifacts/opencode/main/`).
-- Latest artifact: `_artifacts/opencode/main/2026-06-28_command-workflow-audit-fixes/walkthrough.md`.
+- Project-code changes committed as `ec791b2`; Daniel will push `main_debug` and optionally commit the remaining opencode artifacts (`_artifacts/opencode/_main/`).
+- Latest artifact: `_artifacts/opencode/_main/2026-06-28_command-workflow-audit-fixes/walkthrough.md`.

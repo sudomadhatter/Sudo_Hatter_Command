@@ -219,7 +219,11 @@ if (-not $GlobalsOnly) {
   $cmdDir = Join-Path $src "commands"
 
   $cl = Sync-CommandDir $cmdDir (Join-Path $Target ".claude\commands")  "claude" -WhatIf:$WhatIf
-  Sync-Dir (Join-Path $src "skills")          (Join-Path $Target ".claude\skills") -WhatIf:$WhatIf
+  # bmad-* skills are BMAD-OWNED. BMAD self-installs them (its `ides:` = claude-code, antigravity) directly into
+  # .claude\skills, .opencode, and .agent\skills, and refreshes them on every `bmad` update. Our toolkit must NOT
+  # carry or shadow them: a stale vendored copy in .agents\skills would clobber BMAD's current install on each
+  # sync (robocopy overwrites same-named files). Exclude bmad-* so BMAD stays the single source for its own skills.
+  Sync-Dir (Join-Path $src "skills")          (Join-Path $Target ".claude\skills") @('bmad-*') -WhatIf:$WhatIf
   Sync-Dir (Join-Path $src "hooks")           (Join-Path $Target ".claude\hooks") -WhatIf:$WhatIf
   $oc = Sync-CommandDir $cmdDir (Join-Path $Target ".opencode\commands") "opencode" -WhatIf:$WhatIf
   Sync-Dir (Join-Path $src "opencode-agents") (Join-Path $Target ".opencode\agent") -WhatIf:$WhatIf

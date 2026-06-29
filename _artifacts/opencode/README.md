@@ -5,7 +5,7 @@ top-level `_artifacts/` so the two tools don't collide. Inside here, opencode ap
 placement rules** the home base uses (full model → `../../_docs/workspace-standard.md`):
 
 1. **Project work** → `opencode/<project>/<YYYY-MM-DD>_<slug>/` (the `<project>` = the `Projects/<name>/`
-   folder name, e.g. `opencode/aviationChat-AGY/`). **Create the project folder if missing; otherwise reuse it.**
+   folder name, e.g. `opencode/AGY_AVIATIONCHAT/`). **Create the project folder if missing; otherwise reuse it.**
 2. **Main / home-base / cross-project work** → `opencode/_main/<YYYY-MM-DD>_<slug>/`.
 3. **Stories** → nest under the parent **epic folder**: `opencode/<project>/<epic>/<story>/`
    (create the epic folder if missing). Random/system tasks → `<YYYY-MM-DD>_<slug>/`; retired → `_archived/`.

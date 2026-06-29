@@ -6,7 +6,7 @@ description: Refresh the machine-global command caches (Antigravity global_workf
 
 **This is now a thin alias.** The global caches are refreshed by the one unified engine, `sync-agents.ps1`
 (see `/sync-agents`). This command runs the **globals-only** pass — the canonical `.agents/commands/` set
-(the same 37 commands Claude uses) is mirror-synced into:
+(the same canonical command set Claude uses) is mirror-synced into:
 
 - `~/.gemini/antigravity/global_workflows` (Antigravity calls our commands "workflows")
 - `~/.config/opencode/commands`
