@@ -1,12 +1,47 @@
 # AviationChat Test-Architecture Retrofit — Field Guide (TEA-Gated `sudo-` Flow)
 
-## How to use this guide
+> **Status — 2026-06-29:** Step 0 (the risk assessment) is **complete**. It produced 9 scoped stories, **TEA-1..TEA-9**, ranked P0–P3, with the FAA-citation (R-P6) and Sully-safety-override (R-P3) risks at Prio P0. Artifacts live under `Projects/AGY_AVIATIONCHAT/_bmad-output/test-artifacts/` (`test-design-architecture.md`, `test-design-qa.md`, `test-design/aviationChat-AGY-handoff.md`). You are now in per-story execution; the recommended start is the fully-unblocked **TEA-1** (schema contracts) via `/sudo-write-story-tests`.
 
-Your mentor handed you a four-directive brief (D1–D4, principles P1–P10) on how an agentic codebase *should* be tested — but he wrote it **blind to the AviationChat repo**, so a few of his targets aim at components that do not exist here and one of his numbers (an 85% coverage floor) aims at tooling that is not installed yet. This guide does the reconciliation for you: for every principle it states **what the brief asked for**, **what AviationChat actually has** (grounded in a verified repo recon — never invented), and **the exact `sudo-` / TEA command you run to close the gap**. Read it top to bottom once, then live in the Coverage Scorecard; where the mentor named something the repo does not contain, this guide says so plainly and routes it to a short "decide with Daniel" list instead of pretending a walkthrough exists.
+## How this system works (read this first)
+
+There are **two layers** with **two cadences** — don't confuse them.
+
+1. **Test *design* — the planning layer (runs once per scope).** `bmad-testarch-test-design`, driven by Murat (the Master Test Architect), ranks what can hurt you (P0–P3) and emits scoped stories with acceptance criteria. You run it **once per body of work**, up front — not per story.
+2. **The `sudo-` story loop — the execution layer (runs once per story).** `/sudo-write-story-tests` (red) → `/sudo-dev-story-tests` (green) → `/sudo-code-review` (gate) → `/sudo-update-sprint-memory` (your sign-off).
+
+### Do I re-run all of this for a new epic?
+
+**No.** This guide is a *one-time, system-level retrofit*: AviationChat shipped with no test architecture, so we're paying down debt across the whole app at once (all 10 principles, the full component inventory). You pay that cost **once**.
+
+A **new epic** going forward is much lighter:
+
+```
+New epic
+  └─ bmad-testarch-test-design   (scoped to THAT epic's handful of stories — fast)
+       └─ for each story:  /sudo-write-story-tests → /sudo-dev-story-tests
+                            → /sudo-code-review → /sudo-update-sprint-memory
+```
+
+Test design is **risk-proportional**, not mandatory ceremony. A high-stakes epic (FAA accuracy, Sully safety, auth) earns the full design pass; a low-risk epic (a settings page, a copy change) can skip straight to the sudo loop with a one-line risk note. The design skill has **Create / Resume / Validate / Edit** modes so you can revise an old plan instead of starting cold — and each epic gets cheaper as this retrofit hardens the foundation (armed gate, coverage floor, schema-contract pattern).
+
+## How to read this guide
+
+Read it top to bottom once, then live in the **Coverage Scorecard** (§1) and the **command cheat-sheet** (§9). For every principle the body states **what good testing asks for**, **what AviationChat actually has** (file:line evidence, never invented), and **the exact command to close the gap**. Where a target does not exist in the repo, the guide says so plainly and routes it to a short *decide-with-Daniel* list instead of faking a walkthrough.
+
+**Contents**
+- §1 — Coverage Scorecard (P1–P10 at a glance)
+- §2 — The 5-step retrofit sequence
+- §3 — Step 0: the assessment (✅ done — what it produced)
+- §4 — D1 Determinism: P1 isolation · P2 coverage · P3 behavioral triggers
+- §5 — D2 Variance & contracts: P4 temp-0 · P5 schema · P6 adversarial
+- §6 — D3 CI architecture: P7 impact analysis · P8 nightly evals
+- §7 — D4 Machine-enforced standards: P9 ruleset · P10 test-first
+- §8 — What you own vs what the agents do
+- §9 — Quick reference (commands, the gate dial, where artifacts land)
 
 > **Shell note (read once):** every fenced command block below is **bash** and assumes you start from the project root. The platform's primary shell is Windows PowerShell, where the POSIX inline-env-prefix form `VAR="" cmd` is a **parse error**. Run these blocks in the **Bash shell**, or use the PowerShell equivalent shown inline (set the env var first, then run the command).
 
-Three facts anchor everything below:
+### Three facts that anchor everything
 
 1. **The gate is already armed.** `_bmad-output/sudo-tests.yaml` exists and `waive: false`, so `/sudo-code-review` enforces for real on every story. Required tiers are `[L1, L2]`; L3 (LLM-as-judge) is intentionally *not* required in the gate.
 2. **Branch coverage is currently UNMEASURED.** Backend has zero coverage tooling (no `pytest-cov`, no `.coveragerc`, no `[tool.coverage]`). Frontend has `@vitest/coverage-v8` installed but **not wired** (no `coverage` key in `vitest.config.ts`, no `--coverage` in any command). That is why `l1_coverage_min` is `0.0` — a deliberate grandfather setting, not an oversight.
@@ -76,9 +111,11 @@ flowchart TD
 
 ---
 
-## 3. STEP 0 — THE ASSESSMENT (do this first)
+## 3. STEP 0 — THE ASSESSMENT (✅ complete — kept here as the reference for next time)
 
-Before you install a single tool or write a single test, you turn the mentor's blind brief into a **scoped, risk-ranked plan against the real tree**. This is the first real action and the one that resolves the mentor's wrong assumptions — because the assessment is where "Research Agent" gets renamed to "Librarian," where "85%" gets replaced by a *measured* baseline, and where the genuinely-present subsystems (JIT injection, the reasoning-log schemas) get scoped into real stories.
+> **Already done for this retrofit.** Step 0 ran on 2026-06-29 and produced TEA-1..TEA-9 plus the risk register under `_bmad-output/test-artifacts/`. The walkthrough below is retained so you can re-run the *same* assessment, scoped down, when a **new epic** arrives.
+
+Before you install a single tool or write a single test, you turn an aspirational brief into a **scoped, risk-ranked plan against the real tree**. This is the first real action and the one that resolves wrong assumptions — the assessment is where "Research Agent" gets renamed to "Librarian," where "85%" gets replaced by a *measured* baseline, and where the genuinely-present subsystems (JIT injection, the reasoning-log schemas) get scoped into real stories.
 
 **Exactly what to do:**
 
@@ -350,7 +387,7 @@ flowchart TD
 
 > **Definition:** feed wrong/hostile FAA inputs and assert the system does not hallucinate regs or echo phantom citations.
 
-**Covered? — PARTIAL (and the mentor's framing needs a correction — do not scaffold from scratch).** An adversarial **citation-fidelity** suite already exists: an adversarial citation-fidelity suite (`backend/evals/scenarios/citation_fidelity.json`, scenarios CF_01–CF_10) feeds the Reasoner an empty/unrelated dossier and asserts `sources: []` instead of fabricating `FAR 91.7` / `AIM 4-2-1`, plus a partner `backend/evals/scenarios/answer_leak.json` that carries the must-FAIL negative control `NC_01` (id at `answer_leak.json:279`) — it must FAIL every run to prove the judge is awake. (`citation_fidelity.json` itself contains only CF_01–CF_10; the negative control lives in `answer_leak.json`, not in the citation suite.) But this layer is **L3 (LLM-as-judge), explicitly excluded from CI** (`backend/evals/README.md`: "Manual-only… NEVER runs in CI"; `norecursedirs` excludes `evals/`). **Gaps:** (1) it tests hallucinated citations (output side), not **incorrect FAA *queries*** (input side — wrong reg, non-existent reg, prompt-injection); that input fixture set does not exist. (2) Nothing runs **deterministically in the gate**. The `regulatory-verification-protocol` skill is the policy this layer enforces.
+**Covered? — PARTIAL (the framing needs a correction — do not scaffold from scratch).** An adversarial **citation-fidelity** suite already exists (`backend/evals/scenarios/citation_fidelity.json`, scenarios CF_01–CF_10): it feeds the Reasoner an empty/unrelated dossier and asserts `sources: []` instead of fabricating `FAR 91.7` / `AIM 4-2-1`, plus a partner `backend/evals/scenarios/answer_leak.json` that carries the must-FAIL negative control `NC_01` (id at `answer_leak.json:279`) — it must FAIL every run to prove the judge is awake. (`citation_fidelity.json` itself contains only CF_01–CF_10; the negative control lives in `answer_leak.json`, not in the citation suite.) But this layer is **L3 (LLM-as-judge), explicitly excluded from CI** (`backend/evals/README.md`: "Manual-only… NEVER runs in CI"; `norecursedirs` excludes `evals/`). **Gaps:** (1) it tests hallucinated citations (output side), not **incorrect FAA *queries*** (input side — wrong reg, non-existent reg, prompt-injection); that input fixture set does not exist. (2) Nothing runs **deterministically in the gate**. The `regulatory-verification-protocol` skill is the policy this layer enforces.
 
 **Walkthrough (first-timer):**
 

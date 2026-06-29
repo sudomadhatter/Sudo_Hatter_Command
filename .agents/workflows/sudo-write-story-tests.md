@@ -14,8 +14,10 @@ tests already written and **failing**. Tests-first, before any dev. Project-scop
 ## Step 0 — Resolve the target project (FIRST — before any other step)
 Run from the **command center** (the lobby), this command operates on exactly ONE child project under
 `Projects/`, never the lobby itself. Resolve the target now:
-0. **Self** — if the current repo already has `_bmad/bmm/config.yaml` and **no** `Projects/` subfolder,
-   you are inside a project already: `PROJECT_ROOT = .`. Skip to the binding rule.
+0. **Self (sub-project fast path — check this FIRST, and STOP here if it matches)** — if this repo has
+   **no** `Projects/` subfolder, you ARE the project: set `PROJECT_ROOT = .` and skip straight to the
+   binding rule. Do NOT read `active-project.txt`, parse `$ARGUMENTS` for a project name, or ask which
+   project — cases 1–3 below are command-center-only (the lobby that hosts children under `Projects/`).
 1. **Inline override** — if `$ARGUMENTS` begins with a name matching a folder under `Projects/`, that is
    the target; consume that first token (the remainder is the real argument — story id, focus, …). Write
    the name alone into `_my_resources/active-project.txt` (overwrite) so later commands inherit it.

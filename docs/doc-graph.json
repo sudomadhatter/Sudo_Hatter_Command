@@ -296,7 +296,7 @@
       "out": 3
     },
     {
-      "path": "rules/bmad_code_review_fast_path.md",
+      "path": "rules/bmad_code_review_sudo_fix.md",
       "in": 3,
       "out": 0
     },
@@ -5029,7 +5029,7 @@
     },
     {
       "from": "commands/sudo-code-review_AP.md",
-      "to": "rules/bmad_code_review_fast_path.md",
+      "to": "rules/bmad_code_review_sudo_fix.md",
       "kind": "ref"
     },
     {
@@ -5224,7 +5224,7 @@
     },
     {
       "from": "opencode-agents/opus-reviewer.md",
-      "to": "rules/bmad_code_review_fast_path.md",
+      "to": "rules/bmad_code_review_sudo_fix.md",
       "kind": "ref"
     },
     {
@@ -5244,7 +5244,7 @@
     },
     {
       "from": "rules/INDEX.md",
-      "to": "rules/bmad_code_review_fast_path.md",
+      "to": "rules/bmad_code_review_sudo_fix.md",
       "kind": "ref"
     },
     {
@@ -17613,7 +17613,7 @@
       "target": "your-action-required.md"
     },
     {
-      "from": "rules/bmad_code_review_fast_path.md",
+      "from": "rules/bmad_code_review_sudo_fix.md",
       "target": "code-review.md"
     },
     {

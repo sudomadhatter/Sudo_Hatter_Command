@@ -14,8 +14,10 @@ repo). The gate lives HERE; there is no separate `/test-gate` or `/qa-gate`.
 ## Step 0 — Resolve the target project (FIRST — before any other step)
 Run from the **command center** (the lobby), this command operates on exactly ONE child project under
 `Projects/`, never the lobby itself. Resolve the target now:
-0. **Self** — if the current repo already has `_bmad/bmm/config.yaml` and **no** `Projects/` subfolder,
-   you are inside a project already: `PROJECT_ROOT = .`. Skip to the binding rule.
+0. **Self (sub-project fast path — check this FIRST, and STOP here if it matches)** — if this repo has
+   **no** `Projects/` subfolder, you ARE the project: set `PROJECT_ROOT = .` and skip straight to the
+   binding rule. Do NOT read `active-project.txt`, parse `$ARGUMENTS` for a project name, or ask which
+   project — cases 1–3 below are command-center-only (the lobby that hosts children under `Projects/`).
 1. **Inline override** — if `$ARGUMENTS` begins with a name matching a folder under `Projects/`, that is
    the target; consume that first token (the remainder is the real argument — story id, focus, …). Write
    the name alone into `_my_resources/active-project.txt` (overwrite) so later commands inherit it.
@@ -60,11 +62,11 @@ Combine into **PASS / CONCERNS / FAIL / WAIVED** and write
   **PASS** = all required tiers green. **WAIVED** = no baseline (Step 2).
 
 ## Step 5 — Update the story walkthrough (REQUIRED whenever you found or fixed anything)
-The single closing doc for this story is `_artifacts/<epic>/<story>/walkthrough.md` (per the
-`artifacts-always-first` rule — the ONE doc holding the narrative + `## Task Checklist` + `## Your
-Actions`). The verdict file from Step 4 is an addendum; the **walkthrough is the living source of truth**,
-so reflect the review back INTO it in place — never leave it stale (old status, old test count, no
-findings):
+The single closing doc for this story is `_artifacts/<epic>/<story>/walkthrough.md` — if it wasn't handed
+to you, find it there (per the `artifacts-always-first` rule — the ONE doc holding the narrative +
+`## Task Checklist` + `## Your Actions`). The verdict file from Step 4 is an addendum; the **walkthrough is
+the living source of truth**, so reflect the review back INTO it in place — never leave it stale (old status,
+old test count, no findings):
 - Append a `## Code Review (<date>)` section to the body: the verdict, each finding with `file:line` +
   disposition (applied / deferred / dismissed), and a link to `sudo-code-review-<story>.md`. If you changed
   nothing, say so ("Changes applied: none — implementation correct as-is").

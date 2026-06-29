@@ -13,8 +13,10 @@ and ends with expanded coverage. Project-scoped (targets THIS repo).
 ## Step 0 — Resolve the target project (FIRST — before any other step)
 Run from the **command center** (the lobby), this command operates on exactly ONE child project under
 `Projects/`, never the lobby itself. Resolve the target now:
-0. **Self** — if the current repo already has `_bmad/bmm/config.yaml` and **no** `Projects/` subfolder,
-   you are inside a project already: `PROJECT_ROOT = .`. Skip to the binding rule.
+0. **Self (sub-project fast path — check this FIRST, and STOP here if it matches)** — if this repo has
+   **no** `Projects/` subfolder, you ARE the project: set `PROJECT_ROOT = .` and skip straight to the
+   binding rule. Do NOT read `active-project.txt`, parse `$ARGUMENTS` for a project name, or ask which
+   project — cases 1–3 below are command-center-only (the lobby that hosts children under `Projects/`).
 1. **Inline override** — if `$ARGUMENTS` begins with a name matching a folder under `Projects/`, that is
    the target; consume that first token (the remainder is the real argument — story id, focus, …). Write
    the name alone into `_my_resources/active-project.txt` (overwrite) so later commands inherit it.
@@ -42,6 +44,15 @@ plan. (Human-lane equivalent of autopilot Stage 2.) **Persist the audit as its o
 `self-audit-stress-test.md`** (`type: self_audit`) in the story's artifact folder — inline findings, or
 findings folded only into the plan, do NOT satisfy the protocol (`artifacts-always-first` §7).
 
+## Step 2.5 — Gate: ask first, but ONLY if you have questions
+A **conditional** gate — not a mandatory approval stop. After the plan + audit, decide honestly whether you
+have real questions for the human: a genuine ambiguity, a decision only they can make, contradictory ACs, or
+a plan concern the audit raised that you can't safely resolve yourself.
+- **Have questions → STOP before any code.** Ask them concisely in chat (on web/mobile, the tap-to-approve
+  chip) and wait for answers. Modify NO project file and do NOT start dev until they're resolved. This gate
+  OVERRIDES bmad-dev-story's no-pause directive — but only here, and only because you have questions.
+- **No questions → go straight to Step 3.** Don't manufacture one; an unambiguous plan just gets built.
+
 ## Step 3 — Implement
 Invoke the **`bmad-dev-story`** skill in IMPLEMENT mode: apply the audit, write the code, and drive the
 ① red tests to green. Run the relevant suite(s) and paste the **actual** output (constitution rule). If a
@@ -64,7 +75,7 @@ but no closing artifacts). Before reporting Done, the story's artifact folder
 - [ ] **`walkthrough.md`** (`type: walkthrough`) — the ONE closing doc (§5): narrative (what changed
       file-by-file & why), the red→green test story, the **actual pasted test output**, an AC→evidence
       matrix, then a **`## Task Checklist`** section (final TodoWrite snapshot) and a **`## Your Actions`**
-      section (Daniel's manual steps + the exact git commit command). **Required even when Daniel said
+      section (the human's manual steps + the exact git commit command). **Required even when told to
       "skip the plan, just do it" — the walkthrough is never skippable.**
 
 Post a clickable Markdown link to every artifact in the chat that same turn — never a bare path.
