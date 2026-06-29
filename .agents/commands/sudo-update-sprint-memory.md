@@ -1,5 +1,6 @@
 ---
 description: End-of-session / story close-out save — advance the closed story to done (running this command IS Daniel's sign-off; only objectively-red /sudo-code-review tests block the flip), code-verify, route learnings to specs/rules/memory, prune active-context. Run as the LAST step when closing a story or any session.
+platforms: [opencode, antigravity]
 ---
 
 # /sudo-update-sprint-memory — Session End (G1 close-out)
@@ -11,6 +12,27 @@ Run as the last step when closing a story (or any dev / brainstorm / research se
 > `_artifacts/<date>_<slug>/walkthrough.md` + git — never in `active-context.md`. Durable cross-session
 > facts belong in Claude's auto-memory. This command routes each learning to its correct home and keeps
 > `active-context.md` small so `/sudo-boot-sprint-memory` stays cheap.
+
+## Step 0 — Resolve the target project (FIRST — before any other step)
+Run from the **command center** (the lobby), this close-out operates on exactly ONE child project under
+`Projects/`, never the lobby itself. Resolve the target now:
+0. **Self** — if the current repo already has `_bmad/bmm/config.yaml` and **no** `Projects/` subfolder,
+   you are inside a project already: `PROJECT_ROOT = .`. Skip to the binding rule.
+1. **Inline override** — if `$ARGUMENTS` begins with a name matching a folder under `Projects/`, that is
+   the target; consume that first token (the remainder is the real argument). Write the name alone into
+   `_my_resources/active-project.txt` (overwrite) so later commands inherit it.
+2. **Active pointer** — else read `_my_resources/active-project.txt`; if it names a folder under
+   `Projects/`, use it (normally the same project you booted/built this session).
+3. **Ask** — else STOP and ask Daniel *"Which project are we closing out? (e.g. AGY_AVIATIONCHAT)"* —
+   never guess, never operate on the lobby.
+
+Set `PROJECT_ROOT = Projects/<name>` and **echo exactly** `Target: Projects/<name>` before any work.
+
+**Binding rule (applies to EVERY step below):** every "THIS repo", every `{project-root}`, and every bare
+path (`_bmad-output/…`, `_bmad/…`, `_artifacts/…`, `sprint-status.yaml`, story files) resolves **under
+`PROJECT_ROOT`**, never the lobby. The Claude auto-memory write in Step 6 is the ONE exception — it always
+targets Daniel's global memory dir, not the project. If a needed project path is missing under
+`PROJECT_ROOT`, STOP and say so.
 
 ## Step 1 — Read current state & this session's artifacts (scoped — don't read whole files you don't need whole)
 Read:

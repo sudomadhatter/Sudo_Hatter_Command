@@ -14,8 +14,9 @@ CLAUDE.md session-start ritual and the code standards. This runs unattended, so:
 
 - **Resolve ambiguity yourself** from the story + codebase — never ask Daniel. Log any judgment call you'd
   normally raise with him to `decisions-log.md` in the shared folder.
-- **Never** `git commit`/`push`, and **never** set the story status to `done` (or touch sprint-status) —
-  human close-out only.
+- **Never** `git commit`/`push`, and **never** touch story status or `sprint-status.yaml` — in autopilot
+  the **orchestrator** owns the `review` flip (gated on its own independent green test result), and the
+  human owns `review → done` at close-out. You just build; leave all status changes to them.
 - **Stay in your lane.** Write only the ONE artifact your mode owns (below). Do not write another stage's
   artifact (the audit, the review). If your output artifact already exists in the folder, leave it and stop.
 

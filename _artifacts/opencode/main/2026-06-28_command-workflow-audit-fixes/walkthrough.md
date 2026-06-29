@@ -37,6 +37,8 @@ Daniel asked for an audit of the command/workflow setup in the home base, plus c
    - **`AGENTS.md` §5 + §7** — made the opencode namespace rule explicit: opencode home-base artifacts go to `_artifacts/opencode/_main/` (or `opencode/<project>/`), never directly to `_artifacts/_main/`.
    - **`.agents/rules/artifacts-always-first.md`** — same clarification at the top of the artifact-location instructions, plus updated project-folder examples.
 
+9. **`.opencode/node_modules/`** — deleted the 52 MB on-disk tree (was already ignored by `.gitignore` and `.opencode/.gitignore`). `.opencode/package.json` and `package-lock.json` remain so opencode can reinstall the plugin on its next launch if needed.
+
 ### Sync propagation
 Ran `/sync-agents` after the command/script edits. Verified the mirrored copies updated:
 
@@ -90,9 +92,9 @@ The linter correctly resolved the renamed project folders (`AGY_AVIATIONCHAT`, `
 
 ## Out of scope / still open
 
-- **`.opencode/node_modules/`** — the 52 MB `node_modules` tree under `.opencode/` is still on disk. Daniel asked for clarification before deleting; I held off since it is correctly ignored by `.gitignore`/`.opencode/.gitignore`.
 - **`1_update-maps --dry-run`** — the command doc now says `--dry-run` stops the agent before edits, but the underlying `check_maps.py` script does not accept a `--dry-run` flag. The read-mode default behavior is safe; a future cleanup could add native `--dry-run` support to the script.
 - **Pending projects** (`jetChat-AGY`, `B&L WorldWide`, `NEXGen Films`) stay in `router.md` as pending and are not yet scaffolded in `Projects/`.
+- **Push** — Daniel will run the git command in [Your Actions](#your-actions).
 
 ## Task Checklist
 
@@ -107,17 +109,32 @@ The linter correctly resolved the renamed project folders (`AGY_AVIATIONCHAT`, `
 - [x] Re-sync commands/skills/agents into `.claude/`, `.opencode/`, and global caches
 - [x] Run live smoke tests (`sync-agents -WhatIf`, globals-only `-WhatIf`, `bmad-help` reachability, `check_maps --all`)
 - [x] Update `AGENTS.md` and `.agents/rules/artifacts-always-first.md` to direct opencode artifacts to `_artifacts/opencode/_main/`
-- [ ] Decide whether to delete `.opencode/node_modules/` and remove it if approved
+- [x] Delete `.opencode/node_modules/` (Daniel approved)
 - [ ] `git add / commit / push` the lobby changes (see Your Actions)
 
 ## Your Actions
 
-All changes are uncommitted in the lobby repo. Review the diff, then commit on the appropriate branch (`main_debug` per `git-policy.md`) and push:
+The project-file changes were already committed as `ec791b2` by the time the audit follow-up finished. To push them:
 
 ```powershell
 cd C:\Users\dlohn\.gemini\antigravity\scratch\Sudo_Hatter_Command
-git add router.md .gitignore AGENTS.md .agents/commands/1_update-maps.md .agents/commands/INDEX.md .agents/commands/slash_command_updating.md .agents/commands/sync-agents.md .agents/rules/artifacts-always-first.md .agents/scripts/sync-agents.ps1
-git commit -m "chore(home-base): align router/gitignore to real project folders, add sync -WhatIf, hide INDEX from command palette" -m "- router.md now points to Projects/AGY_AVIATIONCHAT, Fresh_Workspace_BMAD, Ingestion_pipeline_AvCh, OpenCode" -m "- .gitignore retired stale root-level project entries" -m "- .agents/commands/INDEX.md excluded via platforms: []" -m "- slash_command_updating count fixed (37) and documents -WhatIf" -m "- sync-agents.ps1 gains -WhatIf/-DryRun preview mode" -m "- AGENTS.md + artifacts-always-first.md: opencode artifacts go to _artifacts/opencode/_main/"
+git push origin main_debug
+```
+
+The only remaining uncommitted changes are the opencode artifact files from this session:
+
+```text
+ M _artifacts/opencode/main/2026-06-28_command-workflow-audit-fixes/walkthrough.md
+?? _artifacts/opencode/main/2026-06-28_command-workflow-audit-fixes/implementation_plan.md
+ M _artifacts/opencode/main/active-context.md
+?? _artifacts/opencode/main/INDEX.md
+```
+
+Add and commit those artifacts if you want them in the repo (recommended for cross-agent continuity):
+
+```powershell
+git add _artifacts/opencode/main/
+git commit -m "docs(artifacts): opencode home-base command/workflow audit follow-up artifacts"
 git push origin main_debug
 ```
 

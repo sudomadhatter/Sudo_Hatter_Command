@@ -1,5 +1,6 @@
 ---
 description: Story prep — create the next BMAD story, then write its failing acceptance tests (ATDD red phase) before any code. Step ① of the sudo dev flow.
+platforms: [opencode, antigravity]
 ---
 
 # /sudo-write-story-tests — Create Story + Red Tests (①)
@@ -9,6 +10,27 @@ tests already written and **failing**. Tests-first, before any dev. Project-scop
 
 > Flow position: `sudo-boot-sprint-memory` → **`sudo-write-story-tests`** → `sudo-dev-story-tests` →
 > `sudo-code-review` → `sudo-update-sprint-memory`.
+
+## Step 0 — Resolve the target project (FIRST — before any other step)
+Run from the **command center** (the lobby), this command operates on exactly ONE child project under
+`Projects/`, never the lobby itself. Resolve the target now:
+0. **Self** — if the current repo already has `_bmad/bmm/config.yaml` and **no** `Projects/` subfolder,
+   you are inside a project already: `PROJECT_ROOT = .`. Skip to the binding rule.
+1. **Inline override** — if `$ARGUMENTS` begins with a name matching a folder under `Projects/`, that is
+   the target; consume that first token (the remainder is the real argument — story id, focus, …). Write
+   the name alone into `_my_resources/active-project.txt` (overwrite) so later commands inherit it.
+2. **Active pointer** — else read `_my_resources/active-project.txt`; if it names a folder under
+   `Projects/`, use it.
+3. **Ask** — else STOP and ask Daniel *"Which project are we working in? (e.g. AGY_AVIATIONCHAT)"* —
+   never guess, never operate on the lobby.
+
+Set `PROJECT_ROOT = Projects/<name>` and **echo exactly** `Target: Projects/<name>` before any work.
+
+**Binding rule (applies to EVERY step below):** every "THIS repo", every `{project-root}`, and every bare
+path (`_bmad-output/…`, `_bmad/…`, `_artifacts/…`, story files, `implementation_plan.md`, test commands)
+resolves **under `PROJECT_ROOT`**. When you invoke any nested `bmad-*` / `1_*` skill, bind its
+`{project-root}` to `PROJECT_ROOT`, run it against that directory, and read/write only there. If a needed
+path is missing under `PROJECT_ROOT`, STOP and say so — never fall back to the lobby.
 
 ## Step 1 — Create the story
 Invoke the **`bmad-create-story`** skill for the story in `$ARGUMENTS` (a story id like `11.16`, or "the

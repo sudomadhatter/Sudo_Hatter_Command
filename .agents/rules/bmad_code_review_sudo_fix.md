@@ -1,87 +1,47 @@
 ---
-name: bmad_code_review_fast_path
-description: "Activates when the bmad-code-review skill or workflow runs in this solo-agent setup. Run all review layers yourself sequentially (no subagents), do not stop at checkpoints, and persist findings to code-review.md."
+name: bmad_code_review_sudo_fix
+description: "Activates whenever the bmad-code-review skill or workflow runs (any agent, any platform). Run the review end-to-end in one pass — never halt to hand steps back to the user — then report findings to code-review.md. Never flip the story to done; stop at review."
+activation: Model Decision (auto when the bmad-code-review skill or workflow runs)
 ---
 
-# BMAD Code Review — Solo Agent Auto-Pilot
+# BMAD Code Review — Run-to-Completion Adapter
 
-**Activates when:** The `bmad-code-review` skill or workflow is invoked.
+`bmad-code-review` is authored for a multi-agent swarm that halts to spawn subagents and asks for
+confirmation at each checkpoint. Here it runs as ONE uninterrupted pass. The procedure (three review
+layers → triage → present) is unchanged; only the orchestration below is overridden.
 
-## Core Mandate: No Swarm, No Stopping
+## The contract
+- **Run to completion in one pass.** Carry out every step yourself — including anything the workflow
+  phrases as "launch subagents," "generate prompt files and halt," or "stop for confirmation." Run the
+  three layers sequentially, or fan them out as real subagents if you have them, but complete and
+  synthesize all three before returning. Never return a partial review.
+- **Silent defaults, no checkpoints.** Auto-answer the Step 1 questions; skip every confirmation pause.
+- **Stop at `review`, never `done`.** The human close-out (`/sudo-update-sprint-memory`) owns `review → done`.
+- **The one allowed stop:** a genuine `decision_needed` finding (Step 4) — a judgment call only the human can make.
 
-You are running in a **single-agent environment**. You do NOT have access to subagents, parallel workers, or a swarm. Every instruction in the code review workflow that references "launching subagents," "parallel review layers," or "generating prompt files and halting" must be adapted to solo sequential execution.
-
-**You MUST NOT stop to ask the user for confirmation at any checkpoint.** Run the entire workflow end-to-end in a single turn. The user triggered this review because they want results — not a conversation about reviewing.
-
----
-
-## Step 1 Overrides (Gather Context)
-
-When the workflow asks these questions, use these defaults silently — do not present them as choices:
-
-| Workflow Question | Auto-Answer |
+## Step 1 — Context (auto-answer, don't ask)
+| Workflow question | Answer |
 |---|---|
-| **"What do you want to review?"** | Uncommitted changes (`git diff HEAD`) — staged + unstaged. |
-| **"Is there a spec or story file?"** | Yes. Use the story file path from the user's prompt. If none was provided, scan `_bmad/bmm/stories/` for any file with `Status: ready-for-review` or `review`. If nothing found, proceed with `review_mode = "no-spec"`. |
-| **"Confirm summary before proceeding?"** (§ CHECKPOINT) | Skip. Print a one-line summary (files changed, lines ±, review mode) and immediately continue. Do NOT halt. |
-| **Chunking offer for large diffs** | Decline chunking. Proceed with the full diff. |
+| What to review? | Uncommitted changes (`git diff HEAD`) — staged + unstaged. |
+| Spec/story file? | The path from the user's prompt; else scan `_bmad/bmm/stories/` for `Status: ready-for-review`/`review`; else `review_mode = "no-spec"`. |
+| Confirm summary? | Print a one-line summary (files, ±lines, mode) and continue. |
+| Chunk a large diff? | No — review the full diff. |
 
----
+## Step 2 — Review (run all three layers, then continue)
+1. **Blind Hunter** — `{diff_output}` ONLY (no spec, no project context). Bugs, logic errors, security, smells → findings list.
+2. **Edge Case Hunter** — diff + full project read. Every branch, boundary, null, error path, race, type-coercion edge → list with `location`, `trigger_condition`, `potential_consequence`.
+3. **Acceptance Auditor** (skip if `no-spec`) — diff vs the spec/story ACs. Violations, deviations, missing implementation → list with title, AC reference, evidence.
 
-## Step 2 Overrides (Review) — Solo Sequential Execution
+Accumulate findings internally (no intermediate summaries), then go straight to triage.
 
-**This is the critical override.** The workflow says to launch three subagents in parallel. You cannot do that. Instead:
+## Step 3 — Triage
+Run the workflow's normalization, deduplication, and classification exactly as written — without pausing.
 
-1. **Run each review layer yourself, sequentially, in the same turn.** Do not generate prompt files. Do not halt. Do not ask the user to run anything in a separate session.
+## Step 4 — Present & act
+- **`decision_needed` findings** — the one exception: present them clearly and halt for the human's call.
+- **Patch findings** — never ask how to handle them. If `{spec_file}` is set, leave them as action items in the story file; else list each (file, line, suggested fix) in the output. Do not auto-apply.
+- **Status** — ensure the story is at `review` (idempotent — the dev step normally set it already). **Never write `done`** to the story file or `sprint-status.yaml`; this overrides step-04-present's `done` default.
 
-2. **Execution order:**
-   - **Pass 1 — Blind Hunter.** Mentally reset. Look at `{diff_output}` ONLY. No spec, no project context. Find bugs, logic errors, security issues, and code smells from the diff alone. Produce a markdown list of findings.
-   - **Pass 2 — Edge Case Hunter.** Now use your full project read access alongside the diff. Walk every branching path, boundary condition, null check, error path, race condition, and type coercion edge. Produce findings as a structured list with `location`, `trigger_condition`, `potential_consequence`.
-   - **Pass 3 — Acceptance Auditor.** (Skip if `review_mode = "no-spec"`.) Load the spec/story file and any context docs. Check the diff against acceptance criteria, spec intent, and specified behavior. Flag violations, deviations, and missing implementation. Produce a markdown list with title, AC reference, and evidence.
-
-3. **Between passes:** Do NOT summarize or present intermediate results to the user. Just accumulate findings internally and continue.
-
-4. **After all passes:** Proceed directly to Step 3 (Triage). No halting.
-
----
-
-## Step 3 Overrides (Triage)
-
-No changes to triage logic. Run normalization, deduplication, and classification exactly as written. Do NOT halt or ask the user for input during triage.
-
----
-
-## Step 4 Overrides (Present and Act)
-
-### Decision-Needed Findings
-If `decision_needed` findings exist, **this is the ONE exception** where you present them — the user genuinely must make a judgment call. Present them clearly and halt for input.
-
-### Patch Findings
-Do NOT ask "How would you like to handle the patches?" — default to:
-- If `{spec_file}` is set: **Leave as action items** in the story file.
-- If `{spec_file}` is NOT set: **List all patches** in the output with file, line, and suggested fix. Do not auto-apply.
-
-### Sprint Status Update
-Run the story status update and sprint-status.yaml sync automatically — no confirmation needed.
-
----
-
-## Close-Out
-
-After the workflow completes:
-1. Explicitly confirm: "✅ Story `<key>` closed out. Both `story file` and `sprint-status.yaml` updated to `done`."
-2. Append git push command: "🚀 **Don't forget to commit and push!** `git add -A && git commit -m 'feat(epic-N): Story X.Y.Z — <Title>' && git push`"
-
----
-
-## Summary of Behavioral Overrides
-
-| Workflow Behavior | Override |
-|---|---|
-| Launch parallel subagents | Run all three layers yourself, sequentially |
-| Generate prompt files and halt | Never. Run inline. |
-| Halt at checkpoints for confirmation | Skip all halts except `decision_needed` |
-| Ask what to review | Default to uncommitted changes |
-| Ask about spec file | Auto-discover or proceed without |
-| Ask how to handle patches | Default to action items (spec) or list (no spec) |
-| Present options for next steps | Skip — end the workflow |
+## Close-out
+1. Confirm: `✅ Story <key> reviewed — left at review for human close-out. Run /sudo-update-sprint-memory to advance review → done.`
+2. Remind: `🚀 Commit & push: git add -A && git commit -m 'feat(epic-N): Story X.Y.Z — <Title>' && git push`

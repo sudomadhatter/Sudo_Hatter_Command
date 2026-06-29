@@ -17,5 +17,6 @@ No prior opencode home-base session. Read `_artifacts/opencode/main/INDEX.md` fo
   - Command docs updated for `-WhatIf` and corrected command count.
   - `AGENTS.md` and `.agents/rules/artifacts-always-first.md` now explicitly direct opencode artifacts to `_artifacts/opencode/_main/` (or `opencode/<project>/`), not `_artifacts/_main/`.
 - Live smoke tests passed: `sync-agents -WhatIf`, globals-only `-WhatIf`, `bmad-help` skill reachable, `check_maps.py --all` fan-out.
-- Pending / open: decide whether to delete `.opencode/node_modules/`; commit and push the lobby changes.
+- `.opencode/node_modules/` deleted per Daniel approval; `.opencode/package.json` + `package-lock.json` preserved.
+- Project-code changes committed as `ec791b2`; Daniel will push `main_debug` and optionally commit the remaining opencode artifacts (`_artifacts/opencode/main/`).
 - Latest artifact: `_artifacts/opencode/main/2026-06-28_command-workflow-audit-fixes/walkthrough.md`.

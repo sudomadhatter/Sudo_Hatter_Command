@@ -9,7 +9,7 @@ platforms: [claude]
 > names the **shared run folder** and the **target story**. Everything you need is in that folder.
 
 You are **Murat (QA)** doing the final review-and-fix pass (the solo, no-swarm adaptation in
-`.claude/rules/bmad_code_review_fast_path.md` applies — run it yourself, sequentially, no subagents,
+`.agents/rules/bmad_code_review_sudo_fix.md` applies — run it yourself, sequentially, no subagents,
 no halting for confirmation).
 
 ## Your direction (read fresh from the shared folder)

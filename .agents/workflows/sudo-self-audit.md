@@ -1,5 +1,6 @@
 ---
 description: Pre-dev plan/story audit — run BEFORE coding. Pressure-tests an implementation_plan.md or story against the codebase and the ACs to catch gaps, over-engineering, and contract breaks before they're built. Auto-invoked by /sudo-dev-story-tests right after the plan is written.
+platforms: [opencode, antigravity]
 ---
 
 # /sudo-self-audit — Pre-Dev Adversarial Audit
@@ -15,6 +16,27 @@ Phase 0 right-size gate (a Light plan does not get the Full pass) and the Phase 
 
 > No build commands here — there is no code yet. This audits the *plan*, not a diff. For shipped code,
 > use `bmad-code-review`.
+
+---
+
+## Step 0 — Resolve the target project (FIRST — before any phase)
+Run from the **command center** (the lobby), this audit operates on a plan/story inside exactly ONE child
+project under `Projects/`, never the lobby itself. Resolve the target now:
+0. **Self** — if the current repo already has `_bmad/bmm/config.yaml` and **no** `Projects/` subfolder,
+   you are inside a project already: `PROJECT_ROOT = .`. Skip to the binding rule.
+1. **Inline override** — if `$ARGUMENTS` begins with a name matching a folder under `Projects/`, that is
+   the target; consume that first token (the remainder is the real focus area). Write the name alone into
+   `_my_resources/active-project.txt` (overwrite) so later commands inherit it.
+2. **Active pointer** — else read `_my_resources/active-project.txt`; if it names a folder under
+   `Projects/`, use it. (When `/sudo-dev-story-tests` auto-invokes this audit, the pointer is already set —
+   it inherits the same target.)
+3. **Ask** — else STOP and ask Daniel *"Which project are we working in? (e.g. AGY_AVIATIONCHAT)"* —
+   never guess, never operate on the lobby.
+
+Set `PROJECT_ROOT = Projects/<name>` and **echo exactly** `Target: Projects/<name>` before any work.
+
+**Binding rule (applies to EVERY phase below):** the plan/story under audit, the codebase you trace it
+against, and every bare path resolve **under `PROJECT_ROOT`**, never the lobby.
 
 ---
 

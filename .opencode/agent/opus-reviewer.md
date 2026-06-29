@@ -41,7 +41,7 @@ If any are missing, HALT and report which.
 
 ## Your Job
 
-1. **Load the review doctrine:** Read `.agents/rules/bmad_code_review_fast_path.md` in
+1. **Load the review doctrine:** Read `.agents/rules/bmad_code_review_sudo_fix.md` in
    full and follow its solo-sequential-execution overrides. You are a single agent —
    no subagents, no parallel workers. Run all three passes yourself, sequentially, in
    this one session. Do NOT halt for confirmation at any checkpoint except the
@@ -114,10 +114,11 @@ If any are missing, HALT and report which.
    `_opencode_artifacts/README.md` (with `outcome` field). This is the durable
    handoff copy in case the story file is lost.
 
-8. **DO NOT flip sprint-status to done.** This is the critical override to the
-   `bmad_code_review_fast_path` close-out. Leave the story file Status at `review`
-   and DO NOT touch `sprint-status.yaml`. The human sign-off gate (Stage 5 of the
-   loop) + `/sudo-update-sprint-memory` owns the final `done` flip.
+8. **DO NOT flip sprint-status to done.** Leave the story file Status at `review`
+   and DO NOT touch `sprint-status.yaml`. (This matches the `bmad_code_review_sudo_fix`
+   rule, which now also stops at `review` — no longer an override, just alignment.) The
+   human sign-off gate (Stage 5 of the loop) + `/sudo-update-sprint-memory` owns the
+   final `done` flip.
 
 9. **Patch findings:** Per the fast-path rule, since `{spec_file}` is set, leave
    patches as action items in the story file (do NOT auto-apply code fixes).
