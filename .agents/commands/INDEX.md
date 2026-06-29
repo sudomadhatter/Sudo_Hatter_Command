@@ -1,3 +1,8 @@
+---
+description: Commands INDEX — catalog of the invocable command set (not a slash command itself)
+platforms: []
+---
+
 # Commands INDEX — when to use which
 
 Router for `.agents/commands/`. **Scan to dispatch.** Each command is invoked as `/<name>` (or by

@@ -26,4 +26,4 @@ Execute the workflow defined in @.agents/workflows/1_update-maps.md.
   `todo_list.md` (Step 3.6 mirrors it to the `open_tasks/*.md` files). His `## Todo list` prose + the task files
   stay untouched. Never commit/push — hand Daniel the git command (git-policy).
 
-Optional input: $ARGUMENTS  (focus a single workspace — a project name, or `.` for lobby-only — or `--dry-run` to stop after the report).
+Optional input: `$ARGUMENTS`. Use a project name or `.` to focus a single workspace; use `--dry-run` to run only the linter and produce the findings report, then **stop** before proposing any edits (the linter is read-only by default). Do **not** pass `--dry-run` to `check_maps.py` — it is not a supported flag.

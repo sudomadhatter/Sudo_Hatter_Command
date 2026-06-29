@@ -69,19 +69,20 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 - Dated output: `YYYY-MM-DD_<slug>.md`
 - Versioned drafts: `<slug>_draft.md`, `<slug>_v2.md`, `<slug>_final.md`
 - Artifacts go **where you work FROM** (not just what the work is about). Three rules decide the bucket:
-  1. **Project work** → a per-project bucket `_artifacts/<project-folder-name>/` (e.g. `_artifacts/aviationChat-AGY/`,
-     `_artifacts/clean-bmad-workspace/`; the bucket = the `Projects/<name>/` folder name). **Create it if it
+  1. **Project work** → a per-project bucket `_artifacts/<project-folder-name>/` (e.g. `_artifacts/AGY_AVIATIONCHAT/`,
+     `_artifacts/Fresh_Workspace_BMAD/`; the bucket = the `Projects/<name>/` folder name). **Create it if it
      isn't there yet; otherwise reuse it.**
   2. **Main / home-base / cross-project work** (routing, the `.agents/` toolkit, the standard, multi-project) →
      the home-base bucket `_artifacts/_main/` (formerly `_home`).
   3. **Stories** → nest under the parent **epic folder**: `<epic>/<story>/` (create the epic folder if missing).
      Random/system tasks → `<YYYY-MM-DD>_<slug>/`; retired → `_archived/`.
+  - **When YOU are opencode**, home-base artifacts belong under `_artifacts/opencode/` using the same three
+    rules above — project work → `opencode/<project-folder-name>/`; main/cross-project work → `opencode/_main/`;
+    stories → `opencode/<project-folder-name>/<epic>/<story>/`. Do **not** write directly to `_artifacts/_main/`.
   - **From the home base** (this folder is your cwd) → home-base `_artifacts/` per rules 1–3; append a row to
     `_artifacts/INDEX.md`. **From inside a project** (`Projects/<name>/` is your cwd) → **follow THAT project's
     rules**: project-local `Projects/<name>/_artifacts/…` + its own `active-context.md`/`INDEX.md` (there is no
     `_main` inside a project — every task there is that project's work).
-  - **opencode** writes under its own `_artifacts/opencode/` namespace and applies the **same three rules inside
-    it**: `opencode/<project>/`, `opencode/_main/`, `opencode/<project>/<epic>/<story>/`.
   - Full model → `docs/workspace-standard.md`.
 - Memory / active-context sections are NUMBERED (e.g. 5.2) so agents **skip-to-N** instead of reading all.
 
@@ -118,8 +119,10 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 ## 7. PERSISTENCE  (you own this — not a vendor)
 - **Where it lives — decided by where you work FROM.** Working **from the home base** → home-base `_artifacts/`
   (`_artifacts/<project>/active-context.md` for a project worked on from here; `_artifacts/_main/active-context.md`
-  for home-base work) + the home-base `_artifacts/INDEX.md` ledger. Working **from inside a project**
-  (`Projects/<name>/` open) → that project's own `_artifacts/active-context.md` + `INDEX.md` (follow its rules).
+  for home-base work) + the home-base `_artifacts/INDEX.md` ledger. **When running as opencode**, use
+  `_artifacts/opencode/<project>/active-context.md` and `_artifacts/opencode/_main/active-context.md` instead
+  — never the generic `_main/` bucket. Working **from inside a project** (`Projects/<name>/` is your cwd) → that
+  project's own `_artifacts/active-context.md` + `INDEX.md` (follow its rules).
 - **"pick up"** → read-only continuity brief from the right `active-context.md` for where you're working from.
   Don't change anything; don't explain the obvious. **Also surface open tasks:** after the `active-context.md`
   brief, read this workspace's `_my_resources/open_tasks/todo_list.md` (+ any plan/PRP `.md` notes alongside it)

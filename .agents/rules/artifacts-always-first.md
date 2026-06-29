@@ -79,17 +79,21 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
 ### 2. Create the artifact folder + plan
 
 **Pick the location by where you work FROM (your cwd):**
-- **From the home base** (`Sudo_Hatter_Command/` is cwd) → home-base `_artifacts/`: project work → a per-project
-  bucket `_artifacts/<project-folder-name>/…` (**create the bucket if it isn't there yet, else reuse it**);
-  main / home-base / cross-project work (the standard, master `.agents/`, the router, lobby wiring) →
-  `_artifacts/_main/…` (formerly `_home`). Append a row to `_artifacts/INDEX.md`.
+- **When running as opencode**, prepend `opencode/` to every home-base path below. Project work goes to
+  `_artifacts/opencode/<project-folder-name>/`; main / cross-project work goes to `_artifacts/opencode/_main/`;
+  stories go to `_artifacts/opencode/<project-folder-name>/<epic>/<story>/`. **Never write opencode artifacts directly
+  to `_artifacts/_main/` or `_artifacts/<project>/`.** An opencode session run from inside a project still follows
+  the project's own `_artifacts/` rules (opencode namespace applies only at the home base).
+- **From the home base** (`Sudo_Hatter_Command/` is cwd) → home-base `_artifacts/` (not opencode):
+  + project work → a per-project bucket `_artifacts/<project-folder-name>/…` (e.g. `_artifacts/AGY_AVIATIONCHAT/`,
+    `_artifacts/Fresh_Workspace_BMAD/`; **create the bucket if it isn't there yet, else reuse it**);
+  + main / home-base / cross-project work (the standard, master `.agents/`, the router, lobby wiring) →
+    `_artifacts/_main/…` (formerly `_home`). Append a row to `_artifacts/INDEX.md`.
 - **From inside a project** (`Projects/<name>/` is cwd) → project-local `Projects/<name>/_artifacts/…` + that
   project's own `active-context.md`/`INDEX.md` (follow its rules, not the home-base ledger). There is no
   *cross-project* `_main` here — but the project keeps a **local `_main/`** for its own system/infrastructure
   work (the agent system, rules, scripts, CI). Story work nests under `epic_<N>/`; random one-offs are dated at
   the root.
-- **opencode** writes under `_artifacts/opencode/` and applies these same rules inside it: project →
-  `opencode/<project>/`, main → `opencode/_main/`, story → `opencode/<project>/<epic>/<story>/`.
 
 **Then find the parent and name the folder by task type — pick the FIRST that matches (in either location):**
 - **Story** (work tied to a story id `E.S`) → `epic_<E>/<story>/` — an **epic folder houses all of its
@@ -98,7 +102,7 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
   Epic-scoped, not date-prefixed at the root. This holds for **any** story — whether the autopilot, a BMAD
   flow, or Daniel devs it by hand; the parent is decided by the story id, **not** by the tool.
 - **System / infrastructure** ("systems things": the agent system, rules, scripts, CI, cross-cutting config)
-  → `_main/<YYYY-MM-DD>_<slug>/`.
+  → `_main/<YYYY-MM-DD>_<slug>/` (for opencode, under `opencode/_main/…`).
 - **Random one-off** (everything else) → `<YYYY-MM-DD>_<slug>/` at the root — date FIRST, slug LAST so they
   sort chronologically (e.g. `2026-06-25_artifacts-policy-finish`). Slug: lowercase, hyphen-separated, max 6
   words, from Daniel's first concrete request.

@@ -9,6 +9,8 @@
   and .opencode dirs (Claude /commands + skills + hooks resolve there) and, for a LOBBY sync, also refreshes
   the two machine-global caches so opencode and Antigravity see the same set Claude does.
 
+  Use -WhatIf (alias -DryRun) to preview every copy, create, and delete action without touching disk.
+
   PLATFORM REACH. A command may declare its reach with frontmatter `platforms: [claude, opencode, antigravity]`.
   Absent = universal (all three). The sync copies a command only to the platforms it lists, so e.g.
   /autopilot_claude (claude-only) never lands in the opencode/gemini surfaces.
@@ -46,11 +48,16 @@
 
 .PARAMETER NoGlobals
   Sync local tool dirs only; skip the machine-global caches even on a lobby sync.
+
+.PARAMETER WhatIf
+  Preview mode. Report every copy, directory creation, and deletion that would happen, but perform no writes.
+  Alias: -DryRun.
 #>
 param(
   [string]$Target,
   [switch]$GlobalsOnly,
-  [switch]$NoGlobals
+  [switch]$NoGlobals,
+  [Alias('DryRun')][switch]$WhatIf
 )
 
 $ErrorActionPreference = "Stop"
@@ -64,16 +71,21 @@ $AllPlatforms = @('claude','opencode','antigravity')
 
 # --- helpers ------------------------------------------------------------------
 
-function Sync-Dir($src, $dst, [string[]]$ExcludeDirs) {
+function Sync-Dir($src, $dst, [string[]]$ExcludeDirs, [switch]$WhatIf) {
   if (-not (Test-Path $src)) { return }
-  New-Item -ItemType Directory -Force -Path $dst | Out-Null
   $xd = @('node_modules') + (@($ExcludeDirs) | Where-Object { $_ })
-  robocopy $src $dst /E /XD @xd /NFL /NDL /NJH /NJS /NC /NS | Out-Null
-  if ($LASTEXITCODE -ge 8) { throw "robocopy failed ($src -> $dst), rc=$LASTEXITCODE" }
+  if (-not $WhatIf) {
+    New-Item -ItemType Directory -Force -Path $dst | Out-Null
+    robocopy $src $dst /E /XD @xd /NFL /NDL /NJH /NJS /NC /NS | Out-Null
+    if ($LASTEXITCODE -ge 8) { throw "robocopy failed ($src -> $dst), rc=$LASTEXITCODE" }
+  } else {
+    Write-Host ("WHATIF: would robocopy '{0}' -> '{1}' (excluding: {2})" -f $src,$dst,($xd -join ', '))
+  }
 }
 
 # Read a command file's `platforms:` frontmatter. Absent / no frontmatter => universal (all three).
 # Recognized inline form only:  platforms: [claude, opencode]
+# An explicit empty list (platforms: []) means "nowhere" — the file is documentation, not an invocable command.
 function Get-CommandPlatforms($file) {
   $inFM = $false; $n = 0
   foreach ($line in [System.IO.File]::ReadAllLines($file)) {
@@ -85,7 +97,8 @@ function Get-CommandPlatforms($file) {
       $items = $matches[1].Split(',') |
                ForEach-Object { $_.Trim().Trim('"').Trim("'").ToLower() } |
                Where-Object { $_ }
-      if ($items) { return @($items) } else { return $AllPlatforms }
+      # A matched, explicit empty list is intentionally "nowhere"; missing/empty key falls through to universal.
+      return @($items)
     }
   }
   return $AllPlatforms
@@ -96,26 +109,36 @@ function Get-CommandPlatforms($file) {
 #   -Mirror       : global-cache mode (purge non-eligible ghosts; preserve only FOREIGN bmad-* = BMAD's own
 #                   global install); else local mode (purge only master-managed-but-ineligible; leave
 #                   unknown/project-own files untouched)
+#   -WhatIf       : report actions but do not copy or delete
 # Returns the list of eligible file names.
 function Sync-CommandDir {
-  param([string]$MasterCmdDir, [string]$Dst, [string]$Platform, [switch]$Mirror)
+  param([string]$MasterCmdDir, [string]$Dst, [string]$Platform, [switch]$Mirror, [switch]$WhatIf)
   New-Item -ItemType Directory -Force -Path $Dst | Out-Null
   $masterFiles = Get-ChildItem -Path $MasterCmdDir -Filter '*.md' -File
   $masterNames = @($masterFiles | Select-Object -ExpandProperty Name)
   $eligible = @()
   foreach ($f in $masterFiles) {
     if ((Get-CommandPlatforms $f.FullName) -contains $Platform) {
-      Copy-Item -Path $f.FullName -Destination $Dst -Force
+      if (-not $WhatIf) {
+        Copy-Item -Path $f.FullName -Destination $Dst -Force
+      } else {
+        Write-Host ("WHATIF: would copy command '{0}' -> '{1}' for platform '{2}'" -f $f.Name,$Dst,$Platform)
+      }
       $eligible += $f.Name
     }
   }
-  Get-ChildItem -Path $Dst -Filter '*.md' -File -ErrorAction SilentlyContinue | Where-Object {
+  $toPurge = Get-ChildItem -Path $Dst -Filter '*.md' -File -ErrorAction SilentlyContinue | Where-Object {
     $name = $_.Name
     if ($eligible -contains $name)        { $false }                      # keep: eligible for this platform
     elseif ($masterNames -contains $name) { $true }                       # purge: OUR command, not eligible here
     elseif ($Mirror)                      { -not ($name -match '^bmad-') } # global: purge foreign ghosts, keep BMAD's own
     else                                  { $false }                      # local: keep foreign/project-own files
-  } | Remove-Item -Force
+  }
+  if (-not $WhatIf) {
+    $toPurge | Remove-Item -Force
+  } else {
+    $toPurge | ForEach-Object { Write-Host ("WHATIF: would delete command '{0}' from '{1}'" -f $_.Name,$Dst) }
+  }
   return $eligible
 }
 
@@ -126,33 +149,42 @@ function Sync-CommandDir {
 # Mirror ONLY sudo-* on purpose: BMAD personas are skills and 1_* are real workflows, so mirroring those too
 # would make duplicate / entries. Generated copies, regenerated every sync -- edit the command, not these.
 function Sync-AntigravityWorkflowMirror {
-  param([string]$MasterDir)
+  param([string]$MasterDir, [switch]$WhatIf)
   $cmdDir = Join-Path $MasterDir "commands"
   $wfDir  = Join-Path $MasterDir "workflows"
-  New-Item -ItemType Directory -Force -Path $wfDir | Out-Null
+  if (-not $WhatIf) { New-Item -ItemType Directory -Force -Path $wfDir | Out-Null } else { Write-Host "WHATIF: would ensure dir '$wfDir'" }
   $mirrored = @()
   foreach ($f in (Get-ChildItem -Path $cmdDir -Filter 'sudo-*.md' -File)) {
     if (($f.Name -notmatch '_AP\.md$') -and ((Get-CommandPlatforms $f.FullName) -contains 'antigravity')) {
       if ((Get-Item $f.FullName).Length -gt 12000) {
         Write-Warning ("sync-agents: '{0}' exceeds Antigravity's 12000-char workflow limit; mirrored anyway" -f $f.Name)
       }
-      Copy-Item -Path $f.FullName -Destination (Join-Path $wfDir $f.Name) -Force
+      if (-not $WhatIf) {
+        Copy-Item -Path $f.FullName -Destination (Join-Path $wfDir $f.Name) -Force
+      } else {
+        Write-Host ("WHATIF: would mirror '{0}' -> workflows/' for antigravity" -f $f.FullName)
+      }
       $mirrored += $f.Name
     }
   }
   # Prune stale generated mirrors: a sudo-*.md in workflows/ whose source command is gone or now ineligible.
-  Get-ChildItem -Path $wfDir -Filter 'sudo-*.md' -File -ErrorAction SilentlyContinue |
-    Where-Object { $mirrored -notcontains $_.Name } |
-    ForEach-Object { Remove-Item $_.FullName -Force }
+  $stale = Get-ChildItem -Path $wfDir -Filter 'sudo-*.md' -File -ErrorAction SilentlyContinue |
+    Where-Object { $mirrored -notcontains $_.Name }
+  if (-not $WhatIf) {
+    $stale | ForEach-Object { Remove-Item $_.FullName -Force }
+  } else {
+    $stale | ForEach-Object { Write-Host ("WHATIF: would delete stale mirror '{0}' from workflows/'" -f $_.Name) }
+  }
   return $mirrored
 }
 
 Write-Host "sync-agents: master=$Master"
 Write-Host "sync-agents: target=$Target (lobby=$IsLobby)"
+if ($WhatIf) { Write-Host "sync-agents: *** WHATIF / DRY-RUN MODE *** no files will be changed" }
 
 # Regenerate the Antigravity workflow mirrors in the master BEFORE vendoring, so projects pick them up via
 # the (additive) .agents vendor. (Global command cache still mirrors commands/ separately, unchanged.)
-$agWf = Sync-AntigravityWorkflowMirror $Master
+$agWf = Sync-AntigravityWorkflowMirror $Master -WhatIf:$WhatIf
 Write-Host "sync-agents: antigravity workflow mirror -> $($agWf.Count) sudo-* in .agents/workflows/"
 
 # --- local tool dirs ----------------------------------------------------------
@@ -164,7 +196,7 @@ if (-not $GlobalsOnly) {
     # Exclude bmad\ from the vendor: BMAD's module config is PROJECT-OWNED (each repo carries its own
     # `project_name` etc.) and BMAD self-installs per project, so it must NOT be overwritten from master.
     # This keeps it project-owned the same way rules\ already are (additive vendor, master never clobbers it).
-    Sync-Dir $Master (Join-Path $Target ".agents") @((Join-Path $Master 'bmad'))
+    Sync-Dir $Master (Join-Path $Target ".agents") @((Join-Path $Master 'bmad')) -WhatIf:$WhatIf
     # Prune stale command-ghosts from the vendored workflows/: a file that is a master COMMAND but NOT a
     # master workflow is a leftover from the old layout (commands used to live in workflows/). This is the
     # ONLY purge on the vendored .agents and it is provably safe — it can never touch rules/, skills/, or a
@@ -172,9 +204,13 @@ if (-not $GlobalsOnly) {
     $mWf  = @(Get-ChildItem (Join-Path $Master "workflows") -Filter *.md -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
     $mCmd = @(Get-ChildItem (Join-Path $Master "commands")  -Filter *.md -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
     $purged = 0
-    Get-ChildItem (Join-Path $Target ".agents\workflows") -Filter *.md -File -ErrorAction SilentlyContinue |
-      Where-Object { ($mWf -notcontains $_.Name) -and ($mCmd -contains $_.Name) } |
-      ForEach-Object { Remove-Item $_.FullName -Force; $purged++ }
+    $ghosts = Get-ChildItem (Join-Path $Target ".agents\workflows") -Filter *.md -File -ErrorAction SilentlyContinue |
+      Where-Object { ($mWf -notcontains $_.Name) -and ($mCmd -contains $_.Name) }
+    if (-not $WhatIf) {
+      $ghosts | ForEach-Object { Remove-Item $_.FullName -Force; $purged++ }
+    } else {
+      $ghosts | ForEach-Object { Write-Host ("WHATIF: would delete stale vendor command-ghost '{0}'" -f $_.FullName); $purged++ }
+    }
     if ($purged) { Write-Host "sync-agents: purged $purged stale workflows/ command-ghost(s) from the vendor" }
   }
 
@@ -182,11 +218,11 @@ if (-not $GlobalsOnly) {
   $src    = if ($IsLobby) { $Master } else { Join-Path $Target ".agents" }
   $cmdDir = Join-Path $src "commands"
 
-  $cl = Sync-CommandDir $cmdDir (Join-Path $Target ".claude\commands")  "claude"
-  Sync-Dir (Join-Path $src "skills")          (Join-Path $Target ".claude\skills")
-  Sync-Dir (Join-Path $src "hooks")           (Join-Path $Target ".claude\hooks")
-  $oc = Sync-CommandDir $cmdDir (Join-Path $Target ".opencode\commands") "opencode"
-  Sync-Dir (Join-Path $src "opencode-agents") (Join-Path $Target ".opencode\agent")
+  $cl = Sync-CommandDir $cmdDir (Join-Path $Target ".claude\commands")  "claude" -WhatIf:$WhatIf
+  Sync-Dir (Join-Path $src "skills")          (Join-Path $Target ".claude\skills") -WhatIf:$WhatIf
+  Sync-Dir (Join-Path $src "hooks")           (Join-Path $Target ".claude\hooks") -WhatIf:$WhatIf
+  $oc = Sync-CommandDir $cmdDir (Join-Path $Target ".opencode\commands") "opencode" -WhatIf:$WhatIf
+  Sync-Dir (Join-Path $src "opencode-agents") (Join-Path $Target ".opencode\agent") -WhatIf:$WhatIf
 
   Write-Host "sync-agents: .claude\commands   -> $($cl.Count) cmds"
   Write-Host "sync-agents: .opencode\commands -> $($oc.Count) cmds"
@@ -203,13 +239,17 @@ if ((-not $NoGlobals) -and ($IsLobby -or $GlobalsOnly)) {
   )
   foreach ($c in $caches) {
     try {
-      New-Item -ItemType Directory -Force -Path $c.Path -ErrorAction SilentlyContinue | Out-Null
+      if (-not $WhatIf) {
+        New-Item -ItemType Directory -Force -Path $c.Path -ErrorAction SilentlyContinue | Out-Null
+      } else {
+        Write-Host ("WHATIF: would ensure global cache dir '{0}'" -f $c.Path)
+      }
       if (-not (Test-Path $c.Path)) { throw "path not writable (broken junction or missing target?)" }
     } catch {
       Write-Warning ("sync-agents: SKIPPED {0} global cache '{1}' - {2}" -f $c.Name, $c.Path, $_.Exception.Message)
       continue
     }
-    $names = Sync-CommandDir $GlobalCmdSrc $c.Path $c.Platform -Mirror
+    $names = Sync-CommandDir $GlobalCmdSrc $c.Path $c.Platform -Mirror -WhatIf:$WhatIf
     Write-Host ("sync-agents: {0} global -> {1} cmds  ({2})" -f $c.Name, $names.Count, $c.Path)
   }
   Write-Host "sync-agents: (global caches mirror-exact; bmad-* preserved; restart opencode to pick up)"

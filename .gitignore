@@ -9,14 +9,9 @@
 # All projects live under Projects/ and are independent repos.
 /Projects/
 
-# Projects still at the repo root (pre-migration) — ignored until they move into Projects/.
-/aviationChat-AGY/
-/fresh-workspace-bmad/
-/jetChat-AGY/
-/B&L WorldWide/
-/NEXGen Films/
-/ingestion-Pipeline-AAvCh/
-/openCode/
+# All projects live under Projects/ and are independent repos. The old root-level pre-migration entries
+# (aviationChat-AGY, fresh-workspace-bmad, jetChat-AGY, B&L WorldWide, NEXGen Films, ingestion-Pipeline-*, openCode)
+# have been retired now that those workspaces are under Projects/.
 
 # GitNexus code-graph index (disposable Tier-2 accelerator — never committed).
 **/.gitnexus/

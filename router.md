@@ -9,13 +9,13 @@ Any workspace may send you BACK here ("if not here, go to root router").
 
 | If the work is about… | Go to | Read first | Status |
 |---|---|---|---|
-| Aviation ground-school app (FastAPI / ADK / Gemini, voice CFI) | `Projects/aviationChat-AGY/` | its `AGENTS.md` | converted (Phase 1) · standard-compliant · repo-map indexed · Phase 2 (rule reconcile) pending |
-| AGY quick-start project skeleton (FastAPI/ADK · Next/React · Firebase) — clone to start a new project | `Projects/clean-bmad-workspace/` | its `AGENTS.md` | quick-start skeleton · standard-compliant · repo-map indexed + drift hook |
+| Aviation ground-school app (FastAPI / ADK / Gemini, voice CFI) | `Projects/AGY_AVIATIONCHAT/` | its `AGENTS.md` | converted (Phase 1) · standard-compliant · repo-map indexed · Phase 2 (rule reconcile) pending |
+| AGY quick-start project skeleton (FastAPI/ADK · Next/React · Firebase) — clone to start a new project | `Projects/Fresh_Workspace_BMAD/` | its `AGENTS.md` | quick-start skeleton · standard-compliant · repo-map indexed + drift hook |
 | jetChat app | `Projects/jetChat-AGY/` | its `AGENTS.md` | pending |
 | B&L WorldWide | `Projects/B&L WorldWide/` | its `AGENTS.md` | pending |
 | NEXGen Films | `Projects/NEXGen Films/` | its `AGENTS.md` | pending |
-| AviationChat ingestion pipeline | `Projects/ingestion-Pipeline-AC/` | its `AGENTS.md` | pending |
-| openCode workspace | `Projects/openCode/` | its `AGENTS.md` | pending |
+| AviationChat ingestion pipeline | `Projects/Ingestion_pipeline_AvCh/` | its `AGENTS.md` | pending |
+| openCode workspace | `Projects/OpenCode/` | its `AGENTS.md` | pending |
 | Maintaining THIS home-base system | `_system/` | `_system/AGENTS.md` | active |
 | **"What do we do next" / open tasks / what's left / Daniel's plans & PRPs** | `_my_resources/open_tasks/` **for where you work FROM** (lobby → home-base `_my_resources/open_tasks/`; inside a converted project → that project's `_my_resources/open_tasks/`) | `todo_list.md` (+ any plan/PRP files there) | active · **READ-ONLY** (Daniel's notes — never edit; cross-check vs live project files) |
 | Reference: routing theory + transcripts | `docs/`, `youtube_transcripts/` | `_my_resources/docs/master-implementation-plan.md` | reference |

@@ -35,8 +35,15 @@ Run (PowerShell):
 (If `$ARGUMENTS` is empty, run `& ".agents/scripts/sync-agents.ps1"` with no `-Target`.)
 
 Switches: `-GlobalsOnly` (refresh only the two global caches — what `/slash_command_updating` delegates to) ·
-`-NoGlobals` (local tool dirs only).
+`-NoGlobals` (local tool dirs only) · `-WhatIf` / `-DryRun` (preview every copy/delete action without touching disk).
 
 After it runs, report the per-surface counts it prints (`.claude/commands`, `.opencode/commands`, opencode
 global, antigravity global, and — for a project — the vendored `.agents/`). On a globals refresh, remind Daniel
 to **restart opencode** so the global commands are picked up in other projects.
+
+### Preview mode
+```powershell
+& ".agents/scripts/sync-agents.ps1" -WhatIf
+```
+Use `-WhatIf` (or `-DryRun`) before a real sync to see which commands would be copied or purged on each surface,
+which workflow mirrors would be regenerated, and which directories would be created. No files are changed.
