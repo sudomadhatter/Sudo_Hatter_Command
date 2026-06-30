@@ -108,6 +108,7 @@ instead of a per-repo fork. Keep workspaces matching this table and the generic 
 | Pickup/handoff brief (**prune target**) | `_artifacts/<bucket>/active-context.md` | **BMAD project:** `_bmad-output/active-context/active-context.md` (the live brief; `_artifacts/` holds *session history* only) | the file the **prune** trims |
 | Context archive (prune overflow) | `_artifacts/<bucket>/active-context-archive.md` | `_bmad-output/active-context/_archive/` | created on first prune |
 | Session ledger | `_artifacts/INDEX.md` | `_artifacts/INDEX.md` | one row per session; archive overflow → `INDEX-archive.md` |
+| Depth-3 epic INDEX | `_artifacts/<bucket>/INDEX.md` (bucket = `_main`, `<project>`) | `_artifacts/<epic_or_bucket>/INDEX.md` (e.g. `epic_8/`, `epic_11/`, `_main/`, `tea/`) | **only inside `_artifacts/`** — one row per session folder, listing the story/what + artifact files present; scan-to-find for bug-tracking. Not for code dirs. Created when a bucket has ≥2 session folders; `/1_update-maps` reconciles. |
 | Retired artifacts | `_artifacts/_archived/` | `_artifacts/_archived/` | — |
 | Open tasks ("what's next") | `_my_resources/open_tasks/todo_list.md` (+ plan/PRP notes) | same | **READ-ONLY for context**, but `/1_update-maps` refreshes its `## Open Work` file-list; surfaced on pickup + "what's next" |
 | Personal area (protected) | `_my_resources/` | `_my_resources/` | off-limits **except** the `## Open Work` manifest in `open_tasks/todo_list.md` (maintained by `/1_update-maps`) |
@@ -226,6 +227,7 @@ everywhere. From **inside a project** it reconciles just that workspace. Each re
   (final TodoWrite snapshot) + a `## Your Actions` section with the exact git command
 - ☐ `active-context.md` updated (the hand-off)
 - ☐ `INDEX.md` row appended
+- ☐ **depth-3 `INDEX.md`** updated (if the session landed inside an `_artifacts/` epic/bucket folder that already has one — or created if the folder now has ≥2 sessions)
 - ☐ `docs/repo-map.md` updated **only if** a top-level folder/agent was added/removed
 - ☐ ran `_routing-canary/` if routing structure changed
 - ☐ story `.md` status + `sprint-status.yaml` synced (story work only)

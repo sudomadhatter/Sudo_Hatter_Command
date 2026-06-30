@@ -34,6 +34,12 @@
             "command": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& (Join-Path $env:CLAUDE_PROJECT_DIR '.agents/scripts/check-repo-map-drift.ps1') -Root $env:CLAUDE_PROJECT_DIR -MapPath 'docs/repo-map.md'\"",
             "timeout": 10,
             "statusMessage": "Checking repo-map drift..."
+          },
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -Command \"python (Join-Path $env:CLAUDE_PROJECT_DIR '.agents/scripts/check_maps.py') --depth3-only\"",
+            "timeout": 10,
+            "statusMessage": "Checking depth-3 _artifacts INDEX..."
           }
         ]
       }

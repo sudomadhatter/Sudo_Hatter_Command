@@ -20,13 +20,15 @@ Mode detection (PATH CONTRACT, two columns):
                  its continuity brief at `_bmad-output/active-context/active-context.md` and uses `_artifacts/`
                  for session *history*; a non-BMAD project uses `_artifacts/active-context.md`.
 
-Six checks (1-4 fatal drift; 5 non-fatal hint; 6 fatal):
+Seven checks (1-4 fatal drift; 5 non-fatal hint; 6-7 fatal):
   1. AUTO-block freshness   — regenerate the map's AUTO body in memory (mode-preserving) and diff.
   2. Path existence         — every backticked table-row path in the map CURATED block + each INDEX.md resolves.
   3. Folder coverage        — every real TOP-LEVEL folder appears in the map text.
   4. Git baseline           — diff HEAD against the last reconciled SHA (<docs>/.maps-state.json); list renames.
   5. Context hygiene        — NON-FATAL nag: continuity brief over the prune window / INDEX.md over the row cap.
   6. Structure conformance  — the workspace carries the standard files in the standard places (the contract gate).
+  7. Depth-3 _artifacts INDEX — every _artifacts/ bucket with ≥2 session folders has an INDEX.md (one row per
+                             session); reports missing INDEXes, missing rows, stale rows. Only inside _artifacts/.
 """
 import argparse
 import json
@@ -64,6 +66,9 @@ STATE_BASENAME = ".maps-state.json"   # sits in the docs folder beside the repo-
 # Append-only NARRATIVE ledgers: rows are immutable history (cross-repo + renamed/deleted paths by
 # design), so path-existence linting is a category error here — old rows SHOULD keep their old paths.
 NARRATIVE_LEDGERS = {"_artifacts/INDEX.md"}
+
+# Session-folder name patterns (depth-3 INDEX rows reference these)
+SESSION_FOLDER_RE = re.compile(r"^(story-|\d{4}-|tea-|wave-|close-out-|epic-|autopilot-)")
 
 # A backticked token is disqualified as a checkable path if it carries any of this shape-noise
 # (whitespace = a command/prose fragment; braces/angles/glob = a pattern, not a literal path).
@@ -286,6 +291,56 @@ def find_indexes(root):
     return sorted(found)
 
 
+# --- check 7: depth-3 INDEX reconciliation (inside _artifacts/ only) ---------------------------------
+# Only _artifacts/ gets depth-3 INDEXes; everything else stays depth-2. A "bucket" is any directory
+# under _artifacts/ that has ≥2 session subdirectories. Each bucket should have an INDEX.md with one
+# row per session folder. This check reports: missing INDEX, missing rows, stale rows.
+def check_depth3_indexes(root):
+    problems = []
+    adir = root / "_artifacts"
+    if not adir.is_dir():
+        return problems
+
+    for dirpath, dirnames, _ in os.walk(adir):
+        # Skip _archived and hidden dirs — don't walk into them
+        dirnames[:] = [d for d in dirnames if d != "_archived" and not d.startswith(".")]
+        bucket = Path(dirpath)
+        if bucket == adir:
+            continue  # _artifacts/ itself has the main narrative INDEX — not a depth-3 bucket
+        # Only count subdirs that look like session folders (date-prefixed, story-, tea-, etc.)
+        sessions = sorted(d for d in dirnames if SESSION_FOLDER_RE.match(d))
+        if len(sessions) < 2:
+            continue  # 0-1 session-like subdirs → not worth an INDEX (skip sub-buckets, _pipeline, etc.)
+
+        idx = bucket / "INDEX.md"
+        rel_bucket = bucket.relative_to(root).as_posix()
+
+        if not idx.exists():
+            problems.append(f"{rel_bucket}/INDEX.md: missing (has {len(sessions)} session folders (>=2) -- create it)")
+            continue
+
+        # Parse INDEX for session folder names mentioned in table rows (backticked tokens)
+        text = idx.read_text(encoding="utf-8")
+        mentioned = set()
+        for line in text.splitlines():
+            if "|" not in line:
+                continue
+            for tok in re.findall(r"`([^`]+)`", line):
+                tok = tok.strip().rstrip("/")
+                if tok and not SHAPE_NOISE.search(tok):
+                    mentioned.add(tok)
+
+        missing = [s for s in sessions if s not in mentioned]
+        stale = sorted(m for m in mentioned if m not in sessions and SESSION_FOLDER_RE.match(m))
+
+        for s in missing:
+            problems.append(f"{rel_bucket}/INDEX.md: missing row for `{s}/`")
+        for s in stale:
+            problems.append(f"{rel_bucket}/INDEX.md: stale row `{s}/` (folder not on disk)")
+
+    return problems
+
+
 # --- check 5: context hygiene (NON-FATAL hint — the prune nag) ----------------------------------------
 def check_context_hygiene(root, is_home, is_bmad):
     hints = []
@@ -365,6 +420,8 @@ def lint_one(root, ignore_override=None):
         index_problems.extend(check_paths(root, idx, top_level))
     drift["INDEX.md paths"] = index_problems
 
+    drift["depth-3 _artifacts INDEX"] = check_depth3_indexes(root)
+
     drift["structure conformance"] = check_conformance(root, is_home, is_bmad, map_path)
 
     git_notes, _ = check_git(root, state_path)
@@ -412,9 +469,20 @@ def main():
     ap.add_argument("--all", action="store_true", dest="fan_out",
                     help="home base: fan out across the lobby + every conformant Projects/<name> in one run")
     ap.add_argument("--set-anchor", action="store_true", help="record HEAD as the reconciled baseline and exit")
+    ap.add_argument("--depth3-only", action="store_true",
+                    help="fast check: only run the depth-3 _artifacts INDEX reconciliation (for SessionStart; always exits 0)")
     args = ap.parse_args()
     root = Path(args.root).resolve()
     is_home, _ = detect_mode(root)
+
+    # --depth3-only: fast SessionStart nag — only checks _artifacts/ depth-3 INDEXes, always exits 0
+    if args.depth3_only:
+        problems = check_depth3_indexes(root)
+        if problems:
+            print("⚠️  Depth-3 _artifacts INDEX drift (run /1_update-maps to reconcile):")
+            for p in problems:
+                print(f"  • {p}")
+        sys.exit(0)  # always 0 — it's a nag, not a gate
 
     # Worklist: `--all` at a home base fans out (lobby first, then each conformant project); otherwise the
     # single --root. `--all` outside a home base is a harmless no-op so the SAME command is safe everywhere.
