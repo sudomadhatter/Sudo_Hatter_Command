@@ -17,6 +17,7 @@
 | Home-base docs (this map · workspace standard · master plan) | `docs/` |
 | How to add / maintain workspaces (`/new-project`, `/sync-agents`) | `_system/` |
 | Model-agnostic proof the routing works | `_routing-canary/` |
+| BMAD-generated output (planning/implementation/test artifacts from running BMAD workflows at the home base) | `_bmad-output/` |
 | Daniel's personal area — **PROTECTED** (don't edit/reference unless he says/links) | `_my_resources/` — **EXCEPT** `open_tasks/` (read-only carve-out below) |
 | **"What do we do next" / open tasks / Daniel's plans & PRPs** — READ-ONLY, never edit | `_my_resources/open_tasks/` (start at `todo_list.md`; cross-check vs live project files) |
 
@@ -58,6 +59,27 @@ nags if a new top-level folder isn't named here. Rebuild the AUTO body:
 
 ```text
 Sudo_Hatter_Command/
+  _bmad/
+    _config/
+        [4 files: .csvx3, .yamlx1 | e.g. bmad-help.csv]
+    bmm/
+        [2 files: .yamlx1, .csvx1 | e.g. config.yaml]
+    core/
+        [2 files: .yamlx1, .csvx1 | e.g. config.yaml]
+    custom/
+        [2 files: .tomlx2 | e.g. config.toml]
+    scripts/
+        [3 files: .pyx3 | e.g. memlog.py]
+    tea/
+      workflows/
+        testarch/
+            [1 files: .mdx1 | e.g. README.md]
+        [2 files: .yamlx1, .csvx1 | e.g. config.yaml]
+      [2 files: .tomlx2 | e.g. config.toml]
+  _bmad-output/
+    implementation-artifacts/
+    planning-artifacts/
+    test-artifacts/
   _routing-canary/
     control/
         [1 files: .mdx1 | e.g. agent.md]
