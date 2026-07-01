@@ -1,6 +1,6 @@
-# `_artifacts/aviationChat-AGY/` — home-base bucket for the aviationChat-AGY project
+# `_artifacts/AGY_AVIATIONCHAT/` — home-base bucket for the AGY_AVIATIONCHAT project
 
-Plans, walkthroughs, and continuity for **aviationChat-AGY work done FROM the home base** (cwd =
+Plans, walkthroughs, and continuity for **AGY_AVIATIONCHAT work done FROM the home base** (cwd =
 `Sudo_Hatter_Command/`). This is the per-project bucket from rule 1 of the placement standard
 (full rules → [`../README.md`](../README.md) and [`../INDEX.md`](../INDEX.md)).
 
@@ -10,6 +10,6 @@ Plans, walkthroughs, and continuity for **aviationChat-AGY work done FROM the ho
 - **Retired** → `_archived/`.
 
 ## Where else this project's history lives
-Sessions run **from inside the project** (cwd = `Projects/aviationChat-AGY/`) are saved in that repo's own
-`Projects/aviationChat-AGY/_artifacts/` instead — so when hunting history, check **both** locations.
-opencode's runs for this project live under [`../opencode/aviationChat-AGY/`](../opencode/README.md).
+- Sessions run **from inside the project** (cwd = `Projects/AGY_AVIATIONCHAT/`) are saved in that repo's own
+  `Projects/AGY_AVIATIONCHAT/_artifacts/` instead — so when hunting history, check **both** locations.
+- opencode's runs for this project live under [`../opencode/AGY_AVIATIONCHAT/`](../opencode/README.md).

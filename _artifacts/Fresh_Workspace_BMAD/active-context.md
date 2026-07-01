@@ -1,9 +1,9 @@
-# Active Context — clean-bmad-workspace
+# Active Context — Fresh_Workspace_BMAD
 
-> Continuity brief for the home base's `clean-bmad-workspace` workspace. "pick up" reads this.
+> Continuity brief for the home base's `Fresh_Workspace_BMAD` workspace. "pick up" reads this.
 
 ## 1. Current state (2026-06-25)
-clean-bmad-workspace is now the **AGY quick-start project skeleton** — the repo Daniel clones to start a new
+Fresh_Workspace_BMAD is now the **AGY quick-start project skeleton** — the repo Daniel clones to start a new
 project. Identity re-cast from "aviationChat clone" → a generic skeleton that **keeps the AGY stack**
 (FastAPI/ADK · Next/React · Firebase — Daniel uses it on almost all projects) but is organized/indexed/governed
 like the home base. Still workspace-standard compliant + repo-map indexed, now with a **hybrid auto-updating
@@ -31,17 +31,17 @@ pattern for the queued projects. Session: `2026-06-24_agents-format-conversion/`
 
 ## 3. Decisions baked in
 - **Git: agents NEVER commit/push** — print the command, Daniel pushes. Resolved at source: master
-  `git-policy.md` is the canonical never-commit rule (replaced `git-closeout-commits.md`); clean-bmad's
+  `git-policy.md` is the canonical never-commit rule (replaced `git-closeout-commits.md`); Fresh_Workspace_BMAD's
   `AGENTS.md` just defers to it (verbose override removed after re-sync).
 - **Rules self-route now:** all 12 master rules carry `description:` frontmatter triggers, and each toolkit
   dir (`rules/commands/workflows/skills`) has an `INDEX.md` router ("when to use which"). Vendored here.
 - **Autopilot is "doc + shared placement":** model-agnostic doc in master `.agents/workflows/`; engine
   stays Claude/Opus-4.8 and harness-independent (spawns its own `claude` workers). Script stays
   project-local (`$RepoRoot = $PSScriptRoot\..` binding — do NOT move it).
-- **Keep clean-bmad generic** — it's the template/sandbox; no aviationChat domain values.
+- **Keep Fresh_Workspace_BMAD generic** — it's the template/sandbox; no aviationChat domain values.
 
 ## 4. Pitfalls learned (apply to the next 6 conversions)
-- Before deleting `.agent/`, copy out any unique non-vendored files (clean-bmad had 3 in `.agent/workflows/`,
+- Before deleting `.agent/`, copy out any unique non-vendored files (Fresh_Workspace_BMAD had 3 in `.agent/workflows/`,
   one git-untracked). Preserved here in `2026-06-24_.../_preserved-from-old-.agent/`.
 - Rewrite `opencode.json` paths or the first opencode session won't boot.
 - BMAD owns `_bmad/`, `.agents/bmad/`, `bmad-*` skills/commands — never customize those; new vendored set
@@ -51,7 +51,7 @@ pattern for the queued projects. Session: `2026-06-24_agents-format-conversion/`
 - **Apply the SessionStart hook** — replace `.claude/settings.json` with
   `2026-06-25_quickstart-skeleton-reshape/settings.json.proposed` (agent was blocked from self-editing startup
   config). That switches ON the hybrid auto-updating repo-map.
-- **Commit + push BOTH repos** (clean-bmad + home-base) — agents don't push; exact commands in
+- **Commit + push BOTH repos** (Fresh_Workspace_BMAD + home-base) — agents don't push; exact commands in
   `2026-06-25_quickstart-skeleton-reshape/walkthrough.md`. (If the prior `workspace-standard-cleanup` commit is
   still pending, fold both into one.)
 - **WS7 follow-up (offered):** promote `check-repo-map-drift.ps1` → master `.agents/scripts/` and wire the

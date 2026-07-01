@@ -3,5 +3,5 @@
   // pending changes show in the Source Control panel. Default is 1, which
   // only finds repos at the workspace root and misses Projects/<name>/.
   "git.repositoryScanMaxDepth": 2,
-  "git.detectSubmodules": false
+  "git.detectSubmodules": true
 }

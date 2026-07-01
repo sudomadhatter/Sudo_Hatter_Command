@@ -7,7 +7,7 @@ work → `_artifacts/<project>/` (create-if-missing), (2) main/cross-project →
 `_home` via `git mv`), (3) stories → under the parent epic folder. **opencode** mirrors all 3 inside its own
 `_artifacts/opencode/` namespace. Updated every live standard doc (`AGENTS.md` §5/§7, master
 `artifacts-always-first.md`, `workspace-standard.md`, `repo-map.md`, `INDEX.md`) + the SessionStart hook path +
-all artifact READMEs (added `_main/` + `clean-bmad-workspace/` ones). Re-vendored the standard into aviationChat-AGY
+all artifact READMEs (added `_main/` + `Fresh_Workspace_BMAD/` ones). Re-vendored the standard into AGY_AVIATIONCHAT
 + clean-bmad (aviationChat's copy was stale pre-work-from-cwd — re-vendor fixed it). Fixed the 3 `_my_resources/`
 diagrams. Zero live `_home` refs remain. Session: `_artifacts/_main/2026-06-26_artifact-placement-standard/`
 (UNCOMMITTED — home + both project repos; cmds in walkthrough).
@@ -24,8 +24,8 @@ MIT break-glass engine for the GitNexus license tripwire.
 **2026-06-25: `_my_resources/open_tasks/` standardized as the "what's next" check.** Asking "what's next /
 open tasks / what's left" now reads Daniel's notes for **where you work FROM** (lobby → home-base folder; inside a
 converted project → that project's own) — on-demand, READ-ONLY, no SessionStart hook. Executed for converted
-projects only: **aviationChat-AGY** (`git mv`'d 5 notes `_Open_Task/`→`open_tasks/`, removed empty dir, seeded
-`todo_list.md`, added READ-ONLY routing row to `AGENTS.md`); **clean-bmad-workspace** (seeded `open_tasks/todo_list.md`
+projects only: **AGY_AVIATIONCHAT** (`git mv`'d 5 notes `_Open_Task/`→`open_tasks/`, removed empty dir, seeded
+`todo_list.md`, added READ-ONLY routing row to `AGENTS.md`); **Fresh_Workspace_BMAD** (seeded `open_tasks/todo_list.md`
 + routing row); **lobby** `router.md` row 20 + `_docs/repo-map.md` resolve by where-you-work-from; **memory**
 `my-resources-personal-area-protected` carve-out upgraded to system-wide. Committed on origin/main as `fa8bf1b`.
 Session: `_artifacts/_main/2026-06-25_open-tasks-standard/`. Maps/indexes verified current this pass (router ✓,
@@ -40,7 +40,7 @@ and verification (agent runs in-container) for web/mobile sessions. See `_artifa
 **Artifact rule revised → "artifacts go WHERE YOU WORK FROM"** (cwd decides): from the home base → a per-project
 bucket `_artifacts/<project>/` or `_artifacts/_main/`; inside a project → project-local (AGENTS §5/§7, workspace-standard,
 INDEX, memory). This session also ran aviationChat **Phase 2** (collapsed `.agent/`→`.agents/`, deleted 1,059 files,
-removed forked `.claude/rules/`, GitNexus zero-code) — it lives in `_artifacts/aviationChat-AGY/2026-06-25_ws7-and-phase2/`.
+removed forked `.claude/rules/`, GitNexus zero-code) — it lives in `_artifacts/AGY_AVIATIONCHAT/2026-06-25_ws7-and-phase2/`.
 **2026-06-25: artifacts-policy reconciliation FINISHED** — wrote `_artifacts/README.md` (the how-to), reconciled
 the last stale `_artifacts/<workspace>/` refs (`AGENTS.md` §3 · `workspace-standard.md` Part 1 + appendix · master
 `artifacts-always-first.md`) to **work-from-cwd**, refreshed `_docs/repo-map.md` (`--mode content`, drift clean),
@@ -82,8 +82,8 @@ already bundled this session's first-pass repo edits with the prior self-audit w
   committed/pushed to their own remotes.
 - 5.4 BLOCKED:
   - **CORRECTED 2026-06-25:** the earlier "clean-bmad is OFF-LIMITS / another team" note was wrong.
-    `Projects/clean-bmad-workspace` is **Daniel's own clean-shell template** (the project he clones to start a
-    new one). It is fully editable. Active work: `_artifacts/clean-bmad-workspace/2026-06-25_workspace-standard-cleanup/`
+    `Projects/Fresh_Workspace_BMAD` is **Daniel's own clean-shell template** (the project he clones to start a
+    new one). It is fully editable. Active work: `_artifacts/Fresh_Workspace_BMAD/2026-06-25_workspace-standard-cleanup/`
     (standard-conformance + repo-map index; `_01_My/` → protected `_my_resources/`).
   - 5 venvs still hardcode the old path; recreate per-project when next used.
 - 5.5 Best next move: (1) finish the clean-bmad workspace-standard cleanup (AGENTS.md renumber, vendor

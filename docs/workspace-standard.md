@@ -173,7 +173,7 @@ Full rule → `.agents/rules/artifacts-always-first.md`.
 The deciding factor is the workspace you have open (your cwd), not only what the work is about.
 - **Working from the home base** (`Sudo_Hatter_Command/` is your cwd) → home-base `_artifacts/`:
   - **project work** → a per-project bucket `_artifacts/<project-folder-name>/<YYYY-MM-DD>_<slug>/`
-    (e.g. `_artifacts/aviationChat-AGY/`, `_artifacts/clean-bmad-workspace/`; the bucket name = the
+    (e.g. `_artifacts/AGY_AVIATIONCHAT/`, `_artifacts/Fresh_Workspace_BMAD/`; the bucket name = the
     `Projects/<name>/` folder name).
   - **main / home-base / cross-project work** (routing, the `.agents/` toolkit, multi-project) →
     `_artifacts/_main/<YYYY-MM-DD>_<slug>/` (formerly `_home`).
@@ -276,8 +276,8 @@ This standard replaces months of contradictory, duplicated rules. State as of 20
 **Resolved 2026-06-27 — `_claude_artifacts/` fully retired:**
 - The `1_*` commands (`1_run-all-tests-back_front`, `1_make-workflow-from-chat`, `1_check-for-tech-stack-updates`)
   and the `autopilot-dev-story.ps1` engine were repointed off `_claude_artifacts/` → `_artifacts/` at the master
-  `.agents/` source and across every synced copy. Fresh-workspace (clean-bmad-workspace) was converted to the
-  project-local `_artifacts/` model (matching aviationChat) and its dead `_claude_artifacts/` store was deleted.
+  `.agents/` source and across every synced copy. Fresh-workspace (Fresh_Workspace_BMAD) was converted to the
+  project-local `_artifacts/` model (matching AGY_AVIATIONCHAT) and its dead `_claude_artifacts/` store was deleted.
   Ignore-lists keep the name defensively; historical mentions (a skill's origin-session paths) are left as
   accurate history.
 

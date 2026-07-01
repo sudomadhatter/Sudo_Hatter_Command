@@ -67,7 +67,7 @@ Sudo_Hatter_Command/
     core/
         [2 files: .yamlx1, .csvx1 | e.g. config.yaml]
     custom/
-        [2 files: .tomlx2 | e.g. config.toml]
+        [1 files: .tomlx1 | e.g. config.toml]
     scripts/
         [3 files: .pyx3 | e.g. memlog.py]
     tea/
@@ -76,10 +76,6 @@ Sudo_Hatter_Command/
             [1 files: .mdx1 | e.g. README.md]
         [2 files: .yamlx1, .csvx1 | e.g. config.yaml]
       [2 files: .tomlx2 | e.g. config.toml]
-  _bmad-output/
-    implementation-artifacts/
-    planning-artifacts/
-    test-artifacts/
   _routing-canary/
     control/
         [1 files: .mdx1 | e.g. agent.md]

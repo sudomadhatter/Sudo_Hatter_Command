@@ -7,7 +7,7 @@
 # ============================================================
 
 # All projects live under Projects/ and are independent repos.
-/Projects/
+# (Ignore rules removed to allow VS Code Git repository auto-discovery)
 
 # All projects live under Projects/ and are independent repos. The old root-level pre-migration entries
 # (aviationChat-AGY, fresh-workspace-bmad, jetChat-AGY, B&L WorldWide, NEXGen Films, ingestion-Pipeline-*, openCode)
