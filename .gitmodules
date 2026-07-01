@@ -1,0 +1,21 @@
+[submodule "Projects/AGY_AVIATIONCHAT"]
+	path = Projects/AGY_AVIATIONCHAT
+	url = https://github.com/sudomadhatter/AGY_AVIATIONCHAT
+[submodule "Projects/AGY_JETCHAT"]
+	path = Projects/AGY_JETCHAT
+	url = https://github.com/sudomadhatter/AGY_JETCHAT
+[submodule "Projects/B-L-WorldWide"]
+	path = Projects/B-L-WorldWide
+	url = https://github.com/sudomadhatter/B-L-WorldWide
+[submodule "Projects/Fresh_Workspace_BMAD"]
+	path = Projects/Fresh_Workspace_BMAD
+	url = https://github.com/sudomadhatter/Fresh_Workspace_BMAD
+[submodule "Projects/NEXGen-Films"]
+	path = Projects/NEXGen-Films
+	url = https://github.com/sudomadhatter/NEXGen-Films
+[submodule "Projects/OpenChat-Openrouter"]
+	path = Projects/OpenChat-Openrouter
+	url = https://github.com/sudomadhatter/OpenChat-Openrouter
+[submodule "Projects/RAG_Pipeline_AC"]
+	path = Projects/RAG_Pipeline_AC
+	url = https://github.com/sudomadhatter/RAG_Pipeline_AC
