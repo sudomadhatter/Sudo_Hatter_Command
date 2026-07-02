@@ -9,11 +9,33 @@ platforms: [claude]
 > session continuity (`--session-id` / `--resume`). It cannot run under Gemini/opencode and is
 > intentionally NOT mirrored there.
 
-Launch the autopilot pipeline for the story in `$ARGUMENTS` (a story id like `11.16`, or a path).
+Launch the autopilot pipeline for the story in `$ARGUMENTS` (a story id like `11.16`, or a path),
+optionally prefixed by a project name when run from the command center (e.g. `AGY_AVIATIONCHAT 11.16`).
 
 ## What to do
 
-1. Confirm a story identifier was provided in `$ARGUMENTS`. If empty, ask which story and stop.
+### Step 0 - Resolve the target project (FIRST - before anything else)
+This command runs from the **command center (lobby)** and drives the autopilot inside exactly ONE child
+project under `Projects/`, never the lobby itself. Resolve the target now (same pattern as the `/sudo-*`
+commands):
+- **Self fast-path (check this FIRST):** if this repo has **no** `Projects/` subfolder, you ARE the project
+  - set `PROJECT_ROOT = .` and skip the rest of Step 0 (this is the autopilot run from *inside* a project).
+- **Inline override:** if `$ARGUMENTS` begins with a name matching a folder under `Projects/`, that is the
+  target; **consume that first token** (the remainder is the real story id/path). Write the name alone into
+  `_my_resources/active-project.txt` (overwrite) so later commands inherit it.
+- **Active pointer:** else read `_my_resources/active-project.txt`; if it names a folder under `Projects/`, use it.
+- **Ask:** else STOP and ask Daniel *"Which project are we working in? (e.g. AGY_AVIATIONCHAT)"* - never
+  guess, never run the autopilot against the lobby.
+
+Set `PROJECT_ROOT` (= `Projects/<name>`, or `.` via the fast-path) and **echo** `Target: <PROJECT_ROOT>`
+before any work. Call the story argument that remains after this step `<STORY>` (= `$ARGUMENTS` minus any
+consumed project token). **Binding rule:** the PowerShell script, every `_artifacts/...` path, the story
+lookup, and the debrief all resolve **under `PROJECT_ROOT`**. The `.ps1` self-anchors to its own project
+(it derives its repo root from its own location), so only the *paths you pass it* need the prefix - no
+script change is required. When `PROJECT_ROOT` is `.`, every `<PROJECT_ROOT>/...` path below reduces to the
+original in-project form.
+
+1. Confirm a story identifier remains in `<STORY>` after Step 0. If empty, ask which story and stop.
 
 2. **Create a live TodoWrite list mirroring the pipeline** so Daniel watches it advance in the panel.
    Items (trim to match `-MaxStage`): `Stage 1 - Plan (Dev)`, `Stage 2 - Audit (QA)`,
@@ -24,8 +46,11 @@ Launch the autopilot pipeline for the story in `$ARGUMENTS` (a story id like `11
    a live notification (Monitor avoids the foreground timeout AND drives the todo updates below).
    Call Monitor with:
 
-   - **command:** `LOG_SLUG=$(printf '%s' "$ARGUMENTS" | tr -c 'A-Za-z0-9' '-' | sed 's/--*/-/g; s/^-//; s/-$//'); LOG="_artifacts/_autopilot-run-$LOG_SLUG.log"; powershell.exe -NoProfile -File scripts/autopilot-dev-story.ps1 -Story "$ARGUMENTS" > "$LOG" 2>&1 & APID=$!; tail --pid=$APID -f -n +1 "$LOG" | grep --line-buffered -E ">>> STAGE|TEST GATE|STORY STATUS|done in|PAUSED|AUTOPILOT|Total cost|CRASHED|retrying|MODEL MISMATCH|! WARNING|TESTS|COST CEILING|REVIEW INCOMPLETE"`
-   - **description:** `autopilot $ARGUMENTS - stage progress (per-story log _autopilot-run-<story>.log)`
+   Substitute `<PROJECT_ROOT>` and `<STORY>` below with the values resolved in Step 0 before calling
+   Monitor (when `PROJECT_ROOT` is `.` the paths reduce to the original in-project form):
+
+   - **command:** `LOG_SLUG=$(printf '%s' "<STORY>" | tr -c 'A-Za-z0-9' '-' | sed 's/--*/-/g; s/^-//; s/-$//'); LOG="<PROJECT_ROOT>/_artifacts/_autopilot-run-$LOG_SLUG.log"; powershell.exe -NoProfile -File "<PROJECT_ROOT>/scripts/autopilot-dev-story.ps1" -Story "<STORY>" > "$LOG" 2>&1 & APID=$!; tail --pid=$APID -f -n +1 "$LOG" | grep --line-buffered -E ">>> STAGE|TEST GATE|STORY STATUS|done in|PAUSED|AUTOPILOT|Total cost|CRASHED|retrying|MODEL MISMATCH|! WARNING|TESTS|COST CEILING|REVIEW INCOMPLETE"`
+   - **description:** `autopilot <STORY> - stage progress (per-story log <PROJECT_ROOT>/_artifacts/_autopilot-run-<story>.log)`
    - **persistent:** `true`  (tail exits when the script PID dies)
 
    This **tails a real log file** instead of piping the live PowerShell straight through `grep` (the old
@@ -73,14 +98,14 @@ Launch the autopilot pipeline for the story in `$ARGUMENTS` (a story id like `11
      the orchestrator advanced the story to `review` (story file + sprint-status). Daniel still owns review->done.
 
 5. When the watch ends, mark the last stage `completed`, read the canonical artifact folder
-   `_artifacts/epic_<epic>/<date>_autopilot-<id>/`, and give the final debrief: total cost, artifacts
+   `<PROJECT_ROOT>/_artifacts/epic_<epic>/<date>_autopilot-<id>/`, and give the final debrief: total cost, artifacts
    written, and - most importantly - the **OUT-OF-SPEC DECISIONS** and **OPEN QUESTIONS FOR DANIEL**
    sections at the top of `walkthrough.md` plus `decisions-log.md` (the choices the team made on
    Daniel's behalf, and anything QA is asking him). State whether it finished all stages (**COMPLETE**),
    **PAUSED** on a `PIPELINE_BLOCKER` (needs Daniel), or **CRASHED** on a genuine error (re-run with no
    flags; finished stages auto-detect from the folder and skip). On a clean **COMPLETE**, also tell Daniel
    the story was auto-advanced to **`review`** (story file + sprint-status) — he owns the `review -> done`
-   flip. The full transcript is at `_artifacts/_autopilot-run-<story>.log` (and a self-contained copy in
+   flip. The full transcript is at `<PROJECT_ROOT>/_artifacts/_autopilot-run-<story>.log` (and a self-contained copy in
    `<run-folder>/_pipeline/run.log`), and `_RUN-STATUS.md` in the folder shows the final state.
 
 > **On-demand status** also works anytime: while a run is going, just ask "status" and Claude reads

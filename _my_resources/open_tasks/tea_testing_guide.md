@@ -1,6 +1,50 @@
 # AviationChat Test-Architecture Retrofit — Field Guide (TEA-Gated `sudo-` Flow)
 
-> **Status — 2026-06-29:** Step 0 (the risk assessment) is **complete**. It produced 9 scoped stories, **TEA-1..TEA-9**, ranked P0–P3, with the FAA-citation (R-P6) and Sully-safety-override (R-P3) risks at Prio P0. Artifacts live under `Projects/AGY_AVIATIONCHAT/_bmad-output/test-artifacts/` (`test-design-architecture.md`, `test-design-qa.md`, `test-design/aviationChat-AGY-handoff.md`). You are now in per-story execution; the recommended start is the fully-unblocked **TEA-1** (schema contracts) via `/sudo-write-story-tests`.
+> **Status — 2026-07-02:** Step 0 done (2026-06-29, TEA-1..TEA-9 + field-report TEA-10/11) → **8 stories executed, all gate PASS** (TEA-1/2/3/4/5/7/10/11). The **true-P0 audit is done** (`/bmad-testarch-trace`, 2026-07-02): gate **CONCERNS** — P0 84.1% weighted vs the 100% target, P1 83% ≥ 80% (MET), suite fully green, E2E level missing. The gap worklist is filed in sprint-status as **tea-12..tea-18** (+ tea-6/8/9 backfilled as explicit keys). **Next up: TEA-8** (codify the matrix — now unblocked), then tea-12→17 via the **minimum flow** (§0 below — NOT the full sudo loop). Canonical audit artifact: `_bmad-output/test-artifacts/traceability/traceability-matrix-2026-07-02.md` (+ `gate-decision-2026-07-02.json`).
+
+---
+
+## §0 — The 2026-07-02 audit: outcome, the MINIMUM per-story flow, and the open stories
+
+### What the audit established
+
+The PRD's ~47 FR families are now classified against **your Test Priorities Matrix** (P0 100% / P1 80% / P2 50% / P3 20% + levels): **9 P0 families (A1–A9)** — FAA citation fidelity, auth/session, entitlement+tenancy walls, mastery state machine, grading/data-moat integrity, cost caps, pedagogical safety overrides, Part 141 logging, privacy/consent — and **9 P1 core-journey families (B1–B9)**. Five parallel suite sweeps mapped all of them to real tests (file:line evidence in the matrix). Verdict **CONCERNS**: coverage is genuinely strong at unit/integration with negative paths, but 2 P0 items sit at NONE (`firestore.rules`, the 21-day application decay timer), the **Mercy-Rule regression tests were deleted in the V2.5→V2.7 migration**, and the E2E level your matrix requires on P0+P1 doesn't exist beyond 2 generic specs.
+
+### The MINIMUM flow (the finding — pick by story type, not by habit)
+
+The full sudo loop is **not** wrong — it's the deluxe path. The insight from 8 TEA stories + the audit: `/sudo-code-review`'s gate internally re-runs suite + trace + nfr + test-review **per story**, but the trace was just done audit-wide, and for **test-only** stories there is no production diff for the 3-layer adversarial review to hunt in. So:
+
+| Story type | Minimum flow | What you skip | Never skip |
+|---|---|---|---|
+| **Test-only gap story** (tea-12, 13, 14, 15, 17, 18) | `/bmad-testarch-automate` → `/bmad-testarch-test-review` | Full 3-layer `/bmad-code-review` (no production diff to hunt); per-story trace + nfr | Keyless full-suite run (`GEMINI_API_KEY="" pytest backend/tests/`) as the zero-new-regression proof; `/sudo-update-sprint-memory` close-out |
+| **E2E new-dev** (tea-16) | `/bmad-testarch-automate` (it levels tests: E2E/API/component/unit) → `/bmad-testarch-test-review` | `bmad-testarch-framework` — **do NOT re-run it**: Playwright config + CI job exist since 11.16; framework would re-scaffold, not audit | Same as above + the specs must run green in the blocking `frontend-e2e` CI job |
+| **Normal feature story** (product code changes) | `/bmad-testarch-atdd` (red) → `/bmad-dev-story` (green) → `/bmad-code-review` | The sudo wrappers' plan/self-audit ceremony — *if* the story is small and off the P0 surface | An implement step in the middle — atdd→review alone builds nothing |
+| **P0-surface feature story** (touches A1–A9 areas) | The **full sudo loop** ①②③④ | Nothing | The armed gate (`sudo-tests.yaml`) exists precisely for these |
+| **Wave/epic boundary** | Re-run `/bmad-testarch-trace` (Edit mode on the 2026-07-02 matrix) + `nfr` once per wave | Running trace/nfr per-story in between | — |
+
+One caveat carried from the TEA stories: if a test-only story turns out to need a behavior-preserving extraction to make something testable (the TEA-3/TEA-4 pattern), that's a production change — escalate that story to the feature row (add `/bmad-code-review`).
+
+### The open stories — redo-of-DONE vs new development
+
+**Redo/patch of already-DONE stories** (the work shipped; its test net has holes — all test-only, min flow applies):
+
+| Story | Gap | Patches which DONE story | What to build |
+|---|---|---|---|
+| **tea-12** 🔴 | GAP-1: `firestore.rules` never asserted | **11.6** (rules lockdown shipped deploy-only) | Firebase-emulator suite: `assertFails`/`assertSucceeds` per locked block (11.6's 7 deny-blocks + `grading_events` deny from 14.5 + waitlist deny from 13.1 + rkp auth-gate) |
+| **tea-13** 🔴 | GAP-2: Mercy-Rule regression net deleted in V2.5→V2.7 | **4.33 / 4.37 / QA-7 / 8.1** | Characterization tests vs the CURRENT V2.7 flow: surrender regex, frustration threshold (≥0.7 ×2 turns → mercy at attempt 3), MCQ recognition-downgrade, reveal-only-after-MCQ-miss; + persist-assert the `mercy_type` / `mercy_mcq_correct` / `surrender` SAR fields |
+| **tea-14** | GAP-3+4: data contracts unpinned | **mastery-service era / 8.1 / 12.1** | Pin all 3 `DECAY_TIMERS` entries (21d application is NEVER asserted — only 14d rote) + expiry boundaries; assert SAR `acs_element_key` persists (the V2.7 Teaching-Ledger join key); copy the `grading_events` governance grep-gate to `quiz_banks/` (Rule #9 sole-writer has no tripwire) |
+| **tea-15** | GAP-5: WS auth matrix incomplete | **11.16** + review-status **8.19.9** | `/ws/sully-spike` 4003 first-message-auth suite (the only voice router without one); extend the 4030 entitlement parametrization to igor-spike + sully-intro |
+| **tea-18** ⛔ | GAP-6: no FAA negative control in L3 | completes **TEA-4**'s deferred half (blocker **B2**) | Wire TEA-4's *drafted-review-only* `incorrect_faa_query.json` (IFQ_01–03) + `NC_FAA_01` into `backend/evals/scenarios/` + the drift runner. **Your lane:** you author/ratify the CFI fixtures first |
+
+**New development** (nothing to redo — the layer doesn't exist yet):
+
+| Story | What | Why |
+|---|---|---|
+| **tea-16** | Playwright E2E pack on the existing setup: auth wall, entitlement lock popup (solo vs entitled), 4-step lesson happy path **asserting the FR39-E `lesson_step`-before-`verification` SSE order** (asserted nowhere today), verification badge states | The E2E *level* your matrix requires on P0+P1; the SSE-ordering invariant gets pinned at the right level. Voice stays Manual (accepted deviation — live-QA runbook) |
+| **tea-17** | P1 unit stragglers: compliance router `TestClient` tests (service+PDF layers are FULL but `routers/compliance.py` has zero HTTP tests), `HeroSection` FR14-B GT-chips (no test file), FR14-C soft-delete UI assert, Living Text correction handler, intent-classifier accuracy; verify-or-add FR45-F bug-report sanitization | Closes the audit's P1 stragglers in one sweep |
+| **TEA-8** ⏫ | `testing-standards.md` (Option B project-local default — the A/B/C sync fork is still YOUR call) codifying the matrix **+ the A1–A9/B1–B9 classification** from the audit | Now unblocked: the audit matrix is its input. Do this FIRST so every later story cites the standard |
+
+**Re-run cadence:** after tea-12..17 land, re-run `/bmad-testarch-trace` (**Edit mode** on `traceability-matrix-2026-07-02.md`) — expected P0 ≥97% weighted with all four levels present → flip the gate to PASS, then ratchet `--cov-fail-under` upward per the TEA-5 plan.
 
 ## How this system works (read this first)
 
@@ -42,6 +86,8 @@ Read it top to bottom once, then live in the **Coverage Scorecard** (§1) and th
 > **Shell note (read once):** every fenced command block below is **bash** and assumes you start from the project root. The platform's primary shell is Windows PowerShell, where the POSIX inline-env-prefix form `VAR="" cmd` is a **parse error**. Run these blocks in the **Bash shell**, or use the PowerShell equivalent shown inline (set the env var first, then run the command).
 
 ### Three facts that anchor everything
+
+> **2026-07-02 staleness note:** facts 2 and 3 below (and the §1 scorecard) are **historical — written 2026-06-29 before the TEA stories ran**. Today: coverage IS measured (54.02% branch baseline on specialist+routers, CI `--cov-fail-under=54`, `l1_coverage_min: 0.54` — TEA-5) and a **local** nightly eval-drift runner exists (`run_nightly.ps1` + `drift.py`, TEA-7; still no GitHub nightly, by design/B5). Fact 1 is still true and stronger — the TEA-2 determinism guard now *enforces* zero-live-LLM at L1. Current state of record = the §0 audit matrix.
 
 1. **The gate is already armed.** `_bmad-output/sudo-tests.yaml` exists and `waive: false`, so `/sudo-code-review` enforces for real on every story. Required tiers are `[L1, L2]`; L3 (LLM-as-judge) is intentionally *not* required in the gate.
 2. **Branch coverage is currently UNMEASURED.** Backend has zero coverage tooling (no `pytest-cov`, no `.coveragerc`, no `[tool.coverage]`). Frontend has `@vitest/coverage-v8` installed but **not wired** (no `coverage` key in `vitest.config.ts`, no `--coverage` in any command). That is why `l1_coverage_min` is `0.0` — a deliberate grandfather setting, not an oversight.

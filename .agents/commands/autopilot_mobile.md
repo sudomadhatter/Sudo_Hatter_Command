@@ -21,22 +21,40 @@ Run the pipeline for the story in `$ARGUMENTS` (a story id like `11.16`, or a pa
 
 ## What to do
 
+### 0. Resolve the target project (FIRST)
+This command runs from the **command center (lobby)** and drives the pipeline inside exactly ONE child
+project under `Projects/`, never the lobby (same pattern as the `/sudo-*` commands):
+- **Self fast-path (check FIRST):** if this repo has **no** `Projects/` subfolder, you ARE the project -
+  `PROJECT_ROOT = .`; skip the rest of Step 0.
+- **Inline override:** if `$ARGUMENTS` begins with a name matching a folder under `Projects/`, consume that
+  token as the project and write it alone into `_my_resources/active-project.txt` (overwrite).
+- **Active pointer:** else read `_my_resources/active-project.txt` if it names a folder under `Projects/`.
+- **Ask:** else STOP and ask *"Which project? (e.g. AGY_AVIATIONCHAT)"* - never guess, never run on the lobby.
+
+Resolve `PROJECT_ROOT` to an **absolute** path (`Projects/<name>` or `.` → its absolute form; the Workflow
+sandbox needs absolutes) and **echo** `Target: <PROJECT_ROOT>`. Everything below - the story lookup,
+`_bmad/...`, `_artifacts/...`, the workflow script, and the test gate - resolves **under `PROJECT_ROOT`**.
+The story argument that remains after this step is `<STORY>`.
+
 ### 1. Resolve the story
-- If `$ARGUMENTS` is empty, ask which story and STOP.
-- If it's a path that exists, use it. Otherwise match `_bmad/bmm/stories/*.md` whose name contains the
-  id in either dotted (`8.15`) or dashed (`8-15`) form. No match → tell Daniel and STOP. More than one
-  match → list them, ask which, STOP (never guess).
+- If `<STORY>` is empty, ask which story and STOP.
+- If it's a path that exists, use it. Otherwise match `<PROJECT_ROOT>/_bmad/bmm/stories/*.md` whose name
+  contains the id in either dotted (`8.15`) or dashed (`8-15`) form. No match → tell Daniel and STOP. More
+  than one match → list them, ask which, STOP (never guess).
 - Read the story's frontmatter `baseline_commit:` (first ~15 lines) if present — it's the scope anchor
   passed to the implement/review stages.
 
-### 2. Resolve the canonical artifact folder
+### 2. Resolve the canonical artifact folder (all under `<PROJECT_ROOT>`)
 - Slug = `autopilot-<id>` with non-alphanumerics collapsed to `-` (e.g. `autopilot-8-15`).
 - Epic = the leading number of the story id (`14.6` → `14`). A story **nests under its epic bucket**
-  `_artifacts/epic_<epic>/` — **create the epic folder if it isn't there yet** (per `artifacts-always-first`:
-  stories live under their epic). If the id has no leading epic number, fall back to the `_artifacts/` root.
-- Reuse an existing `_artifacts/epic_<epic>/*_<slug>/` folder (or a pre-fix `_artifacts/*_<slug>/` at the
-  root) if one exists — prefer the one that already holds `implementation_plan.md` — so a resume finds prior
-  artifacts; otherwise mint `_artifacts/epic_<epic>/<today>_<slug>/`. Create the folder.
+  `<PROJECT_ROOT>/_artifacts/epic_<epic>/` — **create the epic folder if it isn't there yet** (per
+  `artifacts-always-first`: stories live under their epic). If the id has no leading epic number, fall back
+  to the `<PROJECT_ROOT>/_artifacts/` root.
+- Reuse an existing `<PROJECT_ROOT>/_artifacts/epic_<epic>/*_<slug>/` folder (or a pre-fix
+  `<PROJECT_ROOT>/_artifacts/*_<slug>/` at the root) if one exists — prefer the one that already holds
+  `implementation_plan.md` — so a resume finds prior artifacts; otherwise mint
+  `<PROJECT_ROOT>/_artifacts/epic_<epic>/<today>_<slug>/`. Create the folder. Use its **absolute** path as
+  `<folder>` below.
 
 ### 3. Compute the resume start-stage (artifact-presence skip)
 A stage is "complete" iff its handoff artifact exists on disk:
@@ -50,21 +68,25 @@ will be skipped.
 - Write `<folder>/_RUN-STATUS.md` = **📱 MOBILE RUN — IN PROGRESS — NOT FINISHED** (so a crashed/partial
   run can never read as a finished story, and the run is flagged as mobile-made).
 - **Tag the run as mobile-made** (`mobile-mode.md` Override 3): this is a `CLAUDE_CODE_REMOTE` run, so add
-  `mobile: true` to each artifact's `ArtifactMetadata` frontmatter and prefix the `_artifacts/INDEX.md`
-  row (and `walkthrough.md` H1) with **📱**, so Daniel can find mobile runs later for a desktop re-pass.
+  `mobile: true` to each artifact's `ArtifactMetadata` frontmatter and prefix the
+  `<PROJECT_ROOT>/_artifacts/INDEX.md` row (and `walkthrough.md` H1) with **📱**, so Daniel can find mobile
+  runs later for a desktop re-pass.
 
 ### 5. Launch the workflow
 Call the **Workflow** tool with the committed orchestrator and the resolved args:
 
 ```
 Workflow({
-  scriptPath: 'scripts/autopilot_mobile.workflow.js',
+  scriptPath: '<PROJECT_ROOT>/scripts/autopilot_mobile.workflow.js',
   args: { story: '<id>', storyFile: '<abs path>', folder: '<abs folder>',
-          baselineCommit: '<sha or empty>', startStage: <N> }
+          baselineCommit: '<sha or empty>', startStage: <N>,
+          projectRoot: '<abs PROJECT_ROOT>', projectName: '<project folder name, or "this project">' }
 })
 ```
 
-It runs in the background and notifies on completion. As stage `log()` lines stream in, advance the
+Pass `projectRoot` as an **absolute** path: the workflow's stage agents `cd` into it before running any
+shell command (tests, git, installs), so the cwd-relative test steps work even when you launched from the
+lobby. It runs in the background and notifies on completion. As stage `log()` lines stream in, advance the
 TaskCreate list. The workflow returns a structured debrief: `{ status, stages[], haltedAt?, ... }`.
 
 ### 6. On return — gate, then debrief
@@ -74,13 +96,13 @@ TaskCreate list. The workflow returns a structured debrief: `{ status, stages[],
 - **status `crashed` / `artifact-missing`**: stamp `_RUN-STATUS.md` CRASHED, report which stage,
   note it's resumable.
 - **status `complete`**: run the **independent test gate** yourself (do NOT trust the agents' pasted
-  output):
-  - Derive scope from the baseline diff (`git diff --name-only <baseline>`): backend changes →
-    `pytest backend/tests -q`; frontend changes → `npm test -- --run` in `frontend/`. No baseline →
-    run both.
-  - **Container caveat:** if there's no `.venv`/`python` (backend) or no `npm` (frontend), the runner
-    is missing — stamp `_RUN-STATUS.md` **TESTS UNVERIFIED — RUNNER MISSING** and say so plainly; do
-    NOT claim green. (Same honesty rule as the PowerShell gate.)
+  output). **Run every gate command from `<PROJECT_ROOT>`** (`cd` there first) so bare paths resolve:
+  - Derive scope from the baseline diff (`git -C <PROJECT_ROOT> diff --name-only <baseline>`): backend
+    changes → `pytest backend/tests -q`; frontend changes → `npm test -- --run` in `frontend/`. No
+    baseline → run both.
+  - **Container caveat:** if there's no `.venv`/`python` (backend) or no `npm` (frontend) under
+    `<PROJECT_ROOT>`, the runner is missing — stamp `_RUN-STATUS.md` **TESTS UNVERIFIED — RUNNER MISSING**
+    and say so plainly; do NOT claim green. (Same honesty rule as the PowerShell gate.)
   - Red suite → stamp **TESTS RED — NOT FINISHED**, point at the output, stop. (If the red is a
     parallel team's WIP, confirm this story's own tests pass and note it.)
   - Green → stamp `_RUN-STATUS.md` **PIPELINE COMPLETE — but NOT closed out**.
