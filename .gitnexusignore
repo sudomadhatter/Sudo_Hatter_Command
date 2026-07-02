@@ -1,0 +1,11 @@
+# GitNexus index scope — HOME BASE ONLY.
+# The lobby map indexes ONLY the home-base's own infra. Every subproject under
+# Projects/ is an independent git submodule with its OWN GitNexus map and must
+# NEVER be pulled into the lobby index.
+#
+# Why this file (not .gitignore): Projects/ is intentionally NOT gitignored so
+# VS Code can auto-discover the nested repos. But GitNexus walks the filesystem
+# (it does not respect submodule boundaries), so without this it descends into
+# every submodule working tree and balloons the lobby map from ~1.5k symbols to
+# 100k+ nodes. .gitnexusignore scopes the index without touching .gitignore.
+/Projects/

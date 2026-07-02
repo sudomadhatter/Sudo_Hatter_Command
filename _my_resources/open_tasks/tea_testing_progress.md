@@ -1,6 +1,6 @@
 # AviationChat Test-Architecture Retrofit — Field Guide (TEA-Gated `sudo-` Flow)
 
-> **Status — 2026-07-02:** Step 0 done (2026-06-29, TEA-1..TEA-9 + field-report TEA-10/11) → **8 stories executed, all gate PASS** (TEA-1/2/3/4/5/7/10/11). The **true-P0 audit is done** (`/bmad-testarch-trace`, 2026-07-02): gate **CONCERNS** — P0 84.1% weighted vs the 100% target, P1 83% ≥ 80% (MET), suite fully green, E2E level missing. The gap worklist is filed in sprint-status as **tea-12..tea-18** (+ tea-6/8/9 backfilled as explicit keys). **Next up: TEA-8** (codify the matrix — now unblocked), then tea-12→17 via the **minimum flow** (§0 below — NOT the full sudo loop). Canonical audit artifact: `_bmad-output/test-artifacts/traceability/traceability-matrix-2026-07-02.md` (+ `gate-decision-2026-07-02.json`).
+> **Status — 2026-07-02:** Step 0 done (2026-06-29, TEA-1..TEA-9 + field-report TEA-10/11) → **9 stories executed, all gate PASS** (TEA-1/2/3/4/5/7/8/10/11). The **true-P0 audit is done** (`/bmad-testarch-trace`, 2026-07-02): gate **CONCERNS** — P0 84.1% weighted vs the 100% target, P1 83% ≥ 80% (MET), suite fully green, E2E level missing. The gap worklist is filed in sprint-status as **tea-12..tea-18** (+ tea-6/8/9 backfilled as explicit keys). **Next up: tea-12**, then tea-13→17 via the **minimum flow** (§0 below — NOT the full sudo loop). Canonical audit artifact: `_bmad-output/test-artifacts/traceability/traceability-matrix-2026-07-02.md` (+ `gate-decision-2026-07-02.json`).
 
 ---
 
@@ -42,7 +42,7 @@ One caveat carried from the TEA stories: if a test-only story turns out to need 
 |---|---|---|
 | **tea-16** | Playwright E2E pack on the existing setup: auth wall, entitlement lock popup (solo vs entitled), 4-step lesson happy path **asserting the FR39-E `lesson_step`-before-`verification` SSE order** (asserted nowhere today), verification badge states | The E2E *level* your matrix requires on P0+P1; the SSE-ordering invariant gets pinned at the right level. Voice stays Manual (accepted deviation — live-QA runbook) |
 | **tea-17** | P1 unit stragglers: compliance router `TestClient` tests (service+PDF layers are FULL but `routers/compliance.py` has zero HTTP tests), `HeroSection` FR14-B GT-chips (no test file), FR14-C soft-delete UI assert, Living Text correction handler, intent-classifier accuracy; verify-or-add FR45-F bug-report sanitization | Closes the audit's P1 stragglers in one sweep |
-| **TEA-8** ⏫ | `testing-standards.md` (Option B project-local default — the A/B/C sync fork is still YOUR call) codifying the matrix **+ the A1–A9/B1–B9 classification** from the audit | Now unblocked: the audit matrix is its input. Do this FIRST so every later story cites the standard |
+| **TEA-8** ✅ DONE | `testing-standards.md` (Option B project-local default — the A/B/C sync fork is still YOUR call) codifying the matrix **+ the A1–A9/B1–B9 classification** from the audit | Now unblocked: the audit matrix is its input. Do this FIRST so every later story cites the standard |
 
 **Re-run cadence:** after tea-12..17 land, re-run `/bmad-testarch-trace` (**Edit mode** on `traceability-matrix-2026-07-02.md`) — expected P0 ≥97% weighted with all four levels present → flip the gate to PASS, then ratchet `--cov-fail-under` upward per the TEA-5 plan.
 
