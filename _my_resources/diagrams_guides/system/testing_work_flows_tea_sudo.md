@@ -22,6 +22,70 @@
 
 ---
 
+## 0.5 TEA method — the quick-reference card
+
+Everything the method asks of you, on one screen. Keep this open; drop into §1–§8 only when you need the prose, code, or Epic 8 examples behind a line. (§16 is the even-terser one-line glossary.)
+
+**The reframe** — stop asking *"do we have enough tests?"* Ask *"do we have the **right** tests at the **right** priority, and are the P0 gates green?"*
+
+**What TEA is** — a *method/playbook* on top of your runners (pytest, vitest, Playwright), **not** a replacement: 9 workflows + a 42-fragment knowledge library + quality standards that make expert testing decisions repeatable. Adopt at the entry point matching team maturity: `Lite` (30-min) → `Solo` → `Integrated` → `Enterprise` → `Brownfield` (retrofit). **Start at Lite.**
+
+**The move (run on any feature / PR / module) — §1**
+```
+1. What can break?   → list the decisions the code makes (defaults · auth · transforms · ordering · privacy flags)
+2. What P-level?     → Risk = Probability × Impact
+3. Start at P0, work down.   100% P0 FIRST · 100% total is NEVER the goal.
+```
+A test exists to **guard a decision that would hurt if it silently broke.** No hurt → probably no test.
+
+**Risk → priority → allocation — §2**
+
+`Risk = Probability × Impact` · **Probability** = how likely to fail (rendering → logic → auth/privacy) · **Impact** = damage if it does (cosmetic → workaround → data-loss/security).
+
+| P-level | Meaning | Levels it earns | Coverage |
+|---------|---------|-----------------|:--------:|
+| **P0 — Critical** | business fails if broken (privacy default, tenancy wall, auth) | Unit + Integration + E2E + Manual | **100%** |
+| **P1 — High** | major user pain / core workflow | Unit + Integration + E2E | **80%** |
+| **P2 — Medium** | inconvenience, workaround exists | Integration + Manual | **50%** |
+| **P3 — Low** | minimal / cosmetic | Manual / skip | **20%** |
+
+**Test levels (the pyramid) — §3** · spread a P0 across all three, cheapest/most-isolated first.
+
+| Level | Covers | Speed |
+|-------|--------|-------|
+| **Unit** | isolated function/class, no deps | ms |
+| **Integration** | multiple components / DB / service | medium |
+| **E2E** | full workflow, real HTTP / browser | slow |
+
+**Definition of Done — a "good" test — §4** · the ceiling, not just "tests pass":
+`no flaky` · `no hard waits/sleeps` (react to state) · `stateless & parallelizable` · `self-cleaning` (finally) · `low-maintenance` (no brittle selectors) · `near the source` (mirrored tree).
+
+**Test shape — AAA — §5** · **Arrange → Act → Assert.** One test guards one decision that matters.
+
+**Patterns that matter — §6**
+- **Fixture composition** — setup/teardown once, compose by deps, cleanup in `finally` (runs even on crash).
+- **Mock-first / network-first** — set the mock up **before** the action (kills races).
+- **⚠️ Use-site patch** — patch where the module-under-test *looks the name up* (import site), not where it's defined. The #1 Python mock bug.
+- **Data factory** — `_make_event(...)`: defaults + overrides → one update point per schema change.
+- **Step-file architecture** — self-contained JIT-loaded micro-files, progress tracked externally, resumable.
+
+**TDD mode — know which you're asking for — §7**
+
+| | **ATDD** (test-first) | **Automate** (coverage expansion) |
+|-|-----------------------|-----------------------------------|
+| Order | Test → Code (Red → Green) | Code → Test (passes immediately) |
+| Use case | new feature, TDD discipline | brownfield gap / regression debt |
+
+Red-green loop: **Red** (failing test) → **Green** (minimal code) → **Refactor** (stays green) → **Repeat**.
+
+**Quality & gate — §8**
+- **Test Review — 5 dimensions** (0–100 each, avg = overall): **Determinism · Isolation · Assertions · Structure · Performance.**
+- **Trace gate:** load AC → discover tests → map → analyze gaps → verdict. 🟢 all P0/P1 covered → **ship** · 🟡 P1 gaps → **Lead assesses** · 🔴 any P0 gap → **do NOT ship**.
+- **Metrics — track vs. vanity:** ✅ P0/P1 coverage %, flakiness, exec time, determinism. ❌ total line coverage, test count, file count.
+- **"How much is enough?"** = enough to hold every P0/P1 gate GREEN.
+
+---
+
 ## 1. "Where do I start?" — the decision tree
 
 This is the answer to the most common beginner question. Run it on any feature, PR, or untested module.
