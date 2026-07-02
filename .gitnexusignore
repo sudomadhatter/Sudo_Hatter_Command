@@ -25,10 +25,14 @@
 # Routing test fixtures.
 /_routing-canary/
 
-# Re-include the master toolkit — the lobby's REAL infra (scripts, hooks, skills).
-# GitNexus auto-filters dot-directories by default; negation opts it back in (#771).
+# KNOWN LIMITATION (gitnexus 1.6.8): the master toolkit in .agents/ CANNOT be
+# indexed. The file walker hardcodes glob `dot: false` (dist/core/ingestion/
+# filesystem-walker.js), so dot-directories are skipped before ignore rules run.
+# The #771 `!pattern` negation only rescues DEFAULT_IGNORE_LIST names (vendor,
+# __tests__, ...), NOT dotted paths. The negation below is therefore INERT today;
+# it is kept so the toolkit auto-appears if a future release lifts `dot: false`.
 !/.agents/
 
-# NOTE: .claude/ .opencode/ .agent/ .antigravity/ stay auto-filtered ON PURPOSE —
-# they are sync-target MIRRORS of .agents/; indexing them would duplicate every
-# symbol 3-4x. Edit the master in .agents/, never the mirrors.
+# NOTE: even if dot-dirs become indexable, .claude/ .opencode/ .agent/
+# .antigravity/ must stay excluded — they are sync-target MIRRORS of .agents/;
+# indexing them would duplicate every symbol 3-4x.

@@ -4,6 +4,8 @@ Read `AGENTS.md` in this same folder and follow it. That is the single source of
 
 (Every `CLAUDE.md` / `GEMINI.md` in this system says exactly this — one front door per LLM, one brain in `AGENTS.md`.)
 
+> **GitNexus scope note (do not "fix" the small numbers below):** the lobby index is deliberately tiny — it maps ONLY the manager/routing surface (root maps, `docs/`, `_system/`). `_artifacts/`, `_my_resources/`, `_bmad*/`, `_routing-canary/` are excluded as noise via `.gitnexusignore`, and the `.agents/` toolkit is unindexable on gitnexus 1.6.8 (dot-dir walker limit — see `.gitnexusignore`). The live product map is the child repo index **AGY_AVIATIONCHAT** (~37.7k symbols, product code only) — pass `repo: "AGY_AVIATIONCHAT"` for product work.
+
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
