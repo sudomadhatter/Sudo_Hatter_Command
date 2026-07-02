@@ -1,5 +1,5 @@
 ---
-description: Mobile-native autopilot — the web/cloud port of /autopilot_claude. Runs the same 4-stage Dev/QA story pipeline (Plan -> Audit -> Implement -> Review+Fix) on the Workflow engine instead of PowerShell, so it works on Claude Code web + mobile. Each stage is a fresh-context Opus subagent at high reasoning effort. Never commits, never marks the story done.
+description: Mobile-native autopilot — the web/cloud port of /autopilot_claude. Runs the same 4-stage Dev/QA story pipeline (Plan -> Audit -> Implement -> Review+Fix) on the Workflow engine instead of PowerShell, so it works on Claude Code web + mobile. Each stage is a fresh-context subagent at high reasoning effort — Opus on the Dev stages, Fable on the QA stages (Audit, Review+Fix). Never commits, never marks the story done.
 platforms: [claude]
 ---
 
@@ -13,9 +13,10 @@ platforms: [claude]
 
 Run the pipeline for the story in `$ARGUMENTS` (a story id like `11.16`, or a path to the story `.md`).
 
-## Parameters (fixed by Daniel, 2026-06-26)
+## Parameters (fixed by Daniel, 2026-06-26; QA lane -> Fable, 2026-07-02)
 
-- **Model:** `opus` on all four stages.
+- **Model:** `opus` on the Dev stages (1 Plan, 3 Implement); `fable` on the QA stages (2 Audit,
+  4 Review+Fix) — the strongest tier on the last gates before the human, matching /autopilot_claude's split.
 - **Reasoning effort:** `high` on all four stages (the native form of the script's "think hard").
 - **Context:** a brand-new subagent per stage (blind review).
 

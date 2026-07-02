@@ -72,6 +72,9 @@ original in-project form.
    **Resume a crashed run:** `-ResumeFrom <N>` (1-4) (or just re-run with no flags - completed stages
    are auto-skipped by artifact presence, and the saved session ids are reused). **Preview the resume
    plan + session ids for $0:** `-DryRun`. **Retry budget:** `-MaxRetries` (default 3).
+   **Per-stage runaway cap:** `-MaxStageCost` (default $15, 0 disables) — enforced inside each CLI call
+   via `--max-budget-usd`, so one stuck stage halts itself (CRASHED-resumable) instead of burning far
+   past the run-level `-MaxCost` (default $40).
 
 4. **As each Monitor notification arrives, advance the TodoWrite list** so it updates live:
    - On `>>> STAGE N/4 - ...` -> mark Stage N-1 `completed` and Stage N `in_progress`.
