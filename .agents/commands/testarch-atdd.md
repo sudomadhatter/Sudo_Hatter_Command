@@ -1,6 +1,6 @@
 ﻿---
 description: ATDD — write failing acceptance tests before implementation
-platforms: [opencode, claude, antigravity]
+platforms: [opencode]
 ---
 
 Invoke the `bmad-testarch-atdd` skill with the user's intent.
