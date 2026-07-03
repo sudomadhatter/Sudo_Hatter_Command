@@ -490,8 +490,9 @@ Print this. It's the whole curriculum compressed into the questions you ask on a
 | [test_grading_event_dataset_api.py](../../../Projects/AGY_AVIATIONCHAT/backend/tests/routers/test_grading_event_dataset_api.py) | E2E | `client_and_svc` fixture (auto-cleanup); `GOV_QUERY` **use-site** patch; `TestClient` API pattern |
 | [test_tenancy_gate.py](../../../Projects/AGY_AVIATIONCHAT/backend/tests/routers/test_tenancy_gate.py) | E2E | P0 Trace artifact; CI merge-blocker; RED gate if removed |
 | [test_faa_grounding_guard.py](../../../Projects/AGY_AVIATIONCHAT/backend/tests/agents/specialist/test_faa_grounding_guard.py) | — | Live ATDD example (TEA-4): test written red before `agent.py` green |
+| [firestore.rules.test.js](../../../Projects/AGY_AVIATIONCHAT/firebase/tests/firestore.rules.test.js) | Integration (emulator) | Security-rules testing (TEA-12): `@firebase/rules-unit-testing` `assertFails`/`assertSucceeds` deny/allow matrix against the real Firestore emulator; **local-only, out of the PR gate** (needs Java 17 — set `JAVA_HOME` per shell); non-vacuity via the emulator's own `PERMISSION_DENIED` logs |
 
-> Paths in this section are relative to this guide's location. Inside the project repo, they are `backend/tests/...`.
+> Paths in this section are relative to this guide's location. Inside the project repo, they are `backend/tests/...` (or `firebase/tests/...` for the rules suite).
 
 ---
 

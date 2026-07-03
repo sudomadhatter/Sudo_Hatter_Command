@@ -18,4 +18,4 @@
 
 ## Open Work
 <!-- These are my research on topics we are working on, diagrams and notes for context, cross check these to the sprint status, use these as reference to get up to speed quickly: -->
-    - tea_testing_guide.md
+    - tea_testing_progress_strategy.md

@@ -28,6 +28,9 @@ DEFAULT_IGNORES = {
     "auth_keys", "_artifacts", "_claude_artifacts", "_opencode_artifacts",
     "_test_scripts", "_debug_audio", ".pytest_cache", ".adk", ".next",
     "dist", "build", "__tests__", ".turbo", ".cache",
+    # ephemeral test/build/report output — gitignored, machine-local, never worth mapping
+    # (kept here so the generator AND check_maps.py's freshness regen agree — one source of truth)
+    "coverage", "playwright-report", "test-results", "bin",
 }
 
 CODE_EXTS = {".py", ".ts", ".tsx", ".js", ".jsx"}
