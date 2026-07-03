@@ -1,6 +1,5 @@
 ---
 description: Autopilot (headless) test-first Dev command — PLAN or IMPLEMENT a story test-first inside the shared autopilot run folder. Modeled off /sudo-dev-story-tests_AP but weaves the atdd (red) → implement (green) → automate (expand) flow from /sudo-dev-story-tests. NOT for interactive use; the autopilot orchestrator invokes it.
-platforms: [claude]
 ---
 
 # /sudo-dev-story-tests_AP — Autopilot Test-First Dev (Amelia)

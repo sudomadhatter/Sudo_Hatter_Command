@@ -1,6 +1,5 @@
 ---
 description: Autopilot (headless) Review+Fix+Gate command — review the implementation in the shared autopilot run folder, apply fixes, run the TEA test gate, and hand to Daniel. Modeled off /sudo-code-review but tuned for agent-to-agent handoff. NOT for interactive use; the autopilot orchestrator invokes it.
-platforms: [claude]
 ---
 
 # /sudo-code-review_AP — Autopilot Review + Fix + Test Gate (Murat)

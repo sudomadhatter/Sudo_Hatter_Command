@@ -169,13 +169,21 @@ That splits "works for all LLMs" into two independent things:
 
 | Engine | Headless call | Session new / resume | Telemetry | Status |
 |---|---|---|---|---|
-| **Claude** (`claude` CLI) | `claude -p … --output-format json` | `--session-id`+`--name` / `--resume` | result JSON (`.total_cost_usd`, `.num_turns`, `.is_error`) | **proven runtime** |
-| **opencode** | `opencode run …` | its own session id / `--continue` | different JSON schema → needs a parse adapter | optional future seam — *point at the Anthropic provider, NOT OpenRouter*; **not built** |
+| **Claude** (`claude` CLI) | `claude -p … --output-format json` | `--session-id`+`--name` / `--resume` | result JSON (`.total_cost_usd`, `.num_turns`, `.is_error`, `.modelUsage`) | **proven runtime** (`/autopilot_claude`, Fable-5 QA via subscription) |
+| **opencode** (`opencode` CLI) | `opencode run … --auto --format json` | `--session <id>` (id **captured from the event stream** on the "new" stage, not pre-minted) | NDJSON event stream (parse adapter: `text` events -> result, `step_finish.part.cost` -> cost, `error` events -> is_error) | **second runtime** (`/autopilot_opencode`, Dev=selected default, QA=`openrouter/z-ai/glm-5.2` `--variant max`) |
 | **Antigravity / Gemini** | — | — | — | IDE-bound, not headless-scriptable; **out of scope** |
+
+> **TWO RUNTIMES NOW EXIST.** `/autopilot_claude` is the Claude-engine proven path (Fable-5 QA via
+> the Claude subscription, `--max-budget-usd` per-stage cap, `.modelUsage` mismatch assertion).
+> `/autopilot_opencode` is the opencode-engine sibling (GLM 5.2 at `--variant max` for QA, no API
+> keys, no per-stage cap, mismatch assertion is a no-op — the opencode event stream carries no
+> `model` field). Both share the same artifact contract, test gate, story->`review` flip, and
+> resilience model; only the `Invoke-Stage` seam + the telemetry adapter differ.
 
 > **CURRENT RUNTIME: the `claude` CLI on Opus 4.8 — and it should stay there.** The relay, file-handoff,
 > test gate, and resilience model (the rest of this doc) are already vendor-neutral; only this one call is
-> Claude-bound, by choice.
+> Claude-bound, by choice. (The opencode engine is the second runtime above — same vendor-neutral core,
+> different `Invoke-Stage` seam.)
 
 ### 5b. Tuning lever — per-role EFFORT on one model, not per-role model
 
