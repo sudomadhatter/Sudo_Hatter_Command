@@ -119,6 +119,8 @@ current AC or cut:**
 - [ ] A new pattern or layer when an **existing project pattern** already does the job
 - [ ] Plan size wildly out of proportion to the ACs (e.g. 1 AC → 200-line plan)
 - [ ] Rebuilding something that **already exists** (Phase 1 reinvention check)
+- [ ] Clone-and-tweak — the plan duplicates an existing block/component/test ("copy X and adjust")
+  where reusing or extending X would do
 
 For each tripwire that fires, name the **simpler alternative** and the lines/steps it saves. **Default
 disposition for an unjustified tripwire is CUT IT.**
@@ -148,10 +150,13 @@ consequence via a shared dependency, the silent killer (corrupts vs. throws), th
 ## Phase 4 — Verdict
 
 1. **Per-item:** SAFE / NEEDS REVISION / UNSAFE
-2. **Three quick gates** (one line each):
+2. **Four quick gates** (one line each):
    - **Verification strategy present?** Does the plan say how it'll be proven (tests / manual)? No → flag.
    - **Anything irreversible / destructive?** Migrations, DB schema/rules, data deletes → flag + gate.
    - **Any step vague enough the dev will guess?** Ambiguity → the dev fills the gap wrong. Tighten it.
+   - **Quality fit?** Does the plan anchor the dev to the existing conventions it should match (naming,
+     error style, module placement, test patterns) — or leave style to improvisation? A plan silent on
+     "where this lives and what it looks like" invites slop.
 3. **Final Go / No-Go** for proceeding to dev.
 
 If NEEDS-REVISION or UNSAFE → **bake the fix into the plan/story itself** (inline `⚠️ AUDIT FINDING`
