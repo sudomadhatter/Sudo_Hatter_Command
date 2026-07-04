@@ -33,15 +33,29 @@ resolves **under `PROJECT_ROOT`**. When you invoke any nested `bmad-*` / `1_*` s
 `{project-root}` to `PROJECT_ROOT`, run it against that directory, and read/write only there. If a needed
 path is missing under `PROJECT_ROOT`, STOP and say so — never fall back to the lobby.
 
+## Step 0.5 — Resolve & create the artifact folder (BEFORE any sub-skill writes a file)
+Every artifact this flow produces (plan, self-audit, walkthrough, code-review) lands in ONE story-scoped
+folder — set it **now** so `bmad-dev-story` and the audit don't drop files at the `_artifacts/` root. Per
+`artifacts-always-first`:
+- **Numeric story `E.S`** → derive the epic from the leading number (e.g. `11.18` → `11`);
+  `ARTIFACT_DIR = PROJECT_ROOT/_artifacts/epic_<E>/<story-slug>/` — **create `epic_<E>/` if missing**, then
+  the story folder inside it (slug `story-<E>-<S>-<short-title>`), or reuse the existing one on a resume.
+- **TEA / non-numeric id** (e.g. `tea-17`) has no numeric epic → nest under the `tea/` bucket:
+  `PROJECT_ROOT/_artifacts/tea/<story-slug>/`.
+- **No story id at all** (a true one-off) → `PROJECT_ROOT/_artifacts/<YYYY-MM-DD>_<slug>/` at the root.
+
+**Echo** `Artifacts: <ARTIFACT_DIR>` before Step 1. Every step below writes into `ARTIFACT_DIR`; pass it
+explicitly to each sub-skill and **never** let one mint its own root-level or date-stamped folder.
+
 ## Step 1 — Plan
 Invoke the **`bmad-dev-story`** skill in PLAN mode for the story in `$ARGUMENTS`. Produce its
-`implementation_plan.md`.
+`implementation_plan.md` **into `ARTIFACT_DIR`** — not the BMAD stories dir, not the `_artifacts/` root.
 
 ## Step 2 — Self-audit the plan (automatic, the moment the plan is written)
 Immediately invoke **`/sudo-self-audit`** against the just-written plan — the pre-dev adversarial
 stress-test (gaps, over-engineering, contract breaks) BEFORE any code. Fold its findings back into the
 plan. (Human-lane equivalent of autopilot Stage 2.) **Persist the audit as its own
-`self-audit-stress-test.md`** (`type: self_audit`) in the story's artifact folder — inline findings, or
+`self-audit-stress-test.md`** (`type: self_audit`) **in `ARTIFACT_DIR`** (Step 0.5) — inline findings, or
 findings folded only into the plan, do NOT satisfy the protocol (`artifacts-always-first` §7).
 
 ## Step 2.5 — Gate: ask first, but ONLY if you have questions
@@ -65,8 +79,8 @@ built — closing gaps the ATDD pass did not reach.
 ## Step 5 — Close-out artifacts (MANDATORY — never skip, even on "just do it")
 The Always-On **`artifacts-always-first`** rule governs this step; it is restated inline here so the
 literal flow cannot miss it (the bug this hardening closes: the steps above produced a plan + a chat report
-but no closing artifacts). Before reporting Done, the story's artifact folder
-`PROJECT_ROOT/_artifacts/epic_<E>/<story>/` MUST hold all three files, each carrying the
+but no closing artifacts). Before reporting Done, `ARTIFACT_DIR` (the Step 0.5 folder — a numeric story's
+`PROJECT_ROOT/_artifacts/epic_<E>/<story>/`) MUST hold all three files, each carrying the
 `IsArtifact: true` + `ArtifactMetadata` frontmatter (with the right `type:`):
 
 - [ ] **`implementation_plan.md`** (`type: implementation_plan`) — from Step 1, frontmatter present (§2).

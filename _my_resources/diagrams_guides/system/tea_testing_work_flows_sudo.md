@@ -9,6 +9,25 @@
 
 ---
 
+Glossary / one-line cheat sheet
+
+| Term | One line |
+|------|----------|
+| **TEA** | Method/playbook on top of your tools — makes expert testing repeatable |
+| **P0–P3** | Risk priority = Probability × Impact; P0 = ship-blocker, P3 = cosmetic |
+| **AAA** | Arrange → Act → Assert; the shape of every test |
+| **DoD** | No flaky, no hard waits, stateless, self-cleaning, low-maintenance, near source |
+| **ATDD** | Test-first (red → green); the failing test is the proof-of-test |
+| **Automate** | Coverage expansion on existing code (passes immediately) |
+| **Use-site patch** | Patch the name as the module-under-test looks it up — not the definition |
+| **Factory** | `_make_event(...)` — defaults + overrides; one update point |
+| **Trace gate** | Requirements → tests → GREEN/YELLOW/RED ship decision |
+| **5 dimensions** | Determinism · Isolation · Assertions · Structure · Performance |
+| **L1–L4** | Deterministic → Constrained LLM → LLM-judge → Human |
+| **TEST GATE** | The opt-in, baseline-diff gate inside `/sudo-code-review` (③) |
+
+---
+
 # PART A — THE METHOD
 
 ## 0. The one-paragraph mental model
@@ -517,26 +536,7 @@ Session 7 is a returnable reference. Re-run `/bmad-teach-me-testing` → Session
 
 ---
 
-## 16. Glossary / one-line cheat sheet
-
-| Term | One line |
-|------|----------|
-| **TEA** | Method/playbook on top of your tools — makes expert testing repeatable |
-| **P0–P3** | Risk priority = Probability × Impact; P0 = ship-blocker, P3 = cosmetic |
-| **AAA** | Arrange → Act → Assert; the shape of every test |
-| **DoD** | No flaky, no hard waits, stateless, self-cleaning, low-maintenance, near source |
-| **ATDD** | Test-first (red → green); the failing test is the proof-of-test |
-| **Automate** | Coverage expansion on existing code (passes immediately) |
-| **Use-site patch** | Patch the name as the module-under-test looks it up — not the definition |
-| **Factory** | `_make_event(...)` — defaults + overrides; one update point |
-| **Trace gate** | Requirements → tests → GREEN/YELLOW/RED ship decision |
-| **5 dimensions** | Determinism · Isolation · Assertions · Structure · Performance |
-| **L1–L4** | Deterministic → Constrained LLM → LLM-judge → Human |
-| **TEST GATE** | The opt-in, baseline-diff gate inside `/sudo-code-review` (③) |
-
----
-
-## 17. Reference links
+## Reference links
 
 **TEA documentation**
 - Overview: https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/
