@@ -1,8 +1,23 @@
 # ACTIVE CONTEXT — _main  (you own this, not a vendor)
 
 ## 1. PRIME STATE
-Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-07-03
-**2026-07-03 (latest): Tier-2 local law — per-folder AGENTS.md as a 3-tier model.** `_artifacts/`,
+Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-07-04
+**2026-07-04 (latest): Tier-2 per-project rollout DONE — the 07-03 session's flagged follow-up is closed.**
+AGY_AVIATIONCHAT + Fresh_Workspace_BMAD each carry their 9 Tier-2 files (`_artifacts/`, `_my_resources/`,
+`docs/` — local-law `AGENTS.md` + `CLAUDE.md`/`GEMINI.md` adapters, bodies digested from each project's own
+canon: AGY keeps `tea/`/local `_main/`/GitNexus-exclusion note, Fresh has neither `tea/` nor GitNexus),
+vendored `docs/workspace-standard.md` refreshed hash-identical to lobby canon, reading-order rule in each
+root `AGENTS.md` §2, one-doc close aligned (root §5 + `_artifacts/README.md`), repo-map AUTO regenerated
+(mode-preserving). Verified: check 8 `[ok] (redirects verified)` in both + AGY negative test; AUTO freshness
+`[ok]` ×2. Untouched pre-existing backlog: AGY 14 depth-3 INDEX gaps + stale GitNexus index (re-index AFTER
+committing), Fresh dead curated `_bmad/bmm/stories` — a future `/1_update-maps` run's work. Check 8 can go
+hint→fatal only after the 4 unconverted projects (JETCHAT, B-L, NEXGen, OpenChat) get Tier-1 brains.
+Session: `_artifacts/_main/2026-07-04_tier2-project-rollout/`. Git: AGY committed `dc58a20e` (bundled into
+story 8.23.2's commit by the live story lane — content diff-verified intact; two-lanes convergence again,
+cf. 8.22.2), Fresh committed `52a5c93` **on `main`** (not `main_debug` — flagged); lobby session files
+staged, awaiting Daniel's commit + `--set-anchor` (cmds in walkthrough; per-project set-anchor + AGY
+re-index owed after the 8.23.2 lane settles).
+**2026-07-03: Tier-2 local law — per-folder AGENTS.md as a 3-tier model.** `_artifacts/`,
 `_my_resources/`, `docs/` each now carry a ~15-line local-law `AGENTS.md` + 1-line `CLAUDE.md`/`GEMINI.md`
 adapters (auto-attached at point of contact — the `_my_resources` READ-ONLY law and `_artifacts` bucket law
 self-enforce). Reading-order rule codified: root `AGENTS.md` §1.7 + `workspace-standard.md` Part 1

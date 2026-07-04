@@ -31,3 +31,4 @@
 | `2026-06-28_testing-strategy-tea-gate/` | Bulletproof testing strategy (TEA gate), Phase A. | implementation_plan, walkthrough |
 | `2026-07-03_artifact-routing-fix/` | Epic-nesting fix: opencode engines + `/sudo-dev-story-tests` Step 0.5 (all 3 surfaces). | implementation_plan, walkthrough |
 | `2026-07-03_tier2-local-law/` | Tier-2 local-law AGENTS.md + adapters (`_artifacts/`, `_my_resources/`, `docs/`); reading-order rule; check 8. | implementation_plan, walkthrough |
+| `2026-07-04_tier2-project-rollout/` | Tier-2 local law rolled out to AGY + Fresh (9 files each, vendored standard refresh, reading-order rule, one-doc alignment). | implementation_plan, walkthrough |
