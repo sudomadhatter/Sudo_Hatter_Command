@@ -12,8 +12,12 @@ workspaces carry the files). Fixed 2 live bugs: linter's regen hint wrote a stra
 (cwd-relative `--output`); `generate_repo_map.py` default-root resolved to `.agents/`. Synced lobby + globals +
 AGY + Fresh (md5 ×3). Diagram doc `file_folder_structure+maintaining.md` updated (Daniel-directed). **OPEN:**
 per-project Tier-2 rollout (AGY/Fresh: 9 files each + vendored `workspace-standard.md` — docs/ isn't synced);
-their lints show the check-8 hint until then. Session: `_artifacts/_main/2026-07-03_tier2-local-law/`
-(UNCOMMITTED — 3 repos, cmds in walkthrough).
+their lints show the check-8 hint until then. **Round 2: `/1_update-maps` is now THE verify command** —
+check 8 content-verifies adapters/law, **NEW check 9 verifies GitNexus index freshness** (`lastCommit==HEAD`;
+caught lobby + AGY genuinely stale), workflow Step 3.7 creates/repairs Tier-2 files, Step 6 hands off re-index
+cmds. **⚠️ `.gitnexus/meta.json` embeds the GitHub PAT cleartext — rotate + switch remote to
+credential-manager auth.** Session: `_artifacts/_main/2026-07-03_tier2-local-law/` (batch 1 committed
+`4be629b`; round-2 cmds in walkthrough Addendum).
 **2026-06-26 (latest): artifact-placement standard codified as 3 rules + `_home`→`_main` rename.** (1) project
 work → `_artifacts/<project>/` (create-if-missing), (2) main/cross-project → `_artifacts/_main/` (renamed from
 `_home` via `git mv`), (3) stories → under the parent epic folder. **opencode** mirrors all 3 inside its own

@@ -98,6 +98,65 @@ Final full lobby lint after close-out ledger rows: exit 0 (pasted in chat).
 - 4 unconverted projects (JETCHAT, B-L-WorldWide, NEXGen-Films, OpenChat-Openrouter) still lack
   Tier-1 brains — pre-existing backlog.
 
+---
+
+# Addendum — /1_update-maps optimization pass (same session, Daniel: "make it the perfect verify command")
+
+## Audit verdict + what changed
+The command covered maps/INDEXes/prune/open-tasks but had 4 gaps. All fixed:
+1. **check 8 strengthened** (`check_maps.py`) — beyond existence: the law `AGENTS.md` must be non-empty
+   and each adapter must actually carry the redirect line (`ADAPTER_PHRASE`). Negative-tested: a stub
+   `docs/CLAUDE.md` fired `adapter(s) CLAUDE.md don't redirect`, restore → `[ok] (redirects verified)`.
+2. **NEW check 9 — GitNexus index freshness** (`check_maps.py`) — implements the standing rule
+   (memory: `gitnexus-verify-index-fresh-after-pull`): if `<root>/.gitnexus/meta.json` exists, its
+   `lastCommit` must equal `git rev-parse HEAD`; non-fatal hint with the re-index command. Skips cleanly
+   when no index / `--skip-git` (no `lastCommit`). Live-verified: lobby index legitimately STALE
+   (indexed `9993428` < HEAD) **and AGY's too** (`1fc85d1` < `7e279e2`) — the exact after-pull scenario.
+3. **Workflow wired to act on both** (`1_update-maps.md`) — goal line names AGENTS files + indexing as
+   verify targets; targets table + 2 rows; NEW **Step 3.7** (create/repair Tier-2 files from the house
+   pattern, `_my_resources/` law files = the one other legitimate write there); Step 4 report template
+   + tier-2/gitnexus sections; Step 5.7 apply; Step 6 re-index hand-off (run AFTER committing, like the
+   anchor; `.agents/` SUDO_COMMAND index reminder — `--skip-git`, check 9 can't see it); guardrails.
+4. **Step 1 regen command fixed** — dropped the cwd-relative `--output` footgun (same bug class fixed in
+   the linter's hint earlier this session); stale bug-note removed; per-project fan-out form added.
+   Docstring corrected while there: check 4 (git baseline) was always informational, never fatal.
+
+Proof-of-life fan-out (`--all`): lobby clean + its real stale-index hint; AGY shows genuine backlog
+drift (new `journeys/`+`tia/` dirs, 13 depth-3 row gaps, stale index) + expected tier-2 hints; Fresh
+stale AUTO + 1 dead curated path + tier-2 hints; RAG_Pipeline_AC NOT conformant (pre-existing); 4
+non-workspaces skipped. That drift is a normal future `/1_update-maps` run's work — not this session's.
+
+## ⚠️ Security finding (Daniel action)
+`.gitnexus/meta.json` stores the git remote URL **with the GitHub PAT embedded in cleartext** (it copies
+`git remote get-url origin`). `.gitnexus/` is gitignored so it never pushes, but the token sits in plain
+local files (and appeared in this chat's transcript). **Recommend: rotate the PAT and switch the remote
+to credential-manager auth** (`git remote set-url origin https://github.com/sudomadhatter/Sudo_Hatter_Command`).
+
+## Addendum — Your Actions
+The first batch is already committed (`4be629b`). This round, lobby only + re-syncs (AGY/Fresh get the
+same 6 vendored toolkit files again):
+
+**Lobby:**
+```bash
+git add .agents/scripts/check_maps.py .agents/commands/1_update-maps.md .agents/workflows/1_update-maps.md \
+        .claude/commands/1_update-maps.md .opencode/commands/1_update-maps.md \
+        "_my_resources/diagrams_guides/system/file_folder_structure+maintaining.md" \
+        _artifacts/INDEX.md _artifacts/_main/active-context.md _artifacts/_main/2026-07-03_tier2-local-law/
+git commit -m "feat(maps): check 8 content-verify + check 9 gitnexus freshness; wire /1_update-maps as THE verify command"
+python .agents/scripts/check_maps.py --set-anchor
+node .gitnexus/run.cjs analyze     # clears the lobby's own check-9 hint (AFTER committing)
+```
+
+**AGY + Fresh** (same 6 files each, vendored by sync):
+```bash
+git -C Projects/AGY_AVIATIONCHAT add .agents/scripts/check_maps.py .agents/commands/1_update-maps.md .agents/workflows/1_update-maps.md .claude/commands/1_update-maps.md .opencode/commands/1_update-maps.md .agents/scripts/generate_repo_map.py
+git -C Projects/AGY_AVIATIONCHAT commit -m "chore(toolkit): sync check-9 gitnexus freshness + tier-2 content checks"
+git -C Projects/Fresh_Workspace_BMAD add .agents/scripts/check_maps.py .agents/commands/1_update-maps.md .agents/workflows/1_update-maps.md .claude/commands/1_update-maps.md .opencode/commands/1_update-maps.md .agents/scripts/generate_repo_map.py
+git -C Projects/Fresh_Workspace_BMAD commit -m "chore(toolkit): sync check-9 gitnexus freshness + tier-2 content checks"
+```
+(If a listed file shows no diff in a repo, git skips it harmlessly. AGY's stale index: after committing,
+`cd Projects/AGY_AVIATIONCHAT && node .gitnexus/run.cjs analyze`.)
+
 ## Task Checklist
 - [x] Read newest artifact-routing-fix walkthrough + source files
 - [x] implementation_plan.md written (pre-approved by Daniel in chat)

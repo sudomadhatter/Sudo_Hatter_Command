@@ -20,7 +20,7 @@ flowchart TD
 
     subgraph TOOLKIT [".agents/ — MASTER TOOLKIT (single source of authorship)"]
         RULES["rules/\nconstitution, karpathy, artifacts-always-first,\ngit-policy, mobile-mode"]
-        SCRIPTS["scripts/\ncheck_maps.py (8-check linter)\nsync-agents.ps1"]
+        SCRIPTS["scripts/\ncheck_maps.py (9-check linter)\nsync-agents.ps1"]
         CMDS["commands/ + workflows/\nINDEX.md (command registry)\n1_update-maps.md (the workflow)"]
         OTHER["skills/, templates/, bmad/"]
     end
@@ -123,7 +123,7 @@ Three pieces work together: the **linter** (detect), the **workflow** (reconcile
 
 ```mermaid
 flowchart TD
-    subgraph LINTER ["check_maps.py — 8 checks"]
+    subgraph LINTER ["check_maps.py — 9 checks"]
         C1["1. AUTO-block freshness\n(mode-preserving regen + diff)"]
         C2["2. path existence\n(map/INDEX table-row paths resolve)"]
         C3["3. top-level folder coverage"]
@@ -131,28 +131,29 @@ flowchart TD
         C5["5. context hygiene\n(prune nag — HINT only)"]
         C6["6. structure conformance\n(PATH CONTRACT gate)"]
         C7["7. depth-3 _artifacts INDEX\n(missing/stale per-bucket)"]
-        C8["8. tier-2 local law\n(AGENTS.md + adapters — HINT only)"]
+        C8["8. tier-2 local law\n(AGENTS.md + redirecting adapters — HINT only)"]
+        C9["9. gitnexus index freshness\n(meta.json lastCommit == HEAD — HINT only)"]
     end
 
     HOOK["SessionStart hook #3\n(.claude/settings.json)\nruns --depth3-only\nClaude Code only"]
     HOOK -->|"~50ms, exits 0 (non-fatal nag)"| C7
 
     WORKFLOW["/1_update-maps command\nthe reconciliation workflow"]
-    WORKFLOW -->|"Step 3: audit all 8 checks"| LINTER
+    WORKFLOW -->|"Step 3: audit all 9 checks"| LINTER
     WORKFLOW -->|"Step 5: fix drift\nregen AUTO (mode-preserving)\nadd missing depth-3 INDEXes"| LINTER
     WORKFLOW -->|"Step 6: commit per repo\n+ --set-anchor"| ANCHOR["docs/.maps-state.json\nbaseline for next drift check"]
 
     classDef hook fill:#fff3d6,stroke:#b8860b,color:#000
     classDef depth3 fill:#d4f7d4,stroke:#2e7d32,color:#000
     class HOOK hook
-    class C7,C8 depth3
+    class C7,C8,C9 depth3
 ```
 
 ### check_maps.py flags
 
 | Flag | What it does |
 |---|---|
-| `--all` | Run all 8 checks across all conformant workspaces |
+| `--all` | Run all 9 checks across all conformant workspaces |
 | `--depth3-only` | Run ONLY check 7 (depth-3 INDEX); exits 0 always — for SessionStart nag |
 | `--set-anchor` | Write current state to `docs/.maps-state.json` (run AFTER committing) |
 | `--ignore <dirs>` | Skip dirs (lobby: `Projects,_my_resources`; projects: `_my_resources,_bmad`) |
@@ -248,7 +249,7 @@ flowchart TD
 | `docs/workspace-standard.md` | The WHAT — structure contract (PATH CONTRACT table, tier model, depth-3 rule, end-of-task checklist) |
 | `_artifacts/AGENTS.md` · `_my_resources/AGENTS.md` · `docs/AGENTS.md` | Tier-2 local law (+ 1-line adapters beside each) — auto-attached at point of contact |
 | `.agents/workflows/1_update-maps.md` | The HOW — 7-step reconciliation workflow (audit → fix → commit → anchor) |
-| `.agents/scripts/check_maps.py` | The linter — 8 checks (6 fatal + 2 hints) + `--depth3-only` + `--set-anchor` |
+| `.agents/scripts/check_maps.py` | The linter — 9 checks (5 fatal + git signal + 3 hints: hygiene, tier-2 law, gitnexus freshness) + `--depth3-only` + `--set-anchor` |
 | `.agents/scripts/sync-agents.ps1` | The propagator — mirrors master `.agents/` to all platforms + projects |
 | `docs/repo-map.md` | Hybrid nav index (curated header + AUTO body) — per workspace |
 | `_artifacts/INDEX.md` | Depth-2 session ledger — per workspace |

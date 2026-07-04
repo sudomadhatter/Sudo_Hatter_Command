@@ -2,9 +2,13 @@
 
 > **Goal.** Bring every navigation artifact in a workspace back into agreement with what's *actually on
 > disk*: the repo map (`docs/repo-map.md` — same in lobby and project), every `INDEX.md`,
-> the size of the continuity `active-context.md` (**context hygiene / prune**), and the **open-tasks list**
-> (`_my_resources/open_tasks/todo_list.md`'s `## Open Work` section, kept mirroring the task files beside it).
+> the **Tier-2 local-law `AGENTS.md` + adapters** (the folder-file tier model),
+> the size of the continuity `active-context.md` (**context hygiene / prune**), the **open-tasks list**
+> (`_my_resources/open_tasks/todo_list.md`'s `## Open Work` section, kept mirroring the task files beside it),
+> and the **GitNexus index freshness** (machine-local index vs HEAD — verify + hand off, never auto-reindex).
 > Detect drift accurately (use git, not a blind re-walk), fix what's safe to fix, and flag what isn't yours to edit.
+> **This is THE one verification command** for "are the maps, the INDEXes, the AGENTS files, and the
+> indexing all current?" — a clean exit means every deterministic layer agrees with disk.
 >
 > **This is an upkeep/maintenance workflow.** It edits docs/markdown only — never code, never commits,
 > never pushes (per `.agents/rules/git-policy.md`). Read-mostly until the approval gate.
@@ -34,6 +38,8 @@
 | `_artifacts/INDEX.md` | session ledger (inside `_artifacts/`) | **Editable** — reconcile rows against real session folders. |
 | `_artifacts/<bucket>/INDEX.md` (depth-3, **inside `_artifacts/` only**) | per-epic/bucket session INDEX — one row per session folder, listing the story + artifact files | **Editable** — reconcile rows vs session folders under each `epic_*/`, `_main/`, `tea/`, etc. Create when a bucket has ≥2 session folders; `/1_update-maps` keeps them current. Not for code dirs. |
 | `.agents/{rules,workflows,skills,commands}/INDEX.md` | **MASTER** family maps (this repo is the source) | **Editable here** — fix drift, then `/sync-agents` to push copies to `.claude/`/`.opencode/`. |
+| Tier-2 local law — `{_artifacts,_my_resources,docs}/AGENTS.md` + `CLAUDE.md`/`GEMINI.md` adapters | the folder-file tier model (`workspace-standard.md` Part 1) | **Create/repair** when check 8 hints (Step 3.7): copy the house pattern, adapt the law digest to that workspace. The `_my_resources/` law files are the ONE other thing writable under that dir. |
+| `.gitnexus/meta.json` `lastCommit` vs HEAD | machine-local GitNexus index (gitignored, does not travel) | **Verify-only** (check 9): if stale, hand Daniel the re-index command per repo — never run the indexer yourself mid-workflow. |
 | `_my_resources/open_tasks/todo_list.md` — the **`## Open Work`** file-list | Daniel's hand-written notes **plus** an auto manifest of the task files | **Refresh ONLY the `## Open Work` file-list** to mirror the `open_tasks/*.md` plan/PRP files beside it. Leave his `## Todo list` prose and the task files themselves untouched (Step 3.6). |
 
 **Off-limits the whole time:** anything under `_my_resources/` (Daniel's protected area — `AGENTS.md` §5)
@@ -61,18 +67,19 @@ Daniel's `## Todo list` prose and every task file — stays **read-only** (you m
    python .agents/scripts/check_maps.py                       # one workspace (lobby, or run from inside a project)
    python .agents/scripts/check_maps.py --root Projects/<name>   # one specific project from the lobby
    ```
-   Per workspace it runs **eight** checks. Four are **fatal drift** (exit non-zero): **AUTO-block freshness** (regenerates the
+   Per workspace it runs **nine** checks. Fatal drift (exit non-zero): **AUTO-block freshness** (regenerates the
    map body in memory, mode-preserving, and diffs), **path existence** (every path *promised* in a
    repo-map/INDEX table row resolves on disk), **top-level folder coverage** (every real top-level folder is
-   documented), and **git baseline** (adds/deletes/**renames** since the last reconciled SHA in
-   `<docs>/.maps-state.json`). Two more gates (also fatal): the **structure-conformance** gate — the workspace carries
-   the standard files in the standard places per the PATH CONTRACT (this is the "verify the structures stay
-   standard" check that makes one generic tool safe) — and the **depth-3 `_artifacts/` INDEX** reconciliation
-   (every bucket with ≥2 session folders has an `INDEX.md` whose rows match disk). Two are **NON-FATAL hints**:
-   **context hygiene** — the continuity `active-context.md` is over the prune window or `INDEX.md` is over the
-   row cap (drives Step 3.5) — and **tier-2 local law** — a guarded infrastructure dir (`_artifacts/`,
-   `_my_resources/`, `docs/`) is missing its local-law `AGENTS.md` or a 1-line adapter (fix = copy the tier-2
-   pattern per `workspace-standard.md` Part 1, "folder-file tier model").
+   documented), the **structure-conformance** gate — the workspace carries the standard files in the standard
+   places per the PATH CONTRACT (the "verify the structures stay standard" check that makes one generic tool
+   safe) — and the **depth-3 `_artifacts/` INDEX** reconciliation (every bucket with ≥2 session folders has an
+   `INDEX.md` whose rows match disk). Informational: **git baseline** (adds/deletes/**renames** since the last
+   reconciled SHA in `<docs>/.maps-state.json` — the highest-value drift signal, never the exit code). Three are
+   **NON-FATAL hints**: **context hygiene** — the continuity `active-context.md` is over the prune window or
+   `INDEX.md` is over the row cap (drives Step 3.5); **tier-2 local law** — a guarded infrastructure dir
+   (`_artifacts/`, `_my_resources/`, `docs/`) is missing its local-law `AGENTS.md`, the law is empty, or an
+   adapter doesn't actually redirect (drives Step 3.7); and **gitnexus index** — the workspace's machine-local
+   GitNexus index (`.gitnexus/meta.json`) is behind HEAD (drives the Step 6 re-index hand-off).
    High-precision: it only flags table-row paths with a real top-level first segment, so prose/cross-repo
    mentions don't generate noise. From the lobby it skips `Projects/` (separate repos) and `_my_resources/`
    (protected); with `--root` it lints that workspace directly.
@@ -132,13 +139,14 @@ project**, because Daniel's `/1_update-maps` from the top is meant to clean ever
 1. Read the sentinel comment in `docs/repo-map.md` to learn the **declared mode** — the line reads
    `mode=content` or `mode=auto`. **Preserve it.** Regenerating in the wrong mode rewrites the entire
    block and produces a junk diff. This repo is **`mode=content`** (folder-level only).
-2. Run the generator with that mode and the established ignore list:
+2. Run the generator with that mode and the established ignore list — **pass `--root`, never `--output`**
+   (`--output` resolves against your *cwd*: with the `docs/` prefix dropped it silently writes a stray
+   root-level `repo-map.md`; with `--root` the default output already lands at `<root>/docs/repo-map.md`):
    ```bash
-   python .agents/scripts/generate_repo_map.py --root . --output docs/repo-map.md --ignore Projects,_my_resources --mode content
+   python .agents/scripts/generate_repo_map.py --root . --ignore Projects,_my_resources --mode content   # lobby
+   python .agents/scripts/generate_repo_map.py --root Projects/<name> --ignore <its documented set> --mode <its mode>   # fan-out, per project
    ```
-   (Use `--mode auto` only if the sentinel says so.) **`--root .` is required at the home base:** the master
-   generator lives at `.agents/scripts/`, so its default root resolves to `.agents/` (it assumes the vendored
-   `<project>/scripts/` location) — without `--root .` it maps only the `.agents/` subtree, not the lobby.
+   (Use `--mode auto` only if the sentinel says so.)
 3. `git diff docs/repo-map.md`. Three outcomes:
    - **No diff** → the folder structure is unchanged; the AUTO block was already current. Good.
    - **Diff present** → new/removed/renamed top-level folders exist on disk. Keep it; note the changed
@@ -246,6 +254,26 @@ mirroring the **`## Open Work`** section to the files actually present — and *
 
 ---
 
+## Step 3.7 — Tier-2 local law (create/repair the folder AGENTS.md + adapters)
+
+The linter's `[tier-2 local law]` section is a **non-fatal hint**. If it's `[ok]`, **skip this step.** If it
+hints, propose the fix (an *edit* → Step 4 gate):
+
+1. **Missing files** → create them from the house pattern (reference copies live at the lobby:
+   `_artifacts/AGENTS.md`, `_my_resources/AGENTS.md`, `docs/AGENTS.md` + the 1-line adapters beside each).
+   The two adapters are byte-identical boilerplate (only the `# Entry — <folder>` title varies); the
+   `AGENTS.md` is a **~15-line law digest adapted to THAT workspace** — what this place is, the local law,
+   where the detail lives (README / INDEX header / the synced rule). Digest-points-at-canon: never restate a
+   whole rule, never contradict the workspace's own README.
+2. **Empty law / non-redirecting adapter** → repair to the pattern (the adapter must carry the exact line
+   ``Read `AGENTS.md` in this same folder``).
+3. The `_my_resources/` law files are the one **other** legitimate write under that dir (alongside the
+   Step 3.6 manifest) — the protection covers Daniel's content, not the system's law files. Touch nothing
+   else in there.
+4. Canon for the tier model → `workspace-standard.md` Part 1, "The folder-file tier model".
+
+---
+
 ## Step 4 — Findings report + approval gate (STOP)
 
 Present a single, scannable report before changing any file **outside `_artifacts/`** (the artifacts gate,
@@ -270,8 +298,15 @@ each block:
 #### 🗂️ Open-tasks list (`todo_list.md` → ## Open Work)
 - add `new-prp.md`, drop `shipped-task.md`                  [reason: matches open_tasks/ on disk]  (manifest only — prose untouched)
 
+#### 🏷️ Tier-2 local law — only if the linter hinted
+- _artifacts/: create AGENTS.md + CLAUDE.md + GEMINI.md from the house pattern   [reason: check-8 hint]
+- docs/CLAUDE.md: repair — adapter doesn't redirect                              [reason: check-8 hint]
+
+#### 🔍 GitNexus index — only if the linter hinted (verify-only, command handed at Step 6)
+- <workspace>: index STALE (indexed <sha7>, HEAD <sha7>) → re-index command in the close-out
+
 #### 🚩 Flagged — NOT mine to edit (needs you / another tool)
-- _my_resources/... (outside the Open Work manifest)        → Daniel's protected area, confirm with him
+- _my_resources/... (outside the Open Work manifest + law files) → Daniel's protected area, confirm with him
 
 #### 🧹 Context hygiene (prune) — only if the linter nagged
 - active-context.md: 14 blocks → archive oldest 4 to <archive>, keep newest 10   [reason: over window]
@@ -298,7 +333,9 @@ edits, say so and proceed (a regen that produces no diff needs no approval).
    verbatim — never a rewrite), and confirm the brief now opens on the newest ~10 blocks.
 6. **Apply the open-tasks refresh** (Step 3.6) if approved: rewrite ONLY the `## Open Work` file manifest in
    `todo_list.md` to match `open_tasks/*.md`; re-read to confirm the `## Todo list` prose is byte-for-byte intact.
-7. **Re-run the generator** if you edited the curated block, so the file is internally consistent, and
+7. **Apply the Tier-2 fixes** (Step 3.7) if approved: create/repair the law + adapters, then re-run the
+   linter's tier-2 section to confirm `[ok] ... (redirects verified)`.
+8. **Re-run the generator** if you edited the curated block, so the file is internally consistent, and
    re-diff to confirm only the intended lines changed.
 
 ---
@@ -328,6 +365,15 @@ edits, say so and proceed (a regen that produces no diff needs no approval).
   ```
   Do not anchor before committing — you'd baseline an un-committed state.
 - If you fixed any `.agents/*/INDEX.md`, remind him those need `/sync-agents` to reach `.claude`/`.opencode`.
+- **GitNexus re-index hand-off.** If check 9 hinted anywhere, hand Daniel the per-repo command **to run AFTER
+  committing** (so the fresh index lands on the new HEAD, same reasoning as the anchor):
+  ```bash
+  node .gitnexus/run.cjs analyze                                    # the stale workspace, from ITS root
+  ```
+  Never run the indexer yourself mid-workflow (it can take minutes and the law is verify-only here). Two
+  standing caveats: the **`.agents/` SUDO_COMMAND index has no git tracking** (`--skip-git`) — check 9 can't
+  see it, so if this run touched `.agents/**`, remind Daniel it needs a manual re-analyze too; and an index is
+  **machine-local** — after a pull on another computer the same staleness must be re-checked there.
 
 ---
 
@@ -346,9 +392,14 @@ edits, say so and proceed (a regen that produces no diff needs no approval).
 - **Prune is a MOVE, never a rewrite** — archived blocks/rows stay verbatim; never summarise history away.
 - **Depth-3 INDEX only inside `_artifacts/`** — one row per session folder in each `epic_*/`, `_main/`, `tea/`,
   etc. (not for code dirs). Create when a bucket has ≥2 sessions; reconcile on every `/1_update-maps`.
-- **`_my_resources/` is untouchable** with **one surgical exception** — the `## Open Work` file manifest in
-  `todo_list.md`, which Step 3.6 refreshes to match `open_tasks/*.md`. His `## Todo list` prose, the task files,
-  and everything else under `_my_resources/` stay off-limits. `_bmad/` is regenerated.
+- **`_my_resources/` is untouchable** with **two surgical exceptions** — the `## Open Work` file manifest in
+  `todo_list.md` (Step 3.6) and the tier-2 law files at its top (`AGENTS.md` + adapters, Step 3.7). His
+  `## Todo list` prose, the task files, and everything else under `_my_resources/` stay off-limits. `_bmad/`
+  is regenerated.
+- **Tier-2 fixes are pattern copies** — law digest adapted per workspace, adapters byte-identical boilerplate;
+  never a second canonical copy of a rule (digest-points-at-canon).
+- **GitNexus is verify-only here** — check 9 detects, Step 6 hands off the re-index command; the workflow never
+  runs the indexer.
 - **Never commit/push** — hand off the command, one per repo.
 
 Optional input: $ARGUMENTS  (e.g. a folder to focus on, or `--dry-run` to stop after the report).

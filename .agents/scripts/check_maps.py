@@ -20,19 +20,24 @@ Mode detection (PATH CONTRACT, two columns):
                  its continuity brief at `_bmad-output/active-context/active-context.md` and uses `_artifacts/`
                  for session *history*; a non-BMAD project uses `_artifacts/active-context.md`.
 
-Eight checks (1-4 fatal drift; 5 + 8 non-fatal hints; 6-7 fatal):
+Nine checks (1-3 fatal drift; 4 informational; 5 + 8 + 9 non-fatal hints; 6-7 fatal):
   1. AUTO-block freshness   — regenerate the map's AUTO body in memory (mode-preserving) and diff.
   2. Path existence         — every backticked table-row path in the map CURATED block + each INDEX.md resolves.
   3. Folder coverage        — every real TOP-LEVEL folder appears in the map text.
   4. Git baseline           — diff HEAD against the last reconciled SHA (<docs>/.maps-state.json); list renames.
+                             (Informational — it feeds the workflow's judgment steps, never the exit code.)
   5. Context hygiene        — NON-FATAL nag: continuity brief over the prune window / INDEX.md over the row cap.
   6. Structure conformance  — the workspace carries the standard files in the standard places (the contract gate).
   7. Depth-3 _artifacts INDEX — every _artifacts/ bucket with ≥2 session folders has an INDEX.md (one row per
                              session); reports missing INDEXes, missing rows, stale rows. Only inside _artifacts/.
   8. Tier-2 local law       — NON-FATAL nag: each guarded infrastructure dir present (_artifacts/, _my_resources/,
-                             docs/) carries a local-law AGENTS.md + 1-line CLAUDE.md/GEMINI.md adapters
-                             (workspace-standard.md Part 1, "folder-file tier model"). Hint until every
-                             workspace carries the files; then promote into check 6.
+                             docs/) carries a local-law AGENTS.md (non-empty) + 1-line CLAUDE.md/GEMINI.md
+                             adapters that actually redirect (workspace-standard.md Part 1, "folder-file tier
+                             model"). Hint until every workspace carries the files; then promote into check 6.
+  9. GitNexus index freshness — NON-FATAL nag: if the workspace has a machine-local GitNexus index
+                             (.gitnexus/meta.json), its lastCommit must equal HEAD. A git pull moves HEAD past
+                             the gitignored index and impact/test-selection answers go silently wrong
+                             (dirty tree != stale — only commits count). No index -> skip.
 """
 import argparse
 import json
@@ -90,9 +95,12 @@ INDEX_ROW_RE = re.compile(r"^\|\s*\d{4}-\d{2}-\d{2}\s*\|", re.M)  # a dated INDE
 
 # Tier-2 guarded-infrastructure dirs (workspace-standard.md Part 1, "folder-file tier model"):
 # when present, each carries a local-law AGENTS.md + the 1-line adapters so the law auto-attaches
-# at the point of contact. Existence-only check — _my_resources content is never read.
+# at the point of contact. Reads ONLY these three system files at the dir's top — the _my_resources
+# protection covers Daniel's content, not the law files (which are ours to verify).
 TIER2_DIRS = ("_artifacts", "_my_resources", "docs")
 TIER2_FILES = ("AGENTS.md", "CLAUDE.md", "GEMINI.md")
+# The redirect line every adapter must carry (byte-pattern of the house adapter — root + tiers alike).
+ADAPTER_PHRASE = "Read `AGENTS.md` in this same folder"
 
 
 def sh(args, cwd):
@@ -376,8 +384,10 @@ def check_context_hygiene(root, is_home, is_bmad):
 # --- check 8: Tier-2 local law (NON-FATAL hint — guarded dirs carry AGENTS.md + adapters) --------------
 def check_tier2_law(root):
     """Each Tier-2 dir that exists should carry a local-law AGENTS.md + both 1-line adapters, so the
-    harness auto-attaches the law when an agent touches files there. Hint-only (unconverted workspaces
-    shouldn't start failing); promote into check_conformance once all workspaces carry the files."""
+    harness auto-attaches the law when an agent touches files there. Beyond existence: the law must be
+    non-empty and each adapter must actually redirect (a 0-byte file or a copy-paste stub would
+    otherwise pass). Hint-only (unconverted workspaces shouldn't start failing); promote into
+    check_conformance once all workspaces carry the files."""
     hints = []
     for d in TIER2_DIRS:
         base = root / d
@@ -386,7 +396,40 @@ def check_tier2_law(root):
         missing = [f for f in TIER2_FILES if not (base / f).exists()]
         if missing:
             hints.append(f"{d}/: no local law - missing {', '.join(missing)} (tier model, workspace-standard.md Part 1)")
+            continue
+        if not (base / "AGENTS.md").read_text(encoding="utf-8", errors="replace").strip():
+            hints.append(f"{d}/AGENTS.md: empty - write the local law (tier model, workspace-standard.md Part 1)")
+        broken = [f for f in ("CLAUDE.md", "GEMINI.md")
+                  if ADAPTER_PHRASE not in (base / f).read_text(encoding="utf-8", errors="replace")]
+        if broken:
+            hints.append(f"{d}/: adapter(s) {', '.join(broken)} don't redirect - "
+                         f"expected the line: {ADAPTER_PHRASE} ...")
     return hints
+
+
+# --- check 9: GitNexus index freshness (NON-FATAL hint — machine-local index vs HEAD) ------------------
+def check_gitnexus_fresh(root):
+    """Standing rule (memory: gitnexus-verify-index-fresh-after-pull): a git pull moves HEAD past the
+    machine-local, gitignored GitNexus index — which then silently mis-answers impact/test-selection
+    queries. If this workspace carries an index (.gitnexus/meta.json), its lastCommit must equal HEAD.
+    Dirty tree != stale — only commits count. No index / no git / no lastCommit (--skip-git indexes
+    like the .agents/ SUDO_COMMAND one) -> nothing to check here."""
+    meta = root / ".gitnexus" / "meta.json"
+    if not meta.exists():
+        return []
+    try:
+        last = (json.loads(meta.read_text(encoding="utf-8")).get("lastCommit") or "").strip()
+    except Exception:
+        return [".gitnexus/meta.json: unreadable - re-index: node .gitnexus/run.cjs analyze"]
+    if not last:
+        return []
+    head, rc = sh(["git", "rev-parse", "HEAD"], root)
+    if rc != 0 or not head:
+        return []
+    if head != last:
+        return [f"GitNexus index STALE - indexed at {last[:7]}, HEAD is {head[:7]} - re-index: "
+                "node .gitnexus/run.cjs analyze (impact/test-selection answers unreliable until then)"]
+    return []
 
 
 # --- check 6: structure conformance (the contract gate — 'verify structures stay standard') -----------
@@ -488,7 +531,18 @@ def lint_one(root, ignore_override=None):
         for h in tier2:
             print("  [hint] " + h)
     else:
-        print("  [ok] guarded dirs carry AGENTS.md + adapters")
+        print("  [ok] guarded dirs carry AGENTS.md + adapters (redirects verified)")
+
+    # gitnexus freshness is likewise a NON-FATAL nag (see check_gitnexus_fresh docstring)
+    print("\n[gitnexus index]  (hint only - does not fail the lint)")
+    gn = check_gitnexus_fresh(root)
+    if gn:
+        for h in gn:
+            print("  [hint] " + h)
+    elif (root / ".gitnexus" / "meta.json").exists():
+        print("  [ok] index matches HEAD")
+    else:
+        print("  [ok] no GitNexus index in this workspace - nothing to verify")
 
     return has_drift
 
