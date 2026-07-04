@@ -20,7 +20,7 @@ Mode detection (PATH CONTRACT, two columns):
                  its continuity brief at `_bmad-output/active-context/active-context.md` and uses `_artifacts/`
                  for session *history*; a non-BMAD project uses `_artifacts/active-context.md`.
 
-Seven checks (1-4 fatal drift; 5 non-fatal hint; 6-7 fatal):
+Eight checks (1-4 fatal drift; 5 + 8 non-fatal hints; 6-7 fatal):
   1. AUTO-block freshness   — regenerate the map's AUTO body in memory (mode-preserving) and diff.
   2. Path existence         — every backticked table-row path in the map CURATED block + each INDEX.md resolves.
   3. Folder coverage        — every real TOP-LEVEL folder appears in the map text.
@@ -29,6 +29,10 @@ Seven checks (1-4 fatal drift; 5 non-fatal hint; 6-7 fatal):
   6. Structure conformance  — the workspace carries the standard files in the standard places (the contract gate).
   7. Depth-3 _artifacts INDEX — every _artifacts/ bucket with ≥2 session folders has an INDEX.md (one row per
                              session); reports missing INDEXes, missing rows, stale rows. Only inside _artifacts/.
+  8. Tier-2 local law       — NON-FATAL nag: each guarded infrastructure dir present (_artifacts/, _my_resources/,
+                             docs/) carries a local-law AGENTS.md + 1-line CLAUDE.md/GEMINI.md adapters
+                             (workspace-standard.md Part 1, "folder-file tier model"). Hint until every
+                             workspace carries the files; then promote into check 6.
 """
 import argparse
 import json
@@ -83,6 +87,12 @@ INDEX_NAG_ROWS = 35         # hint to archive older rows once past this
 
 BLOCK_RE = re.compile(r"^\s*\*\*\d{4}-\d{2}-\d{2}", re.M)         # a dated PRIME-STATE session block
 INDEX_ROW_RE = re.compile(r"^\|\s*\d{4}-\d{2}-\d{2}\s*\|", re.M)  # a dated INDEX.md session row
+
+# Tier-2 guarded-infrastructure dirs (workspace-standard.md Part 1, "folder-file tier model"):
+# when present, each carries a local-law AGENTS.md + the 1-line adapters so the law auto-attaches
+# at the point of contact. Existence-only check — _my_resources content is never read.
+TIER2_DIRS = ("_artifacts", "_my_resources", "docs")
+TIER2_FILES = ("AGENTS.md", "CLAUDE.md", "GEMINI.md")
 
 
 def sh(args, cwd):
@@ -171,8 +181,10 @@ def check_auto_block(root, map_path, regen_ignore):
     new_lines = set(fresh.splitlines())
     added = [l.strip() for l in sorted(new_lines - cur_lines) if l.strip().endswith("/")]
     removed = [l.strip() for l in sorted(cur_lines - new_lines) if l.strip().endswith("/")]
+    # NOTE: no --output (its path is cwd-relative and silently writes a stray root file when the
+    # docs/ prefix is dropped); --root makes the default output land at <root>/docs/repo-map.md.
     msgs = ["AUTO block is STALE - regenerate: "
-            f"python .agents/scripts/generate_repo_map.py --output {map_path.name} "
+            f"python .agents/scripts/generate_repo_map.py --root {root} "
             f"--ignore {regen_ignore} --mode {mode}"]
     if added:
         msgs.append("  on disk but not in map: " + ", ".join(added[:12]))
@@ -361,6 +373,22 @@ def check_context_hygiene(root, is_home, is_bmad):
     return hints
 
 
+# --- check 8: Tier-2 local law (NON-FATAL hint — guarded dirs carry AGENTS.md + adapters) --------------
+def check_tier2_law(root):
+    """Each Tier-2 dir that exists should carry a local-law AGENTS.md + both 1-line adapters, so the
+    harness auto-attaches the law when an agent touches files there. Hint-only (unconverted workspaces
+    shouldn't start failing); promote into check_conformance once all workspaces carry the files."""
+    hints = []
+    for d in TIER2_DIRS:
+        base = root / d
+        if not base.is_dir():
+            continue
+        missing = [f for f in TIER2_FILES if not (base / f).exists()]
+        if missing:
+            hints.append(f"{d}/: no local law - missing {', '.join(missing)} (tier model, workspace-standard.md Part 1)")
+    return hints
+
+
 # --- check 6: structure conformance (the contract gate — 'verify structures stay standard') -----------
 def check_conformance(root, is_home, is_bmad, map_path):
     """Confirm the workspace carries the standard files in the standard places (workspace-standard.md PATH CONTRACT)."""
@@ -452,6 +480,15 @@ def lint_one(root, ignore_override=None):
             print("  [hint] " + h)
     else:
         print("  [ok] continuity brief + INDEX within the prune window")
+
+    # tier-2 local law is likewise a NON-FATAL nag (see check_tier2_law docstring)
+    print("\n[tier-2 local law]  (hint only - does not fail the lint)")
+    tier2 = check_tier2_law(root)
+    if tier2:
+        for h in tier2:
+            print("  [hint] " + h)
+    else:
+        print("  [ok] guarded dirs carry AGENTS.md + adapters")
 
     return has_drift
 

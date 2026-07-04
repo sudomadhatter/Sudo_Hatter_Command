@@ -12,6 +12,9 @@ the program; you **become** the agent the workspace describes.
 4. Before any risky/irreversible action → see §6 GATES.
 5. Continuity ("pick up" / "hand off") → see §7 PERSISTENCE.
 6. Before editing any file outside `_artifacts/` → an approved `implementation_plan.md` is required (see §3 gate).
+7. **Entering any folder: if it carries an `AGENTS.md`, read that FIRST** (the local law — how to act
+   there); read its `INDEX.md`/`README.md` only when you need the inventory. Tier model (which folders
+   get one) → `docs/workspace-standard.md` Part 1.
 
 ## 2. MAP / MISSION / SUPPORT  (answer these for every task — then you're never lost)
 - **MAP** — where am I, where can I go?   → `router.md` (lobby) → a workspace `AGENTS.md` (floor)

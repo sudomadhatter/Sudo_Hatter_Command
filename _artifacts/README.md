@@ -1,7 +1,8 @@
 # `_artifacts/` — shared memory (home base)
 
-Plans, walkthroughs, and continuity for work done **from the home base**. The session ledger is
-[`INDEX.md`](./INDEX.md) (placement rules live in its header); the full model is `_docs/workspace-standard.md`;
+Plans, walkthroughs, and continuity for work done **from the home base**. The 10-second law of this
+place is [`AGENTS.md`](./AGENTS.md) (auto-attached via the adapters); the session ledger is
+[`INDEX.md`](./INDEX.md) (placement rules live in its header); the full model is `docs/workspace-standard.md`;
 the plan-first protocol is `.agents/rules/artifacts-always-first.md`.
 
 > **⛔ The store is `_artifacts/` — never `_claude_artifacts/` or `_opencode_artifacts/`** (both retired/deleted).
@@ -35,8 +36,7 @@ The deciding factor is your **cwd**, not only what the work is about (full rules
 | File | When |
 |---|---|
 | `implementation_plan.md` | always — approved **before** any edits |
-| `walkthrough.md` | at close — what changed + **real pasted test output** + a **"Your Actions"** git command |
-| `task-list.md` | at close — snapshot of the final TodoWrite list |
+| `walkthrough.md` | at close — the ONE closing doc: what changed + **real pasted test output**, ending in `## Task Checklist` (final TodoWrite snapshot) + `## Your Actions` (git command). **No separate `task-list.md`** |
 | `code-review.md` / `self-audit-stress-test.md` / `bug-list.md` | when those run |
 
 **Continuity:** `active-context.md` is the pickup/handoff brief for that location —

@@ -1,0 +1,179 @@
+diff --git Projects/Fresh_Workspace_BMAD/scripts/autopilot-dev-story.ps1 Projects/AGY_AVIATIONCHAT/scripts/autopilot-dev-story.ps1
+index 0688755..73c58d7 100644
+--- Projects/Fresh_Workspace_BMAD/scripts/autopilot-dev-story.ps1
++++ Projects/AGY_AVIATIONCHAT/scripts/autopilot-dev-story.ps1
+@@ -149,6 +149,22 @@ param(
+     [ValidateSet('auto','backend','frontend','both','none')]
+     [string]$TestScope = 'auto',
+ 
++    # --- GLM / alternate Dev-lane endpoint (Stages 1 Plan + 3 Implement) ---------------------
++    # When -DevBaseUrl is set, the DEV lane runs through an Anthropic-COMPATIBLE endpoint (e.g. Z.ai's
++    # GLM coding endpoint) instead of the native Anthropic API. Those stages then spend ZERO Claude
++    # subscription tokens - the `claude` binary is only the local tool harness (Read/Edit/Write); the
++    # actual inference bills to that provider. The QA lane (Stages 2/4) ALWAYS stays on native Anthropic.
++    # Empty -DevBaseUrl = today's all-Claude behavior, byte-identical. See the /autopilot_glm command.
++    [string]$DevBaseUrl = "",
++    # Auth token for -DevBaseUrl. If omitted, falls back to $env:Z_AI_API_KEY / GLM_API_KEY /
++    # ANTHROPIC_AUTH_TOKEN so the secret never has to sit on the command line (or in the per-story log).
++    # Only consulted when -DevBaseUrl is set.
++    [string]$DevAuthToken = "",
++    # Convenience: -Glm points the Dev lane at Z.ai's GLM 5.2 Anthropic-compatible endpoint with sane
++    # defaults (base url https://api.z.ai/api/anthropic + model glm-5.2), reading the key from the env
++    # vars above. Equivalent to passing -DevBaseUrl/-DevModel explicitly; an explicit flag always wins.
++    [switch]$Glm,
++
+     [switch]$DryRun
+ )
+ 
+@@ -159,6 +175,47 @@ $ErrorActionPreference = "Stop"
+ try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
+ $OutputEncoding = [System.Text.Encoding]::UTF8
+ 
++# --- GLM / alternate Dev-lane endpoint normalization -------------------------------------
++# -Glm is sugar for "route the Dev lane at Z.ai's GLM 5.2 Anthropic-compatible endpoint". It only
++# fills in defaults the user did NOT set, so an explicit -DevBaseUrl / -DevModel always wins.
++if ($Glm) {
++    if (-not $DevBaseUrl) { $DevBaseUrl = "https://api.z.ai/api/anthropic" }
++    if ($DevModel -eq "claude-opus-4-8") { $DevModel = "glm-5.2" }   # only override the untouched default
++}
++# Resolve the Dev-lane auth token: explicit flag > env (Z_AI_API_KEY / GLM_API_KEY / ANTHROPIC_AUTH_TOKEN).
++# Keeping it in the env (not on the command line) means it never lands in the per-story monitoring log.
++if ($DevBaseUrl -and -not $DevAuthToken) {
++    foreach ($v in @('Z_AI_API_KEY','GLM_API_KEY','ANTHROPIC_AUTH_TOKEN')) {
++        $val = [Environment]::GetEnvironmentVariable($v)
++        if ($val) { $DevAuthToken = $val; break }
++    }
++}
++# .env fallback: if still no token, read a gitignored .env - searching the project root and up to two
++# parents (…/Projects, …/<command-center>), so ONE lobby-level .env serves every child project and the
++# key survives the Windows "new User env var not seen by an already-open shell" propagation gap. Never
++# echoed anywhere (only assigned to the child's ANTHROPIC_AUTH_TOKEN), so it stays out of every log.
++if ($DevBaseUrl -and -not $DevAuthToken) {
++    $projRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
++    $envDirs  = @($projRoot, (Split-Path $projRoot -Parent), (Split-Path (Split-Path $projRoot -Parent) -Parent))
++    foreach ($d in ($envDirs | Where-Object { $_ })) {
++        $envFile = Join-Path $d ".env"
++        if (Test-Path $envFile) {
++            foreach ($ln in (Get-Content -LiteralPath $envFile -ErrorAction SilentlyContinue)) {
++                if ($ln -match '^\s*(?:export\s+)?(?:Z_AI_API_KEY|GLM_API_KEY|ANTHROPIC_AUTH_TOKEN)\s*=\s*(.+?)\s*$') {
++                    $DevAuthToken = $Matches[1].Trim().Trim('"').Trim("'"); break
++                }
++            }
++        }
++        if ($DevAuthToken) { break }
++    }
++}
++if ($DevBaseUrl -and -not $DevAuthToken -and -not $DryRun) {
++    throw "Dev-lane endpoint -DevBaseUrl is set ($DevBaseUrl) but no auth token was found. Pass -DevAuthToken <key> or set `$env:Z_AI_API_KEY (the Z.ai coding-plan key), then re-run. (A -DryRun preview is allowed without a key.)"
++}
++if ($DevBaseUrl -and $DevModel -like 'claude-*') {
++    throw "Misconfig: -DevBaseUrl points at a non-Anthropic endpoint but -DevModel is '$DevModel' (a Claude id). Set -DevModel to that provider's model id (e.g. glm-5.2)."
++}
++
+ # --- Resolve paths ----------------------------------------------------------------------
+ $RepoRoot = (Resolve-Path "$PSScriptRoot\..").Path
+ # Derive the project name from the repo folder so this script is project-agnostic (template-safe).
+@@ -444,6 +501,10 @@ if ($DryRun) {
+     $qaShow  = if ($QaSession)  { $QaSession }  else { "(minted when Stage 2 runs)" }
+     Write-Host "     dev = $devShow  ($DevName)"
+     Write-Host "     qa  = $qaShow  ($QaName)"
++    if ($DevBaseUrl) {
++        $tokShow = if ($DevAuthToken) { "key resolved" } else { "! NO KEY (set `$env:Z_AI_API_KEY)" }
++        Write-Host "   Dev lane  : HYBRID -> $DevBaseUrl  [model $DevModel; $tokShow] - Stages 1+3 off the Claude subscription"
++    }
+     Write-Host "============================================================" -ForegroundColor Cyan
+     exit 0
+ }
+@@ -488,6 +549,10 @@ Write-Host "   Story    : $StoryFile"
+ Write-Host "   Dev ($DevModel @ $DevEffort): session $DevName   QA ($AuditModel @ audit:$AuditEffort review:$ReviewEffort): session $QaName"
+ Write-Host "   Folder   : $Folder"
+ Write-Host "   Start    : Stage $startStage (auto=$autoStart, -ResumeFrom=$ResumeFrom) | MaxRetries $MaxRetries"
++if ($DevBaseUrl) {
++    Write-Host "   HYBRID   : Dev lane (Stages 1+3) -> $DevBaseUrl  [model $DevModel]" -ForegroundColor Magenta
++    Write-Host "              Those stages spend ZERO Claude tokens (billed to that provider); QA lane stays on Anthropic." -ForegroundColor Magenta
++}
+ Write-Host "============================================================" -ForegroundColor Cyan
+ 
+ # --- Stage runner (with transient-error retry + session continuity) ---------------------
+@@ -500,7 +565,11 @@ function Invoke-Stage {
+         [string]$Prompt,
+         [string]$SessionId,
+         [ValidateSet('New','Resume')][string]$SessionMode,
+-        [string]$SessionName
++        [string]$SessionName,
++        # Route THIS stage at an alternate Anthropic-compatible endpoint (Dev lane = GLM). Empty = native
++        # Anthropic (QA lane / default). AuthToken is the provider key for BaseUrl.
++        [string]$BaseUrl = "",
++        [string]$AuthToken = ""
+     )
+ 
+     $script:CurrentStageLabel = "Stage $Num ($Name)"
+@@ -513,7 +582,22 @@ function Invoke-Stage {
+     for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
+         $sw = [System.Diagnostics.Stopwatch]::StartNew()
+         Push-Location $RepoRoot
++        # --- Route THIS stage's inference to an alternate Anthropic-compatible endpoint (Dev lane = GLM) ---
++        # Scope the env vars the `claude` CLI reads to just this child call, so the QA lane (no -BaseUrl)
++        # always hits native Anthropic. Endpoints differ on whether they honor --model directly or map the
++        # opus/sonnet/haiku SLOTS, so point all three at $Model too (this also keeps internal CLI helper
++        # calls off the Claude subscription). Empty -BaseUrl => no-op => byte-identical to the all-Claude run.
++        $envKeys  = @('ANTHROPIC_BASE_URL','ANTHROPIC_AUTH_TOKEN','ANTHROPIC_DEFAULT_OPUS_MODEL','ANTHROPIC_DEFAULT_SONNET_MODEL','ANTHROPIC_DEFAULT_HAIKU_MODEL')
++        $envSaved = @{}
++        foreach ($k in $envKeys) { $envSaved[$k] = [Environment]::GetEnvironmentVariable($k) }
+         try {
++            if ($BaseUrl) {
++                $env:ANTHROPIC_BASE_URL = $BaseUrl
++                if ($AuthToken) { $env:ANTHROPIC_AUTH_TOKEN = $AuthToken }
++                $env:ANTHROPIC_DEFAULT_OPUS_MODEL   = $Model
++                $env:ANTHROPIC_DEFAULT_SONNET_MODEL = $Model
++                $env:ANTHROPIC_DEFAULT_HAIKU_MODEL  = $Model
++            }
+             $cargs = @(
+                 '-p', $Prompt,
+                 '--model', $Model,
+@@ -536,6 +620,11 @@ function Invoke-Stage {
+             # Empty stdin avoids the 3s "no stdin" wait; 2>$null drops PS native-stderr wrapping.
+             $raw = $null | & $Claude @cargs 2>$null | Out-String
+         } finally {
++            # Restore the native-Anthropic env for the QA lane / next attempt (remove vars that were unset).
++            foreach ($k in $envKeys) {
++                if ($null -eq $envSaved[$k]) { Remove-Item ("Env:\" + $k) -ErrorAction SilentlyContinue }
++                else { Set-Item ("Env:\" + $k) -Value $envSaved[$k] }
++            }
+             Pop-Location
+         }
+         $sw.Stop()
+@@ -562,9 +651,14 @@ function Invoke-Stage {
+             $script:TotalCost += $cost
+             Write-Host ("  done in {0:n0}s | cost `$" -f $sw.Elapsed.TotalSeconds + ("{0:n2}" -f $cost) + (" | turns {0}" -f $j.num_turns)) -ForegroundColor DarkGray
+             # Model-assertion (#5): modelUsage is keyed by the model that ACTUALLY served the request.
++            # Normalize a trailing context-window tag (e.g. "glm-5.2[1m]" vs requested "glm-5.2") and case,
++            # so an alternate endpoint echoing the tagged id does not false-fire while a REAL mismatch
++            # (glm vs claude, or a wrong glm version) still trips.
+             $served = @()
+             if ($j.modelUsage) { $served = @($j.modelUsage.PSObject.Properties.Name) }
+-            if ($served.Count -gt 0 -and ($served -notcontains $Model)) {
++            $normReq    = ($Model -replace '\[[^\]]*\]$','').ToLower()
++            $servedNorm = @($served | ForEach-Object { ($_ -replace '\[[^\]]*\]$','').ToLower() })
++            if ($served.Count -gt 0 -and ($servedNorm -notcontains $normReq)) {
+                 Write-Host ("  ! MODEL MISMATCH: requested {0} but served {1}" -f $Model, ($served -join ', ')) -ForegroundColor Red
+                 $script:ModelMismatch += "Stage $Num ($Name): requested $Model, served $($served -join ', ')"
+             }
+@@ -1099,7 +1193,7 @@ You are Amelia (Dev), Stage 1 of 4 (PLAN). Headless in $ProjectName.
+ - Target story: $StoryFile
+ Your full stage instructions live in the /sudo-dev-story-tests_AP command above.
+ "@
+-    $r1 = Invoke-Stage -Num 1 -Name "Plan" -Model $DevModel -Effort $DevEffort -Prompt $prompt1 -SessionId $DevSession -SessionMode New -SessionName $DevName
++    $r1 = Invoke-Stage -Num 1 -Name "Plan" -Model $DevModel -Effort $DevEffort -Prompt $prompt1 -SessionId $DevSession -SessionMode New -SessionName $DevName -BaseUrl $DevBaseUrl -AuthToken $DevAuthToken
+     Stop-OnBlocker -Result $r1 -Num 1 -Name "Plan"
+     Assert-Artifact "implementation_plan.md"
+ } else {
+@@ -1155,7 +1249,7 @@ You are Amelia (Dev), Stage 3 of 4 (IMPLEMENT). Headless in $ProjectName.
+ $scopeGuidance
+ Your full stage instructions live in the /sudo-dev-story-tests_AP command above.
+ "@
+-    $r3 = Invoke-Stage -Num 3 -Name "Implement" -Model $DevModel -Effort $DevEffort -Prompt $prompt3 -SessionId $DevSession -SessionMode Resume
++    $r3 = Invoke-Stage -Num 3 -Name "Implement" -Model $DevModel -Effort $DevEffort -Prompt $prompt3 -SessionId $DevSession -SessionMode Resume -BaseUrl $DevBaseUrl -AuthToken $DevAuthToken
+     Stop-OnBlocker -Result $r3 -Num 3 -Name "Implement"
+     Assert-Artifact "walkthrough.md" "Amelia likely wrote the walkthrough under another name (e.g. stage3-implement.md). Rename it to walkthrough.md and re-run with -ResumeFrom 4 (the dev session resumes from cache)."
+ } else {

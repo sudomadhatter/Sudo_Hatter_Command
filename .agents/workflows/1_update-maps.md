@@ -61,14 +61,18 @@ Daniel's `## Todo list` prose and every task file — stays **read-only** (you m
    python .agents/scripts/check_maps.py                       # one workspace (lobby, or run from inside a project)
    python .agents/scripts/check_maps.py --root Projects/<name>   # one specific project from the lobby
    ```
-   Per workspace it runs **six** checks. Four are **fatal drift** (exit non-zero): **AUTO-block freshness** (regenerates the
+   Per workspace it runs **eight** checks. Four are **fatal drift** (exit non-zero): **AUTO-block freshness** (regenerates the
    map body in memory, mode-preserving, and diffs), **path existence** (every path *promised* in a
    repo-map/INDEX table row resolves on disk), **top-level folder coverage** (every real top-level folder is
    documented), and **git baseline** (adds/deletes/**renames** since the last reconciled SHA in
-   `<docs>/.maps-state.json`). One is the **structure-conformance** gate (also fatal) — the workspace carries
+   `<docs>/.maps-state.json`). Two more gates (also fatal): the **structure-conformance** gate — the workspace carries
    the standard files in the standard places per the PATH CONTRACT (this is the "verify the structures stay
-   standard" check that makes one generic tool safe). One is **context hygiene** — a **NON-FATAL hint** when the
-   continuity `active-context.md` is over the prune window or `INDEX.md` is over the row cap (drives Step 3.5).
+   standard" check that makes one generic tool safe) — and the **depth-3 `_artifacts/` INDEX** reconciliation
+   (every bucket with ≥2 session folders has an `INDEX.md` whose rows match disk). Two are **NON-FATAL hints**:
+   **context hygiene** — the continuity `active-context.md` is over the prune window or `INDEX.md` is over the
+   row cap (drives Step 3.5) — and **tier-2 local law** — a guarded infrastructure dir (`_artifacts/`,
+   `_my_resources/`, `docs/`) is missing its local-law `AGENTS.md` or a 1-line adapter (fix = copy the tier-2
+   pattern per `workspace-standard.md` Part 1, "folder-file tier model").
    High-precision: it only flags table-row paths with a real top-level first segment, so prose/cross-repo
    mentions don't generate noise. From the lobby it skips `Projects/` (separate repos) and `_my_resources/`
    (protected); with `--root` it lints that workspace directly.

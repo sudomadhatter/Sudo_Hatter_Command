@@ -179,7 +179,11 @@ def splice(output_path, auto_body, root):
 
 def main():
     here = Path(__file__).resolve()
-    default_root = here.parent.parent  # when vendored at <project>/scripts/, this is <project>/
+    # Workspace root, robust to vendored location (same logic as check_maps.py): the script lives at
+    # `<root>/.agents/scripts/` (master + vendored) or a legacy `<root>/scripts/`. Strip the scripts
+    # dir, and the `.agents` dir if present, to land on the root.
+    _scripts = here.parent
+    default_root = _scripts.parent.parent if _scripts.parent.name == ".agents" else _scripts.parent
     ap = argparse.ArgumentParser(description="Generate the AUTO body of docs/repo-map.md")
     ap.add_argument("--root", default=str(default_root), help="workspace root to map")
     ap.add_argument("--output", default=None, help="output file (default <root>/docs/repo-map.md)")

@@ -12,7 +12,7 @@ Execute the workflow defined in @.agents/workflows/1_update-maps.md.
   one workspace, exactly as before. Scope to a single workspace from the lobby with the focus arg below.
 - **Lead with the linter** — it does the mechanical detection. From the home base use `--all`:
   `python .agents/scripts/check_maps.py --all` (lobby + every conformant project, one combined report); inside a
-  project just `python .agents/scripts/check_maps.py`. It runs six checks per workspace + a context/open-tasks hint.
+  project just `python .agents/scripts/check_maps.py`. It runs eight checks per workspace (6 fatal + the context-hygiene and tier-2-local-law hints).
 - Steps 0–3 are read-only (detect via git + the linter, regenerate each AUTO block **in its declared mode**,
   drift-check the curated tables both ways, audit every `INDEX.md`). Steps 3.5–3.6 **propose edits** — the
   context-hygiene **prune** and the **open-tasks refresh** — gated by Step 4.

@@ -87,9 +87,9 @@ Sudo_Hatter_Command/
         [1 files: .mdx1 | e.g. skill.md]
       [6 files: .mdx6 | e.g. AGENTS.md]
   _system/
-      [2 files: .mdx1, .ps1x1 | e.g. AGENTS.md]
+      [3 files: .mdx1, .txtx1, .ps1x1 | e.g. AGENTS.md]
   docs/
-      [4 files: .mdx3, .jsonx1 | e.g. doc-graph.json]
+      [7 files: .mdx6, .jsonx1 | e.g. AGENTS.md]
     [5 files: .mdx4, .jsonx1 | e.g. AGENTS.md]
 ```
 <!-- REPO-MAP:AUTO-END -->

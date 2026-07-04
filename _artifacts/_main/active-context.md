@@ -1,7 +1,19 @@
 # ACTIVE CONTEXT — _main  (you own this, not a vendor)
 
 ## 1. PRIME STATE
-Current workspace: `_main` (lobby at `C:\Sudo_Hatter_Command`; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-06-26
+Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-07-03
+**2026-07-03 (latest): Tier-2 local law — per-folder AGENTS.md as a 3-tier model.** `_artifacts/`,
+`_my_resources/`, `docs/` each now carry a ~15-line local-law `AGENTS.md` + 1-line `CLAUDE.md`/`GEMINI.md`
+adapters (auto-attached at point of contact — the `_my_resources` READ-ONLY law and `_artifacts` bucket law
+self-enforce). Reading-order rule codified: root `AGENTS.md` §1.7 + `workspace-standard.md` Part 1
+("folder-file tier model" + PATH CONTRACT row) — folder `AGENTS.md` FIRST, INDEX/README only for inventory.
+`check_maps.py` = **8 checks** now (check 8 tier-2 coverage, NON-FATAL hint; promote to conformance once all
+workspaces carry the files). Fixed 2 live bugs: linter's regen hint wrote a stray root `repo-map.md`
+(cwd-relative `--output`); `generate_repo_map.py` default-root resolved to `.agents/`. Synced lobby + globals +
+AGY + Fresh (md5 ×3). Diagram doc `file_folder_structure+maintaining.md` updated (Daniel-directed). **OPEN:**
+per-project Tier-2 rollout (AGY/Fresh: 9 files each + vendored `workspace-standard.md` — docs/ isn't synced);
+their lints show the check-8 hint until then. Session: `_artifacts/_main/2026-07-03_tier2-local-law/`
+(UNCOMMITTED — 3 repos, cmds in walkthrough).
 **2026-06-26 (latest): artifact-placement standard codified as 3 rules + `_home`→`_main` rename.** (1) project
 work → `_artifacts/<project>/` (create-if-missing), (2) main/cross-project → `_artifacts/_main/` (renamed from
 `_home` via `git mv`), (3) stories → under the parent epic folder. **opencode** mirrors all 3 inside its own

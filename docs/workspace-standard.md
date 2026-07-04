@@ -68,6 +68,27 @@ least-context loading real. Always include the up-route: *"if what you need isn'
 Skills live in the vendored `.agents/skills/<name>/SKILL.md` and are pulled **only** by the workspace rows
 that call them. Never load skills globally.
 
+### The folder-file tier model (which folders get an `AGENTS.md`)
+Not every folder gets one — boilerplate in every hop burns tokens and drifts, and if every folder has
+one the beacon dies. Three tiers, one reading-order rule:
+
+| Tier | What it is | Carries |
+|---|---|---|
+| **1 — Floors** (work happens here) | workspace roots: the lobby, each `Projects/<name>/`, `_system/`, `_routing-canary/`, `.agents/` | full `AGENTS.md` (Map/Mission/Support + routing table) + 1-line adapters |
+| **2 — Guarded infrastructure** (rules apply here, work doesn't) | `_artifacts/`, `_my_resources/`, `docs/` | a short **local-law `AGENTS.md`** (~15 lines: what this place is, the law, where the detail lives) + 1-line `CLAUDE.md`/`GEMINI.md` adapters |
+| **3 — Leaf content** (storage) | epic buckets, session folders, diagrams, transcripts | `INDEX.md` (and/or `README.md`) only — **no** `AGENTS.md` |
+
+**The reading-order rule (codified in every brain's START HERE):** entering any folder — if it carries
+an `AGENTS.md`, read that FIRST (how to *act* here); read `INDEX.md`/`README.md` only when you need the
+*inventory*. They are complements, not substitutes: `AGENTS.md` = behavior, `INDEX.md` = contents.
+
+**Why the adapters matter at Tier 2:** harnesses auto-attach their nested memory file at the point of
+contact — Claude Code injects a subfolder's `CLAUDE.md` the moment it touches any file under it (Codex:
+nested `AGENTS.md`; Gemini: hierarchical context files). So the local law self-enforces when an agent
+wanders in, with zero reliance on it choosing to read anything. A Tier-2 `AGENTS.md` is a **digest that
+points at canon** (the synced rule / the README / the INDEX header) — never a second canonical copy.
+Coverage is linted by `check_maps.py` check 8 (non-fatal hint until every workspace carries the files).
+
 ### Supporting files every workspace carries
 - **`docs/repo-map.md`** — the navigation index (Part 3).
 - **`active-context.md`** (home-base bucket or project-local, per Part 2) — continuity (numbered: `1 PRIME`, `5 PICK UP`, `6 HAND OFF`).
@@ -88,6 +109,7 @@ that call them. Never load skills globally.
 | ☐ | `_my_resources/open_tasks/todo_list.md` present (READ-ONLY); wired into BOTH the "what's next" routing row AND "pick up" |
 | ☐ | registered as a row in the root `router.md` |
 | ☐ | vendored `docs/workspace-standard.md` present |
+| ☐ | Tier-2 local law: `_artifacts/`, `_my_resources/`, `docs/` each carry `AGENTS.md` + 1-line adapters |
 
 ### The PATH CONTRACT (exact files & where they live — what the tooling verifies)
 This is the machine-checkable heart of the standard: the **exact path** of every standard element, in the two
@@ -110,6 +132,7 @@ instead of a per-repo fork. Keep workspaces matching this table and the generic 
 | Session ledger | `_artifacts/INDEX.md` | `_artifacts/INDEX.md` | one row per session; archive overflow → `INDEX-archive.md` |
 | Depth-3 epic INDEX | `_artifacts/<bucket>/INDEX.md` (bucket = `_main`, `<project>`) | `_artifacts/<epic_or_bucket>/INDEX.md` (e.g. `epic_8/`, `epic_11/`, `_main/`, `tea/`) | **only inside `_artifacts/`** — one row per session folder, listing the story/what + artifact files present; scan-to-find for bug-tracking. Not for code dirs. Created when a bucket has ≥2 session folders; `/1_update-maps` reconciles. |
 | Retired artifacts | `_artifacts/_archived/` | `_artifacts/_archived/` | — |
+| Tier-2 local law | `_artifacts/AGENTS.md` · `_my_resources/AGENTS.md` · `docs/AGENTS.md` (+ 1-line `CLAUDE.md`/`GEMINI.md` adapters beside each) | same | tier model above; linted as a **non-fatal hint** (check 8) |
 | Open tasks ("what's next") | `_my_resources/open_tasks/todo_list.md` (+ plan/PRP notes) | same | **READ-ONLY for context**, but `/1_update-maps` refreshes its `## Open Work` file-list; surfaced on pickup + "what's next" |
 | Personal area (protected) | `_my_resources/` | `_my_resources/` | off-limits **except** the `## Open Work` manifest in `open_tasks/todo_list.md` (maintained by `/1_update-maps`) |
 | BMAD (if present) | — | `_bmad/` (owned, regenerated) · `_bmad-output/` (state) | `_bmad-output/active-context/active-context.md` **IS** the continuity brief above; `_bmad/` itself is never hand-edited |

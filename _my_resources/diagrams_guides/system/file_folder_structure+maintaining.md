@@ -20,18 +20,19 @@ flowchart TD
 
     subgraph TOOLKIT [".agents/ — MASTER TOOLKIT (single source of authorship)"]
         RULES["rules/\nconstitution, karpathy, artifacts-always-first,\ngit-policy, mobile-mode"]
-        SCRIPTS["scripts/\ncheck_maps.py (7-check linter)\nsync-agents.ps1"]
+        SCRIPTS["scripts/\ncheck_maps.py (8-check linter)\nsync-agents.ps1"]
         CMDS["commands/ + workflows/\nINDEX.md (command registry)\n1_update-maps.md (the workflow)"]
         OTHER["skills/, templates/, bmad/"]
     end
 
     subgraph MEM ["_artifacts/ — SHARED MEMORY (you own it)"]
+        LAW["AGENTS.md (local law) + adapters\n(auto-attached at point of contact)"]
         INDEX["INDEX.md (session ledger, depth-2)\n+ INDEX-archive.md (pruned history)"]
         DEPTH3["_main/INDEX.md, (project)/INDEX.md,\n(epic)/INDEX.md, tea/INDEX.md\n(depth-3, per-bucket session indexes)"]
         STORE["active-context.md + session folders"]
     end
 
-    DOCS["docs/\nmaster-implementation-plan.md\nworkspace-standard.md (the WHAT)\nrepo-map.md (hybrid nav index)"]
+    DOCS["docs/\nAGENTS.md (local law) + adapters\nworkspace-standard.md (the WHAT)\nrepo-map.md (hybrid nav index)\ndoc-graph.md/.json (generated)"]
     CANARY["_routing-canary/\nrouting regression check"]
     SYS["_system/\nbuilder: /new-project, /sync-agents"]
     SETTINGS[".claude/settings.json\n3 SessionStart hooks:\nactive-context + gate + depth-3 nag"]
@@ -46,6 +47,38 @@ flowchart TD
     ROUTER --> PROJ
     TOOLKIT --> PROJ
 ```
+
+---
+
+## 1b. The folder-file tier model (which folders get an `AGENTS.md`) — NEW 2026-07-03
+
+**The reading-order rule (root law §1.7):** entering any folder — if it carries an `AGENTS.md`, read
+that FIRST (the local law: how to *act* here); read `INDEX.md`/`README.md` only when you need the
+*inventory*. They are complements, not substitutes: `AGENTS.md` = behavior, `INDEX.md` = contents.
+
+| Tier | What | Folders | Carries |
+|---|---|---|---|
+| **1 — Floors** | work happens here | lobby root, each `Projects/(name)/`, `_system/`, `_routing-canary/`, `.agents/` | full `AGENTS.md` (brain) + 1-line adapters |
+| **2 — Guarded infrastructure** | rules apply here, work doesn't | `_artifacts/`, `_my_resources/`, `docs/` | ~15-line **local-law `AGENTS.md`** + 1-line `CLAUDE.md`/`GEMINI.md` adapters |
+| **3 — Leaf content** | storage | epic buckets, session folders, `diagrams_guides/`, transcripts | `INDEX.md`/`README.md` only — **no** `AGENTS.md` |
+
+**Why the adapters give this teeth** (the auto-attach mechanism — no reliance on the model choosing to read):
+
+```mermaid
+flowchart LR
+    TOUCH["agent touches ANY file\nunder a Tier-2 folder"] --> AUTO["harness auto-attaches the nested adapter\n(Claude Code: CLAUDE.md - Gemini: GEMINI.md\nCodex: nested AGENTS.md natively)"]
+    AUTO --> LAW["adapter points at the folder's\nAGENTS.md = the LOCAL LAW"]
+    LAW --> ACT["agent acts by the local law\n(e.g. _my_resources = READ-ONLY,\n_artifacts = bucket + epic-nesting rules)"]
+
+    classDef law fill:#d4f7d4,stroke:#2e7d32,color:#000
+    class LAW,ACT law
+```
+
+**Guard rails:** a Tier-2 `AGENTS.md` is a *digest that points at canon* (the synced rule / README /
+INDEX header) — never a second canonical copy. Not every folder gets one — boilerplate in every hop
+burns tokens, drifts, and kills the beacon. Coverage is linted by `check_maps.py` **check 8**
+(non-fatal hint until every workspace carries the files). Canon → `docs/workspace-standard.md` Part 1,
+"folder-file tier model".
 
 ---
 
@@ -90,35 +123,36 @@ Three pieces work together: the **linter** (detect), the **workflow** (reconcile
 
 ```mermaid
 flowchart TD
-    subgraph LINTER ["check_maps.py — 7 checks"]
-        C1["1. repo-map exists"]
-        C2["2. repo-map AUTO in sync"]
-        C3["3. INDEX.md exists (depth-2)"]
-        C4["4. INDEX rows match folders"]
-        C5["5. repo-map drift (new dirs)"]
-        C6["6. settings.json hooks present"]
+    subgraph LINTER ["check_maps.py — 8 checks"]
+        C1["1. AUTO-block freshness\n(mode-preserving regen + diff)"]
+        C2["2. path existence\n(map/INDEX table-row paths resolve)"]
+        C3["3. top-level folder coverage"]
+        C4["4. git baseline\n(renames since last anchor)"]
+        C5["5. context hygiene\n(prune nag — HINT only)"]
+        C6["6. structure conformance\n(PATH CONTRACT gate)"]
         C7["7. depth-3 _artifacts INDEX\n(missing/stale per-bucket)"]
+        C8["8. tier-2 local law\n(AGENTS.md + adapters — HINT only)"]
     end
 
     HOOK["SessionStart hook #3\n(.claude/settings.json)\nruns --depth3-only\nClaude Code only"]
     HOOK -->|"~50ms, exits 0 (non-fatal nag)"| C7
 
     WORKFLOW["/1_update-maps command\nthe reconciliation workflow"]
-    WORKFLOW -->|"Step 3: audit all 7 checks"| LINTER
+    WORKFLOW -->|"Step 3: audit all 8 checks"| LINTER
     WORKFLOW -->|"Step 5: fix drift\nregen AUTO (mode-preserving)\nadd missing depth-3 INDEXes"| LINTER
     WORKFLOW -->|"Step 6: commit per repo\n+ --set-anchor"| ANCHOR["docs/.maps-state.json\nbaseline for next drift check"]
 
     classDef hook fill:#fff3d6,stroke:#b8860b,color:#000
     classDef depth3 fill:#d4f7d4,stroke:#2e7d32,color:#000
     class HOOK hook
-    class C7 depth3
+    class C7,C8 depth3
 ```
 
 ### check_maps.py flags
 
 | Flag | What it does |
 |---|---|
-| `--all` | Run all 7 checks across all conformant workspaces |
+| `--all` | Run all 8 checks across all conformant workspaces |
 | `--depth3-only` | Run ONLY check 7 (depth-3 INDEX); exits 0 always — for SessionStart nag |
 | `--set-anchor` | Write current state to `docs/.maps-state.json` (run AFTER committing) |
 | `--ignore <dirs>` | Skip dirs (lobby: `Projects,_my_resources`; projects: `_my_resources,_bmad`) |
@@ -164,7 +198,7 @@ flowchart TD
     PW --> GATE{"3. STOP — did Daniel say 'approved'?"}
     GATE -- "No" --> WAIT["wait / revise (no file edits)"]
     GATE -- "Yes" --> EX["4. Execute with live TodoWrite"]
-    EX --> CL["5. Close: walkthrough.md + task-list.md\n+ INDEX row + active-context hand-off"]
+    EX --> CL["5. Close: ONE walkthrough.md\n(ends: Task Checklist + Your Actions)\n+ INDEX row + active-context hand-off"]
     CL --> MAPS["6. Run /1_update-maps if structure changed\n(depth-3 INDEX, repo-map, linter)"]
     CL --> GIT["GIT: hand Daniel the exact command\nnever commit/push yourself unless delegated"]
 
@@ -211,9 +245,10 @@ flowchart TD
 
 | Path | What it is |
 |---|---|
-| `docs/workspace-standard.md` | The WHAT — structure contract (PATH CONTRACT table, depth-3 rule, end-of-task checklist) |
+| `docs/workspace-standard.md` | The WHAT — structure contract (PATH CONTRACT table, tier model, depth-3 rule, end-of-task checklist) |
+| `_artifacts/AGENTS.md` · `_my_resources/AGENTS.md` · `docs/AGENTS.md` | Tier-2 local law (+ 1-line adapters beside each) — auto-attached at point of contact |
 | `.agents/workflows/1_update-maps.md` | The HOW — 7-step reconciliation workflow (audit → fix → commit → anchor) |
-| `.agents/scripts/check_maps.py` | The linter — 7 checks + `--depth3-only` + `--set-anchor` |
+| `.agents/scripts/check_maps.py` | The linter — 8 checks (6 fatal + 2 hints) + `--depth3-only` + `--set-anchor` |
 | `.agents/scripts/sync-agents.ps1` | The propagator — mirrors master `.agents/` to all platforms + projects |
 | `docs/repo-map.md` | Hybrid nav index (curated header + AUTO body) — per workspace |
 | `_artifacts/INDEX.md` | Depth-2 session ledger — per workspace |
