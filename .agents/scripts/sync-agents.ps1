@@ -154,7 +154,18 @@ function Sync-AntigravityWorkflowMirror {
   $wfDir  = Join-Path $MasterDir "workflows"
   if (-not $WhatIf) { New-Item -ItemType Directory -Force -Path $wfDir | Out-Null } else { Write-Host "WHATIF: would ensure dir '$wfDir'" }
   $mirrored = @()
-  foreach ($f in (Get-ChildItem -Path $cmdDir -Filter 'sudo-*.md' -File)) {
+  
+  $allowed = @('sudo-*.md', '1_*.md', 'new-project.md', 'slash_command_updating.md', 'merge_main_debug.md')
+  $excluded = @('1_update-maps.md') # Real workflow lives in workflows/, do not overwrite with command wrapper
+  
+  $files = Get-ChildItem -Path $cmdDir -Filter '*.md' -File | Where-Object {
+    $name = $_.Name
+    $match = $false
+    foreach ($p in $allowed) { if ($name -like $p) { $match = $true; break } }
+    $match -and ($excluded -notcontains $name)
+  }
+
+  foreach ($f in $files) {
     if (($f.Name -notmatch '_AP\.md$') -and ((Get-CommandPlatforms $f.FullName) -contains 'antigravity')) {
       if ((Get-Item $f.FullName).Length -gt 12000) {
         Write-Warning ("sync-agents: '{0}' exceeds Antigravity's 12000-char workflow limit; mirrored anyway" -f $f.Name)
@@ -167,9 +178,16 @@ function Sync-AntigravityWorkflowMirror {
       $mirrored += $f.Name
     }
   }
-  # Prune stale generated mirrors: a sudo-*.md in workflows/ whose source command is gone or now ineligible.
-  $stale = Get-ChildItem -Path $wfDir -Filter 'sudo-*.md' -File -ErrorAction SilentlyContinue |
-    Where-Object { $mirrored -notcontains $_.Name }
+  # Prune stale generated mirrors: any file in workflows/ that matches our allowed patterns but is NO LONGER mirrored.
+  # (Except the excluded ones which we intentionally don't mirror, but might legitimately exist in workflows/)
+  $stale = Get-ChildItem -Path $wfDir -Filter '*.md' -File -ErrorAction SilentlyContinue |
+    Where-Object { 
+      $name = $_.Name
+      $match = $false
+      foreach ($p in $allowed) { if ($name -like $p) { $match = $true; break } }
+      $match -and ($excluded -notcontains $name) -and ($mirrored -notcontains $name)
+    }
+    
   if (-not $WhatIf) {
     $stale | ForEach-Object { Remove-Item $_.FullName -Force }
   } else {
