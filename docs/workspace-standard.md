@@ -132,6 +132,7 @@ instead of a per-repo fork. Keep workspaces matching this table and the generic 
 | Session ledger | `_artifacts/INDEX.md` | `_artifacts/INDEX.md` | one row per session; archive overflow → `INDEX-archive.md` |
 | Depth-3 epic INDEX | `_artifacts/<bucket>/INDEX.md` (bucket = `_main`, `<project>`) | `_artifacts/<epic_or_bucket>/INDEX.md` (e.g. `epic_8/`, `epic_11/`, `_main/`, `tea/`) | **only inside `_artifacts/`** — one row per session folder, listing the story/what + artifact files present; scan-to-find for bug-tracking. Not for code dirs. Created when a bucket has ≥2 session folders; `/1_update-maps` reconciles. |
 | Retired artifacts | `_artifacts/_archived/` | `_artifacts/_archived/` | — |
+| Testing & Debugging | `_artifacts/debugging/` | `_artifacts/debugging/` | standardized folder for isolated testing, bug repros, and debug scripts |
 | Tier-2 local law | `_artifacts/AGENTS.md` · `_my_resources/AGENTS.md` · `docs/AGENTS.md` (+ 1-line `CLAUDE.md`/`GEMINI.md` adapters beside each) | same | tier model above; linted as a **non-fatal hint** (check 8) |
 | Open tasks ("what's next") | `_my_resources/open_tasks/todo_list.md` (+ plan/PRP notes) | same | **READ-ONLY for context**, but `/1_update-maps` refreshes its `## Open Work` file-list; surfaced on pickup + "what's next" |
 | Personal area (protected) | `_my_resources/` | `_my_resources/` | off-limits **except** the `## Open Work` manifest in `open_tasks/todo_list.md` (maintained by `/1_update-maps`) |
@@ -209,7 +210,7 @@ The deciding factor is the workspace you have open (your cwd), not only what the
 - **opencode** writes under its own `_artifacts/opencode/` namespace and applies the **same rules inside it**:
   `opencode/<project>/`, `opencode/_main/`, `opencode/<project>/<epic>/<story>/`.
 - Within either location: **random task** → `<YYYY-MM-DD>_<slug>/`; **story** → `<epic>/<story>/` (epic folder
-  houses its stories — create the epic folder if missing); retired history → `_archived/`.
+  houses its stories — create the epic folder if missing); retired history → `_archived/`; **testing/debugging** → `debugging/<YYYY-MM-DD>_<slug>/` (for repros, tests, and isolated debugging).
 - **Finding a project's history:** look in BOTH the home-base bucket `_artifacts/<project>/` (sessions run
   from the home base) AND the project-local `Projects/<name>/_artifacts/` (sessions run inside the project).
 

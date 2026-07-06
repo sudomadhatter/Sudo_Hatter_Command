@@ -3,7 +3,7 @@
 **What this is.** A hands-on training doc: how to run the TEA testing method and the `sudo-` dev-flow workflows we built, taught through a real, completed run. The whole AviationChat test-architecture retrofit (principles P1–P10) is **done** — so this is no longer a progress tracker; it's the "here's how to do it again" playbook, with one full story (**TEA-9**, the local TIA gate) walked end-to-end as the example.
 
 **Two companion docs — read them in this order:**
-1. **The reference card** → `_my_resources/diagrams_guides/system/testing_work_flows_tea_sudo.md` — the *concepts* (risk matrix, P0–P3, test levels, "good test" definition, the 9 TEA workflows, the L1–L4 pyramid). Keep it open; this guide does **not** re-teach those.
+1. **The reference card** → `_my_resources/diagrams_guides/system/tea_testing_work_flows_sudo.md` — the *concepts* (risk matrix, P0–P3, test levels, "good test" definition, the 9 TEA workflows, the L1–L4 pyramid). Keep it open; this guide does **not** re-teach those.
 2. **This guide** → the *operating procedure*: which flow to pick per story, the `sudo-` loop walked through a real story, and how to actually run every test tier (unit, coverage, the local TIA gate, the E2E journeys, the Firestore-rules emulator, temp-0/evals).
 
 **Who owns it:** Daniel (Lead). Working anchor: `AGY_AVIATIONCHAT`.
@@ -284,4 +284,4 @@ Also delivered outside P1–P10: **TEA-12** (Firestore-rules emulator suite, 61/
 
 ---
 
-*Companion (concepts & command reference): `_my_resources/diagrams_guides/system/testing_work_flows_tea_sudo.md`. This guide can be relocated next to it (out of `open_tasks/`) now that the retrofit is closed — it's a reference, not an open task.*
+*Companion (concepts & command reference): `_my_resources/diagrams_guides/system/tea_testing_work_flows_sudo.md`. This guide can be relocated next to it (out of `open_tasks/`) now that the retrofit is closed — it's a reference, not an open task.*

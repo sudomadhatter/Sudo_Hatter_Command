@@ -1,3 +1,8 @@
+---
+name: 1_update_maps
+description: Update the Maps & INDEX.md files (any workspace)
+---
+
 # Workflow — Update the Maps & INDEX.md files (any workspace)
 
 > **Goal.** Bring every navigation artifact in a workspace back into agreement with what's *actually on
