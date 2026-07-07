@@ -1,0 +1,42 @@
+﻿# ──────────────────────────────────────────────
+# Sudo_Hatter_Command — TDAD Orchestration Tools
+# Test-Driven Agentic Development (TDAD) Pipeline
+# Used by: /autopilot_claude workflow
+# ──────────────────────────────────────────────
+
+# ─────────────────────────────────
+# LAYER 1 — BDD Contract Engine
+# Install: into each project's backend venv
+# ─────────────────────────────────
+# pytest-bdd converts Gherkin (Given/When/Then) scenarios into executable
+# pytest physics. This is the Vision Lock — your English directive becomes
+# an unambiguous machine contract the agent tests against.
+#
+# Install per project:
+#   .\backend\.venv\Scripts\python.exe -m pip install --prefer-binary pytest-bdd
+#
+# Listed in each project's requirements.txt as:
+#   pytest-bdd>=7.0.0
+#
+# Installed version: 8.1.0
+# Docs: https://github.com/pytest-dev/pytest-bdd
+
+# ─────────────────────────────────
+# LAYER 2 — Autonomous Coding Engine
+# Install: GLOBALLY via official installer (NOT pip install)
+# ─────────────────────────────────
+# aider is the dev agent that enters the Black Box loop: reads failing BDD
+# tests, writes implementation code, iterates until 100% green.
+# It is a CLI tool — like git. NEVER add to requirements.txt.
+#
+# CORRECT install (Windows) — from aider official docs:
+#   powershell -ExecutionPolicy ByPass -c "irm https://aider.chat/install.ps1 | iex"
+#
+# This uses uv to create an isolated Python 3.12 env for aider.
+# DO NOT use: pip install aider-chat  (resolves to ancient 0.16.0 on Python 3.14)
+#
+# Verify:
+#   aider --version   # should print: aider 0.86.2 (or newer)
+#
+# Installed version: 0.86.2 (in ~/.local/bin/aider.exe via uv)
+# Docs: https://aider.chat/docs/install.html

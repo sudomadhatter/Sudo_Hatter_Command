@@ -1,6 +1,6 @@
 # _artifacts INDEX — archive
 
-> Older session rows moved here from `_artifacts/INDEX.md` to keep the live ledger scannable (~25 newest).
+> Older session rows moved here from `_artifacts/INDEX.md` to keep the live ledger scannable (~50 newest).
 > This is a verbatim move — full history, just out of the hot path. Find a row by date/slug; the live
 > ledger at `_artifacts/INDEX.md` carries the newest sessions.
 

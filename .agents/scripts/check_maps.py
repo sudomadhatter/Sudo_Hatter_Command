@@ -88,8 +88,8 @@ SHAPE_NOISE = re.compile(r"[\s{}<>§*…]")
 PRUNE_KEEP_BLOCKS = 10      # newest dated blocks to keep in a continuity active-context.md
 PRUNE_NAG_BLOCKS = 12       # hint to prune once a brief exceeds this many blocks (hysteresis, not every session)
 PRUNE_NAG_LINES = 220       # fallback signal when a brief has no dated blocks to count
-INDEX_KEEP_ROWS = 25        # newest session rows to keep in INDEX.md
-INDEX_NAG_ROWS = 35         # hint to archive older rows once past this
+INDEX_KEEP_ROWS = 50        # newest session rows to keep in INDEX.md
+INDEX_NAG_ROWS = 60         # hint to archive older rows once past this
 
 BLOCK_RE = re.compile(r"^\s*\*\*\d{4}-\d{2}-\d{2}", re.M)         # a dated PRIME-STATE session block
 INDEX_ROW_RE = re.compile(r"^\|\s*\d{4}-\d{2}-\d{2}\s*\|", re.M)  # a dated INDEX.md session row

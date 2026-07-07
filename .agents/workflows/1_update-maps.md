@@ -237,8 +237,8 @@ nags, propose a prune (it is an *edit*, so it goes through the Step 4 gate like 
      dir already uses).
    Leave §5 PICK UP / §6 HAND OFF (they describe only the latest state — not a growing stack). Never *summarise
    away* a block — archiving is a move, not a rewrite; the history stays readable, just out of the hot path.
-3. **INDEX.md** over ~25 rows → move the oldest rows into `INDEX-archive.md` (same folder), keeping the header
-   + newest ~25. The ledger stays scannable; old rows stay findable.
+3. **INDEX.md** over ~50 rows → move the oldest rows into `INDEX-archive.md` (same folder), keeping the header
+   + newest ~50. The ledger stays scannable; old rows stay findable.
 4. **Session folders** under `_artifacts/` are disk-only (never auto-loaded into context) → do **not** prune them
    here; archive them to `_artifacts/_archived/` on epic close, not on a size trigger.
 
@@ -329,7 +329,7 @@ each block:
 
 #### 🧹 Context hygiene (prune) — only if the linter nagged
 - active-context.md: 14 blocks → archive oldest 4 to <archive>, keep newest 10   [reason: over window]
-- INDEX.md: 38 rows → archive oldest 13 to INDEX-archive.md, keep newest 25       [reason: over cap]
+- INDEX.md: 65 rows → archive oldest 15 to INDEX-archive.md, keep newest 50       [reason: over cap]
 
 #### AUTO block
 - Regenerated (mode=content): <no change | N folders added/removed>

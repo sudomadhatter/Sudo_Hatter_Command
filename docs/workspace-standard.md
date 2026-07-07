@@ -230,7 +230,7 @@ A **session** = one pick-up→hand-off; each hand-off prepends one dated block (
 continuity `active-context.md` and one row to `INDEX.md`. Left alone these grow without bound and bloat every
 pickup. `/1_update-maps` carries a **prune** step: keep the **newest ~10 session blocks** in the brief, archive
 older ones to the context archive (`active-context-archive.md` at the lobby; `_bmad-output/active-context/_archive/`
-in a BMAD project); keep the newest **~25** `INDEX.md` rows, archive older to `INDEX-archive.md`. `check_maps.py`
+in a BMAD project); keep the newest **~50** `INDEX.md` rows, archive older to `INDEX-archive.md`. `check_maps.py`
 only *nags* past ~12 blocks (hysteresis — not every session), and the prune is approval-gated like every other
 edit. Session **folders** under `_artifacts/` are disk-only (never auto-loaded into context) → archive them on
 epic close, not on a schedule.
