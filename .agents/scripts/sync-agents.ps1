@@ -277,5 +277,36 @@ if ((-not $NoGlobals) -and ($IsLobby -or $GlobalsOnly)) {
   Write-Host "sync-agents: (global caches mirror-exact; bmad-* preserved; restart opencode to pick up)"
 }
 
+# --- Fresh living-template drift check (lobby sync only) ----------------------
+# Fresh_Workspace_BMAD is the skeleton new projects clone from. This sync already vendors .agents/ into it
+# (additive, above), but the FRONT DOOR + docs are per-workspace and are NOT synced (copying them would wipe
+# the skeleton's own content). So instead of a blind copy, FLAG when Fresh's front-door pattern has drifted
+# from the lobby — the agent reconciles it by hand (living-template-sync rule), keeping it generic.
+if ($IsLobby -and -not $GlobalsOnly) {
+  $fresh = Join-Path $HomeRoot "Projects\Fresh_Workspace_BMAD"
+  if (Test-Path $fresh) {
+    $warn = @()
+    if (-not (Test-Path (Join-Path $fresh "docs\gitnexus.md"))) { $warn += "missing docs/gitnexus.md (GitNexus own-file pattern)" }
+    $fa = Join-Path $fresh "AGENTS.md"
+    if (Test-Path $fa) {
+      $t = Get-Content $fa -Raw
+      if ($t -notmatch 'read that FIRST') { $warn += "AGENTS.md is missing the reading-order rule" }
+      if ($t -match 'gitnexus:start')     { $warn += "AGENTS.md still inlines a GitNexus block (should be docs/gitnexus.md + pointer)" }
+    } else { $warn += "no root AGENTS.md" }
+    $lws = Join-Path $HomeRoot "docs\workspace-standard.md"
+    $fws = Join-Path $fresh "docs\workspace-standard.md"
+    if ((Test-Path $lws) -and (Test-Path $fws)) {
+      if ((Get-FileHash $lws).Hash -ne (Get-FileHash $fws).Hash) { $warn += "docs/workspace-standard.md differs from the lobby canon" }
+    } elseif (-not (Test-Path $fws)) { $warn += "missing docs/workspace-standard.md" }
+    if ($warn.Count) {
+      Write-Warning "sync-agents: Fresh_Workspace_BMAD (living template) has drifted from the lobby front-door pattern:"
+      $warn | ForEach-Object { Write-Warning ("  - {0}" -f $_) }
+      Write-Warning "  reconcile by hand per the living-template-sync rule (keep generic; placeholders where a real project fills in)."
+    } else {
+      Write-Host "sync-agents: Fresh living-template check OK (front-door pattern current)."
+    }
+  }
+}
+
 Write-Host "sync-agents: done. (Edit the master .agents/ - never the copies - and re-run to propagate.)"
 exit 0

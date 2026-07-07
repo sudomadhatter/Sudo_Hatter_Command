@@ -251,3 +251,36 @@ A recorder that keeps the repo-map / `INDEX` upkeep loop pre-scoped, so the Sess
   add the hook, gitignore the journal, add the SessionStart nag). Byproduct: fixed a pre-existing Windows
   cp1252 crash in `check_maps.py`'s depth-3 nag.
 - Full detail → [`_artifacts/_main/2026-07-06_maps-recorder/walkthrough.md`](../../_artifacts/_main/2026-07-06_maps-recorder/walkthrough.md).
+
+---
+
+## 9. Files & folders organization strategy
+
+> The canonical, complete spec is `docs/workspace-standard.md`; the auto-surfacing decision layer is the
+> **`workspace-structure` skill** (it triggers on any create/move/reorganize/scaffold task). This section is the
+> at-a-glance summary — the "guide to files & folder organization strategy."
+
+### Tier model — which folders get a control file
+| Tier | What | Gets |
+|---|---|---|
+| **1 — Floor** (work happens here) | workspace roots: the lobby, each `Projects/<name>/`, `_system/`, `_routing-canary/`, `.agents/` | a full **`AGENTS.md`** (Map/Mission/Support + routing table) + 1-line `CLAUDE.md`/`GEMINI.md` adapters |
+| **2 — Guarded infrastructure** | `_artifacts/`, `_my_resources/`, `docs/` | a short local-law **`AGENTS.md`** (~15 lines) + adapters, so the folder's special rules self-enforce |
+| **3 — Leaf content** | everything else | **`INDEX.md`** only (inventory), or nothing |
+
+### Reading-order rule
+Entering any folder: **if it carries an `AGENTS.md`, read that FIRST** (the local law); read its
+`INDEX.md`/`README.md` only when you need the inventory. Only "special instruction" folders carry an
+`AGENTS.md` — most don't, and for those `INDEX.md` is the map.
+
+### Adapters + GitNexus stay out of the front door
+`CLAUDE.md` / `GEMINI.md` are **always bare one-line adapters** → "read `AGENTS.md`." Nothing model-specific or
+heavy in them. GitNexus code-intelligence, where a repo has it, lives in its **own `docs/gitnexus.md`** with a
+one-line pointer from `AGENTS.md` — never inline (keeps the always-read front door lean; set `.gitnexusrc`
+`skipAgentsMd` so the generator can't re-inject the block).
+
+### Fresh_Workspace_BMAD is the living template
+It's the skeleton every new project is cloned + renamed from (`<PROJECT_NAME>` placeholders → one find-replace
+on clone). **Any structural change at the home base must land in Fresh** so new projects start current. Rules +
+toolkit propagate automatically via `/sync-agents`; front-door + `docs/` + folder-layout changes are
+per-workspace and **hand-mirrored** — and `/sync-agents` (lobby) now **auto-flags** when Fresh has drifted.
+Codified as the `living-template-sync` rule.
