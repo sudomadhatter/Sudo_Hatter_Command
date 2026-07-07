@@ -16,6 +16,10 @@
 # GitNexus code-graph index (disposable Tier-2 accelerator — never committed).
 **/.gitnexus/
 
+# Map-drift journal (machine-local commit-time cache written by .githooks/post-commit — a HINT the
+# nag + /1_update-maps read; check_maps.py's git-diff-vs-anchor stays ground truth). Rebuilt as you commit.
+**/docs/.maps-journal*.jsonl
+
 # Build / runtime junk anywhere
 **/node_modules/
 **/.venv/

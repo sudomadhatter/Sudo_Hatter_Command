@@ -53,3 +53,12 @@ When your changes create dead code, remove it. When your changes make a comment 
 - Run tests after changes and paste actual terminal output — never claim results without evidence.
 - One targeted debug log saves three blind guesses. When you can't observe runtime behavior, instrument and ask the user to report back.
 - Don't stack multiple speculative fixes — if you change 3 things and it works, you don't know which one mattered.
+
+## 5. Read the Docs, Don't Guess
+
+**Unfamiliar MCP tool, CLI, API, or library? Look up the real interface before you call it.**
+
+- If you're not sure how something is invoked — an MCP tool's params, a CLI's flags, an API's endpoint/shape, a library's signature — STOP. Don't guess and don't pattern-match from memory; a wrong flag or param fails silently or does the wrong thing.
+- Find the authoritative source first. Prefer **first-party documentation from the vendor/company's own website**, official docs, or the tool's own `--help` / README / source. Use the **web search tool** to locate it when it isn't already on disk.
+- Match the docs to the **version you're actually on** — interfaces drift, and a remembered signature may be stale (see `dependency-awareness`).
+- Only write the call once you've confirmed the real interface. "It's probably `X`" is not confirmation.

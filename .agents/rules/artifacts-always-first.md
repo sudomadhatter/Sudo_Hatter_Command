@@ -107,6 +107,10 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
   sort chronologically (e.g. `2026-06-25_artifacts-policy-finish`). Slug: lowercase, hyphen-separated, max 6
   words, from Daniel's first concrete request.
 
+**File names within a folder:** dated output → `YYYY-MM-DD_<slug>.md`; versioned drafts →
+`<slug>_draft.md` → `<slug>_v2.md` → `<slug>_final.md`. Memory / active-context sections are
+**numbered** (e.g. `5.2`) so agents skip-to-N instead of reading the whole file.
+
 Start the **TodoWrite task list** (this is the task tracker — no `task.md` file), then write
 `implementation_plan.md` (goal, every file touched with links, execution order, open questions,
 verification plan). Use the `Write` tool. Frontmatter on every artifact file:

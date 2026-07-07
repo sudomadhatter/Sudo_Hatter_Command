@@ -68,37 +68,17 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 > *(This caveat is lobby-specific — inside a project you're past the ignore boundary, so don't carry it
 > into a project's `AGENTS.md`.)*
 
-## 5. NAMING CONVENTIONS  (this replaces a database)
-- Dated output: `YYYY-MM-DD_<slug>.md`
-- Versioned drafts: `<slug>_draft.md`, `<slug>_v2.md`, `<slug>_final.md`
-- Artifacts go **where you work FROM** (not just what the work is about). Three rules decide the bucket:
-  1. **Project work** → a per-project bucket `_artifacts/<project-folder-name>/` (e.g. `_artifacts/AGY_AVIATIONCHAT/`,
-     `_artifacts/Fresh_Workspace_BMAD/`; the bucket = the `Projects/<name>/` folder name). **Create it if it
-     isn't there yet; otherwise reuse it.**
-  2. **Main / home-base / cross-project work** (routing, the `.agents/` toolkit, the standard, multi-project) →
-     the home-base bucket `_artifacts/_main/` (formerly `_home`).
-  3. **Stories** → nest under the parent **epic folder**: `<epic>/<story>/` (create the epic folder if missing).
-     Random/system tasks → `<YYYY-MM-DD>_<slug>/`; retired → `_archived/`.
-  - **When YOU are opencode**, home-base artifacts belong under `_artifacts/opencode/` using the same three
-    rules above — project work → `opencode/<project-folder-name>/`; main/cross-project work → `opencode/_main/`;
-    stories → `opencode/<project-folder-name>/<epic>/<story>/`. Do **not** write directly to `_artifacts/_main/`.
-  - **From the home base** (this folder is your cwd) → home-base `_artifacts/` per rules 1–3; append a row to
-    `_artifacts/INDEX.md`. **From inside a project** (`Projects/<name>/` is your cwd) → **follow THAT project's
-    rules**: project-local `Projects/<name>/_artifacts/…` + its own `active-context.md`/`INDEX.md` (there is no
-    `_main` inside a project — every task there is that project's work).
-  - Full model → `docs/workspace-standard.md`.
-- Memory / active-context sections are NUMBERED (e.g. 5.2) so agents **skip-to-N** instead of reading all.
+## 5. NAMING & ARTIFACT PLACEMENT  (this replaces a database)
+Artifacts go **where you work FROM**. The full bucket rules (per-project `_artifacts/<project>/` · home-base
+`_artifacts/_main/` · the `opencode/` namespace · story `<epic>/<story>/` · from-home-base-vs-inside-project),
+the file-naming patterns (`YYYY-MM-DD_<slug>.md`, `_draft`/`_v2`/`_final`), and numbered memory sections all
+live in the always-loaded **`.agents/rules/artifacts-always-first.md`** (§2) · full model →
+`docs/workspace-standard.md`. Append every home-base session to `_artifacts/INDEX.md`.
 
 ## 6. GATES  (consult before acting)
 - **ROUTING GATE**: confirm the target workspace via `router.md` before touching files in it.
-- **SEARCH GATE (lobby) — the Grep tool is blind to `Projects/` ONLY from the lobby root.** A Grep whose
-  `path` is the root (or unset) silently returns zero hits from the nested project repos (ripgrep honors
-  the lobby's `.gitignore`), which reads as "clean" when it is not. Two valid ways through: **(a)** point
-  the Grep tool's `path` *one level down*, directly at a project (`Projects/<name>`) — it's its own repo
-  root so the lobby ignore no longer applies; or **(b)** for one sweep across **all** projects at once, use
-  the **Bash** tool (`find`/`grep`), since a single root Grep can't see them. Never trust a root-level Grep
-  for a cross-project "is this the only copy?" question. (Full mechanics → §4; memory:
-  `grep-skips-gitignored-projects`.)
+- **SEARCH GATE** — a root-level Grep is blind to `Projects/` (ripgrep honors the lobby `.gitignore`) and
+  reads as a false "clean"; point Grep at `Projects/<name>` or use Bash. **Full mechanics → §4.**
 - **RISK GATE**: never delete / overwrite / publish without explicit go-ahead. **GIT — desktop default:**
   never run `git commit`/`push` yourself — hand Daniel the command unless he delegates it in the moment
   (→ `.agents/rules/git-policy.md`). On **web/mobile** (`CLAUDE_CODE_REMOTE=true`) the agent owns git
@@ -112,35 +92,30 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
     `git push` to `main_debug`/`main`, or merging a PR into them.
   - `main` is extra-protected: never push/PR/merge to it; promoting `main_debug` → `main` is the owner's
     deliberate manual decision. (Web/mobile clone/fork specifics → `.agents/rules/mobile-mode.md`.)
-  - *Enforcement note:* a PreToolUse hook (canonical `.agents/hooks/require-push-approval.py`, deployed to
-    every `.claude/hooks/` by `/sync-agents`) forces the prompt on
-    any `git push` targeting `main`/`main_debug` however wrapped; `merge_pull_request` is gated in
-    `.claude/settings.json`. Pushes to `claude/*` and PR create/update are NOT gated. Approve a merge into
-    `main_debug` by invoking `/merge_main_debug` — invoking it IS the per-action approval.
+  - Approve a merge into `main_debug` by invoking `/merge_main_debug` — invoking it IS the per-action
+    approval. *Hook + settings enforcement mechanics → `.agents/rules/git-policy.md`.*
 - Full hard stops + "ask first" list → `.agents/rules/constitution.md`.
 
 ## 7. PERSISTENCE  (you own this — not a vendor)
-- **Where it lives — decided by where you work FROM.** Working **from the home base** → home-base `_artifacts/`
-  (`_artifacts/<project>/active-context.md` for a project worked on from here; `_artifacts/_main/active-context.md`
-  for home-base work) + the home-base `_artifacts/INDEX.md` ledger. **When running as opencode**, use
-  `_artifacts/opencode/<project>/active-context.md` and `_artifacts/opencode/_main/active-context.md` instead
-  — never the generic `_main/` bucket. Working **from inside a project** (`Projects/<name>/` is your cwd) → that
-  project's own `_artifacts/active-context.md` + `INDEX.md` (follow its rules).
-- **"pick up"** → read-only continuity brief from the right `active-context.md` for where you're working from.
-  Don't change anything; don't explain the obvious. **Also surface open tasks:** after the `active-context.md`
-  brief, read this workspace's `_my_resources/open_tasks/todo_list.md` (+ any plan/PRP `.md` notes alongside it)
-  and add a one-line "what's queued." **READ-ONLY** — Daniel's notes; never edit; cross-check vs live files.
-  (Same source the "what's next / open tasks / what's left" routing trigger uses → `router.md`.)
-- **"hand off"** → write current state to that `active-context.md`, append a row to the matching `INDEX.md`,
-  then read it back and verify without relying on chat memory.
-- Full protocol → `.agents/rules/artifacts-always-first.md`. Full model → `docs/workspace-standard.md`.
+- **Location follows where you work FROM** — home-base `_artifacts/<project|_main>/active-context.md` + the
+  `_artifacts/INDEX.md` ledger; the `opencode/` namespace when you're opencode; a project's own `_artifacts/`
+  from inside it. Full model → `.agents/rules/artifacts-always-first.md` · `docs/workspace-standard.md`.
+- **"pick up"** → read-only continuity brief from the right `active-context.md`, then surface open tasks from
+  this workspace's `_my_resources/open_tasks/todo_list.md` (**READ-ONLY** — never edit; cross-check vs live
+  files; trigger also → `router.md`). **"hand off"** → write state back, append the matching `INDEX.md` row,
+  read it back to verify.
 
 ## 8. PORTABILITY
-`AGENTS.md` is the universal contract; `CLAUDE.md` and `GEMINI.md` are one-line adapters that point
-here. Nothing model-specific lives in shared files — so Claude, opencode, and Antigravity all drive
-the same system, and your work is saved to **your** files, not a vendor's memory. One canonical command
-set (`.agents/commands/`) mirrors to all three via `/sync-agents`; a command opts out of a platform with
-`platforms:` frontmatter (default = everywhere). Full model → `docs/workspace-standard.md`.
+`AGENTS.md` is the universal contract; `CLAUDE.md` / `GEMINI.md` are one-line adapters pointing here (nothing
+model-specific in shared files). One command set (`.agents/commands/`) mirrors to all three via `/sync-agents`
+(`platforms:` frontmatter opts a command out; default = everywhere). Full model → `docs/workspace-standard.md`.
+
+> **GitNexus scope note (don't "fix" the small numbers below).** The lobby index is deliberately tiny — it
+> maps ONLY the manager/routing surface (root maps, `docs/`, `_system/`); `_artifacts/`, `_my_resources/`,
+> `_bmad*/`, `_routing-canary/` are excluded via `.gitnexusignore`, and the `.agents/` toolkit is unindexable
+> on gitnexus 1.6.8 (dot-dir walker limit). The live product map is the child index **AGY_AVIATIONCHAT**
+> (~37.7k symbols, product code only) — pass `repo: "AGY_AVIATIONCHAT"` for product work. *(Block below is
+> now static — the generator no longer refreshes it; see `.gitnexusrc` `skipAgentsMd`.)*
 
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence

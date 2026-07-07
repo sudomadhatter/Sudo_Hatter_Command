@@ -1,44 +1,45 @@
-<!-- gitnexus:start -->
-# GitNexus — Code Intelligence
+# AGENTS.md — `.agents/` (master toolkit · Tier-1 floor)
 
-This project is indexed by GitNexus as **SUDO_COMMAND** (17230 symbols, 17576 relationships, 35 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+## 1. ROOT LAW (what this folder is)
+This is **THE master toolkit** — the single source of authorship for every tool the agents have: rules,
+commands, skills, workflows, the BMAD install, scripts, templates, hooks. Everything the whole system runs
+on originates **here**; the copies elsewhere are **downstream mirrors, never sources**:
+- `.claude/` · `.opencode/` (the lobby + each project) + the machine-global caches = synced command/skill copies.
+- each `Projects/<name>/.agents/` = an additive vendored copy of this whole folder.
 
-> Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
+**Never edit a mirror. Edit here, then run `/sync-agents`** to propagate. Rules are read **in place** from
+`rules/` via the `CLAUDE.md`/`GEMINI.md`→`AGENTS.md` chain — they are NOT copied into `.claude/rules`.
 
-## Always Do
+## 2. START HERE (don't read the whole toolkit)
+Least-context still applies: use the routing table (§3) to jump to the ONE subfolder a task needs, then scan
+that subfolder's `INDEX.md` to dispatch — never read every rule/command/skill. Full inventory of this folder
+→ `INDEX.md`. Not toolkit authorship? **Go back up** → `../AGENTS.md` (lobby law) or `../router.md` (routing).
 
-- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
-- **MUST run `detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows. For regression review, compare against the default branch: `detect_changes({scope: "compare", base_ref: "main"})`.
-- **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
-- When exploring unfamiliar code, use `query({search_query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
-- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `context({name: "symbolName"})`.
-- For security review, `explain({target: "fileOrSymbol"})` lists taint findings (source→sink flows; needs `analyze --pdg`).
+## 3. ROUTING TABLE (task → subfolder → its index)
+| Task | Go to | Dispatch via |
+|---|---|---|
+| Behavioral law / a rule (how to act) | `rules/` | `rules/INDEX.md` |
+| A slash command (`/sudo-*`, `/autopilot_*`, `/sync-agents`, `/new-project`, …) | `commands/` | `commands/INDEX.md` |
+| A skill (a capability the model invokes) | `skills/` | `skills/INDEX.md` |
+| An Antigravity workflow / in-repo reference doc | `workflows/` | `workflows/INDEX.md` |
+| The BMAD method install | `bmad/` | **BMAD-owned — regenerated on BMAD update, NEVER hand-edit** |
+| A maintenance script | `scripts/` | `check_maps.py` · `generate_repo_map.py` · `record_map_changes.py` · `generate_doc_graph.py` · `sync-agents.ps1` · `new-project.ps1` |
+| Scaffold a new project | `templates/project-template/` | consumed by `/new-project` |
+| The git write-approval hook | `hooks/` | `require-push-approval.py` (deployed to every `.claude/hooks/` by `/sync-agents`) |
+| opencode agent definitions | `opencode-agents/` | — |
 
-## Never Do
+## 4. THE LAW (authorship + sync)
+- **Single source of authorship.** Author here; `/sync-agents` mirrors `commands/` + `skills/` to all three
+  platforms (Claude, opencode, the Antigravity workflow mirror) + the machine-global caches, and additively
+  vendors this whole `.agents/` into each `Projects/<name>/`.
+- **`platforms:` frontmatter** on a command limits its reach (absent = everywhere).
+- **After ANY edit here, run `/sync-agents`** (or the project-scoped variant) so the mirrors don't drift.
 
-- NEVER edit a function, class, or method without first running `impact` on it.
-- NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
-- NEVER rename symbols with find-and-replace — use `rename` which understands the call graph.
-- NEVER commit changes without running `detect_changes()` to check affected scope.
+## 5. GATES / GO BACK UP
+- Full hard stops + gates → `rules/constitution.md`; the plan-first artifact gate → `rules/artifacts-always-first.md`.
+- Entering a subfolder: if it carries an `INDEX.md`, scan that to dispatch (an `AGENTS.md` first, if one exists).
+- Not toolkit work? → `../AGENTS.md` (lobby) or `../router.md` (routing).
 
-## Resources
-
-| Resource | Use for |
-|----------|---------|
-| `gitnexus://repo/SUDO_COMMAND/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/SUDO_COMMAND/clusters` | All functional areas |
-| `gitnexus://repo/SUDO_COMMAND/processes` | All execution flows |
-| `gitnexus://repo/SUDO_COMMAND/process/{name}` | Step-by-step execution trace |
-
-## CLI
-
-| Task | Read this skill file |
-|------|---------------------|
-| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
-| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
-| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
-| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
-| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
-| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
-
-<!-- gitnexus:end -->
+<!-- No GitNexus block by design: this toolkit is markdown, navigated by these indexes (and the doc-graph),
+     not the code-graph. If graph intel is ever wanted here, put it in a separate file + a one-line pointer —
+     never inline in this floor law. -->

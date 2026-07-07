@@ -1,3 +1,4 @@
 {
-  "pdg": true
+  "pdg": true,
+  "analyze": { "skipAgentsMd": true }
 }

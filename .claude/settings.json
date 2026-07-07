@@ -40,6 +40,12 @@
             "command": "powershell -NoProfile -Command \"python (Join-Path $env:CLAUDE_PROJECT_DIR '.agents/scripts/check_maps.py') --depth3-only\"",
             "timeout": 10,
             "statusMessage": "Checking depth-3 _artifacts INDEX..."
+          },
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -Command \"python (Join-Path $env:CLAUDE_PROJECT_DIR '.agents/scripts/record_map_changes.py') --nag\"",
+            "timeout": 10,
+            "statusMessage": "Reading map-drift journal..."
           }
         ]
       }

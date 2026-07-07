@@ -61,6 +61,20 @@ Daniel's `## Todo list` prose and every task file — stays **read-only** (you m
 
 ## Step 0 — Preflight + run the drift linter
 
+> **Step 0.0 — Read the commit-time journal FIRST (a pre-scoped worklist, not the source of truth).**
+> A `post-commit` recorder (`.githooks/post-commit` → `.agents/scripts/record_map_changes.py`) classifies
+> each commit's changes into this workflow's judgment categories and appends them to a machine-local,
+> gitignored journal (`docs/.maps-journal.jsonl`). Reading it tells you *what changed and what it needs*
+> before you lint, so you spend judgment (the slow layer) only where it's flagged:
+> ```bash
+> python .agents/scripts/record_map_changes.py --nag      # classified tail since the last reconcile (anchor)
+> ```
+> **It is a CACHE, never the truth.** The `--nag` output carries a freshness guard: if it prints
+> "*journal is behind HEAD … a commit bypassed the recorder*", the cache is incomplete — **ignore it and
+> rely entirely on the linter below** (whose `git diff <anchor>..HEAD` is ground truth). Even when fresh,
+> the linter still runs — the journal only *scopes* your attention; the linter *verifies* against disk.
+> No journal yet (fresh clone, recorder not enabled) → skip this and use the linter as before.
+
 1. **Work out where you are** (it decides the scope — see Step 0.5):
    - **Home base** = a `Projects/` dir exists beside `AGENTS.md` + `docs/repo-map.md`. This run **fans out**:
      the lobby **and** every conformant project.
@@ -368,7 +382,10 @@ edits, say so and proceed (a regen that produces no diff needs no approval).
   ```bash
   python .agents/scripts/check_maps.py --set-anchor --all     # home base: lobby + each project
   ```
-  Do not anchor before committing — you'd baseline an un-committed state.
+  Do not anchor before committing — you'd baseline an un-committed state. **Re-anchoring also CONSUMES the
+  commit-time journal** (Step 0.0): it rolls every `docs/.maps-journal.jsonl` line up to the new anchor into
+  `docs/.maps-journal-archive.jsonl` (a MOVE, never a delete), so the live journal carries only *unreconciled*
+  drift for the next SessionStart nag. Nothing to do by hand — `--set-anchor` does it.
 - If you fixed any `.agents/*/INDEX.md`, remind him those need `/sync-agents` to reach `.claude`/`.opencode`.
 - **GitNexus re-index hand-off.** If check 9 hinted anywhere, hand Daniel the per-repo command **to run AFTER
   committing** (so the fresh index lands on the new HEAD, same reasoning as the anchor):

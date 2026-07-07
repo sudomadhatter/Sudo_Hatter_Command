@@ -1,0 +1,13 @@
+#!/bin/sh
+# post-commit — map-drift RECORDER (non-blocking).
+# Classifies the just-made commit's changes into the repo-map/INDEX judgment categories and appends
+# ONE line to the machine-local journal (docs/.maps-journal.jsonl). post-commit fires AFTER the commit
+# is sealed, so it can never block or corrupt a commit; every error is swallowed so a broken recorder
+# is invisible to your workflow. The journal is a CACHE — check_maps.py (git diff vs anchor) stays truth.
+#
+# Enable per repo (once):  git config core.hooksPath .githooks
+# It is shared/tracked, so every clone that runs that one command gets the recorder.
+
+if command -v python >/dev/null 2>&1; then PY=python; else PY=python3; fi
+"$PY" .agents/scripts/record_map_changes.py --commit HEAD >/dev/null 2>&1 || true
+exit 0
