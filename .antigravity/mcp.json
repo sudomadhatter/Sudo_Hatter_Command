@@ -3,6 +3,13 @@
     "gitnexus": {
       "command": "cmd",
       "args": ["/c", "gitnexus", "mcp"]
+    },
+    "md-feedback": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "md-feedback"
+      ]
     }
   }
 }

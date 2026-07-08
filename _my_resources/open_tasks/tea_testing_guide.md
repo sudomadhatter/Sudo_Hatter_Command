@@ -9,6 +9,20 @@
 ### What the audit established
 
 The PRD's ~47 FR families are now classified against **your Test Priorities Matrix** (P0 100% / P1 80% / P2 50% / P3 20% + levels): **9 P0 families (A1–A9)** — FAA citation fidelity, auth/session, entitlement+tenancy walls, mastery state machine, grading/data-moat integrity, cost caps, pedagogical safety overrides, Part 141 logging, privacy/consent — and **9 P1 core-journey families (B1–B9)**. Five parallel suite sweeps mapped all of them to real tests (file:line evidence in the matrix). Verdict **CONCERNS**: coverage is genuinely strong at unit/integration with negative paths, but 2 P0 items sit at NONE (`firestore.rules`, the 21-day application decay timer), the **Mercy-Rule regression tests were deleted in the V2.5→V2.7 migration**, and the E2E level your matrix requires on P0+P1 doesn't exist beyond 2 generic specs.
+<!-- USER_MEMO
+  id="memo-mrcefl02-e051qm"
+  type="question"
+  status="open"
+  owner="human"
+  source="vscode"
+  color="blue"
+  text="Needs clarification"
+  anchorText="The PRD's ~47 FR families are now classified against **your Test Priorities Matrix** (P0 100% / P1 80% / P2 50% / P3 20% + levels): **9 P0 families (A1–A9)** — FAA citation fidelity, auth/session, entitlement+tenancy walls, mastery state machine, grading/data-moat integrity, cost caps, pedagogical safety overrides, Part 141 logging, privacy/consent — and **9 P1 core-journey families (B1–B9)**. Five parallel suite sweeps mapped all of them to real tests (file:line evidence in the matrix). Verdict **CONCERNS**: coverage is genuinely strong at unit/integration with negative paths, but 2 P0 items sit at NONE (`firestore.rules`, the 21-day application decay timer), the **Mercy-Rule regression tests were deleted in the V2.5→V2.7 migration**, and the E2E level your matrix requires on P0+P1 doesn't exist beyond 2 generic specs."
+  anchor="L11|a43bbe71"
+  createdAt="2026-07-08T18:16:08.978Z"
+  updatedAt="2026-07-08T18:16:08.978Z"
+  anchorConfidence="text"
+-->
 
 ### The MINIMUM flow (the finding — pick by story type, not by habit)
 
@@ -19,7 +33,7 @@ The full sudo loop is **not** wrong — it's the deluxe path. The insight from 8
 | **Test-only gap story** (tea-12, 13, 14, 15, 17, 18) | `/bmad-testarch-automate` → `/bmad-testarch-test-review` | Full 3-layer `/bmad-code-review` (no production diff to hunt); per-story trace + nfr | Keyless full-suite run (`GEMINI_API_KEY="" pytest backend/tests/`) as the zero-new-regression proof; `/sudo-update-sprint-memory` close-out |
 | **E2E new-dev** (tea-16) | `/bmad-testarch-automate` (it levels tests: E2E/API/component/unit) → `/bmad-testarch-test-review` | `bmad-testarch-framework` — **do NOT re-run it**: Playwright config + CI job exist since 11.16; framework would re-scaffold, not audit | Same as above + the specs must run green in the blocking `frontend-e2e` CI job |
 | **Normal feature story** (product code changes) | `/bmad-testarch-atdd` (red) → `/bmad-dev-story` (green) → `/bmad-code-review` | The sudo wrappers' plan/self-audit ceremony — *if* the story is small and off the P0 surface | An implement step in the middle — atdd→review alone builds nothing |
-| **P0-surface feature story** (touches A1–A9 areas) | The **full sudo loop** ①②③④ | Nothing | The armed gate (`sudo-tests.yaml`) exists precisely for these |
+| **P0-surface feature story** (touches A1–A9 areas) | The **full sudo loop** (bdd → write → audit → dev → review) | Nothing | The armed gate (`sudo-tests.yaml`) exists precisely for these |
 | **Wave/epic boundary** | Re-run `/bmad-testarch-trace` (Edit mode on the 2026-07-02 matrix) + `nfr` once per wave | Running trace/nfr per-story in between | — |
 
 One caveat carried from the TEA stories: if a test-only story turns out to need a behavior-preserving extraction to make something testable (the TEA-3/TEA-4 pattern), that's a production change — escalate that story to the feature row (add `/bmad-code-review`).
@@ -51,7 +65,7 @@ One caveat carried from the TEA stories: if a test-only story turns out to need 
 There are **two layers** with **two cadences** — don't confuse them.
 
 1. **Test *design* — the planning layer (runs once per scope).** `bmad-testarch-test-design`, driven by Murat (the Master Test Architect), ranks what can hurt you (P0–P3) and emits scoped stories with acceptance criteria. You run it **once per body of work**, up front — not per story.
-2. **The `sudo-` story loop — the execution layer (runs once per story).** `/sudo-write-story-tests` (red) → `/sudo-dev-story-tests` (green, executed inside the OpenHands Docker sandbox) → `/sudo-code-review` (gate) → `/sudo-update-sprint-memory` (your sign-off).
+2. **The `sudo-` story loop — the execution layer (runs once per story).** `/sudo-bdd-tests` (vision lock) → `/sudo-write-story-tests` (red) → `/sudo-self-audit` (plan pressure-test) → `/sudo-dev-story-tests` (green, executed inside the OpenHands Docker sandbox) → `/sudo-code-review` (gate) → `/sudo-update-sprint-memory` (your sign-off).
 
 ### Do I re-run all of this for a new epic?
 
@@ -62,8 +76,8 @@ A **new epic** going forward is much lighter:
 ```
 New epic
   └─ bmad-testarch-test-design   (scoped to THAT epic's handful of stories — fast)
-       └─ for each story:  /sudo-write-story-tests → /sudo-dev-story-tests
-                            → /sudo-code-review → /sudo-update-sprint-memory
+       └─ for each story:  /sudo-bdd-tests → /sudo-write-story-tests → /sudo-self-audit
+                            → /sudo-dev-story-tests → /sudo-code-review → /sudo-update-sprint-memory
 ```
 
 Test design is **risk-proportional**, not mandatory ceremony. A high-stakes epic (FAA accuracy, Sully safety, auth) earns the full design pass; a low-risk epic (a settings page, a copy change) can skip straight to the sudo loop with a one-line risk note. The design skill has **Create / Resume / Validate / Edit** modes so you can revise an old plan instead of starting cold — and each epic gets cheaper as this retrofit hardens the foundation (armed gate, coverage floor, schema-contract pattern).
@@ -132,8 +146,8 @@ flowchart TD
     end
 
     subgraph S2 ["Step 2 — Execute per story (test-first loop)"]
-        Exec["Red tests, then green, then expand"]
-        ExecCmd["Commands: /sudo-write-story-tests then\n/sudo-dev-story-tests then /sudo-code-review"]
+        Exec["Vision lock, red tests, audit, then green"]
+        ExecCmd["Commands: /sudo-bdd-tests then /sudo-write-story-tests then\n/sudo-self-audit then /sudo-dev-story-tests then /sudo-code-review"]
         Exec --> ExecCmd
     end
 
@@ -338,11 +352,11 @@ flowchart TD
     T3 --> D{"Decide with Daniel:\nis JIT Context Assembler the target?"}
     D -->|"yes"| T3b["Add JIT dossier trigger test\n(pattern: test_dossier_context_builder.py)"]
     D -->|"no / unclear"| HOLD["Log as decide-with-Daniel, do NOT scaffold"]
-    T1 --> W["/sudo-write-story-tests (RED trigger tests)"]
+    T1 --> W["/sudo-bdd-tests then /sudo-write-story-tests (RED trigger tests)"]
     T2 --> W
     T3b --> W
     W --> X["Assert flag / counter / enum\nNEVER string-match LLM prose"]
-    X --> Y["/sudo-dev-story-tests (drive green + automate edges)"]
+    X --> Y["/sudo-self-audit then /sudo-dev-story-tests (drive green + automate edges)"]
     Y --> Z["/sudo-code-review (suite + trace + nfr + test-review)"]
     Z --> V["PASS / CONCERNS / FAIL verdict"]
 ```
@@ -742,3 +756,20 @@ Located at `_bmad-output/sudo-tests.yaml`. Its **presence** arms the gate (absen
 ---
 
 *Companion: the day-to-day human-lane flow → `_my_resources/diagrams_guides/system/testing_work_flows_tea_sudo.md`.*
+
+<!-- GATE
+  id="gate-mrcefl02-8ln3lv"
+  type="merge"
+  status="proceed"
+  blockedBy=""
+  canProceedIf=""
+  doneDefinition="All review annotations resolved"
+-->
+
+<!-- PLAN_CURSOR
+  taskId="memo-mrcefl02-e051qm"
+  step="0 applied, 0/1 resolved"
+  nextAction="Review: memo-mrcefl02-e051qm"
+  lastSeenHash="c17969ab"
+  updatedAt="2026-07-08T18:16:08.978Z"
+-->

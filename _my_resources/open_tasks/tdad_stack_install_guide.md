@@ -6,6 +6,20 @@
 ---
 
 ## What We're Setting Up & Why
+<!-- USER_MEMO
+  id="memo-mrce63k2-il3dpl"
+  type="highlight"
+  status="open"
+  owner="human"
+  source="vscode"
+  color="yellow"
+  text="Reference highlight"
+  anchorText="## What We're Setting Up &amp; Why"
+  anchor="L8|9f791f67"
+  createdAt="2026-07-08T18:08:46.466Z"
+  updatedAt="2026-07-08T18:08:46.466Z"
+  anchorConfidence="text"
+-->
 
 The BDD Vision Lock (`pytest-bdd`) is being added to **both** the `/sudo` and
 `/autopilot_claude` dev flows. The goal is to replace ambiguous English ACs with strict
@@ -113,7 +127,8 @@ aider --version
 |---|---|---|
 | `pytest-bdd` | Each project's `backend/.venv` | It's a test library — runs in the test suite |
 | `aider` | Global (`~/.local/bin`) via `uv` | It's a CLI dev tool — like `git`, not a library |
-| Both listed in | `requirements-tdad.txt` (lobby root) | Documentation / team reference |
+| `md-feedback` | MCP Config (`.claude`/`.opencode/mcp.json`) | Provides the AI agents with markdown annotation capabilities for `/sudo-self-audit` |
+| Listed in | `requirements-tdad.txt` (lobby root) | Documentation / team reference |
 
 > [!IMPORTANT]
 > **Never add `aider-chat` to a project's `requirements.txt`.**
@@ -164,7 +179,7 @@ BDD contracts apply to **both** tracks. The only difference is whether you're wa
 
 | Track | Command | BDD Contracts | Difference |
 |---|---|---|---|
-| **Manual** | `/sudo-write-story-tests` → `/sudo-dev-story-tests` → `/sudo-code-review` | ✅ Yes | **You watch.** You can see when the agent is struggling and intervene. You approve each phase gate. |
+| **Manual** | `/sudo-bdd-tests` → `/sudo-write-story-tests` → `/sudo-self-audit` → `/sudo-dev-story-tests` → `/sudo-code-review` | ✅ Yes | **You watch.** You can see when the agent is struggling and intervene. You approve each phase gate. |
 | **Autonomous** | `/autopilot_claude` | ✅ Yes | **Headless.** Agent locks into the loop and runs until tests are green. You only see the final result. |
 
 > [!IMPORTANT]
@@ -174,10 +189,10 @@ BDD contracts apply to **both** tracks. The only difference is whether you're wa
 
 ### How the BDD Vision Lock Works
 
-Today: `/sudo-write-story-tests` generates acceptance tests from bullet-point ACs.
-The agent interprets English and writes what it thinks you mean.
+Today: `/sudo-bdd-tests` engages the Vision Lock to interactively align on expected behaviors, translating them into strict Gherkin contracts. Then `/sudo-write-story-tests` generates acceptance tests from the Gherkin contracts.
+The agent no longer interprets ambiguous English or writes what it thinks you mean.
 
-After TDAD: The workflow will first translate the AC into a strict Gherkin contract:
+The workflow first translates the AC into a strict Gherkin contract:
 
 ```gherkin
 Feature: Aviation Lesson Routing
@@ -248,3 +263,19 @@ backend/tests/
 3. **Wire aider into `/autopilot_claude`** — Completed.
 4. **Deploy OpenHands** — Completed for Desktop tracks. Stage 3 now launches OpenHands via Docker volume mount.
 
+<!-- GATE
+  id="gate-mrce63k2-wywl95"
+  type="merge"
+  status="proceed"
+  blockedBy=""
+  canProceedIf=""
+  doneDefinition="All review annotations resolved"
+-->
+
+<!-- PLAN_CURSOR
+  taskId="memo-mrce63k2-il3dpl"
+  step="0 applied, 0/1 resolved"
+  nextAction="Review: memo-mrce63k2-il3dpl"
+  lastSeenHash="4908aec7"
+  updatedAt="2026-07-08T18:08:46.466Z"
+-->
