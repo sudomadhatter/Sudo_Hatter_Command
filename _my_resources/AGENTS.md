@@ -6,9 +6,9 @@ routing row points you at. What's here → `README.md`.
 ## The law
 - **NEVER create, edit, move, or delete anything here on your own.** Touch a file only when Daniel
   explicitly directs you to that file, in the moment. (An approval elsewhere doesn't carry in here.)
-- **ONE standing exception:** `/1_update-maps` refreshes the `## Open Work` file-list inside
+- **ONE standing exception:** `/1_update-maps` refreshes the `## Open Tasks` file-list inside
   `open_tasks/todo_list.md` — only that list; his `## Todo list` prose and the task files stay his.
-- `open_tasks/todo_list.md` — Daniel's "what's next" queue. Surfaced READ-ONLY on "pick up" and on
+- `open_tasks/todo_list.md` — Daniel's "what's next" queue. Check the todo list for sub projects if they're listed under '## Sub-Projects Todo Lists'.  Surfaced READ-ONLY on "pick up" and on
   "what's next / open tasks" asks. **Cross-check against live project files** — notes can be stale.
 - `active-project.txt` — which child project the lobby `sudo-*` skills target.
 - `diagrams_guides/` (his reference diagrams — see its `INDEX.md`), `youtube_transcripts/` (source
