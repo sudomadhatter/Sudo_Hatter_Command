@@ -132,7 +132,7 @@ aider --version
 
 ---
 
-## Current Install Status (Laptop)
+## Current Install Status
 
 | Tool | Status |
 |---|---|
@@ -168,9 +168,9 @@ BDD contracts apply to **both** tracks. The only difference is whether you're wa
 | **Autonomous** | `/autopilot_claude` | ✅ Yes | **Headless.** Agent locks into the loop and runs until tests are green. You only see the final result. |
 
 > [!IMPORTANT]
-> **The sandbox (OpenHands) is deferred for both tracks.**
-> We are not isolating the aider loop in Docker yet. The agent runs against the local
-> test suite. OpenHands gets revisited once BDD contracts are proven end-to-end.
+> **The sandbox (OpenHands) is ACTIVE for Desktop tracks.**
+> We are using OpenHands for `/autopilot_claude` and `opencode` (Stage 3). 
+> The Mobile track remains cloud-native and defers to desktop for OpenHands.
 
 ### How the BDD Vision Lock Works
 
@@ -195,18 +195,16 @@ misinterpret it — every `Given`/`When`/`Then` is a hard assertion in pytest.
 The autonomous loop (`aider`) then writes implementation code until every
 assertion is green. There is no room for drift.
 
-### What the OpenHands Sandbox Is (and Why We Deferred It)
+### What the OpenHands Sandbox Is (Active on Desktop)
 
 The full PRP proposed wrapping aider in an **OpenHands** secure sandbox — an
 isolated Docker environment where agents can spin up real databases, run full
 end-to-end suites, and verify cascading effects without touching production.
 
-**We deferred the sandbox for now.** Reason: the sandbox adds significant
-infrastructure complexity (Docker, environment parity, secret injection) that
-we don't need to prove the BDD contract concept. The aider loop running against
-the local test suite is the right first step. We will revisit OpenHands once we
-have the BDD contract layer working end-to-end and have seen a full
-`/autopilot_claude` cycle use it successfully.
+**Status: Active for Desktop Tracks.** We have wired OpenHands into Stage 3 (Implement)
+of `/autopilot_claude` and `/autopilot-dev-story-opencode.ps1`. The mobile track
+(`/autopilot_mobile`) remains cloud-native due to infrastructure constraints; when 
+mobile users need the sandbox, they remote into the desktop.
 
 ### The Adversarial Audit Layer (Phase 5 — Future)
 
@@ -247,8 +245,6 @@ backend/tests/
    pattern works end-to-end with the existing codebase before touching autopilot.
 2. **Update `/sudo-write-story-tests`** to optionally output a `.feature` file
    alongside the standard `test_*.py` red-phase scaffold.
-3. **Wire aider into `/autopilot_claude`** — the command currently uses the Claude
-   API directly; we need to evaluate whether aider's loop or a raw Claude call is
-   the right engine for the autonomous phase.
-4. **Revisit OpenHands** once BDD contracts are proven in the local test loop.
+3. **Wire aider into `/autopilot_claude`** — Completed.
+4. **Deploy OpenHands** — Completed for Desktop tracks. Stage 3 now launches OpenHands via Docker volume mount.
 

@@ -8,6 +8,10 @@ platforms: [claude]
 > **CLAUDE-ONLY.** This drives headless `claude -p` subprocesses with exact `--model` pinning and
 > session continuity (`--session-id` / `--resume`). It cannot run under Gemini/opencode and is
 > intentionally NOT mirrored there.
+>
+> **TDAD/aider Integration Note:** This headless flow is being integrated with `aider` and `pytest-bdd`. 
+> For any exact setup syntax or flags regarding the sandbox or BDD physics, explicitly reference the 
+> official [aider-chat](https://github.com/Aider-AI/aider) and [pytest-bdd](https://github.com/pytest-dev/pytest-bdd) git repositories.
 
 Launch the autopilot pipeline for the story in `$ARGUMENTS` (a story id like `11.16`, or a path),
 optionally prefixed by a project name when run from the command center (e.g. `AGY_AVIATIONCHAT 11.16`).
@@ -68,7 +72,7 @@ original in-project form.
    known-upfront path to tail live.)
 
    For a cheap plan+audit trial, append `-MaxStage 2`. Model overrides: `-DevModel`/`-AuditModel`
-   (defaults: Dev `claude-opus-4-8`, QA `claude-fable-5`).
+   (defaults: Dev `claude-opus-4-8`, QA `claude-opus-4-8`).
    **Resume a crashed run:** `-ResumeFrom <N>` (1-4) (or just re-run with no flags - completed stages
    are auto-skipped by artifact presence, and the saved session ids are reused). **Preview the resume
    plan + session ids for $0:** `-DryRun`. **Retry budget:** `-MaxRetries` (default 3).
@@ -123,7 +127,7 @@ original in-project form.
 A 4-stage chain across **two persistent sessions**, handing off via artifacts in the one shared folder
 `_artifacts/epic_<epic>/<date>_autopilot-<id>/`. Each team does its codebase deep-dive once and **resumes its
 own chat** for its second stage (so it never re-researches). Models come from `-DevModel`/`-AuditModel`
-(Dev defaults `claude-opus-4-8`; QA defaults `claude-fable-5` — the strongest tier sits on the audit +
+(Dev defaults `claude-opus-4-8`; QA defaults `claude-opus-4-8` — the strongest tier sits on the audit +
 review+fix lane, the last gates before the human, and the two QA stages share one session so the
 codebase deep-dive is paid once); each stage runs a dedicated headless `_AP` command that carries its
 behavior (the script just points it at the shared folder):

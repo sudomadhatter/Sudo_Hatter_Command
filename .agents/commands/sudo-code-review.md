@@ -34,10 +34,8 @@ path (`_bmad-output/…`, `_bmad/…`, `_artifacts/…`, story files, test comma
 `PROJECT_ROOT`, run it against that directory, and read/write only there. If a needed path is missing under
 `PROJECT_ROOT`, STOP and say so — never fall back to the lobby.
 
-## Step 1 — Adversarial code review
-Invoke the **`bmad-code-review`** skill on the story's diff (its existing layers + the Test-Adequacy
-lens). Apply the actionable fixes yourself; if you change code, re-run the relevant suite(s) and paste
-actual output.
+## Step 1 — Clean-Room Adversarial Code Review
+Invoke the **`bmad-code-review`** skill on the story's diff. You MUST act as a **Clean-Room** agent: zero out any builder's bias. Your only job is to aggressively audit the final diff against the strict BDD contract. Hunt specifically for **AI Drift**, over-engineering, bloat, unnecessary abstractions, and logic flaws. Apply the actionable fixes yourself; if you change code, re-run the relevant suite(s) and paste actual output.
 
 ## Step 2 — Gate: opt-in check
 Read `_bmad-output/sudo-tests.yaml`.

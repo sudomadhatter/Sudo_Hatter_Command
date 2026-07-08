@@ -1,6 +1,6 @@
-# agent — INDEX
+# opencode-agents — INDEX
 
-opencode agent definitions mirror (from `/sync-agents`). Read-only mirror — edit at MASTER `.agents/opencode-agents/`, then re-sync.
+opencode agent definition files. MASTER here — mirrored to `.opencode/agent/` and project vendored copies via `/sync-agents`.
 
 ## Top-level contents
 <!-- auto-listed by /1_update-maps — refresh via /1_update-maps; do not hand-edit entries -->

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "md-feedback": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "md-feedback",
+        "--workspace=C:\\Sudo_Hatter_Command"
+      ]
+    }
+  }
+}

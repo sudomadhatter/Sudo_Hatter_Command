@@ -40,9 +40,11 @@ next story" when empty). This writes the story file under `_bmad/bmm/stories/` w
 criteria (ACs). Confirm the story file + ACs exist before continuing. If create-story stops for input,
 surface it and stop — never guess.
 
-## Step 2 — Write the failing acceptance tests (ATDD red phase)
-Invoke the **`bmad-testarch-atdd`** skill against the story just created. Generate acceptance tests that
-codify each AC and **must fail now** (no implementation exists yet). If the epic has a
+## Step 2 — BDD Vision Lock (ATDD Contract Phase)
+Invoke the **`/sudo-bdd-tests`** workflow. This is an interactive session with the Test Architect (Murat) to hash out exact expected behaviors until they are 100% understood, generating the strict `pytest-bdd` `.feature` files and step definitions.
+
+## Step 3 — Write the failing acceptance tests (ATDD red phase)
+Invoke the **`bmad-testarch-atdd`** skill against the story just created. Generate any remaining unit/component acceptance tests that codify each AC and **must fail now** (no implementation exists yet). If the epic has a
 `bmad-testarch-test-design` risk plan, pull it so P0 ACs get priority coverage.
 
 ## Done
