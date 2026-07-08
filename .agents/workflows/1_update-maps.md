@@ -216,8 +216,9 @@ reconciliation:
    - **`.agents/{rules,workflows,skills,commands}/INDEX.md`** (MASTER here) — fix drift **directly** (e.g. a
      new command in `.agents/commands/` not yet in its INDEX), then note that `/sync-agents` must run to
      push the copies to `.claude/`/`.opencode/`. (In a project these are vendored/verify-only — not here.)
+   - **Missing level-2 `INDEX.md` files** — the linter flags these under `[level-2 INDEX presence]`. If a required folder is missing its `INDEX.md`, create it and list its top-level contents so future agents can read it instead of scanning the full folder.
 
----
+> **Fast-Path (`AGENTS.md` Updates Only)**: If the only recent change driving the update was an `AGENTS.md` file, you can fast-path the run by focusing purely on refreshing the `INDEX.md` files and the `repo-map` (if mode-preserving). `AGENTS.md` rule changes do not require a deep structural regeneration.
 
 ## Step 3.5 — Context hygiene (prune the continuity brief)
 

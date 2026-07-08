@@ -1,0 +1,62 @@
+# skills — INDEX
+
+Legacy `.agent/` skills folder (retire-list — see `docs/workspace-standard.md` Appendix). These are the old BMAD skill copies; the canonical skills now live at `.agents/skills/`. Minimal stub kept until the retire pass.
+
+## Top-level contents
+<!-- auto-listed by /1_update-maps — refresh via /1_update-maps; do not hand-edit entries -->
+- `bmad-advanced-elicitation/`
+- `bmad-agent-analyst/`
+- `bmad-agent-architect/`
+- `bmad-agent-dev/`
+- `bmad-agent-pm/`
+- `bmad-agent-tech-writer/`
+- `bmad-agent-ux-designer/`
+- `bmad-architecture/`
+- `bmad-brainstorming/`
+- `bmad-check-implementation-readiness/`
+- `bmad-checkpoint-preview/`
+- `bmad-code-review/`
+- `bmad-correct-course/`
+- `bmad-create-architecture/`
+- `bmad-create-epics-and-stories/`
+- `bmad-create-prd/`
+- `bmad-create-story/`
+- `bmad-customize/`
+- `bmad-dev-story/`
+- `bmad-document-project/`
+- `bmad-domain-research/`
+- `bmad-editorial-review-prose/`
+- `bmad-editorial-review-structure/`
+- `bmad-edit-prd/`
+- `bmad-forge-idea/`
+- `bmad-generate-project-context/`
+- `bmad-help/`
+- `bmad-index-docs/`
+- `bmad-investigate/`
+- `bmad-market-research/`
+- `bmad-party-mode/`
+- `bmad-prd/`
+- `bmad-prfaq/`
+- `bmad-product-brief/`
+- `bmad-qa-generate-e2e-tests/`
+- `bmad-quick-dev/`
+- `bmad-retrospective/`
+- `bmad-review-adversarial-general/`
+- `bmad-review-edge-case-hunter/`
+- `bmad-shard-doc/`
+- `bmad-spec/`
+- `bmad-sprint-planning/`
+- `bmad-sprint-status/`
+- `bmad-tea/`
+- `bmad-teach-me-testing/`
+- `bmad-technical-research/`
+- `bmad-testarch-atdd/`
+- `bmad-testarch-automate/`
+- `bmad-testarch-ci/`
+- `bmad-testarch-framework/`
+- `bmad-testarch-nfr/`
+- `bmad-testarch-test-design/`
+- `bmad-testarch-test-review/`
+- `bmad-testarch-trace/`
+- `bmad-ux/`
+- `bmad-validate-prd/`

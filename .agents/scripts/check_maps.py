@@ -56,7 +56,7 @@ import record_map_changes as rmc  # noqa: E402  (commit-time journal — consume
 # own linter). _my_resources is PROTECTED (don't even read); _bmad is BMAD-regenerated. Rest is noise.
 SCAN_IGNORES = {
     ".git", ".venv", "venv", "env", "__pycache__", "node_modules", ".next", "dist", "build",
-    ".pytest_cache", ".turbo", ".cache", "coverage", "_my_resources", "_bmad", "Projects",
+    ".pytest_cache", ".turbo", ".cache", "coverage", "_my_resources", "_bmad", "Projects", ".gitnexus",
 }
 # Extra ignores fed to the generator's regen — MUST match the documented invocation in the repo-map
 # header. Home base uses `Projects,_my_resources`; a project's header may declare its own (e.g. `_bmad`).
@@ -318,6 +318,24 @@ def find_indexes(root):
     return sorted(found)
 
 
+# --- check 2.5: level-2 INDEX presence ---------------------------------------------------------------
+def check_level2_indexes(root):
+    problems = []
+    for p1 in root.iterdir():
+        if not p1.is_dir() or p1.name in SCAN_IGNORES or p1.name == ".git":
+            continue
+        if p1.name == "_artifacts":
+            continue
+        for p2 in p1.iterdir():
+            if not p2.is_dir() or p2.name in SCAN_IGNORES or p2.name.startswith("."):
+                continue
+            idx = p2 / "INDEX.md"
+            if not idx.exists():
+                rel = p2.relative_to(root).as_posix()
+                problems.append(f"{rel}/INDEX.md: missing (level-2 folder requires an INDEX.md)")
+    return problems
+
+
 # --- check 7: depth-3 INDEX reconciliation (inside _artifacts/ only) ---------------------------------
 # Only _artifacts/ gets depth-3 INDEXes; everything else stays depth-2. A "bucket" is any directory
 # under _artifacts/ that has ≥2 session subdirectories. Each bucket should have an INDEX.md with one
@@ -498,6 +516,7 @@ def lint_one(root, ignore_override=None):
         index_problems.extend(check_paths(root, idx, top_level))
     drift["INDEX.md paths"] = index_problems
 
+    drift["level-2 INDEX presence"] = check_level2_indexes(root)
     drift["depth-3 _artifacts INDEX"] = check_depth3_indexes(root)
 
     drift["structure conformance"] = check_conformance(root, is_home, is_bmad, map_path)
