@@ -98,6 +98,29 @@ Coverage is linted by `check_maps.py` check 8 (non-fatal hint until every worksp
   `skills.paths` = `[".agents/skills"]`.
 - **A vendored copy of this standard** at `docs/workspace-standard.md`.
 
+### The enforcement layer a dev workspace carries (standard since 2026-07-09)
+Anywhere stories/code get built — the projects, AND the lobby (Daniel also manages from there; direct
+BMAD skill runs bind `{project-root}` to wherever you sit) — carries four enforcement pieces on top of
+the toolkit:
+
+- **`_bmad/custom/` guard + dialect tomls** (+ `_bmad/scripts/resolve_customization.py` /
+  `resolve_config.py`): `bmad-dev-story.toml` + `bmad-quick-dev.toml` enforce the plan-first gate +
+  artifact protocol *inside* BMAD skill runs (persistent facts + un-skippable `on_complete`);
+  `bmad-testarch-atdd.toml` + `bmad-testarch-automate.toml` pin test scaffolding to **pytest +
+  pytest-bdd** and persist `automation-summary-<story>.md` — the evidence `/sudo-code-review`'s gate
+  check 5 looks for. The tomls load `.agents/rules/000-PLAN-FIRST-GATE.md` (master-owned; projects
+  inherit it via `/sync-agents`). **`_bmad/` itself is NEVER synced** — toml parity across lobby + AGY +
+  Fresh is a 3-way hand-copy; new projects inherit by cloning Fresh.
+- **`_bmad-output/sudo-tests.yaml`** — present = the `/sudo-code-review` TEA gate is **ARMED**
+  (absent = auto-WAIVED, and a workspace that starts WAIVED tends to stay WAIVED). Ships armed in the
+  template with ratchet-from-zero floors; `l1_coverage_min` and CI's `--cov-fail-under` only ever go UP.
+- **`.github/workflows/pr-check.yml`** — CI gates PRs to **`main` AND `main_debug`** (the 2026-07 audit's
+  P0-1 lesson: an ungated integration branch is where regressions hide).
+- **BDD layer (TDAD Layer 1)** — Gherkin contracts at `backend/tests/features/<domain>/*.feature`,
+  **self-binding** steps at `backend/tests/bdd/steps_<domain>.py` (each calls `pytest_bdd.scenarios()`;
+  pyproject `python_files` includes `steps_*.py`) — dropping a feature+steps pair into the tree is all it
+  takes for the suite and CI to execute it.
+
 ### Format checklist (stamp a workspace)
 | ✓ | Item |
 |---|---|
@@ -110,6 +133,9 @@ Coverage is linted by `check_maps.py` check 8 (non-fatal hint until every worksp
 | ☐ | registered as a row in the root `router.md` |
 | ☐ | vendored `docs/workspace-standard.md` present |
 | ☐ | Tier-2 local law: `_artifacts/`, `_my_resources/`, `docs/` each carry `AGENTS.md` + 1-line adapters |
+| ☐ | dev workspace: `_bmad/custom/` guard layer present (4 tomls + resolver scripts — hand-copy parity, never synced) |
+| ☐ | dev workspace: `_bmad-output/sudo-tests.yaml` ARMED · `pr-check.yml` gates `main` + `main_debug` |
+| ☐ | dev workspace: BDD layer wired (`backend/tests/features/` + self-binding `tests/bdd/steps_*.py` + `python_files`) |
 
 ### The PATH CONTRACT (exact files & where they live — what the tooling verifies)
 This is the machine-checkable heart of the standard: the **exact path** of every standard element, in the two
@@ -159,6 +185,10 @@ Formatting is one-time; upkeep is forever. Who does what, and when.
   **vendored** by `/sync-agents` — never hand-edit a copy; edit the master and re-sync.
 - **Project-specific hard-stops** live in that project's local `constitution.project.md` — never by editing a
   vendored generic rule. This is the anti-fork rule that prevents the drift this whole standard exists to fix.
+- **BMAD skill overrides are the sanctioned per-repo exception:** `_bmad/custom/*.toml` customize installed
+  BMAD skills per repo and survive skill updates — `/sync-agents` never touches `_bmad/`. Keep the three
+  repos' sets identical by hand-copy (new projects inherit by cloning Fresh); personal tweaks go in
+  `*.user.toml` (gitignored), team law in the committed `*.toml`.
 
 ### Command sync & platform reach — one master, three platforms
 The **single canonical invocable set is `.agents/commands/`**. It mirrors to every platform via one command,

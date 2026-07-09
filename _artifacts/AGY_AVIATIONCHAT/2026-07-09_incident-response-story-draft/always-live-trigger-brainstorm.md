@@ -140,9 +140,29 @@ it") is Level 2 as the target state.
 | 16.3 | **Frontend Sentry**: `@sentry/nextjs` + ErrorBoundary capture + FE Sentry project + alert rule into the same funnel | CONFIRMED in scope (memo: "for sure") |
 | 16.4 | (optional) Notification hardening: severity tiers, SMS, Level-2 flip | later |
 
-## Recommendation (one line)
+## Recommendation (one line — superseded by the decision below)
 
 **A as the backbone now** (cron first, relay upgrade after) + **Level 1→2 progression** +
 **GitHub-issue + direct-email notifications**, with **B (Routines) piloted as the phone-side
 acceptance surface** once the backbone proves itself — and **16.3 is non-negotiable** or the "site
 crashed" half of the mission never fires the pipeline at all.
+
+---
+
+## ✅ DECISION — Daniel, 2026-07-09 (chip answers)
+
+1. **Webhook from day one — no cron phase.** "We are not going to come back and upgrade this
+   later, so why wait?"
+2. **Option B (Claude Code Routines) is the PRIMARY runtime.** "I trust the beta… if it doesn't
+   work we can roll it back to something more proven." → Option A (GitHub Actions) is built as the
+   **dormant rollback lane**; the relay's `TARGET` switch is the whole migration (one env flip).
+3. **Level 2 from day one.** Every incident arrives with the fix already built + tests run + PR
+   open; accepting = merge. "No reason to wait — we are not trying to keep rebuilding something."
+4. **Notifications: GitHub issue only** (email + mobile-app push). No SMTP leg, no SMS.
+5. **Build-history (`_artifacts`) lookup is CONDITIONAL** — only when the agent is struggling to
+   understand what broke, "it has the resources to go look at the way we built it" — not on every
+   incident.
+
+Design consequence worth naming: the Routines sandbox has no GCP identity, so the **relay
+(GCP-native Cloud Function) pre-fetches the ±15-min Cloud Run log excerpt** and ships it in the
+fire payload — the primary lane keeps its logs leg without handing credentials to the beta.

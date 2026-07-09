@@ -1,0 +1,18 @@
+# Team override for bmad-testarch-atdd — TDAD dialect pin
+# Lives in _bmad/custom/ — survives BMAD skill updates.
+#
+# WHY (testing_audit_BDD 2026-07-09, §5 stack-doctrine mismatch): the testarch
+# skills' built-in checklists and scaffold suggestions speak Playwright/Cypress/
+# Jest dialect, while this stack's Layer-1 acceptance contracts are
+# pytest + pytest-bdd (Python). Without this pin the red-phase scaffolds
+# occasionally arrive in the wrong language/framework and get hand-translated.
+#
+# Merge rules: persistent_facts APPEND to the skill's defaults.
+
+[workflow]
+
+persistent_facts = [
+  "TEST DIALECT (TDAD Layer 1 — non-negotiable): this project's acceptance/red-phase tests are pytest + pytest-bdd (Python). NEVER scaffold Cypress or Jest. Playwright is reserved for stories that are explicitly E2E/UI-journey level — everything else is pytest. When your checklists or knowledge fragments suggest JS-framework fixtures, translate the underlying intent into pytest/pytest-bdd idiom instead of emitting them verbatim.",
+  "BDD LAYOUT (house convention): Gherkin contracts live at {project-root}/backend/tests/features/<domain>/<name>.feature; step bindings live at {project-root}/backend/tests/bdd/steps_<domain>.py and are SELF-BINDING — each steps module calls pytest_bdd.scenarios() on its feature file(s), and pyproject.toml collects steps_*.py as test modules. Dropping a feature+steps pair into the tree is all it takes for the suite (and CI) to execute it.",
+  "VISION LOCK: if /sudo-bdd-tests (flow step ①b) already authored a .feature contract for this story, bind your red-phase scaffolds to THAT contract via scenarios() — do not write a parallel set of assertions that can drift from it.",
+]

@@ -1,6 +1,20 @@
 # AviationChat Test-Architecture Retrofit — Field Guide (TEA-Gated `sudo-` Flow)
 
-> **Status — 2026-07-02:** Step 0 done (2026-06-29, TEA-1..TEA-9 + field-report TEA-10/11) → **8 stories executed, all gate PASS** (TEA-1/2/3/4/5/7/10/11). The **true-P0 audit is done** (`/bmad-testarch-trace`, 2026-07-02): gate **CONCERNS** — P0 84.1% weighted vs the 100% target, P1 83% ≥ 80% (MET), suite fully green, E2E level missing. The gap worklist is filed in sprint-status as **tea-12..tea-18** (+ tea-6/8/9 backfilled as explicit keys). **Next up: TEA-8** (codify the matrix — now unblocked), then tea-12→17 via the **minimum flow** (§0 below — NOT the full sudo loop). Canonical audit artifact: `_bmad-output/test-artifacts/traceability/traceability-matrix-2026-07-02.md` (+ `gate-decision-2026-07-02.json`).
+> **Status — 2026-07-09 (CURRENT — supersedes the 7/02 block below):** the tea-12..18 backlog is
+> **finished** — the 2026-07-03 trace re-run closed every gap: **gate PASS, P0 weighted 100%**, all levels
+> MET, ~2,316 backend + 332 frontend tests green; the coverage ratchet is `l1_coverage_min: 0.54` with CI
+> `--cov-fail-under=54`. Since then (2026-07-09): the full testing audit lives at **`testing_audit_BDD.md`
+> (this folder)** — headline: 13/14 Epic-8 ATDD stories skipped the automate pass (tests NOT orphaned; CI
+> runs the full suite) and the seam is now **enforced** — ② `sudo-dev-story-tests` Step 4 must persist
+> `_bmad-output/test-artifacts/automation-summary-<story>.md` (or an explicit `## Automate: skipped`
+> rationale) and ③ `sudo-code-review` gained **gate check 5** (missing evidence → verdict capped at
+> CONCERNS; `tea-*`/MIN-FLOW exempt). New `_bmad/custom/bmad-testarch-atdd/automate.toml` (lobby + AGY +
+> Fresh) pin TEA scaffolding to **pytest-bdd** and make automate write that evidence automatically. The
+> BDD/TDAD layer is live in Fresh (first `.feature` green). Still open from the audit: **P0-1..P0-3**
+> (ungated `main_debug`, test-less backend deploy, journeys pack) + **P1-4** (risk-based automate backfill)
+> + **P1-5** (run NFR once).
+>
+> **Status — 2026-07-02 (historical):** Step 0 done (2026-06-29, TEA-1..TEA-9 + field-report TEA-10/11) → **8 stories executed, all gate PASS** (TEA-1/2/3/4/5/7/10/11). The **true-P0 audit is done** (`/bmad-testarch-trace`, 2026-07-02): gate **CONCERNS** — P0 84.1% weighted vs the 100% target, P1 83% ≥ 80% (MET), suite fully green, E2E level missing. The gap worklist is filed in sprint-status as **tea-12..tea-18** (+ tea-6/8/9 backfilled as explicit keys). **Next up: TEA-8** (codify the matrix — now unblocked), then tea-12→17 via the **minimum flow** (§0 below — NOT the full sudo loop). Canonical audit artifact: `_bmad-output/test-artifacts/traceability/traceability-matrix-2026-07-02.md` (+ `gate-decision-2026-07-02.json`).
 
 ---
 

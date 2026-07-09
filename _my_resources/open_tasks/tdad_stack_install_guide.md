@@ -244,8 +244,18 @@ backend/tests/
 
 1. **Design the first `.feature` file** for an existing Epic 8 story — prove the
    pattern works end-to-end with the existing codebase before touching autopilot.
+   — 🔄 **UPDATE 2026-07-09: the wiring itself is PROVEN.** Fresh_Workspace (the template) runs the
+   system's first `.feature` green: `backend/tests/features/template/workspace_smoke.feature` +
+   **self-binding** `backend/tests/bdd/steps_template.py` (each steps module calls
+   `pytest_bdd.scenarios()`; pyproject `python_files` adds `steps_*.py` — this is the house convention,
+   drop a feature+steps pair in and CI runs it). Also landed: `_bmad/custom/bmad-testarch-atdd.toml` +
+   `bmad-testarch-automate.toml` (lobby + AGY + Fresh) pin TEA scaffolding to pytest-bdd. **Still open:**
+   the pilot on a REAL Epic-8 story in AGY (audit P2-8).
 2. **Update `/sudo-write-story-tests`** to optionally output a `.feature` file
    alongside the standard `test_*.py` red-phase scaffold.
+   — Note 2026-07-09: `/sudo-bdd-tests` (step ①b) already authors the `.feature`, and the new atdd toml
+   instructs red-phase scaffolds to BIND to an existing ①b contract via `scenarios()` instead of
+   duplicating assertions — the command-file edit itself is still open.
 3. **Wire aider into `/autopilot_claude`** — Completed.
 4. **Deploy OpenHands** — Completed for Desktop tracks. Stage 3 now launches OpenHands via Docker volume mount.
 

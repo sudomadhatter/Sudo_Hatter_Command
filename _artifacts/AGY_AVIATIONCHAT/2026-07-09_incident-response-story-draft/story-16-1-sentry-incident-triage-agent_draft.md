@@ -207,3 +207,5 @@ No — **if bounded**. Walkthroughs record "what fought back and how it was solv
 <!-- CHECKPOINT id="ckpt_mrdm8y6x_u4k8nq" time="2026-07-09T14:42:42.585Z" note="auto" fixes=0 questions=2 highlights=0 sections="⚠️ OPEN DECISIONS FOR DANIEL" -->
 
 <!-- CHECKPOINT id="ckpt_mrdmyo4x_l5tq0k" time="2026-07-09T15:02:42.609Z" note="auto" fixes=0 questions=3 highlights=0 sections="⚠️ OPEN DECISIONS FOR DANIEL" -->
+
+<!-- CHECKPOINT id="ckpt_mrdnoe2k_alvmkn" time="2026-07-09T15:22:42.620Z" note="auto" fixes=0 questions=3 highlights=0 sections="⚠️ OPEN DECISIONS FOR DANIEL" -->

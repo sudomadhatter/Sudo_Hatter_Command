@@ -13,7 +13,11 @@ You need to configure Claude, OpenCode, and Antigravity to use the `md-feedback`
 
 ### A. Claude Configuration
 
-Create or edit `.claude/mcp.json` at the root of your workspace:
+> ⚠️ **CORRECTED 2026-07-09:** Claude Code reads the **root `.mcp.json`** — it does **NOT** read
+> `.claude/mcp.json` (that path was the original instruction here and is exactly why the server never
+> loaded; root-caused + rewired across lobby + AGY + Fresh).
+
+Create or edit **`.mcp.json`** at the root of your workspace:
 
 ```json
 {
@@ -28,6 +32,9 @@ Create or edit `.claude/mcp.json` at the root of your workspace:
   }
 }
 ```
+
+(The house repos also keep a mirror copy at `.claude/mcp.json` for tool compatibility, but the root
+`.mcp.json` is the one that makes Claude Code load it. Restart Claude Code after wiring.)
 
 ### B. OpenCode Configuration
 

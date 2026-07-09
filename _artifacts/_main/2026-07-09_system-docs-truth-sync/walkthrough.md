@@ -135,4 +135,59 @@ The two remaining `[x]` are **vendored copies `/sync-agents` fills** (the master
    can't see it).
 5. **Your call — `check_maps_output.txt` (tracked):** delete → `git rm check_maps_output.txt`; or keep
    local but untrack → `git rm --cached check_maps_output.txt` + add `check_maps_output.txt` to `.gitignore`.
-6. **Worth a look:** the stray `Projects/aviationChat-AGY/` directory (old copy?).
+6. ~~Worth a look: the stray `Projects/aviationChat-AGY/` directory~~ — **RESOLVED in the addendum below.**
+
+---
+
+## Addendum (same session) — "fix 1 and 2" + md-feedback rollout + guide rewrite
+
+**Fix 1 — stray `Projects/aviationChat-AGY/` DELETED.** Inspected first: it contained only an empty
+`frontend/` folder — **0 bytes, no `.git`** — an accidental husk under the old project name, not a
+repo. Removed (`rm -rf`; under gitignored `Projects/`, so no lobby commit involved). Live-config sweep
+for the old name found one mention: `python_inter_venv_fix/SKILL.md` uses it as a *historical example*
+of a stale path (that's literally the skill's topic) — harmless, left alone.
+
+**Fix 2 — md-feedback memos: ROOT CAUSE found and fixed.** Commit `7567807` configured md-feedback in
+`.claude/mcp.json` / `.opencode/mcp.json` / `.antigravity/mcp.json` at the **lobby only** — but Claude
+Code reads project MCP servers from the **root `.mcp.json`** (which held only gitnexus — that's exactly
+why gitnexus tools work and md-feedback never appeared). Neither project had ANY md-feedback config.
+Wired now (guide-pattern + the root-file fix), merging into existing files, never overwriting:
+
+| Workspace | `.mcp.json` (root — the Claude Code fix) | `.claude/mcp.json` | `.opencode/mcp.json` | `.antigravity/mcp.json` |
+|---|---|---|---|---|
+| Lobby | **ADDED** (beside gitnexus) | already had it | already had it | already had it |
+| AGY_AVIATIONCHAT | **NEW** | **NEW** | **NEW** | **MERGED** (kept firebase + gitnexus) |
+| Fresh_Workspace_BMAD | **NEW** | **NEW** | **NEW** | **MERGED** (kept firebase w/ `{{PROJECT_NAME}}`) |
+
+The two open USER_MEMO blocks in this session's plan remain untouched (hand-editing corrupts tracking
+hashes); once the server loads (restart + approve), say "review" and they can be resolved via
+`apply_memo`. Note: `_my_resources/open_tasks/md_feedback_setup_guide.md` documents only the
+`.claude/mcp.json` path — it's missing the root-`.mcp.json` requirement for Claude Code (your doc; not
+edited).
+
+**Guide rewritten (Daniel-directed):**
+[`file_folder_structure+maintaining.md`](../../../_my_resources/diagrams_guides/system/file_folder_structure+maintaining.md)
+is now the full "what we built and how it works" guide & overview — the idea, the routing walk, tier
+model, artifacts/persistence, the two-layer INDEX contract, the maintaining system, sync/anti-drift,
+git model, the MD Feedback loop (§9, incl. where it's wired), workspace status, key files, and a
+when-to-run-what playbook (§12). All content grounded in this session's verified state.
+
+## Your Actions (addendum — three repos now)
+1. **Lobby commit** — use the command in item 1 above **plus** `.mcp.json` and note the guide file is
+   already in the list:
+   ```bash
+   git add .mcp.json   # add to the item-1 git add list before committing
+   ```
+2. **AGY_AVIATIONCHAT commit:**
+   ```bash
+   git -C Projects/AGY_AVIATIONCHAT add .mcp.json .claude/mcp.json .opencode/mcp.json .antigravity/mcp.json
+   git -C Projects/AGY_AVIATIONCHAT commit -m "chore: wire md-feedback MCP across all platform configs"
+   ```
+3. **Fresh_Workspace_BMAD commit:**
+   ```bash
+   git -C Projects/Fresh_Workspace_BMAD add .mcp.json .claude/mcp.json .opencode/mcp.json .antigravity/mcp.json
+   git -C Projects/Fresh_Workspace_BMAD commit -m "chore: wire md-feedback MCP across all platform configs (template)"
+   ```
+4. **Restart Claude Code** (and opencode/Antigravity) so the new md-feedback server loads — approve it
+   when prompted — then say **"review"** on the plan to resolve the two open memos.
+5. Optionally add the root-`.mcp.json` step to your `md_feedback_setup_guide.md` (your file — not touched).

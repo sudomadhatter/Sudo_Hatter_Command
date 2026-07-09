@@ -211,7 +211,7 @@ Root cause is a missing enforcement seam, twice over:
 
 ### 5.4 TDAD integration notes (so the rollout doesn't snag)
 
-- **Stack-doctrine mismatch to expect:** the `bmad-testarch-atdd`/`framework` skill checklists are Playwright/Cypress-oriented, while the TDAD Layer-1 flow is pytest-bdd/Python. The skills work, but their fixture/scaffold suggestions will occasionally speak the wrong dialect — worth a customize-override pass (`bmad-customize`) when the pilot runs.
+- **Stack-doctrine mismatch to expect:** the `bmad-testarch-atdd`/`framework` skill checklists are Playwright/Cypress-oriented, while the TDAD Layer-1 flow is pytest-bdd/Python. The skills work, but their fixture/scaffold suggestions will occasionally speak the wrong dialect — worth a customize-override pass (`bmad-customize`) when the pilot runs. ✅ **Landed 2026-07-09:** `_bmad/custom/bmad-testarch-atdd.toml` + `bmad-testarch-automate.toml` in AGY + Fresh (pytest-bdd dialect pin; automate `on_complete` persists `automation-summary-<story>.md` — the ③ gate check-5 evidence). All three repos carry them — lobby included (direct BMAD skill runs from the lobby seat bind `{project-root}` to the lobby; the sudo flow itself always binds to the child project).
 - **Aider (Layer 2) is autopilot-only by design** — keep it out of `requirements.txt` (already documented in `requirements-tdad.txt`).
 - **The clean-room adversarial reviewer (TDAD Phase 5) is designed, not built** — current `/sudo-code-review` carries session context. Fine for now; noted so it isn't assumed done.
 
@@ -241,7 +241,7 @@ Root cause is a missing enforcement seam, twice over:
 | # | Action | How |
 |---|---|---|
 | P2-8 | **BDD pilot story** (§5.3-2) | Next Epic 8/9 story through the full Vision-Lock loop; confirm `.feature` collection in pr-check with zero config change. |
-| P2-9 | **Fresh_Workspace bootstrap checklist** | Before its first story: copy/adapt `sudo-tests.yaml` (arm the gate), add a minimal `pr-check` workflow, fill TEA config placeholders (v6.2.2 → consider aligning to 6.9.0), then BDD-from-day-1. |
+| P2-9 | **Fresh_Workspace bootstrap checklist** ✅ **DONE 2026-07-09** (core) | Shipped in the `fresh-template-bootstrap` session: `sudo-tests.yaml` ARMED (ratchet-from-zero floors), `pr-check.yml` gating PRs to **main + main_debug** (P0-1 lesson baked in), AGY guard layer hand-vendored (`_bmad/custom/` tomls + resolver scripts + `000-PLAN-FIRST-GATE` rule — `/sync-agents` excludes `_bmad/`), first `.feature` + self-binding steps green (1 passed), TDAD dialect tomls in. REMAINING (minor): TEA `{{USER_NAME}}`-style config placeholders / v6.2.2→6.9 core alignment. Session: `_artifacts/Fresh_Workspace_BMAD/2026-07-09_fresh-template-bootstrap/`. |
 | P2-10 | **Nightly decision, made deliberately** | Either codify "nightly is local by design (B5)" in `testing-standards.md`, or add `nightly-evals.yml` (needs `GEMINI_API_KEY` secret + eval fixtures). Current state is fine but undocumented as a decision. |
 | P2-11 | **De-stale the docs** | Update `tea_testing_guide.md` header (7/03 PASS supersedes CONCERNS; `l1_coverage_min` 0.54), fix the mislabeled `_artifacts/Fresh_Workspace_BMAD/active-context.md`, extend ROOT-LAW §4 to cover the Glob blind spot (§1). |
 

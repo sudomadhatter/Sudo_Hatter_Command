@@ -20,6 +20,7 @@ this table is the at-a-glance version. This is the shared/master set; a project 
 | `karpathy-guidelines.md` | floor | always — behavioral coding principles (think first, simplicity, surgical, verify). |
 | `artifacts-always-first.md` | protocol | any session that may modify files — the plan-first artifact protocol (plan→approve→build→walkthrough). |
 | `git-policy.md` | protocol | any time git comes up — you NEVER commit/push; hand Daniel the command unless he delegates that specific action. |
+| `000-PLAN-FIRST-GATE.md` | protocol | any dev work or BMAD dev-skill run — incl. lobby-rooted `quick-dev` maintenance — PRIORITY-ZERO kill-chain: no project file modified until Daniel approves an `implementation_plan.md`; the `_bmad/custom/` guard tomls load it into every dev-story/quick-dev run (parity across lobby + AGY + Fresh, 2026-07-09). |
 | `code-standards.md` | on-demand | writing/reviewing backend (Python/FastAPI) or frontend (React/TS) code — style + organization. |
 | `dependency-awareness.md` | on-demand | modifying `package.json` / `requirements.txt` / `pyproject.toml` or any dependency manifest. |
 | `powershell-encoding-safety.md` | on-demand | writing/restoring file content via shell on Windows — avoid UTF-16/BOM corruption. |
