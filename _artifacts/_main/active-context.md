@@ -1,8 +1,23 @@
 # ACTIVE CONTEXT — _main  (you own this, not a vendor)
 
 ## 1. PRIME STATE
-Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-07-04
-**2026-07-04 (latest): Tier-2 per-project rollout DONE — the 07-03 session's flagged follow-up is closed.**
+Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-07-09
+**2026-07-09 (latest): Docs truth-sync + root-law slim DONE — audits passed, drift fixed, canary green.**
+Transcript-vs-setup audit: R1–R8 met/exceeded (architecture sound); `/1_update-maps` prune verified
+**move-never-delete** (workflow prose + Step-4 gate + `consume()` archives before rewriting). Doc-drift fixes:
+`master-implementation-plan.md` (status→built-live, "how to read" banner, §2 tree real names/paths, §4 as-built
+§1–§8, §7 historical, new §8 entry), guide `file_folder_structure+maintaining.md` (hook table → 4 SessionStart +
+PreToolUse, workspace table synced to router, diagram +`_my_resources`/`_bmad`), `router.md` transcript path.
+Root `AGENTS.md` slimmed: grep mechanics → **NEW `.agents/rules/lobby-search.md`** (trigger stays inline §6;
+includes the Glob-blind-in-Projects caveat; rules INDEX row added), git-write gate 10→4 lines; §4 +2 rows.
+Reconciled: repo-map AUTO regen, `_main` depth-3 INDEX +6 rows, NEW `_artifacts/AGY_AVIATIONCHAT/INDEX.md` +
+`_bmad-output/brainstorming/INDEX.md`. **Canary GREEN post-slim** (entry path only → "done boss", Power.md
+verified + reset). Per Daniel's memos: **bmad-\* skills + `.agent/` left alone.** OWED (Daniel): explicit-path
+commit (other lanes' sudo-\* edits in tree — never `git add -A`) → `--set-anchor` → `/sync-agents` (vendors
+lobby-search + fills `.claude`/`.opencode` command INDEXes) → GitNexus re-index → `check_maps_output.txt` call
+(TRACKED: delete vs `git rm --cached`+ignore). Surfaced: stray `Projects/aviationChat-AGY/` non-workspace dir.
+Session: `_artifacts/_main/2026-07-09_system-docs-truth-sync/`.
+**2026-07-04: Tier-2 per-project rollout DONE — the 07-03 session's flagged follow-up is closed.**
 AGY_AVIATIONCHAT + Fresh_Workspace_BMAD each carry their 9 Tier-2 files (`_artifacts/`, `_my_resources/`,
 `docs/` — local-law `AGENTS.md` + `CLAUDE.md`/`GEMINI.md` adapters, bodies digested from each project's own
 canon: AGY keeps `tea/`/local `_main/`/GitNexus-exclusion note, Fresh has neither `tea/` nor GitNexus),

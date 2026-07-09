@@ -41,6 +41,9 @@ that is your direction. Apply **all** of the audit's proposed fixes first, then 
    Step-1 red tests to green.
 3. **Expand — automate broader coverage.** Once green, invoke the **`bmad-testarch-automate`** skill to
    expand API / UI / contract coverage around what was built — closing gaps the ATDD pass did not reach.
+   **Leave evidence:** persist its summary as `_bmad-output/test-artifacts/automation-summary-<story>.md`;
+   if expansion is genuinely not applicable, record a `## Automate: skipped — <rationale>` section in
+   `walkthrough.md`. The QA gate checks for this evidence — a silent skip surfaces as CONCERNS.
 4. **Run the suite(s) until green and paste the *actual* output** into `walkthrough.md` (constitution rule:
    real output, never a paraphrase). Backend = `pytest backend/tests`; frontend = `npm test` from
    `frontend/`. If a test fails, find the **root cause** before fixing.

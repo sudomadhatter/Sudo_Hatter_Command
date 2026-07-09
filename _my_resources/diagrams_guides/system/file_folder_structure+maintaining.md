@@ -33,6 +33,8 @@ flowchart TD
     end
 
     DOCS["docs/\nAGENTS.md (local law) + adapters\nworkspace-standard.md (the WHAT)\nrepo-map.md (hybrid nav index)\ndoc-graph.md/.json (generated)"]
+    MYRES["_my_resources/\nDaniel's personal area (Tier-2 law)\nopen_tasks/ read-only carve-out"]
+    BMADL["_bmad/ + _bmad-output/\nBMAD module + state (lobby)"]
     CANARY["_routing-canary/\nrouting regression check"]
     SYS["_system/\nbuilder: /new-project, /sync-agents"]
     SETTINGS[".claude/settings.json\n3 SessionStart hooks:\nactive-context + gate + depth-3 nag"]
@@ -41,6 +43,8 @@ flowchart TD
     BRAIN --> TOOLKIT
     BRAIN --> MEM
     BRAIN --> DOCS
+    BRAIN --> MYRES
+    BRAIN --> BMADL
     BRAIN --> CANARY
     BRAIN --> SYS
     BRAIN --> SETTINGS
@@ -123,7 +127,7 @@ Three pieces work together: the **linter** (detect), the **workflow** (reconcile
 
 ```mermaid
 flowchart TD
-    subgraph LINTER ["check_maps.py — 9 checks"]
+    subgraph LINTER ["check_maps.py — 9 checks (+ 2.5 level-2 INDEX)"]
         C1["1. AUTO-block freshness\n(mode-preserving regen + diff)"]
         C2["2. path existence\n(map/INDEX table-row paths resolve)"]
         C3["3. top-level folder coverage"]
@@ -153,18 +157,20 @@ flowchart TD
 
 | Flag | What it does |
 |---|---|
-| `--all` | Run all 9 checks across all conformant workspaces |
+| `--all` | Run all 9 checks (+ the unnumbered level-2 INDEX presence check, "2.5") across all conformant workspaces |
 | `--depth3-only` | Run ONLY check 7 (depth-3 INDEX); exits 0 always — for SessionStart nag |
 | `--set-anchor` | Write current state to `docs/.maps-state.json` (run AFTER committing) |
 | `--ignore <dirs>` | Skip dirs (lobby: `Projects,_my_resources`; projects: `_my_resources,_bmad`) |
 
-### The three SessionStart hooks (Claude Code only)
+### The four SessionStart hooks (Claude Code only) + one PreToolUse guard
 
 | # | Hook | What it does |
 |---|---|---|
-| 1 | active-context injection | Reads the workspace's `active-context.md` into session context |
-| 2 | plan-first gate | Enforces the artifacts-always-first gate |
+| 1 | continuity + gate + repo-map | Injects `_artifacts/_main/active-context.md`, the artifacts/git gate text, AND the full `docs/repo-map.md` |
+| 2 | repo-map drift check | `check-repo-map-drift.ps1` — nags on top-level folders on disk but missing from the map |
 | 3 | depth-3 nag | Runs `check_maps.py --depth3-only` — surfaces drift without blocking |
+| 4 | maps-journal nag | Runs `record_map_changes.py --nag` — pre-scoped drift worklist since the last anchor |
+| PT | git push approval | PreToolUse on Bash: `.claude/hooks/require-push-approval.py` guards agent `git commit`/`push` |
 
 > **Platform note:** hooks fire only on Claude Code (desktop + web/mobile). opencode and Antigravity/Gemini
 > don't have a SessionStart hook system — they get the full linter when you run `/1_update-maps` manually.
@@ -238,7 +244,9 @@ flowchart TD
 | Lobby (home base) | ✅ Yes | `content` | ignore `Projects,_my_resources` |
 | AGY_AVIATIONCHAT | ✅ Yes | `content` | ignore `_my_resources,_bmad`; has project-specific rules in `constitution.project.md` |
 | Fresh_Workspace_BMAD | ✅ Yes | `auto` | ignore `_my_resources,_bmad` |
-| Ingestion_pipeline_AvCh | ❌ No | — | needs `/new-project` or manual standardization |
+| BRKN_Tattoos | ⏳ active | — | active in `router.md`; conformance not yet audited |
+| RAG_Pipeline_AC (AviationChat ingestion) | ❌ No | — | needs `/new-project` or manual standardization |
+| AGY_JETCHAT · B-L-WorldWide · NEXGen-Films · OpenChat-Openrouter | ❌ pending | — | registered in `router.md`, not yet converted |
 
 ---
 
@@ -249,12 +257,12 @@ flowchart TD
 | `docs/workspace-standard.md` | The WHAT — structure contract (PATH CONTRACT table, tier model, depth-3 rule, end-of-task checklist) |
 | `_artifacts/AGENTS.md` · `_my_resources/AGENTS.md` · `docs/AGENTS.md` | Tier-2 local law (+ 1-line adapters beside each) — auto-attached at point of contact |
 | `.agents/workflows/1_update-maps.md` | The HOW — 7-step reconciliation workflow (audit → fix → commit → anchor) |
-| `.agents/scripts/check_maps.py` | The linter — 9 checks (5 fatal + git signal + 3 hints: hygiene, tier-2 law, gitnexus freshness) + `--depth3-only` + `--set-anchor` |
+| `.agents/scripts/check_maps.py` | The linter — 9 checks (5 fatal + git signal + 3 hints: hygiene, tier-2 law, gitnexus freshness) + unnumbered check 2.5 (level-2 INDEX presence) + `--depth3-only` + `--set-anchor` |
 | `.agents/scripts/sync-agents.ps1` | The propagator — mirrors master `.agents/` to all platforms + projects |
 | `docs/repo-map.md` | Hybrid nav index (curated header + AUTO body) — per workspace |
 | `_artifacts/INDEX.md` | Depth-2 session ledger — per workspace |
 | `_artifacts/(bucket)/INDEX.md` | Depth-3 per-bucket session index — created when bucket has >= 2 session subfolders |
-| `.claude/settings.json` | 3 SessionStart hooks (active-context + gate + depth-3 nag) — Claude Code only |
+| `.claude/settings.json` | 4 SessionStart hooks (continuity+gate+repo-map · drift check · depth-3 nag · journal nag) + a PreToolUse git guard — Claude Code only |
 | `docs/.maps-state.json` | Drift baseline anchor — set via `--set-anchor` after committing |
 
 **Git policy (locked):** never run `git commit`/`push` yourself — hand Daniel the exact command. The only

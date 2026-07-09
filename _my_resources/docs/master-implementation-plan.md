@@ -3,7 +3,7 @@ title: Sudo_Hatter_Command Home Base — Master Implementation Plan
 subtitle: Folder-as-Workspace Routing System
 type: reference-doc
 date: 2026-06-24
-status: awaiting-go-ahead (Phase A in progress)
+status: built-live — historical rollout record + evolution log (§8)
 owner: Daniel
 sources:
   - youtube_transcripts/main_script_for_structure.md            # Jake Van Cleef — the spec
@@ -19,6 +19,11 @@ sources:
 > existing projects, multiple tools (Claude Code / opencode / Antigravity-Gemini), BMAD, a `Projects/`
 > container, one git repo per project, and a shared `_artifacts/` memory. Where the theory says
 > "workspace-a / router.md / _memory," this says "Projects/clean-bmad-workspace / router.md / _artifacts."
+
+> **How to read this doc (added 2026-07-09).** §0–§7 are the **historical rollout record** — kept for
+> lineage (only the worst-drifted lines corrected in place). The **standing spec** for how workspaces are
+> shaped and maintained is `docs/workspace-standard.md`; refinements since the rollout land in §8 (the
+> evolution log); §9 is current strategy. Old→new names: see the §8 preamble.
 
 ---
 
@@ -75,24 +80,24 @@ C:\Sudo_Hatter_Command\                         ← HOME BASE (lobby) · own git
 ├─ .agents\                  ← MASTER toolkit (single source of authorship)
 │   ├─ rules\  commands\  skills\  workflows\  bmad\  scripts\  templates\project-template\
 │
-├─ _docs\                    ← HOME-BASE DOCUMENTATION (this plan lives here; tracked)
+├─ docs\                     ← HOME-BASE DOCUMENTATION (workspace-standard.md · repo-map.md; this plan now lives in _my_resources\docs\)
 │
 ├─ _artifacts\               ← SHARED MEMORY (all agents read/write; theory's _memory absorbed)
 │   ├─ INDEX.md              ledger: date · workspace · slug · summary · status  (skip-to scan)
-│   ├─ _home\                root-level / cross-project session work
+│   ├─ _main\                root-level / cross-project session work (formerly _home)
 │   └─ <project>\
 │       ├─ active-context.md  numbered sections (1 PRIME · 5 PICK UP · 6 HAND OFF)
-│       └─ <YYYY-MM-DD>_<slug>\  implementation_plan · walkthrough · task-list · code-review …
+│       └─ <YYYY-MM-DD>_<slug>\  implementation_plan · walkthrough (ends: Task Checklist + Your Actions) · code-review …
 │
 ├─ _routing-canary\              ← routing CI: CLAUDE→agent→control→skill→Power.md=="control your agent"
 ├─ _system\                  ← builder note (how to add/maintain workspaces) → AGENTS.md
 ├─ .claude\  .opencode\      ← LOBBY tool dirs (synced copies of master)
-├─ youtube_transcripts\      ← reference (tracked)
+├─ _my_resources\            ← Daniel's personal area (docs\ · youtube_transcripts\ · open_tasks\) — protected, Tier-2 law
 │
 └─ Projects\                 ← all projects (git-ignored by home base; each its own repo)
-    ├─ aviationChat-AGY\      pointer CLAUDE/GEMINI → AGENTS.md (workspace) · vendored .agents
-    ├─ clean-bmad-workspace\  (first conversion)
-    ├─ jetChat-AGY\  B&L WorldWide\  NEXGen Films\  ingestion-Pipeline-AC\  openCode\
+    ├─ AGY_AVIATIONCHAT\      pointer CLAUDE/GEMINI → AGENTS.md (workspace) · vendored .agents
+    ├─ Fresh_Workspace_BMAD\  (the living template — the first conversion, since renamed)
+    ├─ BRKN_Tattoos\  AGY_JETCHAT\  B-L-WorldWide\  NEXGen-Films\  RAG_Pipeline_AC\  OpenChat-Openrouter\
 ```
 
 ---
@@ -118,13 +123,15 @@ C:\Sudo_Hatter_Command\                         ← HOME BASE (lobby) · own git
 Single source of truth." Identical everywhere → one front door per LLM.
 
 **Root `AGENTS.md`** — numbered for skip-to-N:
-- `1 ROOT LAW` — prime mission of the home base.
-- `2 START HERE` — you're in the lobby; don't read the tree; routing question → `router.md`; risky action → GATES.
-- `3 MAP / MISSION / SUPPORT` — the three answers every task needs.
-- `4 ALWAYS-LOAD` — small set only (`.agents/rules/constitution.md` + `karpathy-guidelines.md`); everything else routed on demand (least-context loading).
-- `5 NAMING CONVENTIONS` — dates/versions/slugs; replaces a database.
-- `6 GATES` — routing gate + risk gate → `.agents/rules/constitution.md`.
+- `ROOT LAW` (header) — prime mission of the home base.
+- `1 START HERE` — you're in the lobby; don't read the tree; routing question → `router.md`; risky action → GATES.
+- `2 MAP / MISSION / SUPPORT` — the three answers every task needs.
+- `3 ALWAYS-LOAD` — small set only (`constitution.md` + `karpathy-guidelines.md` + `artifacts-always-first.md`); everything else routed on demand (least-context loading).
+- `4 WHAT LIVES WHERE` — the home-base infrastructure table.
+- `5 NAMING & ARTIFACT PLACEMENT` — dates/versions/slugs; replaces a database (details → `artifacts-always-first.md` §2).
+- `6 GATES` — routing + search + risk/git gates → `.agents/rules/constitution.md`.
 - `7 PERSISTENCE` — pickup/handoff → `_artifacts/`.
+- `8 PORTABILITY` — `AGENTS.md` universal; `CLAUDE.md`/`GEMINI.md` one-line adapters.
 
 **Root `router.md`** — lobby = categories only:
 
@@ -184,7 +191,7 @@ CLAUDE/GEMINI + `AGENTS.md` skeleton w/ starter routing table + `_artifacts/<nam
 
 ---
 
-## 7. Progress + immediate next steps
+## 7. Progress + immediate next steps  (historical — Phase A snapshot, superseded; see §8)
 
 **Done so far (Phase A, partial):** `.agents/{rules,commands,skills,workflows,bmad,scripts,templates}`
 created; `_artifacts/_home` created; 12 shared rules harvested into `.agents/rules/`; this master plan
@@ -207,6 +214,16 @@ written to `_docs/`.
 > base is the lobby repo; projects are `Projects/AGY_AVIATIONCHAT/` + `Projects/Fresh_Workspace_BMAD/`; the
 > home-base cross-project bucket is `_artifacts/_main/` (the old `_home`). Each entry links its full
 > walkthrough.
+
+### 2026-07-09 — Docs truth-sync + lobby-search mechanics extracted (lobby)
+Audit vs the source transcript passed (R1–R8 met or exceeded); every fix was documentation drift, not
+structure: this doc's status line / §2 tree / §4 spec corrected in place (+ this "how to read" banner),
+`router.md`'s transcript path fixed, the file/folder guide's hook + workspace tables synced to disk, and
+the lobby grep-gotcha **mechanics** moved to `.agents/rules/lobby-search.md` — the §6 SEARCH GATE trigger
+stays inline (refines 2026-07-06's "stays inline": trigger-inline, mechanics-routed). `/1_update-maps`
+prune verified **move-never-delete** end to end (workflow prose + Step-4 gate +
+`record_map_changes.consume()` archives before rewriting). Full detail →
+[`_artifacts/_main/2026-07-09_system-docs-truth-sync/walkthrough.md`](../../_artifacts/_main/2026-07-09_system-docs-truth-sync/walkthrough.md).
 
 ### 2026-07-06 — Front door leaned + GitNexus block single-sourced (lobby + AGY + Fresh)
 Operationalized two of §6's anti-patterns ("no mega `AGENTS.md`", "`CLAUDE.md`/`GEMINI.md` stay one-line

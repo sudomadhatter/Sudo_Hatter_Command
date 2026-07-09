@@ -74,7 +74,10 @@ test fails, find root cause before fixing.
 
 ## Step 4 — Automate (expand coverage)
 Invoke the **`bmad-testarch-automate`** skill to expand API / UI / contract coverage around what was
-built — closing gaps the ATDD pass did not reach.
+built — closing gaps the ATDD pass did not reach. **Leave evidence:** persist its summary as
+`_bmad-output/test-artifacts/automation-summary-<story>.md`; if expansion is genuinely not applicable to
+this story, write a `## Automate: skipped — <rationale>` section into the walkthrough instead. A silent
+skip is an unfinished Step 4 — the Step 5 checklist (and the ③ gate's automate-evidence check) verify this.
 
 ## Step 5 — Close-out artifacts (MANDATORY — never skip, even on "just do it")
 The Always-On **`artifacts-always-first`** rule governs this step; it is restated inline here so the
@@ -91,6 +94,11 @@ but no closing artifacts). Before reporting Done, `ARTIFACT_DIR` (the Step 0.5 f
       matrix, then a **`## Task Checklist`** section (final TodoWrite snapshot) and a **`## Your Actions`**
       section (the human's manual steps + the exact git commit command). **Required even when told to
       "skip the plan, just do it" — the walkthrough is never skippable.**
+- [ ] **Automate evidence (Step 4)** — `_bmad-output/test-artifacts/automation-summary-<story>.md` exists,
+      OR the walkthrough carries an explicit `## Automate: skipped — <rationale>` section. (Lives with the
+      TEA outputs, not in `ARTIFACT_DIR`.) A silent skip fails this checklist — the bug this item closes:
+      the 2026-07-09 testing audit found 13 of 14 Epic-8 ATDD stories finished green with no expansion
+      pass and nothing caught it.
 
 Post a clickable Markdown link to every artifact in the chat that same turn — never a bare path.
 

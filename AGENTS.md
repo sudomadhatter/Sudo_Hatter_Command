@@ -49,24 +49,13 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 | Routing canary | `_routing-canary/` | model-agnostic proof the routing works (Claude/opencode/Antigravity) |
 | System builder | `_system/` | how to add/maintain workspaces (`/new-project`, `/sync-agents`) |
 | Lobby tool dirs | `.claude/`, `.opencode/` | synced copies of the master so `/commands` + skills resolve here. `/sync-agents` mirrors `.agents/commands/` to all three platforms (incl. the opencode + Antigravity machine-global caches); `platforms:` frontmatter limits a command's reach |
+| Personal area | `_my_resources/` | Daniel's notes (docs · transcripts · open_tasks) — protected, Tier-2 law; `open_tasks/` read-only carve-out |
+| BMAD (lobby) | `_bmad/` · `_bmad-output/` | BMAD module (regenerated — never hand-edit) + its state/output |
 | Projects | `Projects/<name>/` | the actual projects, each its own git repo |
 
-> **⚠️ SEARCHING THE TREE — GREP IS BLIND TO `Projects/` ONLY FROM THE LOBBY ROOT (lobby-only gotcha).**
-> `Projects/` is **gitignored** here (each project is its own git repo nested under the lobby). The **Grep
-> tool runs ripgrep, which honors `.gitignore`** — so a Grep whose `path` is the lobby root (or unset)
-> **silently skips everything under `Projects/`** and returns zero hits from the project repos. A grep that
-> finds a master file in `.agents/` is **not** proof it's the only copy: that same file is **vendored** into
-> each `Projects/<name>/.agents/`, and a root-level Grep can't see those.
-> **The fix is to go one level down.** Point the Grep tool's `path` *directly at a project repo*
-> (`Projects/<name>/` or deeper) and it works fine — that directory is its **own git repo root**, so
-> ripgrep starts a fresh ignore context there and never applies the lobby's parent `.gitignore`. So:
-> **single project → use the Grep tool with `path: Projects/<name>`** (fast, indexed). **One sweep across
-> ALL projects at once → use the Bash tool** (`find Projects -name '<file>'`, then `grep`/`diff` each hit;
-> confirm with `git check-ignore <path>`), since a single root-level Grep is blind and you'd otherwise have
-> to loop Grep per project. Canonical fix path is unchanged: edit the master `.agents/`, then
-> `/sync-agents <project>` to re-vendor.
-> *(This caveat is lobby-specific — inside a project you're past the ignore boundary, so don't carry it
-> into a project's `AGENTS.md`.)*
+> **⚠️ SEARCHING FROM THE LOBBY:** root-level Grep/Glob are **blind to `Projects/`** (ripgrep honors the
+> lobby `.gitignore`) — a "clean" root search proves nothing about the project repos. Point Grep at
+> `Projects/<name>`, or sweep all projects with Bash `find`. Full mechanics → `.agents/rules/lobby-search.md`.
 
 ## 5. NAMING & ARTIFACT PLACEMENT  (this replaces a database)
 Artifacts go **where you work FROM**. The full bucket rules (per-project `_artifacts/<project>/` · home-base
@@ -78,22 +67,17 @@ live in the always-loaded **`.agents/rules/artifacts-always-first.md`** (§2) ·
 ## 6. GATES  (consult before acting)
 - **ROUTING GATE**: confirm the target workspace via `router.md` before touching files in it.
 - **SEARCH GATE** — a root-level Grep is blind to `Projects/` (ripgrep honors the lobby `.gitignore`) and
-  reads as a false "clean"; point Grep at `Projects/<name>` or use Bash. **Full mechanics → §4.**
+  reads as a false "clean"; point Grep at `Projects/<name>` or use Bash. **Full mechanics →
+  `.agents/rules/lobby-search.md`.**
 - **RISK GATE**: never delete / overwrite / publish without explicit go-ahead. **GIT — desktop default:**
   never run `git commit`/`push` yourself — hand Daniel the command unless he delegates it in the moment
   (→ `.agents/rules/git-policy.md`). On **web/mobile** (`CLAUDE_CODE_REMOTE=true`) the agent owns git
   delivery instead (commits/pushes its own files, asks before the PR) → `.agents/rules/mobile-mode.md`; on
   desktop the var is unset → ignore that file.
-- **GIT WRITE APPROVAL — free on your OWN branch; the button on the owner's.** (Canonical source of the
-  branch model → `.agents/rules/git-policy.md` § "Branch model — `main_debug` → `main`".) The gate keys on
-  WHERE a write lands, not the act of pushing.
-  - **FREE**: push freely to your own `claude/*` session branch; open/update PRs. (Loops/retries are fine.)
-  - **APPROVAL** (per-action, never carries forward): any write to the owner's branches — a direct
-    `git push` to `main_debug`/`main`, or merging a PR into them.
-  - `main` is extra-protected: never push/PR/merge to it; promoting `main_debug` → `main` is the owner's
-    deliberate manual decision. (Web/mobile clone/fork specifics → `.agents/rules/mobile-mode.md`.)
-  - Approve a merge into `main_debug` by invoking `/merge_main_debug` — invoking it IS the per-action
-    approval. *Hook + settings enforcement mechanics → `.agents/rules/git-policy.md`.*
+- **GIT WRITE APPROVAL — free on your OWN branch; the button on the owner's.** FREE: your own `claude/*`
+  branch + opening/updating PRs. APPROVAL (per-action, never carries): any write to `main_debug`/`main` —
+  invoking `/merge_main_debug` IS the approval for `main_debug`; `main` is owner-only — never push/PR/merge
+  to it. Full branch model + enforcement → `.agents/rules/git-policy.md` (web/mobile → `mobile-mode.md`).
 - Full hard stops + "ask first" list → `.agents/rules/constitution.md`.
 
 ## 7. PERSISTENCE  (you own this — not a vendor)

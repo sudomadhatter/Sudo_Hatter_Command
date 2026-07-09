@@ -40,7 +40,12 @@ After review + fix, run the gate and record the verdict INSIDE `code-review.md`.
 2. **`bmad-testarch-trace`** — requirements→tests traceability + coverage vs `l1_coverage_min`.
 3. **`bmad-testarch-nfr`** — perf / security / reliability (when `nfr: true` or `agent_bearing: true`).
 4. **`bmad-testarch-test-review`** — quality/flake of the tests themselves.
-5. **Verdict** — combine into **PASS / CONCERNS / FAIL / WAIVED**:
+5. **Automate evidence** — feature stories only (numeric `E.S` ids; test-only stories like `tea-*` are
+   exempt): confirm the Dev stage's expansion pass left evidence — `automation-summary-<story>.md` under
+   `_bmad-output/test-artifacts/`, or an explicit `## Automate: skipped — <rationale>` section in
+   `walkthrough.md`. Missing BOTH → cap the verdict at **CONCERNS** and name the gap in `code-review.md`
+   (never FAIL on this alone).
+6. **Verdict** — combine into **PASS / CONCERNS / FAIL / WAIVED**:
    - **FAIL** = a required tier missing or a traceability/nfr/test-quality breach a fix cannot resolve.
    - **CONCERNS** = soft issues only.
    - **PASS** = all required tiers green.

@@ -32,3 +32,9 @@
 | `2026-07-03_artifact-routing-fix/` | Epic-nesting fix: opencode engines + `/sudo-dev-story-tests` Step 0.5 (all 3 surfaces). | implementation_plan, walkthrough |
 | `2026-07-03_tier2-local-law/` | Tier-2 local-law AGENTS.md + adapters (`_artifacts/`, `_my_resources/`, `docs/`); reading-order rule; check 8. | implementation_plan, walkthrough |
 | `2026-07-04_tier2-project-rollout/` | Tier-2 local law rolled out to AGY + Fresh (9 files each, vendored standard refresh, reading-order rule, one-doc alignment). | implementation_plan, walkthrough |
+| `2026-07-06_agents-folder-floor-law/` | `.agents/` toolkit floor law (Tier-1 AGENTS.md for the master toolkit). | implementation_plan, walkthrough |
+| `2026-07-06_agents-md-dedupe-triage/` | AGENTS.md/CLAUDE.md dedupe + triage — front door leaned (lobby + AGY + Fresh). | implementation_plan, walkthrough |
+| `2026-07-06_gitnexus-ownfile-folder-guide/` | GitNexus → own `docs/gitnexus.md` + pointer (×3) + living-template rule + Fresh audit. | implementation_plan, walkthrough |
+| `2026-07-06_maps-recorder/` | Commit-time map-drift recorder (post-commit hook → journal → nag/consume). | implementation_plan, walkthrough |
+| `2026-07-09_automate-evidence-gate/` | Automate-evidence seam closed in the sudo dev flow (lobby + AGY + Fresh). | implementation_plan, walkthrough |
+| `2026-07-09_system-docs-truth-sync/` | Docs truth-sync (master plan, guide, router) + lobby-search rule extraction + prune move-verify. | implementation_plan, walkthrough |

@@ -6,20 +6,6 @@
 ---
 
 ## What We're Setting Up & Why
-<!-- USER_MEMO
-  id="memo-mrce63k2-il3dpl"
-  type="highlight"
-  status="open"
-  owner="human"
-  source="vscode"
-  color="yellow"
-  text="Reference highlight"
-  anchorText="## What We're Setting Up &amp; Why"
-  anchor="L8|9f791f67"
-  createdAt="2026-07-08T18:08:46.466Z"
-  updatedAt="2026-07-08T18:08:46.466Z"
-  anchorConfidence="text"
--->
 
 The BDD Vision Lock (`pytest-bdd`) is being added to **both** the `/sudo` and
 `/autopilot_claude` dev flows. The goal is to replace ambiguous English ACs with strict
@@ -263,19 +249,4 @@ backend/tests/
 3. **Wire aider into `/autopilot_claude`** — Completed.
 4. **Deploy OpenHands** — Completed for Desktop tracks. Stage 3 now launches OpenHands via Docker volume mount.
 
-<!-- GATE
-  id="gate-mrce63k2-wywl95"
-  type="merge"
-  status="proceed"
-  blockedBy=""
-  canProceedIf=""
-  doneDefinition="All review annotations resolved"
--->
-
-<!-- PLAN_CURSOR
-  taskId="memo-mrce63k2-il3dpl"
-  step="0 applied, 0/1 resolved"
-  nextAction="Review: memo-mrce63k2-il3dpl"
-  lastSeenHash="4908aec7"
-  updatedAt="2026-07-08T18:08:46.466Z"
--->
+<!-- CHECKPOINT id="ckpt_mrdjqxf2_c9xtcr" time="2026-07-09T13:32:42.542Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->

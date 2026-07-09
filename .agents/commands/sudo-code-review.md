@@ -48,6 +48,11 @@ Read `_bmad-output/sudo-tests.yaml`.
 2. **`bmad-testarch-trace`** — requirements→tests traceability + coverage vs `l1_coverage_min`.
 3. **`bmad-testarch-nfr`** — perf / security / reliability (when `nfr: true` or `agent_bearing: true`).
 4. **`bmad-testarch-test-review`** — quality/flake of the tests themselves.
+5. **Automate evidence** — feature stories only (numeric `E.S` ids; test-only MIN-FLOW stories like
+   `tea-*` are exempt): confirm ②'s expansion pass left evidence — `automation-summary-<story>.md` under
+   `_bmad-output/test-artifacts/`, or an explicit `## Automate: skipped — <rationale>` section in the
+   story walkthrough. Missing BOTH → cap the verdict at **CONCERNS** and name the gap in the verdict file
+   (never FAIL on this alone — stories gated before 2026-07-09 predate the check).
 
 ## Step 4 — Verdict
 Combine into **PASS / CONCERNS / FAIL / WAIVED** and write

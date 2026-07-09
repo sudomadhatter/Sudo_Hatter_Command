@@ -23,6 +23,7 @@ this table is the at-a-glance version. This is the shared/master set; a project 
 | `code-standards.md` | on-demand | writing/reviewing backend (Python/FastAPI) or frontend (React/TS) code — style + organization. |
 | `dependency-awareness.md` | on-demand | modifying `package.json` / `requirements.txt` / `pyproject.toml` or any dependency manifest. |
 | `powershell-encoding-safety.md` | on-demand | writing/restoring file content via shell on Windows — avoid UTF-16/BOM corruption. |
+| `lobby-search.md` | on-demand | searching the tree FROM the lobby root — Grep/Glob are blind to `Projects/` (gitignore); the correct search patterns. Lobby-specific. |
 | `bmad_code_review_sudo_fix.md` | on-demand | the `bmad-code-review` skill/workflow runs — run-to-completion review (any agent), no halting; stops at `review`. |
 | `collaborative-debug-first.md` | on-demand | you can't observe runtime (browser/network/Firestore/UI) but Daniel can — instrument + ask, don't guess. |
 | `completion-not-illusion.md` | on-demand | a workflow emits polished intermediate artifacts — a polished artifact is a claim, not proof of done. |

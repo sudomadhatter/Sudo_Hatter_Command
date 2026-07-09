@@ -67,7 +67,7 @@ Sudo_Hatter_Command/
     core/
         [2 files: .yamlx1, .csvx1 | e.g. config.yaml]
     custom/
-        [2 files: .tomlx2 | e.g. config.toml]
+        [1 files: .tomlx1 | e.g. config.toml]
     scripts/
         [3 files: .pyx3 | e.g. memlog.py]
     tea/
@@ -77,19 +77,19 @@ Sudo_Hatter_Command/
         [2 files: .yamlx1, .csvx1 | e.g. config.yaml]
       [2 files: .tomlx2 | e.g. config.toml]
   _bmad-output/
-    implementation-artifacts/
-    planning-artifacts/
-    test-artifacts/
+    brainstorming/
+      brainstorm-tdad-integration-2026-07-07/
+        [1 files: .mdx1 | e.g. INDEX.md]
   _routing-canary/
     control/
-        [1 files: .mdx1 | e.g. agent.md]
+        [2 files: .mdx2 | e.g. INDEX.md]
     skills/
-        [1 files: .mdx1 | e.g. skill.md]
+        [2 files: .mdx2 | e.g. INDEX.md]
       [6 files: .mdx6 | e.g. AGENTS.md]
   _system/
       [3 files: .mdx1, .txtx1, .ps1x1 | e.g. AGENTS.md]
   docs/
-      [7 files: .mdx6, .jsonx1 | e.g. AGENTS.md]
-    [6 files: .mdx4, .txtx1, .jsonx1 | e.g. AGENTS.md]
+      [8 files: .mdx7, .jsonx1 | e.g. AGENTS.md]
+    [8 files: .mdx4, .txtx3, .jsonx1 | e.g. AGENTS.md]
 ```
 <!-- REPO-MAP:AUTO-END -->

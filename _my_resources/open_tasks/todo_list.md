@@ -25,5 +25,11 @@
 <!-- open_tasks files — auto-listed by /1_update_maps -->
 1. Tea Storys 
 2. Live Testing
-3. Full TEA Audit with Fable 
-4. Have Fable verify the file folder system against this script: C:\Sudo_Hatter_Command\_my_resources\youtube_transcripts\implementation-plan_folder-as-workspace-routing-system.md
+3. Tasks for Fable 
+   - Complete New Task 1. and 2. 3. Security Hardening. 
+   - Full TEA Audit with Fable 
+   - Verify the file folder system against this script: C:\Sudo_Hatter_Command\_my_resources\youtube_transcripts\implementation-plan_folder-as-workspace-routing-system.md
+
+<!-- CHECKPOINT id="ckpt_mrco535n_b16yyr" time="2026-07-08T22:47:55.451Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+
+<!-- CHECKPOINT id="ckpt_mrcohy4b_7gq97k" time="2026-07-08T22:57:55.451Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
