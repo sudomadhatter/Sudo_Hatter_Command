@@ -67,16 +67,18 @@ Verified grounding (2026-07-09 session):
 6. **Step 5 — The report.** Template embedded in the runbook (single source), sections: **TL;DR**
    (what broke, severity, blast radius, confidence) · **Timeline** · **Evidence** (Sentry + logs) ·
    **Code path** · **Root-cause hypothesis (confidence-rated)** · **Proposed fix plan**
-   (implementation-plan shaped) · **Suggested tests** · **Your Actions** (ends with the mobile
-   acceptance instructions — how to accept from the phone, per 16.2). Output location is
-   parameterized: interactive → `_artifacts/debugging/<YYYY-MM-DD>_<issue-slug>/incident-report.md`;
+   (implementation-plan shaped) · **Suggested tests** · **Your Actions** (ends with the local-accept
+   instructions — pull the `claude/incident-*` branch, test it, merge to `main`, then rebase
+   `main_debug` onto `main`, per 16.2). Output
+   location is parameterized: interactive → `_artifacts/debugging/<YYYY-MM-DD>_<issue-slug>/incident-report.md`;
    headless → the 16.2 contract (`claude/incident-<id>` branch). Every file reference a clickable
    link; no secrets; PII stays hashed (backend `_before_send` already guarantees this upstream).
 7. **Read-only guarantee.** The runbook writes ONLY its report (artifacts folder or its own
-   incident branch per lane). It never merges and never pushes to `main` or `main_debug` — the
-   fix awaits acceptance (Level-2 auto-fix is 16.2's contract, still on an isolated branch, PR
-   against `main` per Daniel's 2026-07-09 decision). Analysis is anchored at the event's release
-   SHA (the `main` code that is actually live), not the `main_debug` working state.
+   incident branch per lane). It never merges, never opens a PR, and never pushes to `main` or
+   `main_debug` — the fix awaits acceptance (Level-2 auto-fix is 16.2's contract, pushed to an
+   isolated `claude/incident-*` branch that Daniel pulls, tests, merges to `main`, then rebases
+   `main_debug` onto `main` himself). Analysis is anchored at the event's release SHA (the `main`
+   code that is actually live), not the `main_debug` working state.
 8. **Drill harness + local drill.** A thin `/sudo-incident-response [issue-id|latest]` command
    (master `.agents/commands/`, vendored via `/sync-agents`) exists **solely to execute the runbook
    in drills** — it is the test harness, not the product. Local drill passes: forced failure via

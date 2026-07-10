@@ -18,15 +18,18 @@ source: _artifacts/AGY_AVIATIONCHAT/2026-07-09_incident-response-story-draft/ (d
 > (no polling phase), **Claude Code Routines as the primary runtime** ("I trust the beta… if it
 > doesn't work we can roll it back to something more proven"), the **GitHub Actions lane built
 > dormant as that rollback** (one switch-flip away), **Level 2 from day one** (the fix arrives
-> already built — accepting = merge), **GitHub issue as the sole notification**.
+> already built on a hotfix branch — accepting = pull it, test, merge to `main`, then rebase
+> `main_debug` onto it), **GitHub issue as the sole notification**.
 
 ## Story
 
 As **the engineering owner reachable only by phone when production breaks**,
 I want **a Sentry alert to instantly fire a cloud Claude agent that investigates, builds the fix
-on its own branch, and opens the PR — with the full report reaching my phone as a GitHub issue**,
-so that **accepting a production fix is reading a report and tapping merge, with my desktop
-powered off the whole time.**
+on its own `claude/incident-*` hotfix branch, and hands it to me — with the full report reaching my
+phone as a GitHub issue**,
+so that **accepting a production fix is pulling that ready branch, confirming it works locally,
+merging it to `main`, then rebasing `main_debug` onto the hotfix — the investigation and build
+already done for me while my desktop was off.**
 
 ## Architecture (agreed)
 
@@ -45,13 +48,13 @@ RELAY — small GCP Cloud Function (project aviationchat)
 Claude executes .github/claude/incident-triage.md (Story 16.1)
   LEVEL 2: branches from MAIN at the event's release SHA (the code that is LIVE) ·
   builds the fix on claude/incident-<short-id> · runs the test suite ·
-  opens a PR to **main** with the report as its body  (it can NEVER merge)
+  pushes that branch — NO PR (it never pushes to main or main_debug)
       ▼
-GitHub issue labeled `incident` — body = the full report → email + mobile-app push
+GitHub issue labeled `incident` — body = the full report + branch name → email + mobile-app push
       ▼
-Daniel, on the phone: reviews the report + PR → merge = acceptance
+Daniel: pulls claude/incident-<short-id> locally → tests → merges to main → rebases main_debug = acceptance
   (Routines bonus: the issue footer carries the live session URL — tap to stand inside
-   the agent session and interrogate it before merging)
+   the agent session and interrogate it before accepting)
 ```
 
 **Why the relay pre-fetches logs:** the Routines sandbox has no GCP identity. Fetching the log
@@ -67,18 +70,23 @@ without handing GCP credentials to a beta product.
 2. **The Routine is live**: fire endpoint + bearer token; on fire it executes the 16.1 runbook
    with the payload (Sentry issue id + log excerpt); repo access via the GitHub connection.
    Task 0 verifies the beta's current auth/billing model and pins the beta header version used.
-3. **Level 2 execution, guarded — targets `main` (Daniel, 2026-07-09: "main is live and will be
-   the one that needs to be monitored and pushed to")**: the incident branch is cut from `main`
-   at the event's release SHA (the exact code that is live — Sentry's release tag carries it);
-   fix implemented on `claude/incident-<short-id>` only; full test suite run with real output in
-   the PR; **PR opened against `main`**, never self-merged; nothing the pipeline does can push to
-   `main` or `main_debug` directly — merging to `main` stays the owner's deliberate manual
-   action, now deliverable from the phone. The PR body flags the required **back-merge**: after
-   merging the hotfix to `main`, sync it into `main_debug` so the next promotion doesn't revert
-   it (exact command in the footer; automating the back-merge is a 16.4 candidate).
+3. **Level 2 execution, guarded — fixes `main`, hands Daniel a branch (Daniel, 2026-07-09: "main
+   is live and will be the one that needs to be monitored and pushed to")**: the incident branch
+   is cut from `main` at the event's release SHA (the exact code that is live — Sentry's release
+   tag carries it); fix implemented on `claude/incident-<short-id>` only; full test suite run with
+   real output captured in the report + on the branch. The pipeline **pushes that branch and stops
+   — it opens no PR and can push to neither `main` nor `main_debug`.** Acceptance is Daniel's, done
+   locally via the standard hotfix flow: he pulls `claude/incident-<short-id>`, confirms the fix
+   works on his machine, **merges it into `main`**, then **rebases `main_debug` onto `main`** so his
+   open work replays on top of the shipped hotfix. **`main_debug` is only ever rebased, never merged
+   into** (it carries open, untested work that must stay isolated) — no back-merge. Because the
+   pipeline never PRs to `main`, the standing "never PR to main" rule needs no carve-out.
 4. **Delivery**: GitHub issue labeled `incident` + `incident:<short-id>`, body = the complete
-   report (16.1 template), footer = acceptance instructions + the PR link + (Routines lane) the
-   live session URL. GitHub's native email + app push are the notification — no other channels.
+   report (16.1 template), footer = the branch name + the local-accept runbook (`git fetch &&
+   git checkout claude/incident-<short-id>` → test → `git checkout main && git merge
+   claude/incident-<short-id> && git push` → `git checkout main_debug && git rebase main`)
+   + (Routines lane) the live session URL. GitHub's native email + app push are the notification —
+   no other channels.
 5. **The rollback lane exists DORMANT and is proven**: `.github/workflows/incident-response.yml`
    on `repository_dispatch` runs `claude-code-action` (agent mode, `ANTHROPIC_API_KEY` secret)
    with the same runbook, logs via the repo's existing Workload Identity Federation +
@@ -86,10 +94,12 @@ without handing GCP credentials to a beta product.
    the pipeline completes end-to-end — the fallback is tested, not theoretical.
 6. **Guards**: dedupe idempotent across retries; `INCIDENTS_PAUSED` relay env var as kill switch;
    per-run turn/cost cap; report inherits the runbook's no-secrets/no-PII rules.
-7. **E2E phone drill gates `done`**: forced P1 (Story-11.5 smoke pattern), desktop untouched →
-   issue + push arrive on the phone → Daniel reviews the report + ready-made PR from the phone
-   and merges (or rejects, which is also a pass — the gate is accuracy + deliverability, not
-   merge). Frontend leg joins the epic close-out live-QA once 16.3 ships.
+7. **E2E drill gates `done`**: forced P1 (Story-11.5 smoke pattern), desktop off while the
+   pipeline runs → issue + push arrive on the phone → Daniel then pulls the `claude/incident-*`
+   branch locally, confirms the planted fix works, **merges it to `main`**, and **rebases
+   `main_debug` onto `main`** (or rejects, which is also a pass — the gate is report accuracy +
+   branch deliverability, not the merge). Frontend leg joins the epic close-out live-QA once 16.3
+   ships.
 
 ## Tasks / Subtasks
 
@@ -100,7 +110,8 @@ without handing GCP credentials to a beta product.
 - [ ] Task 1 — Relay function (AC: 1, 6): signature check, dedupe, log pre-fetch, `TARGET` switch,
       kill switch; deploy + unit tests
 - [ ] Task 2 — Routine setup (AC: 2, 3, 4): fire endpoint wiring, runbook invocation, Level-2
-      prompt contract (branch/tests/PR), issue creation + footer
+      prompt contract (branch from main @ release SHA / tests / push branch — no PR), issue
+      creation + footer (branch name + local-accept instructions)
 - [ ] Task 3 — Dormant fallback workflow (AC: 5): Actions workflow + WIF logging auth, same
       runbook, same delivery
 - [ ] Task 4 — Sentry alert rules (both projects when 16.3 lands): webhook action → relay URL
@@ -121,14 +132,14 @@ without handing GCP credentials to a beta product.
 - **Security**: no service-account keys anywhere (relay uses its runtime SA; fallback uses WIF);
   Sentry signature verified before anything fires; bearer token + webhook secret live in the
   relay's secret config, never in the repo.
-- **Constitution alignment + the deliberate `main` carve-out**: the pipeline writes only to its
-  own `claude/incident-*` branches + issues. The standing rule "never PR/merge to `main`" is
-  **amended by Daniel (2026-07-09) for this lane only**: production crashes come FROM `main` (the
-  live deploy), so incident-fix PRs target `main` — and the merge (= the promotion decision that
-  rule protects) remains his manual, per-action button, unchanged in spirit. `main_debug` stays
-  the normal dev lane; hotfixes back-merge into it. The 16.2 dev session must reconcile
-  `git-policy.md` / project `AGENTS.md` §8 wording with this carve-out so future agents don't
-  fight the pipeline. Test output in the PR must be real (pasted), per house rules.
+- **Constitution alignment — no carve-out needed**: the pipeline writes only to its own
+  `claude/incident-*` branch + the issue. It **never opens a PR and never pushes to `main` or
+  `main_debug`**, so the standing rule "never PR/merge to `main`" holds exactly as written —
+  nothing to amend. Production crashes come FROM `main` (the live deploy), so the branch is cut
+  from `main`; Daniel merges it to `main` locally, then **rebases `main_debug` onto `main`** (the
+  standard hotfix-sync — `main_debug` is rebased so its open, untested work replays on top of the
+  fix, **never merged into**; no back-merge). Real (pasted) test output stays a house rule,
+  captured in the report + on the branch.
 - **What "monitoring main" means mechanically**: Sentry watches the deployed service, which is
   built from `main`; every event carries the deploy's `GIT_SHA` release tag → triage checks out
   that SHA, so the agent reads and fixes the code that actually crashed, not the newer

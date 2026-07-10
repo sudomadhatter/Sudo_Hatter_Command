@@ -67,7 +67,7 @@ Sudo_Hatter_Command/
     core/
         [2 files: .yamlx1, .csvx1 | e.g. config.yaml]
     custom/
-        [1 files: .tomlx1 | e.g. config.toml]
+        [5 files: .tomlx5 | e.g. bmad-dev-story.toml]
     scripts/
         [3 files: .pyx3 | e.g. memlog.py]
     tea/

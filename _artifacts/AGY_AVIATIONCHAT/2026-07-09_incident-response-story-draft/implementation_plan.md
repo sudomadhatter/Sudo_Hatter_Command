@@ -13,8 +13,8 @@ ArtifactMetadata:
 Land the Automated Incident Response epic in the project tracker. The feature: a Sentry alert
 (frontend or backend) fires a **headless Claude agent in GitHub Actions** — PC off — which runs a
 triage runbook and delivers a full incident report + solution to Daniel's phone (GitHub issue push
-+ email); acceptance is one tap in mobile Claude Code (Level 1) or merging a ready-made fix PR
-(Level 2).
++ email); acceptance is one tap in mobile Claude Code (Level 1) or pulling a ready-made hotfix
+branch, testing it locally, merging to `main`, then rebasing `main_debug` onto the hotfix (Level 2).
 
 ## Decision record (Daniel, 2026-07-09 — memos + chip answers; full log in the brainstorm doc §DECISION)
 
@@ -23,22 +23,26 @@ triage runbook and delivers a full incident report + solution to Daniel's phone 
 - **Webhook from day one** — no cron/polling phase ("why wait?").
 - **Claude Code Routines = primary runtime** ("I trust the beta"), with the **GitHub Actions lane
   built dormant as the rollback** — the relay's `TARGET` env flip is the whole migration.
-- **Level 2 from day one**: fix pre-built + tests + PR open; accepting = merge (pipeline never
-  merges).
+- **Level 2 from day one**: fix pre-built + tests on a `claude/incident-*` hotfix branch (no PR);
+  accepting = Daniel pulls it, tests locally, merges to `main`, then rebases `main_debug` onto
+  `main` (pipeline never pushes to `main`).
 - **Notifications: GitHub issue only** (native email + app push).
 - **Build-history (`_artifacts`) lookup is conditional** — only when the agent is struggling, not
   every incident.
 - **Monitors + fixes `main` (production)** — "debug is where we build, main is live": crashes come
-  from the live deploy built from `main`; triage anchors at the event's release SHA; incident PRs
-  target `main`; the merge stays Daniel's manual button; hotfix back-merge to `main_debug` flagged
-  in every PR footer. (Deliberate owner carve-out of the "never PR to main" rule, this lane only.)
+  from the live deploy built from `main`; triage anchors at the event's release SHA; the agent
+  builds the fix on a `claude/incident-<id>` hotfix branch and **pushes that branch — no PR**;
+  Daniel pulls it, tests locally, **merges to `main`**, then **rebases `main_debug` onto `main`**
+  (standard hotfix-sync — open work replays on top of the hotfix; `main_debug` is rebased, never
+  merged into; no back-merge). No carve-out needed: the agent never PRs to `main`, so the standing
+  "never PR to main" rule holds as written.
 
 ## The story set (drafts in this folder)
 
 | Story | File | One-liner |
 |---|---|---|
 | 16.1 | [story-16-1-sentry-incident-triage-agent_v2.md](story-16-1-sentry-incident-triage-agent_v2.md) | The triage **runbook** (`.github/claude/incident-triage.md`) both lanes execute; local drill harness |
-| 16.2 | [story-16-2-always-live-trigger-pipeline_draft.md](story-16-2-always-live-trigger-pipeline_draft.md) | **THE story**: Sentry webhook → relay (signature + dedupe + log pre-fetch + `TARGET` switch) → **Routine** builds fix + opens PR (Level 2) → GitHub issue on the phone; dormant GH-Actions rollback lane, drilled |
+| 16.2 | [story-16-2-always-live-trigger-pipeline_draft.md](story-16-2-always-live-trigger-pipeline_draft.md) | **THE story**: Sentry webhook → relay (signature + dedupe + log pre-fetch + `TARGET` switch) → **Routine** builds fix on a hotfix branch (Level 2, no PR) → GitHub issue on the phone; dormant GH-Actions rollback lane, drilled |
 | 16.3 | [story-16-3-frontend-sentry-capture_draft.md](story-16-3-frontend-sentry-capture_draft.md) | `@sentry/nextjs` + ErrorBoundary capture + FE Sentry project + source maps → same funnel |
 
 (v1 of 16.1 stays in this folder untouched — it carries Daniel's md-feedback memos.)

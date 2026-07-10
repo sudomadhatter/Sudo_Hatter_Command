@@ -25,7 +25,7 @@ ArtifactMetadata:
 
 - Total risks identified: 13
 - High-priority risks (score ≥6): 7
-- Critical categories: SEC (unauthorized firing, agent write-boundary, PII), OPS (alert-storm spend, lost back-merge), TECH (beta dependency)
+- Critical categories: SEC (unauthorized firing, agent write-boundary, PII), OPS (alert-storm spend, skipped main_debug rebase), TECH (beta dependency)
 - **No score-9 blockers** — nothing here fails the gate outright; the epic is buildable as designed.
 
 **Coverage Summary:**
@@ -45,7 +45,7 @@ ArtifactMetadata:
 | --- | --- | --- |
 | **Load/perf testing of the relay** | Relay is idle ≈100% of the time; traffic is single-event webhooks | Dedupe + `INCIDENTS_PAUSED` cap storm behavior (tested at P0) |
 | **Chaos testing Sentry itself** | Third-party SaaS; not ours to test | Sentry email chain (11.5, live-verified) is the independent safety net |
-| **Automated back-merge main → main_debug** | Explicitly deferred to 16.4 candidates | PR-footer command asserted by P1 process test (R-007) |
+| **Automated `main_debug` rebase after a hotfix** | Deferred to 16.4 candidates | Local-accept runbook (issue footer) carries the exact rebase command, asserted by P1 process test (R-007) |
 | **Routines beta internals** | Vendor beta; can't be unit-tested from outside | Rollback drill (REQUIRED, 16.2 AC-5) proves the escape hatch |
 
 ---
@@ -58,10 +58,10 @@ ArtifactMetadata:
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | R-001 | SEC | Forged/unsigned webhook fires the pipeline (attacker-triggered agent runs, spend burn, injection surface) | 2 | 3 | 6 | `.feature` contract: invalid/missing/wrong-secret signature → reject, nothing fires; timing-safe compare in unit test | 16.2 dev | 16.2 red phase |
 | R-002 | OPS | Alert storm / dedupe failure → runaway Claude spend + issue spam | 2 | 3 | 6 | Contract: duplicate `incident:<short-id>` → drop (idempotent across retries); `INCIDENTS_PAUSED` → no fire; per-run cost cap in Routine contract (threshold from Task 0) | 16.2 dev | 16.2 red phase |
-| R-003 | SEC | Agent escapes its write-boundary (direct push to `main`/`main_debug`, or self-merge) — breaks the owner-merge guarantee | 2 | 3 | 6 | Branch protection verified as part of the E2E drill: pipeline token attempt against `main` must be denied; PR-only permissions on the token | 16.2 dev + Daniel (repo settings) | 16.2 drill |
+| R-003 | SEC | Agent escapes its write-boundary (pushes to `main` or `main_debug` instead of only its `claude/incident-*` branch) — breaks the owner-controlled go-live | 2 | 3 | 6 | Branch protection verified as part of the E2E drill: pipeline token can push ONLY to `claude/incident-*`; a push attempt against `main` (and `main_debug`) must be denied; no PR/merge scope on the token | 16.2 dev + Daniel (repo settings) | 16.2 drill |
 | R-004 | DATA/SEC | Student PII or secrets leak into the pre-fetched log excerpt → GitHub issue/PR body | 2 | 3 | 6 | Relay scrub step tested (emails/tokens/uid patterns); E2E drill report inspected for raw PII; backend `_before_send` hashing already guards the Sentry side | 16.2 dev | 16.2 red phase |
 | R-005 | TECH | Routines beta breaks (endpoint/auth/header changes) → primary lane silently dead | 3 | 2 | 6 | Dormant-lane **rollback drill is REQUIRED** (AC-5); relay logs fire-failures loudly; Sentry email continues regardless | 16.2 dev | 16.2 drill |
-| R-007 | OPS | Back-merge to `main_debug` forgotten → next promotion **reverts a shipped hotfix** (regression of previously-broken functionality) | 2 | 3 | 6 | PR-footer back-merge command asserted by process test; 16.4 automation candidate | 16.2 dev / Daniel | 16.2 |
+| R-007 | OPS | `main_debug` rebase skipped after a hotfix → the two lines drift; a later promotion reverts the shipped fix or forces a messy merge against untested work | 2 | 3 | 6 | Local-accept runbook (issue footer) carries the exact rebase command; asserted by process test; 16.4 automation candidate | 16.2 dev / Daniel | 16.2 |
 | R-009 | SEC | FE PII parity failure (`sendDefaultPii` true by accident, raw uid attached) → student PII in Sentry | 2 | 3 | 6 | Vitest unit asserts init config: `sendDefaultPii: false`, hashed uid only, `tracesSampleRate: 0` | 16.3 dev | 16.3 red phase |
 
 ### Medium-Priority Risks (Score 3–4)
@@ -136,7 +136,7 @@ ArtifactMetadata:
 | Duplicate `incident:<short-id>` → dropped | API (`.feature`) | R-002 | 1 | 16.2 dev | 16.2-API-004 |
 | `INCIDENTS_PAUSED=true` → no fire | API (`.feature`) | R-002 | 1 | 16.2 dev | 16.2-API-005 |
 | Log excerpt scrubbed of emails/tokens/raw uids before payload | Unit | R-004 | 2 | 16.2 dev | 16.2-UNIT-001..002 |
-| Pipeline token CANNOT push to `main`/`main_debug`; PR-only | E2E (drill step) + config audit | R-003 | 1 | 16.2 dev + Daniel | 16.2-E2E-001; branch-protection screenshot/log in Completion Notes |
+| Pipeline token can push ONLY to `claude/incident-*`; cannot write `main`/`main_debug`; no PR/merge scope | E2E (drill step) + config audit | R-003 | 1 | 16.2 dev + Daniel | 16.2-E2E-001; branch-protection screenshot/log in Completion Notes |
 | FE init: `sendDefaultPii: false`, hashed uid only, `tracesSampleRate: 0` | Unit (vitest) | R-009 | 2 | 16.3 dev | 16.3-UNIT-001..002 |
 
 **Total P0**: 10 tests, ~11–16 hours
@@ -153,8 +153,8 @@ ArtifactMetadata:
 | Routine fire returns non-2xx → logged loudly (not silent) | Unit | R-005 | 1 | 16.2 dev | 16.2-UNIT-003 |
 | Release SHA extracted correctly from event payload | Unit | R-006 | 1 | 16.2 dev | 16.2-UNIT-004 |
 | **Rollback drill**: flip `TARGET=github`, forced failure completes E2E | E2E (drill) | R-005 | 1 | 16.2 dev | 16.2-E2E-002 — REQUIRED, gates done |
-| **Phone drill**: forced P1, desktop off → issue + PR on phone | E2E (drill) | — | 1 | Daniel + 16.2 dev | 16.2-E2E-003 — gates done (AC-7) |
-| PR footer carries back-merge command | Unit/process | R-007 | 1 | 16.2 dev | 16.2-UNIT-005 (template assert) |
+| **E2E drill**: forced P1, desktop off → issue + branch on phone → Daniel pulls locally, tests, merges to `main`, rebases `main_debug` | E2E (drill) | — | 1 | Daniel + 16.2 dev | 16.2-E2E-003 — gates done (AC-7) |
+| Issue footer carries the exact `main_debug` rebase command | Unit/process | R-007 | 1 | 16.2 dev | 16.2-UNIT-005 (template assert) |
 | 16.1 local drill: planted failure named, correct file, sane fix | Drill (manual, scripted setup) | R-012 | 1 | 16.1 dev + Daniel | 16.1's acceptance evidence (BDD waived — no product code) |
 | DSN unset → clean no-op; ErrorBoundary captures with `zone` tag | Unit (vitest) | R-008 | 2 | 16.3 dev | 16.3-UNIT-003..004 (mock `@sentry/nextjs`) |
 
@@ -204,7 +204,7 @@ No nightly/weekly lane needed — this epic has no long-running or expensive sui
 | Priority | Count | Hours (range) | Notes |
 | --- | --- | --- | --- |
 | P0 | 10 | 11–16 | First `.feature` scaffold + fixtures cost extra once (pilot) |
-| P1 | 11 | 11–17 | Drills include human time (Daniel's phone leg) |
+| P1 | 11 | 11–17 | Drills include human time (Daniel's phone + local test/merge/rebase leg) |
 | P2 | 6 | 4–8 | Mostly drill spot-checks |
 | P3 | 1 | 1–2 | Conditional |
 | **Total** | **28** | **~27–43 h** | ~1–1.5 weeks, spread across the three story devs, not one sitting |

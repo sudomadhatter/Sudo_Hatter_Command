@@ -1,18 +1,16 @@
-# opencode-agents — INDEX
+# INDEX - opencode-agents
 
-opencode agent definition files. MASTER here — mirrored to `.opencode/agent/` and project vendored copies via `/sync-agents`.
+This folder contains:
 
-## Top-level contents
-<!-- auto-listed by /1_update-maps — refresh via /1_update-maps; do not hand-edit entries -->
-- `bmad-analyst.md`
-- `bmad-architect.md`
-- `bmad-dev.md`
-- `bmad-master.md`
-- `bmad-pm.md`
-- `bmad-qa.md`
-- `bmad-sm.md`
-- `bmad-tea.md`
-- `bmad-tech-writer.md`
-- `bmad-ux-designer.md`
-- `opus-auditor.md`
-- `opus-reviewer.md`
+- **bmad-analyst.md** (File)
+- **bmad-architect.md** (File)
+- **bmad-dev.md** (File)
+- **bmad-master.md** (File)
+- **bmad-pm.md** (File)
+- **bmad-qa.md** (File)
+- **bmad-sm.md** (File)
+- **bmad-tea.md** (File)
+- **bmad-tech-writer.md** (File)
+- **bmad-ux-designer.md** (File)
+- **opus-auditor.md** (File)
+- **opus-reviewer.md** (File)

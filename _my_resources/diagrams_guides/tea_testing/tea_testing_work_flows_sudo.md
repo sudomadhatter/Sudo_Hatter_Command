@@ -9,6 +9,38 @@
 
 ---
 
+## ⚡ The `/` command workflow — new epic → developed
+
+The exact sequence, top to bottom, from a fresh epic to a shipped story. Run it from the **command center** (lobby); the leading token targets the child project (e.g. `AGY_AVIATIONCHAT`). **Phase A runs once per epic; Phase B repeats per story (P0 first).** Full detail in §11.
+
+```
+# ── Orient (start of every session) ───────────────────────────
+/sudo-boot-sprint-memory <PROJECT>           # where am I? what's next? (read-only)
+
+# ── Phase A · Epic kickoff — ONCE per epic ────────────────────
+/sudo-create-epics-stories-sprint <PROJECT> <requirements-source>
+#   → epic + stories → sprint board → interactive P0–P3 risk-score (one story at a time)
+
+# ── Phase B · Per-story loop — REPEAT per story, P0 first ──────
+/sudo-write-story-tests    <story>   # ① BDD Vision Lock + ATDD red tests (must fail now)
+/sudo-dev-story-tests      <story>   # ② plan → self-audit → build to green → automate
+/sudo-code-review          <story>   # ③ adversarial review + TEST GATE → PASS/CONCERNS/FAIL
+/sudo-update-sprint-memory <story>   # close-out = your sign-off → flip to done → you git commit
+```
+
+| # | Agile step | Command |
+|---|------------|---------|
+| — | Orient — where am I / what's next | `/sudo-boot-sprint-memory` |
+| **1–2** | Epic + stories + sprint, then map test levels (P0–P3) | `/sudo-create-epics-stories-sprint` |
+| **3** | Write the failing test | `/sudo-write-story-tests` |
+| **4–6** | Dev plan → self-audit → code the story | `/sudo-dev-story-tests` |
+| **7** | Code review + run tests | `/sudo-code-review` |
+| **8** | Close out + git push + log learnings | `/sudo-update-sprint-memory` |
+
+> **P0 first.** The kickoff's Step 3 risk-scores every story with you; work the P0s through Phase B before P1/P2. Nothing is committed by an agent — you run `git commit` after each close-out.
+
+---
+
 Glossary / one-line cheat sheet
 
 | Term | One line |

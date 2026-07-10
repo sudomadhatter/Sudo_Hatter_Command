@@ -1,9 +1,12 @@
 # Sentry Error-Response Team — visual overview & quick reference
 
 > **What this is:** AviationChat's automated incident-response system (Epic 16). When production
-> breaks — frontend or backend — a cloud Claude agent investigates, **builds the fix**, opens the
-> PR, and the full report lands on Daniel's phone. Accepting the fix = tapping merge. Desktop off
-> the whole time.
+> breaks — frontend or backend — a cloud Claude agent investigates, **builds the fix on its own
+> hotfix branch**, and the full report lands on Daniel's phone. Accepting the fix = the standard
+> hotfix flow: **pull the branch, test it locally, merge it into `main`, then rebase `main_debug`
+> onto the released hotfix**. The investigation + build run with Daniel's desktop off; only the
+> final test-merge-rebase is hands-on. `main_debug` (open, untested work) is **rebased, never
+> merged into** — its unfinished work simply replays on top of the shipped fix.
 >
 > Designed + approved 2026-07-09. Stories: `Projects/AGY_AVIATIONCHAT/_bmad/bmm/stories/story-16-*.md` ·
 > Decision record: `_artifacts/AGY_AVIATIONCHAT/2026-07-09_incident-response-story-draft/always-live-trigger-brainstorm.md`
@@ -26,54 +29,56 @@ flowchart TD
     ROUTINE --> WORK
     GHA --> WORK
 
-    WORK["THE AGENT'S WORK — Level 2<br/>investigate root cause<br/>branch from main @ live release SHA<br/>build the fix + run test suite<br/>open PR to main"]
+    WORK["THE AGENT'S WORK — Level 2<br/>investigate root cause<br/>branch from main @ live release SHA<br/>build the fix + run test suite<br/>push branch claude/incident-XXX (NO PR)"]
 
-    WORK --> ISSUE["GitHub Issue = full report<br/>+ PR link + live session URL"]
+    WORK --> ISSUE["GitHub Issue = full report<br/>+ branch name + live session URL"]
     ISSUE --> PHONE["Daniel's phone<br/>email + GitHub app push"]
     PHONE --> DECIDE{"Daniel decides"}
-    DECIDE -- "accept" --> MERGE["Tap MERGE on the PR<br/>fix goes LIVE on main"]
+    DECIDE -- "accept" --> LOCAL["Pull branch locally · test the fix<br/>merge branch → main (goes LIVE)<br/>rebase main_debug onto main"]
     DECIDE -- "interrogate first" --> CHAT["Tap session URL<br/>talk to the agent live"] --> DECIDE
-    DECIDE -- "reject" --> CLOSE["Close PR / tell agent to redo"]
+    DECIDE -- "reject" --> CLOSE["Delete branch / tell agent to redo"]
 
     style SENTRY fill:#7b2d8e,color:#fff
     style RELAY fill:#1a73e8,color:#fff
     style ROUTINE fill:#d97706,color:#fff
     style GHA fill:#374151,color:#fff
     style WORK fill:#065f46,color:#fff
-    style MERGE fill:#166534,color:#fff
+    style LOCAL fill:#166534,color:#fff
 ```
 
-**The agent can NEVER merge.** The merge button is Daniel's, always.
+**The agent can NEVER push to `main`.** It only ever writes its own `claude/incident-*` branch;
+going live is Daniel's deliberate local test → merge-to-`main` → rebase-`main_debug`, always.
 
 ---
 
 ## 2. One incident, step by step (the phone experience)
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    participant App as AviationChat (live, main)
-    participant Sen as Sentry
-    participant Rel as Relay (GCP Fn)
-    participant Agent as Claude agent (cloud)
-    participant GH as GitHub
-    participant Dan as Daniel's phone
+flowchart TD
+    A["1 · AviationChat (live, main) throws a crash<br/>event carries stack trace + release SHA"]
+    B["2 · Sentry receives it<br/>fires the 11.5 alert email (the wake-up) AND the webhook"]
+    C["3 · Relay (GCP Fn)<br/>verify signature · dedupe · fetch ±15min logs"]
+    D["4 · Relay fires the agent<br/>with issue id + log excerpt"]
+    E["5 · Agent runs the triage runbook<br/>Sentry issue · logs · code path · build history IF struggling"]
+    F["6 · Agent branches claude/incident-XXX from main @ live SHA<br/>builds fix · runs full test suite"]
+    G["7 · Agent pushes the branch (NO PR)<br/>+ opens Issue 'incident' = full report + branch + session URL"]
+    H["8 · Report lands on Daniel's phone<br/>email + app push"]
+    I["9 · (optional) tap session URL — interrogate the agent live"]
+    J["10 · Daniel pulls the branch locally<br/>tests the fix actually works"]
+    K["11 · Daniel merges the branch into main → fix is live"]
+    L["12 · Daniel rebases main_debug onto main<br/>open work replays on top of the hotfix"]
 
-    App->>Sen: crash event (stack trace + release SHA)
-    Sen->>Dan: alert email (existing 11.5 chain — the wake-up)
-    Sen->>Rel: webhook fires
-    Rel->>Rel: verify signature · dedupe · fetch ±15min logs
-    Rel->>Agent: fire with issue id + log excerpt
-    Agent->>Agent: triage runbook — Sentry issue, logs,<br/>code path, build history IF struggling
-    Agent->>GH: branch claude/incident-XXX from main @ live SHA
-    Agent->>Agent: build fix + run full test suite
-    Agent->>GH: open PR to main (report + real test output as body)
-    Agent->>GH: open Issue "incident" = full report + PR + session URL
-    GH->>Dan: email + app push
-    Dan->>Agent: (optional) tap session URL, ask questions
-    Dan->>GH: tap MERGE = acceptance → fix is live
-    Dan->>GH: back-merge main → main_debug (footer command)
+    A --> B --> C --> D --> E --> F --> G --> H --> I --> J --> K --> L
+
+    style A fill:#7b2d8e,color:#fff
+    style C fill:#1a73e8,color:#fff
+    style F fill:#065f46,color:#fff
+    style K fill:#166534,color:#fff
 ```
+
+The incident lane **never merges into `main_debug`** — after the fix merges to `main`,
+`main_debug` is *rebased* onto `main`, so its open untested work simply replays on top of the
+shipped hotfix (the standard hotfix-branch sync, minus the textbook merge-into-dev).
 
 ---
 
@@ -82,22 +87,26 @@ sequenceDiagram
 ```mermaid
 flowchart LR
     MAIN["main<br/>LIVE PRODUCTION<br/>= what Sentry monitors"]
-    DEBUG["main_debug<br/>the build/dev lane"]
-    INC["claude/incident-XXX<br/>agent's own branch<br/>cut from main @ crash SHA"]
+    DEBUG["main_debug<br/>open + untested work<br/>NEVER MERGED INTO"]
+    INC["claude/incident-XXX<br/>agent's own hotfix branch<br/>cut from main @ crash SHA"]
 
     MAIN -- "crash comes from here" --> INC
-    INC -- "PR (agent opens, never merges)" --> MAIN
-    MAIN -- "back-merge the hotfix<br/>(so next promotion keeps it)" --> DEBUG
-    DEBUG -- "normal promotion<br/>(Daniel's manual decision, unchanged)" --> MAIN
+    INC -- "agent pushes the branch (never PRs, never merges)" --> INC
+    INC -- "Daniel tests locally, then merges to main" --> MAIN
+    MAIN -- "Daniel rebases main_debug onto main<br/>(open work replays on top of the hotfix)" --> DEBUG
 
     style MAIN fill:#991b1b,color:#fff
     style DEBUG fill:#1e40af,color:#fff
     style INC fill:#065f46,color:#fff
 ```
 
-⚠️ **Deliberate carve-out (Daniel, 2026-07-09):** the standing "never PR to main" rule is amended
-for THIS lane only — incident fixes target `main` because that's the live branch that crashed.
-The merge stays Daniel's per-action button, so the spirit of the rule is unchanged.
+✅ **The flow (Daniel, 2026-07-09) — standard hotfix pattern:** a **new hotfix branch** fixes the
+problem → Daniel tests it → **merges it to `main`** (live) → **rebases `main_debug` onto `main`**.
+`main_debug` (open, untested work) is only ever *rebased* — the hotfix is never merged *into* it,
+so its unfinished work stays isolated and simply replays on top of the shipped fix. The agent only
+ever writes its own `claude/incident-*` branch — it never PRs and never pushes to `main`, so the
+standing "never PR to main" rule needs **no carve-out**; it holds as written. (Rebase assumes
+`main_debug` is Daniel's to rewrite — force-push after, standard for a private integration branch.)
 
 ---
 
@@ -108,7 +117,7 @@ flowchart TD
     S1["16.1 — Triage Runbook (ready-for-dev)<br/>the BRAIN: .github/claude/incident-triage.md<br/>5 steps + report template + local drill"]
     S2["16.2 — Always-Live Pipeline (backlog)<br/>relay + Routine + Level-2 fix PR<br/>+ dormant rollback lane + phone drill"]
     S3["16.3 — Frontend Sentry (backlog)<br/>@sentry/nextjs + ErrorBoundary<br/>browser crashes join the funnel"]
-    S4["16.4 — candidates (later)<br/>auto back-merge · severity tiers ·<br/>SMS · Routines GA migration"]
+    S4["16.4 — candidates (later)<br/>branch auto-cleanup · severity tiers ·<br/>SMS · Routines GA migration"]
 
     S1 --> S2 --> S4
     S1 -.parallel ok.-> S3
@@ -130,7 +139,7 @@ BE crashes → two full reports on the phone.
 | Relay | GCP Cloud Function, project `aviationchat` (16.2) | Verify → dedupe → fetch logs → route |
 | Primary lane | Claude Code **Routine** (beta) | Cloud agent session; live session URL bonus |
 | Rollback lane | `.github/workflows/incident-response.yml` (dormant) | Proven GA path, same runbook |
-| Delivery | GitHub Issue `incident` + PR to `main` | Report + push + email to phone |
+| Delivery | GitHub Issue `incident` + ready `claude/incident-*` branch | Report + push + email to phone |
 | Drill harness | `/sudo-incident-response` command | Testing only — NOT the product |
 
 ### Switches & secrets (names only — values never in repo)
@@ -145,7 +154,7 @@ BE crashes → two full reports on the phone.
 
 ### Guardrails (non-negotiable)
 
-- Agent **never merges**; can't push to `main` or `main_debug` — only its own `claude/incident-*` branch.
+- Agent **never PRs and never pushes to `main` or `main_debug`** — it writes only its own `claude/incident-*` branch. Going live is Daniel's local test → merge to `main` → rebase `main_debug`.
 - Dedupe by Sentry short-id — one issue, one triage, ever.
 - Real test output pasted in every PR; no secrets or PII in any report (user ids arrive pre-hashed).
 - Rollback lane is **drilled**, not hoped for; Sentry's plain alert email keeps firing regardless.
@@ -156,7 +165,7 @@ BE crashes → two full reports on the phone.
 |---|---|
 | Trigger | Webhook from day one — no polling phase |
 | Runtime | **Routines beta = primary** ("I trust the beta"); GH Actions built as drilled rollback |
-| Fix depth | **Level 2 from day one** — fix pre-built, tests run, PR open; accept = merge |
+| Fix depth | **Level 2 from day one** — fix pre-built + tests run on a hotfix branch; accept = pull it, test, merge to `main`, then rebase `main_debug` onto it |
 | Notification | GitHub issue only (email + app push) |
 | Build-history lookup | Conditional — only when the agent is struggling |
-| Branch | **Monitors + fixes `main`** (live); `main_debug` stays the build lane; back-merge flagged per PR |
+| Branch | **New `claude/incident-*` hotfix branch fixes `main`** (live) → Daniel tests → merges to `main` → **rebases `main_debug` onto `main`**; `main_debug` (open untested work) is *rebased, never merged into* — no PR, no back-merge |
