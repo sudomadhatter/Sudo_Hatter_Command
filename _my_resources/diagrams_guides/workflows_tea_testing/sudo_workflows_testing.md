@@ -22,8 +22,8 @@ The exact sequence, top to bottom, from a fresh epic to a shipped story. Run it 
 #   → epic + stories → sprint board → interactive P0–P3 risk-score (one story at a time)
 
 # ── Phase B · Per-story loop — REPEAT per story, P0 first ──────
-/sudo-write-story-tests    <story>   # ① BDD Vision Lock + ATDD red tests (must fail now)
-/sudo-dev-story-tests      <story>   # ② plan → self-audit → build to green → automate
+/sudo-write-story-tests    <story>   # ① BDD Vision Lock (MANDATORY, waiver-recorded) + ATDD red tests (must fail now)
+/sudo-dev-story-tests      <story>   # ② BDD gate → plan → self-audit → build to green → automate
 /sudo-code-review          <story>   # ③ adversarial review + TEST GATE → PASS/CONCERNS/FAIL
 /sudo-update-sprint-memory <story>   # close-out = your sign-off → flip to done → you git commit
 ```
@@ -71,8 +71,12 @@ Doesn't call other commands — it just **reads state** and tells you what to ru
 ### `/sudo-write-story-tests` ① — story prep + red tests (calls 3 skills)
 ```
 1. bmad-create-story    → writes the story file under _bmad/bmm/stories/ with its ACs
-2. /sudo-bdd-tests      → BDD Vision Lock: interactive w/ Murat until behaviors are 100% locked,
-                          then generates strict pytest-bdd .feature files + step defs (backend/tests/features/, /bdd/)
+2. /sudo-bdd-tests      → BDD Vision Lock (MANDATORY): interactive w/ Murat until behaviors are 100% locked,
+                          then stack-appropriate contracts — strict pytest-bdd .feature + step defs for
+                          backend (backend/tests/features/, /bdd/); BDD-structured vitest/Playwright
+                          scaffolds for frontend. Sole escape = a RECORDED waiver (no behavior surface,
+                          you confirm, frontmatter records it). Either way the story leaves ① carrying
+                          `bdd: locked` (+ contract paths) or `bdd: waived — <rationale>` in frontmatter.
 3. bmad-testarch-atdd   → writes the remaining unit/component acceptance tests that MUST FAIL now (red phase)
                           (pulls the test-design P-levels so P0 ACs get priority coverage)
                           → leaves tests staged & red. Does NOT implement.
@@ -81,6 +85,9 @@ Doesn't call other commands — it just **reads state** and tells you what to ru
 ### `/sudo-dev-story-tests` ② — build to green (calls bmad-dev-story twice + 2 skills)
 ```
 0.5 resolve ARTIFACT_DIR              → _artifacts/epic_<E>/<story>/ (all artifacts land here)
+0.7 BDD contract gate (HARD)          → story frontmatter must carry `bdd: locked` (+ contract files ON DISK)
+                                        or `bdd: waived — <rationale>`; NEITHER (incl. pre-gate stories) →
+                                        STOP, run /sudo-bdd-tests first. No plan, no code without it.
 1.  bmad-dev-story (PLAN mode)        → writes implementation_plan.md into ARTIFACT_DIR
 2.  /sudo-self-audit  (AUTOMATIC)     → adversarial pre-dev stress-test of the plan (see its breakdown below)
                                         → folds findings back in + persists self-audit-stress-test.md
@@ -142,7 +149,7 @@ Running this **IS your sign-off.** Only objectively-red tests can block the flip
 | `bmad-sprint-planning` | Generate/populate `sprint-status.yaml` from the epic's stories |
 | `bmad-testarch-test-design` | Risk-score stories P0–P3 (Probability × Impact); the interactive kickoff step |
 | `bmad-create-story` | Write ONE story file with its ACs under `_bmad/bmm/stories/` |
-| `/sudo-bdd-tests` | Interactive BDD Vision Lock → strict `pytest-bdd` `.feature` + step defs |
+| `/sudo-bdd-tests` | Interactive BDD Vision Lock (MANDATORY phase of ①) → stack-appropriate contracts (`pytest-bdd` BE / BDD-structured vitest-Playwright FE) or a recorded waiver; ② hard-gates on the frontmatter record |
 | `bmad-testarch-atdd` | Write **failing** (red) acceptance tests before any code |
 | `bmad-dev-story` | The dev engine — PLAN mode writes the plan; IMPLEMENT mode writes code to green |
 | `bmad-testarch-automate` | Expand coverage on existing code (passes immediately) |
@@ -163,6 +170,7 @@ Glossary / one-line cheat sheet
 | **AAA** | Arrange → Act → Assert; the shape of every test |
 | **DoD** | No flaky, no hard waits, stateless, self-cleaning, low-maintenance, near source |
 | **ATDD** | Test-first (red → green); the failing test is the proof-of-test |
+| **BDD Vision Lock** | Mandatory ① phase: interactive behavior lock w/ Murat → Given/When/Then contract (or **recorded** waiver) stamped in story frontmatter; ② refuses to dev without it |
 | **Automate** | Coverage expansion on existing code (passes immediately) |
 | **Use-site patch** | Patch the name as the module-under-test looks it up — not the definition |
 | **Factory** | `_make_event(...)` — defaults + overrides; one update point |
@@ -525,12 +533,13 @@ flowchart TD
 |---------|--------------|
 | `/sudo-boot-sprint-memory` | Where am I? What story is next? Which command do I run? (read-only) |
 | `/sudo-create-epics-stories-sprint` | **Phase A / epic kickoff** — create the epic + stories → sprint board → interactive P0–P3 risk-score (one story at a time). |
-| `/sudo-write-story-tests` | ① Create the story, then write its **failing** acceptance tests. |
-| `/sudo-dev-story-tests` | ② Plan → auto self-audit → build → drive tests green → automate. |
+| `/sudo-write-story-tests` | ① Create the story → **BDD Vision Lock (mandatory)** → write its **failing** acceptance tests. |
+| `/sudo-bdd-tests` | ①-inner (also standalone) — interactive Vision Lock w/ Murat → stack-appropriate BDD contracts or a **recorded** waiver, stamped into story frontmatter. |
+| `/sudo-dev-story-tests` | ② **BDD contract gate (hard)** → plan → auto self-audit → build → drive tests green → automate. |
 | `/sudo-self-audit` | Adversarial pre-dev audit of the plan (fires automatically inside ②). |
 | `/sudo-code-review` | ③ Review the diff + run the **TEST GATE** → PASS/CONCERNS/FAIL/WAIVED. |
 | `/sudo-update-sprint-memory` | Close-out: verify verdict, flip story → `done`, route learnings, prune. |
-| `*_AP` variants | Autopilot lanes (`sudo-dev-story-tests_AP`, `sudo-code-review_AP`, `sudo-self-audit_AP`) — same ideas, different engine. |
+| `*_AP` variants | Autopilot lanes (`sudo-dev-story-tests_AP`, `sudo-code-review_AP`, `sudo-self-audit_AP`) — same ideas, different engine. `dev_AP` plan-stage enforces the BDD gate too: contract-or-waiver missing → `PIPELINE_BLOCKER` (headless lanes never author the lock themselves). |
 
 ### Supporting test commands
 | Command | Does |
@@ -586,8 +595,8 @@ flowchart TD
 |------|---------|------------------------|
 | boot | `sudo-boot-sprint-memory` | — (reads active-context + sprint-status, recommends next command) |
 | kickoff | `sudo-create-epics-stories-sprint` | `bmad-create-epics-and-stories` → `bmad-sprint-planning` → `bmad-testarch-test-design` (interactive P0–P3, one story at a time) |
-| ① | `sudo-write-story-tests` | `bmad-create-story` → `/sudo-bdd-tests` (BDD Vision Lock) → `testarch-atdd` |
-| ② | `sudo-dev-story-tests` | `bmad-dev-story` (plan) → `sudo-self-audit` → `bmad-dev-story` (implement) → `testarch-automate` |
+| ① | `sudo-write-story-tests` | `bmad-create-story` → `/sudo-bdd-tests` (BDD Vision Lock, **mandatory** — contract or recorded waiver) → `testarch-atdd` |
+| ② | `sudo-dev-story-tests` | **BDD contract gate** → `bmad-dev-story` (plan) → `sudo-self-audit` → `bmad-dev-story` (implement) → `testarch-automate` |
 | ③ | `sudo-code-review` | `bmad-code-review` → `/1_run-all-tests-back_front` → `testarch-trace` → `testarch-nfr` → `testarch-test-review` |
 | close | `sudo-update-sprint-memory` | — (reads ③'s verdict; only command that flips a story to `done`) |
 

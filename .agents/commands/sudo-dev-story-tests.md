@@ -47,6 +47,18 @@ folder — set it **now** so `bmad-dev-story` and the audit don't drop files at 
 **Echo** `Artifacts: <ARTIFACT_DIR>` before Step 1. Every step below writes into `ARTIFACT_DIR`; pass it
 explicitly to each sub-skill and **never** let one mint its own root-level or date-stamped folder.
 
+## Step 0.7 — BDD contract gate (HARD — before any planning or code)
+The BDD Vision Lock is a standing, enterprise-level phase of this flow: **a story may not be planned or
+implemented without its locked behavior contract or a recorded waiver.** Check the story file's
+frontmatter, then verify on disk (trust nothing — a flag with no file behind it fails the gate):
+- **`bdd: locked`** AND every `bdd_contract:` path exists on disk (`.feature` files / BDD-structured FE
+  scaffolds) → proceed; those contracts are part of the ① red set Step 3 must drive green.
+- **`bdd: waived — <rationale>`** (explicit, human-approved, recorded) → proceed; note the waiver in the plan.
+- **Neither** — including stories that predate this gate (no `bdd:` key at all) — → **STOP. Do not plan,
+  do not write code.** Run the **`/sudo-bdd-tests`** Vision Lock now (it is interactive — the human must
+  be in the loop) and only continue once the story carries a real contract or a recorded waiver. Never
+  grandfather a story past this gate silently, and never author the "lock" yourself without the session.
+
 ## Step 1 — Plan
 Invoke the **`bmad-dev-story`** skill in PLAN mode for the story in `$ARGUMENTS`. Produce its
 `implementation_plan.md` **into `ARTIFACT_DIR`** — not the BMAD stories dir, not the `_artifacts/` root.
@@ -69,8 +81,9 @@ a plan concern the audit raised that you can't safely resolve yourself.
 
 ## Step 3 — Implement
 Invoke the **`bmad-dev-story`** skill in IMPLEMENT mode: apply the audit, write the code, and drive the
-① red tests to green. Run the relevant suite(s) and paste the **actual** output (constitution rule). If a
-test fails, find root cause before fixing.
+① red tests — **including the BDD contract scenarios from the Vision Lock (Step 0.7)** — to green. Run the
+relevant suite(s) and paste the **actual** output (constitution rule). If a test fails, find root cause
+before fixing.
 
 ## Step 4 — Automate (expand coverage)
 Invoke the **`bmad-testarch-automate`** skill to expand API / UI / contract coverage around what was

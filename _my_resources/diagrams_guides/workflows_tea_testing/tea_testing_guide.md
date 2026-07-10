@@ -79,7 +79,7 @@ One caveat carried from the TEA stories: if a test-only story turns out to need 
 There are **two layers** with **two cadences** — don't confuse them.
 
 1. **Test *design* — the planning layer (runs once per scope).** `bmad-testarch-test-design`, driven by Murat (the Master Test Architect), ranks what can hurt you (P0–P3) and emits scoped stories with acceptance criteria. You run it **once per body of work**, up front — not per story.
-2. **The `sudo-` story loop — the execution layer (runs once per story).** `/sudo-bdd-tests` (vision lock) → `/sudo-write-story-tests` (red) → `/sudo-self-audit` (plan pressure-test) → `/sudo-dev-story-tests` (green, executed inside the OpenHands Docker sandbox) → `/sudo-code-review` (gate) → `/sudo-update-sprint-memory` (your sign-off).
+2. **The `sudo-` story loop — the execution layer (runs once per story).** `/sudo-write-story-tests` (① create story → **BDD Vision Lock, mandatory** — `/sudo-bdd-tests` fires inside it; contract or *recorded* waiver stamped in story frontmatter → red ATDD) → `/sudo-self-audit` (plan pressure-test) → `/sudo-dev-story-tests` (② **hard-gates on the BDD record**, then green — executed inside the OpenHands Docker sandbox) → `/sudo-code-review` (gate) → `/sudo-update-sprint-memory` (your sign-off). `/sudo-bdd-tests` is also runnable standalone to lock/waive a story whose file already exists.
 
 ### Do I re-run all of this for a new epic?
 
@@ -90,8 +90,8 @@ A **new epic** going forward is much lighter:
 ```
 New epic
   └─ bmad-testarch-test-design   (scoped to THAT epic's handful of stories — fast)
-       └─ for each story:  /sudo-bdd-tests → /sudo-write-story-tests → /sudo-self-audit
-                            → /sudo-dev-story-tests → /sudo-code-review → /sudo-update-sprint-memory
+       └─ for each story:  /sudo-write-story-tests (create → BDD Vision Lock → red) → /sudo-self-audit
+                            → /sudo-dev-story-tests (BDD gate → green) → /sudo-code-review → /sudo-update-sprint-memory
 ```
 
 Test design is **risk-proportional**, not mandatory ceremony. A high-stakes epic (FAA accuracy, Sully safety, auth) earns the full design pass; a low-risk epic (a settings page, a copy change) can skip straight to the sudo loop with a one-line risk note. The design skill has **Create / Resume / Validate / Edit** modes so you can revise an old plan instead of starting cold — and each epic gets cheaper as this retrofit hardens the foundation (armed gate, coverage floor, schema-contract pattern).
@@ -161,7 +161,7 @@ flowchart TD
 
     subgraph S2 ["Step 2 — Execute per story (test-first loop)"]
         Exec["Vision lock, red tests, audit, then green"]
-        ExecCmd["Commands: /sudo-bdd-tests then /sudo-write-story-tests then\n/sudo-self-audit then /sudo-dev-story-tests then /sudo-code-review"]
+        ExecCmd["Commands: /sudo-write-story-tests (BDD Vision Lock inside) then\n/sudo-self-audit then /sudo-dev-story-tests (BDD gate) then /sudo-code-review"]
         Exec --> ExecCmd
     end
 
@@ -366,7 +366,7 @@ flowchart TD
     T3 --> D{"Decide with Daniel:\nis JIT Context Assembler the target?"}
     D -->|"yes"| T3b["Add JIT dossier trigger test\n(pattern: test_dossier_context_builder.py)"]
     D -->|"no / unclear"| HOLD["Log as decide-with-Daniel, do NOT scaffold"]
-    T1 --> W["/sudo-bdd-tests then /sudo-write-story-tests (RED trigger tests)"]
+    T1 --> W["/sudo-write-story-tests (BDD Vision Lock + RED trigger tests)"]
     T2 --> W
     T3b --> W
     W --> X["Assert flag / counter / enum\nNEVER string-match LLM prose"]

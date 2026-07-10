@@ -208,8 +208,8 @@ BDD contracts apply to **both** tracks. The only difference is whether you're wa
 
 | Track | Command | BDD Contracts | Difference |
 |---|---|---|---|
-| **Manual** | `/sudo-bdd-tests` → `/sudo-write-story-tests` → `/sudo-self-audit` → `/sudo-dev-story-tests` → `/sudo-code-review` | ✅ Yes | **You watch.** You can see when the agent is struggling and intervene. You approve each phase gate. |
-| **Autonomous** | `/autopilot_claude` | ✅ Yes | **Headless.** Agent locks into the loop and runs until tests are green. You only see the final result. |
+| **Manual** | `/sudo-write-story-tests` (BDD Vision Lock fires inside — mandatory) → `/sudo-self-audit` → `/sudo-dev-story-tests` (hard-gates on the BDD record) → `/sudo-code-review` | ✅ Yes | **You watch.** You can see when the agent is struggling and intervene. You approve each phase gate. |
+| **Autonomous** | `/autopilot_claude` | ✅ Yes | **Headless.** Agent locks into the loop and runs until tests are green. You only see the final result. `dev_AP` enforces the same BDD gate: no contract/waiver → `PIPELINE_BLOCKER` (a headless lane never authors the lock itself). |
 
 > [!IMPORTANT]
 > **The sandbox (OpenHands) is ACTIVE for Desktop tracks.**
@@ -218,8 +218,14 @@ BDD contracts apply to **both** tracks. The only difference is whether you're wa
 
 ### How the BDD Vision Lock Works
 
-Today: `/sudo-bdd-tests` engages the Vision Lock to interactively align on expected behaviors, translating them into strict Gherkin contracts. Then `/sudo-write-story-tests` generates acceptance tests from the Gherkin contracts.
+Today: `/sudo-bdd-tests` engages the Vision Lock to interactively align on expected behaviors, translating them into strict Gherkin contracts (stack-appropriate: `pytest-bdd` `.feature` for backend, BDD-structured vitest/Playwright scaffolds for frontend). Then `/sudo-write-story-tests` generates the remaining acceptance tests from the contracts.
 The agent no longer interprets ambiguous English or writes what it thinks you mean.
+
+**Enforced end-to-end (2026-07-10):** the Vision Lock is a MANDATORY phase of ① — the only exit without
+a contract is a *recorded*, human-approved waiver (`bdd: waived — <rationale>` in the story frontmatter,
+for stories with no behavior surface). ② (`/sudo-dev-story-tests`) and the `dev_AP` autopilot twin
+**hard-gate on that frontmatter record** (`bdd: locked` + contract files on disk, or `bdd: waived`) and
+refuse to plan/code without it — headless lanes raise `PIPELINE_BLOCKER` instead of self-locking.
 
 The workflow first translates the AC into a strict Gherkin contract:
 
@@ -306,6 +312,11 @@ backend/tests/
    — Note 2026-07-09: `/sudo-bdd-tests` (step ①b) already authors the `.feature`, and the new atdd toml
    instructs red-phase scaffolds to BIND to an existing ①b contract via `scenarios()` instead of
    duplicating assertions — the command-file edit itself is still open.
+   — ✅ **DONE 2026-07-10:** the command files now enforce it end-to-end. ①'s Step 2 (Vision Lock) is
+   MANDATORY (sole escape = a recorded, human-approved `bdd: waived` frontmatter entry); `/sudo-bdd-tests`
+   writes stack-appropriate contracts + stamps `bdd: locked`/`bdd_contract:` into the story frontmatter;
+   ② + `dev_AP` hard-gate on that record before any plan/code (headless → `PIPELINE_BLOCKER`). Mirrored
+   to `.agents/workflows/`; guide updates in this folder same day.
 3. **Wire aider into `/autopilot_claude`** — Completed.
 4. **Deploy OpenHands** — Completed for Desktop tracks. Stage 3 now launches OpenHands via Docker volume mount.
 

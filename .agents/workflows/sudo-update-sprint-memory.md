@@ -15,35 +15,30 @@ Run as the last step when closing a story (or any dev / brainstorm / research se
 
 ## Step 0 — Resolve the target project (FIRST — before any other step)
 Run from the **command center** (the lobby), this close-out operates on exactly ONE child project under
-`Projects/`, never the lobby itself. Resolve the target now:
-0. **Self (sub-project fast path — check this FIRST, and STOP here if it matches)** — if this repo has
-   **no** `Projects/` subfolder, you ARE the project: set `PROJECT_ROOT = .` and skip straight to the
-   binding rule. Do NOT read `active-project.txt`, parse `$ARGUMENTS` for a project name, or ask which
-   project — cases 1–3 below are command-center-only (the lobby that hosts children under `Projects/`).
-1. **Inline override** — if `$ARGUMENTS` begins with a name matching a folder under `Projects/`, that is
-   the target; consume that first token (the remainder is the real argument). Write the name alone into
-   `_my_resources/active-project.txt` (overwrite) so later commands inherit it.
-2. **Active pointer** — else read `_my_resources/active-project.txt`; if it names a folder under
-   `Projects/`, use it (normally the same project you booted/built this session).
+`Projects/`, never the lobby itself:
+0. **Self (sub-project fast path — check FIRST, STOP here if it matches)** — this repo has **no**
+   `Projects/` subfolder → you ARE the project: `PROJECT_ROOT = .`, skip to the binding rule. Don't read
+   `active-project.txt`, parse `$ARGUMENTS` for a project, or ask — cases 1–3 are command-center-only.
+1. **Inline override** — `$ARGUMENTS` begins with a folder name under `Projects/` → that's the target;
+   consume the token, write the name alone into `_my_resources/active-project.txt` (overwrite).
+2. **Active pointer** — else use `_my_resources/active-project.txt` if it names a folder under `Projects/`.
 3. **Ask** — else STOP and ask Daniel *"Which project are we closing out? (e.g. AGY_AVIATIONCHAT)"* —
    never guess, never operate on the lobby.
 
 Set `PROJECT_ROOT = Projects/<name>` and **echo exactly** `Target: Projects/<name>` before any work.
 
-**Binding rule (applies to EVERY step below):** every "THIS repo", every `{project-root}`, and every bare
-path (`_bmad-output/…`, `_bmad/…`, `_artifacts/…`, `sprint-status.yaml`, story files) resolves **under
-`PROJECT_ROOT`**, never the lobby. The Claude auto-memory write in Step 6 is the ONE exception — it always
-targets Daniel's global memory dir, not the project. If a needed project path is missing under
-`PROJECT_ROOT`, STOP and say so.
+**Binding rule (EVERY step below):** every "THIS repo", `{project-root}`, and bare path (`_bmad-output/…`,
+`_bmad/…`, `_artifacts/…`, `sprint-status.yaml`, story files) resolves **under `PROJECT_ROOT`**, never the
+lobby. ONE exception: Step 6's Claude auto-memory write always targets Daniel's global memory dir. A needed
+project path missing under `PROJECT_ROOT` → STOP and say so.
 
 ## Step 1 — Read current state & this session's artifacts (scoped — don't read whole files you don't need whole)
-Read:
 1. `_bmad-output/active-context/active-context.md` — full (you're about to prune/edit it).
-2. `_bmad-output/implementation-artifacts/sprint-status.yaml` — **Grep for THIS story's id + read only its epic block + line**, NOT all 400+ lines (that file is ~27k tokens; reading it whole is the single biggest waste in this command).
-3. List `_bmad-output/component-specs/` — names only. Open a spec only when you have a learning to route into it (Step 3).
-4. `_bmad-output/project-context.md` — open ONLY if a session learning looks app-wide (to check for an existing rule before adding one). Otherwise skip; its rules were loaded at boot.
-5. This session's `_artifacts/<YYYY-MM-DD>_<slug>/` — `implementation_plan.md` and `walkthrough.md` (its `## Task Checklist` + `## Your Actions` are sections of it, not separate files). **Skip any artifact you already read earlier THIS session** (e.g. right after an /autopilot run the walkthrough + code-review are already in context — don't re-read them). **If `walkthrough.md` ends with a `## Close-Out Handoff` block** (autopilot Stage 4 writes one), that block is the AUTHORITATIVE, pre-routed list of this run's learnings — Step 3 lifts it instead of re-deriving.
-6. **Cross-reference `implementation_plan.md` vs `walkthrough.md`** for plan-vs-built deltas — unless you already surfaced those deltas this session.
+2. `_bmad-output/implementation-artifacts/sprint-status.yaml` — **Grep THIS story's id; read only its epic block + line**, never all 400+ lines (~27k tokens — whole-file reads are this command's biggest waste).
+3. `_bmad-output/component-specs/` — names only; open a spec only when routing a learning into it (Step 3).
+4. `_bmad-output/project-context.md` — ONLY if a learning looks app-wide (check for an existing rule first). Otherwise skip; its rules were loaded at boot.
+5. This session's `_artifacts/<YYYY-MM-DD>_<slug>/` — `implementation_plan.md` + `walkthrough.md` (its `## Task Checklist` + `## Your Actions` are sections of it, not separate files). **Skip anything already read THIS session** (post-/autopilot the walkthrough + code-review are already in context). **If `walkthrough.md` ends with a `## Close-Out Handoff` block** (autopilot Stage 4 writes one), it is the AUTHORITATIVE pre-routed learnings list — Step 3 lifts it instead of re-deriving.
+6. **Cross-reference plan vs walkthrough** for plan-vs-built deltas — unless already surfaced this session.
 
 Report: sprint objective, this story's status, plan-vs-walkthrough deltas, # known pitfalls.
 
@@ -74,45 +69,38 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
 ## Step 4 — Apply updates (specs / rules / active-context now; memory waits for Step 6)
 - **Completed tasks**: move `✅` items to `## Completed Tasks` with `- **Resolved:** YYYY-MM-DD`.
 - **Story-status → `done` (THE PRIMARY purpose of this command).** Daniel invoking this command **IS his
-  sign-off that the story is done** — so for the story you just closed, **close it out: flip it to `done`
-  by default, without asking** — in BOTH the story file (`_bmad/bmm/stories/…` frontmatter) AND
-  `sprint-status.yaml`. Echo it: print `Closing <story>: review → done`. Idempotent: only
-  `ready-for-dev`/`in-progress`/`review` advance to `done`; never downgrade a status.
-  - **The ONLY thing that blocks the flip is objectively-red tests.** Read this story's verdict at
-    `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md`. **FAIL** (a NEW test regression or
-    a missing required tier — tests are actually red) → do NOT flip; tell Daniel to run `/sudo-code-review`,
-    fix the red, then re-run this command. **Every other verdict closes the story:** **PASS** → flip;
-    **CONCERNS** → flip + record the concerns in the close-out summary; **WAIVED / missing** (no
-    `sudo-tests.yaml` baseline, or the gate wasn't run) **/ stale** (verdict HEAD ref ≠ current HEAD) →
-    flip (no gate to block on). Fail-open: a gate-read error never blocks close-out.
-  - **Do NOT punt the flip back to Daniel — there is no "leave it at review and ask" branch.** If the
-    story, its sprint-status note, or active-context mentions a pending **live-test / live-verify / live-QA
-    / live-checkride** or "stays review until X", that is NOT a blocker here: Daniel running this command is
-    the sign-off that resolves it. Flip anyway and just NOTE it in the close-out summary
-    (`note: story flagged a pending live-test — closed on your invocation`). The red-tests **FAIL** above
-    is the only refusal.
-  - **"commit owed" is NOT a blocker.** Agents never commit, so almost every freshly-built story owes a
-    commit; Daniel commits right after close-out. Flip to `done` anyway.
-  - (This does NOT contradict /autopilot, which is autonomous and deliberately stops at `review` because no
-    human is in the loop. `/sudo-update-sprint-memory` is Daniel-invoked — the human IS the loop — so it
-    owns the `review → done` advance.)
+  sign-off that the story is done** — **flip the just-closed story to `done` by default, without asking**,
+  in BOTH the story file (`_bmad/bmm/stories/…` frontmatter) AND `sprint-status.yaml`. Print
+  `Closing <story>: review → done`. Idempotent: only `ready-for-dev`/`in-progress`/`review` advance;
+  never downgrade.
+  - **ONLY objectively-red tests block the flip.** Read the verdict at
+    `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md`. **FAIL** (a NEW regression or a
+    missing required tier — tests actually red) → do NOT flip; tell Daniel to fix the red via
+    `/sudo-code-review`, then re-run this. **Every other verdict closes it:** **PASS** → flip;
+    **CONCERNS** → flip + record them in the summary; **WAIVED / missing** (no baseline / gate not run)
+    **/ stale** (verdict HEAD ≠ current HEAD) → flip. Fail-open: a gate-read error never blocks close-out.
+  - **No "leave it at review and ask" branch — never punt the flip back to Daniel.** A pending
+    **live-test / live-verify / live-QA / live-checkride** or "stays review until X" note is NOT a blocker:
+    his invocation resolves it. Flip and NOTE it (`note: story flagged a pending live-test — closed on your
+    invocation`). The red-tests **FAIL** is the only refusal.
+  - **"commit owed" is NOT a blocker** — agents never commit; Daniel commits right after close-out.
+  - (No conflict with /autopilot: it's autonomous, so it deliberately stops at `review`; here the human IS
+    the loop, so this command owns `review → done`.)
 - **Last Updated**: set to today's date at the top of `active-context.md`.
 
 ## Step 5 — Prune & cap (this is what keeps boot cheap) — AUTOMATIC, never ask
-This whole step is an unconditional *apply* (same tier as Step 4): prune and cap **without asking**.
-Active-context is project-scoped and reversible (history survives in `_artifacts/` + git), so there is
-NO permission gate here. The ONLY gate in this command is the live-test story→done check (Step 4) —
-everything else, including the memory write (Step 6), just applies.
-- **`active-context.md` hard cap ≈ 250 lines of LIVE state.** If history has crept in, move it to
-  `_artifacts/<date>_<slug>/walkthrough.md` / git — do not keep narrative logs here.
-- **Completed tasks > 5** → delete the oldest (history lives in `_artifacts/` + git).
-- **Pitfall staleness** — ALWAYS re-check the pitfalls you added/touched this session. Run the FULL
-  staleness sweep over EVERY `## Known V2 Pitfalls` entry ONLY when `active-context.md` is over its
-  ~250-line cap (that grep-per-entry pass is expensive and mostly returns "keep", so it only earns its
-  cost when the file actually needs trimming). For each entry checked:
-  1. References a story dependency and that story is `done` in sprint-status → **stale, remove**.
-  2. Describes a temporary degraded state ("degraded until Story Y") and Y is `done` → **stale, remove**.
-  3. References a code pattern; grep it — if the pattern no longer exists → **stale, remove**.
+Unconditional *apply* (same tier as Step 4), **without asking** — active-context is project-scoped and
+reversible (history survives in `_artifacts/` + git), so NO permission gate here. The ONLY gate in this
+command is Step 4's red-tests check; everything else, including Step 6's memory write, just applies.
+- **`active-context.md` hard cap ≈ 250 lines of LIVE state** — move crept-in history to
+  `_artifacts/<date>_<slug>/walkthrough.md` / git; no narrative logs here.
+- **Completed tasks > 5** → delete the oldest.
+- **Pitfall staleness** — ALWAYS re-check pitfalls you added/touched this session. Run the FULL sweep over
+  EVERY `## Known V2 Pitfalls` entry ONLY when over the ~250-line cap (the grep-per-entry pass is expensive
+  and mostly returns "keep"). Per entry checked:
+  1. Story dependency now `done` in sprint-status → **stale, remove**.
+  2. "Degraded until Story Y" and Y is `done` → **stale, remove**.
+  3. References a code pattern; grep it — gone → **stale, remove**.
   4. Permanent architectural invariant (e.g. "Firestore uses named DB") → **keep**.
 - **Size caps**: component spec > 120 lines → keep 8 most-recent failure modes; `project-context.md`
   target 150 / hard cap 200 → compress by grouping rules without losing meaning.
@@ -128,24 +116,18 @@ everything else, including the memory write (Step 6), just applies.
   > - ✅ Moved to Completed: [tasks]
   > - 🧠 Learnings: [rule/pitfall] → [file]
   > - 🧹 Pruned: [stale pitfalls / old completed]
-- **Memory (AUTOMATIC — validate, cross-check, write; no approval gate):** For each candidate (from the
-  Close-Out Handoff `→ Claude memory` bucket, or one you derived in Step 3), self-validate and write it
-  WITHOUT asking. Run this check per candidate:
-  1. **Valid to store?** It must be a durable, cross-session fact — a recurring pitfall, an architecture
-     invariant, or a Daniel preference — NOT a one-off detail of this story and NOT something already
-     captured in a spec / rule / active-context in Steps 3–4. If it fails this, drop it (don't write).
-  2. **Cross-check against existing memory.** Read `MEMORY.md` and any same-topic memory file. If a memory
-     already covers this fact, UPDATE that file in place (don't duplicate); if the new learning CONTRADICTS
-     an existing memory, the new one wins — rewrite the stale file to match reality. Only create a NEW file
-     when nothing existing covers it.
-  3. **Write it.** One fact per file with `name` / `description` / `metadata.type` frontmatter + a one-line
-     `MEMORY.md` pointer. New file → add the pointer; updated file → leave/refresh its pointer; superseded
-     file → keep its single pointer line accurate.
-  - **If there are zero valid candidates,** print `🧠 Memory: nothing cross-session this session — unchanged`
-    and move on. (This is MOST sessions — project learnings already routed to specs / active-context / rules
-    in Steps 3–4; memory is only for durable, non-component facts.)
-  - In the summary, list what was written/updated, e.g. `🧠 Memory: wrote [name] (new) · updated [name]
-    (superseded stale entry)`.
+- **Memory (AUTOMATIC — validate, cross-check, write; no approval gate):** for each candidate (Close-Out
+  Handoff `→ Claude memory` bucket, or derived in Step 3), self-validate and write WITHOUT asking:
+  1. **Valid to store?** A durable, cross-session fact — recurring pitfall, architecture invariant, or
+     Daniel preference — NOT a one-off story detail, NOT already captured in Steps 3–4. Fails → drop it.
+  2. **Cross-check existing memory.** Read `MEMORY.md` + any same-topic file. Already covered → UPDATE
+     that file in place (no duplicate); CONTRADICTED → the new learning wins, rewrite the stale file.
+     Only create a NEW file when nothing covers it.
+  3. **Write it.** One fact per file (`name` / `description` / `metadata.type` frontmatter) + a one-line
+     `MEMORY.md` pointer — added, refreshed, or kept accurate per case.
+  - **Zero valid candidates** → print `🧠 Memory: nothing cross-session this session — unchanged` (MOST
+    sessions — project learnings already routed in Steps 3–4; memory is only durable non-component facts).
+  - Summary lists writes, e.g. `🧠 Memory: wrote [name] (new) · updated [name] (superseded stale entry)`.
 - **Then ask Daniel (always, separate from memory):** *"Saved the session updates from the codebase +
   artifacts. Any manual learnings, new bugs, or sprint-objective changes to add?"* Apply any additions. Done.
 

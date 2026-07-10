@@ -22,6 +22,12 @@ CLAUDE.md session-start ritual and the code standards. This runs unattended, so:
 ---
 
 ## mode = `plan` (Stage 1)
+**BDD contract gate (HARD — check FIRST, before planning):** the story's frontmatter must carry either
+`bdd: locked` with every `bdd_contract:` path present on disk, or a recorded `bdd: waived — <rationale>`.
+Neither (including a `locked` flag whose contract file is missing) → this is a **human-only gap**: the
+Vision Lock is interactive with the human by design, and a headless lane must NEVER author the "lock"
+itself. End immediately with `PIPELINE_BLOCKER: BDD contract missing — run /sudo-bdd-tests for <story>`.
+
 Read the target story. Produce **only** `implementation_plan.md` in the shared folder:
 - Goal, an AC → implementation mapping, every file touched (with links), execution order, a verification
   plan, and any open questions — addressed to the QA teammate **Murat**, not to Daniel.
@@ -35,7 +41,10 @@ that is your direction. Apply **all** of the audit's proposed fixes first, then 
 
 1. **Red — author the failing acceptance tests first.** Before writing any production code, invoke the
    **`bmad-testarch-atdd`** skill to author failing acceptance tests for the story's ACs (one per AC). This
-   keeps dev test-first: the tests exist and FAIL before the implementation does.
+   keeps dev test-first: the tests exist and FAIL before the implementation does. The story's BDD
+   contract scenarios (`bdd_contract:` frontmatter — `.feature` files / BDD-structured FE scaffolds) are
+   part of this red set: implement their step definitions rather than duplicating them as new tests, and
+   drive them green with everything else. (`bdd: waived` stories skip this clause, nothing else.)
 2. **Green — implement to drive them green.** Touch only the files the plan lists (the audit may amend that
    list). Leave parallel teammates' unrelated working-tree changes alone. Implement the code to drive the
    Step-1 red tests to green.
