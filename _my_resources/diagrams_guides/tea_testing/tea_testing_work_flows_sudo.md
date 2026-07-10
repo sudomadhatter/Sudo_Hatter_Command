@@ -328,7 +328,7 @@ Break complex workflows into micro-files: self-contained, loaded just-in-time, s
 
 ```mermaid
 flowchart TD
-    TD["testarch-test-design<br/>(epic setup — risk P0–P3)"] --> ATDD["testarch-atdd<br/>(① write RED tests)"]
+    TD["testarch-test-design<br/>(epic kickoff — final interactive step, risk P0–P3)"] --> ATDD["testarch-atdd<br/>(① write RED tests)"]
     ATDD --> AUTO["testarch-automate<br/>(② expand coverage)"]
     AUTO --> TRACE["testarch-trace<br/>(③ gate: requirements→tests + verdict)"]
     TRACE --> NFR["testarch-nfr<br/>(③ gate: perf/security/reliability)"]
@@ -339,7 +339,7 @@ flowchart TD
 
 | Workflow | Fires | Job |
 |----------|-------|-----|
-| **test-design** | once per epic (sprint planning) | risk-score the epic's work P0–P3 → tells ① which ACs deserve the heaviest tests |
+| **test-design** | epic kickoff — final interactive step of `/sudo-create-epics-stories-sprint` | risk-score the epic's work P0–P3 **with Daniel, one story at a time** → tells ① which ACs deserve the heaviest tests |
 | **atdd** | ① per story | write acceptance tests that MUST fail now (red) |
 | **automate** | ② per story | expand API / UI / contract coverage on existing code |
 | **trace** | ③ gate | map requirements → tests, coverage vs. floor, GREEN/YELLOW/RED verdict |
@@ -379,6 +379,7 @@ flowchart TD
 | Command | One-line job |
 |---------|--------------|
 | `/sudo-boot-sprint-memory` | Where am I? What story is next? Which command do I run? (read-only) |
+| `/sudo-create-epics-stories-sprint` | **Phase A / epic kickoff** — create the epic + stories → sprint board → interactive P0–P3 risk-score (one story at a time). |
 | `/sudo-write-story-tests` | ① Create the story, then write its **failing** acceptance tests. |
 | `/sudo-dev-story-tests` | ② Plan → auto self-audit → build → drive tests green → automate. |
 | `/sudo-self-audit` | Adversarial pre-dev audit of the plan (fires automatically inside ②). |
@@ -399,26 +400,45 @@ flowchart TD
 
 The `sudo-` commands are **thin orchestrators** — they don't reimplement anything; they *call* the BMAD + TEA workflows in the right order and bake a **test gate** into review.
 
+**Two phases, eight steps.** An **epic kickoff** runs once; the **per-story loop** repeats:
+
+| # | Step | Command |
+|---|------|---------|
+| — | Orient (where am I / what's next) | `/sudo-boot-sprint-memory` |
+| **1** | Epic + stories + sprint | `/sudo-create-epics-stories-sprint` |
+| **2** | Map test levels (P0–P3) | ↳ its final interactive step |
+| **3** | Write failing test | `/sudo-write-story-tests` |
+| **4** | Dev implementation plan | `/sudo-dev-story-tests` → plan |
+| **5** | Self-audit stress test | `/sudo-dev-story-tests` → self-audit |
+| **6** | Code the story | `/sudo-dev-story-tests` → build + automate |
+| **7** | Code review + run tests | `/sudo-code-review` |
+| **8** | Close out + git push + log learnings | `/sudo-update-sprint-memory` + commit |
+
+Steps 1–2 are the once-per-epic kickoff; 3–8 repeat per story.
+
 ```mermaid
 flowchart TD
-    BOOT["/sudo-boot-sprint-memory<br/>boot + story pick-up"] --> W["① /sudo-write-story-tests<br/>create story + RED tests"]
+    BOOT["/sudo-boot-sprint-memory<br/>boot + story pick-up"] --> KICK["/sudo-create-epics-stories-sprint<br/>(once per epic)<br/>epics + stories + sprint + risk-score P0–P3"]
+    KICK --> W["① /sudo-write-story-tests<br/>write RED tests (BDD Vision Lock + ATDD)"]
     W --> DEV["② /sudo-dev-story-tests<br/>plan → self-audit → build → automate"]
     DEV --> CR["③ /sudo-code-review<br/>review + TEST GATE → verdict"]
     CR --> GATE{"verdict?"}
     GATE -->|"PASS / CONCERNS / WAIVED"| UPD["/sudo-update-sprint-memory<br/>flip story → done, save learnings, prune"]
     GATE -.->|"FAIL — fix & re-review"| DEV
     UPD --> COMMIT["git commit (Daniel)"]
+    UPD -.->|"next story"| W
 ```
 
 | Step | Command | Calls (TEA workflows) |
 |------|---------|------------------------|
 | boot | `sudo-boot-sprint-memory` | — (reads active-context + sprint-status, recommends next command) |
-| ① | `sudo-write-story-tests` | `bmad-create-story` → `testarch-atdd` (+ optional `testarch-test-design`) |
+| kickoff | `sudo-create-epics-stories-sprint` | `bmad-create-epics-and-stories` → `bmad-sprint-planning` → `bmad-testarch-test-design` (interactive P0–P3, one story at a time) |
+| ① | `sudo-write-story-tests` | `bmad-create-story` → `/sudo-bdd-tests` (BDD Vision Lock) → `testarch-atdd` |
 | ② | `sudo-dev-story-tests` | `bmad-dev-story` (plan) → `sudo-self-audit` → `bmad-dev-story` (implement) → `testarch-automate` |
 | ③ | `sudo-code-review` | `bmad-code-review` → `/1_run-all-tests-back_front` → `testarch-trace` → `testarch-nfr` → `testarch-test-review` |
 | close | `sudo-update-sprint-memory` | — (reads ③'s verdict; only command that flips a story to `done`) |
 
-> **Epic setup (once per epic):** run `testarch-test-design` at sprint planning to risk-score P0–P3. Same first move to retrofit an untested codebase.
+> **Epic kickoff (once per epic):** `/sudo-create-epics-stories-sprint` bundles this — it ends with an interactive `testarch-test-design` pass where you risk-score every story P0–P3 one at a time. Same first move to retrofit an untested codebase.
 
 ### The TEST GATE (the heart of ③)
 Opt-in and baseline-diff aware: a project with no `_bmad-output/sudo-tests.yaml` baseline **auto-WAIVED** (never blocks a test-less project); legacy red is grandfathered — only **NEW** regressions fail.

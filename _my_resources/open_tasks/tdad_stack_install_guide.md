@@ -48,6 +48,15 @@ goes into `requirements.txt`.
 - Python (any version — aider brings its own 3.12)
 - A project venv already created for AGY_AVIATIONCHAT and/or Fresh_Workspace_BMAD
 
+> [!NOTE]
+> **Most of the stack ships in the repos — `git clone`/`pull` IS the install for it.**
+> The BMAD testarch skills (`.claude/skills/bmad-testarch-*`), the commands
+> (`.agents/commands/sudo-bdd-tests.md`, `testarch-*.md`), the TEA pins
+> (`_bmad/custom/bmad-testarch-*.toml`, `_bmad/tea/config.yaml`), the pyproject marker
+> registry, and the test trees (`backend/tests/features/` + `backend/tests/bdd/`) are all
+> versioned files. Only TWO things are per-machine: each project venv's packages (Step 2)
+> and the global `aider` (Step 1).
+
 ---
 
 ### Step 1 — Install `aider` Globally (One-Time Per Machine)
@@ -72,20 +81,22 @@ aider --version
 
 ---
 
-### Step 2 — Install `pytest-bdd` Into Each Project Venv
+### Step 2 — Sync Each Project Venv (full requirements, not just pytest-bdd)
 
-Run this from each project root (where `backend/.venv` lives):
+On a NEW machine, install the **whole pinned requirements file** — installing only
+`pytest-bdd` leaves the rest of the env drifted (missing `networkx` etc. breaks suite
+collection). Run from each project root (where `backend/.venv` lives):
 
 #### AGY_AVIATIONCHAT
 ```powershell
 cd Projects\AGY_AVIATIONCHAT
-.\backend\.venv\Scripts\python.exe -m pip install --prefer-binary pytest-bdd
+.\backend\.venv\Scripts\python.exe -m pip install --prefer-binary -r backend\requirements.txt
 ```
 
 #### Fresh_Workspace_BMAD
 ```powershell
 cd Projects\Fresh_Workspace_BMAD
-.\backend\.venv\Scripts\python.exe -m pip install --prefer-binary pytest-bdd
+.\backend\.venv\Scripts\python.exe -m pip install --prefer-binary -r backend\requirements.txt
 ```
 
 **Verify (run from inside the project):**
@@ -94,6 +105,13 @@ cd Projects\Fresh_Workspace_BMAD
 ```
 
 Expected output: `pytest-bdd OK`
+
+> [!WARNING]
+> **Interpreter discipline (lesson, 2026-07-09):** bare `python` resolves to the GLOBAL
+> user Python (3.14 on the desktop) — NOT the project venv. The global env is drifted
+> (running the AGY suite with it produced 35 collection errors from missing pinned deps),
+> while `backend\.venv` is fully synced and collects the whole suite clean. **Always invoke
+> tests through the venv:** `.\backend\.venv\Scripts\python.exe -m pytest ...`
 
 ---
 
@@ -107,13 +125,38 @@ aider --version
 
 ---
 
+### Step 4 — Smoke-Verify the Whole Stack (ready-made canaries)
+
+Both projects now carry live `.feature` files, so a new machine can prove the stack in
+under a minute:
+
+```powershell
+# AGY — the Epic 16 red contract (8 skip-marked scenarios; skipped = CORRECT until 16.2 dev)
+cd Projects\AGY_AVIATIONCHAT
+.\backend\.venv\Scripts\python.exe -m pytest backend/tests/bdd -q
+# Expected: 8 skipped
+
+# AGY — whole-suite collection health (proves no missing deps)
+.\backend\.venv\Scripts\python.exe -m pytest backend/tests --collect-only -q
+# Expected (2026-07-09 baseline): 2335 tests collected, 0 errors
+
+# Fresh_Workspace_BMAD — the template smoke .feature must be GREEN
+cd ..\Fresh_Workspace_BMAD
+.\backend\.venv\Scripts\python.exe -m pytest backend/tests -q -k workspace_smoke
+```
+
+If the AGY bdd run reports an import error instead of `8 skipped`, you're on the wrong
+interpreter (see the Step-2 warning) or the venv isn't synced.
+
+---
+
 ## What Goes Where (The Rule)
 
 | Tool | Location | Why |
 |---|---|---|
 | `pytest-bdd` | Each project's `backend/.venv` | It's a test library — runs in the test suite |
 | `aider` | Global (`~/.local/bin`) via `uv` | It's a CLI dev tool — like `git`, not a library |
-| `md-feedback` | MCP Config (`.claude`/`.opencode/mcp.json`) | Provides the AI agents with markdown annotation capabilities for `/sudo-self-audit` |
+| `md-feedback` | MCP config — **root `.mcp.json`** per repo (Claude Code does NOT read `.claude/mcp.json` — that misplacement is why it never loaded; fixed ×4 surfaces 2026-07-09) + `.opencode/mcp.json` for opencode | Provides the AI agents with markdown annotation capabilities for `/sudo-self-audit` |
 | Listed in | `requirements-tdad.txt` (lobby root) | Documentation / team reference |
 
 > [!IMPORTANT]
@@ -251,6 +294,13 @@ backend/tests/
    drop a feature+steps pair in and CI runs it). Also landed: `_bmad/custom/bmad-testarch-atdd.toml` +
    `bmad-testarch-automate.toml` (lobby + AGY + Fresh) pin TEA scaffolding to pytest-bdd. **Still open:**
    the pilot on a REAL Epic-8 story in AGY (audit P2-8).
+   — 🔄 **UPDATE 2026-07-09 (later session): the AGY pilot is ASSIGNED = Story 16.2** (Epic 16
+   incident-response relay — better fit than an Epic-8 retrofit: greenfield code, 4 crisp behaviors).
+   Its red contract is already IN the repo, skip-marked: `backend/tests/features/incident_relay.feature`
+   (8 scenarios, AC-8) + `backend/tests/bdd/test_incident_relay_steps.py`; verified `8 skipped, 0 errors`,
+   full suite collects 2335/0 via the venv. Supporting docs: `_bmad-output/test-artifacts/test-design-epic-16.md`
+   + `atdd-checklist-16-2-always-live-trigger-pipeline.md`. Activation = 16.2 dev start (remove one
+   `pytestmark` line → 8 RED → build the relay to green).
 2. **Update `/sudo-write-story-tests`** to optionally output a `.feature` file
    alongside the standard `test_*.py` red-phase scaffold.
    — Note 2026-07-09: `/sudo-bdd-tests` (step ①b) already authors the `.feature`, and the new atdd toml

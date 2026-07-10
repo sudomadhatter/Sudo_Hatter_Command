@@ -123,3 +123,40 @@ The audit's forward-only rule — "every new story goes through `/sudo-bdd-tests
 contract → ATDD red" — needs a first story to prove the loop (P2-8). The relay is ideal:
 small greenfield Python with four crisp, externally-observable behaviors, and it lands the
 repo's first `.feature` with zero CI config change.
+
+---
+
+## Amendment 3 (2026-07-09) — ATDD red-phase scaffolds for Story 16.2 (`/testarch-atdd`)
+
+Daniel: "go ahead and run the /testarch-atdd too." Workflow `bmad-testarch-atdd` executed
+(epic-story scope = **16.2**, the BDD pilot; backend stack → AI generation, sequential mode).
+Red-phase rule per the workflow: **every scaffold is skip-marked** — `pr-check` stays green;
+16.2 dev activates them at the Vision Lock (remove one module-level skip), watches them fail
+(RED), then implements to green. 16.1 = waived (no product code); 16.3 scaffolds generated at
+its own dev start (its FE module paths are Task-0/Task-1 decisions).
+
+### Files touched on "approved"
+
+1. **`backend/tests/features/incident_relay.feature`** — NEW, the repo's FIRST `.feature`:
+   8 Gherkin scenarios = story AC-8's contract (invalid signature ×2 + valid signature accept ·
+   dedupe drop + retry idempotency · kill switch · `TARGET` routing ×2), tagged `@p0`/`@p1`
+   per the Epic 16 test design (16.2-API-001..008).
+2. **`backend/tests/bdd/test_incident_relay_steps.py`** — NEW: pytest-bdd step definitions with
+   real Given/When/Then assertions (HMAC-SHA256 signature helper, fake lane-transport recorder,
+   fake GitHub dedupe lookup). **Module-level `pytest.mark.skip`** = the red-phase guard; the
+   relay module import is lazy (inside the harness) so activation fails per-test with a clear
+   message, never breaking collection. The to-be-built import target (`relay.app`) is the
+   contract's placeholder — dev re-points ONE adapter function at the real module at Vision
+   Lock (AC-8 records the final location).
+3. **`backend/tests/bdd/__init__.py`** — NEW, empty (matches `backend/tests/` package convention).
+4. **`_bmad-output/test-artifacts/atdd-checklist-16-2-always-live-trigger-pipeline.md`** — NEW:
+   the workflow's checklist artifact (scenario list with failure reasons, mock requirements,
+   implementation checklist mapping each test → tasks, activation instructions, run commands).
+5. **`_bmad/bmm/stories/story-16-2-always-live-trigger-pipeline.md`** — Dev Notes gains an
+   `ATDD Artifacts` pointer block (per the workflow's story-linking step; everything else verbatim).
+
+### Verification on placement
+
+- `pytest backend/tests/bdd --collect-only -q` → 8 scenarios collected, all SKIPPED, zero
+  errors — proof the suite stays green AND `pr-check` picks the `.feature` run up zero-config
+  (the pilot's first hard evidence).
