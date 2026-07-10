@@ -6,5 +6,6 @@
   "git.detectSubmodules": true,
   "workbench.editor.centeredLayoutFixedWidth": true,
   "workbench.editor.closeOnFileDelete": true,
-  "workbench.editor.enablePreviewFromQuickOpen": true
+  "workbench.editor.enablePreviewFromQuickOpen": true,
+  "python.defaultInterpreterPath": "${workspaceFolder}/Projects/AGY_AVIATIONCHAT/backend/.venv/Scripts/python.exe"
 }

@@ -41,6 +41,119 @@ The exact sequence, top to bottom, from a fresh epic to a shipped story. Run it 
 
 ---
 
+## 🔎 What each thin `/` command actually fires (the full call-graph)
+
+Every `/sudo-*` you type is a **thin launcher**: the `.claude/skills/sudo-*/SKILL.md` just says "read `.agents/commands/sudo-*.md` and follow it end-to-end." That `.agents/commands/` file is the real script — it resolves the target project, then calls the underlying **BMAD + TEA skills** in order. Below is what's under the hood for each one, so you know exactly what's running when you fire a command.
+
+> **Every command shares Step 0:** resolve the child project (`$ARGUMENTS` name → `_my_resources/active-project.txt` pointer → ask you), echo `Target: Projects/<name>`, and bind every path under it. Never touches the lobby. Omitted below to avoid repetition.
+
+---
+
+### `/sudo-boot-sprint-memory` — Orient (read-only, no sub-skills)
+Doesn't call other commands — it just **reads state** and tells you what to run next.
+```
+1. active-context.md        → Sprint Objective · Stable (don't-touch) · Broken · In Play · Pitfalls
+2. component-specs/          → Invariants of any in-scope spec
+3. sprint-status.yaml        → story counts + the NEXT story to pick up + which sudo- step it needs
+4. confirm guardrails        → G2 spec-compliance · G3 targeted-edits · G5 agent-authority · G6 get_db() · G8 research-first
+                              → then STOPS. Discovery only — waits for your instruction.
+```
+
+### `/sudo-create-epics-stories-sprint` — Phase A epic kickoff (calls 3 skills)
+```
+1. bmad-create-epics-and-stories   → writes the epic + its user stories with acceptance criteria (ACs)
+2. bmad-sprint-planning            → lands those stories in sprint-status.yaml as `ready-for-dev`
+3. bmad-testarch-test-design       → risk-analyzes (Risk = Probability × Impact), THEN…
+   ⛔ INTERACTIVE HARD STOP        → as Murat (Test Architect), walks you through P0–P3 ONE story at a time
+                                     (recommended P-level + why + what-it-is + levels-it-earns; you confirm/override each)
+```
+
+### `/sudo-write-story-tests` ① — story prep + red tests (calls 3 skills)
+```
+1. bmad-create-story    → writes the story file under _bmad/bmm/stories/ with its ACs
+2. /sudo-bdd-tests      → BDD Vision Lock: interactive w/ Murat until behaviors are 100% locked,
+                          then generates strict pytest-bdd .feature files + step defs (backend/tests/features/, /bdd/)
+3. bmad-testarch-atdd   → writes the remaining unit/component acceptance tests that MUST FAIL now (red phase)
+                          (pulls the test-design P-levels so P0 ACs get priority coverage)
+                          → leaves tests staged & red. Does NOT implement.
+```
+
+### `/sudo-dev-story-tests` ② — build to green (calls bmad-dev-story twice + 2 skills)
+```
+0.5 resolve ARTIFACT_DIR              → _artifacts/epic_<E>/<story>/ (all artifacts land here)
+1.  bmad-dev-story (PLAN mode)        → writes implementation_plan.md into ARTIFACT_DIR
+2.  /sudo-self-audit  (AUTOMATIC)     → adversarial pre-dev stress-test of the plan (see its breakdown below)
+                                        → folds findings back in + persists self-audit-stress-test.md
+2.5 conditional gate                 → only STOPS to ask if you have a real question; else proceeds
+3.  bmad-dev-story (IMPLEMENT mode)   → writes the code, drives the ① red tests → GREEN, pastes actual test output
+4.  bmad-testarch-automate            → expands API/UI/contract coverage on what was built (automation-summary-<story>.md)
+5.  close-out artifacts (MANDATORY)   → implementation_plan.md · self-audit-stress-test.md · walkthrough.md
+                                        → MAY flip story to `review`. NEVER flips to `done`, NEVER commits.
+```
+
+### `/sudo-self-audit` — adversarial pre-dev audit (fires inside ②; no sub-skills, 5 phases)
+Audits the **plan, not a diff** — catches flaws while fixing them is still free.
+```
+Phase 0  Right-size + AC traceability  → Skip / Light / Full; map every AC ↔ plan step (gap = under-deliver; extra = scope creep)
+Phase 1  Blast-radius trace            → GitNexus impact()/context() if indexed, else grep — who breaks if this changes;
+                                         contract two-sidedness (SSE/API/DB/signature); reinvention check
+Phase 2  Over-engineering gate (STRICT)→ default NO-GO: new abstraction/flag/dep for N=1, "might need", clone-and-tweak → CUT
+Phase 3  Pre-mortem scenarios          → happy · rehydration · error/timeout · concurrency · bad-auth · exhaustiveness · AI-hallucinated edge
+Phase 4  Verdict                       → SAFE / NEEDS-REVISION / UNSAFE + Go/No-Go; bakes fixes inline into the plan
+```
+
+### `/sudo-code-review` ③ — review + TEST GATE (calls bmad-code-review + the gate chain)
+```
+1. bmad-code-review              → clean-room adversarial review of the diff (AI drift, over-eng, bloat, logic flaws);
+                                    applies actionable fixes itself + re-runs suites
+2. gate opt-in check             → read _bmad-output/sudo-tests.yaml — ABSENT → verdict WAIVED (skip gate)
+3. gate checks (baseline-diff, fail only on NEW regressions):
+     • /1_run-all-tests-back_front   → pytest + vitest
+     • bmad-testarch-trace           → requirements→tests traceability + coverage vs l1_coverage_min
+     • bmad-testarch-nfr             → perf / security / reliability (when nfr:true or agent_bearing:true)
+     • bmad-testarch-test-review     → quality/flake of the tests themselves
+     • automate-evidence check       → confirms ②'s expansion pass left evidence (else caps at CONCERNS)
+4. Verdict → PASS / CONCERNS / FAIL / WAIVED  → writes sudo-code-review-<story>.md (+ current git HEAD ref)
+5. reflects the review back INTO walkthrough.md
+                                    → NEVER commits, NEVER flips story status.
+```
+
+### `/sudo-update-sprint-memory` — close-out / sign-off (no sub-skills, 6 steps)
+Running this **IS your sign-off.** Only objectively-red tests can block the flip.
+```
+1. read state + this session's artifacts (plan + walkthrough; lift ## Close-Out Handoff if present)
+2. code-verify the work you just closed (grep the fix in the files it touched)
+3. route each learning to 1 of 4 homes:
+     app-wide rule → project-context.md · component gotcha → component-specs/ · open bug → active-context.md · cross-session fact → Claude memory
+4. APPLY: flip story `review → done` (in story file + sprint-status.yaml)
+     → ONLY a FAIL verdict (new red regression) blocks. PASS/CONCERNS/WAIVED/stale/missing all close it.
+5. prune active-context.md (≈250-line cap; drop stale pitfalls & old completed tasks) — automatic, never asks
+6. write validated Claude memories + ask you for any manual learnings
+                                    → then YOU run `git commit`.
+```
+
+---
+
+**One-liner dictionary of every underlying skill these call:**
+
+| Underlying skill / command | What it does |
+|----------------------------|--------------|
+| `bmad-create-epics-and-stories` | Break a requirements source into an epic + user stories with ACs |
+| `bmad-sprint-planning` | Generate/populate `sprint-status.yaml` from the epic's stories |
+| `bmad-testarch-test-design` | Risk-score stories P0–P3 (Probability × Impact); the interactive kickoff step |
+| `bmad-create-story` | Write ONE story file with its ACs under `_bmad/bmm/stories/` |
+| `/sudo-bdd-tests` | Interactive BDD Vision Lock → strict `pytest-bdd` `.feature` + step defs |
+| `bmad-testarch-atdd` | Write **failing** (red) acceptance tests before any code |
+| `bmad-dev-story` | The dev engine — PLAN mode writes the plan; IMPLEMENT mode writes code to green |
+| `bmad-testarch-automate` | Expand coverage on existing code (passes immediately) |
+| `bmad-code-review` | Adversarial clean-room review of the diff; applies fixes |
+| `/1_run-all-tests-back_front` | Run the full pytest + vitest suites (the gate's runner) |
+| `bmad-testarch-trace` | Requirements→tests traceability matrix + coverage verdict |
+| `bmad-testarch-nfr` | Audit non-functional evidence (perf / security / reliability) |
+| `bmad-testarch-test-review` | Score the tests on the 5 quality dimensions |
+
+---
+
 Glossary / one-line cheat sheet
 
 | Term | One line |
@@ -610,3 +723,5 @@ Session 7 is a returnable reference. Re-run `/bmad-teach-me-testing` → Session
 ---
 
 *Generated from TEA Academy (7/7 complete) + the `sudo-` TEA-gated dev-flow walkthrough. The `sudo-` commands are thin orchestrators over the TEA workflows; the gate in ③ is the only ship/no-ship decision point.*
+
+<!-- CHECKPOINT id="ckpt_mrefjgkp_cqegiw" time="2026-07-10T04:22:41.833Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->

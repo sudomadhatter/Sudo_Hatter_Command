@@ -27,7 +27,6 @@
 | `router.md` | Routing / ownership / "where does this go" |
 | `AGENTS.md` | The home-base operating contract (gates, artifacts, persistence) |
 | `docs/workspace-standard.md` | How a workspace is shaped + kept healthy (repo-map, artifacts, naming) |
-| `_my_resources/docs/master-implementation-plan.md` | The home-base build plan |
 | `_artifacts/INDEX.md` | The session ledger — "pick up" scans it, "hand off" appends to it |
 | a project's `Projects/<name>/AGENTS.md` | When you go work inside that project (not this file) |
 | `_my_resources/open_tasks/` | Daniel asks "what do we do next / what's left" — read his todo + saved plans/PRPs (read-only) |
