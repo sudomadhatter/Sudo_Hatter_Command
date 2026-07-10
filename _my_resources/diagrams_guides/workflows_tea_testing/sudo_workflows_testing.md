@@ -539,6 +539,14 @@ flowchart TD
 | `/1_clean-test-scripts` | Tidy/remove scratch test scripts. |
 | `/1_live_testing_team` | Live / manual QA lane. |
 
+### Ops drill command — outside the per-story loop
+Not part of the ①②③ dev flow — a standalone **incident-response drill** (Epic 16). Fire it any time to
+exercise the production triage runbook; it never touches the sprint board.
+
+| Command | Does |
+|---------|------|
+| `/sudo-incident-response [issue-id\|latest]` | **Drill harness** (16.1) for the Sentry incident-triage runbook (`.github/claude/incident-triage.md`). Thin — carries no triage logic: resolves the project → loads its runbook → runs it verbatim (**interactive lane**, Sentry MCP) → drops an `incident-report.md` under `_artifacts/debugging/`. **Drill:** force a P1 (`_test_scripts/sentry_smoke_test.py`) then run `/sudo-incident-response latest`; a pass = the report names the planted failure, the right file, and a sane fix. The runbook is the product; this is only its test rig. Full picture: [security/sentry_error_response_team.md](../security/sentry_error_response_team.md). |
+
 ---
 
 ## 11. The `sudo-` dev flow — the human-driven story loop

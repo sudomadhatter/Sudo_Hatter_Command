@@ -114,7 +114,7 @@ standing "never PR to main" rule needs **no carve-out**; it holds as written. (R
 
 ```mermaid
 flowchart TD
-    S1["16.1 — Triage Runbook (ready-for-dev)<br/>the BRAIN: .github/claude/incident-triage.md<br/>5 steps + report template + local drill"]
+    S1["16.1 — Triage Runbook (✅ BUILT — review, 2026-07-10)<br/>the BRAIN: .github/claude/incident-triage.md<br/>5 steps + report template + /sudo-incident-response drill<br/>(drill pending Daniel → gates review→done)"]
     S2["16.2 — Always-Live Pipeline (backlog)<br/>relay + Routine + Level-2 fix PR<br/>+ dormant rollback lane + phone drill"]
     S3["16.3 — Frontend Sentry (backlog)<br/>@sentry/nextjs + ErrorBoundary<br/>browser crashes join the funnel"]
     S4["16.4 — candidates (later)<br/>branch auto-cleanup · severity tiers ·<br/>SMS · Routines GA migration"]
@@ -135,12 +135,12 @@ BE crashes → two full reports on the phone.
 
 | Piece | Home | Job |
 |---|---|---|
-| Triage runbook | `.github/claude/incident-triage.md` (16.1) | The 5-step brain both lanes execute |
+| Triage runbook | `.github/claude/incident-triage.md` (16.1 ✅ built) | The 5-step brain both lanes execute (preflight · guardrails · 5 steps · report template) |
 | Relay | GCP Cloud Function, project `aviationchat` (16.2) | Verify → dedupe → fetch logs → route |
 | Primary lane | Claude Code **Routine** (beta) | Cloud agent session; live session URL bonus |
 | Rollback lane | `.github/workflows/incident-response.yml` (dormant) | Proven GA path, same runbook |
 | Delivery | GitHub Issue `incident` + ready `claude/incident-*` branch | Report + push + email to phone |
-| Drill harness | `/sudo-incident-response` command | Testing only — NOT the product |
+| Drill harness | `/sudo-incident-response [issue-id\|latest]` (16.1 ✅ shipped, vendored via `/sync-agents`) | Testing only — NOT the product. Thin command (zero triage logic): resolves the project → loads its `incident-triage.md` → runs it verbatim, **interactive lane** (Sentry MCP) → drops the report in `_artifacts/debugging/`. Drill = force a P1 (`_test_scripts/sentry_smoke_test.py`) then `/sudo-incident-response latest`. |
 
 ### Switches & secrets (names only — values never in repo)
 
