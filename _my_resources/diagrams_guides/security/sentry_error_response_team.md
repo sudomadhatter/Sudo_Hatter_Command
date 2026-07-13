@@ -33,8 +33,9 @@ exist. What was built in its place, and where each piece stands:
 - **Manual dispatch drill** → run 29214562741 → full report **issue #20** + branch
   `claude/incident-python-fastapi-6` (correct root cause, code permalinked at the release SHA,
   conditional build-history correctly skipped, and it caught a garbled SHA in the trigger payload).
-- **Fully autonomous front door**: a planted untagged fatal at 00:20:11Z → Sentry rule → relay
-  (`TARGET=github`) → dispatch at 00:20:26 → agent → **issue #21** + page. Nobody touched anything.
+- **Fully autonomous front door**: the planted `FINAL-CONFIG-DRILL` fatal (`PYTHON-FASTAPI-B`,
+  numeric id 7607174913) at 00:20:11Z → Sentry rule → relay (`TARGET=github`) → dispatch at
+  00:20:26 (**15 seconds** after the event) → agent → **issue #21** + page. Zero manual steps.
 
 Thin fallback lane also verified e2e (~16s). Page format (report TL;DR + tap-to-copy **Error Team
 Prompt**) live via PR #22. Repo Actions secrets (`ANTHROPIC_API_KEY`, `SENTRY_AUTH_TOKEN`,
@@ -215,7 +216,7 @@ BE crashes → two full reports on the phone.
 |---|---|
 | Agent-lane model | **Left unpinned** (no `--model` arg) so it tracks claude-code-action's default — zero upkeep as models advance. Constraint: an Opus-class default, not Fable |
 | Page content | The page itself answers "what is it": agent headline + the report's own `## TL;DR` (500-char cap) + **Error Team Prompt** — a tap-to-copy `<pre>` block pasted straight into Claude to review/accept the fix (PR #22) |
-| Alert-rule frequency | **5 min** (was 30). Sentry's new Monitors/Automations engine treats rule `frequency` as a re-fire mute window — a 30-min window swallowed a second drill fired 13 min after the first |
+| Alert-rule frequency | **5 min** (was 30) — hardening so closely-spaced distinct P1s each re-fire; `frequency` is the rule's per-issue re-notify throttle |
 | Feature status | **CLOSED as shipped** — both lanes drilled, autonomous front-door run witnessed (issue #21) |
 
 ---
@@ -259,12 +260,13 @@ BE crashes → two full reports on the phone.
    ⚠️ **Loop guard is not optional**: the pipeline's own page is a fatal event in the same
    project — untagged, the rule re-fires the pipeline forever (fresh id per hop defeats dedupe).
    The pager must tag its capture (`incident_page=true`).
-   ⚠️ **`frequency` is a re-fire mute window** on the new Monitors/Automations engine — at the
-   default 30, a second distinct P1 within 30 min of the first fires NOTHING (swallowed our
-   second drill; looked exactly like a broken lane). Set 5 for a P1 pipeline.
-   ⚠️ The new engine **migrates legacy rules to "workflows" with a different id** (our rule
-   17286663 ↔ workflow 3695667); the legacy API's `lastTriggered` goes unreliable after cutover —
-   read firing state from the Monitors UI / workflow, not the legacy rule.
+   ⚠️ **`frequency` is the rule's re-notify mute window** (default 30 min) — set 5 for a P1
+   pipeline so a recurring/regressing issue re-fires quickly.
+   ⚠️ The new Monitors engine **migrates legacy rules to "workflows" with a different id** (our
+   rule 17286663 ↔ workflow 3695667); the legacy API's `lastTriggered` can stay `None` after
+   cutover — read firing state from the Monitors UI / workflow, not the legacy rule. And the
+   **numeric group id ≠ short-id** (`7607174913` = `PYTHON-FASTAPI-B`): when correlating "what
+   fired?", resolve both forms before concluding two events exist.
 6. **Flip `TARGET=github`** on the relay → the agent lane is live.
 7. **Wire "page AFTER report"**: the workflow's LAST steps (one `if: success()`, one
    `if: failure()` so a dead lane is never silent) send the Telegram page. Never page before the
@@ -291,8 +293,9 @@ BE crashes → two full reports on the phone.
 
 ⚠️ Space consecutive fatal-drills **further apart than the rule's `frequency` window** (and use a
 fresh unique message each time — same message = same Sentry group = only fires on first-seen or
-regression). A swallowed drill looks identical to a dead lane; check the rule's mute window before
-declaring failure.
+regression). Before declaring the lane dead, **check the Actions run list first**: ours had fired
+15 seconds after the event and was sitting there succeeded while we hunted a "missing" dispatch —
+a timestamp misread + numeric-id/short-id confusion manufactured a phantom failure.
 
 ### Cross-platform gotchas (cost us real hours)
 
