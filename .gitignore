@@ -33,3 +33,4 @@
 **/.env
 **/auth_keys/
 .claude/settings.local.json
+

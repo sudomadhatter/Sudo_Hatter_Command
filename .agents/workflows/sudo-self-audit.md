@@ -28,8 +28,8 @@ project under `Projects/`, never the lobby itself. Resolve the target now:
    project — cases 1–3 below are command-center-only (the lobby that hosts children under `Projects/`).
 1. **Inline override** — if `$ARGUMENTS` begins with a name matching a folder under `Projects/`, that is
    the target; consume that first token (the remainder is the real focus area). Write the name alone into
-   `_my_resources/active-project.txt` (overwrite) so later commands inherit it.
-2. **Active pointer** — else read `_my_resources/active-project.txt`; if it names a folder under
+   `.agents/active-project.txt` (overwrite) so later commands inherit it.
+2. **Active pointer** — else read `.agents/active-project.txt`; if it names a folder under
    `Projects/`, use it. (When `/sudo-dev-story-tests` auto-invokes this audit, the pointer is already set —
    it inherits the same target.)
 3. **Ask** — else STOP and ask Daniel *"Which project are we working in? (e.g. AGY_AVIATIONCHAT)"* —

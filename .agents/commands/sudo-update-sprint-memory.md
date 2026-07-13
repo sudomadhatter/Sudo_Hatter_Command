@@ -20,8 +20,8 @@ Run from the **command center** (the lobby), this close-out operates on exactly 
    `Projects/` subfolder → you ARE the project: `PROJECT_ROOT = .`, skip to the binding rule. Don't read
    `active-project.txt`, parse `$ARGUMENTS` for a project, or ask — cases 1–3 are command-center-only.
 1. **Inline override** — `$ARGUMENTS` begins with a folder name under `Projects/` → that's the target;
-   consume the token, write the name alone into `_my_resources/active-project.txt` (overwrite).
-2. **Active pointer** — else use `_my_resources/active-project.txt` if it names a folder under `Projects/`.
+   consume the token, write the name alone into `.agents/active-project.txt` (overwrite).
+2. **Active pointer** — else use `.agents/active-project.txt` if it names a folder under `Projects/`.
 3. **Ask** — else STOP and ask Daniel *"Which project are we closing out? (e.g. AGY_AVIATIONCHAT)"* —
    never guess, never operate on the lobby.
 

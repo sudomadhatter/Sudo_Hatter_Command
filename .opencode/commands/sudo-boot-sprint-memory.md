@@ -14,17 +14,17 @@ Run from the **command center** (the lobby), this command reads exactly ONE chil
 `Projects/`, never the lobby itself. Resolve the target now:
 0. **Self (sub-project fast path — check this FIRST, and STOP here if it matches)** — if this repo has
    **no** `Projects/` subfolder, you ARE the project: set `PROJECT_ROOT = .` and skip straight to the
-   binding rule. Do NOT read `active-project.txt`, parse `$ARGUMENTS` for a project name, or ask which
+   binding rule. Do NOT read `.agents/active-project.txt`, parse `$ARGUMENTS` for a project name, or ask which
    project — the cases below are command-center-only (the lobby that hosts children under `Projects/`).
 1. **Inline override** — if `$ARGUMENTS` begins with a name matching a folder under `Projects/`, that is
    the target; consume that first token (the remainder is the real argument). Write the name alone into
-   `_my_resources/active-project.txt` (overwrite) so later commands inherit it. **This command is the
+   `.agents/active-project.txt` (overwrite) so later commands inherit it. **This command is the
    normal place to set the active project for the session** (e.g. `/sudo-boot-sprint-memory AGY_AVIATIONCHAT`).
 2. **No inline name** (the usual case — most UIs fire `/` the instant it's selected, so no argument
-   arrives) — do NOT silently reuse the pointer. Read `_my_resources/active-project.txt` for the current
+   arrives) — do NOT silently reuse the pointer. Read `.agents/active-project.txt` for the current
    focus, list the folders under `Projects/`, and ASK Daniel: *"Active project is `<pointer, or none>`.
    Which project this session?"* with that list. If he just confirms, keep the pointer; otherwise write his
-   choice into `_my_resources/active-project.txt` (overwrite). Never guess, never operate on the lobby.
+   choice into `.agents/active-project.txt` (overwrite). Never guess, never operate on the lobby.
    (If Daniel already named a project in this chat, treat that as his answer — don't re-ask.)
 
 Set `PROJECT_ROOT = Projects/<name>` and **echo exactly** `Target: Projects/<name>` before any work.

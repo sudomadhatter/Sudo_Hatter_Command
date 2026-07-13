@@ -40,8 +40,8 @@ project under `Projects/`, never the lobby (same pattern as the `/sudo-*` comman
 - **Self fast-path (check FIRST):** if this repo has **no** `Projects/` subfolder, you ARE the project -
   `PROJECT_ROOT = .`; skip the rest of Step 0.
 - **Inline override:** if `$ARGUMENTS` begins with a name matching a folder under `Projects/`, consume that
-  token as the project and write it alone into `_my_resources/active-project.txt` (overwrite).
-- **Active pointer:** else read `_my_resources/active-project.txt` if it names a folder under `Projects/`.
+  token as the project and write it alone into `.agents/active-project.txt` (overwrite).
+- **Active pointer:** else read `.agents/active-project.txt` if it names a folder under `Projects/`.
 - **Ask:** else STOP and ask *"Which project? (e.g. AGY_AVIATIONCHAT)"* - never guess, never run on the lobby.
 
 Resolve `PROJECT_ROOT` to an **absolute** path (`Projects/<name>` or `.` → its absolute form; the Workflow

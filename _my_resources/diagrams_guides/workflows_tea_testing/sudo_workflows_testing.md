@@ -45,7 +45,7 @@ The exact sequence, top to bottom, from a fresh epic to a shipped story. Run it 
 
 Every `/sudo-*` you type is a **thin launcher**: the `.claude/skills/sudo-*/SKILL.md` just says "read `.agents/commands/sudo-*.md` and follow it end-to-end." That `.agents/commands/` file is the real script — it resolves the target project, then calls the underlying **BMAD + TEA skills** in order. Below is what's under the hood for each one, so you know exactly what's running when you fire a command.
 
-> **Every command shares Step 0:** resolve the child project (`$ARGUMENTS` name → `_my_resources/active-project.txt` pointer → ask you), echo `Target: Projects/<name>`, and bind every path under it. Never touches the lobby. Omitted below to avoid repetition.
+> **Every command shares Step 0:** resolve the child project (`$ARGUMENTS` name → `.agents/active-project.txt` pointer → ask you), echo `Target: Projects/<name>`, and bind every path under it. Never touches the lobby. Omitted below to avoid repetition.
 
 ---
 

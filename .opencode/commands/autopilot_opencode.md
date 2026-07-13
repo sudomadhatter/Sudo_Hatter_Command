@@ -37,8 +37,8 @@ commands):
   - set `PROJECT_ROOT = .` and skip the rest of Step 0 (this is the autopilot run from *inside* a project).
 - **Inline override:** if `$ARGUMENTS` begins with a name matching a folder under `Projects/`, that is the
   target; **consume that first token** (the remainder is the real story id/path). Write the name alone into
-  `_my_resources/active-project.txt` (overwrite) so later commands inherit it.
-- **Active pointer:** else read `_my_resources/active-project.txt`; if it names a folder under `Projects/`, use it.
+  `.agents/active-project.txt` (overwrite) so later commands inherit it.
+- **Active pointer:** else read `.agents/active-project.txt`; if it names a folder under `Projects/`, use it.
 - **Ask:** else STOP and ask Daniel *"Which project are we working in? (e.g. AGY_AVIATIONCHAT)"* - never
   guess, never run the autopilot against the lobby.
 

@@ -21,8 +21,8 @@ never the lobby itself. Resolve the target now:
    read `active-project.txt`, parse `$ARGUMENTS` for a project name, or ask which project.
 1. **Inline override** — if `$ARGUMENTS` begins with a name matching a folder under `Projects/`, that is the
    target; consume that first token (the remainder is the real argument — issue id / `latest`). Write the
-   name alone into `_my_resources/active-project.txt` (overwrite) so later commands inherit it.
-2. **Active pointer** — else read `_my_resources/active-project.txt`; if it names a folder under `Projects/`,
+   name alone into `.agents/active-project.txt` (overwrite) so later commands inherit it.
+2. **Active pointer** — else read `.agents/active-project.txt`; if it names a folder under `Projects/`,
    use it.
 3. **Ask** — else STOP and ask which project we're working in (e.g. AGY_AVIATIONCHAT) — never guess, never
    operate on the lobby.

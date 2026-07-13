@@ -20,8 +20,8 @@ Run from the **command center** (the lobby), this command operates on exactly ON
    project — cases 1–3 below are command-center-only (the lobby that hosts children under `Projects/`).
 1. **Inline override** — if `$ARGUMENTS` begins with a name matching a folder under `Projects/`, that is
    the target; consume that first token (the remainder is the real argument — story id, focus, …). Write
-   the name alone into `_my_resources/active-project.txt` (overwrite) so later commands inherit it.
-2. **Active pointer** — else read `_my_resources/active-project.txt`; if it names a folder under
+   the name alone into `.agents/active-project.txt` (overwrite) so later commands inherit it.
+2. **Active pointer** — else read `.agents/active-project.txt`; if it names a folder under
    `Projects/`, use it.
 3. **Ask** — else STOP and ask Daniel *"Which project are we working in? (e.g. AGY_AVIATIONCHAT)"* —
    never guess, never operate on the lobby.
