@@ -1,5 +1,5 @@
 ---
-description: BDD Vision Lock — interactive session to hash out exact expected behaviors until 100% understood, then generate stack-appropriate BDD contracts (pytest-bdd backend / BDD-structured vitest-Playwright frontend) — or record an explicit human-approved waiver. Mandatory phase of the sudo dev flow; ② hard-gates on its output.
+description: BDD Vision Lock — interactive session to hash out exact expected behaviors until 100% understood, then codify them as BDD-structured contracts INSIDE the story's ATDD red test files (standalone pytest-bdd .feature is opt-in only) — or record an explicit human-approved waiver. Mandatory phase of the sudo dev flow; ② hard-gates on its output.
 platforms: [opencode, antigravity]
 ---
 
@@ -31,23 +31,36 @@ Assume the persona of **Murat (Test Architect)**.
 - Ask targeted, specific questions about edge cases, unstated assumptions, and exact expected outcomes.
 - **STOP and wait for the user's answers.** Do NOT proceed to Step 2 until the user explicitly agrees that the behaviors are perfectly defined.
 
-## Step 2 — Generate BDD Contracts (stack-appropriate)
-Once the user confirms the behaviors are locked in, write the Given/When/Then contract **in the stack that
-owns each behavior** — the Vision Lock is universal, the artifact format follows the code:
-- **Backend (pytest) behaviors:** strict `pytest-bdd` `.feature` file(s) into `backend/tests/features/` +
-  step-definition scaffolds into `backend/tests/bdd/` (house convention: self-binding `steps_*.py` calling
-  `pytest_bdd.scenarios()`).
-- **Frontend (vitest / Playwright) behaviors:** the SAME Given/When/Then contract, codified as
-  BDD-structured `describe`/`it` scaffolds in the story's vitest (or `frontend/e2e/` Playwright) test file —
-  each scenario a `describe("Given …")` with `it("When … Then …")` cases. Do NOT force pytest-bdd onto FE.
+## Step 2 — Codify the contract (default: INTO the story's ATDD red tests)
+Once the user confirms the behaviors are locked in, codify the Given/When/Then contract **into the story's
+existing ATDD red test file(s)** — the Vision Lock's value is the decision-forcing *conversation*; the
+artifact rides the red tests ① writes anyway. (Epic 17 audit, 2026-07-13: the genuine catches came from
+the lock session, self-audit, and recon — the parallel pytest-bdd layer mostly re-confirmed already-correct
+behavior while adding its own harness-bug class, e.g. the sync-step `asyncio.run` false-reds.)
+- **Backend behaviors (default):** BDD-structured pytest — one test (or test class) per scenario, named
+  for it, with the locked `Given/When/Then` verbatim in the docstring — written into the story's ATDD red
+  test file under `backend/tests/`, red until ② implements. No separate `.feature`/steps pair.
+- **Frontend behaviors (unchanged):** the SAME contract as BDD-structured `describe("Given …")` /
+  `it("When … Then …")` cases in the story's vitest (or `frontend/e2e/` Playwright) red test file.
+- **Standalone `pytest-bdd` (OPT-IN — the exception, never the default):** a `.feature` file in
+  `backend/tests/features/` + self-binding steps in `backend/tests/bdd/` ONLY when Gherkin itself buys
+  something (a stakeholder-readable spec, heavy data-table scenarios, a cross-team contract) AND the human
+  explicitly opts in during the lock session. It duplicates ATDD and carries its own harness bugs
+  (sync steps driving async fns, step-binding drift) — so it must be chosen, never assumed.
 - **Mixed stories:** each behavior lands in its own stack; the story frontmatter lists every contract path.
 
 ## Step 2b — Record the lock (or waiver) in the story file
 Update the story file's YAML frontmatter so downstream steps can gate on it (`/sudo-dev-story-tests` ②
 refuses to dev a story without one of these):
-- Locked: `bdd: locked` + `bdd_contract: <path(s) to the .feature / contract test file(s)>`
+- Locked: `bdd: locked` + `bdd_contract: <path(s) to the contract test file(s)>` — the ATDD red file(s)
+  carrying the scenarios (or the opt-in `.feature` files). **These paths are load-bearing:** ② verifies
+  each exists on disk, and any later rename/delete MUST update this frontmatter — a `locked` record
+  pointing at missing files fails the gate (the Epic 17.7 phantom-contract lesson: `bdd: locked` with all
+  three cited files deleted from disk).
 - Waived: `bdd: waived — <rationale> (human sign-off, <date>)`
 The frontmatter is the source of truth; a waiver that lives only in chat or an epic-notes comment does not count.
+Also record the lock's *decisions* (the resolved Qs/forks) as a dated comment block in the story file —
+Epic 17 proved that decision record is where the step earns its keep.
 
 ## Done
 Report: the generated contract files (or the recorded waiver) and the frontmatter record. Ask the user if they are ready to proceed to the standard unit tests (`sudo-write-story-tests` Step 3) or implementation (`sudo-dev-story-tests`).

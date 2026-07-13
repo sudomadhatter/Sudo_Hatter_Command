@@ -42,9 +42,11 @@ surface it and stop — never guess.
 
 ## Step 2 — BDD Vision Lock (ATDD Contract Phase — MANDATORY, never silently skipped)
 Invoke the **`/sudo-bdd-tests`** workflow. This is an interactive session with the Test Architect (Murat)
-to hash out exact expected behaviors until they are 100% understood, generating the stack-appropriate
-Given/When/Then contracts (strict `pytest-bdd` `.feature` + step defs for backend behaviors;
-BDD-structured vitest/Playwright scaffolds for frontend behaviors).
+to hash out exact expected behaviors until they are 100% understood. The locked Given/When/Then contract
+is codified **into the story's ATDD red test file(s)** (BDD-structured pytest scenarios for backend;
+BDD-structured vitest/Playwright `describe`/`it` for frontend) — Step 3 extends those same files. A
+standalone `pytest-bdd` `.feature` + step-defs pair is **opt-in only** (the human explicitly chooses it
+during the lock, when Gherkin itself buys value); never default to it.
 
 This phase is a standing part of the enterprise flow — **the ONLY exit without a contract is a recorded
 waiver**: the story has no product-behavior surface (docs-only, characterization-only), the human confirms
@@ -53,7 +55,9 @@ leaves ① carrying `bdd: locked` (+ contract paths) or `bdd: waived` in its fro
 `/sudo-dev-story-tests` (②) **hard-gates on that record** and will refuse to dev a story without it.
 
 ## Step 3 — Write the failing acceptance tests (ATDD red phase)
-Invoke the **`bmad-testarch-atdd`** skill against the story just created. Generate any remaining unit/component acceptance tests that codify each AC and **must fail now** (no implementation exists yet). If the epic has a
+Invoke the **`bmad-testarch-atdd`** skill against the story just created. Generate any remaining unit/component acceptance tests that codify each AC and **must fail now** (no implementation exists yet) —
+**extending the Step 2 contract file(s), not minting sibling test files** (one red file per story per
+stack; the Vision Lock scenarios and the ATDD reds live together). If the epic has a
 `bmad-testarch-test-design` risk plan, pull it so P0 ACs get priority coverage.
 
 ## Done

@@ -22,8 +22,8 @@ The exact sequence, top to bottom, from a fresh epic to a shipped story. Run it 
 #   → epic + stories → sprint board → interactive P0–P3 risk-score (one story at a time)
 
 # ── Phase B · Per-story loop — REPEAT per story, P0 first ──────
-/sudo-write-story-tests    <story>   # ① BDD Vision Lock (MANDATORY, waiver-recorded) + ATDD red tests (must fail now)
-/sudo-dev-story-tests      <story>   # ② BDD gate → plan → self-audit → build to green → automate
+/sudo-write-story-tests    <story>   # ① BDD Vision Lock (MANDATORY, waiver-recorded) + ATDD red tests (must fail now; lock scenarios live IN the red files)
+/sudo-dev-story-tests      <story>   # ② BDD gate → plan → ⛔ SELF-AUDIT STOP (you pick: model / fresh team / continue) → build to green → automate
 /sudo-code-review          <story>   # ③ adversarial review + TEST GATE → PASS/CONCERNS/FAIL
 /sudo-update-sprint-memory <story>   # close-out = your sign-off → flip to done → you git commit
 ```
@@ -71,13 +71,16 @@ Doesn't call other commands — it just **reads state** and tells you what to ru
 ### `/sudo-write-story-tests` ① — story prep + red tests (calls 3 skills)
 ```
 1. bmad-create-story    → writes the story file under _bmad/bmm/stories/ with its ACs
-2. /sudo-bdd-tests      → BDD Vision Lock (MANDATORY): interactive w/ Murat until behaviors are 100% locked,
-                          then stack-appropriate contracts — strict pytest-bdd .feature + step defs for
-                          backend (backend/tests/features/, /bdd/); BDD-structured vitest/Playwright
-                          scaffolds for frontend. Sole escape = a RECORDED waiver (no behavior surface,
-                          you confirm, frontmatter records it). Either way the story leaves ① carrying
-                          `bdd: locked` (+ contract paths) or `bdd: waived — <rationale>` in frontmatter.
-3. bmad-testarch-atdd   → writes the remaining unit/component acceptance tests that MUST FAIL now (red phase)
+2. /sudo-bdd-tests      → BDD Vision Lock (MANDATORY): interactive w/ Murat until behaviors are 100% locked.
+                          The locked Given/When/Then goes INTO the story's ATDD red test file(s) —
+                          BDD-structured pytest scenarios (BE) / describe-it scaffolds (FE). A standalone
+                          pytest-bdd .feature + step defs is OPT-IN ONLY (you choose it at the lock, when
+                          Gherkin itself buys value — Epic 17 audit demoted it from default). Sole other
+                          escape = a RECORDED waiver (no behavior surface, you confirm, frontmatter records
+                          it). Either way the story leaves ① carrying `bdd: locked` (+ contract paths) or
+                          `bdd: waived — <rationale>` in frontmatter, plus a dated decision block.
+3. bmad-testarch-atdd   → writes the remaining unit/component acceptance tests that MUST FAIL now (red phase),
+                          EXTENDING the same contract file(s) — one red file per story per stack
                           (pulls the test-design P-levels so P0 ACs get priority coverage)
                           → leaves tests staged & red. Does NOT implement.
 ```
@@ -85,12 +88,18 @@ Doesn't call other commands — it just **reads state** and tells you what to ru
 ### `/sudo-dev-story-tests` ② — build to green (calls bmad-dev-story twice + 2 skills)
 ```
 0.5 resolve ARTIFACT_DIR              → _artifacts/epic_<E>/<story>/ (all artifacts land here)
-0.7 BDD contract gate (HARD)          → story frontmatter must carry `bdd: locked` (+ contract files ON DISK)
-                                        or `bdd: waived — <rationale>`; NEITHER (incl. pre-gate stories) →
-                                        STOP, run /sudo-bdd-tests first. No plan, no code without it.
+0.7 BDD contract gate (HARD)          → story frontmatter must carry `bdd: locked` (+ every cited contract
+                                        file ON DISK — a locked flag with missing files FAILS, the 17.7
+                                        phantom lesson) or `bdd: waived — <rationale>`; NEITHER (incl.
+                                        pre-gate stories) → STOP, run /sudo-bdd-tests first. No plan, no code.
 1.  bmad-dev-story (PLAN mode)        → writes implementation_plan.md into ARTIFACT_DIR
-2.  /sudo-self-audit  (AUTOMATIC)     → adversarial pre-dev stress-test of the plan (see its breakdown below)
-                                        → folds findings back in + persists self-audit-stress-test.md
+2.  ⛔ SELF-AUDIT STOP GATE (MANDATORY)→ posts the plan link and STOPS. You pick:
+                                        (a) run /sudo-self-audit here — name a model for the lane
+                                            (e.g. "use Fable" on an easy story; subagent model override)
+                                        (b) you take implementation_plan.md to a FRESH team/session — it waits
+                                        (c) "continue" — resumes the remainder; no audit run/provided →
+                                            it confirms once, then records the skip as a stub artifact
+                                        → either way findings fold into the plan + self-audit-stress-test.md
 2.5 conditional gate                 → only STOPS to ask if you have a real question; else proceeds
 3.  bmad-dev-story (IMPLEMENT mode)   → writes the code, drives the ① red tests → GREEN, pastes actual test output
 4.  bmad-testarch-automate            → expands API/UI/contract coverage on what was built (automation-summary-<story>.md)
@@ -98,8 +107,10 @@ Doesn't call other commands — it just **reads state** and tells you what to ru
                                         → MAY flip story to `review`. NEVER flips to `done`, NEVER commits.
 ```
 
-### `/sudo-self-audit` — adversarial pre-dev audit (fires inside ②; no sub-skills, 5 phases)
-Audits the **plan, not a diff** — catches flaws while fixing them is still free.
+### `/sudo-self-audit` — adversarial pre-dev audit (fires inside ② at the STOP gate; no sub-skills, 5 phases)
+Audits the **plan, not a diff** — catches flaws while fixing them is still free. ② stops before running it
+so you choose the lane: run it in-session (optionally on a cheaper model for easy stories), or hand the
+plan doc to a fresh team and say **continue** when their audit lands.
 ```
 Phase 0  Right-size + AC traceability  → Skip / Light / Full; map every AC ↔ plan step (gap = under-deliver; extra = scope creep)
 Phase 1  Blast-radius trace            → GitNexus impact()/context() if indexed, else grep — who breaks if this changes;
@@ -149,7 +160,7 @@ Running this **IS your sign-off.** Only objectively-red tests can block the flip
 | `bmad-sprint-planning` | Generate/populate `sprint-status.yaml` from the epic's stories |
 | `bmad-testarch-test-design` | Risk-score stories P0–P3 (Probability × Impact); the interactive kickoff step |
 | `bmad-create-story` | Write ONE story file with its ACs under `_bmad/bmm/stories/` |
-| `/sudo-bdd-tests` | Interactive BDD Vision Lock (MANDATORY phase of ①) → stack-appropriate contracts (`pytest-bdd` BE / BDD-structured vitest-Playwright FE) or a recorded waiver; ② hard-gates on the frontmatter record |
+| `/sudo-bdd-tests` | Interactive BDD Vision Lock (MANDATORY phase of ①) → locked scenarios codified INTO the story's ATDD red files (standalone `pytest-bdd` `.feature` = opt-in only) or a recorded waiver; ② hard-gates on the frontmatter record + files-on-disk |
 | `bmad-testarch-atdd` | Write **failing** (red) acceptance tests before any code |
 | `bmad-dev-story` | The dev engine — PLAN mode writes the plan; IMPLEMENT mode writes code to green |
 | `bmad-testarch-automate` | Expand coverage on existing code (passes immediately) |
@@ -170,7 +181,7 @@ Glossary / one-line cheat sheet
 | **AAA** | Arrange → Act → Assert; the shape of every test |
 | **DoD** | No flaky, no hard waits, stateless, self-cleaning, low-maintenance, near source |
 | **ATDD** | Test-first (red → green); the failing test is the proof-of-test |
-| **BDD Vision Lock** | Mandatory ① phase: interactive behavior lock w/ Murat → Given/When/Then contract (or **recorded** waiver) stamped in story frontmatter; ② refuses to dev without it |
+| **BDD Vision Lock** | Mandatory ① phase: interactive behavior lock w/ Murat → Given/When/Then codified into the story's ATDD red files (or **recorded** waiver) stamped in story frontmatter; ② refuses to dev without it. Standalone `pytest-bdd` is opt-in, not the default |
 | **Automate** | Coverage expansion on existing code (passes immediately) |
 | **Use-site patch** | Patch the name as the module-under-test looks it up — not the definition |
 | **Factory** | `_make_event(...)` — defaults + overrides; one update point |
@@ -436,18 +447,31 @@ Break complex workflows into micro-files: self-contained, loaded just-in-time, s
 
 ---
 
-## 7.5 BDD (Behavior-Driven Development) — Executable Specifications
+## 7.5 BDD (Behavior-Driven Development) — the Vision Lock, right-sized
 
-BDD uses Gherkin syntax (`Given-When-Then`) in `.feature` files to define requirements, which are executed directly by Python code using `pytest-bdd` (Step ① "Vision Lock").
+The **Vision Lock conversation** (① `/sudo-bdd-tests`) is the mandatory part: an interactive session that
+pins exact `Given-When-Then` behaviors before any code. The **artifact** rides the story's ATDD red test
+file(s) — BDD-structured pytest scenarios (BE) / `describe("Given …")`-`it("When … Then …")` (FE) — one
+red file per story per stack.
 
-* **Feature File** (`.feature`): Natural language steps.
-* **Step Definitions** (`test_*_steps.py`): Python code decorated with `@given`, `@when`, `@then` that executes the steps.
-* **State Sharing (`ctx`)**: Steps share test state using a standard pytest fixture.
+**Epic 17 audit verdict (2026-07-13, the recalibration):** across 8 locked stories, the demonstrated value
+came from the lock *session* (17.7 caught a stale story premise + 2 live defects; 17.8 caught dataset
+drift + forced schema decisions), while the parallel standalone `pytest-bdd` layer mostly re-confirmed
+already-correct behavior (3 stories closed "no changes — correct as-is"), added its own harness-bug class
+(sync steps driving async fns → `asyncio.run` false-reds), and produced one phantom gate pass (17.7's
+`bdd: locked` with all contract files deleted). **So: conversation kept mandatory; standalone `pytest-bdd`
+demoted to opt-in.**
 
-**Value Added:**
-1. **Living Specs**: If requirements and implementation drift, tests fail immediately.
-2. **Safety Gates**: Automatically checks critical invariants (e.g., no cycle loops, edge limits, mandatory reasons) on change.
-3. **Design Isolation**: Keeps visual styling metadata (affinity) separate from analytical backend calculations (e.g., excluding visual links from bottleneck logic).
+* **Default contract:** locked scenarios written into the story's ATDD red test file(s); ② drives them green.
+* **Opt-in `pytest-bdd`** (`.feature` + `test_*_steps.py`, `@given/@when/@then`, shared `ctx` fixture):
+  choose it at the lock only when Gherkin itself buys value — stakeholder-readable specs, heavy data-table
+  scenarios, cross-team contracts. Gotcha when you do: sync step fns driving `async def` seams must use
+  `asyncio.run(...)` (Py 3.12+).
+* **Gate integrity:** `bdd_contract:` paths are load-bearing — ② verifies each exists on disk; renames/
+  deletes must update the frontmatter.
+
+**Value the lock keeps delivering:** living specs (drift → red), decision records in the story file, and
+safety-gate invariants (cycle caps, mandatory reasons) — now pinned in the same red files ATDD owns.
 
 ---
 
@@ -548,10 +572,10 @@ flowchart TD
 |---------|--------------|
 | `/sudo-boot-sprint-memory` | Where am I? What story is next? Which command do I run? (read-only) |
 | `/sudo-create-epics-stories-sprint` | **Phase A / epic kickoff** — create the epic + stories → sprint board → interactive P0–P3 risk-score (one story at a time). |
-| `/sudo-write-story-tests` | ① Create the story → **BDD Vision Lock (mandatory)** → write its **failing** acceptance tests. |
-| `/sudo-bdd-tests` | ①-inner (also standalone) — interactive Vision Lock w/ Murat → stack-appropriate BDD contracts or a **recorded** waiver, stamped into story frontmatter. |
-| `/sudo-dev-story-tests` | ② **BDD contract gate (hard)** → plan → auto self-audit → build → drive tests green → automate. |
-| `/sudo-self-audit` | Adversarial pre-dev audit of the plan (fires automatically inside ②). |
+| `/sudo-write-story-tests` | ① Create the story → **BDD Vision Lock (mandatory)** → write its **failing** acceptance tests (lock scenarios + ATDD reds share one file per stack). |
+| `/sudo-bdd-tests` | ①-inner (also standalone) — interactive Vision Lock w/ Murat → scenarios codified into the ATDD red files (standalone pytest-bdd opt-in only) or a **recorded** waiver, stamped into story frontmatter. |
+| `/sudo-dev-story-tests` | ② **BDD contract gate (hard)** → plan → **⛔ self-audit STOP gate** (you pick: run here w/ chosen model · fresh team · continue) → build → drive tests green → automate. |
+| `/sudo-self-audit` | Adversarial pre-dev audit of the plan (fires inside ② at the STOP gate — or standalone by a fresh team on the plan doc). |
 | `/sudo-code-review` | ③ Review the diff + run the **TEST GATE** → PASS/CONCERNS/FAIL/WAIVED. |
 | `/sudo-update-sprint-memory` | Close-out: verify verdict, flip story → `done`, route learnings, prune. |
 | `*_AP` variants | Autopilot lanes (`sudo-dev-story-tests_AP`, `sudo-code-review_AP`, `sudo-self-audit_AP`) — same ideas, different engine. `dev_AP` plan-stage enforces the BDD gate too: contract-or-waiver missing → `PIPELINE_BLOCKER` (headless lanes never author the lock themselves). |
@@ -586,8 +610,8 @@ The `sudo-` commands are **thin orchestrators** — they don't reimplement anyth
 | **2** | Map test levels (P0–P3) | ↳ its final interactive step |
 | **3** | Write failing test | `/sudo-write-story-tests` |
 | **4** | Dev implementation plan | `/sudo-dev-story-tests` → plan |
-| **5** | Self-audit stress test | `/sudo-dev-story-tests` → self-audit |
-| **6** | Code the story | `/sudo-dev-story-tests` → build + automate |
+| **5** | ⛔ STOP → self-audit stress test | `/sudo-dev-story-tests` → you pick lane/model (or fresh team), then audit |
+| **6** | Code the story (on "continue") | `/sudo-dev-story-tests` → build + automate |
 | **7** | Code review + run tests | `/sudo-code-review` |
 | **8** | Close out + git push + log learnings | `/sudo-update-sprint-memory` + commit |
 
@@ -597,7 +621,7 @@ Steps 1–2 are the once-per-epic kickoff; 3–8 repeat per story.
 flowchart TD
     BOOT["/sudo-boot-sprint-memory<br/>boot + story pick-up"] --> KICK["/sudo-create-epics-stories-sprint<br/>(once per epic)<br/>epics + stories + sprint + risk-score P0–P3"]
     KICK --> W["① /sudo-write-story-tests<br/>write RED tests (BDD Vision Lock + ATDD)"]
-    W --> DEV["② /sudo-dev-story-tests<br/>plan → self-audit → build → automate"]
+    W --> DEV["② /sudo-dev-story-tests<br/>plan → ⛔ audit STOP (pick model / fresh team) → build → automate"]
     DEV --> CR["③ /sudo-code-review<br/>review + TEST GATE → verdict"]
     CR --> GATE{"verdict?"}
     GATE -->|"PASS / CONCERNS / WAIVED"| UPD["/sudo-update-sprint-memory<br/>flip story → done, save learnings, prune"]
@@ -611,7 +635,7 @@ flowchart TD
 | boot | `sudo-boot-sprint-memory` | — (reads active-context + sprint-status, recommends next command) |
 | kickoff | `sudo-create-epics-stories-sprint` | `bmad-create-epics-and-stories` → `bmad-sprint-planning` → `bmad-testarch-test-design` (interactive P0–P3, one story at a time) |
 | ① | `sudo-write-story-tests` | `bmad-create-story` → `/sudo-bdd-tests` (BDD Vision Lock, **mandatory** — contract or recorded waiver) → `testarch-atdd` |
-| ② | `sudo-dev-story-tests` | **BDD contract gate** → `bmad-dev-story` (plan) → `sudo-self-audit` → `bmad-dev-story` (implement) → `testarch-automate` |
+| ② | `sudo-dev-story-tests` | **BDD contract gate** → `bmad-dev-story` (plan) → **⛔ STOP** → `sudo-self-audit` (chosen lane/model, or fresh team) → `bmad-dev-story` (implement) → `testarch-automate` |
 | ③ | `sudo-code-review` | `bmad-code-review` → `/1_run-all-tests-back_front` → `testarch-trace` → `testarch-nfr` → `testarch-test-review` |
 | close | `sudo-update-sprint-memory` | — (reads ③'s verdict; only command that flips a story to `done`) |
 
@@ -759,3 +783,5 @@ Session 7 is a returnable reference. Re-run `/bmad-teach-me-testing` → Session
 <!-- CHECKPOINT id="ckpt_mrefjgkp_cqegiw" time="2026-07-10T04:22:41.833Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
 
 <!-- CHECKPOINT id="ckpt_mriqhjgy_wmr0ic" time="2026-07-13T04:40:12.754Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+
+<!-- CHECKPOINT id="ckpt_mrjgfu74_t98jtq" time="2026-07-13T16:46:43.360Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->

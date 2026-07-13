@@ -1,5 +1,5 @@
 ---
-description: Develop a story test-first — plan, auto self-audit the plan, implement, then auto-expand coverage. Step ② of the sudo dev flow.
+description: Develop a story test-first — plan, then STOP at the self-audit gate (human picks: run it here on a chosen model, hand the plan to a fresh team, or continue), implement, then auto-expand coverage. Step ② of the sudo dev flow.
 platforms: [opencode, antigravity]
 ---
 
@@ -51,8 +51,11 @@ explicitly to each sub-skill and **never** let one mint its own root-level or da
 The BDD Vision Lock is a standing, enterprise-level phase of this flow: **a story may not be planned or
 implemented without its locked behavior contract or a recorded waiver.** Check the story file's
 frontmatter, then verify on disk (trust nothing — a flag with no file behind it fails the gate):
-- **`bdd: locked`** AND every `bdd_contract:` path exists on disk (`.feature` files / BDD-structured FE
-  scaffolds) → proceed; those contracts are part of the ① red set Step 3 must drive green.
+- **`bdd: locked`** AND every `bdd_contract:` path exists on disk (BDD-structured scenarios inside the
+  story's ATDD red test files — the default — or the opt-in `.feature` files) → proceed; those contracts
+  are part of the ① red set Step 3 must drive green. A `locked` record whose cited files are missing
+  (deleted, renamed, never written) **fails the gate** — fix the frontmatter or re-lock, never wave it
+  through (Epic 17.7 shipped a `locked` record backed by zero on-disk files).
 - **`bdd: waived — <rationale>`** (explicit, human-approved, recorded) → proceed; note the waiver in the plan.
 - **Neither** — including stories that predate this gate (no `bdd:` key at all) — → **STOP. Do not plan,
   do not write code.** Run the **`/sudo-bdd-tests`** Vision Lock now (it is interactive — the human must
@@ -63,12 +66,32 @@ frontmatter, then verify on disk (trust nothing — a flag with no file behind i
 Invoke the **`bmad-dev-story`** skill in PLAN mode for the story in `$ARGUMENTS`. Produce its
 `implementation_plan.md` **into `ARTIFACT_DIR`** — not the BMAD stories dir, not the `_artifacts/` root.
 
-## Step 2 — Self-audit the plan (automatic, the moment the plan is written)
-Immediately invoke **`/sudo-self-audit`** against the just-written plan — the pre-dev adversarial
-stress-test (gaps, over-engineering, contract breaks) BEFORE any code. Fold its findings back into the
-plan. (Human-lane equivalent of autopilot Stage 2.) **Persist the audit as its own
-`self-audit-stress-test.md`** (`type: self_audit`) **in `ARTIFACT_DIR`** (Step 0.5) — inline findings, or
-findings folded only into the plan, do NOT satisfy the protocol (`artifacts-always-first` §7).
+## Step 2 — Self-audit STOP gate (MANDATORY — stop the moment the plan is written)
+The plan exists; **STOP before the audit and before any code.** This stop exists so the human can choose
+the audit *lane and model* — e.g. a lighter model for an easy story, or a fresh team with clean context.
+Post the clickable link to `implementation_plan.md` and ask ONE question:
+
+> "Plan ready → self-audit next. **(a)** run `/sudo-self-audit` here — name a model if you want a
+> different lane (e.g. 'use Fable' for an easy story); **(b)** you take `implementation_plan.md` to a
+> fresh team/session for the audit — I'll wait; or just say **continue**."
+
+Then **WAIT. Modify NO project file and write NO code until the human answers.**
+- **(a) Run here** — invoke **`/sudo-self-audit`** against the plan (the pre-dev adversarial stress-test:
+  gaps, over-engineering, contract breaks). If the human named a model, run the audit on it — spawn
+  `/sudo-self-audit` as a subagent with that model override where the surface supports it; otherwise the
+  human switches model and re-invokes. Fold findings back into the plan. (Human-lane equivalent of
+  autopilot Stage 2.) **Persist the audit as its own `self-audit-stress-test.md`** (`type: self_audit`)
+  **in `ARTIFACT_DIR`** (Step 0.5) — inline findings, or findings folded only into the plan, do NOT
+  satisfy the protocol (`artifacts-always-first` §7).
+- **(b) Fresh team** — do nothing and wait. When the human returns and says **continue**, read the
+  external audit (expect `self-audit-stress-test.md` in `ARTIFACT_DIR`; if it lives elsewhere, ask), fold
+  its findings into the plan, then proceed.
+- **"continue" with no audit run and none provided** — confirm once ("skipping the self-audit for this
+  story?"); on an explicit yes, write a stub `self-audit-stress-test.md` recording
+  `Skipped by human decision (<date>)` so the Step 5 checklist stays honest, and proceed.
+
+**"continue" always means: run the remainder of the flow (Step 2.5 → 3 → 4 → 5) without further stops** —
+subject only to Step 2.5's real-questions rule.
 
 ## Step 2.5 — Gate: ask first, but ONLY if you have questions
 A **conditional** gate — not a mandatory approval stop. After the plan + audit, decide honestly whether you

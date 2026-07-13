@@ -1,6 +1,6 @@
 ---
 name: sudo-dev-story-tests
-description: 'Command center → child project. Develop a story test-first — plan, auto self-audit the plan, implement, then auto-expand coverage. Step ② of the sudo dev flow. Use when the user says "dev the story" / "sudo dev story" from the command center.'
+description: 'Command center → child project. Develop a story test-first — plan, then STOP at the self-audit gate (human picks: run it here on a chosen model, hand the plan to a fresh team, or continue), implement, then auto-expand coverage. Step ② of the sudo dev flow. Use when the user says "dev the story" / "sudo dev story" from the command center.'
 ---
 
 # /sudo-dev-story-tests — command center launcher (②)

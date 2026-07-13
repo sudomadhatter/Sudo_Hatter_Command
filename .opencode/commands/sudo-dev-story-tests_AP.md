@@ -42,9 +42,10 @@ that is your direction. Apply **all** of the audit's proposed fixes first, then 
 1. **Red — author the failing acceptance tests first.** Before writing any production code, invoke the
    **`bmad-testarch-atdd`** skill to author failing acceptance tests for the story's ACs (one per AC). This
    keeps dev test-first: the tests exist and FAIL before the implementation does. The story's BDD
-   contract scenarios (`bdd_contract:` frontmatter — `.feature` files / BDD-structured FE scaffolds) are
-   part of this red set: implement their step definitions rather than duplicating them as new tests, and
-   drive them green with everything else. (`bdd: waived` stories skip this clause, nothing else.)
+   contract scenarios (`bdd_contract:` frontmatter — BDD-structured scenarios inside the story's ATDD red
+   test files by default, or opt-in `.feature` files + step defs) are part of this red set: extend those
+   same files rather than duplicating them as new tests, and drive them green with everything else.
+   (`bdd: waived` stories skip this clause, nothing else.)
 2. **Green — implement to drive them green.** Touch only the files the plan lists (the audit may amend that
    list). Leave parallel teammates' unrelated working-tree changes alone. Implement the code to drive the
    Step-1 red tests to green.
