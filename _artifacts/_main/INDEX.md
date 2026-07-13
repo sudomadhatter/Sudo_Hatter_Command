@@ -39,3 +39,4 @@
 | `2026-07-09_automate-evidence-gate/` | Automate-evidence seam closed in the sudo dev flow (lobby + AGY + Fresh). | implementation_plan, walkthrough |
 | `2026-07-09_system-docs-truth-sync/` | Docs truth-sync (master plan, guide, router) + lobby-search rule extraction + prune move-verify. | implementation_plan, walkthrough |
 | `2026-07-09_sudo-create-epics-stories-sprint/` | Epic kickoff session (Phase A). | implementation_plan, task, walkthrough |
+| `2026-07-13_reconcile-maps-linter/` | Reconcile maps linter false positives. | implementation_plan, walkthrough |

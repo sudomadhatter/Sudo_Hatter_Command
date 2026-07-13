@@ -57,6 +57,7 @@ import record_map_changes as rmc  # noqa: E402  (commit-time journal — consume
 SCAN_IGNORES = {
     ".git", ".venv", "venv", "env", "__pycache__", "node_modules", ".next", "dist", "build",
     ".pytest_cache", ".turbo", ".cache", "coverage", "_my_resources", "_bmad", "Projects", ".gitnexus",
+    ".claude", ".opencode", "_bmad-output", ".github", ".vscode",
 }
 # Extra ignores fed to the generator's regen — MUST match the documented invocation in the repo-map
 # header. Home base uses `Projects,_my_resources`; a project's header may declare its own (e.g. `_bmad`).
