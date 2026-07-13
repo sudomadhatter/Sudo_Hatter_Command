@@ -436,6 +436,21 @@ Break complex workflows into micro-files: self-contained, loaded just-in-time, s
 
 ---
 
+## 7.5 BDD (Behavior-Driven Development) — Executable Specifications
+
+BDD uses Gherkin syntax (`Given-When-Then`) in `.feature` files to define requirements, which are executed directly by Python code using `pytest-bdd` (Step ① "Vision Lock").
+
+* **Feature File** (`.feature`): Natural language steps.
+* **Step Definitions** (`test_*_steps.py`): Python code decorated with `@given`, `@when`, `@then` that executes the steps.
+* **State Sharing (`ctx`)**: Steps share test state using a standard pytest fixture.
+
+**Value Added:**
+1. **Living Specs**: If requirements and implementation drift, tests fail immediately.
+2. **Safety Gates**: Automatically checks critical invariants (e.g., no cycle loops, edge limits, mandatory reasons) on change.
+3. **Design Isolation**: Keeps visual styling metadata (affinity) separate from analytical backend calculations (e.g., excluding visual links from bottleneck logic).
+
+---
+
 ## 8. Quality & Trace — auditing and the release gate
 
 ### 8.1 Test Review — 5 dimensions (0–100 each; overall = average)
@@ -742,3 +757,5 @@ Session 7 is a returnable reference. Re-run `/bmad-teach-me-testing` → Session
 *Generated from TEA Academy (7/7 complete) + the `sudo-` TEA-gated dev-flow walkthrough. The `sudo-` commands are thin orchestrators over the TEA workflows; the gate in ③ is the only ship/no-ship decision point.*
 
 <!-- CHECKPOINT id="ckpt_mrefjgkp_cqegiw" time="2026-07-10T04:22:41.833Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+
+<!-- CHECKPOINT id="ckpt_mriqhjgy_wmr0ic" time="2026-07-13T04:40:12.754Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
