@@ -29,10 +29,16 @@ exist. What was built in its place, and where each piece stands:
 | **Loop guard** | (not in plan) | Added: the pipeline's own page events carry `incident_page=true`; the Sentry alert rule filters them out (prevents page→alert→fire loops). |
 | **TARGET semantics** | `routines` primary / `github` rollback | **Inverted: `github` = primary (agent), `routines` = fallback (thin pager).** |
 
-Verified live so far: relay → fire endpoint → issue + page + Telegram (thin lane, e2e ~16s).
-The Actions agent lane is wired and on `main` but **needs repo Actions secrets
-(`ANTHROPIC_API_KEY`, `SENTRY_AUTH_TOKEN`) and a live drill** — until that drill passes, treat
-lane status as unproven.
+**PROVEN LIVE — 2026-07-13.** The agent lane ran end-to-end twice:
+- **Manual dispatch drill** → run 29214562741 → full report **issue #20** + branch
+  `claude/incident-python-fastapi-6` (correct root cause, code permalinked at the release SHA,
+  conditional build-history correctly skipped, and it caught a garbled SHA in the trigger payload).
+- **Fully autonomous front door**: a planted untagged fatal at 00:20:11Z → Sentry rule → relay
+  (`TARGET=github`) → dispatch at 00:20:26 → agent → **issue #21** + page. Nobody touched anything.
+
+Thin fallback lane also verified e2e (~16s). Page format (report TL;DR + tap-to-copy **Error Team
+Prompt**) live via PR #22. Repo Actions secrets (`ANTHROPIC_API_KEY`, `SENTRY_AUTH_TOKEN`,
+`TELEGRAM_BOT_TOKEN`) set 2026-07-12.
 
 ---
 
@@ -160,9 +166,9 @@ BE crashes → two full reports on the phone.
 |---|---|---|
 | Triage runbook | `.github/claude/incident-triage.md` (16.1 ✅ built) | The 5-step brain both lanes execute (preflight · guardrails · 5 steps · report template) |
 | Relay | GCP Cloud Function `sentry-incident-relay`, project `aviationchat` (16.2 ✅ deployed) | Verify → dedupe → fetch logs → route |
-| **Primary lane (as-built)** | `.github/workflows/incident-response.yml` (`TARGET=github`) | claude-code-action runs the runbook → full report + fix branch. Needs `ANTHROPIC_API_KEY` + `SENTRY_AUTH_TOKEN` Actions secrets |
+| **Primary lane (as-built, PROVEN)** | `.github/workflows/incident-response.yml` (`TARGET=github`) | claude-code-action runs the runbook → full report + fix branch. Secrets set; model left **unpinned** (tracks the action's default) |
 | Fallback lane | Backend `/api/incident/fire` (`TARGET=routines`) | Thin instant pager (issue + Telegram + Sentry-fatal page), NO investigation. ~~Routines beta~~ dead — no API |
-| Delivery | GitHub Issue `incident` (by github-actions bot) + ready `claude/incident-*` branch | Report → GitHub app push + Telegram, AFTER the agent finishes |
+| Delivery | GitHub Issue `incident` (by github-actions bot) + ready `claude/incident-*` branch | Report → GitHub app push + Telegram, AFTER the agent finishes. Page = agent's headline + the report's own **TL;DR** + report/branch links + tap-to-copy **Error Team Prompt** (ready Claude prompt: read report, verify, accept/adjust/reject) |
 | Drill harness | `/sudo-incident-response [issue-id\|latest]` (16.1 ✅ shipped, vendored via `/sync-agents`) | Testing only — NOT the product. Thin command (zero triage logic): resolves the project → loads its `incident-triage.md` → runs it verbatim, **interactive lane** (Sentry MCP) → drops the report in `_artifacts/debugging/`. Drill = force a P1 (`_test_scripts/sentry_smoke_test.py`) then `/sudo-incident-response latest`. |
 
 ### Switches & secrets (names only — values never in repo)
@@ -203,6 +209,15 @@ BE crashes → two full reports on the phone.
 | Phone channel | **Telegram added** (`@AvCh_Security_Bot`) — buzzes with headline + report link + Claude paste-prompt after the report lands |
 | Quick summary | The fire endpoint's one-call Claude "likely cause" paragraph is a fallback-lane garnish, **not** the report — the report is the runbook's output |
 
+### Decision log addendum (Daniel, 2026-07-13 — close-out)
+
+| Decision | Call |
+|---|---|
+| Agent-lane model | **Left unpinned** (no `--model` arg) so it tracks claude-code-action's default — zero upkeep as models advance. Constraint: an Opus-class default, not Fable |
+| Page content | The page itself answers "what is it": agent headline + the report's own `## TL;DR` (500-char cap) + **Error Team Prompt** — a tap-to-copy `<pre>` block pasted straight into Claude to review/accept the fix (PR #22) |
+| Alert-rule frequency | **5 min** (was 30). Sentry's new Monitors/Automations engine treats rule `frequency` as a re-fire mute window — a 30-min window swallowed a second drill fired 13 min after the first |
+| Feature status | **CLOSED as shipped** — both lanes drilled, autonomous front-door run witnessed (issue #21) |
+
 ---
 
 ## 6. Replication playbook — stand this up on ANY project
@@ -215,7 +230,7 @@ BE crashes → two full reports on the phone.
 | # | Piece | You write it / you click it |
 |---|---|---|
 | 1 | **Triage runbook** — `.github/claude/incident-triage.md` | Write once, copy per project; only the Sentry org/project slugs and artifact paths change |
-| 2 | **Agent workflow** — `.github/workflows/incident-response.yml` | Trigger `repository_dispatch: types: [incident]`; checkout `main` full-depth; `anthropics/claude-code-action` with the runbook as prompt; least-privilege `permissions:` (contents+issues write) |
+| 2 | **Agent workflow** — `.github/workflows/incident-response.yml` | Trigger `repository_dispatch: types: [incident]`; checkout `main` full-depth; `anthropics/claude-code-action` with the runbook as prompt; least-privilege `permissions:` (contents+issues write). ⚠️ **v1 has NO `mode:`/`prompt_file:` inputs** — recalled-from-memory params 400 the run before it starts; the only prompt input is `prompt:` (point it at the runbook file + "execute VERBATIM"). Verify against the action's `action.yml`, not memory. Leave the model unpinned unless you have a reason |
 | 3 | **Relay** — GCP Cloud Function (`relay/app.py` pure logic + `main.py` glue) | Verify HMAC → kill switch → dedupe by issue label → pre-fetch logs → route by `TARGET` |
 | 4 | **Fallback pager** — backend `POST /api/incident/fire` | Optional but recommended: bearer-authed thin lane (issue + page) for when Actions is down |
 | 5 | **Telegram bot** | BotFather `/newbot` → token; recipient must message the bot once → `getUpdates` yields chat_id |
@@ -240,13 +255,30 @@ BE crashes → two full reports on the phone.
    need `--condition=None` non-interactively when the org policy has conditional bindings.
 5. **Alert rule** (create via API if the org is on the new Monitors UI — the click path drifts):
    conditions first-seen OR regression, filters `level = fatal` **AND the loop guard:**
-   `incident_page is not set`, action "notify via <integration>".
+   `incident_page is not set`, action "notify via <integration>", **`frequency: 5`**.
    ⚠️ **Loop guard is not optional**: the pipeline's own page is a fatal event in the same
    project — untagged, the rule re-fires the pipeline forever (fresh id per hop defeats dedupe).
    The pager must tag its capture (`incident_page=true`).
+   ⚠️ **`frequency` is a re-fire mute window** on the new Monitors/Automations engine — at the
+   default 30, a second distinct P1 within 30 min of the first fires NOTHING (swallowed our
+   second drill; looked exactly like a broken lane). Set 5 for a P1 pipeline.
+   ⚠️ The new engine **migrates legacy rules to "workflows" with a different id** (our rule
+   17286663 ↔ workflow 3695667); the legacy API's `lastTriggered` goes unreliable after cutover —
+   read firing state from the Monitors UI / workflow, not the legacy rule.
 6. **Flip `TARGET=github`** on the relay → the agent lane is live.
-7. **Wire "page AFTER report"**: the workflow's LAST step sends the Telegram/notify with the
-   issue URL. Never page before the report exists — the platform's own alert email is the FYI.
+7. **Wire "page AFTER report"**: the workflow's LAST steps (one `if: success()`, one
+   `if: failure()` so a dead lane is never silent) send the Telegram page. Never page before the
+   report exists — the platform's own alert email is the FYI. The page composes itself from the
+   report the agent just wrote (no extra AI call):
+   `gh issue list --label incident --limit 1` → issue number/url/**title** (the agent's headline),
+   `gh issue view --json body` → lift the `## TL;DR` section (flatten, cap ~500 chars), plus a
+   tap-to-copy **Error Team Prompt** in a `<pre>` block (`parse_mode=HTML`) that pastes into
+   Claude: read report → verify root cause + fix diff → accept/adjust/reject.
+   ⚠️ Telegram **hard-400s the ENTIRE message** on invalid UTF-8 or malformed HTML: force
+   `LC_ALL: C.UTF-8` (byte-slicing `${VAR:0:N}` under locale C tears multibyte chars), scrub with
+   `iconv -f UTF-8 -t UTF-8 -c`, and entity-escape (`& < >`) every dynamic field.
+   ⚠️ Actions bash runs `-e -o pipefail`: make every extraction best-effort (`|| true`,
+   `if`-then — never `[ cond ] && cmd`) so a paging hiccup can't masquerade as a triage failure.
 
 ### Drills (each proved something broken for us — run all four)
 
@@ -254,14 +286,24 @@ BE crashes → two full reports on the phone.
 |---|---|---|
 | `curl` relay with bad `Sentry-Hook-Signature` | HMAC guard | 401 |
 | Authed POST to the fire endpoint | Fallback delivery | Labeled issue + page, `degraded:false` |
-| Untagged test fatal via the DSN | Full chain incl. alert rule + loop guard | Report/issue appears, NO cascade |
-| Manual `repository_dispatch` with a real issue id | **The agent lane itself** | Full report + `claude/incident-*` branch |
+| Manual `repository_dispatch` with a real issue id | **The agent lane itself** (skips Sentry) | Full report issue + `claude/incident-*` branch, THEN the page |
+| Untagged test fatal via the DSN | **The whole front door**: rule + loop guard + relay + agent | Autonomous run within ~30s → report + branch + page, NO cascade |
+
+⚠️ Space consecutive fatal-drills **further apart than the rule's `frequency` window** (and use a
+fresh unique message each time — same message = same Sentry group = only fires on first-seen or
+regression). A swallowed drill looks identical to a dead lane; check the rule's mute window before
+declaring failure.
 
 ### Cross-platform gotchas (cost us real hours)
 
 - GitHub **never push-notifies you for issues your own PAT creates** — agent-lane issues must come
   from `github-actions[bot]` (workflow `GITHUB_TOKEN`), or use Telegram.
-- Windows shells mangle non-ASCII in `curl -d` JSON (em-dashes → 400 "error parsing body"). ASCII-only payloads.
+- Windows shells mangle non-ASCII in `curl -d` JSON (em-dashes → 400 "error parsing body") **and in
+  emoji typed literally into command strings** (Telegram 400s them as invalid UTF-8). ASCII-only
+  payloads; for rich text, write a UTF-8 file and send with `--data-urlencode "text@C:/path"`
+  (Windows curl needs the `C:/` form, not `/c/`).
+- Secrets read from a Windows-edited `.env` carry a **CR tail** (`\r`) that corrupts URLs/headers —
+  always `tr -d '\r\n'` after extraction.
 - Test-suite guard: the pager code paths will FIRE REAL pages under pytest unless the suite
   force-unsets `TELEGRAM_*`/`ANTHROPIC_API_KEY` (autouse fixture).
 - Sentry `LevelFilter` levels are python-logging numbers: **50 = fatal**, 40 = error.
