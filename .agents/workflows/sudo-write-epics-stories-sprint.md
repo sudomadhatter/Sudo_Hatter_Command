@@ -1,15 +1,15 @@
 ---
-description: Epic kickoff — create the epic + its stories, generate the sprint board, then interactively risk-score every story P0–P3 (test levels). Phase A of the sudo flow, before the per-story dev loop.
+description: Epic kickoff — write the epic + its stories, generate the sprint board, then interactively risk-score every story P0–P3 (test levels). Phase A of the sudo flow, before the per-story dev loop.
 platforms: [opencode, antigravity]
 ---
 
-# /sudo-create-epics-stories-sprint — Epic Kickoff: Stories + Sprint + Risk-Score (Phase A)
+# /sudo-write-epics-stories-sprint — Epic Kickoff: Stories + Sprint + Risk-Score (Phase A)
 
 Thin orchestrator — calls three existing BMAD/TEA skills back-to-back so a batch of requirements arrives as
 an epic, a populated sprint board, AND a Daniel-confirmed P0–P3 risk map in ONE pass. Runs BEFORE the
 per-story dev loop. Project-scoped (targets THIS repo).
 
-> Flow position: `sudo-boot-sprint-memory` → **`sudo-create-epics-stories-sprint`** →
+> Flow position: `sudo-boot-sprint-memory` → **`sudo-write-epics-stories-sprint`** →
 > `sudo-write-story-tests` → `sudo-dev-story-tests` → `sudo-code-review` → `sudo-update-sprint-memory`.
 
 ## Step 0 — Resolve the target project (FIRST — before any other step)
