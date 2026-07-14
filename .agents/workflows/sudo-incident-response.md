@@ -1,6 +1,6 @@
 ---
 description: Drill harness that executes a project's incident-triage runbook against a Sentry issue. The TEST HARNESS for Story 16.1's runbook — not the product. Interactive drill lane.
-platforms: [opencode, antigravity, codex]
+platforms: [claude, opencode, antigravity, codex]
 ---
 
 # /sudo-incident-response — Incident Triage Drill Harness
