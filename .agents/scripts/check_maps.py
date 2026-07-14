@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """check_maps.py — deterministic drift linter for the repo map + INDEX.md files (ANY workspace).
 
-The detection engine behind the /1_update-maps workflow. It does ONLY the checks a script can do
+The detection engine behind the /sudo-update-maps workflow. It does ONLY the checks a script can do
 reliably (no judgment) and prints a structured report; the agent workflow supplies the prose fixes
 (purpose lines, INDEX categorisation, the actual prune). Exit code is non-zero when drift is found.
 
@@ -419,7 +419,7 @@ def check_context_hygiene(root, is_home, is_bmad):
         lines = text.count("\n") + 1
         rel = ac.relative_to(root).as_posix()
         if blocks >= PRUNE_NAG_BLOCKS:
-            hints.append(f"{rel}: {blocks} session blocks - prune to newest ~{PRUNE_KEEP_BLOCKS} via /1_update-maps")
+            hints.append(f"{rel}: {blocks} session blocks - prune to newest ~{PRUNE_KEEP_BLOCKS} via /sudo-update-maps")
         elif blocks == 0 and lines >= PRUNE_NAG_LINES:
             hints.append(f"{rel}: {lines} lines (no dated blocks detected) - review length")
     idx = root / "_artifacts" / "INDEX.md"
@@ -626,7 +626,7 @@ def main():
     if args.depth3_only:
         problems = check_depth3_indexes(root)
         if problems:
-            print("⚠️  Depth-3 _artifacts INDEX drift (run /1_update-maps to reconcile):")
+            print("⚠️  Depth-3 _artifacts INDEX drift (run /sudo-update-maps to reconcile):")
             for p in problems:
                 print(f"  • {p}")
         sys.exit(0)  # always 0 — it's a nag, not a gate
@@ -664,7 +664,7 @@ def main():
 
     print("\n" + "=" * 78)
     if any_drift:
-        print("DRIFT FOUND - run /1_update-maps to reconcile (it supplies the prose a script can't).")
+        print("DRIFT FOUND - run /sudo-update-maps to reconcile (it supplies the prose a script can't).")
         sys.exit(1)
     print("All maps & INDEXes agree with disk. [ok]")
     sys.exit(0)

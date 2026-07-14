@@ -43,7 +43,7 @@ Read `_bmad-output/sudo-tests.yaml`.
 - **Present** → it defines `required_tiers · l1_coverage_min · agent_bearing · nfr · waive`. Continue.
 
 ## Step 3 — Gate: run the checks (baseline-diff aware — fail only on NEW regressions)
-1. **Suite** — run the `/1_run-all-tests-back_front` command (pytest + vitest). Compare against the red
+1. **Suite** — run the full suite directly: backend pytest (use `backend/.venv`) + frontend vitest. Compare against the red
    baseline; only failures NEW to this story count (legacy red is grandfathered). **Two guards (per
    `tests-must-gate-for-real`):** (a) confirm CI runs the *same real entrypoint* this gate runs — open the
    pipeline YAML and check each test job invokes the project's actual harness command (e.g.

@@ -3,7 +3,7 @@
 BMAD install (agents, workflows, install manifests). Regenerated on BMAD update — never hand-edit. Mirrored to projects via `/sync-agents`.
 
 ## Top-level contents
-<!-- auto-listed by /1_update-maps — refresh via /1_update-maps; do not hand-edit entries -->
+<!-- auto-listed by /sudo-update-maps — refresh via /sudo-update-maps; do not hand-edit entries -->
 - `_config/`
 - `bmm/`
 - `config.toml`

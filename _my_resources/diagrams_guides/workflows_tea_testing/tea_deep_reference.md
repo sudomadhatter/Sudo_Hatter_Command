@@ -1,3 +1,22 @@
+# TEA Deep Reference (companion — not the quick guide)
+
+> **Read [sudo_workflows_testing.md](sudo_workflows_testing.md) first** — that is the clean quick
+> reference. This file is the deep archive it was carved from (2026-07-14): full call-graphs, the
+> method curriculum, the Epic-8 anchor index, and the 42-fragment TEA library. Kept for depth, not
+> for daily use.
+>
+> **Command names below predate the 2026-07-14 rename.** Translate as you read:
+>
+> | Old name in this doc | Now |
+> |---|---|
+> | `/sudo-incident-response` | `/security_team_aviationchat` |
+> | `/1_update-maps` | `/sudo-update-maps` |
+> | `/1_live_testing_team` | `/sudo-live-testing-team` |
+> | `/1_push-to-main-and-deploy` | `/sudo-push-e2e` (now carries the mandatory e2e gate) |
+> | `/1_run-all-tests-back_front` | deleted — ③ runs the suites directly; shipping runs them via `/sudo-push-e2e` |
+> | `/1_run-restart-dev-env` | absorbed into `/sudo-live-testing-team` Step 1 |
+> | `/1_check-for-tech-stack-updates`, `/1_clean-test-scripts`, `/1_firebase-user-cleanup`, `/1_make-workflow-from-chat` | deleted (recoverable from git) |
+
 # TEA Testing — Quick Reference Guide
 
 **Owner:** Daniel (Lead — Tech Lead / Engineering Manager)

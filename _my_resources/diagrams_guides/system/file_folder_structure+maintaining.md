@@ -10,7 +10,7 @@
 > | `_my_resources/youtube_transcripts/implementation-plan_folder-as-workspace-routing-system.md` | the **theory** (mentor transcript, distilled) |
 > | `_my_resources/docs/master-implementation-plan.md` | the **rollout record** (how it got built) + evolution log (§8) |
 > | `docs/workspace-standard.md` | the **standing spec** (PATH CONTRACT, tier model, upkeep rules) |
-> | `.agents/workflows/1_update-maps.md` | the **maintenance workflow** (how it stays honest) |
+> | `.agents/workflows/sudo-update-maps.md` | the **maintenance workflow** (how it stays honest) |
 > | *this file* | the **guide & overview** (read this first) |
 
 ---
@@ -40,7 +40,7 @@ flowchart TD
     subgraph TOOLKIT [".agents/ — MASTER TOOLKIT (single source of authorship)"]
         RULES["rules/\nconstitution, karpathy, artifacts-always-first,\ngit-policy, lobby-search, mobile-mode"]
         SCRIPTS["scripts/\ncheck_maps.py (linter)\nsync-agents.ps1 · record_map_changes.py"]
-        CMDS["commands/ + workflows/\nINDEX.md (command registry)\n1_update-maps.md (the workflow)"]
+        CMDS["commands/ + workflows/\nINDEX.md (command registry)\nsudo-update-maps.md (the workflow)"]
         OTHER["skills/, templates/, bmad/"]
     end
 
@@ -125,7 +125,7 @@ flowchart TD
     GATE -- "No" --> WAIT["wait / revise (no file edits)"]
     GATE -- "Yes" --> EX["4. Execute with live TodoWrite"]
     EX --> CL["5. Close: ONE walkthrough.md\n(ends: Task Checklist + Your Actions)\n+ INDEX row + active-context hand-off"]
-    CL --> MAPS["6. Run /1_update-maps if structure changed\n(depth-3 INDEX, repo-map, linter)"]
+    CL --> MAPS["6. Run /sudo-update-maps if structure changed\n(depth-3 INDEX, repo-map, linter)"]
     CL --> GIT["GIT: hand Daniel the exact command\nnever commit/push yourself unless delegated"]
 
     classDef gate fill:#fff3d6,stroke:#b8860b,color:#000
@@ -200,7 +200,7 @@ flowchart TD
     HOOK["SessionStart hooks\n(.claude/settings.json)\nClaude Code only"]
     HOOK -->|"depth-3 nag + journal nag\n(non-fatal)"| C7
 
-    WORKFLOW["/1_update-maps command\nthe reconciliation workflow"]
+    WORKFLOW["/sudo-update-maps command\nthe reconciliation workflow"]
     WORKFLOW -->|"Step 3: audit all checks"| LINTER
     WORKFLOW -->|"Step 5: fix drift\nregen AUTO (mode-preserving)\nadd missing depth-3 INDEXes\nprune (MOVE to archives)"| LINTER
     WORKFLOW -->|"Step 6: commit per repo\n+ --set-anchor (consumes journal)"| ANCHOR["docs/.maps-state.json\nbaseline for next drift check"]
@@ -220,7 +220,7 @@ flowchart TD
 | `--set-anchor` | Write current state to `docs/.maps-state.json` + consume the maps-journal (run AFTER committing) |
 | `--ignore <dirs>` | Skip dirs (lobby: `Projects,_my_resources`; projects: `_my_resources,_bmad`) |
 
-**Fan-out:** run from the home base, `/1_update-maps` reconciles the lobby **and every conformant
+**Fan-out:** run from the home base, `/sudo-update-maps` reconciles the lobby **and every conformant
 project** in one pass (each repo commits + re-anchors separately). Run inside a project, it does just
 that workspace.
 
@@ -235,7 +235,7 @@ that workspace.
 | PT | git push approval | PreToolUse on Bash: `.claude/hooks/require-push-approval.py` guards agent `git commit`/`push` |
 
 > **Platform note:** hooks fire only on Claude Code. opencode and Antigravity/Gemini get the full
-> linter when `/1_update-maps` runs.
+> linter when `/sudo-update-maps` runs.
 
 ### The routing canary (`_routing-canary/`)
 
@@ -310,7 +310,7 @@ Node 18+ (`npx -y md-feedback`). New/changed servers appear after a session rest
 | `router.md` | The master map — categories → workspaces, routes up & down |
 | `docs/workspace-standard.md` | The WHAT — structure contract (PATH CONTRACT, tier model, depth-3 rule, end-of-task checklist) |
 | `_artifacts/AGENTS.md` · `_my_resources/AGENTS.md` · `docs/AGENTS.md` | Tier-2 local law (+ adapters) — auto-attached at point of contact |
-| `.agents/workflows/1_update-maps.md` | The HOW — reconciliation workflow (audit → fix → commit → anchor) |
+| `.agents/workflows/sudo-update-maps.md` | The HOW — reconciliation workflow (audit → fix → commit → anchor) |
 | `.agents/scripts/check_maps.py` | The linter — 9 checks + unnumbered 2.5 + `--depth3-only` + `--set-anchor` |
 | `.agents/scripts/sync-agents.ps1` | The propagator — mirrors master `.agents/` to all platforms + projects (**excludes `_bmad/`** — see next row) |
 | `_bmad/custom/*.toml` + `_bmad/scripts/resolve_*.py` (projects only) | The BMAD guard layer — plan-first + artifact-insurance overrides (`bmad-dev-story`/`quick-dev`), TDAD dialect pins (`bmad-testarch-atdd`/`automate`, pytest-bdd + automate-evidence `on_complete`). Lives in ALL THREE repos (lobby included — direct BMAD skill runs from the lobby seat bind `{project-root}` to the lobby, Daniel's management lane; the sudo story flow binds to the child project). Propagates ONLY by cloning Fresh or 3-way hand-copy — never `/sync-agents` |
@@ -329,7 +329,7 @@ Node 18+ (`npx -y md-feedback`). New/changed servers appear after a session rest
 | Session start (from the lobby) | say **"pick up"** / run `/sudo-boot-sprint-memory` for sprint work — brief + open tasks surface |
 | Starting any file-touching task | plan-first: `implementation_plan.md` in the right bucket → STOP for "approved" |
 | Closing a task | ONE `walkthrough.md` (Task Checklist + Your Actions) + INDEX row + **"hand off"** |
-| After any structural change (folders moved/added, sessions created) | `/1_update-maps` — then commit, then `--set-anchor` |
+| After any structural change (folders moved/added, sessions created) | `/sudo-update-maps` — then commit, then `--set-anchor` |
 | After editing master `.agents/` | `/sync-agents` (lobby) or `/sync-agents <project>` |
 | After changing routing structure (`AGENTS.md`, `router.md`, adapters) | re-run `_routing-canary/` + reset `Power.md` |
 | After committing (if check 9 hinted) | `node .gitnexus/run.cjs analyze` in the stale repo |

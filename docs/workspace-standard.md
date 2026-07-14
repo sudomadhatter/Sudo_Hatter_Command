@@ -92,7 +92,7 @@ Coverage is linted by `check_maps.py` check 8 (non-fatal hint until every worksp
 ### Supporting files every workspace carries
 - **`docs/repo-map.md`** — the navigation index (Part 3).
 - **`active-context.md`** (home-base bucket or project-local, per Part 2) — continuity (numbered: `1 PRIME`, `5 PICK UP`, `6 HAND OFF`).
-- **`_my_resources/open_tasks/todo_list.md`** — Daniel's "what's next" queue (+ any plan/PRP `.md` notes alongside). Surfaced by BOTH the routing-table "what's next" row AND on "pick up." **READ-ONLY for agents — with one exception:** `/1_update-maps` refreshes the **`## Open Work` file-list** to mirror the task files beside it (Daniel's `## Todo list` prose and the task files stay his). Cross-check vs live files.
+- **`_my_resources/open_tasks/todo_list.md`** — Daniel's "what's next" queue (+ any plan/PRP `.md` notes alongside). Surfaced by BOTH the routing-table "what's next" row AND on "pick up." **READ-ONLY for agents — with one exception:** `/sudo-update-maps` refreshes the **`## Open Work` file-list** to mirror the task files beside it (Daniel's `## Todo list` prose and the task files stay his). Cross-check vs live files.
 - **`.agents/`** — the vendored master toolkit (rules, commands, skills, workflows, scripts, templates).
 - **`opencode.json`** — `instructions` = the slim least-context set (`AGENTS.md` + the always-load rules);
   `skills.paths` = `[".agents/skills"]`.
@@ -140,7 +140,7 @@ the toolkit:
 ### The PATH CONTRACT (exact files & where they live — what the tooling verifies)
 This is the machine-checkable heart of the standard: the **exact path** of every standard element, in the two
 **modes** a workspace can run in. `check_maps.py` reads this contract to (a) confirm a workspace is conformant
-and (b) know what to reconcile/prune — which is what lets **one generic `/1_update-maps` serve every workspace**
+and (b) know what to reconcile/prune — which is what lets **one generic `/sudo-update-maps` serve every workspace**
 instead of a per-repo fork. Keep workspaces matching this table and the generic tool just works.
 
 | Element | Home base (LOBBY) mode | Project (`Projects/<name>/`) mode | Notes |
@@ -156,12 +156,12 @@ instead of a per-repo fork. Keep workspaces matching this table and the generic 
 | Pickup/handoff brief (**prune target**) | `_artifacts/<bucket>/active-context.md` | **BMAD project:** `_bmad-output/active-context/active-context.md` (the live brief; `_artifacts/` holds *session history* only) | the file the **prune** trims |
 | Context archive (prune overflow) | `_artifacts/<bucket>/active-context-archive.md` | `_bmad-output/active-context/_archive/` | created on first prune |
 | Session ledger | `_artifacts/INDEX.md` | `_artifacts/INDEX.md` | one row per session; archive overflow → `INDEX-archive.md` |
-| Depth-3 epic INDEX | `_artifacts/<bucket>/INDEX.md` (bucket = `_main`, `<project>`) | `_artifacts/<epic_or_bucket>/INDEX.md` (e.g. `epic_8/`, `epic_11/`, `_main/`, `tea/`) | **only inside `_artifacts/`** — one row per session folder, listing the story/what + artifact files present; scan-to-find for bug-tracking. Not for code dirs. Created when a bucket has ≥2 session folders; `/1_update-maps` reconciles. |
+| Depth-3 epic INDEX | `_artifacts/<bucket>/INDEX.md` (bucket = `_main`, `<project>`) | `_artifacts/<epic_or_bucket>/INDEX.md` (e.g. `epic_8/`, `epic_11/`, `_main/`, `tea/`) | **only inside `_artifacts/`** — one row per session folder, listing the story/what + artifact files present; scan-to-find for bug-tracking. Not for code dirs. Created when a bucket has ≥2 session folders; `/sudo-update-maps` reconciles. |
 | Retired artifacts | `_artifacts/_archived/` | `_artifacts/_archived/` | — |
 | Testing & Debugging | `_artifacts/debugging/` | `_artifacts/debugging/` | standardized folder for isolated testing, bug repros, and debug scripts |
 | Tier-2 local law | `_artifacts/AGENTS.md` · `_my_resources/AGENTS.md` · `docs/AGENTS.md` (+ 1-line `CLAUDE.md`/`GEMINI.md` adapters beside each) | same | tier model above; linted as a **non-fatal hint** (check 8) |
-| Open tasks ("what's next") | `_my_resources/open_tasks/todo_list.md` (+ plan/PRP notes) | same | **READ-ONLY for context**, but `/1_update-maps` refreshes its `## Open Work` file-list; surfaced on pickup + "what's next" |
-| Personal area (protected) | `_my_resources/` | `_my_resources/` | off-limits **except** the `## Open Work` manifest in `open_tasks/todo_list.md` (maintained by `/1_update-maps`) |
+| Open tasks ("what's next") | `_my_resources/open_tasks/todo_list.md` (+ plan/PRP notes) | same | **READ-ONLY for context**, but `/sudo-update-maps` refreshes its `## Open Work` file-list; surfaced on pickup + "what's next" |
+| Personal area (protected) | `_my_resources/` | `_my_resources/` | off-limits **except** the `## Open Work` manifest in `open_tasks/todo_list.md` (maintained by `/sudo-update-maps`) |
 | BMAD (if present) | — | `_bmad/` (owned, regenerated) · `_bmad-output/` (state) | `_bmad-output/active-context/active-context.md` **IS** the continuity brief above; `_bmad/` itself is never hand-edited |
 
 **Two modes, one rule.** Every workspace — lobby and project — uses a plain `docs/` folder (no underscore) for
@@ -266,7 +266,7 @@ test ("work on X" from a fresh session lands in the right workspace). Full how/w
 ### Context hygiene — prune the continuity brief (don't let it grow forever)
 A **session** = one pick-up→hand-off; each hand-off prepends one dated block (`**YYYY-MM-DD: …**`) to the
 continuity `active-context.md` and one row to `INDEX.md`. Left alone these grow without bound and bloat every
-pickup. `/1_update-maps` carries a **prune** step: keep the **newest ~10 session blocks** in the brief, archive
+pickup. `/sudo-update-maps` carries a **prune** step: keep the **newest ~10 session blocks** in the brief, archive
 older ones to the context archive (`active-context-archive.md` at the lobby; `_bmad-output/active-context/_archive/`
 in a BMAD project); keep the newest **~50** `INDEX.md` rows, archive older to `INDEX-archive.md`. `check_maps.py`
 only *nags* past ~12 blocks (hysteresis — not every session), and the prune is approval-gated like every other
@@ -278,7 +278,7 @@ The same command also **refreshes the open-tasks list**: it rewrites the `## Ope
 (Daniel drops them in; moves them out when he picks one up). It touches only that manifest — his `## Todo list`
 prose and the task files stay his — and it's approval-gated like the prune.
 
-**Run scope — fan-out.** `/1_update-maps` is **mode-driven**: from the **home base** (a `Projects/` dir exists)
+**Run scope — fan-out.** `/sudo-update-maps` is **mode-driven**: from the **home base** (a `Projects/` dir exists)
 it fans out — `check_maps.py --all` reconciles the lobby **and every conformant project** (one with an
 `AGENTS.md`) in one run, so a single command from the top cleans + prunes + refreshes the open-tasks list
 everywhere. From **inside a project** it reconciles just that workspace. Each repo commits and re-anchors

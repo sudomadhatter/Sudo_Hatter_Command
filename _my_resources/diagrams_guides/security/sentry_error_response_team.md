@@ -144,7 +144,7 @@ standing "never PR to main" rule needs **no carve-out**; it holds as written. (R
 
 ```mermaid
 flowchart TD
-    S1["16.1 — Triage Runbook (✅ BUILT — review, 2026-07-10)<br/>the BRAIN: .github/claude/incident-triage.md<br/>5 steps + report template + /sudo-incident-response drill<br/>(drill pending Daniel → gates review→done)"]
+    S1["16.1 — Triage Runbook (✅ BUILT — review, 2026-07-10)<br/>the BRAIN: .github/claude/incident-triage.md<br/>5 steps + report template + /security_team_aviationchat drill<br/>(drill pending Daniel → gates review→done)"]
     S2["16.2 — Always-Live Pipeline (backlog)<br/>relay + Routine + Level-2 fix PR<br/>+ dormant rollback lane + phone drill"]
     S3["16.3 — Frontend Sentry (backlog)<br/>@sentry/nextjs + ErrorBoundary<br/>browser crashes join the funnel"]
     S4["16.4 — candidates (later)<br/>branch auto-cleanup · severity tiers ·<br/>SMS · Routines GA migration"]
@@ -170,7 +170,7 @@ BE crashes → two full reports on the phone.
 | **Primary lane (as-built, PROVEN)** | `.github/workflows/incident-response.yml` (`TARGET=github`) | claude-code-action runs the runbook → full report + fix branch. Secrets set; model left **unpinned** (tracks the action's default) |
 | Fallback lane | Backend `/api/incident/fire` (`TARGET=routines`) | Thin instant pager (issue + Telegram + Sentry-fatal page), NO investigation. ~~Routines beta~~ dead — no API |
 | Delivery | GitHub Issue `incident` (by github-actions bot) + ready `claude/incident-*` branch | Report → GitHub app push + Telegram, AFTER the agent finishes. Page = agent's headline + the report's own **TL;DR** + report/branch links + tap-to-copy **Error Team Prompt** (ready Claude prompt: read report, verify, accept/adjust/reject) |
-| Drill harness | `/sudo-incident-response [issue-id\|latest]` (16.1 ✅ shipped, vendored via `/sync-agents`) | Testing only — NOT the product. Thin command (zero triage logic): resolves the project → loads its `incident-triage.md` → runs it verbatim, **interactive lane** (Sentry MCP) → drops the report in `_artifacts/debugging/`. Drill = force a P1 (`_test_scripts/sentry_smoke_test.py`) then `/sudo-incident-response latest`. |
+| Drill harness | `/security_team_aviationchat [issue-id\|latest]` (16.1 ✅ shipped, vendored via `/sync-agents`) | Testing only — NOT the product. Thin command (zero triage logic): resolves the project → loads its `incident-triage.md` → runs it verbatim, **interactive lane** (Sentry MCP) → drops the report in `_artifacts/debugging/`. Drill = force a P1 (`_test_scripts/sentry_smoke_test.py`) then `/security_team_aviationchat latest`. |
 
 ### Switches & secrets (names only — values never in repo)
 

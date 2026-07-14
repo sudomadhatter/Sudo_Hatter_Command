@@ -3,7 +3,7 @@
 Maintenance scripts (MASTER here): `check_maps.py` (drift linter), `generate_repo_map.py` (repo-map generator), `sync-agents.ps1` (toolkit sync), `new-project.ps1` (workspace scaffolder), `generate_doc_graph.py` (doc graph). Mirrored to project vendored copies via `/sync-agents`.
 
 ## Top-level contents
-<!-- auto-listed by /1_update-maps — refresh via /1_update-maps; do not hand-edit entries -->
+<!-- auto-listed by /sudo-update-maps — refresh via /sudo-update-maps; do not hand-edit entries -->
 - `__pycache__/`
 - `check_maps.py`
 - `check-repo-map-drift.ps1`

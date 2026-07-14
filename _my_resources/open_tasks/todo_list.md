@@ -1,8 +1,11 @@
 # Todo List
 <!-- Daniel's personal task notes for all projects. READ-ONLY for agents. Unless asked to update this file by me. -->
+
 ## Sub-Projects Todo Lists
 <!-- Read /open_tasks/todo_list.md for a quick view of what is going on in the sub projects listed below. -->
-1. C:\Sudo_Hatter_Command\Projects\AGY_AVIATIONCHAT\_my_resources\open_tasks\todo_list.md
+1. Go to this folder path to see the open todo list in the sub projects:
+- C:\Sudo_Hatter_Command\Projects\AGY_AVIATIONCHAT\_my_resources\open_tasks\todo_list.md
+- 
 
 ----
 
@@ -17,3 +20,5 @@
 ----
 
 <!-- CHECKPOINT id="ckpt_mrk3jkm0_qa7nw6" time="2026-07-14T03:33:28.728Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+
+<!-- CHECKPOINT id="ckpt_mrl5ujcs_h74lqs" time="2026-07-14T21:25:45.724Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->

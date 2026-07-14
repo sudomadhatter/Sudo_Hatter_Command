@@ -1,9 +1,9 @@
 ---
-description: Drill harness that executes a project's incident-triage runbook against a Sentry issue. The TEST HARNESS for Story 16.1's runbook — not the product. Interactive drill lane.
-platforms: [claude, opencode, antigravity, codex]
+description: AviationChat security/error team — DRILL the incident-triage runbook against a Sentry issue (interactive lane). Test harness for the 16.1 runbook only; the always-live pipeline is the GitHub Action (16.2), which never uses this command.
+platforms: [opencode, antigravity, codex]
 ---
 
-# /sudo-incident-response — Incident Triage Drill Harness
+# /security_team_aviationchat — Incident Triage Drill Harness
 
 Thin harness. Its **entire job** is to execute a project's canonical triage runbook
 (`.github/claude/incident-triage.md`) against a Sentry issue, in the **interactive lane**, and drop the
@@ -52,7 +52,7 @@ Markdown link** to it in the chat, plus a one-line summary (what broke · confid
 
 ## Drill mode (AC-8 acceptance evidence)
 To drill: force a P1 first (the Story-11.5 pattern, `PROJECT_ROOT/_test_scripts/sentry_smoke_test.py` → a
-fatal `P1_RKP_MANIFEST_FAILURE`), then run `/sudo-incident-response latest`. A **pass** = the human confirms
+fatal `P1_RKP_MANIFEST_FAILURE`), then run `/security_team_aviationchat latest`. A **pass** = the human confirms
 the report names the planted failure, the correct file, and a sane fix. That human confirmation is the
 story's acceptance evidence; record the report path + verdict in the story's Completion Notes.
 

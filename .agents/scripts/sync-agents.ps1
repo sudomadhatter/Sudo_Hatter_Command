@@ -147,12 +147,17 @@ function Get-CommandPlatforms($file) {
 #   -WhatIf       : report actions but do not copy or delete
 # Returns the list of eligible file names.
 function Sync-CommandDir {
-  param([string]$MasterCmdDir, [string]$Dst, [string]$Platform, [switch]$Mirror, [switch]$WhatIf)
+  # -SkipAP: robot-lane commands (*_AP.md — invoked by the autopilot engines, never typed by a human) are
+  # vendored ONLY into project tool dirs (the engines Push-Location into the project and resolve them there).
+  # The lobby's typeable menus and the machine-global caches skip them; the purge branch below then removes
+  # any stale copies automatically on every sync.
+  param([string]$MasterCmdDir, [string]$Dst, [string]$Platform, [switch]$Mirror, [switch]$SkipAP, [switch]$WhatIf)
   New-Item -ItemType Directory -Force -Path $Dst | Out-Null
   $masterFiles = Get-ChildItem -Path $MasterCmdDir -Filter '*.md' -File
   $masterNames = @($masterFiles | Select-Object -ExpandProperty Name)
   $eligible = @()
   foreach ($f in $masterFiles) {
+    if ($SkipAP -and ($f.Name -match '_AP\.md$')) { continue }
     if ((Get-CommandPlatforms $f.FullName) -contains $Platform) {
       if (-not $WhatIf) {
         Copy-Item -Path $f.FullName -Destination $Dst -Force
@@ -191,7 +196,7 @@ function Sync-AntigravityWorkflowMirror {
   $mirrored = @()
   
   $allowed = @('sudo-*.md', '1_*.md', 'new-project.md', 'slash_command_updating.md', 'merge_main_debug.md')
-  $excluded = @('1_update-maps.md') # Real workflow lives in workflows/, do not overwrite with command wrapper
+  $excluded = @('sudo-update-maps.md') # Real workflow lives in workflows/, do not overwrite with command wrapper
   
   $files = Get-ChildItem -Path $cmdDir -Filter '*.md' -File | Where-Object {
     $name = $_.Name
@@ -312,14 +317,14 @@ if (-not $GlobalsOnly) {
   $src    = if ($IsLobby) { $Master } else { Join-Path $Target ".agents" }
   $cmdDir = Join-Path $src "commands"
 
-  $cl = Sync-CommandDir $cmdDir (Join-Path $Target ".claude\commands")  "claude" -WhatIf:$WhatIf
+  $cl = Sync-CommandDir $cmdDir (Join-Path $Target ".claude\commands")  "claude" -SkipAP:$IsLobby -WhatIf:$WhatIf
   # bmad-* skills are BMAD-OWNED. BMAD self-installs them (its `ides:` = claude-code, antigravity) directly into
   # .claude\skills, .opencode, and .agent\skills, and refreshes them on every `bmad` update. Our toolkit must NOT
   # carry or shadow them: a stale vendored copy in .agents\skills would clobber BMAD's current install on each
   # sync (robocopy overwrites same-named files). Exclude bmad-* so BMAD stays the single source for its own skills.
   Sync-Dir (Join-Path $src "skills")          (Join-Path $Target ".claude\skills") @('bmad-*') -WhatIf:$WhatIf
   Sync-Dir (Join-Path $src "hooks")           (Join-Path $Target ".claude\hooks") -WhatIf:$WhatIf
-  $oc = Sync-CommandDir $cmdDir (Join-Path $Target ".opencode\commands") "opencode" -WhatIf:$WhatIf
+  $oc = Sync-CommandDir $cmdDir (Join-Path $Target ".opencode\commands") "opencode" -SkipAP:$IsLobby -WhatIf:$WhatIf
   Sync-Dir (Join-Path $src "opencode-agents") (Join-Path $Target ".opencode\agent") -WhatIf:$WhatIf
 
   Write-Host "sync-agents: .claude\commands   -> $($cl.Count) cmds"
@@ -350,7 +355,7 @@ if ((-not $NoGlobals) -and ($IsLobby -or $GlobalsOnly)) {
       Write-Warning ("sync-agents: SKIPPED {0} global cache '{1}' - {2}" -f $c.Name, $c.Path, $_.Exception.Message)
       continue
     }
-    $names = Sync-CommandDir $GlobalCmdSrc $c.Path $c.Platform -Mirror -WhatIf:$WhatIf
+    $names = Sync-CommandDir $GlobalCmdSrc $c.Path $c.Platform -Mirror -SkipAP -WhatIf:$WhatIf
     Write-Host ("sync-agents: {0} global -> {1} cmds  ({2})" -f $c.Name, $names.Count, $c.Path)
   }
   Write-Host "sync-agents: (global caches mirror-exact; bmad-* preserved; restart opencode to pick up)"

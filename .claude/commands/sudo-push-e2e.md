@@ -1,97 +1,107 @@
 ---
-description: Ship committed changes to production (main) via merge or cherry-pick, trigger CI/CD, and deploy backend to Cloud Run.
+description: Push & promote with the E2E gate — push main_debug, or promote main_debug → main (full merge OR cherry-picked features). Nothing lands on main until /sudo-e2e is green. Then CI/CD + Cloud Run deploy + live verification.
 ---
 
-# /1_push-to-main-and-deploy — Merge, Push, and Deploy
+# /sudo-push-e2e — Push, Gate, Promote, Deploy
 
-This workflow guides the agent through shipping verified commits from the development line (`main_debug` or a feature branch) to the production line (`main`).
+The one shipping command. It moves verified work from the development line (`main_debug`) toward the
+production line (`main`), and it **refuses to touch `main` until the end-to-end suite is green**.
+
+**Branch model (never violate):** `main_debug` is the integration branch. `main` is only ever
+*fast-forwarded or merged up from* `main_debug` — `main` must NEVER end up ahead. After any
+cherry-pick promotion, reconcile so `main_debug` contains `main` again (Step 5).
 
 ## 🛑 MANDATORY RULES (Before You Start)
-1. **Never commit/push autonomously**: Always write the exact git commands for the human to approve/run, OR propose them via execution tools so the human can review and approve them individually.
-2. **Clear GITHUB_TOKEN on push**: When proposing or running `git push` or `git pull` from the agent terminal, always clear the environment variable first (e.g., prefix with `$env:GITHUB_TOKEN = ""` in PowerShell or `env -u GITHUB_TOKEN` in Bash) to prevent authentication failures from invalid session tokens.
-3. **Pre-flight Gate**: You MUST run Step 0 (Verification) successfully. If any test or build fails, STOP and report the error. Do not proceed to deployment.
+1. **Never commit/push autonomously**: write the exact git commands for the human to approve/run, OR
+   propose them via execution tools so the human approves each one individually.
+2. **Clear GITHUB_TOKEN on push/pull**: prefix with `$env:GITHUB_TOKEN = ""` (PowerShell) or
+   `env -u GITHUB_TOKEN` (Bash) to prevent stale-session auth failures.
+3. **The gate is not optional**: a red gate STOPS the command. Report what failed; do not "push anyway".
 
----
+## Step 0 — Resolve the target project (FIRST — before anything else)
+Run from the **command center** (the lobby), this operates on exactly ONE child project under
+`Projects/`, never the lobby itself:
+0. **Self (sub-project fast path)** — no `Projects/` subfolder here → you ARE the project:
+   `PROJECT_ROOT = .`, skip ahead.
+1. **Inline override** — if `$ARGUMENTS` begins with a name matching a folder under `Projects/`,
+   that is the target; consume the token. Write it to `.agents/active-project.txt`.
+2. **Active pointer** — else read `.agents/active-project.txt`.
+3. **Ask** — else STOP and ask.
 
-## Step 0: Pre-flight Verification (All Projects)
-Run these checks before touching the production branch:
-1. **Backend Tests**: Run the pytest suite (excluding voice-agent mocks if applicable).
-2. **Frontend Build**: Run the production build compiler (`npm run build` or `npx next build`) in the `frontend` directory to ensure no compilation errors exist.
+Set `PROJECT_ROOT` and **echo exactly** `Target: Projects/<name>`. All git/test commands below run
+inside `PROJECT_ROOT`.
 
----
+## Step 1 — Pick the path
+From the remaining `$ARGUMENTS` (`debug` | `main` | `cherry [sha…]`) or by asking the human:
 
-## Step 1: Commit and Push Development Branch
-Ensure all active work on `main_debug` or your feature branch is committed and pushed:
+| Path | What ships | Gate required |
+|---|---|---|
+| **A · `debug`** — push `main_debug` only | commits already on `main_debug` → `origin/main_debug` | **Light**: backend pytest + frontend build |
+| **B · `main`** — full promotion | everything on `main_debug` → merged into `main` | **FULL**: light gate **+ `/sudo-e2e` green** |
+| **C · `cherry`** — feature promotion | chosen commit(s) cherry-picked onto `main` | **FULL**: light gate **+ `/sudo-e2e` green** |
+
+Path B is for "main_debug is clean, ship it all". Path C is for "main_debug has unfinished work;
+ship only these verified features". If unsure which, show `git log --oneline main..main_debug` and
+decide together.
+
+## Step 2 — Run the gate (BEFORE touching any branch)
+**Light gate (all paths):**
+1. Backend: full pytest suite via the canonical venv (`backend/.venv` — never the global interpreter).
+2. Frontend: production build (`npm run build` / `npx next build` in `frontend/`) — zero compile errors.
+
+**Full gate (paths B and C, additionally):**
+3. Run **`/sudo-e2e`** — the real end-to-end suite (emulator-backed, seeded users). It must finish
+   **green**. Its report is the promotion evidence; link it in the ledger row (Step 7).
+
+Any failure → **STOP**. Summarize the failures, file/link the evidence, and suggest the lane
+(`/sudo-quick-dev` or the ①②③ story loop). Do not proceed.
+
+## Step 3 — Commit & push the development branch (all paths)
 ```powershell
-# In PowerShell:
 git status
-git add <explicit-file-paths>
+git add <explicit-file-paths>            # never blanket-add; verify staged imports have staged modules
 git commit -m "<semantic-message>"
-$env:GITHUB_TOKEN = ""; git push origin <branch-name>
+$env:GITHUB_TOKEN = ""; git push origin main_debug
 ```
+**Path A ends here** → jump to Step 6 (deploy is optional for debug pushes) and Step 7.
 
----
-
-## Step 2: Merge or Cherry-pick to Production (main)
-
-Decide which path to take based on the state of `main_debug`:
-*   **Path A (Merge)**: Use this if `main_debug` contains NO other unreleased or in-progress changes, and you want to merge everything.
-*   **Path B (Cherry-pick)**: Use this if `main_debug` has other unfinished features, and you ONLY want to ship the specific commits you just verified.
-
-### Path A: Merge Branch
+## Step 4 — Promote to main (paths B and C — human approves every command)
+### Path B: full merge
 ```powershell
-# 1. Switch to production and pull latest
 git checkout main
 $env:GITHUB_TOKEN = ""; git pull origin main
-
-# 2. Merge branch (using --no-ff to preserve history metadata)
-git merge <branch-name> --no-ff
-
-# 🛑 HUMAN GATE: Summarize the commits + changed files to the user first.
-# 3. Push to origin main to trigger frontend App Hosting CI/CD
+git merge main_debug --no-ff             # preserve history metadata
+# 🛑 HUMAN GATE: summarize the commits + changed files first
+$env:GITHUB_TOKEN = ""; git push origin main   # triggers frontend App Hosting CI/CD
+```
+### Path C: cherry-pick features
+```powershell
+git log --oneline main..main_debug       # identify the SHAs together
+git checkout main
+$env:GITHUB_TOKEN = ""; git pull origin main
+git cherry-pick <sha-1> <sha-2>
+# 🛑 HUMAN GATE: summarize the cherry-picked commits first
 $env:GITHUB_TOKEN = ""; git push origin main
 ```
 
-### Path B: Cherry-pick Specific Commits
+## Step 5 — Reconcile the branch model (path C always; path B sanity-check)
+Cherry-picks mint NEW SHAs on `main`, leaving `main` "ahead" — reconcile immediately:
 ```powershell
-# 1. Identify the commit SHAs from your dev branch:
-git log -n 5 --oneline
-
-# 2. Switch to production and pull latest
-git checkout main
-$env:GITHUB_TOKEN = ""; git pull origin main
-
-# 3. Cherry-pick the target commit(s)
-git cherry-pick <commit-sha-1> <commit-sha-2>
-
-# 🛑 HUMAN GATE: Summarize the cherry-picked commits to the user first.
-# 4. Push to origin main to trigger frontend App Hosting CI/CD
-$env:GITHUB_TOKEN = ""; git push origin main
+git checkout main_debug
+git merge main                            # main_debug now contains main again
+$env:GITHUB_TOKEN = ""; git push origin main_debug
 ```
+Path B: verify `git log --oneline main_debug..main` is empty (it should be, after a clean merge).
+Always finish back on `main_debug` — the working tree stays on the dev line.
 
----
+## Step 6 — Deploy backend (if backend changed — Cloud Run)
+Run the project's backend deploy (see `@.agents/skills/deploy-backend/SKILL.md` for auth + pipeline
+specs). Target the correct region/project (AviationChat: `us-east1` / `aviationchat`).
 
-## Step 3: Switch Back to Dev Line
-Always return your working tree to the development branch to keep the workspace isolated:
-```powershell
-git checkout <dev-branch-name-or-main_debug>
-```
+## Step 7 — Verify live + update the ledger
+1. **Live check**: backend `/health` + the production frontend URL.
+2. **Ledger**: add a row to `PROJECT_ROOT/_artifacts/INDEX.md` (and the home-base INDEX if run from
+   the lobby) — what shipped, which path, gate evidence link (the `/sudo-e2e` report for B/C).
+3. **Active context**: record the deployment in the project's `active-context.md`.
 
----
-
-## Step 4: Deploy Backend (Optional / Cloud Run)
-If the changes include backend modifications, deploy them to GCP Cloud Run:
-1. Run the project's backend deployment script (e.g. `.\deploy_secrets.ps1` or `gcloud run deploy`).
-2. Target the correct region (e.g. `us-east1` for AviationChat) and project ID (`aviationchat`).
-
----
-
-## Step 5: Verification & Ledger Update
-1. **Verify Live Site**: Hit the `/health` endpoint on the backend and verify the frontend at `https://aviationchat.org` (or the active custom domain).
-2. **Update Ledger**: Update `_artifacts/INDEX.md` (and the home-base `INDEX.md` if working from home base) with a row for this deployment.
-3. **Update Active Context**: Update `active-context.md` under the project-local BMAD state folder with the deployment details.
-
----
-*Reference: `@.agents/skills/deploy-backend/SKILL.md` for full GCP authentication and pipeline specs.*
-
-Optional additional input (feature branch name): $ARGUMENTS
+Optional additional input (project · path `debug|main|cherry` · SHAs): $ARGUMENTS

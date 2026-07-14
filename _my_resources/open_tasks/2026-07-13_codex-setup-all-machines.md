@@ -123,7 +123,7 @@ not a project sync), and confirm `.claude/skills/bmad-*` exists on that machine.
 | Command group | On Codex? | Why |
 |---|---|---|
 | Universal `/` commands (no `platforms:` key) — `sync-agents`, `1_*`, `new-project`, `merge_main_debug`, `webm-alpha-video`, `slash_command_updating` | ✅ prompts | default = everywhere |
-| `sudo-quick-dev`, `sudo-bdd-tests`, `sudo-incident-response` | ✅ prompts | interactive sudo commands with **no** skill twin |
+| `sudo-quick-dev`, `sudo-bdd-tests`, `security_team_aviationchat` (renamed from sudo-incident-response 2026-07-14) | ✅ prompts | interactive sudo commands with **no** skill twin |
 | `sudo-boot/write/dev/self-audit/code-review/update/create-*` (7) | ✅ **as skills**, not prompts | Codex discovers the `sudo-*` **skills** natively from `.agents/skills`; a prompt too would double the menu |
 | All `bmad-*` (personas, testarch, workflows) | ✅ **as skills** (via `~/.codex/skills` mirror) | "we use bmad in everything" — mirrored, not stubbed |
 | `*_AP` (autopilot headless: self-audit / code-review / dev-story) | ❌ | pinned `[claude, opencode]` — only the claude/opencode autopilot engines invoke them |

@@ -2,9 +2,9 @@
 description: From the home base, fan out and reconcile the lobby + every conformant project against disk — repo-map (mode-preserving), every INDEX.md, the context-hygiene prune, and the open-tasks list (todo_list.md → ## Open Work). Reports for approval before editing; read-mostly, never commits. Inside a project it reconciles just that one workspace, unchanged.
 ---
 
-# /1_update-maps — Update the Maps, INDEXes & open-tasks list
+# /sudo-update-maps — Update the Maps, INDEXes & open-tasks list
 
-Execute the workflow defined in @.agents/workflows/1_update-maps.md.
+Execute the workflow defined in @.agents/workflows/sudo-update-maps.md.
 
 **Execution notes:**
 - **Scope is mode-driven.** Run from the **home base** (a `Projects/` dir exists) → it **fans out**: the lobby

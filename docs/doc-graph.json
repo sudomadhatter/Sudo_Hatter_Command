@@ -1,15 +1,15 @@
 {
   "root": "C:\\Users\\dlohn\\.gemini\\antigravity\\scratch\\Sudo_Hatter_Command\\.agents",
   "counts": {
-    "files": 248,
+    "files": 237,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 239,
+    "edges": 221,
     "external": 16,
     "ambiguous": 53,
-    "dangling": 206,
-    "broken_paths": 33,
-    "unresolved_names": 173
+    "dangling": 195,
+    "broken_paths": 32,
+    "unresolved_names": 163
   },
   "nodes": [
     {
@@ -33,53 +33,8 @@
       "out": 7
     },
     {
-      "path": "commands/1_check-for-tech-stack-updates.md",
-      "in": 0,
-      "out": 2
-    },
-    {
-      "path": "commands/1_clean-test-scripts.md",
-      "in": 0,
-      "out": 2
-    },
-    {
-      "path": "commands/1_firebase-user-cleanup.md",
-      "in": 0,
-      "out": 2
-    },
-    {
-      "path": "commands/1_live_testing_team.md",
-      "in": 0,
-      "out": 1
-    },
-    {
-      "path": "commands/1_make-workflow-from-chat.md",
-      "in": 0,
-      "out": 1
-    },
-    {
-      "path": "commands/1_push-to-main-and-deploy.md",
-      "in": 0,
-      "out": 2
-    },
-    {
-      "path": "commands/1_run-all-tests-back_front.md",
-      "in": 0,
-      "out": 2
-    },
-    {
-      "path": "commands/1_run-restart-dev-env.md",
-      "in": 0,
-      "out": 1
-    },
-    {
-      "path": "commands/1_update-maps.md",
-      "in": 1,
-      "out": 4
-    },
-    {
       "path": "commands/INDEX.md",
-      "in": 5,
+      "in": 4,
       "out": 0
     },
     {
@@ -143,6 +98,11 @@
       "out": 0
     },
     {
+      "path": "commands/security_team_aviationchat.md",
+      "in": 0,
+      "out": 0
+    },
+    {
       "path": "commands/slash_command_updating.md",
       "in": 0,
       "out": 0
@@ -183,9 +143,19 @@
       "out": 1
     },
     {
-      "path": "commands/sudo-incident-response.md",
-      "in": 1,
+      "path": "commands/sudo-e2e.md",
+      "in": 0,
       "out": 0
+    },
+    {
+      "path": "commands/sudo-live-testing-team.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": "commands/sudo-push-e2e.md",
+      "in": 0,
+      "out": 1
     },
     {
       "path": "commands/sudo-quick-dev.md",
@@ -201,6 +171,11 @@
       "path": "commands/sudo-self-audit_AP.md",
       "in": 0,
       "out": 1
+    },
+    {
+      "path": "commands/sudo-update-maps.md",
+      "in": 1,
+      "out": 4
     },
     {
       "path": "commands/sudo-update-sprint-memory.md",
@@ -389,7 +364,7 @@
     },
     {
       "path": "rules/constitution.md",
-      "in": 24,
+      "in": 16,
       "out": 1
     },
     {
@@ -446,11 +421,6 @@
       "path": "scripts/INDEX.md",
       "in": 0,
       "out": 0
-    },
-    {
-      "path": "skills/1_update-maps/SKILL.md",
-      "in": 0,
-      "out": 2
     },
     {
       "path": "skills/3_voice-ai-development/SKILL.md",
@@ -1023,14 +993,14 @@
       "out": 1
     },
     {
-      "path": "skills/sudo-incident-response/SKILL.md",
+      "path": "skills/sudo-self-audit/SKILL.md",
       "in": 0,
       "out": 1
     },
     {
-      "path": "skills/sudo-self-audit/SKILL.md",
+      "path": "skills/sudo-update-maps/SKILL.md",
       "in": 0,
-      "out": 1
+      "out": 2
     },
     {
       "path": "skills/sudo-update-sprint-memory/SKILL.md",
@@ -1133,53 +1103,8 @@
       "out": 1
     },
     {
-      "path": "workflows/1_check-for-tech-stack-updates.md",
-      "in": 1,
-      "out": 1
-    },
-    {
-      "path": "workflows/1_clean-test-scripts.md",
-      "in": 1,
-      "out": 1
-    },
-    {
-      "path": "workflows/1_firebase-user-cleanup.md",
-      "in": 1,
-      "out": 1
-    },
-    {
-      "path": "workflows/1_live_testing_team.md",
-      "in": 1,
-      "out": 0
-    },
-    {
-      "path": "workflows/1_make-workflow-from-chat.md",
-      "in": 1,
-      "out": 0
-    },
-    {
-      "path": "workflows/1_push-to-main-and-deploy.md",
-      "in": 0,
-      "out": 2
-    },
-    {
-      "path": "workflows/1_run-all-tests-back_front.md",
-      "in": 1,
-      "out": 1
-    },
-    {
-      "path": "workflows/1_run-restart-dev-env.md",
-      "in": 1,
-      "out": 0
-    },
-    {
-      "path": "workflows/1_update-maps.md",
-      "in": 2,
-      "out": 7
-    },
-    {
       "path": "workflows/INDEX.md",
-      "in": 4,
+      "in": 3,
       "out": 4
     },
     {
@@ -1196,6 +1121,11 @@
       "path": "workflows/new-project.md",
       "in": 0,
       "out": 3
+    },
+    {
+      "path": "workflows/security_team_aviationchat.md",
+      "in": 0,
+      "out": 0
     },
     {
       "path": "workflows/slash_command_updating.md",
@@ -1223,9 +1153,19 @@
       "out": 0
     },
     {
-      "path": "workflows/sudo-incident-response.md",
+      "path": "workflows/sudo-e2e.md",
       "in": 0,
       "out": 0
+    },
+    {
+      "path": "workflows/sudo-live-testing-team.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": "workflows/sudo-push-e2e.md",
+      "in": 0,
+      "out": 1
     },
     {
       "path": "workflows/sudo-quick-dev.md",
@@ -1236,6 +1176,11 @@
       "path": "workflows/sudo-self-audit.md",
       "in": 3,
       "out": 2
+    },
+    {
+      "path": "workflows/sudo-update-maps.md",
+      "in": 2,
+      "out": 7
     },
     {
       "path": "workflows/sudo-update-sprint-memory.md",
@@ -1362,91 +1307,6 @@
       "kind": "ref"
     },
     {
-      "from": "commands/1_check-for-tech-stack-updates.md",
-      "to": "rules/constitution.md",
-      "kind": "ref"
-    },
-    {
-      "from": "commands/1_check-for-tech-stack-updates.md",
-      "to": "workflows/1_check-for-tech-stack-updates.md",
-      "kind": "ref"
-    },
-    {
-      "from": "commands/1_clean-test-scripts.md",
-      "to": "rules/constitution.md",
-      "kind": "ref"
-    },
-    {
-      "from": "commands/1_clean-test-scripts.md",
-      "to": "workflows/1_clean-test-scripts.md",
-      "kind": "ref"
-    },
-    {
-      "from": "commands/1_firebase-user-cleanup.md",
-      "to": "rules/constitution.md",
-      "kind": "ref"
-    },
-    {
-      "from": "commands/1_firebase-user-cleanup.md",
-      "to": "workflows/1_firebase-user-cleanup.md",
-      "kind": "ref"
-    },
-    {
-      "from": "commands/1_live_testing_team.md",
-      "to": "workflows/1_live_testing_team.md",
-      "kind": "ref"
-    },
-    {
-      "from": "commands/1_make-workflow-from-chat.md",
-      "to": "workflows/1_make-workflow-from-chat.md",
-      "kind": "ref"
-    },
-    {
-      "from": "commands/1_push-to-main-and-deploy.md",
-      "to": "skills/deploy-backend/SKILL.md",
-      "kind": "ref"
-    },
-    {
-      "from": "commands/1_push-to-main-and-deploy.md",
-      "to": "commands/INDEX.md",
-      "kind": "ref"
-    },
-    {
-      "from": "commands/1_run-all-tests-back_front.md",
-      "to": "rules/constitution.md",
-      "kind": "ref"
-    },
-    {
-      "from": "commands/1_run-all-tests-back_front.md",
-      "to": "workflows/1_run-all-tests-back_front.md",
-      "kind": "ref"
-    },
-    {
-      "from": "commands/1_run-restart-dev-env.md",
-      "to": "workflows/1_run-restart-dev-env.md",
-      "kind": "ref"
-    },
-    {
-      "from": "commands/1_update-maps.md",
-      "to": "rules/artifacts-always-first.md",
-      "kind": "ref"
-    },
-    {
-      "from": "commands/1_update-maps.md",
-      "to": "workflows/1_update-maps.md",
-      "kind": "ref"
-    },
-    {
-      "from": "commands/1_update-maps.md",
-      "to": "AGENTS.md",
-      "kind": "ref"
-    },
-    {
-      "from": "commands/1_update-maps.md",
-      "to": "commands/INDEX.md",
-      "kind": "ref"
-    },
-    {
       "from": "commands/autopilot_mobile.md",
       "to": "rules/mobile-mode.md",
       "kind": "ref"
@@ -1482,6 +1342,11 @@
       "kind": "ref"
     },
     {
+      "from": "commands/sudo-push-e2e.md",
+      "to": "skills/deploy-backend/SKILL.md",
+      "kind": "ref"
+    },
+    {
       "from": "commands/sudo-self-audit.md",
       "to": "AGENTS.md",
       "kind": "ref"
@@ -1494,6 +1359,26 @@
     {
       "from": "commands/sudo-self-audit_AP.md",
       "to": "workflows/sudo-self-audit.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/sudo-update-maps.md",
+      "to": "rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/sudo-update-maps.md",
+      "to": "workflows/sudo-update-maps.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/sudo-update-maps.md",
+      "to": "AGENTS.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/sudo-update-maps.md",
+      "to": "commands/INDEX.md",
       "kind": "ref"
     },
     {
@@ -1902,16 +1787,6 @@
       "kind": "ref"
     },
     {
-      "from": "skills/1_update-maps/SKILL.md",
-      "to": "commands/1_update-maps.md",
-      "kind": "ref"
-    },
-    {
-      "from": "skills/1_update-maps/SKILL.md",
-      "to": "INDEX.md",
-      "kind": "ref"
-    },
-    {
       "from": "skills/4_sse-streaming-patterns/SKILL.md",
       "to": "skills/regulatory-verification-protocol/SKILL.md",
       "kind": "link"
@@ -2232,13 +2107,18 @@
       "kind": "ref"
     },
     {
-      "from": "skills/sudo-incident-response/SKILL.md",
-      "to": "commands/sudo-incident-response.md",
+      "from": "skills/sudo-self-audit/SKILL.md",
+      "to": "commands/sudo-self-audit.md",
       "kind": "ref"
     },
     {
-      "from": "skills/sudo-self-audit/SKILL.md",
-      "to": "commands/sudo-self-audit.md",
+      "from": "skills/sudo-update-maps/SKILL.md",
+      "to": "commands/sudo-update-maps.md",
+      "kind": "ref"
+    },
+    {
+      "from": "skills/sudo-update-maps/SKILL.md",
+      "to": "INDEX.md",
       "kind": "ref"
     },
     {
@@ -2332,76 +2212,6 @@
       "kind": "ref"
     },
     {
-      "from": "workflows/1_check-for-tech-stack-updates.md",
-      "to": "rules/constitution.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/1_clean-test-scripts.md",
-      "to": "rules/constitution.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/1_firebase-user-cleanup.md",
-      "to": "rules/constitution.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/1_push-to-main-and-deploy.md",
-      "to": "skills/deploy-backend/SKILL.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/1_push-to-main-and-deploy.md",
-      "to": "workflows/INDEX.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/1_run-all-tests-back_front.md",
-      "to": "rules/constitution.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "to": "commands/INDEX.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "to": "rules/artifacts-always-first.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "to": "rules/git-policy.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "to": "AGENTS.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "to": "CLAUDE.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "to": "GEMINI.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "to": "workflows/INDEX.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/INDEX.md",
-      "to": "workflows/1_update-maps.md",
-      "kind": "ref"
-    },
-    {
       "from": "workflows/INDEX.md",
       "to": "workflows/autopilot_bmad_dev_loop.md",
       "kind": "ref"
@@ -2414,6 +2224,11 @@
     {
       "from": "workflows/INDEX.md",
       "to": "workflows/sudo-self-audit.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/INDEX.md",
+      "to": "workflows/sudo-update-maps.md",
       "kind": "ref"
     },
     {
@@ -2442,6 +2257,11 @@
       "kind": "ref"
     },
     {
+      "from": "workflows/sudo-push-e2e.md",
+      "to": "skills/deploy-backend/SKILL.md",
+      "kind": "ref"
+    },
+    {
       "from": "workflows/sudo-self-audit.md",
       "to": "AGENTS.md",
       "kind": "ref"
@@ -2452,44 +2272,47 @@
       "kind": "ref"
     },
     {
+      "from": "workflows/sudo-update-maps.md",
+      "to": "commands/INDEX.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/sudo-update-maps.md",
+      "to": "rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/sudo-update-maps.md",
+      "to": "rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/sudo-update-maps.md",
+      "to": "AGENTS.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/sudo-update-maps.md",
+      "to": "CLAUDE.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/sudo-update-maps.md",
+      "to": "GEMINI.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/sudo-update-maps.md",
+      "to": "workflows/INDEX.md",
+      "kind": "ref"
+    },
+    {
       "from": "workflows/sudo-update-sprint-memory.md",
       "to": "AGENTS.md",
       "kind": "ref"
     }
   ],
   "dangling": [
-    {
-      "from": "commands/1_check-for-tech-stack-updates.md",
-      "target": "/walkthrough.md"
-    },
-    {
-      "from": "commands/1_check-for-tech-stack-updates.md",
-      "target": "tech-stack-audit.md"
-    },
-    {
-      "from": "commands/1_live_testing_team.md",
-      "target": "debug-watch-log.md"
-    },
-    {
-      "from": "commands/1_make-workflow-from-chat.md",
-      "target": "/walkthrough.md"
-    },
-    {
-      "from": "commands/1_push-to-main-and-deploy.md",
-      "target": "active-context.md"
-    },
-    {
-      "from": "commands/1_run-all-tests-back_front.md",
-      "target": "/walkthrough.md"
-    },
-    {
-      "from": "commands/1_run-restart-dev-env.md",
-      "target": "_bmad-output/active-context/active-context.md"
-    },
-    {
-      "from": "commands/1_update-maps.md",
-      "target": "todo_list.md"
-    },
     {
       "from": "commands/autopilot_claude.md",
       "target": "_RUN-STATUS.md"
@@ -2575,6 +2398,18 @@
       "target": "walkthrough.md"
     },
     {
+      "from": "commands/security_team_aviationchat.md",
+      "target": ".github/claude/incident-triage.md"
+    },
+    {
+      "from": "commands/security_team_aviationchat.md",
+      "target": "/incident-report.md"
+    },
+    {
+      "from": "commands/security_team_aviationchat.md",
+      "target": "PROJECT_ROOT/.github/claude/incident-triage.md"
+    },
+    {
       "from": "commands/sudo-boot-sprint-memory.md",
       "target": "_bmad-output/active-context/active-context.md"
     },
@@ -2643,16 +2478,12 @@
       "target": "walkthrough.md"
     },
     {
-      "from": "commands/sudo-incident-response.md",
-      "target": ".github/claude/incident-triage.md"
+      "from": "commands/sudo-live-testing-team.md",
+      "target": "PROJECT_ROOT/_bmad-output/active-context/active-context.md"
     },
     {
-      "from": "commands/sudo-incident-response.md",
-      "target": "/incident-report.md"
-    },
-    {
-      "from": "commands/sudo-incident-response.md",
-      "target": "PROJECT_ROOT/.github/claude/incident-triage.md"
+      "from": "commands/sudo-push-e2e.md",
+      "target": "active-context.md"
     },
     {
       "from": "commands/sudo-quick-dev.md",
@@ -2677,6 +2508,10 @@
     {
       "from": "commands/sudo-self-audit_AP.md",
       "target": "walkthrough.md"
+    },
+    {
+      "from": "commands/sudo-update-maps.md",
+      "target": "todo_list.md"
     },
     {
       "from": "commands/sudo-update-sprint-memory.md",
@@ -3031,10 +2866,6 @@
       "target": "sse-streaming-patterns.md"
     },
     {
-      "from": "skills/sudo-incident-response/SKILL.md",
-      "target": ".github/claude/incident-triage.md"
-    },
-    {
       "from": "skills/sudo-self-audit/SKILL.md",
       "target": "implementation_plan.md"
     },
@@ -3075,86 +2906,6 @@
       "target": "todo_list.md"
     },
     {
-      "from": "workflows/1_check-for-tech-stack-updates.md",
-      "target": "/walkthrough.md"
-    },
-    {
-      "from": "workflows/1_check-for-tech-stack-updates.md",
-      "target": "tech-stack-audit.md"
-    },
-    {
-      "from": "workflows/1_live_testing_team.md",
-      "target": "debug-watch-log.md"
-    },
-    {
-      "from": "workflows/1_make-workflow-from-chat.md",
-      "target": "/walkthrough.md"
-    },
-    {
-      "from": "workflows/1_push-to-main-and-deploy.md",
-      "target": "active-context.md"
-    },
-    {
-      "from": "workflows/1_run-all-tests-back_front.md",
-      "target": "/walkthrough.md"
-    },
-    {
-      "from": "workflows/1_run-restart-dev-env.md",
-      "target": "_bmad-output/active-context/active-context.md"
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "target": "/active-context-archive.md"
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "target": "/active-context.md"
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "target": "/docs/repo-map.md"
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "target": "INDEX-archive.md"
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "target": "_artifacts/active-context.md"
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "target": "_bmad-output/active-context/active-context.md"
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "target": "active-context.md"
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "target": "new-prp.md"
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "target": "repo-map.md"
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "target": "shipped-task.md"
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "target": "slug.md"
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "target": "todo_list.md"
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "target": "workspace-standard.md"
-    },
-    {
       "from": "workflows/INDEX.md",
       "target": "implementation_plan.md"
     },
@@ -3191,6 +2942,18 @@
       "target": "walkthrough.md"
     },
     {
+      "from": "workflows/security_team_aviationchat.md",
+      "target": ".github/claude/incident-triage.md"
+    },
+    {
+      "from": "workflows/security_team_aviationchat.md",
+      "target": "/incident-report.md"
+    },
+    {
+      "from": "workflows/security_team_aviationchat.md",
+      "target": "PROJECT_ROOT/.github/claude/incident-triage.md"
+    },
+    {
       "from": "workflows/sudo-boot-sprint-memory.md",
       "target": "_bmad-output/active-context/active-context.md"
     },
@@ -3215,16 +2978,12 @@
       "target": "walkthrough.md"
     },
     {
-      "from": "workflows/sudo-incident-response.md",
-      "target": ".github/claude/incident-triage.md"
+      "from": "workflows/sudo-live-testing-team.md",
+      "target": "PROJECT_ROOT/_bmad-output/active-context/active-context.md"
     },
     {
-      "from": "workflows/sudo-incident-response.md",
-      "target": "/incident-report.md"
-    },
-    {
-      "from": "workflows/sudo-incident-response.md",
-      "target": "PROJECT_ROOT/.github/claude/incident-triage.md"
+      "from": "workflows/sudo-push-e2e.md",
+      "target": "active-context.md"
     },
     {
       "from": "workflows/sudo-quick-dev.md",
@@ -3233,6 +2992,58 @@
     {
       "from": "workflows/sudo-self-audit.md",
       "target": "implementation_plan.md"
+    },
+    {
+      "from": "workflows/sudo-update-maps.md",
+      "target": "/active-context-archive.md"
+    },
+    {
+      "from": "workflows/sudo-update-maps.md",
+      "target": "/active-context.md"
+    },
+    {
+      "from": "workflows/sudo-update-maps.md",
+      "target": "/docs/repo-map.md"
+    },
+    {
+      "from": "workflows/sudo-update-maps.md",
+      "target": "INDEX-archive.md"
+    },
+    {
+      "from": "workflows/sudo-update-maps.md",
+      "target": "_artifacts/active-context.md"
+    },
+    {
+      "from": "workflows/sudo-update-maps.md",
+      "target": "_bmad-output/active-context/active-context.md"
+    },
+    {
+      "from": "workflows/sudo-update-maps.md",
+      "target": "active-context.md"
+    },
+    {
+      "from": "workflows/sudo-update-maps.md",
+      "target": "new-prp.md"
+    },
+    {
+      "from": "workflows/sudo-update-maps.md",
+      "target": "repo-map.md"
+    },
+    {
+      "from": "workflows/sudo-update-maps.md",
+      "target": "shipped-task.md"
+    },
+    {
+      "from": "workflows/sudo-update-maps.md",
+      "target": "slug.md"
+    },
+    {
+      "from": "workflows/sudo-update-maps.md",
+      "target": "todo_list.md"
+    },
+    {
+      "from": "workflows/sudo-update-maps.md",
+      "target": "workspace-standard.md"
     },
     {
       "from": "workflows/sudo-update-sprint-memory.md",
@@ -3329,24 +3140,24 @@
       "target": "_my_resources/open_tasks/todo_list.md"
     },
     {
-      "from": "workflows/1_update-maps.md",
-      "target": "_artifacts/INDEX-archive.md"
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "target": "_my_resources/open_tasks/todo_list.md"
-    },
-    {
-      "from": "workflows/1_update-maps.md",
-      "target": "docs/repo-map.md"
-    },
-    {
       "from": "workflows/new-project.md",
       "target": "router.md"
     },
     {
       "from": "workflows/sudo-boot-sprint-memory.md",
       "target": "router.md"
+    },
+    {
+      "from": "workflows/sudo-update-maps.md",
+      "target": "_artifacts/INDEX-archive.md"
+    },
+    {
+      "from": "workflows/sudo-update-maps.md",
+      "target": "_my_resources/open_tasks/todo_list.md"
+    },
+    {
+      "from": "workflows/sudo-update-maps.md",
+      "target": "docs/repo-map.md"
     }
   ],
   "ambiguous": [
@@ -3360,40 +3171,40 @@
       ]
     },
     {
-      "from": "commands/1_push-to-main-and-deploy.md",
-      "target": "_artifacts/INDEX.md",
-      "candidates": [
-        "INDEX.md",
-        "bmad",
-        "commands/INDEX.md",
-        "hooks/INDEX.md",
-        "opencode-agents/INDEX.md",
-        "rules/INDEX.md",
-        "scripts/INDEX.md",
-        "skills/INDEX.md",
-        "templates/INDEX.md",
-        "workflows/INDEX.md"
-      ]
-    },
-    {
-      "from": "commands/1_update-maps.md",
-      "target": "/INDEX.md",
-      "candidates": [
-        "INDEX.md",
-        "bmad",
-        "commands/INDEX.md",
-        "hooks/INDEX.md",
-        "opencode-agents/INDEX.md",
-        "rules/INDEX.md",
-        "scripts/INDEX.md",
-        "skills/INDEX.md",
-        "templates/INDEX.md",
-        "workflows/INDEX.md"
-      ]
-    },
-    {
       "from": "commands/autopilot_mobile.md",
       "target": "/_artifacts/INDEX.md",
+      "candidates": [
+        "INDEX.md",
+        "bmad",
+        "commands/INDEX.md",
+        "hooks/INDEX.md",
+        "opencode-agents/INDEX.md",
+        "rules/INDEX.md",
+        "scripts/INDEX.md",
+        "skills/INDEX.md",
+        "templates/INDEX.md",
+        "workflows/INDEX.md"
+      ]
+    },
+    {
+      "from": "commands/sudo-push-e2e.md",
+      "target": "PROJECT_ROOT/_artifacts/INDEX.md",
+      "candidates": [
+        "INDEX.md",
+        "bmad",
+        "commands/INDEX.md",
+        "hooks/INDEX.md",
+        "opencode-agents/INDEX.md",
+        "rules/INDEX.md",
+        "scripts/INDEX.md",
+        "skills/INDEX.md",
+        "templates/INDEX.md",
+        "workflows/INDEX.md"
+      ]
+    },
+    {
+      "from": "commands/sudo-update-maps.md",
+      "target": "/INDEX.md",
       "candidates": [
         "INDEX.md",
         "bmad",
@@ -3459,7 +3270,6 @@
       "from": "skills/4_sse-streaming-patterns/SKILL.md",
       "target": "../multi-agent-orchestration/SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -3490,8 +3300,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -3506,7 +3316,6 @@
       "from": "skills/5_adk_skills/adk-prompting/SKILLS.md",
       "target": "SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -3537,8 +3346,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -3553,7 +3362,6 @@
       "from": "skills/6_dual-store-rag-patterns/SKILL.md",
       "target": "../multi-agent-orchestration/SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -3584,8 +3392,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -3600,7 +3408,6 @@
       "from": "skills/INDEX.md",
       "target": "/SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -3631,8 +3438,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -3647,7 +3454,6 @@
       "from": "skills/INDEX.md",
       "target": "SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -3678,8 +3484,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -3694,7 +3500,6 @@
       "from": "skills/agent-handoff-patterns/SKILL.md",
       "target": "../firestore-schema-guide/SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -3725,8 +3530,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -3741,7 +3546,6 @@
       "from": "skills/agent-handoff-patterns/SKILL.md",
       "target": "../multi-agent-orchestration/SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -3772,8 +3576,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -3788,7 +3592,6 @@
       "from": "skills/backend-dev-guidelines/resources/architecture-overview.md",
       "target": "SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -3819,8 +3622,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -3835,7 +3638,6 @@
       "from": "skills/backend-dev-guidelines/resources/async-and-errors.md",
       "target": "SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -3866,8 +3668,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -3882,7 +3684,6 @@
       "from": "skills/backend-dev-guidelines/resources/complete-examples.md",
       "target": "SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -3913,8 +3714,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -3929,7 +3730,6 @@
       "from": "skills/backend-dev-guidelines/resources/configuration.md",
       "target": "SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -3960,8 +3760,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -3976,7 +3776,6 @@
       "from": "skills/backend-dev-guidelines/resources/database-patterns.md",
       "target": "SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -4007,8 +3806,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -4023,7 +3822,6 @@
       "from": "skills/backend-dev-guidelines/resources/middleware-guide.md",
       "target": "SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -4054,8 +3852,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -4070,7 +3868,6 @@
       "from": "skills/backend-dev-guidelines/resources/routing-and-controllers.md",
       "target": "SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -4101,8 +3898,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -4117,7 +3914,6 @@
       "from": "skills/backend-dev-guidelines/resources/sentry-and-monitoring.md",
       "target": "SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -4148,8 +3944,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -4164,7 +3960,6 @@
       "from": "skills/backend-dev-guidelines/resources/services-and-repositories.md",
       "target": "SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -4195,8 +3990,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -4211,7 +4006,6 @@
       "from": "skills/backend-dev-guidelines/resources/testing-guide.md",
       "target": "SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -4242,8 +4036,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -4258,7 +4052,6 @@
       "from": "skills/backend-dev-guidelines/resources/validation-patterns.md",
       "target": "SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -4289,8 +4082,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -4322,7 +4115,6 @@
       "from": "skills/gcp-cloud-run/SKILL.md",
       "target": "../sse-streaming-patterns/SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -4353,8 +4145,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -4369,7 +4161,6 @@
       "from": "skills/hr-agent-schema-guide/SKILL.md",
       "target": "../multi-agent-orchestration/SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -4400,8 +4191,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -4416,7 +4207,6 @@
       "from": "skills/rag-implementation/SKILL.md",
       "target": "../dual-store-rag-patterns/SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -4447,8 +4237,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -4463,7 +4253,6 @@
       "from": "skills/rag-implementation/SKILL.md",
       "target": "../multi-agent-orchestration/SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -4494,8 +4283,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -4510,7 +4299,6 @@
       "from": "skills/regulatory-verification-protocol/SKILL.md",
       "target": "../dual-store-rag-patterns/SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -4541,8 +4329,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -4557,7 +4345,6 @@
       "from": "skills/regulatory-verification-protocol/SKILL.md",
       "target": "../multi-agent-orchestration/SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -4588,8 +4375,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -4604,7 +4391,6 @@
       "from": "skills/regulatory-verification-protocol/SKILL.md",
       "target": "../sse-streaming-patterns/SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -4635,8 +4421,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -4651,7 +4437,6 @@
       "from": "skills/specialist_agents_team/SKILL.md",
       "target": "../dual-store-rag-patterns/SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -4682,8 +4467,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -4698,7 +4483,6 @@
       "from": "skills/specialist_agents_team/SKILL.md",
       "target": "../sse-streaming-patterns/SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -4729,8 +4513,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -4753,7 +4537,6 @@
       "from": "skills/systematic-debugging/CREATION-LOG.md",
       "target": "skill-creation/SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -4784,8 +4567,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -4808,7 +4591,6 @@
       "from": "templates/project-template/AGENTS.md",
       "target": "/SKILL.md",
       "candidates": [
-        "skills/1_update-maps/SKILL.md",
         "skills/3_voice-ai-development/SKILL.md",
         "skills/4_sse-streaming-patterns/SKILL.md",
         "skills/5_adk_skills/adk-agent-development/SKILL.md",
@@ -4839,8 +4621,8 @@
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
-        "skills/sudo-incident-response/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
+        "skills/sudo-update-maps/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
         "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
@@ -4868,8 +4650,8 @@
       ]
     },
     {
-      "from": "workflows/1_push-to-main-and-deploy.md",
-      "target": "_artifacts/INDEX.md",
+      "from": "workflows/sudo-push-e2e.md",
+      "target": "PROJECT_ROOT/_artifacts/INDEX.md",
       "candidates": [
         "INDEX.md",
         "bmad",
@@ -4884,7 +4666,7 @@
       ]
     },
     {
-      "from": "workflows/1_update-maps.md",
+      "from": "workflows/sudo-update-maps.md",
       "target": "/AGENTS.md",
       "candidates": [
         "AGENTS.md",
@@ -4893,7 +4675,7 @@
       ]
     },
     {
-      "from": "workflows/1_update-maps.md",
+      "from": "workflows/sudo-update-maps.md",
       "target": "/INDEX.md",
       "candidates": [
         "INDEX.md",
@@ -4909,7 +4691,7 @@
       ]
     },
     {
-      "from": "workflows/1_update-maps.md",
+      "from": "workflows/sudo-update-maps.md",
       "target": "_artifacts/AGENTS.md",
       "candidates": [
         "AGENTS.md",
@@ -4918,7 +4700,7 @@
       ]
     },
     {
-      "from": "workflows/1_update-maps.md",
+      "from": "workflows/sudo-update-maps.md",
       "target": "_artifacts/INDEX.md",
       "candidates": [
         "INDEX.md",
@@ -4934,7 +4716,7 @@
       ]
     },
     {
-      "from": "workflows/1_update-maps.md",
+      "from": "workflows/sudo-update-maps.md",
       "target": "_artifacts/_main/INDEX.md",
       "candidates": [
         "INDEX.md",
@@ -4950,7 +4732,7 @@
       ]
     },
     {
-      "from": "workflows/1_update-maps.md",
+      "from": "workflows/sudo-update-maps.md",
       "target": "_artifacts/epic_8/INDEX.md",
       "candidates": [
         "INDEX.md",
@@ -4966,7 +4748,7 @@
       ]
     },
     {
-      "from": "workflows/1_update-maps.md",
+      "from": "workflows/sudo-update-maps.md",
       "target": "_artifacts/tea/INDEX.md",
       "candidates": [
         "INDEX.md",
@@ -4982,7 +4764,7 @@
       ]
     },
     {
-      "from": "workflows/1_update-maps.md",
+      "from": "workflows/sudo-update-maps.md",
       "target": "_my_resources/AGENTS.md",
       "candidates": [
         "AGENTS.md",
@@ -4991,7 +4773,7 @@
       ]
     },
     {
-      "from": "workflows/1_update-maps.md",
+      "from": "workflows/sudo-update-maps.md",
       "target": "docs/AGENTS.md",
       "candidates": [
         "AGENTS.md",
@@ -5000,7 +4782,7 @@
       ]
     },
     {
-      "from": "workflows/1_update-maps.md",
+      "from": "workflows/sudo-update-maps.md",
       "target": "docs/CLAUDE.md",
       "candidates": [
         "CLAUDE.md",
