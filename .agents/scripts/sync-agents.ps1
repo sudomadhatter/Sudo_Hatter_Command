@@ -66,12 +66,38 @@ param(
   [string]$Target,
   [switch]$GlobalsOnly,
   [switch]$NoGlobals,
+  [switch]$Maintained,
   [Alias('DryRun')][switch]$WhatIf
 )
 
 $ErrorActionPreference = "Stop"
 $Master   = Split-Path $PSScriptRoot -Parent     # ...\.agents
 $HomeRoot = Split-Path $Master -Parent           # ...\Sudo_Hatter_Command
+
+# -Maintained: the ONLY sanctioned "sync everything" — the lobby + ONLY the projects on the
+# .agents\maintained-projects.txt allowlist (shared with check_maps.py). Never hand-loop over
+# Projects\* : that touches child repos we deliberately do not keep in sync. -Target is ignored here.
+if ($Maintained) {
+  Write-Host "sync-agents: -Maintained fan-out (lobby + .agents\maintained-projects.txt)"
+  & $PSCommandPath -WhatIf:$WhatIf                                  # lobby (default target; refreshes globals)
+  $listFile = Join-Path $HomeRoot ".agents\maintained-projects.txt"
+  if (Test-Path $listFile) {
+    foreach ($line in Get-Content $listFile) {
+      $name = ($line -replace '#.*$', '').Trim()
+      if (-not $name) { continue }
+      $proj = Join-Path $HomeRoot "Projects\$name"
+      if (Test-Path $proj) {
+        & $PSCommandPath -Target $proj -NoGlobals -WhatIf:$WhatIf
+      } else {
+        Write-Warning "sync-agents: maintained project '$name' not found under Projects\ - skipping"
+      }
+    }
+  } else {
+    Write-Warning "sync-agents: no .agents\maintained-projects.txt found - only the lobby was synced"
+  }
+  exit 0
+}
+
 if (-not $Target) { $Target = $HomeRoot }
 $Target   = (Resolve-Path $Target).Path
 $IsLobby  = ($Target.TrimEnd('\') -ieq $HomeRoot.TrimEnd('\'))

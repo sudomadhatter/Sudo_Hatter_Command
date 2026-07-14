@@ -155,16 +155,39 @@ def default_regen_ignore(is_home, is_bmad):
     return ",".join(parts)
 
 
+def maintained_projects(home_root):
+    """The explicit allowlist of `Projects/<name>` folders this home base keeps in sync — one name per line
+    in `.agents/maintained-projects.txt` (blanks + #comments ignored). Returns a set, or None when the file
+    is absent (legacy fallback: then every conformant project is maintained). The lobby is always maintained
+    and is never listed here. Single source of truth shared with sync-agents.ps1 (-Maintained)."""
+    f = home_root / ".agents" / "maintained-projects.txt"
+    if not f.exists():
+        return None
+    out = set()
+    for line in f.read_text(encoding="utf-8").splitlines():
+        name = line.split("#", 1)[0].strip()
+        if name:
+            out.add(name)
+    return out
+
+
 def fan_out_targets(home_root):
-    """Home-base fan-out worklist: the lobby itself FIRST, then every `Projects/<name>` that is an actual
-    workspace (marker = it carries an `AGENTS.md`). Non-workspace folders (no brain) are returned separately
-    so the caller can print a one-line skip instead of linting junk. Returns (targets, skipped)."""
+    """Home-base fan-out worklist: the lobby FIRST, then each MAINTAINED `Projects/<name>`. A project is
+    maintained iff it carries an `AGENTS.md` (a real workspace) AND is on the maintained-projects allowlist
+    (when that file exists). Anything skipped is returned as (path, reason) so the caller prints a one-line
+    skip instead of linting it. Returns (targets, skipped)."""
     targets = [home_root]
     skipped = []
+    allow = maintained_projects(home_root)
     pdir = home_root / "Projects"
     if pdir.is_dir():
         for child in sorted((p for p in pdir.iterdir() if p.is_dir()), key=lambda p: p.name):
-            (targets if (child / "AGENTS.md").exists() else skipped).append(child)
+            if not (child / "AGENTS.md").exists():
+                skipped.append((child, "not a workspace (no AGENTS.md)"))
+            elif allow is not None and child.name not in allow:
+                skipped.append((child, "not in .agents/maintained-projects.txt"))
+            else:
+                targets.append(child)
     return targets, skipped
 
 
@@ -629,8 +652,8 @@ def main():
     any_drift = False
     for t in targets:
         any_drift |= lint_one(t, args.ignore)
-    for s in skipped:
-        print(f"\n[skip] Projects/{s.name} - not a workspace (no AGENTS.md), nothing to reconcile")
+    for s, reason in skipped:
+        print(f"\n[skip] Projects/{s.name} - {reason}, nothing to reconcile")
 
     if multi:
         tail = f"FAN-OUT COMPLETE - {len(targets)} workspace(s) linted"

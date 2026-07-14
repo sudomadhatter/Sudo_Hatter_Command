@@ -1,0 +1,15 @@
+# Maintained projects — the SINGLE source of truth for which child workspaces this
+# command center keeps in sync (toolkit vendor + map fan-out).
+#
+# One `Projects/<name>` folder name per line. Blank lines and #comments are ignored.
+# The lobby (this command center) is ALWAYS maintained and is not listed here.
+#
+# WHO READS THIS:
+#   - .agents/scripts/check_maps.py  (fan_out_targets): `--all` / /1_update-maps lint ONLY these.
+#   - .agents/scripts/sync-agents.ps1 (-Maintained):    the ONLY sanctioned "sync everything".
+# Never hand-loop over Projects/* — that touches repos we deliberately do not keep current.
+#
+# To add a new project to upkeep: add its folder name below and re-run /sync-agents -Maintained.
+
+AGY_AVIATIONCHAT
+Fresh_Workspace_BMAD

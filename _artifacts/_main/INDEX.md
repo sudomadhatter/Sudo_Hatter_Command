@@ -42,3 +42,5 @@
 | `2026-07-13_reconcile-maps-linter/` | Reconcile maps linter false positives. | implementation_plan, walkthrough |
 | `2026-07-13_codex-platform-surface/` | Add Codex (OpenAI) as the 4th command surface. | implementation_plan, walkthrough |
 | `2026-07-13_update-maps/` | Update maps, indexes, and open tasks for Lobby and conformant projects. | implementation_plan, walkthrough |
+| `2026-07-14_rename-sudo-create-epics-stories-sprint/` | Rename /sudo-create-epics-stories-sprint to /sudo-write-epics-stories-sprint. | implementation_plan, walkthrough |
+| `2026-07-14_update-gitnexus-graphs/` | Update GitNexus graphs for Sudo_Hatter_Command and AGY_AVIATIONCHAT. | implementation_plan |

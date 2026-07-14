@@ -1,8 +1,12 @@
 # ACTIVE CONTEXT — _main  (you own this, not a vendor)
 
 ## 1. PRIME STATE
-Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-07-09
-**2026-07-09 (latest): Docs truth-sync + root-law slim DONE — audits passed, drift fixed, canary green.**
+Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-07-14
+**2026-07-14 (latest): GitNexus graphs updated & dev tooling excluded. Sync guide created.**
+Refined product GitNexus index scope to exclude development/testing tooling (`load/`, `scripts/`, `_test_scripts/`, `auth_keys/`, `scratch/`, and root scripts) from indexing. Documented the new scope in `Projects/AGY_AVIATIONCHAT/docs/gitnexus.md`. Created a new guide [docs/gitnexus-sync.md](file:///c:/Users/dlohn/.gemini/antigravity/scratch/Sudo_Hatter_Command/docs/gitnexus-sync.md) explaining how the index files are machine-local and do not sync via Git, with instructions for re-indexing other machines. Executed GitNexus analysis on lobby (`Sudo_Hatter_Command`) and product project (`AGY_AVIATIONCHAT`), successfully updating local indexes. Regenerated content-mode AUTO blocks for both repo-maps, and resolved a missing debug index row drift for `password-reset-fix`. Verify maps checks clean (`exit 0`).
+Session: `_artifacts/_main/2026-07-14_update-gitnexus-graphs/`.
+
+**2026-07-09: Docs truth-sync + root-law slim DONE — audits passed, drift fixed, canary green.**
 Transcript-vs-setup audit: R1–R8 met/exceeded (architecture sound); `/1_update-maps` prune verified
 **move-never-delete** (workflow prose + Step-4 gate + `consume()` archives before rewriting). Doc-drift fixes:
 `master-implementation-plan.md` (status→built-live, "how to read" banner, §2 tree real names/paths, §4 as-built
@@ -105,51 +109,23 @@ Session: `_artifacts/_main/2026-06-25_home-base-maps-gitnexus-opentasks/`. NB: c
 already bundled this session's first-pass repo edits with the prior self-audit work — confirm that was intentional.
 
 ## 5. PICK UP  (read-only brief)
-- 5.1 Doing: building the home base (folder-as-workspace routing). Latest session executed the approved plan
-  `_artifacts/_main/2026-06-24_workspace-standard-and-repo-map/` — Parts F, E, D, A, C + the home-base portion
-  of B. Lab-prove + propagation are BLOCKED (see 5.4).
+- 5.1 Doing: maintaining GitNexus indexing and map/index health.
 - 5.2 Changed this session:
-  - **Rename:** `_experiment/` → `_routing-canary/` (git mv); README rewritten with "when to run" triggers.
-  - **Git policy LOCKED (canonical):** never run `git commit`/`push` yourself — hand Daniel the command;
-    only commit/push when he explicitly delegates it in the moment. Lives in `.agents/rules/git-policy.md`
-    (renamed from the contradictory `git-closeout-commits.md`); `constitution.md` + `artifacts-always-first.md`
-    + `AGENTS.md` §6 reconciled to it.
-  - **New canonical doc:** `_docs/workspace-standard.md` (how to FORMAT + UPKEEP a workspace; repo-map two
-    modes; retire-list appendix). To be vendored into every project's `docs/` later.
-  - **Artifacts org scheme** (in `artifacts-always-first.md` §2): bucket rule (file under the workspace the work
-    changes; `_main` for cross-project) + random-task `<date>_<slug>` vs story `<epic>/<story>` folders.
-  - **Lobby parity:** `AGENTS.md` now has the mandatory artifacts gate + always-loads `artifacts-always-first`;
-    NEW `.claude/settings.json` SessionStart hook injects this file + the gate (verified, UTF-8).
-  - **Repo-map generator:** `.agents/scripts/generate_repo_map.py` (AST + collapse + curated-header sentinels).
-    Proven read-only on ingestion: **514 → 192 lines**, data dirs collapsed.
-- 5.3 Earlier (still true): Phase A spine + master toolkit done; rename-day restructure moved 7 projects into
-  `Projects\` + path-fixed 262 files; home-base repo pushed (`036ae32`, branch `main`, origin
-  github.com/sudomadhatter/Sudo_Hatter_Command, private; `Projects/` gitignored); all 7 project repos
-  committed/pushed to their own remotes.
-- 5.4 BLOCKED:
-  - **CORRECTED 2026-06-25:** the earlier "clean-bmad is OFF-LIMITS / another team" note was wrong.
-    `Projects/Fresh_Workspace_BMAD` is **Daniel's own clean-shell template** (the project he clones to start a
-    new one). It is fully editable. Active work: `_artifacts/Fresh_Workspace_BMAD/2026-06-25_workspace-standard-cleanup/`
-    (standard-conformance + repo-map index; `_01_My/` → protected `_my_resources/`).
-  - 5 venvs still hardcode the old path; recreate per-project when next used.
-- 5.5 Best next move: (1) finish the clean-bmad workspace-standard cleanup (AGENTS.md renumber, vendor
-  workspace-standard + generator, build `docs/repo-map.md`, protect `_my_resources/`); (2) seed the
-  generator + standard + hook into the project template and `/sync-agents`. ((3) retire-list `_claude_artifacts/`
-  follow-up — ✓ DONE 2026-06-27: autopilot `.ps1` + `1_*` commands repointed to `_artifacts/`, fresh-workspace
-  converted to project-local, dead store deleted.)
+  - Excluded development, testing, and credential tools from the `AGY_AVIATIONCHAT` GitNexus indexing in `.gitnexusignore`.
+  - Created a synchronization guide at `docs/gitnexus-sync.md` explaining that the compiled index is machine-local.
+  - Linked the sync guide in the `docs/gitnexus.md` files of both workspaces.
+  - Updated GitNexus index graphs locally for Sudo_Hatter_Command (lobby) and AGY_AVIATIONCHAT.
+  - Regenerated content-mode AUTO blocks for both repository maps.
+  - Added the missing index row in `Projects/AGY_AVIATIONCHAT/_artifacts/debugging/INDEX.md` for `2026-07-14_password-reset-fix/`.
+  - Verified maps and indexes are clean (`exit 0`).
+- 5.3 Git status:
+  - Lobby: Modified `_artifacts/INDEX.md`, `_artifacts/_main/INDEX.md`, `docs/gitnexus.md`, `docs/repo-map.md`. Untracked `docs/gitnexus-sync.md`, `_artifacts/_main/2026-07-14_update-gitnexus-graphs/`.
+  - Product (`AGY_AVIATIONCHAT`): Modified `.gitnexusignore`, `docs/gitnexus.md`, `docs/repo-map.md`, `_artifacts/debugging/INDEX.md`, and local gitnexus skills.
+- 5.4 Best next move: Daniel commits changes in both repositories and runs `python .agents/scripts/check_maps.py --set-anchor --all` to baseline map diffs.
 
 ## 6. HAND OFF  (verified state at this checkpoint)
-- 6.1 Completed: Phase A; rename-day restructure; **this session's home-base Parts F/E/D/A/C/B-home** (see 5.2),
-  all verified (hook output + generator 514→192 proof pasted in the session walkthrough).
-- 6.2 In progress: nothing executing. Plan `2026-06-24_workspace-standard-and-repo-map` is closed for its
-  home-base scope; its lab/propagation scope is parked pending clearance.
-- 6.3 Open tasks / trade-offs: lab-prove + propagate the repo-map/standard once clean-bmad is cleared; vendor
-  `workspace-standard.md` into each project; retire-list `_claude_artifacts/` follow-up ✓ done 2026-06-27;
-  per-project rule reconciliation happens during each conversion; cross-LLM cold test of `_routing-canary/` in
-  opencode + Antigravity still to run.
-- 6.4 Related links: `_docs/workspace-standard.md`, `_docs/master-implementation-plan.md`,
-  `_artifacts/_main/2026-06-24_workspace-standard-and-repo-map/` (plan + walkthrough + task-list).
-- 6.5 Git: prior home-base sessions (maps/GitNexus, open-tasks standard) are committed on origin/main — latest
-  `fa8bf1b`. **UNCOMMITTED now:** the 2026-06-26 doc-graph-extractor session (new `generate_doc_graph.py`,
-  `_docs/doc-graph.{md,json}`, `repo-map.md` pointer, this active-context + INDEX). Commit cmd in its `walkthrough.md`.
-  Per-session "Your Actions" git commands remain in each `walkthrough.md` for the record.
+- 6.1 Completed: Refined indexing scopes, synchronized GitNexus graphs, added machine-local index sync documentation, regenerated AUTO blocks, and verified zero drift.
+- 6.2 In progress: Nothing executing.
+- 6.3 Open tasks / trade-offs: Indexes are machine-local; other machines must re-run analyze after pulling.
+- 6.4 Related links: `docs/gitnexus-sync.md`, `_artifacts/_main/2026-07-14_update-gitnexus-graphs/` (plan + walkthrough).
+- 6.5 Git: Uncommitted lobby and product files ready for Daniel to commit (commands in walkthrough).

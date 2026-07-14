@@ -91,7 +91,7 @@ Sudo_Hatter_Command/
   _system/
       [3 files: .mdx1, .txtx1, .ps1x1 | e.g. AGENTS.md]
   docs/
-      [8 files: .mdx7, .jsonx1 | e.g. AGENTS.md]
+      [9 files: .mdx8, .jsonx1 | e.g. AGENTS.md]
     [8 files: .mdx4, .txtx3, .jsonx1 | e.g. AGENTS.md]
 ```
 <!-- REPO-MAP:AUTO-END -->

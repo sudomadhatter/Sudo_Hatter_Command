@@ -29,6 +29,7 @@ workspace you have open (your cwd), not only what the work is about. Three rules
 
 | Date | Workspace | Slug | Summary | Status |
 |---|---|---|---|---|
+| 2026-07-14 | _main | update-gitnexus-graphs | **Update GitNexus graphs.** Run analyze command to update GitNexus database files for the lobby (Sudo_Hatter_Command) and the main project (AGY_AVIATIONCHAT) workspaces. | plan |
 | 2026-07-14 | _main | rename-sudo-create-epics-stories-sprint | **Rename /sudo-create-epics-stories-sprint to /sudo-write-epics-stories-sprint.** Renamed the epic kickoff command/workflow to /sudo-write-epics-stories-sprint to make the naming convention uniform across the system. Cleaned up stale files and synced the master `.agents` folder to Lobby, AviationChat, and Fresh_Workspace_BMAD workspaces across all LLMs (Gemini, Claude, opencode, Codex). | handoff |
 | 2026-07-14 | AGY_AVIATIONCHAT | password-reset-fix | **Firebase password reset continueUrl fallback.** Handled continue URL whitelist failures dynamically. If continueUrl domain is not authorized/valid, it falls back to sending the reset email without redirect settings. Added Vitest unit test suite. | done |
 | 2026-07-14 | AGY_AVIATIONCHAT | integrated-school-solo-login-card | **Story 8.19.11 Done.** Relocated school/solo gate to Step 2 onboarding inside Cockpit Card on `/`. Retired SchoolCodeGate.tsx. All tests green. | done |
@@ -75,3 +76,5 @@ workspace you have open (your cwd), not only what the work is about. Three rules
 
 > Earlier session rows (2026-06-24 → 2026-06-25, 10 rows) archived to `_artifacts/INDEX-archive.md`
 > to keep this ledger scannable. Full history preserved there — find by date/slug.
+
+<!-- CHECKPOINT id="ckpt_mrkn1ha0_juzdqa" time="2026-07-14T12:39:16.920Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->

@@ -50,3 +50,4 @@ This project is indexed by GitNexus as **Sudo_Hatter_Command** (67 symbols, 60 r
 | Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
 | Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
+| Index synchronization across machines | `docs/gitnexus-sync.md` |
