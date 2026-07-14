@@ -28,9 +28,11 @@ description: Update the Maps & INDEX.md files (any workspace)
 > python .agents/scripts/check_maps.py --root Projects/AGY_AVIATIONCHAT   # one project
 > ```
 > **Fan-out (the home-base default for this workflow).** `Projects/<name>/` are separate git repos. Run from the
-> lobby, `--all` reconciles the **lobby AND each `Projects/<name>` that is a workspace** (has an `AGENTS.md`) —
-> so one `/1_update-maps` at the top cleans everything. Run from *inside* a project (no `Projects/` dir) it's a
-> single-workspace pass — **identical to before**. Each repo still commits + re-anchors **separately** (Step 6).
+> lobby, `--all` reconciles the **lobby AND each MAINTAINED `Projects/<name>`** — a workspace (has an `AGENTS.md`)
+> that is ALSO listed in `.agents/maintained-projects.txt` (the single allowlist, shared with
+> `sync-agents.ps1 -Maintained`). Conformant-but-unlisted repos are `[skip]`-ped with a reason — we deliberately
+> do NOT keep every child current. So one `/1_update-maps` at the top cleans the maintained set. Run from *inside*
+> a project it's a single-workspace pass. Each repo still commits + re-anchors **separately** (Step 6).
 
 ---
 
@@ -77,10 +79,10 @@ Daniel's `## Todo list` prose and every task file — stays **read-only** (you m
 
 1. **Work out where you are** (it decides the scope — see Step 0.5):
    - **Home base** = a `Projects/` dir exists beside `AGENTS.md` + `docs/repo-map.md`. This run **fans out**:
-     the lobby **and** every conformant project.
+     the lobby **and** every **maintained** project (in `.agents/maintained-projects.txt`; others are skipped).
    - **Inside a project** = no `Projects/` dir (`docs/repo-map.md`). Single-workspace run — unchanged.
 2. **Run the deterministic linter first — it does the mechanical detection for you.** From the home base lead
-   with `--all` (lobby + every conformant project in one combined report); inside a project just run it bare:
+   with `--all` (lobby + every maintained project in one combined report); inside a project just run it bare:
    ```bash
    python .agents/scripts/check_maps.py --all                 # HOME BASE: lobby + every conformant project
    python .agents/scripts/check_maps.py                       # one workspace (lobby, or run from inside a project)
@@ -130,12 +132,12 @@ Daniel's `## Todo list` prose and every task file — stays **read-only** (you m
 **Inside a project** (no `Projects/` dir) → skip this step; you have exactly one workspace. Do Steps 1–3.6
 for it and close out (Step 6) for that one repo. This is the unchanged single-workspace path.
 
-**At the home base** (a `Projects/` dir exists) → this run reconciles **the lobby AND every conformant
-project**, because Daniel's `/1_update-maps` from the top is meant to clean everything in one go:
+**At the home base** (a `Projects/` dir exists) → this run reconciles **the lobby AND every maintained
+project** (listed in `.agents/maintained-projects.txt`); `/1_update-maps` from the top cleans that set in one go:
 
 1. **Build the worklist.** The `--all` lint already printed one section per target: the **lobby first**, then
-   each `Projects/<name>` that carries an `AGENTS.md` (the workspace marker). Folders without one (e.g. a
-   non-workspace like `OpenCode`) are printed as `[skip]` — ignore them. A half-built workspace (an `AGENTS.md`
+   each maintained `Projects/<name>` (carries an `AGENTS.md` AND is on the allowlist). Folders without a brain,
+   or workspaces not on the allowlist, are printed as `[skip]` with a reason — ignore them. A half-built workspace (an `AGENTS.md`
    but missing map/`.agents/`) shows as **NOT conformant** — that's real signal; flag it in the report, don't
    try to force a reconcile on a workspace that isn't standard yet (Guardrails: "conformance first").
 2. **Do Steps 1–3.6 PER workspace**, using that workspace's own paths (each workspace's map is `docs/repo-map.md`;
