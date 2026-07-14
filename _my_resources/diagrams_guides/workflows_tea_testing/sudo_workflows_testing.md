@@ -18,7 +18,7 @@ The exact sequence, top to bottom, from a fresh epic to a shipped story. Run it 
 /sudo-boot-sprint-memory <PROJECT>           # where am I? what's next? (read-only)
 
 # ── Phase A · Epic kickoff — ONCE per epic ────────────────────
-/sudo-create-epics-stories-sprint <PROJECT> <requirements-source>
+/sudo-write-epics-stories-sprint <PROJECT> <requirements-source>
 #   → epic + stories → sprint board → interactive P0–P3 risk-score (one story at a time)
 
 # ── Phase B · Per-story loop — REPEAT per story, P0 first ──────
@@ -31,7 +31,7 @@ The exact sequence, top to bottom, from a fresh epic to a shipped story. Run it 
 | # | Agile step | Command |
 |---|------------|---------|
 | — | Orient — where am I / what's next | `/sudo-boot-sprint-memory` |
-| **1–2** | Epic + stories + sprint, then map test levels (P0–P3) | `/sudo-create-epics-stories-sprint` |
+| **1–2** | Epic + stories + sprint, then map test levels (P0–P3) | `/sudo-write-epics-stories-sprint` |
 | **3** | Write the failing test | `/sudo-write-story-tests` |
 | **4–6** | Dev plan → self-audit → code the story | `/sudo-dev-story-tests` |
 | **7** | Code review + run tests | `/sudo-code-review` |
@@ -59,7 +59,7 @@ Doesn't call other commands — it just **reads state** and tells you what to ru
                               → then STOPS. Discovery only — waits for your instruction.
 ```
 
-### `/sudo-create-epics-stories-sprint` — Phase A epic kickoff (calls 3 skills)
+### `/sudo-write-epics-stories-sprint` — Phase A epic kickoff (calls 3 skills)
 ```
 1. bmad-create-epics-and-stories   → writes the epic + its user stories with acceptance criteria (ACs)
 2. bmad-sprint-planning            → lands those stories in sprint-status.yaml as `ready-for-dev`
@@ -531,7 +531,7 @@ flowchart TD
 
 | Workflow | Fires | Job |
 |----------|-------|-----|
-| **test-design** | epic kickoff — final interactive step of `/sudo-create-epics-stories-sprint` | risk-score the epic's work P0–P3 **with Daniel, one story at a time** → tells ① which ACs deserve the heaviest tests |
+| **test-design** | epic kickoff — final interactive step of `/sudo-write-epics-stories-sprint` | risk-score the epic's work P0–P3 **with Daniel, one story at a time** → tells ① which ACs deserve the heaviest tests |
 | **atdd** | ① per story | write acceptance tests that MUST fail now (red) |
 | **automate** | ② per story | expand API / UI / contract coverage on existing code |
 | **trace** | ③ gate | map requirements → tests, coverage vs. floor, GREEN/YELLOW/RED verdict |
@@ -571,7 +571,7 @@ flowchart TD
 | Command | One-line job |
 |---------|--------------|
 | `/sudo-boot-sprint-memory` | Where am I? What story is next? Which command do I run? (read-only) |
-| `/sudo-create-epics-stories-sprint` | **Phase A / epic kickoff** — create the epic + stories → sprint board → interactive P0–P3 risk-score (one story at a time). |
+| `/sudo-write-epics-stories-sprint` | **Phase A / epic kickoff** — write the epic + stories → sprint board → interactive P0–P3 risk-score (one story at a time). |
 | `/sudo-write-story-tests` | ① Create the story → **BDD Vision Lock (mandatory)** → write its **failing** acceptance tests (lock scenarios + ATDD reds share one file per stack). |
 | `/sudo-bdd-tests` | ①-inner (also standalone) — interactive Vision Lock w/ Murat → scenarios codified into the ATDD red files (standalone pytest-bdd opt-in only) or a **recorded** waiver, stamped into story frontmatter. |
 | `/sudo-dev-story-tests` | ② **BDD contract gate (hard)** → plan → **⛔ self-audit STOP gate** (you pick: run here w/ chosen model · fresh team · continue) → build → drive tests green → automate. |
@@ -595,6 +595,42 @@ exercise the production triage runbook; it never touches the sprint board.
 |---------|------|
 | `/sudo-incident-response [issue-id\|latest]` | **Drill harness** (16.1) for the Sentry incident-triage runbook (`.github/claude/incident-triage.md`). Thin — carries no triage logic: resolves the project → loads its runbook → runs it verbatim (**interactive lane**, Sentry MCP) → drops an `incident-report.md` under `_artifacts/debugging/`. **Drill:** force a P1 (`_test_scripts/sentry_smoke_test.py`) then run `/sudo-incident-response latest`; a pass = the report names the planted failure, the right file, and a sane fix. The runbook is the product; this is only its test rig. Full picture: [security/sentry_error_response_team.md](../security/sentry_error_response_team.md). |
 
+#### The incident lane's **E2E test** — the headless dispatch (read this if the last line confused you)
+
+There are **two** ways to test the incident system, and they cover **opposite halves.** The command above
+(`/sudo-incident-response`) tests the *triage brain* in a chat window. The **headless E2E dispatch** tests
+the *production wiring* — the real GitHub Actions lane, end to end. It's "E2E" in the truest §3 sense: the
+**full workflow over the real stack** (Actions runner → real HTTP → Telegram), not a mocked slice.
+
+| | `/sudo-incident-response` — interactive drill | **Headless E2E dispatch** — the real lane |
+|---|---|---|
+| **Lane** | an interactive Claude chat session | the real **GitHub Actions** runner (`.github/workflows/incident-response.yml`) |
+| **What it proves** | the runbook finds the right cause · file · fix | CI secrets/auth · fix-branch push · **the Telegram pager** — the whole chain fires |
+| **Output** | `incident-report.md` in `_artifacts/debugging/` | a **real GitHub issue** + fix branch + a **page to your phone** |
+| **How it fires** | `/sudo-incident-response latest` | a hand-crafted `repository_dispatch` (`gh api repos/<owner>/<repo>/dispatches -f event_type=incident …`) |
+| **Built-in command?** | ✅ yes | ❌ **no** — manual dispatch, or wait for a real Sentry fatal |
+
+**Why you need both (the 2026-07-14 lesson).** A Telegram-paging bug lived *only* in the headless lane's
+shell script — a parse error in a step that **only runs on a real dispatch**. Everything was green
+everywhere (unit tests, the interactive drill, the PR gate), yet the first real incident paged a **false
+"🛑 LANE FAILED"** while the report was actually fine. The interactive drill *could never* catch it — it
+doesn't run the Actions bash or the pager. Only a headless E2E dispatch exercises that surface.
+
+**When to fire the headless E2E dispatch** (the tips):
+- **After ANY edit to `.github/workflows/incident-response.yml`** — *especially* the bash paging steps. Nothing else runs them; they execute only on a real dispatch. **This is the big one.**
+- After changing the runbook, when you want to see *headless* behavior (no Sentry MCP — REST-only).
+- To confirm the CI secrets/auth are still wired (`SENTRY_AUTH_TOKEN`, Workload Identity, `TELEGRAM_BOT_TOKEN`).
+- As a periodic **fire drill** — simple proof the pager still reaches your phone.
+
+**How to ask for it:** just say *"fire an incident drill"* / *"live-fire the incident lane"* / *"test the
+pager end-to-end."* Claude crafts the dispatch (against a real issue or a synthetic one), watches it go
+green, confirms the page landed, and cleans up any throwaway issue/branch after.
+
+> **Gap worth closing:** there's no one-word command for the headless E2E yet — it's a hand-crafted
+> `repository_dispatch`. Adding a `workflow_dispatch:` trigger to the workflow would let you fire it from the
+> GitHub Actions UI / `gh workflow run` with no payload-crafting, and a `bash -n` syntax-gate on the page
+> steps would catch the parse-error class in CI before it ever ships.
+
 ---
 
 ## 11. The `sudo-` dev flow — the human-driven story loop
@@ -606,7 +642,7 @@ The `sudo-` commands are **thin orchestrators** — they don't reimplement anyth
 | # | Step | Command |
 |---|------|---------|
 | — | Orient (where am I / what's next) | `/sudo-boot-sprint-memory` |
-| **1** | Epic + stories + sprint | `/sudo-create-epics-stories-sprint` |
+| **1** | Epic + stories + sprint | `/sudo-write-epics-stories-sprint` |
 | **2** | Map test levels (P0–P3) | ↳ its final interactive step |
 | **3** | Write failing test | `/sudo-write-story-tests` |
 | **4** | Dev implementation plan | `/sudo-dev-story-tests` → plan |
@@ -619,7 +655,7 @@ Steps 1–2 are the once-per-epic kickoff; 3–8 repeat per story.
 
 ```mermaid
 flowchart TD
-    BOOT["/sudo-boot-sprint-memory<br/>boot + story pick-up"] --> KICK["/sudo-create-epics-stories-sprint<br/>(once per epic)<br/>epics + stories + sprint + risk-score P0–P3"]
+    BOOT["/sudo-boot-sprint-memory<br/>boot + story pick-up"] --> KICK["/sudo-write-epics-stories-sprint<br/>(once per epic)<br/>epics + stories + sprint + risk-score P0–P3"]
     KICK --> W["① /sudo-write-story-tests<br/>write RED tests (BDD Vision Lock + ATDD)"]
     W --> DEV["② /sudo-dev-story-tests<br/>plan → ⛔ audit STOP (pick model / fresh team) → build → automate"]
     DEV --> CR["③ /sudo-code-review<br/>review + TEST GATE → verdict"]
@@ -633,13 +669,13 @@ flowchart TD
 | Step | Command | Calls (TEA workflows) |
 |------|---------|------------------------|
 | boot | `sudo-boot-sprint-memory` | — (reads active-context + sprint-status, recommends next command) |
-| kickoff | `sudo-create-epics-stories-sprint` | `bmad-create-epics-and-stories` → `bmad-sprint-planning` → `bmad-testarch-test-design` (interactive P0–P3, one story at a time) |
+| kickoff | `sudo-write-epics-stories-sprint` | `bmad-create-epics-and-stories` → `bmad-sprint-planning` → `bmad-testarch-test-design` (interactive P0–P3, one story at a time) |
 | ① | `sudo-write-story-tests` | `bmad-create-story` → `/sudo-bdd-tests` (BDD Vision Lock, **mandatory** — contract or recorded waiver) → `testarch-atdd` |
 | ② | `sudo-dev-story-tests` | **BDD contract gate** → `bmad-dev-story` (plan) → **⛔ STOP** → `sudo-self-audit` (chosen lane/model, or fresh team) → `bmad-dev-story` (implement) → `testarch-automate` |
 | ③ | `sudo-code-review` | `bmad-code-review` → `/1_run-all-tests-back_front` → `testarch-trace` → `testarch-nfr` → `testarch-test-review` |
 | close | `sudo-update-sprint-memory` | — (reads ③'s verdict; only command that flips a story to `done`) |
 
-> **Epic kickoff (once per epic):** `/sudo-create-epics-stories-sprint` bundles this — it ends with an interactive `testarch-test-design` pass where you risk-score every story P0–P3 one at a time. Same first move to retrofit an untested codebase.
+> **Epic kickoff (once per epic):** `/sudo-write-epics-stories-sprint` bundles this — it ends with an interactive `testarch-test-design` pass where you risk-score every story P0–P3 one at a time. Same first move to retrofit an untested codebase.
 
 ### The TEST GATE (the heart of ③)
 Opt-in and baseline-diff aware: a project with no `_bmad-output/sudo-tests.yaml` baseline **auto-WAIVED** (never blocks a test-less project); legacy red is grandfathered — only **NEW** regressions fail.
@@ -785,3 +821,5 @@ Session 7 is a returnable reference. Re-run `/bmad-teach-me-testing` → Session
 <!-- CHECKPOINT id="ckpt_mriqhjgy_wmr0ic" time="2026-07-13T04:40:12.754Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
 
 <!-- CHECKPOINT id="ckpt_mrjgfu74_t98jtq" time="2026-07-13T16:46:43.360Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+
+<!-- CHECKPOINT id="ckpt_mrkl96fs_1zkvkj" time="2026-07-14T11:49:16.888Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
