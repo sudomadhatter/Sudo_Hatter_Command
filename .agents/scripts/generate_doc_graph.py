@@ -43,6 +43,27 @@ AUTO_END = "<!-- DOC-GRAPH:AUTO-END -->"
 CURATED_START = "<!-- DOC-GRAPH:CURATED-START -->"
 CURATED_END = "<!-- DOC-GRAPH:CURATED-END -->"
 
+# Memoized existence probe. Windows `stat` is slow under Defender real-time scanning, and the
+# same bare targets (e.g. `walkthrough.md`) recur hundreds of times -- caching collapses those
+# repeats so a doc-graph regen runs in seconds instead of minutes.
+_ISFILE = {}
+
+
+def _cached_is_file(p):
+    key = str(p)
+    v = _ISFILE.get(key)
+    if v is None:
+        if key.startswith("\\\\") or key.startswith("//"):
+            v = False                            # never stat a UNC path -- is_file() blocks on SMB
+        else:
+            try:
+                v = p.is_file()
+            except OSError:
+                v = False
+        _ISFILE[key] = v
+    return v
+
+
 # A path token ending in .md, not glued to a surrounding word. Allows / and \ so both
 # `.agents/rules/x.md` and `.agents\rules\x.md` are caught; backslashes normalized later.
 TOKEN_RE = re.compile(r"(?<![\w./\\-])([\w./\\-]+\.md)\b")
@@ -71,6 +92,11 @@ def clean_target(raw):
         return None
     if "://" in t or t.startswith("http") or t.startswith("mailto:"):
         return None                              # external URL, not doc wiring
+    if t.startswith("//"):
+        return None                              # protocol-relative URL (`//host/x.md`, from a
+                                                 # stripped `https:`) or UNC path -- not a doc ref.
+                                                 # Left in, Windows treats `root / //host` as a UNC
+                                                 # network path and is_file() blocks ~30s on SMB.
     if "*" in t or " " in t:
         return None
     if t.startswith("./"):
@@ -110,41 +136,87 @@ def resolve(target, source_rel, scope_files, by_basename, lobby_root, root):
         return ("resolved", hits[0])
     if len(hits) > 1:
         return ("ambiguous", hits)
-    # not in scope -- real file elsewhere (external) or genuinely broken (dangling)?
+    # Not in scope -- real file elsewhere (external, e.g. a `../router.md` that escapes .agents
+    # into the lobby) or genuinely broken (dangling)? Probe each base via the cached, UNC-guarded
+    # stat: memoization + the UNC skip keep this fast and stop a stray `//host/x.md` URL from
+    # blocking ~30s on SMB (the bug that silently froze every regen since June).
     for base in (lobby_root, root, root / src_dir):
-        try:
-            if (base / target).is_file():
-                return ("external", target)
-        except OSError:
-            pass
+        if _cached_is_file(base / target):
+            return ("external", target)
     return ("dangling", target)
+
+
+# --- vendor-pack collapsing (BMAD) ------------------------------------------
+# BMAD self-installs ~54 skill packs under skills/bmad-* (each ~65-70 internal md
+# fragments: templates, checklists, workflow steps). Enumerating + wiring every one
+# made the graph 81% bmad nodes / 94% bmad edges -- vendor noise that buried the ~183
+# docs WE authored and made the broken-link report useless. We COLLAPSE each pack to
+# one summary node (its root + a doc count), so an agent still sees the skill exists
+# and how big it is, but its internals are neither parsed nor wired. Our docs can still
+# LINK to a pack (edge -> pack node); the pack itself is a leaf we do not traverse.
+def pack_root(rel):
+    """If rel lives inside a collapsible vendor pack, return that pack's root dir; else None."""
+    parts = rel.split("/")
+    for i, seg in enumerate(parts[:-1]):          # dir segments only (never the filename)
+        s = seg.lower()
+        if s in ("bmad", "_bmad") or s.startswith("bmad-"):
+            return "/".join(parts[: i + 1])
+    return None
+
+
+def canon(rel):
+    """Collapse a pack-internal path to its pack root; pass any other path through."""
+    return pack_root(rel) or rel
 
 
 def build_graph(root, ignores):
     root = Path(root).resolve()
     lobby_root = root.parent if root.name == ".agents" else root
     scope_list = collect_md(str(root), ignores)
-    scope_files = set(scope_list)
+    scope_files = set(scope_list)                 # complete set -> links INTO a pack still resolve
     by_basename = defaultdict(list)
     for rel in scope_list:
         by_basename[posixpath.basename(rel)].append(rel)
 
+    # One collapsed summary per vendor pack (doc count); authored docs are the real graph.
+    pack_docs = defaultdict(int)
+    for rel in scope_list:
+        pr = pack_root(rel)
+        if pr is not None:
+            pack_docs[pr] += 1
+    authored = [rel for rel in scope_list if pack_root(rel) is None]
+
     edges, externals, danglings, ambiguous = [], [], [], []
     out_deg = defaultdict(int)
     in_deg = defaultdict(int)
-    for rel in scope_list:
+    for rel in authored:
         in_deg.setdefault(rel, 0)
+    for pr in pack_docs:
+        in_deg.setdefault(pr, 0)                  # packs are link TARGETS, never parsed as sources
+
+    def _link(src, dest, kind):
+        if dest == src:
+            return                                # self / same-pack
+        edges.append({"from": src, "to": dest, "kind": kind})
+        out_deg[src] += 1
+        in_deg[dest] += 1
+
+    for rel in authored:                          # parse ONLY the docs we authored (skip pack internals)
         text = (root / rel).read_text(encoding="utf-8", errors="ignore")
         for target, kind in sorted(extract_refs(text).items()):
             status, value = resolve(target, rel, scope_files, by_basename, lobby_root, root)
             if status == "resolved":
-                if value == rel:
-                    continue                      # self-reference
-                edges.append({"from": rel, "to": value, "kind": kind})
-                out_deg[rel] += 1
-                in_deg[value] += 1
+                _link(rel, canon(value), kind)    # a hit inside a pack collapses to the pack node
             elif status == "ambiguous":
-                ambiguous.append({"from": rel, "target": target, "candidates": value})
+                cands = []
+                for c in value:                   # collapse candidates; if they reduce to ONE, it resolves
+                    cc = canon(c)
+                    if cc not in cands:
+                        cands.append(cc)
+                if len(cands) == 1:
+                    _link(rel, cands[0], kind)
+                else:
+                    ambiguous.append({"from": rel, "target": target, "candidates": cands})
             elif status == "external":
                 externals.append({"from": rel, "target": value})
             else:
@@ -159,7 +231,9 @@ def build_graph(root, ignores):
             uniq.append(e)
     edges = uniq
 
-    nodes = [{"path": rel, "in": in_deg.get(rel, 0), "out": out_deg.get(rel, 0)} for rel in scope_list]
+    nodes = [{"path": rel, "in": in_deg.get(rel, 0), "out": out_deg.get(rel, 0)} for rel in authored]
+    nodes += [{"path": pr, "in": in_deg.get(pr, 0), "out": 0, "docs": pack_docs[pr], "pack": True}
+              for pr in sorted(pack_docs)]
     # A dangling target that names a PATH (a real dir component) is a likely-broken link (signal);
     # a bare filename -- or a root-relative `/name.md`, which is a bmad output-file pattern -- is
     # usually a generated-artifact name a workflow mentions, not a link (noise).
@@ -167,12 +241,14 @@ def build_graph(root, ignores):
     return {
         "root": str(root),
         "counts": {
-            "files": len(scope_list), "edges": len(edges), "external": len(externals),
+            "files": len(authored), "packs": len(pack_docs), "pack_docs": sum(pack_docs.values()),
+            "edges": len(edges), "external": len(externals),
             "ambiguous": len(ambiguous),
             "dangling": len(danglings), "broken_paths": broken, "unresolved_names": len(danglings) - broken,
         },
         "nodes": nodes, "edges": edges,
         "dangling": danglings, "external": externals, "ambiguous": ambiguous,
+        "packs": [{"path": pr, "docs": pack_docs[pr], "in": in_deg.get(pr, 0)} for pr in sorted(pack_docs)],
     }
 
 
@@ -205,7 +281,7 @@ def render_auto(graph, top):
     amb_specific = sorted((a for a in graph["ambiguous"] if len(a["candidates"]) <= 4),
                           key=lambda a: (a["from"], a["target"]))
     amb_generic = Counter(a["target"] for a in graph["ambiguous"] if len(a["candidates"]) > 4)
-    orphans = [n["path"] for n in nodes if n["in"] == 0]
+    orphans = [n["path"] for n in nodes if n["in"] == 0 and not n.get("pack")]
     orph_by_dir = Counter(_topdir(p) for p in orphans)
 
     L = [
@@ -213,7 +289,8 @@ def render_auto(graph, top):
         "<!-- generated by .agents/scripts/generate_doc_graph.py -- do NOT hand-edit this block;",
         "     edit the CURATED block above. Rebuild: python .agents/scripts/generate_doc_graph.py -->",
         "",
-        f"**Scope:** `{graph['root']}` | **{c['files']}** docs | **{c['edges']}** resolved edges | "
+        f"**Scope:** `{graph['root']}` | **{c['files']}** authored docs + **{c.get('packs', 0)}** bmad packs "
+        f"({c.get('pack_docs', 0)} vendor docs summarized) | **{c['edges']}** resolved edges | "
         f"**{c['broken_paths']}** broken-path refs | **{c['unresolved_names']}** bare-name refs | "
         f"**{c['ambiguous']}** ambiguous | **{c['external']}** external.",
         f"_Human summary -- tables capped at {CAP} rows; the complete lists are in `doc-graph.json`._",
@@ -254,6 +331,16 @@ def render_auto(graph, top):
     if amb_generic:
         generic = ", ".join(f"`{nm}` x{n}" for nm, n in amb_generic.most_common(8))
         L.append(f"\n_Plus {sum(amb_generic.values())} refs to generic names omitted: {generic} ..._")
+
+    packs = graph.get("packs", [])
+    if packs:
+        L += ["", f"## BMAD skill packs ({len(packs)}, summarized -- internals not enumerated)",
+              "_Each is one vendor skill pack: `docs` = md files inside it; `from` = links to it from our toolkit._",
+              "", "| Pack | docs | linked-from |", "|---|---:|---:|"]
+        prows, extra = _capped(sorted(packs, key=lambda p: (-p["in"], p["path"])))
+        L += [f"| `{p['path']}` | {p['docs']} | {p['in']} |" for p in prows]
+        if extra:
+            L.append(f"| ... | _+{extra} more_ | _in doc-graph.json_ |")
 
     L += ["", f"## Orphans: {len(orphans)} docs nothing in scope references (full list in doc-graph.json)",
           "_Expected for leaf docs like per-skill `SKILL.md` that are loaded by name, not linked._",
