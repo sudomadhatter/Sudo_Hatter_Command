@@ -8,8 +8,11 @@ Execute the workflow defined in @.agents/workflows/1_update-maps.md.
 
 **Execution notes:**
 - **Scope is mode-driven.** Run from the **home base** (a `Projects/` dir exists) → it **fans out**: the lobby
-  **and** every conformant `Projects/<name>` (one with an `AGENTS.md`). Run from **inside a project** → just that
-  one workspace, exactly as before. Scope to a single workspace from the lobby with the focus arg below.
+  **and** every **maintained** `Projects/<name>` — i.e. a workspace (has `AGENTS.md`) that is ALSO listed in
+  `.agents/maintained-projects.txt` (the single allowlist, shared with `sync-agents.ps1 -Maintained`).
+  Conformant-but-unlisted projects are skipped with a one-line reason. To add a project to upkeep, add its
+  folder name to that file. Run from **inside a project** → just that one workspace. Scope to a single
+  workspace from the lobby with the focus arg below.
 - **Lead with the linter** — it does the mechanical detection. From the home base use `--all`:
   `python .agents/scripts/check_maps.py --all` (lobby + every conformant project, one combined report); inside a
   project just `python .agents/scripts/check_maps.py`. It runs nine numbered checks per workspace (5 fatal + the git-baseline signal + the context-hygiene, tier-2-local-law, and gitnexus-index-freshness hints; plus an unnumbered level-2 INDEX presence check) — one command verifies maps, INDEXes, the folder AGENTS.md law files, AND the code index.
