@@ -5,22 +5,30 @@
 
 .DESCRIPTION
   Single source of authorship = <home>\.agents. The canonical invocable set is .agents\commands\ — it mirrors
-  to ALL three platforms. This copies commands / skills / hooks / opencode-agents into the target's .claude
-  and .opencode dirs (Claude /commands + skills + hooks resolve there) and, for a LOBBY sync, also refreshes
-  the two machine-global caches so opencode and Antigravity see the same set Claude does.
+  to ALL FOUR platforms (Claude, opencode, Antigravity/Gemini, Codex). This copies commands / skills / hooks /
+  opencode-agents into the target's .claude and .opencode dirs (Claude /commands + skills + hooks resolve there)
+  and, for a LOBBY sync, also refreshes the machine-global caches so opencode, Antigravity, and Codex see the
+  same set Claude does.
+
+  Codex is the lightest surface: it reads AGENTS.md natively AND discovers Agent Skills from .agents\skills
+  (repo) + ~\.codex\skills (global), so rules + our own skills need zero work. Only two globals are pushed for
+  it: (1) custom prompts -> ~\.codex\prompts (its /commands equivalent, invoked /prompts:<name>), and (2) the
+  bmad-* skills -> ~\.codex\skills (BMAD installs to .claude\skills, which Codex does not read).
 
   Use -WhatIf (alias -DryRun) to preview every copy, create, and delete action without touching disk.
 
-  PLATFORM REACH. A command may declare its reach with frontmatter `platforms: [claude, opencode, antigravity]`.
-  Absent = universal (all three). The sync copies a command only to the platforms it lists, so e.g.
-  /autopilot_claude (claude-only) never lands in the opencode/gemini surfaces.
+  PLATFORM REACH. A command may declare its reach with frontmatter `platforms: [claude, opencode, antigravity, codex]`.
+  Absent = universal (all four). The sync copies a command only to the platforms it lists, so e.g.
+  /autopilot_claude (claude-only) never lands in the opencode/gemini/codex surfaces.
 
   PURGE POLICY.
     - Local tool dirs (.claude, .opencode): copy eligible commands; purge only commands that ARE master-managed
       but are no longer eligible for that platform. Files the master doesn't own (a project's own commands) are
       left alone. Skills / hooks / opencode-agents are an additive robocopy (no delete).
-    - Global caches: MIRROR-EXACT — copy eligible, purge anything not eligible, EXCEPT `bmad-*` (BMAD installs
-      its own global agents/workflows; never ours to delete).
+    - Global caches (opencode + Antigravity + Codex prompts): MIRROR-EXACT — copy eligible, purge anything not
+      eligible, EXCEPT `bmad-*` (BMAD installs its own global agents/workflows; never ours to delete).
+    - Codex skills cache (~\.codex\skills): mirror `bmad-*` skill dirs from .claude\skills (per-dir /MIR); purge
+      codex-side bmad-* dirs whose source is gone; PRESERVE `.system` and any foreign (non-bmad) dirs.
     - Project .agents vendor: ADDITIVE. The vendored .agents is a HYBRID (master toolkit + project-owned
       rules\, skills\, and bmad\), so it is NEVER mirrored/purged wholesale. bmad\ is EXCLUDED from the vendor
       robocopy entirely (BMAD's module config is project-identity — each repo's own `project_name` — and BMAD
@@ -43,11 +51,12 @@
   Directory to sync into. Default: the home-base root (lobby).
 
 .PARAMETER GlobalsOnly
-  Refresh only the machine-global caches (opencode + Antigravity) from the lobby master. Skips local tool dirs.
-  This is what /slash_command_updating now delegates to.
+  Refresh only the machine-global caches (opencode + Antigravity command caches, Codex prompts, and the Codex
+  bmad-* skills mirror) from the lobby master. Skips local tool dirs. /slash_command_updating delegates to this.
 
 .PARAMETER NoGlobals
-  Sync local tool dirs only; skip the machine-global caches even on a lobby sync.
+  Sync local tool dirs only; skip the machine-global caches (incl. the Codex prompts + skills mirror) even on a
+  lobby sync.
 
 .PARAMETER WhatIf
   Preview mode. Report every copy, directory creation, and deletion that would happen, but perform no writes.
@@ -67,7 +76,7 @@ if (-not $Target) { $Target = $HomeRoot }
 $Target   = (Resolve-Path $Target).Path
 $IsLobby  = ($Target.TrimEnd('\') -ieq $HomeRoot.TrimEnd('\'))
 
-$AllPlatforms = @('claude','opencode','antigravity')
+$AllPlatforms = @('claude','opencode','antigravity','codex')
 
 # --- helpers ------------------------------------------------------------------
 
@@ -196,6 +205,47 @@ function Sync-AntigravityWorkflowMirror {
   return $mirrored
 }
 
+# Mirror the BMAD skills into Codex's machine-global skills cache (~/.codex/skills). Codex implements the
+# open Agent Skills standard and discovers .agents/skills (repo) + ~/.codex/skills (global) -- but NOT
+# .claude/skills, which is where BMAD installs its 56 bmad-* skills (its manifest targets claude-code +
+# antigravity only). Our OWN skills already live in .agents/skills, so Codex sees them from the repo; only the
+# bmad-* set is missing. This mirrors each .claude/skills/bmad-* dir into ~/.codex/skills so Codex invokes BMAD
+# natively via /skills (same model as Claude -- no /prompts: stub, which would double the menu entry). Machine-
+# local by design, exactly like the prompts + opencode/antigravity command caches; re-run sync to refresh.
+# Per-dir /MIR is safe (mirrors WITHIN one skill dir only). Codex-side bmad-* dirs whose source is gone are
+# purged; .system and any foreign (non-bmad) dirs are preserved.
+function Sync-CodexSkills {
+  param([string]$SkillSrcDir, [string]$Dst, [switch]$WhatIf)
+  if (-not (Test-Path $SkillSrcDir)) { Write-Warning "sync-agents: SKIPPED codex skills - no source '$SkillSrcDir'"; return 0 }
+  try {
+    if (-not $WhatIf) { New-Item -ItemType Directory -Force -Path $Dst -ErrorAction SilentlyContinue | Out-Null }
+    if (-not (Test-Path $Dst) -and -not $WhatIf) { throw "path not writable (broken junction or missing target?)" }
+  } catch {
+    Write-Warning ("sync-agents: SKIPPED codex skills cache '{0}' - {1}" -f $Dst, $_.Exception.Message); return 0
+  }
+  $srcSkills = Get-ChildItem -Path $SkillSrcDir -Directory -Filter 'bmad-*' -ErrorAction SilentlyContinue
+  $srcNames  = @($srcSkills | Select-Object -ExpandProperty Name)
+  foreach ($s in $srcSkills) {
+    $tgt = Join-Path $Dst $s.Name
+    if (-not $WhatIf) {
+      New-Item -ItemType Directory -Force -Path $tgt | Out-Null
+      robocopy $s.FullName $tgt /MIR /NFL /NDL /NJH /NJS /NC /NS /XD node_modules | Out-Null
+      if ($LASTEXITCODE -ge 8) { throw "robocopy failed ($($s.FullName) -> $tgt), rc=$LASTEXITCODE" }
+    } else {
+      Write-Host ("WHATIF: would mirror codex skill '{0}' -> '{1}'" -f $s.Name, $tgt)
+    }
+  }
+  # Purge codex-side bmad-* dirs whose source no longer exists. Never touch .system or foreign (non-bmad) dirs.
+  $stale = Get-ChildItem -Path $Dst -Directory -Filter 'bmad-*' -ErrorAction SilentlyContinue |
+    Where-Object { $srcNames -notcontains $_.Name }
+  if (-not $WhatIf) {
+    $stale | ForEach-Object { Remove-Item $_.FullName -Recurse -Force }
+  } else {
+    $stale | ForEach-Object { Write-Host ("WHATIF: would delete stale codex skill '{0}'" -f $_.Name) }
+  }
+  return $srcNames.Count
+}
+
 Write-Host "sync-agents: master=$Master"
 Write-Host "sync-agents: target=$Target (lobby=$IsLobby)"
 if ($WhatIf) { Write-Host "sync-agents: *** WHATIF / DRY-RUN MODE *** no files will be changed" }
@@ -257,7 +307,10 @@ if ((-not $NoGlobals) -and ($IsLobby -or $GlobalsOnly)) {
   $GlobalCmdSrc = Join-Path $Master "commands"
   $caches = @(
     @{ Name = 'opencode';    Platform = 'opencode';    Path = (Join-Path $env:USERPROFILE ".config\opencode\commands") },
-    @{ Name = 'antigravity'; Platform = 'antigravity'; Path = (Join-Path $env:USERPROFILE ".gemini\antigravity\global_workflows") }
+    @{ Name = 'antigravity'; Platform = 'antigravity'; Path = (Join-Path $env:USERPROFILE ".gemini\antigravity\global_workflows") },
+    # Codex custom prompts (invoked /prompts:<name>). Global-only -- Codex has no repo-level prompts dir; its
+    # repo surface is AGENTS.md + .agents/skills (already handled). bmad-* skills go to ~/.codex/skills below.
+    @{ Name = 'codex';       Platform = 'codex';       Path = (Join-Path $env:USERPROFILE ".codex\prompts") }
   )
   foreach ($c in $caches) {
     try {
@@ -275,6 +328,13 @@ if ((-not $NoGlobals) -and ($IsLobby -or $GlobalsOnly)) {
     Write-Host ("sync-agents: {0} global -> {1} cmds  ({2})" -f $c.Name, $names.Count, $c.Path)
   }
   Write-Host "sync-agents: (global caches mirror-exact; bmad-* preserved; restart opencode to pick up)"
+
+  # Codex reads Agent Skills natively but NOT .claude/skills (where BMAD installs). Mirror the bmad-* skills
+  # into ~/.codex/skills so BMAD is reachable from Codex via /skills (Daniel: "we use bmad in everything").
+  $codexSkillsDst = Join-Path $env:USERPROFILE ".codex\skills"
+  $bmadSkillSrc   = Join-Path $HomeRoot ".claude\skills"
+  $codexSkillCount = Sync-CodexSkills $bmadSkillSrc $codexSkillsDst -WhatIf:$WhatIf
+  Write-Host ("sync-agents: codex skills -> {0} bmad-* mirrored  ({1})" -f $codexSkillCount, $codexSkillsDst)
 }
 
 # --- Fresh living-template drift check (lobby sync only) ----------------------

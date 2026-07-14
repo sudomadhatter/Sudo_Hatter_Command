@@ -15,7 +15,7 @@ sources:
 > **What this is.** The single, evergreen standard for how every workspace in `Sudo_Hatter_Command` is
 > *shaped* and *kept healthy*. The transcript is the theory; the master-implementation-plan is the one-time
 > rollout; **this** is the standing spec an agent consults whenever it creates, converts, or maintains a
-> workspace. It is model-agnostic — it serves Claude, opencode, and Antigravity/Gemini equally.
+> workspace. It is model-agnostic — it serves Claude, opencode, Antigravity/Gemini, and Codex equally.
 >
 > **Where it lives.** Canonically at `docs/workspace-standard.md`. A **vendored copy** travels in each
 > `Projects/<name>/docs/` (same model as `.agents/rules/*`), so every repo is self-contained. Edit the
@@ -190,24 +190,32 @@ Formatting is one-time; upkeep is forever. Who does what, and when.
   repos' sets identical by hand-copy (new projects inherit by cloning Fresh); personal tweaks go in
   `*.user.toml` (gitignored), team law in the committed `*.toml`.
 
-### Command sync & platform reach — one master, three platforms
+### Command sync & platform reach — one master, four platforms
 The **single canonical invocable set is `.agents/commands/`**. It mirrors to every platform via one command,
 `/sync-agents` (engine: `.agents/scripts/sync-agents.ps1`) — there is no second sync tool to drift against.
 
 - **Surfaces it feeds.** Local tool dirs `.claude/{commands,skills}` + `.opencode/{commands,agent}`; and, on a
-  **lobby** sync, the two **machine-global** caches `~/.config/opencode/commands` and
-  `~/.gemini/antigravity/global_workflows`. (A project sync vendors `.agents/` and refreshes that project's
-  local dirs; it does **not** touch the globals — globals reflect the lobby's canonical set.)
+  **lobby** sync, the **machine-global** caches `~/.config/opencode/commands`,
+  `~/.gemini/antigravity/global_workflows`, and `~/.codex/prompts` (Codex's `/commands` equivalent, invoked
+  `/prompts:<name>`). (A project sync vendors `.agents/` and refreshes that project's local dirs; it does
+  **not** touch the globals — globals reflect the lobby's canonical set.)
+- **Codex is the lightest surface.** It reads `AGENTS.md` **and** the Agent Skills in `.agents/skills/`
+  natively (open Agent Skills standard: `$REPO_ROOT/.agents/skills` + `~/.codex/skills`), so rules and our own
+  skills need zero sync work — only the custom-prompts cache above. The one gap: BMAD installs its skills to
+  `.claude/skills` (manifest `ides: [claude-code, antigravity]`), which Codex doesn't read — so a lobby sync
+  **mirrors the `bmad-*` skills into `~/.codex/skills`**, making BMAD reachable there via `/skills`. Both Codex
+  caches are machine-local (like the opencode/AG caches), so re-run the sync per machine.
 - **`commands/` vs `workflows/`.** `.agents/commands/` are the invocable `/slash` units that mirror out.
   `.agents/workflows/` are **in-repo reference process-docs** read via routing tables — they are NOT pushed to
   any command cache. *(Antigravity confusingly calls its invocable units "workflows," but our source is always
   `commands/` — name-matching that to `.agents/workflows/` is the exact bug this rule prevents.)*
-- **Platform reach.** A command declares scope with frontmatter `platforms: [claude, opencode, antigravity]`.
-  **Absent = universal** (all three). The sync copies a command only to the platforms it lists, so a tool that
-  can't run it (e.g. `/autopilot_claude` needs the `claude` CLI) never appears in the wrong surface.
+- **Platform reach.** A command declares scope with frontmatter `platforms: [claude, opencode, antigravity,
+  codex]`. **Absent = universal** (all four). The sync copies a command only to the platforms it lists, so a
+  tool that can't run it (e.g. `/autopilot_claude` needs the `claude` CLI) never appears in the wrong surface.
 - **Purge policy.** Local tool dirs purge only master-managed-but-now-ineligible commands (a project's own
   commands are left alone). Global caches are **mirror-exact** — stale ghosts purged — **except `bmad-*`**,
-  which BMAD installs globally and is never ours to delete.
+  which BMAD installs globally and is never ours to delete. The Codex skills mirror likewise purges stale
+  `bmad-*` dirs but preserves `.system` and any foreign (non-bmad) skill dirs.
 - **Gemini is global-only.** Antigravity has no project-local command dir; it reads from the global cache. That
   asymmetry is a platform constraint, not a defect — the same canonical set still reaches it.
 

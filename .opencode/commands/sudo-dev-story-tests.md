@@ -108,6 +108,11 @@ Invoke the **`bmad-dev-story`** skill in IMPLEMENT mode: apply the audit, write 
 relevant suite(s) and paste the **actual** output (constitution rule). If a test fails, find root cause
 before fixing.
 
+**Every ① red ends green or is quarantined — never shipped red (`tests-must-gate-for-real`).**
+A red that can't go green is the tell ① handed you **fiction** — it asserts what the design never had
+(copy absent from source, an auth-gated page assumed "public"). Fix it to the real contract or drop it
+with a one-line note; never delete-to-force-green.
+
 ## Step 4 — Automate (expand coverage)
 Invoke the **`bmad-testarch-automate`** skill to expand API / UI / contract coverage around what was
 built — closing gaps the ATDD pass did not reach. **Leave evidence:** persist its summary as

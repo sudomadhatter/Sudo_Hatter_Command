@@ -48,7 +48,7 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 | Navigation index | `docs/repo-map.md` | the lobby's repo-map (curated header + auto body); drift-checked at SessionStart |
 | Routing canary | `_routing-canary/` | model-agnostic proof the routing works (Claude/opencode/Antigravity) |
 | System builder | `_system/` | how to add/maintain workspaces (`/new-project`, `/sync-agents`) |
-| Lobby tool dirs | `.claude/`, `.opencode/` | synced copies of the master so `/commands` + skills resolve here. `/sync-agents` mirrors `.agents/commands/` to all three platforms (incl. the opencode + Antigravity machine-global caches); `platforms:` frontmatter limits a command's reach |
+| Lobby tool dirs | `.claude/`, `.opencode/` | synced copies of the master so `/commands` + skills resolve here. `/sync-agents` mirrors `.agents/commands/` to **all four** platforms (incl. the opencode + Antigravity machine-global caches, and the Codex `~/.codex/prompts` + `~/.codex/skills` caches); `platforms:` frontmatter limits a command's reach |
 | Personal area | `_my_resources/` | Daniel's notes (docs · transcripts · open_tasks) — protected, Tier-2 law; `open_tasks/` read-only carve-out |
 | BMAD (lobby) | `_bmad/` · `_bmad-output/` | BMAD module (regenerated — never hand-edit) + its state/output |
 | Projects | `Projects/<name>/` | the actual projects, each its own git repo |
@@ -91,8 +91,12 @@ live in the always-loaded **`.agents/rules/artifacts-always-first.md`** (§2) ·
 
 ## 8. PORTABILITY
 `AGENTS.md` is the universal contract; `CLAUDE.md` / `GEMINI.md` are one-line adapters pointing here (nothing
-model-specific in shared files). One command set (`.agents/commands/`) mirrors to all three via `/sync-agents`
-(`platforms:` frontmatter opts a command out; default = everywhere). Full model → `docs/workspace-standard.md`.
+model-specific in shared files). **Codex** reads `AGENTS.md` **and** the Agent Skills in `.agents/skills/`
+natively — it needs no adapter file. One command set (`.agents/commands/`) mirrors to **all four** LLM surfaces
+(Claude, opencode, Antigravity/Gemini, Codex) via `/sync-agents` (`platforms:` frontmatter opts a command out;
+default = everywhere). Codex's `/commands` equivalent is custom prompts (`~/.codex/prompts`, invoked
+`/prompts:<name>`); BMAD's skills — which install to `.claude/skills`, outside Codex's search path — are mirrored
+to `~/.codex/skills` so BMAD is reachable there too. Full model → `docs/workspace-standard.md`.
 
 > **GitNexus** — code-intelligence (impact · detect_changes · query · context) for this repo →
 > `docs/gitnexus.md`. (Lobby index is routing-surface only; product work uses `repo: "AGY_AVIATIONCHAT"`.)

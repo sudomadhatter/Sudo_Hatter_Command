@@ -60,6 +60,15 @@ Invoke the **`bmad-testarch-atdd`** skill against the story just created. Genera
 stack; the Vision Lock scenarios and the ATDD reds live together). If the epic has a
 `bmad-testarch-test-design` risk plan, pull it so P0 ACs get priority coverage.
 
+**Ground every red before it counts (per `tests-must-gate-for-real`).** A red must fail because the
+feature is *unbuilt*, never because it invented something. Before leaving this step, verify against the
+ACTUAL code (grep the producing surface; read the page/handler/endpoint) that every asserted string,
+selector, endpoint, and **precondition** is real or is the honest absence of a real thing — and that the
+test's assumed auth / precondition model matches reality (e.g. don't assert an auth-gated page as
+"public"). A test asserting copy that does not exist in source, or misreading the auth model, is
+**fiction, not a red** — it fails identically whether the feature is unbuilt or the assertion is bogus,
+so it can never go green. Fix or drop it here; do not hand fiction to ②.
+
 ## Done
 Report: story id + path, ACs covered, the red tests written (paths) and confirmation they fail as
 expected. Leave them staged — `sudo-dev-story-tests` turns them green next. **Do NOT start implementing.**

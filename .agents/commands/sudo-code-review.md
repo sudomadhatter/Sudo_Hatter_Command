@@ -44,10 +44,20 @@ Read `_bmad-output/sudo-tests.yaml`.
 
 ## Step 3 — Gate: run the checks (baseline-diff aware — fail only on NEW regressions)
 1. **Suite** — run the `/1_run-all-tests-back_front` command (pytest + vitest). Compare against the red
-   baseline; only failures NEW to this story count (legacy red is grandfathered).
+   baseline; only failures NEW to this story count (legacy red is grandfathered). **Two guards (per
+   `tests-must-gate-for-real`):** (a) confirm CI runs the *same real entrypoint* this gate runs — open the
+   pipeline YAML and check each test job invokes the project's actual harness command (e.g.
+   `npm run test:e2e`), not a divergent/partial config that silently skips the suite that matters; a green
+   CI check on a suite that never ran is a FAIL, not a pass. (b) Grandfathering is for *owned* legacy red
+   only (known-flaky / quarantined-with-ticket) — a red that asserts strings, selectors, or preconditions
+   absent from real source is **fiction, not legacy debt**; do not grandfather it, FAIL and fix/delete it.
 2. **`bmad-testarch-trace`** — requirements→tests traceability + coverage vs `l1_coverage_min`.
 3. **`bmad-testarch-nfr`** — perf / security / reliability (when `nfr: true` or `agent_bearing: true`).
-4. **`bmad-testarch-test-review`** — quality/flake of the tests themselves.
+4. **`bmad-testarch-test-review`** — quality/flake of the tests themselves. Also scan the CI pipeline for
+   *soft* test steps (`continue-on-error`, `|| true`, blanket `.skip`/`xfail`, "report-only"): each is a
+   hole that reads as green. Per `tests-must-gate-for-real`, a soft gate is legitimate only as a one-run
+   window carrying a named owner + a tracked expiry task — flag any that lacks both (CONCERNS floor) and
+   name it in the verdict.
 5. **Automate evidence** — feature stories only (numeric `E.S` ids; test-only MIN-FLOW stories like
    `tea-*` are exempt): confirm ②'s expansion pass left evidence — `automation-summary-<story>.md` under
    `_bmad-output/test-artifacts/`, or an explicit `## Automate: skipped — <rationale>` section in the

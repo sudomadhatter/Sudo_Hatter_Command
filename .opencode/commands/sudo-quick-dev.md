@@ -1,6 +1,6 @@
 ---
 description: Fast-track dev flow — write the story, develop the fix directly, run a light post-dev sanity audit, and stop for review. Bypasses strict ATDD tests, planning gates, and code reviews.
-platforms: [opencode, antigravity, claude]
+platforms: [opencode, antigravity, claude, codex]
 ---
 
 # /sudo-quick-dev — Fast-Track Development & Sanity Audit

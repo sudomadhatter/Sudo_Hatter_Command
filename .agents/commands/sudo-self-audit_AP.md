@@ -1,5 +1,6 @@
 ---
 description: Autopilot (headless) pre-dev Audit command — stress-test the plan inside the shared autopilot run folder. Modeled off /sudo-self-audit but tuned for agent-to-agent handoff. NOT for interactive use; the autopilot orchestrator invokes it.
+platforms: [claude, opencode]
 ---
 
 # /sudo-self-audit_AP — Autopilot Audit (Murat)

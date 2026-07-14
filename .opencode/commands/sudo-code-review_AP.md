@@ -1,5 +1,6 @@
 ---
 description: Autopilot (headless) Review+Fix+Gate command — review the implementation in the shared autopilot run folder, apply fixes, run the TEA test gate, and hand to Daniel. Modeled off /sudo-code-review but tuned for agent-to-agent handoff. NOT for interactive use; the autopilot orchestrator invokes it.
+platforms: [claude, opencode]
 ---
 
 # /sudo-code-review_AP — Autopilot Review + Fix + Test Gate (Murat)
@@ -39,7 +40,12 @@ After review + fix, run the gate and record the verdict INSIDE `code-review.md`.
    - **Present** → it defines `required_tiers · l1_coverage_min · agent_bearing · nfr · waive`. Continue.
 2. **`bmad-testarch-trace`** — requirements→tests traceability + coverage vs `l1_coverage_min`.
 3. **`bmad-testarch-nfr`** — perf / security / reliability (when `nfr: true` or `agent_bearing: true`).
-4. **`bmad-testarch-test-review`** — quality/flake of the tests themselves.
+4. **`bmad-testarch-test-review`** — quality/flake of the tests themselves. Per `tests-must-gate-for-real`,
+   also: (a) confirm the CI pipeline's test jobs invoke the project's *real* harness entrypoint (not a
+   partial/divergent config that skips the suite that matters); (b) a red asserting strings/selectors/
+   preconditions absent from real source is **fiction, not grandfathered legacy red** — FAIL it; (c) flag
+   any soft CI test step (`continue-on-error`, `|| true`, blanket `.skip`, "report-only") lacking a named
+   owner + tracked expiry (CONCERNS floor). Name each in `code-review.md`.
 5. **Automate evidence** — feature stories only (numeric `E.S` ids; test-only stories like `tea-*` are
    exempt): confirm the Dev stage's expansion pass left evidence — `automation-summary-<story>.md` under
    `_bmad-output/test-artifacts/`, or an explicit `## Automate: skipped — <rationale>` section in
