@@ -5,7 +5,7 @@
 # The lobby (this command center) is ALWAYS maintained and is not listed here.
 #
 # WHO READS THIS:
-#   - .agents/scripts/check_maps.py  (fan_out_targets): `--all` / /sudo-update-maps lint ONLY these.
+#   - .agents/scripts/check_maps.py  (fan_out_targets): `--all` / /update-maps-indexes lint ONLY these.
 #   - .agents/scripts/sync-agents.ps1 (-Maintained):    the ONLY sanctioned "sync everything".
 # Never hand-loop over Projects/* — that touches repos we deliberately do not keep current.
 #

@@ -3,7 +3,7 @@
 Legacy `.agent/` skills folder (retire-list — see `docs/workspace-standard.md` Appendix). These are the old BMAD skill copies; the canonical skills now live at `.agents/skills/`. Minimal stub kept until the retire pass.
 
 ## Top-level contents
-<!-- auto-listed by /sudo-update-maps — refresh via /sudo-update-maps; do not hand-edit entries -->
+<!-- auto-listed by /update-maps-indexes — refresh via /update-maps-indexes; do not hand-edit entries -->
 - `bmad-advanced-elicitation/`
 - `bmad-agent-analyst/`
 - `bmad-agent-architect/`

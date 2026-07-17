@@ -4,7 +4,7 @@
 The fast, non-blocking companion to check_maps.py. A `post-commit` git hook calls this on every
 commit; it classifies the commit's changes into the linter's judgment categories and appends ONE
 line to a machine-local journal (`docs/.maps-journal.jsonl`). The existing consumers — the
-SessionStart nag and the /sudo-update-maps workflow — then read a PRE-SCOPED worklist instead of
+SessionStart nag and the /update-maps-indexes workflow — then read a PRE-SCOPED worklist instead of
 re-deriving "what changed" from scratch.
 
   CACHE, NOT TRUTH. The journal only ACCELERATES. `git diff <anchor>..HEAD` (check_maps check 4)
@@ -226,7 +226,7 @@ def nag(root):
             seen.add(key)
             items.append(c)
     print(f"\U0001f5fa️  maps-journal: {len(items)} map-relevant change(s) since last reconcile "
-          "(run /sudo-update-maps to apply the prose fixes):")
+          "(run /update-maps-indexes to apply the prose fixes):")
     for c in items:
         label = NEEDS_LABEL.get(c.get("needs"), c.get("needs", ""))
         arrow = f" → {c['newpath']}" if c.get("kind") == "rename" and c.get("newpath") else ""

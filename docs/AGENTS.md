@@ -14,5 +14,5 @@ Workspace docs for the home base. Load per task — nothing here is a startup pa
   committing). Never hand-edit.
 - `doc-graph.md` / `doc-graph.json` — generated doc-wiring graph (regen via
   `.agents/scripts/generate_doc_graph.py`). Report-only; never hand-edit.
-- Added/removed a file here → the repo-map AUTO body will drift; run `/sudo-update-maps` (or the
+- Added/removed a file here → the repo-map AUTO body will drift; run `/update-maps-indexes` (or the
   generator) before hand-off.

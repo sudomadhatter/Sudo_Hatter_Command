@@ -1,7 +1,7 @@
 # The Sudo Dev System — Quick Reference
 
 > One page: how we build, the commands you type, and how we test. Updated **2026-07-14** (the
-> command rename: everything human-typed is now `sudo-*`). Deep material lives in
+> command rename — the story flow is `sudo-*`; upkeep keeps plain names like `/update-maps-indexes`). Deep material lives in
 > [tea_deep_reference.md](tea_deep_reference.md) — go there for full call-graphs, the method
 > curriculum, and the TEA fragment library.
 
@@ -81,7 +81,7 @@ bug docs** first, then enter the same story loop. Nothing ships to `main` withou
 ### Toolkit upkeep
 | Command | What it does |
 |---|---|
-| `/sudo-update-maps` | Reconciles repo-maps, every INDEX.md, context hygiene, and the open-tasks list across the lobby + maintained projects. |
+| `/update-maps-indexes` | Reconciles repo-maps, every INDEX.md, every AGENTS.md + README reference (dead paths, renamed commands, stale contents-lists), context hygiene, and the open-tasks list across the lobby + maintained projects. |
 | `/sync-agents` | Pushes the master `.agents` toolkit to all 4 platforms (Claude, opencode, Antigravity, Codex) + the maintained projects (`-Maintained`). |
 | `/slash_command_updating` | Thin alias: refresh just the machine-global command caches. |
 | `/new-project` | Scaffold a new project workspace under `Projects/`. |

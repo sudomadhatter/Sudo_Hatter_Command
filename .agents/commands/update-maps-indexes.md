@@ -1,10 +1,10 @@
 ---
-description: From the home base, fan out and reconcile the lobby + every conformant project against disk — repo-map (mode-preserving), every INDEX.md, the context-hygiene prune, and the open-tasks list (todo_list.md → ## Open Work). Reports for approval before editing; read-mostly, never commits. Inside a project it reconciles just that one workspace, unchanged.
+description: From the home base, fan out and reconcile the lobby + every conformant project against disk — repo-map (mode-preserving), every INDEX.md, every AGENTS.md + README's references (dead paths, renamed commands, stale contents-lists), the context-hygiene prune, and the open-tasks list (todo_list.md → ## Open Work). Reports for approval before editing; read-mostly, never commits. Inside a project it reconciles just that one workspace, unchanged.
 ---
 
-# /sudo-update-maps — Update the Maps, INDEXes & open-tasks list
+# /update-maps-indexes — Update the Maps, INDEXes, AGENTS + READMEs
 
-Execute the workflow defined in @.agents/workflows/sudo-update-maps.md.
+Execute the workflow defined in @.agents/workflows/update-maps-indexes.md.
 
 **Execution notes:**
 - **Scope is mode-driven.** Run from the **home base** (a `Projects/` dir exists) → it **fans out**: the lobby
@@ -17,8 +17,10 @@ Execute the workflow defined in @.agents/workflows/sudo-update-maps.md.
   `python .agents/scripts/check_maps.py --all` (lobby + every conformant project, one combined report); inside a
   project just `python .agents/scripts/check_maps.py`. It runs nine numbered checks per workspace (5 fatal + the git-baseline signal + the context-hygiene, tier-2-local-law, and gitnexus-index-freshness hints; plus an unnumbered level-2 INDEX presence check) — one command verifies maps, INDEXes, the folder AGENTS.md law files, AND the code index.
 - Steps 0–3 are read-only (detect via git + the linter, regenerate each AUTO block **in its declared mode**,
-  drift-check the curated tables both ways, audit every `INDEX.md`). Steps 3.5–3.6 **propose edits** — the
-  context-hygiene **prune** and the **open-tasks refresh** — gated by Step 4.
+  drift-check the curated tables both ways, audit every `INDEX.md`). Steps 3.5–3.8 **propose edits** — the
+  context-hygiene **prune**, the **open-tasks refresh**, the tier-2 law repairs, and the **AGENTS.md/README
+  pointer reconcile** (Step 3.8: every path, `/command` name, and contents-list those files claim must match
+  disk; repair pointers, never meaning) — all gated by Step 4.
 - Step 4 is a hard STOP: present one findings report (grouped by workspace in a fan-out) and wait for approval
   before editing anything outside `_artifacts/` (per @.agents/rules/artifacts-always-first.md).
 - **Each project is its own repo** → in a fan-out, edits land per repo and the close-out hands Daniel **one

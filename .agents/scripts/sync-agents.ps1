@@ -196,7 +196,7 @@ function Sync-AntigravityWorkflowMirror {
   $mirrored = @()
   
   $allowed = @('sudo-*.md', '1_*.md', 'new-project.md', 'slash_command_updating.md', 'merge_main_debug.md')
-  $excluded = @('sudo-update-maps.md') # Real workflow lives in workflows/, do not overwrite with command wrapper
+  $excluded = @('update-maps-indexes.md') # Real workflow lives in workflows/, do not overwrite with command wrapper
   
   $files = Get-ChildItem -Path $cmdDir -Filter '*.md' -File | Where-Object {
     $name = $_.Name

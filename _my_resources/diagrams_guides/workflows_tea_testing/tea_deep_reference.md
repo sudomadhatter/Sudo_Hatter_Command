@@ -10,7 +10,7 @@
 > | Old name in this doc | Now |
 > |---|---|
 > | `/sudo-incident-response` | `/security_team_aviationchat` |
-> | `/1_update-maps` | `/sudo-update-maps` |
+> | `/1_update-maps` | `/update-maps-indexes` |
 > | `/1_live_testing_team` | `/sudo-live-testing-team` |
 > | `/1_push-to-main-and-deploy` | `/sudo-push-e2e` (now carries the mandatory e2e gate) |
 > | `/1_run-all-tests-back_front` | deleted — ③ runs the suites directly; shipping runs them via `/sudo-push-e2e` |

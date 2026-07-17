@@ -11,7 +11,7 @@ commands were stale, there was no e2e gate before promoting `main_debug` → `ma
 | Old | New | Notes |
 |---|---|---|
 | `sudo-incident-response` | `security_team_aviationchat` | name now says what it is; **removed from the Claude menu** (platforms back to `[opencode, antigravity, codex]` — reverts Gemini commit e4d51de's claude add + its skill). AGY runbook's 2 prose refs updated. |
-| `1_update-maps` | `sudo-update-maps` | incl. `check_maps.py` ×4, `record_map_changes.py` ×2, `sync-agents.ps1` wrapper-guard, skills dirs, 12 doc/INDEX refs |
+| `1_update-maps` | `update-maps-indexes` | incl. `check_maps.py` ×4, `record_map_changes.py` ×2, `sync-agents.ps1` wrapper-guard, skills dirs, 12 doc/INDEX refs |
 | `1_live_testing_team` | `sudo-live-testing-team` | **revamped from a self-referential wrapper to a full command**: boots backend+frontend (absorbs `1_run-restart-dev-env`), watches backend logs, coaches the DevTools check, files researched bug docs (verified vs docs-say) that feed the sudo story flow |
 | `1_push-to-main-and-deploy` | `sudo-push-e2e` | now the ONE shipping command: paths A (`main_debug` push) / B (full merge → `main`) / C (cherry-pick → `main`); **B/C hard-require `/sudo-e2e` GREEN**; adds the path-C back-merge reconcile (main never ahead) |
 
@@ -72,7 +72,7 @@ yml header + 16.2 close). Flagged, not fixed (AGY code file, one-line doc edit, 
 ```powershell
 # LOBBY (Sudo_Hatter_Command) — the restructure
 git add -A
-git commit -m "refactor(toolkit): command-surface restructure — sudo-* renames, /sudo-e2e + /sudo-push-e2e gate, robot-lane _AP exclusion, guide rewrite" -m "Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
+git commit -m "refactor(toolkit): command-surface restructure — renames (update-maps-indexes, security_team_aviationchat, sudo-live-testing-team, sudo-push-e2e), /sudo-e2e gate, robot-lane _AP exclusion, guide rewrite" -m "Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 
 # AGY_AVIATIONCHAT — runbook refs + vendored toolkit + workspace-standard
 cd Projects/AGY_AVIATIONCHAT

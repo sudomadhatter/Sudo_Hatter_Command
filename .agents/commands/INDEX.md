@@ -30,13 +30,13 @@ engines read them) — the sync skips them for the lobby menus and the global ca
 | **Sudo quick-fix flow** (fast track) | `sudo-quick-dev` | fast-track dev flow — write the story, develop the fix directly, run a light post-dev sanity audit, and close out to log it. Bypasses strict ATDD tests and code reviews. |
 | **Shipping** (the e2e gate) | `sudo-e2e` · `sudo-push-e2e` · `merge_main_debug` | `sudo-e2e` runs the hermetic end-to-end suite (emulators + seeded users) → GREEN/RED verdict, solo or as the gate; `sudo-push-e2e` is the ONE shipping command — push `main_debug` (path A), full merge → `main` (B), or cherry-pick features → `main` (C); **B/C refuse to run until `sudo-e2e` is GREEN**, then CI/CD + Cloud Run deploy + live verify + ledger. `merge_main_debug` — merge a reviewed PR into `main_debug` (the per-action approval button). |
 | **Live debugging** | `sudo-live-testing-team` | boots backend+frontend, watches backend logs while the human flies the app, coaches the DevTools check, and files researched bug docs that feed the story loop. Writes no code. |
-| **Session / project ops** | `sudo-update-maps` | refresh the repo map + every INDEX + context hygiene + open-tasks list; from the top it **fans out across the lobby + maintained projects**. |
+| **Session / project ops** | `update-maps-indexes` | refresh the repo map + every INDEX + context hygiene + open-tasks list; from the top it **fans out across the lobby + maintained projects**. |
 | **Security / error team** | `security_team_aviationchat` | DRILL the incident-triage runbook against a Sentry issue (interactive lane). The always-live pipeline is the GitHub Action — this is only its quarterly fire-drill harness. Not in the Claude menu. |
 | **System builder** (lobby) | `new-project` · `sync-agents` · `slash_command_updating` | scaffold a workspace, push the master toolkit into a target, or refresh global command caches. |
 | **Media** | `webm-alpha-video` | convert a green-screen MP4 to alpha WebM. |
 
 **Renamed / retired (2026-07-14):** `sudo-incident-response` → `security_team_aviationchat` ·
-`1_update-maps` → `sudo-update-maps` · `1_live_testing_team` → `sudo-live-testing-team` (revamped) ·
+`1_update-maps` → `update-maps-indexes` · `1_live_testing_team` → `sudo-live-testing-team` (revamped) ·
 `1_push-to-main-and-deploy` → `sudo-push-e2e` (now carries the mandatory e2e gate) · deleted:
 `1_run-all-tests-back_front` (③ runs suites directly), `1_run-restart-dev-env` (absorbed into
 `sudo-live-testing-team`), `1_check-for-tech-stack-updates`, `1_clean-test-scripts`,
