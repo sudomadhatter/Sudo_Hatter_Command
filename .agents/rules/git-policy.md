@@ -85,5 +85,6 @@ bakes the pull into the recommendation whenever the branch is behind.
 
 - **Check the remote first** (Sync-first above) — the "Your Actions" command block leads with
   `git pull --ff-only` whenever the branch is behind, before add/commit/push.
+- **Validate CI/CD credentials**: Before recommending or running a push to deployment-triggering branches (such as `main` or `main_debug`), verify that the target repository's required secrets (e.g., `FIREBASE_SERVICE_ACCOUNT` for Firebase) and variables (e.g., `FIREBASE_PROJECT_ID`) are fully set up on GitHub using `gh secret list` and `gh variable list` (always clear `env:GITHUB_TOKEN` beforehand). If credentials are missing, STOP and notify the user to configure them before proceeding.
 - The `walkthrough.md` "Your Actions" documents the exact `git add` (explicit paths) + `commit` +
   `push` commands either way — so the record exists whether Daniel or (by delegation) you run them.

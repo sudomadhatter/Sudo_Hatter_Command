@@ -48,13 +48,18 @@ decide together.
 **Light gate (all paths):**
 1. Backend: full pytest suite via the canonical venv (`backend/.venv` — never the global interpreter).
 2. Frontend: production build (`npm run build` / `npx next build` in `frontend/`) — zero compile errors.
+3. CI/CD Credentials: Check that required remote credentials (secrets/variables) are configured. For Firebase deployments:
+   - Run `Remove-Item env:GITHUB_TOKEN; gh secret list --repo <repo-nwo>` (or `env -u GITHUB_TOKEN` in Bash) and verify `FIREBASE_SERVICE_ACCOUNT` is present.
+   - Run `Remove-Item env:GITHUB_TOKEN; gh variable list --repo <repo-nwo>` and verify `FIREBASE_PROJECT_ID` is present.
+   If any required deployment credentials are missing, STOP and warn the user.
 
 **Full gate (paths B and C, additionally):**
-3. Run **`/sudo-e2e`** — the real end-to-end suite (emulator-backed, seeded users). It must finish
+4. Run **`/sudo-e2e`** — the real end-to-end suite (emulator-backed, seeded users). It must finish
    **green**. Its report is the promotion evidence; link it in the ledger row (Step 7).
 
 Any failure → **STOP**. Summarize the failures, file/link the evidence, and suggest the lane
 (`/sudo-quick-dev` or the ①②③ story loop). Do not proceed.
+
 
 ## Step 3 — Commit & push the development branch (all paths)
 ```powershell
