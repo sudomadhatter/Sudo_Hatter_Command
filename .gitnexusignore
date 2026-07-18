@@ -36,3 +36,7 @@
 # NOTE: even if dot-dirs become indexable, .claude/ .opencode/ .agent/
 # .antigravity/ must stay excluded — they are sync-target MIRRORS of .agents/;
 # indexing them would duplicate every symbol 3-4x.
+
+# Virtual environments
+/.venv_stale/
+/.venv/

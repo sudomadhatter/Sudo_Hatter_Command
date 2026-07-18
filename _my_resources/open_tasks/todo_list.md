@@ -13,9 +13,13 @@
 <!-- Always cross-check against the live project files before trusting anything here. -->
 1. 
 
-## Open Tasks
+## Open Work
 <!-- Add plan/PRP notes as <slug>.md alongside this file. -->
 1. Live Testing
+
+<!-- open_tasks files — auto-listed by /update-maps-indexes -->
+- `2026-07-13_codex-setup-all-machines.md`
+- `gitnexus-sync.md`
 
 ----
 

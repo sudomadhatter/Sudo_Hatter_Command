@@ -99,8 +99,13 @@ gcloud run deploy aviationchat-backend `
   --set-secrets "GEMINI_API_KEY=GEMINI_API_KEY:latest,JWT_ADMIN_SECRET=JWT_ADMIN_SECRET:latest,DEEPGRAM_API_KEY=DEEPGRAM_API_KEY:latest" `
   --memory 1Gi --cpu 1 --timeout 3600 `
   --session-affinity --concurrency 40 `
-  --min-instances 1 --max-instances 5
+  --min-instances 0 --max-instances 5
 ```
+
+> **min-instances:** `0` = DEV posture (2026-07-18 cost decision — no 24/7 warm instance;
+> `BackendWarmup.tsx` pings `/health` on every app open to mask the cold start).
+> 🔴 Flip back to `1` before user beta — see the PRE-BETA OPS GATE note in
+> `_bmad-output/implementation-artifacts/sprint-status.yaml`.
 
 This deploys the already-built image and shows the **exact error** if it fails. It also unblocks you immediately if CI/CD is slow.
 
