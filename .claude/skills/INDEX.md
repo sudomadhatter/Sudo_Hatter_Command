@@ -11,7 +11,7 @@ skill's own description.
 | **BMAD agents** | the named personas | `bmad-agent-dev` (Amelia) · `-pm` (John) · `-architect` (Winston) · `-analyst` (Mary) · `-ux-designer` (Sally) · `-tech-writer` (Paige) |
 | **BMAD lifecycle** | plan → build → ship a story | `bmad-prd` · `bmad-create-architecture` · `bmad-create-epics-and-stories` · `bmad-create-story` · `bmad-dev-story` · `bmad-code-review` · `bmad-sprint-planning`/`-status` · `bmad-retrospective` · `bmad-correct-course` |
 | **BMAD test architecture** | quality, NFR, automated tests | `bmad-tea` (Murat) · `bmad-testarch-*` (atdd, automate, ci, framework, nfr, test-design, test-review, trace) · `bmad-qa-generate-e2e-tests` |
-| **BMAD thinking/editorial** | ideation + adversarial review | `bmad-brainstorming` · `bmad-advanced-elicitation` · `bmad-party-mode` · `bmad-editorial-review-*` · `bmad-review-*` · `bmad-investigate` |
+| **BMAD thinking/editorial** | ideation + adversarial review | `bmad-brainstorming` · `bmad-advanced-elicitation` · `bmad-party-mode` · `bmad-editorial-review-*` · `bmad-review-*` · `bmad-investigate` · `sudo-adviser-board` (open-table board of historical minds → Brainstorm → Plan → Market → BMAD handoff) |
 | **BMAD research/specs** | research + distillation | `bmad-domain-research` · `bmad-market-research` · `bmad-technical-research` · `bmad-spec` · `bmad-product-brief` · `bmad-prfaq` |
 | **Firebase / GCP** | infra + deploy | `firebase-*-basics` (auth, firestore, hosting, app-hosting, data-connect, ai-logic) · `gcp-cloud-run` · `deploy-backend` · `troubleshoot-cloudrun-deployment` |
 | **Backend / Python** | server + language patterns | `backend-dev-guidelines` · `python-patterns` · `python_inter_venv_fix` |
