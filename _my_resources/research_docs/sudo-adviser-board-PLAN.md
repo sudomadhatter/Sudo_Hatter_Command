@@ -258,3 +258,5 @@ A session can end after any phase — not every topic goes the full distance; th
 ---
 
 *Open items for Daniel: roster trades (any seat ↔ bench swap is a one-line edit), team names, and whether the session brief location (`_my_resources/board_sessions/`) is right.*
+
+<!-- CHECKPOINT id="ckpt_mrs1obks_n39vrl" time="2026-07-19T17:03:20.476Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->

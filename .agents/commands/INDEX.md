@@ -15,7 +15,7 @@ Antigravity/Gemini (global `~/.gemini/antigravity/global_workflows` — it calls
 frontmatter to limit where it syncs. **Absent = universal** (all four). Tagged today: `autopilot_claude`,
 `autopilot_mobile` → `[claude]`; `autopilot_opencode` → `[opencode]`; the `_AP` trio → `[claude, opencode]`;
 `security_team_aviationchat` → `[opencode, antigravity, codex]` (deliberately NOT in the Claude menu);
-`sudo-adviser-board` → `[claude, opencode, codex]` (too large for Antigravity's 12k workflow limit — slim AG variant owed).
+`sudo-adviser-board` → `[claude, opencode, codex]` (25k body exceeds Antigravity's 12k workflow limit — AG gets the hand-authored thin launcher `.agents/workflows/sudo-adviser-board.md`, prune-protected in the sync's `$excluded` list).
 **Robot-lane rule (2026-07-14):** `*_AP` commands vendor ONLY into project tool dirs (where the autopilot
 engines read them) — the sync skips them for the lobby menus and the global caches.
 
