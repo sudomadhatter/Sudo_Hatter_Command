@@ -30,7 +30,7 @@ root `AGENTS.md` §2, one-doc close aligned (root §5 + `_artifacts/README.md`),
 (mode-preserving). Verified: check 8 `[ok] (redirects verified)` in both + AGY negative test; AUTO freshness
 `[ok]` ×2. Untouched pre-existing backlog: AGY 14 depth-3 INDEX gaps + stale GitNexus index (re-index AFTER
 committing), Fresh dead curated `_bmad/bmm/stories` — a future `/1_update-maps` run's work. Check 8 can go
-hint→fatal only after the 4 unconverted projects (JETCHAT, B-L, NEXGen, OpenChat) get Tier-1 brains.
+hint→fatal only after the 3 unconverted projects (B-L, NEXGen, OpenChat) get Tier-1 brains.
 Session: `_artifacts/_main/2026-07-04_tier2-project-rollout/`. Git: AGY committed `dc58a20e` (bundled into
 story 8.23.2's commit by the live story lane — content diff-verified intact; two-lanes convergence again,
 cf. 8.22.2), Fresh committed `52a5c93` **on `main`** (not `main_debug` — flagged); lobby session files

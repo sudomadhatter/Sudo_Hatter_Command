@@ -12,7 +12,6 @@ Any workspace may send you BACK here ("if not here, go to root router").
 | Aviation ground-school app (FastAPI / ADK / Gemini, voice CFI) | `Projects/AGY_AVIATIONCHAT/` | its `AGENTS.md` | converted (Phase 1) · standard-compliant · repo-map indexed · Phase 2 (rule reconcile) pending |
 | AGY quick-start project skeleton (FastAPI/ADK · Next/React · Firebase) — clone to start a new project | `Projects/Fresh_Workspace_BMAD/` | its `AGENTS.md` | quick-start skeleton · standard-compliant · repo-map indexed + drift hook |
 | BRKN_Tattoos app | `Projects/BRKN_Tattoos/` | its `AGENTS.md` | active |
-| jetChat app | `Projects/AGY_JETCHAT/` | its `AGENTS.md` | pending |
 | B&L WorldWide | `Projects/B-L-WorldWide/` | its `AGENTS.md` | pending |
 | NEXGen Films | `Projects/NEXGen-Films/` | its `AGENTS.md` | pending |
 | AviationChat ingestion pipeline | `Projects/RAG_Pipeline_AC/` | its `AGENTS.md` | pending |

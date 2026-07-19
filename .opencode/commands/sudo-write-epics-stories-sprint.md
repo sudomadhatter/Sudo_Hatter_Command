@@ -41,9 +41,29 @@ fix-list path, or a described scope — e.g. `_my_resources/open_tasks/fix_list_
 the epic + its user stories with acceptance criteria. Confirm the epic + story files exist before continuing.
 If the skill stops for input (missing requirements source, ambiguous scope), surface it and STOP — never guess.
 
+**FLOW CONTRACT (bake-in from the 2026-07-19 retro — how this orchestration runs):** the nested BMAD skill
+is a 4-step workflow whose step files each end in their own `[C]`-continue menu. Those menus exist for
+STANDALONE greenfield use — do **NOT** surface them one-by-one during this orchestration; that turns one
+kickoff into five stalls. When `$ARGUMENTS` names an already-approved requirements source (a signed-off
+plan / fix-list), drive the skill's internal steps straight through (auto-continue its menus), appending per
+the brownfield precedent (namespaced `E<N>-FR*` requirements; Epic 17/18 section format in `epics.md`).
+This command has exactly **TWO human checkpoints**:
+  1. ONE consolidated review after Step 1 — epic definition + full story list + AC digest in a single
+     message (correction loops happen here), then proceed to Step 2 with no further menus;
+  2. the Step 3 per-story risk-scoring (the designed hard stop).
+A nested skill stopping on a REAL gap (missing source, contradictory scope) still surfaces + STOPs — this
+contract removes ceremony, never judgment.
+
 ## Step 2 — Generate the sprint board
-Invoke the **`bmad-sprint-planning`** skill. It lands the new stories in
-`_bmad-output/implementation-artifacts/sprint-status.yaml` as `ready-for-dev`. Confirm they appear before Step 3.
+Land the new epic + story keys in `_bmad-output/implementation-artifacts/sprint-status.yaml` as **`backlog`**
+— NOT `ready-for-dev`. (Per the board's state machine and the Epic 17/18 precedent, a story flips to
+`ready-for-dev` only when `/sudo-write-story-tests` ① creates its story file; this line previously said
+`ready-for-dev` and contradicted the state machine — fixed 2026-07-19.) Follow house style: the epic's
+comment block (STATUS · Source · order/deps), one commented line per story key (P-levels appended after
+Step 3), `epic-<N>-retrospective: optional`, and a dated entry PREPENDED to the `# last_updated:` journal
+line. For a single-epic append, edit the YAML directly per house style — invoking the full
+`bmad-sprint-planning` skill is only warranted when regenerating the whole board. Confirm the keys appear
+before Step 3.
 
 ## Step 3 — Risk-score the backlog (test levels) — INTERACTIVE HARD STOP
 This is the final step and a **hard stop** — you WORK WITH Daniel to label every story, one at a time.
@@ -58,8 +78,11 @@ This is the final step and a **hard stop** — you WORK WITH Daniel to label eve
    - **Levels it earns** — P0 = Unit+Integration+E2E+Manual (100%) · P1 = Unit+Integration+E2E (80%) ·
      P2 = Integration+Manual (50%) · P3 = Manual/skip (20%).
 3. Give Daniel a way to **confirm or override each label individually** (the tap-to-answer question UI; the
-   recommended P-level is the default first choice). **STOP and wait** for his decision on each — do NOT
-   batch them all silently or assume the recommendation. This is the hard stop.
+   recommended P-level is the default first choice). ONE tap-screen carrying every story as its OWN question
+   (recommendation + why + levels on each) satisfies "one at a time" — each story gets an individual
+   decision (Epic 17/19 precedent: "interactive chips"). What is forbidden is deciding on the human's
+   behalf: never record a P-level that wasn't explicitly confirmed. **STOP and wait** for the decisions.
+   This is the hard stop.
 4. Record the confirmed P-levels + test-level allocation into the test-design artifact
    (`_bmad-output/test-artifacts/test-design/…`) and reflect the P-level onto each story.
 

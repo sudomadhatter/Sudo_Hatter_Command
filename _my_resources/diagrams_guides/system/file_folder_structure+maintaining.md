@@ -300,7 +300,7 @@ Node 18+ (`npx -y md-feedback`). New/changed servers appear after a session rest
 | Fresh_Workspace_BMAD | ✅ Yes | `auto` | ignore `_my_resources,_bmad`; **the living template — born enforcing since 2026-07-09**: armed TEA gate (`_bmad-output/sudo-tests.yaml`), CI gating `main`+`main_debug` (`pr-check.yml`), BDD layer (`backend/tests/features/` + self-binding `tests/bdd/steps_*.py`), `_bmad/custom/` guard + dialect tomls + resolver scripts |
 | BRKN_Tattoos | ⏳ active | — | active in `router.md`; conformance not yet audited |
 | RAG_Pipeline_AC (AviationChat ingestion) | ❌ No | — | needs `/new-project` or manual standardization |
-| AGY_JETCHAT · B-L-WorldWide · NEXGen-Films · OpenChat-Openrouter | ❌ pending | — | registered in `router.md`, not yet converted |
+| B-L-WorldWide · NEXGen-Films · OpenChat-Openrouter | ❌ pending | — | registered in `router.md`, not yet converted |
 
 ## 11. Quick-reference: key files
 
