@@ -5,18 +5,6 @@
 > method curriculum, the Epic-8 anchor index, and the 42-fragment TEA library. Kept for depth, not
 > for daily use.
 >
-> **Command names below predate the 2026-07-14 rename.** Translate as you read:
->
-> | Old name in this doc | Now |
-> |---|---|
-> | `/sudo-incident-response` | `/security_team_aviationchat` |
-> | `/1_update-maps` | `/update-maps-indexes` |
-> | `/1_live_testing_team` | `/sudo-live-testing-team` |
-> | `/1_push-to-main-and-deploy` | `/sudo-push-e2e` (now carries the mandatory e2e gate) |
-> | `/1_run-all-tests-back_front` | deleted — ③ runs the suites directly; shipping runs them via `/sudo-push-e2e` |
-> | `/1_run-restart-dev-env` | absorbed into `/sudo-live-testing-team` Step 1 |
-> | `/1_check-for-tech-stack-updates`, `/1_clean-test-scripts`, `/1_firebase-user-cleanup`, `/1_make-workflow-from-chat` | deleted (recoverable from git) |
-
 # TEA Testing — Quick Reference Guide
 
 **Owner:** Daniel (Lead — Tech Lead / Engineering Manager)
@@ -145,7 +133,7 @@ Phase 4  Verdict                       → SAFE / NEEDS-REVISION / UNSAFE + Go/N
                                     applies actionable fixes itself + re-runs suites
 2. gate opt-in check             → read _bmad-output/sudo-tests.yaml — ABSENT → verdict WAIVED (skip gate)
 3. gate checks (baseline-diff, fail only on NEW regressions):
-     • /1_run-all-tests-back_front   → pytest + vitest
+     • direct test execution         → pytest + vitest
      • bmad-testarch-trace           → requirements→tests traceability + coverage vs l1_coverage_min
      • bmad-testarch-nfr             → perf / security / reliability (when nfr:true or agent_bearing:true)
      • bmad-testarch-test-review     → quality/flake of the tests themselves
@@ -184,7 +172,6 @@ Running this **IS your sign-off.** Only objectively-red tests can block the flip
 | `bmad-dev-story` | The dev engine — PLAN mode writes the plan; IMPLEMENT mode writes code to green |
 | `bmad-testarch-automate` | Expand coverage on existing code (passes immediately) |
 | `bmad-code-review` | Adversarial clean-room review of the diff; applies fixes |
-| `/1_run-all-tests-back_front` | Run the full pytest + vitest suites (the gate's runner) |
 | `bmad-testarch-trace` | Requirements→tests traceability matrix + coverage verdict |
 | `bmad-testarch-nfr` | Audit non-functional evidence (perf / security / reliability) |
 | `bmad-testarch-test-review` | Score the tests on the 5 quality dimensions |
@@ -602,9 +589,7 @@ flowchart TD
 ### Supporting test commands
 | Command | Does |
 |---------|------|
-| `/1_run-all-tests-back_front` | Run pytest + vitest (the gate's test runner in ③). |
-| `/1_clean-test-scripts` | Tidy/remove scratch test scripts. |
-| `/1_live_testing_team` | Live / manual QA lane. |
+| `/sudo-live-testing-team` | Live / manual QA lane. |
 
 ### Ops drill command — outside the per-story loop
 Not part of the ①②③ dev flow — a standalone **incident-response drill** (Epic 16). Fire it any time to
@@ -612,21 +597,21 @@ exercise the production triage runbook; it never touches the sprint board.
 
 | Command | Does |
 |---------|------|
-| `/sudo-incident-response [issue-id\|latest]` | **Drill harness** (16.1) for the Sentry incident-triage runbook (`.github/claude/incident-triage.md`). Thin — carries no triage logic: resolves the project → loads its runbook → runs it verbatim (**interactive lane**, Sentry MCP) → drops an `incident-report.md` under `_artifacts/debugging/`. **Drill:** force a P1 (`_test_scripts/sentry_smoke_test.py`) then run `/sudo-incident-response latest`; a pass = the report names the planted failure, the right file, and a sane fix. The runbook is the product; this is only its test rig. Full picture: [security/sentry_error_response_team.md](../security/sentry_error_response_team.md). |
+| `/security_team_aviationchat [issue-id\|latest]` | **Drill harness** (16.1) for the Sentry incident-triage runbook (`.github/claude/incident-triage.md`). Thin — carries no triage logic: resolves the project → loads its runbook → runs it verbatim (**interactive lane**, Sentry MCP) → drops an `incident-report.md` under `_artifacts/debugging/`. **Drill:** force a P1 (`_test_scripts/sentry_smoke_test.py`) then run `/security_team_aviationchat latest`; a pass = the report names the planted failure, the right file, and a sane fix. The runbook is the product; this is only its test rig. Full picture: [security/sentry_error_response_team.md](../security/sentry_error_response_team.md). |
 
 #### The incident lane's **E2E test** — the headless dispatch (read this if the last line confused you)
 
 There are **two** ways to test the incident system, and they cover **opposite halves.** The command above
-(`/sudo-incident-response`) tests the *triage brain* in a chat window. The **headless E2E dispatch** tests
+(`/security_team_aviationchat`) tests the *triage brain* in a chat window. The **headless E2E dispatch** tests
 the *production wiring* — the real GitHub Actions lane, end to end. It's "E2E" in the truest §3 sense: the
 **full workflow over the real stack** (Actions runner → real HTTP → Telegram), not a mocked slice.
 
-| | `/sudo-incident-response` — interactive drill | **Headless E2E dispatch** — the real lane |
+| | `/security_team_aviationchat` — interactive drill | **Headless E2E dispatch** — the real lane |
 |---|---|---|
 | **Lane** | an interactive Claude chat session | the real **GitHub Actions** runner (`.github/workflows/incident-response.yml`) |
 | **What it proves** | the runbook finds the right cause · file · fix | CI secrets/auth · fix-branch push · **the Telegram pager** — the whole chain fires |
 | **Output** | `incident-report.md` in `_artifacts/debugging/` | a **real GitHub issue** + fix branch + a **page to your phone** |
-| **How it fires** | `/sudo-incident-response latest` | a hand-crafted `repository_dispatch` (`gh api repos/<owner>/<repo>/dispatches -f event_type=incident …`) |
+| **How it fires** | `/security_team_aviationchat latest` | a hand-crafted `repository_dispatch` (`gh api repos/<owner>/<repo>/dispatches -f event_type=incident …`) |
 | **Built-in command?** | ✅ yes | ❌ **no** — manual dispatch, or wait for a real Sentry fatal |
 
 **Why you need both (the 2026-07-14 lesson).** A Telegram-paging bug lived *only* in the headless lane's

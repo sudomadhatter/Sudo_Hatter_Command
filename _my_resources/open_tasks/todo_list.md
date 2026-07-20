@@ -11,11 +11,14 @@
 
 ## New Tasks
 <!-- Always cross-check against the live project files before trusting anything here. -->
-1. 
+1. verify codex is set up on my main machine
+2. double check that autopilot is good to go
+3. 
 
 ## Open Work
 <!-- Add plan/PRP notes as <slug>.md alongside this file. -->
 1. Live Testing
+2. New Epic for updating to google ADK 2.0 
 
 <!-- open_tasks files — auto-listed by /update-maps-indexes -->
 - `2026-07-13_codex-setup-all-machines.md`
@@ -26,3 +29,5 @@
 <!-- CHECKPOINT id="ckpt_mrk3jkm0_qa7nw6" time="2026-07-14T03:33:28.728Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
 
 <!-- CHECKPOINT id="ckpt_mrl5ujcs_h74lqs" time="2026-07-14T21:25:45.724Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+
+<!-- CHECKPOINT id="ckpt_mrsmhxzx_a4yqti" time="2026-07-20T02:46:14.877Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
