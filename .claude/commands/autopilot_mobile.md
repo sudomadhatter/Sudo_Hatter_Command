@@ -1,5 +1,5 @@
 ---
-description: Mobile-native autopilot — the web/cloud port of /autopilot_claude. Runs the same 4-stage Dev/QA story pipeline (Plan -> Audit -> Implement -> Review+Fix) on the Workflow engine instead of PowerShell, so it works on Claude Code web + mobile. Each stage is a fresh-context subagent — Opus on the Dev stages (max effort), Fable on the QA stages (Audit high, Review+Fix xhigh), mirroring /autopilot_claude's per-stage effort ladder. Flips the story to review on a green regression-only gate; never commits, never marks the story done.
+description: Mobile-native autopilot — the web/cloud port of /autopilot_claude. Runs the same 4-stage Dev/QA story pipeline (Plan -> Audit -> Implement -> Review+Fix) on the Workflow engine instead of PowerShell, so it works on Claude Code web + mobile. Each stage is a fresh-context subagent — Opus on the Dev stages (medium effort), Fable on the QA stages (max effort on both gates), mirroring /autopilot_claude's per-stage effort ladder. Flips the story to review on a green regression-only gate; never commits, never marks the story done.
 platforms: [claude]
 ---
 
@@ -13,20 +13,20 @@ platforms: [claude]
 
 Run the pipeline for the story in `$ARGUMENTS` (a story id like `11.16`, or a path to the story `.md`).
 
-## Parameters (fixed by Daniel, 2026-06-26; QA lane -> Fable, 2026-07-02; effort ladder mirrored 2026-07-03)
+## Parameters (fixed by Daniel, 2026-06-26; QA lane -> Fable, 2026-07-02; effort ladder mirrored 2026-07-08)
 
 - **Model:** `opus` on the Dev stages (1 Plan, 3 Implement); `fable` on the QA stages (2 Audit,
   4 Review+Fix) — the strongest tier on the last gates before the human, matching /autopilot_claude's split.
 - **Reasoning effort (per stage, NOT uniform):** mirrors /autopilot_claude's effort ladder
-  (`-DevEffort`/`-AuditEffort`/`-ReviewEffort`). The Opus Dev lane runs at `max` (cheaper tier — spend the
-  depth there); the Fable QA lane is dialed back. Effort is per-call, so the two QA stages differ:
+  (`-DevEffort`/`-AuditEffort`/`-ReviewEffort`). The depth goes to the **QA lane** — Stages 2 and 4 are the
+  last gates before the human, so they run at `max`, while the Dev coding lane runs at `medium`:
 
   | Stage | Model | Effort |
   |---|---|---|
-  | 1 Plan (Dev) | opus | **max** |
-  | 2 Audit (QA) | fable | high |
-  | 3 Implement (Dev) | opus | **max** |
-  | 4 Review+Fix (QA) | fable | **xhigh** |
+  | 1 Plan (Dev) | opus | medium |
+  | 2 Audit (QA) | fable | **max** |
+  | 3 Implement (Dev) | opus | medium |
+  | 4 Review+Fix (QA) | fable | **max** |
 
   (This supersedes the old "high on all four / think hard" convention — depth is set explicitly per stage,
   configured in `scripts/autopilot_mobile.workflow.js`'s `STAGES`.)

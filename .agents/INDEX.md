@@ -8,7 +8,8 @@ the "what's in here" map. Edit at master, then `/sync-agents`.
 | `rules/` | behavioral law — constitution, karpathy-guidelines, git-policy, artifacts-always-first, mobile-mode, … | `rules/INDEX.md` |
 | `commands/` | the canonical slash-command set — `/sudo-*`, `/autopilot_*`, `/sync-agents`, `/new-project`, `/merge_main_debug`, … | `commands/INDEX.md` |
 | `skills/` | model-invoked capabilities | `skills/INDEX.md` |
-| `workflows/` | the Antigravity workflow mirror + in-repo reference docs | `workflows/INDEX.md` |
+| `workflows/` | the Antigravity workflow mirror + real multi-stage workflows — **this is Antigravity's `/` surface**, so everything here is invocable by Gemini | `workflows/INDEX.md` |
+| `reference/` | long-form reference docs deliberately OFF every command surface (e.g. the autopilot relay reference — a Claude/opencode-only pipeline Gemini can't run) | `reference/INDEX.md` |
 | `bmad/` | the BMAD method install — **owned, regenerated on update, never hand-edit** | — |
 | `scripts/` | maintenance — `check_maps.py`, `generate_repo_map.py`, `record_map_changes.py`, `generate_doc_graph.py`, `check-repo-map-drift.ps1`, `sync-agents.ps1`, `new-project.ps1` | — |
 | `templates/` | `project-template/` — the scaffold `/new-project` clones | — |

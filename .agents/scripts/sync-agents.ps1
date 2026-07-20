@@ -25,6 +25,14 @@
     - Local tool dirs (.claude, .opencode): copy eligible commands; purge only commands that ARE master-managed
       but are no longer eligible for that platform. Files the master doesn't own (a project's own commands) are
       left alone. Skills / hooks / opencode-agents are an additive robocopy (no delete).
+    - SYNC MANIFEST (`.agents\.sync-manifest.json`, per target). Additive copies alone leaked ghosts: a command
+      DELETED or RENAMED in the master lingered in every copy forever, and because a project's vendored .agents
+      is itself the SOURCE for that project's .claude/.opencode menus, the ghost was re-generated into the menus
+      on every subsequent sync (the name-based purge above can't catch it — once the master drops the name the
+      file reads as "project-own, leave alone"). Each run now records exactly what it wrote; the next run deletes
+      what IT previously wrote and no longer owns. Anything the sync never wrote — project-authored commands,
+      project rules, BMAD's own installs — is absent from the manifest and therefore CANNOT be purged by it.
+      A missing/corrupt manifest degrades safely to "purge nothing this run".
     - Global caches (opencode + Antigravity + Codex prompts): MIRROR-EXACT — copy eligible, purge anything not
       eligible, EXCEPT `bmad-*` (BMAD installs its own global agents/workflows; never ours to delete).
     - Codex skills cache (~\.codex\skills): mirror `bmad-*` skill dirs from .claude\skills (per-dir /MIR); purge
@@ -67,6 +75,8 @@ param(
   [switch]$GlobalsOnly,
   [switch]$NoGlobals,
   [switch]$Maintained,
+  [switch]$Status,
+  [switch]$Reconcile,
   [Alias('DryRun')][switch]$WhatIf
 )
 
@@ -79,7 +89,7 @@ $HomeRoot = Split-Path $Master -Parent           # ...\Sudo_Hatter_Command
 # Projects\* : that touches child repos we deliberately do not keep in sync. -Target is ignored here.
 if ($Maintained) {
   Write-Host "sync-agents: -Maintained fan-out (lobby + .agents\maintained-projects.txt)"
-  & $PSCommandPath -WhatIf:$WhatIf                                  # lobby (default target; refreshes globals)
+  & $PSCommandPath -Status:$Status -Reconcile:$Reconcile -WhatIf:$WhatIf   # lobby (default target; refreshes globals)
   $listFile = Join-Path $HomeRoot ".agents\maintained-projects.txt"
   if (Test-Path $listFile) {
     foreach ($line in Get-Content $listFile) {
@@ -87,7 +97,7 @@ if ($Maintained) {
       if (-not $name) { continue }
       $proj = Join-Path $HomeRoot "Projects\$name"
       if (Test-Path $proj) {
-        & $PSCommandPath -Target $proj -NoGlobals -WhatIf:$WhatIf
+        & $PSCommandPath -Target $proj -NoGlobals -Status:$Status -Reconcile:$Reconcile -WhatIf:$WhatIf
       } else {
         Write-Warning "sync-agents: maintained project '$name' not found under Projects\ - skipping"
       }
@@ -106,16 +116,130 @@ $AllPlatforms = @('claude','opencode','antigravity','codex')
 
 # --- helpers ------------------------------------------------------------------
 
-function Sync-Dir($src, $dst, [string[]]$ExcludeDirs, [switch]$WhatIf) {
+function Sync-Dir($src, $dst, [string[]]$ExcludeDirs, [string[]]$ExcludeFiles, [switch]$WhatIf) {
   if (-not (Test-Path $src)) { return }
   $xd = @('node_modules') + (@($ExcludeDirs) | Where-Object { $_ })
+  $xf = @(@($ExcludeFiles) | Where-Object { $_ })
   if (-not $WhatIf) {
     New-Item -ItemType Directory -Force -Path $dst | Out-Null
-    robocopy $src $dst /E /XD @xd /NFL /NDL /NJH /NJS /NC /NS | Out-Null
+    if ($xf) { robocopy $src $dst /E /XD @xd /XF @xf /NFL /NDL /NJH /NJS /NC /NS | Out-Null }
+    else     { robocopy $src $dst /E /XD @xd          /NFL /NDL /NJH /NJS /NC /NS | Out-Null }
     if ($LASTEXITCODE -ge 8) { throw "robocopy failed ($src -> $dst), rc=$LASTEXITCODE" }
   } else {
     Write-Host ("WHATIF: would robocopy '{0}' -> '{1}' (excluding: {2})" -f $src,$dst,($xd -join ', '))
   }
+}
+
+# --- sync manifest: the fix for the "sync never purges" blind spot ------------
+# See PURGE POLICY in the header. The manifest is a record of what THIS sync wrote, so the next run can
+# delete its own retired output without ever touching a file it did not create.
+$ManifestName = '.sync-manifest.json'
+
+function Get-SyncManifest([string]$target) {
+  $p = Join-Path $target ".agents\$ManifestName"
+  $empty = @{ vendor = @(); local = @{} }
+  if (-not (Test-Path $p)) { return $empty }
+  try {
+    $j = Get-Content $p -Raw | ConvertFrom-Json
+    $local = @{}
+    if ($j.local) { foreach ($prop in $j.local.PSObject.Properties) { $local[$prop.Name] = @($prop.Value) } }
+    return @{ vendor = @($j.vendor); local = $local }
+  } catch {
+    # Fail SAFE, never destructive: an unreadable manifest means we cannot prove ownership, so we purge nothing.
+    Write-Warning ("sync-agents: unreadable {0} ({1}) - purging nothing this run" -f $ManifestName, $_.Exception.Message)
+    return $empty
+  }
+}
+
+function Save-SyncManifest([string]$target, $manifest, [switch]$WhatIf) {
+  $p = Join-Path $target ".agents\$ManifestName"
+  if ($WhatIf) { Write-Host ("WHATIF: would write sync manifest '{0}'" -f $p); return }
+  New-Item -ItemType Directory -Force -Path (Split-Path $p -Parent) | Out-Null
+  $out = [ordered]@{
+    version   = 1
+    generated = (Get-Date).ToString('s')
+    note      = 'Generated by sync-agents.ps1. Records what the sync wrote so the next run can purge its own retired files. Do not hand-edit.'
+    vendor    = @($manifest.vendor)
+    local     = $manifest.local
+  }
+  ($out | ConvertTo-Json -Depth 6) | Set-Content -Path $p -Encoding utf8
+}
+
+# --- reconcile: a git-status-style three-way view of the invocable surfaces ---
+# Mental model: the master is the remote, each copy is a working tree, the manifest is the index.
+#   M  differs  — the copy's content is not master's. Either the copy was hand-edited (master wins: the next
+#                 sync overwrites it, so surfacing it first means the edit isn't lost silently) or master moved
+#                 ahead and this copy simply hasn't been synced yet. Both resolve the same way — run a sync.
+#   ?  orphan   — present in the copy, but master has no such command. Either a PROJECT-AUTHORED command
+#                 (legitimate, e.g. /autopilot_glm) or a PRE-MANIFEST GHOST (a file retired before the manifest
+#                 existed, so no record proves we wrote it). Nothing can tell these apart automatically, which
+#                 is exactly what project-own.txt is for.
+# Scope is deliberately the INVOCABLE surfaces only. rules\ and skills\ are legitimately hybrid (project-owned
+# content lives beside master's), so flagging orphans there would be pure noise, and purging there would be
+# destructive. Ghosts only do harm where they become typeable commands, and that is precisely what we cover.
+$OwnListName = 'project-own.txt'
+
+# $null = no list authored yet (which BLOCKS purging); @() = an authored, deliberately empty list (purge all orphans).
+function Get-OwnAllowList([string]$target) {
+  $p = Join-Path $target ".agents\$OwnListName"
+  if (-not (Test-Path $p)) { return $null }
+  $items = @(Get-Content $p | ForEach-Object { ($_ -replace '#.*$','').Trim() } | Where-Object { $_ })
+  # The leading comma is load-bearing: PowerShell unrolls a returned EMPTY array back to $null, which would
+  # make a fully-curated list ("claim nothing, purge everything") read as "no list authored yet" and stage
+  # forever instead of purging. Wrapping preserves @() as a real, distinct value.
+  return ,$items
+}
+
+function Get-SurfaceState {
+  param([string]$Target, [string]$MasterDir)
+  $mCmd = @(Get-ChildItem (Join-Path $MasterDir 'commands')  -Filter *.md -File -ErrorAction SilentlyContinue)
+  $mWf  = @(Get-ChildItem (Join-Path $MasterDir 'workflows') -Filter *.md -File -ErrorAction SilentlyContinue)
+  # .claude/.opencode hold a platform-FILTERED subset, so "absent" there is normal and never a finding; we only
+  # ever ask whether a file present in the copy corresponds to a master command at all.
+  $map = [ordered]@{
+    '.agents\commands'   = $mCmd
+    '.agents\workflows'  = $mWf
+    '.claude\commands'   = $mCmd
+    '.opencode\commands' = $mCmd
+  }
+  $rows = @()
+  foreach ($key in $map.Keys) {
+    $dir = Join-Path $Target $key
+    if (-not (Test-Path $dir)) { continue }
+    $byName = @{}
+    foreach ($f in $map[$key]) { $byName[$f.Name] = $f.FullName }
+    foreach ($f in (Get-ChildItem $dir -Filter *.md -File -ErrorAction SilentlyContinue)) {
+      $state = $null
+      if (-not $byName.ContainsKey($f.Name)) {
+        $state = 'orphan'
+      } elseif ((Get-FileHash $f.FullName -Algorithm MD5).Hash -ne (Get-FileHash $byName[$f.Name] -Algorithm MD5).Hash) {
+        $state = 'modified'
+      }
+      if ($state) { $rows += [pscustomobject]@{ Surface = $key; Name = $f.Name; State = $state; Path = $f.FullName } }
+    }
+  }
+  return $rows
+}
+
+# Files under the master that a vendor copy is expected to place (relative paths), mirroring Sync-Dir's excludes.
+function Get-VendorFileSet([string]$masterDir) {
+  $root = (Resolve-Path $masterDir).Path
+  Get-ChildItem $masterDir -File -Recurse -Force -ErrorAction SilentlyContinue |
+    Where-Object { ($_.FullName -notmatch '\\(bmad|node_modules)\\') -and ($_.Name -ne $ManifestName) } |
+    ForEach-Object { $_.FullName.Substring($root.Length).TrimStart('\') }
+}
+
+# Delete what a previous run wrote into $dst and this run no longer owns. Returns the purged relative paths.
+function Invoke-ManifestPurge([string]$dst, [string[]]$was, [string[]]$now, [switch]$WhatIf) {
+  $purged = @()
+  foreach ($rel in @($was | Where-Object { $_ -and ($now -notcontains $_) })) {
+    $f = Join-Path $dst $rel
+    if (-not (Test-Path $f)) { continue }
+    if ($WhatIf) { Write-Host ("WHATIF: would purge retired file '{0}' (master no longer owns it)" -f $f) }
+    else         { Remove-Item $f -Force }
+    $purged += $rel
+  }
+  return $purged
 }
 
 # Read a command file's `platforms:` frontmatter. Absent / no frontmatter => universal (all three).
@@ -281,6 +405,30 @@ Write-Host "sync-agents: master=$Master"
 Write-Host "sync-agents: target=$Target (lobby=$IsLobby)"
 if ($WhatIf) { Write-Host "sync-agents: *** WHATIF / DRY-RUN MODE *** no files will be changed" }
 
+# --- -Status: read-only reconciliation report, then stop (writes NOTHING) -----
+if ($Status) {
+  $rows = @(Get-SurfaceState $Target $Master)
+  $own  = Get-OwnAllowList $Target
+  Write-Host ("sync-agents: STATUS {0} (read-only)" -f $Target)
+  if (-not $rows) {
+    Write-Host "  clean - every invocable file matches the master."
+  } else {
+    foreach ($r in ($rows | Sort-Object Surface, Name)) {
+      $tag = if ($r.State -eq 'modified')            { 'M  ' }
+             elseif ($own -and ($own -contains $r.Name)) { 'own' }
+             else                                    { '?  ' }
+      Write-Host ("  {0} {1,-20} {2}" -f $tag, $r.Surface, $r.Name)
+    }
+    $m = @($rows | Where-Object { $_.State -eq 'modified' }).Count
+    $o = @($rows | Where-Object { $_.State -eq 'orphan' -and -not ($own -and ($own -contains $_.Name)) }).Count
+    $k = @($rows | Where-Object { $_.State -eq 'orphan' -and ($own -and ($own -contains $_.Name)) }).Count
+    Write-Host ("  legend: M = differs from master (a sync overwrites it with master's) - ? = orphan, master has no such command - own = kept by {0}" -f $OwnListName)
+    Write-Host ("  totals: {0} differing, {1} unclaimed orphan(s), {2} project-owned" -f $m, $o, $k)
+    if ($o) { Write-Host "  resolve with: -Reconcile (stages a keep-list first; never deletes unreviewed)" }
+  }
+  exit 0
+}
+
 # Regenerate the Antigravity workflow mirrors in the master BEFORE vendoring, so projects pick them up via
 # the (additive) .agents vendor. (Global command cache still mirrors commands/ separately, unchanged.)
 $agWf = Sync-AntigravityWorkflowMirror $Master -WhatIf:$WhatIf
@@ -288,6 +436,12 @@ Write-Host "sync-agents: antigravity workflow mirror -> $($agWf.Count) sudo-* in
 
 # --- local tool dirs ----------------------------------------------------------
 if (-not $GlobalsOnly) {
+  # What the LAST run wrote here. Everything purged below is drawn from this record, never from a bare
+  # "not in master" test — that test cannot tell a retired ghost from a project's own command.
+  $manifest = Get-SyncManifest $Target
+  # Rebuilt from scratch each run and swapped in at save time, so keys from an older layout (or an older
+  # absolute-path scheme) age out instead of accumulating forever.
+  $newLocal = @{}
   # Project target → vendor master's .agents into the project ADDITIVELY (Sync-Dir = /E, no purge). The
   # project's .agents is a HYBRID: master toolkit layered over project-OWNED rules\ + project skills\ that
   # master does NOT have. Do NOT change this to /MIR or a blanket /PURGE — it deletes the project's own files.
@@ -295,7 +449,30 @@ if (-not $GlobalsOnly) {
     # Exclude bmad\ from the vendor: BMAD's module config is PROJECT-OWNED (each repo carries its own
     # `project_name` etc.) and BMAD self-installs per project, so it must NOT be overwritten from master.
     # This keeps it project-owned the same way rules\ already are (additive vendor, master never clobbers it).
-    Sync-Dir $Master (Join-Path $Target ".agents") @((Join-Path $Master 'bmad')) -WhatIf:$WhatIf
+    Sync-Dir $Master (Join-Path $Target ".agents") @((Join-Path $Master 'bmad')) @($ManifestName) -WhatIf:$WhatIf
+
+    # THE BLIND-SPOT FIX. The vendor above is additive, so a master file that was deleted or renamed used to
+    # live on here forever — and since this vendored .agents is the SOURCE for this project's .claude/.opencode
+    # menus (see $src below), the ghost was re-published into the menus on every sync. Purge strictly what a
+    # previous run of this script wrote and the master has since dropped; project-owned rules\, project skills\,
+    # bmad\ and any project-authored command were never in the manifest and are structurally unreachable here.
+    $vendorNow    = @(Get-VendorFileSet $Master)
+    $vendorPurged = Invoke-ManifestPurge (Join-Path $Target ".agents") $manifest.vendor $vendorNow -WhatIf:$WhatIf
+    if ($vendorPurged.Count) {
+      Write-Host "sync-agents: purged $($vendorPurged.Count) retired vendor file(s): $($vendorPurged -join ', ')"
+    }
+    $manifest.vendor = $vendorNow
+
+    # Inventory (never delete) the project's OWN invocables, so local-only additions stay visible instead of
+    # being mistaken for drift later. These are legitimately outside the master — reported, not touched.
+    foreach ($sub in @('commands','workflows')) {
+      $d = Join-Path $Target ".agents\$sub"
+      if (-not (Test-Path $d)) { continue }
+      $own = @(Get-ChildItem $d -Filter *.md -File -ErrorAction SilentlyContinue |
+               Where-Object { $vendorNow -notcontains "$sub\$($_.Name)" } |
+               Select-Object -ExpandProperty Name)
+      if ($own.Count) { Write-Host ("sync-agents: .agents\{0}\ has {1} project-owned file(s), left alone: {2}" -f $sub, $own.Count, ($own -join ', ')) }
+    }
     # Prune stale command-ghosts from the vendored workflows/: a file that is a master COMMAND but NOT a
     # master workflow is a leftover from the old layout (commands used to live in workflows/). This is the
     # ONLY purge on the vendored .agents and it is provably safe — it can never touch rules/, skills/, or a
@@ -317,18 +494,79 @@ if (-not $GlobalsOnly) {
   $src    = if ($IsLobby) { $Master } else { Join-Path $Target ".agents" }
   $cmdDir = Join-Path $src "commands"
 
-  $cl = Sync-CommandDir $cmdDir (Join-Path $Target ".claude\commands")  "claude" -SkipAP:$IsLobby -WhatIf:$WhatIf
+  # Manifest keys are RELATIVE to the target, so the record stays valid if the repo is moved or re-cloned.
+  $claudeCmdKey = ".claude\commands"
+  $claudeCmdDst = Join-Path $Target $claudeCmdKey
+  $cl = Sync-CommandDir $cmdDir $claudeCmdDst "claude" -SkipAP:$IsLobby -WhatIf:$WhatIf
+  # Second half of the blind-spot fix: a command the master RENAMED or DELETED stops being master-managed, so
+  # Sync-CommandDir's name test reclassifies it as "project-own, keep". The manifest remembers we wrote it.
+  $clGone = Invoke-ManifestPurge $claudeCmdDst $manifest.local[$claudeCmdKey] $cl -WhatIf:$WhatIf
+  if ($clGone.Count) { Write-Host "sync-agents: purged $($clGone.Count) retired .claude command(s): $($clGone -join ', ')" }
+  $newLocal[$claudeCmdKey] = $cl
   # bmad-* skills are BMAD-OWNED. BMAD self-installs them (its `ides:` = claude-code, antigravity) directly into
   # .claude\skills, .opencode, and .agent\skills, and refreshes them on every `bmad` update. Our toolkit must NOT
   # carry or shadow them: a stale vendored copy in .agents\skills would clobber BMAD's current install on each
   # sync (robocopy overwrites same-named files). Exclude bmad-* so BMAD stays the single source for its own skills.
   Sync-Dir (Join-Path $src "skills")          (Join-Path $Target ".claude\skills") @('bmad-*') -WhatIf:$WhatIf
   Sync-Dir (Join-Path $src "hooks")           (Join-Path $Target ".claude\hooks") -WhatIf:$WhatIf
-  $oc = Sync-CommandDir $cmdDir (Join-Path $Target ".opencode\commands") "opencode" -SkipAP:$IsLobby -WhatIf:$WhatIf
+  $ocCmdKey = ".opencode\commands"
+  $ocCmdDst = Join-Path $Target $ocCmdKey
+  $oc = Sync-CommandDir $cmdDir $ocCmdDst "opencode" -SkipAP:$IsLobby -WhatIf:$WhatIf
+  $ocGone = Invoke-ManifestPurge $ocCmdDst $manifest.local[$ocCmdKey] $oc -WhatIf:$WhatIf
+  if ($ocGone.Count) { Write-Host "sync-agents: purged $($ocGone.Count) retired .opencode command(s): $($ocGone -join ', ')" }
+  $newLocal[$ocCmdKey] = $oc
   Sync-Dir (Join-Path $src "opencode-agents") (Join-Path $Target ".opencode\agent") -WhatIf:$WhatIf
 
   Write-Host "sync-agents: .claude\commands   -> $($cl.Count) cmds"
   Write-Host "sync-agents: .opencode\commands -> $($oc.Count) cmds"
+
+  # Record what THIS run wrote, so the next one can retire it. Written last: a mid-run failure leaves the
+  # older manifest in place, which only ever means "purge less next time" — never an unowned deletion.
+  $manifest.local = $newLocal
+  Save-SyncManifest $Target $manifest -WhatIf:$WhatIf
+
+  # --- -Reconcile: clear out orphans the manifest can't vouch for ------------
+  # The manifest retires what the sync ITSELF wrote, which cannot cover files retired before the manifest
+  # existed (Fresh's 8 restructure ghosts) or dropped in by hand. Those are indistinguishable from a project's
+  # own commands, so this NEVER guesses: the first run STAGES a keep-list and deletes nothing. The human edits
+  # that list (delete a line = "purge this"), and only the second run acts. Same staging idea as `git add`.
+  if ($Reconcile) {
+    $orphans = @(Get-SurfaceState $Target $Master | Where-Object { $_.State -eq 'orphan' })
+    $own     = Get-OwnAllowList $Target
+    $ownPath = Join-Path $Target ".agents\$OwnListName"
+    if (-not $orphans.Count) {
+      Write-Host "sync-agents: reconcile - no orphans, nothing to resolve."
+    } elseif ($null -eq $own) {
+      $names = @($orphans | Select-Object -ExpandProperty Name -Unique | Sort-Object)
+      Write-Warning ("sync-agents: reconcile found {0} orphan(s) and no {1} yet - STAGING, deleting nothing." -f $names.Count, $OwnListName)
+      if ($WhatIf) {
+        Write-Host ("WHATIF: would stage keep-list '{0}' with: {1}" -f $ownPath, ($names -join ', '))
+      } else {
+        $header = @(
+          "# project-own.txt - commands/workflows THIS repo owns that the master toolkit does not.",
+          "# Every name listed here is preserved forever; sync-agents will never purge it.",
+          "# DELETE a line to mark that file as a stale ghost - the next -Reconcile removes it everywhere.",
+          "# Staged automatically on the first -Reconcile. Review before re-running.",
+          ""
+        )
+        Set-Content -Path $ownPath -Value ($header + $names) -Encoding utf8
+        Write-Host ("sync-agents: staged {0} - review it, delete the lines you want purged, then re-run -Reconcile" -f $ownPath)
+      }
+      $names | ForEach-Object { Write-Host ("    staged (kept): {0}" -f $_) }
+    } else {
+      $kill = @($orphans | Where-Object { $own -notcontains $_.Name })
+      if (-not $kill.Count) {
+        Write-Host ("sync-agents: reconcile - all {0} orphan(s) are claimed by {1}, nothing purged." -f $orphans.Count, $OwnListName)
+      } else {
+        foreach ($o in $kill) {
+          if ($WhatIf) { Write-Host ("WHATIF: would reconcile-purge unclaimed orphan '{0}'" -f $o.Path) }
+          else         { Remove-Item $o.Path -Force }
+        }
+        $verb = if ($WhatIf) { 'would purge' } else { 'purged' }
+        Write-Host ("sync-agents: reconcile {0} {1} unclaimed orphan(s): {2}" -f $verb, $kill.Count, (($kill | Select-Object -ExpandProperty Name -Unique) -join ', '))
+      }
+    }
+  }
 }
 
 # --- machine-global caches (lobby only; always source the true master) --------

@@ -71,8 +71,10 @@ original in-project form.
    the transcript at `<run-folder>/_pipeline/run.log` — the per-story global log above is just the stable,
    known-upfront path to tail live.)
 
-   For a cheap plan+audit trial, append `-MaxStage 2`. Model overrides: `-DevModel`/`-AuditModel`
-   (defaults: Dev `claude-opus-4-8`, QA `claude-opus-4-8`).
+   For a cheap plan+audit trial, append `-MaxStage 2`. **Model overrides:** `-DevModel`/`-AuditModel`
+   (defaults: Dev `claude-opus-4-8`, QA `claude-fable-5`). **Effort overrides:** `-DevEffort`/
+   `-AuditEffort`/`-ReviewEffort` (defaults: `medium`/`max`/`max`; levels `low|medium|high|xhigh|max`).
+   See the ladder table below — effort, not the prompt wording, is the depth control on these models.
    **Resume a crashed run:** `-ResumeFrom <N>` (1-4) (or just re-run with no flags - completed stages
    are auto-skipped by artifact presence, and the saved session ids are reused). **Preview the resume
    plan + session ids for $0:** `-DryRun`. **Retry budget:** `-MaxRetries` (default 3).
@@ -126,18 +128,22 @@ original in-project form.
 
 A 4-stage chain across **two persistent sessions**, handing off via artifacts in the one shared folder
 `_artifacts/epic_<epic>/<date>_autopilot-<id>/`. Each team does its codebase deep-dive once and **resumes its
-own chat** for its second stage (so it never re-researches). Models come from `-DevModel`/`-AuditModel`
-(Dev defaults `claude-opus-4-8`; QA defaults `claude-opus-4-8` — the strongest tier sits on the audit +
-review+fix lane, the last gates before the human, and the two QA stages share one session so the
-codebase deep-dive is paid once); each stage runs a dedicated headless `_AP` command that carries its
-behavior (the script just points it at the shared folder):
+own chat** for its second stage (so it never re-researches). Each stage runs a dedicated headless `_AP`
+command that carries its behavior (the script just points it at the shared folder):
 
-| Stage | Session | Teammate | Command -> artifact |
-|---|---|---|---|
-| 1 Plan | dev (new) | Amelia (Dev) | `/sudo-dev-story-tests_AP plan` -> `implementation_plan.md` |
-| 2 Audit | qa (new) | Murat (QA) | `/sudo-self-audit_AP` -> `self-audit-stress-test.md` |
-| 3 Implement | dev (resume) | Amelia (Dev) | `/sudo-dev-story-tests_AP implement` (applies audit, develops, tests) -> `walkthrough.md` |
-| 4 Review+Fix | qa (resume) | Murat (QA) | `/sudo-code-review_AP` (verifies + reviews + applies fixes + retests) -> `code-review.md`, hands to Daniel |
+| Stage | Session | Teammate | Model | Effort | Command -> artifact |
+|---|---|---|---|---|---|
+| 1 Plan | dev (new) | Amelia (Dev) | `claude-opus-4-8` | `medium` | `/sudo-dev-story-tests_AP plan` -> `implementation_plan.md` |
+| 2 Audit | qa (new) | Murat (QA) | `claude-fable-5` | **`max`** | `/sudo-self-audit_AP` -> `self-audit-stress-test.md` |
+| 3 Implement | dev (resume) | Amelia (Dev) | `claude-opus-4-8` | `medium` | `/sudo-dev-story-tests_AP implement` (applies audit, develops, tests) -> `walkthrough.md` |
+| 4 Review+Fix | qa (resume) | Murat (QA) | `claude-fable-5` | **`max`** | `/sudo-code-review_AP` (verifies + reviews + applies fixes + retests) -> `code-review.md`, hands to Daniel |
+
+**Why this ladder:** the depth sits on the **QA lane** — Stages 2 and 4 are the last gates before the
+human, so they get the strongest tier (**Fable 5**, standing config since 2026-07-02) at maximum effort,
+while the Dev coding lane runs Opus 4.8 at `medium`. Thinking is always-on on these models, so `--effort`
+(not "think hard" prompt keywords) is the depth control. Effort is **per-call**, so Stages 2 and 4 can
+differ freely even though they share one QA session — but the **model must stay constant across a lane**,
+or resuming that session invalidates its model-scoped cache. That's why there are two model flags, not four.
 
 ## Guardrails (already built into the script - do not override)
 

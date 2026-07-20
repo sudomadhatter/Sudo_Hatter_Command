@@ -31,9 +31,9 @@ A normal "dev a story" chat is one model doing everything in one pass: it plans,
 its own homework with no independent check. The autopilot splits that into a **four-eyes pipeline**
 where an **independent reviewer session** (a fresh QA chat, Murat) checks the Dev's work twice —
 once on the plan (cheap, before code is written) and once on the diff. The independence comes from a
-*separate session + a different persona*, not from a stronger model: both default to **Opus 4.8**,
-and the reviewer can be pinned to a stronger or different model via `-AuditModel` when a story
-warrants it. The pre-code audit is the highest-leverage part: catching a flawed test assertion or an
+*separate session + a different persona* — and, since 2026-07-02, from a **different model too**: the Dev
+lane runs **Opus 4.8** and the QA lane runs **Fable 5** at max effort (§5b), so the reviewer is neither
+the same chat nor the same weights as the author. The pre-code audit is the highest-leverage part: catching a flawed test assertion or an
 unmount-order a11y bug in the *plan* costs nothing, whereas catching it after implementation costs a
 red CI run and a rewrite. And because no agent grades its *own* output as the final word, the
 orchestrator runs an **independent test gate** of its own after Stage 4 (§6) — it re-runs the suites
@@ -133,7 +133,8 @@ story-dependent, not a law.
 | **Worker** | `claude` CLI (headless) | `claude -p <prompt> --model <id> --permission-mode bypassPermissions --output-format json` |
 | **Continuity** | CLI session flags | `--session-id <uuid>` + `--name <label>` (first call) · `--resume <uuid>` (second call) |
 | **Agents** | Dedicated headless **`_AP` commands** | Prompts invoke `/sudo-dev-story-tests_AP plan`, `/sudo-self-audit_AP`, `/sudo-dev-story-tests_AP implement`, `/sudo-code-review_AP` (agent-tuned variants of the interactive BMAD skills). |
-| **Models** | Opus 4.8 (Dev) · Opus 4.8 (QA) | Both default to `claude-opus-4-8`; independence is the *separate session + persona*, not a stronger model. Pin asymmetrically via `-DevModel` / `-AuditModel`. |
+| **Models** | Opus 4.8 (Dev) · **Fable 5 (QA)** | Dev `claude-opus-4-8`, QA `claude-fable-5` (since 2026-07-02). Repin via `-DevModel` / `-AuditModel` — one flag per *lane*, because a lane's model must stay constant across its resumed session. |
+| **Effort** | `medium` (Dev) · **`max`** (QA, both stages) | Passed per call as `--effort`; set by `-DevEffort` / `-AuditEffort` / `-ReviewEffort`. This is the depth control — see §5b. |
 | **Test gate** | `pytest` + `vitest`, run by the script | After Stage 4 the orchestrator re-runs the suites itself (`-TestScope auto` derives scope from the baseline diff: backend-only / frontend-only / both — and a shared-contract change (schemas / models / OpenAPI / generated types) forces both, so a cross-stack break can't slip through). It refuses to stamp COMPLETE on red. |
 | **Handoff** | Artifact files | One canonical `_artifacts/<date>_autopilot-<story>/` folder; `_pipeline/` holds raw JSON + `sessions.json` + a self-contained `run.log` transcript. |
 | **Telemetry** | Parsed from result JSON | `.total_cost_usd`, `.num_turns`, `.is_error`, cache token counts. |
@@ -185,14 +186,34 @@ That splits "works for all LLMs" into two independent things:
 > Claude-bound, by choice. (The opencode engine is the second runtime above — same vendor-neutral core,
 > different `Invoke-Stage` seam.)
 
-### 5b. Tuning lever — per-role EFFORT on one model, not per-role model
+### 5b. Tuning lever — per-stage EFFORT, per-lane MODEL
 
-The asymmetry that matters is **effort, not model.** Both teams default to `claude-opus-4-8`; the script
-dials *thinking effort per role via prompt keywords* — Dev-Plan says "think hard" (med), Dev-Implement has
-no keyword (low), QA Audit/Review both say "think hard". We tried `-DevModel claude-sonnet-4-6` to save
-cost and found **Opus-4.8-at-lower-effort is the same cost with better results** — so prefer dialing the
-keyword down over downgrading the model. (`-DevModel`/`-AuditModel` still exist for pinning a *successor*
-model when one ships, not for trading down.)
+Two dials, at different granularities, and the difference is not cosmetic:
+
+| Dial | Granularity | Why |
+|---|---|---|
+| **Effort** (`--effort`) | **per stage** (4 values) | Effort is a per-call setting, so Stage 2 and Stage 4 can differ freely despite sharing one QA session. |
+| **Model** (`--model`) | **per lane** (2 values) | A lane's model must stay constant across its resumed session — changing it invalidates the model-scoped prompt cache, so there is no `-ReviewModel`. |
+
+The current ladder — Dev `opus-4-8 @ medium`, QA `fable-5 @ max` on **both** gates:
+
+| Stage | Lane | Model | Effort |
+|---|---|---|---|
+| 1 Plan | Dev | `claude-opus-4-8` | `medium` |
+| 2 Audit | QA | `claude-fable-5` | **`max`** |
+| 3 Implement | Dev | `claude-opus-4-8` | `medium` |
+| 4 Review+Fix | QA | `claude-fable-5` | **`max`** |
+
+**Depth goes to the QA lane** — Stages 2 and 4 are the last gates before the human, so they get the
+strongest tier at maximum effort while the Dev coding lane runs at `medium`.
+
+Two findings worth keeping:
+
+- **Effort replaced prompt keywords.** Thinking is always-on on Fable 5 / Opus 4.8, so depth is set by the
+  `--effort` flag, not by writing "think hard" in the prompt. Any surviving keyword in a prompt is inert.
+- **Don't trade down a tier to save money.** We tried `-DevModel claude-sonnet-4-6` and found
+  **Opus-4.8-at-lower-effort costs about the same with better results.** Dial effort down, not the model.
+  `-DevModel`/`-AuditModel` are for pinning a *successor* model when one ships.
 
 ---
 
@@ -420,12 +441,16 @@ Or trigger via the slash command: **`/autopilot_claude 13.4`**.
 | Parameter | Default | Purpose |
 |---|---|---|
 | `-Story` | (required) | `"14.2"` or a path to the story `.md` |
-| `-DevModel` | `claude-opus-4-8` | model for Stages 1 & 3 (Dev) |
-| `-AuditModel` | `claude-opus-4-8` | model for Stages 2 & 4 (QA) |
+| `-DevModel` | `claude-opus-4-8` | model for Stages 1 & 3 (Dev lane) |
+| `-AuditModel` | `claude-fable-5` | model for Stages 2 & 4 (QA lane) |
+| `-DevEffort` | `medium` | `--effort` for Stages 1 & 3 · `low\|medium\|high\|xhigh\|max` |
+| `-AuditEffort` | `max` | `--effort` for Stage 2 (pre-dev audit) |
+| `-ReviewEffort` | `max` | `--effort` for Stage 4 (final review+fix) |
 | `-MaxStage` | `4` | stop after this stage (1–4) |
 | `-ResumeFrom` | `0` (auto) | force a start stage (1–4) |
 | `-MaxRetries` | `3` | transient-error attempts per stage |
-| `-MaxCost` | `30` | $ ceiling; halts if spend crosses it (`0` disables) |
+| `-MaxCost` | `40` | run-level $ ceiling, checked between stages; halts if spend crosses it (`0` disables) |
+| `-MaxStageCost` | `15` | per-stage cap, enforced *inside* the call via `--max-budget-usd`, so one stuck stage self-halts (`0` disables) |
 | `-TestScope` | `auto` | independent gate: `auto` (scope from baseline diff: backend-only / frontend-only / both; a shared-contract change forces both) / `backend` / `frontend` / `both` / `none` |
 | `-DryRun` | off | print the plan + sessions, no spend |
 
