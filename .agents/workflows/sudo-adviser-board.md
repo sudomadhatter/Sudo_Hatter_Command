@@ -1,5 +1,5 @@
 ---
-description: 'Convene the Adviser Board — open-table brainstorm of historical minds in 5 challenge teams (First Principles, Ground Truth, Ruin & Ripple, Unconventional Leverage, Human Needs) + an on-call Real-World marketing squad anchored by Hormozi. Flips assumptions, sees around corners, surfaces what people NEED, not what they want. Phased: Brainstorm → Plan → Market → BMAD build handoff.'
+description: 'Convene the Adviser Board — open-table brainstorm of historical minds in 5 challenge teams (First Principles, Ground Truth, Ruin & Ripple, Unconventional Leverage, Human Needs) + an on-call Real-World marketing squad. Flips assumptions, sees around corners, surfaces what people NEED, not what they want. Operator-chaired: phases (Brainstorm → Plan → Market → Brief) advance only on the operator''s word.'
 platforms: [antigravity]
 ---
 
@@ -21,6 +21,7 @@ here; on any edit, update the command file (single source of truth) instead.
 Quick orientation (details in the command file): 5 challenge teams — 🔬 First Principles (Kepler, Feynman,
 Tesla, Turing) · 🩺 Ground Truth (Semmelweis, Snow, Wegener, Nightingale) · 🌊 Ruin & Ripple (Mandelbrot,
 Taleb, Munger, Bastiat) · 🧬 Unconventional Leverage (Margulis, Nakamoto, Ravikant, Fuller) · 🎯 Human
-Needs (Drucker, Schwartz, Rubin, Diogenes, Houellebecq) — plus the 📣 Real-World marketing squad (Hormozi
-anchor + Godin, Vaynerchuk, Brunson + dual-hats) and a 10-mind bench. Arc: **Brainstorm → Plan → Market →
-BMAD build handoff**; every phase advance is confirmed with the user, never silent.
+Needs (Drucker, Schwartz, Rubin, Diogenes, Houellebecq) — plus the 📣 Real-World marketing squad (a team
+of equals: Hormozi, Godin, Vaynerchuk, Brunson + dual-hats) and a 10-mind bench. Arc: **Brainstorm → Plan
+→ Market → Brief** — the operator chairs; phases advance only on the operator's word, and the board never
+pushes the pace.
