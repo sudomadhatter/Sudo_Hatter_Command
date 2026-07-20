@@ -68,7 +68,7 @@ Invoke the **`bmad-dev-story`** skill in PLAN mode for the story in `$ARGUMENTS`
 
 ## Step 2 — Self-audit STOP gate (MANDATORY — stop the moment the plan is written)
 The plan exists; **STOP before the audit and before any code.** This stop exists so the human can choose
-the audit *lane and model* — e.g. a lighter model for an easy story, or a fresh team with clean context.
+the audit *lane and model*.
 Post the clickable link to `implementation_plan.md` and ask ONE question:
 
 > "Plan ready → self-audit next. **(a)** run `/sudo-self-audit` here — name a model if you want a
@@ -78,11 +78,14 @@ Post the clickable link to `implementation_plan.md` and ask ONE question:
 Then **WAIT. Modify NO project file and write NO code until the human answers.**
 - **(a) Run here** — invoke **`/sudo-self-audit`** against the plan (the pre-dev adversarial stress-test:
   gaps, over-engineering, contract breaks). If the human named a model, run the audit on it — spawn
-  `/sudo-self-audit` as a subagent with that model override where the surface supports it; otherwise the
-  human switches model and re-invokes. Fold findings back into the plan. (Human-lane equivalent of
-  autopilot Stage 2.) **Persist the audit as its own `self-audit-stress-test.md`** (`type: self_audit`)
+  `/sudo-self-audit` as a subagent with that model override where the surface supports it (the agent can
+  NEVER switch the session model — only the human can, via `/model`). Fold findings back into the plan.
+  **Persist the audit as its own `self-audit-stress-test.md`** (`type: self_audit`)
   **in `ARTIFACT_DIR`** (Step 0.5) — inline findings, or findings folded only into the plan, do NOT
   satisfy the protocol (`artifacts-always-first` §7).
+  - **Session-model switch = audit lane ONLY** (e.g. `/model` Fable + "continue"): audit on it, persist,
+    fold findings — then **STOP AGAIN** and WAIT for the human to switch back to their dev model and say
+    **continue** before Step 2.5/3. Never implement on the audit-switched model.
 - **(b) Fresh team** — do nothing and wait. When the human returns and says **continue**, read the
   external audit (expect `self-audit-stress-test.md` in `ARTIFACT_DIR`; if it lives elsewhere, ask), fold
   its findings into the plan, then proceed.
@@ -91,7 +94,7 @@ Then **WAIT. Modify NO project file and write NO code until the human answers.**
   `Skipped by human decision (<date>)` so the Step 5 checklist stays honest, and proceed.
 
 **"continue" always means: run the remainder of the flow (Step 2.5 → 3 → 4 → 5) without further stops** —
-subject only to Step 2.5's real-questions rule.
+subject only to Step 2.5's real-questions rule and the model-switch second stop above.
 
 ## Step 2.5 — Gate: ask first, but ONLY if you have questions
 A **conditional** gate — not a mandatory approval stop. After the plan + audit, decide honestly whether you
@@ -122,8 +125,7 @@ skip is an unfinished Step 4 — the Step 5 checklist (and the ③ gate's automa
 
 ## Step 5 — Close-out artifacts (MANDATORY — never skip, even on "just do it")
 The Always-On **`artifacts-always-first`** rule governs this step; it is restated inline here so the
-literal flow cannot miss it (the bug this hardening closes: the steps above produced a plan + a chat report
-but no closing artifacts). Before reporting Done, `ARTIFACT_DIR` (the Step 0.5 folder — a numeric story's
+literal flow cannot miss it. Before reporting Done, `ARTIFACT_DIR` (the Step 0.5 folder — a numeric story's
 `PROJECT_ROOT/_artifacts/epic_<E>/<story>/`) MUST hold all three files, each carrying the
 `IsArtifact: true` + `ArtifactMetadata` frontmatter (with the right `type:`):
 
@@ -137,9 +139,7 @@ but no closing artifacts). Before reporting Done, `ARTIFACT_DIR` (the Step 0.5 f
       "skip the plan, just do it" — the walkthrough is never skippable.**
 - [ ] **Automate evidence (Step 4)** — `_bmad-output/test-artifacts/automation-summary-<story>.md` exists,
       OR the walkthrough carries an explicit `## Automate: skipped — <rationale>` section. (Lives with the
-      TEA outputs, not in `ARTIFACT_DIR`.) A silent skip fails this checklist — the bug this item closes:
-      the 2026-07-09 testing audit found 13 of 14 Epic-8 ATDD stories finished green with no expansion
-      pass and nothing caught it.
+      TEA outputs, not in `ARTIFACT_DIR`.) A silent skip fails this checklist.
 
 Post a clickable Markdown link to every artifact in the chat that same turn — never a bare path.
 
