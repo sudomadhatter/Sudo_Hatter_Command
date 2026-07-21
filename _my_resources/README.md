@@ -6,5 +6,6 @@
         - The **`## Open Tasks`** file-list inside `open_tasks/todo_list.md` is kept fresh by `/update-maps-indexes` —
           it mirrors the plan/PRP `.md` files I've dropped in `open_tasks/`. That command touches **only** that
           file-list; it never edits my `## Todo list` notes or the task files themselves.
+    - `board_sessions` : Output briefs and strategic direction notes from `/sudo-adviser-board` sessions with Daniel and his board of advisors.
     - The other folders are notes, PRPs, and other random notes I keep for myself. 
     - Always double check against the live files in the projects folder to make sure you are not seeing stale or outdated information. 
