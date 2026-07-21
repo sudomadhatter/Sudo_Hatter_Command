@@ -1,5 +1,5 @@
 ---
-description: Develop a story test-first — plan, then STOP at the self-audit gate (human picks: run it here on a chosen model, hand the plan to a fresh team, or continue), implement, then auto-expand coverage. Step ② of the sudo dev flow.
+description: Develop a story test-first — plan, then STOP at the self-audit gate (`continue` = audit here; `changed` = human switched the model, audit then stop to switch back; a pasted file path = another team's blind audit), implement, then auto-expand coverage. Step ② of the sudo dev flow.
 platforms: [opencode, antigravity]
 ---
 
@@ -42,7 +42,8 @@ folder — set it **now** so `bmad-dev-story` and the audit don't drop files at 
   the story folder inside it (slug `story-<E>-<S>-<short-title>`), or reuse the existing one on a resume.
 - **TEA / non-numeric id** (e.g. `tea-17`) has no numeric epic → nest under the `tea/` bucket:
   `PROJECT_ROOT/_artifacts/tea/<story-slug>/`.
-- **No story id at all** (a true one-off) → `PROJECT_ROOT/_artifacts/<YYYY-MM-DD>_<slug>/` at the root.
+- **No story id at all** (a true one-off) → `PROJECT_ROOT/_artifacts/_main/<YYYY-MM-DD>_<slug>/` — the
+  holding bucket; never a dated folder at the `_artifacts/` root.
 
 **Echo** `Artifacts: <ARTIFACT_DIR>` before Step 1. Every step below writes into `ARTIFACT_DIR`; pass it
 explicitly to each sub-skill and **never** let one mint its own root-level or date-stamped folder.
@@ -67,34 +68,35 @@ Invoke the **`bmad-dev-story`** skill in PLAN mode for the story in `$ARGUMENTS`
 `implementation_plan.md` **into `ARTIFACT_DIR`** — not the BMAD stories dir, not the `_artifacts/` root.
 
 ## Step 2 — Self-audit STOP gate (MANDATORY — stop the moment the plan is written)
-The plan exists; **STOP before the audit and before any code.** This stop exists so the human can choose
-the audit *lane and model*.
-Post the clickable link to `implementation_plan.md` and ask ONE question:
+The plan exists; **STOP before the audit and before any code.** This stop lets the human switch the
+model for the audit, or hand it to another team (often a different LLM, blind).
+**You can NEVER switch the model yourself — never offer to.** Only the human can (e.g. `/model`).
 
-> "Plan ready → self-audit next. **(a)** run `/sudo-self-audit` here — name a model if you want a
-> different lane (e.g. 'use Fable' for an easy story); **(b)** you take `implementation_plan.md` to a
-> fresh team/session for the audit — I'll wait; or just say **continue**."
+Post the gate message — short, ALWAYS with the clickable plan link (never a bare path):
 
-Then **WAIT. Modify NO project file and write NO code until the human answers.**
-- **(a) Run here** — invoke **`/sudo-self-audit`** against the plan (the pre-dev adversarial stress-test:
-  gaps, over-engineering, contract breaks). If the human named a model, run the audit on it — spawn
-  `/sudo-self-audit` as a subagent with that model override where the surface supports it (the agent can
-  NEVER switch the session model — only the human can, via `/model`). Fold findings back into the plan.
-  **Persist the audit as its own `self-audit-stress-test.md`** (`type: self_audit`)
-  **in `ARTIFACT_DIR`** (Step 0.5) — inline findings, or findings folded only into the plan, do NOT
-  satisfy the protocol (`artifacts-always-first` §7).
-  - **Session-model switch = audit lane ONLY** (e.g. `/model` Fable + "continue"): audit on it, persist,
-    fold findings — then **STOP AGAIN** and WAIT for the human to switch back to their dev model and say
-    **continue** before Step 2.5/3. Never implement on the audit-switched model.
-- **(b) Fresh team** — do nothing and wait. When the human returns and says **continue**, read the
-  external audit (expect `self-audit-stress-test.md` in `ARTIFACT_DIR`; if it lives elsewhere, ask), fold
-  its findings into the plan, then proceed.
-- **"continue" with no audit run and none provided** — confirm once ("skipping the self-audit for this
-  story?"); on an explicit yes, write a stub `self-audit-stress-test.md` recording
-  `Skipped by human decision (<date>)` so the Step 5 checklist stays honest, and proceed.
+> "Plan ready → **[implementation_plan.md](<ARTIFACT_DIR>/implementation_plan.md)**
+> **1.** `continue` — audit runs here · or switch your model first, then say `changed`
+> **2.** handoff to another team — paste the audit file's path here when it's done."
 
-**"continue" always means: run the remainder of the flow (Step 2.5 → 3 → 4 → 5) without further stops** —
-subject only to Step 2.5's real-questions rule and the model-switch second stop above.
+Then **WAIT — modify NO project file, write NO code.** The reply IS the trigger:
+
+- **`continue`** — no model change. Run **`/sudo-self-audit`** on the plan here (the pre-dev
+  adversarial stress-test). **Persist it as `self-audit-stress-test.md`**
+  (`type: self_audit`) **in `ARTIFACT_DIR`** — inline-only findings do NOT satisfy the protocol
+  (`artifacts-always-first` §7). Fold findings into the plan, then go straight on (Step 2.5 → 3 → 4 → 5)
+  — **no second gate**.
+- **`changed`** — the human ALREADY switched the model; the audit lane. Run **`/sudo-self-audit`** now
+  (on the switched model), persist + fold as above — then **STOP AGAIN**:
+  *"Audit done — switch back, then say `continue`."* WAIT before Step 2.5/3 — **never implement on the
+  audit-switched model.** This switch-back gate exists ONLY after `changed`.
+- **A pasted file path** — another team ran the audit blind; the path IS the handoff. Read it; if outside
+  `ARTIFACT_DIR`, copy it in as `self-audit-stress-test.md` (`type: self_audit`, source path noted in its
+  frontmatter). Fold its findings into the plan, then proceed — no further stops.
+- **Explicit "skip the audit"** — confirm once; on yes, write a stub `self-audit-stress-test.md`
+  recording `Skipped by human decision (<date>)` so the Step 5 checklist stays honest, and proceed.
+
+**`continue` always means: run the remainder (Step 2.5 → 3 → 4 → 5) without further stops** — subject
+only to Step 2.5's real-questions rule and the `changed`-path switch-back stop above.
 
 ## Step 2.5 — Gate: ask first, but ONLY if you have questions
 A **conditional** gate — not a mandatory approval stop. After the plan + audit, decide honestly whether you

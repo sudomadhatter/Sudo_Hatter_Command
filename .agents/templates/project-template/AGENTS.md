@@ -32,8 +32,8 @@ If what you need isn't here, GO BACK to the home-base root `../../router.md` (or
 
 ## NAMING / ARTIFACTS (project-local)
 - Dated output `YYYY-MM-DD_<slug>.md`; versioned drafts `<slug>_v2.md` / `_final.md`.
-- Artifacts are **project-local** — write into this repo's own `_artifacts/`: random task → `<YYYY-MM-DD>_<slug>/`,
-  story → `<epic>/<story>/`, retired → `_archived/`. Append a row to `_artifacts/INDEX.md` at close. Full model →
+- Artifacts are **project-local** — write into this repo's own `_artifacts/`: story → `<epic>/<story>/`; no home yet /
+  random task → `_main/<YYYY-MM-DD>_<slug>/` (holding bucket — never dated at the root); retired → `_archived/`. Append a row to `_artifacts/INDEX.md` at close. Full model →
   `../../AGENTS.md` §5 + `.agents/rules/artifacts-always-first.md`.
 
 ## PERSISTENCE

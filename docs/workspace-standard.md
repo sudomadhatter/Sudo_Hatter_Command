@@ -247,7 +247,9 @@ The deciding factor is the workspace you have open (your cwd), not only what the
   inside a project — every task there is that project's work.)
 - **opencode** writes under its own `_artifacts/opencode/` namespace and applies the **same rules inside it**:
   `opencode/<project>/`, `opencode/_main/`, `opencode/<project>/<epic>/<story>/`.
-- Within either location: **random task** → `<YYYY-MM-DD>_<slug>/`; **story** → `<epic>/<story>/` (epic folder
+- Within either location: **random task** → `<YYYY-MM-DD>_<slug>/` (at the home base, inside the bucket you
+  picked; **in a project, inside `_main/` — the holding bucket for anything with no home yet — never at the
+  `_artifacts/` root**); **story** → `<epic>/<story>/` (epic folder
   houses its stories — create the epic folder if missing); retired history → `_archived/`; **testing/debugging** → `debugging/<YYYY-MM-DD>_<slug>/` (for repros, tests, and isolated debugging).
 - **Finding a project's history:** look in BOTH the home-base bucket `_artifacts/<project>/` (sessions run
   from the home base) AND the project-local `Projects/<name>/_artifacts/` (sessions run inside the project).

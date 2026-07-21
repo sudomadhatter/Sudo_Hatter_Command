@@ -92,8 +92,9 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
 - **From inside a project** (`Projects/<name>/` is cwd) → project-local `Projects/<name>/_artifacts/…` + that
   project's own `active-context.md`/`INDEX.md` (follow its rules, not the home-base ledger). There is no
   *cross-project* `_main` here — but the project keeps a **local `_main/`** for its own system/infrastructure
-  work (the agent system, rules, scripts, CI). Story work nests under `epic_<N>/`; random one-offs are dated at
-  the root.
+  work (the agent system, rules, scripts, CI) — which doubles as the **holding bucket**: anything with no home
+  yet lives in `_main/` until it has one or you make one. Story work nests under `epic_<N>/`; **nothing is
+  dated at the project `_artifacts/` root**.
 
 **Then find the parent and name the folder by task type — pick the FIRST that matches (in either location):**
 - **Story** (work tied to a story id `E.S`) → `epic_<E>/<story>/` — an **epic folder houses all of its
@@ -103,9 +104,11 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
   flow, or Daniel devs it by hand; the parent is decided by the story id, **not** by the tool.
 - **System / infrastructure** ("systems things": the agent system, rules, scripts, CI, cross-cutting config)
   → `_main/<YYYY-MM-DD>_<slug>/` (for opencode, under `opencode/_main/…`).
-- **Random one-off** (everything else) → `<YYYY-MM-DD>_<slug>/` at the root — date FIRST, slug LAST so they
-  sort chronologically (e.g. `2026-06-25_artifacts-policy-finish`). Slug: lowercase, hyphen-separated, max 6
-  words, from Daniel's first concrete request.
+- **No home yet / random one-off** (everything else) → `<YYYY-MM-DD>_<slug>/` — date FIRST, slug LAST so they
+  sort chronologically (e.g. `2026-06-25_artifacts-policy-finish`); slug: lowercase, hyphen-separated, max 6
+  words, from the operator's first concrete request. At the home base the bucket you picked is the home; **in
+  a project it goes inside `_main/` — the holding bucket — until it has a home or you make one; never a dated
+  folder at the project's `_artifacts/` root**.
 
 **File names within a folder:** dated output → `YYYY-MM-DD_<slug>.md`; versioned drafts →
 `<slug>_draft.md` → `<slug>_v2.md` → `<slug>_final.md`. Memory / active-context sections are
