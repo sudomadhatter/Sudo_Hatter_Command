@@ -22,7 +22,9 @@ the program; you **become** the agent the workspace describes.
 - **SUPPORT** — what tools/skills/context? → `.agents/skills/`, `.agents/commands/`, pulled per the table
 
 ## 3. ALWAYS-LOAD  (small by design)
-Load now: `.agents/rules/constitution.md` (hard stops + gates), `.agents/rules/karpathy-guidelines.md`
+Load now: `.agents/rules/operator-profile.md` (**who you're talking to** — Daniel is the visionary/chair,
+you are the engineer; the eight speaking obligations that govern every reply),
+`.agents/rules/constitution.md` (hard stops + gates), `.agents/rules/karpathy-guidelines.md`
 (how to work), and `.agents/rules/artifacts-always-first.md` (the plan-first gate — see below). Everything
 else in `.agents/rules/` loads **on demand** when a task calls for it — do not preload the rest. The full
 rule set is the shared toolkit, not a startup payload. How a workspace is shaped + kept healthy →

@@ -5,6 +5,10 @@ description: "Activates on conversational chat replies. Prefer prose over bullet
 
 # Chat Response Formatting — Prose Over Scaffolding
 
+> **Why this exists → `operator-profile`** (floor rule). This file is the *formatting* consequence of
+> obligations 2 and 5 there: narrative first, compression second; never make Daniel the compiler.
+> When the two seem to conflict, `operator-profile` is the intent.
+
 > Distilled from the Claude Fable 5 consumer-prompt `lists_and_bullets` doctrine (2026-06-16).
 > Applies to **conversational chat replies only** — see the carve-out below.
 

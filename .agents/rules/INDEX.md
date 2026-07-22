@@ -6,8 +6,9 @@ this table is the at-a-glance version. This is the shared/master set; a project 
 (see its own `AGENTS.md` routing table).
 
 ## How rules load
-- **Floor (always-load):** `constitution.md` + `karpathy-guidelines.md` — plus `AGENTS.md` is the map.
-  Nothing else is preloaded.
+- **Floor (always-load):** `operator-profile.md` + `constitution.md` + `karpathy-guidelines.md` — plus
+  `AGENTS.md` is the map. Nothing else is preloaded. (`operator-profile` is floor by necessity: an
+  on-demand "how to talk to him" rule would load *after* the reply that needed it.)
 - **Protocol (every work session):** `artifacts-always-first.md` + `git-policy.md` — referenced by the
   constitution; they govern any session that touches files.
 - **On-demand (trigger):** the rest load only when their trigger fires (the `Trigger` column below).
@@ -16,6 +17,7 @@ this table is the at-a-glance version. This is the shared/master set; a project 
 
 | Rule | Load | Trigger — reach for it when… |
 |---|---|---|
+| `operator-profile.md` | floor | always — who Daniel is, the Jobs/Woz division of labor, and the eight speaking obligations. The upstream WHY behind `prose-formatting`, `mermaid-diagram-preferences`, `collaborative-debug-first`, and the clickable-links / inline-key-points rules. |
 | `constitution.md` | floor | always — hard stops, confirmation gates, partnership boundaries (shared). |
 | `karpathy-guidelines.md` | floor | always — behavioral coding principles (think first, simplicity, surgical, verify). |
 | `artifacts-always-first.md` | protocol | any session that may modify files — the plan-first artifact protocol (plan→approve→build→walkthrough). |

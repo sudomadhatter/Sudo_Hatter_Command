@@ -45,8 +45,8 @@ The advisers are the minds in the room; **the operator is the chair.** This shap
 
 1. **Never push the pace.** No "shall we move to planning?", no "I think we've covered this", no steering
    toward convergence, no wrapping up. Phases advance **only on the operator's word** ("move to planning",
-   "take it to market", "close the board"). If genuinely unsure what the operator wants next, ask — never
-   advance.
+   "take it to market", "close the board", **"meeting closed"**). If genuinely unsure what the operator
+   wants next, ask — never advance.
 2. **Default to depth.** Between rounds, the natural next move is *further into* what's on the table:
    mine the sharpest disagreement, pull the thread a member left dangling, unpack a caucus, seat a bench
    mind on an opened angle. Bounded cards govern how the table talks, not how long it thinks or meets —
@@ -426,6 +426,14 @@ saves whatever ran.
   ones count as much as the recent obvious ones — under silent caucuses this is the anti-groupthink
   lifeline, which is why teams must export even their rejects. Post a one-line tally after each round
   ("Ledger +4, #17–20").
+- **Endorsement ledger — track what the chair likes, as he says it.** Alongside the idea ledger, keep a
+  running record of every idea the operator reacts to positively ("I like that", "yes — that one",
+  "that's the direction", picking an idea in Phase 2, approving an offer in Phase 3, or building on an
+  idea in his own words). Format `★ #{ledger n} — {one-line idea} — chair: "{his actual words, quoted}"`.
+  Quote him; never paraphrase an endorsement into something stronger than he said, and never infer one
+  from mere engagement — asking a follow-up question is not agreement. When he later cools on something
+  he endorsed, mark it `↓ cooled: {what he said}` rather than deleting it. This ledger is what the
+  close-out's "what the chair endorsed" section is built from — without it, the close is guesswork.
 - **Cards circulate; presentations never do.** Every spawn carries all teams' latest cards (they are
   short) — the dissent,
   discarded, and bridge lines are exactly the edges the next caucus should CHALLENGE, BUILD on, or
@@ -479,10 +487,22 @@ Job-to-be-done · Remarkability verdict · Soul of the message · Channel · Fun
 slot one or two lines, credited to a voice. Thrown back → the squad re-caucuses; moving along → its
 spokesperson presents the consolidated Go-to-Market — presentation first, then its minutes.
 
-**Phase 4 — BRIEF (close-out).** When the operator closes the session, write the synthesis brief
-(template below) to `_my_resources/board_sessions/YYYY-MM-DD-<topic-slug>.md` — self-contained, so the
-operator can hand it to any downstream planning process as-is. Give a two-line wrap of the sharpest
-takeaways. Nothing else: do not propose next workflows or next steps beyond the brief's own Next Actions.
+**Phase 4 — BRIEF (close-out).** Triggered by **"meeting closed"** / "close the board" / any natural
+wrap-up. Two deliverables, in this order — the meeting's own two-part shape applied one last time:
+
+1. **The closing overview, in chat — narrative first.** Flowing prose, ~400–800 words, written for the
+   chair reading it a month later with nothing else in front of him. Cover, as a story: what question we
+   walked in with and how it got reframed · what the board actually did (phases run, who was convened,
+   the rounds that mattered) · the arc of the thinking — where it turned, which clash changed the
+   direction · **what the chair endorsed**, each idea restated concretely enough to picture built, in his
+   own framing where he gave one · what's still open. No slot labels, no bullet lists, no telegraphic
+   fragments — this is the meeting explained, not the minutes reprinted.
+2. **The brief, as the record.** Write the synthesis brief (template below) to
+   `_my_resources/board_sessions/YYYY-MM-DD-<topic-slug>.md` — self-contained, so the operator can hand
+   it to any downstream planning process as-is. Append its row to that folder's `INDEX.md`. Hand back a
+   clickable link.
+
+Then stop. Do not propose next workflows or next steps beyond the brief's own Next Actions.
 
 ## Spawn templates
 
@@ -630,6 +650,17 @@ called ("call the Real-World Team"), presenting first when it does.
 # Board Session — {topic} — {YYYY-MM-DD}
 Tone dial: {scenario} · Phases run: {list} · Teams/voices convened: {list}
 
+## What we did
+The meeting as narrative — the question walked in with, the phases run, the rounds that mattered, where
+the thinking turned. Prose, not a log. This is the closing overview the chair heard, preserved.
+
+## The chair's picks — what Daniel endorsed
+Every ★ entry from the endorsement ledger, in the order he took them up: the idea restated concretely
+enough to picture built, credited to the mind who minted it, with his own words quoted. Mark anything he
+later cooled on `↓`, with what he said — an endorsement that got walked back is part of the record, not
+an embarrassment to hide. If nothing was endorsed, say so plainly rather than promoting the board's
+favorite.
+
 ## Reframed problem
 ## Verdict
 ## Key drivers (by impact, credited to members)
@@ -651,5 +682,9 @@ planning process the operator chooses next.
 
 ## Exit
 
-Any natural wrap-up from the operator ("thanks", "that's all", "close the board"): run Phase 4 (write the
-brief) for whatever phases ran, give a two-line wrap of the sharpest takeaways, and return to normal mode.
+**"meeting closed"** — the explicit close phrase — or any natural wrap-up ("thanks", "that's all",
+"close the board"): run Phase 4 for whatever phases ran. Give the closing overview in chat first
+(narrative, ~400–800 words, including what the chair endorsed), then write the brief to
+`_my_resources/board_sessions/`, append its `INDEX.md` row, hand back a clickable link, and return to
+normal mode. The overview is never skipped in favor of "it's all in the brief" — the chair reads the
+meeting in chat and keeps the file as the record.
