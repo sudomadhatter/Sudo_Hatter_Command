@@ -49,7 +49,7 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 | Routing canary | `_routing-canary/` | model-agnostic proof the routing works (Claude/opencode/Antigravity) |
 | System builder | `_system/` | how to add/maintain workspaces (`/new-project`, `/sync-agents`) |
 | Lobby tool dirs | `.claude/`, `.opencode/` | synced copies of the master so `/commands` + skills resolve here. `/sync-agents` mirrors `.agents/commands/` to **all four** platforms (incl. the opencode + Antigravity machine-global caches, and the Codex `~/.codex/prompts` + `~/.codex/skills` caches); `platforms:` frontmatter limits a command's reach |
-| Personal area | `_my_resources/` | Daniel's notes (docs · transcripts · open_tasks) — protected, Tier-2 law; `open_tasks/` read-only carve-out |
+| Personal area | `_my_resources/` | Daniel's notes (docs · transcripts · open_tasks) — protected, Tier-2 law; `open_tasks/` (read-only) & `_quick_reference/` (read/write) allow-list carve-outs |
 | BMAD (lobby) | `_bmad/` · `_bmad-output/` | BMAD module (regenerated — never hand-edit) + its state/output |
 | Projects | `Projects/<name>/` | the actual projects, each its own git repo |
 
