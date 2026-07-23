@@ -137,8 +137,8 @@ literal flow cannot miss it. Before reporting Done, `ARTIFACT_DIR` (the Step 0.5
 - [ ] **`walkthrough.md`** (`type: walkthrough`) — the ONE closing doc (§5): narrative (what changed
       file-by-file & why), the red→green test story, the **actual pasted test output**, an AC→evidence
       matrix, then a **`## Task Checklist`** section (final TodoWrite snapshot) and a **`## Your Actions`**
-      section (the human's manual steps + the exact git commit command). **Required even when told to
-      "skip the plan, just do it" — the walkthrough is never skippable.**
+      section (what landed — worktree branch + commits — plus anything still on the human). **Required
+      even when told to "skip the plan, just do it" — the walkthrough is never skippable.**
 - [ ] **Automate evidence (Step 4)** — `_bmad-output/test-artifacts/automation-summary-<story>.md` exists,
       OR the walkthrough carries an explicit `## Automate: skipped — <rationale>` section. (Lives with the
       TEA outputs, not in `ARTIFACT_DIR`.) A silent skip fails this checklist.
@@ -149,7 +149,9 @@ Post a clickable Markdown link to every artifact in the chat that same turn — 
 Report: plan-vs-built deltas, audit findings applied, tests now green (paste output), coverage added, and
 the three Step-5 artifact links. Hand to `sudo-code-review`. The dev step **may advance the story to
 `review`** — bmad-dev-story's Step 9 does this and we let it (don't fight bmad's own logic). **Never flip to
-`done`, and never `git commit`/`push`** — `done` is Daniel's call at close-out via
-`/sudo-update-sprint-memory`, after his human-in-the-loop review.
+`done`** — that is Daniel's call at close-out via `/sudo-update-sprint-memory`, after his human-in-the-loop
+review. **Git:** commit your work freely inside the story worktree as you go (explicit paths, never
+`git add -A`); do NOT land it on `main_debug` — Step 7 of `/sudo-update-sprint-memory` owns that push
+(→ `worktree-per-story`).
 
 Optional additional input: $ARGUMENTS

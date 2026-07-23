@@ -32,8 +32,9 @@ Keep it minimal — only these per session:
 2. **`implementation_plan.md`** — the plan Daniel signs off on (the "approved" gate).
 3. **`walkthrough.md`** — the SINGLE closing doc; it holds everything final. It MUST end with a
    **`## Task Checklist`** section (the final TodoWrite snapshot) and then a **`## Your Actions`**
-   section (manual steps + the exact git commit command). Do NOT split these off into separate
-   `task-list.md` or `your-action-required.md` files — extra closing docs are wasted space and time.
+   section (what landed — branch + commits — plus anything still left for Daniel). Do NOT split these
+   off into separate `task-list.md` or `your-action-required.md` files — extra closing docs are wasted
+   space and time.
 4. **`bug-list.md`** — ONLY for debugging / live-testing sessions. A simple bug list.
 5. **`code-review.md`** — whenever a code review runs (see §6).
 6. **`self-audit-stress-test.md`** — whenever the `/sudo-self-audit` pre-dev audit runs
@@ -156,7 +157,10 @@ closing document — it carries everything final, in this order:
 2. **`## Task Checklist`** — the final `TodoWrite` snapshot: every task with its end status
    (`[x]` done / `[ ]` deferred, one-line reason for anything not finished). Terse — it is the list,
    not a second walkthrough; it replaces the old standalone `task-list.md`.
-3. **`## Your Actions`** (LAST) — Daniel's manual steps + the exact `git add / commit / push` command.
+3. **`## Your Actions`** (LAST) — what landed (the `claude/*` branch, the commit range, whether it
+   reached `main_debug`) plus anything still on Daniel: a `main` promotion, a live check, a decision.
+   It is no longer a `git add` command block — the agent commits its own work in the worktree and
+   lands it at close-out (→ `git-policy` · `worktree-per-story`).
 
 Do NOT split the checklist or the actions into separate files (`task-list.md`,
 `your-action-required.md`) — one doc holds the walkthrough, the task list, and the actions.
@@ -198,9 +202,9 @@ When Daniel says **"review"** (or asks to review a document/plan), EVERY agent m
 - NEVER write/update an artifact — or name a file or path in chat — without posting a clickable Markdown
   link to it that same turn (see the "Link every artifact — and every file — in the chat" rule above).
 - NEVER claim the walkthrough is done without actual test output.
-- NEVER finish a `walkthrough.md` without its `## Task Checklist` and `## Your Actions` sections (the git commit command lives in the latter).
+- NEVER finish a `walkthrough.md` without its `## Task Checklist` and `## Your Actions` sections (what landed + what's still on Daniel lives in the latter).
 - NEVER write the final task checklist or the "Your Actions" steps as separate files — they are sections inside `walkthrough.md` (§5).
-- NEVER run `git commit`/`git push` yourself — the `walkthrough.md` "Your Actions" section hands Daniel the exact command. The ONLY exception: Daniel explicitly delegates a specific commit/push to you in that moment (then: your own files only, explicit paths, never `git add -A`). Full policy → the `git-policy` rule.
+- NEVER edit a project file for story/dev work before opening its worktree — then commit your own work inside it freely (explicit paths, never `git add -A`). Landing on `main_debug` needs Daniel's sign-off; `main` is his alone. Full policy → the `git-policy` + `worktree-per-story` rules.
 - NEVER deliver code-review findings inline-only — always persist them as a `code-review.md` artifact.
 - NEVER deliver `/sudo-self-audit` findings inline-only — always persist them as a
   `self-audit-stress-test.md` artifact (`type: self_audit`), even though the audit writes no code.

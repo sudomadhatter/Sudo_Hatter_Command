@@ -1,168 +1,103 @@
 ---
 name: git-policy
-description: "Git default: NEVER run commit/push yourself — hand Daniel the exact command. Only commit/push when Daniel explicitly delegates that specific action; then commit your OWN files via explicit paths, never git add -A."
+description: "Git policy: story/dev work happens in its own git worktree on a `claude/*` branch, where the agent commits FREELY (explicit paths — never `git add -A`). The story lands on `main_debug` as ONE clean push, either on Daniel's in-the-moment 'approved' or via /sudo-update-sprint-memory. `main` is reached only when Daniel asks directly or runs /sudo-push-e2e."
 ---
 
 # Git Policy
 
-> The single, canonical git rule for the whole workspace. Supersedes the older "commit at story
-> close-out" stance — there is only one policy now: **you hand Daniel the command** unless he
-> explicitly delegates a specific commit/push to you.
+> The single, canonical git rule for the whole workspace. **Agents commit and push their own work now.**
+> This supersedes the old "never run git yourself — hand Daniel the command" default, which is gone:
+> that default is what produced commits carrying four unrelated sessions at once.
 
 ## Branch model — `main_debug` → `main` (THE dev standard)
 
 > The one source of truth for the branch model. Every workspace (home base + every project) uses it;
 > per-workspace `AGENTS.md` GATES sections point here rather than restating it.
 
-- **`main` is LIVE PRODUCTION — never work on it, never auto-target it.** It stays deployable.
-- **All day-to-day work flows through `main_debug`** (the shared integration branch): a `claude/*`
-  session branch → PR → **`main_debug`**. This is the "one place to send everything."
-- **Promotion `main_debug` → `main` is Daniel's deliberate, manual decision** — done only when he is
-  happy and confident it won't break production. An agent never promotes to `main` on its own.
+- **`main` is LIVE PRODUCTION — never work on it, never auto-target it, never branch a worktree from
+  it.** It stays deployable.
+- **All day-to-day work flows through `main_debug`** (the shared integration branch): a story worktree
+  on a `claude/*` branch → lands on **`main_debug`**. This is the "one place to send everything."
+- **Promotion `main_debug` → `main` is Daniel's deliberate, manual decision** — only when he asks for it
+  directly, or via `/sudo-push-e2e`. An agent never promotes to `main` on its own.
 
-### Write-approval gate — free on your OWN branch; the button on the owner's
-The gate keys on **where a write lands**, not the act of pushing:
-- **FREE:** push freely to your own `claude/*` session branch (loops/retries fine); open/update PRs.
-- **APPROVAL (per-action, never carries forward):** any write to an **owner branch** —
-  `main_debug` or `main` — i.e. a direct `git push` to either, or merging a PR into them. `main` is
-  **extra-protected**: never push/PR/merge to it directly; reach it only via the manual promotion above.
-- **Enforcement:** the `require-push-approval.py` PreToolUse hook (canonical source `.agents/hooks/`,
-  deployed to every `.claude/hooks/` by `/sync-agents`) forces the approval prompt on any `git push`
-  targeting `main_debug`/`main` however it's wrapped; `merge_pull_request` (+ GitHub write tools) is
-  gated in `.claude/settings.json`. Approve a merge into `main_debug` by invoking `/merge_main_debug` —
-  invoking it IS the per-action approval.
+## Default — you work in a worktree, and you own git inside it
 
-## Default — you do NOT run git
+**Story or dev work opens its own git worktree before the first project file is edited**, branched from
+`main_debug`. One story, one worktree, one `claude/*` branch. Inside that worktree the agent commits
+its own work freely — that is the entire point of the worktree. Full lifecycle, triggers, and
+exemptions → **`worktree-per-story.md`** (protocol tier, loads alongside this rule).
 
-**Never run `git commit` or `git push` yourself.** Instead, the `walkthrough.md` "Your Actions"
-section hands Daniel the exact command(s) to run. This holds at every stage — mid-work AND at
-close-out. The record of the command exists whether Daniel runs it or (by exception) delegates it.
+Why: several teams run in parallel against one checkout. Their edits interleave, `git status` becomes a
+soup of everybody's work, and whoever pushes last inherits all of it. A worktree per story ends that.
 
-> **Web/mobile sessions are the exception.** On a phone there is no terminal to paste into, so the
-> `mobile-mode.md` lane takes over: the agent commits/pushes its own files (same safe-commit mechanics
-> below) and **asks before opening a PR**. See `mobile-mode.md` → Override 1.
+## The write gate — keyed on WHERE a write lands, not on the act
 
-This pairs with the plan-first gate: no project-file edits without an approved `implementation_plan.md`
-(see `artifacts-always-first`), and "done" is earned, not implied (see `completion-not-illusion`).
+| Destination | Permission |
+|---|---|
+| Your own `claude/*` branch (commits **and** pushes) | **FREE** — no approval, loops/retries fine |
+| `main_debug` | **Daniel's sign-off** — his in-the-moment "approved", or invoking `/sudo-update-sprint-memory` (which IS the sign-off) |
+| `main` | **Never by an agent** — only when Daniel asks directly or runs `/sudo-push-e2e` |
 
-## The only exception — Daniel explicitly delegates
+Approval for a `main_debug` landing is **per-action and never carries forward**. One "approved" lands
+one story; the next needs its own.
 
-If Daniel explicitly tells you to run a specific commit or push in that moment ("go ahead and commit
-this", "you push it"), you may — for that action only. A standing approval does NOT carry to the next
-commit; each delegation is one-time. When delegated, follow the safe-commit mechanics below.
+**Enforcement:** the `require-push-approval.py` PreToolUse hook (canonical source `.agents/hooks/`,
+deployed to every `.claude/hooks/`) forces the approval prompt on any `git push` targeting
+`main_debug`/`main` however it's wrapped, and on any `git commit` attempted while HEAD is
+`main_debug`/`main` (i.e. outside a worktree — see `worktree-per-story.md` G1). `merge_pull_request`
+(+ GitHub write tools) is gated in `.claude/settings.json`. The hook only ever sees the **agent's**
+Bash tool — Daniel's own terminal is never affected by it.
 
-## Sync-first — always check the remote before you commit (or recommend the commit)
+## The landing — one story, one clean push
 
-Phone and desktop share branches, so a commit made on a **stale** branch is what causes the
-diverge → rejected-push tangle. Before you produce the "Your Actions" commit recommendation (desktop)
-**or** commit/push yourself (mobile / delegated), ALWAYS check the remote first:
+The story lands on `main_debug` at close-out (`/sudo-update-sprint-memory` Step 7) or on Daniel's
+in-the-moment "approved". It merges **from inside the worktree**, never by checking out `main_debug`
+in the shared checkout:
 
-1. **Fetch and compare:** `git fetch origin <branch>`, then check whether the local branch is behind
-   origin (e.g. `git status -sb` shows `behind`, or `git rev-list --count <branch>..origin/<branch>` > 0).
-2. **If behind, lead with the pull.** The recommended command block (or your own sequence) MUST start
-   with `git pull --ff-only origin <branch>` *before* `git add`/`commit`/`push`, so neither machine ever
-   commits on top of a stale branch.
-3. **If the branches have DIVERGED** (a fast-forward pull isn't possible), **STOP and flag it** — hand
-   Daniel the situation. Do NOT recommend or run a blind merge/rebase, and never force-push.
+```bash
+git fetch origin main_debug
+git merge origin/main_debug        # absorb it INSIDE the worktree — conflicts surface here, isolated
+git push origin claude/<slug>      # free; the branch is the rollback point
+git push origin HEAD:main_debug    # THE landing (hook prompts once)
+```
 
-This is the written form of the desktop habit "pull before you work": the agent checks for you and
-bakes the pull into the recommendation whenever the branch is behind.
+Checking out `main_debug` in the shared checkout to merge is **wrong** — that tree holds other teams'
+uncommitted work, so the merge either refuses or drags their files through your landing. If the merge
+conflicts, it conflicts in the isolated worktree: **STOP and report**, never force-push, never
+blind-rebase.
 
-## Safe-commit mechanics (apply ONLY when delegated)
-
-- **Commit your OWN work via explicit paths:** `git add path/one path/two …`.
-- **NEVER `git add -A`, `git add .`, or `git add -u`** — they sweep other parallel work (other
-  agents/teams, or Daniel's own uncommitted changes) into your commit. This is the most important rule.
-- **Verify the staged set first:** `git diff --cached --stat` must show ONLY your files. If anything
-  else appears, unstage it (`git restore --staged <path>`) before committing.
----
-name: git-policy
-description: "Git default: NEVER run commit/push yourself — hand Daniel the exact command. Only commit/push when Daniel explicitly delegates that specific action; then commit your OWN files via explicit paths, never git add -A."
----
-
-# Git Policy
-
-> The single, canonical git rule for the whole workspace. Supersedes the older "commit at story
-> close-out" stance — there is only one policy now: **you hand Daniel the command** unless he
-> explicitly delegates a specific commit/push to you.
-
-## Branch model — `main_debug` → `main` (THE dev standard)
-
-> The one source of truth for the branch model. Every workspace (home base + every project) uses it;
-> per-workspace `AGENTS.md` GATES sections point here rather than restating it.
-
-- **`main` is LIVE PRODUCTION — never work on it, never auto-target it.** It stays deployable.
-- **All day-to-day work flows through `main_debug`** (the shared integration branch): a `claude/*`
-  session branch → PR → **`main_debug`**. This is the "one place to send everything."
-- **Promotion `main_debug` → `main` is Daniel's deliberate, manual decision** — done only when he is
-  happy and confident it won't break production. An agent never promotes to `main` on its own.
-
-### Write-approval gate — free on your OWN branch; the button on the owner's
-The gate keys on **where a write lands**, not the act of pushing:
-- **FREE:** push freely to your own `claude/*` session branch (loops/retries fine); open/update PRs.
-- **APPROVAL (per-action, never carries forward):** any write to an **owner branch** —
-  `main_debug` or `main` — i.e. a direct `git push` to either, or merging a PR into them. `main` is
-  **extra-protected**: never push/PR/merge to it directly; reach it only via the manual promotion above.
-- **Enforcement:** the `require-push-approval.py` PreToolUse hook (canonical source `.agents/hooks/`,
-  deployed to every `.claude/hooks/` by `/sync-agents`) forces the approval prompt on any `git push`
-  targeting `main_debug`/`main` however it's wrapped; `merge_pull_request` (+ GitHub write tools) is
-  gated in `.claude/settings.json`. Approve a merge into `main_debug` by invoking `/merge_main_debug` —
-  invoking it IS the per-action approval.
-
-## Default — you do NOT run git
-
-**Never run `git commit` or `git push` yourself.** Instead, the `walkthrough.md` "Your Actions"
-section hands Daniel the exact command(s) to run. This holds at every stage — mid-work AND at
-close-out. The record of the command exists whether Daniel runs it or (by exception) delegates it.
-
-> **Web/mobile sessions are the exception.** On a phone there is no terminal to paste into, so the
-> `mobile-mode.md` lane takes over: the agent commits/pushes its own files (same safe-commit mechanics
-> below) and **asks before opening a PR**. See `mobile-mode.md` → Override 1.
-
-This pairs with the plan-first gate: no project-file edits without an approved `implementation_plan.md`
-(see `artifacts-always-first`), and "done" is earned, not implied (see `completion-not-illusion`).
-
-## The only exception — Daniel explicitly delegates
-
-If Daniel explicitly tells you to run a specific commit or push in that moment ("go ahead and commit
-this", "you push it"), you may — for that action only. A standing approval does NOT carry to the next
-commit; each delegation is one-time. When delegated, follow the safe-commit mechanics below.
-
-## Sync-first — always check the remote before you commit (or recommend the commit)
-
-Phone and desktop share branches, so a commit made on a **stale** branch is what causes the
-diverge → rejected-push tangle. Before you produce the "Your Actions" commit recommendation (desktop)
-**or** commit/push yourself (mobile / delegated), ALWAYS check the remote first:
-
-1. **Fetch and compare:** `git fetch origin <branch>`, then check whether the local branch is behind
-   origin (e.g. `git status -sb` shows `behind`, or `git rev-list --count <branch>..origin/<branch>` > 0).
-2. **If behind, lead with the pull.** The recommended command block (or your own sequence) MUST start
-   with `git pull --ff-only origin <branch>` *before* `git add`/`commit`/`push`, so neither machine ever
-   commits on top of a stale branch.
-3. **If the branches have DIVERGED** (a fast-forward pull isn't possible), **STOP and flag it** — hand
-   Daniel the situation. Do NOT recommend or run a blind merge/rebase, and never force-push.
-
-This is the written form of the desktop habit "pull before you work": the agent checks for you and
-bakes the pull into the recommendation whenever the branch is behind.
-
-## Safe-commit mechanics (apply ONLY when delegated)
+## Safe-commit mechanics (always — inside the worktree too)
 
 - **Commit your OWN work via explicit paths:** `git add path/one path/two …`.
 - **NEVER `git add -A`, `git add .`, or `git add -u`** — they sweep other parallel work (other
-  agents/teams, or Daniel's own uncommitted changes) into your commit. This is the most important rule.
+  agents/teams, or Daniel's own uncommitted changes) into your commit. This is the most important rule,
+  and the worktree does not repeal it.
 - **Verify the staged set first:** `git diff --cached --stat` must show ONLY your files. If anything
   else appears, unstage it (`git restore --staged <path>`) before committing.
 - **Scope the commit message** to your task/story only.
-- **Push only if the push was also delegated** — it is a distinct outward action needing its own
-  go-ahead. Push your work as its own commit; never bundle other work.
 - **If a push is rejected** (remote moved under you), **STOP and report.** Do not force-push, and do
   not blind-rebase while other uncommitted work sits in the tree.
+
+## Sync-first — check the remote before you land
+
+Phone and desktop share branches, so landing from a **stale** branch is what causes the
+diverge → rejected-push tangle. Before the landing push:
+
+1. **Fetch and compare:** `git fetch origin main_debug`, then check whether you are behind
+   (`git rev-list --count HEAD..origin/main_debug` > 0).
+2. **If behind, merge `origin/main_debug` into your story branch first** (the landing block above does
+   this by default) so you never land on top of a stale base.
+3. **If it will not merge cleanly**, **STOP and flag it** — hand Daniel the situation. Do NOT run a
+   blind merge/rebase, and never force-push.
 
 ## Always
 
 - **Clear the Dummy GitHub Token:** The Antigravity IDE automatically injects a dummy `GITHUB_TOKEN` into the agent's environment as a sandbox security measure. Because Git and the `gh` CLI prioritize this environment variable over the Windows Credential Manager, it causes authentication failures. **Before running any `git` or `gh` commands, you MUST clear this variable** by prefixing the command or running: `Remove-Item Env:\GITHUB_TOKEN -ErrorAction Ignore; <command>`.
-- **Check the remote first** (Sync-first above) — the "Your Actions" command block leads with
-  `git pull --ff-only` whenever the branch is behind, before add/commit/push.
-- **Validate CI/CD credentials**: Before recommending or running a push to deployment-triggering branches (such as `main` or `main_debug`), verify that the target repository's required secrets (e.g., `FIREBASE_SERVICE_ACCOUNT` for Firebase) and variables (e.g., `FIREBASE_PROJECT_ID`) are fully set up on GitHub using `gh secret list` and `gh variable list`. If credentials are missing, STOP and notify the user to configure them before proceeding.
-- The `walkthrough.md` "Your Actions" documents the exact `git add` (explicit paths) + `commit` +
-  `push` commands either way — so the record exists whether Daniel or (by delegation) you run them.
+- **Validate CI/CD credentials**: Before landing on a deployment-triggering branch (`main` or `main_debug`), verify that the target repository's required secrets (e.g., `FIREBASE_SERVICE_ACCOUNT`) and variables (e.g., `FIREBASE_PROJECT_ID`) are set up on GitHub using `gh secret list` and `gh variable list`. If credentials are missing, STOP and notify Daniel before proceeding.
+- The `walkthrough.md` **"Your Actions"** section records what landed — the branch, the commit range,
+  and anything Daniel still has to do (a `main` promotion, a live check). It is no longer a `git add`
+  command block, because the agent already ran it.
+
+> **Web/mobile sessions** follow the same model with lighter mechanics — see `mobile-mode.md`
+> → Override 1. It shares this rule's safe-commit mechanics and Sync-first.

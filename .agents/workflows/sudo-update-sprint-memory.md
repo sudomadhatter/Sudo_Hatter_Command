@@ -1,5 +1,5 @@
 ---
-description: End-of-session / story close-out save — advance the closed story to done (running this command IS Daniel's sign-off; only objectively-red /sudo-code-review tests block the flip), code-verify, route learnings to specs/rules/memory, prune active-context. Run as the LAST step when closing a story or any session.
+description: End-of-session / story close-out save — advance the closed story to done (running this command IS Daniel's sign-off; only objectively-red /sudo-code-review tests block the flip), code-verify, route learnings to specs/rules/memory, prune active-context, then LAND the story worktree branch on main_debug as one clean push (Step 7). Run as the LAST step when closing a story or any session.
 platforms: [opencode, antigravity]
 ---
 
@@ -83,7 +83,8 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
     **live-test / live-verify / live-QA / live-checkride** or "stays review until X" note is NOT a blocker:
     his invocation resolves it. Flip and NOTE it (`note: story flagged a pending live-test — closed on your
     invocation`). The red-tests **FAIL** is the only refusal.
-  - **"commit owed" is NOT a blocker** — agents never commit; Daniel commits right after close-out.
+  - **"commit owed" is NOT a blocker** — the agent commits its own work in the story worktree, and
+    Step 7 lands it. Nothing about git blocks the status flip.
   - (No conflict with /autopilot: it's autonomous, so it deliberately stops at `review`; here the human IS
     the loop, so this command owns `review → done`.)
 - **Last Updated**: set to today's date at the top of `active-context.md`.
@@ -108,9 +109,9 @@ command is Step 4's red-tests check; everything else, including Step 6's memory 
 
 ## Step 6 — §5 artifacts, summary & manual catch
 - Ensure this session's `_artifacts/<date>_<slug>/` has the single **`walkthrough.md`** ending with a
-  **`## Task Checklist`** section (final task snapshot) and a **`## Your Actions`** section (manual steps +
-  the exact `git` command — agents never commit), per AGENTS.md §5. (There is no separate `task-list.md`
-  or `your-action-required.md` — both are sections of the walkthrough.)
+  **`## Task Checklist`** section (final task snapshot) and a **`## Your Actions`** section — what landed
+  (branch + commit range, per Step 7) plus anything still on Daniel — per AGENTS.md §5. (There is no
+  separate `task-list.md` or `your-action-required.md` — both are sections of the walkthrough.)
 - Print a summary:
   > **Session save applied:**
   > - ✅ Moved to Completed: [tasks]
@@ -129,6 +130,40 @@ command is Step 4's red-tests check; everything else, including Step 6's memory 
     sessions — project learnings already routed in Steps 3–4; memory is only durable non-component facts).
   - Summary lists writes, e.g. `🧠 Memory: wrote [name] (new) · updated [name] (superseded stale entry)`.
 - **Then ask Daniel (always, separate from memory):** *"Saved the session updates from the codebase +
-  artifacts. Any manual learnings, new bugs, or sprint-objective changes to add?"* Apply any additions. Done.
+  artifacts. Any manual learnings, new bugs, or sprint-objective changes to add?"* Apply any additions.
+
+## Step 7 — Land the story on `main_debug` (the one sanctioned push)
+
+**Daniel invoking this command IS the sign-off for this push.** Run it LAST, after Steps 1–6 have written
+the board, the story file, and `active-context.md` — so those edits ride the story branch and land with
+the story instead of being hunk-picked out of somebody else's diff later.
+
+**Precondition — check FIRST.** `git rev-parse --abbrev-ref HEAD` must be a **`claude/*`** branch (you are
+inside the story worktree). If HEAD is `main_debug`/`main`, this story was not worked in a worktree —
+**do NOT land it.** Report that, tell Daniel his working tree holds the changes, and stop. Do not try to
+rescue it by committing in the shared checkout.
+
+```bash
+# 1 · commit the close-out edits — EXPLICIT PATHS ONLY, never `git add -A`
+git add <sprint-status.yaml> <story-file> <active-context.md> <artifacts…>
+git diff --cached --stat          # must show ONLY this story's files
+git commit -m "chore(<story>): close out — status done, board + learnings"
+
+# 2 · sync-first: absorb main_debug INSIDE the worktree (never check it out in the shared checkout)
+git fetch origin main_debug
+git merge origin/main_debug       # CONFLICT → STOP and report; never force-push, never blind-rebase
+
+# 3 · push the story branch (free — your own branch, the rollback point)
+git push -u origin claude/<story-slug>
+
+# 4 · THE LANDING — one story, one clean push (the hook prompts once; Daniel approves)
+git push origin HEAD:main_debug
+```
+
+- **Keep the worktree** — do not remove it. It is the rollback point.
+- **`main` is untouched.** Only Daniel, directly or via `/sudo-push-e2e`.
+- **Report** the branch, the commit range that landed, and the `main_debug` sha — and put the same in the
+  walkthrough's `## Your Actions` (Step 6).
+- If the landing push is rejected because the remote moved, **STOP and report.** Re-run from step 2.
 
 Optional additional input: $ARGUMENTS

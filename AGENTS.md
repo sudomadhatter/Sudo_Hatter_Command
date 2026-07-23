@@ -71,15 +71,16 @@ live in the always-loaded **`.agents/rules/artifacts-always-first.md`** (§2) ·
 - **SEARCH GATE** — a root-level Grep is blind to `Projects/` (ripgrep honors the lobby `.gitignore`) and
   reads as a false "clean"; point Grep at `Projects/<name>` or use Bash. **Full mechanics →
   `.agents/rules/lobby-search.md`.**
-- **RISK GATE**: never delete / overwrite / publish without explicit go-ahead. **GIT — desktop default:**
-  never run `git commit`/`push` yourself — hand Daniel the command unless he delegates it in the moment
-  (→ `.agents/rules/git-policy.md`). On **web/mobile** (`CLAUDE_CODE_REMOTE=true`) the agent owns git
-  delivery instead (commits/pushes its own files, asks before the PR) → `.agents/rules/mobile-mode.md`; on
-  desktop the var is unset → ignore that file.
-- **GIT WRITE APPROVAL — free on your OWN branch; the button on the owner's.** FREE: your own `claude/*`
-  branch + opening/updating PRs. APPROVAL (per-action, never carries): any write to `main_debug`/`main` —
-  invoking `/merge_main_debug` IS the approval for `main_debug`; `main` is owner-only — never push/PR/merge
-  to it. Full branch model + enforcement → `.agents/rules/git-policy.md` (web/mobile → `mobile-mode.md`).
+- **RISK GATE**: never delete / overwrite / publish without explicit go-ahead.
+- **WORKTREE GATE — one story, one worktree.** Any story/dev work that will produce commits opens its own
+  git worktree branched from **`main_debug`** (never `main`) **before the first project file is edited** —
+  automatic, don't ask. Inside it you commit **freely** (explicit paths; `git add -A`/`.`/`-u` stay banned).
+  Read-only sessions are exempt. Full lifecycle → `.agents/rules/worktree-per-story.md`.
+- **GIT WRITE APPROVAL — the gate is WHERE a write lands.** FREE: your own `claude/*` branch — commits
+  **and** pushes. SIGN-OFF (per-action, never carries): landing on **`main_debug`** — Daniel's in-the-moment
+  "approved", or invoking `/sudo-update-sprint-memory` (its Step 7 does the landing; invoking it IS the
+  sign-off). OWNER-ONLY: **`main`** — only when Daniel asks directly or runs `/sudo-push-e2e`. Full branch
+  model + enforcement → `.agents/rules/git-policy.md` (web/mobile → `mobile-mode.md`).
 - Full hard stops + "ask first" list → `.agents/rules/constitution.md`.
 
 ## 7. PERSISTENCE  (you own this — not a vendor)

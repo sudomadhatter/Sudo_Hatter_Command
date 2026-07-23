@@ -414,7 +414,8 @@ edits, say so and proceed (a regen that produces no diff needs no approval).
   python .agents/scripts/check_maps.py --all      # home base; or bare / --root <proj> for one workspace
   ```
 - Summarise what changed (files + line counts) and what was flagged, **grouped by repo**.
-- **Do not commit or push.** Per `.agents/rules/git-policy.md`, hand Daniel the exact command(s). **Each
+- **This one lands by hand** — it is a multi-repo sweep, not story work, so there is no single story
+  branch for `worktree-per-story` to land. Hand Daniel the exact command(s). **Each
   workspace is its own git repo → one commit per touched repo** (run git inside that repo). E.g.:
   ```bash
   # lobby
@@ -472,6 +473,6 @@ edits, say so and proceed (a regen that produces no diff needs no approval).
   Substantively-wrong claims get 🚩 flagged for an authoring decision.
 - **GitNexus is verify-only here** — check 9 detects, Step 6 hands off the re-index command; the workflow never
   runs the indexer.
-- **Never commit/push** — hand off the command, one per repo.
+- **Lands by hand** (multi-repo sweep — see above) — hand off the command, one per repo.
 
 Optional input: $ARGUMENTS  (e.g. a folder to focus on, or `--dry-run` to stop after the report).

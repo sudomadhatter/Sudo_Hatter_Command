@@ -9,8 +9,8 @@ this table is the at-a-glance version. This is the shared/master set; a project 
 - **Floor (always-load):** `operator-profile.md` + `constitution.md` + `karpathy-guidelines.md` — plus
   `AGENTS.md` is the map. Nothing else is preloaded. (`operator-profile` is floor by necessity: an
   on-demand "how to talk to him" rule would load *after* the reply that needed it.)
-- **Protocol (every work session):** `artifacts-always-first.md` + `git-policy.md` — referenced by the
-  constitution; they govern any session that touches files.
+- **Protocol (every work session):** `artifacts-always-first.md` + `git-policy.md` +
+  `worktree-per-story.md` — referenced by the constitution; they govern any session that touches files.
 - **On-demand (trigger):** the rest load only when their trigger fires (the `Trigger` column below).
 
 ## The set
@@ -21,7 +21,8 @@ this table is the at-a-glance version. This is the shared/master set; a project 
 | `constitution.md` | floor | always — hard stops, confirmation gates, partnership boundaries (shared). |
 | `karpathy-guidelines.md` | floor | always — behavioral coding principles (think first, simplicity, surgical, verify). |
 | `artifacts-always-first.md` | protocol | any session that may modify files — the plan-first artifact protocol (plan→approve→build→walkthrough). |
-| `git-policy.md` | protocol | any time git comes up — you NEVER commit/push; hand Daniel the command unless he delegates that specific action. |
+| `git-policy.md` | protocol | any time git comes up — the branch model + the write gate: your `claude/*` branch is free (commit AND push), `main_debug` lands at Daniel's sign-off, `main` is his alone. |
+| `worktree-per-story.md` | protocol | any story/dev work that will produce commits — open a worktree off `main_debug` first, commit freely inside it, land it as one clean push at close-out. |
 | `000-PLAN-FIRST-GATE.md` | protocol | any dev work or BMAD dev-skill run — incl. lobby-rooted `quick-dev` maintenance — PRIORITY-ZERO kill-chain: no project file modified until Daniel approves an `implementation_plan.md`; the `_bmad/custom/` guard tomls load it into every dev-story/quick-dev run (parity across lobby + AGY + Fresh, 2026-07-09). |
 | `code-standards.md` | on-demand | writing/reviewing backend (Python/FastAPI) or frontend (React/TS) code — style + organization. |
 | `dependency-awareness.md` | on-demand | modifying `package.json` / `requirements.txt` / `pyproject.toml` or any dependency manifest. |

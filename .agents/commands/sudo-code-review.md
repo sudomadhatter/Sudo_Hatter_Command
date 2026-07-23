@@ -86,13 +86,15 @@ old test count, no findings):
 - If you changed code: refresh the parts of the body your fixes made stale — the AC/test matrix + test
   counts, the pasted **actual** suite totals, and the `## Task Checklist` (tick the rows your fixes
   completed).
-- If your fixes changed the files to commit, update the exact `git add … && git commit` line in
-  `## Your Actions` (keep its `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>` trailer).
+- If your fixes changed files, commit them in the story worktree (explicit paths) and refresh the
+  branch/commit summary in `## Your Actions` (keep the
+  `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>` trailer on your commits).
 - **Hard rule: NEVER finish `/sudo-code-review` with the walkthrough body left stale after applying fixes.**
 
 ## Stay in lane
-Never `git commit`/`push`; never flip the story status or edit `sprint-status.yaml` — that is
-`sudo-update-sprint-memory`'s job (it reads this verdict first). Updating `walkthrough.md` (Step 5) is IN
-lane — that is documenting the review, not flipping status or committing.
+Commit your review fixes inside the story worktree (explicit paths) — but **never land on `main_debug`**,
+and never flip the story status or edit `sprint-status.yaml`; that is `sudo-update-sprint-memory`'s job
+(it reads this verdict first, then lands the branch in its Step 7). Updating `walkthrough.md` (Step 5) is
+IN lane — that is documenting the review, not flipping status.
 
 Optional additional input: $ARGUMENTS

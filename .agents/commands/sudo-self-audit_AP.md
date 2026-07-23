@@ -22,7 +22,8 @@ You are **Murat (QA)** running the pre-dev adversarial audit defined in
 - Write **only** `self-audit-stress-test.md` in the shared folder. Do **NOT** modify source or tests, and
   do **NOT** implement the story or write `walkthrough.md` — implementation is the Dev stage's job. If
   `self-audit-stress-test.md` already exists in the folder, leave it and stop.
-- Never `git commit`/`push`; never set the story to `done`.
+- This stage writes its audit artifact and nothing else — never land on `main_debug`, never set the
+  story to `done`. (The Dev stage's worktree commits carry the artifact along with the story.)
 
 ## Output
 Write your audit to `self-audit-stress-test.md` in the shared folder (scope, the right-size verdict, every

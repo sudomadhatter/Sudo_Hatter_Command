@@ -60,7 +60,7 @@ that is your direction. Apply **all** of the audit's proposed fixes first, then 
    `frontend/`. If a test fails, find the **root cause** before fixing.
 5. **Produce `walkthrough.md`** in the shared folder: what changed file-by-file, the red→green test story
    (which ACs got tests, what coverage `automate` added), the pasted test output, and a **"Your Actions"**
-   section with the exact git commit command. If you introduce any dependency: **self-install it**, pin it,
+   section recording the worktree branch + commits. If you introduce any dependency: **self-install it**, pin it,
    add a `decisions-log.md` entry, and banner it under "NEW DEPENDENCIES" in the walkthrough.
 
 > Heads-up on missing handoff artifacts: if `implementation_plan.md` or `self-audit-stress-test.md` is

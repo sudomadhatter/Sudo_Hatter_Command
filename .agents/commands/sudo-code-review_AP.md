@@ -61,13 +61,14 @@ After review + fix, run the gate and record the verdict INSIDE `code-review.md`.
    can detect a stale verdict) INSIDE `code-review.md`.
 
 ## Stay in your lane / human-in-the-loop
-- Never `git commit`/`push`; never set the story to `done` or edit `sprint-status.yaml` — human close-out.
+- Commit review fixes inside the story worktree (explicit paths, never `git add -A`); **never land on
+  `main_debug`**, never set the story to `done` or edit `sprint-status.yaml` — human close-out owns both.
 - Write **`code-review.md`** in the shared folder (REQUIRED even if the review is clean): scope, the 3
   passes, every finding with `file:line` + severity + disposition, your independent test output, the test
   gate's per-check results + overall verdict (with story id + current git HEAD ref), and — if you changed
   nothing — an explicit "Changes applied: none — implementation is correct as-is."
-- **Update `walkthrough.md`** so its "Your Actions" git command ends with the line:
-  `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`
+- **Update `walkthrough.md`** so its "Your Actions" records the worktree branch + commits; keep the
+  `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>` trailer on your commit messages.
 - Put these TWO sections at the **TOP** of `walkthrough.md` (you are the last agent before Daniel; mirror
   the detail in `decisions-log.md`):
   - `## OUT-OF-SPEC DECISIONS` — every call the team made that the story did not cover (what it was

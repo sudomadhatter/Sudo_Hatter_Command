@@ -16,7 +16,7 @@ project-agnostic core shared across the whole workspace.
 
 - Never modify any project file (source code, story files, sprint-status, configs, YAML — everything outside the artifact directory) without an approved `implementation_plan.md` — see `artifacts-always-first` rule
 - Never treat "ok", "perfect", "continue", or "ready-for-dev" as authorization — require explicit approval (on web/mobile, a tap-to-approve chip is the explicit approval → `mobile-mode` rule)
-- **Never run `git commit` or `git push` yourself — provide the exact command for Daniel to run.** The ONLY exception: Daniel explicitly delegates a specific commit/push to you in that moment. Never `git add -A`/`git add .` (it can sweep other parallel work). Full policy → the `git-policy` rule. (Web/mobile sessions: the agent commits/pushes and asks before the PR → `mobile-mode` rule.)
+- **Git — the gate is WHERE a write lands, not whether you run git.** Story/dev work opens its own worktree off `main_debug` first (→ `worktree-per-story` rule); inside it, on your `claude/*` branch, you commit and push **freely**. Landing on **`main_debug`** needs Daniel's sign-off — his in-the-moment "approved", or invoking `/sudo-update-sprint-memory` (which IS the sign-off); approval is per-action and never carries. **`main` is never an agent's** — only when Daniel asks directly or runs `/sudo-push-e2e`. Never `git add -A`/`git add .`/`git add -u` (it sweeps other parallel work). Full policy → the `git-policy` rule.
 - Never fabricate citations or references — defer to verified sources or say "I don't know"
 - Never instantiate a duplicate client for a shared resource (database, auth, cache) — use the project's singleton/factory
 - Never hardcode secrets, API keys, or credentials
