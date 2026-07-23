@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "phase": "root_cause",
+  "status": "active",
+  "transitions": [
+    {
+      "from": "scope",
+      "to": "root_cause",
+      "tool": "vscode.workflow.advance",
+      "note": "Triggered from status CTA",
+      "timestamp": "2026-07-22T23:46:46.085Z"
+    }
+  ],
+  "pendingCheckpoint": null,
+  "approvals": [],
+  "approvalGrant": null,
+  "updatedAt": "2026-07-22T23:46:46.085Z"
+}

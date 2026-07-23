@@ -1,15 +1,15 @@
 {
-  "root": "C:\\Users\\dlohn\\.gemini\\antigravity\\scratch\\Sudo_Hatter_Command\\.agents",
+  "root": "C:\\Sudo_Hatter_Command\\.agents",
   "counts": {
-    "files": 237,
+    "files": 243,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 222,
-    "external": 16,
+    "edges": 231,
+    "external": 17,
     "ambiguous": 56,
-    "dangling": 197,
-    "broken_paths": 34,
-    "unresolved_names": 163
+    "dangling": 202,
+    "broken_paths": 35,
+    "unresolved_names": 167
   },
   "nodes": [
     {
@@ -30,12 +30,12 @@
     {
       "path": "INDEX.md",
       "in": 3,
-      "out": 7
+      "out": 8
     },
     {
       "path": "commands/INDEX.md",
-      "in": 4,
-      "out": 0
+      "in": 5,
+      "out": 1
     },
     {
       "path": "commands/analyst.md",
@@ -51,6 +51,11 @@
       "path": "commands/autopilot_claude.md",
       "in": 2,
       "out": 0
+    },
+    {
+      "path": "commands/autopilot_deepseek4.md",
+      "in": 0,
+      "out": 1
     },
     {
       "path": "commands/autopilot_mobile.md",
@@ -113,6 +118,11 @@
       "out": 0
     },
     {
+      "path": "commands/sudo-adviser-board.md",
+      "in": 2,
+      "out": 1
+    },
+    {
       "path": "commands/sudo-bdd-tests.md",
       "in": 0,
       "out": 0
@@ -131,6 +141,11 @@
       "path": "commands/sudo-code-review_AP.md",
       "in": 0,
       "out": 1
+    },
+    {
+      "path": "commands/sudo-create-epic-sprint.md",
+      "in": 1,
+      "out": 0
     },
     {
       "path": "commands/sudo-dev-story-tests.md",
@@ -176,11 +191,6 @@
       "path": "commands/sudo-update-sprint-memory.md",
       "in": 1,
       "out": 1
-    },
-    {
-      "path": "commands/sudo-write-epics-stories-sprint.md",
-      "in": 1,
-      "out": 0
     },
     {
       "path": "commands/sudo-write-story-tests.md",
@@ -328,6 +338,16 @@
       "out": 2
     },
     {
+      "path": "reference/INDEX.md",
+      "in": 2,
+      "out": 1
+    },
+    {
+      "path": "reference/autopilot_bmad_dev_loop.md",
+      "in": 3,
+      "out": 2
+    },
+    {
       "path": "rules/000-PLAN-FIRST-GATE.md",
       "in": 1,
       "out": 0
@@ -335,7 +355,7 @@
     {
       "path": "rules/INDEX.md",
       "in": 5,
-      "out": 18
+      "out": 19
     },
     {
       "path": "rules/artifacts-always-first.md",
@@ -401,6 +421,11 @@
       "path": "rules/mobile-mode.md",
       "in": 6,
       "out": 7
+    },
+    {
+      "path": "rules/operator-profile.md",
+      "in": 1,
+      "out": 0
     },
     {
       "path": "rules/powershell-encoding-safety.md",
@@ -978,12 +1003,22 @@
       "out": 1
     },
     {
+      "path": "skills/sudo-adviser-board/SKILL.md",
+      "in": 0,
+      "out": 1
+    },
+    {
       "path": "skills/sudo-boot-sprint-memory/SKILL.md",
       "in": 0,
       "out": 1
     },
     {
       "path": "skills/sudo-code-review/SKILL.md",
+      "in": 0,
+      "out": 1
+    },
+    {
+      "path": "skills/sudo-create-epic-sprint/SKILL.md",
       "in": 0,
       "out": 1
     },
@@ -999,11 +1034,6 @@
     },
     {
       "path": "skills/sudo-update-sprint-memory/SKILL.md",
-      "in": 0,
-      "out": 1
-    },
-    {
-      "path": "skills/sudo-write-epics-stories-sprint/SKILL.md",
       "in": 0,
       "out": 1
     },
@@ -1105,12 +1135,7 @@
     {
       "path": "workflows/INDEX.md",
       "in": 3,
-      "out": 4
-    },
-    {
-      "path": "workflows/autopilot_bmad_dev_loop.md",
-      "in": 1,
-      "out": 2
+      "out": 5
     },
     {
       "path": "workflows/merge_main_debug.md",
@@ -1133,6 +1158,11 @@
       "out": 0
     },
     {
+      "path": "workflows/sudo-adviser-board.md",
+      "in": 1,
+      "out": 1
+    },
+    {
       "path": "workflows/sudo-bdd-tests.md",
       "in": 0,
       "out": 0
@@ -1144,6 +1174,11 @@
     },
     {
       "path": "workflows/sudo-code-review.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": "workflows/sudo-create-epic-sprint.md",
       "in": 0,
       "out": 0
     },
@@ -1181,11 +1216,6 @@
       "path": "workflows/sudo-update-sprint-memory.md",
       "in": 0,
       "out": 1
-    },
-    {
-      "path": "workflows/sudo-write-epics-stories-sprint.md",
-      "in": 0,
-      "out": 0
     },
     {
       "path": "workflows/sudo-write-story-tests.md",
@@ -1293,6 +1323,11 @@
     },
     {
       "from": "INDEX.md",
+      "to": "reference/INDEX.md",
+      "kind": "ref"
+    },
+    {
+      "from": "INDEX.md",
       "to": "rules/INDEX.md",
       "kind": "ref"
     },
@@ -1304,6 +1339,16 @@
     {
       "from": "INDEX.md",
       "to": "workflows/INDEX.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/INDEX.md",
+      "to": "workflows/sudo-adviser-board.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/autopilot_deepseek4.md",
+      "to": "reference/autopilot_bmad_dev_loop.md",
       "kind": "ref"
     },
     {
@@ -1324,6 +1369,11 @@
     {
       "from": "commands/new-project.md",
       "to": "GEMINI.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/sudo-adviser-board.md",
+      "to": "commands/INDEX.md",
       "kind": "ref"
     },
     {
@@ -1617,6 +1667,16 @@
       "kind": "ref"
     },
     {
+      "from": "reference/INDEX.md",
+      "to": "reference/autopilot_bmad_dev_loop.md",
+      "kind": "ref"
+    },
+    {
+      "from": "reference/autopilot_bmad_dev_loop.md",
+      "to": "commands/autopilot_claude.md",
+      "kind": "link"
+    },
+    {
       "from": "rules/INDEX.md",
       "to": "rules/000-PLAN-FIRST-GATE.md",
       "kind": "ref"
@@ -1689,6 +1749,11 @@
     {
       "from": "rules/INDEX.md",
       "to": "rules/mobile-mode.md",
+      "kind": "ref"
+    },
+    {
+      "from": "rules/INDEX.md",
+      "to": "rules/operator-profile.md",
       "kind": "ref"
     },
     {
@@ -2092,6 +2157,11 @@
       "kind": "link"
     },
     {
+      "from": "skills/sudo-adviser-board/SKILL.md",
+      "to": "commands/sudo-adviser-board.md",
+      "kind": "ref"
+    },
+    {
       "from": "skills/sudo-boot-sprint-memory/SKILL.md",
       "to": "commands/sudo-boot-sprint-memory.md",
       "kind": "ref"
@@ -2099,6 +2169,11 @@
     {
       "from": "skills/sudo-code-review/SKILL.md",
       "to": "commands/sudo-code-review.md",
+      "kind": "ref"
+    },
+    {
+      "from": "skills/sudo-create-epic-sprint/SKILL.md",
+      "to": "commands/sudo-create-epic-sprint.md",
       "kind": "ref"
     },
     {
@@ -2114,11 +2189,6 @@
     {
       "from": "skills/sudo-update-sprint-memory/SKILL.md",
       "to": "commands/sudo-update-sprint-memory.md",
-      "kind": "ref"
-    },
-    {
-      "from": "skills/sudo-write-epics-stories-sprint/SKILL.md",
-      "to": "commands/sudo-write-epics-stories-sprint.md",
       "kind": "ref"
     },
     {
@@ -2218,7 +2288,12 @@
     },
     {
       "from": "workflows/INDEX.md",
-      "to": "workflows/autopilot_bmad_dev_loop.md",
+      "to": "reference/INDEX.md",
+      "kind": "link"
+    },
+    {
+      "from": "workflows/INDEX.md",
+      "to": "reference/autopilot_bmad_dev_loop.md",
       "kind": "ref"
     },
     {
@@ -2237,11 +2312,6 @@
       "kind": "ref"
     },
     {
-      "from": "workflows/autopilot_bmad_dev_loop.md",
-      "to": "commands/autopilot_claude.md",
-      "kind": "link"
-    },
-    {
       "from": "workflows/new-project.md",
       "to": "AGENTS.md",
       "kind": "ref"
@@ -2254,6 +2324,11 @@
     {
       "from": "workflows/new-project.md",
       "to": "GEMINI.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/sudo-adviser-board.md",
+      "to": "commands/sudo-adviser-board.md",
       "kind": "ref"
     },
     {
@@ -2318,6 +2393,10 @@
     }
   ],
   "dangling": [
+    {
+      "from": "commands/INDEX.md",
+      "target": "_my_resources/research_docs/sudo-adviser-board-REFERENCE.md"
+    },
     {
       "from": "commands/autopilot_claude.md",
       "target": "_RUN-STATUS.md"
@@ -2455,6 +2534,18 @@
       "target": "walkthrough.md"
     },
     {
+      "from": "commands/sudo-create-epic-sprint.md",
+      "target": "_my_resources/open_tasks/fix_list_admin_sudoadmin.md"
+    },
+    {
+      "from": "commands/sudo-create-epic-sprint.md",
+      "target": "epics.md"
+    },
+    {
+      "from": "commands/sudo-dev-story-tests.md",
+      "target": "/implementation_plan.md"
+    },
+    {
       "from": "commands/sudo-dev-story-tests.md",
       "target": "implementation_plan.md"
     },
@@ -2555,10 +2646,6 @@
       "target": "your-action-required.md"
     },
     {
-      "from": "commands/sudo-write-epics-stories-sprint.md",
-      "target": "_my_resources/open_tasks/fix_list_admin_sudoadmin.md"
-    },
-    {
       "from": "commands/sudo-write-story-tests.md",
       "target": "implementation_plan.md"
     },
@@ -2617,6 +2704,30 @@
     {
       "from": "opencode-agents/opus-reviewer.md",
       "target": "review-findings.md"
+    },
+    {
+      "from": "reference/autopilot_bmad_dev_loop.md",
+      "target": "_RUN-STATUS.md"
+    },
+    {
+      "from": "reference/autopilot_bmad_dev_loop.md",
+      "target": "code-review.md"
+    },
+    {
+      "from": "reference/autopilot_bmad_dev_loop.md",
+      "target": "decisions-log.md"
+    },
+    {
+      "from": "reference/autopilot_bmad_dev_loop.md",
+      "target": "implementation_plan.md"
+    },
+    {
+      "from": "reference/autopilot_bmad_dev_loop.md",
+      "target": "self-audit-stress-test.md"
+    },
+    {
+      "from": "reference/autopilot_bmad_dev_loop.md",
+      "target": "walkthrough.md"
     },
     {
       "from": "rules/000-PLAN-FIRST-GATE.md",
@@ -2871,12 +2982,12 @@
       "target": "sse-streaming-patterns.md"
     },
     {
-      "from": "skills/sudo-self-audit/SKILL.md",
-      "target": "implementation_plan.md"
+      "from": "skills/sudo-create-epic-sprint/SKILL.md",
+      "target": "_my_resources/open_tasks/fix_list_admin_sudoadmin.md"
     },
     {
-      "from": "skills/sudo-write-epics-stories-sprint/SKILL.md",
-      "target": "_my_resources/open_tasks/fix_list_admin_sudoadmin.md"
+      "from": "skills/sudo-self-audit/SKILL.md",
+      "target": "implementation_plan.md"
     },
     {
       "from": "skills/ui-ux-pro-max/SKILL.md",
@@ -2923,30 +3034,6 @@
       "target": "todo_list.md"
     },
     {
-      "from": "workflows/autopilot_bmad_dev_loop.md",
-      "target": "_RUN-STATUS.md"
-    },
-    {
-      "from": "workflows/autopilot_bmad_dev_loop.md",
-      "target": "code-review.md"
-    },
-    {
-      "from": "workflows/autopilot_bmad_dev_loop.md",
-      "target": "decisions-log.md"
-    },
-    {
-      "from": "workflows/autopilot_bmad_dev_loop.md",
-      "target": "implementation_plan.md"
-    },
-    {
-      "from": "workflows/autopilot_bmad_dev_loop.md",
-      "target": "self-audit-stress-test.md"
-    },
-    {
-      "from": "workflows/autopilot_bmad_dev_loop.md",
-      "target": "walkthrough.md"
-    },
-    {
       "from": "workflows/security_team_aviationchat.md",
       "target": ".github/claude/incident-triage.md"
     },
@@ -2969,6 +3056,18 @@
     {
       "from": "workflows/sudo-code-review.md",
       "target": "walkthrough.md"
+    },
+    {
+      "from": "workflows/sudo-create-epic-sprint.md",
+      "target": "_my_resources/open_tasks/fix_list_admin_sudoadmin.md"
+    },
+    {
+      "from": "workflows/sudo-create-epic-sprint.md",
+      "target": "epics.md"
+    },
+    {
+      "from": "workflows/sudo-dev-story-tests.md",
+      "target": "/implementation_plan.md"
     },
     {
       "from": "workflows/sudo-dev-story-tests.md",
@@ -3037,10 +3136,6 @@
     {
       "from": "workflows/sudo-update-sprint-memory.md",
       "target": "your-action-required.md"
-    },
-    {
-      "from": "workflows/sudo-write-epics-stories-sprint.md",
-      "target": "_my_resources/open_tasks/fix_list_admin_sudoadmin.md"
     },
     {
       "from": "workflows/sudo-write-story-tests.md",
@@ -3115,6 +3210,10 @@
     {
       "from": "commands/new-project.md",
       "target": "router.md"
+    },
+    {
+      "from": "commands/sudo-adviser-board.md",
+      "target": "_my_resources/diagrams_guides/workflows_tea_testing/sudo-adviser-board-REFERENCE.md"
     },
     {
       "from": "commands/sudo-boot-sprint-memory.md",
@@ -3192,6 +3291,7 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
+        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -3208,6 +3308,7 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
+        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -3224,6 +3325,7 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
+        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -3256,6 +3358,7 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
+        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -3272,6 +3375,7 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
+        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -3310,12 +3414,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -3356,12 +3461,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -3402,12 +3508,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -3448,12 +3555,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -3494,12 +3602,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -3540,12 +3649,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -3586,12 +3696,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -3632,12 +3743,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -3678,12 +3790,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -3724,12 +3837,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -3770,12 +3884,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -3816,12 +3931,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -3862,12 +3978,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -3908,12 +4025,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -3954,12 +4072,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -4000,12 +4119,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -4046,12 +4166,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -4092,12 +4213,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -4155,12 +4277,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -4201,12 +4324,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -4247,12 +4371,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -4293,12 +4418,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -4339,12 +4465,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -4385,12 +4512,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -4431,12 +4559,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -4477,12 +4606,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -4523,12 +4653,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -4577,12 +4708,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -4631,12 +4763,13 @@
         "skills/react-best-practices/SKILL.md",
         "skills/regulatory-verification-protocol/SKILL.md",
         "skills/specialist_agents_team/SKILL.md",
+        "skills/sudo-adviser-board/SKILL.md",
         "skills/sudo-boot-sprint-memory/SKILL.md",
         "skills/sudo-code-review/SKILL.md",
+        "skills/sudo-create-epic-sprint/SKILL.md",
         "skills/sudo-dev-story-tests/SKILL.md",
         "skills/sudo-self-audit/SKILL.md",
         "skills/sudo-update-sprint-memory/SKILL.md",
-        "skills/sudo-write-epics-stories-sprint/SKILL.md",
         "skills/sudo-write-story-tests/SKILL.md",
         "skills/systematic-debugging/SKILL.md",
         "skills/troubleshoot-cloudrun-deployment/SKILL.md",
@@ -4655,6 +4788,7 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
+        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -4671,6 +4805,7 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
+        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -4704,6 +4839,7 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
+        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -4737,6 +4873,7 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
+        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -4753,6 +4890,7 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
+        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -4769,6 +4907,7 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
+        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -4785,6 +4924,7 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
+        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",

@@ -25,7 +25,7 @@ The exact sequence, top to bottom, from a fresh epic to a shipped story. Run it 
 /sudo-boot-sprint-memory <PROJECT>           # where am I? what's next? (read-only)
 
 # ── Phase A · Epic kickoff — ONCE per epic ────────────────────
-/sudo-write-epics-stories-sprint <PROJECT> <requirements-source>
+/sudo-create-epic-sprint <PROJECT> <requirements-source>
 #   → epic + stories → sprint board → interactive P0–P3 risk-score (one story at a time)
 
 # ── Phase B · Per-story loop — REPEAT per story, P0 first ──────
@@ -38,7 +38,7 @@ The exact sequence, top to bottom, from a fresh epic to a shipped story. Run it 
 | # | Agile step | Command |
 |---|------------|---------|
 | — | Orient — where am I / what's next | `/sudo-boot-sprint-memory` |
-| **1–2** | Epic + stories + sprint, then map test levels (P0–P3) | `/sudo-write-epics-stories-sprint` |
+| **1–2** | Epic + stories + sprint, then map test levels (P0–P3) | `/sudo-create-epic-sprint` |
 | **3** | Write the failing test | `/sudo-write-story-tests` |
 | **4–6** | Dev plan → self-audit → code the story | `/sudo-dev-story-tests` |
 | **7** | Code review + run tests | `/sudo-code-review` |
@@ -66,7 +66,7 @@ Doesn't call other commands — it just **reads state** and tells you what to ru
                               → then STOPS. Discovery only — waits for your instruction.
 ```
 
-### `/sudo-write-epics-stories-sprint` — Phase A epic kickoff (calls 3 skills)
+### `/sudo-create-epic-sprint` — Phase A epic kickoff (calls 3 skills)
 ```
 1. bmad-create-epics-and-stories   → writes the epic + its user stories with acceptance criteria (ACs)
 2. bmad-sprint-planning            → lands those stories in sprint-status.yaml as `ready-for-dev`
@@ -537,7 +537,7 @@ flowchart TD
 
 | Workflow | Fires | Job |
 |----------|-------|-----|
-| **test-design** | epic kickoff — final interactive step of `/sudo-write-epics-stories-sprint` | risk-score the epic's work P0–P3 **with Daniel, one story at a time** → tells ① which ACs deserve the heaviest tests |
+| **test-design** | epic kickoff — final interactive step of `/sudo-create-epic-sprint` | risk-score the epic's work P0–P3 **with Daniel, one story at a time** → tells ① which ACs deserve the heaviest tests |
 | **atdd** | ① per story | write acceptance tests that MUST fail now (red) |
 | **automate** | ② per story | expand API / UI / contract coverage on existing code |
 | **trace** | ③ gate | map requirements → tests, coverage vs. floor, GREEN/YELLOW/RED verdict |
@@ -577,7 +577,7 @@ flowchart TD
 | Command | One-line job |
 |---------|--------------|
 | `/sudo-boot-sprint-memory` | Where am I? What story is next? Which command do I run? (read-only) |
-| `/sudo-write-epics-stories-sprint` | **Phase A / epic kickoff** — write the epic + stories → sprint board → interactive P0–P3 risk-score (one story at a time). |
+| `/sudo-create-epic-sprint` | **Phase A / epic kickoff** — write the epic + stories → sprint board → interactive P0–P3 risk-score (one story at a time). |
 | `/sudo-write-story-tests` | ① Create the story → **BDD Vision Lock (mandatory)** → write its **failing** acceptance tests (lock scenarios + ATDD reds share one file per stack). |
 | `/sudo-bdd-tests` | ①-inner (also standalone) — interactive Vision Lock w/ Murat → scenarios codified into the ATDD red files (standalone pytest-bdd opt-in only) or a **recorded** waiver, stamped into story frontmatter. |
 | `/sudo-dev-story-tests` | ② **BDD contract gate (hard)** → plan → **⛔ self-audit STOP gate** (you pick: run here w/ chosen model · fresh team · continue) → build → drive tests green → automate. |
@@ -646,7 +646,7 @@ The `sudo-` commands are **thin orchestrators** — they don't reimplement anyth
 | # | Step | Command |
 |---|------|---------|
 | — | Orient (where am I / what's next) | `/sudo-boot-sprint-memory` |
-| **1** | Epic + stories + sprint | `/sudo-write-epics-stories-sprint` |
+| **1** | Epic + stories + sprint | `/sudo-create-epic-sprint` |
 | **2** | Map test levels (P0–P3) | ↳ its final interactive step |
 | **3** | Write failing test | `/sudo-write-story-tests` |
 | **4** | Dev implementation plan | `/sudo-dev-story-tests` → plan |
@@ -659,7 +659,7 @@ Steps 1–2 are the once-per-epic kickoff; 3–8 repeat per story.
 
 ```mermaid
 flowchart TD
-    BOOT["/sudo-boot-sprint-memory<br/>boot + story pick-up"] --> KICK["/sudo-write-epics-stories-sprint<br/>(once per epic)<br/>epics + stories + sprint + risk-score P0–P3"]
+    BOOT["/sudo-boot-sprint-memory<br/>boot + story pick-up"] --> KICK["/sudo-create-epic-sprint<br/>(once per epic)<br/>epics + stories + sprint + risk-score P0–P3"]
     KICK --> W["① /sudo-write-story-tests<br/>write RED tests (BDD Vision Lock + ATDD)"]
     W --> DEV["② /sudo-dev-story-tests<br/>plan → ⛔ audit STOP (pick model / fresh team) → build → automate"]
     DEV --> CR["③ /sudo-code-review<br/>review + TEST GATE → verdict"]
@@ -673,13 +673,13 @@ flowchart TD
 | Step | Command | Calls (TEA workflows) |
 |------|---------|------------------------|
 | boot | `sudo-boot-sprint-memory` | — (reads active-context + sprint-status, recommends next command) |
-| kickoff | `sudo-write-epics-stories-sprint` | `bmad-create-epics-and-stories` → `bmad-sprint-planning` → `bmad-testarch-test-design` (interactive P0–P3, one story at a time) |
+| kickoff | `sudo-create-epic-sprint` | `bmad-create-epics-and-stories` → `bmad-sprint-planning` → `bmad-testarch-test-design` (interactive P0–P3, one story at a time) |
 | ① | `sudo-write-story-tests` | `bmad-create-story` → `/sudo-bdd-tests` (BDD Vision Lock, **mandatory** — contract or recorded waiver) → `testarch-atdd` |
 | ② | `sudo-dev-story-tests` | **BDD contract gate** → `bmad-dev-story` (plan) → **⛔ STOP** → `sudo-self-audit` (chosen lane/model, or fresh team) → `bmad-dev-story` (implement) → `testarch-automate` |
 | ③ | `sudo-code-review` | `bmad-code-review` → `/1_run-all-tests-back_front` → `testarch-trace` → `testarch-nfr` → `testarch-test-review` |
 | close | `sudo-update-sprint-memory` | — (reads ③'s verdict; only command that flips a story to `done`) |
 
-> **Epic kickoff (once per epic):** `/sudo-write-epics-stories-sprint` bundles this — it ends with an interactive `testarch-test-design` pass where you risk-score every story P0–P3 one at a time. Same first move to retrofit an untested codebase.
+> **Epic kickoff (once per epic):** `/sudo-create-epic-sprint` bundles this — it ends with an interactive `testarch-test-design` pass where you risk-score every story P0–P3 one at a time. Same first move to retrofit an untested codebase.
 
 ### The TEST GATE (the heart of ③)
 Opt-in and baseline-diff aware: a project with no `_bmad-output/sudo-tests.yaml` baseline **auto-WAIVED** (never blocks a test-less project); legacy red is grandfathered — only **NEW** regressions fail.

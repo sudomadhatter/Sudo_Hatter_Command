@@ -1,9 +1,34 @@
 # Epic 21 — AvCh Demo Portal (Sales Demo Mode)
 
-**Status:** Brief / pre-story
+**Status:** Brief / pre-story — **Phase 0 already shipped (see below)**
 **Date:** 2026-07-22
+
+---
+
+## 0. ✅ Already done — 2026-07-22 (not stories; landed directly)
+
+**Live infrastructure provisioned** (verified against project `aviationchat`):
+- School `ACDEMO` "AvCh Demo" created, `max_seats=25`. `TESTPILOT` untouched. **Two schools now exist.**
+- Auth accounts created with documented passwords: `demo@aviationchat.org` (`demo1215`), `schooltesting@aviationchat.org`, `solotesting@aviationchat.org` (both `testing1215`).
+- `demo@aviationchat.org` registered as `school_admin` bound to `ACDEMO`, `is_owner=False`.
+
+**🔴 Security hole closed.** `admin_credentials/demo@aviationchat.com` had **no `role` field**, so `admin_auth_service.py:118` (`data.get("role", ROLE_SUPER_ADMIN)`) resolved it to **`super_admin`** — and its password was printed on `/about` to every NDA'd visitor. An explicit `role: school_admin` + `school_code: ACDEMO` was stamped on it. It can no longer inherit super_admin.
+
+**`/about` Mission Control CTA removed entirely** (operator decision: the admin panel is shown only in operator-led demos from TESTPILOT, which has real data). Removed the credentials block, the "Access Mission Control" link, both desktop and mobile nav entries, and the orphaned `Play`/`ExternalLink`/`ShieldCheck`/`Link` imports. Epic 21 story 21.9 reclaims that slot for the Sully/Igor cards.
+
+**Stale credential sweep — 8 scripts deleted** (all zero-reference, all hardcoding stale production credentials, two actively dangerous): `backend/{update_demo,update_pass,make_admin,revert_admin,create_user,fix_all_admins,fix_admin_firestore}.py` and `scripts/add_demo_admin.py`. `make_admin.py` granted **super_admin to team@aviationchat.org**; `fix_admin_firestore.py` deleted and recreated the owner credential.
+
+**Fixed rather than deleted:**
+- `scripts/create_admin.py` — bootstrap now takes `ADMIN_BOOTSTRAP_PASSWORD` from env (no hardcoded credential), and creates the owner with explicit `is_owner=True, role="super_admin"`. It previously created the account with `1215admin` while *printing* a different password, and left `role` implicit — relying on the very default that caused the demo-account escalation.
+- `backend/routers/bug_reports.py` — `_DEMO_ADMIN_EMAIL` → `_DEMO_ADMIN_EMAILS` frozenset covering both addresses (4 call sites).
+- `frontend/src/app/admin/page.tsx` — `isDemoEmail()` helper replacing two inline `.com` comparisons.
+- `backend/scripts/purge_and_repair_accounts.py` — **the three new accounts were not in the protected-from-deletion allowlist.** A purge run would have destroyed them. Added.
+
+**Verification:** frontend typecheck clean for both edited files; admin suite 18/18; bug-reports suite 22/22 (the demo-denylist test now asserts *every* address in the frozenset, not one hardcoded string); full backend collection 2650 tests, 0 import errors.
+
+**⚠️ Still open — the root cause is untouched:** `admin_auth_service.py:118` and `:300` still default a roleless doc to `super_admin`. All four current records have explicit roles, so nothing is exposed *today*, but any future roleless record silently becomes a full operator. This should fail **closed**. Needs its own story + test — it is an authz behaviour change and this shop is test-first.
 **Source:** `/bmad-party-mode` brainstorm — Winston (architect), Amelia (dev), Sally (UX), Mary (analyst), chaired by Daniel
-**Next step:** `/sudo-write-epics-stories-sprint` to formalize stories + sprint board + P0–P3 risk scoring
+**Next step:** `/sudo-create-epic-sprint` to formalize stories + sprint board + P0–P3 risk scoring
 
 ---
 

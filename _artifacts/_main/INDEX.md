@@ -46,3 +46,5 @@
 | `2026-07-14_rename-sudo-create-epics-stories-sprint/` | Rename /sudo-create-epics-stories-sprint to /sudo-write-epics-stories-sprint. | implementation_plan, walkthrough |
 | `2026-07-14_update-gitnexus-graphs/` | Update GitNexus graphs for Sudo_Hatter_Command and AGY_AVIATIONCHAT. | implementation_plan |
 | `2026-07-20_step2-gate-rework/` | ② Step-2 self-audit gate rework (continue/changed/path triggers across all surfaces). | implementation_plan, walkthrough |
+| `2026-07-22_rename-sudo-create-epic-sprint/` | Rename /sudo-write-epics-stories-sprint to /sudo-create-epic-sprint across all platforms and projects. | implementation_plan, walkthrough |
+

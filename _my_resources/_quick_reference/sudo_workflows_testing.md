@@ -11,7 +11,7 @@
 
 ```mermaid
 flowchart TD
-    BOOT["/sudo-boot-sprint-memory\nsession boot — where am I, what is next"] --> KICK["/sudo-write-epics-stories-sprint\nONCE per epic: epic + stories + sprint board\n+ interactive P0-P3 risk scoring"]
+    BOOT["/sudo-boot-sprint-memory\nsession boot — where am I, what is next"] --> KICK["/sudo-create-epic-sprint\nONCE per epic: epic + stories + sprint board\n+ interactive P0-P3 risk scoring"]
     KICK --> ONE["① /sudo-write-story-tests\nstory file + BDD Vision Lock\n+ RED acceptance tests"]
     ONE --> TWO["② /sudo-dev-story-tests\nplan → STOP self-audit gate\n→ implement → expand coverage"]
     TWO --> THREE["③ /sudo-code-review\nadversarial review + TEST GATE\nPASS / CONCERNS / FAIL / WAIVED"]
@@ -50,7 +50,7 @@ bug docs** first, then enter the same story loop. Nothing ships to `main` withou
 | Command | What it does |
 |---|---|
 | `/sudo-boot-sprint-memory` | Session boot — reads sprint + context, tells you the next story and which command to run. |
-| `/sudo-write-epics-stories-sprint` | **Once per epic**: writes the epic + stories, builds the sprint board, then risk-scores every story P0–P3 with you. |
+| `/sudo-create-epic-sprint` | **Once per epic**: writes the epic + stories, builds the sprint board, then risk-scores every story P0–P3 with you. |
 | ① `/sudo-write-story-tests` | Creates the next story + locks behaviors (BDD Vision Lock) + writes the RED acceptance tests. |
 | ② `/sudo-dev-story-tests` | Plans, **stops at the self-audit gate** (you pick: run here / other model / fresh team), implements to green, expands coverage. |
 | ③ `/sudo-code-review` | Adversarial code review, then the test gate (suite + trace + NFR + test-review) → verdict. |
@@ -100,7 +100,7 @@ bug docs** first, then enter the same story loop. Nothing ships to `main` withou
 | # | Step | Command | Under the hood |
 |---|------|---------|----------------|
 | — | Orient | `/sudo-boot-sprint-memory` | reads active-context + sprint-status |
-| 1 | Epic kickoff (once) | `/sudo-write-epics-stories-sprint` | create-epics → sprint-planning → `testarch-test-design` (interactive P0–P3, one story at a time) |
+| 1 | Epic kickoff (once) | `/sudo-create-epic-sprint` | create-epics → sprint-planning → `testarch-test-design` (interactive P0–P3, one story at a time) |
 | 2 | Write RED tests | ① `/sudo-write-story-tests` | create-story → BDD Vision Lock (**mandatory** — contract or recorded waiver) → `testarch-atdd` |
 | 3 | Plan + audit + build | ② `/sudo-dev-story-tests` | BDD gate → plan → **⛔ STOP: self-audit** (you choose the lane) → implement → `testarch-automate` |
 | 4 | Review + gate | ③ `/sudo-code-review` | adversarial review → full suites (pytest + vitest) → `testarch-trace` → `testarch-nfr` → `testarch-test-review` |
@@ -231,7 +231,7 @@ flowchart TD
 
 | Workflow | Fires | Job |
 |---|---|---|
-| `testarch-test-design` | epic kickoff (inside `/sudo-write-epics-stories-sprint`) | risk-score P0–P3 with you → test plan |
+| `testarch-test-design` | epic kickoff (inside `/sudo-create-epic-sprint`) | risk-score P0–P3 with you → test plan |
 | `testarch-atdd` | ① | write the failing acceptance tests |
 | `testarch-automate` | ② | expand coverage on working code |
 | `testarch-trace` | ③ | requirements → tests matrix + coverage verdict |
