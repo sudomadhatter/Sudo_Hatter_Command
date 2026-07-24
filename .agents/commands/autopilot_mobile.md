@@ -1,5 +1,5 @@
 ---
-description: Mobile-native autopilot — the web/cloud port of /autopilot_claude. Runs the same 4-stage Dev/QA story pipeline (Plan -> Audit -> Implement -> Review+Fix) on the Workflow engine instead of PowerShell, so it works on Claude Code web + mobile. Each stage is a fresh-context subagent — Opus on the Dev stages (medium effort), Fable on the QA stages (max effort on both gates), mirroring /autopilot_claude's per-stage effort ladder. Flips the story to review on a green regression-only gate; never commits, never marks the story done.
+description: Mobile-native autopilot — the web/cloud port of /autopilot_claude. Runs the same 4-stage Dev/QA story pipeline (Plan -> Audit -> Implement -> Review+Fix) on the Workflow engine instead of PowerShell, so it works on Claude Code web + mobile. Each stage is a fresh-context subagent — Opus on the Dev stages (medium effort) and on the Stage 2 audit (max effort), Fable on the Stage 4 final review (max effort), mirroring /autopilot_claude's split model/effort ladder. Flips the story to review on a green regression-only gate; never commits, never marks the story done.
 platforms: [claude]
 ---
 
@@ -13,20 +13,23 @@ platforms: [claude]
 
 Run the pipeline for the story in `$ARGUMENTS` (a story id like `11.16`, or a path to the story `.md`).
 
-## Parameters (fixed by Daniel, 2026-06-26; QA lane -> Fable, 2026-07-02; effort ladder mirrored 2026-07-08)
+## Parameters (fixed by Daniel, 2026-06-26; QA split model, 2026-07-23; effort ladder mirrored 2026-07-08)
 
-- **Model:** `opus` on the Dev stages (1 Plan, 3 Implement); `fable` on the QA stages (2 Audit,
-  4 Review+Fix) — the strongest tier on the last gates before the human, matching /autopilot_claude's split.
+- **Model:** `opus` on the Dev stages (1 Plan, 3 Implement) **and** the Stage 2 pre-dev audit — the audit's
+  value lands in its artifact and Fable is 2× Opus per token, so it runs the cheaper model at full depth.
+  Stage 4 (the FINAL review+fix, last gate before the human) stays `fable`. Matches /autopilot_claude's
+  `-AuditModel opus` / `-ReviewModel fable` split. Each stage is a fresh-context subagent (no shared
+  session), so the split has no cross-model cache tax here.
 - **Reasoning effort (per stage, NOT uniform):** mirrors /autopilot_claude's effort ladder
-  (`-DevEffort`/`-AuditEffort`/`-ReviewEffort`). The depth goes to the **QA lane** — Stages 2 and 4 are the
-  last gates before the human, so they run at `max`, while the Dev coding lane runs at `medium`:
+  (`-DevEffort`/`-AuditEffort`/`-ReviewEffort`). Both QA gates (Stages 2 and 4) run at `max` — the last
+  checks before the human — while the Dev coding lane runs at `medium`:
 
   | Stage | Model | Effort |
   |---|---|---|
   | 1 Plan (Dev) | opus | medium |
-  | 2 Audit (QA) | fable | **max** |
+  | 2 Audit (QA) | **opus** | **max** |
   | 3 Implement (Dev) | opus | medium |
-  | 4 Review+Fix (QA) | fable | **max** |
+  | 4 Review+Fix (QA) | **fable** | **max** |
 
   (This supersedes the old "high on all four / think hard" convention — depth is set explicitly per stage,
   configured in `scripts/autopilot_mobile.workflow.js`'s `STAGES`.)
@@ -56,6 +59,11 @@ The story argument that remains after this step is `<STORY>`.
   than one match → list them, ask which, STOP (never guess).
 - Read the story's frontmatter `baseline_commit:` (first ~15 lines) if present — it's the scope anchor
   passed to the implement/review stages.
+- Read the story's frontmatter `Status:` too, and keep it as `<STORY_STATUS>`. **If it is `done`, STOP** —
+  the pipeline never sets `done` itself, so a `done` story is one a human already closed; re-running it
+  would re-execute all four stages against finished work. Tell Daniel to re-open the story (set `Status`
+  back to `ready-for-dev`/`review`) if he really wants to re-run it. Pass the value through in step 5b
+  regardless: the workflow carries the same guard as a backstop, and it can only fire if you send it.
 
 ### 2. Resolve the canonical artifact folder (all under `<PROJECT_ROOT>`)
 - Slug = `autopilot-<id>` with non-alphanumerics collapsed to `-` (e.g. `autopilot-8-15`).
@@ -106,7 +114,7 @@ fresh baseline would be tainted by this run's own code, so reuse the cached one 
 Workflow({
   scriptPath: '<PROJECT_ROOT>/scripts/autopilot_mobile.workflow.js',
   args: { story: '<id>', storyFile: '<abs path>', folder: '<abs folder>',
-          baselineCommit: '<sha or empty>', startStage: <N>,
+          baselineCommit: '<sha or empty>', startStage: <N>, storyStatus: '<STORY_STATUS>',
           projectRoot: '<abs PROJECT_ROOT>', projectName: '<project folder name, or "this project">' }
 })
 ```

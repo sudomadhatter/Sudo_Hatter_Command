@@ -1,15 +1,16 @@
 ---
-description: Autopilot Dev-Story Loop (HYBRID) - same 4-stage Dev/QA pipeline as /autopilot_claude, but the Dev lane (Stage 1 Plan + Stage 3 Implement) runs on DeepSeek V4 Pro via OpenRouter's Anthropic-compatible endpoint, so the token-heavy code-writing spends ZERO Claude subscription tokens. The QA lane (Stage 2 Audit + Stage 4 Review+Fix) stays on Claude/Fable 5. Whole board runs at xhigh effort. CLAUDE-ONLY (drives the claude CLI). Requires an OpenRouter key.
+description: Autopilot Dev-Story Loop (HYBRID) - same 4-stage Dev/QA pipeline as /autopilot_claude, but the Dev lane (Stage 1 Plan + Stage 3 Implement) runs on DeepSeek V4 Pro via OpenRouter's Anthropic-compatible endpoint, so the token-heavy code-writing spends ZERO Claude subscription tokens. The QA lane stays on Claude - Stage 2 Audit on Opus 4.8, Stage 4 Review+Fix on Fable 5. Whole board runs at xhigh effort. CLAUDE-ONLY (drives the claude CLI). Requires an OpenRouter key.
 platforms: [claude]
 ---
 
-# /autopilot_deepseek4 - Hybrid Story Pipeline (DeepSeek V4 Pro Dev lane + Fable QA lane)
+# /autopilot_deepseek4 - Hybrid Story Pipeline (DeepSeek V4 Pro Dev lane + Opus/Fable QA lane)
 
 > **This is `/autopilot_claude` with ONE change: the Dev lane runs on DeepSeek V4 Pro instead of Opus.**
 > The orchestrator is the *same* `scripts/autopilot-dev-story.ps1`; the only difference is the
 > `-Deepseek4` flag, which routes Stages 1 (Plan) + 3 (Implement) at OpenRouter's Anthropic-compatible
 > endpoint and raises the whole board to `xhigh` effort. Those stages spend **zero Claude tokens**
-> (billed to your OpenRouter key); Stages 2 + 4 stay on Claude/Fable 5. Every guardrail (resumable,
+> (billed to your OpenRouter key); Stages 2 + 4 stay on Claude (audit on Opus 4.8, review on Fable 5).
+> Every guardrail (resumable,
 > per-story lock, baseline-red gate, story-flip-to-review, never-commits, never-marks-done) is
 > inherited unchanged.
 >
@@ -22,13 +23,15 @@ platforms: [claude]
 | Stage | Lane | Model | Effort | Billed to |
 |---|---|---|---|---|
 | 1 Plan | Dev | `deepseek/deepseek-v4-pro` | **`xhigh`** | OpenRouter |
-| 2 Audit | QA | `claude-fable-5` | **`xhigh`** | Claude subscription |
+| 2 Audit | QA | `claude-opus-4-8` | **`xhigh`** | Claude subscription |
 | 3 Implement | Dev | `deepseek/deepseek-v4-pro` | **`xhigh`** | OpenRouter |
 | 4 Review+Fix | QA | `claude-fable-5` | **`xhigh`** | Claude subscription |
 
 Note this is a **deliberately different ladder from `/autopilot_claude`** (which runs Dev at `medium`).
-The Dev lane here is cheap third-party inference, so there is no reason to hold it back; the Fable QA
-lane runs `xhigh` on both gates as the last check before the human.
+The Dev lane here is cheap third-party inference, so there is no reason to hold it back; the QA lane
+runs `xhigh` on both gates as the last check before the human. The QA gates inherit the engine's split
+defaults — **Stage 2 audit on Opus 4.8, Stage 4 review on Fable 5** (Fable is 2x Opus per token, so the
+pre-dev audit takes the cheaper model and only the final gate before the human pays for Fable).
 
 ## Prerequisites
 

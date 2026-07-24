@@ -247,6 +247,105 @@ Daniel switched models and said go: "write the shared document, then we can fix 
   prose re-anchor → R4 permanent distribution test → R5 fossil `DELETE_FIELD` → R6 dry-run/
   `--execute`/prove → R7 delete legacy. **Awaiting Daniel's "approved" + its 3 open questions.**
 
+## Continuation — 2026-07-23 (later): 6-3 approved & EXECUTING — R1/R2/R4/R5 done, R3 fleet paused
+
+Daniel's answers: **letter-free prose · multi-agent workflow for R3 · legacy folder committed.**
+
+- **R1** — `curriculum_components/quiz_banks_legacy_2026-07-23/` snapshot, 48/48 md5-identical +
+  README/INDEX. The repo's blanket `*.json` credentials guard was silently hiding the snapshot from
+  git — added a temporary `.gitignore` carve-out (removed with the folder at R7).
+- **R2** — NEW `scripts/rebalance_quiz_answers.py` executed. Format round-trip proven 48/48 BEFORE
+  writing (caught 14 banks with a variant trailing-newline convention), then A19/B258/C70/D37 →
+  **96/96/96/96**, 283/384 keys moved, the "None of the above" pin held at D (`PPL_PA_I_G_05`
+  Q004), texts/pins/non-option fields hard-asserted unchanged. Letter table saved project-local:
+  `_artifacts/2026-07-23_quiz-rebalance-firestore-truth/r2_letter_map.md`.
+- **R3 — in flight, paused on the Claude session limit.** Targeting scan corrected the audit: the
+  true letter-anchored set is **282 explanations + 63 sjt_rationales on 315 questions** (the audit's
+  263 missed parenthetical "(A)" refs; its "all 92" rationale claim was loose — 29 are already
+  letter-free; "W&B" / "A&P" / "HAVE A PLAN" were false positives). Workflow per bank: rewrite
+  (from the LEGACY file, so original letters resolve) → independent adversarial verify (letter-lint
+  + factual invariance) → one repair round. **Two fleet launches hit the session limit** (~1.8M
+  subagent tokens): 9 banks' rewrites journal-cached, 16 valid rewrite files on disk, none verified
+  yet. **Resume after the 3:20pm ET reset** — cached agents replay free, then apply → suite green.
+- **R4 + R5 — your frozen parallel task had already built both from the approved plan** (mtimes
+  00:52 ET); verified line-by-line and kept: `src/tests/test_answer_distribution.py` (per-bank
+  2-per-letter · corpus uniform scaled to bank count · letter-free lint; **red on lint for all 48
+  banks BY DESIGN until R3 applies** — suite currently 78 pass / 48 expected-red / 5 skip) and the
+  ingester `sjt_rationale: DELETE_FIELD` delta (dry-run announces 292 clears; ~206 hit live fossils).
+- **Mid-flight sweep commits `22be19e`/`73632c7`** (00:52–00:57 ET, authored while the first fleet
+  was dying — your side, not mine) captured the whole conversion + R1/R2 + SOP/skill edits.
+  **Audited clean: no credentials, no PDFs, no generated import manifests.** The frozen task's
+  uncommitted leftovers (board comment, quiz_banks INDEX rewrite, `r2_letter_map.md`) were accurate
+  and kept.
+- **Drift-proofing (your mid-turn directive)** — SOP **§6** now carries the full authoring
+  direction: balanced **{A,A,B,B,C,C,D,D}** key, LETTER-FREE feedback prose (name content/behavior;
+  "Class B airspace" proper names fine), Chain-of-Cues shape, enforcement pointer. And the
+  `quiz-bank-generation` skill (master + `.claude` mirror) is de-positionalized — the old
+  "A=get-there-itis … D=correct" SJT grid that CAUSED the skew is retired at the authoring surface,
+  replaced with attitude-tags-travel-with-text + balanced-key rules.
+- **New bug found reviewing R5 — story `6-5` filed:** the ingester always writes `seen_by: []` /
+  `last_seen_at: None` into the merge payload, so ANY re-ingest resets live rotation state
+  (contradicts its own docstring). Harmless today — the audit proved rotation state is empty
+  everywhere — but real once students accumulate history. Fix before the next re-ingest after launch.
+- **Blast radius (your directive) — verified:** the complete reader surface of `quiz_banks/*.json`
+  is `src/config.py` (path def) · the ingester (reviewed) · `generate_state_map.py` (counts only —
+  letter-invariant) · the rebalance script · the new test. The app consumes **Firestore**, not repo
+  files — and **zero store writes happened** (the only Firestore touch this session was the earlier
+  read-only audit). App repo mirror in protected `_my_resources/` untouched. RKP manifests, DB1/DB2,
+  `src/utils/schema.py`, app `backend/schemas/quiz.py` untouched. Legacy folder invisible to every
+  tool (`config.QUIZ_BANKS_DIR` still points at `quiz_banks/`). Conformance lint EXIT 0.
+
+## Continuation — 2026-07-23 (late): R3 finished, story 6-3 code-complete
+
+**The multi-agent fleet failed three times and I stopped using it.** Two Fable launches and one
+Opus launch burned **~5.6M subagent tokens** and each one died on the account session limit — the
+Opus attempt pushed the reset to 9:20pm and still only finished **19 of 48** banks. A 48-bank
+fleet does not fit inside one session window, and every retry ate budget that blocks your other
+work. Your plan listed per-batch inline rewriting as the sanctioned alternative, so I switched to it.
+
+**What replaced it — surgical positional replacement.** Instead of regenerating whole explanations
+(expensive, and every regeneration risks factual drift), the inline tooling re-finds each
+letter-referencing span *in document order* and swaps in a content phrase, leaving **every other
+byte of the field untouched** — factual invariance by construction. Scratchpad tools:
+`r3_surgical_extract.py` (shows only the letter spans + the option map) and `r3_surgical_apply.py`
+(positional replace, then re-lint). The 19 completed Opus banks were kept and lint-gated.
+
+**Result — all verified against the frozen legacy snapshot:**
+
+| Check | Result |
+|---|---|
+| Answer key distribution | **96 / 96 / 96 / 96** |
+| Feedback fields rewritten | **345** (282 explanations + 63 SJT rationales, all 48 banks) |
+| Option-letter references remaining | **0** |
+| Test suite | **126 passed · 5 skipped · 0 failed** |
+| Fabricated facts (number/citation not in the question) | **0** |
+| Lost citations | **0** (the one flagged "180" was a tokenization artifact — `FL180` is in both) |
+| Non-prose fields (ids, stems, `far_reference`, `acs_element`) | **byte-identical to legacy** |
+| Conformance lint | exit 0 |
+
+**Two correctness catches worth knowing about.** First, the narrow "Option X" regex — the one the
+permanent test uses — **misses bare references** like "while C and D have errors" and parenthetical
+lists like "(A, D)". I scanned all 48 banks: 884 narrow refs but only ~5 genuine bare ones. The
+parenthetical-list form is now caught by the permanent test (safe, unambiguous); the handful of
+bare-prose ones were fixed explicitly. Second, a bare "safer than B" hid inside `PPL_PA_I_G_04_Q006`
+alongside nested parentheticals — fixed with explicit pre-replacements.
+
+**R6 EXECUTED — Daniel approved and spot-checked the prose ("passes the in person test").**
+Ingested **384 questions across 48 lessons**; **292** `sjt_rationale` DELETE_FIELDs sent.
+
+| Live proof (read-only audit re-run after the write) | Result |
+|---|---|
+| Live `correct_answer` distribution | **96 / 96 / 96 / 96** (25% each) — was B 258 (67%) |
+| Safety perspective correct-D | **24** — was **zero** |
+| repo ↔ live drift | **identical=48, differs=0** — the 206 `sjt_rationale` fossils are **gone** |
+| RKP manifests | identical=48 (untouched, as planned) |
+| Rotation state (`seen_by`) | still empty on all 384 — no student state disturbed |
+| `generate_state_map.py --live` | clean |
+| `probe_bridge_hop.py` | **48/48 lessons ≥1 DB2 hit** — bridge intact |
+
+**Only R7 remains:** delete `quiz_banks_legacy_2026-07-23/` + its `.gitignore` carve-out, on
+Daniel's explicit word. Until then that frozen snapshot is the rollback path.
+
 ## Task Checklist
 
 - [x] P0 — operator-profile wired into AGY `AGENTS.md` §4 (rule + INDEX row already in place)
@@ -258,55 +357,65 @@ Daniel switched models and said go: "write the shared document, then we can fix 
 - [x] P4 — BMAD board state seeded (**deviation:** no `_bmad/` module — see above)
 - [x] P5 — SOP + cross-links shipped 2026-07-23 (mirror README skipped — folder is inside protected `_my_resources/`; policy lives in the SOP instead)
 - [x] Live Firestore audit (read-only): skew confirmed live, zero content drift, manifests clean
-- [ ] Story 6-3 re-balance — **plan awaiting approval** (project-local artifact in the pipeline repo)
+- [x] Story 6-3 **code-complete** — R1 snapshot · R2 rebalance (96×4) · R3 letter-free prose (345 fields, 0 refs, 0 fabricated facts) · R4 gate green (126 passed) · R5 fossil delta · R6 dry-run reviewed. **Blocked only on your `--execute` word, then R7**
+- [x] Blast-radius sweep + SOP §6/skill drift-proofing (Daniel's two mid-turn directives)
 - [x] P6 — Drive pull proven byte-identical (base64 + CRLF mechanic discovered)
 
 ## Your Actions
 
-**1. Commit the pipeline conversion.** Single repo, single `main` branch (no debug branch, per your
-memo). This touches nearly everything, so explicit top-level paths rather than `git add -A`:
+**1. ~~Commit the pipeline conversion~~ — already happened.** The sweep commits `22be19e` +
+`73632c7` (00:52–00:57 ET 2026-07-23, made from your side while the R3 fleet ran) captured the
+conversion, R1/R2, SOP and skill edits — audited clean (no credentials/PDFs/generated manifests).
+The AGY pointer row also landed (`8bc8420b`), and the earlier lobby pointer edits are in. What
+remains is the small 6-3 execution delta:
 
 ```bash
 cd c:/Sudo_Hatter_Command/Projects/RAG_Pipeline_AC
-git add -A .agents .claude .opencode .gemini _artifacts _bmad-output _docs _my_resources \
-          AGENTS.md CLAUDE.md GEMINI.md README.md .mcp.json \
-          curriculum_components docs pipeline specialist_curriculum src
-git commit -m "chore(workspace): convert to house standard, lean toolkit, grounding gate, BMAD-lite
+git add -A .gitignore curriculum_components docs _docs _bmad-output _artifacts \
+          AGENTS.md README.md .agents .claude src scripts
+git commit -m "feat(6-3): letter-free quiz feedback prose, shipped; docs merged into docs/
 
-- front doors: CLAUDE.md/GEMINI.md pointers + Layer-2 AGENTS.md workspace map
-- vendored .agents (19 master rules), pruned to a LEAN set: 8 skills, 1 command
-  (no sudo flow, no autopilots, no BMAD/TEA testing family, no app-only skills)
-- project rules: constitution.project.md (data-side hard stops) + credential-resolution
-- new faa-grounding-gate skill; wired into rkp-manifest-creation + quiz-bank-generation
-- artifacts consolidated _claude_artifacts/_opencode_artifacts -> _artifacts (history via git mv)
-- BMAD-lite board state in _bmad-output (no _bmad module by design)
-- GitNexus dropped: de-grouped from ac-stack, local index deleted
-- 16 level-2 INDEX.md + repo-map; conformance lint exit 0; 33 tests green
-- branch model: single main BY DESIGN (workhorse repo, deployed nowhere)
-- two-team SOP (_docs/SOP_curriculum_operations.md) + quiz re-balance plan (story 6-3, awaiting go)"
+- R3 complete: 345 feedback fields (282 explanations + 63 SJT rationales) across all 48
+  banks now reference option CONTENT, never letters -> a future re-letter is free
+- verified vs the frozen legacy snapshot: 0 letter refs remain, 0 fabricated facts,
+  0 lost citations, non-prose fields byte-identical; suite 126 passed / 5 skipped
+- test gate also catches parenthetical letter lists ((A, D)); ~5 bare refs fixed by hand
+- gitignore carve-out so the 48 legacy snapshot JSONs are tracked (removed at R7)
+- shipped to Firestore: 384 questions / 48 lessons, 292 sjt_rationale DELETE_FIELDs;
+  live proof 96x4, drift identical=48 (fossils gone), manifests 48, bridge 48/48
+- R7: legacy snapshot + its gitignore carve-out deleted; story 6-3 closed
+- docs: _docs/ merged into docs/ (one documentation folder); _my_resources/ is personal
+  again. Fixed two generator scripts that hardcoded the path as a quoted segment and
+  silently recreated a ghost _docs/ on every run
+- instrument track prepped: SOP section 10 + epic-7-instrument-kickoff
+- NEW stories: 6-5 (re-ingest resets seen_by rotation state) and 6-6 (a lesson is
+  invisible to students until the app's curriculum_key.json lists it)"
 ```
 
-(The 2026-07-23 additions — SOP, plan artifact, board updates — all fall under the paths already
-listed, so the one command captures the whole thing.)
-
-**2. Lobby + AGY each picked up small pointer edits on 2026-07-23** (your `aab6491`/`6ff0aad`
-commits covered everything earlier):
+**2. Lobby session record delta** (today's walkthrough + INDEX updates):
 
 ```bash
 cd c:/Sudo_Hatter_Command
-git add router.md _artifacts/INDEX.md _artifacts/_main/2026-07-22_pipeline-conversion-and-sop
-git commit -m "docs(router): RAG_Pipeline_AC -> converted; session record: SOP shipped + quiz audit"
-
-cd c:/Sudo_Hatter_Command/Projects/AGY_AVIATIONCHAT
-git add AGENTS.md
-git commit -m "docs(agents): route curriculum content upstream to RAG_Pipeline_AC + its SOP"
+git add _artifacts/INDEX.md _artifacts/_main/2026-07-22_pipeline-conversion-and-sop
+git commit -m "docs(session): 6-3 approved+executing - R1/R2/R4/R5 done, R3 fleet paused at session limit"
 ```
 
-**3. Decisions still open:**
-- **Story 6-3 re-balance plan** — review
-  `Projects/RAG_Pipeline_AC/_artifacts/2026-07-23_quiz-rebalance-firestore-truth/implementation_plan.md`
-  and answer its 3 open questions (letter-free prose? batch cadence? legacy folder committed?).
-  Say "approved" to start R1.
+**3. Story 6-3 is CLOSED.** R7 done on your word — legacy snapshot and its `.gitignore` carve-out
+deleted, board → `done`. Nothing outstanding on it.
+
+**4. Docs merged into one `docs/` folder** (your `_docs` → `_my_resources` move would have broken
+~40 references and was silently recreating a ghost `_docs/` on every state-map run). `_my_resources/`
+is purely personal again. **The two-team guide you asked for is at
+`Projects/RAG_Pipeline_AC/docs/SOP_curriculum_operations.md`.**
+
+**5. Instrument track is prepped** — SOP §10 + `epic-7-instrument-kickoff` on the board. Three
+decisions are yours before authoring starts: the lesson-id prefix (it becomes the app's permanent
+certificate namespace), the Drive master naming suffix, and the per-Area epics. New story `6-6`
+flags the cross-repo gap: a lesson isn't visible to students until the **app's**
+`backend/data/curriculum_key.json` lists it.
+
+**4. Decisions still open:**
 - **Delete `specialist_curriculum/`?** Dead folder, byte-identical duplicate. One word and it's gone.
 - (Optional) a README banner inside `_my_resources/_docs/specialist_lesson/` in AGY — that's your
   protected area, so it's yours to add; the SOP already records the mirror policy.
+- Story `6-5` (rotation-state reset on re-ingest) sits in the backlog for prioritization.

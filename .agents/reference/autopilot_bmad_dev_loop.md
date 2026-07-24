@@ -14,11 +14,12 @@
 
 ## 1. The one-paragraph mental model
 
-It is a **relay race between two AI teammates who each stay in one chat.** A plain PowerShell
+It is a **relay race between AI teammates who hand off through files.** A plain PowerShell
 script (no LLM "coordinator" — that would just be tax) fires four headless `claude -p` subprocesses
 in sequence. The **Dev** (Amelia, Opus 4.8) plans the story, then *resumes the same session* to
-implement it. The **QA** (Murat, Opus 4.8) audits the plan *before any code exists*, then *resumes
-the same session* to review the finished code, apply fixes itself, and write Daniel a report. The
+implement it. On **QA**, Murat audits the plan *before any code exists* (Stage 2, Opus 4.8 in an audit
+session), then a **fresh review session** (Stage 4, Fable 5) reviews the finished code, applies fixes
+itself, and writes Daniel a report. The
 two teams hand off through **files in one folder**, never by talking directly. After its own
 independent test gate goes green, the script flips the story to `review` — but it **never commits
 and never marks the story `done`**; that last mile is always human.
@@ -31,9 +32,10 @@ A normal "dev a story" chat is one model doing everything in one pass: it plans,
 its own homework with no independent check. The autopilot splits that into a **four-eyes pipeline**
 where an **independent reviewer session** (a fresh QA chat, Murat) checks the Dev's work twice —
 once on the plan (cheap, before code is written) and once on the diff. The independence comes from a
-*separate session + a different persona* — and, since 2026-07-02, from a **different model too**: the Dev
-lane runs **Opus 4.8** and the QA lane runs **Fable 5** at max effort (§5b), so the reviewer is neither
-the same chat nor the same weights as the author. The pre-code audit is the highest-leverage part: catching a flawed test assertion or an
+*separate session + a different persona* — and, on the final gate, from a **different model too**: the
+Dev lane runs **Opus 4.8**, the QA **audit** (Stage 2) runs Opus 4.8 in its own session, and the QA
+**review** (Stage 4) runs **Fable 5** in a fresh session — both QA gates at max effort (§5b), so the
+final reviewer is neither the same chat nor the same weights as the author. The pre-code audit is the highest-leverage part: catching a flawed test assertion or an
 unmount-order a11y bug in the *plan* costs nothing, whereas catching it after implementation costs a
 red CI run and a rewrite. And because no agent grades its *own* output as the final word, the
 orchestrator runs an **independent test gate** of its own after Stage 4 (§6) — it re-runs the suites
@@ -44,10 +46,10 @@ itself rather than trusting any pasted "tests green."
 ## 3. The four-stage relay
 
 ```
-Stage 1  Plan        Dev/Amelia 4.8  NEW dev     /sudo-dev-story-tests_AP plan       -> implementation_plan.md
-Stage 2  Audit       QA /Murat  4.8  NEW qa      /sudo-self-audit_AP  -> self-audit-stress-test.md
-Stage 3  Implement   Dev/Amelia 4.8  RESUME dev  /sudo-dev-story-tests_AP implement  -> code + walkthrough.md
-Stage 4  Review+Fix  QA /Murat  4.8  RESUME qa   /sudo-code-review_AP          -> code-review.md + fixes
+Stage 1  Plan        Dev/Amelia 4.8    NEW dev     /sudo-dev-story-tests_AP plan       -> implementation_plan.md
+Stage 2  Audit       QA /Murat  4.8    NEW audit   /sudo-self-audit_AP  -> self-audit-stress-test.md
+Stage 3  Implement   Dev/Amelia 4.8    RESUME dev  /sudo-dev-story-tests_AP implement  -> code + walkthrough.md
+Stage 4  Review+Fix  QA /Murat  Fable  NEW review  /sudo-code-review_AP          -> code-review.md + fixes
   then   TEST GATE   orchestrator (no LLM) re-runs pytest+vitest -> green: flip story to review -> Daniel
 ```
 
@@ -61,12 +63,13 @@ flowchart TD
     D(["Daniel: /autopilot_claude 14.2"]) --> M1["orchestrator mints dev UUID -> sessions.json"]
     M1 --> S1["Stage 1 PLAN — NEW dev session (Amelia, Opus 4.8)<br/>/sudo-dev-story-tests_AP plan"]
     S1 -->|"writes implementation_plan.md"| F[("shared run folder")]
-    F --> M2["orchestrator mints qa UUID -> sessions.json"]
-    M2 --> S2["Stage 2 AUDIT — NEW qa session (Murat, Opus 4.8)<br/>/sudo-self-audit_AP"]
+    F --> M2["orchestrator mints audit UUID -> sessions.json"]
+    M2 --> S2["Stage 2 AUDIT — NEW audit session (Murat, Opus 4.8)<br/>/sudo-self-audit_AP"]
     S2 -->|"reads plan -> writes self-audit-stress-test.md (findings + fixes)"| F
     F --> S3["Stage 3 IMPLEMENT — RESUME dev (plan still in context)<br/>/sudo-dev-story-tests_AP implement"]
     S3 -->|"reads audit -> writes source code + walkthrough.md"| F
-    F --> S4["Stage 4 REVIEW+FIX — RESUME qa (audit still in context)<br/>/sudo-code-review_AP"]
+    F --> M3["orchestrator mints review UUID -> sessions.json"]
+    M3 --> S4["Stage 4 REVIEW+FIX — NEW review session (Murat, Fable 5)<br/>reads plan + audit + walkthrough + diff<br/>/sudo-code-review_AP"]
     S4 -->|"reads diff -> re-runs tests, applies fixes, writes code-review.md + OUT-OF-SPEC + OPEN QUESTIONS"| F
     F --> G{"orchestrator TEST GATE<br/>independent pytest + vitest"}
     G -->|"RED"| RED["TESTS RED — exit 4<br/>(resume -ResumeFrom 4)"]
@@ -86,42 +89,58 @@ flowchart TD
 
 ---
 
-## 4. The two-session continuity (the v2 idea)
+## 4. The session model — Dev continuity + decoupled QA gates
 
-Each team does its **codebase deep-dive once**. v1 cold-started all five stages, so the QA reviewer
-re-read the same files the QA auditor had already studied an hour earlier — pure re-derivation tax.
-v2 keeps each team in **one persistent chat**:
+The **Dev team does its codebase deep-dive once** and carries it forward: Stage 1 (Plan) cold-starts a
+chat, Stage 3 (Implement) *resumes the same chat*, so the plan is already in context — no re-derivation
+tax. (v1 cold-started every stage; keeping the Dev team in one persistent chat was the original v2 idea.)
+
+The **QA lane is two independent sessions, on purpose.** Stage 2 (Audit) runs Opus 4.8 in its own
+session; Stage 4 (Review+Fix) runs **Fable 5 in a fresh session**. They are deliberately *not* resumed
+into one chat, and the reason is the prompt cache. The cache is **model-scoped** — a resumed session that
+changes model mid-stream invalidates the tools+system+messages cache, so a Fable Stage 4 resuming an Opus
+Stage 2 would re-ingest Opus's entire audit transcript at the **full input price**, not the cheap
+cache-read price. Resume's one economic benefit (cache-cheap carry-over) is exactly what a model switch
+destroys. So once the QA gates run different models, decoupling is strictly better: Stage 4 opens clean
+and grounds itself on the *distilled artifacts* (plan + audit + walkthrough + diff) instead of replaying
+Stage 2's raw exploration. (This split was adopted 2026-07-23 to cut spend — Fable is 2x Opus per token,
+so the pre-dev audit takes the cheaper model and only the final gate before the human pays for Fable.)
 
 ```mermaid
 flowchart LR
     subgraph dev["DEV session — one chat, id 6274..."]
         S1["Stage 1: PLAN<br/>cold deep-dive"] --> S3["Stage 3: IMPLEMENT<br/>RESUME — plan already in context"]
     end
-    subgraph qa["QA session — one chat, id 0b9e..."]
-        S2["Stage 2: AUDIT<br/>cold deep-dive"] --> S4["Stage 4: REVIEW+FIX<br/>RESUME — audit already in context"]
+    subgraph audit["AUDIT session — Opus, id 0b9e..."]
+        S2["Stage 2: AUDIT<br/>cold deep-dive"]
+    end
+    subgraph review["REVIEW session — Fable, fresh, id a1f3..."]
+        S4["Stage 4: REVIEW+FIX<br/>cold — grounds on the artifacts"]
     end
     S1 -. "plan file" .-> S2
     S2 -. "audit file" .-> S3
     S3 -. "walkthrough + diff" .-> S4
 ```
 
-**How it is wired:** the script owns the session ids. It mints a UUID for a team **at the moment
-that team's first stage runs**, persists it to `_pipeline/sessions.json`, and passes
-`--session-id <uuid> --name autopilot-<story>-<dev|qa>` on the first call, then `--resume <uuid>` on
-the second. Because the ids are ours (not parsed out of the model's output), a crashed run is still
-resumable — we just re-issue `--resume`.
+**How it is wired:** the script owns the session ids. It mints a UUID for a session **at the moment
+that session's stage runs**, persists it to `_pipeline/sessions.json` (`dev` / `audit` / `review`), and
+passes `--session-id <uuid> --name autopilot-<story>-<dev|audit|review>` on the call. The Dev id is
+reused on Stage 3 via `--resume <uuid>`; the audit and review ids are one-shot. Because the ids are ours
+(not parsed out of the model's output), a crashed run is still resumable — we just re-issue the id.
 
-> **Minting on-run, not up-front, is deliberate** (a collision fix — see §8). If both ids were
+> **Minting on-run, not up-front, is deliberate** (a collision fix — see §8). If the ids were
 > generated once at startup, a forced redo (`-ResumeFrom 1`) would re-issue `--session-id` with an
 > id that *already exists*, and the CLI's behaviour on a duplicate id is undocumented.
 
-**The honest tradeoff (measured on 13.3):** resume buys *coherence and cache reuse*, not a
-guaranteed per-stage cost drop. A resumed session re-sends its prior transcript as input on every
-turn — billed, though at cheap cache-read rates. On 13.3 the Stage-4 resume read **676,763 tokens
-from cache** against just 1,359 fresh input tokens: the continuity mechanism demonstrably worked,
-but the resume *stages* were not individually cheaper than v1's cold stages (S3 was $2.41 vs a v1
-cold implement ~$1.88). The win is quality + context fidelity; treat any cost savings as
-story-dependent, not a law.
+**The honest tradeoff (measured on 13.3, under the old single-QA-session design):** resume buys
+*coherence and cache reuse*, not a guaranteed per-stage cost drop. A resumed session re-sends its prior
+transcript as input on every turn — billed, though at cheap cache-read rates *only while the model is
+unchanged*. On 13.3 the Stage-4 resume read **676,763 tokens from cache** against just 1,359 fresh input
+tokens: the continuity mechanism demonstrably worked — but that run kept QA on one model. The moment the
+QA gates split across models (Opus audit → Fable review), that same cache read would be billed at full
+price, which is precisely why Stage 4 is now a decoupled fresh session rather than a resume. The Dev lane
+still resumes (S1→S3, same model) and still earns that cache; treat any cost savings as story-dependent,
+not a law.
 
 ---
 
@@ -131,9 +150,9 @@ story-dependent, not a law.
 |---|---|---|
 | **Orchestrator** | Windows PowerShell 5.1 | One script, no external deps. Plain control flow — the "coordinator" is `if`/`for`, not an LLM. |
 | **Worker** | `claude` CLI (headless) | `claude -p <prompt> --model <id> --permission-mode bypassPermissions --output-format json` |
-| **Continuity** | CLI session flags | `--session-id <uuid>` + `--name <label>` (first call) · `--resume <uuid>` (second call) |
+| **Continuity** | CLI session flags | `--session-id <uuid>` + `--name <label>` (new session) · `--resume <uuid>` (Stage 3 only — the QA audit/review sessions are one-shot, §4) |
 | **Agents** | Dedicated headless **`_AP` commands** | Prompts invoke `/sudo-dev-story-tests_AP plan`, `/sudo-self-audit_AP`, `/sudo-dev-story-tests_AP implement`, `/sudo-code-review_AP` (agent-tuned variants of the interactive BMAD skills). |
-| **Models** | Opus 4.8 (Dev) · **Fable 5 (QA)** | Dev `claude-opus-4-8`, QA `claude-fable-5` (since 2026-07-02). Repin via `-DevModel` / `-AuditModel` — one flag per *lane*, because a lane's model must stay constant across its resumed session. |
+| **Models** | Opus 4.8 (Dev) · Opus 4.8 (QA audit) · **Fable 5 (QA review)** | Dev `claude-opus-4-8`, Stage 2 audit `claude-opus-4-8`, Stage 4 review `claude-fable-5` (QA split 2026-07-23). Repin via `-DevModel` / `-AuditModel` / `-ReviewModel` — one flag per *session*, since the QA gates are decoupled (§4, §5b). |
 | **Effort** | `medium` (Dev) · **`max`** (QA, both stages) | Passed per call as `--effort`; set by `-DevEffort` / `-AuditEffort` / `-ReviewEffort`. This is the depth control — see §5b. |
 | **Test gate** | `pytest` + `vitest`, run by the script | After Stage 4 the orchestrator re-runs the suites itself (`-TestScope auto` derives scope from the baseline diff: backend-only / frontend-only / both — and a shared-contract change (schemas / models / OpenAPI / generated types) forces both, so a cross-stack break can't slip through). It refuses to stamp COMPLETE on red. |
 | **Handoff** | Artifact files | One canonical `_artifacts/<date>_autopilot-<story>/` folder; `_pipeline/` holds raw JSON + `sessions.json` + a self-contained `run.log` transcript. |
@@ -154,7 +173,8 @@ $raw = $null | & $Claude @cargs 2>$null | Out-String   # empty stdin; drop PS st
 The orchestrator is **not the model you are chatting with.** It is a PowerShell script that spawns its
 **own** headless workers. So you can launch it from a Claude Code session, an **opencode** session, an
 **Antigravity** session, or a bare terminal, and it **still runs Opus 4.8** — the worker model is the
-script's `-DevModel` / `-AuditModel`, completely independent of whatever harness you triggered it from.
+script's `-DevModel` / `-AuditModel` / `-ReviewModel`, completely independent of whatever harness you
+triggered it from.
 
 That splits "works for all LLMs" into two independent things:
 
@@ -170,12 +190,13 @@ That splits "works for all LLMs" into two independent things:
 
 | Engine | Headless call | Session new / resume | Telemetry | Status |
 |---|---|---|---|---|
-| **Claude** (`claude` CLI) | `claude -p … --output-format json` | `--session-id`+`--name` / `--resume` | result JSON (`.total_cost_usd`, `.num_turns`, `.is_error`, `.modelUsage`) | **proven runtime** (`/autopilot_claude`, Fable-5 QA via subscription) |
+| **Claude** (`claude` CLI) | `claude -p … --output-format json` | `--session-id`+`--name` / `--resume` | result JSON (`.total_cost_usd`, `.num_turns`, `.is_error`, `.modelUsage`) | **proven runtime** (`/autopilot_claude`, Opus audit + Fable-5 review via subscription) |
 | **opencode** (`opencode` CLI) | `opencode run … --auto --format json` | `--session <id>` (id **captured from the event stream** on the "new" stage, not pre-minted) | NDJSON event stream (parse adapter: `text` events -> result, `step_finish.part.cost` -> cost, `error` events -> is_error) | **second runtime** (`/autopilot_opencode`, Dev=selected default, QA=`openrouter/z-ai/glm-5.2` `--variant max`) |
 | **Antigravity / Gemini** | — | — | — | IDE-bound, not headless-scriptable; **out of scope** |
 
-> **TWO RUNTIMES NOW EXIST.** `/autopilot_claude` is the Claude-engine proven path (Fable-5 QA via
-> the Claude subscription, `--max-budget-usd` per-stage cap, `.modelUsage` mismatch assertion).
+> **TWO RUNTIMES NOW EXIST.** `/autopilot_claude` is the Claude-engine proven path (Opus audit +
+> Fable-5 review via the Claude subscription, `--max-budget-usd` per-stage cap, `.modelUsage` mismatch
+> assertion).
 > `/autopilot_opencode` is the opencode-engine sibling (GLM 5.2 at `--variant max` for QA, no API
 > keys, no per-stage cap, mismatch assertion is a no-op — the opencode event stream carries no
 > `model` field). Both share the same artifact contract, test gate, story->`review` flip, and
@@ -186,34 +207,40 @@ That splits "works for all LLMs" into two independent things:
 > Claude-bound, by choice. (The opencode engine is the second runtime above — same vendor-neutral core,
 > different `Invoke-Stage` seam.)
 
-### 5b. Tuning lever — per-stage EFFORT, per-lane MODEL
+### 5b. Tuning lever — per-stage EFFORT, per-session MODEL
 
 Two dials, at different granularities, and the difference is not cosmetic:
 
 | Dial | Granularity | Why |
 |---|---|---|
-| **Effort** (`--effort`) | **per stage** (4 values) | Effort is a per-call setting, so Stage 2 and Stage 4 can differ freely despite sharing one QA session. |
-| **Model** (`--model`) | **per lane** (2 values) | A lane's model must stay constant across its resumed session — changing it invalidates the model-scoped prompt cache, so there is no `-ReviewModel`. |
+| **Effort** (`--effort`) | **per stage** (4 values) | Effort is a per-call setting, so every stage can differ freely — including two stages inside one resumed session. |
+| **Model** (`--model`) | **per session** (3 values) | A *resumed* session's model must stay constant — changing it invalidates the model-scoped prompt cache. That is why Stages 1+3 share one flag (`-DevModel`, one resumed chat), and why the two QA gates, which deliberately run *different* models, are two separate one-shot sessions rather than one resumed one (§4): `-AuditModel` (Stage 2) and `-ReviewModel` (Stage 4). |
 
-The current ladder — Dev `opus-4-8 @ medium`, QA `fable-5 @ max` on **both** gates:
+The current ladder — Dev `opus-4-8 @ medium`, QA audit `opus-4-8 @ max`, QA review `fable-5 @ max`:
 
-| Stage | Lane | Model | Effort |
-|---|---|---|---|
-| 1 Plan | Dev | `claude-opus-4-8` | `medium` |
-| 2 Audit | QA | `claude-fable-5` | **`max`** |
-| 3 Implement | Dev | `claude-opus-4-8` | `medium` |
-| 4 Review+Fix | QA | `claude-fable-5` | **`max`** |
+| Stage | Lane | Session | Model | Effort |
+|---|---|---|---|---|
+| 1 Plan | Dev | dev (new) | `claude-opus-4-8` | `medium` |
+| 2 Audit | QA | audit (new) | `claude-opus-4-8` | **`max`** |
+| 3 Implement | Dev | dev (resume) | `claude-opus-4-8` | `medium` |
+| 4 Review+Fix | QA | review (new) | `claude-fable-5` | **`max`** |
 
-**Depth goes to the QA lane** — Stages 2 and 4 are the last gates before the human, so they get the
-strongest tier at maximum effort while the Dev coding lane runs at `medium`.
+**Depth goes to the QA lane** — Stages 2 and 4 are the last gates before the human, so both run at
+maximum effort while the Dev coding lane runs at `medium`. The **strongest tier** is reserved for
+Stage 4, the final gate before the human sees the work.
 
-Two findings worth keeping:
+Findings worth keeping:
 
 - **Effort replaced prompt keywords.** Thinking is always-on on Fable 5 / Opus 4.8, so depth is set by the
   `--effort` flag, not by writing "think hard" in the prompt. Any surviving keyword in a prompt is inert.
-- **Don't trade down a tier to save money.** We tried `-DevModel claude-sonnet-4-6` and found
-  **Opus-4.8-at-lower-effort costs about the same with better results.** Dial effort down, not the model.
-  `-DevModel`/`-AuditModel` are for pinning a *successor* model when one ships.
+- **Don't trade down a tier to save money — on the *coding* lane.** We tried `-DevModel claude-sonnet-4-6`
+  and found **Opus-4.8-at-lower-effort costs about the same with better results.** Dial effort down, not
+  the model. `-DevModel`/`-AuditModel`/`-ReviewModel` are also how you pin a *successor* model when one ships.
+- **The QA-gate exception (2026-07-23).** The Stage 2 audit *was* stepped down Fable -> Opus, held at
+  `max` effort. That is a deliberate exception to the rule above, not a repeal of it: Fable is exactly 2x
+  Opus per token ($10/$50 vs $5/$25 per 1M), the audit's deliverable is a findings *artifact* rather than
+  code, and the final gate before the human still pays for Fable. If audit quality visibly drops, this is
+  the first knob to put back.
 
 ---
 
@@ -302,7 +329,7 @@ _artifacts/<date>_autopilot-<story>/
 ├── decisions-log.md              (any stage — every story-silent call the team made)
 ├── _RUN-STATUS.md                (live status: IN PROGRESS / TEST GATE / COMPLETE / PAUSED / TESTS RED / CRASHED)
 └── _pipeline/
-    ├── sessions.json             ({"dev":"<uuid>","qa":"<uuid>"})
+    ├── sessions.json             ({"dev":"<uuid>","qa":"<uuid>","review":"<uuid>"} - "qa" is the Stage-2 audit session)
     ├── run.log                   (self-contained transcript — stage headers + each result + final banner)
     ├── stage{1..4}-*.json        (raw CLI result JSON per stage — cost, turns, etc.)
     └── gate-tests-*.txt          (independent test-gate output: backend / frontend)
@@ -432,7 +459,7 @@ Each of these is a real bug or insight from the shakedown runs, now baked into t
 # Cheap trial: plan + audit only (stop after Stage 2)
 .\scripts\autopilot-dev-story.ps1 -Story 13.4 -MaxStage 2
 
-# Re-run only the review+fix leg (resumes the qa session)
+# Re-run only the review+fix leg (opens a fresh review session, re-grounds on the artifacts)
 .\scripts\autopilot-dev-story.ps1 -Story 13.4 -ResumeFrom 4
 ```
 
@@ -442,7 +469,8 @@ Or trigger via the slash command: **`/autopilot_claude 13.4`**.
 |---|---|---|
 | `-Story` | (required) | `"14.2"` or a path to the story `.md` |
 | `-DevModel` | `claude-opus-4-8` | model for Stages 1 & 3 (Dev lane) |
-| `-AuditModel` | `claude-fable-5` | model for Stages 2 & 4 (QA lane) |
+| `-AuditModel` | `claude-opus-4-8` | model for Stage 2 (QA pre-dev audit, own session) |
+| `-ReviewModel` | `claude-fable-5` | model for Stage 4 (QA final review+fix, own session) |
 | `-DevEffort` | `medium` | `--effort` for Stages 1 & 3 · `low\|medium\|high\|xhigh\|max` |
 | `-AuditEffort` | `max` | `--effort` for Stage 2 (pre-dev audit) |
 | `-ReviewEffort` | `max` | `--effort` for Stage 4 (final review+fix) |

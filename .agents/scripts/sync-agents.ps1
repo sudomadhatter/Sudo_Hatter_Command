@@ -24,7 +24,9 @@
   PURGE POLICY.
     - Local tool dirs (.claude, .opencode): copy eligible commands; purge only commands that ARE master-managed
       but are no longer eligible for that platform. Files the master doesn't own (a project's own commands) are
-      left alone. Skills / hooks / opencode-agents are an additive robocopy (no delete).
+      left alone. Hooks / opencode-agents are an additive robocopy (no delete). .claude\skills is additive too,
+      but is ALSO manifest-tracked per skill FOLDER — Claude Code turns every SKILL.md into a typeable slash
+      command, so a retired skill dir is a command ghost and gets the same ownership-proven purge as a command.
     - SYNC MANIFEST (`.agents\.sync-manifest.json`, per target). Additive copies alone leaked ghosts: a command
       DELETED or RENAMED in the master lingered in every copy forever, and because a project's vendored .agents
       is itself the SOURCE for that project's .claude/.opencode menus, the ghost was re-generated into the menus
@@ -240,6 +242,49 @@ function Invoke-ManifestPurge([string]$dst, [string[]]$was, [string[]]$now, [swi
     $purged += $rel
   }
   return $purged
+}
+
+# Directory variant of the above, for a surface whose UNIT IS A FOLDER rather than a file: .claude\skills holds
+# one dir per skill, and Claude Code publishes a typeable slash command for every SKILL.md it finds there. Same
+# ownership rule, so it is exactly as safe — only a NAME a previous run recorded writing is ever removed, which
+# leaves project-authored skills and BMAD's own installs structurally unreachable.
+function Invoke-ManifestPurgeDir([string]$dst, [string[]]$was, [string[]]$now, [switch]$WhatIf) {
+  $purged = @()
+  foreach ($rel in @($was | Where-Object { $_ -and ($now -notcontains $_) })) {
+    $d = Join-Path $dst $rel
+    if (-not (Test-Path $d)) { continue }
+    if ($WhatIf) { Write-Host ("WHATIF: would purge retired skill dir '{0}' (master no longer owns it)" -f $d) }
+    else         { Remove-Item $d -Recurse -Force }
+    $purged += $rel
+  }
+  return $purged
+}
+
+# Top-level skill folder names a sync places into a .claude\skills copy — the same set Sync-Dir writes, so the
+# manifest records precisely what was copied. bmad-* is BMAD's own install: never ours to record, never ours to
+# purge (mirrors Sync-Dir's exclude at the call site).
+function Get-SkillDirSet([string]$skillSrc) {
+  if (-not (Test-Path $skillSrc)) { return @() }
+  return ,@(Get-ChildItem $skillSrc -Directory -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -notlike 'bmad-*' } |
+            Select-Object -ExpandProperty Name)
+}
+
+# Remove directories left empty by a purge. A manifest purge deletes FILES, so retiring a skill emptied its
+# folder but left the folder itself behind — harmless in .agents\, but it reads as drift and it is the shell a
+# ghost re-grows in. Only prunes dirs that are empty all the way down, so it can never remove real content.
+function Remove-EmptyDirs([string]$root, [switch]$WhatIf) {
+  if (-not (Test-Path $root)) { return 0 }
+  $n = 0
+  # Deepest-first, so a parent emptied by its children's removal is itself collected on the same pass.
+  foreach ($d in @(Get-ChildItem $root -Directory -Recurse -Force -ErrorAction SilentlyContinue |
+                   Sort-Object { $_.FullName.Length } -Descending)) {
+    if (@(Get-ChildItem $d.FullName -Force -ErrorAction SilentlyContinue).Count) { continue }
+    if ($WhatIf) { Write-Host ("WHATIF: would prune empty dir '{0}'" -f $d.FullName) }
+    else         { Remove-Item $d.FullName -Force -ErrorAction SilentlyContinue }
+    $n++
+  }
+  return $n
 }
 
 # Read a command file's `platforms:` frontmatter. Absent / no frontmatter => universal (all three).
@@ -460,6 +505,10 @@ if (-not $GlobalsOnly) {
     $vendorPurged = Invoke-ManifestPurge (Join-Path $Target ".agents") $manifest.vendor $vendorNow -WhatIf:$WhatIf
     if ($vendorPurged.Count) {
       Write-Host "sync-agents: purged $($vendorPurged.Count) retired vendor file(s): $($vendorPurged -join ', ')"
+      # A file purge empties a retired skill's folder but leaves the folder standing. Collect those husks so the
+      # vendor matches the master exactly; empty-only, so project-owned content is never in reach.
+      $husks = Remove-EmptyDirs (Join-Path $Target ".agents\skills") -WhatIf:$WhatIf
+      if ($husks) { Write-Host "sync-agents: pruned $husks empty skill folder(s) left by the purge" }
     }
     $manifest.vendor = $vendorNow
 
@@ -507,7 +556,18 @@ if (-not $GlobalsOnly) {
   # .claude\skills, .opencode, and .agent\skills, and refreshes them on every `bmad` update. Our toolkit must NOT
   # carry or shadow them: a stale vendored copy in .agents\skills would clobber BMAD's current install on each
   # sync (robocopy overwrites same-named files). Exclude bmad-* so BMAD stays the single source for its own skills.
-  Sync-Dir (Join-Path $src "skills")          (Join-Path $Target ".claude\skills") @('bmad-*') -WhatIf:$WhatIf
+  # Skills are the THIRD invocable surface, not just content: Claude Code publishes a slash command for every
+  # .claude\skills\*\SKILL.md, so a RENAMED skill leaves a typeable ghost exactly the way a retired command file
+  # does (/sudo-write-epics-stories-sprint survived its own rename this way). Sync-Dir is additive robocopy, so
+  # the manifest carries the same ownership record here that it already carries for commands.
+  $skillSrcDir = Join-Path $src "skills"
+  $claudeSkKey = ".claude\skills"
+  $claudeSkDst = Join-Path $Target $claudeSkKey
+  Sync-Dir $skillSrcDir $claudeSkDst @('bmad-*') -WhatIf:$WhatIf
+  $sk     = Get-SkillDirSet $skillSrcDir
+  $skGone = Invoke-ManifestPurgeDir $claudeSkDst $manifest.local[$claudeSkKey] $sk -WhatIf:$WhatIf
+  if ($skGone.Count) { Write-Host "sync-agents: purged $($skGone.Count) retired .claude skill(s): $($skGone -join ', ')" }
+  $newLocal[$claudeSkKey] = $sk
   Sync-Dir (Join-Path $src "hooks")           (Join-Path $Target ".claude\hooks") -WhatIf:$WhatIf
   $ocCmdKey = ".opencode\commands"
   $ocCmdDst = Join-Path $Target $ocCmdKey

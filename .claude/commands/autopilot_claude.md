@@ -1,9 +1,9 @@
 ---
-description: Autopilot Dev-Story Loop (v2, CLAUDE) - autonomous dev/QA team in TWO continuous chats (Dev plans+implements, QA audits+reviews+fixes). Resilient (retries transient errors), resumable (just re-run; finished stages auto-detect), human-in-the-loop (never crashes on agent output). CLAUDE-ONLY (needs the claude CLI). The /autopilot_opencode variant is a separate, opencode-native pipeline.
+description: Autopilot Dev-Story Loop (v2, CLAUDE) - autonomous dev/QA team across THREE sessions (Dev plans+implements in one continuous chat; QA audits then reviews+fixes in two separate one-shot chats - Stage 2 audit on Opus, Stage 4 final review on Fable, both at max effort). Resilient (retries transient errors), resumable (just re-run; finished stages auto-detect), human-in-the-loop (never crashes on agent output). CLAUDE-ONLY (needs the claude CLI). The /autopilot_opencode variant is a separate, opencode-native pipeline.
 platforms: [claude]
 ---
 
-# /autopilot_claude - Autonomous Story Pipeline (v2: two continuous teams)
+# /autopilot_claude - Autonomous Story Pipeline (v2: dev chat + split QA gates)
 
 > **CLAUDE-ONLY.** This drives headless `claude -p` subprocesses with exact `--model` pinning and
 > session continuity (`--session-id` / `--resume`). It cannot run under Gemini/opencode and is
@@ -71,9 +71,10 @@ original in-project form.
    the transcript at `<run-folder>/_pipeline/run.log` — the per-story global log above is just the stable,
    known-upfront path to tail live.)
 
-   For a cheap plan+audit trial, append `-MaxStage 2`. **Model overrides:** `-DevModel`/`-AuditModel`
-   (defaults: Dev `claude-opus-4-8`, QA `claude-fable-5`). **Effort overrides:** `-DevEffort`/
-   `-AuditEffort`/`-ReviewEffort` (defaults: `medium`/`max`/`max`; levels `low|medium|high|xhigh|max`).
+   For a cheap plan+audit trial, append `-MaxStage 2`. **Model overrides:** `-DevModel` (Stages 1+3),
+   `-AuditModel` (Stage 2), `-ReviewModel` (Stage 4) — defaults Dev `claude-opus-4-8`, audit
+   `claude-opus-4-8`, review `claude-fable-5`. **Effort overrides:** `-DevEffort`/`-AuditEffort`/
+   `-ReviewEffort` (defaults: `medium`/`max`/`max`; levels `low|medium|high|xhigh|max`).
    See the ladder table below — effort, not the prompt wording, is the depth control on these models.
    **Resume a crashed run:** `-ResumeFrom <N>` (1-4) (or just re-run with no flags - completed stages
    are auto-skipped by artifact presence, and the saved session ids are reused). **Preview the resume
@@ -126,24 +127,27 @@ original in-project form.
 
 ## What this runs (for context)
 
-A 4-stage chain across **two persistent sessions**, handing off via artifacts in the one shared folder
-`_artifacts/epic_<epic>/<date>_autopilot-<id>/`. Each team does its codebase deep-dive once and **resumes its
-own chat** for its second stage (so it never re-researches). Each stage runs a dedicated headless `_AP`
-command that carries its behavior (the script just points it at the shared folder):
+A 4-stage chain across **three sessions**, handing off via artifacts in the one shared folder
+`_artifacts/epic_<epic>/<date>_autopilot-<id>/`. The Dev team does its codebase deep-dive once and **resumes
+its own chat** for Stage 3 (so it never re-researches); the two QA gates run on different models in their own
+one-shot sessions. Each stage runs a dedicated headless `_AP` command that carries its behavior (the script
+just points it at the shared folder):
 
 | Stage | Session | Teammate | Model | Effort | Command -> artifact |
 |---|---|---|---|---|---|
 | 1 Plan | dev (new) | Amelia (Dev) | `claude-opus-4-8` | `medium` | `/sudo-dev-story-tests_AP plan` -> `implementation_plan.md` |
-| 2 Audit | qa (new) | Murat (QA) | `claude-fable-5` | **`max`** | `/sudo-self-audit_AP` -> `self-audit-stress-test.md` |
+| 2 Audit | audit (new) | Murat (QA) | `claude-opus-4-8` | **`max`** | `/sudo-self-audit_AP` -> `self-audit-stress-test.md` |
 | 3 Implement | dev (resume) | Amelia (Dev) | `claude-opus-4-8` | `medium` | `/sudo-dev-story-tests_AP implement` (applies audit, develops, tests) -> `walkthrough.md` |
-| 4 Review+Fix | qa (resume) | Murat (QA) | `claude-fable-5` | **`max`** | `/sudo-code-review_AP` (verifies + reviews + applies fixes + retests) -> `code-review.md`, hands to Daniel |
+| 4 Review+Fix | review (new) | Murat (QA) | `claude-fable-5` | **`max`** | `/sudo-code-review_AP` (reads plan+audit+walkthrough+diff, reviews, applies fixes, retests) -> `code-review.md`, hands to Daniel |
 
-**Why this ladder:** the depth sits on the **QA lane** — Stages 2 and 4 are the last gates before the
-human, so they get the strongest tier (**Fable 5**, standing config since 2026-07-02) at maximum effort,
-while the Dev coding lane runs Opus 4.8 at `medium`. Thinking is always-on on these models, so `--effort`
-(not "think hard" prompt keywords) is the depth control. Effort is **per-call**, so Stages 2 and 4 can
-differ freely even though they share one QA session — but the **model must stay constant across a lane**,
-or resuming that session invalidates its model-scoped cache. That's why there are two model flags, not four.
+**Why this ladder:** both QA gates run at **maximum effort** — they're the last checks before the human —
+but they no longer share a model or a session. The pre-dev **audit runs Opus** (Fable is 2× Opus per token,
+and the audit's value lives in its written artifact, so it buys full depth at half the price), while the
+**final gate before the human stays Fable 5**. They're decoupled on purpose: a resumed session on a *different*
+model is a model-scoped cache **miss**, so Fable would re-read Opus's whole transcript at full price —
+continuity buys nothing once the models differ. Instead Stage 4 opens fresh and reads the distilled artifacts.
+Thinking is always-on, so `--effort` (not "think hard" keywords) is the depth control; three model flags now
+(`-DevModel`, `-AuditModel`, `-ReviewModel`), each with its own session.
 
 ## Guardrails (already built into the script - do not override)
 
@@ -155,12 +159,12 @@ or resuming that session invalidates its model-scoped cache. That's why there ar
   last agent before the human, it writes **OUT-OF-SPEC DECISIONS** + **OPEN QUESTIONS FOR DANIEL** at the
   top of `walkthrough.md` (and may ask Daniel directly there), and appends a **`## Close-Out Handoff`** block
   at the bottom — the pre-routed learnings (incl. memory candidates) that `/sudo-update-sprint-memory` lifts at close-out.
-- **Session continuity:** each team resumes its own chat (`--session-id` on the first call, `--resume`
-  on the second). The two session ids are deterministic (generated up front, saved to
-  `_pipeline/sessions.json`) so a crash is still resumable. Sessions are **persisted** (this is the
-  cost of continuity) but **labeled** `autopilot-<story>-dev` / `-qa` - 2 named sessions in history,
-  not 5 unlabeled ones. There is NO "do not research" instruction - continuity is a convenience, the
-  agents still investigate anything they need.
+- **Sessions:** three deterministic session ids (generated up front, saved to `_pipeline/sessions.json`,
+  labeled `autopilot-<story>-dev` / `-audit` / `-review`) so a crash is still resumable. The **dev**
+  session is reused across Stages 1+3 (`--session-id` then `--resume`, so the Dev team never re-researches);
+  the **audit** (Stage 2) and **review** (Stage 4) sessions are each one-shot `--session-id` calls on
+  different models. There is NO "do not research" instruction - the agents still investigate anything they
+  need, and Stage 4 grounds itself by reading the plan + audit + walkthrough + diff off disk.
 - **Resilience:** transient API errors (stream idle timeout, overloaded, 429/503/529) are retried
   (`-MaxRetries`, default 3, with backoff) before a stage fails. A genuine hard failure (e.g. the API
   dies after retries) stamps `CRASHED` in `_RUN-STATUS.md` (never leaves "IN PROGRESS"); recover by just
