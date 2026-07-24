@@ -80,8 +80,8 @@ be hunk-picked out of somebody else's diff. The landing sequence itself is in `g
 ("The landing"): merge `origin/main_debug` into the story branch *inside the worktree*, then
 `git push origin HEAD:main_debug`. Never check out `main_debug` in the shared checkout to merge.
 
-Afterwards the worktree is **kept on disk**, not auto-removed — it is the rollback point if the landing
-needs revisiting.
+Afterwards, once the landing on `main_debug` is verified, the worktree and git branch (`claude/<story-slug>`) are pruned via `/sudo-close-workingtree` (auto-invoked by `/sudo-update-sprint-memory` Step 8) to keep local disk and remote GitHub clean.
+
 
 ## Hard stops
 

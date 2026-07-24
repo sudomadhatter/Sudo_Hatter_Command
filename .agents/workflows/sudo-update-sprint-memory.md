@@ -146,10 +146,16 @@ git push -u origin claude/<story-slug>
 git push origin HEAD:main_debug
 ```
 
-- **Keep the worktree** — it's the rollback point.
 - **`main` is untouched.** Only Daniel, directly or via `/sudo-push-e2e`.
 - **Report** the branch, the commit range that landed, and the `main_debug` sha — same into the walkthrough's
   `## Your Actions` (Step 6).
 - Landing push rejected (remote moved) → **STOP and report.** Re-run from step 2.
 
+## Step 8 — Prune the merged worktree & branches (AUTOMATIC)
+
+Immediately after Step 7 landing succeeds:
+1. Invoke `/sudo-close-workingtree <story-slug>` to verify the merge, remove the local worktree (`.claude/worktrees/<story-slug>`), and delete both the local and remote GitHub branches (`claude/<story-slug>`).
+2. Confirm both local disk and remote origin are clean.
+
 Optional additional input: $ARGUMENTS
+

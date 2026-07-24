@@ -1,7 +1,8 @@
 # The Sudo Dev System — Quick Reference
 
 > One page: how we build, the commands you type, and how we test. Updated **2026-07-24** (added
-> `/autopilot-claude`, `/sudo-park`, `/sudo-resume`, `/sudo-mobile-error-team`, and `/clean-code-audit`).
+> `/autopilot-claude`, `/sudo-park`, `/sudo-resume`, `/sudo-close-workingtree`, `/sudo-mobile-error-team`, and `/clean-code-audit`).
+
 > Deep material lives in [tea_deep_reference.md](tea_deep_reference.md) — go there for full call-graphs, the method
 > curriculum, and the TEA fragment library.
 
@@ -59,7 +60,9 @@ bug docs** first or handled via `/sudo-mobile-error-team`, then enter the story 
 | ② `/sudo-dev-story-tests` | Plans, **stops at the self-audit gate** (you pick: run here / other model / fresh team), implements to green, expands coverage. |
 | ③ `/sudo-code-review` | Adversarial code review, clean-code audit (Step 3.5), then test gate (suite + trace + NFR + test-review) → verdict. |
 | `/clean-code-audit` | Standalone or Step 3.5 of ③: audits diff vs `code-standards.md` (ruff/eslint/pyrefly/tsc floor + comment contract/AI-drift pass). |
-| `/sudo-update-sprint-memory` | Close-out: flips the story to `done` (your sign-off — only red tests block), saves learnings, prunes context. |
+| `/sudo-update-sprint-memory` | Close-out: flips story to `done` (your sign-off — only red tests block), saves learnings, prunes context, lands on `main_debug`, and auto-invokes `/sudo-close-workingtree` (Step 8). |
+| `/sudo-close-workingtree` | Verifies story branch is merged to `origin/main_debug`, removes local worktree, and deletes local & remote GitHub `claude/*` branches. |
+
 | `/sudo-bdd-tests` | Standalone BDD Vision Lock session (① runs it for you; use solo to re-lock behaviors). |
 | `/sudo-self-audit` | Standalone pre-dev plan audit (② runs it for you; use solo to pressure-test any plan). |
 | `/sudo-quick-dev` | Fast lane for small fixes — story + direct dev + light sanity audit. Skips the heavy gates. |
@@ -116,7 +119,8 @@ bug docs** first or handled via `/sudo-mobile-error-team`, then enter the story 
 | 2 | Write RED tests | ① `/sudo-write-story-tests` | create-story → BDD Vision Lock (**mandatory** — contract or recorded waiver) → `testarch-atdd` |
 | 3 | Plan + audit + build | ② `/sudo-dev-story-tests` | BDD gate → plan → **⛔ STOP: self-audit** (you choose the lane) → implement → `testarch-automate` |
 | 4 | Review + gate | ③ `/sudo-code-review` | adversarial review → `/clean-code-audit` (Step 3.5) → full suites (pytest + vitest) → `testarch-trace` → `testarch-nfr` → `testarch-test-review` |
-| 5 | Close out | `/sudo-update-sprint-memory` | reads ③'s verdict; the ONLY thing that flips `review` → `done` |
+| 5 | Close out | `/sudo-update-sprint-memory` | reads ③'s verdict; flips `review` → `done`, lands on `main_debug`, auto-calls `/sudo-close-workingtree` (Step 8) |
+
 
 **Status contract:** dev/orchestrator set `review`; only your close-out sets `done`.
 

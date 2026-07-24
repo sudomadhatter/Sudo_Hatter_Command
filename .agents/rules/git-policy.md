@@ -67,6 +67,9 @@ uncommitted work, so the merge either refuses or drags their files through your 
 conflicts, it conflicts in the isolated worktree: **STOP and report**, never force-push, never
 blind-rebase.
 
+Once `HEAD:main_debug` is pushed and verified merged, `/sudo-close-workingtree` prunes the local worktree (`.claude/worktrees/<slug>`) and deletes both local and remote `claude/<slug>` branches.
+
+
 ## Safe-commit mechanics (always — inside the worktree too)
 
 - **Commit your OWN work via explicit paths:** `git add path/one path/two …`.
