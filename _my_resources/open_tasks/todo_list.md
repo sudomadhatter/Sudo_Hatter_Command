@@ -21,6 +21,7 @@ These are folder paths to see the open todo list in the sub projects:
 1. Live Testing
 2. New Epic 18 for updating to google ADK 2.0
     - make sure to do this on its own branch this is a high risk change that could break our production system
+3. /mobile-error_team still needs to be pushed to main to work, there is a note in claude memory about it, just ask. 
 
 <!-- open_tasks files — auto-listed by /update-maps-indexes -->
 - `2026-07-13_codex-setup-all-machines.md`
@@ -33,3 +34,5 @@ These are folder paths to see the open todo list in the sub projects:
 <!-- CHECKPOINT id="ckpt_mrx0p3jt_d0a9cj" time="2026-07-23T04:34:47.993Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
 
 <!-- CHECKPOINT id="ckpt_mrx11yim_sf116o" time="2026-07-23T04:44:47.998Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+
+<!-- CHECKPOINT id="ckpt_mryf009r_s3ea49" time="2026-07-24T04:02:57.759Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->

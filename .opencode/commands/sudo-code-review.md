@@ -1,13 +1,14 @@
 ---
-description: Review + gate a story — adversarial code review, then the test gate (suite + TEA trace + nfr + test-review) producing a PASS/CONCERNS/FAIL/WAIVED verdict. Step ③ of the sudo dev flow.
+description: Review + gate a story — adversarial code review, then the test gate (suite + TEA trace + nfr + test-review) and the clean-code gate (code-standards conformance), producing a PASS/CONCERNS/FAIL/WAIVED verdict. Step ③ of the sudo dev flow.
 platforms: [opencode, antigravity]
 ---
 
-# /sudo-code-review — Review + Test Gate (③)
+# /sudo-code-review — Review + Test Gate + Clean-Code Gate (③)
 
-Thin orchestrator — runs your adversarial review, then the test gate, and writes ONE verdict artifact
-that `sudo-update-sprint-memory` reads before flipping the story to `done`. Project-scoped (targets THIS
-repo). The gate lives HERE; there is no separate `/test-gate` or `/qa-gate`.
+Thin orchestrator — runs your adversarial review, then the test gate, then the clean-code gate, and writes
+ONE verdict artifact that `sudo-update-sprint-memory` reads before flipping the story to `done`.
+Project-scoped (targets THIS repo). Both gates live HERE; there is no separate `/test-gate`, `/qa-gate`,
+or `/lint-gate`.
 
 > Flow position: `sudo-dev-story-tests` → **`sudo-code-review`** → `sudo-update-sprint-memory`.
 
@@ -72,15 +73,41 @@ Read `_bmad-output/sudo-tests.yaml`.
    story walkthrough. Missing BOTH → cap the verdict at **CONCERNS** and name the gap in the verdict file
    (never FAIL on this alone — stories gated before 2026-07-09 predate the check).
 
+## Step 3.5 — Gate: clean code (ALWAYS runs — independent of Step 2's opt-in)
+Invoke the **`clean-code-audit`** skill on the story diff, bound to the same worktree Step 0.5 resolved.
+It checks the diff against `.agents/rules/code-standards.md` — the one house definition of clean — in two
+halves: the **machine floor** (ruff · eslint · pyrefly · tsc, scoped to changed lines) and a **judgment
+pass** (the comment contract §1 + the AI-drift bans §2).
+
+- **Diff-scoped.** Only code THIS story wrote is in scope; legacy debt in untouched files is noted, never
+  gated on — the same grandfathering the test gate already uses.
+- **This gate does NOT depend on `sudo-tests.yaml`.** A project with no test baseline still has a code
+  standard, so a `WAIVED` test gate (Step 2) never waives this one.
+- **A missing tool is a finding, not a skip** — `No module named ruff` means the floor is unrunnable and
+  the project breaks `tests-must-gate-for-real` §2. Report it and name the fix.
+- **An empty diff is a STOP, not a pass.** If the changed-file set comes back empty, say so and stop — a
+  vacuously green gate is exactly what this step exists to prevent.
+
+Fold its findings table into the verdict file **verbatim**, with the actual command output pasted. Apply
+the fixes you can make safely, then re-run the affected check and paste the new output.
+
 ## Step 4 — Verdict
 Combine into **PASS / CONCERNS / FAIL / WAIVED** and write
 `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md`:
 - the review (scope, the passes, each finding with `file:line` + severity + disposition),
 - each gate check's result + the **actual** suite output,
+- a `## Clean-Code Gate` section carrying Step 3.5's findings table and its pasted tool output,
 - the overall verdict, the story id, and the current `git HEAD` ref (so `sudo-update-sprint-memory` can
   detect a stale verdict).
-- **FAIL** = a new test regression or a required tier missing. **CONCERNS** = soft issues only.
-  **PASS** = all required tiers green. **WAIVED** = no baseline (Step 2).
+- **FAIL** = a new test regression, a required tier missing, **or** a Step 3.5 machine-floor error on a
+  changed line / a banned pattern shipped (bare `except:`, `any`, a committed secret).
+- **CONCERNS** = soft issues only — including Step 3.5's judgment findings (missing story provenance, a
+  stale `AIDEV-NOTE` the diff should have updated, bloat, duplication, an unowned TODO).
+- **PASS** = all required tiers green **and** the clean-code floor green on changed lines.
+- **WAIVED** = no test baseline (Step 2). Step 3.5 still ran — report its result inside the waiver.
+
+> The split is deliberate: objective checks block a story, taste does not. Taste gets recorded, argued,
+> and fixed on its merits — never used to stall a story on a reviewer's preference.
 
 ## Step 5 — Update the story walkthrough (REQUIRED whenever you found or fixed anything)
 The single closing doc for this story is `_artifacts/<epic>/<story>/walkthrough.md` — if it wasn't handed

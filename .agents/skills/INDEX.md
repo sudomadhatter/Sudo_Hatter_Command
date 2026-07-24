@@ -18,6 +18,7 @@ skill's own description.
 | **Frontend / UI** | React + design | `react-best-practices` · `ui-ux-pro-max` |
 | **Voice / AI / RAG** | model + retrieval topology | `3_voice-ai-development` · `gemini-live-api` · `rag-implementation` · `6_dual-store-rag-patterns` · `4_sse-streaming-patterns` |
 | **Prompting / diagrams / debug** | cross-cutting craft | `adk-prompting` · `v3-prompt-architecture` · `mermaid-diagram-standards` · `systematic-debugging` |
+| **Code quality gates** | is the code clean, and can you prove it | `clean-code-audit` — the auditor for `.agents/rules/code-standards.md`: machine floor (ruff · eslint · pyrefly · tsc) that can FAIL + a judgment pass (comment contract, AI-drift bans) that caps at CONCERNS. Diff-scoped. Runs standalone and as `/sudo-code-review` Step 3.5. |
 | **Workspace / system craft** | how the repo is organized | `workspace-structure` (tier model · reading-order · AGENTS.md-vs-INDEX.md · naming — the decision layer over `docs/workspace-standard.md`) |
 | **Project domain** (project-specific) | this app's internals | `agent-handoff-patterns` · `hr-agent-schema-guide` · `regulatory-verification-protocol` · `specialist_agents_team` · `architectural-propagation` |
 
