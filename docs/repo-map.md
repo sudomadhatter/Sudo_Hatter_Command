@@ -66,7 +66,7 @@ Sudo_Hatter_Command/
     core/
         [2 files: .yamlx1, .csvx1 | e.g. config.yaml]
     custom/
-        [6 files: .tomlx6 | e.g. bmad-dev-story.toml]
+        [5 files: .tomlx5 | e.g. bmad-dev-story.toml]
     scripts/
         [3 files: .pyx3 | e.g. memlog.py]
     tea/
@@ -79,9 +79,6 @@ Sudo_Hatter_Command/
     brainstorming/
       brainstorm-tdad-integration-2026-07-07/
         [1 files: .mdx1 | e.g. INDEX.md]
-    implementation-artifacts/
-    planning-artifacts/
-    test-artifacts/
   _routing-canary/
     control/
         [2 files: .mdx2 | e.g. INDEX.md]

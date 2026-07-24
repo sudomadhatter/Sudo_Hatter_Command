@@ -4,6 +4,9 @@
 
 | Session folder | What | Artifacts |
 |---|---|---|
+| `2026-07-23_update-maps-indexes/` | Fan-out map and artifact-index reconciliation. | implementation_plan, walkthrough |
+| `2026-07-22_operator-profile-rule/` | Operator-profile rule addition and rollout. | implementation_plan, walkthrough |
+| `2026-07-22_pipeline-conversion-and-sop/` | Pipeline conversion and curriculum-operations SOP. | implementation_plan, walkthrough |
 | `2026-07-14_command-surface-restructure/` | Command renames (security_team_aviationchat, update-maps-indexes, sudo-live-testing-team, sudo-push-e2e) + NEW /sudo-e2e gate + robot-lane _AP sync rule + guide rewrite + Telegram/incident pipeline audit (healthy). | walkthrough |
 | `2026-06-24_gitnexus-adoption-spike/` | GitNexus adoption spike (graph RAG/MCP for home base). | implementation_plan, walkthrough |
 | `2026-06-24_workspace-standard-and-repo-map/` | Workspace standard + repo-map + git policy + constitution reconcile. | implementation_plan, task-list, walkthrough |

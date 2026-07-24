@@ -2,6 +2,10 @@
 
 ## 1. PRIME STATE
 Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-07-14
+**2026-07-23 (latest): Fan-out map and INDEX reconciliation complete.**
+Regenerated the lobby, AGY AviationChat, and Fresh Workspace AUTO map blocks in their declared modes and repaired all deterministic INDEX drift (including the AGY `frontend/test-results/` index). `python .agents/scripts/check_maps.py --all` now reports that all maps and indexes agree with disk. Still informational: lobby GitNexus is stale and needs a post-commit `node .gitnexus/run.cjs analyze`; AGY's active context is 391 lines with no dated session blocks, so it needs a human decision rather than a mechanical prune. Project git discovery required a per-command safe-directory override because the sandbox user differs from the worktree owner. No commits or map anchors were created.
+Session: `_artifacts/_main/2026-07-23_update-maps-indexes/`.
+
 **2026-07-14 (latest): GitNexus graphs updated & dev tooling excluded. Sync guide created.**
 Refined product GitNexus index scope to exclude development/testing tooling (`load/`, `scripts/`, `_test_scripts/`, `auth_keys/`, `scratch/`, and root scripts) from indexing. Documented the new scope in `Projects/AGY_AVIATIONCHAT/docs/gitnexus.md`. Created a new guide [docs/gitnexus-sync.md](file:///c:/Users/dlohn/.gemini/antigravity/scratch/Sudo_Hatter_Command/docs/gitnexus-sync.md) explaining how the index files are machine-local and do not sync via Git, with instructions for re-indexing other machines. Executed GitNexus analysis on lobby (`Sudo_Hatter_Command`) and product project (`AGY_AVIATIONCHAT`), successfully updating local indexes. Regenerated content-mode AUTO blocks for both repo-maps, and resolved a missing debug index row drift for `password-reset-fix`. Verify maps checks clean (`exit 0`).
 Session: `_artifacts/_main/2026-07-14_update-gitnexus-graphs/`.
@@ -91,24 +95,12 @@ and verification (agent runs in-container) for web/mobile sessions. See `_artifa
 bucket `_artifacts/<project>/` or `_artifacts/_main/`; inside a project → project-local (AGENTS §5/§7, workspace-standard,
 INDEX, memory). This session also ran aviationChat **Phase 2** (collapsed `.agent/`→`.agents/`, deleted 1,059 files,
 removed forked `.claude/rules/`, GitNexus zero-code) — it lives in `_artifacts/AGY_AVIATIONCHAT/2026-06-25_ws7-and-phase2/`.
-**2026-06-25: artifacts-policy reconciliation FINISHED** — wrote `_artifacts/README.md` (the how-to), reconciled
-the last stale `_artifacts/<workspace>/` refs (`AGENTS.md` §3 · `workspace-standard.md` Part 1 + appendix · master
-`artifacts-always-first.md`) to **work-from-cwd**, refreshed `_docs/repo-map.md` (`--mode content`, drift clean),
-and renamed the policy memory → `artifacts-go-where-you-work-from`. Session:
-`_artifacts/_main/2026-06-25_artifacts-policy-finish-and-drift-backport/` (commit pending — see its walkthrough).
-**2026-06-25: GitNexus index = the command center + open_tasks "what's next".** ONE lobby GitNexus repo
-**`SUDO_COMMAND`** = the command center itself — all of `.agents/` (rules · workflows · commands · skills ·
-scripts, ~17k nodes), rooted directly at `.agents/` with `--skip-git` to beat GitNexus's dot-folder skip
-(`--index-only`; re-index manually after toolkit edits; `.agents/.gitnexus/` gitignored). (A first-pass thin
-"portfolio map" showing projects-as-nodes was tried then **dropped** per Daniel — index + its root
-`.gitnexusignore` removed.) Caveat: GitNexus extracts headings not doc-refs from markdown → thin edges between
-rule/workflow `.md`; read/grep for "what references what". `_my_resources/open_tasks/` is now the READ-ONLY
-"what do we do next" source (wired into `router.md` + `_docs/repo-map.md` + the protection memory). Surfaced (open):
-~50+ dangling `.agent/` (singular) refs across the master toolkit — needs a deliberate pass, not a blind replace.
-Session: `_artifacts/_main/2026-06-25_home-base-maps-gitnexus-opentasks/`. NB: commit `8a40c0f` (on origin/main)
-already bundled this session's first-pass repo edits with the prior self-audit work — confirm that was intentional.
-
 ## 5. PICK UP  (read-only brief)
+- 5.1 Doing: map/index maintenance is complete; no process is running.
+- 5.2 Changed this session: regenerated three declared-mode AUTO map blocks; added the missing lobby and AGY artifact-ledger rows; created the AGY `frontend/test-results/INDEX.md` and `epic_debug_2/INDEX.md` inventories; verified fan-out lint clean.
+- 5.3 Remaining: after the relevant commits, re-anchor with `python .agents/scripts/check_maps.py --set-anchor --all`; re-index lobby GitNexus; decide whether and how to compact AGY's undated 391-line continuity brief.
+- 5.4 Git: do not mass-stage the lobbyâ€”it already contained unrelated uncommitted changes before this reconciliation.
+- 5.5 Historical hand-off from 2026-07-14 follows.
 - 5.1 Doing: maintaining GitNexus indexing and map/index health.
 - 5.2 Changed this session:
   - Excluded development, testing, and credential tools from the `AGY_AVIATIONCHAT` GitNexus indexing in `.gitnexusignore`.
@@ -124,6 +116,11 @@ already bundled this session's first-pass repo edits with the prior self-audit w
 - 5.4 Best next move: Daniel commits changes in both repositories and runs `python .agents/scripts/check_maps.py --set-anchor --all` to baseline map diffs.
 
 ## 6. HAND OFF  (verified state at this checkpoint)
+- 6.1 Completed: the fan-out map/index reconciliation; all deterministic linter checks pass.
+- 6.2 In progress: nothing.
+- 6.3 Open: lobby GitNexus re-index after commit; AGY continuity-brief compaction needs an authoring decision; map anchors await commits.
+- 6.4 Session: `_artifacts/_main/2026-07-23_update-maps-indexes/`.
+- 6.5 Historical hand-off from 2026-07-14 follows.
 - 6.1 Completed: Refined indexing scopes, synchronized GitNexus graphs, added machine-local index sync documentation, regenerated AUTO blocks, and verified zero drift.
 - 6.2 In progress: Nothing executing.
 - 6.3 Open tasks / trade-offs: Indexes are machine-local; other machines must re-run analyze after pulling.
