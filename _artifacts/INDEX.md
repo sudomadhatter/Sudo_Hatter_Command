@@ -86,4 +86,7 @@ workspace you have open (your cwd), not only what the work is about. Three rules
 > Earlier session rows (2026-06-24 → 2026-06-25, 10 rows) archived to `_artifacts/INDEX-archive.md`
 > to keep this ledger scannable. Full history preserved there — find by date/slug.
 
+| 2026-07-24 | _main | update-sudo-close-workingtree | Update `/sudo-close-workingtree` command and workflow in `.agents` to purge physical orphan worktree directories from disk after `git worktree remove` & `git worktree prune`. | done |
+
 <!-- CHECKPOINT id="ckpt_mrkn1ha0_juzdqa" time="2026-07-14T12:39:16.920Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+

@@ -35,16 +35,21 @@ git merge-base --is-ancestor claude/<story-slug> origin/main_debug
 ## Step 2 — Exit worktree directory if currently inside it
 If current working directory (`cwd`) is inside `PROJECT_ROOT/.claude/worktrees/<story-slug>`, shift `cwd` out to `PROJECT_ROOT` so the directory is unlocked for removal.
 
-## Step 3 — Prune local git worktree
+## Step 3 — Prune local git worktree & purge physical directory
 In `PROJECT_ROOT`:
-If `.claude/worktrees/<story-slug>` is listed in `git worktree list`:
-```bash
-git worktree remove .claude/worktrees/<story-slug>
-```
-If the folder was deleted manually or pruned:
-```bash
-git worktree prune
-```
+1. If `.claude/worktrees/<story-slug>` is listed in `git worktree list`:
+   ```bash
+   git worktree remove --force .claude/worktrees/<story-slug>
+   ```
+2. Run git worktree prune:
+   ```bash
+   git worktree prune
+   ```
+3. **Physical disk cleanup (prevent orphan folders in IDE side panel)**:
+   Check if the directory `.claude/worktrees/<story-slug>` still exists on disk. If it exists:
+   ```powershell
+   Remove-Item -Recurse -Force "PROJECT_ROOT/.claude/worktrees/<story-slug>" -ErrorAction Ignore
+   ```
 
 ## Step 4 — Delete local and remote git branches
 In `PROJECT_ROOT`:
