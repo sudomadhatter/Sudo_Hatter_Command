@@ -44,6 +44,13 @@ On the phone there is no terminal, so the "hand Daniel the command" default does
 - **Ask before the PR.** Opening / converting a draft PR is an outward action — present it as a
   **tap-confirm** (see Override 2) and wait for the tap before creating it. The PR targets **`main_debug`**
   (the shared integration branch), **never `main`** — see `git-policy.md` → "Branch model".
+  - **Hotfix carve-out (incident lane ONLY).** A `/sudo-mobile-error-team` production hotfix PR targets
+    **`main`**, not `main_debug`. Two reasons: the incident lane is anchored on production
+    (`incident-response.yml` checks out `ref: main`, and every back-merge footer says merge to
+    `main` then rebase `main_debug`), and the quality gate `pr-check.yml` only runs on PRs whose
+    base is `main` — a hotfix PR to `main_debug` would get **no CI at all**, which on the mobile
+    lane means no gate at all. Everything else still holds: it opens as a **draft**, the
+    tap-confirm above is still required, and the agent still never merges it.
 - **"Your Actions" becomes "review the PR."** The `walkthrough.md` closing section links the pushed
   branch / draft PR (`review PR #N`) instead of pasting a git command Daniel can't run.
 
