@@ -58,7 +58,14 @@ it). Report, compactly:
   `claude/<story-slug>` tree (`worktree-per-story` → "Resuming"). If it does, say so with its path and branch
   (*"Story <id> → worktree open at `<path>` on `claude/<slug>` — the next `sudo-` step re-enters it, does not
   open a new one"*); the story file and red tests may live ONLY in that tree, so any resumed dev/review work
-  must `cd` in first. If none, note the next step opens one at first edit.
+  must `cd` in first.
+- **⚠️ No worktree is NOT proof of a fresh start — check the remote before you say so.** Worktrees are
+  machine-local (`.claude/worktrees/` is not in the repo), and Daniel works one sprint across desktop,
+  laptop, and mobile. Whenever `git worktree list` shows nothing for the next story, ALSO run
+  `git ls-remote --heads origin 'refs/heads/claude/*'`. A `claude/<story-slug>` branch on origin means the
+  step was already done on another machine — report it as **"exists on origin, not on this machine"** and
+  point at `/sudo-switch-machine resume` to re-create the working surface. Only when BOTH are empty may you
+  say the next step opens a worktree at first edit.
 Read-only — cross-check against live files; never edit anything.
 
 > **⛔ This is NOT the master "pick up."** The home-base `pick up` trigger (`AGENTS.md` §7 / `router.md`)
