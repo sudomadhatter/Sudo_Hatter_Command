@@ -17,9 +17,10 @@ flowchart TD
     ONE --> TWO["② /sudo-dev-story-tests\nplan → STOP self-audit gate\n→ implement → expand coverage"]
     TWO --> THREE["③ /sudo-code-review\nadversarial review + TEST GATE\nPASS / CONCERNS / FAIL / WAIVED"]
     THREE -.->|"Step 3.5"| CLEAN["/clean-code-audit\nmachine floor + taste audit"]
-    THREE --> CLOSE["/sudo-update-sprint-memory\nclose-out — YOUR sign-off flips story to done"]
-    CLOSE -.->|"next story"| ONE
-    CLOSE --> SHIP["/sudo-push-e2e\nrun /sudo-e2e → green → promote to main"]
+    THREE --> CLOSE["/sudo-update-sprint-memory\nclose-out — YOUR sign-off flips story to done\n+ lands on main_debug"]
+    CLOSE --> CLOSEWT["/sudo-close-workingtree\nStep 8: verify merge, prune worktree,\npurge folder, delete branches"]
+    CLOSEWT -.->|"next story"| ONE
+    CLOSEWT --> SHIP["/sudo-push-e2e\nrun /sudo-e2e → green → promote to main"]
     SHIP --> PROD["Production\nCloud Run backend + App Hosting frontend"]
     PROD -.->|"errors"| SEC["Security / Error team\nSentry → GitHub Action triage\n→ issue + fix branch → Telegram page"]
     SEC -.->|"live incident response"| MOBERR["/sudo-mobile-error-team\nphone/desktop responder: re-diagnose\n→ rollback/fix card → CI gate → close loop"]
