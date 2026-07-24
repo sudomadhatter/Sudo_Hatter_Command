@@ -34,3 +34,10 @@
 **/auth_keys/
 .claude/settings.local.json
 
+# Story worktrees — MACHINE-LOCAL, never committable. A worktree dir holds a
+# `.git` FILE, so a blanket `git add` records it as a gitlink (mode 160000) with
+# no .gitmodules; pulling that on another machine creates empty dirs at exactly
+# the paths `git worktree add` needs. Push the BRANCH, not the tree.
+# (Bit AGY in d098dc63 — pre-empting it here.)
+.claude/worktrees/
+
