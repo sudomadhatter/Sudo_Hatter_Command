@@ -54,6 +54,11 @@ it). Report, compactly:
   `_bmad/bmm/stories/`.
 - **Next command** — which `sudo-` step it needs: not-started → `/sudo-write-story-tests`; mid-dev →
   `/sudo-dev-story-tests`; built & awaiting review → `/sudo-code-review`; reviewed → `/sudo-update-sprint-memory`.
+- **Worktree** — run `git worktree list` and report whether the next/in-play story already has a
+  `claude/<story-slug>` tree (`worktree-per-story` → "Resuming"). If it does, say so with its path and branch
+  (*"Story <id> → worktree open at `<path>` on `claude/<slug>` — the next `sudo-` step re-enters it, does not
+  open a new one"*); the story file and red tests may live ONLY in that tree, so any resumed dev/review work
+  must `cd` in first. If none, note the next step opens one at first edit.
 Read-only — cross-check against live files; never edit anything.
 
 > **⛔ This is NOT the master "pick up."** The home-base `pick up` trigger (`AGENTS.md` §7 / `router.md`)

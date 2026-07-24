@@ -34,6 +34,14 @@ path (`_bmad-output/…`, `_bmad/…`, `_artifacts/…`, story files, test comma
 `PROJECT_ROOT`, run it against that directory, and read/write only there. If a needed path is missing under
 `PROJECT_ROOT`, STOP and say so — never fall back to the lobby.
 
+## Step 0.5 — Re-enter the story worktree if one already exists (fresh-chat resume)
+The story you are reviewing was almost certainly built in its own worktree, and this review often runs in a
+**new chat** (`worktree-per-story` → "Resuming — a fresh chat picks the story back up"). Before Step 1, run
+`git worktree list` under `PROJECT_ROOT`; if a `claude/<story-slug>` tree exists, **cd into it and bind the
+diff, story file, tests, and suite commands under it** — the built code and its red→green tests commonly
+live ONLY in that tree, so reviewing from the shared checkout would audit an empty or stale diff. Echo
+`Worktree: reviewing in <path>`. If none exists, review in `PROJECT_ROOT` as usual.
+
 ## Step 1 — Clean-Room Adversarial Code Review
 Invoke the **`bmad-code-review`** skill on the story's diff. You MUST act as a **Clean-Room** agent: zero out any builder's bias. Your only job is to aggressively audit the final diff against the strict BDD contract. Hunt specifically for **AI Drift**, over-engineering, bloat, unnecessary abstractions, and logic flaws. Apply the actionable fixes yourself; if you change code, re-run the relevant suite(s) and paste actual output.
 

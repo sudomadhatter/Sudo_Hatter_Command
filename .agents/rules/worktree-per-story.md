@@ -33,6 +33,28 @@ another story's branch).
   checkout.
 - **Daniel says otherwise** — an explicit "just do it here" in the moment wins.
 
+## Resuming — a fresh chat picks the story back up
+
+A worktree outlives the chat that opened it. A **new session** — fresh context, a `/compact`, a
+different model, or simply a different chat window — that resumes an in-flight story must **re-enter the
+existing worktree**: not open a second one, and not work in the shared checkout. Before `EnterWorktree`
+fires (and at the top of any `sudo-*` step that will read or edit story files), look first:
+
+```
+git worktree list        # is there already a  claude/<story-slug>  tree?
+```
+
+- **A tree for this story slug exists** → that IS your workspace. `cd` into it and bind every path — story
+  file, ① red tests, `_artifacts/…`, test commands — under it. Its branch already carries the ① / earlier-②
+  commits, and **the story file and red tests often live ONLY in that tree, never in the shared checkout** —
+  so a session that skips this step is blind to the very work it was invoked to continue, and will either
+  re-do ① or wrongly report the story missing.
+- **No tree yet** → this is the first work session; open one per the Trigger above.
+
+Never open a second worktree for a slug that already has one, and never fall back to editing in the shared
+checkout because the tree "looked empty" from where you happened to be standing. Match by the `<story-slug>`
+in the branch/path, not by cwd.
+
 ## Inside the worktree — commit freely
 
 The worktree is your box. Commit your own work as you go; no approval, no handing Daniel a command.
