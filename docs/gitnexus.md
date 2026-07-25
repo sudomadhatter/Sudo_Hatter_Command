@@ -5,7 +5,7 @@
 > `skipAgentsMd`); don't fuss over the small numbers.
 
 **Scope note.** The lobby index is deliberately tiny — it maps ONLY the manager/routing surface (root maps,
-`docs/`, `_system/`); `_artifacts/`, `_my_resources/`, `_bmad*/`, `_routing-canary/` are excluded via
+`docs/`); `_artifacts/`, `_my_resources/`, `_bmad*/`, `_routing-canary/` are excluded via
 `.gitnexusignore`, and the `.agents/` toolkit is unindexable on gitnexus 1.6.8 (dot-dir walker limit). The
 live product map is the child index **AGY_AVIATIONCHAT** (~37.7k symbols, product code only) — pass
 `repo: "AGY_AVIATIONCHAT"` for product work.

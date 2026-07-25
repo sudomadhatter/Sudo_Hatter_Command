@@ -61,7 +61,11 @@ learning yourself:
 Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: session artifacts)`.
 
 ## Step 4 — Apply updates (specs / rules / active-context now; memory waits for Step 6)
-- **Completed tasks**: move `✅` items to `## Completed Tasks` with `- **Resolved:** YYYY-MM-DD`.
+- **Every active-context entry is BORN as a pointer — ≤3 lines: outcome · STILL-OWED · pointer** to where
+  the record actually lives (the map in Step 5). The narrative goes in `sprint-status.yaml`'s story line +
+  the walkthrough, NEVER here. Writing a narrative entry into active-context is the bug that blew it to
+  31k tokens (2026-07-25) — active-context POINTS at information; it does not restate it.
+- **Completed tasks**: move `✅` items to `## Completed Tasks` with `- **Resolved:** YYYY-MM-DD` (pointer form).
 - **Story-status → `done` (this command's PRIMARY purpose).** Daniel invoking this **IS his sign-off** —
   **flip the just-closed story to `done` by default, without asking**, in BOTH the story file
   (`_bmad/bmm/stories/…` frontmatter) AND `sprint-status.yaml`. Print `Closing <story>: review → done`.
@@ -79,15 +83,34 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
     lands it. Nothing about git blocks the status flip.
 - **Last Updated**: set to today's date at the top of `active-context.md`.
 
-## Step 5 — Prune & cap (this is what keeps boot cheap) — AUTOMATIC, never ask
+## Step 5 — Prune & budget (this is what keeps boot cheap) — AUTOMATIC, never ask
 Unconditional *apply* (same tier as Step 4), **without asking** — active-context is project-scoped and
-reversible (history in `_artifacts/` + git). The ONLY gate in this command is Step 4's red-tests check;
-everything else, incl. Step 6's memory write, just applies.
-- **`active-context.md` hard cap ≈ 250 lines of LIVE state** — move crept-in history to the walkthrough /
-  git; no narrative logs here.
-- **Completed tasks > 5** → delete the oldest.
-- **Pitfall staleness** — ALWAYS re-check pitfalls you touched this session. Run the FULL sweep over EVERY
-  `## Known V2 Pitfalls` entry ONLY when over the ~250-line cap. Per entry:
+reversible (history in `_artifacts/` + `_archive/` + git). The ONLY gate in this command is Step 4's
+red-tests check; everything else, incl. Step 6's memory write, just applies.
+- **`active-context.md` has a hard CONTEXT budget: ≤ 20 KB ≈ 5,000 tokens.** Lines are NOT the metric —
+  context is. **Measure: file size in bytes ÷ 4**; report `active-context: ~X / 5,000 tokens` in Step 6's
+  summary EVERY close-out. Over budget → prune **in this same pass**, one-in-one-out: adding an entry
+  means compacting/archiving another.
+- **Prune = two moves — deletion is the normal outcome, not a failure:**
+  1. **Still-live state** → compact to a ≤3-line pointer, keep.
+  2. **Everything else** (stale, superseded, finished, recorded at its home) → **DELETE** — git history
+     is the undo. Read the entry ONCE before cutting: a buried STILL-OWED obligation must survive as a
+     pointer line (the 2026-07-13 OIDC-env loss is the cautionary case), and a standing ruling must live
+     in memory/specs before its text dies here.
+  **`_archive/` is unmaintained COLD STORAGE, not a routing home** — append-only dumps (e.g. a
+  restructure snapshot), ZERO upkeep, nothing reads it routinely, never a mandatory copy step. Agents
+  check it (and git history) only when struggling with something that feels previously solved.
+- **The map — route information to its ONE home; active-context only POINTS:**
+  - `sprint-status.yaml` story line → per-story ledger + dated history log
+  - `_artifacts/<epic>/<story>/walkthrough.md` → full narrative + Your Actions
+  - `sudo-code-review-<story>.md` → verdicts + findings (follow-on seeds point here)
+  - `component-specs/<spec>.md` → component pitfalls/contracts · `project-context.md` → app-wide rules
+  - `known-pitfalls.md` (beside active-context) → the V2 pitfall long-tail, **grep-scoped, never bulk-loaded**
+  - Claude auto-memory → cross-session facts + operator rulings · `_archive/` → pruned text
+- **Completed tasks > 5** → compact the oldest to pointer form if it isn't, then move it to `_archive/`.
+- **Pitfall staleness** — pitfalls live in `known-pitfalls.md` (soft budget 60 KB). ALWAYS re-check entries
+  you touched this session. **Prune-on-touch:** a story that touches a pitfall's component MOVES that entry
+  into the component spec at close-out. Run the FULL four-rule sweep only when over budget:
   1. Story dependency now `done` in sprint-status → **stale, remove**.
   2. "Degraded until Story Y" and Y is `done` → **stale, remove**.
   3. References a code pattern; grep it — gone → **stale, remove**.

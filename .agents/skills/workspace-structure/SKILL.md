@@ -13,7 +13,7 @@ content here.
 ## Tier model — which folders get a control file
 | Tier | What | Gets |
 |---|---|---|
-| **1 — Floor** (work happens here) | workspace roots: the lobby, each `Projects/<name>/`, `_system/`, `_routing-canary/`, `.agents/` | full **`AGENTS.md`** (Map/Mission/Support + routing table) + 1-line `CLAUDE.md`/`GEMINI.md` adapters |
+| **1 — Floor** (work happens here) | workspace roots: the lobby, each `Projects/<name>/`, `_routing-canary/`, `.agents/` | full **`AGENTS.md`** (Map/Mission/Support + routing table) + 1-line `CLAUDE.md`/`GEMINI.md` adapters |
 | **2 — Guarded infrastructure** | `_artifacts/`, `_my_resources/`, `docs/` | a short local-law **`AGENTS.md`** (~15 lines) + adapters, so the folder's special rules self-enforce |
 | **3 — Leaf content** | everything else | **`INDEX.md`** only (inventory), or nothing |
 

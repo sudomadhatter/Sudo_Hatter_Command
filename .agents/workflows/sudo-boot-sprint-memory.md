@@ -39,7 +39,8 @@ Read `_bmad-output/active-context/active-context.md` and output a `<context>` bl
 - **Stable** — what's tested and working (the "Do NOT Touch" set)?
 - **Broken** — what's known-broken or in review?
 - **In Play** — which files are currently being modified?
-- **Pitfalls** — gotchas from recent bugs (`## Known V2 Pitfalls`).
+- **Pitfalls** — active-context only POINTS at them now: GREP `_bmad-output/active-context/known-pitfalls.md`
+  for the next story's files/components and surface ONLY the matching entries — never bulk-load that file.
 
 ## Step 2 — Load in-scope component specs
 For each spec flagged in-scope (or implied by the sprint objective), read it from

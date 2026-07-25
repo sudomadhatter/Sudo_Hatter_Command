@@ -1,6 +1,6 @@
 # GitNexus index scope — HOME BASE ONLY, optimized as the PROJECT MANAGER map.
 # Signal = the master toolkit (.agents/), routing/docs infra (AGENTS.md, router.md,
-# docs/, _system/). Noise = child-project session artifacts, personal documents,
+# docs/). Noise = child-project session artifacts, personal documents,
 # vendor BMAD install, test fixtures — excluded below.
 #
 # Why this file (not .gitignore): Projects/ is intentionally NOT gitignored so

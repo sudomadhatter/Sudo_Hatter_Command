@@ -74,7 +74,7 @@ one the beacon dies. Three tiers, one reading-order rule:
 
 | Tier | What it is | Carries |
 |---|---|---|
-| **1 — Floors** (work happens here) | workspace roots: the lobby, each `Projects/<name>/`, `_system/`, `_routing-canary/`, `.agents/` | full `AGENTS.md` (Map/Mission/Support + routing table) + 1-line adapters |
+| **1 — Floors** (work happens here) | workspace roots: the lobby, each `Projects/<name>/`, `_routing-canary/`, `.agents/` | full `AGENTS.md` (Map/Mission/Support + routing table) + 1-line adapters |
 | **2 — Guarded infrastructure** (rules apply here, work doesn't) | `_artifacts/`, `_my_resources/`, `docs/` | a short **local-law `AGENTS.md`** (~15 lines: what this place is, the law, where the detail lives) + 1-line `CLAUDE.md`/`GEMINI.md` adapters |
 | **3 — Leaf content** (storage) | epic buckets, session folders, diagrams, transcripts | `INDEX.md` (and/or `README.md`) only — **no** `AGENTS.md` |
 

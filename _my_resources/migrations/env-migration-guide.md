@@ -91,7 +91,8 @@ missing directories, and `git clone` refuses to clone into a non-empty folder.
 
 ```powershell
 # a) Every restored file must be IGNORED by its own repo — none may show as untracked.
-git -C . status --short                                   # lobby: no .env, no _secrets/
+git -C . status --short                                   # lobby: no .env, no _secrets/ anywhere
+git check-ignore -v _my_resources/migrations/_secrets/master.env   # must print a .gitignore rule
 git -C Projects/AGY_AVIATIONCHAT status --short           # no .env*, no auth_keys/
 git -C Projects/BRKN_Tattoos status --short               # no .env.local
 
@@ -139,18 +140,18 @@ UTF-8 without BOM. Then run §4.
 Any time a secret is added, rotated, or a new project gains a real `.env`:
 
 ```powershell
-powershell -File _system\Export-EnvMaster.ps1
+powershell -File _my_resources\migrations\Export-EnvMaster.ps1
 ```
 
 It re-scans everything (lobby `.env`, all real `.env`/`.env.local`/
 `.env.production` under `Projects/`, all `auth_keys/` contents; skips
 `.env.example`, `node_modules`, venvs, worktrees) and rewrites
-`_secrets/master.env` with a fresh manifest. It refuses to run if the output
-isn't gitignored.
+`_my_resources/migrations/_secrets/master.env` with a fresh manifest. It refuses
+to run if the output isn't gitignored.
 
 ## 8. Security rules (non-negotiable)
 
-- `master.env` and everything in `_secrets/` is **never committed, never
+- `master.env` and everything in any `_secrets/` folder is **never committed, never
   emailed, never pasted into a chat, never cloud-synced in plaintext**.
   Transfer via USB stick or a password-manager secure note/attachment.
 - Never print secret **values** in agent output or logs — key names only.

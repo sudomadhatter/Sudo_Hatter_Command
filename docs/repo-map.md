@@ -15,11 +15,11 @@
 | Synced engine mirrors (so `/commands` + skills resolve here) | `.claude/`, `.opencode/` |
 | Shared memory (plans · walkthroughs · handoffs · ledger) | `_artifacts/` (`_main/` = home-base work; `<project>/` = per-project; `opencode/` = opencode's mirror) |
 | Home-base docs (this map · workspace standard · master plan) | `docs/` |
-| How to add / maintain workspaces (`/new-project`, `/sync-agents`) | `_system/` |
+| How to add / maintain workspaces (`/new-project`, `/sync-agents`) | `docs/system-builder.md` |
 | Model-agnostic proof the routing works | `_routing-canary/` |
 | BMAD-generated output (planning/implementation/test artifacts from running BMAD workflows at the home base) | `_bmad-output/` |
 | Daniel's personal area — **PROTECTED** (don't edit/reference unless he says/links) | `_my_resources/` — **EXCEPT** `open_tasks/` (read-only carve-out below) |
-| Secrets / env files — ALL gitignored, so never in the AUTO tree below | lobby `.env` (root) + per-project files; master bundle `_secrets/master.env` (hand-carried, NEVER committed); export/restore: `_system/Export-EnvMaster.ps1` / `_system/Restore-EnvMaster.ps1` |
+| Secrets / env files — ALL gitignored, so never in the AUTO tree below | lobby `.env` (root) + per-project files; master bundle `_my_resources/migrations/_secrets/master.env` (hand-carried, NEVER committed); export/restore: `_my_resources/migrations/Export-EnvMaster.ps1` / `Restore-EnvMaster.ps1` |
 | **"What do we do next" / open tasks / Daniel's plans & PRPs** — READ-ONLY, never edit | `_my_resources/open_tasks/` (start at `todo_list.md`; cross-check vs live project files) |
 
 ## Knowledge map (which doc to read when)
@@ -31,7 +31,8 @@
 | `_artifacts/INDEX.md` | The session ledger — "pick up" scans it, "hand off" appends to it |
 | a project's `Projects/<name>/AGENTS.md` | When you go work inside that project (not this file) |
 | `_my_resources/open_tasks/` | Daniel asks "what do we do next / what's left" — read his todo + saved plans/PRPs (read-only) |
-| `docs/env-migration-guide.md` | New-machine setup / repopulating any `.env` or `auth_keys/` file (the manifest inside `_secrets/master.env` lists every secret file + its exact path) |
+| `docs/system-builder.md` | Growing/maintaining the home base itself — `/new-project`, `/sync-agents`, workspace-conversion rules |
+| `_my_resources/migrations/INDEX.md` | New-machine setup / repopulating any `.env` or `auth_keys/` file (→ `env-migration-guide.md`; the manifest inside `_secrets/master.env` lists every secret file + its exact path). Disposable kit — `_my_resources/` is excluded from repo-map regen, so it never appears in the AUTO tree below |
 
 **GitNexus (Tier-2 graph — on-demand, disposable).** ONE index: **`SUDO_COMMAND`** = the command center
 itself — all of `.agents/` (rules · workflows · commands · skills · scripts; ~17k nodes). Rooted directly at
@@ -90,10 +91,6 @@ Sudo_Hatter_Command/
     skills/
         [2 files: .mdx2 | e.g. INDEX.md]
       [6 files: .mdx6 | e.g. AGENTS.md]
-  _secrets/
-      [1 files: .envx1 | e.g. master.env]
-  _system/
-      [5 files: .ps1x3, .mdx1, .txtx1 | e.g. AGENTS.md]
   docs/
       [9 files: .mdx8, .jsonx1 | e.g. AGENTS.md]
     [8 files: .mdx4, .txtx3, .jsonx1 | e.g. AGENTS.md]
