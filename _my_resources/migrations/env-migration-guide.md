@@ -5,6 +5,14 @@ Sudo_Hatter_Command lobby and its sub-projects.
 **You need exactly two things:** this document, and the operator's `master.env`
 file (hand-carried — it is never in git).
 
+**Where this kit lives:** `_my_resources/migrations/` — this guide, both
+`*-EnvMaster.ps1` scripts, `rename-fix.ps1`, and the `_secrets/` vault. It sits
+in the personal area on purpose: it is new-machine-only, not day-to-day
+infrastructure, so it stays out of the top level and can be deleted outright
+once a machine is set up rather than left to go stale. The lobby's read-only
+posture for `_my_resources/` does not apply while you are running this guide —
+the operator pointing you here IS the instruction to use it.
+
 ---
 
 ## 1. The mental model
@@ -14,7 +22,7 @@ Every secret in this system lives in gitignored files (`**/.env`,
 them are bundled into one hand-carried file:
 
 ```
-_secrets/master.env          <- gitignored; the operator copies this over manually
+_my_resources/migrations/_secrets/master.env   <- gitignored; the operator copies this over manually
 ```
 
 The master is a plain-text concatenation of every real env/credential file,
@@ -62,21 +70,22 @@ missing directories, and `git clone` refuses to clone into a non-empty folder.
    using the exact folder names from the master's manifest (e.g.
    `Projects/AGY_AVIATIONCHAT`, `Projects/BRKN_Tattoos`). Every sub-project is
    its own independent repo — the lobby repo does not contain them.
-3. **Place the operator's copy of `master.env`** at `_secrets/master.env`
-   (create the `_secrets` folder if needed), or leave it on the USB stick and
-   pass its path with `-MasterPath`.
+3. **Place the operator's copy of `master.env`** at
+   `_my_resources/migrations/_secrets/master.env` (create the `_secrets` folder
+   if needed), or leave it on the USB stick and pass its path with `-MasterPath`.
 4. **Run the restore script** from the lobby root:
 
    ```powershell
-   powershell -File _system\Restore-EnvMaster.ps1
-   # or: powershell -File _system\Restore-EnvMaster.ps1 -MasterPath D:\master.env
+   powershell -File _my_resources\migrations\Restore-EnvMaster.ps1
+   # or: powershell -File _my_resources\migrations\Restore-EnvMaster.ps1 -MasterPath D:\master.env
    ```
 
    It writes every file to its original path, creates missing dirs, and backs
    up any existing-but-different file as `<name>.pre-restore.bak`.
 5. **Verify** (§4). Do not skip this.
 6. **Delete the master from any transfer medium** (USB stick, download folder)
-   once verified. Keep only `_secrets/master.env` on the machine.
+   once verified. Keep only `_my_resources/migrations/_secrets/master.env` on the
+   machine.
 
 ## 4. Verification checklist (agent: run every line)
 

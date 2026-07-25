@@ -1,10 +1,11 @@
-# Restore-EnvMaster.ps1 — split _secrets/master.env back into the individual
-# .env / credential files it was exported from, at their original relative paths.
+# Restore-EnvMaster.ps1 — split _my_resources/migrations/_secrets/master.env back
+# into the individual .env / credential files it was exported from, at their
+# original relative paths.
 #
 # Run from the lobby root of the NEW machine after cloning the repos:
-#   powershell -File _system\Restore-EnvMaster.ps1
+#   powershell -File _my_resources\migrations\Restore-EnvMaster.ps1
 # or point at a master file sitting anywhere (e.g. straight off the USB stick):
-#   powershell -File _system\Restore-EnvMaster.ps1 -MasterPath D:\master.env
+#   powershell -File _my_resources\migrations\Restore-EnvMaster.ps1 -MasterPath D:\master.env
 #
 # Behavior:
 #   - Creates missing directories (e.g. auth_keys/) as needed.
@@ -14,12 +15,14 @@
 #   - Refuses absolute paths or paths containing ".." inside the master file.
 
 param(
-    [string]$Root = (Split-Path $PSScriptRoot -Parent),
+    # $Root must be the LOBBY ROOT — manifest paths are relative to it. This script
+    # lives two levels down (_my_resources/migrations/), so walk up twice.
+    [string]$Root = (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent),
     [string]$MasterPath = ''
 )
 
 $ErrorActionPreference = 'Stop'
-if (-not $MasterPath) { $MasterPath = Join-Path $Root '_secrets\master.env' }
+if (-not $MasterPath) { $MasterPath = Join-Path $Root '_my_resources\migrations\_secrets\master.env' }
 if (-not (Test-Path $MasterPath)) { throw "Master file not found: $MasterPath" }
 
 $lines = [System.IO.File]::ReadAllLines($MasterPath)
@@ -67,4 +70,4 @@ foreach ($line in $lines) {
 if ($null -ne $current) { throw "Master file ended mid-block: $current never closed" }
 
 Write-Host ''
-Write-Host "Done. $written file(s) written/updated. Now run the verification steps in docs/env-migration-guide.md."
+Write-Host "Done. $written file(s) written/updated. Now run the verification steps in _my_resources/migrations/env-migration-guide.md."

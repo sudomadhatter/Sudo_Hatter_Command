@@ -20,9 +20,9 @@
   -NoMove to fix paths only (no Projects/ move).
 
 .EXAMPLE
-  .\_system\rename-fix.ps1                          # dry-run preview (move + fixes)
-  .\_system\rename-fix.ps1 -Apply                   # move projects + fix paths
-  .\_system\rename-fix.ps1 -Apply -RemoveVenvs      # also delete venvs to recreate
+  .\_my_resources\migrations\rename-fix.ps1                     # dry-run preview (move + fixes)
+  .\_my_resources\migrations\rename-fix.ps1 -Apply              # move projects + fix paths
+  .\_my_resources\migrations\rename-fix.ps1 -Apply -RemoveVenvs # also delete venvs to recreate
 #>
 param(
   [string]$OldName = 'Sudo_Hatter_Command',
@@ -33,7 +33,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$HomeRoot = Split-Path $PSScriptRoot -Parent   # _system -> home-base root (rename-safe)
+$HomeRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent   # _my_resources/migrations -> home-base root (rename-safe)
 $Projects = @('aviationChat-AGY','clean-bmad-workspace','jetChat-AGY','B&L WorldWide',
               'NEXGen Films','ingestion-Pipeline-AC','openCode')
 
