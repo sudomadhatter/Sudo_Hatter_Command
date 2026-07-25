@@ -1,9 +1,9 @@
 ---
-description: End-of-session / story close-out save — advance the closed story to done (running this command IS Daniel's sign-off; only objectively-red /sudo-code-review tests block the flip), code-verify, route learnings to specs/rules/memory, prune active-context, then LAND the story worktree branch on main_debug as one clean push (Step 7). Run as the LAST step when closing a story or any session.
+description: End-of-session / story close-out save — advance the closed story to done (running this command IS Daniel's sign-off; only objectively-red /sudo-code-review tests block the flip), code-verify, route learnings to specs/rules/memory, prune active-context, then LAND the story branch on main_debug (Step 7). Run LAST when closing a story or session.
 platforms: [opencode, antigravity]
 ---
 
-# /sudo-update-sprint-memory — Session End (G1 close-out)
+# /sudo-update-sprint-memory — Session End (close-out)
 
 Self-contained, project-scoped — targets THIS repo's `_bmad-output/`. Run as the last step closing a story
 (or any dev / brainstorm / research session). **Active-context holds STATE, not history** — narratives go to
@@ -31,15 +31,15 @@ project path missing under `PROJECT_ROOT` → STOP and say so.
 
 ## Step 1 — Read current state & this session's artifacts (scoped — no needless whole-file reads)
 1. `_bmad-output/active-context/active-context.md` — full (about to prune it).
-2. `_bmad-output/implementation-artifacts/sprint-status.yaml` — **Grep THIS story's id; read only its epic block + line**, never all 400+ lines (~27k tokens — the biggest waste here).
+2. `_bmad-output/implementation-artifacts/sprint-status.yaml` — **Grep THIS story's id; read only its epic block + line**, never all 400+ lines.
 3. `_bmad-output/component-specs/` — names only; open one only when routing a learning into it (Step 3).
 4. `_bmad-output/project-context.md` — ONLY if a learning looks app-wide (check for an existing rule first); else skip, its rules loaded at boot.
-5. This session's `_artifacts/<YYYY-MM-DD>_<slug>/` — `implementation_plan.md` + `walkthrough.md` (its `## Task Checklist` + `## Your Actions` are sections, not separate files). **Skip anything already read THIS session.** **If `walkthrough.md` ends with a `## Close-Out Handoff` block** (autopilot Stage 4 writes one), that is the AUTHORITATIVE pre-routed learnings — Step 3 lifts it, no re-deriving.
+5. This session's `_artifacts/<YYYY-MM-DD>_<slug>/` — `implementation_plan.md` + `walkthrough.md` (checklist + actions are sections inside it). **Skip anything already read THIS session.** **If `walkthrough.md` ends with a `## Close-Out Handoff` block** (autopilot Stage 4 writes one), that is the AUTHORITATIVE pre-routed learnings — Step 3 lifts it, no re-deriving.
 6. **Cross-reference plan vs walkthrough** for plan-vs-built deltas — unless already surfaced this session.
 
 Report: sprint objective, story status, plan-vs-walkthrough deltas, # known pitfalls.
 
-## Step 2 — Code-verify THIS session's work (not the whole backlog)
+## Step 2 — Verify the claimed work exists on disk (grep-check — NOT a code review)
 Code-verify the story/task you just closed: grep its fix/feature in the files it touched, mark
 `✅ Code-Verified` / `❌ Not Found` / `⚠️ Partial`. After an /autopilot run it's already tests-green +
 QA-approved — a confirming grep is enough; don't re-run the suites. Only RE-verify a pre-existing
@@ -48,7 +48,7 @@ can't be grep-advanced — leave as-is. Queue every `✅` to move to `## Complet
 
 ## Step 3 — Route each learning to the RIGHT home (the 4 homes)
 **If `walkthrough.md` has a `## Close-Out Handoff` block, LIFT it:** its four sub-sections map 1:1 to the
-four homes below — route each item to its tagged home (`none` = nothing there). Pre-sorted by the doer, so
+four homes below — route each item to its tagged home. Pre-sorted by the doer, so
 do NOT re-derive. **Only if there is NO such block** (a manual, non-autopilot session) categorize every
 learning yourself:
 - **New architecture rule / invariant (app-wide)** → `_bmad-output/project-context.md` (`## Critical Architecture Rules`)
@@ -76,8 +76,7 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
     his invocation resolves it. Flip and NOTE it (`note: pending live-test — closed on your invocation`).
     The red-tests **FAIL** is the only refusal.
   - **"commit owed" is NOT a blocker** — the agent commits its own work in the story worktree, and Step 7
-    lands it. Nothing about git blocks the status flip. (No conflict with /autopilot: it stops at `review`;
-    here the human IS the loop, so this command owns `review → done`.)
+    lands it. Nothing about git blocks the status flip.
 - **Last Updated**: set to today's date at the top of `active-context.md`.
 
 ## Step 5 — Prune & cap (this is what keeps boot cheap) — AUTOMATIC, never ask
@@ -114,20 +113,17 @@ everything else, incl. Step 6's memory write, just applies.
   3. **Write it.** One fact per file (`name`/`description`/`metadata.type` frontmatter) + a one-line
      `MEMORY.md` pointer.
   - Report outcome: `🧠 Memory: wrote [name] (new) · updated [name]`, or `🧠 Memory: nothing cross-session
-    — unchanged` (MOST sessions — learnings already routed in Steps 3–4).
-- **Then ask Daniel (always, separate from memory):** *"Saved the session updates from the codebase +
-  artifacts. Any manual learnings, new bugs, or sprint-objective changes to add?"* Apply any additions.
+    — unchanged` (most sessions).
+- **Then ask Daniel (always, separate from memory):** *"Saved the session updates. Any manual learnings, new bugs, or sprint-objective changes to add?"* Apply any additions.
 
 ## Step 7 — Land the story on `main_debug` (the one sanctioned push)
 
 **Daniel invoking this command IS the sign-off for this push.** Run it LAST, after Steps 1–6 wrote the board,
-story file, and `active-context.md` — so those edits ride the story branch and land with it, not hunk-picked
-from someone else's diff later.
+story file, and `active-context.md` — so those edits ride the story branch and land with it.
 
 **Precondition — check FIRST.** `git rev-parse --abbrev-ref HEAD` must be a **`claude/*`** branch (inside the
 story worktree). If HEAD is `main_debug`/`main`, this story wasn't worked in a worktree — **do NOT land it.**
-Report it, tell Daniel his working tree holds the changes, and stop — don't rescue it by committing in the
-shared checkout.
+Report it and stop — never rescue it by committing in the shared checkout.
 
 ```bash
 # 1 · commit the close-out edits — EXPLICIT PATHS ONLY, never `git add -A`
@@ -135,14 +131,14 @@ git add <sprint-status.yaml> <story-file> <active-context.md> <artifacts…>
 git diff --cached --stat          # must show ONLY this story's files
 git commit -m "chore(<story>): close out — status done, board + learnings"
 
-# 2 · sync-first: absorb main_debug INSIDE the worktree (never check it out in the shared checkout)
+# 2 · sync-first: absorb main_debug INSIDE the worktree
 git fetch origin main_debug
 git merge origin/main_debug       # CONFLICT → STOP and report; never force-push, never blind-rebase
 
-# 3 · push the story branch (free — your own branch, the rollback point)
+# 3 · push the story branch (the rollback point)
 git push -u origin claude/<story-slug>
 
-# 4 · THE LANDING — one clean push (hook prompts once; Daniel approves)
+# 4 · THE LANDING — one clean push (hook prompts once)
 git push origin HEAD:main_debug
 ```
 

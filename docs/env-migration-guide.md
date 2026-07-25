@@ -1,0 +1,149 @@
+# Env Migration Guide — setting up secrets on a new machine
+
+**Audience:** the AI agent (or human) setting up a fresh computer for the
+Sudo_Hatter_Command lobby and its sub-projects.
+**You need exactly two things:** this document, and the operator's `master.env`
+file (hand-carried — it is never in git).
+
+---
+
+## 1. The mental model
+
+Every secret in this system lives in gitignored files (`**/.env`,
+`**/auth_keys/`), so **cloning the repos gives you zero credentials**. All of
+them are bundled into one hand-carried file:
+
+```
+_secrets/master.env          <- gitignored; the operator copies this over manually
+```
+
+The master is a plain-text concatenation of every real env/credential file,
+each wrapped in a marker pair:
+
+```
+# >>> FILE: Projects/AGY_AVIATIONCHAT/backend/.env
+JWT_ADMIN_SECRET=...
+...
+# <<< END FILE: Projects/AGY_AVIATIONCHAT/backend/.env
+```
+
+Paths are relative to the lobby root, forward-slashed. A `MANIFEST` comment at
+the top lists every bundled file. Restoring = splitting the blocks back out to
+those paths. A script does it for you (§3), or you can do it by hand (§6).
+
+## 2. What's in the bundle (inventory as of 2026-07-24)
+
+| File (relative to lobby root) | What it powers |
+|---|---|
+| `.env` | Lobby-wide aggregate: GLM/Z.ai key, GitHub PATs, Gemini key, GCP project, Vertex Search IDs, Firebase web config, Sentry, Telegram, Anthropic key, incident-pipeline settings |
+| `Projects/AGY_AVIATIONCHAT/auth_keys/.env` | AGY backend GCP/Vertex/Gemini config + `GOOGLE_APPLICATION_CREDENTIALS` pointer |
+| `Projects/AGY_AVIATIONCHAT/auth_keys/service-account.json` | GCP service-account key the pointer above targets |
+| `Projects/AGY_AVIATIONCHAT/backend/.env` | Incident pipeline: Sentry webhook/auth, GitHub token, Telegram bot, Anthropic key, JWT admin secret |
+| `Projects/AGY_AVIATIONCHAT/frontend/.env.local` | Firebase web config, backend URL, site password |
+| `Projects/AGY_AVIATIONCHAT/frontend/.env.production` | Production backend URLs (no secrets, but must exist for builds) |
+| `Projects/BRKN_Tattoos/frontend/.env.local` | Resend API key |
+
+The export script auto-discovers, so a newer `master.env` may contain more
+files than this table — **the manifest inside the master is the source of
+truth**, this table is orientation.
+
+Note: `GOOGLE_APPLICATION_CREDENTIALS` values are deliberately **relative
+paths** — nothing inside any env file needs editing for a new machine. If you
+ever see an absolute `C:\Users\...` path in one, fix it to relative.
+
+## 3. New-machine setup — do it in this order
+
+**Order matters:** clone first, restore second. The restore script creates
+missing directories, and `git clone` refuses to clone into a non-empty folder.
+
+1. **Clone the lobby** to the same layout the operator uses (ask if unclear;
+   the historical location is `~\.gemini\antigravity\scratch\Sudo_Hatter_Command`).
+2. **Clone each sub-project repo** the operator works on into `Projects/`
+   using the exact folder names from the master's manifest (e.g.
+   `Projects/AGY_AVIATIONCHAT`, `Projects/BRKN_Tattoos`). Every sub-project is
+   its own independent repo — the lobby repo does not contain them.
+3. **Place the operator's copy of `master.env`** at `_secrets/master.env`
+   (create the `_secrets` folder if needed), or leave it on the USB stick and
+   pass its path with `-MasterPath`.
+4. **Run the restore script** from the lobby root:
+
+   ```powershell
+   powershell -File _system\Restore-EnvMaster.ps1
+   # or: powershell -File _system\Restore-EnvMaster.ps1 -MasterPath D:\master.env
+   ```
+
+   It writes every file to its original path, creates missing dirs, and backs
+   up any existing-but-different file as `<name>.pre-restore.bak`.
+5. **Verify** (§4). Do not skip this.
+6. **Delete the master from any transfer medium** (USB stick, download folder)
+   once verified. Keep only `_secrets/master.env` on the machine.
+
+## 4. Verification checklist (agent: run every line)
+
+```powershell
+# a) Every restored file must be IGNORED by its own repo — none may show as untracked.
+git -C . status --short                                   # lobby: no .env, no _secrets/
+git -C Projects/AGY_AVIATIONCHAT status --short           # no .env*, no auth_keys/
+git -C Projects/BRKN_Tattoos status --short               # no .env.local
+
+# b) Spot-check that keys actually landed (names, never print values):
+Select-String -Path .env -Pattern '^[A-Z_]+=' | Measure-Object            # expect ~35+ lines
+Test-Path Projects/AGY_AVIATIONCHAT/auth_keys/service-account.json        # True
+
+# c) The service-account pointer resolves (run from AGY root):
+#    auth_keys/.env has GOOGLE_APPLICATION_CREDENTIALS=auth_keys/service-account.json
+```
+
+If any restored file shows up in `git status`, **stop** — fix the `.gitignore`
+before doing anything else. Never commit your way past it.
+
+## 5. Beyond .env — per-machine setup the master can NOT carry
+
+These are machine-local logins/toolchains, not files. Walk the operator
+through each as needed:
+
+- **gcloud**: `gcloud auth login` + `gcloud auth application-default login`,
+  set the project from `GCP_PROJECT_ID` in `.env`.
+- **GitHub CLI**: `gh auth login` (the PATs in `.env` are for the incident
+  pipeline, not a substitute for gh auth).
+- **Firebase CLI**: `firebase login`.
+- **Java 17 (Temurin)** on PATH / `JAVA_HOME` — required by the Firestore
+  rules-emulator test suite.
+- **Python venvs**: rebuild per project; AGY's canonical test venv is
+  `Projects/AGY_AVIATIONCHAT/backend/.venv` (never the repo root one).
+- **node_modules**: `npm install` per frontend.
+- **GitNexus index**: machine-local, does not travel — re-index the repos you
+  work in.
+- **Git worktrees**: never travel between machines. If the operator parked
+  work with `/sudo-park`, run `/sudo-resume` to recreate worktrees from the
+  pushed branches — do not expect `git worktree list` to show anything.
+
+## 6. Manual restore (no script available)
+
+Open `master.env`. For each `# >>> FILE: <path>` … `# <<< END FILE: <path>`
+pair: create `<path>` (relative to lobby root, create parent folders), paste
+the lines between the markers verbatim (excluding the marker lines), save as
+UTF-8 without BOM. Then run §4.
+
+## 7. Keeping the master fresh (old machine / ongoing)
+
+Any time a secret is added, rotated, or a new project gains a real `.env`:
+
+```powershell
+powershell -File _system\Export-EnvMaster.ps1
+```
+
+It re-scans everything (lobby `.env`, all real `.env`/`.env.local`/
+`.env.production` under `Projects/`, all `auth_keys/` contents; skips
+`.env.example`, `node_modules`, venvs, worktrees) and rewrites
+`_secrets/master.env` with a fresh manifest. It refuses to run if the output
+isn't gitignored.
+
+## 8. Security rules (non-negotiable)
+
+- `master.env` and everything in `_secrets/` is **never committed, never
+  emailed, never pasted into a chat, never cloud-synced in plaintext**.
+  Transfer via USB stick or a password-manager secure note/attachment.
+- Never print secret **values** in agent output or logs — key names only.
+- If the master may have been exposed (lost USB, pasted somewhere), treat
+  every credential in it as burned and rotate them all.

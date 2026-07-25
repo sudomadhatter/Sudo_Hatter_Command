@@ -27,7 +27,7 @@ EVERYTHING in the working tree:
 - Configuration (`.env`, `package.json`, `pyproject.toml`, etc.)
 - Agent configs, YAML metadata, any dotfile
 
-The ONLY exception: the opencode artifact directory `_artifacts/` itself (where `implementation_plan.md`, `task.md`, and `walkthrough.md` live). This directory is auto-allowed by `opencode.json` `permission.edit` so writes don't prompt.
+The ONLY exception: the artifact directory `_artifacts/` itself (where `implementation_plan.md` and `walkthrough.md` live). This directory is auto-allowed by `opencode.json` `permission.edit` so writes don't prompt.
 
 ## What is NOT Approval
 
@@ -57,7 +57,7 @@ BMAD skills (`bmad-dev-story`, `bmad-quick-dev`, etc.) have execution steps that
 
 ## After Approval — The Sequence
 
-1. Create `task.md` artifact — checklist of tasks, mark `[ ]` → `[/]` → `[x]` as you work
+1. Track with the live TodoWrite task list — no `task.md`; the final checklist lands as a `## Task Checklist` section inside `walkthrough.md` (per `artifacts-always-first`)
 2. Execute the plan — NOW modify project files (story status, sprint-status, code)
 3. Create `walkthrough.md` artifact — what changed, actual test output, deviations from plan
 4. End-of-task checklist in final message (what was built, Daniel's action items, blockers, BMAD backfill)

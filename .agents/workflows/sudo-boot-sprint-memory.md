@@ -3,10 +3,10 @@ description: Session boot / BMAD story pick-up — reads active-context + sprint
 platforms: [opencode, antigravity]
 ---
 
-# /sudo-boot-sprint-memory — Session Boot + Story Pick-Up (G1)
+# /sudo-boot-sprint-memory — Session Boot + Story Pick-Up
 
 Self-contained — no external workflow file. Project-scoped: reads THIS repo's `_bmad-output/`.
-Quick-start to ground yourself at the beginning of any session. This is the manual trigger for Guardrail G1.
+Quick-start to ground yourself at the beginning of any session.
 Discovery only — after completion, **do NOT start coding; wait for Daniel's next instruction.**
 
 ## Step 0 — Resolve the target project (FIRST — before any other step)
@@ -73,11 +73,12 @@ Read-only — cross-check against live files; never edit anything.
 > BMAD-story/sprint-scoped sibling and does NOT replace or modify it.
 
 ## Step 3 — Confirm guardrails active this session
-- **G2** Component-spec compliance — check specs before modifying spec'd components.
-- **G3** Targeted edits only — no full-file rewrites.
-- **G5** Agent authority boundaries — each agent has a single responsibility.
-- **G6** Firestore singleton — all access through `get_db()`.
-- **G8** Research-first — read files before editing them.
+- **Component-spec compliance** — check specs before modifying spec'd components.
+- **Targeted edits only** — no full-file rewrites.
+- **Agent authority boundaries** — each agent has a single responsibility.
+- **Shared-resource singleton** — one client per shared resource (DB / auth / cache), via the
+  project's factory (per the constitution).
+- **Research-first** — read files before editing them.
 
 ## Step 4 — Ready
 Say:

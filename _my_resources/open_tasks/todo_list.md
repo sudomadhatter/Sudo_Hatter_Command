@@ -15,6 +15,7 @@ These are folder paths to see the open todo list in the sub projects:
 2. double check that autopilot is good to go
 3. delete out jetchat project on main computer
 4. set up a master .env in sudo hatter command for my main computer
+5. merge all projects onto the new MAC Pro use: C:\Users\dlohn\.gemini\antigravity\scratch\Sudo_Hatter_Command\docs\env-migration-guide.md
 
 ## Open Work
 <!-- Add plan/PRP notes as <slug>.md alongside this file. -->
@@ -38,3 +39,7 @@ These are folder paths to see the open todo list in the sub projects:
 <!-- CHECKPOINT id="ckpt_mryf009r_s3ea49" time="2026-07-24T04:02:57.759Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
 
 <!-- CHECKPOINT id="ckpt_mrysxjxx_xb5pct" time="2026-07-24T10:32:57.909Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+
+<!-- CHECKPOINT id="ckpt_mrzm9mm2_xwxa2j" time="2026-07-25T00:14:10.106Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+
+<!-- CHECKPOINT id="ckpt_mrzmmhkr_odcrv6" time="2026-07-25T00:24:10.107Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->

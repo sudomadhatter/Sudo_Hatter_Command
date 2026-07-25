@@ -87,7 +87,9 @@ What no linter can see. Read the changed hunks and answer each honestly:
 - Any comment that merely restates the code? Any `TODO`/`FIXME` without an owner and a tracked task?
 - Does a genuine trap introduced here deserve a new `AIDEV-NOTE` that is missing?
 
-**B. The AI-drift bans (`code-standards` §2)**
+**B. The AI-drift bans (`code-standards` §2)** — *standalone runs only: as `/sudo-code-review`
+Step 3.5 this part is satisfied by importing the Step-1 adversarial review's drift findings
+(source-labelled `review`); do not re-walk the hunks.*
 - New abstraction with a single caller?
 - Something re-implemented that already exists? **Search before you accept it as new** — this is the
   most common real finding. Grep the obvious neighbours; use GitNexus `context({name})` if the repo is

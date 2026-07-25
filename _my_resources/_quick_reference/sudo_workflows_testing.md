@@ -12,7 +12,7 @@
 
 ```mermaid
 flowchart TD
-    BOOT["/sudo-boot-sprint-memory\nsession boot — where am I, what is next"] --> KICK["/bmad-create-epics-and-stories\nONCE per epic: epic + stories + sprint board\n+ interactive P0-P3 risk scoring"]
+    BOOT["/sudo-boot-sprint-memory\nsession boot — where am I, what is next"] --> KICK["/sudo-create-epic-sprint\nONCE per epic: epic + stories + sprint board\n+ interactive P0-P3 risk scoring"]
     KICK --> ONE["① /sudo-write-story-tests\nstory file + BDD Vision Lock\n+ RED acceptance tests"]
     ONE --> TWO["② /sudo-dev-story-tests\nplan → STOP self-audit gate\n→ implement → expand coverage"]
     TWO --> THREE["③ /sudo-code-review\nadversarial review + TEST GATE\nPASS / CONCERNS / FAIL / WAIVED"]
@@ -56,17 +56,17 @@ bug docs** first or handled via `/sudo-mobile-error-team`, then enter the story 
 | Command | What it does |
 |---|---|
 | `/sudo-boot-sprint-memory` | Session boot — reads sprint + context, tells you the next story and which command to run. |
-| `/bmad-create-epics-and-stories` | **Once per epic**: writes the epic + stories, builds the sprint board, then risk-scores every story P0–P3 with you. |
+| `/sudo-create-epic-sprint` | **Once per epic**: wraps `bmad-create-epics-and-stories` — writes the epic + stories, builds the sprint board, then risk-scores every story P0–P3 with you (two human checkpoints, no nested-menu stalls). |
 | ① `/sudo-write-story-tests` | Creates the next story + locks behaviors (BDD Vision Lock) + writes the RED acceptance tests. |
 | ② `/sudo-dev-story-tests` | Plans, **stops at the self-audit gate** (you pick: run here / other model / fresh team), implements to green, expands coverage. |
-| ③ `/sudo-code-review` | Adversarial code review, clean-code audit (Step 3.5), then test gate (suite + trace + NFR + test-review) → verdict. |
+| ③ `/sudo-code-review` | Adversarial code review, then the test gate (diff-scoped suites + trace + NFR + test-review + automate evidence), then the clean-code audit (Step 3.5) → verdict. |
 | `/clean-code-audit` | Standalone or Step 3.5 of ③: audits diff vs `code-standards.md` (ruff/eslint/pyrefly/tsc floor + comment contract/AI-drift pass). |
 | `/sudo-update-sprint-memory` | Close-out: flips story to `done` (your sign-off — only red tests block), saves learnings, prunes context, lands on `main_debug`, and auto-invokes `/sudo-close-workingtree` (Step 8). |
 | `/sudo-close-workingtree` | Verifies story branch is merged to `origin/main_debug`, removes local worktree, and deletes local & remote GitHub `claude/*` branches. |
 
 | `/sudo-bdd-tests` | Standalone BDD Vision Lock session (① runs it for you; use solo to re-lock behaviors). |
 | `/sudo-self-audit` | Standalone pre-dev plan audit (② runs it for you; use solo to pressure-test any plan). |
-| `/sudo-quick-dev` | Fast lane for small fixes — story + direct dev + light sanity audit. Skips the heavy gates. |
+| `/sudo-quick-dev` | Fast lane for small fixes — worktree + story + direct dev + scoped tests + clean-code audit; EJECTS to ①②③ if the change grows past ~3 files/~150 lines or touches a protected surface (auth, payments, PII, schema, cross-boundary contracts). Skips ATDD and the review gates. |
 
 ### Machine handoff & portability (switching boxes)
 | Command | What it does |
@@ -116,10 +116,10 @@ bug docs** first or handled via `/sudo-mobile-error-team`, then enter the story 
 | # | Step | Command | Under the hood |
 |---|------|---------|----------------|
 | — | Orient | `/sudo-boot-sprint-memory` | reads active-context + sprint-status |
-| 1 | Epic kickoff (once) | `/bmad-create-epics-and-stories` | create-epics → sprint-planning → `testarch-test-design` (interactive P0–P3, one story at a time) |
+| 1 | Epic kickoff (once) | `/sudo-create-epic-sprint` | create-epics → sprint-board append → `testarch-test-design` (interactive P0–P3, one story at a time) |
 | 2 | Write RED tests | ① `/sudo-write-story-tests` | create-story → BDD Vision Lock (**mandatory** — contract or recorded waiver) → `testarch-atdd` |
 | 3 | Plan + audit + build | ② `/sudo-dev-story-tests` | BDD gate → plan → **⛔ STOP: self-audit** (you choose the lane) → implement → `testarch-automate` |
-| 4 | Review + gate | ③ `/sudo-code-review` | adversarial review → `/clean-code-audit` (Step 3.5) → full suites (pytest + vitest) → `testarch-trace` → `testarch-nfr` → `testarch-test-review` |
+| 4 | Review + gate | ③ `/sudo-code-review` | adversarial review → suites (diff-scoped stacks) → `testarch-trace` → `testarch-nfr` → `testarch-test-review` → `/clean-code-audit` (Step 3.5) |
 | 5 | Close out | `/sudo-update-sprint-memory` | reads ③'s verdict; flips `review` → `done`, lands on `main_debug`, auto-calls `/sudo-close-workingtree` (Step 8) |
 
 
@@ -128,7 +128,7 @@ bug docs** first or handled via `/sudo-mobile-error-team`, then enter the story 
 ### Clean code audit (Step 3.5 of ③ or standalone)
 `/clean-code-audit` checks the diff against `.agents/rules/code-standards.md`:
 - **Machine floor (objective — can FAIL)**: `ruff`, `eslint`, `pyrefly`, `tsc` on changed lines + bans (bare `except:`, `any` in TS, committed secrets, leftover debug prints).
-- **Judgment pass (taste — caps at CONCERNS)**: comment contract (Story AC provenance, `AIDEV-NOTE` anchor hygiene) + AI-drift bans (single-caller abstractions, re-implementing existing helpers, scope creep).
+- **Judgment pass (taste — caps at CONCERNS)**: comment contract (Story AC provenance, `AIDEV-NOTE` anchor hygiene) + AI-drift bans (single-caller abstractions, re-implementing existing helpers, scope creep) — inside ③ the drift bans are imported from Step 1's adversarial review, not re-hunted.
 
 ### The test gate (heart of ③)
 Opt-in per project and baseline-diff aware — legacy red is grandfathered; only **NEW** regressions fail:
@@ -140,6 +140,7 @@ l1_coverage_min: 85            # deterministic coverage floor
 agent_bearing: true            # story touches agent behavior → L3 judge required
 nfr: false                     # also run the NFR audit
 waive: false                   # hard override (force WAIVED)
+# ci_audit: {sha, date}        # written by ③ — CI entrypoint re-audited only when workflows change
 ```
 
 | Verdict | Means |
@@ -253,7 +254,7 @@ flowchart TD
 
 | Workflow | Fires | Job |
 |---|---|---|
-| `testarch-test-design` | epic kickoff (inside `/bmad-create-epics-and-stories`) | risk-score P0–P3 with you → test plan |
+| `testarch-test-design` | epic kickoff (inside `/sudo-create-epic-sprint`) | risk-score P0–P3 with you → test plan |
 | `testarch-atdd` | ① | write the failing acceptance tests |
 | `testarch-automate` | ② | expand coverage on working code |
 | `testarch-trace` | ③ | requirements → tests matrix + coverage verdict |

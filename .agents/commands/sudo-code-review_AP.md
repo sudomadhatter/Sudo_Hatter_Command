@@ -41,11 +41,15 @@ After review + fix, run the gate and record the verdict INSIDE `code-review.md`.
 2. **`bmad-testarch-trace`** — requirements→tests traceability + coverage vs `l1_coverage_min`.
 3. **`bmad-testarch-nfr`** — perf / security / reliability (when `nfr: true` or `agent_bearing: true`).
 4. **`bmad-testarch-test-review`** — quality/flake of the tests themselves. Per `tests-must-gate-for-real`,
-   also: (a) confirm the CI pipeline's test jobs invoke the project's *real* harness entrypoint (not a
-   partial/divergent config that skips the suite that matters); (b) a red asserting strings/selectors/
-   preconditions absent from real source is **fiction, not grandfathered legacy red** — FAIL it; (c) flag
-   any soft CI test step (`continue-on-error`, `|| true`, blanket `.skip`, "report-only") lacking a named
-   owner + tracked expiry (CONCERNS floor). Name each in `code-review.md`.
+   also: (b) — always, per story — a red asserting strings/selectors/preconditions absent from real
+   source is **fiction, not grandfathered legacy red** — FAIL it. (a) + (c) are **CHANGE-TRIGGERED,
+   not per-story**: run them only when the diff touches `.github/workflows/**` or a test-runner config,
+   when `sudo-tests.yaml` has no `ci_audit:` record, or when `git log -1 --format=%H -- .github/workflows/`
+   differs from the recorded `ci_audit.sha` — then (a) confirm the CI pipeline's test jobs invoke the
+   project's *real* harness entrypoint (not a partial/divergent config that skips the suite that matters),
+   (c) flag any soft CI test step (`continue-on-error`, `|| true`, blanket `.skip`, "report-only") lacking
+   a named owner + tracked expiry (CONCERNS floor), and write `ci_audit: {sha, date}` back into
+   `sudo-tests.yaml`; when skipped, state `CI audit current as of <sha>`. Name each finding in `code-review.md`.
 5. **Automate evidence** — feature stories only (numeric `E.S` ids; test-only stories like `tea-*` are
    exempt): confirm the Dev stage's expansion pass left evidence — `automation-summary-<story>.md` under
    `_bmad-output/test-artifacts/`, or an explicit `## Automate: skipped — <rationale>` section in

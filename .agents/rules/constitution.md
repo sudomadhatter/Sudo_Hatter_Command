@@ -15,7 +15,7 @@ project-agnostic core shared across the whole workspace.
 ## 🚫 Hard Stops
 
 - Never modify any project file (source code, story files, sprint-status, configs, YAML — everything outside the artifact directory) without an approved `implementation_plan.md` — see `artifacts-always-first` rule
-- Never treat "ok", "perfect", "continue", or "ready-for-dev" as authorization — require explicit approval (on web/mobile, a tap-to-approve chip is the explicit approval → `mobile-mode` rule)
+- Never treat "ok", "perfect", "continue", or "ready-for-dev" as authorization — require explicit approval (on web/mobile, a tap-to-approve chip is the explicit approval → `mobile-mode` rule). ONE exception: a reply word a sudo command's own body explicitly defines as its gate trigger (`/sudo-dev-story-tests` Step 2's `continue`; invoking `/sudo-update-sprint-memory`, which IS the sign-off) is the explicit approval for exactly the step it gates — the ban targets ad-hoc chat words, never command-defined gates
 - **Git — the gate is WHERE a write lands, not whether you run git.** Story/dev work opens its own worktree off `main_debug` first (→ `worktree-per-story` rule); inside it, on your `claude/*` branch, you commit and push **freely**. Landing on **`main_debug`** needs Daniel's sign-off — his in-the-moment "approved", or invoking `/sudo-update-sprint-memory` (which IS the sign-off); approval is per-action and never carries. **`main` is never an agent's** — only when Daniel asks directly or runs `/sudo-push-e2e`. Never `git add -A`/`git add .`/`git add -u` (it sweeps other parallel work). Full policy → the `git-policy` rule.
 - Never fabricate citations or references — defer to verified sources or say "I don't know"
 - Never instantiate a duplicate client for a shared resource (database, auth, cache) — use the project's singleton/factory
@@ -37,5 +37,5 @@ project-agnostic core shared across the whole workspace.
 - Always update the workspace's active-context at session end (the "hand off")
 - Always physically edit the `.md` story file status after completing a story
 - Always perform at least one live QA pass per epic before marking it done
-- Always save code-review output as a `code-review.md` artifact in the session folder — inline-only findings are not allowed (see `artifacts-always-first` rule)
+- Always save code-review output as a `code-review.md` artifact in the session folder — inline-only findings are not allowed (see `artifacts-always-first` rule). `/sudo-code-review` ALSO writes its machine-read verdict to `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md` — two homes by design (session detail vs the verdict close-out reads); never collapse one into the other
 - Always hand Daniel **clickable links, never bare paths** — any file, artifact, or path you name or deliver in chat must be a Markdown link `[label](relative/path)` he can click to open. Applies to every session, including read-only / investigatory answers (the `artifacts-always-first` rule applies this to the artifact set)

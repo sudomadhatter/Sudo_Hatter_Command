@@ -19,6 +19,7 @@
 | Model-agnostic proof the routing works | `_routing-canary/` |
 | BMAD-generated output (planning/implementation/test artifacts from running BMAD workflows at the home base) | `_bmad-output/` |
 | Daniel's personal area — **PROTECTED** (don't edit/reference unless he says/links) | `_my_resources/` — **EXCEPT** `open_tasks/` (read-only carve-out below) |
+| Secrets / env files — ALL gitignored, so never in the AUTO tree below | lobby `.env` (root) + per-project files; master bundle `_secrets/master.env` (hand-carried, NEVER committed); export/restore: `_system/Export-EnvMaster.ps1` / `_system/Restore-EnvMaster.ps1` |
 | **"What do we do next" / open tasks / Daniel's plans & PRPs** — READ-ONLY, never edit | `_my_resources/open_tasks/` (start at `todo_list.md`; cross-check vs live project files) |
 
 ## Knowledge map (which doc to read when)
@@ -30,6 +31,7 @@
 | `_artifacts/INDEX.md` | The session ledger — "pick up" scans it, "hand off" appends to it |
 | a project's `Projects/<name>/AGENTS.md` | When you go work inside that project (not this file) |
 | `_my_resources/open_tasks/` | Daniel asks "what do we do next / what's left" — read his todo + saved plans/PRPs (read-only) |
+| `docs/env-migration-guide.md` | New-machine setup / repopulating any `.env` or `auth_keys/` file (the manifest inside `_secrets/master.env` lists every secret file + its exact path) |
 
 **GitNexus (Tier-2 graph — on-demand, disposable).** ONE index: **`SUDO_COMMAND`** = the command center
 itself — all of `.agents/` (rules · workflows · commands · skills · scripts; ~17k nodes). Rooted directly at
@@ -66,7 +68,7 @@ Sudo_Hatter_Command/
     core/
         [2 files: .yamlx1, .csvx1 | e.g. config.yaml]
     custom/
-        [5 files: .tomlx5 | e.g. bmad-dev-story.toml]
+        [6 files: .tomlx6 | e.g. bmad-dev-story.toml]
     scripts/
         [3 files: .pyx3 | e.g. memlog.py]
     tea/
@@ -79,16 +81,21 @@ Sudo_Hatter_Command/
     brainstorming/
       brainstorm-tdad-integration-2026-07-07/
         [1 files: .mdx1 | e.g. INDEX.md]
+    implementation-artifacts/
+    planning-artifacts/
+    test-artifacts/
   _routing-canary/
     control/
         [2 files: .mdx2 | e.g. INDEX.md]
     skills/
         [2 files: .mdx2 | e.g. INDEX.md]
       [6 files: .mdx6 | e.g. AGENTS.md]
+  _secrets/
+      [1 files: .envx1 | e.g. master.env]
   _system/
-      [3 files: .mdx1, .txtx1, .ps1x1 | e.g. AGENTS.md]
+      [5 files: .ps1x3, .mdx1, .txtx1 | e.g. AGENTS.md]
   docs/
-      [8 files: .mdx7, .jsonx1 | e.g. AGENTS.md]
+      [9 files: .mdx8, .jsonx1 | e.g. AGENTS.md]
     [8 files: .mdx4, .txtx3, .jsonx1 | e.g. AGENTS.md]
 ```
 <!-- REPO-MAP:AUTO-END -->

@@ -32,6 +32,8 @@
 # Secrets / local
 **/.env
 **/auth_keys/
+# Master env bundle for machine migration (built by _system/Export-EnvMaster.ps1) — never committed.
+_secrets/
 .claude/settings.local.json
 
 # Story worktrees — MACHINE-LOCAL, never committable. A worktree dir holds a

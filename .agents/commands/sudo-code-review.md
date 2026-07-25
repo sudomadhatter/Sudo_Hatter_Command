@@ -52,18 +52,25 @@ Read `_bmad-output/sudo-tests.yaml`.
 - **Present** → it defines `required_tiers · l1_coverage_min · agent_bearing · nfr · waive`. Continue.
 
 ## Step 3 — Gate: run the checks (baseline-diff aware — fail only on NEW regressions)
-1. **Suite** — run the full suite directly: backend pytest (use `backend/.venv`) + frontend vitest. Compare against the red
+1. **Suite — diff-scoped stacks.** Run the FULL suite of every stack the diff touched (backend pytest
+   via `backend/.venv`; frontend vitest). Run the OTHER stack only when the diff touched a shared
+   cross-boundary surface (API/SSE schema, shared types/contract files) — otherwise skip it and say so
+   (PR CI + `/sudo-e2e` still run both stacks before anything ships). Compare against the red
    baseline; only failures NEW to this story count (legacy red is grandfathered). **Two guards (per
-   `tests-must-gate-for-real`):** (a) confirm CI runs the *same real entrypoint* this gate runs — open the
-   pipeline YAML and check each test job invokes the project's actual harness command (e.g.
-   `npm run test:e2e`), not a divergent/partial config that silently skips the suite that matters; a green
-   CI check on a suite that never ran is a FAIL, not a pass. (b) Grandfathering is for *owned* legacy red
+   `tests-must-gate-for-real`):** (a) **CI-entrypoint audit — change-triggered, not per-story.** Run it only
+   when the diff touches `.github/workflows/**` or a test-runner config, when `sudo-tests.yaml` has no
+   `ci_audit:` record, or when `git log -1 --format=%H -- .github/workflows/` differs from the recorded
+   `ci_audit.sha`. When it runs: open the pipeline YAML and confirm each test job invokes the project's
+   actual harness command (e.g. `npm run test:e2e`), not a divergent/partial config — a green CI check on
+   a suite that never ran is a FAIL, not a pass — then write `ci_audit: {sha, date}` back into
+   `sudo-tests.yaml`. When skipped, state `CI audit current as of <sha>` in the verdict. (b) Grandfathering is for *owned* legacy red
    only (known-flaky / quarantined-with-ticket) — a red that asserts strings, selectors, or preconditions
    absent from real source is **fiction, not legacy debt**; do not grandfather it, FAIL and fix/delete it.
 2. **`bmad-testarch-trace`** — requirements→tests traceability + coverage vs `l1_coverage_min`.
 3. **`bmad-testarch-nfr`** — perf / security / reliability (when `nfr: true` or `agent_bearing: true`).
 4. **`bmad-testarch-test-review`** — quality/flake of the tests themselves. Also scan the CI pipeline for
-   *soft* test steps (`continue-on-error`, `|| true`, blanket `.skip`/`xfail`, "report-only"): each is a
+   *soft* test steps (`continue-on-error`, `|| true`, blanket `.skip`/`xfail`, "report-only") — on the
+   SAME change-trigger as guard (a), never per-story: each is a
    hole that reads as green. Per `tests-must-gate-for-real`, a soft gate is legitimate only as a one-run
    window carrying a named owner + a tracked expiry task — flag any that lacks both (CONCERNS floor) and
    name it in the verdict.
@@ -79,6 +86,10 @@ It checks the diff against `.agents/rules/code-standards.md` — the one house d
 halves: the **machine floor** (ruff · eslint · pyrefly · tsc, scoped to changed lines) and a **judgment
 pass** (the comment contract §1 + the AI-drift bans §2).
 
+- **No double drift-hunt (inside ③ only).** Step 1's adversarial review already walked these hunks —
+  run the machine floor + the comment contract (§2A) only, and IMPORT Step 1's drift/bloat findings
+  into the findings table (source `review`) instead of re-running the §2B ban-hunt. The full two-half
+  pass is for standalone `/clean-code-audit` runs.
 - **Diff-scoped.** Only code THIS story wrote is in scope; legacy debt in untouched files is noted, never
   gated on — the same grandfathering the test gate already uses.
 - **This gate does NOT depend on `sudo-tests.yaml`.** A project with no test baseline still has a code
