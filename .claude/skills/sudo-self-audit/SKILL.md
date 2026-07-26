@@ -10,6 +10,6 @@ inside a CHILD project under `Projects/` (e.g. `AGY_AVIATIONCHAT`), never the lo
 
 **Execute now:** read `.agents/commands/sudo-self-audit.md` (relative to the repo root) and follow it END
 TO END. Its **Step 0** resolves which child to target — a leading `$ARGUMENTS` project name, else the
-`_my_resources/active-project.txt` pointer (already set when `/sudo-dev-story-tests` auto-invokes this),
+`.agents/active-project.txt` pointer (already set when `/sudo-dev-story-tests` auto-invokes this),
 else it asks Daniel — then traces the plan against that project's codebase only. Pass `$ARGUMENTS` through
 verbatim.

@@ -18,21 +18,14 @@ baseline and reds the `/sudo-e2e` gate that guards promotion to `main`.
 Pick the work back up with `/sudo-resume`.
 
 ## Step 0 — Resolve scope (FIRST)
-Two separate git repos are in play and BOTH must be parked:
-1. **The lobby** — the repo you are standing in (`Sudo_Hatter_Command`). Holds `_artifacts/`, `.agents/`,
-   board sessions, open tasks.
-2. **The active project** — read `.agents/active-project.txt`; set `PROJECT_ROOT = Projects/<name>`. If the
-   pointer is missing, ASK which project — never guess.
-   (**Sub-project fast path:** if this repo has no `Projects/` subfolder, you ARE the project — lobby and
-   project are the same repo. Do the project half only.)
-
-Echo exactly `Parking: lobby + Projects/<name>` before any git command.
+Per `.agents/rules/sudo-target-resolution.md` **§DUAL**: BOTH repos must be parked — the lobby AND the
+active project (pointer missing → ASK, never guess; fast path: no `Projects/` subfolder → one repo, do
+the project half only). Echo exactly `Parking: lobby + Projects/<name>` before any git command.
 
 ## Step 1 — Guard: worktrees must never be committable (BEFORE any `git add`)
 A worktree directory holds a `.git` **file**, so a blanket `git add` records it as a **gitlink (mode
 160000)** with no `.gitmodules`. Pulling that on another machine creates **empty directories at exactly the
-paths `git worktree add` needs**, and re-creating the worktree there fails. (This really happened in AGY,
-commit `d098dc63`; fixed 2026-07-23.) In BOTH repos:
+paths `git worktree add` needs**, and re-creating the worktree there fails. In BOTH repos:
 
 ```bash
 git check-ignore -q .claude/worktrees/ || echo "NOT IGNORED — fix before parking"

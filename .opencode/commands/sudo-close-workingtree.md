@@ -7,9 +7,8 @@ description: Safely verify a story branch has been merged into main_debug, prune
 Safely clean up a story worktree and its associated git branches (`claude/<story-slug>`) after the story has been completed and landed on `main_debug`.
 
 ## Step 0 — Resolve target project and story slug
-1. **Target Project**:
-   - Sub-project fast path: If this repo has no `Projects/` subfolder, `PROJECT_ROOT = .`.
-   - Else, resolve project via inline override in `$ARGUMENTS`, active pointer in `.agents/active-project.txt`, or ask Daniel. Set `PROJECT_ROOT = Projects/<name>`.
+1. **Target Project** — bind per `.agents/rules/sudo-target-resolution.md` §STD: self fast-path →
+   `$ARGUMENTS` override → `.agents/active-project.txt` → else ask Daniel. Set `PROJECT_ROOT`.
 2. **Target Story Slug**:
    - If `$ARGUMENTS` provides a story slug or branch name (e.g. `21-12-fail-closed-admin-roles` or `claude/21-12-fail-closed-admin-roles`), strip any `claude/` or `.claude/worktrees/` prefix to extract `<story-slug>`.
    - Otherwise, if standing inside a worktree `.claude/worktrees/<story-slug>`, extract `<story-slug>` from current working directory.

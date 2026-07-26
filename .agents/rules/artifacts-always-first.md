@@ -204,7 +204,7 @@ When Daniel says **"review"** (or asks to review a document/plan), EVERY agent m
 - NEVER claim the walkthrough is done without actual test output.
 - NEVER finish a `walkthrough.md` without its `## Task Checklist` and `## Your Actions` sections (what landed + what's still on Daniel lives in the latter).
 - NEVER write the final task checklist or the "Your Actions" steps as separate files — they are sections inside `walkthrough.md` (§5).
-- NEVER edit a project file for story/dev work before opening its worktree — then commit your own work inside it freely (explicit paths, never `git add -A`). Landing on `main_debug` needs Daniel's sign-off; `main` is his alone. Full policy → the `git-policy` + `worktree-per-story` rules.
+- NEVER edit a project file for sudo-lane story work before opening its worktree — then commit your own work inside it freely (explicit paths, never `git add -A`). Ad-hoc non-story work edits `main_debug` directly — no worktree (→ `worktree-per-story` Trigger). Landing on `main_debug` needs Daniel's sign-off; `main` is his alone. Full policy → the `git-policy` + `worktree-per-story` rules.
 - NEVER deliver code-review findings inline-only — always persist them as a `code-review.md` artifact.
 - NEVER deliver `/sudo-self-audit` findings inline-only — always persist them as a
   `self-audit-stress-test.md` artifact (`type: self_audit`), even though the audit writes no code.

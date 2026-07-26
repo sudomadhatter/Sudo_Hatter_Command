@@ -10,6 +10,6 @@ under `Projects/` (e.g. `AGY_AVIATIONCHAT`), never the lobby.
 
 **Execute now:** read `.agents/commands/sudo-dev-story-tests.md` (relative to the repo root) and follow it
 END TO END. Its **Step 0** resolves which child to target — a leading `$ARGUMENTS` project name, else the
-`_my_resources/active-project.txt` pointer, else it asks Daniel — then binds every path (and every nested
+`.agents/active-project.txt` pointer, else it asks Daniel — then binds every path (and every nested
 `bmad-*` skill's `{project-root}`) under that project's root. Pass `$ARGUMENTS` through verbatim; the
 leading token may name the project, e.g. `AGY_AVIATIONCHAT 11.16`.

@@ -21,12 +21,17 @@ description: "Git policy: story/dev work happens in its own git worktree on a `c
 - **Promotion `main_debug` → `main` is Daniel's deliberate, manual decision** — only when he asks for it
   directly, or via `/sudo-push-e2e`. An agent never promotes to `main` on its own.
 
-## Default — you work in a worktree, and you own git inside it
+## Default — story lanes work in a worktree; ad-hoc work commits on `main_debug`
 
-**Story or dev work opens its own git worktree before the first project file is edited**, branched from
-`main_debug`. One story, one worktree, one `claude/*` branch. Inside that worktree the agent commits
-its own work freely — that is the entire point of the worktree. Full lifecycle, triggers, and
-exemptions → **`worktree-per-story.md`** (protocol tier, loads alongside this rule).
+**Sudo-lane story work opens its own git worktree before the first project file is edited**, branched from
+`main_debug`. One story, one worktree, one `claude/*` branch; inside it the agent commits freely, and the
+lane that opened the tree closes it (close-out lands, `/sudo-close-workingtree` prunes). Full lifecycle,
+triggers, and exemptions → **`worktree-per-story.md`** (protocol tier, loads alongside this rule).
+
+**Ad-hoc work outside the story lanes** — Daniel's conversational asks: quick fixes, toolkit/system
+maintenance — takes NO worktree and NO `claude/*` branch: edit the main checkout on `main_debug` directly.
+The ask that scoped the work is the go-ahead to work there; the safe-commit mechanics below apply in full,
+and the push-approval hook still prompts.
 
 Why: several teams run in parallel against one checkout. Their edits interleave, `git status` becomes a
 soup of everybody's work, and whoever pushes last inherits all of it. A worktree per story ends that.
@@ -36,7 +41,7 @@ soup of everybody's work, and whoever pushes last inherits all of it. A worktree
 | Destination | Permission |
 |---|---|
 | Your own `claude/*` branch (commits **and** pushes) | **FREE** — no approval, loops/retries fine |
-| `main_debug` | **Daniel's sign-off** — his in-the-moment "approved", or invoking `/sudo-update-sprint-memory` (which IS the sign-off) |
+| `main_debug` | **Daniel's sign-off** — his in-the-moment "approved", the ask that explicitly scoped ad-hoc work to `main_debug`, or invoking `/sudo-update-sprint-memory` (which IS the sign-off) |
 | `main` | **Never by an agent** — only when Daniel asks directly or runs `/sudo-push-e2e` |
 
 Approval for a `main_debug` landing is **per-action and never carries forward**. One "approved" lands

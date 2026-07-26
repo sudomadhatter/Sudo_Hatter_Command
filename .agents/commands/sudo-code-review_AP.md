@@ -71,8 +71,7 @@ After review + fix, run the gate and record the verdict INSIDE `code-review.md`.
   passes, every finding with `file:line` + severity + disposition, your independent test output, the test
   gate's per-check results + overall verdict (with story id + current git HEAD ref), and — if you changed
   nothing — an explicit "Changes applied: none — implementation is correct as-is."
-- **Update `walkthrough.md`** so its "Your Actions" records the worktree branch + commits; keep the
-  `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>` trailer on your commit messages.
+- **Update `walkthrough.md`** so its "Your Actions" records the worktree branch + commits.
 - Put these TWO sections at the **TOP** of `walkthrough.md` (you are the last agent before Daniel; mirror
   the detail in `decisions-log.md`):
   - `## OUT-OF-SPEC DECISIONS` — every call the team made that the story did not cover (what it was

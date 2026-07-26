@@ -73,10 +73,12 @@ live in the always-loaded **`.agents/rules/artifacts-always-first.md`** (§2) ·
   reads as a false "clean"; point Grep at `Projects/<name>` or use Bash. **Full mechanics →
   `.agents/rules/lobby-search.md`.**
 - **RISK GATE**: never delete / overwrite / publish without explicit go-ahead.
-- **WORKTREE GATE — one story, one worktree.** Any story/dev work that will produce commits opens its own
-  git worktree branched from **`main_debug`** (never `main`) **before the first project file is edited** —
-  automatic, don't ask. Inside it you commit **freely** (explicit paths; `git add -A`/`.`/`-u` stay banned).
-  Read-only sessions are exempt. Full lifecycle → `.agents/rules/worktree-per-story.md`.
+- **WORKTREE GATE — worktrees belong to the sudo story lanes.** A story lane (①/②/quick-dev/autopilot)
+  opens its own worktree branched from **`main_debug`** (never `main`) before the first edit — automatic,
+  don't ask — commits **freely** inside it (explicit paths; `git add -A`/`.`/`-u` stay banned), and the
+  SAME flow closes it (close-out lands it; `/sudo-close-workingtree` prunes). **Ad-hoc non-story work
+  never opens a worktree** — it edits `main_debug` directly (an orphan tree no flow will close is the
+  failure this prevents). Read-only sessions: no tree. Full lifecycle → `.agents/rules/worktree-per-story.md`.
 - **GIT WRITE APPROVAL — the gate is WHERE a write lands.** FREE: your own `claude/*` branch — commits
   **and** pushes. SIGN-OFF (per-action, never carries): landing on **`main_debug`** — Daniel's in-the-moment
   "approved", or invoking `/sudo-update-sprint-memory` (its Step 7 does the landing; invoking it IS the

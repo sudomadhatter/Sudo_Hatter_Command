@@ -10,5 +10,5 @@ under `Projects/` (e.g. `AGY_AVIATIONCHAT`), never the lobby — except Claude a
 
 **Execute now:** read `.agents/commands/sudo-update-sprint-memory.md` (relative to the repo root) and
 follow it END TO END. Its **Step 0** resolves which child to target — a leading `$ARGUMENTS` project name,
-else the `_my_resources/active-project.txt` pointer, else it asks Daniel — then advances the story, routes
+else the `.agents/active-project.txt` pointer, else it asks Daniel — then advances the story, routes
 learnings, and prunes under that project's root only. Pass `$ARGUMENTS` through verbatim.

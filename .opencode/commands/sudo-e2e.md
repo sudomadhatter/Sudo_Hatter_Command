@@ -9,16 +9,9 @@ here is the evidence that `main_debug` is safe to promote to `main` (`/sudo-push
 call this and refuse to proceed on red). Run it solo whenever you want end-to-end confidence.
 
 ## Step 0 — Resolve the target project (FIRST — before anything else)
-Run from the **command center** (the lobby), this operates on exactly ONE child project under
-`Projects/`, never the lobby itself:
-0. **Self (sub-project fast path)** — no `Projects/` subfolder here → you ARE the project:
-   `PROJECT_ROOT = .`, skip ahead.
-1. **Inline override** — if `$ARGUMENTS` begins with a name matching a folder under `Projects/`,
-   that is the target; consume the token. Write it to `.agents/active-project.txt`.
-2. **Active pointer** — else read `.agents/active-project.txt`.
-3. **Ask** — else STOP and ask.
-
-Set `PROJECT_ROOT` and **echo exactly** `Target: Projects/<name>`.
+Bind the target per `.agents/rules/sudo-target-resolution.md` §STD + §BIND: self fast-path → `$ARGUMENTS`
+override → `.agents/active-project.txt` → else **STOP and ask** — never guess, never operate on the
+lobby. Set `PROJECT_ROOT` and **echo exactly** `Target: Projects/<name>`.
 
 ## Step 1 — Confirm the harness exists
 Check `PROJECT_ROOT/frontend/e2e/run-e2e.mjs`. If missing, STOP: this project has no E2E harness
@@ -30,13 +23,10 @@ From `PROJECT_ROOT/frontend`, as a **background process** (it takes minutes; kee
 ```powershell
 npm run test:e2e
 ```
-What the harness does for you (do NOT hand-roll any of it):
-- wraps Playwright in `firebase emulators:exec --only auth,firestore --project demo-agy`
-- auto-discovers Java 17 (Adoptium) if `JAVA_HOME` is unset — the emulators need a JRE
-- boots a FRESH frontend dev server on **port 3100** wired to the emulators (never reuses :3000)
-- seeds the test users (entitled + locked learner) in global-setup
-- network-mocks the FastAPI backend (`**/api/**`) — **no uvicorn required**; the run is hermetic
-- runs the journey pack (`e2e/journeys/**`) serially for determinism
+The harness owns the whole environment — do **NOT** hand-roll any of it: it wraps Playwright in the
+Firebase auth+firestore emulators (`--project demo-agy`, auto-discovering Java 17), boots a FRESH dev
+server on **port 3100** wired to them (never :3000), seeds the test users, network-mocks the FastAPI
+backend (hermetic — no uvicorn required), and runs the journey pack (`e2e/journeys/**`) serially.
 
 Pass-through args after `--` (e.g. one spec, headed): `npm run test:e2e -- journeys/auth-wall.spec.ts --headed`
 

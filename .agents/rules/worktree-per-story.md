@@ -1,6 +1,6 @@
 ---
 name: worktree-per-story
-description: "Fires on any story or development work that will produce commits. Open a dedicated git worktree branched from `main_debug` BEFORE editing the first project file — one story, one worktree, one `claude/*` branch — commit freely inside it, and land it on `main_debug` as ONE clean push at Daniel's sign-off. Read-only sessions are exempt. Pairs with git-policy.md."
+description: "Fires when a sudo story lane (① /sudo-write-story-tests · ② /sudo-dev-story-tests · /sudo-quick-dev · autopilot) starts work that will produce commits — and ONLY there. One story, one worktree, one `claude/*` branch, opened off `main_debug` BEFORE the first edit, committed freely inside, landed at close-out and pruned by /sudo-close-workingtree. Ad-hoc non-story work NEVER opens a worktree — it edits `main_debug` directly. Read-only sessions exempt. Pairs with git-policy.md."
 activation: Protocol (every work session that writes files)
 ---
 
@@ -12,10 +12,18 @@ activation: Protocol (every work session that writes files)
 > can only honestly describe one of them. A worktree per story ends that. Each story gets an isolated
 > tree, commits only its own files, and lands as one clean push.
 
-## Trigger — automatic, do not ask
+## Trigger — the sudo story lanes, automatic there, ONLY there
 
-**Any story or development work that will produce commits opens its own worktree BEFORE the first
-project file is edited.** This is automatic; the agent does not ask permission each time.
+**A worktree opens when a sudo story lane starts work that will produce story commits** — ①
+`/sudo-write-story-tests`, ② `/sudo-dev-story-tests`, `/sudo-quick-dev`, the autopilot engines — **BEFORE
+the first project file is edited.** Automatic inside those lanes; the agent does not ask each time. The
+lane that opens the tree is the lane that closes it: the story lands at close-out
+(`/sudo-update-sprint-memory` Step 7) and `/sudo-close-workingtree` prunes the tree + branches (its
+Step 8). **Never open a worktree outside a sudo story lane.** Ad-hoc work Daniel asks for
+conversationally — quick fixes, toolkit/system maintenance, doc edits — edits the main checkout directly
+on `main_debug`: Daniel runs solo, nothing else is on the branch mid-session, and an orphan tree that no
+close-out will ever prune is exactly what this boundary prevents. Unsure whether you're in a lane? You're
+not — work on `main_debug` (or ask).
 
 ```
 EnterWorktree  →  .claude/worktrees/<story-slug>/  on branch  claude/<story-slug>
@@ -28,6 +36,8 @@ another story's branch).
 
 ### Exempt — no worktree needed
 
+- **Ad-hoc non-story work** — anything outside the sudo story lanes (see Trigger): edit and commit on
+  `main_debug` with explicit paths; the push-approval hook still prompts.
 - **Read-only sessions** — questions, recon, code reading, reviews that write no project file.
 - **`/sudo-push-e2e`** — it operates *on* branches (`main_debug` → `main`), so it must run in the main
   checkout.
@@ -62,7 +72,7 @@ The safe-commit mechanics from `git-policy.md` still apply in full:
 
 | Gate | Rule |
 |---|---|
-| **G1 · Location** | Commit only from inside a worktree, on a `claude/*` branch. HEAD is `main_debug`/`main` → **do not commit** — you are in the shared checkout. Open the worktree first. (The `require-push-approval.py` hook prompts if you try.) |
+| **G1 · Location** | Story-lane commits happen only inside a worktree, on a `claude/*` branch — HEAD at `main_debug`/`main` during a story lane means you are in the shared checkout: open the worktree first. Sanctioned ad-hoc (non-lane) work commits on `main_debug` by design (see Trigger). (The `require-push-approval.py` hook prompts either way.) |
 | **G2 · Scope** | `git add <explicit paths>` only. **`git add -A` / `.` / `-u` are banned** — they sweep other teams' work into your commit. Verify with `git diff --cached --stat` that only your files are staged. |
 | **G3 · Push** | No pushes to `main_debug` during development. Pushing your own `claude/*` branch is free at any time. |
 | **G4 · `main`** | Never. Only Daniel, directly or via `/sudo-push-e2e`. |
@@ -85,7 +95,8 @@ Afterwards, once the landing on `main_debug` is verified, the worktree and git b
 
 ## Hard stops
 
-- NEVER edit a project file for story/dev work before the worktree is open.
+- NEVER edit a project file for sudo-lane story work before its worktree is open — and NEVER open a
+  worktree outside a sudo story lane (an orphan tree no close-out will prune).
 - NEVER branch a worktree from `main`.
 - NEVER `git add -A` / `.` / `-u`, inside a worktree or out.
 - NEVER check out `main_debug` in the shared checkout to merge a story — other teams' uncommitted work

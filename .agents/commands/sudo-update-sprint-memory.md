@@ -11,23 +11,12 @@ the walkthrough + git, durable cross-session facts to Claude's auto-memory; this
 small so `/sudo-boot-sprint-memory` stays cheap.
 
 ## Step 0 — Resolve the target project (FIRST — before any other step)
-Run from the **command center** (the lobby), this close-out operates on exactly ONE child project under
-`Projects/`, never the lobby itself:
-0. **Self (sub-project fast path — check FIRST, STOP here if it matches)** — this repo has **no**
-   `Projects/` subfolder → you ARE the project: `PROJECT_ROOT = .`, skip to the binding rule. Don't read
-   `active-project.txt`, parse `$ARGUMENTS` for a project, or ask — cases 1–3 are command-center-only.
-1. **Inline override** — `$ARGUMENTS` begins with a folder name under `Projects/` → that's the target;
-   consume the token, write the name alone into `.agents/active-project.txt` (overwrite).
-2. **Active pointer** — else use `.agents/active-project.txt` if it names a folder under `Projects/`.
-3. **Ask** — else STOP and ask Daniel *"Which project are we closing out? (e.g. AGY_AVIATIONCHAT)"* —
-   never guess, never operate on the lobby.
-
-Set `PROJECT_ROOT = Projects/<name>` and **echo exactly** `Target: Projects/<name>` before any work.
-
-**Binding rule (EVERY step below):** every "THIS repo", `{project-root}`, and bare path (`_bmad-output/…`,
-`_bmad/…`, `_artifacts/…`, `sprint-status.yaml`, story files) resolves **under `PROJECT_ROOT`**, never the
-lobby. ONE exception: Step 6's Claude auto-memory write always targets Daniel's global memory dir. A needed
-project path missing under `PROJECT_ROOT` → STOP and say so.
+Bind the target per `.agents/rules/sudo-target-resolution.md` §STD + §BIND: self fast-path → `$ARGUMENTS`
+override → `.agents/active-project.txt` → else **STOP and ask** *"Which project are we closing out?"* —
+never guess, never operate on the lobby. Set `PROJECT_ROOT` and **echo exactly** `Target: Projects/<name>`
+before any work; every bare path below resolves under `PROJECT_ROOT`, and a needed project path missing
+there → STOP and say so. ONE exception to §BIND: Step 6's Claude auto-memory write always targets Daniel's
+global memory dir.
 
 ## Step 1 — Read current state & this session's artifacts (scoped — no needless whole-file reads)
 1. `_bmad-output/active-context/active-context.md` — full (about to prune it).
@@ -62,9 +51,8 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
 
 ## Step 4 — Apply updates (specs / rules / active-context now; memory waits for Step 6)
 - **Every active-context entry is BORN as a pointer — ≤3 lines: outcome · STILL-OWED · pointer** to where
-  the record actually lives (the map in Step 5). The narrative goes in `sprint-status.yaml`'s story line +
-  the walkthrough, NEVER here. Writing a narrative entry into active-context is the bug that blew it to
-  31k tokens (2026-07-25) — active-context POINTS at information; it does not restate it.
+  the record actually lives (the map in `/sudo-prune-context`). The narrative goes in `sprint-status.yaml`'s
+  story line + the walkthrough, NEVER here — active-context POINTS at information, it does not restate it.
 - **Completed tasks**: move `✅` items to `## Completed Tasks` with `- **Resolved:** YYYY-MM-DD` (pointer form).
 - **Story-status → `done` (this command's PRIMARY purpose).** Daniel invoking this **IS his sign-off** —
   **flip the just-closed story to `done` by default, without asking**, in BOTH the story file
@@ -83,41 +71,11 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
     lands it. Nothing about git blocks the status flip.
 - **Last Updated**: set to today's date at the top of `active-context.md`.
 
-## Step 5 — Prune & budget (this is what keeps boot cheap) — AUTOMATIC, never ask
-Unconditional *apply* (same tier as Step 4), **without asking** — active-context is project-scoped and
-reversible (history in `_artifacts/` + `_archive/` + git). The ONLY gate in this command is Step 4's
-red-tests check; everything else, incl. Step 6's memory write, just applies.
-- **`active-context.md` has a hard CONTEXT budget: ≤ 20 KB ≈ 5,000 tokens.** Lines are NOT the metric —
-  context is. **Measure: file size in bytes ÷ 4**; report `active-context: ~X / 5,000 tokens` in Step 6's
-  summary EVERY close-out. Over budget → prune **in this same pass**, one-in-one-out: adding an entry
-  means compacting/archiving another.
-- **Prune = two moves — deletion is the normal outcome, not a failure:**
-  1. **Still-live state** → compact to a ≤3-line pointer, keep.
-  2. **Everything else** (stale, superseded, finished, recorded at its home) → **DELETE** — git history
-     is the undo. Read the entry ONCE before cutting: a buried STILL-OWED obligation must survive as a
-     pointer line (the 2026-07-13 OIDC-env loss is the cautionary case), and a standing ruling must live
-     in memory/specs before its text dies here.
-  **`_archive/` is unmaintained COLD STORAGE, not a routing home** — append-only dumps (e.g. a
-  restructure snapshot), ZERO upkeep, nothing reads it routinely, never a mandatory copy step. Agents
-  check it (and git history) only when struggling with something that feels previously solved.
-- **The map — route information to its ONE home; active-context only POINTS:**
-  - `sprint-status.yaml` story line → per-story ledger + dated history log
-  - `_artifacts/<epic>/<story>/walkthrough.md` → full narrative + Your Actions
-  - `sudo-code-review-<story>.md` → verdicts + findings (follow-on seeds point here)
-  - `component-specs/<spec>.md` → component pitfalls/contracts · `project-context.md` → app-wide rules
-  - `known-pitfalls.md` (beside active-context) → the V2 pitfall long-tail, **grep-scoped, never bulk-loaded**
-  - Claude auto-memory → cross-session facts + operator rulings · `_archive/` → pruned text
-- **Completed tasks > 5** → compact the oldest to pointer form if it isn't, then move it to `_archive/`.
-- **Pitfall staleness** — pitfalls live in `known-pitfalls.md` (soft budget 60 KB). ALWAYS re-check entries
-  you touched this session. **Prune-on-touch:** a story that touches a pitfall's component MOVES that entry
-  into the component spec at close-out. Run the FULL four-rule sweep only when over budget:
-  1. Story dependency now `done` in sprint-status → **stale, remove**.
-  2. "Degraded until Story Y" and Y is `done` → **stale, remove**.
-  3. References a code pattern; grep it — gone → **stale, remove**.
-  4. Permanent architectural invariant (e.g. "Firestore uses named DB") → **keep**.
-- **Size caps**: component spec > 120 lines → keep 8 most-recent failure modes; `project-context.md` target
-  150 / hard cap 200 → group rules without losing meaning.
-- **Normalize encoding** of any line you touch (no `â€"` mojibake — use real `—` `→` `⚠️`).
+## Step 5 — Prune & budget → run `/sudo-prune-context` (AUTOMATIC, never ask)
+Invoke **`/sudo-prune-context`** against the same `PROJECT_ROOT` (it inherits the binding — no
+re-resolution). It applies unconditionally — the ONLY gate in THIS command stays Step 4's red-tests
+check; everything else, incl. Step 6's memory write, just applies. Carry its report line
+(`active-context: ~X / 5,000 tokens`) into Step 6's summary EVERY close-out.
 
 ## Step 6 — §5 artifacts, summary & manual catch
 - Ensure this session's `_artifacts/<date>_<slug>/` has the single **`walkthrough.md`** ending with a
@@ -148,27 +106,15 @@ story file, and `active-context.md` — so those edits ride the story branch and
 story worktree). If HEAD is `main_debug`/`main`, this story wasn't worked in a worktree — **do NOT land it.**
 Report it and stop — never rescue it by committing in the shared checkout.
 
-```bash
-# 1 · commit the close-out edits — EXPLICIT PATHS ONLY, never `git add -A`
-git add <sprint-status.yaml> <story-file> <active-context.md> <artifacts…>
-git diff --cached --stat          # must show ONLY this story's files
-git commit -m "chore(<story>): close out — status done, board + learnings"
-
-# 2 · sync-first: absorb main_debug INSIDE the worktree
-git fetch origin main_debug
-git merge origin/main_debug       # CONFLICT → STOP and report; never force-push, never blind-rebase
-
-# 3 · push the story branch (the rollback point)
-git push -u origin claude/<story-slug>
-
-# 4 · THE LANDING — one clean push (hook prompts once)
-git push origin HEAD:main_debug
-```
+Then execute `git-policy.md` → **"The landing"**, inside the worktree: first commit the close-out edits —
+EXPLICIT PATHS ONLY (board, story file, active-context, artifacts; `git diff --cached --stat` must show
+ONLY this story's files), then merge `origin/main_debug` (CONFLICT → **STOP and report**; never force-push,
+never blind-rebase), push `claude/<story-slug>`, then `git push origin HEAD:main_debug`.
 
 - **`main` is untouched.** Only Daniel, directly or via `/sudo-push-e2e`.
 - **Report** the branch, the commit range that landed, and the `main_debug` sha — same into the walkthrough's
   `## Your Actions` (Step 6).
-- Landing push rejected (remote moved) → **STOP and report.** Re-run from step 2.
+- Landing push rejected (remote moved) → **STOP and report.** Re-sync and re-land, never force.
 
 ## Step 8 — Prune the merged worktree & branches (AUTOMATIC)
 

@@ -10,18 +10,10 @@ in view, and turn every symptom into a **researched bug document** that the sudo
 **no product code** — its output is evidence, not patches.
 
 ## Step 0 — Resolve the target project (FIRST — before anything else)
-Run from the **command center** (the lobby), this operates on exactly ONE child project under `Projects/`,
-never the lobby itself. Resolve the target now:
-0. **Self (sub-project fast path — check FIRST, STOP here if it matches)** — if this repo has **no**
-   `Projects/` subfolder, you ARE the project: set `PROJECT_ROOT = .` and skip ahead. Do NOT read
-   `active-project.txt`, parse `$ARGUMENTS` for a project name, or ask which project.
-1. **Inline override** — if `$ARGUMENTS` begins with a name matching a folder under `Projects/`, that is
-   the target; consume that first token (the remainder is the real argument — area under test). Write the
-   name alone into `.agents/active-project.txt` (overwrite) so later commands inherit it.
-2. **Active pointer** — else read `.agents/active-project.txt`; if it names a folder under `Projects/`, use it.
-3. **Ask** — else STOP and ask which project we're working in — never guess, never operate on the lobby.
-
-Set `PROJECT_ROOT = Projects/<name>` and **echo exactly** `Target: Projects/<name>` before any work.
+Bind the target per `.agents/rules/sudo-target-resolution.md` §STD + §BIND: self fast-path → `$ARGUMENTS`
+override (remainder = the area under test) → `.agents/active-project.txt` → else **STOP and ask** — never
+guess, never operate on the lobby. Set `PROJECT_ROOT` and **echo exactly** `Target: Projects/<name>`
+before any work.
 
 ## Step 1 — Boot the dev environment
 1. Load `PROJECT_ROOT/_bmad-output/active-context/active-context.md` and give a 3-line context summary.

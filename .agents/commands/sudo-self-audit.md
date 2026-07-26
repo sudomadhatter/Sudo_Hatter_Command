@@ -20,25 +20,12 @@ Phase 0 right-size gate (a Light plan does not get the Full pass) and the Phase 
 ---
 
 ## Step 0 — Resolve the target project (FIRST — before any phase)
-Run from the **command center** (the lobby), this audit operates on a plan/story inside exactly ONE child
-project under `Projects/`, never the lobby itself. Resolve the target now:
-0. **Self (sub-project fast path — check this FIRST, and STOP here if it matches)** — if this repo has
-   **no** `Projects/` subfolder, you ARE the project: set `PROJECT_ROOT = .` and skip straight to the
-   binding rule. Do NOT read `active-project.txt`, parse `$ARGUMENTS` for a project name, or ask which
-   project — cases 1–3 below are command-center-only (the lobby that hosts children under `Projects/`).
-1. **Inline override** — if `$ARGUMENTS` begins with a name matching a folder under `Projects/`, that is
-   the target; consume that first token (the remainder is the real focus area). Write the name alone into
-   `.agents/active-project.txt` (overwrite) so later commands inherit it.
-2. **Active pointer** — else read `.agents/active-project.txt`; if it names a folder under
-   `Projects/`, use it. (When `/sudo-dev-story-tests` auto-invokes this audit, the pointer is already set —
-   it inherits the same target.)
-3. **Ask** — else STOP and ask Daniel *"Which project are we working in? (e.g. AGY_AVIATIONCHAT)"* —
-   never guess, never operate on the lobby.
-
-Set `PROJECT_ROOT = Projects/<name>` and **echo exactly** `Target: Projects/<name>` before any work.
-
-**Binding rule (applies to EVERY phase below):** the plan/story under audit, the codebase you trace it
-against, and every bare path resolve **under `PROJECT_ROOT`**, never the lobby.
+Bind the target per `.agents/rules/sudo-target-resolution.md` §STD + §BIND: self fast-path → `$ARGUMENTS`
+override (remainder = the focus area) → `.agents/active-project.txt` → else **STOP and ask** — never
+guess, never operate on the lobby. (When `/sudo-dev-story-tests` auto-invokes this audit, the pointer is
+already set — it inherits the same target.) Set `PROJECT_ROOT` and **echo exactly**
+`Target: Projects/<name>` before any work; the plan/story under audit, the codebase you trace it against,
+and every bare path resolve under `PROJECT_ROOT`, never the lobby.
 
 ---
 
@@ -70,15 +57,12 @@ rows that carry real risk:
 
 **Graph-first when available.** If this repo is GitNexus-indexed (its `AGENTS.md`/`CLAUDE.md` carries a
 "GitNexus — Code Intelligence" section) and the MCP tools are present, use the code graph for the
-**authoritative** blast radius instead of grepping blind:
-
-- `impact({ target: "Symbol", direction: "upstream", summaryOnly: true })` — who breaks if this changes
-  (the upstream/downstream columns, straight from the real call graph). Add `repo: "<IndexName>"` when
-  more than one repo is indexed.
-- `context({ name: "Symbol" })` — callers/callees + the execution flows the symbol participates in.
-- **Read the confidence column** — code edges ≈ 1.0; doc/story-file mentions ≈ 0.8 (breadcrumbs, not code).
-- **Caveat:** GitNexus links repos only via HTTP contracts — it will NOT surface coupling through a
-  shared DB / data store; the Contract two-sidedness bullet below still needs manual reasoning.
+**authoritative** blast radius instead of grepping blind: `impact({ target, direction: "upstream",
+summaryOnly: true })` — who breaks if this changes; `context({ name })` — callers/callees + flows (add
+`repo:` when more than one repo is indexed; full tool tour → the `gitnexus-impact-analysis` skill).
+**Read the confidence column** — code edges ≈ 1.0; doc/story-file mentions ≈ 0.8. **Caveat:** GitNexus
+links repos only via HTTP contracts — it will NOT surface coupling through a shared DB / data store; the
+Contract two-sidedness bullet below still needs manual reasoning.
 
 **Fall back to grep** when the tools aren't available (headless autopilot runs, or a non-indexed repo) —
 and keep grep as a cross-check for dynamic / string references the AST graph can miss:

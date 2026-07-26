@@ -14,16 +14,10 @@ and the clean-code audit. The human review at the end is the gate.
 > tests → `/clean-code-audit` → [STOP for human review; close-out is the human's].
 
 ## Step 0 — Resolve the target project (FIRST — before any other step)
-Run from the **command center** (the lobby), this command operates on exactly ONE child project under
-`Projects/`, never the lobby itself. Resolve the target now:
-0. **Self (sub-project fast path)** — if this repo has **no** `Projects/` subfolder, you ARE the project: set `PROJECT_ROOT = .` and skip straight to the binding rule.
-1. **Inline override** — if `$ARGUMENTS` begins with a name matching a folder under `Projects/`, that is the target; consume that first token. Write the name alone into `.agents/active-project.txt` (overwrite).
-2. **Active pointer** — else read `.agents/active-project.txt`; if it names a folder under `Projects/`, use it.
-3. **Ask** — else STOP and ask Daniel *"Which project are we working in? (e.g. AGY_AVIATIONCHAT)"* — never guess.
-
-Set `PROJECT_ROOT = Projects/<name>` and **echo exactly** `Target: Projects/<name>` before any work.
-
-**Binding rule:** every path and child tool call resolves under `PROJECT_ROOT`.
+Bind the target per `.agents/rules/sudo-target-resolution.md` §STD + §BIND: self fast-path → `$ARGUMENTS`
+override → `.agents/active-project.txt` → else **STOP and ask** — never guess, never operate on the
+lobby. Set `PROJECT_ROOT` and **echo exactly** `Target: Projects/<name>` before any work; every path and
+child tool call resolves under `PROJECT_ROOT`.
 
 ## Step 0.5 — Worktree (before the first edit)
 Per `worktree-per-story`: run `git worktree list` under `PROJECT_ROOT`; reuse an existing

@@ -11,48 +11,28 @@ Thin orchestrator — builds the story against ①'s red tests and ends with exp
 > Flow position: `sudo-write-story-tests` → **`sudo-dev-story-tests`** → `sudo-code-review`.
 
 ## Step 0 — Resolve the target project (FIRST — before any other step)
-Run from the **command center** (the lobby), this command operates on exactly ONE child project under
-`Projects/`, never the lobby itself:
-0. **Self (sub-project fast path — check FIRST, STOP here if it matches)** — this repo has **no**
-   `Projects/` subfolder → you ARE the project: `PROJECT_ROOT = .`, skip to the binding rule. Don't read
-   `active-project.txt`, parse `$ARGUMENTS` for a project, or ask — cases 1–3 are command-center-only.
-1. **Inline override** — `$ARGUMENTS` begins with a folder name under `Projects/` → that's the target;
-   consume the token (remainder = the real argument: story id, focus…) and write the name alone into
-   `.agents/active-project.txt` (overwrite) so later commands inherit it.
-2. **Active pointer** — else use `.agents/active-project.txt` if it names a folder under `Projects/`.
-3. **Ask** — else STOP and ask Daniel *"Which project are we working in? (e.g. AGY_AVIATIONCHAT)"* —
-   never guess, never operate on the lobby.
-
-Set `PROJECT_ROOT = Projects/<name>` and **echo exactly** `Target: Projects/<name>` before any work.
-
-**Binding rule (EVERY step below):** every "THIS repo", `{project-root}`, and bare path (`_bmad-output/…`,
-`_bmad/…`, `_artifacts/…`, story files, `implementation_plan.md`, test commands) resolves **under
-`PROJECT_ROOT`**. When you invoke a nested `bmad-*` / `1_*` skill, bind its `{project-root}` to
-`PROJECT_ROOT` and read/write only there. A needed path missing under `PROJECT_ROOT` → STOP and say so;
-never fall back to the lobby.
+Bind the target per `.agents/rules/sudo-target-resolution.md` §STD + §BIND: self fast-path → `$ARGUMENTS`
+override (remainder = the real argument: story id, focus…) → `.agents/active-project.txt` → else **STOP
+and ask** — never guess, never operate on the lobby. Set `PROJECT_ROOT` and **echo exactly**
+`Target: Projects/<name>` before any work. Every bare path below resolves under `PROJECT_ROOT` (nested
+`bmad-*`/`1_*` skills bind their `{project-root}` to it); a needed path missing under `PROJECT_ROOT` →
+STOP and say so, never fall back to the lobby.
 
 ## Step 0.5 — Resolve & create the artifact folder (BEFORE any sub-skill writes a file)
-Every artifact this flow produces (plan, self-audit, walkthrough, code-review) lands in ONE story-scoped
-folder — set it **now** so `bmad-dev-story` and the audit don't drop files at the `_artifacts/` root. Per
-`artifacts-always-first`:
-- **Numeric story `E.S`** → epic = leading number (e.g. `11.18` → `11`);
-  `ARTIFACT_DIR = PROJECT_ROOT/_artifacts/epic_<E>/<story-slug>/` — **create `epic_<E>/` if missing**, then
-  the story folder (slug `story-<E>-<S>-<short-title>`), or reuse the existing one on a resume.
-- **TEA / non-numeric id** (e.g. `tea-17`) → nest under the `tea/` bucket: `PROJECT_ROOT/_artifacts/tea/<story-slug>/`.
-- **No story id at all** (a true one-off) → `PROJECT_ROOT/_artifacts/_main/<YYYY-MM-DD>_<slug>/` — the
-  holding bucket; never a dated folder at the `_artifacts/` root.
-
-**Echo** `Artifacts: <ARTIFACT_DIR>` before Step 1. Every step below writes into `ARTIFACT_DIR`; pass it
-explicitly to each sub-skill and **never** let one mint its own root-level or date-stamped folder.
+Per `artifacts-always-first` §2, everything this flow produces lands in ONE story-scoped folder — set it
+now: numeric `E.S` → `ARTIFACT_DIR = PROJECT_ROOT/_artifacts/epic_<E>/story-<E>-<S>-<short-title>/`
+(create `epic_<E>/` if missing; reuse the existing folder on a resume) · TEA / non-numeric id →
+`PROJECT_ROOT/_artifacts/tea/<story-slug>/` · no story id → `PROJECT_ROOT/_artifacts/_main/<YYYY-MM-DD>_<slug>/`
+(the holding bucket; never a dated folder at the `_artifacts/` root). **Echo** `Artifacts: <ARTIFACT_DIR>`
+before Step 1; pass it explicitly to each sub-skill and **never** let one mint its own root-level or
+date-stamped folder.
 
 ## Step 0.6 — Re-enter the story worktree if one already exists (fresh-chat resume)
-This command often runs in a **new chat** that did NOT open the worktree ① or an earlier ② created. Before
-any planning or edit, run `git worktree list` under `PROJECT_ROOT` (`worktree-per-story` → "Resuming"). If a
-`claude/<story-slug>` tree exists, **cd into it and re-bind everything below under it** — story file, ① red
-tests, `ARTIFACT_DIR`, test commands. The story file and reds commonly live ONLY in that tree; a session
-that skips this plans against a checkout that can't see them, or opens a duplicate. If none exists, this is
-the first work session and `bmad-dev-story` opens one at first edit. Echo the case (`Worktree: reused
-<path>` / `none yet — opens at first edit`).
+Before any planning or edit: `git worktree list` under `PROJECT_ROOT` (`worktree-per-story` → "Resuming").
+A `claude/<story-slug>` tree exists → **cd into it and re-bind everything below under it** — story file,
+① red tests, `ARTIFACT_DIR`, test commands (they commonly live ONLY in that tree; skipping this plans
+blind or opens a duplicate). None → first work session; `bmad-dev-story` opens one at first edit. Echo the
+case (`Worktree: reused <path>` / `none yet — opens at first edit`).
 
 ## Step 0.7 — BDD contract gate (HARD — before any planning or code)
 The BDD Vision Lock is a standing phase of this flow: **a story may not be planned or implemented without

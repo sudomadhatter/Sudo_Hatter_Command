@@ -16,13 +16,9 @@ branch. That is the intended end state, not a conflict.
 Parked from the other machine with `/sudo-park`.
 
 ## Step 0 — Resolve scope (FIRST)
-Two separate git repos are in play and BOTH must be refreshed:
-1. **The lobby** — the repo you are standing in (`Sudo_Hatter_Command`).
-2. **The active project** — read `.agents/active-project.txt`; set `PROJECT_ROOT = Projects/<name>`. If the
-   pointer is missing, ASK which project — never guess.
-   (**Sub-project fast path:** if this repo has no `Projects/` subfolder, you ARE the project.)
-
-Echo exactly `Resuming: lobby + Projects/<name>` before any git command.
+Per `.agents/rules/sudo-target-resolution.md` **§DUAL**: BOTH repos must be refreshed — the lobby AND the
+active project (pointer missing → ASK, never guess; fast path: no `Projects/` subfolder → one repo). Echo
+exactly `Resuming: lobby + Projects/<name>` before any git command.
 
 ## Step 1 — Fetch both repos
 In the lobby AND in `PROJECT_ROOT`:

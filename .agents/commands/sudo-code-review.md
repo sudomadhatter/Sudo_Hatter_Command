@@ -13,35 +13,17 @@ or `/lint-gate`.
 > Flow position: `sudo-dev-story-tests` → **`sudo-code-review`** → `sudo-update-sprint-memory`.
 
 ## Step 0 — Resolve the target project (FIRST — before any other step)
-Run from the **command center** (the lobby), this command operates on exactly ONE child project under
-`Projects/`, never the lobby itself. Resolve the target now:
-0. **Self (sub-project fast path — check this FIRST, and STOP here if it matches)** — if this repo has
-   **no** `Projects/` subfolder, you ARE the project: set `PROJECT_ROOT = .` and skip straight to the
-   binding rule. Do NOT read `active-project.txt`, parse `$ARGUMENTS` for a project name, or ask which
-   project — cases 1–3 below are command-center-only (the lobby that hosts children under `Projects/`).
-1. **Inline override** — if `$ARGUMENTS` begins with a name matching a folder under `Projects/`, that is
-   the target; consume that first token (the remainder is the real argument — story id, focus, …). Write
-   the name alone into `.agents/active-project.txt` (overwrite) so later commands inherit it.
-2. **Active pointer** — else read `.agents/active-project.txt`; if it names a folder under
-   `Projects/`, use it.
-3. **Ask** — else STOP and ask Daniel *"Which project are we working in? (e.g. AGY_AVIATIONCHAT)"* —
-   never guess, never operate on the lobby.
-
-Set `PROJECT_ROOT = Projects/<name>` and **echo exactly** `Target: Projects/<name>` before any work.
-
-**Binding rule (applies to EVERY step below):** every "THIS repo", every `{project-root}`, and every bare
-path (`_bmad-output/…`, `_bmad/…`, `_artifacts/…`, story files, test commands) resolves **under
-`PROJECT_ROOT`**. When you invoke any nested `bmad-*` / `1_*` skill, bind its `{project-root}` to
-`PROJECT_ROOT`, run it against that directory, and read/write only there. If a needed path is missing under
-`PROJECT_ROOT`, STOP and say so — never fall back to the lobby.
+Bind the target per `.agents/rules/sudo-target-resolution.md` §STD + §BIND: self fast-path → `$ARGUMENTS`
+override → `.agents/active-project.txt` → else **STOP and ask** — never guess, never operate on the lobby.
+Set `PROJECT_ROOT` and **echo exactly** `Target: Projects/<name>` before any work. Every bare path below
+resolves under `PROJECT_ROOT` (nested `bmad-*`/`1_*` skills bind their `{project-root}` to it); a needed
+path missing under `PROJECT_ROOT` → STOP, never fall back to the lobby.
 
 ## Step 0.5 — Re-enter the story worktree if one already exists (fresh-chat resume)
-The story you are reviewing was almost certainly built in its own worktree, and this review often runs in a
-**new chat** (`worktree-per-story` → "Resuming — a fresh chat picks the story back up"). Before Step 1, run
-`git worktree list` under `PROJECT_ROOT`; if a `claude/<story-slug>` tree exists, **cd into it and bind the
-diff, story file, tests, and suite commands under it** — the built code and its red→green tests commonly
-live ONLY in that tree, so reviewing from the shared checkout would audit an empty or stale diff. Echo
-`Worktree: reviewing in <path>`. If none exists, review in `PROJECT_ROOT` as usual.
+Before Step 1: `git worktree list` under `PROJECT_ROOT` (`worktree-per-story` → "Resuming"). A
+`claude/<story-slug>` tree exists → **cd into it and bind the diff, story file, tests, and suite commands
+under it** (the built code often lives ONLY there — the shared checkout would audit an empty or stale
+diff); echo `Worktree: reviewing in <path>`. None → review in `PROJECT_ROOT` as usual.
 
 ## Step 1 — Clean-Room Adversarial Code Review
 Invoke the **`bmad-code-review`** skill on the story's diff. You MUST act as a **Clean-Room** agent: zero out any builder's bias. Your only job is to aggressively audit the final diff against the strict BDD contract. Hunt specifically for **AI Drift**, over-engineering, bloat, unnecessary abstractions, and logic flaws. Apply the actionable fixes yourself; if you change code, re-run the relevant suite(s) and paste actual output.
@@ -66,9 +48,9 @@ Read `_bmad-output/sudo-tests.yaml`.
    `sudo-tests.yaml`. When skipped, state `CI audit current as of <sha>` in the verdict. (b) Grandfathering is for *owned* legacy red
    only (known-flaky / quarantined-with-ticket) — a red that asserts strings, selectors, or preconditions
    absent from real source is **fiction, not legacy debt**; do not grandfather it, FAIL and fix/delete it.
-2. **`bmad-testarch-trace`** — requirements→tests traceability + coverage vs `l1_coverage_min`.
-3. **`bmad-testarch-nfr`** — perf / security / reliability (when `nfr: true` or `agent_bearing: true`).
-4. **`bmad-testarch-test-review`** — quality/flake of the tests themselves. Also scan the CI pipeline for
+2. **`bmad-testarch-trace`** — gate coverage vs `l1_coverage_min`.
+3. **`bmad-testarch-nfr`** — when `nfr: true` or `agent_bearing: true`.
+4. **`bmad-testarch-test-review`**. Also scan the CI pipeline for
    *soft* test steps (`continue-on-error`, `|| true`, blanket `.skip`/`xfail`, "report-only") — on the
    SAME change-trigger as guard (a), never per-story: each is a
    hole that reads as green. Per `tests-must-gate-for-real`, a soft gate is legitimate only as a one-run
@@ -81,10 +63,8 @@ Read `_bmad-output/sudo-tests.yaml`.
    (never FAIL on this alone — stories gated before 2026-07-09 predate the check).
 
 ## Step 3.5 — Gate: clean code (ALWAYS runs — independent of Step 2's opt-in)
-Invoke the **`clean-code-audit`** skill on the story diff, bound to the same worktree Step 0.5 resolved.
-It checks the diff against `.agents/rules/code-standards.md` — the one house definition of clean — in two
-halves: the **machine floor** (ruff · eslint · pyrefly · tsc, scoped to changed lines) and a **judgment
-pass** (the comment contract §1 + the AI-drift bans §2).
+Invoke the **`clean-code-audit`** skill on the story diff, bound to the same worktree Step 0.5 resolved
+(its standard is `.agents/rules/code-standards.md`).
 
 - **No double drift-hunt (inside ③ only).** Step 1's adversarial review already walked these hunks —
   run the machine floor + the comment contract (§2A) only, and IMPORT Step 1's drift/bloat findings
@@ -133,8 +113,7 @@ old test count, no findings):
   counts, the pasted **actual** suite totals, and the `## Task Checklist` (tick the rows your fixes
   completed).
 - If your fixes changed files, commit them in the story worktree (explicit paths) and refresh the
-  branch/commit summary in `## Your Actions` (keep the
-  `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>` trailer on your commits).
+  branch/commit summary in `## Your Actions`.
 - **Hard rule: NEVER finish `/sudo-code-review` with the walkthrough body left stale after applying fixes.**
 
 ## Stay in lane

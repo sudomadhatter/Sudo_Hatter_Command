@@ -11,6 +11,6 @@ project** for the rest of the session.
 
 **Execute now:** read `.agents/commands/sudo-boot-sprint-memory.md` (relative to the repo root) and follow
 it END TO END. Its **Step 0** resolves the child — a leading `$ARGUMENTS` project name (which it writes to
-the `_my_resources/active-project.txt` pointer so later commands inherit it), else the existing pointer,
+the `.agents/active-project.txt` pointer so later commands inherit it), else the existing pointer,
 else it asks Daniel — then binds every path under that project's root. Run it as
 `/sudo-boot-sprint-memory AGY_AVIATIONCHAT` to switch focus to that project.

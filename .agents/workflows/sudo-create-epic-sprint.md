@@ -13,27 +13,12 @@ per-story dev loop. Project-scoped (targets THIS repo).
 > `sudo-write-story-tests` → `sudo-dev-story-tests` → `sudo-code-review` → `sudo-update-sprint-memory`.
 
 ## Step 0 — Resolve the target project (FIRST — before any other step)
-Run from the **command center** (the lobby), this command operates on exactly ONE child project under
-`Projects/`, never the lobby itself. Resolve the target now:
-0. **Self (sub-project fast path — check this FIRST, and STOP here if it matches)** — if this repo has
-   **no** `Projects/` subfolder, you ARE the project: set `PROJECT_ROOT = .` and skip straight to the
-   binding rule. Do NOT read `active-project.txt`, parse `$ARGUMENTS` for a project name, or ask which
-   project — cases 1–3 below are command-center-only (the lobby that hosts children under `Projects/`).
-1. **Inline override** — if `$ARGUMENTS` begins with a name matching a folder under `Projects/`, that is
-   the target; consume that first token (the remainder is the real argument — requirements source, focus, …).
-   Write the name alone into `.agents/active-project.txt` (overwrite) so later commands inherit it.
-2. **Active pointer** — else read `.agents/active-project.txt`; if it names a folder under
-   `Projects/`, use it.
-3. **Ask** — else STOP and ask Daniel *"Which project are we working in? (e.g. AGY_AVIATIONCHAT)"* —
-   never guess, never operate on the lobby.
-
-Set `PROJECT_ROOT = Projects/<name>` and **echo exactly** `Target: Projects/<name>` before any work.
-
-**Binding rule (applies to EVERY step below):** every "THIS repo", every `{project-root}`, and every bare
-path (`_bmad-output/…`, `_bmad/…`, `_artifacts/…`, story files, `sprint-status.yaml`) resolves **under
-`PROJECT_ROOT`**. When you invoke any nested `bmad-*` skill, bind its `{project-root}` to `PROJECT_ROOT`,
-run it against that directory, and read/write only there. If a needed path is missing under `PROJECT_ROOT`,
-STOP and say so — never fall back to the lobby.
+Bind the target per `.agents/rules/sudo-target-resolution.md` §STD + §BIND: self fast-path → `$ARGUMENTS`
+override (remainder = the real argument — requirements source, focus, …) → `.agents/active-project.txt` →
+else **STOP and ask** — never guess, never operate on the lobby. Set `PROJECT_ROOT` and **echo exactly**
+`Target: Projects/<name>` before any work. Every bare path below resolves under `PROJECT_ROOT` (nested
+`bmad-*` skills bind their `{project-root}` to it); a needed path missing under `PROJECT_ROOT` → STOP and
+say so, never fall back to the lobby.
 
 ## Step 1 — Create the epic and its stories
 Invoke the **`bmad-create-epics-and-stories`** skill for the requirements in `$ARGUMENTS` (a PRD, a
@@ -41,7 +26,7 @@ fix-list path, or a described scope — e.g. `_my_resources/open_tasks/fix_list_
 the epic + its user stories with acceptance criteria. Confirm the epic + story files exist before continuing.
 If the skill stops for input (missing requirements source, ambiguous scope), surface it and STOP — never guess.
 
-**FLOW CONTRACT (bake-in from the 2026-07-19 retro — how this orchestration runs):** the nested BMAD skill
+**FLOW CONTRACT (how this orchestration runs):** the nested BMAD skill
 is a 4-step workflow whose step files each end in their own `[C]`-continue menu. Those menus exist for
 STANDALONE greenfield use — do **NOT** surface them one-by-one during this orchestration; that turns one
 kickoff into five stalls. When `$ARGUMENTS` names an already-approved requirements source (a signed-off
@@ -56,9 +41,8 @@ contract removes ceremony, never judgment.
 
 ## Step 2 — Generate the sprint board
 Land the new epic + story keys in `_bmad-output/implementation-artifacts/sprint-status.yaml` as **`backlog`**
-— NOT `ready-for-dev`. (Per the board's state machine and the Epic 17/18 precedent, a story flips to
-`ready-for-dev` only when `/sudo-write-story-tests` ① creates its story file; this line previously said
-`ready-for-dev` and contradicted the state machine — fixed 2026-07-19.) Follow house style: the epic's
+— NOT `ready-for-dev` (the board's state machine: a story flips to `ready-for-dev` only when
+`/sudo-write-story-tests` ① creates its story file). Follow house style: the epic's
 comment block (STATUS · Source · order/deps), one commented line per story key (P-levels appended after
 Step 3), `epic-<N>-retrospective: optional`, and a dated entry PREPENDED to the `# last_updated:` journal
 line. For a single-epic append, edit the YAML directly per house style — invoking the full
