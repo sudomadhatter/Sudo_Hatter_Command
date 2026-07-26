@@ -4,3 +4,6 @@
 
 ## GEMINI SPECIFIC HARD RULES:
 1. **SYNC MAINTAINED PROJECTS ONLY**: NEVER run `sync-agents` across all `Projects/*` directories or hand-loop over `Projects/`. Sync MUST ONLY target the lobby or use `& ".agents/scripts/sync-agents.ps1" -Maintained` which restricts multi-project sync strictly to `.agents/maintained-projects.txt` (the top maintained projects: `AGY_AVIATIONCHAT`, `Fresh_Workspace_BMAD`).
+2. **WORKTREE ENFORCEMENT BEFORE CODE EDITS**: Before editing any project source files for a story, feature, or fix, Gemini MUST create and switch into a dedicated git worktree branched from `main_debug` (e.g. `git worktree add -b claude/<slug> .claude/worktrees/<slug> main_debug`). NEVER edit project files directly on `main_debug` or `main`.
+3. **EXPLICIT GIT COMMITS ONLY**: NEVER use wildcard staging (`git add -A`, `git add .`, `git add -u`). Always stage explicit file paths and verify `git diff --cached --stat` before committing.
+

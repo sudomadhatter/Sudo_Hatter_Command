@@ -34,6 +34,20 @@ resolves **under `PROJECT_ROOT`**. When you invoke any nested `bmad-*` / `1_*` s
 `{project-root}` to `PROJECT_ROOT`, run it against that directory, and read/write only there. If a needed
 path is missing under `PROJECT_ROOT`, STOP and say so — never fall back to the lobby.
 
+## Step 0.5 — Open the story worktree (BEFORE the first project file is written)
+① writes the story file and its red tests, so `worktree-per-story` applies in full. Under `PROJECT_ROOT`:
+1. **`git worktree list`** — if a `claude/<story-slug>` tree already exists (a re-run, or ② started),
+   **re-enter it**; never open a second for the same slug.
+2. Else confirm HEAD is `main_debug` (**never** `main`), then open `.claude/worktrees/<story-slug>` on
+   `claude/<story-slug>` — slug `story-<id-dashed>-<short-name>`, e.g. `story-21-3-student-archive`.
+
+**Ordering caveat:** the slug depends on the story id, which Step 1 may be the thing that resolves ("the
+next story"). Resolve the id first, then open the tree — still before the story file is written; never
+write into the shared checkout planning to move it afterwards.
+
+Re-bind every path below under it (story file, red tests, `_artifacts/…`, `sprint-status.yaml`, test
+commands) and echo `Worktree: <path> (<branch>)`.
+
 ## Step 1 — Create the story
 Invoke the **`bmad-create-story`** skill for the story in `$ARGUMENTS` (a story id like `11.16`, or "the
 next story" when empty). This writes the story file under `_bmad/bmm/stories/` with its acceptance
@@ -71,6 +85,11 @@ so it can never go green. Fix or drop it here; do not hand fiction to ②.
 
 ## Done
 Report: story id + path, ACs covered, the red tests written (paths) and confirmation they fail as
-expected. Leave them staged — `sudo-dev-story-tests` turns them green next. **Do NOT start implementing.**
+expected — plus the `Worktree: <path> (<branch>)` line from Step 0.5, so ② knows where the story lives.
+**Do NOT start implementing.** `sudo-dev-story-tests` turns the reds green next.
+
+**Git:** commit ①'s output **inside the worktree** with explicit paths (`git add -A` / `.` / `-u` are
+banned — they sweep other teams' work in). Do NOT push it to `main_debug`; Step 7 of
+`/sudo-update-sprint-memory` owns that landing (→ `worktree-per-story`, `git-policy`).
 
 Optional additional input: $ARGUMENTS
