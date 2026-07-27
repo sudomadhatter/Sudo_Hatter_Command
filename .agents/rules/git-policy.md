@@ -54,6 +54,32 @@ deployed to every `.claude/hooks/`) forces the approval prompt on any `git push`
 (+ GitHub write tools) is gated in `.claude/settings.json`. The hook only ever sees the **agent's**
 Bash tool — Daniel's own terminal is never affected by it.
 
+## A commit is not done until it is pushed
+
+**`git commit` and `git push` are ONE action. Never end a turn, a step, or a command with a commit sitting
+unpushed.** An unpushed commit is invisible to every other machine and to the operator, who then has to
+discover and push it by hand — which is exactly the manual sync this toolkit exists to remove.
+
+This applies to **every repo you touched**, not just the one the work started in. A `/sync-agents` run
+writes to the lobby *and* each maintained project, so a change to one master file dirties three repos;
+committing the one you were thinking about and leaving the other two is the common form of this failure.
+Sync also runs *after* commits sometimes — re-check `git status` at the end and commit-and-push whatever
+the sync just wrote.
+
+**Close every piece of work with this, per repo touched:**
+
+```bash
+git status --short                                   # must be empty
+git rev-list --left-right --count <branch>...origin/<branch>   # must be "0 0"
+```
+
+`0 0` + clean, in **every** repo, or the work is not finished. State the result per repo — an unverified
+"pushed" is how this hides.
+
+⛔ The only exception is a story branch mid-flight, which is governed by "The landing" below: its commits
+stay local until the landing pushes `HEAD:main_debug`. That is about *which ref* receives the push, never a
+licence to leave work uncommitted or a landing unpushed.
+
 ## The landing — one story, one clean push
 
 The story lands on `main_debug` at close-out (`/sudo-update-sprint-memory` Step 7) or on Daniel's
