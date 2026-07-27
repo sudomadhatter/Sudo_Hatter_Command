@@ -71,28 +71,68 @@ In `PROJECT_ROOT`:
 3. **Physical disk cleanup (prevent orphan folders in IDE side panel)**:
 
    ⛔ **Unlink junctions FIRST — `Remove-Item -Recurse` follows them and deletes the TARGET.** A story
-   worktree does not inherit gitignored assets, so lanes junction `frontend/node_modules` and
-   `firebase/tests/node_modules` back to the **main checkout** (see `worktree-per-story.md`). A naive
-   recursive delete walks straight through those junctions and destroys the real `node_modules` in
-   `PROJECT_ROOT` — breaking the shared checkout *and* every other live worktree pointing at it.
+   worktree does not inherit gitignored assets, so lanes junction shared assets back to the **main
+   checkout** (see `worktree-per-story.md`). A naive recursive delete walks straight through those
+   junctions and destroys the real asset in `PROJECT_ROOT` — breaking the shared checkout *and* every
+   other live worktree pointing at it.
+
+   **Never work from a list of "the junctions I created."** Two independent reasons the list is wrong:
+   - Known shared-asset links are **at least** `frontend/node_modules`, `firebase/tests/node_modules`
+     **and `backend/.venv`** — `.venv` was missing from this command until 2026-07-27 and is the one
+     that orphaned the 21.5 tree.
+   - **Tools create junctions on their own.** Next.js/Turbopack plants them under
+     `frontend/.next/dev/node_modules/` (e.g. `import-in-the-middle-*`, `require-in-the-middle-*`) simply
+     by running the dev server or the E2E gate. Observed 2026-07-27: 2 of 3 reparse points in a worktree
+     were created by Next, not by any lane.
+
+   **Therefore: always ENUMERATE, never assume.** The scan is the authority.
 
    ```powershell
    $wt = "PROJECT_ROOT/.claude/worktrees/<story-slug>"
-   # 1 · enumerate every reparse point (junction/symlink) inside the tree
-   Get-ChildItem $wt -Recurse -Force -Directory -EA SilentlyContinue |
-     Where-Object { $_.LinkType } | ForEach-Object {
-       cmd /c rmdir "$($_.FullName)"        # removes the LINK only, never the target
-       Write-Output "unlinked: $($_.FullName)"
-     }
+   # 1 · enumerate every reparse point (junction/symlink) and unlink it.
+   #     Use .Delete() on the DirectoryInfo — it removes the LINK only, never the target,
+   #     and unlike `cmd /c rmdir` it cannot be mis-parsed by a shell wrapper.
+   foreach ($l in @(Get-ChildItem $wt -Recurse -Force -Directory -EA SilentlyContinue |
+                    Where-Object { $_.LinkType })) {
+     $l.Delete(); Write-Output "unlinked: $($l.FullName)"
+   }
    # 2 · prove none remain, THEN delete
-   $left = Get-ChildItem $wt -Recurse -Force -Directory -EA SilentlyContinue | Where-Object { $_.LinkType }
-   if ($left) { Write-Output "ABORT - reparse points still present"; $left | Select FullName }
-   else { Remove-Item -Recurse -Force $wt -Confirm:$false }
+   $left = @(Get-ChildItem $wt -Recurse -Force -Directory -EA SilentlyContinue | Where-Object { $_.LinkType })
+   if ($left.Count) { Write-Output "ABORT - reparse points still present"; $left | Select FullName }
+   else { Remove-Item -Recurse -Force $wt -Confirm:$false -ErrorAction Stop }
    ```
 
-   Then **verify the junction targets survived** (`frontend/node_modules` and `firebase/tests/node_modules`
-   under `PROJECT_ROOT` still exist and are non-empty) before reporting success. `-ErrorAction Ignore` is
-   deliberately NOT used on the delete: a failure here must be visible, not swallowed.
+   Then **verify the junction targets survived** — `frontend/node_modules`, `firebase/tests/node_modules`
+   **and `backend/.venv`** under `PROJECT_ROOT` still exist and are non-empty — before reporting success.
+   `-ErrorAction Ignore` is deliberately NOT used on the delete: a failure here must be visible, not swallowed.
+
+   **If the delete fails with *"being used by another process"***, the unlink half has already made the
+   husk harmless (no reparse points left). Do **not** retry in a loop and do **not** report success —
+   name the leftover path, say the junctions are unlinked so it is now safe to delete by hand, and carry
+   it in the report. Common holders: an editor file-watcher, or a shell whose `cwd` is still inside
+   (Step 2).
+
+## Step 3.5 — Sweep for ORPHAN worktree directories (catches earlier bad close-outs)
+
+A husk left by a *previous* close-out is invisible to `git worktree list` — git pruned the registration,
+so nothing ever looks at the folder again. That is how the 21.5 tree survived a full day in the IDE side
+panel, still holding live junctions to the shared `.venv` and both `node_modules`. Sweep every run, not
+just for `<story-slug>`:
+
+```powershell
+$root = "PROJECT_ROOT/.claude/worktrees"
+if (Test-Path $root) {
+  $known = (git worktree list --porcelain) -match '^worktree ' -replace '^worktree ',''
+  Get-ChildItem $root -Force -Directory | ForEach-Object {
+    $isKnown = $known | Where-Object { $_.Replace('/','\') -like "*$($_.Name)*" }
+    if (-not $isKnown) { Write-Output "ORPHAN: $($_.FullName)" }
+  }
+}
+```
+
+An orphan with **no `.git` entry inside it** is a dead husk — run the Step 3.3 unlink-then-delete on it.
+Report every orphan found and what you did with it. A directory that still has `.git` is a live worktree
+git lost track of: **STOP and report**, never delete it.
 
 ## Step 4 — Delete local and remote git branches
 In `PROJECT_ROOT`:
@@ -104,9 +144,28 @@ git branch -d claude/<story-slug>
 Remove-Item Env:\GITHUB_TOKEN -ErrorAction Ignore; git push origin --delete claude/<story-slug>
 ```
 
-## Step 5 — Report outcome
+## Step 5 — Verify, THEN report (never report an unverified success)
+
+⛔ **Prove each claim before printing it.** The 21.5 close-out reported a clean removal while the
+directory was still on disk holding three live junctions — because the report was written from intent,
+not from a check. Every ✅ below must come from a command you actually ran in this step:
+
+```powershell
+Test-Path "PROJECT_ROOT/.claude/worktrees/<story-slug>"        # must be False
+git worktree list                                              # must not list it
+git branch --list claude/<story-slug>                          # must be empty
+git ls-remote --heads origin claude/<story-slug>               # must be empty
+# shared assets must all still exist and be non-empty:
+#   PROJECT_ROOT/frontend/node_modules · firebase/tests/node_modules · backend/.venv
+```
+
+If a check fails, print ❌ for that line with the actual state — a partial cleanup reported as complete is
+worse than no cleanup, because nothing will look again.
+
 Print summary:
 `🧹 Closed workingtree & pruned branches for <story-slug>:`
-- `✅ Local worktree removed: .claude/worktrees/<story-slug>`
+- `✅ Local worktree removed: .claude/worktrees/<story-slug>` *(verified absent)*
 - `✅ Local branch deleted: claude/<story-slug>`
-- `✅ Remote GitHub branch deleted: origin/claude/<story-slug>`
+- `✅ Remote GitHub branch deleted: origin/claude/<story-slug>` *(or "never pushed — nothing to delete")*
+- `✅ Shared assets intact: frontend/node_modules · firebase/tests/node_modules · backend/.venv`
+- `🧹 Orphans swept: <list, or "none">` *(from Step 3.5)*
