@@ -18,6 +18,21 @@ before any work; every bare path below resolves under `PROJECT_ROOT`, and a need
 there → STOP and say so. ONE exception to §BIND: Step 6's Claude auto-memory write always targets Daniel's
 global memory dir.
 
+## Step 0.5 — Sync the branch BEFORE you read or edit the board (parallel-lane safety)
+Steps 1–6 read **and rewrite** `sprint-status.yaml` + `active-context.md`. Do that on a stale base and you
+author every board edit against an old file, then discover it at Step 7's merge — on the two hottest files
+in the repo. So absorb the trunk FIRST, inside the worktree:
+
+```bash
+git fetch origin main_debug
+git rev-list --count HEAD..origin/main_debug     # >0 → behind
+git merge origin/main_debug                      # CONFLICT → STOP and report, never force
+```
+
+Echo `Base: current with origin/main_debug @ <sha>`. Step 7 re-merges as a cheap safety net; this one is
+what makes the board edits land clean. If another lane closed out while you worked, its board line is now
+in front of you — **read it before you write yours**, and never delete a line you did not add.
+
 ## Step 1 — Read current state & this session's artifacts (scoped — no needless whole-file reads)
 1. `_bmad-output/active-context/active-context.md` — full (about to prune it).
 2. `_bmad-output/implementation-artifacts/sprint-status.yaml` — **Grep THIS story's id; read only its epic block + line**, never all 400+ lines.
@@ -70,6 +85,12 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
   - **"commit owed" is NOT a blocker** — the agent commits its own work in the story worktree, and Step 7
     lands it. Nothing about git blocks the status flip.
 - **Last Updated**: set to today's date at the top of `active-context.md`.
+- **`sprint-status.yaml` CHANGE LOG — one entry per line, newest first.** Add your entry as its own
+  `#   YYYY-MM-DD (<story> <stage>): …` line directly under the CHANGE-LOG header block, and bump the
+  `# last_updated:` date above it. ⛔ **Never re-join the log into one ` | `-separated line** — it was
+  29k characters on a single line, which made every concurrent close-out an unresolvable conflict.
+  Distinct lines let two lanes merge. Keep your entry to what the board needs; the narrative belongs in
+  the story's walkthrough.
 
 ## Step 5 — Prune & budget → run `/sudo-prune-context` (AUTOMATIC, never ask)
 Invoke **`/sudo-prune-context`** against the same `PROJECT_ROOT` (it inherits the binding — no
@@ -115,6 +136,28 @@ never blind-rebase), push `claude/<story-slug>`, then `git push origin HEAD:main
 - **Report** the branch, the commit range that landed, and the `main_debug` sha — same into the walkthrough's
   `## Your Actions` (Step 6).
 - Landing push rejected (remote moved) → **STOP and report.** Re-sync and re-land, never force.
+
+### Step 7b — Reconcile the shared checkout (MANDATORY — the push does NOT do this)
+
+`git push origin HEAD:main_debug` moves the remote and `origin/main_debug`; it leaves `refs/heads/main_debug`
+— the branch checked out in `PROJECT_ROOT` — exactly where it was. Skip this and the shared tree falls **one
+story behind per landing, forever**, until a `pull --ff-only` refuses on the board files Daniel edits there.
+That is the single most common reason close-out "needs untangling every time". Run `git-policy.md`
+→ **"Reconcile the shared checkout"** now, from `PROJECT_ROOT`:
+
+1. `git -C "$ROOT" fetch origin`, then `git -C "$ROOT" rev-list --left-right --count main_debug...origin/main_debug`.
+2. **`0 0`** → current, done. **ahead > 0** → real divergence, **STOP and report** (Daniel's call).
+   **behind only** → fast-forward.
+3. Dirty tree → `git stash push -m "pre-<slug>-land reconcile"` **first** (that dirt is somebody's in-flight
+   work and the stash is its only copy), `git merge --ff-only origin/main_debug`, then `git stash pop`.
+4. **`stash pop` conflict → STOP and report** the conflicted files and what each side wanted. Never
+   `stash drop`, never `checkout --` over it to force the fast-forward through.
+5. Confirm `--left-right --count` is `0 0` and the tree is clean, and **state that in the report** — an
+   unverified reconcile is how this silently regresses.
+
+⚠️ If the stash held edits to `sprint-status.yaml` / `active-context.md`, they were authored on the
+pre-landing base: after popping, **verify BOTH intents survived** (your close-out AND theirs) rather than
+trusting a clean pop — grep for a line you wrote and a line they wrote before moving on.
 
 ## Step 8 — Prune the merged worktree & branches (AUTOMATIC)
 

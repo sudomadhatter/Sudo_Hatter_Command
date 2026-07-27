@@ -72,7 +72,42 @@ uncommitted work, so the merge either refuses or drags their files through your 
 conflicts, it conflicts in the isolated worktree: **STOP and report**, never force-push, never
 blind-rebase.
 
-Once `HEAD:main_debug` is pushed and verified merged, `/sudo-close-workingtree` prunes the local worktree (`.claude/worktrees/<slug>`) and deletes both local and remote `claude/<slug>` branches.
+### Reconcile the shared checkout — MANDATORY, immediately after the landing push
+
+`git push origin HEAD:main_debug` updates the remote and `refs/remotes/origin/main_debug`. It does
+**NOT** update `refs/heads/main_debug` — the branch checked out in the shared tree. Skip this and the
+shared checkout falls exactly one story behind **per landing, monotonically**: run four lanes, land four
+stories, it is four behind. Because the board files (`sprint-status.yaml`, `active-context.md`) are
+hand-edited in that tree, a later `pull --ff-only` then **refuses** on the overlap, and every close-out
+turns into a manual untangle.
+
+This is NOT the prohibited "merge through the shared checkout". A fast-forward of a ref that is strictly
+behind cannot conflict, and nobody's uncommitted work is merged through anything. Run from `PROJECT_ROOT`:
+
+```bash
+git -C "$ROOT" fetch origin
+git -C "$ROOT" rev-list --left-right --count main_debug...origin/main_debug   # -> "<ahead> <behind>"
+```
+
+- **`0 0`** → already current. Done.
+- **ahead > 0** → local `main_debug` carries commits the remote lacks (sanctioned ad-hoc work).
+  **STOP and report** — that is a real divergence, not a fast-forward, and it is Daniel's call.
+- **ahead 0, behind > 0** → fast-forward it. If `git status --porcelain` is dirty, that dirt is somebody's
+  in-flight work: **stash it with a labelled message** (recoverable), fast-forward, then pop.
+
+```bash
+git -C "$ROOT" stash push -m "pre-<slug>-land reconcile"   # ONLY if dirty
+git -C "$ROOT" merge --ff-only origin/main_debug
+git -C "$ROOT" stash pop                                    # only if you stashed
+```
+
+**A `stash pop` conflict is a STOP, not a thing to resolve silently** — report the conflicted files and
+what each side wanted. Never `stash drop` or `checkout --` someone's uncommitted work to make the
+fast-forward go through; the stash is the only copy. Finish by re-checking `--left-right --count` is
+`0 0` and the tree is clean, and **say so in the report**.
+
+Once `HEAD:main_debug` is pushed, the shared checkout is reconciled, and the landing is verified merged,
+`/sudo-close-workingtree` prunes the local worktree (`.claude/worktrees/<slug>`) and deletes both local and remote `claude/<slug>` branches.
 
 
 ## Safe-commit mechanics (always — inside the worktree too)
