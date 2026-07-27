@@ -106,9 +106,14 @@ Parallel-safe beside it: **`<command>`** (<lane>) · **`<command>`** (<lane>).
 
 ## 🟢 Ready for dev
 
-| Story | Title | Story file | Depends on | Next command |
-|---|---|---|---|---|
-| **<id>** | <title> | ✅ / ❌ spec in `epics.md` L<n> | — | `<cmd>` |
+**Quick-dev tickets go HERE, in this table — they are dev work, so they belong with the dev work.** Use the
+Lane column; the next command carries the difference (`/sudo-quick-dev <slug>` vs
+`/sudo-write-story-tests <id>`). There is no separate quick-dev section — see the ⛔ note below.
+
+| Story | Title | Lane | Story file | Depends on | Next command |
+|---|---|---|---|---|---|
+| **<id>** | <title> | full ①②③ | ✅ / ❌ spec in `epics.md` L<n> | — | `/sudo-write-story-tests <id>` |
+| <ticket> | <title> | quick-dev | <spec / brief link> | — | `/sudo-quick-dev <slug>` |
 
 ## 🔵 In flight
 
@@ -128,11 +133,13 @@ Parallel-safe beside it: **`<command>`** (<lane>) · **`<command>`** (<lane>).
 |---|---|---|---|
 | 1 | 🔴 | <imperative action> | <story / gate> |
 
-## ⚡ Quick-dev queue
-
-| Ticket | Verdict | Brief | Next command |
-|---|---|---|---|
-| <ticket> | ✅ quick-dev / ❌ full ①②③ | [`<doc>`](<path>) | `<cmd>` |
+⛔ **NEVER emit a "Quick-dev queue" section.** It existed until 2026-07-27 and was deleted because a
+separate section for actionable dev work is a trap in two directions: it splits the "what do I work on
+next" answer across two tables, and — being off to the side — nobody reconciles it, so it goes stale while
+still reading as authoritative. Its two surviving rows were BOTH wrong: one recommended `/sudo-quick-dev`
+on a story that was already `done` and only owed a manual live pass (operator-queue work), the other stayed
+listed after its fix had shipped. **Quick-dev tickets are dev work → the Ready-for-dev table.** If a ticket
+is not dev work, it belongs in the Operator queue or the Pipeline, never in a lane of its own.
 
 ## 📋 Pipeline — specced, not yet a story
 
