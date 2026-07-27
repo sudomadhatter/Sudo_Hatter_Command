@@ -8,9 +8,10 @@ activation: Always On
 
 > **Shared memory.** Artifacts go **where you work FROM** (your cwd). **From the home base** → home-base
 > `_artifacts/`: project work → a per-project bucket `_artifacts/<project>/…` (**create it if missing**, else
-> reuse); main / home-base / cross-project work → `_artifacts/_main/…` (formerly `_home`); either way append a
-> row to `_artifacts/INDEX.md`. **From inside a project** (`Projects/<name>/` is cwd) → that project's own
-> `_artifacts/` + its `active-context.md`/`INDEX.md` (its rules, not this ledger). The store is written by ALL
+> reuse); main / home-base / cross-project work → `_artifacts/_main/…` (formerly `_home`).
+> **From inside a project** (`Projects/<name>/` is cwd) → that project's own `_artifacts/` — and **read
+> `Projects/<name>/_artifacts/AGENTS.md` FIRST**: it is that store's local law, it wins, and it names
+> buckets this rule does not (see §2). The store is written by ALL
 > tools — Claude, opencode, Antigravity/Gemini — so any agent can read past chats. **opencode** writes under its
 > own `_artifacts/opencode/` namespace, applying the **same rules inside it** (`opencode/<project>/`,
 > `opencode/_main/`, `opencode/<project>/<epic>/<story>/`). Full model → `docs/workspace-standard.md`.
@@ -90,8 +91,15 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
     `_artifacts/Fresh_Workspace_BMAD/`; **create the bucket if it isn't there yet, else reuse it**);
   + main / home-base / cross-project work (the standard, master `.agents/`, the router, lobby wiring) →
     `_artifacts/_main/…` (formerly `_home`). Append a row to `_artifacts/INDEX.md`.
-- **From inside a project** (`Projects/<name>/` is cwd) → project-local `Projects/<name>/_artifacts/…` + that
-  project's own `active-context.md`/`INDEX.md` (follow its rules, not the home-base ledger). There is no
+- **From inside a project** (`Projects/<name>/` is cwd) → project-local `Projects/<name>/_artifacts/…`.
+  **⛔ Open `Projects/<name>/_artifacts/AGENTS.md` BEFORE you pick a folder.** That file is the store's local
+  law and it **overrides the task-type list below** — it is written per project and routinely names buckets
+  this rule does not. AGY_AVIATIONCHAT's, for instance, routes debugging/ad-hoc sessions to
+  `debugging/<YYYY-MM-DD>_<slug>/`, TEA / non-numeric story ids to `tea/<story>/`, and structured debug epics
+  to `epic_debug_<N>/<story>/` — none of which appear here, so an agent working from this rule alone misfiles
+  every one of them. Read it first, then apply the list below for whatever it does not cover. Continuity is
+  the project's own brief (`active-context.md`, or `_bmad-output/active-context/active-context.md` in a BMAD
+  project), not the home-base ledger. There is no
   *cross-project* `_main` here — but the project keeps a **local `_main/`** for its own system/infrastructure
   work (the agent system, rules, scripts, CI) — which doubles as the **holding bucket**: anything with no home
   yet lives in `_main/` until it has one or you make one. Story work nests under `epic_<N>/`; **nothing is
@@ -110,6 +118,14 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
   words, from the operator's first concrete request. At the home base the bucket you picked is the home; **in
   a project it goes inside `_main/` — the holding bucket — until it has a home or you make one; never a dated
   folder at the project's `_artifacts/` root**.
+
+> **The `INDEX.md` ledger is reconciled in batch — do NOT hand-append a row every session.** That machinery
+> already exists: the SessionStart hook chain runs `check_maps.py --depth3-only` and
+> `record_map_changes.py --nag`, and `/update-maps-indexes` does the real pass (audits every `INDEX.md`,
+> reconciles `AGENTS.md`/README pointers against disk). Getting the artifact into the **right folder** is the
+> per-session obligation — the ledger catches up on its own, and it is run deliberately, on cheaper agents.
+> Append a row by hand only when you are the only one who can write it: a session whose "What" needs context
+> a mechanical reconciler cannot recover.
 
 **File names within a folder:** dated output → `YYYY-MM-DD_<slug>.md`; versioned drafts →
 `<slug>_draft.md` → `<slug>_v2.md` → `<slug>_final.md`. Memory / active-context sections are
@@ -174,6 +190,14 @@ finding (file:line, severity, failure scenario, suggested fix), and a dispositio
 (addressed / deferred) so the review is reviewable the same way plans and walkthroughs are.
 Frontmatter `type: code_review`.
 
+> **Exception — the sudo story lane (③).** `/sudo-code-review` writes its verdict to
+> `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md` instead, because
+> `/sudo-update-sprint-memory` reads it from there before flipping the story to `done` (and every story from
+> epic 15 on already lives there). **That file IS the review artifact — do not also write a `code-review.md`.**
+> The story's `walkthrough.md` carries a `## Code Review (<date>)` section linking it, so the story folder
+> still leads you to it. Epics 11–12 predate this and keep `code-review.md` in the session folder; both are
+> valid history — look in both before concluding a review was never persisted.
+
 ### 7. Write `self-audit-stress-test.md` (whenever the pre-dev audit runs)
 **Every run of the `/sudo-self-audit` workflow — on a plan, a story, or another agent's
 audit — MUST be saved as a `self-audit-stress-test.md` artifact in the current session's
@@ -199,13 +223,16 @@ When Daniel says **"review"** (or asks to review a document/plan), EVERY agent m
 - NEVER modify any project file before `implementation_plan.md` is approved.
 - NEVER manually edit MD Feedback HTML blocks (`<!-- USER_MEMO -->`, `<!-- PLAN_CURSOR -->`, `<!-- CHECKPOINT -->`). You MUST use the `md-feedback` MCP tools to resolve feedback to avoid breaking document hashes.
 - NEVER skip the artifact folder for a "quick" change (outside the Skip cases above).
+- NEVER place an artifact inside a project without first reading that project's `_artifacts/AGENTS.md` — it is
+  the local law, it overrides §2's task-type list, and it names buckets this rule does not.
 - NEVER write/update an artifact — or name a file or path in chat — without posting a clickable Markdown
   link to it that same turn (see the "Link every artifact — and every file — in the chat" rule above).
 - NEVER claim the walkthrough is done without actual test output.
 - NEVER finish a `walkthrough.md` without its `## Task Checklist` and `## Your Actions` sections (what landed + what's still on Daniel lives in the latter).
 - NEVER write the final task checklist or the "Your Actions" steps as separate files — they are sections inside `walkthrough.md` (§5).
 - NEVER edit a project file for sudo-lane story work before opening its worktree — then commit your own work inside it freely (explicit paths, never `git add -A`). Ad-hoc non-story work edits `main_debug` directly — no worktree (→ `worktree-per-story` Trigger). Landing on `main_debug` needs Daniel's sign-off; `main` is his alone. Full policy → the `git-policy` + `worktree-per-story` rules.
-- NEVER deliver code-review findings inline-only — always persist them as a `code-review.md` artifact.
+- NEVER deliver code-review findings inline-only — always persist them: a `code-review.md` artifact, or in
+  the sudo story lane `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md` (§6).
 - NEVER deliver `/sudo-self-audit` findings inline-only — always persist them as a
   `self-audit-stress-test.md` artifact (`type: self_audit`), even though the audit writes no code.
 
