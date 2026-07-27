@@ -26,10 +26,34 @@ Remove-Item Env:\GITHUB_TOKEN -ErrorAction Ignore; git fetch origin
 git merge-base --is-ancestor claude/<story-slug> origin/main_debug
 ```
 
-- **If `git merge-base` returns exit code 0**: The branch is fully merged into `origin/main_debug`. Proceed to Step 2.
+- **If `git merge-base` returns exit code 0**: The branch is fully merged into `origin/main_debug`. Proceed to Step 1.5.
 - **If `git merge-base` returns non-zero**: **STOP IMMEDIATELY!**
   Print: `❌ Refusing to delete: claude/<story-slug> is NOT fully merged into origin/main_debug.`
   Instruct: `Land the story first using /sudo-update-sprint-memory or git merge to origin/main_debug.`
+
+## Step 1.5 — Backstop: is the shared checkout actually current? (catches the silent drift)
+You are already standing in `PROJECT_ROOT`, so check the thing the landing push cannot update:
+
+```bash
+git rev-list --left-right --count main_debug...origin/main_debug     # -> "<ahead> <behind>"
+```
+
+`git push origin HEAD:main_debug` moves the remote but never `refs/heads/main_debug`, so a shared checkout
+that is **behind** means a landing skipped `/sudo-update-sprint-memory` Step 7b — and the drift compounds one
+story per landing until a `pull --ff-only` refuses on the board files.
+
+- **`0 0`** → clean, proceed to Step 2.
+- **behind only** → run `git-policy.md` → **"Reconcile the shared checkout"** now (stash if dirty →
+  `merge --ff-only` → pop; a pop conflict is a **STOP**). Then re-check it reads `0 0`.
+- **ahead > 0** → real divergence, **STOP and report** — never fast-forward over local commits.
+
+Note the local branch may legitimately be behind *at this instant* if you were invoked standalone rather
+than by Step 8; reconciling is still correct. Do NOT skip this because "Step 7 already pushed" — the push
+is exactly what does not do it.
+
+⚠️ Deleting the local branch (Step 4) with `git branch -d` checks it is merged into **HEAD**, not into
+`origin/main_debug`. On a stale `main_debug` that check fails on a branch that HAS landed. Reconciling here
+first is what makes `-d` succeed honestly instead of tempting a `-D`.
 
 ## Step 2 — Exit worktree directory if currently inside it
 If current working directory (`cwd`) is inside `PROJECT_ROOT/.claude/worktrees/<story-slug>`, shift `cwd` out to `PROJECT_ROOT` so the directory is unlocked for removal.
@@ -45,10 +69,30 @@ In `PROJECT_ROOT`:
    git worktree prune
    ```
 3. **Physical disk cleanup (prevent orphan folders in IDE side panel)**:
-   Check if the directory `.claude/worktrees/<story-slug>` still exists on disk. If it exists:
+
+   ⛔ **Unlink junctions FIRST — `Remove-Item -Recurse` follows them and deletes the TARGET.** A story
+   worktree does not inherit gitignored assets, so lanes junction `frontend/node_modules` and
+   `firebase/tests/node_modules` back to the **main checkout** (see `worktree-per-story.md`). A naive
+   recursive delete walks straight through those junctions and destroys the real `node_modules` in
+   `PROJECT_ROOT` — breaking the shared checkout *and* every other live worktree pointing at it.
+
    ```powershell
-   Remove-Item -Recurse -Force "PROJECT_ROOT/.claude/worktrees/<story-slug>" -ErrorAction Ignore
+   $wt = "PROJECT_ROOT/.claude/worktrees/<story-slug>"
+   # 1 · enumerate every reparse point (junction/symlink) inside the tree
+   Get-ChildItem $wt -Recurse -Force -Directory -EA SilentlyContinue |
+     Where-Object { $_.LinkType } | ForEach-Object {
+       cmd /c rmdir "$($_.FullName)"        # removes the LINK only, never the target
+       Write-Output "unlinked: $($_.FullName)"
+     }
+   # 2 · prove none remain, THEN delete
+   $left = Get-ChildItem $wt -Recurse -Force -Directory -EA SilentlyContinue | Where-Object { $_.LinkType }
+   if ($left) { Write-Output "ABORT - reparse points still present"; $left | Select FullName }
+   else { Remove-Item -Recurse -Force $wt -Confirm:$false }
    ```
+
+   Then **verify the junction targets survived** (`frontend/node_modules` and `firebase/tests/node_modules`
+   under `PROJECT_ROOT` still exist and are non-empty) before reporting success. `-ErrorAction Ignore` is
+   deliberately NOT used on the delete: a failure here must be visible, not swallowed.
 
 ## Step 4 — Delete local and remote git branches
 In `PROJECT_ROOT`:

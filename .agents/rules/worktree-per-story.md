@@ -90,6 +90,12 @@ be hunk-picked out of somebody else's diff. The landing sequence itself is in `g
 ("The landing"): merge `origin/main_debug` into the story branch *inside the worktree*, then
 `git push origin HEAD:main_debug`. Never check out `main_debug` in the shared checkout to merge.
 
+⚠️ **That push does NOT update the shared checkout's `main_debug`** — it moves the remote and
+`origin/main_debug` only, leaving `refs/heads/main_debug` where it was. Landing without reconciling
+afterwards puts the shared tree one story behind **per landing**, and since the board files are edited
+there, the next `pull --ff-only` refuses. `git-policy.md` → **"Reconcile the shared checkout"** is a
+mandatory part of every landing, not an optional tidy-up.
+
 Afterwards, once the landing on `main_debug` is verified, the worktree and git branch (`claude/<story-slug>`) are pruned via `/sudo-close-workingtree` (auto-invoked by `/sudo-update-sprint-memory` Step 8) to keep local disk and remote GitHub clean.
 
 
