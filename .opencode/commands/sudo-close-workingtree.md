@@ -115,6 +115,43 @@ produced a false "shared assets MISSING" report that briefly looked like the del
 Report every directory found, its state, and what you did with it — **including the ones you left alone and
 why**. A tree you decided to keep is a decision, and an unreported decision reads as an oversight.
 
+## Step 1.7 — Close-out authorization gate (what makes cleanup APPROVED)
+
+**A worktree exists only while a story is being worked.** Cleaning one up is authorized by the story being
+**closed out** — not merely merged. Step 1 proved the code landed; that is a different question from
+whether the operator finished the story. This step answers the second one, and it is what replaces
+deference with a lookup: if the gate passes, **act — do not ask.**
+
+This also closes a failure you have already been bitten by: **debug-2.2 sat merged-but-not-closed-out for
+five days** while every planning surface recommended rebuilding it. Under merge-base alone its tree would
+have been pruned, erasing the last on-disk hint that the close-out never ran.
+
+Per tree, in order — first match wins:
+
+1. **Story file frontmatter reads `Status: done`** (`_bmad/bmm/stories/<story>.md`; grep BOTH dot and dash
+   forms of the id) → **AUTHORIZED.** This is the authority — only a human close-out writes `done`
+   (`story-status-flip-contract`: dev sets `review`).
+2. **Board key exists in `sprint-status.yaml` and reads `done`** → corroborated. Say so.
+3. **Board key ABSENT** → check the CHANGE LOG for the slug.
+   - Found → **AUTHORIZED**, and **state in the report that no board key exists.** Standalone quick-dev
+     tickets legitimately have none (prior art: `security-profile-idor-fix`, `gemini-key-pytest-env`), but
+     a missing key is otherwise indistinguishable from the debug-2.2 failure, and a missing key fires no
+     drift check anywhere. Naming it is the only thing that surfaces it.
+   - Not found → **STOP** (below).
+4. **Status is `review` / `in-progress` / `backlog`, or nothing corroborates** → **STOP.** Print:
+   `❌ <slug> is merged but not closed out (status: <x>). Run /sudo-update-sprint-memory first, then re-run.`
+   Leave the tree and the branch exactly as they are.
+
+⛔ **This gate has exactly two outcomes: AUTHORIZED, or a STOP with a named reason and the fix.** There is
+no third "the board looks ambiguous, checking with you" branch — that is the punt-hatch this gate exists to
+remove, and re-introducing it recreates the very problem it was written for. Ambiguity resolves to the STOP
+in (4), stated as a refusal, never as a question.
+
+**Normal path cost: zero.** `/sudo-update-sprint-memory` Steps 1–7 flip the status, write the board and
+land the code before Step 8 ever calls this command — so the gate is satisfied by construction. It only
+bites when the prune is run standalone against something that was never actually closed out. Which is
+exactly when it should.
+
 ## Step 2 — PRESERVE uncommitted work before ANY removal (MANDATORY — data-loss gate)
 
 ⛔ **`git worktree remove --force` DISCARDS uncommitted and untracked files without a prompt.** Step 1's
@@ -226,23 +263,36 @@ PROJECT_ROOT/backend/.venv/Scripts/python.exe --version              # must prin
 Any failure here → **STOP and report immediately.** A destroyed shared asset breaks every other lane on the
 machine, and it is recoverable only if someone knows it happened.
 
-## Step 5 — Delete branches — ONLY those that passed Step 1
+## Step 5 — Delete branches — ONLY those that passed Steps 1 AND 1.7
 
 ```bash
 git branch -d claude/<story-slug>                                   # -d, never -D
+
+# Remote: ONLY if the branch is actually on origin — i.e. it was PARKED.
+git ls-remote --heads origin claude/<story-slug>                    # empty → nothing to delete, say so
 Remove-Item Env:\GITHUB_TOKEN -ErrorAction Ignore; git push origin --delete claude/<story-slug>
 ```
 
-⛔ **Delete a branch ONLY if it passed Step 1's merge-base check.** Removing a *tree* is reversible — the
-branch can recreate it via `/sudo-resume`. Deleting the *branch* of an unlanded story destroys the only
-copy of that work, including anything Step 2 just preserved. The sweep in Step 1.6 deliberately reaches
-trees belonging to other stories; their branches have **not** been checked and must **not** be deleted.
+⛔ **Delete a branch ONLY if it passed Step 1 (landed) AND Step 1.7 (closed out).** Removing a *tree* is
+cheap — the branch recreates it. Deleting the *branch* of an unlanded story destroys the only copy of that
+work, including anything Step 2 just preserved. Step 1.6 deliberately reaches trees belonging to **other**
+stories; those branches have not been checked and must **not** be deleted.
 
-- Branch landed (Step 1 exit 0) → delete local + remote.
-- Branch not landed, tree removed → **keep both branches**, and report: *"tree pruned; branch
-  `claude/<slug>` retained on origin — restore with `/sudo-resume`."*
+- Landed + closed out → delete local; delete remote **only if `ls-remote` finds it**.
+- Landed, not closed out → Step 1.7 already STOPped. Nothing is deleted.
+- Not landed, tree removed → **keep both branches**, and report: *"tree pruned; branch `claude/<slug>`
+  retained — restore with `/sudo-resume`."*
 - `git branch -d` refuses → do **not** reach for `-D`. It means the branch is not merged into HEAD; go back
   to Step 1.5.
+
+**Most story branches will not exist on origin at all, and that is correct.** Per `git-policy.md` → "The
+landing", the landing pushes `HEAD:main_debug` and **not** the branch; a story branch reaches origin only
+via `/sudo-park`. So an absent remote branch is the normal case — report it as *"never pushed (not
+parked) — nothing to delete"*, not as a failure. A remote branch that IS present means this story was
+parked, and deleting it here is what stops `/sudo-resume` from later offering a story that is already done.
+
+⛔ **Never sweep `claude/*` on origin wholesale.** `incident-*` branches come from the Epic-16 incident
+pipeline, not story flow, and are outside this command entirely.
 
 ## Step 6 — Verify, THEN report (never report an unverified success)
 

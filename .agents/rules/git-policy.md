@@ -63,9 +63,24 @@ in the shared checkout:
 ```bash
 git fetch origin main_debug
 git merge origin/main_debug        # absorb it INSIDE the worktree — conflicts surface here, isolated
-git push origin claude/<slug>      # free; the branch is the rollback point
 git push origin HEAD:main_debug    # THE landing (hook prompts once)
 ```
+
+⛔ **Do NOT push the story branch itself.** This used to read `git push origin claude/<slug>  # free; the
+branch is the rollback point` — it is not the rollback point. The **local** branch is, and it survives a
+failed landing push completely untouched; the remote copy only covered the few seconds between the two
+pushes. What it cost was permanent: every story branch ever landed accumulated on origin, and by
+2026-07-27 there were 10 stale `claude/*` there.
+
+**A story branch reaches origin exactly one way: `/sudo-park`.** That is the entire point of park —
+*"the ONLY thing that makes the work portable"* — and `/sudo-resume` reads `git ls-remote --heads origin
+'refs/heads/claude/*'` to find in-flight work. Pushing on every landing made park redundant and turned
+that listing into noise, so it could not answer the one question it exists for.
+
+**The invariant this buys: a `claude/*` branch on origin means "parked, in-flight, on another machine."**
+Nothing else. Keep it true — it is what makes `/sudo-resume` trustworthy on a cold machine.
+(`incident-*` branches come from the Epic-16 incident pipeline, not story flow; they are outside this rule
+and must not be swept by it.)
 
 Checking out `main_debug` in the shared checkout to merge is **wrong** — that tree holds other teams'
 uncommitted work, so the merge either refuses or drags their files through your landing. If the merge

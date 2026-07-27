@@ -130,7 +130,13 @@ Report it and stop — never rescue it by committing in the shared checkout.
 Then execute `git-policy.md` → **"The landing"**, inside the worktree: first commit the close-out edits —
 EXPLICIT PATHS ONLY (board, story file, active-context, artifacts; `git diff --cached --stat` must show
 ONLY this story's files), then merge `origin/main_debug` (CONFLICT → **STOP and report**; never force-push,
-never blind-rebase), push `claude/<story-slug>`, then `git push origin HEAD:main_debug`.
+never blind-rebase), then `git push origin HEAD:main_debug`.
+
+⛔ **Do NOT push `claude/<story-slug>` to origin.** The local branch is the rollback point and survives a
+failed landing push intact. A story branch reaches origin **only** via `/sudo-park` — that is park's whole
+purpose, and `/sudo-resume` reads the origin `claude/*` list to find in-flight work on a cold machine.
+Pushing here made park redundant and filled that listing with landed-and-dead branches. If this story WAS
+parked, its branch is already on origin and Step 8 deletes it there.
 
 - **`main` is untouched.** Only Daniel, directly or via `/sudo-push-e2e`.
 - **Report** the branch, the commit range that landed, and the `main_debug` sha — same into the walkthrough's
