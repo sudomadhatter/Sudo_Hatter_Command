@@ -1,43 +1,55 @@
 # `_artifacts/` — shared memory (home base)
 
-Plans, walkthroughs, and continuity for work done **from the home base**. The 10-second law of this
-place is [`AGENTS.md`](./AGENTS.md) (auto-attached via the adapters); the session ledger is
-[`INDEX.md`](./INDEX.md) (placement rules live in its header); the full model is `docs/workspace-standard.md`;
-the plan-first protocol is `.agents/rules/artifacts-always-first.md`.
+Plans, walkthroughs, and continuity for work done **from the home base**.
 
-> **⛔ The store is `_artifacts/` — never `_claude_artifacts/` or `_opencode_artifacts/`** (both retired/deleted).
-> Every agent and tool writes here — `/bmad-dev-story`, `/bmad-quick-dev`, autopilot, or a hand session alike.
-> If a story's `source:` line or an old note points at `_claude_artifacts/`, that is dead history — write here.
+| Question | Where it is answered |
+|---|---|
+| **Where does my session folder go?** | [`AGENTS.md`](./AGENTS.md) — the local law, and the **single** authority on placement. It is auto-attached via the adapters, so it is the copy that actually reaches an agent. |
+| What already happened here? | [`INDEX.md`](./INDEX.md) — the session ledger, newest rows first. |
+| What is the plan-first protocol? | [`.agents/rules/artifacts-always-first.md`](../.agents/rules/artifacts-always-first.md) |
+| What is the whole workspace model? | [`docs/workspace-standard.md`](../docs/workspace-standard.md) |
 
-## Where a session folder goes — three rules, by where you WORK FROM
-The deciding factor is your **cwd**, not only what the work is about (full rules → the [`INDEX.md`](./INDEX.md) header):
-1. **Project work** → a per-project bucket `_artifacts/<project>/…` (bucket name = the `Projects/<name>/` folder).
-   **Create the bucket if it isn't there yet; otherwise reuse it.**
-2. **Main / home-base / cross-project work** → `_artifacts/_main/…` (formerly `_home`).
-3. **Stories** → nest under the parent **epic folder** `epic_<E>/<story>/` (create `epic_<E>/` if missing) —
-   **any** story (autopilot, BMAD, or hand-dev'd); the parent is decided by the story id, not the tool.
-- **From the home base** (cwd = `Sudo_Hatter_Command/`) → **here**, per rules 1–3; log a row in `INDEX.md`.
-- **From inside a project** (cwd = `Projects/<name>/`) → that project's own `Projects/<name>/_artifacts/` and its
-  own `active-context.md` / `INDEX.md` (follow its rules — not this ledger). No *cross-project* `_main` inside a
-  project — but a project keeps a **local `_main/`** for its own system/infra work.
-- **opencode** writes under [`opencode/`](./opencode/README.md), applying the same three rules inside it.
-- **Finding history:** look in BOTH the home-base bucket `_artifacts/<project>/` and the project-local one.
+> **⛔ The store is `_artifacts/` — never `_claude_artifacts/` or `_opencode_artifacts/`** (both retired and
+> deleted). Every agent and tool writes here — `/bmad-dev-story`, `/bmad-quick-dev`, autopilot, or a hand
+> session alike. If a story's `source:` line or an old note points at `_claude_artifacts/`, that is dead
+> history — write here.
 
-## How to structure the folder
-- **Story** → `epic_<E>/<story>/` — **the epic folder houses all of its stories. Create `epic_<E>/` if it isn't
-  there yet**, then nest the story inside (e.g. `epic_9/story-9.4-ios-shell/`, or an autopilot run
-  `epic_14/2026-06-27_autopilot-14-6/`). Epic-scoped, not date-prefixed. Holds for **any** story — the parent is
-  the story id, not the tool.
-- **System / infrastructure** ("systems things": the agent system, rules, scripts, CI) → `_main/<YYYY-MM-DD>_<slug>/`.
-- **Random one-off** → `<YYYY-MM-DD>_<slug>/` (date first so they sort; slug = lowercase-hyphenated, ≤6 words).
-- **Retired** → `_archived/` — archive history, don't delete it.
+> **Placement is deliberately NOT restated on this page.** It used to be — in `AGENTS.md`, here, and in
+> `INDEX.md`'s header — and the copies drifted apart. Per `workspace-standard.md` ("a Tier-2 `AGENTS.md` is a
+> digest that points at canon — never a second canonical copy"), the law now lives in exactly one place.
+> **If you are about to add placement rules to this file, add them to [`AGENTS.md`](./AGENTS.md) instead.**
 
 ## What each session folder carries
 | File | When |
 |---|---|
 | `implementation_plan.md` | always — approved **before** any edits |
-| `walkthrough.md` | at close — the ONE closing doc: what changed + **real pasted test output**, ending in `## Task Checklist` (final TodoWrite snapshot) + `## Your Actions` (git command). **No separate `task-list.md`** |
+| `walkthrough.md` | at close — the ONE closing doc: what changed + **real pasted test output**, ending in `## Task Checklist` (final TodoWrite snapshot) + `## Your Actions`. **No separate `task-list.md`** |
 | `code-review.md` / `self-audit-stress-test.md` / `bug-list.md` | when those run |
 
-**Continuity:** `active-context.md` is the pickup/handoff brief for that location —
-`_artifacts/<project>/active-context.md` (a project worked on from here) or `_artifacts/_main/active-context.md`.
+## Buckets you will see at the root
+Each is a **parent** for session folders, never a session folder itself — see `AGENTS.md` for which one your
+work belongs to.
+
+- `<project-folder-name>/` — work about one project, done from here (e.g. `AGY_AVIATIONCHAT/`,
+  `Fresh_Workspace_BMAD/`). Named exactly for the folder under `Projects/`.
+- `_main/` — the home base's own work: the standard, the master `.agents/` toolkit, the router, lobby wiring,
+  and anything with no home yet. (Formerly `_home`.)
+- `opencode/` — opencode's namespace. The same bucket rules apply *inside* it; see
+  [`opencode/README.md`](./opencode/README.md).
+- `_archived/` — retired history. **Archive, never delete**: old `INDEX.md` rows keep pointing at old paths,
+  so a deleted folder turns a valid row into a dead one.
+
+Inside a project bucket, story work nests under `epic_<E>/<story>/` — the epic folder houses all of its
+stories (e.g. `epic_9/story-9.4-ios-shell/`, or an autopilot run `epic_14/2026-06-27_autopilot-14-6/`).
+
+## Where a project's history actually lives
+Both places, and you need both to reconstruct it: the home-base bucket `_artifacts/<project>/` holds sessions
+run **from here**, and `Projects/<name>/_artifacts/` holds sessions run **from inside the project**. A project's
+own `_artifacts/AGENTS.md` is the authority once you are in it — read it before placing anything there.
+
+## Continuity
+`active-context.md` is the pickup/handoff brief **for its bucket** — `_artifacts/<project>/active-context.md`
+for a project worked on from here, or `_artifacts/_main/active-context.md` for home-base work.
+
+The `INDEX.md` ledger is reconciled in batch by the SessionStart hooks and `/update-maps-indexes` — don't
+hand-append a row every session.

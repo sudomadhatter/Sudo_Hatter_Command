@@ -346,7 +346,11 @@ def find_indexes(root):
 def check_level2_indexes(root):
     problems = []
     for p1 in root.iterdir():
-        if not p1.is_dir() or p1.name in SCAN_IGNORES or p1.name == ".git":
+        # Dot-dirs are tool caches (.ruff_cache, .pytest_cache, .gitnexus, ...) — never content, so they
+        # never owe an INDEX. Skip them at level 1 exactly as the level-2 loop below already does; without
+        # this, a build cache's version folder (.ruff_cache/0.15.21/) is reported as FATAL drift forever,
+        # which is how a real check gets trained into background noise.
+        if not p1.is_dir() or p1.name in SCAN_IGNORES or p1.name.startswith("."):
             continue
         if p1.name == "_artifacts":
             continue

@@ -201,8 +201,20 @@ about top-level folders on disk but missing from the map. Do its check by hand h
 
 ## Step 3 — Audit each INDEX.md against reality
 
-For **every home-base** `INDEX.md` (the linter lists them; `Projects/` are skipped), do a row-vs-disk
-reconciliation:
+For **every `INDEX.md` in the workspace you are currently reconciling**, do a row-vs-disk reconciliation.
+
+> **Scope — read this before you skip a project.** In a fan-out you run this step **once per workspace**
+> (Step 0.5), against that workspace's own INDEXes. The "`Projects/` are skipped" you may have seen refers
+> only to a **bare lobby lint**: `check_maps.py` run without `--all`/`--root` does not descend into
+> `Projects/` because those are separate repos with their own maps. `--all` lints each of them as its own
+> workspace, and this step follows. **A project's `_artifacts/INDEX.md` is in scope and always was.**
+
+> ⚠️ **The root ledger has NO machine check for missing rows — a clean lint proves nothing here.**
+> `[INDEX.md paths]` only verifies that paths a row *mentions* resolve on disk; nothing verifies a session
+> folder *got* a row. Only the **depth-3** check (`[depth-3 _artifacts INDEX]`) tests row completeness, and
+> only inside buckets. This is not theoretical: on 2026-07-26 an entire epic — five story folders — was
+> absent from a project's root `_artifacts/INDEX.md` while every linter check reported `[ok] clean`.
+> **So this bullet is judgment work you must actually do; you cannot infer it from a green lint.**
 
 1. List the real contents of the folder the INDEX governs.
 2. Compare against the INDEX rows. Report, per INDEX: **missing** (on disk, no row), **stale** (row, no
@@ -212,6 +224,16 @@ reconciliation:
       represents a real session should have a row, *or* be covered by the "earlier dated folders predate this
       ledger" note. Add rows for sessions completed since the last update. Fix paths that moved. Keep it to
       **one row per session**.
+      **Shape — read the file before you write to it.** A mature ledger carries **two** tables: a
+      session table (newest first, typically `Date | Folder | What | Status`) and, lower down, a
+      **bucket summary** table (`Epic 16 — … | epic_16/ | <date range>`). New session rows go in the
+      **first** table, at the **top**; a whole new bucket earns a row in the second. **Copy the column
+      layout that file already uses — never invent, add, or reorder columns**, and never merge the two
+      tables. If you cannot tell which table a row belongs in, it is the session table.
+      **What to write in "What":** one or two sentences a future agent can act on — what the session
+      decided or changed, and the consequence. Not the folder name restated. This is the half a
+      mechanical reconciler cannot produce, which is the whole reason this step is judgment and not a
+      script; a row reading "Story 21.3 work" is worse than no row, because it looks reconciled.
     - **`_artifacts/<bucket>/INDEX.md`** (depth-3, editable) — for each folder under `_artifacts/` that has
       ≥2 session subfolders (e.g. `epic_8/`, `epic_11/`, `_main/`, `tea/`), open its INDEX and reconcile:
       add rows for new session folders, fix stale ones, remove rows for deleted sessions. One row per

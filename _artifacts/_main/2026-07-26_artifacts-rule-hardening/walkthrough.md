@@ -134,6 +134,131 @@ Scoping check before commit — only this session's files dirty in each repo:
  M .agents/rules/artifacts-always-first.md
 ```
 
+---
+
+# Round 2 — auditing `/update-maps-indexes`, and the law consolidation
+
+The follow-on question was whether `/update-maps-indexes` is detailed enough that a weaker model would
+update every INDEX, AGENTS and README correctly — plus a direct question: do we actually need both a
+README and an AGENTS.md per folder?
+
+## What the linter proved
+
+Running it rather than reading it was the whole value:
+
+```
+[INDEX.md paths]            [ok] clean
+[depth-3 _artifacts INDEX]  [x] _artifacts/epic_21/INDEX.md: missing row for `story-21-3-...`
+[level-2 INDEX presence]    [x] .ruff_cache/0.15.21/INDEX.md: missing
+[tier-2 local law]          [ok] guarded dirs carry AGENTS.md + adapters (redirects verified)
+```
+
+- **The root ledger has no row-completeness check at all.** Depth-3 caught the missing 21.3 row instantly,
+  while the *root* `_artifacts/INDEX.md` was missing all five `epic_21` stories and every check said
+  `[ok] clean`. `[INDEX.md paths]` only verifies that paths a row *mentions* resolve — never that a session
+  folder *got* a row. That asymmetry is the entire reason epic 21 went unindexed.
+- **Step 3 contradicted the fan-out.** Its opening line read "for **every home-base** `INDEX.md`
+  (`Projects/` are skipped)" while Step 0.5 says run it per workspace. A weak model follows the literal
+  line and never audits a project's INDEXes.
+- **`.ruff_cache` was a permanent FATAL false positive.** `check_level2_indexes` skipped `SCAN_IGNORES` and
+  `.git` at level 1 but not dot-dirs generally, so it descended into a build cache and demanded an
+  `INDEX.md` in it — while the level-2 loop one line below already skipped dot-dirs. A fatal check that
+  cries wolf every run is how a real check gets trained into background noise.
+
+## The proposal I withdrew
+
+I had ranked a new "check 10 — local-law pointer lint" highly: run the existing `dead_paths()` over the
+tier-2 law files with its table-rows-only restriction lifted, to catch stale prose pointers like the
+`aviationChat-AGY` one from round 1.
+
+Two things killed it.
+
+First, the operator's objection: a grep-based sweep can't see into `Projects/` at all, because those are
+gitignored from the lobby root — it would have returned clean for every project and *looked* like a
+passing check. (Moving it into the linter answers that; `check_maps.py` walks with `os.walk` under
+`--root` and never reads gitignore.)
+
+Second, and decisive: **testing it against reality.** The line I had written into `_artifacts/AGENTS.md`
+two hours earlier references `_artifacts/opencode/aviationChat-AGY/` — a *lobby* path, cited from inside
+AGY. First segment `_artifacts` is a real top-level folder there, and `AGY/_artifacts/opencode/` doesn't
+exist, so check 10 would have flagged my own correct line on day one. Adding a noisy hint while removing a
+noisy fatal (the `.ruff_cache` fix) is incoherent — noise is what trained agents to ignore these checks in
+the first place. The bug it targets has fired **once**, on a two-month-old folder rename.
+
+Deferred, with the trigger stated: a second rename-strands-prose incident, or the consolidation below
+failing to shrink the path count.
+
+## Do we need both a README and an AGENTS.md?
+
+`docs/workspace-standard.md` already answers it, and the answer indicted what was on disk.
+
+- Tier 2 (`_artifacts/`, `_my_resources/`, `docs/`) **must** carry a local-law `AGENTS.md` + adapters —
+  it's on the format checklist and in the PATH CONTRACT.
+- `README.md` is **not** required: `check_maps.py` never mentions it, and no adapter loads it.
+- The reading-order rule: *"`AGENTS.md` = behavior, `INDEX.md` = contents. Complements, not substitutes."*
+- And the binding constraint: *"a Tier-2 `AGENTS.md` is a **digest that points at canon** — never a second
+  canonical copy."*
+
+That last line was being violated in every `_artifacts/` folder in the system. The placement law existed
+**four** times per folder — the global rule, `AGENTS.md`, `README.md`, and `INDEX.md`'s header — and they
+had drifted in the worst possible direction:
+
+| File | Routing branches it listed |
+|---|---|
+| `AGENTS.md` (**auto-loaded**) | 3 — no `debugging/` |
+| `README.md` (never loaded) | 5 |
+| `INDEX.md` header (never loaded) | 5 |
+
+The file agents actually load was the *least* complete one. AGY's `AGENTS.md` even contradicted itself
+inside eight lines: no `debugging/` in its WRITE list, then `debugging/` named as a valid bucket parent in
+its NEVER line. Fresh carried the identical defect, which makes it template-inherited, not a one-off.
+
+## What changed
+
+**`.agents/scripts/check_maps.py`** — one condition, plus a comment saying why: dot-dirs are tool caches,
+never content, so they never owe an `INDEX.md`.
+
+**`.agents/workflows/update-maps-indexes.md`** — Step 3 rewritten at the top: the scope line now reads
+"every `INDEX.md` in the workspace you are currently reconciling," with a note explaining that the
+`Projects/` skip applies only to a bare lobby lint. Added a ⚠️ block stating outright that **a clean lint
+proves nothing about root-ledger row completeness**, citing this exact incident. Added the row schema —
+the two-table shape (session table first, bucket summary lower down), "copy the columns already in use,
+never invent or reorder," and what belongs in a "What" cell, with the note that a row reading
+"Story 21.3 work" is *worse* than no row because it looks reconciled.
+
+**Nine files consolidated** — `_artifacts/{AGENTS.md, README.md, INDEX.md}` × lobby, AGY, Fresh:
+
+- `AGENTS.md` is now the single placement authority in each, with the **complete** branch list — AGY gains
+  `debugging/`, `tea/`, `epic_debug_<N>/` and `_archived/`; Fresh gains `debugging/`; the lobby's
+  cwd-decides-first rule is now explicit (*if cwd is a project, stop — you do not write here*).
+- `README.md` keeps what a digest can't carry — the file-shape table, the bucket inventory, the archive
+  rationale, continuity — and states plainly that placement is deliberately not restated, with a line
+  telling the next author to put new rules in `AGENTS.md` instead.
+- `INDEX.md` headers became pointers.
+- All three also stopped instructing "append a row to `INDEX.md`", which had directly contradicted the
+  batch-reconcile note added in round 1.
+
+Two depth-3 rows added — `epic_21/INDEX.md` for 21.3 and `_main/INDEX.md` for this session — under the
+rule's own carve-out (append by hand only when you're the only one who can write the row).
+
+## Verification — actual output
+
+```
+######## AGY ########                    ######## LOBBY ########
+[level-2 INDEX presence]  [ok] clean     [level-2 INDEX presence]  [ok] clean
+[depth-3 _artifacts INDEX] [ok] clean    [tier-2 local law]        [ok] (redirects verified)
+[tier-2 local law] [ok] (redirects verified)
+```
+
+The `.ruff_cache` fatal is gone from both. Tier-2 still verifies clean after nine files were rewritten,
+so no adapter or law file was broken in the process.
+
+**Not fixed, deliberately:** six `_main/INDEX.md` rows in the lobby (`2026-07-23_code-standards-gate`,
+`2026-07-23_reindex-gitnexus`, `2026-07-24_sudo-close-workingtree`, `2026-07-24_sudo-flow-rules-audit`,
+`2026-07-24_update-sudo-close-workingtree`, `2026-07-25_sudo-command-optimization`). Those are earlier
+sessions; writing their "What" cells would mean inventing summaries for work I wasn't in, which is exactly
+the worse-than-nothing row the new guidance warns about. They belong to a `/update-maps-indexes` run.
+
 ## Task Checklist
 
 - [x] Verify 21.3's artifact placement against disk **and** against `main_debug`
@@ -147,6 +272,17 @@ Scoping check before commit — only this session's files dirty in each repo:
 - [x] D3 — three dead `aviationChat-AGY` pointers repaired
 - [x] Backfill the 5 `epic_21` INDEX rows
 - [x] Verify + commit one commit per repo
+- [x] **Round 2** — audit `/update-maps-indexes` by running its linter, not reading it
+- [x] Workflow Step 3: scope contradiction, "a clean lint proves nothing here" warning, row schema
+- [x] `check_maps.py`: dot-dir skip at level 1 (`.ruff_cache` fatal false positive)
+- [x] Answer the README/AGENTS question against `workspace-standard.md` rather than by preference
+- [x] Consolidate the placement law 4 copies → 1 across 9 files (lobby, AGY, Fresh)
+- [x] Backfill the two depth-3 rows that are mine to write
+- [x] Re-run the linter: dot-dir FP gone, tier-2 still clean after the rewrites
+- [x] Withdraw the check-10 proposal on evidence; record the trigger that would revive it
+- [ ] **Deferred:** check 10 (local-law pointer lint) — would false-positive on day one; revisit on a
+      second incident
+- [ ] **Not done:** six `_main/INDEX.md` rows for earlier sessions — batch work for `/update-maps-indexes`
 - [ ] **Not done:** `Fresh_Workspace_BMAD` is on `main` — committed locally, not pushed (owner-only branch)
 
 ## Your Actions

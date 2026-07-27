@@ -4,6 +4,7 @@
 
 | Session folder | What | Artifacts |
 |---|---|---|
+| `2026-07-26_artifacts-rule-hardening/` | Made the artifacts rule tell agents to read a project's `_artifacts/AGENTS.md` before placing anything (it names buckets the rule doesn't); recorded the sudo-lane verdict home; consolidated the placement law from 3–4 copies per folder down to one (AGENTS.md), across lobby + AGY + Fresh; fixed the `.ruff_cache` false positive in `check_maps.py`'s level-2 check. | implementation_plan, walkthrough |
 | `2026-07-23_update-maps-indexes/` | Fan-out map and artifact-index reconciliation. | implementation_plan, walkthrough |
 | `2026-07-22_operator-profile-rule/` | Operator-profile rule addition and rollout. | implementation_plan, walkthrough |
 | `2026-07-22_pipeline-conversion-and-sop/` | Pipeline conversion and curriculum-operations SOP. | implementation_plan, walkthrough |

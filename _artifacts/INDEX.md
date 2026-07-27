@@ -3,29 +3,15 @@
 One row per session, newest at top. **"pick up"** scans this; **"hand off"** appends to it.
 This is the scannable "database" — naming conventions + this ledger replace a query layer.
 
-## Where artifacts go (placement rules — read before creating a session folder)
-**Artifacts go where you WORK FROM (Daniel, 2026-06-25; `_main` rename 2026-06-26).** The deciding factor is the
-workspace you have open (your cwd), not only what the work is about. Three rules decide the bucket:
-1. **Project work** → a per-project bucket `_artifacts/<project-folder-name>/<YYYY-MM-DD>_<slug>/`
-   (e.g. `_artifacts/AGY_AVIATIONCHAT/`, `_artifacts/Fresh_Workspace_BMAD/`; the bucket = the `Projects/<name>/`
-   folder name). **Create the bucket if missing; otherwise reuse it.**
-2. **Main / home-base / cross-project work** (routing, `.agents/` toolkit, multi-project) →
-   `_artifacts/_main/<YYYY-MM-DD>_<slug>/` (formerly `_home`).
-3. **Stories** → nest under the parent **epic folder** `epic_<E>/<story>/` (create `epic_<E>/` if missing) — any
-   story (autopilot/BMAD/hand-dev), parent = the story id, not the tool; retired → `_archived/`.
-- **Working from the home base** (this repo is your cwd) → home-base `_artifacts/` per rules 1–3; append a row
-  to THIS ledger.
-- **Working from inside a project** (`Projects/<name>/` is your cwd) → **follow THAT project's rules**:
-  project-local `Projects/<name>/_artifacts/…` + its own `active-context.md`/`INDEX.md` (not this ledger). There
-  is no `_main` inside a project — every task there is that project's work.
-- **opencode** writes under its own `_artifacts/opencode/` namespace, applying the same three rules inside it:
-  `opencode/<project>/`, `opencode/_main/`, `opencode/<project>/<epic>/<story>/`.
-- **Finding a project's history:** check BOTH the home-base bucket `_artifacts/<project>/` (sessions run from
-  here) AND the project-local `Projects/<name>/_artifacts/` (sessions run inside it).
-- Each session folder carries: `implementation_plan.md` (approved before edits) and a single `walkthrough.md`
-  (ending in a `## Task Checklist` section then a `## Your Actions` git command — **no** separate `task-list.md`
-  or `your-action-required.md`); add `code-review.md` / `self-audit-stress-test.md` when those run. Then update
-  that workspace's `active-context.md` (+ a row in the matching `INDEX.md`).
+## Where artifacts go → [`AGENTS.md`](./AGENTS.md), the one authority
+The full placement law used to be restated in this header. It drifted out of step with the other copies, so it
+is now a pointer: **read [`AGENTS.md`](./AGENTS.md) before creating a session folder** — it is auto-attached,
+so it is the copy that actually reaches an agent. Folder shape and the bucket inventory → [`README.md`](./README.md).
+Adding placement rules back into this header re-creates the bug.
+
+**Rows below.** Newest first — **"pick up"** scans them. Copy the columns already in use; never add or reorder
+them. This ledger is reconciled in batch by the SessionStart hooks + `/update-maps-indexes` — don't hand-append
+a row every session; get the folder right instead.
 
 | Date | Workspace | Slug | Summary | Status |
 |---|---|---|---|---|
