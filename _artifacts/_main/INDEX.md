@@ -5,6 +5,12 @@
 | Session folder | What | Artifacts |
 |---|---|---|
 | `2026-07-26_artifacts-rule-hardening/` | Made the artifacts rule tell agents to read a project's `_artifacts/AGENTS.md` before placing anything (it names buckets the rule doesn't); recorded the sudo-lane verdict home; consolidated the placement law from 3–4 copies per folder down to one (AGENTS.md), across lobby + AGY + Fresh; fixed the `.ruff_cache` false positive in `check_maps.py`'s level-2 check. | implementation_plan, walkthrough |
+| `2026-07-25_sudo-command-optimization/` | Optimized sudo commands and created safety inventory. | implementation_plan, safety-inventory, walkthrough |
+| `2026-07-24_update-sudo-close-workingtree/` | Updated the sudo-close-workingtree command/workflow. | implementation_plan, walkthrough |
+| `2026-07-24_sudo-flow-rules-audit/` | Audited the sudo flow rules and documented the findings. | 2026-07-24_sudo-flow-rules-audit, implementation_plan, walkthrough |
+| `2026-07-24_sudo-close-workingtree/` | Created the sudo-close-workingtree command and workflow. | implementation_plan, walkthrough |
+| `2026-07-23_reindex-gitnexus/` | Reindexed GitNexus. | implementation_plan |
+| `2026-07-23_code-standards-gate/` | Implemented the code standards gate for the sudo code review flow. | implementation_plan, walkthrough |
 | `2026-07-23_update-maps-indexes/` | Fan-out map and artifact-index reconciliation. | implementation_plan, walkthrough |
 | `2026-07-22_operator-profile-rule/` | Operator-profile rule addition and rollout. | implementation_plan, walkthrough |
 | `2026-07-22_pipeline-conversion-and-sop/` | Pipeline conversion and curriculum-operations SOP. | implementation_plan, walkthrough |

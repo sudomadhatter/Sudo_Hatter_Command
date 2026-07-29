@@ -21,6 +21,7 @@
 | Daniel's personal area — **PROTECTED** (don't edit/reference unless he says/links) | `_my_resources/` — **EXCEPT** `open_tasks/` (read-only carve-out below) |
 | Secrets / env files — ALL gitignored, so never in the AUTO tree below | lobby `.env` (root) + per-project files; master bundle `_my_resources/migrations/_secrets/master.env` (hand-carried, NEVER committed); export/restore: `_my_resources/migrations/Export-EnvMaster.ps1` / `Restore-EnvMaster.ps1` |
 | **"What do we do next" / open tasks / Daniel's plans & PRPs** — READ-ONLY, never edit | `_my_resources/open_tasks/` (start at `todo_list.md`; cross-check vs live project files) |
+| Scratch scripts and temp files | `scratch/` |
 
 ## Knowledge map (which doc to read when)
 | Doc | Read it when |
@@ -70,6 +71,9 @@ Sudo_Hatter_Command/
         [2 files: .yamlx1, .csvx1 | e.g. config.yaml]
     custom/
         [6 files: .tomlx6 | e.g. bmad-dev-story.toml]
+    output/
+      brainstorming/
+        virtual-film-previs-software/
     scripts/
         [3 files: .pyx3 | e.g. memlog.py]
     tea/
@@ -81,9 +85,15 @@ Sudo_Hatter_Command/
   _bmad-output/
     brainstorming/
       brainstorm-tdad-integration-2026-07-07/
+      virtual-director/
         [1 files: .mdx1 | e.g. INDEX.md]
+    forge/
+      aviationchat-prd/
     implementation-artifacts/
     planning-artifacts/
+      briefs/
+        brief-NEXgen-VR-Director-2026-07-28/
+            [1 files: .mdx1 | e.g. brief.md]
     test-artifacts/
   _routing-canary/
     control/
@@ -93,6 +103,8 @@ Sudo_Hatter_Command/
       [6 files: .mdx6 | e.g. AGENTS.md]
   docs/
       [9 files: .mdx8, .jsonx1 | e.g. AGENTS.md]
+  scratch/
+      [1 files: .pyx1 | e.g. find_brainstorm.py]
     [8 files: .mdx4, .txtx3, .jsonx1 | e.g. AGENTS.md]
 ```
 <!-- REPO-MAP:AUTO-END -->
