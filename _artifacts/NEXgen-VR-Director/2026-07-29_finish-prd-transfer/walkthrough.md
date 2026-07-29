@@ -46,10 +46,11 @@ Git verification after the transfer:
 
 ```text
 Commit                       : 4d12f92 chore: initialize NEXgen VR Director
-Branch                       : main_debug
+Baseline branch              : main
+Active development branch    : main_debug
 WorktreeEntries              : 0
 Local/Remote divergence      : 0 / 0
-Remote branch                : origin/main_debug
+Remote branches              : origin/main, origin/main_debug
 Repository                   : private
 ```
 
@@ -65,6 +66,6 @@ Repository                   : private
 
 ## Your Actions
 
-- The complete project is available in the private GitHub repository: `https://github.com/sudomadhatter/NEXgen-VR-Director`.
+- The complete project is available in the private GitHub repository: `https://github.com/sudomadhatter/NEXgen-VR-Director`. Its default branch is `main`.
 - The next planning step is UX design and architecture. Architecture must satisfy the PRD's Section 10 validation gates before it commits to the affected implementation scope.
-- The project now tracks `origin/main_debug` at commit `4d12f92`; the local worktree is clean and synchronized with GitHub.
+- The project now tracks both `origin/main` and `origin/main_debug` at commit `4d12f92`; the local checkout is `main_debug`, clean, and synchronized with GitHub.
