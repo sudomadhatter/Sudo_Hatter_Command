@@ -53,7 +53,7 @@ of the board. If an item has no command, write `—` and say who owns it.
 | `review` (code written) | In review | `/sudo-code-review <id>` |
 | review PASS, not landed | In review | `/sudo-update-sprint-memory` |
 | `done` but owes a live test / deploy / decision | Operator queue | `—` (operator) |
-| Small, contained, **not** a P0 surface | Quick-dev queue | `/sudo-quick-dev <slug>` |
+| Small, contained, **not** a P0 surface | **Ready for dev**, Lane = `quick-dev` | `/sudo-quick-dev <slug>` |
 | Unblockable by dev (dependency, external, decision) | Blocked | `—` + explicit *Blocked by:* |
 | `descoped` / `deferred` | **Epic status only** | 🛑 never a lane, never a recommendation |
 
@@ -62,8 +62,18 @@ of the board. If an item has no command, write `—` and say who owns it.
 - A `done` story that still owes anything (deploy, backfill, live verify) **stays visible** in the
   Operator queue. Do not let `done` hide a live obligation.
 - Authz / PII / P0 surfaces are **never** quick-dev — route them to `/sudo-write-story-tests`.
-- If the YAML and reality disagree, follow the YAML in the status column and **flag the drift inline**
-  on that row. Never silently "correct" the YAML in the board.
+- ⛔ **A story with a LIVE WORKTREE is IN FLIGHT — the YAML does not get a vote.** Before writing any lane,
+  run `git worktree list` and read the `Status:` line of each live tree's story file. **Those two win.**
+  The YAML lags **by design**: neither `/sudo-dev-story-tests` (②) nor `/sudo-code-review` (③) ever writes
+  `sprint-status.yaml` — only close-out does (`story-status-flip-contract`). So an actively-developed story
+  reads `backlog` there for its entire life.
+  **This is the single worst bug this board can have.** On 2026-07-27 it put 21.4 — story written, tests
+  written, implementation done, sitting in code review — under *Ready for dev* with
+  `/sudo-write-story-tests` as its next command, i.e. it instructed the reader to rebuild the story from
+  scratch on top of another lane's live worktree. Map story-file `Status:` straight to the lane:
+  `review` → **In flight**, next `/sudo-code-review <id>`. Never `①` on a story whose tree already exists.
+- If the YAML and reality disagree **for anything other than a live worktree**, follow the YAML in the
+  status column and **flag the drift inline** on that row. Never silently "correct" the YAML in the board.
 
 ## Step 3 — Write the board (this skeleton, this order, every time)
 
