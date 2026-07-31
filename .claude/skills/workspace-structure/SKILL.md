@@ -28,8 +28,10 @@ heavy in them — no GitNexus block, no rules. Keep them bare. GitNexus code-int
 own `docs/gitnexus.md` with a one-line pointer from `AGENTS.md` — never inline.
 
 ## Naming & artifact buckets
-Dated `YYYY-MM-DD_<slug>.md`; versioned `_draft`/`_v2`/`_final`; artifacts go **where you work FROM** (the
-`artifacts-always-first` rule owns the full bucket model). Full model → `docs/workspace-standard.md`.
+Dated `YYYY-MM-DD_<slug>.md`; versioned `_draft`/`_v2`/`_final`; artifacts go **with the owning workspace,
+regardless of cwd or tool**. Every `Projects/<name>/` workspace is project-local unless it is explicitly
+listed in the home router's Sudo-managed exception registry. The `artifacts-always-first` rule owns the full
+bucket model. Full model → `docs/workspace-standard.md`.
 
 ## When you CHANGE the structure
 Propagate structural changes to `Projects/Fresh_Workspace_BMAD/` — the living template new projects clone from —

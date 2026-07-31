@@ -4,6 +4,12 @@ Updates `_my_resources/_quick_reference/sprint-dependency-map.md` in the target 
 
 > Flow position: Standalone / maintenance command — run whenever stories change state, after epic kickoff, or when checking open work tickets.
 
+> **REBUILD TO TEMPLATE.** Every run regenerates the document from scratch using the template in Step 3.
+> Do NOT preserve sections from the existing file that are not in the template (settled rulings tables,
+> epic status tables, pipeline specs, historical context paragraphs — all of that is reference material
+> that lives in the sources of truth, not on an action board). The board must be lean enough to scan in
+> 30 seconds and answer: "what do I do next, what can run in parallel, what's blocked."
+
 ## Step 0 — Resolve Target Project
 
 Determine the target project:
@@ -41,6 +47,14 @@ For every story in an active epic (`in-progress` or `backlog`):
 - **Story Review Passed / Ready to Land**:
   - Next Command: `/sudo-update-sprint-memory`
 
+### 1b. Parallelism (CRITICAL)
+- Check the dependency graph: stories that have **no dependency on each other** should be marked
+  with `‖` (parallel) in the Ready for Development table and called out explicitly in the execution spine
+  under a `### ⚡ Can run in parallel` sub-heading.
+- Always check git worktrees (`git worktree list`) — an existing worktree means work is in flight even if
+  the YAML hasn't caught up. A worktree with zero divergent commits from `main_debug` is premature and
+  should be flagged for pruning.
+
 ### 2. Stories Requiring Live Testing or Blocking Agent Input
 - List any completed/staged stories that require Daniel to manually test on staging/Cloud Run, perform voice/UI checks, or provide design decisions before the story can fully close.
 
@@ -56,6 +70,8 @@ For every story in an active epic (`in-progress` or `backlog`):
 
 ### 6. Daniel-Owned Operations & Launch Gates
 - Operations, environment secrets, Firestore rules/TTL policy deploys, legal reviews, or manual tasks owned by Daniel.
+- **Strip completed ✅ items.** Only open/pending work belongs on the board. Completed operator actions
+  are historical — they live in `active-context.md` and `sprint-status.yaml`, not here.
 
 ## Step 3 — Format and Write `sprint-dependency-map.md`
 

@@ -1,5 +1,5 @@
 ---
-description: Update personal sprint map — rebuilds the workspace's sprint-dependency-map.md as a clean ticket board (lanes, next command per story, operator queue, blockers) from sprint-status.yaml.
+description: Update personal sprint map — rebuilds the workspace's sprint-dependency-map.md as a clean ticket board (lanes, next command per story, VERIFIED parallel matrix, quick-dev candidates, operator queue, blockers) from sprint-status.yaml.
 platforms: [opencode, antigravity, claude, codex]
 ---
 
@@ -35,6 +35,11 @@ Echo `Target: <PROJECT_ROOT>`. Target doc: `{PROJECT_ROOT}/_my_resources/_quick_
 4. `git log --oneline -20` + `git branch -a` + `git worktree list` — catch stories that moved without the
    YAML being flipped.
 5. `_my_resources/Open_Tasks/*.md` — live bug/triage docs that own tickets the YAML does not track.
+6. `_bmad-output/test-artifacts/test-design-epic-*.md` — the **risk P-level per story**. It drives two
+   board decisions: quick-dev eligibility (Step 2) and how loudly a parallel verdict matters (Step 2.5).
+7. For every live worktree: its story file's frontmatter (`blocked_by:`, `bdd_contract:`) and any
+   `_artifacts/epic_*/story-*/implementation_plan.md` — a ② plan's "Modify [file]" lines are that lane's
+   own declaration of its edit sites, and Step 2.5 consumes them.
 
 ⛔ **Never inherit the previous board's epic list.** Build the epic list fresh from the YAML every run.
 A prior version of this board silently omitted a whole live epic and recommended a closed story and a
@@ -53,7 +58,7 @@ of the board. If an item has no command, write `—` and say who owns it.
 | `review` (code written) | In review | `/sudo-code-review <id>` |
 | review PASS, not landed | In review | `/sudo-update-sprint-memory` |
 | `done` but owes a live test / deploy / decision | Operator queue | `—` (operator) |
-| Small, contained, **not** a P0 surface | **Ready for dev**, Lane = `quick-dev` | `/sudo-quick-dev <slug>` |
+| Risk-scored **P2/P3** + small + contained (or an unscored follow-on that is) | **Ready for dev**, Lane = `quick-dev` | `/sudo-quick-dev <id-or-slug>` |
 | Unblockable by dev (dependency, external, decision) | Blocked | `—` + explicit *Blocked by:* |
 | `descoped` / `deferred` | **Epic status only** | 🛑 never a lane, never a recommendation |
 
@@ -61,7 +66,15 @@ of the board. If an item has no command, write `—` and say who owns it.
 - A `descoped` or `deferred` story is **never** in Ready, In flight, or Do next.
 - A `done` story that still owes anything (deploy, backfill, live verify) **stays visible** in the
   Operator queue. Do not let `done` hide a live obligation.
-- Authz / PII / P0 surfaces are **never** quick-dev — route them to `/sudo-write-story-tests`.
+- **Quick-dev is a P2/P3 lane.** A story risk-scored **P0 or P1** in the epic's test-design takes the
+  full ①②③ loop, always — no matter how small the diff looks. Authz / PII / data-integrity surfaces
+  are **never** quick-dev regardless of score. Unscored follow-ons qualify only when small, contained,
+  and off those surfaces; `/sudo-quick-dev`'s EJECT tripwire is the backstop, not the gate.
+- ⛔ **The board never says "parallel" outside the Parallel-lanes table, and ✅ only comes from
+  Step 2.5.** No prose like "zero dependencies", no ‖ markers on unverified rows. On 2026-07-31 this
+  board asserted "21.11 has zero dependencies on 21.8 — can run in parallel" for a story that had **no
+  story file** — its ① then found both stories edit `check_cost_cap` at the same spot. Unknown
+  surfaces = ⚠️ unverified = scheduled as serialized.
 - ⛔ **A story with a LIVE WORKTREE is IN FLIGHT — the YAML does not get a vote.** Before writing any lane,
   run `git worktree list` and read the `Status:` line of each live tree's story file. **Those two win.**
   The YAML lags **by design**: neither `/sudo-dev-story-tests` (②) nor `/sudo-code-review` (③) ever writes
@@ -74,6 +87,31 @@ of the board. If an item has no command, write `—` and say who owns it.
   `review` → **In flight**, next `/sudo-code-review <id>`. Never `①` on a story whose tree already exists.
 - If the YAML and reality disagree **for anything other than a live worktree**, follow the YAML in the
   status column and **flag the drift inline** on that row. Never silently "correct" the YAML in the board.
+
+## Step 2.5 — Verify every parallel claim (MANDATORY — parallelism is a verdict, not a vibe)
+
+For every pair of lanes the board could offer together (each in-flight lane × each other in-flight or
+ready lane in the active epic), derive a verdict **fresh this run**:
+
+1. **Extract each story's touch-set** — the real source files it changes — from, in order of authority:
+   - `git diff --name-only main_debug...<branch>` for a live branch (code already written wins);
+   - the worktree's `implementation_plan.md` "Modify/Add [file]" lines (a ② plan is the lane's own
+     declaration of its edit sites — this is what would have caught 21.8 → 21.11);
+   - the story file's Dev Notes surfaces-map / Tasks paths.
+   Board and planning artifacts (`_bmad-output/`, `_bmad/`, `_artifacts/`, `_my_resources/`) do not
+   count as overlap — every lane touches those; only source paths decide.
+2. **Check contract edges** — `blocked_by:` frontmatter, and grep each story file for the other's id.
+   A story that imports a symbol the other story **creates** is 🔒 serialized even with zero file
+   overlap today (the module will exist by the time both land — add/add on a new file has no merge base).
+3. **Intersect and rule:**
+   - Intersection empty AND no contract edge → ✅ **parallel** — evidence line: `no shared source
+     files (checked <date>: <which inputs were read>)`.
+   - Any shared file or contract edge → 🔒 **serialize** — name the shared file/function and which
+     story goes first.
+   - Either story has **no story file yet** → ⚠️ **unverified** — its surfaces are unknown until ①
+     grounds them. ⚠️ schedules as 🔒. Never promote ⚠️ to ✅ by assumption; the fix is to run ①.
+4. Verdicts are **point-in-time**: a new `implementation_plan.md` appearing in a lane's worktree can
+   flip yesterday's ✅ to 🔒, which is why this step re-runs on every rebuild.
 
 ## Step 3 — Write the board (this skeleton, this order, every time)
 
@@ -106,7 +144,15 @@ last_checked: YYYY-MM-DD
 ## ▶ Do next
 
 **`<command>`** — <one line: why this one>.
-Parallel-safe beside it: **`<command>`** (<lane>) · **`<command>`** (<lane>).
+Runnable beside it: only ✅ rows below — **`<command>`** (<story>) · or *none verified*.
+
+## 🧵 Parallel lanes — verified this run, never assumed
+
+| Pair | Verdict | Evidence / shared surface | Order |
+|---|---|---|---|
+| <A> ↔ <B> | ✅ parallel | no shared source files (checked YYYY-MM-DD: diffs + plans + story surfaces) | — |
+| <A> ↔ <C> | 🔒 serialize | both edit `<file>` (`<function>`) | <C> waits for <A> |
+| <A> ↔ <D> | ⚠️ unverified | <D> has no story file — surfaces unknown until ① | treat as 🔒 |
 
 ## 🔴 Blocked
 
@@ -143,13 +189,22 @@ Lane column; the next command carries the difference (`/sudo-quick-dev <slug>` v
 |---|---|---|---|
 | 1 | 🔴 | <imperative action> | <story / gate> |
 
-⛔ **NEVER emit a "Quick-dev queue" section.** It existed until 2026-07-27 and was deleted because a
-separate section for actionable dev work is a trap in two directions: it splits the "what do I work on
-next" answer across two tables, and — being off to the side — nobody reconciles it, so it goes stale while
-still reading as authoritative. Its two surviving rows were BOTH wrong: one recommended `/sudo-quick-dev`
-on a story that was already `done` and only owed a manual live pass (operator-queue work), the other stayed
-listed after its fix had shipped. **Quick-dev tickets are dev work → the Ready-for-dev table.** If a ticket
-is not dev work, it belongs in the Operator queue or the Pipeline, never in a lane of its own.
+## ⚡ Quick-dev recommendations
+
+Two kinds of rows, one lane: (a) **backlog stories risk-scored P2/P3** in the epic's test-design —
+candidates for the fast loop; (b) small unscored follow-ons / one-file debugs. **P0 and P1 stories are
+NEVER here** — full ①②③ always; authz / PII / data-integrity never, regardless of score. The
+`/sudo-quick-dev` EJECT tripwire returns anything that grows teeth to the full loop.
+
+| Ticket | P | Brief / spec | Next command |
+|---|---|---|---|
+| **<story id>** <title> | P2 | spec in `epics.md` § <id> | `/sudo-quick-dev <id>` |
+| <follow-on name> | — | [`<doc>`](<path>) | `/sudo-quick-dev <slug>` |
+
+⚠️ **Staleness guard.** The old quick-dev section (deleted 2026-07-27) went stale because it was not
+reconciled on each run. This command rebuilds the ENTIRE board every run — including this section.
+If a ticket here is already `done`, **delete the row.** If a ticket here only owes a live test (no code),
+it belongs in the Operator queue, not here.
 
 ## 📋 Pipeline — specced, not yet a story
 
@@ -213,8 +268,12 @@ owes something, that item moves to the Operator queue and stays visible.
 4. Every `done`-but-owing item is in the Operator queue.
 5. Every referenced path resolves.
 6. Zero strikethrough, zero "historical" blocks, under ~250 lines.
+7. **Every use of the word "parallel" on the board traces to a ✅ row in Parallel lanes**, and every
+   ✅ row carries its evidence line. No ⚠️ pair is offered as runnable-beside anywhere.
+8. **No P0/P1 story appears in quick-dev** — cross-check every ⚡ row against the test-design P-levels.
 
 ## Step 6 — Report
 
 Print the board path, then: active epic(s) · counts per lane · the single recommended next command ·
+parallel verdicts (`<n> ✅ · <n> 🔒 · <n> ⚠️`) with any 🔒 named · quick-dev candidates count ·
 operator-owed count with 🔴 count · any drift found between the YAML and git · any epic collapsed.
