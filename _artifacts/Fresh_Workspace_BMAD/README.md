@@ -1,7 +1,7 @@
-# `_artifacts/Fresh_Workspace_BMAD/` — home-base bucket for the Fresh_Workspace_BMAD project
+# `_artifacts/Fresh_Workspace_BMAD/` — Sudo-managed Fresh Workspace history
 
-Plans, walkthroughs, and continuity for **Fresh_Workspace_BMAD work done FROM the home base** (cwd =
-`Sudo_Hatter_Command/`). This is the per-project bucket from rule 1 of the placement standard
+Plans, walkthroughs, and continuity for maintaining **Fresh_Workspace_BMAD**, regardless of launch
+directory or agent/tool. This is an explicit Sudo-managed exception
 (full rules → [`../README.md`](../README.md) and [`../INDEX.md`](../INDEX.md)).
 
 ## Structure (same three rules as everywhere)
@@ -9,7 +9,7 @@ Plans, walkthroughs, and continuity for **Fresh_Workspace_BMAD work done FROM th
 - **Story** → nest under its parent **epic folder**: `<epic>/<story>/` (create the epic folder if missing).
 - **Retired** → `_archived/`.
 
-## Where else this project's history lives
-- Sessions run **from inside the project** (cwd = `Projects/Fresh_Workspace_BMAD/`) are saved in that repo's own
-  `Projects/Fresh_Workspace_BMAD/_artifacts/` instead — so when hunting history, check **both** locations.
-- opencode's runs for this project live under [`../opencode/Fresh_Workspace_BMAD/`](../opencode/README.md).
+## One operational history
+
+Fresh Workspace's operational session history lives here. Its repository-local `_artifacts/` is duplicable
+scaffold content for future projects; clones become project-owned and do not inherit this exception.

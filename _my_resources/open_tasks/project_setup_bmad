@@ -1,0 +1,139 @@
+---
+IsArtifact: true
+ArtifactMetadata:
+  title: NEXgen-VR-Director next planning steps
+  type: implementation_plan
+  date: 2026-07-30
+---
+
+# NEXgen-VR-Director next planning steps
+
+## Goal
+
+Move NEXgen-VR-Director from its final PRD into a decision-complete UX contract, then use that contract to
+sequence architecture, TEA quality planning, epics, and implementation stories without writing stories
+against unresolved product behavior or unproven technical assumptions.
+
+## Current state confirmed
+
+- The PRD is `status: final`; its quality and traceability reviews passed.
+- No UX-design run exists.
+- No architecture, ADR, epic, sprint, or implementation story exists.
+- The project is clean and synchronized on `main_debug`.
+- The PRD carries four architecture validation gates: motion provider, hardware profiles, screenplay
+  fidelity, and voice/asset rights.
+- TEA system-level Test Design cannot run yet because it requires the PRD plus architecture/ADR inputs.
+
+## Recommendation
+
+Do not start implementation stories yet. Run the planning sequence below:
+
+1. **UX now** — use Sally's coaching path, supported by `ui-ux-pro-max`, to turn the final PRD into the
+   paired UX contracts: `DESIGN.md` for visual identity and `EXPERIENCE.md` for information architecture,
+   behavior, states, interactions, accessibility, and named user journeys.
+2. **Architecture next** — design the desktop/client/render-service boundaries and satisfy PRD gates G-1
+   through G-4 with dated evidence before architecture commits to affected scope.
+3. **TEA system-level Test Design** — once an architecture/ADR draft exists, assess product and NFR risk,
+   identify testability requirements, and feed any gaps back into architecture before it is finalized.
+4. **Epics and stories** — create them from the final PRD, UX contracts, approved architecture, and TEA
+   risk plan. This is the first point where implementation stories are ready to be written.
+5. **Implementation-readiness gate** — verify PRD, UX, architecture, epics, acceptance criteria, and
+   traceability before sprint planning.
+6. **Story execution** — for each approved story, run story-level ATDD before development, then automate,
+   review, and trace the tests as implementation proceeds.
+
+## Approval boundary for this plan
+
+Approval authorizes **only Step 1, the UX Create workflow**. Architecture, TEA output, epics/stories, and code
+will each receive their own scoped implementation plan and approval gate.
+
+## UX inputs
+
+Use these confirmed planning sources:
+
+- [Final PRD](../../../Projects/NEXgen-VR-Director/_bmad-output/planning-artifacts/prds/prd-NEXgen-VR-Director-2026-07-28/prd.md) — authoritative when inputs conflict.
+- [PRD decision log](../../../Projects/NEXgen-VR-Director/_bmad-output/planning-artifacts/prds/prd-NEXgen-VR-Director-2026-07-28/.decision-log.md) — settled product decisions.
+- [Product brief](../../../Projects/NEXgen-VR-Director/_bmad-output/planning-artifacts/briefs/brief-NEXgen-VR-Director-2026-07-28/brief.md) — supporting discovery context; its draft status does not override the final PRD.
+- [Project context](../../../Projects/NEXgen-VR-Director/_bmad-output/project-context.md) — product constraints and planning boundaries.
+
+Do not use the inherited generic scaffold as product guidance.
+
+## UX execution order
+
+1. Create the new UX run workspace under the planning-artifacts directory. No prior run needs resuming.
+2. Capture Daniel's UX brain dump and any visual references or brand constraints he chooses to provide.
+3. Walk the four PRD journeys with their named protagonists and close the information architecture: every
+   stated need has a screen, and every screen belongs to a journey.
+4. Resolve the high-impact experience decisions: dual-pane Director's Chair behavior, Live versus Step
+   Director states, approval and regeneration boundaries, AI suggestion handling, hardware preflight,
+   progress/failure/recovery, local-versus-cloud visibility, accessibility, input methods, and content
+   density.
+5. Capture visual-identity decisions without pre-selecting colors, styles, or component systems for Daniel.
+6. After Daniel supplies the product and style keywords, run the required `ui-ux-pro-max` design-system
+   search for a desktop film-previsualization creative tool. Use its pattern, style, color, typography,
+   effects, and anti-pattern results as recommendations—not as automatic decisions.
+7. Supplement that search with focused UX guidance for dense desktop controls, keyboard and focus behavior,
+   progress and failure states, undo/recovery, accessibility, reduced motion, and React implementation
+   constraints.
+8. Save the relevant `ui-ux-pro-max` findings in the UX run's `.working/` area and record only
+   Daniel-approved choices in the UX decision log. Do not create a competing persisted `MASTER.md`;
+   BMad's `DESIGN.md` and `EXPERIENCE.md` remain the two canonical contracts.
+9. Distill the decision log into the two UX spines, render key-screen references where layout materially
+   affects behavior, and classify all remaining surfaces as mocked or spine-only.
+10. Offer the UX reviewer gate before finalization. Resolve phase-blocking findings and set both spines to
+   `status: final`.
+11. Apply the `ui-ux-pro-max` pre-delivery checklist to the UX contracts and mocks: consistent icons,
+    visible interaction and focus states, no layout-shifting hover behavior, sufficient contrast, no
+    color-only meaning, reduced-motion support, and responsive behavior appropriate to the approved desktop
+    window constraints.
+12. Update project continuity and close this session with a walkthrough containing the final task checklist
+   and Daniel's remaining actions.
+
+## Files created or updated after approval
+
+- [UX run folder](../../../Projects/NEXgen-VR-Director/_bmad-output/planning-artifacts/ux-designs/ux-NEXgen-VR-Director-2026-07-30/) — new workflow workspace.
+- [DESIGN.md](../../../Projects/NEXgen-VR-Director/_bmad-output/planning-artifacts/ux-designs/ux-NEXgen-VR-Director-2026-07-30/DESIGN.md) — visual design contract.
+- [EXPERIENCE.md](../../../Projects/NEXgen-VR-Director/_bmad-output/planning-artifacts/ux-designs/ux-NEXgen-VR-Director-2026-07-30/EXPERIENCE.md) — behavioral UX contract.
+- [UX decision log](../../../Projects/NEXgen-VR-Director/_bmad-output/planning-artifacts/ux-designs/ux-NEXgen-VR-Director-2026-07-30/.decision-log.md) — canonical discovery decisions.
+- The UX run's `.working/`, including the captured `ui-ux-pro-max` recommendations, plus `imports/` and any
+  promoted `mockups/` or `wireframes/` required by the approved decisions.
+- [Project active context](../../../Projects/NEXgen-VR-Director/_bmad-output/active-context/active-context.md) — planning handoff after UX finalization.
+- [Home-base NEXgen active context](../../active-context.md) — continuity for sessions run from the command center.
+- `walkthrough.md` beside this plan — execution record, actual validation evidence, final task checklist,
+  and Daniel's remaining actions.
+
+No architecture, epic, story, sprint-status, source-code, dependency, deployment, or git-history file is
+authorized by this plan.
+
+## Open decisions during UX discovery
+
+- Whether the UX run follows the recommended **coaching path** or the fast path.
+- Which visual references, brand materials, or existing product inspirations Daniel wants imported.
+- Whether final UX validation uses the available reviewer gate and which lenses Daniel selects.
+- Which layout-driving surfaces need mocks beyond the two core anchors: scene verification and the
+  Director's Chair.
+
+The recommendation is the coaching path because this is a new desktop creative tool with multiple operating
+modes, explicit human-approval boundaries, dense controls, and high-cost downstream architecture decisions.
+
+## Verification
+
+- Confirm both UX spines follow their required schemas and cross-reference shared design tokens correctly.
+- Confirm every PRD user journey and relevant functional requirement maps to an information-architecture
+  surface and state.
+- Confirm Live/Step mode, approval, AI-change, save/recovery, provider-failure, and export-failure states are
+  explicitly defined.
+- Confirm accessibility does not rely on color alone and local/cloud execution remains visible to the user.
+- Confirm mock coverage for every information-architecture surface is recorded.
+- Confirm `ui-ux-pro-max` recommendations were evaluated against the PRD and Daniel's decisions rather than
+  copied into the canonical UX contracts without review.
+- Confirm consistent SVG iconography, visible hover/focus states, accessible contrast, reduced-motion
+  behavior, and no layout shift in interactive mock states.
+- Run the selected UX reviewer lenses, if Daniel opts in, and resolve blocking findings.
+- Verify both UX spines end with `status: final`, then update active context with architecture as the next gate.
+
+## Success criteria
+
+UX is complete when a product designer, architect, and story author can independently answer what the user
+sees, what they can do, how each state behaves, where approval is required, and which decisions remain
+outside UX—without inventing behavior that is absent from the final PRD.

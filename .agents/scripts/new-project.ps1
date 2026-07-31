@@ -3,7 +3,7 @@
   Scaffold a new project workspace under Projects/ that is born with the routing design.
 
 .DESCRIPTION
-  Creates Projects/<Name> from .agents/templates/project-template, creates its _artifacts workspace,
+  Creates Projects/<Name> from .agents/templates/project-template, creates its project-local _artifacts workspace,
   vendors the shared toolkit (sync-agents), and git-inits the new project's own repo. Projects/ is
   already covered by the home-base .gitignore, so the new repo stays independent.
 
@@ -25,7 +25,7 @@ New-Item -ItemType Directory -Force -Path $Dest | Out-Null
 robocopy (Join-Path $Master "templates\project-template") $Dest /E /NFL /NDL /NJH /NJS /NC /NS | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "template copy failed, rc=$LASTEXITCODE" }
 
-New-Item -ItemType Directory -Force -Path (Join-Path $HomeRoot "_artifacts\$Name") | Out-Null
+New-Item -ItemType Directory -Force -Path (Join-Path $Dest "_artifacts\_main") | Out-Null
 
 & (Join-Path $PSScriptRoot "sync-agents.ps1") -Target $Dest
 
@@ -33,5 +33,6 @@ Push-Location $Dest
 try { git init | Out-Null } finally { Pop-Location }
 
 Write-Host "new-project: created Projects\$Name (own git repo, toolkit vendored)."
+Write-Host "Artifacts: Projects\$Name\_artifacts (project-owned by default)."
 Write-Host "NEXT (manual): add a row to router.md pointing 'work about <X>' -> Projects/$Name/."
 exit 0

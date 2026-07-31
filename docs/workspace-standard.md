@@ -55,7 +55,7 @@ A compliant workspace has these, and nothing it doesn't need.
   6. **ROUTING TABLE** — the heart (Layer 2, below).
   7. **NAMING CONVENTIONS** — dates/versions/slugs; replaces a database.
   8. **GATES** — routing gate + risk gate → `.agents/rules/constitution.md`.
-  9. **PERSISTENCE** — pickup/handoff → the right `_artifacts/` for where you work from (Part 2). **"pick up"
+  9. **PERSISTENCE** — pickup/handoff → the `_artifacts/` owned by the target workspace (Part 2). **"pick up"
      also surfaces `_my_resources/open_tasks/todo_list.md`** (READ-ONLY) — the same notes the routing-table
      "what's next / open tasks" row serves, so both triggers land on one source.
 
@@ -91,7 +91,7 @@ Coverage is linted by `check_maps.py` check 8 (non-fatal hint until every worksp
 
 ### Supporting files every workspace carries
 - **`docs/repo-map.md`** — the navigation index (Part 3).
-- **`active-context.md`** (home-base bucket or project-local, per Part 2) — continuity (numbered: `1 PRIME`, `5 PICK UP`, `6 HAND OFF`).
+- **`active-context.md`** (home-base/exception bucket or project-local, per Part 2) — continuity (numbered: `1 PRIME`, `5 PICK UP`, `6 HAND OFF`).
 - **`_my_resources/open_tasks/todo_list.md`** — Daniel's "what's next" queue (+ any plan/PRP `.md` notes alongside). Surfaced by BOTH the routing-table "what's next" row AND on "pick up." **READ-ONLY for agents — with one exception:** `/update-maps-indexes` refreshes the **`## Open Work` file-list** to mirror the task files beside it (Daniel's `## Todo list` prose and the task files stay his). Cross-check vs live files.
 - **`.agents/`** — the vendored master toolkit (rules, commands, skills, workflows, scripts, templates).
 - **`opencode.json`** — `instructions` = the slim least-context set (`AGENTS.md` + the always-load rules);
@@ -128,7 +128,7 @@ the toolkit:
 | ☐ | `AGENTS.md` numbered, with Map/Mission/Support + a real routing table + up-route |
 | ☐ | `.agents/` vendored; `opencode.json` points at `.agents/` paths |
 | ☐ | `docs/repo-map.md` present and current (Part 3) |
-| ☐ | the workspace's `active-context.md` exists (home-base bucket or project-local) |
+| ☐ | the workspace's `active-context.md` exists in its owning home-base, exception, or project-local store |
 | ☐ | `_my_resources/open_tasks/todo_list.md` present (READ-ONLY); wired into BOTH the "what's next" routing row AND "pick up" |
 | ☐ | registered as a row in the root `router.md` |
 | ☐ | vendored `docs/workspace-standard.md` present |
@@ -152,11 +152,11 @@ instead of a per-repo fork. Keep workspaces matching this table and the generic 
 | Structure standard | `docs/workspace-standard.md` | `docs/workspace-standard.md` | this file; vendored copy per project |
 | Maintenance scripts | `.agents/scripts/{check_maps,generate_repo_map}.py` | same (synced copies) | run central with `--root <path>`; synced copy is for standalone use |
 | Drift baseline | `docs/.maps-state.json` | `docs/.maps-state.json` | sits beside the repo-map |
-| Continuity store | `_artifacts/` (buckets: `_main/`, `<project>/`) | `_artifacts/` (project-local) | **"artifacts go where you work FROM"** |
-| Pickup/handoff brief (**prune target**) | `_artifacts/<bucket>/active-context.md` | **BMAD project:** `_bmad-output/active-context/active-context.md` (the live brief; `_artifacts/` holds *session history* only) | the file the **prune** trims |
-| Context archive (prune overflow) | `_artifacts/<bucket>/active-context-archive.md` | `_bmad-output/active-context/_archive/` | created on first prune |
+| Continuity store | `_artifacts/_main/` plus explicitly registered Sudo-managed exception buckets | `_artifacts/` (project-local) | ownership decides; cwd/tool never does |
+| Pickup/handoff brief (**prune target**) | `_artifacts/_main/active-context.md` or a registered exception's `active-context.md` | **BMAD project:** `_bmad-output/active-context/active-context.md` (the live brief; `_artifacts/` holds *session history* only) | the file the **prune** trims |
+| Context archive (prune overflow) | owning bucket's `active-context-archive.md` | `_bmad-output/active-context/_archive/` | created on first prune |
 | Session ledger | `_artifacts/INDEX.md` | `_artifacts/INDEX.md` | one row per session; archive overflow → `INDEX-archive.md` |
-| Depth-3 epic INDEX | `_artifacts/<bucket>/INDEX.md` (bucket = `_main`, `<project>`) | `_artifacts/<epic_or_bucket>/INDEX.md` (e.g. `epic_8/`, `epic_11/`, `_main/`, `tea/`) | **only inside `_artifacts/`** — one row per session folder, listing the story/what + artifact files present; scan-to-find for bug-tracking. Not for code dirs. Created when a bucket has ≥2 session folders; `/update-maps-indexes` reconciles. |
+| Depth-3 epic INDEX | `_artifacts/<bucket>/INDEX.md` (bucket = `_main` or a registered exception) | `_artifacts/<epic_or_bucket>/INDEX.md` (e.g. `epic_8/`, `epic_11/`, `_main/`, `tea/`) | **only inside `_artifacts/`** — one row per session folder, listing the story/what + artifact files present; scan-to-find for bug-tracking. Not for code dirs. Created when a bucket has ≥2 session folders; `/update-maps-indexes` reconciles. |
 | Retired artifacts | `_artifacts/_archived/` | `_artifacts/_archived/` | — |
 | Testing & Debugging | `_artifacts/debugging/` | `_artifacts/debugging/` | standardized folder for isolated testing, bug repros, and debug scripts |
 | Tier-2 local law | `_artifacts/AGENTS.md` · `_my_resources/AGENTS.md` · `docs/AGENTS.md` (+ 1-line `CLAUDE.md`/`GEMINI.md` adapters beside each) | same | tier model above; linted as a **non-fatal hint** (check 8) |
@@ -164,15 +164,11 @@ instead of a per-repo fork. Keep workspaces matching this table and the generic 
 | Personal area (protected) | `_my_resources/` | `_my_resources/` | off-limits **except** the `## Open Work` manifest in `open_tasks/todo_list.md` (maintained by `/update-maps-indexes`) |
 | BMAD (if present) | — | `_bmad/` (owned, regenerated) · `_bmad-output/` (state) | `_bmad-output/active-context/active-context.md` **IS** the continuity brief above; `_bmad/` itself is never hand-edited |
 
-**Two modes, one rule.** Every workspace — lobby and project — uses a plain `docs/` folder (no underscore) for
-its navigation index and standard; the old `_docs/` lobby form is retired. The only legitimate
-home-base↔project differences left are: (1) the lobby's `_artifacts/` is split into **buckets** (`_main/`,
-`<project>/`) because work from the lobby is filed by *which workspace it changes*, whereas a project's
-`_artifacts/` is flat history; (2) the **continuity brief** that pickup reads and the prune trims lives at
-`_artifacts/<bucket>/active-context.md` at the lobby but at **`_bmad-output/active-context/active-context.md`**
-in a BMAD project (a project's `_artifacts/` holds *session history* — folders + `INDEX.md` — not the brief).
-Everything else is identical. `check_maps.py` detects the mode by the presence of a `Projects/` directory (and
-a `_bmad-output/` directory) and applies the right column.
+**Two modes, one ownership rule.** Every workspace uses a plain `docs/` folder. A non-exempt project owns
+its session history in its own `_artifacts/` regardless of where a chat starts. The lobby store contains
+only `_main/` plus the named Sudo-managed exceptions in `router.md`. In a BMAD project, the continuity brief
+that pickup reads and pruning trims lives at `_bmad-output/active-context/active-context.md`; project-local
+`_artifacts/` holds session history. `check_maps.py` detects lobby/project mode and applies the right column.
 
 ---
 
@@ -231,28 +227,19 @@ Every non-trivial, file-touching task: research read-only → write `implementat
 to `_artifacts/INDEX.md` → update `active-context.md` (the hand-off).
 Full rule → `.agents/rules/artifacts-always-first.md`.
 
-**Artifact organization — artifacts go WHERE YOU WORK FROM (Daniel, 2026-06-25):**
-The deciding factor is the workspace you have open (your cwd), not only what the work is about.
-- **Working from the home base** (`Sudo_Hatter_Command/` is your cwd) → home-base `_artifacts/`:
-  - **project work** → a per-project bucket `_artifacts/<project-folder-name>/<YYYY-MM-DD>_<slug>/`
-    (e.g. `_artifacts/AGY_AVIATIONCHAT/`, `_artifacts/Fresh_Workspace_BMAD/`; the bucket name = the
-    `Projects/<name>/` folder name).
-  - **main / home-base / cross-project work** (routing, the `.agents/` toolkit, multi-project) →
-    `_artifacts/_main/<YYYY-MM-DD>_<slug>/` (formerly `_home`).
-  - For project work, **create the per-project bucket if it isn't there yet; otherwise reuse it.**
-  - Either way, log a row in the home-base `_artifacts/INDEX.md`.
-- **Working from inside a project** (`Projects/<name>/` is your cwd) → **follow THAT project's rules**:
-  project-local `Projects/<name>/_artifacts/`, with the project's own `_artifacts/active-context.md`
-  (+ `_artifacts/INDEX.md`). The project owns this history so it travels with the repo. (There is no `_main`
-  inside a project — every task there is that project's work.)
-- **opencode** writes under its own `_artifacts/opencode/` namespace and applies the **same rules inside it**:
-  `opencode/<project>/`, `opencode/_main/`, `opencode/<project>/<epic>/<story>/`.
-- Within either location: **random task** → `<YYYY-MM-DD>_<slug>/` (at the home base, inside the bucket you
-  picked; **in a project, inside `_main/` — the holding bucket for anything with no home yet — never at the
-  `_artifacts/` root**); **story** → `<epic>/<story>/` (epic folder
-  houses its stories — create the epic folder if missing); retired history → `_archived/`; **testing/debugging** → `debugging/<YYYY-MM-DD>_<slug>/` (for repros, tests, and isolated debugging).
-- **Finding a project's history:** look in BOTH the home-base bucket `_artifacts/<project>/` (sessions run
-  from the home base) AND the project-local `Projects/<name>/_artifacts/` (sessions run inside the project).
+**Artifact organization — ownership first (Daniel, 2026-07-30):**
+- **Default:** every current or future directory under `Projects/` owns its session history in
+  `Projects/<name>/_artifacts/`, regardless of cwd or tool.
+- **Exceptions:** the home `router.md` contains the complete Sudo-managed exception registry. Only those
+  named workspaces use home-base `_artifacts/<name>/` buckets. An exception never transfers to a clone.
+- **Home-base/cross-project work:** routing, master `.agents/`, and multi-project governance use
+  `_artifacts/_main/<YYYY-MM-DD>_<slug>/`.
+- **No fallback:** if a non-exempt project's local store is missing, create the standard project-local
+  skeleton; never create a home-base project bucket.
+- Within the owning store: **random task** → `_main/<YYYY-MM-DD>_<slug>/` for project-owned stores;
+  **story** → `<epic>/<story>/`; retired history → `_archived/`; **testing/debugging** →
+  `debugging/<YYYY-MM-DD>_<slug>/`.
+- **One authoritative history:** do not split a non-exempt project's history by launch directory or agent.
 
 ### Routing canary — the regression cadence
 `_routing-canary/` is a permanent check, not a one-time demo. **Re-run it when** you change routing structure
@@ -333,7 +320,8 @@ This standard replaces months of contradictory, duplicated rules. State as of 20
 **Resolved (at the master `.agents/` source):**
 - One git policy (`git-policy.md`, formerly the contradictory `git-closeout-commits.md`).
 - `constitution.md` + `artifacts-always-first.md` reconciled to it (both wrote to `_artifacts/<workspace>/`;
-  **later superseded 2026-06-25 by the work-from-cwd model** — see Part 2).
+  **later superseded 2026-06-25 by a cwd-based model, then superseded again 2026-07-30 by the
+  ownership-first model** — see Part 2).
 - `prose-formatting.md` repointed off the dead `_claude_artifacts/` store.
 - `_experiment/` → `_routing-canary/`.
 

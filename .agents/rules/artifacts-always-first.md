@@ -6,15 +6,14 @@ activation: Always On
 
 # Artifacts — Always First
 
-> **Shared memory.** Artifacts go **where you work FROM** (your cwd). **From the home base** → home-base
-> `_artifacts/`: project work → a per-project bucket `_artifacts/<project>/…` (**create it if missing**, else
-> reuse); main / home-base / cross-project work → `_artifacts/_main/…` (formerly `_home`).
-> **From inside a project** (`Projects/<name>/` is cwd) → that project's own `_artifacts/` — and **read
-> `Projects/<name>/_artifacts/AGENTS.md` FIRST**: it is that store's local law, it wins, and it names
-> buckets this rule does not (see §2). The store is written by ALL
-> tools — Claude, opencode, Antigravity/Gemini — so any agent can read past chats. **opencode** writes under its
-> own `_artifacts/opencode/` namespace, applying the **same rules inside it** (`opencode/<project>/`,
-> `opencode/_main/`, `opencode/<project>/<epic>/<story>/`). Full model → `docs/workspace-standard.md`.
+> **Shared memory follows ownership, never cwd or tool.** Work about a directory under `Projects/` goes to
+> that project's own `_artifacts/`, even when the chat starts in the home base. Read the project's
+> `_artifacts/AGENTS.md` FIRST; its local buckets win. The only alternative is an explicit Sudo-managed
+> exception in the home router. The current complete exception set is `Fresh_Workspace_BMAD` and
+> `OpenChat-Openrouter`; their operational history stays in the matching home-base `_artifacts/<name>/`.
+> Main/home-base/cross-project work goes to `_artifacts/_main/`. The store is shared by Claude, opencode,
+> Antigravity/Gemini, and Codex so every agent can read past sessions. Full model →
+> `docs/workspace-standard.md`.
 >
 > **⛔ The store is ALWAYS `_artifacts/`.** The old names `_claude_artifacts/` and `_opencode_artifacts/` are
 > **RETIRED/DELETED** — **never create them**, whatever tool or skill you are running (`/bmad-dev-story`,
@@ -80,30 +79,23 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
 
 ### 2. Create the artifact folder + plan
 
-**Pick the location by where you work FROM (your cwd):**
-- **When running as opencode**, prepend `opencode/` to every home-base path below. Project work goes to
-  `_artifacts/opencode/<project-folder-name>/`; main / cross-project work goes to `_artifacts/opencode/_main/`;
-  stories go to `_artifacts/opencode/<project-folder-name>/<epic>/<story>/`. **Never write opencode artifacts directly
-  to `_artifacts/_main/` or `_artifacts/<project>/`.** An opencode session run from inside a project still follows
-  the project's own `_artifacts/` rules (opencode namespace applies only at the home base).
-- **From the home base** (`Sudo_Hatter_Command/` is cwd) → home-base `_artifacts/` (not opencode):
-  + project work → a per-project bucket `_artifacts/<project-folder-name>/…` (e.g. `_artifacts/AGY_AVIATIONCHAT/`,
-    `_artifacts/Fresh_Workspace_BMAD/`; **create the bucket if it isn't there yet, else reuse it**);
-  + main / home-base / cross-project work (the standard, master `.agents/`, the router, lobby wiring) →
-    `_artifacts/_main/…` (formerly `_home`). Append a row to `_artifacts/INDEX.md`.
-- **From inside a project** (`Projects/<name>/` is cwd) → project-local `Projects/<name>/_artifacts/…`.
-  **⛔ Open `Projects/<name>/_artifacts/AGENTS.md` BEFORE you pick a folder.** That file is the store's local
-  law and it **overrides the task-type list below** — it is written per project and routinely names buckets
-  this rule does not. AGY_AVIATIONCHAT's, for instance, routes debugging/ad-hoc sessions to
-  `debugging/<YYYY-MM-DD>_<slug>/`, TEA / non-numeric story ids to `tea/<story>/`, and structured debug epics
-  to `epic_debug_<N>/<story>/` — none of which appear here, so an agent working from this rule alone misfiles
-  every one of them. Read it first, then apply the list below for whatever it does not cover. Continuity is
-  the project's own brief (`active-context.md`, or `_bmad-output/active-context/active-context.md` in a BMAD
-  project), not the home-base ledger. There is no
-  *cross-project* `_main` here — but the project keeps a **local `_main/`** for its own system/infrastructure
-  work (the agent system, rules, scripts, CI) — which doubles as the **holding bucket**: anything with no home
-  yet lives in `_main/` until it has one or you make one. Story work nests under `epic_<N>/`; **nothing is
-  dated at the project `_artifacts/` root**.
+**Pick the location by artifact ownership:**
+- **Project-owned default:** work about any `Projects/<name>/` directory that is not in the exception
+  registry goes to `Projects/<name>/_artifacts/…`, regardless of cwd or tool. If the project-local store is
+  missing, create its standard skeleton; never create a home-base fallback bucket.
+- **Sudo-managed exception:** work about a name explicitly listed in the home `router.md` exception registry
+  goes to the matching home-base `_artifacts/<name>/…`. The complete current set is
+  `Fresh_Workspace_BMAD` and `OpenChat-Openrouter`. An exception must be explicit; never infer one.
+- **Home-base ownership:** main/home-base/cross-project work (the standard, master `.agents/`, router, lobby
+  wiring) goes to `_artifacts/_main/…`.
+- **Tool identity never changes ownership.** Claude, opencode, Antigravity/Gemini, and Codex all write to the
+  same owning store. Do not create a tool-specific duplicate of project history.
+- **For a project-owned store, open `Projects/<name>/_artifacts/AGENTS.md` BEFORE choosing a bucket.** That
+  local law overrides the generic task-type list below and may define debugging, TEA, or structured-debug
+  buckets. Continuity is the project's own brief (`active-context.md`, or
+  `_bmad-output/active-context/active-context.md` in a BMAD project), not the home-base ledger. The project
+  keeps a local `_main/` holding bucket for project infrastructure or work with no better home. Story work
+  nests under `epic_<N>/`; nothing is dated at the project `_artifacts/` root.
 
 **Then find the parent and name the folder by task type — pick the FIRST that matches (in either location):**
 - **Story** (work tied to a story id `E.S`) → `epic_<E>/<story>/` — an **epic folder houses all of its
@@ -112,12 +104,12 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
   Epic-scoped, not date-prefixed at the root. This holds for **any** story — whether the autopilot, a BMAD
   flow, or Daniel devs it by hand; the parent is decided by the story id, **not** by the tool.
 - **System / infrastructure** ("systems things": the agent system, rules, scripts, CI, cross-cutting config)
-  → `_main/<YYYY-MM-DD>_<slug>/` (for opencode, under `opencode/_main/…`).
+  → the owning store's `_main/<YYYY-MM-DD>_<slug>/`.
 - **No home yet / random one-off** (everything else) → `<YYYY-MM-DD>_<slug>/` — date FIRST, slug LAST so they
   sort chronologically (e.g. `2026-06-25_artifacts-policy-finish`); slug: lowercase, hyphen-separated, max 6
-  words, from the operator's first concrete request. At the home base the bucket you picked is the home; **in
-  a project it goes inside `_main/` — the holding bucket — until it has a home or you make one; never a dated
-  folder at the project's `_artifacts/` root**.
+  words, from the operator's first concrete request. In a project-owned store it goes inside `_main/` — the
+  holding bucket — until it has a home or you make one; never use a dated folder at the project's
+  `_artifacts/` root.
 
 > **The `INDEX.md` ledger is reconciled in batch — do NOT hand-append a row every session.** That machinery
 > already exists: the SessionStart hook chain runs `check_maps.py --depth3-only` and

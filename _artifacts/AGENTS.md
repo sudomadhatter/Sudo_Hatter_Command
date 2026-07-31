@@ -7,21 +7,14 @@ examples → `README.md`. The session ledger → `INDEX.md`.
 
 ## The law
 - **READ**: scan `INDEX.md` newest-rows-first — don't walk the tree.
-- **FIRST decide WHERE, by the cwd you are working FROM:**
-  - **cwd = a project** (`Projects/<name>/`) → **stop; you do not write here.** Write to that project's own
-    `_artifacts/`, and read `Projects/<name>/_artifacts/AGENTS.md` first — it is the authority there and it
-    names buckets this file does not.
-  - **cwd = the home base** → here, by the bucket rule below.
-- **THEN pick the bucket — first match wins. This list is complete; nothing else routes:**
-  1. **story** (id `E.S`) → nest under the epic parent `epic_<E>/<story>/` (create `epic_<E>/` if missing;
-     TEA / non-numeric story ids → `tea/<story>/`). Parent = the story id, **not** the tool — autopilot,
-     BMAD and hand-dev all nest the same.
-  2. **project work** (about one `Projects/<name>/`, done from here) → the per-project bucket
-     `<project-folder-name>/…`, named exactly for the project folder. **Create it if missing, else reuse.**
-  3. **main / home-base / cross-project work** (the standard, master `.agents/`, the router, lobby wiring)
-     **or no home yet** → `_main/<YYYY-MM-DD>_<slug>/`.
-  4. **opencode agents** → the same rules applied *inside* `opencode/` (`opencode/<project>/`,
-     `opencode/_main/`, `opencode/<project>/<epic>/<story>/`) — never the generic buckets above.
+- **Route by ownership, never cwd or tool:**
+  1. **Non-exempt project work** → stop; write to `Projects/<name>/_artifacts/` and read that store's
+     `AGENTS.md` first. This remains true when the chat starts in the lobby.
+  2. **Sudo-managed exception work** → the matching named bucket here. The complete registry is in
+     `router.md`; currently only `Fresh_Workspace_BMAD/` and `OpenChat-Openrouter/`.
+  3. **main / home-base / cross-project work** → `_main/<YYYY-MM-DD>_<slug>/`.
+- Inside an exception bucket, story work nests under `epic_<E>/<story>/`; TEA/non-numeric story ids may use
+  `tea/<story>/`. Parentage follows the work, not the tool.
 - **NEVER** drop a story/session folder at a root that has an epic parent. **NEVER** write to the retired
   `_claude_artifacts/` / `_opencode_artifacts/` stores — if a story's `source:` line names one, that is dead
   history; write here.
@@ -31,5 +24,5 @@ examples → `README.md`. The session ledger → `INDEX.md`.
   row**: the ledger is reconciled in batch by the SessionStart hooks + `/update-maps-indexes`. Getting the
   folder right is what you owe.
 - History is immutable: old rows keep old paths; retire to `_archived/`, never delete.
-- **Finding history:** a project's work may live in BOTH the home-base bucket `<project>/` and the
-  project-local `Projects/<name>/_artifacts/` — check both.
+- **Finding history:** non-exempt project history has one authoritative home: the project's own
+  `_artifacts/`. Only registered exceptions use named home-base buckets.

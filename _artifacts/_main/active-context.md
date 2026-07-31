@@ -1,7 +1,16 @@
 # ACTIVE CONTEXT — _main  (you own this, not a vendor)
 
 ## 1. PRIME STATE
-Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-07-14
+Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-07-30
+**2026-07-30 (latest): Artifact ownership rule corrected and histories consolidated.**
+Every directory under `Projects/` now owns its artifact history project-locally by default, regardless of
+cwd or tool. The complete Sudo-managed exception registry contains only `Fresh_Workspace_BMAD` and
+`OpenChat-Openrouter`. Canonical rule/skill/checker/standard copies hash-match across AviationChat, Fresh
+Workspace, and NEXgen VR. Migrated the former Sudo buckets for AviationChat (18 files / 146677 bytes) and
+NEXgen VR (9 files / 57266 bytes), verified SHA-256 manifests, then removed only those two source folders.
+The Sudo `_artifacts/` root now contains `_main`, Fresh Workspace, and OpenChat. No git delivery occurred.
+Session: `_artifacts/_main/2026-07-30_project-first-artifact-locality/`.
+
 **2026-07-23 (latest): Fan-out map and INDEX reconciliation complete.**
 Regenerated the lobby, AGY AviationChat, and Fresh Workspace AUTO map blocks in their declared modes and repaired all deterministic INDEX drift (including the AGY `frontend/test-results/` index). `python .agents/scripts/check_maps.py --all` now reports that all maps and indexes agree with disk. Still informational: lobby GitNexus is stale and needs a post-commit `node .gitnexus/run.cjs analyze`; AGY's active context is 391 lines with no dated session blocks, so it needs a human decision rather than a mechanical prune. Project git discovery required a per-command safe-directory override because the sandbox user differs from the worktree owner. No commits or map anchors were created.
 Session: `_artifacts/_main/2026-07-23_update-maps-indexes/`.

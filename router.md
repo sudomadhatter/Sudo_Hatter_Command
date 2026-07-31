@@ -7,6 +7,21 @@ Any workspace may send you BACK here ("if not here, go to root router").
 > **Note:** all projects live under `Projects/`, each keeping its own git repo. "Converted" = the
 > project has pointer `CLAUDE.md`/`GEMINI.md` + a workspace `AGENTS.md` (Layer-2 map) + vendored `.agents/`.
 
+## Artifact ownership
+
+**Default:** every current or future directory under `Projects/` owns its artifacts in its own
+`Projects/<name>/_artifacts/`, regardless of where the chat starts or which agent/tool runs it.
+
+**Complete Sudo-managed exception registry:**
+
+- `Fresh_Workspace_BMAD` — living duplication template; operational history stays in
+  `_artifacts/Fresh_Workspace_BMAD/`. The exception does not transfer to clones.
+- `OpenChat-Openrouter` — Sudo-managed workspace; operational history stays in
+  `_artifacts/OpenChat-Openrouter/`.
+
+Anything not listed above follows the project-owned default. Adding an exception requires an explicit edit
+to this registry.
+
 | If the work is about… | Go to | Read first | Status |
 |---|---|---|---|
 | Aviation ground-school app (FastAPI / ADK / Gemini, voice CFI) | `Projects/AGY_AVIATIONCHAT/` | its `AGENTS.md` | converted (Phase 1) · standard-compliant · repo-map indexed · Phase 2 (rule reconcile) pending |

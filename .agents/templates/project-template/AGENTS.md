@@ -34,11 +34,10 @@ If what you need isn't here, GO BACK to the home-base root `../../router.md` (or
 - Dated output `YYYY-MM-DD_<slug>.md`; versioned drafts `<slug>_v2.md` / `_final.md`.
 - Artifacts are **project-local** — write into this repo's own `_artifacts/`: story → `<epic>/<story>/`; no home yet /
   random task → `_main/<YYYY-MM-DD>_<slug>/` (holding bucket — never dated at the root); retired → `_archived/`. Append a row to `_artifacts/INDEX.md` at close. Full model →
-  `../../AGENTS.md` §5 + `.agents/rules/artifacts-always-first.md`.
+  `.agents/rules/artifacts-always-first.md`. This remains true when a chat starts outside the repository.
 
 ## PERSISTENCE
 - "pick up" / "hand off" → project-local `_artifacts/` (dated session folders + `<epic>/<story>/` + `_archived/`),
-  so history travels with the repo. Sessions run *from the home base* instead land in `../../_artifacts/<PROJECT>/`
-  — check **both** to reconstruct full history.
+  so history travels with the repo. There is no second home-base project bucket.
 - **"pick up" also surfaces open tasks:** after the active-context brief, read `_my_resources/open_tasks/todo_list.md`
   (+ any plan/PRP `.md` notes there) and add a one-line "what's queued." **READ-ONLY** (Daniel's notes; never edit).

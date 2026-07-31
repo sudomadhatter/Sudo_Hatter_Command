@@ -14,8 +14,8 @@ SAME script reconciles the lobby OR any conformant project. Point it at a worksp
     python .agents/scripts/check_maps.py --set-anchor                   # record HEAD as the reconciled baseline
 
 Mode detection (PATH CONTRACT, two columns):
-  - HOME BASE  — has a `Projects/` dir. Map at `docs/repo-map.md`; continuity briefs at
-                 `_artifacts/<bucket>/active-context.md`; `Projects/` are separate repos (never descended).
+  - HOME BASE  — has a `Projects/` dir. Map at `docs/repo-map.md`; continuity briefs live only in
+                 `_artifacts/_main/` and router-registered Sudo-managed exception buckets.
   - PROJECT    — no `Projects/`. Map at `docs/repo-map.md`. A BMAD project (`_bmad-output/` present) keeps
                  its continuity brief at `_bmad-output/active-context/active-context.md` and uses `_artifacts/`
                  for session *history*; a non-BMAD project uses `_artifacts/active-context.md`.
@@ -124,12 +124,31 @@ def detect_mode(root):
     return (root / "Projects").is_dir(), (root / "_bmad-output").is_dir()
 
 
+def sudo_managed_exceptions(root):
+    """Read the complete exception registry from router.md's dedicated section."""
+    router = root / "router.md"
+    if not router.exists():
+        return set()
+    text = router.read_text(encoding="utf-8")
+    marker = "**Complete Sudo-managed exception registry:**"
+    end_marker = "Anything not listed above"
+    if marker not in text:
+        return set()
+    section = text.split(marker, 1)[1].split(end_marker, 1)[0]
+    return {
+        line.split("`", 2)[1]
+        for line in section.splitlines()
+        if line.lstrip().startswith("- `") and line.count("`") >= 2
+    }
+
+
 def continuity_briefs(root, is_home, is_bmad):
     """The pickup/handoff brief(s) the prune trims — location depends on mode (see the PATH CONTRACT)."""
     found = []
     adir = root / "_artifacts"
     if is_home and adir.is_dir():
-        for b in sorted(p for p in adir.iterdir() if p.is_dir() and p.name != "_archived"):
+        owned = {"_main"} | sudo_managed_exceptions(root)
+        for b in sorted(p for p in adir.iterdir() if p.is_dir() and p.name in owned):
             ac = b / "active-context.md"
             if ac.exists():
                 found.append(ac)
@@ -508,7 +527,12 @@ def check_conformance(root, is_home, is_bmad, map_path):
     if not (docs / "workspace-standard.md").exists():
         missing.append(f"structure standard (`{(docs / 'workspace-standard.md').relative_to(root).as_posix()}`)")
     if not continuity_briefs(root, is_home, is_bmad):
-        loc = "_bmad-output/active-context/active-context.md" if is_bmad else "_artifacts/<bucket>/active-context.md"
+        if is_home:
+            loc = "_artifacts/_main/active-context.md"
+        elif is_bmad:
+            loc = "_bmad-output/active-context/active-context.md"
+        else:
+            loc = "_artifacts/active-context.md"
         missing.append(f"continuity brief (expected `{loc}`)")
     return [f"NOT conformant - missing {m}" for m in missing]
 

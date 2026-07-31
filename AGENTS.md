@@ -36,8 +36,8 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 > use the desktop defaults. `mobile-mode.md` owns the trigger (single source for the lane boundary).
 
 > **⛔ ARTIFACTS — MANDATORY FIRST ACTION.** Before modifying ANY file outside `_artifacts/`, write an
-> `implementation_plan.md` into the right `_artifacts/` for where you work from (§5) and **STOP until Daniel says "approved."** Track
-> work with a live TodoWrite list; close with `walkthrough.md` + `task-list.md`. **This applies at the lobby
+> `implementation_plan.md` into the artifact store owned by the target workspace (§5) and **STOP until Daniel says "approved."** Track
+> work with a live TodoWrite list; close with one `walkthrough.md`. **This applies at the lobby
 > too — not only inside projects.** Full protocol → `.agents/rules/artifacts-always-first.md`. (Skip only for
 > read-only/investigatory asks and trivial one-liners.)
 
@@ -45,7 +45,7 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 | Area | Path | Purpose |
 |---|---|---|
 | Master toolkit | `.agents/` | rules · commands · skills · workflows · bmad · scripts · templates (single source of authorship) |
-| Shared memory | `_artifacts/` | every agent's plans/walkthroughs/handoffs; `INDEX.md` ledger; per-workspace `active-context.md` |
+| Home-base memory | `_artifacts/` | home-base/cross-project history plus explicitly registered Sudo-managed exceptions |
 | Docs | `docs/` | home-base documentation (master implementation plan, workspace standard) |
 | Navigation index | `docs/repo-map.md` | the lobby's repo-map (curated header + auto body); drift-checked at SessionStart |
 | Routing canary | `_routing-canary/` | model-agnostic proof the routing works (Claude/opencode/Antigravity) |
@@ -54,18 +54,22 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 | Lobby tool dirs | `.claude/`, `.opencode/` | synced copies of the master so `/commands` + skills resolve here. `/sync-agents` mirrors `.agents/commands/` to **all four** platforms (incl. the opencode + Antigravity machine-global caches, and the Codex `~/.codex/prompts` + `~/.codex/skills` caches); `platforms:` frontmatter limits a command's reach |
 | Personal area | `_my_resources/` | Daniel's notes (docs · transcripts · open_tasks) — protected, Tier-2 law; `open_tasks/` (read-only) & `_quick_reference/` (read/write) allow-list carve-outs |
 | BMAD (lobby) | `_bmad/` · `_bmad-output/` | BMAD module (regenerated — never hand-edit) + its state/output |
-| Projects | `Projects/<name>/` | the actual projects, each its own git repo |
+| Projects | `Projects/<name>/` | project-owned workspaces, each with its own repo and `_artifacts/`, except the explicit Sudo-managed exceptions in `router.md` |
 
 > **⚠️ SEARCHING FROM THE LOBBY:** root-level Grep/Glob are **blind to `Projects/`** (ripgrep honors the
 > lobby `.gitignore`) — a "clean" root search proves nothing about the project repos. Point Grep at
 > `Projects/<name>`, or sweep all projects with Bash `find`. Full mechanics → `.agents/rules/lobby-search.md`.
 
 ## 5. NAMING & ARTIFACT PLACEMENT  (this replaces a database)
-Artifacts go **where you work FROM**. The full bucket rules (per-project `_artifacts/<project>/` · home-base
-`_artifacts/_main/` · the `opencode/` namespace · story `<epic>/<story>/` · from-home-base-vs-inside-project),
-the file-naming patterns (`YYYY-MM-DD_<slug>.md`, `_draft`/`_v2`/`_final`), and numbered memory sections all
-live in the always-loaded **`.agents/rules/artifacts-always-first.md`** (§2) · full model →
-`docs/workspace-standard.md`. Append every home-base session to `_artifacts/INDEX.md`.
+Artifacts go **with their owning workspace, regardless of cwd or tool**. Every directory under `Projects/`
+owns its history in `Projects/<name>/_artifacts/` unless it appears in the explicit Sudo-managed exception
+registry in `router.md`. The only current exceptions are `Fresh_Workspace_BMAD` and
+`OpenChat-Openrouter`; their operational history stays in the matching home-base `_artifacts/<name>/`
+bucket. Home-base and cross-project system work uses `_artifacts/_main/`.
+
+The full bucket rules (story `<epic>/<story>/`, local `_main/`, debugging, file naming, continuity) live in
+the always-loaded **`.agents/rules/artifacts-always-first.md`** (§2); full model →
+`docs/workspace-standard.md`.
 
 ## 6. GATES  (consult before acting)
 - **ROUTING GATE**: confirm the target workspace via `router.md` before touching files in it.
@@ -87,9 +91,10 @@ live in the always-loaded **`.agents/rules/artifacts-always-first.md`** (§2) ·
 - Full hard stops + "ask first" list → `.agents/rules/constitution.md`.
 
 ## 7. PERSISTENCE  (you own this — not a vendor)
-- **Location follows where you work FROM** — home-base `_artifacts/<project|_main>/active-context.md` + the
-  `_artifacts/INDEX.md` ledger; the `opencode/` namespace when you're opencode; a project's own `_artifacts/`
-  from inside it. Full model → `.agents/rules/artifacts-always-first.md` · `docs/workspace-standard.md`.
+- **Location follows ownership** — a non-exempt project's history is always project-local, even when the chat
+  starts in the lobby. Sudo-managed exceptions use their named home-base buckets; home-base/cross-project
+  work uses `_artifacts/_main/`. Full model → `.agents/rules/artifacts-always-first.md` ·
+  `docs/workspace-standard.md`.
 - **"pick up"** → read-only continuity brief from the right `active-context.md`, then surface open tasks from
   this workspace's `_my_resources/open_tasks/todo_list.md` (**READ-ONLY** — never edit; cross-check vs live
   files; trigger also → `router.md`). **"hand off"** → write state back, append the matching `INDEX.md` row,

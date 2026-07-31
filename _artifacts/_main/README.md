@@ -5,8 +5,8 @@ The bucket for the **command center's own work** done from the home base: the ro
 isn't owned by a single `Projects/<name>/`. This is rule 2 of the placement standard
 (full rules → [`../README.md`](../README.md) and [`../INDEX.md`](../INDEX.md)).
 
-> Renamed from `_home` → `_main` on 2026-06-26. Per-project work goes to a sibling `_artifacts/<project>/`
-> bucket instead; opencode's equivalent is `_artifacts/opencode/_main/`.
+> Renamed from `_home` → `_main` on 2026-06-26. Non-exempt project work always goes to the project's own
+> `_artifacts/`; only Sudo-managed exceptions registered in `router.md` use sibling named buckets.
 
 ## Structure
 - **General / system task** → `<YYYY-MM-DD>_<slug>/` (date first so folders sort chronologically).

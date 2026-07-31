@@ -1,6 +1,6 @@
 # `_artifacts/` — shared memory (home base)
 
-Plans, walkthroughs, and continuity for work done **from the home base**.
+Plans, walkthroughs, and continuity owned by the home base, plus Sudo-managed exception histories.
 
 | Question | Where it is answered |
 |---|---|
@@ -30,8 +30,8 @@ Plans, walkthroughs, and continuity for work done **from the home base**.
 Each is a **parent** for session folders, never a session folder itself — see `AGENTS.md` for which one your
 work belongs to.
 
-- `<project-folder-name>/` — work about one project, done from here (e.g. `AGY_AVIATIONCHAT/`,
-  `Fresh_Workspace_BMAD/`). Named exactly for the folder under `Projects/`.
+- `Fresh_Workspace_BMAD/` and `OpenChat-Openrouter/` — the complete registered Sudo-managed exception set.
+  These are operational histories, not the default for projects.
 - `_main/` — the home base's own work: the standard, the master `.agents/` toolkit, the router, lobby wiring,
   and anything with no home yet. (Formerly `_home`.)
 - `opencode/` — opencode's namespace. The same bucket rules apply *inside* it; see
@@ -43,13 +43,12 @@ Inside a project bucket, story work nests under `epic_<E>/<story>/` — the epic
 stories (e.g. `epic_9/story-9.4-ios-shell/`, or an autopilot run `epic_14/2026-06-27_autopilot-14-6/`).
 
 ## Where a project's history actually lives
-Both places, and you need both to reconstruct it: the home-base bucket `_artifacts/<project>/` holds sessions
-run **from here**, and `Projects/<name>/_artifacts/` holds sessions run **from inside the project**. A project's
-own `_artifacts/AGENTS.md` is the authority once you are in it — read it before placing anything there.
+Every non-exempt project's history lives only in `Projects/<name>/_artifacts/`, even when work begins from
+the lobby. The two exceptions are listed above and in `router.md`.
 
 ## Continuity
-`active-context.md` is the pickup/handoff brief **for its bucket** — `_artifacts/<project>/active-context.md`
-for a project worked on from here, or `_artifacts/_main/active-context.md` for home-base work.
+`active-context.md` is the pickup/handoff brief for its owning store: an exception's named bucket or
+`_artifacts/_main/` for home-base work. Non-exempt projects use their project-local continuity contract.
 
 The `INDEX.md` ledger is reconciled in batch by the SessionStart hooks and `/update-maps-indexes` — don't
 hand-append a row every session.
