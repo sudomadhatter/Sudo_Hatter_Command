@@ -23,7 +23,9 @@ path missing under `PROJECT_ROOT` → STOP, never fall back to the lobby.
 Before Step 1: `git worktree list` under `PROJECT_ROOT` (`worktree-per-story` → "Resuming"). A
 `claude/<story-slug>` tree exists → **cd into it and bind the diff, story file, tests, and suite commands
 under it** (the built code often lives ONLY there — the shared checkout would audit an empty or stale
-diff); echo `Worktree: reviewing in <path>`. None → review in `PROJECT_ROOT` as usual.
+diff); echo `Worktree: reviewing in <path>`. None → review in `PROJECT_ROOT` as usual. Artifacts too:
+this story's plan/walkthrough/verdict live in THIS tree — absent here = that step never ran; a lookalike
+in the shared checkout is a SIBLING lane's, not evidence. Echo the story's ①②③ step-state before Step 1.
 
 ## Step 1 — Clean-Room Adversarial Code Review
 Invoke the **`bmad-code-review`** skill on the story's diff. You MUST act as a **Clean-Room** agent: zero out any builder's bias. Your only job is to aggressively audit the final diff against the strict BDD contract. Hunt specifically for **AI Drift**, over-engineering, bloat, unnecessary abstractions, and logic flaws. Apply the actionable fixes yourself; if you change code, re-run the relevant suite(s) and paste actual output.
@@ -84,7 +86,8 @@ the fixes you can make safely, then re-run the affected check and paste the new 
 
 ## Step 4 — Verdict
 Combine into **PASS / CONCERNS / FAIL / WAIVED** and write
-`_bmad-output/implementation-artifacts/sudo-code-review-<story>.md`:
+`_bmad-output/implementation-artifacts/sudo-code-review-<story>.md` — **inside the worktree Step 0.5
+resolved**, never the shared checkout (it rides the story branch through the close-out merge):
 - the review (scope, the passes, each finding with `file:line` + severity + disposition),
 - each gate check's result + the **actual** suite output,
 - a `## Clean-Code Gate` section carrying Step 3.5's findings table and its pasted tool output,

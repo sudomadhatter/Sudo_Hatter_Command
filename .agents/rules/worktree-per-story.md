@@ -100,6 +100,16 @@ The safe-commit mechanics from `git-policy.md` still apply in full:
 | **G3 · Push** | No pushes to `main_debug` during development. Pushing your own `claude/*` branch is free at any time. |
 | **G4 · `main`** | Never. Only Daniel, directly or via `/sudo-push-e2e`. |
 
+## Artifacts are authored in the tree
+
+Every file a story step writes — story file, red tests, implementation plan, self-audit, walkthrough,
+automation summary, the ③ verdict — is authored INSIDE the story's worktree, rides the story branch,
+and lands with the close-out merge. Never write a story-scoped artifact to the shared checkout. The
+reader's corollary: a story's artifacts live in ITS tree — absence there means that step never ran. A
+lookalike found in the shared checkout or a sibling tree is ANOTHER lane's work; reading it as this
+story's evidence is how a session derails (2026-08-01: a sibling's ③ verdict sitting in the shared
+checkout read as "this story's review is done", and the confusion cost the actual run).
+
 ## Close-out — the landing
 
 The story lands on `main_debug` as **one clean push**, triggered by either:
