@@ -1,92 +1,165 @@
 ---
 name: python_inter_venv_fix
-description: "Quick-fix when VS Code 'Select Python Interpreter' won't connect to the project .venv, or imports show as unresolved / type-checking breaks. Almost always caused by config files pointing at a stale/old project path after the repo was moved or re-cloned. Use when the user says the interpreter is wrong, can't find the venv, or Pylance/pyright/pyrefly can't resolve imports."
+description: "Ground truth for this project's Python environment: which interpreter, which venv, which version. Use when the VS Code interpreter is wrong, imports show unresolved, Pylance/pyright/pyrefly can't resolve fastapi/google.adk, a test failure smells environmental rather than logical, or pytest dies before running any test (tmp_path / basetemp errors)."
 ---
 
-# Python Interpreter / venv Quick-Fix
+# Python environment — ground truth
 
-## When to use
-The user reports any of:
-- "Select Python Interpreter" can't find / won't connect to the `.venv`.
-- VS Code picks the wrong interpreter (global Python instead of the project venv).
-- Imports show as unresolved; Pylance / Pyright / pyrefly can't resolve `fastapi`, `google.adk`, etc.
+## The canonical environment (memorize this, it is the whole skill)
 
-## The #1 root cause (check this FIRST)
-**Config files contain absolute paths to an OLD project location.** This repo has been moved
-between folders (e.g. `c:\Sudo_Hatter_Command\Projects\aviationChat-AGY\` → the current
-`c:\Users\dlohn\.gemini\antigravity\scratch\Sudo_Hatter_Command\Projects\AGY_AVIATIONCHAT\`). Hard-coded absolute paths in
-the tooling configs die the moment the project folder changes, so VS Code is pointed at a venv
-that no longer exists.
+| | |
+|---|---|
+| **Interpreter** | `backend/.venv/Scripts/python.exe` — the *only* venv in this repo |
+| **Python version** | **3.11** — matches CI (`pr-check.yml`), prod (`Dockerfile`), and ruff `target-version = "py311"` |
+| **Enforced by** | `requires-python = ">=3.11,<3.12"` in `pyproject.toml` + a CI assert step |
+| **Run tests as** | `backend/.venv/Scripts/python.exe -m pytest backend/tests -n auto --dist loadfile -q` |
 
-> The permanent cure is **portable paths** (`${workspaceFolder}` / relative), so it never breaks
-> again on a move. Only `pyrefly.toml` must stay absolute (see the rule note below).
+Verify in one command — paste the output, don't assert from memory:
 
-## Diagnose (read-only — confirm before editing)
-
-1. Confirm the canonical venv exists locally and is populated:
-   ```bash
-   ls backend/.venv/Scripts/python.exe
-   ls backend/.venv/Lib/site-packages | grep -iE "fastapi|google_adk|pydantic"
-   ```
-   Canonical interpreter for this project is **`backend/.venv`** (matches `pyrefly.toml`'s
-   `project_includes = ["backend/**/*.py"]` and the `cd backend && pytest` convention).
-   There may also be a stray root `.venv` — ignore it; `backend/.venv` is the live one.
-
-2. Find every stale absolute path (proves the diagnosis):
-   ```
-   Grep pattern: Sudo_Hatter_Command   (or whatever the OLD base folder was)
-   ```
-   The four files that actually matter for interpreter/type-checking are below. (Many doc/skill/
-   workflow/artifact hits will also appear — those are cosmetic and OUT of scope.)
-
-## The fix — 4 git-tracked config files (all at repo root unless noted)
-
-Replace the stale base path. Prefer **portable** forms so it survives the next move:
-
-| File | Field(s) | Set to (portable) |
-|---|---|---|
-| `.vscode/settings.json` | `python.defaultInterpreterPath` | `${workspaceFolder}/backend/.venv/Scripts/python.exe` |
-| `.vscode/settings.json` | `python.analysis.extraPaths` | `["${workspaceFolder}/backend", "${workspaceFolder}/backend/.venv/Lib/site-packages"]` |
-| `pyrightconfig.json` (root) | `venvPath` | `"backend"` (relative to config dir; keep `venv: ".venv"`) |
-| `backend/pyrightconfig.json` | `venvPath` | `"."` (relative to config dir; keep `venv: ".venv"`) |
-| `pyrefly.toml` | `python-interpreter-path`, `search_path` (×2), `site_package_path` | **absolute**, current workspace — see note |
-
-### ⚠️ pyrefly.toml stays ABSOLUTE
-Project rule `.claude/rules/pyrefly-paths.md` mandates absolute, **double-backslash** native
-Windows paths and warns that forward slashes / non-native paths cause *silent* config failures
-(empty search roots). So for `pyrefly.toml`, repoint to the current absolute workspace, e.g.:
-```toml
-python-interpreter-path = "c:\\Users\\dlohn\\.gemini\\antigravity\\scratch\\AGY_AVIATIONCHAT\\backend\\.venv\\Scripts\\python.exe"
-```
-This is the one file to re-point if the project moves again. Get the current absolute path with
-`pwd` and convert `/` → `\\`.
-
-## Verify (paste actual output)
 ```bash
-backend/.venv/Scripts/python.exe -c "import sys, fastapi, google.adk, pydantic; print(sys.executable); print(fastapi.__version__); print('deps OK')"
+backend/.venv/Scripts/python.exe -c "import sys, fastapi, google.adk, pydantic; print(sys.version); print(sys.executable); print('deps OK')"
 ```
-The printed `sys.executable` must point at the **current** workspace's `backend/.venv`.
 
-## Tell the user to do these (config alone is not enough)
-VS Code caches the *selected* interpreter in per-workspace storage **outside** the repo, so a
-stale cached pick won't auto-switch even after the config is fixed:
+`sys.version` must start with **3.11**, and `sys.executable` must be under the **current** workspace.
 
-1. `Ctrl+Shift+P` → **"Python: Select Interpreter"** → choose `.\backend\.venv\Scripts\python.exe`
-   (or "Enter interpreter path…" if it's not auto-listed).
-2. `Ctrl+Shift+P` → **"Developer: Reload Window"** (pyrefly does NOT hot-reload its config).
-3. Still unresolved? `Ctrl+Shift+P` → **"Python: Clear Cache and Reload Window"**.
+---
 
-## Commit (provide the command — never run git yourself)
+## ⚠️ Two things this skill used to teach that are now WRONG
+
+This skill was written for a repo state that no longer exists. If you have an older copy cached,
+or you find these patterns anywhere, they are bugs:
+
+### 1. "pyrefly.toml must stay ABSOLUTE with double backslashes" — **REVERSED**
+
+`pyrefly.toml` is now **relative** and must stay that way:
+
+```toml
+project-includes = ["backend/**/*.py"]
+search-path = ["."]
+```
+
+Absolute paths there are what pinned the config to one machine, broke the laptop lane, and are the
+reason the `code-standards` §6 backend type check went unwired in CI for so long. `code-standards`
+§5 bans machine-absolute paths in config. The file carries an `AIDEV-NOTE` saying so, ending
+*"Do not reintroduce an absolute path or an interpreter pin."* Pyrefly resolves the interpreter from
+the environment it is invoked with — that is what keeps CI and `backend/.venv` on the same one.
+
+**Following the old instruction would re-break CI.**
+
+### 2. "There may also be a stray root `.venv` — ignore it" — **IT'S GONE**
+
+The duplicate root `.venv` was deleted on 2026-08-01. It was a partial environment missing
+`pytest-cov`, and running the suite through it produced a spurious `test_pytest_cov_is_installed`
+failure that looked exactly like a product regression. That phantom cost real time twice, and one
+occurrence got written into `sprint-status.yaml` as a standing *"TEA-5 env gap"* known-failure note
+that then misled two later close-outs before anyone caught it.
+
+There is now exactly one venv. If you ever see a root `.venv` reappear, **delete it** — do not
+work around it.
+
+---
+
+## Symptom → cause, in the order these actually happen now
+
+### Pytest dies before running anything: `tmp_path` errors, "could not create `%TEMP%/pytest-of-<user>`"
+
+**The most common real environment failure in this repo, and it has nothing to do with the venv.**
+
+Looks catastrophic — dozens of setup errors at once, often with a pytest-bdd wrapper failure riding
+along. It is the sandbox/OS denying pytest its default temp root, not your code and not your
+interpreter.
+
+Confirm it is environmental, then work around it:
+
+```bash
+# 1. Prove it's the temp root, not the tests — run ONE tmp_path test with a local base
+backend/.venv/Scripts/python.exe -m pytest <one_tmp_path_test> --basetemp=./.pytest-tmp -q
+
+# 2. If that passes, re-run the real suite with the same override
+backend/.venv/Scripts/python.exe -m pytest backend/tests -n auto --dist loadfile -q --basetemp=./.pytest-tmp
+```
+
+**Put the basetemp somewhere disposable and gitignored — never inside `_artifacts/`.** A previous
+run wrote it into a story's artifact folder and left directories git could not even stat, so
+`warning: could not open directory … Permission denied` polluted every later `git status` in that
+lane for two sessions.
+
+The condition is intermittent. `%TEMP%` being writable today does not mean it will be next run.
+
+### Imports unresolved / wrong interpreter in VS Code
+
+The repo config is correct and portable — `pyrefly.toml`, `pyrightconfig.json`,
+`backend/pyrightconfig.json` and `.vscode/settings.json` carry **no** machine-absolute paths
+(re-verified 2026-08-01: repo-wide grep for a hardcoded user path in config returns zero hits).
+
+So if the interpreter is wrong, it is almost certainly **VS Code's cached per-workspace pick**,
+which lives outside the repo and will not auto-correct:
+
+1. `Ctrl+Shift+P` → **Python: Select Interpreter** → `.\backend\.venv\Scripts\python.exe`
+2. `Ctrl+Shift+P` → **Developer: Reload Window** (pyrefly does not hot-reload its config)
+3. Still broken? `Ctrl+Shift+P` → **Python: Clear Cache and Reload Window**
+
+Do **not** "fix" this by editing config paths. If you genuinely find a stale absolute path, that is
+a §5 violation — fix it to a relative/`${workspaceFolder}` form, never to a new absolute one.
+
+### A test fails for you but passes elsewhere (or vice versa)
+
+Check the interpreter *first*, before debugging the test:
+
+```bash
+backend/.venv/Scripts/python.exe -c "import sys; print(sys.version, sys.executable)"
+```
+
+Wrong version or wrong path explains more "regressions" in this repo's history than any real bug.
+Note that git worktrees under `.claude/worktrees/` may carry their **own** `backend/.venv` — check
+which one you are actually invoking.
+
+### Tracebacks naming a directory that doesn't exist
+
+Cosmetic. `.pyc` bytecode compiled at an older venv location keeps the old `co_filename`, so some
+frames print a dead path. Rebuilding the venv clears it. Ignore it while debugging — the line
+numbers are still correct.
+
+---
+
+## Rebuilding the venv (rare — and it is disruptive)
+
+Only when the venv is genuinely corrupt or on the wrong Python.
+
+> **Check for live consumers first.** Worktrees under `.claude/worktrees/` may share this single
+> venv, and other agent sessions may be running the suite out of it right now. Deleting it
+> mid-run produces unattributable false-REDs in someone else's lane — see the
+> `parallel-autopilot-shared-tree-gate` learning.
+>
+> ```powershell
+> Get-CimInstance Win32_Process -Filter "Name='python.exe'" |
+>   Where-Object { $_.CommandLine -like "*AGY_AVIATIONCHAT*backend\.venv*" }
+> ```
+> Wait until that returns nothing.
+
+```powershell
+Remove-Item -LiteralPath backend\.venv -Recurse -Force
+py -3.11 -m venv backend\.venv
+backend\.venv\Scripts\python.exe -m pip install --upgrade pip
+backend\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
+```
+
+Then confirm the two pinned CI gate tools landed — both are hard gates and a silent miss is
+expensive:
+
+```bash
+backend/.venv/Scripts/ruff.exe --version      # must be 0.16.0
+backend/.venv/Scripts/pyrefly.exe --version   # must be 1.1.1
+```
+
+## Committing (provide the command — never run git yourself)
+
 ```powershell
 git add .vscode/settings.json pyrefly.toml pyrightconfig.json backend/pyrightconfig.json
-git commit -m "fix(env): repoint Python interpreter/type-checker config to current workspace path (portable)"
-git push
+git commit -m "fix(env): <what you actually changed>"
 ```
 
-## Related / deeper context
-- Full diagnosis + post-mortem of the original two-venv consolidation:
-  `_claude_artifacts/2026-05-30_python-env-cleanup/python-env-fix-runbook.md`
-- This skill's origin session: `_claude_artifacts/2026-06-07_python-interpreter-stale-path/`
-- Pyrefly path rule (why pyrefly stays absolute): `.claude/rules/pyrefly-paths.md`
-- BMAD "Microsoft Store python3" noise (separate issue — `python3.exe` shim missing in venv):
-  `Copy-Item backend\.venv\Scripts\python.exe backend\.venv\Scripts\python3.exe`
+## Related
+
+- `.agents/rules/code-standards.md` §5 (no machine-absolute paths in config), §6 (ruff + pyrefly machine floor)
+- `_artifacts/_main/2026-08-01_python-env-fix/` — the 3.11 migration, the symptom evidence behind this rewrite, and why the old guidance was inverted
