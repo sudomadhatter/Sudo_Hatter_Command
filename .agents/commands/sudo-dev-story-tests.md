@@ -92,8 +92,13 @@ concern the audit raised that you can't safely resolve yourself.
 
 ## Step 3 — Implement
 Invoke **`bmad-dev-story`** in IMPLEMENT mode: apply the audit, write the code, and drive the ① red tests —
-**including the BDD contract scenarios from the Vision Lock (Step 0.7)** — to green. Run the relevant
-suite(s) and paste the **actual** output (constitution rule). If a test fails, find root cause before fixing.
+**including the BDD contract scenarios from the Vision Lock (Step 0.7)** — to green. Run scoped suites while
+you iterate (the story's files + touched modules), then **finish with ONE full-suite run per touched stack**
+(backend: `backend/.venv` pytest with the project's canonical runner flags — the runner AIDEV-NOTE in
+`backend/requirements.txt` is the one source of truth) and paste the **actual** totals **plus
+`git rev-parse HEAD`** into the walkthrough (constitution rule). That (totals, SHA) pair is ③'s entry
+baseline — ③ re-runs the full suite up front ONLY when the SHA or the shape doesn't hold, so the pair never
+pays for the full suite twice. If a test fails, find root cause before fixing.
 
 **Every ① red ends green or is quarantined — never shipped red (`tests-must-gate-for-real`).** A red that
 can't go green is the tell ① handed you **fiction** — it asserts what the design never had (copy absent from

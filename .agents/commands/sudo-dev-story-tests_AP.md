@@ -56,8 +56,10 @@ that is your direction. Apply **all** of the audit's proposed fixes first, then 
    if expansion is genuinely not applicable, record a `## Automate: skipped — <rationale>` section in
    `walkthrough.md`. The QA gate checks for this evidence — a silent skip surfaces as CONCERNS.
 4. **Run the suite(s) until green and paste the *actual* output** into `walkthrough.md` (constitution rule:
-   real output, never a paraphrase). Backend = `pytest backend/tests`; frontend = `npm test` from
-   `frontend/`. If a test fails, find the **root cause** before fixing.
+   real output, never a paraphrase). Backend = `pytest backend/tests -q` plus the project's canonical
+   runner flags (the runner AIDEV-NOTE in `backend/requirements.txt` is the one source of truth — go
+   parallel only when that note says so); frontend = `npm test` from `frontend/`. Paste
+   `git rev-parse HEAD` beside the totals. If a test fails, find the **root cause** before fixing.
 5. **Produce `walkthrough.md`** in the shared folder: what changed file-by-file, the red→green test story
    (which ACs got tests, what coverage `automate` added), the pasted test output, and a **"Your Actions"**
    section recording the worktree branch + commits. If you introduce any dependency: **self-install it**, pin it,

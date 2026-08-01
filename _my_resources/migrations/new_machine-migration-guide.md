@@ -6,7 +6,8 @@ Sudo_Hatter_Command lobby and its sub-projects.
 file (hand-carried — it is never in git).
 
 **Where this kit lives:** `_my_resources/migrations/` — this guide, both
-`*-EnvMaster.ps1` scripts, `rename-fix.ps1`, and the `_secrets/` vault. It sits
+`*-EnvMaster.ps1` scripts, `rename-fix.ps1`, the `_secrets/` vault, and the
+companion guide `python-311-test-infra-other-machines.md` (venv rebuild — §5). It sits
 in the personal area on purpose: it is new-machine-only, not day-to-day
 infrastructure, so it stays out of the top level and can be deleted outright
 once a machine is set up rather than left to go stale. The lobby's read-only
@@ -121,6 +122,12 @@ through each as needed:
   rules-emulator test suite.
 - **Python venvs**: rebuild per project; AGY's canonical test venv is
   `Projects/AGY_AVIATIONCHAT/backend/.venv` (never the repo root one).
+  **For AGY, do NOT wing this** — follow the companion guide in this folder:
+  [`python-311-test-infra-other-machines.md`](python-311-test-infra-other-machines.md).
+  It carries the required interpreter (**3.11**, not whatever is newest — pytest
+  will NOT warn you on the wrong one), the exact rebuild commands, and the
+  4-check verification walkthrough (incl. the parallel runner + machine-wide
+  suite lock added 2026-08-01).
 - **node_modules**: `npm install` per frontend.
 - **GitNexus index**: machine-local, does not travel — re-index the repos you
   work in.
