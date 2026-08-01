@@ -12,6 +12,29 @@ activation: Protocol (every work session that writes files)
 > can only honestly describe one of them. A worktree per story ends that. Each story gets an isolated
 > tree, commits only its own files, and lands as one clean push.
 
+## The standing environment — parallel teams are the NORM
+
+Up to **four story lanes — sometimes more — run this system at once**: separate sessions, separate
+models, sometimes separate platforms (Claude Code, opencode, Antigravity, Codex, an autopilot engine),
+all against the same project repo. One story = one worktree = one `claude/<story-slug>` branch is what
+makes that survivable. Assume from your first command that you are NOT alone in the repo:
+
+- **The shared checkout is a lobby, not your desk.** Its `git status` routinely shows other lanes'
+  dirty files and half-landed syncs. Never sweep, revert, or "fix" a file you did not change — report
+  it and move on. (G2's explicit-paths rule exists precisely so several lanes can share one checkout
+  without committing each other's work.)
+- **`origin/main_debug` moves under you.** Another lane can land mid-session, so your branch base is
+  stale by default — merge `origin/main_debug` into the story branch before landing (the landing
+  sequence in `git-policy.md`); never assume the base you opened on.
+- **The board files are everyone's files.** `sprint-status.yaml`, `active-context.md`, and the sprint
+  map are edited by EVERY lane — the #1 merge-conflict surface (2026-07-31: a three-block conflict
+  soup was committed to active-context.md exactly this way). Resolve by keeping BOTH sides' facts —
+  parallel lanes record different true things; picking a winner erases someone's work.
+- **Sibling lanes collide on shared surfaces.** Two lanes have shipped the same fix from one triage
+  doc; two stories have planned edits to the same function. Before landing, re-diff your branch
+  against the live sibling `claude/*` branches, and honor any set-wide LANDING RULE posted on the
+  project's sprint board — while one is active, no lane lands alone.
+
 ## Trigger — the sudo story lanes, automatic there, ONLY there
 
 **A worktree opens when a sudo story lane starts work that will produce story commits** — ①
@@ -83,6 +106,12 @@ The story lands on `main_debug` as **one clean push**, triggered by either:
 
 - **`/sudo-update-sprint-memory`** — invoking it IS Daniel's sign-off (Step 7 does the landing), or
 - **Daniel's in-the-moment "approved"** — per-action, never carries to the next story.
+
+**Several sibling lanes live at close-out time** (the standing multi-team case, or a LANDING RULE posted
+on the project's sprint board): the set goes through **`/sudo-merge-epic-workingtrees`** — the one-shot
+close-out for ALL live lanes: overlap map, dependency-ordered merges with per-lane test gates, landing,
+each story flipped `done`, the combined gate, then every tree and branch pruned. No lane lands alone
+while a set is declared.
 
 Close-out runs **inside the worktree**, so its `sprint-status.yaml`, `active-context.md`, and story-file
 edits ride the story branch and land with the story — instead of sitting in the shared tree waiting to

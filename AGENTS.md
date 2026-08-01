@@ -82,7 +82,11 @@ the always-loaded **`.agents/rules/artifacts-always-first.md`** (§2); full mode
   don't ask — commits **freely** inside it (explicit paths; `git add -A`/`.`/`-u` stay banned), and the
   SAME flow closes it (close-out lands it; `/sudo-close-workingtree` prunes). **Ad-hoc non-story work
   never opens a worktree** — it edits `main_debug` directly (an orphan tree no flow will close is the
-  failure this prevents). Read-only sessions: no tree. Full lifecycle → `.agents/rules/worktree-per-story.md`.
+  failure this prevents). Read-only sessions: no tree. **Parallel teams are the NORM — up to four lanes
+  (sometimes more) run at once:** expect other lanes' dirty files in the shared checkout (never sweep,
+  revert, or "fix" work you didn't do) and expect `origin/main_debug` to move mid-session; several lanes
+  landing together go through `/sudo-merge-epic-workingtrees`, never one-by-one. Full lifecycle →
+  `.agents/rules/worktree-per-story.md`.
 - **GIT WRITE APPROVAL — the gate is WHERE a write lands.** FREE: your own `claude/*` branch — commits
   **and** pushes. SIGN-OFF (per-action, never carries): landing on **`main_debug`** — Daniel's in-the-moment
   "approved", or invoking `/sudo-update-sprint-memory` (its Step 7 does the landing; invoking it IS the

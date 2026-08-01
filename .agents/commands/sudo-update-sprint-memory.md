@@ -123,6 +123,11 @@ check; everything else, incl. Step 6's memory write, just applies. Carry its rep
 **Daniel invoking this command IS the sign-off for this push.** Run it LAST, after Steps 1–6 wrote the board,
 story file, and `active-context.md` — so those edits ride the story branch and land with it.
 
+⚠️ **Several sibling worktrees live** (operator says so, `git worktree list` shows sibling story lanes, or
+a LANDING RULE is posted on the board): STOP this solo flow — read `.agents/commands/sudo-merge-epic-workingtrees.md`
+and follow IT end to end: it runs this command's close-out per story itself (fix → merge → land → flip
+`done` → combined gate → prune ALL trees) in one shot; nothing returns here.
+
 **Precondition — check FIRST.** `git rev-parse --abbrev-ref HEAD` must be a **`claude/*`** branch (inside the
 story worktree). If HEAD is `main_debug`/`main`, this story wasn't worked in a worktree — **do NOT land it.**
 Report it and stop — never rescue it by committing in the shared checkout.
