@@ -25,9 +25,17 @@ In the lobby AND in `PROJECT_ROOT`:
 
 ```bash
 git fetch origin --prune
-git status -sb                        # confirm which branch you are on
+git rev-parse --abbrev-ref HEAD       # MUST read main_debug — see the guard below
+git checkout main_debug               # ONLY if it did not; never skip to the pull
 git pull --ff-only origin main_debug  # diverged → STOP and report; do not merge blind
 ```
+
+⛔ **Stand on `main_debug` BEFORE that pull — this is a hard gate, not tidiness.** Every repo's GitHub
+default branch is `main` (deliberate: a clone lands on production), so on a **fresh machine HEAD is `main`**.
+Running `git pull --ff-only origin main_debug` from there fast-forwards **`main` itself** to everything on
+`main_debug` — a silent, unreviewed promote of every unshipped commit into production (AGY carries 160+),
+and it succeeds quietly because it really is a fast-forward. Checking `git status -sb` is not enough; the
+checkout is what prevents it. Promotion is `/sudo-push-e2e` only, never a side effect of resuming.
 
 A `--ff-only` failure means this machine has local commits that never got parked. **Stop and report it** —
 do not merge or rebase your way out. Those commits are the thing `/sudo-park` exists to prevent, and
