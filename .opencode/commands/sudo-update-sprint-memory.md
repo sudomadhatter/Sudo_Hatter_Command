@@ -123,6 +123,11 @@ check; everything else, incl. Step 6's memory write, just applies. Carry its rep
 **Daniel invoking this command IS the sign-off for this push.** Run it LAST, after Steps 1–6 wrote the board,
 story file, and `active-context.md` — so those edits ride the story branch and land with it.
 
+⚠️ **Several sibling worktrees live** (operator says so, `git worktree list` shows sibling story lanes, or
+a LANDING RULE is posted on the board): STOP this solo flow — read `.agents/commands/sudo-merge-epic-workingtrees.md`
+and follow IT end to end: it runs this command's close-out per story itself (fix → merge → land → flip
+`done` → combined gate → prune ALL trees) in one shot; nothing returns here.
+
 **Precondition — check FIRST.** `git rev-parse --abbrev-ref HEAD` must be a **`claude/*`** branch (inside the
 story worktree). If HEAD is `main_debug`/`main`, this story wasn't worked in a worktree — **do NOT land it.**
 Report it and stop — never rescue it by committing in the shared checkout.
@@ -130,7 +135,18 @@ Report it and stop — never rescue it by committing in the shared checkout.
 Then execute `git-policy.md` → **"The landing"**, inside the worktree: first commit the close-out edits —
 EXPLICIT PATHS ONLY (board, story file, active-context, artifacts; `git diff --cached --stat` must show
 ONLY this story's files), then merge `origin/main_debug` (CONFLICT → **STOP and report**; never force-push,
-never blind-rebase), then `git push origin HEAD:main_debug`.
+never blind-rebase), **then the MERGE GATE — prove the tree that ships, not the one ③ reviewed** (the solo
+counterpart of `/sudo-merge-epic-workingtrees` Step 5's combined gate): run
+`git diff --name-only <③-verdict suite SHA>..HEAD -- backend/ frontend/`.
+- **Empty** → the merge changed no code under you (fast-forward / doc-only drift): ③'s green already
+  describes this exact tree — inherit it, say `Merge gate: inherited ③ green @ <sha>`, and push.
+- **Non-empty** → trunk moved code since ③'s run, so the merged tree has NEVER been tested: run the full
+  suite of the touched stacks on it NOW (parallel flags; the conftest suite lock serializes the box) and
+  paste totals into the walkthrough. **Red → STOP: no push, nothing lands** — the board/status flips from
+  Steps 1–6 ride this branch, so a stopped landing publishes nothing. Report the failing tests + which
+  trunk commits collided (`git log <suite-SHA>..origin/main_debug --oneline`); the fix is a follow-on on
+  the branch, then re-gate.
+Then `git push origin HEAD:main_debug`.
 
 ⛔ **Do NOT push `claude/<story-slug>` to origin.** The local branch is the rollback point and survives a
 failed landing push intact. A story branch reaches origin **only** via `/sudo-park` — that is park's whole

@@ -23,10 +23,12 @@ path missing under `PROJECT_ROOT` → STOP, never fall back to the lobby.
 Before Step 1: `git worktree list` under `PROJECT_ROOT` (`worktree-per-story` → "Resuming"). A
 `claude/<story-slug>` tree exists → **cd into it and bind the diff, story file, tests, and suite commands
 under it** (the built code often lives ONLY there — the shared checkout would audit an empty or stale
-diff); echo `Worktree: reviewing in <path>`. None → review in `PROJECT_ROOT` as usual.
+diff); echo `Worktree: reviewing in <path>`. None → review in `PROJECT_ROOT` as usual. Artifacts too:
+this story's plan/walkthrough/verdict live in THIS tree — absent here = that step never ran; a lookalike
+in the shared checkout is a SIBLING lane's, not evidence. Echo the story's ①②③ step-state before Step 1.
 
 ## Step 1 — Clean-Room Adversarial Code Review
-Invoke the **`bmad-code-review`** skill on the story's diff. You MUST act as a **Clean-Room** agent: zero out any builder's bias. Your only job is to aggressively audit the final diff against the strict BDD contract. Hunt specifically for **AI Drift**, over-engineering, bloat, unnecessary abstractions, and logic flaws. Apply the actionable fixes yourself; if you change code, re-run the relevant suite(s) and paste actual output.
+Invoke the **`bmad-code-review`** skill on the story's diff. You MUST act as a **Clean-Room** agent: zero out any builder's bias. Your only job is to aggressively audit the final diff against the strict BDD contract. Hunt specifically for **AI Drift**, over-engineering, bloat, unnecessary abstractions, and logic flaws. Apply the actionable fixes yourself; if you change code, re-run the relevant suite(s) — scoped, not full; the ONE full-suite run lands after your last change (Step 3.1) — and paste actual output.
 
 ## Step 2 — Gate: opt-in check
 Read `_bmad-output/sudo-tests.yaml`.
@@ -34,11 +36,27 @@ Read `_bmad-output/sudo-tests.yaml`.
 - **Present** → it defines `required_tiers · l1_coverage_min · agent_bearing · nfr · waive`. Continue.
 
 ## Step 3 — Gate: run the checks (baseline-diff aware — fail only on NEW regressions)
-1. **Suite — diff-scoped stacks.** Run the FULL suite of every stack the diff touched (backend pytest
-   via `backend/.venv`; frontend vitest). Run the OTHER stack only when the diff touched a shared
-   cross-boundary surface (API/SSE schema, shared types/contract files) — otherwise skip it and say so
-   (PR CI + `/sudo-e2e` still run both stacks before anything ships). Compare against the red
-   baseline; only failures NEW to this story count (legacy red is grandfathered). **Two guards (per
+1. **Suite — ONE full run, measured on the FINAL SHA (diff-scoped stacks).** Stacks in scope = the ones
+   the diff touched (backend pytest via `backend/.venv` with the project's canonical runner flags — the ONE
+   source of truth is the runner AIDEV-NOTE in `backend/requirements.txt`; frontend vitest). Run the OTHER stack only when the diff touched a shared cross-boundary surface (API/SSE
+   schema, shared types/contract files) — otherwise skip it and say so (PR CI + `/sudo-e2e` still run
+   both stacks before anything ships). The verdict needs the full suite green exactly ONCE, on the exact
+   code that will land — never burn a full run proving greens on code you are about to change:
+   - **Inherit ②'s baseline instead of re-running it.** ②'s walkthrough carries full-suite totals + the
+     SHA they were measured at. If that SHA == the worktree HEAD under review AND the totals are
+     full-suite-shaped (count ≈ known suite size + this story's new tests — a scoped run pasted as "the
+     suite" is exactly the fiction `tests-must-gate-for-real` exists for), adopt it as the entry
+     baseline. Missing, partial, or SHA-mismatched → run the full suite up front yourself. **Fail toward
+     running, never toward trusting.**
+   - **While reviewing/fixing, run scoped** — the story's contract file + the suites of the modules you
+     touched.
+   - **After your LAST code/test change, run the FULL suite once** and paste the real output; record
+     `git rev-parse HEAD` beside it. Artifact/doc-only commits after this run do NOT invalidate it —
+     only code or test changes force a re-run. Changed nothing at all? Then ②'s inherited green (SHA
+     verified) IS the evidence — spot-run the story's own test file as a cheap independent probe and
+     cite both. This replaces the old "full suite on arrival" rule, which could land a final SHA whose
+     full green was measured on a DIFFERENT (pre-fix) SHA — the new invariant is strictly stronger.
+   Compare against the red baseline; only failures NEW to this story count (legacy red is grandfathered). **Two guards (per
    `tests-must-gate-for-real`):** (a) **CI-entrypoint audit — change-triggered, not per-story.** Run it only
    when the diff touches `.github/workflows/**` or a test-runner config, when `sudo-tests.yaml` has no
    `ci_audit:` record, or when `git log -1 --format=%H -- .github/workflows/` differs from the recorded
@@ -84,12 +102,14 @@ the fixes you can make safely, then re-run the affected check and paste the new 
 
 ## Step 4 — Verdict
 Combine into **PASS / CONCERNS / FAIL / WAIVED** and write
-`_bmad-output/implementation-artifacts/sudo-code-review-<story>.md`:
+`_bmad-output/implementation-artifacts/sudo-code-review-<story>.md` — **inside the worktree Step 0.5
+resolved**, never the shared checkout (it rides the story branch through the close-out merge):
 - the review (scope, the passes, each finding with `file:line` + severity + disposition),
 - each gate check's result + the **actual** suite output,
 - a `## Clean-Code Gate` section carrying Step 3.5's findings table and its pasted tool output,
 - the overall verdict, the story id, and the current `git HEAD` ref (so `sudo-update-sprint-memory` can
-  detect a stale verdict).
+  detect a stale verdict) — plus the SHA the full-suite evidence was measured on and whose run it was
+  (②'s inherited or ③'s own). Any code/test diff between that SHA and HEAD invalidates the verdict.
 - **FAIL** = a new test regression, a required tier missing, **or** a Step 3.5 machine-floor error on a
   changed line / a banned pattern shipped (bare `except:`, `any`, a committed secret).
 - **CONCERNS** = soft issues only — including Step 3.5's judgment findings (missing story provenance, a
