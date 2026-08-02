@@ -265,12 +265,19 @@ machine, and it is recoverable only if someone knows it happened.
 
 ## Step 5 — Delete branches — ONLY those that passed Steps 1 AND 1.7
 
-```bash
-git branch -d claude/<story-slug>                                   # -d, never -D
+**Order is REMOTE first, local second — the reverse fails.** A landed branch's close-out commits are
+never pushed to `claude/*` (the landing pushes `HEAD:main_debug` only), so a PARKED branch's local tip
+is ahead of its upstream. `git branch -d` checks merged-into-**upstream** when an upstream exists — and
+refuses. Deleting the remote first removes the upstream, so `-d` falls back to the merged-into-HEAD
+check and succeeds honestly (observed 2026-08-01: all three set-close-out `-d`s failed remote-last,
+all three succeeded remote-first).
 
-# Remote: ONLY if the branch is actually on origin — i.e. it was PARKED.
+```bash
+# Remote FIRST: ONLY if the branch is actually on origin — i.e. it was PARKED.
 git ls-remote --heads origin claude/<story-slug>                    # empty → nothing to delete, say so
 Remove-Item Env:\GITHUB_TOKEN -ErrorAction Ignore; git push origin --delete claude/<story-slug>
+
+git branch -d claude/<story-slug>                                   # -d, never -D
 ```
 
 ⛔ **Delete a branch ONLY if it passed Step 1 (landed) AND Step 1.7 (closed out).** Removing a *tree* is
@@ -282,8 +289,9 @@ stories; those branches have not been checked and must **not** be deleted.
 - Landed, not closed out → Step 1.7 already STOPped. Nothing is deleted.
 - Not landed, tree removed → **keep both branches**, and report: *"tree pruned; branch `claude/<slug>`
   retained — restore with `/sudo-resume`."*
-- `git branch -d` refuses → do **not** reach for `-D`. It means the branch is not merged into HEAD; go back
-  to Step 1.5.
+- `git branch -d` refuses → do **not** reach for `-D`. With the remote already deleted (the order above),
+  a refusal means the branch is genuinely not merged into HEAD; go back to Step 1.5. (If you ran it
+  remote-last, the refusal is probably just the upstream check — delete the remote and retry `-d` once.)
 
 **Most story branches will not exist on origin at all, and that is correct.** Per `git-policy.md` → "The
 landing", the landing pushes `HEAD:main_debug` and **not** the branch; a story branch reaches origin only

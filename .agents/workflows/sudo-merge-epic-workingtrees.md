@@ -69,6 +69,12 @@ For each eligible lane, in the Step 3 order:
 1. **Merge the trunk into the lane, in the lane:** `git merge origin/main_debug` — it now carries
    every previously-landed sibling, so each merge is the rolling reconcile. Resolve conflicts HERE
    per the Step 3 plan. ⛔ Never check `main_debug` out in the shared checkout to resolve anything.
+   **Expect ONE conflict block spanning the set's story-status lines in `sprint-status.yaml` at
+   every lane merge** — adjacent lines, different lanes, by construction (the one-line-per-entry
+   CHANGE LOG auto-merges; the status lines don't). The resolution is mechanical, never judgment:
+   keep the TRUNK's lines for already-landed siblings (their `done` is newer) + this LANE's own
+   line. First proven 2026-08-01 on the {21.9, 21.10, 21.11} set — memory
+   `multi-lane-closeout-board-merge-shape`.
 2. **Post-merge gate, still inside the worktree:** this story's red file(s) (now green), the
    touched-surface tier for its stack, and already-landed siblings' red files on shared surfaces
    (their tripwires stay green). Project's canonical runners (testing-standards / pitfalls — e.g.
