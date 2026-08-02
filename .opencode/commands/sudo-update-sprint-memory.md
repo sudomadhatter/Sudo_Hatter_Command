@@ -92,6 +92,15 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
   Distinct lines let two lanes merge. Keep your entry to what the board needs; the narrative belongs in
   the story's walkthrough.
 
+## Step 4.5 — Rebuild the scrum board (AUTOMATIC, never ask)
+
+The YAML just changed, so the board must move **in the same commit** — run **`/sudo-update-scrum-board`**
+against the same `PROJECT_ROOT` (it inherits the binding). Full rebuild per its own skeleton; never
+hand-edit individual board lines here. This is what keeps the post-commit stale-stamp hook silent, and
+the rebuild clears any hook-stamped `⚠️ STALE` banner (`<!-- STALE-STAMP -->`).
+If the board file conflicts during a multi-lane landing, do NOT hand-merge it — resolve the YAML first,
+then re-run `/sudo-update-scrum-board` on the merged tree and commit that.
+
 ## Step 5 — Prune & budget → run `/sudo-prune-context` (AUTOMATIC, never ask)
 Invoke **`/sudo-prune-context`** against the same `PROJECT_ROOT` (it inherits the binding — no
 re-resolution). It applies unconditionally — the ONLY gate in THIS command stays Step 4's red-tests
