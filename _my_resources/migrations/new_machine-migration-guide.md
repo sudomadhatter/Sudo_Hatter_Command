@@ -7,7 +7,7 @@ file (hand-carried — it is never in git).
 
 **Where this kit lives:** `_my_resources/migrations/` — this guide, both
 `*-EnvMaster.ps1` scripts, `rename-fix.ps1`, the `_secrets/` vault, and the
-companion guide `python-311-test-infra-other-machines.md` (venv rebuild — §5). It sits
+companion guide `python_vytest-updates-other-machines.md` (venv rebuild — §5). It sits
 in the personal area on purpose: it is new-machine-only, not day-to-day
 infrastructure, so it stays out of the top level and can be deleted outright
 once a machine is set up rather than left to go stale. The lobby's read-only

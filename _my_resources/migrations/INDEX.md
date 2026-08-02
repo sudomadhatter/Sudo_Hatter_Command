@@ -11,9 +11,10 @@ guide, run the scripts.
 ## New machine — start here
 | Step | File |
 |---|---|
-| 1. The whole procedure (clone → restore → verify) | `env-migration-guide.md` |
+| 1. The whole procedure (clone → restore → verify) | `new_machine-migration-guide.md` (renamed 2026-08-01 from `env-migration-guide.md`) |
 | 2. Rebuild every `.env` / `auth_keys/` file from the master | `Restore-EnvMaster.ps1` |
 | 3. The hand-carried secret bundle it reads | `_secrets/master.env` — **gitignored, never committed** |
+| 4. AGY test-infra companion (its §5 points here) — Python 3.11 venv rebuild + 4-check verification; the vitest suite lock needs no per-machine work | `python_vytest-updates-other-machines.md` |
 
 ```powershell
 # from the LOBBY ROOT (not from this folder)

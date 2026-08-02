@@ -1,4 +1,4 @@
-# ⚠️ Migration — every OTHER machine needs its venv rebuilt (Python 3.11 + test-infra overhaul, 2026-08-01)
+# ⚠️ Migration — every OTHER machine needs its venv rebuilt (Python 3.11 + test-infra overhaul + vitest suite lock, 2026-08-01)
 
 Part of the `_my_resources/migrations/` kit — the Python/venv companion to
 [`new_machine-migration-guide.md`](new_machine-migration-guide.md) (which covers secrets;
@@ -31,6 +31,14 @@ old venv, and:
   `pytest-xdist` fails loudly with `unrecognized arguments: -n` if you do opt in.
 - The suite lock needs `filelock` — without it, runs still work but print
   `[suite-lock] filelock not installed — machine serialization OFF` (fail-open by design).
+
+**Late 2026-08-01 addition — the FRONTEND got the same suite lock** (`cae06a78` on `main_debug`):
+full `vitest run`s on one machine now queue instead of thrashing (measured before the lock: two
+concurrent full runs took 481s/1074s vs a healthy 178s, collected only 57–81 of 84 files, and
+reported shifting failure sets). **Unlike the Python side, this needs ZERO per-machine work** —
+the lock is tracked code (`frontend/vitest.global-setup.ts`, wired via `globalSetup` in
+`frontend/vitest.config.ts`) with zero new npm dependencies, so it arrives complete with
+`git pull`. Details in "The vitest side" section below.
 
 ## The 5-minute fix (run on EACH machine, once)
 
@@ -78,7 +86,8 @@ backend\.venv\Scripts\python.exe -m pytest backend\tests -q --timeout=300
 
 | Message | Meaning |
 |---|---|
-| `[suite-lock] another suite run holds this machine (pid … worktree …) — queued` | The lock working: something else is mid-suite on THIS machine; your run starts the moment it finishes. Never fires across machines (lock lives in that machine's %TEMP%). |
+| `[suite-lock] another suite run holds this machine (pid … worktree …) — queued` | The lock working: something else is mid-suite on THIS machine; your run starts the moment it finishes. Never fires across machines (lock lives in that machine's %TEMP%). **Fires from vitest too now** — same wording, same meaning. |
+| `[suite-lock] holder pid … is gone — reclaiming the lock.` (vitest) | A previous full run was hard-killed (Task Manager, closed chat) and left its lock behind; the new run detected the dead PID and took over. Self-healing, nothing to do. |
 | `[suite-lock] filelock not installed — machine serialization OFF` | Old venv — run the pip install from step 2. Tests still run fine meanwhile. |
 | A test fails with `Timeout >300.0s` + a stack dump | The new hang ceiling naming a wedged test — that test was hanging forever before; now it fails loudly with the culprit's stack. |
 
@@ -90,6 +99,33 @@ backend\.venv\Scripts\python.exe -m pytest backend\tests -q --timeout=300
 | `No module named pytest` right after pulling | you caught a venv mid-rebuild, or step 2 was interrupted | re-run step 2 fully |
 | VS Code can't find the interpreter / imports unresolved after the rebuild | stale interpreter path cached | the `python_inter_venv_fix` skill covers this exact case |
 | Weird failures only on ONE machine | that machine skipped this checklist — venv still 3.14 | run CHECK 1; rebuild |
+
+## The vitest side (nothing to rebuild — read once, then forget)
+
+The frontend twin of the pytest lock, added late 2026-08-01 (`cae06a78`). Other machines get it
+for free with `git pull` — it is ordinary tracked TypeScript, zero new dependencies, and the lock
+itself lives per-machine in `%TEMP%\agy_aviationchat_vitest_suite.lock` (never travels, never
+conflicts across machines). What it does, so its messages don't surprise you:
+
+- **Full `vitest run`s queue per machine** — a second full run prints the queued message (same
+  wording as pytest's) and starts the instant the first finishes.
+- **Scoped runs never wait** — `npx vitest run <file-or-pattern>` starts instantly, always.
+  Watch mode never takes the lock either.
+- **Dead holders self-heal** — the lock records the holder's PID; a waiter that finds the PID
+  dead reclaims in ~5s (verified with a real Task-Manager kill). No filelock/kernel magic here:
+  Node has none, so it's an atomic `mkdir` + PID liveness check.
+- **`AGY_SUITE_LOCK=0` bypasses it** (the SAME env var bypasses the pytest lock — one switch,
+  both stacks; never default it anywhere).
+- **It's an economizer, not a gate** — if the lock can't even be created it warns and runs anyway.
+  45-minute ceiling, then it errors naming the holder and the lock path to delete.
+- Only prerequisite is a current `node_modules` (`npm ci` in `frontend/` if vitest is missing) —
+  which every machine needed anyway.
+
+⚠️ **The two locks are per-STACK by design** — a backend pytest run and a frontend vitest run
+still share the box, and that overlap alone measurably slows the frontend (222s→322s) enough to
+trip the load-sensitive 15s testTimeout on jsdom-heavy specs. If you see exactly one frontend
+timeout flake while the backend suite is churning, re-run it; the real fix (per-file jsdom/
+transform cost) is a filed follow-on in AGY active-context.
 
 ## The full playbook — how to do this again
 
@@ -199,7 +235,9 @@ wrong one) before trusting it.
 | Declared interpreter | `pyproject.toml` `requires-python` |
 | The full 2026-08-01 record (evidence, measurements, traps) | `_artifacts/_main/2026-08-01_python-env-fix/walkthrough.md` |
 | Open parallel follow-up (~8 tests hang only under `-n`) | AGY active-context → Active Tasks |
-| Machine-wide suite lock (queued ≠ hung) | root `conftest.py` |
+| Machine-wide suite lock, backend (queued ≠ hung) | root `conftest.py` |
+| Machine-wide suite lock, frontend | `frontend/vitest.global-setup.ts` (wired in `frontend/vitest.config.ts`) |
+| Frontend flake driver (jsdom setup/transform ≈85% of wall clock) | AIDEV-NOTE in `frontend/vitest.config.ts` + AGY active-context follow-on |
 
 ## Related facts
 
