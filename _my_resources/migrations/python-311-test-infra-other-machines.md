@@ -6,8 +6,8 @@ its §5 points here). Applies to EXISTING machines pulling the 2026-08-01 change
 fresh-machine setups.
 
 **Status:** OPEN until every machine that works on AGY_AVIATIONCHAT has run the checklist below.
-Machines done: ☑ desktop (2026-08-01 — **verified: 2887 passed / 32 skipped / 0 failed on 3.11,
-three independent serial passes**) · ☐ laptop · ☐ any other clone
+Machines done: ☑ laptop (this one, 2026-08-01 — **verified: 2887 passed / 32 skipped / 0 failed on 3.11,
+three independent serial passes**) · ☐ desktop · ☐ any other clone
 
 ---
 
@@ -67,7 +67,7 @@ backend\.venv\Scripts\python.exe -m pytest backend\tests\test_affirmative_classi
 
 # CHECK 4 — the full suite on 3.11 (the real proof; serial = the current gate mode)
 backend\.venv\Scripts\python.exe -m pytest backend\tests -q --timeout=300
-#   PASS: same totals as the desktop baseline (≈2887 passed / 32 skipped / 0 failed —
+#   PASS: same totals as the laptop baseline (≈2887 passed / 32 skipped / 0 failed —
 #         exact count grows as stories land; 0 failed is the bar), in ~12 min serial.
 #   (Parallel -n auto is opt-in until the xdist tail-hang follow-up closes.)
 #   Any NEW failure here = a 3.11-vs-3.14 behavior difference on this machine's deps —
@@ -203,7 +203,7 @@ wrong one) before trusting it.
 
 ## Related facts
 
-- ~~Leftover staging venvs on the desktop~~ — both `backend\.venv311` (staging) and
+- ~~Leftover staging venvs on the laptop~~ — both `backend\.venv311` (staging) and
   `backend\.venv.old314` (rollback) were deleted after the migration verified. Other machines
   never had them; if you see any `.venv*` variant anywhere, it's cruft — delete it.
 - CI is immune to all of this (fresh install every run, and the new
