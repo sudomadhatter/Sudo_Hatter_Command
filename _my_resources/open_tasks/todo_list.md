@@ -1,6 +1,8 @@
 # Todo List
 <!-- Daniel's personal task notes for all projects. READ-ONLY for agents. Unless asked to update this file by me. -->
 
+1. check that the python is all set up correctly accross all machines
+
 ## Sub-Projects Todo Lists
 <!-- Read /open_tasks/todo_list.md for a quick view of what is going on in the sub projects listed below. -->
 These are folder paths to see the open todo list in the sub projects: 
@@ -11,11 +13,11 @@ These are folder paths to see the open todo list in the sub projects:
 
 ## New Tasks
 <!-- Always cross-check against the live project files before trusting anything here. -->
-1. do the live testing for 8.19.9 entitlement-gate live verification
-2. double check that autopilot is good to go
-3. delete out jetchat project on main computer
-4. set up a master .env in sudo hatter command for my main computer
-5. merge all projects onto the new MAC Pro use: C:\Users\dlohn\.gemini\antigravity\scratch\Sudo_Hatter_Command\_my_resources\migrations\env-migration-guide.md
+
+1. double check that autopilot is good to go
+2. delete out jetchat project on main computer
+3. set up a master .env in sudo hatter command for my main computer
+4. merge all projects onto the new MAC Pro use: C:\Users\dlohn\.gemini\antigravity\scratch\Sudo_Hatter_Command\_my_resources\migrations\env-migration-guide.md
 
 ## Open Work
 <!-- Add plan/PRP notes as <slug>.md alongside this file. -->
@@ -43,3 +45,7 @@ These are folder paths to see the open todo list in the sub projects:
 <!-- CHECKPOINT id="ckpt_mrzm9mm2_xwxa2j" time="2026-07-25T00:14:10.106Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
 
 <!-- CHECKPOINT id="ckpt_mrzmmhkr_odcrv6" time="2026-07-25T00:24:10.107Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+
+<!-- CHECKPOINT id="ckpt_msawb3rc_89x83h" time="2026-08-01T21:40:43.080Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+
+<!-- CHECKPOINT id="ckpt_msawnyrr_5u4zhf" time="2026-08-01T21:50:43.143Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
