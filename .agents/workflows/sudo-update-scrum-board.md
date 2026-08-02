@@ -1,5 +1,5 @@
 ---
-description: Rebuild the workspace's sprint_scrum_board_map.md as an enterprise scrum board — Right-now brief, verified team-lane plan (grounded stories only), one work queue with a command per row, operator actions, reference tail. Replaces /update-personal-sprint-map.
+description: Rebuild the workspace's sprint_scrum_board_map.md as an enterprise scrum board — Right-now brief, Parallel Approved Stories (verified set, grounded stories only), one work queue with a command per row, operator actions, reference tail. Replaces /update-personal-sprint-map.
 platforms: [opencode, antigravity]
 ---
 

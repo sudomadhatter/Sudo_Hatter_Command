@@ -1,5 +1,5 @@
 ---
-description: Rebuild the workspace's sprint_scrum_board_map.md as an enterprise scrum board — Right-now brief, verified team-lane plan (grounded stories only), one work queue with a command per row, operator actions, reference tail. Replaces /update-personal-sprint-map.
+description: Rebuild the workspace's sprint_scrum_board_map.md as an enterprise scrum board — Right-now brief, Parallel Approved Stories (verified set, grounded stories only), one work queue with a command per row, operator actions, reference tail. Replaces /update-personal-sprint-map.
 platforms: [opencode, antigravity, claude, codex]
 ---
 
@@ -8,7 +8,7 @@ platforms: [opencode, antigravity, claude, codex]
 Rebuilds `_my_resources/_quick_reference/sprint_scrum_board_map.md` in the target workspace.
 
 The board is an **efficiency tool, not a document.** The operator runs **2–4 teams at once** and scans
-it top-down: *what's the goal → what runs next → which lanes are safe together → what's waiting on me.*
+it top-down: *what's the goal → what runs next → what's approved to run in parallel → what's waiting on me.*
 Every run produces the **same five zones in the same order**, hard-capped at **~150 lines**. Detail that
 doesn't fit belongs in a linked doc — never in a sixth section.
 
@@ -52,7 +52,7 @@ five days. Enumerating from the YAML is the only thing that prevents it.
 
 | Observed state | Zone / row | Command |
 |---|---|---|
-| **Live worktree exists** (any YAML state) | 🎯 In-flight line + occupies a team lane | story `Status: review` → `/sudo-code-review <id>` · else `/sudo-dev-story-tests <id>` |
+| **Live worktree exists** (any YAML state) | 🎯 In-flight line + a context line in 🧵 | story `Status: review` → `/sudo-code-review <id>` · else `/sudo-dev-story-tests <id>` |
 | `backlog`, no story file | 🛠 queue · 🟢 ready | `/sudo-write-story-tests <id>` |
 | `backlog`/`ready`, story file + reds exist | 🛠 queue · 🟢 ready | `/sudo-dev-story-tests <id>` |
 | `review`, code written, review not yet run | 🛠 queue · 🟢 ready | `/sudo-code-review <id>` |
@@ -79,37 +79,49 @@ five days. Enumerating from the YAML is the only thing that prevents it.
 - If the YAML and reality disagree for anything other than a live worktree, follow the YAML in the
   State column and **flag the drift inline** on that row. Never silently "correct" the YAML here.
 
-## Step 2.5 — Team-lane plan (parallelism is a verdict, not a vibe)
+## Step 2.5 — Parallel Approved Stories (the set is the verdict)
 
 **Grounding gate.** A parallel verdict needs both sides' **touch-sets** — the source files each will
 edit — and those exist only once a story is *grounded*: a live branch diff, an `implementation_plan.md`,
-or a written story file with Dev Notes surfaces. **Ungrounded tickets are never lane-eligible.** The
-board's answer for them is "write the story first", never a guess. (2026-07-31: the board asserted a
-story with **no story file** was parallel-safe; its ① then found both stories editing `check_cost_cap`
-at the same line.)
+or a written story file with Dev Notes surfaces. **Ungrounded tickets are never approved.** The board's
+answer for them is "write the story first", never a guess. (2026-07-31: the board asserted a story with
+**no story file** was parallel-safe; its ① then found both stories editing `check_cost_cap` at the same
+line.)
 
 **The operator's lever: to develop an epic in parallel, write its stories first.** Grounded stories
-unlock lanes; nothing else does.
+unlock approval; nothing else does.
 
-1. **Candidates** = every in-flight lane + every 🟢 ready row that is grounded.
+**Display rule — show the ANSWER, never the math.** The board never prints pairwise notation
+("✅ vs C+D"), lane letters, or cross-references the reader must join. It prints one **approved list**
+— membership means *safe beside every other approved row* — followed by a verdict table in which every
+parallel-relevant ticket carries exactly **one** verdict:
+
+| Verdict | Meaning |
+|---|---|
+| 🟢 approved | in the approved set — safe to run beside every other 🟢 |
+| 🔒 after `<ticket>` | shares (or may share) files with that specific ticket — run after it lands |
+| ⏳ waiting on `<story>` | an in-flight story's surfaces are unknown; clears the moment its ① plan lands |
+| 📝 no story | ungrounded — `/sudo-write-story-tests <id>` unlocks it |
+
+⛔ "Not yet checked" is not a verdict. Do the check this run or issue 🔒 with the suspected surface —
+no ticket is ever left un-verdicted.
+
+**Compute the approved set:**
+1. **Candidates** = every in-flight story + every 🟢 ready row that is grounded.
 2. **Touch-sets**, in order of authority: `git diff --name-only main_debug...<branch>` (code written
    wins) → the worktree's `implementation_plan.md` "Modify/Add [file]" lines → the story file's
    Dev Notes surfaces / task paths. Planning artifacts (`_bmad-output/`, `_bmad/`, `_artifacts/`,
    `_my_resources/`) never count as overlap — only source paths decide.
 3. **Contract edges:** `blocked_by:` frontmatter; a story that imports a symbol the other story
-   **creates** is 🔒 serialized even with zero file overlap today (add/add on a new file has no
-   merge base).
-4. **Propose Lanes A–D** (cap 4 — matches how many teams the operator runs): the largest candidate set
-   in which **every pair** is disjoint. Each lane row carries its evidence:
-   `✅ no shared source files (checked <date>: <which inputs were read>)`.
-5. Grounded but conflicting → listed under the table as 🔒 with the shared file/function and who goes
-   first.
-6. An in-flight lane whose surfaces are **unknown** (no plan landed yet) poisons every verdict against
-   it. Say so on its lane row; other lanes proceed only as the operator's explicit risk call, and the
-   verdict upgrades the moment its plan lands.
-7. Verdicts are **point-in-time** — a new plan appearing can flip yesterday's ✅, which is why this
-   step re-runs on every rebuild. Runtime caveat: full test suites contend across lanes even with
-   disjoint files — stagger suite runs.
+   **creates** is 🔒 even with zero file overlap today (add/add on a new file has no merge base).
+4. **Approved set** = the largest candidate set in which **every pair** is disjoint. Verify the pairs
+   fresh each run; stamp the whole set once: `verified <date>: <which inputs were read>`.
+5. An in-flight story whose surfaces are **unknown** (no plan landed yet) cannot approve anything that
+   plausibly shares its ground — those tickets get ⏳ against it, upgraded the moment its plan lands.
+   The in-flight story itself appears as a context line above the table, not as a verdict row.
+6. Verdicts are **point-in-time** — a new plan appearing can flip yesterday's 🟢, which is why this
+   step re-runs on every rebuild. Runtime caveat: full test suites contend across parallel work even
+   with disjoint files — stagger suite runs.
 
 ## Step 3 — Write the board (this skeleton, this order, every time)
 
@@ -132,20 +144,26 @@ last_checked: YYYY-MM-DD
 **Goal:** <one sentence — the sprint objective and why it matters>
 **Do next:** `<command>` — <why, half a line>
 **In flight:** <id — where / whose team> · or None
+**Parallel approved:** <n> stories — run any of them together (🧵)
 **Waiting on you:** <n> 🔴 — <the biggest one and what it closes> (full list 👤)
 **Recently landed:** <one line>
 
-## 🧵 Team lanes — verified this run
+## 🧵 Parallel Approved Stories — verified this run
 
-Only grounded stories ride a lane. **Parallel epic development = write its stories first.**
+**✅ Approved — run any of these at the same time** (verified YYYY-MM-DD: <inputs read>):
+1. `<command>`
+2. `<command>`
 
-| Lane | Ticket | Command | Evidence |
-|---|---|---|---|
-| A | <id> (in flight) | `<cmd>` | <diff/plan read — or "surfaces unknown until ① lands; poisons cross-verdicts"> |
-| B | <id/slug> | `<cmd>` | ✅ no shared source files (checked YYYY-MM-DD: <inputs>) |
+<in-flight context line, e.g. "<id> (other team) keeps running in its own worktree beside these.">
 
-🔒 <X> ↔ <Y>: both edit `<file>` (`<function>`) — <who goes first>.
-🔏 Lane-ineligible (ungrounded): <ids> — `/sudo-write-story-tests <id>` unlocks a lane.
+| Ticket | Verdict | Why |
+|---|---|---|
+| <id/slug> | 🟢 approved | <its only surface, one phrase> |
+| <id/slug> | 🔒 after `<ticket>` | <the shared / unpinned surface> |
+| <id/slug> | ⏳ waiting on `<story>` | <what clears it> |
+| <pipeline ids> | 📝 no story | `/sudo-write-story-tests <id>` unlocks |
+
+Every 🟢 is safe beside every other 🟢. **Parallel epic development = write its stories first.**
 
 ## 🛠 Work queue
 
@@ -205,7 +223,10 @@ Only grounded stories ride a lane. **Parallel epic development = write its stori
 - ⛔ Filing a settled decision under anything that reads like a gap, limitation, or open question —
   that framing gets closed work re-proposed. Settled rulings, stated affirmatively; dead stories are
   **terminal**.
-- ⛔ The words "parallel" / "beside" / "safe together" anywhere outside 🧵 Team lanes.
+- ⛔ The words "parallel" / "beside" / "safe together" anywhere outside 🧵 Parallel Approved Stories
+  (the 🎯 count line excepted — it only points at 🧵).
+- ⛔ Pairwise notation, lane letters, or any verdict the reader must assemble by joining rows — the
+  approved list and the one-verdict-per-ticket table are the only parallel displays.
 - ⛔ Re-explaining a rule the board already states once.
 
 **Collapsing finished work.** Fully-`done` epics with nothing owed collapse into the one ✅ line in
@@ -218,14 +239,15 @@ Anything a done epic still owes lives in 👤 Your actions.
 2. No `descoped` / `deferred` item anywhere in the queue or lanes.
 3. Every 🟢 row has a command; every 🔴 row names its blocker, owner, and clears-when.
 4. Every done-but-owing item is in 👤 Your actions.
-5. Every lane is grounded and pairwise-verified with a dated evidence line; nothing ungrounded rides a
-   lane; parallel vocabulary appears nowhere else on the board.
+5. Every 🟢 in the approved set traces to a fresh pairwise check under one dated stamp; every
+   parallel-relevant ticket carries exactly one verdict (🟢 / 🔒 / ⏳ / 📝 — never "unchecked");
+   nothing ungrounded is 🟢; parallel vocabulary appears nowhere else on the board.
 6. 🎯 Right now is ≤8 lines and holds no data absent from the zones below.
 7. Every referenced path resolves; zero strikethrough; ≤~150 lines.
 8. No P0/P1 story in quick-dev — cross-check every quick-dev row against the test-design P-levels.
 
 ## Step 6 — Report
 
-Print the board path, then: goal line · do-next command · lane plan (`<n> lanes, evidence dates`) with
-any 🔒 named · queue counts (🟢 / 🔴 / 📋) · operator-owed count with 🔴 count · any drift flagged
-between the YAML and git · any epic newly collapsed into the ✅ done line.
+Print the board path, then: goal line · do-next command · approved-set size (`<n> approved, verified
+<date>`) with any 🔒/⏳ named · queue counts (🟢 / 🔴 / 📋) · operator-owed count with 🔴 count · any
+drift flagged between the YAML and git · any epic newly collapsed into the ✅ done line.
