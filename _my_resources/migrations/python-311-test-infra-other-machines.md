@@ -6,7 +6,8 @@ its §5 points here). Applies to EXISTING machines pulling the 2026-08-01 change
 fresh-machine setups.
 
 **Status:** OPEN until every machine that works on AGY_AVIATIONCHAT has run the checklist below.
-Machines done: ☑ desktop (this one, 2026-08-01) · ☐ laptop · ☐ any other clone
+Machines done: ☑ desktop (2026-08-01 — **verified: 2887 passed / 32 skipped / 0 failed on 3.11,
+three independent serial passes**) · ☐ laptop · ☐ any other clone
 
 ---
 
@@ -89,6 +90,116 @@ backend\.venv\Scripts\python.exe -m pytest backend\tests -q --timeout=300
 | `No module named pytest` right after pulling | you caught a venv mid-rebuild, or step 2 was interrupted | re-run step 2 fully |
 | VS Code can't find the interpreter / imports unresolved after the rebuild | stale interpreter path cached | the `python_inter_venv_fix` skill covers this exact case |
 | Weird failures only on ONE machine | that machine skipped this checklist — venv still 3.14 | run CHECK 1; rebuild |
+
+## The full playbook — how to do this again
+
+The sections above cover a machine *catching up*. This section is the complete procedure for
+**repeating the whole operation** — the next interpreter bump (3.12, 3.13…), another project, or
+any "the env drifted and nobody noticed" crisis. It is written from the 2026-08-01 run, where every
+step below was either done right the first time or paid for the hard way. Traps are marked ⚠️.
+
+### Phase 0 — Diagnose before touching anything
+
+```powershell
+py -0p                                                        # every interpreter on the machine
+Get-Content backend\.venv\pyvenv.cfg                          # version = ? command = ? (provenance!)
+Select-String "python-version" .github\workflows\pr-check.yml # what CI runs
+Select-String "^FROM" Dockerfile                              # what prod runs
+Select-String "requires-python|target-version" pyproject.toml # what is DECLARED
+```
+
+All five must name the same version. Any disagreement = drift. Two extra tells:
+- `pyvenv.cfg`'s `command =` names a path that no longer exists → the venv was carried through a
+  repo move and is a time bomb (stale `.pyc` tracebacks, IDE interpreter confusion).
+- More than one venv (`.venv` at repo root, `.venv311`, anything) → delete down to ONE
+  (`backend/.venv`) as part of the job, whatever else you do.
+
+⚠️ **pytest enforces none of this.** Only pip (at install) and the CI assert step check
+`requires-python`. A wrong venv runs tests silently forever. That is why Phase 0 is manual.
+
+### Phase 1 — Check for live consumers, then STAGE, never swap hot
+
+```powershell
+Get-CimInstance Win32_Process -Filter "Name = 'python.exe'" |
+  Where-Object { $_.CommandLine -match 'AGY_AVIATIONCHAT' } |
+  Select-Object ProcessId, CommandLine
+```
+
+⚠️ **Non-zero result = STOP.** Deleting/rebuilding a venv under a running suite produces
+unattributable false-REDs across every lane using it — this is exactly how "the whole company is
+blocked" happened on 2026-08-01. Also announce a freeze: **no team starts a test run until the
+swap is done** (the suite lock queues big runs, but a freeze keeps small runs out too).
+
+Build the new env BESIDE the old one, verify it cold, and only then swap:
+
+```powershell
+py -3.11 -m venv backend\.venvSTAGE
+backend\.venvSTAGE\Scripts\python.exe -m pip install -r backend\requirements.txt
+backend\.venvSTAGE\Scripts\python.exe -m pip check          # "No broken requirements found"
+# when the process check above returns ZERO rows:
+Rename-Item backend\.venv backend\.venv.oldXXX              # park as rollback, don't delete yet
+Rename-Item backend\.venvSTAGE backend\.venv
+```
+
+⚠️ First-time installs for a NEW interpreter download the entire wheel set fresh (different
+`cp3XX` tags — torch alone is ~2.5 GB). Budget 15–30 min; do not assume a hung pip.
+
+### Phase 2 — Prove it, one variable at a time
+
+- **Serial only** (`-q --timeout=300`, no `-n`) while the interpreter is the variable under test —
+  a parallel failure is ambiguous between "new Python" and "xdist".
+- ⚠️ **Full output to a persistent file, NEVER `| tail`:**
+  `... -m pytest backend\tests -q --timeout=300 -rf > proof.log 2>&1`
+  Every `| tail` run that dies early (kill, crash, IDE restart) loses the failure names. This cost
+  us three diagnostic runs in one night.
+- ⚠️ **Chat/IDE restarts kill agent-launched runs** (they are child processes). If a restart is
+  possible, launch detached via Task Scheduler:
+  ```powershell
+  # write a one-line .cmd that cd's to the repo and runs pytest > log, then:
+  schtasks /create /f /tn "proof-run" /sc once /st 23:59 /tr "%TEMP%\proof.cmd"
+  schtasks /run /tn "proof-run"     # fires now, survives everything
+  schtasks /delete /tn "proof-run" /f   # cleanup afterwards
+  ```
+- **Pass = EXACT totals match** the known-good baseline (passed AND skipped AND failed). Run it
+  more than once — three passes closed it here. Any new failure is a real finding: capture the
+  traceback; it is a version incompatibility, not a reason to roll back blind.
+
+### Phase 3 — Declare it so drift can never be silent again
+
+Already done for AGY (keep on the next bump): `requires-python` in `pyproject.toml` under
+`[project]`, and the `pr-check.yml` "Assert runner Python satisfies requires-python" step, which
+reads the declaration instead of restating the number — so the pin and the declaration cannot
+drift apart. Prove the assert **bites both ways** (passes on the right version, exits 1 on the
+wrong one) before trusting it.
+
+### Phase 4 — Clean up, or the leftovers bite
+
+⚠️ **Delete the parked/staging venvs once green** — they are not harmless:
+- Any `.venv*` under `backend/` lands inside `test_grading_event_governance_gate`'s `rglob` scan
+  and can triple it (~16k → ~48k files), blowing the 300s ceiling. This produced a real timeout.
+- A leftover venv is exactly the "wrong venv" trap (S2) that manufactured a phantom known-failure
+  which sat on the sprint board for two close-outs.
+- `.gitignore` carries `.venv*/` so they never show as 10k phantom changes in the IDE again.
+
+### Phase 5 — Propagate
+
+1. Commit + push the config changes (explicit paths — the 2026-08-01 sweep-commit `c887257d` is
+   the counterexample to imitate never).
+2. Check off every machine at the top of THIS doc as it runs the 5-minute fix + 4 checks.
+3. If any skill/spec was corrected during the work: **upstream to the lobby `.agents/` master
+   FIRST, then `/sync-agents`** — ⚠️ syncing while the master is stale overwrites the corrected
+   project copy with the old wrong one (happened tonight; caught).
+4. One line to every active lane: "merge `origin/main_debug` before your next test run."
+
+### Reference — where each fact lives
+
+| Fact | Source of truth |
+|---|---|
+| Which runner flags are canonical (serial vs `-n auto`) | runner AIDEV-NOTE in `backend/requirements.txt` |
+| Declared interpreter | `pyproject.toml` `requires-python` |
+| The full 2026-08-01 record (evidence, measurements, traps) | `_artifacts/_main/2026-08-01_python-env-fix/walkthrough.md` |
+| Open parallel follow-up (~8 tests hang only under `-n`) | AGY active-context → Active Tasks |
+| Machine-wide suite lock (queued ≠ hung) | root `conftest.py` |
 
 ## Related facts
 
