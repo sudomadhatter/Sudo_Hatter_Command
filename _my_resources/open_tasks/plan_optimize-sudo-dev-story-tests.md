@@ -137,10 +137,19 @@ visible — an unnecessary re-run now needs a written "why."
    antigravity launchers / codex); verify `.sync-manifest.json` and mirrors carry the new body.
 3. **Fresh template** (`fresh-workspace-living-template`): confirm whether it mirrors command
    bodies; if yes, propagate.
-4. **Autopilot engines:** initial grep under the obvious AGY paths found no hardcoded
-   full-suite-timing assumptions — engines drive the `_AP` command by name, and that body already
-   has the correct order. Verify engine paths from the autopilot spec once during rollout and
-   re-grep; expected result: no engine edits needed (the fix rides the command body).
+4. **Autopilot lanes** (verified on disk 2026-08-02 — four launchers, three engines):
+
+   | Launcher | Engine | Reaches the fix how |
+   |---|---|---|
+   | `/autopilot_claude` | `scripts/autopilot-dev-story.ps1` (canonical) | Invokes `sudo-dev-story-tests_AP` by name → **covered by the twin patch** |
+   | `/autopilot_deepseek4` | the SAME ps1, `-Deepseek4` flag (Dev lane on DeepSeek V4 Pro, QA stays Claude) | Same stage commands via the shared ps1 → **covered by the twin patch** |
+   | `/autopilot_opencode` | opencode-native pipeline | References the `_AP` stage commands → **covered by the twin patch** |
+   | `/autopilot_mobile` | Workflow-engine port (web/mobile; no ps1) | **Does NOT reference the `_AP` commands** — its stage subagent prompts inline their own copy of the stage content (`autopilot-mobile-mirrors-claude`: a known drifting port). **Port the Step-4.5 ordering/invariant + mutation rule into its Dev-stage prompt explicitly.** |
+
+   Also verified: `sudo-code-review_AP.md` carries **no SHA-inheritance clause — by design.** The
+   autopilot orchestrator gates the `review` flip on its own independent green run (unattended
+   lanes verify, they don't trust). No inheritance edit is owed there; the interactive ③ is the
+   only consumer of the (totals, SHA) pair, and Step 4.5 is what makes it valid for it.
 
 **Acceptance:** twins diff clean on the shared content; sync manifest updated; the old Step-3
 phrasing greps to zero across masters + mirrors.
