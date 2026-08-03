@@ -92,13 +92,14 @@ concern the audit raised that you can't safely resolve yourself.
 
 ## Step 3 — Implement
 Invoke **`bmad-dev-story`** in IMPLEMENT mode: apply the audit, write the code, and drive the ① red tests —
-**including the BDD contract scenarios from the Vision Lock (Step 0.7)** — to green. Run scoped suites while
-you iterate (the story's files + touched modules), then **finish with ONE full-suite run per touched stack**
-(backend: `backend/.venv` pytest with the project's canonical runner flags — the runner AIDEV-NOTE in
-`backend/requirements.txt` is the one source of truth) and paste the **actual** totals **plus
-`git rev-parse HEAD`** into the walkthrough (constitution rule). That (totals, SHA) pair is ③'s entry
-baseline — ③ re-runs the full suite up front ONLY when the SHA or the shape doesn't hold, so the pair never
-pays for the full suite twice. If a test fails, find root cause before fixing.
+**including the BDD contract scenarios from the Vision Lock (Step 0.7)** — to green. Run **scoped** suites
+while you iterate (the story's files + touched modules), and finish this step with one targeted
+**blast-radius pass** over the suites your changed files share — fail fast on collateral while context is
+hot. If a test fails, find root cause before fixing.
+
+**Do NOT run the full suite in this step** (`tests-must-gate-for-real` Rule 4 — scoped runs are *feedback*,
+the full suite is *certification*). Step 4 adds tests, which stales any totals produced now; **Step 4.5 owns
+the one certification run.**
 
 **Every ① red ends green or is quarantined — never shipped red (`tests-must-gate-for-real`).** A red that
 can't go green is the tell ① handed you **fiction** — it asserts what the design never had (copy absent from
@@ -112,6 +113,34 @@ gaps the ATDD pass missed. **Leave evidence:** persist its summary as
 `## Automate: skipped — <rationale>` section into the walkthrough instead. A silent skip is an unfinished
 Step 4 — the Step 5 checklist and the ③ gate verify this.
 
+**Structural reds are wiring proofs, never behavior proofs.** If ① left structural-only guard/wiring reds
+(source-contains asserts), behavioral coverage is **owed here**, not optional — and you prove it non-vacuous
+by **RELOCATING** the guard, never by deleting it, with a **positive control** on every scenario. Full
+contract → `tests-must-gate-for-real` Rule 4.
+
+## Step 4.5 — Certify at the shipping SHA (the ONE full-suite run)
+Governed by `tests-must-gate-for-real` Rule 4 — certification is measured at the SHA that ships, and nothing
+before this step counts. In order:
+
+1. **Machine floor, ONCE, over the final changed-file set** — ruff + pyrefly on changed files (both HARD
+   gates lint WHOLE files, so inherited debt in a file you touched is yours). If `--fix` altered anything,
+   re-run the story contract set.
+2. **Commit** (explicit paths, never `git add -A`) — the SHA has to exist before a run can name it.
+3. **ONE full-suite run per touched stack** — backend: `backend/.venv` pytest with the project's canonical
+   runner flags (the runner AIDEV-NOTE in `backend/requirements.txt` is the ONE source of truth). E2E tier
+   touched → the **FULL-TREE** emulator run; `-k`/single-file emulator runs are debug-only and **never
+   citable**. Red here → fix, re-commit, re-run: only the LAST run is the certification.
+4. **Emit the certification handoff** — `_bmad-output/test-artifacts/certification-<story>.json`, one
+   `stacks` entry per stack you ran:
+   `{"story","sha","utc","stacks":{"<stack>":{"cmd","passed","skipped","failed","seconds"}}}` — **and**
+   paste the actual output + `git rev-parse HEAD` into the walkthrough. **INVARIANT: the totals MUST come
+   from a run at exactly that SHA.** Any code or test change after it voids the pair (repeat from 2);
+   artifact/doc-only changes are exempt. ③ compares this `sha` to the HEAD under review — match → it
+   inherits your green; miss → it pays for the full suite again.
+5. **Finalize the automate summary's suite-result line NOW** — summary, JSON, and walkthrough carry the
+   SAME pair; never two documents with divergent totals. **Re-run nothing this run subsumes** — a hedge is
+   a Suite Ledger row that needs a written "why."
+
 ## Step 5 — Close-out artifacts (MANDATORY — never skip, even on "just do it")
 The Always-On **`artifacts-always-first`** rule governs this step. Before reporting Done, `ARTIFACT_DIR`
 MUST hold all three files, each carrying the `IsArtifact: true` + `ArtifactMetadata` frontmatter
@@ -122,9 +151,16 @@ MUST hold all three files, each carrying the `IsArtifact: true` + `ArtifactMetad
       NOT inline-only and NOT merely folded into the plan (§7).
 - [ ] **`walkthrough.md`** (`type: walkthrough`) — the ONE closing doc (§5): narrative (what changed
       file-by-file & why), the red→green test story, the **actual pasted test output**, an AC→evidence
-      matrix, then a **`## Task Checklist`** section (final TodoWrite snapshot) and a **`## Your Actions`**
-      section (what landed — worktree branch + commits — plus anything still on the human). **Required even
-      when told to "skip the plan, just do it" — the walkthrough is never skippable.**
+      matrix, a **`## Suite Ledger`** section (below), then a **`## Task Checklist`** section (final
+      TodoWrite snapshot) and a **`## Your Actions`** section (what landed — worktree branch + commits —
+      plus anything still on the human). **Required even when told to "skip the plan, just do it" — the
+      walkthrough is never skippable.**
+- [ ] **`## Suite Ledger`** — one row per suite invocation this story:
+      `scope · command · duration · result · why this run`. The Step-4.5 certification row carries the SHA.
+      The table is **per story, not per command** — ③ appends its own rows to it. This is how a redundant
+      run becomes visible: a hedge re-run has to write down its "why."
+- [ ] **Certification handoff (Step 4.5)** — `_bmad-output/test-artifacts/certification-<story>.json` exists
+      and its `sha` equals the current HEAD (artifact/doc-only commits after it are exempt).
 - [ ] **Automate evidence (Step 4)** — `_bmad-output/test-artifacts/automation-summary-<story>.md` exists,
       OR the walkthrough carries an explicit `## Automate: skipped — <rationale>` section. (Lives with the
       TEA outputs, not `ARTIFACT_DIR`.) A silent skip fails this checklist.

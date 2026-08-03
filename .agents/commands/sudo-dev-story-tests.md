@@ -97,9 +97,9 @@ while you iterate (the story's files + touched modules), and finish this step wi
 **blast-radius pass** over the suites your changed files share — fail fast on collateral while context is
 hot. If a test fails, find root cause before fixing.
 
-**Do NOT run the full suite in this step** (`tests-must-gate-for-real` Rule 4). Step 4 adds tests, which
-stales any totals produced now; **Step 4.5 owns the one certification run.** Scoped + blast-radius runs are
-*feedback*; the full suite is *certification*, and it has exactly one moment — the shipping SHA.
+**Do NOT run the full suite in this step** (`tests-must-gate-for-real` Rule 4 — scoped runs are *feedback*,
+the full suite is *certification*). Step 4 adds tests, which stales any totals produced now; **Step 4.5 owns
+the one certification run.**
 
 **Every ① red ends green or is quarantined — never shipped red (`tests-must-gate-for-real`).** A red that
 can't go green is the tell ① handed you **fiction** — it asserts what the design never had (copy absent from
@@ -130,20 +130,16 @@ before this step counts. In order:
    runner flags (the runner AIDEV-NOTE in `backend/requirements.txt` is the ONE source of truth). E2E tier
    touched → the **FULL-TREE** emulator run; `-k`/single-file emulator runs are debug-only and **never
    citable**. Red here → fix, re-commit, re-run: only the LAST run is the certification.
-4. **Emit the certification handoff** — write `_bmad-output/test-artifacts/certification-<story>.json`:
-   ```json
-   { "story": "<id>", "sha": "<git rev-parse HEAD>", "utc": "<ISO-8601>",
-     "stacks": { "<stack>": { "cmd": "<exact command>", "passed": 0, "skipped": 0, "failed": 0, "seconds": 0 } } }
-   ```
-   — one entry per stack you ran — **and** paste the actual output + `git rev-parse HEAD` into the
-   walkthrough. **INVARIANT: the totals MUST come from a run at exactly that SHA.** Any code or test change
-   after the run voids it (repeat from 2); artifact/doc-only changes are exempt. This file is ③'s entry
-   baseline — ③ compares its `sha` to the HEAD under review and inherits the green on a match, or runs the
-   full suite itself on a miss. Produced at any earlier SHA, the full suite gets paid twice.
-5. **Finalize the automate summary's suite-result line NOW** so the summary, the JSON, and the walkthrough
-   all carry the SAME pair — never two documents with divergent totals.
-6. **Do NOT re-run anything this certification run subsumes.** A hedge re-run is a Suite Ledger row that
-   needs a written "why."
+4. **Emit the certification handoff** — `_bmad-output/test-artifacts/certification-<story>.json`, one
+   `stacks` entry per stack you ran:
+   `{"story","sha","utc","stacks":{"<stack>":{"cmd","passed","skipped","failed","seconds"}}}` — **and**
+   paste the actual output + `git rev-parse HEAD` into the walkthrough. **INVARIANT: the totals MUST come
+   from a run at exactly that SHA.** Any code or test change after it voids the pair (repeat from 2);
+   artifact/doc-only changes are exempt. ③ compares this `sha` to the HEAD under review — match → it
+   inherits your green; miss → it pays for the full suite again.
+5. **Finalize the automate summary's suite-result line NOW** — summary, JSON, and walkthrough carry the
+   SAME pair; never two documents with divergent totals. **Re-run nothing this run subsumes** — a hedge is
+   a Suite Ledger row that needs a written "why."
 
 ## Step 5 — Close-out artifacts (MANDATORY — never skip, even on "just do it")
 The Always-On **`artifacts-always-first`** rule governs this step. Before reporting Done, `ARTIFACT_DIR`
