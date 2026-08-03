@@ -1,6 +1,6 @@
 ---
 name: artifacts-always-first
-description: "The single source of truth for the plan-first artifact protocol. Create implementation_plan.md and get explicit approval BEFORE modifying ANY project file. Track with the live TodoWrite task list. Close with ONE walkthrough.md that holds the narrative + Task Checklist + Your Actions (no separate task-list.md / your-action-required.md). No exceptions."
+description: "The single source of truth for the plan-first artifact protocol. Create implementation_plan.md and get explicit approval BEFORE modifying ANY project file. Track with the live TodoWrite task list. A session/story closes with TWO living docs: implementation_plan.md (+ appended ## Self-Audit) and walkthrough.md (outline ## Task Checklist + ## Evidence + ## Suite Ledger + appended ## Code Review + ## Your Actions). No standalone audit/review files, no task-list.md / your-action-required.md. No exceptions."
 activation: Always On
 ---
 
@@ -22,29 +22,34 @@ activation: Always On
 
 ## The Lean Artifact Set
 
-Keep it minimal — only these per session:
+Keep it minimal — **TWO living docs** per session, hard-budgeted:
 
 1. **Task list** — DURING work, the live `TodoWrite` list is the single tracker (Daniel watches it
-   update live). AT COMPLETION, the final checklist is captured as a **`## Task Checklist` section
-   INSIDE `walkthrough.md`** (see §5) — never a separate file. Do NOT hand-maintain a parallel
-   `task.md` during work, and do NOT write a standalone `task-list.md`: TodoWrite is the live tracker;
-   its end-state lives in the walkthrough.
-2. **`implementation_plan.md`** — the plan Daniel signs off on (the "approved" gate).
-3. **`walkthrough.md`** — the SINGLE closing doc; it holds everything final. It MUST end with a
-   **`## Task Checklist`** section (the final TodoWrite snapshot) and then a **`## Your Actions`**
-   section (what landed — branch + commits — plus anything still left for Daniel). Do NOT split these
-   off into separate `task-list.md` or `your-action-required.md` files — extra closing docs are wasted
-   space and time.
+   update live). AT COMPLETION its end-state becomes the walkthrough's **`## Task Checklist`** outline
+   (§5) — never a separate file, never a hand-maintained parallel `task.md`.
+2. **`implementation_plan.md`** — the plan Daniel signs off on (the "approved" gate) AND the pre-dev
+   audit's home: `/sudo-self-audit` **appends its `## Self-Audit (<date>)` section here** (§7). A
+   living pre-dev doc — no standalone audit file.
+3. **`walkthrough.md`** — the SINGLE closing doc, outline-first (§5): header → **`## Task Checklist`**
+   (the task outline — pitfalls/findings indented under the tasks that fought back) →
+   **`## Evidence`** (the ONE AC→evidence matrix + LATEST suite totals + SHA) → **`## Suite Ledger`**
+   → **`## Code Review (<date>)`** (appended by the review, §6) → **`## Your Actions`** (LAST — what
+   landed + what's still on Daniel). Everything final lives here; the review appends, never forks.
 4. **`bug-list.md`** — ONLY for debugging / live-testing sessions. A simple bug list.
-5. **`code-review.md`** — whenever a code review runs (see §6).
-6. **`self-audit-stress-test.md`** — whenever the `/sudo-self-audit` pre-dev audit runs
-   (see §7). Inline-only findings are NOT sufficient — the audit is always persisted.
 
-> Do NOT create: a parallel hand-maintained `task.md` during work, a standalone `task-list.md`, a
-> separate `your-action-required.md`, index/`00_artifacts-list.md` files, or the verbose
-> `debug-watch-log.md`. The final task checklist AND the "Your Actions" steps both live as sections
-> inside `walkthrough.md` — one closing doc, not three. The rest of the flow is identical for normal
-> dev and stories.
+**Budgets (HARD):** `implementation_plan.md` ≤ 8 KB incl. its audit section; `walkthrough.md` ≤ 10 KB
+incl. its review section. Over budget → compress in place (pointers to git / the story file), never a
+new file. Test evidence is totals lines + SHA, never reporter dumps; a re-run REPLACES the pasted
+totals (git keeps history) — only the `## Suite Ledger` accretes rows.
+
+> Do NOT create: a parallel `task.md`, a standalone `task-list.md` / `your-action-required.md`,
+> index/`00_artifacts-list.md` files, the verbose `debug-watch-log.md`, a standalone
+> `self-audit-stress-test.md` (§7), or a standalone `code-review.md` /
+> `sudo-code-review-<story>.md` (§6) — audits live IN the plan, reviews live IN the walkthrough.
+> Stories closed before 2026-08-02 carry the old standalone files: valid history, read them there,
+> never write new ones. TEA test-artifacts (`atdd-checklist-*`, `automation-summary-*`,
+> `certification-*.json` under `_bmad-output/test-artifacts/`) are OUT of this set by design and stay
+> standalone. The rest of the flow is identical for normal dev and stories.
 
 > **🔗 Link every artifact — and every file — in the chat, always.** The moment you write or update ANY
 > artifact (plan, walkthrough, bug-list, code-review, self-audit) — or name / hand over ANY file or path —
@@ -132,7 +137,7 @@ verification plan). Use the `Write` tool. Frontmatter on every artifact file:
 IsArtifact: true
 ArtifactMetadata:
   title: <title>
-  type: implementation_plan | walkthrough | bug_list | code_review | self_audit
+  type: implementation_plan | walkthrough | bug_list
   date: <YYYY-MM-DD>
 ---
 ```
@@ -156,49 +161,68 @@ Now — and only now — modify project files. Update the TodoWrite list (`pendi
 → `completed`) as you go so Daniel can watch progress live.
 
 ### 5. Write `walkthrough.md` (after completion — the ONE closing doc)
-A dev journal, not a diff dump: what you did step by step, what fought back and how you
-solved it (say so plainly if it went clean), what changed file-by-file and why, **actual
-test output pasted** (never fabricated), and any deviations from the plan. This is the **single**
-closing document — it carries everything final, in this order:
+An **outline, not a narrative** — the task list IS the structure; prose exists only where something
+fought back. In this order:
 
-1. **The narrative** above (what changed & why + pasted test output).
-2. **`## Task Checklist`** — the final `TodoWrite` snapshot: every task with its end status
-   (`[x]` done / `[ ]` deferred, one-line reason for anything not finished). Terse — it is the list,
-   not a second walkthrough; it replaces the old standalone `task-list.md`.
-3. **`## Your Actions`** (LAST) — what landed (the `claude/*` branch, the commit range, whether it
+1. **Header** (a few lines) — story/session link, status, branch + commit range.
+2. **`## Task Checklist`** — the task outline (replaces the old narrative + checklist pair): the
+   final `TodoWrite` snapshot, `[x]`/`[ ]` per task; under a task, ONLY indented bullets for what
+   fought back — pitfalls hit, findings, plan-vs-built deviations, and how each was resolved. A task
+   that went clean gets NO sub-bullets (clean is the default reading). Deferred `[ ]` rows carry a
+   one-line reason.
+3. **`## Evidence`** — the ONE AC→evidence matrix (the only copy anywhere — the story file and
+   review link here, never restate), the LATEST full-suite totals + `git rev-parse HEAD` **actually
+   pasted** (never fabricated; totals lines only), and a one-line static-checks result. A re-run
+   REPLACES the totals; the Suite Ledger keeps the history.
+4. **`## Suite Ledger`** — one row per suite invocation this story: `scope · command · duration ·
+   result · why this run`. The certification row carries the SHA; the review step appends its rows.
+5. **`## Code Review (<date>)`** — appended by the review step (§6), never pre-written by the dev.
+6. **`## Your Actions`** (LAST) — what landed (the `claude/*` branch, the commit range, whether it
    reached `main_debug`) plus anything still on Daniel: a `main` promotion, a live check, a decision.
-   It is no longer a `git add` command block — the agent commits its own work in the worktree and
-   lands it at close-out (→ `git-policy` · `worktree-per-story`).
+   Also posted in chat. The review step attempts any agent-solvable row here and ticks it; only
+   genuine human calls survive. Not a `git add` block — the agent commits its own work in the
+   worktree and lands it at close-out (→ `git-policy` · `worktree-per-story`).
 
-Do NOT split the checklist or the actions into separate files (`task-list.md`,
-`your-action-required.md`) — one doc holds the walkthrough, the task list, and the actions.
+Do NOT split any section into a separate file — one doc holds the outline, the evidence, the review,
+and the actions.
 
-### 6. Write `code-review.md` (whenever a code review runs)
-**Any code review — `/code-review`, `bmad-code-review`, or an ad-hoc review — MUST be saved as
-a `code-review.md` artifact in the current session's `<YYYY-MM-DD>_<slug>/` folder**
-(use `code-review-N.md` if a session runs more than one). Presenting findings only inline in the
-chat is NOT sufficient. The artifact captures: scope (files/diff reviewed), method/effort, every
-finding (file:line, severity, failure scenario, suggested fix), and a disposition checklist
-(addressed / deferred) so the review is reviewable the same way plans and walkthroughs are.
-Frontmatter `type: code_review`.
+### 6. Append `## Code Review (<date>)` to `walkthrough.md` (whenever a code review runs)
+**Any code review — `/sudo-code-review`, `/code-review`, `bmad-code-review`, or an ad-hoc review —
+writes its findings INTO the session/story `walkthrough.md` as a `## Code Review (<date>)` section.**
+Presenting findings only inline in the chat is NOT sufficient, and a standalone review file is no
+longer the home. The section carries:
+- the canonical verdict line — **`Verdict: PASS|CONCERNS|FAIL|WAIVED @ <reviewed-sha>`** — plus the
+  SHA the suite evidence was measured on. This line is what `/sudo-update-sprint-memory` reads before
+  flipping a story to `done`; any code/test diff between that SHA and HEAD invalidates the verdict.
+- scope (files/diff reviewed) and method/effort — one line each,
+- **ONE findings table** (the only copy anywhere — the story file links here, never restates):
+  `file:line` · severity · failure scenario · disposition (applied / deferred / dismissed),
+- each gate check's result in one line, with the actual suite totals (rows also go to
+  `## Suite Ledger`).
 
-> **Exception — the sudo story lane (③).** `/sudo-code-review` writes its verdict to
-> `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md` instead, because
-> `/sudo-update-sprint-memory` reads it from there before flipping the story to `done` (and every story from
-> epic 15 on already lives there). **That file IS the review artifact — do not also write a `code-review.md`.**
-> The story's `walkthrough.md` carries a `## Code Review (<date>)` section linking it, so the story folder
-> still leads you to it. Epics 11–12 predate this and keep `code-review.md` in the session folder; both are
-> valid history — look in both before concluding a review was never persisted.
+No walkthrough exists yet (an ad-hoc review outside any session)? Create the session folder + a
+minimal walkthrough and put the section in it. Multiple reviews append multiple dated sections.
 
-### 7. Write `self-audit-stress-test.md` (whenever the pre-dev audit runs)
-**Every run of the `/sudo-self-audit` workflow — on a plan, a story, or another agent's
-audit — MUST be saved as a `self-audit-stress-test.md` artifact in the current session's
-`<YYYY-MM-DD>_<slug>/` folder** (use `self-audit-stress-test-N.md` if a session
-runs more than one). Presenting findings only inline in the chat is NOT sufficient. The artifact
-captures: targets reviewed, audit level (Skip/Light/Full), the Phase 0–4 walk, every finding
-(`file:line`, severity, failure scenario, suggested fix), and the final Go / No-Go verdict.
-This persists even though the audit writes no code — it audits a *plan*, and the plan's reviewer
-needs the audit on disk, not just in chat. Frontmatter `type: self_audit`.
+> **Legacy:** stories closed before 2026-08-02 hold their review at
+> `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md` (epics 15+) or as
+> `code-review.md` in the session folder (epics 11–12). Valid history — readers fall back there when
+> a walkthrough has no `## Code Review` section. **Never write a NEW review to those paths.**
+
+### 7. Append `## Self-Audit (<date>)` to `implementation_plan.md` (whenever the pre-dev audit runs)
+**Every `/sudo-self-audit` run appends its result INTO the plan it audited** as a
+`## Self-Audit (<date>)` section — presenting findings only inline in the chat is NOT sufficient, and
+a standalone audit file is no longer the home. The section carries: the right-size level
+(Skip/Light/Full), **one line per phase walked** (what was checked and cleared — the evidence the
+audit actually ran), the findings table (`file:line` · severity · failure scenario · disposition),
+and the canonical **`Audit verdict: GO | NO-GO`** line. Inline `⚠️ AUDIT FINDING` flags still go in
+the affected plan sections so the dev reads them in context; the section is the summary + proof.
+- **Blind-handoff lane:** an external team's audit gets appended into this section (source noted in
+  the heading), not copied in as a standalone file.
+- **Skip lane:** one line — `Audit: skipped by human decision (<date>)`.
+The plan's frontmatter `type:` stays `implementation_plan`.
+
+> **Legacy:** stories closed before 2026-08-02 keep `self-audit-stress-test.md` — valid history;
+> never write a new one.
 
 ## MD Feedback / Review Protocol
 When Daniel says **"review"** (or asks to review a document/plan), EVERY agent must:
@@ -219,14 +243,17 @@ When Daniel says **"review"** (or asks to review a document/plan), EVERY agent m
   the local law, it overrides §2's task-type list, and it names buckets this rule does not.
 - NEVER write/update an artifact — or name a file or path in chat — without posting a clickable Markdown
   link to it that same turn (see the "Link every artifact — and every file — in the chat" rule above).
-- NEVER claim the walkthrough is done without actual test output.
-- NEVER finish a `walkthrough.md` without its `## Task Checklist` and `## Your Actions` sections (what landed + what's still on Daniel lives in the latter).
-- NEVER write the final task checklist or the "Your Actions" steps as separate files — they are sections inside `walkthrough.md` (§5).
+- NEVER claim the walkthrough is done without actual test output (totals + SHA in `## Evidence`).
+- NEVER finish a `walkthrough.md` without its `## Task Checklist`, `## Evidence` (+ `## Suite Ledger`
+  for story work), and `## Your Actions` sections (what landed + what's still on Daniel lives in the latter).
+- NEVER write the task outline, evidence, review, or "Your Actions" as separate files — they are sections inside `walkthrough.md` (§5).
+- NEVER let a living doc blow its budget (see The Lean Artifact Set) — compress in place; a re-run
+  REPLACES pasted totals, only the `## Suite Ledger` accretes.
 - NEVER edit a project file for sudo-lane story work before opening its worktree — then commit your own work inside it freely (explicit paths, never `git add -A`). Ad-hoc non-story work edits `main_debug` directly — no worktree (→ `worktree-per-story` Trigger). Landing on `main_debug` needs Daniel's sign-off; `main` is his alone. Full policy → the `git-policy` + `worktree-per-story` rules.
-- NEVER deliver code-review findings inline-only — always persist them: a `code-review.md` artifact, or in
-  the sudo story lane `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md` (§6).
-- NEVER deliver `/sudo-self-audit` findings inline-only — always persist them as a
-  `self-audit-stress-test.md` artifact (`type: self_audit`), even though the audit writes no code.
+- NEVER deliver code-review findings inline-only — append the `## Code Review (<date>)` section to the
+  walkthrough (§6); never mint a standalone review file (legacy paths are read-only history).
+- NEVER deliver `/sudo-self-audit` findings inline-only — append the `## Self-Audit (<date>)` section
+  to the plan (§7); never mint a standalone audit file.
 
 ## Why this matters
 Artifact files are Daniel's primary interface for reviewing session work, and the shared `_artifacts/`

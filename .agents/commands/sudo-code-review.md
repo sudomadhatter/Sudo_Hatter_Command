@@ -5,10 +5,11 @@ platforms: [opencode, antigravity]
 
 # /sudo-code-review — Review + Test Gate + Clean-Code Gate (③)
 
-Thin orchestrator — runs your adversarial review, then the test gate, then the clean-code gate, and writes
-ONE verdict artifact that `sudo-update-sprint-memory` reads before flipping the story to `done`.
-Project-scoped (targets THIS repo). Both gates live HERE; there is no separate `/test-gate`, `/qa-gate`,
-or `/lint-gate`.
+Thin orchestrator — runs your adversarial review, then the test gate, then the clean-code gate, and
+appends ONE `## Code Review (<date>)` verdict section to the story's `walkthrough.md` — the section
+`sudo-update-sprint-memory` reads before flipping the story to `done` (no separate verdict file —
+`artifacts-always-first` §6). Project-scoped (targets THIS repo). Both gates live HERE; there is no
+separate `/test-gate`, `/qa-gate`, or `/lint-gate`.
 
 > Flow position: `sudo-dev-story-tests` → **`sudo-code-review`** → `sudo-update-sprint-memory`.
 
@@ -28,7 +29,7 @@ this story's plan/walkthrough/verdict live in THIS tree — absent here = that s
 in the shared checkout is a SIBLING lane's, not evidence. Echo the story's ①②③ step-state before Step 1.
 
 ## Step 1 — Clean-Room Adversarial Code Review
-Invoke the **`bmad-code-review`** skill on the story's diff. You MUST act as a **Clean-Room** agent: zero out any builder's bias. Your only job is to aggressively audit the final diff against the strict BDD contract. Hunt specifically for **AI Drift**, over-engineering, bloat, unnecessary abstractions, and logic flaws. Apply the actionable fixes yourself; if you change code, re-run the relevant suite(s) — scoped, not full; the ONE full-suite run lands after your last change (Step 3.1) — and paste actual output.
+Invoke the **`bmad-code-review`** skill on the story's diff. You MUST act as a **Clean-Room** agent: zero out any builder's bias. Your only job is to aggressively audit the final diff against the strict BDD contract. Hunt specifically for **AI Drift**, over-engineering, bloat, unnecessary abstractions, and logic flaws. **Ordering (deliberate): run the blind hunt on the DIFF first — open ②'s `walkthrough.md` and plan only AFTER it**, for claimed evidence, plan-vs-built deviations, and the `## Your Actions` rows; reading the builder's story before hunting imports exactly the bias this step exists to zero out. Apply the actionable fixes yourself; if you change code, re-run the relevant suite(s) — scoped, not full; the ONE full-suite run lands after your last change (Step 3.1) — and paste actual output.
 
 ## Step 2 — Gate: opt-in check
 Read `_bmad-output/sudo-tests.yaml`.
@@ -84,8 +85,8 @@ Read `_bmad-output/sudo-tests.yaml`.
 5. **Automate evidence** — feature stories only (numeric `E.S` ids; test-only MIN-FLOW stories like
    `tea-*` are exempt): confirm ②'s expansion pass left evidence — `automation-summary-<story>.md` under
    `_bmad-output/test-artifacts/`, or an explicit `## Automate: skipped — <rationale>` section in the
-   story walkthrough. Missing BOTH → cap the verdict at **CONCERNS** and name the gap in the verdict file
-   (never FAIL on this alone — stories gated before 2026-07-09 predate the check).
+   story walkthrough. Missing BOTH → cap the verdict at **CONCERNS** and name the gap in the verdict
+   section (never FAIL on this alone — stories gated before 2026-07-09 predate the check).
 
 ## Step 3.5 — Gate: clean code (ALWAYS runs — independent of Step 2's opt-in)
 Invoke the **`clean-code-audit`** skill on the story diff, bound to the same worktree Step 0.5 resolved
@@ -104,19 +105,26 @@ Invoke the **`clean-code-audit`** skill on the story diff, bound to the same wor
 - **An empty diff is a STOP, not a pass.** If the changed-file set comes back empty, say so and stop — a
   vacuously green gate is exactly what this step exists to prevent.
 
-Fold its findings table into the verdict file **verbatim**, with the actual command output pasted. Apply
+Fold its findings table into the verdict section **verbatim**, with the actual command output pasted. Apply
 the fixes you can make safely, then re-run the affected check and paste the new output.
 
-## Step 4 — Verdict
-Combine into **PASS / CONCERNS / FAIL / WAIVED** and write
-`_bmad-output/implementation-artifacts/sudo-code-review-<story>.md` — **inside the worktree Step 0.5
-resolved**, never the shared checkout (it rides the story branch through the close-out merge):
-- the review (scope, the passes, each finding with `file:line` + severity + disposition),
-- each gate check's result + the **actual** suite output,
-- a `## Clean-Code Gate` section carrying Step 3.5's findings table and its pasted tool output,
-- the overall verdict, the story id, and the current `git HEAD` ref (so `sudo-update-sprint-memory` can
-  detect a stale verdict) — plus the SHA the full-suite evidence was measured on and whose run it was
-  (②'s inherited or ③'s own). Any code/test diff between that SHA and HEAD invalidates the verdict.
+## Step 4 — Verdict (append to the walkthrough — NO separate file)
+Combine into **PASS / CONCERNS / FAIL / WAIVED** and **append a `## Code Review (<date>)` section to the
+story's `walkthrough.md`** (`_artifacts/epic_<E>/<story>/` — **inside the worktree Step 0.5 resolved**,
+never the shared checkout; it rides the story branch through the close-out merge). A standalone verdict
+file is retired per `artifacts-always-first` §6 — pre-2026-08-02 stories keep
+`_bmad-output/implementation-artifacts/sudo-code-review-<story>.md` as read-only history; never write a
+new one. The section carries:
+- FIRST line: the canonical **`Verdict: PASS|CONCERNS|FAIL|WAIVED @ <HEAD-sha>`** — this is what
+  `sudo-update-sprint-memory` reads before flipping the story to `done` — plus one line naming the SHA
+  the full-suite evidence was measured on and whose run it was (②'s inherited certification or ③'s
+  own). Any code/test diff between that SHA and HEAD invalidates the verdict.
+- scope + method, one line each; then ONE findings table (`file:line` · severity · failure scenario ·
+  disposition applied / deferred / dismissed) — the only copy anywhere; the story file links here,
+  never restates,
+- each gate check's result in one line + the **actual** suite totals (runs also ledgered in
+  `## Suite Ledger`),
+- a `### Clean-Code Gate` subsection carrying Step 3.5's findings table and its pasted tool output.
 - **FAIL** = a new test regression, a required tier missing, **or** a Step 3.5 machine-floor error on a
   changed line / a banned pattern shipped (bare `except:`, `any`, a committed secret).
 - **CONCERNS** = soft issues only — including Step 3.5's judgment findings (missing story provenance, a
@@ -127,26 +135,24 @@ resolved**, never the shared checkout (it rides the story branch through the clo
 > The split is deliberate: objective checks block a story, taste does not. Taste gets recorded, argued,
 > and fixed on its merits — never used to stall a story on a reviewer's preference.
 
-## Step 5 — Update the story walkthrough (REQUIRED whenever you found or fixed anything)
-The single closing doc for this story is `_artifacts/<epic>/<story>/walkthrough.md` — if it wasn't handed
-to you, find it there (per the `artifacts-always-first` rule — the ONE doc holding the narrative +
-`## Task Checklist` + `## Your Actions`). The verdict file from Step 4 is an addendum; the **walkthrough is
-the living source of truth**, so reflect the review back INTO it in place — never leave it stale (old status,
-old test count, no findings):
-- Append a `## Code Review (<date>)` section to the body: the verdict, each finding with `file:line` +
-  disposition (applied / deferred / dismissed), and a link to `sudo-code-review-<story>.md`. If you changed
-  nothing, say so ("Changes applied: none — implementation correct as-is").
-- If you changed code: refresh the parts of the body your fixes made stale — the AC/test matrix + test
-  counts, the pasted **actual** suite totals, and the `## Task Checklist` (tick the rows your fixes
-  completed).
-- If your fixes changed files, commit them in the story worktree (explicit paths) and refresh the
-  branch/commit summary in `## Your Actions`.
+## Step 5 — Refresh the walkthrough body + clear `## Your Actions` (REQUIRED)
+The walkthrough (`_artifacts/epic_<E>/<story>/walkthrough.md`, in the worktree) is the **living source
+of truth** — your Step 4 section is part of it, and the body around it must not go stale:
+- If you changed code: refresh what your fixes staled — the `## Evidence` AC matrix + test counts,
+  **REPLACE** the pasted totals with your final run (+ SHA — a re-run replaces, only the
+  `## Suite Ledger` accretes), and tick the `## Task Checklist` rows your fixes completed (add an
+  indented finding bullet under the task it belongs to). If you changed nothing, the Step 4 section
+  says so ("Changes applied: none — implementation correct as-is").
+- **`## Your Actions` triage:** attempt every agent-solvable row yourself — a deferred suite run, a
+  missing artifact link, a doc fix — and tick it with a one-line note. Leave ONLY genuine human calls
+  (product decisions, live checks, `main` promotion). Refresh the branch/commit summary after your
+  worktree commits.
 - **Hard rule: NEVER finish `/sudo-code-review` with the walkthrough body left stale after applying fixes.**
 
 ## Stay in lane
 Commit your review fixes inside the story worktree (explicit paths) — but **never land on `main_debug`**,
 and never flip the story status or edit `sprint-status.yaml`; that is `sudo-update-sprint-memory`'s job
-(it reads this verdict first, then lands the branch in its Step 7). Updating `walkthrough.md` (Step 5) is
-IN lane — that is documenting the review, not flipping status.
+(it reads the walkthrough's `Verdict:` line first, then lands the branch in its Step 7). Updating
+`walkthrough.md` (Steps 4–5) is IN lane — that is documenting the review, not flipping status.
 
 Optional additional input: $ARGUMENTS

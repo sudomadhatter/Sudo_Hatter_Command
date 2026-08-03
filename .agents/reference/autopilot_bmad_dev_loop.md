@@ -47,9 +47,9 @@ itself rather than trusting any pasted "tests green."
 
 ```
 Stage 1  Plan        Dev/Amelia 4.8    NEW dev     /sudo-dev-story-tests_AP plan       -> implementation_plan.md
-Stage 2  Audit       QA /Murat  4.8    NEW audit   /sudo-self-audit_AP  -> self-audit-stress-test.md
+Stage 2  Audit       QA /Murat  4.8    NEW audit   /sudo-self-audit_AP  -> ## Self-Audit appended into implementation_plan.md
 Stage 3  Implement   Dev/Amelia 4.8    RESUME dev  /sudo-dev-story-tests_AP implement  -> code + walkthrough.md
-Stage 4  Review+Fix  QA /Murat  Fable  NEW review  /sudo-code-review_AP          -> code-review.md + fixes
+Stage 4  Review+Fix  QA /Murat  Fable  NEW review  /sudo-code-review_AP          -> ## Code Review appended into walkthrough.md + fixes
   then   TEST GATE   orchestrator (no LLM) re-runs pytest+vitest -> green: flip story to review -> Daniel
 ```
 
@@ -65,12 +65,12 @@ flowchart TD
     S1 -->|"writes implementation_plan.md"| F[("shared run folder")]
     F --> M2["orchestrator mints audit UUID -> sessions.json"]
     M2 --> S2["Stage 2 AUDIT — NEW audit session (Murat, Opus 4.8)<br/>/sudo-self-audit_AP"]
-    S2 -->|"reads plan -> writes self-audit-stress-test.md (findings + fixes)"| F
+    S2 -->|"reads plan -> appends ## Self-Audit into it (findings + fixes)"| F
     F --> S3["Stage 3 IMPLEMENT — RESUME dev (plan still in context)<br/>/sudo-dev-story-tests_AP implement"]
     S3 -->|"reads audit -> writes source code + walkthrough.md"| F
     F --> M3["orchestrator mints review UUID -> sessions.json"]
     M3 --> S4["Stage 4 REVIEW+FIX — NEW review session (Murat, Fable 5)<br/>reads plan + audit + walkthrough + diff<br/>/sudo-code-review_AP"]
-    S4 -->|"reads diff -> re-runs tests, applies fixes, writes code-review.md + OUT-OF-SPEC + OPEN QUESTIONS"| F
+    S4 -->|"reads diff -> re-runs tests, applies fixes, appends ## Code Review + OUT-OF-SPEC + OPEN QUESTIONS"| F
     F --> G{"orchestrator TEST GATE<br/>independent pytest + vitest"}
     G -->|"RED"| RED["TESTS RED — exit 4<br/>(resume -ResumeFrom 4)"]
     G -->|"green"| RV["flip story -> review<br/>(story .md + sprint-status.yaml)"]
@@ -83,9 +83,9 @@ flowchart TD
 | Stage | Command invoked | May write | Must NOT |
 |---|---|---|---|
 | 1 Plan | `/sudo-dev-story-tests_AP plan` | `implementation_plan.md`, `decisions-log.md` | touch source code |
-| 2 Audit | `/sudo-self-audit_AP` | `self-audit-stress-test.md`, `decisions-log.md` | hard-halt on findings (fixes flow to S3) |
+| 2 Audit | `/sudo-self-audit_AP` | the plan's `## Self-Audit` section, `decisions-log.md` | hard-halt on findings (fixes flow to S3) |
 | 3 Implement | `/sudo-dev-story-tests_AP implement` | source, tests, `walkthrough.md` | re-plan; commit; touch story status |
-| 4 Review+Fix | `/sudo-code-review_AP` | `code-review.md`, fixes, walkthrough sections | commit; touch story status / `sprint-status.yaml` (the **orchestrator** owns the `review` flip) |
+| 4 Review+Fix | `/sudo-code-review_AP` | the walkthrough's `## Code Review` section, fixes, other walkthrough sections | commit; touch story status / `sprint-status.yaml` (the **orchestrator** owns the `review` flip) |
 
 ---
 
@@ -322,10 +322,9 @@ re-deriving:
 
 ```
 _artifacts/<date>_autopilot-<story>/
-├── implementation_plan.md        (Stage 1 — Dev)
-├── self-audit-stress-test.md     (Stage 2 — QA, findings + proposed fixes)
-├── walkthrough.md                (Stage 3 — Dev; ends with ## Task Checklist + ## Your Actions; Stage 4 prepends QA CLOSE-OUT to the TOP)
-├── code-review.md                (Stage 4 — QA, the formal review artifact)
+├── implementation_plan.md        (Stage 1 — Dev; Stage 2 QA appends ## Self-Audit — findings + proposed fixes + `Audit verdict:` line)
+├── walkthrough.md                (Stage 3 — Dev: ## Task Checklist outline + ## Evidence + ## Suite Ledger + ## Your Actions;
+│                                  Stage 4 QA appends ## Code Review (`Verdict:` line) and prepends QA CLOSE-OUT to the TOP)
 ├── decisions-log.md              (any stage — every story-silent call the team made)
 ├── _RUN-STATUS.md                (live status: IN PROGRESS / TEST GATE / COMPLETE / PAUSED / TESTS RED / CRASHED)
 └── _pipeline/
@@ -334,13 +333,17 @@ _artifacts/<date>_autopilot-<story>/
     ├── stage{1..4}-*.json        (raw CLI result JSON per stage — cost, turns, etc.)
     └── gate-tests-*.txt          (independent test-gate output: backend / frontend)
 ```
+(Runs before 2026-08-02 also hold standalone `self-audit-stress-test.md` / `code-review.md` — read-only
+history; the two-doc model replaced them.)
 
 > **The run is self-contained.** The global live-tail log lives at `_artifacts/_autopilot-run.log`
 > (the stable path the `/autopilot_claude` skill tails), but the folder *also* keeps its own `_pipeline/run.log`
 > copy — so opening just the run folder shows the whole story without hunting for the global log.
 
-The artifact-presence map *is* the resume logic: `1=implementation_plan.md`,
-`2=self-audit-stress-test.md`, `3=walkthrough.md`, `4=code-review.md`.
+The artifact/section-presence map *is* the resume logic: `1 = implementation_plan.md exists`,
+`2 = the plan contains an "Audit verdict:" line (## Self-Audit)`, `3 = walkthrough.md exists`,
+`4 = the walkthrough contains a "## Code Review" section (Verdict: line)`. A legacy standalone
+`self-audit-stress-test.md` / `code-review.md` from an old run still counts as its stage's evidence.
 
 **QA owns the last mile.** Because Stage 4 is the final agent before the human, it writes two
 spotlight sections at the **top** of `walkthrough.md`:

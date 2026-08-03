@@ -33,8 +33,9 @@ mandatory copy step; checked (with git history) only when something feels previo
 
 ## The map — route information to its ONE home; active-context only POINTS
 - `sprint-status.yaml` story line → per-story ledger + dated history log
-- `_artifacts/<epic>/<story>/walkthrough.md` → full narrative + Your Actions
-- `sudo-code-review-<story>.md` → verdicts + findings (follow-on seeds point here)
+- `_artifacts/<epic>/<story>/walkthrough.md` → the story record: task outline + evidence +
+  `## Code Review` (verdict + findings — follow-on seeds point here) + Your Actions
+  (pre-2026-08-02 stories: verdicts in `sudo-code-review-<story>.md`)
 - `component-specs/<spec>.md` → component pitfalls/contracts · `project-context.md` → app-wide rules
 - `known-pitfalls.md` (beside active-context) → the V2 pitfall long-tail, **grep-scoped, never bulk-loaded**
 - Claude auto-memory → cross-session facts + operator rulings · `_archive/` → pruned text

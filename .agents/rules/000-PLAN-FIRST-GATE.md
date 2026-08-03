@@ -57,9 +57,9 @@ BMAD skills (`bmad-dev-story`, `bmad-quick-dev`, etc.) have execution steps that
 
 ## After Approval — The Sequence
 
-1. Track with the live TodoWrite task list — no `task.md`; the final checklist lands as a `## Task Checklist` section inside `walkthrough.md` (per `artifacts-always-first`)
+1. Track with the live TodoWrite task list — no `task.md`; its end-state lands as the `## Task Checklist` outline inside `walkthrough.md` (per `artifacts-always-first`)
 2. Execute the plan — NOW modify project files (story status, sprint-status, code)
-3. Create `walkthrough.md` artifact — what changed, actual test output, deviations from plan
+3. Create `walkthrough.md` artifact — outline-first: `## Task Checklist` (pitfalls under the tasks that fought back) + `## Evidence` (AC matrix + actual test totals + SHA) + `## Your Actions`
 4. End-of-task checklist in final message (what was built, Daniel's action items, blockers, BMAD backfill)
 
 ## When to Skip

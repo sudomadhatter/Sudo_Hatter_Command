@@ -36,9 +36,10 @@ Read the target story. Produce **only** `implementation_plan.md` in the shared f
   stage run after you.
 
 ## mode = `implement` (Stage 3)
-Read `implementation_plan.md` **and** `self-audit-stress-test.md` (Murat's audit) in the shared folder —
-that is your direction. Apply **all** of the audit's proposed fixes first, then implement the plan
-**test-first** (red → green → expand). Do **not** re-plan.
+Read `implementation_plan.md` in the shared folder — including its **`## Self-Audit`** section (Murat's
+audit, appended by Stage 2) and any inline `⚠️ AUDIT FINDING` flags — that is your direction, ONE file.
+Apply **all** of the audit's proposed fixes first, then implement the plan **test-first**
+(red → green → expand). Do **not** re-plan.
 
 1. **Red — author the failing acceptance tests first.** Before writing any production code, invoke the
    **`bmad-testarch-atdd`** skill to author failing acceptance tests for the story's ACs (one per AC). This
@@ -68,16 +69,20 @@ that is your direction. Apply **all** of the audit's proposed fixes first, then 
    emulator runs are debug-only and never citable. Paste `git rev-parse HEAD` beside the totals; any code or
    test change after that run voids them (artifact/doc-only changes are exempt). If a test fails, find the
    **root cause** before fixing.
-5. **Produce `walkthrough.md`** in the shared folder: what changed file-by-file, the red→green test story
-   (which ACs got tests, what coverage `automate` added), the pasted test output, a **`## Suite Ledger`**
-   table (`scope · command · duration · result · why this run` — one row per suite invocation; a hedge
-   re-run has to write down its why), and a **"Your Actions"** section recording the worktree branch +
-   commits. If you introduce any dependency: **self-install it**, pin it,
+5. **Produce `walkthrough.md`** in the shared folder — outline-first (`artifacts-always-first` §5):
+   header → **`## Task Checklist`** (the task outline — pitfalls/findings/plan-vs-built deviations
+   indented ONLY under the tasks that fought back; clean tasks bare) → **`## Evidence`** (the ONE
+   AC→evidence matrix — which ACs got tests, what coverage `automate` added — + the pasted actual
+   totals + SHA) → a **`## Suite Ledger`** table (`scope · command · duration · result · why this run`
+   — one row per suite invocation; a hedge re-run has to write down its why) → **`## Your Actions`**
+   recording the worktree branch + commits. NO narrative essay; ≤ 10 KB. Stage 4 appends
+   `## Code Review` — never pre-write it. If you introduce any dependency: **self-install it**, pin it,
    add a `decisions-log.md` entry, and banner it under "NEW DEPENDENCIES" in the walkthrough.
 
-> Heads-up on missing handoff artifacts: if `implementation_plan.md` or `self-audit-stress-test.md` is
-> absent, an upstream stage didn't land. Don't silently re-plan or re-audit — note it, proceed from the
-> story with safe defaults logged to `decisions-log.md`, or raise a `PIPELINE_BLOCKER` if you truly can't.
+> Heads-up on missing handoff artifacts: if `implementation_plan.md` is absent, or it has no
+> `## Self-Audit` section (with its `Audit verdict:` line), an upstream stage didn't land. Don't
+> silently re-plan or re-audit — note it, proceed from the story with safe defaults logged to
+> `decisions-log.md`, or raise a `PIPELINE_BLOCKER` if you truly can't.
 
 ---
 

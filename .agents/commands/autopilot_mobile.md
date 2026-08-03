@@ -77,11 +77,14 @@ The story argument that remains after this step is `<STORY>`.
   `<PROJECT_ROOT>/_artifacts/epic_<epic>/<today>_<slug>/`. Create the folder. Use its **absolute** path as
   `<folder>` below.
 
-### 3. Compute the resume start-stage (artifact-presence skip)
-A stage is "complete" iff its handoff artifact exists on disk:
-`implementation_plan.md` (1) · `self-audit-stress-test.md` (2) · `walkthrough.md` (3) · `code-review.md` (4).
-`startStage` = the first stage whose artifact is missing (1 on a clean run). Tell Daniel which stages
-will be skipped.
+### 3. Compute the resume start-stage (artifact/section-presence skip)
+A stage is "complete" iff its handoff evidence exists on disk:
+Stage 1 = `implementation_plan.md` exists · Stage 2 = the plan contains an `Audit verdict:` line (its
+`## Self-Audit` section) · Stage 3 = `walkthrough.md` exists · Stage 4 = the walkthrough contains a
+`## Code Review` section (`Verdict:` line). No standalone `self-audit-stress-test.md` /
+`code-review.md` — those files are retired (a leftover from an old run still counts as stage evidence
+on resume). `startStage` = the first stage whose evidence is missing (1 on a clean run). Tell Daniel
+which stages will be skipped.
 
 ### 4. Live task list + run-status marker
 - Create a TaskCreate list mirroring the four stages; mark `startStage` `in_progress`, the rest
@@ -156,7 +159,8 @@ TaskCreate list. The workflow returns a structured debrief: `{ status, stages[],
   - `sprint-status.yaml`: the story's key `ready-for-dev|in-progress` → `review` (preserve any trailing comment).
   - **NEVER flip to `done`** — the human owns `review → done`. This is **best-effort**: a flip hiccup is a
     warning, never a crash of an already-green run (Daniel can flip by hand at close-out). Only flip after
-    the gate is green AND `code-review.md` exists (a Stage-4 no-op must not silently advance the story).
+    the gate is green AND the walkthrough carries its `## Code Review` section with a `Verdict:` line
+    (a Stage-4 no-op must not silently advance the story).
 
 ### 7. Final debrief (mobile-summarized)
 Read `<folder>/walkthrough.md` (top: **OUT-OF-SPEC DECISIONS** + **OPEN QUESTIONS FOR DANIEL**) and

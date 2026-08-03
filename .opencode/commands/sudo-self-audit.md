@@ -135,18 +135,23 @@ consequence via a shared dependency, the silent killer (corrupts vs. throws), th
 ## Phase 4 — Verdict
 
 1. **Per-item:** SAFE / NEEDS REVISION / UNSAFE
-2. **Four quick gates** (one line each):
+2. **Persist (ALWAYS — per `artifacts-always-first` §7):** append the audit INTO the plan/story you
+   audited as a **`## Self-Audit (<date>)`** section — right-size level, ONE line per phase walked
+   (what was checked and cleared), the findings table (`file:line` · severity · failure scenario ·
+   disposition), and the canonical **`Audit verdict: GO | NO-GO`** line. Do NOT write a standalone
+   `self-audit-stress-test.md` — retired 2026-08-02 (older stories keep theirs as read-only history).
+3. **Four quick gates** (one line each):
    - **Verification strategy present?** Does the plan say how it'll be proven (tests / manual)? No → flag.
    - **Anything irreversible / destructive?** Migrations, DB schema/rules, data deletes → flag + gate.
    - **Any step vague enough the dev will guess?** Ambiguity → the dev fills the gap wrong. Tighten it.
    - **Quality fit?** Does the plan anchor the dev to the existing conventions it should match (naming,
      error style, module placement, test patterns) — or leave style to improvisation? A plan silent on
      "where this lives and what it looks like" invites slop.
-3. **Final Go / No-Go** for proceeding to dev.
+4. **Final Go / No-Go** for proceeding to dev.
 
 If NEEDS-REVISION or UNSAFE → **bake the fix into the plan/story itself** (inline `⚠️ AUDIT FINDING`
-in the affected section, plus a short findings table) so the dev agent reads it in context — then
-re-run only the phases the change touched.
+in the affected section, plus the findings table in `## Self-Audit`) so the dev agent reads it in
+context — then re-run only the phases the change touched.
 
 ---
 

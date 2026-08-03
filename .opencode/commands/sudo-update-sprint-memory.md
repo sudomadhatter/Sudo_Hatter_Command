@@ -38,7 +38,7 @@ in front of you — **read it before you write yours**, and never delete a line 
 2. `_bmad-output/implementation-artifacts/sprint-status.yaml` — **Grep THIS story's id; read only its epic block + line**, never all 400+ lines.
 3. `_bmad-output/component-specs/` — names only; open one only when routing a learning into it (Step 3).
 4. `_bmad-output/project-context.md` — ONLY if a learning looks app-wide (check for an existing rule first); else skip, its rules loaded at boot.
-5. This session's `_artifacts/<YYYY-MM-DD>_<slug>/` — `implementation_plan.md` + `walkthrough.md` (checklist + actions are sections inside it). **Skip anything already read THIS session.** **If `walkthrough.md` ends with a `## Close-Out Handoff` block** (autopilot Stage 4 writes one), that is the AUTHORITATIVE pre-routed learnings — Step 3 lifts it, no re-deriving.
+5. This session's `_artifacts/<YYYY-MM-DD>_<slug>/` — the TWO living docs: `implementation_plan.md` (carries `## Self-Audit`) + `walkthrough.md` (carries the `## Task Checklist` outline, `## Evidence`, `## Suite Ledger`, `## Code Review` with the verdict, and `## Your Actions` — everything close-out needs is in this ONE doc). **Skip anything already read THIS session.** **If `walkthrough.md` ends with a `## Close-Out Handoff` block** (autopilot Stage 4 writes one), that is the AUTHORITATIVE pre-routed learnings — Step 3 lifts it, no re-deriving.
 6. **Cross-reference plan vs walkthrough** for plan-vs-built deltas — unless already surfaced this session.
 
 Report: sprint objective, story status, plan-vs-walkthrough deltas, # known pitfalls.
@@ -73,8 +73,10 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
   **flip the just-closed story to `done` by default, without asking**, in BOTH the story file
   (`_bmad/bmm/stories/…` frontmatter) AND `sprint-status.yaml`. Print `Closing <story>: review → done`.
   Idempotent: only `ready-for-dev`/`in-progress`/`review` advance; never downgrade.
-  - **ONLY objectively-red tests block the flip.** Read the verdict at
-    `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md`. **FAIL** (a NEW regression or missing
+  - **ONLY objectively-red tests block the flip.** Read the **`Verdict: … @ <sha>`** line in the story
+    walkthrough's `## Code Review` section (stories closed before 2026-08-02 keep the old standalone
+    verdict — fall back to `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md` when the
+    walkthrough has no such section). **FAIL** (a NEW regression or missing
     required tier — actually red) → do NOT flip; tell Daniel to fix via `/sudo-code-review`, then re-run.
     **Every other verdict closes it:** **PASS** → flip; **CONCERNS** → flip + record them; **WAIVED /
     missing / stale** (verdict on an old HEAD) → flip. Fail-open: a gate-read error never blocks close-out.
@@ -109,10 +111,11 @@ check; everything else, incl. Step 6's memory write, just applies. Carry its rep
 (`active-context: ~X / 5,000 tokens`) into Step 6's summary EVERY close-out.
 
 ## Step 6 — §5 artifacts, summary & manual catch
-- Ensure this session's `_artifacts/<date>_<slug>/` has the single **`walkthrough.md`** ending with a
-  **`## Task Checklist`** section (final task snapshot) and a **`## Your Actions`** section — what landed
-  (branch + commit range, per Step 7) plus anything still on Daniel — per AGENTS.md §5. (Sections of the
-  walkthrough, not separate files.)
+- Ensure this session's `_artifacts/<date>_<slug>/` has the single **`walkthrough.md`** with its
+  sections per `artifacts-always-first` §5 — **`## Task Checklist`** (the outline), **`## Evidence`**,
+  and **`## Your Actions`** (what landed — branch + commit range, per Step 7 — plus anything still on
+  Daniel); story work also carries `## Suite Ledger` + the review's `## Code Review`. (Sections of the
+  walkthrough, not separate files; ≤ 10 KB.)
 - Print a **`Session save applied:`** summary — ✅ tasks moved to Completed, 🧠 learnings routed (→ file),
   🧹 stale pitfalls / old completed pruned.
 - **Memory (AUTOMATIC — validate, cross-check, write; no approval gate):** for each candidate (Close-Out

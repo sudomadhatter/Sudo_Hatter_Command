@@ -1,6 +1,6 @@
 ---
 name: bmad_code_review_sudo_fix
-description: "Activates whenever the bmad-code-review skill or workflow runs (any agent, any platform). Run the review end-to-end in one pass — never halt to hand steps back to the user — then report findings to code-review.md. Never flip the story to done; stop at review."
+description: "Activates whenever the bmad-code-review skill or workflow runs (any agent, any platform). Run the review end-to-end in one pass — never halt to hand steps back to the user — then append findings to the walkthrough's ## Code Review section (artifacts-always-first §6). Never flip the story to done; stop at review."
 activation: Model Decision (auto when the bmad-code-review skill or workflow runs)
 ---
 

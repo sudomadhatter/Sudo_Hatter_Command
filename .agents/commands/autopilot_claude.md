@@ -103,8 +103,9 @@ original in-project form.
      story introduced ZERO new ones; this is a PASS. The run proceeds to the story flip.
    - On `TESTS RED` -> the post-Stage-4 gate found NEW failures vs the pre-run baseline (true regressions
      from this run, listed in the log); report them. The work is on disk; not a crash. Re-run `-ResumeFrom 4`.
-   - On `REVIEW INCOMPLETE` -> the gate was green but Stage 4 wrote no `code-review.md` (the QA review leg
-     no-op'd). The story was NOT flipped. Tell Daniel to re-run `-ResumeFrom 4` to redo the review.
+   - On `REVIEW INCOMPLETE` -> the gate was green but Stage 4 appended no `## Code Review` section to
+     `walkthrough.md` (the QA review leg no-op'd). The story was NOT flipped. Tell Daniel to re-run
+     `-ResumeFrom 4` to redo the review.
    - On `>>> STORY STATUS - ... flipped to review` -> the gate was green AND the review artifact exists, so
      the orchestrator advanced the story to `review` (story file + sprint-status). Daniel still owns review->done.
 
@@ -136,9 +137,9 @@ just points it at the shared folder):
 | Stage | Session | Teammate | Model | Effort | Command -> artifact |
 |---|---|---|---|---|---|
 | 1 Plan | dev (new) | Amelia (Dev) | `claude-opus-4-8` | `medium` | `/sudo-dev-story-tests_AP plan` -> `implementation_plan.md` |
-| 2 Audit | audit (new) | Murat (QA) | `claude-opus-4-8` | **`max`** | `/sudo-self-audit_AP` -> `self-audit-stress-test.md` |
+| 2 Audit | audit (new) | Murat (QA) | `claude-opus-4-8` | **`max`** | `/sudo-self-audit_AP` -> appends `## Self-Audit` into `implementation_plan.md` |
 | 3 Implement | dev (resume) | Amelia (Dev) | `claude-opus-4-8` | `medium` | `/sudo-dev-story-tests_AP implement` (applies audit, develops, tests) -> `walkthrough.md` |
-| 4 Review+Fix | review (new) | Murat (QA) | `claude-fable-5` | **`max`** | `/sudo-code-review_AP` (reads plan+audit+walkthrough+diff, reviews, applies fixes, retests) -> `code-review.md`, hands to Daniel |
+| 4 Review+Fix | review (new) | Murat (QA) | `claude-fable-5` | **`max`** | `/sudo-code-review_AP` (reads plan incl. audit + walkthrough + diff, reviews, applies fixes, retests) -> appends `## Code Review` (Verdict line) into `walkthrough.md`, hands to Daniel |
 
 **Why this ladder:** both QA gates run at **maximum effort** — they're the last checks before the human —
 but they no longer share a model or a session. The pre-dev **audit runs Opus** (Fable is 2× Opus per token,

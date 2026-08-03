@@ -123,9 +123,9 @@ deep-dive once and **resumes its own chat** for its second stage (so it never re
 | Stage | Session | Teammate | Command -> artifact |
 |---|---|---|---|
 | 1 Plan | dev (new) | Amelia (Dev) | `/sudo-dev-story-tests_AP plan` -> `implementation_plan.md` |
-| 2 Audit | qa (new) | Murat (QA) | `/sudo-self-audit_AP` -> `self-audit-stress-test.md` |
+| 2 Audit | qa (new) | Murat (QA) | `/sudo-self-audit_AP` -> appends `## Self-Audit` into `implementation_plan.md` |
 | 3 Implement | dev (resume) | Amelia (Dev) | `/sudo-dev-story-tests_AP implement` -> `walkthrough.md` |
-| 4 Review+Fix | qa (resume) | Murat (QA) | `/sudo-code-review_AP` -> `code-review.md` |
+| 4 Review+Fix | qa (resume) | Murat (QA) | `/sudo-code-review_AP` -> appends `## Code Review` (Verdict line) into `walkthrough.md` |
 
 **Session continuity on opencode:** the `claude` engine pre-mints a UUID and passes `--session-id`.
 opencode mints `ses_...` ids server-side, so this engine **captures the id from each "new" stage's

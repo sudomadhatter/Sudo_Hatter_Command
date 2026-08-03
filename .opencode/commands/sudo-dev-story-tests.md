@@ -65,18 +65,20 @@ Post the gate message — short, ALWAYS with the clickable plan link (never a ba
 Then **WAIT — modify NO project file, write NO code.** The reply IS the trigger:
 
 - **`continue`** — no model change. Run **`/sudo-self-audit`** on the plan here (pre-dev adversarial
-  stress-test). **Persist as `self-audit-stress-test.md`** (`type: self_audit`) **in `ARTIFACT_DIR`** —
-  inline-only findings do NOT satisfy the protocol (`artifacts-always-first` §7). Fold findings into the
-  plan, then go straight on (Step 2.5 → 3 → 4 → 5) — **no second gate**.
+  stress-test). **Persist by appending `## Self-Audit (<date>)` INTO the plan** (with its
+  `Audit verdict:` line) — inline-only findings do NOT satisfy the protocol, and a standalone audit
+  file is retired (`artifacts-always-first` §7). Then go straight on (Step 2.5 → 3 → 4 → 5) — **no
+  second gate**.
 - **`changed`** — the human ALREADY switched the model; the audit lane. Run **`/sudo-self-audit`** now (on
   the switched model), persist + fold as above — then **STOP AGAIN**: *"Audit done — switch back, then say
   `continue`."* WAIT before Step 2.5/3 — **never implement on the audit-switched model.** This switch-back
   gate exists ONLY after `changed`.
-- **A pasted file path** — another team ran the audit blind; the path IS the handoff. Read it; if outside
-  `ARTIFACT_DIR`, copy it in as `self-audit-stress-test.md` (`type: self_audit`, source noted in
-  frontmatter). Fold its findings into the plan, then proceed — no further stops.
-- **Explicit "skip the audit"** — confirm once; on yes, write a stub `self-audit-stress-test.md` recording
-  `Skipped by human decision (<date>)` so the Step 5 checklist stays honest, and proceed.
+- **A pasted file path** — another team ran the audit blind; the path IS the handoff. Read it and
+  append its content into the plan's **`## Self-Audit (<date>)`** section (source noted in the
+  heading); fold its findings into the affected plan sections, then proceed — no further stops.
+- **Explicit "skip the audit"** — confirm once; on yes, add the one-line `## Self-Audit` section to
+  the plan — `Audit: skipped by human decision (<date>)` — so the Step 5 checklist stays honest, and
+  proceed.
 
 **`continue` always means: run the remainder (Step 2.5 → 3 → 4 → 5) without further stops** — subject only
 to Step 2.5's real-questions rule and the `changed`-path switch-back stop above.
@@ -143,18 +145,20 @@ before this step counts. In order:
 
 ## Step 5 — Close-out artifacts (MANDATORY — never skip, even on "just do it")
 The Always-On **`artifacts-always-first`** rule governs this step. Before reporting Done, `ARTIFACT_DIR`
-MUST hold all three files, each carrying the `IsArtifact: true` + `ArtifactMetadata` frontmatter
+MUST hold the TWO living docs, each carrying the `IsArtifact: true` + `ArtifactMetadata` frontmatter
 (correct `type:`):
 
-- [ ] **`implementation_plan.md`** (`type: implementation_plan`) — from Step 1, frontmatter present (§2).
-- [ ] **`self-audit-stress-test.md`** (`type: self_audit`) — the persisted Step 2 audit, a standalone file,
-      NOT inline-only and NOT merely folded into the plan (§7).
-- [ ] **`walkthrough.md`** (`type: walkthrough`) — the ONE closing doc (§5): narrative (what changed
-      file-by-file & why), the red→green test story, the **actual pasted test output**, an AC→evidence
-      matrix, a **`## Suite Ledger`** section (below), then a **`## Task Checklist`** section (final
-      TodoWrite snapshot) and a **`## Your Actions`** section (what landed — worktree branch + commits —
-      plus anything still on the human). **Required even when told to "skip the plan, just do it" — the
-      walkthrough is never skippable.**
+- [ ] **`implementation_plan.md`** (`type: implementation_plan`) — from Step 1, frontmatter present
+      (§2), **including its `## Self-Audit (<date>)` section** with the `Audit verdict:` line (appended
+      at Step 2 — a standalone audit file is retired per §7; a missing section = Step 2 never ran).
+- [ ] **`walkthrough.md`** (`type: walkthrough`) — the ONE closing doc, outline-first (§5): header →
+      **`## Task Checklist`** (final TodoWrite snapshot as the outline — pitfalls, findings, and
+      plan-vs-built deviations indented ONLY under the tasks that fought back; clean tasks bare) →
+      **`## Evidence`** (the ONE AC→evidence matrix + the **actual pasted** certification totals + SHA)
+      → a **`## Suite Ledger`** section (below) → **`## Your Actions`** (what landed — worktree branch +
+      commits — plus anything still on the human). ③ appends `## Code Review` later — never pre-write
+      it. **Required even when told to "skip the plan, just do it" — the walkthrough is never
+      skippable.**
 - [ ] **`## Suite Ledger`** — one row per suite invocation this story:
       `scope · command · duration · result · why this run`. The Step-4.5 certification row carries the SHA.
       The table is **per story, not per command** — ③ appends its own rows to it. This is how a redundant
@@ -169,7 +173,7 @@ Post a clickable Markdown link to every artifact in the chat that same turn — 
 
 ## Done
 Report: plan-vs-built deltas, audit findings applied, tests now green (paste output), coverage added, and
-the three Step-5 artifact links. Hand to `sudo-code-review`. The dev step **may advance the story to
+the two Step-5 artifact links. Hand to `sudo-code-review`. The dev step **may advance the story to
 `review`** — bmad-dev-story's Step 9 does this and we let it. **Never flip to `done`** — Daniel's call at
 close-out via `/sudo-update-sprint-memory`. **Git:** commit freely inside the story worktree (explicit paths,
 never `git add -A`); do NOT land it on `main_debug` — Step 7 of `/sudo-update-sprint-memory` owns that push

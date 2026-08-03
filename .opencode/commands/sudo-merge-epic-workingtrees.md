@@ -30,8 +30,10 @@ Echo exactly `Target: Projects/<name>` before any work.
    origin with no local tree is still a lane (re-create its worktree if it belongs to the set — a
    re-created tree has ONLY tracked files: restore gitignored assets per the project's known
    pitfalls before trusting its test runs).
-2. Map each lane → story id → board row + story frontmatter status → review verdict
-   (`_bmad-output/implementation-artifacts/sudo-code-review-<story>.md`, may be absent). Read the
+2. Map each lane → story id → board row + story frontmatter status → review verdict: the
+   `Verdict: … @ <sha>` line in the lane's `_artifacts/epic_<E>/<story>/walkthrough.md`
+   `## Code Review` section (pre-2026-08-02 stories: fall back to
+   `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md`; either may be absent). Read the
    sprint map's **LANDING RULE** if one is posted — it may already name the set and the order.
 3. Present the set (lane · story · status · verdict · proposed order) and **confirm with the
    operator**: membership default = every live lane of the named epic. Excluded lanes stay

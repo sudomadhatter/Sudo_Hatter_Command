@@ -68,9 +68,10 @@ Typing the exact word "approved" on a phone keyboard is the worst part of mobile
 
 ## Override 3 — Lighter, chat-first artifacts
 
-The artifact set from `artifacts-always-first.md` still applies — `implementation_plan.md` and the single
-`walkthrough.md` (which carries the `## Task Checklist` + `## Your Actions` sections), plus the `INDEX.md`
-row and `active-context.md` update. But on mobile:
+The artifact set from `artifacts-always-first.md` still applies — the TWO living docs:
+`implementation_plan.md` (+ appended `## Self-Audit`) and the single `walkthrough.md` (`## Task
+Checklist` outline + `## Evidence` + appended `## Code Review` + `## Your Actions`), plus the
+`INDEX.md` row and `active-context.md` update. But on mobile:
 
 - **📱 Tag every artifact as mobile-made — so Daniel can find them later.** On a phone he can't fully
   review a walkthrough, so flag every mobile run for a proper desktop re-pass: add **`mobile: true`** under
