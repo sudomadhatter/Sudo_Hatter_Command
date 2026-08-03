@@ -47,7 +47,9 @@ diet, and close-out preflight.**
 
 ---
 
-## Wave 1 — Scripts only, zero command edits, zero conflict risk
+## Wave 1 — Scripts only, zero command edits, zero conflict risk — ✅ **DONE 2026-08-03, `63c211c`**
+*(shipped with 3 defects and 1 omission — see `## Self-Audit (2026-08-03)`: F2 · F3 · F5 must be fixed
+before Wave 3 wires these scripts into close-out; F6 is the unbuilt check.)*
 
 All new files under `.agents/scripts/` (existing precedent: `check_maps.py`, `record_map_changes.py`,
 `generate_repo_map.py`). **Python 3.11 is on PATH; no `yq`/`jq` exists on this machine, so everything is
@@ -130,12 +132,21 @@ hand this session.
 
 ---
 
-## Wave 2 — Execute Plan A (artifact consolidation)
+## Wave 2 — Execute Plan A (artifact consolidation) — ✅ **DONE 2026-08-03, `7cb52ef`**
 
 Follow `_artifacts/_main/2026-08-02_story-artifact-token-optimization/implementation_plan.md` exactly as
 written. No changes proposed here. It lands first because it **reduces** the file surface Wave 3 edits
 (the verdict file disappears, review output moves into the walkthrough) — doing it after Wave 3 would
 mean editing the same command sections twice.
+
+> ⚠️ **AUDIT FINDING (2026-08-03) — this wave was already executed before Wave 1 landed.** Commit
+> `7cb52ef` covers Plan A steps #1–#10 (rule, 8 commands, 3 `_AP` twins, constitution, autopilot
+> reference + all three engines, regenerated workflows and platform copies). Steps #11–#12 verified
+> complete after the fact: `artifacts-always-first.md` is byte-identical (19,199 B) across the lobby and
+> all three maintained projects, and AGY `_artifacts/AGENTS.md:22` carries the two-doc close. The
+> remaining `self-audit-stress-test.md` references in the toolkit are all retirement notices or
+> legacy-fallback clauses — Plan A's own verification grep passes. **Do not re-run this wave.** The next
+> unexecuted wave is 3.
 
 ---
 
@@ -262,5 +273,54 @@ run, and a stale verdict is detected rather than remembered.
    defaults hard; Wave 3 wires close-out with `--advisory`. ⏳ **Flip owed:** at the close of the first
    full sprint after Wave 3 lands, remove `--advisory` from the close-out wiring. Check this line at
    every close-out until it is done, then strike it.
+
+---
+
+## Self-Audit (2026-08-03)
+
+**Right-size: FULL** — the plan touches a shared data model (`sprint-status.yaml`), a state machine (the
+status-flip contract), and a symbol with ~20 consumers (the command surface). Audited *after* Wave 1
+shipped and *before* Wave 3, so it is half conformance-check, half pre-dev gate.
+
+- **Phase 0 (scope · right-size · traceability)** — walked each Wave-1 promise (§1.1–§1.4) against the
+  delivered script; 22 of 24 promised checks exist, one is missing (F6), one deviates deliberately (F9).
+  Wave 2's own step list traced against `git show 7cb52ef` → already complete (F1).
+- **Phase 1 (blast radius)** — traced the four scripts against their real consumers: `_bmad-output/gates/`
+  is **not** gitignored in AGY (`check-ignore` → not ignored, 318 files already tracked under
+  `_bmad-output/`), so receipts do ride the branch as designed; the risk that killed the whole receipt
+  contract is cleared. Three consumer breaks found instead (F2, F3, F5).
+- **Phase 2 (over-engineering gate)** — no tripwire fires. Four scripts, stdlib-only, no new dependency,
+  no abstraction without a second caller; `wf_common` earns its existence at 4 importers. The one
+  *under*-engineering finding (F7) is the opposite failure: a new hard rule with no enforcement.
+- **Phase 3 (pre-mortem)** — "shipped and silently corrupted state": the dominant mode is a checker that
+  **cannot fire** looking identical to a clean tree (F3), followed by a checker that fires **wrongly** and
+  gets muted (F2, F5). Both were verified by execution against the real AGY tree, not by reading.
+
+| # | file:line | Sev | Failure scenario | Disposition |
+|---|---|---|---|---|
+| F1 | `implementation_plan.md:133` | HIGH | Wave 2 reads "execute Plan A"; it landed as `7cb52ef`. Acting on the plan re-edits 37 files a second time. | **Plan corrected** — Wave 2 marked DONE inline |
+| F2 | `closeout_preflight.py:125` | HIGH | No legacy-verdict fallback (Plan A mandates one). Verified: `--story 17.2` → *"the review step has not run"* → BLOCKED, while `sudo-code-review-17.2.md` sits on disk. Every pre-08-02 story false-blocks; the preflight gets muted. | **FIX in Wave 3, before wiring** |
+| F3 | `closeout_preflight.py:35` | HIGH | Branch matched by story slug, but AGY branches are descriptive (`claude/xdist-tail-hang`, `Epic-7`). Every story reports INFO *"already cleaned up"* — a check that cannot fire, reading as a clear. Unmerged commits get stranded (`landing-is-not-closeout`). | **FIX** — resolve from the worktree / Close-Out Handoff block; "no branch" → WARN, never INFO |
+| F4 | `closeout_preflight.py:122` | MED | Bare `startswith` with no separator guard: `--story 21.8` matches **both** `story-21-8-master-demo-mode` and `story-21-8b-demo-data-quarantine` (verified). A sibling's verdict can block — or satisfy — the wrong flip. | **FIX** — reuse `find_story_files`' `want + "-"` discipline |
+| F5 | `gate_receipt.py:150` vs `:81` | MED | `run` records `git_head(--cwd or project)`; `check` has no `--cwd`, no `--sha` (the plan specified one), and compares by **equality**. A receipt taken in a story worktree, or on a branch that landed via a merge commit, always reads STALE → Wave 3's hard gate blocks every honest receipt → `--advisory` becomes permanent. | **FIX before Wave 3 wiring** — accept `--sha`; use ancestor+diff staleness like `check_artifacts:149` |
+| F6 | `implementation_plan.md:122` | MED | §1.4 promises "greps the story's File List against HEAD, ✅/❌/⚠️ per claim". Not built — 8 checks shipped, not this one. Claimed File Lists stay unverified at close-out. | **Build in Wave 3, or strike the bullet** |
+| F7 | Plan A `implementation_plan.md:81-84` | MED | New hard budgets (plan ≤8 KB, walkthrough ≤10 KB) are enforced by nothing; `workflow_lint` checks only `active-context`. By this plan's own governing principle an unenforced budget rots. Scope also unruled: **this plan is 15.4 KB**, ~2× the story budget — do `_main/` initiative plans count? | **Add to `workflow_lint` in Wave 3 + rule the `_main/` scope question** |
+| F8 | `Projects/*/.agents/scripts/` | LOW | Wave 1 scripts are vendored into all three maintained projects but **untracked** there (identical bytes; AGY's `scripts/INDEX.md` also modified). `commit-and-push-are-one-action` unsatisfied in three child repos. | **Operator call** — commit per repo, or exclude `scripts/` from vendoring |
+| F9 | `implementation_plan.md:64` | INFO | §1.1 specifies "`_AP` step-lists match their primaries". Twins are single-pass headless adaptations with their own prose headings, so step-sequence comparison is pure noise. Shipped as primary-reference + git-recency drift instead. | **Accepted deviation** — recorded here |
+
+**Four gates**
+- *Verification strategy present?* Yes, per-wave and non-negotiable — **except** Wave 3's "compare tool-call
+  count against today's run as the recorded baseline": no baseline artifact was ever written, so the
+  comparison has nothing to compare to. **Flag** — record the baseline before Wave 3 starts, or drop the claim.
+- *Irreversible / destructive?* Only Wave 4's split; mitigated by byte-for-byte reconstruction + a
+  `.pre-split` copy held one sprint. Adequate as written.
+- *Any step vague enough the dev will guess?* Yes — §3.2 "wire the scripts in" never says what a close-out
+  does with **exit 1 (warnings) vs exit 2 (errors)**. That distinction *is* ruling #3. **Tighten before Wave 3.**
+- *Quality fit?* Yes — the scripts match the existing `.agents/scripts/` precedent, stdlib-only, ASCII output.
+
+**Audit verdict: NO-GO** for Wave 2 as written (already executed — F1). **GO for Wave 3**, conditional on
+F2 · F3 · F5 being fixed first: all three live in scripts Wave 3 wires into close-out, and wiring a
+checker that false-blocks (F2), cannot fire (F3), or always reads stale (F5) converts an enforcement
+point into an ignored one — the precise failure this plan exists to end.
 
 <!-- CHECKPOINT id="ckpt_mscl3u61_ncq5zo" time="2026-08-03T02:02:40.633Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
