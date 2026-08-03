@@ -50,6 +50,10 @@ sync-agents: lobby + 3 projects, all surfaces reported, Fresh living-template ch
 ## Your Actions
 
 1. **Restart opencode** so the refreshed global command cache is picked up (sync-agents note).
-2. **Live AGY worktree** (`story-21-8b-demo-data-quarantine`): its vendored toolkit copies predate this change — it inherits everything when it merges trunk; its in-flight story may still close the old way (legacy fallbacks cover it). No action unless it wedges.
+2. ~~Live AGY worktree (`story-21-8b`)~~ — VERIFIED CLOSED (operator query, post-close): worktree
+   unregistered, directory gone (no blocking shell), no local/remote branch, story `done` on the board
+   (2026-08-02, gate 3023P/0F). The "live worktree" caveat in the final report was a stale mid-session
+   observation — the tree was pruned by another lane while this session ran. Only 21.8b's T9 manual P0
+   check remains owed (board-tracked, non-blocking).
 3. First story under the new shape: sanity-check that ② produces the two docs and ③ appends — the budgets and section contracts are new muscle memory for the agents.
 4. Commits + pushes: done by this session per repo (lobby, AGY, Fresh, NEXgen + lobby gitlink bump) — verify below in the final chat report; nothing else is owed.
