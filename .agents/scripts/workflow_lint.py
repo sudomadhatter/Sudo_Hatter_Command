@@ -1,0 +1,258 @@
+"""workflow_lint.py — the regression net for the workflow-infrastructure upgrade (Wave 1.1).
+
+Checks the TOOLKIT (lobby .agents/) and one TARGET PROJECT against the invariants the
+command prose currently asks agents to hold by hand. Built FIRST so later waves can prove
+they broke nothing.
+
+Exit: 0 clean · 1 warnings only · 2 any error.  `--json` for machines.
+
+Usage:
+    python .agents/scripts/workflow_lint.py [--project <name-or-path>] [--json]
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import wf_common as wf
+
+_LINK_RE = re.compile(r"\]\(([^)]+)\)")
+
+
+# ── Toolkit checks (lobby) ─────────────────────────────────────────────────────
+
+def check_commands(lobby: Path, rep: wf.Report) -> None:
+    cmd_dir = lobby / ".agents" / "commands"
+    files = sorted(cmd_dir.glob("*.md"))
+    index_path = cmd_dir / "INDEX.md"
+    index_text = wf.read_text(index_path) if index_path.is_file() else ""
+
+    for f in files:
+        if f.name == "INDEX.md":
+            continue
+        text = wf.read_text(f)
+        # platforms: [] syncs to ZERO platforms while looking installed
+        # (memory: platforms-empty-list-means-nowhere). Omitting the key = all four, fine.
+        head = text[:800]
+        if re.search(r"^platforms:\s*\[\s*\]", head, re.MULTILINE):
+            rep.err("commands", f"{f.name}: `platforms: []` syncs to NOWHERE")
+        if not text.startswith("---"):  # read_text strips a BOM, so this is a real absence
+            rep.warn("commands", f"{f.name}: no frontmatter block")
+        if wf.has_bom(f):
+            rep.info("commands", f"{f.name}: UTF-8 BOM present")
+        stem = f.stem
+        if index_text and stem not in index_text:
+            rep.warn("commands-index", f"{f.name} not mentioned in commands/INDEX.md")
+
+    if index_text:
+        # Dead pointers — LINKS only. INDEX prose legitimately names files that live
+        # elsewhere (`_my_resources/.../sudo-adviser-board-REFERENCE.md`) and records
+        # historical renames (`sprint-dependency-map.md` -> ...); a bare-filename scan
+        # reads those as missing commands.
+        for target in set(_LINK_RE.findall(index_text)):
+            t = target.split("#")[0].strip()
+            if not t or t.startswith(("http://", "https://", "mailto:")):
+                continue
+            if not (cmd_dir / t).exists():
+                rep.err("commands-index", f"INDEX.md dead link: {target}")
+    else:
+        rep.warn("commands-index", "commands/INDEX.md missing or empty")
+
+
+def _last_commit_ts(path: Path, cwd: Path) -> int | None:
+    r = wf.git(["log", "-1", "--format=%ct", "--", str(path)], cwd)
+    out = r.stdout.strip()
+    return int(out) if r.returncode == 0 and out.isdigit() else None
+
+
+def check_ap_twins(lobby: Path, rep: wf.Report) -> None:
+    """_AP twins drift from their primaries (memory: sudo-commands-have-ap-twins-that-drift).
+
+    A twin is NOT a step-for-step mirror — it is a single-pass headless adaptation with its
+    own prose headings, so comparing step sequences only ever produces noise. The signals
+    that actually mean drift: the twin stopped pointing at its primary, or the primary was
+    committed AFTER the twin (someone fixed one side only)."""
+    cmd_dir = lobby / ".agents" / "commands"
+    for ap in sorted(cmd_dir.glob("*_AP.md")):
+        primary = cmd_dir / (ap.stem[:-3] + ".md")
+        if not primary.is_file():
+            rep.err("ap-twins", f"{ap.name}: primary {primary.name} missing")
+            continue
+        # Match the STEM: twins name the primary bare in their title/description
+        # (`# /sudo-code-review_AP - ...`); only some use the `@.../<name>.md` path form.
+        # This fires when the primary is RENAMED out from under the twin.
+        if primary.stem not in wf.read_text(ap):
+            rep.warn("ap-twins", f"{ap.name} no longer references {primary.stem}")
+        ap_ts, pr_ts = _last_commit_ts(ap, lobby), _last_commit_ts(primary, lobby)
+        if ap_ts and pr_ts and pr_ts > ap_ts:
+            days = round((pr_ts - ap_ts) / 86400, 1)
+            rep.warn("ap-twins",
+                     f"{primary.name} committed {days}d AFTER {ap.name} - diff the twin")
+
+
+# ── Project checks ─────────────────────────────────────────────────────────────
+
+_ZONES = ["## 🎯", "## 🧵", "## 🛠", "## 👤", "## 📚"]
+
+
+def check_scrum_board(project: Path, rep: wf.Report) -> None:
+    path = project / wf.SCRUM_BOARD_REL
+    if not path.is_file():
+        rep.err("board", f"{wf.SCRUM_BOARD_REL} missing")
+        return
+    text = wf.read_text(path)
+    lines = text.splitlines()
+
+    for z in _ZONES:
+        if not any(ln.startswith(z) for ln in lines):
+            rep.err("board", f"zone '{z}' missing")
+    if len(lines) > 160:  # skill cap is "~150"; 160 = cap + slack before it fires
+        rep.warn("board", f"{len(lines)} lines (cap ~150)")
+    if "~~" in text:
+        rep.err("board", "strikethrough present (banned - delete, don't strike)")
+    if "<!-- STALE-STAMP -->" in text or "<!--YAML-DRIFT-->" in text:
+        rep.err("board", "hook drift-stamp present - board needs a rebuild")
+
+    # Right-now zone: <=8 content lines, by the skill's own contract.
+    in_zone, count = False, 0
+    for ln in lines:
+        if ln.startswith("## 🎯"):
+            in_zone = True
+            continue
+        if in_zone and ln.startswith("## "):
+            break
+        if in_zone and ln.strip():
+            count += 1
+    if count > 8:
+        rep.warn("board", f"'Right now' zone has {count} content lines (cap 8)")
+
+    # No descoped/deferred item inside the Work queue zone.
+    in_q = False
+    for i, ln in enumerate(lines, 1):
+        if ln.startswith("## 🛠"):
+            in_q = True
+            continue
+        if in_q and ln.startswith("## "):
+            break
+        if in_q and ln.lstrip().startswith("|") and re.search(
+                r"\b(descoped|deferred)\b", ln, re.IGNORECASE):
+            rep.err("board", f"line {i}: descoped/deferred item in the Work queue")
+
+    # Every relative link resolves (from the board's own directory).
+    for target in _LINK_RE.findall(text):
+        t = target.split("#")[0].strip()
+        if not t or t.startswith(("http://", "https://", "mailto:")):
+            continue
+        if not (path.parent / t).exists():
+            rep.err("board-links", f"dead link: {target}")
+
+
+def check_active_context(project: Path, rep: wf.Report) -> None:
+    path = project / wf.ACTIVE_CONTEXT_REL
+    if not path.is_file():
+        rep.err("context", f"{wf.ACTIVE_CONTEXT_REL} missing")
+        return
+    size = path.stat().st_size
+    if size > 20 * 1024:
+        rep.err("context", f"active-context is {size} bytes (budget 20480)")
+    else:
+        rep.info("context", f"active-context ~{round(size / 4)} / 5,000 tokens")
+
+
+def check_sprint_status(project: Path, rep: wf.Report) -> None:
+    path = project / wf.BOARD_REL
+    text = wf.read_text(path)
+    board = wf.parse_board(text)
+
+    for key, info in board.items():
+        if info["dupes"]:
+            rep.err("sprint-status",
+                    f"duplicate key '{key}' (lines {info['line_no']} + {info['dupes']})")
+
+    missing_active, missing_done = [], 0
+    for key, info in board.items():
+        if not wf.is_story_key(key):
+            continue
+        files = wf.find_story_files(project, key)
+        if len(files) > 1:
+            rep.warn("sprint-status", f"'{key}' matches {len(files)} story files")
+        elif not files:
+            # backlog = "story only exists in the epic file" (no file is correct);
+            # descoped stories legitimately never had one (21-2 precedent).
+            if info["status"] in ("ready-for-dev", "in-progress", "review"):
+                missing_active.append(f"{key} ({info['status']})")
+            elif info["status"] == "done":
+                missing_done += 1
+    for item in missing_active:
+        rep.err("sprint-status", f"active story with NO story file: {item}")
+    if missing_done:
+        rep.info("sprint-status",
+                 f"{missing_done} done key(s) without a story file (historic; not gated)")
+
+
+def check_status_drift(project: Path, rep: wf.Report) -> None:
+    for d in wf.status_drift(project):
+        rep.warn("status-drift",
+                 f"{d['key']}: board={d['board']} vs frontmatter={d['frontmatter']} "
+                 f"({d['file']}) - fix with story_status.py set --reconcile")
+
+
+def scan_encoding(paths: list[tuple[str, Path]], rep: wf.Report) -> None:
+    """Two distinct corruptions, two severities:
+      * U+FFFD  = bytes that are NOT valid UTF-8 -> the file is already broken (ERROR).
+      * `a-hat-euro` digraphs = valid UTF-8 that encodes a cp1252 misread (WARN).
+    Neither is visible in a PS 5.1 console, which renders good UTF-8 as digraphs anyway."""
+    for label, path in paths:
+        if not path.is_file():
+            continue
+        text = wf.read_text(path)
+        # U+FFFD is scanned RAW — an undecodable byte is broken wherever it sits.
+        if wf.REPLACEMENT_CHAR in text:
+            rep.err("encoding",
+                    f"{label}: {text.count(wf.REPLACEMENT_CHAR)} undecodable byte(s)")
+        prose = wf.strip_code(text)
+        hits = sum(prose.count(m) for m in wf.MOJIBAKE_MARKERS)
+        if hits:
+            rep.warn("encoding", f"{label}: ~{hits} mojibake digraph(s) (cp1252 round-trip)")
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="Workflow invariants linter (Wave 1.1)")
+    ap.add_argument("--project", help="project name under Projects/ or a path")
+    ap.add_argument("--json", action="store_true")
+    args = ap.parse_args()
+
+    rep = wf.Report()
+    scan: list[tuple[str, Path]] = []
+    lobby = wf.find_lobby_root(Path.cwd())
+    if lobby:
+        check_commands(lobby, rep)
+        check_ap_twins(lobby, rep)
+        scan += [(f"commands/{f.name}", f)
+                 for f in sorted((lobby / ".agents" / "commands").glob("*.md"))]
+    else:
+        rep.info("toolkit", "no lobby root found from cwd - toolkit checks skipped")
+
+    project = wf.resolve_project_root(args.project)
+    check_scrum_board(project, rep)
+    check_active_context(project, rep)
+    check_sprint_status(project, rep)
+    check_status_drift(project, rep)
+    scan += [(rel, project / rel) for rel in
+             (wf.BOARD_REL, wf.ACTIVE_CONTEXT_REL, wf.SCRUM_BOARD_REL)]
+    scan_encoding(scan, rep)
+
+    if args.json:
+        print(json.dumps({"project": str(project), "findings": rep.items,
+                          "exit": rep.exit_code()}, indent=2))
+    else:
+        rep.print_human(f"workflow_lint - {project.name}")
+    return rep.exit_code()
+
+
+if __name__ == "__main__":
+    sys.exit(main())
