@@ -37,6 +37,25 @@ step with a "flip to hard gate later" comment READS as a temporary measure. All 
    that lacks both as a finding (CONCERNS floor). Grandfathering "fail only on NEW regressions" is real,
    but legacy red must be **examined and owned** (quarantined-with-ticket), not unexamined permanent
    failure a fiction test can hide inside.
+4. **Certification is measured at the SHIPPING SHA — feedback runs are not certification.** Scoped suites
+   and the blast-radius pass are *feedback*: cheap, early, at the point of maximum uncertainty. The full
+   suite is *certification*, and it has exactly ONE legitimate moment — after the last code or test change,
+   at the SHA that will ship. Consequences, all binding:
+   - **The (totals, SHA) pair is a contract, not decoration.** Totals MUST come from a run at exactly the
+     SHA named beside them. Any code or test change after that run **voids it** — re-run. **Artifact/doc-only
+     changes are exempt** (a walkthrough edit after the run does not invalidate it).
+   - **Never certify before a step that adds tests.** A full-suite run ordered ahead of a coverage-expansion
+     pass produces totals that stale the moment expansion lands. Order certification last.
+   - **Only citable forms count.** Where a harness makes isolated results untrustworthy, only the citable
+     form may be pasted as evidence — e.g. an emulator tier must be run **FULL-TREE**; `-k`/single-file
+     emulator runs are debug-only, never citable (sibling conftests global-mock the tree, and collection
+     dominates their cost anyway).
+   - **A structural red is a wiring proof, never a behavior proof.** Source-contains asserts cannot see
+     ORDER — a guard relocated below the write it protects passes them identically. Behavioral coverage is
+     therefore **owed**, not optional. Prove a new behavioral test non-vacuous by **RELOCATING** the guard
+     (structural reds stay green; only the new test fires), **never by deleting it** — deletion kills both
+     tests and isolates nothing. Give every scenario a **positive control** (the unguarded path must still
+     do the thing), or the test passes against a helper that does nothing at all.
 
 ## Why
 Source: AGY 2026-07-13. `frontend/e2e/hanger-talk.spec.ts` asserted four UI strings ("Free Learning
@@ -48,3 +67,13 @@ harness (6/6 green locally the whole time) never ran on CI at all; the failing j
 fiction red at ①, wrong CI entrypoint, report-only-forever — each of which this rule closes. The guard is
 cheap (grep the source, check the CI command, put an owner on every soft gate); the failure — a suite that
 looks green while protecting nothing — is not.
+
+**Rule 4 source: AGY story 21.8b, 2026-08-02.** `/sudo-dev-story-tests` Step 3 mandated the full-suite run
+*before* Step 4 (`bmad-testarch-automate`) — the step whose whole job is adding tests. Following the spec
+literally produced totals (3008 @ `66069c99`) that staled the instant expansion landed; the agent caught it
+and paid a SECOND full run (3012 @ `7423eadf`) to hand ③ a valid pair. One full backend suite is **278 s
+serial**, so the mis-ordering cost ~4.6 min per story, every story, to buy back an invariant the ordering
+had broken. Separately, the story's first mutation check *deleted* the guard — which killed the structural
+test too, isolating nothing; only the *relocate* mutation proved the behavioral test carried its own weight.
+Both failures are ordering/technique errors that read as diligence, which is exactly why they need to be
+written down. (See [[source-grep-guards-cannot-see-order]], [[stubbed-children-make-green-vacuous]].)

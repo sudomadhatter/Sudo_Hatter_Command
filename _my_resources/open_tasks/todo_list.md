@@ -18,6 +18,9 @@ These are folder paths to see the open todo list in the sub projects:
 2. delete out jetchat project on main computer
 3. set up a master .env in sudo hatter command for my main computer
 4. merge all projects onto the new MAC Pro use: C:\Users\dlohn\.gemini\antigravity\scratch\Sudo_Hatter_Command\_my_resources\migrations\env-migration-guide.md
+5. Verify the new workflows for running python and vytests. We uptimized this for its solo lane, but with the new Mac we may be able to handle more. These documents are stored in the migrations folder, the new_machine references the python_vytest doc that will limit it to linear testing.
+6. git-hooks-board-stale guide to set up the triggers for updating the scrum board, to move tickets to stale.
+7. update sudo_workflows with all the changes we made
 
 ## Open Work
 <!-- Add plan/PRP notes as <slug>.md alongside this file. -->
@@ -49,3 +52,9 @@ These are folder paths to see the open todo list in the sub projects:
 <!-- CHECKPOINT id="ckpt_msawb3rc_89x83h" time="2026-08-01T21:40:43.080Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
 
 <!-- CHECKPOINT id="ckpt_msawnyrr_5u4zhf" time="2026-08-01T21:50:43.143Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+
+<!-- CHECKPOINT id="ckpt_msc57udy_zs5jo6" time="2026-08-02T18:37:53.687Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+
+<!-- CHECKPOINT id="ckpt_msci3dtz_aap0fz" time="2026-08-03T00:38:20.615Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+
+<!-- CHECKPOINT id="ckpt_mscit3rh_ie2ikc" time="2026-08-03T00:58:20.621Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->

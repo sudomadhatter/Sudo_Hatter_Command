@@ -55,14 +55,24 @@ that is your direction. Apply **all** of the audit's proposed fixes first, then 
    **Leave evidence:** persist its summary as `_bmad-output/test-artifacts/automation-summary-<story>.md`;
    if expansion is genuinely not applicable, record a `## Automate: skipped — <rationale>` section in
    `walkthrough.md`. The QA gate checks for this evidence — a silent skip surfaces as CONCERNS.
-4. **Run the suite(s) until green and paste the *actual* output** into `walkthrough.md` (constitution rule:
-   real output, never a paraphrase). Backend = `pytest backend/tests -q` plus the project's canonical
-   runner flags (the runner AIDEV-NOTE in `backend/requirements.txt` is the one source of truth — go
-   parallel only when that note says so); frontend = `npm test` from `frontend/`. Paste
-   `git rev-parse HEAD` beside the totals. If a test fails, find the **root cause** before fixing.
+   **If step 1 left structural-only guard/wiring reds, behavioral coverage is OWED here** — and you prove it
+   non-vacuous by **RELOCATING** the guard (never deleting it) with a positive control on every scenario
+   (`tests-must-gate-for-real` Rule 4).
+4. **Certify LAST, at the shipping SHA** (`tests-must-gate-for-real` Rule 4 — scoped runs while you iterate
+   are *feedback*; the full run is *certification*, and it comes after step 3, never before it, because
+   expansion stales any totals produced earlier). Run the suite(s) until green and paste the *actual*
+   output into `walkthrough.md` (constitution rule: real output, never a paraphrase). Backend =
+   `pytest backend/tests -q` plus the project's canonical runner flags (the runner AIDEV-NOTE in
+   `backend/requirements.txt` is the one source of truth — go parallel only when that note says so);
+   frontend = `npm test` from `frontend/`. An E2E/emulator tier must be run **FULL-TREE** — `-k`/single-file
+   emulator runs are debug-only and never citable. Paste `git rev-parse HEAD` beside the totals; any code or
+   test change after that run voids them (artifact/doc-only changes are exempt). If a test fails, find the
+   **root cause** before fixing.
 5. **Produce `walkthrough.md`** in the shared folder: what changed file-by-file, the red→green test story
-   (which ACs got tests, what coverage `automate` added), the pasted test output, and a **"Your Actions"**
-   section recording the worktree branch + commits. If you introduce any dependency: **self-install it**, pin it,
+   (which ACs got tests, what coverage `automate` added), the pasted test output, a **`## Suite Ledger`**
+   table (`scope · command · duration · result · why this run` — one row per suite invocation; a hedge
+   re-run has to write down its why), and a **"Your Actions"** section recording the worktree branch +
+   commits. If you introduce any dependency: **self-install it**, pin it,
    add a `decisions-log.md` entry, and banner it under "NEW DEPENDENCIES" in the walkthrough.
 
 > Heads-up on missing handoff artifacts: if `implementation_plan.md` or `self-audit-stress-test.md` is

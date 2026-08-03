@@ -42,20 +42,27 @@ Read `_bmad-output/sudo-tests.yaml`.
    schema, shared types/contract files) — otherwise skip it and say so (PR CI + `/sudo-e2e` still run
    both stacks before anything ships). The verdict needs the full suite green exactly ONCE, on the exact
    code that will land — never burn a full run proving greens on code you are about to change:
-   - **Inherit ②'s baseline instead of re-running it.** ②'s walkthrough carries full-suite totals + the
-     SHA they were measured at. If that SHA == the worktree HEAD under review AND the totals are
-     full-suite-shaped (count ≈ known suite size + this story's new tests — a scoped run pasted as "the
-     suite" is exactly the fiction `tests-must-gate-for-real` exists for), adopt it as the entry
-     baseline. Missing, partial, or SHA-mismatched → run the full suite up front yourself. **Fail toward
-     running, never toward trusting.**
+   - **Inherit ②'s baseline instead of re-running it — via a MECHANICAL check, not a judgment call.**
+     ② Step 4.5 emits `_bmad-output/test-artifacts/certification-<story>.json`
+     (`{story, sha, utc, stacks:{<stack>:{cmd, passed, skipped, failed, seconds}}}`). Read it and compare
+     its `sha` to `git rev-parse HEAD` on the worktree under review:
+     - **`sha` == HEAD and `failed: 0`** → adopt as the entry baseline. Cite the file. Do not re-run.
+     - **File absent, `sha` mismatched, a touched stack missing from `stacks`, or any `failed` > 0** →
+       run the full suite up front yourself. **Fail toward running, never toward trusting.**
+     No file (a pre-contract story, or a lane that skipped ② Step 4.5) → fall back to ②'s pasted
+     walkthrough totals + SHA under the same equality test; anything less specific than an exact SHA is a
+     miss, not a partial credit.
    - **While reviewing/fixing, run scoped** — the story's contract file + the suites of the modules you
      touched.
    - **After your LAST code/test change, run the FULL suite once** and paste the real output; record
-     `git rev-parse HEAD` beside it. Artifact/doc-only commits after this run do NOT invalidate it —
-     only code or test changes force a re-run. Changed nothing at all? Then ②'s inherited green (SHA
-     verified) IS the evidence — spot-run the story's own test file as a cheap independent probe and
-     cite both. This replaces the old "full suite on arrival" rule, which could land a final SHA whose
-     full green was measured on a DIFFERENT (pre-fix) SHA — the new invariant is strictly stronger.
+     `git rev-parse HEAD` beside it, and **refresh `certification-<story>.json` to your SHA** (you are now
+     the certifying run). Artifact/doc-only commits after this run do NOT invalidate it — only code or test
+     changes force a re-run. Changed nothing at all? Then ②'s inherited green (SHA verified) IS the
+     evidence — spot-run the story's own test file as a cheap independent probe and cite both. This
+     replaces the old "full suite on arrival" rule, which could land a final SHA whose full green was
+     measured on a DIFFERENT (pre-fix) SHA — the new invariant is strictly stronger.
+   - **Append your suite runs to the walkthrough's `## Suite Ledger`** (the table is per STORY, ②+③) —
+     `scope · command · duration · result · why this run`.
    Compare against the red baseline; only failures NEW to this story count (legacy red is grandfathered). **Two guards (per
    `tests-must-gate-for-real`):** (a) **CI-entrypoint audit — change-triggered, not per-story.** Run it only
    when the diff touches `.github/workflows/**` or a test-runner config, when `sudo-tests.yaml` has no
