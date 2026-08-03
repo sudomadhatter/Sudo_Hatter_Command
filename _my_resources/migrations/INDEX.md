@@ -15,6 +15,7 @@ guide, run the scripts.
 | 2. Rebuild every `.env` / `auth_keys/` file from the master | `Restore-EnvMaster.ps1` |
 | 3. The hand-carried secret bundle it reads | `_secrets/master.env` — **gitignored, never committed** |
 | 4. AGY test-infra companion (its §5 points here) — Python 3.11 venv rebuild + 4-check verification; the vitest suite lock needs no per-machine work | `python_vytest-updates-other-machines.md` |
+| 5. Scrum-board stale-stamp git hooks (per machine, per project — AGY today) | `git-hooks-board-stale-install.md` |
 
 ```powershell
 # from the LOBBY ROOT (not from this folder)

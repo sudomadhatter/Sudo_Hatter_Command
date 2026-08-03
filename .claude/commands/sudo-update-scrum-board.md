@@ -26,8 +26,10 @@ doesn't fit belongs in a linked doc — never in a sixth section.
 Echo `Target: <PROJECT_ROOT>`. Target doc:
 `{PROJECT_ROOT}/_my_resources/_quick_reference/sprint_scrum_board_map.md` (create `_quick_reference/`
 if missing). If the legacy `sprint-dependency-map.md` still exists there, `git mv` it to the new name
-first, then rebuild. If a hook-stamped `⚠️ STALE` banner (`<!-- STALE-STAMP -->`) is on the board, this
-full rebuild clears it — never preserve it.
+first, then rebuild. If the hook stamped drift onto the board (a `⚠️ STALE` banner listing changed keys
+`old → new`, plus inline `⚠️` flags beside changed stories — markers `<!-- STALE-STAMP -->` /
+`<!--YAML-DRIFT-->`), treat the listed keys as a work-list for this run; the full rebuild clears every
+flag — never preserve them.
 
 ## Step 1 — Read state (YAML first, always)
 

@@ -97,7 +97,8 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
 The YAML just changed, so the board must move **in the same commit** — run **`/sudo-update-scrum-board`**
 against the same `PROJECT_ROOT` (it inherits the binding). Full rebuild per its own skeleton; never
 hand-edit individual board lines here. This is what keeps the post-commit stale-stamp hook silent, and
-the rebuild clears any hook-stamped `⚠️ STALE` banner (`<!-- STALE-STAMP -->`).
+the rebuild clears any hook-stamped drift (the `⚠️ STALE` banner + inline per-story `⚠️` flags,
+markers `<!-- STALE-STAMP -->` / `<!--YAML-DRIFT-->`).
 If the board file conflicts during a multi-lane landing, do NOT hand-merge it — resolve the YAML first,
 then re-run `/sudo-update-scrum-board` on the merged tree and commit that.
 
