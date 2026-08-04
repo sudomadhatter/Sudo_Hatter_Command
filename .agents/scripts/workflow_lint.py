@@ -267,6 +267,51 @@ def check_sprint_status(project: Path, rep: wf.Report) -> None:
                  f"{missing_done} done key(s) without a story file (historic; not gated)")
 
 
+BOARD_SIZE_CAP = 96 * 1024  # bytes. Post-split landing was 62 KB (2026-08-03) with all
+# doctrine comments deliberately KEPT (the reviewed triage); the cap is a regrowth
+# backstop, not a tripwire on the target - the per-note rule below catches the actual
+# failure mode (multi-KB notes returning) directly.
+NOTE_CAP = 120  # chars after '#'; ruling 2026-08-03
+
+
+def check_board_note_budget(project: Path, rep: wf.Report) -> None:
+    """Wave 4's standing rule: narrative never lands on the board again.
+
+    The split bought back 300 KB; the board had been growing ~15 KB/day, so without
+    this check the win is spent in a quarter. A no-note-status row carries NOTHING
+    (story_status.py drops the note on the flip - audit F2); a live row carries at
+    most NOTE_CAP chars; the full story belongs in _bmad-output/history/ and the
+    walkthrough."""
+    path = project / wf.BOARD_REL
+    raw = path.read_bytes()
+    if b"development_status" not in raw:
+        return
+    if len(raw) > BOARD_SIZE_CAP:
+        rep.err("board-budget", f"{wf.BOARD_REL} is {len(raw)} bytes (cap "
+                                f"{BOARD_SIZE_CAP}) - narrative is landing on the board "
+                                f"again; move it to _bmad-output/history/")
+    hist = project / "_bmad-output/history"
+    if not hist.exists():
+        rep.info("board-budget", "pre-split board (no _bmad-output/history/) - "
+                                 "note rules not enforced")
+        return
+    for i, line in enumerate(wf.read_text(path).splitlines(), 1):
+        m = wf._KEY_RE.match(line)
+        if not m or m.group(2) not in wf.ALL_STATUSES:
+            continue
+        note = m.group(3).strip().lstrip("#").strip().rstrip("\r")
+        if not note:
+            continue
+        if m.group(2) in wf.NO_NOTE_STATUSES:
+            rep.err("board-budget", f"line {i}: '{m.group(1)}' is {m.group(2)} but "
+                                    f"carries a note - a finished row's story lives in "
+                                    f"history/, not on the board")
+        elif len(note) > NOTE_CAP:
+            rep.err("board-budget", f"line {i}: '{m.group(1)}' note is {len(note)} chars "
+                                    f"(cap {NOTE_CAP}) - move it to history/ and keep a "
+                                    f"<=120-char pointer, or nothing")
+
+
 def check_status_drift(project: Path, rep: wf.Report) -> None:
     for d in wf.status_drift(project):
         rep.warn("status-drift",
@@ -385,6 +430,7 @@ def main() -> int:
     check_active_context(project, rep)
     check_artifact_budgets(project, rep)
     check_sprint_status(project, rep)
+    check_board_note_budget(project, rep)
     check_status_drift(project, rep)
     scan += [(rel, project / rel) for rel in
              (wf.BOARD_REL, wf.ACTIVE_CONTEXT_REL, wf.SCRUM_BOARD_REL)]

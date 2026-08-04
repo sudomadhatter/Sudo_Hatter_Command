@@ -19,6 +19,7 @@ CRLF/LF, and any pre-existing mojibake bytes survive untouched (surrogateescape 
 from __future__ import annotations
 
 import argparse
+import datetime
 import re
 import sys
 from pathlib import Path
@@ -98,12 +99,27 @@ def cmd_set(project: Path, story_id: str, new_status: str,
         wf.die(f"refusing downgrade {cur_board} -> {new_status} (pass --force)")
 
     # ── Compute both new texts BEFORE writing either ───────────────────────────
-    new_story = re.sub(r"^(Status:\s*)(.+?)\s*$", rf"\g<1>{new_status}",
-                       story_text, count=1, flags=re.MULTILINE)
-    key_re = re.compile(rf"^(  {re.escape(key)}:\s*)([a-z0-9-]+)(.*)$", re.MULTILINE)
-    new_board, n = key_re.subn(rf"\g<1>{new_status}\g<3>", board_text, count=1)
+    # `[^\r\n]` + an explicit `(\r?)` group: on a CRLF file, `\s*$` / `(.*)$` swallow the
+    # `\r` into what they eat or keep, so an edit that drops text also flips that ONE line
+    # to LF - invisible to every reader that normalizes, cumulative on disk.
+    new_story = re.sub(r"^(Status:[ \t]*)([^\r\n]*?)[ \t]*(\r?)$",
+                       rf"\g<1>{new_status}\g<3>", story_text, count=1, flags=re.MULTILINE)
+    key_re = re.compile(rf"^(  {re.escape(key)}:[ \t]*)([a-z0-9-]+)([^\r\n]*)(\r?)$",
+                        re.MULTILINE)
+    # A flip into a no-note status DROPS the board note instead of carrying it (Wave 4
+    # audit F2): `\g<3>` used to ride a `review`-phase note straight onto a `done` row,
+    # and the note-budget lint would then indict the line this very tool wrote.
+    board_repl = (rf"\g<1>{new_status}\g<4>" if new_status in wf.NO_NOTE_STATUSES
+                  else rf"\g<1>{new_status}\g<3>\g<4>")
+    new_board, n = key_re.subn(board_repl, board_text, count=1)
     if n != 1:
         wf.die(f"board line for '{key}' not found for rewrite (parse drift?)")
+    # The board's freshness signal is the REAL `last_updated:` key (Wave 4 / audit F9 -
+    # bmad-sprint-status reads it); refresh it on every flip so it cannot rot the way
+    # the old comment form did. Absent key = pre-split board, nothing to refresh.
+    new_board = re.sub(r"^(last_updated:[ \t]*)[^\r\n]*?([ \t]*\r?)$",
+                       rf"\g<1>{datetime.date.today().isoformat()}\g<2>",
+                       new_board, count=1, flags=re.MULTILINE)
 
     # An inline history note describes the OLD transition; carrying it past a flip would
     # make it a lie. Dropped on purpose - but never silently (git holds the original).
@@ -111,6 +127,11 @@ def cmd_set(project: Path, story_id: str, new_status: str,
                                           story_text, re.MULTILINE)) else None)
     if note:
         print(f"[NOTE] dropping stale inline note from {story_path.name}: {note}")
+    if new_status in wf.NO_NOTE_STATUSES:
+        old_note = (m.group(3).strip() if (m := key_re.search(board_text)) else "")
+        if old_note.strip():
+            print(f"[NOTE] dropping board note from '{key}' on the flip to "
+                  f"{new_status} (git holds the original): {old_note.strip()[:100]}")
 
     # ── Write both or neither (restore the first on a second-write failure) ────
     wf.write_exact(story_path, new_story)

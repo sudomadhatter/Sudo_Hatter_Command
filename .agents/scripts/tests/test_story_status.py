@@ -21,13 +21,15 @@ last_updated: 2026-08-03
 
 development_status:
   epic-21: in-progress
-  21-8b-demo-data-quarantine: review
+  21-8b-demo-data-quarantine: review   # WIP note from the active phase
   8-19-two-tier-admin-umbrella: done
   8-22-1-graph-rag-exam-lane-ingestion: done
   21-2-legacy-thing: descoped
+  17-2-note-carrier: in-progress   # live note that must survive a flow flip
 """
 STORIES = {
     "story-21-8b-demo-data-quarantine.md": "# Story 21.8b\n\nStatus: review\n\nBody.\n",
+    "story-17-2-note-carrier.md": "# Story 17.2\n\nStatus: in-progress\n\nBody.\n",
     # DRIFTED, and written in the dot form (both naming forms exist in the real tree)
     "story-8.19-two-tier-admin-umbrella.md": "# Story 8.19\n\nStatus: ready-for-dev\n\nBody.\n",
     # agrees, but carries an inline history note after the value
@@ -88,12 +90,17 @@ def main() -> int:
                 code == 1 and "8-19-two-tier-admin-umbrella" in out and "21-8b" not in out,
                 f"exit={code}")
 
-        # B - happy path flips BOTH surfaces
+        # B - happy path flips BOTH surfaces + refreshes the board's freshness key
+        import datetime
         proj = build(tmp)
         code, out = run_script("story_status.py", "set", "21.8b", "done", "--project", str(proj))
+        today = datetime.date.today().isoformat()
         c.check("B set flips both surfaces",
                 code == 0 and board_status(proj, "21-8b-demo-data-quarantine") == "done"
                 and file_status(proj, Q) == "done" and "[AGREE]" in out, f"exit={code}")
+        c.check("B2 set refreshes last_updated (Wave 4 / F9)",
+                f"last_updated: {today}" in
+                (proj / BOARD_REL).read_text(encoding="utf-8"), today)
 
         # C - THE 21.8b class: refuse a drifted story, writing NEITHER surface
         proj = build(tmp)
@@ -126,6 +133,40 @@ def main() -> int:
         code, out = run_script("story_status.py", "get", "8.22.1", "--project", str(proj))
         c.check("I inline note != drift",
                 code == 0 and "board=done  frontmatter=done" in out, out.strip())
+
+        # K - Wave 4 F2: a flip INTO a no-note status DROPS the board note. Before the
+        # fix `\g<3>` carried `# WIP note` onto the done row, and the note-budget lint
+        # then indicted the very line this tool wrote.
+        proj = build(tmp)
+        code, out = run_script("story_status.py", "set", "21.8b", "done", "--project", str(proj))
+        line = next(l for l in (proj / BOARD_REL).read_text(encoding="utf-8").splitlines()
+                    if l.strip().startswith("21-8b-demo-data-quarantine:"))
+        c.check("K terminal flip drops the board note",
+                code == 0 and "#" not in line and "dropping board note" in out,
+                f"exit={code} line={line!r}")
+
+        # L - positive control for K: a flow flip between noted statuses KEEPS the note.
+        # A dropper that fires on every write is the muted-check failure in reverse.
+        proj = build(tmp)
+        code, out = run_script("story_status.py", "set", "17.2", "review", "--project", str(proj))
+        line = next(l for l in (proj / BOARD_REL).read_text(encoding="utf-8").splitlines()
+                    if l.strip().startswith("17-2-note-carrier:"))
+        c.check("L flow flip keeps the board note",
+                code == 0 and "# live note that must survive" in line
+                and "dropping board note" not in out, f"exit={code} line={line!r}")
+
+        # M - BYTE contract on a CRLF board: the note-drop must not flip the line's EOL.
+        # `(.*)$` keeps the \r inside the tail, so dropping the tail dropped the \r too;
+        # every normalized reader shows the same text either way, so only bytes can tell.
+        proj = build(tmp)
+        raw = (proj / BOARD_REL).read_bytes()
+        (proj / BOARD_REL).write_bytes(raw.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
+        code, out = run_script("story_status.py", "set", "21.8b", "done", "--project", str(proj))
+        flipped = next(l for l in (proj / BOARD_REL).read_bytes().split(b"\r\n")
+                       if l.strip().startswith(b"21-8b"))
+        c.check("M CRLF board keeps CRLF through a note-drop",
+                code == 0 and b"\n" not in flipped and flipped.endswith(b"done"),
+                f"exit={code} line={flipped!r}")
 
         # J - ATOMICITY: board unwritable -> the story file must be ROLLED BACK
         proj = build(tmp)

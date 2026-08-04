@@ -37,6 +37,17 @@ EXPECTED = {
 }
 
 
+def _oversize(proj: Path):
+    """Grow the fixture board past the size cap, lint, then restore."""
+    p = proj / wf.BOARD_REL
+    original = p.read_bytes()
+    p.write_bytes(original + b"# pad\n" * (lint.BOARD_SIZE_CAP // 6 + 1))
+    rep = wf.Report()
+    lint.check_board_note_budget(proj, rep)
+    p.write_bytes(original)
+    return rep
+
+
 def main() -> int:
     c = Cases("encoding scanner control")
     with TempDir() as tmp:
@@ -103,6 +114,44 @@ def main() -> int:
                 str(msgs)[:120])
         c.check("F7 _main/ initiative plans are out of scope",
                 not any("some-initiative" in m for _, m in msgs), str(msgs)[:120])
+
+        # ── Wave 4: the board note budget - the rule that keeps the split won ─
+        proj4 = tmp / "proj4"
+        (proj4 / wf.BOARD_REL).parent.mkdir(parents=True)
+        (proj4 / "_bmad-output/history").mkdir(parents=True)  # post-split marker
+        (proj4 / wf.BOARD_REL).write_text(
+            "last_updated: 2026-08-03\n"
+            "development_status:\n"
+            "  4-1-done-with-note: done   # this finished row should carry NOTHING\n"
+            "  4-2-live-long: review   # " + "x" * 200 + "\n"
+            "  4-3-live-ok: review   # short ruling note, well under the cap\n"
+            "  4-4-done-bare: done\n", encoding="utf-8")
+        rep = wf.Report()
+        lint.check_board_note_budget(proj4, rep)
+        msgs = [(i["sev"], i["msg"]) for i in rep.items]
+        c.check("W4 a note on a done row is an ERROR",
+                any(s == "ERROR" and "4-1-done-with-note" in m for s, m in msgs),
+                str(msgs)[:120])
+        c.check("W4 an over-cap note on a live row is an ERROR",
+                any(s == "ERROR" and "4-2-live-long" in m for s, m in msgs), str(msgs)[:120])
+        c.check("W4 positive control: a short live note and a bare done row pass",
+                not any(("4-3-live-ok" in m or "4-4-done-bare" in m) for _, m in msgs),
+                str(msgs)[:120])
+        c.check("W4 board over the size cap is an ERROR",
+                (lambda r2: any(i["sev"] == "ERROR" and "bytes" in i["msg"]
+                                for i in r2.items))(_oversize(proj4)), "")
+        # pre-split board (no history/): rules stay off - the check must not fire
+        # on a project that has not migrated
+        proj5 = tmp / "proj5"
+        (proj5 / wf.BOARD_REL).parent.mkdir(parents=True)
+        (proj5 / wf.BOARD_REL).write_text(
+            "development_status:\n  5-1-x: done   # legacy note, pre-split\n",
+            encoding="utf-8")
+        rep = wf.Report()
+        lint.check_board_note_budget(proj5, rep)
+        c.check("W4 pre-split project is exempt (info only)",
+                not any(i["sev"] == "ERROR" for i in rep.items),
+                str([i["msg"] for i in rep.items])[:100])
 
         # ── Wave 5: the pre-commit encoding gate ──────────────────────────────
         # A gate that blocks nothing and a gate that blocks everything both end up

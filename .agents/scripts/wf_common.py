@@ -33,6 +33,15 @@ STATUS_RANK = {s: i for i, s in enumerate(PROGRESS_ORDER)}
 TERMINAL = {"done", "descoped"}
 ALL_STATUSES = set(PROGRESS_ORDER) | {"descoped", "deferred", "deferred-v3", "optional"}
 
+# Statuses whose board row carries NO inline note (Wave 4 ruling, 2026-08-03): the row's
+# story lives in _bmad-output/history/ + the walkthrough, so a trailing note on one of
+# these is either stale (a lie about a finished thing) or misplaced narrative. This is
+# deliberately NOT `TERMINAL` — that set answers "may this status ever change again?"
+# (optional retros and deferred-v3 parks CAN move), while this one answers "does anyone
+# still need a note here?". The split tool and the note-budget lint import THIS set; a
+# private re-declaration in either is how the two disagree about day one (audit F3).
+NO_NOTE_STATUSES = {"done", "descoped", "deferred-v3", "optional"}
+
 # Mojibake signatures: UTF-8 text that was decoded as cp1252 and re-encoded.
 # NOTE: a cp1252-rendered console (PS 5.1 `Get-Content`) SHOWS these for perfectly good
 # UTF-8 files — only an on-disk byte check proves corruption, which is why detection lives

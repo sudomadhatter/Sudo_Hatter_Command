@@ -140,12 +140,16 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
   above. A `deferred` or `deferred-v3` child DOES: park it under a *deferred epic*, never as a parked
   row under a finished one, or the epic can never close.
 - **Last Updated**: set to today's date at the top of `active-context.md`.
-- **`sprint-status.yaml` CHANGE LOG — one entry per line, newest first.** Add your entry as its own
-  `#   YYYY-MM-DD (<story> <stage>): …` line directly under the CHANGE-LOG header block, and bump the
-  `# last_updated:` date above it. ⛔ **Never re-join the log into one ` | `-separated line** — it was
-  29k characters on a single line, which made every concurrent close-out an unresolvable conflict.
-  Distinct lines let two lanes merge. Keep your entry to what the board needs; the narrative belongs in
-  the story's walkthrough.
+- **CHANGE LOG — `_bmad-output/history/CHANGELOG.md`, one entry per line, newest first** (Wave 4
+  split, 2026-08-03: the log no longer lives in `sprint-status.yaml` — the pointer there says so).
+  Add your entry as its own `#   YYYY-MM-DD (<story> <stage>): …` line directly under the CHANGE-LOG
+  header block in THAT file. The board's real `last_updated:` key refreshes automatically when
+  `story_status.py set` flips the story. ⛔ **Never re-join the log into one ` | `-separated line** —
+  it was 29k characters on a single line, which made every concurrent close-out an unresolvable
+  conflict. Distinct lines let two lanes merge. Keep your entry to what the board needs; the narrative
+  belongs in the story's walkthrough. ⛔ **Never add a narrative note to the board row itself** — a
+  non-terminal row may carry ≤120 chars; a terminal row carries NOTHING (`workflow_lint` errors on
+  both, and the flip drops the old note automatically).
 
 ## Step 4.5 — Rebuild the scrum board (AUTOMATIC, never ask)
 
