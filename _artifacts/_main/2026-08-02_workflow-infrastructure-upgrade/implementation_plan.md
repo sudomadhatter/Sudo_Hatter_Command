@@ -188,6 +188,13 @@ Applies to the 17 / 7 / 11 commands measured above. **Expected: 327 KB → ~230 
 
 ## Wave 4 — Split state from narrative (the big context win, the biggest risk)
 
+> 📄 **Wave 4 has its own plan as of 2026-08-03:**
+> `_artifacts/_main/2026-08-03_sprint-status-split/implementation_plan.md`, self-audited (verdict
+> **NO-GO as written · GO conditional on F1 · F2 · F4**). **Follow that document, not this section.**
+> ⚠️ The sketch below is superseded on its central claim: a full byte census showed the narrative is
+> **not** mostly in standalone comment lines — **62 % of the file is the trailing note on the key
+> lines themselves**, which is the one line every writer edits. Different, more dangerous operation.
+
 `sprint-status.yaml` becomes machine-readable state; its 541 comment lines and 47 multi-kilobyte rows
 move to history.
 
