@@ -5,6 +5,10 @@ platforms: [opencode]
 
 # /autopilot_opencode - Autonomous Story Pipeline (opencode engine)
 
+> **Rules in force for this command:**
+> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
+> - `.agents/rules/sudo-target-resolution.md` — bind ONE target, never operate on the lobby
+
 > **OPENCODE-ONLY.** This drives headless `opencode run` subprocesses. It is the opencode-native
 > sibling of `/autopilot_claude` (which drives `claude -p`). Same relay, same artifact contract,
 > same test gate, same story->review flip - only the worker call differs.

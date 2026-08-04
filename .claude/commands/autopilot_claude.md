@@ -5,6 +5,10 @@ platforms: [claude]
 
 # /autopilot_claude - Autonomous Story Pipeline (v2: dev chat + split QA gates)
 
+> **Rules in force for this command:**
+> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
+> - `.agents/rules/sudo-target-resolution.md` — bind ONE target, never operate on the lobby
+
 > **CLAUDE-ONLY.** This drives headless `claude -p` subprocesses with exact `--model` pinning and
 > session continuity (`--session-id` / `--resume`). It cannot run under Gemini/opencode and is
 > intentionally NOT mirrored there.

@@ -5,6 +5,10 @@ platforms: [claude]
 
 # /sudo-mobile-error-team — Error Team Responder
 
+> **Rules in force for this command:**
+> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
+> - `.agents/rules/sudo-target-resolution.md` — bind ONE target, never operate on the lobby
+
 > **What this is.** The human half of the incident pipeline. The machine half already ran: the relay
 > opened a GitHub issue (`incident:<short-id>`) and the headless agent (`incident-response.yml` →
 > `.github/claude/incident-triage.md`) wrote a full report and pushed a `claude/incident-<id>` fix

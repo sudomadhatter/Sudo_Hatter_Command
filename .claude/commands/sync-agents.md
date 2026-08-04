@@ -4,6 +4,9 @@ description: Sync the master .agents toolkit into every command surface — loca
 
 # /sync-agents
 
+> **Rules in force for this command:**
+> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
+
 Push the master `.agents/` toolkit into every place a command/skill can resolve. The canonical invocable set
 is `.agents/commands/` and it mirrors to **all four platforms** (Claude, opencode, Antigravity/Gemini, Codex).
 **Authorship stays single-source — always edit `.agents/`, never the copies.**

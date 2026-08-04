@@ -21,6 +21,23 @@ because the tree "looks empty" — every incident below started with a tree that
 
 Echo `Target: Projects/<name> | Story: <story-slug>` before proceeding.
 
+## Step 0.6 — Preflight first (fast pre-check — it does NOT replace the gates below)
+
+```bash
+python .agents/scripts/closeout_preflight.py --story <id> --project <PROJECT> --fetch [--branch <name>]
+```
+
+One call answers Steps 1, 1.5 and 1.6's questions mechanically: is the branch an ancestor of
+`main_debug`, is every repo `0/0` and clean, and is each registered worktree LIVE / LOST (registered,
+no directory) / HUSK (directory, no `.git` — the state that blocks the next `worktree add`).
+**Exit 2 → stop here.** A `landing was NOT verified` warning is not a pass — resolve it before anything
+is removed.
+
+⛔ **It does not authorize deletion.** The preflight reads; it never writes. Steps 1.7 (authorization),
+2 (preserve uncommitted work) and 3a (unlink every reparse point BEFORE any recursive remove) are
+data-loss gates the script does not cover — run them in full, exactly as written. Deleting through a
+junction destroys the shared `backend/.venv` and `node_modules` **targets**, not just the links.
+
 ## Step 1 — Safety Verification Gate (MANDATORY)
 In `PROJECT_ROOT`:
 ```bash
