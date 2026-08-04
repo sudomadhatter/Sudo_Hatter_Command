@@ -6,8 +6,14 @@ its §5 points here). Applies to EXISTING machines pulling the 2026-08-01 change
 fresh-machine setups.
 
 **Status:** OPEN until every machine that works on AGY_AVIATIONCHAT has run the checklist below.
-Machines done: ☑ laptop (this one, 2026-08-01 — **verified: 2887 passed / 32 skipped / 0 failed on 3.11,
-three independent serial passes**) · ☐ desktop · ☐ any other clone
+Machines done:
+- ☑ **laptop, Windows, 8-core** — 2026-08-01: 2887 passed / 32 skipped / 0 failed on 3.11, three
+  independent serial passes. Re-verified 2026-08-03 **parallel**: 3024 / 35 / 0, and `-n 4` timed at
+  206.81 s vs `-n auto` 261.76 s (see *Tune `-n`*).
+- ☐ **Mac** — use the macOS column; it needs `python3.11`, `temurin@17`, Node, and `pwsh` if you run
+  the kit's `.ps1` scripts. Same setup as everywhere else — a faster machine does **not** get a
+  reduced checklist (see *"My machine is much faster…"*); it gets its own `-n` value.
+- ☐ desktop · ☐ any other clone
 
 ---
 
@@ -53,53 +59,97 @@ the lock is tracked code (`frontend/vitest.global-setup.ts`, wired via `globalSe
 
 ## The 5-minute fix (run on EACH machine, once)
 
+> **The only axis that needs branching is OS, not machine power.** `-n auto` already scales itself to
+> the core count, so a fast machine needs no different setup — it needs different *commands*. Pick your
+> column and use it consistently; `$PY` below is shorthand for the venv's interpreter.
+
+**Windows (PowerShell)**
 ```powershell
-# 0. From the AGY_AVIATIONCHAT repo root, on current main_debug:
-git pull
-
-# 1. Is Python 3.11 installed on this machine?
-py -0p                       # look for a -V:3.11 line
-winget install Python.Python.3.11    # only if missing
-
-# 2. Rebuild the canonical venv from 3.11 (deletes the drifted one):
-Remove-Item -Recurse -Force backend\.venv
+git pull                                   # 0. from the AGY_AVIATIONCHAT repo root, on main_debug
+py -0p                                     # 1. look for a -V:3.11 line
+winget install Python.Python.3.11          #    only if missing
+Remove-Item -Recurse -Force backend\.venv  # 2. rebuild (deletes the drifted one)
 py -3.11 -m venv backend\.venv
 backend\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
+#   $PY = backend\.venv\Scripts\python.exe
 ```
+
+**macOS (zsh/bash)**
+```bash
+git pull                                   # 0. from the AGY_AVIATIONCHAT repo root, on main_debug
+python3.11 --version                       # 1. installed?
+brew install python@3.11                   #    only if missing
+rm -rf backend/.venv                       # 2. rebuild (deletes the drifted one)
+python3.11 -m venv backend/.venv
+backend/.venv/bin/python -m pip install -r backend/requirements.txt
+#   $PY = backend/.venv/bin/python
+```
+
+**macOS also needs, once:** `brew install --cask temurin@17` (Firestore rules-emulator suite) · Node
+(`brew install node`) · **`pwsh`** (`brew install --cask powershell`) if you intend to run
+`Restore-EnvMaster.ps1` from the migration kit — those scripts are PowerShell.
+`rename-fix.ps1` is Windows-only by design (it rewrites `%USERPROFILE%` paths); do not run it on a Mac.
 
 ## Verify it didn't break anything (the actual walkthrough)
 
-Run these four checks **in order**. Expected output shown for each.
+Run these checks **in order**. `$PY` = the interpreter path from your column above
+(`backend\.venv\Scripts\python.exe` on Windows, `backend/.venv/bin/python` on macOS).
 
-```powershell
+```bash
 # CHECK 1 — the venv really is 3.11 now
-backend\.venv\Scripts\python.exe --version
+$PY --version
 #   PASS: Python 3.11.x        FAIL: 3.14.x → step 2 above didn't run / wrong launcher
 
-# CHECK 2 — the new pins landed
-backend\.venv\Scripts\python.exe -m pip list | Select-String "pytest-xdist|filelock|ruff|pyrefly"
+# CHECK 2 — the new pins landed        (Windows: pipe to `Select-String` instead of `grep -E`)
+$PY -m pip list | grep -E "pytest-xdist|filelock|ruff|pyrefly"
 #   PASS: all four listed (xdist 3.8.0, filelock 3.24.3, ruff 0.16.0, pyrefly 1.1.1)
 
 # CHECK 3 — a scoped run works and does NOT wait on the lock (inner loop stays instant)
-backend\.venv\Scripts\python.exe -m pytest backend\tests\test_affirmative_classifier.py -q
+$PY -m pytest backend/tests/test_affirmative_classifier.py -q
 #   PASS: green, starts immediately, NO [suite-lock] line
 
 # CHECK 4 — the full suite on 3.11, PARALLEL (the real proof; this is the gate mode since 08-03)
-backend\.venv\Scripts\python.exe -m pytest backend\tests -n auto --dist loadfile -q
+$PY -m pytest backend/tests -n auto --dist loadfile -q
 #   PASS: 0 failed. Reference totals 2026-08-03: 3024 passed / 35 skipped / 0 failed
 #         (the passed count grows as stories land; 0 failed is the bar).
-#   TIMING IS MACHINE-SPECIFIC AND NOT A SIGNAL: `-n auto` = this machine's core count, so
-#         the laptop's 8-core 262s and 4-core 207s are both healthy. Don't chase a difference.
-#   ⚠️ Workers dying with `node down` / respawns, ~5 min apart, near the end of the run =
-#         a virtualenv is being walked. Check the venv NAME (see the ⚠️ above), then run
-#         `-k test_scan_never_walks_a_colocated_virtualenv` — it names the offending directory.
+#   TIMING IS MACHINE-SPECIFIC AND NOT A SIGNAL — see "Tune -n on this machine" below.
 #   Any NEW failure here = a real behavior difference on this machine's deps —
 #   capture the traceback; that is a real finding, not a reason to roll back.
 
 # CHECK 4b — only if CHECK 4 is red and you need to tell "this machine" from "xdist" apart
-backend\.venv\Scripts\python.exe -m pytest backend\tests -q --timeout=300
+$PY -m pytest backend/tests -q --timeout=300
 #   Serial, one variable. Green here + red above = a parallelism problem, not an interpreter one.
 ```
+
+### ⚠️ A hung CHECK 4 looks DIFFERENT on each OS
+
+Both are the same bug — almost always a virtualenv being walked (see the venv-naming ⚠️ above).
+Confirm either way with `$PY -m pytest backend/tests -k test_scan_never_walks_a_colocated_virtualenv`,
+which names the offending directory.
+
+| OS | What you see | Why |
+|---|---|---|
+| **Windows** | workers die — `node down` + respawn, ~5 min apart, near the end of the run | no `SIGALRM`, so pytest-timeout uses the **thread** method and `os._exit`s the whole worker process |
+| **macOS** | ordinary test failures with a `Timeout >300s` traceback naming each test; workers survive | `SIGALRM` available → the **signal** method raises inside the test |
+
+**On a fast machine the same bug may not trip the timeout at all** — it just silently makes every run
+slower forever. That is why CHECK 4's guard also asserts an unconditional file-count bound: the count
+is machine-independent, so it catches this on hardware fast enough to hide it.
+
+### Tune `-n` on this machine (do this once)
+
+`-n auto` = core count, and **auto is not always fastest**. Every xdist worker re-imports the whole
+backend tree (firebase, genai, adk), so past a point the import cost outweighs the extra parallelism.
+Measured on the 8-core laptop, 2026-08-03:
+
+| Workers | Wall clock |
+|---|---|
+| `-n 8` (= `auto` there) | 261.76 s |
+| `-n 4` | **206.81 s** |
+
+Half the workers, 21% faster. On a many-core machine `auto` may be **slower** than a smaller number —
+so time `-n 4`, `-n 6`, `-n 8` and `-n auto` once, and use the winner for local full runs. CI stays
+`auto` (4 vCPU, where `auto` ≈ 4 anyway). This is a local speed preference only; it changes no gate.
 
 ## Messages you may see that are FEATURES, not breakage
 
@@ -110,11 +160,38 @@ backend\.venv\Scripts\python.exe -m pytest backend\tests -q --timeout=300
 | `[suite-lock] filelock not installed — machine serialization OFF` | Old venv — run the pip install from step 2. Tests still run fine meanwhile. |
 | A test fails with `Timeout >300.0s` + a stack dump | The new hang ceiling naming a wedged test — that test was hanging forever before; now it fails loudly with the culprit's stack. |
 
+## "My machine is much faster — do I still need the locks?"
+
+Asked every time a beefier box joins. **Yes, and the locks are not a weak-laptop workaround.** Keep
+the setup identical; the only thing that legitimately varies per machine is the `-n` value above.
+
+Two different things get called "parallel", and only one of them is locked:
+
+| | What it is | Locked? |
+|---|---|---|
+| **Inside one suite** | `pytest -n auto --dist loadfile`; vitest's default worker pool (no `maxWorkers` cap is set) | **No — always on**, and it already claims every core |
+| **Between whole-suite runs** | two lanes each starting a FULL run on one machine | **Yes** — one full pytest run and one full vitest run at a time |
+
+Because a single run already saturates the cores, a second concurrent full run oversubscribes by the
+same *proportion* on 8 cores or 32. More cores make each run finish sooner; they do not stop two runs
+from fighting. Serializing whole runs is therefore near throughput-optimal on any machine — it costs
+**latency to whoever asks second**, not total throughput, and that run starts the instant the first ends.
+
+**What a bigger machine does buy you, for free:** the two locks are separate files
+(`agy_aviationchat_suite.lock` vs `agy_aviationchat_vitest_suite.lock`), so **backend and frontend
+suites may already run at the same time**. On the 8-core laptop that cross-stack overlap was still
+risky — a concurrent backend suite stretched the frontend run 222 s → 322 s and blew a 15 s timeout on
+a 2.1 s test. With plenty of RAM and fast NVMe that is exactly the case that becomes safe. That is the
+real concurrency win, and it needs no configuration.
+
+**Override, if you ever truly want concurrent full runs:** `AGY_SUITE_LOCK=0` — the same variable for
+BOTH stacks. Set it per-invocation; never default it anywhere.
+
 ## Failure signatures → fixes
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `unrecognized arguments: -n` | venv predates the xdist pin | `pip install -r backend\requirements.txt` |
+| `unrecognized arguments: -n` | venv predates the xdist pin | `pip install -r backend/requirements.txt` |
 | `No module named pytest` right after pulling | you caught a venv mid-rebuild, or step 2 was interrupted | re-run step 2 fully |
 | VS Code can't find the interpreter / imports unresolved after the rebuild | stale interpreter path cached | the `python_inter_venv_fix` skill covers this exact case |
 | Weird failures only on ONE machine | that machine skipped this checklist — venv still 3.14 | run CHECK 1; rebuild |
@@ -147,6 +224,11 @@ timeout flake while the backend suite is churning, re-run it; the real fix (per-
 transform cost) is a filed follow-on in AGY active-context.
 
 ## The full playbook — how to do this again
+
+> **Commands below are PowerShell/Windows**, written from the 2026-08-01 run and deliberately left as
+> the original record. The *procedure* is OS-independent; on macOS substitute per the macOS column
+> above (`python3.11`, `backend/.venv/bin/python`, `grep -E` for `Select-String`, `rm -rf` for
+> `Remove-Item -Recurse -Force`, `ps aux | grep` for `Get-Process`).
 
 The sections above cover a machine *catching up*. This section is the complete procedure for
 **repeating the whole operation** — the next interpreter bump (3.12, 3.13…), another project, or
