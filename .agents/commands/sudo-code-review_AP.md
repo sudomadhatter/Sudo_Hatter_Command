@@ -22,14 +22,52 @@ no halting for confirmation).
   + `## Your Actions`).
 - the target story (for the acceptance pass).
 
-## The work (one pass)
-1. **Verify** the Dev stage addressed every finding from your audit.
-2. **Review the diff** in three passes: blind diff → edge cases (full repo read) → acceptance vs the ACs.
-   You do NOT need to re-run the full suite just to reconfirm a green baseline — the orchestrator runs the
-   authoritative suite itself after you. Spend the time on the CODE.
-3. **Apply the actionable fixes yourself** (you have full context). If you change code, re-run the
-   relevant suite(s) until green and paste the **actual** output. If you change nothing, you do not need
-   to run tests.
+> **Do NOT open these first.** They are Ingest 2 — see the two-ingest contract below. The blind pass
+> runs on the diff alone, and the builder's own account of the work is precisely what biases it.
+
+## The work (TWO ingests, three lenses)
+
+This is the read-budget contract from `.agents/rules/bmad_code_review_sudo_fix.md` §Step 2, spelled out
+for the autopilot's artifact set — the two MUST agree. You are the most expensive model in the pipeline
+and you are billed on every token you pull. **Pull the material in exactly two reads, then think.** The
+three lenses are three *questions asked of context you already hold*, not three traversals of the repo.
+
+**Ingest 1 — the diff, alone.** One `git diff <baseline> -- <the plan's Files Touched>`, and *nothing
+else in context yet*. Run lens 1 on it immediately, before anything below lands. This ordering is the
+whole point: reading the builder's plan or walkthrough first imports exactly the bias the blind pass
+exists to zero out.
+
+**Ingest 2 — one batched grounding pull**, only after lens 1 has produced its findings:
+- each **changed file whole** (you need the surroundings the diff elides);
+- the **direct callers/dependents** of what changed — the files the diff's own symbols reach;
+- the **tests** covering those files;
+- the artifacts named above (plan + `## Self-Audit`, walkthrough, the story).
+
+That is the read budget. **There is no full-repo sweep** — an unbounded "read everything" pass is what
+this stage used to do, and it burned the run's budget without finding what a targeted read of the blast
+radius finds. Do not restore it.
+
+**The three lenses**, no fresh traversal between them:
+1. **Blind diff** — over Ingest 1 ONLY. Is the change correct on its own terms? Bugs, logic errors,
+   security, smells.
+2. **Edge cases** — over Ingest 2. Boundaries, nulls, ordering, concurrency, failure paths, and the
+   callers you already pulled.
+3. **Acceptance** — over Ingest 2. Every AC in the story, and every finding from your `## Self-Audit`,
+   satisfied?
+
+**Top-ups are allowed but must be earned.** If a lens surfaces a *specific* lead — a symbol you cannot
+resolve, a caller you did not anticipate — read that named file. Read it because you can say what you
+are looking for, never "to be thorough." One targeted top-up beats a second sweep; a second sweep is
+the failure mode. **Never trade away a real finding to save tokens** — this is the last gate before
+production, and a missed defect costs far more than the read. Efficiency here means *not re-reading what
+you already have*, not reviewing less.
+
+**Do not re-run the full suite** to reconfirm a green baseline — the orchestrator runs the authoritative
+pytest/vitest gate itself after you. Spend the budget on the CODE.
+
+**Then: apply the actionable fixes yourself** (you have full context). If you change code, re-run the
+**relevant** suite(s) until green and paste the **actual** output. If you change nothing, you do not need
+to run tests.
 
 ## The test gate (TEA traceability / nfr / test-quality verdict layer)
 After review + fix, run the gate and record the verdict INSIDE the walkthrough's

@@ -93,7 +93,8 @@ Sudo_Hatter_Command/
     planning-artifacts/
       briefs/
         brief-NEXgen-VR-Director-2026-07-28/
-            [1 files: .mdx1 | e.g. brief.md]
+      prds/
+        prd-NEXgen-VR-Director-2026-07-28/
     test-artifacts/
   _routing-canary/
     control/

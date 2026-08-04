@@ -53,24 +53,34 @@ If any are missing, HALT and report which.
      changes since the baseline). This is `{diff_output}`.
    - If the diff is empty, HALT and report — dev produced no changes to review.
 
-3. **Load supporting context (read-only):**
-   - The story file at `story_path` — this is your spec (Acceptance Criteria, Tasks,
-     Dev Notes).
-   - `_bmad-output/project-context.md` — architecture rules.
-   - `.agents/rules/constitution.md` — hard stops.
+3. **Do NOT load supporting context yet.** The story, `project-context.md`, and the
+   constitution are Ingest 2 (step 4) — loading them now defeats Pass 1's blindness,
+   which is the whole reason that pass exists.
 
-4. **Run the three passes sequentially** (per the fast-path rule):
-   - **Pass 1 — Blind Hunter:** Look at `{diff_output}` ONLY. No spec, no project
-     context. Find bugs, logic errors, security issues, code smells from the diff
-     alone. Produce a findings list.
-   - **Pass 2 — Edge Case Hunter:** Use full project read access. Walk every branching
-     path, boundary condition, null check, error path, race condition, type coercion
-     edge. Produce findings as structured list with `location`, `trigger_condition`,
-     `potential_consequence`.
-   - **Pass 3 — Acceptance Auditor:** Load the story file. Check the diff against
-     acceptance criteria, spec intent, specified behavior. Flag violations,
-     deviations, missing implementation. Produce findings with title, AC reference,
-     evidence.
+4. **Run the three passes sequentially** (per the fast-path rule's TWO-ingest read
+   budget — read the material in exactly two pulls, then think; the passes are three
+   questions asked of context you already hold, NOT three traversals of the tree):
+   - **Pass 1 — Blind Hunter:** over **Ingest 1** (`{diff_output}`) ONLY. No spec, no
+     story, no project context. Find bugs, logic errors, security issues, code smells
+     from the diff alone. Produce a findings list.
+   - **Ingest 2 — one batched grounding pull**, only now that Pass 1 has its findings:
+     each changed file whole, the direct callers/dependents of the changed symbols, the
+     tests covering them, the story file at `story_path` (your spec — ACs, Tasks, Dev
+     Notes), `_bmad-output/project-context.md` (architecture rules), and
+     `.agents/rules/constitution.md` (hard stops). **There is no "full project read"
+     pass** — an unbounded sweep burns the budget and finds less than a targeted read of
+     the blast radius. Do not add one back.
+   - **Pass 2 — Edge Case Hunter:** over Ingest 2. Walk every branching path, boundary
+     condition, null check, error path, race condition, type coercion edge, plus the
+     callers you already pulled. Produce findings as a structured list with `location`,
+     `trigger_condition`, `potential_consequence`.
+   - **Pass 3 — Acceptance Auditor:** over Ingest 2. Check the diff against acceptance
+     criteria, spec intent, specified behavior. Flag violations, deviations, missing
+     implementation. Produce findings with title, AC reference, evidence.
+   - **Top-ups must be earned:** a pass that surfaces a *specific* lead reads that named
+     file. Read because you can say what you are looking for, never "to be thorough."
+     **Never trade a real finding for tokens** — a missed defect costs far more than the
+     read. Efficiency is not re-reading what you hold, never reviewing less.
    - Between passes: do NOT summarize or present intermediate results. Accumulate
      internally and continue.
 

@@ -1,6 +1,9 @@
 # Skills INDEX — when to use which (family map)
 
-Router for `.agents/skills/` (~100 skills). Unlike rules, **skills already self-route**: each has a
+Router for the **skill surface an agent actually sees (~100)**, which comes from two places: the **44**
+authored skills in `.agents/skills/` (this repo is their master) plus the **56** `bmad-*` skills BMAD
+installs directly into `.claude/skills/` — the BMAD families below live there, not here, so don't go
+looking for them in the master dir. Unlike rules, **skills already self-route**: each has a
 `SKILL.md` with a `description:` that the harness surfaces, so you rarely pick one by hand — you invoke
 by intent or `/<skill-name>`. This INDEX is therefore a **family map** (so you know what domains exist),
 not a per-skill list — that would go stale. To find one skill, match your task to a family, then to the

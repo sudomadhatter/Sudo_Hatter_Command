@@ -30,8 +30,7 @@ These are folder paths to see the open todo list in the sub projects:
 3. /mobile-error_team still needs to be pushed to main to work, there is a note in claude memory about it, just ask. 
 
 <!-- open_tasks files — auto-listed by /update-maps-indexes -->
-- `2026-07-13_codex-setup-all-machines.md`
-- `gitnexus-sync.md`
+- `plan_optimize-sudo-dev-story-tests.md`
 
 ----
 

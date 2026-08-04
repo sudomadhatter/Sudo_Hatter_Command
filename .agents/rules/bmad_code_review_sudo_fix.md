@@ -27,10 +27,35 @@ layers → triage → present) is unchanged; only the orchestration below is ove
 | Confirm summary? | Print a one-line summary (files, ±lines, mode) and continue. |
 | Chunk a large diff? | No — review the full diff. |
 
-## Step 2 — Review (run all three layers, then continue)
-1. **Blind Hunter** — `{diff_output}` ONLY (no spec, no project context). Bugs, logic errors, security, smells → findings list.
-2. **Edge Case Hunter** — diff + full project read. Every branch, boundary, null, error path, race, type-coercion edge → list with `location`, `trigger_condition`, `potential_consequence`.
-3. **Acceptance Auditor** (skip if `no-spec`) — diff vs the spec/story ACs. Violations, deviations, missing implementation → list with title, AC reference, evidence.
+## Step 2 — Review (TWO ingests, three layers)
+
+Read scope is a budget, not an afterthought — the reviewer is usually the most expensive model in the
+run. **Pull the material in exactly two reads, then think.** The three layers are three *questions asked
+of context you already hold*, not three traversals of the tree.
+
+- **Ingest 1 — the diff, alone.** Nothing else in context yet. This is what makes Layer 1 blind.
+- **Ingest 2 — one batched grounding pull**, taken only *after* Layer 1 has produced its findings: each
+  changed file whole, the direct callers/dependents of the changed symbols, the tests covering them, and
+  the spec/story.
+
+That is the read budget. **There is no "read the whole repo" pass** — an unbounded sweep burns the run's
+budget and finds less than a targeted read of the blast radius. Do not add one back.
+
+1. **Blind Hunter** — Ingest 1 ONLY (no spec, no story, no walkthrough, no project context). Bugs, logic
+   errors, security, smells → findings list. It runs *before* Ingest 2 lands: reading the builder's
+   account first imports exactly the bias this layer exists to zero out.
+2. **Edge Case Hunter** — over Ingest 2. Every branch, boundary, null, error path, race, type-coercion
+   edge, plus the callers you already pulled → list with `location`, `trigger_condition`,
+   `potential_consequence`.
+3. **Acceptance Auditor** (skip if `no-spec`) — over Ingest 2. Diff vs the spec/story ACs. Violations,
+   deviations, missing implementation → list with title, AC reference, evidence.
+
+**Top-ups must be earned.** When a layer surfaces a *specific* lead — an unresolved symbol, a caller you
+did not anticipate — read that named file. Read because you can say what you are looking for, never "to
+be thorough." One targeted top-up beats a second sweep; a second sweep is the failure mode.
+**Never trade a real finding for tokens** — this is the last gate before the human, and a missed defect
+costs far more than the read. Efficiency here means *not re-reading what you already hold*, never
+reviewing less.
 
 Accumulate findings internally (no intermediate summaries), then go straight to triage.
 
