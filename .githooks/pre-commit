@@ -1,0 +1,3 @@
+#!/bin/sh
+# pre-commit-encoding (installed by .agents/scripts/git-hooks/install-encoding-hook.ps1)
+exec "$(git rev-parse --show-toplevel)/.agents/scripts/git-hooks/pre-commit-encoding.sh" "$@"

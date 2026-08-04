@@ -1,4 +1,6 @@
-"""workflow_lint's checks must FIRE on real defects and stay quiet on look-alikes. Without
+"""wf-lint: allow-encoding-literals — the fixtures below ARE mojibake, on purpose.
+
+workflow_lint's checks must FIRE on real defects and stay quiet on look-alikes. Without
 these controls a clean lint run is indistinguishable from a dead detector.
 
 The encoding third case is the one that caught us: `sudo-prune-context.md` documents the
@@ -59,6 +61,22 @@ def main() -> int:
         # strip_code must not swallow the whole document
         kept = wf.strip_code("before `x` after")
         c.check("strip_code keeps prose", "before" in kept and "after" in kept, kept)
+
+        # ── The opt-out: a file may legitimately CARRY these bytes as data ─────
+        # wf_common.py holds a literal U+FFFD as REPLACEMENT_CHAR, so without this the
+        # gate blocked every commit that touched the gate. Both directions asserted:
+        # the marker must silence it, and its ABSENCE must not.
+        (tmp / "detector.md").write_bytes(
+            (lint.ENCODING_OPT_OUT + "\nthis file discusses � on purpose\n").encode("utf-8"))
+        (tmp / "no-marker.md").write_bytes("no marker, same content �\n".encode("utf-8"))
+        rep = wf.Report()
+        lint.scan_encoding([("detector.md", tmp / "detector.md"),
+                            ("no-marker.md", tmp / "no-marker.md")], rep)
+        msgs = [(i["sev"], i["msg"]) for i in rep.items]
+        c.check("opt-out silences a file that carries the bytes as DATA",
+                not any("detector.md" in m for _, m in msgs), str(msgs)[:110])
+        c.check("without the marker the SAME content still fires",
+                any(s == "ERROR" and "no-marker.md" in m for s, m in msgs), str(msgs)[:110])
 
         # ── F7: artifact budgets, scoped to work that is still moving ─────────
         proj = tmp / "proj"

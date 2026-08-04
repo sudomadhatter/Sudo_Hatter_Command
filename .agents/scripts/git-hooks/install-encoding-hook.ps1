@@ -27,12 +27,23 @@ function Install-One([string]$root) {
   $gitPath = Join-Path $root '.git'
   if (-not (Test-Path $gitPath)) { Write-Host "  SKIP $root (not a git repo)"; return }
 
-  # A worktree's .git is a FILE pointing at the real gitdir.
-  if (Test-Path $gitPath -PathType Leaf) {
-    $line = (Get-Content $gitPath -TotalCount 1)
-    $gitPath = $line -replace '^gitdir:\s*', ''
+  # core.hooksPath OVERRIDES .git/hooks entirely. Three of the four repos here set it to
+  # .githooks, so an installer that assumes .git/hooks writes a file git never reads —
+  # it reports success and installs nothing. A gate that silently does not run is worse
+  # than no gate, so this is resolved, not assumed.
+  $hooksPath = (git -C $root config --get core.hooksPath 2>$null)
+  if ($hooksPath) {
+    $hookDir = if ([System.IO.Path]::IsPathRooted($hooksPath)) { $hooksPath }
+               else { Join-Path $root $hooksPath }
+    Write-Host "  ($root -> core.hooksPath = $hooksPath)"
+  } else {
+    # A worktree's .git is a FILE pointing at the real gitdir.
+    if (Test-Path $gitPath -PathType Leaf) {
+      $line = (Get-Content $gitPath -TotalCount 1)
+      $gitPath = $line -replace '^gitdir:\s*', ''
+    }
+    $hookDir = Join-Path $gitPath 'hooks'
   }
-  $hookDir = Join-Path $gitPath 'hooks'
   if (-not (Test-Path $hookDir)) { New-Item -ItemType Directory -Path $hookDir -Force | Out-Null }
   $hook = Join-Path $hookDir 'pre-commit'
 

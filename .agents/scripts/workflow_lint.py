@@ -274,6 +274,14 @@ def check_status_drift(project: Path, rep: wf.Report) -> None:
                  f"({d['file']}) - fix with story_status.py set --reconcile")
 
 
+# A file that legitimately CONTAINS these bytes as data - the detector's own constants,
+# its test fixtures, a doc quoting them outside a code span - declares it once, here.
+# Without this the scanner flags itself: wf_common.py holds a literal U+FFFD as
+# REPLACEMENT_CHAR, so the gate blocked every commit that touched the gate. Third instance
+# of this shape in the project (memory: comment-literals-invert-source-grep-tests).
+ENCODING_OPT_OUT = "wf-lint: allow-encoding-literals"
+
+
 def scan_encoding(paths: list[tuple[str, Path]], rep: wf.Report) -> None:
     """Two distinct corruptions, two severities:
       * U+FFFD  = bytes that are NOT valid UTF-8 -> the file is already broken (ERROR).
@@ -283,6 +291,8 @@ def scan_encoding(paths: list[tuple[str, Path]], rep: wf.Report) -> None:
         if not path.is_file():
             continue
         text = wf.read_text(path)
+        if ENCODING_OPT_OUT in text:
+            continue
         # U+FFFD is scanned RAW — an undecodable byte is broken wherever it sits.
         if wf.REPLACEMENT_CHAR in text:
             rep.err("encoding",

@@ -5,6 +5,10 @@ These scripts VERIFY the sudo dev-flow's invariants (status agreement, gate rece
 board + context budgets) so command prose can later shrink to "run the check" — the
 plan's governing principle: an instruction may only be deleted after a script enforces it.
 
+This file declares `wf-lint: allow-encoding-literals` — it holds a literal U+FFFD and
+the cp1252 digraph table as DATA, and without the opt-out the encoding gate flags the
+very module that implements it.
+
 Stdlib only (no yq/jq on this machine). Output is plain ASCII — Windows consoles may be
 cp1252 and choke on emoji (the flag_demo_school.py precedent).
 """

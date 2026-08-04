@@ -1,8 +1,12 @@
 #!/bin/sh
 # pre-commit-encoding — block a commit that would introduce broken bytes.
 #
-# Installed as .git/hooks/pre-commit by install-encoding-hook.ps1 (machine-local: .git/
-# never travels through GitHub, so every machine installs it once).
+# Installed as <hooks-dir>/pre-commit by install-encoding-hook.ps1. The hooks dir is
+# `core.hooksPath` when set, else .git/hooks — NOT interchangeable: the lobby, AGY and
+# Fresh all set core.hooksPath=.githooks, so an installer that assumed .git/hooks wrote a
+# file git never reads and reported success. Where .githooks/ is tracked the hook TRAVELS
+# through git and needs no per-machine install; where it is not, .git/ never travels and
+# every clone installs once.
 #
 # Why a hook and not a rule: "normalise the lines you touch" has been losing this race for
 # months. Mojibake is invisible in review — a Windows PowerShell 5.1 console renders
