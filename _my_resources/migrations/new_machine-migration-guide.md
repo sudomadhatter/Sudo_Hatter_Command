@@ -128,6 +128,19 @@ through each as needed:
   will NOT warn you on the wrong one), the exact rebuild commands, and the
   4-check verification walkthrough (incl. the parallel runner + machine-wide
   suite lock added 2026-08-01).
+  > ⚠️ **Name it `.venv`, and keep it directly under `backend/`.** Several backend
+  > tests are source-grep gates that walk `backend/` and read every `.py` they
+  > find. They skip virtualenvs **by directory name** — `.venv*` plus a fixed
+  > list. A venv named anything else (`env311`, `pyenv`, `venv3`) is walked and
+  > read instead: **16,586 files / ~273 MB per test** rather than 217. Serially
+  > that is merely slow; under `pytest -n auto` it blows the 300s timeout, and
+  > pytest-timeout kills and respawns the worker on each trip — roughly **40
+  > minutes of `node down` churn with no error message that names the cause**.
+  > This cost a full debugging session on 2026-08-01 (story `debug-3.2`). The
+  > guard `test_scan_never_walks_a_colocated_virtualenv` now fails loudly and
+  > names the directory instead, but only if you run the suite.
+
+
 - **node_modules**: `npm install` per frontend.
 - **GitNexus index**: machine-local, does not travel — re-index the repos you
   work in.

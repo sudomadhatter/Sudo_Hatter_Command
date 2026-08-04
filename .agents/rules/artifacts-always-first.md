@@ -108,8 +108,24 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
   (e.g. `epic_14/story-14.6-graph-insight/`, or an autopilot run `epic_14/2026-06-27_autopilot-14-6/`).
   Epic-scoped, not date-prefixed at the root. This holds for **any** story — whether the autopilot, a BMAD
   flow, or Daniel devs it by hand; the parent is decided by the story id, **not** by the tool.
+- **Quick fix** (**neither a story nor a bug-fix story**: infra/tooling/config repair, a recorded
+  follow-on, one-off maintenance — anything that still deserves a record but does not earn a story)
+  → the owning store's `quick_fixes/quick-fix-<track>.<n>-<slug>/`. **Operator ruling 2026-08-03.**
+  - **Numbering is a standing, always-open track** — track `1`, items `1.1`, `1.2`, `1.3`, … continuing
+    in order. **The track does not close at the end of a round** — that is the point of it; a new one
+    opens as `2` only if a track is deliberately retired. Read the folder's `INDEX.md` for the next
+    free number; never restart at `1.1`.
+  - **Mint NO story file and NO epic key.** Do not create anything in `_bmad/bmm/stories/`, and never
+    hang a quick fix off a `done` epic — that silently reopens it. Board tracking, when the work is
+    worth tracking, is a single `quick-fix-<track>-<n>-<slug>` key in `sprint-status.yaml`.
+  - One `walkthrough.md` in the folder is the whole record (no `implementation_plan.md`), plus a row
+    in `quick_fixes/INDEX.md` — that INDEX is the numbering register, so **append its row by hand**;
+    it is the exception to the batch-reconcile note below.
+  - This is where `/sudo-quick-dev` work lands when it turns out not to be a story, and it is the
+    home for the follow-on class in `followon-fixes-are-not-a-new-story`.
 - **System / infrastructure** ("systems things": the agent system, rules, scripts, CI, cross-cutting config)
-  → the owning store's `_main/<YYYY-MM-DD>_<slug>/`.
+  → the owning store's `_main/<YYYY-MM-DD>_<slug>/`. A quick fix that happens to touch infra matches
+  the quick-fix bucket ABOVE this one — first match wins.
 - **No home yet / random one-off** (everything else) → `<YYYY-MM-DD>_<slug>/` — date FIRST, slug LAST so they
   sort chronologically (e.g. `2026-06-25_artifacts-policy-finish`); slug: lowercase, hyphen-separated, max 6
   words, from the operator's first concrete request. In a project-owned store it goes inside `_main/` — the
