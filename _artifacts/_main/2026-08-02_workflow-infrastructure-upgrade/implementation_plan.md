@@ -299,12 +299,12 @@ shipped and *before* Wave 3, so it is half conformance-check, half pre-dev gate.
 | # | file:line | Sev | Failure scenario | Disposition |
 |---|---|---|---|---|
 | F1 | `implementation_plan.md:133` | HIGH | Wave 2 reads "execute Plan A"; it landed as `7cb52ef`. Acting on the plan re-edits 37 files a second time. | **Plan corrected** — Wave 2 marked DONE inline |
-| F2 | `closeout_preflight.py:125` | HIGH | No legacy-verdict fallback (Plan A mandates one). Verified: `--story 17.2` → *"the review step has not run"* → BLOCKED, while `sudo-code-review-17.2.md` sits on disk. Every pre-08-02 story false-blocks; the preflight gets muted. | **FIX in Wave 3, before wiring** |
-| F3 | `closeout_preflight.py:35` | HIGH | Branch matched by story slug, but AGY branches are descriptive (`claude/xdist-tail-hang`, `Epic-7`). Every story reports INFO *"already cleaned up"* — a check that cannot fire, reading as a clear. Unmerged commits get stranded (`landing-is-not-closeout`). | **FIX** — resolve from the worktree / Close-Out Handoff block; "no branch" → WARN, never INFO |
-| F4 | `closeout_preflight.py:122` | MED | Bare `startswith` with no separator guard: `--story 21.8` matches **both** `story-21-8-master-demo-mode` and `story-21-8b-demo-data-quarantine` (verified). A sibling's verdict can block — or satisfy — the wrong flip. | **FIX** — reuse `find_story_files`' `want + "-"` discipline |
-| F5 | `gate_receipt.py:150` vs `:81` | MED | `run` records `git_head(--cwd or project)`; `check` has no `--cwd`, no `--sha` (the plan specified one), and compares by **equality**. A receipt taken in a story worktree, or on a branch that landed via a merge commit, always reads STALE → Wave 3's hard gate blocks every honest receipt → `--advisory` becomes permanent. | **FIX before Wave 3 wiring** — accept `--sha`; use ancestor+diff staleness like `check_artifacts:149` |
-| F6 | `implementation_plan.md:122` | MED | §1.4 promises "greps the story's File List against HEAD, ✅/❌/⚠️ per claim". Not built — 8 checks shipped, not this one. Claimed File Lists stay unverified at close-out. | **Build in Wave 3, or strike the bullet** |
-| F7 | Plan A `implementation_plan.md:81-84` | MED | New hard budgets (plan ≤8 KB, walkthrough ≤10 KB) are enforced by nothing; `workflow_lint` checks only `active-context`. By this plan's own governing principle an unenforced budget rots. Scope also unruled: **this plan is 15.4 KB**, ~2× the story budget — do `_main/` initiative plans count? | **Add to `workflow_lint` in Wave 3 + rule the `_main/` scope question** |
+| F2 | `closeout_preflight.py:125` | HIGH | No legacy-verdict fallback (Plan A mandates one). Verified: `--story 17.2` → *"the review step has not run"* → BLOCKED, while `sudo-code-review-17.2.md` sits on disk. Every pre-08-02 story false-blocks; the preflight gets muted. | ✅ **FIXED** — `legacy_verdict()`; 17.2 now resolves via the standalone file |
+| F3 | `closeout_preflight.py:35` | HIGH | Branch matched by story slug, but AGY branches are descriptive (`claude/xdist-tail-hang`, `Epic-7`). Every story reports INFO *"already cleaned up"* — a check that cannot fire, reading as a clear. Unmerged commits get stranded (`landing-is-not-closeout`). | ✅ **FIXED** — `find_branches()` also reads worktrees; `--branch` override; unverifiable → **WARN** naming why |
+| F4 | `closeout_preflight.py:122` | MED | Bare `startswith` with no separator guard: `--story 21.8` matches **both** `story-21-8-master-demo-mode` and `story-21-8b-demo-data-quarantine` (verified). A sibling's verdict can block — or satisfy — the wrong flip. | ✅ **FIXED** — `wf.slug_matches()`; 21.8 now reads its own walkthrough (Verdict CONCERNS) |
+| F5 | `gate_receipt.py:150` vs `:81` | MED | `run` records `git_head(--cwd or project)`; `check` has no `--cwd`, no `--sha` (the plan specified one), and compares by **equality**. A receipt taken in a story worktree, or on a branch that landed via a merge commit, always reads STALE → Wave 3's hard gate blocks every honest receipt → `--advisory` becomes permanent. | ✅ **FIXED** — `--sha` + `--cwd`; staleness compares **trees** (`wf.same_tree`), and preflight now delegates so the two cannot disagree |
+| F6 | `implementation_plan.md:122` | MED | §1.4 promises "greps the story's File List against HEAD, ✅/❌/⚠️ per claim". Not built — 8 checks shipped, not this one. Claimed File Lists stay unverified at close-out. | ✅ **BUILT** — `check_file_list()`; tracked ✅ / untracked ⚠️ / absent ❌ |
+| F7 | Plan A `implementation_plan.md:81-84` | MED | New hard budgets (plan ≤8 KB, walkthrough ≤10 KB) are enforced by nothing; `workflow_lint` checks only `active-context`. By this plan's own governing principle an unenforced budget rots. Scope also unruled: **this plan is 15.4 KB**, ~2× the story budget — do `_main/` initiative plans count? | ✅ **FIXED** — `check_artifact_budgets()`. **Scope called, confirm or overrule:** in-flight stories only (closed ones are history, `_main/` plans are neither per-story nor re-read) — otherwise the check opens with 115 warnings and gets muted |
 | F8 | `Projects/*/.agents/scripts/` | LOW | Wave 1 scripts are vendored into all three maintained projects but **untracked** there (identical bytes; AGY's `scripts/INDEX.md` also modified). `commit-and-push-are-one-action` unsatisfied in three child repos. | **Operator call** — commit per repo, or exclude `scripts/` from vendoring |
 | F9 | `implementation_plan.md:64` | INFO | §1.1 specifies "`_AP` step-lists match their primaries". Twins are single-pass headless adaptations with their own prose headings, so step-sequence comparison is pure noise. Shipped as primary-reference + git-recency drift instead. | **Accepted deviation** — recorded here |
 
@@ -322,5 +322,20 @@ shipped and *before* Wave 3, so it is half conformance-check, half pre-dev gate.
 F2 · F3 · F5 being fixed first: all three live in scripts Wave 3 wires into close-out, and wiring a
 checker that false-blocks (F2), cannot fire (F3), or always reads stale (F5) converts an enforcement
 point into an ignored one — the precise failure this plan exists to end.
+
+### Remediation (2026-08-03, same day)
+
+F2 · F3 · F4 · F5 · F6 · F7 all **fixed and verified against the real AGY tree**, not just in fixtures —
+the audit's whole finding was that fixture-green proved nothing. Test suite **39 → 60 cases**, every new
+case failing before its fix. `test_verdict_reader.py` → `test_closeout_preflight.py` and
+`test_encoding_scan.py` → `test_workflow_lint.py` (one test file per script, history preserved via
+`git mv`). **The Wave 3 GO condition is now met.** Two items remain open and are the operator's:
+
+- **F8** — the Wave 1 scripts are vendored into all three maintained projects but uncommitted there, and
+  the lobby masters have now moved ahead of those copies. `/sync-agents -Maintained` then a commit per
+  repo, or exclude `scripts/` from vendoring.
+- **F7 scope** — confirm or overrule "in-flight stories only" (see the table).
+- The Wave 3 baseline gap and the exit-1-vs-exit-2 ambiguity (both in **Four gates**) are still owed
+  before Wave 3 starts.
 
 <!-- CHECKPOINT id="ckpt_mscl3u61_ncq5zo" time="2026-08-03T02:02:40.633Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->

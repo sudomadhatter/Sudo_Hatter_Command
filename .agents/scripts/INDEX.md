@@ -12,9 +12,9 @@ Maintenance scripts (MASTER here): `check_maps.py` (drift linter), `generate_rep
 | `gate_receipt.py` | did this gate actually run, at this commit? | `gate_receipt.py run --story 21.8b --gate ruff -- ruff check backend/` |
 | `closeout_preflight.py` | is this story safe to close out? | `closeout_preflight.py --story 21.8b --project AGY_AVIATIONCHAT` |
 
-`gate_receipt.py` has no `--result` flag by design: it EXECUTES the gate and writes the receipt from the real exit code, so a verdict cannot be handed in. All flags precede `--`; everything after it is the gate command verbatim.
+`gate_receipt.py` has no `--result` flag by design: it EXECUTES the gate and writes the receipt from the real exit code, so a verdict cannot be handed in. All flags precede `--`; everything after it is the gate command verbatim. Staleness compares **trees, not SHAs** — a branch that lands via a merge commit has a new HEAD and identical content, and calling that stale is how a hard gate earns a permanent `--advisory`.
 
-Tests: `python .agents/scripts/tests/run_all.py` (39 cases, stdlib only, no pytest). Each script is covered by the defect that motivated it, plus a positive control — a linter that reports nothing looks identical whether it is clean or dead.
+Tests: `python .agents/scripts/tests/run_all.py` (60 cases, stdlib only, no pytest). One test file per script. Each script is covered by the defect that motivated it, plus a positive control — a checker that reports nothing looks identical whether it is clean or dead, and a checker that reports *everything* gets muted. Both failures are represented.
 
 ## Top-level contents
 <!-- auto-listed by /update-maps-indexes — refresh via /update-maps-indexes; do not hand-edit entries -->

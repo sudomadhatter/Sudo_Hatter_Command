@@ -6,7 +6,7 @@ inverting the flow: it EXECUTES the gate and writes the receipt from the real ex
 There is no `--result` flag. You cannot hand it a verdict.
 
     gate_receipt.py run   --story 21.8b --gate ruff -- ruff check backend/
-    gate_receipt.py check --story 21.8b --require ruff,pytest [--advisory]
+    gate_receipt.py check --story 21.8b --require ruff,pytest [--sha X] [--cwd W] [--advisory]
     gate_receipt.py list  --story 21.8b
 
 EVERY flag goes BEFORE `--`. Everything after it is the gate command verbatim, so a
@@ -128,34 +128,61 @@ def cmd_run(project: Path, story: str, gate: str, command: list[str],
     return 1 if result == "fail" else 2
 
 
-def cmd_check(project: Path, story: str, require: list[str], advisory: bool) -> int:
-    head = wf.git_head(project)
+def check_receipt(repo: Path, data: dict, gate: str, target: str | None,
+                  rep: wf.Report) -> None:
+    """One receipt against one target commit. Shared with closeout_preflight so the two
+    never disagree about what 'stale' means."""
+    if data.get("result") != "pass":
+        rep.err("gates", f"{gate}: result={data.get('result')} "
+                         f"(exit {data.get('exit_code')})")
+        return
+    sha = str(data.get("sha") or "")
+    if target and sha != target:
+        # TREE comparison, not SHA equality: a branch that landed via a merge commit has a
+        # new SHA and an identical tree, and that receipt is still evidence about this code.
+        identical = wf.same_tree(repo, sha, target)
+        if identical is None:
+            rep.warn("gates", f"{gate}: recorded at {sha[:8]}, which is not a commit in "
+                              f"{repo.name} (worktree-only or pruned) - CANNOT verify freshness")
+        elif identical:
+            rep.info("gates", f"{gate}: pass @ {sha[:8]} - different commit than "
+                              f"{target[:8]}, identical tree")
+        else:
+            rep.err("gates", f"{gate}: STALE - passed at {sha[:8]}, "
+                             f"code differs from {target[:8]}")
+            return
+    if data.get("dirty_tree"):
+        rep.warn("gates", f"{gate}: passed over a DIRTY tree - "
+                          f"the receipt's SHA is not what was tested")
+    if not target or sha == target:
+        rep.info("gates", f"{gate}: pass @ {sha[:8]}"
+                          f"{' - ' + data['totals'] if data.get('totals') else ''}")
+
+
+def load_receipt(project: Path, story: str, gate: str, rep: wf.Report) -> dict | None:
+    path = receipt_dir(project, story) / f"{gate}.json"
+    if not path.is_file():
+        rep.err("gates", f"{gate}: NO RECEIPT - the gate has no evidence it ran")
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        rep.err("gates", f"{gate}: unreadable receipt ({exc})")
+        return None
+
+
+def cmd_check(project: Path, story: str, require: list[str], advisory: bool,
+              sha: str | None, cwd: Path | None) -> int:
+    # The receipt was stamped wherever the gate RAN (often a story worktree), so the repo
+    # that resolves its commits may not be the project root.
+    repo = cwd or project
+    target = sha or wf.git_head(repo)
     rep = wf.Report()
-    out_dir = receipt_dir(project, story)
 
     for gate in require:
-        path = out_dir / f"{gate}.json"
-        if not path.is_file():
-            rep.err("gates", f"{gate}: NO RECEIPT - the gate has no evidence it ran")
-            continue
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError as exc:
-            rep.err("gates", f"{gate}: unreadable receipt ({exc})")
-            continue
-        if data.get("result") != "pass":
-            rep.err("gates", f"{gate}: result={data.get('result')} "
-                             f"(exit {data.get('exit_code')})")
-            continue
-        if head and data.get("sha") != head:
-            rep.err("gates", f"{gate}: STALE - passed at "
-                             f"{str(data.get('sha'))[:8]}, HEAD is {head[:8]}")
-            continue
-        if data.get("dirty_tree"):
-            rep.warn("gates", f"{gate}: passed over a DIRTY tree - "
-                              f"the receipt's SHA is not what was tested")
-        rep.info("gates", f"{gate}: pass @ {str(data.get('sha'))[:8]}"
-                          f"{' - ' + data['totals'] if data.get('totals') else ''}")
+        data = load_receipt(project, story, gate, rep)
+        if data is not None:
+            check_receipt(repo, data, gate, target, rep)
 
     rep.print_human(f"gate_receipt check - {wf.norm_id(story)}")
     code = rep.exit_code()
@@ -195,6 +222,10 @@ def main() -> int:
     p_check.add_argument("--story", required=True)
     p_check.add_argument("--project")
     p_check.add_argument("--require", required=True, help="comma-separated gate names")
+    p_check.add_argument("--sha", help="check against THIS commit (the shipping sha) "
+                                       "instead of the current HEAD")
+    p_check.add_argument("--cwd", help="resolve commits in this repo/worktree - use the same "
+                                       "one `run --cwd` used, or its shas are unknown here")
     p_check.add_argument("--advisory", action="store_true",
                          help="report but do not block (first-sprint rollout only)")
 
@@ -211,7 +242,8 @@ def main() -> int:
         return cmd_run(project, args.story, args.gate, command, args.allow_fail, cwd)
     if args.cmd == "check":
         gates = [g.strip() for g in args.require.split(",") if g.strip()]
-        return cmd_check(project, args.story, gates, args.advisory)
+        return cmd_check(project, args.story, gates, args.advisory, args.sha,
+                         Path(args.cwd).resolve() if args.cwd else None)
     return cmd_list(project, args.story)
 
 

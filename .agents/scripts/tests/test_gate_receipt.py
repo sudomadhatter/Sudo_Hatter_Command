@@ -102,6 +102,45 @@ def main() -> int:
         c.check("10 there is no way to hand in a verdict",
                 code != 0 and "unrecognized" in out.lower(), f"exit={code}")
 
+        # ── F5: staleness is a property of the TREE, not of the sha ───────────
+        # A story branch that lands via a merge commit produces a new HEAD with an
+        # identical tree. Calling that stale blocks every honest receipt, and a hard
+        # gate that always blocks gets `--advisory` forever.
+        git(repo, "add", "-A")          # earlier cases left the tree dirty on purpose
+        git(repo, "commit", "-qm", "settle")
+        trunk = git(repo, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+        git(repo, "checkout", "-qb", "sidebranch")
+        (repo / "story_work.txt").write_text("the story's change\n", encoding="utf-8")
+        git(repo, "add", "story_work.txt")
+        git(repo, "commit", "-qm", "story work")
+        gr("run", "--story", "21.8b", "--gate", "treegate", "--", sys.executable, "-c", "print(1)")
+        side_sha = git(repo, "rev-parse", "HEAD").stdout.strip()
+        git(repo, "checkout", "-q", trunk)
+        # --no-ff: a real merge commit, so HEAD differs while the tree is identical
+        git(repo, "merge", "-q", "--no-ff", "-m", "merge story", "sidebranch")
+        head_after_merge = git(repo, "rev-parse", "HEAD").stdout.strip()
+        code, out = gr("check", "--story", "21.8b", "--require", "treegate")
+        c.check("12 a merge commit with an identical tree is NOT stale",
+                code == 0 and side_sha != head_after_merge and "identical tree" in out,
+                f"exit={code} {out.splitlines()[-2] if out else ''}")
+
+        code, out = gr("check", "--story", "21.8b", "--require", "treegate",
+                       "--sha", side_sha)
+        c.check("13 --sha pins the comparison to the shipping commit",
+                code == 0 and "STALE" not in out, f"exit={code}")
+
+        (repo / "backend.py").write_text("real change\n", encoding="utf-8")
+        git(repo, "add", "backend.py")
+        git(repo, "commit", "-qm", "a real code change")
+        code, out = gr("check", "--story", "21.8b", "--require", "treegate")
+        c.check("14 a genuine content change IS still stale",
+                code == 2 and "STALE" in out, f"exit={code}")
+
+        code, out = gr("check", "--story", "21.8b", "--require", "treegate",
+                       "--sha", "0" * 40)
+        c.check("15 an unknown target sha warns, never silently passes",
+                "CANNOT verify" in out, out.strip().splitlines()[-2] if out else "")
+
         # a commit landing mid-run means the receipt describes no single tree
         code, _ = gr("run", "--story", "21.8b", "--gate", "moving", "--", sys.executable, "-c",
                      f"import subprocess,pathlib;"

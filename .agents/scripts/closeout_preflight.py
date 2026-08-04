@@ -6,8 +6,8 @@ agree, is the context inside budget, did the gates actually run, can the epic cl
 the story's verdict recorded. Each is a git or filesystem question with an exact answer, and
 each has failed silently at least once (see the memory index). This answers all of them.
 
-    closeout_preflight.py --story 21.8b [--project P] [--worktree PATH]
-                          [--require-gates ruff,pytest] [--fetch] [--json]
+    closeout_preflight.py --story 21.8b [--project P] [--worktree PATH] [--branch B]
+                          [--require-gates ruff,pytest] [--sha X] [--fetch] [--json]
 
 Exit: 0 clean · 1 warnings · 2 blocking. It never flips a status - it reports whether the
 flip is safe; `story_status.py set` does the write.
@@ -21,6 +21,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import gate_receipt as gr
 import wf_common as wf
 
 INTEGRATION_BRANCH = "main_debug"
@@ -28,14 +29,43 @@ INTEGRATION_BRANCH = "main_debug"
 
 # ── 1. Did the code actually land? ─────────────────────────────────────────────
 
-def check_landed(project: Path, key: str, rep: wf.Report) -> None:
+def find_branches(project: Path, key: str, explicit: str | None) -> list[str]:
+    """Candidate branches for a story, in order of how much they prove.
+
+    Branches here are named descriptively (`claude/xdist-tail-hang`, `Epic-7`) far more
+    often than by story id, so a slug-only match finds nothing for almost every story.
+    Worktrees are the reliable link: a story tree is checked out on the story's branch."""
+    if explicit:
+        return [explicit]
+    sid = wf.story_id(key)
+    found: list[str] = []
+    for pat in (f"*{key}*", f"*{sid}*", f"*{sid.replace('-', '.')}*"):
+        r = wf.git(["branch", "--list", "--all", "--format=%(refname:short)", pat], project)
+        found += [b.strip() for b in r.stdout.splitlines() if b.strip()]
+    # A worktree whose directory carries the id is checked out on this story's branch.
+    out = wf.git(["worktree", "list", "--porcelain"], project).stdout
+    for block in out.split("\n\n"):
+        wt = re.search(r"^worktree (.+)$", block, re.MULTILINE)
+        br = re.search(r"^branch refs/heads/(.+)$", block, re.MULTILINE)
+        if wt and br and (wf.slug_matches(sid, Path(wt.group(1)).name)
+                          or wf.story_id(Path(wt.group(1)).name) == sid):
+            found.append(br.group(1).strip())
+    seen: dict[str, None] = {}
+    for b in found:
+        seen.setdefault(b, None)
+    return list(seen)
+
+
+def check_landed(project: Path, key: str, rep: wf.Report, branch: str | None = None) -> None:
     """Landing and close-out are separate events (memory: landing-is-not-closeout) -
     code merges while the board still reads `review`, and the board never notices."""
-    slug = wf.norm_id(key)
-    r = wf.git(["branch", "--list", "--all", f"*{slug}*"], project)
-    branches = [b.strip(" *+") for b in r.stdout.splitlines() if b.strip()]
+    branches = find_branches(project, key, branch)
     if not branches:
-        rep.info("landed", f"no branch matches '{slug}' - already cleaned up, or never had one")
+        # NOT an info. "I could not check" and "I checked and it is clean" must never
+        # print the same way - a check that cannot fire is indistinguishable from a pass.
+        rep.warn("landed", f"no branch or worktree carries '{wf.story_id(key)}' - branches here "
+                           f"are often named descriptively, so landing was NOT verified; "
+                           f"confirm by hand or pass --branch <name>")
         return
     for b in branches:
         merged = wf.git(["merge-base", "--is-ancestor", b, INTEGRATION_BRANCH], project)
@@ -114,14 +144,37 @@ _VERDICT_RE = re.compile(
     re.MULTILINE | re.IGNORECASE)
 
 
+_LEGACY_REL = "_bmad-output/implementation-artifacts"
+
+
+def legacy_verdict(project: Path, key: str) -> Path | None:
+    """Stories closed before the two-doc change (2026-08-02) recorded their verdict in a
+    standalone `sudo-code-review-<story>.md`. Plan A's back-compat contract is explicit:
+    section first, legacy file second. Without this fallback every historic story reports
+    'the review never ran' - a false red on correctly-closed work, which is exactly how a
+    checker gets muted."""
+    d = project / _LEGACY_REL
+    if not d.is_dir():
+        return None
+    for p in sorted(d.glob("sudo-code-review-*.md")):
+        if wf.slug_matches(wf.story_id(key), p.stem[len("sudo-code-review-"):]):
+            return p
+    return None
+
+
 def check_artifacts(project: Path, key: str, rep: wf.Report) -> None:
     """The two-doc close puts the flip gate in the walkthrough's `Verdict:` line
     (memory: story-artifacts-two-doc-close). Absent section = the step never ran."""
     slug = wf.norm_id(key)
+    # slug_matches, not startswith: `21-8` must not adopt `21-8b`'s walkthrough.
     hits = [p for p in project.glob("_artifacts/**/walkthrough.md")
-            if slug.startswith(wf.norm_id(p.parent.name).removeprefix("story-"))
-            or wf.norm_id(p.parent.name).removeprefix("story-").startswith(slug)]
+            if wf.slug_matches(slug, wf.norm_id(p.parent.name).removeprefix("story-"))]
     if not hits:
+        legacy = legacy_verdict(project, key)
+        if legacy:
+            rep.info("artifacts", f"no walkthrough.md; verdict is in the pre-08-02 standalone "
+                                  f"file {legacy.relative_to(project)}")
+            return
         rep.err("artifacts", f"no walkthrough.md found for '{slug}' - "
                              f"code review never recorded a verdict")
         return
@@ -130,6 +183,11 @@ def check_artifacts(project: Path, key: str, rep: wf.Report) -> None:
         m = _VERDICT_RE.search(text)
         rel = path.relative_to(project)
         if not m:
+            legacy = legacy_verdict(project, key)
+            if legacy:
+                rep.info("artifacts", f"{rel}: no `Verdict:` line, but the pre-08-02 standalone "
+                                      f"{legacy.name} holds it (legacy fallback)")
+                continue
             rep.err("artifacts", f"{rel}: no `Verdict:` line - "
                                  f"the review step has not run (or did not record it)")
             continue
@@ -156,6 +214,56 @@ def check_artifacts(project: Path, key: str, rep: wf.Report) -> None:
                                      f"reviewed SHA - the verdict is STALE, re-gate")
 
 
+_FILELIST_RE = re.compile(r"^\s*(?:#{1,6}\s*|\**)File List\**\s*:?\s*$",
+                          re.MULTILINE | re.IGNORECASE)
+_PATH_RE = re.compile(r"[A-Za-z0-9_.\-]+(?:/[A-Za-z0-9_.\-]+)+\.[A-Za-z0-9]+")
+
+
+def check_file_list(project: Path, key: str, rep: wf.Report) -> None:
+    """Verify the story's claimed File List against the tree (plan §1.4 code-verify).
+
+    The File List is the dev's own claim about what changed; nothing has ever checked it.
+    A path that does not exist means the claim is wrong, the file was renamed, or the work
+    is on a branch that never landed - all three are close-out blockers."""
+    files = wf.find_story_files(project, key)
+    if len(files) != 1:
+        return  # missing/ambiguous story files are check_surfaces' report
+    text = wf.read_text(files[0])
+    m = _FILELIST_RE.search(text)
+    if not m:
+        rep.warn("file-list", f"{files[0].name}: no `File List` section - "
+                              f"nothing to verify the change set against")
+        return
+    body: list[str] = []
+    for line in text[m.end():].splitlines():
+        if line.lstrip().startswith("#") or re.match(r"^\s*\*\*[A-Z]", line):
+            break
+        body.append(line)
+    claimed: list[str] = []
+    for cand in _PATH_RE.findall("\n".join(body)):
+        if cand not in claimed:
+            claimed.append(cand)
+    if not claimed:
+        rep.warn("file-list", f"{files[0].name}: File List section has no file paths")
+        return
+
+    tracked = {ln.strip() for ln in
+               wf.git(["ls-files"], project).stdout.splitlines() if ln.strip()}
+    missing, untracked, ok = [], [], 0
+    for c in claimed:
+        if c in tracked:
+            ok += 1
+        elif (project / c).exists():
+            untracked.append(c)
+        else:
+            missing.append(c)
+    rep.info("file-list", f"{ok}/{len(claimed)} claimed file(s) tracked at HEAD")
+    for c in untracked:
+        rep.warn("file-list", f"claimed but UNTRACKED: {c} - never committed")
+    for c in missing:
+        rep.err("file-list", f"claimed but ABSENT: {c} - renamed, or the work never landed")
+
+
 def check_budget(project: Path, rep: wf.Report) -> None:
     path = project / wf.ACTIVE_CONTEXT_REL
     if not path.is_file():
@@ -166,23 +274,22 @@ def check_budget(project: Path, rep: wf.Report) -> None:
         "budget", f"active-context {size} bytes (~{round(size / 4)} tokens, budget 20480)")
 
 
-def check_gates(project: Path, story: str, require: list[str], rep: wf.Report) -> None:
+def check_gates(project: Path, story: str, require: list[str], rep: wf.Report,
+                sha: str | None = None) -> None:
+    """Delegates to gate_receipt so the two tools can never disagree about 'stale' -
+    they had two different definitions, and the stricter one was wrong."""
     if not require:
         return
-    head = wf.git_head(project)
-    gate_dir = project / wf.GATES_REL / wf.norm_id(story)
+    target = sha or wf.git_head(project)
     for gate in require:
-        path = gate_dir / f"{gate}.json"
-        if not path.is_file():
+        if not (gr.receipt_dir(project, story) / f"{gate}.json").is_file():
+            # WARN, not ERROR: ruling 2026-08-02 keeps the receipt gate advisory for one
+            # sprint. gate_receipt's own `check` is where the hard block lives.
             rep.warn("gates", f"{gate}: no receipt (gate_receipt.py run ...)")
             continue
-        d = json.loads(path.read_text(encoding="utf-8"))
-        if d.get("result") != "pass":
-            rep.err("gates", f"{gate}: {d.get('result')} (exit {d.get('exit_code')})")
-        elif head and d.get("sha") != head:
-            rep.err("gates", f"{gate}: stale - passed at {str(d.get('sha'))[:8]}, HEAD {head[:8]}")
-        else:
-            rep.info("gates", f"{gate}: pass @ {str(d.get('sha'))[:8]}")
+        data = gr.load_receipt(project, story, gate, rep)
+        if data is not None:
+            gr.check_receipt(project, data, gate, target, rep)
 
 
 def check_epic(project: Path, key: str, rep: wf.Report) -> None:
@@ -214,7 +321,9 @@ def main() -> int:
     ap.add_argument("--story", required=True)
     ap.add_argument("--project")
     ap.add_argument("--worktree", help="the story's worktree, checked for sync too")
+    ap.add_argument("--branch", help="the story's branch, when it is not named after the story")
     ap.add_argument("--require-gates", default="", help="comma-separated gate names")
+    ap.add_argument("--sha", help="check gate receipts against THIS commit, not HEAD")
     ap.add_argument("--fetch", action="store_true", help="fetch first (network)")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
@@ -230,7 +339,7 @@ def main() -> int:
 
     rep = wf.Report()
     rep.info("story", f"{key} = {board[key]['status']}")
-    check_landed(project, key, rep)
+    check_landed(project, key, rep, args.branch)
     check_sync("project", project, args.fetch, rep)
     lobby = wf.find_lobby_root(Path.cwd())
     if lobby and lobby != project:
@@ -240,9 +349,10 @@ def main() -> int:
     check_worktrees(project, rep)
     check_surfaces(project, key, rep)
     check_artifacts(project, key, rep)
+    check_file_list(project, key, rep)
     check_budget(project, rep)
     check_gates(project, args.story,
-                [g.strip() for g in args.require_gates.split(",") if g.strip()], rep)
+                [g.strip() for g in args.require_gates.split(",") if g.strip()], rep, args.sha)
     check_epic(project, key, rep)
 
     if args.json:

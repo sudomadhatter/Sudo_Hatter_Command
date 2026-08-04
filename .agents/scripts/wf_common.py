@@ -142,6 +142,41 @@ def norm_id(s: str) -> str:
     return s.lower().replace(".", "-").strip()
 
 
+def slug_matches(want: str, have: str) -> bool:
+    """Story-id containment WITH a separator guard.
+
+    A bare `startswith` makes `21-8` match `21-8b-demo-data-quarantine`, so a SIBLING's
+    artifacts can satisfy — or block — the wrong story's close-out. Only an exact match or
+    a match ending at a `-` boundary counts."""
+    want, have = norm_id(want), norm_id(have)
+    return want == have or want.startswith(have + "-") or have.startswith(want + "-")
+
+
+_ID_RE = re.compile(r"^(\d+(?:-\d+)*[a-z]?)")
+
+
+def story_id(key: str) -> str:
+    """The bare numeric id from a board key: `21-8b-demo-data-quarantine` -> `21-8b`.
+    Branch names and worktree dirs carry the id, never the whole key."""
+    m = _ID_RE.match(norm_id(key))
+    return m.group(1) if m else norm_id(key)
+
+
+def commit_exists(repo: Path, sha: str) -> bool:
+    return git(["cat-file", "-e", f"{sha}^{{commit}}"], repo).returncode == 0
+
+
+def same_tree(repo: Path, a: str, b: str) -> bool | None:
+    """Do two commits have identical CONTENT? None if either is unknown here.
+
+    Staleness must compare TREES, not SHAs. A story branch that lands via a merge commit
+    produces a different HEAD with an identical tree — SHA equality calls that stale and
+    blocks a perfectly good gate, which is how a hard gate earns a permanent `--advisory`."""
+    if not (commit_exists(repo, a) and commit_exists(repo, b)):
+        return None
+    return git(["diff", "--quiet", a, b], repo).returncode == 0
+
+
 def find_story_files(project_root: Path, key: str) -> list[Path]:
     """Story files exist in BOTH naming forms (story-21.8b-* and story-21-8b-*), and a
     file's slug may be a prefix of the board key (or vice versa). Exact match wins."""
