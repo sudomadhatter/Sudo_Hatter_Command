@@ -21,7 +21,7 @@ Maintenance scripts (MASTER here): `check_maps.py` (drift linter), `generate_rep
 
 A file that legitimately **carries** those bytes as data — the detector's own constants, its fixtures, a doc quoting them — declares `wf-lint: allow-encoding-literals` and is skipped. Without it the gate blocks every commit that touches the gate.
 
-Tests: `python .agents/scripts/tests/run_all.py` (94 cases across 5 files, stdlib only, no pytest). One test file per script. Each script is covered by the defect that motivated it, plus a positive control — a checker that reports nothing looks identical whether it is clean or dead, and a checker that reports *everything* gets muted. Both failures are represented.
+Tests: `python .agents/scripts/tests/run_all.py` (95 cases across 5 files, stdlib only, no pytest). One test file per script. Each script is covered by the defect that motivated it, plus a positive control — a checker that reports nothing looks identical whether it is clean or dead, and a checker that reports *everything* gets muted. Both failures are represented.
 
 ## Top-level contents
 <!-- auto-listed by /update-maps-indexes — refresh via /update-maps-indexes; do not hand-edit entries -->
