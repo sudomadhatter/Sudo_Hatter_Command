@@ -14,7 +14,9 @@ Maintenance scripts (MASTER here): `check_maps.py` (drift linter), `generate_rep
 
 `gate_receipt.py` has no `--result` flag by design: it EXECUTES the gate and writes the receipt from the real exit code, so a verdict cannot be handed in. All flags precede `--`; everything after it is the gate command verbatim. Staleness compares **trees, not SHAs** — a branch that lands via a merge commit has a new HEAD and identical content, and calling that stale is how a hard gate earns a permanent `--advisory`.
 
-Tests: `python .agents/scripts/tests/run_all.py` (60 cases, stdlib only, no pytest). One test file per script. Each script is covered by the defect that motivated it, plus a positive control — a checker that reports nothing looks identical whether it is clean or dead, and a checker that reports *everything* gets muted. Both failures are represented.
+`workflow_lint.py --staged [--fix]` is the **pre-commit encoding gate** (Wave 5): staged files only, encoding only, so it stays fast enough not to get disabled. Install it per clone with `git-hooks/install-encoding-hook.ps1 [-All]` — `.git/` never travels, so every machine installs once. It refuses to clobber an existing `pre-commit` hook, and `scripts/git-hooks/DISABLE` (untracked) is the kill switch. `--fix` repairs only *unambiguous* cp1252 round-trips; everything less certain is reported, never rewritten.
+
+Tests: `python .agents/scripts/tests/run_all.py` (64 cases, stdlib only, no pytest). One test file per script. Each script is covered by the defect that motivated it, plus a positive control — a checker that reports nothing looks identical whether it is clean or dead, and a checker that reports *everything* gets muted. Both failures are represented.
 
 ## Top-level contents
 <!-- auto-listed by /update-maps-indexes — refresh via /update-maps-indexes; do not hand-edit entries -->

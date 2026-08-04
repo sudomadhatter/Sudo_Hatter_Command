@@ -135,7 +135,13 @@ def parse_board(board_text: str) -> dict[str, dict]:
 
 
 def is_story_key(key: str) -> bool:
-    return not key.startswith("epic-") and not key.endswith("-retrospective")
+    """A board key that OWES a story file under `_bmad/bmm/stories/`.
+
+    Three kinds legitimately have none: an `epic-*` umbrella, a `*-retrospective`, and a
+    `quick-fix-*` track — the quick-fix ruling (2026-08-03) says a quick fix mints NO story
+    file and NO epic key on purpose, so demanding one reports the rule itself as a defect."""
+    return (not key.startswith(("epic-", "quick-fix-"))
+            and not key.endswith("-retrospective"))
 
 
 def norm_id(s: str) -> str:

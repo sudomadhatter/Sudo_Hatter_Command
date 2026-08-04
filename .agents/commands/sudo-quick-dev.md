@@ -5,6 +5,9 @@ platforms: [opencode, antigravity, claude, codex]
 
 # /sudo-quick-dev — Fast-Track Development (fast lane, guarded)
 
+> **Rules in force for this command:**
+> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
+
 Thin orchestrator for SMALL fixes. It keeps the speed — bypasses red-phase test writing
 (`sudo-write-story-tests`), planning approval gates, and the adversarial review (`sudo-code-review`) —
 and keeps the safety through four cheap guards: a worktree, an eject tripwire, scoped verification,

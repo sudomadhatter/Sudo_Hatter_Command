@@ -5,6 +5,9 @@ platforms: [opencode, antigravity]
 
 # /sudo-update-sprint-memory — Session End (close-out)
 
+> **Rules in force for this command:**
+> - `.agents/rules/worktree-per-story.md` — one worktree per story, resolve-or-STOP, never delete through a junction
+
 Self-contained, project-scoped — targets THIS repo's `_bmad-output/`. Run as the last step closing a story
 (or any dev / brainstorm / research session). **Active-context holds STATE, not history** — narratives go to
 the walkthrough + git, durable cross-session facts to Claude's auto-memory; this keeps `active-context.md`
@@ -33,6 +36,26 @@ Echo `Base: current with origin/main_debug @ <sha>`. Step 7 re-merges as a cheap
 what makes the board edits land clean. If another lane closed out while you worked, its board line is now
 in front of you — **read it before you write yours**, and never delete a line you did not add.
 
+## Step 0.6 — Preflight: one call instead of ten (AUTOMATIC, never ask)
+
+Run it before reading anything. It answers, mechanically, every question Steps 1–2 and 7–8 used to
+answer by hand — and each of those has been silently wrong at least once:
+
+```bash
+python .agents/scripts/closeout_preflight.py --story <id> --project <PROJECT> --fetch \
+       [--branch <name>] [--worktree <path>] [--require-gates suite,ruff,pyrefly]
+```
+
+It reports: did the code land on `main_debug` · is every repo `0/0` and clean · are the registered
+worktrees LIVE/LOST/HUSK · do both status surfaces agree · does the walkthrough carry a `Verdict:`
+(with the pre-2026-08-02 standalone-file fallback) · is that verdict stale against HEAD · does the
+story's **File List** still exist in the tree · is `active-context` inside budget · did the required
+gates actually run at this commit · can the epic close.
+
+**Exit 2 = BLOCKED — resolve before flipping anything. Exit 1 = warnings: read them, they do not
+block.** A warning that says *"landing was NOT verified"* means exactly that — it is not a pass.
+Paste the block into the close-out summary; it IS the evidence for Steps 1, 2, 7b and 8.
+
 ## Step 1 — Read current state & this session's artifacts (scoped — no needless whole-file reads)
 1. `_bmad-output/active-context/active-context.md` — full (about to prune it).
 2. `_bmad-output/implementation-artifacts/sprint-status.yaml` — **Grep THIS story's id; read only its epic block + line**, never all 400+ lines.
@@ -44,6 +67,10 @@ in front of you — **read it before you write yours**, and never delete a line 
 Report: sprint objective, story status, plan-vs-walkthrough deltas, # known pitfalls.
 
 ## Step 2 — Verify the claimed work exists on disk (grep-check — NOT a code review)
+**Step 0.6 already did the file-level half**: its `file-list` lines check every path the story CLAIMED
+it changed against the tree — tracked ✅ / untracked-never-committed ⚠️ / absent ❌. Do not redo it by
+hand; an `ERROR: claimed but ABSENT` there means the work was renamed or never landed, and it blocks.
+What remains for you is the *semantic* half — that the named fix is actually present in those files.
 Code-verify the story/task you just closed: grep its fix/feature in the files it touched, mark
 `✅ Code-Verified` / `❌ Not Found` / `⚠️ Partial`. After an /autopilot run it's already tests-green +
 QA-approved — a confirming grep is enough; don't re-run the suites. Only RE-verify a pre-existing
@@ -69,10 +96,24 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
   the record actually lives (the map in `/sudo-prune-context`). The narrative goes in `sprint-status.yaml`'s
   story line + the walkthrough, NEVER here — active-context POINTS at information, it does not restate it.
 - **Completed tasks**: move `✅` items to `## Completed Tasks` with `- **Resolved:** YYYY-MM-DD` (pointer form).
-- **Story-status → `done` (this command's PRIMARY purpose).** Daniel invoking this **IS his sign-off** —
-  **flip the just-closed story to `done` by default, without asking**, in BOTH the story file
-  (`_bmad/bmm/stories/…` frontmatter) AND `sprint-status.yaml`. Print `Closing <story>: review → done`.
+- **Story-status → `done` (this command's PRIMARY purpose).** The operator invoking this **IS the
+  sign-off** — **flip the just-closed story to `done` by default, without asking.** Do it with the
+  script, never by hand-editing two files:
+
+  ```bash
+  python .agents/scripts/story_status.py set <id> done --project <PROJECT>
+  ```
+
+  It writes the story frontmatter **and** the board key in one operation **or neither** — the two
+  surfaces drifted apart repeatedly when this was two manual edits (six stories were found drifted on
+  2026-08-03 alone). It refuses a downgrade, refuses an unknown status, and refuses outright if the two
+  surfaces already disagree — that case needs `--reconcile`, which is a decision, not a default.
+  It prints `board X -> Y, frontmatter X -> Y`; echo that as `Closing <story>: review → done`.
   Idempotent: only `ready-for-dev`/`in-progress`/`review` advance; never downgrade.
+  - **Gate evidence (advisory this sprint, hard after):** if the story recorded gate receipts, confirm
+    them before the flip — `python .agents/scripts/gate_receipt.py check --story <id> --require
+    <gates> --advisory`. A receipt proves the gate RAN, at which commit; prose cannot.
+    ⏳ Remove `--advisory` at the close of the first full sprint after this landed (ruling 2026-08-02).
   - **ONLY objectively-red tests block the flip.** Read the **`Verdict: … @ <sha>`** line in the story
     walkthrough's `## Code Review` section (stories closed before 2026-08-02 keep the old standalone
     verdict — fall back to `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md` when the
@@ -86,6 +127,18 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
     The red-tests **FAIL** is the only refusal.
   - **"commit owed" is NOT a blocker** — the agent commits its own work in the story worktree, and Step 7
     lands it. Nothing about git blocks the status flip.
+- **Epic closure — do it in the SAME pass, never leave it to be noticed later.** An umbrella cannot
+  close itself: when every child of this story's epic is terminal (`done`/`descoped`), the epic key is
+  the only thing still holding it open, and a stale-open epic keeps recommending finished work.
+  Step 0.6's `epic` line already answers this — `epic-N is 'X' but ALL n children are terminal - it can
+  close now`. When it says that:
+  1. diff `_bmad-output/planning-artifacts/epics.md` against the board keys 1:1 — a child that exists in
+     one and not the other is the real finding, and it is NOT closeable yet;
+  2. flip the epic key with `story_status.py set epic-N done --project <PROJECT>`;
+  3. update the epic's status line in `epics.md` in the same edit — the two rot independently.
+  **A pending live-verify / live-QA debt does NOT hold an epic open** — same rule as the story flip
+  above. A `deferred` or `deferred-v3` child DOES: park it under a *deferred epic*, never as a parked
+  row under a finished one, or the epic can never close.
 - **Last Updated**: set to today's date at the top of `active-context.md`.
 - **`sprint-status.yaml` CHANGE LOG — one entry per line, newest first.** Add your entry as its own
   `#   YYYY-MM-DD (<story> <stage>): …` line directly under the CHANGE-LOG header block, and bump the

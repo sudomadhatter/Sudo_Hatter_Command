@@ -4,6 +4,10 @@ description: Park the session before switching machines — commit (explicit pat
 
 # /sudo-park — Park Before Switching Machines
 
+> **Rules in force for this command:**
+> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
+> - `.agents/rules/worktree-per-story.md` — one worktree per story, resolve-or-STOP, never delete through a junction
+
 Daniel works one sprint across **desktop, laptop, and mobile**. Git branches travel; **worktrees do not.**
 `.claude/worktrees/` is machine-local and not in the repo, so on the next machine `git worktree list` shows
 only the main checkout. **Anything not pushed is stranded on the box you are walking away from.**

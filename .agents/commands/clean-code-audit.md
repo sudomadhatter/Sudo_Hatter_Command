@@ -5,6 +5,10 @@ platforms: [opencode, antigravity]
 
 # /clean-code-audit — Is this code clean, and can you prove it?
 
+> **Rules in force for this command:**
+> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
+> - `.agents/rules/sudo-target-resolution.md` — bind ONE target, never operate on the lobby
+
 Checks a **diff** against `.agents/rules/code-standards.md` — the one house definition of clean. Two
 halves: the **machine floor** (objective, can FAIL) and the **judgment pass** (taste, caps at CONCERNS).
 

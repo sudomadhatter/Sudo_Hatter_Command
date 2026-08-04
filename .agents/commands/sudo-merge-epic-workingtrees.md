@@ -5,6 +5,9 @@ platforms: [opencode, antigravity]
 
 # /sudo-merge-epic-workingtrees — Close Out ALL Parallel Story Lanes in One Shot
 
+> **Rules in force for this command:**
+> - `.agents/rules/worktree-per-story.md` — one worktree per story, resolve-or-STOP, never delete through a junction
+
 Up to four story lanes (sometimes more) run at once, and lanes of one epic descend on the same
 surfaces. Closing them one-by-one without looking sideways ships what no single lane ever saw: two
 lanes editing one function, the same fix landed twice, board files colliding, and **semantic breaks

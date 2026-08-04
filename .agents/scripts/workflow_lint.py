@@ -63,6 +63,37 @@ def check_commands(lobby: Path, rep: wf.Report) -> None:
         rep.warn("commands-index", "commands/INDEX.md missing or empty")
 
 
+# A command that DOES the thing must POINT at the rule governing it. Note the direction:
+# the invariant is "the pointer exists", never "the prose is deleted". The standing
+# obligations stay restated inline on purpose - agents follow the literal step list, and a
+# bare pointer gets skipped (memory: restate-alwayson-obligations-in-command-bodies).
+_RULE_POINTERS = (
+    ("git-policy", "git-mutating",
+     re.compile(r"git (?:commit|push|add|merge|rebase|reset)\b|"
+                r"git checkout -b|git branch -[Dd]\b")),
+    ("worktree-per-story", "worktree",
+     re.compile(r"git worktree\b")),
+    ("sudo-target-resolution", "target-resolving",
+     re.compile(r"^#+\s*Step 0\b.*(?:target|project)", re.I | re.M)),
+)
+
+
+def check_rule_pointers(lobby: Path, rep: wf.Report) -> None:
+    """Scans RAW text, not strip_code'd prose. In a command file a backticked `git commit`
+    is an INSTRUCTION the agent will run, not a quoted example - the opposite of the
+    mojibake case, where the backticks mean "this is what NOT to write"."""
+    cmd_dir = lobby / ".agents" / "commands"
+    for f in sorted(cmd_dir.glob("*.md")):
+        if f.name == "INDEX.md":
+            continue
+        text = wf.read_text(f)
+        for rule, label, pattern in _RULE_POINTERS:
+            if pattern.search(text) and rule not in text:
+                rep.warn("rule-pointers",
+                         f"{f.name}: {label} but never points at "
+                         f"`.agents/rules/{rule}.md`")
+
+
 def _last_commit_ts(path: Path, cwd: Path) -> int | None:
     r = wf.git(["log", "-1", "--format=%ct", "--", str(path)], cwd)
     out = r.stdout.strip()
@@ -262,17 +293,77 @@ def scan_encoding(paths: list[tuple[str, Path]], rep: wf.Report) -> None:
             rep.warn("encoding", f"{label}: ~{hits} mojibake digraph(s) (cp1252 round-trip)")
 
 
+# cp1252 round-trip repairs that are UNAMBIGUOUS: each left side is a byte sequence that
+# cannot arise from correctly-encoded text in these documents. Anything less certain is
+# reported, never rewritten - "fixing" a clean file is the failure mode this guards
+# (memory: powershell-console-fakes-mojibake).
+_REPAIRS = {"â€”": "—", "â€“": "–", "â€˜": "‘", "â€™": "’",
+            "â€œ": "“", "â€": "”", "â€¦": "…", "Â ": " ", "Â·": "·"}
+
+
+def staged_files(repo: Path) -> list[Path]:
+    r = wf.git(["diff", "--cached", "--name-only", "--diff-filter=ACMR"], repo)
+    out = []
+    for line in r.stdout.splitlines():
+        p = repo / line.strip()
+        if line.strip() and p.is_file() and p.suffix.lower() in (
+                ".md", ".py", ".yaml", ".yml", ".json", ".ts", ".tsx", ".js", ".sh", ".ps1"):
+            out.append(p)
+    return out
+
+
+def cmd_staged(fix: bool) -> int:
+    """Pre-commit gate: encoding only, on STAGED files only, and fast.
+
+    A full lint here would make every commit slow and the hook would be disabled within a
+    week. Encoding is the right thing to gate at commit time because it is the one defect
+    that is invisible in review - a PS 5.1 console renders good UTF-8 as mojibake anyway."""
+    repo = Path(wf.git(["rev-parse", "--show-toplevel"], Path.cwd()).stdout.strip() or ".")
+    files = staged_files(repo)
+    if not files:
+        return 0
+    rep = wf.Report()
+    scan_encoding([(str(p.relative_to(repo)), p) for p in files], rep)
+    if fix:
+        for p in files:
+            text = wf.read_exact(p)
+            new = text
+            for bad, good in _REPAIRS.items():
+                new = new.replace(bad, good)
+            if new != text:
+                wf.write_exact(p, new)
+                print(f"[FIXED] {p.relative_to(repo)} - re-stage it")
+        return 0
+    errs, _ = rep.counts()
+    if rep.items:
+        rep.print_human("pre-commit encoding gate")
+    if errs:
+        print("\nCOMMIT BLOCKED: undecodable bytes in a staged file.")
+        print("  inspect : python .agents/scripts/workflow_lint.py --staged")
+        print("  repair  : python .agents/scripts/workflow_lint.py --staged --fix   (then re-stage)")
+        print("  bypass  : git commit --no-verify   (say why in the message)")
+    return 2 if errs else 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Workflow invariants linter (Wave 1.1)")
     ap.add_argument("--project", help="project name under Projects/ or a path")
+    ap.add_argument("--staged", action="store_true",
+                    help="pre-commit mode: encoding scan of staged files only")
+    ap.add_argument("--fix", action="store_true",
+                    help="with --staged: repair unambiguous cp1252 round-trips in place")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
+
+    if args.staged:
+        return cmd_staged(args.fix)
 
     rep = wf.Report()
     scan: list[tuple[str, Path]] = []
     lobby = wf.find_lobby_root(Path.cwd())
     if lobby:
         check_commands(lobby, rep)
+        check_rule_pointers(lobby, rep)
         check_ap_twins(lobby, rep)
         scan += [(f"commands/{f.name}", f)
                  for f in sorted((lobby / ".agents" / "commands").glob("*.md"))]

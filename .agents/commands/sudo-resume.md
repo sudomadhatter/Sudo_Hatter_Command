@@ -4,6 +4,9 @@ description: Resume a sprint on a machine you just switched to — fetch both re
 
 # /sudo-resume — Pick The Sprint Back Up On This Machine
 
+> **Rules in force for this command:**
+> - `.agents/rules/worktree-per-story.md` — one worktree per story, resolve-or-STOP, never delete through a junction
+
 Daniel works one sprint across **desktop, laptop, and mobile**. Git branches travel; **worktrees do not.**
 `.claude/worktrees/` is machine-local and not in the repo, so on a machine you just switched to
 `git worktree list` shows only the main checkout — and every `sudo-` step reads that as *"no tree, fresh

@@ -4,6 +4,9 @@ description: Push & promote with the E2E gate — push main_debug, or promote ma
 
 # /sudo-push-e2e — Push, Gate, Promote, Deploy
 
+> **Rules in force for this command:**
+> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
+
 The one shipping command. It moves verified work from the development line (`main_debug`) toward the
 production line (`main`), and it **refuses to touch `main` until the end-to-end suite is green**.
 

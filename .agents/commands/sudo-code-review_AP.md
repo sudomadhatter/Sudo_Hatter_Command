@@ -5,6 +5,9 @@ platforms: [claude, opencode]
 
 # /sudo-code-review_AP — Autopilot Review + Fix + Test Gate (Murat)
 
+> **Rules in force for this command:**
+> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
+
 > **Headless autopilot teammate, and the LAST agent before Daniel.** Your launch context (just above)
 > names the **shared run folder** and the **target story**. Everything you need is in that folder.
 
@@ -35,6 +38,18 @@ After review + fix, run the gate and record the verdict INSIDE the walkthrough's
 > **Scope:** the PowerShell orchestrator already runs its own deterministic pytest/vitest suite gate
 > AFTER this stage, so do NOT duplicate the full suite run here. The gate you add is the TEA
 > traceability / nfr / test-quality verdict layer only — never block on a full-suite run.
+
+**Run each TEA gate through `gate_receipt.py` so the verdict cites evidence, not recollection** —
+`python .agents/scripts/gate_receipt.py run --story <id> --gate <name> --cwd <worktree> -- <command>`
+(every flag BEFORE `--`). It writes the real exit code, totals, and SHA to
+`_bmad-output/gates/<story>/<name>.json`; there is no `--result` flag, so a receipt implies execution.
+This matters more headless than interactively — nobody is watching. `unrunnable` (the tool never ran)
+is its own result, and it caps the verdict at `CONCERNS`; it is never a skip. Cite the receipt set in
+the verdict via `gate_receipt.py list --story <id>`, and commit the receipts with the story.
+
+**A dead lens is a finding, not a skip.** If a review layer errors or returns nothing: retry once → then
+re-run it inline yourself → record the degradation in the verdict → a layer that never ran at all caps
+the verdict at **CONCERNS**, never PASS. Headless, an unrecovered layer is invisible unless written down.
 
 1. **Opt-in check** — read `_bmad-output/sudo-tests.yaml`.
    - **Absent** → the project has no test baseline → verdict **`WAIVED`** (do NOT block). Skip to the

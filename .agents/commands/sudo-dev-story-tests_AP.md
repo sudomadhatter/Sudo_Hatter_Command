@@ -5,6 +5,9 @@ platforms: [claude, opencode]
 
 # /sudo-dev-story-tests_AP — Autopilot Test-First Dev (Amelia)
 
+> **Rules in force for this command:**
+> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
+
 > **Headless autopilot teammate.** Your launch context (just above this command) names the **shared run
 > folder** and the **target story** — do all your work inside that one folder, and read prior teammates'
 > artifacts there for your direction. `$ARGUMENTS` is your **mode**: `plan` or `implement`.

@@ -5,6 +5,9 @@ platforms: [opencode, antigravity, codex]
 
 # /security_team_aviationchat — Incident Triage Drill Harness
 
+> **Rules in force for this command:**
+> - `.agents/rules/sudo-target-resolution.md` — bind ONE target, never operate on the lobby
+
 Thin harness. Its **entire job** is to execute a project's canonical triage runbook
 (`.github/claude/incident-triage.md`) against a Sentry issue, in the **interactive lane**, and drop the
 report in that project's artifacts. It exists **solely to run/drill the runbook** — the runbook is the

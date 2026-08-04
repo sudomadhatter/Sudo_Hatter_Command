@@ -31,12 +31,38 @@ in the shared checkout is a SIBLING lane's, not evidence. Echo the story's ①�
 ## Step 1 — Clean-Room Adversarial Code Review
 Invoke the **`bmad-code-review`** skill on the story's diff. You MUST act as a **Clean-Room** agent: zero out any builder's bias. Your only job is to aggressively audit the final diff against the strict BDD contract. Hunt specifically for **AI Drift**, over-engineering, bloat, unnecessary abstractions, and logic flaws. **Ordering (deliberate): run the blind hunt on the DIFF first — open ②'s `walkthrough.md` and plan only AFTER it**, for claimed evidence, plan-vs-built deviations, and the `## Your Actions` rows; reading the builder's story before hunting imports exactly the bias this step exists to zero out. Apply the actionable fixes yourself; if you change code, re-run the relevant suite(s) — scoped, not full; the ONE full-suite run lands after your last change (Step 3.1) — and paste actual output.
 
+**Subagent-failure contract (a dead layer is a FINDING, never a silent skip).** This review runs as
+several parallel lenses; on 2026-08-02 two of four died and recovery was improvised. When any layer
+errors, times out, or returns nothing:
+1. **Retry it once.** Transient tool/API failures are the common case.
+2. **Still failing → re-run that lens INLINE yourself**, in this context. A lens is a prompt, not a
+   privileged tool; losing the parallelism costs time, not coverage.
+3. **Record the degradation in the verdict** — name the layer, the failure, and how it was recovered.
+   "4 layers ran" and "3 ran plus 1 rerun inline" are different evidence and must read differently.
+4. **A layer that never ran at all caps the verdict at `CONCERNS`.** Not PASS. An unexamined surface is
+   an unknown, and an unknown is not a pass — the same rule as a missing tool in Step 3.5.
+
 ## Step 2 — Gate: opt-in check
 Read `_bmad-output/sudo-tests.yaml`.
 - **Absent** → the project has no test baseline → verdict **`WAIVED`** (do NOT block). Skip to Step 4.
 - **Present** → it defines `required_tiers · l1_coverage_min · agent_bearing · nfr · waive`. Continue.
 
 ## Step 3 — Gate: run the checks (baseline-diff aware — fail only on NEW regressions)
+
+**Run every gate through `gate_receipt.py` — the verdict then cites evidence, not recollection.**
+
+```bash
+python .agents/scripts/gate_receipt.py run --story <id> --gate suite --cwd <worktree> \
+       -- <the real command>          # EVERY flag precedes `--`; after it is the command verbatim
+```
+
+It executes the command, records the true exit code, the parsed totals **from the tool's own summary
+line**, the git SHA, and whether the tree was dirty, into `_bmad-output/gates/<story>/<gate>.json`.
+There is **no `--result` flag** — a verdict cannot be handed in, so a receipt implies execution. Commit
+the receipts with the story: the evidence then rides the branch through the merge, and close-out can
+re-check it without re-running anything. Three results, not two — `unrunnable` (the tool never ran) is
+distinct from `fail`, because per Step 3.5 a missing tool is a **finding, not a skip**.
+
 1. **Suite — ONE full run, measured on the FINAL SHA (diff-scoped stacks).** Stacks in scope = the ones
    the diff touched (backend pytest via `backend/.venv` with the project's canonical runner flags — the ONE
    source of truth is the runner AIDEV-NOTE in `backend/requirements.txt`; frontend vitest). Run the OTHER stack only when the diff touched a shared cross-boundary surface (API/SSE
@@ -123,7 +149,9 @@ new one. The section carries:
   disposition applied / deferred / dismissed) — the only copy anywhere; the story file links here,
   never restates,
 - each gate check's result in one line + the **actual** suite totals (runs also ledgered in
-  `## Suite Ledger`),
+  `## Suite Ledger`), each **citing its receipt** — `suite: pass @ <sha> (gates/<story>/suite.json)`.
+  Run `gate_receipt.py list --story <id>` and paste the block; an `unrunnable` row is a finding that
+  caps the verdict at CONCERNS, and a gate with no receipt was not run, whatever the prose says,
 - a `### Clean-Code Gate` subsection carrying Step 3.5's findings table and its pasted tool output.
 - **FAIL** = a new test regression, a required tier missing, **or** a Step 3.5 machine-floor error on a
   changed line / a banned pattern shipped (bare `except:`, `any`, a committed secret).

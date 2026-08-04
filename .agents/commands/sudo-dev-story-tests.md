@@ -5,6 +5,9 @@ platforms: [opencode, antigravity]
 
 # /sudo-dev-story-tests — Plan → Self-Audit → Implement → Automate (②)
 
+> **Rules in force for this command:**
+> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
+
 Thin orchestrator — builds the story against ①'s red tests and ends with expanded coverage. Project-scoped
 (targets THIS repo).
 

@@ -5,6 +5,9 @@ platforms: [claude]
 
 # /autopilot_mobile — Autonomous Story Pipeline (cloud/mobile)
 
+> **Rules in force for this command:**
+> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
+
 > **Why this exists.** The local `/autopilot_claude` drives `powershell.exe` + nested `claude` CLI
 > subprocesses — neither exists in the Claude Code web/mobile environment. This command does the same
 > job with the in-environment **Workflow** tool: 4 stages, each a **fresh-context subagent**, handing

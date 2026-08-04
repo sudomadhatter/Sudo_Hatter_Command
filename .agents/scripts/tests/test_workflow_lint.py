@@ -11,7 +11,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from _harness import Cases, TempDir
+from _harness import SCRIPTS, Cases, TempDir
 
 import wf_common as wf          # noqa: E402
 import workflow_lint as lint    # noqa: E402
@@ -85,6 +85,49 @@ def main() -> int:
                 str(msgs)[:120])
         c.check("F7 _main/ initiative plans are out of scope",
                 not any("some-initiative" in m for _, m in msgs), str(msgs)[:120])
+
+        # ── Wave 5: the pre-commit encoding gate ──────────────────────────────
+        # A gate that blocks nothing and a gate that blocks everything both end up
+        # disabled, so both directions are asserted.
+        import subprocess
+        repo = tmp / "hookrepo"
+        (repo / ".agents/scripts").mkdir(parents=True)
+        for f in ("wf_common.py", "workflow_lint.py"):
+            (repo / ".agents/scripts" / f).write_bytes((SCRIPTS / f).read_bytes())
+        subprocess.run(["git", "init", "-q"], cwd=repo)
+        subprocess.run(["git", "config", "user.email", "t@t.t"], cwd=repo)
+        subprocess.run(["git", "config", "user.name", "t"], cwd=repo)
+
+        def staged(*names: str, fix: bool = False) -> tuple[int, str]:
+            subprocess.run(["git", "add", *names], cwd=repo, capture_output=True)
+            r = subprocess.run(
+                [sys.executable, str(repo / ".agents/scripts/workflow_lint.py"),
+                 "--staged"] + (["--fix"] if fix else []),
+                cwd=repo, capture_output=True, text=True, errors="replace")
+            return r.returncode, r.stdout + r.stderr
+
+        (repo / "clean.md").write_bytes("Rebuild the board — then stamp it.\n".encode("utf-8"))
+        code, _ = staged("clean.md")
+        c.check("W5 clean UTF-8 does not block a commit", code == 0, f"exit={code}")
+
+        (repo / "broken.md").write_bytes(b"text then a bad byte: \xff\xfe done\n")
+        code, out = staged("broken.md")
+        c.check("W5 undecodable bytes BLOCK the commit",
+                code == 2 and "COMMIT BLOCKED" in out, f"exit={code}")
+
+        (repo / "moji.md").write_bytes("board â€” then\n".encode("utf-8"))
+        code, out = staged("moji.md", fix=True)
+        c.check("W5 --fix repairs a cp1252 round-trip to a real em dash",
+                "—" in (repo / "moji.md").read_text(encoding="utf-8"),
+                repr((repo / "moji.md").read_text(encoding="utf-8"))[:60])
+
+        # `git add` is cumulative - broken.md is still in the index from the case above,
+        # and leaving it there would make this assert the wrong thing entirely.
+        subprocess.run(["git", "reset", "-q"], cwd=repo, capture_output=True)
+        (repo / "untouched.md").write_bytes(b"not staged \xff\xfe\n")
+        code, _ = staged("moji.md")
+        c.check("W5 an UNSTAGED broken file is not the commit's problem",
+                code == 0, f"exit={code}")
     return c.finish()
 
 
