@@ -1,4 +1,4 @@
-# ⚠️ Migration — every OTHER machine needs its venv rebuilt (Python 3.11 + test-infra overhaul + vitest suite lock, 2026-08-01)
+# ⚠️ Migration — every OTHER machine needs its venv rebuilt (Python 3.11 + test-infra overhaul + vitest suite lock, 2026-08-01; gate went PARALLEL 2026-08-03)
 
 Part of the `_my_resources/migrations/` kit — the Python/venv companion to
 [`new_machine-migration-guide.md`](new_machine-migration-guide.md) (which covers secrets;
@@ -26,9 +26,20 @@ old venv, and:
 - pytest does **NOT** check `requires-python` — a stale 3.14 venv will happily keep running
   tests on the wrong interpreter, and local green goes back to being a lie **on that machine
   only**. Nothing warns you. (Only pip and the CI assert step enforce the declaration.)
-- Parallel runs (`-n auto`) are available but **opt-in for now** — gate runs stay serial until
-  the xdist tail-hang follow-up closes (see AGY active-context). An old venv without
-  `pytest-xdist` fails loudly with `unrecognized arguments: -n` if you do opt in.
+- **Parallel runs are the GATE MODE since 2026-08-03** (quick fix 1.1): `-n auto --dist loadfile`,
+  matching `pr-check.yml`. This was "opt-in, gate stays serial" until then. An old venv without
+  `pytest-xdist` fails loudly with `unrecognized arguments: -n` — which on a stale machine now
+  breaks the *normal* command, not an optional one. **Nothing new to install:** `pytest-xdist` and
+  `filelock` are pinned in `backend/requirements.txt`, so the step-2 rebuild below is the whole fix.
+- ⚠️ **Name the venv `.venv` and keep it directly under `backend/`.** Several backend tests are
+  source-grep gates that walk `backend/` and read every `.py` they find; they skip virtualenvs **by
+  directory name** (`.venv*` plus a fixed list). A venv named anything else — `env311`, `pyenv`,
+  `venv3` — is walked and read instead: **16,586 files / ~273 MB per test** rather than 217. Serially
+  that is merely slow; under `-n auto` it blows the 300s timeout and pytest-timeout kills and
+  respawns the worker on every trip — **~40 minutes of `node down` churn with no error naming the
+  cause.** That is exactly the bug quick fix 1.1 closed. The guard
+  `test_scan_never_walks_a_colocated_virtualenv` now fails loudly and names the directory, but only
+  once you run the suite.
 - The suite lock needs `filelock` — without it, runs still work but print
   `[suite-lock] filelock not installed — machine serialization OFF` (fail-open by design).
 
@@ -73,13 +84,21 @@ backend\.venv\Scripts\python.exe -m pip list | Select-String "pytest-xdist|filel
 backend\.venv\Scripts\python.exe -m pytest backend\tests\test_affirmative_classifier.py -q
 #   PASS: green, starts immediately, NO [suite-lock] line
 
-# CHECK 4 — the full suite on 3.11 (the real proof; serial = the current gate mode)
-backend\.venv\Scripts\python.exe -m pytest backend\tests -q --timeout=300
-#   PASS: same totals as the laptop baseline (≈2887 passed / 32 skipped / 0 failed —
-#         exact count grows as stories land; 0 failed is the bar), in ~12 min serial.
-#   (Parallel -n auto is opt-in until the xdist tail-hang follow-up closes.)
-#   Any NEW failure here = a 3.11-vs-3.14 behavior difference on this machine's deps —
+# CHECK 4 — the full suite on 3.11, PARALLEL (the real proof; this is the gate mode since 08-03)
+backend\.venv\Scripts\python.exe -m pytest backend\tests -n auto --dist loadfile -q
+#   PASS: 0 failed. Reference totals 2026-08-03: 3024 passed / 35 skipped / 0 failed
+#         (the passed count grows as stories land; 0 failed is the bar).
+#   TIMING IS MACHINE-SPECIFIC AND NOT A SIGNAL: `-n auto` = this machine's core count, so
+#         the laptop's 8-core 262s and 4-core 207s are both healthy. Don't chase a difference.
+#   ⚠️ Workers dying with `node down` / respawns, ~5 min apart, near the end of the run =
+#         a virtualenv is being walked. Check the venv NAME (see the ⚠️ above), then run
+#         `-k test_scan_never_walks_a_colocated_virtualenv` — it names the offending directory.
+#   Any NEW failure here = a real behavior difference on this machine's deps —
 #   capture the traceback; that is a real finding, not a reason to roll back.
+
+# CHECK 4b — only if CHECK 4 is red and you need to tell "this machine" from "xdist" apart
+backend\.venv\Scripts\python.exe -m pytest backend\tests -q --timeout=300
+#   Serial, one variable. Green here + red above = a parallelism problem, not an interpreter one.
 ```
 
 ## Messages you may see that are FEATURES, not breakage
@@ -234,7 +253,7 @@ wrong one) before trusting it.
 | Which runner flags are canonical (serial vs `-n auto`) | runner AIDEV-NOTE in `backend/requirements.txt` |
 | Declared interpreter | `pyproject.toml` `requires-python` |
 | The full 2026-08-01 record (evidence, measurements, traps) | `_artifacts/_main/2026-08-01_python-env-fix/walkthrough.md` |
-| Open parallel follow-up (~8 tests hang only under `-n`) | AGY active-context → Active Tasks |
+| Why the gate went parallel, and the venv-naming hazard | `_artifacts/quick_fixes/quick-fix-1.1-xdist-tail-hang/walkthrough.md` (2026-08-03) |
 | Machine-wide suite lock, backend (queued ≠ hung) | root `conftest.py` |
 | Machine-wide suite lock, frontend | `frontend/vitest.global-setup.ts` (wired in `frontend/vitest.config.ts`) |
 | Frontend flake driver (jsdom setup/transform ≈85% of wall clock) | AIDEV-NOTE in `frontend/vitest.config.ts` + AGY active-context follow-on |

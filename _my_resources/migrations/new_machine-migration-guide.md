@@ -123,11 +123,16 @@ through each as needed:
 - **Python venvs**: rebuild per project; AGY's canonical test venv is
   `Projects/AGY_AVIATIONCHAT/backend/.venv` (never the repo root one).
   **For AGY, do NOT wing this** — follow the companion guide in this folder:
-  [`python-311-test-infra-other-machines.md`](python-311-test-infra-other-machines.md).
+  [`python_vytest-updates-other-machines.md`](python_vytest-updates-other-machines.md).
   It carries the required interpreter (**3.11**, not whatever is newest — pytest
   will NOT warn you on the wrong one), the exact rebuild commands, and the
-  4-check verification walkthrough (incl. the parallel runner + machine-wide
-  suite lock added 2026-08-01).
+  verification walkthrough (machine-wide suite lock added 2026-08-01; the gate
+  runs **parallel** — `-n auto --dist loadfile` — since 2026-08-03).
+  > **Nothing extra to install.** `pytest-xdist`, `filelock`, `pytest-timeout`
+  > and `pytest-cov` are all pinned in `backend/requirements.txt`, so the one
+  > `pip install -r backend/requirements.txt` in the companion guide is the whole
+  > job. Timings differ per machine because `-n auto` = core count — that is not
+  > a signal, so don't chase it.
   > ⚠️ **Name it `.venv`, and keep it directly under `backend/`.** Several backend
   > tests are source-grep gates that walk `backend/` and read every `.py` they
   > find. They skip virtualenvs **by directory name** — `.venv*` plus a fixed
@@ -136,7 +141,9 @@ through each as needed:
   > that is merely slow; under `pytest -n auto` it blows the 300s timeout, and
   > pytest-timeout kills and respawns the worker on each trip — roughly **40
   > minutes of `node down` churn with no error message that names the cause**.
-  > This cost a full debugging session on 2026-08-01 (story `debug-3.2`). The
+  > This cost two debugging sessions (2026-08-01/03); the fix and the full
+  > mechanism are quick fix 1.1 in AGY's
+  > `_artifacts/quick_fixes/quick-fix-1.1-xdist-tail-hang/walkthrough.md`. The
   > guard `test_scan_never_walks_a_colocated_virtualenv` now fails loudly and
   > names the directory instead, but only if you run the suite.
 

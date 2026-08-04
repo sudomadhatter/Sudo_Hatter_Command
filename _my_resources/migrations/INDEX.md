@@ -14,7 +14,7 @@ guide, run the scripts.
 | 1. The whole procedure (clone → restore → verify) | `new_machine-migration-guide.md` (renamed 2026-08-01 from `env-migration-guide.md`) |
 | 2. Rebuild every `.env` / `auth_keys/` file from the master | `Restore-EnvMaster.ps1` |
 | 3. The hand-carried secret bundle it reads | `_secrets/master.env` — **gitignored, never committed** |
-| 4. AGY test-infra companion (its §5 points here) — Python 3.11 venv rebuild + 4-check verification; the vitest suite lock needs no per-machine work | `python_vytest-updates-other-machines.md` |
+| 4. AGY test-infra companion (its §5 points here) — Python 3.11 venv rebuild + verification walkthrough. **Nothing extra to install** (xdist/filelock are pinned in `requirements.txt`), but the venv MUST be named `.venv` under `backend/` or the gate hangs ~40 min under `-n auto`. Gate runs parallel since 2026-08-03. The vitest suite lock needs no per-machine work | `python_vytest-updates-other-machines.md` |
 | 5. Scrum-board stale-stamp git hooks (per machine, per project — AGY today) | `git-hooks-board-stale-install.md` |
 
 ```powershell
@@ -31,7 +31,6 @@ powershell -File _my_resources\migrations\Restore-EnvMaster.ps1
 ## One-off migration records (historical)
 - `autopilot-glm-hybrid.patch` + `propagate-autopilot-glm-hybrid.md` — the GLM hybrid-lane autopilot
   port, kept for propagating to the other autopilot engines.
-- `research_docs/` — background notes for the above.
 
 ## Rules
 - **All three `.ps1` files run from the LOBBY ROOT, not from this folder.** Each derives the lobby
