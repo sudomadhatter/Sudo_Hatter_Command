@@ -42,6 +42,11 @@ ALL_STATUSES = set(PROGRESS_ORDER) | {"descoped", "deferred", "deferred-v3", "op
 # private re-declaration in either is how the two disagree about day one (audit F3).
 NO_NOTE_STATUSES = {"done", "descoped", "deferred-v3", "optional"}
 
+# Max inline note on a row that may still carry one, in chars after the '#'. Lives HERE
+# for the same reason as the set above: the splitter DECIDES by it and the lint JUDGES by
+# it, so two declarations is the splitter emitting a board that fails its own gate.
+NOTE_CAP = 120
+
 # Mojibake signatures: UTF-8 text that was decoded as cp1252 and re-encoded.
 # NOTE: a cp1252-rendered console (PS 5.1 `Get-Content`) SHOWS these for perfectly good
 # UTF-8 files — only an on-disk byte check proves corruption, which is why detection lives
@@ -50,7 +55,11 @@ MOJIBAKE_MARKERS = ("â€", "â•", "â‘", "âš",
                     "âœ", "â›", "Ã©", "ï¸")
 REPLACEMENT_CHAR = "�"  # a decode FAILURE — bytes that are not valid UTF-8 at all
 
-_KEY_RE = re.compile(r"^  ([A-Za-z0-9][A-Za-z0-9_.-]*):\s*([a-z0-9-]+)(.*)$")
+# Public: three modules match board lines with GROUPS (parse_board only returns statuses,
+# which is not enough to read or rewrite a row's trailing note). `_KEY_RE` stays as an
+# alias so nothing that already imported the private name breaks.
+KEY_RE = re.compile(r"^  ([A-Za-z0-9][A-Za-z0-9_.-]*):\s*([a-z0-9-]+)(.*)$")
+_KEY_RE = KEY_RE
 
 
 def die(msg: str, code: int = 2) -> "None":

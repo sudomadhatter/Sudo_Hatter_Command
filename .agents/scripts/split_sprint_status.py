@@ -47,7 +47,8 @@ import wf_common as wf
 
 HISTORY_REL = "_bmad-output/history"
 MANIFEST_REL = f"{HISTORY_REL}/migration-manifest.json"
-NOTE_CAP = 120  # ruling 2026-08-03: max inline note on a non-terminal row, in chars after '#'
+NOTE_CAP = wf.NOTE_CAP  # single source; see wf_common - the splitter decides by it and
+#                         workflow_lint judges by it, so they cannot be separate constants
 
 _CHANGELOG_MARK = "CHANGE LOG"
 
@@ -68,6 +69,13 @@ def read_lf(path: Path) -> str:
 def write_lf(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(text.encode("utf-8", errors="surrogateescape"))
+
+
+def commit_date(repo: Path, sha: str) -> str:
+    """ISO date of a commit — the honest `last_updated` for a board migrated at that sha."""
+    p = subprocess.run(["git", "-C", str(repo), "show", "-s", "--format=%cs", sha],
+                       capture_output=True, text=True)
+    return p.stdout.strip() if p.returncode == 0 and p.stdout.strip() else "unknown"
 
 
 def git_blob(repo: Path, sha: str, rel: str) -> str:
@@ -109,7 +117,7 @@ def new_manifest(sha: str, n_lines: int, trailing_nl: bool) -> dict:
 
 
 def key_match(line: str):
-    m = wf._KEY_RE.match(line)
+    m = wf.KEY_RE.match(line)
     return m if (m and m.group(2) in wf.ALL_STATUSES) else None
 
 
@@ -174,9 +182,8 @@ def simulate_current(orig: list[str], m: dict) -> list[str]:
 def reconstruct_original(project: Path, m: dict) -> str:
     """Rebuild the original LF stream WITHOUT reading the blob."""
     cur = read_lf(project / wf.BOARD_REL).split("\n")
-    if m["trailing_newline"]:
-        if cur and cur[-1] == "":
-            cur.pop()
+    if m["trailing_newline"] and cur and cur[-1] == "":
+        cur.pop()
     hist_cache: dict[str, list[str]] = {}
 
     def hist_line(dest: str, line_no: int) -> str:
@@ -323,11 +330,15 @@ def stage_changelog(project: Path, orig: list[str], m: dict, sha: str) -> int:
                                  f"<!-- board-line src={i} -->", [line])
             m["spans"].append({"src_start": i, "src_end": i,
                                "dest": dest, "dest_start": dl2, "what": "stale-lu-comment"})
+    # No `# last_updated:` comment to inherit (any project but AGY) -> take the SOURCE
+    # COMMIT's date. A hardcoded literal here would stamp every future migration with the
+    # day this tool was written, and `last_updated` is precisely the field a reader trusts
+    # to judge staleness.
     m["insertions"].append({
         "after_src": start - 1,
-        "lines": [f"# CHANGE LOG moved to {HISTORY_REL}/CHANGELOG.md (Wave 4 split; "
-                  f"newest first, verbatim). Add new entries THERE.",
-                  f"last_updated: {stamp or '2026-08-03'}"]})
+        "lines": [(f"# CHANGE LOG moved to {HISTORY_REL}/CHANGELOG.md (Wave 4 split; "
+                   f"newest first, verbatim). Add new entries THERE."),
+                  f"last_updated: {stamp or commit_date(project, m['source_sha'])}"]})
     return end - start + 1
 
 

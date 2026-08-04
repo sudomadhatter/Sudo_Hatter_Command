@@ -137,9 +137,24 @@ def main() -> int:
         c.check("W4 positive control: a short live note and a bare done row pass",
                 not any(("4-3-live-ok" in m or "4-4-done-bare" in m) for _, m in msgs),
                 str(msgs)[:120])
+        rep_big = _oversize(proj4)
         c.check("W4 board over the size cap is an ERROR",
-                (lambda r2: any(i["sev"] == "ERROR" and "bytes" in i["msg"]
-                                for i in r2.items))(_oversize(proj4)), "")
+                any(i["sev"] == "ERROR" and "bytes" in i["msg"] for i in rep_big.items), "")
+        # W4 flood cap: an unmigrated-but-history-bearing board must not emit 200 errors.
+        # Silence and a flood mute a check equally; the summary line keeps the count honest.
+        proj6 = tmp / "proj6"
+        (proj6 / wf.BOARD_REL).parent.mkdir(parents=True)
+        (proj6 / "_bmad-output/history").mkdir(parents=True)
+        rows = "".join(f"  6-{n}-x: done   # note {n}\n" for n in range(40))
+        (proj6 / wf.BOARD_REL).write_text("development_status:\n" + rows, encoding="utf-8")
+        rep = wf.Report()
+        lint.check_board_note_budget(proj6, rep)
+        errs = [i for i in rep.items if i["sev"] == "ERROR"]
+        c.check("W4 a flood is capped, and the remainder is COUNTED not dropped",
+                len(errs) == lint.MAX_NOTE_ERRORS + 1
+                and any("30 more note violation" in i["msg"] for i in errs),
+                f"{len(errs)} errors")
+
         # pre-split board (no history/): rules stay off - the check must not fire
         # on a project that has not migrated
         proj5 = tmp / "proj5"

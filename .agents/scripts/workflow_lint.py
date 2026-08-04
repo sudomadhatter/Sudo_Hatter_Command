@@ -271,7 +271,10 @@ BOARD_SIZE_CAP = 96 * 1024  # bytes. Post-split landing was 62 KB (2026-08-03) w
 # doctrine comments deliberately KEPT (the reviewed triage); the cap is a regrowth
 # backstop, not a tripwire on the target - the per-note rule below catches the actual
 # failure mode (multi-KB notes returning) directly.
-NOTE_CAP = 120  # chars after '#'; ruling 2026-08-03
+NOTE_CAP = wf.NOTE_CAP  # single source; see wf_common (split_sprint_status decides by the
+#                         same constant - two declarations is a splitter that emits a board
+#                         failing its own gate)
+MAX_NOTE_ERRORS = 10    # a flood is as muting as silence: report the first N, then count
 
 
 def check_board_note_budget(project: Path, rep: wf.Report) -> None:
@@ -295,21 +298,31 @@ def check_board_note_budget(project: Path, rep: wf.Report) -> None:
         rep.info("board-budget", "pre-split board (no _bmad-output/history/) - "
                                  "note rules not enforced")
         return
+    shown = 0
+    suppressed = 0
     for i, line in enumerate(wf.read_text(path).splitlines(), 1):
-        m = wf._KEY_RE.match(line)
+        m = wf.KEY_RE.match(line)
         if not m or m.group(2) not in wf.ALL_STATUSES:
             continue
-        note = m.group(3).strip().lstrip("#").strip().rstrip("\r")
+        note = m.group(3).strip().lstrip("#").strip()
         if not note:
             continue
         if m.group(2) in wf.NO_NOTE_STATUSES:
-            rep.err("board-budget", f"line {i}: '{m.group(1)}' is {m.group(2)} but "
-                                    f"carries a note - a finished row's story lives in "
-                                    f"history/, not on the board")
+            msg = (f"line {i}: '{m.group(1)}' is {m.group(2)} but carries a note - a "
+                   f"finished row's story lives in history/, not on the board")
         elif len(note) > NOTE_CAP:
-            rep.err("board-budget", f"line {i}: '{m.group(1)}' note is {len(note)} chars "
-                                    f"(cap {NOTE_CAP}) - move it to history/ and keep a "
-                                    f"<=120-char pointer, or nothing")
+            msg = (f"line {i}: '{m.group(1)}' note is {len(note)} chars (cap {NOTE_CAP}) "
+                   f"- move it to history/ and keep a <={NOTE_CAP}-char pointer, or nothing")
+        else:
+            continue
+        if shown < MAX_NOTE_ERRORS:
+            rep.err("board-budget", msg)
+            shown += 1
+        else:
+            suppressed += 1
+    if suppressed:
+        rep.err("board-budget", f"...and {suppressed} more note violation(s) not listed - "
+                                f"run split_sprint_status.py plan for the full census")
 
 
 def check_status_drift(project: Path, rep: wf.Report) -> None:
