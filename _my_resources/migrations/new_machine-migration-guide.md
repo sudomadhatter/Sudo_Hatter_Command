@@ -83,6 +83,14 @@ missing directories, and `git clone` refuses to clone into a non-empty folder.
 
    It writes every file to its original path, creates missing dirs, and backs
    up any existing-but-different file as `<name>.pre-restore.bak`.
+
+   > ⛔ **macOS: do NOT run this — use §6 Manual restore instead.** The script is
+   > path-separator-bound even under `pwsh`: it joins
+   > `'_my_resources\migrations\_secrets\master.env'` and does
+   > `$relPath.Replace('/', '\')`, so on macOS it looks for one literal
+   > back-slashed filename and would write `backend\.env` as a single file rather
+   > than nesting it into `backend/`. §6 does the same job by hand and is the
+   > supported Mac path today.
 5. **Verify** (§4). Do not skip this.
 6. **Delete the master from any transfer medium** (USB stick, download folder)
    once verified. Keep only `_my_resources/migrations/_secrets/master.env` on the

@@ -6,14 +6,21 @@ its §5 points here). Applies to EXISTING machines pulling the 2026-08-01 change
 fresh-machine setups.
 
 **Status:** OPEN until every machine that works on AGY_AVIATIONCHAT has run the checklist below.
-Machines done:
-- ☑ **laptop, Windows, 8-core** — 2026-08-01: 2887 passed / 32 skipped / 0 failed on 3.11, three
-  independent serial passes. Re-verified 2026-08-03 **parallel**: 3024 / 35 / 0, and `-n 4` timed at
-  206.81 s vs `-n auto` 261.76 s (see *Tune `-n`*).
-- ☐ **Mac** — use the macOS column; it needs `python3.11`, `temurin@17`, Node, and `pwsh` if you run
-  the kit's `.ps1` scripts. Same setup as everywhere else — a faster machine does **not** get a
-  reduced checklist (see *"My machine is much faster…"*); it gets its own `-n` value.
-- ☐ desktop · ☐ any other clone
+
+| Machine | OS → which column | Done | Best `-n` (measure once) | Notes |
+|---|---|---|---|---|
+| **Laptop** (8-core) | Windows | ☑ 2026-08-01 · re-verified parallel 2026-08-03 | **`-n 4`** (206.81 s, vs `auto`/8 = 261.76 s) | The box every measurement in this doc came from |
+| **Desktop** (64 GB RAM) | Windows | ☐ | ☐ time `4 / 6 / 8 / auto` | Same commands as the laptop — **nothing extra to install** |
+| **Mac** (64 GB RAM) | macOS | ☐ | ☐ time `4 / 6 / 8 / auto` | Needs `python3.11`, `temurin@17`, Node, + `pwsh` for any `.ps1`. See ⛔ **§2 of `INDEX.md`** — the secrets restore script does NOT work here |
+
+**Two independent axes — don't collapse them.** *OS* decides which command column you use. *Power*
+decides only your `-n` value and is otherwise handled automatically (`-n auto` reads the core count).
+The desktop is the proof they are independent: **Windows and fast.** A faster machine never gets a
+reduced checklist — every step below is correctness, not performance (see
+*"My machine is much faster…"*).
+
+⚠️ **Both 64 GB machines are fast enough to HIDE the venv-walk bug** rather than fail on it — CHECK 4's
+unconditional file-count bound is what catches it there. Do not weaken that assertion.
 
 ---
 
@@ -132,9 +139,12 @@ which names the offending directory.
 | **Windows** | workers die — `node down` + respawn, ~5 min apart, near the end of the run | no `SIGALRM`, so pytest-timeout uses the **thread** method and `os._exit`s the whole worker process |
 | **macOS** | ordinary test failures with a `Timeout >300s` traceback naming each test; workers survive | `SIGALRM` available → the **signal** method raises inside the test |
 
-**On a fast machine the same bug may not trip the timeout at all** — it just silently makes every run
-slower forever. That is why CHECK 4's guard also asserts an unconditional file-count bound: the count
-is machine-independent, so it catches this on hardware fast enough to hide it.
+**On a fast machine this bug may never trip the timeout at all** — it would just tax every run
+silently, forever. **Nothing extra for you to do about it:** the guard asserts an unconditional
+file-count bound (`< 2000` scanned files) alongside the timeout, and a file count is
+machine-independent — so CHECK 4 fails on a fast Mac exactly as it would on a slow laptop. This is
+already handled; it is recorded here only so nobody "optimises" that bound away later thinking the
+timeout covers it. It does not.
 
 ### Tune `-n` on this machine (do this once)
 
