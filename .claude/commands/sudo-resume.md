@@ -4,6 +4,9 @@ description: Resume a sprint on a machine you just switched to — fetch both re
 
 # /sudo-resume — Pick The Sprint Back Up On This Machine
 
+> **Rules in force for this command:**
+> - `.agents/rules/worktree-per-story.md` — one worktree per story, resolve-or-STOP, never delete through a junction
+
 Daniel works one sprint across **desktop, laptop, and mobile**. Git branches travel; **worktrees do not.**
 `.claude/worktrees/` is machine-local and not in the repo, so on a machine you just switched to
 `git worktree list` shows only the main checkout — and every `sudo-` step reads that as *"no tree, fresh
@@ -53,6 +56,11 @@ git ls-remote --heads origin 'refs/heads/claude/*'
 Every branch listed that is ahead of `origin/main_debug` is **in-flight story work**. Cross-check each
 against `sprint-status.yaml` for its status, and report the whole set — branch, story, step — **before
 touching anything**. Expect branches the handoff card does not mention: parallel sessions open their own.
+
+⛔ Report the YAML status as the YAML's claim, not as the truth. A story sitting at `review` is **not**
+proof it is landable — the verdict lives in the lane's `walkthrough.md` under `## Code Review`, and a
+`@ <sha>` older than that branch's HEAD is a stale verdict. Do not resolve that here;
+`/sudo-boot-sprint-memory` owns it (Step 2b). Never recommend a close-out from this command.
 
 ## Step 4 — Re-create the working surface
 Ask Daniel which story he is picking up, then match the machine:

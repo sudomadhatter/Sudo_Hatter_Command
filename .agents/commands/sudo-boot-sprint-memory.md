@@ -37,9 +37,25 @@ Read `_bmad-output/implementation-artifacts/sprint-status.yaml` (grep the epic b
 it). Report, compactly:
 - **Story states** — counts by status (`ready-for-dev` / `in-progress` / `review` / `done`).
 - **Next story to pick up** — the top `ready-for-dev` (or the current `in-progress`), with its file under
-  `_bmad/bmm/stories/`.
+  `_bmad/bmm/stories/`. ⛔ A `descoped` or `deferred` story is **never** recommended, whatever its
+  position in the YAML.
 - **Next command** — which `sudo-` step it needs: not-started → `/sudo-write-story-tests`; mid-dev →
-  `/sudo-dev-story-tests`; built & awaiting review → `/sudo-code-review`; reviewed → `/sudo-update-sprint-memory`.
+  `/sudo-dev-story-tests`; built & awaiting review → `/sudo-code-review`. For a story the YAML calls
+  `review`, **never recommend close-out off that status** — resolve it from the artifact:
+  - ⛔ **Read the verdict — never infer it — and a stale verdict is not a verdict.** A lane's verdict
+    lives in its `_artifacts/epic_*/story-*/walkthrough.md` under `## Code Review`, first line
+    `Verdict: PASS | CONCERNS | FAIL | WAIVED @ <sha>` (since 2026-08-02). Pre-2026-08-02 lanes keep a
+    standalone `sudo-code-review-<story>.md` / `code-review.md` — **read-only history**; fall back to it,
+    never write a new one. No `## Code Review` section and no legacy file = the review never ran,
+    whatever the YAML says → `/sudo-code-review <id>`.
+  - Then check the SHA. `PASS`/`WAIVED` whose `@ <sha>` **is** that branch's current HEAD →
+    `/sudo-update-sprint-memory`. `@ <sha>` that is **not** HEAD → code landed after the review →
+    `/sudo-code-review <id>`, **never** close-out. `FAIL`/`CONCERNS` → `/sudo-code-review <id>`.
+  - ⛔ Two or more lanes of the same epic sitting at a fresh pass are **ONE** recommendation —
+    `/sudo-merge-epic-workingtrees <epic>` — not N× `/sudo-update-sprint-memory`.
+- ⛔ **A story with a LIVE WORKTREE is in flight — the YAML does not get a vote.** The YAML lags by
+  design: ② and ③ never write it, only close-out does. Map the story file's `Status:` straight to the
+  recommendation; never send a story whose tree already exists back to ① `/sudo-write-story-tests`.
 - **Worktree** — run `git worktree list` and report whether the next/in-play story already has a
   `claude/<story-slug>` tree (`worktree-per-story` → "Resuming"). If it does, say so with its path and branch
   (*"Story <id> → worktree open at `<path>` on `claude/<slug>` — the next `sudo-` step re-enters it, does not
