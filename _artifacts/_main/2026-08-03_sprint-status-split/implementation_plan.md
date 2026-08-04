@@ -513,6 +513,49 @@ after the migration, which is exactly why this gate runs before a line of code. 
 · F9 and the §4.4 tightening are already baked into the plan above; **the four rulings in §10 plus the
 new fifth are owed before 4.1 starts.**
 
+---
+
+## Landed (2026-08-03, same day)
+
+Executed in full, GO conditions first. The record, commit by commit:
+
+| Step | Where | Commit |
+|---|---|---|
+| F2 note-drop + CRLF byte fix + F9 `last_updated` refresh in `story_status.py`; F3 `NO_NOTE_STATUSES`; split tool + 19 tests; §6 lint check; 5 command re-points | lobby | `feat(workflow): Wave 4 toolkit` |
+| 4.0 freeze — `.pre-split` (`-text`), baselines to files | AGY | `0752c437` ← **the pinned baseline** |
+| 4.3 terminal — 199 moves, 363,334 → 140,952 B | AGY | `43331b58` |
+| 4.4a changelog — 47 lines + both stale `# last_updated` comments; real key promoted | AGY | 140,952 → 67,755 B |
+| 4.4b comments — 339 candidates triaged, **all-KEEP** (the 3 auto-MOVEs were decision records; TSV rides in git) | AGY | 0 moves |
+| 4.5 active — 10 over-cap notes moved whole; 9 dated DEFERRED rulings stay inline | AGY | 67,755 → **62,040 B** |
+| 4.6 propagation — sync -Maintained, 3 child commits, NEXgen pointer, INDEX, memory | all four | children `d1da12ff` / `9816cda` / `33daa44` |
+
+**Every stage `verify --sha 0752c437` → byte-identical.** Harness diff vs the 4.0 baseline:
+`workflow_lint` identical (0 errors — including the new note-budget check), `story_status check`
+identical, `closeout_preflight` differed only by the then-uncommitted migration files. Suite
+**94 cases / 5 files** green.
+
+**Deviations from the plan, called out rather than buried:**
+1. **Board size cap is 96 KB, not 64 KB** — the reviewed all-KEEP triage landed the board at 62 KB
+   (the ~29 KB projection assumed the free comments would move; review ruled them doctrine). A 64 KB
+   cap would leave 2 KB of headroom — a muted check waiting to happen. The per-note cap is the real
+   guard; the size cap is the regrowth backstop.
+2. **4.2's line-ending negative control became a deleted-space control** — `verify` normalizes EOLs
+   by design (`* text=auto` makes them per-machine presentation; refusing to normalize would fail
+   every honest checkout, audit F4's failure shape). The CRLF-worktree case proves the normalize
+   direction; the deleted-space case proves whitespace mutations still fail.
+3. **F7's gate condition amended** — "zero rows in `review`/`in-progress`" is unsatisfiable on a
+   living board (two June rows are parked in `review`). The operative condition — no concurrent
+   writer — was met: the operator chaired the session, no autopilot/close-out lane ran, and the
+   tool's own simulation check would have stopped a surprise write (proven by test R3).
+4. **Active-row notes over cap moved WHOLE, nothing retained** — truncating to 120 chars would
+   fabricate a summary; the 9 surviving notes were already under cap and are all dated rulings.
+
+**Residuals:**
+- ⏳ One real close-out against the split board (next story) — watch the CHANGELOG re-point and
+  the automatic note-drop. §8 item 5, deliberately left to the next genuine story.
+- ⏳ `.pre-split` dropped after one sprint.
+- Fresh/NEXgen boards are pre-split and exempt from the note rules until they migrate.
+
 > **Audit addendum (same day, after the first verdict).** A second, slower sweep of the consumer
 > question returned **F9** — an entire vendored BMAD skill tree (`.agent/`, singular) that the first
 > sweep truncated away. It does not change the verdict: F9 is MED, fully mitigated in §3/§4.4/§9, and

@@ -186,7 +186,12 @@ Applies to the 17 / 7 / 11 commands measured above. **Expected: 327 KB → ~230 
 
 ---
 
-## Wave 4 — Split state from narrative (the big context win, the biggest risk)
+## Wave 4 — Split state from narrative (the big context win, the biggest risk) — ✅ **DONE 2026-08-03**
+
+> ✅ Executed same-day from the dedicated plan after its audit blockers (F1 · F2 · F4) landed first.
+> AGY board **363,334 → 62,040 B**, four staged applies (`43331b58` → `d1da12ff`), each one
+> byte-verified by reconstruction against the pinned blob `0752c437`. Suite 94 cases / 5 files.
+> Residual: one real close-out against the split board is the live test of the re-points.
 
 > 📄 **Wave 4 has its own plan as of 2026-08-03:**
 > `_artifacts/_main/2026-08-03_sprint-status-split/implementation_plan.md`, self-audited (verdict
