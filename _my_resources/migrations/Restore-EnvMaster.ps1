@@ -70,4 +70,7 @@ foreach ($line in $lines) {
 if ($null -ne $current) { throw "Master file ended mid-block: $current never closed" }
 
 Write-Host ''
-Write-Host "Done. $written file(s) written/updated. Now run the verification steps in _my_resources/migrations/env-migration-guide.md."
+# NOTE: keep this string pure ASCII. This file is UTF-8 WITHOUT a BOM, and Windows
+# PowerShell 5.1 parses a no-BOM script as the ANSI codepage — so a non-ASCII char
+# here prints mangled at runtime (a section sign came out as "A§"). Verified 2026-08-03.
+Write-Host "Done. $written file(s) written/updated. Now run the verification checklist in _my_resources/migrations/new_machine-migration-guide.md (section 4)."

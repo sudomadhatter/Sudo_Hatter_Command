@@ -140,5 +140,5 @@ if [ "$DRY_RUN" -eq 1 ]; then
   echo "Dry run complete. $written file(s) WOULD be written/updated. Re-run without --dry-run to apply."
 else
   echo "Done. $written file(s) written/updated (mode 600)."
-  echo "Now run the verification checklist in _my_resources/migrations/new_machine-migration-guide.md §4."
+  echo "Now run the verification checklist in _my_resources/migrations/new_machine-migration-guide.md (section 4)."
 fi
