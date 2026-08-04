@@ -14,10 +14,14 @@ trailing `--project X` becomes two more arguments to the tool under test, not a 
 
 Receipts land in `_bmad-output/gates/<story>/<gate>.json`.
 
-Three results, not two — `unrunnable` is its own state because `No module named ruff` means
+FOUR results, not two. `unrunnable` is its own state because `No module named ruff` means
 the floor never ran, and the house rule is that a missing tool is a FINDING, not a skip
 (`/sudo-code-review` Step 3.5). Collapsing it into `fail` loses that distinction; collapsing
-it into `pass` is how a green gets faked.
+it into `pass` is how a green gets faked. `warn` (opt-in via `--warn-exit N`) is the same
+argument one level down: a tool that grades its OWN findings — `workflow_lint` exits 1 for
+warnings and 2 for errors — has that grading erased if every non-zero is `fail`, and a
+verdict citing `lint: fail` when the tool found zero errors is evidence that gets ignored.
+`warn` is non-blocking but never a pass, so the finding still has to be read.
 
 A receipt also records whether the tree was DIRTY. A receipt stamped at SHA X taken over
 uncommitted edits is not evidence about SHA X, and `check` says so.
@@ -60,12 +64,20 @@ def _totals(output: str) -> str | None:
     return None
 
 
-def _classify(exit_code: int, output: str) -> str:
+def _classify(exit_code: int, output: str, warn_exit: int | None = None) -> str:
     if exit_code == 0:
         return "pass"
     tail = output[-4000:]
     if exit_code in (9009, 127) or any(s in tail for s in _UNRUNNABLE):
         return "unrunnable"
+    # A tool that grades its own findings (workflow_lint: 1 = warnings, 2 = errors) loses
+    # that grading if every non-zero collapses to `fail`. The caller declares which code
+    # means "advisory findings, nothing blocking" via --warn-exit; it is a FOURTH result,
+    # never a pass, so the finding still has to be read - it just does not block. Without
+    # this, an all-warnings lint reads `fail` in the verdict's evidence and the gate gets
+    # ignored, which is the failure this whole receipt contract exists to prevent.
+    if warn_exit is not None and exit_code == warn_exit:
+        return "warn"
     return "fail"
 
 
@@ -74,7 +86,7 @@ def receipt_dir(project: Path, story: str) -> Path:
 
 
 def cmd_run(project: Path, story: str, gate: str, command: list[str],
-            allow_fail: bool, cwd: Path | None) -> int:
+            allow_fail: bool, cwd: Path | None, warn_exit: int | None = None) -> int:
     if not command:
         wf.die("no command given - put it after `--`")
     work = cwd or project
@@ -92,7 +104,7 @@ def cmd_run(project: Path, story: str, gate: str, command: list[str],
     elapsed = round(time.time() - started, 1)
 
     sha_after = wf.git_head(work)
-    result = _classify(exit_code, output)
+    result = _classify(exit_code, output, warn_exit)
     # A commit landing mid-run means the receipt describes no single tree.
     if sha_before and sha_after and sha_before != sha_after:
         result = "unrunnable"
@@ -123,7 +135,7 @@ def cmd_run(project: Path, story: str, gate: str, command: list[str],
     if data["totals"]:
         print(f"        totals: {data['totals']}")
     print(f"        receipt: {path.relative_to(project)}")
-    if result == "pass" or allow_fail:
+    if result in ("pass", "warn") or allow_fail:
         return 0
     return 1 if result == "fail" else 2
 
@@ -132,7 +144,11 @@ def check_receipt(repo: Path, data: dict, gate: str, target: str | None,
                   rep: wf.Report) -> None:
     """One receipt against one target commit. Shared with closeout_preflight so the two
     never disagree about what 'stale' means."""
-    if data.get("result") != "pass":
+    if data.get("result") == "warn":
+        # Advisory findings: recorded, never blocking. Still WARN-not-INFO so it is read.
+        rep.warn("gates", f"{gate}: advisory findings only (exit {data.get('exit_code')}) "
+                          f"- not blocking, but read them")
+    elif data.get("result") != "pass":
         rep.err("gates", f"{gate}: result={data.get('result')} "
                          f"(exit {data.get('exit_code')})")
         return
@@ -216,6 +232,10 @@ def main() -> int:
     p_run.add_argument("--cwd", help="run the command here (e.g. a worktree) instead of the project root")
     p_run.add_argument("--allow-fail", action="store_true",
                        help="always exit 0; the receipt still records the true result")
+    p_run.add_argument("--warn-exit", type=int, metavar="N",
+                       help="exit code N means ADVISORY findings, not failure (e.g. "
+                            "workflow_lint: 1=warnings, 2=errors -> --warn-exit 1). "
+                            "Records result=warn: non-blocking, but never a pass.")
     p_run.add_argument("command", nargs=argparse.REMAINDER)
 
     p_check = sub.add_parser("check")
@@ -239,7 +259,8 @@ def main() -> int:
     if args.cmd == "run":
         command = args.command[1:] if args.command[:1] == ["--"] else args.command
         cwd = Path(args.cwd).resolve() if args.cwd else None
-        return cmd_run(project, args.story, args.gate, command, args.allow_fail, cwd)
+        return cmd_run(project, args.story, args.gate, command, args.allow_fail, cwd,
+                       args.warn_exit)
     if args.cmd == "check":
         gates = [g.strip() for g in args.require.split(",") if g.strip()]
         return cmd_check(project, args.story, gates, args.advisory, args.sha,

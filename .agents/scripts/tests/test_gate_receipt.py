@@ -58,6 +58,26 @@ def main() -> int:
         c.check("2b totals quoted from the tool's own summary",
                 r["totals"] == "3 failed, 275 passed in 12.0s", f"totals={r['totals']!r}")
 
+        # --warn-exit: a tool that GRADES its own findings keeps that grading. Without it
+        # an all-warnings workflow_lint reads `fail` in the verdict and the gate is ignored.
+        code, _ = gr("run", "--story", "21.8b", "--gate", "lintwarn", "--warn-exit", "1",
+                     "--", sys.executable, "-c",
+                     "import sys; print('-- 0 error(s), 3 warning(s) --'); sys.exit(1)")
+        c.check("2c --warn-exit: warnings are `warn`, non-blocking, never `pass`",
+                code == 0 and receipt("lintwarn")["result"] == "warn",
+                f"exit={code} result={receipt('lintwarn')['result']}")
+        # ...and the SAME flag must not launder a real error exit into advisory
+        code, _ = gr("run", "--story", "21.8b", "--gate", "linterr", "--warn-exit", "1",
+                     "--", sys.executable, "-c",
+                     "import sys; print('-- 2 error(s) --'); sys.exit(2)")
+        c.check("2d --warn-exit does NOT launder a real failure",
+                code == 1 and receipt("linterr")["result"] == "fail", f"exit={code}")
+        # and without the flag the old collapse still applies (no silent behaviour change)
+        code, _ = gr("run", "--story", "21.8b", "--gate", "nolabel",
+                     "--", sys.executable, "-c", "import sys; sys.exit(1)")
+        c.check("2e without --warn-exit, exit 1 is still `fail`",
+                receipt("nolabel")["result"] == "fail", "")
+
         code, _ = gr("run", "--story", "21.8b", "--gate", "ruff",
                      "--", "definitely-not-a-real-binary-xyz", "check")
         c.check("3 missing tool -> unrunnable (a finding, not a skip)",
