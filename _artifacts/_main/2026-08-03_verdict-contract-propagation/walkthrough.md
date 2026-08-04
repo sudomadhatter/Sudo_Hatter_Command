@@ -28,7 +28,10 @@ Plan: [implementation_plan.md](implementation_plan.md) · Branch `main_debug` ·
 - [x] **WS-B — [`sudo-resume.md`](../../../.agents/commands/sudo-resume.md) Step 3** — report the YAML
   status as *the YAML's claim*, not truth; boot owns resolution; never recommend close-out from resume.
 - [x] **WS-D — propagate** — `/sync-agents` + `-Maintained`, 4 platform surfaces × 4 projects.
-- [ ] **WS-C — commit in Fresh + NEXgen** — **NOT DONE, deliberately.** See Your Actions.
+- [x] **WS-C — landed in all four repos** (operator reaffirmed scope: lobby + the maintained three)
+  - lobby `b72e0f1` (10 files) · Fresh `861448b` (3) · NEXgen `bcc940d` (3) · AGY already carried it
+  - all four pushed, `0 0` vs `origin/main_debug`, 0 dirty
+  - Fresh's lobby gitlink is configured `ignore=all` — left alone rather than `--force`d
 
 ## Evidence
 
@@ -39,7 +42,8 @@ Plan: [implementation_plan.md](implementation_plan.md) · Branch `main_debug` ·
 | 3 · boot still read-only / discovery-only | ✅ `Read-only — … never edit anything.` intact; 0 write verbs added |
 | 4 · workflow-enforcement gate | ✅ **64 checks, 4/4 files** (`closeout_preflight` 24 · `gate_receipt` 18 · `story_status` 10 · `encoding` 12) |
 | 5 · byte-identity across projects × platforms | ✅ **32/32 MATCH** (SHA-256 vs master, all 3 edited commands) |
-| 6 · Fresh + NEXgen clean 3-file commit | ❌ **blocked** — NEXgen's index holds 60 files staged by another session |
+| 6 · Fresh + NEXgen clean 3-file commit | ✅ 3 files each; the concurrent session committed its own 60 first, so nothing of mine swept it |
+| 7 · post-push: fix present in **HEAD** of all 4 repos, 0 dirty, `0 0` vs origin | ✅ 4/4 — boot + resume + board all YES |
 
 Launcher threshold: boot 6,761 B and resume 5,761 B are both under 11,500 B → full bodies, no thin
 launcher. Board unchanged at 16,979 B (still a launcher). No code changed → no test suite in scope.
@@ -72,10 +76,12 @@ last session — that was over-application, not a rule.
 So the toolkit fix is **done, synced, and gate-green everywhere** — but the git state is being written by
 someone other than me, and `git commit` in NEXgen would sweep 60 files I did not author.
 
+**Resolved** — the concurrent session committed its own work; my four commits then landed cleanly on top
+with explicit paths only, sweeping nothing of theirs.
+
 | # | Pri | Action | Closes |
 |---|---|---|---|
-| 1 | 🔴 | **Decide the commit.** Options: (a) I commit the lobby with my explicit paths only and leave NEXgen's foreign index alone; (b) I wait until the other session finishes; (c) you point me at what that session owns and I work around it | this session |
-| 2 | 🔴 | NEXgen's **60 staged files** — another session's staging. I will not commit them without your word | NEXgen index |
-| 3 | 🟡 | Fresh needs **nothing** — the other session already committed my boot/resume edits there (`7c7a06f`). Lobby is now *behind* its own downstream copy | lobby/Fresh divergence |
-| 4 | 🟢 | Restart opencode to pick up the refreshed global cache (47 cmds) | sync propagation |
-| 5 | 🟢 | GitNexus index stale after the concurrent commits — `gitnexus analyze` | index freshness |
+| 1 | 🟡 | **`B-L-WorldWide` (12 sudo cmds) and `BRKN_Tattoos` (13) have the toolkit installed but are NOT on `maintained-projects.txt`.** Frozen at July copies — including the old `sudo-boot-sprint-memory` with exactly this defect. Either add them to the maintained list or accept they drift | toolkit coverage |
+| 2 | 🟢 | Restart opencode to pick up the refreshed global cache (47 cmds) | sync propagation |
+| 3 | 🟢 | GitNexus index stale after the concurrent commits — `gitnexus analyze` | index freshness |
+| 4 | 🟢 | `BRKN_Tattoos` has a gitlink with **no `.gitmodules` mapping** (`git submodule status` errors on it) | lobby submodule hygiene |
