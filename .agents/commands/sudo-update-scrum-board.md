@@ -43,9 +43,13 @@ flag — never preserve them.
 5. `_my_resources/Open_Tasks/*.md` — live bug/triage docs that own tickets the YAML does not track.
 6. `_bmad-output/test-artifacts/test-design-epic-*.md` — the **risk P-level per story**. It drives
    quick-dev eligibility (Step 2) and lane risk (Step 2.5).
-7. For every live worktree: its story file's frontmatter (`blocked_by:`, `bdd_contract:`) and any
-   `_artifacts/epic_*/story-*/implementation_plan.md` — a ② plan's "Modify [file]" lines are that lane's
-   own declaration of its edit sites, and Step 2.5 consumes them.
+7. For every live worktree: its story file's frontmatter (`blocked_by:`, `bdd_contract:`) plus **both**
+   living artifacts under `_artifacts/epic_*/story-*/` —
+   - `implementation_plan.md`: its "Modify [file]" lines are that lane's own declaration of its edit
+     sites (Step 2.5 consumes them), and its `## Self-Audit` section is what the lane already knows is
+     risky, including edit sites the plan itself missed.
+   - `walkthrough.md`: its `## Code Review` → `Verdict: … @ <sha>` line decides whether the row is
+     landable (Step 2), and its open `## Your Actions` rows are 👤 rows — never queue rows.
 
 ⛔ **Never inherit the previous board's epic list.** Build the epic list fresh from the YAML every run.
 A prior board silently omitted a whole live epic and recommended a closed story and a deferred epic for
@@ -59,7 +63,7 @@ five days. Enumerating from the YAML is the only thing that prevents it.
 | `backlog`, no story file | 🛠 queue · 🟢 ready | `/sudo-write-story-tests <id>` |
 | `backlog`/`ready`, story file + reds exist | 🛠 queue · 🟢 ready | `/sudo-dev-story-tests <id>` |
 | `review`, code written, review not yet run | 🛠 queue · 🟢 ready | `/sudo-code-review <id>` |
-| Review PASS, not landed | 🛠 queue · 🟢 ready | `/sudo-update-sprint-memory` |
+| Review passed, not landed — verdict from the walkthrough's `## Code Review` (see hard rules) | 🛠 queue · 🟢 ready | `/sudo-update-sprint-memory` · ≥2 lanes of one epic → `/sudo-merge-epic-workingtrees <epic>` |
 | Risk-scored **P2/P3** + small + contained (or an unscored follow-on that is) | 🛠 queue · 🟢 ready · Lane = quick-dev | `/sudo-quick-dev <slug>` |
 | Unstartable by an agent (dependency, external, decision) | 🛠 queue · 🔴 blocked | `—` + *Blocked by* + owner + clears-when |
 | Specced follow-on, not yet a story/ticket | 🛠 queue · 📋 pipeline | its future command |
@@ -73,6 +77,16 @@ five days. Enumerating from the YAML is the only thing that prevents it.
   sitting in code review under *Ready for dev* with `/sudo-write-story-tests` as its next command —
   i.e. it instructed the reader to rebuild the story on top of another lane's live worktree. Map the
   story file's `Status:` straight to the row; never ① a story whose tree already exists.
+- ⛔ **Read the verdict — never infer it — and a stale verdict is not a verdict.** A lane's verdict lives
+  in its `walkthrough.md` under `## Code Review`, first line
+  `Verdict: PASS | CONCERNS | FAIL | WAIVED @ <sha>` (since 2026-08-02). Pre-2026-08-02 lanes keep a
+  standalone `sudo-code-review-<story>.md` / `code-review.md` — **read-only history**; fall back to it,
+  never write a new one. Then check the SHA: if `@ <sha>` is not that branch's current HEAD, code landed
+  after the review and the row is `/sudo-code-review <id>`, **never** a close-out. No `## Code Review`
+  section and no legacy file = the review never ran, whatever the YAML says.
+- ⛔ **Collapse a landable set into ONE row.** Two or more lanes of the same epic sitting at a fresh
+  pass are a single queue row — `/sudo-merge-epic-workingtrees <epic>` — not N× `/sudo-update-sprint-memory`.
+  Per-lane close-out rows re-diff the same trunk N times and push the board past its ~150-line cap.
 - ⛔ A `descoped` or `deferred` item is **never** in the queue and never recommended.
 - **Quick-dev is a P2/P3 lane.** P0/P1 always takes the full ①②③ loop, no matter how small the diff
   looks. Authz / PII / data-integrity surfaces are **never** quick-dev regardless of score. The
@@ -112,8 +126,10 @@ no ticket is ever left un-verdicted.
 **Compute the approved set:**
 1. **Candidates** = every in-flight story + every 🟢 ready row that is grounded.
 2. **Touch-sets**, in order of authority: `git diff --name-only main_debug...<branch>` (code written
-   wins) → the worktree's `implementation_plan.md` "Modify/Add [file]" lines → the story file's
-   Dev Notes surfaces / task paths. Planning artifacts (`_bmad-output/`, `_bmad/`, `_artifacts/`,
+   wins) → the worktree's `implementation_plan.md` "Modify/Add [file]" lines **plus every source path
+   its `## Self-Audit` names** (that section's whole job is finding the edit sites the plan missed —
+   ignoring it approves a pair the lane's own audit already flagged) → the story file's Dev Notes
+   surfaces / task paths. Planning artifacts (`_bmad-output/`, `_bmad/`, `_artifacts/`,
    `_my_resources/`) never count as overlap — only source paths decide.
 3. **Contract edges:** `blocked_by:` frontmatter; a story that imports a symbol the other story
    **creates** is 🔒 even with zero file overlap today (add/add on a new file has no merge base).
@@ -206,6 +222,8 @@ Every 🟢 is safe beside every other 🟢. **Parallel epic development = write 
 - [active-context.md](../../_bmad-output/active-context/active-context.md)
 - [epics.md](../../_bmad-output/planning-artifacts/epics.md)
 - [Open tasks](../Open_Tasks/)
+- [Story artifacts](../../_artifacts/) — per lane: `implementation_plan.md` (+ `## Self-Audit`) ·
+  `walkthrough.md` (+ `## Code Review` → `Verdict:`)
 ```
 
 ## Step 4 — Style contract (what keeps it scannable)
@@ -248,6 +266,9 @@ Anything a done epic still owes lives in 👤 Your actions.
 6. 🎯 Right now is ≤8 lines and holds no data absent from the zones below.
 7. Every referenced path resolves; zero strikethrough; ≤~150 lines.
 8. No P0/P1 story in quick-dev — cross-check every quick-dev row against the test-design P-levels.
+9. Every landable row (`/sudo-update-sprint-memory` / `/sudo-merge-epic-workingtrees`) traces to a
+   `Verdict:` line whose `@ <sha>` equals that branch's current HEAD — and a landable set belonging to
+   one epic is ONE collapsed row, not one row per lane.
 
 ## Step 6 — Report
 
