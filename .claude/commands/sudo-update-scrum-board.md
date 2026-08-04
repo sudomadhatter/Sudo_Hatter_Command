@@ -34,7 +34,9 @@ flag — never preserve them.
 ## Step 1 — Read state (YAML first, always)
 
 1. `_bmad-output/implementation-artifacts/sprint-status.yaml` — **the master.** Dump `development_status`
-   and enumerate **every epic key it contains.**
+   and enumerate **every epic key it contains.** Post-split (Wave 4) rows are bare `key: status`; when a
+   board thread needs a row's story ("the ANSWER not the math"), it is in
+   `_bmad-output/history/<epic>/<key>.md` and `_bmad-output/history/CHANGELOG.md`, not on the row.
 2. `_bmad/bmm/stories/` — which stories have files. Check **both `story-21.5-*.md` and `story-21-5-*.md`**;
    both naming forms are in use.
 3. `_bmad-output/active-context/active-context.md` — owed live tests, deploys, blocking input.

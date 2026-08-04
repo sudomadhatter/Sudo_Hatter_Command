@@ -56,6 +56,8 @@ git ls-remote --heads origin 'refs/heads/claude/*'
 Every branch listed that is ahead of `origin/main_debug` is **in-flight story work**. Cross-check each
 against `sprint-status.yaml` for its status, and report the whole set — branch, story, step — **before
 touching anything**. Expect branches the handoff card does not mention: parallel sessions open their own.
+(The board carries bare statuses since the Wave 4 split; a row's history, if you need it, is in
+`_bmad-output/history/<epic>/<key>.md`.)
 
 ⛔ Report the YAML status as the YAML's claim, not as the truth. A story sitting at `review` is **not**
 proof it is landable — the verdict lives in the lane's `walkthrough.md` under `## Code Review`, and a

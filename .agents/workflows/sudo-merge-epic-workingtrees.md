@@ -76,7 +76,9 @@ For each eligible lane, in the Step 3 order:
    per the Step 3 plan. ⛔ Never check `main_debug` out in the shared checkout to resolve anything.
    **Expect ONE conflict block spanning the set's story-status lines in `sprint-status.yaml` at
    every lane merge** — adjacent lines, different lanes, by construction (the one-line-per-entry
-   CHANGE LOG auto-merges; the status lines don't). The resolution is mechanical, never judgment:
+   CHANGE LOG in `_bmad-output/history/CHANGELOG.md` auto-merges; the status lines don't — and
+   post-split they are BARE `key: status` rows, so the block is small). The resolution is
+   mechanical, never judgment:
    keep the TRUNK's lines for already-landed siblings (their `done` is newer) + this LANE's own
    line. First proven 2026-08-01 on the {21.9, 21.10, 21.11} set — memory
    `multi-lane-closeout-board-merge-shape`.
@@ -91,7 +93,8 @@ For each eligible lane, in the Step 3 order:
    obligations of `/sudo-update-sprint-memory` Steps 1–4 + 6, scoped to this story: verify the
    claimed work on disk (grep-check); flip the story to `done` in BOTH the story frontmatter and
    `sprint-status.yaml` (print `Closing <story>: <old> → done`); add the story's own CHANGE-LOG
-   line (own line, newest-first, never re-joined); reduce its active-context entry to a ≤3-line
+   line to `_bmad-output/history/CHANGELOG.md` (own line, newest-first, never re-joined — the log
+   left the board in the Wave 4 split); reduce its active-context entry to a ≤3-line
    pointer; route learnings to their homes and queue memory writes; confirm the walkthrough's
    `## Your Actions` records what lands. Commit — EXPLICIT PATHS ONLY, `git diff --cached --stat`
    shows only this story's files.

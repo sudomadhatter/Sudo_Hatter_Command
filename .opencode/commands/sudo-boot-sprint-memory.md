@@ -33,8 +33,10 @@ For each spec flagged in-scope (or implied by the sprint objective), read it fro
 > "No component specs flagged in-scope. I'll load specs as needed based on what we work on."
 
 ## Step 2b — Sprint status & the next story (the story "pick up")
-Read `_bmad-output/implementation-artifacts/sprint-status.yaml` (grep the epic blocks — don't dump all of
-it). Report, compactly:
+Read `_bmad-output/implementation-artifacts/sprint-status.yaml` — post-split (Wave 4, 2026-08-03) it is
+~62 KB of bare `key: status` rows and fits one read. **Row narrative is NOT there anymore**: what
+happened on a story lives in `_bmad-output/history/<epic>/<key>.md` (and the change log in
+`_bmad-output/history/CHANGELOG.md`) — read those only for the specific rows you need. Report, compactly:
 - **Story states** — counts by status (`ready-for-dev` / `in-progress` / `review` / `done`).
 - **Next story to pick up** — the top `ready-for-dev` (or the current `in-progress`), with its file under
   `_bmad/bmm/stories/`. ⛔ A `descoped` or `deferred` story is **never** recommended, whatever its
