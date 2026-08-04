@@ -70,12 +70,16 @@ def _classify(exit_code: int, output: str, warn_exit: int | None = None) -> str:
     tail = output[-4000:]
     if exit_code in (9009, 127) or any(s in tail for s in _UNRUNNABLE):
         return "unrunnable"
-    # A tool that grades its own findings (workflow_lint: 1 = warnings, 2 = errors) loses
-    # that grading if every non-zero collapses to `fail`. The caller declares which code
-    # means "advisory findings, nothing blocking" via --warn-exit; it is a FOURTH result,
-    # never a pass, so the finding still has to be read - it just does not block. Without
-    # this, an all-warnings lint reads `fail` in the verdict's evidence and the gate gets
-    # ignored, which is the failure this whole receipt contract exists to prevent.
+    # Wave 4 (3) review, finding R5 - the exit-1-vs-exit-2 ambiguity the Wave 4 audit left
+    # open under "Four gates". A tool that grades its own findings (workflow_lint: 1 =
+    # warnings, 2 = errors) loses that grading if every non-zero collapses to `fail`. The
+    # caller declares which code means "advisory findings, nothing blocking" via
+    # --warn-exit; it is a FOURTH result, never a pass, so the finding still has to be
+    # read - it just does not block. Without this, an all-warnings lint reads `fail` in the
+    # verdict's evidence and the gate gets ignored, which is the failure this whole receipt
+    # contract exists to prevent.
+    # AIDEV-NOTE: ONE declared code per call, never a set - that is what stops a real error
+    # (exit 2) being laundered into advice. Test 2d pins it; 2e pins the unflagged default.
     if warn_exit is not None and exit_code == warn_exit:
         return "warn"
     return "fail"
