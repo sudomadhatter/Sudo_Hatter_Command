@@ -84,13 +84,22 @@ missing directories, and `git clone` refuses to clone into a non-empty folder.
    It writes every file to its original path, creates missing dirs, and backs
    up any existing-but-different file as `<name>.pre-restore.bak`.
 
-   > ⛔ **macOS: do NOT run this — use §6 Manual restore instead.** The script is
-   > path-separator-bound even under `pwsh`: it joins
-   > `'_my_resources\migrations\_secrets\master.env'` and does
-   > `$relPath.Replace('/', '\')`, so on macOS it looks for one literal
-   > back-slashed filename and would write `backend\.env` as a single file rather
-   > than nesting it into `backend/`. §6 does the same job by hand and is the
-   > supported Mac path today.
+   **On macOS / Linux use the twin script instead** — it resolves the lobby root
+   itself, so it runs from anywhere:
+
+   ```bash
+   bash _my_resources/migrations/restore-env-master.sh --dry-run   # look first
+   bash _my_resources/migrations/restore-env-master.sh             # then apply
+   ```
+
+   > ⛔ **Do not run the `.ps1` on macOS, even under `pwsh`.** It is
+   > path-separator-bound — it joins `'_my_resources\migrations\_secrets\master.env'`
+   > and does `$relPath.Replace('/', '\')`, so it would hunt for one literal
+   > back-slashed filename and write `backend\.env` as a single file rather than
+   > nesting it into `backend/`. The `.sh` is a verified twin (byte-identical
+   > output on the same master); it also strips the CRLF a Windows-exported
+   > `master.env` carries, and `chmod 600`s what it writes. §6's manual restore
+   > remains the fallback if you have neither.
 5. **Verify** (§4). Do not skip this.
 6. **Delete the master from any transfer medium** (USB stick, download folder)
    once verified. Keep only `_my_resources/migrations/_secrets/master.env` on the

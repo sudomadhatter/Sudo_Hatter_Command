@@ -28,15 +28,20 @@ guides, run the scripts.
 |---|---|---|---|---|
 | 1 | Read the whole procedure first (clone → restore → verify) | [`new_machine-migration-guide.md`](new_machine-migration-guide.md) | ✅ | ✅ |
 | 2 | Clone both repos (lobby + every project you work in) | that guide, §3 | ✅ | ✅ |
-| 3 | Restore every `.env` / `auth_keys/` from the master bundle | [`Restore-EnvMaster.ps1`](Restore-EnvMaster.ps1) | ✅ | ⛔ **see §2** — use the guide's §6 manual restore |
+| 3 | Restore every `.env` / `auth_keys/` from the master bundle | Windows → [`Restore-EnvMaster.ps1`](Restore-EnvMaster.ps1) · macOS/Linux → [`restore-env-master.sh`](restore-env-master.sh) | ✅ | ✅ **use the `.sh`** |
 | 4 | The secret bundle step 3 reads | `_secrets/master.env` — **gitignored, hand-carried, never committed** | ✅ | ✅ |
 | 5 | Rebuild the AGY Python venv + verify the test infra | [`python_vytest-updates-other-machines.md`](python_vytest-updates-other-machines.md) | ✅ | ✅ (use its macOS column) |
 | 6 | Per-machine logins & toolchains — gcloud, gh, firebase, Java 17, Node, GitNexus re-index | that guide, §5 | ✅ | ✅ |
 | 7 | Scrum-board stale-stamp git hooks (per machine, per project — AGY today) | [`git-hooks-board-stale-install.md`](git-hooks-board-stale-install.md) | ✅ | needs `pwsh` (installer is `.ps1`) |
 
 ```powershell
-# step 3, from the LOBBY ROOT (not from this folder) — Windows only
+# step 3 — Windows, from the LOBBY ROOT (not from this folder)
 powershell -File _my_resources\migrations\Restore-EnvMaster.ps1
+```
+```bash
+# step 3 — macOS / Linux. Finds the lobby root itself, so run it from anywhere.
+bash _my_resources/migrations/restore-env-master.sh --dry-run   # look first
+bash _my_resources/migrations/restore-env-master.sh             # then apply
 ```
 
 **Step 5 is not optional on a fast machine.** It is a *correctness* step, not a performance one — CI
@@ -45,14 +50,16 @@ box does not get a reduced checklist; it gets its own `-n` value. That doc says 
 
 ---
 
-## 2 · ⛔ macOS: two things in this kit are Windows-bound
+## 2 · macOS notes
 
-Both are known, neither is subtle, and hitting them blind wastes an afternoon.
+| What | Situation |
+|---|---|
+| **Secrets restore** | ✅ **Solved — use [`restore-env-master.sh`](restore-env-master.sh).** `Restore-EnvMaster.ps1` cannot do this on macOS even under `pwsh`: it joins `'_my_resources\migrations\_secrets\master.env'` and does `$relPath.Replace('/', '\')`, so it would hunt for one literal back-slashed filename and write `backend\.env` as a single file instead of nesting it. Rather than change a working Windows script, the `.sh` is its **twin** — same markers, same backups, same refusals, **verified byte-identical output** on the same master. It also strips the CRLF that a Windows-exported `master.env` carries (a naive shell read would append `\r` to every secret), adds `--dry-run`, and `chmod 600`s what it writes. |
+| **`rename-fix.ps1`** | ⛔ Windows-only *by design* — it rewrites `%USERPROFILE%` and `.claude\settings.json` paths. Not applicable on a Mac; do not run it. |
+| **`.ps1` files generally** | Need `pwsh` (`brew install --cask powershell`). Only `Export-EnvMaster.ps1` and the git-hooks installer are likely to matter. |
 
-| What | Why it breaks on macOS | Do this instead |
-|---|---|---|
-| **`Restore-EnvMaster.ps1`** (step 3) | Even under `pwsh` it is path-separator-bound: it joins `'_my_resources\migrations\_secrets\master.env'` and does `$relPath.Replace('/', '\')`, so on macOS it looks for one literal back-slashed filename and would write `backend\.env` as a single file rather than nesting it | Use **§6 "Manual restore"** in `new_machine-migration-guide.md` — it is written for exactly this case. (Or ask for the script to be made separator-agnostic; the change is small but must not regress Windows.) |
-| **`rename-fix.ps1`** | Windows-only *by design* — it rewrites `%USERPROFILE%` and `.claude\settings.json` paths | Not applicable on a Mac. Do not run it. |
+> **Keep the two restore scripts in sync.** If either changes, change both — they are twins by
+> contract, and the whole point is that a Mac and a Windows box end up with identical files.
 
 **Also install on macOS**, beyond what §5 of the guide lists: `python3.11` ·
 `brew install --cask temurin@17` (Firestore rules-emulator suite) · `node` · **`pwsh`**
@@ -82,9 +89,10 @@ cross-platform once `pwsh` is present.
 
 ## Rules
 
-- **All three `.ps1` files run from the LOBBY ROOT, not from this folder.** Each derives the lobby
-  root as two levels up from its own location — moving them again breaks that, so fix the
-  `Split-Path` chain if you ever do.
+- **The `.ps1` files run from the LOBBY ROOT, not from this folder.** Each derives the lobby root as
+  two levels up from its own location — moving them again breaks that, so fix the `Split-Path` chain
+  if you ever do. (`restore-env-master.sh` resolves its own location, so it runs from anywhere — but
+  it makes the same two-levels-up assumption, so it moves with them.)
 - **`_secrets/` is never committed, emailed, pasted into a chat, or cloud-synced in plaintext.**
   It is covered by the `**/_secrets/` rule in the lobby `.gitignore`; `Export-EnvMaster.ps1` refuses
   to run if that rule ever stops matching.
