@@ -135,6 +135,30 @@ another session** at the time of writing. Wave 4 must not edit them under that s
 either waits for those to land or coordinates explicitly. This is a real sequencing constraint, not a
 courtesy.
 
+> ⚠️ **AUDIT FINDING (F9) — a whole consumer surface was missing from this section.** AGY carries
+> **two** toolkit trees: `.agents/` (the synced lobby toolkit, mapped above) and **`.agent/`
+> (singular) — the vendored BMAD skills**, ~20 more files that reference this board. My first sweep
+> was a `head_limit`-truncated result I read as a complete inventory. The additions:
+>
+> | Consumer | Role | Impact |
+> |---|---|---|
+> | `.agent/skills/bmad-quick-dev/sync-sprint-status.md` | **a 7th writer** — *"Load the FULL file"*, edits the key, *"Save preserving ALL comments"* | Loading the full file is **impossible today** at 364 KB — an argument *for* the split, not against |
+> | `.agent/skills/bmad-sprint-status/SKILL.md` | validates the status vocabulary, checks freshness, offers "show raw sprint-status.yaml" | See the `last_updated` break below |
+> | `.agent/skills/bmad-sprint-planning/sprint-status-template.yaml` | defines the canonical shape for a newly generated board | **Carries no trailing-note convention** — it is *already* the lean shape this wave targets |
+> | `bmad-create-story` · `bmad-dev-story` · `bmad-retrospective` · `bmad-code-review` steps | read status | state only — safe |
+>
+> **The template finding cuts the other way and is worth stating plainly:** the split moves AGY
+> *toward* BMAD's canonical shape, not away from it. The house rule *"fix the rule, not BMAD
+> internals"* is not in tension here — no BMAD internal needs editing.
+>
+> ⛔ **But one concrete break:** `bmad-sprint-status` warns "may be stale" from `last_updated`,
+> falling back to `generated`. AGY has **no `last_updated` key** — it is a *comment* at line 66,
+> sitting directly above the CHANGE LOG block, and line 2 redirects readers to that block. §4.4 moves
+> that block to history and takes the date with it, leaving only `generated: 2026-03-07`. **Fix:
+> promote `last_updated` to a real key in the retained header**, as the template already has it
+> (`sprint-status-template.yaml:44`). ~30 bytes, repairs a pre-existing latent defect instead of
+> making it permanent.
+
 **Non-consumers, verified clear:** `scripts/git-hooks/board-stale-stamp.sh` diffs the board between
 the last reconcile commit and HEAD. ~~The migration commit is a whole-file rewrite, so the stamp will
 fire once, loudly.~~ ⚠️ **AUDIT FINDING (F5) — checked and false.** Line 55 strips the trailing
@@ -245,6 +269,10 @@ remaining 4 % is the dangerous part.
 
 ### 4.4 — Migrate the CHANGE LOG and the free comments
 - 52 entries → `history/CHANGELOG.md`, one `##` section each, newest first, verbatim text.
+- **Promote `last_updated` to a real YAML key in the retained header** before moving the block —
+  today it is the comment at line 66 that rides along with the CHANGE LOG (F9). Match the template's
+  shape (`sprint-status-template.yaml:44`), and have `story_status.py set` refresh it on every flip
+  so it cannot rot the way the comment did.
 - The 347 free-comment lines are **triaged, not bulk-moved**: policy notes (the V3 REVIEW POLICY
   block, the epic-8 rulings) are *doctrine* and belong in the header or a rule; dated narrative goes
   to history. Anything ambiguous stays put — leaving a comment behind costs bytes; moving doctrine
@@ -360,6 +388,7 @@ wrong, and a status that 21 rows use and the doctrine omits is exactly how `defe
 | Doctrine buried in history by an unreviewed triage | MED | 4.4 — `comment-triage.tsv` is a reviewed artifact; `apply` refuses on `?`; default KEEP |
 | A narrative reader degrades silently | MED | §3 classifies readers explicitly; 4.5 re-points each; the failure is *less output*, never an error — so it must be checked by reading the output, not by exit codes |
 | Two diverged AGY autopilot `.ps1` copies | MED | both listed in §3; `autopilot-has-three-drifting-engines` — fix in all copies or none |
+| BMAD's freshness signal dies with the CHANGE LOG | MED | **F9** — promote `last_updated` to a real key in 4.4; `story_status.py set` refreshes it |
 | Board regrows | MED | §6 rule + `check_board_note_budget()`, shipped in the same wave |
 | Stale-stamp hook fires on the migration commit | LOW | expected; noted in the commit message |
 | Merge conflict against another lane's board edit | LOW | the split *reduces* this class — conflicts today are on multi-KB story lines |
@@ -385,7 +414,9 @@ plus deleting `history/`. Committed in 4.0, before any risk is taken, and held o
 
 - Changing the status vocabulary itself (only its *documentation* is corrected — §6).
 - Reformatting `epics.md` or the scrum board map.
-- BMAD internals.
+- **BMAD internals** — and per F9 none need touching: `sprint-status-template.yaml` already describes
+  the lean shape, so the split converges on it. The one BMAD-facing change is *adding* the
+  `last_updated` key the template already expects, which is repair, not a fork.
 - Any new dependency. Stdlib Python 3.11 + git.
 - Dropping `.pre-split` — that is a separate action one sprint later.
 
@@ -423,7 +454,11 @@ claim against the live tree — the Wave 1 lesson was that fixture-green proves 
   parsers; `story_status.py`'s rewrite regex confirmed to flip a bare line (`n=1`). Six writers and
   four narrative readers classified in §3. Three consumer defects found: **F1, F2, F4.** One claimed
   risk **disproved** (F5). `check_artifact_budgets` globs `_artifacts/**` only, so `_bmad-output/history/`
-  does not interact with it.
+  does not interact with it. **A second sweep of the same question found a surface the first had
+  missed entirely (F9)** — the first result was `head_limit`-truncated and I read it as complete.
+  The lesson is the one this initiative keeps re-learning in a new costume: *a truncated inventory
+  looks exactly like a complete one.* The corrected count is **~70 referencing files across three
+  trees** (lobby `.agents/`, AGY `.agents/`, AGY `.agent/`), not the 50 originally stated.
 - **Phase 2 (over-engineering gate)** — one tripwire fires: per-span `sha256` in the manifest, a
   field no check consumes once a whole-file compare exists (**F6**, cut). `.pre-split` was also
   challenged as duplicating `git show <sha>:path` — **kept**, demoted from verification baseline to
@@ -446,6 +481,7 @@ claim against the live tree — the Wave 1 lesson was that fixture-green proves 
 | F7 | §4.3 | MED | "No command writes a terminal row" holds only for rows *already* terminal. A close-out mid-window writes a row **into** terminal state, note attached (F2). The phase's entire safety claim is conditional and the condition was unstated. | ✅ **Baked in** — 4.3 gated on zero rows in `review`/`in-progress` |
 | — | §4.4 | MED | "Triage 347 comment lines, doctrine vs narrative" is the one step vague enough that a dev guesses — and a wrong guess buries a ruling in history, which is the failure `settled-decisions-are-not-gaps` already has a memory for. | ✅ **Baked in** — `comment-triage.tsv` as a reviewed artifact; `apply` refuses on `?`; default KEEP |
 | F6 | §4.1 | LOW | Per-span `sha256` in the manifest is consumed by nothing once the whole-file compare exists. Over-engineering tripwire: a field that looks like rigour and adds none. | ✅ **Cut** |
+| F9 | §3, §4.4, §9 | MED | **§3's consumer map was incomplete.** AGY has two toolkit trees — `.agents/` (synced lobby) and **`.agent/` (vendored BMAD skills, ~20 more files)**. Missing from it: a **7th writer** (`bmad-quick-dev/sync-sprint-status.md`), the `bmad-sprint-status` skill, and the template defining the board's canonical shape. Concrete break: `last_updated` is a *comment* at line 66 riding directly above the CHANGE LOG, so 4.4 moves the date to history and `bmad-sprint-status` falls back to `generated: 2026-03-07` and warns "stale" forever. | ✅ **Baked in** — §3 table extended; 4.4 promotes `last_updated` to a real key per the template; §9 clarified |
 | F5 | §3 | LOW | The plan claimed `board-stale-stamp.sh` "will fire once, loudly" on the migration commit. **False** — line 55 strips the comment before comparing values and line 10 says "comment-only edits ignored"; the drift file comes out empty and the hook exits 0. The plan overstated its own risk. | ✅ **Retracted** in §3 |
 | F8 | §1 | INFO | The terminal/active table conflated *total rows* (235/26) with *rows carrying a note* (199/19). The 199/19 split — the number the whole phasing rests on — is correct. | ✅ **Column added** |
 
@@ -474,5 +510,13 @@ migration commit. No split recommended; the ordering already carries the benefit
 All three are the same failure class this initiative exists to end — an enforcement point that either
 cannot fail (F1) or fails on honest work and gets muted (F2, F4). They are cheap now and expensive
 after the migration, which is exactly why this gate runs before a line of code. F3 · F5 · F6 · F7 · F8
-and the §4.4 tightening are already baked into the plan above; **the four rulings in §10 plus the new
-fifth are owed before 4.1 starts.**
+· F9 and the §4.4 tightening are already baked into the plan above; **the four rulings in §10 plus the
+new fifth are owed before 4.1 starts.**
+
+> **Audit addendum (same day, after the first verdict).** A second, slower sweep of the consumer
+> question returned **F9** — an entire vendored BMAD skill tree (`.agent/`, singular) that the first
+> sweep truncated away. It does not change the verdict: F9 is MED, fully mitigated in §3/§4.4/§9, and
+> its largest sub-finding actually *reduces* risk (BMAD's own template already describes the lean
+> shape this wave produces). It is recorded rather than quietly folded in because the miss is the
+> point — **the audit's own blast-radius phase was one truncated tool result away from shipping an
+> incomplete consumer map**, which is precisely the defect class the map exists to prevent.
