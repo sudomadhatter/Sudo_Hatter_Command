@@ -1,0 +1,117 @@
+{
+  "name": "sudo-command-center (teaching edition)",
+  "source": "../../..",
+
+  "_comment_include": "Everything the system needs to run for someone who has no projects yet. Tool surface dirs (.claude/.opencode/.antigravity/.agent) are included so commands resolve on first clone rather than after a /sync-agents.",
+  "include": [
+    ".agents",
+    ".claude",
+    ".opencode",
+    ".antigravity",
+    ".agent",
+    ".githooks",
+    ".vscode",
+    "_bmad",
+    "docs",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    "router.md",
+    "opencode.json",
+    ".mcp.json",
+    ".gitattributes",
+    ".gitignore",
+    "requirements.txt",
+    "requirements-tdad.txt"
+  ],
+
+  "_comment_exclude": "Personal, machine-local, or project-owned. _my_resources is Daniel's personal area; _artifacts is session memory; .gitnexus is a per-machine index; Projects/ holds real client work.",
+  "exclude": [
+    ".agents/active-project.txt",
+    ".agents/skills/3_voice-ai-development",
+    ".agents/skills/4_sse-streaming-patterns",
+    ".agents/skills/5_adk_skills",
+    ".agents/skills/6_dual-store-rag-patterns",
+    ".agents/skills/agent-handoff-patterns",
+    ".agents/skills/hr-agent-schema-guide",
+    ".agents/skills/rag-implementation",
+    ".agents/skills/regulatory-verification-protocol",
+    ".agents/skills/specialist_agents_team",
+    ".agents/skills/gemini-live-api",
+    ".agents/skills/gcp-cloud-run",
+    ".agents/skills/deploy-backend",
+    ".agents/skills/troubleshoot-cloudrun-deployment",
+    ".agents/commands/security_team_aviationchat.md",
+    ".agents/workflows/security_team_aviationchat.md",
+    ".agents/scripts/export-teaching-edition.ps1",
+    ".agents/scripts/teaching-edition",
+    ".claude/skills/3_voice-ai-development",
+    ".claude/skills/4_sse-streaming-patterns",
+    ".claude/skills/5_adk_skills",
+    ".claude/skills/6_dual-store-rag-patterns",
+    ".claude/skills/agent-handoff-patterns",
+    ".claude/skills/hr-agent-schema-guide",
+    ".claude/skills/rag-implementation",
+    ".claude/skills/regulatory-verification-protocol",
+    ".claude/skills/specialist_agents_team",
+    ".claude/skills/gemini-live-api",
+    ".claude/skills/gcp-cloud-run",
+    ".claude/skills/deploy-backend",
+    ".claude/skills/troubleshoot-cloudrun-deployment",
+    ".claude/commands/security_team_aviationchat.md",
+    ".claude/settings.local.json"
+  ],
+
+  "_comment_excludeAnywhere": "Path segments never copied, wherever they appear.",
+  "excludeAnywhere": [
+    ".git",
+    ".venv",
+    ".venv_stale",
+    "node_modules",
+    "__pycache__",
+    ".pytest_cache",
+    ".gitnexus",
+    "_artifacts",
+    "_bmad-output",
+    "_my_resources",
+    "Projects",
+    "scratch",
+    "_routing-canary"
+  ],
+
+  "_comment_substitutions": "Most domain references in core commands are incidental examples, not structure. Matching is CASE-SENSITIVE so replacements read naturally in context (DANIEL in a heading becomes THE OPERATOR, not 'the operator'). That means every case variant needs its own row - the case-INSENSITIVE leak scan below is what proves none were missed. Order matters: longest first, so AGY_AVIATIONCHAT is consumed before AVIATIONCHAT.",
+  "substitutions": [
+    { "from": "AGY_AVIATIONCHAT", "to": "YOUR_PROJECT" },
+    { "from": "AVIATIONCHAT", "to": "YOUR_PROJECT" },
+    { "from": "AviationChat", "to": "your project" },
+    { "from": "aviationChat", "to": "your-project" },
+    { "from": "aviationchat", "to": "your-project" },
+    { "from": "NEXGen", "to": "YOUR_PROJECT" },
+    { "from": "NEXgen", "to": "YOUR_PROJECT" },
+    { "from": "DANIEL", "to": "THE OPERATOR" },
+    { "from": "Daniel", "to": "the operator" },
+    { "from": "dlohneiss@gmail.com", "to": "you@example.com" },
+    { "from": "dlohneiss", "to": "your-user" },
+    { "from": "sudomadhatter", "to": "your-github-user" },
+    { "from": "Sudo_Hatter_Command", "to": "sudo-command-center" }
+  ],
+
+  "_comment_transforms": "Whole-file swaps for files whose CONTENT is personal, not just its tokens. operator-profile is floor-tier and hard-codes Daniel as chair; unchanged, a stranger's agent believes it is talking to him.",
+  "transforms": [
+    { "path": ".agents/rules/operator-profile.md", "replaceWith": "replacements/operator-profile.md" },
+    { "path": ".agents/maintained-projects.txt", "replaceWith": "replacements/maintained-projects.txt" },
+    { "path": "router.md", "replaceWith": "replacements/router.md" }
+  ],
+
+  "_comment_leakScan": "Runs after every export and cannot be skipped. Any hit blocks the push. Matching is case-INSENSITIVE, so it catches case variants the substitution table missed - that is its main job. Every value from the live .env is added automatically. NOTE: _my_resources is deliberately NOT a needle. It is a structural folder name in the workspace standard (a personal area agents never touch) and the teaching edition should keep the concept; only its CONTENTS are excluded.",
+  "leakScan": {
+    "literals": [
+      "Daniel",
+      "dlohneiss",
+      "AviationChat",
+      "NEXgen",
+      "sudomadhatter",
+      "Sudo_Hatter_Command"
+    ]
+  }
+}

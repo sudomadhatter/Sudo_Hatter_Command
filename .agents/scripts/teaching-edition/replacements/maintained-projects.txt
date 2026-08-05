@@ -1,0 +1,11 @@
+# Projects this command center maintains.
+#
+# One project folder name per line, relative to Projects/. Blank lines and #-comments ignored.
+# Used by the fan-out commands (/update-maps-indexes, /sync-agents) to decide what to sweep.
+#
+# Empty on purpose: a fresh command center maintains nothing yet.
+# Add your first entry after you clone the project skeleton — see /sudo-tour stop 2.
+#
+# Example:
+#   MyApp
+#   InternalTools
