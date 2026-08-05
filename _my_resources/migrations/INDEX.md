@@ -33,6 +33,28 @@ guides, run the scripts.
 | 5 | Rebuild the AGY Python venv + verify the test infra | [`python_vytest-updates-other-machines.md`](python_vytest-updates-other-machines.md) | ✅ | ✅ (use its macOS column) |
 | 6 | Per-machine logins & toolchains — gcloud, gh, firebase, Java 17, Node, GitNexus re-index | that guide, §5 | ✅ | ✅ |
 | 7 | Scrum-board stale-stamp git hooks (per machine, per project — AGY today) | [`git-hooks-board-stale-install.md`](git-hooks-board-stale-install.md) | ✅ | needs `pwsh` (installer is `.ps1`) |
+| 8 | **Link the Claude auto-memory store** so memory travels via git instead of dying on this box | `.agents/scripts/link-memory.ps1` · macOS → `link-memory.sh` | ✅ | ✅ **use the `.sh`** |
+
+```powershell
+# step 8 — Windows, from the LOBBY ROOT. Dry run first; -Apply only once the plan reads right.
+powershell -File .agents\scripts\link-memory.ps1 -All
+powershell -File .agents\scripts\link-memory.ps1 -All -Apply
+```
+```bash
+# step 8 — macOS. Finds the lobby root itself, so run it from anywhere.
+bash .agents/scripts/link-memory.sh --all            # look first
+bash .agents/scripts/link-memory.sh --all --apply    # then apply
+```
+
+> **⚠️ Step 8 has an ORDER dependency across machines — get this wrong and you strand memory.**
+> The **first machine to link SEEDS** the shared store; every machine after it finds the store populated
+> and moves its own local memory **aside to a backup** instead of merging. So **link the machine holding
+> the NEWEST memories first**, commit + push, and only then link the others. The scripts never delete or
+> merge — they back up and report — but a stale machine seeding first means everyone pulls stale memory.
+>
+> **On macOS, run the dry run and read it before `--apply`.** The slug rule was derived from Windows
+> paths; the script verifies the directory it computed actually exists and tells you to stop if nothing
+> matches. If it prints that warning, report it rather than forcing it.
 
 ```powershell
 # step 3 — Windows, from the LOBBY ROOT (not from this folder)
@@ -56,10 +78,13 @@ box does not get a reduced checklist; it gets its own `-n` value. That doc says 
 |---|---|
 | **Secrets restore** | ✅ **Solved — use [`restore-env-master.sh`](restore-env-master.sh).** `Restore-EnvMaster.ps1` cannot do this on macOS even under `pwsh`: it joins `'_my_resources\migrations\_secrets\master.env'` and does `$relPath.Replace('/', '\')`, so it would hunt for one literal back-slashed filename and write `backend\.env` as a single file instead of nesting it. Rather than change a working Windows script, the `.sh` is its **twin** — same markers, same backups, same refusals, **verified byte-identical output** on the same master. It also strips the CRLF that a Windows-exported `master.env` carries (a naive shell read would append `\r` to every secret), adds `--dry-run`, and `chmod 600`s what it writes. |
 | **`rename-fix.ps1`** | ⛔ Windows-only *by design* — it rewrites `%USERPROFILE%` and `.claude\settings.json` paths. Not applicable on a Mac; do not run it. |
+| **`link-memory.sh`** | ✅ **Use this, not the `.ps1`.** Twin of `link-memory.ps1`: symlink instead of junction, `~/.claude/projects/` instead of `%USERPROFILE%\.claude\projects\`, everything else identical. The macOS slug shape is **inferred from Windows paths** — a POSIX path's leading `/` should render as a leading `-`. The script verifies the computed directory exists and **refuses rather than guessing** if nothing matches, so run the dry run and read it. One command settles it for good: `ls ~/.claude/projects/`. |
 | **`.ps1` files generally** | Need `pwsh` (`brew install --cask powershell`). Only `Export-EnvMaster.ps1` and the git-hooks installer are likely to matter. |
 
-> **Keep the two restore scripts in sync.** If either changes, change both — they are twins by
-> contract, and the whole point is that a Mac and a Windows box end up with identical files.
+> **Keep the twin pairs in sync.** If either half changes, change both — they are twins by contract, and
+> the whole point is that a Mac and a Windows box end up with identical files. **Two pairs live under this
+> rule now:** `Restore-EnvMaster.ps1` / `restore-env-master.sh`, and
+> `.agents/scripts/link-memory.ps1` / `link-memory.sh`.
 
 **Also install on macOS**, beyond what §5 of the guide lists: `python3.11` ·
 `brew install --cask temurin@17` (Firestore rules-emulator suite) · `node` · **`pwsh`**
@@ -76,6 +101,17 @@ cross-platform once `pwsh` is present.
 |---|---|
 | Re-bundle every secret after adding or rotating one | [`Export-EnvMaster.ps1`](Export-EnvMaster.ps1) |
 | Rename-day: move projects into `Projects/` + repair absolute paths | [`rename-fix.ps1`](rename-fix.ps1) (dry-run by default; `-Apply` to write) — **Windows only** |
+| **Rename-day, STEP 2 — re-point the memory junction** | `.agents/scripts/link-memory.ps1 -All -Apply` (macOS: `link-memory.sh --all --apply`) |
+
+> **⚠️ Renaming without step 2 silently strands memory — this has already happened twice.**
+> Claude Code's memory slug is derived from the workspace's absolute path (`:` `\` `/` `_` → `-`), so a
+> rename changes the slug and orphans everything under the old one. `rename-fix.ps1` repairs
+> `.claude\settings.json` but knows nothing about `projects/<slug>/memory/`. Two dead stores on this
+> machine prove the gap: **13 files** under `c--AGY-Projects-aviationChat-AGY` and **2** under
+> `c--Sudo-Hatter-Command-Projects-aviationChat-AGY`, both from past renames.
+>
+> Once the store is junctioned into the repo, a rename costs **nothing but re-running the linker** — the
+> data was never in the slug directory to begin with. That is the entire point of the junction.
 
 ## 4 · One-off migration records (historical — NOT machine setup)
 

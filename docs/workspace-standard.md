@@ -82,6 +82,14 @@ one the beacon dies. Three tiers, one reading-order rule:
 an `AGENTS.md`, read that FIRST (how to *act* here); read `INDEX.md`/`README.md` only when you need the
 *inventory*. They are complements, not substitutes: `AGENTS.md` = behavior, `INDEX.md` = contents.
 
+**`.agents/` is a Tier-1 floor, and it is linted like one.** It carries the same brain + inventory +
+adapters any workspace root does, and each of its subfolders carries an `INDEX.md`. Dot-dirs are
+otherwise treated as tool cache and skipped wholesale, so `.agents/` is named in `DOT_CONTENT_DIRS`
+(PATH CONTRACT below) to opt it back into the scan. It does **not** index deeper than level 2 — six of
+its ten subfolders are flat, `skills/` is self-describing via `SKILL.md` frontmatter, `bmad/` is
+BMAD-owned and regenerated, and `templates/project-template/` is a scaffold that carries its own
+control files. Depth is not the need there; enforcement is.
+
 **Why the adapters matter at Tier 2:** harnesses auto-attach their nested memory file at the point of
 contact — Claude Code injects a subfolder's `CLAUDE.md` the moment it touches any file under it (Codex:
 nested `AGENTS.md`; Gemini: hierarchical context files). So the local law self-enforces when an agent
@@ -156,7 +164,10 @@ instead of a per-repo fork. Keep workspaces matching this table and the generic 
 | Pickup/handoff brief (**prune target**) | `_artifacts/_main/active-context.md` or a registered exception's `active-context.md` | **BMAD project:** `_bmad-output/active-context/active-context.md` (the live brief; `_artifacts/` holds *session history* only) | the file the **prune** trims |
 | Context archive (prune overflow) | owning bucket's `active-context-archive.md` | `_bmad-output/active-context/_archive/` | created on first prune |
 | Session ledger | `_artifacts/INDEX.md` | `_artifacts/INDEX.md` | one row per session; archive overflow → `INDEX-archive.md` |
-| Depth-3 epic INDEX | `_artifacts/<bucket>/INDEX.md` (bucket = `_main` or a registered exception) | `_artifacts/<epic_or_bucket>/INDEX.md` (e.g. `epic_8/`, `epic_11/`, `_main/`, `tea/`) | **only inside `_artifacts/`** — one row per session folder, listing the story/what + artifact files present; scan-to-find for bug-tracking. Not for code dirs. Created when a bucket has ≥2 session folders; `/update-maps-indexes` reconciles. |
+| INDEX depth | **level 2** everywhere, except the two named lists below | same | the house rule: every level-2 folder carries an `INDEX.md`. Exceptions are **named sets in `check_maps.py`**, never hardcoded at the call site — opting a folder in is a one-line edit. |
+| ↳ `DEPTH3_DIRS` (deeper) | `_artifacts/<bucket>/INDEX.md` (bucket = `_main` or a registered exception) | `_artifacts/<epic_or_bucket>/INDEX.md` (e.g. `epic_8/`, `epic_11/`, `_main/`, `tea/`) | folders that index one level **deeper**: skipped by check 2.5, walked by check 7 instead. One row per session folder, listing the story/what + artifact files present; scan-to-find for bug-tracking. Not for code dirs. Created when a bucket has ≥2 session folders; `/update-maps-indexes` reconciles. |
+| ↳ `DOT_CONTENT_DIRS` (scanned) | `.agents/` | `.agents/` | dot-dirs that are real **content**, not tool cache, so they are scanned like any normal folder. Everything else starting with `.` stays skipped (`.ruff_cache/0.15.21/` would otherwise be permanent FATAL drift). Applies at **level 1 only** — the level-2 dot-skip stays blanket, keeping `.agents/.claude` and `.agents/.gitnexus` exempt. |
+| Portable auto-memory | `_artifacts/_memory/` | `_artifacts/_memory/` | the **canonical** home of Claude Code's auto-memory. The harness writes to `~/.claude/projects/<slug>/memory/`, which is not a repo and never leaves the machine; a **junction (Windows) / symlink (macOS)** points it here so memory travels in git. Linked by `.agents/scripts/link-memory.ps1` · `link-memory.sh` (twins; dry-run by default). `README.md`/`.gitkeep` are scaffolding, not memories. |
 | Retired artifacts | `_artifacts/_archived/` | `_artifacts/_archived/` | — |
 | Testing & Debugging | `_artifacts/debugging/` | `_artifacts/debugging/` | standardized folder for isolated testing, bug repros, and debug scripts |
 | Tier-2 local law | `_artifacts/AGENTS.md` · `_my_resources/AGENTS.md` · `docs/AGENTS.md` (+ 1-line `CLAUDE.md`/`GEMINI.md` adapters beside each) | same | tier model above; linted as a **non-fatal hint** (check 8) |
@@ -240,6 +251,27 @@ Full rule → `.agents/rules/artifacts-always-first.md`.
   **story** → `<epic>/<story>/`; retired history → `_archived/`; **testing/debugging** →
   `debugging/<YYYY-MM-DD>_<slug>/`.
 - **One authoritative history:** do not split a non-exempt project's history by launch directory or agent.
+
+### Auto-memory — junctioned into the repo, because the harness store is path-derived
+Claude Code keeps auto-memory at `~/.claude/projects/<slug>/memory/`, where `<slug>` is **derived from the
+workspace's absolute path** (`:` `\` `/` `_` → `-`). Left alone that store fails three ways: it never leaves
+the machine (`~/.claude` is not a repo, not a link, not cloud-synced), a **rename silently orphans it**
+(the slug changes), and two casings of a path can collide on a case-insensitive volume.
+
+So the canonical store is `_artifacts/_memory/` **in the repo**, and the harness path is a junction/symlink
+pointing at it — set up per machine with `.agents/scripts/link-memory.ps1` (Windows) or `link-memory.sh`
+(macOS). They are **twins by contract**: change one, change both.
+
+Two operational rules, both learned the expensive way:
+- **The first machine to link SEEDS the shared store**; later machines find it populated and move their own
+  local memory *aside to a backup* rather than merging. **Link the machine with the newest memories first.**
+  The scripts never delete or merge — but a stale machine seeding first propagates stale memory to all.
+- **Re-run the linker on rename day.** `rename-fix.ps1` repairs `.claude/settings.json` but not the memory
+  slug. That gap stranded **15 memory files** across two dead slugs before this was set up. Once junctioned,
+  a rename costs nothing but re-pointing the link — the data was never in the slug directory.
+
+Full contract → `_artifacts/_memory/README.md`; setup steps → `_my_resources/migrations/INDEX.md` §1 step 8
+(new machine) and §3 (rename day).
 
 ### Routing canary — the regression cadence
 `_routing-canary/` is a permanent check, not a one-time demo. **Re-run it when** you change routing structure

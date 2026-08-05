@@ -14,6 +14,19 @@
        ...in the home base AND your user ~/.claude/settings.json.
     3. Lists virtual envs to recreate (they hardcode the old path).
 
+  ** STEP 2 OF RENAME DAY - THIS SCRIPT IS NOT THE WHOLE JOB **
+  It does NOT touch Claude Code's auto-memory. That store lives at ~/.claude/projects/<slug>/memory/
+  where <slug> is DERIVED FROM THE WORKSPACE'S ABSOLUTE PATH (':' '\' '/' '_' all become '-'), so a
+  rename changes the slug and ORPHANS every memory under the old one. That gap has already cost real
+  data twice: 13 files stranded under 'c--AGY-Projects-aviationChat-AGY' and 2 under
+  'c--Sudo-Hatter-Command-Projects-aviationChat-AGY'.
+
+  After this script finishes, run:
+        .\.agents\scripts\link-memory.ps1 -All -Apply      (macOS: link-memory.sh --all --apply)
+
+  Once the store is junctioned into the repo, a rename costs nothing but re-pointing that junction -
+  the memories were never in the slug directory to begin with.
+
   Safe by construction: DRY-RUN by default (shows everything first); skips node_modules, venvs, .git,
   __pycache__, .ruff_cache, .pytest_cache, .next, dist, build; only known text extensions; writes
   UTF-8 (no BOM). Add -Apply to do it; -RemoveVenvs to delete venvs for a clean recreate;
@@ -23,6 +36,7 @@
   .\_my_resources\migrations\rename-fix.ps1                     # dry-run preview (move + fixes)
   .\_my_resources\migrations\rename-fix.ps1 -Apply              # move projects + fix paths
   .\_my_resources\migrations\rename-fix.ps1 -Apply -RemoveVenvs # also delete venvs to recreate
+  .\.agents\scripts\link-memory.ps1 -All -Apply                 # THEN re-point the memory junction
 #>
 param(
   [string]$OldName = 'Sudo_Hatter_Command',

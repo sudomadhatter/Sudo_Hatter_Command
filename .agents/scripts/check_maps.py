@@ -28,8 +28,9 @@ Nine checks (1-3 fatal drift; 4 informational; 5 + 8 + 9 non-fatal hints; 6-7 fa
                              (Informational — it feeds the workflow's judgment steps, never the exit code.)
   5. Context hygiene        — NON-FATAL nag: continuity brief over the prune window / INDEX.md over the row cap.
   6. Structure conformance  — the workspace carries the standard files in the standard places (the contract gate).
-  7. Depth-3 _artifacts INDEX — every _artifacts/ bucket with ≥2 session folders has an INDEX.md (one row per
-                             session); reports missing INDEXes, missing rows, stale rows. Only inside _artifacts/.
+  7. Depth-3 INDEX          — every bucket with ≥2 session folders inside a DEPTH3_DIRS folder has an INDEX.md
+                             (one row per session); reports missing INDEXes, missing rows, stale rows. The
+                             house rule is depth-2 everywhere; DEPTH3_DIRS is the named opt-in list.
   8. Tier-2 local law       — NON-FATAL nag: each guarded infrastructure dir present (_artifacts/, _my_resources/,
                              docs/) carries a local-law AGENTS.md (non-empty) + 1-line CLAUDE.md/GEMINI.md
                              adapters that actually redirect (workspace-standard.md Part 1, "folder-file tier
@@ -71,6 +72,20 @@ TOPLEVEL_SKIP = {
     "_test_scripts", "_debug_audio", "dist", "build", "__tests__",
     "_bmad", "_my_resources",
 }
+
+# --- INDEX depth exceptions (the named lists; see workspace-standard.md PATH CONTRACT) ---------------
+# The house rule is INDEX coverage to LEVEL 2. These two sets are the ONLY sanctioned exceptions, named
+# here so opting a folder in is a one-line edit instead of a code change in several places.
+#
+# DEPTH3_DIRS  — folders that index one level DEEPER than the rule. check 2.5 skips them at level 1 and
+#                check 7 walks them instead, requiring an INDEX.md in every bucket with >=2 session dirs.
+# DOT_CONTENT_DIRS — dot-dirs that are real CONTENT, not tool cache, so check 2.5 scans them like any
+#                normal folder. Everything else starting with "." stays skipped (.ruff_cache/0.15.21/ and
+#                friends would otherwise report as FATAL drift forever, which is how a real check gets
+#                trained into background noise). Applies at LEVEL 1 ONLY — the level-2 dot-skip stays
+#                blanket, so `.agents/.claude` and `.agents/.gitnexus` remain correctly exempt.
+DEPTH3_DIRS = {"_artifacts"}
+DOT_CONTENT_DIRS = {".agents"}
 
 STATE_BASENAME = ".maps-state.json"   # sits in the docs folder beside the repo-map (mode-dependent dir)
 
@@ -368,11 +383,14 @@ def check_level2_indexes(root):
         # Dot-dirs are tool caches (.ruff_cache, .pytest_cache, .gitnexus, ...) — never content, so they
         # never owe an INDEX. Skip them at level 1 exactly as the level-2 loop below already does; without
         # this, a build cache's version folder (.ruff_cache/0.15.21/) is reported as FATAL drift forever,
-        # which is how a real check gets trained into background noise.
-        if not p1.is_dir() or p1.name in SCAN_IGNORES or p1.name.startswith("."):
+        # which is how a real check gets trained into background noise. DOT_CONTENT_DIRS opts the real
+        # content dot-dirs (the master `.agents/` toolkit) back IN — they carry INDEXes like anything else.
+        if not p1.is_dir() or p1.name in SCAN_IGNORES:
             continue
-        if p1.name == "_artifacts":
+        if p1.name.startswith(".") and p1.name not in DOT_CONTENT_DIRS:
             continue
+        if p1.name in DEPTH3_DIRS:
+            continue  # handled one level deeper by check 7
         for p2 in p1.iterdir():
             if not p2.is_dir() or p2.name in SCAN_IGNORES or p2.name.startswith("."):
                 continue
@@ -383,13 +401,19 @@ def check_level2_indexes(root):
     return problems
 
 
-# --- check 7: depth-3 INDEX reconciliation (inside _artifacts/ only) ---------------------------------
-# Only _artifacts/ gets depth-3 INDEXes; everything else stays depth-2. A "bucket" is any directory
-# under _artifacts/ that has ≥2 session subdirectories. Each bucket should have an INDEX.md with one
-# row per session folder. This check reports: missing INDEX, missing rows, stale rows.
+# --- check 7: depth-3 INDEX reconciliation (DEPTH3_DIRS only) ----------------------------------------
+# Only the folders named in DEPTH3_DIRS get depth-3 INDEXes; everything else stays depth-2. A "bucket"
+# is any directory under one of them that has ≥2 session subdirectories. Each bucket should have an
+# INDEX.md with one row per session folder. This check reports: missing INDEX, missing rows, stale rows.
 def check_depth3_indexes(root):
     problems = []
-    adir = root / "_artifacts"
+    for top in sorted(DEPTH3_DIRS):
+        problems.extend(_check_depth3_tree(root, root / top))
+    return problems
+
+
+def _check_depth3_tree(root, adir):
+    problems = []
     if not adir.is_dir():
         return problems
 
@@ -398,7 +422,7 @@ def check_depth3_indexes(root):
         dirnames[:] = [d for d in dirnames if d != "_archived" and not d.startswith(".")]
         bucket = Path(dirpath)
         if bucket == adir:
-            continue  # _artifacts/ itself has the main narrative INDEX — not a depth-3 bucket
+            continue  # the top itself has the main narrative INDEX — not a depth-3 bucket
         # Only count subdirs that look like session folders (date-prefixed, story-, tea-, etc.)
         sessions = sorted(d for d in dirnames if SESSION_FOLDER_RE.match(d))
         if len(sessions) < 2:
@@ -518,6 +542,13 @@ def check_conformance(root, is_home, is_bmad, map_path):
     need("CLAUDE.md", "adapter")
     need("GEMINI.md", "adapter")
     need(".agents", "toolkit dir")
+    # `.agents/` is a TIER-1 FLOOR (workspace-standard.md Part 1) — it carries the same brain + adapters
+    # any workspace root does. Doctrine has said so since the tier model landed; nothing enforced it,
+    # because check 2.5's dot-dir skip made the whole toolkit invisible to the linter.
+    need(".agents/AGENTS.md", "toolkit brain")
+    need(".agents/INDEX.md", "toolkit inventory")
+    need(".agents/CLAUDE.md", "toolkit adapter")
+    need(".agents/GEMINI.md", "toolkit adapter")
     need(".agents/scripts/check_maps.py", "maintenance script")
     need(".agents/scripts/generate_repo_map.py", "map generator")
     need("_my_resources/open_tasks/todo_list.md", "open-tasks list")

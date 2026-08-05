@@ -1,7 +1,57 @@
 # ACTIVE CONTEXT — _main  (you own this, not a vendor)
 
 ## 1. PRIME STATE
-Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-07-30
+Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-08-04
+**2026-08-04 (latest): Auto-memory is now junctioned into the repo — tooling shipped, NOT yet applied.**
+Claude memory lives under a slug **derived from the workspace's absolute path**, so it never leaves the
+machine and a rename orphans it. **15 files were already dead** (13 + 2 under two stale slugs from past
+renames) because `rename-fix.ps1` repairs `.claude\settings.json` but never knew `projects/<slug>/memory/`
+existed. Canonical store is now `_artifacts/_memory/`, linked by `.agents/scripts/link-memory.ps1` /
+`link-memory.sh` — **twins by contract**, dry-run by default, and they **never merge or delete**: seed if
+canonical is empty, otherwise back the local set aside to `memory.local-backup-<ts>` and report.
+**⛔ NOTHING WAS APPLIED ON THIS DESKTOP — deliberate.** This box holds the OLDEST memories; the laptop has
+the current ones. **The first machine to link SEEDS the shared store**, so the laptop must go first or
+stale memory propagates everywhere. Sequence: (1) commit+push the tooling from here, (2) laptop pulls →
+`link-memory.ps1 -All` dry run → `-Apply` → commit `_artifacts/_memory/` → push, (3) desktop pulls + runs
+it (its 25 stale files get backed up, not lost), (4) MacBook — **run `ls ~/.claude/projects/` and report
+before `--apply`**; the macOS slug shape is inferred from Windows paths and the script refuses rather than
+guessing. Also tightened `artifacts-always-first.md`: plans must be pasted **FULLY inline** (link-only = a
+gate violation) — found via one of the *stranded* memories, which is a neat proof of what stranding costs.
+Still open from earlier today: 3 project repos hold **staged, uncommitted** `adk-prompting` deletions, and
+**B-L-WorldWide is on `main`** (owner-only).
+Session: `_artifacts/_main/2026-08-04_portable-memory-store/`.
+
+**2026-08-04 (latest): INDEX-depth exceptions are a named list; `.agents/` is now linted.**
+`check_maps.py` had `_artifacts` hardcoded as the sole depth exception at 3 call sites. It is now two named
+sets — `DEPTH3_DIRS` (index deeper) and `DOT_CONTENT_DIRS` (dot-dirs that are content, not tool cache) — so
+adding a folder is a one-line edit. Answering "should `.agents/` index deeper": **no.** Six of its ten
+subfolders are flat, `skills/` self-describes through `SKILL.md` frontmatter, `bmad/` is regenerated, and
+`templates/project-template/` is a scaffold. It already carried `AGENTS.md`, `INDEX.md`, both adapters, and
+an `INDEX.md` in all ten subfolders — the gap was that **check 2.5's dot-dir skip (written for `.ruff_cache`)
+made the whole master toolkit invisible to the linter**. It is now scanned, and its four Tier-1 law files are
+asserted in check 6. Retired the `adk-prompting` skill (4 dirs + sync-manifest entry): an Antigravity guide
+misfiled as ADK, unloadable in its richer copy, whose content `v3-prompt-architecture` already covers and
+partly corrects; its one unique idea lives on as v3 #21. `check_maps.py --all` shows **zero new drift** — all
+three conformant workspaces clean on both changed checks. **UNCOMMITTED:** run `/sync-agents` first (the
+`v3-prompt-architecture` mirror is one section stale by design), then the single commit in the walkthrough.
+**Open, needs Daniel:** (1) `5_adk_skills/` nesting hides `adk-agent-development` + `adk-testing-patterns`
+from the harness entirely — both genuine and matching the pinned `google-adk==1.26.0`; flattening touches the
+sync manifest + 4 caches + 3 vendored copies. (2) ~~vendored copies~~ **DONE** — all 12 deleted via `git rm -r`
+(explicit paths) across AGY / Fresh / B-L-WorldWide; 16 dirs gone total incl. the lobby's 4, both real ADK
+skills intact everywhere. Deletions are **staged, uncommitted** in all 3 repos; ⚠️ B-L-WorldWide is on
+`main` = OWNER-ONLY. **Standing lesson from it:** deletion propagation is *surface-specific* —
+`/sync-agents` purges `.claude/skills/` (manifest-tracked per skill folder; a retired skill dir is a command
+ghost) but NEVER `Projects/<name>/.agents/skills/`, whose vendor is additive by design because the vendored
+`.agents` is a hybrid holding project-owned rules/skills a blanket purge would destroy. Retiring a skill
+therefore always needs the manual vendored delete too.
+**Retracted from this session:** the two "orphan `.claude/skills/` mirrors" were false positives from a scan
+that only compared `.agents/skills/` to `.claude/skills/`. `sudo-merge-epic-workingtrees` is generated from
+its master COMMAND `.agents/commands/sudo-merge-epic-workingtrees.md`; `gitnexus` is a 6-sub-skill bundle
+mastered at `.agents/.claude/skills/gitnexus/`. Both correct — nothing to delete.
+**Do not hand-edit `.sync-manifest.json`** — it is the record of what the last sync wrote, and removing an
+entry disables the purge that propagates a deletion (learned the hard way this session; edit reverted).
+Session: `_artifacts/_main/2026-08-04_index-depth-exception-list/`.
+
 **2026-07-30 (latest): Artifact ownership rule corrected and histories consolidated.**
 Every directory under `Projects/` now owns its artifact history project-locally by default, regardless of
 cwd or tool. The complete Sudo-managed exception registry contains only `Fresh_Workspace_BMAD` and

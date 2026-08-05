@@ -168,6 +168,26 @@ through each as needed:
 - **node_modules**: `npm install` per frontend.
 - **GitNexus index**: machine-local, does not travel — re-index the repos you
   work in.
+- **Claude auto-memory**: machine-local **by default** — `~/.claude` is not a
+  repo, not a link, and not cloud-synced, so memory dies on the box that wrote
+  it. Fix it once per machine:
+  ```powershell
+  powershell -File .agents\scripts\link-memory.ps1 -All          # dry run FIRST
+  powershell -File .agents\scripts\link-memory.ps1 -All -Apply
+  ```
+  macOS uses the twin: `bash .agents/scripts/link-memory.sh --all [--apply]`.
+  This junctions (symlinks on macOS) `~/.claude/projects/<slug>/memory/` to the
+  repo's `_artifacts/_memory/`, so memory commits and travels like everything
+  else.
+  > ⚠️ **ORDER MATTERS ACROSS MACHINES.** The first machine to link **seeds**
+  > the shared store; every later machine finds it populated and moves its own
+  > local memory **aside to a backup** rather than merging. So link the machine
+  > with the **newest** memories first, commit + push, then do the others. The
+  > scripts never delete or merge — they back up and report — but if a stale
+  > machine seeds first, everyone pulls stale memory.
+  > ⚠️ The memory slug is **derived from the workspace's absolute path**, so a
+  > rename re-points it — see `rename-fix.ps1`'s header and §3 of this folder's
+  > `INDEX.md`. Skipping that step is what stranded 15 memory files here.
 - **Git worktrees**: never travel between machines. If the operator parked
   work with `/sudo-park`, run `/sudo-resume` to recreate worktrees from the
   pushed branches — do not expect `git worktree list` to show anything.

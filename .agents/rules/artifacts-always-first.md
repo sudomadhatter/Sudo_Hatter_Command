@@ -162,8 +162,14 @@ ArtifactMetadata:
 > and prefix the artifact's title + `INDEX.md` row with **📱**, so mobile-made artifacts are findable later
 > for a desktop re-pass — see `mobile-mode.md` Override 3.
 
-Present the plan's key points **inline in the chat** AND link the artifact. Daniel signs off
-on a plan he can see in the conversation, not just a file on disk.
+**Paste the plan FULLY inline in the chat** AND link the artifact. Not a summary, not "key points", not a
+link with a teaser — the whole plan, in the conversation, so Daniel can approve or redirect without opening
+a file. A link alone (or a digest of a plan he cannot see) is a **gate violation**, not a style choice:
+he is being asked to approve something he has not been shown.
+
+Only exception: a genuinely long plan (≳ the 8 KB budget) may lead with the decisions and trade-offs in
+full and link the exhaustive file-by-file appendix — the reasoning he must judge is never the part
+abbreviated. Same principle as `operator-profile.md`: narrative briefing first, compressed record second.
 
 ### 3. STOP — wait for the gate phrase
 Do nothing else. Do not "prepare" files, update story status, or touch `sprint-status.yaml`
