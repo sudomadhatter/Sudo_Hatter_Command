@@ -43,7 +43,10 @@
   "keepStructure": ["_artifacts"],
 
   "_comment_exclude": "AUDIT F9: this list is derived from FRESH, not copied from the lobby. Fresh vendors 15 domain skills - two the lobby does not have (gemini-live-api-dev, google-adk-python) - plus 2 domain RULES the master does not carry. Reusing the lobby's list would have shipped all four. The skeleton's own README says it carries the stack, not a product.",
+  "_comment_exclude_self": "The export tooling excludes ITSELF, exactly as the lobby manifest does. It cannot survive its own substitution pass: the table's 'from' values ARE the private names, so running the pass over the manifest rewrites every row into an identity mapping ({from: YOUR_PROJECT, to: YOUR_PROJECT}). That is not cosmetic - a shipped copy in that state reports hundreds of substitutions while scrubbing NOTHING, and its leak-scan needles are scrubbed too. A privacy tool that reports success while doing no work is worse than no tool. It also masks its own leak: the scan found 0 hits here only because the manifest had scrubbed itself.",
   "exclude": [
+    ".agents/scripts/export-teaching-edition.ps1",
+    ".agents/scripts/teaching-edition",
     ".agents/rules/adk_file_formating.md",
     ".agents/rules/voice-agent-architecture.md",
     ".agents/skills/3_voice-ai-development",

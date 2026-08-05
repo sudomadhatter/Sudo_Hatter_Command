@@ -187,6 +187,11 @@ This is a generated edition of a working command center — exported by a script
 and none of its owner's projects, history, or notes. So this is real machinery that has been used in
 anger, with the personal layer removed, rather than a demo built to be shown.
 
-If you want to see how that works, read
-[`.agents/scripts/teaching-edition/`](.agents/scripts/teaching-edition/) — the manifests are the
-privacy audit, and the export refuses to run if a leak scan finds anything.
+How it works: a manifest lists what ships, so privacy is reviewed once as a list rather than
+re-decided file by file; a substitution pass rewrites the names that remain; and a leak scan with no
+exception list runs last — any hit blocks the push.
+
+The export tooling itself is the one thing not in this repo, and for a reason worth knowing. Its
+manifest's search terms *are* the private names, so running the substitution pass over it rewrites
+every rule into an identity mapping — a copy that would report hundreds of substitutions while
+scrubbing nothing. A privacy tool that cannot survive its own pass has to stay home.
