@@ -270,12 +270,14 @@ Two operational rules, both learned the expensive way:
 - **The first machine to link SEEDS the shared store**; later machines find it populated and move their own
   local memory *aside to a backup* rather than merging. **Link the machine with the newest memories first.**
   The scripts never delete or merge — but a stale machine seeding first propagates stale memory to all.
-- **Re-run the linker on rename day.** `rename-fix.ps1` repairs `.claude/settings.json` but not the memory
-  slug. That gap stranded **15 memory files** across two dead slugs before this was set up. Once junctioned,
-  a rename costs nothing but re-pointing the link — the data was never in the slug directory.
+- **Re-run the linker after any rename.** Renaming the workspace folder changes the derived slug, and the
+  tooling that repairs `.claude/settings.json` does **not** repair the memory slug. That gap stranded **15
+  memory files** across two dead slugs before junctioning was set up. Once junctioned, a rename costs
+  nothing but re-pointing the link — the data was never in the slug directory.
 
-Full contract → `_artifacts/_memory/README.md`; setup steps → `_my_resources/migrations/INDEX.md` §1 step 8
-(new machine) and §3 (rename day).
+Both linkers are **dry-run by default**, so run one with no arguments first and read what it plans to do.
+Full contract → `_artifacts/_memory/README.md`, which the linker creates alongside the store on its first
+real run; `README.md`/`.gitkeep` there are scaffolding, not memories.
 
 ### Routing canary — the regression cadence
 `_routing-canary/` is a permanent check, not a one-time demo. **Re-run it when** you change routing structure
