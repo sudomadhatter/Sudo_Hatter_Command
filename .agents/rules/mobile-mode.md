@@ -1,7 +1,6 @@
 ---
 name: mobile-mode
 description: "The web/mobile lane. Activates automatically when env `CLAUDE_CODE_REMOTE=true` (Claude Code on the web or phone), or when Daniel says 'mobile'. Adapts git, the approval gate, artifacts, and verification for a phone — where there is no terminal to paste into and typing is expensive. This rule is the single source of truth for the lane boundary (when mobile is on vs. desktop). Overrides the desktop defaults in git-policy.md and artifacts-always-first.md for the duration of the session."
-activation: On Demand (auto on web/mobile)
 ---
 
 # Mobile Mode

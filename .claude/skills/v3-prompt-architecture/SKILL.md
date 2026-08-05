@@ -115,3 +115,12 @@ When drafting flows for tutoring or instructional agents, embed the Tripartite F
 **Problem:** Ending prompts with `Answer:` or `Overview:` confuses modern chat-tuned models. They perceive these as user strings needing completion, causing initial punctuation stutters.
 **Solution:** Do not use trailing stop-sequences. Let the model's native chat structure handle the initialization after processing the injected data blocks at the bottom of the prompt.
 
+### 21. Sampling Parameters Are Part of the Prompt
+**Problem:** A prompt is tuned in isolation and then shipped against whatever decoding settings happen to be configured, so identical text behaves differently between environments and the prompt gets blamed for a sampling problem.
+**Solution:** Specify the decoding config alongside the prompt as part of the artifact.
+- Baseline **temperature `1.0`** for reasoning-heavy agents — lowering it to "make it more accurate" narrows the search the reasoning depends on.
+- Set thinking level to match the job: **High** for bug-hunting, architecture, and adversarial review; **Low** for routine, well-specified tasks where extra deliberation only adds latency.
+- When targeting Flash Lite with a reduced `thinking_budget`, pair this with #10 — the format preference and the budget interact.
+
+*(Salvaged from the retired `adk-prompting` skill, 2026-08-04 — the one piece of it not already covered here.)*
+

@@ -1,7 +1,6 @@
 ---
 name: 000-PLAN-FIRST-GATE
 description: "PRIORITY ZERO — No project file may be modified until Daniel approves an implementation_plan.md. No skill, workflow, or slash command overrides this. Read this FIRST."
-activation: Always On
 ---
 
 # 🛑 PRIORITY ZERO: Plan First, Code Never (Until Approved)
@@ -64,9 +63,10 @@ BMAD skills (`bmad-dev-story`, `bmad-quick-dev`, etc.) have execution steps that
 
 ## When to Skip
 
-- **Investigatory requests** ("explain how X works", "where is Y?") — no plan needed
-- **Trivial one-liners** (typo, comment, formatting) — mention what you changed, skip full cycle
-- **Daniel explicitly says** "skip the plan, just do it" — still write a walkthrough after
+**The exemption list lives in ONE place: `artifacts-always-first.md` § "When to Skip".** Read it there.
+
+It is not duplicated here on purpose — two copies of a gate's exemptions drift apart, and each one reads
+authoritative. If you are deciding whether this gate applies, you are deciding against that list.
 
 ## Violation Examples
 

@@ -7,6 +7,9 @@ platforms: [opencode, antigravity, claude, codex]
 
 > **Rules in force for this command:**
 > - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
+> - `.agents/rules/reproduce-before-you-fix.md` — **when the quick fix is a BUG fix**: the five gates
+>   (reproduce → minimize → pin a test seen red → falsify one hypothesis at a time → minimal fix → prove
+>   by reverting). Its G3 stop conditions fire the EJECT tripwire below.
 
 Thin orchestrator for SMALL fixes. It keeps the speed — bypasses red-phase test writing
 (`sudo-write-story-tests`), planning approval gates, and the adversarial review (`sudo-code-review`) —
@@ -38,6 +41,8 @@ Invoke the **`bmad-dev-story`** skill on the created story.
 * **Skip ATDD:** skip the strict red-phase acceptance-test-first cycle; implement the minimal code
   directly to satisfy the story.
 * **Root cause first:** for a bug fix, find the root cause before touching code — no symptom patches.
+  Work `reproduce-before-you-fix` in order: **no edit before a citable reproduction (G1)**, and the
+  pinning test of Step 2b is written and **seen red (G2) BEFORE the fix**, not after it.
 * **⛔ EJECT TRIPWIRE (the safety core — check as you go, not just at the end):** if the emerging
   change exceeds **~3 files / ~150 changed lines**, or touches a **protected surface** — auth/tenancy
   walls, payments, PII handling, DB schema or security rules, a cross-boundary API/SSE contract —

@@ -48,13 +48,23 @@ same install step applies there.
 
 ## Verify it works (~30 seconds, safe — leaves no trace)
 
+> ⚠️ **`sh` is NOT on PATH in PowerShell** — only inside Git Bash. Running these lines verbatim in a
+> PowerShell window gets you `The term 'sh' is not recognized`, which looks like the hook is broken
+> when nothing is wrong. This affects the **manual verify only**: git invokes its own bundled `sh`
+> for hooks, so the installed hooks fire correctly regardless. Either run the block from **Git Bash**
+> (where plain `sh` works), or derive git's bundled shell as below. Do not hardcode
+> `C:\Program Files\Git` — installs vary (this machine's git is at `C:\Git`).
+
 ```powershell
+# 0. Point $sh at git's own shell (works wherever git is installed):
+$sh = Join-Path (Split-Path (Split-Path (Get-Command git).Source -Parent) -Parent) 'bin\sh.exe'
+
 # 1. Fresh board -> must print NOTHING and exit 0:
-sh scripts/git-hooks/board-stale-stamp.sh
+& $sh scripts/git-hooks/board-stale-stamp.sh
 
 # 2. Force a real drift view against an older commit -> banner + flags appear:
 #    (any commit hash from `git log --oneline -- _bmad-output/implementation-artifacts/sprint-status.yaml`)
-$env:BOARD_BASE = "<older-commit-hash>"; sh scripts/git-hooks/board-stale-stamp.sh; Remove-Item Env:BOARD_BASE
+$env:BOARD_BASE = "<older-commit-hash>"; & $sh scripts/git-hooks/board-stale-stamp.sh; Remove-Item Env:BOARD_BASE
 
 # 3. Inspect, then restore the test stamp (it is YOUR test edit — safe to discard):
 git checkout -- _my_resources/_quick_reference/sprint_scrum_board_map.md

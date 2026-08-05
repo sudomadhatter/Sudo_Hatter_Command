@@ -2,6 +2,60 @@
 
 ## 1. PRIME STATE
 Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-08-04
+**2026-08-04 (latest): rule load class has ONE source of truth, and the protocol tier now loads on a BINDING trigger.**
+Audit of `.agents/rules/` found the set already clean on the things people check (all 21 have frontmatter,
+`name:` matches filename everywhere, INDEX covers all 21, no ghosts). The rot was elsewhere: **load class
+had three sources of truth that disagreed** — `AGENTS.md` §3, the INDEX `Load` column, and a frontmatter
+`activation:` field on **12 of 21 rules written in Cursor's vocabulary** ("Always On", "Model Decision")
+that **nothing reads** (grep-verified across `.agents/`, `docs/`, `.claude/`, `.opencode/`).
+`000-PLAN-FIRST-GATE` — the priority-zero kill-chain — had **three sources giving three different answers**
+about when it loads; `powershell-encoding-safety` claimed `Always On`. `activation:` deleted from all 12;
+`AGENTS.md` §3 now states the INDEX's three tiers. **Token win:** `artifacts-always-first` (21 KB) stops
+loading in conversation-only turns. **⚠️ THE LESSON — Daniel caught it, I didn't:** making the protocol tier
+conditional without making the condition **binding** is a regression, not an optimization. §3 said "load the
+moment a session may touch files" — descriptive; an agent can read that and never load the plan gate. Now
+imperative: **load BEFORE the first tool call that creates, edits, or deletes a file — if you are about to
+write and they aren't loaded, stop and load them first.** Plus a standing **anchor invariant**: the four
+protocol rules are conditional but **their LAW is not** — every gate they carry is also stated inline in
+`AGENTS.md` AND the floor `constitution.md`, so the stop binds even in a session that never opens the rule.
+*A protocol rule whose law is not anchored in both is a defect — fix the anchor, never promote the rule to
+floor.* The invariant **failed its own first test** and exposed `000-PLAN-FIRST-GATE` with zero references
+in `constitution.md` (pre-existing; C2 made it load-bearing) — now fixed. Also: 2 de-dupes landed, **the 3rd
+deliberately dropped** (stripping the sign-off summary from floor `constitution` would leave floor deferring
+to protocol `git-policy`, which may not be loaded — the exact hole just closed); INDEX regrouped by load
+class, proven lossless by sorted-line diff; **EOL integrity check added mid-run** (unplanned — a scripted
+frontmatter strip is the `powershell-encoding-safety` bug class; all files 100% CRLF, 0 bare LF).
+**Propagated:** `project-template` + AGY §4 + Fresh §4 by hand — `/sync-agents` vendors `.agents/` but
+**never writes a project's root `AGENTS.md`** (`sync-agents.ps1:525-532`), so root files are always manual.
+**OPEN (corrected — Daniel caught my misread):** `NEXgen-VR-Director` is a **healthy Fresh clone on GitHub**
+(`sudomadhatter/NEXgen-VR-Director`, private, `main`+`main_debug`, full skeleton, pushed 2026-08-04 04:41) —
+but **this desktop never cloned it**; `Projects/NEXgen-VR-Director/` was an empty 2026-07-30 placeholder and
+the sync vendored 3 toolkit dirs into it, which now block a clean clone. Fix: clear placeholder → clone →
+hand-apply §4 → re-sync. `RAG_Pipeline_AC` has an AGENTS.md but is NOT maintained, so its vendored rules never refresh.
+**UNCOMMITTED ×3** (lobby + AGY + Fresh) and **`/sync-agents` owed first.**
+Session: `_artifacts/_main/2026-08-04_rules-folder-optimization/`.
+
+**2026-08-04 (latest): `reproduce-before-you-fix` — the house debug loop is now a rule.**
+Debug guidance existed as five scattered one-liners (`karpathy-guidelines:20`, `collaborative-debug-first`,
+`sudo-quick-dev:40`, `sudo-mobile-error-team` §4, `sudo-live-testing-team:46`) — but `grep -ri reproduc`
+over **every rule and every command** returned **one hit**, a disk path in `sudo-close-workingtree`.
+**Reproduction had zero coverage**, and nothing anywhere put a stop condition on the guess-loop. New
+on-demand rule with **five gates**: G1 reproduce (a *citable* artifact — command, URL+click path, Sentry id,
+or a failing test; "I can see it in the code" is a hypothesis) → G1.5 minimize → G2 pin a test **SEEN red**
+and commit it → G3 falsify one hypothesis at a time under stop conditions (**10 min / 3 falsified / 2
+no-evidence edits**, house-set and labeled tunable) → G4 minimal fix at the mechanism → **G5 revert the fix
+hunk, watch the test go red, restore**. G5 is the gate nobody runs and the only cheap proof a pinning test
+isn't passing coincidentally. Two legitimate *endings* keep agents from faking a repro: can't-observe →
+`collaborative-debug-first`; genuinely non-reproducible → add observability and stop. **Dispatch matters
+more than the rule** — an on-demand rule only fires if something reaches for it, so the pointer went into
+`karpathy-guidelines` §1, which is floor. It **references, never restates** (`tests-must-gate-for-real` #1
+for right-reason reds, its #4 for revert-don't-delete), so there is no duplicated prose to drift. Also
+wired into `/sudo-quick-dev` (pinning test seen red BEFORE the fix) and `/sudo-mobile-error-team` (§4's
+"fails on broken code" must be **observed**). Sources: MIT 6.031, Verraes, delta debugging, Google SRE.
+**UNCOMMITTED**, and **`/sync-agents` owed** (2 command files + shared rules). Deferred by agreement:
+`sudo-live-testing-team` (diagnoses only) and `sudo-dev-story-tests:103` (suite failures, not reported bugs).
+Session: `_artifacts/_main/2026-08-04_debug-protocol-rule/`.
+
 **2026-08-04 (latest): Auto-memory is now junctioned into the repo — tooling shipped, NOT yet applied.**
 Claude memory lives under a slug **derived from the workspace's absolute path**, so it never leaves the
 machine and a rename orphans it. **15 files were already dead** (13 + 2 under two stale slugs from past

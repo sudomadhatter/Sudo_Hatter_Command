@@ -5,6 +5,11 @@ description: "Activates when you cannot directly observe runtime behavior (brows
 
 # Rule: Collaborative Debug-First (Ask the Pilot)
 
+> **Where this sits.** This is the **G1 can't-observe branch** of `.agents/rules/reproduce-before-you-fix.md`
+> — the debug loop's reproduction gate, for when the evidence lives in a runtime only Daniel can see. Run
+> the protocol below to *get* the reproduction, then continue at G1.5 (minimize) in that rule. Everything
+> after "the issue is Y" — pinning test, hypothesis discipline, proving the fix — lives there, not here.
+
 ## When This Applies
 Any time you cannot directly observe runtime behavior — browser console, network requests, Firestore state, or UI rendering — and the user CAN.
 

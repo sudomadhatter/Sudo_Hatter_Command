@@ -48,8 +48,19 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $HomeRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent   # _my_resources/migrations -> home-base root (rename-safe)
-$Projects = @('aviationChat-AGY','clean-bmad-workspace','jetChat-AGY','B&L WorldWide',
-              'NEXGen Films','ingestion-Pipeline-AC','openCode')
+
+# Folder names as they exist on disk under Projects\. VERIFIED 2026-08-04 against the actual tree.
+# The previous list named seven folders, NONE of which still existed (aviationChat-AGY,
+# clean-bmad-workspace, jetChat-AGY, 'B&L WorldWide', 'NEXGen Films', ingestion-Pipeline-AC,
+# openCode) - so STEP 1 moved nothing and STEP 2 rewrote no project-scoped paths, while the script
+# still printed a confident summary. A stale list here fails SILENTLY; re-verify it before every
+# rename day.
+#
+# NOTE: every project already lives under Projects\, so STEP 1 is normally a no-op (Test-Path on the
+# home-root source misses) and the bare "$OldName" -> "$NewName" replace in STEP 2 does the real work.
+# The list still matters for any project sitting at the home root, and for the Projects\-aware rewrite.
+$Projects = @('AGY_AVIATIONCHAT','B-L-WorldWide','BRKN_Tattoos','Fresh_Workspace_BMAD',
+              'NEXGen-Films','NEXgen-VR-Director','OpenChat-Openrouter','RAG_Pipeline_AC')
 
 Write-Host "Home root : $HomeRoot"
 Write-Host "Replace   : '$OldName' -> '$NewName'   (projects -> Projects\<name>: $(-not $NoMove))"

@@ -8,6 +8,10 @@ platforms: [claude]
 > **Rules in force for this command:**
 > - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
 > - `.agents/rules/sudo-target-resolution.md` — bind ONE target, never operate on the lobby
+> - `.agents/rules/reproduce-before-you-fix.md` — the five debug gates behind standing rules 1 and 4
+>   below. Under fire, the two that get skipped are **G1** (the Sentry event id IS your reproduction —
+>   if it doesn't reproduce, say so; don't fix blind) and **G5** (revert the fix hunk, watch the
+>   regression test go red again, restore).
 
 > **What this is.** The human half of the incident pipeline. The machine half already ran: the relay
 > opened a GitHub issue (`incident:<short-id>`) and the headless agent (`incident-response.yml` →
@@ -37,7 +41,9 @@ platforms: [claude]
    Everything else becomes the follow-up story in Step 9.
 4. **A regression test is mandatory** — one that fails on the broken code and passes on the fix.
    No test, no merge recommendation. If the failure genuinely can't be unit-tested, say so
-   explicitly and name what would catch it instead.
+   explicitly and name what would catch it instead. **"Fails on the broken code" must be OBSERVED,
+   not asserted** — write it before the fix and paste the red, or revert the fix hunk afterward and
+   paste the red then (`reproduce-before-you-fix` G2/G5). A test only seen green proves nothing.
 5. **Branch law.** This command writes **only** `claude/incident-<short-id-lower>`. It **never**
    pushes `main` or `main_debug`, and **never merges on its own initiative** (see Stop 2).
 6. **Two anchors, don't confuse them.** Read code for **diagnosis** at the event's `RELEASE_SHA`

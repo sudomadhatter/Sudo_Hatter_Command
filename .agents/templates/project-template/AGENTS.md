@@ -8,7 +8,18 @@ If what you need isn't here, GO BACK to the home-base root `../../router.md` (or
 - **SUPPORT:** the shared toolkit is vendored at `.agents/` (rules · skills · commands) — load only what the routing table calls for.
 
 ## ALWAYS-LOAD (small)
-- `.agents/rules/constitution.md` + `.agents/rules/karpathy-guidelines.md`.
+Three tiers — only the first is actually always-on. `.agents/rules/INDEX.md`'s `Load` column states this
+same classification; if the two disagree they are both wrong. A rule's frontmatter does **not** declare
+its own load class.
+- **FLOOR — every session:** `.agents/rules/operator-profile.md` (who you're talking to) +
+  `.agents/rules/constitution.md` (hard stops) + `.agents/rules/karpathy-guidelines.md` (how to work).
+- **PROTOCOL — load BEFORE the first tool call that creates, edits, or deletes a file** (if you are about
+  to write and they are not loaded, stop and load them first): `.agents/rules/artifacts-always-first.md` ·
+  `.agents/rules/000-PLAN-FIRST-GATE.md` · `.agents/rules/git-policy.md` ·
+  `.agents/rules/worktree-per-story.md`. Conditional — but their LAW is also stated inline in this file
+  (the ARTIFACTS section + the GATES below) and in the floor `constitution.md`, so the stop binds even in
+  a session that never opens them.
+- **ON-DEMAND — everything else**, per its trigger in `.agents/rules/INDEX.md`. Do not preload.
 - Project-specific hard stops: `constitution.project.md` (create it only if this project needs any).
 - **Web / mobile session (`CLAUDE_CODE_REMOTE=true`)?** Also load `.agents/rules/mobile-mode.md` (the
   web/mobile lane). It applies ONLY when that env var is `true`; on a desktop IDE session it's unset →

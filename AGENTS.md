@@ -22,13 +22,33 @@ the program; you **become** the agent the workspace describes.
 - **SUPPORT** — what tools/skills/context? → `.agents/skills/`, `.agents/commands/`, pulled per the table
 
 ## 3. ALWAYS-LOAD  (small by design)
-Load now: `.agents/rules/operator-profile.md` (**who you're talking to** — Daniel is the visionary/chair,
-you are the engineer; the eight speaking obligations that govern every reply),
-`.agents/rules/constitution.md` (hard stops + gates), `.agents/rules/karpathy-guidelines.md`
-(how to work), and `.agents/rules/artifacts-always-first.md` (the plan-first gate — see below). Everything
-else in `.agents/rules/` loads **on demand** when a task calls for it — do not preload the rest. The full
-rule set is the shared toolkit, not a startup payload. How a workspace is shaped + kept healthy →
-`docs/workspace-standard.md`.
+
+Three tiers — only the first is actually always-on. **`.agents/rules/INDEX.md` is the per-rule router**
+and its `Load` column states this same classification; if the two ever disagree, they are both wrong
+until reconciled. A rule's own frontmatter does **not** declare its load class.
+
+**FLOOR — load now, every session:** `.agents/rules/operator-profile.md` (**who you're talking to** —
+Daniel is the visionary/chair, you are the engineer; the eight speaking obligations that govern every
+reply), `.agents/rules/constitution.md` (hard stops + gates), and `.agents/rules/karpathy-guidelines.md`
+(how to work).
+
+**PROTOCOL — load BEFORE the first tool call that creates, edits, or deletes a file.** Not "eventually",
+not "if it seems relevant": if you are about to write and these are not loaded, **stop and load them
+first.** `.agents/rules/artifacts-always-first.md` (the plan-first gate) · `.agents/rules/000-PLAN-FIRST-GATE.md`
+(its priority-zero kill-chain) · `.agents/rules/git-policy.md` (the branch model + write gate) ·
+`.agents/rules/worktree-per-story.md`. Together ~44 KB — which is why they are conditional rather than
+floor, and why the trigger has to be a rule you follow rather than a hope.
+
+> **These four are conditional, but their LAW is not.** Every gate they carry is also stated inline in
+> this file — the ⛔ ARTIFACTS block at the end of this section, plus the WORKTREE and GIT WRITE gates in
+> §6 — and again in the always-loaded `constitution.md` Hard Stops. So the gate binds even in a session
+> that never opens the rule. The rule files carry the *mechanics*; `AGENTS.md` and `constitution.md`
+> carry the *stop*. If you ever find a protocol rule whose law is NOT anchored in both, that is a defect —
+> fix the anchor, don't promote the rule to floor.
+
+**ON-DEMAND — everything else in `.agents/rules/`**, pulled when its trigger fires (the `Trigger` column
+in the INDEX). Do not preload. The full rule set is the shared toolkit, not a startup payload. How a
+workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 
 > **Web/mobile session?** When env **`CLAUDE_CODE_REMOTE=true`** (Claude Code on the web or phone), also
 > load `.agents/rules/mobile-mode.md` — the web/mobile lane: it adapts git, the approval gate, artifacts,
@@ -38,8 +58,11 @@ rule set is the shared toolkit, not a startup payload. How a workspace is shaped
 > **⛔ ARTIFACTS — MANDATORY FIRST ACTION.** Before modifying ANY file outside `_artifacts/`, write an
 > `implementation_plan.md` into the artifact store owned by the target workspace (§5) and **STOP until Daniel says "approved."** Track
 > work with a live TodoWrite list; close with one `walkthrough.md`. **This applies at the lobby
-> too — not only inside projects.** Full protocol → `.agents/rules/artifacts-always-first.md`. (Skip only for
-> read-only/investigatory asks and trivial one-liners.)
+> too — not only inside projects.** Full protocol → `.agents/rules/artifacts-always-first.md`; the
+> priority-zero kill-chain that enforces it (and the `_bmad/custom/` guard tomls that load it into every
+> dev-story / quick-dev run) → `.agents/rules/000-PLAN-FIRST-GATE.md`. (Skip only for
+> read-only/investigatory asks and trivial one-liners — that exemption list lives in
+> `artifacts-always-first.md` § "When to Skip" and nowhere else.)
 
 ## 4. WHAT LIVES WHERE  (home-base infrastructure)
 | Area | Path | Purpose |
@@ -68,7 +91,8 @@ registry in `router.md`. The only current exceptions are `Fresh_Workspace_BMAD` 
 bucket. Home-base and cross-project system work uses `_artifacts/_main/`.
 
 The full bucket rules (story `<epic>/<story>/`, local `_main/`, debugging, file naming, continuity) live in
-the always-loaded **`.agents/rules/artifacts-always-first.md`** (§2); full model →
+the protocol-tier **`.agents/rules/artifacts-always-first.md`** (§2 — loaded whenever a session may write
+files, per §3); full model →
 `docs/workspace-standard.md`.
 
 ## 6. GATES  (consult before acting)

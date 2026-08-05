@@ -1,7 +1,6 @@
 ---
 name: dependency-awareness
 description: "Activates when modifying package.json, requirements.txt, pyproject.toml, or any dependency manifest. Prevents silent dependency drift."
-activation: Model Decision
 ---
 
 # Dependency Changes — Proceed with Caution

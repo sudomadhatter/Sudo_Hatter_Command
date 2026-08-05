@@ -33,8 +33,8 @@ maintenance — takes NO worktree and NO `claude/*` branch: edit the main checko
 The ask that scoped the work is the go-ahead to work there; the safe-commit mechanics below apply in full,
 and the push-approval hook still prompts.
 
-Why: several teams run in parallel against one checkout. Their edits interleave, `git status` becomes a
-soup of everybody's work, and whoever pushes last inherits all of it. A worktree per story ends that.
+Why: parallel teams sharing one checkout turn `git status` into everybody's work at once. Full rationale
+lives once, in **`worktree-per-story.md`** ("Why this exists") — not restated here.
 
 ## The write gate — keyed on WHERE a write lands, not on the act
 

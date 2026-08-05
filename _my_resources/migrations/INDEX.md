@@ -20,6 +20,42 @@ guides, run the scripts.
 >
 > Do not read §3 or §4 — historical records for unrelated tasks, nothing to do with machine setup.
 
+> ### ✅ First live execution: Desktop, 2026-08-04 — steps 1–7 (NOT the whole kit)
+> Until then this kit had been **written but never run** — every step was transcribed from a working
+> session rather than replayed. Running it surfaced **six defects that each stop the run cold**, now
+> fixed in place. If you are on a machine that has not been set up since, expect the corrected text:
+>
+> | Where | Defect | Symptom if you hit the old text |
+> |---|---|---|
+> | python companion, step 2 | `PYTHONUTF8=1` missing | pip installs **zero** packages; `pip check` still says "No broken requirements found" |
+> | python companion, Phase 1 | `Rename-Item` given a path as `-NewName` | `represents a path or device name` — the venv swap never happens |
+> | python companion, Phase 4 | "delete parked venvs once green" | circular: a venv parked under `backend/` is what **prevents** green (2 failed / 3022 passed) |
+> | python companion, CHECK 3 | named a file that cannot pass standalone | 9 failed / 3 errors on a perfectly good venv — sends you hunting a phantom |
+> | this guide, §4 | restore's own `.pre-restore.bak` copies escape the ignore rules | a live Firebase API key left sitting untracked |
+> | this guide, §3 | assumed every `Projects/<name>` is a clone | 2 of 8 had no `.git`; git commands there silently hit the **lobby** |
+>
+> Two of those (`PYTHONUTF8`, `Rename-Item`) are hard stops on **any** Windows machine. Note also that
+> the laptop's ☑ in the python companion's machine table predates the 2026-08-03 change that causes the
+> first one — so that ☑ certifies a procedure it never ran. **Treat an unticked box as untested, and a
+> ticked one as tested only for the text as it stood that day.**
+>
+> **Exactly what was and was NOT executed** — do not read the ✅ above as blanket coverage:
+>
+> | Asset | Status |
+> |---|---|
+> | `Restore-EnvMaster.ps1` | ✅ **run for real** — 7 files restored, 4 backed up, §4 verified |
+> | `python_vytest-…md` (5-min fix + CHECK 1–4) | ✅ **run for real** — venv rebuilt, gate `3024 passed / 35 skipped / 0 failed`, `-n` swept |
+> | `git-hooks-board-stale-install.md` | ✅ **run for real** — installed, stamped real drift, reverted clean |
+> | `restore-env-master.sh` | ⚠️ **`--dry-run` only, and under Git Bash on WINDOWS — never on macOS.** It parsed all 7 markers and classified create-vs-backup correctly, so its parsing and root-resolution are sound. Its **writing** path (`chmod 600`, backups, CRLF strip on real output) is still unproven. First Mac to run it should use `--dry-run` first and report |
+> | `Export-EnvMaster.ps1` | ⛔ **NOT run.** Deliberately — it *rewrites* `_secrets/master.env`, and re-generating the operator's hand-carried bundle to test a script is not a safe experiment mid-setup. Still unverified |
+> | `rename-fix.ps1` | ⛔ **NOT run** (no rename happened). Its stale project list was fixed by inspection against the real tree, not by executing it. `-Apply` remains untested |
+> | `.agents/scripts/link-memory.ps1` | ⚠️ **dry run only** — plan read correctly (would seed 25 files, junction 4 workspaces). `-Apply` deliberately NOT run: this machine's memories are stale, so seeding from here would push stale memory to every other machine. The machine holding the NEWEST memories must link first |
+> | `link-memory.sh` | ⛔ **NOT run** — macOS only |
+>
+> ⚠️ **Two projects had no `.git` at all** (`BRKN_Tattoos`, `NEXgen-VR-Director`) — see §3 step 2 of the
+> guide. Git commands inside an un-cloned project silently operate on the **lobby** instead of failing,
+> so this does not announce itself.
+
 ---
 
 ## 1 · New machine — the ordered path

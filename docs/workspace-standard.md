@@ -49,8 +49,12 @@ A compliant workspace has these, and nothing it doesn't need.
      `../../router.md`; risky action → GATES.
   3. **MAP / MISSION / SUPPORT** — the three answers every task needs (where am I + where can I go / what is the
      work / what tools+context).
-  4. **ALWAYS-LOAD** — the *small* set only: `.agents/rules/constitution.md`, `karpathy-guidelines.md`, and
-     `artifacts-always-first.md`. Everything else loads on demand.
+  4. **ALWAYS-LOAD** — three tiers, only the first always-on. **Floor:** `.agents/rules/operator-profile.md`,
+     `constitution.md`, `karpathy-guidelines.md`. **Protocol** (the moment a session may touch files, not
+     before): `artifacts-always-first.md`, `000-PLAN-FIRST-GATE.md`, `git-policy.md`, `worktree-per-story.md`.
+     **On-demand:** everything else, per its trigger. This classification is stated in exactly two live
+     places — this section's counterpart in the workspace's `AGENTS.md`, and the `Load` column of
+     `.agents/rules/INDEX.md`. They must agree; a rule's frontmatter does **not** declare its own load class.
   5. **ARTIFACTS PROTOCOL — MANDATORY FIRST ACTION** — the plan-first gate, stated up front (see Part 2).
   6. **ROUTING TABLE** — the heart (Layer 2, below).
   7. **NAMING CONVENTIONS** — dates/versions/slugs; replaces a database.

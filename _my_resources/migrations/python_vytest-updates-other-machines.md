@@ -9,8 +9,8 @@ fresh-machine setups.
 
 | Machine | OS → which column | Done | Best `-n` (measure once) | Notes |
 |---|---|---|---|---|
-| **Laptop** (8-core) | Windows | ☑ 2026-08-01 · re-verified parallel 2026-08-03 | **`-n 4`** (206.81 s, vs `auto`/8 = 261.76 s) | The box every measurement in this doc came from |
-| **Desktop** (64 GB RAM) | Windows | ☐ | ☐ time `4 / 6 / 8 / auto` | Same commands as the laptop — **nothing extra to install** |
+| **Laptop** (8-core) | Windows | ☑ 2026-08-01 · re-verified parallel 2026-08-03 | **`-n 4`** (206.81 s, vs `auto`/8 = 261.76 s) | The box most measurements in this doc came from. ⚠️ Its ☑ predates the 08-03 `requirements.txt` emoji, so it has **never** run the current install step — see the `PYTHONUTF8` box |
+| **Desktop** (16 logical cores, 64 GB RAM) | Windows | ☑ 2026-08-04 — `3024 passed / 35 skipped / 0 failed`, matching the reference totals exactly | **`-n 6`** (57.65 s) · 4 = 63.68 · 8 = 59.87 · 12 = 64.33 · `auto`(16) = **71.75 s, the slowest** | Needed Python 3.11 **installed from scratch** (only 3.14/3.10 present) and `PYTHONUTF8=1`. Old venv was 3.14.0 built `--system-site-packages`. First machine to execute **this companion** (5-min fix + CHECK 1–4) against a real environment; 4 of the 6 kit-wide defects were found here. Kit-wide coverage — including what was NOT run — is the table in `INDEX.md` |
 | **Mac** (64 GB RAM) | macOS | ☐ | ☐ time `4 / 6 / 8 / auto` | Needs `python3.11`, `temurin@17`, Node, + `pwsh` for any `.ps1`. See ⛔ **§2 of `INDEX.md`** — the secrets restore script does NOT work here |
 
 **Two independent axes — don't collapse them.** *OS* decides which command column you use. *Power*
@@ -70,6 +70,22 @@ the lock is tracked code (`frontend/vitest.global-setup.ts`, wired via `globalSe
 > the core count, so a fast machine needs no different setup — it needs different *commands*. Pick your
 > column and use it consistently; `$PY` below is shorthand for the venv's interpreter.
 
+> ⛔ **STOP — check for live consumers BEFORE step 2 deletes the venv.** This 5-minute fix used to go
+> straight to `Remove-Item -Recurse -Force backend\.venv`, while the process check lived only in the
+> "full playbook" Phase 1 far below — which is the section a catching-up machine never reads. On the
+> Desktop 2026-08-04 that check found **two live `uvicorn --reload` processes running off the very venv
+> the next line deletes.** Deleting a venv under a running consumer is how the 2026-08-01 "whole company
+> blocked" incident happened: unattributable false-REDs across every lane.
+>
+> ```powershell
+> Get-CimInstance Win32_Process -Filter "Name = 'python.exe'" |
+>   Where-Object { $_.CommandLine -match 'AGY_AVIATIONCHAT' } |
+>   Select-Object ProcessId, CommandLine        # macOS: ps aux | grep AGY_AVIATIONCHAT
+> ```
+>
+> **Zero rows → proceed.** Any rows → stop the dev server / suite first, or use the stage-and-swap in
+> Phase 1 instead, which builds beside the running venv and touches nothing until you swap.
+
 **Windows (PowerShell)**
 ```powershell
 git pull                                   # 0. from the AGY_AVIATIONCHAT repo root, on main_debug
@@ -77,9 +93,35 @@ py -0p                                     # 1. look for a -V:3.11 line
 winget install Python.Python.3.11          #    only if missing
 Remove-Item -Recurse -Force backend\.venv  # 2. rebuild (deletes the drifted one)
 py -3.11 -m venv backend\.venv
+$env:PYTHONUTF8 = '1'                      # 2b. REQUIRED on Windows - see the box below
 backend\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
 #   $PY = backend\.venv\Scripts\python.exe
 ```
+
+> ⛔ **Windows: without `PYTHONUTF8=1` the install fails outright, and the error names nothing useful.**
+> Discovered on the Desktop 2026-08-04. `backend/requirements.txt` is UTF-8 **with no BOM** and carries
+> non-ASCII in its AIDEV-NOTE comments (26 such lines; the `⚠️` added by `0366da1b` on **2026-08-03** is
+> the first byte that bites — `EF B8 8F`, a variation selector, at offset 2162). pip 24.0 — exactly what
+> `py -3.11 -m venv` bundles on 3.11.9 — has no BOM to go on, falls back to the *locale* encoding
+> (cp1252), and dies before installing a single package:
+>
+> ```
+> UnicodeDecodeError: 'charmap' codec can't decode byte 0x8f in position 2162
+> ```
+>
+> It aborts while **parsing the requirements file**, so the venv is left holding only its own bootstrap
+> (`pip list` shows 2 packages) while `pip check` still cheerfully reports "No broken requirements
+> found" — it only validates what did install. Do not read that as success; count the packages.
+>
+> ⚠️ **The laptop's ☑ above is NOT evidence this step still works.** The laptop rebuilt on 2026-08-01,
+> two days BEFORE the emoji landed — it has never installed from the current file. Every Windows machine
+> rebuilding from 08-03 onward hits this. macOS generally escapes it (its default locale is already
+> UTF-8), which is why the `.sh` column carries no such line.
+>
+> `PYTHONUTF8=1` is the least invasive fix — it changes no tracked file and no pip version. Upgrading
+> pip inside the venv also works (newer pip reads requirements as UTF-8 unconditionally), but every
+> fresh 3.11.9 venv re-bundles 24.0, so that has to be repeated per rebuild. The durable fix is to keep
+> non-ASCII out of `requirements.txt` comments; until someone does that, keep the line above.
 
 **macOS (zsh/bash)**
 ```bash
@@ -112,13 +154,25 @@ $PY -m pip list | grep -E "pytest-xdist|filelock|ruff|pyrefly"
 #   PASS: all four listed (xdist 3.8.0, filelock 3.24.3, ruff 0.16.0, pyrefly 1.1.1)
 
 # CHECK 3 — a scoped run works and does NOT wait on the lock (inner loop stays instant)
-$PY -m pytest backend/tests/test_affirmative_classifier.py -q
-#   PASS: green, starts immediately, NO [suite-lock] line
+$PY -m pytest backend/tests/test_layer_175.py -q
+#   PASS: 49 passed, ~2s wall, starts immediately, NO [suite-lock] line
+#   (verified standalone on the Desktop 2026-08-04. Pick a file that does NOT mock SDKs into
+#    sys.modules — see the box below for why the old choice could never pass alone.)
+
+# CHECK 3b — catch a stray virtualenv BEFORE paying for the full run (~18s vs ~60s)
+$PY -m pytest backend/tests/routers/test_hr_profile_single_writer.py -q
+#   PASS: 102 passed. This file scans production source and excludes only the LITERAL "/.venv/",
+#   so it is the fastest way to prove no parked/staging venv is sitting under backend/.
+#   FAIL here (esp. test_exactly_one_api_key_env_var_name_is_read /
+#   test_no_library_module_hijacks_the_root_logger) = a .venv* variant is being read as source.
 
 # CHECK 4 — the full suite on 3.11, PARALLEL (the real proof; this is the gate mode since 08-03)
 $PY -m pytest backend/tests -n auto --dist loadfile -q
 #   PASS: 0 failed. Reference totals 2026-08-03: 3024 passed / 35 skipped / 0 failed
 #         (the passed count grows as stories land; 0 failed is the bar).
+#   RE-CONFIRMED 2026-08-04 on the Desktop — a DIFFERENT machine, freshly built 3.11 venv,
+#   and with the machine's .env files both absent and present: 3024 / 35 / 0 every time,
+#   across -n auto/4/6/8/12. The totals are genuinely interpreter- and secret-independent.
 #   TIMING IS MACHINE-SPECIFIC AND NOT A SIGNAL — see "Tune -n on this machine" below.
 #   Any NEW failure here = a real behavior difference on this machine's deps —
 #   capture the traceback; that is a real finding, not a reason to roll back.
@@ -127,6 +181,33 @@ $PY -m pytest backend/tests -n auto --dist loadfile -q
 $PY -m pytest backend/tests -q --timeout=300
 #   Serial, one variable. Green here + red above = a parallelism problem, not an interpreter one.
 ```
+
+> ⛔ **CHECK 3 used to name `test_affirmative_classifier.py`. That file CANNOT pass standalone — on any
+> machine, on any interpreter.** Corrected 2026-08-04 after it failed 9-failed/3-errors on the Desktop
+> and sent a migration down a false trail. It is not an environment fault: the file mocks the SDK at
+> import time,
+>
+> ```python
+> sys.modules.setdefault("firebase_admin", MagicMock())   # a MagicMock has no __path__
+> ```
+>
+> and `backend/services/schools_service.py` then runs `import firebase_admin.auth`, which needs a real
+> **package** → `ModuleNotFoundError: 'firebase_admin' is not a package`. Because it is `setdefault`,
+> the mock only wins when nothing imported the real SDK first — which is exactly what happens when the
+> file runs **alone**. Inside the full suite something imports it earlier and the file passes, which is
+> why the gate is green and CHECK 3 was red. Pre-importing the real package doesn't rescue it either:
+> you then reach `backend/database.py`'s module-level `get_db()` and get
+> `RuntimeError: Firebase Admin not initialized`. Both paths fail in isolation, by construction.
+>
+> **Proof it was never an interpreter regression:** the same file, same failures (9 failed, 3 errors)
+> under the parked 3.14 venv. Always run that control before blaming a migration.
+
+> ✅ **The backend suite is HERMETIC — it needs no secrets.** Verified on the Desktop 2026-08-04: a full
+> `3024 passed / 35 skipped / 0 failed` with **no `.env` files present anywhere on the machine** (lobby
+> `.env`, `backend/.env` and BRKN's `.env.local` had not been restored yet). So **step 5 does not depend
+> on step 3** of `new_machine-migration-guide.md` — you can rebuild the venv and clear the gate before
+> the operator's `master.env` ever arrives. Do not let a missing secret stall this checklist, and do not
+> "explain" a red gate with absent credentials — look for a real cause.
 
 ### ⚠️ A hung CHECK 4 looks DIFFERENT on each OS
 
@@ -201,6 +282,8 @@ BOTH stacks. Set it per-invocation; never default it anywhere.
 
 | Symptom | Cause | Fix |
 |---|---|---|
+| `UnicodeDecodeError: 'charmap' codec can't decode byte 0x8f` during `pip install -r` | Windows-only: pip 24.0 reads the no-BOM `requirements.txt` as cp1252 and chokes on the non-ASCII in its comments. **Zero packages installed** despite `pip check` passing | `$env:PYTHONUTF8 = '1'` before the install (step 2b above) |
+| `pip check` says "No broken requirements found" but imports fail | `pip check` only validates what installed — after the failure above, that is nothing | count first: `pip list --format=freeze` should be ~180 packages, not 2 |
 | `unrecognized arguments: -n` | venv predates the xdist pin | `pip install -r backend/requirements.txt` |
 | `No module named pytest` right after pulling | you caught a venv mid-rebuild, or step 2 was interrupted | re-run step 2 fully |
 | VS Code can't find the interpreter / imports unresolved after the rebuild | stale interpreter path cached | the `python_inter_venv_fix` skill covers this exact case |
@@ -258,6 +341,16 @@ Select-String "requires-python|target-version" pyproject.toml # what is DECLARED
 All five must name the same version. Any disagreement = drift. Two extra tells:
 - `pyvenv.cfg`'s `command =` names a path that no longer exists → the venv was carried through a
   repo move and is a time bomb (stale `.pyc` tracebacks, IDE interpreter confusion).
+  > ⚠️ **One legitimate exception — do not chase it.** After the Phase 1 stage-and-swap, `command =`
+  > permanently records `...\.venvSTAGE`, because that is the path the venv was *created* at. The
+  > directory is gone by design once promoted to `.venv`. This is a cosmetic provenance string, not
+  > drift: the `home =` / `executable =` / `version =` lines are what actually matter, and they stay
+  > correct. Judge the venv on those three, not on `command =`. (Seen on the Desktop 2026-08-04 and
+  > briefly mistaken for the time bomb above.)
+- `include-system-site-packages = true` → the venv can resolve imports against the GLOBAL interpreter's
+  site-packages, so a missing dependency silently "works" locally and explodes in CI. The 5-minute-fix
+  command creates the venv **without** `--system-site-packages`, so a rebuild closes this. The Desktop's
+  pre-2026-08-04 venv had it set to `true` against a global 3.14 — check it on any machine you inherit.
 - More than one venv (`.venv` at repo root, `.venv311`, anything) → delete down to ONE
   (`backend/.venv`) as part of the job, whatever else you do.
 
@@ -281,12 +374,21 @@ Build the new env BESIDE the old one, verify it cold, and only then swap:
 
 ```powershell
 py -3.11 -m venv backend\.venvSTAGE
+$env:PYTHONUTF8 = '1'                                       # REQUIRED - see the pip/cp1252 box above
 backend\.venvSTAGE\Scripts\python.exe -m pip install -r backend\requirements.txt
 backend\.venvSTAGE\Scripts\python.exe -m pip check          # "No broken requirements found"
+# VERIFY THE COUNT, not just pip check - a parse failure installs NOTHING yet still "checks" clean:
+@(backend\.venvSTAGE\Scripts\python.exe -m pip list --format=freeze).Count   # expect ~174, not 2
 # when the process check above returns ZERO rows:
-Rename-Item backend\.venv backend\.venv.oldXXX              # park as rollback, don't delete yet
-Rename-Item backend\.venvSTAGE backend\.venv
+Rename-Item -Path backend\.venv      -NewName '.venv.old314'  # park as rollback, don't delete yet
+Rename-Item -Path backend\.venvSTAGE -NewName '.venv'
 ```
+
+> ⚠️ **`-NewName` takes a bare NAME, never a path.** The two-positional-argument form this section
+> used to carry (`Rename-Item backend\.venv backend\.venv.old314`) fails on every machine with
+> `Cannot rename the specified target, because it represents a path or device name` — PowerShell reads
+> the second argument as `-NewName` and rejects the `\`. Harmless (nothing is renamed, both directories
+> survive) but it stops the swap dead. Verified and corrected 2026-08-04 on the Desktop.
 
 ⚠️ First-time installs for a NEW interpreter download the entire wheel set fresh (different
 `cp3XX` tags — torch alone is ~2.5 GB). Budget 15–30 min; do not assume a hung pip.
@@ -320,6 +422,32 @@ drift apart. Prove the assert **bites both ways** (passes on the right version, 
 wrong one) before trusting it.
 
 ### Phase 4 — Clean up, or the leftovers bite
+
+> ⛔ **ORDERING BUG — "once green" is unreachable while a parked venv sits under `backend/`.**
+> Verified on the Desktop 2026-08-04. The Phase 1 swap parks the old venv as `backend\.venv.old314`,
+> and that alone turns the gate red: **2 failed, 3022 passed** — both failures in
+> `backend/tests/routers/test_hr_profile_single_writer.py`, which scans production source and excludes
+> only the **literal** `/.venv/`:
+>
+> ```python
+> if "/tests/" in rel or "/.venv/" in rel or "__pycache__" in rel:   # line 134
+> ```
+>
+> `.venv.old314/` does not match `/.venv/`, so ~174 packages of site-packages get read as production
+> source — and a library that touches the root logger or reads an API-key env var trips the gate.
+> **So the exclusion is NOT `.venv*` for every gate.** The `.venv*` claim elsewhere in this doc is true
+> of `test_scan_never_walks_a_colocated_virtualenv`, but *not* of this one — do not generalize it.
+>
+> **Do this instead of parking in place:** move the rollback OUT of the scan root rather than leaving it
+> beside `.venv`. The scan is rooted at `backend/`, so one level up is clear of it and you keep the
+> rollback:
+>
+> ```powershell
+> Move-Item -Path backend\.venv.old314 -Destination .\_venv-rollback-old314
+> ```
+>
+> Re-running the two tests after that move: **102 passed**. Same venv, same interpreter — only the
+> parked directory's location changed. Delete `_venv-rollback-old314` once you are confident.
 
 ⚠️ **Delete the parked/staging venvs once green** — they are not harmless:
 - Any `.venv*` under `backend/` lands inside `test_grading_event_governance_gate`'s `rglob` scan

@@ -1,7 +1,6 @@
 ---
 name: sudo-target-resolution
 description: "The canonical Step-0 target-resolution ladder every /sudo-* command binds with: self fast-path → $ARGUMENTS inline override → .agents/active-project.txt pointer → STOP-and-ask. Variants: §ASK (boot — always confirm, never silently reuse the pointer) and §DUAL (park/resume — lobby + active project, both repos). Plus §BIND (everything resolves under PROJECT_ROOT; missing path → STOP) and the echo contract. Commands state the obligations inline and point here for the mechanics."
-activation: Manual (loaded when a /sudo-* command's Step 0 points here)
 ---
 
 # Sudo Target Resolution — the Step-0 ladder (single source)

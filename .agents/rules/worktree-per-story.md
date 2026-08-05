@@ -1,7 +1,6 @@
 ---
 name: worktree-per-story
 description: "Fires when a sudo story lane (① /sudo-write-story-tests · ② /sudo-dev-story-tests · /sudo-quick-dev · autopilot) starts work that will produce commits — and ONLY there. One story, one worktree, one `claude/*` branch, opened off `main_debug` BEFORE the first edit, committed freely inside, landed at close-out and pruned by /sudo-close-workingtree. Ad-hoc non-story work NEVER opens a worktree — it edits `main_debug` directly. Read-only sessions exempt. Pairs with git-policy.md."
-activation: Protocol (every work session that writes files)
 ---
 
 # Worktree Per Story

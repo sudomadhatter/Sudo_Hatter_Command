@@ -40,7 +40,14 @@ Paths are relative to the lobby root, forward-slashed. A `MANIFEST` comment at
 the top lists every bundled file. Restoring = splitting the blocks back out to
 those paths. A script does it for you (§3), or you can do it by hand (§6).
 
-## 2. What's in the bundle (inventory as of 2026-07-24)
+## 2. What's in the bundle (inventory as of 2026-07-24 — **re-verified 2026-08-04**)
+
+> ✅ Confirmed accurate against a real master on the Desktop restore: the bundle carried **exactly these
+> 7 blocks**, no more, no fewer. The table below was written before several current projects existed
+> (`RAG_Pipeline_AC`, `NEXgen-VR-Director`, `Fresh_Workspace_BMAD`, `OpenChat-Openrouter`,
+> `NEXGen-Films`, `B-L-WorldWide`) and it is still correct — those projects simply carry no real
+> secrets yet. Count the markers before trusting it on any future master:
+> `grep -c '^# >>> FILE:' _my_resources/migrations/_secrets/master.env`
 
 | File (relative to lobby root) | What it powers |
 |---|---|
@@ -65,12 +72,34 @@ ever see an absolute `C:\Users\...` path in one, fix it to relative.
 **Order matters:** clone first, restore second. The restore script creates
 missing directories, and `git clone` refuses to clone into a non-empty folder.
 
-1. **Clone the lobby** to the same layout the operator uses (ask if unclear;
-   the historical location is `~\.gemini\antigravity\scratch\Sudo_Hatter_Command`).
+1. **Clone the lobby** to the same layout the operator uses. Current location on
+   the existing machines is **`C:\Sudo_Hatter_Command`** (drive root, verified
+   2026-08-04). An older `~\.gemini\antigravity\scratch\Sudo_Hatter_Command`
+   path appears in historical notes — that layout is dead; do not recreate it.
+   The absolute path matters beyond taste: Claude Code's memory slug is derived
+   from it (see step 8 / `link-memory.ps1`), so matching the other machines keeps
+   the slug — and therefore the memory junction — identical everywhere.
 2. **Clone each sub-project repo** the operator works on into `Projects/`
    using the exact folder names from the master's manifest (e.g.
    `Projects/AGY_AVIATIONCHAT`, `Projects/BRKN_Tattoos`). Every sub-project is
    its own independent repo — the lobby repo does not contain them.
+
+   > ⚠️ **Verify this — a MISSING clone looks exactly like a present one.** The lobby records each
+   > `Projects/<name>` as a gitlink (mode 160000). If the clone never happened, the folder can still
+   > exist with files in it, and `git` commands run inside it **silently operate on the LOBBY repo**
+   > instead of erroring. That is how a restored secret can land in a directory that belongs to no
+   > repo at all. On the Desktop 2026-08-04, two of eight were in this state — `BRKN_Tattoos` (which
+   > the master restores a secret into) and `NEXgen-VR-Director` (which is in
+   > `.agents/maintained-projects.txt`, so the step-8 memory linker targets it and its
+   > `_artifacts/_memory` could never be committed). Check every one:
+   >
+   > ```bash
+   > cd Projects && for p in */; do p=${p%/}
+   >   [ -e "$p/.git" ] && echo "OWN REPO  $p" || echo "NO .git   $p  <- not cloned"
+   > done
+   > ```
+   >
+   > Anything reported `NO .git` still needs cloning before steps 3, 5 or 8 mean anything for it.
 3. **Place the operator's copy of `master.env`** at
    `_my_resources/migrations/_secrets/master.env` (create the `_secrets` folder
    if needed), or leave it on the USB stick and pass its path with `-MasterPath`.
@@ -124,6 +153,27 @@ Test-Path Projects/AGY_AVIATIONCHAT/auth_keys/service-account.json        # True
 
 If any restored file shows up in `git status`, **stop** — fix the `.gitignore`
 before doing anything else. Never commit your way past it.
+
+> ⛔ **The restore's OWN backups escape the ignore rules — check them explicitly.** Both restore
+> scripts write `<name>.pre-restore.bak` beside every file they overwrite, and that suffix defeats
+> exact-name patterns: `.env.local` does **not** match `.env.local.pre-restore.bak`. On the
+> 2026-08-04 Desktop restore this left a live Firebase API key in an untracked
+> `frontend/.env.local.pre-restore.bak`. `auth_keys/` copies happened to be safe only because the
+> whole directory is ignored. Run this after every restore:
+>
+> ```bash
+> git status --short | grep -iE '\.env|_secrets|auth_keys|service-account|\.bak'   # expect NOTHING
+> ```
+>
+> Fixed 2026-08-04 by adding `*.pre-restore.bak` to AGY's `.gitignore` and `**/*.pre-restore.bak`
+> plus `**/.env.local` to the lobby's. **A new project restored into for the first time will not have
+> those rules** — re-run the grep there rather than assuming.
+
+> ⚠️ **A restored file showing as ` M` (modified, tracked) is usually just line endings.**
+> `frontend/.env.production` is tracked on purpose (URLs, no secrets). The restore scripts write LF
+> while the working tree is CRLF, so it reads as modified with an **empty** content diff. Confirm
+> before acting — `git show HEAD:<path> | tr -d '\r'` against `tr -d '\r' < <path>` — and if they
+> match, `git checkout -- <path>` rather than committing a whitespace-only change.
 
 ## 5. Beyond .env — per-machine setup the master can NOT carry
 

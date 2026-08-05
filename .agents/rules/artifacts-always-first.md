@@ -1,7 +1,6 @@
 ---
 name: artifacts-always-first
 description: "The single source of truth for the plan-first artifact protocol. Create implementation_plan.md and get explicit approval BEFORE modifying ANY project file. Track with the live TodoWrite task list. A session/story closes with TWO living docs: implementation_plan.md (+ appended ## Self-Audit) and walkthrough.md (outline ## Task Checklist + ## Evidence + ## Suite Ledger + appended ## Code Review + ## Your Actions). No standalone audit/review files, no task-list.md / your-action-required.md. No exceptions."
-activation: Always On
 ---
 
 # Artifacts — Always First

@@ -2,13 +2,13 @@
 	path = Projects/AGY_AVIATIONCHAT
 	url = https://github.com/sudomadhatter/AGY_AVIATIONCHAT
 	ignore = all
-[submodule "Projects/AGY_JETCHAT"]
-	path = Projects/AGY_JETCHAT
-	url = https://github.com/sudomadhatter/AGY_JETCHAT
-	ignore = all
 [submodule "Projects/B-L-WorldWide"]
 	path = Projects/B-L-WorldWide
 	url = https://github.com/sudomadhatter/B-L-WorldWide
+	ignore = all
+[submodule "Projects/BRKN_Tattoos"]
+	path = Projects/BRKN_Tattoos
+	url = https://github.com/sudomadhatter/BRKN_Tattoos
 	ignore = all
 [submodule "Projects/Fresh_Workspace_BMAD"]
 	path = Projects/Fresh_Workspace_BMAD
@@ -17,6 +17,10 @@
 [submodule "Projects/NEXGen-Films"]
 	path = Projects/NEXGen-Films
 	url = https://github.com/sudomadhatter/NEXGen-Films
+	ignore = all
+[submodule "Projects/NEXgen-VR-Director"]
+	path = Projects/NEXgen-VR-Director
+	url = https://github.com/sudomadhatter/NEXgen-VR-Director
 	ignore = all
 [submodule "Projects/OpenChat-Openrouter"]
 	path = Projects/OpenChat-Openrouter

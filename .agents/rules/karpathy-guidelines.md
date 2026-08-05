@@ -1,7 +1,6 @@
 ---
 name: karpathy-guidelines
 description: "Universal behavioral principles to reduce common LLM coding mistakes. Derived from Andrej Karpathy's observations, adapted with project-specific lessons."
-activation: Always On
 ---
 
 # Behavioral Principles
@@ -18,6 +17,7 @@ Tradeoff: These guidelines bias toward caution over speed. For trivial tasks, us
 - If something is unclear, stop. Name what's confusing. Ask.
 - Read the relevant context files (active-context, component specs) BEFORE writing any code.
 - Investigate root cause before proposing fixes — address "why does the architecture allow this bug?" before patching a symptom.
+  **When something is reported broken, load `.agents/rules/reproduce-before-you-fix.md` and work its five gates** — that rule is where this line is spelled out (reproduce → pin a test seen red → falsify → minimal fix → prove by reverting).
 
 ## 2. Simplicity First
 

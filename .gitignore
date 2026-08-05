@@ -31,6 +31,14 @@
 
 # Secrets / local
 **/.env
+# `**/.env` matches ONLY a file named exactly `.env` — not `.env.local`, and not the
+# `<name>.pre-restore.bak` copies that Restore-EnvMaster.ps1 / restore-env-master.sh drop beside
+# every file they overwrite. On the 2026-08-04 Desktop restore that gap left a live Firebase API
+# key sitting in an untracked `frontend/.env.local.pre-restore.bak` inside AGY (fixed in AGY's own
+# .gitignore too). Restores land secrets in projects whose ignore rules nobody re-checked, so both
+# patterns belong here as the backstop.
+**/.env.local
+**/*.pre-restore.bak
 **/auth_keys/
 # Master env bundle for machine migration (built by
 # _my_resources/migrations/Export-EnvMaster.ps1) — never committed. Pattern is
