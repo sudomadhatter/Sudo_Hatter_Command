@@ -312,20 +312,46 @@ if (Test-Path -LiteralPath $envPath) {
 
 $scanRoot = if ($WhatIf) { $null } else { $Target }
 $hits = @()
+$scannedGitRepo = $false
 if ($scanRoot -and (Test-Path -LiteralPath $scanRoot)) {
-    # No exemptions. Every file in the export tree is scanned, without exception.
+    # Every file the export WROTE is scanned - there is no exemption list, because the first
+    # version of this script had one and the exemption was the leak.
+    #
+    # The single thing skipped is the DESTINATION repo's own .git/. It is not export output:
+    # nothing inside it is ever committed, it IS the repository. Its reflog also necessarily
+    # records the committer identity of whoever ran the export, which no manifest can scrub,
+    # so leaving it in makes the scan permanently red - and a scan that is always red gets
+    # muted, which is the same as having no scan. Its HISTORY is a real but separate concern
+    # with a separate remedy; it is reported below rather than silently dropped.
+    $gitDir = Join-Path ([System.IO.Path]::GetFullPath($scanRoot)) '.git'
+    $scannedGitRepo = Test-Path -LiteralPath $gitDir
+
     foreach ($file in Get-ChildItem -LiteralPath $scanRoot -Recurse -File -Force) {
+        if ($file.FullName.StartsWith($gitDir, [StringComparison]::OrdinalIgnoreCase)) { continue }
+        $rel = $file.FullName.Substring($scanRoot.Length).TrimStart('\', '/')
+
+        # PATHS are scanned, not only contents. The substitution pass rewrites what is INSIDE
+        # a file and never touches its NAME, so a file called security_team_<client>.md ships
+        # a client name in plain sight while its scrubbed contents sail straight through a
+        # content-only scan. That is not hypothetical - it is exactly how three such files got
+        # past this guard and into a pushed repo.
+        $relSlash = $rel -replace '\\', '/'
+        foreach ($n in $needles) {
+            if ($relSlash -like "*$n*") { $hits += "$rel  PATH contains: $n" }
+        }
+        foreach ($n in $wordNeedles) {
+            if ($relSlash -match ('\b' + [regex]::Escape($n) + '\b')) {
+                $hits += "$rel  PATH contains (word): $n"
+            }
+        }
+
         $text = Get-Content -LiteralPath $file.FullName -Raw -ErrorAction SilentlyContinue
         if (-not $text) { continue }
         foreach ($n in $needles) {
-            if ($text -like "*$n*") {
-                $rel = $file.FullName.Substring($scanRoot.Length).TrimStart('\', '/')
-                $hits += "$rel  contains: $n"
-            }
+            if ($text -like "*$n*") { $hits += "$rel  contains: $n" }
         }
         foreach ($n in $wordNeedles) {
             if ($text -match ('\b' + [regex]::Escape($n) + '\b')) {
-                $rel = $file.FullName.Substring($scanRoot.Length).TrimStart('\', '/')
                 $hits += "$rel  contains (word): $n"
             }
         }
@@ -342,7 +368,15 @@ if ($WhatIf) {
     Write-Host "Do NOT push this export. Fix the manifest (exclude or transform the file) and re-run." -ForegroundColor Red
     exit 1
 } else {
-    Write-Host "   clean - $($needles.Count) needles, 0 hits" -ForegroundColor Green
+    Write-Host "   clean - $($needles.Count) needles, 0 hits (contents AND paths)" -ForegroundColor Green
+}
+
+if (-not $WhatIf -and $scannedGitRepo) {
+    Write-Host ""
+    Write-Host "   note: the target is an existing git repo. This scan covers the WORKING TREE." -ForegroundColor DarkYellow
+    Write-Host "   Earlier commits are not scanned and a force-push does not erase them - an" -ForegroundColor DarkYellow
+    Write-Host "   unreachable commit stays fetchable by SHA until the host garbage-collects." -ForegroundColor DarkYellow
+    Write-Host "   If a previous export leaked, recreating the repo is the only certain fix." -ForegroundColor DarkYellow
 }
 
 Write-Host ""

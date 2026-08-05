@@ -59,6 +59,7 @@
     ".claude/skills/deploy-backend",
     ".claude/skills/troubleshoot-cloudrun-deployment",
     ".claude/commands/security_team_aviationchat.md",
+    ".opencode/commands/security_team_aviationchat.md",
     ".claude/settings.local.json"
   ],
 
