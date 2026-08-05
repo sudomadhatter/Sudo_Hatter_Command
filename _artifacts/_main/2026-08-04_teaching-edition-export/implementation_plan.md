@@ -222,3 +222,5 @@ the existing `.agents/scripts/` conventions and the new test follows `_harness.p
 fails silently. F2, F6, F7, F8, F9 fixed in the same pass.
 
 <!-- CHECKPOINT id="ckpt_msfgxg5t_6hbfvu" time="2026-08-05T02:29:02.609Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+
+<!-- CHECKPOINT id="ckpt_msfim33l_ii3jou" time="2026-08-05T03:16:11.697Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->

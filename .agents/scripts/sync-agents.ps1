@@ -385,7 +385,9 @@ function Sync-AntigravityWorkflowMirror {
   if (-not $WhatIf) { New-Item -ItemType Directory -Force -Path $wfDir | Out-Null } else { Write-Host "WHATIF: would ensure dir '$wfDir'" }
   $mirrored = @()
   
-  $allowed = @('sudo-*.md', '1_*.md', 'new-project.md', 'slash_command_updating.md', 'merge_main_debug.md')
+  $allowed = @('sudo-*.md', '1_*.md', 'new-project.md', 'slash_command_updating.md', 'merge_main_debug.md',
+               'training.md')  # training: the tutor toggle must reach Antigravity/Gemini too, or the
+                               # teaching edition ships a /training the README promises and one surface cannot run
   $excluded = @('update-maps-indexes.md', 'sudo-adviser-board.md') # Real workflow lives in workflows/, do not overwrite with command wrapper (adviser-board: hand-authored thin launcher — the full command is ~25k, over AG's 12k limit)
   
   $files = Get-ChildItem -Path $cmdDir -Filter '*.md' -File | Where-Object {
