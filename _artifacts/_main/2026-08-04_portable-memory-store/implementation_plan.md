@@ -137,3 +137,45 @@ own INDEX ("the operator pointing an agent at this folder IS the instruction") p
 ---
 
 **STOP — awaiting "approved", plus your calls on A and B.**
+
+---
+
+## Audit append — 2026-08-04, seeding run (this machine)
+
+**§1's slug rule was wrong, and it was wrong in the one way that loses data.** The set is
+`: \ / _ .` → `-`. The dot was missing.
+
+**How a "verified against all five directories" claim was still false.** Every path in §1's table lives
+under `c:\Sudo_Hatter_Command\…` — *not one of them contains a dot*. The sample could not distinguish
+"dot is in the set" from "dot is not," so the rule fit all five and was recorded as confirmed. This
+machine's home base is `c:\Users\dlohn\.gemini\…`, and that dotted directory is the discriminating case
+the other machine never had. The table in §1 is therefore evidence from a different box; it is left as
+written for provenance, not as the current state of this one.
+
+**What the bug did.** `c:\Users\dlohn\.gemini\…` slugs to `c--Users-dlohn--gemini-…` — a *double* dash,
+one from the `\` and one from the `.`. `[:\\/_]` computes `-.gemini`, matching nothing on disk. The
+linker read that as "no local store exists," and its first dry run proposed creating a **new empty slug
+dir**, junctioning it, and reporting success — leaving all **126** memories stranded in the untouched
+original. Failure and success were indistinguishable in the output: both print "create slug dir" +
+"junction". Caught by reading the dry run's file count, which said nothing about 126 files.
+
+**Fixed.**
+
+| File | Change |
+|---|---|
+| `.agents/scripts/link-memory.ps1` | char class → `[:\\/_.]`; `Resolve-SlugDir` resolves by enumeration (on-disk casing, exact match before case-insensitive); rule comment carries the evidence |
+| `.agents/scripts/link-memory.sh` | twin edits (`sed 's#[:\\/_.]#-#g'`, `-name` before `-iname`) |
+| `_artifacts/_memory/README.md` | rule corrected + why the dot matters |
+| `Projects/{AGY_AVIATIONCHAT,Fresh_Workspace_BMAD,NEXgen-VR-Director}/.agents/scripts/` | both scripts re-copied — each vendored copy carried the same bug and would have stranded its own project's memory |
+
+**Seeded.** 126 files moved to `_artifacts/_memory/`; junction verified; all 126 confirmed identical to a
+pre-move backup by name and byte length. Canonical was empty beforehand, so this took the SEED path — the
+other machine was held back from seeding with its stale set, as intended.
+
+**Secondary fix.** The resolver reported the slug as `C--…` while disk says `c--…` (PowerShell uppercases
+the drive letter; the harness records the cwd's own casing). Harmless on NTFS, but it makes the operator's
+one verification step — compare this output to `ls ~/.claude/projects` — look like a second store had been
+created. It now reports the on-disk spelling and names the mismatch explicitly.
+
+**Still open.** The three maintained projects are unlinked; AGY has **16** memories in its slug dir. Each
+is its own repo, so linking them is a separate, per-repo decision — see the close-out note.

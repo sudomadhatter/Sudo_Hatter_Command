@@ -4,7 +4,7 @@
 # Make Claude Code's auto-memory store portable: SYMLINK it into the repo so it travels via git.
 #
 # Claude Code keeps auto-memory at  ~/.claude/projects/<slug>/memory/  where <slug> is DERIVED FROM THE
-# ABSOLUTE PATH of the workspace (':' '\' '/' and '_' all become '-'). That makes the store fragile:
+# ABSOLUTE PATH of the workspace (':' '\' '/' '_' and '.' all become '-'). That makes the store fragile:
 #
 #   1. MACHINE - ~/.claude is not a repo and is not synced, so memory never leaves the box it was
 #                written on.
@@ -52,25 +52,46 @@ ROOT="$(cd "$ROOT" && pwd)"
 PROJECTS_STORE="$HOME/.claude/projects"
 
 # --- the slug algorithm ---------------------------------------------------------------------------
-# ':' '\' '/' and '_' each become '-'. Nothing else is touched; case is preserved as the path supplies
-# it. On a POSIX path the leading '/' therefore produces a LEADING '-'.
+# ':' '\' '/' '_' and '.' each become '-'. Nothing else is touched; case is preserved as the path
+# supplies it. On a POSIX path the leading '/' therefore produces a LEADING '-'.
+#
+# '.' IS IN THE SET, and leaving it out is not cosmetic — it silently retargets the whole script. Our
+# home base lives under a DOTTED directory, '.gemini', so the true slug carries a DOUBLE dash there:
+#
+#     c:\Users\dlohn\.gemini\...  ->  c--Users-dlohn--gemini-...
+#                     ^ '\' then '.'        ^^ both dashes
+#
+# A char class without '.' yields '-.gemini', which matches no existing directory. The script would
+# then take itself down the "no local store" path, create a BRAND NEW empty slug dir, link that, and
+# leave every real memory stranded in the old one — the precise data-loss this tool exists to prevent,
+# wearing a success message. Caught 2026-08-04 on the seeding run, 126 files at stake. The Mac is just
+# as exposed: '~/.claude' and any dotted parent hit the same rule.
 #
 # NOTE: this rule was derived from Windows slugs and reproduces every one of them exactly, but the
 # POSIX shape has not been observed on a real Mac. That is why link_workspace VERIFIES the computed
 # slug dir before trusting it — run `ls ~/.claude/projects/` once on the Mac and compare.
-memory_slug() { printf '%s' "$1" | sed 's#[:\\/_]#-#g'; }
+memory_slug() { printf '%s' "$1" | sed 's#[:\\/_.]#-#g'; }
 
 # Case handling: APFS/HFS+ are case-INSENSITIVE by default, so two spellings resolve to one directory
 # (same as NTFS). Compute ONE slug, then reuse any existing dir that matches case-insensitively rather
 # than creating a second. Linking "both spellings" would process the same dir twice and manufacture a
 # false canonical-vs-local conflict on the second pass.
+#
+# Resolve by ENUMERATION, never by `-d "$want"`: find reports each name as it is stored ON DISK, while a
+# `-d` test on a case-insensitive volume succeeds against whatever spelling the caller supplied. Exact
+# match wins first, so a case-SENSITIVE volume (any Linux box, or a case-sensitive APFS) still picks its
+# exact directory and never gets silently redirected to a differently-cased sibling; the -iname pass is
+# the reuse path. Reporting the on-disk spelling matters: an operator comparing this output against
+# `ls ~/.claude/projects` must not see a name that looks like a second, freshly-created store.
 resolve_slug_dir() {
   local slug want hit
   slug="$(memory_slug "$1")"
   want="$PROJECTS_STORE/$slug"
-  if [ -d "$want" ]; then printf '%s' "$want"; return; fi
   if [ -d "$PROJECTS_STORE" ]; then
-    hit="$(find "$PROJECTS_STORE" -mindepth 1 -maxdepth 1 -type d -iname "$slug" | head -1)"
+    hit="$(find "$PROJECTS_STORE" -mindepth 1 -maxdepth 1 -type d -name "$slug" | head -1)"
+    if [ -z "$hit" ]; then
+      hit="$(find "$PROJECTS_STORE" -mindepth 1 -maxdepth 1 -type d -iname "$slug" | head -1)"
+    fi
     if [ -n "$hit" ]; then printf '%s' "$hit"; return; fi
   fi
   printf '%s' "$want"

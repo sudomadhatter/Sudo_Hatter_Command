@@ -11,9 +11,15 @@ in `.agents/maintained-projects.txt`.
 
 ## Why this exists
 
-`<slug>` is **derived from the absolute path** of the workspace — `:` `\` `/` and `_` all become `-`. That
-makes the harness's own store fragile in three ways, two of which had already cost real data before this
-was set up:
+`<slug>` is **derived from the absolute path** of the workspace — `:` `\` `/` `_` **and `.`** all become
+`-`. The dot matters: this home base sits under `.gemini`, so the real slug carries a *double* dash there
+(`c:\Users\dlohn\.gemini\…` → `c--Users-dlohn--gemini-…`, one dash from the `\` and one from the `.`).
+Omitting it computes `-.gemini`, which matches nothing on disk — and a linker that can't find the existing
+store will happily create an empty one, link that, and report success while the real memories sit
+stranded. That bug shipped in the first cut of both scripts and was caught on the seeding run.
+
+That derivation makes the harness's own store fragile in three ways, two of which had already cost real
+data before this was set up:
 
 | Axis | What breaks | Evidence |
 |---|---|---|
