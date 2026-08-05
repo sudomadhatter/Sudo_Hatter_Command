@@ -123,11 +123,11 @@
       "dlohneiss",
       "AviationChat",
       "NEXgen",
-      "sudomadhatter",
       "Sudo_Hatter_Command",
       "Fresh_Workspace_BMAD",
       "clean-bmad"
     ],
+    "_note_sudomadhatter": "sudomadhatter is deliberately NOT a needle. The READMEs must carry the real clone URLs (github.com/sudomadhatter/...) or nobody can clone anything - it is the publication address, not a secret. The SUBSTITUTION still rewrites it everywhere else, and transforms run AFTER substitutions, so the hand-authored READMEs keep the real URL while every other file is scrubbed.",
     "_note_Mac": "Mac was tried as a needle and REMOVED: BMAD's own project-types.csv lists 'Mac desktop app', so it false-fired AND the matching substitution corrupted vendor data to 'Chen desktop app'. A lone Mac beside Ada and Bruno identifies nobody.",
     "wordLiterals": ["Sully", "Igor"]
   }
