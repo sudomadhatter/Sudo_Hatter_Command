@@ -63,7 +63,7 @@
   ],
 
   "_comment_emptyDirs": "Folder exists, nothing inside. TOP-LEVEL ONLY on purpose: the real subfolders here are named after the owner's projects and dated sessions (_artifacts/_main/2026-08-04_..., Projects/<client>), so recreating the tree would leak the names. The newcomer gets the shape and fills it themselves.",
-  "emptyDirs": ["_artifacts", "_bmad-output", "Projects"],
+  "emptyDirs": ["_artifacts", "_bmad-output", "Projects", "_my_resources"],
 
   "_comment_excludeAnywhere": "Path segments never copied, wherever they appear.",
   "excludeAnywhere": [
