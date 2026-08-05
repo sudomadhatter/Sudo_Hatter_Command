@@ -38,6 +38,7 @@ block and §13 differ, so there's one thing to learn, not three.
 | ship to production | `/sudo-push-e2e` (§6) |
 | switch machines | `/sudo-park` before, `/sudo-resume` after — **§7 has a warning worth reading once** |
 | chase a production error | `/sudo-mobile-error-team` (§12) |
+| brainstorm or solve hard problems | `/sudo-adviser-board` — historical minds in challenge teams (§3) |
 | free up a heavy session | `/sudo-prune-context` |
 
 **Sections:** 1 the map · 2 the two rules · 3 commands · 4 the loop · **5 the safety net** ·
@@ -71,6 +72,7 @@ flowchart TD
     LIVE["/sudo-live-testing-team\nyou fly the app, agent watches the logs"] -.->|"becomes a story"| ONE
     AP["/autopilot_claude and its 3 siblings\nrobot runs the whole loop for you"] -.->|"alternate lane for ①②③"| TWO
     BOARD["/sudo-update-scrum-board\nrebuilds what runs next, and what runs in parallel"] -.-> BOOT
+    ADV["/sudo-adviser-board\nhistorical minds in challenge teams\nBrainstorm → Plan → Market → Brief"] -.->|"seeds ideation/plan"| KICK
     PARK["/sudo-park\npark your work before closing the laptop"] <--> RESUME["/sudo-resume\nrestore it on the other machine"]
 ```
 
@@ -139,7 +141,7 @@ Everything else in this document is a consequence of those two.
 
 | Command | What it does for you |
 |---|---|
-| `/sudo-adviser-board` | Historical minds in challenge teams that flip your assumptions and surface what people *need* rather than what they asked for. Advances only on your word. |
+| `/sudo-adviser-board` | Convene historical minds in 5 challenge teams (+ Real-World marketing squad) to flip assumptions, solve hard frontier problems, and surface what people *need*. Runs Brainstorm → Plan → Market → Brief stations; advances only on your word. Saves brief to `_my_resources/board_sessions/`. |
 
 ### Autopilot — the robot lane
 
@@ -497,3 +499,5 @@ This page is the how-to. Everything longer lives elsewhere.
 | The Adviser Board in full | [sudo-adviser-board-REFERENCE.md](../diagrams_guides/workflows_tea_testing/sudo-adviser-board-REFERENCE.md) |
 | Workspace layout plus artifact rules | [docs/workspace-standard.md](../../docs/workspace-standard.md) |
 | The toolkit's front door | [AGENTS.md](../../AGENTS.md) |
+
+<!-- CHECKPOINT id="ckpt_msffsfgr_ux1239" time="2026-08-05T01:57:08.811Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
