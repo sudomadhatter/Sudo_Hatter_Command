@@ -1,6 +1,7 @@
 ---
 name: 000-PLAN-FIRST-GATE
 description: "PRIORITY ZERO — No project file may be modified until Daniel approves an implementation_plan.md. No skill, workflow, or slash command overrides this. Read this FIRST."
+since: 2026-07-09
 ---
 
 # 🛑 PRIORITY ZERO: Plan First, Code Never (Until Approved)

@@ -1,6 +1,7 @@
 ---
 name: lobby-search
 description: "Lobby-only search gotcha: from the home-base root, Grep AND Glob are blind to Projects/ (ripgrep-based tools honor the lobby .gitignore, which ignores Projects/). Mechanics + the correct search patterns. Load when searching the tree from the lobby."
+since: 2026-07-09
 ---
 
 # Searching the tree from the LOBBY (Grep/Glob are blind to `Projects/`)

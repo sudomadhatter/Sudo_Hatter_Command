@@ -1,6 +1,7 @@
 ---
 name: constitution
 description: "Hard stops, confirmation gates, and partnership boundaries (shared, project-agnostic). For behavioral coding principles, see karpathy-guidelines.md. Project-specific hard stops live in each project's local constitution.project.md."
+since: 2026-06-24
 ---
 
 # Agent Constitution (shared)

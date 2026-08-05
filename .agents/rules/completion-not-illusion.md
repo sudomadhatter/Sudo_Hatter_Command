@@ -1,6 +1,8 @@
 ---
 name: completion-not-illusion
 description: "Activates for any workflow that produces polished intermediate artifacts (plans, audits, walkthroughs). A polished artifact is a claim, not proof of completion; mark incompleteness loudly."
+why: "A -MaxStage 2 autopilot trial (2026-06-19) produced a plan + audit polished enough that a partial run risked being remembered as a finished story; the marker is cheap, shipping on incomplete work is not."
+since: 2026-06-24
 ---
 
 # Completion Is Earned, Not Implied (Artifacts != Done)

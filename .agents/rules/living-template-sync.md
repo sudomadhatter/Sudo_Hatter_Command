@@ -1,6 +1,8 @@
 ---
 name: living-template-sync
 description: "Fresh_Workspace_BMAD is the LIVING TEMPLATE new projects are cloned from. `/sync-agents` (lobby) auto-flags when Fresh's front-door pattern has drifted; this rule is how to RECONCILE it. Rule/toolkit edits ride /sync-agents automatically; front-door + structure changes are per-workspace (NOT synced) and must be hand-mirrored into Fresh, kept generic."
+why: "Rule and structure changes at the home base must also land in Fresh, the living template for new projects, so new projects are never set up from scratch."
+since: 2026-07-07
 ---
 
 # Living Template — keep Fresh_Workspace_BMAD current

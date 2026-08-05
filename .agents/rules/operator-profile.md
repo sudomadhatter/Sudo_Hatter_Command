@@ -1,6 +1,7 @@
 ---
 name: operator-profile
 description: "Who the operator is and how to work with him — the Jobs/Woz contract. Always on: it governs every reply, so it must be loaded before the reply that needs it. The upstream WHY behind prose-formatting, mermaid-diagram-preferences, collaborative-debug-first, clickable-links, and plan-key-points-inline."
+since: 2026-07-22
 ---
 
 # Operator Profile — who you're talking to

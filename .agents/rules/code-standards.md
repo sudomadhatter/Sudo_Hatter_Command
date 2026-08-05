@@ -1,6 +1,7 @@
 ---
 name: code-standards
 description: "Activates when writing, reviewing, or gating code — backend (Python/FastAPI) or frontend (React/TypeScript). The house definition of 'clean': the comment contract (Story provenance + AIDEV-NOTE anchors), the AI-drift bans, style/organization, and the machine-checkable floor. The `clean-code-audit` skill and `/sudo-code-review` Step 3.5 both enforce THIS file — edit the standard here and the gate follows."
+since: 2026-06-24
 ---
 
 # Code Standards — the house definition of "clean"

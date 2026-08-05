@@ -1,6 +1,7 @@
 ---
 name: mermaid-diagram-preferences
 description: "Activates whenever you generate a Mermaid diagram. Never use sequenceDiagram (Daniel finds them noise); use flowchart TD or LR instead."
+since: 2026-06-24
 ---
 
 # Mermaid Diagram Preferences

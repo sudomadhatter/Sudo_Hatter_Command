@@ -1,6 +1,7 @@
 ---
 name: git-policy
 description: "Git policy: story/dev work happens in its own git worktree on a `claude/*` branch, where the agent commits FREELY (explicit paths — never `git add -A`). The story lands on `main_debug` as ONE clean push, either on Daniel's in-the-moment 'approved' or via /sudo-update-sprint-memory. `main` is reached only when Daniel asks directly or runs /sudo-push-e2e."
+since: 2026-06-24
 ---
 
 # Git Policy

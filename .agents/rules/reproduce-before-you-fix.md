@@ -1,6 +1,8 @@
 ---
 name: reproduce-before-you-fix
 description: "Activates the moment something is reported broken — a bug, a red suite, an incident, 'it's not working', a Sentry alert. The house debug loop: reproduce → pin with a failing test SEEN red → falsify one hypothesis at a time → minimal fix at the cause → prove the test catches it by reverting the fix. No fix without a reproduction; no bug fix without a pinning test."
+why: "Reproduce, locate, fix-and-verify plus the ten-minute rule are MIT 6.031; hypothesis ordering and falsify-don't-confirm are Verraes (2024)."
+since: 2026-08-04
 ---
 
 # Reproduce Before You Fix
