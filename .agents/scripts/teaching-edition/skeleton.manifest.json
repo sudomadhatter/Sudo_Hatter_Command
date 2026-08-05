@@ -14,6 +14,7 @@
     ".github",
     ".vscode",
     "_bmad",
+    "_bmad-output",
     "backend",
     "frontend",
     "docs",
@@ -38,8 +39,8 @@
     ".mcp.json"
   ],
 
-  "_comment_keepStructure": "Drop the files, keep the structure. These folders teach WHERE work goes - active-context/, component-specs/, planning-artifacts/, test-artifacts/, debugging/ - and their subfolder names are generic, so the whole tree is safe to recreate. Every folder gets a .gitkeep or git will not track it and the structure vanishes on clone.",
-  "keepStructure": ["_artifacts", "_bmad-output"],
+  "_comment_keepStructure": "Drop the files, keep the structure - _artifacts/ teaches WHERE session memory goes without shipping anybody's sessions. Every folder gets a .gitkeep or git will not track it and the structure vanishes on clone. NOTE: _bmad-output is deliberately NOT here. Its files are {{PLACEHOLDER}} templates, not content, and the SessionStart hook READS _bmad-output/active-context/active-context.md - dropping it breaks the skeleton the moment it is opened.",
+  "keepStructure": ["_artifacts"],
 
   "_comment_exclude": "AUDIT F9: this list is derived from FRESH, not copied from the lobby. Fresh vendors 15 domain skills - two the lobby does not have (gemini-live-api-dev, google-adk-python) - plus 2 domain RULES the master does not carry. Reusing the lobby's list would have shipped all four. The skeleton's own README says it carries the stack, not a product.",
   "exclude": [
@@ -119,7 +120,10 @@
     { "path": ".agents/rules/operator-profile.md", "replaceWith": "replacements/operator-profile.md" },
     { "_note": "ADDS a file rather than replacing one - the source has no .training-mode (its owner is not a learner) but every teaching clone must start with the tutor ON.", "path": ".training-mode", "replaceWith": "replacements/training-mode-sentinel" },
     { "_note": "The training rule and its command are authored in the lobby master; the skeleton needs them too so the tutor works inside a project, not only at the command center.", "path": ".agents/rules/training-mode.md", "replaceWith": "../../rules/training-mode.md" },
-    { "path": ".agents/commands/training.md", "replaceWith": "../../commands/training.md" }
+    { "path": ".agents/commands/training.md", "replaceWith": "../../commands/training.md" },
+    { "path": ".agents/commands/sudo-tour.md", "replaceWith": "../../commands/sudo-tour.md" },
+    { "_note": "README gains the template-not-workshop banner and the sudo dev-loop section the original lacks.", "path": "README.md", "replaceWith": "replacements/skeleton-README.md" },
+    { "_note": "THE agent-facing copy of the template warning. The SessionStart hook injects this file into EVERY session, so an agent opening the template sees the stop before it can start building. A README does not stop an agent; this does.", "path": "_bmad-output/active-context/active-context.md", "replaceWith": "replacements/skeleton-active-context.md" }
   ],
 
   "_comment_leakScan": "Case-INSENSITIVE, runs every export, cannot be skipped, no exception list. Every value from a .env in the source is added automatically. _my_resources is NOT a needle - it is a structural folder name in the workspace standard that the skeleton should keep teaching; only its contents are excluded.",

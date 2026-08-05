@@ -97,6 +97,8 @@
     { "from": "dlohneiss", "to": "your-user" },
     { "from": "sudomadhatter", "to": "your-github-user" },
     { "from": "Sudo_Hatter_Command", "to": "sudo-command-center" },
+    { "from": "Fresh_Workspace_BMAD", "to": "sudo-project-skeleton" },
+    { "from": "clean-bmad", "to": "sudo-project-skeleton" },
 
     { "_note": "Voice-agent names, surviving as INCIDENTAL EXAMPLES in generic files (v3-prompt-architecture uses them as sample entities). Substituted, not excluded. word:true is mandatory - Igor hides inside Rigor, Mac inside Machine." },
     { "from": "Sully", "to": "Ada", "word": true },
@@ -110,7 +112,8 @@
     { "path": ".agents/rules/operator-profile.md", "replaceWith": "replacements/operator-profile.md" },
     { "path": ".agents/maintained-projects.txt", "replaceWith": "replacements/maintained-projects.txt" },
     { "path": "router.md", "replaceWith": "replacements/router.md" },
-    { "_note": "ADDS a file rather than replacing one - the source repo has no .training-mode (its owner is not a learner) but every teaching clone must start with the tutor ON. A transform writes to a path whether or not the source has it.", "path": ".training-mode", "replaceWith": "replacements/training-mode-sentinel" }
+    { "_note": "ADDS a file rather than replacing one - the source repo has no .training-mode (its owner is not a learner) but every teaching clone must start with the tutor ON. A transform writes to a path whether or not the source has it.", "path": ".training-mode", "replaceWith": "replacements/training-mode-sentinel" },
+    { "_note": "Also an ADD: the source command center has no README. This one is teaching-edition-specific (it points at /sudo-tour and .training-mode), so it lives here rather than in the owner's repo.", "path": "README.md", "replaceWith": "replacements/lobby-README.md" }
   ],
 
   "_comment_leakScan": "Runs after every export and cannot be skipped. Any hit blocks the push. Matching is case-INSENSITIVE, so it catches case variants the substitution table missed - that is its main job. Every value from the live .env is added automatically. NOTE: _my_resources is deliberately NOT a needle. It is a structural folder name in the workspace standard (a personal area agents never touch) and the teaching edition should keep the concept; only its CONTENTS are excluded.",
@@ -121,7 +124,9 @@
       "AviationChat",
       "NEXgen",
       "sudomadhatter",
-      "Sudo_Hatter_Command"
+      "Sudo_Hatter_Command",
+      "Fresh_Workspace_BMAD",
+      "clean-bmad"
     ],
     "_note_Mac": "Mac was tried as a needle and REMOVED: BMAD's own project-types.csv lists 'Mac desktop app', so it false-fired AND the matching substitution corrupted vendor data to 'Chen desktop app'. A lone Mac beside Ada and Bruno identifies nobody.",
     "wordLiterals": ["Sully", "Igor"]

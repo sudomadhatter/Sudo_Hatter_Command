@@ -227,6 +227,24 @@ foreach ($t in (Get-ManifestList $m "transforms")) {
     Copy-Item -LiteralPath $replacement -Destination $dest -Force
 }
 
+# --- site map -----------------------------------------------------------------------------
+# The exported tree is NOT the source tree - folders were dropped, emptied, and renamed. A
+# repo-map copied across would describe a repo that does not exist, which is worse than none
+# because it is the file a newcomer trusts to find things. Regenerate it against the export.
+# Runs BEFORE the leak scan on purpose, so the regenerated map is scanned like everything else.
+
+$mapPath = Join-Path $Target 'docs/repo-map.md'
+if (-not $WhatIf -and (Test-Path -LiteralPath $mapPath)) {
+    $gen = Join-Path $sourceRoot '.agents/scripts/generate_repo_map.py'
+    if (Test-Path -LiteralPath $gen) {
+        Write-Host "-- site map --" -ForegroundColor Yellow
+        & python $gen --root $Target --output $mapPath 2>&1 | Select-Object -Last 2 |
+            ForEach-Object { Write-Host "   $_" }
+    } else {
+        Write-Warning "generate_repo_map.py not found - docs/repo-map.md still describes the SOURCE tree"
+    }
+}
+
 # --- report -----------------------------------------------------------------------------
 
 Write-Host "copied      : $($copied.Count) files"
