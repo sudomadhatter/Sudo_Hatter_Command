@@ -1,6 +1,8 @@
 ---
 name: artifacts-always-first
 description: "The single source of truth for the plan-first artifact protocol. Create implementation_plan.md and get explicit approval BEFORE modifying ANY project file. Track with the live TodoWrite task list. A session/story closes with TWO living docs: implementation_plan.md (+ appended ## Self-Audit) and walkthrough.md (outline ## Task Checklist + ## Evidence + ## Suite Ledger + appended ## Code Review + ## Your Actions). No standalone audit/review files, no task-list.md / your-action-required.md. No exceptions."
+why: "Artifacts are Daniel's primary interface for reviewing session work, and _artifacts/ is the cross-project memory every agent reads - skipping it breaks the collaboration model."
+since: 2026-06-24
 ---
 
 # Artifacts — Always First
@@ -36,10 +38,25 @@ Keep it minimal — **TWO living docs** per session, hard-budgeted:
    landed + what's still on Daniel). Everything final lives here; the review appends, never forks.
 4. **`bug-list.md`** — ONLY for debugging / live-testing sessions. A simple bug list.
 
-**Budgets (HARD):** `implementation_plan.md` ≤ 8 KB incl. its audit section; `walkthrough.md` ≤ 10 KB
-incl. its review section. Over budget → compress in place (pointers to git / the story file), never a
-new file. Test evidence is totals lines + SHA, never reporter dumps; a re-run REPLACES the pasted
-totals (git keeps history) — only the `## Suite Ledger` accretes rows.
+**Budgets (targets):** `implementation_plan.md` ≤ 8 KB incl. its audit section; `walkthrough.md`
+≤ 10 KB incl. its review section. Right ~99% of the time; a multi-phase or multi-repo plan may run
+longer.
+
+> **Scope — per-story artifacts only.** The budget caps what dev and close-out must RE-READ, so it
+> covers artifacts of stories still moving through the loop. **`_artifacts/_main/` initiative plans,
+> closed stories, `_archived/`, and `debugging/` are OUT of scope** — that is exactly what
+> `workflow_lint.check_artifact_budgets` enforces, and it **warns, never blocks**. Do not compress a
+> `_main/` plan to hit a number that was never aimed at it.
+
+- **HARD — accuracy outranks the budget.** Never drop a decision, a file, or a caveat to hit a byte
+  count. If the work genuinely needs the space, write it and state the size + reason in chat. Daniel
+  can call it bloat and make you cut — that is his call, not one to make silently on his behalf.
+  Never ask permission for bytes: the ask lands before the content exists, so it cannot be judged.
+- **HARD — never a new file.** Over budget → compress in place (pointers to git / the story file).
+  Splitting the record across files is the failure the budget actually guards against.
+
+Test evidence is totals lines + SHA, never reporter dumps; a re-run REPLACES the pasted totals (git
+keeps history) — only the `## Suite Ledger` accretes rows.
 
 > Do NOT create: a parallel `task.md`, a standalone `task-list.md` / `your-action-required.md`,
 > index/`00_artifacts-list.md` files, the verbose `debug-watch-log.md`, a standalone
@@ -166,7 +183,7 @@ link with a teaser — the whole plan, in the conversation, so Daniel can approv
 a file. A link alone (or a digest of a plan he cannot see) is a **gate violation**, not a style choice:
 he is being asked to approve something he has not been shown.
 
-Only exception: a genuinely long plan (≳ the 8 KB budget) may lead with the decisions and trade-offs in
+Only exception: a genuinely long plan (≳ the 8 KB target) may lead with the decisions and trade-offs in
 full and link the exhaustive file-by-file appendix — the reasoning he must judge is never the part
 abbreviated. Same principle as `operator-profile.md`: narrative briefing first, compressed record second.
 
@@ -268,8 +285,10 @@ When Daniel says **"review"** (or asks to review a document/plan), EVERY agent m
 - NEVER finish a `walkthrough.md` without its `## Task Checklist`, `## Evidence` (+ `## Suite Ledger`
   for story work), and `## Your Actions` sections (what landed + what's still on Daniel lives in the latter).
 - NEVER write the task outline, evidence, review, or "Your Actions" as separate files — they are sections inside `walkthrough.md` (§5).
-- NEVER let a living doc blow its budget (see The Lean Artifact Set) — compress in place; a re-run
-  REPLACES pasted totals, only the `## Suite Ledger` accretes.
+- NEVER answer an over-budget doc by splitting it into a second file (see The Lean Artifact Set) —
+  compress in place; a re-run REPLACES pasted totals, only the `## Suite Ledger` accretes. The byte
+  targets themselves are targets: NEVER cut a decision, file, or caveat to hit one — write what the
+  work needs and state the overage.
 - NEVER edit a project file for sudo-lane story work before opening its worktree — then commit your own work inside it freely (explicit paths, never `git add -A`). Ad-hoc non-story work edits `main_debug` directly — no worktree (→ `worktree-per-story` Trigger). Landing on `main_debug` needs Daniel's sign-off; `main` is his alone. Full policy → the `git-policy` + `worktree-per-story` rules.
 - NEVER deliver code-review findings inline-only — append the `## Code Review (<date>)` section to the
   walkthrough (§6); never mint a standalone review file (legacy paths are read-only history).
