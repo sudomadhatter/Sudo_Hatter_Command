@@ -217,7 +217,17 @@ def fan_out_targets(home_root):
     if pdir.is_dir():
         for child in sorted((p for p in pdir.iterdir() if p.is_dir()), key=lambda p: p.name):
             if not (child / "AGENTS.md").exists():
-                skipped.append((child, "not a workspace (no AGENTS.md)"))
+                # Distinguish "random folder" from "submodule you forgot to clone". Every Projects/<name>
+                # is a gitlink; an uninitialized one is an EMPTY dir that reads as deliberate. Naming it
+                # is what turns a silent skip into an actionable one (2026-08-04: NEXgen-VR-Director sat
+                # empty for 5 days because its .gitmodules mapping was missing and nothing ever said so).
+                if not (child / ".git").exists():
+                    reason = ("NOT CHECKED OUT - uninitialized submodule? run: "
+                              f"git submodule update --init -- Projects/{child.name} "
+                              "(if that no-ops, its .gitmodules mapping is missing)")
+                else:
+                    reason = "not a workspace (no AGENTS.md)"
+                skipped.append((child, reason))
             elif allow is not None and child.name not in allow:
                 skipped.append((child, "not in .agents/maintained-projects.txt"))
             else:

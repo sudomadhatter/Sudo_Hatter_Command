@@ -98,11 +98,27 @@ if ($Maintained) {
       $name = ($line -replace '#.*$', '').Trim()
       if (-not $name) { continue }
       $proj = Join-Path $HomeRoot "Projects\$name"
-      if (Test-Path $proj) {
-        & $PSCommandPath -Target $proj -NoGlobals -Status:$Status -Reconcile:$Reconcile -WhatIf:$WhatIf
-      } else {
+      if (-not (Test-Path $proj)) {
         Write-Warning "sync-agents: maintained project '$name' not found under Projects\ - skipping"
+        continue
       }
+      # GUARD (2026-08-04): a directory existing is NOT proof the project is here. Every Projects\<name>
+      # is a git SUBMODULE; an uninitialized one is an EMPTY directory that looks deliberate. Vendoring
+      # into it manufactures a fake project that later tools then trust - that is exactly how
+      # NEXgen-VR-Director got 601 toolkit files written into a placeholder it had no business holding
+      # (root cause: its .gitmodules mapping was missing, so `submodule update --init` silently skipped it).
+      # Materialized == has .git (dir or file) OR a root AGENTS.md. Fail LOUD; never write into the gap.
+      $hasGit    = Test-Path (Join-Path $proj ".git")
+      $hasAgents = Test-Path (Join-Path $proj "AGENTS.md")
+      if (-not ($hasGit -or $hasAgents)) {
+        Write-Warning "sync-agents: SKIPPING '$name' - directory exists but the project is NOT checked out (no .git, no AGENTS.md)."
+        Write-Warning "sync-agents:   This is almost always an uninitialized submodule. Do NOT sync into it - clone it first:"
+        Write-Warning "sync-agents:       git submodule update --init -- Projects/$name"
+        Write-Warning "sync-agents:   If that no-ops, the path has no .gitmodules mapping. Verify parity:"
+        Write-Warning "sync-agents:       git ls-files -s Projects/   vs   git config -f .gitmodules --get-regexp path"
+        continue
+      }
+      & $PSCommandPath -Target $proj -NoGlobals -Status:$Status -Reconcile:$Reconcile -WhatIf:$WhatIf
     }
   } else {
     Write-Warning "sync-agents: no .agents\maintained-projects.txt found - only the lobby was synced"

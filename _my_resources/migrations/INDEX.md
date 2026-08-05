@@ -173,6 +173,14 @@ cross-platform once `pwsh` is present.
   content: `INDEX.md` and/or `README.md`, never `AGENTS.md`). There is deliberately **no** `README.md`
   here — a second entry point is a second thing to keep in sync.
 
+- **`.gitmodules` parity is a setup precondition, not a detail.** Every `Projects/<name>` is a
+  gitlink; a gitlink with no `.gitmodules` mapping makes `git submodule update --init` **silently
+  no-op**, so the folder stays empty on every machine forever and `git submodule status` *dies* on the
+  first unmapped path instead of reporting it. Verify `git ls-files -s Projects/` against
+  `git config -f .gitmodules --get-regexp path` before trusting any clone step — full procedure in
+  `new_machine-migration-guide.md` §3 step 2. (2026-08-04: `NEXgen-VR-Director` + `BRKN_Tattoos` were
+  unmapped, `AGY_JETCHAT` was a dead mapping to a 404 repo.)
+
 ## Related
 
 - Maintaining the home base itself (`/new-project`, `/sync-agents`) → `docs/system-builder.md`

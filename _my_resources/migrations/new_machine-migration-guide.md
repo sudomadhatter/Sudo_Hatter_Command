@@ -79,10 +79,34 @@ missing directories, and `git clone` refuses to clone into a non-empty folder.
    The absolute path matters beyond taste: Claude Code's memory slug is derived
    from it (see step 8 / `link-memory.ps1`), so matching the other machines keeps
    the slug — and therefore the memory junction — identical everywhere.
-2. **Clone each sub-project repo** the operator works on into `Projects/`
-   using the exact folder names from the master's manifest (e.g.
-   `Projects/AGY_AVIATIONCHAT`, `Projects/BRKN_Tattoos`). Every sub-project is
-   its own independent repo — the lobby repo does not contain them.
+2. **Clone the sub-projects — use the submodule machinery, not manual clones.** Every
+   `Projects/<name>` is registered in the lobby as a **gitlink (mode 160000)** with its URL in
+   `.gitmodules`, so one command brings them all down at the exact commits the lobby expects:
+
+   ```bash
+   git submodule update --init --recursive          # all of them
+   git submodule status                             # '-' prefix = still not initialized
+   ```
+
+   Manual `git clone` per project also works, but you must use the **exact** folder names from
+   `.gitmodules` — a typo produces a folder the lobby doesn't recognise and no tool will notice.
+
+   > ⛔ **FIRST verify `.gitmodules` parity — this is the failure that actually happened.** A path can
+   > be a gitlink with **no `.gitmodules` mapping**. Then `submodule update --init` has no URL to clone
+   > from and **silently skips it**, leaving an empty folder forever, on every machine. On 2026-08-04
+   > `NEXgen-VR-Director` and `BRKN_Tattoos` were both in this state; `git submodule status` didn't even
+   > report it, because it **died** on the first unmapped path before reaching the second. Check parity
+   > BEFORE trusting any clone step:
+   >
+   > ```bash
+   > git ls-files -s Projects/ | awk '{print $4}' | sort > /tmp/links.txt
+   > git config -f .gitmodules --get-regexp path | awk '{print $2}' | sort > /tmp/maps.txt
+   > diff /tmp/links.txt /tmp/maps.txt && echo "parity OK"
+   > ```
+   >
+   > `<` lines = gitlink with no mapping → **add the `[submodule]` block to `.gitmodules`** (that is the
+   > fix; nothing else will work). `>` lines = mapping with no gitlink → a dead entry, delete it
+   > (`AGY_JETCHAT` was one — the repo 404s).
 
    > ⚠️ **Verify this — a MISSING clone looks exactly like a present one.** The lobby records each
    > `Projects/<name>` as a gitlink (mode 160000). If the clone never happened, the folder can still
@@ -100,6 +124,12 @@ missing directories, and `git clone` refuses to clone into a non-empty folder.
    > ```
    >
    > Anything reported `NO .git` still needs cloning before steps 3, 5 or 8 mean anything for it.
+   >
+   > **Never let a tool write into an un-cloned folder.** `sync-agents.ps1 -Maintained` and
+   > `check_maps.py --all` now both refuse and print the `submodule update --init` remedy (guards added
+   > 2026-08-04, after a sync wrote 601 toolkit files into NEXgen's empty placeholder). If you script
+   > anything new that walks `maintained-projects.txt`, copy that guard — a directory existing is
+   > **not** proof the project is here.
 3. **Place the operator's copy of `master.env`** at
    `_my_resources/migrations/_secrets/master.env` (create the `_secrets` folder
    if needed), or leave it on the USB stick and pass its path with `-MasterPath`.
