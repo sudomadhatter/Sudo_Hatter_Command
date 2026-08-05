@@ -275,8 +275,14 @@ if (-not $WhatIf) {
         "",
         "--- excluded ($($excluded.Count)) ---"
     ) + $excluded
-    Set-Content -LiteralPath $reportPath -Value $report -Encoding UTF8
-    Write-Host "exclusion report: $reportPath"
+    # Non-fatal: the report is a courtesy, the export is the product. If the target sits at a
+    # drive root the parent is write-protected, and a 2400-file export must not die on a log.
+    try {
+        Set-Content -LiteralPath $reportPath -Value $report -Encoding UTF8 -ErrorAction Stop
+        Write-Host "exclusion report: $reportPath"
+    } catch {
+        Write-Warning "could not write the exclusion report to '$reportPath' ($($_.Exception.GetType().Name)) - export itself is unaffected"
+    }
 }
 
 # --- leak scan (never optional) ---------------------------------------------------------
