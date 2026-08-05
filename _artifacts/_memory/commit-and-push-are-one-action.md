@@ -21,6 +21,17 @@ was pushing the repo actively being reasoned about (AGY) and committing-but-not-
 Second mechanic: **sync often runs AFTER the commit**, so a repo that was clean when committed is dirty
 again by the end of the turn — re-check at the end, never at the point you happened to commit.
 
+**THIS IS NOT A PERMISSION GRANT.** It is a completeness rule, and the distinction was tested on
+2026-08-04: this memory was read as standing authorization to push unasked, and the operator had to stop
+and ask when that changed. It never changed. Verified against the source transcript — the 07-27 complaint
+was that THREE repos were touched, one was pushed, and two were committed-and-abandoned, so the operator
+hand-synced them. It was about work left half-done across repos. Authorization was never discussed.
+
+Push is outward-facing and still needs approval. When approval is absent or a permission gate blocks it,
+the finished end-state is: **commit made, push attempted, operator told the exact ref and count** — never
+a silent stop, and never routing around the gate with another tool. A blocked push that is clearly
+reported satisfies this memory. A quiet unpushed commit does not.
+
 **How to apply:** end every piece of work by running, in **each repo touched**:
 
 ```bash
