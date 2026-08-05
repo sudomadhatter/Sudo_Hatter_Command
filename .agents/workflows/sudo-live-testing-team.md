@@ -36,11 +36,10 @@ before any work.
   Firestore reads (`get_db()`) → temporary debug logs (reload picks them up; remove at close) →
   Cloud Run / `gcloud` (ask first). Always ask before reaching outside the local box.
 
-## Step 3 — Recon every confirmed symptom into a bug doc
-For each distinct bug, research the ROOT cause: read the code path, correlate the log evidence, and
-check claims against the docs — mark every finding **verified** (evidence in hand) vs **docs-say**
-(plausible, needs confirmation). Then file one doc per bug at
-`PROJECT_ROOT/_artifacts/debugging/<YYYY-MM-DD>_live-testing/<n>-<slug>.md` containing:
+## Step 3 — Recon every confirmed symptom into the single session bug document
+Create (or append to) a single consolidated bug document for the testing session at
+`PROJECT_ROOT/_artifacts/debugging/<YYYY-MM-DD>_live-testing/bug-list.md`.
+For each confirmed symptom, append a numbered section (`## Bug <n>: <Title / Slug>`) to this **same document** throughout the session containing:
 - **Symptom** — what the human saw, in their words
 - **Evidence** — exact log lines / network rows / console output captured
 - **Root cause** — ranked hypotheses, each tagged verified vs docs-say
@@ -48,7 +47,7 @@ check claims against the docs — mark every finding **verified** (evidence in h
 - **Suggested lane** — `/sudo-quick-dev` (small/contained) or the full ①②③ story loop (risky/cross-cutting)
 
 ## Step 4 — Close out
-Post a session summary table (bug → doc link → suggested lane). Ask whether to keep or kill the
+Post a session summary table (Bug # → Section Link in `bug-list.md` → suggested lane). Ask whether to keep or kill the
 servers. Remove every temporary debug log you added. The fixes themselves happen in the sudo dev
 flow — never in this chat.
 

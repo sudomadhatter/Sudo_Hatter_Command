@@ -2,6 +2,17 @@
 
 ## 1. PRIME STATE
 Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-08-04
+**2026-08-05 (latest): AviationChat AI evaluation quick reference is ready.**
+Daniel asked for a plain-language guide before beginning the setup work. Created
+`_my_resources/_quick_reference/agy_aviationchat_ai_evaluations.md` with two verified Mermaid flowcharts.
+The assessment establishes: L1 deterministic tests are mature; L2 ADK evaluation scaffolding has no saved
+evalsets and is excluded from default pytest discovery; L3 has a real Gemini judge harness but only historical
+June reports; and voice has deterministic router coverage but no native Gemini Live duplex replay harness.
+**Recommended next work:** activate a small ADK golden corpus, freshen and human-calibrate the L3 baseline,
+then build a budgeted staging-only audio replay suite for Sully and Igor. Do not install OpenEvals first;
+reconsider it later only as an adapter for multimodal voice scoring or experiment dashboards.
+Session: `_artifacts/_main/2026-08-05_ai-evals-quick-reference/`.
+
 **2026-08-04 (latest): rule load class has ONE source of truth, and the protocol tier now loads on a BINDING trigger.**
 Audit of `.agents/rules/` found the set already clean on the things people check (all 21 have frontmatter,
 `name:` matches filename everywhere, INDEX covers all 21, no ghosts). The rot was elsewhere: **load class
