@@ -39,6 +39,7 @@ this table is the at-a-glance version. This is the shared/master set; a project 
 | `tests-must-gate-for-real.md` | on-demand | writing acceptance/ATDD tests, scaffolding/reviewing a CI gate, or marking a suite report-only/soft/skip — a red must fail for the right reason, CI must run the REAL suite, and no gate is soft forever. |
 | `mermaid-diagram-preferences.md` | on-demand | generating a Mermaid diagram — never `sequenceDiagram`; use `flowchart TD`/`LR`. |
 | `prose-formatting.md` | on-demand | writing a conversational chat reply — prose over scaffolding (does NOT govern deliverable docs). |
+| `training-mode.md` | on-demand (auto when `.training-mode` exists) | a `.training-mode` file is present at the repo root — the tutor lane: the person is LEARNING the system, so every answer is a teaching answer, explain before executing, never invent a command. Supersedes `operator-profile` while on; `/training on\|off\|status` flips it. |
 | `mobile-mode.md` | on-demand (auto on web/mobile) | the session is web/mobile (remote container) or Daniel says "mobile" — adapts git, the approval gate, artifacts, and verification for the phone. |
 | `living-template-sync.md` | on-demand | you change a shared rule, the front-door pattern, or a folder/workspace convention at the home base — propagate it into `Fresh_Workspace_BMAD` (the living template new projects clone from) so new projects start current, not stale. |
 

@@ -50,6 +50,12 @@ floor, and why the trigger has to be a rule you follow rather than a hope.
 in the INDEX). Do not preload. The full rule set is the shared toolkit, not a startup payload. How a
 workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 
+> **Training mode?** When a file named **`.training-mode`** exists at the repo root, also load
+> `.agents/rules/training-mode.md` — the tutor lane for someone LEARNING this system: every answer is
+> a teaching answer, explain before executing, never invent a command. It **supersedes
+> `operator-profile`** while active and nothing else. `/training on|off|status` flips it.
+> `training-mode.md` owns the trigger (single source for the lane boundary).
+
 > **Web/mobile session?** When env **`CLAUDE_CODE_REMOTE=true`** (Claude Code on the web or phone), also
 > load `.agents/rules/mobile-mode.md` — the web/mobile lane: it adapts git, the approval gate, artifacts,
 > and verification for a device with no terminal. On a desktop IDE session the var is unset → ignore it and

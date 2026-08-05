@@ -55,12 +55,21 @@ Write-Host "source : $sourceRoot"
 Write-Host "target : $Target$(if ($WhatIf) { '   [WhatIf - nothing will be written]' })"
 Write-Host ""
 
+# Optional manifest keys. Set-StrictMode turns a missing property into a hard error, so every
+# optional list goes through here - a manifest should not have to spell out the keys it does
+# not use.
+function Get-ManifestList {
+    param($Obj, [string]$Name)
+    if ($Obj -and ($Obj.PSObject.Properties.Name -contains $Name)) { return @($Obj.$Name) }
+    return @()
+}
+
 # --- exclusion matching -----------------------------------------------------------------
 
 # Path segments that are never copied, wherever they appear in the tree.
-$excludeDirs = @($m.excludeAnywhere)
+$excludeDirs = Get-ManifestList $m "excludeAnywhere"
 # Repo-relative prefixes that are never copied.
-$excludePaths = @($m.exclude) | ForEach-Object { $_.TrimEnd('/', '\') }
+$excludePaths = Get-ManifestList $m "exclude" | ForEach-Object { $_.TrimEnd('/', '\') }
 
 function Test-Excluded {
     param([string]$Rel)
@@ -109,6 +118,41 @@ foreach ($inc in $m.include) {
     }
 }
 
+# --- structure-only folders -------------------------------------------------------------
+# "Drop all the files, keep the structures." A newcomer needs to SEE where things go -
+# _artifacts/, _bmad-output/ and friends are part of how the system is taught - but none of
+# the content belongs to them. So the directory tree is recreated and every file is dropped.
+# Each folder gets a .gitkeep, or git will not track an empty directory and the structure
+# silently disappears on clone - which would defeat the whole point.
+
+$structureDirs = 0
+if (-not $WhatIf) {
+    foreach ($rel in (Get-ManifestList $m "keepStructure")) {
+        $src = Join-Path $sourceRoot $rel
+        if (-not (Test-Path -LiteralPath $src)) { continue }
+        $dirs = @(Get-Item -LiteralPath $src) + @(Get-ChildItem -LiteralPath $src -Recurse -Directory -Force)
+        foreach ($d in $dirs) {
+            $r = $d.FullName.Substring($sourceRoot.Path.Length).TrimStart('\', '/')
+            $dest = Join-Path $Target $r
+            if (-not (Test-Path -LiteralPath $dest)) {
+                New-Item -ItemType Directory -Path $dest -Force | Out-Null
+            }
+            Set-Content -LiteralPath (Join-Path $dest '.gitkeep') -Value '' -NoNewline -Encoding UTF8
+            $structureDirs++
+        }
+    }
+    # Top-level only: the folder exists, nothing inside it (its real subfolders are named
+    # after the owner's projects, so recreating them would leak the names).
+    foreach ($rel in (Get-ManifestList $m "emptyDirs")) {
+        $dest = Join-Path $Target $rel
+        if (-not (Test-Path -LiteralPath $dest)) {
+            New-Item -ItemType Directory -Path $dest -Force | Out-Null
+        }
+        Set-Content -LiteralPath (Join-Path $dest '.gitkeep') -Value '' -NoNewline -Encoding UTF8
+        $structureDirs++
+    }
+}
+
 # --- substitutions ----------------------------------------------------------------------
 # Literal token swaps applied to copied TEXT files, in manifest order (so a longer token can
 # be handled before the shorter one it contains). This exists because most domain references
@@ -125,15 +169,31 @@ $TEXT_EXT = @('.md', '.txt', '.json', '.ps1', '.py', '.yaml', '.yml', '.toml', '
 $subCount = 0
 $subFiles = 0
 
-if (-not $WhatIf -and $m.PSObject.Properties.Name -contains 'substitutions') {
+$subList = Get-ManifestList $m "substitutions"
+if (-not $WhatIf -and $subList.Count -gt 0) {
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     foreach ($file in Get-ChildItem -LiteralPath $Target -Recurse -File -Force) {
         if ($TEXT_EXT -notcontains $file.Extension.ToLower() -and
             $TEXT_EXT -notcontains $file.Name.ToLower()) { continue }
         $text = [System.IO.File]::ReadAllText($file.FullName)
         $orig = $text
-        foreach ($s in $m.substitutions) {
-            if ($text.Contains($s.from)) {
+        foreach ($s in $subList) {
+            # Entries with no "from" are inline `_note` comments documenting the rows below
+            # them - JSON has no comment syntax and this table needs its reasoning attached.
+            if ($s.PSObject.Properties.Name -notcontains 'from') { continue }
+            # "word": true matches whole words only. Required for short names that are substrings
+            # of ordinary words - a plain replace of "Mac" corrupts "Machine", and "Igor" hides
+            # inside "Rigor". Without this the choice is a corrupted export or a missed name.
+            $isWord = ($s.PSObject.Properties.Name -contains 'word') -and $s.word
+            if ($isWord) {
+                $pattern = '\b' + [regex]::Escape($s.from) + '\b'
+                $n = ([regex]::Matches($text, $pattern)).Count
+                if ($n -gt 0) {
+                    $text = [regex]::Replace($text, $pattern, $s.to)
+                    $subCount += $n
+                }
+            }
+            elseif ($text.Contains($s.from)) {
                 $n = ([regex]::Matches($text, [regex]::Escape($s.from))).Count
                 $text = $text.Replace($s.from, $s.to)
                 $subCount += $n
@@ -151,7 +211,7 @@ if (-not $WhatIf -and $m.PSObject.Properties.Name -contains 'substitutions') {
 # a replacement you can open and read is reviewable, a regex buried in JSON is not.
 
 $transformed = New-Object System.Collections.Generic.List[string]
-foreach ($t in $m.transforms) {
+foreach ($t in (Get-ManifestList $m "transforms")) {
     $replacement = Join-Path $manifestDir $t.replaceWith
     if (-not (Test-Path -LiteralPath $replacement)) {
         throw "Transform replacement missing: $($t.replaceWith) (for $($t.path))"
@@ -171,6 +231,7 @@ foreach ($t in $m.transforms) {
 
 Write-Host "copied      : $($copied.Count) files"
 Write-Host "excluded    : $($excluded.Count) files"
+Write-Host "structure   : $structureDirs empty folder(s) kept"
 Write-Host "substituted : $subCount token(s) across $subFiles file(s)"
 Write-Host "transformed : $($transformed.Count) files"
 Write-Host ""
@@ -205,7 +266,12 @@ if (-not $WhatIf) {
 Write-Host ""
 Write-Host "-- leak scan --" -ForegroundColor Yellow
 
-$needles = @($m.leakScan.literals)
+$needles = Get-ManifestList $m.leakScan "literals"
+
+# Short names that are substrings of ordinary words need whole-word matching, or the scan
+# cries wolf ("Igor" inside "Rigor") - and a scanner that cries wolf gets muted, which is
+# the same outcome as having no scanner.
+$wordNeedles = Get-ManifestList $m.leakScan "wordLiterals"
 
 # Every VALUE from the live .env, so a key that was pasted into a doc is caught even
 # though the .env itself was excluded.
@@ -231,6 +297,12 @@ if ($scanRoot -and (Test-Path -LiteralPath $scanRoot)) {
             if ($text -like "*$n*") {
                 $rel = $file.FullName.Substring($scanRoot.Length).TrimStart('\', '/')
                 $hits += "$rel  contains: $n"
+            }
+        }
+        foreach ($n in $wordNeedles) {
+            if ($text -match ('\b' + [regex]::Escape($n) + '\b')) {
+                $rel = $file.FullName.Substring($scanRoot.Length).TrimStart('\', '/')
+                $hits += "$rel  contains (word): $n"
             }
         }
     }

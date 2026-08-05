@@ -2,7 +2,7 @@
   "name": "sudo-command-center (teaching edition)",
   "source": "../../..",
 
-  "_comment_include": "Everything the system needs to run for someone who has no projects yet. Tool surface dirs (.claude/.opencode/.antigravity/.agent) are included so commands resolve on first clone rather than after a /sync-agents.",
+  "_comment_include": "BARE BONES - the system itself, nothing else. Rules, commands, workflows, skills, scripts, templates, and the routing brain. No projects, no session history, no BMAD module (BMAD runs inside a project, not the command center - the skeleton carries it). Tool surface dirs (.claude/.opencode/.antigravity/.agent) are included so commands resolve on first clone rather than only after a /sync-agents.",
   "include": [
     ".agents",
     ".claude",
@@ -62,6 +62,9 @@
     ".claude/settings.local.json"
   ],
 
+  "_comment_emptyDirs": "Folder exists, nothing inside. TOP-LEVEL ONLY on purpose: the real subfolders here are named after the owner's projects and dated sessions (_artifacts/_main/2026-08-04_..., Projects/<client>), so recreating the tree would leak the names. The newcomer gets the shape and fills it themselves.",
+  "emptyDirs": ["_artifacts", "_bmad-output", "Projects"],
+
   "_comment_excludeAnywhere": "Path segments never copied, wherever they appear.",
   "excludeAnywhere": [
     ".git",
@@ -93,14 +96,21 @@
     { "from": "dlohneiss@gmail.com", "to": "you@example.com" },
     { "from": "dlohneiss", "to": "your-user" },
     { "from": "sudomadhatter", "to": "your-github-user" },
-    { "from": "Sudo_Hatter_Command", "to": "sudo-command-center" }
+    { "from": "Sudo_Hatter_Command", "to": "sudo-command-center" },
+
+    { "_note": "Voice-agent names, surviving as INCIDENTAL EXAMPLES in generic files (v3-prompt-architecture uses them as sample entities). Substituted, not excluded. word:true is mandatory - Igor hides inside Rigor, Mac inside Machine." },
+    { "from": "Sully", "to": "Ada", "word": true },
+    { "from": "sully", "to": "ada", "word": true },
+    { "from": "Igor", "to": "Bruno", "word": true },
+    { "from": "igor", "to": "bruno", "word": true }
   ],
 
   "_comment_transforms": "Whole-file swaps for files whose CONTENT is personal, not just its tokens. operator-profile is floor-tier and hard-codes Daniel as chair; unchanged, a stranger's agent believes it is talking to him.",
   "transforms": [
     { "path": ".agents/rules/operator-profile.md", "replaceWith": "replacements/operator-profile.md" },
     { "path": ".agents/maintained-projects.txt", "replaceWith": "replacements/maintained-projects.txt" },
-    { "path": "router.md", "replaceWith": "replacements/router.md" }
+    { "path": "router.md", "replaceWith": "replacements/router.md" },
+    { "_note": "ADDS a file rather than replacing one - the source repo has no .training-mode (its owner is not a learner) but every teaching clone must start with the tutor ON. A transform writes to a path whether or not the source has it.", "path": ".training-mode", "replaceWith": "replacements/training-mode-sentinel" }
   ],
 
   "_comment_leakScan": "Runs after every export and cannot be skipped. Any hit blocks the push. Matching is case-INSENSITIVE, so it catches case variants the substitution table missed - that is its main job. Every value from the live .env is added automatically. NOTE: _my_resources is deliberately NOT a needle. It is a structural folder name in the workspace standard (a personal area agents never touch) and the teaching edition should keep the concept; only its CONTENTS are excluded.",
@@ -112,6 +122,8 @@
       "NEXgen",
       "sudomadhatter",
       "Sudo_Hatter_Command"
-    ]
+    ],
+    "_note_Mac": "Mac was tried as a needle and REMOVED: BMAD's own project-types.csv lists 'Mac desktop app', so it false-fired AND the matching substitution corrupted vendor data to 'Chen desktop app'. A lone Mac beside Ada and Bruno identifies nobody.",
+    "wordLiterals": ["Sully", "Igor"]
   }
 }
