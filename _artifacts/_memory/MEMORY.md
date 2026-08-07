@@ -2,6 +2,10 @@
 
 <!-- One line per memory: link + a short hook. Detail lives in the file. Keep under ~17 KB. -->
 
+## Jira & tickets
+- [Jira is LIVE (SCC + AVCH)](jira-integration-live.md) — every branch/commit carries a key; gate ARMED, wrong-project key rejected.
+- [VS Code hides hook output](vscode-hides-git-hook-output.md) — a warn-only hook looks like clean success; ship hooks ARMED.
+
 ## AGY access & data
 - [Corpus IS the asset](agy-corpus-is-the-asset.md) — real-user data is a revenue line; demo data is placeholder by design.
 - [`entitled` has no provenance](agy-entitled-claim-has-no-provenance.md) — paywall live; one shared boolean, a billing revoke kills school access.
@@ -49,7 +53,7 @@
 - [Sentry API access](sentry-api-access-aviationchat.md) — token in backend/.env; control vs region host split; the loop-guard filter is sacred.
 - [Incident pipeline 16.2](incident-pipeline-16-2-operations.md) — agent lane PRIMARY; fire endpoint is the fallback pager.
 - [Commit and push are ONE action](commit-and-push-are-one-action.md) — never end a step unpushed or dirty; verify `0 0` + clean per repo.
-- [Git branch model](git-branch-model-standard.md) — main is the ONLY long-lived branch; epics on short-lived epic/* merged via /sudo-push-e2e; retired main_debug 2026-08-07.
+- [Git branch model](git-branch-model-standard.md) — main is the ONLY long-lived branch; epics on short-lived epic/* merged via /sudo-push-e2e; retired main_debug 2026-08-07; branches now carry a Jira key.
 - [Hook `ask` = DENY in auto mode](hook-ask-becomes-autodeny-in-auto-mode.md) — the hook gates main only; reads pass while mutations die; retry once, then hand over the rule.
 - [Pruned worktree blocks re-add](pruned-worktree-leaves-a-blocking-shell.md) — the empty dir blocks `worktree add`; only PowerShell can delete it.
 - [Worktrees skip gitignored assets](worktrees-do-not-inherit-gitignored-assets.md) — copy auth_keys/ + .env; junction node_modules; `npm ci` for E2E.
@@ -115,7 +119,7 @@
 - [Sync covers .agents not docs](toolkit-sync-covers-agents-not-docs.md) — edit master `.agents/`; `docs/` is NOT synced.
 - [Maintained-projects allowlist](maintained-projects-allowlist.md) — `.agents/maintained-projects.txt`; NEXgen is a bare gitlink.
 - [Installed ≠ maintained (RULED)](toolkit-installed-but-deliberately-unmaintained.md) — B-L-WorldWide + BRKN_Tattoos frozen on purpose; not a gap.
-- [Fresh is the living template](fresh-workspace-living-template.md) — the golden skeleton; propagate rule/structure changes into it.
+- [Fresh RETIRED 2026-08-07](fresh-workspace-living-template.md) — no longer the living template or maintained; no template exists now, cut new projects from the lobby master.
 - [Rules read in place](rule-org-single-source-audit.md) — rules load from `.agents/rules/`; sync copies commands+skills, NEVER rules.
 - [Command restructure 07-14](command-surface-restructure-2026-07-14.md) — the rename map + /sudo-e2e gate + -SkipAP.
 - [sudo commands have _AP twins](sudo-commands-have-ap-twins-that-drift.md) — when fixing one, diff the twin.

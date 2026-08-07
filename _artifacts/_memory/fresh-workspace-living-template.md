@@ -12,3 +12,10 @@ metadata:
 **Why:** if Fresh drifts behind the lobby, every new project starts stale and has to be hand-fixed on each clone.
 
 **How to apply:** `.agents/**` (rules/toolkit) propagate via `/sync-agents` (additive vendor into every project incl. Fresh) — see [[toolkit-sync-covers-agents-not-docs]]. Front-door files (root `AGENTS.md`/`CLAUDE.md`/`GEMINI.md`/`INDEX.md`), `docs/`, and folder structure are NOT synced → hand-mirror into Fresh, kept generic (no product specifics; placeholders where a real project fills in). Codified as the `living-template-sync` rule in `.agents/rules/` (+ its INDEX row). Verify: a clone+rename should need only placeholder fills, not structural setup.
+
+
+**RETIRED 2026-08-07 (SCC-25, Daniel's ruling).** Fresh_Workspace_BMAD is no longer the living
+template and is out of `.agents/maintained-projects.txt` — sync and map fan-out skip it; structure/rule
+changes NO LONGER propagate into it. It sits on disk untouched (deliberately stale, like
+[[toolkit-installed-but-deliberately-unmaintained]]) until Daniel decides disposal. There is currently
+NO living template — a new project would be cut from the lobby master `.agents/` directly.

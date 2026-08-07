@@ -62,13 +62,13 @@ guides, run the scripts.
 
 | # | Step | File / command | Windows | macOS |
 |---|---|---|---|---|
-| 1 | Read the whole procedure first (clone → restore → verify) | [`new_machine-migration-guide.md`](new_machine-migration-guide.md) | ✅ | ✅ |
+| 1 | Read the whole procedure first (clone → restore → verify) | [`new_machine-migration-guide.md`](install_guides/new_machine-migration-guide.md) | ✅ | ✅ |
 | 2 | Clone both repos (lobby + every project you work in) | that guide, §3 | ✅ | ✅ |
-| 3 | Restore every `.env` / `auth_keys/` from the master bundle | Windows → [`Restore-EnvMaster.ps1`](Restore-EnvMaster.ps1) · macOS/Linux → [`restore-env-master.sh`](restore-env-master.sh) | ✅ | ✅ **use the `.sh`** |
+| 3 | Restore every `.env` / `auth_keys/` from the master bundle | Windows → [`Restore-EnvMaster.ps1`](scripts/Restore-EnvMaster.ps1) · macOS/Linux → [`restore-env-master.sh`](scripts/restore-env-master.sh) | ✅ | ✅ **use the `.sh`** |
 | 4 | The secret bundle step 3 reads | `_secrets/master.env` — **gitignored, hand-carried, never committed** | ✅ | ✅ |
-| 5 | Rebuild the AGY Python venv + verify the test infra | [`python_vytest-updates-other-machines.md`](python_vytest-updates-other-machines.md) | ✅ | ✅ (use its macOS column) |
+| 5 | Rebuild the AGY Python venv + verify the test infra | [`python_vytest-updates-other-machines.md`](install_guides/python_vytest-updates-other-machines.md) | ✅ | ✅ (use its macOS column) |
 | 6 | Per-machine logins & toolchains — gcloud, gh, firebase, Java 17, Node, GitNexus re-index | that guide, §5 | ✅ | ✅ |
-| 7 | Scrum-board stale-stamp git hooks (per machine, per project — AGY today) | [`git-hooks-board-stale-install.md`](git-hooks-board-stale-install.md) | ✅ | needs `pwsh` (installer is `.ps1`) |
+| 7 | Scrum-board stale-stamp git hooks (per machine, per project — AGY today) | [`git-hooks-board-stale-install.md`](../open_tasks/git-hooks-board-stale-install.md) | ✅ | needs `pwsh` (installer is `.ps1`) |
 | 8 | **Link the Claude auto-memory store** so memory travels via git instead of dying on this box | `.agents/scripts/link-memory.ps1` · macOS → `link-memory.sh` | ✅ | ✅ **use the `.sh`** |
 
 ```powershell
@@ -112,7 +112,7 @@ box does not get a reduced checklist; it gets its own `-n` value. That doc says 
 
 | What | Situation |
 |---|---|
-| **Secrets restore** | ✅ **Solved — use [`restore-env-master.sh`](restore-env-master.sh).** `Restore-EnvMaster.ps1` cannot do this on macOS even under `pwsh`: it joins `'_my_resources\migrations\_secrets\master.env'` and does `$relPath.Replace('/', '\')`, so it would hunt for one literal back-slashed filename and write `backend\.env` as a single file instead of nesting it. Rather than change a working Windows script, the `.sh` is its **twin** — same markers, same backups, same refusals, **verified byte-identical output** on the same master. It also strips the CRLF that a Windows-exported `master.env` carries (a naive shell read would append `\r` to every secret), adds `--dry-run`, and `chmod 600`s what it writes. |
+| **Secrets restore** | ✅ **Solved — use [`restore-env-master.sh`](scripts/restore-env-master.sh).** `Restore-EnvMaster.ps1` cannot do this on macOS even under `pwsh`: it joins `'_my_resources\migrations\_secrets\master.env'` and does `$relPath.Replace('/', '\')`, so it would hunt for one literal back-slashed filename and write `backend\.env` as a single file instead of nesting it. Rather than change a working Windows script, the `.sh` is its **twin** — same markers, same backups, same refusals, **verified byte-identical output** on the same master. It also strips the CRLF that a Windows-exported `master.env` carries (a naive shell read would append `\r` to every secret), adds `--dry-run`, and `chmod 600`s what it writes. |
 | **`rename-fix.ps1`** | ⛔ Windows-only *by design* — it rewrites `%USERPROFILE%` and `.claude\settings.json` paths. Not applicable on a Mac; do not run it. |
 | **`link-memory.sh`** | ✅ **Use this, not the `.ps1`.** Twin of `link-memory.ps1`: symlink instead of junction, `~/.claude/projects/` instead of `%USERPROFILE%\.claude\projects\`, everything else identical. The macOS slug shape is **inferred from Windows paths** — a POSIX path's leading `/` should render as a leading `-`. The script verifies the computed directory exists and **refuses rather than guessing** if nothing matches, so run the dry run and read it. One command settles it for good: `ls ~/.claude/projects/`. |
 | **`.ps1` files generally** | Need `pwsh` (`brew install --cask powershell`). Only `Export-EnvMaster.ps1` and the git-hooks installer are likely to matter. |
@@ -135,8 +135,8 @@ cross-platform once `pwsh` is present.
 
 | Task | File |
 |---|---|
-| Re-bundle every secret after adding or rotating one | [`Export-EnvMaster.ps1`](Export-EnvMaster.ps1) |
-| Rename-day: move projects into `Projects/` + repair absolute paths | [`rename-fix.ps1`](rename-fix.ps1) (dry-run by default; `-Apply` to write) — **Windows only** |
+| Re-bundle every secret after adding or rotating one | [`Export-EnvMaster.ps1`](scripts/Export-EnvMaster.ps1) |
+| Rename-day: move projects into `Projects/` + repair absolute paths | [`rename-fix.ps1`](scripts/rename-fix.ps1) (dry-run by default; `-Apply` to write) — **Windows only** |
 | **Rename-day, STEP 2 — re-point the memory junction** | `.agents/scripts/link-memory.ps1 -All -Apply` (macOS: `link-memory.sh --all --apply`) |
 
 > **⚠️ Renaming without step 2 silently strands memory — this has already happened twice.**
@@ -151,8 +151,8 @@ cross-platform once `pwsh` is present.
 
 ## 4 · One-off migration records (historical — NOT machine setup)
 
-- [`propagate-autopilot-glm-hybrid.md`](propagate-autopilot-glm-hybrid.md) +
-  [`autopilot-glm-hybrid.patch`](autopilot-glm-hybrid.patch) — the GLM hybrid-lane autopilot port.
+- [`propagate-autopilot-glm-hybrid.md`](install_guides/propagate-autopilot-glm-hybrid.md) +
+  [`autopilot-glm-hybrid.patch`](scripts/autopilot-glm-hybrid.patch) — the GLM hybrid-lane autopilot port.
   Kept because the autopilot engine is **project-local** (each project under `Projects/` has its own
   `scripts/autopilot-dev-story.ps1`, and they are not synced), so this is the record for propagating
   the change into the next project. Nothing to do when setting up a machine.

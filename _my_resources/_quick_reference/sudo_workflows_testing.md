@@ -28,7 +28,6 @@ block and §13 differ, so there's one thing to learn, not three.
 | …do this | → run / read |
 |---|---|
 | know what to work on | `/sudo-boot-sprint-memory` — reads the sprint and tells you the next move |
-| refresh the board | `/sudo-update-scrum-board` (§11) |
 | start the next story | ① `/sudo-write-story-tests <id>` |
 | build a story that has failing tests waiting | ② `/sudo-dev-story-tests <id>` |
 | review code that's written | ③ `/sudo-code-review <id>` |
@@ -54,7 +53,7 @@ main road; dotted lines are the on-ramps.*
 
 ```mermaid
 flowchart TD
-    BOOT["/sudo-boot-sprint-memory\nsession boot: where am I, what is next"] --> KICK["/sudo-create-epic-sprint\nONCE per epic: epic + stories + board\nplus risk-score every story with you"]
+    BOOT["/sudo-boot-sprint-memory\nsession boot: where am I, what is next"] --> KICK["/sudo-create-epic-sprint\nONCE per epic: epic + stories\nplus risk-score every story with you"]
     KICK --> ONE["① /sudo-write-story-tests\nstory file + lock the behavior\nplus write the FAILING tests first"]
     ONE --> TWO["② /sudo-dev-story-tests\nplan → STOP for your approval → build\n→ widen coverage → certify the suite"]
     TWO --> THREE["③ /sudo-code-review\nhunt the diff blind → adversarial review\n→ test gate → PASS/CONCERNS/FAIL/WAIVED"]
@@ -71,7 +70,6 @@ flowchart TD
     MOBERR -.->|"becomes a story"| ONE
     LIVE["/sudo-live-testing-team\nyou fly the app, agent watches the logs"] -.->|"becomes a story"| ONE
     AP["/autopilot_claude and its 3 siblings\nrobot runs the whole loop for you"] -.->|"alternate lane for ①②③"| TWO
-    BOARD["/sudo-update-scrum-board\nrebuilds what runs next, and what runs in parallel"] -.-> BOOT
     PARK["/sudo-park\npark your work before closing the laptop"] <--> RESUME["/sudo-resume\nrestore it on the other machine"]
 ```
 
@@ -100,8 +98,7 @@ Everything else in this document is a consequence of those two.
 | Command | What it does for you |
 |---|---|
 | `/sudo-boot-sprint-memory` | Start of session. Reads the sprint, tells you the next story and exactly which command it needs. It **reads the review verdict from the artifact** rather than trusting the status file — so it won't send you to close out something that hasn't really passed. |
-| `/sudo-update-scrum-board` | Rebuilds the board — what's next, what can run in parallel, what's waiting on you (§11). |
-| `/sudo-create-epic-sprint` | **Once per epic.** Writes the epic and its stories, generates the board, then risk-scores every story with you. That score decides how much testing each story earns. |
+| `/sudo-create-epic-sprint` | **Once per epic.** Writes the epic and its stories, then risk-scores every story with you. That score decides how much testing each story earns. |
 | ① `/sudo-write-story-tests` | Creates the story, locks the intended behavior in plain language, then writes the **failing** tests. Failing is the point — a test that never failed proves nothing. |
 | ② `/sudo-dev-story-tests` | Plans, **stops for your `approved`**, builds until the tests pass, widens coverage, then records a signed-off snapshot of the results. |
 | ③ `/sudo-code-review` | Hunts the diff cold, runs an adversarial review, audits code quality, runs the test gate, issues a verdict. |
@@ -245,7 +242,7 @@ flowchart LR
 | `closeout_preflight.py` | **Closing out a story that didn't really land.** One command answers: did the code merge · is every repo clean and in sync · does the review verdict exist and does it still apply · do the files the story claims it changed actually exist. **Exit 2 means blocked.** A warning that says *"landing was NOT verified"* means exactly that — it is not a pass. |
 | `story_status.py` | **A story marked done in one place and not the other.** Status lives in two files; this flips both together or neither. |
 | `workflow_lint.py` | **Broken characters quietly entering a document** — the `—` that turns into `â€"`. Runs on every commit, staged files only, so it stays fast enough that nobody disables it. |
-| `split_sprint_status.py` | The one-time migration that shrank the board (§11). |
+| `split_sprint_status.py` | The one-time migration that split the sprint board's commentary into history files. |
 | `wf_common.py` | Shared plumbing the others import. You'll never call it. |
 
 **Two design decisions worth knowing**, because they look like bugs until you know why:
@@ -430,30 +427,20 @@ one.
 
 ## 11. The board — what runs next
 
-Rebuilt by `/sudo-update-scrum-board`, and **only** by that command — no background process ever edits
-it. Five zones, same order every time, hard-capped so it stays readable:
+**The scrum-board map is retired (2026-08-07, SCC-13 / AVCH-10).** `sprint_scrum_board_map.md` and
+`/sudo-update-scrum-board` are gone; the human-facing view of "what runs next" is the **Jira board** —
+[SCC](https://sudo-command.atlassian.net/jira/software/projects/SCC/boards/2) for this command center,
+[AVCH](https://sudo-command.atlassian.net/jira/software/projects/AVCH/boards/3) for AviationChat. The
+sprint holds the current batch, the backlog holds everything else, and every ticket links to its
+branches and commits through the key. How to drive it by hand:
+[jira_manual.md](jira_manual.md); why it's built this way:
+[jira_integration_guide.md](../diagrams_guides/system/jira_integration_guide.md).
 
-| Zone | Answers |
-|---|---|
-| 🎯 **Right now** | the goal, the one command to run next, what's in flight, what's waiting on you |
-| 🧵 **Parallel Approved** | the verified set — being listed here means safe to run alongside every other item in it |
-| 🛠 **Work queue** | one row per ticket, each with the exact command to type |
-| 👤 **Your actions** | what agents can't do. Shows **None.** when empty — that emptiness is information |
-| 📚 **Reference** | epic status, settled decisions, sources of truth |
-
-**Two things to trust about it:**
-
-- **It shows the answer, never the math.** No cross-referencing, no notation to decode.
-- **A story with nothing written down is never marked safe-to-parallelize.** Deciding two stories won't
-  collide means knowing which files each one touches, and that's only knowable once the story exists.
-  Its answer for a vague ticket is *"write the story first"* — never a guess. **So if you want an epic
-  developed in parallel, write its stories first.** That's the lever.
-
-**The board got 6× smaller.** It had grown past 363,000 characters — too big to read in one pass. The
-running commentary moved out to a **history file per story**, leaving the board carrying each story's
-status plus a **short note on live rows only**. Finished rows carry no note at all, and the linter
-treats one as an error. The migration was proven by rebuilding the original from the split pieces and
-confirming it came back **character-for-character identical** — nothing was summarized away.
+**What did NOT retire: `sprint-status.yaml`** (decided in SCC-20). It remains the machine-read sprint
+state — the story loop, close-outs, `/sudo-boot-sprint-memory`, `/sudo-resume` and the autopilots all
+read it, and its vocabulary (`descoped` vs `deferred-v3`, `ready-for-dev`) is richer than Jira's.
+The pairing between the two worlds: the Jira summary carries the BMAD number (`21.4 — School code
+rotation`), the story file carries `jira_key:` in frontmatter, and the branch carries the Jira key.
 
 **One override worth knowing:** if a story has a live working folder on disk, it is in flight no matter
 what the status file says. The status file lags by design — only close-out writes it.

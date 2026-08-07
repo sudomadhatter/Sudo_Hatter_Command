@@ -56,3 +56,10 @@ descriptively — `claude/xdist-tail-hang`) reads exactly like a clean pass; a c
 correctly-closed history (no legacy-verdict fallback → every pre-08-02 story BLOCKs) or on 115
 untouchable files gets muted. Gate staleness must compare **trees, not SHAs** — a merge commit has a
 new HEAD and identical content. Verify against the live tree before calling any of these done.
+
+**`run_all.py` IS the lobby's merge gate (confirmed 2026-08-07).** The lobby has **no `frontend/`**, so
+it has no E2E harness and never will — `/sudo-e2e` stops at Step 1 when `frontend/e2e/run-e2e.mjs` is
+missing. Do not go hunting for one, and never improvise a substitute and call it the gate. Per-repo:
+lobby → `python3 .agents/scripts/tests/run_all.py`; AviationChat → light gate + `/sudo-e2e`. Green reads
+`5/5 files passed` and `20/20 passed`, ~2 s. Both `chore/SCC-10-*` merges on 2026-08-07 were gated on
+exactly this. See [[jira-integration-live]].
