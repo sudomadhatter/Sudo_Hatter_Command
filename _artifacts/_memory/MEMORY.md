@@ -150,3 +150,4 @@
 - [Dev-story gate is conditional](dev-story-gate-is-conditional.md) — Step 2.5 stops ONLY on real questions, else proceeds.
 - [Restate Always-On obligations](restate-alwayson-obligations-in-command-bodies.md) — agents follow the literal step list; bake them in as steps.
 - [No personal name in directives](no-personal-name-in-directives.md) — no "Daniel" in `.agents/` directive bodies; generic referent.
+- [Plan reviews ride md-feedback memos](plan-reviews-ride-md-feedback-memos.md) — list_annotations FIRST (editor reflow hides the one real memo); edit directly (apply is fix-only), respond in-thread; he closes in VS Code; one-item-per-line lists.
