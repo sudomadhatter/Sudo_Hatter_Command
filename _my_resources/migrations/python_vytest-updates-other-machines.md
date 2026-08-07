@@ -298,10 +298,25 @@ BOTH stacks. Set it per-invocation; never default it anywhere.
 > including a red file **dying pre-assertion instead of failing on its asserts**. Clean-room proof
 > matrix (probe project, no repo code): vitest 4.1.5 *and* 4.1.10, jsdom 27 *and* 28.1.0 — all broken
 > on Node 26; the identical probe passes on Node 22.23.2. Raw jsdom is fine on 26 — it is vitest's
-> global-window injection that drops the storage accessors. **Fix: run Node 22 LTS**
-> (`brew install node@22`, prepend `/opt/homebrew/opt/node@22/bin` to PATH). Re-run after the switch:
+> global-window injection that drops the storage accessors. Re-run after switching to 22:
 > `581 passed / 1 skipped / 0 failed`, full parity. Check `node --version` FIRST when a fresh machine
 > shows storage-flavored vitest failures the other machines don't.
+>
+> ⛔ **Fix it at the LINK, not with a PATH export — a `~/.zshrc` line only fixes shells YOU type in.**
+> The first fix here was `export PATH=/opt/homebrew/opt/node@22/bin:$PATH` in `~/.zshrc`, which made
+> `node --version` read 22 interactively while every **non-interactive** shell — scripts, agent-run
+> commands, hooks, anything a GUI app spawns — still resolved 26 (`.zshrc` is interactive-only; there
+> was no `~/.zshenv`). The suite would then pass by hand and fail in automation, on the same machine,
+> with no visible difference. Do this instead:
+>
+> ```bash
+> brew unlink node && brew link --force --overwrite node@22
+> node --version                                   # 22.x
+> for m in -c -lc -ic; do zsh $m 'node --version'; done   # ALL THREE must read 22
+> ```
+>
+> Node 26 stays installed and re-linking is one command, so this is fully reversible. Verify with the
+> three-mode loop, not a single `node --version`.
 
 The frontend twin of the pytest lock, added late 2026-08-01 (`cae06a78`). Other machines get it
 for free with `git pull` — it is ordinary tracked TypeScript, zero new dependencies, and the lock

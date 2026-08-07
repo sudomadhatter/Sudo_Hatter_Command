@@ -19,4 +19,22 @@ In AGY_AVIATIONCHAT the project `CLAUDE.md` instructs agents to run `impact()`/`
 
 **Laptop rebuild (2026-07-02):** both repos re-indexed on this machine (lobby `Sudo_Hatter_Command` @ its current commit + `Projects/AGY_AVIATIONCHAT`), `list_repos` shows both registered. Gotcha discovered: the indexes were originally built with `--pdg`, and running plain `analyze` (what the todo/CLAUDE.md say) forces a full rebuild WITHOUT the PDG layer — killing `pdg_query`/`explain` taint/`impact mode:"pdg"`. Fix: a committed `.gitnexusrc` (`{"pdg": true}`) now sits at both repo roots pinning the mode, so plain `analyze` keeps PDG and stays incremental. The lbug.shadow orphan-process bug from the desktop never triggered here (leaked `gitnexus mcp` node processes existed but analyze succeeded — only kill them if analyze actually fails with the IO exception).
 
+**Mac setup — TWO things are per-machine, not one (2026-08-06):** the index is the well-known half; the
+**MCP registration is the half that bites silently.** The tracked lobby `.mcp.json` launches the server
+as `cmd /c gitnexus mcp` — `cmd` does not exist on macOS, so the server never starts and the agent has
+**zero gitnexus tools even with a perfectly fresh index**. Do NOT "fix" the tracked file: native Windows
+genuinely needs the `cmd /c` wrapper, so a bare command breaks the other machines. Add a **local-scope**
+override instead (precedence: local > project > user) in `~/.claude.json` under
+`projects["<repo path>"].mcpServers`: `"gitnexus": {"command": "gitnexus", "args": ["mcp"]}` — set for
+the lobby and AGY here. The CLI is also not installed by anything else: `npm i -g gitnexus`. Indexed on
+this Mac 2026-08-06 (gitnexus **1.6.9**): lobby 86 symbols / 18 files, AGY 50,234 symbols / 119,663
+edges / 546 clusters / 300 flows, both PDG-pinned via the committed `.gitnexusrc`. Smoke-test the server
+without a session by piping `initialize` + `tools/list` into `gitnexus mcp` (expect **17** tools) — but
+macOS has **no `timeout`** binary, so a test using it exits 127 and prints nothing, which looks exactly
+like a dead server; use `perl -e 'alarm(40); exec "gitnexus","mcp"'`. Also: **`analyze` rewrites tracked
+skill docs** (`.claude/skills/gitnexus/*/SKILL.md`) to match the installed version — upstream to the
+`.agents/` master before committing or `/sync-agents` reverts them, and keep every machine on the same
+version or three files flip-flop forever. (The 1.6.8 `.agents/`-unindexable limit above is untested on
+1.6.9 — the lobby index still excludes it.)
+
 **How to apply:** Now that it's live, USE `impact()`/`context()`/`detect_changes()` per AGY's `CLAUDE.md` — run `impact` before editing a symbol, `detect_changes` before committing. On ANY fresh machine/checkout the index will be absent again (machine-local) → verify first (`list_repos`, or the `gitnexus://repo/AGY_AVIATIONCHAT/context` resource); if absent, `npx gitnexus analyze` rebuilds it (Daniel handles the re-index; may need `npm i -g gitnexus` per the npm-11 note). When genuinely unavailable, substitute a manual blast-radius check + full regression and note `impact unavailable` in the gate verdict. Related: [[command-center-sudo-skills]], [[tea-retrofit-active-initiative]].

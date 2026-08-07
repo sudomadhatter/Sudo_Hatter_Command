@@ -22,7 +22,10 @@ vitest's window→global copy.
 proves nothing about a fresh install — node_modules and Node versions don't travel via git.
 
 **How to apply:** On any machine where vitest shows storage-flavored failures the other machines don't,
-check `node --version` FIRST. Fix: `brew install node@22`, prepend `/opt/homebrew/opt/node@22/bin` to
-PATH (done in `~/.zshrc` on the Mac). After the switch AGY frontend ran
-`581 passed / 1 skipped / 0 failed`. Recorded in the migration kit's vitest section
+check `node --version` FIRST. Fix at the LINK, not with a PATH export:
+`brew unlink node && brew link --force --overwrite node@22`. ⛔ The first attempt here was a `~/.zshrc`
+PATH line, which is **interactive-only** — scripts, agent-run commands, hooks and GUI-spawned processes
+all still got Node 26, so the suite passed by hand and failed in automation on the same machine. Verify
+all three modes, not one: `for m in -c -lc -ic; do zsh $m 'node --version'; done`. After the switch AGY
+frontend ran `581 passed / 1 skipped / 0 failed`. Recorded in the migration kit's vitest section
 (`_my_resources/migrations/python_vytest-updates-other-machines.md`). Related: [[agy-frontend-vitest-harness]].

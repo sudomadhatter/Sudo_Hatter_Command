@@ -246,8 +246,38 @@ through each as needed:
 
 
 - **node_modules**: `npm install` per frontend.
-- **GitNexus index**: machine-local, does not travel — re-index the repos you
-  work in.
+  > ⚠️ **Pin Node to 22 LTS first.** `brew install node` gives the current major (26 as of
+  > 2026-08-06), which breaks vitest's jsdom environment — see the ⛔ box in the vitest section of
+  > [`python_vytest-updates-other-machines.md`](python_vytest-updates-other-machines.md).
+- **GitNexus**: machine-local, does not travel. **Neither the CLI nor the index arrives with a
+  clone** — both are per-machine (2026-08-06, the Mac):
+  ```bash
+  npm i -g gitnexus                 # the CLI itself; nothing else installs it
+  gitnexus analyze                  # run from EACH repo root you work in (lobby + AGY)
+  gitnexus list                     # confirm both repos registered, commit == HEAD
+  ```
+  > ⛔ **The MCP registration is Windows-only in git — a Mac gets NO gitnexus tools until you
+  > override it locally.** The tracked lobby `.mcp.json` launches the server as
+  > `cmd /c gitnexus mcp`; `cmd` does not exist on macOS, so the server silently never starts.
+  > **Do not "fix" the tracked file** — bare commands break Claude Code on native Windows, which
+  > genuinely needs the `cmd /c` wrapper. Instead add a **local-scope** override, which outranks
+  > project scope (precedence: local > project > user), in `~/.claude.json` under
+  > `projects["<repo path>"].mcpServers`:
+  >
+  > ```json
+  > "gitnexus": { "command": "gitnexus", "args": ["mcp"] }
+  > ```
+  >
+  > Set for the lobby and AGY on the Mac. Verify without launching a session by piping an
+  > `initialize` + `tools/list` JSON-RPC pair into `gitnexus mcp` — expect 17 tools and a
+  > `repoCount` matching `gitnexus list`. ⚠️ macOS has **no `timeout`** binary; a smoke test that
+  > uses it exits 127 and prints nothing, which reads exactly like a dead server. Use
+  > `perl -e 'alarm(40); exec "gitnexus","mcp"'`.
+  >
+  > ⚠️ **`gitnexus analyze` rewrites tracked skill docs** (`.claude/skills/gitnexus/*/SKILL.md`) to
+  > match the installed version. Upstream those to the `.agents/` master before committing, or the
+  > next `/sync-agents` reverts them — and keep every machine on the same gitnexus version, or they
+  > will flip-flop the same three files forever.
 - **Claude auto-memory**: machine-local **by default** — `~/.claude` is not a
   repo, not a link, and not cloud-synced, so memory dies on the box that wrote
   it. Fix it once per machine:
