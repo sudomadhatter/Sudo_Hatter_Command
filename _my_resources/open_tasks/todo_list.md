@@ -14,10 +14,20 @@ These are folder paths to see the open todo list in the sub projects:
 ## New Tasks
 <!-- Always cross-check against the live project files before trusting anything here. -->
 
-1. set up a master .env in sudo hatter command for my main computer
-2. merge all projects onto the new MAC Pro use: C:\Users\dlohn\.gemini\antigravity\scratch\Sudo_Hatter_Command\_my_resources\migrations\env-migration-guide.md
-3. Verify the new workflows for running python and vytests. We uptimized this for its solo lane, but with the new Mac we may be able to handle more. These documents are stored in the migrations folder, the new_machine references the python_vytest doc that will limit it to linear testing.
-4. git-hooks-board-stale guide to set up the triggers for updating the scrum board, to move tickets to stale.
+1. merge all projects onto the new MAC Pro use: C:\Users\dlohn\.gemini\antigravity\scratch\Sudo_Hatter_Command\_my_resources\migrations\env-migration-guide.md
+2. Verify the new workflows for running python and vytests. We uptimized this for its solo lane, but with the new Mac we may be able to handle more. These documents are stored in the migrations folder, the new_machine references the python_vytest doc that will limit it to linear testing.
+3. git-hooks-board-stale guide to set up the triggers for updating the scrum board, to move tickets to stale.
+4. No more running on main_debug we have to do this the right way and do small branches and then merge them back to main no more main_debug, we need to fix this merge it to main and then continue the correct way.
+5. Update Aviationchat ADK to 2.5 for both front and back end
+6. Updates for the project Aviationchat and new standards
+    -  Jira integration for tickets with hooks that block pushing with out updateing the tickets. We will use this instead of the sprint board we are doing now. 
+    - add schema to user ids, get details from chat with gary
+    - seperate the front and back end. if possible also seperate out the bmad and the other stuff from git and see if we can optimize the command center to handle all that stuff when it comes to work flows rules and commands.
+    - set up database to share secrets the secure way
+7. While updating the command center to handle all workflow related things, also apply the graph rag style for the workflows, have the /write-storys-epics decide here if its a quick dev or full dev. optimize the quick dev, if not there it can be when we write the storys, if its quick dev it prompts you down this path. 
+    - Use this time to also impliment the Openwork Skill https://github.com/andrewyng/openworker
+8. set up a master .env in sudo hatter command for my main computer
+
 
 ## Open Work
 <!-- Add plan/PRP notes as <slug>.md alongside this file. -->
@@ -35,24 +45,4 @@ These are folder paths to see the open todo list in the sub projects:
 
 <!-- CHECKPOINT id="ckpt_mrx0p3jt_d0a9cj" time="2026-07-23T04:34:47.993Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
 
-<!-- CHECKPOINT id="ckpt_mrx11yim_sf116o" time="2026-07-23T04:44:47.998Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
 
-<!-- CHECKPOINT id="ckpt_mryf009r_s3ea49" time="2026-07-24T04:02:57.759Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
-
-<!-- CHECKPOINT id="ckpt_mrysxjxx_xb5pct" time="2026-07-24T10:32:57.909Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
-
-<!-- CHECKPOINT id="ckpt_mrzm9mm2_xwxa2j" time="2026-07-25T00:14:10.106Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
-
-<!-- CHECKPOINT id="ckpt_mrzmmhkr_odcrv6" time="2026-07-25T00:24:10.107Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
-
-<!-- CHECKPOINT id="ckpt_msawb3rc_89x83h" time="2026-08-01T21:40:43.080Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
-
-<!-- CHECKPOINT id="ckpt_msawnyrr_5u4zhf" time="2026-08-01T21:50:43.143Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
-
-<!-- CHECKPOINT id="ckpt_msc57udy_zs5jo6" time="2026-08-02T18:37:53.687Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
-
-<!-- CHECKPOINT id="ckpt_msci3dtz_aap0fz" time="2026-08-03T00:38:20.615Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
-
-<!-- CHECKPOINT id="ckpt_mscit3rh_ie2ikc" time="2026-08-03T00:58:20.621Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
-
-<!-- CHECKPOINT id="ckpt_msfasdw3_0o15w9" time="2026-08-04T23:37:08.691Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
