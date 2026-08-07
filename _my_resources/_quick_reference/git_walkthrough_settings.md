@@ -35,12 +35,13 @@ All of this lives in `~/.gitconfig` — your **user profile** (`/Users/<you>/.gi
 `C:/Users/dlohn/.gitconfig` on the Windows box) — so it survives a Git reinstall. Every repo on that
 machine inherits it.
 
-> **⚠️ It follows the *profile*, not you — checked 2026-08-07:** `~/.gitconfig` is per-machine. This
-> block was applied on the **Windows** box in June; on the **Mac**, **none of the ten are set** — that
-> file holds only `user.*` and the `gh` credential helper. So on the Mac you get git's stock behavior:
-> `git pull` silently makes merge commits, deleted remote branches pile up as stale refs, and a new
-> branch's first push still needs `--set-upstream`. Fix is the appendix block at the bottom, run once
-> per machine. Verify with `git config --global --get pull.ff` (silent + exit 1 = not set).
+> **⚠️ It follows the *profile*, not you — run this block on every machine.** `~/.gitconfig` is
+> per-machine and does **not** travel with you. Applied on the **Windows** box 2026-06-24; a check on
+> **2026-08-07 found zero of the ten set on the Mac** — that file held only `user.*` and the `gh`
+> credential helper, so the Mac had been running stock git the whole time (silent merge commits on
+> pull, stale `origin/*` refs piling up, `--set-upstream` needed per new branch). **Applied on the Mac
+> 2026-08-07; both machines now match.** On any *next* machine, verify before trusting this page:
+> `git config --global --get pull.ff` — silent output plus exit 1 means **not set**.
 
 ---
 
@@ -403,7 +404,12 @@ panel. You still **commit and push from inside each project repo** — this only
 
 ### Appendix — the exact block (run once per machine)
 
-Applied on Windows 2026-06-24. **Not yet applied on the Mac** — see the warning under §0.
+Applied on Windows 2026-06-24 and on the Mac 2026-08-07. Run it once per machine — see §0.
+
+> **One catch it can't fix retroactively:** `push.autoSetupRemote` only sets the upstream on a branch's
+> **first** push. Branches you pushed *before* turning it on still have none, so `git status` won't show
+> ahead/behind and `HEAD...@{u}` errors out. Repair a branch with
+> `git branch --set-upstream-to=origin/<branch>`.
 
 ```bash
 git config --global pull.ff only

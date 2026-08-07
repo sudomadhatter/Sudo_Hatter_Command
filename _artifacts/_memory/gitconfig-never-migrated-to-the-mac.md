@@ -1,11 +1,11 @@
 ---
 name: gitconfig-never-migrated-to-the-mac
-description: "The ten documented global git settings (pull.ff=only, fetch.prune, autoSetupRemote…) are set on the Windows box only — verified 2026-08-07 that ZERO are set on the Mac."
+description: "~/.gitconfig does not travel — the ten documented settings were Windows-only until applied on the Mac 2026-08-07; autoSetupRemote can't fix branches pushed before it."
 metadata: 
   node_type: memory
   type: project
   originSessionId: 8bc78088-0a6e-4b75-b4eb-edc817c5fe79
-  modified: 2026-08-07T12:52:07.491Z
+  modified: 2026-08-07T12:55:53.629Z
 ---
 
 `_my_resources/_quick_reference/git_walkthrough_settings.md` documents ten global git settings and its
@@ -27,8 +27,14 @@ So on the Mac, git has been running **stock defaults** the whole time:
 **Why:** the doc reads like a record of live state, so a Mac session trusts settings that aren't there.
 The `0 0` ahead/behind verification habit silently degrades to an error on any freshly-pushed branch.
 
-**How to apply:** never infer git config from that doc — run `git config --global --get <key>` (silent
-+ exit 1 = not set). The fix is its own appendix block, run once per machine; as of 2026-08-07 it has
-**not** been run on the Mac (offered, not yet approved). Same failure shape as
+**RESOLVED 2026-08-07** — Daniel approved and the appendix block was applied on the Mac; all ten now
+read back set, and both machines match. The doc carries the dated status under §0.
+
+**How to apply:** on any *next* machine, never infer git config from that doc — run
+`git config --global --get <key>` (silent + exit 1 = not set) before trusting it. **The lasting trap:
+`push.autoSetupRemote` only binds an upstream on a branch's FIRST push** — anything pushed before the
+setting existed still has none, so `git status` shows no ahead/behind and the `0 0` verification habit
+([[commit-and-push-are-one-action]]) errors out instead of failing loudly. Repair with
+`git branch --set-upstream-to=origin/<branch>`. Same failure shape as
 [[zshrc-is-invisible-to-automation]] and [[windows-authored-code-hides-posix-bugs]]: Windows-era setup
 assumed to be universal. Machine-portable secrets/config live in [[env-migration-kit]].
