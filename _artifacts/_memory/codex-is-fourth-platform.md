@@ -31,3 +31,20 @@ Full wiring: `docs/workspace-standard.md` "one master, four platforms"; setup gu
 `_my_resources/open_tasks/2026-07-13_codex-setup-all-machines.md`. Note: this makes
 [[autopilot-has-three-drifting-engines]] a **four**-platform world for the sync surface (autopilot engines are
 still claude/opencode/mobile only).
+
+**Mac 2026-08-07 — the caches lie about whether Codex is usable.** `~/.codex/prompts` (18) and
+`~/.codex/skills` (56) are written by `/sync-agents -GlobalsOnly`, which does NOT need the Codex CLI
+to exist. So a machine can show both caches fully populated while `codex` is not installed at all —
+it reads as "Codex is set up" when nothing can invoke it. Check the BINARY, not the caches:
+`command -v codex`.
+
+Install on macOS: `brew install --cask codex` — a plain **binary** cask (links `/opt/homebrew/bin/codex`),
+so unlike the Temurin `.pkg` cask it needs no interactive sudo and an agent can run it. Verified
+0.147.0, resolves in all three zsh modes.
+
+⛔ **Auth is operator-only.** There is **no OpenAI key in `master.env`** (Anthropic + Gemini + Z.ai
+only), so the API-key route does not exist here — `codex login` (ChatGPT account, browser OAuth) is
+the only path, it needs a real terminal, and backgrounding it wedges exactly like `gh auth login`.
+Until it is done `codex login status` says `Not logged in` and `codex doctor` fails only the auth
+check. A `⚠ websocket` warning from `doctor` is normal on a healthy fresh install — not a blocker.
+Related: [[zshrc-is-invisible-to-automation]].

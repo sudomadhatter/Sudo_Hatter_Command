@@ -357,7 +357,33 @@ through each as needed:
   > not a Mac gap — listed here so nobody re-diagnoses it as one.
   >
   > Health-check the whole surface without starting a session — `opencode debug config` must show the
-  > `instructions` list, `skills.paths`, and all 13 agents.
+  > `instructions` list, `skills.paths`, and all 12 agents.
+  >
+  > ⛔ **`.opencode/agent/INDEX.md` used to load as a PHANTOM AGENT** (fixed 2026-08-07). opencode
+  > registers every `.md` in that directory as an agent definition, so the folder's own map file became
+  > a selectable agent named `INDEX` (mode `all`) whose entire prompt is a list of its sibling files. It
+  > was present in six projects. The command surface never had this bug because
+  > `.agents/commands/INDEX.md` declares `platforms: []` and `Sync-CommandDir` filters on that — but
+  > `Sync-Dir` is a plain tree copy, so `-ExcludeFiles 'INDEX.md'` had to be stated explicitly. Agent
+  > count is **12**, not 13; if you see 13, the exclusion has regressed.
+- **Codex CLI**: the fourth platform. Its two caches (`~/.codex/prompts`, `~/.codex/skills`) are filled
+  by the same `-GlobalsOnly` sync as opencode's, so they can be fully populated on a machine where the
+  CLI itself is **not installed** — which reads as "Codex is set up" when nothing can invoke it. Install
+  and authenticate separately (2026-08-07, the Mac):
+  ```bash
+  brew install --cask codex        # a plain BINARY cask — no .pkg, so no interactive sudo
+  codex login status               # expect "Not logged in" on a fresh box
+  codex login                      # INTERACTIVE browser OAuth — an agent cannot run this
+  codex doctor                     # auth ✓ + runtime/install/search/git all ✓
+  ```
+  > ⚠️ There is **no OpenAI key anywhere in `master.env`** — the bundle carries Anthropic, Gemini and
+  > Z.ai keys only. So the API-key route is not available from the migration kit and `codex login`
+  > (ChatGPT account, browser) is the only path. Same shape as `gh auth login`: it needs a real
+  > terminal, and backgrounding it just wedges.
+  >
+  > `codex doctor` also reports `⚠ websocket — Responses WebSocket failed; HTTPS fallback may still
+  > work`. That appeared on a healthy fresh install here and is not a blocker; re-check it only if
+  > sessions actually misbehave after login.
 - **Git identity**: `user.name` / `user.email` live in `~/.gitconfig` — machine-local, never in a
   clone. With nothing set, git **invents** one from the hostname (`sudohatter@Sudos-MacBook-Pro.local`)
   and commits happily, so nothing fails and nothing warns. Those commits are orphans: GitHub cannot
