@@ -141,7 +141,9 @@ if ($Maintained) {
 
 if (-not $Target) { $Target = $HomeRoot }
 $Target   = (Resolve-Path $Target).Path
-$IsLobby  = ($Target.TrimEnd('\') -ieq $HomeRoot.TrimEnd('\'))
+# Trim BOTH separators: off Windows a trailing '/' survives TrimEnd('\'), and the lobby would then
+# compare unequal to itself and silently run the project branch against the master tree.
+$IsLobby  = ($Target.TrimEnd('\', '/') -ieq $HomeRoot.TrimEnd('\', '/'))
 
 $AllPlatforms = @('claude','opencode','antigravity','codex')
 
@@ -222,7 +224,10 @@ function Copy-Tree {
 
 function Sync-Dir($src, $dst, [string[]]$ExcludeDirs, [string[]]$ExcludeFiles, [switch]$WhatIf) {
   if (-not (Test-Path $src)) { return }
-  $xd = @('node_modules') + (@($ExcludeDirs) | Where-Object { $_ })
+  # __pycache__ alongside node_modules: .pyc names embed the interpreter version (cpython-314 here,
+  # something else on the Windows box), so vendoring them churns the TRACKED manifest every time a
+  # different machine syncs — and they are regenerable caches no project should carry.
+  $xd = @('node_modules', '__pycache__') + (@($ExcludeDirs) | Where-Object { $_ })
   $xf = @(@($ExcludeFiles) | Where-Object { $_ })
   if (-not $WhatIf) {
     Copy-Tree $src $dst $xd $xf
@@ -367,11 +372,19 @@ function Get-SurfaceState {
 }
 
 # Files under the master that a vendor copy is expected to place (relative paths), mirroring Sync-Dir's excludes.
+#
+# ⛔ SEPARATORS ARE LOAD-BEARING HERE — this set is compared against the TRACKED manifest, which every
+# machine shares. Windows produces `commands\analyst.md`; an unnormalised macOS run produces
+# `/commands/analyst.md`, and the two sets then have ZERO overlap. Invoke-ManifestPurge reads that as
+# "the master dropped every file it ever owned" and deletes the entire vendored toolkit — ~570 files per
+# project — while Join-Path still happily resolves the back-slashed manifest paths on macOS, so every
+# delete succeeds and the run reports itself as a normal purge. Emit BACK-slashed, leading-separator-free
+# paths on every OS so the manifest stays byte-comparable across machines.
 function Get-VendorFileSet([string]$masterDir) {
   $root = (Resolve-Path $masterDir).Path
   Get-ChildItem $masterDir -File -Recurse -Force -ErrorAction SilentlyContinue |
-    Where-Object { ($_.FullName -notmatch '\\(bmad|node_modules)\\') -and ($_.Name -ne $ManifestName) } |
-    ForEach-Object { $_.FullName.Substring($root.Length).TrimStart('\') }
+    Where-Object { ($_.FullName -notmatch '[\\/](bmad|node_modules|__pycache__)[\\/]') -and ($_.Name -ne $ManifestName) } |
+    ForEach-Object { $_.FullName.Substring($root.Length).TrimStart('\', '/').Replace('/', '\') }
 }
 
 # Delete what a previous run wrote into $dst and this run no longer owns. Returns the purged relative paths.
@@ -752,7 +765,14 @@ if (-not $GlobalsOnly) {
   $ocGone = Invoke-ManifestPurge $ocCmdDst $manifest.local[$ocCmdKey] $oc -WhatIf:$WhatIf
   if ($ocGone.Count) { Write-Host "sync-agents: purged $($ocGone.Count) retired .opencode command(s): $($ocGone -join ', ')" }
   $newLocal[$ocCmdKey] = $oc
-  Sync-Dir (Join-Path $src "opencode-agents") (Join-Path $Target ".opencode\agent") -WhatIf:$WhatIf
+  # -ExcludeFiles INDEX.md: opencode's agent loader treats EVERY .md in this dir as an agent definition, so
+  # the folder's own map file was being registered as a selectable agent named "INDEX" (mode `all`) whose
+  # entire prompt is a list of its sibling files. It showed up in the agent picker in all six projects that
+  # have a .opencode. The command surface never had this bug because .agents/commands/INDEX.md declares
+  # `platforms: []` and Sync-CommandDir filters on that — but Sync-Dir is a plain tree copy with no such
+  # filter, so the exclusion has to be stated here. check_maps.py never descends into .opencode, so the
+  # master's INDEX.md still satisfies the map lint; only the vendored copy is suppressed.
+  Sync-Dir (Join-Path $src "opencode-agents") (Join-Path $Target ".opencode\agent") -ExcludeFiles 'INDEX.md' -WhatIf:$WhatIf
 
   Write-Host "sync-agents: .claude\commands   -> $($cl.Count) cmds"
   Write-Host "sync-agents: .opencode\commands -> $($oc.Count) cmds"
