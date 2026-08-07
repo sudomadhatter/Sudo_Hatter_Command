@@ -14,12 +14,11 @@ These are folder paths to see the open todo list in the sub projects:
 ## New Tasks
 <!-- Always cross-check against the live project files before trusting anything here. -->
 
-1. merge all projects onto the new MAC Pro use: C:\Users\dlohn\.gemini\antigravity\scratch\Sudo_Hatter_Command\_my_resources\migrations\env-migration-guide.md
-2. Verify the new workflows for running python and vytests. We uptimized this for its solo lane, but with the new Mac we may be able to handle more. These documents are stored in the migrations folder, the new_machine references the python_vytest doc that will limit it to linear testing.
-3. git-hooks-board-stale guide to set up the triggers for updating the scrum board, to move tickets to stale.
-4. No more running on main_debug we have to do this the right way and do small branches and then merge them back to main no more main_debug, we need to fix this merge it to main and then continue the correct way.
-5. Update Aviationchat ADK to 2.5 for both front and back end
-6. Updates for the project Aviationchat and new standards
+1. Verify the new workflows for running python and vytests. We uptimized this for its solo lane, but with the new Mac we may be able to handle more. These documents are stored in the migrations folder, the new_machine references the python_vytest doc that will limit it to linear testing.
+2. git-hooks-board-stale guide to set up the triggers for updating the scrum board, to move tickets to stale.
+3. No more running on main_debug we have to do this the right way and do small branches and then merge them back to main no more main_debug, we need to fix this merge it to main and then continue the correct way.
+4. Update Aviationchat ADK to 2.5 for both front and back end
+5. Updates for the project Aviationchat and new standards
     -  Jira integration for tickets with hooks that block pushing with out updateing the tickets. We will use this instead of the sprint board we are doing now. 
     - add schema to user ids, get details from chat with gary
     - seperate the front and back end. if possible also seperate out the bmad and the other stuff from git and see if we can optimize the command center to handle all that stuff when it comes to work flows rules and commands.
