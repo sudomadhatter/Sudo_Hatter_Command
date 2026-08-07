@@ -21,11 +21,11 @@ STOP and say so, never fall back to the lobby.
 
 ## Step 0.5 — Open the story worktree (BEFORE the first project file is written)
 ① writes the story file and its red tests, so `worktree-per-story` applies in full. Under `PROJECT_ROOT`:
-1. **`git worktree list`** — if a `claude/<story-slug>` tree already exists (a re-run, or ② started),
+1. **`git worktree list`** — if a `claude/<JIRA-KEY>-<story-slug>` tree already exists (a re-run, or ② started),
    **re-enter it**; never open a second for the same slug.
-2. Else confirm the story's EPIC branch exists (`epic/<epic-key>-<slug>`, cut by
+2. Else confirm the story's EPIC branch exists (`epic/<JIRA-KEY>-<slug>`, cut by
    `/sudo-create-epic-sprint` — missing → go back and run it) and HEAD is on it (**never** `main`),
-   then open `.claude/worktrees/<story-slug>` on `claude/<story-slug>` off it — slug
+   then open `.claude/worktrees/<story-slug>` on `claude/<JIRA-KEY>-<story-slug>` off it — slug
    `story-<id-dashed>-<short-name>`, e.g. `story-21-3-student-archive`.
 
 **Ordering caveat:** the slug depends on the story id, which Step 1 may be the thing that resolves ("the

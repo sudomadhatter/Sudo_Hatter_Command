@@ -45,9 +45,14 @@ Per `git-policy.md`, every epic integrates on its own short-lived branch. Cut it
 
 ```bash
 git fetch origin
-git checkout -b epic/<epic-key>-<slug> origin/main
-git push -u origin epic/<epic-key>-<slug>
+git checkout -b epic/<JIRA-KEY>-<slug> origin/main
+git push -u origin epic/<JIRA-KEY>-<slug>
 ```
+
+`<JIRA-KEY>` is the EPIC's Jira ticket (one of the repo's keys in `.agents/jira.conf` — the armed
+commit-msg hook rejects the wrong project's key). If no ticket exists for this epic yet, STOP and ask
+Daniel to mint one (or mint it with him per the pairing convention: Jira summary carries the BMAD
+number, e.g. `Epic 21 — <title>`) — **never invent a key, never cut the branch unkeyed.**
 
 Story worktrees (`/sudo-write-story-tests` ①) branch FROM this branch — it must exist before the first
 one opens. The epic reaches `main` only via `/sudo-push-e2e`, which deletes the branch after the merge.

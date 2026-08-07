@@ -32,7 +32,7 @@ date-stamped folder.
 
 ## Step 0.6 — Re-enter the story worktree if one already exists (fresh-chat resume)
 Before any planning or edit: `git worktree list` under `PROJECT_ROOT` (`worktree-per-story` → "Resuming").
-A `claude/<story-slug>` tree exists → **cd into it and re-bind everything below under it** — story file,
+A `claude/<JIRA-KEY>-<story-slug>` tree exists → **cd into it and re-bind everything below under it** — story file,
 ① red tests, `ARTIFACT_DIR`, test commands (they commonly live ONLY in that tree; skipping this plans
 blind or opens a duplicate). None → first work session; `bmad-dev-story` opens one at first edit. Echo the
 case (`Worktree: reused <path>` / `none yet — opens at first edit`).

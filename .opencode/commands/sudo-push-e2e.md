@@ -31,7 +31,7 @@ lobby. Set `PROJECT_ROOT` and **echo exactly** `Target: Projects/<name>`. All gi
 inside `PROJECT_ROOT`.
 
 ## Step 1 — Resolve the epic branch
-From `$ARGUMENTS` (an `epic/<slug>` name) or by discovery:
+From `$ARGUMENTS` (an `epic/<JIRA-KEY>-<slug>` name) or by discovery:
 ```bash
 git fetch origin
 git branch -a --list '*epic/*'          # live epic branches, local + origin
@@ -52,8 +52,8 @@ name them — `/sudo-merge-epic-workingtrees` or the story close-outs come first
 Hotfixes can land on `main` mid-epic (incident lane). Absorb them first so the gate tests what will
 actually ship:
 ```bash
-git checkout epic/<slug>
-git pull --ff-only origin epic/<slug>       # be current with the remote epic
+git checkout epic/<JIRA-KEY>-<slug>
+git pull --ff-only origin epic/<JIRA-KEY>-<slug>       # be current with the remote epic
 git merge origin/main                        # absorb production; conflicts surface HERE, not on main
 ```
 A conflict is a STOP-and-resolve-together, never a force. If this merge brought in changes, the gate
@@ -100,8 +100,8 @@ Daniel, immediately.
 ## Step 6 — Prune the epic branch + update the ledger
 The epic shipped; its branch is done:
 ```bash
-git branch -d epic/<slug>
-$env:GITHUB_TOKEN = ""; git push origin --delete epic/<slug>
+git branch -d epic/<JIRA-KEY>-<slug>
+$env:GITHUB_TOKEN = ""; git push origin --delete epic/<JIRA-KEY>-<slug>
 git rev-list --left-right --count main...origin/main    # must be 0 0
 ```
 1. **Ledger**: add a row to `PROJECT_ROOT/_artifacts/INDEX.md` (and the home-base INDEX if run from

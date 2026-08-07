@@ -27,9 +27,9 @@ child tool call resolves under `PROJECT_ROOT`.
 
 ## Step 0.5 — Worktree (before the first edit)
 Per `worktree-per-story`: run `git worktree list` under `PROJECT_ROOT`; reuse an existing
-`claude/<slug>` tree for this fix, else open one off the story's EPIC branch (`epic/<epic-key>-<slug>`).
+`claude/<JIRA-KEY>-<slug>` tree for this fix, else open one off the story's EPIC branch (`epic/<JIRA-KEY>-<slug>`).
 No epic applies — a truly ad-hoc fix outside any sprint — then mirror `git-policy.md`'s chore lane
-instead: a short-lived `chore/<slug>` branch off `main`, no worktree, merged back to `main` in the same
+instead: a short-lived `chore/<JIRA-KEY>-<slug>` branch off `main`, no worktree, merged back to `main` in the same
 session with Daniel's sign-off. Echo the case. Quick fixes are NOT exempt — this is what keeps them
 tangle-free, rollbackable, and landable through the normal close-out.
 

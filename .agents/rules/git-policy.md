@@ -1,6 +1,6 @@
 ---
 name: git-policy
-description: "Git policy: main is the ONLY long-lived branch. Each epic gets a short-lived `epic/<slug>` branch off main; story/dev work happens in its own git worktree on a `claude/*` branch off the epic branch, where the agent commits FREELY (explicit paths — never `git add -A`). The story lands on its epic branch on Daniel's in-the-moment 'approved' or via /sudo-update-sprint-memory. The epic reaches `main` only through /sudo-push-e2e — full gate + E2E green + Daniel's sign-off."
+description: "Git policy: main is the ONLY long-lived branch. Each epic gets a short-lived `epic/<JIRA-KEY>-<slug>` branch off main; story/dev work happens in its own git worktree on a `claude/*` branch off the epic branch, where the agent commits FREELY (explicit paths — never `git add -A`). The story lands on its epic branch on Daniel's in-the-moment 'approved' or via /sudo-update-sprint-memory. The epic reaches `main` only through /sudo-push-e2e — full gate + E2E green + Daniel's sign-off."
 ---
 
 # Git Policy
@@ -92,7 +92,7 @@ git rev-list --left-right --count <branch>...origin/<branch>   # must be "0 0"
 "pushed" is how this hides.
 
 ⛔ The only exception is a story branch mid-flight, which is governed by "The landing" below: its commits
-stay local until the landing pushes `HEAD:epic/<slug>`. That is about *which ref* receives the push, never
+stay local until the landing pushes `HEAD:epic/<JIRA-KEY>-<slug>`. That is about *which ref* receives the push, never
 a licence to leave work uncommitted or a landing unpushed.
 
 ## The landing — one story, one clean push
@@ -102,9 +102,9 @@ Daniel's in-the-moment "approved". It merges **from inside the worktree**, never
 epic branch in the shared checkout:
 
 ```bash
-git fetch origin epic/<slug>
-git merge origin/epic/<slug>        # absorb it INSIDE the worktree — conflicts surface here, isolated
-git push origin HEAD:epic/<slug>    # THE landing
+git fetch origin epic/<JIRA-KEY>-<slug>
+git merge origin/epic/<JIRA-KEY>-<slug>        # absorb it INSIDE the worktree — conflicts surface here, isolated
+git push origin HEAD:epic/<JIRA-KEY>-<slug>    # THE landing
 ```
 
 ⛔ **Do NOT push the story branch itself.** The **local** branch is the rollback point, and it survives
@@ -153,9 +153,9 @@ checkout boring: it is always exactly production.
 Phone and desktop share branches, so landing from a **stale** branch is what causes the
 diverge → rejected-push tangle. Before the landing push:
 
-1. **Fetch and compare:** `git fetch origin epic/<slug>`, then check whether you are behind
-   (`git rev-list --count HEAD..origin/epic/<slug>` > 0).
-2. **If behind, merge `origin/epic/<slug>` into your story branch first** (the landing block above
+1. **Fetch and compare:** `git fetch origin epic/<JIRA-KEY>-<slug>`, then check whether you are behind
+   (`git rev-list --count HEAD..origin/epic/<JIRA-KEY>-<slug>` > 0).
+2. **If behind, merge `origin/epic/<JIRA-KEY>-<slug>` into your story branch first** (the landing block above
    does this by default) so you never land on top of a stale base.
 3. **If it will not merge cleanly**, **STOP and flag it** — hand Daniel the situation. Do NOT run a
    blind merge/rebase, and never force-push.

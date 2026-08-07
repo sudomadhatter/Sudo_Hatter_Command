@@ -52,11 +52,11 @@ git diff --cached --stat              # must show ONLY this story's files
 git commit -m "wip(<story>): park for machine switch — <one line of where it stands>"
 
 # 2 · sync-first: absorb the story's EPIC branch INSIDE the worktree
-git fetch origin epic/<slug>
-git merge origin/epic/<slug>          # CONFLICT → resolve HERE, on the machine that has the context
+git fetch origin epic/<JIRA-KEY>-<slug>
+git merge origin/epic/<JIRA-KEY>-<slug>          # CONFLICT → resolve HERE, on the machine that has the context
 
 # 3 · push the branch — this is the ONLY thing that makes the work portable
-git push -u origin claude/<story-slug>
+git push -u origin claude/<JIRA-KEY>-<story-slug>
 ```
 
 - **Resolve conflicts now, not later.** The sprint board (`sprint-status.yaml`) conflicts routinely because
@@ -72,13 +72,13 @@ git push -u origin claude/<story-slug>
 an unpushed epic branch strands every landed story with it:
 
 ```bash
-git push origin epic/<slug>           # rejected → fetch + merge first, never force
+git push origin epic/<JIRA-KEY>-<slug>           # rejected → fetch + merge first, never force
 ```
 
 Then `PROJECT_ROOT` and the lobby. The shared checkouts stand on `main`, which moves only via
 `/sudo-push-e2e` — so there is usually nothing to push. But **sanctioned unpushed work must not be
 stranded**: loose session output (untracked `_artifacts/` run-folders are the usual catch — the record of
-the session, worthless on the machine you are walking away from) goes on a short-lived `chore/<slug>`
+the session, worthless on the machine you are walking away from) goes on a short-lived `chore/<JIRA-KEY>-<slug>`
 branch off `main` per `git-policy.md`, and an already-approved chore merge sitting unpushed on `main`
 gets pushed now (the push-approval hook prompts — expected):
 
@@ -86,7 +86,7 @@ gets pushed now (the push-approval hook prompts — expected):
 git status --porcelain                # report untracked artifact folders explicitly
 git add <explicit paths>              # artifacts, docs — NEVER -A
 git commit -m "<scope>: park for machine switch"     # on the chore/* branch, never on main directly
-git push -u origin chore/<slug>
+git push -u origin chore/<JIRA-KEY>-<slug>
 ```
 
 ## Step 4 — Write the resume card
@@ -96,7 +96,7 @@ one live card, never a log:
 
 ```markdown
 > **🔁 MACHINE HANDOFF — parked <YYYY-MM-DD> from <machine>:** Live story branches on origin —
-> `claude/<slug>` (step ①/②/③, <one line: what is done, what is next>) ×N. Worktrees are LOCAL —
+> `claude/<JIRA-KEY>-<slug>` (step ①/②/③, <one line: what is done, what is next>) ×N. Worktrees are LOCAL —
 > `git worktree list` on the next machine WILL show nothing; that is expected, not a fresh start.
 > Pick it back up with `/sudo-resume`. Left dirty on <machine>, deliberately: <paths or "nothing">.
 ```
