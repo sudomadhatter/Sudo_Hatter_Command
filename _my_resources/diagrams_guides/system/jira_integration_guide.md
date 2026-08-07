@@ -321,15 +321,25 @@ flowchart TD
 
 ### Two modes
 
-**WARN (current).** Prints the complaint and lets the commit through. This is deliberate: a gate that
-starts by rejecting a commit you were halfway through gets `--no-verify`'d forever afterwards. Run in warn
-for a few days; when it stops surprising you, arm it.
+**WARN.** Prints the complaint and lets the commit through. The original plan was to sit here for a few
+days so the gate stops surprising you before it starts refusing you.
 
-**ENFORCE.** Create the file, in whichever repo you're arming:
+**ENFORCE (current, armed 2026-08-07).** Rejects the commit outright. Armed by the presence of a tracked
+file:
 
 ```bash
 touch .agents/scripts/git-hooks/JIRA-ENFORCE
 ```
+
+**Why it was armed on day one instead.** WARN failed its first real test the same evening it shipped. A
+commit carrying `SCC-10` landed on AviationChat's `main`, where `jira.conf` binds the repo to `AVCH`. The
+hook fired and complained exactly as designed — and nobody saw it, because the commit came from **VS Code's
+Source Control panel, which writes hook output to `View → Output → Git` and shows nothing in the UI**. The
+"run in WARN for a few days" advice silently assumes you are committing in a terminal. A warning nobody
+reads is not a gate.
+
+The flag file is **tracked**, not local. Untracked, the gate would be armed on one machine and silent on
+every other clone — failing precisely when you switch machines.
 
 Remove the file to disarm. **Kill switch** for the whole hook: create `.agents/scripts/git-hooks/DISABLE`.
 **Bypass once:** `git commit --no-verify`.
@@ -471,7 +481,7 @@ one column on the board, and the distinction between *not yet* and *never* survi
 - Saved filters `AVCH Deferred` (10003) and `SCC Deferred` (10004)
 - `acli` 1.3.22 installed and authenticated as `sudomadhatter@gmail.com`
 - GitHub for Atlassian app installed; Smart Commits enabled
-- `commit-msg` hook in the lobby and AviationChat, **WARN mode**, tested in both modes
+- `commit-msg` hook in the lobby and AviationChat, **ENFORCE mode** (armed 2026-08-07, flag tracked)
 - `.agents/jira.conf` per repo; excluded from `/sync-agents` in both the vendor and the manifest
 - `JIRA_API_TOKEN` + `JIRA_EMAIL` secrets on both GitHub repos
 - Atlassian MCP declared in `.mcp.json` (optional; needs `/mcp` approval)
@@ -523,7 +533,8 @@ Revoking is instant and total — the old string dies everywhere at once, so you
 | Symptom | Cause | Fix |
 |---|---|---|
 | Hook prints nothing, ever | `core.hooksPath` unset in that repo | `git config core.hooksPath .githooks` |
-| Commit passes with no key | WARN mode, or repo has no `jira.conf` | Check both |
+| Commit passes with no key | `JIRA-ENFORCE` missing, or repo has no `jira.conf` | Check both |
+| Committed from VS Code and saw no hook output | The panel hides it | `View → Output → Git`. In ENFORCE mode a rejection also raises a notification |
 | `SCC-9` rejected in AviationChat | Working as designed — wrong project | Use an `AVCH` key |
 | Commit and ticket exist, but no link | Key typo'd, or GitHub app not connected to that repo | Check the key; check the app's repo list |
 | `✗ Error: unknown flag: --key` | You used `--key` on `view` | `view` takes the key positionally |
@@ -540,3 +551,5 @@ Revoking is instant and total — the old string dies everywhere at once, so you
 - `Projects/AGY_AVIATIONCHAT/_bmad-output/implementation-artifacts/sprint-status.yaml` — the board, still the source of truth for sprint state
 
 <!-- CHECKPOINT id="ckpt_msjenp0o_kmuefd" time="2026-08-07T20:36:33.000Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+
+<!-- CHECKPOINT id="ckpt_msjhiks2_s1a95l" time="2026-08-07T21:56:33.074Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
