@@ -66,3 +66,18 @@ the branch from a status line you printed but did not act on.
 **Why:** one consistent, safe model everywhere so production stays deployable and nothing breaks; avoids the per-project drift that had Fresh on a main-only model. Keeping `main` a pure fast-forward of `main_debug` means promotion is always a clean, reviewable advance with no divergence to untangle.
 
 **How to apply:** when handing Daniel commit/push commands, target `main_debug` (or a `claude/*` branch → PR), never `main`. The canonical source of truth now lives in `.agents/rules/git-policy.md` § "Branch model — main_debug → main" (synced to every workspace), enforced by `.agents/hooks/require-push-approval.py` (gates both branches, deployed to every `.claude/hooks/` by `/sync-agents`). See also [[git-policy-no-self-commit]].
+
+**Submodule gitlinks are INVISIBLE in the lobby (found 2026-08-06).** `.gitmodules` sets
+`ignore = all` on all eight `Projects/*` entries, so the lobby's `git status` structurally cannot
+report gitlink drift — it reads perfectly clean while the recorded pointers lag behind commits that
+are already pushed. Only `git submodule status` shows it (a leading `+` = the working tree is ahead
+of the recorded sha). This is deliberate config (it keeps child-repo churn out of the lobby's
+status); do NOT "fix" it. It does mean the pointers move ONLY when someone explicitly
+`git add Projects/<name>`, and a `git push` in a submodule never bumps the superproject.
+
+**Why it bites:** a fresh clone plus `git submodule update --init` checks out the RECORDED sha, so
+stale gitlinks silently hand a new machine older code — the exact failure the migration kit exists
+to prevent.
+
+**How to apply:** after committing inside any submodule, run `git submodule status | grep '^+'` in
+the lobby and `git add` every path it lists. Never trust the lobby's `git status` for this.
