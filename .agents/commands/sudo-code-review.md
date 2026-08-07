@@ -22,7 +22,7 @@ path missing under `PROJECT_ROOT` → STOP, never fall back to the lobby.
 
 ## Step 0.5 — Re-enter the story worktree if one already exists (fresh-chat resume)
 Before Step 1: `git worktree list` under `PROJECT_ROOT` (`worktree-per-story` → "Resuming"). A
-`claude/<story-slug>` tree exists → **cd into it and bind the diff, story file, tests, and suite commands
+`claude/<JIRA-KEY>-<story-slug>` tree exists → **cd into it and bind the diff, story file, tests, and suite commands
 under it** (the built code often lives ONLY there — the shared checkout would audit an empty or stale
 diff); echo `Worktree: reviewing in <path>`. None → review in `PROJECT_ROOT` as usual. Artifacts too:
 this story's plan/walkthrough/verdict live in THIS tree — absent here = that step never ran; a lookalike

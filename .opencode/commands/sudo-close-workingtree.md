@@ -4,8 +4,8 @@ description: Safely verify a story branch has been merged into its epic branch, 
 
 # /sudo-close-workingtree — Close & Prune Merged Worktree & Branches
 
-Safely clean up story worktrees and their git branches (`claude/<story-slug>`) after a story has landed on
-its epic branch (`epic/<epic-key>-<slug>`).
+Safely clean up story worktrees and their git branches (`claude/<JIRA-KEY>-<story-slug>`) after a story has landed on
+its epic branch (`epic/<JIRA-KEY>-<slug>`).
 
 **Order is load-bearing and the numbering enforces it: SWEEP → PRESERVE → UNLINK → REMOVE → DELETE BRANCH.**
 Every out-of-order variant of this command has destroyed something. Do not reorder, and do not skip a step
@@ -47,14 +47,14 @@ Remove-Item Env:\GITHUB_TOKEN -ErrorAction Ignore; git fetch origin
 # 2 · Resolve the story's epic branch (exactly one live epic/* is the normal case)
 git for-each-ref --format='%(refname:short)' refs/remotes/origin/epic/*
 
-# 3 · Verification check: confirm story branch has landed on origin/epic/<slug>
-git merge-base --is-ancestor claude/<story-slug> origin/epic/<slug>
+# 3 · Verification check: confirm story branch has landed on origin/epic/<JIRA-KEY>-<slug>
+git merge-base --is-ancestor claude/<JIRA-KEY>-<story-slug> origin/epic/<JIRA-KEY>-<slug>
 ```
 
-- **Exit code 0**: the branch is fully merged into `origin/epic/<slug>`. Proceed to Step 1.6.
+- **Exit code 0**: the branch is fully merged into `origin/epic/<JIRA-KEY>-<slug>`. Proceed to Step 1.6.
 - **Non-zero**: **STOP IMMEDIATELY!**
-  Print: `❌ Refusing to delete: claude/<story-slug> is NOT fully merged into origin/epic/<slug>.`
-  Instruct: `Land the story first using /sudo-update-sprint-memory or git merge to origin/epic/<slug>.`
+  Print: `❌ Refusing to delete: claude/<JIRA-KEY>-<story-slug> is NOT fully merged into origin/epic/<JIRA-KEY>-<slug>.`
+  Instruct: `Land the story first using /sudo-update-sprint-memory or git merge to origin/epic/<JIRA-KEY>-<slug>.`
 
 **Record this result per branch.** Step 5 deletes branches, and it may ONLY delete a branch that passed this
 check. A tree can be safe to remove while its branch is not safe to delete — those are different questions.
@@ -170,7 +170,7 @@ git -C .claude/worktrees/<slug> status --short      # ANY output = unsaved work
   ```bash
   git -C .claude/worktrees/<slug> add <explicit paths>     # never `git add -A`
   git -C .claude/worktrees/<slug> commit -m "wip(<story>): preserve uncommitted work before worktree prune"
-  git -C .claude/worktrees/<slug> push -u origin claude/<slug>
+  git -C .claude/worktrees/<slug> push -u origin claude/<JIRA-KEY>-<slug>
   ```
   Then say plainly in the report that you committed someone else's in-flight work, what it was, and that
   the story's status is **unchanged** — a preservation commit is not progress and must never be reported as
@@ -265,7 +265,7 @@ machine, and it is recoverable only if someone knows it happened.
 ## Step 5 — Delete branches — ONLY those that passed Steps 1 AND 1.7
 
 **Order is REMOTE first, local second — the reverse fails.** A landed branch's close-out commits are
-never pushed to `claude/*` (the landing pushes `HEAD:epic/<slug>` only), so a PARKED branch's local tip
+never pushed to `claude/*` (the landing pushes `HEAD:epic/<JIRA-KEY>-<slug>` only), so a PARKED branch's local tip
 is ahead of its upstream. `git branch -d` checks merged-into-**upstream** when an upstream exists — and
 refuses. Deleting the remote first removes the upstream, so `-d` falls back to the merged-into-HEAD
 check and succeeds honestly (observed 2026-08-01: all three set-close-out `-d`s failed remote-last,
@@ -273,16 +273,16 @@ all three succeeded remote-first).
 
 ```bash
 # Remote FIRST: ONLY if the branch is actually on origin — i.e. it was PARKED.
-git ls-remote --heads origin claude/<story-slug>                    # empty → nothing to delete, say so
-Remove-Item Env:\GITHUB_TOKEN -ErrorAction Ignore; git push origin --delete claude/<story-slug>
+git ls-remote --heads origin claude/<JIRA-KEY>-<story-slug>                    # empty → nothing to delete, say so
+Remove-Item Env:\GITHUB_TOKEN -ErrorAction Ignore; git push origin --delete claude/<JIRA-KEY>-<story-slug>
 
-git branch -d claude/<story-slug>                                   # -d first; see the HEAD caveat below
+git branch -d claude/<JIRA-KEY>-<story-slug>                                   # -d first; see the HEAD caveat below
 ```
 
 ⚠️ **The merged-into-HEAD fallback checks `main` now** (the shared checkout stands there), and `main`
 does not contain the story until its epic merges via `/sudo-push-e2e` — so `-d` can honestly refuse on
 a branch that HAS landed. In exactly that case, Step 1's recorded `merge-base --is-ancestor …
-origin/epic/<slug>` pass IS the merged proof: delete with `git branch -D` and cite that pass in the
+origin/epic/<JIRA-KEY>-<slug>` pass IS the merged proof: delete with `git branch -D` and cite that pass in the
 report. No recorded Step 1 pass → never `-D`.
 
 ⛔ **Delete a branch ONLY if it passed Step 1 (landed) AND Step 1.7 (closed out).** Removing a *tree* is
@@ -292,7 +292,7 @@ stories; those branches have not been checked and must **not** be deleted.
 
 - Landed + closed out → delete local; delete remote **only if `ls-remote` finds it**.
 - Landed, not closed out → Step 1.7 already STOPped. Nothing is deleted.
-- Not landed, tree removed → **keep both branches**, and report: *"tree pruned; branch `claude/<slug>`
+- Not landed, tree removed → **keep both branches**, and report: *"tree pruned; branch `claude/<JIRA-KEY>-<slug>`
   retained — restore with `/sudo-resume`."*
 - `git branch -d` refuses → check WHY before reaching for `-D`. With the remote already deleted (the
   order above), a refusal is either the expected HEAD-is-`main` caveat above (Step 1 passed → `-D` with
@@ -300,7 +300,7 @@ stories; those branches have not been checked and must **not** be deleted.
   the refusal is probably just the upstream check — delete the remote and retry `-d` once.)
 
 **Most story branches will not exist on origin at all, and that is correct.** Per `git-policy.md` → "The
-landing", the landing pushes `HEAD:epic/<slug>` and **not** the branch; a story branch reaches origin only
+landing", the landing pushes `HEAD:epic/<JIRA-KEY>-<slug>` and **not** the branch; a story branch reaches origin only
 via `/sudo-park`. So an absent remote branch is the normal case — report it as *"never pushed (not
 parked) — nothing to delete"*, not as a failure. A remote branch that IS present means this story was
 parked, and deleting it here is what stops `/sudo-resume` from later offering a story that is already done.
@@ -317,8 +317,8 @@ check. Every ✅ below must come from a command you actually ran in this step:
 ```powershell
 Test-Path "PROJECT_ROOT/.claude/worktrees/<slug>"              # must be False
 git worktree list                                              # must not list it
-git branch --list claude/<slug>                                # empty IF you deleted it
-git ls-remote --heads origin claude/<slug>                     # empty IF you deleted it
+git branch --list claude/<JIRA-KEY>-<slug>                                # empty IF you deleted it
+git ls-remote --heads origin claude/<JIRA-KEY>-<slug>                     # empty IF you deleted it
 Get-ChildItem "PROJECT_ROOT/.claude/worktrees" -Force -Directory   # every remaining row must be one
                                                                # you deliberately KEPT and named
 ```
@@ -329,8 +329,8 @@ worse than no cleanup, because nothing will look again.
 Print summary:
 `🧹 Closed workingtree & pruned branches for <story-slug>:`
 - `✅ Local worktree removed: .claude/worktrees/<story-slug>` *(verified absent)*
-- `✅ Local branch deleted: claude/<story-slug>` *(or "retained — not landed")*
-- `✅ Remote GitHub branch deleted: origin/claude/<story-slug>` *(or "retained" / "never pushed")*
+- `✅ Local branch deleted: claude/<JIRA-KEY>-<story-slug>` *(or "retained — not landed")*
+- `✅ Remote GitHub branch deleted: origin/claude/<JIRA-KEY>-<story-slug>` *(or "retained" / "never pushed")*
 - `✅ Shared assets intact: frontend/node_modules · firebase/tests/node_modules · backend/.venv` *(probed)*
 - `🧹 Swept: <every tree found, its state, and its disposition — or "none">` *(from Step 1.6)*
 - `💾 Preserved: <what was committed and pushed, and to which branch — or "nothing uncommitted">` *(Step 2)*

@@ -59,14 +59,14 @@ happened on a story lives in `_bmad-output/history/<epic>/<key>.md` (and the cha
   design: ② and ③ never write it, only close-out does. Map the story file's `Status:` straight to the
   recommendation; never send a story whose tree already exists back to ① `/sudo-write-story-tests`.
 - **Worktree** — run `git worktree list` and report whether the next/in-play story already has a
-  `claude/<story-slug>` tree (`worktree-per-story` → "Resuming"). If it does, say so with its path and branch
-  (*"Story <id> → worktree open at `<path>` on `claude/<slug>` — the next `sudo-` step re-enters it, does not
+  `claude/<JIRA-KEY>-<story-slug>` tree (`worktree-per-story` → "Resuming"). If it does, say so with its path and branch
+  (*"Story <id> → worktree open at `<path>` on `claude/<JIRA-KEY>-<slug>` — the next `sudo-` step re-enters it, does not
   open a new one"*); the story file and red tests may live ONLY in that tree, so any resumed dev/review work
   must `cd` in first.
 - **⚠️ No worktree is NOT proof of a fresh start — check the remote before you say so.** Worktrees are
   machine-local (`.claude/worktrees/` is not in the repo), and Daniel works one sprint across desktop,
   laptop, and mobile. Whenever `git worktree list` shows nothing for the next story, ALSO run
-  `git ls-remote --heads origin 'refs/heads/claude/*'`. A `claude/<story-slug>` branch on origin means the
+  `git ls-remote --heads origin 'refs/heads/claude/*'`. A `claude/<JIRA-KEY>-<story-slug>` branch on origin means the
   step was already done on another machine — report it as **"exists on origin, not on this machine"** and
   point at `/sudo-resume` to re-create the working surface. Only when BOTH are empty may you say the next
   step opens a worktree at first edit.

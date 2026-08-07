@@ -1,6 +1,6 @@
 ---
 name: worktree-per-story
-description: "Fires when a sudo story lane (① /sudo-write-story-tests · ② /sudo-dev-story-tests · /sudo-quick-dev · autopilot) starts work that will produce commits — and ONLY there. One story, one worktree, one `claude/*` branch, opened off the story's EPIC branch (`epic/<slug>`) BEFORE the first edit, committed freely inside, landed at close-out and pruned by /sudo-close-workingtree. Ad-hoc non-story work NEVER opens a worktree — it takes a `chore/*` branch off main. Read-only sessions exempt. Pairs with git-policy.md."
+description: "Fires when a sudo story lane (① /sudo-write-story-tests · ② /sudo-dev-story-tests · /sudo-quick-dev · autopilot) starts work that will produce commits — and ONLY there. One story, one worktree, one `claude/*` branch, opened off the story's EPIC branch (`epic/<JIRA-KEY>-<slug>`) BEFORE the first edit, committed freely inside, landed at close-out and pruned by /sudo-close-workingtree. Ad-hoc non-story work NEVER opens a worktree — it takes a `chore/*` branch off main. Read-only sessions exempt. Pairs with git-policy.md."
 ---
 
 # Worktree Per Story
@@ -15,15 +15,15 @@ description: "Fires when a sudo story lane (① /sudo-write-story-tests · ② /
 
 Up to **four story lanes — sometimes more — run this system at once**: separate sessions, separate
 models, sometimes separate platforms (Claude Code, opencode, Antigravity, Codex, an autopilot engine),
-all against the same project repo. One story = one worktree = one `claude/<story-slug>` branch is what
+all against the same project repo. One story = one worktree = one `claude/<JIRA-KEY>-<story-slug>` branch is what
 makes that survivable. Assume from your first command that you are NOT alone in the repo:
 
 - **The shared checkout is a lobby, not your desk.** It stands on `main` — production — and stays
   there. Its `git status` can still show other lanes' dirty files and half-landed syncs. Never sweep,
   revert, or "fix" a file you did not change — report it and move on. (G2's explicit-paths rule exists
   precisely so several lanes can share one checkout without committing each other's work.)
-- **The epic branch moves under you.** Another lane can land on `epic/<slug>` mid-session, so your
-  branch base is stale by default — merge `origin/epic/<slug>` into the story branch before landing
+- **The epic branch moves under you.** Another lane can land on `epic/<JIRA-KEY>-<slug>` mid-session, so your
+  branch base is stale by default — merge `origin/epic/<JIRA-KEY>-<slug>` into the story branch before landing
   (the landing sequence in `git-policy.md`); never assume the base you opened on.
 - **The board files are everyone's files.** `sprint-status.yaml`, `active-context.md`, and the sprint
   map are edited by EVERY lane — the #1 merge-conflict surface (2026-07-31: a three-block conflict
@@ -42,16 +42,16 @@ the first project file is edited.** Automatic inside those lanes; the agent does
 lane that opens the tree is the lane that closes it: the story lands at close-out
 (`/sudo-update-sprint-memory` Step 7) and `/sudo-close-workingtree` prunes the tree + branches (its
 Step 8). **Never open a worktree outside a sudo story lane.** Ad-hoc work Daniel asks for
-conversationally — quick fixes, toolkit/system maintenance, doc edits — takes a short-lived `chore/<slug>`
+conversationally — quick fixes, toolkit/system maintenance, doc edits — takes a short-lived `chore/<JIRA-KEY>-<slug>`
 branch off `main` (no worktree, no `claude/*` branch), merged back to `main` in the same session with
 Daniel's sign-off; an orphan tree that no close-out will ever prune is exactly what this boundary
 prevents. Unsure whether you're in a lane? You're not — take a `chore/*` branch (or ask).
 
 ```
-EnterWorktree  →  .claude/worktrees/<story-slug>/  on branch  claude/<story-slug>
+EnterWorktree  →  .claude/worktrees/<story-slug>/  on branch  claude/<JIRA-KEY>-<story-slug>
 ```
 
-Branched from **the story's epic branch (`epic/<epic-key>-<slug>`)**, never from `main`. The epic
+Branched from **the story's epic branch (`epic/<JIRA-KEY>-<slug>`)**, never from `main`. The epic
 branch is cut from `main` at epic kickoff (`/sudo-create-epic-sprint`); if it doesn't exist yet,
 that step was skipped — go back and run it. The `worktree.baseRef: "head"` setting makes the new
 worktree inherit the current HEAD, so **check out the epic branch before opening the worktree** — if
@@ -60,11 +60,11 @@ another story's branch).
 
 ### Exempt — no worktree needed
 
-- **Ad-hoc non-story work** — anything outside the sudo story lanes (see Trigger): `chore/<slug>`
+- **Ad-hoc non-story work** — anything outside the sudo story lanes (see Trigger): `chore/<JIRA-KEY>-<slug>`
   branch off `main`, explicit paths, merged back with sign-off; the push-approval hook still prompts
   on the `main` merge.
 - **Read-only sessions** — questions, recon, code reading, reviews that write no project file.
-- **`/sudo-push-e2e`** — it operates *on* branches (`epic/<slug>` → `main`), so it must run in the
+- **`/sudo-push-e2e`** — it operates *on* branches (`epic/<JIRA-KEY>-<slug>` → `main`), so it must run in the
   main checkout.
 - **Daniel says otherwise** — an explicit "just do it here" in the moment wins.
 
@@ -76,7 +76,7 @@ existing worktree**: not open a second one, and not work in the shared checkout.
 fires (and at the top of any `sudo-*` step that will read or edit story files), look first:
 
 ```
-git worktree list        # is there already a  claude/<story-slug>  tree?
+git worktree list        # is there already a  claude/<JIRA-KEY>-<story-slug>  tree?
 ```
 
 - **A tree for this story slug exists** → that IS your workspace. `cd` into it and bind every path — story
@@ -128,8 +128,8 @@ while a set is declared.
 Close-out runs **inside the worktree**, so its `sprint-status.yaml`, `active-context.md`, and story-file
 edits ride the story branch and land with the story — instead of sitting in the shared tree waiting to
 be hunk-picked out of somebody else's diff. The landing sequence itself is in `git-policy.md`
-("The landing"): merge `origin/epic/<slug>` into the story branch *inside the worktree*, then
-`git push origin HEAD:epic/<slug>`. Never check out the epic branch in the shared checkout to merge.
+("The landing"): merge `origin/epic/<JIRA-KEY>-<slug>` into the story branch *inside the worktree*, then
+`git push origin HEAD:epic/<JIRA-KEY>-<slug>`. Never check out the epic branch in the shared checkout to merge.
 
 The shared checkout needs **no reconcile after a landing** — it stands on `main`, which only moves when
 the epic merges via `/sudo-push-e2e`. (Under the retired `main_debug` model the shared checkout fell one
@@ -137,7 +137,7 @@ story behind per landing and needed a mandatory fast-forward; that whole failure
 long-lived integration branch.)
 
 Afterwards, once the landing on the epic branch is verified, the worktree and git branch
-(`claude/<story-slug>`) are pruned via `/sudo-close-workingtree` (auto-invoked by
+(`claude/<JIRA-KEY>-<story-slug>`) are pruned via `/sudo-close-workingtree` (auto-invoked by
 `/sudo-update-sprint-memory` Step 8) to keep local disk and remote GitHub clean. The epic branch itself
 is pruned later, by `/sudo-push-e2e`, after the epic merges to `main`.
 

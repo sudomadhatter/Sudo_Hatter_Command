@@ -24,16 +24,16 @@ global memory dir.
 ## Step 0.5 — Sync the branch BEFORE you read or edit the board (parallel-lane safety)
 Steps 1–6 read **and rewrite** `sprint-status.yaml` + `active-context.md`. Do that on a stale base and you
 author every board edit against an old file, then discover it at Step 7's merge — on the two hottest files
-in the repo. So absorb the story's EPIC branch FIRST, inside the worktree (`epic/<epic-key>-<slug>` —
+in the repo. So absorb the story's EPIC branch FIRST, inside the worktree (`epic/<JIRA-KEY>-<slug>` —
 exactly one live `epic/*` branch is the normal case):
 
 ```bash
-git fetch origin epic/<slug>
-git rev-list --count HEAD..origin/epic/<slug>    # >0 → behind
-git merge origin/epic/<slug>                     # CONFLICT → STOP and report, never force
+git fetch origin epic/<JIRA-KEY>-<slug>
+git rev-list --count HEAD..origin/epic/<JIRA-KEY>-<slug>    # >0 → behind
+git merge origin/epic/<JIRA-KEY>-<slug>                     # CONFLICT → STOP and report, never force
 ```
 
-Echo `Base: current with origin/epic/<slug> @ <sha>`. Step 7 re-merges as a cheap safety net; this one is
+Echo `Base: current with origin/epic/<JIRA-KEY>-<slug> @ <sha>`. Step 7 re-merges as a cheap safety net; this one is
 what makes the board edits land clean. If another lane closed out while you worked, its board line is now
 in front of you — **read it before you write yours**, and never delete a line you did not add.
 
@@ -206,7 +206,7 @@ it.** Report it and stop — never rescue it by committing in the shared checkou
 
 Then execute `git-policy.md` → **"The landing"**, inside the worktree: first commit the close-out edits —
 EXPLICIT PATHS ONLY (board, story file, active-context, artifacts; `git diff --cached --stat` must show
-ONLY this story's files), then merge `origin/epic/<slug>` (CONFLICT → **STOP and report**; never force-push,
+ONLY this story's files), then merge `origin/epic/<JIRA-KEY>-<slug>` (CONFLICT → **STOP and report**; never force-push,
 never blind-rebase), **then the MERGE GATE — prove the tree that ships, not the one ③ reviewed** (the solo
 counterpart of `/sudo-merge-epic-workingtrees` Step 5's combined gate): run
 `git diff --name-only <③-verdict suite SHA>..HEAD -- backend/ frontend/`.
@@ -216,11 +216,11 @@ counterpart of `/sudo-merge-epic-workingtrees` Step 5's combined gate): run
   full suite of the touched stacks on it NOW (parallel flags; the conftest suite lock serializes the box) and
   paste totals into the walkthrough. **Red → STOP: no push, nothing lands** — the board/status flips from
   Steps 1–6 ride this branch, so a stopped landing publishes nothing. Report the failing tests + which
-  epic-branch commits collided (`git log <suite-SHA>..origin/epic/<slug> --oneline`); the fix is a follow-on
+  epic-branch commits collided (`git log <suite-SHA>..origin/epic/<JIRA-KEY>-<slug> --oneline`); the fix is a follow-on
   on the branch, then re-gate.
-Then `git push origin HEAD:epic/<slug>` — THE landing.
+Then `git push origin HEAD:epic/<JIRA-KEY>-<slug>` — THE landing.
 
-⛔ **Do NOT push `claude/<story-slug>` to origin.** The local branch is the rollback point and survives a
+⛔ **Do NOT push `claude/<JIRA-KEY>-<story-slug>` to origin.** The local branch is the rollback point and survives a
 failed landing push intact. A story branch reaches origin **only** via `/sudo-park` — that is park's whole
 purpose, and `/sudo-resume` reads the origin `claude/*` list to find in-flight work on a cold machine.
 Pushing here made park redundant and filled that listing with landed-and-dead branches. If this story WAS
@@ -236,7 +236,7 @@ parked, its branch is already on origin and Step 8 deletes it there.
 ## Step 8 — Prune the merged worktree & branches (AUTOMATIC)
 
 Immediately after Step 7 landing succeeds:
-1. Invoke `/sudo-close-workingtree <story-slug>` to verify the merge, remove the local worktree (`.claude/worktrees/<story-slug>`), and delete both the local and remote GitHub branches (`claude/<story-slug>`).
+1. Invoke `/sudo-close-workingtree <story-slug>` to verify the merge, remove the local worktree (`.claude/worktrees/<story-slug>`), and delete both the local and remote GitHub branches (`claude/<JIRA-KEY>-<story-slug>`).
 2. Confirm both local disk and remote origin are clean.
 
 Optional additional input: $ARGUMENTS
