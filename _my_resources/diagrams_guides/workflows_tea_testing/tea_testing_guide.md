@@ -844,7 +844,8 @@ A **fast local pre-push pre-check** — run only the tests your diff can break, 
 ./scripts/tia_gate.ps1 -DryRun          # print the decision, run nothing
 ./scripts/tia_gate.ps1                    # run the selected tests (or full suite)
 ./scripts/tia_gate.ps1 -IncludeE2E        # also run the emulator journeys inline
-./scripts/tia_gate.ps1 -Base main_debug   # diff base (default: main_debug)
+./scripts/tia_gate.ps1 -Base main         # diff base (default: main)
+#   in a story lane, diff against the epic branch instead: -Base epic/<key>-<slug>
 ```
 
 If the GitNexus index is behind HEAD (e.g. after pulling work committed on another machine), it prints `STALE_INDEX` and runs everything — re-index with `node .gitnexus/run.cjs analyze` to re-enable fast selective runs. (This gate operationalizes the standing rule in memory `gitnexus-verify-index-fresh-after-pull`.)

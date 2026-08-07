@@ -24,7 +24,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import gate_receipt as gr
 import wf_common as wf
 
-INTEGRATION_BRANCH = "main_debug"
+def integration_branch(project: Path) -> str:
+    """The landing target for a story: its epic branch (`epic/*`), falling back to `main`.
+
+    main_debug retired 2026-08-07 — epics integrate on short-lived epic/* branches that merge
+    to main via /sudo-push-e2e. With exactly one live epic branch the target is unambiguous;
+    with zero or several, `main` is the only branch every landing eventually reaches, so the
+    ancestor check stays meaningful (a story merged via its epic IS an ancestor of main once
+    the epic ships — before that, several-epics ambiguity must be resolved with --branch)."""
+    r = wf.git(["branch", "--list", "--format=%(refname:short)", "epic/*"], project)
+    branches = [b.strip() for b in r.stdout.splitlines() if b.strip()]
+    return branches[0] if len(branches) == 1 else "main"
 
 
 # ── 1. Did the code actually land? ─────────────────────────────────────────────
@@ -67,14 +77,15 @@ def check_landed(project: Path, key: str, rep: wf.Report, branch: str | None = N
                            f"are often named descriptively, so landing was NOT verified; "
                            f"confirm by hand or pass --branch <name>")
         return
+    target = integration_branch(project)
     for b in branches:
-        merged = wf.git(["merge-base", "--is-ancestor", b, INTEGRATION_BRANCH], project)
+        merged = wf.git(["merge-base", "--is-ancestor", b, target], project)
         if merged.returncode == 0:
-            rep.info("landed", f"{b} is an ancestor of {INTEGRATION_BRANCH} (landed)")
+            rep.info("landed", f"{b} is an ancestor of {target} (landed)")
         else:
-            ahead = wf.git(["rev-list", "--count", f"{INTEGRATION_BRANCH}..{b}"], project)
+            ahead = wf.git(["rev-list", "--count", f"{target}..{b}"], project)
             n = ahead.stdout.strip() or "?"
-            rep.err("landed", f"{b} has {n} commit(s) NOT on {INTEGRATION_BRANCH} - "
+            rep.err("landed", f"{b} has {n} commit(s) NOT on {target} - "
                               f"closing out now would strand them")
 
 

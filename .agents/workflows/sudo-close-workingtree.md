@@ -1,5 +1,5 @@
 ---
-description: Safely verify a story branch has been merged into main_debug, preserve any uncommitted work, then prune EVERY stale worktree on disk and delete both local and remote (GitHub) branches. Sweeps all trees, not just the named slug.
+description: Safely verify a story branch has been merged into its epic branch, preserve any uncommitted work, then prune EVERY stale worktree on disk and delete both local and remote (GitHub) branches. Sweeps all trees, not just the named slug.
 platforms: [opencode, antigravity]
 ---
 

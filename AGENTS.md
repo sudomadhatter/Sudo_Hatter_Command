@@ -102,20 +102,22 @@ files, per §3); full model →
   `.agents/rules/lobby-search.md`.**
 - **RISK GATE**: never delete / overwrite / publish without explicit go-ahead.
 - **WORKTREE GATE — worktrees belong to the sudo story lanes.** A story lane (①/②/quick-dev/autopilot)
-  opens its own worktree branched from **`main_debug`** (never `main`) before the first edit — automatic,
-  don't ask — commits **freely** inside it (explicit paths; `git add -A`/`.`/`-u` stay banned), and the
-  SAME flow closes it (close-out lands it; `/sudo-close-workingtree` prunes). **Ad-hoc non-story work
-  never opens a worktree** — it edits `main_debug` directly (an orphan tree no flow will close is the
-  failure this prevents). Read-only sessions: no tree. **Parallel teams are the NORM — up to four lanes
-  (sometimes more) run at once:** expect other lanes' dirty files in the shared checkout (never sweep,
-  revert, or "fix" work you didn't do) and expect `origin/main_debug` to move mid-session; several lanes
+  opens its own worktree branched from **the story's epic branch** (`epic/<slug>`, never `main`) before
+  the first edit — automatic, don't ask — commits **freely** inside it (explicit paths; `git add
+  -A`/`.`/`-u` stay banned), and the SAME flow closes it (close-out lands it; `/sudo-close-workingtree`
+  prunes). **Ad-hoc non-story work never opens a worktree** — it takes a `chore/*` branch off `main`
+  (an orphan tree no flow will close is the failure this prevents). Read-only sessions: no tree.
+  **Parallel teams are the NORM — up to four lanes (sometimes more) run at once:** expect other lanes'
+  dirty files in the shared checkout (never sweep, revert, or "fix" work you didn't do) and expect the
+  epic branch to move mid-session; several lanes
   landing together go through `/sudo-merge-epic-workingtrees`, never one-by-one. Full lifecycle →
   `.agents/rules/worktree-per-story.md`.
-- **GIT WRITE APPROVAL — the gate is WHERE a write lands.** FREE: your own `claude/*` branch — commits
-  **and** pushes. SIGN-OFF (per-action, never carries): landing on **`main_debug`** — Daniel's in-the-moment
-  "approved", or invoking `/sudo-update-sprint-memory` (its Step 7 does the landing; invoking it IS the
-  sign-off). OWNER-ONLY: **`main`** — only when Daniel asks directly or runs `/sudo-push-e2e`. Full branch
-  model + enforcement → `.agents/rules/git-policy.md` (web/mobile → `mobile-mode.md`).
+- **GIT WRITE APPROVAL — the gate is WHERE a write lands.** FREE: your own `claude/*` or `chore/*`
+  branch — commits **and** pushes. SIGN-OFF (per-action, never carries): landing on **the epic branch** —
+  Daniel's in-the-moment "approved", or invoking `/sudo-update-sprint-memory` (its Step 7 does the
+  landing; invoking it IS the sign-off). OWNER-ONLY: **`main`** — only via `/sudo-push-e2e` (epic merge,
+  full gate) or Daniel's direct ask. Full branch model + enforcement → `.agents/rules/git-policy.md`
+  (web/mobile → `mobile-mode.md`).
 - Full hard stops + "ask first" list → `.agents/rules/constitution.md`.
 
 ## 7. PERSISTENCE  (you own this — not a vendor)

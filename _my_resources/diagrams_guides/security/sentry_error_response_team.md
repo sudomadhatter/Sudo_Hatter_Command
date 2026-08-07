@@ -3,10 +3,10 @@
 > **What this is:** AviationChat's automated incident-response system (Epic 16). When production
 > breaks — frontend or backend — a cloud Claude agent investigates, **builds the fix on its own
 > hotfix branch**, and the full report lands on Daniel's phone. Accepting the fix = the standard
-> hotfix flow: **pull the branch, test it locally, merge it into `main`, then rebase `main_debug`
-> onto the released hotfix**. The investigation + build run with Daniel's desktop off; only the
-> final test-merge-rebase is hands-on. `main_debug` (open, untested work) is **rebased, never
-> merged into** — its unfinished work simply replays on top of the shipped fix.
+> hotfix flow: **pull the branch, test it locally, merge it into `main`** — done. The investigation
+> + build run with Daniel's desktop off; only the final test-and-merge is hands-on. Open work is
+> **never merged into** — if an `epic/*` branch is live, it simply absorbs the shipped fix at its
+> next sync with `origin/main`.
 >
 > Designed + approved 2026-07-09. Stories: `Projects/AGY_AVIATIONCHAT/_bmad/bmm/stories/story-16-*.md` ·
 > Decision record: `_artifacts/AGY_AVIATIONCHAT/2026-07-09_incident-response-story-draft/always-live-trigger-brainstorm.md`
@@ -64,7 +64,7 @@ flowchart TD
     WORK --> ISSUE["GitHub Issue = full report<br/>+ branch name (issue by github-actions bot)"]
     ISSUE --> PHONE["Daniel's phone — AFTER the report exists<br/>GitHub app push + Telegram @AvCh_Security_Bot<br/>(Sentry's own email = the instant FYI, separate)"]
     PHONE --> DECIDE{"Daniel decides"}
-    DECIDE -- "accept" --> LOCAL["Pull branch locally · test the fix<br/>merge branch → main (goes LIVE)<br/>rebase main_debug onto main"]
+    DECIDE -- "accept" --> LOCAL["Pull branch locally · test the fix<br/>merge branch → main (goes LIVE)<br/>any open epic/* branch absorbs it<br/>at its next sync with origin/main"]
     DECIDE -- "interrogate first" --> CHAT["Tap session URL<br/>talk to the agent live"] --> DECIDE
     DECIDE -- "reject" --> CLOSE["Delete branch / tell agent to redo"]
 
@@ -77,7 +77,8 @@ flowchart TD
 ```
 
 **The agent can NEVER push to `main`.** It only ever writes its own `claude/incident-*` branch;
-going live is Daniel's deliberate local test → merge-to-`main` → rebase-`main_debug`, always.
+going live is Daniel's deliberate local test → merge-to-`main`, always. Any open `epic/*` branch
+picks the hotfix up at its next sync with `origin/main` — no manual back-merge step.
 
 ---
 
@@ -96,7 +97,7 @@ flowchart TD
     I["9 · (optional) copy the issue's paste-prompt into Claude Code<br/>= fresh session with full context (no live session URL in the Actions lane)"]
     J["10 · Daniel pulls the branch locally<br/>tests the fix actually works"]
     K["11 · Daniel merges the branch into main → fix is live"]
-    L["12 · Daniel rebases main_debug onto main<br/>open work replays on top of the hotfix"]
+    L["12 · Done — no back-merge step<br/>any open epic/* branch absorbs the hotfix<br/>at its next sync with origin/main"]
 
     A --> B --> C --> D --> E --> F --> G --> H --> I --> J --> K --> L
 
@@ -106,9 +107,9 @@ flowchart TD
     style K fill:#166534,color:#fff
 ```
 
-The incident lane **never merges into `main_debug`** — after the fix merges to `main`,
-`main_debug` is *rebased* onto `main`, so its open untested work simply replays on top of the
-shipped hotfix (the standard hotfix-branch sync, minus the textbook merge-into-dev).
+The incident lane **never merges into open work** — the fix ships on `main`, and any live `epic/*`
+branch absorbs it at its next sync with `origin/main` (`/sudo-push-e2e` forces exactly that sync +
+a re-gate before an epic can merge, so an epic can never land without the hotfix already in it).
 
 ---
 
@@ -116,27 +117,29 @@ shipped hotfix (the standard hotfix-branch sync, minus the textbook merge-into-d
 
 ```mermaid
 flowchart LR
-    MAIN["main<br/>LIVE PRODUCTION<br/>= what Sentry monitors"]
-    DEBUG["main_debug<br/>open + untested work<br/>NEVER MERGED INTO"]
+    MAIN["main<br/>LIVE PRODUCTION<br/>the ONLY long-lived branch<br/>= what Sentry monitors"]
+    EPIC["epic/* branch<br/>open + untested work (when one is live)<br/>NEVER MERGED INTO by the incident lane"]
     INC["claude/incident-XXX<br/>agent's own hotfix branch<br/>cut from main @ crash SHA"]
 
     MAIN -- "crash comes from here" --> INC
     INC -- "agent pushes the branch (never PRs, never merges)" --> INC
     INC -- "Daniel tests locally, then merges to main" --> MAIN
-    MAIN -- "Daniel rebases main_debug onto main<br/>(open work replays on top of the hotfix)" --> DEBUG
+    MAIN -- "epic branch syncs origin/main<br/>(absorbs the hotfix; /sudo-push-e2e re-gates)" --> EPIC
 
     style MAIN fill:#991b1b,color:#fff
-    style DEBUG fill:#1e40af,color:#fff
+    style EPIC fill:#1e40af,color:#fff
     style INC fill:#065f46,color:#fff
 ```
 
-✅ **The flow (Daniel, 2026-07-09) — standard hotfix pattern:** a **new hotfix branch** fixes the
-problem → Daniel tests it → **merges it to `main`** (live) → **rebases `main_debug` onto `main`**.
-`main_debug` (open, untested work) is only ever *rebased* — the hotfix is never merged *into* it,
-so its unfinished work stays isolated and simply replays on top of the shipped fix. The agent only
+✅ **The flow — standard hotfix pattern:** a **new hotfix branch** fixes the problem → Daniel
+tests it → **merges it to `main`** (live). That is the whole hands-on flow — no back-merge, no
+rebase step. If an `epic/*` branch is open, it absorbs the hotfix at its next sync with
+`origin/main` (and `/sudo-push-e2e` forces that sync + a re-gate before the epic can merge), so
+unfinished work stays isolated and the hotfix is never merged *into* it by hand. The agent only
 ever writes its own `claude/incident-*` branch — it never PRs and never pushes to `main`, so the
-standing "never PR to main" rule needs **no carve-out**; it holds as written. (Rebase assumes
-`main_debug` is Daniel's to rewrite — force-push after, standard for a private integration branch.)
+standing "never PR to main" rule needs **no carve-out**; it holds as written. (Under the retired
+two-branch model this flow ended with rebasing `main_debug` onto `main`; that step died with
+`main_debug`, 2026-08-07.)
 
 ---
 
@@ -185,7 +188,7 @@ BE crashes → two full reports on the phone.
 
 ### Guardrails (non-negotiable)
 
-- Agent **never PRs and never pushes to `main` or `main_debug`** — it writes only its own `claude/incident-*` branch. Going live is Daniel's local test → merge to `main` → rebase `main_debug`.
+- Agent **never PRs and never pushes to `main` or any `epic/*` branch** — it writes only its own `claude/incident-*` branch. Going live is Daniel's local test → merge to `main`; open epic branches absorb the fix at their next sync with `origin/main`.
 - Dedupe by Sentry short-id — one issue, one triage, ever.
 - Real test output pasted in every PR; no secrets or PII in any report (user ids arrive pre-hashed).
 - Rollback lane is **drilled**, not hoped for; Sentry's plain alert email keeps firing regardless.
@@ -196,10 +199,10 @@ BE crashes → two full reports on the phone.
 |---|---|
 | Trigger | Webhook from day one — no polling phase |
 | Runtime | ~~**Routines beta = primary** ("I trust the beta"); GH Actions built as drilled rollback~~ **superseded 2026-07-12 ↓** |
-| Fix depth | **Level 2 from day one** — fix pre-built + tests run on a hotfix branch; accept = pull it, test, merge to `main`, then rebase `main_debug` onto it |
+| Fix depth | **Level 2 from day one** — fix pre-built + tests run on a hotfix branch; accept = pull it, test, merge to `main` ~~, then rebase `main_debug` onto it~~ **rebase step retired 2026-08-07 ↓** |
 | Notification | GitHub issue only (email + app push) |
 | Build-history lookup | Conditional — only when the agent is struggling |
-| Branch | **New `claude/incident-*` hotfix branch fixes `main`** (live) → Daniel tests → merges to `main` → **rebases `main_debug` onto `main`**; `main_debug` (open untested work) is *rebased, never merged into* — no PR, no back-merge |
+| Branch | **New `claude/incident-*` hotfix branch fixes `main`** (live) → Daniel tests → merges to `main` — no PR, no back-merge ~~→ **rebases `main_debug` onto `main`**; `main_debug` (open untested work) is *rebased, never merged into*~~ **superseded 2026-08-07 ↓** |
 
 ### Decision log addendum (Daniel, 2026-07-12)
 
@@ -218,6 +221,12 @@ BE crashes → two full reports on the phone.
 | Page content | The page itself answers "what is it": agent headline + the report's own `## TL;DR` (500-char cap) + **Error Team Prompt** — a tap-to-copy `<pre>` block pasted straight into Claude to review/accept the fix (PR #22) |
 | Alert-rule frequency | **5 min** (was 30) — hardening so closely-spaced distinct P1s each re-fire; `frequency` is the rule's per-issue re-notify throttle |
 | Feature status | **CLOSED as shipped** — both lanes drilled, autonomous front-door run witnessed (issue #21) |
+
+### Decision log addendum (2026-08-07 — branch-model migration)
+
+| Decision | Call |
+|---|---|
+| Hotfix sync | **The rebase step is gone.** `main` is now the ONLY long-lived branch (`main_debug` retired 2026-08-07 — `.agents/rules/git-policy.md`). The hotfix merges to `main` and stops there; any open `epic/*` branch absorbs it at its next sync with `origin/main`, which `/sudo-push-e2e` runs (and re-gates) before every epic merge |
 
 ---
 

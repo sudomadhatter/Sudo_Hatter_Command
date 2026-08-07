@@ -60,7 +60,7 @@ All of it fixed and pushed on `claude/story-21-7-demo-profile-seed`:
   handling (`doc.to_dict()` returning `Awaitable` etc.). That number is why the full-repo step must stay
   soft; the changed-files gate is what protects new lines.
 
-### ✅ …and it is now ON `main_debug` — verified 2026-07-31 (story 21.8 ③)
+### ✅ …and it has LANDED — verified 2026-07-31 (story 21.8 ③, then on `main_debug`; on `main` since the 2026-08-07 branch migration)
 
 The paragraph above describes a fix that was, at the time, only **on a branch** — which is why the earlier
 guidance was "gate pyrefly on regression-vs-baseline until 21.7 lands". **21.7 has landed.** Re-verified
@@ -70,12 +70,13 @@ directly against the trunk at 21.8's close-out, not inferred:
 - `git show origin/main_debug:.github/workflows/pr-check.yml` → **`Types (pyrefly) — changed files, HARD
   GATE`** present, plus the report-only full-repo step carrying OWNER + EXPIRY.
 
-So on any story branched from current `main_debug`, **pyrefly on changed files is a real hard gate and a
-non-zero count on YOUR files is a blocker, not a baseline artefact.** Story 21.8 ran it clean (0 errors,
-4 documented sync-stub suppressions). Note the changed-files gate lints **whole changed files**, so
-inherited debt in a file you touched becomes yours — the same ratchet as
-[[agy-ruff-changed-files-is-a-hard-gate]]. Both hard gates still fire on **PRs to `main` only**, never on
-a `main_debug` push, so a local run remains the only pre-landing signal.
+So on any story branched from the current base (the live epic branch if one exists, else `main`),
+**pyrefly on changed files is a real hard gate and a non-zero count on YOUR files is a blocker, not a
+baseline artefact.** Story 21.8 ran it clean (0 errors, 4 documented sync-stub suppressions). Note the
+changed-files gate lints **whole changed files**, so inherited debt in a file you touched becomes yours —
+the same ratchet as [[agy-ruff-changed-files-is-a-hard-gate]]. Both hard gates fire on **pull requests
+only**, never on the direct push that lands a story on its epic branch, so a local run remains the only
+pre-landing signal.
 
 **The frontend half is still open** — `ignoreBuildErrors`, no `typecheck` script, no CI `tsc` job. Run
 `npx tsc --noEmit` by hand on any `.ts`/`.tsx` change; the baseline was clean, so any output is yours.

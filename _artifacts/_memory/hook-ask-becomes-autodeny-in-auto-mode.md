@@ -9,11 +9,12 @@ metadata:
 ---
 
 **`permissionDecision: "ask"` is not a prompt in auto mode — it is a denial.**
-`.claude/hooks/require-push-approval.py` gates (1) `git push` at main/main_debug and (2) `git commit`
-while HEAD is main/main_debug, and its docstring says both are *"`permissionDecision=ask` (never a hard
-block — Daniel can always wave one through)."* That is only true interactively. In auto mode there is no
-human in the loop, so every `ask` collapses to a deny and ad-hoc work on `main_debug` — which
-`git-policy.md` explicitly sanctions — cannot be committed at all.
+`.claude/hooks/require-push-approval.py` gates `main` only: (1) any `git push` targeting `main` and
+(2) `git commit` while HEAD is `main`, and its docstring says both are *"`permissionDecision=ask` (never
+a hard block — Daniel can always wave one through)."* That is only true interactively. In auto mode there
+is no human in the loop, so every `ask` collapses to a deny and any gated action — a push targeting
+`main`, or a commit while standing on `main` — cannot run at all. (Branch work — `claude/*`, `epic/*`,
+`chore/*` — never trips this hook.)
 
 **Don't misdiagnose this as a credentials or tooling problem.** On 2026-07-30 I reported "I don't know why
 I can't run this" when the answer was the workspace's own hook. The tell: read commands succeed while

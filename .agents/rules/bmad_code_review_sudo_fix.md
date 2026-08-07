@@ -69,5 +69,5 @@ Run the workflow's normalization, deduplication, and classification exactly as w
 ## Close-out
 1. Confirm: `✅ Story <key> reviewed — left at review for human close-out. Run /sudo-update-sprint-memory to advance review → done.`
 2. Commit the reviewed work **inside the story worktree**, explicit paths only — never `git add -A`
-   (it sweeps other teams' work in). Do NOT land it on `main_debug`; that is close-out's job:
+   (it sweeps other teams' work in). Do NOT land it on the epic branch; that is close-out's job:
    `git add <paths> && git commit -m 'feat(epic-N): Story X.Y.Z — <Title>'`

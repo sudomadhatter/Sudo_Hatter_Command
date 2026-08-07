@@ -28,9 +28,9 @@
 - [Deferred EPIC, never deferred-v3](agy-deferred-epic-not-deferred-v3.md) — parked rows under a finished epic hold it open forever.
 - [Story files canonical dir](agy-story-files-canonical-dir.md) — `_bmad/bmm/stories/`; grep dot AND dash forms; next ID from sprint-status.yaml.
 - [Status-flip contract](story-status-flip-contract.md) — dev sets `review`; only human close-out sets `done`. Fix the rule, not BMAD.
-- [Follow-ons are NOT a new story](followon-fixes-are-not-a-new-story.md) — no worktree/branch/board key; fix on main_debug, explicit paths.
+- [Follow-ons are NOT a new story](followon-fixes-are-not-a-new-story.md) — no worktree/board key; fix on the epic branch (or chore/* off main), explicit paths.
 - [Close-out is the sign-off](close-out-command-is-daniels-signoff.md) — an operator-invoked sudo-* command IS the sign-off; never punt back.
-- [Parallel lanes fix one finding](parallel-lanes-fix-the-same-finding.md) — re-diff main_debug first; the SET rule binds on file OVERLAP.
+- [Parallel lanes fix one finding](parallel-lanes-fix-the-same-finding.md) — re-diff the epic branch first; the SET rule binds on file OVERLAP.
 - [Multi-lane close-out shape](multi-lane-closeout-board-merge-shape.md) — story lines conflict each merge; flip from the STORY FILE.
 - [Landing is not close-out](landing-is-not-closeout.md) — code can merge while the board reads `review`. Check git BEFORE closing out.
 - [active-context budget](active-context-pointer-budget.md) — ≤20 KB ≈ 5k tokens; entries born as ≤3-line pointers; stale text is DELETED.
@@ -49,8 +49,8 @@
 - [Sentry API access](sentry-api-access-aviationchat.md) — token in backend/.env; control vs region host split; the loop-guard filter is sacred.
 - [Incident pipeline 16.2](incident-pipeline-16-2-operations.md) — agent lane PRIMARY; fire endpoint is the fallback pager.
 - [Commit and push are ONE action](commit-and-push-are-one-action.md) — never end a step unpushed or dirty; verify `0 0` + clean per repo.
-- [Git branch model](git-branch-model-standard.md) — main_debug integrates; main NEVER ahead. Check dates not counts; never force-push.
-- [Hook `ask` = DENY in auto mode](hook-ask-becomes-autodeny-in-auto-mode.md) — reads pass while mutations die; retry once, then hand over the rule.
+- [Git branch model](git-branch-model-standard.md) — main is the ONLY long-lived branch; epics on short-lived epic/* merged via /sudo-push-e2e; retired main_debug 2026-08-07.
+- [Hook `ask` = DENY in auto mode](hook-ask-becomes-autodeny-in-auto-mode.md) — the hook gates main only; reads pass while mutations die; retry once, then hand over the rule.
 - [Pruned worktree blocks re-add](pruned-worktree-leaves-a-blocking-shell.md) — the empty dir blocks `worktree add`; only PowerShell can delete it.
 - [Worktrees skip gitignored assets](worktrees-do-not-inherit-gitignored-assets.md) — copy auth_keys/ + .env; junction node_modules; `npm ci` for E2E.
 - [Env migration kit](env-migration-kit.md) — `_my_resources/migrations/`: master.env + new_machine guide; clone first, restore second.

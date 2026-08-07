@@ -56,7 +56,7 @@ old venv, and:
 - The suite lock needs `filelock` — without it, runs still work but print
   `[suite-lock] filelock not installed — machine serialization OFF` (fail-open by design).
 
-**Late 2026-08-01 addition — the FRONTEND got the same suite lock** (`cae06a78` on `main_debug`):
+**Late 2026-08-01 addition — the FRONTEND got the same suite lock** (`cae06a78`, now on `main`):
 full `vitest run`s on one machine now queue instead of thrashing (measured before the lock: two
 concurrent full runs took 481s/1074s vs a healthy 178s, collected only 57–81 of 84 files, and
 reported shifting failure sets). **Unlike the Python side, this needs ZERO per-machine work** —
@@ -88,7 +88,7 @@ the lock is tracked code (`frontend/vitest.global-setup.ts`, wired via `globalSe
 
 **Windows (PowerShell)**
 ```powershell
-git pull                                   # 0. from the AGY_AVIATIONCHAT repo root, on main_debug
+git pull                                   # 0. from the AGY_AVIATIONCHAT repo root, on main
 py -0p                                     # 1. look for a -V:3.11 line
 winget install Python.Python.3.11          #    only if missing
 Remove-Item -Recurse -Force backend\.venv  # 2. rebuild (deletes the drifted one)
@@ -125,7 +125,7 @@ backend\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
 
 **macOS (zsh/bash)**
 ```bash
-git pull                                   # 0. from the AGY_AVIATIONCHAT repo root, on main_debug
+git pull                                   # 0. from the AGY_AVIATIONCHAT repo root, on main
 python3.11 --version                       # 1. installed?
 brew install python@3.11                   #    only if missing
 rm -rf backend/.venv                       # 2. rebuild (deletes the drifted one)
@@ -491,7 +491,8 @@ wrong one) before trusting it.
 3. If any skill/spec was corrected during the work: **upstream to the lobby `.agents/` master
    FIRST, then `/sync-agents`** — ⚠️ syncing while the master is stale overwrites the corrected
    project copy with the old wrong one (happened tonight; caught).
-4. One line to every active lane: "merge `origin/main_debug` before your next test run."
+4. One line to every active lane: "merge your base — the epic branch if one is live, else
+   `origin/main` — before your next test run."
 
 ### Reference — where each fact lives
 

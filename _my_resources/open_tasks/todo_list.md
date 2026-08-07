@@ -16,7 +16,7 @@ These are folder paths to see the open todo list in the sub projects:
 
 1. Verify the new workflows for running python and vytests. We uptimized this for its solo lane, but with the new Mac we may be able to handle more. These documents are stored in the migrations folder, the new_machine references the python_vytest doc that will limit it to linear testing.
 2. git-hooks-board-stale guide to set up the triggers for updating the scrum board, to move tickets to stale.
-3. No more running on main_debug we have to do this the right way and do small branches and then merge them back to main no more main_debug, we need to fix this merge it to main and then continue the correct way.
+3. ✅ DONE 2026-08-07 — No more running on main_debug we have to do this the right way and do small branches and then merge them back to main no more main_debug, we need to fix this merge it to main and then continue the correct way. *(Shipped: `main_debug` fast-forwarded into `main` and deleted everywhere; epics run on short-lived `epic/*` branches merged via `/sudo-push-e2e` — see `.agents/rules/git-policy.md`.)*
 4. Update Aviationchat ADK to 2.5 for both front and back end
 5. Updates for the project Aviationchat and new standards
     -  Jira integration for tickets with hooks that block pushing with out updateing the tickets. We will use this instead of the sprint board we are doing now. 

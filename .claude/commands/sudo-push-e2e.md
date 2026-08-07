@@ -1,25 +1,24 @@
----
-description: Push & promote with the E2E gate — push main_debug, or promote main_debug → main (full merge OR cherry-picked features). Nothing lands on main until /sudo-e2e is green. Then CI/CD + Cloud Run deploy + live verification.
----
-
-# /sudo-push-e2e — Push, Gate, Promote, Deploy
+# /sudo-push-e2e — Gate, Merge the Epic, Deploy
 
 > **Rules in force for this command:**
-> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
+> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never force-push
 
-The one shipping command. It moves verified work from the development line (`main_debug`) toward the
-production line (`main`), and it **refuses to touch `main` until the end-to-end suite is green**.
+The one shipping command. It merges a finished **epic branch** (`epic/<slug>`) into **`main`** — live
+production — and it **refuses to touch `main` until the full gate is green**. Invoking this command IS
+Daniel's per-merge sign-off for the one epic it ships; the push-approval hook still prompts on the
+final push, and that prompt is expected, not an error.
 
-**Branch model (never violate):** `main_debug` is the integration branch. `main` is only ever
-*fast-forwarded or merged up from* `main_debug` — `main` must NEVER end up ahead. After any
-cherry-pick promotion, reconcile so `main_debug` contains `main` again (Step 5).
+**Branch model (never violate):** `main` is the only long-lived branch. Epics integrate on short-lived
+`epic/<slug>` branches and reach `main` only through this command. After the merge, the epic branch is
+**deleted** — nothing accumulates. (The old `main_debug` integration branch was retired 2026-08-07;
+any doc still describing "promotion from main_debug" predates that.)
 
 ## 🛑 MANDATORY RULES (Before You Start)
-1. **Never commit/push autonomously**: write the exact git commands for the human to approve/run, OR
-   propose them via execution tools so the human approves each one individually.
+1. **The gate is not optional**: a red gate STOPS the command. Report what failed; do not "push anyway".
 2. **Clear GITHUB_TOKEN on push/pull**: prefix with `$env:GITHUB_TOKEN = ""` (PowerShell) or
    `env -u GITHUB_TOKEN` (Bash) to prevent stale-session auth failures.
-3. **The gate is not optional**: a red gate STOPS the command. Report what failed; do not "push anyway".
+3. **On a deploying repo, a push to `main` IS a production deploy.** Know the rollback path (previous
+   Cloud Run revision / previous hosting release) before you push, not after.
 
 ## Step 0 — Resolve the target project (FIRST — before anything else)
 Bind the target per `.agents/rules/sudo-target-resolution.md` §STD + §BIND: self fast-path → `$ARGUMENTS`
@@ -27,82 +26,77 @@ override → `.agents/active-project.txt` → else **STOP and ask** — never gu
 lobby. Set `PROJECT_ROOT` and **echo exactly** `Target: Projects/<name>`. All git/test commands below run
 inside `PROJECT_ROOT`.
 
-## Step 1 — Pick the path
-From the remaining `$ARGUMENTS` (`debug` | `main` | `cherry [sha…]`) or by asking the human:
+## Step 1 — Resolve the epic branch
+From `$ARGUMENTS` (an `epic/<slug>` name) or by discovery:
+```bash
+git fetch origin
+git branch -a --list '*epic/*'          # live epic branches, local + origin
+```
+- **Exactly one live epic branch** → that's the candidate; confirm it with Daniel by name.
+- **Several** → show them with `git log --oneline main..<branch> | head` each and decide together.
+- **None** → nothing to ship; if Daniel is pointing at a `chore/*` branch, this command can merge it
+  with the **light gate** only (his direct ask IS that approval) — otherwise stop.
 
-| Path | What ships | Gate required |
-|---|---|---|
-| **A · `debug`** — push `main_debug` only | commits already on `main_debug` → `origin/main_debug` | **Light**: backend pytest + frontend build |
-| **B · `main`** — full promotion | everything on `main_debug` → merged into `main` | **FULL**: light gate **+ `/sudo-e2e` green** |
-| **C · `cherry`** — feature promotion | chosen commit(s) cherry-picked onto `main` | **FULL**: light gate **+ `/sudo-e2e` green** |
+Sanity: every story on the board for this epic should be `done`. If stories are still open, STOP and
+name them — `/sudo-merge-epic-workingtrees` or the story close-outs come first.
 
-Path B is for "main_debug is clean, ship it all". Path C is for "main_debug has unfinished work;
-ship only these verified features". If unsure which, show `git log --oneline main..main_debug` and
-decide together.
+## Step 2 — Sync the epic branch with main (BEFORE gating)
+Hotfixes can land on `main` mid-epic (incident lane). Absorb them first so the gate tests what will
+actually ship:
+```bash
+git checkout epic/<slug>
+git pull --ff-only origin epic/<slug>       # be current with the remote epic
+git merge origin/main                        # absorb production; conflicts surface HERE, not on main
+```
+A conflict is a STOP-and-resolve-together, never a force. If this merge brought in changes, the gate
+below runs on the post-merge tree — that is the point.
 
-## Step 2 — Run the gate (BEFORE touching any branch)
-**Light gate (all paths):**
+## Step 3 — Run the gate (on the epic branch)
+**Light gate (always):**
 1. Backend: full pytest suite via the canonical venv (`backend/.venv` — never the global interpreter).
 2. Frontend: production build (`npm run build` / `npx next build` in `frontend/`) — zero compile errors.
-3. CI/CD Credentials: Check that required remote credentials (secrets/variables) are configured. For Firebase deployments:
-   - Run `Remove-Item env:GITHUB_TOKEN; gh secret list --repo <repo-nwo>` (or `env -u GITHUB_TOKEN` in Bash) and verify `FIREBASE_SERVICE_ACCOUNT` is present.
-   - Run `Remove-Item env:GITHUB_TOKEN; gh variable list --repo <repo-nwo>` and verify `FIREBASE_PROJECT_ID` is present.
-   If any required deployment credentials are missing, STOP and warn the user.
+3. CI/CD credentials: check what the deploy workflows actually reference. WIF-based workflows
+   (workload_identity_provider in the yml) need no stored secrets; otherwise verify required secrets
+   (`gh secret list`) and variables (`gh variable list`). Missing → STOP and warn.
 
-**Full gate (paths B and C, additionally):**
+**Full gate (any epic merge):**
 4. Run **`/sudo-e2e`** — it must finish **green**. Its report is the promotion evidence; link it in the
-   ledger row (Step 7).
+   ledger row (Step 6).
 
 Any failure → **STOP**. Summarize the failures, file/link the evidence, and suggest the lane
 (`/sudo-quick-dev` or the ①②③ story loop). Do not proceed.
 
-
-## Step 3 — Commit & push the development branch (all paths)
-```powershell
-git status
-git add <explicit-file-paths>            # never blanket-add; verify staged imports have staged modules
-git commit -m "<semantic-message>"
-$env:GITHUB_TOKEN = ""; git push origin main_debug
-```
-**Path A ends here** → jump to Step 6 (deploy is optional for debug pushes) and Step 7.
-
-## Step 4 — Promote to main (paths B and C — human approves every command)
-### Path B: full merge
-```powershell
+## Step 4 — Merge to main
+```bash
 git checkout main
-$env:GITHUB_TOKEN = ""; git pull origin main
-git merge main_debug --no-ff             # preserve history metadata
-# 🛑 HUMAN GATE: summarize the commits + changed files first
-$env:GITHUB_TOKEN = ""; git push origin main   # triggers frontend App Hosting CI/CD
+$env:GITHUB_TOKEN = ""; git pull --ff-only origin main
+git merge epic/<slug> --no-ff -m "merge: epic/<slug> -> main (gated: suite + build + e2e green)"
+# 🛑 summarize the commits + changed files for Daniel before pushing
+$env:GITHUB_TOKEN = ""; git push origin main    # hook prompts — this is the expected approval moment
 ```
-### Path C: cherry-pick features
-```powershell
-git log --oneline main..main_debug       # identify the SHAs together
-git checkout main
-$env:GITHUB_TOKEN = ""; git pull origin main
-git cherry-pick <sha-1> <sha-2>
-# 🛑 HUMAN GATE: summarize the cherry-picked commits first
-$env:GITHUB_TOKEN = ""; git push origin main
+The `--no-ff` merge commit records the epic as one reviewable unit on `main`'s first-parent history.
+If the push is rejected (remote moved), STOP and report — never force.
+
+## Step 5 — Watch the deploy + verify live
+On repos with CI/CD, the push just fired the deploy workflows:
+```bash
+gh run list --limit 5                 # watch to completion — all must conclude success
 ```
+Then verify live: backend `/health` (expect 200), the production frontend URL, and on Cloud Run
+confirm the serving revision via the RELEASE track (other fields lie about what's serving). A failed
+deploy is an incident: fix forward on a `chore/*` branch or roll back the revision — decide with
+Daniel, immediately.
 
-## Step 5 — Reconcile the branch model (path C always; path B sanity-check)
-Cherry-picks mint NEW SHAs on `main`, leaving `main` "ahead" — reconcile immediately:
-```powershell
-git checkout main_debug
-git merge main                            # main_debug now contains main again
-$env:GITHUB_TOKEN = ""; git push origin main_debug
+## Step 6 — Prune the epic branch + update the ledger
+The epic shipped; its branch is done:
+```bash
+git branch -d epic/<slug>
+$env:GITHUB_TOKEN = ""; git push origin --delete epic/<slug>
+git rev-list --left-right --count main...origin/main    # must be 0 0
 ```
-Path B: verify `git log --oneline main_debug..main` is empty (it should be, after a clean merge).
-Always finish back on `main_debug` — the working tree stays on the dev line.
+1. **Ledger**: add a row to `PROJECT_ROOT/_artifacts/INDEX.md` (and the home-base INDEX if run from
+   the lobby) — what shipped, the merge SHA, gate evidence link (the `/sudo-e2e` report).
+2. **Active context**: record the deployment in the project's `active-context.md`.
+3. Finish standing on `main`, clean, `0 0` — state it per repo touched.
 
-## Step 6 — Deploy backend (if backend changed — Cloud Run)
-Run the project's backend deploy (see `@.agents/skills/deploy-backend/SKILL.md` for auth + pipeline
-specs). Target the correct region/project (AviationChat: `us-east1` / `aviationchat`).
-
-## Step 7 — Verify live + update the ledger
-1. **Live check**: backend `/health` + the production frontend URL.
-2. **Ledger**: add a row to `PROJECT_ROOT/_artifacts/INDEX.md` (and the home-base INDEX if run from
-   the lobby) — what shipped, which path, gate evidence link (the `/sudo-e2e` report for B/C).
-3. **Active context**: record the deployment in the project's `active-context.md`.
-
-Optional additional input (project · path `debug|main|cherry` · SHAs): $ARGUMENTS
+Optional additional input (project · epic branch): $ARGUMENTS

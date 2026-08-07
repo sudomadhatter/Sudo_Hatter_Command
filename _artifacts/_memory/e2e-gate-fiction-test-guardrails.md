@@ -38,6 +38,7 @@ DESIGN — a codex prompt would double the skill menu entry); codex reads the ru
 Trimmed my ② `sudo-dev-story-tests` addition to keep the file <12000 B (Antigravity workflow limit).
 
 **Still owed (git — Daniel's call per git-policy):** commit the master `.agents/` guard changes + the
-vendored copies on `main_debug`; commit the AGY CI fix + fiction-spec deletion; open the proving PR and
+vendored copies on the live epic branch (else a `chore/*` branch off `main` — the old `main_debug`
+target retired 2026-08-07); commit the AGY CI fix + fiction-spec deletion; open the proving PR and
 flip report-only→hard-gate after the first green ubuntu run.
 Related: [[atdd-mock-shape-must-match-backend-contract]], [[agy-learner-e2e-harness]].

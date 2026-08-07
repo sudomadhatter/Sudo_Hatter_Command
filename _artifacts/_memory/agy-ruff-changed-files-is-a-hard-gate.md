@@ -57,8 +57,9 @@ did not write becomes your PR's blocker.** `FILES=$(git diff --name-only …); r
 whole file, not your hunks. Story 21.4 touched 37 `.py` files and inherited **14 pre-existing I001/F841
 errors**; a ③ gate scoped to changed *lines* (which is how `/sudo-code-review` Step 3.5 phrases it) reports
 PASS while CI fails the PR. So:
-- Run ruff on the **changed FILE list**, then run the SAME list against `main_debug` (the sibling shared
-  checkout has the same `pyproject.toml`) to split NEW from INHERITED. Fix both — inherited debt in a file
+- Run ruff on the **changed FILE list**, then run the SAME list against the diff base — the live epic
+  branch if one exists, else `main` (the shared checkout stands on `main` and has the same
+  `pyproject.toml`) — to split NEW from INHERITED. Fix both — inherited debt in a file
   you touched is genuinely yours now — and say which was which in the verdict.
 - **Re-run the suite after `--fix`.** isort reorders imports, and files like
   `test_hr_profile_single_writer.py` carry deliberate `import backend.main`-before-router ordering
@@ -67,16 +68,17 @@ PASS while CI fails the PR. So:
   observed it was not pinned and not in CI *on the trunk*, because the gate was still riding the 21.7
   branch. **It landed at `9358974a` on 2026-07-30**, so `main_debug` now DOES carry the pin
   (`pyrefly==1.1.1`) and both CI steps. Two lanes reading the trunk hours apart got opposite true answers —
-  which is the actual lesson: **check the trunk, never assume, in either direction.** Gating on
-  *regression vs a `main_debug` baseline* rather than an absolute count (21.4: 482 vs 489 repo-wide, net
+  which is the actual lesson: **check the base branch, never assume, in either direction.** Gating on
+  *regression vs the base-branch baseline* (the epic branch, else `main`) rather than an absolute count
+  (21.4: 482 vs 489 repo-wide, net
   −7) stays the right instinct for the full-repo number, since the report-only step is soft by design; the
   **changed-files** step is the hard one and expects zero.
 
-**⚠️ WHEN these gates actually fire — established at the 21.4 landing:** `pr-check.yml` is
-`on: pull_request` → `branches: [main]`. A **direct push to `main_debug` — which is how every story
-lands (`/sudo-update-sprint-memory` Step 7) — triggers NOTHING.** Both hard gates bite only at PROMOTE
-(`main_debug → main`, via `/sudo-push-e2e`), where the "changed files" set is the whole promote diff and
-inherits every story's accumulated debt. So: a red ruff/pyrefly result never blocks a story landing, but
+**⚠️ WHEN these gates actually fire — established at the 21.4 landing, re-based to the epic model:**
+`pr-check.yml` is `on: pull_request` (`main` + `epic/**`). A **story landing is a direct push to the
+epic branch (`/sudo-update-sprint-memory` Step 7) — it triggers NOTHING.** Both hard gates bite only at
+PROMOTE (epic branch → `main`, via `/sudo-push-e2e`), where the "changed files" set is the whole epic
+diff and inherits every story's accumulated debt. So: a red ruff/pyrefly result never blocks a story landing, but
 it is not free either — it queues up for the promote. Say which of the two you mean; "it would fail CI"
 is wrong for a landing and right for a promote.
 

@@ -28,17 +28,14 @@ In the lobby AND in `PROJECT_ROOT`:
 
 ```bash
 git fetch origin --prune
-git rev-parse --abbrev-ref HEAD       # MUST read main_debug — see the guard below
-git checkout main_debug               # ONLY if it did not; never skip to the pull
-git pull --ff-only origin main_debug  # diverged → STOP and report; do not merge blind
+git rev-parse --abbrev-ref HEAD       # the shared checkout stands on main — permanently
+git checkout main                     # ONLY if it read something else
+git pull --ff-only origin main        # diverged → STOP and report; do not merge blind
 ```
 
-⛔ **Stand on `main_debug` BEFORE that pull — this is a hard gate, not tidiness.** Every repo's GitHub
-default branch is `main` (deliberate: a clone lands on production), so on a **fresh machine HEAD is `main`**.
-Running `git pull --ff-only origin main_debug` from there fast-forwards **`main` itself** to everything on
-`main_debug` — a silent, unreviewed promote of every unshipped commit into production (AGY carries 160+),
-and it succeeds quietly because it really is a fast-forward. Checking `git status -sb` is not enough; the
-checkout is what prevents it. Promotion is `/sudo-push-e2e` only, never a side effect of resuming.
+The shared checkout stands on `main` and stays there — a fresh clone lands on it, and that is now also
+the working stance, not a hazard. (The old hard gate here — accidentally fast-forwarding `main` while
+pulling `main_debug` — died with the integration branch on 2026-08-07.)
 
 A `--ff-only` failure means this machine has local commits that never got parked. **Stop and report it** —
 do not merge or rebase your way out. Those commits are the thing `/sudo-park` exists to prevent, and
@@ -49,11 +46,14 @@ Read `_bmad-output/active-context/active-context.md` § *Owed / Carryover Gates*
 **🔁 MACHINE HANDOFF** stanza. It names the live branches, the step each is at, and anything the other
 machine deliberately left dirty. If there is no card, continue — Step 3 is the ground truth either way.
 
-## Step 3 — Find the live stories (do NOT trust `git worktree list` here)
+## Step 3 — Find the in-flight work (do NOT trust `git worktree list` here)
 ```bash
-git ls-remote --heads origin 'refs/heads/claude/*'
+git ls-remote --heads origin 'refs/heads/epic/*'      # the live epic branch(es) — the integration line
+git ls-remote --heads origin 'refs/heads/claude/*'    # parked story branches
 ```
-Every branch listed that is ahead of `origin/main_debug` is **in-flight story work**. Cross-check each
+An `epic/*` branch on origin is the sprint's integration line — check it out locally so the story
+worktrees below have their base (`git checkout --track origin/epic/<slug>`, then back to `main`).
+Every `claude/*` branch listed is **in-flight story work**, parked from another machine. Cross-check each
 against `sprint-status.yaml` for its status, and report the whole set — branch, story, step — **before
 touching anything**. Expect branches the handoff card does not mention: parallel sessions open their own.
 (The board carries bare statuses since the Wave 4 split; a row's history, if you need it, is in
@@ -71,8 +71,11 @@ Ask Daniel which story he is picking up, then match the machine:
   ```bash
   git worktree add --track -b claude/<slug> .claude/worktrees/<slug> origin/claude/<slug>
   ```
-  If the local branch already exists, use `git worktree add .claude/worktrees/<slug> claude/<slug>` and
-  then `git pull` **inside** it — the branch may have moved on the other machine.
+  The parked branch already descends from its epic branch, so the re-created tree sits on the right
+  base; a story with no parked branch yet opens its worktree off `origin/epic/<slug>` instead — never
+  off `main` (`worktree-per-story`). If the local branch already exists, use
+  `git worktree add .claude/worktrees/<slug> claude/<slug>` and then `git pull` **inside** it — the
+  branch may have moved on the other machine.
 
   Path already exists but is not a registered worktree (a leftover ghost directory) → `git worktree prune`,
   then remove the empty directory, then add. **Never** `git worktree add --force` over real content.

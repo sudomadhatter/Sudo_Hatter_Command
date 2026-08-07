@@ -1,11 +1,11 @@
 ---
-description: Safely verify a story branch has been merged into main_debug, preserve any uncommitted work, then prune EVERY stale worktree on disk and delete both local and remote (GitHub) branches. Sweeps all trees, not just the named slug.
+description: Safely verify a story branch has been merged into its epic branch, preserve any uncommitted work, then prune EVERY stale worktree on disk and delete both local and remote (GitHub) branches. Sweeps all trees, not just the named slug.
 ---
 
 # /sudo-close-workingtree — Close & Prune Merged Worktree & Branches
 
 Safely clean up story worktrees and their git branches (`claude/<story-slug>`) after a story has landed on
-`main_debug`.
+its epic branch (`epic/<epic-key>-<slug>`).
 
 **Order is load-bearing and the numbering enforces it: SWEEP → PRESERVE → UNLINK → REMOVE → DELETE BRANCH.**
 Every out-of-order variant of this command has destroyed something. Do not reorder, and do not skip a step
@@ -27,8 +27,8 @@ Echo `Target: Projects/<name> | Story: <story-slug>` before proceeding.
 python .agents/scripts/closeout_preflight.py --story <id> --project <PROJECT> --fetch [--branch <name>]
 ```
 
-One call answers Steps 1, 1.5 and 1.6's questions mechanically: is the branch an ancestor of
-`main_debug`, is every repo `0/0` and clean, and is each registered worktree LIVE / LOST (registered,
+One call answers Steps 1 and 1.6's questions mechanically: is the branch an ancestor of
+the epic branch, is every repo `0/0` and clean, and is each registered worktree LIVE / LOST (registered,
 no directory) / HUSK (directory, no `.git` — the state that blocks the next `worktree add`).
 **Exit 2 → stop here.** A `landing was NOT verified` warning is not a pass — resolve it before anything
 is removed.
@@ -44,41 +44,23 @@ In `PROJECT_ROOT`:
 # 1 · Fetch latest remote refs
 Remove-Item Env:\GITHUB_TOKEN -ErrorAction Ignore; git fetch origin
 
-# 2 · Verification check: confirm story branch has landed on origin/main_debug
-git merge-base --is-ancestor claude/<story-slug> origin/main_debug
+# 2 · Resolve the story's epic branch (exactly one live epic/* is the normal case)
+git for-each-ref --format='%(refname:short)' refs/remotes/origin/epic/*
+
+# 3 · Verification check: confirm story branch has landed on origin/epic/<slug>
+git merge-base --is-ancestor claude/<story-slug> origin/epic/<slug>
 ```
 
-- **Exit code 0**: the branch is fully merged into `origin/main_debug`. Proceed to Step 1.5.
+- **Exit code 0**: the branch is fully merged into `origin/epic/<slug>`. Proceed to Step 1.6.
 - **Non-zero**: **STOP IMMEDIATELY!**
-  Print: `❌ Refusing to delete: claude/<story-slug> is NOT fully merged into origin/main_debug.`
-  Instruct: `Land the story first using /sudo-update-sprint-memory or git merge to origin/main_debug.`
+  Print: `❌ Refusing to delete: claude/<story-slug> is NOT fully merged into origin/epic/<slug>.`
+  Instruct: `Land the story first using /sudo-update-sprint-memory or git merge to origin/epic/<slug>.`
 
 **Record this result per branch.** Step 5 deletes branches, and it may ONLY delete a branch that passed this
 check. A tree can be safe to remove while its branch is not safe to delete — those are different questions.
 
-## Step 1.5 — Backstop: is the shared checkout actually current? (catches the silent drift)
-You are already standing in `PROJECT_ROOT`, so check the thing the landing push cannot update:
-
-```bash
-git rev-list --left-right --count main_debug...origin/main_debug     # -> "<ahead> <behind>"
-```
-
-`git push origin HEAD:main_debug` moves the remote but never `refs/heads/main_debug`, so a shared checkout
-that is **behind** means a landing skipped `/sudo-update-sprint-memory` Step 7b — and the drift compounds one
-story per landing until a `pull --ff-only` refuses on the board files.
-
-- **`0 0`** → clean, proceed to Step 1.6.
-- **behind only** → run `git-policy.md` → **"Reconcile the shared checkout"** now (stash if dirty →
-  `merge --ff-only` → pop; a pop conflict is a **STOP**). Then re-check it reads `0 0`.
-- **ahead > 0** → real divergence, **STOP and report** — never fast-forward over local commits.
-
-Note the local branch may legitimately be behind *at this instant* if you were invoked standalone rather
-than by Step 8; reconciling is still correct. Do NOT skip this because "Step 7 already pushed" — the push
-is exactly what does not do it.
-
-⚠️ Deleting the local branch (Step 5) with `git branch -d` checks it is merged into **HEAD**, not into
-`origin/main_debug`. On a stale `main_debug` that check fails on a branch that HAS landed. Reconciling here
-first is what makes `-d` succeed honestly instead of tempting a `-D`.
+> *(The old Step 1.5 shared-checkout reconcile died with `main_debug` on 2026-08-07 — the shared checkout
+> stands on `main` and only moves when an epic merges via `/sudo-push-e2e`. Nothing to backstop here.)*
 
 ## Step 1.6 — SWEEP every worktree on disk FIRST (before removing anything)
 
@@ -283,7 +265,7 @@ machine, and it is recoverable only if someone knows it happened.
 ## Step 5 — Delete branches — ONLY those that passed Steps 1 AND 1.7
 
 **Order is REMOTE first, local second — the reverse fails.** A landed branch's close-out commits are
-never pushed to `claude/*` (the landing pushes `HEAD:main_debug` only), so a PARKED branch's local tip
+never pushed to `claude/*` (the landing pushes `HEAD:epic/<slug>` only), so a PARKED branch's local tip
 is ahead of its upstream. `git branch -d` checks merged-into-**upstream** when an upstream exists — and
 refuses. Deleting the remote first removes the upstream, so `-d` falls back to the merged-into-HEAD
 check and succeeds honestly (observed 2026-08-01: all three set-close-out `-d`s failed remote-last,
@@ -294,8 +276,14 @@ all three succeeded remote-first).
 git ls-remote --heads origin claude/<story-slug>                    # empty → nothing to delete, say so
 Remove-Item Env:\GITHUB_TOKEN -ErrorAction Ignore; git push origin --delete claude/<story-slug>
 
-git branch -d claude/<story-slug>                                   # -d, never -D
+git branch -d claude/<story-slug>                                   # -d first; see the HEAD caveat below
 ```
+
+⚠️ **The merged-into-HEAD fallback checks `main` now** (the shared checkout stands there), and `main`
+does not contain the story until its epic merges via `/sudo-push-e2e` — so `-d` can honestly refuse on
+a branch that HAS landed. In exactly that case, Step 1's recorded `merge-base --is-ancestor …
+origin/epic/<slug>` pass IS the merged proof: delete with `git branch -D` and cite that pass in the
+report. No recorded Step 1 pass → never `-D`.
 
 ⛔ **Delete a branch ONLY if it passed Step 1 (landed) AND Step 1.7 (closed out).** Removing a *tree* is
 cheap — the branch recreates it. Deleting the *branch* of an unlanded story destroys the only copy of that
@@ -306,12 +294,13 @@ stories; those branches have not been checked and must **not** be deleted.
 - Landed, not closed out → Step 1.7 already STOPped. Nothing is deleted.
 - Not landed, tree removed → **keep both branches**, and report: *"tree pruned; branch `claude/<slug>`
   retained — restore with `/sudo-resume`."*
-- `git branch -d` refuses → do **not** reach for `-D`. With the remote already deleted (the order above),
-  a refusal means the branch is genuinely not merged into HEAD; go back to Step 1.5. (If you ran it
-  remote-last, the refusal is probably just the upstream check — delete the remote and retry `-d` once.)
+- `git branch -d` refuses → check WHY before reaching for `-D`. With the remote already deleted (the
+  order above), a refusal is either the expected HEAD-is-`main` caveat above (Step 1 passed → `-D` with
+  the cited proof) or the branch genuinely never landed — go back to Step 1. (If you ran it remote-last,
+  the refusal is probably just the upstream check — delete the remote and retry `-d` once.)
 
 **Most story branches will not exist on origin at all, and that is correct.** Per `git-policy.md` → "The
-landing", the landing pushes `HEAD:main_debug` and **not** the branch; a story branch reaches origin only
+landing", the landing pushes `HEAD:epic/<slug>` and **not** the branch; a story branch reaches origin only
 via `/sudo-park`. So an absent remote branch is the normal case — report it as *"never pushed (not
 parked) — nothing to delete"*, not as a failure. A remote branch that IS present means this story was
 parked, and deleting it here is what stops `/sudo-resume` from later offering a story that is already done.

@@ -123,7 +123,8 @@ the verdict at **CONCERNS**, never PASS. Headless, an unrecovered layer is invis
 
 ## Stay in your lane / human-in-the-loop
 - Commit review fixes inside the story worktree (explicit paths, never `git add -A`); **never land on
-  `main_debug`**, never set the story to `done` or edit `sprint-status.yaml` — human close-out owns both.
+  the epic branch** (close-out's job), never set the story to `done` or edit `sprint-status.yaml` —
+  human close-out owns both.
 - **Append `## Code Review (<date>)` to `walkthrough.md`** (REQUIRED even if the review is clean — a
   Stage-4 no-op must still leave the section): the canonical `Verdict: … @ <sha>` first line, scope,
   the 3 passes, ONE findings table (`file:line` + severity + disposition), your independent test

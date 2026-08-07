@@ -1,6 +1,6 @@
 ---
 name: sudo-close-workingtree
-description: 'Command center → child project. Safely verify a story branch has been merged into main_debug, prune its local git worktree, and delete both local and remote (GitHub) branches. Use when the user says "close worktree" / "prune worktree" / "sudo close workingtree".'
+description: 'Command center → child project. Safely verify a story branch has been merged into its epic branch, prune its local git worktree, and delete both local and remote (GitHub) branches. Use when the user says "close worktree" / "prune worktree" / "sudo close workingtree".'
 ---
 
 # /sudo-close-workingtree — Command Center Launcher

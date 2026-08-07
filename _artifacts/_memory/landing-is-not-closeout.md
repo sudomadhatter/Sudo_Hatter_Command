@@ -1,6 +1,6 @@
 ---
 name: landing-is-not-closeout
-description: "A story branch can land on main_debug with its close-out never run — shipped code sitting behind a `review` board, or behind NO board key at all. Check the board against git after any merge; a merge commit is not a status flip."
+description: "A story branch can land on its epic branch with its close-out never run — shipped code sitting behind a `review` board, or behind NO board key at all. Check the board against git after any merge; a merge commit is not a status flip."
 metadata: 
   node_type: memory
   type: feedback
@@ -18,13 +18,14 @@ operator caught it, not the tooling.
 
 **Why it matters:** the board — not git — is what the next session reads. `/sudo-boot-sprint-memory` will
 happily re-offer a shipped story as the next thing to work, and a `review` line invites someone to re-run ③
-on code that is already on `main_debug`. See [[sprint-dependency-map-recommends-stale-work]] for the same
+on code that already landed on the epic branch. See [[sprint-dependency-map-recommends-stale-work]] for the same
 class of failure one layer up.
 
 **How to apply:**
 - When asked to close out a story, **check git first**: `git log --oneline | grep <story>` and
-  `git merge-base --is-ancestor <story-sha> main_debug`. If the code already landed, Steps 7–8 are done —
-  do not try to re-land it, and do not stop just because HEAD is `main_debug` and Step 7's `claude/*`
+  `git merge-base --is-ancestor <story-sha> epic/<key>-<slug>` (the story's epic branch; against `main`
+  if the epic has already merged and its branch is gone). If the code already landed, Steps 7–8 are done —
+  do not try to re-land it, and do not stop just because HEAD is the epic branch and Step 7's `claude/*`
   precondition fails. That precondition exists to stop *story work* being committed in the shared checkout;
   bookkeeping for an already-landed story is a different thing. Commit the close-out paths explicitly
   (never `git add -A` — the shared checkout usually carries other sessions' dirt) and say plainly that

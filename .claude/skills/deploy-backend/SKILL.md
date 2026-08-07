@@ -1,11 +1,11 @@
 ---
 name: deploy-backend
-description: Push backend changes to both branches, trigger CI/CD, and verify Cloud Run deployment. Use when the user says "deploy backend", "push and verify", or "ship it".
+description: Land backend changes on main through the gated merge, trigger CI/CD, and verify Cloud Run deployment. Use when the user says "deploy backend", "push and verify", or "ship it".
 ---
 
 # Deploy Backend to Cloud Run
 
-Push backend changes from the current feature branch → sync to `main` → CI/CD auto-deploys → verify on Cloud Run.
+Backend changes reach production one way: a gated merge to `main` (epic branch via `/sudo-push-e2e`, or a `chore/*`/`claude/incident-*` branch merged with Daniel's sign-off) → CI/CD auto-deploys → verify on Cloud Run. This skill covers the deploy-and-verify half; it never invents its own path onto `main`.
 
 ## Environment
 
@@ -45,32 +45,35 @@ python -m pytest backend/tests/ -v --tb=short -k "not test_orchestrator_mercy_ru
 > [!IMPORTANT]
 > Do NOT push if tests fail. The CI/CD quality gate will reject it. The `-k` filter matches the exclusions in `deploy-backend.yml` — keep them in sync.
 
-### Step 2: Commit & Push Feature Branch
+### Step 2: Commit on Your Branch
 
 ```powershell
-git add <files>
+git add <files>            # explicit paths only — never -A / . / -u
 git commit -m "<message>"
-git push origin <feature-branch>
 ```
 
-### Step 3: Sync to Main & Push
+### Step 3: Reach Main Through the Gate
+
+CI/CD only triggers on `main`, and `main` is reached only through the branch model
+(`.agents/rules/git-policy.md`):
+
+- **Epic work** → the epic merges via **`/sudo-push-e2e`** (full gate + Daniel's sign-off). That
+  command owns the merge, the push, and the deploy watch — hand off to it.
+- **Hotfix / ad-hoc backend change** → on your `chore/*` (or `claude/incident-*`) branch, with tests
+  green (Step 1), present the summary and get Daniel's confirmation, then:
 
 ```powershell
-$branch = git branch --show-current
-
-# Sync the deploy workflow + any changed backend files
 git checkout main
-git checkout $branch -- <changed-files>
-git add <files>
-git commit -m "chore: sync from $branch — <summary>"
-git push origin main
-
-# Switch back
-git checkout $branch
+$env:GITHUB_TOKEN = ""; git pull --ff-only origin main
+git merge <branch> --no-ff
+$env:GITHUB_TOKEN = ""; git push origin main     # fires the deploy
+git branch -d <branch>
 ```
 
 > [!WARNING]
-> CI/CD only triggers on `main`. Always push main to deploy.
+> Never `git checkout main && git checkout <branch> -- <files>` to hand-copy changes onto `main` —
+> that mints untracked duplicate commits and bypasses the gate. Merge the branch or use
+> `/sudo-push-e2e`; nothing else touches `main`.
 
 ### Step 4: Diagnose (if failure email arrives)
 

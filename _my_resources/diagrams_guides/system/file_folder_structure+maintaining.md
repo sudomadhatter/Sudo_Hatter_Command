@@ -126,7 +126,7 @@ flowchart TD
     GATE -- "Yes" --> EX["4. Execute with live TodoWrite"]
     EX --> CL["5. Close: ONE walkthrough.md\n(ends: Task Checklist + Your Actions)\n+ INDEX row + active-context hand-off"]
     CL --> MAPS["6. Run /update-maps-indexes if structure changed\n(depth-3 INDEX, repo-map, linter)"]
-    CL --> GIT["GIT: hand Daniel the exact command\nnever commit/push yourself unless delegated"]
+    CL --> GIT["GIT: commit and push your own work\non your branch — explicit paths, never add -A;\nmain only through the gated epic merge"]
 
     classDef gate fill:#fff3d6,stroke:#b8860b,color:#000
     class GATE,GIT,MAPS gate
@@ -273,8 +273,11 @@ flowchart LR
 - **Desktop default:** agents never run `git commit`/`push` — the walkthrough's "Your Actions" hands
   Daniel the exact command (explicit paths, never `git add -A`). Exception: an explicitly delegated,
   per-action commit. Enforced by the PreToolUse hook.
-- **Branch model:** all dev on `main_debug`; `main` is protected — promoting `main_debug` → `main` is
-  Daniel's deliberate manual act. `/merge_main_debug` IS the per-action merge approval.
+- **Branch model:** `main` is the ONLY long-lived branch (live production — a push deploys). Each epic
+  gets a short-lived `epic/<key>-<slug>` branch off `main`; story worktrees branch from and land on it;
+  the epic merges to `main` only via `/sudo-push-e2e` (full gate + `/sudo-e2e` green + Daniel's
+  sign-off, `--no-ff`, epic branch deleted after). Ad-hoc work: short-lived `chore/*` off `main`,
+  merged same-session with sign-off. Canon: `.agents/rules/git-policy.md`.
 - **Web/mobile** (`CLAUDE_CODE_REMOTE=true`): the agent owns git delivery instead → `mobile-mode.md`.
 - Each project is its **own repo** — one commit per touched repo, never cross-commit.
 
@@ -297,7 +300,7 @@ Node 18+ (`npx -y md-feedback`). New/changed servers appear after a session rest
 |---|---|---|---|
 | Lobby (home base) | ✅ Yes | `content` | ignore `Projects,_my_resources`; `_bmad/custom/` guard + dialect tomls (2026-07-09 — guards direct lobby-rooted BMAD runs) |
 | AGY_AVIATIONCHAT | ✅ Yes | `content` | ignore `_my_resources,_bmad`; project rules in `constitution.project.md`; `_bmad/custom/` guard + TDAD dialect tomls (2026-07-09) |
-| Fresh_Workspace_BMAD | ✅ Yes | `auto` | ignore `_my_resources,_bmad`; **the living template — born enforcing since 2026-07-09**: armed TEA gate (`_bmad-output/sudo-tests.yaml`), CI gating `main`+`main_debug` (`pr-check.yml`), BDD layer (`backend/tests/features/` + self-binding `tests/bdd/steps_*.py`), `_bmad/custom/` guard + dialect tomls + resolver scripts |
+| Fresh_Workspace_BMAD | ✅ Yes | `auto` | ignore `_my_resources,_bmad`; **the living template — born enforcing since 2026-07-09**: armed TEA gate (`_bmad-output/sudo-tests.yaml`), CI gating `main` + `epic/**` (`pr-check.yml`), BDD layer (`backend/tests/features/` + self-binding `tests/bdd/steps_*.py`), `_bmad/custom/` guard + dialect tomls + resolver scripts |
 | BRKN_Tattoos | ⏳ active | — | active in `router.md`; conformance not yet audited |
 | RAG_Pipeline_AC (AviationChat ingestion) | ❌ No | — | needs `/new-project` or manual standardization |
 | B-L-WorldWide · NEXGen-Films · OpenChat-Openrouter | ❌ pending | — | registered in `router.md`, not yet converted |

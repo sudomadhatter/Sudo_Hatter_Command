@@ -41,7 +41,8 @@ Two additions from 2026-07-25 (a second, separate instance):
   through FOUR merges still 500-ing. Age is no evidence it recovered.
 - **⚠️ The dev server serves the MAIN CHECKOUT, not your worktree.** Under this repo's
   worktree-per-story rule that means restarting it proves nothing about the branch you are on — it
-  renders `main_debug`. Live-verify AFTER landing, or point a second dev server at the worktree. Not
+  renders the shared checkout's branch (`main` today; `main_debug` at the time of this incident).
+  Live-verify AFTER landing, or point a second dev server at the worktree. Not
   knowing this reads as "my fix didn't take", i.e. the exact same false signal as the wedge itself.
   (I also cleared `.next` during that restart, so plain-restart-alone was never isolated — the cache
   clear may well be unnecessary.)

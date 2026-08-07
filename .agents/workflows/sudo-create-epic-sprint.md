@@ -39,6 +39,19 @@ This command has exactly **TWO human checkpoints**:
 A nested skill stopping on a REAL gap (missing source, contradictory scope) still surfaces + STOPs — this
 contract removes ceremony, never judgment.
 
+## Step 1.5 — Cut the epic branch (before any story worktree can open)
+Per `git-policy.md`, every epic integrates on its own short-lived branch. Cut it now from up-to-date
+`main` and push it so it lives on origin:
+
+```bash
+git fetch origin
+git checkout -b epic/<epic-key>-<slug> origin/main
+git push -u origin epic/<epic-key>-<slug>
+```
+
+Story worktrees (`/sudo-write-story-tests` ①) branch FROM this branch — it must exist before the first
+one opens. The epic reaches `main` only via `/sudo-push-e2e`, which deletes the branch after the merge.
+
 ## Step 2 — Generate the sprint board
 Land the new epic + story keys in `_bmad-output/implementation-artifacts/sprint-status.yaml` as **`backlog`**
 — NOT `ready-for-dev` (the board's state machine: a story flips to `ready-for-dev` only when

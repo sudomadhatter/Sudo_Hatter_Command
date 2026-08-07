@@ -26,12 +26,12 @@ its own load class.
   ignore it and use the desktop defaults below. `mobile-mode.md` owns the trigger.
 
 ## GATES (consult before acting)
-- **GIT — the dev standard is `main_debug` → `main`** (canonical → `.agents/rules/git-policy.md` § "Branch
-  model"). `main` is LIVE PRODUCTION — never work on it; all dev flows `claude/*` → PR → **`main_debug`**;
-  promoting to `main` is Daniel's deliberate manual call. **Desktop default:** agents **never** run
-  `git commit`/`push` themselves unless Daniel delegates it in the moment. On **web/mobile**
-  (`CLAUDE_CODE_REMOTE=true`) the agent owns git delivery instead → `.agents/rules/mobile-mode.md`. The
-  push-approval hook (`.claude/hooks/`) gates `main_debug`/`main`.
+- **GIT — the dev standard is epic branches → `main`** (canonical → `.agents/rules/git-policy.md`
+  § "Branch model"). `main` is LIVE PRODUCTION and the only long-lived branch — never work on it;
+  each epic gets a short-lived `epic/<slug>` off `main`, story work flows `claude/*` worktree →
+  epic branch, and the epic merges to `main` only via `/sudo-push-e2e` (full gate + Daniel's
+  sign-off). On **web/mobile** (`CLAUDE_CODE_REMOTE=true`) git delivery mechanics →
+  `.agents/rules/mobile-mode.md`. The push-approval hook (`.claude/hooks/`) gates `main`.
 - **ROUTING + RISK:** confirm the target before touching files; never delete/overwrite/publish without an
   explicit go-ahead. Full hard stops → `.agents/rules/constitution.md`.
 

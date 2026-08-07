@@ -1,6 +1,6 @@
 ---
 name: parallel-lanes-fix-the-same-finding
-description: "Two lanes running on one triage doc can ship the SAME fix; re-diff main_debug before close-out, the Part 1/Part 3 split does not partition files. With 3+ lanes open the operator's rule is RECONCILE THE SET — no lane lands alone"
+description: "Two lanes running on one triage doc can ship the SAME fix; re-diff the epic branch before close-out, the Part 1/Part 3 split does not partition files. With 3+ lanes open the operator's rule is RECONCILE THE SET — no lane lands alone"
 metadata: 
   node_type: memory
   type: project
@@ -19,15 +19,16 @@ the other's branch. A quick-dev batch is exactly the window where this bites —
 for the full lane to land, and its whole premise is small fixes on shared surfaces.
 
 **How to apply:**
-- Before close-out, re-diff `main_debug` against the branch base. `git rev-list --left-right --count`
+- Before close-out, re-diff the epic branch (`epic/<key>-<slug>`; the integration base since
+  `main_debug` retired 2026-08-07) against the branch base. `git rev-list --left-right --count`
   then `git merge-tree --write-tree --name-only` gives a non-destructive conflict list.
 - **Merge BEFORE you build, not just before you close out** (added 2026-07-26, story 21.3). A branch that
   sat while the other lane landed is missing that lane's **tests**, not only its code — and a test you
   cannot see cannot fail. 21.3 planned an 8th roster column; the merge brought
   `student-roster-email-first.red.test.tsx`, which asserts `cells[cells.length - 1]` carries the pinned
   sticky classes. Building first would have looked **green locally** and broken on landing, with the cause
-  a merge away from the symptom. Treat "merge `main_debug`" as a blocking precondition of the first edit
-  whenever the branch is older than the trunk.
+  a merge away from the symptom. Treat "merge the epic branch" as a blocking precondition of the first
+  edit whenever the branch is older than the epic branch.
 - **Catch the collision at ①, and serialize on the shared EDIT SITE — not on the missing symbol**
   (added 2026-07-31, story 21.11). 21.11's ① found it needed `demo_master.is_master_demo_uid`, a
   predicate story 21.8 owns and had not built. The tempting read is "21.11 is blocked on a missing
@@ -40,7 +41,7 @@ for the full lane to land, and its whole premise is small fixes on shared surfac
   touches, not just the symbol it exports; (b) an **add/add conflict on a brand-new file has no
   merge base**, so a reviewer must hand-pick between two whole implementations — much worse than a
   normal 3-way. Record the gate in the story frontmatter (`blocked_by:`) AND the board row, with an
-  explicit machine-checkable start condition (`git ls-tree main_debug -- <path>` returns the file,
+  explicit machine-checkable start condition (`git ls-tree epic/<key>-<slug> -- <path>` returns the file,
   then merge). Also state how many reds are actually gated: 21.11's were 6 of 25, so the story was
   never "blocked" as a whole — only its ② start was. **Structural fix landed same day:**
   `/update-personal-sprint-map` Step 2.5 now derives every parallel claim as a verdict (touch-set
@@ -49,9 +50,9 @@ for the full lane to land, and its whole premise is small fixes on shared surfac
   P2/P3-only. If a board asserts "parallel" without a verdict table, it predates that fix.
 - **At 3+ open lanes the unit of landing is the SET, not the story** (operator ruling 2026-07-31,
   Epic 21). Four worktrees ran at once — 21.8, 21.9, 21.10, 21.11 — all against the same demo tenant.
-  Daniel's rule: **no lane lands on `main_debug` on its own.** Merge `main_debug` into each branch,
-  re-diff the lanes against *each other* (not just against trunk), resolve overlaps, then land. The
-  pairwise habit above does not scale: it catches lane-vs-trunk drift but is blind to lane-vs-lane
+  Daniel's rule: **no lane lands on the epic branch on its own.** Merge the epic branch into each branch,
+  re-diff the lanes against *each other* (not just against the epic branch), resolve overlaps, then land.
+  The pairwise habit above does not scale: it catches lane-vs-base drift but is blind to lane-vs-lane
   overlap, which is where 21.8 ∩ 21.11 (`check_cost_cap`) and 21.8 ∩ 21.10 (the demo account's
   session lifecycle — one resets it, the other dirties it via the real checkride consequence) both
   live. **Branch bases diverge fast:** on 07-31 `main_debug` moved twice inside one ① session, and a
@@ -65,7 +66,7 @@ for the full lane to land, and its whole premise is small fixes on shared surfac
   is cheap and should be run before invoking the set flow, because it can dissolve it:
 
   ```bash
-  for b in <lanes>; do git diff --name-only $(git merge-base claude/$b origin/main_debug)..claude/$b; done
+  for b in <lanes>; do git diff --name-only $(git merge-base claude/$b origin/epic/<slug>)..claude/$b; done
   ```
 
   Here 21.9/21.10/21.11 were **①-only** — each touched just its own story file and its own new red file —
@@ -73,8 +74,8 @@ for the full lane to land, and its whole premise is small fixes on shared surfac
   lane-vs-lane overlaps the ruling was written to catch (21.8 ∩ 21.11 on `check_cost_cap`) are **planned**
   overlaps that had not been written yet; a set-landing would have bundled three lanes with no code in
   them. **Read the rule's purpose, not its trigger:** it exists to stop two lanes editing one function, so
-  when the diff proves disjoint production files, land and let the rest reconcile *to* the landed trunk.
-  Corollary that argues FOR landing early: those three lanes' board rows still read `backlog` on the trunk
+  when the diff proves disjoint production files, land and let the rest reconcile *to* the landed epic
+  branch. Corollary that argues FOR landing early: those three lanes' board rows still read `backlog` on it
   while their worktrees had ① done — holding a finished lane back does not keep the board honest, it just
   extends the [[landing-is-not-closeout]] window for everyone.
 - **Do not trust the other lane's close-out commit message about the board.** debug-2.3's commit said
