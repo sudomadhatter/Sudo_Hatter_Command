@@ -152,15 +152,16 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
   non-terminal row may carry ≤120 chars; a terminal row carries NOTHING (`workflow_lint` errors on
   both, and the flip drops the old note automatically).
 
-## Step 4.5 — Rebuild the scrum board (AUTOMATIC, never ask)
+## Step 4.5 — Move the Jira ticket (AUTOMATIC, never ask)
 
-The YAML just changed, so the board must move **in the same commit** — run **`/sudo-update-scrum-board`**
-against the same `PROJECT_ROOT` (it inherits the binding). Full rebuild per its own skeleton; never
-hand-edit individual board lines here. This is what keeps the post-commit stale-stamp hook silent, and
-the rebuild clears any hook-stamped drift (the `⚠️ STALE` banner + inline per-story `⚠️` flags,
-markers `<!-- STALE-STAMP -->` / `<!--YAML-DRIFT-->`).
-If the board file conflicts during a multi-lane landing, do NOT hand-merge it — resolve the YAML first,
-then re-run `/sudo-update-scrum-board` on the merged tree and commit that.
+The YAML just changed, so the story's Jira ticket must move with it. Read `jira_key:` from the story's
+frontmatter and transition it to match the flip (`review` → `In Review`; a close-out to `done` →
+`Done`), posting the gate evidence as a comment:
+`acli jira workitem transition --key <KEY> --status "<Status>"` then
+`acli jira workitem comment create --key <KEY> --body "<verdict line + walkthrough path @ sha>"`.
+If the story has no `jira_key` yet (pre-Jira story) or the project has no Jira project, note that in
+the Step 6 summary and continue — never invent a key. *(The scrum-board map + its rebuild step were
+retired 2026-08-07, SCC-13; `sprint-status.yaml` remains the machine state and Jira is the human view.)*
 
 ## Step 5 — Prune & budget → run `/sudo-prune-context` (AUTOMATIC, never ask)
 Invoke **`/sudo-prune-context`** against the same `PROJECT_ROOT` (it inherits the binding — no

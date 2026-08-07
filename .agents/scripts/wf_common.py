@@ -23,7 +23,8 @@ from pathlib import Path
 BOARD_REL = "_bmad-output/implementation-artifacts/sprint-status.yaml"
 STORIES_REL = "_bmad/bmm/stories"
 ACTIVE_CONTEXT_REL = "_bmad-output/active-context/active-context.md"
-SCRUM_BOARD_REL = "_my_resources/_quick_reference/sprint_scrum_board_map.md"
+# SCRUM_BOARD_REL retired 2026-08-07 (SCC-22): the scrum-board map is superseded by Jira;
+# sprint-status.yaml (BOARD_REL) remains the working sprint state.
 EPICS_REL = "_bmad-output/planning-artifacts/epics.md"
 GATES_REL = "_bmad-output/gates"
 

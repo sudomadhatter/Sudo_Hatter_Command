@@ -127,61 +127,6 @@ def check_ap_twins(lobby: Path, rep: wf.Report) -> None:
 
 # ── Project checks ─────────────────────────────────────────────────────────────
 
-_ZONES = ["## 🎯", "## 🧵", "## 🛠", "## 👤", "## 📚"]
-
-
-def check_scrum_board(project: Path, rep: wf.Report) -> None:
-    path = project / wf.SCRUM_BOARD_REL
-    if not path.is_file():
-        rep.err("board", f"{wf.SCRUM_BOARD_REL} missing")
-        return
-    text = wf.read_text(path)
-    lines = text.splitlines()
-
-    for z in _ZONES:
-        if not any(ln.startswith(z) for ln in lines):
-            rep.err("board", f"zone '{z}' missing")
-    if len(lines) > 160:  # skill cap is "~150"; 160 = cap + slack before it fires
-        rep.warn("board", f"{len(lines)} lines (cap ~150)")
-    if "~~" in text:
-        rep.err("board", "strikethrough present (banned - delete, don't strike)")
-    if "<!-- STALE-STAMP -->" in text or "<!--YAML-DRIFT-->" in text:
-        rep.err("board", "hook drift-stamp present - board needs a rebuild")
-
-    # Right-now zone: <=8 content lines, by the skill's own contract.
-    in_zone, count = False, 0
-    for ln in lines:
-        if ln.startswith("## 🎯"):
-            in_zone = True
-            continue
-        if in_zone and ln.startswith("## "):
-            break
-        if in_zone and ln.strip():
-            count += 1
-    if count > 8:
-        rep.warn("board", f"'Right now' zone has {count} content lines (cap 8)")
-
-    # No descoped/deferred item inside the Work queue zone.
-    in_q = False
-    for i, ln in enumerate(lines, 1):
-        if ln.startswith("## 🛠"):
-            in_q = True
-            continue
-        if in_q and ln.startswith("## "):
-            break
-        if in_q and ln.lstrip().startswith("|") and re.search(
-                r"\b(descoped|deferred)\b", ln, re.IGNORECASE):
-            rep.err("board", f"line {i}: descoped/deferred item in the Work queue")
-
-    # Every relative link resolves (from the board's own directory).
-    for target in _LINK_RE.findall(text):
-        t = target.split("#")[0].strip()
-        if not t or t.startswith(("http://", "https://", "mailto:")):
-            continue
-        if not (path.parent / t).exists():
-            rep.err("board-links", f"dead link: {target}")
-
-
 def check_active_context(project: Path, rep: wf.Report) -> None:
     path = project / wf.ACTIVE_CONTEXT_REL
     if not path.is_file():
@@ -439,14 +384,13 @@ def main() -> int:
         rep.info("toolkit", "no lobby root found from cwd - toolkit checks skipped")
 
     project = wf.resolve_project_root(args.project)
-    check_scrum_board(project, rep)
     check_active_context(project, rep)
     check_artifact_budgets(project, rep)
     check_sprint_status(project, rep)
     check_board_note_budget(project, rep)
     check_status_drift(project, rep)
     scan += [(rel, project / rel) for rel in
-             (wf.BOARD_REL, wf.ACTIVE_CONTEXT_REL, wf.SCRUM_BOARD_REL)]
+             (wf.BOARD_REL, wf.ACTIVE_CONTEXT_REL)]
     scan_encoding(scan, rep)
 
     if args.json:
