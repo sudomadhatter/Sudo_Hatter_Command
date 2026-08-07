@@ -25,8 +25,12 @@ as `cmd /c gitnexus mcp` — `cmd` does not exist on macOS, so the server never 
 **zero gitnexus tools even with a perfectly fresh index**. Do NOT "fix" the tracked file: native Windows
 genuinely needs the `cmd /c` wrapper, so a bare command breaks the other machines. Add a **local-scope**
 override instead (precedence: local > project > user) in `~/.claude.json` under
-`projects["<repo path>"].mcpServers`: `"gitnexus": {"command": "gitnexus", "args": ["mcp"]}` — set for
-the lobby and AGY here. The CLI is also not installed by anything else: `npm i -g gitnexus`. Indexed on
+`projects["<repo path>"].mcpServers` — set for the lobby and AGY here. **Use absolute paths, not the
+`gitnexus` shim**: `{"command": "/opt/homebrew/bin/node", "args":
+["/opt/homebrew/lib/node_modules/gitnexus/dist/cli/index.js", "mcp"]}`. `launchctl getenv PATH` is
+unset on macOS, so a GUI-launched editor spawns children with only `/usr/bin:/bin` — bare `gitnexus`
+never resolves, and absolute `/opt/homebrew/bin/gitnexus` ALSO dies because its `#!/usr/bin/env node`
+shebang re-looks-up node on that stripped PATH. Both failure modes are silent. The CLI is also not installed by anything else: `npm i -g gitnexus`. Indexed on
 this Mac 2026-08-06 (gitnexus **1.6.9**): lobby 86 symbols / 18 files, AGY 50,234 symbols / 119,663
 edges / 546 clusters / 300 flows, both PDG-pinned via the committed `.gitnexusrc`. Smoke-test the server
 without a session by piping `initialize` + `tools/list` into `gitnexus mcp` (expect **17** tools) — but

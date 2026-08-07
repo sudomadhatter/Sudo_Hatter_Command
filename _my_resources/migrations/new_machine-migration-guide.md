@@ -265,8 +265,19 @@ through each as needed:
   > `projects["<repo path>"].mcpServers`:
   >
   > ```json
-  > "gitnexus": { "command": "gitnexus", "args": ["mcp"] }
+  > "gitnexus": {
+  >   "command": "/opt/homebrew/bin/node",
+  >   "args": ["/opt/homebrew/lib/node_modules/gitnexus/dist/cli/index.js", "mcp"]
+  > }
   > ```
+  >
+  > ⛔ **Use those ABSOLUTE paths — `"command": "gitnexus"` is a second silent failure on macOS.**
+  > `launchctl getenv PATH` is unset here, so a GUI-launched editor spawns children with only
+  > `/usr/bin:/bin:/usr/sbin:/sbin` — no `/opt/homebrew/bin`. Naming `gitnexus` bare fails to resolve,
+  > and even an absolute `/opt/homebrew/bin/gitnexus` still dies, because its `#!/usr/bin/env node`
+  > shebang looks `node` up on that same stripped PATH (`env: node: No such file or directory`).
+  > Invoking the real node binary against the CLI script sidesteps both. Proved with
+  > `env -i PATH=/usr/bin:/bin`: bare and absolute-shim both fail, this form returns 17 tools.
   >
   > Set for the lobby and AGY on the Mac. Verify without launching a session by piping an
   > `initialize` + `tools/list` JSON-RPC pair into `gitnexus mcp` — expect 17 tools and a
