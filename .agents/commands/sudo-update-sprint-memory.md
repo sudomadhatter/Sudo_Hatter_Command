@@ -158,7 +158,7 @@ The YAML just changed, so the story's Jira ticket must move with it. Read `jira_
 frontmatter and transition it to match the flip (`review` → `In Review`; a close-out to `done` →
 `Done`), posting the gate evidence as a comment:
 `acli jira workitem transition --key <KEY> --status "<Status>"` then
-`acli jira workitem comment create --key <KEY> --body "<verdict line + walkthrough path @ sha>"`.
+`acli jira workitem comment create --key <KEY> --body "<verdict line + walkthrough path @ sha>"`. Full acli reference: `.agents/rules/jira.md`.
 If the story has no `jira_key` yet (pre-Jira story) or the project has no Jira project, note that in
 the Step 6 summary and continue — never invent a key. *(The scrum-board map + its rebuild step were
 retired 2026-08-07, SCC-13; `sprint-status.yaml` remains the machine state and Jira is the human view.)*
