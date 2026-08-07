@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 8bc78088-0a6e-4b75-b4eb-edc817c5fe79
-  modified: 2026-08-07T23:14:03.723Z
+  modified: 2026-08-07T23:30:33.356Z
 ---
 
 Set up 2026-08-07 at `https://sudo-command.atlassian.net`. Two **team-managed** projects, one board
@@ -47,7 +47,9 @@ across all four platforms. Flag traps: `view` takes the key **positionally** (`-
 born because Gemini, knowing only the policy rules, claimed "I have no Jira integration" when the
 authenticated CLI was sitting right there. The rule carries the cheat-sheet, flag traps, ticket↔file
 join, and guardrails; pointed to from rules/INDEX.md, git-policy.md, push-e2e Step 6.5,
-update-sprint-memory Step 4.5, and the human guide's cheat-sheet section.
+update-sprint-memory Step 4.5, the human guide's cheat-sheet section, and — after a fresh Gemini
+session STILL missed it (its funnel never consults rules/INDEX.md for a status question) — named
+directly in **AGENTS.md §3** of both repos: the one file every discovery path passes through.
 
 **Statuses:** `To Do` · `In Progress` · `In Review` · `Done` · `Deferred`. `Deferred` sits in the
 **`To Do` category** on purpose — a Done-category status would auto-resolve and make descoped work read
