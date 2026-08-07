@@ -21,5 +21,21 @@ npm test   # firebase emulators:exec --config ../../firebase.json --only firesto
 
 There was **no pre-existing rules-test setup** — `deploy-rules.yml` only DEPLOYS rules in CI (via `firebase deploy`), never tests them (that deploy-but-never-test gap was GAP-1). No firebase MCP is wired into the Claude Code session (both ToolSearches empty); the local firebase CLI (npm) is what drives the emulator.
 
+**macOS addendum (2026-08-06) — different JDK, different scope, and the suite has grown to 70.**
+The Mac uses the Homebrew **`openjdk@17` formula**, NOT the Temurin cask — casks are `.pkg`
+installers that need interactive sudo and cannot be driven headlessly. The formula is keg-only and
+is deliberately **not** registered with `/usr/libexec/java_home`, so that helper reports *"Unable to
+locate a Java Runtime"* right next to a working JDK; point at it explicitly:
+`/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home`.
+
+⛔ **Do NOT set it "per shell" here.** That advice is Windows-shaped and produces a
+pass-by-hand/fail-in-automation split on macOS. JAVA_HOME belongs in **`~/.zshenv`** — `~/.zshrc` is
+interactive-only, so agents, hooks and `zsh -c` never see it ([[zshrc-is-invisible-to-automation]]).
+Also required, and separate from the frontend's install: `(cd firebase/tests && npm install)` — the
+backend emulator tier and the TEA-16 E2E journeys both resolve `firebase-tools` out of that same
+directory, so all three suites die together when it is missing. Verified on the Mac: **70 pass / 0
+fail**. Both emulator orchestrators now discover Java themselves on darwin
+([[windows-authored-code-hides-posix-bugs]]).
+
 **Why:** without JAVA_HOME set, `npm test` fails with a cryptic emulator startup error even though everything is installed — the PATH step is non-obvious.
-**How to apply:** to run or extend the rules suite, set JAVA_HOME to the Temurin path first; it's proven green. Related: [[tea-retrofit-active-initiative]].
+**How to apply:** to run or extend the rules suite, set JAVA_HOME first — Temurin path on Windows, the Homebrew openjdk@17 path via `~/.zshenv` on macOS; it's proven green on both. Related: [[tea-retrofit-active-initiative]].

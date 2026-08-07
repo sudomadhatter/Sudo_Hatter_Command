@@ -205,6 +205,39 @@ before doing anything else. Never commit your way past it.
 > before acting — `git show HEAD:<path> | tr -d '\r'` against `tr -d '\r' < <path>` — and if they
 > match, `git checkout -- <path>` rather than committing a whitespace-only change.
 
+### 4b. The five gates — the machine is not "done" until all five are green
+
+Secrets landing correctly proves the **restore** worked, not that the machine can **build and test**.
+Those are different claims, and on 2026-08-06 the Mac passed §4 in full while three of these five
+could not run at all. Run every one and match the count — a suite that collects 0 tests and exits 0
+looks exactly like a suite that passed.
+
+| # | Gate | Command (from the repo root) | Expected 2026-08-06 |
+|---|------|------------------------------|---------------------|
+| 1 | Backend unit | `backend/.venv/bin/python -m pytest backend/tests -n 8` | 3025 passed / 35 skipped |
+| 2 | Frontend unit | `(cd frontend && npm test)` | 581 passed / 1 skipped |
+| 3 | Firestore rules | `(cd firebase/tests && npm test)` | 70 pass / 0 fail |
+| 4 | Backend emulator | `node backend/tests/e2e_emulator/run-emulator-e2e.mjs` | 39 passed |
+| 5 | E2E journeys | `(cd frontend && npm run test:e2e)` | 31 passed |
+
+Gates 3–5 all need Java + `firebase/tests/node_modules`, and gate 5 also needs the Playwright
+browsers — see §5. Gates 4 and 5 discover Java themselves; strip `JAVA_HOME` deliberately
+(`env -u JAVA_HOME …`) at least once to prove the discovery works and you are not leaning on a
+shell export that automation will not have.
+
+The lobby has a sixth, separate gate for the workflow-enforcement scripts:
+
+```bash
+python3 .agents/scripts/tests/run_all.py      # expect "5/5 files passed"
+```
+
+> ⛔ **This is where a POSIX-only failure will surface first.** The toolkit was authored on Windows,
+> where `os.chmod` only toggles the read-only attribute — so a test that restored a file with bare
+> `stat.S_IWRITE` (0o200, *write-only*) passed there for months and died on macOS with
+> `PermissionError` the moment it read the file back. One bad line took down the whole gate. Fixed
+> 2026-08-06 in `test_story_status.py`; expect more of the same shape, and fix the **master**
+> `.agents/` copy first, then propagate to the maintained projects.
+
 ## 5. Beyond .env — per-machine setup the master can NOT carry
 
 These are machine-local logins/toolchains, not files. Walk the operator
@@ -289,6 +322,54 @@ through each as needed:
   > match the installed version. Upstream those to the `.agents/` master before committing, or the
   > next `/sync-agents` reverts them — and keep every machine on the same gitnexus version, or they
   > will flip-flop the same three files forever.
+- **Git identity**: `user.name` / `user.email` live in `~/.gitconfig` — machine-local, never in a
+  clone. With nothing set, git **invents** one from the hostname (`sudohatter@Sudos-MacBook-Pro.local`)
+  and commits happily, so nothing fails and nothing warns. Those commits are orphans: GitHub cannot
+  match the address to the account, so they show no avatar, earn no contribution square, and split
+  `git shortlog` into two people. Seven commits were already pushed that way on 2026-08-06 before
+  anyone noticed. Set it **before the first commit**, and confirm it against the history you are
+  joining rather than from memory:
+  ```bash
+  git log --pretty="%ae" | sort | uniq -c | sort -rn | head   # the address this repo actually uses
+  git config --global user.name  "sudomadhatter"
+  git config --global user.email "sudomadhatter@gmail.com"
+  ```
+  > Already-pushed commits keep the wrong author — rewriting them means a force-push over shared
+  > history, so leave them unless the contribution graph genuinely matters.
+- **Java / `JAVA_HOME`**: the Firebase emulators (Firestore + Auth) are Java, and **nothing on macOS
+  points at the JDK for you.** Homebrew's `openjdk@17` is keg-only and is NOT registered with
+  `/usr/libexec/java_home`, so that helper answers *"Unable to locate a Java Runtime"* next to a
+  perfectly good install. Export it explicitly — **in `~/.zshenv`, not `~/.zshrc`**:
+  ```bash
+  export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
+  ```
+  > ⛔ **`~/.zshrc` is interactive-only.** Agents, git hooks, npm scripts and anything run as
+  > `zsh -c` never source it, so the variable is there when you test by hand and gone in every
+  > automated path — the tests then fail *only* under automation, on the same machine that just
+  > passed. `~/.zshenv` is read by **every** zsh. This is the second variable on this Mac to be lost
+  > exactly this way (Node 22's PATH was the first). Verify all three modes, never one:
+  > ```bash
+  > for m in -c -lc -ic; do zsh $m 'echo $JAVA_HOME'; done
+  > ```
+- **Firebase emulator harness**: `firebase/tests/node_modules` is a **separate `npm install`** from
+  the frontend's, and three different suites resolve `firebase-tools` out of it — the TEA-12 rules
+  suite, the backend emulator tier, and the TEA-16 E2E journeys. Miss it and all three die at once
+  with `firebase-tools not found`, which reads like a broken repo rather than a skipped install:
+  ```bash
+  (cd Projects/AGY_AVIATIONCHAT/firebase/tests && npm install)
+  ```
+  > ⚠️ That install rewrites `package-lock.json` with pure npm-version metadata churn (`peer` flags,
+  > a nested optional `picomatch`). **Discard it** (`git checkout -- firebase/tests/package-lock.json`)
+  > — committing it just starts a diff war with the Windows machine.
+  >
+  > The emulator JARs themselves are a separate machine-local download into `~/.cache/firebase/`.
+  > Nothing fetches them ahead of time; the first `emulators:exec` pulls them, so budget a slow
+  > first run rather than assuming it hung.
+- **Playwright browsers**: `npm install` gets the *library*; the ~90 MB browser binaries are a
+  machine-local cache in `~/Library/Caches/ms-playwright` that no clone carries:
+  ```bash
+  (cd Projects/AGY_AVIATIONCHAT/frontend && npx playwright install chromium)
+  ```
 - **Claude auto-memory**: machine-local **by default** — `~/.claude` is not a
   repo, not a link, and not cloud-synced, so memory dies on the box that wrote
   it. Fix it once per machine:

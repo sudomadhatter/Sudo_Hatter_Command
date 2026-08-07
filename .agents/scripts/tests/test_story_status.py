@@ -172,7 +172,11 @@ def main() -> int:
         proj = build(tmp)
         os.chmod(proj / BOARD_REL, stat.S_IREAD)
         code, out = run_script("story_status.py", "set", "21.8b", "done", "--project", str(proj))
-        os.chmod(proj / BOARD_REL, stat.S_IWRITE)
+        # Restore READ *and* WRITE. Bare S_IWRITE is 0o200 — write-only — so on POSIX the
+        # board_status() read two lines down dies with PermissionError and takes the whole
+        # gate with it. Windows hides this: os.chmod there only toggles the read-only
+        # attribute, so S_IWRITE leaves the file perfectly readable and J passes.
+        os.chmod(proj / BOARD_REL, stat.S_IREAD | stat.S_IWRITE)
         c.check("J rolls story back when the board write fails",
                 code != 0 and file_status(proj, Q) == "review"
                 and board_status(proj, "21-8b-demo-data-quarantine") == "review"
