@@ -1,7 +1,8 @@
 <#
 .SYNOPSIS
-  Push the master .agents toolkit into every command surface: a target's local tool dirs (the lobby or a
-  project) AND the machine-global command caches for opencode + Antigravity/Gemini.
+  Push the master .agents toolkit into every command surface: the LOBBY's local tool dirs AND the
+  machine-global command caches for opencode + Antigravity/Gemini + Codex. (Project targets are retired —
+  thin model 2026-08-07, .agents/rules/project-law.md: projects carry tier-2 law only, no vendor.)
 
 .DESCRIPTION
   Single source of authorship = <home>\.agents. The canonical invocable set is .agents\commands\ — it mirrors
@@ -39,26 +40,15 @@
       eligible, EXCEPT `bmad-*` (BMAD installs its own global agents/workflows; never ours to delete).
     - Codex skills cache (~\.codex\skills): mirror `bmad-*` skill dirs from .claude\skills (per-dir /MIR); purge
       codex-side bmad-* dirs whose source is gone; PRESERVE `.system` and any foreign (non-bmad) dirs.
-    - Project .agents vendor: ADDITIVE. The vendored .agents is a HYBRID (master toolkit + project-owned
-      rules\, skills\, and bmad\), so it is NEVER mirrored/purged wholesale. bmad\ is EXCLUDED from the vendor
-      robocopy entirely (BMAD's module config is project-identity — each repo's own `project_name` — and BMAD
-      self-installs per project; master must never overwrite it). The lone deletion is a narrow prune of
-      stale workflows\ command-ghosts — a workflows\ file whose name is a master COMMAND but not a master
-      WORKFLOW (a leftover from when commands lived in workflows\). That test provably never hits rules\,
-      skills\, bmad\, or a project-authored workflow.
-
-  For a PROJECT target (not the lobby root) it ALSO vendors master's .agents into the project so the repo is
-  clone-safe. That vendor is ADDITIVE (/E, no purge): a project's .agents is a HYBRID — master toolkit copied
-  in, layered OVER project-OWNED content master does NOT have (notably .agents\rules\ and project-specific
-  .agents\skills\). .agents\bmad\ is EXCLUDED from the vendor (project-owned identity; see PURGE POLICY). So
-  NEVER /MIR or blanket-/PURGE the vendored .agents — that deletes the project's own files. The only deletion
-  here is the narrow workflows\ command-ghost prune (see PURGE POLICY). A project
-  sync does NOT touch the machine-global caches (globals reflect the lobby's canonical set).
+    - Project vendoring: RETIRED (thin model, 2026-08-07). A project holds ONLY its own tier-2 law
+      (rules\ + skills\ + INDEX.md — .agents/rules/project-law.md); sessions run from the center, so the
+      lobby dirs + machine-global caches are the entire sync surface. -Maintained and project -Target now
+      exit with an explanatory error instead of vendoring.
 
   Always edit the master; never hand-edit the copies. Re-run this to propagate changes.
 
 .PARAMETER Target
-  Directory to sync into. Default: the home-base root (lobby).
+  Must resolve to the home-base root (the default). Project targets are retired — thin model 2026-08-07.
 
 .PARAMETER GlobalsOnly
   Refresh only the machine-global caches (opencode + Antigravity command caches, Codex prompts, and the Codex
@@ -99,44 +89,16 @@ $UserHome = if ($env:USERPROFILE) { $env:USERPROFILE }
             else                  { [Environment]::GetFolderPath('UserProfile') }
 if (-not $UserHome) { throw "sync-agents: cannot resolve the machine home dir (USERPROFILE/HOME both unset)" }
 
-# -Maintained: the ONLY sanctioned "sync everything" — the lobby + ONLY the projects on the
-# .agents\maintained-projects.txt allowlist (shared with check_maps.py). Never hand-loop over
-# Projects\* : that touches child repos we deliberately do not keep in sync. -Target is ignored here.
+# -Maintained is RETIRED (thin model, 2026-08-07 — .agents/rules/project-law.md): projects carry no
+# vendored toolkit, so there is nothing to fan out to. A plain /sync-agents (lobby + machine-global
+# caches) already reaches every platform from any cwd. .agents\maintained-projects.txt lives on as the
+# check_maps.py --all LINT worklist only — it no longer drives any sync.
 if ($Maintained) {
-  Write-Host "sync-agents: -Maintained fan-out (lobby + .agents\maintained-projects.txt)"
-  & $PSCommandPath -Status:$Status -Reconcile:$Reconcile -WhatIf:$WhatIf   # lobby (default target; refreshes globals)
-  $listFile = Join-Path $HomeRoot ".agents\maintained-projects.txt"
-  if (Test-Path $listFile) {
-    foreach ($line in Get-Content $listFile) {
-      $name = ($line -replace '#.*$', '').Trim()
-      if (-not $name) { continue }
-      $proj = Join-Path $HomeRoot "Projects\$name"
-      if (-not (Test-Path $proj)) {
-        Write-Warning "sync-agents: maintained project '$name' not found under Projects\ - skipping"
-        continue
-      }
-      # GUARD (2026-08-04): a directory existing is NOT proof the project is here. Every Projects\<name>
-      # is a git SUBMODULE; an uninitialized one is an EMPTY directory that looks deliberate. Vendoring
-      # into it manufactures a fake project that later tools then trust - that is exactly how
-      # NEXgen-VR-Director got 601 toolkit files written into a placeholder it had no business holding
-      # (root cause: its .gitmodules mapping was missing, so `submodule update --init` silently skipped it).
-      # Materialized == has .git (dir or file) OR a root AGENTS.md. Fail LOUD; never write into the gap.
-      $hasGit    = Test-Path (Join-Path $proj ".git")
-      $hasAgents = Test-Path (Join-Path $proj "AGENTS.md")
-      if (-not ($hasGit -or $hasAgents)) {
-        Write-Warning "sync-agents: SKIPPING '$name' - directory exists but the project is NOT checked out (no .git, no AGENTS.md)."
-        Write-Warning "sync-agents:   This is almost always an uninitialized submodule. Do NOT sync into it - clone it first:"
-        Write-Warning "sync-agents:       git submodule update --init -- Projects/$name"
-        Write-Warning "sync-agents:   If that no-ops, the path has no .gitmodules mapping. Verify parity:"
-        Write-Warning "sync-agents:       git ls-files -s Projects/   vs   git config -f .gitmodules --get-regexp path"
-        continue
-      }
-      & $PSCommandPath -Target $proj -NoGlobals -Status:$Status -Reconcile:$Reconcile -WhatIf:$WhatIf
-    }
-  } else {
-    Write-Warning "sync-agents: no .agents\maintained-projects.txt found - only the lobby was synced"
-  }
-  exit 0
+  Write-Error ("sync-agents: -Maintained is retired (thin model, 2026-08-07). Projects hold only their " +
+    "own tier-2 law (rules/ + skills/ + INDEX.md - see .agents/rules/project-law.md); there is no " +
+    "per-project vendor to sync. Run /sync-agents with no flags: the lobby + machine-global caches " +
+    "serve every session from any cwd. (maintained-projects.txt remains the check_maps --all worklist.)")
+  exit 1
 }
 
 if (-not $Target) { $Target = $HomeRoot }
@@ -144,6 +106,16 @@ $Target   = (Resolve-Path $Target).Path
 # Trim BOTH separators: off Windows a trailing '/' survives TrimEnd('\'), and the lobby would then
 # compare unequal to itself and silently run the project branch against the master tree.
 $IsLobby  = ($Target.TrimEnd('\', '/') -ieq $HomeRoot.TrimEnd('\', '/'))
+
+# Project targets are RETIRED with the same 2026-08-07 thin model: vendoring tier 1 into a project is
+# now a rule violation (project-law.md hard stop), so fail LOUD with the why instead of writing files.
+if (-not $IsLobby) {
+  Write-Error ("sync-agents: project targets are retired (thin model, 2026-08-07). '$Target' must not " +
+    "carry the tier-1 toolkit - a project holds only its own rules/ + skills/ + INDEX.md " +
+    "(.agents/rules/project-law.md). Run /sync-agents with no target: the lobby + machine-global " +
+    "caches serve every session, from any cwd.")
+  exit 1
+}
 
 $AllPlatforms = @('claude','opencode','antigravity','codex')
 
@@ -380,12 +352,7 @@ function Get-SurfaceState {
 # project — while Join-Path still happily resolves the back-slashed manifest paths on macOS, so every
 # delete succeeds and the run reports itself as a normal purge. Emit BACK-slashed, leading-separator-free
 # paths on every OS so the manifest stays byte-comparable across machines.
-function Get-VendorFileSet([string]$masterDir) {
-  $root = (Resolve-Path $masterDir).Path
-  Get-ChildItem $masterDir -File -Recurse -Force -ErrorAction SilentlyContinue |
-    Where-Object { ($_.FullName -notmatch '[\\/](bmad|node_modules|__pycache__)[\\/]') -and ($_.Name -ne $ManifestName) } |
-    ForEach-Object { $_.FullName.Substring($root.Length).TrimStart('\', '/').Replace('/', '\') }
-}
+# (Get-VendorFileSet deleted 2026-08-07 with the project-vendor path — thin model, project-law.md.)
 
 # Delete what a previous run wrote into $dst and this run no longer owns. Returns the purged relative paths.
 function Invoke-ManifestPurge([string]$dst, [string[]]$was, [string[]]$now, [switch]$WhatIf) {
@@ -677,60 +644,12 @@ if (-not $GlobalsOnly) {
   # Rebuilt from scratch each run and swapped in at save time, so keys from an older layout (or an older
   # absolute-path scheme) age out instead of accumulating forever.
   $newLocal = @{}
-  # Project target → vendor master's .agents into the project ADDITIVELY (Sync-Dir = /E, no purge). The
-  # project's .agents is a HYBRID: master toolkit layered over project-OWNED rules\ + project skills\ that
-  # master does NOT have. Do NOT change this to /MIR or a blanket /PURGE — it deletes the project's own files.
-  if (-not $IsLobby) {
-    # Exclude bmad\ from the vendor: BMAD's module config is PROJECT-OWNED (each repo carries its own
-    # `project_name` etc.) and BMAD self-installs per project, so it must NOT be overwritten from master.
-    # This keeps it project-owned the same way rules\ already are (additive vendor, master never clobbers it).
-    Sync-Dir $Master (Join-Path $Target ".agents") @((Join-Path $Master 'bmad')) @($ManifestName) -WhatIf:$WhatIf
+  # Project vendoring RETIRED (thin model, 2026-08-07 — .agents/rules/project-law.md): projects carry
+  # tier-2 law only, and the non-lobby guard above makes this whole stage lobby-only. The manifest's
+  # `vendor` key stays in the schema (older manifests carry it) but nothing writes it anymore.
 
-    # THE BLIND-SPOT FIX. The vendor above is additive, so a master file that was deleted or renamed used to
-    # live on here forever — and since this vendored .agents is the SOURCE for this project's .claude/.opencode
-    # menus (see $src below), the ghost was re-published into the menus on every sync. Purge strictly what a
-    # previous run of this script wrote and the master has since dropped; project-owned rules\, project skills\,
-    # bmad\ and any project-authored command were never in the manifest and are structurally unreachable here.
-    $vendorNow    = @(Get-VendorFileSet $Master)
-    $vendorPurged = Invoke-ManifestPurge (Join-Path $Target ".agents") $manifest.vendor $vendorNow -WhatIf:$WhatIf
-    if ($vendorPurged.Count) {
-      Write-Host "sync-agents: purged $($vendorPurged.Count) retired vendor file(s): $($vendorPurged -join ', ')"
-      # A file purge empties a retired skill's folder but leaves the folder standing. Collect those husks so the
-      # vendor matches the master exactly; empty-only, so project-owned content is never in reach.
-      $husks = Remove-EmptyDirs (Join-Path $Target ".agents\skills") -WhatIf:$WhatIf
-      if ($husks) { Write-Host "sync-agents: pruned $husks empty skill folder(s) left by the purge" }
-    }
-    $manifest.vendor = $vendorNow
-
-    # Inventory (never delete) the project's OWN invocables, so local-only additions stay visible instead of
-    # being mistaken for drift later. These are legitimately outside the master — reported, not touched.
-    foreach ($sub in @('commands','workflows')) {
-      $d = Join-Path $Target ".agents\$sub"
-      if (-not (Test-Path $d)) { continue }
-      $own = @(Get-ChildItem $d -Filter *.md -File -ErrorAction SilentlyContinue |
-               Where-Object { $vendorNow -notcontains "$sub\$($_.Name)" } |
-               Select-Object -ExpandProperty Name)
-      if ($own.Count) { Write-Host ("sync-agents: .agents\{0}\ has {1} project-owned file(s), left alone: {2}" -f $sub, $own.Count, ($own -join ', ')) }
-    }
-    # Prune stale command-ghosts from the vendored workflows/: a file that is a master COMMAND but NOT a
-    # master workflow is a leftover from the old layout (commands used to live in workflows/). This is the
-    # ONLY purge on the vendored .agents and it is provably safe — it can never touch rules/, skills/, or a
-    # project-authored workflow (none of those are master commands). Everything else stays additive (/E).
-    $mWf  = @(Get-ChildItem (Join-Path $Master "workflows") -Filter *.md -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
-    $mCmd = @(Get-ChildItem (Join-Path $Master "commands")  -Filter *.md -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
-    $purged = 0
-    $ghosts = Get-ChildItem (Join-Path $Target ".agents\workflows") -Filter *.md -File -ErrorAction SilentlyContinue |
-      Where-Object { ($mWf -notcontains $_.Name) -and ($mCmd -contains $_.Name) }
-    if (-not $WhatIf) {
-      $ghosts | ForEach-Object { Remove-Item $_.FullName -Force; $purged++ }
-    } else {
-      $ghosts | ForEach-Object { Write-Host ("WHATIF: would delete stale vendor command-ghost '{0}'" -f $_.FullName); $purged++ }
-    }
-    if ($purged) { Write-Host "sync-agents: purged $purged stale workflows/ command-ghost(s) from the vendor" }
-  }
-
-  # Source of truth for this target's tool dirs: master for the lobby, vendored copy for a project.
-  $src    = if ($IsLobby) { $Master } else { Join-Path $Target ".agents" }
+  # Source of truth: the master (the only sanctioned target is the lobby).
+  $src    = $Master
   $cmdDir = Join-Path $src "commands"
 
   # Manifest keys are RELATIVE to the target, so the record stays valid if the repo is moved or re-cloned.
@@ -866,36 +785,9 @@ if ((-not $NoGlobals) -and ($IsLobby -or $GlobalsOnly)) {
   Write-Host ("sync-agents: codex skills -> {0} bmad-* mirrored  ({1})" -f $codexSkillCount, $codexSkillsDst)
 }
 
-# --- Fresh living-template drift check (lobby sync only) ----------------------
-# Fresh_Workspace_BMAD is the skeleton new projects clone from. This sync already vendors .agents/ into it
-# (additive, above), but the FRONT DOOR + docs are per-workspace and are NOT synced (copying them would wipe
-# the skeleton's own content). So instead of a blind copy, FLAG when Fresh's front-door pattern has drifted
-# from the lobby — the agent reconciles it by hand (living-template-sync rule), keeping it generic.
-if ($IsLobby -and -not $GlobalsOnly) {
-  $fresh = Join-Path $HomeRoot "Projects\Fresh_Workspace_BMAD"
-  if (Test-Path $fresh) {
-    $warn = @()
-    if (-not (Test-Path (Join-Path $fresh "docs\gitnexus.md"))) { $warn += "missing docs/gitnexus.md (GitNexus own-file pattern)" }
-    $fa = Join-Path $fresh "AGENTS.md"
-    if (Test-Path $fa) {
-      $t = Get-Content $fa -Raw
-      if ($t -notmatch 'read that FIRST') { $warn += "AGENTS.md is missing the reading-order rule" }
-      if ($t -match 'gitnexus:start')     { $warn += "AGENTS.md still inlines a GitNexus block (should be docs/gitnexus.md + pointer)" }
-    } else { $warn += "no root AGENTS.md" }
-    $lws = Join-Path $HomeRoot "docs\workspace-standard.md"
-    $fws = Join-Path $fresh "docs\workspace-standard.md"
-    if ((Test-Path $lws) -and (Test-Path $fws)) {
-      if ((Get-FileHash $lws).Hash -ne (Get-FileHash $fws).Hash) { $warn += "docs/workspace-standard.md differs from the lobby canon" }
-    } elseif (-not (Test-Path $fws)) { $warn += "missing docs/workspace-standard.md" }
-    if ($warn.Count) {
-      Write-Warning "sync-agents: Fresh_Workspace_BMAD (living template) has drifted from the lobby front-door pattern:"
-      $warn | ForEach-Object { Write-Warning ("  - {0}" -f $_) }
-      Write-Warning "  reconcile by hand per the living-template-sync rule (keep generic; placeholders where a real project fills in)."
-    } else {
-      Write-Host "sync-agents: Fresh living-template check OK (front-door pattern current)."
-    }
-  }
-}
+# (Fresh living-template drift check RETIRED 2026-08-07: Fresh_Workspace_BMAD is frozen — the clone
+# source is now the sudo-project-skeleton repo, and lobby canon changes no longer propagate to Fresh.
+# The living-template-sync rule is rewritten against the skeleton in the centralization epic's P6.)
 
 Write-Host "sync-agents: done. (Edit the master .agents/ - never the copies - and re-run to propagate.)"
 exit 0

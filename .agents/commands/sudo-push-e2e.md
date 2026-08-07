@@ -67,6 +67,7 @@ Any failure → **STOP**. Summarize the failures, file/link the evidence, and su
 (`/sudo-quick-dev` or the ①②③ story loop). Do not proceed.
 
 ## Step 4 — Merge to main
+<!-- JIRA-HOOK: the epic's Jira tickets transition to Done here when the merge lands. Separate story; not built yet. -->
 ```bash
 git checkout main
 $env:GITHUB_TOKEN = ""; git pull --ff-only origin main

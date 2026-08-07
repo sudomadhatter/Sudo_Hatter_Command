@@ -190,6 +190,7 @@ check; everything else, incl. Step 6's memory write, just applies. Carry its rep
 - **Then ask Daniel (always, separate from memory):** *"Saved the session updates. Any manual learnings, new bugs, or sprint-objective changes to add?"* Apply any additions.
 
 ## Step 7 — Land the story on the EPIC branch (the one sanctioned push)
+<!-- JIRA-HOOK: ticket-moved check runs here BEFORE the landing push — the story's Jira ticket must be in the required status or the landing stops. Separate story; not built yet. -->
 
 **Daniel invoking this command IS the sign-off for this push.** Run it LAST, after Steps 1–6 wrote the board,
 story file, and `active-context.md` — so those edits ride the story branch and land with it.

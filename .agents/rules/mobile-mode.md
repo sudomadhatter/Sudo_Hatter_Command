@@ -15,7 +15,7 @@ description: "The web/mobile lane. Activates automatically when env `CLAUDE_CODE
 
 - **Auto:** the session runs in a remote / cloud container (Claude Code on the web or the mobile app),
   detected by the environment variable **`CLAUDE_CODE_REMOTE=true`** (the flag Claude Code sets on
-  web/mobile — the same one `autopilot_mobile.md` keys on). This is the normal case for phone use.
+  web/mobile). This is the normal case for phone use.
 - **Manual:** Daniel says "mobile" / "mobile mode" in any session.
 - **Off (desktop):** a local desktop IDE session — `CLAUDE_CODE_REMOTE` is unset, so the desktop defaults
   (`git-policy.md`, `artifacts-always-first.md`) apply **unchanged**. Ignore this rule entirely.
