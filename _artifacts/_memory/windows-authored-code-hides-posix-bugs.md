@@ -1,6 +1,6 @@
 ---
 name: windows-authored-code-hides-posix-bugs
-description: "This toolkit was authored on Windows, so Windows-only assumptions sat green for months and only failed on the Mac — chmod semantics, hardcoded C:/ discovery paths, ';' PATH separators, $env:USERPROFILE, robocopy. Five found 2026-08-06; assume more, and note two of them printed SUCCESS first."
+description: "This toolkit was authored on Windows, so Windows-only assumptions sat green for months and only failed on the Mac — chmod semantics, hardcoded C:/ discovery paths, ';' PATH separators, $env:USERPROFILE, robocopy, and a path-separator mismatch that DELETED ~570 vendored files per project. Six found 2026-08-06/07; three printed SUCCESS while failing."
 metadata:
   node_type: memory
   type: project
@@ -34,6 +34,27 @@ run had already printed success lines**, so the sync looked like it worked (2026
 5. **`robocopy` does not exist off Windows.** The codex-skills mirror died having created exactly
    **one** skill directory — a half-built cache that reads as deliberate, not as a crash. Fix: keep
    robocopy on Windows verbatim, PowerShell-native `Copy-Tree` elsewhere.
+
+**And a SIXTH, the destructive one (2026-08-07)** — same file, and it deleted real work:
+
+6. **`Get-VendorFileSet` emitted forward-slashed paths and compared them to the back-slashed TRACKED
+   manifest.** `$_.FullName.Substring($root.Length).TrimStart('\')` cannot strip a leading `/`, so
+   macOS produced `/commands/analyst.md` where Windows had written `commands\analyst.md`. **Zero
+   overlap → `Invoke-ManifestPurge` concluded the master had dropped every file it ever owned and
+   deleted the entire vendored toolkit — ~570 files per maintained project.** `Join-Path` then
+   resolves back-slashed manifest paths fine on macOS, so all 349 deletes SUCCEEDED, and the run
+   printed them as an ordinary `purged N retired vendor file(s)` line and exited 0. Because the
+   vendored `.agents` is the SOURCE for each project's `.claude`/`.opencode` menus, the next step
+   read the emptied dir and published **0 commands**. Fix: `[\\/](bmad|node_modules|__pycache__)[\\/]`
+   for the excludes, and `TrimStart('\','/').Replace('/','\')` so every OS emits the back-slashed
+   form the tracked manifest uses. (`$IsLobby`'s `TrimEnd('\')` had the same shape — fixed too.)
+
+**The rule this forces: a comparison against a TRACKED, cross-machine artifact is a portability
+surface.** Separator normalisation is not cosmetic there — it decides whether a purge is a no-op or
+a wipe. Anything of the form "delete what is in the manifest but not in the fresh scan" must
+normalise BOTH sides before comparing, and should refuse to run when the diff is implausibly large
+(a purge proposing ~100% of the manifest is a bug, not a cleanup). **Always `-WhatIf` a sync on a new
+platform before letting it write.**
 
 Two things that are *not* bugs, so don't "fix" them: pwsh 7's `Join-Path` **normalises** a `\` in a
 path literal to `/` on Unix, so the ~20 `".claude\commands"`-style joins are fine; and the manifest
