@@ -24,3 +24,14 @@ must fail, commit, and assert git's own exit code is non-zero AND `HEAD` did not
 `$?` after a pipeline — that is the last command's status, not git's, and it will read as success.
 Where `.githooks/` is tracked (all three) the hook travels through git and needs no per-machine
 install; where it is not, every clone installs once because `.git/` never travels.
+
+**Mac addendum (2026-08-06):** `core.hooksPath` is LOCAL config — it never travels, so every fresh
+clone starts with it unset; the Mac set it in lobby, Fresh AND NEXgen (NEXgen's unset state above was
+the old machine's, not a ruling). **AGY on the Mac deliberately leaves hooksPath unset**: it is a
+submodule there (`.git` is a pointer file; real hooks dir is
+`<lobby>/.git/modules/Projects/AGY_AVIATIONCHAT/hooks`), and machine-local stubs in that dir CHAIN
+both systems — `.githooks/` (encoding + recorder) plus `scripts/git-hooks/board-stale-stamp.sh`
+(post-commit + post-merge). Setting hooksPath there would silence the board stamp. Also fixed
+fleet-wide that day: every tracked hook/script was committed from Windows as 100644 — git *skips* a
+non-executable hook with only a warning, and an executable hook exec-ing a non-executable script
+*blocks the commit* (exit 126). Exec bits are now committed (100755) in all four repos.
