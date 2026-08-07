@@ -75,7 +75,7 @@
 - [Live-guard needs @live](test-live-guard-needs-live-marker.md) — real-key tests need `@pytest.mark.live` or the guard is swallowed.
 - [Rules tests need Java](firestore-rules-tests-need-java.md) — Temurin on Win, brew `openjdk@17` on Mac; JAVA_HOME in `~/.zshenv`, plus `firebase/tests` npm install.
 - [Node 26 breaks vitest jsdom storage](node-26-breaks-vitest-jsdom-storage.md) — localStorage undefined in tests; run Node 22 LTS; check `node --version` first.
-- [Windows-authored code hides POSIX bugs](windows-authored-code-hides-posix-bugs.md) — chmod semantics, `C:/` discovery paths, `;` PATH joins; 3 found on the Mac, assume more.
+- [Windows-authored code hides POSIX bugs](windows-authored-code-hides-posix-bugs.md) — chmod, `C:/` paths, `;` PATH joins, `USERPROFILE`, `robocopy`; 5 found on the Mac and 2 printed SUCCESS first.
 - [Full-suite contention](vitest-full-suite-contends-across-lanes.md) — locks are per-STACK; long runs → persistent log; bg shells die on chat close.
 - [⛔ "jsdom OOM" was a mock bug](sudo-admin-jsdom-oom-machine-bound.md) — an unstable `useRouter()` mock drove an infinite render loop.
 - [coverage `source` ignores paths](coverage-source-silently-ignores-file-paths.md) — a .py path in `source` measures NOTHING; use `source_pkgs`.
