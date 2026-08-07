@@ -1,6 +1,7 @@
 # The Sudo Dev System — Quick Reference
 
-> **How we build, and what you type.** Current as of **2026-08-03**, after Waves 1–5.
+> **How we build, and what you type.** Current as of **2026-08-07**, after Waves 1–5 and the
+> epic-branch migration (`main` is now the only long-lived branch).
 > Read once start-to-finish, then jump in. Every technical term gets explained the first time it shows
 > up — you shouldn't need to know git plumbing to run this system.
 
@@ -125,8 +126,7 @@ Everything else in this document is a consequence of those two.
 | Command | What it does for you |
 |---|---|
 | `/sudo-e2e` | Runs the real end-to-end suite — a complete stand-in for the live app, with test users. Green means safe to ship. |
-| `/sudo-push-e2e` | The one shipping command. Three paths (§6); two of them **refuse to run** until the end-to-end suite is green. |
-| `/merge_main_debug` | Approves and merges a reviewed pull request into the build branch. Never into production. |
+| `/sudo-push-e2e` | The one shipping command: merges the epic branch into `main` (§6). **Refuses to run** until the end-to-end suite is green and you sign off. |
 
 ### Debugging and incidents
 
@@ -288,27 +288,31 @@ let you make it *unknowingly*.
 
 ## 6. Shipping — the end-to-end gate
 
-**Two branches.** `main_debug` is where everything is built. `main` is what your users are running. Code
-flows one direction only, and `main` must **never** get ahead of `main_debug`.
+**One long-lived branch.** `main` is live production — on projects with CI/CD, a push to `main` **is** a
+deploy. Everything else is short-lived by design: each epic gets its own `epic/<key>-<slug>` branch cut
+from `main` at kickoff, every story lands on that epic branch, and the epic reaches `main` exactly one
+way — `/sudo-push-e2e`. Small fixes outside any epic take a `chore/*` branch off `main`, merged back the
+same session with your sign-off.
 
-*What you're looking at: the three ways code ships, and which ones are gated.*
+*What you're looking at: how code ships, and where the gate stands.*
 
 ```mermaid
 flowchart TD
-    DEV["your work"] --> MD["main_debug\nthe build branch"]
-    MD --> PATH{"/sudo-push-e2e"}
-    PATH -- "A · push the build branch" --> A["tests plus frontend build\nno end-to-end needed"]
-    PATH -- "B · ship everything" --> GATE{"/sudo-e2e\nGREEN?"}
-    PATH -- "C · ship selected fixes" --> GATE
+    DEV["your story worktrees\none per story"] --> EPIC["the epic branch\nepic/&lt;key&gt;-&lt;slug&gt;, cut from main\nshort-lived: one epic, then gone"]
+    EPIC --> SHIP{"/sudo-push-e2e"}
+    SHIP --> SYNC["absorb origin/main first\nso any hotfix that shipped mid-epic\nis merged and re-tested"]
+    SYNC --> GATE{"full test gate\nplus /sudo-e2e GREEN?"}
     GATE -- "RED" --> STOP["REFUSES to run\nNothing ships."]
-    GATE -- "GREEN" --> MAIN["main\nlive for users"]
+    GATE -- "GREEN plus your sign-off" --> MAIN["main\nlive for users"]
     MAIN --> DEPLOY["deploy, then verify live"]
-    MAIN -.->|"path C only: merge back\nso main never leads"| MD
+    MAIN --> DEL["epic branch deleted\nnothing accumulates"]
+    CHORE["chore/* branch\nsmall fixes outside any epic"] -.->|"same session\nwith your sign-off"| MAIN
 ```
 
-Path **C** ships selected fixes rather than everything — useful when one thing is urgent and the rest
-isn't ready. It finishes by merging `main` back into `main_debug`, which is what keeps the "never ahead"
-rule true.
+Before the merge, `/sudo-push-e2e` pulls `origin/main` **into** the epic branch and re-gates — so `main`
+never receives an unresolved conflict, and a hotfix that shipped mid-epic is already absorbed. The merge
+itself is `--no-ff` (the epic stays visible as one unit in history), and the epic branch is deleted after
+it lands — branches are short-lived on purpose; nothing accumulates.
 
 `/sudo-e2e` also runs solo any time you want end-to-end confidence without shipping.
 
@@ -316,7 +320,7 @@ rule true.
 
 | Gate | Where | When |
 |---|---|---|
-| Pull-request checks | GitHub Actions | every PR into the build branch |
+| Pull-request checks | GitHub Actions | every PR into `main` or an epic branch |
 | Test-selection gate | local, before push | picks the affected tests; falls back to the full suite when unsure |
 | **End-to-end gate** | local, via `/sudo-push-e2e` | **before anything reaches production** |
 | Deploy | hosting CI/CD | on push to `main` |
@@ -329,30 +333,25 @@ rule true.
 You work one sprint across desktop, laptop, and phone. **Branches travel between machines; your local
 working setup does not.** That gap is the entire reason this pair exists.
 
-*What you're looking at: the handoff, and the trap waiting on the far side.*
+*What you're looking at: the handoff — push on one side, pull on the other.*
 
 ```mermaid
 flowchart TD
     M1["machine A\nyou're finishing up"] --> PARK["/sudo-park\npush everything plus write a note"]
     PARK --> ORIGIN["GitHub\nthe only thing both machines share"]
     ORIGIN --> RESUME["/sudo-resume\non machine B"]
-    RESUME --> CHECK{"Which branch\nam I standing on?"}
-    CHECK -- "main — the default\non a fresh machine" --> DANGER["⛔ DO NOT PULL HERE\nPulling the build branch from here\nships every unreviewed commit\nstraight to your users.\nGit reports success."]
-    CHECK -- "main_debug" --> SAFE["safe to pull"]
-    DANGER --> FIX["switch to main_debug FIRST"]
-    FIX --> SAFE
-    SAFE --> BOOT["/sudo-boot-sprint-memory\nload the sprint and keep going"]
+    RESUME --> PULL["shared checkout stands on main\ngit pull --ff-only origin main\nsafe: it only catches production up"]
+    PULL --> WORK["check out the live epic/* branch\nplus re-create the story worktrees"]
+    WORK --> BOOT["/sudo-boot-sprint-memory\nload the sprint and keep going"]
 ```
 
-**The trap, plainly.** Every repo's default branch is `main` — deliberate, so anyone cloning lands on
-production code. But it means a machine you just set up is *standing on production*. Pulling the build
-branch while standing there doesn't "get the latest" — it fast-forwards **production itself** to
-everything unshipped. For a mature project that's 160+ commits nobody reviewed, live, and **git reports
-success**, because technically it is a clean fast-forward.
-
-`/sudo-resume` now checks which branch you're on and switches before pulling. That check is the whole
-defense. Promotion to production happens through `/sudo-push-e2e` and nowhere else — never as a side
-effect of picking your work back up.
+**Why the pull is boring now.** The shared checkout stands on `main` and stays there — always exactly
+production. `git pull --ff-only origin main` from there can only catch it up to what already shipped; it
+cannot promote anything. (Under the retired two-branch model this exact spot hid a trap: pulling the
+build branch while standing on `main` silently fast-forwarded production to 160+ unreviewed commits.
+With one long-lived branch, the trap has nothing left to spring on.) Story work never happens in the
+shared checkout anyway — it lives in worktrees on the epic branch. Promotion to production happens
+through `/sudo-push-e2e` and nowhere else — never as a side effect of picking your work back up.
 
 Two smaller things it handles: a fresh machine shows **no** work in progress even when plenty exists
 (it's all on GitHub, not yet on disk), and resuming never deletes anything on your other machine — both

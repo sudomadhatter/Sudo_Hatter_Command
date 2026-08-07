@@ -40,11 +40,12 @@ git rev-list --left-right --count <branch>...origin/<branch>    # must be "0 0"
 ```
 
 and state the result per repo. `0 0` + clean everywhere, or it is not finished. Do not report "pushed"
-without that check — an unverified push claim is how this hides. Note the lobby is on `main_debug` and
-Fresh is on `main`, so do not assume one branch name.
+without that check — an unverified push claim is how this hides. Note the shared checkout stands on
+`main` in every repo, but story worktrees sit on `claude/*` and epics on `epic/*` — check which branch
+you are on, do not assume one name.
 
 The one exception is a story branch mid-flight (see `git-policy.md` → "The landing"): its commits stay
-local until close-out pushes `HEAD:main_debug`. That governs WHICH ref receives the push — never a licence
+local until close-out pushes `HEAD:epic/<slug>`. That governs WHICH ref receives the push — never a licence
 to leave work uncommitted or a landing unpushed. Related: [[git-branch-model-standard]],
 [[close-out-command-is-daniels-signoff]], [[toolkit-sync-covers-agents-not-docs]],
 [[maintained-projects-allowlist]].

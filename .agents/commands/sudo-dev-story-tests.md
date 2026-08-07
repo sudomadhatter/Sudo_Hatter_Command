@@ -179,7 +179,7 @@ Report: plan-vs-built deltas, audit findings applied, tests now green (paste out
 the two Step-5 artifact links. Hand to `sudo-code-review`. The dev step **may advance the story to
 `review`** — bmad-dev-story's Step 9 does this and we let it. **Never flip to `done`** — Daniel's call at
 close-out via `/sudo-update-sprint-memory`. **Git:** commit freely inside the story worktree (explicit paths,
-never `git add -A`); do NOT land it on `main_debug` — Step 7 of `/sudo-update-sprint-memory` owns that push
+never `git add -A`); do NOT land it on the epic branch — Step 7 of `/sudo-update-sprint-memory` owns that push
 (→ `worktree-per-story`).
 
 Optional additional input: $ARGUMENTS

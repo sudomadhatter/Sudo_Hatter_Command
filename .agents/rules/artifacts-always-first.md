@@ -199,7 +199,8 @@ fought back. In this order:
    result · why this run`. The certification row carries the SHA; the review step appends its rows.
 5. **`## Code Review (<date>)`** — appended by the review step (§6), never pre-written by the dev.
 6. **`## Your Actions`** (LAST) — what landed (the `claude/*` branch, the commit range, whether it
-   reached `main_debug`) plus anything still on Daniel: a `main` promotion, a live check, a decision.
+   reached the epic branch) plus anything still on Daniel: an epic promotion to `main` via
+   `/sudo-push-e2e`, a live check, a decision.
    Also posted in chat. The review step attempts any agent-solvable row here and ticks it; only
    genuine human calls survive. Not a `git add` block — the agent commits its own work in the
    worktree and lands it at close-out (→ `git-policy` · `worktree-per-story`).
@@ -270,7 +271,7 @@ When Daniel says **"review"** (or asks to review a document/plan), EVERY agent m
 - NEVER write the task outline, evidence, review, or "Your Actions" as separate files — they are sections inside `walkthrough.md` (§5).
 - NEVER let a living doc blow its budget (see The Lean Artifact Set) — compress in place; a re-run
   REPLACES pasted totals, only the `## Suite Ledger` accretes.
-- NEVER edit a project file for sudo-lane story work before opening its worktree — then commit your own work inside it freely (explicit paths, never `git add -A`). Ad-hoc non-story work edits `main_debug` directly — no worktree (→ `worktree-per-story` Trigger). Landing on `main_debug` needs Daniel's sign-off; `main` is his alone. Full policy → the `git-policy` + `worktree-per-story` rules.
+- NEVER edit a project file for sudo-lane story work before opening its worktree — then commit your own work inside it freely (explicit paths, never `git add -A`). Ad-hoc non-story work takes a `chore/*` branch off `main` — no worktree (→ `worktree-per-story` Trigger). Landing on the epic branch needs Daniel's sign-off; `main` is his alone (via `/sudo-push-e2e`). Full policy → the `git-policy` + `worktree-per-story` rules.
 - NEVER deliver code-review findings inline-only — append the `## Code Review (<date>)` section to the
   walkthrough (§6); never mint a standalone review file (legacy paths are read-only history).
 - NEVER deliver `/sudo-self-audit` findings inline-only — append the `## Self-Audit (<date>)` section

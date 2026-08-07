@@ -11,5 +11,5 @@ metadata:
 
 The lobby (Sudo_Hatter_Command / "main") has **no** engine — git history confirms it was never tracked there. Its only autopilot artifact is the canonical spec doc `.agents/workflows/autopilot_bmad_dev_loop.md` (documents `-TestScope`, gate phases). So "fix the autopilot on main" = update that spec doc; the functional fix goes in the project engines. See also [[grep-skips-gitignored-projects]].
 
-**Why:** "fix this on main, aviationchat, fresh-workspace" maps to: spec-doc edit in the lobby master + engine edit in each of the two project repos (`Projects/AGY_AVIATIONCHAT`, `Projects/Fresh_Workspace_BMAD`), both on `main_debug`.
+**Why:** "fix this on main, aviationchat, fresh-workspace" maps to: spec-doc edit in the lobby master + engine edit in each of the two project repos (`Projects/AGY_AVIATIONCHAT`, `Projects/Fresh_Workspace_BMAD`), each on that repo's integration base (the live epic branch, else a `chore/*` branch off `main`).
 **How to apply:** Edit `Projects/<proj>/scripts/autopilot-dev-story.ps1` in BOTH projects, then the lobby spec doc. Validate with `[System.Management.Automation.Language.Parser]::ParseFile`. Run `sync-agents.ps1` to refresh the doc's vendored project copies.

@@ -1,6 +1,6 @@
 ---
 name: worktree-per-story
-description: "Fires when a sudo story lane (① /sudo-write-story-tests · ② /sudo-dev-story-tests · /sudo-quick-dev · autopilot) starts work that will produce commits — and ONLY there. One story, one worktree, one `claude/*` branch, opened off `main_debug` BEFORE the first edit, committed freely inside, landed at close-out and pruned by /sudo-close-workingtree. Ad-hoc non-story work NEVER opens a worktree — it edits `main_debug` directly. Read-only sessions exempt. Pairs with git-policy.md."
+description: "Fires when a sudo story lane (① /sudo-write-story-tests · ② /sudo-dev-story-tests · /sudo-quick-dev · autopilot) starts work that will produce commits — and ONLY there. One story, one worktree, one `claude/*` branch, opened off the story's EPIC branch (`epic/<slug>`) BEFORE the first edit, committed freely inside, landed at close-out and pruned by /sudo-close-workingtree. Ad-hoc non-story work NEVER opens a worktree — it takes a `chore/*` branch off main. Read-only sessions exempt. Pairs with git-policy.md."
 ---
 
 # Worktree Per Story
@@ -18,13 +18,13 @@ models, sometimes separate platforms (Claude Code, opencode, Antigravity, Codex,
 all against the same project repo. One story = one worktree = one `claude/<story-slug>` branch is what
 makes that survivable. Assume from your first command that you are NOT alone in the repo:
 
-- **The shared checkout is a lobby, not your desk.** Its `git status` routinely shows other lanes'
-  dirty files and half-landed syncs. Never sweep, revert, or "fix" a file you did not change — report
-  it and move on. (G2's explicit-paths rule exists precisely so several lanes can share one checkout
-  without committing each other's work.)
-- **`origin/main_debug` moves under you.** Another lane can land mid-session, so your branch base is
-  stale by default — merge `origin/main_debug` into the story branch before landing (the landing
-  sequence in `git-policy.md`); never assume the base you opened on.
+- **The shared checkout is a lobby, not your desk.** It stands on `main` — production — and stays
+  there. Its `git status` can still show other lanes' dirty files and half-landed syncs. Never sweep,
+  revert, or "fix" a file you did not change — report it and move on. (G2's explicit-paths rule exists
+  precisely so several lanes can share one checkout without committing each other's work.)
+- **The epic branch moves under you.** Another lane can land on `epic/<slug>` mid-session, so your
+  branch base is stale by default — merge `origin/epic/<slug>` into the story branch before landing
+  (the landing sequence in `git-policy.md`); never assume the base you opened on.
 - **The board files are everyone's files.** `sprint-status.yaml`, `active-context.md`, and the sprint
   map are edited by EVERY lane — the #1 merge-conflict surface (2026-07-31: a three-block conflict
   soup was committed to active-context.md exactly this way). Resolve by keeping BOTH sides' facts —
@@ -42,27 +42,30 @@ the first project file is edited.** Automatic inside those lanes; the agent does
 lane that opens the tree is the lane that closes it: the story lands at close-out
 (`/sudo-update-sprint-memory` Step 7) and `/sudo-close-workingtree` prunes the tree + branches (its
 Step 8). **Never open a worktree outside a sudo story lane.** Ad-hoc work Daniel asks for
-conversationally — quick fixes, toolkit/system maintenance, doc edits — edits the main checkout directly
-on `main_debug`: Daniel runs solo, nothing else is on the branch mid-session, and an orphan tree that no
-close-out will ever prune is exactly what this boundary prevents. Unsure whether you're in a lane? You're
-not — work on `main_debug` (or ask).
+conversationally — quick fixes, toolkit/system maintenance, doc edits — takes a short-lived `chore/<slug>`
+branch off `main` (no worktree, no `claude/*` branch), merged back to `main` in the same session with
+Daniel's sign-off; an orphan tree that no close-out will ever prune is exactly what this boundary
+prevents. Unsure whether you're in a lane? You're not — take a `chore/*` branch (or ask).
 
 ```
 EnterWorktree  →  .claude/worktrees/<story-slug>/  on branch  claude/<story-slug>
 ```
 
-Branched from **`main_debug`**, never from `main`. The `worktree.baseRef: "head"` setting makes the new
-worktree inherit the current HEAD, so **confirm HEAD is `main_debug` before opening it** — if you are
-somewhere else, get to `main_debug` first (or say so out loud if you are deliberately stacking on
+Branched from **the story's epic branch (`epic/<epic-key>-<slug>`)**, never from `main`. The epic
+branch is cut from `main` at epic kickoff (`/sudo-create-epic-sprint`); if it doesn't exist yet,
+that step was skipped — go back and run it. The `worktree.baseRef: "head"` setting makes the new
+worktree inherit the current HEAD, so **check out the epic branch before opening the worktree** — if
+you are somewhere else, get there first (or say so out loud if you are deliberately stacking on
 another story's branch).
 
 ### Exempt — no worktree needed
 
-- **Ad-hoc non-story work** — anything outside the sudo story lanes (see Trigger): edit and commit on
-  `main_debug` with explicit paths; the push-approval hook still prompts.
+- **Ad-hoc non-story work** — anything outside the sudo story lanes (see Trigger): `chore/<slug>`
+  branch off `main`, explicit paths, merged back with sign-off; the push-approval hook still prompts
+  on the `main` merge.
 - **Read-only sessions** — questions, recon, code reading, reviews that write no project file.
-- **`/sudo-push-e2e`** — it operates *on* branches (`main_debug` → `main`), so it must run in the main
-  checkout.
+- **`/sudo-push-e2e`** — it operates *on* branches (`epic/<slug>` → `main`), so it must run in the
+  main checkout.
 - **Daniel says otherwise** — an explicit "just do it here" in the moment wins.
 
 ## Resuming — a fresh chat picks the story back up
@@ -94,10 +97,10 @@ The safe-commit mechanics from `git-policy.md` still apply in full:
 
 | Gate | Rule |
 |---|---|
-| **G1 · Location** | Story-lane commits happen only inside a worktree, on a `claude/*` branch — HEAD at `main_debug`/`main` during a story lane means you are in the shared checkout: open the worktree first. Sanctioned ad-hoc (non-lane) work commits on `main_debug` by design (see Trigger). (The `require-push-approval.py` hook prompts either way.) |
+| **G1 · Location** | Story-lane commits happen only inside a worktree, on a `claude/*` branch — HEAD at `main` during a story lane means you are in the shared checkout: open the worktree first. Ad-hoc (non-lane) work commits on its `chore/*` branch by design (see Trigger). (The `require-push-approval.py` hook prompts on `main` either way.) |
 | **G2 · Scope** | `git add <explicit paths>` only. **`git add -A` / `.` / `-u` are banned** — they sweep other teams' work into your commit. Verify with `git diff --cached --stat` that only your files are staged. |
-| **G3 · Push** | No pushes to `main_debug` during development. Pushing your own `claude/*` branch is free at any time. |
-| **G4 · `main`** | Never. Only Daniel, directly or via `/sudo-push-e2e`. |
+| **G3 · Push** | No pushes to the epic branch during development — the landing at close-out is the one sanctioned push there. Pushing your own `claude/*` branch is free at any time. |
+| **G4 · `main`** | Never. Only Daniel, via `/sudo-push-e2e` (epic merge) or a direct in-the-moment ask (chore merge). |
 
 ## Artifacts are authored in the tree
 
@@ -111,7 +114,7 @@ checkout read as "this story's review is done", and the confusion cost the actua
 
 ## Close-out — the landing
 
-The story lands on `main_debug` as **one clean push**, triggered by either:
+The story lands on its **epic branch** as **one clean push**, triggered by either:
 
 - **`/sudo-update-sprint-memory`** — invoking it IS Daniel's sign-off (Step 7 does the landing), or
 - **Daniel's in-the-moment "approved"** — per-action, never carries to the next story.
@@ -125,24 +128,25 @@ while a set is declared.
 Close-out runs **inside the worktree**, so its `sprint-status.yaml`, `active-context.md`, and story-file
 edits ride the story branch and land with the story — instead of sitting in the shared tree waiting to
 be hunk-picked out of somebody else's diff. The landing sequence itself is in `git-policy.md`
-("The landing"): merge `origin/main_debug` into the story branch *inside the worktree*, then
-`git push origin HEAD:main_debug`. Never check out `main_debug` in the shared checkout to merge.
+("The landing"): merge `origin/epic/<slug>` into the story branch *inside the worktree*, then
+`git push origin HEAD:epic/<slug>`. Never check out the epic branch in the shared checkout to merge.
 
-⚠️ **That push does NOT update the shared checkout's `main_debug`** — it moves the remote and
-`origin/main_debug` only, leaving `refs/heads/main_debug` where it was. Landing without reconciling
-afterwards puts the shared tree one story behind **per landing**, and since the board files are edited
-there, the next `pull --ff-only` refuses. `git-policy.md` → **"Reconcile the shared checkout"** is a
-mandatory part of every landing, not an optional tidy-up.
+The shared checkout needs **no reconcile after a landing** — it stands on `main`, which only moves when
+the epic merges via `/sudo-push-e2e`. (Under the retired `main_debug` model the shared checkout fell one
+story behind per landing and needed a mandatory fast-forward; that whole failure mode died with the
+long-lived integration branch.)
 
-Afterwards, once the landing on `main_debug` is verified, the worktree and git branch (`claude/<story-slug>`) are pruned via `/sudo-close-workingtree` (auto-invoked by `/sudo-update-sprint-memory` Step 8) to keep local disk and remote GitHub clean.
-
+Afterwards, once the landing on the epic branch is verified, the worktree and git branch
+(`claude/<story-slug>`) are pruned via `/sudo-close-workingtree` (auto-invoked by
+`/sudo-update-sprint-memory` Step 8) to keep local disk and remote GitHub clean. The epic branch itself
+is pruned later, by `/sudo-push-e2e`, after the epic merges to `main`.
 
 ## Hard stops
 
 - NEVER edit a project file for sudo-lane story work before its worktree is open — and NEVER open a
   worktree outside a sudo story lane (an orphan tree no close-out will prune).
-- NEVER branch a worktree from `main`.
+- NEVER branch a story worktree from `main` — stories branch from the epic branch.
 - NEVER `git add -A` / `.` / `-u`, inside a worktree or out.
-- NEVER check out `main_debug` in the shared checkout to merge a story — other teams' uncommitted work
-  lives there.
+- NEVER check out the epic branch in the shared checkout to merge a story — land from inside the
+  worktree; the shared checkout stays on `main`.
 - NEVER push to `main`. That is Daniel's, via `/sudo-push-e2e`.

@@ -1,6 +1,6 @@
 ---
 name: git-policy
-description: "Git policy: story/dev work happens in its own git worktree on a `claude/*` branch, where the agent commits FREELY (explicit paths — never `git add -A`). The story lands on `main_debug` as ONE clean push, either on Daniel's in-the-moment 'approved' or via /sudo-update-sprint-memory. `main` is reached only when Daniel asks directly or runs /sudo-push-e2e."
+description: "Git policy: main is the ONLY long-lived branch. Each epic gets a short-lived `epic/<slug>` branch off main; story/dev work happens in its own git worktree on a `claude/*` branch off the epic branch, where the agent commits FREELY (explicit paths — never `git add -A`). The story lands on its epic branch on Daniel's in-the-moment 'approved' or via /sudo-update-sprint-memory. The epic reaches `main` only through /sudo-push-e2e — full gate + E2E green + Daniel's sign-off."
 ---
 
 # Git Policy
@@ -9,50 +9,50 @@ description: "Git policy: story/dev work happens in its own git worktree on a `c
 > This supersedes the old "never run git yourself — hand Daniel the command" default, which is gone:
 > that default is what produced commits carrying four unrelated sessions at once.
 
-## Branch model — `main_debug` → `main` (THE dev standard)
+## Branch model — epic branches → `main` (THE dev standard)
 
 > The one source of truth for the branch model. Every workspace (home base + every project) uses it;
 > per-workspace `AGENTS.md` GATES sections point here rather than restating it.
+>
+> **History note:** the previous standard (`main_debug` as a long-lived integration branch) was
+> retired 2026-08-07 — every repo's `main_debug` was fast-forwarded into `main` and deleted. If a
+> doc, memory, or artifact still says `main_debug`, it predates that migration; the artifact stays
+> as history, but the procedure it describes is dead.
 
-- **`main` is LIVE PRODUCTION — never work on it, never auto-target it, never branch a worktree from
-  it.** It stays deployable.
-- **All day-to-day work flows through `main_debug`** (the shared integration branch): a story worktree
-  on a `claude/*` branch → lands on **`main_debug`**. This is the "one place to send everything."
-- **Promotion `main_debug` → `main` is Daniel's deliberate, manual decision** — only when he asks for it
-  directly, or via `/sudo-push-e2e`. An agent never promotes to `main` on its own.
-
-## Default — story lanes work in a worktree; ad-hoc work commits on `main_debug`
-
-**Sudo-lane story work opens its own git worktree before the first project file is edited**, branched from
-`main_debug`. One story, one worktree, one `claude/*` branch; inside it the agent commits freely, and the
-lane that opened the tree closes it (close-out lands, `/sudo-close-workingtree` prunes). Full lifecycle,
-triggers, and exemptions → **`worktree-per-story.md`** (protocol tier, loads alongside this rule).
-
-**Ad-hoc work outside the story lanes** — Daniel's conversational asks: quick fixes, toolkit/system
-maintenance — takes NO worktree and NO `claude/*` branch: edit the main checkout on `main_debug` directly.
-The ask that scoped the work is the go-ahead to work there; the safe-commit mechanics below apply in full,
-and the push-approval hook still prompts.
-
-Why: parallel teams sharing one checkout turn `git status` into everybody's work at once. Full rationale
-lives once, in **`worktree-per-story.md`** ("Why this exists") — not restated here.
+- **`main` is LIVE PRODUCTION and the ONLY long-lived branch — never work on it directly, never
+  auto-target it, never branch a worktree straight from it for story work.** It stays deployable;
+  on projects with CI/CD, a push to `main` IS a deploy.
+- **Each epic gets one short-lived branch: `epic/<epic-key>-<slug>`, cut from `main`** at epic
+  kickoff (`/sudo-create-epic-sprint`). All of the epic's stories integrate there. This is the
+  "one place to send everything" — scoped to the epic, not eternal.
+- **Story work happens in a worktree on a `claude/*` branch cut from the epic branch**, and lands
+  back on the epic branch at close-out (see "The landing").
+- **Ad-hoc work outside any epic** — quick fixes, toolkit/system maintenance — takes a short-lived
+  `chore/<slug>` branch off `main`, merged back to `main` in the same session with Daniel's
+  per-action sign-off. In doc-only repos (no CI) the gate is the sign-off itself; in deploying
+  repos the light gate (tests + build) runs first.
+- **The epic reaches `main` exactly one way: `/sudo-push-e2e`** — the full gate (backend suite +
+  frontend build + `/sudo-e2e` GREEN) plus Daniel's explicit sign-off, then the merge. An agent
+  never merges to `main` on its own initiative. The epic branch is deleted after it merges:
+  branches are short-lived by design; nothing accumulates.
 
 ## The write gate — keyed on WHERE a write lands, not on the act
 
 | Destination | Permission |
 |---|---|
-| Your own `claude/*` branch (commits **and** pushes) | **FREE** — no approval, loops/retries fine |
-| `main_debug` | **Daniel's sign-off** — his in-the-moment "approved", the ask that explicitly scoped ad-hoc work to `main_debug`, or invoking `/sudo-update-sprint-memory` (which IS the sign-off) |
-| `main` | **Never by an agent** — only when Daniel asks directly or runs `/sudo-push-e2e` |
+| Your own `claude/*` story branch (commits **and** pushes) | **FREE** — no approval, loops/retries fine |
+| The epic branch (`epic/*`) — a story landing | **Daniel's sign-off** — his in-the-moment "approved", or invoking `/sudo-update-sprint-memory` (which IS the sign-off) |
+| A `chore/*` branch (commits and pushes) | **FREE** — the merge back to `main` is what's gated |
+| `main` | **Only through `/sudo-push-e2e`** (epic merge, full gate + sign-off) or Daniel's direct in-the-moment ask (chore merge). Never on an agent's own initiative. |
 
-Approval for a `main_debug` landing is **per-action and never carries forward**. One "approved" lands
-one story; the next needs its own.
+Approval for an epic-branch landing or a `main` merge is **per-action and never carries forward**.
+One "approved" lands one story; the next needs its own.
 
 **Enforcement:** the `require-push-approval.py` PreToolUse hook (canonical source `.agents/hooks/`,
-deployed to every `.claude/hooks/`) forces the approval prompt on any `git push` targeting
-`main_debug`/`main` however it's wrapped, and on any `git commit` attempted while HEAD is
-`main_debug`/`main` (i.e. outside a worktree — see `worktree-per-story.md` G1). `merge_pull_request`
-(+ GitHub write tools) is gated in `.claude/settings.json`. The hook only ever sees the **agent's**
-Bash tool — Daniel's own terminal is never affected by it.
+deployed to every `.claude/hooks/`) forces the approval prompt on any `git push` targeting `main`
+however it's wrapped, and on any `git commit` attempted while HEAD is `main` (work always happens
+on a branch). `merge_pull_request` (+ GitHub write tools) is gated in `.claude/settings.json`. The
+hook only ever sees the **agent's** Bash tool — Daniel's own terminal is never affected by it.
 
 ## A commit is not done until it is pushed
 
@@ -77,79 +77,44 @@ git rev-list --left-right --count <branch>...origin/<branch>   # must be "0 0"
 "pushed" is how this hides.
 
 ⛔ The only exception is a story branch mid-flight, which is governed by "The landing" below: its commits
-stay local until the landing pushes `HEAD:main_debug`. That is about *which ref* receives the push, never a
-licence to leave work uncommitted or a landing unpushed.
+stay local until the landing pushes `HEAD:epic/<slug>`. That is about *which ref* receives the push, never
+a licence to leave work uncommitted or a landing unpushed.
 
 ## The landing — one story, one clean push
 
-The story lands on `main_debug` at close-out (`/sudo-update-sprint-memory` Step 7) or on Daniel's
-in-the-moment "approved". It merges **from inside the worktree**, never by checking out `main_debug`
-in the shared checkout:
+The story lands on its **epic branch** at close-out (`/sudo-update-sprint-memory` Step 7) or on
+Daniel's in-the-moment "approved". It merges **from inside the worktree**, never by checking out the
+epic branch in the shared checkout:
 
 ```bash
-git fetch origin main_debug
-git merge origin/main_debug        # absorb it INSIDE the worktree — conflicts surface here, isolated
-git push origin HEAD:main_debug    # THE landing (hook prompts once)
+git fetch origin epic/<slug>
+git merge origin/epic/<slug>        # absorb it INSIDE the worktree — conflicts surface here, isolated
+git push origin HEAD:epic/<slug>    # THE landing
 ```
 
-⛔ **Do NOT push the story branch itself.** This used to read `git push origin claude/<slug>  # free; the
-branch is the rollback point` — it is not the rollback point. The **local** branch is, and it survives a
-failed landing push completely untouched; the remote copy only covered the few seconds between the two
-pushes. What it cost was permanent: every story branch ever landed accumulated on origin, and by
-2026-07-27 there were 10 stale `claude/*` there.
+⛔ **Do NOT push the story branch itself.** The **local** branch is the rollback point, and it survives
+a failed landing push completely untouched. Pushing story branches on every landing is what left 10
+stale `claude/*` on origin by 2026-07-27.
 
 **A story branch reaches origin exactly one way: `/sudo-park`.** That is the entire point of park —
 *"the ONLY thing that makes the work portable"* — and `/sudo-resume` reads `git ls-remote --heads origin
-'refs/heads/claude/*'` to find in-flight work. Pushing on every landing made park redundant and turned
-that listing into noise, so it could not answer the one question it exists for.
+'refs/heads/claude/*'` to find in-flight work. The epic branch, by contrast, LIVES on origin — park
+pushes it too, and resume checks it out on the new machine.
 
 **The invariant this buys: a `claude/*` branch on origin means "parked, in-flight, on another machine."**
 Nothing else. Keep it true — it is what makes `/sudo-resume` trustworthy on a cold machine.
 (`incident-*` branches come from the Epic-16 incident pipeline, not story flow; they are outside this rule
 and must not be swept by it.)
 
-Checking out `main_debug` in the shared checkout to merge is **wrong** — that tree holds other teams'
-uncommitted work, so the merge either refuses or drags their files through your landing. If the merge
-conflicts, it conflicts in the isolated worktree: **STOP and report**, never force-push, never
-blind-rebase.
+Checking out the epic branch in the shared checkout to merge is **wrong** — the shared checkout stands
+on `main` and stays there; pulling story landings through it drags other teams' uncommitted work into
+your merge. If the landing merge conflicts, it conflicts in the isolated worktree: **STOP and report**,
+never force-push, never blind-rebase.
 
-### Reconcile the shared checkout — MANDATORY, immediately after the landing push
-
-`git push origin HEAD:main_debug` updates the remote and `refs/remotes/origin/main_debug`. It does
-**NOT** update `refs/heads/main_debug` — the branch checked out in the shared tree. Skip this and the
-shared checkout falls exactly one story behind **per landing, monotonically**: run four lanes, land four
-stories, it is four behind. Because the board files (`sprint-status.yaml`, `active-context.md`) are
-hand-edited in that tree, a later `pull --ff-only` then **refuses** on the overlap, and every close-out
-turns into a manual untangle.
-
-This is NOT the prohibited "merge through the shared checkout". A fast-forward of a ref that is strictly
-behind cannot conflict, and nobody's uncommitted work is merged through anything. Run from `PROJECT_ROOT`:
-
-```bash
-git -C "$ROOT" fetch origin
-git -C "$ROOT" rev-list --left-right --count main_debug...origin/main_debug   # -> "<ahead> <behind>"
-```
-
-- **`0 0`** → already current. Done.
-- **ahead > 0** → local `main_debug` carries commits the remote lacks (sanctioned ad-hoc work).
-  **STOP and report** — that is a real divergence, not a fast-forward, and it is Daniel's call.
-- **ahead 0, behind > 0** → fast-forward it. If `git status --porcelain` is dirty, that dirt is somebody's
-  in-flight work: **stash it with a labelled message** (recoverable), fast-forward, then pop.
-
-```bash
-git -C "$ROOT" stash push -m "pre-<slug>-land reconcile"   # ONLY if dirty
-git -C "$ROOT" merge --ff-only origin/main_debug
-git -C "$ROOT" stash pop                                    # only if you stashed
-```
-
-**A `stash pop` conflict is a STOP, not a thing to resolve silently** — report the conflicted files and
-what each side wanted. Never `stash drop` or `checkout --` someone's uncommitted work to make the
-fast-forward go through; the stash is the only copy. Finish by re-checking `--left-right --count` is
-`0 0` and the tree is clean, and **say so in the report**.
-
-Once `HEAD:main_debug` is pushed, the shared checkout is reconciled, and the landing is verified merged,
-`/sudo-close-workingtree` prunes the local worktree (`.claude/worktrees/<slug>`) and deletes both local and remote `claude/<slug>` branches.
-
+**Board files live on the epic branch too.** `sprint-status.yaml`, `active-context.md`, and story
+files are edited in the story worktree (or on the epic branch directly at close-out) — never in the
+shared `main` checkout, which only advances when the epic merges. This is what makes the shared
+checkout boring: it is always exactly production.
 
 ## Safe-commit mechanics (always — inside the worktree too)
 
@@ -168,20 +133,24 @@ Once `HEAD:main_debug` is pushed, the shared checkout is reconciled, and the lan
 Phone and desktop share branches, so landing from a **stale** branch is what causes the
 diverge → rejected-push tangle. Before the landing push:
 
-1. **Fetch and compare:** `git fetch origin main_debug`, then check whether you are behind
-   (`git rev-list --count HEAD..origin/main_debug` > 0).
-2. **If behind, merge `origin/main_debug` into your story branch first** (the landing block above does
-   this by default) so you never land on top of a stale base.
+1. **Fetch and compare:** `git fetch origin epic/<slug>`, then check whether you are behind
+   (`git rev-list --count HEAD..origin/epic/<slug>` > 0).
+2. **If behind, merge `origin/epic/<slug>` into your story branch first** (the landing block above
+   does this by default) so you never land on top of a stale base.
 3. **If it will not merge cleanly**, **STOP and flag it** — hand Daniel the situation. Do NOT run a
    blind merge/rebase, and never force-push.
+
+The same applies one level up: before `/sudo-push-e2e` merges an epic into `main`, it first merges
+`origin/main` INTO the epic branch (absorbing any hotfixes that shipped mid-epic), re-gates, and only
+then merges to `main` — so `main` never receives an unresolved conflict.
 
 ## Always
 
 - **Clear the Dummy GitHub Token:** The Antigravity IDE automatically injects a dummy `GITHUB_TOKEN` into the agent's environment as a sandbox security measure. Because Git and the `gh` CLI prioritize this environment variable over the Windows Credential Manager, it causes authentication failures. **Before running any `git` or `gh` commands, you MUST clear this variable** by prefixing the command or running: `Remove-Item Env:\GITHUB_TOKEN -ErrorAction Ignore; <command>`.
-- **Validate CI/CD credentials**: Before landing on a deployment-triggering branch (`main` or `main_debug`), verify that the target repository's required secrets (e.g., `FIREBASE_SERVICE_ACCOUNT`) and variables (e.g., `FIREBASE_PROJECT_ID`) are set up on GitHub using `gh secret list` and `gh variable list`. If credentials are missing, STOP and notify Daniel before proceeding.
+- **Validate CI/CD credentials**: Before landing on a deployment-triggering branch (`main`), verify that the target repository's required secrets and variables are set up on GitHub using `gh secret list` and `gh variable list` (WIF-based workflows need neither — check what the workflow actually references). If credentials are missing, STOP and notify Daniel before proceeding.
 - The `walkthrough.md` **"Your Actions"** section records what landed — the branch, the commit range,
-  and anything Daniel still has to do (a `main` promotion, a live check). It is no longer a `git add`
-  command block, because the agent already ran it.
+  and anything Daniel still has to do (an epic promotion via `/sudo-push-e2e`, a live check). It is no
+  longer a `git add` command block, because the agent already ran it.
 
 > **Web/mobile sessions** follow the same model with lighter mechanics — see `mobile-mode.md`
 > → Override 1. It shares this rule's safe-commit mechanics and Sync-first.

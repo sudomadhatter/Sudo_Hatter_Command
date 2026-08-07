@@ -23,8 +23,10 @@ STOP and say so, never fall back to the lobby.
 ① writes the story file and its red tests, so `worktree-per-story` applies in full. Under `PROJECT_ROOT`:
 1. **`git worktree list`** — if a `claude/<story-slug>` tree already exists (a re-run, or ② started),
    **re-enter it**; never open a second for the same slug.
-2. Else confirm HEAD is `main_debug` (**never** `main`), then open `.claude/worktrees/<story-slug>` on
-   `claude/<story-slug>` — slug `story-<id-dashed>-<short-name>`, e.g. `story-21-3-student-archive`.
+2. Else confirm the story's EPIC branch exists (`epic/<epic-key>-<slug>`, cut by
+   `/sudo-create-epic-sprint` — missing → go back and run it) and HEAD is on it (**never** `main`),
+   then open `.claude/worktrees/<story-slug>` on `claude/<story-slug>` off it — slug
+   `story-<id-dashed>-<short-name>`, e.g. `story-21-3-student-archive`.
 
 **Ordering caveat:** the slug depends on the story id, which Step 1 may be the thing that resolves ("the
 next story"). Resolve the id first, then open the tree — still before the story file is written; never
@@ -74,7 +76,7 @@ expected — plus the `Worktree: <path> (<branch>)` line from Step 0.5, so ② k
 **Do NOT start implementing.** `sudo-dev-story-tests` turns the reds green next.
 
 **Git:** commit ①'s output **inside the worktree** with explicit paths (`git add -A` / `.` / `-u` are
-banned — they sweep other teams' work in). Do NOT push it to `main_debug`; Step 7 of
+banned — they sweep other teams' work in). Do NOT push the epic branch mid-story; Step 7 of
 `/sudo-update-sprint-memory` owns that landing (→ `worktree-per-story`, `git-policy`).
 
 Optional additional input: $ARGUMENTS

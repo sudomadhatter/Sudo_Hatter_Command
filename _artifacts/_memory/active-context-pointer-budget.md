@@ -44,8 +44,9 @@ already enabled; the 11.18 attorney sign-off lives in `component-specs/legal-pag
 rather than invented onto the board.
 
 **The rule: resolve the narrative by newest-wins, but diff the OWED lists item by item.** Because this file
-is pruned aggressively and independently on parallel branches, a merge in *either* direction can drop an
-obligation with no marker. For each OWED line only one side has, ask: discharged, re-homed, or about to
+is pruned aggressively and independently on parallel branches (today: story worktrees landing on the epic
+branch — the file is edited there, never in the shared `main` checkout), a merge in *either* direction can
+drop an obligation with no marker. For each OWED line only one side has, ask: discharged, re-homed, or about to
 die? Only the third needs recovering, and grep the repo to tell them apart.
 
 **How to apply:** never write a narrative paragraph into active-context; the budget check is as mandatory

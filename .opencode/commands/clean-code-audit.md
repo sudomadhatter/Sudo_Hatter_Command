@@ -41,10 +41,13 @@ Story work lives in its own worktree (`worktree-per-story`), and the code under 
 **only there**. Run `git worktree list` under `PROJECT_ROOT`; if a `claude/<story-slug>` tree matches the
 story, `cd` into it and bind every path and command below to that tree. Echo `Auditing in <path>`.
 
-Establish the changed-file set — this is the audit's entire universe:
+Establish the changed-file set — this is the audit's entire universe. Resolve the base dynamically:
+on a `claude/*` story branch the base is its EPIC branch (exactly one live `epic/*` is the normal
+case); otherwise fall back to `main`:
 
 ```bash
-git diff --name-only main_debug...HEAD          # story branch vs the trunk it forked from
+BASE=$(git for-each-ref --format='%(refname:short)' refs/heads/epic/* | head -1); BASE=${BASE:-main}
+git diff --name-only "${BASE}...HEAD"           # story branch vs the branch it forked from
 git diff --name-only --cached                   # plus staged, if mid-work
 ```
 
@@ -133,7 +136,7 @@ Apply the fixes you can make safely, then **re-run the affected check and paste 
 each finding `applied` / `deferred` / `dismissed` — a dismissal needs a reason.
 
 ## Stay in lane
-Audit and fix; never flip a story status, never edit `sprint-status.yaml`, never land on `main_debug`.
+Audit and fix; never flip a story status, never edit `sprint-status.yaml`, never land on the epic branch.
 Commit fixes inside the story worktree with explicit paths (`git add -A`/`.`/`-u` stay banned).
 
 Optional additional input: $ARGUMENTS

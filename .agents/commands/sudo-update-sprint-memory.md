@@ -1,5 +1,5 @@
 ---
-description: End-of-session / story close-out save — advance the closed story to done (running this command IS Daniel's sign-off; only objectively-red /sudo-code-review tests block the flip), code-verify, route learnings to specs/rules/memory, prune active-context, then LAND the story branch on main_debug (Step 7). Run LAST when closing a story or session.
+description: End-of-session / story close-out save — advance the closed story to done (running this command IS Daniel's sign-off; only objectively-red /sudo-code-review tests block the flip), code-verify, route learnings to specs/rules/memory, prune active-context, then LAND the story branch on its EPIC branch (Step 7). Run LAST when closing a story or session.
 platforms: [opencode, antigravity]
 ---
 
@@ -24,15 +24,16 @@ global memory dir.
 ## Step 0.5 — Sync the branch BEFORE you read or edit the board (parallel-lane safety)
 Steps 1–6 read **and rewrite** `sprint-status.yaml` + `active-context.md`. Do that on a stale base and you
 author every board edit against an old file, then discover it at Step 7's merge — on the two hottest files
-in the repo. So absorb the trunk FIRST, inside the worktree:
+in the repo. So absorb the story's EPIC branch FIRST, inside the worktree (`epic/<epic-key>-<slug>` —
+exactly one live `epic/*` branch is the normal case):
 
 ```bash
-git fetch origin main_debug
-git rev-list --count HEAD..origin/main_debug     # >0 → behind
-git merge origin/main_debug                      # CONFLICT → STOP and report, never force
+git fetch origin epic/<slug>
+git rev-list --count HEAD..origin/epic/<slug>    # >0 → behind
+git merge origin/epic/<slug>                     # CONFLICT → STOP and report, never force
 ```
 
-Echo `Base: current with origin/main_debug @ <sha>`. Step 7 re-merges as a cheap safety net; this one is
+Echo `Base: current with origin/epic/<slug> @ <sha>`. Step 7 re-merges as a cheap safety net; this one is
 what makes the board edits land clean. If another lane closed out while you worked, its board line is now
 in front of you — **read it before you write yours**, and never delete a line you did not add.
 
@@ -46,7 +47,7 @@ python .agents/scripts/closeout_preflight.py --story <id> --project <PROJECT> --
        [--branch <name>] [--worktree <path>] [--require-gates suite,ruff,pyrefly]
 ```
 
-It reports: did the code land on `main_debug` · is every repo `0/0` and clean · are the registered
+It reports: did the code land on the epic branch · is every repo `0/0` and clean · are the registered
 worktrees LIVE/LOST/HUSK · do both status surfaces agree · does the walkthrough carry a `Verdict:`
 (with the pre-2026-08-02 standalone-file fallback) · is that verdict stale against HEAD · does the
 story's **File List** still exist in the tree · is `active-context` inside budget · did the required
@@ -54,7 +55,7 @@ gates actually run at this commit · can the epic close.
 
 **Exit 2 = BLOCKED — resolve before flipping anything. Exit 1 = warnings: read them, they do not
 block.** A warning that says *"landing was NOT verified"* means exactly that — it is not a pass.
-Paste the block into the close-out summary; it IS the evidence for Steps 1, 2, 7b and 8.
+Paste the block into the close-out summary; it IS the evidence for Steps 1, 2, 7 and 8.
 
 ## Step 1 — Read current state & this session's artifacts (scoped — no needless whole-file reads)
 1. `_bmad-output/active-context/active-context.md` — full (about to prune it).
@@ -188,7 +189,7 @@ check; everything else, incl. Step 6's memory write, just applies. Carry its rep
     — unchanged` (most sessions).
 - **Then ask Daniel (always, separate from memory):** *"Saved the session updates. Any manual learnings, new bugs, or sprint-objective changes to add?"* Apply any additions.
 
-## Step 7 — Land the story on `main_debug` (the one sanctioned push)
+## Step 7 — Land the story on the EPIC branch (the one sanctioned push)
 
 **Daniel invoking this command IS the sign-off for this push.** Run it LAST, after Steps 1–6 wrote the board,
 story file, and `active-context.md` — so those edits ride the story branch and land with it.
@@ -199,24 +200,24 @@ and follow IT end to end: it runs this command's close-out per story itself (fix
 `done` → combined gate → prune ALL trees) in one shot; nothing returns here.
 
 **Precondition — check FIRST.** `git rev-parse --abbrev-ref HEAD` must be a **`claude/*`** branch (inside the
-story worktree). If HEAD is `main_debug`/`main`, this story wasn't worked in a worktree — **do NOT land it.**
-Report it and stop — never rescue it by committing in the shared checkout.
+story worktree). If HEAD is the epic branch or `main`, this story wasn't worked in a worktree — **do NOT land
+it.** Report it and stop — never rescue it by committing in the shared checkout.
 
 Then execute `git-policy.md` → **"The landing"**, inside the worktree: first commit the close-out edits —
 EXPLICIT PATHS ONLY (board, story file, active-context, artifacts; `git diff --cached --stat` must show
-ONLY this story's files), then merge `origin/main_debug` (CONFLICT → **STOP and report**; never force-push,
+ONLY this story's files), then merge `origin/epic/<slug>` (CONFLICT → **STOP and report**; never force-push,
 never blind-rebase), **then the MERGE GATE — prove the tree that ships, not the one ③ reviewed** (the solo
 counterpart of `/sudo-merge-epic-workingtrees` Step 5's combined gate): run
 `git diff --name-only <③-verdict suite SHA>..HEAD -- backend/ frontend/`.
 - **Empty** → the merge changed no code under you (fast-forward / doc-only drift): ③'s green already
   describes this exact tree — inherit it, say `Merge gate: inherited ③ green @ <sha>`, and push.
-- **Non-empty** → trunk moved code since ③'s run, so the merged tree has NEVER been tested: run the full
-  suite of the touched stacks on it NOW (parallel flags; the conftest suite lock serializes the box) and
+- **Non-empty** → the epic branch moved code since ③'s run, so the merged tree has NEVER been tested: run the
+  full suite of the touched stacks on it NOW (parallel flags; the conftest suite lock serializes the box) and
   paste totals into the walkthrough. **Red → STOP: no push, nothing lands** — the board/status flips from
   Steps 1–6 ride this branch, so a stopped landing publishes nothing. Report the failing tests + which
-  trunk commits collided (`git log <suite-SHA>..origin/main_debug --oneline`); the fix is a follow-on on
-  the branch, then re-gate.
-Then `git push origin HEAD:main_debug`.
+  epic-branch commits collided (`git log <suite-SHA>..origin/epic/<slug> --oneline`); the fix is a follow-on
+  on the branch, then re-gate.
+Then `git push origin HEAD:epic/<slug>` — THE landing.
 
 ⛔ **Do NOT push `claude/<story-slug>` to origin.** The local branch is the rollback point and survives a
 failed landing push intact. A story branch reaches origin **only** via `/sudo-park` — that is park's whole
@@ -225,31 +226,11 @@ Pushing here made park redundant and filled that listing with landed-and-dead br
 parked, its branch is already on origin and Step 8 deletes it there.
 
 - **`main` is untouched.** Only Daniel, directly or via `/sudo-push-e2e`.
-- **Report** the branch, the commit range that landed, and the `main_debug` sha — same into the walkthrough's
+- **Report** the branch, the commit range that landed, and the epic-branch sha — same into the walkthrough's
   `## Your Actions` (Step 6).
 - Landing push rejected (remote moved) → **STOP and report.** Re-sync and re-land, never force.
-
-### Step 7b — Reconcile the shared checkout (MANDATORY — the push does NOT do this)
-
-`git push origin HEAD:main_debug` moves the remote and `origin/main_debug`; it leaves `refs/heads/main_debug`
-— the branch checked out in `PROJECT_ROOT` — exactly where it was. Skip this and the shared tree falls **one
-story behind per landing, forever**, until a `pull --ff-only` refuses on the board files Daniel edits there.
-That is the single most common reason close-out "needs untangling every time". Run `git-policy.md`
-→ **"Reconcile the shared checkout"** now, from `PROJECT_ROOT`:
-
-1. `git -C "$ROOT" fetch origin`, then `git -C "$ROOT" rev-list --left-right --count main_debug...origin/main_debug`.
-2. **`0 0`** → current, done. **ahead > 0** → real divergence, **STOP and report** (Daniel's call).
-   **behind only** → fast-forward.
-3. Dirty tree → `git stash push -m "pre-<slug>-land reconcile"` **first** (that dirt is somebody's in-flight
-   work and the stash is its only copy), `git merge --ff-only origin/main_debug`, then `git stash pop`.
-4. **`stash pop` conflict → STOP and report** the conflicted files and what each side wanted. Never
-   `stash drop`, never `checkout --` over it to force the fast-forward through.
-5. Confirm `--left-right --count` is `0 0` and the tree is clean, and **state that in the report** — an
-   unverified reconcile is how this silently regresses.
-
-⚠️ If the stash held edits to `sprint-status.yaml` / `active-context.md`, they were authored on the
-pre-landing base: after popping, **verify BOTH intents survived** (your close-out AND theirs) rather than
-trusting a clean pop — grep for a line you wrote and a line they wrote before moving on.
+- **No shared-checkout reconcile is owed.** It stands on `main`, which moves only when the epic merges via
+  `/sudo-push-e2e`. (The old Step 7b reconcile died with `main_debug` on 2026-08-07.)
 
 ## Step 8 — Prune the merged worktree & branches (AUTOMATIC)
 

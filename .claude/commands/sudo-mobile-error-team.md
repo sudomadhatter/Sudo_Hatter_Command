@@ -1,5 +1,5 @@
 ---
-description: Error team responder — take a live production incident (Sentry P1 → GitHub issue → machine-written fix branch) from alert to landed hotfix. Independently re-diagnoses, offers rollback-vs-fix-forward, writes a minimal fix + regression test, gates it on real CI, and stops twice for Daniel. Phone-first (this is the command the incident page tells you to run). Never merges on its own initiative; never pushes main/main_debug.
+description: Error team responder — take a live production incident (Sentry P1 → GitHub issue → machine-written fix branch) from alert to landed hotfix. Independently re-diagnoses, offers rollback-vs-fix-forward, writes a minimal fix + regression test, gates it on real CI, and stops twice for Daniel. Phone-first (this is the command the incident page tells you to run). Never merges on its own initiative; never pushes main.
 platforms: [claude]
 ---
 
@@ -45,7 +45,7 @@ platforms: [claude]
    not asserted** — write it before the fix and paste the red, or revert the fix hunk afterward and
    paste the red then (`reproduce-before-you-fix` G2/G5). A test only seen green proves nothing.
 5. **Branch law.** This command writes **only** `claude/incident-<short-id-lower>`. It **never**
-   pushes `main` or `main_debug`, and **never merges on its own initiative** (see Stop 2).
+   pushes `main`, and **never merges on its own initiative** (see Stop 2).
 6. **Two anchors, don't confuse them.** Read code for **diagnosis** at the event's `RELEASE_SHA`
    (what the user actually ran). Base the **fix branch** on current `main` HEAD. If they differ,
    say so — the gap may itself be relevant.
@@ -231,8 +231,8 @@ git checkout -B claude/incident-<id> origin/claude/incident-<id> || git checkout
 
 Open a **DRAFT PR targeting `main`** — tap-confirmed first (mobile-mode Override 1: ask before the
 PR). This is the documented **hotfix carve-out**: the incident lane is anchored on production
-(`incident-response.yml` checks out `ref: main`; both back-merge footers say merge to `main`, then
-rebase `main_debug`), and `pr-check.yml` only runs on PRs targeting `main`.
+(`incident-response.yml` checks out `ref: main`; the hotfix lands on `main` via this PR), and
+`pr-check.yml` only runs on PRs targeting `main`.
 
 ```bash
 gh pr create --draft --base main --head claude/incident-<id> \
@@ -290,18 +290,19 @@ rate should fall to zero on the new release. Report the actual observation, not 
    the proper fix and its ACs, and add the sprint-status.yaml backlog entry. **Read the file's
    existing token format first** — the board drifts; match what's there, don't assume.
    A complete, root-cause fix needs no follow-up story; say so rather than inventing one.
-5. **Back-merge reminder (desktop step, don't do it here):**
-   `git checkout main_debug && git rebase main` — the existing contract. `main_debug` is shared by
-   parallel teams; that rebase is Daniel's call, not this command's.
+5. **Epic-sync reminder (desktop step, don't do it here):** any OPEN `epic/*` branch must absorb the
+   hotfix — merge `origin/main` INTO the epic branch, sync-first per `git-policy.md` (`/sudo-push-e2e`
+   re-does this before promoting either way). The epic branch is shared by parallel teams; that merge
+   is Daniel's call, not this command's. (The old `main_debug` back-merge contract died 2026-08-07.)
 
 ---
 
 ## What this command never does
 
-- Never merges without Daniel's explicit word · never pushes `main`/`main_debug` directly.
+- Never merges without Daniel's explicit word · never pushes `main` directly.
 - Never claims a gate result it didn't observe · never calls zero-checks "green."
 - Never expands past the root cause "while it's in there."
-- Never rebases `main_debug` · never marks a story `done`.
+- Never merges `main` into an epic branch on its own initiative (Daniel's call) · never marks a story `done`.
 - Never runs bare `python` in AGY (drifted global interpreter → false findings).
 
 Optional additional input (short-id / issue URL / `latest`): $ARGUMENTS

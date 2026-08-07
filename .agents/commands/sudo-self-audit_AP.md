@@ -24,8 +24,8 @@ You are **Murat (QA)** running the pre-dev adversarial audit defined in
   file is retired 2026-08-02). Do **NOT** modify source or tests, and do **NOT** implement the story or
   write `walkthrough.md` — implementation is the Dev stage's job. If the plan already carries a
   `## Self-Audit` section, leave it and stop.
-- This stage appends its audit and nothing else — never land on `main_debug`, never set the
-  story to `done`. (The Dev stage's worktree commits carry the plan along with the story.)
+- This stage appends its audit and nothing else — never land on the epic branch (close-out's job),
+  never set the story to `done`. (The Dev stage's worktree commits carry the plan along with the story.)
 
 ## Output
 Append **`## Self-Audit (<date>)`** to `implementation_plan.md` in the shared folder: scope, the

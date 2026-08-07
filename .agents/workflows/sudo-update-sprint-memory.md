@@ -1,5 +1,5 @@
 ---
-description: End-of-session / story close-out save — advance the closed story to done (running this command IS Daniel's sign-off; only objectively-red /sudo-code-review tests block the flip), code-verify, route learnings to specs/rules/memory, prune active-context, then LAND the story branch on main_debug (Step 7). Run LAST when closing a story or session.
+description: End-of-session / story close-out save — advance the closed story to done (running this command IS Daniel's sign-off; only objectively-red /sudo-code-review tests block the flip), code-verify, route learnings to specs/rules/memory, prune active-context, then LAND the story branch on its EPIC branch (Step 7). Run LAST when closing a story or session.
 platforms: [opencode, antigravity]
 ---
 

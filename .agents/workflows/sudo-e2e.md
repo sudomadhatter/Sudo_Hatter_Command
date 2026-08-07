@@ -5,8 +5,8 @@ description: Run the project's real end-to-end suite (Firebase-emulator-backed, 
 # /sudo-e2e — End-to-End Test Gate
 
 Runs the project's **hermetic E2E harness** and turns the result into a promotion verdict. Green
-here is the evidence that `main_debug` is safe to promote to `main` (`/sudo-push-e2e` paths B/C
-call this and refuse to proceed on red). Run it solo whenever you want end-to-end confidence.
+here is the evidence that the EPIC BRANCH is safe to merge into `main` (`/sudo-push-e2e` calls
+this and refuses to proceed on red). Run it solo whenever you want end-to-end confidence.
 
 ## Step 0 — Resolve the target project (FIRST — before anything else)
 Bind the target per `.agents/rules/sudo-target-resolution.md` §STD + §BIND: self fast-path → `$ARGUMENTS`
@@ -41,7 +41,7 @@ Pass-through args after `--` (e.g. one spec, headed): `npm run test:e2e -- journ
 ## Step 3 — Report the verdict
 Parse the run and post exactly one of:
 - **`E2E GATE: GREEN`** — N/N journeys passed. Link the HTML report if written
-  (`frontend/playwright-report/`). Safe to promote.
+  (`frontend/playwright-report/`). The epic branch is safe to merge into `main`.
 - **`E2E GATE: RED`** — list each failing spec + the one-line reason (assertion vs timeout vs
   harness/env). A harness/env failure is still RED — fix the env and re-run; never wave it through.
 

@@ -127,8 +127,10 @@ no ticket is ever left un-verdicted.
 
 **Compute the approved set:**
 1. **Candidates** = every in-flight story + every 🟢 ready row that is grounded.
-2. **Touch-sets**, in order of authority: `git diff --name-only main_debug...<branch>` (code written
-   wins) → the worktree's `implementation_plan.md` "Modify/Add [file]" lines **plus every source path
+2. **Touch-sets**, in order of authority: `git diff --name-only <base>...<branch>` (code written
+   wins; base = the story's epic branch — `git for-each-ref --format='%(refname:short)'
+   refs/heads/epic/*`, exactly one live epic branch is the normal case; fallback `main`) → the
+   worktree's `implementation_plan.md` "Modify/Add [file]" lines **plus every source path
    its `## Self-Audit` names** (that section's whole job is finding the edit sites the plan missed —
    ignoring it approves a pair the lane's own audit already flagged) → the story file's Dev Notes
    surfaces / task paths. Planning artifacts (`_bmad-output/`, `_bmad/`, `_artifacts/`,

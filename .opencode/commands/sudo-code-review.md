@@ -178,8 +178,8 @@ of truth** — your Step 4 section is part of it, and the body around it must no
 - **Hard rule: NEVER finish `/sudo-code-review` with the walkthrough body left stale after applying fixes.**
 
 ## Stay in lane
-Commit your review fixes inside the story worktree (explicit paths) — but **never land on `main_debug`**,
-and never flip the story status or edit `sprint-status.yaml`; that is `sudo-update-sprint-memory`'s job
+Commit your review fixes inside the story worktree (explicit paths) — but **never land on the epic
+branch** (close-out's job), and never flip the story status or edit `sprint-status.yaml`; that is `sudo-update-sprint-memory`'s job
 (it reads the walkthrough's `Verdict:` line first, then lands the branch in its Step 7). Updating
 `walkthrough.md` (Steps 4–5) is IN lane — that is documenting the review, not flipping status.
 

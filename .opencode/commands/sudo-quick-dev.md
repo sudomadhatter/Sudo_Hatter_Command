@@ -27,8 +27,11 @@ child tool call resolves under `PROJECT_ROOT`.
 
 ## Step 0.5 — Worktree (before the first edit)
 Per `worktree-per-story`: run `git worktree list` under `PROJECT_ROOT`; reuse an existing
-`claude/<slug>` tree for this fix, else open one off `main_debug`. Echo the case. Quick fixes are NOT
-exempt — this is what keeps them tangle-free, rollbackable, and landable through the normal close-out.
+`claude/<slug>` tree for this fix, else open one off the story's EPIC branch (`epic/<epic-key>-<slug>`).
+No epic applies — a truly ad-hoc fix outside any sprint — then mirror `git-policy.md`'s chore lane
+instead: a short-lived `chore/<slug>` branch off `main`, no worktree, merged back to `main` in the same
+session with Daniel's sign-off. Echo the case. Quick fixes are NOT exempt — this is what keeps them
+tangle-free, rollbackable, and landable through the normal close-out.
 
 ## Step 1 — Create the story
 Invoke the **`bmad-create-story`** skill for the story in `$ARGUMENTS` (e.g., a story ID like `12.3`, or a new descriptive name). This creates the story file in `_bmad/bmm/stories/` with its ACs.
@@ -67,6 +70,7 @@ check, paste output.
 
 ## Done
 Stop here. Do **NOT** run `/sudo-update-sprint-memory`. Commit inside the worktree (explicit paths —
-never `git add -A`); never land on `main_debug`. Display the story path, the key changes, the test +
+never `git add -A`); never land on the epic branch (close-out's job), never touch `main`. Display the
+story path, the key changes, the test +
 audit output, and invite the human (Daniel) to review and run `/sudo-update-sprint-memory` himself
 when satisfied.

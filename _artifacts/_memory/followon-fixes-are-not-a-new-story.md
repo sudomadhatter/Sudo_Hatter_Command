@@ -1,6 +1,6 @@
 ---
 name: followon-fixes-are-not-a-new-story
-description: "Remediating a closed story's recorded findings is NOT a new story — no worktree, no branch, no board key. Fix directly on main_debug with explicit-path commits. And don't leave recorded findings unfixed."
+description: "Remediating a closed story's recorded findings is NOT a new story — no worktree, no board key. Fix on the epic branch (or a chore/* branch off main when no epic is live) with explicit-path commits. And don't leave recorded findings unfixed."
 metadata: 
   node_type: memory
   type: feedback
@@ -20,7 +20,9 @@ spinning up a worktree + branch for it is ceremony that buys nothing and leaves 
 And a finding recorded as "deferred" still reads as unfinished work to the person who has to ship it.
 
 **How to apply:**
-- Fix directly in the shared checkout on `main_debug`, commit with **explicit paths** (another lane's
+- Fix directly on the story's epic branch (no new story worktree); when no epic is live, take a
+  short-lived `chore/*` branch off `main` and merge it back the same session with sign-off. Never in the
+  shared `main` checkout. Commit with **explicit paths** (another lane's
   staged work often lives there — never `git add -A`), push, verify `0 0` + clean.
 - Record it on the CLOSED story's board line and its ③ verdict as a dated FOLLOW-ON block, so the
   verdict stops reading as an outstanding obligation. No new board key.

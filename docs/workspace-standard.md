@@ -126,8 +126,9 @@ the toolkit:
 - **`_bmad-output/sudo-tests.yaml`** — present = the `/sudo-code-review` TEA gate is **ARMED**
   (absent = auto-WAIVED, and a workspace that starts WAIVED tends to stay WAIVED). Ships armed in the
   template with ratchet-from-zero floors; `l1_coverage_min` and CI's `--cov-fail-under` only ever go UP.
-- **`.github/workflows/pr-check.yml`** — CI gates PRs to **`main` AND `main_debug`** (the 2026-07 audit's
-  P0-1 lesson: an ungated integration branch is where regressions hide).
+- **`.github/workflows/pr-check.yml`** — CI gates PRs to **`main` AND `epic/**`** (the 2026-07 audit's
+  P0-1 lesson: an ungated integration branch is where regressions hide — under the epic-branch model
+  that means story landings get CI too, not just the epic's merge to `main`).
 - **BDD layer (TDAD Layer 1)** — Gherkin contracts at `backend/tests/features/<domain>/*.feature`,
   **self-binding** steps at `backend/tests/bdd/steps_<domain>.py` (each calls `pytest_bdd.scenarios()`;
   pyproject `python_files` includes `steps_*.py`) — dropping a feature+steps pair into the tree is all it
@@ -146,7 +147,7 @@ the toolkit:
 | ☐ | vendored `docs/workspace-standard.md` present |
 | ☐ | Tier-2 local law: `_artifacts/`, `_my_resources/`, `docs/` each carry `AGENTS.md` + 1-line adapters |
 | ☐ | dev workspace: `_bmad/custom/` guard layer present (4 tomls + resolver scripts — hand-copy parity, never synced) |
-| ☐ | dev workspace: `_bmad-output/sudo-tests.yaml` ARMED · `pr-check.yml` gates `main` + `main_debug` |
+| ☐ | dev workspace: `_bmad-output/sudo-tests.yaml` ARMED · `pr-check.yml` gates `main` + `epic/**` |
 | ☐ | dev workspace: BDD layer wired (`backend/tests/features/` + self-binding `tests/bdd/steps_*.py` + `python_files`) |
 
 ### The PATH CONTRACT (exact files & where they live — what the tooling verifies)

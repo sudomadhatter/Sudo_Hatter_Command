@@ -19,7 +19,7 @@ against unresolved product behavior or unproven technical assumptions.
 - The PRD is `status: final`; its quality and traceability reviews passed.
 - No UX-design run exists.
 - No architecture, ADR, epic, sprint, or implementation story exists.
-- The project is clean and synchronized on `main_debug`.
+- The project is clean and synchronized on `main`.
 - The PRD carries four architecture validation gates: motion provider, hardware profiles, screenplay
   fidelity, and voice/asset rights.
 - TEA system-level Test Design cannot run yet because it requires the PRD plus architecture/ADR inputs.

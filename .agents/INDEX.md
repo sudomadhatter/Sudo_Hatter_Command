@@ -6,7 +6,7 @@ the "what's in here" map. Edit at master, then `/sync-agents`.
 | Subfolder | Holds | Dispatch via |
 |---|---|---|
 | `rules/` | behavioral law — constitution, karpathy-guidelines, git-policy, artifacts-always-first, mobile-mode, … | `rules/INDEX.md` |
-| `commands/` | the canonical slash-command set — `/sudo-*`, `/autopilot_*`, `/sync-agents`, `/new-project`, `/merge_main_debug`, … | `commands/INDEX.md` |
+| `commands/` | the canonical slash-command set — `/sudo-*`, `/autopilot_*`, `/sync-agents`, `/new-project`, … | `commands/INDEX.md` |
 | `skills/` | model-invoked capabilities | `skills/INDEX.md` |
 | `workflows/` | the Antigravity workflow mirror + real multi-stage workflows — **this is Antigravity's `/` surface**, so everything here is invocable by Gemini | `workflows/INDEX.md` |
 | `reference/` | long-form reference docs deliberately OFF every command surface (e.g. the autopilot relay reference — a Claude/opencode-only pipeline Gemini can't run) | `reference/INDEX.md` |

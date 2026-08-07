@@ -1,5 +1,5 @@
 ---
-description: One-shot close-out for ALL of an epic's live story worktrees — read every tree, check each story, fix/merge in dependency order with per-lane test gates, land on main_debug, flip each story to done, run the combined gate, then prune every tree and branch. Invoked directly or from /sudo-update-sprint-memory when several lanes are live.
+description: One-shot close-out for ALL of an epic's live story worktrees — read every tree, check each story, fix/merge in dependency order with per-lane test gates, land on the epic branch, flip each story to done, run the combined gate, then prune every tree and branch. Invoked directly or from /sudo-update-sprint-memory when several lanes are live.
 platforms: [opencode, antigravity]
 ---
 
@@ -54,7 +54,7 @@ Inside each worktree:
 
 ## Step 3 — The overlap map (BEFORE any merge)
 Pairwise across the set (`git diff --name-only <A>...<B>` per pair, plus each lane vs
-`origin/main_debug`), classify every file touched by ≥2 lanes:
+`origin/epic/<slug>` — the epic's own branch), classify every file touched by ≥2 lanes:
 - **Code overlaps** — read both hunks; same-function edits get an owner + resolution decided NOW,
   not mid-conflict. Dependency edges (one lane creates a module/predicate a sibling imports)
   dictate order: **creator lands before importer**; an operator ruling on the board outranks any
@@ -71,9 +71,10 @@ dependencies don't dictate.
 
 ## Step 4 — Fix, close, land — sequentially, verified INSIDE each worktree
 For each eligible lane, in the Step 3 order:
-1. **Merge the trunk into the lane, in the lane:** `git merge origin/main_debug` — it now carries
-   every previously-landed sibling, so each merge is the rolling reconcile. Resolve conflicts HERE
-   per the Step 3 plan. ⛔ Never check `main_debug` out in the shared checkout to resolve anything.
+1. **Merge the epic branch into the lane, in the lane:** `git merge origin/epic/<slug>` — it now
+   carries every previously-landed sibling, so each merge is the rolling reconcile. Resolve conflicts
+   HERE per the Step 3 plan. ⛔ Never check the epic branch out in the shared checkout to resolve
+   anything.
    **Expect ONE conflict block spanning the set's story-status lines in `sprint-status.yaml` at
    every lane merge** — adjacent lines, different lanes, by construction (the one-line-per-entry
    CHANGE LOG in `_bmad-output/history/CHANGELOG.md` auto-merges; the status lines don't — and
@@ -98,20 +99,19 @@ For each eligible lane, in the Step 3 order:
    pointer; route learnings to their homes and queue memory writes; confirm the walkthrough's
    `## Your Actions` records what lands. Commit — EXPLICIT PATHS ONLY, `git diff --cached --stat`
    shows only this story's files.
-4. **Land:** `git push origin HEAD:main_debug`; verify the remote moved. Rejected (remote moved
+4. **Land:** `git push origin HEAD:epic/<slug>`; verify the remote moved. Rejected (remote moved
    again) → re-merge, re-gate, re-land — never force. ⛔ Do NOT push the `claude/*` branch itself;
    it is the rollback point until Step 6 deletes it.
 
-## Step 5 — Combined gate on the reconciled trunk
-1. **Reconcile the shared checkout** (`git-policy.md` → "Reconcile the shared checkout") — the
-   pushes moved `origin/main_debug` only; the checked-out branch is now N stories behind. Verify
-   `0 0` + clean, and say so.
-2. Run the COMBINED surface once on the updated trunk: the union of all landed stories' test files
-   + the standard tier per stack touched (+ `/sudo-e2e` if the set is headed to a promote). An
-   integration break no single lane caused is fixed HERE — directly on `main_debug`, explicit
+## Step 5 — Combined gate on the reconciled epic branch
+*(No shared-checkout reconcile is owed — it stands on `main` and only moves when the epic merges;
+the old "N stories behind" fast-forward died with `main_debug` on 2026-08-07.)*
+1. Run the COMBINED surface once on the updated epic branch: the union of all landed stories' test
+   files + the standard tier per stack touched (+ `/sudo-e2e` if the set is headed to a promote). An
+   integration break no single lane caused is fixed HERE — directly on the epic branch, explicit
    paths, follow-on-fix convention (no new story, no new worktree) — and the combined surface
    re-run to green.
-3. Run `/sudo-prune-context` ONCE for the whole set (not per lane); write the queued memory files +
+2. Run `/sudo-prune-context` ONCE for the whole set (not per lane); write the queued memory files +
    `MEMORY.md` pointers; ask the operator the close-out catch question once: *"Set closed. Any
    manual learnings, new bugs, or sprint-objective changes to add?"*
 
@@ -123,8 +123,9 @@ trees and are reported, not pruned.
 
 ## Done — the one-shot report
 Per story: landed SHA range · verdict · `→ done` flip · pruned ✓. Set-level: overlaps resolved
-(file → resolution) · per-lane and combined test evidence · memory writes · reconcile verified
-`0 0` · anything skipped and WHY (a blocked lane, an excluded lane, a live-QA carryover). `main`
-untouched — promotes stay with `/sudo-push-e2e`.
+(file → resolution) · per-lane and combined test evidence · memory writes · anything skipped and
+WHY (a blocked lane, an excluded lane, a live-QA carryover). **This command ends at the epic
+branch — it does NOT merge to `main`.** The epic reaches `main` exactly one way: `/sudo-push-e2e`
+(full gate + Daniel's sign-off), which also deletes the epic branch after the merge.
 
 Optional additional input: $ARGUMENTS
