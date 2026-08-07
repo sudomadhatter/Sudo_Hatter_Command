@@ -394,5 +394,5 @@ WHEN SOMETHING IS SILENT
 - [jira_integration_guide.md](jira_integration_guide.md) — why it's built this way; the two-channel model;
   the BMAD-number ↔ Jira-key join; Smart Commits; the live-vs-not-built ledger
 - [git_walkthrough_settings.md](git_walkthrough_settings.md) — git setup and settings
-- [../workflows_tea_testing/sudo_workflows_testing.md](../workflows_tea_testing/sudo_workflows_testing.md)
+- [../../_quick_reference/sudo_workflows_testing.md](../../_quick_reference/sudo_workflows_testing.md)
   — the command lanes and the test gate in full
