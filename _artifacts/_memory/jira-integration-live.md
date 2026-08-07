@@ -54,7 +54,7 @@ not a lock. Daniel committed to GitHub Pro 2026-08-07; once active, `main` becom
 through a passing PR and the docs' "alarm not lock" sections need updating.
 
 **Docs:** `_my_resources/diagrams_guides/system/jira_integration_guide.md` (the why) and
-`jira_manual.md` (the by-hand how-to). Both carry a live-vs-not-built ledger — keep it honest.
+`_my_resources/_quick_reference/jira_manual.md` (the by-hand how-to; relocated there by the operator 2026-08-07). Both carry a live-vs-not-built ledger — keep it honest.
 
 **Still not built:** the `acli` wrapper in `.agents/scripts/`, a `pre-push` branch-name check, a CI job
 failing PRs with unkeyed commits, and the `/sudo-*` wiring. That last one has **five reserved seats**

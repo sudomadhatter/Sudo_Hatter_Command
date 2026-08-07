@@ -433,7 +433,7 @@ one.
 [AVCH](https://sudo-command.atlassian.net/jira/software/projects/AVCH/boards/3) for AviationChat. The
 sprint holds the current batch, the backlog holds everything else, and every ticket links to its
 branches and commits through the key. How to drive it by hand:
-[jira_manual.md](../diagrams_guides/system/jira_manual.md); why it's built this way:
+[jira_manual.md](jira_manual.md); why it's built this way:
 [jira_integration_guide.md](../diagrams_guides/system/jira_integration_guide.md).
 
 **What did NOT retire: `sprint-status.yaml`** (decided in SCC-20). It remains the machine-read sprint

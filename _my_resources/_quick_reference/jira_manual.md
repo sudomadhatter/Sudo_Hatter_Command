@@ -4,7 +4,7 @@
 > and pushing code through the VS Code Source Control panel. No commands, no agents, no terminal.
 > Written 2026-08-07 from an actual run — including the parts that went wrong.
 >
-> **Companion doc:** [jira_integration_guide.md](jira_integration_guide.md) explains *why* the system is
+> **Companion doc:** [jira_integration_guide.md](../diagrams_guides/system/jira_integration_guide.md) explains *why* the system is
 > built this way. This one is *how you drive it*.
 
 ---
@@ -391,8 +391,8 @@ WHEN SOMETHING IS SILENT
 
 ## 8. Related reading
 
-- [jira_integration_guide.md](jira_integration_guide.md) — why it's built this way; the two-channel model;
+- [jira_integration_guide.md](../diagrams_guides/system/jira_integration_guide.md) — why it's built this way; the two-channel model;
   the BMAD-number ↔ Jira-key join; Smart Commits; the live-vs-not-built ledger
 - [git_walkthrough_settings.md](git_walkthrough_settings.md) — git setup and settings
-- [../../_quick_reference/sudo_workflows_testing.md](../../_quick_reference/sudo_workflows_testing.md)
+- [sudo_workflows_testing.md](sudo_workflows_testing.md)
   — the command lanes and the test gate in full
