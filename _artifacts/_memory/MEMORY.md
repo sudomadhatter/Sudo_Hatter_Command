@@ -55,6 +55,7 @@
 - [Worktrees skip gitignored assets](worktrees-do-not-inherit-gitignored-assets.md) — copy auth_keys/ + .env; junction node_modules; `npm ci` for E2E.
 - [Env migration kit](env-migration-kit.md) — `_my_resources/migrations/`: master.env + new_machine guide; clone first, restore second.
 - [`.zshrc` is invisible to automation](zshrc-is-invisible-to-automation.md) — interactive-only; shared env belongs in `~/.zshenv`. Cost two debug cycles.
+- [Global gitconfig doesn't travel](gitconfig-never-migrated-to-the-mac.md) — Windows-only until applied on the Mac 08-07; `autoSetupRemote` can't retro-fix branches pushed before it.
 - [Secrets layout is operator-owned](secrets-bundle-layout-is-operator-owned.md) — never reorganize/dedupe the bundle; point scripts at the operator's copy.
 
 ## Testing
