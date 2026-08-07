@@ -54,6 +54,7 @@
 - [Pruned worktree blocks re-add](pruned-worktree-leaves-a-blocking-shell.md) — the empty dir blocks `worktree add`; only PowerShell can delete it.
 - [Worktrees skip gitignored assets](worktrees-do-not-inherit-gitignored-assets.md) — copy auth_keys/ + .env; junction node_modules; `npm ci` for E2E.
 - [Env migration kit](env-migration-kit.md) — `_my_resources/migrations/`: master.env + new_machine guide; clone first, restore second.
+- [Secrets layout is operator-owned](secrets-bundle-layout-is-operator-owned.md) — never reorganize/dedupe the bundle; point scripts at the operator's copy.
 
 ## Testing
 - [Typecheck: BE gated, FE not](agy-typecheck-is-enforced-nowhere.md) — pyrefly changed-files hard gate live 07-31; frontend `tsc` ungated but clean.
@@ -72,6 +73,7 @@
 - [✅ Gemini key leak (FIXED)](real-gemini-key-leaks-into-pytest-env.md) — `setdefault` is wrong for a secret; conftests assign. Rotation owed.
 - [Live-guard needs @live](test-live-guard-needs-live-marker.md) — real-key tests need `@pytest.mark.live` or the guard is swallowed.
 - [Rules tests need Java](firestore-rules-tests-need-java.md) — Java 17 (Temurin) installed here; set JAVA_HOME per shell.
+- [Node 26 breaks vitest jsdom storage](node-26-breaks-vitest-jsdom-storage.md) — localStorage undefined in tests; run Node 22 LTS; check `node --version` first.
 - [Full-suite contention](vitest-full-suite-contends-across-lanes.md) — locks are per-STACK; long runs → persistent log; bg shells die on chat close.
 - [⛔ "jsdom OOM" was a mock bug](sudo-admin-jsdom-oom-machine-bound.md) — an unstable `useRouter()` mock drove an infinite render loop.
 - [coverage `source` ignores paths](coverage-source-silently-ignores-file-paths.md) — a .py path in `source` measures NOTHING; use `source_pkgs`.

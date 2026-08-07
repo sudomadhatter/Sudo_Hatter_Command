@@ -42,6 +42,22 @@ installed: .git/hooks/post-merge  -> scripts/git-hooks/board-stale-stamp.sh
 The installer **refuses to overwrite** a pre-existing hook that isn't ours — if it warns, open the
 existing hook and chain the script manually (add the `exec` line from the stub).
 
+> ⛔ **Submodule clones (the Mac, 2026-08-06): the installer fails — `.git` is a FILE there.** When the
+> project was brought down via `git submodule update --init`, `<repo>/.git` is a gitdir pointer file, so
+> the installer's literal `<repo>/.git/hooks/<name>` path errors with `Could not find a part of the
+> path` (its "installed:" line still prints — do not trust it; `ls` the real hooks dir). The real hooks
+> dir is `$(git rev-parse --git-dir)/hooks` → `<lobby>/.git/modules/Projects/<name>/hooks`. Write the
+> stubs there by hand.
+>
+> **Two hook systems share one slot — chain, don't choose.** Repos also carry a tracked `.githooks/`
+> (encoding pre-commit, map-drift post-commit) activated by machine-local `git config core.hooksPath
+> .githooks` — which never travels, so set it per machine (lobby, Fresh_Workspace_BMAD,
+> NEXgen-VR-Director). For AGY, hooksPath would *silence* these board stubs, so instead leave hooksPath
+> unset and write stubs into the modules hooks dir that run BOTH: pre-commit → exec `.githooks/pre-commit`;
+> post-commit → run `.githooks/post-commit` then exec `board-stale-stamp.sh`; post-merge → exec
+> `board-stale-stamp.sh`. Verified 2026-08-06: fresh board silent/exit 0, `BOARD_BASE` drift stamped the
+> banner, checkout restored clean.
+
 **Which projects:** any project whose repo contains `scripts/git-hooks/board-stale-stamp.sh`.
 As of 2026-08-02 that is **AGY_AVIATIONCHAT only**. If the kit gets copied to another project, the
 same install step applies there.

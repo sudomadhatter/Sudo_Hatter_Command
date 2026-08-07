@@ -11,7 +11,7 @@ fresh-machine setups.
 |---|---|---|---|---|
 | **Laptop** (8-core) | Windows | ☑ 2026-08-01 · re-verified parallel 2026-08-03 | **`-n 4`** (206.81 s, vs `auto`/8 = 261.76 s) | The box most measurements in this doc came from. ⚠️ Its ☑ predates the 08-03 `requirements.txt` emoji, so it has **never** run the current install step — see the `PYTHONUTF8` box |
 | **Desktop** (16 logical cores, 64 GB RAM) | Windows | ☑ 2026-08-04 — `3024 passed / 35 skipped / 0 failed`, matching the reference totals exactly | **`-n 6`** (57.65 s) · 4 = 63.68 · 8 = 59.87 · 12 = 64.33 · `auto`(16) = **71.75 s, the slowest** | Needed Python 3.11 **installed from scratch** (only 3.14/3.10 present) and `PYTHONUTF8=1`. Old venv was 3.14.0 built `--system-site-packages`. First machine to execute **this companion** (5-min fix + CHECK 1–4) against a real environment; 4 of the 6 kit-wide defects were found here. Kit-wide coverage — including what was NOT run — is the table in `INDEX.md` |
-| **Mac** (64 GB RAM) | macOS | ☐ | ☐ time `4 / 6 / 8 / auto` | Needs `python3.11`, `temurin@17`, Node, + `pwsh` for any `.ps1`. See ⛔ **§2 of `INDEX.md`** — the secrets restore script does NOT work here |
+| **Mac** (10-core Apple Silicon, 64 GB RAM) | macOS | ☑ 2026-08-06 — `3025 passed / 35 skipped / 0 failed` (one story landed since the 3024 reference) | **`-n 8`** (11.11 s) · 6 = 11.50 · 4 = 13.00 · `auto`(10) = **13.68 s, the slowest** | Fastest machine in this table (fresh 3.11.15 venv, 170 pkgs). Java is **`openjdk@17` formula** (`/opt/homebrew/opt/openjdk@17`), NOT the temurin cask — the cask's pkg installer needs an interactive sudo the setup agent doesn't have; set `JAVA_HOME` per shell (or via `~/.zshrc`). `restore-env-master.sh` ran its first live macOS **write** here 2026-08-06: 4 files restored, mode 600, §4 clean — the `--dry-run`-only caveat in `INDEX.md` is now closed |
 
 **Two independent axes — don't collapse them.** *OS* decides which command column you use. *Power*
 decides only your `-n` value and is otherwise handled automatically (`-n auto` reads the core count).
@@ -290,6 +290,18 @@ BOTH stacks. Set it per-invocation; never default it anywhere.
 | Weird failures only on ONE machine | that machine skipped this checklist — venv still 3.14 | run CHECK 1; rebuild |
 
 ## The vitest side (nothing to rebuild — read once, then forget)
+
+> ⛔ **One per-machine trap after all — Node 26 breaks the vitest jsdom environment.** Found on the Mac
+> 2026-08-06: a fresh `brew install node` gave Node 26.7.0, and under it every test file that touches
+> `localStorage`/`sessionStorage` dies in `beforeEach` with
+> `TypeError: Cannot read properties of undefined (reading 'clear')` — 18 failures across 4 files,
+> including a red file **dying pre-assertion instead of failing on its asserts**. Clean-room proof
+> matrix (probe project, no repo code): vitest 4.1.5 *and* 4.1.10, jsdom 27 *and* 28.1.0 — all broken
+> on Node 26; the identical probe passes on Node 22.23.2. Raw jsdom is fine on 26 — it is vitest's
+> global-window injection that drops the storage accessors. **Fix: run Node 22 LTS**
+> (`brew install node@22`, prepend `/opt/homebrew/opt/node@22/bin` to PATH). Re-run after the switch:
+> `581 passed / 1 skipped / 0 failed`, full parity. Check `node --version` FIRST when a fresh machine
+> shows storage-flavored vitest failures the other machines don't.
 
 The frontend twin of the pytest lock, added late 2026-08-01 (`cae06a78`). Other machines get it
 for free with `git pull` — it is ordinary tracked TypeScript, zero new dependencies, and the lock
