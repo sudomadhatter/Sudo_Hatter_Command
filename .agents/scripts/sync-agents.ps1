@@ -86,6 +86,19 @@ $ErrorActionPreference = "Stop"
 $Master   = Split-Path $PSScriptRoot -Parent     # ...\.agents
 $HomeRoot = Split-Path $Master -Parent           # ...\Sudo_Hatter_Command
 
+# Machine home for the global caches. $env:USERPROFILE is WINDOWS-ONLY - on macOS/Linux pwsh it is
+# $null, and `Join-Path $null ...` THROWS, which killed the entire global-cache stage (opencode +
+# Antigravity + Codex prompts + Codex skills) on the Mac while the local sync above had already
+# succeeded, so the run looked mostly fine. Resolve it once, cross-platform.
+# (Everything else in this script is separator-safe: PowerShell 7's Join-Path normalises the `\`
+# in path literals to `/` on Unix. The `.claude\commands`-style MANIFEST KEYS are deliberately left
+# back-slashed - they are dictionary keys, not paths, and must stay byte-identical across machines
+# or a manifest written on Windows would stop matching here and skip its retire-purge.)
+$UserHome = if ($env:USERPROFILE) { $env:USERPROFILE }
+            elseif ($env:HOME)    { $env:HOME }
+            else                  { [Environment]::GetFolderPath('UserProfile') }
+if (-not $UserHome) { throw "sync-agents: cannot resolve the machine home dir (USERPROFILE/HOME both unset)" }
+
 # -Maintained: the ONLY sanctioned "sync everything" — the lobby + ONLY the projects on the
 # .agents\maintained-projects.txt allowlist (shared with check_maps.py). Never hand-loop over
 # Projects\* : that touches child repos we deliberately do not keep in sync. -Target is ignored here.
@@ -134,17 +147,87 @@ $AllPlatforms = @('claude','opencode','antigravity','codex')
 
 # --- helpers ------------------------------------------------------------------
 
+# Is this path, or any directory above it inside $Root, excluded? Mirrors robocopy's /XD /XF, which match
+# by NAME anywhere in the tree; an /XD entry given as an absolute path is honoured as that exact directory
+# (the .agents vendor passes `<master>\bmad` that way).
+function Test-TreeExcluded {
+  param([string]$Full, [string]$Root, [bool]$IsDir, [string[]]$DirNames, [string[]]$DirPaths, [string[]]$FileNames)
+  if ((-not $IsDir) -and ($FileNames -contains (Split-Path $Full -Leaf))) { return $true }
+  $probe = if ($IsDir) { $Full } else { Split-Path $Full -Parent }
+  while ($probe -and ($probe.Length -gt $Root.Length)) {
+    if ($DirNames -contains (Split-Path $probe -Leaf)) { return $true }
+    if ($DirPaths -contains $probe) { return $true }
+    $probe = Split-Path $probe -Parent
+  }
+  return $false
+}
+
+# Cross-platform tree copy. robocopy is WINDOWS-ONLY, and on macOS/Linux these call sites aborted the run
+# mid-way instead of degrading - the Mac's first /sync-agents died after creating exactly one codex skill
+# dir, leaving a half-built cache that looked deliberate. Windows keeps robocopy VERBATIM (the proven path
+# on the primary machines); every other platform takes the PowerShell-native equivalent below. Semantics
+# both sides implement:
+#   -Mirror off (robocopy /E)  : additive - copy the tree, never delete anything already at the target
+#   -Mirror on  (robocopy /MIR): additive PLUS delete target entries the source no longer has
+# Excluded paths are skipped on BOTH passes, so -Mirror never deletes an excluded dir at the target either
+# (robocopy /MIR /XD behaves the same way: an excluded dir is out of scope, not "extra").
+function Copy-Tree {
+  param([string]$Src, [string]$Dst, [string[]]$ExcludeDirs, [string[]]$ExcludeFiles, [switch]$Mirror)
+  $xd = @(@($ExcludeDirs)  | Where-Object { $_ })
+  $xf = @(@($ExcludeFiles) | Where-Object { $_ })
+
+  if ($IsWindows) {
+    New-Item -ItemType Directory -Force -Path $Dst | Out-Null
+    $mode = if ($Mirror) { '/MIR' } else { '/E' }
+    if ($xf) { robocopy $Src $Dst $mode /XD @xd /XF @xf /NFL /NDL /NJH /NJS /NC /NS | Out-Null }
+    else     { robocopy $Src $Dst $mode /XD @xd          /NFL /NDL /NJH /NJS /NC /NS | Out-Null }
+    if ($LASTEXITCODE -ge 8) { throw "robocopy failed ($Src -> $Dst), rc=$LASTEXITCODE" }
+    return
+  }
+
+  $srcRoot  = (Resolve-Path -LiteralPath $Src).Path
+  $dirNames = @($xd | Where-Object { -not [IO.Path]::IsPathRooted($_) })
+  $dirPaths = @($xd | Where-Object { [IO.Path]::IsPathRooted($_) } |
+                ForEach-Object { $r = Resolve-Path -LiteralPath $_ -ErrorAction SilentlyContinue; if ($r) { $r.Path } })
+  New-Item -ItemType Directory -Force -Path $Dst | Out-Null
+  $dstRoot = (Resolve-Path -LiteralPath $Dst).Path
+
+  # -Force: on Unix a dot-file is "hidden", and without it every .gitkeep / .env.example would be skipped.
+  $kept = New-Object 'System.Collections.Generic.HashSet[string]'
+  foreach ($item in Get-ChildItem -LiteralPath $srcRoot -Recurse -Force -ErrorAction SilentlyContinue) {
+    if (Test-TreeExcluded $item.FullName $srcRoot $item.PSIsContainer $dirNames $dirPaths $xf) { continue }
+    $rel = $item.FullName.Substring($srcRoot.Length).TrimStart([char]'/', [char]'\')
+    [void]$kept.Add($rel)
+    $target = Join-Path $dstRoot $rel
+    if ($item.PSIsContainer) {
+      New-Item -ItemType Directory -Force -Path $target | Out-Null
+    } else {
+      $parent = Split-Path $target -Parent
+      if (-not (Test-Path -LiteralPath $parent)) { New-Item -ItemType Directory -Force -Path $parent | Out-Null }
+      Copy-Item -LiteralPath $item.FullName -Destination $target -Force
+    }
+  }
+
+  if (-not $Mirror) { return }
+  # Deepest-first, so a directory is only removed after its own contents have been considered.
+  $extra = @(Get-ChildItem -LiteralPath $dstRoot -Recurse -Force -ErrorAction SilentlyContinue |
+             Sort-Object { $_.FullName.Length } -Descending)
+  foreach ($item in $extra) {
+    if (-not (Test-Path -LiteralPath $item.FullName)) { continue }   # already gone with its parent
+    if (Test-TreeExcluded $item.FullName $dstRoot $item.PSIsContainer $dirNames $dirPaths $xf) { continue }
+    $rel = $item.FullName.Substring($dstRoot.Length).TrimStart([char]'/', [char]'\')
+    if (-not $kept.Contains($rel)) { Remove-Item -LiteralPath $item.FullName -Recurse -Force }
+  }
+}
+
 function Sync-Dir($src, $dst, [string[]]$ExcludeDirs, [string[]]$ExcludeFiles, [switch]$WhatIf) {
   if (-not (Test-Path $src)) { return }
   $xd = @('node_modules') + (@($ExcludeDirs) | Where-Object { $_ })
   $xf = @(@($ExcludeFiles) | Where-Object { $_ })
   if (-not $WhatIf) {
-    New-Item -ItemType Directory -Force -Path $dst | Out-Null
-    if ($xf) { robocopy $src $dst /E /XD @xd /XF @xf /NFL /NDL /NJH /NJS /NC /NS | Out-Null }
-    else     { robocopy $src $dst /E /XD @xd          /NFL /NDL /NJH /NJS /NC /NS | Out-Null }
-    if ($LASTEXITCODE -ge 8) { throw "robocopy failed ($src -> $dst), rc=$LASTEXITCODE" }
+    Copy-Tree $src $dst $xd $xf
   } else {
-    Write-Host ("WHATIF: would robocopy '{0}' -> '{1}' (excluding: {2})" -f $src,$dst,($xd -join ', '))
+    Write-Host ("WHATIF: would copy tree '{0}' -> '{1}' (excluding: {2})" -f $src,$dst,($xd -join ', '))
   }
 }
 
@@ -169,18 +252,62 @@ function Get-SyncManifest([string]$target) {
   }
 }
 
+function ConvertTo-ManifestString([string]$s) {
+  # Back-slash FIRST or the escapes we add get re-escaped. Manifest strings are path keys and file names.
+  $e = $s.Replace('\','\\').Replace('"','\"').Replace("`r",'\r').Replace("`n",'\n').Replace("`t",'\t')
+  return '"' + $e + '"'
+}
+
+# The manifest is TRACKED, so its bytes are a diff every machine reads. `ConvertTo-Json` cannot own them:
+# Windows PowerShell 5.1 and pwsh 7 serialise differently (5.1 emits a BOM and its own spacing -
+# `"version":  1` with two spaces), so the file rewrote ENTIRELY the first time it was generated on the
+# Mac - 250 lines of pure formatting churn burying the one line that carries meaning, and a guaranteed
+# conflict every time the two machines sync in turn. Emitting it by hand makes both engines write the
+# same bytes: fixed key order, sorted arrays, 2-space indent, LF, no BOM. Sorting is safe - every reader
+# tests membership (`-notcontains`), never position.
 function Save-SyncManifest([string]$target, $manifest, [switch]$WhatIf) {
   $p = Join-Path $target ".agents\$ManifestName"
   if ($WhatIf) { Write-Host ("WHATIF: would write sync manifest '{0}'" -f $p); return }
   New-Item -ItemType Directory -Force -Path (Split-Path $p -Parent) | Out-Null
-  $out = [ordered]@{
-    version   = 1
-    generated = (Get-Date).ToString('s')
-    note      = 'Generated by sync-agents.ps1. Records what the sync wrote so the next run can purge its own retired files. Do not hand-edit.'
-    vendor    = @($manifest.vendor)
-    local     = $manifest.local
+
+  $note  = 'Generated by sync-agents.ps1. Records what the sync wrote so the next run can purge its own retired files. Do not hand-edit.'
+  $lines = New-Object 'System.Collections.Generic.List[string]'
+  $lines.Add('{')
+  $lines.Add('  "version": 1,')
+  $lines.Add('  "generated": ' + (ConvertTo-ManifestString ((Get-Date).ToString('s'))) + ',')
+  $lines.Add('  "note": ' + (ConvertTo-ManifestString $note) + ',')
+
+  # An array as `[]` when empty, else one entry per line - matching what ConvertTo-Json produced, so this
+  # change alone does not re-churn the file on top of the format switch.
+  $emit = {
+    param([string]$label, [string[]]$items, [string]$indent, [string]$tail)
+    $vals = @(@($items) | Where-Object { $_ } | Sort-Object)
+    if (-not $vals.Count) { $lines.Add("$indent$label[]$tail"); return }
+    $lines.Add("$indent$label[")
+    for ($i = 0; $i -lt $vals.Count; $i++) {
+      $comma = if ($i -lt $vals.Count - 1) { ',' } else { '' }
+      $lines.Add("$indent  " + (ConvertTo-ManifestString $vals[$i]) + $comma)
+    }
+    $lines.Add("$indent]$tail")
   }
-  ($out | ConvertTo-Json -Depth 6) | Set-Content -Path $p -Encoding utf8
+
+  & $emit '"vendor": ' @($manifest.vendor) '  ' ','
+  $keys = @($manifest.local.Keys | Sort-Object)
+  if (-not $keys.Count) {
+    $lines.Add('  "local": {}')
+  } else {
+    $lines.Add('  "local": {')
+    for ($k = 0; $k -lt $keys.Count; $k++) {
+      $tail = if ($k -lt $keys.Count - 1) { ',' } else { '' }
+      & $emit ((ConvertTo-ManifestString $keys[$k]) + ': ') @($manifest.local[$keys[$k]]) '    ' $tail
+    }
+    $lines.Add('  }')
+  }
+  $lines.Add('}')
+
+  # WriteAllText, not Set-Content: -Encoding utf8 means "with BOM" on 5.1 and "without" on 7, and
+  # Set-Content would also stamp the platform's line ending on every line.
+  [IO.File]::WriteAllText($p, (($lines -join "`n") + "`n"), (New-Object Text.UTF8Encoding($false)))
 }
 
 # --- reconcile: a git-status-style three-way view of the invocable surfaces ---
@@ -480,8 +607,7 @@ function Sync-CodexSkills {
     $tgt = Join-Path $Dst $s.Name
     if (-not $WhatIf) {
       New-Item -ItemType Directory -Force -Path $tgt | Out-Null
-      robocopy $s.FullName $tgt /MIR /NFL /NDL /NJH /NJS /NC /NS /XD node_modules | Out-Null
-      if ($LASTEXITCODE -ge 8) { throw "robocopy failed ($($s.FullName) -> $tgt), rc=$LASTEXITCODE" }
+      Copy-Tree $s.FullName $tgt @('node_modules') @() -Mirror
     } else {
       Write-Host ("WHATIF: would mirror codex skill '{0}' -> '{1}'" -f $s.Name, $tgt)
     }
@@ -686,20 +812,23 @@ if (-not $GlobalsOnly) {
 if ((-not $NoGlobals) -and ($IsLobby -or $GlobalsOnly)) {
   $GlobalCmdSrc = Join-Path $Master "commands"
   $caches = @(
-    @{ Name = 'opencode';    Platform = 'opencode';    Path = (Join-Path $env:USERPROFILE ".config\opencode\commands") },
-    @{ Name = 'antigravity'; Platform = 'antigravity'; Path = (Join-Path $env:USERPROFILE ".gemini\antigravity\global_workflows") },
+    @{ Name = 'opencode';    Platform = 'opencode';    Path = (Join-Path $UserHome ".config\opencode\commands") },
+    @{ Name = 'antigravity'; Platform = 'antigravity'; Path = (Join-Path $UserHome ".gemini\antigravity\global_workflows") },
     # Codex custom prompts (invoked /prompts:<name>). Global-only -- Codex has no repo-level prompts dir; its
     # repo surface is AGENTS.md + .agents/skills (already handled). bmad-* skills go to ~/.codex/skills below.
-    @{ Name = 'codex';       Platform = 'codex';       Path = (Join-Path $env:USERPROFILE ".codex\prompts") }
+    @{ Name = 'codex';       Platform = 'codex';       Path = (Join-Path $UserHome ".codex\prompts") }
   )
   foreach ($c in $caches) {
     try {
       if (-not $WhatIf) {
         New-Item -ItemType Directory -Force -Path $c.Path -ErrorAction SilentlyContinue | Out-Null
+        # Guard the REAL run only. Under -WhatIf the dir was deliberately not created, so this test
+        # would fail on every not-yet-existing cache and report a fake "broken junction" on a fresh
+        # machine - which is exactly the state a dry run is most often used to inspect.
+        if (-not (Test-Path $c.Path)) { throw "path not writable (broken junction or missing target?)" }
       } else {
         Write-Host ("WHATIF: would ensure global cache dir '{0}'" -f $c.Path)
       }
-      if (-not (Test-Path $c.Path)) { throw "path not writable (broken junction or missing target?)" }
     } catch {
       Write-Warning ("sync-agents: SKIPPED {0} global cache '{1}' - {2}" -f $c.Name, $c.Path, $_.Exception.Message)
       continue
@@ -711,7 +840,7 @@ if ((-not $NoGlobals) -and ($IsLobby -or $GlobalsOnly)) {
 
   # Codex reads Agent Skills natively but NOT .claude/skills (where BMAD installs). Mirror the bmad-* skills
   # into ~/.codex/skills so BMAD is reachable from Codex via /skills (Daniel: "we use bmad in everything").
-  $codexSkillsDst = Join-Path $env:USERPROFILE ".codex\skills"
+  $codexSkillsDst = Join-Path $UserHome ".codex\skills"
   $bmadSkillSrc   = Join-Path $HomeRoot ".claude\skills"
   $codexSkillCount = Sync-CodexSkills $bmadSkillSrc $codexSkillsDst -WhatIf:$WhatIf
   Write-Host ("sync-agents: codex skills -> {0} bmad-* mirrored  ({1})" -f $codexSkillCount, $codexSkillsDst)

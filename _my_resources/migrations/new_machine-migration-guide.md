@@ -322,6 +322,42 @@ through each as needed:
   > match the installed version. Upstream those to the `.agents/` master before committing, or the
   > next `/sync-agents` reverts them — and keep every machine on the same gitnexus version, or they
   > will flip-flop the same three files forever.
+- **opencode**: one of the four platforms the toolkit syncs to, and **none of it travels** (2026-08-06,
+  the Mac). A clone brings the repo-side surface only — `opencode.json`, `.opencode/commands/` (47) and
+  `.opencode/agent/` (13) — which is why the config looks complete while the machine has no opencode at
+  all. Three separate machine-local pieces:
+  ```bash
+  brew install sst/tap/opencode     # 1. the CLI. Nothing else installs it
+  pwsh -File .agents/scripts/sync-agents.ps1 -GlobalsOnly   # 2. the ~/.config/opencode/commands cache
+  opencode auth login               # 3. provider credentials — INTERACTIVE, cannot be scripted
+  ```
+  > **The global command cache is what makes `/sudo-*` work outside a synced repo.** Step 2 is the same
+  > `/sync-agents -GlobalsOnly` used on Windows; it also refreshes the Antigravity workflows, the Codex
+  > prompts and the 56 bmad-* Codex skills. Expect `opencode global -> 47 cmds`.
+  >
+  > ⛔ **`sync-agents.ps1` could not do step 2 on macOS before 2026-08-06 — and it failed in the two ways
+  > that hide themselves.** `$env:USERPROFILE` is Windows-only, so `Join-Path $null` **threw** and took
+  > the whole global stage down *after* the local sync had already printed its success lines; and
+  > `robocopy` does not exist off Windows, so the codex-skills mirror died having created exactly **one**
+  > skill directory — a half-built cache that looks deliberate. Both are fixed (Windows still takes the
+  > robocopy path verbatim). If a global cache is ever empty here, re-run with `-WhatIf` and read the
+  > *whole* output — the failure is never on the last line.
+  >
+  > ⚠️ **Credentials are the one step nobody can do for you.** They live in
+  > `~/.local/share/opencode/auth.json`, are machine-local like every other login in this section, and
+  > `opencode auth login` is a TUI — an agent cannot run it. Until it is done, `opencode models` lists
+  > only the free `opencode/*` tier and every pinned agent fails. The `.opencode/agent/opus-*` files and
+  > `/autopilot_opencode` pin **`openrouter/…`** models, so the provider to authenticate is **OpenRouter**
+  > unless that pin changes. Verify with `opencode auth list`, then `opencode models | grep openrouter`.
+  >
+  > ⚠️ **opencode gets no MCP servers from this repo — on any platform.** It reads `mcp` out of
+  > `opencode.json`, and ours has no such key; the `.opencode/mcp.json` file sitting next to it is read by
+  > nothing. So gitnexus and md-feedback are Claude-only today. Confirm with
+  > `opencode debug config | grep '"mcp"'` (no match = none loaded). Pre-existing and shared with Windows,
+  > not a Mac gap — listed here so nobody re-diagnoses it as one.
+  >
+  > Health-check the whole surface without starting a session — `opencode debug config` must show the
+  > `instructions` list, `skills.paths`, and all 13 agents.
 - **Git identity**: `user.name` / `user.email` live in `~/.gitconfig` — machine-local, never in a
   clone. With nothing set, git **invents** one from the hostname (`sudohatter@Sudos-MacBook-Pro.local`)
   and commits happily, so nothing fails and nothing warns. Those commits are orphans: GitHub cannot
