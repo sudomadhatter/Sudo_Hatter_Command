@@ -32,8 +32,15 @@ scope: machine-wide (~/.gitconfig user-global) — applies to every repo on this
 | `rerere.enabled` | `true` | Git **remembers** how you resolved a conflict and replays it if it reappears. |
 
 All of this lives in `~/.gitconfig` — your **user profile** (`/Users/<you>/.gitconfig` on the Mac,
-`C:/Users/dlohn/.gitconfig` on the Windows box) — so it survives a Git reinstall and follows you to a
-new machine. Every repo inherits it.
+`C:/Users/dlohn/.gitconfig` on the Windows box) — so it survives a Git reinstall. Every repo on that
+machine inherits it.
+
+> **⚠️ It follows the *profile*, not you — checked 2026-08-07:** `~/.gitconfig` is per-machine. This
+> block was applied on the **Windows** box in June; on the **Mac**, **none of the ten are set** — that
+> file holds only `user.*` and the `gh` credential helper. So on the Mac you get git's stock behavior:
+> `git pull` silently makes merge commits, deleted remote branches pile up as stale refs, and a new
+> branch's first push still needs `--set-upstream`. Fix is the appendix block at the bottom, run once
+> per machine. Verify with `git config --global --get pull.ff` (silent + exit 1 = not set).
 
 ---
 
@@ -394,7 +401,9 @@ panel. You still **commit and push from inside each project repo** — this only
 
 ---
 
-### Appendix — the exact block that was applied
+### Appendix — the exact block (run once per machine)
+
+Applied on Windows 2026-06-24. **Not yet applied on the Mac** — see the warning under §0.
 
 ```bash
 git config --global pull.ff only
