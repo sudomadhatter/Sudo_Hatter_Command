@@ -2,6 +2,7 @@
 title: Git Settings — Visual Walkthrough (pull / push / merge defaults)
 type: guide
 date: 2026-06-24
+updated: 2026-08-07
 owner: Daniel
 status: reference
 scope: machine-wide (~/.gitconfig user-global) — applies to every repo on this machine
@@ -30,8 +31,9 @@ scope: machine-wide (~/.gitconfig user-global) — applies to every repo on this
 | `init.defaultBranch` | `main` | New repos start on `main`, not `master`. |
 | `rerere.enabled` | `true` | Git **remembers** how you resolved a conflict and replays it if it reappears. |
 
-All of this lives in `~/.gitconfig` (`C:/Users/dlohn/.gitconfig`) — your **user profile**, so it
-survives a Git reinstall and follows you to a new machine. Every repo inherits it.
+All of this lives in `~/.gitconfig` — your **user profile** (`/Users/<you>/.gitconfig` on the Mac,
+`C:/Users/dlohn/.gitconfig` on the Windows box) — so it survives a Git reinstall and follows you to a
+new machine. Every repo inherits it.
 
 ---
 
@@ -133,9 +135,10 @@ flowchart TD
     Q1 -- "No, it's your\nprivate feature branch" --> Rebase["Prefer REBASE\n(clean linear history,\ntidy pull requests)"]
 ```
 
-> **Your daily rule of thumb:** on your own feature branches (`Epic-8`, etc.) run
-> `git pull --rebase` for a clean line. On shared `main`, a merge is honest. With `pull.ff=only`,
-> git won't do *either* silently — you always type the verb on purpose.
+> **Your daily rule of thumb:** on a branch only you are standing on (`claude/*` story worktrees,
+> `chore/*` one-offs) run `git pull --rebase` for a clean line. On anything shared — `main`, and an
+> `epic/*` branch that several lanes are landing on — a merge is honest. With `pull.ff=only`, git won't
+> do *either* silently; you always type the verb on purpose. See §8 for how this maps onto our flow.
 
 ---
 
@@ -256,7 +259,58 @@ flowchart TD
 
 ---
 
-## 8. The one setting we deliberately did NOT set
+## 8. How this meets our branch flow
+
+Everything above is machine-wide git *preference*. This section is where those preferences meet the
+**way we actually work** — one long-lived branch, everything else short-lived. (Retired **2026-08-07**:
+the old `main_debug` integration branch. If you find a doc that still mentions it, that doc is stale.)
+
+The full law lives in [`.agents/rules/git-policy.md`](../../.agents/rules/git-policy.md); the
+walkthrough for humans is §6 of
+[sudo_workflows_testing.md](sudo_workflows_testing.md). This is just the git-command-level view.
+
+```mermaid
+flowchart TD
+    MAIN["main\nthe ONLY long-lived branch\n= live production"] --> EPIC["epic/&lt;key&gt;-&lt;slug&gt;\ncut at epic kickoff\nlives one epic, then deleted"]
+    EPIC --> WT["claude/&lt;story&gt;\none worktree per story\nyours alone"]
+    WT -->|"land: push HEAD:epic/&lt;slug&gt;"| EPIC
+    EPIC -->|"/sudo-push-e2e ONLY\ngate green + your sign-off\ngit merge --no-ff"| MAIN
+    MAIN --> CHORE["chore/&lt;slug&gt;\nad-hoc work, no epic"]
+    CHORE -->|"same session, sign-off\ngit merge --no-ff"| MAIN
+```
+
+**Which branch you're on decides what you're allowed to do.** That's the whole model:
+
+| Branch | Who's on it | Commit + push |
+|---|---|---|
+| `claude/<story>` | you, in one story worktree | **free** — commit as often as you like |
+| `chore/<slug>` | you, for work outside any epic | **free** |
+| `epic/<key>-<slug>` | several story lanes land here | **sign-off per landing** |
+| `main` | everyone; a push here **deploys** | **`/sudo-push-e2e` only** |
+
+**How each setting earns its keep here:**
+
+| Setting | What it does for this flow |
+|---|---|
+| `pull.ff=only` | The shared checkout permanently stands on `main`. From there `git pull --ff-only origin main` can only *catch production up to what already shipped* — it can never promote anything. Under the retired two-branch model this exact spot silently fast-forwarded production to 160+ ungated commits; now there's nothing left to spring. |
+| `fetch.prune=true` | Epic and story branches are **deleted after they merge**, on purpose. Prune is what keeps your local list from filling with dead `origin/epic/*` refs. Given how many branches this model creates and destroys, this is the setting doing the most quiet work. |
+| `push.autoSetupRemote=true` | Every story opens a brand-new `claude/*` branch. Without this, each one costs you a `--set-upstream` before its first push. |
+| `push.default=simple` | `git push` only ever touches the branch you're standing on — so a push from a story worktree can't reach `main` by accident. |
+| `rerere.enabled=true` | An epic branch absorbs `origin/main` more than once before it ships. The same conflict tends to reappear; rerere replays the resolution you already made. |
+| `merge.conflictstyle=zdiff3` | Parallel lanes are the norm — when two land on one epic branch, seeing the **common ancestor** is what tells you which side actually changed the line. |
+| `rebase.autostash=true` | Lets you catch a branch up without stopping to stash first. |
+
+**Three habits the settings can't enforce — they're yours:**
+
+- **Never `git add -A` / `.` / `-u`.** Stage explicit paths, always. Parallel lanes mean other people's
+  dirty files sit in the same checkout; a blanket add sweeps their work into your commit.
+- **`--no-ff` on the way to `main`.** A fast-forward dissolves the epic into loose commits. `--no-ff`
+  keeps it one visible unit in history, so it can be reasoned about — and reverted — as one thing.
+- **Never force-push a shared branch.** `epic/*` has other lanes on it, and `main` is production.
+
+---
+
+## 9. The one setting we deliberately did NOT set
 
 **`core.autocrlf`** (line-ending normalization) was left untouched **on purpose**. On Windows it can
 silently rewrite line endings (`CRLF` ↔ `LF`) across a repo, which on an existing live project like
@@ -269,7 +323,7 @@ aviationChat can produce a giant "everything changed" diff out of nowhere.
 
 ---
 
-## 9. Verify / change / undo
+## 10. Verify / change / undo
 
 ```bash
 # See everything that's set globally
@@ -290,7 +344,7 @@ Nothing here touches repo contents or history — it's all preferences in a text
 
 ---
 
-## 10. Bonus gotcha — "why don't my project's pending changes show in VS Code?"
+## 11. Bonus gotcha — "why don't my project's pending changes show in VS Code?"
 
 This is **not** about the config above — it's a VS Code + nested-repo quirk specific to the
 home-base layout, where each `Projects/<name>/` is its **own** git repo nested inside the home-base

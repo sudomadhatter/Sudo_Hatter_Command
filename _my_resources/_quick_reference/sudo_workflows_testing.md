@@ -37,7 +37,7 @@ block and §13 differ, so there's one thing to learn, not three.
 | fix something small | `/sudo-quick-dev <slug>` — **low-risk work only** |
 | know whether a review still counts | §5's decision tree — a review of old code is not a review |
 | ship to production | `/sudo-push-e2e` (§6) |
-| switch machines | `/sudo-park` before, `/sudo-resume` after — **§7 has a warning worth reading once** |
+| switch machines | `/sudo-park` before, `/sudo-resume` after — §7 shows the handoff end to end |
 | chase a production error | `/sudo-mobile-error-team` (§12) |
 | free up a heavy session | `/sudo-prune-context` |
 
@@ -328,7 +328,7 @@ it lands — branches are short-lived on purpose; nothing accumulates.
 
 ---
 
-## 7. Switching machines — and the one dangerous mistake
+## 7. Switching machines
 
 You work one sprint across desktop, laptop, and phone. **Branches travel between machines; your local
 working setup does not.** That gap is the entire reason this pair exists.
