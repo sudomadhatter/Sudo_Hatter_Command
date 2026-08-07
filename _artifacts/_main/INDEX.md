@@ -72,3 +72,4 @@
 | `2026-07-22_rename-sudo-create-epic-sprint/` | Rename /sudo-write-epics-stories-sprint to /sudo-create-epic-sprint across all platforms and projects. | implementation_plan, walkthrough |
 
 | `2026-07-22_worktree-commit-gates/` | Worktree per story; agents commit inside it and land the story on main_debug as one clean push at close-out (/sudo-update-sprint-memory Step 7). Removed the old "agents never commit/push" law across all 3 repos. | implementation_plan, walkthrough |
+| `2026-08-07_toolkit-centralization/` | Toolkit-centralization epic (thin projects, center-only workflow law): plan v3 + project-law draft; P1 landed the two-tier law + five always-check anchors. | implementation_plan, project-law_draft |

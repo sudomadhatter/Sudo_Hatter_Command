@@ -97,6 +97,10 @@ files, per §3); full model →
 
 ## 6. GATES  (consult before acting)
 - **ROUTING GATE**: confirm the target workspace via `router.md` before touching files in it.
+- **PROJECT-LAW GATE — binding a project = loading its law.** The moment a target project is bound
+  (`/sudo-*` Step 0 §BIND, or any work under `Projects/<name>/`), read `PROJECT_ROOT/.agents/INDEX.md`
+  and honor its `Load` column — a converted (thin) project's INDEX routes its own rules + skills; a
+  converted project missing it → STOP. Two-tier contract → `.agents/rules/project-law.md`.
 - **SEARCH GATE** — a root-level Grep is blind to `Projects/` (ripgrep honors the lobby `.gitignore`) and
   reads as a false "clean"; point Grep at `Projects/<name>` or use Bash. **Full mechanics →
   `.agents/rules/lobby-search.md`.**

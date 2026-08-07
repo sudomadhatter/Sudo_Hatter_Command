@@ -5,7 +5,10 @@ Lobby = categories only; detail lives on each floor. If a request isn't listed h
 Any workspace may send you BACK here ("if not here, go to root router").
 
 > **Note:** all projects live under `Projects/`, each keeping its own git repo. "Converted" = the
-> project has pointer `CLAUDE.md`/`GEMINI.md` + a workspace `AGENTS.md` (Layer-2 map) + vendored `.agents/`.
+> project has pointer `CLAUDE.md`/`GEMINI.md` + a workspace `AGENTS.md` (Layer-2 map) + **its own tier-2
+> law only** (`.agents/rules/` + `.agents/skills/` + `.agents/INDEX.md`) — the center carries all workflow
+> law (`.agents/rules/project-law.md`). Binding a converted project = reading its `.agents/INDEX.md`
+> (§BIND). Legacy full-vendor projects are pending conversion.
 
 ## Artifact ownership
 

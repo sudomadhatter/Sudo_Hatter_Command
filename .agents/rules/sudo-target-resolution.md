@@ -1,6 +1,6 @@
 ---
 name: sudo-target-resolution
-description: "The canonical Step-0 target-resolution ladder every /sudo-* command binds with: self fast-path → $ARGUMENTS inline override → .agents/active-project.txt pointer → STOP-and-ask. Variants: §ASK (boot — always confirm, never silently reuse the pointer) and §DUAL (park/resume — lobby + active project, both repos). Plus §BIND (everything resolves under PROJECT_ROOT; missing path → STOP) and the echo contract. Commands state the obligations inline and point here for the mechanics."
+description: "The canonical Step-0 target-resolution ladder every /sudo-* command binds with: self fast-path → $ARGUMENTS inline override → .agents/active-project.txt pointer → STOP-and-ask. Variants: §ASK (boot — always confirm, never silently reuse the pointer) and §DUAL (park/resume — lobby + active project, both repos). Plus §BIND (everything resolves under PROJECT_ROOT; missing path → STOP; binding = reading the project's `.agents/INDEX.md` law) and the echo contract. Commands state the obligations inline and point here for the mechanics."
 ---
 
 # Sudo Target Resolution — the Step-0 ladder (single source)
@@ -58,3 +58,12 @@ Every "THIS repo", every `{project-root}`, and every bare path (`_bmad-output/�
 command invokes any nested `bmad-*` / `1_*` skill, bind its `{project-root}` to `PROJECT_ROOT`, run it
 against that directory, and read/write only there. A needed path missing under `PROJECT_ROOT` → **STOP and
 say so — never fall back to the lobby.**
+
+**Binding loads the project's law.** On binding `PROJECT_ROOT` — before any other step of the calling
+command — read `PROJECT_ROOT/.agents/INDEX.md` and honor its `Load` column: floor rules immediately,
+protocol rules before your first write in that project, on-demand rules on their triggers. In a
+**converted** (thin, tier-2) project that INDEX routes the project's own `rules/` + `skills/`; if it is
+missing there → **STOP and say so** — absence is a defect, never a default (full contract →
+`project-law.md`). In a still-vendored project the file is the toolkit inventory — reading it costs one
+small file and changes nothing. The self fast-path (case 0) binds the same obligation with
+`PROJECT_ROOT = .`.
