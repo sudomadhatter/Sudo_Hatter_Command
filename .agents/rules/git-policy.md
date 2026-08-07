@@ -46,6 +46,9 @@ description: "Git policy: main is the ONLY long-lived branch. Each epic gets a s
   with no valid key for that repo is refused outright. Merge/revert/fixup/squash messages and
   in-progress rebases are exempt. Bypass once with `--no-verify`; disarm by deleting the flag.
 - **A rejected commit is a no-op** — the staged set is untouched, nothing to undo.
+- **Operating the board itself** (reading tickets, JQL, transitions, minting) is its own rule:
+  `.agents/rules/jira.md` — the `acli` cheat-sheet, flag traps, and the ticket↔file join. The board
+  is reachable from any shell-capable agent; no MCP or per-platform config exists or is needed.
 - **The epic reaches `main` exactly one way: `/sudo-push-e2e`** — the full gate (backend suite +
   frontend build + `/sudo-e2e` GREEN) plus Daniel's explicit sign-off, then the merge. An agent
   never merges to `main` on its own initiative. The epic branch is deleted after it merges:

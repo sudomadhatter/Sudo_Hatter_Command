@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 8bc78088-0a6e-4b75-b4eb-edc817c5fe79
-  modified: 2026-08-07T23:00:37.077Z
+  modified: 2026-08-07T23:14:03.723Z
 ---
 
 Set up 2026-08-07 at `https://sudo-command.atlassian.net`. Two **team-managed** projects, one board
@@ -40,7 +40,14 @@ never appears on any ticket's Development panel.
 the macOS keychain. One binary any model can shell out to — MCP would be per-tool config drifting
 across all four platforms. Flag traps: `view` takes the key **positionally** (`--key` is only on
 `transition`); `project list` needs one of `--recent/--limit/--paginate`; it's `board search` and
-`board list-sprints --id N`, not `board list`; `comment create` needs `--key`.
+`board list-sprints --id N`, not `board list`; `comment create` needs `--key`; `transition` wants
+`--yes` to skip its interactive confirm.
+
+**This is now a platform-neutral rule (2026-08-08): `.agents/rules/jira.md`** in lobby AND AGY —
+born because Gemini, knowing only the policy rules, claimed "I have no Jira integration" when the
+authenticated CLI was sitting right there. The rule carries the cheat-sheet, flag traps, ticket↔file
+join, and guardrails; pointed to from rules/INDEX.md, git-policy.md, push-e2e Step 6.5,
+update-sprint-memory Step 4.5, and the human guide's cheat-sheet section.
 
 **Statuses:** `To Do` · `In Progress` · `In Review` · `Done` · `Deferred`. `Deferred` sits in the
 **`To Do` category** on purpose — a Done-category status would auto-resolve and make descoped work read
@@ -67,7 +74,9 @@ transitions the EPIC ticket at merge; `/sudo-update-sprint-memory` Step 4.5 move
 close-out; every branch template toolkit-wide reads `epic|claude|chore/<JIRA-KEY>-<slug>`, and
 `/sudo-create-epic-sprint` refuses to cut an unkeyed epic branch.
 
-**Still not built:** the `acli` wrapper in `.agents/scripts/` (SCC-14), a `pre-push` branch-name check
+**Still not built:** the `acli` wrapper script in `.agents/scripts/` (SCC-14 — its knowledge half
+shipped 2026-08-08 as the jira.md rule; only the script remains, and may no longer be worth building),
+a `pre-push` branch-name check
 (SCC-15), a CI job failing PRs with unkeyed commits (SCC-16), and runtime key-minting/stamping at
 story kickoff (SCC-18). Of the five `JIRA-HOOK` seats on the stopped `epic/toolkit-centralization`
 branch, the three command-file seats are now wired on `main`; the `require-push-approval.py` ×2 seats

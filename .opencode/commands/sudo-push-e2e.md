@@ -118,7 +118,7 @@ acli jira workitem comment create --key <JIRA-KEY> \
 acli jira workitem transition --key <JIRA-KEY> --status "Done"
 ```
 (`comment create` needs `--key`; `transition` too — `view` is the only one that takes the key
-positionally.) Transition the EPIC ticket only — child stories were already moved one-by-one at their
+positionally.) Full acli reference: `.agents/rules/jira.md`. Transition the EPIC ticket only — child stories were already moved one-by-one at their
 close-outs by `/sudo-update-sprint-memory`. If Step 1's sanity check was honest, they are all `Done`
 before this runs; if the transition fails because children are open, that is the sanity check telling
 you it was skipped — go run the close-outs, do not force the epic.

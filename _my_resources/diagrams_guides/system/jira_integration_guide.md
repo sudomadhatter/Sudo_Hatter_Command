@@ -409,6 +409,10 @@ and it is entirely optional. *Decision still open.*
 
 ## 11. Cheat sheet
 
+> **Agent-facing canonical copy:** `.agents/rules/jira.md` (lobby + AGY each carry one) — the rule every
+> LLM platform loads on demand, with this cheat-sheet, the flag traps, the ticket↔file join, and the
+> guardrails. Edit the rule first; this section is the human mirror.
+
 ### Reading
 
 ```bash
