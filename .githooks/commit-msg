@@ -1,0 +1,3 @@
+#!/bin/sh
+# commit-msg-jira (see .agents/scripts/git-hooks/commit-msg-jira.sh for the why)
+exec "$(git rev-parse --show-toplevel)/.agents/scripts/git-hooks/commit-msg-jira.sh" "$@"

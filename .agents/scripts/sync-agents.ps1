@@ -383,7 +383,7 @@ function Get-SurfaceState {
 function Get-VendorFileSet([string]$masterDir) {
   $root = (Resolve-Path $masterDir).Path
   Get-ChildItem $masterDir -File -Recurse -Force -ErrorAction SilentlyContinue |
-    Where-Object { ($_.FullName -notmatch '[\\/](bmad|node_modules|__pycache__)[\\/]') -and ($_.Name -ne $ManifestName) } |
+    Where-Object { ($_.FullName -notmatch '[\\/](bmad|node_modules|__pycache__)[\\/]') -and ($_.Name -ne $ManifestName) -and ($_.Name -ne 'jira.conf') } |
     ForEach-Object { $_.FullName.Substring($root.Length).TrimStart('\', '/').Replace('/', '\') }
 }
 
@@ -684,7 +684,13 @@ if (-not $GlobalsOnly) {
     # Exclude bmad\ from the vendor: BMAD's module config is PROJECT-OWNED (each repo carries its own
     # `project_name` etc.) and BMAD self-installs per project, so it must NOT be overwritten from master.
     # This keeps it project-owned the same way rules\ already are (additive vendor, master never clobbers it).
-    Sync-Dir $Master (Join-Path $Target ".agents") @((Join-Path $Master 'bmad')) @($ManifestName) -WhatIf:$WhatIf
+    #
+    # jira.conf is PROJECT-OWNED for the same reason: it names the Jira project key this repo answers to
+    # (AGY=AVCH, lobby=SCC). Vendoring master's copy would give every project the lobby's key, and the
+    # commit-msg gate would then reject the repo's OWN work items while accepting another project's — with
+    # the file looking entirely correct. Excluded from Get-VendorFileSet too, so the manifest never claims
+    # the vendor placed it (a later delete from master would otherwise purge every project's copy).
+    Sync-Dir $Master (Join-Path $Target ".agents") @((Join-Path $Master 'bmad')) @($ManifestName, 'jira.conf') -WhatIf:$WhatIf
 
     # THE BLIND-SPOT FIX. The vendor above is additive, so a master file that was deleted or renamed used to
     # live on here forever — and since this vendored .agents is the SOURCE for this project's .claude/.opencode
