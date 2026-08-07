@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 8bc78088-0a6e-4b75-b4eb-edc817c5fe79
-  modified: 2026-08-07T22:09:45.398Z
+  modified: 2026-08-07T23:00:37.077Z
 ---
 
 Set up 2026-08-07 at `https://sudo-command.atlassian.net`. Two **team-managed** projects, one board
@@ -56,10 +56,22 @@ through a passing PR and the docs' "alarm not lock" sections need updating.
 **Docs:** `_my_resources/diagrams_guides/system/jira_integration_guide.md` (the why) and
 `_my_resources/_quick_reference/jira_manual.md` (the by-hand how-to; relocated there by the operator 2026-08-07). Both carry a live-vs-not-built ledger — keep it honest.
 
-**Still not built:** the `acli` wrapper in `.agents/scripts/`, a `pre-push` branch-name check, a CI job
-failing PRs with unkeyed commits, and the `/sudo-*` wiring. That last one has **five reserved seats**
-marked `JIRA-HOOK` on the stopped `epic/toolkit-centralization` branch (`sudo-create-epic-sprint.md`,
-`sudo-push-e2e.md`, `sudo-update-sprint-memory.md`, `require-push-approval.py` ×2).
+**The AVCH board is populated (2026-08-07 evening, SCC-29):** AVCH-13 = Epic 12 (In Progress) with
+AVCH-14/15/16 = 12.3 umbrella + 12.3.4/12.3.7 (In Review); AVCH-17..20 = Epics 18/19/20/22 (Deferred).
+Open story files carry `jira_key:` frontmatter and sprint-status.yaml's header is `project_key: AVCH`
+— done epics were deliberately NOT resurrected as tickets. Pairing: Jira summary carries the BMAD
+number (`Epic 12 — …`, `12.3.4 — …`); the YAML row keys never change.
+
+**Command wiring live (SCC-27/28, AVCH-11/12):** `/sudo-push-e2e` Step 6.5 comments evidence +
+transitions the EPIC ticket at merge; `/sudo-update-sprint-memory` Step 4.5 moves the story ticket at
+close-out; every branch template toolkit-wide reads `epic|claude|chore/<JIRA-KEY>-<slug>`, and
+`/sudo-create-epic-sprint` refuses to cut an unkeyed epic branch.
+
+**Still not built:** the `acli` wrapper in `.agents/scripts/` (SCC-14), a `pre-push` branch-name check
+(SCC-15), a CI job failing PRs with unkeyed commits (SCC-16), and runtime key-minting/stamping at
+story kickoff (SCC-18). Of the five `JIRA-HOOK` seats on the stopped `epic/toolkit-centralization`
+branch, the three command-file seats are now wired on `main`; the `require-push-approval.py` ×2 seats
+remain.
 
 **How to apply:** never invent a Jira number — read it from the ticket. Branch and commit with the key
 for the repo you are standing in. See [[vscode-hides-git-hook-output]] for why a warning-only gate was
