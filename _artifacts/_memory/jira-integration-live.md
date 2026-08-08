@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 8bc78088-0a6e-4b75-b4eb-edc817c5fe79
-  modified: 2026-08-08T04:06:57.727Z
+  modified: 2026-08-08T04:47:43.953Z
 ---
 
 Set up 2026-08-07 at `https://sudo-command.atlassian.net`. Two **team-managed** projects, one board
@@ -54,7 +54,15 @@ directly in **AGENTS.md §3** of both repos: the one file every discovery path p
 **Statuses:** `To Do` · `In Progress` · `In Review` · `Done` · `Deferred`. `Deferred` sits in the
 **`To Do` category** on purpose — a Done-category status would auto-resolve and make descoped work read
 as *shipped*. Descoped work goes to `Deferred` + the `descoped` label (the two were merged; team-managed
-can't customise Resolution). Saved filters: `AVCH Deferred` (10003), `SCC Deferred` (10004).
+can't customise Resolution). Saved filters are GENERIC, cross-project (re-cut 2026-08-07 late):
+`Deferred` (10003), `Quick-Dev` (10005), `Parallel-OK` (10006), `Blocked` (10007), `Descoped` (10009);
+the per-project `SCC Deferred` (10004) is retired-pending-UI-delete. Agents never use saved filters
+(raw JQL only) — they are operator sugar. TWO UI traps that bit here: (1) "Save filter" stores the last
+search that RAN — press Enter on the JQL before saving, or the filter silently captures the default
+query (3 of 4 hand-made filters shipped broken this way; fixed via `acli jira filter update --id`).
+(2) The setup-era filters each BACKED a user kanban board ("AVCH Deferred" board 4, "SCC Deferred"
+board 5) — Jira refuses to delete a board-backed filter; delete the board first (boards directory →
+row ⋯ → Delete), then the filter.
 
 **Free-tier limits shape the design.** Jira Free caps automation at 100 runs/month, so the design leans
 on **Smart Commits** (`#comment` `#time` `#transition`), which cost zero quota. GitHub Free cannot put
