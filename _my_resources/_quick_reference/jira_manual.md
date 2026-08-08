@@ -396,3 +396,5 @@ WHEN SOMETHING IS SILENT
 - [git_walkthrough_settings.md](git_walkthrough_settings.md) — git setup and settings
 - [sudo_workflows_testing.md](sudo_workflows_testing.md)
   — the command lanes and the test gate in full
+
+<!-- CHECKPOINT id="ckpt_msjiy0kp_e3v0cw" time="2026-08-07T22:36:33.001Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->

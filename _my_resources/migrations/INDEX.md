@@ -60,10 +60,15 @@ guides, run the scripts.
 
 ## 1 · New machine — the ordered path
 
+> **In a hurry / already cloned?** The one-page version is
+> [`machine_setup_card.md`](../_quick_reference/machine_setup_card.md) — arm the commit gates, check
+> which Python the box answers to, restore what git doesn't carry. This table is the full path.
+
 | # | Step | File / command | Windows | macOS |
 |---|---|---|---|---|
 | 1 | Read the whole procedure first (clone → restore → verify) | [`new_machine-migration-guide.md`](install_guides/new_machine-migration-guide.md) | ✅ | ✅ |
 | 2 | Clone both repos (lobby + every project you work in) | that guide, §3 | ✅ | ✅ |
+| 2b | **⛔ Arm the commit gates — one command, and nothing looks wrong if you skip it.** `core.hooksPath` is LOCAL config, so a fresh clone has NO Jira / encoding / SOP gate at all | `git config --global core.hooksPath .githooks` — relative value ⇒ resolves per repo, arms every clone present and future. Verify per that guide, §5 | ✅ | ✅ |
 | 3 | Restore every `.env` / `auth_keys/` from the master bundle | Windows → [`Restore-EnvMaster.ps1`](scripts/Restore-EnvMaster.ps1) · macOS/Linux → [`restore-env-master.sh`](scripts/restore-env-master.sh) | ✅ | ✅ **use the `.sh`** |
 | 4 | The secret bundle step 3 reads | `_secrets/master.env` — **gitignored, hand-carried, never committed** | ✅ | ✅ |
 | 5 | Rebuild the AGY Python venv + verify the test infra | [`python_vytest-updates-other-machines.md`](install_guides/python_vytest-updates-other-machines.md) | ✅ | ✅ (use its macOS column) |

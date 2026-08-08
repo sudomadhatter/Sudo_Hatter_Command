@@ -433,6 +433,11 @@ something works on one box and not the other, check this table before suspecting
 Windows-authored assumption reads as "the Mac is broken," and a Mac-authored one reads the same way in
 reverse.
 
+> **Setting up a machine?** The short version is [machine_setup_card.md](machine_setup_card.md) *(beside
+> this file)* — arm the gates, check the Python name, restore what git doesn't carry. The full path for a
+> genuinely fresh box (secrets, venvs, toolchains, the five test gates) is the
+> [migrations kit](../migrations/INDEX.md).
+
 ---
 
 ## 8. How we test

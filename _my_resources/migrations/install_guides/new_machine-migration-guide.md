@@ -228,7 +228,8 @@ shell export that automation will not have.
 The lobby has a sixth, separate gate for the workflow-enforcement scripts:
 
 ```bash
-python3 .agents/scripts/tests/run_all.py      # expect "5/5 files passed"
+python3 .agents/scripts/tests/run_all.py      # Mac;  on the PC: python .agents/...
+                                              # expect "6/6 files passed"  (124 checks, ~10 s)
 ```
 
 > ⛔ **This is where a POSIX-only failure will surface first.** The toolkit was authored on Windows,
@@ -242,6 +243,46 @@ python3 .agents/scripts/tests/run_all.py      # expect "5/5 files passed"
 
 These are machine-local logins/toolchains, not files. Walk the operator
 through each as needed:
+
+- ### ⛔ **The commit gates — do this FIRST, it is one command** *(added 2026-08-08, SCC-31)*
+
+  ```bash
+  git config --global core.hooksPath .githooks
+  ```
+
+  **Why this leads the list.** Every commit gate we have — the Jira key check, the encoding
+  check, and the SOP-currency check — is armed by git's `core.hooksPath`, and that setting is
+  **local config: it does NOT travel with a clone.** Unset, git reads `.git/hooks`, finds an
+  empty directory, and **every gate is silently off while the repo looks completely normal.**
+  There is no warning, no output, and nothing in `git status` to notice. A machine can run for
+  weeks producing unkeyed commits and stale docs, and the first symptom is a Jira board with
+  holes in it.
+
+  Setting it **globally with a RELATIVE value** is the fix, and the relative part is the trick:
+  git resolves it against *each repo's own working-tree root*, so this one command arms every
+  clone on the machine — the lobby, every project, and every repo you clone later — while
+  staying a harmless no-op in any repo that has no `.githooks/` directory. A per-repo
+  `git config core.hooksPath .githooks` also works but has to be repeated forever, which is how
+  it ended up set in three of four repos here.
+
+  **Verify it fires** (from the lobby, on a throwaway branch — a rejected commit is a no-op,
+  your staged files are untouched):
+
+  ```bash
+  git checkout -b tmp/gate-check
+  git commit --allow-empty -m "no key here"     # expect: REJECTED, "No Jira work-item key"
+  git commit --allow-empty -m "SCC-1 probe"     # expect: accepted
+  git checkout - && git branch -D tmp/gate-check
+  ```
+
+  If the first one *succeeds*, the gates are not armed on this machine — re-run the config
+  command and check `git config --global core.hooksPath` reads `.githooks`.
+
+- **Python's name differs per OS.** The Mac has **only `python3`** (no bare `python`, not even in
+  a login shell); a python.org install on Windows has **only `python`**; `py` is the Windows
+  launcher. Docs are written `python3` — on the PC, drop the `3`. **Nothing to install and nothing
+  to alias**: every hook probes `python3 → python → py`, so the gates work on either OS untouched.
+  Only the commands *you type* differ.
 
 - **gcloud**: `gcloud auth login` + `gcloud auth application-default login`,
   set the project from `GCP_PROJECT_ID` in `.env`.

@@ -2,7 +2,13 @@
 
 ## 1. PRIME STATE
 Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-08-08
-**2026-08-08 (latest): toolkit centralization SHIPPED — the thin model is live on every main.**
+**2026-08-08 (latest): the operator's SOP page is now gate-enforced, and the system is TWO machines.**
+An armed commit-msg gate (`sop_currency.py`) rejects any usage-surface change that leaves
+`_my_resources/_quick_reference/sudo_workflows_testing.md` behind — `[sop-ok]` is the logged opt-out.
+⚠️ **Mac AND PC:** `python3` vs `python` differ, and `core.hooksPath` is LOCAL config, so a fresh clone
+has **no gates at all** — `git config --global core.hooksPath .githooks` arms every repo per machine.
+Walkthrough: `_artifacts/_main/2026-08-07_toolkit-centralization/walkthrough-sop-currency.md`.
+**2026-08-08: toolkit centralization SHIPPED — the thin model is live on every main.**
 Epic SCC-31 + AVCH-23: ~1M lines of vendored toolkit removed; every project now carries only tier-2 law
 (rules · skills · INDEX router) + the repo-local enforcement carve-out. Self-audit GO. Merged: lobby
 `5e9f1ed` · VR `04bf376` · RAG `68cf6fd` · skeleton `6b96deb`; AGY = operator push of `epic/AVCH-23-thin-toolkit`
@@ -158,61 +164,6 @@ story 8.23.2's commit by the live story lane — content diff-verified intact; t
 cf. 8.22.2), Fresh committed `52a5c93` **on `main`** (not `main_debug` — flagged); lobby session files
 staged, awaiting Daniel's commit + `--set-anchor` (cmds in walkthrough; per-project set-anchor + AGY
 re-index owed after the 8.23.2 lane settles).
-**2026-07-03: Tier-2 local law — per-folder AGENTS.md as a 3-tier model.** `_artifacts/`,
-`_my_resources/`, `docs/` each now carry a ~15-line local-law `AGENTS.md` + 1-line `CLAUDE.md`/`GEMINI.md`
-adapters (auto-attached at point of contact — the `_my_resources` READ-ONLY law and `_artifacts` bucket law
-self-enforce). Reading-order rule codified: root `AGENTS.md` §1.7 + `workspace-standard.md` Part 1
-("folder-file tier model" + PATH CONTRACT row) — folder `AGENTS.md` FIRST, INDEX/README only for inventory.
-`check_maps.py` = **8 checks** now (check 8 tier-2 coverage, NON-FATAL hint; promote to conformance once all
-workspaces carry the files). Fixed 2 live bugs: linter's regen hint wrote a stray root `repo-map.md`
-(cwd-relative `--output`); `generate_repo_map.py` default-root resolved to `.agents/`. Synced lobby + globals +
-AGY + Fresh (md5 ×3). Diagram doc `file_folder_structure+maintaining.md` updated (Daniel-directed). **OPEN:**
-per-project Tier-2 rollout (AGY/Fresh: 9 files each + vendored `workspace-standard.md` — docs/ isn't synced);
-their lints show the check-8 hint until then. **Round 2: `/1_update-maps` is now THE verify command** —
-check 8 content-verifies adapters/law, **NEW check 9 verifies GitNexus index freshness** (`lastCommit==HEAD`;
-caught lobby + AGY genuinely stale), workflow Step 3.7 creates/repairs Tier-2 files, Step 6 hands off re-index
-cmds. **⚠️ `.gitnexus/meta.json` embeds the GitHub PAT cleartext — rotate + switch remote to
-credential-manager auth.** Session: `_artifacts/_main/2026-07-03_tier2-local-law/` (batch 1 committed
-`4be629b`; round-2 cmds in walkthrough Addendum).
-**2026-06-26 (latest): artifact-placement standard codified as 3 rules + `_home`→`_main` rename.** (1) project
-work → `_artifacts/<project>/` (create-if-missing), (2) main/cross-project → `_artifacts/_main/` (renamed from
-`_home` via `git mv`), (3) stories → under the parent epic folder. **opencode** mirrors all 3 inside its own
-`_artifacts/opencode/` namespace. Updated every live standard doc (`AGENTS.md` §5/§7, master
-`artifacts-always-first.md`, `workspace-standard.md`, `repo-map.md`, `INDEX.md`) + the SessionStart hook path +
-all artifact READMEs (added `_main/` + `Fresh_Workspace_BMAD/` ones). Re-vendored the standard into AGY_AVIATIONCHAT
-+ clean-bmad (aviationChat's copy was stale pre-work-from-cwd — re-vendor fixed it). Fixed the 3 `_my_resources/`
-diagrams. Zero live `_home` refs remain. Session: `_artifacts/_main/2026-06-26_artifact-placement-standard/`
-(UNCOMMITTED — home + both project repos; cmds in walkthrough).
-**2026-06-26: owned doc-wiring graph extractor built.** Filled the prose "what references what" layer
-GitNexus is blind to (it extracts headings, not doc refs) — surfaced when comparing GitNexus (= our own
-`gitnexus@1.6.8`, abhigyanpatwari upstream — we're on latest) vs **graphify** (safishamsi, MIT). Chose owned /
-deterministic / no-LLM / $0 over graphify's LLM layer. New `.agents/scripts/generate_doc_graph.py` (mirrors
-`generate_repo_map.py`) → `_docs/doc-graph.md` (human: hubs + broken-path/ambiguous/orphan reports) +
-`_docs/doc-graph.json` (full): **979 docs / 2427 edges**. Report-only. **Partially addresses the open `.agent/`
-(singular) dangling-refs item below** — it auto-surfaces some (`bmad-sm.md → .agent/gemini.md` + 2 ambiguous), but
-basename fallback masks others, so a grep sweep is still the exhaustive route. Session:
-`_artifacts/_main/2026-06-26_doc-graph-extractor/` (UNCOMMITTED — cmd in walkthrough). graphify noted as the named
-MIT break-glass engine for the GitNexus license tripwire.
-**2026-06-25: `_my_resources/open_tasks/` standardized as the "what's next" check.** Asking "what's next /
-open tasks / what's left" now reads Daniel's notes for **where you work FROM** (lobby → home-base folder; inside a
-converted project → that project's own) — on-demand, READ-ONLY, no SessionStart hook. Executed for converted
-projects only: **AGY_AVIATIONCHAT** (`git mv`'d 5 notes `_Open_Task/`→`open_tasks/`, removed empty dir, seeded
-`todo_list.md`, added READ-ONLY routing row to `AGENTS.md`); **Fresh_Workspace_BMAD** (seeded `open_tasks/todo_list.md`
-+ routing row); **lobby** `router.md` row 20 + `_docs/repo-map.md` resolve by where-you-work-from; **memory**
-`my-resources-personal-area-protected` carve-out upgraded to system-wide. Committed on origin/main as `fa8bf1b`.
-Session: `_artifacts/_main/2026-06-25_open-tasks-standard/`. Maps/indexes verified current this pass (router ✓,
-repo-map drift exit 0 ✓, INDEX row ✓).
-Phase A + rename-day restructure DONE. **Workspace Standard + repo-map hybrid + artifacts parity landed
-(home-base portion).** `_experiment/` is now `_routing-canary/`. One canonical git policy.
-**2026-06-25: mobile-mode lane added** — the command center is now driven from a phone; `.agents/rules/mobile-mode.md`
-adapts git (agent commits/pushes, asks before PR), the approval gate (tap-to-approve), artifacts (TL;DR-first),
-and verification (agent runs in-container) for web/mobile sessions. See `_artifacts/_main/2026-06-25_mobile-mode-rule/`.
-**2026-06-25: WS7 + artifact-rule.** The home base now has its own `_docs/repo-map.md` + a SessionStart drift hook
-(master `check-repo-map-drift.ps1` gained `-Root`/`-MapPath`; direct `.claude/settings.json` edit worked).
-**Artifact rule revised → "artifacts go WHERE YOU WORK FROM"** (cwd decides): from the home base → a per-project
-bucket `_artifacts/<project>/` or `_artifacts/_main/`; inside a project → project-local (AGENTS §5/§7, workspace-standard,
-INDEX, memory). This session also ran aviationChat **Phase 2** (collapsed `.agent/`→`.agents/`, deleted 1,059 files,
-removed forked `.claude/rules/`, GitNexus zero-code) — it lives in `_artifacts/AGY_AVIATIONCHAT/2026-06-25_ws7-and-phase2/`.
 ## 5. PICK UP  (read-only brief)
 - 5.1 Doing: map/index maintenance is complete; no process is running.
 - 5.2 Changed this session: regenerated three declared-mode AUTO map blocks; added the missing lobby and AGY artifact-ledger rows; created the AGY `frontend/test-results/INDEX.md` and `epic_debug_2/INDEX.md` inventories; verified fan-out lint clean.
