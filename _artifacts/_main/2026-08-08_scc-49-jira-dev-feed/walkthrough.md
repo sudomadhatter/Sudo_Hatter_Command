@@ -35,7 +35,7 @@ them on the ticket, and makes it impossible to skip quietly.
       Record**, verify. Content comes from Step 3's routing as `--decision` / `--pitfall` /
       `--followon`; the walkthrough scrape is only a safety net beneath it.
 - [x] **`/sudo-create-epic-sprint` Step 1.5** — epic mint now renders its outline from `epics.md`.
-- [x] **`/sudo-quick-dev` Step 3.5 (new)** — it closes its own branch, so it files its own record.
+- [x] **`/sudo-quick-dev` Step 4.5 (new)** — it closes its own branch, so it files its own record.
       **Exactly one Dev Record per ticket:** an existing record is *updated in place*, never stacked,
       so the branch-closer and a later story close-out cannot leave two partial records.
 - [x] **Work-item type derived, not defaulted** (operator ruling, second pass). `Story` = a child of an
@@ -50,7 +50,16 @@ them on the ticket, and makes it impossible to skip quietly.
       `sudo-update-sprint-memory` ×3, `sudo-close-workingtree`, `update-maps-indexes` ×12). The Mac has
       no bare `python` at all, so every one of those was broken on this machine.
       `rules/sop-currency.md` keeps its bare `python` — it *quotes* the bug as the example.
-- [x] **49 test cases** in this file (173 across the suite), joined to `run_all.py` by auto-discovery.
+- [x] **A silently-disarmed gate, found by the sweep.** Fixing the docs' `python` surfaced the same bug
+      one layer down: `pre-commit-encoding.sh` probed `python || python3`, **never tried `py`**, and on
+      a box with only the Windows launcher the whole substitution failed so the hook `exit 0`'d —
+      **armed in name, checking nothing.** VS Code hides hook output, so that would have stayed
+      invisible indefinitely. Both it and `.githooks/post-commit` now use the same
+      `python3 → python → py` probe as `sop-currency.sh`, and the armed gates *announce* a skip.
+- [x] **58 test cases** in this file (182 across the suite), joined to `run_all.py` by auto-discovery.
+      The probe guard reads **code only** — the fix's own comment quotes the broken line, and a raw
+      grep flagged the fix as the defect on first run. It carries a positive control asserting the
+      strip is load-bearing.
 - [x] **Docs** — SOP quick-reference §5, `.agents/rules/jira.md`, `.agents/scripts/INDEX.md`.
 - [x] `/sync-agents` — mirrors regenerated for opencode, Antigravity, Codex.
 
@@ -58,8 +67,8 @@ them on the ticket, and makes it impossible to skip quietly.
 
 | Claim | Proof |
 |---|---|
-| Full enforcement suite green | `python3 .agents/scripts/tests/run_all.py` → **7/7 files, 169 cases** |
-| New file's own cases | `test_jira_feed.py` → **45/45 passed** |
+| Full enforcement suite green | `python3 .agents/scripts/tests/run_all.py` → **7/7 files, 182 cases** |
+| New file's own cases | `test_jira_feed.py` → **58/58 passed** |
 | Outline renders real ACs, invents nothing | `outline --story 12.3.4 --project AGY_AVIATIONCHAT` → all 7 ACs verbatim, story statement, story-file path |
 | Epic outline reads `epics.md` | `outline --epic 12` → goal + the 3 child stories, stops before Epic 13 |
 | `check` works against the LIVE board | `check --key AVCH-15` → description present (142 chars), **no Dev Record → exit 2** |

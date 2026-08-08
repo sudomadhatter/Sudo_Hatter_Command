@@ -305,7 +305,7 @@ flowchart LR
   gate with no legitimate way out gets disabled permanently, and then nothing is checked at all.
 
 Run all their tests any time: **`python3 .agents/scripts/tests/run_all.py`** (on the PC, `python …` —
-see the box below) — 173 checks across 7 files, about ten seconds. Full detail in
+see the box below) — 182 checks across 7 files, about ten seconds. Full detail in
 [`.agents/scripts/INDEX.md`](../../.agents/scripts/INDEX.md).
 
 > **⚠ Python is named differently on your two machines.** The **Mac** has **only `python3`** — no bare

@@ -23,7 +23,7 @@ import stat
 import sys
 from pathlib import Path
 
-from _harness import Cases, TempDir, run_script
+from _harness import SCRIPTS, Cases, TempDir, run_script
 
 BOARD_REL = Path("_bmad-output/implementation-artifacts/sprint-status.yaml")
 EPICS_REL = Path("_bmad-output/planning-artifacts/epics.md")
@@ -430,6 +430,45 @@ def main() -> int:
         code, out = jf("check", "--key", "TEST-7")
         c.check("check: two Dev Records -> warns, does not block",
                 code == 1 and "there should be" in out, out.strip()[:200])
+
+        # ── the interpreter probe, in every hook that has one ──────────────────
+        # The suite cannot EXECUTE these (a .sh will not run on the PC), so this asserts the
+        # contract textually. It is a weak guard by nature - it cannot see order-of-execution
+        # - but it does catch the exact regression it was written for: `pre-commit-encoding.sh`
+        # probed `python || python3`, never tried `py`, and on a box with only `py` the whole
+        # substitution failed so the gate exited 0. Armed in name, checking nothing, silently.
+        hooks = SCRIPTS.parent.parent  # repo root
+        probes = {
+            ".agents/scripts/git-hooks/pre-commit-encoding.sh": True,
+            ".agents/scripts/git-hooks/sop-currency.sh": True,
+            ".githooks/post-commit": False,   # recorder: may skip, must not prefer `python`
+        }
+        for rel, must_announce in probes.items():
+            p = hooks / rel
+            if not p.is_file():
+                c.check(f"probe: {rel} exists", False, "missing")
+                continue
+            # CODE only. The fix's own comment quotes the broken line verbatim, so a whole-file
+            # grep matches the warning ABOUT the bug and reports the fix as the defect - the
+            # same inversion that made a source-grep guard pass on a comment once before.
+            text = "\n".join(ln for ln in p.read_text(encoding="utf-8").splitlines()
+                             if not ln.lstrip().startswith("#"))
+            c.check(f"probe: {rel} tries python3, python AND py",
+                    "for c in python3 python py" in text,
+                    "hooks must probe, never assume - the Mac has no bare `python`")
+            c.check(f"probe: {rel} never falls back to a bare `python` first",
+                    "command -v python |" not in text
+                    and "then PY=python;" not in text)
+            if must_announce:
+                c.check(f"probe: {rel} SAYS so when no interpreter is found",
+                        "no python interpreter found" in text,
+                        "a gate that skips mutely reads as a pass")
+        # Positive control for the strip above: the fix's comment DOES quote the old line, so
+        # a guard reading the raw file would fail here. If this ever passes, the strip is dead.
+        raw = (hooks / ".agents/scripts/git-hooks/pre-commit-encoding.sh").read_text(encoding="utf-8")
+        c.check("probe: the comment-stripping is load-bearing, not decorative",
+                "command -v python |" in raw,
+                "the fix quotes the broken line; a raw grep would flag the fix as the defect")
     return c.finish()
 
 
