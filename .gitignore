@@ -53,3 +53,6 @@
 # (Bit AGY in d098dc63 — pre-empting it here.)
 .claude/worktrees/
 
+
+# macOS Finder droppings — machine noise, never content
+**/.DS_Store
