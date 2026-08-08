@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 8bc78088-0a6e-4b75-b4eb-edc817c5fe79
-  modified: 2026-08-07T23:30:33.356Z
+  modified: 2026-08-08T04:47:43.953Z
 ---
 
 Set up 2026-08-07 at `https://sudo-command.atlassian.net`. Two **team-managed** projects, one board
@@ -54,7 +54,15 @@ directly in **AGENTS.md §3** of both repos: the one file every discovery path p
 **Statuses:** `To Do` · `In Progress` · `In Review` · `Done` · `Deferred`. `Deferred` sits in the
 **`To Do` category** on purpose — a Done-category status would auto-resolve and make descoped work read
 as *shipped*. Descoped work goes to `Deferred` + the `descoped` label (the two were merged; team-managed
-can't customise Resolution). Saved filters: `AVCH Deferred` (10003), `SCC Deferred` (10004).
+can't customise Resolution). Saved filters are GENERIC, cross-project (re-cut 2026-08-07 late):
+`Deferred` (10003), `Quick-Dev` (10005), `Parallel-OK` (10006), `Blocked` (10007), `Descoped` (10009);
+the per-project `SCC Deferred` (10004) is retired-pending-UI-delete. Agents never use saved filters
+(raw JQL only) — they are operator sugar. TWO UI traps that bit here: (1) "Save filter" stores the last
+search that RAN — press Enter on the JQL before saving, or the filter silently captures the default
+query (3 of 4 hand-made filters shipped broken this way; fixed via `acli jira filter update --id`).
+(2) The setup-era filters each BACKED a user kanban board ("AVCH Deferred" board 4, "SCC Deferred"
+board 5) — Jira refuses to delete a board-backed filter; delete the board first (boards directory →
+row ⋯ → Delete), then the filter.
 
 **Free-tier limits shape the design.** Jira Free caps automation at 100 runs/month, so the design leans
 on **Smart Commits** (`#comment` `#time` `#transition`), which cost zero quota. GitHub Free cannot put
@@ -71,19 +79,36 @@ Open story files carry `jira_key:` frontmatter and sprint-status.yaml's header i
 — done epics were deliberately NOT resurrected as tickets. Pairing: Jira summary carries the BMAD
 number (`Epic 12 — …`, `12.3.4 — …`); the YAML row keys never change.
 
+**Full-pipeline backfill (2026-08-07 late, operator-directed):** the deferred epics' CHILD stories are
+now tickets too — AVCH-24..32 = 18.1–18.9, AVCH-33..36 = 19.1–19.4, AVCH-37 = 20.1, AVCH-38..40 =
+22.1–22.3; all `Deferred`, parented to their epic ticket, created UNASSIGNED (omitting `--assignee`
+creates bare — this is the fix for "why is everything assigned to me"). The board now mirrors every
+non-done YAML row 1:1. Deferred stories have NO story files (files mint at kickoff), so no `jira_key:`
+frontmatter exists for them — the join is the BMAD number in the summary + the "Board row:" slug in the
+description. Done work stays off the board (bare-state ruling) — do NOT backfill epics 1–17/21/debug/TEA.
+
 **Command wiring live (SCC-27/28, AVCH-11/12):** `/sudo-push-e2e` Step 6.5 comments evidence +
 transitions the EPIC ticket at merge; `/sudo-update-sprint-memory` Step 4.5 moves the story ticket at
-close-out; every branch template toolkit-wide reads `epic|claude|chore/<JIRA-KEY>-<slug>`, and
-`/sudo-create-epic-sprint` refuses to cut an unkeyed epic branch.
+close-out; every branch template toolkit-wide reads `epic|claude|chore/<JIRA-KEY>-<slug>`.
 
-**Still not built:** the `acli` wrapper script in `.agents/scripts/` (SCC-14 — its knowledge half
-shipped 2026-08-08 as the jira.md rule; only the script remains, and may no longer be worth building),
-a `pre-push` branch-name check
-(SCC-15), a CI job failing PRs with unkeyed commits (SCC-16), and runtime key-minting/stamping at
-story kickoff (SCC-18). Of the five `JIRA-HOOK` seats on the stopped `epic/toolkit-centralization`
-branch, the three command-file seats are now wired on `main`; the `require-push-approval.py` ×2 seats
-remain.
+**Minting seams live (SCC-44/AVCH-41, 2026-08-07 late — operator released the human-mint rule):**
+agents may mint tickets, at exactly two wired seams. `/sudo-create-epic-sprint` Step 1.5 mints the
+EPIC ticket at kickoff (no more STOP-and-ask); `/sudo-write-story-tests` ① Step 1.6 mints the STORY
+ticket at pickup — child of the epic ticket, bare, `jira_key:` stamped into frontmatter — and rules
+three classifications as LABELS (labels stack, statuses don't — a story can be quick-dev AND blocked):
+`quick-dev` (may ship via /sudo-quick-dev), `parallel-ok` (no file overlap with sibling lanes),
+`blocked` (+ a `Blocks` link naming the blocker: `link create --out <blocker> --in <story> --type
+Blocks`). A `Blocked` STATUS is wired as optional — the operator owes the one-time UI add per board
+(acli cannot create statuses or saved filters); until then the label alone carries it. Speculative
+minting stays banned — a ticket asserts a decided piece of work.
+
+Still genuinely open on SCC: GitHub Pro / branch protection (SCC-19) and the Windows stale-stamp hook
+removal (SCC-23). Docs refresh shipped as SCC-30 / AVCH-22; AGY's AGENTS.md went tier-2 as AVCH-23.
+(acli quirk worth knowing: tickets create as the authenticated account — the site has one human
+account, so everything shows "assigned to Daniel" unless created bare.)
 
 **How to apply:** never invent a Jira number — read it from the ticket. Branch and commit with the key
 for the repo you are standing in. See [[vscode-hides-git-hook-output]] for why a warning-only gate was
 not enough.
+
+<!-- CHECKPOINT id="ckpt_msjnn6ub_ve7no2" time="2026-08-08T00:48:05.987Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->

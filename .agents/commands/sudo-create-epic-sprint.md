@@ -51,9 +51,13 @@ git push -u origin epic/<JIRA-KEY>-<slug>
 ```
 
 `<JIRA-KEY>` is the EPIC's Jira ticket (one of the repo's keys in `.agents/jira.conf` — the armed
-commit-msg hook rejects the wrong project's key). If no ticket exists for this epic yet, STOP and ask
-Daniel to mint one (or mint it with him per the pairing convention: Jira summary carries the BMAD
-number, e.g. `Epic 21 — <title>`) — **never invent a key, never cut the branch unkeyed.**
+commit-msg hook rejects the wrong project's key). If no ticket exists for this epic yet, **mint it
+now** (operator ruling 2026-08-07 — the human is already in the room at kickoff, no separate ask):
+`acli jira workitem create --project <PROJ> --type Epic --summary "Epic <N> — <title>"` — summary
+carries the BMAD number, created bare (no `--assignee`). Read the key from the create output —
+**never invent a key, never cut the branch unkeyed.** Story tickets are NOT minted here: ①
+`/sudo-write-story-tests` mints each story's ticket at pickup (its Step 1.6), so the board fills as
+work actually starts. Full acli reference: `.agents/rules/jira.md`.
 
 Story worktrees (`/sudo-write-story-tests` ①) branch FROM this branch — it must exist before the first
 one opens. The epic reaches `main` only via `/sudo-push-e2e`, which deletes the branch after the merge.

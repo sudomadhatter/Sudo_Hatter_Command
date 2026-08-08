@@ -482,7 +482,7 @@ one column on the board, and the distinction between *not yet* and *never* survi
 
 - Jira site with `AVCH` and `SCC`; sprints enabled on both; `AVCH Sprint 1` and `SCC Sprint 1` created
 - `Deferred` status in both projects, category `To Do` — confirmed by round-trip on a sample ticket
-- Saved filters `AVCH Deferred` (10003) and `SCC Deferred` (10004)
+- Saved filters, generic and cross-project (re-cut 2026-08-07 late): `Deferred` (10003), `Quick-Dev` (10005), `Parallel-OK` (10006), `Blocked` (10007), `Descoped` (10009) — one view per question, spanning every current AND future project; per-project slices come from each board's columns/label filter. Agents never read saved filters (they run raw JQL) — these are operator sugar.
 - `acli` 1.3.22 installed and authenticated as `sudomadhatter@gmail.com`
 - GitHub for Atlassian app installed; Smart Commits enabled
 - `commit-msg` hook in the lobby and AviationChat, **ENFORCE mode** (armed 2026-08-07, flag tracked)

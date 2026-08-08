@@ -57,8 +57,8 @@ main road; dotted lines are the on-ramps.*
 
 ```mermaid
 flowchart TD
-    BOOT["/sudo-boot-sprint-memory\nsession boot: where am I, what is next"] --> KICK["/sudo-create-epic-sprint\nONCE per epic: epic + stories + board\nrisk-score with you · needs the epic's Jira ticket"]
-    KICK --> ONE["① /sudo-write-story-tests\nstory file + lock the behavior\nplus write the FAILING tests first"]
+    BOOT["/sudo-boot-sprint-memory\nsession boot: where am I, what is next"] --> KICK["/sudo-create-epic-sprint\nONCE per epic: epic + stories + board\nrisk-score with you · mints the epic's Jira ticket"]
+    KICK --> ONE["① /sudo-write-story-tests\nmints the story's ticket · rules its lane\nstory file + behavior lock + FAILING tests first"]
     ONE --> TWO["② /sudo-dev-story-tests\nplan → STOP for your approval → build\n→ widen coverage → certify the suite"]
     TWO --> THREE["③ /sudo-code-review\nhunt the diff blind → adversarial review\n→ test gate → PASS/CONCERNS/FAIL/WAIVED"]
     THREE -.->|"Step 3.5"| CLEAN["/clean-code-audit\nmachine checks plus a taste pass"]
@@ -108,8 +108,8 @@ without anyone remembering to link anything (§6, §11).
 | Command | What it does for you |
 |---|---|
 | `/sudo-boot-sprint-memory` | Start of session. Reads the sprint, tells you the next story and exactly which command it needs. It **reads the review verdict from the artifact** rather than trusting the status file — so it won't send you to close out something that hasn't really passed. |
-| `/sudo-create-epic-sprint` | **Once per epic.** Writes the epic and its stories, then risk-scores every story with you. That score decides how much testing each story earns. Needs the epic's **Jira ticket** before it will cut the epic branch — it never invents a key; no ticket means it stops and mints one with you. |
-| ① `/sudo-write-story-tests` | Creates the story, locks the intended behavior in plain language, then writes the **failing** tests. Failing is the point — a test that never failed proves nothing. |
+| `/sudo-create-epic-sprint` | **Once per epic.** Writes the epic and its stories, then risk-scores every story with you. That score decides how much testing each story earns. Mints the epic's **Jira ticket** itself at kickoff (you're in the room) — never an invented key: it reads the key from the ticket it just created, and the branch is never cut unkeyed. |
+| ① `/sudo-write-story-tests` | Creates the story, locks the intended behavior in plain language, then writes the **failing** tests. Failing is the point — a test that never failed proves nothing. Also **mints the story's Jira ticket** (child of the epic's) and rules three things onto the board as labels: `quick-dev` (may ship through the fast lane), `parallel-ok` (safe beside the epic's other lanes), `blocked` (waiting on a linked blocker). |
 | ② `/sudo-dev-story-tests` | Plans, **stops for your `approved`**, builds until the tests pass, widens coverage, then records a signed-off snapshot of the results. |
 | ③ `/sudo-code-review` | Hunts the diff cold, runs an adversarial review, audits code quality, runs the test gate, issues a verdict. |
 | `/clean-code-audit` | Dead code, duplication, drift. Runs inside ③; also runs solo across a whole area. |
@@ -118,7 +118,7 @@ without anyone remembering to link anything (§6, §11).
 | `/sudo-close-workingtree` | Confirms the branch really merged, then removes the workspace and deletes the branch. |
 | `/sudo-bdd-tests` | Locks behavior in plain language, standalone (① does this for you). |
 | `/sudo-self-audit` | Pressure-tests a plan against the real code before anyone writes anything (② does this for you). |
-| `/sudo-quick-dev` | Fast lane for genuinely small fixes. **Low-risk only** — anything touching login, permissions, or user data takes the full loop no matter how small the change looks. |
+| `/sudo-quick-dev` | Fast lane for genuinely small fixes. **Low-risk only** — anything touching login, permissions, or user data takes the full loop no matter how small the change looks. ① marks eligible stories with the `quick-dev` label, so the fast-lane pile is one board filter away. |
 | `/sudo-prune-context` | Trims the running session notes back under budget so sessions start fast. |
 
 ### Machine handoff
@@ -184,7 +184,8 @@ documents on the right are how the next step knows what happened — they are th
 ```mermaid
 flowchart TD
     subgraph S1 ["① /sudo-write-story-tests"]
-        A1["lock the behavior in plain language"] --> A2["write tests that FAIL"]
+        A0["mint the story's Jira ticket\nrule: lane · parallel · blocked"] --> A1["lock the behavior in plain language"]
+        A1 --> A2["write tests that FAIL"]
     end
     subgraph S2 ["② /sudo-dev-story-tests"]
         B1["write the plan"] --> B2{"STOP\nyou type 'approved'"}
@@ -465,10 +466,13 @@ rotation`), the story file carries `jira_key:` in frontmatter, and the branch ca
 **Any agent can read and write the board — live.** There is no "export it for me" step: every platform
 (Claude, Gemini, opencode, Codex, Antigravity) shells out to the authenticated `acli` CLI. Ask "what's
 In Progress?" and the agent queries Jira and joins each ticket back to its story file through
-`jira_key:`. The rule that teaches this: [`jira.md`](../../.agents/rules/jira.md). Ticket movement is
-automated at exactly two moments — close-out moves the **story's** ticket, and `/sudo-push-e2e` moves
-the **epic's** ticket to Done with the evidence commented. Sprint and backlog *placement* stays yours;
-machinery only ever touches status.
+`jira_key:`. The rule that teaches this: [`jira.md`](../../.agents/rules/jira.md). The board fills itself:
+`/sudo-create-epic-sprint` mints the **epic's** ticket at kickoff, and ① mints each **story's**
+ticket at pickup — stamped with three rulings as labels: `quick-dev` (fast lane allowed),
+`parallel-ok` (safe beside the epic's other lanes), `blocked` (waiting on a linked blocker).
+Movement is automated at exactly two moments — close-out moves the **story's** ticket, and
+`/sudo-push-e2e` moves the **epic's** ticket to Done with the evidence commented. Sprint and backlog
+*placement* stays yours; outside the two minting seams, machinery only ever touches status.
 
 **One override worth knowing:** if a story has a live working folder on disk, it is in flight no matter
 what the status file says. The status file lags by design — only close-out writes it.
