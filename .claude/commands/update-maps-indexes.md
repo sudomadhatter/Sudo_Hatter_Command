@@ -9,13 +9,15 @@ Execute the workflow defined in @.agents/workflows/update-maps-indexes.md.
 **Execution notes:**
 - **Scope is mode-driven.** Run from the **home base** (a `Projects/` dir exists) → it **fans out**: the lobby
   **and** every **maintained** `Projects/<name>` — i.e. a workspace (has `AGENTS.md`) that is ALSO listed in
-  `.agents/maintained-projects.txt` (the single allowlist, shared with `sync-agents.ps1 -Maintained`).
+  `.agents/maintained-projects.txt` (the lint worklist — `sync-agents.ps1` stopped reading it when the
+  `-Maintained` vendor fan-out was retired 2026-08-07; nothing is pushed into a project any more).
   Conformant-but-unlisted projects are skipped with a one-line reason. To add a project to upkeep, add its
   folder name to that file. Run from **inside a project** → just that one workspace. Scope to a single
   workspace from the lobby with the focus arg below.
 - **Lead with the linter** — it does the mechanical detection. From the home base use `--all`:
-  `python .agents/scripts/check_maps.py --all` (lobby + every conformant project, one combined report); inside a
-  project just `python .agents/scripts/check_maps.py`. It runs nine numbered checks per workspace (5 fatal + the git-baseline signal + the context-hygiene, tier-2-local-law, and gitnexus-index-freshness hints; plus an unnumbered level-2 INDEX presence check) — one command verifies maps, INDEXes, the folder AGENTS.md law files, AND the code index.
+  `python3 .agents/scripts/check_maps.py --all` (lobby + every conformant project, one combined report); inside a
+  project just `python3 .agents/scripts/check_maps.py`. (**`python3`, not `python`** — bare `python` does not
+  exist on the Mac, in a script or a login shell.) It runs nine numbered checks per workspace (5 fatal + the git-baseline signal + the context-hygiene, tier-2-local-law, and gitnexus-index-freshness hints; plus an unnumbered level-2 INDEX presence check) — one command verifies maps, INDEXes, the folder AGENTS.md law files, AND the code index.
 - Steps 0–3 are read-only (detect via git + the linter, regenerate each AUTO block **in its declared mode**,
   drift-check the curated tables both ways, audit every `INDEX.md`). Steps 3.5–3.8 **propose edits** — the
   context-hygiene **prune**, the **open-tasks refresh**, the tier-2 law repairs, and the **AGENTS.md/README
