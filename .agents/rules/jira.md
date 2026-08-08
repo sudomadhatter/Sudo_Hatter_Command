@@ -1,6 +1,6 @@
 ---
 name: jira
-description: "How ANY agent on this machine reads and writes the live Jira board: the authenticated `acli` CLI — no MCP, no API config, plain shell. Load whenever the board comes up outside a sudo command (what's In Progress? move this ticket, mint a ticket, JQL). Carries the command cheat-sheet, the flag traps, the ticket↔file join, and the guardrails (never invent a key; status only — placement is the operator's)."
+description: "How ANY agent on this machine reads and writes the live Jira board: the authenticated `acli` CLI — no MCP, no API config, plain shell. Load whenever the board comes up outside a sudo command (what's In Progress? move this ticket, mint a ticket, JQL). Carries the command cheat-sheet, the flag traps, the ticket↔file join, the label vocabulary, and the guardrails (never invent a key; minting happens at two wired seams; placement is the operator's)."
 ---
 
 # Jira operations — the board is one shell command away
@@ -22,9 +22,19 @@ Site: `https://sudo-command.atlassian.net` — two team-managed projects:
 | `AVCH` | Aviation Chat | `Projects/AGY_AVIATIONCHAT` |
 
 Each repo declares its own key in `.agents/jira.conf`; the armed commit-msg hook rejects the wrong
-project's key. Statuses: `To Do` · `In Progress` · `In Review` · `Done` · `Deferred` — **Deferred
-sits in the To Do category on purpose** (a Done-category status would make descoped work read as
-shipped). Descoped work = `Deferred` + the `descoped` label.
+project's key. Statuses: `To Do` · `In Progress` · `In Review` · `Done` · `Deferred` · `Blocked`
+(once added per board in the UI — until then the `blocked` label alone carries the signal) —
+**Deferred sits in the To Do category on purpose** (a Done-category status would make descoped work
+read as shipped). Descoped work = `Deferred` + the `descoped` label.
+
+**Label vocabulary** — a card holds ONE status but stacks labels, which is exactly why these are
+labels (a story can be quick-dev-eligible AND blocked at once). All three are ruled by ①
+`/sudo-write-story-tests` at story pickup:
+`quick-dev` = ships via `/sudo-quick-dev` instead of the full ①②③ loop ·
+`parallel-ok` = no file overlap with the epic's other in-flight stories, safe to run beside them ·
+`blocked` = waiting on a linked blocker (the `Blocks` link names WHAT; pair with the `Blocked`
+status where the board has it). Filter any of them:
+`acli jira workitem search --jql "project = AVCH AND labels = quick-dev AND status != Done"`.
 
 ## Reading the board
 
@@ -46,11 +56,28 @@ join each ticket to its local counterpart (join rules below).
 acli jira workitem comment create --key SCC-14 --body "…"        # TRAP: needs --key
 acli jira workitem transition --key SCC-14 --status "In Review" --yes  # TRAP: needs --key; --yes skips the interactive confirm
 acli jira workitem create --project SCC --type Task --summary "…" --description "…"
-#   children of an epic: add --parent <EPIC-KEY>; --type Epic works too
+#   children of an epic: add --parent <EPIC-KEY>; --type Epic works too; --label "a,b" at create
+#   ALWAYS create bare (no --assignee) — default-assignee is why everything once showed "assigned to Daniel"
+acli jira workitem edit --key SCC-14 --labels "quick-dev,parallel-ok"   # REPLACES the label set
+acli jira workitem link create --out SCC-10 --in SCC-14 --type Blocks   # reads: SCC-10 blocks SCC-14
 ```
 
 Smart Commits (`#comment` / `#time` / `#transition` in a commit message) also work and cost zero
 automation quota — but the branch-name join already links commits, so use them sparingly.
+
+## Who mints tickets — two wired seams
+
+Agents MAY mint (operator ruling 2026-08-07): every ticket carries its provenance — the BMAD number
+in the summary, the board row / spec pointer in the description — so nothing lands untraceable.
+
+- **Epics** → `/sudo-create-epic-sprint` Step 1.5, at kickoff (the operator is in the room).
+- **Stories** → `/sudo-write-story-tests` ① Step 1.6, at pickup: child of the epic ticket, bare,
+  labels from ①'s lane/parallel/blocked ruling, `jira_key:` stamped into the story frontmatter.
+- **Toolkit/chore work** → mint the repo's chore ticket before cutting `chore/<KEY>-<slug>`.
+
+Outside these seams: status + comments only. Never mint speculative work — a ticket asserts a
+decision already made; "maybe" items live in the deferred ledgers, and the operator purges
+unrecognized tickets on sight.
 
 ## The ticket ↔ file join (all literal strings — no magic)
 
@@ -62,11 +89,11 @@ automation quota — but the branch-name join already links commits, so use them
 
 ## Guardrails
 
-1. **Never invent a key.** Read it from an existing ticket or branch; if none exists, STOP and mint
-   one with the operator (pairing convention above). A well-formed wrong key is worse than none —
-   it silently decorates the wrong ticket.
-2. **Status and comments only.** Sprint/backlog placement, priorities, and board layout are the
-   operator's; machinery moves STATUS and posts evidence, nothing else.
+1. **Never invent a key.** A key comes from an existing ticket, a branch name, or the create output
+   of a ticket you just minted at one of the two seams — never from imagination. A well-formed wrong
+   key is worse than none — it silently decorates the wrong ticket.
+2. **Placement stays the operator's.** Machinery mints at the two seams, moves status, and posts
+   evidence — sprint/backlog placement, priorities, and board layout are human decisions.
 3. **Bare-state board.** Only OPEN work gets tickets. Never resurrect finished epics as tickets —
    done work is file history (`sprint-status.yaml`, `epics.md`), not board rows.
 4. **Don't double-move.** Two transitions are already automated: `/sudo-push-e2e` Step 6.5 moves the

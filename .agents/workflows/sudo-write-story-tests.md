@@ -41,6 +41,30 @@ next story" when empty). This writes the story file under `_bmad/bmm/stories/` w
 criteria (ACs). Confirm the story file + ACs exist before continuing. If create-story stops for input,
 surface it and stop — never guess.
 
+## Step 1.6 — Mint the story's Jira ticket + rule the lane (AUTOMATIC — operator ruling 2026-08-07)
+The story file exists, so its ticket must too — ① is the story's single classification point. Using the
+repo's project from `.agents/jira.conf` and the EPIC's ticket key (it's in the epic branch name):
+
+1. **Rule three things first** (they shape the mint):
+   - **Lane** — can this story ship via `/sudo-quick-dev` instead of the full ①②③ loop? (Small blast
+     radius, P2/P3 risk score, no new endpoint/contract/auth surface.) → label `quick-dev`. Default is
+     the full loop, no label.
+   - **Parallel** — can it run beside the epic's other in-flight stories? Binds on FILE OVERLAP (per
+     the parallel-lanes rule): disjoint file sets → label `parallel-ok`.
+   - **Blocked** — does it depend on an unlanded story/ticket? → label `blocked` + a `Blocks` link.
+2. **Check it doesn't already exist** (backfilled boards, re-runs): search the BMAD number —
+   `acli jira workitem search --jql "project = <PROJ> AND summary ~ '<n.m>'"`. Found → reuse that key.
+3. **Mint** (bare, parented, labels from step 1): `acli jira workitem create --project <PROJ> --type
+   Task --parent <EPIC-KEY> --summary "<n.m> — <Story Title>" --label "<ruled labels>"` — summary
+   carries the BMAD number; no `--assignee`. Read the new key from the output — **never invent one.**
+4. **Stamp the story file frontmatter** — the file is the machine truth, the board only mirrors it:
+   `jira_key: <KEY>` (Step 4.5 of `/sudo-update-sprint-memory` moves the ticket by reading exactly
+   this field), plus the rulings: `lane: quick-dev|full`, `parallel_ok: true|false`,
+   `blocked_by: [<keys>]` (omit when empty).
+5. **Set its state:** blocked → `acli jira workitem link create --out <BLOCKER-KEY> --in <KEY> --type
+   Blocks`, then transition to `Blocked` if the board has that status (else the label carries it).
+   Not blocked → transition to `In Progress` (`--yes`). Full acli reference: `.agents/rules/jira.md`.
+
 ## Step 2 — BDD Vision Lock (ATDD Contract Phase — MANDATORY, never silently skipped)
 Invoke the **`/sudo-bdd-tests`** workflow. This is an interactive session with the Test Architect (Murat)
 to hash out exact expected behaviors until they are 100% understood. The locked Given/When/Then contract
