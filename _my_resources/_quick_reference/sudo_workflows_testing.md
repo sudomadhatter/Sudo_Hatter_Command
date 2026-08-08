@@ -548,9 +548,46 @@ In Progress?" and the agent queries Jira and joins each ticket back to its story
 `/sudo-create-epic-sprint` mints the **epic's** ticket at kickoff, and ① mints each **story's**
 ticket at pickup — stamped with three rulings as labels: `quick-dev` (fast lane allowed),
 `parallel-ok` (safe beside the epic's other lanes), `blocked` (waiting on a linked blocker).
-Movement is automated at exactly two moments — close-out moves the **story's** ticket, and
-`/sudo-push-e2e` moves the **epic's** ticket to Done with the evidence commented. Sprint and backlog
-*placement* stays yours; outside the two minting seams, machinery only ever touches status.
+Movement is automated at exactly three moments — close-out moves the **story's** ticket,
+`/close-task-merge-tree` moves a **task's**, and `/sudo-push-e2e` moves the **epic's** to Done with
+the evidence commented. Sprint and backlog *placement* stays yours; outside the two minting seams,
+machinery only ever touches status.
+
+### Two shapes of work on one board — and why it decides the command
+
+Everything on the board is a **Story** or a **Task**, and that is not a label — **it decides which
+command is able to close it.**
+
+A **Story** is sprint work. It has a number (`19.2`), a story file, a BMAD epic above it and a row on
+`sprint-status.yaml`. It runs the ①②③ loop and closes with `/sudo-update-sprint-memory`.
+
+A **Task** is most of what you actually spend days on: the toolkit, the rules, the `/` commands, IDE
+and skills work. No story file, no BMAD epic, and in this command center no sprint board at all. It
+hangs under one of your grouping epics (`CI/CD Improvment`, `New Epic Feature or Fix`, `Thin toolkit`)
+only because Jira offers no other container for it.
+
+The consequence is the part worth knowing: **`/sudo-update-sprint-memory` cannot close a Task, and
+never could.** It reads a sprint board, flips a story status and lands on an epic branch — a Task has
+none of the three. So Task work was being closed by hand, which is exactly why the tickets stayed
+empty. `/close-task-merge-tree` is that missing half, with the same four obligations.
+
+| | Story | Task |
+|---|---|---|
+| Branch | `claude/<KEY>-<slug>`, off the epic branch | `chore/<KEY>-<slug>`, off `main` |
+| Closes with | `/sudo-update-sprint-memory` | **`/close-task-merge-tree`** |
+| The code lands on | the epic branch (then `main` via `/sudo-push-e2e`) | `main`, directly |
+| Your sign-off | invoking the close-out | invoking the command |
+
+You never pick the type by hand: `jira_feed.py` derives it when the ticket is minted, and
+`jira_feed.py audit --jira-project <P>` re-checks a whole board at once. **`Bug` stays yours** — your
+temporary flag on a Story you found broken; the close-out puts it back to Story once the fix lands.
+
+**The one refusal to expect.** A Task merges to `main` without the end-to-end suite, and the only
+thing that justifies that is *nothing that deploys changed*. So `/close-task-merge-tree` doesn't take
+anyone's word for it — it checks the diff, and if a `chore/*` branch touched `backend/`, `frontend/`,
+`firebase/`, `functions/`, `mobile/` or `.github/`, it stops and sends the work to `/sudo-push-e2e`.
+There is no flag to force it past. A change that reaches deployable code is a product change however
+its ticket is labelled.
 
 **One override worth knowing:** if a story has a live working folder on disk, it is in flight no matter
 what the status file says. The status file lags by design — only close-out writes it.
