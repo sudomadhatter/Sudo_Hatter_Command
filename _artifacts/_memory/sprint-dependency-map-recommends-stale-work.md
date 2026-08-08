@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: d1bc5de1-b28b-40c0-a47b-3d0e4c6de41a
-  modified: 2026-08-02T19:18:22.986Z
+  modified: 2026-08-08T17:39:50.698Z
 ---
 
 **RENAMED 2026-08-02:** the board is now `sprint_scrum_board_map.md` (same folder), rebuilt by
@@ -15,8 +15,9 @@ The lessons below predate the rename and still bind.
 `Projects/AGY_AVIATIONCHAT/_my_resources/_quick_reference/sprint_scrum_board_map.md` is hand-maintained
 and lags `_bmad-output/implementation-artifacts/sprint-status.yaml`. On 2026-07-25 it was 5 days stale and
 its headline recommendation was wrong in **both** halves: it told the operator to run `/sudo-quick-dev
-debug.7` (closed 07-21, along with debug.6 and debug.8) and to start `19.1` as the main line (**all of
-Epic 19 is `deferred`** — see [[agy-epic-19-deferred-pin-cascade]]). It was also missing Epic 21 and
+debug.7` (closed 07-21, along with debug.6 and debug.8) and to start `19.1` as the main line (all of
+Epic 19 was `deferred` **at that date** — it REOPENED 2026-08-08, so do not read this as current epic
+state; see [[agy-epic-19-deferred-pin-cascade]]). It was also missing Epic 21 and
 epic-debug-2 **entirely** — nine backlog rows invisible, which reads as an empty backlog, not a gap.
 
 **Why:** the doc carries prose recommendations ("the one-liner", lane maps, quick-dev candidates), not just
