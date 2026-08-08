@@ -20,6 +20,12 @@ These are folder paths to see the open todo list in the sub projects:
     - While updating the command center to handle all workflow related things, also apply the graph rag style for the workflows, have the /write-storys-epics decide here if its a quick dev or full dev. optimize the quick dev, if not there it can be when we write the storys, if its quick dev it prompts you down this path. 
         - Use this time to also impliment the Openwork Skill https://github.com/andrewyng/openworker and also https://github.com/PrimeIntellect-ai/prime-agent for self improving. I want to take a look at both
 4. set up a master .env in sudo hatter command for my main computer at home
+5. Take a look at the /quick-dev workflow has contradictions with the rules about artifacts.
+6. /autopilots need to also use workingtrees 
+7. verify that /self-assess is actually using the gitnexus for looking at edges and lets audit its effetivness
+8. Update the ADK testing for agents and actually impliment the stage 2 we never did
+9. Read proposed plan: /Users/sudohatter/Sudo_Hatter_Command/_my_resources/open_tasks/proposal_graphrag_executiblity.md
+10. Verify the new skeleton project has the file folder guide and set up in it and uses it.
 
 ## Open Work
 <!-- Add plan/PRP notes as <slug>.md alongside this file. -->
@@ -29,16 +35,17 @@ These are folder paths to see the open todo list in the sub projects:
 3. /mobile-error_team still needs to be pushed to main to work, there is a note in claude memory about it, just ask. 
 
 <!-- open_tasks files — auto-listed by /update-maps-indexes -->
+- `architecture-decision-proposal-2026-08-05-firestore-schema-scope.md`
+- `git-hooks-board-stale-install.md`
 - `plan_optimize-sudo-dev-story-tests.md`
+- `proposal_graphrag_executiblity.md`
 
 ----
 
 <!-- CHECKPOINT id="ckpt_mrk3jkm0_qa7nw6" time="2026-07-14T03:33:28.728Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
 
-<!-- CHECKPOINT id="ckpt_mrx0p3jt_d0a9cj" time="2026-07-23T04:34:47.993Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+<!-- CHECKPOINT id="ckpt_msjwxz8u_64e1n0" time="2026-08-08T05:08:25.902Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
 
-<!-- CHECKPOINT id="ckpt_msj88d6c_nt3gau" time="2026-08-07T17:36:40.116Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+<!-- CHECKPOINT id="ckpt_msjyqa20_u2gjba" time="2026-08-08T05:58:25.896Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
 
-<!-- CHECKPOINT id="ckpt_msjcij04_1oc5cr" time="2026-08-07T19:36:32.692Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
-
-<!-- CHECKPOINT id="ckpt_msjil5m7_1ds8wo" time="2026-08-07T22:26:33.007Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+<!-- CHECKPOINT id="ckpt_msjz350s_mrrj2n" time="2026-08-08T06:08:25.900Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
