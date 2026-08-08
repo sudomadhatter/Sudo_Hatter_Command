@@ -98,9 +98,13 @@ check after applying fixes and paste the output.
 
 ## Step 4 — Artifacts, then stop
 - The **spec** the skill wrote is the working doc (it carries the Suggested Review Order).
+- **Story lane only:** the skill syncs `sprint-status.yaml` and advances the story to **`review`** on its
+  way out. That is the normal dev→review flip (`story-status-flip-contract`) — `done` stays yours. On the
+  ad-hoc lane there is no story key, so the sync skips silently.
 - Write a **thin `walkthrough.md`** in the owning `_artifacts/` store — story work →
   `epic_<E>/<story>/`; ad-hoc → `quick_fixes/quick-fix-<track>.<n>-<slug>/` (read that folder's
-  `INDEX.md` for the next free number and append the row by hand). It **links** the spec rather than
+  `INDEX.md` for the next free number and append the row by hand; **create the folder + its `INDEX.md`
+  if this is the repo's first quick fix** — the lobby has none yet, AviationChat does). It **links** the spec rather than
   restating it, and carries `## Task Checklist` → `## Evidence` (AC→evidence + pasted totals + SHA) →
   `## Code Review (<date>)` with the canonical **`Verdict: PASS|CONCERNS|FAIL|WAIVED @ <sha>`** line →
   `## Your Actions`. Post clickable Markdown links to every artifact in the chat.

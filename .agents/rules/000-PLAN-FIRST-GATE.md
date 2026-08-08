@@ -53,6 +53,12 @@ Present key points inline in the chat AND link the artifact. Daniel reviews plan
 
 BMAD skills (`bmad-dev-story`, `bmad-quick-dev`, etc.) have execution steps that mutate project files — updating story status, sprint-status.yaml, writing code. **Those steps are subordinate to this gate.** The correct execution order when a BMAD skill is invoked:
 
+> **Read this together with the carve-out at the top.** `bmad-quick-dev` appears in that list because a
+> **bare** invocation of it is gated like any other skill. It is NOT gated when it runs as the engine of
+> `/sudo-quick-dev` — that command's invocation IS the skip instruction, and its EJECT tripwire re-arms
+> the gate. Same skill, two callers, two answers; the caller decides, never the skill and never the size
+> of the change.
+
 1. Run the skill's research/discovery steps (read-only)
 2. Use the skill's context to write `implementation_plan.md` (artifact only)
 3. Present the plan to Daniel with key points inline

@@ -141,7 +141,7 @@ alongside it and isolating nothing; only relocating it proved the behavioral tes
 Both are diligence-shaped failures, which is why they are written down.
 
 The halves of this rule already existed — `karpathy-guidelines` §1 (root cause before symptom),
-`sudo-quick-dev` Step 2 (one pinning regression test), `sudo-mobile-error-team` §4 (regression test
+`sudo-quick-dev` Step 3's review gate (one pinning regression test), `sudo-mobile-error-team` §4 (regression test
 mandatory), `collaborative-debug-first` (instrument, don't speculate). What was missing across every
 rule and command was **reproduction**: one grep for `reproduc*` over the whole `.agents/` tree returned
 a single hit, about a disk path. That is the gap this closes.
