@@ -16,3 +16,5 @@
 
 AGY_AVIATIONCHAT
 NEXgen-VR-Director
+# Fresh_Workspace_BMAD retired 2026-08-07 (SCC-25) — was the living template; left on disk untouched,
+# no longer synced or linted. Disposal of the repo itself is the operator's call.

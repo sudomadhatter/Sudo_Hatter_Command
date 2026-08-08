@@ -1,0 +1,14 @@
+#!/bin/sh
+# commit-msg-jira (see .agents/scripts/git-hooks/commit-msg-jira.sh for the why)
+#
+# GUARD (SCC-32): `--show-toplevel` resolves to the WORKTREE root, not the main checkout, so a worktree
+# cut from a commit before the script existed has no script to exec — and a bare `exec` on a missing file
+# kills the commit outright with a shell error. That is a hard door where the design calls for a loud
+# alarm (guide §10), and it hit a real lane the day the gate shipped. Missing script → say so, allow.
+HOOK="$(git rev-parse --show-toplevel)/.agents/scripts/git-hooks/commit-msg-jira.sh"
+if [ ! -x "$HOOK" ]; then
+  echo "  ⚠ jira commit gate not present in this worktree ($HOOK) — commit allowed, unchecked."
+  echo "    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it."
+  exit 0
+fi
+exec "$HOOK" "$@"

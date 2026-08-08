@@ -54,7 +54,7 @@ Inside each worktree:
 
 ## Step 3 — The overlap map (BEFORE any merge)
 Pairwise across the set (`git diff --name-only <A>...<B>` per pair, plus each lane vs
-`origin/epic/<slug>` — the epic's own branch), classify every file touched by ≥2 lanes:
+`origin/epic/<JIRA-KEY>-<slug>` — the epic's own branch), classify every file touched by ≥2 lanes:
 - **Code overlaps** — read both hunks; same-function edits get an owner + resolution decided NOW,
   not mid-conflict. Dependency edges (one lane creates a module/predicate a sibling imports)
   dictate order: **creator lands before importer**; an operator ruling on the board outranks any
@@ -71,7 +71,7 @@ dependencies don't dictate.
 
 ## Step 4 — Fix, close, land — sequentially, verified INSIDE each worktree
 For each eligible lane, in the Step 3 order:
-1. **Merge the epic branch into the lane, in the lane:** `git merge origin/epic/<slug>` — it now
+1. **Merge the epic branch into the lane, in the lane:** `git merge origin/epic/<JIRA-KEY>-<slug>` — it now
    carries every previously-landed sibling, so each merge is the rolling reconcile. Resolve conflicts
    HERE per the Step 3 plan. ⛔ Never check the epic branch out in the shared checkout to resolve
    anything.
@@ -99,7 +99,7 @@ For each eligible lane, in the Step 3 order:
    pointer; route learnings to their homes and queue memory writes; confirm the walkthrough's
    `## Your Actions` records what lands. Commit — EXPLICIT PATHS ONLY, `git diff --cached --stat`
    shows only this story's files.
-4. **Land:** `git push origin HEAD:epic/<slug>`; verify the remote moved. Rejected (remote moved
+4. **Land:** `git push origin HEAD:epic/<JIRA-KEY>-<slug>`; verify the remote moved. Rejected (remote moved
    again) → re-merge, re-gate, re-land — never force. ⛔ Do NOT push the `claude/*` branch itself;
    it is the rollback point until Step 6 deletes it.
 
@@ -117,7 +117,7 @@ the old "N stories behind" fast-forward died with `main_debug` on 2026-08-07.)*
 
 ## Step 6 — Prune EVERY tree and branch (AUTOMATIC — only after Step 5 is green)
 For each landed lane: `/sudo-close-workingtree <story-slug>` — verify merged, remove
-`.claude/worktrees/<slug>`, delete local + remote `claude/<slug>`. ⛔ Prune NOTHING before the
+`.claude/worktrees/<slug>`, delete local + remote `claude/<JIRA-KEY>-<slug>`. ⛔ Prune NOTHING before the
 combined gate is green — the worktrees are the rollback points. Blocked/skipped lanes keep their
 trees and are reported, not pruned.
 

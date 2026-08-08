@@ -570,10 +570,19 @@ def check_conformance(root, is_home, is_bmad, map_path):
         # is an ERROR, never a default. Any tier-1 vendor still present is the P3/P4 conversion
         # worklist, flagged loud so a half-stripped project can't read as clean.
         need(".agents/INDEX.md", "tier-2 law INDEX (binding reads this — project-law.md)")
+        # ⚠️ NEVER add the repo-local ENFORCEMENT set to this list (SCC-32): `.githooks/`,
+        # `.agents/scripts/git-hooks/`, and `.agents/jira.conf` are the armed Jira commit gate. Git runs
+        # hooks in the repo they gate and `jira.conf` names THAT repo's Jira project — they are permanently
+        # project-local by design (same class as BMAD's `_bmad/custom/*.toml`), never vendored, never
+        # centralized. Flagging them would order the conversion to delete the audit trail. `.agents/scripts`
+        # is therefore probed by its TOOLKIT sentinel, not the bare directory, so a project keeping only
+        # `scripts/git-hooks/` reads as clean.
         vendor_markers = [
-            ".agents/AGENTS.md", ".agents/commands", ".agents/workflows", ".agents/scripts",
+            ".agents/AGENTS.md", ".agents/commands", ".agents/workflows",
+            ".agents/scripts/check_maps.py", ".agents/scripts/generate_repo_map.py",
+            ".agents/scripts/sync-agents.ps1",
             ".agents/hooks", ".agents/templates", ".agents/reference", ".agents/bmad",
-            ".agents/opencode-agents", ".opencode", "opencode.json", ".mcp.json", ".githooks",
+            ".agents/opencode-agents", ".opencode", "opencode.json", ".mcp.json",
         ]
         found = [m for m in vendor_markers if (root / m).exists()]
         if found:

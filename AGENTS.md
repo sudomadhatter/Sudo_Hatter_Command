@@ -50,6 +50,13 @@ floor, and why the trigger has to be a rule you follow rather than a hope.
 in the INDEX). Do not preload. The full rule set is the shared toolkit, not a startup payload. How a
 workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 
+> **One on-demand rule is named HERE because its trigger hides in plain sight: the Jira board.** Any
+> sprint/backlog/ticket question ("what's In Progress?", "move/mint this ticket") is answered from the
+> **live board** via the authenticated `acli` CLI — load `.agents/rules/jira.md` (cheat-sheet + flag
+> traps + guardrails) and run the query. Never answer "I have no Jira integration": every shell-capable
+> agent on this machine has one. The local `sprint-status.yaml` remains the machine state; Jira is the
+> human view — the rule carries the join.
+
 > **Web/mobile session?** When env **`CLAUDE_CODE_REMOTE=true`** (Claude Code on the web or phone), also
 > load `.agents/rules/mobile-mode.md` — the web/mobile lane: it adapts git, the approval gate, artifacts,
 > and verification for a device with no terminal. On a desktop IDE session the var is unset → ignore it and

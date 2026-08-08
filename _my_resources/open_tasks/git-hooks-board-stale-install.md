@@ -1,5 +1,9 @@
 # Scrum-board stale-stamp hooks — per-machine install guide
 
+**ATTENTION AGENTS: This is now a delete guide we need to remoce all this**
+
+
+
 **Why this document exists:** git hooks live in `.git/hooks/`, and `.git/` never travels through
 GitHub — so the board stale-stamp automation must be installed **once per machine, per project**.
 Cloning a repo does NOT bring the hooks with it. This is the checklist for every machine you work on
@@ -111,3 +115,5 @@ git checkout -- _my_resources/_quick_reference/sprint_scrum_board_map.md
   `.agents/commands/sudo-update-scrum-board.md`
 - Close-out keeps the board fresh in the normal path (Step 4.5 of `/sudo-update-sprint-memory`) —
   the hook is the tripwire for everything that leaks around it.
+
+<!-- CHECKPOINT id="ckpt_msji8aoj_3xwkuw" time="2026-08-07T22:16:33.043Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->

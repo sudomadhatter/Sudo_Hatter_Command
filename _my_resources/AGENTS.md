@@ -8,7 +8,7 @@ routing row points you at. What's here → `README.md`.
   explicitly directs you to that file, in the moment. (An approval elsewhere doesn't carry in here.)
 - **STANDING EXCEPTIONS:**
   - `open_tasks/todo_list.md` — `/update-maps-indexes` refreshes the `## Open Tasks` file-list inside (only that list; his `## Todo list` prose and task files stay his).
-  - `_quick_reference/` — Agents are ALLOWED to read, reference, and update quick-reference documents (e.g., `sprint_scrum_board_map.md`, `sudo_workflows_testing.md`) as needed/directed.
+  - `_quick_reference/` — Agents are ALLOWED to read, reference, and update quick-reference documents (e.g., `sudo_workflows_testing.md`) as needed/directed.
   - `migrations/` — the new-computer setup kit (secrets export/restore, rename-day script) + one-off
     migration records. Agents are ALLOWED to read it and RUN its scripts **once Daniel points them at a
     migration** (`/sudo-resume`, "set up this machine", "restore my secrets") — the whole folder exists to

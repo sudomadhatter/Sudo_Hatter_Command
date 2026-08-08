@@ -12,11 +12,26 @@ work between them.
 | Tier | Lives at | Holds | Reaches |
 |---|---|---|---|
 | **Tier 1 — workflow law** | the command center's `.agents/` | rules · commands · skills · workflows · scripts · templates | every project, every platform, every session |
-| **Tier 2 — project law** | `Projects/<name>/.agents/` | `rules/` + `skills/` + `INDEX.md` **only** | that one project |
+| **Tier 2 — project law** | `Projects/<name>/.agents/` | `rules/` + `skills/` + `INDEX.md`, plus the enforcement set below | that one project |
 
 A project carries **no** copy of tier 1. No vendored commands, workflows, scripts, or shared rules; no
 tracked `.claude/`, `.opencode/`, `.gemini/`, `.antigravity/`. Sessions run from the command center, so
 tier 1 is already loaded — a second copy inside the project is dead weight that drifts.
+
+### ⛔ The carve-out: repo-local enforcement stays in the repo
+
+Some files **cannot** live at the center, because the machinery that reads them runs inside the project
+repo. Centralizing them doesn't tidy them up — it disarms them. They are tier-2 by nature, not by choice:
+
+| File | Why it can only live there |
+|---|---|
+| `.githooks/*` + `.agents/scripts/git-hooks/*` | **git runs hooks in the repo they gate.** A hook at the center never fires for a commit in a project. Carries the armed Jira commit gate + its tracked `JIRA-ENFORCE` flag and the encoding guard. |
+| `.agents/jira.conf` | **Project identity.** It names the Jira project THIS repo answers to (AGY → `AVCH`, lobby → `SCC`). One vendored copy would give every repo the lobby's key, and each gate would then reject its own work items while accepting another project's — with the file reading perfectly plausibly. |
+| `_bmad/custom/*.toml` | The original precedent: BMAD's per-repo skill overrides + module identity. |
+
+The test: **does something inside the repo execute or read this file at runtime?** If yes, it stays,
+however "shared" its content looks. A conversion that strips these has removed enforcement, not
+duplication — and `check_maps.py` deliberately does NOT flag them as stale vendor.
 
 ## ⛔ Binding a project MEANS loading its law
 

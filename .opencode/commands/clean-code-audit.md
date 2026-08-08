@@ -38,7 +38,7 @@ Every bare path and every command below resolves **under `PROJECT_ROOT`**.
 ## Step 0.5 — Resolve the diff (worktree-aware)
 
 Story work lives in its own worktree (`worktree-per-story`), and the code under audit commonly exists
-**only there**. Run `git worktree list` under `PROJECT_ROOT`; if a `claude/<story-slug>` tree matches the
+**only there**. Run `git worktree list` under `PROJECT_ROOT`; if a `claude/<JIRA-KEY>-<story-slug>` tree matches the
 story, `cd` into it and bind every path and command below to that tree. Echo `Auditing in <path>`.
 
 Establish the changed-file set — this is the audit's entire universe. Resolve the base dynamically:

@@ -1,0 +1,15 @@
+# Presence of this file arms commit-msg-jira.sh: a commit with no Jira work-item
+# key is REJECTED instead of merely warned about. The hook tests existence only —
+# nothing reads these lines.
+#
+# Armed 2026-08-07 (SCC-10), after a real miss: a commit carrying SCC-10 landed
+# on AviationChat's main, where .agents/jira.conf binds the repo to AVCH. The hook
+# fired and warned correctly. Nobody saw it — the commit came from VS Code's Source
+# Control panel, which writes hook output to View > Output > Git and shows nothing
+# in the UI. A warning nobody reads is not a gate.
+#
+# This file is TRACKED on purpose. Untracked, the gate would be armed on one machine
+# and silent on every other clone — failing exactly when you switch machines.
+#
+# To disarm for one commit:  git commit --no-verify
+# To disarm entirely:        delete this file (or .agents/scripts/git-hooks/DISABLE)

@@ -1,7 +1,8 @@
 # The Sudo Dev System — Quick Reference
 
-> **How we build, and what you type.** Current as of **2026-08-07**, after Waves 1–5 and the
-> epic-branch migration (`main` is now the only long-lived branch).
+> **How we build, and what you type.** Current as of **2026-08-07**, after Waves 1–5, the
+> epic-branch migration (`main` is the only long-lived branch), and the **Jira integration** —
+> every branch and every commit now carries the repo's ticket key, enforced by an armed git hook.
 > Read once start-to-finish, then jump in. Every technical term gets explained the first time it shows
 > up — you shouldn't need to know git plumbing to run this system.
 
@@ -12,12 +13,13 @@ under `Projects/`; it has no sprint of its own.
 
 | | |
 |---|---|
+| What runs next | the [SCC Jira board](https://sudo-command.atlassian.net/jira/software/projects/SCC/boards/2) — sprint view (§11) |
 | The master toolkit | [`.agents/`](../../.agents/) — commands, rules, scripts. Edit here, never the copies. |
 | Long-form depth | [`../diagrams_guides/`](../diagrams_guides/) |
-| Projects this drives | the [maintained list](../../.agents/maintained-projects.txt) — AGY_AVIATIONCHAT · Fresh_Workspace_BMAD · NEXgen-VR-Director |
+| Projects this drives | the [maintained list](../../.agents/maintained-projects.txt) — AGY_AVIATIONCHAT · NEXgen-VR-Director |
 
 Each project keeps its own copy of this page. **The body below is identical everywhere** — only this
-block and §13 differ, so there's one thing to learn, not three.
+block, §13, and link paths differ, so there's one thing to learn, not three.
 
 ---
 
@@ -28,7 +30,7 @@ block and §13 differ, so there's one thing to learn, not three.
 | …do this | → run / read |
 |---|---|
 | know what to work on | `/sudo-boot-sprint-memory` — reads the sprint and tells you the next move |
-| refresh the board | `/sudo-update-scrum-board` (§11) |
+| see or move the sprint board | ask any agent — the live board answers via `acli` (§11) |
 | start the next story | ① `/sudo-write-story-tests <id>` |
 | build a story that has failing tests waiting | ② `/sudo-dev-story-tests <id>` |
 | review code that's written | ③ `/sudo-code-review <id>` |
@@ -39,6 +41,7 @@ block and §13 differ, so there's one thing to learn, not three.
 | ship to production | `/sudo-push-e2e` (§6) |
 | switch machines | `/sudo-park` before, `/sudo-resume` after — §7 shows the handoff end to end |
 | chase a production error | `/sudo-mobile-error-team` (§12) |
+| brainstorm or solve hard problems | `/sudo-adviser-board` — historical minds in challenge teams (§3) |
 | free up a heavy session | `/sudo-prune-context` |
 
 **Sections:** 1 the map · 2 the two rules · 3 commands · 4 the loop · **5 the safety net** ·
@@ -54,24 +57,24 @@ main road; dotted lines are the on-ramps.*
 
 ```mermaid
 flowchart TD
-    BOOT["/sudo-boot-sprint-memory\nsession boot: where am I, what is next"] --> KICK["/sudo-create-epic-sprint\nONCE per epic: epic + stories + board\nplus risk-score every story with you"]
+    BOOT["/sudo-boot-sprint-memory\nsession boot: where am I, what is next"] --> KICK["/sudo-create-epic-sprint\nONCE per epic: epic + stories + board\nrisk-score with you · needs the epic's Jira ticket"]
     KICK --> ONE["① /sudo-write-story-tests\nstory file + lock the behavior\nplus write the FAILING tests first"]
     ONE --> TWO["② /sudo-dev-story-tests\nplan → STOP for your approval → build\n→ widen coverage → certify the suite"]
     TWO --> THREE["③ /sudo-code-review\nhunt the diff blind → adversarial review\n→ test gate → PASS/CONCERNS/FAIL/WAIVED"]
     THREE -.->|"Step 3.5"| CLEAN["/clean-code-audit\nmachine checks plus a taste pass"]
-    THREE --> CLOSE["/sudo-update-sprint-memory\nclose-out: YOUR sign-off marks it done\nand lands the code"]
+    THREE --> CLOSE["/sudo-update-sprint-memory\nclose-out: YOUR sign-off marks it done\nlands the code · moves the story's Jira ticket"]
     THREE --> MERGE["/sudo-merge-epic-workingtrees\n2+ passed lanes of ONE epic → one landing"]
     CLOSE --> CLOSEWT["/sudo-close-workingtree\nverify it merged, then clean up"]
     MERGE --> CLOSEWT
     CLOSEWT -.->|"next story"| ONE
-    CLOSEWT --> SHIP["/sudo-push-e2e\nend-to-end suite must be green → promote"]
+    CLOSEWT --> SHIP["/sudo-push-e2e\nend-to-end suite must be green → promote\nthen the epic's Jira ticket → Done"]
     SHIP --> PROD["Production"]
     PROD -.->|"errors"| SEC["Automated incident pipeline\nSentry → triage → issue + fix branch → page"]
     SEC -.->|"you respond"| MOBERR["/sudo-mobile-error-team\nre-diagnose → rollback-or-fix card → CI gate"]
     MOBERR -.->|"becomes a story"| ONE
     LIVE["/sudo-live-testing-team\nyou fly the app, agent watches the logs"] -.->|"becomes a story"| ONE
+    ADV["/sudo-adviser-board\nhistorical minds in challenge teams\nBrainstorm → Plan → Market → Brief"] -.->|"seeds ideation/plan"| KICK
     AP["/autopilot_claude and its 3 siblings\nrobot runs the whole loop for you"] -.->|"alternate lane for ①②③"| TWO
-    BOARD["/sudo-update-scrum-board\nrebuilds what runs next, and what runs in parallel"] -.-> BOOT
     PARK["/sudo-park\npark your work before closing the laptop"] <--> RESUME["/sudo-resume\nrestore it on the other machine"]
 ```
 
@@ -91,6 +94,11 @@ exists only to make them pass, and an adversarial review stands between "coded" 
 
 Everything else in this document is a consequence of those two.
 
+**And one rule the machines hold so you don't have to:** every branch and every commit carries the
+repo's **Jira ticket key** (`epic/AVCH-13-ppl-curriculum`, not `epic/ppl-curriculum`). An armed git
+hook refuses a keyless commit outright — which is what keeps every ticket's Development panel honest
+without anyone remembering to link anything (§6, §11).
+
 ---
 
 ## 3. Your `/` commands (the human lane)
@@ -100,13 +108,12 @@ Everything else in this document is a consequence of those two.
 | Command | What it does for you |
 |---|---|
 | `/sudo-boot-sprint-memory` | Start of session. Reads the sprint, tells you the next story and exactly which command it needs. It **reads the review verdict from the artifact** rather than trusting the status file — so it won't send you to close out something that hasn't really passed. |
-| `/sudo-update-scrum-board` | Rebuilds the board — what's next, what can run in parallel, what's waiting on you (§11). |
-| `/sudo-create-epic-sprint` | **Once per epic.** Writes the epic and its stories, generates the board, then risk-scores every story with you. That score decides how much testing each story earns. |
+| `/sudo-create-epic-sprint` | **Once per epic.** Writes the epic and its stories, then risk-scores every story with you. That score decides how much testing each story earns. Needs the epic's **Jira ticket** before it will cut the epic branch — it never invents a key; no ticket means it stops and mints one with you. |
 | ① `/sudo-write-story-tests` | Creates the story, locks the intended behavior in plain language, then writes the **failing** tests. Failing is the point — a test that never failed proves nothing. |
 | ② `/sudo-dev-story-tests` | Plans, **stops for your `approved`**, builds until the tests pass, widens coverage, then records a signed-off snapshot of the results. |
 | ③ `/sudo-code-review` | Hunts the diff cold, runs an adversarial review, audits code quality, runs the test gate, issues a verdict. |
 | `/clean-code-audit` | Dead code, duplication, drift. Runs inside ③; also runs solo across a whole area. |
-| `/sudo-update-sprint-memory` | Close-out. Pre-flights everything mechanically (§5), marks the story done on **your** word, saves what was learned, lands the code. |
+| `/sudo-update-sprint-memory` | Close-out. Pre-flights everything mechanically (§5), marks the story done on **your** word, saves what was learned, lands the code — and **moves the story's Jira ticket** to match, with the evidence attached. |
 | `/sudo-merge-epic-workingtrees` | Lands **all** of one epic's finished lanes in a single reviewed pass — instead of closing out four stories one at a time. |
 | `/sudo-close-workingtree` | Confirms the branch really merged, then removes the workspace and deletes the branch. |
 | `/sudo-bdd-tests` | Locks behavior in plain language, standalone (① does this for you). |
@@ -126,7 +133,7 @@ Everything else in this document is a consequence of those two.
 | Command | What it does for you |
 |---|---|
 | `/sudo-e2e` | Runs the real end-to-end suite — a complete stand-in for the live app, with test users. Green means safe to ship. |
-| `/sudo-push-e2e` | The one shipping command: merges the epic branch into `main` (§6). **Refuses to run** until the end-to-end suite is green and you sign off. |
+| `/sudo-push-e2e` | The one shipping command — the only road an epic takes to `main` (§6). It **refuses to run** until the end-to-end suite is green and you sign off. After the merge it comments the evidence on the epic's Jira ticket and moves it to **Done**. |
 
 ### Debugging and incidents
 
@@ -139,7 +146,7 @@ Everything else in this document is a consequence of those two.
 
 | Command | What it does for you |
 |---|---|
-| `/sudo-adviser-board` | Historical minds in challenge teams that flip your assumptions and surface what people *need* rather than what they asked for. Advances only on your word. |
+| `/sudo-adviser-board` | Convene historical minds in 5 challenge teams (+ Real-World marketing squad) to flip assumptions, solve hard frontier problems, and surface what people *need*. Runs Brainstorm → Plan → Market → Brief stations; advances only on your word. Saves brief to `_my_resources/board_sessions/`. |
 
 ### Autopilot — the robot lane
 
@@ -192,8 +199,8 @@ flowchart TD
     end
     A2 --> B1
     B5 --> C1
-    C4 --> D["/sudo-update-sprint-memory\nyour sign-off"]
-    S1 -.->|"writes"| F1["story file\nplus failing tests"]
+    C4 --> D["/sudo-update-sprint-memory\nyour sign-off\nmoves the story's Jira ticket"]
+    S1 -.->|"writes"| F1["story file with jira_key\nplus failing tests"]
     S2 -.->|"writes"| F2["implementation_plan.md\nthe audit is appended INTO it"]
     S2 -.->|"writes"| F3["walkthrough.md\nplus a certified test snapshot"]
     S3 -.->|"appends INTO the walkthrough"| F4["## Code Review\nwith the verdict line"]
@@ -211,9 +218,9 @@ you're hunting for what an audit or a review said, it is inside one of those two
 
 ## 5. The safety net — what runs the checks for you
 
-This is the newest part of the system and the least visible. **Six small programs** now do the checking
-that used to be a person holding eight rules in their head. You almost never run them; the commands run
-them for you. What matters to you is *what they refuse to let happen.*
+This is the newest part of the system and the least visible. **Six small programs — plus one armed git
+hook** — now do the checking that used to be a person holding eight rules in their head. You almost
+never run them; the commands run them for you. What matters to you is *what they refuse to let happen.*
 
 *What you're looking at: which safety check fires inside which command.*
 
@@ -230,12 +237,14 @@ flowchart LR
         CP["closeout_preflight.py\nis this actually safe to close?"]
         SS["story_status.py\nflip BOTH status files\ntogether, or neither"]
         WL["workflow_lint.py --staged\nblocks broken text encoding"]
+        JH["commit-msg-jira.sh — ARMED\nrefuses a commit without\nthe repo's Jira ticket key"]
     end
     R --> GR
     M --> CP
     M --> SS
     W --> CP
     G --> WL
+    G --> JH
     GR -.->|"receipts ride the branch"| CP
 ```
 
@@ -245,6 +254,7 @@ flowchart LR
 | `closeout_preflight.py` | **Closing out a story that didn't really land.** One command answers: did the code merge · is every repo clean and in sync · does the review verdict exist and does it still apply · do the files the story claims it changed actually exist. **Exit 2 means blocked.** A warning that says *"landing was NOT verified"* means exactly that — it is not a pass. |
 | `story_status.py` | **A story marked done in one place and not the other.** Status lives in two files; this flips both together or neither. |
 | `workflow_lint.py` | **Broken characters quietly entering a document** — the `—` that turns into `â€"`. Runs on every commit, staged files only, so it stays fast enough that nobody disables it. |
+| `commit-msg-jira.sh` | **A commit with no ticket.** Each repo declares its Jira project in `.agents/jira.conf`; a commit whose message carries no valid key for *that* repo — or the wrong project's key — is refused outright. A rejected commit is a no-op: your staged files are untouched, nothing to undo. Merges, reverts, and rebases are exempt (the branch name carries the key for them). |
 | `split_sprint_status.py` | The one-time migration that shrank the board (§11). |
 | `wf_common.py` | Shared plumbing the others import. You'll never call it. |
 
@@ -288,31 +298,37 @@ let you make it *unknowingly*.
 
 ## 6. Shipping — the end-to-end gate
 
-**One long-lived branch.** `main` is live production — on projects with CI/CD, a push to `main` **is** a
-deploy. Everything else is short-lived by design: each epic gets its own `epic/<key>-<slug>` branch cut
-from `main` at kickoff, every story lands on that epic branch, and the epic reaches `main` exactly one
-way — `/sudo-push-e2e`. Small fixes outside any epic take a `chore/*` branch off `main`, merged back the
-same session with your sign-off.
+**One long-lived branch.** `main` is what your users are running — on projects with CI/CD, a push to it
+**is** a deploy. Everything else is short-lived by design: each epic gets its own
+`epic/<JIRA-KEY>-<slug>` branch cut from `main` at kickoff — the key is the epic's Jira ticket, which is
+how the board links every commit without anyone pasting links — stories land on that epic branch, and
+the epic reaches `main` exactly one way: `/sudo-push-e2e`. Small fixes outside any epic take a
+`chore/<JIRA-KEY>-<slug>` branch off `main` (every chore carries its own ticket), merged back the same
+session with your sign-off.
 
-*What you're looking at: how code ships, and where the gate stands.*
+*What you're looking at: the one road to production, and where the gate stands on it.*
 
 ```mermaid
 flowchart TD
-    DEV["your story worktrees\none per story"] --> EPIC["the epic branch\nepic/&lt;key&gt;-&lt;slug&gt;, cut from main\nshort-lived: one epic, then gone"]
+    DEV["your story worktrees\nclaude/&lt;JIRA-KEY&gt;-&lt;slug&gt;, one per story"] --> EPIC["the epic branch\nepic/&lt;JIRA-KEY&gt;-&lt;slug&gt;, cut from main\nshort-lived: one epic, then gone"]
     EPIC --> SHIP{"/sudo-push-e2e"}
     SHIP --> SYNC["absorb origin/main first\nso any hotfix that shipped mid-epic\nis merged and re-tested"]
-    SYNC --> GATE{"full test gate\nplus /sudo-e2e GREEN?"}
+    SYNC --> GATE{"backend suite\nplus frontend build\nplus /sudo-e2e — GREEN?"}
     GATE -- "RED" --> STOP["REFUSES to run\nNothing ships."]
     GATE -- "GREEN plus your sign-off" --> MAIN["main\nlive for users"]
     MAIN --> DEPLOY["deploy, then verify live"]
+    MAIN --> TICKET["Jira: evidence commented\nepic ticket → Done"]
     MAIN --> DEL["epic branch deleted\nnothing accumulates"]
-    CHORE["chore/* branch\nsmall fixes outside any epic"] -.->|"same session\nwith your sign-off"| MAIN
+    CHORE["chore/&lt;JIRA-KEY&gt;-&lt;slug&gt;\nsmall fixes outside any epic\neach carries its own ticket"] -.->|"same session\nwith your sign-off"| MAIN
 ```
 
 Before the merge, `/sudo-push-e2e` pulls `origin/main` **into** the epic branch and re-gates — so `main`
 never receives an unresolved conflict, and a hotfix that shipped mid-epic is already absorbed. The merge
 itself is `--no-ff` (the epic stays visible as one unit in history), and the epic branch is deleted after
-it lands — branches are short-lived on purpose; nothing accumulates.
+it lands — branches are short-lived on purpose; nothing accumulates. Because the branch name rides in the
+merge message, Jira links even the merge commit to the epic's ticket; the same command then posts the
+gate evidence on the ticket and moves it to **Done** — child stories already moved one at a time at their
+close-outs.
 
 `/sudo-e2e` also runs solo any time you want end-to-end confidence without shipping.
 
@@ -321,6 +337,7 @@ it lands — branches are short-lived on purpose; nothing accumulates.
 | Gate | Where | When |
 |---|---|---|
 | Pull-request checks | GitHub Actions | every PR into `main` or an epic branch |
+| **Jira key check** | local, armed git hook | **every commit** (§5) |
 | Test-selection gate | local, before push | picks the affected tests; falls back to the full suite when unsure |
 | **End-to-end gate** | local, via `/sudo-push-e2e` | **before anything reaches production** |
 | Deploy | hosting CI/CD | on push to `main` |
@@ -430,30 +447,28 @@ one.
 
 ## 11. The board — what runs next
 
-Rebuilt by `/sudo-update-scrum-board`, and **only** by that command — no background process ever edits
-it. Five zones, same order every time, hard-capped so it stays readable:
+**The scrum-board map is retired (2026-08-07, SCC-13 / AVCH-10).** `sprint_scrum_board_map.md` and
+`/sudo-update-scrum-board` are gone; the human-facing view of "what runs next" is the **Jira board** —
+[SCC](https://sudo-command.atlassian.net/jira/software/projects/SCC/boards/2) for this command center,
+[AVCH](https://sudo-command.atlassian.net/jira/software/projects/AVCH/boards/3) for AviationChat. The
+sprint holds the current batch, the backlog holds everything else, and every ticket links to its
+branches and commits through the key. How to drive it by hand:
+[jira_manual.md](jira_manual.md); why it's built this way:
+[jira_integration_guide.md](../diagrams_guides/system/jira_integration_guide.md).
 
-| Zone | Answers |
-|---|---|
-| 🎯 **Right now** | the goal, the one command to run next, what's in flight, what's waiting on you |
-| 🧵 **Parallel Approved** | the verified set — being listed here means safe to run alongside every other item in it |
-| 🛠 **Work queue** | one row per ticket, each with the exact command to type |
-| 👤 **Your actions** | what agents can't do. Shows **None.** when empty — that emptiness is information |
-| 📚 **Reference** | epic status, settled decisions, sources of truth |
+**What did NOT retire: `sprint-status.yaml`** (decided in SCC-20). It remains the machine-read sprint
+state — the story loop, close-outs, `/sudo-boot-sprint-memory`, `/sudo-resume` and the autopilots all
+read it, and its vocabulary (`descoped` vs `deferred-v3`, `ready-for-dev`) is richer than Jira's.
+The pairing between the two worlds: the Jira summary carries the BMAD number (`21.4 — School code
+rotation`), the story file carries `jira_key:` in frontmatter, and the branch carries the Jira key.
 
-**Two things to trust about it:**
-
-- **It shows the answer, never the math.** No cross-referencing, no notation to decode.
-- **A story with nothing written down is never marked safe-to-parallelize.** Deciding two stories won't
-  collide means knowing which files each one touches, and that's only knowable once the story exists.
-  Its answer for a vague ticket is *"write the story first"* — never a guess. **So if you want an epic
-  developed in parallel, write its stories first.** That's the lever.
-
-**The board got 6× smaller.** It had grown past 363,000 characters — too big to read in one pass. The
-running commentary moved out to a **history file per story**, leaving the board carrying each story's
-status plus a **short note on live rows only**. Finished rows carry no note at all, and the linter
-treats one as an error. The migration was proven by rebuilding the original from the split pieces and
-confirming it came back **character-for-character identical** — nothing was summarized away.
+**Any agent can read and write the board — live.** There is no "export it for me" step: every platform
+(Claude, Gemini, opencode, Codex, Antigravity) shells out to the authenticated `acli` CLI. Ask "what's
+In Progress?" and the agent queries Jira and joins each ticket back to its story file through
+`jira_key:`. The rule that teaches this: [`jira.md`](../../.agents/rules/jira.md). Ticket movement is
+automated at exactly two moments — close-out moves the **story's** ticket, and `/sudo-push-e2e` moves
+the **epic's** ticket to Done with the evidence commented. Sprint and backlog *placement* stays yours;
+machinery only ever touches status.
 
 **One override worth knowing:** if a story has a live working folder on disk, it is in flight no matter
 what the status file says. The status file lags by design — only close-out writes it.
@@ -489,6 +504,7 @@ This page is the how-to. Everything longer lives elsewhere.
 |---|---|
 | What a command does, step by step | [`.agents/commands/`](../../.agents/commands/) — one file per `/command` |
 | The rules themselves — the authority for everything above | [`.agents/rules/`](../../.agents/rules/) |
+| Jira from an agent's seat — the cheat-sheet + guardrails | [`.agents/rules/jira.md`](../../.agents/rules/jira.md) |
 | The safety-net scripts in detail | [`.agents/scripts/INDEX.md`](../../.agents/scripts/INDEX.md) |
 | Testing method in depth | [tea_deep_reference.md](../diagrams_guides/workflows_tea_testing/tea_deep_reference.md) |
 | The long-form testing field guide | [tea_testing_guide.md](../diagrams_guides/workflows_tea_testing/tea_testing_guide.md) |

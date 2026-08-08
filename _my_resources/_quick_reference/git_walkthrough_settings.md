@@ -270,20 +270,22 @@ flowchart TD
 ## 8. How this meets our branch flow
 
 Everything above is machine-wide git *preference*. This section is where those preferences meet the
-**way we actually work** — one long-lived branch, everything else short-lived. (Retired **2026-08-07**:
-the old `main_debug` integration branch. If you find a doc that still mentions it, that doc is stale.)
+**way we actually work** — one long-lived branch, everything else short-lived and **named after its
+Jira ticket** (armed 2026-08-07: every branch and every commit carries the repo's ticket key, and a
+git hook refuses a keyless commit). (Retired **2026-08-07**: the old `main_debug` integration branch.
+If you find a doc that still mentions it, that doc is stale.)
 
-The full law lives in [`.agents/rules/git-policy.md`](../../.agents/rules/git-policy.md); the
-walkthrough for humans is §6 of
+The full law lives in [`.agents/rules/git-policy.md`](../../.agents/rules/git-policy.md), the Jira
+half in [`.agents/rules/jira.md`](../../.agents/rules/jira.md); the walkthrough for humans is §6 of
 [sudo_workflows_testing.md](sudo_workflows_testing.md). This is just the git-command-level view.
 
 ```mermaid
 flowchart TD
-    MAIN["main\nthe ONLY long-lived branch\n= live production"] --> EPIC["epic/&lt;key&gt;-&lt;slug&gt;\ncut at epic kickoff\nlives one epic, then deleted"]
-    EPIC --> WT["claude/&lt;story&gt;\none worktree per story\nyours alone"]
-    WT -->|"land: push HEAD:epic/&lt;slug&gt;"| EPIC
+    MAIN["main\nthe ONLY long-lived branch\n= live production"] --> EPIC["epic/&lt;JIRA-KEY&gt;-&lt;slug&gt;\ncut at epic kickoff\nlives one epic, then deleted"]
+    EPIC --> WT["claude/&lt;JIRA-KEY&gt;-&lt;slug&gt;\none worktree per story\nyours alone"]
+    WT -->|"land: push HEAD:epic/&lt;JIRA-KEY&gt;-&lt;slug&gt;"| EPIC
     EPIC -->|"/sudo-push-e2e ONLY\ngate green + your sign-off\ngit merge --no-ff"| MAIN
-    MAIN --> CHORE["chore/&lt;slug&gt;\nad-hoc work, no epic"]
+    MAIN --> CHORE["chore/&lt;JIRA-KEY&gt;-&lt;slug&gt;\nad-hoc work, no epic\neach carries its own ticket"]
     CHORE -->|"same session, sign-off\ngit merge --no-ff"| MAIN
 ```
 
@@ -291,9 +293,9 @@ flowchart TD
 
 | Branch | Who's on it | Commit + push |
 |---|---|---|
-| `claude/<story>` | you, in one story worktree | **free** — commit as often as you like |
-| `chore/<slug>` | you, for work outside any epic | **free** |
-| `epic/<key>-<slug>` | several story lanes land here | **sign-off per landing** |
+| `claude/<JIRA-KEY>-<slug>` | you, in one story worktree | **free** — commit as often as you like |
+| `chore/<JIRA-KEY>-<slug>` | you, for work outside any epic (its own ticket) | **free** |
+| `epic/<JIRA-KEY>-<slug>` | several story lanes land here | **sign-off per landing** |
 | `main` | everyone; a push here **deploys** | **`/sudo-push-e2e` only** |
 
 **How each setting earns its keep here:**
@@ -315,6 +317,11 @@ flowchart TD
 - **`--no-ff` on the way to `main`.** A fast-forward dissolves the epic into loose commits. `--no-ff`
   keeps it one visible unit in history, so it can be reasoned about — and reverted — as one thing.
 - **Never force-push a shared branch.** `epic/*` has other lanes on it, and `main` is production.
+
+**And one thing you do NOT have to remember:** the Jira ticket key. The armed `commit-msg` hook
+refuses a keyless commit outright (a rejected commit is a no-op — staged files untouched), and the
+key in the branch name links every commit to its ticket automatically. Details:
+[`.agents/rules/jira.md`](../../.agents/rules/jira.md).
 
 ---
 

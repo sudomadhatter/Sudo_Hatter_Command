@@ -28,7 +28,7 @@ its own load class.
 ## GATES (consult before acting)
 - **GIT — the dev standard is epic branches → `main`** (canonical → `.agents/rules/git-policy.md`
   § "Branch model"). `main` is LIVE PRODUCTION and the only long-lived branch — never work on it;
-  each epic gets a short-lived `epic/<slug>` off `main`, story work flows `claude/*` worktree →
+  each epic gets a short-lived `epic/<JIRA-KEY>-<slug>` off `main`, story work flows `claude/*` worktree →
   epic branch, and the epic merges to `main` only via `/sudo-push-e2e` (full gate + Daniel's
   sign-off). On **web/mobile** (`CLAUDE_CODE_REMOTE=true`) git delivery mechanics →
   `.agents/rules/mobile-mode.md`. The push-approval hook (`.claude/hooks/`) gates `main`.

@@ -352,7 +352,12 @@ function Get-SurfaceState {
 # project — while Join-Path still happily resolves the back-slashed manifest paths on macOS, so every
 # delete succeeds and the run reports itself as a normal purge. Emit BACK-slashed, leading-separator-free
 # paths on every OS so the manifest stays byte-comparable across machines.
-# (Get-VendorFileSet deleted 2026-08-07 with the project-vendor path — thin model, project-law.md.)
+# (Get-VendorFileSet deleted 2026-08-07 with the project-vendor path — thin model, project-law.md.
+#  It had just gained a `jira.conf` exclusion (SCC-10) to stop the vendor overwriting each repo's Jira
+#  identity. Deleting the vendor makes that exclusion moot — nothing copies into a project at all — and
+#  supersedes it with the stronger guarantee. `jira.conf`, `.githooks/`, and `.agents/scripts/git-hooks/`
+#  are repo-local ENFORCEMENT: git runs hooks in the repo they gate, so they live there permanently and
+#  are never centralized. Same class as BMAD's `_bmad/custom/*.toml`.)
 
 # Delete what a previous run wrote into $dst and this run no longer owns. Returns the purged relative paths.
 function Invoke-ManifestPurge([string]$dst, [string[]]$was, [string[]]$now, [switch]$WhatIf) {

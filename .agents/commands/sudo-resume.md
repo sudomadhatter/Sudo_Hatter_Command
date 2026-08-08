@@ -52,7 +52,7 @@ git ls-remote --heads origin 'refs/heads/epic/*'      # the live epic branch(es)
 git ls-remote --heads origin 'refs/heads/claude/*'    # parked story branches
 ```
 An `epic/*` branch on origin is the sprint's integration line — check it out locally so the story
-worktrees below have their base (`git checkout --track origin/epic/<slug>`, then back to `main`).
+worktrees below have their base (`git checkout --track origin/epic/<JIRA-KEY>-<slug>`, then back to `main`).
 Every `claude/*` branch listed is **in-flight story work**, parked from another machine. Cross-check each
 against `sprint-status.yaml` for its status, and report the whole set — branch, story, step — **before
 touching anything**. Expect branches the handoff card does not mention: parallel sessions open their own.
@@ -69,19 +69,19 @@ Ask Daniel which story he is picking up, then match the machine:
 
 - **Desktop / laptop (parallel stories, full git):**
   ```bash
-  git worktree add --track -b claude/<slug> .claude/worktrees/<slug> origin/claude/<slug>
+  git worktree add --track -b claude/<JIRA-KEY>-<slug> .claude/worktrees/<slug> origin/claude/<JIRA-KEY>-<slug>
   ```
   The parked branch already descends from its epic branch, so the re-created tree sits on the right
-  base; a story with no parked branch yet opens its worktree off `origin/epic/<slug>` instead — never
+  base; a story with no parked branch yet opens its worktree off `origin/epic/<JIRA-KEY>-<slug>` instead — never
   off `main` (`worktree-per-story`). If the local branch already exists, use
-  `git worktree add .claude/worktrees/<slug> claude/<slug>` and then `git pull` **inside** it — the
+  `git worktree add .claude/worktrees/<slug> claude/<JIRA-KEY>-<slug>` and then `git pull` **inside** it — the
   branch may have moved on the other machine.
 
   Path already exists but is not a registered worktree (a leftover ghost directory) → `git worktree prune`,
   then remove the empty directory, then add. **Never** `git worktree add --force` over real content.
 
 - **Mobile / cloud (one story at a time, no worktree needed):** plain
-  `git checkout claude/<slug>` in the main checkout. The worktree is only a convenience for running several
+  `git checkout claude/<JIRA-KEY>-<slug>` in the main checkout. The worktree is only a convenience for running several
   stories side by side on one box — **the branch is the portable unit**, and nothing downstream requires the
   work to sit in `.claude/worktrees/`.
 

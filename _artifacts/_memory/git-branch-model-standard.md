@@ -57,3 +57,12 @@ main_debug failure modes: the shared-checkout reconcile debt, the "main drifted 
 lives on production and only moves when an epic merges; anything else standing there is a branch
 someone forgot to clean up or in-flight work. Submodule gitlink hygiene is unchanged
 (`ignore = all` hides drift; `git submodule status | grep '^+'` after committing inside one).
+
+**Amended 2026-08-07 — every branch and commit now carries a Jira key.** Branch names became
+`epic/<JIRA-KEY>-<slug>`, `claude/<JIRA-KEY>-<slug>`, `chore/<JIRA-KEY>-<slug>`; the key goes
+immediately after the prefix (Atlassian joins on the literal string and reads branch names too). The
+key must match the repo's `.agents/jira.conf` — `SCC` in the lobby, `AVCH` in AviationChat — and the
+`commit-msg` hook is ARMED, so a keyless or wrong-project commit is **rejected**. `.agents/rules/git-policy.md`
+carries this in the branch-model section and in "the write gate"; the lobby and AGY copies were updated
+together (AGY keeps its own identical copy — rules are read in place, never synced). Details:
+[[jira-integration-live]].
