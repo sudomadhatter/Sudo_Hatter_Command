@@ -6,6 +6,9 @@ description: Sync the master .agents toolkit into every command surface — loca
 
 > **Rules in force for this command:**
 > - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
+> - `.agents/rules/sop-currency.md` — **if this run is publishing a command you added, renamed, or retired,
+>   the `/` menu changed.** Update `_my_resources/_quick_reference/sudo_workflows_testing.md` §3 in the same
+>   commit; the armed commit-msg gate rejects it otherwise (`[sop-ok]` opts out and is logged).
 
 Push the master `.agents/` toolkit into every place a command/skill can resolve. The canonical invocable set
 is `.agents/commands/` and it mirrors to **all four platforms** (Claude, opencode, Antigravity/Gemini, Codex).
@@ -62,6 +65,11 @@ detection there would be noise and purging there would be destructive.
 `/autopilot_claude` (claude-only) never lands in the opencode/gemini/codex surfaces, and the `_AP` headless
 commands (`[claude, opencode]`) never reach the Antigravity or Codex menus. Global caches are **mirror-exact**
 (stale ghosts purged) except `bmad-*` (BMAD's own global install is preserved).
+
+> **⚠ `platforms: []` is not "all" — it is NOWHERE.** An empty list syncs the command to **zero** platforms
+> while the frontmatter reads as configured and the sync reports success; only *omitting* the key means
+> universal. This shipped for real: `/review` was authored with `platforms: []` and resolved nowhere until
+> someone noticed the menu was short. If you want every platform, **write no `platforms:` key at all.**
 
 Argument (`$ARGUMENTS`): optional target path. No argument = sync the home-base lobby (root) + globals.
 

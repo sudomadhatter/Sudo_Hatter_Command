@@ -1,0 +1,16 @@
+SOP-ENFORCE — arming marker for sop-currency.sh  (SCC-31, 2026-08-08)
+
+Its PRESENCE switches the SOP-currency gate from warn to REJECT. Delete this file to
+downgrade to warn-only; no code change, no re-install.
+
+Why it ships armed, against the usual "roll out in warn first" advice: hook output is
+invisible under VS Code — it renders where nobody is looking, so a warn-only gate reads as
+a clean success and enforces exactly nothing. A warn rollout here would have been a rollout
+of nothing at all.
+
+The pressure valve is the commit message, not this file: put [sop-ok] in the message when a
+change genuinely does not alter how the system is used. That decision then lives in the git
+log permanently, which is the point — a silent bypass teaches nothing, a logged one is a
+record you can audit later.
+
+Law: .agents/rules/sop-currency.md   Logic: .agents/scripts/sop_currency.py

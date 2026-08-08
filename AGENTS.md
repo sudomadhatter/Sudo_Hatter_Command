@@ -57,6 +57,14 @@ workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 > agent on this machine has one. The local `sprint-status.yaml` remains the machine state; Jira is the
 > human view — the rule carries the join.
 
+> **A second on-demand rule is named HERE for the same reason — its trigger is invisible from inside the
+> edit: `sop-currency.md`.** Editing a `/` command, a rule, a safety-net script, a commit gate, or this
+> file **changes how the operator uses the system**, so
+> `_my_resources/_quick_reference/sudo_workflows_testing.md` — the operator's PRD, the one page that
+> answers "what do I type" — must be updated **in the same commit**. An armed commit-msg gate rejects the
+> commit otherwise; `[sop-ok]` in the message is the logged opt-out for changes that genuinely alter no
+> usage. Load the rule before you touch any of those surfaces.
+
 > **Web/mobile session?** When env **`CLAUDE_CODE_REMOTE=true`** (Claude Code on the web or phone), also
 > load `.agents/rules/mobile-mode.md` — the web/mobile lane: it adapts git, the approval gate, artifacts,
 > and verification for a device with no terminal. On a desktop IDE session the var is unset → ignore it and

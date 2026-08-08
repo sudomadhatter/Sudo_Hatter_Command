@@ -166,3 +166,72 @@ project targets.
 
 **Audit verdict: GO** — merge order: **skeleton → lobby → AGY (via `/sudo-push-e2e`) →
 VR → RAG**, then gitlink bumps. Lobby precondition: the other lane's WIP lands first.
+
+---
+
+## Follow-on Plan — SOP doc currency (2026-08-08)
+
+**Ask:** `_my_resources/_quick_reference/sudo_workflows_testing.md` is the PRD for how we use the command
+center. Bring it current, then make it *structurally impossible* for it to go stale — a rule plus a
+mechanical trigger — and land it all on the last branch into `main`.
+
+### What the audit found stale (verified against the tree, not memory)
+
+| # | Line(s) | Stale claim | Ground truth |
+|---|---|---|---|
+| S1 | 3–7 | "Current as of 2026-08-07, after Waves 1–5 … Jira" | Misses the whole centralization epic (SCC-31/32/45, AVCH-23) — the largest change to how the system is used since the epic-branch migration. |
+| S2 | 11–12 | Lobby "holds the master toolkit and drives the child projects" | True but no longer sufficient. The ruling is the **two-tier model**: the center is the ONLY home for rules · `/` commands · skills · workflows · BMAD machinery; a project carries ONLY its own `rules/` + `skills/` + `INDEX.md` + repo-local enforcement. Nothing is vendored anywhere. |
+| S3 | 19 | "Projects this drives — the maintained list" | `maintained-projects.txt` is now a **LINT worklist only**; `sync-agents.ps1` stopped reading it 2026-08-07. The line implies a sync fan-out that no longer exists. |
+| S4 | 77, 156 | `/autopilot_mobile` "the in-app Workflow engine"; "`/autopilot_claude` and its 3 siblings" | `/autopilot_mobile` was **deleted 2026-08-07**. Mobile drives the desktop engines via Remote Control. Two siblings remain. |
+| S5 | 167 | "`/sync-agents` … add `-Maintained` to reach every project" | The `-Maintained` vendor fan-out was **retired**. Sync targets the lobby + machine caches; projects read from the center. |
+| S6 | 271 | "`python .agents/scripts/tests/run_all.py` — **94 checks**" | Two defects. Count is **98** (24+21+19+14+20 across 5 files). And **`python` does not exist on this Mac** — not in automation, not in a login shell (`zsh -lic 'which python'` → not found). Only `python3` resolves. The documented command fails on the machine it is read on. |
+| S7 | §3 | `/review` absent | A real command in `.agents/commands/review.md`, synced to all four platforms. |
+| S8 | 21–22 | "Each project keeps its own copy … identical everywhere" | Only AGY carries a live copy (Fresh is retired). The AGY copy's own header still calls its `.agents/` "a synced copy — edit the master in the lobby," which the centralization made false. |
+
+> **S6 is the one with teeth.** 29 `.md` lines across `.agents/`, `docs/`, and `_quick_reference/` tell the
+> reader to run `python …`. Every one of them is a broken instruction on the current machine. This plan
+> fixes the SOP doc's occurrence; the remaining 28 are called out as a scoped follow-on, not silently swept.
+
+### The trigger — three seams, because one is never honored
+
+Mirrors `living-template-sync.md` (the existing sibling: *change the front door → mirror it to the
+skeleton*). This is: *change how the system is **used** → update the SOP doc.*
+
+1. **The law** — `.agents/rules/sop-currency.md`. Names the trigger surfaces, states what counts as a
+   usage change vs. an internal one, and points at the doc. Row in `.agents/rules/INDEX.md`; named in
+   root `AGENTS.md` §3 the way `jira.md` is.
+2. **The machine** — `.agents/scripts/sop_currency.py`. Reads the staged diff; if a **usage surface**
+   changed and the SOP doc did not, it fires. Surfaces: `.agents/commands/*.md` (add/delete/rename is
+   always a usage change), `.agents/rules/*.md`, `.agents/scripts/*.py`, `.agents/scripts/git-hooks/**`,
+   `.githooks/**`, root `AGENTS.md`. Excluded: `INDEX.md` inventory churn, `reference/`, `templates/`,
+   `skills/`, `_artifacts/`. Wired into the **commit-msg** hook (not pre-commit — the escape hatch lives
+   in the message) beside the Jira gate. Tests join `run_all.py`: 5 files → 6.
+3. **The steps** — restated inline in `/sync-agents`, `/update-maps-indexes`, and
+   `/slash_command_updating`, per the house finding that agents follow the literal step list.
+
+### The one decision that is yours
+
+**Armed or warn-only?**
+
+- **ARMED (recommended)** — blocks the commit; escape hatch is the literal token `[sop-ok]` in the commit
+  message for changes that genuinely don't alter usage. Same shape as the encoding checker's documented
+  stand-down. Chosen because **a warn-only hook is invisible in VS Code** — it prints into a pane nobody
+  reads and looks like clean success, which is exactly how a "never stale" promise quietly dies.
+- **WARN** — prints and passes. Zero friction, and on this machine, zero effect.
+
+Cost of ARMED: one extra token on toolkit commits that don't change usage. Files ship with the
+`SOP-ENFORCE` marker present; deleting that file downgrades it to warn without a code change.
+
+### Scope, branch, verification
+
+- Branch `chore/SCC-31-sop-currency` off `main` — this rolls into the shipped centralization epic rather
+  than minting a ticket. Say the word if you'd rather it carry its own key.
+- **Not touched:** the AGY copy of the SOP doc. It sits in that repo's protected `_my_resources/`, and
+  AGY has an unpushed ff-merge waiting on you — a second dirty file there would tangle it. Its drift is
+  recorded here and in the new rule.
+- Verification: `run_all.py` **6/6 green**, and the new gate live-fired three ways — surface-without-doc
+  → reject, surface-with-doc → pass, surface + `[sop-ok]` → pass.
+- **Correction to this document:** the audit line above reports `run_all` as "5/5 files, 20/20 checks."
+  20/20 was the last file's tally, not the total. The suite is **98 checks across 5 files**.
+
+**Status: awaiting `approved`.**
