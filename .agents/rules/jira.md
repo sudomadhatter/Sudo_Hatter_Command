@@ -39,26 +39,60 @@ There are **two kinds of Epic** and they are indistinguishable in Jira's UI:
 | **BMAD epic** | summary carries the BMAD number — `Epic 19 — ADK 2.x Runtime Upgrade`; it has a matching epic in the project's `epics.md` and rows on `sprint-status.yaml` | **`Story`** — each carries a BMAD number (`19.1`, `12.3.4`) and **has a story file** in `_bmad/bmm/stories/` |
 | **Grouping epic** | no BMAD number — `CI/CD Improvment`, `New Epic Feature or Fix`, `Thin toolkit` | **`Task`** — chore/toolkit/ad-hoc work with **no story file and no BMAD epic**, filed under the umbrella so it does not float loose |
 
-**The discriminator is the story file, nothing else.** A ticket backed by a file in
-`_bmad/bmm/stories/` is a `Story`; one without is a `Task`. Both kinds sit under an epic, so
-"has a parent" proves nothing. `Bug` stays for incident work.
+**The four types, and how each is decided:**
+
+| Type | What it is | How it is recognized |
+|---|---|---|
+| **`Epic`** | a container — BMAD epic *or* grouping epic | minted by hand; never computed |
+| **`Story`** | BMAD sprint work: a planned story in `epics.md` + `sprint-status.yaml`, under a BMAD epic. **Debug stories are Stories** — they run the same loop, they just fix rather than build | a **dotted BMAD number** (`19.2`, `12.3.4`) **OR** a **`debug-` id** (`debug-4.1-hr-date-fixes`) **OR** a **story file** in `_bmad/bmm/stories/` |
+| **`Task`** | workflow / IDE / rules / skills / toolkit work — **not** a story, filed under a grouping epic because Jira offers no other container | none of the above |
+| **`Bug`** | **TEMPORARY, and the operator sets it.** A Story he finds broken wears `Bug` instead of `Story` and goes back to `To Do` until the fix lands. Same story, flagged | never computed — but **cleared at close-out** |
+
+**The `Bug` lifecycle — he raises it, the flow clears it:**
+
+```
+operator finds a broken story   ->  type Story -> Bug,  status -> To Do
+agent fixes it, closes it out   ->  type Bug -> Story   (the bug is gone)
+```
+
+⛔ **Never set or clear a `Bug` by hand, and never "correct" one.** It carries the same number and
+the same story file as any Story, so every rule here reads it as a mistyped Story — and flipping it
+back mid-flight **erases the operator's only signal that the story is broken.** Exactly one thing
+clears it: `jira_feed.py devrecord --closing` at `/sudo-update-sprint-memory` Step 4.5, because the
+close-out is the one moment anything can know the fix landed. The bulk `audit` **cannot** tell "still
+broken" from "fixed", so it reports Bugs and moves on.
+
+**Why Story needs THREE signals, not one.** The **number** is true *before* the story file exists —
+backfilled rows are minted from `epics.md` long before ① picks them up, and `19.2` sitting in
+`backlog` is a planned sprint story, not toolkit work. The **`debug-` marker** carries the ids that
+have no dotted number of their own. The **file** catches the rest (`tea-16-…`). Any one is enough;
+no single one survives the real board, which is how this rule was wrong twice before it was pinned.
 
 **Worked example — the AVCH board is the reference shape:**
 
 ```
 AVCH-18  Epic  "Epic 19 — ADK 2.x Runtime Upgrade"      <- BMAD epic
-  AVCH-33..36, 45   Story   "19.1 — …" … "19.5 — …"     <- story files exist
+  AVCH-33..36, 45   Story   "19.1 — …" … "19.5 — …"     <- numbered; 19.2/19.4 have no file YET
 AVCH-13  Epic  "Epic 12 — PPL Curriculum Activation"    <- BMAD epic
   AVCH-14, 15, 16   Story   "12.3 — …", "12.3.4 — …"
 AVCH-43  Epic  "CI/CD Improvment"                       <- GROUPING epic, no BMAD number
-  AVCH-44, AVCH-46  Task    "Separate front/back end"   <- no story file, no BMAD epic
+  AVCH-44, AVCH-46  Task    "Separate front/back end"   <- workflow work, no BMAD story
+  (a debug story would land here as)  Bug  "debug-4.1 — …"
 ```
 
-`jira_feed.py mint` **derives** the type from whether it resolved a story file, so it cannot drift
-back to a fixed default — which is exactly how the whole board ended up `Task`. It warns when a
-Story has no `--epic-key`, because a BMAD story belongs under its BMAD epic. Minting chore work is
-raw acli: `--type Task --parent <GROUPING-EPIC-KEY>`. `--type` overrides the derivation whenever the
-operator reclassifies something.
+**SCC is the pure case:** the command centre has **no** `_bmad/bmm/stories/` and no sprint board, so
+every one of its 27 non-epic tickets is a `Task` under one of its five grouping epics. The rule
+produces that with no per-project switch.
+
+`jira_feed.py mint` **derives** the type rather than defaulting it, so it cannot drift back — a
+fixed default is how the whole board ended up `Task`. It warns when sprint work has no `--epic-key`.
+`--type` overrides whenever the operator reclassifies.
+
+**Auditing the board:** `python3 .agents/scripts/jira_feed.py audit --jira-project <PROJ> --project
+<P>` reports every ticket whose type disagrees with this table; `--apply` converts them and reads
+each one back. It **never demotes a `Bug`** — an operator-filed production incident has no BMAD
+number and no story file, so from here it is indistinguishable from chore work, and that judgment
+is not the rule's to make.
 
 **Label vocabulary** — a card holds ONE status but stacks labels, which is exactly why these are
 labels (a story can be quick-dev-eligible AND blocked at once). All three are ruled by ①

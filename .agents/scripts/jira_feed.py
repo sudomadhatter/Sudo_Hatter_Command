@@ -11,6 +11,7 @@ about or what building it taught. SCC-49 closes that.
                            --summary "..." [--lane quick-dev] [--parallel-ok] [--apply]
     jira_feed.py devrecord --key AVCH-15 --story 12.3.4 --project P [--decision ...]
                            [--pitfall ...] [--followon ...] [--apply] [--strict]
+    jira_feed.py audit     --jira-project AVCH --project P [--apply]
     jira_feed.py check     --key AVCH-15 [--story 12.3.4]
 
 Two invariants this file exists to hold, because prose could not:
@@ -540,29 +541,72 @@ def cmd_outline(args) -> int:
     return 0
 
 
+_BMAD_NUM_RE = re.compile(r"^\d+\.\d")
+# Debug stories are ordinary BMAD stories - story file, board row, the full dev loop - they
+# just fix rather than build. Their ids carry the marker (`debug-1.1-toaster-safe-area`,
+# `debug-4.1-hr-date-fixes`) but no dotted number of their own, so they need their own signal.
+_DEBUG_RE = re.compile(r"^debug[-.]", re.IGNORECASE)
+
+
+def work_type(head: str, has_story_file: bool) -> str:
+    """The ONE type rule, in one place (operator ruling 2026-08-08). See .agents/rules/jira.md.
+
+    `head` is the leading token of a story id or a ticket summary - `19.2`, `debug-1.1`,
+    `Separate the front end`. The parent is NEVER the tell: everything is parented, and BMAD
+    epics are indistinguishable in Jira from the operator's grouping epics.
+
+      Story - BMAD sprint work, debug stories included
+      Task  - workflow / IDE / rules / skills work, filed under a grouping epic
+      Epic  - a container; never computed here
+
+    THREE signals feed Story, because no one of them survives the real board alone: the NUMBER
+    (`19.2`) is true before the story file exists - backfilled rows are minted from `epics.md`
+    long before (1) picks them up; the DEBUG marker carries ids with no dotted number of their
+    own; the FILE catches the rest (`tea-16-...`).
+
+    **`Bug` is never computed, and never touched.** It is TEMPORARY: a Story found to be broken
+    wears `Bug` instead of `Story` until the operator says it is fixed. It is the same story,
+    flagged - so it looks to every rule here like a mistyped Story, and "correcting" it would
+    erase his only signal that the story is broken.
+    """
+    if _DEBUG_RE.match(head) or _BMAD_NUM_RE.match(head) or has_story_file:
+        return "Story"
+    return "Task"
+
+
 def issue_type(args, story_file: Path | None) -> str:
-    """Story vs Task turns on WHETHER A BMAD STORY BACKS THE TICKET - never on having a
-    parent (operator ruling 2026-08-08).
+    """Story vs Task turns on WHETHER THIS IS BMAD SPRINT WORK - never on having a parent
+    (operator ruling 2026-08-08).
 
     Every ticket on this board gets an epic parent, so the parent cannot be the tell. Two
-    kinds of epic exist and they look identical in Jira:
+    kinds of epic exist and they are indistinguishable in Jira:
 
-      * a **BMAD epic** (`Epic 19 - ADK 2.x Runtime Upgrade`) has an epic in the project's
-        `epics.md` and a sprint board behind it; its children carry BMAD numbers (`19.1`,
-        `12.3.4`) and each has a story file -> those children are **Stories**;
+      * a **BMAD epic** (`Epic 19 - ADK 2.x Runtime Upgrade`) has an entry in the project's
+        `epics.md` and rows on `sprint-status.yaml`; its children carry BMAD numbers (`19.1`,
+        `12.3.4`) and become story files -> **Story**;
       * a **grouping epic** (`CI/CD Improvment`, `New Epic Feature or Fix`) is an umbrella the
-        operator keeps so chore work is filed somewhere instead of floating loose. Its
-        children have no BMAD number and no story file -> they are **Tasks**.
+        operator keeps so workflow / IDE / rules / skills work is filed somewhere instead of
+        floating loose. Jira offers no other container for it. Its children are **Tasks**.
 
-    So the discriminator is the story file, which is also the thing the board's own join rule
-    already uses. `--type` overrides for anything else (a Bug, an operator reclassification).
+    TWO signals, EITHER of which makes it a Story, because neither alone is sufficient:
+
+      * a **BMAD number** on the id/summary (`19.2`) - true even before the story file is
+        written. Backfilled board rows are minted from `epics.md` long before ① picks them up,
+        and typing those Task said 19.2 was toolkit work when it is a planned sprint story;
+      * a **story file** in `_bmad/bmm/stories/` - which catches the ids that carry no dotted
+        number at all (`tea-16-...`), and those are real stories too.
+
+    Neither signal alone survives contact with the real board, which is exactly how the first
+    two cuts of this function were wrong. `--type` overrides for anything else (a Bug, an
+    operator reclassification).
     """
     if args.type:
         return args.type
-    if story_file is not None and args.epic_key is None:
-        warn("this story has no --epic-key: a BMAD story belongs under its BMAD epic. "
+    want = work_type((args.story or "").strip(), story_file is not None)
+    if want in ("Story", "Bug") and args.epic_key is None:
+        warn("this story has no --epic-key: BMAD sprint work belongs under its BMAD epic. "
              "Pass --epic-key, or type it explicitly with --type.")
-    return "Story" if story_file is not None else "Task"
+    return want
 
 
 def cmd_mint(args) -> int:
@@ -689,7 +733,100 @@ def cmd_devrecord(args) -> int:
             f"read-back - NOT recorded")
         return 2
     say(f"jira-feed: {args.key} {action} ({len(body)} chars)")
+
+    if args.closing:
+        # The other half of the `Bug` rule. The operator flips a broken Story to `Bug` and
+        # sends it back To Do; when the fix lands, THE BUG IS GONE, so the ticket goes back to
+        # being a Story. Close-out is the only moment anything can know that - a bulk audit
+        # cannot tell "still broken" from "fixed", which is why it leaves Bugs alone.
+        have = ((view_fields(binary, args.key).get("issuetype") or {}).get("name") or "").strip()
+        if have == "Bug":
+            want = work_type((args.story or "").strip(),
+                             bool(wf.find_story_files(project, args.story)))
+            if want != "Story":
+                warn(f"{args.key} is a Bug but {args.story} does not look like BMAD sprint "
+                     f"work ({want}) - leaving the type alone, clear it by hand")
+            else:
+                r = acli(binary, ["jira", "workitem", "edit", "--key", args.key,
+                                  "--type", "Story", "--yes"])
+                landed = ((view_fields(binary, args.key).get("issuetype") or {})
+                          .get("name") or "").strip()
+                if r.returncode != 0 or landed != "Story":
+                    say(f"jira-feed: {args.key} Bug -> Story FAILED (still {landed or '?'}) "
+                        f"{(r.stderr or r.stdout).strip()[:160]}")
+                    return 2
+                say(f"jira-feed: {args.key} Bug -> Story (the fix landed, the bug is gone)")
     return 0
+
+
+def cmd_audit(args) -> int:
+    """Does every ticket's TYPE agree with what the work actually is?
+
+    Nobody noticed the whole board was `Task` - including 21 real sprint stories - because a
+    wrong type is invisible until you go looking. This is the going-looking, and `--apply`
+    is the migration: idempotent, re-runnable, and it reads each ticket back.
+    """
+    project = resolve_root(args.project, need_board=False)
+    binary = acli_bin(args.acli)
+    found = acli_json(binary, ["jira", "workitem", "search", "--json", "--limit", "200",
+                               # NOT `parent`: acli rejects it on search ("field 'parent' is
+                               # not allowed") - and the parent was never the discriminator.
+                               "--fields", "key,issuetype,summary",
+                               "--jql", f"project = {args.jira_project} ORDER BY key"])
+    items = as_items(found, "issues")
+    if not items:
+        wf.die(f"no work items read for project {args.jira_project}")
+
+    rep = wf.Report()
+    wrong: list[tuple[str, str, str]] = []
+    for item in items:
+        fields = item.get("fields") or {}
+        key = item.get("key") or ""
+        have = ((fields.get("issuetype") or {}).get("name") or "").strip()
+        summary = field_text(fields.get("summary"))
+        if have in ("Epic", "Subtask", "Sub-task"):
+            continue  # containers are not this rule's business
+        if have == "Bug":
+            # HANDS OFF - and this is the one skip that matters. `Bug` is TEMPORARY: a Story the
+            # operator found broken wears it until he says it is fixed. It carries the same
+            # number and the same story file as any Story, so every rule here reads it as a
+            # mistyped Story and the "helpful" fix would erase his only signal that it is broken.
+            rep.info("type", f"{key}: Bug - operator's flag on a broken story, left alone")
+            continue
+        head = summary.split()[0] if summary else ""
+        has_file = bool(head and wf.find_story_files(project, head))
+        want = work_type(head, has_file)
+        if have == want:
+            rep.info("type", f"{key}: {have} OK")
+        else:
+            why = ("debug story" if _DEBUG_RE.match(head) else
+                   "BMAD number" if _BMAD_NUM_RE.match(head) else
+                   "story file" if has_file else "no BMAD work")
+            wrong.append((key, have, want))
+            rep.warn("type", f"{key}: {have} -> {want} ({why}) - {summary[:52]}")
+
+    if not wrong:
+        rep.print_human(f"jira-feed audit {args.jira_project}")
+        say(f"jira-feed: every type agrees with the rule ({len(items)} items)")
+        return 0
+    if not args.apply:
+        rep.print_human(f"jira-feed audit {args.jira_project}")
+        say(f"jira-feed: DRY RUN - {len(wrong)} ticket(s) mistyped; re-run with --apply")
+        return 1
+
+    failed = []
+    for key, have, want in wrong:
+        r = acli(binary, ["jira", "workitem", "edit", "--key", key, "--type", want, "--yes"])
+        landed = ((view_fields(binary, key).get("issuetype") or {}).get("name") or "").strip()
+        if r.returncode != 0 or landed != want:
+            failed.append(key)
+            say(f"jira-feed: {key} {have} -> {want} FAILED (now {landed or '?'}) "
+                f"{(r.stderr or r.stdout).strip()[:160]}")
+        else:
+            say(f"jira-feed: {key} {have} -> {want}")
+    say(f"jira-feed: converted {len(wrong) - len(failed)}/{len(wrong)}"
+        + (f"; FAILED: {', '.join(failed)}" if failed else ""))
+    return 2 if failed else 0
 
 
 def cmd_check(args) -> int:
@@ -766,9 +903,16 @@ def main() -> int:
     p_dev.add_argument("--stage", default="close-out", help="close-out | quick-dev | ...")
     p_dev.add_argument("--date", default=date.today().isoformat())
     p_dev.add_argument("--strict", action="store_true", help="empty bucket is a hard fail")
+    p_dev.add_argument("--closing", action="store_true",
+                       help="this is the story close-out: clear a `Bug` flag back to Story")
     p_dev.add_argument("--append-new", action="store_true",
                        help="post a SECOND record instead of updating (rare)")
     p_dev.add_argument("--apply", action="store_true", help="without this, renders only")
+
+    p_aud = sub.add_parser("audit", help="do all the ticket TYPES agree with the rule?")
+    common(p_aud)
+    p_aud.add_argument("--jira-project", required=True, help="e.g. AVCH")
+    p_aud.add_argument("--apply", action="store_true", help="fix the mistyped ones")
 
     p_chk = sub.add_parser("check", help="does this ticket carry outline + Dev Record?")
     common(p_chk)
@@ -776,8 +920,8 @@ def main() -> int:
     p_chk.add_argument("--story")
 
     args = ap.parse_args()
-    return {"outline": cmd_outline, "mint": cmd_mint,
-            "devrecord": cmd_devrecord, "check": cmd_check}[args.verb](args)
+    return {"outline": cmd_outline, "mint": cmd_mint, "devrecord": cmd_devrecord,
+            "audit": cmd_audit, "check": cmd_check}[args.verb](args)
 
 
 if __name__ == "__main__":

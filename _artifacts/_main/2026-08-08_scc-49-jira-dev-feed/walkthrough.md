@@ -38,12 +38,24 @@ them on the ticket, and makes it impossible to skip quietly.
 - [x] **`/sudo-quick-dev` Step 4.5 (new)** — it closes its own branch, so it files its own record.
       **Exactly one Dev Record per ticket:** an existing record is *updated in place*, never stacked,
       so the branch-closer and a later story close-out cannot leave two partial records.
-- [x] **Work-item type derived from the STORY FILE, not the parent** (operator ruling; corrected on
-      the third pass after reading the real AVCH board). *Everything* is parented, and a BMAD epic
-      (`Epic 19 — …`) is indistinguishable in Jira from one of the operator's grouping epics
-      (`CI/CD Improvment`, `New Epic Feature or Fix`) — so keying off the parent, as the first cut did,
-      types every chore Task as a Story. The discriminator is whether a file in `_bmad/bmm/stories/`
-      backs the ticket. `--type` overrides; a Story with no `--epic-key` warns.
+- [x] **The type rule, pinned in one place after being wrong twice.** Cut 1 keyed on the epic
+      *parent* — but everything is parented, and a BMAD epic is indistinguishable in Jira from a
+      grouping epic (`CI/CD Improvment`), so that types every chore Task a Story. Cut 2 keyed on the
+      *story file* alone — but `19.2` is a planned sprint story whose file is not written until ①
+      picks it up. Settled: **Story** takes three signals (dotted number **or** `debug-` marker **or**
+      story file), **Task** is everything else, **Epic** is never computed. `work_type()` is the one
+      implementation; `--type` overrides.
+- [x] **The `Bug` lifecycle — he raises it, the flow clears it.** A Story found broken wears `Bug`
+      and goes back to `To Do`. It carries the same number and file as any Story, so every rule reads
+      it as a mistyped Story and "correcting" it would erase the only signal that it is broken.
+      Exactly one thing clears it: `devrecord --closing` at close-out, the one moment anything can
+      know the fix landed. The bulk `audit` cannot tell "still broken" from "fixed", so it reports
+      Bugs and moves on.
+- [x] **New `audit` verb** — reports every ticket whose type disagrees with the rule, `--apply`
+      migrates and reads each one back. AVCH now returns **every type agrees with the rule (39
+      items)**. SCC needs none: no story files, no sprint board, so all 27 non-epic tickets are
+      correctly `Task` under its five grouping epics — the rule produces that with no per-project
+      switch.
 - [x] **The split lane, closed.** SCC-40 landed on `main` mid-session, so `main` was absorbed here.
       The merge auto-resolved and **placed Step 3.5 after Step 4** — the silent misplacement predicted
       in the first pass. Renumbered to **Step 4.5**, which is where it belonged anyway: it points at the
@@ -58,7 +70,7 @@ them on the ticket, and makes it impossible to skip quietly.
       **armed in name, checking nothing.** VS Code hides hook output, so that would have stayed
       invisible indefinitely. Both it and `.githooks/post-commit` now use the same
       `python3 → python → py` probe as `sop-currency.sh`, and the armed gates *announce* a skip.
-- [x] **59 test cases** in this file (183 across the suite), joined to `run_all.py` by auto-discovery.
+- [x] **78 test cases** in this file (202 across the suite), joined to `run_all.py` by auto-discovery.
       The probe guard reads **code only** — the fix's own comment quotes the broken line, and a raw
       grep flagged the fix as the defect on first run. It carries a positive control asserting the
       strip is load-bearing.
@@ -69,8 +81,8 @@ them on the ticket, and makes it impossible to skip quietly.
 
 | Claim | Proof |
 |---|---|
-| Full enforcement suite green | `python3 .agents/scripts/tests/run_all.py` → **7/7 files, 183 cases** |
-| New file's own cases | `test_jira_feed.py` → **59/59 passed** |
+| Full enforcement suite green | `python3 .agents/scripts/tests/run_all.py` → **7/7 files, 202 cases** |
+| New file's own cases | `test_jira_feed.py` → **78/78 passed** |
 | Outline renders real ACs, invents nothing | `outline --story 12.3.4 --project AGY_AVIATIONCHAT` → all 7 ACs verbatim, story statement, story-file path |
 | Epic outline reads `epics.md` | `outline --epic 12` → goal + the 3 child stories, stops before Epic 13 |
 | `check` works against the LIVE board | `check --key AVCH-15` → description present (142 chars), **no Dev Record → exit 2** |
@@ -92,12 +104,9 @@ Two things need your call:
 
 1. **The live post to SCC-49 is held.** You said the ticket was being updated, so I did not write to
    it. The command is ready and its dry-run output is in the chat — say go and I'll run it.
-2. **The existing board is all `Task`, including the real stories.** New tickets type themselves
-   correctly now, but **21 AVCH tickets that ARE stories still read `Task`** — every one whose summary
-   starts with a BMAD number: `AVCH-14/15/16`, `24`–`32`, `33`–`36`, `37`, `38`–`40`, `45`. The other
-   **10** (`9`–`12`, `21`, `22`, `41`, `44`, `46`, `48`) are correctly `Task` already. Converting is
-   `acli jira workitem edit --key <K> --type Story --yes` per ticket — a board migration, so it is
-   yours to call. Say the word and I'll script the 21.
+2. **AVCH is migrated and clean** — `audit` reports *every type agrees with the rule (39 items)*.
+   Re-run `jira_feed.py audit --jira-project AVCH --project AGY_AVIATIONCHAT` any time; it is
+   idempotent. SCC needs no migration at all.
 
 **Note for whoever picks this up next:** the shared checkout was flipped to another branch mid-session
 by a parallel session (SCC-50), which is why the command bodies briefly appeared to revert. Nothing was

@@ -171,8 +171,13 @@ python3 .agents/scripts/jira_feed.py devrecord --key <KEY> --story <id> --projec
        --decision "<a ruling made while building, and why>" \
        --pitfall  "<a failure mode the next agent would hit>" \
        --followon "<what is still owed, or the deferral>" \
-       --evidence "<suite totals @ sha>" --apply
+       --evidence "<suite totals @ sha>" --closing --apply
 ```
+
+`--closing` also **clears the operator's `Bug` flag**: when he finds a story broken he flips it
+`Story` → `Bug` and sends it back to `To Do`, so a ticket arriving here as a `Bug` means the fix you
+just closed IS that bug — it goes back to `Story`. This is the only moment anything can know that,
+which is why the bulk `audit` leaves Bugs alone. Never clear one by hand.
 
 Repeat a flag per item. It lifts the `Verdict:` line and the walkthrough path itself, then **reads the
 ticket back and exits 2 if the comment is not there** — an acli call that silently no-ops is

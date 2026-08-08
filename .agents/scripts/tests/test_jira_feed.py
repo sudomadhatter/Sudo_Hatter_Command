@@ -129,9 +129,11 @@ def adf(text):
 
 head = args[:4]
 if head[:3] == ["jira", "workitem", "view"]:
-    print(json.dumps({"key": "TEST-7",
+    vkey = args[3] if len(args) > 3 else "TEST-7"
+    print(json.dumps({"key": vkey,
                       "fields": {"description": adf(state.get("description")),
-                                 "summary": state.get("summary", "")}}))
+                                 "summary": state.get("summary", ""),
+                                 "issuetype": {"name": state.get("types", {}).get(vkey, "Task")}}}))
 elif head == ["jira", "workitem", "comment", "list"]:
     print(json.dumps({"comments": [{"id": c["id"], "body": adf(c["body"])}
                                    for c in state["comments"]]}))
@@ -156,7 +158,11 @@ elif head[:3] == ["jira", "workitem", "create"]:
     save()
     print("Created work item: TEST-99")
 elif head[:3] == ["jira", "workitem", "edit"]:
-    state["description"] = read("--description-file")
+    if "--type" in args:
+        state.setdefault("types", {})[val("--key")] = val("--type")
+        state.setdefault("retyped", []).append(val("--key"))
+    else:
+        state["description"] = read("--description-file")
     state["edit_args"] = args
     save()
     print("Work item edited")
@@ -349,11 +355,10 @@ def main() -> int:
         c.check("mint: labels follow the ruling",
                 "quick-dev" in labels and "parallel-ok" in labels, labels)
 
-        # Type turns on WHETHER A BMAD STORY BACKS THE TICKET - never on having a parent.
-        # EVERY ticket on this board is parented: BMAD epics carry `Epic 19 - ...` and their
-        # children carry BMAD numbers, while GROUPING epics ("CI/CD Improvment") exist purely
-        # so chore work is filed somewhere. Both look identical in Jira, so keying off the
-        # parent would type every chore Task as a Story.
+        # Type turns on WHETHER THIS IS BMAD SPRINT WORK - never on having a parent. EVERY
+        # ticket is parented: BMAD epics hold numbered stories, GROUPING epics ("CI/CD
+        # Improvment") hold workflow/rules/skills work because Jira offers no other container.
+        # Both look identical in Jira, so keying off the parent types every chore as a Story.
         c.check("mint: a story file backs it -> Story",
                 st["create_args"][st["create_args"].index("--type") + 1] == "Story",
                 st["create_args"][st["create_args"].index("--type") + 1])
@@ -436,6 +441,108 @@ def main() -> int:
         code, out = jf("check", "--key", "TEST-7")
         c.check("check: two Dev Records -> warns, does not block",
                 code == 1 and "there should be" in out, out.strip()[:200])
+
+        # ── the type rule, all four arms ──────────────────────────────────────
+        # `Bug` is deliberately absent. It is TEMPORARY and the operator's alone: a Story found
+        # broken wears `Bug` until he says it is fixed. It carries the same number and story
+        # file as any Story, so a rule that "corrects" it erases his signal that it is broken.
+        # Pinned as a table because this rule was WRONG TWICE before the real board settled
+        # it: first keyed on the epic parent (which would type every chore Task a Story,
+        # since everything is parented), then on the story file alone (which typed 19.2 a
+        # Task - a planned sprint story whose file is not written until pickup).
+        import jira_feed  # noqa: E402 - the tests run scripts/ on sys.path
+        table = [
+            ("19.2", False, "Story", "a dotted number, file not written until pickup"),
+            ("12.3.4", True, "Story", "number and file"),
+            ("tea-16-eval", True, "Story", "no dotted number, but a real story file"),
+            ("debug-1.1", True, "Story", "a debug story is an ordinary BMAD story"),
+            ("debug-4.1", False, "Story", "the debug marker stands in for the dotted number"),
+            ("Separate", False, "Task", "workflow/IDE/rules/skills work"),
+            ("quick-fix-1.1", False, "Task", "ad-hoc fix, no BMAD story behind it"),
+        ]
+        for head, has_file, want, why in table:
+            got = jira_feed.work_type(head, has_file)
+            c.check(f"type rule: {head} (file={str(has_file).lower()}) -> {want}",
+                    got == want, f"got {got} - {why}")
+
+        # ── --closing clears the operator's Bug flag ───────────────────────────
+        # He flips a broken Story to Bug and sends it back To Do. When the fix lands the bug
+        # is GONE, so close-out puts it back to Story. Close-out is the only moment anything
+        # can know that - which is exactly why the bulk audit must not guess.
+        set_state(state, types={"TEST-7": "Bug"})
+        code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
+                       "--closing", "--outcome", "review -> done", "--followon", "none")
+        st = get_state(state)
+        c.check("closing: a fixed Bug goes back to Story",
+                code == 0 and st["types"]["TEST-7"] == "Story"
+                and "the bug is gone" in out, out.strip()[:200])
+
+        set_state(state, types={"TEST-7": "Story"})
+        code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
+                       "--closing", "--followon", "none")
+        c.check("closing: an ordinary Story is not re-typed",
+                code == 0 and "retyped" not in get_state(state), out.strip()[:160])
+
+        set_state(state, types={"TEST-7": "Bug"})
+        code, out = jf("devrecord", "--story", "chore-thing", "--key", "TEST-7", "--apply",
+                       "--closing", "--followon", "none")
+        c.check("closing: a Bug that is NOT BMAD sprint work is left for the operator",
+                code == 0 and get_state(state)["types"]["TEST-7"] == "Bug"
+                and "leaving the type alone" in out, out.strip()[:200])
+
+        set_state(state, types={"TEST-7": "Bug"})
+        code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
+                       "--followon", "none")
+        c.check("closing: without --closing the Bug flag stands",
+                code == 0 and get_state(state)["types"]["TEST-7"] == "Bug")
+
+        # ── audit: report + migrate types, and NEVER touch a Bug ───────────────
+        def board(*rows):
+            """rows: (key, type, summary)"""
+            set_state(state,
+                      search=[{"key": k, "fields": {"issuetype": {"name": t},
+                                                    "summary": s}} for k, t, s in rows],
+                      types={k: t for k, t, _ in rows})
+
+        board(("T-1", "Task", "9.1 - Widget Archive"),
+              ("T-2", "Task", "Separate the front end"),
+              ("T-3", "Epic", "CI/CD Improvment"))
+        code, out = run_script("jira_feed.py", "audit", "--project", str(repo),
+                               "--acli", str(acli), "--jira-project", "TEST")
+        c.check("audit: flags a numbered ticket typed Task",
+                code == 1 and "T-1: Task -> Story" in out, out.strip()[:200])
+        c.check("audit: leaves un-numbered chore work as Task", "T-2: Task -> " not in out)
+        c.check("audit: ignores Epics entirely", "T-3" not in out)
+        c.check("audit: a dry run writes nothing", "retyped" not in get_state(state))
+
+        board(("T-1", "Task", "9.1 - Widget Archive"),
+              ("T-2", "Task", "Separate the front end"))
+        code, out = run_script("jira_feed.py", "audit", "--project", str(repo),
+                               "--acli", str(acli), "--jira-project", "TEST", "--apply")
+        st = get_state(state)
+        c.check("audit --apply: converts and reads the ticket back",
+                code == 0 and st.get("retyped") == ["T-1"]
+                and st["types"]["T-1"] == "Story", out.strip()[:200])
+
+        # THE load-bearing case. A Bug is a Story the operator flagged as broken - same number,
+        # same story file - so every rule here reads it as a mistyped Story. "Correcting" it
+        # erases his only signal that the story is broken.
+        board(("T-1", "Bug", "9.1 - Widget Archive"),
+              ("T-2", "Task", "Separate the front end"))
+        code, out = run_script("jira_feed.py", "audit", "--project", str(repo),
+                               "--acli", str(acli), "--jira-project", "TEST", "--apply")
+        st = get_state(state)
+        c.check("audit: NEVER retypes a Bug, even when it looks like a mistyped Story",
+                "retyped" not in st and st["types"]["T-1"] == "Bug", out.strip()[:200])
+        c.check("audit: says why the Bug was left alone",
+                "left alone" in out and code == 0, out.strip()[:200])
+
+        board(("T-1", "Story", "9.1 - Widget Archive"),
+              ("T-2", "Task", "Separate the front end"))
+        code, out = run_script("jira_feed.py", "audit", "--project", str(repo),
+                               "--acli", str(acli), "--jira-project", "TEST")
+        c.check("audit: a correct board reports clean (positive control)",
+                code == 0 and "every type agrees" in out, out.strip()[:200])
 
         # ── the interpreter probe, in every hook that has one ──────────────────
         # The suite cannot EXECUTE these (a .sh will not run on the PC), so this asserts the
