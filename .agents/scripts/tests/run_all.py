@@ -1,6 +1,9 @@
 """Run every workflow-script test. Stdlib only; no pytest, no install step.
 
-    python .agents/scripts/tests/run_all.py
+    python3 .agents/scripts/tests/run_all.py
+
+`python3`, not `python` — there is no bare `python` on the Mac, in a script or a login shell.
+Test files are auto-discovered (`test_*.py`), so a new one joins the suite with no wiring.
 
 Exit 0 only if every case in every file passed.
 """

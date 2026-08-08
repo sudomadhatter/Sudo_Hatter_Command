@@ -44,6 +44,7 @@ from here by every session. A project carries only its OWN rules, routed from it
 | `prose-formatting.md` | on-demand | writing a conversational chat reply — prose over scaffolding (does NOT govern deliverable docs). |
 | `mobile-mode.md` | on-demand (auto on web/mobile) | the session is web/mobile (remote container) or Daniel says "mobile" — adapts git, the approval gate, artifacts, and verification for the phone. |
 | `living-template-sync.md` | on-demand | you change the **front door, folder layout, thin-project floor, enforcement set, or the BMAD tomls** at the home base — hand-mirror it into the `sudo-project-skeleton` repo (the clone source) or every new project starts stale. Shared rules/commands/skills need NO mirroring: projects read them from the center. |
+| `sop-currency.md` | on-demand | you change how the command center is **USED** — a `/` command (add/rename/retire), a rule, a safety-net script, a commit gate, or the root `AGENTS.md`. The SOP quick-reference `_my_resources/_quick_reference/sudo_workflows_testing.md` is the operator's PRD and must move **in the same commit**; an armed commit-msg gate rejects the commit otherwise, with `[sop-ok]` as the logged opt-out. Sibling of `living-template-sync` — that one keeps new projects from being born stale, this one keeps the manual from going stale. |
 
 
 

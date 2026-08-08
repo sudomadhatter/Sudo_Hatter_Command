@@ -1,25 +1,40 @@
 # The Sudo Dev System — Quick Reference
 
-> **How we build, and what you type.** Current as of **2026-08-07**, after Waves 1–5, the
-> epic-branch migration (`main` is the only long-lived branch), and the **Jira integration** —
-> every branch and every commit now carries the repo's ticket key, enforced by an armed git hook.
-> Read once start-to-finish, then jump in. Every technical term gets explained the first time it shows
-> up — you shouldn't need to know git plumbing to run this system.
+> **How we build, and what you type.** Current as of **2026-08-08**, after Waves 1–5, the
+> epic-branch migration (`main` is the only long-lived branch), the **Jira integration** — every branch
+> and every commit now carries the repo's ticket key, enforced by an armed git hook — and the
+> **toolkit centralization** (SCC-31/32/45 · AVCH-23), which moved every shared rule, command, skill,
+> and workflow to one home. Read once start-to-finish, then jump in. Every technical term gets explained
+> the first time it shows up — you shouldn't need to know git plumbing to run this system.
+>
+> **This page is kept current by a gate, not by good intentions.** Change a `/` command, a rule, a
+> safety-net script, or a commit hook, and the commit is **rejected** unless this file moves with it
+> (`[sop-ok]` in the message opts out and is logged). The law:
+> [`sop-currency.md`](../../.agents/rules/sop-currency.md).
 
 ## In this workspace
 
-You're in the **command center (lobby)**. It holds the master toolkit and drives the child projects
-under `Projects/`; it has no sprint of its own.
+You're in the **command center (lobby)**. It has no sprint of its own — it holds the toolkit and drives
+the child projects under `Projects/`.
+
+**One home, since 2026-08-07.** Every shared rule, `/` command, skill, workflow, and the BMAD machinery
+lives here and *only* here. Nothing is copied into a project any more. A project carries just its own
+law — its `rules/`, its `skills/`, and the `.agents/INDEX.md` that routes them — plus the enforcement
+that has to sit in the repo to work at all (its git hooks and its `jira.conf`). Two consequences worth
+holding: **you edit a shared rule in exactly one place and every project has it instantly**, and
+**binding a project means reading its `.agents/INDEX.md` first**, because that file is now the only
+thing that tells you what's local.
 
 | | |
 |---|---|
 | What runs next | the [SCC Jira board](https://sudo-command.atlassian.net/jira/software/projects/SCC/boards/2) — sprint view (§11) |
-| The master toolkit | [`.agents/`](../../.agents/) — commands, rules, scripts. Edit here, never the copies. |
+| The shared toolkit — the only copy | [`.agents/`](../../.agents/) — commands, rules, skills, workflows, scripts |
+| What a project owns vs. what it reads from here | [`project-law.md`](../../.agents/rules/project-law.md) |
 | Long-form depth | [`../diagrams_guides/`](../diagrams_guides/) |
-| Projects this drives | the [maintained list](../../.agents/maintained-projects.txt) — AGY_AVIATIONCHAT · NEXgen-VR-Director |
+| Projects this **lints** (`/update-maps-indexes`) | the [maintained list](../../.agents/maintained-projects.txt) — AGY_AVIATIONCHAT · NEXgen-VR-Director. It is a lint worklist, **not** a sync target: nothing is pushed into a project. |
 
-Each project keeps its own copy of this page. **The body below is identical everywhere** — only this
-block, §13, and link paths differ, so there's one thing to learn, not three.
+AGY_AVIATIONCHAT keeps its own copy of this page, localized in the header block, §11 and §13. **The body
+is meant to be identical** — if the two disagree, this one is canonical.
 
 ---
 
@@ -43,6 +58,7 @@ block, §13, and link paths differ, so there's one thing to learn, not three.
 | chase a production error | `/sudo-mobile-error-team` (§12) |
 | brainstorm or solve hard problems | `/sudo-adviser-board` — historical minds in challenge teams (§3) |
 | free up a heavy session | `/sudo-prune-context` |
+| **change the system itself** — a command, a rule, a gate | edit it in `.agents/` (the only copy), then **update this page in the same commit** — a gate enforces it (§5) |
 
 **Sections:** 1 the map · 2 the two rules · 3 commands · 4 the loop · **5 the safety net** ·
 6 shipping · 7 machine handoff · 8 how we test · 9 TEA tools · 10 autopilot · 11 the board ·
@@ -74,7 +90,7 @@ flowchart TD
     MOBERR -.->|"becomes a story"| ONE
     LIVE["/sudo-live-testing-team\nyou fly the app, agent watches the logs"] -.->|"becomes a story"| ONE
     ADV["/sudo-adviser-board\nhistorical minds in challenge teams\nBrainstorm → Plan → Market → Brief"] -.->|"seeds ideation/plan"| KICK
-    AP["/autopilot_claude and its 3 siblings\nrobot runs the whole loop for you"] -.->|"alternate lane for ①②③"| TWO
+    AP["/autopilot_claude and its 2 siblings\nrobot runs the whole loop for you"] -.->|"alternate lane for ①②③"| TWO
     PARK["/sudo-park\npark your work before closing the laptop"] <--> RESUME["/sudo-resume\nrestore it on the other machine"]
 ```
 
@@ -153,18 +169,23 @@ without anyone remembering to link anything (§6, §11).
 | Command | Runs on | Notes |
 |---|---|---|
 | `/autopilot_claude` | the `claude` CLI | The canonical robot loop: Plan → Audit → Build → Review, four separate sessions. |
-| `/autopilot_mobile` | the in-app Workflow engine | Same pipeline from web or phone — no terminal needed. |
 | `/autopilot_opencode` | the `opencode` binary | Port of the same loop. |
-| `/autopilot_deepseek4` | `claude` CLI plus a flag | Runs the token-heavy building half on a cheaper model, keeps review on Claude. A *lane* of `/autopilot_claude`, not a fourth engine. |
+| `/autopilot_deepseek4` | `claude` CLI plus a flag | Runs the token-heavy building half on a cheaper model, keeps review on Claude. A *lane* of `/autopilot_claude`, not a third engine. |
 
 > There is **no** `/autopilot-claude` with a hyphen. Every launcher uses an underscore.
+>
+> **`/autopilot_mobile` was deleted 2026-08-07.** There is no separate mobile engine any more — from your
+> phone you drive the desktop engines through Remote Control, which is strictly better: same code, same
+> gates, one thing to fix when the loop changes.
 
 ### Toolkit upkeep
 
 | Command | What it does for you |
 |---|---|
 | `/update-maps-indexes` | Reconciles the repo maps, every index, and every cross-reference across the lobby and the maintained projects. |
-| `/sync-agents` | Pushes the master toolkit to all four platforms; add `-Maintained` to reach every project. |
+| `/sync-agents` | Publishes the toolkit to all four platforms (Claude, opencode, Antigravity, Codex) so your `/` menu resolves everywhere. It reaches **the lobby and this machine's caches only** — the old `-Maintained` fan-out that copied the toolkit into every project was retired with centralization. Projects read from the center; there is nothing to push. |
+| `/slash_command_updating` | A thin alias for the globals-only half of `/sync-agents` — refreshes the Antigravity and opencode machine caches when their menus go stale but the lobby is fine. Plain `/sync-agents` does this *and* the local dirs, so prefer it. |
+| `/review` | Reviews the working diff outside the story loop — the quick read when there's no story to hang ③ on. |
 | `/new-project` · `/webm-alpha-video` | Scaffold a new workspace · green-screen video to transparent WebM. |
 
 ### Not in your menu, on purpose
@@ -219,8 +240,8 @@ you're hunting for what an audit or a review said, it is inside one of those two
 
 ## 5. The safety net — what runs the checks for you
 
-This is the newest part of the system and the least visible. **Six small programs — plus one armed git
-hook** — now do the checking that used to be a person holding eight rules in their head. You almost
+This is the newest part of the system and the least visible. **Seven small programs — plus two armed git
+hooks** — now do the checking that used to be a person holding eight rules in their head. You almost
 never run them; the commands run them for you. What matters to you is *what they refuse to let happen.*
 
 *What you're looking at: which safety check fires inside which command.*
@@ -239,6 +260,7 @@ flowchart LR
         SS["story_status.py\nflip BOTH status files\ntogether, or neither"]
         WL["workflow_lint.py --staged\nblocks broken text encoding"]
         JH["commit-msg-jira.sh — ARMED\nrefuses a commit without\nthe repo's Jira ticket key"]
+        SC["sop_currency.py — ARMED\nrefuses a usage change that\nleaves this page behind"]
     end
     R --> GR
     M --> CP
@@ -246,6 +268,7 @@ flowchart LR
     W --> CP
     G --> WL
     G --> JH
+    G --> SC
     GR -.->|"receipts ride the branch"| CP
 ```
 
@@ -256,6 +279,7 @@ flowchart LR
 | `story_status.py` | **A story marked done in one place and not the other.** Status lives in two files; this flips both together or neither. |
 | `workflow_lint.py` | **Broken characters quietly entering a document** — the `—` that turns into `â€"`. Runs on every commit, staged files only, so it stays fast enough that nobody disables it. |
 | `commit-msg-jira.sh` | **A commit with no ticket.** Each repo declares its Jira project in `.agents/jira.conf`; a commit whose message carries no valid key for *that* repo — or the wrong project's key — is refused outright. A rejected commit is a no-op: your staged files are untouched, nothing to undo. Merges, reverts, and rebases are exempt (the branch name carries the key for them). |
+| `sop_currency.py` | **This page falling behind the system it describes.** Change a `/` command, a rule, a safety-net script, a commit gate, or the root `AGENTS.md`, and the commit is refused unless this file is staged with it. Say `[sop-ok]` in the message when a change genuinely alters no usage — that stays in the git log as the record of the call. It checks only that the two moved together; no program can judge whether the *edit* was right, and the point is to make you look while you still have the context. |
 | `split_sprint_status.py` | The one-time migration that shrank the board (§11). |
 | `wf_common.py` | Shared plumbing the others import. You'll never call it. |
 
@@ -267,9 +291,18 @@ flowchart LR
 - **The encoding check can be told to stand down** on a file that legitimately contains those broken-
   looking characters as data — the checker's own test fixtures, a doc quoting them. Without that escape
   hatch, the gate would block every commit that touches the gate itself.
+- **Both new gates ship armed rather than warning first**, which breaks the usual advice. The reason is
+  specific to how you work: **hook output is invisible in VS Code.** A warn-only gate prints into a pane
+  nobody reads, so it looks exactly like a clean success — you'd have shipped the gate and enforced
+  nothing. Every one of them keeps a one-token exit instead (`[sop-ok]`, or `--no-verify`), because a
+  gate with no legitimate way out gets disabled permanently, and then nothing is checked at all.
 
-Run all their tests any time: `python .agents/scripts/tests/run_all.py` — **94 checks, about a second.**
-Full detail in [`.agents/scripts/INDEX.md`](../../.agents/scripts/INDEX.md).
+Run all their tests any time: **`python3 .agents/scripts/tests/run_all.py`** — 123 checks across 6 files,
+about ten seconds. Full detail in [`.agents/scripts/INDEX.md`](../../.agents/scripts/INDEX.md).
+
+> **It's `python3`, not `python`.** There is no bare `python` on the Mac — not in a script, not in your
+> own shell. Older notes across the toolkit still say `python …`; every one of them fails here. If a
+> documented command errors with *command not found*, try `python3` before assuming anything is broken.
 
 ### Is this review still valid?
 
@@ -509,6 +542,8 @@ This page is the how-to. Everything longer lives elsewhere.
 | What a command does, step by step | [`.agents/commands/`](../../.agents/commands/) — one file per `/command` |
 | The rules themselves — the authority for everything above | [`.agents/rules/`](../../.agents/rules/) |
 | Jira from an agent's seat — the cheat-sheet + guardrails | [`.agents/rules/jira.md`](../../.agents/rules/jira.md) |
+| **Why this page can't go stale** — the trigger, the surfaces, the opt-out | [`.agents/rules/sop-currency.md`](../../.agents/rules/sop-currency.md) |
+| What a project owns vs. what it reads from the center | [`.agents/rules/project-law.md`](../../.agents/rules/project-law.md) |
 | The safety-net scripts in detail | [`.agents/scripts/INDEX.md`](../../.agents/scripts/INDEX.md) |
 | Testing method in depth | [tea_deep_reference.md](../diagrams_guides/workflows_tea_testing/tea_deep_reference.md) |
 | The long-form testing field guide | [tea_testing_guide.md](../diagrams_guides/workflows_tea_testing/tea_testing_guide.md) |
