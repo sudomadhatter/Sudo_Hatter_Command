@@ -4,6 +4,7 @@
 
 | Session folder | What | Artifacts |
 |---|---|---|
+| `2026-08-08_scc-40-quick-dev-artifact-reconcile/` | SCC-40: `/sudo-quick-dev` put on the real quick-dev engine (`bmad-quick-dev`, one-shot route) instead of driving the full-lane skills with their gates argued away in prose — which was the root of all seven doc/runtime contradictions. Adds an AC baseline before the code and a mandatory tiered review gate; carves the exemption into the single skip list. Also corrected the BMAD override seam: `_bmad/custom/` is canonical, `.agents/bmad/` is not mirrored. | implementation_plan, walkthrough |
 | `2026-08-08_update-maps-indexes/` | Reconciled lobby + maintained AGY and NEXgen maps, indexes, references, open-task inventory, and active-context hygiene; retained two substantive AGY defects as explicit follow-ups. | implementation_plan, walkthrough |
 | `2026-08-07_command-center-workflow-memory/` | Approved plan for deterministic lobby close-outs, compact workflow memory, typed workflow GraphRAG, automatic quick/full lane routing, and CI enforcement; implementation awaits a safe keyed chore branch. | implementation_plan |
 | `2026-08-07_toolkit-centralization/` | Toolkit-centralization epic (thin projects, center-only workflow law): plan v3 + project-law draft; P1 landed the two-tier law + five always-check anchors. Follow-on 08-08: the SOP quick-reference de-staled and put behind an ARMED commit-msg gate, plus the two-machine (Mac/PC) walk-back. | implementation_plan, project-law_draft, walkthrough-sop-currency |

@@ -5,7 +5,12 @@ description: "PRIORITY ZERO — No project file may be modified until Daniel app
 
 # 🛑 PRIORITY ZERO: Plan First, Code Never (Until Approved)
 
-> This rule OVERRIDES every skill, workflow, and slash command — including BMAD dev-story, quick-dev, create-story, and any future skill that has its own "execute" steps. If a skill says "mark in-progress" or "implement now," STOP — that instruction is subordinate to this gate.
+> This rule OVERRIDES every skill, workflow, and slash command — including BMAD dev-story, create-story, and any future skill that has its own "execute" steps. If a skill says "mark in-progress" or "implement now," STOP — that instruction is subordinate to this gate.
+>
+> **The one carve-out lives in the exemption list, not here** (see "When to Skip" below): `/sudo-quick-dev`
+> is operator-invoked, and invoking it IS the "skip the plan" instruction. Naming it inline here as
+> *overridden* is what put this rule and that command in direct contradiction — two copies of a gate's
+> scope drift apart, and each one reads authoritative.
 
 ## The Kill-Chain
 
@@ -47,6 +52,12 @@ Present key points inline in the chat AND link the artifact. Daniel reviews plan
 ## BMAD Skill Integration
 
 BMAD skills (`bmad-dev-story`, `bmad-quick-dev`, etc.) have execution steps that mutate project files — updating story status, sprint-status.yaml, writing code. **Those steps are subordinate to this gate.** The correct execution order when a BMAD skill is invoked:
+
+> **Read this together with the carve-out at the top.** `bmad-quick-dev` appears in that list because a
+> **bare** invocation of it is gated like any other skill. It is NOT gated when it runs as the engine of
+> `/sudo-quick-dev` — that command's invocation IS the skip instruction, and its EJECT tripwire re-arms
+> the gate. Same skill, two callers, two answers; the caller decides, never the skill and never the size
+> of the change.
 
 1. Run the skill's research/discovery steps (read-only)
 2. Use the skill's context to write `implementation_plan.md` (artifact only)
