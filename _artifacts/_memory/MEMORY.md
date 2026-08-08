@@ -110,17 +110,19 @@
 - [Relocated links are mis-pathed](relocated-doc-links-are-mispathed-not-dead.md) — a broken link in a copied doc means the target moved.
 
 ## Toolkit & sync
+- [Thin projects — center owns workflow law](thin-projects-center-owns-workflow-law.md) — no vendored toolkit anywhere; binding a project MEANS reading its `.agents/INDEX.md` or STOP.
+- [Repo-local enforcement never centralizes](repo-local-enforcement-never-centralizes.md) — hooks + `jira.conf` + BMAD tomls stay in the repo they gate; stripping them deletes enforcement, not duplication.
 - [`platforms: []` means NOWHERE](platforms-empty-list-means-nowhere.md) — syncs to ZERO platforms (omitting the key = all four) while looking installed.
 - [Codex is the 4th platform](codex-is-fourth-platform.md) — reads AGENTS.md + skills natively; sync pushes only ~/.codex/prompts + skills.
 - [Antigravity uses workflows](antigravity-uses-workflows-not-commands.md) — the 12k limit is SOLVED via auto-emitted launchers; never byte-golf.
 - [Command center → child skills](command-center-sudo-skills.md) — lobby `/sudo-*` are skill-launchers targeting the active project.
 - [BMAD wrappers are opencode-only](bmad-wrappers-are-opencode-only-bridges.md) — testarch/persona stubs = [opencode]; sudo-* keep both.
 - [Sync ghost-purge is FIXED](sync-leaves-local-command-ghosts.md) — `.sync-manifest.json` retires renamed/deleted commands everywhere.
-- [Sync covers .agents not docs](toolkit-sync-covers-agents-not-docs.md) — edit master `.agents/`; `docs/` is NOT synced.
-- [Maintained-projects allowlist](maintained-projects-allowlist.md) — `.agents/maintained-projects.txt`; NEXgen is a bare gitlink.
+- [Sync covers .agents not docs](toolkit-sync-covers-agents-not-docs.md) — since 08-07 sync targets the LOBBY + machine caches only; projects read from the center.
+- [Maintained-projects allowlist](maintained-projects-allowlist.md) — LINT worklist only since 08-07; sync no longer reads it; Fresh de-listed.
 - [Installed ≠ maintained (RULED)](toolkit-installed-but-deliberately-unmaintained.md) — B-L-WorldWide + BRKN_Tattoos frozen on purpose; not a gap.
 - [Fresh RETIRED 2026-08-07](fresh-workspace-living-template.md) — no longer the living template or maintained; no template exists now, cut new projects from the lobby master.
-- [Rules read in place](rule-org-single-source-audit.md) — rules load from `.agents/rules/`; sync copies commands+skills, NEVER rules.
+- [Rules read in place](rule-org-single-source-audit.md) — one home since 08-07: the center's `.agents/rules/`; the project vendor it describes is gone.
 - [Command restructure 07-14](command-surface-restructure-2026-07-14.md) — the rename map + /sudo-e2e gate + -SkipAP.
 - [sudo commands have _AP twins](sudo-commands-have-ap-twins-that-drift.md) — when fixing one, diff the twin.
 - [/team-onboarding is built-in](team-onboarding-is-claude-builtin.md) — a CLI built-in, NOT a toolkit file; don't re-hunt it.
@@ -134,9 +136,9 @@
 - [Memory lives in the repo now](portable-memory-store-dot-slug-trap.md) — `_artifacts/_memory/` + a junction; slug turns `.` into `-` too, and missing that strands everything.
 
 ## Autopilot
-- [Three drifting engines](autopilot-has-three-drifting-engines.md) — claude/opencode .ps1 + mobile workflow; a fix must land in ALL THREE.
+- [Two drifting engines](autopilot-has-three-drifting-engines.md) — claude + opencode .ps1; mobile was DELETED 08-07. A fix must land in both.
 - [Engine is project-local](autopilot-engine-is-project-local.md) — the .ps1 lives per-project (diverged); lobby holds only the spec.
-- [mobile mirrors claude](autopilot-mobile-mirrors-claude.md) — mobile is a drifting port; claude's .ps1 is canonical.
+- [⛔ mobile autopilot RETIRED](autopilot-mobile-mirrors-claude.md) — deleted 08-07; Remote Control runs the desktop engines. Don't re-create it.
 - [glm hybrid lane](autopilot-glm-hybrid-lane.md) — Dev on GLM via Z.ai, QA stays Claude; AGY-only, propagation owed.
 - [Takeover: check liveness](autopilot-manual-takeover-check-liveness.md) — a "crashed" autopilot can resume and overwrite run files.
 

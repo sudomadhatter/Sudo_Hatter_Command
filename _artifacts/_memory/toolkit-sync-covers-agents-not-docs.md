@@ -7,6 +7,12 @@ metadata:
   originSessionId: bf3140de-d49f-4344-905c-7f15c7a243fd
 ---
 
+**⚠️ SCOPE CHANGED 2026-08-07 (SCC-31): sync no longer touches projects at all.** It targets the lobby's
+own `.claude/`+`.opencode/` plus the machine-global caches (opencode · Antigravity · Codex), and that is
+the whole surface — every project reads the toolkit from the center instead
+([[thin-projects-center-owns-workflow-law]]). The `bmad/` carve-out below is now moot (nothing vendors),
+but its principle became the general rule → [[repo-local-enforcement-never-centralizes]]. Original note:
+
 The `.agents/` toolkit has ONE source of truth: the lobby's `.agents/`. Edit there only. A periodic
 background sync (and the manual `/sync-agents` → `.agents/scripts/sync-agents.ps1`) mirrors it to the
 lobby's `.claude/`+`.opencode/` command surfaces and vendors it into every `Projects/<name>/.agents/`

@@ -9,6 +9,12 @@ metadata:
 
 Rule-organization audit across the lobby + `Projects/`, 2026-07-06.
 
+**⚠️ SUPERSEDED 2026-08-07 (SCC-31).** The project `.agents/` vendor described below no longer exists:
+projects carry only their OWN rules + skills + `INDEX.md`, and shared rules are read in place from the
+lobby ([[thin-projects-center-owns-workflow-law]]). The single-source principle survived — it just has
+one home now instead of N synced copies. RAG_Pipeline_AC's "no `.agents/rules/`" offense below was
+resolved in that conversion. Kept as history:
+
 **The model (corrects the recurring "rules ended up in `.claude`" worry):** behavioral rules are single-sourced in `.agents/rules/` and read **in-place** via `CLAUDE.md`/`GEMINI.md` → `AGENTS.md` → `.agents/rules/`. There should be **no** `<proj>/.claude/rules/`. `/sync-agents` copies only commands+skills+hooks into `.claude`/`.opencode`/antigravity — **never rules**; the project `.agents/` vendor is additive `robocopy /E` (overwrites shared rules from master, preserves project-only rules like `constitution.project.md`, never purges). So a lobby rule edit is live with no sync; a project rule needs a re-vendor OR a matching edit. [[toolkit-sync-covers-agents-not-docs]]
 
 **DONE (clean / on-model):**
