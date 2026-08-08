@@ -35,8 +35,17 @@
 | `docs/system-builder.md` | Growing/maintaining the home base itself — `/new-project`, `/sync-agents`, workspace-conversion rules |
 | `_my_resources/migrations/INDEX.md` | New-machine setup / repopulating any `.env` or `auth_keys/` file (→ `new_machine-migration-guide.md`; the manifest inside the hand-carried master.env lists every secret file + its exact path). Disposable kit — `_my_resources/` is excluded from repo-map regen, so it never appears in the AUTO tree below |
 
-**GitNexus (Tier-2 graph — on-demand, disposable).** ONE index: **`SUDO_COMMAND`** = the command center
-itself — all of `.agents/` (rules · workflows · commands · skills · scripts; ~17k nodes). Rooted directly at
+> **⚠ There are actually TWO indexes here, and the lint checks the one you don't query** (found
+> 2026-08-08). `check_maps.py`'s freshness hint reads the **root** `.gitnexus/meta.json` — a small
+> whole-repo index (86 nodes; the lobby is nearly all markdown) whose only job is to carry a
+> `lastCommit` stamp. The index you actually query is `SUDO_COMMAND` under `.agents/`, and because its
+> documented build uses `--skip-git` it writes **no** commit stamp at all — so it can never satisfy that
+> check, and the root one nagged permanently while pinned to `main_debug`, a branch retired 2026-08-07.
+> **Re-index both**: `gitnexus analyze . --index-only -f` clears the lint; the `.agents/` command below
+> refreshes what queries use. Node counts after centralization: root 86 · SUDO_COMMAND **2,664**.
+
+**GitNexus (Tier-2 graph — on-demand, disposable).** ONE index you query: **`SUDO_COMMAND`** = the command
+center itself — all of `.agents/` (rules · workflows · commands · skills · scripts). Rooted directly at
 `.agents/` (with `--skip-git`) to bypass GitNexus's dot-folder skip. This is "the one everything points to,"
 not the pointer/adapter copies (`.claude/`/`.opencode/` mirrors are excluded). Re-index after editing any
 rule/workflow (no commit-tracking, so do it manually):
