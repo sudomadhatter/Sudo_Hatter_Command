@@ -53,7 +53,7 @@ Tier-2/disposable — the maps above stay canonical (see `_my_resources/.../gitn
 
 **Drift:** checked at SessionStart by `.agents/scripts/check-repo-map-drift.ps1 -MapPath docs/repo-map.md` — it
 nags if a new top-level folder isn't named here. Rebuild the AUTO body:
-`python .agents/scripts/generate_repo_map.py --root . --output docs/repo-map.md --mode content --ignore Projects,_my_resources` (`--root .` is required here — the master generator lives at `.agents/scripts/`, so its default root would otherwise resolve to `.agents/`).
+`python3 .agents/scripts/generate_repo_map.py --root . --mode content --ignore Projects,_my_resources` (`--root .` is required here — the master generator lives at `.agents/scripts/`, so its default root would otherwise resolve to `.agents/`; the default output is `docs/repo-map.md`).
 <!-- REPO-MAP:CURATED-END -->
 
 <!-- REPO-MAP:AUTO-START -->
