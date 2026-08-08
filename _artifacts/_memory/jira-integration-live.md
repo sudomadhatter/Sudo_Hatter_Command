@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 8bc78088-0a6e-4b75-b4eb-edc817c5fe79
-  modified: 2026-08-07T23:30:33.356Z
+  modified: 2026-08-08T00:31:01.940Z
 ---
 
 Set up 2026-08-07 at `https://sudo-command.atlassian.net`. Two **team-managed** projects, one board
@@ -76,13 +76,17 @@ transitions the EPIC ticket at merge; `/sudo-update-sprint-memory` Step 4.5 move
 close-out; every branch template toolkit-wide reads `epic|claude|chore/<JIRA-KEY>-<slug>`, and
 `/sudo-create-epic-sprint` refuses to cut an unkeyed epic branch.
 
-**Still not built:** the `acli` wrapper script in `.agents/scripts/` (SCC-14 — its knowledge half
-shipped 2026-08-08 as the jira.md rule; only the script remains, and may no longer be worth building),
-a `pre-push` branch-name check
-(SCC-15), a CI job failing PRs with unkeyed commits (SCC-16), and runtime key-minting/stamping at
-story kickoff (SCC-18). Of the five `JIRA-HOOK` seats on the stopped `epic/toolkit-centralization`
-branch, the three command-file seats are now wired on `main`; the `require-push-approval.py` ×2 seats
-remain.
+**SETTLED BY DELETION (2026-08-07 evening) — never re-file these.** The operator deleted the whole
+"finish the wiring" child set from the SCC board: the acli wrapper script (was SCC-14 — its knowledge
+half lives on as `jira.md`), the pre-push branch-name check (SCC-15), the CI unkeyed-commit job
+(SCC-16), the reserved JIRA-HOOK seats incl. `require-push-approval.py` (SCC-17), runtime
+key-minting/stamping at story kickoff (SCC-18), and the duplicate retire task (SCC-11). Ruling: the
+armed commit-msg hook + the command wiring + the jira.md rule IS the complete enforcement surface —
+proposing any of the deleted items again is re-litigating a settled decision ([[settled-decisions-are-not-gaps]]).
+Still genuinely open on SCC: GitHub Pro / branch protection (SCC-19) and the Windows stale-stamp hook
+removal (SCC-23). Docs refresh shipped as SCC-30 / AVCH-22; AGY's AGENTS.md went tier-2 as AVCH-23.
+(acli quirk worth knowing: tickets create as the authenticated account — the site has one human
+account, so everything shows "assigned to Daniel" unless created bare.)
 
 **How to apply:** never invent a Jira number — read it from the ticket. Branch and commit with the key
 for the repo you are standing in. See [[vscode-hides-git-hook-output]] for why a warning-only gate was
