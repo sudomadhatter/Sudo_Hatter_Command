@@ -4,7 +4,8 @@
       "command": "npx",
       "args": [
         "-y",
-        "md-feedback"
+        "md-feedback",
+        "--workspace=/Users/sudohatter/Sudo_Hatter_Command"
       ]
     }
   }
