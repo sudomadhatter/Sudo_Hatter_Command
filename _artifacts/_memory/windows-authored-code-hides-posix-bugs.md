@@ -1,9 +1,11 @@
 ---
 name: windows-authored-code-hides-posix-bugs
-description: "This toolkit was authored on Windows, so Windows-only assumptions sat green for months and only failed on the Mac — chmod semantics, hardcoded C:/ discovery paths, ';' PATH separators, $env:USERPROFILE, robocopy, and a path-separator mismatch that DELETED ~570 vendored files per project. Six found 2026-08-06/07; three printed SUCCESS while failing."
-metadata:
+description: "This toolkit was authored on Windows, so Windows-only assumptions sat green for months and only failed on the Mac — chmod semantics, hardcoded C:/ discovery paths, ';' PATH separators, $env:USERPROFILE, robocopy, a path-separator mismatch that DELETED ~570 vendored files per project, and bare `python` in ~29 DOC lines when only `python3` exists here. Seven found 2026-08-06/08; three printed SUCCESS while failing."
+metadata: 
   node_type: memory
   type: project
+  originSessionId: ea1c7963-b655-4c4b-861f-0b832da17b1e
+  modified: 2026-08-08T05:56:55.774Z
 ---
 
 Every repo here was written on Windows first. Windows-only assumptions therefore pass CI and local
@@ -49,6 +51,17 @@ run had already printed success lines**, so the sync looked like it worked (2026
    for the excludes, and `TrimStart('\','/').Replace('/','\')` so every OS emits the back-slashed
    form the tracked manifest uses. (`$IsLobby`'s `TrimEnd('\')` had the same shape — fixed too.)
 
+**A SEVENTH, in the DOCS rather than the code (2026-08-08)** — and it is the longest-lived:
+
+7. **Bare `python` does not exist on this Mac** — not in automation, not in a login shell
+   (`zsh -lic 'which python'` → not found). Only `python3` resolves. **~29 `.md` lines across
+   `.agents/`, `docs/`, and `_my_resources/_quick_reference/` still instruct the reader to run
+   `python .agents/scripts/…`** — every one is a broken instruction on the machine it is read on.
+   The SOP quick-reference's copy was wrong twice over: `python … run_all.py — 94 checks` when the
+   count was 98 (now 123 across 6 files, ~10 s). Fixed at the SOP doc, `.agents/scripts/INDEX.md`,
+   `/update-maps-indexes`, and `run_all.py`'s docstring; **the rest are still stale.** Hooks and
+   scripts should probe `python3 → python → py` rather than hardcode one name.
+
 **The rule this forces: a comparison against a TRACKED, cross-machine artifact is a portability
 surface.** Separator normalisation is not cosmetic there — it decides whether a purge is a no-op or
 a wipe. Anything of the form "delete what is in the manifest but not in the fresh scan" must
@@ -70,5 +83,7 @@ bug until proven otherwise — grep the failing path for `C:/`, `\\`, `.exe`, `;
 ([[toolkit-sync-covers-agents-not-docs]]), and make the fix platform-branching rather than Mac-only
 — the Windows machines still need their path. **Read the WHOLE output, never the last line**: a
 Windows-only call site fails at the point it is reached, which is routinely after several honest
-success messages.
-Related: [[zshrc-is-invisible-to-automation]], [[powershell-console-fakes-mojibake]].
+success messages. **And treat every documented command as code**: paste it into a shell before
+writing it down — a doc line is the one "call site" no test ever executes.
+Related: [[zshrc-is-invisible-to-automation]], [[powershell-console-fakes-mojibake]],
+[[sop-doc-currency-gate]].

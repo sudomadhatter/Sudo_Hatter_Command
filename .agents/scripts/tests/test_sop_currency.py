@@ -112,6 +112,21 @@ def main() -> int:
     ok, _, _ = evaluate([], "SCC-31 empty stage")
     c.check("W an empty change set passes", ok)
 
+    # ── Y: the OTHER machine. This runs on a Windows PC too, where the console is
+    # cp1252 and print() of a non-ASCII char raises UnicodeEncodeError - which would
+    # crash the hook and turn "warn-only, commit allowed" into a hard failure with a
+    # traceback. An em dash in the warn-mode line did exactly that until 2026-08-08.
+    with TempDir() as tmp:
+        (tmp / ".agents" / "scripts" / "git-hooks").mkdir(parents=True)
+        _, warn_out = run_script("sop_currency.py", "--repo", str(tmp),
+                                 "--message", "SCC-31 x", "--paths", ".agents/commands/x.md")
+        (tmp / MARKER).write_text("armed\n", encoding="utf-8")
+        _, armed_out = run_script("sop_currency.py", "--repo", str(tmp),
+                                  "--message", "SCC-31 x", "--paths", ".agents/commands/x.md")
+    bad = [ch for ch in warn_out + armed_out if ord(ch) > 127]
+    c.check("Y all output is ASCII (cp1252 consoles on the PC)", not bad,
+            f"non-ASCII: {sorted(set(bad))}" if bad else "both modes clean")
+
     c.check("X windows-style separators normalize",
             classify(r".agents\commands\x.md") is not None)
 

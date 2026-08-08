@@ -27,10 +27,11 @@ cd "$REPO_ROOT" || exit 0
 [ -f .agents/scripts/sop_currency.py ] || exit 0
 
 # ─── Interpreter ───────────────────────────────────────────────────────────────────────────
-# `python3` on macOS/Linux, `python` on Windows — and on THIS machine bare `python` does not
-# exist at all, not even in a login shell. That mismatch is what put a broken command in the
-# SOP doc for weeks and is half the reason this gate exists; a hook that hard-codes one name
-# would reproduce the same bug in the enforcement layer.
+# This system is driven from BOTH a Mac and a Windows PC, and they disagree: the Mac has only
+# `python3` (not even in a login shell), a python.org PC has only `python`, and `py` is the
+# Windows launcher. That mismatch is what put a broken command in the SOP doc for weeks and is
+# half the reason this gate exists — so hard-coding one name here would reproduce the very bug
+# the gate was built to catch, in the enforcement layer itself. Probe, never assume.
 PY=""
 for c in python3 python py; do
   if command -v "$c" >/dev/null 2>&1; then PY="$c"; break; fi

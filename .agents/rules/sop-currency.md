@@ -54,10 +54,13 @@ plumbing. Three habits keep it honest:
    them, then how.
 2. **Retire, don't accrete.** A deleted command comes OUT of §3 — it does not get a "(retired)"
    note that quietly doubles the page every year.
-3. **Every command you print must run on this machine.** The page said `python .agents/scripts/
-   tests/run_all.py — 94 checks` when `python` does not exist here (only `python3`) and the count
-   was 98. Both halves wrong, in the single place the doc hands you something to type. Paste the
-   command into a shell before you write it down.
+3. **Every command you print must run on BOTH machines.** This system is driven from a Mac *and* a
+   Windows PC, and every page is read on both — see `two-machines-mac-and-pc`. The page said
+   `python .agents/scripts/tests/run_all.py — 94 checks` when the Mac has no bare `python` (only
+   `python3`) and the count was 98. The first fix over-corrected to a blanket "it's `python3`,
+   `python` is wrong" — equally false, because a python.org PC has only `python`. **A doc command is
+   a call site no test ever executes:** paste it into a shell before writing it down, and name the
+   machine when the two disagree. Scripts and hooks must probe (`python3 → python → py`), never assume.
 
 ## The sibling rules
 
