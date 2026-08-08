@@ -1,7 +1,8 @@
 # Skills INDEX — when to use which (family map)
 
-Router for the **skill surface an agent actually sees (~100)**, which comes from two places: the **44**
-authored skills in `.agents/skills/` (this repo is their master) plus the **56** `bmad-*` skills BMAD
+Router for the **skill surface an agent actually sees (~90)**, which comes from two places: the **31**
+authored skills in `.agents/skills/` (this repo is their master — shared, project-agnostic ONLY; a
+product's domain packs live in that product's own `.agents/skills/`, per `project-law.md`) plus the **56** `bmad-*` skills BMAD
 installs directly into `.claude/skills/` — the BMAD families below live there, not here, so don't go
 looking for them in the master dir. Unlike rules, **skills already self-route**: each has a
 `SKILL.md` with a `description:` that the harness surfaces, so you rarely pick one by hand — you invoke
@@ -16,14 +17,12 @@ skill's own description.
 | **BMAD test architecture** | quality, NFR, automated tests | `bmad-tea` (Murat) · `bmad-testarch-*` (atdd, automate, ci, framework, nfr, test-design, test-review, trace) · `bmad-qa-generate-e2e-tests` |
 | **BMAD thinking/editorial** | ideation + adversarial review | `bmad-brainstorming` · `bmad-advanced-elicitation` · `bmad-party-mode` · `bmad-editorial-review-*` · `bmad-review-*` · `bmad-investigate` · `sudo-adviser-board` (open-table board of historical minds → Brainstorm → Plan → Market → BMAD handoff) |
 | **BMAD research/specs** | research + distillation | `bmad-domain-research` · `bmad-market-research` · `bmad-technical-research` · `bmad-spec` · `bmad-product-brief` · `bmad-prfaq` |
-| **Firebase / GCP** | infra + deploy | `firebase-*-basics` (auth, firestore, hosting, app-hosting, data-connect, ai-logic) · `gcp-cloud-run` · `deploy-backend` · `troubleshoot-cloudrun-deployment` |
-| **Backend / Python** | server + language patterns | `backend-dev-guidelines` · `python-patterns` · `python_inter_venv_fix` |
+| **Firebase / GCP** | infra + deploy | `firebase-*-basics` (auth, firestore, hosting, app-hosting, data-connect, ai-logic) · `deploy-backend` · `troubleshoot-cloudrun-deployment` |
+| **Backend / Python** | server + language patterns | `backend-dev-guidelines` · `python-patterns` |
 | **Frontend / UI** | React + design | `react-best-practices` · `ui-ux-pro-max` |
-| **Voice / AI / RAG** | model + retrieval topology | `3_voice-ai-development` · `gemini-live-api` · `rag-implementation` · `6_dual-store-rag-patterns` · `4_sse-streaming-patterns` |
 | **Prompting / diagrams / debug** | cross-cutting craft | `adk-prompting` · `v3-prompt-architecture` · `mermaid-diagram-standards` · `systematic-debugging` |
 | **Code quality gates** | is the code clean, and can you prove it | `clean-code-audit` — the auditor for `.agents/rules/code-standards.md`: machine floor (ruff · eslint · pyrefly · tsc) that can FAIL + a judgment pass (comment contract, AI-drift bans) that caps at CONCERNS. Diff-scoped. Runs standalone and as `/sudo-code-review` Step 3.5. |
 | **Workspace / system craft** | how the repo is organized | `workspace-structure` (tier model · reading-order · AGENTS.md-vs-INDEX.md · naming — the decision layer over `docs/workspace-standard.md`) |
-| **Project domain** (project-specific) | this app's internals | `agent-handoff-patterns` · `hr-agent-schema-guide` · `regulatory-verification-protocol` · `specialist_agents_team` · `architectural-propagation` |
 
 **Adding a skill:** create `<name>/SKILL.md` with a `description:` that states when it applies (that's the
 router), slot it into a family above if you keep this map current, and re-run `/sync-agents`.
