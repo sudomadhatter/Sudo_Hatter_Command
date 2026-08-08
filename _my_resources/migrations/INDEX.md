@@ -61,7 +61,7 @@ guides, run the scripts.
 ## 1 · New machine — the ordered path
 
 > **In a hurry / already cloned?** The one-page version is
-> [`machine_setup_card.md`](../_quick_reference/machine_setup_card.md) — arm the commit gates, check
+> [`machine_setup_card.md`](install_guides/machine_setup_card.md) — arm the commit gates, check
 > which Python the box answers to, restore what git doesn't carry. This table is the full path.
 
 | # | Step | File / command | Windows | macOS |
