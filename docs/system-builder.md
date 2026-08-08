@@ -14,7 +14,8 @@ the lobby in sync, and keep `../router.md` current. This is the "system-builder 
 talk to *this* workspace to grow the home base.
 
 ## TOOLS
-- **`/new-project <name>`** → scaffold `Projects/<name>/` from `.agents/templates/project-template/`,
+- **`/new-project <name>`** → scaffold `Projects/<name>/` by cloning the thin skeleton repo
+  (`sudomadhatter/sudo-project-skeleton` — no vendored toolkit; see `.agents/rules/project-law.md`),
   register it in `../router.md`, add it to `../.gitignore`, and `git init` its own repo.
 - **`/sync-agents [target]`** → push `.agents/{commands,skills,opencode-agents}` into a target's tool
   dirs (the lobby, or a project). Markdown only — never `node_modules`.

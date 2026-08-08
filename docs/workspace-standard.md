@@ -91,8 +91,8 @@ adapters any workspace root does, and each of its subfolders carries an `INDEX.m
 otherwise treated as tool cache and skipped wholesale, so `.agents/` is named in `DOT_CONTENT_DIRS`
 (PATH CONTRACT below) to opt it back into the scan. It does **not** index deeper than level 2 — six of
 its ten subfolders are flat, `skills/` is self-describing via `SKILL.md` frontmatter, `bmad/` is
-BMAD-owned and regenerated, and `templates/project-template/` is a scaffold that carries its own
-control files. Depth is not the need there; enforcement is.
+and `bmad/` is BMAD-owned and regenerated. (`templates/project-template/` was retired 2026-08-07,
+SCC-31 — `/new-project` clones the skeleton repo instead.) Depth is not the need there; enforcement is.
 
 **Why the adapters matter at Tier 2:** harnesses auto-attach their nested memory file at the point of
 contact — Claude Code injects a subfolder's `CLAUDE.md` the moment it touches any file under it (Codex:

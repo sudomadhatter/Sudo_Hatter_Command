@@ -582,8 +582,13 @@ def check_conformance(root, is_home, is_bmad, map_path):
             ".agents/scripts/check_maps.py", ".agents/scripts/generate_repo_map.py",
             ".agents/scripts/sync-agents.ps1",
             ".agents/hooks", ".agents/templates", ".agents/reference", ".agents/bmad",
-            ".agents/opencode-agents", ".opencode", "opencode.json", ".mcp.json",
+            ".agents/opencode-agents", ".opencode/commands", ".opencode/agent", "opencode.json",
         ]
+        # NOT markers: `.mcp.json` / `.opencode/mcp.json` / `.claude/settings.json` are per-project
+        # CONFIG (which MCP servers this repo declares, its permissions, its worktree baseRef) — the
+        # same class as the enforcement set, not vendored toolkit. Only `.opencode/`'s command+agent
+        # dirs are vendor, so they are named directly instead of the parent (AVCH-23: the bare
+        # `.opencode` marker red-flagged a repo whose only remaining file was its MCP declaration).
         found = [m for m in vendor_markers if (root / m).exists()]
         if found:
             shown = ", ".join(found[:4]) + ("," if len(found) > 4 else "")
