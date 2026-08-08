@@ -40,6 +40,7 @@ A nested skill stopping on a REAL gap (missing source, contradictory scope) stil
 contract removes ceremony, never judgment.
 
 ## Step 1.5 — Cut the epic branch (before any story worktree can open)
+<!-- JIRA-HOOK: epic/story tickets mint here when the branch is cut (epic + stories → Jira, ids recorded on the sprint board). Separate story; not built yet. -->
 Per `git-policy.md`, every epic integrates on its own short-lived branch. Cut it now from up-to-date
 `main` and push it so it lives on origin:
 

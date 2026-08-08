@@ -1,8 +1,13 @@
 # ACTIVE CONTEXT — _main  (you own this, not a vendor)
 
 ## 1. PRIME STATE
-Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-08-04
-**2026-08-04 (latest): rule load class has ONE source of truth, and the protocol tier now loads on a BINDING trigger.**
+Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-08-08
+**2026-08-08 (latest): toolkit centralization SHIPPED — the thin model is live on every main.**
+Epic SCC-31 + AVCH-23: ~1M lines of vendored toolkit removed; every project now carries only tier-2 law
+(rules · skills · INDEX router) + the repo-local enforcement carve-out. Self-audit GO. Merged: lobby
+`5e9f1ed` · VR `04bf376` · RAG `68cf6fd` · skeleton `6b96deb`; AGY = operator push of `epic/AVCH-23-thin-toolkit`
+(ff, deploy-safe). Session: `_artifacts/_main/2026-08-07_toolkit-centralization/`.
+**2026-08-04: rule load class has ONE source of truth, and the protocol tier now loads on a BINDING trigger.**
 Audit of `.agents/rules/` found the set already clean on the things people check (all 21 have frontmatter,
 `name:` matches filename everywhere, INDEX covers all 21, no ghosts). The rot was elsewhere: **load class
 had three sources of truth that disagreed** — `AGENTS.md` §3, the INDEX `Load` column, and a frontmatter

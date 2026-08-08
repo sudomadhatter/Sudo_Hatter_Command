@@ -19,7 +19,7 @@
 | Model-agnostic proof the routing works | `_routing-canary/` |
 | BMAD-generated output (planning/implementation/test artifacts from running BMAD workflows at the home base) | `_bmad-output/` |
 | Daniel's personal area — **PROTECTED** (don't edit/reference unless he says/links) | `_my_resources/` — **EXCEPT** `open_tasks/` (read-only carve-out below) |
-| Secrets / env files — ALL gitignored, so never in the AUTO tree below | lobby `.env` (root) + per-project files; master bundle `_my_resources/migrations/_secrets/master.env` (hand-carried, NEVER committed); export/restore: `_my_resources/migrations/Export-EnvMaster.ps1` / `Restore-EnvMaster.ps1` |
+| Secrets / env files — ALL gitignored, so never in the AUTO tree below | lobby `.env` (root) + per-project files; master bundle master.env in the migrations `_secrets/` folder (hand-carried, NEVER committed — absent from any machine until placed by hand); export/restore: `_my_resources/migrations/scripts/Export-EnvMaster.ps1` / `scripts/Restore-EnvMaster.ps1` |
 | **"What do we do next" / open tasks / Daniel's plans & PRPs** — READ-ONLY, never edit | `_my_resources/open_tasks/` (start at `todo_list.md`; cross-check vs live project files) |
 | Scratch scripts and temp files | `scratch/` |
 
@@ -33,7 +33,7 @@
 | a project's `Projects/<name>/AGENTS.md` | When you go work inside that project (not this file) |
 | `_my_resources/open_tasks/` | Daniel asks "what do we do next / what's left" — read his todo + saved plans/PRPs (read-only) |
 | `docs/system-builder.md` | Growing/maintaining the home base itself — `/new-project`, `/sync-agents`, workspace-conversion rules |
-| `_my_resources/migrations/INDEX.md` | New-machine setup / repopulating any `.env` or `auth_keys/` file (→ `env-migration-guide.md`; the manifest inside `_secrets/master.env` lists every secret file + its exact path). Disposable kit — `_my_resources/` is excluded from repo-map regen, so it never appears in the AUTO tree below |
+| `_my_resources/migrations/INDEX.md` | New-machine setup / repopulating any `.env` or `auth_keys/` file (→ `env-migration-guide.md`; the manifest inside the hand-carried master.env lists every secret file + its exact path). Disposable kit — `_my_resources/` is excluded from repo-map regen, so it never appears in the AUTO tree below |
 
 **GitNexus (Tier-2 graph — on-demand, disposable).** ONE index: **`SUDO_COMMAND`** = the command center
 itself — all of `.agents/` (rules · workflows · commands · skills · scripts; ~17k nodes). Rooted directly at
@@ -70,10 +70,7 @@ Sudo_Hatter_Command/
     core/
         [2 files: .yamlx1, .csvx1 | e.g. config.yaml]
     custom/
-        [6 files: .tomlx6 | e.g. bmad-dev-story.toml]
-    output/
-      brainstorming/
-        virtual-film-previs-software/
+        [5 files: .tomlx5 | e.g. bmad-dev-story.toml]
     scripts/
         [3 files: .pyx3 | e.g. memlog.py]
     tea/
@@ -85,17 +82,9 @@ Sudo_Hatter_Command/
   _bmad-output/
     brainstorming/
       brainstorm-tdad-integration-2026-07-07/
-      virtual-director/
         [1 files: .mdx1 | e.g. INDEX.md]
     forge/
       aviationchat-prd/
-    implementation-artifacts/
-    planning-artifacts/
-      briefs/
-        brief-NEXgen-VR-Director-2026-07-28/
-      prds/
-        prd-NEXgen-VR-Director-2026-07-28/
-    test-artifacts/
   _routing-canary/
     control/
         [2 files: .mdx2 | e.g. INDEX.md]
