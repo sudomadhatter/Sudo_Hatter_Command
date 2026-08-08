@@ -540,21 +540,29 @@ def cmd_outline(args) -> int:
     return 0
 
 
-def issue_type(args) -> str:
-    """Story vs Task follows the HIERARCHY, not a flag default (operator ruling 2026-08-08).
+def issue_type(args, story_file: Path | None) -> str:
+    """Story vs Task turns on WHETHER A BMAD STORY BACKS THE TICKET - never on having a
+    parent (operator ruling 2026-08-08).
 
-    A **Story** is a child of an epic - it has an epic behind it and a story file in the tree.
-    A **Task** is work nobody wrote an epic and a story for: chore, toolkit, ad-hoc fixes.
-    Both are real and both get used, so the type is derived from whether an epic key is in
-    hand rather than hardcoded; `--type` still overrides for the odd case (a Bug, say).
-    Deriving it is the point - a fixed default is how every story ticket on the board ended
-    up a Task."""
+    Every ticket on this board gets an epic parent, so the parent cannot be the tell. Two
+    kinds of epic exist and they look identical in Jira:
+
+      * a **BMAD epic** (`Epic 19 - ADK 2.x Runtime Upgrade`) has an epic in the project's
+        `epics.md` and a sprint board behind it; its children carry BMAD numbers (`19.1`,
+        `12.3.4`) and each has a story file -> those children are **Stories**;
+      * a **grouping epic** (`CI/CD Improvment`, `New Epic Feature or Fix`) is an umbrella the
+        operator keeps so chore work is filed somewhere instead of floating loose. Its
+        children have no BMAD number and no story file -> they are **Tasks**.
+
+    So the discriminator is the story file, which is also the thing the board's own join rule
+    already uses. `--type` overrides for anything else (a Bug, an operator reclassification).
+    """
     if args.type:
-        if args.type.lower() == "story" and not args.epic_key:
-            warn("--type Story with no --epic-key: a story hangs under an epic. Pass "
-                 "--epic-key, or mint it as a Task if there is genuinely no epic.")
         return args.type
-    return "Story" if args.epic_key else "Task"
+    if story_file is not None and args.epic_key is None:
+        warn("this story has no --epic-key: a BMAD story belongs under its BMAD epic. "
+             "Pass --epic-key, or type it explicitly with --type.")
+    return "Story" if story_file is not None else "Task"
 
 
 def cmd_mint(args) -> int:
@@ -570,7 +578,7 @@ def cmd_mint(args) -> int:
     summary = args.summary or f"{args.story} - {story_title(wf.read_text(story_file))}"
 
     if not args.apply:
-        say(f"jira-feed: DRY RUN - would mint {issue_type(args)} '{summary}' "
+        say(f"jira-feed: DRY RUN - would mint {issue_type(args, story_file)} '{summary}' "
             f"in {args.jira_project}")
         sys.stdout.write(body)
         return 0
@@ -602,7 +610,7 @@ def cmd_mint(args) -> int:
                 say(f"jira-feed: backfilled the outline onto bare ticket {key}")
         else:
             create = ["jira", "workitem", "create", "--project", args.jira_project,
-                      "--type", issue_type(args), "--summary", summary,
+                      "--type", issue_type(args, story_file), "--summary", summary,
                       "--description-file", str(tmp), "--json"]
             if args.epic_key:
                 create += ["--parent", args.epic_key]
@@ -739,8 +747,8 @@ def main() -> int:
     common(p_mint); outline_flags(p_mint)
     p_mint.add_argument("--jira-project", required=True, help="e.g. AVCH (from .agents/jira.conf)")
     p_mint.add_argument("--summary", help="default: '<id> - <story title>'")
-    p_mint.add_argument("--type", help="override; default is Story under an epic, "
-                                       "Task without one (see issue_type)")
+    p_mint.add_argument("--type", help="override; default is Story when a BMAD story file "
+                                       "backs the ticket, else Task (see issue_type)")
     p_mint.add_argument("--label", action="append")
     p_mint.add_argument("--apply", action="store_true", help="without this, renders only")
 

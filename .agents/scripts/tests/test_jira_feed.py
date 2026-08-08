@@ -349,32 +349,38 @@ def main() -> int:
         c.check("mint: labels follow the ruling",
                 "quick-dev" in labels and "parallel-ok" in labels, labels)
 
-        # Type follows the HIERARCHY: a Story hangs under an epic, a Task is work nobody
-        # wrote an epic and a story for. A fixed default is how every story ticket on the
-        # board ended up a Task.
-        c.check("mint: under an epic -> Story",
+        # Type turns on WHETHER A BMAD STORY BACKS THE TICKET - never on having a parent.
+        # EVERY ticket on this board is parented: BMAD epics carry `Epic 19 - ...` and their
+        # children carry BMAD numbers, while GROUPING epics ("CI/CD Improvment") exist purely
+        # so chore work is filed somewhere. Both look identical in Jira, so keying off the
+        # parent would type every chore Task as a Story.
+        c.check("mint: a story file backs it -> Story",
                 st["create_args"][st["create_args"].index("--type") + 1] == "Story",
                 st["create_args"][st["create_args"].index("--type") + 1])
 
         set_state(state)
         code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST", "--apply")
         st = get_state(state)
-        c.check("mint: no epic -> Task",
-                st["create_args"][st["create_args"].index("--type") + 1] == "Task",
+        c.check("mint: still a Story with no epic key - the story file decides, not the parent",
+                st["create_args"][st["create_args"].index("--type") + 1] == "Story",
                 st["create_args"][st["create_args"].index("--type") + 1])
+        c.check("mint: ...but it warns that a BMAD story belongs under its BMAD epic",
+                "belongs under its BMAD epic" in out, out.strip()[:160])
+
+        # The chore case: grouping-epic work has no story file, so the operator types it.
+        set_state(state)
+        code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST",
+                       "--type", "Task", "--epic-key", "TEST-1", "--apply")
+        st = get_state(state)
+        c.check("mint: an explicit --type wins (chore work under a grouping epic)",
+                st["create_args"][st["create_args"].index("--type") + 1] == "Task")
 
         set_state(state)
         code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST",
                        "--type", "Bug", "--epic-key", "TEST-1", "--apply")
         st = get_state(state)
-        c.check("mint: an explicit --type still wins",
+        c.check("mint: --type passes any board type through",
                 st["create_args"][st["create_args"].index("--type") + 1] == "Bug")
-
-        set_state(state)
-        code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST",
-                       "--type", "Story", "--apply")
-        c.check("mint: --type Story with no epic warns (a story hangs under an epic)",
-                "no --epic-key" in out, out.strip()[:160])
 
         # A backfilled or re-run board already has the ticket. A second one is worse than
         # none - two rows, one of which nothing will ever move again.

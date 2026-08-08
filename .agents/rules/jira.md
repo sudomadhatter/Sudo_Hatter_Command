@@ -27,15 +27,38 @@ project's key. Statuses: `To Do` · `In Progress` · `In Review` · `Done` · `D
 **Deferred sits in the To Do category on purpose** (a Done-category status would make descoped work
 read as shipped). Descoped work = `Deferred` + the `descoped` label.
 
-**Work-item types — all three are in use, and the difference is the HIERARCHY, not a preference**
-(operator ruling 2026-08-08). `Epic` = the umbrella, minted at kickoff. **`Story` = a child OF an
-epic** — it has an epic behind it and a story file in `_bmad/bmm/stories/`; that is what ①
-`/sudo-write-story-tests` mints. **`Task` = work nobody wrote an epic and a story for** — toolkit and
-chore tickets, ad-hoc fixes, anything cut straight to a `chore/<KEY>-<slug>` branch. `Bug` exists for
-incident work. Getting this wrong is not cosmetic: a Task parented to an epic looks like a story that
-was never planned. `jira_feed.py mint` **derives** the type (epic key in hand → `Story`, none →
-`Task`) precisely so it cannot drift back to a fixed default — which is how the whole board ended up
-Tasks. `--type` still overrides for the odd case.
+## Work-item types — and the ONE thing that decides them
+
+**Everything is parented. The parent is therefore NOT the discriminator** (operator ruling
+2026-08-08 — this is the rule an agent gets wrong first, so read it before minting anything).
+
+There are **two kinds of Epic** and they are indistinguishable in Jira's UI:
+
+| Kind of epic | How you recognize it | What its children are |
+|---|---|---|
+| **BMAD epic** | summary carries the BMAD number — `Epic 19 — ADK 2.x Runtime Upgrade`; it has a matching epic in the project's `epics.md` and rows on `sprint-status.yaml` | **`Story`** — each carries a BMAD number (`19.1`, `12.3.4`) and **has a story file** in `_bmad/bmm/stories/` |
+| **Grouping epic** | no BMAD number — `CI/CD Improvment`, `New Epic Feature or Fix`, `Thin toolkit` | **`Task`** — chore/toolkit/ad-hoc work with **no story file and no BMAD epic**, filed under the umbrella so it does not float loose |
+
+**The discriminator is the story file, nothing else.** A ticket backed by a file in
+`_bmad/bmm/stories/` is a `Story`; one without is a `Task`. Both kinds sit under an epic, so
+"has a parent" proves nothing. `Bug` stays for incident work.
+
+**Worked example — the AVCH board is the reference shape:**
+
+```
+AVCH-18  Epic  "Epic 19 — ADK 2.x Runtime Upgrade"      <- BMAD epic
+  AVCH-33..36, 45   Story   "19.1 — …" … "19.5 — …"     <- story files exist
+AVCH-13  Epic  "Epic 12 — PPL Curriculum Activation"    <- BMAD epic
+  AVCH-14, 15, 16   Story   "12.3 — …", "12.3.4 — …"
+AVCH-43  Epic  "CI/CD Improvment"                       <- GROUPING epic, no BMAD number
+  AVCH-44, AVCH-46  Task    "Separate front/back end"   <- no story file, no BMAD epic
+```
+
+`jira_feed.py mint` **derives** the type from whether it resolved a story file, so it cannot drift
+back to a fixed default — which is exactly how the whole board ended up `Task`. It warns when a
+Story has no `--epic-key`, because a BMAD story belongs under its BMAD epic. Minting chore work is
+raw acli: `--type Task --parent <GROUPING-EPIC-KEY>`. `--type` overrides the derivation whenever the
+operator reclassifies something.
 
 **Label vocabulary** — a card holds ONE status but stacks labels, which is exactly why these are
 labels (a story can be quick-dev-eligible AND blocked at once). All three are ruled by ①

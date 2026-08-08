@@ -66,9 +66,10 @@ repo's project from `.agents/jira.conf` and the EPIC's ticket key (it's in the e
    outline if it was bare; (b) renders the **description from the story file** you just wrote (its
    statement, its ACs, the lane rulings, the story-file path) — nothing invented, and a story with no
    AC section says exactly that; (c) creates it bare (no `--assignee`), parented, with the ruled
-   labels, **typed `Story` because it hangs under an epic** (a `Task` is work nobody wrote an epic and
-   a story for — the type is derived from the epic key, never a fixed default; → `.agents/rules/jira.md`);
-   (d) **reads the ticket back and exits 2 if the description did not land.**
+   labels, **typed `Story` because a story file backs it** — not because it has a parent; everything
+   has a parent, and a `Task` under a *grouping* epic looks identical (→ `.agents/rules/jira.md`
+   §Work-item types, which is where that model is documented); (d) **reads the ticket back and exits 2
+   if the description did not land.**
    It prints `JIRA_KEY=<KEY>` — take the key from there, **never invent one.** Non-zero exit → STOP
    and fix; do not carry on with an unkeyed or hollow ticket. Full acli reference:
    `.agents/rules/jira.md`.
