@@ -6,7 +6,7 @@
     },
     "md-feedback": {
       "command": "npx",
-      "args": ["-y", "md-feedback"]
+      "args": ["-y", "md-feedback", "--workspace=/Users/sudohatter/Sudo_Hatter_Command"]
     }
   }
 }
