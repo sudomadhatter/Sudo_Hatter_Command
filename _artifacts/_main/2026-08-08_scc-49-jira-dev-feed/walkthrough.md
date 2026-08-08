@@ -93,11 +93,11 @@ Two things need your call:
 1. **The live post to SCC-49 is held.** You said the ticket was being updated, so I did not write to
    it. The command is ready and its dry-run output is in the chat — say go and I'll run it.
 2. **The existing board is all `Task`, including the real stories.** New tickets type themselves
-   correctly now, but ~22 AVCH tickets that ARE stories (`AVCH-14/15/16` under Epic 12; `24`–`32`
-   under Epic 18; `33`–`36`+`45` under Epic 19; `37`; `38`–`40`) still read `Task`. The chore ones
-   (`AVCH-44`, `46` under CI/CD; `9`–`12`, `21`, `22`, `41`, `48`) are correctly `Task` already.
-   Converting the first group is `acli jira workitem edit --key <K> --type Story --yes` per ticket —
-   a board migration, so it is yours to call. Say the word and I'll script the 22.
+   correctly now, but **21 AVCH tickets that ARE stories still read `Task`** — every one whose summary
+   starts with a BMAD number: `AVCH-14/15/16`, `24`–`32`, `33`–`36`, `37`, `38`–`40`, `45`. The other
+   **10** (`9`–`12`, `21`, `22`, `41`, `44`, `46`, `48`) are correctly `Task` already. Converting is
+   `acli jira workitem edit --key <K> --type Story --yes` per ticket — a board migration, so it is
+   yours to call. Say the word and I'll script the 21.
 
 **Note for whoever picks this up next:** the shared checkout was flipped to another branch mid-session
 by a parallel session (SCC-50), which is why the command bodies briefly appeared to revert. Nothing was
