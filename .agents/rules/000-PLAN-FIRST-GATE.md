@@ -5,7 +5,12 @@ description: "PRIORITY ZERO — No project file may be modified until Daniel app
 
 # 🛑 PRIORITY ZERO: Plan First, Code Never (Until Approved)
 
-> This rule OVERRIDES every skill, workflow, and slash command — including BMAD dev-story, quick-dev, create-story, and any future skill that has its own "execute" steps. If a skill says "mark in-progress" or "implement now," STOP — that instruction is subordinate to this gate.
+> This rule OVERRIDES every skill, workflow, and slash command — including BMAD dev-story, create-story, and any future skill that has its own "execute" steps. If a skill says "mark in-progress" or "implement now," STOP — that instruction is subordinate to this gate.
+>
+> **The one carve-out lives in the exemption list, not here** (see "When to Skip" below): `/sudo-quick-dev`
+> is operator-invoked, and invoking it IS the "skip the plan" instruction. Naming it inline here as
+> *overridden* is what put this rule and that command in direct contradiction — two copies of a gate's
+> scope drift apart, and each one reads authoritative.
 
 ## The Kill-Chain
 

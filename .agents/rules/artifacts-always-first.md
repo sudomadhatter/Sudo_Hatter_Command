@@ -256,6 +256,16 @@ When Daniel says **"review"** (or asks to review a document/plan), EVERY agent m
 - **Investigatory requests** ("explain how X works", "where is Y?") — no artifacts needed.
 - **Trivial one-liners** (typo, comment fix) — mention what you changed; skip the full cycle.
 - **Daniel explicitly says** "skip the plan, just do it" — still write a walkthrough after.
+- **`/sudo-quick-dev`** — **invoking that command IS the "skip the plan" instruction above**, the same way
+  invoking `/sudo-update-sprint-memory` IS the close-out sign-off. It runs no `implementation_plan.md` and
+  waits for no "approved"; its gate is the human review at the end. The exemption is conditional on its
+  guards staying intact — the worktree/chore branch, the acceptance criteria fixed in Step 1, the EJECT
+  tripwire, and the mandatory review gate. **A fired tripwire re-arms this gate:** the moment the work
+  ejects to the full lane, it is no longer exempt and needs an approved plan like anything else.
+  - Its record is **spec + thin walkthrough**: the spec the skill writes (in `_bmad-output/`) is the
+    working doc; the `walkthrough.md` in the owning `_artifacts/` store **links** it rather than restating
+    it, and still carries `## Task Checklist` → `## Evidence` → `## Code Review (<date>)` (with the
+    canonical `Verdict:` line) → `## Your Actions`. The walkthrough is never skipped.
 
 ## Hard Stops
 - NEVER modify any project file before `implementation_plan.md` is approved.
