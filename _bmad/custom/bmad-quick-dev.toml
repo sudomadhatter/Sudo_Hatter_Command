@@ -1,41 +1,77 @@
 # Team override for bmad-quick-dev
-# Lives in _bmad/custom/ — survives BMAD skill updates.
-#
-# Purpose: Enforce the project constitution's plan-first gate
-# AND the AGENTS.md artifact protocol.
+# Lives in _bmad/custom/ — survives BMAD skill updates (the skill dir is replaced
+# on update; this file is not). Only the fields exposed by the skill's own
+# customize.toml may be set here: activation_steps_prepend / _append,
+# persistent_facts, on_complete.
 #
 # FIX (2026-06-11): Added on_complete + artifact persistent fact.
-# Same pattern as bmad-dev-story.toml — agent "forgets" to write the
-# closing walkthrough.md without these.
+# FIX (2026-06-27): Baked the EXPLICIT artifact folder into the persistent fact
+# + on_complete — the BMAD flow never loads the global placement rule, so a
+# path-less instruction let the agent drift to the RETIRED _claude_artifacts/.
 #
-# FIX (2026-06-27): Baked the EXPLICIT artifact folder into the persistent
-# fact + on_complete (see bmad-dev-story.toml for the why — the BMAD flow
-# never loads the global placement rule, so a path-less instruction let the
-# agent drift to the RETIRED _claude_artifacts/ store). Same pass aligned the
-# close-out to the one-doc model: a single walkthrough.md ending in
-# `## Task Checklist` + `## Your Actions` — no separate your-action-required.md
-# or task-list.md (artifacts-always-first.md §5).
+# FIX (2026-08-08, SCC-40): /sudo-quick-dev now drives THIS skill instead of
+# bmad-create-story + bmad-dev-story. Three consequences encoded below:
+#   1. The plan-first gate is stated with its ONE literal exemption, so the
+#      command and the gate stop contradicting each other. A bare invocation of
+#      this skill is still gated.
+#   2. The commit contract is spelled out — the skill's native "conventional
+#      message derived from the spec title" is REJECTED by our armed commit-msg
+#      hook, which requires the repo's Jira key.
+#   3. The artifact shape is the current one (quick-fix bucket + thin
+#      walkthrough), replacing the pre-2026-08-02 narrative shape.
 
 [workflow]
 
 activation_steps_prepend = [
-  """Load and internalize {project-root}/.agents/rules/000-PLAN-FIRST-GATE.md as the highest-priority rule set.
-MANDATORY PLAN-FIRST GATE:
-Before modifying ANY project file (source code, story files, sprint-status.yaml, configs):
-1. Create an implementation_plan.md artifact with: goal, files to change, approach, and verification plan.
-2. Present the plan to the user inline in the chat.
-3. HALT. Wait for 'approved' before writing any code.
-This gate is NON-NEGOTIABLE and overrides all skill instructions.""",
+  """PLAN-FIRST GATE — read {project-root}/.agents/rules/000-PLAN-FIRST-GATE.md.
+Before modifying ANY project file (source, story files, sprint-status.yaml, configs) you normally must
+write an implementation_plan.md, present it inline, and HALT until the human says 'approved'.
+
+There are exactly TWO ways that gate is satisfied in this workflow — no others, and never by your own
+judgement that the change is small:
+
+  (a) This run was launched by /sudo-quick-dev. That command is operator-invoked, and invoking it IS the
+      'skip the plan' instruction (artifacts-always-first.md, When to Skip). You will know: it echoes
+      `Target: <project>`, opens a worktree or chore branch BEFORE any edit, and fixes an explicit
+      acceptance-criteria list in its Step 1. Proceed under its guards — and its EJECT tripwire re-arms
+      this gate the moment the work stops being small.
+
+  (b) You are on the plan-code-review route and the human answered [A] Approve at CHECKPOINT 1. That
+      checkpoint IS the approval; do not ask for a second one.
+
+Otherwise: HALT and get an approved plan first.""",
 ]
 
 persistent_facts = [
   "file:{project-root}/.agents/rules/000-PLAN-FIRST-GATE.md",
-  "MANDATORY ARTIFACT PROTOCOL: Session artifacts live in THIS project's `_artifacts/` store, per its `_artifacts/README.md` — a story `E.S` goes in `_artifacts/epic_<E>/story-<E.S>-<slug>/` (create `epic_<E>/` if it is missing); other work goes in `_artifacts/<YYYY-MM-DD>_<slug>/`. NEVER write them to `_claude_artifacts/` (RETIRED/DELETED) or `_bmad-output/` (that is BMAD's own store, not the session store). In that folder you MUST write ONE closing doc — `walkthrough.md` (recap: what changed, pasted test output, AC matrix) — ending with a `## Task Checklist` section (the final TodoWrite snapshot) and then a `## Your Actions` section (manual steps + the exact git commit command). Do NOT write a separate `your-action-required.md` or `task-list.md` — everything final lives in `walkthrough.md` (per artifacts-always-first.md §5). Producing it in the wrong store — or not at all — is a session failure.",
+
+  "COMMIT CONTRACT (this repo rejects commits that violate it — see .agents/rules/git-policy.md). This workflow's own instruction to 'create a local commit with a conventional message derived from the spec title' is NOT sufficient here. (1) Every commit subject MUST lead with this repo's Jira key, read from `.agents/jira.conf` (e.g. `SCC-40 fix(quick-dev): …`) — an armed commit-msg hook REFUSES any subject without a valid key for this repo, and a rejected commit is a no-op. (2) Stage with EXPLICIT PATHS ONLY — `git add path/one path/two`. NEVER `git add -A`, `git add .`, or `git add -u`: they sweep up parallel agents' and the operator's uncommitted work. Verify with `git diff --cached --stat` before committing. (3) NEVER push `main`, never force-push, never merge to `main` on your own initiative. (4) Commit INSIDE the worktree; landing on the epic branch is the human's close-out, not yours.",
+
+  "PROTECTED SURFACES — hard eject, regardless of how small the diff looks. If the change touches auth or tenancy walls, payments, PII handling, DB schema or security rules, or a cross-boundary API/SSE contract: STOP, state the one-line reason, and hand off to the full lane (/sudo-write-story-tests). Keep everything written; discard nothing. Risk decides this, not size.",
+
+  "ARTIFACT PROTOCOL. Two docs with distinct homes — do not merge or duplicate them. (1) The SPEC belongs where this skill puts it, under `_bmad-output/` — that is BMAD's own store and is correct for the spec. (2) The CLOSING RECORD is a THIN `walkthrough.md` in THIS project's `_artifacts/` store: story work → `_artifacts/epic_<E>/story-<E.S>-<slug>/` (create `epic_<E>/` if missing); an ad-hoc quick fix (no story, no epic key) → `_artifacts/quick_fixes/quick-fix-<track>.<n>-<slug>/`, reading that folder's INDEX.md for the next free number and appending the row by hand; project infrastructure work → `_artifacts/_main/<YYYY-MM-DD>_<slug>/`. NEVER `_claude_artifacts/` (RETIRED/DELETED). The walkthrough LINKS the spec rather than restating it, and carries: `## Task Checklist` → `## Evidence` (AC→evidence + pasted actual test totals + SHA, totals lines only) → `## Code Review (<date>)` with the canonical line `Verdict: PASS|CONCERNS|FAIL|WAIVED @ <sha>` → `## Your Actions` LAST. No narrative essay, no separate your-action-required.md / task-list.md / standalone review file. Budget ≤ 10 KB. Post a clickable Markdown link to every artifact in the chat the same turn you write it.",
+
+  "AN AD-HOC QUICK FIX MINTS NO STORY FILE AND NO EPIC KEY. Do not create anything in `_bmad/bmm/stories/`, and never hang a quick fix off a finished epic — that silently reopens it.",
 ]
 
 # Fires at the very end of the workflow — the last thing executed.
-on_complete = """STOP. Before you write your final chat message, check the session artifacts.
-ARTIFACT LOCATION (non-negotiable): THIS project's own `_artifacts/` store, per `_artifacts/README.md` — a story `E.S` → `_artifacts/epic_<E>/story-<E.S>-<slug>/` (create `epic_<E>/` if missing); other work → `_artifacts/<YYYY-MM-DD>_<slug>/`. NEVER `_claude_artifacts/` (RETIRED/DELETED) and NEVER `_bmad-output/`.
-Required (per AGENTS.md and constitution.md): ONE closing doc, `walkthrough.md`, IN THAT FOLDER — narrative + pasted test output, ENDING with a `## Task Checklist` section (final TodoWrite snapshot) and then a `## Your Actions` section (git commit command + manual steps). Do NOT write a separate `your-action-required.md` or `task-list.md`; both are sections inside `walkthrough.md`.
-If it does NOT yet exist in the correct folder, create it NOW using the write_to_file tool with IsArtifact=true. If you already wrote artifacts somewhere else (e.g. `_claude_artifacts/`), MOVE them there.
-Only AFTER `walkthrough.md` exists in the right place may you write your completion summary to the user."""
+# BACKSTOP ONLY: /sudo-quick-dev Step 3 owns the review gate. This fires it if that step did not run.
+on_complete = """STOP. Do not write your final chat message yet — two things must be true first.
+
+1. THE REVIEW GATE RAN. An independent adversarial reviewer (bmad-review-adversarial-general) must have
+   seen the diff in a subagent with NO conversation context — reviewing your own reasoning anchors on it.
+   If code was touched, an acceptance-auditor pass against the agreed acceptance criteria and the
+   /clean-code-audit machine floor must also have run, plus the scoped tests for the touched module
+   (the WHOLE endpoint/module suite if a shared handler changed). If docs/config only, no lint floor
+   applies — instead check every touched link and `#L` anchor, and confirm SOP currency: a usage-surface
+   change (.agents/commands/, .agents/rules/, .agents/scripts/, git hooks, root AGENTS.md) must move
+   `_my_resources/_quick_reference/sudo_workflows_testing.md` in the SAME commit or the armed gate
+   rejects it. If any of this did not happen, RUN IT NOW. Never report a gate you did not actually run.
+
+2. THE THIN walkthrough.md EXISTS in the correct `_artifacts/` folder (see the artifact protocol fact),
+   written with IsArtifact=true, linking the spec, and carrying its `Verdict:` line. If it is missing or
+   in the wrong store, create/move it now.
+
+Then STOP for human review. Do NOT run /sudo-update-sprint-memory, do NOT flip a story to `done`, do NOT
+land on the epic branch, do NOT touch `main` — those are the human's. Close by displaying the spec path,
+a clickable link to the walkthrough, the key changes, and the actual review-gate output."""
