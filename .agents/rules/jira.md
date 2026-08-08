@@ -88,6 +88,23 @@ produces that with no per-project switch.
 fixed default is how the whole board ended up `Task`. It warns when sprint work has no `--epic-key`.
 `--type` overrides whenever the operator reclassifies.
 
+**The type decides which close-out can reach it.** This is the practical consequence of the table
+above, and the reason `Task` needed a command of its own:
+
+| Type | Branch | Closes out with | Why the other one cannot |
+|---|---|---|---|
+| **`Story`** | `claude/<KEY>-<slug>` off the epic branch | `/sudo-update-sprint-memory` | it lands on the **epic** branch, never `main` |
+| **`Task`** | `chore/<KEY>-<slug>` off `main` | **`/close-task-merge-tree`** (SCC-49) | close-out reads a sprint board, flips a story status and lands on an epic branch — a Task has **none of the three**, so the command has nothing to operate on |
+| **`Epic`** | `epic/<KEY>-<slug>` off `main` | `/sudo-push-e2e` | — |
+
+`/close-task-merge-tree` files the same **one** Dev Record through `jira_feed.py devrecord` and moves
+the ticket to `Done` itself. It does **not** pass `--closing`: that flag exists only to clear a
+`Bug` back to `Story`, and `Bug` is the operator's flag on a broken **Story** — a state the Task lane
+never reaches. Before it merges, `task_preflight.py` re-asks the type question **from the diff**: a
+`chore/*` branch that touches `backend/ · frontend/ · firebase/ · functions/ · mobile/ · .github/` is
+refused and handed to `/sudo-push-e2e`, because a change reaching deployable code is a product change
+whatever its ticket type says.
+
 **Auditing the board:** `python3 .agents/scripts/jira_feed.py audit --jira-project <PROJ> --project
 <P>` reports every ticket whose type disagrees with this table; `--apply` converts them and reads
 each one back. It **never demotes a `Bug`** — an operator-filed production incident has no BMAD

@@ -52,6 +52,7 @@ is meant to be identical** — if the two disagree, this one is canonical.
 | land a story that passed review | `/sudo-update-sprint-memory` — it pre-flights everything first (§5) |
 | land every lane of one epic at once | `/sudo-merge-epic-workingtrees <epic>` |
 | fix something small, or change docs/config | `/sudo-quick-dev <slug>` — **low-risk work only**; still gets ACs up front and a review gate after |
+| close out a **Task** (toolkit/rules/IDE work with no story) | `/close-task-merge-tree` — the non-BMAD close-out: gate, merge to `main`, Dev Record, prune (§6) |
 | know whether a review still counts | §5's decision tree — a review of old code is not a review |
 | ship to production | `/sudo-push-e2e` (§6) |
 | switch machines | `/sudo-park` before, `/sudo-resume` after — §7 shows the handoff end to end |
@@ -150,6 +151,7 @@ without anyone remembering to link anything (§6, §11).
 |---|---|
 | `/sudo-e2e` | Runs the real end-to-end suite — a complete stand-in for the live app, with test users. Green means safe to ship. |
 | `/sudo-push-e2e` | The one shipping command — the only road an epic takes to `main` (§6). It **refuses to run** until the end-to-end suite is green and you sign off. After the merge it comments the evidence on the epic's Jira ticket and moves it to **Done**. |
+| `/close-task-merge-tree` | **The Task lane's close-out** — the half BMAD has no answer for. A **Task** (toolkit, rules, IDE, skills work) has no epic, no story file and often no sprint board at all, so `/sudo-update-sprint-memory` has nothing to operate on and simply cannot close it. This does the same four things for it: run the gate, merge to `main` with `--no-ff`, file **one** Dev Record and move the ticket to **Done**, prune the branch. **Typing it IS your merge sign-off** — same contract `/sudo-push-e2e` carries for an epic. Your question about skipping the end-to-end tests is answered **by the repo, not by the agent**: it derives the lane and either says *this repo has nothing that deploys, so there is no E2E suite to skip* (the command centre) or *this diff touched `backend/`* — and in that second case it **refuses and hands the work to `/sudo-push-e2e`**, with no override flag. It is the one command deliberately **not** named `sudo-*`, because that family is barred from acting on the command centre and toolkit tasks live there. |
 
 ### Debugging and incidents
 
@@ -240,7 +242,7 @@ you're hunting for what an audit or a review said, it is inside one of those two
 
 ## 5. The safety net — what runs the checks for you
 
-This is the newest part of the system and the least visible. **Eight small programs — plus two armed git
+This is the newest part of the system and the least visible. **Nine small programs — plus two armed git
 hooks** — now do the checking that used to be a person holding eight rules in their head. You almost
 never run them; the commands run them for you. What matters to you is *what they refuse to let happen.*
 
@@ -254,6 +256,7 @@ flowchart LR
         W["/sudo-close-workingtree"]
         S["① /sudo-write-story-tests"]
         Q["/sudo-quick-dev"]
+        T["/close-task-merge-tree"]
         G["every git commit"]
     end
     subgraph CHK ["the checks that fire"]
@@ -264,6 +267,7 @@ flowchart LR
         JH["commit-msg-jira.sh — ARMED\nrefuses a commit without\nthe repo's Jira ticket key"]
         SC["sop_currency.py — ARMED\nrefuses a usage change that\nleaves this page behind"]
         JF["jira_feed.py\nputs the outline and the\ndev record ON the ticket"]
+        TP["task_preflight.py\ndecides the LANE:\nis anything deployable in here?"]
     end
     R --> GR
     M --> CP
@@ -271,6 +275,8 @@ flowchart LR
     M --> JF
     S --> JF
     Q --> JF
+    T --> TP
+    T --> JF
     W --> CP
     G --> WL
     G --> JH
@@ -287,6 +293,7 @@ flowchart LR
 | `commit-msg-jira.sh` | **A commit with no ticket.** Each repo declares its Jira project in `.agents/jira.conf`; a commit whose message carries no valid key for *that* repo — or the wrong project's key — is refused outright. A rejected commit is a no-op: your staged files are untouched, nothing to undo. Merges, reverts, and rebases are exempt (the branch name carries the key for them). |
 | `sop_currency.py` | **This page falling behind the system it describes.** Change a `/` command, a rule, a safety-net script, a commit gate, or the root `AGENTS.md`, and the commit is refused unless this file is staged with it. Say `[sop-ok]` in the message when a change genuinely alters no usage — that stays in the git log as the record of the call. It checks only that the two moved together; no program can judge whether the *edit* was right, and the point is to make you look while you still have the context. |
 | `jira_feed.py` | **A Jira ticket that is only a title.** Every story ticket used to be minted with a summary and nothing else, and close-out posted one verdict line — so the board could tell you a story existed, never what it was about or what building it taught. Now ① mints the ticket with an outline rendered *from the story file* (its statement, its acceptance criteria — nothing invented; a story with no ACs says exactly that), and the close-out files a **Dev Record**: the decisions, the pitfalls, and what is still owed. Both write paths **read the ticket back** and fail if what they claimed to write is not there. **Exactly one Dev Record per ticket** — `/sudo-quick-dev` closes its own branch and files one too, and a later close-out updates that record instead of stacking a second. It also picks the ticket **type** for you: **Story** = BMAD sprint work (debug stories included), **Task** = workflow/IDE/rules/skills work under one of your grouping epics (`CI/CD Improvment`, `New Epic Feature or Fix`). *Everything* is parented, so the parent never decides it. **`Bug` is yours to raise** — your temporary flag on a story you found broken (you set the type and send it back to To Do) — and the close-out puts it back to **Story** once the fix lands, because the bug is gone. Nothing else ever touches it. `jira_feed.py audit --jira-project <P>` checks a whole board and `--apply` migrates it. Full model + the AVCH worked example: [`.agents/rules/jira.md`](../../.agents/rules/jira.md) §Work-item types. |
+| `task_preflight.py` | **A change to the product sneaking onto `main` labelled a "task".** `/close-task-merge-tree` is cheaper than `/sudo-push-e2e` for exactly one reason — it skips the end-to-end suite — and the only honest justification is *nothing that deploys changed.* That is the claim an agent is worst at checking about its own work, so this derives it instead of asking. Two questions, both answered from the repo: does this repo **have** anything that deploys (`backend/ · frontend/ · firebase/ · functions/ · mobile/ · .github/`), and did **this diff** touch it? No deployable surface at all is the command centre's case — there is no E2E suite there to skip, so nothing is being got away with. Touch one and it **stops dead and sends the work to `/sudo-push-e2e`. There is no override flag, on purpose.** It also checks the branch really is `chore/<KEY>-<slug>` with a key this repo owns, that the tree is clean and pushed, that `origin/main` was absorbed (so a conflict lands on your branch and never on production), and that the walkthrough the Dev Record will point at actually exists. Point it at an `epic/`, `claude/` or `incident/` branch and it names the command that IS right rather than just refusing. |
 | `split_sprint_status.py` | The one-time migration that shrank the board (§11). |
 | `wf_common.py` | Shared plumbing the others import. You'll never call it. |
 
@@ -352,7 +359,7 @@ let you make it *unknowingly*.
 how the board links every commit without anyone pasting links — stories land on that epic branch, and
 the epic reaches `main` exactly one way: `/sudo-push-e2e`. Small fixes outside any epic take a
 `chore/<JIRA-KEY>-<slug>` branch off `main` (every chore carries its own ticket), merged back the same
-session with your sign-off.
+session with your sign-off — that merge is `/close-task-merge-tree`, and typing it **is** the sign-off.
 
 *What you're looking at: the one road to production, and where the gate stands on it.*
 
@@ -367,7 +374,9 @@ flowchart TD
     MAIN --> DEPLOY["deploy, then verify live"]
     MAIN --> TICKET["Jira: evidence commented\nepic ticket → Done"]
     MAIN --> DEL["epic branch deleted\nnothing accumulates"]
-    CHORE["chore/&lt;JIRA-KEY&gt;-&lt;slug&gt;\nsmall fixes outside any epic\neach carries its own ticket"] -.->|"same session\nwith your sign-off"| MAIN
+    CHORE["chore/&lt;JIRA-KEY&gt;-&lt;slug&gt;\nsmall fixes and Task work\neach carries its own ticket"] -.->|"/close-task-merge-tree\ntyping it IS your sign-off"| LANE{"anything deployable\nin the diff?"}
+    LANE -- "no" --> MAIN
+    LANE -- "yes" --> SHIP
 ```
 
 Before the merge, `/sudo-push-e2e` pulls `origin/main` **into** the epic branch and re-gates — so `main`

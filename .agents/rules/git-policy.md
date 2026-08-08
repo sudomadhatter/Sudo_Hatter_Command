@@ -32,6 +32,12 @@ description: "Git policy: main is the ONLY long-lived branch. Each epic gets a s
   Daniel's per-action sign-off. The gate is per-repo: the lobby runs
   `python3 .agents/scripts/tests/run_all.py` (it has **no E2E suite and never will** — no
   `frontend/`); deploying repos run the light gate (tests + build), and epic merges add `/sudo-e2e`.
+  **The command that does this is `/close-task-merge-tree`** (SCC-49) — invoking it IS the
+  sign-off, the same contract `/sudo-push-e2e` carries for an epic. It will not decide the gate
+  from prose: `task_preflight.py` derives the lane from the repo and the diff, and a `chore/*`
+  branch that touches `backend/`, `frontend/`, `firebase/`, `functions/`, `mobile/` or `.github/`
+  is refused outright and handed to `/sudo-push-e2e` — a change that reaches deployable code is a
+  product change no matter what its ticket is called.
 
 ### Every branch and every commit carries a Jira key (armed 2026-08-07)
 
@@ -61,7 +67,7 @@ description: "Git policy: main is the ONLY long-lived branch. Each epic gets a s
 | Your own `claude/*` story branch (commits **and** pushes) | **FREE** — no approval, loops/retries fine |
 | The epic branch (`epic/*`) — a story landing | **Daniel's sign-off** — his in-the-moment "approved", or invoking `/sudo-update-sprint-memory` (which IS the sign-off) |
 | A `chore/*` branch (commits and pushes) | **FREE** — the merge back to `main` is what's gated |
-| `main` | **Only through `/sudo-push-e2e`** (epic merge, full gate + sign-off) or Daniel's direct in-the-moment ask (chore merge). Never on an agent's own initiative. |
+| `main` | **Only through `/sudo-push-e2e`** (epic merge, full gate + sign-off) or **`/close-task-merge-tree`** (task merge — preflight + the lane's gate; invoking it IS the sign-off), or Daniel's direct in-the-moment ask. Never on an agent's own initiative. |
 
 Approval for an epic-branch landing or a `main` merge is **per-action and never carries forward**.
 One "approved" lands one story; the next needs its own.

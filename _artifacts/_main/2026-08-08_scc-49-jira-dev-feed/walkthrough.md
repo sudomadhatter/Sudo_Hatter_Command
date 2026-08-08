@@ -74,15 +74,50 @@ them on the ticket, and makes it impossible to skip quietly.
       The probe guard reads **code only** — the fix's own comment quotes the broken line, and a raw
       grep flagged the fix as the defect on first run. It carries a positive control asserting the
       strip is load-bearing.
-- [x] **Docs** — SOP quick-reference §5, `.agents/rules/jira.md`, `.agents/scripts/INDEX.md`.
-- [x] `/sync-agents` — mirrors regenerated for opencode, Antigravity, Codex.
+- [x] **`/close-task-merge-tree` — the Task lane's close-out** (added after the type model settled).
+      The board now knows Task from Story, and the Task half had nowhere to go: BMAD's
+      `/sudo-update-sprint-memory` reads a sprint board, flips a story status and lands on an epic
+      branch, and a Task has **none of the three**. This does the same four things without them —
+      gate, `--no-ff` merge to `main`, one Dev Record + ticket → Done, prune.
+  - **Deliberately not `sudo-*`.** That family binds `sudo-target-resolution.md` — *"never the
+    lobby"* — and toolkit Tasks live in the lobby. The non-`sudo` family (`/sync-agents`,
+    `/update-maps-indexes`) is the one allowed to act on the repo you are standing in, so the
+    naming carries the permission rather than an exception being written for it.
+  - **The E2E question is answered by the repo, not by the agent.** Skipping the end-to-end suite is
+    the *only* thing making this cheaper than `/sudo-push-e2e`, and its one honest justification —
+    *nothing that deploys changed* — is exactly the claim an agent audits worst about its own work.
+    `task_preflight.py` derives it twice over: does the repo **have** a deployable surface at all
+    (empty ⇒ the command centre, where `git-policy.md` already says there is no E2E suite and never
+    will be — nothing is being skipped), and did **this diff** reach one. Touched ⇒ `HANDOFF`, hard
+    exit 2, `/sudo-push-e2e`. **No override flag, on purpose.**
+  - Order settled: **merge, then record.** A ticket reading `Done` while the merge failed is a lie
+    on the board; a merge that landed while the record lags is one command from correct.
+  - No `--closing` on this lane — it clears a `Bug` back to `Story`, and `Bug` is the operator's flag
+    on a broken **Story**. Passing it here would be a dead flag.
+  - *Found while building:* the worktree check flagged the **main checkout** — `git worktree list`
+    block [0] is the checkout itself, which stands on the branch by definition. A warning that fires
+    on every clean run is a warning nobody reads. Now skipped, with a regression case **and** a
+    positive control proving a real extra worktree still trips it.
+  - *Found while building:* a missing `_artifacts/` tree read as "nothing to check" (a WARN). That is
+    backwards — no tree is the **strongest** evidence the walkthrough was never written, and warning
+    there is how the check goes quiet on the one repo that needed it. Now an ERROR either way.
+- [x] **35 test cases** for it (237 across 8 files). The load-bearing pair is one repo, one command,
+      two diffs: `backend/app.py` → HANDOFF + exit 2, `.agents/rules/x.md` → LOCAL + exit 0. Without
+      the second the gate would just be "always stop", which gets routed around inside a week.
+- [x] **Docs** — SOP quick-reference §3/§5/§6 (incl. the lane branch in the shipping diagram),
+      `.agents/rules/jira.md` (a close-out row per type — the type decides which command can reach
+      it), `.agents/rules/git-policy.md` (the chore lane now names its command, and the `main` row of
+      the write gate lists both roads), both INDEXes.
+- [x] `/sync-agents` — mirrors regenerated for Claude, opencode, Antigravity, Codex.
 
 ## Evidence
 
 | Claim | Proof |
 |---|---|
-| Full enforcement suite green | `python3 .agents/scripts/tests/run_all.py` → **7/7 files, 202 cases** |
-| New file's own cases | `test_jira_feed.py` → **78/78 passed** |
+| Full enforcement suite green | `python3 .agents/scripts/tests/run_all.py` → **8/8 files, 237 cases** |
+| New files' own cases | `test_jira_feed.py` → **78/78** · `test_task_preflight.py` → **35/35** |
+| The lane cannot be talked around | same repo, same command: `backend/app.py` in the diff → `LANE: HANDOFF`, exit 2, names `/sudo-push-e2e`; `.agents/rules/x.md` → `LANE: LOCAL`, exit 0 |
+| The command centre needs no exception | live run on this branch → *"this repo has no deployable surface … there is no E2E suite here to skip"*, `LANE: LOCAL` |
 | Outline renders real ACs, invents nothing | `outline --story 12.3.4 --project AGY_AVIATIONCHAT` → all 7 ACs verbatim, story statement, story-file path |
 | Epic outline reads `epics.md` | `outline --epic 12` → goal + the 3 child stories, stops before Epic 13 |
 | `check` works against the LIVE board | `check --key AVCH-15` → description present (142 chars), **no Dev Record → exit 2** |
