@@ -27,6 +27,9 @@ Then finish the wiring — the script prints these, do them in order:
    lobby (`Projects/` is git-ignored here otherwise).
 3. **Placeholders** — grep the new project for `{{` and `<PROJECT_NAME>`: `AGENTS.md`,
    `.agents/INDEX.md`, `_bmad-output/project-context.md`, `_my_resources/open_tasks/todo_list.md`.
+4. **Localize the map** — `python3 .agents/scripts/generate_repo_map.py --root "Projects/$ARGUMENTS"
+   --ignore _my_resources,_bmad --mode auto` (run from the lobby; the template's AUTO tree carries the
+   skeleton's own root name until you regenerate, so `check_maps` would flag it stale).
 
 **Optional, when it gets a Jira board:** `cp .agents/jira.conf.example .agents/jira.conf`, set
 `JIRA_KEYS`, then `touch .agents/scripts/git-hooks/JIRA-ENFORCE` to arm REJECT mode. Until then the

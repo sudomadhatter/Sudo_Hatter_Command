@@ -126,3 +126,43 @@ Silent gates get POSITIVE verification in P3 before deletions commit. Reachers f
 
 **Audit verdict: GO** (7 fixes baked; re-baseline 2026-08-07 changed no disposition — F7 confirmed still required, P0-retire-main_debug removed as done upstream).
 
+
+---
+
+## Self-Audit (2026-08-07) — post-build, pre-merge (operator-ordered)
+
+Right-size: **Full** — audited base `88b079a` (lane) plus all four child branch heads.
+P0 scope: traced all six phases against the five branches. P1 blast-radius: `merge-tree`
+vs every repo's `main` = **0 conflicts**; full deletion review (~5,700 deleted files) for
+load-bearing losses — none found; AGY diff touches nothing under `backend/`/`frontend/`.
+P2 drift gate: audit remediation is INDEX routers + map reconciles only — no new
+abstraction. P3 pre-mortem: enforcement executed, not assumed — commit hooks run with
+bad/good messages, push-approval hook probed three ways, `run_all` re-run at head.
+
+| Finding | Sev | Disposition |
+|---|---|---|
+| Epic branch sat at P2 (`35b2d80`); pre-flight + P5 + P6 lived only on the `claude/SCC-32-preflight` lane | HIGH | **FIXED** — epic fast-forwarded to the lane head (this commit) |
+| All 4 child repos failed the thin floor: tier-2 `rules` / `scripts` / `skills` INDEX routers missing, repo-map AUTO blocks stale | HIGH | **FIXED** — AGY `9627e7e0` · VR `54e6a02` · RAG `5789062` · skeleton `9f2f68c`; all four lint clean |
+| Skeleton default branch is still the FAT template (3,239 files) and `/new-project` clones the default branch | HIGH | **SEQUENCING** — merge `chore/SCC-31-thin-template` before any `/new-project` run; `/new-project` gained a post-clone map-localize step |
+| Lobby main checkout carries the other lane's uncommitted WIP (mcp.json ×4, `.agents/commands/INDEX.md` + `review.md`, sync-manifest, 2 memory/docs); `.agents/commands/INDEX.md` is also changed by this epic | MED | **PRE-MERGE** — that lane must commit/stash before the lobby merge or git refuses the checkout |
+| `reaudit_v4.md` + `.md-feedback/` untracked in the main checkout | MED | reaudit was already tracked at `88b079a` (untracked twin is byte-identical); `.md-feedback/workflow.json` lands in this commit |
+| VR carried `.agents/.claude/` gitnexus-skill residue | LOW | **FIXED** in `54e6a02` |
+| Center `.agents/skills/` still carries 13 AGY domain packs (tier-2 content in tier-1: hr-agent-schema-guide, voice-ai, SSE patterns, …) — reverse-vendoring, drift risk | LOW | **REPORTED** — one follow-on commit on the operator's word |
+| Stale vendored-era prose survives: `docs/workspace-standard.md` (VR · RAG · skeleton), AGY `README.md` toolkit sections, VR/skeleton `AGENTS.md` autopilot row | LOW | **REPORTED** — post-merge doc-sweep candidate |
+| Lobby map drift (SCC-26 curated rot + rename journal) predates the epic | LOW | post-merge `/update-maps-indexes` on main |
+| False alarms cleared: `_my_resources` conflict-marker = SCC-30 teaching sample (identical on main) · toml "gate refs" = provenance comments, zero `file:` load directives · VR `bmad-*` skills = repo-local BMAD machinery by design (VR ∩ center = ∅) | — | no action |
+
+Environment notes: AGY's working checkout moved to `chore/AVCH-41-sop-twin-jira-flow`
+mid-audit (same commit `ec0ba3b2`; fixes went through a temp worktree, since removed).
+AGY's 3 residual lint flags there are worktree artifacts — gitignored `.env` / `.venv`
+absent in the worktree, present in the real checkout. Session limit blocked subagents;
+the audit ran inline.
+
+Verification at head: `run_all` **5/5 files, 20/20 checks** · armed commit gates
+live-tested (lobby + AGY: bad msg rc=1, good rc=0; skeleton disarmed: rc=0 + warning) ·
+push-approval hook: `main` push → ask, lane push → allow, `git -C <lane> push` → allow ·
+secrets scan of the full lane patch: 0 hits · sync `-WhatIf`: machine caches only, zero
+project targets.
+
+**Audit verdict: GO** — merge order: **skeleton → lobby → AGY (via `/sudo-push-e2e`) →
+VR → RAG**, then gitlink bumps. Lobby precondition: the other lane's WIP lands first.
