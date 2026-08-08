@@ -552,21 +552,54 @@ def check_conformance(root, is_home, is_bmad, map_path):
     need("CLAUDE.md", "adapter")
     need("GEMINI.md", "adapter")
     need(".agents", "toolkit dir")
-    # `.agents/` is a TIER-1 FLOOR (workspace-standard.md Part 1) — it carries the same brain + adapters
-    # any workspace root does. Doctrine has said so since the tier model landed; nothing enforced it,
-    # because check 2.5's dot-dir skip made the whole toolkit invisible to the linter.
-    need(".agents/AGENTS.md", "toolkit brain")
-    need(".agents/INDEX.md", "toolkit inventory")
-    need(".agents/CLAUDE.md", "toolkit adapter")
-    need(".agents/GEMINI.md", "toolkit adapter")
-    need(".agents/scripts/check_maps.py", "maintenance script")
-    need(".agents/scripts/generate_repo_map.py", "map generator")
+    if is_home:
+        # LOBBY: `.agents/` is the MASTER toolkit and a TIER-1 FLOOR (workspace-standard.md Part 1) —
+        # it carries the same brain + adapters any workspace root does, plus the maintenance scripts.
+        need(".agents/AGENTS.md", "toolkit brain")
+        need(".agents/INDEX.md", "toolkit inventory")
+        need(".agents/CLAUDE.md", "toolkit adapter")
+        need(".agents/GEMINI.md", "toolkit adapter")
+        need(".agents/scripts/check_maps.py", "maintenance script")
+        need(".agents/scripts/generate_repo_map.py", "map generator")
+        if not (docs / "workspace-standard.md").exists():
+            missing.append(f"structure standard (`{(docs / 'workspace-standard.md').relative_to(root).as_posix()}`)")
+    else:
+        # PROJECT: THIN floor (thin model 2026-08-07 — `.agents/rules/project-law.md`). A project's
+        # `.agents/` holds ONLY its own tier-2 law: `rules/` + `skills/` + `INDEX.md`. The INDEX is
+        # anchor 5 of the always-check guarantee — binding a project MEANS reading it, so its absence
+        # is an ERROR, never a default. Any tier-1 vendor still present is the P3/P4 conversion
+        # worklist, flagged loud so a half-stripped project can't read as clean.
+        need(".agents/INDEX.md", "tier-2 law INDEX (binding reads this — project-law.md)")
+        # ⚠️ NEVER add the repo-local ENFORCEMENT set to this list (SCC-32): `.githooks/`,
+        # `.agents/scripts/git-hooks/`, and `.agents/jira.conf` are the armed Jira commit gate. Git runs
+        # hooks in the repo they gate and `jira.conf` names THAT repo's Jira project — they are permanently
+        # project-local by design (same class as BMAD's `_bmad/custom/*.toml`), never vendored, never
+        # centralized. Flagging them would order the conversion to delete the audit trail. `.agents/scripts`
+        # is therefore probed by its TOOLKIT sentinel, not the bare directory, so a project keeping only
+        # `scripts/git-hooks/` reads as clean.
+        vendor_markers = [
+            ".agents/AGENTS.md", ".agents/commands", ".agents/workflows",
+            ".agents/scripts/check_maps.py", ".agents/scripts/generate_repo_map.py",
+            ".agents/scripts/sync-agents.ps1",
+            ".agents/hooks", ".agents/templates", ".agents/reference", ".agents/bmad",
+            ".agents/opencode-agents", ".opencode/commands", ".opencode/agent", "opencode.json",
+        ]
+        # NOT markers: `.mcp.json` / `.opencode/mcp.json` / `.claude/settings.json` are per-project
+        # CONFIG (which MCP servers this repo declares, its permissions, its worktree baseRef) — the
+        # same class as the enforcement set, not vendored toolkit. Only `.opencode/`'s command+agent
+        # dirs are vendor, so they are named directly instead of the parent (AVCH-23: the bare
+        # `.opencode` marker red-flagged a repo whose only remaining file was its MCP declaration).
+        found = [m for m in vendor_markers if (root / m).exists()]
+        if found:
+            shown = ", ".join(found[:4]) + ("," if len(found) > 4 else "")
+            more = f" +{len(found) - 4} more" if len(found) > 4 else ""
+            missing.append(
+                f"STALE-VENDOR: still carries tier-1 toolkit ({shown}{more}) - "
+                "strip per project-law.md (the P3/P4 conversion worklist)")
     need("_my_resources/open_tasks/todo_list.md", "open-tasks list")
     need("_artifacts/INDEX.md", "session ledger")
     if not map_path.exists():
         missing.append(f"navigation index (`{map_path.relative_to(root).as_posix()}`)")
-    if not (docs / "workspace-standard.md").exists():
-        missing.append(f"structure standard (`{(docs / 'workspace-standard.md').relative_to(root).as_posix()}`)")
     if not continuity_briefs(root, is_home, is_bmad):
         if is_home:
             loc = "_artifacts/_main/active-context.md"

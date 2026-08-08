@@ -13,7 +13,7 @@ Antigravity/Gemini (global `~/.gemini/antigravity/global_workflows` — it calls
 
 **Platform reach.** A command may add `platforms: [claude, opencode, antigravity, codex]` to its
 frontmatter to limit where it syncs. **Absent = universal** (all four). Tagged today: `autopilot_claude`,
-`autopilot_mobile`, `sudo-mobile-error-team` → `[claude]`; `autopilot_opencode` → `[opencode]`; the `_AP` trio → `[claude, opencode]`;
+`sudo-mobile-error-team` → `[claude]`; `autopilot_opencode` → `[opencode]`; the `_AP` trio → `[claude, opencode]`;
 `security_team_aviationchat` → `[opencode, antigravity, codex]` (deliberately NOT in the Claude menu);
 `sudo-adviser-board` → `[claude, opencode, codex]` (25k body exceeds Antigravity's 12k workflow limit — AG gets the hand-authored thin launcher `.agents/workflows/sudo-adviser-board.md`, prune-protected in the sync's `$excluded` list).
 **Robot-lane rule (2026-07-14):** `*_AP` commands vendor ONLY into project tool dirs (where the autopilot
@@ -26,7 +26,6 @@ engines read them) — the sync skips them for the lobby menus and the global ca
 | **BMAD test architecture** (commands) | `testarch-atdd` · `testarch-automate` · `testarch-ci` · `testarch-framework` · `testarch-nfr` · `testarch-test-design` · `testarch-test-review` · `testarch-trace` | thin slash-command wrappers that invoke the matching `bmad-testarch-*` skill (ATDD red-phase, automate coverage, CI pipeline, framework init, NFR audit, test design, test review, traceability matrix). |
 | **Autopilot (Claude-only engine)** | `autopilot_claude` · `autopilot_deepseek4` · `sudo-dev-story-tests_AP` · `sudo-self-audit_AP` · `sudo-code-review_AP` | run the autonomous Dev/QA loop on one story (`/autopilot_claude <story>`). `_AP` = headless robot-lane variants; never invoked by a human, live only inside project tool dirs. |
 | **Autopilot (opencode engine)** | `autopilot_opencode` | the opencode-native sibling of `/autopilot_claude` — a real, built pipeline (`scripts/autopilot-dev-story-opencode.ps1`, ~826 lines): same 4 stages via the same `_AP` commands, same artifact contract, session continuity, retries, cost caps, independent test gate and story→review flip. Drives `opencode run` instead of `claude -p` (Dev on the selected default model, QA pinned to GLM 5.2 at max). Only gap vs the Claude engine: no per-story concurrency lockfile. |
-| **Autopilot (cloud/mobile)** | `autopilot_mobile` | the web/mobile port of `/autopilot_claude` — runs the same 4-stage Dev/QA pipeline on the in-environment Workflow engine (no PowerShell/CLI), so it works on Claude Code web + mobile. |
 | **Sudo dev flow** (TEA-gated, human lane) | `sudo-boot-sprint-memory` · `sudo-create-epic-sprint` · `sudo-write-story-tests` · `sudo-bdd-tests` · `sudo-dev-story-tests` · `sudo-self-audit` · `sudo-code-review` · `sudo-update-sprint-memory` | two phases — **epic kickoff** (`sudo-create-epic-sprint`: create epic + stories → sprint → interactive P0–P3 risk-score, once per epic) then the **per-story loop** with testing baked in: boot/pick-up → write red tests (Vision Lock inside) → plan+self-audit+implement+automate → review+gate → close-out save. Run in that order; `sudo-self-audit` auto-runs inside `sudo-dev-story-tests`. The gate (suite + TEA trace/nfr/test-review → PASS/CONCERNS/FAIL/WAIVED) lives inside `sudo-code-review`. |
 | **Epic merge + code hygiene** | `sudo-merge-epic-workingtrees` · `clean-code-audit` | `sudo-merge-epic-workingtrees` lands several finished story worktrees from one epic in a single reviewed pass (per-lane verdict re-point, overlap detection, board merge) instead of N separate close-outs. `clean-code-audit` is the standalone dead-code / duplication / drift sweep — the same lens `sudo-code-review` folds in per story, run across a whole surface. |
 | **Sudo quick-fix flow** (fast track) | `sudo-quick-dev` | fast-track dev flow — write the story, develop the fix directly, run a light post-dev sanity audit, and close out to log it. Bypasses strict ATDD tests and code reviews. |
@@ -53,6 +52,10 @@ plan gated on grounded stories).
 **Retired (2026-08-07):** `merge_main_debug` — died with the `main_debug` integration branch
 (branch-model migration, `git-policy.md`); the epic→`main` merge is `/sudo-push-e2e`, and stories land
 on their epic branch via `/sudo-update-sprint-memory` Step 7.
+
+**Retired (2026-08-07):** `autopilot_mobile` — deleted (operator ruling, centralization epic): mobile
+drives the desktop via Remote Control now; the desktop engines are the only autopilots. The manifest
+ghost-purge retires every platform cache copy on the next `/sync-agents`.
 
 **Adding a command:** create `<name>.md` with a `description:` frontmatter stating when it fires (add an
 optional `platforms:` line only if it's not universal), add it to the right group above, and re-run

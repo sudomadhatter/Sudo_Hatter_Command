@@ -4,7 +4,7 @@ type: reference-doc
 date: 2026-06-24
 owner: Daniel
 status: canonical
-canonical_location: docs/workspace-standard.md (home base) — vendored copy in each Projects/<name>/docs/
+canonical_location: docs/workspace-standard.md (home base; thin projects carry no copy — legacy vendored copies retire at conversion)
 sources:
   - _my_resources/youtube_transcripts/implementation-plan_folder-as-workspace-routing-system.md  # theory
   - _my_resources/docs/master-implementation-plan.md                                             # the rollout
@@ -17,9 +17,9 @@ sources:
 > rollout; **this** is the standing spec an agent consults whenever it creates, converts, or maintains a
 > workspace. It is model-agnostic — it serves Claude, opencode, Antigravity/Gemini, and Codex equally.
 >
-> **Where it lives.** Canonically at `docs/workspace-standard.md`. A **vendored copy** travels in each
-> `Projects/<name>/docs/` (same model as `.agents/rules/*`), so every repo is self-contained. Edit the
-> canonical copy; re-distribute with `/sync-agents`. Never hand-edit a vendored copy.
+> **Where it lives.** Canonically at `docs/workspace-standard.md` — the ONE live copy (thin model,
+> 2026-08-07: sessions run from the center, so projects no longer carry one). Legacy vendored copies still
+> sitting in unconverted `Projects/<name>/docs/` retire at conversion; never hand-edit one.
 
 ---
 
@@ -91,8 +91,8 @@ adapters any workspace root does, and each of its subfolders carries an `INDEX.m
 otherwise treated as tool cache and skipped wholesale, so `.agents/` is named in `DOT_CONTENT_DIRS`
 (PATH CONTRACT below) to opt it back into the scan. It does **not** index deeper than level 2 — six of
 its ten subfolders are flat, `skills/` is self-describing via `SKILL.md` frontmatter, `bmad/` is
-BMAD-owned and regenerated, and `templates/project-template/` is a scaffold that carries its own
-control files. Depth is not the need there; enforcement is.
+and `bmad/` is BMAD-owned and regenerated. (`templates/project-template/` was retired 2026-08-07,
+SCC-31 — `/new-project` clones the skeleton repo instead.) Depth is not the need there; enforcement is.
 
 **Why the adapters matter at Tier 2:** harnesses auto-attach their nested memory file at the point of
 contact — Claude Code injects a subfolder's `CLAUDE.md` the moment it touches any file under it (Codex:
@@ -105,10 +105,11 @@ Coverage is linted by `check_maps.py` check 8 (non-fatal hint until every worksp
 - **`docs/repo-map.md`** — the navigation index (Part 3).
 - **`active-context.md`** (home-base/exception bucket or project-local, per Part 2) — continuity (numbered: `1 PRIME`, `5 PICK UP`, `6 HAND OFF`).
 - **`_my_resources/open_tasks/todo_list.md`** — Daniel's "what's next" queue (+ any plan/PRP `.md` notes alongside). Surfaced by BOTH the routing-table "what's next" row AND on "pick up." **READ-ONLY for agents — with one exception:** `/update-maps-indexes` refreshes the **`## Open Work` file-list** to mirror the task files beside it (Daniel's `## Todo list` prose and the task files stay his). Cross-check vs live files.
-- **`.agents/`** — the vendored master toolkit (rules, commands, skills, workflows, scripts, templates).
-- **`opencode.json`** — `instructions` = the slim least-context set (`AGENTS.md` + the always-load rules);
-  `skills.paths` = `[".agents/skills"]`.
-- **A vendored copy of this standard** at `docs/workspace-standard.md`.
+- **`.agents/`** — at the home base: the MASTER toolkit (rules, commands, skills, workflows, scripts,
+  templates). In a project (thin model, 2026-08-07): **tier-2 law only** — the project's own `rules/` +
+  `skills/` + `INDEX.md`; the center carries all workflow law → `.agents/rules/project-law.md`.
+- **`opencode.json`** — home base only (thin projects carry none; sessions run from the center):
+  `instructions` = the slim least-context set; `skills.paths` = `[".agents/skills"]`.
 
 ### The enforcement layer a dev workspace carries (standard since 2026-07-09)
 Anywhere stories/code get built — the projects, AND the lobby (Daniel also manages from there; direct
@@ -139,7 +140,7 @@ the toolkit:
 |---|---|
 | ☐ | `CLAUDE.md` + `GEMINI.md` are one-line adapters (no `{{PLACEHOLDER}}`, no dead commands) |
 | ☐ | `AGENTS.md` numbered, with Map/Mission/Support + a real routing table + up-route |
-| ☐ | `.agents/` vendored; `opencode.json` points at `.agents/` paths |
+| ☐ | `.agents/`: master at the lobby · **tier-2 law only** in a thin project (`rules/` + `skills/` + `INDEX.md`; no vendor, no `opencode.json`) — `project-law.md` |
 | ☐ | `docs/repo-map.md` present and current (Part 3) |
 | ☐ | the workspace's `active-context.md` exists in its owning home-base, exception, or project-local store |
 | ☐ | `_my_resources/open_tasks/todo_list.md` present (READ-ONLY); wired into BOTH the "what's next" routing row AND "pick up" |
@@ -160,10 +161,10 @@ instead of a per-repo fork. Keep workspaces matching this table and the generic 
 |---|---|---|---|
 | Entry adapters | `CLAUDE.md` · `GEMINI.md` (1-line) | same | identical everywhere |
 | Brain | `AGENTS.md` | `AGENTS.md` | numbered §1–§9 |
-| Toolkit | `.agents/` (**MASTER** here) | `.agents/` (**vendored**, synced) | one source of authorship |
+| Toolkit | `.agents/` (**MASTER** here) | `.agents/` = **tier-2 law only**: `rules/` + `skills/` + `INDEX.md` (thin model 2026-08-07; legacy full-vendor pending conversion) | one source of authorship; two-tier contract → `project-law.md` |
 | Navigation index | `docs/repo-map.md` | `docs/repo-map.md` | plain `docs/` everywhere — one form, no underscore |
-| Structure standard | `docs/workspace-standard.md` | `docs/workspace-standard.md` | this file; vendored copy per project |
-| Maintenance scripts | `.agents/scripts/{check_maps,generate_repo_map}.py` | same (synced copies) | run central with `--root <path>`; synced copy is for standalone use |
+| Structure standard | `docs/workspace-standard.md` | — (thin: read the canonical copy at the center) | canonical at the home base; per-project vendored copies retire at conversion |
+| Maintenance scripts | `.agents/scripts/{check_maps,generate_repo_map}.py` | — (thin: center-run with `--root Projects/<name>`) | legacy full-vendor projects still hold synced copies until converted |
 | Drift baseline | `docs/.maps-state.json` | `docs/.maps-state.json` | sits beside the repo-map |
 | Continuity store | `_artifacts/_main/` plus explicitly registered Sudo-managed exception buckets | `_artifacts/` (project-local) | ownership decides; cwd/tool never does |
 | Pickup/handoff brief (**prune target**) | `_artifacts/_main/active-context.md` or a registered exception's `active-context.md` | **BMAD project:** `_bmad-output/active-context/active-context.md` (the live brief; `_artifacts/` holds *session history* only) | the file the **prune** trims |
@@ -197,6 +198,8 @@ Formatting is one-time; upkeep is forever. Who does what, and when.
   **vendored** by `/sync-agents` — never hand-edit a copy; edit the master and re-sync.
 - **Project-specific hard-stops** live in that project's local `constitution.project.md` — never by editing a
   vendored generic rule. This is the anti-fork rule that prevents the drift this whole standard exists to fix.
+  Which tier ANY rule or skill belongs to — and the bind-time obligation to read a project's
+  `.agents/INDEX.md` — is the two-tier contract in `.agents/rules/project-law.md`.
 - **BMAD skill overrides are the sanctioned per-repo exception:** `_bmad/custom/*.toml` customize installed
   BMAD skills per repo and survive skill updates — `/sync-agents` never touches `_bmad/`. Keep the three
   repos' sets identical by hand-copy (new projects inherit by cloning Fresh); personal tweaks go in

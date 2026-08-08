@@ -7,6 +7,11 @@ metadata:
   originSessionId: a79df282-acd0-49ff-9d8f-339b9e1067c9
 ---
 
+**⛔ RETIRED 2026-08-07 (SCC-31, operator ruling).** `/autopilot_mobile` and its `workflow.js` engine are
+DELETED from every surface; the manifest ghost-purge clears the platform caches. Mobile drives the desktop
+via Remote Control, which runs the real engines with the full local filesystem. Do not re-create it, and do
+not mirror claude's engine into a mobile twin. Kept as history:
+
 `/autopilot_mobile` is the web/cloud port of `/autopilot_claude` — same 4-stage Dev/QA pipeline, but on the **Workflow engine** (`Projects/<proj>/scripts/autopilot_mobile.workflow.js`, project-local, NOT synced) instead of PowerShell. The two are a drift-prone twin pair like the [[sudo-commands-have-ap-twins-that-drift]] `_AP` pairs.
 
 **Canonical config lives in claude's `autopilot-dev-story.ps1`, not the command doc** (the `.md` abstracts it). When claude changes, re-mirror mobile.

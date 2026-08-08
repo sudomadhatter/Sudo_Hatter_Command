@@ -14,7 +14,12 @@ The maintained set (verified 2026-07-31): the lobby (command center) + **AGY_AVI
 
 **The single source of truth:** `.agents/maintained-projects.txt` — one project folder name per line (blanks/#comments ignored); the lobby is always maintained and is not listed. To add a project to upkeep, add its name to this ONE file.
 
-**Both fan-out mechanisms honor it (added 2026-07-14, commit d6c1bbc):**
+**⚠️ SUPERSEDED 2026-08-07 (SCC-31): this is now the LINT worklist ONLY.** `sync-agents.ps1` no longer
+reads it — `-Maintained` and project targets both exit with an error, because projects carry no vendored
+toolkit to sync ([[thin-projects-center-owns-workflow-law]]). `Fresh_Workspace_BMAD` was de-listed
+(SCC-25, frozen). Current list: AGY_AVIATIONCHAT + NEXgen-VR-Director.
+
+**Historically, both fan-out mechanisms honored it (2026-07-14, commit d6c1bbc):**
 - `check_maps.py` `fan_out_targets()` → `--all` / `/1_update-maps` lint the lobby + listed projects only; conformant-but-unlisted repos print `[skip] ... not in .agents/maintained-projects.txt`. Missing file = legacy fallback (all conformant).
 - `sync-agents.ps1 -Maintained` → the ONLY sanctioned "sync everything": lobby + listed projects. **Never hand-loop over `Projects/*`** — that hits repos we deliberately don't sync (the original mistake).
 

@@ -1,15 +1,18 @@
-# Maintained projects — the SINGLE source of truth for which child workspaces this
-# command center keeps in sync (toolkit vendor + map fan-out).
+# Maintained projects — the check_maps.py --all LINT worklist: which child workspaces the
+# home base lints + reconciles (/update-maps-indexes fan-out).
 #
 # One `Projects/<name>` folder name per line. Blank lines and #comments are ignored.
 # The lobby (this command center) is ALWAYS maintained and is not listed here.
 #
 # WHO READS THIS:
-#   - .agents/scripts/check_maps.py  (fan_out_targets): `--all` / /update-maps-indexes lint ONLY these.
-#   - .agents/scripts/sync-agents.ps1 (-Maintained):    the ONLY sanctioned "sync everything".
+#   - .agents/scripts/check_maps.py (fan_out_targets): `--all` / /update-maps-indexes lint ONLY these.
+#   - sync-agents.ps1 no longer reads it: the -Maintained vendor fan-out was RETIRED 2026-08-07
+#     (thin model, .agents/rules/project-law.md — projects carry no vendored toolkit to sync).
 # Never hand-loop over Projects/* — that touches repos we deliberately do not keep current.
 #
-# To add a new project to upkeep: add its folder name below and re-run /sync-agents -Maintained.
+# To add a new project to upkeep: add its folder name below.
+# De-listed 2026-08-07: Fresh_Workspace_BMAD — frozen template (deliberate legacy vendor must not red
+# the lint; new projects clone the sudo-project-skeleton repo instead).
 
 AGY_AVIATIONCHAT
 NEXgen-VR-Director

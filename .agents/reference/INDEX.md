@@ -24,7 +24,7 @@ still land in every project's `workflows/`. Keeping it out of the surface folder
 
 | Doc | What it documents | Reach for it when… |
 |---|---|---|
-| `autopilot_bmad_dev_loop.md` | The reference for the 4-stage Dev/QA autopilot relay (Plan → Audit → Implement → Review+Fix): engine/harness split, the Engine Adapter, session continuity, the resilience + test-gate model, and the model/effort ladder (§5b). Covers all engines — `/autopilot_claude`, `/autopilot_deepseek4`, `/autopilot_opencode`, `/autopilot_mobile`. | you're running, debugging, extending, or re-tuning the autopilot — or deciding how the loop behaves under a given harness. |
+| `autopilot_bmad_dev_loop.md` | The reference for the 4-stage Dev/QA autopilot relay (Plan → Audit → Implement → Review+Fix): engine/harness split, the Engine Adapter, session continuity, the resilience + test-gate model, and the model/effort ladder (§5b). Covers all engines — `/autopilot_claude`, `/autopilot_deepseek4`, `/autopilot_opencode`. (`/autopilot_mobile` was deleted 2026-08-07 — mobile drives the desktop via Remote Control.) | you're running, debugging, extending, or re-tuning the autopilot — or deciding how the loop behaves under a given harness. |
 
 **Adding a reference doc:** drop `<name>.md` here, add a row above. No `commands/` entry, no `platforms:`
 frontmatter needed — this folder is off every surface by construction. If the doc *should* be invocable,

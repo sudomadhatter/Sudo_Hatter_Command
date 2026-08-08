@@ -24,7 +24,7 @@ that subfolder's `INDEX.md` to dispatch — never read every rule/command/skill.
 | An Antigravity workflow / in-repo reference doc | `workflows/` | `workflows/INDEX.md` |
 | The BMAD method install | `bmad/` | **BMAD-owned — regenerated on BMAD update, NEVER hand-edit** |
 | A maintenance script | `scripts/` | `check_maps.py` · `generate_repo_map.py` · `record_map_changes.py` · `generate_doc_graph.py` · `sync-agents.ps1` · `new-project.ps1` |
-| Scaffold a new project | `templates/project-template/` | consumed by `/new-project` |
+| Scaffold a new project | — | `/new-project` clones the thin skeleton repo (`sudo-project-skeleton`); the local `templates/project-template/` was retired 2026-08-07, SCC-31 |
 | The git write-approval hook | `hooks/` | `require-push-approval.py` (deployed to every `.claude/hooks/` by `/sync-agents`) |
 | opencode agent definitions | `opencode-agents/` | — |
 

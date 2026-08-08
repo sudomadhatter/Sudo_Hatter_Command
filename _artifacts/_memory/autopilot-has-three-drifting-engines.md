@@ -8,6 +8,10 @@ metadata:
   modified: 2026-08-03T00:37:49.445Z
 ---
 
+**UPDATE 2026-08-07 (SCC-31): now TWO engines.** `/autopilot_mobile` and its `workflow.js` were deleted
+(operator ruling) — mobile drives the desktop via Remote Control, so the desktop engines are the only
+autopilots. A fix must land in the remaining two. Original note:
+
 Autopilot runs through one of **three** engine implementations, each launched by a different command, each a
 hand-maintained copy that drifts:
 - `scripts/autopilot-dev-story.ps1` — **claude** engine (`/autopilot_claude`).
