@@ -38,7 +38,19 @@ them on the ticket, and makes it impossible to skip quietly.
 - [x] **`/sudo-quick-dev` Step 3.5 (new)** — it closes its own branch, so it files its own record.
       **Exactly one Dev Record per ticket:** an existing record is *updated in place*, never stacked,
       so the branch-closer and a later story close-out cannot leave two partial records.
-- [x] **45 test cases**, joined to `run_all.py` by auto-discovery.
+- [x] **Work-item type derived, not defaulted** (operator ruling, second pass). `Story` = a child of an
+      epic; `Task` = work nobody wrote an epic and a story for. `mint` picks it off whether an epic key
+      is in hand, so it cannot drift back — a fixed default is exactly how every story ticket on the
+      board became a `Task`. `--type` still overrides; `--type Story` with no epic key warns.
+- [x] **The split lane, closed.** SCC-40 landed on `main` mid-session, so `main` was absorbed here.
+      The merge auto-resolved and **placed Step 3.5 after Step 4** — the silent misplacement predicted
+      in the first pass. Renumbered to **Step 4.5**, which is where it belonged anyway: it points at the
+      walkthrough Step 4 writes, and it now mirrors close-out's own Step 4.5.
+- [x] **Bare `python` swept** — 18 call sites across 5 files (`sudo-code-review`, its `_AP` twin,
+      `sudo-update-sprint-memory` ×3, `sudo-close-workingtree`, `update-maps-indexes` ×12). The Mac has
+      no bare `python` at all, so every one of those was broken on this machine.
+      `rules/sop-currency.md` keeps its bare `python` — it *quotes* the bug as the example.
+- [x] **49 test cases** in this file (173 across the suite), joined to `run_all.py` by auto-discovery.
 - [x] **Docs** — SOP quick-reference §5, `.agents/rules/jira.md`, `.agents/scripts/INDEX.md`.
 - [x] `/sync-agents` — mirrors regenerated for opencode, Antigravity, Codex.
 
@@ -65,20 +77,16 @@ them on the ticket, and makes it impossible to skip quietly.
 
 **Landed** on `chore/SCC-49-jira-dev-feed` (off `main`). Nothing pushed to `main`.
 
-Three things need your call:
+Two things need your call:
 
-1. **The live post to SCC-49 is held.** You said the ticket was being updated, so I did not write to it.
-   The command is ready and its dry-run output is in the chat — say go and I'll run it.
-2. **Ticket type.** SCC-49 says "as a **Story** under the epic". Every existing ticket is `Task`
-   parented to the Epic, and parenting already works (`AVCH-15`/`AVCH-16` → `AVCH-13`). Changing the
-   type scheme is a board decision, so `mint` still uses `--type Task`. Say the word and it is a
-   one-word default change.
-3. **SCC-40 rewrote `/sudo-quick-dev` on its own unmerged branch.** I added Step 3.5 to the `main`
-   version here; the same step must be mirrored onto the SCC-40 branch or the merge will drop it.
+1. **The live post to SCC-49 is held.** You said the ticket was being updated, so I did not write to
+   it. The command is ready and its dry-run output is in the chat — say go and I'll run it.
+2. **The tickets already on the board are all `Task`.** New ones now type themselves correctly, but
+   the ~15 existing story tickets (`AVCH-14`…`AVCH-16` and siblings) are `Task` parented to their
+   epic. Converting is `acli jira workitem edit --key <K> --type Story --yes` per ticket — a board
+   migration, so it is yours to call, not something a script does unasked.
 
-**Two pre-existing findings, not fixed here** (they belong to their own tickets):
-
-- `/sudo-update-sprint-memory` Steps 0.6, 4 and 4's gate note invoke bare **`python`**, which does not
-  exist on the Mac at all. Those three lines are broken on this machine today.
-- `/sudo-quick-dev`'s ad-hoc chore lane still writes no `walkthrough.md` on the `main` version of the
-  command (SCC-40 adds one).
+**Note for whoever picks this up next:** the shared checkout was flipped to another branch mid-session
+by a parallel session (SCC-50), which is why the command bodies briefly appeared to revert. Nothing was
+lost — the work was already committed and pushed. In this checkout, verify
+`git rev-parse --abbrev-ref HEAD` before trusting what a file says.

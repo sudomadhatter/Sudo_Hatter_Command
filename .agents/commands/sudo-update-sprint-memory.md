@@ -43,7 +43,7 @@ Run it before reading anything. It answers, mechanically, every question Steps 1
 answer by hand — and each of those has been silently wrong at least once:
 
 ```bash
-python .agents/scripts/closeout_preflight.py --story <id> --project <PROJECT> --fetch \
+python3 .agents/scripts/closeout_preflight.py --story <id> --project <PROJECT> --fetch \
        [--branch <name>] [--worktree <path>] [--require-gates suite,ruff,pyrefly]
 ```
 
@@ -102,7 +102,7 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
   script, never by hand-editing two files:
 
   ```bash
-  python .agents/scripts/story_status.py set <id> done --project <PROJECT>
+  python3 .agents/scripts/story_status.py set <id> done --project <PROJECT>
   ```
 
   It writes the story frontmatter **and** the board key in one operation **or neither** — the two
@@ -112,7 +112,7 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
   It prints `board X -> Y, frontmatter X -> Y`; echo that as `Closing <story>: review → done`.
   Idempotent: only `ready-for-dev`/`in-progress`/`review` advance; never downgrade.
   - **Gate evidence (advisory this sprint, hard after):** if the story recorded gate receipts, confirm
-    them before the flip — `python .agents/scripts/gate_receipt.py check --story <id> --require
+    them before the flip — `python3 .agents/scripts/gate_receipt.py check --story <id> --require
     <gates> --advisory`. A receipt proves the gate RAN, at which commit; prose cannot.
     ⏳ Remove `--advisory` at the close of the first full sprint after this landed (ruling 2026-08-02).
   - **ONLY objectively-red tests block the flip.** Read the **`Verdict: … @ <sha>`** line in the story

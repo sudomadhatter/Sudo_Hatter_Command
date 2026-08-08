@@ -27,6 +27,16 @@ project's key. Statuses: `To Do` · `In Progress` · `In Review` · `Done` · `D
 **Deferred sits in the To Do category on purpose** (a Done-category status would make descoped work
 read as shipped). Descoped work = `Deferred` + the `descoped` label.
 
+**Work-item types — all three are in use, and the difference is the HIERARCHY, not a preference**
+(operator ruling 2026-08-08). `Epic` = the umbrella, minted at kickoff. **`Story` = a child OF an
+epic** — it has an epic behind it and a story file in `_bmad/bmm/stories/`; that is what ①
+`/sudo-write-story-tests` mints. **`Task` = work nobody wrote an epic and a story for** — toolkit and
+chore tickets, ad-hoc fixes, anything cut straight to a `chore/<KEY>-<slug>` branch. `Bug` exists for
+incident work. Getting this wrong is not cosmetic: a Task parented to an epic looks like a story that
+was never planned. `jira_feed.py mint` **derives** the type (epic key in hand → `Story`, none →
+`Task`) precisely so it cannot drift back to a fixed default — which is how the whole board ended up
+Tasks. `--type` still overrides for the odd case.
+
 **Label vocabulary** — a card holds ONE status but stacks labels, which is exactly why these are
 labels (a story can be quick-dev-eligible AND blocked at once). All three are ruled by ①
 `/sudo-write-story-tests` at story pickup:

@@ -349,6 +349,33 @@ def main() -> int:
         c.check("mint: labels follow the ruling",
                 "quick-dev" in labels and "parallel-ok" in labels, labels)
 
+        # Type follows the HIERARCHY: a Story hangs under an epic, a Task is work nobody
+        # wrote an epic and a story for. A fixed default is how every story ticket on the
+        # board ended up a Task.
+        c.check("mint: under an epic -> Story",
+                st["create_args"][st["create_args"].index("--type") + 1] == "Story",
+                st["create_args"][st["create_args"].index("--type") + 1])
+
+        set_state(state)
+        code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST", "--apply")
+        st = get_state(state)
+        c.check("mint: no epic -> Task",
+                st["create_args"][st["create_args"].index("--type") + 1] == "Task",
+                st["create_args"][st["create_args"].index("--type") + 1])
+
+        set_state(state)
+        code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST",
+                       "--type", "Bug", "--epic-key", "TEST-1", "--apply")
+        st = get_state(state)
+        c.check("mint: an explicit --type still wins",
+                st["create_args"][st["create_args"].index("--type") + 1] == "Bug")
+
+        set_state(state)
+        code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST",
+                       "--type", "Story", "--apply")
+        c.check("mint: --type Story with no epic warns (a story hangs under an epic)",
+                "no --epic-key" in out, out.strip()[:160])
+
         # A backfilled or re-run board already has the ticket. A second one is worse than
         # none - two rows, one of which nothing will ever move again.
         set_state(state, search=[{"key": "TEST-42",

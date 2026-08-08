@@ -540,6 +540,23 @@ def cmd_outline(args) -> int:
     return 0
 
 
+def issue_type(args) -> str:
+    """Story vs Task follows the HIERARCHY, not a flag default (operator ruling 2026-08-08).
+
+    A **Story** is a child of an epic - it has an epic behind it and a story file in the tree.
+    A **Task** is work nobody wrote an epic and a story for: chore, toolkit, ad-hoc fixes.
+    Both are real and both get used, so the type is derived from whether an epic key is in
+    hand rather than hardcoded; `--type` still overrides for the odd case (a Bug, say).
+    Deriving it is the point - a fixed default is how every story ticket on the board ended
+    up a Task."""
+    if args.type:
+        if args.type.lower() == "story" and not args.epic_key:
+            warn("--type Story with no --epic-key: a story hangs under an epic. Pass "
+                 "--epic-key, or mint it as a Task if there is genuinely no epic.")
+        return args.type
+    return "Story" if args.epic_key else "Task"
+
+
 def cmd_mint(args) -> int:
     """Dedupe, create with the description, then PROVE the description landed.
 
@@ -553,7 +570,8 @@ def cmd_mint(args) -> int:
     summary = args.summary or f"{args.story} - {story_title(wf.read_text(story_file))}"
 
     if not args.apply:
-        say(f"jira-feed: DRY RUN - would mint '{summary}' in {args.jira_project}")
+        say(f"jira-feed: DRY RUN - would mint {issue_type(args)} '{summary}' "
+            f"in {args.jira_project}")
         sys.stdout.write(body)
         return 0
 
@@ -584,7 +602,7 @@ def cmd_mint(args) -> int:
                 say(f"jira-feed: backfilled the outline onto bare ticket {key}")
         else:
             create = ["jira", "workitem", "create", "--project", args.jira_project,
-                      "--type", args.type, "--summary", summary,
+                      "--type", issue_type(args), "--summary", summary,
                       "--description-file", str(tmp), "--json"]
             if args.epic_key:
                 create += ["--parent", args.epic_key]
@@ -721,7 +739,8 @@ def main() -> int:
     common(p_mint); outline_flags(p_mint)
     p_mint.add_argument("--jira-project", required=True, help="e.g. AVCH (from .agents/jira.conf)")
     p_mint.add_argument("--summary", help="default: '<id> - <story title>'")
-    p_mint.add_argument("--type", default="Task")
+    p_mint.add_argument("--type", help="override; default is Story under an epic, "
+                                       "Task without one (see issue_type)")
     p_mint.add_argument("--label", action="append")
     p_mint.add_argument("--apply", action="store_true", help="without this, renders only")
 
