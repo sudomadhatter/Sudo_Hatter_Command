@@ -152,16 +152,42 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
   non-terminal row may carry ≤120 chars; a terminal row carries NOTHING (`workflow_lint` errors on
   both, and the flip drops the old note automatically).
 
-## Step 4.5 — Move the Jira ticket (AUTOMATIC, never ask)
+## Step 4.5 — Move the Jira ticket AND file the Dev Record (AUTOMATIC, never ask)
 
-The YAML just changed, so the story's Jira ticket must move with it. Read `jira_key:` from the story's
-frontmatter and transition it to match the flip (`review` → `In Review`; a close-out to `done` →
-`Done`), posting the gate evidence as a comment:
-`acli jira workitem transition --key <KEY> --status "<Status>"` then
-`acli jira workitem comment create --key <KEY> --body "<verdict line + walkthrough path @ sha>"`. Full acli reference: `.agents/rules/jira.md`.
+The YAML just changed, so the story's Jira ticket must move with it — and so must everything the last
+few days taught. Read `jira_key:` from the story's frontmatter, then do both halves:
+
+**a. Transition** to match the flip (`review` → `In Review`; a close-out to `done` → `Done`):
+`acli jira workitem transition --key <KEY> --status "<Status>" --yes`.
+
+**b. File the Dev Record** — SCC-49. A verdict line is a receipt, not a record: the decisions, the
+pitfalls and what is still owed lived only in the walkthrough, so Jira could say a story shipped but
+never what building it taught. **You just did Step 3's routing — you are holding those buckets.** Pass
+them in; the walkthrough scrape underneath is a safety net, never the source:
+
+```bash
+python3 .agents/scripts/jira_feed.py devrecord --key <KEY> --story <id> --project <PROJECT> \
+       --outcome "review -> done" \
+       --decision "<a ruling made while building, and why>" \
+       --pitfall  "<a failure mode the next agent would hit>" \
+       --followon "<what is still owed, or the deferral>" \
+       --evidence "<suite totals @ sha>" --apply
+```
+
+Repeat a flag per item. It lifts the `Verdict:` line and the walkthrough path itself, then **reads the
+ticket back and exits 2 if the comment is not there** — an acli call that silently no-ops is
+indistinguishable from one that worked. **One Dev Record per ticket:** if `/sudo-quick-dev` already
+filed one for this story, this UPDATES it in place rather than stacking a second. A bucket you leave
+empty renders `(none recorded)` and warns — that is honest, but on a story that fought back it means
+Step 3 was thin, so go back and read the walkthrough before accepting it.
+
+**c. Verify** — `python3 .agents/scripts/jira_feed.py check --key <KEY> --story <id>`; paste its two
+lines into the Step 6 summary. That is the evidence the ticket carries both halves.
+
 If the story has no `jira_key` yet (pre-Jira story) or the project has no Jira project, note that in
-the Step 6 summary and continue — never invent a key. *(The scrum-board map + its rebuild step were
-retired 2026-08-07, SCC-13; `sprint-status.yaml` remains the machine state and Jira is the human view.)*
+the Step 6 summary and continue — never invent a key. Full acli reference: `.agents/rules/jira.md`.
+*(The scrum-board map + its rebuild step were retired 2026-08-07, SCC-13; `sprint-status.yaml` remains
+the machine state and Jira is the human view.)*
 
 ## Step 5 — Prune & budget → run `/sudo-prune-context` (AUTOMATIC, never ask)
 Invoke **`/sudo-prune-context`** against the same `PROJECT_ROOT` (it inherits the binding — no

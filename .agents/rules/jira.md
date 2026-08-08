@@ -65,6 +65,35 @@ acli jira workitem link create --out SCC-10 --in SCC-14 --type Blocks   # reads:
 Smart Commits (`#comment` / `#time` / `#transition` in a commit message) also work and cost zero
 automation quota — but the branch-name join already links commits, so use them sparingly.
 
+## What the dev flow WRITES onto a ticket — `jira_feed.py` (SCC-49)
+
+Raw `acli` is above and stays valid for anything ad-hoc. But the three seams where the dev flow feeds a
+ticket go through **`.agents/scripts/jira_feed.py`**, because each one had a silent failure mode that
+prose could not hold:
+
+```bash
+python3 .agents/scripts/jira_feed.py outline   --story 12.3.4 --project P [--epic 12] [--out FILE]
+python3 .agents/scripts/jira_feed.py mint      --story 12.3.4 --project P --jira-project AVCH \
+                                               --epic-key AVCH-13 --lane full --apply
+python3 .agents/scripts/jira_feed.py devrecord --key AVCH-15 --story 12.3.4 --project P \
+                                               --decision "..." --pitfall "..." --apply
+python3 .agents/scripts/jira_feed.py check     --key AVCH-15 --story 12.3.4
+```
+
+- **`mint`** (① Step 1.6) dedupes on the BMAD number, renders the **description from the story file**
+  (statement + ACs + lane rulings + file path), creates it bare and parented, then re-reads the ticket
+  and exits 2 if the description did not land. Prints `JIRA_KEY=<KEY>`.
+- **`devrecord`** (close-out Step 4.5, `/sudo-quick-dev` Step 3.5) files THE Dev Record — decisions,
+  pitfalls, follow-ons, outcome, evidence. **Exactly one per ticket:** an existing record is updated in
+  place, never stacked, so the branch-closer and the story-closer cannot leave two partial records.
+- **`check`** answers "does this ticket carry both halves?" — exit 2 if not.
+
+Two rules that bind on YOU, not the script: **nothing is invented** (a missing story section renders
+`(none found ...)` and warns — do not paper over it), and **the buckets are yours to fill.** The
+walkthrough scrape underneath is a safety net, not the source: close-out has just finished routing the
+session's learnings, so pass them with `--decision` / `--pitfall` / `--followon`. A record that says
+`(none recorded)` on a story that fought back means the routing was thin, not that nothing happened.
+
 ## Who mints tickets — two wired seams
 
 Agents MAY mint (operator ruling 2026-08-07): every ticket carries its provenance — the BMAD number

@@ -52,16 +52,29 @@ repo's project from `.agents/jira.conf` and the EPIC's ticket key (it's in the e
    - **Parallel** — can it run beside the epic's other in-flight stories? Binds on FILE OVERLAP (per
      the parallel-lanes rule): disjoint file sets → label `parallel-ok`.
    - **Blocked** — does it depend on an unlanded story/ticket? → label `blocked` + a `Blocks` link.
-2. **Check it doesn't already exist** (backfilled boards, re-runs): search the BMAD number —
-   `acli jira workitem search --jql "project = <PROJ> AND summary ~ '<n.m>'"`. Found → reuse that key.
-3. **Mint** (bare, parented, labels from step 1): `acli jira workitem create --project <PROJ> --type
-   Task --parent <EPIC-KEY> --summary "<n.m> — <Story Title>" --label "<ruled labels>"` — summary
-   carries the BMAD number; no `--assignee`. Read the new key from the output — **never invent one.**
-4. **Stamp the story file frontmatter** — the file is the machine truth, the board only mirrors it:
+2. **Mint it — one call does the dedupe, the outline, and the proof** (SCC-49: a ticket with only a
+   summary is a title, not a ticket, and the whole board was minted that way):
+
+   ```bash
+   python3 .agents/scripts/jira_feed.py mint --story <n.m> --project <PROJECT> \
+          --jira-project <PROJ> --epic-key <EPIC-KEY> --summary "<n.m> — <Story Title>" \
+          --lane <full|quick-dev> [--parallel-ok] [--blocked-by <KEY>] --apply
+   ```
+
+   It (a) searches the BMAD number first — a backfilled board or a re-run already has the ticket, and
+   a twin nothing will ever move again is worse than none — reusing that key and backfilling the
+   outline if it was bare; (b) renders the **description from the story file** you just wrote (its
+   statement, its ACs, the lane rulings, the story-file path) — nothing invented, and a story with no
+   AC section says exactly that; (c) creates it bare (no `--assignee`), parented, with the ruled
+   labels; (d) **reads the ticket back and exits 2 if the description did not land.**
+   It prints `JIRA_KEY=<KEY>` — take the key from there, **never invent one.** Non-zero exit → STOP
+   and fix; do not carry on with an unkeyed or hollow ticket. Full acli reference:
+   `.agents/rules/jira.md`.
+3. **Stamp the story file frontmatter** — the file is the machine truth, the board only mirrors it:
    `jira_key: <KEY>` (Step 4.5 of `/sudo-update-sprint-memory` moves the ticket by reading exactly
    this field), plus the rulings: `lane: quick-dev|full`, `parallel_ok: true|false`,
    `blocked_by: [<keys>]` (omit when empty).
-5. **Set its state:** blocked → `acli jira workitem link create --out <BLOCKER-KEY> --in <KEY> --type
+4. **Set its state:** blocked → `acli jira workitem link create --out <BLOCKER-KEY> --in <KEY> --type
    Blocks`, then transition to `Blocked` if the board has that status (else the label carries it).
    Not blocked → transition to `In Progress` (`--yes`). Full acli reference: `.agents/rules/jira.md`.
 

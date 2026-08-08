@@ -240,7 +240,7 @@ you're hunting for what an audit or a review said, it is inside one of those two
 
 ## 5. The safety net — what runs the checks for you
 
-This is the newest part of the system and the least visible. **Seven small programs — plus two armed git
+This is the newest part of the system and the least visible. **Eight small programs — plus two armed git
 hooks** — now do the checking that used to be a person holding eight rules in their head. You almost
 never run them; the commands run them for you. What matters to you is *what they refuse to let happen.*
 
@@ -252,6 +252,8 @@ flowchart LR
         R["③ /sudo-code-review"]
         M["/sudo-update-sprint-memory"]
         W["/sudo-close-workingtree"]
+        S["① /sudo-write-story-tests"]
+        Q["/sudo-quick-dev"]
         G["every git commit"]
     end
     subgraph CHK ["the checks that fire"]
@@ -261,10 +263,14 @@ flowchart LR
         WL["workflow_lint.py --staged\nblocks broken text encoding"]
         JH["commit-msg-jira.sh — ARMED\nrefuses a commit without\nthe repo's Jira ticket key"]
         SC["sop_currency.py — ARMED\nrefuses a usage change that\nleaves this page behind"]
+        JF["jira_feed.py\nputs the outline and the\ndev record ON the ticket"]
     end
     R --> GR
     M --> CP
     M --> SS
+    M --> JF
+    S --> JF
+    Q --> JF
     W --> CP
     G --> WL
     G --> JH
@@ -280,6 +286,7 @@ flowchart LR
 | `workflow_lint.py` | **Broken characters quietly entering a document** — the `—` that turns into `â€"`. Runs on every commit, staged files only, so it stays fast enough that nobody disables it. |
 | `commit-msg-jira.sh` | **A commit with no ticket.** Each repo declares its Jira project in `.agents/jira.conf`; a commit whose message carries no valid key for *that* repo — or the wrong project's key — is refused outright. A rejected commit is a no-op: your staged files are untouched, nothing to undo. Merges, reverts, and rebases are exempt (the branch name carries the key for them). |
 | `sop_currency.py` | **This page falling behind the system it describes.** Change a `/` command, a rule, a safety-net script, a commit gate, or the root `AGENTS.md`, and the commit is refused unless this file is staged with it. Say `[sop-ok]` in the message when a change genuinely alters no usage — that stays in the git log as the record of the call. It checks only that the two moved together; no program can judge whether the *edit* was right, and the point is to make you look while you still have the context. |
+| `jira_feed.py` | **A Jira ticket that is only a title.** Every story ticket used to be minted with a summary and nothing else, and close-out posted one verdict line — so the board could tell you a story existed, never what it was about or what building it taught. Now ① mints the ticket with an outline rendered *from the story file* (its statement, its acceptance criteria — nothing invented; a story with no ACs says exactly that), and the close-out files a **Dev Record**: the decisions, the pitfalls, and what is still owed. Both write paths **read the ticket back** and fail if what they claimed to write is not there. **Exactly one Dev Record per ticket** — `/sudo-quick-dev` closes its own branch and files one too, and a later close-out updates that record instead of stacking a second. |
 | `split_sprint_status.py` | The one-time migration that shrank the board (§11). |
 | `wf_common.py` | Shared plumbing the others import. You'll never call it. |
 
@@ -298,7 +305,7 @@ flowchart LR
   gate with no legitimate way out gets disabled permanently, and then nothing is checked at all.
 
 Run all their tests any time: **`python3 .agents/scripts/tests/run_all.py`** (on the PC, `python …` —
-see the box below) — 123 checks across 6 files, about ten seconds. Full detail in
+see the box below) — 169 checks across 7 files, about ten seconds. Full detail in
 [`.agents/scripts/INDEX.md`](../../.agents/scripts/INDEX.md).
 
 > **⚠ Python is named differently on your two machines.** The **Mac** has **only `python3`** — no bare
