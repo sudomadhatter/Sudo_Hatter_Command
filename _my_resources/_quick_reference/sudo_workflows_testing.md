@@ -297,12 +297,19 @@ flowchart LR
   nothing. Every one of them keeps a one-token exit instead (`[sop-ok]`, or `--no-verify`), because a
   gate with no legitimate way out gets disabled permanently, and then nothing is checked at all.
 
-Run all their tests any time: **`python3 .agents/scripts/tests/run_all.py`** — 123 checks across 6 files,
-about ten seconds. Full detail in [`.agents/scripts/INDEX.md`](../../.agents/scripts/INDEX.md).
+Run all their tests any time: **`python3 .agents/scripts/tests/run_all.py`** (on the PC, `python …` —
+see the box below) — 123 checks across 6 files, about ten seconds. Full detail in
+[`.agents/scripts/INDEX.md`](../../.agents/scripts/INDEX.md).
 
-> **It's `python3`, not `python`.** There is no bare `python` on the Mac — not in a script, not in your
-> own shell. Older notes across the toolkit still say `python …`; every one of them fails here. If a
-> documented command errors with *command not found*, try `python3` before assuming anything is broken.
+> **⚠ Python is named differently on your two machines.** The **Mac** has **only `python3`** — no bare
+> `python`, not in a script and not in your own shell. A python.org install on the **PC** has **only
+> `python`** (Microsoft Store installs have both). So there is no single spelling that works
+> everywhere: commands in these docs are written `python3`, and **on the PC you drop the `3`**. If a
+> documented command answers *command not found*, try the other name before assuming anything is broken.
+>
+> **The gates themselves are immune to this** — every hook probes `python3 → python → py` and uses
+> whichever exists, so the safety net works on either machine with nothing to configure. It is only the
+> commands *you type* that differ. See §7.
 
 ### Is this review still valid?
 
@@ -407,6 +414,24 @@ through `/sudo-push-e2e` and nowhere else — never as a side effect of picking 
 Two smaller things it handles: a fresh machine shows **no** work in progress even when plenty exists
 (it's all on GitHub, not yet on disk), and resuming never deletes anything on your other machine — both
 boxes legitimately end up on the same branch.
+
+### What does NOT travel between the machines
+
+Git moves branches and files. It does **not** move your local git *settings*, your environment, or your
+secrets — so a few things have to be true on each box independently. This is the category that produces
+"it works on the desktop but not the Mac" reports, and every item below has already cost a debug cycle.
+
+| | What breaks if it's missing | Fix — **once per machine** |
+|---|---|---|
+| **The commit gates** | `core.hooksPath` is *local* config and does **not** travel with a clone. Without it git reads `.git/hooks`, which is empty — so the Jira gate, the encoding gate, and the SOP gate are all **silently off** while the repo looks identical. | `git config --global core.hooksPath .githooks` — a **relative** value resolves against each repo's own root, so this one command arms every clone you have and every one you make later. It's a harmless no-op in repos with no `.githooks/`. |
+| **Python's name** | The Mac has only `python3`; a python.org PC has only `python`. Typed commands differ; the gates don't (they probe). | Nothing to install — just use the name your box answers to. |
+| **Secrets / `.env` / `auth_keys/`** | All gitignored, so a fresh clone has none of them and things fail in confusing ways rather than obviously. | Restore from the hand-carried master bundle — start at the migrations `INDEX.md` in `_my_resources/`. |
+| **Shell environment** | On the Mac, `.zshrc` is read **only** by interactive shells — anything an agent or script runs can't see it. Shared env belongs in `~/.zshenv`. | Put anything scripts need (e.g. `JAVA_HOME`) in `~/.zshenv`, not `.zshrc`. |
+
+**The rule underneath all four:** anything stored *outside* the repo is per-machine by definition. When
+something works on one box and not the other, check this table before suspecting the code — a
+Windows-authored assumption reads as "the Mac is broken," and a Mac-authored one reads the same way in
+reverse.
 
 ---
 

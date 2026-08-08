@@ -2,6 +2,9 @@
 
 <!-- One line per memory: link + a short hook. Detail lives in the file. Keep under ~17 KB. -->
 
+## ⛔ Read first
+- [TWO machines: Mac AND PC](two-machines-mac-and-pc.md) — every shared doc is read on both; `python3` vs `python`, and `core.hooksPath` is per-machine so gates are silently OFF on a fresh clone.
+
 ## Jira & tickets
 - [Jira is LIVE (SCC + AVCH)](jira-integration-live.md) — every branch/commit carries a key; gate ARMED, wrong-project key rejected.
 - [VS Code hides hook output](vscode-hides-git-hook-output.md) — a warn-only hook looks like clean success; ship hooks ARMED.
@@ -123,6 +126,7 @@
 - [Installed ≠ maintained (RULED)](toolkit-installed-but-deliberately-unmaintained.md) — B-L-WorldWide + BRKN_Tattoos frozen on purpose; not a gap.
 - [Fresh RETIRED 2026-08-07](fresh-workspace-living-template.md) — no longer the living template or maintained; no template exists now, cut new projects from the lobby master.
 - [Rules read in place](rule-org-single-source-audit.md) — one home since 08-07: the center's `.agents/rules/`; the project vendor it describes is gone.
+- [SOP doc currency gate](sop-doc-currency-gate.md) — ARMED 08-08: a usage-surface change without `sudo_workflows_testing.md` is REJECTED; `[sop-ok]` opts out.
 - [Command restructure 07-14](command-surface-restructure-2026-07-14.md) — the rename map + /sudo-e2e gate + -SkipAP.
 - [sudo commands have _AP twins](sudo-commands-have-ap-twins-that-drift.md) — when fixing one, diff the twin.
 - [/team-onboarding is built-in](team-onboarding-is-claude-builtin.md) — a CLI built-in, NOT a toolkit file; don't re-hunt it.

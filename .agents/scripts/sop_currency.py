@@ -7,8 +7,10 @@ do I type." A stale line there is worse than a missing one — it is an instruct
 in the operator's hands, months after the change that broke it.
 
 That already happened, twice over, on a single line: the doc said `python .agents/scripts/
-tests/run_all.py — 94 checks` when there is no `python` on this machine (only `python3`) and
-the count was 98. Both halves wrong, and nothing anywhere could have noticed.
+tests/run_all.py — 94 checks` when the Mac has no bare `python` (only `python3`) and the count
+was 98. Both halves wrong, and nothing anywhere could have noticed. The first fix then swung the
+other way and declared `python3` universal — equally wrong, because this system is driven from a
+Windows PC too, where a python.org install has only `python`. Docs get read on BOTH machines.
 
   ── WHAT THIS CHECKS ───────────────────────────────────────────────────────────────────────
 Given a set of changed paths, it answers ONE question: did a **usage surface** change without
@@ -180,7 +182,7 @@ def main(argv: list[str] | None = None) -> int:
         print("    Commit rejected.")
         print("")
         return 1
-    print(f"    (warn-only — commit allowed. Arm it with: touch {ENFORCE_MARKER})")
+    print(f"    (warn-only - commit allowed. Arm it with: touch {ENFORCE_MARKER})")
     print("")
     return 0
 

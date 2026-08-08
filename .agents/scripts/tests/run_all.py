@@ -1,8 +1,11 @@
 """Run every workflow-script test. Stdlib only; no pytest, no install step.
 
-    python3 .agents/scripts/tests/run_all.py
+    python3 .agents/scripts/tests/run_all.py     # Mac
+    python  .agents/scripts/tests/run_all.py     # PC (python.org install has no `python3`)
 
-`python3`, not `python` — there is no bare `python` on the Mac, in a script or a login shell.
+This system is driven from two machines and they disagree on the name. Nothing here hardcodes
+it — `sys.executable` carries whichever interpreter launched this file down to the child test
+processes, and the git hooks probe `python3 -> python -> py`. Only the command YOU type differs.
 Test files are auto-discovered (`test_*.py`), so a new one joins the suite with no wiring.
 
 Exit 0 only if every case in every file passed.
