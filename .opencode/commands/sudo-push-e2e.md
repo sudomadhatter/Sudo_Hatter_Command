@@ -1,3 +1,7 @@
+---
+description: "The ONE shipping command — merge a finished epic branch (epic/<JIRA-KEY>-<slug>) into main, refusing until the full gate is green: enforcement suite + build + /sudo-e2e GREEN. Invoking it IS the operator's per-merge sign-off; absorbs origin/main into the epic first so conflicts never land on production; prunes the epic branch after the merge. Use when the user says 'ship it' / 'push the epic' / 'sudo push e2e'."
+---
+
 # /sudo-push-e2e — Gate, Merge the Epic, Deploy
 
 > **Rules in force for this command:**
