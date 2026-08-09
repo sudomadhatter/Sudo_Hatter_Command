@@ -2,26 +2,37 @@
 
 > **What this is.** Every step *you* perform by hand: creating work in Jira, moving it through a sprint,
 > and pushing code through the VS Code Source Control panel. No commands, no agents, no terminal.
-> Written 2026-08-07 from an actual run — including the parts that went wrong.
+> Written 2026-08-07 from an actual run — including the parts that went wrong. **Refreshed 2026-08-09.**
 >
 > **Companion doc:** [jira_integration_guide.md](../diagrams_guides/system/jira_integration_guide.md) explains *why* the system is
 > built this way. This one is *how you drive it*.
+>
+> **What changed on 2026-08-09 — read §2.2 if you read nothing else.** This doc used to tell you the
+> Story/Task line was a soft style choice. **It isn't any more.** The type is now decided by a rule, and it
+> decides which close-out command can even reach the ticket. There is also a fourth type — `Bug` — that
+> works unlike anything here: it's a *flag on an existing ticket*, not a new one. §2.6 is new and covers it.
 
 ---
 
 ## 1. Who touches what
 
-The single most useful thing to hold in your head: **the planning layer is yours.** Nothing automatic
-writes to it.
+The single most useful thing to hold in your head: **the planning layer is yours.** Nothing decides *what
+matters* except you.
 
 ```mermaid
 flowchart TD
     subgraph YOURS ["YOURS — nothing automatic touches this"]
-        Y1["what tickets exist"]
-        Y2["what they say"]
-        Y3["what's in the sprint"]
-        Y4["priority and order"]
-        Y5["starting and completing sprints"]
+        Y1["what work is worth doing"]
+        Y2["what's in the sprint"]
+        Y3["priority and order"]
+        Y4["starting and completing sprints"]
+        Y5["board layout and columns"]
+    end
+    subgraph SEAMS ["ON YOUR COMMAND — four named seams, each one a moment you started"]
+        S1["kickoff mints the epic ticket"]
+        S2["story pickup mints the story ticket\n+ stamps jira_key: into the file"]
+        S3["close-out files the Dev Record\nand moves the ticket to Done"]
+        S4["flag pulls a broken ticket\nback out of Done"]
     end
     subgraph MACHINE ["THE MACHINERY — runs whether or not anyone is watching"]
         M1["commit-msg hook\nrefuses a commit with no key"]
@@ -29,20 +40,34 @@ flowchart TD
         M3["the test gate\nrefuses a bad merge"]
     end
     YOURS -->|"you decide the work"| WORK["the work"]
+    WORK --> SEAMS
     WORK -->|"machinery records it"| MACHINE
 
     classDef mine fill:#e3f2fd,stroke:#1565c0,color:#000
     classDef auto fill:#d4f7d4,stroke:#2e7d32,color:#000
+    classDef seam fill:#fff4d6,stroke:#f9a825,color:#000
     class Y1,Y2,Y3,Y4,Y5 mine
     class M1,M2,M3 auto
+    class S1,S2,S3,S4 seam
 ```
 
-**The machinery never creates a ticket, never moves a card, never decides a priority.** It links commits
-to tickets and refuses bad ones. That's the whole of its authority.
+**The machinery never decides a priority, never places anything in a sprint, and never lays out your
+board.** It links commits to tickets and refuses bad ones. That's the whole of its authority.
 
-An agent *can* create or move tickets — but only when you ask it to, in that moment, the same way it
-would edit a file. Left alone, it does nothing to your board. If you never spoke to a model again,
-every mechanism in §3 below would keep working unchanged.
+**One honest correction to this section, from 2026-08-08.** Commands *do* now create and move tickets —
+but only at four named seams, and every one of them is a moment you started:
+
+| Seam | What it does |
+|---|---|
+| `/sudo-create-epic-sprint` at kickoff | mints the **epic** ticket |
+| `/sudo-write-story-tests` at story pickup | mints the **story** ticket and stamps `jira_key:` into the story file |
+| `/sudo-push-e2e` at the epic merge · `/sudo-update-sprint-memory` and `/close-task-merge-tree` at close-out | move the ticket to `Done` and file the Dev Record |
+| `jira_feed.py flag` | moves a ticket **out of `Done`** when it's found broken (§2.6) |
+
+Outside those four: status and comments only, and only when you ask. **Nothing ever decides placement,
+priority or sprint** — those stayed yours on purpose. And nothing runs on a timer: left alone overnight,
+the board is exactly as you left it. If you never spoke to a model again, every mechanism in §3 below
+would keep working unchanged.
 
 ---
 
@@ -79,15 +104,58 @@ Every arrow in that diagram is **you clicking something**. None of it happens on
 
 1. Open the **Backlog**.
 2. **+ Create** — the button in the top bar, or the `+ Create` at the bottom of the Backlog list.
-3. **Work type** — `Task` for plumbing, `Story` for user-facing, `Epic` for a container. The Story/Task
-   line is soft; pick one and stay consistent. `Epic` is the one that genuinely behaves differently.
+3. **Work type** — see the rule immediately below. **This is not a style choice.**
 4. **Summary** — one line, what it is. This becomes the branch slug later, so keep it plain.
 5. **Description** — what's in scope, what's explicitly *out* of scope, and which repos it touches.
    Out-of-scope is the half people skip and then argue about later.
-6. Leave assignee, sprint and epic blank. It lands in the Backlog.
+6. **Parent** — pick the epic it belongs under. Everything is parented; nothing floats loose.
+7. Leave assignee and sprint blank. It lands in the Backlog.
 
 **Write down the key it gives you** — `SCC-11`, `AVCH-12`. That string is now the name of this piece of
 work everywhere: branch, commits, PR title.
+
+### 2.2.1 Choosing the work type — the rule, not a preference
+
+*Changed 2026-08-08. An earlier version of this page said the Story/Task line was soft. It is not, and
+treating it as soft strands the ticket:* **the type decides which close-out command can reach it**, and
+the wrong one has nothing to operate on.
+
+Ask one question — **does this work have a BMAD story?**
+
+```mermaid
+flowchart TD
+    C{"Is it a CONTAINER for other work?"}
+    C -->|"yes"| E["EPIC"]
+    C -->|"no"| Q{"Does it have a dotted BMAD number (19.2, 12.3.4),\na debug- id, or a story file in _bmad/bmm/stories/ ?"}
+    Q -->|"yes — any ONE is enough"| S["STORY\nbranch claude/KEY-slug off the epic branch\ncloses with /sudo-update-sprint-memory"]
+    Q -->|"no"| T["TASK\nworkflow · IDE · rules · skills · toolkit\nbranch chore/KEY-slug off main\ncloses with /close-task-merge-tree"]
+
+    classDef good fill:#d4f7d4,stroke:#2e7d32,color:#000
+    classDef gate fill:#fff4d6,stroke:#f9a825,color:#000
+    class S,T,E good
+    class C,Q gate
+```
+
+**The trap: the parent doesn't tell you.** Everything is parented, so "it's under an epic" proves nothing.
+There are two kinds of epic and Jira draws them identically:
+
+| Kind | How you spot it | Children are |
+|---|---|---|
+| **BMAD epic** | the summary carries a number — `Epic 19 — ADK 2.x Runtime Upgrade` | `Story` |
+| **Grouping epic** | no number — `CI/CD Improvment`, `Thin toolkit` | `Task` |
+
+A grouping epic is a folder, not a plan. It exists only because Jira gives you nowhere else to put things.
+
+**In the lobby (`SCC`) the answer is always `Task`.** There are no BMAD stories here and no sprint board,
+so all 25 non-epic tickets are Tasks under one of five grouping epics. In AviationChat you actually have
+to think about it.
+
+If you get it wrong, nothing breaks loudly — you just find the close-out command can't see your ticket.
+Change the type in the UI and carry on, or let the audit catch it:
+
+```bash
+python3 .agents/scripts/jira_feed.py audit --jira-project SCC --project Sudo_Hatter_Command
+```
 
 ### 2.3 Move it into the sprint
 
@@ -139,9 +207,70 @@ Your statuses, and what each means here:
 | `In Review` | code landed on the epic branch, awaiting the gate | In Progress |
 | `Done` | merged to `main` | Done |
 | `Deferred` | descoped or parked — **still open**, deliberately | **To Do** |
+| `Blocking` | waiting on something else | To Do |
 
 `Deferred` sits in the `To Do` category on purpose. A `Done`-category status would auto-resolve the
 ticket and make descoped work read as *shipped*. Add the `descoped` label when that's the reason.
+
+> **`Blocking` vs `blocked` — the names don't match and that's just how it is.** The *status* on the board
+> reads `Blocking`. The *label* and the saved filter read `blocked`. Use both: the status so the card sits
+> in the right column, the label so the `Blocked` filter finds it. Then add a **`Blocks` link** from
+> whatever is holding it up, because the status says *that* it's stuck and only the link says *on what*.
+
+**The other labels you'll set by hand** — a card holds one status but stacks labels, which is the whole
+reason these are labels:
+
+| Label | Means |
+|---|---|
+| `quick-dev` | ships via `/sudo-quick-dev` instead of the full three-step loop |
+| `parallel-ok` | no file overlap with the epic's other in-flight work — safe to run beside it |
+| `blocked` | pair with the `Blocking` status and a `Blocks` link |
+| `descoped` | with `Deferred`: a terminal ruling, never to be built |
+
+### 2.6 Flagging something broken — the fourth type
+
+*New 2026-08-09.* `Bug` does not work like the other three, and the mistake to avoid is the obvious one:
+
+⛔ **You do not create a Bug ticket.** When something that already shipped turns out to be broken, **the
+ticket that shipped it wears the flag** — same key, same story file, same everything. It comes back out of
+`Done` until the fix lands, then goes back to being whatever it was.
+
+The reason is the audit trail this whole system exists for. A new ticket buys you a second number
+describing the same piece of work, and the trail forks. The flag keeps one number and records that it was
+broken for a while.
+
+**Two ways it gets raised. Yours is the second, and it's one command:**
+
+```bash
+python3 .agents/scripts/jira_feed.py flag --key AVCH-57 \
+        --reason "the roster panel 500s on an archived learner" \
+        --evidence "repro: open school ACDEMO, archive a learner, reload" --apply
+```
+
+*(`AVCH-57` is this page's running example, not a live ticket — the same one §3.2 uses for a branch name.)*
+
+That does the whole flip and proves each part landed: type `Story|Task → Bug`, status `Done → To Do`, and
+a **Bug flag** comment carrying your reason, your evidence, and *what the ticket was* so the restore is
+auditable later.
+
+The other way is an audit — `/sudo-live-testing-team` flies the running app, finds a symptom, and traces
+it back to a candidate ticket. **It will stop and ask you before flagging anything.** That pause is
+deliberate, not caution: "which ticket last touched this line" is not the same question as "which ticket
+broke this", and a wrong flip pulls a finished ticket out of `Done` with nothing to undo it. **You are the
+join.** If it ever stops asking, that's a bug in the tooling.
+
+Three things worth knowing:
+
+- **Flagging twice is harmless.** Already flagged is a no-op — two people finding the same bug can't fight
+  over the board.
+- **It only reopens things that were `Done`.** A ticket sitting `In Progress` was never finished; shoving
+  it back to `To Do` would erase real state.
+- **You can't flag an `Epic`.** A container is never a bug — flag the child whose work broke.
+
+**Clearing it is automatic.** When the fix merges, close-out restores the ticket to `Story` or `Task`
+(whichever the rule says it is) and moves it to `Done`. **Don't clear it by hand** by editing the type in
+the UI mid-flight — the flag is the only signal in the system that the work is broken, and removing it
+early makes the ticket look fine while it isn't.
 
 ---
 
@@ -191,7 +320,7 @@ it** — even one whose message forgot the key. The message is the belt; the bra
 | Prefix | Use it for | Example |
 |---|---|---|
 | `chore/` | one-off work, fixes, toolkit changes | `chore/SCC-11-acli-wrapper` |
-| `epic/` | an epic's integration branch | `epic/AVCH-40-graph-rag` |
+| `epic/` | an epic's integration branch | `epic/AVCH-18-adk-runtime` |
 | `claude/` | one story inside an epic (worktree lane) | `claude/AVCH-57-firestore-singleton` |
 
 Rules that matter:
@@ -297,6 +426,38 @@ git rev-list --left-right --count origin/main...main    # must print: 0  0
 `--no-ff` forces a merge commit so the branch reads as one reviewable unit in `main`'s history. Then
 drag the ticket to **Done**.
 
+> **`-d`, never `-D`.** Lowercase refuses to delete a branch that didn't merge. That refusal is the check
+> working — if it fires after a merge you thought succeeded, go and look, don't force it.
+
+### 3.8 The one-command version — `/close-task-merge-tree`
+
+*Added 2026-08-08.* Everything in §3.7 for a **Task** is one command, and it does several things the hand
+version can't:
+
+```
+/close-task-merge-tree
+```
+
+| It does | Which by hand you'd skip |
+|---|---|
+| **Preflight** — branch name, clean tree, `origin/main` absorbed, walkthrough exists, no stray worktree | conflicts surfacing on `main` instead of on your branch |
+| **Derives the lane from the diff** | see below — this is the one that matters |
+| Runs the repo's gate and pastes the real output | reporting a gate from intent |
+| Merges `--no-ff`, files **one** Dev Record, moves the ticket to `Done`, clears any `Bug` flag | the Dev Record entirely, and the flag |
+| Prunes the branch local *and* remote, verifies `0 0` and a clean tree | the remote branch, usually |
+
+**The lane check is why this exists.** Skipping the end-to-end suite is the only thing that makes a Task
+cheaper to land than an epic, and the only honest reason to skip it is *nothing that deploys changed*. So
+the command works that out from the diff rather than asking: a `chore/*` branch that touches `backend/`,
+`frontend/`, `firebase/`, `functions/`, `mobile/` or `.github/` prints **`LANE: HANDOFF`**, stops, and
+tells you to use `/sudo-push-e2e`. **There is deliberately no override flag.** A change that reaches
+deployable code is a product change whatever its ticket says.
+
+In the lobby you'll always see `LANE: LOCAL`, and for a permanent reason: there is no deployable surface
+here at all.
+
+Use §3.7 by hand when you want to; use this when you want the Dev Record and the flag handling for free.
+
 ---
 
 ## 4. What is actually stopping you from breaking `main`
@@ -305,12 +466,18 @@ Read this once and be honest with yourself about it.
 
 | Layer | Status |
 |---|---|
-| `commit-msg` hook | ✅ **armed** — no key, no commit |
+| `commit-msg` hook — the Jira key | ✅ **armed** — no key, no commit |
+| `pre-commit` hook — encoding | ✅ **armed** — undecodable bytes, or a stray `U+FFFD`, block the commit |
+| `commit-msg` hook — SOP currency | ✅ **armed** — change a command, a rule, a script or a git hook and you must stage `sudo_workflows_testing.md` in the same commit. `[sop-ok]` opts out |
 | The test gate | ⚠️ **only when invoked.** `/sudo-e2e` is a command someone types. Nothing triggers it on a push |
 | Server-side branch protection | ❌ **does not exist** — GitHub Free can't put rulesets on private repos (`403`) |
 
 **You have an alarm, not a lock.** Nothing physically prevents a push to `main`. The discipline in §3 is
-the control; the hook is the backstop; branch protection is the piece you don't own yet.
+the control; the hooks are the backstop; branch protection is the piece you don't own yet.
+
+> **When a commit is blocked, read *which* hook spoke.** Three of them can refuse you now and only one is
+> about Jira. A block that says nothing about a key is the encoding or the SOP hook — and in VS Code you
+> won't see which unless you open `View → Output → Git` (§3.5).
 
 GitHub Pro (~$4/mo) buys the lock: `main` becomes unpushable except through a PR that passed its checks.
 Until then, §3.2 — *always branch first* — is doing real work and is not ceremony.
@@ -321,29 +488,31 @@ Until then, §3.2 — *always branch first* — is doing real work and is not ce
 
 ```mermaid
 flowchart TD
-    A["1 · Backlog: + Create\nwrite scope and out-of-scope"] --> B["2 · note the key\ne.g. SCC-11"]
-    B --> C["3 · drag it into the sprint"]
-    C --> D["4 · drag the card to In Progress"]
-    D --> E["5 · VS Code: create branch\nchore/SCC-11-short-slug"]
-    E --> F["6 · stage file by file\nnever Stage All"]
-    F --> G["7 · commit\nsubject starts with SCC-11"]
-    G --> H["8 · Publish Branch"]
-    H --> I["9 · run the gate for THIS repo"]
+    A["1 · Backlog: + Create\nwrite scope and out-of-scope"] --> A2["2 · pick the WORK TYPE\nby the rule in 2.2.1"]
+    A2 --> B["3 · note the key\ne.g. SCC-11"]
+    B --> C["4 · drag it into the sprint"]
+    C --> D["5 · drag the card to In Progress"]
+    D --> E["6 · VS Code: create branch\nchore/SCC-11-short-slug"]
+    E --> F["7 · stage file by file\nnever Stage All"]
+    F --> G["8 · commit\nsubject starts with SCC-11"]
+    G --> H["9 · Publish Branch"]
+    H --> I["10 · run the gate for THIS repo"]
     I -->|"red"| J["STOP — fix, commit again"]
     J --> I
-    I -->|"green"| K["10 · merge --no-ff to main, push,\ndelete the branch, verify 0 0"]
-    K --> L["11 · drag the card to Done"]
+    I -->|"green"| K["11 · merge --no-ff to main, push,\ndelete the branch, verify 0 0"]
+    K --> L["12 · drag the card to Done"]
+    K -.->|"or skip 10-12 entirely"| CMD["/close-task-merge-tree\ndoes the gate, the merge, the Dev Record,\nthe transition and the prune"]
 
     classDef mine fill:#e3f2fd,stroke:#1565c0,color:#000
     classDef good fill:#d4f7d4,stroke:#2e7d32,color:#000
     classDef bad fill:#ffd6d6,stroke:#c62828,color:#000
-    class A,B,C,D,L mine
-    class E,F,G,H,I,K good
+    class A,A2,B,C,D,L mine
+    class E,F,G,H,I,K,CMD good
     class J bad
 ```
 
-Steps 1–4 and 11 are Jira, in a browser. Steps 5–10 are VS Code. Nothing else is required, and no model
-has to be involved at any point.
+Steps 1–5 and 12 are Jira, in a browser. Steps 6–11 are VS Code. Nothing else is required, and no model
+has to be involved at any point — the dotted branch is a convenience, not a dependency.
 
 ---
 
@@ -356,6 +525,9 @@ has to be involved at any point.
 | Hook complained and nobody saw it | committed from the VS Code panel, which hides hook output | §3.5 — `View → Output → Git`; the gate is now armed so it rejects rather than warns |
 | A commit swept in 15 files instead of 6 | blanket staging pulled in a parallel task | §3.3 — stage file by file |
 | Looked for an E2E suite for the lobby | there isn't one and never was | §3.7 — the lobby's gate is `run_all.py` |
+| A fix "worked" for two tickets while doing nothing | `acli`'s `--fields` is a **whitelist**. A script asked for a field list without `issuetype` on it, then read `issuetype` out of the answer and got empty every time — and the tests passed, because the test stub ignored `--fields` and handed back everything | Name every field you intend to read. And never let a stub be more generous than the tool it stands in for |
+| A doc about mojibake was blocked as mojibake | it *quoted* a replacement character on purpose, and the encoding hook scans for that character | `<!-- wf-lint: allow-encoding-literals -->` in the file — not `--no-verify` |
+| A `Bug` got "corrected" back to `Task` mid-flight | it looked like a mistype | §2.6 — the flag is the only signal the work is broken. Close-out clears it |
 
 ---
 
@@ -368,9 +540,16 @@ JIRA
   Sprint = a planning bucket. Status = the actual state. Unrelated.
   Completing a sprint never changes a status.
 
+WORK TYPE — a rule, not a preference
+  dotted number / debug- id / story file?  -> STORY  -> /sudo-update-sprint-memory
+  none of those?                           -> TASK   -> /close-task-merge-tree
+  a container?                             -> EPIC   -> /sudo-push-e2e
+  In the lobby the answer is always TASK.
+  BUG is a FLAG on an existing ticket. Never a new ticket.
+
 BRANCH
-  chore/SCC-11-short-slug     one-off work
-  epic/AVCH-40-slug           an epic
+  chore/SCC-11-short-slug     one-off work (Task)
+  epic/AVCH-18-slug           an epic
   claude/AVCH-57-slug         one story
   Key goes right after the prefix. Key must match the repo.
 
@@ -383,8 +562,12 @@ REPO → KEY
   Sudo_Hatter_Command  → SCC       gate: run_all.py   (no E2E, by design)
   AGY_AVIATIONCHAT     → AVCH      gate: /sudo-push-e2e
 
+FOUND SOMETHING BROKEN THAT ALREADY SHIPPED
+  jira_feed.py flag --key <K> --reason "..." --apply
+  flips the ORIGINAL ticket to Bug and out of Done. Close-out clears it.
+
 WHEN SOMETHING IS SILENT
-  View → Output → Git
+  View → Output → Git       (three hooks can refuse you; only one is about Jira)
 ```
 
 ---
@@ -392,9 +575,12 @@ WHEN SOMETHING IS SILENT
 ## 8. Related reading
 
 - [jira_integration_guide.md](../diagrams_guides/system/jira_integration_guide.md) — why it's built this way; the two-channel model;
-  the BMAD-number ↔ Jira-key join; Smart Commits; the live-vs-not-built ledger
+  the work-item type rule and the `Bug` lifecycle in full (§6); the BMAD-number ↔ Jira-key join;
+  Smart Commits; the `jira_feed.py` verb table; the live-vs-not-built ledger
 - [git_walkthrough_settings.md](git_walkthrough_settings.md) — git setup and settings
 - [sudo_workflows_testing.md](sudo_workflows_testing.md)
   — the command lanes and the test gate in full
+- `.agents/rules/jira.md` — the agent-facing canonical copy. If these two docs ever disagree with it,
+  it wins and they're stale
 
 <!-- CHECKPOINT id="ckpt_msjiy0kp_e3v0cw" time="2026-08-07T22:36:33.001Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
