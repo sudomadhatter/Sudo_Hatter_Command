@@ -238,6 +238,16 @@ read the story.*
 pre-build audit gets appended into it) and the **walkthrough** (the review gets appended into it). If
 you're hunting for what an audit or a review said, it is inside one of those two — never a separate file.
 
+**Dense, not short — and no size limit (changed 2026-08-08, SCC-51).** Those two docs used to carry hard
+byte caps (8 KB / 10 KB). They are gone. The caps were set the same day the **audit** began appending into
+the plan, which quietly made it a two-author document — so the only way to stay under the cap was for the
+second author, the auditor, to cut findings. A plan that grew because the audit found eight real things is
+working correctly. **Length is never a reason to drop a finding, an acceptance criterion, or evidence.**
+What survives is the reason the caps existed: these files are re-read on every pass of the loop, so every
+line has to earn it — cut restatement and filler, never substance, and never split into a third file.
+(Limits that *move* content rather than destroy it all stay: the running session notes still have a size
+budget, because going over there means stale state to delete, not a finding to lose.)
+
 ---
 
 ## 5. The safety net — what runs the checks for you

@@ -14,7 +14,8 @@ docs in its `_artifacts/` folder: `implementation_plan.md` — `/sudo-self-audit
 outline-first (`## Task Checklist` outline with pitfalls indented under tasks that fought back →
 `## Evidence` (ONE AC matrix + latest totals + SHA, re-runs REPLACE) → `## Suite Ledger` →
 `## Code Review (<date>)` appended by ③ with FIRST line `Verdict: PASS|CONCERNS|FAIL|WAIVED @ <sha>` →
-`## Your Actions`). Budgets are HARD: plan ≤ 8 KB, walkthrough ≤ 10 KB.
+`## Your Actions`). **No byte cap** — dense, not short (the 8/10 KB caps were removed 2026-08-08,
+SCC-51; see [[artifact-budgets-are-scoped-not-universal]]).
 
 **Why:** story 8.23.2 audit showed ~57 KB written per story with findings ×3, AC matrix ×4, test pastes
 ×6 across `self-audit-stress-test.md` / `sudo-code-review-<story>.md` / walkthrough — ~50-55% of it

@@ -36,10 +36,22 @@ Keep it minimal — **TWO living docs** per session, hard-budgeted:
    landed + what's still on Daniel). Everything final lives here; the review appends, never forks.
 4. **`bug-list.md`** — ONLY for debugging / live-testing sessions. A simple bug list.
 
-**Budgets (HARD):** `implementation_plan.md` ≤ 8 KB incl. its audit section; `walkthrough.md` ≤ 10 KB
-incl. its review section. Over budget → compress in place (pointers to git / the story file), never a
-new file. Test evidence is totals lines + SHA, never reporter dumps; a re-run REPLACES the pasted
-totals (git keeps history) — only the `## Suite Ledger` accretes rows.
+**Dense, not short — and there is NO byte cap.** Both docs are re-read on every pass of the loop: the
+dev writes the plan, `/sudo-self-audit` appends into it (§7), the reviewer reads it, close-out reads it
+before flipping status. Every line is paid for repeatedly, so every line must earn it — a decision, a
+constraint, a finding, or evidence. Cut restatement of the codebase, narrative filler, and context
+already stated elsewhere. Test evidence is totals lines + SHA, never reporter dumps; a re-run REPLACES
+the pasted totals (git keeps history) — only the `## Suite Ledger` accretes rows. Feels bloated →
+compress in place (pointers to git / the story file), **never a new file**.
+
+> ⛔ **Length is NEVER a reason to omit a finding, an AC, or a piece of evidence.** A plan that grew
+> because the audit found eight real things is working correctly. Truncating substance to hit a number
+> is the failure this rule exists to prevent — not the outcome it wants.
+>
+> *Hard caps (8 KB / 10 KB) were set 2026-08-02 and **removed 2026-08-08 (SCC-51, operator ruling).**
+> They shipped in the same commit that made `implementation_plan.md` a TWO-author doc (plan + audit),
+> and the number was never validated against a real audit; the first Full audit run under it had to
+> compress its own findings to fit. The discipline stays, the number is gone.*
 
 > Do NOT create: a parallel `task.md`, a standalone `task-list.md` / `your-action-required.md`,
 > index/`00_artifacts-list.md` files, the verbose `debug-watch-log.md`, a standalone
@@ -166,9 +178,10 @@ link with a teaser — the whole plan, in the conversation, so Daniel can approv
 a file. A link alone (or a digest of a plan he cannot see) is a **gate violation**, not a style choice:
 he is being asked to approve something he has not been shown.
 
-Only exception: a genuinely long plan (≳ the 8 KB budget) may lead with the decisions and trade-offs in
-full and link the exhaustive file-by-file appendix — the reasoning he must judge is never the part
-abbreviated. Same principle as `operator-profile.md`: narrative briefing first, compressed record second.
+Only exception: a genuinely long plan may lead with the decisions and trade-offs in full and link the
+exhaustive file-by-file appendix — the reasoning he must judge is never the part abbreviated. That is a
+judgement about what he needs in front of him, never a byte count. Same principle as
+`operator-profile.md`: narrative briefing first, compressed record second.
 
 ### 3. STOP — wait for the gate phrase
 Do nothing else. Do not "prepare" files, update story status, or touch `sprint-status.yaml`
