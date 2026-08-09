@@ -5,7 +5,23 @@ metadata:
   node_type: memory
   type: project
   originSessionId: d77c4200-27cd-4119-8549-a3444604ba67
-  modified: 2026-07-27T13:22:37.487Z
+  modified: 2026-08-09T17:05:17.976Z
+---
+
+⭐ **Since 2026-08-09 (SCC-62) there is a script, and the rule changed underneath this memory.**
+`python3 .agents/scripts/link-worktree-assets.py <tree>` (PC: `python`) links these assets in;
+`--unlink <tree>` takes them out and **must run before any tree is removed**. It **enumerates** reparse
+points rather than walking a known list — the list is always wrong, because Next.js/Turbopack plants its
+own junctions. Both close-outs call it (`/close-task-merge-tree` Step 5, `/sudo-close-workingtree`
+Step 3). **The E2E caveat below still stands: junctioned `node_modules` breaks `next dev`, so an E2E lane
+still needs its own `npm ci`.** Also: worktrees are no longer story-only — **any** commit-producing lane
+opens one now (the trigger is concurrency, not work type), so this setup cost applies to chore lanes too.
+
+**The line-37 recovery pattern was re-validated 2026-08-09** and is the right move whenever a repo's
+shared checkout is standing on someone else's branch: `git diff > patch` → `git worktree add -b <branch>
+<path> main` → `git apply` in the tree → `git checkout --` the shared copy. Used to move an `AGENTS.md`
+edit off AGY's live `epic/AVCH-18` lane without disturbing it.
+
 ---
 
 A new `git worktree add` tree contains **only tracked files**. Everything gitignored is absent, and in AGY that is exactly what the test lanes need. Confirmed 2026-07-25 (story 21.3 ①) — three gaps, each with its own confusing failure:
