@@ -147,7 +147,7 @@ There are two kinds of epic and Jira draws them identically:
 A grouping epic is a folder, not a plan. It exists only because Jira gives you nowhere else to put things.
 
 **In the lobby (`SCC`) the answer is always `Task`.** There are no BMAD stories here and no sprint board,
-so all 25 non-epic tickets are Tasks under one of five grouping epics. In AviationChat you actually have
+so all 32 non-epic tickets are Tasks under one of five grouping epics. In AviationChat you actually have
 to think about it.
 
 If you get it wrong, nothing breaks loudly — you just find the close-out command can't see your ticket.
@@ -208,6 +208,7 @@ Your statuses, and what each means here:
 | `Done` | merged to `main` | Done |
 | `Deferred` | descoped or parked — **still open**, deliberately | **To Do** |
 | `Blocking` | waiting on something else | To Do |
+| `Open Epics` | ⚠️ a stray — one AVCH item (`AVCH-14`) sits here. A board column that became a status; not part of the vocabulary |
 
 `Deferred` sits in the `To Do` category on purpose. A `Done`-category status would auto-resolve the
 ticket and make descoped work read as *shipped*. Add the `descoped` label when that's the reason.
@@ -271,6 +272,33 @@ Three things worth knowing:
 (whichever the rule says it is) and moves it to `Done`. **Don't clear it by hand** by editing the type in
 the UI mid-flight — the flag is the only signal in the system that the work is broken, and removing it
 early makes the ticket look fine while it isn't.
+
+### 2.7 The saved filters — and the one way they lie
+
+Five starred filters, cross-project on purpose: one view per *question*, not per project. They're for you
+— agents run raw JQL and never read them.
+
+| Filter | Shows you | Live count |
+|---|---|---|
+| `Deferred` | parked work, still open | 16 |
+| `Blocked` | waiting on something else | 2 |
+| `Descoped` | terminally ruled out, never to be built | 0 |
+| `Quick-Dev` | eligible for `/sudo-quick-dev` | 0 |
+| `Parallel-OK` | safe to run alongside its siblings | 0 |
+
+> ⚠️ **A filter that returns the wrong list looks exactly like one that works.** Two of these were broken
+> until 2026-08-09 and nothing announced it. `Deferred`'s JQL was `created >= -30d` — a *recently created*
+> view wearing the wrong name, cheerfully returning 30 irrelevant rows. `Blocked` matched only the label,
+> and since no ticket carries any label, it found neither of the two genuinely blocked tickets. Both are
+> fixed. **If a filter's count ever looks surprising, run its JQL by hand before believing it.**
+
+The three zeros are honest, and only one of them is waiting on you:
+
+- **`Descoped` should be empty.** Nothing has been terminally killed — AviationChat's deferred ledger says
+  outright that everything parked is *parked, not queued*.
+- **`Quick-Dev` and `Parallel-OK` fill themselves.** Those labels get written at story pickup by
+  `/sudo-write-story-tests`. Every ticket on the board today predates that seam or was made by hand in the
+  UI, so there's nothing to find yet. The next story picked up will populate them.
 
 ---
 

@@ -232,7 +232,7 @@ marker** covers ids with no dotted number, and the **file** catches the rest. An
 missed real tickets on the real board — that is how the rule got written this way.
 
 One implementation, `jira_feed.py work_type()`, so it cannot drift. **`SCC` is the pure case:** the lobby
-has no story files and no sprint board, so all 25 of its non-epic tickets are `Task` under one of its five
+has no story files and no sprint board, so all 32 of its non-epic tickets are `Task` under one of its five
 grouping epics, with no per-project switch.
 
 Audit the whole board against the rule any time:
@@ -682,6 +682,7 @@ whole answer.
 | `deferred-v3` | `Deferred` | parked, revisited at V3 |
 | `descoped` | `Deferred` + label `descoped` | terminal ruling, never built |
 | — | `Blocking` | waiting on something else. **Note the name** — the status reads `Blocking`, the *label* and the saved filter read `blocked`. Live on the SCC board |
+| — | `Open Epics` | ⚠️ not part of the vocabulary. One AVCH item sits here (`AVCH-14`, the `12.3` umbrella story) — a board column that became a status. Harmless, but it means "every open item" is not `status != Done` on AVCH |
 
 ### Labels — because a card holds one status but stacks labels
 
@@ -712,22 +713,38 @@ one column on the board, and the distinction between *not yet* and *never* survi
 
 Cross-project by design — one view per *question*, spanning every current and future project; per-project
 slices come from each board's own column/label filter. **Agents never read these** (they run raw JQL);
-they are operator sugar. Verified live 2026-08-09:
+they are operator sugar. Every row below was **executed**, not just read, on 2026-08-09:
 
-| Filter | Id | JQL |
-|---|---|---|
-| `Quick-Dev` | 10005 | `labels = quick-dev AND status != Done` |
-| `Parallel-OK` | 10006 | `labels = parallel-ok AND status != Done` |
-| `Blocked` | 10007 | `labels = blocked AND status != Done` |
-| `Descoped` | 10009 | `labels = descoped` |
-| `Deferred` | 10010 | ⚠️ `created >= -30d order by created DESC` — see below |
+| Filter | Id | JQL | Returns |
+|---|---|---|---|
+| `Deferred` | 10010 | `status = Deferred ORDER BY project ASC, key ASC` | **16** |
+| `Blocked` | 10007 | `(labels = blocked OR status = Blocking) AND status != Done ORDER BY project ASC, key ASC` | **2** |
+| `Descoped` | 10009 | `labels = descoped ORDER BY project ASC, key ASC` | 0 — correctly |
+| `Quick-Dev` | 10005 | `labels = quick-dev AND status != Done ORDER BY project ASC, key ASC` | 0 — awaiting input |
+| `Parallel-OK` | 10006 | `labels = parallel-ok AND status != Done ORDER BY project ASC, key ASC` | 0 — awaiting input |
 
-> ⚠️ **The `Deferred` filter does not filter deferred work.** Its JQL is `created >= -30d`, which is a
-> *recently created* view wearing the wrong name. Ids `10003` and `10004` (the old `AVCH Deferred` /
-> `SCC Deferred` pair this doc used to list) no longer exist — `10010` replaced them and picked up the
-> wrong query on the way. It wants `status = Deferred ORDER BY project ASC, key ASC`. **Left as found —
-> saved filters are yours, not the machinery's** (guardrail 2), and a filter is one edit in the UI.
-> Until then, use the JQL above rather than the filter.
+**Two of these were repaired on 2026-08-09, and the story is worth knowing** because it is the failure
+mode saved filters have: *a filter that runs cleanly and returns the wrong thing looks identical to a
+filter that works.*
+
+- **`Deferred` did not filter deferred work.** Its JQL was `created >= -30d order by created DESC` — a
+  *recently created* view wearing the wrong name, returning 30 rows that had nothing to do with parked
+  work. Ids `10003` / `10004` (the old `AVCH Deferred` / `SCC Deferred` pair) no longer exist; `10010`
+  replaced them and picked up the wrong query on the way.
+- **`Blocked` was label-only, and no ticket carries the label.** Two tickets are genuinely blocked —
+  they sit in the **`Blocking` status** — and the filter for blocked work found neither. It now matches
+  either signal.
+
+**Why the other three return nothing — and why only one of those is a problem.** Not a single ticket
+across either board carries **any** label. That is not a filter bug; the JQL is right:
+
+- `Descoped` is **correctly empty.** AviationChat's `deferred-work.md` is explicit — *"assume every entry
+  is parked, not queued"* — so nothing has been terminally ruled out. An empty `Descoped` is the honest
+  answer, and it should stay empty until something is actually killed.
+- `Quick-Dev` and `Parallel-OK` are **set at story pickup**, by `/sudo-write-story-tests` Step 1.6 —
+  `jira_feed.py mint` writes them at create time from ①'s lane ruling. Every current ticket predates that
+  seam or was created by hand in the UI, so there is nothing for them to find *yet*. They will populate
+  on their own from the next story picked up; nothing needs fixing for that to happen.
 
 ---
 
@@ -755,7 +772,7 @@ they are operator sugar. Verified live 2026-08-09:
 | the `acli` wrapper in `.agents/scripts/` | **2026-08-08** (SCC-49), `Bug` verbs 2026-08-09 (SCC-54) | `jira_feed.py`, seven verbs — §12 |
 | `/sudo-*` wiring: kickoff mints + stamps `jira_key` | **2026-08-08** | `/sudo-write-story-tests` Step 1.6 mints the ticket, rules the lane, and writes `jira_key:` into the story frontmatter |
 | `/sudo-*` wiring: transition + gate evidence at merge | **2026-08-08** | `/sudo-push-e2e` Step 6.5 moves the **epic** ticket and posts the gate result |
-| Jira epics and tickets for open work | **done** | `SCC` 30 items (5 epics + 25 Tasks) · `AVCH` 30 (5 epics + 18 Stories + 7 Tasks) |
+| Jira epics and tickets for open work | **done** | `SCC` **37** items (5 Epics + 32 Tasks) · `AVCH` **40** (8 Epics + 21 Stories + 11 Tasks) |
 | the 16 Atlassian onboarding sample tickets | **deleted** | both projects are clean; `SCC-1`…`SCC-3` no longer resolve |
 
 *New since, and not on the old list at all:*
