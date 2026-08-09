@@ -151,6 +151,27 @@ without anyone remembering to link anything (§6, §11).
 
 ## 3. Your `/` commands (the human lane)
 
+> ### ⭐ One door per command, on every tool (2026-08-09, SCC-66)
+>
+> **Nothing you type changes.** What changed is that each command now has exactly **one** way in per
+> tool, instead of two, and the sync builds them all from the same command file:
+>
+> | Tool | How you invoke it |
+> |---|---|
+> | **Claude Code** | `/<name>` (the entry comes from a *skill* now, not a command copy — same name, same behavior) |
+> | **Codex** | `/skills` → `<name>`, or `$<name>`. **Codex cannot have top-level `/name` commands at all** — that limit is Codex's, not ours, and it is why the skill is the door everywhere. |
+> | **opencode** | `/<name>` |
+> | **Antigravity** | `/<name>` |
+>
+> Two old doors are **retired and swept**: Claude's duplicate command copies and Codex's deprecated
+> `/prompts:<name>`. They published the *same* command twice on those tools, which is how the menus
+> drifted apart without anyone noticing.
+>
+> **The one thing to know:** after a `/sync-agents`, **start a new Codex chat** — Codex takes its
+> skill list when a chat opens, so a sync mid-chat is invisible until you open a fresh one. Restart
+> opencode for the same reason. And each machine has its own caches, so a sync on the Mac does not
+> reach the PC — run it once on each.
+
 ### The story loop — the ones you'll type daily
 
 | Command | What it does for you |
@@ -217,7 +238,7 @@ without anyone remembering to link anything (§6, §11).
 | Command | What it does for you |
 |---|---|
 | `/update-maps-indexes` | Reconciles the repo maps, every index, and every cross-reference across the lobby and the maintained projects. |
-| `/sync-agents` | Publishes the toolkit to all four platforms: direct command menus where supported, and native skills in Codex. It reaches **the lobby and this machine's caches only** — the old `-Maintained` fan-out that copied the toolkit into every project was retired with centralization. Projects read from the center; there is nothing to push. **Codex syntax is different:** its deprecated custom prompts are `/prompts:<name>`; supported repo workflows are selected with `/skills` or `$<skill-name>`. A sync cannot create an arbitrary top-level Codex `/name`. **Fixed 2026-08-09 (SCC-56): Antigravity was missing five commands.** The Antigravity half decided what to publish by **filename** (`sudo-*` and three named files) and only then read the command's own declared reach — so `/close-task-merge-tree`, `/sync-agents`, `/review`, `/webm-alpha-video` and `/clean-code-audit` were invisible there, silently, even though `clean-code-audit` names Antigravity outright. What a command *declares* is now the only thing that decides. If an expected entry is missing, first use that platform's syntax, then re-run this. |
+| `/sync-agents` | Publishes the toolkit to all four platforms — **one door each** (see the box at the top of this section). It reaches **the lobby and this machine's caches only** — the old `-Maintained` fan-out that copied the toolkit into every project was retired with centralization. Projects read from the center; there is nothing to push. **Updated 2026-08-09 (SCC-66):** it now *generates* the Claude/Codex skill door for every command instead of publishing a second command copy beside it, and it purges the two retired doors (Claude's command mirrors, Codex's `/prompts:` cache). Hand-written skills are never overwritten. A sync still cannot create an arbitrary top-level Codex `/name` — that is Codex's limit, and the skill is the answer to it. **Fixed 2026-08-09 (SCC-56): Antigravity was missing five commands.** The Antigravity half decided what to publish by **filename** (`sudo-*` and three named files) and only then read the command's own declared reach — so `/close-task-merge-tree`, `/sync-agents`, `/review`, `/webm-alpha-video` and `/clean-code-audit` were invisible there, silently, even though `clean-code-audit` names Antigravity outright. What a command *declares* is now the only thing that decides. If an expected entry is missing, first use that platform's syntax, then re-run this. |
 | `/slash_command_updating` | A thin alias for the globals-only half of `/sync-agents` — refreshes the Antigravity and opencode machine caches when their menus go stale but the lobby is fine. Plain `/sync-agents` does this *and* the local dirs, so prefer it. |
 | `/review` | Reviews the working diff outside the story loop — the quick read when there's no story to hang ③ on. |
 | `/new-project` · `/webm-alpha-video` | Scaffold a new workspace · green-screen video to transparent WebM. |
