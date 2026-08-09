@@ -669,6 +669,30 @@ The engines live **per-project** and have drifted between projects — a behavio
 one. The two of them (claude and opencode) are **twins by contract**: the worktree, commit and ticket
 blocks are kept identical on purpose, so a `diff` of the two files shows drift straight away.
 
+### ⛔ A green check can be telling you the truth about the wrong branch (2026-08-09)
+
+Worth knowing because it changes how you read a report. When several lanes run at once, the checking
+scripts work out *which* repo and branch to look at by starting from wherever the agent happens to be
+standing and searching upward for the repo. That starting point silently resets — a `/compact`, a new
+slash command, a fresh tool call — back to the shared checkout. If a sibling lane has moved the shared
+checkout onto **its** branch, the check quietly points there instead.
+
+Nothing errors. The script has no way of knowing which ticket the agent meant, so it runs every check
+properly and reports a clean result — **about the wrong branch.** It happened on 2026-08-09: a Task
+close-out printed *"clear to close out and merge"* for a different lane's unfinished branch. Merging on
+that would have put someone else's half-done work onto production under the wrong ticket.
+
+What changed, so you can hold the agent to it:
+
+- Every close-out command now has to say **which repo and which branch** it resolved — read out of `git`,
+  not from what it remembers — and **name the ticket it means to close** *before* it runs the check.
+- If the check comes back pointing at a different ticket, it must **stop and tell you**, not retry.
+- The same trap in miniature: piping a check into `tail` to shorten the output makes the computer report
+  *`tail`'s* success instead of the check's, so a failed gate prints "passed". Gates now run unpiped.
+
+**The one thing to ask for:** if an agent reports a gate as green, ask which branch the gate named. A
+report that can't answer that hasn't been verified — it's been assumed.
+
 ---
 
 ## 11. The board — what runs next

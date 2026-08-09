@@ -27,6 +27,10 @@ Per `.agents/rules/sudo-target-resolution.md` **§DUAL**: BOTH repos must be par
 active project (pointer missing → ASK, never guess; fast path: no `Projects/` subfolder → one repo, do
 the project half only). Echo exactly `Parking: lobby + Projects/<name>` before any git command.
 
+**Run every git command with an explicit `-C <repo>`.** Parking spans two repos and touches trees other
+lanes are still standing in, so a bare `git` that inherits `cwd` can act on the wrong one — `cwd` resets at
+slash-command boundaries and is not evidence of intent (`worktree-per-story.md` → *"`cwd` is not intent"*).
+
 ## Step 1 — Guard: worktrees must never be committable (BEFORE any `git add`)
 A worktree directory holds a `.git` **file**, so a blanket `git add` records it as a **gitlink (mode
 160000)** with no `.gitmodules`. Pulling that on another machine creates **empty directories at exactly the

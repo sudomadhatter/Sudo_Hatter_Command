@@ -43,18 +43,54 @@ you are standing in. The naming is the permission; it is not cosmetic.
 4. **Clear GITHUB_TOKEN on push/pull**: prefix with `$env:GITHUB_TOKEN = ""` (PowerShell) or
    `env -u GITHUB_TOKEN` (Bash) to prevent stale-session auth failures.
 
-## Step 0 — Resolve the repo (FIRST)
+## Step 0 — Resolve the repo (FIRST) — from command output, never from belief
 
 The repo is **where you are standing**, not a project pointer. If `$ARGUMENTS` names a folder under
-`Projects/` or a path, use that; otherwise the current repo. Echo exactly `Repo: <name> | Branch:
-<branch>` before any work. Do **not** read `.agents/active-project.txt` — this command's whole point
-is that the command centre is a legitimate target.
+`Projects/` or a path, use that; otherwise the current repo. Do **not** read
+`.agents/active-project.txt` — this command's whole point is that the command centre is a
+legitimate target.
+
+**Resolve it mechanically and pin it in a variable.** `cwd` is not intent: it resets to the shared
+checkout at slash-command boundaries, and the preflight finds its repo by walking *up from cwd*
+looking for `.git`. Run these and read the answers:
+
+```bash
+REPO=$(cd "<the path you resolved>" && git rev-parse --show-toplevel)
+BRANCH=$(git -C "$REPO" rev-parse --abbrev-ref HEAD)
+echo "Repo: $(basename "$REPO") | Branch: $BRANCH"
+```
+
+Then state **the Jira key you intend to close** — the one from the ticket, not the one you read off
+the branch. Keep both: Step 1 compares them.
+
+⛔ **Echoing `Repo | Branch` from memory defeats the only guard here.** The line exists to catch a
+wrong belief about where you are standing; a self-reported echo can only ever confirm the belief.
+It must come from the commands above.
 
 ## Step 1 — Preflight (mechanical — one call answers every precondition)
 
+**Always pass `--repo` and `--branch`.** They are written as optional because the script can guess;
+the guess is exactly what fails when a sibling lane has moved the shared checkout, and a wrong guess
+does not error — it runs every check honestly against **someone else's branch** and prints
+`VERDICT: clear to close out and merge`.
+
 ```bash
-python3 .agents/scripts/task_preflight.py --fetch [--repo <path>] [--branch <name>]
+python3 .agents/scripts/task_preflight.py --fetch --repo "$REPO" --branch "$BRANCH"
 ```
+
+🛑 **Read the header line before you read the verdict.** It echoes the branch the script actually
+resolved:
+
+```
+== task preflight - chore/<JIRA-KEY>-<slug> ==
+```
+
+If that key is not the key you named in Step 0, **STOP** — you are pointed at another lane. Say
+which branch it resolved and which you meant; do not re-run it hoping for a different answer, and
+never merge on a verdict whose header you did not check. (2026-08-09: this resolved a sibling's
+`chore/*` branch mid-close-out and returned a clean verdict; merging it would have put another
+lane's in-flight work on `main` under the wrong ticket. The script cannot catch this — it has no way
+to know which ticket you meant.)
 
 It answers, from the repo rather than from your memory of it:
 

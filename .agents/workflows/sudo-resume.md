@@ -67,6 +67,11 @@ proof it is landable — the verdict lives in the lane's `walkthrough.md` under 
 ## Step 4 — Re-create the working surface
 Ask Daniel which story he is picking up, then match the machine:
 
+**Bind every later command to the tree you create here — `git -C <tree>` or an explicit `--repo`/`--branch`.**
+A freshly re-created worktree is the one place `cwd` is guaranteed *not* to be: the shell is still standing
+in the shared checkout, and scripts resolve their target by walking up from `cwd`
+(`worktree-per-story.md` → *"`cwd` is not intent"*).
+
 - **Desktop / laptop (parallel stories, full git):**
   ```bash
   git worktree add --track -b claude/<JIRA-KEY>-<slug> .claude/worktrees/<slug> origin/claude/<JIRA-KEY>-<slug>
