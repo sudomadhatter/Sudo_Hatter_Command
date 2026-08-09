@@ -57,8 +57,12 @@ def commit(repo: Path, message: str) -> None:
     git(repo, "commit", "--no-verify", "-q", "-m", message)
 
 
+MANIFEST = ("task_key: SCC-11\nprimary_repo: repo\nbranch: chore/SCC-11-thing\n"
+            "close_command: close-task-merge-tree\nsecondary_repos: []\n")
+
+
 def make_repo(root: Path, *, deployable: bool = False, remote: bool = True,
-              walkthrough: bool = True) -> Path:
+              walkthrough: bool = True, manifest: bool = True) -> Path:
     """A repo standing on `main`, optionally with a bare origin it is in sync with."""
     repo = root / "repo"
     repo.mkdir(parents=True)
@@ -74,6 +78,8 @@ def make_repo(root: Path, *, deployable: bool = False, remote: bool = True,
         write(repo, "frontend/page.tsx", "export default () => null\n")
     if walkthrough:
         write(repo, "_artifacts/_main/2026-08-08_scc-11-thing/walkthrough.md", WALKTHROUGH)
+    if manifest:
+        write(repo, "_artifacts/_main/2026-08-08_scc-11-thing/task.yaml", MANIFEST)
     commit(repo, "SCC-11 chore: base")
     if remote:
         bare = root / "origin.git"
@@ -92,8 +98,10 @@ def branch(repo: Path, name: str, files: dict[str, str], *, push: bool = True) -
         git(repo, "push", "-q", "-u", "origin", name)
 
 
-def preflight(repo: Path, *extra: str) -> tuple[int, str]:
-    return run_script("task_preflight.py", "--repo", str(repo), *extra)
+def preflight(repo: Path, *extra: str, expect: str = "SCC-11") -> tuple[int, str]:
+    # --expect-key is REQUIRED since SCC-64; the fixtures' branches carry SCC-11.
+    return run_script("task_preflight.py", "--repo", str(repo),
+                      "--expect-key", expect, *extra)
 
 
 def main() -> int:
@@ -235,7 +243,9 @@ def main() -> int:
     # strongest evidence the walkthrough was never written - reporting that as a warning is
     # how the check would go quiet on exactly the repo that needed it.
     with TempDir() as t:
-        repo = make_repo(t, walkthrough=False)
+        # manifest=False too: the case IS "no _artifacts/ tree at all", and the default
+        # task.yaml fixture would create the tree this check looks for.
+        repo = make_repo(t, walkthrough=False, manifest=False)
         branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
         code, out = preflight(repo)
         c.check("no _artifacts/ tree blocks (not a warning)",
@@ -293,6 +303,70 @@ def main() -> int:
         c.check("--json key is parsed", data["key"] == "SCC-11", str(data.get("key")))
         c.check("--json lists the deployable path touched",
                 data["deployable_touched"] == ["frontend/"], str(data.get("deployable_touched")))
+
+    # ── SCC-64: intent — the preflight refuses to run without a stated target ──
+    # The 2026-08-09 failure: cwd drifted into a sibling lane and every check ran honestly
+    # against the wrong branch. No derived input can catch that; a required one can.
+    with TempDir() as t:
+        repo = make_repo(t)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        code, out = run_script("task_preflight.py", "--repo", str(repo))
+        c.check("SCC-64 bare run (no --expect-key) is refused",
+                code == 2 and "--expect-key" in out, out.strip()[-200:])
+
+    with TempDir() as t:
+        repo = make_repo(t)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        code, out = preflight(repo, expect="SCC-99")
+        c.check("SCC-64 a branch carrying ANOTHER lane's key blocks", code == 2, f"exit {code}")
+        c.check("SCC-64 the mismatch names both keys",
+                "SCC-99" in out and "SCC-11" in out and "ANOTHER lane" in out,
+                out.strip()[-300:])
+
+    with TempDir() as t:
+        repo = make_repo(t)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        code, out = preflight(repo, expect="scc-11")
+        c.check("SCC-64 expect-key is case-normalized and a match is stated",
+                code == 0 and "SCC-11 matches the branch key" in out, out.strip()[-300:])
+
+    # ── SCC-64: the manifest cross-check ──
+    with TempDir() as t:
+        repo = make_repo(t, manifest=False)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        code, out = preflight(repo)
+        c.check("SCC-64 a missing manifest warns with the schema, never blocks",
+                code == 1 and "no task.yaml declares task_key: SCC-11" in out,
+                out.strip()[-400:])
+
+    with TempDir() as t:
+        repo = make_repo(t)  # its manifest declares chore/SCC-11-thing
+        branch(repo, "chore/SCC-11-other", {"docs/x.md": "x\n"})
+        code, out = preflight(repo)
+        c.check("SCC-64 a manifest naming a DIFFERENT branch blocks",
+                code == 2 and "declares branch" in out, out.strip()[-400:])
+
+    # ── SCC-64: dirty memory files are named, with the park-don't-sweep instruction ──
+    with TempDir() as t:
+        repo = make_repo(t)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        write(repo, "_artifacts/_memory/some-lesson.md", "a memory\n")
+        code, out = preflight(repo)
+        c.check("SCC-64 a dirty memory file still blocks", code == 2, f"exit {code}")
+        c.check("SCC-64 memory files get their own instruction, not the generic count",
+                "memory file(s) dirty under _artifacts/_memory/" in out
+                and "sweep" in out and "park" in out, out.strip()[-400:])
+
+    # ── SCC-64: in a no-deploy repo the printed gate is scoped to the toolkit ──
+    with TempDir() as t:
+        repo = make_repo(t)
+        write(repo, ".agents/scripts/workflow_lint.py", "# fixture\n")
+        commit(repo, "SCC-11 chore: lint fixture")
+        git(repo, "push", "-q", "origin", "main")
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        code, out = preflight(repo)
+        c.check("SCC-64 no-deploy repo prints workflow_lint --toolkit-only",
+                "workflow_lint.py --toolkit-only" in out, out.strip()[-300:])
 
     return c.finish()
 

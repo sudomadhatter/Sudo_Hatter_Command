@@ -163,7 +163,9 @@ So, whenever a worktree is open anywhere in the repo — which is the standing c
 exception:
 
 - **Pass `--repo <path>` and `--branch <name>` explicitly.** They read as optional because the script can
-  guess. The guess is precisely what breaks under parallel lanes.
+  guess. The guess is precisely what breaks under parallel lanes. (`task_preflight.py` goes further
+  since SCC-64: `--expect-key` is **required**, and a branch whose key does not match blocks
+  mechanically — the discipline here still covers every other script.)
 - **Derive any `Repo | Branch` line you print from command output** — `git -C "$REPO" rev-parse
   --abbrev-ref HEAD` — never from memory. An echo written from belief can only confirm the belief; it
   cannot catch a wrong one, which is the only thing it is there for.
