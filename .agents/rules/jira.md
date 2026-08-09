@@ -6,11 +6,33 @@ description: "How ANY agent on this machine reads and writes the live Jira board
 # Jira operations — the board is one shell command away
 
 **The fact every platform misses:** Jira is fully reachable from this machine RIGHT NOW via
-**`acli`** (`/opt/homebrew/bin/acli`), already authenticated — the API token lives in the macOS
-keychain, **never** in a repo file, a commit, or chat. There is no MCP server and none is needed:
-if you can run a bash command, you can read and write the board. "I have no Jira integration" is
-false by design — the CLI *is* the integration, chosen precisely so every platform (Claude Code,
-Gemini, opencode, Codex, Antigravity) shares one tool with zero per-platform config.
+**`acli`**, already authenticated — the API token lives in the OS credential store (the macOS
+keychain on the Mac, the Windows equivalent on the PC), **never** in a repo file, a commit, or chat.
+There is no MCP server and none is needed: if you can run a bash command, you can read and write the
+board. "I have no Jira integration" is false by design — the CLI *is* the integration, chosen
+precisely so every platform (Claude Code, Gemini, opencode, Codex, Antigravity) shares one tool with
+zero per-platform config.
+
+**Verify — never assume, and never hardcode a path.** Both the binary's location and the credential
+store are per-machine; this rule is read on the Mac AND the Windows PC (`two-machines-mac-and-pc`).
+One command answers "can I reach the board?" identically on every machine and every platform:
+
+```bash
+acli jira auth status      # ✓ Authenticated + site + account, or a clear failure
+```
+
+⛔ **An `acli` failure is a fact about YOUR SHELL, not about the board.** A sandboxed tool call
+cannot reach the OS credential store, so `acli` fails there while working perfectly in the same repo
+unsandboxed. Read that failure as *"I could not see the board"* — **never** as any of these:
+
+| The wrong conclusion | What it actually was |
+|---|---|
+| "no such ticket / the board says X" | you never reached the board |
+| "the CLI is no longer authenticated" | your shell couldn't reach the store; `auth status` unsandboxed says otherwise |
+| "I can't mint, so I'll reuse an existing key" | see Guardrail 1 — this is how a closed ticket gets reopened by accident |
+
+**Re-run unsandboxed before you believe it.** This produced a wrong conclusion twice on 2026-08-09 —
+the second time from an agent that had correctly diagnosed the sandbox cause minutes earlier.
 
 ## The map
 
@@ -317,6 +339,21 @@ unrecognized tickets on sight.
 1. **Never invent a key.** A key comes from an existing ticket, a branch name, or the create output
    of a ticket you just minted at one of the two seams — never from imagination. A well-formed wrong
    key is worse than none — it silently decorates the wrong ticket.
+   **And it must be an OPEN ticket.** Borrowing a `Done` ticket's key because the new work is
+   adjacent — same files, a follow-on, *"no Jira state will be changed anyway"* — is the same defect
+   wearing a reason. Two mechanisms make that promise false:
+   - Atlassian's GitHub app links every commit on a `<prefix>/<KEY>-<slug>` branch (§The ticket ↔ file
+     join). A closed ticket silently accumulates branches and commits dated after its close.
+   - `jira_feed.py devrecord` keeps **exactly one** Dev Record per ticket and updates it **in place**.
+     A close-out under a borrowed key **overwrites the record of the work that earned the ticket.**
+
+   The armed commit-msg hook checks the *project* prefix, never the *status* — **it will not catch
+   this.** One read is the whole guard, and it costs nothing:
+   ```bash
+   acli jira workitem view <KEY> --fields "status"     # Done? then it is not your key
+   ```
+   Can't mint? That is the sandbox trap at the top of this file, not a licence to reuse — re-run
+   unsandboxed, then mint at the §Who mints tickets seam. Minting is one command and always available.
 2. **Placement stays the operator's.** Machinery mints at the two seams, moves status, and posts
    evidence — sprint/backlog placement, priorities, and board layout are human decisions.
 3. **Bare-state board.** Only OPEN work gets tickets. Never resurrect finished epics as tickets —
@@ -329,4 +366,6 @@ unrecognized tickets on sight.
    **`/sudo-parallel-check` is not a fifth** — it writes the `parallel-ok` **label** and one comment
    on the epic, and deliberately transitions nothing. Placement stays the operator's (guardrail 2);
    "these three are safe together" is not a reason to move a card.
-5. **The token stays in the keychain.** Never echo, copy, or persist it anywhere.
+5. **The token stays in the OS credential store.** Never echo, copy, or persist it anywhere — and
+   never bake a binary path or a store name into a doc. Both are per-machine, this file is read on
+   the Mac and the Windows PC, and a hardcoded Mac path is what teaches a PC agent it has no Jira.
