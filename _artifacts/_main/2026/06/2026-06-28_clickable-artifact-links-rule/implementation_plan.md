@@ -14,7 +14,7 @@ chat is a clickable Markdown link** (`[label](relative/path)`) he can open — n
 Must apply on **this lobby (Sudo_Hatter_Command)** plus **AGY_AVIATIONCHAT** and **Fresh_Workspace_BMAD**.
 
 ## What's already there (so we don't duplicate)
-- [artifacts-always-first.md:48-51](../../../.agents/rules/artifacts-always-first.md#L48-L51) already has
+- [artifacts-always-first.md:48-51](../../../../../.agents/rules/artifacts-always-first.md#L48-L51) already has
   a "🔗 Link every artifact in the chat" callout — but it is **scoped to the 5 formal artifact types**
   (plan, walkthrough, bug-list, code-review, self-audit) and only loads on **work sessions** (it's the
   "protocol" tier, not the always-load floor).

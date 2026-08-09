@@ -10,7 +10,7 @@ ArtifactMetadata:
 
 Source: [2026-07-24_sudo-flow-rules-audit.md](2026-07-24_sudo-flow-rules-audit.md). All edits are lobby **master** files (`.agents/commands/` + `.agents/rules/` + one `_my_resources` doc); mirrors follow via `/sync-agents`. No project-code changes. ② (`sudo-dev-story-tests.md`, 11,988/12,000 chars) is deliberately **untouched** — its contradiction is fixed from the constitution side.
 
-## Edit 1 — [sudo-update-sprint-memory.md](../../../.agents/commands/sudo-update-sprint-memory.md) (F1 + F11 + F4b)
+## Edit 1 — [sudo-update-sprint-memory.md](../../../../../.agents/commands/sudo-update-sprint-memory.md) (F1 + F11 + F4b)
 
 Now 12,420 chars — **over the 12,000 Antigravity workflow limit**. Target ≤ 11,950, verified by `wc -c` after the edit.
 
@@ -18,28 +18,28 @@ Now 12,420 chars — **over the 12,000 Antigravity workflow limit**. Target ≤ 
 - **Strip** `(G1 close-out)` from the H1 (orphaned guardrail numbering).
 - **Trim without weakening any contract** — compress explanatory parentheticals only; every gate, the no-punt flip rules, fail-open verdict read, explicit-paths ban, and Step 7/8 sequence stay semantically identical. Targets: the `/autopilot` no-conflict parenthetical (Step 4), Step 7's bash-comment tails and intro sentence tail, the `~27k tokens` aside (Step 1), the "(MOST sessions …)" aside (Step 6), frontmatter description tail.
 
-## Edit 2 — [constitution.md](../../../.agents/rules/constitution.md) (F2 + F12)
+## Edit 2 — [constitution.md](../../../../../.agents/rules/constitution.md) (F2 + F12)
 
 - **Gate-word carve-out** — append to the "Never treat 'ok', 'perfect', 'continue' …" hard stop: a reply word that a sudo command's own body explicitly defines as its gate trigger (②'s Step-2 `continue`, close-out's invocation-as-sign-off) **IS** the explicit approval for exactly the step it gates; the ban targets ad-hoc chat words, not command-defined gates.
 - **Review-output homes** — extend the "Always save code-review output…" bullet: the ③ gate ALSO writes its machine-read verdict to `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md`; two homes by design (session detail vs the verdict close-out greps). Prevents a future "fix" that collapses one into the other.
 
-## Edit 3 — [000-PLAN-FIRST-GATE.md](../../../.agents/rules/000-PLAN-FIRST-GATE.md) (F3)
+## Edit 3 — [000-PLAN-FIRST-GATE.md](../../../../../.agents/rules/000-PLAN-FIRST-GATE.md) (F3)
 
 - Exception paragraph: drop `task.md` from the artifact-directory list.
 - "After Approval" step 1: replace `Create task.md artifact…` with the current contract — track via the live TodoWrite list; its end-state lands as `## Task Checklist` inside `walkthrough.md`(per `artifacts-always-first`). No other restructuring (surgical).
 
-## Edit 4 — [sudo-boot-sprint-memory.md](../../../.agents/commands/sudo-boot-sprint-memory.md) (F4)
+## Edit 4 — [sudo-boot-sprint-memory.md](../../../../../.agents/commands/sudo-boot-sprint-memory.md) (F4)
 
 - Step 3: drop the orphaned **G2/G3/G5/G6/G8** numbers — same five checks, plainly named; the Firestore line generalized to "shared-resource singleton (one client per DB/auth/cache — per constitution)" so the shared command stays project-agnostic.
 - Strip `(G1)` from the H1 and delete the "manual trigger for Guardrail G1" sentence.
 
-## Edit 5 — [sudo-code-review.md](../../../.agents/commands/sudo-code-review.md) + [clean-code-audit.md](../../../.agents/commands/clean-code-audit.md) (F5)
+## Edit 5 — [sudo-code-review.md](../../../../../.agents/commands/sudo-code-review.md) + [clean-code-audit.md](../../../../../.agents/commands/clean-code-audit.md) (F5)
 
 - ③ Step 3.5: when running **inside ③** (Step 1's adversarial review already walked the hunks), clean-code-audit runs the **machine floor + comment contract (§2A)** only and **imports Step 1's drift findings** into its findings table (source-labelled `review`); it does not re-hunt §2B.
 - clean-code-audit Step 2: matching scoping note — Part B runs only on **standalone** invocations.
 - Result: identical coverage (same checklist, run once), one full diff re-read saved per story.
 
-## Edit 6 — [sudo-code-review.md](../../../.agents/commands/sudo-code-review.md) (F6)
+## Edit 6 — [sudo-code-review.md](../../../../../.agents/commands/sudo-code-review.md) (F6)
 
 Make the per-story CI-pipeline audit **change-triggered**. Step 3.1 guard (a) + Step 3.4's soft-step scan run only when:
 
@@ -49,7 +49,7 @@ Make the per-story CI-pipeline audit **change-triggered**. Step 3.1 guard (a) + 
 
 After a run, write `ci_audit: {sha, date}` back into `sudo-tests.yaml`; otherwise the verdict states "CI audit current as of `<sha>`". Exact drift detection, zero repeated audits.
 
-## Edit 7 — [sudo-quick-dev.md](../../../.agents/commands/sudo-quick-dev.md) (F7 + Daniel's ask: fast AND safe)
+## Edit 7 — [sudo-quick-dev.md](../../../../../.agents/commands/sudo-quick-dev.md) (F7 + Daniel's ask: fast AND safe)
 
 The fast lane keeps its speed (no ATDD, no planning stop, no adversarial review) and gains four cheap guards — each targets a real risk the lane currently leaves open:
 
@@ -61,7 +61,7 @@ The fast lane keeps its speed (no ATDD, no planning stop, no adversarial review)
 
 Size: \~3.3k → \~5.5k chars, far under the 12k limit.
 
-## Edit 8 — [sudo_workflows_testing.md](../../../_my_resources/_quick_reference/sudo_workflows_testing.md) (F9 + F10)
+## Edit 8 — [sudo_workflows_testing.md](../../../../../_my_resources/_quick_reference/sudo_workflows_testing.md) (F9 + F10)
 
 - Swap `/bmad-create-epics-and-stories` → `/sudo-create-epic-sprint` in all four places (map node, §3 table, §4 step 1, §7 trigger column), noting it wraps the BMAD skill + sprint board + risk-scoring with the two-checkpoint flow contract.
 - Fix ③'s order in §3/§4: review → test gate (suite + trace + NFR + test-review + automate evidence) → clean-code audit (Step 3.5) → verdict. Reflect Edit 5/6 (drift findings imported; CI audit change-triggered) in the two lines that describe them.

@@ -10,8 +10,8 @@ ArtifactMetadata:
 
 ## What changed and why
 
-**1. New single source for Step 0 — [`.agents/rules/sudo-target-resolution.md`](../../../.agents/rules/sudo-target-resolution.md) (4.1 KB, new).**
-The target-resolution ladder existed as ~20 KB of hand-paraphrased near-copies across 16 masters (16 distinct texts — drift, not just weight). It is now written ONCE, with its three deliberate variants: **§STD** (default ladder), **§ASK** (boot — never silently reuse the pointer), **§DUAL** (park/resume — both repos), plus **§BIND** (everything under `PROJECT_ROOT`; missing → STOP). Every command's Step 0 is now ~5 lines that keep the obligations inline (echo contract, STOP-and-ask, never-the-lobby, missing-path STOP) and point at the rule for mechanics. Row added to [`rules/INDEX.md`](../../../.agents/rules/INDEX.md).
+**1. New single source for Step 0 — [`.agents/rules/sudo-target-resolution.md`](../../../../../.agents/rules/sudo-target-resolution.md) (4.1 KB, new).**
+The target-resolution ladder existed as ~20 KB of hand-paraphrased near-copies across 16 masters (16 distinct texts — drift, not just weight). It is now written ONCE, with its three deliberate variants: **§STD** (default ladder), **§ASK** (boot — never silently reuse the pointer), **§DUAL** (park/resume — both repos), plus **§BIND** (everything under `PROJECT_ROOT`; missing → STOP). Every command's Step 0 is now ~5 lines that keep the obligations inline (echo contract, STOP-and-ask, never-the-lobby, missing-path STOP) and point at the rule for mechanics. Row added to [`rules/INDEX.md`](../../../../../.agents/rules/INDEX.md).
 
 **2. Fifteen masters slimmed** (Step-0 swap + per-plan cuts; every gate kept — see verification):
 
@@ -39,7 +39,7 @@ Beyond Step 0, the cuts were: worktree re-entry blocks → `worktree-per-story` 
 
 **2b. NEW `/sudo-prune-context` — close-out became an orchestrator (Daniel's mid-execution directive).**
 Close-out's Step 5 (the whole prune-&-budget policy, ~2.6 KB) is a self-contained job, so it moved into
-[`.agents/commands/sudo-prune-context.md`](../../../.agents/commands/sudo-prune-context.md) (4.4 KB,
+[`.agents/commands/sudo-prune-context.md`](../../../../../.agents/commands/sudo-prune-context.md) (4.4 KB,
 universal platforms, row added to `commands/INDEX.md`). Close-out now reads as the call list Daniel asked
 for — verify → route → **flip** (its one gate) → `/sudo-prune-context` → artifacts + memory →
 `git-policy` "The landing" → `/sudo-close-workingtree` — keeping only what it alone owns: the flip
@@ -48,7 +48,7 @@ runnable standalone whenever boot feels heavy.
 
 **3. Antigravity mirrors: zero generated stubs left.** ② (10,438), ③ (10,000), close-out (10,262 after the `/sudo-prune-context` extraction), and `sudo-self-audit` (9,507) all sit under the 11.5 KB stub threshold — sync replaced every generated launcher stub with the **full verbatim workflow**. Antigravity now runs the whole dev flow natively; the only remaining launcher is adviser-board's hand-authored one, by design.
 
-**4. Worktree policy re-scoped (Daniel's directive, 2026-07-25).** Worktrees now belong EXCLUSIVELY to the sudo story lanes (① / ② / quick-dev / autopilot) — the lanes that also land (`/sudo-update-sprint-memory` Step 7) and prune (`/sudo-close-workingtree`) them. Ad-hoc non-story work (conversational quick fixes, toolkit/system maintenance) opens NO worktree and edits `main_debug` directly — an orphan tree no close-out will ever prune is the failure this prevents. Landed in four places: [`worktree-per-story.md`](../../../.agents/rules/worktree-per-story.md) (description, Trigger, Exempt, G1, Hard stops), [`git-policy.md`](../../../.agents/rules/git-policy.md) (Default section + write-gate table), [`AGENTS.md`](../../../AGENTS.md) §6 WORKTREE GATE, [`artifacts-always-first.md`](../../../.agents/rules/artifacts-always-first.md) Hard Stops. Note: `/sudo-quick-dev` KEEPS its worktree — it is a story lane (mints a story file, has a close-out path); "quick fixes" in the new boundary means ad-hoc non-lane work. Flag it if you meant quick-dev too.
+**4. Worktree policy re-scoped (Daniel's directive, 2026-07-25).** Worktrees now belong EXCLUSIVELY to the sudo story lanes (① / ② / quick-dev / autopilot) — the lanes that also land (`/sudo-update-sprint-memory` Step 7) and prune (`/sudo-close-workingtree`) them. Ad-hoc non-story work (conversational quick fixes, toolkit/system maintenance) opens NO worktree and edits `main_debug` directly — an orphan tree no close-out will ever prune is the failure this prevents. Landed in four places: [`worktree-per-story.md`](../../../../../.agents/rules/worktree-per-story.md) (description, Trigger, Exempt, G1, Hard stops), [`git-policy.md`](../../../../../.agents/rules/git-policy.md) (Default section + write-gate table), [`AGENTS.md`](../../../../../AGENTS.md) §6 WORKTREE GATE, [`artifacts-always-first.md`](../../../../../.agents/rules/artifacts-always-first.md) Hard Stops. Note: `/sudo-quick-dev` KEEPS its worktree — it is a story lane (mints a story file, has a close-out path); "quick fixes" in the new boundary means ad-hoc non-lane work. Flag it if you meant quick-dev too.
 
 **5. Bug fixes.** Six SKILL.md launchers cited `_my_resources/active-project.txt` (doesn't exist) → `.agents/active-project.txt` (boot, code-review, dev-story-tests, self-audit, update-sprint-memory, write-story-tests). `sudo-self-audit_AP` repointed from the stub-fragile `workflows/` mirror to the master in `commands/`. Per Daniel: the `Co-Authored-By: Claude Opus 4.8` trailer instructions REMOVED from ③ and ③_AP (not genericized — dropped).
 

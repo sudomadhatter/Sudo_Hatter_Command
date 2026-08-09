@@ -48,17 +48,33 @@ There are **two kinds of Epic** and they are indistinguishable in Jira's UI:
 | **`Task`** | workflow / IDE / rules / skills / toolkit work — **not** a story, filed under a grouping epic because Jira offers no other container | none of the above |
 | **`Bug`** | **TEMPORARY.** A `Story` **or** a `Task` found to be broken wears `Bug` and comes back out of a finished status until the fix lands. Same ticket, same number, same story file — flagged | never computed — **raised** by an audit or by hand, **cleared at close-out** |
 
-**The `Bug` lifecycle — two doors in, one door out:**
+**The `Bug` lifecycle — two doors in, one door out.** All three moves are one script (SCC-54):
 
 ```
-an audit finds a live bug   ->  trace it to the ticket that introduced it
-                                 status -> out of Done,  type Story|Task -> Bug
-the operator finds one      ->  same flip, by hand
-the fix lands, close-out    ->  type Bug -> Story|Task   (the bug is gone),  status -> Done
+an audit finds a live bug  ->  jira_feed.py trace --path <file>:<line>     (PROPOSES, never writes)
+                               jira_feed.py flag  --key <K> --reason "..." --apply
+the operator finds one     ->  the same `flag` call, typed by hand
+the fix lands, close-out   ->  jira_feed.py devrecord --key <K> --closing --apply
 ```
+
+`flag` does the whole flip and proves it landed: `Story|Task -> Bug`, `Done -> To Do`, and a **Bug
+flag** comment carrying the reason, the evidence, and *what the ticket was* so the restore is
+auditable. It is **idempotent** — a ticket already flagged is a no-op, so two testers finding the
+same bug cannot fight over the board — and it **only moves a ticket out of `Done`**: one sitting
+`In Progress` or `In Review` was never finished, and shoving it back to `To Do` would erase real
+state to record something the type already says. It refuses an `Epic` outright.
+
+⛔ **`trace` proposes; only a human hands a key to `flag`.** They are two verbs so that they cannot
+be one. The trace answers *"which ticket last touched this line"*, which is **not** the same question
+as *"which ticket introduced this bug"* — a later unrelated edit takes the blame outright. A wrong
+answer pulls an innocent ticket out of `Done`, and nothing restores the board's history of having
+been right. `flag` therefore takes `--key` and only `--key`; it will not read a trace.
 
 **Both raisers are legitimate**, and the audit is the primary one: it is the path that finds bugs
 nobody has noticed yet. The manual flip is the same operation done by a human who spotted it first.
+**`/sudo-live-testing-team` is the wired entry point** (Step 3.5) — it is the one command that flies
+the running app and files a researched bug doc per symptom, so it already holds exactly what `trace`
+needs. Any other audit can call the same two verbs; nothing about them is that command's private.
 
 ⛔ **Nothing else may retype a `Bug`.** It carries the same number and the same story file it always
 did, so every rule here reads it as a mistype — and "correcting" it mid-flight **erases the only
@@ -178,6 +194,8 @@ python3 .agents/scripts/jira_feed.py mint      --story 12.3.4 --project P --jira
 python3 .agents/scripts/jira_feed.py devrecord --key AVCH-15 --story 12.3.4 --project P \
                                                --decision "..." --pitfall "..." --apply
 python3 .agents/scripts/jira_feed.py check     --key AVCH-15 --story 12.3.4
+python3 .agents/scripts/jira_feed.py trace     --path backend/x.py:42 --path frontend/y.tsx
+python3 .agents/scripts/jira_feed.py flag      --key AVCH-15 --reason "..." --evidence "..." --apply
 ```
 
 - **`mint`** (① Step 1.6) dedupes on the BMAD number, renders the **description from the story file**
@@ -187,6 +205,11 @@ python3 .agents/scripts/jira_feed.py check     --key AVCH-15 --story 12.3.4
   pitfalls, follow-ons, outcome, evidence. **Exactly one per ticket:** an existing record is updated in
   place, never stacked, so the branch-closer and the story-closer cannot leave two partial records.
 - **`check`** answers "does this ticket carry both halves?" — exit 2 if not.
+- **`trace`** (SCC-54) reads git history — `blame` on a `file:LINE`, `git log --no-merges` on the
+  file — and ranks the tickets whose commits touched it, blame first. **No network, no board write**,
+  and it only ever proposes keys from the project(s) in this repo's `.agents/jira.conf`.
+- **`flag`** (SCC-54) is the raise half of the `Bug` rule, above. Needs `--reason`; reads the type
+  and the status back after writing them.
 
 Two rules that bind on YOU, not the script: **nothing is invented** (a missing story section renders
 `(none found ...)` and warns — do not paper over it), and **the buckets are yours to fill.** The
@@ -225,7 +248,9 @@ unrecognized tickets on sight.
    evidence — sprint/backlog placement, priorities, and board layout are human decisions.
 3. **Bare-state board.** Only OPEN work gets tickets. Never resurrect finished epics as tickets —
    done work is file history (`sprint-status.yaml`, `epics.md`), not board rows.
-4. **Don't double-move.** Two transitions are already automated: `/sudo-push-e2e` Step 6.5 moves the
-   EPIC ticket at merge; `/sudo-update-sprint-memory` Step 4.5 moves the STORY ticket at close-out.
-   Outside those, transition a ticket only when the operator asks.
+4. **Don't double-move.** Four transitions are already automated: `/sudo-push-e2e` Step 6.5 moves the
+   EPIC ticket at merge; `/sudo-update-sprint-memory` Step 4.5 moves the STORY ticket at close-out;
+   `/close-task-merge-tree` Step 4 moves the TASK ticket to `Done`; and `jira_feed.py flag` moves a
+   ticket **out of `Done`** when it is found broken. Outside those, transition a ticket only when the
+   operator asks.
 5. **The token stays in the keychain.** Never echo, copy, or persist it anywhere.

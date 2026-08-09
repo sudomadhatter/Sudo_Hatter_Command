@@ -20,7 +20,7 @@ Codex never saw it.
 
 ### What was built
 
-**[.agents/rules/operator-profile.md](../../../.agents/rules/operator-profile.md)** — NEW, `activation:
+**[.agents/rules/operator-profile.md](../../../../../.agents/rules/operator-profile.md)** — NEW, `activation:
 Always On`, floor tier. Three parts:
 
 1. **Who Daniel is** — product-and-systems thinker; designed this command center; reads and reasons
@@ -42,9 +42,9 @@ a one-line self-check for the opening sentence of any substantial reply.
 
 | File | Change |
 |---|---|
-| [AGENTS.md §3](../../../AGENTS.md) | added to the always-load line, first, with a one-clause gloss |
-| [.agents/rules/INDEX.md](../../../.agents/rules/INDEX.md) | added to the floor tier in "How rules load" + a row in the set table; notes *why* it can't be on-demand (it would load after the reply that needed it) |
-| [.agents/rules/prose-formatting.md](../../../.agents/rules/prose-formatting.md) | blockquote pointing up to `operator-profile` as the WHY; states that on conflict, `operator-profile` is the intent |
+| [AGENTS.md §3](../../../../../AGENTS.md) | added to the always-load line, first, with a one-clause gloss |
+| [.agents/rules/INDEX.md](../../../../../.agents/rules/INDEX.md) | added to the floor tier in "How rules load" + a row in the set table; notes *why* it can't be on-demand (it would load after the reply that needed it) |
+| [.agents/rules/prose-formatting.md](../../../../../.agents/rules/prose-formatting.md) | blockquote pointing up to `operator-profile` as the WHY; states that on conflict, `operator-profile` is the intent |
 | `Projects/Fresh_Workspace_BMAD/` | rule copied + its `AGENTS.md` §4 and `.agents/rules/INDEX.md` mirrored, per `living-template-sync` — new projects start current |
 
 ---
@@ -62,7 +62,7 @@ Phase 4 already wrote a session brief, but three gaps meant it couldn't do what 
 - **The in-chat close was "a two-line wrap"** — the compressed form only, which is precisely the
   failure mode that produced the 2026-07-21 complaint.
 
-### What changed — all in [.agents/commands/sudo-adviser-board.md](../../../.agents/commands/sudo-adviser-board.md)
+### What changed — all in [.agents/commands/sudo-adviser-board.md](../../../../../.agents/commands/sudo-adviser-board.md)
 
 The skill and workflow files are thin launchers pointing at the command, so the command is the single
 source of truth and no duplication needed fixing.
