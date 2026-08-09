@@ -90,6 +90,37 @@ Never open a second worktree for a slug that already has one, and never fall bac
 checkout because the tree "looked empty" from where you happened to be standing. Match by the `<story-slug>`
 in the branch/path, not by cwd.
 
+## ⛔ `cwd` is not intent — pin `--repo` and `--branch` on every script
+
+**The moment more than one lane exists, where you are standing stops being evidence of what you meant.**
+`cwd` resets to the shared checkout at slash-command boundaries, at a `/compact`, and whenever a tool call
+starts fresh. Every repo-resolving script in this toolkit — `task_preflight.py`, `closeout_preflight.py`,
+`jira_feed.py`, `check_maps.py` — finds its target by **walking up from `cwd` looking for `.git`**, and
+defaults `--branch` to whatever `HEAD` that repo happens to be on. In a lobby that a sibling lane has moved
+off `main`, both defaults resolve to **that lane's work**.
+
+**This does not fail loudly. It cannot.** The script has no way to know which story or ticket you meant, so
+there is no mismatch for it to detect: it runs every check honestly and reports a clean result *about the
+wrong branch*. On 2026-08-09 a Task close-out drew `VERDICT: clear to close out and merge` for a sibling's
+in-flight `chore/*` branch; merging it would have put another lane's unfinished work on `main` under the
+wrong ticket.
+
+So, whenever a worktree is open anywhere in the repo — which is the standing condition here, not the
+exception:
+
+- **Pass `--repo <path>` and `--branch <name>` explicitly.** They read as optional because the script can
+  guess. The guess is precisely what breaks under parallel lanes.
+- **Derive any `Repo | Branch` line you print from command output** — `git -C "$REPO" rev-parse
+  --abbrev-ref HEAD` — never from memory. An echo written from belief can only confirm the belief; it
+  cannot catch a wrong one, which is the only thing it is there for.
+- **Check the script's echoed target before reading its verdict.** Name the Jira key you intend to act on
+  *first*, then confirm the script resolved that same key. Mismatch → **STOP**, and say which branch it
+  resolved versus which you meant.
+
+The same shape bites in reverse when reading results: a gate piped to `head`/`tail` reports the **pipe's**
+exit code, not the gate's, so a failed gate prints `exit=0`. Run gates unpiped, or capture with
+`out=$(cmd); rc=$?`.
+
 ## Inside the worktree — commit freely
 
 The worktree is your box. Commit your own work as you go; no approval, no handing Daniel a command.

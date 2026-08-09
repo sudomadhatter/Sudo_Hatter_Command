@@ -116,6 +116,13 @@ the old "N stories behind" fast-forward died with `main_debug` on 2026-08-07.)*
    manual learnings, new bugs, or sprint-objective changes to add?"*
 
 ## Step 6 — Prune EVERY tree and branch (AUTOMATIC — only after Step 5 is green)
+
+⛔ **Every per-lane command here takes an explicit `--repo`/`--branch` (or `git -C <tree>`).** This command
+is the one that runs with the MOST sibling trees open at once, so a default resolved from `cwd` is most
+likely to land on the wrong lane — and it prunes, which is not what you want aimed at a guess
+(`worktree-per-story.md` → *"`cwd` is not intent"*). Confirm each invocation echoed the slug you meant
+before it removes anything.
+
 For each landed lane: `/sudo-close-workingtree <story-slug>` — verify merged, remove
 `.claude/worktrees/<slug>`, delete local + remote `claude/<JIRA-KEY>-<slug>`. ⛔ Prune NOTHING before the
 combined gate is green — the worktrees are the rollback points. Blocked/skipped lanes keep their

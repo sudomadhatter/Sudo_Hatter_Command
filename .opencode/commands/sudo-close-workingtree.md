@@ -24,8 +24,15 @@ Echo `Target: Projects/<name> | Story: <story-slug>` before proceeding.
 ## Step 0.6 — Preflight first (fast pre-check — it does NOT replace the gates below)
 
 ```bash
-python3 .agents/scripts/closeout_preflight.py --story <id> --project <PROJECT> --fetch [--branch <name>]
+python3 .agents/scripts/closeout_preflight.py --story <id> --project <PROJECT> --fetch --branch <name>
 ```
+
+**Pass `--branch` explicitly, and check the target it echoes before reading its result.** This command
+runs when worktrees are open by definition, and that is exactly when `cwd` stops matching intent — the
+script walks up from `cwd` for `.git` and defaults to that repo's `HEAD`, so a sibling lane that moved the
+shared checkout silently becomes the target, with every check reported honestly about the wrong branch
+(`worktree-per-story.md` → *"`cwd` is not intent"*). Resolved slug ≠ the slug you echoed in Step 0 →
+**STOP**.
 
 One call answers Steps 1 and 1.6's questions mechanically: is the branch an ancestor of
 the epic branch, is every repo `0/0` and clean, and is each registered worktree LIVE / LOST (registered,
