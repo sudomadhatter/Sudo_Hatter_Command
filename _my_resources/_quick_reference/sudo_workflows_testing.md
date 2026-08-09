@@ -431,6 +431,41 @@ the epic reaches `main` exactly one way: `/sudo-push-e2e`. Small fixes outside a
 `chore/<JIRA-KEY>-<slug>` branch off `main` (every chore carries its own ticket), merged back the same
 session with your sign-off — that merge is `/close-task-merge-tree`, and typing it **is** the sign-off.
 
+### ⭐ Every lane now gets its own workspace — not just story lanes
+
+**Changed 2026-08-09 (SCC-62).** The rule used to decide who got an isolated workspace by asking *what
+kind of work this is*: a story lane got one, everything else was **forbidden** one and had to work in the
+shared checkout. That was backwards. The thing that causes damage is **how many agents are in the repo at
+once**, and a small toolkit fix running next to a story collides just as hard — except it was the one
+told to sit where the collisions happen.
+
+The old wording also made the agent work out its own category, and ended with *"unsure? you're not"* —
+which sent every ambiguous case into the shared checkout, the one place it must not go. **Now: if a lane
+is going to commit anything, it gets its own workspace. No classification, nothing to get wrong.**
+
+Two things deliberately did **not** change, because changing them would break the epic model:
+
+- **Where a lane branches FROM is untouched** — a story still branches from its epic branch (never
+  `main`), Task work still branches from `main`. SCC-62 changed *who gets a workspace*, not *what they
+  branch from*.
+- **Each close-out still cleans up its own** — `/sudo-close-workingtree` for stories, and
+  `/close-task-merge-tree` now does it for Tasks. That prune step is the whole reason Task work was
+  banned from having a workspace before: nothing was cleaning them up, so they piled up as orphans.
+
+**Why this was worth doing:** on 2026-08-09 it went wrong twice in one afternoon. A close-out inspected
+a *different* lane's branch and reported it clear to merge (SCC-61), and the next Task opened onto a
+checkout still holding 11 of that lane's half-finished files (SCC-58).
+
+**The one practical cost, solved.** A fresh workspace doesn't get the files git deliberately ignores —
+`.env`, keys, `node_modules`. You can *see* them, but the test runner and dev server look for them in
+the folder they're running in, so they fail. Run
+`python3 .agents/scripts/link-worktree-assets.py <workspace>` (PC: `python`) and it points the new
+workspace at the originals in seconds rather than copying gigabytes. It warns you about the two cases
+that bite: a linked `.env` is **shared** — change it in one lane and every lane sees it (`--copy-env` if
+that's not what you want) — and a shared `node_modules` is fine for day-to-day work but the E2E suite
+needs its own. **Always `--unlink` before deleting a workspace**; both close-outs do it automatically,
+because a delete that walks through a link destroys the *original*, not the shortcut.
+
 *What you're looking at: the one road to production, and where the gate stands on it.*
 
 ```mermaid

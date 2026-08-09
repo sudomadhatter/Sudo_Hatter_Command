@@ -1,6 +1,6 @@
 ---
 name: worktree-per-story
-description: "Fires when a sudo story lane (① /sudo-write-story-tests · ② /sudo-dev-story-tests · /sudo-quick-dev · autopilot) starts work that will produce commits — and ONLY there. One story, one worktree, one `claude/*` branch, opened off the story's EPIC branch (`epic/<JIRA-KEY>-<slug>`) BEFORE the first edit, committed freely inside, landed at close-out and pruned by /sudo-close-workingtree. Ad-hoc non-story work NEVER opens a worktree — it takes a `chore/*` branch off main. Read-only sessions exempt. Pairs with git-policy.md."
+description: "Fires when ANY lane starts work that will produce commits — the trigger is concurrency, not work type (SCC-62, 2026-08-09). One lane, one worktree, opened BEFORE the first edit, committed freely inside, landed and pruned by its own close-out. The BASE still differs by lane: a sudo story lane takes `claude/<KEY>-<slug>` off the story's EPIC branch (never main) and is pruned by /sudo-close-workingtree; ad-hoc/Task work takes `chore/<KEY>-<slug>` off main and is pruned by /close-task-merge-tree Step 5. Carries the `⛔ Your tree is your world` hard stop (never touch or report another lane's files) and `⛔ cwd is not intent`. Read-only sessions and a single watched trivial edit are exempt. Pairs with git-policy.md."
 ---
 
 # Worktree Per Story
@@ -34,39 +34,93 @@ makes that survivable. Assume from your first command that you are NOT alone in 
   against the live sibling `claude/*` branches, and honor any set-wide LANDING RULE posted on the
   project's sprint board — while one is active, no lane lands alone.
 
-## Trigger — the sudo story lanes, automatic there, ONLY there
+## Trigger — will this lane commit? Then it opens a worktree
 
-**A worktree opens when a sudo story lane starts work that will produce story commits** — ①
-`/sudo-write-story-tests`, ② `/sudo-dev-story-tests`, `/sudo-quick-dev`, the autopilot engines — **BEFORE
-the first project file is edited.** Automatic inside those lanes; the agent does not ask each time. The
-lane that opens the tree is the lane that closes it: the story lands at close-out
-(`/sudo-update-sprint-memory` Step 7) and `/sudo-close-workingtree` prunes the tree + branches (its
-Step 8). **Never open a worktree outside a sudo story lane.** Ad-hoc work Daniel asks for
-conversationally — quick fixes, toolkit/system maintenance, doc edits — takes a short-lived `chore/<JIRA-KEY>-<slug>`
-branch off `main` (no worktree, no `claude/*` branch), merged back to `main` in the same session with
-Daniel's sign-off; an orphan tree that no close-out will ever prune is exactly what this boundary
-prevents. Unsure whether you're in a lane? You're not — take a `chore/*` branch (or ask).
+**A worktree opens when a lane starts work that will produce commits — ANY lane, BEFORE the first
+project file is edited.** Automatic; the agent does not ask each time, and does not first work out what
+*kind* of work this is.
+
+> **Why the trigger is concurrency, not work type.** This rule used to gate on the lane: sudo story
+> lanes got a tree, ad-hoc work was *forbidden* one. That split does not match the hazard. A chore lane
+> running beside a story lane collides exactly as hard as two story lanes — and it was the one told to
+> sit in the shared checkout. Worse, the old wording made the agent **self-classify** ("am I in a sudo
+> story lane?") and ended with *"unsure? you're not"* — which routed every ambiguous case into the
+> shared checkout, the one place it must not go. **Removing the classification removes the failure.**
+> The old ban existed to prevent orphan trees that no close-out would prune; that is now handled —
+> `/close-task-merge-tree` Step 5 prunes its own tree, exactly as `/sudo-close-workingtree` Step 8 does.
+> (2026-08-09, SCC-62. Twice in one day this went wrong: SCC-61 exists because a close-out preflight
+> resolved a sibling lane's branch; SCC-58 then opened onto a checkout standing on SCC-61's branch with
+> 11 dirty files.)
+
+**The tree is the default. What differs by lane is the BRANCH and its BASE — never whether you isolate:**
+
+| Lane | Branch | Base — this does NOT change | Closed + pruned by |
+|---|---|---|---|
+| Sudo story lane (① · ② · `/sudo-quick-dev` · autopilot) | `claude/<JIRA-KEY>-<story-slug>` | the story's **epic branch** (`epic/<JIRA-KEY>-<slug>`) — **never `main`** | `/sudo-update-sprint-memory` Step 7 → `/sudo-close-workingtree` Step 8 |
+| Ad-hoc / Task work (toolkit, rules, docs, config) | `chore/<JIRA-KEY>-<slug>` | `main` | `/close-task-merge-tree` (merge → Step 5 prunes branch **and** tree) |
 
 ```
-EnterWorktree  →  .claude/worktrees/<story-slug>/  on branch  claude/<JIRA-KEY>-<story-slug>
+EnterWorktree  →  .claude/worktrees/<slug>/  on branch  claude/<JIRA-KEY>-<story-slug>  or  chore/<JIRA-KEY>-<slug>
 ```
 
-Branched from **the story's epic branch (`epic/<JIRA-KEY>-<slug>`)**, never from `main`. The epic
-branch is cut from `main` at epic kickoff (`/sudo-create-epic-sprint`); if it doesn't exist yet,
-that step was skipped — go back and run it. The `worktree.baseRef: "head"` setting makes the new
-worktree inherit the current HEAD, so **check out the epic branch before opening the worktree** — if
-you are somewhere else, get there first (or say so out loud if you are deliberately stacking on
-another story's branch).
+⛔ **A story lane still branches from its epic branch, never from `main`.** SCC-62 changed *who gets a
+tree*, not *what they branch from* — a story cut from `main` loses every sibling's work in the epic and
+breaks the landing sequence. The epic branch is cut from `main` at epic kickoff
+(`/sudo-create-epic-sprint`); if it doesn't exist yet, that step was skipped — go back and run it. The
+`worktree.baseRef: "head"` setting makes the new worktree inherit the current HEAD, so **check out the
+base branch before opening the worktree** — if you are somewhere else, get there first (or say so out
+loud if you are deliberately stacking on another story's branch).
+
+**Bring the gitignored assets with you.** A worktree does not inherit `.env`, `auth_keys/` or
+`node_modules` — they are not in git, so there is nothing for `git worktree add` to copy, and reading
+them by absolute path does not help: pytest, uvicorn, `next dev` and the emulators resolve them
+**relative to cwd**. After opening a tree in any repo that has them, run (PC: `python`, not `python3`):
+
+```
+python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>
+```
+
+It links rather than copies, so the cost is seconds, not gigabytes. Two things it will tell you: a
+symlinked `.env` is **shared state** across lanes (good for key rotation, one collision surface back —
+use `--copy-env` if this lane will change it), and shared `node_modules` is fine for dev but the E2E
+tier must run its own `npm ci`. ⛔ **`--unlink` before the tree is removed** — a recursive delete through
+a junction destroys the shared target, not just the link. Both close-outs do this in their prune step.
 
 ### Exempt — no worktree needed
 
-- **Ad-hoc non-story work** — anything outside the sudo story lanes (see Trigger): `chore/<JIRA-KEY>-<slug>`
-  branch off `main`, explicit paths, merged back with sign-off; the push-approval hook still prompts
-  on the `main` merge.
 - **Read-only sessions** — questions, recon, code reading, reviews that write no project file.
+- **A single trivial edit the operator is watching** — a one-line doc/config fix in the moment. If it
+  grows a second file, open the tree.
 - **`/sudo-push-e2e`** — it operates *on* branches (`epic/<JIRA-KEY>-<slug>` → `main`), so it must run in the
   main checkout.
 - **Daniel says otherwise** — an explicit "just do it here" in the moment wins.
+
+### ⛔ Your tree is your world
+
+Isolation stops lanes from overwriting each other. It does **not** stop you from wandering into another
+lane's work and treating it as yours — which is the other half of the damage, and the more common half.
+
+- **Never sweep, revert, stage, commit, or "fix" a file you did not change.** Not even if it is
+  obviously broken. Report it in one line and move on.
+- **Never file another lane's in-flight state as a finding** — a half-edited file in the shared checkout
+  is work in progress, not a defect.
+- **Never merge, rebase onto, or delete a branch that is not yours**, and never check out a branch in
+  the shared checkout to "have a look" — that moves HEAD under whoever is standing there.
+- The shared checkout stands on `main`. If you find it on someone else's branch, that is a live lane:
+  leave it exactly as you found it. (See `⛔ cwd is not intent` below — this is why a close-out must
+  never resolve its target from cwd.)
+
+### Am I alone in this repo? — ask, don't assume
+
+Three commands, before the first edit. This catches the common case; **it is not what makes isolation
+safe** — the worktree default is. `git worktree list` is per-repo and machine-local: it cannot see a
+second *session* on the same branch, and shows nothing at all on a freshly-cloned machine.
+
+```
+git worktree list                              # other trees on THIS machine
+git branch --list 'chore/*' 'claude/*'         # other lanes' branches
+git status --short                             # someone else's dirty files
+```
 
 ## Resuming — a fresh chat picks the story back up
 
@@ -128,7 +182,7 @@ The safe-commit mechanics from `git-policy.md` still apply in full:
 
 | Gate | Rule |
 |---|---|
-| **G1 · Location** | Story-lane commits happen only inside a worktree, on a `claude/*` branch — HEAD at `main` during a story lane means you are in the shared checkout: open the worktree first. Ad-hoc (non-lane) work commits on its `chore/*` branch by design (see Trigger). (The `require-push-approval.py` hook prompts on `main` either way.) |
+| **G1 · Location** | **Every** commit-producing lane commits inside its own worktree — a story lane on `claude/*`, ad-hoc/Task work on `chore/*` (see Trigger). HEAD at `main` while you are about to commit means you are in the shared checkout: open the worktree first. (The `require-push-approval.py` hook prompts on `main` either way.) |
 | **G2 · Scope** | `git add <explicit paths>` only. **`git add -A` / `.` / `-u` are banned** — they sweep other teams' work into your commit. Verify with `git diff --cached --stat` that only your files are staged. |
 | **G3 · Push** | No pushes to the epic branch during development — the landing at close-out is the one sanctioned push there. Pushing your own `claude/*` branch is free at any time. |
 | **G4 · `main`** | Never. Only Daniel, via `/sudo-push-e2e` (epic merge) or a direct in-the-moment ask (chore merge). |
