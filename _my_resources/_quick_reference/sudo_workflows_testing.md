@@ -129,6 +129,14 @@ exists only to make them pass, and an adversarial review stands between "coded" 
   `implementation_plan.md`. "ok" / "looks good" / "continue" are deliberately **not** approval — the
   gate only means something if it's one specific word.
   (→ [000-PLAN-FIRST-GATE](../../.agents/rules/000-PLAN-FIRST-GATE.md))
+  **Hardened 2026-08-09**, because it kept leaking. Four more things that are explicitly *not*
+  approval, all of which had been misread as such: **clicking an option an agent wrote for you**
+  (that answers *which*, never *whether*); **telling it to do the work** ("go build X", "finish Y") —
+  being told to build something is the *reason* to write a plan, not permission to skip one;
+  **answering its clarifying question**; and **correcting its plan** — a correction narrows the plan
+  and the agent must stop and wait *again*. Agents are also now forbidden from putting the word
+  "approved" in a button label, which is how the gate was actually bypassed: the agent wrote the
+  word, you clicked it, and it read its own word back as your consent.
 - **You alone mark a story `done`.** Agents may set it to `review`. Close-out is your signature, and
   running the close-out command *is* the signature — there's nothing else to sign.
 
@@ -149,7 +157,8 @@ without anyone remembering to link anything (§6, §11).
 |---|---|
 | `/sudo-boot-sprint-memory` | Start of session. Reads the sprint, tells you the next story and exactly which command it needs. It **reads the review verdict from the artifact** rather than trusting the status file — so it won't send you to close out something that hasn't really passed. |
 | `/sudo-create-epic-sprint` | **Once per epic.** Writes the epic and its stories, then risk-scores every story with you. That score decides how much testing each story earns. Mints the epic's **Jira ticket** itself at kickoff (you're in the room) — never an invented key: it reads the key from the ticket it just created, and the branch is never cut unkeyed. |
-| ① `/sudo-write-story-tests` | Creates the story, locks the intended behavior in plain language, then writes the **failing** tests. Failing is the point — a test that never failed proves nothing. Also **mints the story's Jira ticket** (child of the epic's) and rules three things onto the board as labels: `quick-dev` (may ship through the fast lane), `parallel-ok` (safe beside the epic's other lanes), `blocked` (waiting on a linked blocker). |
+| ① `/sudo-write-story-tests` | Creates the story, locks the intended behavior in plain language, then writes the **failing** tests. Failing is the point — a test that never failed proves nothing. Also **mints the story's Jira ticket** (child of the epic's) and rules **two** things onto the board as labels: `quick-dev` (may ship through the fast lane) and `blocked` (waiting on a linked blocker). It no longer rules `parallel-ok` — see the row below for why. |
+| ⭐ `/sudo-parallel-check <EPIC-KEY>` | **New, 2026-08-09.** Run it once an epic's stories are all **written**, before you start any of them: it tells you which ones you can run **side by side**. It reads every story file, works out what each one will actually *change* (as opposed to merely mention), and hands you the biggest group that touches no file in common — tagged `parallel-ok` on the board so the group is one filter away. **Why it exists as its own command:** ① used to decide this when it minted each ticket, and it could never have been right — it rules story 19.1 before 19.2 has even been written, so there is nothing to compare it against, and it never looks again. Parallel-safety is a fact about a **group at a moment**, not about one story. Proof: *zero* tickets ever carried the label. **It never guesses.** A story with no file written yet gets "write the story first", not an opinion. When two stories are ambiguous it locks them rather than approving — a wrong green puts two of your lanes on the same file, a wrong lock only costs you running them one after the other. **The answer has a shelf life, and it says so:** it stamps which stories it compared, so if you write another one afterwards the old answer reads *"re-run me"* instead of quietly lying. **It only ever tells you — it never starts anything.** |
 | ② `/sudo-dev-story-tests` | Plans, **stops for your `approved`**, builds until the tests pass, widens coverage, then records a signed-off snapshot of the results. |
 | ③ `/sudo-code-review` | Hunts the diff cold, runs an adversarial review, audits code quality, runs the test gate, issues a verdict. |
 | `/clean-code-audit` | Dead code, duplication, drift. Runs inside ③; also runs solo across a whole area. |
@@ -676,9 +685,17 @@ rotation`), the story file carries `jira_key:` in frontmatter, and the branch ca
 In Progress?" and the agent queries Jira and joins each ticket back to its story file through
 `jira_key:`. The rule that teaches this: [`jira.md`](../../.agents/rules/jira.md). The board fills itself:
 `/sudo-create-epic-sprint` mints the **epic's** ticket at kickoff, and ① mints each **story's**
-ticket at pickup — stamped with three rulings as labels: `quick-dev` (fast lane allowed),
-`parallel-ok` (safe beside the epic's other lanes), `blocked` (waiting on a linked blocker).
-Movement is automated at exactly three moments — close-out moves the **story's** ticket,
+ticket at pickup — stamped with **two** rulings as labels: `quick-dev` (fast lane allowed) and
+`blocked` (waiting on a linked blocker). The third label, **`parallel-ok`, has its own writer**
+(2026-08-09, SCC-56): `/sudo-parallel-check <EPIC-KEY>`, run once the epic's stories are written.
+It is worth knowing *why* it moved, because the same trap catches other rules — a fact about a
+**group** cannot be decided one member at a time. ① rules each story as it mints it, which is before
+its siblings exist, so it had nothing to compare against and never looked again; the label was dead
+on arrival, and no ticket ever carried it. The new command recomputes the whole epic and **rewrites
+every child's label in one pass**, stripping it from anything that no longer qualifies — which is
+what makes the answer keep itself honest instead of rotting. It also stamps which stories it
+compared, so once you write another one the old answer reads *"re-run me"* rather than quietly
+lying. Movement is automated at exactly three moments — close-out moves the **story's** ticket,
 `/close-task-merge-tree` moves a **task's**, and `/sudo-push-e2e` moves the **epic's** to Done with
 the evidence commented. Sprint and backlog *placement* stays yours; outside the two minting seams,
 machinery only ever touches status.

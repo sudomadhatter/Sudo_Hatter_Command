@@ -3,7 +3,12 @@
 **Task** · branch `chore/SCC-56-parallel-check-design-record` off `main` · lane **LOCAL** ·
 one commit, `4ec6cce`.
 
-## ⛔ Read this first — the ticket is NOT satisfied by this branch
+> ✅ **SUPERSEDED 2026-08-09 — the command was built the same day.** Everything below describes the
+> state *before* that, and the "NOT built" warning is no longer true. Current record:
+> [`2026-08-09_scc-56-parallel-check-build/walkthrough.md`](../2026-08-09_scc-56-parallel-check-build/walkthrough.md).
+> This file is kept because the four rulings it captured are what the build was measured against.
+
+## ⛔ Read this first — the ticket is NOT satisfied by this branch (SUPERSEDED — see above)
 
 SCC-56's scope is **building** `/sudo-parallel-check <parent-key>`, plus removing the parallel ruling
 from `/sudo-write-story-tests` Step 1.6, updating `rules/jira.md`, the SOP page, tests in the
