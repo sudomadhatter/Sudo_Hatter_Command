@@ -18,6 +18,15 @@ re-ask). Never guess, never operate on the lobby. Set `PROJECT_ROOT` and **echo 
 `Target: Projects/<name>` before any work; every bare path below resolves under `PROJECT_ROOT`, and a
 needed path missing there → STOP and say so.
 
+> **If the answer is the lobby (`SCC` / `Sudo_Hatter_Command`), this command does not apply — answer
+> anyway, don't dead-end.** The command centre has no `_bmad-output/`, no sprint YAML and no story
+> files, so every step below has nothing to read. That is not a missing feature: the lobby's work is
+> **Tasks on the Jira board**, and the board is the whole queue there. Say so in one line, then run the
+> queue read from `.agents/rules/jira.md` §The queue (`In Progress` → `To Do Next` → `To Do`, first
+> non-empty rank wins; `Blocking` reported separately as impediments) and hand the operator the next
+> card with `/close-task-merge-tree` named as its close-out. Do **not** bind a project to work around
+> this, and do **not** silently retarget to a project he didn't ask for.
+
 ## Step 1 — Read active context
 Read `_bmad-output/active-context/active-context.md` and output a `<context>` block summarizing:
 - **Sprint Objective** — what are we working on?
@@ -41,6 +50,15 @@ happened on a story lives in `_bmad-output/history/<epic>/<key>.md` (and the cha
 - **Next story to pick up** — the top `ready-for-dev` (or the current `in-progress`), with its file under
   `_bmad/bmm/stories/`. ⛔ A `descoped` or `deferred` story is **never** recommended, whatever its
   position in the YAML.
+- ⭐ **The board's `To Do Next` OVERRIDES that computed pick.** Run the rank-2 read from
+  `.agents/rules/jira.md` §The queue for this project's Jira key:
+  `acli jira workitem search --fields "key,summary,status" --jql 'project = <KEY> AND status = "To Do Next" ORDER BY key'`.
+  Anything it returns is what the **operator chose by hand**, and it wins — the YAML lags *by design*
+  (② and ③ never write it, only close-out does), so a stale computed row must never displace a card he
+  placed himself. A board without the column returns **zero rows and exit 0**, not an error — fall
+  straight through to the YAML pick and say nothing about it. When the two disagree, **report both**
+  ("board says `<key>`; the YAML's next `ready-for-dev` is `<id>`") and lead with the board — never
+  silently swap one for the other.
 - **Next command** — which `sudo-` step it needs: not-started → `/sudo-write-story-tests`; mid-dev →
   `/sudo-dev-story-tests`; built & awaiting review → `/sudo-code-review`. For a story the YAML calls
   `review`, **never recommend close-out off that status** — resolve it from the artifact:

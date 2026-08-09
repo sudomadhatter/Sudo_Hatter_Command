@@ -44,7 +44,7 @@ is meant to be identical** — if the two disagree, this one is canonical.
 
 | …do this | → run / read |
 |---|---|
-| know what to work on | `/sudo-boot-sprint-memory` — reads the sprint and tells you the next move |
+| know what to work on | **put the card in `To Do Next` on the board — that column *is* the answer** (see below). On a project: `/sudo-boot-sprint-memory`, which now leads with that column and falls back to the sprint file. In the command centre: just ask. |
 | see or move the sprint board | ask any agent — the live board answers via `acli` (§11) |
 | start the next story | ① `/sudo-write-story-tests <id>` |
 | build a story that has failing tests waiting | ② `/sudo-dev-story-tests <id>` |
@@ -60,6 +60,29 @@ is meant to be identical** — if the two disagree, this one is canonical.
 | brainstorm or solve hard problems | `/sudo-adviser-board` — historical minds in challenge teams (§3) |
 | free up a heavy session | `/sudo-prune-context` |
 | **change the system itself** — a command, a rule, a gate | edit it in `.agents/` (the only copy), then **update this page in the same commit** — a gate enforces it (§5) |
+
+### ⭐ `To Do Next` — the column that answers "what's next?"
+
+**Drag a card into `To Do Next` and every agent picks it up from there.** No file to edit, no command
+to run — the column *is* the instruction. Ask any agent "what's next?", or boot a session, and the
+answer walks three ranks and stops at the first one holding anything:
+
+**`In Progress`** (finish what's started) → **`To Do Next`** (what *you* chose) → **`To Do`** (the
+backlog). `Blocking` is reported separately as an impediment and is **never** offered as something to
+start.
+
+Two things worth knowing:
+
+- **On a project (AVCH), this beats the sprint file.** `/sudo-boot-sprint-memory` normally computes the
+  next story from `sprint-status.yaml` — but that file lags *by design*, since only close-out writes it.
+  A card you placed by hand outranks a stale computed guess. If the two disagree the agent reports both
+  and leads with yours.
+- **The column is per board, and adding it is the whole install.** Only SCC has it today. Create the
+  column in the Jira UI on any other board and it starts working there immediately — no rule change, no
+  code change. A board without it is silently skipped, not an error.
+
+⛔ **`_my_resources/open_tasks/todo_list.md` is retired as an agent source** (2026-08-09). Keep it as
+personal notes if you like; agents no longer read it, and it is never quoted as "what's next".
 
 **Sections:** 1 the map · 2 the two rules · 3 commands · 4 the loop · **5 the safety net** ·
 6 shipping · 7 machine handoff · 8 how we test · 9 TEA tools · 10 autopilot · 11 the board ·
@@ -659,6 +682,14 @@ Movement is automated at exactly three moments — close-out moves the **story's
 `/close-task-merge-tree` moves a **task's**, and `/sudo-push-e2e` moves the **epic's** to Done with
 the evidence commented. Sprint and backlog *placement* stays yours; outside the two minting seams,
 machinery only ever touches status.
+
+**`To Do Next` is how you express that placement to the machinery** (added 2026-08-09, SCC-57). It is
+the one column an agent treats as an instruction: whatever is sitting there is what you chose to start
+next, and it outranks both the `To Do` backlog and — on a project — the next story computed from
+`sprint-status.yaml`. Full behavior and the exact queries: `jira.md` §The queue. **Statuses are per
+board and they differ** — SCC runs `To Do · To Do Next · Blocking · In Progress · Done`, AVCH runs
+`To Do · In Progress · In Review · Deferred · Done`. Note the SCC name is **`Blocking`**, not
+`Blocked`; there is no `Blocked` status on either board.
 
 ### Two shapes of work on one board — and why it decides the command
 

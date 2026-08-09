@@ -9,6 +9,7 @@
 ## Jira & tickets
 - [Jira is LIVE (SCC + AVCH)](jira-integration-live.md) — `acli`, already authed; every branch/commit carries a key; gate ARMED, wrong-project key rejected.
 - [Cross-repo work = a ticket PER REPO](cross-repo-work-needs-a-ticket-per-repo.md) — widening a project's `jira.conf` is ruled out in writing; and the key comes from the `epic/*` branch, never from the BMAD epic number.
+- [`To Do Next` IS the queue](to-do-next-is-the-queue.md) — lead every "what's next" with it; `todo_list.md` is RETIRED as an agent source; the doc's `Blocked` doesn't exist (it's `Blocking`).
 - [VS Code hides hook output](vscode-hides-git-hook-output.md) — a warn-only hook looks like clean success; ship hooks ARMED.
 
 ## AGY access & data

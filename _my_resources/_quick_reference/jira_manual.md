@@ -203,6 +203,7 @@ Your statuses, and what each means here:
 | Status | Meaning | Category |
 |---|---|---|
 | `To Do` | not started | To Do |
+| **`To Do Next`** | ⭐ **what you picked to start next.** Agents lead every "what's next?" with this column — it outranks `To Do`, and on a project it outranks the story computed from `sprint-status.yaml`. SCC only so far; adding the column to another board is the whole install | To Do |
 | `In Progress` | branch cut, work happening | In Progress |
 | `In Review` | code landed on the epic branch, awaiting the gate | In Progress |
 | `Done` | merged to `main` | Done |
