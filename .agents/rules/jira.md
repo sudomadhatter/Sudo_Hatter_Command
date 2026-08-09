@@ -22,10 +22,70 @@ Site: `https://sudo-command.atlassian.net` — two team-managed projects:
 | `AVCH` | Aviation Chat | `Projects/AGY_AVIATIONCHAT` |
 
 Each repo declares its own key in `.agents/jira.conf`; the armed commit-msg hook rejects the wrong
-project's key. Statuses: `To Do` · `In Progress` · `In Review` · `Done` · `Deferred` · `Blocked`
-(once added per board in the UI — until then the `blocked` label alone carries the signal) —
-**Deferred sits in the To Do category on purpose** (a Done-category status would make descoped work
-read as shipped). Descoped work = `Deferred` + the `descoped` label.
+project's key.
+
+**Statuses are per board, and the two boards do not match** (verified live 2026-08-09 — read this
+table, do not assume a shared set):
+
+| Status | SCC | AVCH | Notes |
+|---|---|---|---|
+| `To Do` | ✅ | ✅ | the backlog — everything not yet chosen |
+| **`To Do Next`** | ✅ | — | **the operator's hand-picked queue.** See §The queue below |
+| `In Progress` | ✅ | ✅ | |
+| `In Review` | — | ✅ | |
+| **`Blocking`** | ✅ | — | ⛔ the name is `Blocking`, **not** `Blocked` |
+| `Deferred` | — | ✅ | To Do **category** on purpose — a Done-category status would make descoped work read as shipped. Descoped = `Deferred` + the `descoped` label |
+| `Done` | ✅ | ✅ | |
+
+⛔ **`Blocked` does not exist on either board.** `transition --status "Blocked"` fails outright;
+the real status is **`Blocking`** (live on SCC-23 and SCC-46). Where a board has no blocked status
+at all, the `blocked` **label** alone carries the signal.
+
+**A status missing from a board is not an error — it is not installed there yet.** Every rule below
+is written per-board-optional: query the status, and if the board returns nothing for it, fall
+through to the next rank silently. Adding a column in the Jira UI is therefore the **whole** install
+— no rule edit, no code change.
+
+## The queue — how "what's next?" is answered
+
+**`To Do Next` is the operator's hand-picked queue and it outranks `To Do`** (ruling 2026-08-09).
+Any "what's next?", "what should I work on?", or session-boot answer walks these ranks **in order**
+and stops at the first that returns anything:
+
+| Rank | Status | What it means |
+|---|---|---|
+| 1 | `In Progress` | already started — finish it before starting anything |
+| 2 | **`To Do Next`** | **the operator chose these, deliberately, by hand** |
+| 3 | `To Do` | the backlog — only when the two above are empty |
+
+`Blocking` is **never** a candidate. Surface those separately as impediments, with what each is
+waiting on, and never propose one as the next thing to pick up.
+
+**One query per rank, stop at the first that returns rows.** ⛔ Do not try to rank inside the JQL —
+`ORDER BY CASE WHEN …` is **not valid JQL** (`when` is a reserved word; it fails to parse). Verified
+2026-08-09.
+
+```bash
+P=SCC   # or AVCH
+acli jira workitem search --fields "key,summary,status" --jql "project = $P AND status = \"In Progress\" ORDER BY key"
+acli jira workitem search --fields "key,summary,status" --jql "project = $P AND status = \"To Do Next\"  ORDER BY key"
+acli jira workitem search --fields "key,summary,status" --jql "project = $P AND status = \"To Do\"       ORDER BY key"
+acli jira workitem search --fields "key,summary,status" --jql "project = $P AND status = \"Blocking\"    ORDER BY key"  # impediments, reported separately
+```
+
+**Why the fall-through is safe** (verified 2026-08-09): a status a board does not have returns
+**exit 0 with zero rows** — `status = "To Do Next"` against AVCH is silent today, not an error,
+because the name is registered site-wide. Only a name that exists on **no** board exits 1. So an
+empty rank is genuinely "nothing queued", and a non-zero exit is a real failure worth reporting.
+
+⛔ **Never answer a "what's next" question from `_my_resources/open_tasks/todo_list.md`.** It is
+retired as an agent source (ruling 2026-08-09) — it is the operator's personal notes, it is stale,
+and it duplicates tickets that already exist. Read the board.
+
+**On a BMAD project, `To Do Next` overrides the computed pick.** `/sudo-boot-sprint-memory` derives
+the next story from `sprint-status.yaml`; that YAML lags **by design** (② and ③ never write it, only
+close-out does). A card the operator placed in `To Do Next` beats a stale computed recommendation —
+report the override explicitly rather than silently replacing one with the other.
 
 ## Work-item types — and the ONE thing that decides them
 

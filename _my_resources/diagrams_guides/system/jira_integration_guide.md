@@ -676,6 +676,7 @@ whole answer.
 | `sprint-status.yaml` | Jira status | Notes |
 |---|---|---|
 | `backlog`, `ready-for-dev` | `To Do` | |
+| — | **`To Do Next`** | ⭐ operator-set only; **no `sprint-status.yaml` value maps to it**, which is the point — it is how a human overrides the computed pick. Ranks above `To Do` in every "what's next?" answer, and above the YAML's next `ready-for-dev` on a project. SCC only so far. Full rule: `.agents/rules/jira.md` §The queue |
 | `in-progress` | `In Progress` | |
 | `review` | `In Review` | dev sets this; only human close-out sets `done` |
 | `done` | `Done` | SHIPPED. Never for work that wasn't built |

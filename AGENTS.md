@@ -51,11 +51,14 @@ in the INDEX). Do not preload. The full rule set is the shared toolkit, not a st
 workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 
 > **One on-demand rule is named HERE because its trigger hides in plain sight: the Jira board.** Any
-> sprint/backlog/ticket question ("what's In Progress?", "move/mint this ticket") is answered from the
-> **live board** via the authenticated `acli` CLI — load `.agents/rules/jira.md` (cheat-sheet + flag
-> traps + guardrails) and run the query. Never answer "I have no Jira integration": every shell-capable
-> agent on this machine has one. The local `sprint-status.yaml` remains the machine state; Jira is the
-> human view — the rule carries the join.
+> sprint/backlog/ticket question — **"what's next?" / "what should I work on?"**, "what's In Progress?",
+> "move/mint this ticket" — is answered from the **live board** via the authenticated `acli` CLI — load
+> `.agents/rules/jira.md` (cheat-sheet + queue order + flag traps + guardrails) and run the query. Never
+> answer "I have no Jira integration": every shell-capable agent on this machine has one. The local
+> `sprint-status.yaml` remains the machine state; Jira is the human view — the rule carries the join.
+> **"What's next" has a defined answer, not a judgment call:** `In Progress` → **`To Do Next`** (the
+> operator's hand-picked queue) → `To Do`, first non-empty rank wins; `Blocking` is an impediment, never
+> a candidate. Full rule → `.agents/rules/jira.md` §The queue.
 
 > **A second on-demand rule is named HERE for the same reason — its trigger is invisible from inside the
 > edit: `sop-currency.md`.** Editing a `/` command, a rule, a safety-net script, a commit gate, or this
@@ -144,10 +147,13 @@ files, per §3); full model →
   starts in the lobby. Sudo-managed exceptions use their named home-base buckets; home-base/cross-project
   work uses `_artifacts/_main/`. Full model → `.agents/rules/artifacts-always-first.md` ·
   `docs/workspace-standard.md`.
-- **"pick up"** → read-only continuity brief from the right `active-context.md`, then surface open tasks from
-  this workspace's `_my_resources/open_tasks/todo_list.md` (**READ-ONLY** — never edit; cross-check vs live
-  files; trigger also → `router.md`). **"hand off"** → write state back, append the matching `INDEX.md` row,
-  read it back to verify.
+- **"pick up"** → read-only continuity brief from the right `active-context.md`, then surface open work
+  **from the live Jira board** — `In Progress` → `To Do Next` → `To Do`, first non-empty rank wins
+  (`.agents/rules/jira.md` §The queue; trigger also → `router.md`). ⛔ **NOT from
+  `_my_resources/open_tasks/todo_list.md`** — retired as an agent source (ruling 2026-08-09): it is the
+  operator's personal notes, it is stale, and it duplicates tickets that already exist. Never quote it as
+  "what's next". **"hand off"** → write state back, append the matching `INDEX.md` row, read it back to
+  verify.
 
 ## 8. PORTABILITY
 `AGENTS.md` is the universal contract; `CLAUDE.md` / `GEMINI.md` are one-line adapters pointing here (nothing
