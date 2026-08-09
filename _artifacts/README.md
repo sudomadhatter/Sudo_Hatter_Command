@@ -33,11 +33,10 @@ work belongs to.
 - `Fresh_Workspace_BMAD/` and `OpenChat-Openrouter/` — the complete registered Sudo-managed exception set.
   These are operational histories, not the default for projects.
 - `_main/` — the home base's own work: the standard, the master `.agents/` toolkit, the router, lobby wiring,
-  and anything with no home yet. (Formerly `_home`.)
-- `opencode/` — opencode's namespace. The same bucket rules apply *inside* it; see
-  [`opencode/README.md`](./opencode/README.md).
-- `_archived/` — retired history. **Archive, never delete**: old `INDEX.md` rows keep pointing at old paths,
-  so a deleted folder turns a valid row into a dead one.
+  and anything with no home yet. Current sessions sit directly beneath it; older sessions may be grouped
+  under `<YYYY>/<MM>/`. (Formerly `_home`.)
+- `_archived/` — optional retired-history bucket when one exists. **Archive, never delete**: old `INDEX.md`
+  rows keep pointing at old paths, so a deleted folder turns a valid row into a dead one.
 
 Inside a project bucket, story work nests under `epic_<E>/<story>/` — the epic folder houses all of its
 stories (e.g. `epic_9/story-9.4-ios-shell/`, or an autopilot run `epic_14/2026-06-27_autopilot-14-6/`).

@@ -8,7 +8,7 @@
 the last stale `_artifacts/<workspace>/` refs (`AGENTS.md` §3 · `workspace-standard.md` Part 1 + appendix · master
 `artifacts-always-first.md`) to **work-from-cwd**, refreshed `_docs/repo-map.md` (`--mode content`, drift clean),
 and renamed the policy memory → `artifacts-go-where-you-work-from`. Session:
-`_artifacts/_main/2026-06-25_artifacts-policy-finish-and-drift-backport/` (commit pending — see its walkthrough).
+`_artifacts/_main/2026/06/2026-06-25_artifacts-policy-finish-and-drift-backport/` (commit pending — see its walkthrough).
 **2026-06-25: GitNexus index = the command center + open_tasks "what's next".** ONE lobby GitNexus repo
 **`SUDO_COMMAND`** = the command center itself — all of `.agents/` (rules · workflows · commands · skills ·
 scripts, ~17k nodes), rooted directly at `.agents/` with `--skip-git` to beat GitNexus's dot-folder skip
@@ -18,7 +18,7 @@ scripts, ~17k nodes), rooted directly at `.agents/` with `--skip-git` to beat Gi
 rule/workflow `.md`; read/grep for "what references what". `_my_resources/open_tasks/` is now the READ-ONLY
 "what do we do next" source (wired into `router.md` + `_docs/repo-map.md` + the protection memory). Surfaced (open):
 ~50+ dangling `.agent/` (singular) refs across the master toolkit — needs a deliberate pass, not a blind replace.
-Session: `_artifacts/_main/2026-06-25_home-base-maps-gitnexus-opentasks/`. NB: commit `8a40c0f` (on origin/main)
+Session: `_artifacts/_main/2026/06/2026-06-25_home-base-maps-gitnexus-opentasks/`. NB: commit `8a40c0f` (on origin/main)
 already bundled this session's first-pass repo edits with the prior self-audit work — confirm that was intentional.
 
 ## Archived 2026-08-08
@@ -37,7 +37,7 @@ their lints show the check-8 hint until then. **Round 2: `/1_update-maps` is now
 check 8 content-verifies adapters/law, **NEW check 9 verifies GitNexus index freshness** (`lastCommit==HEAD`;
 caught lobby + AGY genuinely stale), workflow Step 3.7 creates/repairs Tier-2 files, Step 6 hands off re-index
 cmds. **⚠️ `.gitnexus/meta.json` embeds the GitHub PAT cleartext — rotate + switch remote to
-credential-manager auth.** Session: `_artifacts/_main/2026-07-03_tier2-local-law/` (batch 1 committed
+credential-manager auth.** Session: `_artifacts/_main/2026/07/2026-07-03_tier2-local-law/` (batch 1 committed
 `4be629b`; round-2 cmds in walkthrough Addendum).
 **2026-06-26 (latest): artifact-placement standard codified as 3 rules + `_home`→`_main` rename.** (1) project
 work → `_artifacts/<project>/` (create-if-missing), (2) main/cross-project → `_artifacts/_main/` (renamed from
@@ -46,7 +46,7 @@ work → `_artifacts/<project>/` (create-if-missing), (2) main/cross-project →
 `artifacts-always-first.md`, `workspace-standard.md`, `repo-map.md`, `INDEX.md`) + the SessionStart hook path +
 all artifact READMEs (added `_main/` + `Fresh_Workspace_BMAD/` ones). Re-vendored the standard into AGY_AVIATIONCHAT
 + clean-bmad (aviationChat's copy was stale pre-work-from-cwd — re-vendor fixed it). Fixed the 3 `_my_resources/`
-diagrams. Zero live `_home` refs remain. Session: `_artifacts/_main/2026-06-26_artifact-placement-standard/`
+diagrams. Zero live `_home` refs remain. Session: `_artifacts/_main/2026/06/2026-06-26_artifact-placement-standard/`
 (UNCOMMITTED — home + both project repos; cmds in walkthrough).
 **2026-06-26: owned doc-wiring graph extractor built.** Filled the prose "what references what" layer
 GitNexus is blind to (it extracts headings, not doc refs) — surfaced when comparing GitNexus (= our own
@@ -56,7 +56,7 @@ deterministic / no-LLM / $0 over graphify's LLM layer. New `.agents/scripts/gene
 `_docs/doc-graph.json` (full): **979 docs / 2427 edges**. Report-only. **Partially addresses the open `.agent/`
 (singular) dangling-refs item below** — it auto-surfaces some (`bmad-sm.md → .agent/gemini.md` + 2 ambiguous), but
 basename fallback masks others, so a grep sweep is still the exhaustive route. Session:
-`_artifacts/_main/2026-06-26_doc-graph-extractor/` (UNCOMMITTED — cmd in walkthrough). graphify noted as the named
+`_artifacts/_main/2026/06/2026-06-26_doc-graph-extractor/` (UNCOMMITTED — cmd in walkthrough). graphify noted as the named
 MIT break-glass engine for the GitNexus license tripwire.
 **2026-06-25: `_my_resources/open_tasks/` standardized as the "what's next" check.** Asking "what's next /
 open tasks / what's left" now reads Daniel's notes for **where you work FROM** (lobby → home-base folder; inside a
@@ -65,13 +65,13 @@ projects only: **AGY_AVIATIONCHAT** (`git mv`'d 5 notes `_Open_Task/`→`open_ta
 `todo_list.md`, added READ-ONLY routing row to `AGENTS.md`); **Fresh_Workspace_BMAD** (seeded `open_tasks/todo_list.md`
 + routing row); **lobby** `router.md` row 20 + `_docs/repo-map.md` resolve by where-you-work-from; **memory**
 `my-resources-personal-area-protected` carve-out upgraded to system-wide. Committed on origin/main as `fa8bf1b`.
-Session: `_artifacts/_main/2026-06-25_open-tasks-standard/`. Maps/indexes verified current this pass (router ✓,
+Session: `_artifacts/_main/2026/06/2026-06-25_open-tasks-standard/`. Maps/indexes verified current this pass (router ✓,
 repo-map drift exit 0 ✓, INDEX row ✓).
 Phase A + rename-day restructure DONE. **Workspace Standard + repo-map hybrid + artifacts parity landed
 (home-base portion).** `_experiment/` is now `_routing-canary/`. One canonical git policy.
 **2026-06-25: mobile-mode lane added** — the command center is now driven from a phone; `.agents/rules/mobile-mode.md`
 adapts git (agent commits/pushes, asks before PR), the approval gate (tap-to-approve), artifacts (TL;DR-first),
-and verification (agent runs in-container) for web/mobile sessions. See `_artifacts/_main/2026-06-25_mobile-mode-rule/`.
+and verification (agent runs in-container) for web/mobile sessions. See `_artifacts/_main/2026/06/2026-06-25_mobile-mode-rule/`.
 **2026-06-25: WS7 + artifact-rule.** The home base now has its own `_docs/repo-map.md` + a SessionStart drift hook
 (master `check-repo-map-drift.ps1` gained `-Root`/`-MapPath`; direct `.claude/settings.json` edit worked).
 **Artifact rule revised → "artifacts go WHERE YOU WORK FROM"** (cwd decides): from the home base → a per-project

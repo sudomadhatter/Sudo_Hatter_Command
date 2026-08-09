@@ -1,5 +1,6 @@
 ---
 description: Close out TASK work — a `chore/<JIRA-KEY>-<slug>` branch that never got an epic and a story, so BMAD's `/sudo-update-sprint-memory` cannot close it. Preflights mechanically (branch shape, clean+pushed, main absorbed, and THE LANE — did anything deployable change?), runs the gate the lane selects, merges to `main` with `--no-ff`, files the Dev Record and moves the ticket to Done, then prunes the branch. Invoking it IS the merge sign-off. Refuses the moment a deployable path is in the diff and hands the work to `/sudo-push-e2e`.
+platforms: [opencode, antigravity]
 ---
 
 # /close-task-merge-tree — Close a Task, Merge It, Prune the Tree

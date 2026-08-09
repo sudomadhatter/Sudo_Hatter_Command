@@ -124,15 +124,15 @@ cwd or tool. The complete Sudo-managed exception registry contains only `Fresh_W
 Workspace, and NEXgen VR. Migrated the former Sudo buckets for AviationChat (18 files / 146677 bytes) and
 NEXgen VR (9 files / 57266 bytes), verified SHA-256 manifests, then removed only those two source folders.
 The Sudo `_artifacts/` root now contains `_main`, Fresh Workspace, and OpenChat. No git delivery occurred.
-Session: `_artifacts/_main/2026-07-30_project-first-artifact-locality/`.
+Session: `_artifacts/_main/2026/07/2026-07-30_project-first-artifact-locality/`.
 
 **2026-07-23 (latest): Fan-out map and INDEX reconciliation complete.**
 Regenerated the lobby, AGY AviationChat, and Fresh Workspace AUTO map blocks in their declared modes and repaired all deterministic INDEX drift (including the AGY `frontend/test-results/` index). `python .agents/scripts/check_maps.py --all` now reports that all maps and indexes agree with disk. Still informational: lobby GitNexus is stale and needs a post-commit `node .gitnexus/run.cjs analyze`; AGY's active context is 391 lines with no dated session blocks, so it needs a human decision rather than a mechanical prune. Project git discovery required a per-command safe-directory override because the sandbox user differs from the worktree owner. No commits or map anchors were created.
-Session: `_artifacts/_main/2026-07-23_update-maps-indexes/`.
+Session: `_artifacts/_main/2026/07/2026-07-23_update-maps-indexes/`.
 
 **2026-07-14 (latest): GitNexus graphs updated & dev tooling excluded. Sync guide created.**
 Refined product GitNexus index scope to exclude development/testing tooling (`load/`, `scripts/`, `_test_scripts/`, `auth_keys/`, `scratch/`, and root scripts) from indexing. Documented the new scope in `Projects/AGY_AVIATIONCHAT/docs/gitnexus.md`. Created a new guide [docs/gitnexus-sync.md](file:///c:/Users/dlohn/.gemini/antigravity/scratch/Sudo_Hatter_Command/docs/gitnexus-sync.md) explaining how the index files are machine-local and do not sync via Git, with instructions for re-indexing other machines. Executed GitNexus analysis on lobby (`Sudo_Hatter_Command`) and product project (`AGY_AVIATIONCHAT`), successfully updating local indexes. Regenerated content-mode AUTO blocks for both repo-maps, and resolved a missing debug index row drift for `password-reset-fix`. Verify maps checks clean (`exit 0`).
-Session: `_artifacts/_main/2026-07-14_update-gitnexus-graphs/`.
+Session: `_artifacts/_main/2026/07/2026-07-14_update-gitnexus-graphs/`.
 
 **2026-07-09: Docs truth-sync + root-law slim DONE — audits passed, drift fixed, canary green.**
 Transcript-vs-setup audit: R1–R8 met/exceeded (architecture sound); `/1_update-maps` prune verified
@@ -148,7 +148,7 @@ verified + reset). Per Daniel's memos: **bmad-\* skills + `.agent/` left alone.*
 commit (other lanes' sudo-\* edits in tree — never `git add -A`) → `--set-anchor` → `/sync-agents` (vendors
 lobby-search + fills `.claude`/`.opencode` command INDEXes) → GitNexus re-index → `check_maps_output.txt` call
 (TRACKED: delete vs `git rm --cached`+ignore). Surfaced: stray `Projects/aviationChat-AGY/` non-workspace dir.
-Session: `_artifacts/_main/2026-07-09_system-docs-truth-sync/`.
+Session: `_artifacts/_main/2026/07/2026-07-09_system-docs-truth-sync/`.
 **2026-07-04: Tier-2 per-project rollout DONE — the 07-03 session's flagged follow-up is closed.**
 AGY_AVIATIONCHAT + Fresh_Workspace_BMAD each carry their 9 Tier-2 files (`_artifacts/`, `_my_resources/`,
 `docs/` — local-law `AGENTS.md` + `CLAUDE.md`/`GEMINI.md` adapters, bodies digested from each project's own
@@ -159,7 +159,7 @@ root `AGENTS.md` §2, one-doc close aligned (root §5 + `_artifacts/README.md`),
 `[ok]` ×2. Untouched pre-existing backlog: AGY 14 depth-3 INDEX gaps + stale GitNexus index (re-index AFTER
 committing), Fresh dead curated `_bmad/bmm/stories` — a future `/1_update-maps` run's work. Check 8 can go
 hint→fatal only after the 3 unconverted projects (B-L, NEXGen, OpenChat) get Tier-1 brains.
-Session: `_artifacts/_main/2026-07-04_tier2-project-rollout/`. Git: AGY committed `dc58a20e` (bundled into
+Session: `_artifacts/_main/2026/07/2026-07-04_tier2-project-rollout/`. Git: AGY committed `dc58a20e` (bundled into
 story 8.23.2's commit by the live story lane — content diff-verified intact; two-lanes convergence again,
 cf. 8.22.2), Fresh committed `52a5c93` **on `main`** (not `main_debug` — flagged); lobby session files
 staged, awaiting Daniel's commit + `--set-anchor` (cmds in walkthrough; per-project set-anchor + AGY
@@ -180,7 +180,7 @@ re-index owed after the 8.23.2 lane settles).
   - Added the missing index row in `Projects/AGY_AVIATIONCHAT/_artifacts/debugging/INDEX.md` for `2026-07-14_password-reset-fix/`.
   - Verified maps and indexes are clean (`exit 0`).
 - 5.3 Git status:
-  - Lobby: Modified `_artifacts/INDEX.md`, `_artifacts/_main/INDEX.md`, `docs/gitnexus.md`, `docs/repo-map.md`. Untracked `docs/gitnexus-sync.md`, `_artifacts/_main/2026-07-14_update-gitnexus-graphs/`.
+  - Lobby: Modified `_artifacts/INDEX.md`, `_artifacts/_main/INDEX.md`, `docs/gitnexus.md`, `docs/repo-map.md`. Untracked `docs/gitnexus-sync.md`, `_artifacts/_main/2026/07/2026-07-14_update-gitnexus-graphs/`.
   - Product (`AGY_AVIATIONCHAT`): Modified `.gitnexusignore`, `docs/gitnexus.md`, `docs/repo-map.md`, `_artifacts/debugging/INDEX.md`, and local gitnexus skills.
 - 5.4 Best next move: Daniel commits changes in both repositories and runs `python .agents/scripts/check_maps.py --set-anchor --all` to baseline map diffs.
 
@@ -188,10 +188,10 @@ re-index owed after the 8.23.2 lane settles).
 - 6.1 Completed: the fan-out map/index reconciliation; all deterministic linter checks pass.
 - 6.2 In progress: nothing.
 - 6.3 Open: lobby GitNexus re-index after commit; AGY continuity-brief compaction needs an authoring decision; map anchors await commits.
-- 6.4 Session: `_artifacts/_main/2026-07-23_update-maps-indexes/`.
+- 6.4 Session: `_artifacts/_main/2026/07/2026-07-23_update-maps-indexes/`.
 - 6.5 Historical hand-off from 2026-07-14 follows.
 - 6.1 Completed: Refined indexing scopes, synchronized GitNexus graphs, added machine-local index sync documentation, regenerated AUTO blocks, and verified zero drift.
 - 6.2 In progress: Nothing executing.
 - 6.3 Open tasks / trade-offs: Indexes are machine-local; other machines must re-run analyze after pulling.
-- 6.4 Related links: `docs/gitnexus-sync.md`, `_artifacts/_main/2026-07-14_update-gitnexus-graphs/` (plan + walkthrough).
+- 6.4 Related links: `docs/gitnexus-sync.md`, `_artifacts/_main/2026/07/2026-07-14_update-gitnexus-graphs/` (plan + walkthrough).
 - 6.5 Git: Uncommitted lobby and product files ready for Daniel to commit (commands in walkthrough).

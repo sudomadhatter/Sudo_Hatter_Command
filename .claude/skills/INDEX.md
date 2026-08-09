@@ -1,6 +1,6 @@
 # Skills INDEX — when to use which (family map)
 
-Router for the **skill surface an agent actually sees (~90)**, which comes from two places: the **31**
+Router for the **skill surface an agent actually sees (~90)**, which comes from two places: the **32**
 authored skills in `.agents/skills/` (this repo is their master — shared, project-agnostic ONLY; a
 product's domain packs live in that product's own `.agents/skills/`, per `project-law.md`) plus the **56** `bmad-*` skills BMAD
 installs directly into `.claude/skills/` — the BMAD families below live there, not here, so don't go
@@ -22,7 +22,7 @@ skill's own description.
 | **Frontend / UI** | React + design | `react-best-practices` · `ui-ux-pro-max` |
 | **Prompting / diagrams / debug** | cross-cutting craft | `adk-prompting` · `v3-prompt-architecture` · `mermaid-diagram-standards` · `systematic-debugging` |
 | **Code quality gates** | is the code clean, and can you prove it | `clean-code-audit` — the auditor for `.agents/rules/code-standards.md`: machine floor (ruff · eslint · pyrefly · tsc) that can FAIL + a judgment pass (comment contract, AI-drift bans) that caps at CONCERNS. Diff-scoped. Runs standalone and as `/sudo-code-review` Step 3.5. |
-| **Workspace / system craft** | how the repo is organized | `workspace-structure` (tier model · reading-order · AGENTS.md-vs-INDEX.md · naming — the decision layer over `docs/workspace-standard.md`) |
+| **Workspace / system craft** | how the repo is organized and Task work lands | `workspace-structure` (tier model · reading-order · AGENTS.md-vs-INDEX.md · naming — the decision layer over `docs/workspace-standard.md`) · `close-task-merge-tree` (gate · merge · Jira Dev Record · prune for a non-BMAD Task) |
 
 **Adding a skill:** create `<name>/SKILL.md` with a `description:` that states when it applies (that's the
 router), slot it into a family above if you keep this map current, and re-run `/sync-agents`.
