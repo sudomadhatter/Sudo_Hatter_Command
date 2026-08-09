@@ -92,7 +92,7 @@ workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 | Routing canary | `_routing-canary/` | model-agnostic proof the routing works (Claude/opencode/Antigravity) |
 | System builder | `docs/system-builder.md` | how to add/maintain workspaces (`/new-project`, `/sync-agents`) |
 | New-machine setup (disposable) | `_my_resources/migrations/` | secrets export/restore + rename-day tooling; start at its `INDEX.md`. Not day-to-day infra — deleted once a machine is set up |
-| Lobby tool dirs | `.claude/`, `.opencode/` | synced copies of the master so `/commands` + skills resolve here. `/sync-agents` mirrors `.agents/commands/` to **all four** platforms (incl. the opencode + Antigravity machine-global caches, and the Codex `~/.codex/prompts` + `~/.codex/skills` caches); `platforms:` frontmatter limits a command's reach |
+| Lobby tool dirs | `.claude/`, `.opencode/` | synced copies of the master. **One door per platform per command (SCC-66):** Claude + Codex enter through a **launcher skill** (generated per eligible command into `.agents/skills/`, tree-copied to `.claude/skills/`; hand-authored `SKILL.md` wins); opencode through `.opencode/commands/`; Antigravity through `.agents/workflows/`. `.claude/commands/` and `~/.codex/prompts` are **retired** doors; `platforms:` frontmatter limits a command's reach |
 | Personal area | `_my_resources/` | Daniel's notes (docs · transcripts · open_tasks) — protected, Tier-2 law; `open_tasks/` (read-only) & `_quick_reference/` (read/write) allow-list carve-outs |
 | BMAD (lobby) | `_bmad/` · `_bmad-output/` | BMAD module (regenerated — never hand-edit) + its state/output |
 | Projects | `Projects/<name>/` | project-owned workspaces, each with its own repo and `_artifacts/`, except the explicit Sudo-managed exceptions in `router.md` |
@@ -179,11 +179,15 @@ files, per §3); full model →
 ## 8. PORTABILITY
 `AGENTS.md` is the universal contract; `CLAUDE.md` / `GEMINI.md` are one-line adapters pointing here (nothing
 model-specific in shared files). **Codex** reads `AGENTS.md` **and** the Agent Skills in `.agents/skills/`
-natively — it needs no adapter file. One command set (`.agents/commands/`) mirrors to **all four** LLM surfaces
-(Claude, opencode, Antigravity/Gemini, Codex) via `/sync-agents` (`platforms:` frontmatter opts a command out;
-default = everywhere). Codex's `/commands` equivalent is custom prompts (`~/.codex/prompts`, invoked
-`/prompts:<name>`); BMAD's skills — which install to `.claude/skills`, outside Codex's search path — are mirrored
-to `~/.codex/skills` so BMAD is reachable there too. Full model → `docs/workspace-standard.md`.
+natively — it needs no adapter file. One command set (`.agents/commands/`) reaches **all four** LLM surfaces
+via `/sync-agents`, with **one door per platform per command (SCC-66)**: Claude and Codex invoke the
+**launcher skill** (generated per claude/codex-eligible command; the skill's whole body is "read the command
+file, follow it end to end", so the command stays the single brain); opencode invokes its command mirror;
+Antigravity its workflow mirror (12k-cap thin launchers included). `platforms:` frontmatter limits reach;
+default = everywhere. The retired doors — `.claude/commands/` and Codex custom prompts (`~/.codex/prompts`,
+`/prompts:<name>`) — double-doored commands beside their skills and are purged by the sync. BMAD's skills —
+which install to `.claude/skills`, outside Codex's search path — are mirrored to `~/.codex/skills` so BMAD is
+reachable there too. Full model → `docs/workspace-standard.md`.
 
 > **GitNexus** — code-intelligence (impact · detect_changes · query · context) for this repo →
 > `docs/gitnexus.md`. (Lobby index is routing-surface only; product work uses `repo: "AGY_AVIATIONCHAT"`.)
