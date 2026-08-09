@@ -294,7 +294,7 @@ When Daniel says **"review"** (or asks to review a document/plan), EVERY agent m
 - NEVER write the task outline, evidence, review, or "Your Actions" as separate files — they are sections inside `walkthrough.md` (§5).
 - NEVER let a living doc blow its budget (see The Lean Artifact Set) — compress in place; a re-run
   REPLACES pasted totals, only the `## Suite Ledger` accretes.
-- NEVER edit a project file for sudo-lane story work before opening its worktree — then commit your own work inside it freely (explicit paths, never `git add -A`). Ad-hoc non-story work takes a `chore/*` branch off `main` — no worktree (→ `worktree-per-story` Trigger). Landing on the epic branch needs Daniel's sign-off; `main` is his alone (via `/sudo-push-e2e`). Full policy → the `git-policy` + `worktree-per-story` rules.
+- NEVER edit a project file for a commit-producing lane before opening its worktree — story and Task lanes alike (SCC-62: story → `claude/*` off the epic branch, ad-hoc/Task → `chore/*` off `main`) — then commit your own work inside it freely (explicit paths, never `git add -A`). Landing on the epic branch needs Daniel's sign-off; `main` is his alone (via `/sudo-push-e2e` for an epic, `/close-task-merge-tree` for a Task). Full policy → the `git-policy` + `worktree-per-story` rules.
 - NEVER deliver code-review findings inline-only — append the `## Code Review (<date>)` section to the
   walkthrough (§6); never mint a standalone review file (legacy paths are read-only history).
 - NEVER deliver `/sudo-self-audit` findings inline-only — append the `## Self-Audit (<date>)` section

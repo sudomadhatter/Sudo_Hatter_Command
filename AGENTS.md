@@ -123,12 +123,18 @@ files, per §3); full model →
   reads as a false "clean"; point Grep at `Projects/<name>` or use Bash. **Full mechanics →
   `.agents/rules/lobby-search.md`.**
 - **RISK GATE**: never delete / overwrite / publish without explicit go-ahead.
-- **WORKTREE GATE — worktrees belong to the sudo story lanes.** A story lane (①/②/quick-dev/autopilot)
-  opens its own worktree branched from **the story's epic branch** (`epic/<slug>`, never `main`) before
-  the first edit — automatic, don't ask — commits **freely** inside it (explicit paths; `git add
-  -A`/`.`/`-u` stay banned), and the SAME flow closes it (close-out lands it; `/sudo-close-workingtree`
-  prunes). **Ad-hoc non-story work never opens a worktree** — it takes a `chore/*` branch off `main`
-  (an orphan tree no flow will close is the failure this prevents). Read-only sessions: no tree.
+- **WORKTREE GATE — one lane, one worktree.** **Any lane that will produce commits** opens its own git
+  worktree **before the first project file is edited** — automatic, don't ask, and **don't first work
+  out what kind of work this is** (SCC-62, 2026-08-09: the trigger is **concurrency, not work type** — a
+  chore lane beside a story lane collides exactly as hard). What differs by lane is the **branch and its
+  base, never whether you isolate**: a story lane takes `claude/<KEY>-<slug>` off **the story's epic
+  branch** (`epic/<KEY>-<slug>`, never `main`), ad-hoc/Task work takes `chore/<KEY>-<slug>` off `main`.
+  Each is pruned by its own close-out — `/sudo-close-workingtree` for a story, `/close-task-merge-tree`
+  Step 5 for a Task. Commits stay explicit-path (`git add -A`/`.`/`-u` banned). Read-only sessions and a
+  single trivial edit the operator is watching are exempt. A fresh tree does not inherit gitignored
+  assets (`.env`, `auth_keys/`, `.venv`, `node_modules`) — run `.agents/scripts/link-worktree-assets.py`,
+  and `--unlink` **before** any tree is removed. **⛔ Your tree is your world** — never sweep, revert,
+  commit, or **file as a finding** another lane's in-flight work.
   **Parallel teams are the NORM — up to four lanes (sometimes more) run at once:** expect other lanes'
   dirty files in the shared checkout (never sweep, revert, or "fix" work you didn't do) and expect the
   epic branch to move mid-session; several lanes
