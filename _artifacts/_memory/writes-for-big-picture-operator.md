@@ -24,7 +24,7 @@ machinery.**
 - **Every technical term earns its keep on first use** — SHA, worktree, fast-forward, ATDD, red test,
   receipt — one inline clause, never a glossary to bounce to.
 - **Diagrams carry structure, prose carries why.** He reads shape first; mermaid-led is the right default
-  for any walkthrough he'll read ([[mermaid-diagram-standards]] governs the syntax).
+  for any walkthrough he'll read (`.agents/rules/mermaid-diagram-standards.md` governs the syntax).
 - **No unexplained flag soup.** Commands in a table get what they do *for him*, not their signature.
 - **Precision is never the thing you trade away.** Plain language is the delivery; a softened number is
   worse than a hard one.

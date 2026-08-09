@@ -21,4 +21,9 @@ AGY's incident pipeline SHIPPED and CLOSED (Daniel, 2026-07-13). **Agent lane is
 - Windows gotchas: ASCII-only curl JSON bodies (em-dash → FastAPI 400); emoji typed into shell commands reach Telegram as invalid UTF-8 → write a UTF-8 file and `--data-urlencode "text@C:/path"` (Windows curl wants `C:/` not `/c/`); `.env` values carry CR tails → `tr -d '\r\n'`.
 - The user auth token has NO issue/event scopes (by design) — resolve/list Sentry issues via the Sentry MCP (`update_issue`), rules via curl per [[sentry-api-access-aviationchat]].
 - Daniel's merge pattern: pushes to a PR branch are fine, but merging MY OWN PR to main needs him to name it ("merge 22") — the permission classifier enforces exactly this; ask with the PR number when blocked.
+- **⚠ Owed, still true 2026-08-09:** `backend/routers/incident.py` line 1 still reads *"Story 16.2 primary
+  'routines' delivery lane"* — but the as-built primary is the **agent lane**; the fire endpoint is the
+  fallback. A one-line docstring fix, operator's call. (Rescued here 2026-08-09 from
+  `command-surface-restructure-2026-07-14` before retiring it — a live finding had been filed under a
+  memory about *command renames*, where nobody would ever look for it. Verify the line before fixing.)
 - Close-out state: GitHub #14-#21 all closed; Sentry drill groups resolved; enhancement round (event_summary forwarding, `_ai_summary`, log-window fix) is committed on main_debug (swept into 4337d974 by another lane) but NOT deployed — relay redeploy + backend release would activate it if ever wanted.

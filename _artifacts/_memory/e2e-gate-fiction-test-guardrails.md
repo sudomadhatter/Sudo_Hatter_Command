@@ -21,7 +21,7 @@ Kept `continue-on-error` for exactly ONE proving run — flip to hard gate (dele
 first green **ubuntu** run. The `deploy-frontend.yml` is only a build pre-check; frontend actually ships
 via **Firebase App Hosting auto-deploy on merge to main**, so the gate blocks the PR merge, not the deploy.
 
-**Process guard (the durable fix):** new rule [[tests-must-gate-for-real]] (`.agents/rules/` + INDEX row)
+**Process guard (the durable fix):** new rule `.agents/rules/tests-must-gate-for-real.md` (`.agents/rules/` + INDEX row)
 — a red must fail for the RIGHT reason (grounded in real source), CI must run the REAL suite entrypoint,
 and a soft/report-only gate is a one-run window with owner+expiry, never open-ended. Baked enforcement
 into the command masters: ① `sudo-write-story-tests` Step 3 (ground every red vs real source),

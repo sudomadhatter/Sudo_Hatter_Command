@@ -25,7 +25,7 @@ Since 2026-08-09 (SCC-65) the memory store is **every platform's** memory, route
   whether to run `/memory-audit`. Never compact on your own judgment, never raise the cap.
 - **Compaction is judgment, so it is per-item approved**: **`/memory-audit`** ground-truths each
   candidate against the live repo (does the rule/script it names still exist? is the `CLOSED` thing
-  actually gone? do its `[[links]]` resolve?), proposes retire/merge/compress with bytes freed, and
+  actually gone? do its wiki-links resolve?), proposes retire/merge/compress with bytes freed, and
   applies only what is approved. It also checks this machine's harness link.
 
 **Why it moved off `/update-maps-indexes` Step 3.9:** hanging upkeep on a *map* workflow meant it

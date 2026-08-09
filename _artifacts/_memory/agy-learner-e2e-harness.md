@@ -14,7 +14,7 @@ Since TEA-16 (2026-07-03), AGY has a **learner-auth E2E harness**: `frontend/npm
 Authenticated-learner E2E is no longer blocked — don't re-punt it like hanger-talk.spec did.
 **Since 2026-07-14 this harness IS the promotion gate:** `/sudo-e2e` wraps it (GREEN/RED verdict)
 and `/sudo-push-e2e` paths B/C refuse to touch `main` until it's GREEN
-([[command-surface-restructure-2026-07-14]]). Hermetic — backend is network-mocked, no uvicorn.
+(added in the 2026-07-14 command restructure). Hermetic — backend is network-mocked, no uvicorn.
 
 **Why:** Three non-obvious breakages cost most of the session:
 1. **CSP silently blocks the emulators** — `next.config.ts` `connect-src` doesn't allow

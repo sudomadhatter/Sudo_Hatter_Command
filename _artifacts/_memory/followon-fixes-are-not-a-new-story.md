@@ -27,8 +27,8 @@ And a finding recorded as "deferred" still reads as unfinished work to the perso
 - Record it on the CLOSED story's board line and its ③ verdict as a dated FOLLOW-ON block, so the
   verdict stops reading as an outstanding obligation. No new board key.
 - Before deferring a finding, look once more for the fix that keeps the operator's ruling AND removes
-  the human step — see [[agy-school-identity-ghost-doc-window]], where "the operator must delete the old
-  docs" turned out to have a code answer (retire by renaming) that honoured never-delete.
+  the human step — see [[agy-archive-never-delete-ruling]] § BY-ID → BY-FIELD, where "the operator
+  must delete the old docs" turned out to have a code answer (retire by renaming) that honoured never-delete.
 - "Flagged, not done" is a last resort, not a tidy outcome. If it genuinely must wait, say what would
   change the answer.
 

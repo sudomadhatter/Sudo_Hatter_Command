@@ -22,5 +22,6 @@ gone. Vendored copies drifted, and the duplicate skill registrations polluted ev
 (center). *Does it name this product's components, contracts, stack, domain?* → tier 2 (that project,
 routed from its INDEX). Never fork a shared rule into a project; never write a project-specific rule
 into the master. Contract: `.agents/rules/project-law.md`. See
-[[repo-local-enforcement-never-centralizes]] for the files this does NOT apply to, and
-[[fresh-workspace-living-template]] for the retired template.
+[[repo-local-enforcement-never-centralizes]] for the files this does NOT apply to. (The old `Fresh_Workspace_BMAD` living-template was RETIRED 2026-08-07 — `/new-project` now clones
+`sudomadhatter/sudo-project-skeleton`. Verified 2026-08-09: Fresh still sits under `Projects/` but no
+longer carries an autopilot engine, so it is a leftover directory, not the template.)

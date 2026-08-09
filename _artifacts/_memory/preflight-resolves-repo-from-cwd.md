@@ -31,4 +31,4 @@ is the ticket you are closing before reading the verdict at all.
 The doc fix (Step 0 derives from output + names the expected key; Step 1 asserts key match and
 STOPs on mismatch) was scoped 2026-08-09 and **deferred** — so this memory is the only place it
 lives. It now belongs in `.agents/skills/close-task-merge-tree/SKILL.md`, not the command file:
-SCC-59 is converting that command to a skill. See [[worktree-per-story-forbids-chore-worktrees]].
+SCC-59 is converting that command to a skill. See `.agents/rules/worktree-per-story.md` (it forbids chore worktrees).

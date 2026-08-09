@@ -18,4 +18,4 @@ In the Sudo_Hatter_Command home base, `Projects/` is gitignored (each project is
 - **One sweep across ALL projects at once** → use the Bash tool (`find Projects -name '...'` + `grep`/`diff`; `git check-ignore <path>` to confirm), because a single root Grep is blind and you'd otherwise loop Grep per project.
 - Canonical fix path unchanged: edit master `.agents/` then `/sync-agents <project>` to re-vendor.
 
-See [[git-branch-model-standard]], [[sync-leaves-local-command-ghosts]].
+See [[git-branch-model-standard]].
