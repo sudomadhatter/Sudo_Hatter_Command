@@ -564,10 +564,11 @@ def work_type(head: str, has_story_file: bool) -> str:
     long before (1) picks them up; the DEBUG marker carries ids with no dotted number of their
     own; the FILE catches the rest (`tea-16-...`).
 
-    **`Bug` is never computed, and never touched.** It is TEMPORARY: a Story found to be broken
-    wears `Bug` instead of `Story` until the operator says it is fixed. It is the same story,
-    flagged - so it looks to every rule here like a mistyped Story, and "correcting" it would
-    erase his only signal that the story is broken.
+    **`Bug` is never computed here, and never corrected in bulk.** It is TEMPORARY: a Story or
+    a Task found to be broken wears `Bug` until the fix lands. It is the same ticket, flagged -
+    so it looks to every rule here like a mistype, and "correcting" it mid-flight would erase
+    the only signal that the work is broken. Exactly one thing clears it: `devrecord --closing`
+    at close-out, which restores whatever THIS function says the ticket is.
     """
     if _DEBUG_RE.match(head) or _BMAD_NUM_RE.match(head) or has_story_file:
         return "Story"
@@ -603,7 +604,8 @@ def issue_type(args, story_file: Path | None) -> str:
     if args.type:
         return args.type
     want = work_type((args.story or "").strip(), story_file is not None)
-    if want in ("Story", "Bug") and args.epic_key is None:
+    # `work_type` returns only Story or Task, so this is the Story arm - Bug never reaches it.
+    if want == "Story" and args.epic_key is None:
         warn("this story has no --epic-key: BMAD sprint work belongs under its BMAD epic. "
              "Pass --epic-key, or type it explicitly with --type.")
     return want
@@ -735,27 +737,29 @@ def cmd_devrecord(args) -> int:
     say(f"jira-feed: {args.key} {action} ({len(body)} chars)")
 
     if args.closing:
-        # The other half of the `Bug` rule. The operator flips a broken Story to `Bug` and
-        # sends it back To Do; when the fix lands, THE BUG IS GONE, so the ticket goes back to
-        # being a Story. Close-out is the only moment anything can know that - a bulk audit
-        # cannot tell "still broken" from "fixed", which is why it leaves Bugs alone.
+        # The other half of the `Bug` rule. A `Bug` is a TEMPORARY flag on a broken ticket,
+        # raised two ways: an audit that traced a live bug back to the ticket that introduced
+        # it, or the operator by hand. Either way, when the fix lands THE BUG IS GONE and the
+        # ticket goes back to being what it always was. Close-out is the only moment anything
+        # can know that - a bulk audit cannot tell "still broken" from "fixed", which is why
+        # it leaves Bugs alone.
         have = ((view_fields(binary, args.key).get("issuetype") or {}).get("name") or "").strip()
         if have == "Bug":
+            # Restore to whatever the RULE says this ticket is - Story OR Task. Restoring only
+            # to Story (the shape shipped in SCC-49) stranded every flagged Task as a permanent
+            # Bug: it hit a "does not look like BMAD sprint work" warning and nothing else ever
+            # cleared it. A Task can be found broken exactly as easily as a Story.
             want = work_type((args.story or "").strip(),
                              bool(wf.find_story_files(project, args.story)))
-            if want != "Story":
-                warn(f"{args.key} is a Bug but {args.story} does not look like BMAD sprint "
-                     f"work ({want}) - leaving the type alone, clear it by hand")
-            else:
-                r = acli(binary, ["jira", "workitem", "edit", "--key", args.key,
-                                  "--type", "Story", "--yes"])
-                landed = ((view_fields(binary, args.key).get("issuetype") or {})
-                          .get("name") or "").strip()
-                if r.returncode != 0 or landed != "Story":
-                    say(f"jira-feed: {args.key} Bug -> Story FAILED (still {landed or '?'}) "
-                        f"{(r.stderr or r.stdout).strip()[:160]}")
-                    return 2
-                say(f"jira-feed: {args.key} Bug -> Story (the fix landed, the bug is gone)")
+            r = acli(binary, ["jira", "workitem", "edit", "--key", args.key,
+                              "--type", want, "--yes"])
+            landed = ((view_fields(binary, args.key).get("issuetype") or {})
+                      .get("name") or "").strip()
+            if r.returncode != 0 or landed != want:
+                say(f"jira-feed: {args.key} Bug -> {want} FAILED (still {landed or '?'}) "
+                    f"{(r.stderr or r.stdout).strip()[:160]}")
+                return 2
+            say(f"jira-feed: {args.key} Bug -> {want} (the fix landed, the bug is gone)")
     return 0
 
 
@@ -787,11 +791,13 @@ def cmd_audit(args) -> int:
         if have in ("Epic", "Subtask", "Sub-task"):
             continue  # containers are not this rule's business
         if have == "Bug":
-            # HANDS OFF - and this is the one skip that matters. `Bug` is TEMPORARY: a Story the
-            # operator found broken wears it until he says it is fixed. It carries the same
-            # number and the same story file as any Story, so every rule here reads it as a
-            # mistyped Story and the "helpful" fix would erase his only signal that it is broken.
-            rep.info("type", f"{key}: Bug - operator's flag on a broken story, left alone")
+            # HANDS OFF - and this is the one skip that matters. `Bug` is TEMPORARY: a Story or
+            # Task found broken wears it until the fix lands. It carries the same number and the
+            # same story file as before, so every rule here reads it as a mistype and the
+            # "helpful" fix would erase the only signal that the work is broken. This pass
+            # cannot tell "still broken" from "fixed" - only close-out can, which is why
+            # `devrecord --closing` is the one thing that clears it.
+            rep.info("type", f"{key}: Bug - a flag on broken work, left for close-out to clear")
             continue
         head = summary.split()[0] if summary else ""
         has_file = bool(head and wf.find_story_files(project, head))
@@ -904,7 +910,7 @@ def main() -> int:
     p_dev.add_argument("--date", default=date.today().isoformat())
     p_dev.add_argument("--strict", action="store_true", help="empty bucket is a hard fail")
     p_dev.add_argument("--closing", action="store_true",
-                       help="this is the story close-out: clear a `Bug` flag back to Story")
+                       help="this is the close-out: clear a `Bug` flag back to Story or Task")
     p_dev.add_argument("--append-new", action="store_true",
                        help="post a SECOND record instead of updating (rare)")
     p_dev.add_argument("--apply", action="store_true", help="without this, renders only")

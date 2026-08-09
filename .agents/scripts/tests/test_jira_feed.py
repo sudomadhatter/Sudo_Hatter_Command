@@ -443,9 +443,9 @@ def main() -> int:
                 code == 1 and "there should be" in out, out.strip()[:200])
 
         # ── the type rule, all four arms ──────────────────────────────────────
-        # `Bug` is deliberately absent. It is TEMPORARY and the operator's alone: a Story found
-        # broken wears `Bug` until he says it is fixed. It carries the same number and story
-        # file as any Story, so a rule that "corrects" it erases his signal that it is broken.
+        # `Bug` is deliberately absent from the computed vocabulary. It is TEMPORARY: a Story
+        # or Task found broken wears it until the fix lands, carrying the same number and story
+        # file as before - so a rule that "corrects" it erases the signal that it is broken.
         # Pinned as a table because this rule was WRONG TWICE before the real board settled
         # it: first keyed on the epic parent (which would type every chore Task a Story,
         # since everything is parented), then on the story file alone (which typed 19.2 a
@@ -465,15 +465,16 @@ def main() -> int:
             c.check(f"type rule: {head} (file={str(has_file).lower()}) -> {want}",
                     got == want, f"got {got} - {why}")
 
-        # ── --closing clears the operator's Bug flag ───────────────────────────
-        # He flips a broken Story to Bug and sends it back To Do. When the fix lands the bug
-        # is GONE, so close-out puts it back to Story. Close-out is the only moment anything
-        # can know that - which is exactly why the bulk audit must not guess.
+        # ── --closing clears the Bug flag, back to Story OR Task ───────────────
+        # A Bug is a TEMPORARY flag on broken work, raised by an audit that traced a live bug
+        # to the ticket that introduced it, or by the operator by hand. When the fix lands the
+        # bug is GONE and the ticket goes back to being what it always was. Close-out is the
+        # only moment anything can know that - which is why the bulk audit must not guess.
         set_state(state, types={"TEST-7": "Bug"})
         code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
                        "--closing", "--outcome", "review -> done", "--followon", "none")
         st = get_state(state)
-        c.check("closing: a fixed Bug goes back to Story",
+        c.check("closing: a fixed Bug on sprint work goes back to Story",
                 code == 0 and st["types"]["TEST-7"] == "Story"
                 and "the bug is gone" in out, out.strip()[:200])
 
@@ -483,12 +484,16 @@ def main() -> int:
         c.check("closing: an ordinary Story is not re-typed",
                 code == 0 and "retyped" not in get_state(state), out.strip()[:160])
 
+        # THE regression (SCC-53). The first cut restored ONLY to Story: a flagged Task hit a
+        # "does not look like BMAD sprint work" warning and STAYED a Bug, with nothing else in
+        # the system able to clear it - a permanent Bug on the board. Task work can be found
+        # broken exactly as easily as a story, so it must restore to Task.
         set_state(state, types={"TEST-7": "Bug"})
         code, out = jf("devrecord", "--story", "chore-thing", "--key", "TEST-7", "--apply",
                        "--closing", "--followon", "none")
-        c.check("closing: a Bug that is NOT BMAD sprint work is left for the operator",
-                code == 0 and get_state(state)["types"]["TEST-7"] == "Bug"
-                and "leaving the type alone" in out, out.strip()[:200])
+        c.check("closing: a fixed Bug on TASK work goes back to Task, not stranded",
+                code == 0 and get_state(state)["types"]["TEST-7"] == "Task"
+                and "the bug is gone" in out, out.strip()[:200])
 
         set_state(state, types={"TEST-7": "Bug"})
         code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
@@ -524,9 +529,10 @@ def main() -> int:
                 code == 0 and st.get("retyped") == ["T-1"]
                 and st["types"]["T-1"] == "Story", out.strip()[:200])
 
-        # THE load-bearing case. A Bug is a Story the operator flagged as broken - same number,
-        # same story file - so every rule here reads it as a mistyped Story. "Correcting" it
-        # erases his only signal that the story is broken.
+        # THE load-bearing case. A Bug is a Story or Task flagged as broken - same number, same
+        # story file - so every rule here reads it as a mistype. "Correcting" it erases the one
+        # signal that the work is broken. This pass cannot tell "still broken" from "fixed";
+        # only close-out can, so only `devrecord --closing` may clear it.
         board(("T-1", "Bug", "9.1 - Widget Archive"),
               ("T-2", "Task", "Separate the front end"))
         code, out = run_script("jira_feed.py", "audit", "--project", str(repo),
@@ -535,7 +541,16 @@ def main() -> int:
         c.check("audit: NEVER retypes a Bug, even when it looks like a mistyped Story",
                 "retyped" not in st and st["types"]["T-1"] == "Bug", out.strip()[:200])
         c.check("audit: says why the Bug was left alone",
-                "left alone" in out and code == 0, out.strip()[:200])
+                "left for close-out" in out and code == 0, out.strip()[:200])
+
+        # ...and the same for a Bug over TASK work, which the first cut could never clear.
+        board(("T-1", "Bug", "Separate the front end"),
+              ("T-2", "Task", "Something else"))
+        code, out = run_script("jira_feed.py", "audit", "--project", str(repo),
+                               "--acli", str(acli), "--jira-project", "TEST", "--apply")
+        c.check("audit: leaves a Bug over TASK work alone too",
+                "retyped" not in get_state(state)
+                and get_state(state)["types"]["T-1"] == "Bug", out.strip()[:200])
 
         board(("T-1", "Story", "9.1 - Widget Archive"),
               ("T-2", "Task", "Separate the front end"))
