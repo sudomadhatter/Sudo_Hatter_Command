@@ -7,6 +7,7 @@ platforms: [claude]
 
 > **Rules in force for this command:**
 > - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
+> - `.agents/rules/worktree-per-story.md` — one story, one worktree, one `claude/*` branch off the epic branch
 > - `.agents/rules/sudo-target-resolution.md` — bind ONE target, never operate on the lobby
 
 > **CLAUDE-ONLY.** This drives headless `claude -p` subprocesses with exact `--model` pinning and
@@ -42,6 +43,22 @@ lookup, and the debrief all resolve **under `PROJECT_ROOT`**. The `.ps1` self-an
 (it derives its repo root from its own location), so only the *paths you pass it* need the prefix - no
 script change is required. When `PROJECT_ROOT` is `.`, every `<PROJECT_ROOT>/...` path below reduces to the
 original in-project form.
+
+### Step 0.5 - The epic branch must be checked out (the worktree's base)
+
+The engine opens the story's own git worktree before Stage 1 — `.claude/worktrees/<story-slug>/` on
+`claude/<JIRA-KEY>-<story-slug>` — and cuts it from **the epic branch**, per `worktree-per-story.md`
+("NEVER branch a story worktree from `main`"). It takes that base from `PROJECT_ROOT`'s **current
+branch**, exactly as a human's flow leaves it.
+
+So before launching: run `git -C <PROJECT_ROOT> rev-parse --abbrev-ref HEAD`.
+- An `epic/*` branch → good, that is the base.
+- Anything else → either check the epic branch out there first, or pass `-EpicBranch epic/<KEY>-<slug>`.
+  The script refuses to start otherwise rather than guess — a story cut from `main` cannot be landed.
+
+The epic branch is also where the **Jira key** comes from: BMAD's epic number and the Jira epic key do
+not track each other (BMAD epic 19 lives on `epic/AVCH-18-adk-2x-runtime`), so nothing about the story
+id can be arithmetic-ed into a key.
 
 1. Confirm a story identifier remains in `<STORY>` after Step 0. If empty, ask which story and stop.
 
@@ -86,6 +103,10 @@ original in-project form.
    **Per-stage runaway cap:** `-MaxStageCost` (default $15, 0 disables) — enforced inside each CLI call
    via `--max-budget-usd`, so one stuck stage halts itself (CRASHED-resumable) instead of burning far
    past the run-level `-MaxCost` (default $40).
+   **Worktree + landing:** `-EpicBranch epic/<KEY>-<slug>` overrides the base branch (default: whatever
+   `PROJECT_ROOT` currently has checked out — see Step 0.5). `-JiraKey <KEY>` pins the story's work item
+   instead of looking it up. `-NoJira` skips the board update, `-NoCommit` skips the orchestrator's
+   commit, and `-NoWorktree` runs in the shared checkout (debugging only — see the escape hatch below).
 
 4. **As each Monitor notification arrives, advance the TodoWrite list** so it updates live:
    - On `>>> STAGE N/4 - ...` -> mark Stage N-1 `completed` and Stage N `in_progress`.
@@ -110,11 +131,20 @@ original in-project form.
    - On `REVIEW INCOMPLETE` -> the gate was green but Stage 4 appended no `## Code Review` section to
      `walkthrough.md` (the QA review leg no-op'd). The story was NOT flipped. Tell Daniel to re-run
      `-ResumeFrom 4` to redo the review.
+   - On `>>> WORKTREE - opened for story ...` / `re-bound to the existing tree` -> the story's isolated
+     tree is open (or a resume found the existing one). Every path from here on is under it.
    - On `>>> STORY STATUS - ... flipped to review` -> the gate was green AND the review artifact exists, so
      the orchestrator advanced the story to `review` (story file + sprint-status). Daniel still owns review->done.
+   - On `>>> COMMIT - <sha> on claude/...` -> the orchestrator committed the tree on its own green gate.
+     Nothing was pushed. If instead you see `COMMIT REJECTED`, a git hook refused it and the work is left
+     **staged** in the tree — report the hook's message; nothing is lost.
+   - On `>>> JIRA - <KEY> moved to In Review` -> the board now matches the tree. `! JIRA - no work item
+     resolved` means the story has no ticket; the run is still fine, the board just was not touched.
 
-5. When the watch ends, mark the last stage `completed`, read the canonical artifact folder
-   `<PROJECT_ROOT>/_artifacts/epic_<epic>/<date>_autopilot-<id>/`, and give the final debrief: total cost, artifacts
+5. When the watch ends, mark the last stage `completed`, read the canonical artifact folder — which is
+   **inside the story worktree**, at
+   `<PROJECT_ROOT>/.claude/worktrees/<story-slug>/_artifacts/epic_<epic>/<date>_autopilot-<id>/` — and
+   give the final debrief: total cost, artifacts
    written, and - most importantly - the **OUT-OF-SPEC DECISIONS** and **OPEN QUESTIONS FOR DANIEL**
    sections at the top of `walkthrough.md` plus `decisions-log.md` (the choices the team made on
    Daniel's behalf, and anything QA is asking him). State whether it finished all stages (**COMPLETE**),
@@ -185,20 +215,50 @@ Thinking is always-on, so `--effort` (not "think hard" keywords) is the depth co
   BMAD "Dev finishes -> review" step. It **never** flips to `done` (the human owns `review -> done`), and
   it is best-effort (a flip hiccup warns, never crashes a finished run). The agents themselves still never
   touch status — the orchestrator owns the flip, gated on its own green test result.
+- **One story, one worktree.** Before Stage 1 the engine opens (or re-binds to) the story's own tree at
+  `.claude/worktrees/<story-slug>/` on `claude/<JIRA-KEY>-<story-slug>`, cut from the epic branch. Every
+  stage's cwd, both test suites, the `git diff` baseline reads, the story file, `sprint-status.yaml` and
+  the whole run folder live under it. Two things this buys, and they are the point:
+  **isolation** (concurrent stories can no longer see — or red-test against — each other's half-finished
+  edits; before this the only guard was a prompt line asking agents to ignore files they did not
+  recognise), and **a landable result** (`/sudo-update-sprint-memory` Step 7 requires a `claude/*` HEAD,
+  so before this it would refuse to close an autopilot story at all). A resume re-binds to the SAME tree,
+  matched on the story slug — it never cuts a second one. Pruning stays `/sudo-close-workingtree`'s job.
+- **Gitignored assets do not travel into a worktree**, so the engine bootstraps them: `auth_keys/` and
+  the `.env` files are copied in, `frontend/node_modules` is junctioned at the shared checkout's copy,
+  and the test gate falls back to the shared checkout's `backend/.venv` interpreter. A venv and
+  `node_modules` are toolchain, not source — pytest still collects from the worktree's cwd.
 - **Concurrency-safe (run as many stories at once as you want).** Every run is keyed by its story id:
-  a per-story monitoring log (`_autopilot-run-<story>.log`) so concurrent runs never cross-wire, and a
-  per-story lockfile (`<run-folder>/_pipeline/.run.lock`) that refuses to start a SECOND run of the SAME
-  story while one is live. Different stories run fully in parallel (each writes to its own story folder,
-  log, and session store); the same story can't double-run.
+  its own worktree, a per-story monitoring log (`_autopilot-run-<story>.log`) so concurrent runs never
+  cross-wire, and a per-story lockfile (`<run-folder>/_pipeline/.run.lock`) that refuses to start a
+  SECOND run of the SAME story while one is live. Different stories run fully in parallel; the same
+  story can't double-run.
 - A missing handoff artifact is a **hard stop** (CRASHED, resumable), never a silent "continue to the next
   stage" — so a corrupted stage (e.g. Stage 1 producing no plan) halts immediately instead of burning
   spend on empty downstream stages. Re-run with no flags to resume; finished stages auto-skip.
-- The pipeline **never** runs `git commit`/`push` and **never** marks the story `done`.
+- **The orchestrator commits; the agents never touch git.** On a clean COMPLETE the script stages
+  **explicit paths** (enumerated and printed — never `git add -A`/`.`/`-u`) and commits inside the
+  worktree with a Jira-keyed subject, so the armed `commit-msg` gate passes. It **never pushes**, never
+  touches `main`, and never marks a story `done` — landing and closing are `/sudo-update-sprint-memory`'s.
+  A hook that rejects the commit leaves the work **staged**, and the hook's own message is printed.
+  `-NoCommit` skips it.
+- **The ticket moves too.** On green the orchestrator files the Dev Record through the command center's
+  `jira_feed.py` (rendered FROM `walkthrough.md`, read back to prove it landed) and moves the work item
+  to **In Review** — never to Done. It finds the ticket the way `jira_feed.py mint` dedupes: a summary
+  whose first token is this exact BMAD id. No ticket found → warns and skips; `-JiraKey <KEY>` forces it,
+  `-NoJira` turns it off.
 
 ## After it completes - Daniel's close-out (not automated)
 
 1. Review `walkthrough.md` - start with **OUT-OF-SPEC DECISIONS** + **OPEN QUESTIONS FOR DANIEL** at
-   the top - AND `decisions-log.md` (every choice the team made on your behalf).
-2. Answer any open questions. The story is already at **`review`** (the orchestrator flipped it on the
-   green gate); run `/sudo-update-sprint-memory`, then flip `review -> done` when you're satisfied.
-3. Commit when satisfied.
+   the top - AND `decisions-log.md` (every choice the team made on your behalf). Both are in the run
+   folder **inside the story worktree**; so is the code. The ticket is at **In Review** with its Dev Record.
+2. Answer any open questions. The story is already at **`review`** and the work is already **committed**
+   on its `claude/*` branch. Run `/sudo-update-sprint-memory` — it lands the branch on the epic branch,
+   flips `review -> done`, and prunes the tree via `/sudo-close-workingtree`.
+3. Nothing to commit by hand. If the run reported `COMMIT REJECTED`, the work is staged in the tree —
+   read the hook message, fix it, and commit there.
+
+> **Escape hatch (debugging the engine, not stories):** `-NoWorktree` runs every stage in the shared
+> checkout, the pre-AVCH-50 behaviour. Isolation is gone, nothing is committed, and close-out will refuse
+> to land the result. Do not use it for real story work.
