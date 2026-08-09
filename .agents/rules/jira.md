@@ -46,21 +46,32 @@ There are **two kinds of Epic** and they are indistinguishable in Jira's UI:
 | **`Epic`** | a container — BMAD epic *or* grouping epic | minted by hand; never computed |
 | **`Story`** | BMAD sprint work: a planned story in `epics.md` + `sprint-status.yaml`, under a BMAD epic. **Debug stories are Stories** — they run the same loop, they just fix rather than build | a **dotted BMAD number** (`19.2`, `12.3.4`) **OR** a **`debug-` id** (`debug-4.1-hr-date-fixes`) **OR** a **story file** in `_bmad/bmm/stories/` |
 | **`Task`** | workflow / IDE / rules / skills / toolkit work — **not** a story, filed under a grouping epic because Jira offers no other container | none of the above |
-| **`Bug`** | **TEMPORARY, and the operator sets it.** A Story he finds broken wears `Bug` instead of `Story` and goes back to `To Do` until the fix lands. Same story, flagged | never computed — but **cleared at close-out** |
+| **`Bug`** | **TEMPORARY.** A `Story` **or** a `Task` found to be broken wears `Bug` and comes back out of a finished status until the fix lands. Same ticket, same number, same story file — flagged | never computed — **raised** by an audit or by hand, **cleared at close-out** |
 
-**The `Bug` lifecycle — he raises it, the flow clears it:**
+**The `Bug` lifecycle — two doors in, one door out:**
 
 ```
-operator finds a broken story   ->  type Story -> Bug,  status -> To Do
-agent fixes it, closes it out   ->  type Bug -> Story   (the bug is gone)
+an audit finds a live bug   ->  trace it to the ticket that introduced it
+                                 status -> out of Done,  type Story|Task -> Bug
+the operator finds one      ->  same flip, by hand
+the fix lands, close-out    ->  type Bug -> Story|Task   (the bug is gone),  status -> Done
 ```
 
-⛔ **Never set or clear a `Bug` by hand, and never "correct" one.** It carries the same number and
-the same story file as any Story, so every rule here reads it as a mistyped Story — and flipping it
-back mid-flight **erases the operator's only signal that the story is broken.** Exactly one thing
-clears it: `jira_feed.py devrecord --closing` at `/sudo-update-sprint-memory` Step 4.5, because the
-close-out is the one moment anything can know the fix landed. The bulk `audit` **cannot** tell "still
-broken" from "fixed", so it reports Bugs and moves on.
+**Both raisers are legitimate**, and the audit is the primary one: it is the path that finds bugs
+nobody has noticed yet. The manual flip is the same operation done by a human who spotted it first.
+
+⛔ **Nothing else may retype a `Bug`.** It carries the same number and the same story file it always
+did, so every rule here reads it as a mistype — and "correcting" it mid-flight **erases the only
+signal that the work is broken.** Exactly one thing clears it: `jira_feed.py devrecord --closing`,
+run by whichever close-out owns the ticket (`/sudo-update-sprint-memory` Step 4.5 for a Story,
+`/close-task-merge-tree` Step 4 for a Task), because close-out is the one moment anything can know
+the fix landed. The bulk `audit` **cannot** tell "still broken" from "fixed", so it reports Bugs and
+moves on.
+
+⛔ **It restores to `Story` OR `Task`, whichever the rule says the ticket is** — never always `Story`.
+The first cut restored only to `Story`, so a flagged **Task** hit a "does not look like BMAD sprint
+work" warning and **stayed a `Bug` permanently**, with nothing left in the system able to clear it.
+Task work breaks exactly as easily as story work.
 
 **Why Story needs THREE signals, not one.** The **number** is true *before* the story file exists —
 backfilled rows are minted from `epics.md` long before ① picks them up, and `19.2` sitting in
@@ -77,8 +88,13 @@ AVCH-13  Epic  "Epic 12 — PPL Curriculum Activation"    <- BMAD epic
   AVCH-14, 15, 16   Story   "12.3 — …", "12.3.4 — …"
 AVCH-43  Epic  "CI/CD Improvment"                       <- GROUPING epic, no BMAD number
   AVCH-44, AVCH-46  Task    "Separate front/back end"   <- workflow work, no BMAD story
-  (a debug story would land here as)  Bug  "debug-4.1 — …"
 ```
+
+⚠️ **A debug story does NOT belong here.** An earlier version of this example filed `debug-4.1` as a
+`Bug` under the grouping epic, which contradicted the type table above it twice over — a debug story
+is a **`Story`**, and it lives under its own **BMAD epic**, because it runs the ordinary story loop
+and only fixes rather than builds. `Bug` is a *flag on a ticket that turned out to be broken*, not a
+category of work. Corrected 2026-08-09 (SCC-53).
 
 **SCC is the pure case:** the command centre has **no** `_bmad/bmm/stories/` and no sprint board, so
 every one of its 27 non-epic tickets is a `Task` under one of its five grouping epics. The rule
@@ -98,18 +114,18 @@ above, and the reason `Task` needed a command of its own:
 | **`Epic`** | `epic/<KEY>-<slug>` off `main` | `/sudo-push-e2e` | — |
 
 `/close-task-merge-tree` files the same **one** Dev Record through `jira_feed.py devrecord` and moves
-the ticket to `Done` itself. It does **not** pass `--closing`: that flag exists only to clear a
-`Bug` back to `Story`, and `Bug` is the operator's flag on a broken **Story** — a state the Task lane
-never reaches. Before it merges, `task_preflight.py` re-asks the type question **from the diff**: a
+the ticket to `Done` itself, and it **does** pass `--closing` — a Task can be flagged `Bug` exactly
+like a Story, so the Task lane has to clear it too, restoring `Task` rather than `Story`. Before it
+merges, `task_preflight.py` re-asks the type question **from the diff**: a
 `chore/*` branch that touches `backend/ · frontend/ · firebase/ · functions/ · mobile/ · .github/` is
 refused and handed to `/sudo-push-e2e`, because a change reaching deployable code is a product change
 whatever its ticket type says.
 
 **Auditing the board:** `python3 .agents/scripts/jira_feed.py audit --jira-project <PROJ> --project
 <P>` reports every ticket whose type disagrees with this table; `--apply` converts them and reads
-each one back. It **never demotes a `Bug`** — an operator-filed production incident has no BMAD
-number and no story file, so from here it is indistinguishable from chore work, and that judgment
-is not the rule's to make.
+each one back. It **never retypes a `Bug`** — a bulk pass cannot tell "still broken" from "fixed",
+and that judgment is not the rule's to make. Only close-out knows, so only `devrecord --closing`
+clears it.
 
 **Label vocabulary** — a card holds ONE status but stacks labels, which is exactly why these are
 labels (a story can be quick-dev-eligible AND blocked at once). All three are ruled by ①

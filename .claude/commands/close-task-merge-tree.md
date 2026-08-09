@@ -137,7 +137,7 @@ python3 .agents/scripts/jira_feed.py devrecord --key <JIRA-KEY> --story <branch-
        --verdict "<gate result>" \
        --decision "<a ruling made while doing it>" \
        --pitfall "<what nearly bit>" \
-       --followon "<anything still owed>" --apply
+       --followon "<anything still owed>" --closing --apply
 
 acli jira workitem transition --key <JIRA-KEY> --status "Done"
 python3 .agents/scripts/jira_feed.py check --key <JIRA-KEY>     # must exit 0
@@ -148,9 +148,13 @@ python3 .agents/scripts/jira_feed.py check --key <JIRA-KEY>     # must exit 0
 and exits 2 if the comment is not there, so a non-zero exit means the record did **not** land:
 report that, do not report success.
 
-**No `--closing` on this lane.** That flag exists to clear the operator's `Bug` flag back to
-`Story`, and `Bug` is his temporary marker on a broken **Story** — a mechanism the Task lane never
-touches. Passing it here would be a dead flag.
+**`--closing` clears a `Bug` flag, and this lane needs it.** A ticket arrives here typed `Bug` when
+something found it broken and pulled it back out of `Done` — an audit that traced a live bug to it,
+or the operator by hand. The fix you just merged IS that bug, so the type goes back to **`Task`**,
+which is what the rule says this ticket is. It restores whatever `work_type()` computes, never
+always `Story` — the first cut did that, and it stranded every flagged Task as a permanent `Bug`
+because nothing else in the system can clear one. On a non-`Bug` ticket the flag is a silent no-op,
+so it is always safe to pass.
 
 No ticket key at all → say so in the report and skip both calls. **Never invent a key.**
 

@@ -174,10 +174,12 @@ python3 .agents/scripts/jira_feed.py devrecord --key <KEY> --story <id> --projec
        --evidence "<suite totals @ sha>" --closing --apply
 ```
 
-`--closing` also **clears the operator's `Bug` flag**: when he finds a story broken he flips it
-`Story` → `Bug` and sends it back to `To Do`, so a ticket arriving here as a `Bug` means the fix you
-just closed IS that bug — it goes back to `Story`. This is the only moment anything can know that,
-which is why the bulk `audit` leaves Bugs alone. Never clear one by hand.
+`--closing` also **clears a `Bug` flag**. A ticket arrives here typed `Bug` when something found it
+broken and pulled it back out of `Done` — an audit that traced a live bug to it, or the operator by
+hand. Either way that means the fix you just closed IS that bug, so the type goes back to what the
+rule says it is (`Story` here, `Task` on the other lane — **never always `Story`**). Close-out is the
+only moment anything can know the fix landed, which is why the bulk `audit` leaves Bugs alone and why
+nothing else clears one.
 
 Repeat a flag per item. It lifts the `Verdict:` line and the walkthrough path itself, then **reads the
 ticket back and exits 2 if the comment is not there** — an acli call that silently no-ops is
