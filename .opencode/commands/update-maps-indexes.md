@@ -19,13 +19,13 @@ Execute the workflow defined in @.agents/workflows/update-maps-indexes.md.
   project just `python3 .agents/scripts/check_maps.py`. (**Two machines, two spellings** — the Mac has only
   `python3`, a python.org PC has only `python`. Try the other name on a *command not found*.) It runs nine numbered checks per workspace (5 fatal + the git-baseline signal + the context-hygiene, tier-2-local-law, and gitnexus-index-freshness hints; plus an unnumbered level-2 INDEX presence check) — one command verifies maps, INDEXes, the folder AGENTS.md law files, AND the code index.
 - Steps 0–3 are read-only (detect via git + the linter, regenerate each AUTO block **in its declared mode**,
-  drift-check the curated tables both ways, audit every `INDEX.md`). Steps 3.5–3.9 **propose edits** — the
-  context-hygiene **prune**, the **open-tasks refresh**, the tier-2 law repairs, the **AGENTS.md/README
+  drift-check the curated tables both ways, audit every `INDEX.md`). Steps 3.5–3.8 **propose edits** — the
+  context-hygiene **prune**, the **open-tasks refresh**, the tier-2 law repairs, and the **AGENTS.md/README
   pointer reconcile** (Step 3.8: every path, `/command` name, and contents-list those files claim must match
-  disk; repair pointers, never meaning), and the **memory-store reconcile** (Step 3.9, lobby only:
-  `test_memory_store.py` floor + proposed retirements/merges/compressions of `_artifacts/_memory/` —
-  memory bodies are never edited without approval — + this machine's harness-link check) — all gated by
-  Step 4.
+  disk; repair pointers, never meaning) — all gated by Step 4.
+- ⛔ **The memory store is NOT this command's work** (SCC-68 moved it out). `_artifacts/_memory/` belongs to
+  `/memory-audit`, triggered by `tests/test_memory_store.py` at 90% of the index cap. If that trigger fires
+  during a run, flag it in the Step 4 report and point at `/memory-audit` — never audit or compact it here.
 - Step 4 is a hard STOP: present one findings report (grouped by workspace in a fan-out) and wait for approval
   before editing anything outside `_artifacts/` (per @.agents/rules/artifacts-always-first.md).
 - **Each project is its own repo** → in a fan-out, edits land per repo and the close-out hands Daniel **one

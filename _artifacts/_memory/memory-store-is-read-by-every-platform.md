@@ -1,6 +1,6 @@
 ---
 name: memory-store-is-read-by-every-platform
-description: "SCC-65: root AGENTS.md §7 routes EVERY model on EVERY machine to `_artifacts/_memory/MEMORY.md` at session start — READ-ONLY outside the sanctioned write flows. 20 KB index cap gated in run_all; compaction is propose-only."
+description: "SCC-65: root AGENTS.md §7 routes EVERY model on EVERY machine to `_artifacts/_memory/MEMORY.md` at session start — READ-ONLY outside the sanctioned write flows. 20 KB index cap gated in run_all; the gate itself raises MEMORY AUDIT DUE at 90% and the agent must ask (SCC-68)."
 metadata:
   type: project
 ---
@@ -19,10 +19,16 @@ Since 2026-08-09 (SCC-65) the memory store is **every platform's** memory, route
   flight — park or leave it; never sweep, delete, or commit it under your task.
 - **Gated, not policed**: `tests/test_memory_store.py` (in `run_all`) enforces index ≤ 20 KB, every
   index link resolves, no orphan files (`README.md` exempt by name), frontmatter present.
-- **Compaction is judgment, so it is propose-only**: `/update-maps-indexes` **Step 3.9** proposes
-  retirements/merges/compressions for approval and checks this machine's harness link. The gate
-  makes rot loud; it never edits a memory body. Auto-compaction by whatever model is running would
-  destroy exactly the recall the store exists for.
+- **⚠ The gate triggers its own remedy (SCC-68).** At **90 % of cap** — below it, while the run still
+  PASSES — it prints a `MEMORY AUDIT DUE` block with a derived candidate worklist. A script can
+  print, it cannot ask, so §7 binds the *agent*: see that block → **STOP and ask the operator**
+  whether to run `/memory-audit`. Never compact on your own judgment, never raise the cap.
+- **Compaction is judgment, so it is per-item approved**: **`/memory-audit`** ground-truths each
+  candidate against the live repo (does the rule/script it names still exist? is the `CLOSED` thing
+  actually gone? do its `[[links]]` resolve?), proposes retire/merge/compress with bytes freed, and
+  applies only what is approved. It also checks this machine's harness link.
 
-The index had ~1.2 KB of headroom at landing, so the cap will trip by design — the answer is a
-Step 3.9 compaction proposal, **not** raising the cap.
+**Why it moved off `/update-maps-indexes` Step 3.9:** hanging upkeep on a *map* workflow meant it
+never ran — nobody opens a map command because memory feels heavy, and the index reached 99.5 % of
+cap with its remedy parked where no one had a reason to go. Upkeep must trigger from something that
+runs on its own schedule. Related: [[one-door-per-platform-per-command]], [[active-context-pointer-budget]].
