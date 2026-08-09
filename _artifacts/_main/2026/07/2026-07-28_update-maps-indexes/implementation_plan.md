@@ -16,11 +16,11 @@ Reconcile the lobby and maintained workspaces after the `research_docs` renames,
 
 ### Lobby
 
-1. Regenerate the AUTO block in [docs/repo-map.md](../../../docs/repo-map.md) in its declared `content` mode. The linter identified `prds/` and `prd-NEXgen-VR-Director-2026-07-28/` as present on disk but absent from the generated block; the curated map is already valid.
-2. Repair the rollout-source links in [router.md](../../../router.md) and [docs/workspace-standard.md](../../../docs/workspace-standard.md) to the real root source: `_my_resources/research_docs/implementation-plan_folder-as-workspace-routing-system.md`.
-3. Refresh only the auto-managed file manifest in [_my_resources/open_tasks/todo_list.md](../../../_my_resources/open_tasks/todo_list.md): remove the two entries whose files no longer exist. Preserve Daniel's numbered prose and checkpoint metadata verbatim.
-4. Add the missing session row for Fresh Workspace's existing `2026-07-28_rename-research-docs/` folder to [_artifacts/Fresh_Workspace_BMAD/INDEX.md](../../Fresh_Workspace_BMAD/INDEX.md).
-5. At close-out, add this map-reconciliation session to [_artifacts/_main/INDEX.md](../INDEX.md).
+1. Regenerate the AUTO block in [docs/repo-map.md](../../../../../docs/repo-map.md) in its declared `content` mode. The linter identified `prds/` and `prd-NEXgen-VR-Director-2026-07-28/` as present on disk but absent from the generated block; the curated map is already valid.
+2. Repair the rollout-source links in [router.md](../../../../../router.md) and [docs/workspace-standard.md](../../../../../docs/workspace-standard.md) to the real root source: `_my_resources/research_docs/implementation-plan_folder-as-workspace-routing-system.md`.
+3. Refresh only the auto-managed file manifest in [_my_resources/open_tasks/todo_list.md](../../../../../_my_resources/open_tasks/todo_list.md): remove the two entries whose files no longer exist. Preserve Daniel's numbered prose and checkpoint metadata verbatim.
+4. Add the missing session row for Fresh Workspace's existing `2026-07-28_rename-research-docs/` folder to [_artifacts/Fresh_Workspace_BMAD/INDEX.md](../../../../Fresh_Workspace_BMAD/INDEX.md).
+5. At close-out, add this map-reconciliation session to [_artifacts/_main/INDEX.md](../../../INDEX.md).
 
 ### Fresh_Workspace_BMAD
 

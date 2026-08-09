@@ -18,11 +18,11 @@ ever names the person or the reason:
 
 | File | What it encodes | What it never says |
 |---|---|---|
-| [prose-formatting.md](../../../.agents/rules/prose-formatting.md) | chat = prose, not bullet scaffolding | *why* — that Daniel reads for meaning, not for tokens |
-| [mermaid-diagram-preferences.md](../../../.agents/rules/mermaid-diagram-preferences.md) | never `sequenceDiagram` | that this is one instance of "match his mental model" |
-| [collaborative-debug-first.md](../../../.agents/rules/collaborative-debug-first.md) | he can see the browser, you can't — instrument and ask | that he is the hands, you are the engine |
-| [constitution.md §Always](../../../.agents/rules/constitution.md) | clickable links, never bare paths | that he navigates by clicking, not by pasting paths |
-| [000-PLAN-FIRST-GATE.md](../../../.agents/rules/000-PLAN-FIRST-GATE.md) | key points inline in chat, not just a file | that he approves what he can *read in the conversation* |
+| [prose-formatting.md](../../../../../.agents/rules/prose-formatting.md) | chat = prose, not bullet scaffolding | *why* — that Daniel reads for meaning, not for tokens |
+| [mermaid-diagram-preferences.md](../../../../../.agents/rules/mermaid-diagram-preferences.md) | never `sequenceDiagram` | that this is one instance of "match his mental model" |
+| [collaborative-debug-first.md](../../../../../.agents/rules/collaborative-debug-first.md) | he can see the browser, you can't — instrument and ask | that he is the hands, you are the engine |
+| [constitution.md §Always](../../../../../.agents/rules/constitution.md) | clickable links, never bare paths | that he navigates by clicking, not by pasting paths |
+| [000-PLAN-FIRST-GATE.md](../../../../../.agents/rules/000-PLAN-FIRST-GATE.md) | key points inline in chat, not just a file | that he approves what he can *read in the conversation* |
 
 Plus one memory (`presentations-before-compressed-summaries`, 2026-07-21) that captures the
 "explain it like I'm Steve Jobs" doctrine — but it lives in Claude's private memory and is encoded

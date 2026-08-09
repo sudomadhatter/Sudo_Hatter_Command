@@ -38,20 +38,20 @@ ArtifactMetadata:
   `artifacts-always-first.md`).
 - §7 marked historical; new §8 evolution-log entry for this session.
 
-**Phase 2 — [`router.md`](../../../router.md):** reference row `youtube_transcripts/` →
+**Phase 2 — [`router.md`](../../../../../router.md):** reference row `youtube_transcripts/` →
 `_my_resources/youtube_transcripts/`.
 
-**Phase 3 — [`file_folder_structure+maintaining.md`](../../../_my_resources/diagrams_guides/system/file_folder_structure+maintaining.md) + [`AGENTS.md`](../../../AGENTS.md) + [`.agents/commands/1_update-maps.md`](../../../.agents/commands/1_update-maps.md)**
+**Phase 3 — [`file_folder_structure+maintaining.md`](../../../../../_my_resources/diagrams_guides/system/file_folder_structure+maintaining.md) + [`AGENTS.md`](../../../../../AGENTS.md) + [`.agents/commands/1_update-maps.md`](../../../.agents/commands/1_update-maps.md)**
 - Hook table → the real **4** SessionStart hooks + the PreToolUse `require-push-approval.py` guard.
 - §7 workspace table synced to `router.md` (+BRKN_Tattoos, RAG_Pipeline_AC name, 4 pending projects).
 - §1 diagram + root `AGENTS.md` §4 table: added `_my_resources/` and `_bmad/`+`_bmad-output/`.
 - Check-count wording now names the unnumbered check 2.5 (guide ×3 spots + the command doc).
 
 **Phase 4 (amended) — root-law slim + NEW rule**
-- **NEW [`.agents/rules/lobby-search.md`](../../../.agents/rules/lobby-search.md)** — the grep-gotcha
+- **NEW [`.agents/rules/lobby-search.md`](../../../../../.agents/rules/lobby-search.md)** — the grep-gotcha
   mechanics moved out of the front door, PLUS the session-verified Glob caveat (Glob can false-negative
   under `Projects/` even with an in-project path — verify with Bash `find`). Row added to
-  [`.agents/rules/INDEX.md`](../../../.agents/rules/INDEX.md).
+  [`.agents/rules/INDEX.md`](../../../../../.agents/rules/INDEX.md).
 - Root `AGENTS.md`: §4 gotcha 16 lines → 3 (trigger warning stays inline — honors the 2026-07-06
   "foot-gun stays inline" invariant; mechanics routed); §6 SEARCH GATE points at the rule; §6 git-write
   block 10 → 4 lines (canon = `git-policy.md`). ~20 always-loaded lines saved per session.
@@ -166,7 +166,7 @@ hashes); once the server loads (restart + approve), say "review" and they can be
 edited).
 
 **Guide rewritten (Daniel-directed):**
-[`file_folder_structure+maintaining.md`](../../../_my_resources/diagrams_guides/system/file_folder_structure+maintaining.md)
+[`file_folder_structure+maintaining.md`](../../../../../_my_resources/diagrams_guides/system/file_folder_structure+maintaining.md)
 is now the full "what we built and how it works" guide & overview — the idea, the routing walk, tier
 model, artifacts/persistence, the two-layer INDEX contract, the maintaining system, sync/anti-drift,
 git model, the MD Feedback loop (§9, incl. where it's wired), workspace status, key files, and a

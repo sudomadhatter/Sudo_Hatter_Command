@@ -18,14 +18,14 @@ bug-list, code-review, self-audit).
 - The existing guidance in aviationChat is **plan-scoped only**: "Present the plan's key points inline in
   the chat AND link the artifact" — in [artifacts-always-first.md:90](../../../Projects/aviationChat-AGY/.agents/rules/artifacts-always-first.md#L90)
   and [000-PLAN-FIRST-GATE.md:46](../../../Projects/aviationChat-AGY/.agents/rules/000-PLAN-FIRST-GATE.md#L46).
-- The home base rule [.agents/rules/artifacts-always-first.md:94](../../../.agents/rules/artifacts-always-first.md#L94)
+- The home base rule [.agents/rules/artifacts-always-first.md:94](../../../../../.agents/rules/artifacts-always-first.md#L94)
   has the same plan-only line. The clean-bmad template's copy is identical in structure (plan line at L90).
 - Daniel's confirmed intent: **link EVERY artifact in chat**, not just the plan.
 
 ## Scope — 2 files, 2 identical edits each
 The anchor text is identical in both files, so the same two edits apply verbatim.
 
-1. **[.agents/rules/artifacts-always-first.md](../../../.agents/rules/artifacts-always-first.md)** (home-base master)
+1. **[.agents/rules/artifacts-always-first.md](../../../../../.agents/rules/artifacts-always-first.md)** (home-base master)
 2. **[Projects/clean-bmad-workspace/.agents/rules/artifacts-always-first.md](../../../Projects/clean-bmad-workspace/.agents/rules/artifacts-always-first.md)** (template)
 
 ### Edit 1 — new callout (insert right after the "Do NOT create …" block, before `## The Rule`)
