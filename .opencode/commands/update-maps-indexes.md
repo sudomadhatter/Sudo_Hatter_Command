@@ -16,8 +16,8 @@ Execute the workflow defined in @.agents/workflows/update-maps-indexes.md.
   workspace from the lobby with the focus arg below.
 - **Lead with the linter** — it does the mechanical detection. From the home base use `--all`:
   `python3 .agents/scripts/check_maps.py --all` (lobby + every conformant project, one combined report); inside a
-  project just `python3 .agents/scripts/check_maps.py`. (**`python3`, not `python`** — bare `python` does not
-  exist on the Mac, in a script or a login shell.) It runs nine numbered checks per workspace (5 fatal + the git-baseline signal + the context-hygiene, tier-2-local-law, and gitnexus-index-freshness hints; plus an unnumbered level-2 INDEX presence check) — one command verifies maps, INDEXes, the folder AGENTS.md law files, AND the code index.
+  project just `python3 .agents/scripts/check_maps.py`. (**Two machines, two spellings** — the Mac has only
+  `python3`, a python.org PC has only `python`. Try the other name on a *command not found*.) It runs nine numbered checks per workspace (5 fatal + the git-baseline signal + the context-hygiene, tier-2-local-law, and gitnexus-index-freshness hints; plus an unnumbered level-2 INDEX presence check) — one command verifies maps, INDEXes, the folder AGENTS.md law files, AND the code index.
 - Steps 0–3 are read-only (detect via git + the linter, regenerate each AUTO block **in its declared mode**,
   drift-check the curated tables both ways, audit every `INDEX.md`). Steps 3.5–3.8 **propose edits** — the
   context-hygiene **prune**, the **open-tasks refresh**, the tier-2 law repairs, and the **AGENTS.md/README

@@ -26,6 +26,7 @@ These are folder paths to see the open todo list in the sub projects:
 8. Update the ADK testing for agents and actually impliment the stage 2 we never did
 9. Read proposed plan: /Users/sudohatter/Sudo_Hatter_Command/_my_resources/open_tasks/proposal_graphrag_executiblity.md
 10. Verify the new skeleton project has the file folder guide and set up in it and uses it.
+11. Run this so all changes we made work on the main PC
 
 ## Open Work
 <!-- Add plan/PRP notes as <slug>.md alongside this file. -->
@@ -49,3 +50,11 @@ These are folder paths to see the open todo list in the sub projects:
 <!-- CHECKPOINT id="ckpt_msjyqa20_u2gjba" time="2026-08-08T05:58:25.896Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
 
 <!-- CHECKPOINT id="ckpt_msjz350s_mrrj2n" time="2026-08-08T06:08:25.900Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+
+<!-- CHECKPOINT id="ckpt_msjzfzz4_0zxnb1" time="2026-08-08T06:18:25.888Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+
+<!-- CHECKPOINT id="ckpt_msk05pwn_sz24zf" time="2026-08-08T06:38:25.895Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+
+<!-- CHECKPOINT id="ckpt_mskmfsro_afnnbr" time="2026-08-08T17:02:07.716Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
+
+<!-- CHECKPOINT id="ckpt_mskn5im9_mlxh8x" time="2026-08-08T17:22:07.617Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->

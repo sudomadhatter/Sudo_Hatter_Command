@@ -52,7 +52,7 @@ Read `_bmad-output/sudo-tests.yaml`.
 **Run every gate through `gate_receipt.py` — the verdict then cites evidence, not recollection.**
 
 ```bash
-python .agents/scripts/gate_receipt.py run --story <id> --gate suite --cwd <worktree> \
+python3 .agents/scripts/gate_receipt.py run --story <id> --gate suite --cwd <worktree> \
        -- <the real command>          # EVERY flag precedes `--`; after it is the command verbatim
 ```
 
