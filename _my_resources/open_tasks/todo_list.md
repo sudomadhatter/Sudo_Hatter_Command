@@ -23,7 +23,6 @@ These are folder paths to see the open todo list in the sub projects:
 - `architecture-decision-proposal-2026-08-05-firestore-schema-scope.md`
 - `git-hooks-board-stale-install.md`
 - `plan_optimize-sudo-dev-story-tests.md`
-- `proposal_graphrag_executiblity.md`
 
 ----
 
