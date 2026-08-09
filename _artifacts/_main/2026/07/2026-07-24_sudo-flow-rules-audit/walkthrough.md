@@ -16,41 +16,41 @@ quick-dev → full hardening) and the fixes were applied and synced.
 
 ## What changed, file by file (lobby masters)
 
-- **[sudo-update-sprint-memory.md](../../../.agents/commands/sudo-update-sprint-memory.md)** —
+- **[sudo-update-sprint-memory.md](../../../../../.agents/commands/sudo-update-sprint-memory.md)** —
   12,420 → **11,903 chars** (back under the 12k Antigravity workflow limit). Step 2 renamed to
   *"Verify the claimed work exists on disk (grep-check — NOT a code review)"*; `(G1)` dropped from
   the H1; ~10 explanatory parentheticals compressed. Every gate and contract (no-punt flip, fail-open
   verdict read, explicit-paths ban, Step 7/8 landing) is semantically unchanged.
-- **[constitution.md](../../../.agents/rules/constitution.md)** — the `continue`-as-authorization ban
+- **[constitution.md](../../../../../.agents/rules/constitution.md)** — the `continue`-as-authorization ban
   now carries its ONE exception: a gate word a sudo command's own body defines (②'s Step-2
   `continue`; invoking close-out as sign-off) IS explicit approval for exactly that step. The
   code-review bullet now names both review-output homes (session `code-review.md` + the machine-read
   verdict file) so neither gets "fixed" away.
-- **[000-PLAN-FIRST-GATE.md](../../../.agents/rules/000-PLAN-FIRST-GATE.md)** — both `task.md`
+- **[000-PLAN-FIRST-GATE.md](../../../../../.agents/rules/000-PLAN-FIRST-GATE.md)** — both `task.md`
   mentions replaced with the current TodoWrite + walkthrough-checklist contract; no other changes.
-- **[sudo-boot-sprint-memory.md](../../../.agents/commands/sudo-boot-sprint-memory.md)** — orphaned
+- **[sudo-boot-sprint-memory.md](../../../../../.agents/commands/sudo-boot-sprint-memory.md)** — orphaned
   G2/G3/G5/G6/G8 numbering dropped (same five checks, plainly named); the Firestore line generalized
   to shared-resource singleton; `(G1)` and the "Guardrail G1" sentence removed.
-- **[sudo-code-review.md](../../../.agents/commands/sudo-code-review.md)** (11,906 chars) — three
+- **[sudo-code-review.md](../../../../../.agents/commands/sudo-code-review.md)** (11,906 chars) — three
   behavior changes: **(1)** Step 3.1 suites are diff-scoped by stack (other stack only on shared
   cross-boundary surface changes; PR CI + `/sudo-e2e` still run both pre-ship); **(2)** the
   CI-entrypoint audit + soft-step scan are change-triggered via a `ci_audit: {sha, date}` record in
   `sudo-tests.yaml` (re-audits exactly when `.github/workflows/**` or test configs changed);
   **(3)** Step 3.5 no longer re-hunts the AI-drift bans Step 1 already hunted — it imports those
   findings and runs the machine floor + comment contract.
-- **[clean-code-audit.md](../../../.agents/commands/clean-code-audit.md)** — matching note: Part B
+- **[clean-code-audit.md](../../../../../.agents/commands/clean-code-audit.md)** — matching note: Part B
   (drift bans) is standalone-only; inside ③ it imports the review's findings.
-- **[sudo-code-review_AP.md](../../../.agents/commands/sudo-code-review_AP.md)** — the robot twin
+- **[sudo-code-review_AP.md](../../../../../.agents/commands/sudo-code-review_AP.md)** — the robot twin
   mirrored (memory: `_AP` twins drift): its check 4's (a)/(c) CI audits now use the same
   change-trigger; the fiction-red check (b) stays per-story. Suite scoping/Step 3.5 don't exist in
   the twin (the orchestrator owns the suite), so nothing else applied.
-- **[sudo-quick-dev.md](../../../.agents/commands/sudo-quick-dev.md)** — rewritten (3,274 → 5,062
+- **[sudo-quick-dev.md](../../../../../.agents/commands/sudo-quick-dev.md)** — rewritten (3,274 → 5,062
   chars): worktree Step 0.5; root-cause-first line; the **EJECT TRIPWIRE** (~3 files / ~150 lines or
   any protected surface — auth/tenancy, payments, PII, DB schema/rules, cross-boundary contracts →
   STOP, hand to ①, keep the worktree); scoped verification with the one-pinning-regression-test rule
   for bug fixes; `/clean-code-audit` (full pass) replacing the misfit pre-dev self-audit; Done section
   now states the git contract (commit in worktree, explicit paths, never land).
-- **[sudo_workflows_testing.md](../../../_my_resources/_quick_reference/sudo_workflows_testing.md)** —
+- **[sudo_workflows_testing.md](../../../../../_my_resources/_quick_reference/sudo_workflows_testing.md)** —
   kickoff command corrected to `/sudo-create-epic-sprint` in all four places; ③'s order fixed
   (review → test gate → clean-code → verdict); quick-dev row rewritten for the new lane; yaml sample
   gained the `ci_audit` comment line; clean-code section notes the drift-findings import.

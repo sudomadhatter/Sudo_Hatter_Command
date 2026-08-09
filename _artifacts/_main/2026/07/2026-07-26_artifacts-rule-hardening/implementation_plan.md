@@ -61,12 +61,12 @@ obligation; the ledger is reconciled in batch.
 
 | File | Change |
 |---|---|
-| [.agents/rules/artifacts-always-first.md](../../../.agents/rules/artifacts-always-first.md) | D1: read-the-local-law-first mandate (blockquote + §2 + a Hard Stop) · D2: §6 records the sudo-lane verdict path · the ledger note pointing at the hook + `/update-maps-indexes` |
+| [.agents/rules/artifacts-always-first.md](../../../../../.agents/rules/artifacts-always-first.md) | D1: read-the-local-law-first mandate (blockquote + §2 + a Hard Stop) · D2: §6 records the sudo-lane verdict path · the ledger note pointing at the hook + `/update-maps-indexes` |
 | [Projects/AGY_AVIATIONCHAT/.agents/rules/artifacts-always-first.md](../../../Projects/AGY_AVIATIONCHAT/.agents/rules/artifacts-always-first.md) | hand-vendored copy — byte-identical to master today, re-copied after the edit |
 | [Projects/Fresh_Workspace_BMAD/.agents/rules/artifacts-always-first.md](../../../Projects/Fresh_Workspace_BMAD/.agents/rules/artifacts-always-first.md) | same (living-template-sync) |
-| [Projects/AGY_AVIATIONCHAT/_artifacts/AGENTS.md](../../../Projects/AGY_AVIATIONCHAT/_artifacts/AGENTS.md) | D3 line 24 |
-| [Projects/AGY_AVIATIONCHAT/_artifacts/README.md](../../../Projects/AGY_AVIATIONCHAT/_artifacts/README.md) | D3 lines 1, 10 |
-| [Projects/AGY_AVIATIONCHAT/_artifacts/INDEX.md](../../../Projects/AGY_AVIATIONCHAT/_artifacts/INDEX.md) | D3 line 5 · backfill the 5 missing `epic_21` rows |
+| [Projects/AGY_AVIATIONCHAT/_artifacts/AGENTS.md](../../../../../Projects/AGY_AVIATIONCHAT/_artifacts/AGENTS.md) | D3 line 24 |
+| [Projects/AGY_AVIATIONCHAT/_artifacts/README.md](../../../../../Projects/AGY_AVIATIONCHAT/_artifacts/README.md) | D3 lines 1, 10 |
+| [Projects/AGY_AVIATIONCHAT/_artifacts/INDEX.md](../../../../../Projects/AGY_AVIATIONCHAT/_artifacts/INDEX.md) | D3 line 5 · backfill the 5 missing `epic_21` rows |
 
 `/sync-agents` copies commands + skills and **never rules** — the two project copies are hand-vendored.
 

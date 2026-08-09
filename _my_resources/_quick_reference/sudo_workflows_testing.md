@@ -157,7 +157,7 @@ without anyone remembering to link anything (§6, §11).
 
 | Command | What it does for you |
 |---|---|
-| `/sudo-live-testing-team` | Boots the app and watches the logs while **you** click around. Files researched bug reports. Writes no code. |
+| `/sudo-live-testing-team` | Boots the app and watches the logs while **you** click around. Files researched bug reports. Writes no code. **Now also traces each bug back to the ticket that shipped it** and shows you the candidates — it never flags one without your word (§11). |
 | `/sudo-mobile-error-team` | Live incident responder, works from your phone. Re-diagnoses independently, gives you a rollback-vs-fix decision, writes the fix and a test that proves it. |
 
 ### Thinking
@@ -267,6 +267,7 @@ flowchart LR
         S["① /sudo-write-story-tests"]
         Q["/sudo-quick-dev"]
         T["/close-task-merge-tree"]
+        L["/sudo-live-testing-team"]
         G["every git commit"]
     end
     subgraph CHK ["the checks that fire"]
@@ -276,7 +277,7 @@ flowchart LR
         WL["workflow_lint.py --staged\nblocks broken text encoding"]
         JH["commit-msg-jira.sh — ARMED\nrefuses a commit without\nthe repo's Jira ticket key"]
         SC["sop_currency.py — ARMED\nrefuses a usage change that\nleaves this page behind"]
-        JF["jira_feed.py\nputs the outline and the\ndev record ON the ticket"]
+        JF["jira_feed.py\nputs the outline and the\ndev record ON the ticket\n— and raises/clears the Bug flag"]
         TP["task_preflight.py\ndecides the LANE:\nis anything deployable in here?"]
     end
     R --> GR
@@ -287,6 +288,7 @@ flowchart LR
     Q --> JF
     T --> TP
     T --> JF
+    L -->|"you confirm the ticket"| JF
     W --> CP
     G --> WL
     G --> JH
@@ -302,8 +304,8 @@ flowchart LR
 | `workflow_lint.py` | **Broken characters quietly entering a document** — the `—` that turns into `â€"`. Runs on every commit, staged files only, so it stays fast enough that nobody disables it. |
 | `commit-msg-jira.sh` | **A commit with no ticket.** Each repo declares its Jira project in `.agents/jira.conf`; a commit whose message carries no valid key for *that* repo — or the wrong project's key — is refused outright. A rejected commit is a no-op: your staged files are untouched, nothing to undo. Merges, reverts, and rebases are exempt (the branch name carries the key for them). |
 | `sop_currency.py` | **This page falling behind the system it describes.** Change a `/` command, a rule, a safety-net script, a commit gate, or the root `AGENTS.md`, and the commit is refused unless this file is staged with it. Say `[sop-ok]` in the message when a change genuinely alters no usage — that stays in the git log as the record of the call. It checks only that the two moved together; no program can judge whether the *edit* was right, and the point is to make you look while you still have the context. |
-| `jira_feed.py` | **A Jira ticket that is only a title.** Every story ticket used to be minted with a summary and nothing else, and close-out posted one verdict line — so the board could tell you a story existed, never what it was about or what building it taught. Now ① mints the ticket with an outline rendered *from the story file* (its statement, its acceptance criteria — nothing invented; a story with no ACs says exactly that), and the close-out files a **Dev Record**: the decisions, the pitfalls, and what is still owed. Both write paths **read the ticket back** and fail if what they claimed to write is not there. **Exactly one Dev Record per ticket** — `/sudo-quick-dev` closes its own branch and files one too, and a later close-out updates that record instead of stacking a second. It also picks the ticket **type** for you: **Story** = BMAD sprint work (debug stories included), **Task** = workflow/IDE/rules/skills work under one of your grouping epics (`CI/CD Improvment`, `New Epic Feature or Fix`). *Everything* is parented, so the parent never decides it. **`Bug` is yours to raise** — your temporary flag on a story you found broken (you set the type and send it back to To Do) — and the close-out puts it back to **Story** once the fix lands, because the bug is gone. Nothing else ever touches it. `jira_feed.py audit --jira-project <P>` checks a whole board and `--apply` migrates it. Full model + the AVCH worked example: [`.agents/rules/jira.md`](../../.agents/rules/jira.md) §Work-item types. |
-| `task_preflight.py` | **A change to the product sneaking onto `main` labelled a "task".** `/close-task-merge-tree` is cheaper than `/sudo-push-e2e` for exactly one reason — it skips the end-to-end suite — and the only honest justification is *nothing that deploys changed.* That is the claim an agent is worst at checking about its own work, so this derives it instead of asking. Two questions, both answered from the repo: does this repo **have** anything that deploys (`backend/ · frontend/ · firebase/ · functions/ · mobile/ · .github/`), and did **this diff** touch it? No deployable surface at all is the command centre's case — there is no E2E suite there to skip, so nothing is being got away with. Touch one and it **stops dead and sends the work to `/sudo-push-e2e`. There is no override flag, on purpose.** It also checks the branch really is `chore/<KEY>-<slug>` with a key this repo owns, that the tree is clean and pushed, that `origin/main` was absorbed (so a conflict lands on your branch and never on production), and that the walkthrough the Dev Record will point at actually exists. Point it at an `epic/`, `claude/` or `incident/` branch and it names the command that IS right rather than just refusing. |
+| `jira_feed.py` | **A Jira ticket that is only a title.** Every story ticket used to be minted with a summary and nothing else, and close-out posted one verdict line — so the board could tell you a story existed, never what it was about or what building it taught. Now ① mints the ticket with an outline rendered *from the story file* (its statement, its acceptance criteria — nothing invented; a story with no ACs says exactly that), and the close-out files a **Dev Record**: the decisions, the pitfalls, and what is still owed. Both write paths **read the ticket back** and fail if what they claimed to write is not there. **Exactly one Dev Record per ticket** — `/sudo-quick-dev` closes its own branch and files one too, and a later close-out updates that record instead of stacking a second. It also picks the ticket **type** for you: **Story** = BMAD sprint work (debug stories included), **Task** = workflow/IDE/rules/skills work under one of your grouping epics (`CI/CD Improvment`, `New Epic Feature or Fix`). *Everything* is parented, so the parent never decides it. **`Bug` is a flag, not a kind of work** — it means *this ticket turned out to be broken.* Two things raise it: an audit that finds a live bug and traces it back to the ticket that introduced it, or you, by hand. Either way the ticket comes back out of Done wearing `Bug`, and the close-out puts it back to **Story or Task** — whichever it actually is — once the fix lands, because the bug is gone. Nothing else ever touches it: a bulk pass can't tell "still broken" from "fixed", and only close-out can. `jira_feed.py audit --jira-project <P>` checks a whole board and `--apply` migrates it. **Raising a `Bug` is two commands on purpose:** `trace` reads git history and *proposes* which ticket last touched the broken line; `flag` does the flip. They stay separate because "which ticket last touched this line" is not "which ticket introduced this bug" — a later unrelated edit takes the blame — and a wrong flip drags a finished ticket back out of Done with nothing to undo it. So a machine may propose; only you may confirm. Full model + the AVCH worked example: [`.agents/rules/jira.md`](../../.agents/rules/jira.md) §Work-item types. |
+| `task_preflight.py` | **A change to the product sneaking onto `main` labelled a "task".** `/close-task-merge-tree` is cheaper than `/sudo-push-e2e` for exactly one reason — it skips the end-to-end suite — and the only honest justification is *nothing that deploys changed.* That is the claim an agent is worst at checking about its own work, so this derives it instead of asking. Two questions, both answered from the repo: does this repo **have** anything that deploys (`backend/ · frontend/ · firebase/ · functions/ · mobile/ · .github/`), and did **this diff** touch it? No deployable surface at all is the command centre's case — there is no E2E suite there to skip, so nothing is being got away with. Touch one and it **stops dead and sends the work to `/sudo-push-e2e`. There is no override flag, on purpose.** It also checks the branch really is `chore/<KEY>-<slug>` with a key this repo owns, that the tree is clean and pushed, that `origin/main` was absorbed (so a conflict lands on your branch and never on production) — and when it hasn't been, **which of your files the other lanes also touched** (see below) — and that the walkthrough the Dev Record will point at actually exists. Point it at an `epic/`, `claude/` or `incident/` branch and it names the command that IS right rather than just refusing. |
 | `split_sprint_status.py` | The one-time migration that shrank the board (§11). |
 | `wf_common.py` | Shared plumbing the others import. You'll never call it. |
 
@@ -334,6 +336,32 @@ see the box below) — 202 checks across 7 files, about ten seconds. Full detail
 > **The gates themselves are immune to this** — every hook probes `python3 → python → py` and uses
 > whichever exists, so the safety net works on either machine with nothing to configure. It is only the
 > commands *you type* that differ. See §7.
+
+### When another lane lands while you're mid-branch (2026-08-09)
+
+Somebody else merging to `main` is normal and mostly free. What actually costs you a session is being
+behind **on a file you also edited** — and "you are 7 commits behind" tells you nothing about which case
+you're in, so a 30-second catch-up and a real hand-merge read exactly the same.
+
+Both preflights now say which. When your branch hasn't absorbed the other side, they diff the two and
+either tell you:
+
+> `no file overlap: origin/main moved on 16 file(s), none of the 8 this branch touched — the merge should be clean`
+
+or name the ones that collide:
+
+> `2 file(s) changed on BOTH sides — resolve by keeping both sides' facts, never by picking a winner: _my_resources/_quick_reference/sudo_workflows_testing.md, .agents/rules/jira.md`
+
+"Keep both sides' facts" is the standing rule for these, not a suggestion — parallel lanes record
+*different true things*, so picking a winner silently deletes someone's work. The `/` commands you type
+don't change; `/close-task-merge-tree` and `/sudo-update-sprint-memory` just tell you more when it matters.
+
+**Why it warns you here and not the moment they merge.** A ping at merge time can't know whether it
+affects you — most merges don't — and interrupting a lane mid-flight is its own hazard: absorbing `main`
+early drags other people's changes into the diff your review is scoped on, and a `git merge` under a
+running dev server has wedged this system before. At the gate you've already stopped, so telling you
+costs nothing. And note the verb is always **merge**, never *rebase* — rewriting a branch that's been
+pushed is on the never list.
 
 ### Is this review still valid?
 
@@ -419,7 +447,8 @@ the command center — the commands, the rules, the safety-net scripts — is re
 Five steps, in this order:
 
 1. **Preflight** — `task_preflight.py` checks the branch really is `chore/<KEY>-<slug>` with a key
-   this repo owns, the tree is clean and pushed, `origin/main` is absorbed, the walkthrough exists,
+   this repo owns, the tree is clean and pushed, `origin/main` is absorbed (and if not, names the
+   overlapping files — see below), the walkthrough exists,
    and **the lane**. Exit 2 stops the command.
 2. **The gate the lane picked** — in the command center that's the enforcement suite plus the toolkit
    lint, with the real output pasted, not summarized.
@@ -542,8 +571,9 @@ flowchart TD
     S2 --> S3["3 · Build"]
     S3 --> S4["4 · Review and fix\nfresh session again"]
     S4 --> GATE{"tests green?"}
-    GATE -- "yes" --> REV["story → 'review'\nnever 'done' — that stays yours"]
+    GATE -- "yes" --> REV["story → 'review'\n+ commits its own branch\n+ ticket → In Review"]
     GATE -- "no" --> HAND["stops and hands it to you"]
+    REV --> YOU(["you: read it, then\n/sudo-update-sprint-memory"])
     S1 -.->|"leaves behind"| P["the plan"]
     S2 -.->|"appends INTO the plan"| P
     S3 -.->|"leaves behind"| WK["the walkthrough"]
@@ -559,10 +589,45 @@ Each stage runs in a **fresh session** so none inherits the previous one's assum
 *sections inside* those two documents, not for the files themselves. A half-written plan doesn't count
 as a finished plan.
 
-It never marks anything `done` and never pushes to production. Both stay yours.
+### The robot works in its own copy of the repo now (2026-08-09)
+
+Every autopilot run opens the story's own **worktree** first — a second, separate checkout of the same
+repo on its own branch, so the robot is never typing into the same files as you or another lane. The
+code and all the paperwork live in there together, and the robot moves between them as it works. It
+looks like `.claude/worktrees/<story>/`, on a branch named `claude/<TICKET>-<story>`.
+
+Two things this bought, and the second is the one that mattered:
+
+1. **Two stories can finally run at once without poisoning each other's tests.** They used to share one
+   checkout, and the only thing keeping them apart was a paragraph in the prompt asking each robot to
+   please ignore files it didn't recognise. When the test suite ran, it saw everyone's half-finished
+   work, so a failure belonged to nobody.
+2. **Its work can now be closed out at all.** `/sudo-update-sprint-memory` refuses to land a story that
+   isn't in a worktree — so before this, the robot could finish a story perfectly and the normal
+   close-out would simply decline to touch it. That wasn't "close-out isn't automated for autopilot"; it
+   was a dead end.
+
+**You launch it from the epic branch.** The robot cuts the story's branch from whatever the project has
+checked out, and that has to be the epic branch — so switch to it first, or pass
+`-EpicBranch epic/<KEY>-<slug>`. It refuses to start rather than guess, because a story branched off
+`main` can't be landed. (That branch is also where it reads the Jira key from — the BMAD epic number and
+the Jira key don't match up, so there's nothing to calculate.)
+
+**When it's green it now commits, files the ticket, and stops.** It saves the work on the story branch
+with an explicit list of files and a Jira-keyed message, moves the ticket to **In Review**, and writes
+the Dev Record onto it. It still **never pushes**, never touches `main`, and never marks anything
+`done`. So your end of it is: read the walkthrough, the plan, and the ticket — then run
+`/sudo-update-sprint-memory`, which lands the branch, flips it to `done`, and cleans up the worktree.
+Nothing to commit by hand any more.
+
+> ⚠️ **Not yet run for real.** All of the above was written and checked on the Mac, but the autopilot is
+> Windows-only, so no stage of it has actually executed. First time out, use `-DryRun` (it writes
+> nothing and shows you the branch and folder it *would* use), then a small story with `-MaxStage 2`,
+> on each engine.
 
 The engines live **per-project** and have drifted between projects — a behavior fix has to land in each
-one.
+one. The two of them (claude and opencode) are **twins by contract**: the worktree, commit and ticket
+blocks are kept identical on purpose, so a `diff` of the two files shows drift straight away.
 
 ---
 
@@ -621,8 +686,31 @@ empty. `/close-task-merge-tree` is that missing half, with the same four obligat
 | Your sign-off | invoking the close-out | invoking the command |
 
 You never pick the type by hand: `jira_feed.py` derives it when the ticket is minted, and
-`jira_feed.py audit --jira-project <P>` re-checks a whole board at once. **`Bug` stays yours** — your
-temporary flag on a Story you found broken; the close-out puts it back to Story once the fix lands.
+`jira_feed.py audit --jira-project <P>` re-checks a whole board at once. **`Bug` is the third
+state** — a temporary flag meaning *this ticket turned out to be broken.* An audit raises it (finds a
+live bug, traces it to the ticket that introduced it, pulls that ticket back out of Done), or you do
+by hand; the close-out puts it back to **Story or Task** once the fix lands.
+
+**How a bug actually gets flagged, end to end.** `/sudo-live-testing-team` is where this lives, because
+it is the one command that flies the running app: you click, it watches, and every symptom becomes a
+researched bug doc that names *where the fix lives*. Those paths feed the trace.
+
+```
+you find a bug flying the app   ->  the agent traces the paths, shows you ranked candidates
+                                    "SCC-31 · blame + log · last 2026-08-04"
+you say yes                     ->  the ticket goes Story|Task -> Bug, comes out of Done,
+                                    and carries a comment saying what broke and how you know
+the fix lands, close-out        ->  back to Story or Task. The bug is gone.
+```
+
+**The agent stops in the middle of that on purpose.** It can find the ticket; it cannot know it is the
+right one. Git tells you who last *touched* a line, not who *broke* it — a typo fix a month later takes
+the blame, and flagging that ticket pulls finished work back into your queue for someone else's mistake.
+So the machine proposes and you confirm. If nothing is proposed, the bug has no ticket behind it: that
+is new work, not a reopen.
+
+A ticket already flagged is left alone rather than flagged twice, and a ticket that was still
+`In Progress` keeps its status — it was never finished, so there is nothing to reopen.
 
 **The one refusal to expect.** A Task merges to `main` without the end-to-end suite, and the only
 thing that justifies that is *nothing that deploys changed*. So `/close-task-merge-tree` doesn't take

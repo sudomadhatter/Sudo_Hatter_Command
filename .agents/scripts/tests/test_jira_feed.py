@@ -20,6 +20,7 @@ from __future__ import annotations
 import json
 import os
 import stat
+import subprocess
 import sys
 from pathlib import Path
 
@@ -130,10 +131,26 @@ def adf(text):
 head = args[:4]
 if head[:3] == ["jira", "workitem", "view"]:
     vkey = args[3] if len(args) > 3 else "TEST-7"
-    print(json.dumps({"key": vkey,
-                      "fields": {"description": adf(state.get("description")),
-                                 "summary": state.get("summary", ""),
-                                 "issuetype": {"name": state.get("types", {}).get(vkey, "Task")}}}))
+    fields = {"description": adf(state.get("description")),
+              "summary": state.get("summary", ""),
+              "status": {"name": state.get("statuses", {}).get(vkey, "To Do")},
+              "issuetype": {"name": state.get("types", {}).get(vkey, "Task")}}
+    # `--fields` is a WHITELIST on the real acli, so this stub honours it (SCC-54). It did
+    # not, and that gap hid a live defect for two tickets: production asked for a field list
+    # with `issuetype` missing from it, read `issuetype` out of the answer, and got nothing -
+    # while every test here passed, because the stub handed back the whole shape regardless.
+    # A stub more generous than the tool it stands in for cannot fail on the bug it exists
+    # to catch.
+    want = val("--fields")
+    if want:
+        keep = [w.strip() for w in want.split(",")]
+        fields = {k: v for k, v in fields.items() if k in keep}
+    print(json.dumps({"key": vkey, "fields": fields}))
+elif head[:3] == ["jira", "workitem", "transition"]:
+    if not state.get("stuck_status"):
+        state.setdefault("statuses", {})[val("--key")] = val("--status")
+        save()
+    print("Work item transitioned")
 elif head == ["jira", "workitem", "comment", "list"]:
     print(json.dumps({"comments": [{"id": c["id"], "body": adf(c["body"])}
                                    for c in state["comments"]]}))
@@ -202,6 +219,50 @@ def build(root: Path) -> tuple[Path, Path, Path]:
                             encoding="utf-8")
         launcher.chmod(launcher.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
     return repo, launcher, root / "state.json"
+
+
+def git(repo: Path, *args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True)
+
+
+def commit(repo: Path, subject: str) -> None:
+    git(repo, "add", "-A")
+    # --no-verify: this fixture must not inherit the MACHINE's commit-msg hook, which rejects
+    # a subject with no Jira key - and one of these commits deliberately has none.
+    git(repo, "commit", "-q", "--no-verify", "-m", subject)
+
+
+def make_trace_repo(root: Path) -> Path:
+    """A real git history whose subjects carry keys. `trace` reads git, never Jira.
+
+    Shaped to carry every signal the ranking has to separate: a line whose blame is younger
+    than the file's first commit, a MERGE subject repeating a key its own commit already
+    carries, a foreign project's key, and a commit with no key at all."""
+    repo = root / "traced"
+    (repo / ".agents").mkdir(parents=True)
+    git(repo, "init", "-q", "-b", "main")
+    git(repo, "config", "user.email", "t@example.com")
+    git(repo, "config", "user.name", "T")
+    git(repo, "config", "commit.gpgsign", "false")
+    (repo / ".agents/jira.conf").write_text('JIRA_KEYS="SCC"\n', encoding="utf-8")
+    src = repo / "widget.py"
+
+    src.write_text("alpha = 1\nbeta = 2\ngamma = 3\n", encoding="utf-8")
+    commit(repo, "SCC-10 feat: add the widget")
+    src.write_text("alpha = 1\nbeta = 22\ngamma = 3\n", encoding="utf-8")
+    commit(repo, "SCC-11 fix: beta was wrong")
+
+    git(repo, "checkout", "-q", "-b", "side")
+    src.write_text("alpha = 1\nbeta = 22\ngamma = 33\n", encoding="utf-8")
+    commit(repo, "SCC-12 fix: gamma was wrong too")
+    git(repo, "checkout", "-q", "main")
+    git(repo, "merge", "--no-ff", "-q", "-m", "merge: SCC-12 -> main", "side")
+
+    src.write_text("alpha = 1\nbeta = 22\ngamma = 33\ndelta = 4\n", encoding="utf-8")
+    commit(repo, "AVCH-9 chore: a key from the OTHER project")
+    (repo / "orphan.md").write_text("nothing to see\n", encoding="utf-8")
+    commit(repo, "chore: no ticket on this one at all")
+    return repo
 
 
 def set_state(path: Path, **kw) -> None:
@@ -443,9 +504,9 @@ def main() -> int:
                 code == 1 and "there should be" in out, out.strip()[:200])
 
         # ── the type rule, all four arms ──────────────────────────────────────
-        # `Bug` is deliberately absent. It is TEMPORARY and the operator's alone: a Story found
-        # broken wears `Bug` until he says it is fixed. It carries the same number and story
-        # file as any Story, so a rule that "corrects" it erases his signal that it is broken.
+        # `Bug` is deliberately absent from the computed vocabulary. It is TEMPORARY: a Story
+        # or Task found broken wears it until the fix lands, carrying the same number and story
+        # file as before - so a rule that "corrects" it erases the signal that it is broken.
         # Pinned as a table because this rule was WRONG TWICE before the real board settled
         # it: first keyed on the epic parent (which would type every chore Task a Story,
         # since everything is parented), then on the story file alone (which typed 19.2 a
@@ -465,15 +526,16 @@ def main() -> int:
             c.check(f"type rule: {head} (file={str(has_file).lower()}) -> {want}",
                     got == want, f"got {got} - {why}")
 
-        # ── --closing clears the operator's Bug flag ───────────────────────────
-        # He flips a broken Story to Bug and sends it back To Do. When the fix lands the bug
-        # is GONE, so close-out puts it back to Story. Close-out is the only moment anything
-        # can know that - which is exactly why the bulk audit must not guess.
+        # ── --closing clears the Bug flag, back to Story OR Task ───────────────
+        # A Bug is a TEMPORARY flag on broken work, raised by an audit that traced a live bug
+        # to the ticket that introduced it, or by the operator by hand. When the fix lands the
+        # bug is GONE and the ticket goes back to being what it always was. Close-out is the
+        # only moment anything can know that - which is why the bulk audit must not guess.
         set_state(state, types={"TEST-7": "Bug"})
         code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
                        "--closing", "--outcome", "review -> done", "--followon", "none")
         st = get_state(state)
-        c.check("closing: a fixed Bug goes back to Story",
+        c.check("closing: a fixed Bug on sprint work goes back to Story",
                 code == 0 and st["types"]["TEST-7"] == "Story"
                 and "the bug is gone" in out, out.strip()[:200])
 
@@ -483,12 +545,16 @@ def main() -> int:
         c.check("closing: an ordinary Story is not re-typed",
                 code == 0 and "retyped" not in get_state(state), out.strip()[:160])
 
+        # THE regression (SCC-53). The first cut restored ONLY to Story: a flagged Task hit a
+        # "does not look like BMAD sprint work" warning and STAYED a Bug, with nothing else in
+        # the system able to clear it - a permanent Bug on the board. Task work can be found
+        # broken exactly as easily as a story, so it must restore to Task.
         set_state(state, types={"TEST-7": "Bug"})
         code, out = jf("devrecord", "--story", "chore-thing", "--key", "TEST-7", "--apply",
                        "--closing", "--followon", "none")
-        c.check("closing: a Bug that is NOT BMAD sprint work is left for the operator",
-                code == 0 and get_state(state)["types"]["TEST-7"] == "Bug"
-                and "leaving the type alone" in out, out.strip()[:200])
+        c.check("closing: a fixed Bug on TASK work goes back to Task, not stranded",
+                code == 0 and get_state(state)["types"]["TEST-7"] == "Task"
+                and "the bug is gone" in out, out.strip()[:200])
 
         set_state(state, types={"TEST-7": "Bug"})
         code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
@@ -524,9 +590,10 @@ def main() -> int:
                 code == 0 and st.get("retyped") == ["T-1"]
                 and st["types"]["T-1"] == "Story", out.strip()[:200])
 
-        # THE load-bearing case. A Bug is a Story the operator flagged as broken - same number,
-        # same story file - so every rule here reads it as a mistyped Story. "Correcting" it
-        # erases his only signal that the story is broken.
+        # THE load-bearing case. A Bug is a Story or Task flagged as broken - same number, same
+        # story file - so every rule here reads it as a mistype. "Correcting" it erases the one
+        # signal that the work is broken. This pass cannot tell "still broken" from "fixed";
+        # only close-out can, so only `devrecord --closing` may clear it.
         board(("T-1", "Bug", "9.1 - Widget Archive"),
               ("T-2", "Task", "Separate the front end"))
         code, out = run_script("jira_feed.py", "audit", "--project", str(repo),
@@ -535,7 +602,16 @@ def main() -> int:
         c.check("audit: NEVER retypes a Bug, even when it looks like a mistyped Story",
                 "retyped" not in st and st["types"]["T-1"] == "Bug", out.strip()[:200])
         c.check("audit: says why the Bug was left alone",
-                "left alone" in out and code == 0, out.strip()[:200])
+                "left for close-out" in out and code == 0, out.strip()[:200])
+
+        # ...and the same for a Bug over TASK work, which the first cut could never clear.
+        board(("T-1", "Bug", "Separate the front end"),
+              ("T-2", "Task", "Something else"))
+        code, out = run_script("jira_feed.py", "audit", "--project", str(repo),
+                               "--acli", str(acli), "--jira-project", "TEST", "--apply")
+        c.check("audit: leaves a Bug over TASK work alone too",
+                "retyped" not in get_state(state)
+                and get_state(state)["types"]["T-1"] == "Bug", out.strip()[:200])
 
         board(("T-1", "Story", "9.1 - Widget Archive"),
               ("T-2", "Task", "Separate the front end"))
@@ -543,6 +619,135 @@ def main() -> int:
                                "--acli", str(acli), "--jira-project", "TEST")
         c.check("audit: a correct board reports clean (positive control)",
                 code == 0 and "every type agrees" in out, out.strip()[:200])
+
+        # ── trace: propose the ticket behind a path. Reads git, NEVER the board ──
+        traced = make_trace_repo(tmp)
+
+        def tr(*args: str) -> tuple[int, str]:
+            os.environ["STUB_STATE"] = str(state)
+            return run_script("jira_feed.py", "trace", "--project", str(traced), *args)
+
+        # THE load-bearing negative for this verb: it must not be able to touch Jira at all.
+        # `--acli` points at a binary that does not exist, so any board call would die.
+        code, out = tr("--path", "widget.py:2", "--acli", str(tmp / "no-such-acli"))
+        c.check("trace: never calls acli (a bad --acli cannot break it)",
+                code == 0, out.strip()[:200])
+        c.check("trace: blame on the exact line names the ticket that WROTE it",
+                "SCC-11" in out and "blame widget.py:2" in out, out.strip()[:240])
+        c.check("trace: says out loud that it is a proposal",
+                "THIS IS A PROPOSAL" in out)
+        c.check("trace: hands over the exact flag command, best candidate first",
+                "flag --key SCC-11" in out, out.strip()[:240])
+
+        code, out = tr("--path", "widget.py", "--json")
+        data = json.loads(out[out.index("{"):])
+        keys = [c_["key"] for c_ in data["candidates"]]
+        c.check("trace --json: carries every keyed commit on the file",
+                set(keys) == {"SCC-10", "SCC-11", "SCC-12"}, str(keys))
+        # jira.conf says JIRA_KEYS="SCC". Commit prose says "AVCH-9" all the time; proposing a
+        # ticket in another project would flag a ticket this repo cannot even close.
+        c.check("trace: a foreign project's key is never proposed", "AVCH-9" not in out)
+        by_key = {c_["key"]: c_ for c_ in data["candidates"]}
+        # `merge: SCC-12 -> main` repeats a key its own commit already carries. Counting both
+        # double-weights whichever ticket merged last, for no added information.
+        c.check("trace: a merge subject does not double-count its branch's key",
+                by_key["SCC-12"]["hits"] == 1, json.dumps(by_key["SCC-12"]["why"]))
+        c.check("trace: a file-only hit is marked as the weaker signal",
+                by_key["SCC-11"]["blame"] is False, "no :LINE was given")
+
+        # Line 3 was last written by SCC-12; the file's newest keyed commit is AVCH-9 and its
+        # oldest is SCC-10. Ranking must follow the LINE, or the "strong" signal is decoration.
+        code, out = tr("--path", "widget.py:3", "--json")
+        top = json.loads(out[out.index("{"):])["candidates"][0]
+        c.check("trace: blame follows the LINE, and ranks above file-only hits",
+                top["key"] == "SCC-12" and top["blame"] is True, json.dumps(top)[:240])
+
+        code, out = tr("--path", "orphan.md")
+        c.check("trace: no keyed commit -> exit 1, and says so",
+                code == 1 and "no ticket proposed" in out, out.strip()[:200])
+
+        code, out = tr("--path", "widget.py:2", "--path", "ghost.py:9")
+        c.check("trace: a path that does not exist warns and is skipped, not fatal",
+                code == 0 and "ghost.py: not a file" in out, out.strip()[:240])
+
+        # ── flag: the RAISE half. Story|Task -> Bug, and out of Done ────────────
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "Done"},
+                  summary="a shipped task")
+        code, out = jf("flag", "--key", "TEST-7", "--reason", "the roster 500s on load")
+        c.check("flag: dry run renders and writes nothing",
+                code == 0 and "DRY RUN" in out
+                and get_state(state)["types"]["TEST-7"] == "Task"
+                and not get_state(state)["comments"], out.strip()[:200])
+
+        code, out = jf("flag", "--key", "TEST-7", "--reason", "the roster 500s on load",
+                       "--evidence", "500 on GET /roster", "--found-by", "live-testing",
+                       "--apply")
+        st = get_state(state)
+        c.check("flag: a shipped Task becomes a Bug",
+                code == 0 and st["types"]["TEST-7"] == "Bug", out.strip()[:240])
+        c.check("flag: a Done ticket comes back out of Done",
+                st["statuses"]["TEST-7"] == "To Do", out.strip()[:200])
+        body = "\n".join(x["body"] for x in st["comments"])
+        c.check("flag: the ticket carries WHY, not just the flag",
+                "the roster 500s on load" in body and "500 on GET /roster" in body)
+        # Close-out recomputes the type from the rule, but a human reading the board later
+        # needs to see what it WAS - otherwise a flagged ticket has no record of its own kind.
+        c.check("flag: the comment records what it was, so the restore is auditable",
+                "shipped as a **Task**" in body and "restores it to `Task`" in body)
+        c.check("flag: the comment is not mistaken for the Dev Record",
+                "dev record" not in body[:400].lower())
+
+        # Every case above reads `issuetype` and `status` back through `--fields`, which is a
+        # WHITELIST on the real acli - and `issuetype` was missing from production's list for
+        # two tickets (SCC-54). It passed anyway, because the stub returned the whole shape no
+        # matter what was asked for. This is the positive control for the fix: the stub must
+        # actually be strict, or every read-back case above is testing nothing.
+        os.environ["STUB_STATE"] = str(state)
+        probe = subprocess.run([str(acli), "jira", "workitem", "view", "TEST-7",
+                                "--fields", "key,summary", "--json"],
+                               capture_output=True, text=True)
+        c.check("fields whitelist: the stub is STRICT, so the read-back cases mean something",
+                '"issuetype"' not in probe.stdout and '"status"' not in probe.stdout,
+                "a stub more generous than acli hid this defect twice")
+
+        # Idempotent: two testers finding the same bug must not fight over the board.
+        before = len(get_state(state)["comments"])
+        code, out = jf("flag", "--key", "TEST-7", "--reason", "same bug, found again",
+                       "--apply")
+        c.check("flag: an already-flagged ticket is a no-op, not a second flag",
+                code == 0 and "already flagged" in out
+                and len(get_state(state)["comments"]) == before, out.strip()[:200])
+
+        # THE round trip - raise and clear are one mechanism or neither works.
+        code, out = jf("devrecord", "--story", "chore-thing", "--key", "TEST-7", "--apply",
+                       "--closing", "--followon", "none")
+        c.check("round trip: flag -> Bug -> close-out restores Task",
+                code == 0 and get_state(state)["types"]["TEST-7"] == "Task"
+                and "the bug is gone" in out, out.strip()[:240])
+
+        # In flight, not finished: shoving it back to To Do would erase real state to record
+        # something the type already says.
+        set_state(state, types={"TEST-8": "Story"}, statuses={"TEST-8": "In Review"})
+        code, out = jf("flag", "--key", "TEST-8", "--reason", "AC-2 never worked", "--apply")
+        c.check("flag: a ticket still in flight keeps its status",
+                code == 0 and get_state(state)["statuses"]["TEST-8"] == "In Review"
+                and "nothing to reopen" in out, out.strip()[:240])
+        c.check("flag: a Story is flagged exactly like a Task",
+                get_state(state)["types"]["TEST-8"] == "Bug")
+
+        set_state(state, types={"TEST-9": "Epic"}, statuses={"TEST-9": "Done"})
+        code, out = jf("flag", "--key", "TEST-9", "--reason", "whatever", "--apply")
+        c.check("flag: an Epic is refused - a container is never broken work",
+                code == 2 and "container is never a Bug" in out
+                and get_state(state)["types"]["TEST-9"] == "Epic", out.strip()[:200])
+
+        # acli exits 0 on a transition it did not perform - the same swallow the whole script
+        # exists to catch, one verb further on.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "Done"},
+                  stuck_status=True)
+        code, out = jf("flag", "--key", "TEST-7", "--reason", "still broken", "--apply")
+        c.check("flag: a transition that silently no-ops is reported, not assumed",
+                code == 2 and "still Done" in out, out.strip()[:240])
 
         # ── the interpreter probe, in every hook that has one ──────────────────
         # The suite cannot EXECUTE these (a .sh will not run on the PC), so this asserts the

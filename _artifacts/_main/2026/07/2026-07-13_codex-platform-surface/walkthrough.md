@@ -27,7 +27,7 @@ opencode/Antigravity ones:
 
 ### File-by-file
 
-**Engine — [.agents/scripts/sync-agents.ps1](../../../.agents/scripts/sync-agents.ps1)**
+**Engine — [.agents/scripts/sync-agents.ps1](../../../../../.agents/scripts/sync-agents.ps1)**
 - `$AllPlatforms` gained `'codex'` → commands with no `platforms:` key stay universal and now reach Codex.
 - Added a `codex` entry to the machine-global `$caches` array → `~/.codex/prompts` (mirror-exact, `bmad-*`
   preserved — harmless there).
@@ -46,9 +46,9 @@ opencode/Antigravity ones:
   which leaked orchestrator-only commands into the Codex *and* Antigravity menus. Bonus: this cleaned 3 stale
   `_AP` ghosts out of the Antigravity global cache (verified below).
 
-**Docs** — [AGENTS.md](../../../AGENTS.md) §4 + §8 (four platforms; Codex needs no adapter file),
-[sync-agents.md](../../../.agents/commands/sync-agents.md) (surfaces, reach, first-machine `-WhatIf` note),
-[docs/workspace-standard.md](../../../docs/workspace-standard.md) "one master, four platforms" — and the same
+**Docs** — [AGENTS.md](../../../../../AGENTS.md) §4 + §8 (four platforms; Codex needs no adapter file),
+[sync-agents.md](../../../../../.agents/commands/sync-agents.md) (surfaces, reach, first-machine `-WhatIf` note),
+[docs/workspace-standard.md](../../../../../docs/workspace-standard.md) "one master, four platforms" — and the same
 edit hand-propagated to **Fresh** (`Projects/Fresh_Workspace_BMAD/docs/workspace-standard.md`) so the
 living-template drift check stays green (it did — "Fresh living-template check OK").
 

@@ -87,6 +87,12 @@ def check_landed(project: Path, key: str, rep: wf.Report, branch: str | None = N
             n = ahead.stdout.strip() or "?"
             rep.err("landed", f"{b} has {n} commit(s) NOT on {target} - "
                               f"closing out now would strand them")
+            # This is the moment the operator goes and does the landing merge, so it is the
+            # moment worth knowing whether a SIBLING lane already changed the same files.
+            # `worktree-per-story.md`: "The epic branch moves under you... never assume the
+            # base you opened on." Naming the overlap is the difference between a
+            # fast-forward and a three-way merge that needs both sides' facts kept.
+            wf.report_overlap(project, b, target, rep, section="landed")
 
 
 # ── 2. Is every repo pushed and clean? ─────────────────────────────────────────

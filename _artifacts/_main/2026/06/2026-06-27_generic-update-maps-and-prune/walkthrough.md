@@ -6,6 +6,12 @@ ArtifactMetadata:
   date: 2026-06-27
 ---
 
+<!-- wf-lint: allow-encoding-literals — line 43 QUOTES a replacement character on purpose, as
+     the example in a note about console mojibake. The encoding gate scans for U+FFFD raw, so
+     it reads the document about the corruption as the corruption. Same inversion as a
+     source-grep guard matching the comment that describes the bug it looks for. -->
+
+
 # Walkthrough — one generic maps tool, a structure contract, and a prune
 
 ## What I built (the 4 parts, all approved)
