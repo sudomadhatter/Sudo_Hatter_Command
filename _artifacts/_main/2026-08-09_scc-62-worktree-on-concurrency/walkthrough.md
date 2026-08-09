@@ -126,3 +126,47 @@ runs at the AGY close-out immediately after this lands.
 **Reported, deliberately NOT changed:** the skeleton's §8 is written around the retired `main_debug`
 branch model (6 mentions, all predating SCC-62) — template-wide drift beyond this ticket's scope; needs
 its own small task.
+
+---
+
+## Third leg (2026-08-09 — `chore/SCC-62-retire-main-debug`)
+
+The operator rolled the deferred `main_debug` drift into this ticket rather than filing a new one
+("it's something missed by another task"). Landed in the skeleton at `d463613`.
+
+**The 2026-08-07 epic-branch migration retired `main_debug` everywhere except the template.** Every
+project cut from the skeleton was therefore born teaching a dead branch model. Two of the seven
+references were **live enforcement**, not prose — which is why this was worth more than a find-replace:
+
+- **`.github/workflows/pr-check.yml` gated PRs to `[main, main_debug]`.** Under the epic model, stories
+  merge into their epic branch, so gating only `main` leaves the `claude/*` → `epic/*` flow CI-ungated —
+  *verbatim the P0-1 lesson the file's own header says it exists to prevent.* Now `[main, 'epic/**']`.
+- **`.claude/settings.json` injects a GIT gate into every SessionStart** telling the agent to branch off
+  `main_debug`. It now states the SCC-62 concurrency trigger.
+
+Docs fixed alongside: `AGENTS.md` §8 (both gates), `README.md` (the setup step ran `git checkout -b
+main_debug` verbatim, plus the branch-model paragraph), `docs/file_structure_rules/README.md`.
+
+**Found while rewriting the enforcement sentence — the promised hook did not exist.** `AGENTS.md` §8
+claimed a `PreToolUse` hook at `.claude/hooks/require-push-approval.py` and `settings.json` invoked it,
+but the file was never copied into the template. Every new project got a hook pointing at a missing
+script and **no push-approval gate at all**. Shipped from the canonical `.agents/hooks/` source (byte-
+identical to the center's deployed copy), genericized to "the operator" since a template must not carry
+a personal name. It is already the post-migration version — `PROTECTED = ("main",)`, fails open, only
+ever asks. Behavior-tested: push to `main` → `ask`; push to `chore/*` → silent pass.
+
+### ⛔ Pitfall — backticks in a double-quoted `git commit -m` are COMMAND SUBSTITUTION
+
+Committing this work, the message quoted the README line being fixed: `` `git checkout -b main_debug` ``
+inside a double-quoted `-m "..."`. Bash executed it. It created the branch, switched to it, and the
+commit landed on **`main_debug`** — the exact branch this ticket deletes — with the backticked text
+replaced by the command's empty stdout, silently corrupting the message.
+
+It failed loudly enough to catch (`Switched to a new branch 'main_debug'` in the output) and nothing was
+pushed, so recovery was local: `git checkout <chore-branch>` → `git merge --ff-only main_debug` →
+`git commit --amend -F <message-file>` → `git branch -D main_debug`. Verified after: 0 branches named
+`main_debug` local **and** remote in all three repos.
+
+**This repo is unusually exposed to it** — it is a git-workflow toolkit, so commit messages routinely
+quote git commands. **Write any commit message containing backticks to a file and use `-F`**, never
+`-m "..."`. Memory: [[commit-message-backticks-execute]].

@@ -1,8 +1,11 @@
 task_key: SCC-62
 primary_repo: Sudo_Hatter_Command
-branch: chore/SCC-62-stale-copies
+branch: chore/SCC-62-retire-main-debug
 close_command: close-task-merge-tree
 secondary_repos:
   - repo: AGY_AVIATIONCHAT
     landing: independent-task
     ticket: AVCH-52
+  - repo: sudo-project-skeleton
+    landing: independent-task
+    ticket: SCC-62
