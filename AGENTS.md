@@ -170,11 +170,19 @@ files, per §3); full model →
   commit `_artifacts/_memory/` files otherwise — a dirty memory file in your tree that you did not
   write is another session's work in flight. Write law, for the writers: one index line per memory;
   update the existing file, never fork a duplicate; wrong → **delete** (git is the undo);
-  closed-but-instructive → compress to a one-line lesson. Upkeep is gated (`tests/run_all.py` enforces
-  the 20 KB index cap + link↔file integrity) and compaction is **proposed** by `/update-maps-indexes`,
-  applied only on the operator's word. (Claude's `~/.claude/...` harness path is a per-machine
-  symlink into this store — a convenience, never the mechanism; fresh machine → migrations kit §1
-  step 8.)
+  closed-but-instructive → compress to a one-line lesson. (Claude's `~/.claude/...` harness path is a
+  per-machine symlink into this store — a convenience, never the mechanism; fresh machine →
+  migrations kit §1 step 8.)
+- **⚠ The memory-audit trigger — a standing obligation for every platform (SCC-68).** Upkeep is gated:
+  `tests/test_memory_store.py` (in `run_all`) enforces the 20 KB index cap + link↔file integrity, and at
+  **90 % of the cap** it prints a `MEMORY AUDIT DUE` block — below the cap, while the run still passes,
+  so the trigger prevents the red instead of being it. **If you see that block, STOP and ask the
+  operator whether to run `/memory-audit` now.** It is a script: it can print, it cannot ask. You are the
+  half that asks — do not silently note it, do not defer it to a later command, and do not decide for
+  them. ⛔ And do not act on it yourself: **never compact, merge, or retire a memory on your own
+  judgment, and never raise the cap.** Compaction is `/memory-audit`'s work, applied per item on the
+  operator's word — a model summarizing away a hard-won pitfall is silent, permanent loss of exactly
+  the recall this store exists for.
 
 ## 8. PORTABILITY
 `AGENTS.md` is the universal contract; `CLAUDE.md` / `GEMINI.md` are one-line adapters pointing here (nothing
