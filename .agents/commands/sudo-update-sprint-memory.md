@@ -205,7 +205,7 @@ check; everything else, incl. Step 6's memory write, just applies. Carry its rep
   sections per `artifacts-always-first` §5 — **`## Task Checklist`** (the outline), **`## Evidence`**,
   and **`## Your Actions`** (what landed — branch + commit range, per Step 7 — plus anything still on
   Daniel); story work also carries `## Suite Ledger` + the review's `## Code Review`. (Sections of the
-  walkthrough, not separate files; ≤ 10 KB.)
+  walkthrough, not separate files. Dense, not short — no byte cap; never cut a finding to shorten it.)
 - Print a **`Session save applied:`** summary — ✅ tasks moved to Completed, 🧠 learnings routed (→ file),
   🧹 stale pitfalls / old completed pruned.
 - **Memory (AUTOMATIC — validate, cross-check, write; no approval gate):** for each candidate (Close-Out

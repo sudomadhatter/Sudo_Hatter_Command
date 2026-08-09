@@ -125,7 +125,7 @@
 ## Working style
 - [Own it plainly](own-it-plainly-dont-make-excuses.md) — own it in one line, then ACT.
 - [Two-doc story close](story-artifacts-two-doc-close.md) — audit appends to the PLAN, review to the WALKTHROUGH; `Verdict: … @ <sha>` is the flip gate.
-- [Artifact budgets are scoped](artifact-budgets-are-scoped-not-universal.md) — 8/10 KB binds in-flight STORY docs only; don't invent size gates.
+- [Limits relocate, never truncate](limits-relocate-content-never-truncate.md) — the 8/10 KB artifact caps are GONE (SCC-51); a limit is only legit when going over means content is in the wrong file.
 - [Story artifacts live in the tree](story-artifacts-live-in-the-tree.md) — absence in THE tree = the step never ran; RUN the command.
 - [Operator chairs the board](operator-chairs-the-board.md) — multi-voice boards advance ONLY on the operator's word; voices ASK.
 - [Caucus-card contract](adviser-board-caucus-card-contract.md) — silent caucuses → one-speaker Team Cards with originator credit.

@@ -89,31 +89,18 @@ def main() -> int:
         c.check("without the marker the SAME content still fires",
                 any(s == "ERROR" and "no-marker.md" in m for s, m in msgs), str(msgs)[:110])
 
-        # ── F7: artifact budgets, scoped to work that is still moving ─────────
-        proj = tmp / "proj"
-        (proj / wf.BOARD_REL).parent.mkdir(parents=True)
-        (proj / wf.BOARD_REL).write_text(
-            "development_status:\n  9-1-live: review\n  9-2-closed: done\n",
-            encoding="utf-8")
-        for slug, size in (("story-9-1-live", 12_000), ("story-9-2-closed", 40_000)):
-            d = proj / "_artifacts" / "epic_9" / slug
-            d.mkdir(parents=True)
-            (d / "walkthrough.md").write_text("x" * size, encoding="utf-8")
-        main_d = proj / "_artifacts" / "_main" / "some-initiative"
-        main_d.mkdir(parents=True)
-        (main_d / "implementation_plan.md").write_text("y" * 30_000, encoding="utf-8")
-
-        rep = wf.Report()
-        lint.check_artifact_budgets(proj, rep)
-        msgs = [(i["sev"], i["msg"]) for i in rep.items]
-        c.check("F7 an IN-FLIGHT story over budget warns",
-                any(s == "WARN" and "9-1-live" in m for s, m in msgs), str(msgs)[:120])
-        c.check("F7 a CLOSED story is counted as history, not warned",
-                any(s == "INFO" and "closed-story" in m for s, m in msgs)
-                and not any(s == "WARN" and "9-2-closed" in m for s, m in msgs),
-                str(msgs)[:120])
-        c.check("F7 _main/ initiative plans are out of scope",
-                not any("some-initiative" in m for _, m in msgs), str(msgs)[:120])
+        # ── SCC-51: the artifact BYTE budgets are gone, and must stay gone ────
+        # The 8 KB / 10 KB caps (and check_artifact_budgets) were removed 2026-08-08 by
+        # operator ruling: implementation_plan.md is a TWO-author doc (plan + /sudo-self-audit
+        # §7), so a fixed cap truncates the auditor. This asserts nothing re-introduces a byte
+        # threshold - the standard now lives as judgement in artifacts-always-first.md.
+        c.check("SCC-51 no byte-budget check exists on the linter",
+                not hasattr(lint, "check_artifact_budgets") and not hasattr(lint, "_BUDGETS"),
+                "a byte threshold was re-added - see artifacts-always-first.md 'Dense, not short'")
+        _rule = (SCRIPTS.parent / "rules" / "artifacts-always-first.md").read_text(encoding="utf-8")
+        c.check("SCC-51 the rule states the standard that replaced the cap",
+                "NO byte cap" in _rule and "Length is NEVER a reason to omit" in _rule,
+                "artifacts-always-first.md lost the 'dense, not short' standard")
 
         # ── Wave 4: the board note budget - the rule that keeps the split won ─
         proj4 = tmp / "proj4"
