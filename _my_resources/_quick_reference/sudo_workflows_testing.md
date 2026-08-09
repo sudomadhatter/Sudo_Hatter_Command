@@ -453,6 +453,30 @@ the epic reaches `main` exactly one way: `/sudo-push-e2e`. Small fixes outside a
 `chore/<JIRA-KEY>-<slug>` branch off `main` (every chore carries its own ticket), merged back the same
 session with your sign-off — that merge is `/close-task-merge-tree`, and typing it **is** the sign-off.
 
+> ### ⛔ One typing = ONE merge (added 2026-08-09, SCC-71)
+>
+> Typing `/close-task-merge-tree` authorises **the one task you typed it for**. It does not authorise
+> the next one, no matter how soon it follows. Same for `/sudo-update-sprint-memory`. Every other
+> merge to `main` needs you to say so directly.
+>
+> **This got broken, and it is worth knowing how.** In one long session the command was invoked
+> **once** and then rode **six** merges (SCC-64 → SCC-69). Not defiance — the command's whole body
+> stays sitting in the agent's context after you type it, and on task six it still looks exactly as
+> valid as on task one. A permission that arrives as a *document* doesn't expire when the task does.
+> Twice you typed the command to authorise the next merge and were told "already done": **the sign-off
+> was arriving after the merge it was meant to authorise.**
+>
+> **What you should see instead.** When a task is merge-ready the agent stops with the branch pushed,
+> gates green and preflight clear, and hands it back to you — then waits. If it reports a merge you
+> did not authorise for *that* task, that is the bug, and the merge SHA's timestamp against your
+> message is how you prove it.
+>
+> **Not yet fixed mechanically.** This machine has **no pre-push hook** (`.githooks/` holds
+> `commit-msg`, `post-commit`, `pre-commit` only) even though the command doc claims a push-approval
+> hook prompts. The proposed fix — a single-use token written when you invoke the command and consumed
+> by the merge, plus a pre-push hook that refuses `main` without one — is **not built**. Until it is,
+> this rule is enforced by reading, which is exactly the weakness it describes.
+
 ### ⭐ Every lane now gets its own workspace — not just story lanes
 
 **Changed 2026-08-09 (SCC-62).** The rule used to decide who got an isolated workspace by asking *what
