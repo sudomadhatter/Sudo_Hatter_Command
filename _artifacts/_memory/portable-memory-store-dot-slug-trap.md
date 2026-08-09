@@ -40,4 +40,4 @@ prevent data loss. Caught on the seeding run before `-Apply`.
 - On rename day the slug changes — re-run the linker to re-point. Nothing moves, because the data was
   never in the slug dir. See [[env-migration-kit]].
 
-Related: [[artifact-budgets-are-scoped-not-universal]] for what belongs in memory vs. an artifact.
+Related: [[limits-relocate-content-never-truncate]] for what belongs in memory vs. an artifact.

@@ -139,46 +139,22 @@ def check_active_context(project: Path, rep: wf.Report) -> None:
         rep.info("context", f"active-context ~{round(size / 4)} / 5,000 tokens")
 
 
-# Plan A's hard budgets. SCOPE: per-STORY artifacts only. The budget exists to cap what
-# (3) and close-out must re-read on every story; `_artifacts/_main/` initiative plans are
-# neither per-story nor re-read by the loop, so they are deliberately out of scope.
-_BUDGETS = {"implementation_plan.md": 8 * 1024, "walkthrough.md": 10 * 1024}
-
-
-def check_artifact_budgets(project: Path, rep: wf.Report) -> None:
-    """A budget nobody measures is a wish. Plan A set these on 2026-08-02 and nothing has
-    enforced them since - the same shape as every other rule this upgrade is mechanising.
-
-    SCOPE: artifacts of stories still moving through the loop. The budget's stated purpose
-    is capping what (3) and close-out must RE-READ, so a closed story's walkthrough is
-    history - compressing it churns the tree for nothing. And a check that opens with 115
-    warnings about files nobody will touch is a check that gets muted. `_artifacts/_main/`
-    initiative plans are out of scope for the same reason: not per-story, never re-read."""
-    board = wf.parse_board(wf.read_text(project / wf.BOARD_REL))
-    live = [k for k, v in board.items()
-            if wf.is_story_key(k) and v["status"] not in wf.TERMINAL]
-    over, historic = [], 0
-    for name, cap in _BUDGETS.items():
-        for path in project.glob(f"_artifacts/**/{name}"):
-            parts = path.relative_to(project).parts
-            if "_main" in parts or "_archived" in parts or "debugging" in parts:
-                continue
-            size = path.stat().st_size
-            if size <= cap:
-                continue
-            slug = wf.norm_id(path.parent.name).removeprefix("story-")
-            if any(wf.slug_matches(wf.story_id(k), slug) for k in live):
-                over.append((size / cap, path.relative_to(project), size, cap))
-            else:
-                historic += 1
-    for _, rel, size, cap in sorted(over, reverse=True):
-        rep.warn("budgets", f"{rel}: {size} bytes over the {cap} cap "
-                            f"({size / cap:.1f}x) - compress in place, never split")
-    if historic:
-        rep.info("budgets", f"{historic} closed-story artifact(s) over budget "
-                            f"(history; the budget post-dates them)")
-    if not over:
-        rep.info("budgets", "every in-flight story artifact is within its byte budget")
+# REMOVED 2026-08-08 (SCC-51, operator ruling): the hard byte budgets on
+# implementation_plan.md (8 KB) and walkthrough.md (10 KB), and the check that warned on them.
+#
+# They were set 2026-08-02 in the SAME commit that made implementation_plan.md a TWO-author
+# document - the plan plus /sudo-self-audit's findings, phase evidence and verdict
+# (artifacts-always-first §7). A fixed cap on a two-author doc squeezes the second author,
+# which is the auditor: the one voice you least want truncated. The number was never
+# validated against a real audit, and the first Full audit run under it had to compress its
+# own findings to fit. That is the gate cutting substance while the filler it was aimed at
+# survives.
+#
+# The discipline did NOT go away - it moved to where judgement belongs, as a stated standard
+# in artifacts-always-first.md: dense not short, every line carries a decision / constraint /
+# finding / evidence, and LENGTH IS NEVER A REASON TO OMIT A FINDING, AN AC, OR EVIDENCE.
+# Do not re-add a byte threshold here. If artifacts bloat, the answer is removing what does
+# not inform a decision - never truncating what does.
 
 
 def check_sprint_status(project: Path, rep: wf.Report) -> None:
@@ -385,7 +361,6 @@ def main() -> int:
 
     project = wf.resolve_project_root(args.project)
     check_active_context(project, rep)
-    check_artifact_budgets(project, rep)
     check_sprint_status(project, rep)
     check_board_note_budget(project, rep)
     check_status_drift(project, rep)

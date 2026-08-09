@@ -78,7 +78,8 @@ Apply **all** of the audit's proposed fixes first, then implement the plan **tes
    AC→evidence matrix — which ACs got tests, what coverage `automate` added — + the pasted actual
    totals + SHA) → a **`## Suite Ledger`** table (`scope · command · duration · result · why this run`
    — one row per suite invocation; a hedge re-run has to write down its why) → **`## Your Actions`**
-   recording the worktree branch + commits. NO narrative essay; ≤ 10 KB. Stage 4 appends
+   recording the worktree branch + commits. NO narrative essay — dense, not short; no byte cap, and
+   never drop a finding or a piece of evidence to shorten it. Stage 4 appends
    `## Code Review` — never pre-write it. If you introduce any dependency: **self-install it**, pin it,
    add a `decisions-log.md` entry, and banner it under "NEW DEPENDENCIES" in the walkthrough.
 
