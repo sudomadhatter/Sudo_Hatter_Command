@@ -13,6 +13,13 @@ about or what building it taught. SCC-49 closes that.
                            [--pitfall ...] [--followon ...] [--apply] [--strict]
     jira_feed.py audit     --jira-project AVCH --project P [--apply]
     jira_feed.py check     --key AVCH-15 [--story 12.3.4]
+    jira_feed.py trace     --path backend/x.py:42 [--path ...] [--json]
+    jira_feed.py flag      --key AVCH-15 --reason "..." [--evidence ...] [--apply]
+
+`trace` + `flag` are the RAISE half of the `Bug` rule (SCC-54); `devrecord --closing` is the
+clear half. They are two verbs and not one on purpose: `trace` reads git history and proposes,
+`flag` writes the board and will only ever take a `--key` a human typed. A trace that guessed
+wrong and flipped its own answer would pull a finished ticket out of `Done` on no evidence.
 
 Two invariants this file exists to hold, because prose could not:
 
@@ -481,8 +488,17 @@ def render_devrecord(project: Path, story: str, args) -> tuple[str, list[str]]:
 # ── Ticket I/O ─────────────────────────────────────────────────────────────────
 
 def view_fields(binary: str, key: str) -> dict:
+    """`--fields` is a WHITELIST, and `issuetype` has to be on it (SCC-54).
+
+    It was not, and every type read in this file goes through here - so `have` came back `""`
+    on a live board while reading perfectly on the stub, which ignored `--fields` and returned
+    the whole shape regardless. Three things were silently broken by one missing word:
+    `devrecord --closing` never saw a `Bug` so it never cleared one; its read-back would have
+    reported FAILED if it had; and `audit --apply` reports FAILED on every conversion that in
+    fact succeeded. A stub that is more generous than the real tool tests nothing."""
     data = acli_json(binary, ["jira", "workitem", "view", key,
-                              "--fields", "key,summary,status,description,parent,labels",
+                              "--fields",
+                              "key,summary,status,description,parent,labels,issuetype",
                               "--json"])
     if data is None:
         wf.die(f"could not read {key} from Jira (is acli authenticated? "
@@ -835,6 +851,227 @@ def cmd_audit(args) -> int:
     return 2 if failed else 0
 
 
+# ── The raise path: a live bug -> the ticket that introduced it (SCC-54) ───────
+
+_KEY_RE = re.compile(r"\b([A-Z][A-Z0-9]+-\d+)\b")
+_CONF_RE = re.compile(r'^\s*JIRA_KEYS\s*=\s*"?([^"#\n]*)"?', re.MULTILINE)
+_LINE_SPEC_RE = re.compile(r"^(.*):(\d+)$")
+
+
+def conf_projects(repo: Path) -> list[str]:
+    """The project key(s) THIS repo answers to, from `.agents/jira.conf`.
+
+    The same file the armed commit-msg hook reads. Without it every `ABC-1`-shaped token in a
+    commit subject becomes a candidate ticket - and prose says things like "unlike AVCH-13"
+    all the time. With it, a trace inside the lobby can only ever propose `SCC` tickets."""
+    text = wf.read_text(repo / ".agents" / "jira.conf")
+    m = _CONF_RE.search(text)
+    return [k for k in (m.group(1).replace(",", " ").split() if m else []) if k]
+
+
+def keys_in(subject: str, projects: list[str]) -> list[str]:
+    hits = _KEY_RE.findall(subject or "")
+    if not projects:
+        return hits
+    return [k for k in hits if k.split("-")[0] in projects]
+
+
+def commit_meta(repo: Path, sha: str) -> tuple[str, str]:
+    r = wf.git(["log", "-1", "--format=%s%x00%aI", sha], repo)
+    parts = (r.stdout or "").strip().split("\0")
+    return (parts[0] if parts else ""), (parts[1] if len(parts) > 1 else "")
+
+
+def trace_paths(repo: Path, specs: list[str], depth: int) -> tuple[dict, list[str]]:
+    """Which ticket last touched this code? Evidence only - this NEVER writes.
+
+    Two signals, and they are not equal. `git blame` on an exact line names the commit that
+    wrote THAT line, which is as close to "who introduced it" as git can get. `git log` on the
+    file only says the ticket worked in the neighbourhood. Both are reported; blame ranks first.
+
+    `--no-merges` on the log pass: a `--no-ff` merge subject carries the branch's key too, so
+    counting it double-weights whichever ticket merged most recently for no added information.
+
+    None of this proves authorship of a BUG. The line that shows a symptom is often not the
+    line that broke it, and a later unrelated edit takes the blame outright. That is exactly
+    why this prints and stops - `flag` will not take a key from here, only from a human."""
+    projects = conf_projects(repo)
+    cand: dict[str, dict] = {}
+    notes: list[str] = []
+
+    def bump(key: str, kind: str, why: str, when: str) -> None:
+        c = cand.setdefault(key, {"hits": 0, "blame": False, "why": [], "when": ""})
+        c["hits"] += 1
+        c["blame"] = c["blame"] or kind == "blame"
+        c["why"].append(why)
+        c["when"] = max(c["when"], when)
+
+    for spec in specs:
+        m = _LINE_SPEC_RE.match(spec)
+        rel, line = (m.group(1), int(m.group(2))) if m else (spec, None)
+        if not (repo / rel).is_file():
+            notes.append(f"{rel}: not a file in this repo - skipped "
+                         f"(a path that does not exist cannot be blamed)")
+            continue
+        if line:
+            r = wf.git(["blame", "-L", f"{line},{line}", "--porcelain", "--", rel], repo)
+            sha = (r.stdout or "").split(" ")[0].strip()
+            if r.returncode == 0 and re.fullmatch(r"[0-9a-f]{7,40}", sha):
+                subject, when = commit_meta(repo, sha)
+                found = keys_in(subject, projects)
+                for key in found:
+                    bump(key, "blame", f"blame {rel}:{line} -> {sha[:8]} {subject[:60]}", when)
+                if not found:
+                    notes.append(f"{rel}:{line} blames {sha[:8]} whose subject carries no "
+                                 f"{'/'.join(projects) or 'project'} key: {subject[:60]}")
+            else:
+                notes.append(f"{rel}:{line} could not be blamed (line out of range?)")
+
+        r = wf.git(["log", "--no-merges", "-n", str(depth), "--format=%H%x00%s%x00%aI",
+                    "--", rel], repo)
+        for row in (r.stdout or "").splitlines():
+            parts = row.split("\0")
+            if len(parts) < 3:
+                continue
+            for key in keys_in(parts[1], projects):
+                bump(key, "log", f"log  {rel} <- {parts[0][:8]} {parts[1][:60]}", parts[2])
+
+    return cand, notes
+
+
+def cmd_trace(args) -> int:
+    """Propose the ticket(s) behind a set of paths. Read-only, no network, no board write."""
+    repo = resolve_root(args.project, need_board=False)
+    if not (repo / ".git").exists():
+        wf.die(f"{repo} is not a git checkout - there is no history to trace")
+    cand, notes = trace_paths(repo, args.path, args.depth)
+    ranked = sorted(cand.items(),
+                    key=lambda kv: (kv[1]["blame"], kv[1]["hits"], kv[1]["when"]),
+                    reverse=True)
+
+    if args.json:
+        say(json.dumps({"repo": str(repo), "candidates": [
+            {"key": k, "hits": v["hits"], "blame": v["blame"], "last": v["when"],
+             "why": v["why"][:6]} for k, v in ranked], "notes": notes}, indent=2))
+        return 0 if ranked else 1
+
+    rep = wf.Report()
+    for n in notes:
+        rep.warn("trace", n)
+    for key, v in ranked:
+        how = "blame + log" if v["blame"] else "log only"
+        rep.info("trace", f"{key}  {v['hits']} hit(s), {how}, last {v['when'][:10]}")
+        for why in v["why"][:4]:
+            rep.info("trace", f"    {why}")
+    rep.print_human(f"jira-feed trace ({len(args.path)} path(s))")
+    if not ranked:
+        say("jira-feed: no ticket proposed - no commit touching these paths carries a "
+            "project key. Flag by hand if you know the ticket.")
+        return 1
+    say(f"jira-feed: {len(ranked)} candidate(s), best first. THIS IS A PROPOSAL - the last "
+        f"ticket to touch a line is not always the one that broke it.")
+    say(f"jira-feed: confirm with a human, then: jira_feed.py flag --key {ranked[0][0]} "
+        f"--reason \"...\" --apply")
+    return 0
+
+
+def render_flag(args, was: str, status: str) -> str:
+    lines = [f"**Bug flag** - {args.date}",
+             "",
+             f"This ticket shipped as a **{was}** and has been found broken. It wears `Bug` "
+             f"until the fix lands; close-out restores it to `{was}`.",
+             "",
+             f"**What is broken:** {args.reason}"]
+    if args.evidence:
+        lines += ["", "**Evidence:**"] + [f"- {e}" for e in args.evidence]
+    if args.found_by:
+        lines += ["", f"**Found by:** {args.found_by}"]
+    moved = (f"**Status:** `Done` -> `{args.status}` - back into the work queue."
+             if status == "Done" else
+             f"**Status:** left at `{status or '?'}` - it was never finished, so there is "
+             f"nothing to reopen.")
+    lines += ["", moved, "",
+              "Cleared by `jira_feed.py devrecord --closing` at whichever close-out owns this "
+              "ticket. Nothing else may retype it - see `.agents/rules/jira.md`."]
+    return "\n".join(lines) + "\n"
+
+
+def cmd_flag(args) -> int:
+    """Raise the flag: a shipped ticket is broken. Story|Task -> Bug, and out of `Done`.
+
+    Deliberately takes `--key` and nothing else as its target. `trace` can hand you a
+    candidate but it cannot hand it to THIS - a wrong trace would pull an innocent ticket out
+    of `Done`, and there is no undo that restores the board's history of having been right."""
+    binary = acli_bin(args.acli)
+    fields = view_fields(binary, args.key)
+    have = ((fields.get("issuetype") or {}).get("name") or "").strip()
+    status = ((fields.get("status") or {}).get("name") or "").strip()
+    summary = field_text(fields.get("summary"))
+
+    if have in ("Epic", "Subtask", "Sub-task"):
+        wf.die(f"{args.key} is an {have} - a container is never a Bug. Flag the child ticket "
+               f"whose work broke.")
+    if have == "Bug":
+        # Idempotent on purpose: two testers finding the same bug must not fight over the
+        # board, and a re-run must not stack a second flag comment on a ticket already flagged.
+        say(f"jira-feed: {args.key} is already flagged Bug - nothing to do "
+            f"({summary[:60]})")
+        return 0
+    if have not in ("Story", "Task"):
+        wf.die(f"{args.key} reads as type '{have or '?'}' - refusing to flag a type this rule "
+               f"does not know. Check the ticket by hand.")
+
+    body = render_flag(args, have, status)
+    if not args.apply:
+        say(f"jira-feed: DRY RUN - would flag {args.key} {have} -> Bug"
+            + (f", {status} -> {args.status}" if status == "Done" else
+               f", status left at {status or '?'}"))
+        sys.stdout.write(body)
+        return 0
+
+    r = acli(binary, ["jira", "workitem", "edit", "--key", args.key, "--type", "Bug", "--yes"])
+    landed = ((view_fields(binary, args.key).get("issuetype") or {}).get("name") or "").strip()
+    if r.returncode != 0 or landed != "Bug":
+        say(f"jira-feed: {args.key} {have} -> Bug FAILED (still {landed or '?'}) "
+            f"{(r.stderr or r.stdout).strip()[:160]}")
+        return 2
+    say(f"jira-feed: {args.key} {have} -> Bug")
+
+    if status == "Done":
+        # ONLY out of Done. A ticket sitting In Progress or In Review is still in flight -
+        # shoving it back to To Do would erase real state to record something the type
+        # already says. `Deferred` is a To Do-category status by design, so it is not finished
+        # either and is left where it is.
+        t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,
+                          "--status", args.status, "--yes"])
+        now = ((view_fields(binary, args.key).get("status") or {}).get("name") or "").strip()
+        if t.returncode != 0 or now != args.status:
+            say(f"jira-feed: {args.key} is Bug but the status is still {now or '?'} - move it "
+                f"off Done by hand: {(t.stderr or t.stdout).strip()[:160]}")
+            return 2
+        say(f"jira-feed: {args.key} Done -> {args.status}")
+    else:
+        say(f"jira-feed: {args.key} status left at {status or '?'} (not finished, nothing to "
+            f"reopen)")
+
+    tmp = write_temp(body)
+    try:
+        c = acli(binary, ["jira", "workitem", "comment", "create", "--key", args.key,
+                          "--body-file", str(tmp)])
+    finally:
+        tmp.unlink(missing_ok=True)
+    posted = [x for x in list_comments(binary, args.key)
+              if "bug flag" in field_text(x.get("body"))[:200].lower()]
+    if c.returncode != 0 or not posted:
+        # The flag itself landed, so this is not a rollback - it is a ticket that says
+        # "broken" with no record of HOW, which is a mystery on the board six weeks later.
+        say(f"jira-feed: {args.key} is flagged, but the reason comment did NOT land - post it "
+            f"by hand: {(c.stderr or c.stdout).strip()[:160]}")
+        return 2
+    say(f"jira-feed: {args.key} carries the reason ({len(body)} chars)")
+    return 0
+
+
 def cmd_check(args) -> int:
     """Is this ticket actually carrying the feed - description AND one Dev Record?"""
     binary = acli_bin(args.acli)
@@ -920,6 +1157,24 @@ def main() -> int:
     p_aud.add_argument("--jira-project", required=True, help="e.g. AVCH")
     p_aud.add_argument("--apply", action="store_true", help="fix the mistyped ones")
 
+    p_tr = sub.add_parser("trace", help="which ticket last touched this code? proposes only")
+    common(p_tr)
+    p_tr.add_argument("--path", action="append", required=True, metavar="FILE[:LINE]",
+                      help="repeatable; a :LINE suffix enables the stronger blame signal")
+    p_tr.add_argument("--depth", type=int, default=25, help="commits of file history to read")
+    p_tr.add_argument("--json", action="store_true")
+
+    p_flag = sub.add_parser("flag", help="this shipped ticket is broken: Story|Task -> Bug")
+    common(p_flag)
+    p_flag.add_argument("--key", required=True, help="the ticket - NEVER taken from a trace")
+    p_flag.add_argument("--reason", required=True, help="what is broken, in one sentence")
+    p_flag.add_argument("--evidence", action="append", metavar="TEXT")
+    p_flag.add_argument("--found-by", help="e.g. '/sudo-live-testing-team 2026-08-09'")
+    p_flag.add_argument("--status", default="To Do",
+                        help="where a Done ticket lands (default: To Do)")
+    p_flag.add_argument("--date", default=date.today().isoformat())
+    p_flag.add_argument("--apply", action="store_true", help="without this, renders only")
+
     p_chk = sub.add_parser("check", help="does this ticket carry outline + Dev Record?")
     common(p_chk)
     p_chk.add_argument("--key", required=True)
@@ -927,7 +1182,8 @@ def main() -> int:
 
     args = ap.parse_args()
     return {"outline": cmd_outline, "mint": cmd_mint, "devrecord": cmd_devrecord,
-            "audit": cmd_audit, "check": cmd_check}[args.verb](args)
+            "audit": cmd_audit, "check": cmd_check, "trace": cmd_trace,
+            "flag": cmd_flag}[args.verb](args)
 
 
 if __name__ == "__main__":
