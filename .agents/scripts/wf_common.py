@@ -267,6 +267,71 @@ def git_head(cwd: Path) -> str | None:
     return r.stdout.strip() if r.returncode == 0 else None
 
 
+def changed_since_fork(repo: Path, ref: str, fork: str) -> set[str]:
+    """Files `ref` changed since `fork`, as repo-relative paths.
+
+    Two arguments rather than the `fork..ref` range form: a diff treats them identically, and
+    the two-argument spelling is what the merge itself compares - so this answer cannot drift
+    from the thing it is predicting."""
+    r = git(["diff", "--name-only", fork, ref], repo)
+    if r.returncode != 0:
+        return set()
+    return {ln.strip() for ln in r.stdout.splitlines() if ln.strip()}
+
+
+def base_overlap(repo: Path, branch: str, base: str) -> dict | None:
+    """Which files BOTH `branch` and `base` touched since they forked.
+
+    Returns `{"mine": N, "theirs": N, "overlap": [paths]}`, or None when there is no
+    merge-base to compare from. Callers decide severity and wording; this only answers the
+    question, so the two preflights cannot drift on the ANSWER while disagreeing on the prose.
+
+    Why this exists: "you are 7 commits behind `main`" is true and nearly useless. Being
+    behind is routine and usually free. What costs a session is being behind *on a file you
+    also edited* - and without naming those, a 30-second fast-forward and a real three-way
+    merge print identically, so the two correct reactions look the same.
+
+    Deliberately answered at a gate the lane has already stopped at, not pushed at a lane the
+    moment somebody merges to main: a notification cannot know whether it overlaps (most
+    merges do not), and interrupting live work to absorb main is its own hazard - it drags
+    other people's changes into the diff a review scopes on, and a merge under a running dev
+    server has wedged this system before."""
+    fork = git(["merge-base", branch, base], repo).stdout.strip()
+    if not fork:
+        return None
+    mine = changed_since_fork(repo, branch, fork)
+    theirs = changed_since_fork(repo, base, fork)
+    return {"mine": len(mine), "theirs": len(theirs), "overlap": sorted(mine & theirs)}
+
+
+# How many overlapping paths to name before summarizing the rest. The list answers "which of
+# MY files did they touch" - a dozen names answers it; a hundred is a wall that gets scrolled
+# past, which is the same as printing nothing. The COUNT is always exact.
+OVERLAP_SHOWN = 12
+
+
+def report_overlap(repo: Path, branch: str, base: str, rep: "Report",
+                   section: str = "base") -> None:
+    """Print `base_overlap`'s answer. A no-overlap result is printed too - "behind, but on
+    files you never touched" is a real answer, and leaving it silent is how a clean absorb
+    reads as an unknown risk."""
+    info = base_overlap(repo, branch, base)
+    if info is None:
+        rep.warn(section, f"no merge-base with {base} - cannot tell which files overlap")
+        return
+    if not info["mine"] or not info["theirs"]:
+        return
+    overlap = info["overlap"]
+    if not overlap:
+        rep.info(section, f"no file overlap: {base} moved on {info['theirs']} file(s), none "
+                          f"of the {info['mine']} this branch touched - the merge should be clean")
+        return
+    shown = overlap[:OVERLAP_SHOWN]
+    more = f" (+{len(overlap) - len(shown)} more)" if len(overlap) > len(shown) else ""
+    rep.err(section, f"{len(overlap)} file(s) changed on BOTH sides - resolve by keeping both "
+                     f"sides' facts, never by picking a winner: " + ", ".join(shown) + more)
+
+
 class Report:
     """Severity-tiered findings. Exit: 0 clean, 1 warnings only, 2 any error."""
 

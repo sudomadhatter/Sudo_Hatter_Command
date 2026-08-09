@@ -7,6 +7,7 @@ platforms: [opencode]
 
 > **Rules in force for this command:**
 > - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
+> - `.agents/rules/worktree-per-story.md` — one story, one worktree, one `claude/*` branch off the epic branch
 > - `.agents/rules/sudo-target-resolution.md` — bind ONE target, never operate on the lobby
 
 > **OPENCODE-ONLY.** This drives headless `opencode run` subprocesses. It is the opencode-native
@@ -102,10 +103,17 @@ location), so only the *paths you pass it* need the prefix - no script change is
    - On `>>> TEST GATE - ...` -> after Stage 4, the orchestrator is independently re-running the suites.
      Leave Stage 4 `completed` and wait for the gate result.
    - On `TESTS RED` -> the post-Stage-4 gate found NEW failures vs the pre-run baseline. Re-run `-ResumeFrom 4`.
+   - On `>>> WORKTREE - opened for story ...` / `re-bound to the existing tree` -> the story's isolated
+     tree is open (or a resume found the existing one). Every path from here on is under it.
    - On `>>> STORY STATUS - ... flipped to review` -> gate green + review artifact exists; story advanced.
+   - On `>>> COMMIT - <sha> on claude/...` -> the orchestrator committed the tree on its own green gate;
+     nothing was pushed. `COMMIT REJECTED` means a git hook refused it and the work is left **staged**.
+   - On `>>> JIRA - <KEY> moved to In Review` -> the board now matches the tree.
 
-5. When the watch ends, mark the last stage `completed`, read the canonical artifact folder
-   `<PROJECT_ROOT>/_artifacts/<date>_autopilot-<id>/`, and give the final debrief: total cost, artifacts
+5. When the watch ends, mark the last stage `completed`, read the canonical artifact folder — which is
+   **inside the story worktree**, at
+   `<PROJECT_ROOT>/.claude/worktrees/<story-slug>/_artifacts/epic_<epic>/<date>_autopilot-<id>/` — and
+   give the final debrief: total cost, artifacts
    written, and - most importantly - the **OUT-OF-SPEC DECISIONS** and **OPEN QUESTIONS FOR DANIEL**
    sections at the top of `walkthrough.md` plus `decisions-log.md`. State whether it finished all stages
    (**COMPLETE**), **PAUSED** on a `PIPELINE_BLOCKER`, or **CRASHED** (re-run with no flags; finished
@@ -157,8 +165,23 @@ Same as `/autopilot_claude`: never crashes on agent output (human-in-the-loop); 
 stamps `CRASHED`; `_RUN-STATUS.md` re-stamped after every stage; resumable - completed stages auto-detect
 by artifact presence); the audit never hard-halts (findings flow into Stage 3); new-dependency policy
 (self-install + pin + log + banner); all stages run `--auto` (full autonomy on this repo); story-status
-flip to `review` only (never `done`); concurrency-safe (per-story log + lockfile); missing handoff
-artifact is a hard stop (CRASHED-resumable); never `git commit`/`push`, never marks the story `done`.
+flip to `review` only (never `done`); missing handoff artifact is a hard stop (CRASHED-resumable);
+**never pushes and never touches `main`**.
+
+Also the same as `/autopilot_claude`, and new here (read that command's Guardrails for the full text):
+
+- **One story, one worktree** — `.claude/worktrees/<story-slug>/` on `claude/<JIRA-KEY>-<story-slug>`,
+  cut from the epic branch, opened before Stage 1 and re-bound on resume. Every stage cwd, both suites,
+  the story file, `sprint-status.yaml` and the run folder live under it. It is what makes the result
+  landable at all: `/sudo-update-sprint-memory` Step 7 requires a `claude/*` HEAD.
+- **Gitignored assets are bootstrapped in** (`auth_keys/`, the `.env` files, a `node_modules` junction),
+  because they do not travel with a worktree.
+- **The orchestrator commits** inside the tree on its green gate — explicit enumerated paths, Jira-keyed
+  subject, no push — then files the Dev Record and moves the ticket to **In Review**.
+- **Two gaps this engine had that the claude one never did, both closed in the same pass:** it now has
+  the per-story `.run.lock` (nothing used to stop a double-run of the SAME story), and its test gate now
+  finds `backend/.venv` — it looked only at a repo-root `.venv`, which does not exist in AviationChat, so
+  this lane had never once found its own interpreter and silently fell through to system python.
 
 ## How to run it directly
 
@@ -192,7 +215,11 @@ Or trigger via the slash command: **`/autopilot_opencode 13.4`**.
 | `-MaxRetries` | `3` | transient-error attempts per stage |
 | `-MaxCost` | `40` | $ ceiling; halts if spend crosses it (`0` disables). No per-stage cap on this engine. |
 | `-TestScope` | `auto` | independent gate: `auto`/`backend`/`frontend`/`both`/`none` |
-| `-DryRun` | off | print the plan + sessions, no spend |
+| `-DryRun` | off | print the plan + sessions + the worktree that would be cut, no spend |
+| `-EpicBranch` | (current branch) | the epic branch the story tree is cut from; must be an `epic/*` |
+| `-NoWorktree` | off | debug only: run in the shared checkout; no isolation, no commit, cannot be closed out |
+| `-JiraKey` | (looked up) | the story's work item, for the Dev Record + move to In Review |
+| `-NoJira` / `-NoCommit` | off | skip the board update / skip the orchestrator's commit |
 
 **Exit codes:** `0` complete - `2` paused on a blocker - `3` crashed (resume with `-ResumeFrom`) -
 `4` test gate red (resume `-ResumeFrom 4`) - `5` cost ceiling hit (raise `-MaxCost`).
@@ -200,7 +227,9 @@ Or trigger via the slash command: **`/autopilot_opencode 13.4`**.
 ## After it completes - Daniel's close-out (not automated)
 
 1. Review `walkthrough.md` - start with **OUT-OF-SPEC DECISIONS** + **OPEN QUESTIONS FOR DANIEL** at
-   the top - AND `decisions-log.md` (every choice the team made on your behalf).
-2. Answer any open questions. The story is already at **`review`**; run `/sudo-update-sprint-memory`,
-   then flip `review -> done` when you're satisfied.
-3. Commit when satisfied.
+   the top - AND `decisions-log.md` (every choice the team made on your behalf). Both are in the run
+   folder **inside the story worktree**; so is the code. The ticket is at **In Review** with its Dev Record.
+2. Answer any open questions. The story is already at **`review`** and the work is already **committed**
+   on its `claude/*` branch. Run `/sudo-update-sprint-memory` — it lands the branch on the epic branch,
+   flips `review -> done`, and prunes the tree.
+3. Nothing to commit by hand. If the run reported `COMMIT REJECTED`, the work is staged in the tree.
