@@ -18,7 +18,14 @@ It is derived from the repo, never asserted:
     be LOCAL, so the E2E question does not arise there;
   * a repo that DOES deploy is LOCAL only while the diff stays clear of its deployable dirs.
 
-    task_preflight.py [--repo PATH] [--branch B] [--fetch] [--json]
+    task_preflight.py --expect-key SCC-00 [--repo PATH] [--branch B] [--fetch] [--json]
+
+`--expect-key` is REQUIRED (SCC-64). On 2026-08-09 a close-out ran this preflight while cwd
+had silently drifted into a sibling lane's checkout: every check ran honestly against that
+lane's branch and the verdict was a clean lie. The script cannot detect a wrong target from
+derived inputs alone - repo and branch are both guesses when defaulted - so the caller must
+state WHICH ticket they mean, and the branch's key must match it or the run blocks. A wrong
+cwd now fails the key match instead of merging someone else's work.
 
 Exit: 0 clean · 1 warnings · 2 blocking. It reads and reports; it never merges, never
 transitions a ticket, and never deletes a branch. The command does those, after this passes.
@@ -132,6 +139,57 @@ def check_branch(repo: Path, branch: str, rep: wf.Report) -> str | None:
     return key
 
 
+# ── 1b. Is this the branch the OPERATOR meant? ─────────────────────────────────
+
+def check_intent(branch: str, key: str | None, expect: str, rep: wf.Report) -> None:
+    """cwd is not intent. The one thing no derived input can express is which ticket the
+    operator MEANT - so it arrives as --expect-key and the branch has to agree with it."""
+    if key is None:
+        return  # check_branch already errored; a second message would bury the first
+    if key != expect:
+        rep.err("intent", f"--expect-key {expect} but {branch} carries {key} - this "
+                          f"preflight is aimed at ANOTHER lane's branch. cwd is not "
+                          f"intent: re-run against the repo/branch you actually mean")
+    else:
+        rep.info("intent", f"{expect} matches the branch key")
+
+
+# ── 1c. The task manifest, when one exists ─────────────────────────────────────
+
+MANIFEST_SCHEMA = ("task_key: SCC-00 | primary_repo: <name> | branch: chore/SCC-00-<slug> | "
+                   "close_command: close-task-merge-tree | "
+                   "secondary_repos: [{repo, landing: independent-task|retain-on-epic, ticket}]")
+
+
+def manifest_field(text: str, field: str) -> str | None:
+    m = re.search(rf"^\s*{field}\s*:\s*[\"']?([^\"'\n#]+)", text, re.MULTILINE)
+    return m.group(1).strip() if m else None
+
+
+def check_manifest(repo: Path, branch: str, expect: str, rep: wf.Report) -> None:
+    """`task.yaml` is intent written down at task START - it exists before any branch can
+    drift. When one declares this task, it must agree with what the preflight resolved;
+    a manifest nobody checks against is decorative."""
+    root = repo / "_artifacts"
+    manifests = list(root.glob("**/task.yaml")) if root.is_dir() else []
+    mine = [(p, t) for p in manifests
+            if (t := wf.read_text(p)) and manifest_field(t, "task_key") == expect]
+    if not mine:
+        rep.warn("manifest", f"no task.yaml declares task_key: {expect} - intent rests on "
+                             f"--expect-key alone. Author one in the task's _artifacts "
+                             f"folder ({MANIFEST_SCHEMA})")
+        return
+    for p, text in mine:
+        declared = manifest_field(text, "branch")
+        if declared and declared != branch:
+            rep.err("manifest", f"{rel_or_abs(p, repo)} declares branch `{declared}` but "
+                                f"this preflight resolved `{branch}` - one of them is "
+                                f"wrong; fix the manifest or aim at the declared branch")
+        else:
+            rep.info("manifest", f"{rel_or_abs(p, repo)} agrees: {expect} on "
+                                 f"{declared or branch}")
+
+
 # ── 2. Is the branch clean, pushed, and current with main? ─────────────────────
 
 def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report) -> None:
@@ -146,8 +204,21 @@ def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report) -> None:
 
     dirty = wf.git(["status", "--porcelain"], repo).stdout.strip()
     if dirty:
-        rep.err("sync", f"{len(dirty.splitlines())} uncommitted change(s) - commit "
-                        f"(explicit paths) and push before merging")
+        lines = dirty.splitlines()
+        mem = [ln for ln in lines if ln[3:].startswith("_artifacts/_memory/")]
+        rest = [ln for ln in lines if ln not in mem]
+        if rest:
+            rep.err("sync", f"{len(rest)} uncommitted change(s) - commit "
+                            f"(explicit paths) and push before merging")
+        if mem:
+            # Memory files are session output, and the session that wrote them may not be
+            # this one - two lanes share one store. Naming them separately is what stops a
+            # close-out from sweeping (or deleting) another session's memory to get green.
+            rep.err("sync", f"{len(mem)} memory file(s) dirty under _artifacts/_memory/ - "
+                            f"if ANOTHER session wrote them, park or leave them (never "
+                            f"sweep, delete, or commit them under this task); if THIS "
+                            f"session wrote them, commit them with explicit paths under "
+                            f"this task's key first")
     else:
         rep.info("sync", "working tree clean")
 
@@ -281,7 +352,11 @@ def gate_plan(repo: Path, lane: str) -> list[str]:
     if (repo / ".agents/scripts/tests/run_all.py").is_file():
         plan.append("python3 .agents/scripts/tests/run_all.py")
     if (repo / ".agents/scripts/workflow_lint.py").is_file():
-        plan.append("python3 .agents/scripts/workflow_lint.py")
+        # In the command centre (no deployable surface), lint the TOOLKIT only - a root
+        # task close-out must not go red or green on whichever product project happens to
+        # be named in .agents/active-project.txt (SCC-64).
+        flag = " --toolkit-only" if not deploy_surface(repo) else ""
+        plan.append(f"python3 .agents/scripts/workflow_lint.py{flag}")
     if not plan:
         plan.append("(no enforcement suite in this repo - say so; do not report a gate "
                     "that did not run)")
@@ -290,6 +365,9 @@ def gate_plan(repo: Path, lane: str) -> list[str]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Task close-out preflight (SCC-49)")
+    ap.add_argument("--expect-key", required=True,
+                    help="the Jira key you INTEND to close (e.g. SCC-64) - the resolved "
+                         "branch must carry it; cwd is not intent (SCC-64)")
     ap.add_argument("--repo", help="repo root; default: walk up from cwd")
     ap.add_argument("--branch", help="branch to close; default: current HEAD")
     ap.add_argument("--fetch", action="store_true", help="fetch first (network)")
@@ -298,9 +376,12 @@ def main() -> int:
 
     repo = git_root(args.repo)
     branch = args.branch or wf.git(["rev-parse", "--abbrev-ref", "HEAD"], repo).stdout.strip()
+    expect = args.expect_key.strip().upper()
 
     rep = wf.Report()
     key = check_branch(repo, branch, rep)
+    check_intent(branch, key, expect, rep)
+    check_manifest(repo, branch, expect, rep)
     check_sync(repo, branch, args.fetch, rep)
     check_base(repo, branch, rep)
     lane, touched = check_scope(repo, branch, rep)
@@ -309,7 +390,8 @@ def main() -> int:
     plan = gate_plan(repo, lane)
 
     if args.json:
-        print(json.dumps({"repo": str(repo), "branch": branch, "key": key, "lane": lane,
+        print(json.dumps({"repo": str(repo), "branch": branch, "key": key,
+                          "expect_key": expect, "lane": lane,
                           "deployable_touched": touched, "gate": plan,
                           "findings": rep.items, "exit": rep.exit_code()}, indent=2))
     else:

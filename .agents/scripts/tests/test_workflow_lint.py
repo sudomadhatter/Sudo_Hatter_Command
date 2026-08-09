@@ -197,6 +197,33 @@ def main() -> int:
         code, _ = staged("moji.md")
         c.check("W5 an UNSTAGED broken file is not the commit's problem",
                 code == 0, f"exit={code}")
+
+        # ── SCC-64: --toolkit-only must never resolve a project ──────────────
+        # A root Task close-out was going red/green on whichever product project
+        # happened to sit in .agents/active-project.txt. The flag stops BEFORE
+        # resolve_project_root; the bare run is kept as the contrast control.
+        lob = tmp / "lobby"
+        for d in (".agents/scripts", ".agents/commands", ".agents/rules", "Projects"):
+            (lob / d).mkdir(parents=True)
+        for f in ("wf_common.py", "workflow_lint.py"):
+            (lob / ".agents/scripts" / f).write_bytes((SCRIPTS / f).read_bytes())
+
+        def lint_at(*args: str) -> tuple[int, str]:
+            r = subprocess.run([sys.executable,
+                                str(lob / ".agents/scripts/workflow_lint.py"), *args],
+                               cwd=lob, capture_output=True, text=True, errors="replace")
+            return r.returncode, r.stdout + r.stderr
+
+        code_bare, out_bare = lint_at()
+        c.check("SCC-64 control: a bare run with no project dies on resolution",
+                code_bare == 2 and "no project resolved" in out_bare,
+                f"exit={code_bare} {out_bare.strip()[:90]}")
+        code_tk, out_tk = lint_at("--toolkit-only")
+        c.check("SCC-64 --toolkit-only lints the toolkit with NO project resolved",
+                "toolkit-only" in out_tk and "no project resolved" not in out_tk,
+                f"exit={code_tk} {out_tk.strip()[:120]}")
+        c.check("SCC-64 --toolkit-only + --project is refused",
+                lint_at("--toolkit-only", "--project", "x")[0] == 2, "")
     return c.finish()
 
 

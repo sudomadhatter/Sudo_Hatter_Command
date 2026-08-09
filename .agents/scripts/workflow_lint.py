@@ -337,6 +337,9 @@ def cmd_staged(fix: bool) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser(description="Workflow invariants linter (Wave 1.1)")
     ap.add_argument("--project", help="project name under Projects/ or a path")
+    ap.add_argument("--toolkit-only", action="store_true",
+                    help="lobby/toolkit checks only; never resolves a project - a root "
+                         "Task close-out must not inherit .agents/active-project.txt (SCC-64)")
     ap.add_argument("--staged", action="store_true",
                     help="pre-commit mode: encoding scan of staged files only")
     ap.add_argument("--fix", action="store_true",
@@ -346,6 +349,9 @@ def main() -> int:
 
     if args.staged:
         return cmd_staged(args.fix)
+    if args.toolkit_only and args.project:
+        wf.die("--toolkit-only and --project are mutually exclusive - the flag exists "
+               "precisely so no project is resolved")
 
     rep = wf.Report()
     scan: list[tuple[str, Path]] = []
@@ -358,6 +364,21 @@ def main() -> int:
                  for f in sorted((lobby / ".agents" / "commands").glob("*.md"))]
     else:
         rep.info("toolkit", "no lobby root found from cwd - toolkit checks skipped")
+
+    if args.toolkit_only:
+        # The whole point of the flag: STOP before resolve_project_root, which would fall
+        # back to cwd and then .agents/active-project.txt - a root Task close-out gated on
+        # whichever product project happens to be active is a gate about the wrong thing.
+        if not lobby:
+            wf.die("--toolkit-only: no lobby root found from cwd - there is no toolkit "
+                   "here to lint")
+        scan_encoding(scan, rep)
+        if args.json:
+            print(json.dumps({"project": None, "findings": rep.items,
+                              "exit": rep.exit_code()}, indent=2))
+        else:
+            rep.print_human("workflow_lint - toolkit-only")
+        return rep.exit_code()
 
     project = wf.resolve_project_root(args.project)
     check_active_context(project, rep)

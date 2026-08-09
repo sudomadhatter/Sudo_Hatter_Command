@@ -522,7 +522,9 @@ the command center — the commands, the rules, the safety-net scripts — is re
 Five steps, in this order:
 
 1. **Preflight** — `task_preflight.py` checks the branch really is `chore/<KEY>-<slug>` with a key
-   this repo owns, the tree is clean and pushed, `origin/main` is absorbed (and if not, names the
+   this repo owns, that the branch carries **the ticket the agent said it meant to close**
+   (`--expect-key`, required since SCC-64 — see §10 for the failure it kills), that any `task.yaml`
+   manifest agrees, the tree is clean and pushed, `origin/main` is absorbed (and if not, names the
    overlapping files — see below), the walkthrough exists,
    and **the lane**. Exit 2 stops the command.
 2. **The gate the lane picked** — in the command center that's the enforcement suite plus the toolkit
@@ -735,6 +737,21 @@ What changed, so you can hold the agent to it:
 
 **The one thing to ask for:** if an agent reports a gate as green, ask which branch the gate named. A
 report that can't answer that hasn't been verified — it's been assumed.
+
+**Update (2026-08-09, SCC-64): the machine now enforces this instead of trusting the agent to.**
+The Task-close-out check refuses to run at all unless it is told **which ticket is meant**
+(`--expect-key`), and it blocks — hard — when the branch it resolved carries a different ticket's
+key. The discipline above still matters for every *other* script, but for Task close-outs a drifted
+agent can no longer get a clean verdict about the wrong branch; it gets an error naming both
+tickets. Two more things came with it:
+
+- Each task can carry a small `task.yaml` in its artifacts folder — the ticket, repo, and branch
+  written down at task *start*, before anything can drift. The check cross-reads it, and a
+  manifest that disagrees with reality blocks the close-out until one of them is corrected.
+- Toolkit close-outs in the command centre now run the lint scoped to the toolkit
+  (`--toolkit-only`), so a red or green about some *product project's* sprint state can no longer
+  leak into a decision about toolkit work. If an agent explains away a red gate as "pre-existing,
+  different project", it is using the wrong flag.
 
 ---
 

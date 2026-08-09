@@ -1,0 +1,5 @@
+task_key: SCC-64
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-64-closeout-machine-contract
+close_command: close-task-merge-tree
+secondary_repos: []
