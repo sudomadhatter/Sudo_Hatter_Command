@@ -200,6 +200,27 @@ def main() -> int:
         c.check("un-absorbed main blocks", code == 2 and "NOT on" in out, out.strip()[-300:])
         c.check("un-absorbed main says merge it here first",
                 "conflicts surface here, not on main" in out, out.strip()[-300:])
+        # SCC-41: being behind is routine; being behind ON A FILE YOU EDITED is the part that
+        # costs a session. main moved on docs/hotfix.md, the branch owns docs/x.md - disjoint.
+        c.check("SCC-41 no overlap is stated, not left silent",
+                "no file overlap" in out and "should be clean" in out, out.strip()[-400:])
+        c.check("SCC-41 a clean-absorb case does not cry conflict",
+                "changed on BOTH sides" not in out, out.strip()[-400:])
+
+    with TempDir() as t:
+        repo = make_repo(t)
+        branch(repo, "chore/SCC-11-thing", {"docs/shared.md": "mine\n"})
+        # Same file edited on both sides - the ONE case worth naming out loud.
+        git(repo, "checkout", "-q", "main")
+        write(repo, "docs/shared.md", "theirs\n")
+        commit(repo, "SCC-11 chore: another lane edits the same file")
+        git(repo, "push", "-q", "origin", "main")
+        git(repo, "checkout", "-q", "chore/SCC-11-thing")
+        code, out = preflight(repo)
+        c.check("SCC-41 an overlapping file is NAMED",
+                "changed on BOTH sides" in out and "docs/shared.md" in out, out.strip()[-400:])
+        c.check("SCC-41 the overlap tells you how to resolve it",
+                "keeping both sides' facts" in out, out.strip()[-400:])
 
     with TempDir() as t:
         repo = make_repo(t)

@@ -136,3 +136,69 @@ worktrees), and the SOP quick-reference. `NEXgen-VR-Director`, `BRKN_Tattoos`, `
 carry diverged copies — reported, not touched.
 
 **Out of scope:** SCC-38 · SCC-42 · POSIX port.
+
+---
+
+## What the build changed about this plan (2026-08-09)
+
+Four things the plan did not account for. Three were found by ground-truthing it against both repos
+before any edit; the fourth is a correction to the plan's own verification claim.
+
+### 1. The ticket had to split — AGY will not accept an SCC key
+
+The engines live in `Projects/AGY_AVIATIONCHAT`, whose `.agents/jira.conf` binds it to **AVCH** behind an
+**armed** `commit-msg` hook, and whose `.agents/INDEX.md` rules out the easy fix in writing:
+
+> `jira.conf` — "One shared copy would make the gate reject AviationChat's own work items and accept the
+> lobby's."
+
+So widening AGY's keys was a settled no before it was asked. The work splits on the repo boundary:
+
+| Ticket | Repo | Carries |
+|---|---|---|
+| **SCC-41** | lobby | the 3 `autopilot_*.md` launchers + their 3 generated mirrors, `autopilot_bmad_dev_loop.md`, the SOP page |
+| **AVCH-50** | AGY_AVIATIONCHAT | both engines — `autopilot-dev-story.ps1`, `autopilot-dev-story-opencode.ps1` |
+
+### 2. P3 is unblocked, and reaches the center rather than vendoring
+
+SCC-49 landed on `main` (`64b2aa9`), so `jira_feed.py devrecord` exists. It exists **only in the lobby** —
+AGY is a thin project and vendors no toolkit — so the engine resolves it at `$RepoRoot\..\..\.agents\
+scripts\jira_feed.py`. That is the same "project sits under the center" assumption `$PSScriptRoot\..`
+already makes, one level further out.
+
+### 3. The epic branch is the only source of the Jira key — so it became a precondition
+
+The plan said to cut the tree from the epic branch without saying how the engine would know which one.
+It cannot be computed: **BMAD's epic number and the Jira epic key do not track each other** — BMAD epic 19
+lives on `epic/AVCH-18-adk-2x-runtime`, and the commit that made it so says exactly that
+(`AVCH-18 fix(epic-19): repoint the epic to AVCH-18, not the duplicate AVCH-49`). Story files carry no key
+either.
+
+Resolution: the base is **the shared checkout's current branch**, which must be an `epic/*`, exactly as
+`worktree-per-story.md` describes a human doing it ("check out the epic branch before opening the
+worktree"). `-EpicBranch` overrides; anything else is a hard refusal, not a guess — a story cut from
+`main` cannot be landed. Two consequences fell out: the branch name takes the **story's** key (found the
+way `jira_feed.py mint` dedupes) and falls back to the **epic's**, so the armed gate always has a real
+work item; and the story-file lookup gained a `git ls-tree` fallback against the epic branch, because a
+shared checkout parked on `main` — which `worktree-per-story.md` says is where it should stand — does not
+have the story file on disk at all.
+
+### 4. Verification: the plan asked for a real run. It has not happened, and could not here.
+
+The plan's Verification section says "a worktree change only reasoned about is not verified." That still
+stands, and it is **not satisfied**. This lane is Windows-only — `powershell.exe`, `$env:USERPROFILE`,
+`.venv\Scripts\python.exe` — and the work was done on the Mac. What was actually run is in the
+walkthrough's Evidence table: a `pwsh` parse of both engines, a PSScriptAnalyzer pass diffed against the
+pre-change baseline, and the lobby suite. Those catch syntax and structure. They do not catch a wrong
+path, a `git worktree add` that fails on a real repo, or a trust grant that misses.
+
+**The gap is recorded where a reader will hit it, not only here:** `autopilot_bmad_dev_loop.md` §11
+("What is NOT yet proven") now leads with it, and the SOP page carries a ⚠️ in §10.
+
+### Two engines, one contract — the plan's Risk 3
+
+The plan flagged "done in claude is never done" as a standing risk. The two blocks are now written
+**function-for-function identical** and both files say so in the parameter block ("TWINS BY CONTRACT"), so
+`diff` is the drift detector. That is the same convention `link-memory.ps1`/`.sh` already use here. A
+shared dot-sourced module would end the drift structurally, but it adds a new load path to a lane that
+cannot be executed on this machine — deliberately not taken in this pass.

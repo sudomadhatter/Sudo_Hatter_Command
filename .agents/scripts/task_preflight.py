@@ -181,6 +181,7 @@ def check_base(repo: Path, branch: str, rep: wf.Report) -> None:
         behind = wf.git(["rev-list", "--count", f"{branch}..{base}"], repo).stdout.strip() or "?"
         rep.err("base", f"{base} has {behind} commit(s) NOT on {branch} - merge {base} into "
                         f"this branch first so conflicts surface here, not on main")
+        wf.report_overlap(repo, branch, base, rep)
     else:
         rep.info("base", f"{base} is fully absorbed into {branch}")
 
