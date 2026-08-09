@@ -92,3 +92,37 @@ against a 12k cap. A grep against that mirror returns 0 and **looks like a faile
 ## Your Actions
 
 None for the center repo. S1b lands in the two project repos immediately after this.
+
+---
+
+## Follow-on sweep (2026-08-09, post-landing — `chore/SCC-62-stale-copies`)
+
+The operator asked for a fresh-eyes pass before the AVCH-52 merge: silly errors here waste every future
+lane's time. The pass found six, all fixed on this branch:
+
+1. **Center `AGENTS.md` §8 still carried the full OLD gate** — "Ad-hoc non-story work never opens a
+   worktree." S1b aligned AGY and the skeleton but missed the center's own front door — the repo where
+   Task lanes actually run. Replaced with the aligned concurrency-triggered text.
+2. **`worktree-per-story.md`'s own Hard stops contradicted its Trigger** — "NEVER open a worktree
+   outside a sudo story lane" survived 170 lines below the section that abolished it. Rewritten.
+3. **`.agents/rules/INDEX.md` row** still described the old trigger ("Ad-hoc non-story work: NO
+   worktree"). Rewritten.
+4. **`artifacts-always-first.md` hard stop** — same stale sentence, rewritten.
+5. **`link-worktree-assets.py` scanned the repo root only.** AGY keeps every runtime asset one level
+   down (`backend/.env`, `backend/.venv`, `frontend/node_modules`), so on the repo that motivated the
+   script it would have linked only root `auth_keys/` and printed success. Now scans root + depth-1
+   (deliberately not deeper — an unbounded walk would descend into the node_modules being linked).
+   Re-verified end-to-end on a fake nested-layout repo: 4 nested assets linked, idempotent re-run,
+   rogue link found by `--unlink`, `0 remaining`, every shared target intact, tree removed cleanly.
+6. **Two docs cited `/sudo-close-workingtree` "Step 8"** for the unlink — that command's unlink step is
+   **3a**; its steps end at 6. Fixed in the rule and the script docstring, and 3a now leads with the
+   cross-platform script call (it was PowerShell-only — a Mac story close-out had no runnable
+   procedure), keeping the PowerShell block as the by-hand PC path. `.opencode` mirror re-synced
+   byte-identical; the Antigravity mirror stays a thin launcher (869 B).
+
+**State at this commit:** S1b skeleton half landed (`42802c0`); AVCH-52 pushed (`b2d3237a`), its merge
+runs at the AGY close-out immediately after this lands.
+
+**Reported, deliberately NOT changed:** the skeleton's §8 is written around the retired `main_debug`
+branch model (6 mentions, all predating SCC-62) — template-wide drift beyond this ticket's scope; needs
+its own small task.

@@ -47,7 +47,7 @@ project file is edited.** Automatic; the agent does not ask each time, and does 
 > story lane?") and ended with *"unsure? you're not"* — which routed every ambiguous case into the
 > shared checkout, the one place it must not go. **Removing the classification removes the failure.**
 > The old ban existed to prevent orphan trees that no close-out would prune; that is now handled —
-> `/close-task-merge-tree` Step 5 prunes its own tree, exactly as `/sudo-close-workingtree` Step 8 does.
+> `/close-task-merge-tree` Step 5 prunes its own tree, exactly as `/sudo-close-workingtree` Step 3 does.
 > (2026-08-09, SCC-62. Twice in one day this went wrong: SCC-61 exists because a close-out preflight
 > resolved a sibling lane's branch; SCC-58 then opened onto a checkout standing on SCC-61's branch with
 > 11 dirty files.)
@@ -56,7 +56,7 @@ project file is edited.** Automatic; the agent does not ask each time, and does 
 
 | Lane | Branch | Base — this does NOT change | Closed + pruned by |
 |---|---|---|---|
-| Sudo story lane (① · ② · `/sudo-quick-dev` · autopilot) | `claude/<JIRA-KEY>-<story-slug>` | the story's **epic branch** (`epic/<JIRA-KEY>-<slug>`) — **never `main`** | `/sudo-update-sprint-memory` Step 7 → `/sudo-close-workingtree` Step 8 |
+| Sudo story lane (① · ② · `/sudo-quick-dev` · autopilot) | `claude/<JIRA-KEY>-<story-slug>` | the story's **epic branch** (`epic/<JIRA-KEY>-<slug>`) — **never `main`** | `/sudo-update-sprint-memory` Step 7 lands; its Step 8 auto-invokes `/sudo-close-workingtree` |
 | Ad-hoc / Task work (toolkit, rules, docs, config) | `chore/<JIRA-KEY>-<slug>` | `main` | `/close-task-merge-tree` (merge → Step 5 prunes branch **and** tree) |
 
 ```
@@ -230,8 +230,10 @@ is pruned later, by `/sudo-push-e2e`, after the epic merges to `main`.
 
 ## Hard stops
 
-- NEVER edit a project file for sudo-lane story work before its worktree is open — and NEVER open a
-  worktree outside a sudo story lane (an orphan tree no close-out will prune).
+- NEVER edit a project file for a commit-producing lane before its worktree is open — story and Task
+  lanes alike (SCC-62). Every tree is pruned by the close-out that owns it (`/sudo-close-workingtree`
+  Step 3 for a story, `/close-task-merge-tree` Step 5 for a Task); an unpruned tree means a close-out
+  was skipped, not that the tree was illegal to open.
 - NEVER branch a story worktree from `main` — stories branch from the epic branch.
 - NEVER `git add -A` / `.` / `-u`, inside a worktree or out.
 - NEVER check out the epic branch in the shared checkout to merge a story — land from inside the

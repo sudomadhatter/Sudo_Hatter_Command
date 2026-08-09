@@ -221,6 +221,17 @@ real asset in `PROJECT_ROOT` — breaking the shared checkout *and* every other 
 
 **Therefore: always ENUMERATE, never assume. The scan is the authority.**
 
+Cross-platform, Mac AND PC — the same enumerate-then-prove logic, scripted (SCC-62; the center's
+script, run from the command-center root):
+
+```bash
+python3 .agents/scripts/link-worktree-assets.py --unlink PROJECT_ROOT/.claude/worktrees/<slug>   # PC: python
+```
+
+It enumerates every reparse point WITHOUT descending through any, unlinks each (the link only, never
+the target), then re-scans and refuses to report success while any remain. A non-zero exit → STOP,
+exactly as the ABORT below. The PowerShell equivalent, for PC when you need it by hand:
+
 ```powershell
 $wt = "PROJECT_ROOT/.claude/worktrees/<slug>"
 # enumerate every reparse point (junction/symlink) and unlink it.
