@@ -30,3 +30,7 @@
 	path = Projects/RAG_Pipeline_AC
 	url = https://github.com/sudomadhatter/RAG_Pipeline_AC
 	ignore = all
+[submodule "Projects/sudo-project-skeleton"]
+	path = Projects/sudo-project-skeleton
+	url = https://github.com/sudomadhatter/sudo-project-skeleton
+	ignore = all
