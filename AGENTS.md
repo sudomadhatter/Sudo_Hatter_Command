@@ -163,7 +163,7 @@ files, per §3); full model →
 - **Memory — every platform reads it, every machine has it (SCC-65).** The persistent memory store is
   **`_artifacts/_memory/`** — the repo path is canonical: it travels via git, so it is identical on both
   machines and readable by every model. **At session start read `_artifacts/_memory/MEMORY.md`** (the
-  index — one line per memory, ≤20 KB) and open the full files relevant to your task. Recalled facts
+  index — one line per memory, ≤25 KB) and open the full files relevant to your task. Recalled facts
   reflect when they were written — verify against the live repo before acting on one.
   **The store is READ-ONLY except through the sanctioned flows** (the Claude harness auto-memory and
   `/sudo-update-sprint-memory`'s learning-routing step): never edit, delete, reorganize, sweep, or
@@ -174,7 +174,7 @@ files, per §3); full model →
   per-machine symlink into this store — a convenience, never the mechanism; fresh machine →
   migrations kit §1 step 8.)
 - **⚠ The memory-audit trigger — a standing obligation for every platform (SCC-68).** Upkeep is gated:
-  `tests/test_memory_store.py` (in `run_all`) enforces the 20 KB index cap + link↔file integrity, and at
+  `tests/test_memory_store.py` (in `run_all`) enforces the 25 KB index cap + link↔file integrity, and at
   **90 % of the cap** it prints a `MEMORY AUDIT DUE` block — below the cap, while the run still passes,
   so the trigger prevents the red instead of being it. **If you see that block, STOP and ask the
   operator whether to run `/memory-audit` now.** It is a script: it can print, it cannot ask. You are the

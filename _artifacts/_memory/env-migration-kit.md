@@ -15,4 +15,4 @@ Built 2026-07-24 for Daniel's new-computer transition. All secrets are gitignore
 - `new_machine-migration-guide.md` — the secrets doc handed to the new-machine agent (renamed 2026-08-01 from env-migration-guide.md; order: clone repos FIRST, then restore; verification checklist; per-machine logins gcloud/gh/firebase/Java).
 - `python_vytest-updates-other-machines.md` — the venv/interpreter companion (its §5 points here; renamed 2026-08-01 from python-311-test-infra-other-machines.md): AGY needs Python 3.11 specifically, and pytest will NOT warn on a wrong-interpreter venv — carries the rebuild commands + 4-check verification, plus the vitest suite-lock notes (that side needs zero per-machine work — it travels via git).
 
-Pairs with [[sudo-park]]/[[sudo-resume]] for branches/worktrees (those handle git state; this kit handles secrets). All GOOGLE_APPLICATION_CREDENTIALS values are deliberately relative paths — keep them that way.
+Pairs with `/sudo-park`/`/sudo-resume` for branches/worktrees (those handle git state; this kit handles secrets). All GOOGLE_APPLICATION_CREDENTIALS values are deliberately relative paths — keep them that way.

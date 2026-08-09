@@ -5,9 +5,13 @@ AGENTS.md §7 routes EVERY model on EVERY machine through `_artifacts/_memory/ME
 session start. That contract holds only while three things stay true, and each one rots
 silently without a gate:
 
-  * the index stays under 20 KB — the same budget as active-context, because it is loaded
-    whole into every session; growth past it means narrative crept into what must stay a
-    one-line-per-memory index (content belongs in the memory FILES);
+  * the index stays under 25 KB — it is loaded whole into every session, so growth past it
+    means narrative crept into what must stay a one-line-per-memory index (content belongs
+    in the memory FILES). Raised from 20 KB by operator ruling 2026-08-09 (SCC-69): the 20 KB
+    figure was inherited from the active-context budget by analogy and never measured against
+    a real store. The first full audit ground-truthed all 145 memories, freed only 633 bytes,
+    and proved the rest are load-bearing — a cap that forces deletion of true things is the
+    wrong instrument. ⛔ This is still not an agent's call to make: never raise it yourself;
   * every index line points at a file that exists — a dead link is recall of nothing;
   * every memory file has an index line — an unindexed memory is invisible to the exact
     mechanism that makes memory worth writing (`README.md` exempt by name: it documents
@@ -43,7 +47,7 @@ from pathlib import Path
 
 from _harness import SCRIPTS, Cases, TempDir
 
-INDEX_CAP = 20 * 1024
+INDEX_CAP = 25 * 1024
 TRIGGER_PCT = 0.90          # audit is DUE here — below the cap, on purpose (see module docstring)
 BODY_SOFT_CAP = 4 * 1024    # a memory this long is usually narrative that wants compressing
 EXEMPT = {"MEMORY.md", "README.md"}
@@ -261,7 +265,7 @@ def main() -> int:
     c.check("real store exists where AGENTS.md routes every platform",
             (REAL_STORE / "MEMORY.md").is_file(), str(REAL_STORE))
     got = check_store(REAL_STORE)
-    c.check("real store: index <= 20KB, links resolve, no orphans, frontmatter present",
+    c.check("real store: index <= 25KB, links resolve, no orphans, frontmatter present",
             got == [], " | ".join(got[:4]))
 
     rc = c.finish()

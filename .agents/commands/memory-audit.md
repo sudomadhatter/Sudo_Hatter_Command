@@ -1,5 +1,5 @@
 ---
-description: Audit the shared memory store (`_artifacts/_memory/`) and compact it — ground-truth every candidate memory against the live repo (does the rule/script/flag it names still exist? is the thing it calls CLOSED actually gone?), then propose retire / merge / compress with bytes freed and apply ONLY what the operator approves per item. Triggered by `tests/test_memory_store.py` at 90% of the 20 KB index cap; also runnable any time recall feels noisy. Never auto-deletes.
+description: Audit the shared memory store (`_artifacts/_memory/`) and compact it — ground-truth every candidate memory against the live repo (does the rule/script/flag it names still exist? is the thing it calls CLOSED actually gone?), then propose retire / merge / compress with bytes freed and apply ONLY what the operator approves per item. Triggered by `tests/test_memory_store.py` at 90% of the 25 KB index cap; also runnable any time recall feels noisy. Never auto-deletes.
 ---
 
 # /memory-audit — Ground-truth the memory store, then compact it
@@ -31,9 +31,11 @@ on exactly ONE target — never the lobby."* The store lives in the lobby. Same 
 2. **A dirty memory file you did not write is another session's work in flight.** Two lanes share
    one store. **Park it or leave it** — never sweep, delete, or commit it under this audit. If
    `git status` shows memory files you did not touch, say so and exclude them from scope.
-3. **Never raise the cap.** 20 KB ≈ 5,000 tokens charged to every session on every platform before
-   a single useful token. If the index will not fit, the index is carrying content that belongs in
-   the memory *files*. Compress; don't budget more.
+3. **Never raise the cap yourself.** 25 KB ≈ 6,000 tokens charged to every session on every platform
+   before a single useful token. If the index will not fit, first assume the index is carrying content
+   that belongs in the memory *files*. Compress; don't budget more. The cap moved once (20 → 25 KB,
+   2026-08-09) **on the operator's ruling, after an audit proved the store had no slack** — that is the
+   only way it ever moves. Report the finding; let them decide.
 4. **The signals are not verdicts.** Everything the gate hands you is a candidate. A `CLOSED` row
    whose lesson still bites stays. A dangling `[[link]]` is the sanctioned way to mark a memory
    worth writing later. Ground-truth first, always.
@@ -42,7 +44,7 @@ on exactly ONE target — never the lobby."* The store lives in the lobby. Same 
 
 The store is `_artifacts/_memory/` **in the lobby** (`Sudo_Hatter_Command`) — the repo path is
 canonical because it travels via git. Claude's `~/.claude/projects/<slug>/memory` is a per-machine
-symlink *into* it, never the mechanism. Echo `Store: <abs path> | index: <bytes> / 20480` before
+symlink *into* it, never the mechanism. Echo `Store: <abs path> | index: <bytes> / 25600` before
 any work, read from disk, not from belief.
 
 If you are standing in a project rather than the lobby, say so and stop — there is one store.
@@ -53,7 +55,7 @@ If you are standing in a project rather than the lobby, say so and stop — ther
 python3 .agents/scripts/tests/test_memory_store.py
 ```
 
-Mechanical integrity first: index ≤ 20 KB · every link resolves · no orphan files · frontmatter
+Mechanical integrity first: index ≤ 25 KB · every link resolves · no orphan files · frontmatter
 present. **Any red here is a repair, not a judgment call** — fix it in this pass (add the missing
 index line, repair or drop the dead link) and note it in the report as a repair.
 
@@ -97,7 +99,7 @@ is, why, and what it frees:
 
 ```
 ## Memory audit — <date>
-Index: <before> / 20480 bytes (<pct>%)  →  projected <after> (<pct>%)
+Index: <before> / 25600 bytes (<pct>%)  →  projected <after> (<pct>%)
 
 ### 🔧 Repairs (mechanical, from the gate — I will apply)
 - add index line for `<file>.md`                          [orphan; gate red]

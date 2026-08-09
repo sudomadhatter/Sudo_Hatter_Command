@@ -19,4 +19,4 @@ opencode/Codex/Antigravity) because it's Claude's own feature.
 **Why it matters:** it is NOT a dead/skeleton command from the Gemini team's slash edits, despite looking
 like one. Built-ins can't be deleted via file removal or `/sync-agents` — only (maybe) hidden via a Claude
 Code setting. Don't waste a search on it again. The toolkit command surface is otherwise clean (manifest
-purge holding — see [[sync-leaves-local-command-ghosts]]).
+purge holding — see [[one-door-per-platform-per-command]]).

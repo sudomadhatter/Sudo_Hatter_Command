@@ -14,7 +14,7 @@ session-added, rename, toplevel-added, delete) and appends ONE line to `docs/.ma
 
 **Consumers:** the SessionStart 4th hook (`record_map_changes.py --nag`) prints the classified tail since
 the anchor; `/update-maps-indexes` (renamed from `/1_update-maps` 2026-07-14, see
-[[command-surface-restructure-2026-07-14]]) Step 0.0 reads it for a pre-scoped worklist. `check_maps.py --set-anchor` now
+the 2026-07-14 command restructure) Step 0.0 reads it for a pre-scoped worklist. `check_maps.py --set-anchor` now
 also CONSUMES the journal (rolls reconciled lines into `.maps-journal-archive.jsonl` — a move, not a delete).
 
 **Why:** the nag/workflow used to re-derive "what changed" from scratch every time; the journal caches the

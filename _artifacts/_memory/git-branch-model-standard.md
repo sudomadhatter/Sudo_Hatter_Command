@@ -51,7 +51,7 @@ main_debug failure modes: the shared-checkout reconcile debt, the "main drifted 
 (`--base main` default) were rewired. The canonical source of truth remains
 `.agents/rules/git-policy.md` § "Branch model — epic branches → main", enforced by
 `.agents/hooks/require-push-approval.py` (`PROTECTED = ("main",)`). See also
-[[git-policy-no-self-commit]].
+`.agents/rules/git-policy.md` (no self-commit).
 
 **A checkout should normally read `main`** (`git rev-parse --abbrev-ref HEAD`) — the shared checkout
 lives on production and only moves when an epic merges; anything else standing there is a branch

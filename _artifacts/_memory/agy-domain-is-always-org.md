@@ -16,7 +16,7 @@ Ratified by the operator 2026-07-23 and shipped as **Story 21.6** (done 2026-07-
 `sudomadhatter@gmail.com` (super_admin·owner) · `team@aviationchat.org` (school_admin·TESTPILOT) ·
 `demo@aviationchat.org` (school_admin·ACDEMO) · `schooltesting@aviationchat.org` ·
 `solotesting@aviationchat.org` (students). Only the first three have `admin_credentials` docs — see
-[[admin-credentials-drift-from-doc]].
+[[wedged-backend-fans-out-three-symptoms]] § the credential half.
 
 **Enforced mechanically, not by discipline.** `backend/tests/routers/test_story_21_6_demo_account_model.py`
 greps the tree for the forbidden domain and fails the suite on any hit. Two things about that gate matter

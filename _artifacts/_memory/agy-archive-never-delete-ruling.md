@@ -46,3 +46,28 @@ cut the school off from the student's history).
 Related: [[agy-has-real-nda-users]] (why the data is protected), [[settled-decisions-are-not-gaps]]
 (a stale pointer is how a ruled-on decision gets re-proposed), [[agy-authz-claim-primary-ruling]]
 (the descope process this refines), [[agy-story-files-canonical-dir]].
+
+## ⚠ The cost of never-delete: BY-ID → BY-FIELD makes every superseded doc a live duplicate
+
+*(Merged in 2026-08-09 from `agy-school-identity-ghost-doc-window`, retired: the incident closed, but this
+shape is the standing price of the ruling above and belongs with it.)*
+
+**The generalisable rule — ask it of any migration that re-keys a collection:** when a lookup changes
+from **BY-ID** to **BY-FIELD**, every superseded record that still carries that field becomes a live
+duplicate. Never-delete plus field-queries is the trap; **either one alone is fine.**
+
+Story 21.4 (2026-07-30) re-keyed `schools/{school_id}` to a stable name-slug with `code` as a rotatable
+FIELD and lookups as `.where("code","==",…)`. `migrate_school_identity.py` copied each old
+`schools/{code}` doc forward and — correctly, per the ruling — left the original standing *with its
+`code` field intact*. So a superseded doc kept answering: a redemption could land in the **ghost**
+(`users/{uid}.school_id = <the code>`, invisible to any `school_id`-scoped roster, never activatable),
+and **a rotated code did not go dead** because the ghost still matched it.
+
+**Resolved without breaking the ruling:** the migration now *retires* each old doc as its last
+per-school act — `code` → `code_retired`, plus `migrated_to` and `retired_at`. It deletes nothing, so
+the document, its members, and the code's value all survive and it stays reversible. Pinned by `MIG-008`
+(a rotated code stays dead) and `MIG-009` (`_is_old_model` checks `migrated_to` **first** — a retired doc
+has no `code` left, and the old `data.get("code") or doc_id` fallback read its own id back). Safe
+mid-rolling-deploy: pre-21.4 code resolves `schools.document(code)` by DOCUMENT ID and never reads the
+field. `AdminScope`/JWT/`scoped_user_query` all bind `school_id` — **never** re-introduce a code-reading
+gate. Related: [[agy-redemption-has-two-doors]], [[agy-school-seat-cap-fails-closed]].

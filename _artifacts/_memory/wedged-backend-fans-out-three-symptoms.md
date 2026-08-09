@@ -31,6 +31,27 @@ and React components while the real fault is one hung process.
 **How to apply:** when AGY local auth misbehaves, **restart the dev backend FIRST** — before reading auth
 code. Then confirm with the two probes that actually discriminate: (a) login with a *bogus* email — if
 that hangs too it's the Firestore read, not the password; (b) start a second uvicorn on a spare port and
-retry. Never trust `/health` as evidence the backend is healthy. Credentials were verified in sync and
-production was fine the whole time — see [[admin-credentials-drift-from-doc]]. Related:
+retry. Never trust `/health` as evidence the backend is healthy. Related:
 [[agy-error-envelope-shapes]], [[relocating-drops-mount-guards]].
+
+## The credential half — check it second, and it is currently CLEAN
+
+*(Merged in 2026-08-09 from `admin-credentials-drift-from-doc`, retired: its drift was re-verified gone
+and its diagnostic belongs on the same chain as the wedge it was mistaken for.)*
+
+`_my_resources/_quick_reference/login_testing_credentials.md` is the operator's *intended* list, **not a
+readback of production** — admin auth is standalone bcrypt+JWT in `admin_credentials`, isolated from
+Firebase Auth, so nothing reconciles it against the doc and a wrong password looks like broken code.
+It **did** drift once (2026-07-24: `team@aviationchat.org` was `testpilotadmin`, not `…1215`, set by a
+loose `backend/update_school_admin.py`), which is why this was ever a separate memory.
+
+**Re-verified 2026-07-25: the drift is GONE** — all three live docs bcrypt-match the doc, every `role`
+valid. So a login failure today is **not** credential drift; it is the wedge above.
+
+**If you must check anyway:** one script with
+`GOOGLE_APPLICATION_CREDENTIALS=auth_keys/service-account.json` →
+`bcrypt.checkpw(candidate, doc["password_hash"])`, confirming `role` + `school_code` in the same read.
+Then grep **`backend/`**, not just `backend/scripts/` — the original sweep missed two credential-mutating
+orphans one level up. Status 2026-08-09: `update_school_admin.py` and `fix_sudo_pass.py` are **gone**;
+`backend/add_secret.py` is still on disk and tracked (adds a secret, does not mutate passwords — lower
+risk, but it is the same orphan class). Related: [[agy-admin-role-fail-closed]], [[agy-has-real-nda-users]].

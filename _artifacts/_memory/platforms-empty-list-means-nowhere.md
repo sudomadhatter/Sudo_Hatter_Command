@@ -38,4 +38,4 @@ updates the lobby + machine-globals but leaves the projects on their stale vendo
 Absence of project copies in a dry-run is an artifact, not a finding — verify on disk after the real run.
 
 Related: [[bmad-wrappers-are-opencode-only-bridges]] (legit narrow `platforms:` pins),
-[[sync-leaves-local-command-ghosts]] (manifest-driven purge), [[antigravity-uses-workflows-not-commands]].
+[[one-door-per-platform-per-command]] (manifest-driven purge), [[antigravity-uses-workflows-not-commands]].

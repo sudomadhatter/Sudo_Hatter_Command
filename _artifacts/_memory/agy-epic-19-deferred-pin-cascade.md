@@ -57,4 +57,4 @@ start at 19.5. The 5 `@EPIC_19_DEFERRED` skip marks in
 `backend/tests/agents/test_story_19_1_runtime_pins_explicit_key_auth.py` come off during 19.1. Fresh
 pin-propagation stays RETIRED (Fresh was retired 2026-08-07). Related:
 [[agy-deferred-epic-not-deferred-v3]], [[sprint-dependency-map-recommends-stale-work]],
-[[agy-story-files-canonical-dir]], [[fresh-workspace-living-template]].
+[[agy-story-files-canonical-dir]].
