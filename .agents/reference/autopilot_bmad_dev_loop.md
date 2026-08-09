@@ -4,7 +4,10 @@
 > `ready-for-dev` to *planned → audited → implemented → reviewed → self-fixed → committed on its own
 > story branch*, then hands it to Daniel for close-out.
 >
-> **Engine:** [`scripts/autopilot-dev-story.ps1`](../../scripts/autopilot-dev-story.ps1) ·
+> **Engine:** `<project>/scripts/autopilot-dev-story.ps1` — **project-local and diverged between
+> projects**, so there is deliberately no link: there is no one file to point at. Read the copy in
+> the project you are running (`Projects/AGY_AVIATIONCHAT/scripts/`, which is its own repo and does
+> not materialize in a lobby worktree) ·
 > **Trigger:** `/autopilot_claude <story>` ([`.claude/commands/autopilot_claude.md`](../../.claude/commands/autopilot_claude.md)) ·
 > **Status:** v2, hardened — anchored matcher, evidence-gated (no verdict tokens), dedicated `_AP`
 > commands, independent test gate, auto story→`review`. Proven end-to-end on **Story 14.2** (full
