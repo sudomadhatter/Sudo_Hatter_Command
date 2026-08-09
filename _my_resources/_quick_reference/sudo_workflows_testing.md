@@ -466,6 +466,14 @@ that's not what you want) — and a shared `node_modules` is fine for day-to-day
 needs its own. **Always `--unlink` before deleting a workspace**; both close-outs do it automatically,
 because a delete that walks through a link destroys the *original*, not the shortcut.
 
+**Same-day follow-on (2026-08-09, SCC-62 sweep).** A fresh-eyes pass before the AGY close-out caught the
+flip's loose ends and closed them: the linker now finds assets **one folder down** too (`backend/.env`,
+`frontend/node_modules` — the real AGY layout; before, it looked only at the repo root and would have
+quietly linked almost nothing there), and four leftover copies of the OLD "no workspace for ad-hoc work"
+wording were corrected where they still stood — the front door (`AGENTS.md` §8), the rule's own hard-stop
+list, the rules index, and `artifacts-always-first.md`. If you see the old wording anywhere again, it's
+wrong: the rule is *going to commit → own workspace*, full stop.
+
 *What you're looking at: the one road to production, and where the gate stands on it.*
 
 ```mermaid

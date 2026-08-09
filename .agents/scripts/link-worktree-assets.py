@@ -12,6 +12,11 @@ We link rather than copy, so opening a tree costs seconds instead of gigabytes:
     auth_keys/      Mac: symlink   PC: junction   (directory, read-only in practice)
     .env            Mac: symlink   PC: COPY       (Windows file-symlinks need admin/Developer Mode)
 
+Assets are discovered at the repo ROOT and ONE directory down — `backend/.env`, `backend/.venv`,
+`frontend/node_modules` is AGY's real layout, and a root-only scan finds none of them (SCC-62
+follow-on). Depth-1 is deliberate, not lazy: an unbounded walk would descend into the very
+node_modules trees being linked.
+
 Two things worth holding, both reported at runtime:
   - A symlinked `.env` is SHARED STATE. Edit it in one lane and every lane sees it. That is usually
     what you want (key rotation propagates), but it is one collision surface re-introduced. Anything
@@ -25,7 +30,7 @@ Two things worth holding, both reported at runtime:
 
 ⛔ --unlink MUST run before the worktree is removed. A recursive delete THROUGH a junction walks into
 the real directory and destroys the shared target, not just the link. `git worktree remove` does a
-recursive delete. This is why /close-task-merge-tree Step 5 and /sudo-close-workingtree Step 8 unlink
+recursive delete. This is why /close-task-merge-tree Step 5 and /sudo-close-workingtree Step 3 unlink
 first, every time.
 """
 
@@ -84,34 +89,60 @@ def link_file(src: Path, dst: Path, force_copy: bool) -> str:
     return "symlink"
 
 
+def find_assets(repo: Path) -> list[tuple[Path, str]]:
+    """Assets at the repo root AND one directory down (backend/.env, frontend/node_modules).
+
+    Depth-1 is deliberate, not lazy: AGY keeps every runtime asset in a top-level package dir,
+    and an unbounded walk would descend into the very node_modules trees being linked.
+    """
+    asset_names = {name for name, _ in ASSETS}
+    parents = [repo]
+    for child in sorted(p for p in repo.iterdir() if p.is_dir()):
+        # Never treat an asset (or a link) as a parent to scan inside.
+        if child.name in asset_names or child.name == ".git" or child.is_symlink():
+            continue
+        parents.append(child)
+    found: list[tuple[Path, str]] = []
+    for name, kind in ASSETS:
+        for parent in parents:
+            if (parent / name).exists():
+                found.append((parent / name, kind))
+    return found
+
+
 def do_link(worktree: Path, repo: Path, copy_env: bool) -> int:
     print(f"repo:     {repo}")
     print(f"worktree: {worktree}\n")
 
     linked, skipped = 0, 0
-    for name, kind in ASSETS:
-        src, dst = repo / name, worktree / name
-        if not src.exists():
+    env_symlinked = shared_node_modules = False
+    for src, kind in find_assets(repo):
+        rel = src.relative_to(repo)
+        dst = worktree / rel
+        if not dst.parent.is_dir():
+            print(f"  ! {rel} — its parent dir is not in the worktree, skipped")
             continue
         if dst.exists() or dst.is_symlink():
-            print(f"  = {name:<16} already present — left alone")
+            print(f"  = {str(rel):<24} already present — left alone")
             skipped += 1
-            continue
-        how = link_dir(src, dst) if kind == "dir" else link_file(src, dst, copy_env)
-        print(f"  + {name:<16} {how}")
-        linked += 1
+        else:
+            how = link_dir(src, dst) if kind == "dir" else link_file(src, dst, copy_env)
+            print(f"  + {str(rel):<24} {how}")
+            linked += 1
+        env_symlinked = env_symlinked or (kind == "file" and dst.is_symlink())
+        shared_node_modules = shared_node_modules or (rel.name == "node_modules" and dst.exists())
 
     if not linked and not skipped:
-        print("  (nothing to link — this repo has no gitignored runtime assets)")
+        print("  (nothing to link — no gitignored runtime assets at the repo root or one level down)")
         return 0
 
     print(f"\n{linked} linked, {skipped} already present.")
-    if any((worktree / n).is_symlink() for n, k in ASSETS if k == "file"):
+    if env_symlinked:
         print(
             "\n⚠ .env is SHARED STATE via symlink — editing it here edits every lane.\n"
             "  Re-run with --copy-env if this lane will change it."
         )
-    if (worktree / "node_modules").exists():
+    if shared_node_modules:
         print(
             "⚠ node_modules is shared — fine for dev, NOT for E2E.\n"
             "  The E2E tier must run its own `npm ci` in this tree."
