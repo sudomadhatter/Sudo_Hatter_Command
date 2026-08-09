@@ -6,6 +6,9 @@ platforms: [opencode, antigravity]
 # /close-task-merge-tree — Close a Task, Merge It, Prune the Tree
 
 > **Rules in force for this command:**
+> - `.agents/rules/worktree-per-story.md` §"cwd is not intent" — why every repo/branch below is
+>   pinned from command output; with sibling lanes (and their worktrees) live, where you stand is
+>   not evidence of what you mean
 > - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never
 >   force-push; every branch and every commit carries the repo's Jira key (armed 2026-08-07)
 > - `.agents/rules/jira.md` — the `acli` reference, and the work-item type model this lane sits in
@@ -60,8 +63,28 @@ BRANCH=$(git -C "$REPO" rev-parse --abbrev-ref HEAD)
 echo "Repo: $(basename "$REPO") | Branch: $BRANCH"
 ```
 
-Then state **the Jira key you intend to close** — the one from the ticket, not the one you read off
-the branch. Keep both: Step 1 compares them.
+Then pin **the Jira key you intend to close** — the one from the ticket, not the one you read off
+the branch. Keep both; Step 1 makes the script compare them:
+
+```bash
+EXPECTED_KEY="SCC-00"    # the ticket you MEAN, stated before any tool has answered anything
+```
+
+**Author the task manifest if the task never got one.** `task.yaml` sits in the task's
+`_artifacts/_main/<date>_<slug>/` folder and is intent written down where no cwd drift can reach
+it — the preflight cross-checks it and warns when it is missing:
+
+```yaml
+task_key: SCC-00
+primary_repo: <repo folder name>
+branch: chore/SCC-00-<slug>
+close_command: close-task-merge-tree
+secondary_repos: []        # or [{repo: <name>, landing: independent-task|retain-on-epic, ticket: KEY-00}]
+```
+
+Cross-repo work: each `secondary_repos` row is **its own ticket in its own repo** closed through
+its own lane — `landing: retain-on-epic` records the exception where a commit stays on a live epic
+branch and must never be presented as merged to production.
 
 ⛔ **Echoing `Repo | Branch` from memory defeats the only guard here.** The line exists to catch a
 wrong belief about where you are standing; a self-reported echo can only ever confirm the belief.
@@ -69,13 +92,15 @@ It must come from the commands above.
 
 ## Step 1 — Preflight (mechanical — one call answers every precondition)
 
-**Always pass `--repo` and `--branch`.** They are written as optional because the script can guess;
-the guess is exactly what fails when a sibling lane has moved the shared checkout, and a wrong guess
-does not error — it runs every check honestly against **someone else's branch** and prints
-`VERDICT: clear to close out and merge`.
+**`--expect-key` is required — the script refuses to run without it (SCC-64).** This is the
+machine half of Step 0: the preflight now blocks, mechanically, when the resolved branch does not
+carry the key you pinned — a cwd that drifted into a sibling's lane fails the key match instead of
+returning a clean verdict about the wrong branch. Still pass `--repo` and `--branch`: they are
+written as optional because the script can guess, and the guess is exactly what fails when a
+sibling lane has moved the shared checkout.
 
 ```bash
-python3 .agents/scripts/task_preflight.py --fetch --repo "$REPO" --branch "$BRANCH"
+python3 .agents/scripts/task_preflight.py --fetch --repo "$REPO" --branch "$BRANCH" --expect-key "$EXPECTED_KEY"
 ```
 
 🛑 **Read the header line before you read the verdict.** It echoes the branch the script actually
@@ -97,7 +122,9 @@ It answers, from the repo rather than from your memory of it:
 | Check | What a failure means |
 |---|---|
 | **branch** | `chore/<JIRA-KEY>-<slug>`, key immediately after the prefix, key matches `.agents/jira.conf`. An `epic/`, `claude/` or `incident/` branch is refused **by name, with the command that IS right**. |
-| **sync** | clean tree, `0/0` with origin. Merging an unpushed branch puts commits on production that exist on one disk. |
+| **intent** | the branch's key equals `--expect-key`. A mismatch means the preflight is aimed at **another lane's branch** — the 2026-08-09 failure, now a mechanical exit 2 instead of a prose warning. |
+| **manifest** | a `task.yaml` declaring this `task_key` agrees on the branch. Missing manifest = warning (author it, Step 0); a manifest naming a **different branch** = error — one of them is lying. |
+| **sync** | clean tree, `0/0` with origin. Merging an unpushed branch puts commits on production that exist on one disk. Dirty files under `_artifacts/_memory/` are named separately: another session's memory is **parked or left, never swept, deleted, or committed under this task**. |
 | **base** | `origin/main` fully absorbed, and ≥1 commit ahead. Conflicts must surface **here**, never on `main`. |
 | **scope** | ⭐ **THE LANE.** See below. |
 | **artifacts** | a `walkthrough.md` mentioning the key exists. Without it the Dev Record cites nothing. |
