@@ -553,6 +553,7 @@ secrets — so a few things have to be true on each box independently. This is t
 | **Python's name** | The Mac has only `python3`; a python.org PC has only `python`. Typed commands differ; the gates don't (they probe). | Nothing to install — just use the name your box answers to. |
 | **Secrets / `.env` / `auth_keys/`** | All gitignored, so a fresh clone has none of them and things fail in confusing ways rather than obviously. | Restore from the hand-carried master bundle — start at the migrations `INDEX.md` in `_my_resources/`. |
 | **Shell environment** | On the Mac, `.zshrc` is read **only** by interactive shells — anything an agent or script runs can't see it. Shared env belongs in `~/.zshenv`. | Put anything scripts need (e.g. `JAVA_HOME`) in `~/.zshenv`, not `.zshrc`. |
+| **The Jira login** | `acli`'s API token lives in your **OS credential store**, not in the repo — and the binary isn't at the same path on both boxes either. An agent that trips over this concludes *"I have no Jira integration"* and starts improvising: inventing a key, or borrowing a closed ticket's. | `acli jira auth login`, once per machine. Then **any** agent can confirm it with `acli jira auth status` — the one command that answers identically on both boxes. Never hardcode the binary's path into a doc. |
 
 **The rule underneath all four:** anything stored *outside* the repo is per-machine by definition. When
 something works on one box and not the other, check this table before suspecting the code — a
@@ -697,6 +698,17 @@ rotation`), the story file carries `jira_key:` in frontmatter, and the branch ca
 (Claude, Gemini, opencode, Codex, Antigravity) shells out to the authenticated `acli` CLI. Ask "what's
 In Progress?" and the agent queries Jira and joins each ticket back to its story file through
 `jira_key:`. The rule that teaches this: [`jira.md`](../../.agents/rules/jira.md). The board fills itself:
+
+> **⛔ If an agent tells you the board is unreachable, ask it to re-run outside its sandbox
+> (2026-08-09).** A sandboxed tool call can't reach the OS credential store, so `acli` fails there
+> while working perfectly in the same repo unsandboxed. Two agents hit this on one day and both read
+> a fact about *their own shell* as a fact about *the board* — one reported a ticket didn't exist,
+> the other declared the CLI "no longer authenticated" and proposed committing new work under
+> **SCC-54**, a ticket that had already closed. `acli jira auth status`, unsandboxed, settles it in
+> one line. **And a closed ticket's key is never free to borrow:** commits link to it through the
+> branch name, and a close-out would overwrite the one Dev Record belonging to the work that earned
+> it. Minting a fresh ticket is one command and always available.
+
 `/sudo-create-epic-sprint` mints the **epic's** ticket at kickoff, and ① mints each **story's**
 ticket at pickup — stamped with **two** rulings as labels: `quick-dev` (fast lane allowed) and
 `blocked` (waiting on a linked blocker). The third label, **`parallel-ok`, has its own writer**
