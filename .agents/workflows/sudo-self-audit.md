@@ -55,11 +55,29 @@ rows that carry real risk:
 | Symbol / Change | Existing setters (upstream) | Existing readers (downstream) | Breaks if… |
 |-----------------|-----------------------------|-------------------------------|------------|
 
-**Graph-first when available.** If this repo is GitNexus-indexed (its `AGENTS.md`/`CLAUDE.md` carries a
-"GitNexus — Code Intelligence" section) and the MCP tools are present, use the code graph for the
-**authoritative** blast radius instead of grepping blind: `impact({ target, direction: "upstream",
-summaryOnly: true })` — who breaks if this changes; `context({ name })` — callers/callees + flows (add
-`repo:` when more than one repo is indexed; full tool tour → the `gitnexus-impact-analysis` skill).
+**Graph-first when available.** Decide from the TOOL, never from a doc: call `list_repos` and look for
+this project's path. If it is listed and the MCP tools are present, use the code graph for the blast
+radius instead of grepping blind: `impact({ repo, target, direction: "upstream", summaryOnly: true })` —
+who breaks if this changes; `context({ repo, name })` — callers/callees + flows (full tool tour → the
+`gitnexus-impact-analysis` skill). **Never infer "indexed" from a `docs/gitnexus.md` file or an
+`AGENTS.md` mention** — the skeleton ships that doc while having no index at all, so prose gives you
+both false negatives and false positives. `list_repos` is the only ground truth.
+
+**Always pass `repo:`** — several repos are indexed, and an unscoped call silently answers about the
+wrong one.
+
+**Freshness gate — run it BEFORE you trust an answer.** The index is a machine-local cache that does
+not travel with git and goes stale on every pull, merge, or branch switch. Compare the repo's
+`lastCommit`/`branch` from `list_repos` against the working tree's `git rev-parse HEAD` and current
+branch. If they differ, say so in the audit and **treat the graph as a lead, not authority** — re-run
+`detect_changes`/re-index if cheap, otherwise cross-check every finding with grep. A stale index
+returns a confident blast radius for code that no longer exists, which reads exactly like a clean audit.
+
+**A `0` or LOW verdict is the one you must not believe on sight.** `impact()` misses
+attribute-dispatch calls (`self.<attr>.<method>()`), so a genuinely hot symbol can come back 0/LOW —
+i.e. "safe to change." Grep-verify every 0/LOW before acting on it. Non-zero results are trustworthy;
+it is the *absence* of edges that is unreliable.
+
 **Read the confidence column** — code edges ≈ 1.0; doc/story-file mentions ≈ 0.8. **Caveat:** GitNexus
 links repos only via HTTP contracts — it will NOT surface coupling through a shared DB / data store; the
 Contract two-sidedness bullet below still needs manual reasoning.
