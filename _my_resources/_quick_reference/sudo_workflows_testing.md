@@ -532,8 +532,9 @@ flowchart TD
     S2 --> S3["3 · Build"]
     S3 --> S4["4 · Review and fix\nfresh session again"]
     S4 --> GATE{"tests green?"}
-    GATE -- "yes" --> REV["story → 'review'\nnever 'done' — that stays yours"]
+    GATE -- "yes" --> REV["story → 'review'\n+ commits its own branch\n+ ticket → In Review"]
     GATE -- "no" --> HAND["stops and hands it to you"]
+    REV --> YOU(["you: read it, then\n/sudo-update-sprint-memory"])
     S1 -.->|"leaves behind"| P["the plan"]
     S2 -.->|"appends INTO the plan"| P
     S3 -.->|"leaves behind"| WK["the walkthrough"]
@@ -549,10 +550,45 @@ Each stage runs in a **fresh session** so none inherits the previous one's assum
 *sections inside* those two documents, not for the files themselves. A half-written plan doesn't count
 as a finished plan.
 
-It never marks anything `done` and never pushes to production. Both stay yours.
+### The robot works in its own copy of the repo now (2026-08-09)
+
+Every autopilot run opens the story's own **worktree** first — a second, separate checkout of the same
+repo on its own branch, so the robot is never typing into the same files as you or another lane. The
+code and all the paperwork live in there together, and the robot moves between them as it works. It
+looks like `.claude/worktrees/<story>/`, on a branch named `claude/<TICKET>-<story>`.
+
+Two things this bought, and the second is the one that mattered:
+
+1. **Two stories can finally run at once without poisoning each other's tests.** They used to share one
+   checkout, and the only thing keeping them apart was a paragraph in the prompt asking each robot to
+   please ignore files it didn't recognise. When the test suite ran, it saw everyone's half-finished
+   work, so a failure belonged to nobody.
+2. **Its work can now be closed out at all.** `/sudo-update-sprint-memory` refuses to land a story that
+   isn't in a worktree — so before this, the robot could finish a story perfectly and the normal
+   close-out would simply decline to touch it. That wasn't "close-out isn't automated for autopilot"; it
+   was a dead end.
+
+**You launch it from the epic branch.** The robot cuts the story's branch from whatever the project has
+checked out, and that has to be the epic branch — so switch to it first, or pass
+`-EpicBranch epic/<KEY>-<slug>`. It refuses to start rather than guess, because a story branched off
+`main` can't be landed. (That branch is also where it reads the Jira key from — the BMAD epic number and
+the Jira key don't match up, so there's nothing to calculate.)
+
+**When it's green it now commits, files the ticket, and stops.** It saves the work on the story branch
+with an explicit list of files and a Jira-keyed message, moves the ticket to **In Review**, and writes
+the Dev Record onto it. It still **never pushes**, never touches `main`, and never marks anything
+`done`. So your end of it is: read the walkthrough, the plan, and the ticket — then run
+`/sudo-update-sprint-memory`, which lands the branch, flips it to `done`, and cleans up the worktree.
+Nothing to commit by hand any more.
+
+> ⚠️ **Not yet run for real.** All of the above was written and checked on the Mac, but the autopilot is
+> Windows-only, so no stage of it has actually executed. First time out, use `-DryRun` (it writes
+> nothing and shows you the branch and folder it *would* use), then a small story with `-MaxStage 2`,
+> on each engine.
 
 The engines live **per-project** and have drifted between projects — a behavior fix has to land in each
-one.
+one. The two of them (claude and opencode) are **twins by contract**: the worktree, commit and ticket
+blocks are kept identical on purpose, so a `diff` of the two files shows drift straight away.
 
 ---
 

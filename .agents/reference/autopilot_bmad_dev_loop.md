@@ -1,8 +1,8 @@
 # Autopilot BMAD Dev Loop — Reference
 
 > A one-command, fully-autonomous **dev + QA team** that takes a single BMAD story from
-> `ready-for-dev` to *planned → audited → implemented → reviewed → self-fixed*, then hands the
-> finished-but-uncommitted work back to Daniel for close-out.
+> `ready-for-dev` to *planned → audited → implemented → reviewed → self-fixed → committed on its own
+> story branch*, then hands it to Daniel for close-out.
 >
 > **Engine:** [`scripts/autopilot-dev-story.ps1`](../../scripts/autopilot-dev-story.ps1) ·
 > **Trigger:** `/autopilot_claude <story>` ([`.claude/commands/autopilot_claude.md`](../../.claude/commands/autopilot_claude.md)) ·
@@ -20,9 +20,15 @@ in sequence. The **Dev** (Amelia, Opus 4.8) plans the story, then *resumes the s
 implement it. On **QA**, Murat audits the plan *before any code exists* (Stage 2, Opus 4.8 in an audit
 session), then a **fresh review session** (Stage 4, Fable 5) reviews the finished code, applies fixes
 itself, and writes Daniel a report. The
-two teams hand off through **files in one folder**, never by talking directly. After its own
-independent test gate goes green, the script flips the story to `review` — but it **never commits
-and never marks the story `done`**; that last mile is always human.
+two teams hand off through **files in one folder**, never by talking directly.
+
+All of that happens inside **the story's own git worktree** (`.claude/worktrees/<story-slug>/` on
+`claude/<JIRA-KEY>-<story-slug>`, cut from the epic branch), so the code and the artifacts share one
+root and concurrent stories cannot see each other's edits. After its own independent test gate goes
+green, the script flips the story to `review`, **commits the tree** with explicit paths and a
+Jira-keyed subject, and moves the work item to In Review. It **never pushes, never touches `main`, and
+never marks the story `done`** — landing the branch on the epic branch and closing the story are
+`/sudo-update-sprint-memory`'s, and that last mile is always human.
 
 ---
 
@@ -74,8 +80,10 @@ flowchart TD
     F --> G{"orchestrator TEST GATE<br/>independent pytest + vitest"}
     G -->|"RED"| RED["TESTS RED — exit 4<br/>(resume -ResumeFrom 4)"]
     G -->|"green"| RV["flip story -> review<br/>(story .md + sprint-status.yaml)"]
-    RV --> DONE["PIPELINE COMPLETE<br/>not committed, not 'done'"]
-    DONE --> D2(["Daniel: ratify decisions, commit, flip review -> done"])
+    RV --> CM["orchestrator COMMITS the worktree<br/>explicit paths, Jira-keyed subject, NO push"]
+    CM --> JR["ticket -> In Review + Dev Record<br/>(jira_feed.py)"]
+    JR --> DONE["PIPELINE COMPLETE<br/>committed on claude/*, not pushed, not 'done'"]
+    DONE --> D2(["Daniel: ratify decisions, /sudo-update-sprint-memory<br/>lands the branch, flips review -> done, prunes the tree"])
 ```
 
 **What each stage may and may not do:**
@@ -84,8 +92,11 @@ flowchart TD
 |---|---|---|---|
 | 1 Plan | `/sudo-dev-story-tests_AP plan` | `implementation_plan.md`, `decisions-log.md` | touch source code |
 | 2 Audit | `/sudo-self-audit_AP` | the plan's `## Self-Audit` section, `decisions-log.md` | hard-halt on findings (fixes flow to S3) |
-| 3 Implement | `/sudo-dev-story-tests_AP implement` | source, tests, `walkthrough.md` | re-plan; commit; touch story status |
-| 4 Review+Fix | `/sudo-code-review_AP` | the walkthrough's `## Code Review` section, fixes, other walkthrough sections | commit; touch story status / `sprint-status.yaml` (the **orchestrator** owns the `review` flip) |
+| 3 Implement | `/sudo-dev-story-tests_AP implement` | source, tests, `walkthrough.md` | re-plan; **run git at all**; touch story status |
+| 4 Review+Fix | `/sudo-code-review_AP` | the walkthrough's `## Code Review` section, fixes, other walkthrough sections | **run git at all**; touch story status / `sprint-status.yaml` (the **orchestrator** owns the `review` flip AND the commit) |
+
+Every stage's cwd is the story worktree. No stage may read or write anything in the shared checkout —
+that is a different tree on a different branch, so a write there is silently lost to the story.
 
 ---
 
@@ -317,11 +328,12 @@ flowchart TD
 
 ## 7. The artifact handoff folder
 
-Everything for a run lives in one place; the resumed agents read these files instead of
-re-deriving:
+Everything for a run lives in one place — **inside the story worktree**, because `_artifacts/` is
+tracked and the run folder has to ride the story branch to land with the story. The resumed agents read
+these files instead of re-deriving:
 
 ```
-_artifacts/<date>_autopilot-<story>/
+.claude/worktrees/<story-slug>/_artifacts/epic_<N>/<date>_autopilot-<story>/
 ├── implementation_plan.md        (Stage 1 — Dev; Stage 2 QA appends ## Self-Audit — findings + proposed fixes + `Audit verdict:` line)
 ├── walkthrough.md                (Stage 3 — Dev: ## Task Checklist outline + ## Evidence + ## Suite Ledger + ## Your Actions;
 │                                  Stage 4 QA appends ## Code Review (`Verdict:` line) and prepends QA CLOSE-OUT to the TOP)
@@ -483,7 +495,12 @@ Or trigger via the slash command: **`/autopilot_claude 13.4`**.
 | `-MaxCost` | `40` | run-level $ ceiling, checked between stages; halts if spend crosses it (`0` disables) |
 | `-MaxStageCost` | `15` | per-stage cap, enforced *inside* the call via `--max-budget-usd`, so one stuck stage self-halts (`0` disables) |
 | `-TestScope` | `auto` | independent gate: `auto` (scope from baseline diff: backend-only / frontend-only / both; a shared-contract change forces both) / `backend` / `frontend` / `both` / `none` |
-| `-DryRun` | off | print the plan + sessions, no spend |
+| `-DryRun` | off | print the plan + sessions + the worktree that would be cut, no spend (and nothing written) |
+| `-EpicBranch` | (the checkout's current branch) | the epic branch the story tree is cut from; must be an `epic/*`, and supplies the Jira key |
+| `-NoWorktree` | off | debug only: run in the shared checkout. No isolation, no commit, and close-out will refuse to land it |
+| `-JiraKey` | (looked up on the board) | the story's work item, for the Dev Record + the move to In Review |
+| `-NoJira` | off | skip the board update entirely (the story file + `sprint-status.yaml` still flip) |
+| `-NoCommit` | off | skip the orchestrator's commit; the tree is left dirty for a human |
 
 **Exit codes:** `0` complete · `2` paused on a blocker · `3` crashed (resume with `-ResumeFrom`) ·
 `4` test gate red (resume `-ResumeFrom 4`) · `5` cost ceiling hit (raise `-MaxCost`).
@@ -492,24 +509,40 @@ Or trigger via the slash command: **`/autopilot_claude 13.4`**.
 
 ## 10. The human close-out (always required)
 
-The pipeline stops at "developed + reviewed + fixed, gate-verified green, story advanced to
-`review`." On a green gate it **does** flip the story to `review` (both the story `.md` and
-`sprint-status.yaml`). But it deliberately does **not**:
+The pipeline stops at "developed + reviewed + fixed, gate-verified green, story advanced to `review`,
+**committed on its own branch**, ticket at **In Review**." On a green gate it flips the story (both the
+story `.md` and `sprint-status.yaml`), commits the worktree with explicit enumerated paths and a
+Jira-keyed subject, files the Dev Record, and moves the work item. But it deliberately does **not**:
 
-- run `git commit` / `git push`,
+- **push** anything — not the story branch, and never `main`,
+- land the branch on the epic branch,
 - mark the story `done`, or
 - make the judgment calls on the team's out-of-spec decisions.
 
 Daniel's close-out: read the **QA CLOSE-OUT** + **OUT-OF-SPEC DECISIONS** + **OPEN QUESTIONS FOR
-DANIEL** at the top of `walkthrough.md`, ratify (or reverse) the team's story-silent calls, run the
-git command from the walkthrough's "Your Actions," and flip `review → done`. That last mile is the
-point — the autopilot does the labor and parks the story at `review`; the human owns the judgment,
-the `done` flip, and the commit.
+DANIEL** at the top of `walkthrough.md`, ratify (or reverse) the team's story-silent calls, then run
+`/sudo-update-sprint-memory` — it lands the `claude/*` branch on the epic branch, flips `review → done`,
+and prunes the tree. That last mile is the point: the autopilot does the labor and parks the story at
+`review` with the work already committed; the human owns the judgment, the landing, and the `done` flip.
+
+**Why the worktree is what unblocked this.** `/sudo-update-sprint-memory` Step 7 refuses to land a story
+whose HEAD is not a `claude/*` branch inside a worktree. Until the engines opened one, the autopilot's
+output could not be closed out by the normal flow at all — the close-out was not "not automated", it was
+*impossible*. The tree, not tidiness, is the payoff.
 
 ---
 
 ## 11. What is NOT yet proven
 
+- **The whole worktree + commit + Jira change (AVCH-50 / SCC-41), on a real run.** It was written and
+  statically verified on a Mac — both engines parse clean under `pwsh`, and PSScriptAnalyzer reports no
+  new findings against the pre-change baseline — but this lane is Windows-only (`powershell.exe`,
+  `%USERPROFILE%`, `.venv\Scripts\python.exe`), so **not one stage has been executed against it.**
+  What a first real run has to show, per engine: two concurrent stories cannot see each other's files ·
+  the gate runs green inside the tree and finds the right interpreter · `-ResumeFrom` re-binds to the
+  SAME tree instead of cutting a second one · the orchestrator's commit passes the armed `commit-msg`
+  hook · `/sudo-update-sprint-memory` accepts the result and lands it. Start with `-DryRun` (it creates
+  nothing and prints the tree, branch and base it *would* use), then a small story with `-MaxStage 2`.
 - **The retry *loop* firing live.** The backoff path is verified by code inspection + a regex
   classification test, but no real transient failure has been forced on demand (a bad model id is
   correctly *non-transient*, so it never enters the loop).
