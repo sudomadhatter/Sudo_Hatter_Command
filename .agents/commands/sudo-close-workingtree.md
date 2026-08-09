@@ -24,7 +24,7 @@ Echo `Target: Projects/<name> | Story: <story-slug>` before proceeding.
 ## Step 0.6 — Preflight first (fast pre-check — it does NOT replace the gates below)
 
 ```bash
-python .agents/scripts/closeout_preflight.py --story <id> --project <PROJECT> --fetch [--branch <name>]
+python3 .agents/scripts/closeout_preflight.py --story <id> --project <PROJECT> --fetch [--branch <name>]
 ```
 
 One call answers Steps 1 and 1.6's questions mechanically: is the branch an ancestor of

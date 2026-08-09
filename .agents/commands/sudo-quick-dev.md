@@ -109,6 +109,28 @@ check after applying fixes and paste the output.
   `## Code Review (<date>)` with the canonical **`Verdict: PASS|CONCERNS|FAIL|WAIVED @ <sha>`** line →
   `## Your Actions`. Post clickable Markdown links to every artifact in the chat.
 
+## Step 4.5 — File the Dev Record on the ticket (AUTOMATIC, never ask)
+This lane **closes its own branch**, and the ad-hoc chore lane never reaches
+`/sudo-update-sprint-memory` at all — so this is the only place its knowledge gets recorded. Before
+SCC-49 it died in the walkthrough. Runs AFTER Step 4 so the walkthrough it points at exists. The key is
+already in hand: the story's `jira_key:` frontmatter on the story lane, or the `<JIRA-KEY>` in the
+`chore/<JIRA-KEY>-<slug>` branch name on the ad-hoc lane.
+
+```bash
+python3 .agents/scripts/jira_feed.py devrecord --key <JIRA-KEY> --story <id-or-slug> \
+       --project <PROJECT> --stage quick-dev --walkthrough <the Step 4 walkthrough> \
+       --outcome "<what shipped, one line>" --verdict "<the Step 3 verdict>" \
+       --decision "<a ruling made while fixing>" --pitfall "<what nearly bit>" \
+       --followon "<anything Step 3 deferred>" --apply
+```
+
+**Exactly one Dev Record per ticket.** The script finds an existing record and UPDATES it in place, so
+a story that later goes through `/sudo-update-sprint-memory` ends with one current record instead of
+two partial ones — **never pass `--append-new` here.** It reads the ticket back and exits 2 if the
+comment is not there; a non-zero exit means the record did NOT land, so report that rather than
+success. No ticket key at all (a fix outside any ticket) → say so in the Done report and skip;
+**never invent a key.** Full acli reference: `.agents/rules/jira.md`.
+
 ## Done
 Stop here. Do **NOT** run `/sudo-update-sprint-memory`, never land on the epic branch (close-out's job),
 never touch `main`. Display the spec path, the walkthrough link, the key changes, and the review-gate

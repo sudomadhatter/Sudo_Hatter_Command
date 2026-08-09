@@ -8,6 +8,13 @@
 # Enable per repo (once):  git config core.hooksPath .githooks
 # It is shared/tracked, so every clone that runs that one command gets the recorder.
 
-if command -v python >/dev/null 2>&1; then PY=python; else PY=python3; fi
-"$PY" .agents/scripts/record_map_changes.py --commit HEAD >/dev/null 2>&1 || true
+# Same probe order as the two armed gates (SCC-49): python3 -> python -> py. This one is a
+# non-blocking recorder, so a miss costs a journal line rather than a check — but two probe
+# orders in one repo is how they drift, and `python` first is wrong on the Mac, which has
+# only `python3`.
+PY=""
+for c in python3 python py; do
+  if command -v "$c" >/dev/null 2>&1; then PY="$c"; break; fi
+done
+[ -n "$PY" ] && "$PY" .agents/scripts/record_map_changes.py --commit HEAD >/dev/null 2>&1
 exit 0

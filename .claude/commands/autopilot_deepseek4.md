@@ -10,9 +10,11 @@ platforms: [claude]
 > `-Deepseek4` flag, which routes Stages 1 (Plan) + 3 (Implement) at OpenRouter's Anthropic-compatible
 > endpoint and runs every lane at its model's top effort rung. Those stages spend **zero Claude tokens**
 > (billed to your OpenRouter key); Stages 2 + 4 stay on Claude (audit on Opus 4.8, review on Fable 5).
-> Every guardrail (resumable,
-> per-story lock, baseline-red gate, story-flip-to-review, never-commits, never-marks-done) is
-> inherited unchanged.
+> Every guardrail is inherited unchanged, because it is the same script: the **story worktree**
+> (`.claude/worktrees/<story-slug>/` on `claude/<JIRA-KEY>-<story-slug>`, cut from the epic branch),
+> resumable stages, the per-story lock, the baseline-red gate, the story flip to `review`, the
+> orchestrator's commit inside the tree, the ticket move to In Review — and never-pushes,
+> never-touches-`main`, never-marks-`done`.
 >
 > *Replaced `/autopilot_glm` on 2026-07-20. Moved off V4 Pro to **V4 Flash 0731** on 2026-08-04 — DeepSeek's
 > newest release, re-post-trained for coding/reasoning/agent work, at **~4.8x more output per dollar** than
@@ -65,7 +67,8 @@ without a key, so you can sanity-check config first).
 
 ## What to do
 
-Follow **`/autopilot_claude` exactly** — Step 0 (resolve the target project), the story check, the
+Follow **`/autopilot_claude` exactly** — Step 0 (resolve the target project), **Step 0.5 (the epic
+branch must be checked out — it is the worktree's base and the source of the Jira key)**, the story check, the
 live TodoWrite pipeline list, the per-notification todo advancement, and the final debrief are all
 **identical**. There are only THREE deltas, all in the Monitor launch (Step 3):
 

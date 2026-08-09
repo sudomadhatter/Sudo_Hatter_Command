@@ -25,9 +25,9 @@ description: Update the Maps, INDEX.md, AGENTS.md, and README files (any workspa
 > `workspace-standard.md` (the script auto-detects the *mode* — home base vs project, BMAD vs not — and
 > applies the right paths). Target a single workspace with `--root`, or **fan out from the home base with `--all`**:
 > ```bash
-> python .agents/scripts/check_maps.py --all                          # HOME BASE: lobby + every conformant project
-> python .agents/scripts/check_maps.py                                # the repo holding the script (lobby only)
-> python .agents/scripts/check_maps.py --root Projects/AGY_AVIATIONCHAT   # one project
+> python3 .agents/scripts/check_maps.py --all                          # HOME BASE: lobby + every conformant project
+> python3 .agents/scripts/check_maps.py                                # the repo holding the script (lobby only)
+> python3 .agents/scripts/check_maps.py --root Projects/AGY_AVIATIONCHAT   # one project
 > ```
 > **Fan-out (the home-base default for this workflow).** `Projects/<name>/` are separate git repos. Run from the
 > lobby, `--all` reconciles the **lobby AND each MAINTAINED `Projects/<name>`** — a workspace (has an `AGENTS.md`)
@@ -72,7 +72,7 @@ Daniel's `## Todo list` prose and every task file — stays **read-only** (you m
 > gitignored journal (`docs/.maps-journal.jsonl`). Reading it tells you *what changed and what it needs*
 > before you lint, so you spend judgment (the slow layer) only where it's flagged:
 > ```bash
-> python .agents/scripts/record_map_changes.py --nag      # classified tail since the last reconcile (anchor)
+> python3 .agents/scripts/record_map_changes.py --nag      # classified tail since the last reconcile (anchor)
 > ```
 > **It is a CACHE, never the truth.** The `--nag` output carries a freshness guard: if it prints
 > "*journal is behind HEAD … a commit bypassed the recorder*", the cache is incomplete — **ignore it and
@@ -87,9 +87,9 @@ Daniel's `## Todo list` prose and every task file — stays **read-only** (you m
 2. **Run the deterministic linter first — it does the mechanical detection for you.** From the home base lead
    with `--all` (lobby + every maintained project in one combined report); inside a project just run it bare:
    ```bash
-   python .agents/scripts/check_maps.py --all                 # HOME BASE: lobby + every conformant project
-   python .agents/scripts/check_maps.py                       # one workspace (lobby, or run from inside a project)
-   python .agents/scripts/check_maps.py --root Projects/<name>   # one specific project from the lobby
+   python3 .agents/scripts/check_maps.py --all                 # HOME BASE: lobby + every conformant project
+   python3 .agents/scripts/check_maps.py                       # one workspace (lobby, or run from inside a project)
+   python3 .agents/scripts/check_maps.py --root Projects/<name>   # one specific project from the lobby
    ```
    Per workspace it runs **nine** checks. Fatal drift (exit non-zero): **AUTO-block freshness** (regenerates the
    map body in memory, mode-preserving, and diffs), **path existence** (every path *promised* in a
@@ -117,7 +117,7 @@ Daniel's `## Todo list` prose and every task file — stays **read-only** (you m
 3. Capture the raw git signal the linter summarized, for context on *what changed*:
    ```bash
    git status --short                     # R-entries = renames/moves that may break map/INDEX paths
-   git diff --name-status $(python -c "import json;print(json.load(open('docs/.maps-state.json'))['reconciled_at'])")..HEAD
+   git diff --name-status $(python3 -c "import json;print(json.load(open('docs/.maps-state.json'))['reconciled_at'])")..HEAD
    ```
    Renames (`R ...`) and deletes (`D ...`) are the highest-value signal: a moved/deleted file is the most
    common reason a curated table or INDEX row goes stale.
@@ -167,8 +167,8 @@ project** (listed in `.agents/maintained-projects.txt`); `/update-maps-indexes` 
    (`--output` resolves against your *cwd*: with the `docs/` prefix dropped it silently writes a stray
    root-level `repo-map.md`; with `--root` the default output already lands at `<root>/docs/repo-map.md`):
    ```bash
-   python .agents/scripts/generate_repo_map.py --root . --ignore Projects,_my_resources --mode content   # lobby
-   python .agents/scripts/generate_repo_map.py --root Projects/<name> --ignore <its documented set> --mode <its mode>   # fan-out, per project
+   python3 .agents/scripts/generate_repo_map.py --root . --ignore Projects,_my_resources --mode content   # lobby
+   python3 .agents/scripts/generate_repo_map.py --root Projects/<name> --ignore <its documented set> --mode <its mode>   # fan-out, per project
    ```
    (Use `--mode auto` only if the sentinel says so.)
 3. `git diff docs/repo-map.md`. Three outcomes:
@@ -433,7 +433,7 @@ edits, say so and proceed (a regen that produces no diff needs no approval).
 - Re-run the linter to confirm it now exits clean (0) — `--all` from the home base so every workspace is
   re-checked. Anything still flagged is either a 🚩 deferred item or a real miss — say which.
   ```bash
-  python .agents/scripts/check_maps.py --all      # home base; or bare / --root <proj> for one workspace
+  python3 .agents/scripts/check_maps.py --all      # home base; or bare / --root <proj> for one workspace
   ```
 - Summarise what changed (files + line counts) and what was flagged, **grouped by repo**.
 - **This one lands by hand** — it is a multi-repo sweep, not story work, so there is no single story
@@ -450,7 +450,7 @@ edits, say so and proceed (a regen that produces no diff needs no approval).
 - **Re-anchor *after* he commits** (so the next run's git-diff starts clean). One command re-anchors every
   workspace it covered (each gets its own `.maps-state.json` at its own docs dir):
   ```bash
-  python .agents/scripts/check_maps.py --set-anchor --all     # home base: lobby + each project
+  python3 .agents/scripts/check_maps.py --set-anchor --all     # home base: lobby + each project
   ```
   Do not anchor before committing — you'd baseline an un-committed state. **Re-anchoring also CONSUMES the
   commit-time journal** (Step 0.0): it rolls every `docs/.maps-journal.jsonl` line up to the new anchor into

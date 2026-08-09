@@ -78,7 +78,7 @@ After review + fix, run the gate and record the verdict INSIDE the walkthrough's
 > traceability / nfr / test-quality verdict layer only — never block on a full-suite run.
 
 **Run each TEA gate through `gate_receipt.py` so the verdict cites evidence, not recollection** —
-`python .agents/scripts/gate_receipt.py run --story <id> --gate <name> --cwd <worktree> -- <command>`
+`python3 .agents/scripts/gate_receipt.py run --story <id> --gate <name> --cwd <worktree> -- <command>`
 (every flag BEFORE `--`). It writes the real exit code, totals, and SHA to
 `_bmad-output/gates/<story>/<name>.json`; there is no `--result` flag, so a receipt implies execution.
 This matters more headless than interactively — nobody is watching. `unrunnable` (the tool never ran)
