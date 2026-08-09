@@ -25,7 +25,8 @@
 
 ## AGY sprint & stories
 - [Epic 19 REOPENED 08-08](agy-epic-19-deferred-pin-cascade.md) — AVCH-18 on `epic/AVCH-18-adk-2x-runtime`; adk 2.6.3 4-family bump; start at 19.5; don't merge to main early.
-- **Reading the board** — [it recommends stale work](sprint-dependency-map-recommends-stale-work.md) (lags the YAML; check status first) · [five zones](sudo-update-scrum-board-five-zones.md) (🧵 shows the ANSWER, not the math; no background model writes it).
+- **Reading the board** — [it recommends stale work](sprint-dependency-map-recommends-stale-work.md) (lags the YAML; check status first) · [⛔ scrum board RETIRED 08-07](sudo-update-scrum-board-five-zones.md) (SCC-13; recover via `git show 8144518^:...` — the operator went looking and couldn't find it; its Step 2.5 is SCC-56's spec).
+- [`parallel-ok` is a SET property](parallel-ok-is-a-set-property.md) — ① can't rule it (siblings don't exist yet); moved OUT of ① to on-request SCC-56 `/sudo-parallel-check`. `quick-dev` + `blocked` stay.
 - **State rots independently** — [epic keys rot silently](agy-epic-keys-rot-silently.md) (a stale REASON keeps a row alive) · [epics.md + YAML check each other](agy-epics-md-is-partial.md) (YAML wins on state, epics.md for the why) · [deferred EPIC, never deferred-v3](agy-deferred-epic-not-deferred-v3.md) (parked rows hold a finished epic open forever).
 - **Multi-lane landing** — [lanes fix one finding](parallel-lanes-fix-the-same-finding.md) (re-diff the epic branch; the SET rule binds on file OVERLAP) · [close-out shape](multi-lane-closeout-board-merge-shape.md) (flip from the STORY FILE) · [landing ≠ close-out](landing-is-not-closeout.md) (check git BEFORE closing out).
 - [Story files canonical dir](agy-story-files-canonical-dir.md) — `_bmad/bmm/stories/`; grep dot AND dash forms; next ID from sprint-status.yaml.
