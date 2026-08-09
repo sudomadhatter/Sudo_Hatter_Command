@@ -1,5 +1,5 @@
 ---
-description: Live Testing Team — the human flies the app while the agent boots the dev env, watches the backend logs live, coaches the frontend DevTools check, and files researched bug docs that feed the sudo story flow. Writes NO product code.
+description: Live Testing Team — the human flies the app while the agent boots the dev env, watches the backend logs live, coaches the frontend DevTools check, files researched bug docs that feed the sudo story flow, and traces each bug back to the ticket that shipped it (flagging it `Bug` only on the operator's word). Writes NO product code.
 ---
 
 # /sudo-live-testing-team — Live Testing Team (co-pilot debugging loop)
@@ -47,8 +47,33 @@ check claims against the docs — mark every finding **verified** (evidence in h
 - **Proposed fix direction** — where the fix lives, NOT the fix itself
 - **Suggested lane** — `/sudo-quick-dev` (small/contained) or the full ①②③ story loop (risky/cross-cutting)
 
+## Step 3.5 — Trace each bug back to the ticket that shipped it (SCC-54)
+This is the one command that flies the running app, so it is the one that finds bugs nobody has
+noticed yet — and the board should say so. For each bug doc, take the paths from its **Proposed fix
+direction** (a `file:LINE` gives the far stronger signal) and run:
+
+```bash
+python3 .agents/scripts/jira_feed.py trace --project <PROJECT> --path <file>:<line> [--path ...]
+```
+
+It reads git history only — **no board write, ever** — and prints ranked candidates, blame first.
+
+**Then STOP and show the operator.** `trace` answers *"which ticket last touched this line"*, which
+is not *"which ticket introduced this bug"*: a later unrelated edit takes the blame outright, and a
+wrong flip pulls an innocent ticket out of `Done`. **Never pass a traced key to `flag` yourself.** On
+the operator's word — and only then:
+
+```bash
+python3 .agents/scripts/jira_feed.py flag --key <KEY> --reason "<one sentence>" \
+        --evidence "<log line / status / repro>" --found-by "/sudo-live-testing-team <date>" --apply
+```
+
+That flips `Story|Task -> Bug`, brings it back out of `Done`, and posts the reason. Close-out clears
+it later — see `.agents/rules/jira.md`. If no candidate is proposed, say so and move on; a bug with
+no traceable ticket is new work, not a reopen.
+
 ## Step 4 — Close out
-Post a session summary table (bug → doc link → suggested lane). Ask whether to keep or kill the
+Post a session summary table (bug → doc link → **traced ticket, if any** → suggested lane). Ask whether to keep or kill the
 servers. Remove every temporary debug log you added. The fixes themselves happen in the sudo dev
 flow — never in this chat.
 
