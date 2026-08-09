@@ -204,12 +204,25 @@ and that judgment is not the rule's to make. Only close-out knows, so only `devr
 clears it.
 
 **Label vocabulary** — a card holds ONE status but stacks labels, which is exactly why these are
-labels (a story can be quick-dev-eligible AND blocked at once). All three are ruled by ①
-`/sudo-write-story-tests` at story pickup:
-`quick-dev` = ships via `/sudo-quick-dev` instead of the full ①②③ loop ·
-`parallel-ok` = no file overlap with the epic's other in-flight stories, safe to run beside them ·
-`blocked` = waiting on a linked blocker (the `Blocks` link names WHAT; pair with the `Blocked`
-status where the board has it). Filter any of them:
+labels (a story can be quick-dev-eligible AND blocked at once). **Two writers, and which one owns a
+label is not cosmetic:**
+
+| Label | Means | Written by |
+|---|---|---|
+| `quick-dev` | ships via `/sudo-quick-dev` instead of the full ①②③ loop | ① `/sudo-write-story-tests`, at pickup |
+| `blocked` | waiting on a linked blocker (the `Blocks` link names WHAT; pair with the `Blocking` status where the board has it) | ① `/sudo-write-story-tests`, at pickup |
+| **`parallel-ok`** | in the approved set the last check computed — safe to run beside **every other** 🟢 of that epic | ⭐ **`/sudo-parallel-check <EPIC-KEY>`, and nothing else** |
+
+⛔ **`parallel-ok` is meaningless without its stamp, and ① must never write it** (operator ruling
+2026-08-09, SCC-56). It is a property of a **set at a moment**, not of one story: ① mints 19.1's
+ticket before 19.2's file exists, so it has nothing to compare against and never re-evaluates.
+Proof it never worked — **zero** tickets across both boards carried it. The fix was the writer, not
+the field: an epic-scoped pass recomputes the set and **rewrites every child's label in one go**,
+so it is self-correcting on re-run. **A `parallel-ok` whose epic comment stamp
+(`verified <date> against N children: …`) no longer matches that epic's current children is stale —
+re-run, never trust.** `parallel_check.py check --parent <KEY>` answers that in one call.
+
+Filter any of them:
 `acli jira workitem search --jql "project = AVCH AND labels = quick-dev AND status != Done"`.
 
 ## Reading the board
@@ -313,4 +326,7 @@ unrecognized tickets on sight.
    `/close-task-merge-tree` Step 4 moves the TASK ticket to `Done`; and `jira_feed.py flag` moves a
    ticket **out of `Done`** when it is found broken. Outside those, transition a ticket only when the
    operator asks.
+   **`/sudo-parallel-check` is not a fifth** — it writes the `parallel-ok` **label** and one comment
+   on the epic, and deliberately transitions nothing. Placement stays the operator's (guardrail 2);
+   "these three are safe together" is not a reason to move a card.
 5. **The token stays in the keychain.** Never echo, copy, or persist it anywhere.

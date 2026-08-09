@@ -45,20 +45,27 @@ surface it and stop — never guess.
 The story file exists, so its ticket must too — ① is the story's single classification point. Using the
 repo's project from `.agents/jira.conf` and the EPIC's ticket key (it's in the epic branch name):
 
-1. **Rule three things first** (they shape the mint):
+1. **Rule TWO things first** (they shape the mint) — both are per-story facts genuinely knowable
+   at pickup, which is exactly why the third one left:
    - **Lane** — can this story ship via `/sudo-quick-dev` instead of the full ①②③ loop? (Small blast
      radius, P2/P3 risk score, no new endpoint/contract/auth surface.) → label `quick-dev`. Default is
      the full loop, no label.
-   - **Parallel** — can it run beside the epic's other in-flight stories? Binds on FILE OVERLAP (per
-     the parallel-lanes rule): disjoint file sets → label `parallel-ok`.
    - **Blocked** — does it depend on an unlanded story/ticket? → label `blocked` + a `Blocks` link.
+
+   ⛔ **Parallel is NOT ruled here** (operator ruling 2026-08-09, SCC-56). `parallel-ok` is a
+   property of a **set at a moment**, never of one story — and at this instant the siblings do not
+   exist yet: this step mints 19.1's ticket **before** 19.2's story file is written, so there is
+   nothing to compare against, and it is never re-evaluated. A boolean also cannot express
+   *"safe after AVCH-34"*. The proof it never worked is empirical — **zero** tickets across `SCC`
+   and `AVCH` carried the label. Never re-add it here. Once the epic's stories are all written:
+   **`/sudo-parallel-check <EPIC-KEY>`**.
 2. **Mint it — one call does the dedupe, the outline, and the proof** (SCC-49: a ticket with only a
    summary is a title, not a ticket, and the whole board was minted that way):
 
    ```bash
    python3 .agents/scripts/jira_feed.py mint --story <n.m> --project <PROJECT> \
           --jira-project <PROJ> --epic-key <EPIC-KEY> --summary "<n.m> — <Story Title>" \
-          --lane <full|quick-dev> [--parallel-ok] [--blocked-by <KEY>] --apply
+          --lane <full|quick-dev> [--blocked-by <KEY>] --apply
    ```
 
    It (a) searches the BMAD number first — a backfilled board or a re-run already has the ticket, and
@@ -75,8 +82,8 @@ repo's project from `.agents/jira.conf` and the EPIC's ticket key (it's in the e
    `.agents/rules/jira.md`.
 3. **Stamp the story file frontmatter** — the file is the machine truth, the board only mirrors it:
    `jira_key: <KEY>` (Step 4.5 of `/sudo-update-sprint-memory` moves the ticket by reading exactly
-   this field), plus the rulings: `lane: quick-dev|full`, `parallel_ok: true|false`,
-   `blocked_by: [<keys>]` (omit when empty).
+   this field), plus the rulings: `lane: quick-dev|full`, `blocked_by: [<keys>]` (omit when empty).
+   ⛔ No `parallel_ok:` — same reason as above; `/sudo-parallel-check` owns that field.
 4. **Set its state:** blocked → `acli jira workitem link create --out <BLOCKER-KEY> --in <KEY> --type
    Blocks`, then transition to `Blocked` if the board has that status (else the label carries it).
    Not blocked → transition to `In Progress` (`--yes`). Full acli reference: `.agents/rules/jira.md`.

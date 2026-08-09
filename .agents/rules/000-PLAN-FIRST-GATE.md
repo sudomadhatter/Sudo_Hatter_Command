@@ -35,10 +35,38 @@ The ONLY exception: the artifact directory `_artifacts/` itself (where `implemen
 
 ## What is NOT Approval
 
+**The gate opens on ONE thing: the operator typing `approved`, unprompted.** Everything below has
+been mistaken for it in practice — the top four are the classics, the rest were all misread inside a
+single session on 2026-08-09, which is why they are now written down.
+
 - "ok", "sure", "looks good", "continue", "let's go", "ready-for-dev"
 - A plan from a prior conversation
 - A story file with status `ready-for-dev`
 - A BMAD skill step that says "mark in-progress" or "begin implementation"
+- ⛔ **A selected option in a question YOU authored.** A selection answers *which*, never *whether*.
+- ⛔ **An instruction to do the work** — "go make SCC-12", "finish SCC-56", "I would like to fix
+  this", "that is a bug and a problem". These commission the work; the plan step is still owed.
+  Being told to build something is the *reason* to write a plan, not permission to skip it.
+- ⛔ **An answer to a clarifying question.** That is information, not consent.
+- ⛔ **A correction or an overrule** ("no, it is `sudo-parallel-check`"). A correction narrows the
+  plan; it does not open the gate. **Edit the plan and stop AGAIN** — a correction restarts the
+  wait, it never ends it.
+
+### ⛔ Never put the gate word in an option label
+
+Do not offer "approved" (or "go ahead", "ship it", or any other opening token) as the text of a
+choice you present. Writing the word yourself and then reading it back off the operator's click is
+**manufacturing the approval token** — the operator answered *which option*, and the consent was
+authored by you. This is exactly how the gate was bypassed on 2026-08-09.
+
+Present options for *design forks*. Ask for approval in **plain text**, and wait.
+
+### The carve-outs are a CLOSED list
+
+There is a real rule that invoking a command IS the sign-off — `/sudo-quick-dev`, and the close-out
+commands. That list lives in `artifacts-always-first.md` § "When to Skip" and nowhere else. It does
+**not** generalize from *"the operator told me to do the work"* to *"the gate is open."* If you are
+reasoning your way toward an exemption that is not written in that list, you are bypassing the gate.
 
 ## The Plan Must Contain
 

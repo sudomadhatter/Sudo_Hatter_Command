@@ -9,6 +9,20 @@ Every `/sudo-*` command operates on exactly ONE target — never the lobby. The 
 the obligations (echo contract · STOP-and-ask · binding STOPs) inline and points at the variant here for
 the mechanics. This file is the only place the ladder is written out.
 
+> **The one named exception: `/sudo-parallel-check` (SCC-56, 2026-08-09).** It does not walk this ladder
+> at all — it derives its target from the Jira key it was given, via each repo's `.agents/jira.conf`
+> (`AVCH-13` → `Projects/AGY_AVIATIONCHAT`, `SCC-12` → the lobby), so the target is never asked and never
+> guessed. **The lobby is in scope for it, and only for it,** because the lobby carries a full BMAD
+> install and qualifies the day it holds BMAD stories — the discriminator is *BMAD stories*, not
+> project-vs-lobby. It stays `/sudo-*` because it does not *roam* the lobby: it follows the epic it was
+> handed. See `.agents/commands/sudo-parallel-check.md` Step 0.
+>
+> ⛔ **This exception is CLOSED, not a precedent.** It is one named command with a derived, single
+> target. A command that resolves its target by asking, by the active-project pointer, or by standing in
+> a directory does not get the lobby — that is the ladder above, and it has no opt-out. Any future
+> variance is another named line here, added deliberately; *"unless the command says otherwise"* would
+> void the rule, since every command would then say otherwise.
+
 ## §STD — the standard ladder (default)
 
 Walk the cases in order; the first match wins:
