@@ -1,5 +1,5 @@
 ---
-description: Close out TASK work — a `chore/<JIRA-KEY>-<slug>` branch that never got an epic and a story, so BMAD's `/sudo-update-sprint-memory` cannot close it. Preflights mechanically (branch shape, clean+pushed, main absorbed, and THE LANE — did anything deployable change?), runs the gate the lane selects, merges to `main` with `--no-ff`, files the Dev Record and moves the ticket to Done, then prunes the branch. Invoking it IS the merge sign-off. Refuses the moment a deployable path is in the diff and hands the work to `/sudo-push-e2e`.
+description: Close out TASK work — a `chore/<JIRA-KEY>-<slug>` branch that never got an epic and a story, so BMAD's `/sudo-update-sprint-memory` cannot close it. Preflights mechanically (branch shape, clean+pushed, main absorbed, and THE LANE — did anything deployable change?), runs the gate the lane selects, merges to `main` with `--no-ff`, files the Dev Record and moves the ticket to Done, then prunes the worktree AND the branch (SCC-62 — unlink assets before removing the tree; a recursive delete through a junction eats the shared targets). Invoking it IS the merge sign-off. Refuses the moment a deployable path is in the diff and hands the work to `/sudo-push-e2e`.
 platforms: [opencode, antigravity]
 ---
 
@@ -101,7 +101,7 @@ It answers, from the repo rather than from your memory of it:
 | **base** | `origin/main` fully absorbed, and ≥1 commit ahead. Conflicts must surface **here**, never on `main`. |
 | **scope** | ⭐ **THE LANE.** See below. |
 | **artifacts** | a `walkthrough.md` mentioning the key exists. Without it the Dev Record cites nothing. |
-| **worktree** | a worktree still checked out on this branch — it blocks the branch delete in Step 5. |
+| **worktree** | the worktree checked out on this branch — **expected** since SCC-62, and Step 5 prunes it. It blocks the branch delete until removed, so the order in Step 5 is not optional. |
 
 **⭐ The lane, and why the E2E answer is mechanical.** The one thing that makes this command
 cheaper than `/sudo-push-e2e` is skipping the end-to-end suite, and the only honest justification is
@@ -195,22 +195,42 @@ so it is always safe to pass.
 
 No ticket key at all → say so in the report and skip both calls. **Never invent a key.**
 
-## Step 5 — Prune the branch
+## Step 5 — Prune the worktree, THEN the branch
+
+Since SCC-62 every commit-producing lane runs in a worktree, so a Task lane owns one by default — and
+**this command prunes it.** That is what lets ad-hoc work isolate at all: the old ban on chore worktrees
+existed only because nothing cleaned them up. The lane that opened the tree is the lane that closes it.
+
+**Order matters, and getting it wrong is destructive.**
 
 ```bash
+# 1. UNLINK the gitignored assets FIRST — before anything is deleted.  (PC: `python`, not `python3`)
+python3 .agents/scripts/link-worktree-assets.py --unlink .claude/worktrees/<slug>
+
+# 2. Now remove the tree.
+git worktree remove .claude/worktrees/<slug>
+git worktree list                                       # the tree must be gone
+
+# 3. Only then the branch.
 git branch -d chore/<JIRA-KEY>-<slug>
 env -u GITHUB_TOKEN git push origin --delete chore/<JIRA-KEY>-<slug>
 git rev-list --left-right --count main...origin/main    # must be 0 0
 git status --short                                      # must be empty
 ```
 
-`-d` (never `-D`): it refuses if the branch did not merge, which is the check working. A refusal
-here after a successful Step 3 means the merge did not land — go look, do not force.
+⛔ **Unlink before you remove.** A recursive delete **through a junction** destroys the shared
+`.venv` / `node_modules` **targets**, not just the links — it walks into the real directory and deletes
+the contents. `git worktree remove` does a recursive delete. Unlink first, every time.
 
-If Step 1 reported a **worktree** on this branch, `-d` will fail while it exists. Run
-`/sudo-close-workingtree` for that tree first — it unlinks the junctions **before** removing
-anything, and a recursive delete through a junction destroys the shared `.venv` / `node_modules`
-**targets**, not just the links.
+`-d` (never `-D`): it refuses if the branch did not merge, which is the check working. A refusal here
+after a successful Step 3 means the merge did not land — go look, do not force. `-d` also fails while a
+worktree still holds the branch, which is why the tree goes first.
+
+**PC:** a pruned worktree can leave an empty shell directory behind that blocks a later
+`git worktree add` at the same path; only a PowerShell delete clears it.
+
+If the tree belongs to a **story** lane (`claude/*`) rather than this Task, it is not yours to prune —
+`/sudo-close-workingtree` owns that one. Leave it and say so.
 
 ## Step 6 — Verify, THEN report
 
