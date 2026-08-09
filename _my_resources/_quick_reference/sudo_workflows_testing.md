@@ -400,6 +400,38 @@ close-outs.
 | Deploy | hosting CI/CD | on push to `main` |
 | Incident pipeline | GitHub Action | when a real user hits an error (§12) |
 
+### The other road to `main` — `/close-task-merge-tree`
+
+Epics take the road above. **Task work takes this one**, and it exists because most of what you do in
+the command center — the commands, the rules, the safety-net scripts — is real work that reaches
+`main` and has no epic to ride. (Story vs Task, and why close-out can't do it: §11.)
+
+Five steps, in this order:
+
+1. **Preflight** — `task_preflight.py` checks the branch really is `chore/<KEY>-<slug>` with a key
+   this repo owns, the tree is clean and pushed, `origin/main` is absorbed, the walkthrough exists,
+   and **the lane**. Exit 2 stops the command.
+2. **The gate the lane picked** — in the command center that's the enforcement suite plus the toolkit
+   lint, with the real output pasted, not summarized.
+3. **Merge to `main`** — `--no-ff`, so the task stays one reviewable unit in history and Jira links
+   the merge commit through the key in the branch name.
+4. **The ticket** — one Dev Record, then Done.
+5. **Prune** — branch deleted local and remote, `0 0` and clean confirmed.
+
+**Two decisions behind it worth knowing**, because both look arbitrary until you see the failure they
+avoid:
+
+- **The merge happens before the ticket, not after.** A ticket reading `Done` while the merge actually
+  failed is a lie sitting on your board that nothing will ever correct. A merge that landed while the
+  record lags is one command away from right. Given a choice of which half fails, take the
+  recoverable one.
+- **It is deliberately not named `/sudo-…`.** Every `sudo-*` command binds one rule that says *operate
+  on exactly one project — never the command center*. Toolkit tasks live **in** the command center, so
+  a `sudo-` name would have needed an exception carved into that rule, and an exception is a hole
+  anything can walk through later. The non-`sudo` family (`/sync-agents`, `/update-maps-indexes`,
+  `/new-project`) is already the one allowed to act on the repo you're standing in. **The name carries
+  the permission** — that's why it reads differently from everything else in your menu.
+
 ---
 
 ## 7. Switching machines
