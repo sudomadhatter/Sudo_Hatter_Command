@@ -160,6 +160,21 @@ files, per §3); full model →
   operator's personal notes, it is stale, and it duplicates tickets that already exist. Never quote it as
   "what's next". **"hand off"** → write state back, append the matching `INDEX.md` row, read it back to
   verify.
+- **Memory — every platform reads it, every machine has it (SCC-65).** The persistent memory store is
+  **`_artifacts/_memory/`** — the repo path is canonical: it travels via git, so it is identical on both
+  machines and readable by every model. **At session start read `_artifacts/_memory/MEMORY.md`** (the
+  index — one line per memory, ≤20 KB) and open the full files relevant to your task. Recalled facts
+  reflect when they were written — verify against the live repo before acting on one.
+  **The store is READ-ONLY except through the sanctioned flows** (the Claude harness auto-memory and
+  `/sudo-update-sprint-memory`'s learning-routing step): never edit, delete, reorganize, sweep, or
+  commit `_artifacts/_memory/` files otherwise — a dirty memory file in your tree that you did not
+  write is another session's work in flight. Write law, for the writers: one index line per memory;
+  update the existing file, never fork a duplicate; wrong → **delete** (git is the undo);
+  closed-but-instructive → compress to a one-line lesson. Upkeep is gated (`tests/run_all.py` enforces
+  the 20 KB index cap + link↔file integrity) and compaction is **proposed** by `/update-maps-indexes`,
+  applied only on the operator's word. (Claude's `~/.claude/...` harness path is a per-machine
+  symlink into this store — a convenience, never the mechanism; fresh machine → migrations kit §1
+  step 8.)
 
 ## 8. PORTABILITY
 `AGENTS.md` is the universal contract; `CLAUDE.md` / `GEMINI.md` are one-line adapters pointing here (nothing

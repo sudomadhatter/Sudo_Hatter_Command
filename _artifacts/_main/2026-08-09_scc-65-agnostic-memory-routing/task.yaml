@@ -1,0 +1,5 @@
+task_key: SCC-65
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-65-agnostic-memory-routing
+close_command: close-task-merge-tree
+secondary_repos: []
