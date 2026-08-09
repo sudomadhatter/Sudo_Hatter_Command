@@ -122,6 +122,69 @@ one reads authoritative."*
 
 **Split it onto its own ticket if you'd rather** — it is one self-contained commit.
 
+## Follow-ons (2026-08-09) — all three "Still owed" rows closed, one ticket
+
+Operator ruling: *"do them all as one ticket"* — no new key; one separate commit on this branch.
+Plan: the `# Follow-ons` section of [implementation_plan.md](implementation_plan.md).
+
+- [x] **Task 1 — `sudo-target-resolution.md` told a lie about its own system.** Line 8 said flatly
+      *"never the lobby"*; `/sudo-parallel-check` resolves to the lobby on an `SCC` key. The rule now
+      carries one **named, closed** exception — target derived from the key, lobby in scope only where
+      BMAD stories live — plus an explicit ⛔ that it is not a precedent. Bounded on purpose: an
+      unqualified *"unless the command says otherwise"* would void the rule, since every command would
+      then say otherwise.
+- [x] **Task 2 — ⭐ I had misdiagnosed this one, and the real bug was five times bigger.**
+  - The walkthrough said *"`close-task-merge-tree.md` is missing from `.agents/workflows/` …
+    pre-existing sync gap."* Both halves were wrong. `.agents/workflows/` is not a platform surface —
+    it is a **generated** Antigravity mirror — and it was gated by a **filename allow-list**
+    (`sudo-*`, `1_*`, `new-project`, `slash_command_updating`) that ran *before* the documented
+    `platforms:` check. **A command's declared reach was never read unless its filename matched.**
+  - **Five commands claimed Antigravity and reached it zero times:** `close-task-merge-tree`,
+    `sync-agents`, `review`, `webm-alpha-video`, and `clean-code-audit` — which declares
+    `platforms: [opencode, antigravity]` **in the documented mechanism** and was dropped anyway. That
+    last one is what makes it a bug rather than a policy.
+  - **The fix I nearly shipped was the worst one available.** A hand-copy matches no allow-list
+    pattern, so the stale-prune would never touch it either — a permanent hand-maintained twin that
+    drifts. The code comment at `sync-agents.ps1:489` says they already lived through exactly that:
+    *"hand-trimmed twins drifted and needed byte-golf on every edit."*
+  - The name filter was **also redundant**: every BMAD persona and `testarch-*` wrapper already
+    declares `platforms: [opencode]`, and **no `1_*.md` command has existed for some time**. It
+    blocked nothing it was written to block.
+  - **⛔ The near-miss worth remembering: deleting the filter would have deleted the router.**
+    `.agents/workflows/INDEX.md` has no frontmatter and no source in `commands/`; it survived only by
+    *failing* the name filter. The prune uses the same list, so removing it without a guard means the
+    next `/sync-agents` silently deletes `INDEX.md`. It is now named in `$excluded` with the reason
+    written above it. The manifest does not cover `workflows/` — that list is the only protection.
+  - **One overwrite, and it was the point:** `workflows/security_team_aviationchat.md` was stale by
+    exactly one block — missing the `Rules in force` header. Precisely the drift this kills.
+- [x] **Task 3 — the menu advertised a command deleted two days earlier.**
+      `.agents/commands/INDEX.md` still listed `/sudo-update-scrum-board` under session ops with a
+      full live description (retired 2026-08-07, SCC-13 `8144518`). **This is the row that sent the
+      operator looking for a command that no longer existed.** Stripped, with a `Retired (2026-08-07)`
+      note carrying the `git show` recovery command, and the `Renamed (2026-08-02)` line now points
+      forward so it cannot read as current.
+      - ✅ The design record's related warning — *"a stale live copy still sits in
+        `Projects/OpenChat-Openrouter`"* — is **already dead.** Checked all three command dirs there:
+        gone. Recorded so it stops being re-raised.
+
+**Evidence — real output, this branch:**
+
+| Check | Result |
+|---|---|
+| `tests/run_all.py` | **9/9 files passed** |
+| `workflow_lint.py` | 1 error, 3 warnings — **byte-for-byte the pre-existing baseline**, none from this diff |
+| link + anchor check | 10 changed md files, 35 links, **0 unresolved** |
+| mirror dry-run (`-WhatIf`) | 26 mirrored (21 + the 5), **zero prune lines** |
+| mirror set proof | **0 commands wrongly missing**; every workflow is a byte-identical copy, a generated launcher, or one of 3 hand-owned files — **zero drift** |
+| prune safety | `INDEX.md`, `update-maps-indexes.md` (38746 b), `sudo-adviser-board.md` (2245 b) all intact after a real run |
+
+`sync-agents.ps1` ran for real — `pwsh` 7.7.0 is installed on this Mac, so nothing was hand-placed.
+
+**Also landed, unplanned and correct:** the real sync registered `sudo-parallel-check.md` in
+`.agents/.sync-manifest.json`. The build added the platform copies by hand and never ran
+`/sync-agents`, so the manifest did not know the command existed — meaning the ghost-purge treated it
+as unmanaged. Fixed as a side effect of running the generator instead of imagining its output.
+
 ## Your Actions
 
 - **Close out**: `/close-task-merge-tree` — invoking it is the merge sign-off; it is not mine to run.
@@ -133,9 +196,13 @@ one reads authoritative."*
 
 ## Still owed
 
-- **`sudo-target-resolution.md:8`** still says *"never the lobby"* flatly. That is now false for this
-  one command. One-line amendment, its own ticket.
-- **`close-task-merge-tree.md` is missing from `.agents/workflows/`** — it has no `platforms:` key
-  (= all four) but only three copies exist. Pre-existing sync gap, noticed while mirroring.
-- **`.agents/commands/INDEX.md` line 36** still lists the retired `sudo-update-scrum-board` as a live
-  session-ops command. Pre-existing.
+**All three rows are closed** — see `## Follow-ons` above. What remains is not owed by this branch:
+
+- **`_my_resources/open_tasks/todo_list.md` is modified in the working tree and NOT in this commit.**
+  It is the operator's own edit, made in the editor mid-session (the brainstorm list was rewritten
+  under a new *"Brainstorming Phase"* heading). Verified `sync-agents.ps1` never touches that path, so
+  nothing here caused it. **Left alone deliberately** — it is not mine to commit.
+- **The gate-hardening in `000-PLAN-FIRST-GATE.md`** is still splittable onto its own ticket if
+  preferred; it rode in on commit `4a34572` for the SOP-file reason stated above.
+- **Board writes from the end-to-end proof stand:** AVCH-15's `parallel-ok` label and the comment on
+  AVCH-13. Both accurate; a re-run rewrites them.

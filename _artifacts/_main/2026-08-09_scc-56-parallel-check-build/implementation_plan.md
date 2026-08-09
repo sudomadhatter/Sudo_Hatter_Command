@@ -190,3 +190,167 @@ rows. Close out with `/close-task-merge-tree`.
   build** (2026-08-02) — a half-refreshed board looks fresher than it is. Not re-proposed.
 - **No status transitions.** Labels and comments only; placement stays yours (guardrail 2).
 - **No back-fill of old tickets.** Zero tickets carry the label today, so there is nothing to migrate.
+
+---
+
+# Follow-ons (2026-08-09) — the three "Still owed" rows
+
+**Separate code-touch, separate sign-off.** Same branch, same ticket, same session folder — appended
+here rather than fragmented into a new artifact folder, the way `## Self-Audit` appends into a plan.
+
+## ⭐ Recon changed the shape — read this before the tasks
+
+**Item 2's diagnosis in the walkthrough was WRONG, and the real bug is bigger than one file.**
+
+I wrote *"`close-task-merge-tree.md` is missing from `.agents/workflows/` — it has no `platforms:`
+key (= all four) but only three copies exist. Pre-existing sync gap."* That framing assumed
+`.agents/workflows/` is one of the four platform surfaces and that a hand-copy would fix it. Both
+halves are false:
+
+- `.agents/workflows/` is a **generated Antigravity mirror**, regenerated on every `/sync-agents`
+  (`sync-agents.ps1:493` `Sync-AntigravityWorkflowMirror`). It is not a platform surface; it is the
+  *source* Antigravity reads.
+- The mirror is gated by a **name-pattern allow-list**, `sync-agents.ps1:500`:
+
+  ```powershell
+  $allowed = @('sudo-*.md', '1_*.md', 'new-project.md', 'slash_command_updating.md')
+  ```
+
+  The documented `platforms:` check (`Get-CommandPlatforms`, line 511) only ever runs on files that
+  already passed that name filter. **A command's declared reach is never consulted unless its
+  filename happens to match.**
+- So a hand-copy would have been the worst possible fix: the file matches no `$allowed` pattern, so
+  the stale-prune at line 553 would never touch it either — it becomes a **permanent hand-maintained
+  twin that drifts.** That is the exact failure the code comment at line 489 says they already
+  suffered (*"hand-trimmed twins drifted and needed byte-golf on every edit"*).
+
+**Five commands declare Antigravity reach and none of them reach it:**
+
+| Command | Declares | Size | Would be |
+|---|---|---|---|
+| `close-task-merge-tree.md` | *(no key = all four)* | 11305 b | verbatim copy |
+| `clean-code-audit.md` | **`[opencode, antigravity]`** | 5.6 KB | verbatim copy |
+| `sync-agents.md` | *(no key = all four)* | 7844 b | verbatim copy |
+| `review.md` | *(no key = all four)* | 326 b | verbatim copy |
+| `webm-alpha-video.md` | *(no key = all four)* | 872 b | verbatim copy |
+
+`clean-code-audit.md` is the proof this is a bug and not a policy: it **asks for Antigravity in the
+documented mechanism** and the name filter drops it anyway.
+
+**The name filter is also redundant.** Its stated reason (`sync-agents.ps1:486`) is *"Mirror ONLY
+`sudo-*` on purpose: BMAD personas are skills and `1_*` are real workflows, so mirroring those too
+would make duplicate `/` entries."* Every BMAD persona and every `testarch-*` wrapper **already
+declares `platforms: [opencode]`**, so `Get-CommandPlatforms` excludes all of them on its own. And
+there are **no `1_*.md` commands left at all** — that pattern is dead. The filter blocks nothing it
+was written to block, and blocks five things it was not.
+
+## Task 1 — `sudo-target-resolution.md` no longer tells the truth
+
+[`.agents/rules/sudo-target-resolution.md:8`](../../../.agents/rules/sudo-target-resolution.md#L8)
+says flatly *"Every `/sudo-*` command operates on exactly ONE target — never the lobby."*
+`/sudo-parallel-check` derives its target from the Jira key via each repo's `.agents/jira.conf`, and
+**resolves to the lobby** when the key is `SCC` — proven live this session. The command file already
+declares the variance; the rule does not carry the reciprocal pointer, so a reader who checks the law
+first concludes the command is broken.
+
+**Change:** the paragraph gains one named, bounded exception — `/sudo-parallel-check`, target derived
+from the key, lobby included **only** when it holds BMAD stories. Bounded on purpose: an unqualified
+*"unless a command says otherwise"* would void the rule.
+
+## Task 2 — make the Antigravity mirror obey `platforms:`
+
+**Change** [`.agents/scripts/sync-agents.ps1`](../../../.agents/scripts/sync-agents.ps1): delete the
+`$allowed` name filter from both the mirror pass (line 503) and the prune pass (line 555), and let
+the already-present `Get-CommandPlatforms` + `_AP` regex + `$excluded` list be the whole gate — the
+documented contract, and self-maintaining, so a future universal command reaches Antigravity with no
+script edit. Rewrite the block comment at 482–492 to say what the code now does.
+
+**⛔ The prune is the dangerous half — two guards are mandatory:**
+
+1. **`INDEX.md` must go into `$excluded`.** [`.agents/workflows/INDEX.md`](../../../.agents/workflows/INDEX.md)
+   has **no frontmatter at all** and no source in `commands/`. It survives today only because it
+   fails the name filter. Drop the filter without this guard and the next `/sync-agents` **deletes
+   the workflows router.**
+2. **`update-maps-indexes.md` and `sudo-adviser-board.md` stay in `$excluded`** — the real workflow
+   and the hand-authored launcher respectively. Unchanged.
+
+**One reviewed overwrite, and it is the right one.**
+`.agents/workflows/security_team_aviationchat.md` starts being mirrored and gets overwritten. I
+diffed it: the workflows copy is **stale by exactly one block** — it is missing the `Rules in force`
+header naming `sudo-target-resolution.md`. That is precisely the drift this system exists to kill, so
+the overwrite is the fix, not a casualty.
+
+**Then run the mirror** so the five files land in `.agents/workflows/` as generated output, in the
+same commit as the script change — a generator change whose output is not regenerated is a lie in the
+tree. `close-task-merge-tree.md` at 11305 b sits **195 bytes under the 11500 launcher threshold**;
+it copies verbatim today and flips to a generated launcher the moment it grows. Both are correct; no
+action, noted so the flip is not read as a regression later.
+
+> **Machine note.** `sync-agents.ps1` is PowerShell and this is the Mac. `pwsh` availability is
+> checked at execution; if it is absent I edit the script and **hand-place byte-identical copies that
+> match exactly what the generator emits**, then say so plainly rather than claiming a run I did not
+> make.
+
+## Task 3 — the INDEX still advertises a retired command
+
+[`.agents/commands/INDEX.md:37`](../../../.agents/commands/INDEX.md#L37) lists
+`sudo-update-scrum-board` in **Session / project ops** with a full live description. It was retired
+**2026-08-07** (SCC-13, commit `8144518`). The INDEX is the dispatch router — this is the row that
+sent you looking for a command that no longer exists.
+
+**Change:** strip it from the row and its prose; add a `**Retired (2026-08-07):**` note carrying the
+`git show 8144518^:...` recovery command; leave the `Renamed (2026-08-02)` line as history and point
+it forward to the retirement so it cannot be read as current.
+
+✅ **The design record's related item is already resolved** — it warned a stale live copy still sat in
+`Projects/OpenChat-Openrouter`. Checked all three command dirs there this session: **gone.** Nothing
+to do; recorded so it stops being re-raised.
+
+## Branch — all three land on `chore/SCC-56-parallel-check`, and why
+
+SCC-56 is committed at `4a34572`, pushed, **not merged**; `main` is at `4b64327`.
+
+- **Task 1 cannot precede the merge.** It documents `/sudo-parallel-check`, which exists only on this
+  branch. Written on a branch off `main`, it is a rule citing a command that is not there.
+- **Task 3 would guarantee a conflict.** SCC-56 already edits `.agents/commands/INDEX.md` (it added
+  the `sudo-parallel-check` row). A second branch touching the same file collides on merge.
+- **`followon-fixes-are-not-a-new-story` governs:** a follow-on takes no new board key — it lands on
+  the branch that raised it.
+
+⚠️ **The cost, stated:** SCC-56's diff grows past "build the command." Tasks 2 and 3 are pre-existing
+defects that SCC-56 only *surfaced*. Mitigation — **one separate commit** for the follow-ons, worded
+as such, and the walkthrough records which rows were not SCC-56's fault. **If you would rather have
+them on their own ticket, say so and I will hold Tasks 2–3 until SCC-56 merges.**
+
+## Verification
+
+```bash
+python3 .agents/scripts/tests/run_all.py         # must stay 9/9 files passed
+python3 .agents/scripts/workflow_lint.py         # no NEW errors (1 pre-existing AGY error stands)
+python3 .agents/scripts/sop_currency.py          # rules/ + scripts/*.ps1 are surfaces -> SOP must move
+```
+
+Plus, specific to these three:
+
+- **Mirror set is exactly the 5 additions** — re-run the `commands/` vs `workflows/` comparison; every
+  remaining `MISSING-WF` row must be a command that declares `[opencode]`/`[claude]`, never a
+  universal one.
+- **Prune safety proven, not assumed** — `.agents/workflows/INDEX.md`, `update-maps-indexes.md` and
+  `sudo-adviser-board.md` still present after the run.
+- **Link + anchor check** on every changed `.md`, **0 unresolved**.
+- **`grep -rn "sudo-update-scrum-board" .agents/`** returns only retirement/history lines.
+- **SOP currency:** `.agents/rules/` and `.agents/scripts/*.ps1` are enforced surfaces
+  (`sop_currency.py:72-77`); `INDEX.md` is exempt by name. So
+  `_my_resources/_quick_reference/sudo_workflows_testing.md` **must** move — no `[sop-ok]` bypass.
+
+## Open question — ✅ RESOLVED 2026-08-09
+
+Was: Tasks 2–3 on this branch, or held for their own ticket after SCC-56 merges.
+
+**Operator's answer: all three here, under ONE ticket** (*"ok fix 3 to then"* · *"do them all as one
+ticket"*) — SCC-56 is that ticket; no new key is minted. Matches the stated default, so no part of
+the plan changes. Task 3 is included; the follow-ons land as one separate commit on
+`chore/SCC-56-parallel-check`, and the walkthrough records which rows were pre-existing rather than
+SCC-56's doing.
+
+**Nothing else blocks.** Awaiting the gate word.

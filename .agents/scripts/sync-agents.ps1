@@ -479,12 +479,21 @@ function Sync-CommandDir {
   return $eligible
 }
 
-# Mirror the sudo-* dev flow into .agents/workflows/ so ANTIGRAVITY sees it. Antigravity surfaces / from
-# workflows/ (+ skills/), never commands/ (a Claude/opencode concept). The sudo flow is authored as
-# commands; copy the antigravity-eligible ones (sudo-*, excluding _AP claude-only) into workflows/ VERBATIM
-# (frontmatter stays line 1 -- no injected header) so the same / works in all three tools from ONE source.
-# Mirror ONLY sudo-* on purpose: BMAD personas are skills and 1_* are real workflows, so mirroring those too
-# would make duplicate / entries. Generated copies, regenerated every sync -- edit the command, not these.
+# Mirror the antigravity-eligible commands into .agents/workflows/ so ANTIGRAVITY sees them. Antigravity
+# surfaces / from workflows/ (+ skills/), never commands/ (a Claude/opencode concept). The flow is authored
+# as commands; copy the eligible ones into workflows/ VERBATIM (frontmatter stays line 1 -- no injected
+# header) so the same / works in every tool from ONE source. Generated copies, regenerated every sync --
+# edit the command, not these.
+# THE GATE IS `platforms:`, NOT THE FILENAME (SCC-56, 2026-08-09). This used to filter by NAME first
+# ($allowed = sudo-*, 1_*, new-project, slash_command_updating) and only then consult Get-CommandPlatforms,
+# so a command's DECLARED reach was never read unless its filename happened to match. Five commands that
+# claim Antigravity reached it zero times: close-task-merge-tree, sync-agents, review, webm-alpha-video,
+# and clean-code-audit -- which declares `platforms: [opencode, antigravity]` in the documented mechanism
+# and was dropped anyway. The name filter was ALSO redundant: its stated reason was keeping BMAD personas
+# and 1_* workflows out of the / menu, but every persona and testarch-* wrapper already declares
+# `platforms: [opencode]` (so Get-CommandPlatforms excludes them unaided) and no 1_*.md command has existed
+# for some time. It blocked nothing it was written to block. Now: absent/empty `platforms:` == universal ==
+# mirrored; `platforms: []` == nowhere; _AP stays claude-only by name convention.
 # BIG COMMANDS (2026-07-25): a command over ~11.5 KB gets a GENERATED THIN LAUNCHER instead of a verbatim
 # copy -- Antigravity silently drops workflows over its 12,000-char cap, and hand-trimmed twins drifted and
 # needed byte-golf on every edit. The launcher points the agent at .agents/commands/<name>.md (the single
@@ -496,16 +505,18 @@ function Sync-AntigravityWorkflowMirror {
   $wfDir  = Join-Path $MasterDir "workflows"
   if (-not $WhatIf) { New-Item -ItemType Directory -Force -Path $wfDir | Out-Null } else { Write-Host "WHATIF: would ensure dir '$wfDir'" }
   $mirrored = @()
-  
-  $allowed = @('sudo-*.md', '1_*.md', 'new-project.md', 'slash_command_updating.md')
-  $excluded = @('update-maps-indexes.md', 'sudo-adviser-board.md') # Real workflow lives in workflows/, do not overwrite with command wrapper (adviser-board: hand-authored thin launcher — the full command is ~25k, over AG's 12k limit)
-  
-  $files = Get-ChildItem -Path $cmdDir -Filter '*.md' -File | Where-Object {
-    $name = $_.Name
-    $match = $false
-    foreach ($p in $allowed) { if ($name -like $p) { $match = $true; break } }
-    $match -and ($excluded -notcontains $name)
-  }
+
+  # HAND-OWNED files in workflows/: never written by this mirror, never pruned by it. Each has a reason.
+  #   update-maps-indexes.md - the REAL workflow lives here; commands/ holds only a thin wrapper, so a
+  #                            mirror would overwrite 38 KB of workflow with a 4 KB wrapper.
+  #   sudo-adviser-board.md  - hand-authored thin launcher (the command is ~25k, over AG's 12k cap).
+  #   INDEX.md               - the workflows router. It has NO frontmatter and NO source in commands/, and
+  #                            survived only because it failed the old name filter. With that filter gone
+  #                            the prune below would DELETE it on the next sync. Load-bearing guard.
+  $excluded = @('update-maps-indexes.md', 'sudo-adviser-board.md', 'INDEX.md')
+
+  $files = Get-ChildItem -Path $cmdDir -Filter '*.md' -File |
+    Where-Object { $excluded -notcontains $_.Name }
 
   foreach ($f in $files) {
     if (($f.Name -notmatch '_AP\.md$') -and ((Get-CommandPlatforms $f.FullName) -contains 'antigravity')) {
@@ -550,16 +561,13 @@ function Sync-AntigravityWorkflowMirror {
       $mirrored += $f.Name
     }
   }
-  # Prune stale generated mirrors: any file in workflows/ that matches our allowed patterns but is NO LONGER mirrored.
-  # (Except the excluded ones which we intentionally don't mirror, but might legitimately exist in workflows/)
+  # Prune stale generated mirrors: anything in workflows/ that is NO LONGER mirrored and is not hand-owned.
+  # This is now the ONLY thing standing between workflows/ and a stale twin, so $excluded above is the whole
+  # safety list -- a file that belongs in workflows/ without a commands/ source MUST be named there.
   $stale = Get-ChildItem -Path $wfDir -Filter '*.md' -File -ErrorAction SilentlyContinue |
-    Where-Object { 
-      $name = $_.Name
-      $match = $false
-      foreach ($p in $allowed) { if ($name -like $p) { $match = $true; break } }
-      $match -and ($excluded -notcontains $name) -and ($mirrored -notcontains $name)
-    }
-    
+    Where-Object { ($excluded -notcontains $_.Name) -and ($mirrored -notcontains $_.Name) }
+
+
   if (-not $WhatIf) {
     $stale | ForEach-Object { Remove-Item $_.FullName -Force }
   } else {

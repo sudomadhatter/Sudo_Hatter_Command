@@ -217,7 +217,7 @@ without anyone remembering to link anything (§6, §11).
 | Command | What it does for you |
 |---|---|
 | `/update-maps-indexes` | Reconciles the repo maps, every index, and every cross-reference across the lobby and the maintained projects. |
-| `/sync-agents` | Publishes the toolkit to all four platforms (Claude, opencode, Antigravity, Codex) so your `/` menu resolves everywhere. It reaches **the lobby and this machine's caches only** — the old `-Maintained` fan-out that copied the toolkit into every project was retired with centralization. Projects read from the center; there is nothing to push. |
+| `/sync-agents` | Publishes the toolkit to all four platforms (Claude, opencode, Antigravity, Codex) so your `/` menu resolves everywhere. It reaches **the lobby and this machine's caches only** — the old `-Maintained` fan-out that copied the toolkit into every project was retired with centralization. Projects read from the center; there is nothing to push. **Fixed 2026-08-09 (SCC-56): Antigravity was missing five commands.** The Antigravity half decided what to publish by **filename** (`sudo-*` and three named files) and only then read the command's own declared reach — so `/close-task-merge-tree`, `/sync-agents`, `/review`, `/webm-alpha-video` and `/clean-code-audit` were invisible there, silently, even though `clean-code-audit` names Antigravity outright. What a command *declares* is now the only thing that decides. If a `/` you expect is missing in one tool, re-run this. |
 | `/slash_command_updating` | A thin alias for the globals-only half of `/sync-agents` — refreshes the Antigravity and opencode machine caches when their menus go stale but the lobby is fine. Plain `/sync-agents` does this *and* the local dirs, so prefer it. |
 | `/review` | Reviews the working diff outside the story loop — the quick read when there's no story to hang ③ on. |
 | `/new-project` · `/webm-alpha-video` | Scaffold a new workspace · green-screen video to transparent WebM. |
@@ -498,10 +498,17 @@ avoid:
   recoverable one.
 - **It is deliberately not named `/sudo-…`.** Every `sudo-*` command binds one rule that says *operate
   on exactly one project — never the command center*. Toolkit tasks live **in** the command center, so
-  a `sudo-` name would have needed an exception carved into that rule, and an exception is a hole
-  anything can walk through later. The non-`sudo` family (`/sync-agents`, `/update-maps-indexes`,
-  `/new-project`) is already the one allowed to act on the repo you're standing in. **The name carries
-  the permission** — that's why it reads differently from everything else in your menu.
+  a `sudo-` name would have needed an exception carved into that rule. The non-`sudo` family
+  (`/sync-agents`, `/update-maps-indexes`, `/new-project`) is already the one allowed to act on the repo
+  you're standing in. **The name carries the permission** — that's why it reads differently from
+  everything else in your menu.
+  - **One exception now exists, and it proves the line rather than blurring it (2026-08-09).**
+    `/sudo-parallel-check` is allowed to reach the command center, because it never *chooses* a target:
+    you hand it a ticket key and the key decides the repo. `AVCH-13` can only mean AviationChat;
+    `SCC-12` can only mean here. It follows the epic it was given. `/close-task-merge-tree` is the
+    opposite case — its target is *wherever you happen to be standing*, which is exactly the freedom
+    the rule exists to deny. The exception is written down by name and closed; anything new needs its
+    own line, deliberately added.
 
 ---
 
@@ -673,6 +680,12 @@ sprint holds the current batch, the backlog holds everything else, and every tic
 branches and commits through the key. How to drive it by hand:
 [jira_manual.md](jira_manual.md); why it's built this way:
 [jira_integration_guide.md](../diagrams_guides/system/jira_integration_guide.md).
+
+> **The command menu kept advertising it for two days after it was deleted** — the `/` index still
+> listed `/sudo-update-scrum-board` under session ops with a full description, which is what sent you
+> looking for a command that wasn't there. Removed **2026-08-09**. The lesson is cheap and worth
+> keeping: deleting a command is only half of retiring it — the index that dispatches to it is the
+> half people actually read.
 
 **What did NOT retire: `sprint-status.yaml`** (decided in SCC-20). It remains the machine-read sprint
 state — the story loop, close-outs, `/sudo-boot-sprint-memory`, `/sudo-resume` and the autopilots all
