@@ -352,6 +352,30 @@ is what triggers a look at the files that mention it.
 
 ---
 
+## Step 3.9 — Memory store reconcile (`_artifacts/_memory/`, lobby only — SCC-65)
+
+Every platform reads this store at session start (root `AGENTS.md` §7), so its upkeep is part of
+map/index upkeep. The mechanical floor already runs in the gate
+(`tests/test_memory_store.py`: index ≤ 20 KB · every link resolves · no orphan files ·
+frontmatter present); this step does what a gate must not — the **judgment half**, proposed and
+never auto-applied:
+
+1. **Run the floor** — `python3 .agents/scripts/tests/test_memory_store.py`. Any red goes in the
+   report as a proposed mechanical fix (add the missing index line, repair the dead link).
+2. **Propose compaction, don't perform it.** Scan `MEMORY.md` for retirement candidates: entries
+   marked `CLOSED`/`RETIRED`/`FIXED`/`⛔ …RETIRED`, entries whose subject no longer exists on disk
+   or on the boards, near-duplicate pairs that should merge. Each candidate is one proposed line in
+   the report: *retire (delete file + line — git is the undo)*, *merge into <other>*, or *compress
+   to a one-line lesson*. **Memory bodies are never edited or deleted without approval** — a wrong
+   deletion destroys exactly the recall the store exists for.
+3. **Verify this machine's harness link.** `ls -la ~/.claude/projects/` — the lobby slug's
+   `memory` entry must resolve into `_artifacts/_memory/`. Missing or dangling → 🚩 flag with the
+   fix (`link-memory.sh` / `link-memory.ps1`, migrations kit §1 step 8): on a machine without the
+   link, Claude's harness writes memory to a local orphan dir and the repo store silently stops
+   growing. (Machine plumbing — flagged, never "fixed" by editing the repo.)
+
+---
+
 ## Step 4 — Findings report + approval gate (STOP)
 
 Present a single, scannable report before changing any file **outside `_artifacts/`** (the artifacts gate,
@@ -395,6 +419,11 @@ each block:
 #### 🧹 Context hygiene (prune) — only if the linter nagged
 - active-context.md: 14 blocks → archive oldest 4 to <archive>, keep newest 10   [reason: over window]
 - INDEX.md: 65 rows → archive oldest 15 to INDEX-archive.md, keep newest 50       [reason: over cap]
+
+#### 🧠 Memory store (Step 3.9, lobby only)
+- MEMORY.md: 20.9 KB over the 20 KB cap → propose: compress 3 CLOSED entries to one-line lessons  [gate red]
+- retire `some-closed-thing.md` (subject shipped + row marked FIXED) — delete file + line          [candidate, needs approval]
+- 🚩 this machine's `~/.claude/projects/<slug>/memory` link missing → run migrations kit §1 step 8  [machine plumbing]
 
 #### AUTO block
 - Regenerated (mode=content): <no change | N folders added/removed>

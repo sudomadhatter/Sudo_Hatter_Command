@@ -591,8 +591,9 @@ secrets — so a few things have to be true on each box independently. This is t
 | **Secrets / `.env` / `auth_keys/`** | All gitignored, so a fresh clone has none of them and things fail in confusing ways rather than obviously. | Restore from the hand-carried master bundle — start at the migrations `INDEX.md` in `_my_resources/`. |
 | **Shell environment** | On the Mac, `.zshrc` is read **only** by interactive shells — anything an agent or script runs can't see it. Shared env belongs in `~/.zshenv`. | Put anything scripts need (e.g. `JAVA_HOME`) in `~/.zshenv`, not `.zshrc`. |
 | **The Jira login** | `acli`'s API token lives in your **OS credential store**, not in the repo — and the binary isn't at the same path on both boxes either. An agent that trips over this concludes *"I have no Jira integration"* and starts improvising: inventing a key, or borrowing a closed ticket's. | `acli jira auth login`, once per machine. Then **any** agent can confirm it with `acli jira auth status` — the one command that answers identically on both boxes. Never hardcode the binary's path into a doc. |
+| **The memory link** | The agent memory store lives **in the repo** (`_artifacts/_memory/`) — that part travels, and since SCC-65 *every* model on *every* machine reads it at session start. What does **not** travel is the link that lets Claude's own harness write into it: without it, Claude quietly writes memory to a machine-local folder and the shared store **stops growing** — no error, just lessons that never reach the other box or the other models. | `link-memory.ps1` (Windows) / `link-memory.sh` (Mac) — migrations kit §1, step 8. `/update-maps-indexes` now checks the link on whatever machine it runs on and flags a missing one. |
 
-**The rule underneath all four:** anything stored *outside* the repo is per-machine by definition. When
+**The rule underneath all six:** anything stored *outside* the repo is per-machine by definition. When
 something works on one box and not the other, check this table before suspecting the code — a
 Windows-authored assumption reads as "the Mac is broken," and a Mac-authored one reads the same way in
 reverse.
