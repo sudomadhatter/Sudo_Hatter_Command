@@ -52,6 +52,7 @@ is meant to be identical** — if the two disagree, this one is canonical.
 | land a story that passed review | `/cicd-update-sprint-memory` — it pre-flights everything first (§5) |
 | land every lane of one epic at once | `/cicd-merge-epic-workingtrees <epic>` |
 | fix something small, or change docs/config | `/cicd-quick-dev <slug>` — **low-risk work only**; still gets ACs up front and a review gate after |
+| **build** a Task — change a command, a rule, a gate, the docs | `/smh-quick-dev <KEY>` → `/smh-code-review` → `/smh-close-task-merge-tree`. The command centre's own dev cycle: no story, no board, no epic branch (§3) |
 | close out a **Task** (toolkit/rules/IDE work with no story) | `/smh-close-task-merge-tree` — the non-BMAD close-out: gate, merge to `main`, Dev Record, prune (§6). **Codex:** select it with `/skills` or type `$smh-close-task-merge-tree`; Codex does not support repo-defined top-level `/name` commands. |
 | know whether a review still counts | §5's decision tree — a review of old code is not a review |
 | ship to production | `/cicd-push-e2e` (§6) |
@@ -190,6 +191,64 @@ without anyone remembering to link anything (§6, §11).
 | `/cicd-self-audit` | Pressure-tests a plan against the real code before anyone writes anything (② does this for you). **Fixed 2026-08-09 (SCC-58):** the step where it asks the code graph "who else breaks if we change this?" had never once run. It decided whether the graph was available by looking for a section title inside `AGENTS.md` — and that title actually lives in `docs/gitnexus.md`, so the answer was always "not available" and it quietly fell back to plain text search. In AGY that meant grepping a 50,000-symbol app instead of asking a map that answers *"286 things break, 141 of them immediately, across 72 user journeys."* It now asks the tool itself which projects are indexed, so prose can't lie to it either way. Three guards came with it: it names the project on every question (three are indexed — an unnamed question gets answered about the wrong one), it **checks the map is not stale before trusting it** (the map is a local cache that goes out of date on every pull, and a stale one describes code that no longer exists while looking perfectly clean), and it treats a **"nothing breaks" answer as the one to double-check by hand** — the graph is blind to one common calling style, so "safe to change" is the answer it is most likely to get wrong. |
 | `/cicd-quick-dev` | Fast lane for genuinely small work — a fix, a docs/config change, a task that does not earn the full pipeline. **Accuracy over speed:** it drops the *pipeline* (no ATDD red phase, no full suite, no three-reviewer panel), never the rigour — it still opens a worktree, **fixes acceptance criteria before any code**, and runs a **mandatory review gate** afterwards (an independent adversarial reviewer that never saw the conversation; on code, an acceptance audit + the clean-code machine floor + scoped tests; on docs, a link/anchor + SOP-currency check). **Low-risk only** — anything touching login, permissions, payments, user data, DB schema, or a cross-service contract ejects to the full loop no matter how small it looks, and so does anything the router says needs planning. On a story it advances the row to `review` on the way out and **stops there — it never closes out**; `done` is still only yours. ① marks eligible stories with the `quick-dev` label, so the fast-lane pile is one board filter away. |
 | `/cicd-prune-context` | Trims the running session notes back under budget so sessions start fast. |
+
+### ⭐ The Task lane — the dev cycle for work on the system itself (2026-08-10, SCC-78)
+
+**The gap this closes.** Everything in the table above is *BMAD-paired*: it needs a story file, a
+sprint board, an epic branch and a `review`→`done` flip, and it is barred from acting on the command
+centre at all. But a lot of real work is exactly that — move thirteen documents and rewrite thirty-two
+references, extend a commit gate, add a command to four platform menus. That work has **no story and no
+ceremony to hang it on**, and until now the only thing it had was a close-out. You could *land* a Task
+properly; there was no defined way to *build* one. On SCC-74 that showed: the audit command had to be
+invoked knowing it did not apply.
+
+These four are the missing half. They are the `smh-*` twins of the `cicd-*` loop, and the prefix is the
+whole point — **`smh-*` is the family allowed to act on the repo you are standing in**, which is where
+toolkit work lives.
+
+| Command | What it does for you |
+|---|---|
+| `/smh-quick-dev` | **The Task lane's build step.** It is called "quick" because it drops the BMAD *ceremony* — no story file, no board row, no epic branch — **not** because it drops the rigour. It opens a worktree, **fixes a checkable acceptance list before anything is written** (taken from the ticket's own ACCEPTANCE block, or written and confirmed with you), plans, runs the audit below, waits for your literal `approved`, and only then builds. **Its core discipline is that something must be failing before anything is edited.** For a script that means a real test. For a *document or a folder move* — which is most Task work — it means a machine-verifiable assertion written first: this link resolves, this INDEX matches disk, this gate rejects that case, this grep returns zero. That is as close to test-first as prose gets, and it is the difference between "I moved the files" and "I can prove nothing broke." Ends at the review gate and **stops** — it never merges. |
+| `/smh-self-audit` | **Pressure-tests the plan before anyone writes anything** — the Task-lane twin of `/cicd-self-audit`, which refuses the lobby and expects story ACs that do not exist here. Same adversarial pass, but pointed at the blast radius toolkit work actually has: **a command rename orphans four platform caches at once**, a rule change strands every command citing it, a script change breaks a git hook that fires on somebody else's commit, a moved file leaves links that resolve to nothing and look fine. It also **reads the other live lanes** — several `chore/*` branches run at once and their uncommitted work is invisible to a search — and tells you which one should land first. Ends in `GO` or `NO-GO`, written into the plan itself. **It has a second mode as of 2026-08-10:** normally it runs *before* the work and refuses to invent a plan to audit, but when the work already exists and no plan was ever written, it audits the **ticket's own ACCEPTANCE block** instead and stamps the result `retroactive` — so the record never reads as though a gate ran in time when it did not. |
+| `/smh-code-review` | **The Task lane's verdict.** Note this is the **Task** review — after a *story* you still want ③ `/cicd-code-review`, which needs the story file, the board and the epic branch. It **starts by re-checking the ground under your feet** (Step 0.7, added 2026-08-10): it re-derives what changed on `main` while you were building, because Task lanes run several at a time and one of them landing can move a file your work points at. Then it hunts the diff cold in a subagent that never saw the conversation, *then* reads your account of it (that order is deliberate — reading the builder's story first imports the exact bias the step exists to remove), audits the diff against the acceptance list, runs the command-centre gate, folds in the clean-code gate below, and writes one `Verdict: PASS \| CONCERNS \| FAIL \| WAIVED @ <sha>` line into the walkthrough — **the line `/smh-close-task-merge-tree` reads before it will merge anything.** |
+| `/smh-clean-code-audit` | **The command centre's machine floor**, and the reason a separate command was needed at all. `/cicd-clean-code-audit` checks `ruff`, `eslint`, `pyrefly` and `tsc` — **none of which exist in this repo.** There is no venv here, no `backend/`, no `frontend/`. Run the product version here and every single check reports "skipped", which under its own rules means *nothing was checked* — a floor made entirely of holes, reading as a pass. So this one gates on what the command centre really has: the enforcement suite, `workflow_lint.py --toolkit-only`, the SOP-currency check, "does this Python actually compile", the link and anchor sweep, and **door parity** (does every new command exist on all four menus it claims). Its judgment half checks the conventions **this page** defines — the naming law, one door per platform, gates ship armed, every gate needs an auditable way out, and every command an operator types has to work on the Mac *and* the PC. |
+
+**One limit, said out loud rather than papered over:** the product lane records each gate through
+`gate_receipt.py`, which writes a tamper-evident receipt proving a check really ran. **That tool cannot
+run in the command centre** — it looks for a BMAD sprint board and exits when it does not find one. So
+on this lane the evidence contract is pasted real output plus the commit it was measured on, recorded in
+the walkthrough. Same invariant, held by hand instead of by machine. If a code change lands after that
+commit, the verdict is void.
+
+```mermaid
+flowchart LR
+    TICK["a Task ticket\nno story · no board · no epic"] --> QD["/smh-quick-dev\nworktree · acceptance list\nplan → approved"]
+    QD --> SA["/smh-self-audit\nGO or NO-GO\nbefore a file is touched"]
+    SA --> RED["write the assertion RED\ntest · or a check a doc must pass"]
+    RED --> GREEN["implement until it is GREEN\nand nothing more"]
+    GREEN --> CR["/smh-code-review\nStep 0.7 re-check main → blind hunt\n→ acceptance audit → the gate"]
+    CR --> CCA["/smh-clean-code-audit\nrun_all · workflow_lint · sop_currency\npy_compile · links · door parity"]
+    CCA --> V["Verdict in the walkthrough"]
+    V --> STOP["STOP — hand back"]
+    STOP -.->|"your sign-off"| CLOSE["/smh-close-task-merge-tree\nmerge to main · Dev Record · prune"]
+```
+
+> **⭐ Why the review re-checks `main` before it reviews anything (2026-08-10).** The audit you run
+> *before* building traces its blast radius against the repo as it was that morning. Task lanes run
+> several at a time, so by the time you finish, another lane may have landed and **moved a file your
+> work points at.** Every test still passes — your code runs fine; it is the *references* that broke.
+> That is not theoretical: it happened on the very task that built these commands. A sibling lane
+> relocated this document mid-build, and two of the new commands still named its old address as the
+> standard they load. Every gate was green before and after; only the re-check caught it. So the
+> re-check is now a **step**, not advice, and it lives inside `/smh-code-review` rather than being
+> something you have to remember to run — an optional re-audit is one nobody runs, which is exactly how
+> the memory cleanup sat unused inside the map command for weeks.
+
+> **Which lane am I in?** If the work has a **story id**, it is BMAD work and belongs to `①②③`. If it
+> touches anything that **deploys** (`backend/`, `frontend/`, `firebase/`, `functions/`, `mobile/`,
+> `.github/`), it is a product change whatever the ticket says — it ships through `/cicd-push-e2e`, and
+> both `/smh-quick-dev` and the close-out refuse it outright, with no override flag. Everything else —
+> commands, rules, scripts, gates, hooks, docs — is a Task, and this is its lane.
 
 ### Machine handoff
 

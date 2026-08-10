@@ -1,0 +1,5 @@
+task_key: SCC-78
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-78-smh-task-lane-dev-cycle
+close_command: smh-close-task-merge-tree
+secondary_repos: []
