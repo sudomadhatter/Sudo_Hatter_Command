@@ -117,7 +117,7 @@ Append format for specs/rules: `- **YYYY-MM-DD**: [description]. (Source: sessio
     ⏳ Remove `--advisory` at the close of the first full sprint after this landed (ruling 2026-08-02).
   - **ONLY objectively-red tests block the flip.** Read the **`Verdict: … @ <sha>`** line in the story
     walkthrough's `## Code Review` section (stories closed before 2026-08-02 keep the old standalone
-    verdict — fall back to `_bmad-output/implementation-artifacts/cicd-code-review-<story>.md` when the
+    verdict — fall back to `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md` when the
     walkthrough has no such section). **FAIL** (a NEW regression or missing
     required tier — actually red) → do NOT flip; tell Daniel to fix via `/cicd-code-review`, then re-run.
     **Every other verdict closes it:** **PASS** → flip; **CONCERNS** → flip + record them; **WAIVED /

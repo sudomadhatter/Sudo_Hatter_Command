@@ -65,7 +65,7 @@ happened on a story lives in `_bmad-output/history/<epic>/<key>.md` (and the cha
   - ⛔ **Read the verdict — never infer it — and a stale verdict is not a verdict.** A lane's verdict
     lives in its `_artifacts/epic_*/story-*/walkthrough.md` under `## Code Review`, first line
     `Verdict: PASS | CONCERNS | FAIL | WAIVED @ <sha>` (since 2026-08-02). Pre-2026-08-02 lanes keep a
-    standalone `cicd-code-review-<story>.md` / `code-review.md` — **read-only history**; fall back to it,
+    standalone `sudo-code-review-<story>.md` / `code-review.md` — **read-only history**; fall back to it,
     never write a new one. No `## Code Review` section and no legacy file = the review never ran,
     whatever the YAML says → `/cicd-code-review <id>`.
   - Then check the SHA. `PASS`/`WAIVED` whose `@ <sha>` **is** that branch's current HEAD →

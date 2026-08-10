@@ -239,7 +239,7 @@ No walkthrough exists yet (an ad-hoc review outside any session)? Create the ses
 minimal walkthrough and put the section in it. Multiple reviews append multiple dated sections.
 
 > **Legacy:** stories closed before 2026-08-02 hold their review at
-> `_bmad-output/implementation-artifacts/cicd-code-review-<story>.md` (epics 15+) or as
+> `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md` (epics 15+) or as
 > `code-review.md` in the session folder (epics 11–12). Valid history — readers fall back there when
 > a walkthrough has no `## Code Review` section. **Never write a NEW review to those paths.**
 

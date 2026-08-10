@@ -36,7 +36,7 @@ Echo exactly `Target: Projects/<name>` before any work.
 2. Map each lane → story id → board row + story frontmatter status → review verdict: the
    `Verdict: … @ <sha>` line in the lane's `_artifacts/epic_<E>/<story>/walkthrough.md`
    `## Code Review` section (pre-2026-08-02 stories: fall back to
-   `_bmad-output/implementation-artifacts/cicd-code-review-<story>.md`; either may be absent). Read the
+   `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md`; either may be absent). Read the
    sprint map's **LANDING RULE** if one is posted — it may already name the set and the order.
 3. Present the set (lane · story · status · verdict · proposed order) and **confirm with the
    operator**: membership default = every live lane of the named epic. Excluded lanes stay

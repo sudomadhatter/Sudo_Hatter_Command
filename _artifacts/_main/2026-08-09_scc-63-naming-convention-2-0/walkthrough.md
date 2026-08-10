@@ -121,26 +121,31 @@ python3 .agents/scripts/sop_currency.py             ->  fires until staged      
 ## 6. The staleness proof, and why it is not empty
 
 The plan asserted the acceptance grep would return **empty**. **It does not, and it never could** — this
-is a defect in the plan, not in the work. 68 raw `sudo-` hits remain, every one deliberate:
+is a defect in the plan, not in the work. Re-measured at the 2026-08-10 operator audit (after the §9 fix):
+**57 raw `sudo-` hits** on the grep surface — 54 tracked plus 3 in `docs/.maps-journal.jsonl`, which is
+machine-local and gitignored — every one deliberate:
 
 | Kept | Why |
 |---|---|
-| `sudo-project-skeleton` (17) | a **repo name**, not a command |
 | `sudo-tests.yaml` (10) | a **live TEA gate config** filename in project trees |
-| `sudo-command.atlassian.net` (5) | the **Jira site URL** |
-| `sudo-update-scrum-board` (9) | retired 2026-08-07; a `git show` history-recovery command needs the historical path |
-| `sudo-code-review-*` (3) | the back-compat glob + its test fixture — **deliberate**, see §3.2 |
-| `sudo-` in law text (5) | the retirement law must name the prefix it retires |
-| negative-control fixtures (5) | must carry the retired form or they prove nothing |
-| `docs/.maps-journal.jsonl` (5) | append-only journal of past **commit subjects** |
-| `sudo-commands-have-ap-twins-that-drift` | a memory slug |
+| historic verdict filenames `sudo-code-review-<story>.md` (10) | legacy-fallback instructions must name the files **as they exist on disk** — see §9 |
+| history / changelog lines (11) | commands-INDEX changelog + SOP history + the `git show` recovery pointer with its two doc-graph cache rows + the `sync-agents.ps1` SCC-56 comment |
+| back-compat glob + fixtures (8) | `closeout_preflight.py` (3) + its test (5) — **deliberate**, see §3.2 |
+| `sudo-` in law text (5) | the retirement law (AGENTS.md ×2, commands INDEX ×3) must name the prefix it retires |
+| negative-control / lint law (5) | `workflow_lint.py` (2) + `test_workflow_lint.py` (3) — must carry the retired form or they prove nothing |
+| `sudo-command.atlassian.net` (5) | the **Jira site URL** (`jira.md`, `jira.conf`, SOP ×3) |
+| `docs/.maps-journal.jsonl` (3) | append-only, gitignored journal of past **commit subjects** |
+
+(`sudo-project-skeleton` — a repo name, not a command — is excluded by the grep itself, as is
+`_artifacts/` history.)
 
 `autopilot_` is the same story: 14 × `autopilot_bmad_dev_loop.md` (a *reference doc*, never a command),
 plus changelog entries for `/autopilot_mobile` and `/autopilot_glm`, both retired before SCC-63.
 
-**Exactly one real miss was found this way** — a `/sudo-self-audit` reference in a `workflow_lint.py`
-comment — and it is fixed. The right acceptance test is not "the grep is empty" but "every hit is on the
-keep-list", which is what §6 documents.
+**One real miss was found this way at build time** — a `/sudo-self-audit` reference in a
+`workflow_lint.py` comment — and the operator audit found one more class, the over-renamed historic
+verdict filenames (§9). Both are fixed. The right acceptance test is not "the grep is empty" but
+"every hit is on the keep-list", which is what §6 documents.
 
 ## 7. Two more plan defects worth recording
 
@@ -180,7 +185,31 @@ keep-list", which is what §6 documents.
 7. **GitNexus index is stale** (`indexed_commit` ≠ HEAD) — a hint-only finding, but impact/test-selection
    answers are unreliable until `node .gitnexus/run.cjs analyze` runs.
 
-## 9. What happens next
+## 9. Post-commit operator audit (2026-08-10)
+
+Ordered by the operator before push. Re-ran both gates (11/11 files, 0 lint errors / 1 pre-existing
+warning), re-proved sync idempotence (zero purges on `-WhatIf`), re-verified the diff surface (zero
+`Projects/` touches; `_artifacts/` gains only this folder and its INDEX row), and cross-checked every
+`/cicd-` `/smh-` `/sentry-` reference in the live surface against the set of masters + skills — all
+resolve.
+
+**One real defect found and fixed: the sweep over-renamed HISTORIC artifact filenames.** Seven
+hand-owned sites (5 command masters + `constitution.md` + `artifacts-always-first.md`) described the
+pre-2026-08-02 standalone verdict fallback as `cicd-code-review-<story>.md`. Those files exist on disk
+in project trees under the OLD name only — `sudo-code-review-<story>.md` — and no new one is ever
+written (the standalone file is retired; verdicts live in `walkthrough.md`). An agent following the
+renamed fallback would glob a filename that cannot exist and wrongly conclude "review never ran".
+Same bug class the build already fixed in `closeout_preflight.legacy_verdict`, which globs both
+prefixes. Fixed at the source; sync propagated the 3 workflow + 5 opencode mirrors; the SOP's ③ row
+now names the historic file too. **Deliberately NOT changed:** the `artifacts-always-first` §6
+"Do NOT create" list keeps the `cicd-` form — that prohibition is forward-looking (it forbids the
+standalone file an agent would mint *today*, which post-rename would carry the `cicd-` name).
+
+Also observed, no action taken: `_my_resources/open_tasks/plan_optimize-sudo-dev-story-tests.md` is an
+operator planning note outside the sweep surface whose *filename* still carries the old command name —
+the operator's to rename or leave.
+
+## 10. What happens next
 
 This branch is pushed and **stops here**. The Phase 8 gate exists so the operator can switch back to Opus
 and audit before anything merges. Nothing in this lane has merged, transitioned SCC-63, or run the

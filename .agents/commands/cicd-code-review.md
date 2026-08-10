@@ -139,7 +139,7 @@ Combine into **PASS / CONCERNS / FAIL / WAIVED** and **append a `## Code Review 
 story's `walkthrough.md`** (`_artifacts/epic_<E>/<story>/` — **inside the worktree Step 0.5 resolved**,
 never the shared checkout; it rides the story branch through the close-out merge). A standalone verdict
 file is retired per `artifacts-always-first` §6 — pre-2026-08-02 stories keep
-`_bmad-output/implementation-artifacts/cicd-code-review-<story>.md` as read-only history; never write a
+`_bmad-output/implementation-artifacts/sudo-code-review-<story>.md` as read-only history; never write a
 new one. The section carries:
 - FIRST line: the canonical **`Verdict: PASS|CONCERNS|FAIL|WAIVED @ <HEAD-sha>`** — this is what
   `cicd-update-sprint-memory` reads before flipping the story to `done` — plus one line naming the SHA
