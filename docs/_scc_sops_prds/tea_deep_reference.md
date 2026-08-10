@@ -1,6 +1,6 @@
 # TEA Deep Reference (companion — not the quick guide)
 
-> **Read [sudo_workflows_testing.md](../../_quick_reference/sudo_workflows_testing.md) first** — that is the clean quick
+> **Read [sudo_workflows_testing.md](workflows_testing_SOP.md) first** — that is the clean quick
 > reference. This file is the deep archive it was carved from (2026-07-14): full call-graphs, the
 > method curriculum, the Epic-8 anchor index, and the 42-fragment TEA library. Kept for depth, not
 > for daily use.
@@ -597,7 +597,7 @@ exercise the production triage runbook; it never touches the sprint board.
 
 | Command | Does |
 |---------|------|
-| `/sentry-security-team-avch [issue-id\|latest]` | **Drill harness** (16.1) for the Sentry incident-triage runbook (`.github/claude/incident-triage.md`). Thin — carries no triage logic: resolves the project → loads its runbook → runs it verbatim (**interactive lane**, Sentry MCP) → drops an `incident-report.md` under `_artifacts/debugging/`. **Drill:** force a P1 (`_test_scripts/sentry_smoke_test.py`) then run `/sentry-security-team-avch latest`; a pass = the report names the planted failure, the right file, and a sane fix. The runbook is the product; this is only its test rig. Full picture: [security/sentry_error_response_team.md](../security/sentry_error_response_team.md). |
+| `/sentry-security-team-avch [issue-id\|latest]` | **Drill harness** (16.1) for the Sentry incident-triage runbook (`.github/claude/incident-triage.md`). Thin — carries no triage logic: resolves the project → loads its runbook → runs it verbatim (**interactive lane**, Sentry MCP) → drops an `incident-report.md` under `_artifacts/debugging/`. **Drill:** force a P1 (`_test_scripts/sentry_smoke_test.py`) then run `/sentry-security-team-avch latest`; a pass = the report names the planted failure, the right file, and a sane fix. The runbook is the product; this is only its test rig. Full picture: [security/sentry_error_response_team.md](sentry_error_response_team.md). |
 
 #### The incident lane's **E2E test** — the headless dispatch (read this if the last line confused you)
 
@@ -765,12 +765,12 @@ Print this. It's the whole curriculum compressed into the questions you ask on a
 
 | File | Level | Teaches |
 |------|-------|---------|
-| [test_grading_event.py](../../../Projects/AGY_AVIATIONCHAT/backend/tests/schemas/test_grading_event.py) | Unit | AAA shape; P0 privacy default `consent.export_eligible is False`; scores high on all 5 review dimensions |
-| [test_grading_event_writer.py](../../../Projects/AGY_AVIATIONCHAT/backend/tests/services/test_grading_event_writer.py) | Integration | `mock_db` + `writer(mock_db)` fixture composition; `_make_event()` factory |
-| [test_grading_event_dataset_api.py](../../../Projects/AGY_AVIATIONCHAT/backend/tests/routers/test_grading_event_dataset_api.py) | E2E | `client_and_svc` fixture (auto-cleanup); `GOV_QUERY` **use-site** patch; `TestClient` API pattern |
-| [test_tenancy_gate.py](../../../Projects/AGY_AVIATIONCHAT/backend/tests/routers/test_tenancy_gate.py) | E2E | P0 Trace artifact; CI merge-blocker; RED gate if removed |
-| [test_faa_grounding_guard.py](../../../Projects/AGY_AVIATIONCHAT/backend/tests/agents/specialist/test_faa_grounding_guard.py) | — | Live ATDD example (TEA-4): test written red before `agent.py` green |
-| [firestore.rules.test.js](../../../Projects/AGY_AVIATIONCHAT/firebase/tests/firestore.rules.test.js) | Integration (emulator) | Security-rules testing (TEA-12): `@firebase/rules-unit-testing` `assertFails`/`assertSucceeds` deny/allow matrix against the real Firestore emulator; **local-only, out of the PR gate** (needs Java 17 — set `JAVA_HOME` per shell); non-vacuity via the emulator's own `PERMISSION_DENIED` logs |
+| [test_grading_event.py](../../Projects/AGY_AVIATIONCHAT/backend/tests/schemas/test_grading_event.py) | Unit | AAA shape; P0 privacy default `consent.export_eligible is False`; scores high on all 5 review dimensions |
+| [test_grading_event_writer.py](../../Projects/AGY_AVIATIONCHAT/backend/tests/services/test_grading_event_writer.py) | Integration | `mock_db` + `writer(mock_db)` fixture composition; `_make_event()` factory |
+| [test_grading_event_dataset_api.py](../../Projects/AGY_AVIATIONCHAT/backend/tests/routers/test_grading_event_dataset_api.py) | E2E | `client_and_svc` fixture (auto-cleanup); `GOV_QUERY` **use-site** patch; `TestClient` API pattern |
+| [test_tenancy_gate.py](../../Projects/AGY_AVIATIONCHAT/backend/tests/routers/test_tenancy_gate.py) | E2E | P0 Trace artifact; CI merge-blocker; RED gate if removed |
+| [test_faa_grounding_guard.py](../../Projects/AGY_AVIATIONCHAT/backend/tests/agents/specialist/test_faa_grounding_guard.py) | — | Live ATDD example (TEA-4): test written red before `agent.py` green |
+| [firestore.rules.test.js](../../Projects/AGY_AVIATIONCHAT/firebase/tests/firestore.rules.test.js) | Integration (emulator) | Security-rules testing (TEA-12): `@firebase/rules-unit-testing` `assertFails`/`assertSucceeds` deny/allow matrix against the real Firestore emulator; **local-only, out of the PR gate** (needs Java 17 — set `JAVA_HOME` per shell); non-vacuity via the emulator's own `PERMISSION_DENIED` logs |
 
 > Paths in this section are relative to this guide's location. Inside the project repo, they are `backend/tests/...` (or `firebase/tests/...` for the rules suite).
 

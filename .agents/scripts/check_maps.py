@@ -91,7 +91,19 @@ STATE_BASENAME = ".maps-state.json"   # sits in the docs folder beside the repo-
 
 # Append-only NARRATIVE ledgers: rows are immutable history (cross-repo + renamed/deleted paths by
 # design), so path-existence linting is a category error here — old rows SHOULD keep their old paths.
-NARRATIVE_LEDGERS = {"_artifacts/INDEX.md"}
+#
+# EVERY INDEX under `_artifacts/` qualifies, not just the top-level one (SCC-74, 2026-08-10). The
+# depth-3 bucket ledgers (`_artifacts/_main/INDEX.md`, `_artifacts/epic_8/INDEX.md`, ...) are where
+# the detailed narrative actually lives, and a row describing work that RETIRED a path must name
+# that path to be worth reading. Listing only `_artifacts/INDEX.md` left those permanently red on
+# `main` — for `.claude/commands` and `docs/file_structure_rules/README.md`, both correctly recorded
+# as removed — and a lint that is red for reasons nobody may fix trains people to skip its output.
+_NARRATIVE_LEDGER_ROOT = "_artifacts/"
+
+
+def is_narrative_ledger(rel: str) -> bool:
+    """True for append-only history ledgers, where old paths are the point."""
+    return rel.startswith(_NARRATIVE_LEDGER_ROOT) and rel.endswith("INDEX.md")
 
 # Session-folder name patterns (depth-3 INDEX rows reference these)
 SESSION_FOLDER_RE = re.compile(r"^(story-|\d{4}-|tea-|wave-|close-out-|epic-|autopilot-)")
@@ -637,7 +649,7 @@ def lint_one(root, ignore_override=None):
 
     index_problems = []
     for idx in find_indexes(root):
-        if idx.relative_to(root).as_posix() in NARRATIVE_LEDGERS:
+        if is_narrative_ledger(idx.relative_to(root).as_posix()):
             continue  # immutable narrative ledger — don't lint historical paths
         index_problems.extend(check_paths(root, idx, top_level))
     drift["INDEX.md paths"] = index_problems

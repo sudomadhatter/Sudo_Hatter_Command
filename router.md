@@ -39,4 +39,4 @@ to this registry.
 | Maintaining THIS home-base system | `docs/` | `docs/system-builder.md` | active |
 | Setting up a NEW computer (secrets restore) · rename-day restructure | `_my_resources/migrations/` | its `INDEX.md` → `env-migration-guide.md` | active · disposable (deleted after a machine is set up) |
 | **"What do we do next" / open tasks / what's left / Daniel's plans & PRPs** | `_my_resources/open_tasks/` **for where you work FROM** (lobby → home-base `_my_resources/open_tasks/`; inside a converted project → that project's `_my_resources/open_tasks/`) | `todo_list.md` (+ any plan/PRP files there) | active · **READ-ONLY** (Daniel's notes — never edit; cross-check vs live project files) |
-| Reference: routing theory + transcripts | `docs/`, `_my_resources/youtube_transcripts/` | `_my_resources/docs/master-implementation-plan.md` | reference |
+| Reference: SOPs, PRDs, routing theory | **`docs/_scc_sops_prds/`** (every SOP + PRD) · `docs/workspace-standard.md` | its `INDEX.md` → `workflows_testing_SOP.md` | canonical |

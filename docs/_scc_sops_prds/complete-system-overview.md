@@ -1,9 +1,15 @@
 # Sudo_Hatter_Command — Complete System Overview
 
-> **What this is.** The full breakdown of the system we are building: the folder-as-workspace routing
-> system. Synthesized from `_docs/master-implementation-plan.md` (the rollout) and
-> `_docs/workspace-standard.md` (the standard). Read top to bottom once and you'll understand the whole thing.
-> For *only what changed on 2026-06-24*, see `updated_folder_file_structure_diagram.md` in this folder.
+> **What this is.** The full breakdown of the folder-as-workspace routing system, top to bottom.
+> Read it once and you'll understand the whole thing. The standing spec it sits on top of is
+> [`../workspace-standard.md`](../workspace-standard.md); the shorter living overview is
+> [`file_folder_structure+maintaining.md`](file_folder_structure+maintaining.md).
+>
+> ⚠ **Refreshed 2026-08-10 (SCC-74) — read the dates below with care.** This page was written
+> 2026-06-26 and describes the system as it stood then. The structural claims have been corrected
+> against the live tree (`_docs/` and `_system/` no longer exist; the builder commands gained their
+> `smh-` prefix in SCC-63), but the narrative below is still a June account. Where it
+> disagrees with `../workspace-standard.md`, **the standard wins.**
 
 ---
 
@@ -75,9 +81,9 @@ only — detail lives on the floor. Routers route **up** as well as down, so an 
 ```mermaid
 flowchart TD
     LOBBY["LOBBY: root AGENTS.md + router.md\n(categories only)"]
-    LOBBY -->|"route DOWN"| FA["Projects/aviationChat-AGY/\nits own AGENTS.md + routing table"]
+    LOBBY -->|"route DOWN"| FA["Projects/AGY_AVIATIONCHAT/\nits own AGENTS.md + routing table"]
     LOBBY -->|"route DOWN"| FB["Projects/(other project)/\nits own AGENTS.md"]
-    LOBBY -->|"route DOWN"| SYS["_system/ (the builder)"]
+    LOBBY -->|"route DOWN"| SYS["docs/system-builder.md (the builder)"]
     FA -.->|"if not here, route UP"| LOBBY
     FB -.->|"if not here, route UP"| LOBBY
 ```
@@ -98,10 +104,10 @@ flowchart TD
     end
     TOOLKIT[".agents/ — MASTER TOOLKIT (single source)\nrules, commands, skills, workflows, bmad, scripts, templates"]
     MEM["_artifacts/ — SHARED MEMORY\nINDEX.md ledger + (workspace)/active-context.md + session folders"]
-    DOCS["_docs/ — documentation\nmaster-implementation-plan.md, workspace-standard.md"]
+    DOCS["docs/ — documentation\nworkspace-standard.md, repo-map.md, _scc_sops_prds/ (SOPs + PRDs)"]
     CANARY["_routing-canary/ — routing regression check"]
-    SYS["_system/ — builder (/new-project, /sync-agents)"]
-    RES["_my_resources/ — transcripts, diagrams_guides"]
+    SYS["docs/system-builder.md — builder (/smh-new-project, /smh-sync-agents)"]
+    RES["_my_resources/ — Daniel's thinking space\nagents IGNORE unless he links a doc"]
     LOBBYTOOLS[".claude/ + .opencode/ — lobby tool dirs (synced copies)"]
     PROJ["Projects/(name)/ — 7 projects, each its OWN git repo (gitignored by home base)"]
 
@@ -128,7 +134,7 @@ flowchart TD
     G["GEMINI.md"] --> BRAIN
     O["opencode.json"] --> BRAIN
     BRAIN --> SRC[".agents/ (master = single source of authorship)"]
-    SRC -->|"/sync-agents vendors copies"| VEND["copies in .claude, .opencode, and each Projects/(name)/.agents/"]
+    SRC -->|"/smh-sync-agents vendors copies"| VEND["copies in .claude, .opencode, and each Projects/(name)/.agents/"]
     BRAIN --> RUN["drives identically in Claude, opencode, Antigravity/Gemini"]
     EDIT["Edit rules HERE only — never hand-edit a vendored copy"] --> SRC
 
@@ -169,7 +175,7 @@ These are the rules that keep work safe and reviewable. All authored in `.agents
 | Git | `git-policy.md` | Never commit/push yourself — hand Daniel the command, unless he delegates it. |
 | Hard stops + gates | `constitution.md` | Routing gate, risk gate, ask-first list. |
 | How to work | `karpathy-guidelines.md` | Think first, simplicity, surgical changes, verify with evidence. |
-| Workspace shape + upkeep | `_docs/workspace-standard.md` | How to format a workspace and keep it healthy. |
+| Workspace shape + upkeep | `docs/workspace-standard.md` | How to format a workspace and keep it healthy. |
 | Navigation index | repo-map (Part below) | Folder-level map every harness reads first. |
 | Routing health | `_routing-canary/` | Re-run after routing changes or to qualify a new tool. |
 
@@ -196,7 +202,7 @@ flowchart TD
     A --> A2["Phase A2: PROVE ROUTING\n_routing-canary passes in Claude / opencode / Antigravity"]
     A2 --> B["Phase B: FIRST WORKSPACE\nconvert clean-bmad-workspace to the .agents format"]
     B --> C["Phase C: SCALE\nremaining projects one at a time, aviationChat LAST"]
-    C --> D["Phase D: BUILDER\n/new-project + /sync-agents + gates finalized"]
+    C --> D["Phase D: BUILDER\n/smh-new-project + /smh-sync-agents + gates finalized"]
 
     classDef done fill:#d4f7d4,stroke:#2e7d32,color:#000
     classDef prog fill:#fff3d6,stroke:#b8860b,color:#000

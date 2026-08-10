@@ -29,6 +29,7 @@ file enforces, and why it is a test rather than a convention.
     T5  sop_currency.py's SOP_DOC points at a file that exists
     T6  no procedural doc is left behind in _my_resources/
     T7  autopilot_bmad_dev_loop.md exists exactly once in the repo
+    T8  the hook's shell guard and sop_currency.SOP_DOC name the SAME file
 
   -- WHY A TEST AND NOT JUST THE COMMIT GATE -----------------------------------------------
 `sop_currency.py` asks "did the author update the PRD in the same commit." That is
@@ -51,6 +52,11 @@ catches the NEXT rename with no edit here -- and it is scoped to this system's c
 plus a short list of pre-SCC-63 bare aliases, so URL segments (`/api`), doc words (`/how-to`),
 and directory names (`/scripts`) cannot trip it. The fixture controls below prove both halves:
 it fires on real defects and stays quiet on the look-alikes.
+
+One deliberate exemption: DISCUSSED_AS_RETIRED. A doc whose SUBJECT is a retirement must be able
+to name the thing that was retired -- flagging that would push an author to delete the sentence
+explaining the change. What T4 really guards is "no doc tells you to RUN something that does not
+exist," and a fixture proves the exemption stays narrow rather than becoming an off-switch.
 
   -- THE MANIFEST IS A CONTRACT, NOT AN INVENTORY ------------------------------------------
 T1/T6 pin an explicit 13-doc list. That is deliberate: adding a 14th doc must be a conscious
@@ -104,7 +110,34 @@ FAMILY = re.compile(r"^(cicd|smh|sentry|sudo)-")
 # since carries a family prefix, so this list does not grow.
 RETIRED_ALIASES = {"new-project", "sync-agents", "update-maps-indexes", "adviser-board"}
 
+# Names these docs are ALLOWED to mention, because the retirement itself is the subject.
+#
+# A doc that records "`/sudo-update-scrum-board` is gone, use the Jira board" is doing its job --
+# flagging it would push an author to delete the very sentence that explains the change to the next
+# reader. This is the classic source-grep inversion: the literal appears most often in the prose
+# ABOUT its removal. The check still has teeth, because what it really guards is "no doc tells you
+# to RUN something that does not exist," and an entry here is a deliberate, reviewable claim that a
+# given name is discussed historically rather than prescribed.
+#
+# Keep it SHORT. Each entry needs a reason, and a name that stops appearing should be removed.
+DISCUSSED_AS_RETIRED = {
+    # SCC-13 retired the scrum board on 2026-08-07; workflows_testing_SOP.md section 11 is the
+    # written record of the scrum-board -> Jira transition and names it to explain what replaced it.
+    "sudo-update-scrum-board",
+}
+
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s#]+)")
+
+
+def det(ok: bool, msg: str) -> str:
+    """Detail text, suppressed on success.
+
+    The harness prints whatever detail it is handed regardless of outcome, so an
+    unconditional f-string makes a PASS line carry its own failure message -- e.g.
+    `[PASS] T1 folder exists: docs/_scc_sops_prds missing`. A gate whose green output
+    reads like red is a gate people stop reading.
+    """
+    return "" if ok else msg
 
 
 def _md_files(d: Path) -> list[Path]:
@@ -120,6 +153,8 @@ def unresolved_commands(text: str, masters: set[str]) -> set[str]:
     out = set()
     for m in TOKEN.finditer(text):
         t = m.group(1)
+        if t in DISCUSSED_AS_RETIRED:
+            continue
         if (FAMILY.match(t) or t in RETIRED_ALIASES) and t not in masters:
             out.add(t)
     return out
@@ -131,24 +166,29 @@ def main() -> int:
 
     # -- T4 detector fixtures FIRST: a checker nobody has proven is a checker nobody can trust.
     c.check("T4-fixture fires on a retired command",
-            unresolved_commands("see `/sudo-update-scrum-board` for the board", masters)
-            == {"sudo-update-scrum-board"})
+            unresolved_commands("see `/sudo-write-story-tests` for the flow", masters)
+            == {"sudo-write-story-tests"})
     c.check("T4-fixture fires on a pre-SCC-63 alias",
             unresolved_commands("run /sync-agents to publish", masters) == {"sync-agents"})
     quiet = ("visit https://sudo-command.atlassian.net and read "
              "_bmad-output/sudo-tests/report.md via /api and the /how-to guide")
-    c.check("T4-fixture quiet on Jira slug + paths + URL segments",
-            unresolved_commands(quiet, masters) == set(),
-            f"got {sorted(unresolved_commands(quiet, masters))}")
+    qok = unresolved_commands(quiet, masters) == set()
+    c.check("T4-fixture quiet on Jira slug + paths + URL segments", qok,
+            det(qok, f"got {sorted(unresolved_commands(quiet, masters))}"))
+    c.check("T4-fixture allow-list is narrow, not a blanket off-switch",
+            unresolved_commands("run `/sudo-update-scrum-board` and `/sudo-made-up-name`", masters)
+            == {"sudo-made-up-name"})
     live = sorted(masters)[0] if masters else ""
     c.check("T4-fixture quiet on a LIVE command",
             unresolved_commands(f"run /{live} now", masters) == set() if live else False)
 
     # -- T1: the manifest
     present = {p.name for p in _md_files(FOLDER)}
-    c.check("T1 folder exists", FOLDER.is_dir(), f"{FOLDER_REL} missing")
-    c.check("T1 manifest matches", present == EXPECTED,
-            f"missing={sorted(EXPECTED - present)} unexpected={sorted(present - EXPECTED)}")
+    ok = FOLDER.is_dir()
+    c.check("T1 folder exists", ok, det(ok, f"{FOLDER_REL} missing"))
+    ok = present == EXPECTED
+    c.check("T1 manifest matches", ok,
+            det(ok, f"missing={sorted(EXPECTED - present)} unexpected={sorted(present - EXPECTED)}"))
 
     # -- T2: INDEX matches disk, both directions. The defect that rotted the old folder was
     #        exactly this: 2 rows pointing at nothing, 4 files nobody listed.
@@ -162,8 +202,8 @@ def main() -> int:
         phantom = sorted(t for t in linked if not (idx.parent / t).exists())
         unlisted = sorted(n for n in present if n not in {Path(t).name for t in linked})
         c.check("T2 INDEX.md exists", True)
-        c.check("T2 no phantom rows", not phantom, f"dead: {phantom}")
-        c.check("T2 no unlisted files", not unlisted, f"absent from INDEX: {unlisted}")
+        c.check("T2 no phantom rows", not phantom, det(not phantom, f"dead: {phantom}"))
+        c.check("T2 no unlisted files", not unlisted, det(not unlisted, f"absent from INDEX: {unlisted}"))
 
     # -- T3/T4 scan the folder's contents, so an ABSENT folder gives them an empty set and a
     #    vacuous green. That is the failure mode where deleting the folder makes the suite
@@ -178,7 +218,17 @@ def main() -> int:
         for p in _md_files(FOLDER) + ([idx] if idx.is_file() else []):
             for m in LINK.finditer(p.read_text(encoding="utf-8", errors="replace")):
                 t = m.group(1)
-                if not t.startswith(("http", "mailto:")) and not (p.parent / t).exists():
+                if t.startswith(("http", "mailto:")):
+                    continue
+                # Cross-repo targets are OUT OF SCOPE for a lobby gate. Projects/<name>/ are
+                # separate git repos: they are gitignored here, and a `git worktree` checkout
+                # gets only empty stub dirs for them. Asserting on their contents makes this
+                # test a permanent false RED in every lane -- and a gate that is red for
+                # reasons the author cannot fix is a gate that gets ignored or deleted.
+                # Their currency is the OTHER repo's ticket (cross-repo = a ticket per repo).
+                if "Projects/" in t:
+                    continue
+                if not (p.parent / t).exists():
                     dead.append(f"{p.name} -> {t}")
         c.check("T3 no dead relative links", not dead, "; ".join(dead[:6]))
 
@@ -207,6 +257,28 @@ def main() -> int:
     except Exception as e:                                  # import failure is a real failure
         c.check("T5 sop_currency.SOP_DOC resolves", False, f"{type(e).__name__}: {e}")
 
+    # -- T8: the shell guard and the python constant must name the SAME file.
+    #
+    #    sop-currency.sh line ~26 does `[ -f <SOP doc> ] || exit 0` so the gate degrades
+    #    gracefully in a project clone that has no SOP page. Move the doc without moving that
+    #    literal and the LOBBY starts looking like a project clone: the hook exits 0 before it
+    #    ever reaches the python, and the gate disarms ITSELF, silently, with no output anywhere
+    #    -- under VS Code, which renders hook output nowhere the operator looks, that is
+    #    indistinguishable from a clean pass. T5 cannot see this: it only checks the python
+    #    constant, and the two drifting apart is exactly the bug.
+    sh = ROOT / ".agents/scripts/git-hooks/sop-currency.sh"
+    try:
+        import sop_currency as _sc                          # already on sys.path from T5
+        # ALL `[ -f x ]` guards, not the first -- the script opens with the DISABLE kill-switch
+        # guard, so a first-match regex asserts against the wrong literal and can never pass.
+        guards = re.findall(r"\[\s*-f\s+(\S+)\s*\]",
+                            sh.read_text(encoding="utf-8", errors="replace"))
+        ok8 = _sc.SOP_DOC in guards
+        c.check("T8 hook guard matches SOP_DOC", ok8,
+                "" if ok8 else f"SOP_DOC={_sc.SOP_DOC} not among the hook's -f guards: {guards}")
+    except Exception as e:
+        c.check("T8 hook guard matches SOP_DOC", False, f"{type(e).__name__}: {e}")
+
     # -- T6: nothing left behind. RECURSIVE on purpose -- diagrams_guides/ nested its docs under
     #    system/, security/ and workflows_tea_testing/, so a top-level glob saw 3 of 13 and
     #    reported a near-clean folder while ten procedural docs sat one level down.
@@ -214,7 +286,8 @@ def main() -> int:
                   for v in VACATED for p in (ROOT / v).rglob("*.md")
                   if p.name != "INDEX.md") if any((ROOT / v).is_dir() for v in VACATED) else []
     c.check("T6 no procedural docs in _my_resources", not left,
-            f"{len(left)} left: " + "; ".join(left[:4]) + (" ..." if len(left) > 4 else ""))
+            det(not left, f"{len(left)} left: " + "; ".join(left[:4])
+                          + (" ..." if len(left) > 4 else "")))
 
     # -- T7: one copy of the doc that existed twice with 508 differing lines.
     #    Filter the RELATIVE path, never p.parts -- this repo is checked out inside
@@ -227,7 +300,8 @@ def main() -> int:
         if {".git", "_artifacts", "Projects", "worktrees"} & set(parts):
             continue
         copies.append(rel)
-    c.check("T7 exactly one autopilot_bmad_dev_loop.md", len(copies) == 1, f"copies: {sorted(copies)}")
+    ok = len(copies) == 1
+    c.check("T7 exactly one autopilot_bmad_dev_loop.md", ok, det(ok, f"copies: {sorted(copies)}"))
 
     return c.finish()
 

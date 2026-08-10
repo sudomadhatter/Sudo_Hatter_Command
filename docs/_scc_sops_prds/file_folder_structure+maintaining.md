@@ -7,8 +7,8 @@
 >
 > | Doc | Role |
 > |---|---|
-> | `_my_resources/youtube_transcripts/implementation-plan_folder-as-workspace-routing-system.md` | the **theory** (mentor transcript, distilled) |
-> | `_my_resources/docs/master-implementation-plan.md` | the **rollout record** (how it got built) + evolution log (§8) |
+> | `_my_resources/research_docs/implementation-plan_folder-as-workspace-routing-system.md` | the **theory** (mentor transcript, distilled). In Daniel's thinking space — read it only when he links it |
+> | ~~`_my_resources/docs/master-implementation-plan.md`~~ | the rollout record — **gone**; that folder no longer exists. The build history is the git log and `_artifacts/_main/` |
 > | `docs/workspace-standard.md` | the **standing spec** (PATH CONTRACT, tier model, upkeep rules) |
 > | `.agents/workflows/smh-update-maps-indexes.md` | the **maintenance workflow** (how it stays honest) |
 > | *this file* | the **guide & overview** (read this first) |
@@ -51,8 +51,8 @@ flowchart TD
         STORE["active-context.md + session folders"]
     end
 
-    DOCS["docs/\nAGENTS.md (local law) + adapters\nworkspace-standard.md (the WHAT)\nrepo-map.md (hybrid nav index)"]
-    MYRES["_my_resources/\nDaniel's personal area (Tier-2 law)\nopen_tasks/ read-only carve-out"]
+    DOCS["docs/\nAGENTS.md (local law) + adapters\nworkspace-standard.md (the WHAT)\nrepo-map.md (hybrid nav index)\n_scc_sops_prds/ (every SOP + PRD)"]
+    MYRES["_my_resources/\nDaniel's thinking + brainstorm space\nagents IGNORE unless he links a doc\nstaleness is FINE here by design"]
     BMADL["_bmad/ + _bmad-output/\nBMAD module + state (lobby)"]
     CANARY["_routing-canary/\nrouting regression check"]
     SYS["_system/\nbuilder: /smh-new-project, /smh-sync-agents"]
@@ -70,6 +70,35 @@ flowchart TD
     ROUTER --> PROJ
     TOOLKIT --> PROJ
 ```
+
+### 2.1 `docs/` vs `_my_resources/` — the two folders get OPPOSITE treatment (SCC-74, 2026-08-10)
+
+This is the one distinction worth memorising, because getting it wrong is how documentation rots.
+
+| | `docs/` | `_my_resources/` |
+|---|---|---|
+| What it is | the **maintained** surface | Daniel's **thinking + brainstorming space** |
+| Agents | read it, keep it correct | **ignore it** unless he links a specific document |
+| Staleness | must never happen | **fine by design** — it is a scratchpad, not a contract |
+| Drift-checked | yes — `check_maps.py`, repo-map regen, GitNexus | **no, deliberately** |
+
+**Why the split had to become a rule.** Every procedural doc in this system used to live in
+`_my_resources/`. That folder is named in `SCAN_IGNORES` (`check_maps.py`), in
+`DEFAULT_REGEN_IGNORE`, and in the GitNexus ignore list — its own local law says *"excluded from
+repo-map regen + linter scans … do not fix that."* So thirteen documents that tell the operator what
+to type sat where **every drift-checker in this system is forbidden to look.** They did not rot from
+neglect; nothing was *able* to notice. The proof was sitting in the open: the index they lived under
+listed 2 files that did not exist and omitted 4 that did.
+
+SCC-74 moved them to `docs/_scc_sops_prds/`, which put them in scanner scope for free — and because
+it is a **level-2 folder**, `check_maps.py` check 2.5 now *requires* it to carry an accurate
+`INDEX.md`. A dedicated test (`.agents/scripts/tests/test_sops_prds_folder.py`, in `run_all`) pins
+the manifest, checks the INDEX against the directory in both directions, and verifies every
+`/command` reference names a real command master.
+
+**The consequence for you:** a procedural doc found in `_my_resources/` is a defect by definition —
+move it. And never "fix" the ignore lists to make `_my_resources/` scannable: its exemption is what
+makes it safe to think out loud in.
 
 ## 3. How an agent finds its way (the routing walk)
 
@@ -96,7 +125,7 @@ that FIRST (the local law: how to *act* here); read `INDEX.md`/`README.md` only 
 |---|---|---|---|
 | **1 — Floors** | work happens here | lobby root, each `Projects/(name)/`, `_system/`, `_routing-canary/`, `.agents/` | full `AGENTS.md` (brain) + 1-line adapters |
 | **2 — Guarded infrastructure** | rules apply here, work doesn't | `_artifacts/`, `_my_resources/`, `docs/` | ~15-line **local-law `AGENTS.md`** + 1-line adapters |
-| **3 — Leaf content** | storage | epic buckets, session folders, `diagrams_guides/`, transcripts | `INDEX.md`/`README.md` only — **no** `AGENTS.md` |
+| **3 — Leaf content** | storage | epic buckets, session folders, `docs/_scc_sops_prds/`, board sessions | `INDEX.md`/`README.md` only — **no** `AGENTS.md` |
 
 **Why the adapters give this teeth** (auto-attach — no reliance on the model choosing to read):
 
@@ -312,6 +341,7 @@ Node 18+ (`npx -y md-feedback`). New/changed servers appear after a session rest
 | `AGENTS.md` (root) | The brain — root law §1–§8, always loaded |
 | `router.md` | The master map — categories → workspaces, routes up & down |
 | `docs/workspace-standard.md` | The WHAT — structure contract (PATH CONTRACT, tier model, depth-3 rule, end-of-task checklist) |
+| **`docs/_scc_sops_prds/`** | **Every SOP and PRD in the system** — the pages that tell the *operator* what to do and what to type (as opposed to `.agents/`, which describes the system to an *agent*). Start at its `INDEX.md`; `workflows_testing_SOP.md` is THE quick reference. Consolidated here by SCC-74 — see §2.1 below for why the location is the point |
 | `_artifacts/AGENTS.md` · `_my_resources/AGENTS.md` · `docs/AGENTS.md` | Tier-2 local law (+ adapters) — auto-attached at point of contact |
 | `.agents/workflows/smh-update-maps-indexes.md` | The HOW — reconciliation workflow (audit → fix → commit → anchor) |
 | `.agents/scripts/check_maps.py` | The linter — 9 checks + unnumbered 2.5 + `--depth3-only` + `--set-anchor` |
