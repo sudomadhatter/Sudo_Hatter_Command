@@ -20,10 +20,15 @@
 # nag + /smh-update-maps-indexes read; check_maps.py's git-diff-vs-anchor stays ground truth). Rebuilt as you commit.
 **/docs/.maps-journal*.jsonl
 
-# Build / runtime junk anywhere
-**/node_modules/
-**/.venv/
-**/venv/
+# Build / runtime junk anywhere.
+# NO trailing slash on the first three, deliberately (SCC-77): a trailing slash matches DIRECTORIES
+# ONLY, and `link-worktree-assets.py` gives every worktree a SYMLINK at these paths rather than a
+# real directory. So `**/node_modules/` ignored them in the shared checkout and missed them in every
+# worktree — where `task_preflight.py` then counted the link as an uncommitted change and BLOCKED
+# the close-out of a lane that was actually clean.
+**/node_modules
+**/.venv
+**/venv
 **/__pycache__/
 **/.pytest_cache/
 **/.ruff_cache/
