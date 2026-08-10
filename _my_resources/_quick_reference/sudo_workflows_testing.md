@@ -457,8 +457,16 @@ session with your sign-off — that merge is `/smh-close-task-merge-tree`, and t
 > ### ⛔ One typing = ONE merge (added 2026-08-09, SCC-71)
 >
 > Typing `/smh-close-task-merge-tree` authorises **the one task you typed it for**. It does not authorise
-> the next one, no matter how soon it follows. Same for `/cicd-update-sprint-memory`. Every other
-> merge to `main` needs you to say so directly.
+> the next one, no matter how soon it follows. The same one-shot rule governs `/cicd-push-e2e` for an
+> epic merge, and `/cicd-update-sprint-memory` for a story landing. Every other merge to `main` needs
+> you to say so directly.
+>
+> **Two of those three are `main` doors; the third is not.** `/cicd-push-e2e` and
+> `/smh-close-task-merge-tree` reach `main`. `/cicd-update-sprint-memory` lands a story on its **epic
+> branch** and never touches production — its own body says so in as many words. Read as a door list,
+> the paragraph above used to imply three doors onto `main`, and that misreading is what sent SCC-77's
+> first attempt off building a gate around branches nobody pushes (ruling 2026-08-10). The canonical
+> table is `.agents/rules/git-policy.md` § "The write gate"; when in doubt, that file wins.
 >
 > **This got broken, and it is worth knowing how.** In one long session the command was invoked
 > **once** and then rode **six** merges (SCC-64 → SCC-69). Not defiance — the command's whole body
@@ -472,11 +480,42 @@ session with your sign-off — that merge is `/smh-close-task-merge-tree`, and t
 > did not authorise for *that* task, that is the bug, and the merge SHA's timestamp against your
 > message is how you prove it.
 >
-> **Not yet fixed mechanically.** This machine has **no pre-push hook** (`.githooks/` holds
-> `commit-msg`, `post-commit`, `pre-commit` only) even though the command doc claims a push-approval
-> hook prompts. The proposed fix — a single-use token written when you invoke the command and consumed
-> by the merge, plus a pre-push hook that refuses `main` without one — is **not built**. Until it is,
-> this rule is enforced by reading, which is exactly the weakness it describes.
+> **Now fixed mechanically (2026-08-10, SCC-77).** `.githooks/pre-push` refuses any push landing on
+> `main` without a single-use approval token, and spends the token on the way through. The two door
+> commands mint it at their sign-off step, immediately before the push.
+>
+> **What the gate actually checks**, in order — each refusal names its own reason:
+>
+> | Check | Refused when |
+> |---|---|
+> | armed | `MAIN-PUSH-ENFORCE` deleted or `DISABLE` present → passes through, deliberately |
+> | destination | only `refs/heads/main`, whole-token — `epic/main-fix` never trips it |
+> | exists | no token at all |
+> | fresh | minted more than **30 minutes** ago |
+> | **same commit** | **the token names one sha and the push carries another** |
+> | delete | anything that would delete `main`, always, no path |
+>
+> **The "same commit" check is the one that would have caught SCC-71.** The token records the sha it
+> was minted for, so work committed *after* your sign-off is refused — that is exactly the shape of
+> six merges riding one approval. Every refusal also discards the token, so a failed sign-off is spent
+> rather than left lying around for the next push to match by accident.
+>
+> **Where it lives and why.** Pure POSIX `sh`, no Python, no PowerShell. The predecessor gate —
+> `require-push-approval.py`, wired in `.claude/settings.json` — never ran once on the Mac: it was
+> invoked as `powershell -Command "python ..."` and this machine has *neither* binary, only `pwsh` and
+> `python3`. It exited 127 silently on every push, along with all four SessionStart hooks. A gate that
+> depends on one platform's binaries is not a gate, so this one depends on nothing. The Claude-side
+> hook is repaired too, but only as a nicer prompt — **the git hook is the enforcement**.
+>
+> **What it does not do, stated plainly.** An agent can write files, so an agent can write a token.
+> This is not a security boundary against a determined agent and is not sold as one. It turns a silent
+> violation into a deliberate, traceable one, and it closes the drift failure — a close-out command
+> whose body sits in your agent's context still reading valid on task six. Merges through the GitHub
+> web UI or `gh pr merge` never reach a local hook at all; that gap is tracked under SCC-75.
+>
+> **If you are legitimately stuck:** `git push --no-verify` once, or delete
+> `.agents/scripts/git-hooks/MAIN-PUSH-ENFORCE` to disarm it entirely. Both are loud and neither is
+> hidden — the point is that going around the gate should be a decision, not an accident.
 
 ### ⭐ Every lane now gets its own workspace — not just story lanes
 

@@ -1,0 +1,19 @@
+#!/bin/sh
+# pre-push — one gate: nothing reaches `main` without a single-use approval token.
+#
+# GUARD (SCC-32): `--show-toplevel` resolves to the WORKTREE root, not the main checkout, so a
+# worktree cut from a commit before the script existed has no script to exec — and a bare `exec`
+# on a missing file kills the push outright with a shell error. Missing script -> say so, allow.
+# Same trap, same handling, as commit-msg and pre-commit.
+#
+# Note the asymmetry with commit-msg: a missing gate here means an UNGATED push to main, which is
+# worse than a missing commit gate. It still allows, because a hard door on a stale worktree
+# strands the operator with no way to ship — but it says so loudly, and the arm flag being tracked
+# means this state only ever exists on a tree cut before SCC-77 landed.
+HOOK="$(git rev-parse --show-toplevel)/.agents/scripts/git-hooks/pre-push-main-approval.sh"
+if [ ! -x "$HOOK" ]; then
+  echo "  ⚠ main-push gate not present in this worktree ($HOOK) — push allowed, UNCHECKED."
+  echo "    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it."
+  exit 0
+fi
+exec "$HOOK" "$@"

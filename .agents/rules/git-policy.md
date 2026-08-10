@@ -72,11 +72,35 @@ description: "Git policy: main is the ONLY long-lived branch. Each epic gets a s
 Approval for an epic-branch landing or a `main` merge is **per-action and never carries forward**.
 One "approved" lands one story; the next needs its own.
 
-**Enforcement:** the `require-push-approval.py` PreToolUse hook (canonical source `.agents/hooks/`,
-deployed to every `.claude/hooks/`) forces the approval prompt on any `git push` targeting `main`
-however it's wrapped, and on any `git commit` attempted while HEAD is `main` (work always happens
-on a branch). `merge_pull_request` (+ GitHub write tools) is gated in `.claude/settings.json`. The
-hook only ever sees the **agent's** Bash tool — Daniel's own terminal is never affected by it.
+**Enforcement — two layers, and only the first one counts.**
+
+1. ⭐ **`.githooks/pre-push` (SCC-77) — this is the gate.** It refuses any push landing on `main`
+   without a single-use approval token, and spends the token on the way through. The two `main`
+   doors mint it at their sign-off step (`.agents/scripts/git-hooks/mint-push-token.sh`), after the
+   merge commit exists and immediately before the push. The token lives in the **common** git dir,
+   so every worktree on the machine shares exactly one; it records the sha it was minted for, so
+   anything committed after the sign-off is refused. Armed by the tracked
+   `.agents/scripts/git-hooks/MAIN-PUSH-ENFORCE`; bypass once with `git push --no-verify`.
+   Pure POSIX `sh` **on purpose** — see below.
+2. `require-push-approval.py` **PreToolUse hook** (canonical source `.agents/hooks/`, deployed to
+   every `.claude/hooks/`) — prompts earlier and reads better, but it is Claude-only and nothing
+   depends on it. `merge_pull_request` (+ GitHub write tools) is gated in `.claude/settings.json`.
+   It only ever sees the **agent's** Bash tool; the operator's own terminal is never affected.
+
+⛔ **Why layer 1 refuses to depend on an interpreter.** Layer 2 was, for weeks, the *entire* claimed
+enforcement — and it had never executed once. `.claude/settings.json` invoked it as
+`powershell -NoProfile -Command "python ..."` and the Mac has **neither** binary (only `pwsh` and
+`python3`), so it exited 127 in silence on every push, as did all four SessionStart hooks. Six
+merges reached `main` on one sign-off (SCC-64 → SCC-69, 2026-08-09) with nothing in the way. A git
+hook is the only layer both machines, all four agent platforms, and the operator's own terminal
+share — so the gate is `sh`, with no interpreter probe and no Python anywhere in its path.
+
+**What this buys, and what it does not.** An agent can write files, so an agent can write a token.
+This is not a security boundary against a determined agent and must not be described as one. It
+converts a silent violation into a deliberate, traceable one, and it closes the drift failure this
+rule keeps losing to — a close-out command whose body stays in context and still reads exactly as
+valid on task six as on task one. Merges via `gh pr merge` or the GitHub web UI never reach a local
+hook at all; that gap is tracked under SCC-75.
 
 ## A commit is not done until it is pushed
 
