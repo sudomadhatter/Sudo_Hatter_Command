@@ -276,7 +276,20 @@ typed command. Verdict held at **CONCERNS** by CR-3, CR-4 and CR-5; nothing bloc
    because SCC-74 owns that sweep.
 4. **`/smh-quick-dev` is still unexercised.** You said the next task audits it — worth noting that its
    Step 1.5 plan gate is the one control that would have prevented SA-1 here.
-5. **SA-1's structural half is closed; its process half is not.** The lane can now audit post-dev
+5. **Porting Step 0.7 to the `cicd-*` lane: deferred, on a stated trigger (operator ruling
+   2026-08-10).** The gap is real there too — `/cicd-self-audit` has no sibling-lane read at all, and
+   `/cicd-code-review` has no base re-derivation. And it is **not** already covered: `report_overlap`
+   (shared, called by `closeout_preflight.py:95` and `task_preflight.py:255`) answers *"did we both
+   touch the same file"*, which **would not have caught the SCC-74 bug** — the two broken references
+   sat in files with **zero overlap** between the lanes. What defers it is cost and evidence, not
+   coverage: it is 2 commands **plus 3 `-AP` twins**, one of which (`cicd-code-review` / `-AP`) the
+   linter already reports as drifting; and Step 0.7 has fired exactly once, on the task that invented
+   it. The story lane also has a second net the Task lane lacks — stories land on an epic branch,
+   `/cicd-parallel-check` keeps story sets file-disjoint, and the epic still passes a full E2E via
+   `/cicd-push-e2e`, whereas Task work goes straight to `main` with no E2E at all.
+   **⭐ Trigger: if Step 0.7 fires a second time on real work, port it — and fix the `-AP` drift in the
+   same pass, since those files will already be open.**
+6. **SA-1's structural half is closed; its process half is not.** The lane can now audit post-dev
    (`/smh-code-review` Step 0.7, plus the self-audit's POST-DEV mode). What that does **not** fix is
    that the plan gate was skipped on this task in the first place — a retroactive audit is a strictly
    worse instrument than one that runs in time, and the new modes must not become the reason to skip
