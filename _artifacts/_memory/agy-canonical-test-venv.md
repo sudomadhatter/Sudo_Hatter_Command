@@ -17,7 +17,7 @@ CURRENT workspace path, `requires-python = ">=3.11,<3.12"` declared, CI asserts 
 honest caveat (desktop team's A0 sweep of 245 transcripts): **zero observed failures were ever
 3.14-caused** — the migration is CI/prod-parity insurance; the symptom people actually hit was the
 stray root venv below. On OTHER machines the stale-venv trap re-opens silently — the walkthrough is
-`_my_resources/migrations/python_vytest-updates-other-machines.md` (renamed 2026-08-01 from
+`_my_resources/migrations/install_guides/python_vytest-updates-other-machines.md` (renamed 2026-08-01 from
 python-311-test-infra-other-machines.md; now also carries the vitest suite-lock notes).
 
 **Runner flags now live in ONE place**: the runner AIDEV-NOTE in `backend/requirements.txt` (specs

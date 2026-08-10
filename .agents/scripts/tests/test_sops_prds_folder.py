@@ -86,7 +86,6 @@ EXPECTED = {
     "autopilot_bmad_dev_loop.md",
     "sentry_error_response_team.md",
     "file_folder_structure+maintaining.md",
-    "complete-system-overview.md",
     "md_feedback_setup_guide.md",
     "tea_testing_guide.md",
     "tea_deep_reference.md",

@@ -9,13 +9,13 @@ metadata:
 ---
 
 A relative link that fails to resolve in a **relocated** doc is mis-pathed far more often than dead.
-Before concluding a target is gone, search the **lobby** — `_my_resources/diagrams_guides/` especially.
+Before concluding a target is gone, search the **lobby** — `docs/_scc_sops_prds/` especially.
 
-Concrete case (2026-08-03): AGY's `_my_resources/_quick_reference/sudo_workflows_testing.md` is a copy of
-a lobby doc that once lived beside its companions in `_my_resources/diagrams_guides/workflows_tea_testing/`.
+Concrete case (2026-08-03): AGY's `docs/_scc_sops_prds/workflows_testing_SOP.md` is a copy of
+a lobby doc that once lived beside its companions in `docs/_scc_sops_prds/`.
 Its sibling-relative links (`tea_deep_reference.md`, `../security/sentry_error_response_team.md`) came
 along unchanged and now resolve nowhere from `_quick_reference/`. Both targets are real and current —
-53 KB and a full incident system — sitting four levels up (`../../../../_my_resources/diagrams_guides/…`).
+53 KB and a full incident system — sitting four levels up (`../../../../docs/_scc_sops_prds/…`).
 A pre-dev audit filed them as HIGH dead links; the fix was **repoint**, not delete.
 
 **Why:** the "verify it exists" check is usually run only against the project subtree (and root-level Grep

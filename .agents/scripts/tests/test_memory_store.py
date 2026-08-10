@@ -42,6 +42,7 @@ detector is alive.
 from __future__ import annotations
 
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -54,6 +55,9 @@ EXEMPT = {"MEMORY.md", "README.md"}
 CLOSED_MARKS = ("CLOSED", "RETIRED", "FIXED", "SUPERSEDED", "⛔")
 
 REAL_STORE = SCRIPTS.parent.parent / "_artifacts" / "_memory"
+# The repo REAL_STORE lives in - rotted_pointers() resolves memory paths against it,
+# and against the sibling project repo, because a memory about AGY names AGY's paths.
+REPO_ROOT = REAL_STORE.parent.parent
 
 
 def index_text(store: Path) -> str:
@@ -98,6 +102,74 @@ def audit_due(store: Path) -> bool:
     return len(index_text(store).encode("utf-8")) >= INDEX_CAP * TRIGGER_PCT
 
 
+# In-repo path shapes a memory body may name. A rotted one teaches a dead move, and NOTHING
+# caught it before SCC-80: check_store() validates the INDEX (links, orphans, cap) and never
+# reads a body's paths, while audit_due() triggers on SIZE alone. A store can sit at 79% of cap,
+# pass every check, and still route every reader to a folder that was deleted months ago -
+# which is exactly what the 2026-08-10 audit found by hand, 15 times over.
+_REPO_ROOTS = ("_my_resources/", "docs/", ".agents/", "_artifacts/", ".claude/",
+               ".opencode/", ".githooks/", "_bmad/", "_bmad-output/")
+_BACKTICK_PATH = re.compile(r"`([_.A-Za-z0-9][\w./+-]*/[\w./+-]+)`")
+# Absences that are CORRECT. Each is a by-design gap, not rot:
+#   - a retired surface the memory's own subject is the removal of
+#   - a kill-switch you CREATE to disable something (absent = armed)
+#   - gitignored payloads (secrets, PII exports, machine-local caches) that must never be committed
+_BY_DESIGN = (".claude/commands", ".claude/rules", ".opencode/skills", "sudo-dev-story-tests",
+              "sudo-target-resolution", "sudo-code-review", "close-task-merge-tree/SKILL.md",
+              "sprint-dependency-map", "_secrets/", "git-hooks/DISABLE", "auth_keys",
+              "_my_resources/backups", ".maps-journal")
+
+
+def _is_placeholder(path: str) -> bool:
+    """`epic-N`, `<name>`, `x/Y` - a template, not a claim about a real file.
+
+    The `-N` / `-X` SUFFIX form matters as much as a bare segment: `epic-N` is how this system
+    writes "any epic", and treating it as a real path makes the detector cry wolf on correct prose."""
+    return any(len(s) == 1 or s in {"N", "X"} or s.startswith("<")
+               or re.search(r"[-_](N|X)$", s) for s in path.split("/"))
+
+
+def rotted_pointers(store: Path, repo: Path, sibling: Path | None = None) -> dict:
+    """Memory bodies naming an in-repo path that resolves NOWHERE. {file: {paths}}.
+
+    Resolution is tried against `repo` AND `sibling` (a project repo) because memories about a
+    project legitimately name that project's paths. Anything gitignored is skipped: it is absent
+    from a clean checkout on purpose. A path that resolves in either repo, is gitignored, is a
+    template, or is a by-design absence is NOT rot.
+
+    ADVISORY on purpose - returned as a signal, never a hard failure. `Projects/` is not populated
+    in a `git worktree` checkout, so sibling resolution is unavailable in exactly the place most
+    work happens; failing there would make this red for a reason the author cannot fix."""
+    # If the sibling project repo is not CHECKED OUT, this check cannot ground-truth anything:
+    # `Projects/<name>/` is an empty stub in every `git worktree`, so every project path would
+    # read as rot. Measured: 10 of 11 hits were false that way. Report NOTHING rather than a
+    # worklist that is mostly wrong - a signal with that hit-rate is one people learn to skip,
+    # and this file's whole thesis is that a gate nobody reads is a gate that checks nothing.
+    if sibling is not None and (not sibling.is_dir() or not any(sibling.iterdir())):
+        return {}
+
+    out: dict[str, set] = {}
+    for f in sorted(store.glob("*.md")):
+        if f.name in EXEMPT:
+            continue
+        for m in _BACKTICK_PATH.finditer(f.read_text(encoding="utf-8", errors="replace")):
+            path = m.group(1).rstrip("/.,)")
+            if not path.startswith(_REPO_ROOTS) or _is_placeholder(path):
+                continue
+            if any(b in path for b in _BY_DESIGN):
+                continue
+            if (repo / path).exists() or (sibling and (sibling / path).exists()):
+                continue
+            try:
+                if subprocess.run(["git", "check-ignore", "-q", path], cwd=repo,
+                                  capture_output=True).returncode == 0:
+                    continue
+            except OSError:
+                pass
+            out.setdefault(f.name, set()).add(path)
+    return out
+
+
 def audit_signals(store: Path) -> list[str]:
     """A worklist for /memory-audit, derived mechanically so the audit opens on evidence.
 
@@ -132,6 +204,13 @@ def audit_signals(store: Path) -> list[str]:
         out.append(f"{len(big)} memory file(s) over {BODY_SOFT_CAP // 1024} KB "
                    f"({', '.join(big[:3])}{'...' if len(big) > 3 else ''}) - long bodies are "
                    f"usually narrative; the lesson is what earns the space")
+
+    rotted = rotted_pointers(store, REPO_ROOT, REPO_ROOT / "Projects" / "AGY_AVIATIONCHAT")
+    if rotted:
+        n = sum(len(v) for v in rotted.values())
+        out.append(f"{n} rotted path pointer(s) across {len(rotted)} memory file(s) "
+                   f"({', '.join(sorted(rotted)[:3])}{'...' if len(rotted) > 3 else ''}) - the "
+                   f"lesson may still be true while the path it names is gone; correct, do not retire")
     return out
 
 

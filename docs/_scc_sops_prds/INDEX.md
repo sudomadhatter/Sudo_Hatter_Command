@@ -54,8 +54,7 @@ exactly the drift being guarded against.
 
 | Doc | What it is |
 |---|---|
-| [file_folder_structure+maintaining.md](file_folder_structure+maintaining.md) | **The one-stop guide to the home base** — the folder-as-workspace routing system, what lives where, and how it is kept healthy. The living overview that sits on top of `../workspace-standard.md`. |
-| [complete-system-overview.md](complete-system-overview.md) | The full breakdown of the routing system, top to bottom. Deeper background than the guide above. |
+| [file_folder_structure+maintaining.md](file_folder_structure+maintaining.md) | **The one-stop guide to the home base — and the single system overview.** SCC-80 retired `complete-system-overview.md` into it (2026-08-10): 7 of that doc's 10 sections had a counterpart here, its §8 named a script that no longer exists and its §9 was a completed rollout plan. Its Glossary survives as §10a. — the folder-as-workspace routing system, what lives where, and how it is kept healthy. The living overview that sits on top of `../workspace-standard.md`. |
 | [autopilot_bmad_dev_loop.md](autopilot_bmad_dev_loop.md) | **The autopilot reference** — the 4-stage Dev/QA relay (Plan → Audit → Implement → Review+Fix): engine/harness split, the Engine Adapter, session continuity, the resilience + test-gate model, the model/effort ladder (§5b), and the worktree-based concurrency model. Covers every engine — `/cicd-autopilot-claude`, `/cicd-autopilot-deepseek4`, `/cicd-autopilot-opencode`. Moved out of the toolkit's retired `reference` folder by SCC-74, which also resolved a six-week-stale duplicate. |
 | [md_feedback_setup_guide.md](md_feedback_setup_guide.md) | Setting up the **MD Feedback** MCP server (annotations read straight from markdown) for Claude, opencode and Antigravity on a new machine. |
 
