@@ -1,6 +1,6 @@
 """parallel_check.py — which of a BMAD epic's stories can run side by side? (SCC-56)
 
-`parallel-ok` used to be ruled by `/sudo-write-story-tests` Step 1.6, at story pickup. That
+`parallel-ok` used to be ruled by `/cicd-write-story-tests` Step 1.6, at story pickup. That
 mints 19.1's ticket BEFORE 19.2's story file exists, so there is nothing to compare against,
 and it is never re-evaluated. The proof it never worked is empirical: zero tickets across SCC
 and AVCH carry the label, and the `Parallel-OK` saved filter returns nothing.
@@ -176,7 +176,7 @@ def repo_for_key(key: str, explicit: str | None) -> Path:
     Projects/AGY_AVIATIONCHAT and `SCC-99` resolves to the lobby. This is why the command can
     legitimately act on the command centre without roaming it: it follows the epic, and the
     lobby qualifies the day it carries BMAD stories (its `_bmad/bmm/` install is already
-    there). See `.agents/rules/sudo-target-resolution.md` for the ladder this varies from."""
+    there). See `.agents/rules/smh-target-resolution.md` for the ladder this varies from."""
     if explicit:
         p = Path(explicit).resolve()
         if not p.is_dir():
@@ -251,7 +251,7 @@ def gate_bmad(parent: dict, repo: Path) -> str:
     stories_dir = repo / wf.STORIES_REL
     if not stories_dir.is_dir():
         wf.die(f"{repo.name} has no {wf.STORIES_REL}/ — no BMAD stories in this repo yet. "
-               f"/sudo-parallel-check assesses BMAD stories only.", 2)
+               f"/cicd-parallel-check assesses BMAD stories only.", 2)
     num = bmad_epic_number(parent["summary"])
     if num:
         return num
@@ -261,7 +261,7 @@ def gate_bmad(parent: dict, repo: Path) -> str:
         if head and head.lower() in wf.read_text(epics).lower():
             return head
     wf.die(f"`{parent['key']} {parent['summary']}` is a GROUPING epic, not a BMAD epic. "
-           f"/sudo-parallel-check assesses BMAD stories under a BMAD epic; a grouping epic's "
+           f"/cicd-parallel-check assesses BMAD stories under a BMAD epic; a grouping epic's "
            f"children are Tasks with no story files.", 2)
     raise AssertionError  # unreachable
 
@@ -360,7 +360,7 @@ def ground_child(repo: Path, child: dict, base: str) -> dict:
     if not child["grounded"]:
         child["reason"] = (f"no story file for {sid}" if sid
                            else f"{child['key']} carries no BMAD number in its summary")
-        child["next_command"] = (f"/sudo-write-story-tests {sid}" if sid else None)
+        child["next_command"] = (f"/cicd-write-story-tests {sid}" if sid else None)
     return child
 
 
@@ -596,7 +596,7 @@ def render_comment(res: dict) -> str:
         eve = v["evidence"] + (f" → `{v['command']}`" if v.get("command") else "")
         lines.append(f"| {v['key']} | {mark} | {eve} |")
     lines += ["", "_A verdict is a SNAPSHOT. Writing another story invalidates it — re-run "
-                  "`/sudo-parallel-check " + res["parent"] + "`._"]
+                  "`/cicd-parallel-check " + res["parent"] + "`._"]
     return "\n".join(lines)
 
 
@@ -666,7 +666,7 @@ def cmd_check(args) -> int:
         if MARKER in text and "verified" in text:
             stamped = text
     if not stamped:
-        say(f"[STALE] {args.parent} has never been checked — run /sudo-parallel-check")
+        say(f"[STALE] {args.parent} has never been checked — run /cicd-parallel-check")
         return 1
 
     m = re.search(r"verified (\d{4}-\d{2}-\d{2}) against \d+ children: ([^\n_*]+)", stamped)

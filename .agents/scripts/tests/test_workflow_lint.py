@@ -3,7 +3,7 @@
 workflow_lint's checks must FIRE on real defects and stay quiet on look-alikes. Without
 these controls a clean lint run is indistinguishable from a dead detector.
 
-The encoding third case is the one that caught us: `sudo-prune-context.md` documents the
+The encoding third case is the one that caught us: `cicd-prune-context.md` documents the
 mojibake pattern inside a code span, so a naive scan flags the file that says "don't do
 this". The budget cases guard the opposite failure - a check so loud (115 warnings about
 history nobody will touch) that the one actionable line is never read.
@@ -91,7 +91,7 @@ def main() -> int:
 
         # ── SCC-51: the artifact BYTE budgets are gone, and must stay gone ────
         # The 8 KB / 10 KB caps (and check_artifact_budgets) were removed 2026-08-08 by
-        # operator ruling: implementation_plan.md is a TWO-author doc (plan + /sudo-self-audit
+        # operator ruling: implementation_plan.md is a TWO-author doc (plan + /cicd-self-audit
         # §7), so a fixed cap truncates the auditor. This asserts nothing re-introduces a byte
         # threshold - the standard now lives as judgement in artifacts-always-first.md.
         c.check("SCC-51 no byte-budget check exists on the linter",
@@ -224,6 +224,44 @@ def main() -> int:
                 f"exit={code_tk} {out_tk.strip()[:120]}")
         c.check("SCC-64 --toolkit-only + --project is refused",
                 lint_at("--toolkit-only", "--project", "x")[0] == 2, "")
+
+        # ── SCC-63: the naming law is MECHANICAL, not prose ───────────────────
+        # The prefix decides permissions (cicd-* binds smh-target-resolution.md =
+        # one project, never the lobby; smh-* may act on the lobby), so a misnamed
+        # command claims the wrong ones. Negative controls first: a check that
+        # cannot fail proves nothing, and the retired prefix is the exact thing
+        # this must never accept again.
+        nl = tmp / "naming"
+        (nl / ".agents/commands").mkdir(parents=True)
+        cmds = nl / ".agents/commands"
+        for good in ("cicd-code-review.md", "smh-sync-agents.md",
+                     "sentry-security-team-avch.md", "cicd-code-review-AP.md",
+                     "dev.md", "testarch-atdd.md", "INDEX.md"):
+            (cmds / good).write_text("---\ndescription: x\n---\n", encoding="utf-8")
+        rep = wf.Report()
+        lint.check_naming_law(nl, rep)
+        c.check("SCC-63 positive control: valid families + vendor bridges pass",
+                not [i for i in rep.items if i["sev"] == "ERROR"],
+                str([i["msg"] for i in rep.items])[:140])
+
+        # ⛔ These fixture names are DELIBERATELY the retired forms and must never be
+        # "fixed" by a rename sweep - they are the controls. If a sweep rewrites them
+        # the check still passes while proving nothing (SCC-63: this happened once).
+        for bad in ("sudo-code-review.md", "autopilot_claude.md",
+                    "webm-alpha-video.md", "cicd_bad_underscore.md"):
+            (cmds / bad).write_text("---\ndescription: x\n---\n", encoding="utf-8")
+        rep = wf.Report()
+        lint.check_naming_law(nl, rep)
+        errs = " ".join(i["msg"] for i in rep.items if i["sev"] == "ERROR")
+        c.check("SCC-63 negative control: the RETIRED sudo- prefix is rejected",
+                "sudo-code-review.md" in errs, errs[:140])
+        c.check("SCC-63 negative control: an unprefixed command is rejected",
+                "webm-alpha-video.md" in errs, errs[:140])
+        c.check("SCC-63 negative control: underscores are rejected (hyphens only)",
+                "autopilot_claude.md" in errs and "cicd_bad_underscore.md" in errs,
+                errs[:140])
+        c.check("SCC-63 the vendor allowlist stays CLOSED (20 names)",
+                len(lint.VENDOR_COMMANDS) == 20, str(len(lint.VENDOR_COMMANDS)))
     return c.finish()
 
 

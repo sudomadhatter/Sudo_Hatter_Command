@@ -1,12 +1,12 @@
 ---
 name: code-standards
-description: "Activates when writing, reviewing, or gating code — backend (Python/FastAPI) or frontend (React/TypeScript). The house definition of 'clean': the comment contract (Story provenance + AIDEV-NOTE anchors), the AI-drift bans, style/organization, and the machine-checkable floor. The `clean-code-audit` skill and `/sudo-code-review` Step 3.5 both enforce THIS file — edit the standard here and the gate follows."
+description: "Activates when writing, reviewing, or gating code — backend (Python/FastAPI) or frontend (React/TypeScript). The house definition of 'clean': the comment contract (Story provenance + AIDEV-NOTE anchors), the AI-drift bans, style/organization, and the machine-checkable floor. The `cicd-clean-code-audit` skill and `/cicd-code-review` Step 3.5 both enforce THIS file — edit the standard here and the gate follows."
 ---
 
 # Code Standards — the house definition of "clean"
 
-This file is the standard. The **`clean-code-audit`** skill is the auditor that checks a diff against
-it, and **`/sudo-code-review` Step 3.5** is the gate that can fail a story on it. There is one
+This file is the standard. The **`cicd-clean-code-audit`** skill is the auditor that checks a diff against
+it, and **`/cicd-code-review` Step 3.5** is the gate that can fail a story on it. There is one
 definition of clean and it lives here — change it here and every enforcement point follows.
 
 > **Scope of enforcement: the diff, not the repo.** The gate judges the code THIS story wrote. Legacy

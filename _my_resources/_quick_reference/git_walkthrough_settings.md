@@ -284,7 +284,7 @@ flowchart TD
     MAIN["main\nthe ONLY long-lived branch\n= live production"] --> EPIC["epic/&lt;JIRA-KEY&gt;-&lt;slug&gt;\ncut at epic kickoff\nlives one epic, then deleted"]
     EPIC --> WT["claude/&lt;JIRA-KEY&gt;-&lt;slug&gt;\none worktree per story\nyours alone"]
     WT -->|"land: push HEAD:epic/&lt;JIRA-KEY&gt;-&lt;slug&gt;"| EPIC
-    EPIC -->|"/sudo-push-e2e ONLY\ngate green + your sign-off\ngit merge --no-ff"| MAIN
+    EPIC -->|"/cicd-push-e2e ONLY\ngate green + your sign-off\ngit merge --no-ff"| MAIN
     MAIN --> CHORE["chore/&lt;JIRA-KEY&gt;-&lt;slug&gt;\nad-hoc work, no epic\neach carries its own ticket"]
     CHORE -->|"same session, sign-off\ngit merge --no-ff"| MAIN
 ```
@@ -296,7 +296,7 @@ flowchart TD
 | `claude/<JIRA-KEY>-<slug>` | you, in one story worktree | **free** — commit as often as you like |
 | `chore/<JIRA-KEY>-<slug>` | you, for work outside any epic (its own ticket) | **free** |
 | `epic/<JIRA-KEY>-<slug>` | several story lanes land here | **sign-off per landing** |
-| `main` | everyone; a push here **deploys** | **`/sudo-push-e2e` only** |
+| `main` | everyone; a push here **deploys** | **`/cicd-push-e2e` only** |
 
 **How each setting earns its keep here:**
 

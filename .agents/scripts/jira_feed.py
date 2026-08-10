@@ -1,6 +1,6 @@
 """jira_feed.py - feed the dev flow's knowledge back into its Jira ticket (SCC-49).
 
-The board used to carry titles and nothing else: `/sudo-write-story-tests` minted with
+The board used to carry titles and nothing else: `/cicd-write-story-tests` minted with
 `--summary` only, and close-out posted a single verdict line. Everything learned WHILE the
 story was built - the decisions, the pitfalls, what is still owed - lived in the walkthrough
 and never reached the ticket, so Jira could tell you a story existed but never what it was
@@ -27,8 +27,8 @@ Two invariants this file exists to hold, because prose could not:
    its acceptance criteria, verbatim. A missing section renders as an explicit "(none found
    in ...)" line and warns; it never gets filled in with something plausible.
 2. **One Dev Record per ticket, always current.** `devrecord` looks for an existing record
-   first and UPDATES it rather than stacking a second one. Both `/sudo-quick-dev` (which
-   closes its own branch) and `/sudo-update-sprint-memory` (which closes the story) post
+   first and UPDATES it rather than stacking a second one. Both `/cicd-quick-dev` (which
+   closes its own branch) and `/cicd-update-sprint-memory` (which closes the story) post
    through here, and before this they would have produced two records of the same work.
 
 Both write verbs READ THE TICKET BACK and exit non-zero if what they claimed to write is not
@@ -376,7 +376,7 @@ def render_epic_outline(project: Path, epic: str) -> str:
               f"Board: {wf.BOARD_REL} (epic-{epic})",
               "",
               "Rendered by jira_feed.py at epic kickoff. Stories are minted per-story by "
-              "/sudo-write-story-tests as work starts."]
+              "/cicd-write-story-tests as work starts."]
     return "\n".join(lines) + "\n"
 
 
@@ -1169,7 +1169,7 @@ def main() -> int:
     p_flag.add_argument("--key", required=True, help="the ticket - NEVER taken from a trace")
     p_flag.add_argument("--reason", required=True, help="what is broken, in one sentence")
     p_flag.add_argument("--evidence", action="append", metavar="TEXT")
-    p_flag.add_argument("--found-by", help="e.g. '/sudo-live-testing-team 2026-08-09'")
+    p_flag.add_argument("--found-by", help="e.g. '/cicd-live-testing-team 2026-08-09'")
     p_flag.add_argument("--status", default="To Do",
                         help="where a Done ticket lands (default: To Do)")
     p_flag.add_argument("--date", default=date.today().isoformat())

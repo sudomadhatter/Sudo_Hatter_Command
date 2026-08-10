@@ -50,7 +50,7 @@ def check_commands(lobby: Path, rep: wf.Report) -> None:
 
     if index_text:
         # Dead pointers — LINKS only. INDEX prose legitimately names files that live
-        # elsewhere (`_my_resources/.../sudo-adviser-board-REFERENCE.md`) and records
+        # elsewhere (`_my_resources/.../smh-adviser-board-REFERENCE.md`) and records
         # historical renames (`sprint-dependency-map.md` -> ...); a bare-filename scan
         # reads those as missing commands.
         for target in set(_LINK_RE.findall(index_text)):
@@ -73,7 +73,7 @@ _RULE_POINTERS = (
                 r"git checkout -b|git branch -[Dd]\b")),
     ("worktree-per-story", "worktree",
      re.compile(r"git worktree\b")),
-    ("sudo-target-resolution", "target-resolving",
+    ("smh-target-resolution", "target-resolving",
      re.compile(r"^#+\s*Step 0\b.*(?:target|project)", re.I | re.M)),
 )
 
@@ -108,13 +108,14 @@ def check_ap_twins(lobby: Path, rep: wf.Report) -> None:
     that actually mean drift: the twin stopped pointing at its primary, or the primary was
     committed AFTER the twin (someone fixed one side only)."""
     cmd_dir = lobby / ".agents" / "commands"
-    for ap in sorted(cmd_dir.glob("*_AP.md")):
+    # Suffix is `-AP` since SCC-63 (hyphens only; it was `_AP` before the rename).
+    for ap in sorted(cmd_dir.glob("*-AP.md")):
         primary = cmd_dir / (ap.stem[:-3] + ".md")
         if not primary.is_file():
             rep.err("ap-twins", f"{ap.name}: primary {primary.name} missing")
             continue
         # Match the STEM: twins name the primary bare in their title/description
-        # (`# /sudo-code-review_AP - ...`); only some use the `@.../<name>.md` path form.
+        # (`# /cicd-code-review-AP - ...`); only some use the `@.../<name>.md` path form.
         # This fires when the primary is RENAMED out from under the twin.
         if primary.stem not in wf.read_text(ap):
             rep.warn("ap-twins", f"{ap.name} no longer references {primary.stem}")
@@ -123,6 +124,40 @@ def check_ap_twins(lobby: Path, rep: wf.Report) -> None:
             days = round((pr_ts - ap_ts) / 86400, 1)
             rep.warn("ap-twins",
                      f"{primary.name} committed {days}d AFTER {ap.name} - diff the twin")
+
+
+# Vendor BMAD bridges keep their upstream names and take no prefix. This list is
+# CLOSED: widening it is how the convention dies one exception at a time. A new
+# command belongs to cicd- (one project, never the lobby) or smh- (may act on the
+# lobby); sentry- is the reserved incident family.
+VENDOR_COMMANDS = frozenset({
+    "INDEX", "analyst", "architect", "bmad-help", "bmad-master", "dev", "pm", "qa", "sm",
+    "tea", "tech-writer", "testarch-atdd", "testarch-automate", "testarch-ci",
+    "testarch-framework", "testarch-nfr", "testarch-test-design", "testarch-test-review",
+    "testarch-trace", "ux-designer",
+})
+_FAMILY_RE = re.compile(r"^(cicd|smh|sentry)-")
+
+
+def check_naming_law(lobby: Path, rep: wf.Report) -> None:
+    """Every command master declares its family in its name (SCC-63).
+
+    The prefix is load-bearing, not cosmetic: `cicd-*` binds smh-target-resolution.md
+    (exactly ONE project, never the lobby) while `smh-*` may act on the repo you are
+    standing in. A misnamed command therefore claims the wrong permissions. Underscores
+    are rejected outright — the same pass that retired `sudo-` normalised separators, and
+    a lone `foo_bar.md` would quietly reintroduce the split the rename removed."""
+    cmd_dir = lobby / ".agents" / "commands"
+    for f in sorted(cmd_dir.glob("*.md")):
+        stem = f.stem
+        if stem in VENDOR_COMMANDS:
+            continue
+        if not _FAMILY_RE.match(stem):
+            rep.err("naming-law",
+                    f"{f.name}: must start with cicd- / smh- / sentry- "
+                    f"(or be a listed vendor bridge) - see AGENTS.md command naming law")
+        if "_" in stem:
+            rep.err("naming-law", f"{f.name}: underscore in command name - hyphens only")
 
 
 # ── Project checks ─────────────────────────────────────────────────────────────
@@ -143,7 +178,7 @@ def check_active_context(project: Path, rep: wf.Report) -> None:
 # implementation_plan.md (8 KB) and walkthrough.md (10 KB), and the check that warned on them.
 #
 # They were set 2026-08-02 in the SAME commit that made implementation_plan.md a TWO-author
-# document - the plan plus /sudo-self-audit's findings, phase evidence and verdict
+# document - the plan plus /cicd-self-audit's findings, phase evidence and verdict
 # (artifacts-always-first §7). A fixed cap on a two-author doc squeezes the second author,
 # which is the auditor: the one voice you least want truncated. The number was never
 # validated against a real audit, and the first Full audit run under it had to compress its
@@ -360,6 +395,7 @@ def main() -> int:
         check_commands(lobby, rep)
         check_rule_pointers(lobby, rep)
         check_ap_twins(lobby, rep)
+        check_naming_law(lobby, rep)
         scan += [(f"commands/{f.name}", f)
                  for f in sorted((lobby / ".agents" / "commands").glob("*.md"))]
     else:

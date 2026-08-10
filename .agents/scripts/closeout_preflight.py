@@ -1,6 +1,6 @@
 """closeout_preflight.py — run the close-out checklist instead of narrating it (Wave 1.4).
 
-`/sudo-update-sprint-memory` asks an agent to hold ~8 mechanical facts in its head at once:
+`/cicd-update-sprint-memory` asks an agent to hold ~8 mechanical facts in its head at once:
 did the code land, is every repo pushed, are the worktrees real, do both status surfaces
 agree, is the context inside budget, did the gates actually run, can the epic close, and is
 the story's verdict recorded. Each is a git or filesystem question with an exact answer, and
@@ -28,7 +28,7 @@ def integration_branch(project: Path) -> str:
     """The landing target for a story: its epic branch (`epic/*`), falling back to `main`.
 
     main_debug retired 2026-08-07 — epics integrate on short-lived epic/* branches that merge
-    to main via /sudo-push-e2e. With exactly one live epic branch the target is unambiguous;
+    to main via /cicd-push-e2e. With exactly one live epic branch the target is unambiguous;
     with zero or several, `main` is the only branch every landing eventually reaches, so the
     ancestor check stays meaningful (a story merged via its epic IS an ancestor of main once
     the epic ships — before that, several-epics ambiguity must be resolved with --branch)."""
@@ -169,13 +169,18 @@ def legacy_verdict(project: Path, key: str) -> Path | None:
     standalone `sudo-code-review-<story>.md`. Plan A's back-compat contract is explicit:
     section first, legacy file second. Without this fallback every historic story reports
     'the review never ran' - a false red on correctly-closed work, which is exactly how a
-    checker gets muted."""
+    checker gets muted.
+
+    BOTH prefixes are matched (SCC-63). The `sudo-` form is not legacy-by-accident here:
+    those files already exist under project `_bmad-output/`, the rename never touched them,
+    and dropping the pattern would re-break every historic story the fallback exists for."""
     d = project / _LEGACY_REL
     if not d.is_dir():
         return None
-    for p in sorted(d.glob("sudo-code-review-*.md")):
-        if wf.slug_matches(wf.story_id(key), p.stem[len("sudo-code-review-"):]):
-            return p
+    for prefix in ("sudo-code-review-", "cicd-code-review-"):
+        for p in sorted(d.glob(prefix + "*.md")):
+            if wf.slug_matches(wf.story_id(key), p.stem[len(prefix):]):
+                return p
     return None
 
 

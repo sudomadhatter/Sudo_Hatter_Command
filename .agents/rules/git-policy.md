@@ -1,6 +1,6 @@
 ---
 name: git-policy
-description: "Git policy: main is the ONLY long-lived branch. Each epic gets a short-lived `epic/<JIRA-KEY>-<slug>` branch off main; story/dev work happens in its own git worktree on a `claude/*` branch off the epic branch, where the agent commits FREELY (explicit paths — never `git add -A`). The story lands on its epic branch on Daniel's in-the-moment 'approved' or via /sudo-update-sprint-memory. The epic reaches `main` only through /sudo-push-e2e — full gate + E2E green + Daniel's sign-off."
+description: "Git policy: main is the ONLY long-lived branch. Each epic gets a short-lived `epic/<JIRA-KEY>-<slug>` branch off main; story/dev work happens in its own git worktree on a `claude/*` branch off the epic branch, where the agent commits FREELY (explicit paths — never `git add -A`). The story lands on its epic branch on Daniel's in-the-moment 'approved' or via /cicd-update-sprint-memory. The epic reaches `main` only through /cicd-push-e2e — full gate + E2E green + Daniel's sign-off."
 ---
 
 # Git Policy
@@ -23,7 +23,7 @@ description: "Git policy: main is the ONLY long-lived branch. Each epic gets a s
   auto-target it, never branch a worktree straight from it for story work.** It stays deployable;
   on projects with CI/CD, a push to `main` IS a deploy.
 - **Each epic gets one short-lived branch: `epic/<JIRA-KEY>-<slug>`, cut from `main`** at epic
-  kickoff (`/sudo-create-epic-sprint`). All of the epic's stories integrate there. This is the
+  kickoff (`/cicd-create-epic-sprint`). All of the epic's stories integrate there. This is the
   "one place to send everything" — scoped to the epic, not eternal.
 - **Story work happens in a worktree on a `claude/<JIRA-KEY>-<slug>` branch cut from the epic
   branch**, and lands back on the epic branch at close-out (see "The landing").
@@ -31,12 +31,12 @@ description: "Git policy: main is the ONLY long-lived branch. Each epic gets a s
   `chore/<JIRA-KEY>-<slug>` branch off `main`, merged back to `main` in the same session with
   Daniel's per-action sign-off. The gate is per-repo: the lobby runs
   `python3 .agents/scripts/tests/run_all.py` (it has **no E2E suite and never will** — no
-  `frontend/`); deploying repos run the light gate (tests + build), and epic merges add `/sudo-e2e`.
-  **The command that does this is `/close-task-merge-tree`** (SCC-49) — invoking it IS the
-  sign-off, the same contract `/sudo-push-e2e` carries for an epic. It will not decide the gate
+  `frontend/`); deploying repos run the light gate (tests + build), and epic merges add `/cicd-e2e`.
+  **The command that does this is `/smh-close-task-merge-tree`** (SCC-49) — invoking it IS the
+  sign-off, the same contract `/cicd-push-e2e` carries for an epic. It will not decide the gate
   from prose: `task_preflight.py` derives the lane from the repo and the diff, and a `chore/*`
   branch that touches `backend/`, `frontend/`, `firebase/`, `functions/`, `mobile/` or `.github/`
-  is refused outright and handed to `/sudo-push-e2e` — a change that reaches deployable code is a
+  is refused outright and handed to `/cicd-push-e2e` — a change that reaches deployable code is a
   product change no matter what its ticket is called.
 
 ### Every branch and every commit carries a Jira key (armed 2026-08-07)
@@ -55,8 +55,8 @@ description: "Git policy: main is the ONLY long-lived branch. Each epic gets a s
 - **Operating the board itself** (reading tickets, JQL, transitions, minting) is its own rule:
   `.agents/rules/jira.md` — the `acli` cheat-sheet, flag traps, and the ticket↔file join. The board
   is reachable from any shell-capable agent; no MCP or per-platform config exists or is needed.
-- **The epic reaches `main` exactly one way: `/sudo-push-e2e`** — the full gate (backend suite +
-  frontend build + `/sudo-e2e` GREEN) plus Daniel's explicit sign-off, then the merge. An agent
+- **The epic reaches `main` exactly one way: `/cicd-push-e2e`** — the full gate (backend suite +
+  frontend build + `/cicd-e2e` GREEN) plus Daniel's explicit sign-off, then the merge. An agent
   never merges to `main` on its own initiative. The epic branch is deleted after it merges:
   branches are short-lived by design; nothing accumulates.
 
@@ -65,9 +65,9 @@ description: "Git policy: main is the ONLY long-lived branch. Each epic gets a s
 | Destination | Permission |
 |---|---|
 | Your own `claude/*` story branch (commits **and** pushes) | **FREE** — no approval, loops/retries fine |
-| The epic branch (`epic/*`) — a story landing | **Daniel's sign-off** — his in-the-moment "approved", or invoking `/sudo-update-sprint-memory` (which IS the sign-off) |
+| The epic branch (`epic/*`) — a story landing | **Daniel's sign-off** — his in-the-moment "approved", or invoking `/cicd-update-sprint-memory` (which IS the sign-off) |
 | A `chore/*` branch (commits and pushes) | **FREE** — the merge back to `main` is what's gated |
-| `main` | **Only through `/sudo-push-e2e`** (epic merge, full gate + sign-off) or **`/close-task-merge-tree`** (task merge — preflight + the lane's gate; invoking it IS the sign-off), or Daniel's direct in-the-moment ask. Never on an agent's own initiative. |
+| `main` | **Only through `/cicd-push-e2e`** (epic merge, full gate + sign-off) or **`/smh-close-task-merge-tree`** (task merge — preflight + the lane's gate; invoking it IS the sign-off), or Daniel's direct in-the-moment ask. Never on an agent's own initiative. |
 
 Approval for an epic-branch landing or a `main` merge is **per-action and never carries forward**.
 One "approved" lands one story; the next needs its own.
@@ -84,7 +84,7 @@ hook only ever sees the **agent's** Bash tool — Daniel's own terminal is never
 unpushed.** An unpushed commit is invisible to every other machine and to the operator, who then has to
 discover and push it by hand — which is exactly the manual sync this toolkit exists to remove.
 
-This applies to **every repo you touched**, not just the one the work started in. A `/sync-agents` run
+This applies to **every repo you touched**, not just the one the work started in. A `/smh-sync-agents` run
 writes to the lobby *and* each maintained project, so a change to one master file dirties three repos;
 committing the one you were thinking about and leaving the other two is the common form of this failure.
 Sync also runs *after* commits sometimes — re-check `git status` at the end and commit-and-push whatever
@@ -106,7 +106,7 @@ a licence to leave work uncommitted or a landing unpushed.
 
 ## The landing — one story, one clean push
 
-The story lands on its **epic branch** at close-out (`/sudo-update-sprint-memory` Step 7) or on
+The story lands on its **epic branch** at close-out (`/cicd-update-sprint-memory` Step 7) or on
 Daniel's in-the-moment "approved". It merges **from inside the worktree**, never by checking out the
 epic branch in the shared checkout:
 
@@ -120,13 +120,13 @@ git push origin HEAD:epic/<JIRA-KEY>-<slug>    # THE landing
 a failed landing push completely untouched. Pushing story branches on every landing is what left 10
 stale `claude/*` on origin by 2026-07-27.
 
-**A story branch reaches origin exactly one way: `/sudo-park`.** That is the entire point of park —
-*"the ONLY thing that makes the work portable"* — and `/sudo-resume` reads `git ls-remote --heads origin
+**A story branch reaches origin exactly one way: `/cicd-park`.** That is the entire point of park —
+*"the ONLY thing that makes the work portable"* — and `/cicd-resume` reads `git ls-remote --heads origin
 'refs/heads/claude/*'` to find in-flight work. The epic branch, by contrast, LIVES on origin — park
 pushes it too, and resume checks it out on the new machine.
 
 **The invariant this buys: a `claude/*` branch on origin means "parked, in-flight, on another machine."**
-Nothing else. Keep it true — it is what makes `/sudo-resume` trustworthy on a cold machine.
+Nothing else. Keep it true — it is what makes `/cicd-resume` trustworthy on a cold machine.
 (`incident-*` branches come from the Epic-16 incident pipeline, not story flow; they are outside this rule
 and must not be swept by it.)
 
@@ -169,7 +169,7 @@ diverge → rejected-push tangle. Before the landing push:
 3. **If it will not merge cleanly**, **STOP and flag it** — hand Daniel the situation. Do NOT run a
    blind merge/rebase, and never force-push.
 
-The same applies one level up: before `/sudo-push-e2e` merges an epic into `main`, it first merges
+The same applies one level up: before `/cicd-push-e2e` merges an epic into `main`, it first merges
 `origin/main` INTO the epic branch (absorbing any hotfixes that shipped mid-epic), re-gates, and only
 then merges to `main` — so `main` never receives an unresolved conflict.
 
@@ -178,7 +178,7 @@ then merges to `main` — so `main` never receives an unresolved conflict.
 - **Clear the Dummy GitHub Token:** The Antigravity IDE automatically injects a dummy `GITHUB_TOKEN` into the agent's environment as a sandbox security measure. Because Git and the `gh` CLI prioritize this environment variable over the Windows Credential Manager, it causes authentication failures. **Before running any `git` or `gh` commands, you MUST clear this variable** by prefixing the command or running: `Remove-Item Env:\GITHUB_TOKEN -ErrorAction Ignore; <command>`.
 - **Validate CI/CD credentials**: Before landing on a deployment-triggering branch (`main`), verify that the target repository's required secrets and variables are set up on GitHub using `gh secret list` and `gh variable list` (WIF-based workflows need neither — check what the workflow actually references). If credentials are missing, STOP and notify Daniel before proceeding.
 - The `walkthrough.md` **"Your Actions"** section records what landed — the branch, the commit range,
-  and anything Daniel still has to do (an epic promotion via `/sudo-push-e2e`, a live check). It is no
+  and anything Daniel still has to do (an epic promotion via `/cicd-push-e2e`, a live check). It is no
   longer a `git add` command block, because the agent already ran it.
 
 > **Web/mobile sessions** follow the same model with lighter mechanics — see `mobile-mode.md`

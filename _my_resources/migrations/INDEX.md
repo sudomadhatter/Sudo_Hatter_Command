@@ -188,5 +188,5 @@ cross-platform once `pwsh` is present.
 
 ## Related
 
-- Maintaining the home base itself (`/new-project`, `/sync-agents`) → `docs/system-builder.md`
-- Parking / resuming work across machines → `/sudo-park`, `/sudo-resume`
+- Maintaining the home base itself (`/smh-new-project`, `/smh-sync-agents`) → `docs/system-builder.md`
+- Parking / resuming work across machines → `/cicd-park`, `/cicd-resume`

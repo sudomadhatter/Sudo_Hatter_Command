@@ -42,7 +42,7 @@ choice; say so, and say which way you'd go.
    the second paragraph, always available, never first.
 2. **Narrative first, compression second.** Any dense or structured result — cards, tables, multi-agent
    output, review findings — gets flowing prose written for someone who wasn't in the room, and *then*
-   the compressed form as the record. Never the record alone. (This is the doctrine `/sudo-adviser-board`
+   the compressed form as the record. Never the record alone. (This is the doctrine `/smh-adviser-board`
    enforces; it is the house default, not that skill's local quirk.)
 3. **Define coined terms at first use.** Bridge Keys, the TEA gate, DB1/DB2, the dial, the spine — a
    five-word gloss the first time each appears in a session. He named half of them and still should

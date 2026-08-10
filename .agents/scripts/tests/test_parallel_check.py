@@ -29,7 +29,7 @@ def child(key: str, sid: str, *, grounded: bool = True, terminal: bool = False,
                        if grounded else [],
             "authority": "story" if grounded else None,
             "reason": None if grounded else f"no story file for {sid}",
-            "next_command": None if grounded else f"/sudo-write-story-tests {sid}"}
+            "next_command": None if grounded else f"/cicd-write-story-tests {sid}"}
 
 
 def packet(children: list[dict], parent: str = "AVCH-13") -> dict:
@@ -65,7 +65,7 @@ def main() -> int:
         c.check("ungrounded child is NEVER in the approved set",
                 "A-2" not in r["approved"], str(r["approved"]))
         c.check("ungrounded row prints the command that unlocks it",
-                r["_by"]["A-2"].get("command") == "/sudo-write-story-tests 1.2",
+                r["_by"]["A-2"].get("command") == "/cicd-write-story-tests 1.2",
                 str(r["_by"]["A-2"].get("command")))
 
     # ── overlap ────────────────────────────────────────────────────────────────

@@ -108,7 +108,7 @@ flowchart TD
 ```
 
 The incident lane **never merges into open work** — the fix ships on `main`, and any live `epic/*`
-branch absorbs it at its next sync with `origin/main` (`/sudo-push-e2e` forces exactly that sync +
+branch absorbs it at its next sync with `origin/main` (`/cicd-push-e2e` forces exactly that sync +
 a re-gate before an epic can merge, so an epic can never land without the hotfix already in it).
 
 ---
@@ -124,7 +124,7 @@ flowchart LR
     MAIN -- "crash comes from here" --> INC
     INC -- "agent pushes the branch (never PRs, never merges)" --> INC
     INC -- "Daniel tests locally, then merges to main" --> MAIN
-    MAIN -- "epic branch syncs origin/main<br/>(absorbs the hotfix; /sudo-push-e2e re-gates)" --> EPIC
+    MAIN -- "epic branch syncs origin/main<br/>(absorbs the hotfix; /cicd-push-e2e re-gates)" --> EPIC
 
     style MAIN fill:#991b1b,color:#fff
     style EPIC fill:#1e40af,color:#fff
@@ -134,7 +134,7 @@ flowchart LR
 ✅ **The flow — standard hotfix pattern:** a **new hotfix branch** fixes the problem → Daniel
 tests it → **merges it to `main`** (live). That is the whole hands-on flow — no back-merge, no
 rebase step. If an `epic/*` branch is open, it absorbs the hotfix at its next sync with
-`origin/main` (and `/sudo-push-e2e` forces that sync + a re-gate before the epic can merge), so
+`origin/main` (and `/cicd-push-e2e` forces that sync + a re-gate before the epic can merge), so
 unfinished work stays isolated and the hotfix is never merged *into* it by hand. The agent only
 ever writes its own `claude/incident-*` branch — it never PRs and never pushes to `main`, so the
 standing "never PR to main" rule needs **no carve-out**; it holds as written. (Under the retired
@@ -147,7 +147,7 @@ two-branch model this flow ended with rebasing `main_debug` onto `main`; that st
 
 ```mermaid
 flowchart TD
-    S1["16.1 — Triage Runbook (✅ BUILT — review, 2026-07-10)<br/>the BRAIN: .github/claude/incident-triage.md<br/>5 steps + report template + /security_team_aviationchat drill<br/>(drill pending Daniel → gates review→done)"]
+    S1["16.1 — Triage Runbook (✅ BUILT — review, 2026-07-10)<br/>the BRAIN: .github/claude/incident-triage.md<br/>5 steps + report template + /sentry-security-team-avch drill<br/>(drill pending Daniel → gates review→done)"]
     S2["16.2 — Always-Live Pipeline (backlog)<br/>relay + Routine + Level-2 fix PR<br/>+ dormant rollback lane + phone drill"]
     S3["16.3 — Frontend Sentry (backlog)<br/>@sentry/nextjs + ErrorBoundary<br/>browser crashes join the funnel"]
     S4["16.4 — candidates (later)<br/>branch auto-cleanup · severity tiers ·<br/>SMS · Routines GA migration"]
@@ -173,7 +173,7 @@ BE crashes → two full reports on the phone.
 | **Primary lane (as-built, PROVEN)** | `.github/workflows/incident-response.yml` (`TARGET=github`) | claude-code-action runs the runbook → full report + fix branch. Secrets set; model left **unpinned** (tracks the action's default) |
 | Fallback lane | Backend `/api/incident/fire` (`TARGET=routines`) | Thin instant pager (issue + Telegram + Sentry-fatal page), NO investigation. ~~Routines beta~~ dead — no API |
 | Delivery | GitHub Issue `incident` (by github-actions bot) + ready `claude/incident-*` branch | Report → GitHub app push + Telegram, AFTER the agent finishes. Page = agent's headline + the report's own **TL;DR** + report/branch links + tap-to-copy **Error Team Prompt** (ready Claude prompt: read report, verify, accept/adjust/reject) |
-| Drill harness | `/security_team_aviationchat [issue-id\|latest]` (16.1 ✅ shipped, vendored via `/sync-agents`) | Testing only — NOT the product. Thin command (zero triage logic): resolves the project → loads its `incident-triage.md` → runs it verbatim, **interactive lane** (Sentry MCP) → drops the report in `_artifacts/debugging/`. Drill = force a P1 (`_test_scripts/sentry_smoke_test.py`) then `/security_team_aviationchat latest`. |
+| Drill harness | `/sentry-security-team-avch [issue-id\|latest]` (16.1 ✅ shipped, vendored via `/smh-sync-agents`) | Testing only — NOT the product. Thin command (zero triage logic): resolves the project → loads its `incident-triage.md` → runs it verbatim, **interactive lane** (Sentry MCP) → drops the report in `_artifacts/debugging/`. Drill = force a P1 (`_test_scripts/sentry_smoke_test.py`) then `/sentry-security-team-avch latest`. |
 
 ### Switches & secrets (names only — values never in repo)
 
@@ -218,7 +218,7 @@ BE crashes → two full reports on the phone.
 | Decision | Call |
 |---|---|
 | Agent-lane model | **Left unpinned** (no `--model` arg) so it tracks claude-code-action's default — zero upkeep as models advance. Constraint: an Opus-class default, not Fable |
-| Page content | The page itself answers "what is it": agent headline + the report's own `## TL;DR` (500-char cap) + **Error Team Prompt** — a tap-to-copy `<pre>` block pasted straight into Claude to review/accept the fix (PR #22) |
+| Page content | The page itself answers "what is it": agent headline + the report's own `## TL;DR` (500-char cap) + **Error Team Prompt** — a tap-to-copy `<pre>` block pasted straight into Claude to smh-review/accept the fix (PR #22) |
 | Alert-rule frequency | **5 min** (was 30) — hardening so closely-spaced distinct P1s each re-fire; `frequency` is the rule's per-issue re-notify throttle |
 | Feature status | **CLOSED as shipped** — both lanes drilled, autonomous front-door run witnessed (issue #21) |
 
@@ -226,7 +226,7 @@ BE crashes → two full reports on the phone.
 
 | Decision | Call |
 |---|---|
-| Hotfix sync | **The rebase step is gone.** `main` is now the ONLY long-lived branch (`main_debug` retired 2026-08-07 — `.agents/rules/git-policy.md`). The hotfix merges to `main` and stops there; any open `epic/*` branch absorbs it at its next sync with `origin/main`, which `/sudo-push-e2e` runs (and re-gates) before every epic merge |
+| Hotfix sync | **The rebase step is gone.** `main` is now the ONLY long-lived branch (`main_debug` retired 2026-08-07 — `.agents/rules/git-policy.md`). The hotfix merges to `main` and stops there; any open `epic/*` branch absorbs it at its next sync with `origin/main`, which `/cicd-push-e2e` runs (and re-gates) before every epic merge |
 
 ---
 

@@ -92,7 +92,7 @@ otherwise treated as tool cache and skipped wholesale, so `.agents/` is named in
 (PATH CONTRACT below) to opt it back into the scan. It does **not** index deeper than level 2 — six of
 its ten subfolders are flat, `skills/` is self-describing via `SKILL.md` frontmatter, `bmad/` is
 and `bmad/` is BMAD-owned and regenerated. (`templates/project-template/` was retired 2026-08-07,
-SCC-31 — `/new-project` clones the skeleton repo instead.) Depth is not the need there; enforcement is.
+SCC-31 — `/smh-new-project` clones the skeleton repo instead.) Depth is not the need there; enforcement is.
 
 **Why the adapters matter at Tier 2:** harnesses auto-attach their nested memory file at the point of
 contact — Claude Code injects a subfolder's `CLAUDE.md` the moment it touches any file under it (Codex:
@@ -104,7 +104,7 @@ Coverage is linted by `check_maps.py` check 8 (non-fatal hint until every worksp
 ### Supporting files every workspace carries
 - **`docs/repo-map.md`** — the navigation index (Part 3).
 - **`active-context.md`** (home-base/exception bucket or project-local, per Part 2) — continuity (numbered: `1 PRIME`, `5 PICK UP`, `6 HAND OFF`).
-- **`_my_resources/open_tasks/todo_list.md`** — Daniel's "what's next" queue (+ any plan/PRP `.md` notes alongside). Surfaced by BOTH the routing-table "what's next" row AND on "pick up." **READ-ONLY for agents — with one exception:** `/update-maps-indexes` refreshes the **`## Open Work` file-list** to mirror the task files beside it (Daniel's `## Todo list` prose and the task files stay his). Cross-check vs live files.
+- **`_my_resources/open_tasks/todo_list.md`** — Daniel's "what's next" queue (+ any plan/PRP `.md` notes alongside). Surfaced by BOTH the routing-table "what's next" row AND on "pick up." **READ-ONLY for agents — with one exception:** `/smh-update-maps-indexes` refreshes the **`## Open Work` file-list** to mirror the task files beside it (Daniel's `## Todo list` prose and the task files stay his). Cross-check vs live files.
 - **`.agents/`** — at the home base: the MASTER toolkit (rules, commands, skills, workflows, scripts,
   templates). In a project (thin model, 2026-08-07): **tier-2 law only** — the project's own `rules/` +
   `skills/` + `INDEX.md`; the center carries all workflow law → `.agents/rules/project-law.md`.
@@ -120,11 +120,11 @@ the toolkit:
   `resolve_config.py`): `bmad-dev-story.toml` + `bmad-quick-dev.toml` enforce the plan-first gate +
   artifact protocol *inside* BMAD skill runs (persistent facts + un-skippable `on_complete`);
   `bmad-testarch-atdd.toml` + `bmad-testarch-automate.toml` pin test scaffolding to **pytest +
-  pytest-bdd** and persist `automation-summary-<story>.md` — the evidence `/sudo-code-review`'s gate
+  pytest-bdd** and persist `automation-summary-<story>.md` — the evidence `/cicd-code-review`'s gate
   check 5 looks for. The tomls load `.agents/rules/000-PLAN-FIRST-GATE.md` (master-owned; projects
-  inherit it via `/sync-agents`). **`_bmad/` itself is NEVER synced** — toml parity across lobby + AGY +
+  inherit it via `/smh-sync-agents`). **`_bmad/` itself is NEVER synced** — toml parity across lobby + AGY +
   Fresh is a 3-way hand-copy; new projects inherit by cloning Fresh.
-- **`_bmad-output/sudo-tests.yaml`** — present = the `/sudo-code-review` TEA gate is **ARMED**
+- **`_bmad-output/sudo-tests.yaml`** — present = the `/cicd-code-review` TEA gate is **ARMED**
   (absent = auto-WAIVED, and a workspace that starts WAIVED tends to stay WAIVED). Ships armed in the
   template with ratchet-from-zero floors; `l1_coverage_min` and CI's `--cov-fail-under` only ever go UP.
 - **`.github/workflows/pr-check.yml`** — CI gates PRs to **`main` AND `epic/**`** (the 2026-07 audit's
@@ -154,7 +154,7 @@ the toolkit:
 ### The PATH CONTRACT (exact files & where they live — what the tooling verifies)
 This is the machine-checkable heart of the standard: the **exact path** of every standard element, in the two
 **modes** a workspace can run in. `check_maps.py` reads this contract to (a) confirm a workspace is conformant
-and (b) know what to reconcile/prune — which is what lets **one generic `/update-maps-indexes` serve every workspace**
+and (b) know what to reconcile/prune — which is what lets **one generic `/smh-update-maps-indexes` serve every workspace**
 instead of a per-repo fork. Keep workspaces matching this table and the generic tool just works.
 
 | Element | Home base (LOBBY) mode | Project (`Projects/<name>/`) mode | Notes |
@@ -171,14 +171,14 @@ instead of a per-repo fork. Keep workspaces matching this table and the generic 
 | Context archive (prune overflow) | owning bucket's `active-context-archive.md` | `_bmad-output/active-context/_archive/` | created on first prune |
 | Session ledger | `_artifacts/INDEX.md` | `_artifacts/INDEX.md` | one row per session; archive overflow → `INDEX-archive.md` |
 | INDEX depth | **level 2** everywhere, except the two named lists below | same | the house rule: every level-2 folder carries an `INDEX.md`. Exceptions are **named sets in `check_maps.py`**, never hardcoded at the call site — opting a folder in is a one-line edit. |
-| ↳ `DEPTH3_DIRS` (deeper) | `_artifacts/<bucket>/INDEX.md` (bucket = `_main` or a registered exception) | `_artifacts/<epic_or_bucket>/INDEX.md` (e.g. `epic_8/`, `epic_11/`, `_main/`, `tea/`) | folders that index one level **deeper**: skipped by check 2.5, walked by check 7 instead. One row per session folder, listing the story/what + artifact files present; scan-to-find for bug-tracking. Not for code dirs. Created when a bucket has ≥2 session folders; `/update-maps-indexes` reconciles. |
+| ↳ `DEPTH3_DIRS` (deeper) | `_artifacts/<bucket>/INDEX.md` (bucket = `_main` or a registered exception) | `_artifacts/<epic_or_bucket>/INDEX.md` (e.g. `epic_8/`, `epic_11/`, `_main/`, `tea/`) | folders that index one level **deeper**: skipped by check 2.5, walked by check 7 instead. One row per session folder, listing the story/what + artifact files present; scan-to-find for bug-tracking. Not for code dirs. Created when a bucket has ≥2 session folders; `/smh-update-maps-indexes` reconciles. |
 | ↳ `DOT_CONTENT_DIRS` (scanned) | `.agents/` | `.agents/` | dot-dirs that are real **content**, not tool cache, so they are scanned like any normal folder. Everything else starting with `.` stays skipped (`.ruff_cache/0.15.21/` would otherwise be permanent FATAL drift). Applies at **level 1 only** — the level-2 dot-skip stays blanket, keeping `.agents/.claude` and `.agents/.gitnexus` exempt. |
 | Portable auto-memory | `_artifacts/_memory/` | `_artifacts/_memory/` | the **canonical** home of Claude Code's auto-memory. The harness writes to `~/.claude/projects/<slug>/memory/`, which is not a repo and never leaves the machine; a **junction (Windows) / symlink (macOS)** points it here so memory travels in git. Linked by `.agents/scripts/link-memory.ps1` · `link-memory.sh` (twins; dry-run by default). `README.md`/`.gitkeep` are scaffolding, not memories. |
 | Retired artifacts | `_artifacts/_archived/` | `_artifacts/_archived/` | — |
 | Testing & Debugging | `_artifacts/debugging/` | `_artifacts/debugging/` | standardized folder for isolated testing, bug repros, and debug scripts |
 | Tier-2 local law | `_artifacts/AGENTS.md` · `_my_resources/AGENTS.md` · `docs/AGENTS.md` (+ 1-line `CLAUDE.md`/`GEMINI.md` adapters beside each) | same | tier model above; linted as a **non-fatal hint** (check 8) |
-| Open tasks ("what's next") | `_my_resources/open_tasks/todo_list.md` (+ plan/PRP notes) | same | **READ-ONLY for context**, but `/update-maps-indexes` refreshes its `## Open Work` file-list; surfaced on pickup + "what's next" |
-| Personal area (protected) | `_my_resources/` | `_my_resources/` | off-limits **except** the `## Open Work` manifest in `open_tasks/todo_list.md` (maintained by `/update-maps-indexes`) |
+| Open tasks ("what's next") | `_my_resources/open_tasks/todo_list.md` (+ plan/PRP notes) | same | **READ-ONLY for context**, but `/smh-update-maps-indexes` refreshes its `## Open Work` file-list; surfaced on pickup + "what's next" |
+| Personal area (protected) | `_my_resources/` | `_my_resources/` | off-limits **except** the `## Open Work` manifest in `open_tasks/todo_list.md` (maintained by `/smh-update-maps-indexes`) |
 | BMAD (if present) | — | `_bmad/` (owned, regenerated) · `_bmad-output/` (state) | `_bmad-output/active-context/active-context.md` **IS** the continuity brief above; `_bmad/` itself is never hand-edited |
 
 **Two modes, one ownership rule.** Every workspace uses a plain `docs/` folder. A non-exempt project owns
@@ -195,19 +195,19 @@ Formatting is one-time; upkeep is forever. Who does what, and when.
 
 ### Rules: one source, no forks
 - **Authored ONLY in `.agents/`.** Copies in `.claude/`, `.opencode/`, and per-project tool dirs are
-  **vendored** by `/sync-agents` — never hand-edit a copy; edit the master and re-sync.
+  **vendored** by `/smh-sync-agents` — never hand-edit a copy; edit the master and re-sync.
 - **Project-specific hard-stops** live in that project's local `constitution.project.md` — never by editing a
   vendored generic rule. This is the anti-fork rule that prevents the drift this whole standard exists to fix.
   Which tier ANY rule or skill belongs to — and the bind-time obligation to read a project's
   `.agents/INDEX.md` — is the two-tier contract in `.agents/rules/project-law.md`.
 - **BMAD skill overrides are the sanctioned per-repo exception:** `_bmad/custom/*.toml` customize installed
-  BMAD skills per repo and survive skill updates — `/sync-agents` never touches `_bmad/`. Keep the three
+  BMAD skills per repo and survive skill updates — `/smh-sync-agents` never touches `_bmad/`. Keep the three
   repos' sets identical by hand-copy (new projects inherit by cloning Fresh); personal tweaks go in
   `*.user.toml` (gitignored), team law in the committed `*.toml`.
 
 ### Command sync & platform reach — one master, four platforms
 The **single canonical invocable set is `.agents/commands/`**. It mirrors to every platform via one command,
-`/sync-agents` (engine: `.agents/scripts/sync-agents.ps1`) — there is no second sync tool to drift against.
+`/smh-sync-agents` (engine: `.agents/scripts/sync-agents.ps1`) — there is no second sync tool to drift against.
 
 - **Surfaces it feeds.** Local tool dirs `.claude/{commands,skills}` + `.opencode/{commands,agent}`; and, on a
   **lobby** sync, the **machine-global** caches `~/.config/opencode/commands`,
@@ -226,7 +226,7 @@ The **single canonical invocable set is `.agents/commands/`**. It mirrors to eve
   `commands/` — name-matching that to `.agents/workflows/` is the exact bug this rule prevents.)*
 - **Platform reach.** A command declares scope with frontmatter `platforms: [claude, opencode, antigravity,
   codex]`. **Absent = universal** (all four). The sync copies a command only to the platforms it lists, so a
-  tool that can't run it (e.g. `/autopilot_claude` needs the `claude` CLI) never appears in the wrong surface.
+  tool that can't run it (e.g. `/cicd-autopilot-claude` needs the `claude` CLI) never appears in the wrong surface.
 - **Purge policy.** Local tool dirs purge only master-managed-but-now-ineligible commands (a project's own
   commands are left alone). Global caches are **mirror-exact** — stale ghosts purged — **except `bmad-*`**,
   which BMAD installs globally and is never ours to delete. The Codex skills mirror likewise purges stale
@@ -295,7 +295,7 @@ test ("work on X" from a fresh session lands in the right workspace). Full how/w
 ### Context hygiene — prune the continuity brief (don't let it grow forever)
 A **session** = one pick-up→hand-off; each hand-off prepends one dated block (`**YYYY-MM-DD: …**`) to the
 continuity `active-context.md` and one row to `INDEX.md`. Left alone these grow without bound and bloat every
-pickup. `/update-maps-indexes` carries a **prune** step: keep the **newest ~10 session blocks** in the brief, archive
+pickup. `/smh-update-maps-indexes` carries a **prune** step: keep the **newest ~10 session blocks** in the brief, archive
 older ones to the context archive (`active-context-archive.md` at the lobby; `_bmad-output/active-context/_archive/`
 in a BMAD project); keep the newest **~50** `INDEX.md` rows, archive older to `INDEX-archive.md`. `check_maps.py`
 only *nags* past ~12 blocks (hysteresis — not every session), and the prune is approval-gated like every other
@@ -307,7 +307,7 @@ The same command also **refreshes the open-tasks list**: it rewrites the `## Ope
 (Daniel drops them in; moves them out when he picks one up). It touches only that manifest — his `## Todo list`
 prose and the task files stay his — and it's approval-gated like the prune.
 
-**Run scope — fan-out.** `/update-maps-indexes` is **mode-driven**: from the **home base** (a `Projects/` dir exists)
+**Run scope — fan-out.** `/smh-update-maps-indexes` is **mode-driven**: from the **home base** (a `Projects/` dir exists)
 it fans out — `check_maps.py --all` reconciles the lobby **and every conformant project** (one with an
 `AGENTS.md`) in one run, so a single command from the top cleans + prunes + refreshes the open-tasks list
 everywhere. From **inside a project** it reconciles just that workspace. Each repo commits and re-anchors

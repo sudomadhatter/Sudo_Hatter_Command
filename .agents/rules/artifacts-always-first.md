@@ -1,6 +1,6 @@
 ---
 name: artifacts-always-first
-description: "The single source of truth for the plan-first artifact protocol. Create implementation_plan.md and get explicit approval BEFORE modifying ANY project file. Track with the live TodoWrite task list. A session/story closes with TWO living docs: implementation_plan.md (+ appended ## Self-Audit) and walkthrough.md (outline ## Task Checklist + ## Evidence + ## Suite Ledger + appended ## Code Review + ## Your Actions). No standalone audit/review files, no task-list.md / your-action-required.md. No exceptions."
+description: "The single source of truth for the plan-first artifact protocol. Create implementation_plan.md and get explicit approval BEFORE modifying ANY project file. Track with the live TodoWrite task list. A session/story closes with TWO living docs: implementation_plan.md (+ appended ## Self-Audit) and walkthrough.md (outline ## Task Checklist + ## Evidence + ## Suite Ledger + appended ## Code Review + ## Your Actions). No standalone audit/smh-review files, no task-list.md / your-action-required.md. No exceptions."
 ---
 
 # Artifacts — Always First
@@ -27,7 +27,7 @@ Keep it minimal — **TWO living docs** per session, hard-budgeted:
    update live). AT COMPLETION its end-state becomes the walkthrough's **`## Task Checklist`** outline
    (§5) — never a separate file, never a hand-maintained parallel `task.md`.
 2. **`implementation_plan.md`** — the plan Daniel signs off on (the "approved" gate) AND the pre-dev
-   audit's home: `/sudo-self-audit` **appends its `## Self-Audit (<date>)` section here** (§7). A
+   audit's home: `/cicd-self-audit` **appends its `## Self-Audit (<date>)` section here** (§7). A
    living pre-dev doc — no standalone audit file.
 3. **`walkthrough.md`** — the SINGLE closing doc, outline-first (§5): header → **`## Task Checklist`**
    (the task outline — pitfalls/findings indented under the tasks that fought back) →
@@ -37,7 +37,7 @@ Keep it minimal — **TWO living docs** per session, hard-budgeted:
 4. **`bug-list.md`** — ONLY for debugging / live-testing sessions. A simple bug list.
 
 **Dense, not short — and there is NO byte cap.** Both docs are re-read on every pass of the loop: the
-dev writes the plan, `/sudo-self-audit` appends into it (§7), the reviewer reads it, close-out reads it
+dev writes the plan, `/cicd-self-audit` appends into it (§7), the reviewer reads it, close-out reads it
 before flipping status. Every line is paid for repeatedly, so every line must earn it — a decision, a
 constraint, a finding, or evidence. Cut restatement of the codebase, narrative filler, and context
 already stated elsewhere. Test evidence is totals lines + SHA, never reporter dumps; a re-run REPLACES
@@ -56,7 +56,7 @@ compress in place (pointers to git / the story file), **never a new file**.
 > Do NOT create: a parallel `task.md`, a standalone `task-list.md` / `your-action-required.md`,
 > index/`00_artifacts-list.md` files, the verbose `debug-watch-log.md`, a standalone
 > `self-audit-stress-test.md` (§7), or a standalone `code-review.md` /
-> `sudo-code-review-<story>.md` (§6) — audits live IN the plan, reviews live IN the walkthrough.
+> `cicd-code-review-<story>.md` (§6) — audits live IN the plan, reviews live IN the walkthrough.
 > Stories closed before 2026-08-02 carry the old standalone files: valid history, read them there,
 > never write new ones. TEA test-artifacts (`atdd-checklist-*`, `automation-summary-*`,
 > `certification-*.json` under `_bmad-output/test-artifacts/`) are OUT of this set by design and stay
@@ -132,7 +132,7 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
   - One `walkthrough.md` in the folder is the whole record (no `implementation_plan.md`), plus a row
     in `quick_fixes/INDEX.md` — that INDEX is the numbering register, so **append its row by hand**;
     it is the exception to the batch-reconcile note below.
-  - This is where `/sudo-quick-dev` work lands when it turns out not to be a story, and it is the
+  - This is where `/cicd-quick-dev` work lands when it turns out not to be a story, and it is the
     home for the follow-on class in `followon-fixes-are-not-a-new-story`.
 - **System / infrastructure** ("systems things": the agent system, rules, scripts, CI, cross-cutting config)
   → the owning store's `_main/<YYYY-MM-DD>_<slug>/`. A quick fix that happens to touch infra matches
@@ -145,7 +145,7 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
 
 > **The `INDEX.md` ledger is reconciled in batch — do NOT hand-append a row every session.** That machinery
 > already exists: the SessionStart hook chain runs `check_maps.py --depth3-only` and
-> `record_map_changes.py --nag`, and `/update-maps-indexes` does the real pass (audits every `INDEX.md`,
+> `record_map_changes.py --nag`, and `/smh-update-maps-indexes` does the real pass (audits every `INDEX.md`,
 > reconciles `AGENTS.md`/README pointers against disk). Getting the artifact into the **right folder** is the
 > per-session obligation — the ledger catches up on its own, and it is run deliberately, on cheaper agents.
 > Append a row by hand only when you are the only one who can write it: a session whose "What" needs context
@@ -213,7 +213,7 @@ fought back. In this order:
 5. **`## Code Review (<date>)`** — appended by the review step (§6), never pre-written by the dev.
 6. **`## Your Actions`** (LAST) — what landed (the `claude/*` branch, the commit range, whether it
    reached the epic branch) plus anything still on Daniel: an epic promotion to `main` via
-   `/sudo-push-e2e`, a live check, a decision.
+   `/cicd-push-e2e`, a live check, a decision.
    Also posted in chat. The review step attempts any agent-solvable row here and ticks it; only
    genuine human calls survive. Not a `git add` block — the agent commits its own work in the
    worktree and lands it at close-out (→ `git-policy` · `worktree-per-story`).
@@ -222,12 +222,12 @@ Do NOT split any section into a separate file — one doc holds the outline, the
 and the actions.
 
 ### 6. Append `## Code Review (<date>)` to `walkthrough.md` (whenever a code review runs)
-**Any code review — `/sudo-code-review`, `/code-review`, `bmad-code-review`, or an ad-hoc review —
+**Any code review — `/cicd-code-review`, `/code-review`, `bmad-code-review`, or an ad-hoc review —
 writes its findings INTO the session/story `walkthrough.md` as a `## Code Review (<date>)` section.**
 Presenting findings only inline in the chat is NOT sufficient, and a standalone review file is no
 longer the home. The section carries:
 - the canonical verdict line — **`Verdict: PASS|CONCERNS|FAIL|WAIVED @ <reviewed-sha>`** — plus the
-  SHA the suite evidence was measured on. This line is what `/sudo-update-sprint-memory` reads before
+  SHA the suite evidence was measured on. This line is what `/cicd-update-sprint-memory` reads before
   flipping a story to `done`; any code/test diff between that SHA and HEAD invalidates the verdict.
 - scope (files/diff reviewed) and method/effort — one line each,
 - **ONE findings table** (the only copy anywhere — the story file links here, never restates):
@@ -244,7 +244,7 @@ minimal walkthrough and put the section in it. Multiple reviews append multiple 
 > a walkthrough has no `## Code Review` section. **Never write a NEW review to those paths.**
 
 ### 7. Append `## Self-Audit (<date>)` to `implementation_plan.md` (whenever the pre-dev audit runs)
-**Every `/sudo-self-audit` run appends its result INTO the plan it audited** as a
+**Every `/cicd-self-audit` run appends its result INTO the plan it audited** as a
 `## Self-Audit (<date>)` section — presenting findings only inline in the chat is NOT sufficient, and
 a standalone audit file is no longer the home. The section carries: the right-size level
 (Skip/Light/Full), **one line per phase walked** (what was checked and cleared — the evidence the
@@ -269,8 +269,8 @@ When Daniel says **"review"** (or asks to review a document/plan), EVERY agent m
 - **Investigatory requests** ("explain how X works", "where is Y?") — no artifacts needed.
 - **Trivial one-liners** (typo, comment fix) — mention what you changed; skip the full cycle.
 - **Daniel explicitly says** "skip the plan, just do it" — still write a walkthrough after.
-- **`/sudo-quick-dev`** — **invoking that command IS the "skip the plan" instruction above**, the same way
-  invoking `/sudo-update-sprint-memory` IS the close-out sign-off. It runs no `implementation_plan.md` and
+- **`/cicd-quick-dev`** — **invoking that command IS the "skip the plan" instruction above**, the same way
+  invoking `/cicd-update-sprint-memory` IS the close-out sign-off. It runs no `implementation_plan.md` and
   waits for no "approved"; its gate is the human review at the end. The exemption is conditional on its
   guards staying intact — the worktree/chore branch, the acceptance criteria fixed in Step 1, the EJECT
   tripwire, and the mandatory review gate. **A fired tripwire re-arms this gate:** the moment the work
@@ -294,10 +294,10 @@ When Daniel says **"review"** (or asks to review a document/plan), EVERY agent m
 - NEVER write the task outline, evidence, review, or "Your Actions" as separate files — they are sections inside `walkthrough.md` (§5).
 - NEVER let a living doc blow its budget (see The Lean Artifact Set) — compress in place; a re-run
   REPLACES pasted totals, only the `## Suite Ledger` accretes.
-- NEVER edit a project file for a commit-producing lane before opening its worktree — story and Task lanes alike (SCC-62: story → `claude/*` off the epic branch, ad-hoc/Task → `chore/*` off `main`) — then commit your own work inside it freely (explicit paths, never `git add -A`). Landing on the epic branch needs Daniel's sign-off; `main` is his alone (via `/sudo-push-e2e` for an epic, `/close-task-merge-tree` for a Task). Full policy → the `git-policy` + `worktree-per-story` rules.
+- NEVER edit a project file for a commit-producing lane before opening its worktree — story and Task lanes alike (SCC-62: story → `claude/*` off the epic branch, ad-hoc/Task → `chore/*` off `main`) — then commit your own work inside it freely (explicit paths, never `git add -A`). Landing on the epic branch needs Daniel's sign-off; `main` is his alone (via `/cicd-push-e2e` for an epic, `/smh-close-task-merge-tree` for a Task). Full policy → the `git-policy` + `worktree-per-story` rules.
 - NEVER deliver code-review findings inline-only — append the `## Code Review (<date>)` section to the
   walkthrough (§6); never mint a standalone review file (legacy paths are read-only history).
-- NEVER deliver `/sudo-self-audit` findings inline-only — append the `## Self-Audit (<date>)` section
+- NEVER deliver `/cicd-self-audit` findings inline-only — append the `## Self-Audit (<date>)` section
   to the plan (§7); never mint a standalone audit file.
 
 ## Why this matters

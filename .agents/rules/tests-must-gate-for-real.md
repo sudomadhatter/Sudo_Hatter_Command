@@ -68,7 +68,7 @@ fiction red at ①, wrong CI entrypoint, report-only-forever — each of which t
 cheap (grep the source, check the CI command, put an owner on every soft gate); the failure — a suite that
 looks green while protecting nothing — is not.
 
-**Rule 4 source: AGY story 21.8b, 2026-08-02.** `/sudo-dev-story-tests` Step 3 mandated the full-suite run
+**Rule 4 source: AGY story 21.8b, 2026-08-02.** `/cicd-dev-story-tests` Step 3 mandated the full-suite run
 *before* Step 4 (`bmad-testarch-automate`) — the step whose whole job is adding tests. Following the spec
 literally produced totals (3008 @ `66069c99`) that staled the instant expansion landed; the agent caught it
 and paid a SECOND full run (3012 @ `7423eadf`) to hand ③ a valid pair. One full backend suite is **278 s

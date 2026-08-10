@@ -66,6 +66,9 @@ def build(root: Path) -> Path:
                                         encoding="utf-8")
 
     legacy = repo / "_bmad-output/implementation-artifacts"
+    # SCC-63: the historical files carry the RETIRED `sudo-` prefix and were never
+    # renamed (they live in project trees, not the lobby). The fallback must still
+    # find them, so the fixture keeps the old name on purpose.
     (legacy / "sudo-code-review-17.2.md").write_text("# Review\nVerdict: PASS\n",
                                                      encoding="utf-8")
     (repo / "backend").mkdir()
@@ -130,6 +133,19 @@ def main() -> int:
                 bool(found) and all(s != "ERROR" for s, _ in found)
                 and any("legacy" in m or "pre-08-02" in m for _, m in found),
                 str(found)[:110])
+
+        # SCC-63: the fallback globs BOTH prefixes. The fixture above is the RETIRED
+        # `sudo-` name (real history, never renamed); this proves the new one resolves
+        # too, and that a sweep collapsing the pair to one prefix is caught.
+        c.check("SCC-63 the retired sudo- artifact name still resolves",
+                cp.legacy_verdict(repo, "17-2-legacy") is not None,
+                "back-compat glob lost the sudo- prefix - every historic story goes red")
+        newname = repo / "_bmad-output/implementation-artifacts/cicd-code-review-19.9.md"
+        newname.write_text("# Review\nVerdict: PASS\n", encoding="utf-8")
+        c.check("SCC-63 the cicd- artifact name resolves as well",
+                cp.legacy_verdict(repo, "19-9") is not None,
+                "back-compat glob lost the cicd- prefix")
+        newname.unlink()
 
         rep = wf.Report()
         cp.check_artifacts(repo, "21-8-master-demo", rep)

@@ -127,7 +127,7 @@ If any are missing, HALT and report which.
 8. **DO NOT flip sprint-status to done.** Leave the story file Status at `review`
    and DO NOT touch `sprint-status.yaml`. (This matches the `bmad_code_review_sudo_fix`
    rule, which now also stops at `review` — no longer an override, just alignment.) The
-   human sign-off gate (Stage 5 of the loop) + `/sudo-update-sprint-memory` owns the
+   human sign-off gate (Stage 5 of the loop) + `/cicd-update-sprint-memory` owns the
    final `done` flip.
 
 9. **Patch findings:** Per the fast-path rule, since `{spec_file}` is set, leave

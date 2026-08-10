@@ -11,7 +11,7 @@
 sugar switch) that route the **Dev lane (Stage 1 Plan + Stage 3 Implement)** through an
 Anthropic-compatible endpoint (Z.ai's GLM 5.2) so that token-heavy code-writing spends **zero Claude
 subscription tokens**. The QA lane (Stages 2 + 4) stays on Claude. Empty flags = byte-identical to the
-existing all-Claude engine, so this is purely additive and cannot change `/autopilot_claude`.
+existing all-Claude engine, so this is purely additive and cannot change `/cicd-autopilot-claude`.
 
 ---
 
@@ -90,7 +90,7 @@ cp Projects/AGY_AVIATIONCHAT/.claude/commands/autopilot_glm.md "<target-project>
 cp Projects/AGY_AVIATIONCHAT/.agents/commands/autopilot_glm.md "<target-project>/.agents/commands/autopilot_glm.md"
 ```
 It's a thin wrapper (only the `-Glm` delta + key prereq); it defers all reporting mechanics to
-`/autopilot_claude`, so it needs no per-project edits.
+`/cicd-autopilot-claude`, so it needs no per-project edits.
 
 ## 5. Verify (do all three — none spend money)
 
@@ -112,11 +112,11 @@ powershell -NoProfile -File "<ENG>" -Story <id> -Glm
 
 - `grep -c DevBaseUrl "$ENG"` ≥ 1, parses clean, dry-run shows the HYBRID line, keyless run fails fast.
 - `/autopilot_glm` exists in the project's command dir(s).
-- `/autopilot_claude` is **unchanged in behavior** (the flags are opt-in; default path is byte-identical).
+- `/cicd-autopilot-claude` is **unchanged in behavior** (the flags are opt-in; default path is byte-identical).
 
 ## Do NOT
 
-- Do not touch `/autopilot_claude`'s defaults or the QA lane (Stages 2 + 4 must stay on Anthropic).
+- Do not touch `/cicd-autopilot-claude`'s defaults or the QA lane (Stages 2 + 4 must stay on Anthropic).
 - Do not put the Z.ai key on the command line or in a committed file — it comes from `$env:Z_AI_API_KEY`.
 - Do not port to `/autopilot_mobile` as part of this task — that's a separate Workflow-engine mirror
   decision (see the `autopilot-glm-hybrid-lane` / `autopilot-mobile-mirrors-claude` memory).

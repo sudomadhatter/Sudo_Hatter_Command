@@ -7,7 +7,7 @@ description: "PRIORITY ZERO — No project file may be modified until Daniel app
 
 > This rule OVERRIDES every skill, workflow, and slash command — including BMAD dev-story, create-story, and any future skill that has its own "execute" steps. If a skill says "mark in-progress" or "implement now," STOP — that instruction is subordinate to this gate.
 >
-> **The one carve-out lives in the exemption list, not here** (see "When to Skip" below): `/sudo-quick-dev`
+> **The one carve-out lives in the exemption list, not here** (see "When to Skip" below): `/cicd-quick-dev`
 > is operator-invoked, and invoking it IS the "skip the plan" instruction. Naming it inline here as
 > *overridden* is what put this rule and that command in direct contradiction — two copies of a gate's
 > scope drift apart, and each one reads authoritative.
@@ -48,7 +48,7 @@ single session on 2026-08-09, which is why they are now written down.
   this", "that is a bug and a problem". These commission the work; the plan step is still owed.
   Being told to build something is the *reason* to write a plan, not permission to skip it.
 - ⛔ **An answer to a clarifying question.** That is information, not consent.
-- ⛔ **A correction or an overrule** ("no, it is `sudo-parallel-check`"). A correction narrows the
+- ⛔ **A correction or an overrule** ("no, it is `cicd-parallel-check`"). A correction narrows the
   plan; it does not open the gate. **Edit the plan and stop AGAIN** — a correction restarts the
   wait, it never ends it.
 
@@ -63,7 +63,7 @@ Present options for *design forks*. Ask for approval in **plain text**, and wait
 
 ### The carve-outs are a CLOSED list
 
-There is a real rule that invoking a command IS the sign-off — `/sudo-quick-dev`, and the close-out
+There is a real rule that invoking a command IS the sign-off — `/cicd-quick-dev`, and the close-out
 commands. That list lives in `artifacts-always-first.md` § "When to Skip" and nowhere else. It does
 **not** generalize from *"the operator told me to do the work"* to *"the gate is open."* If you are
 reasoning your way toward an exemption that is not written in that list, you are bypassing the gate.
@@ -83,7 +83,7 @@ BMAD skills (`bmad-dev-story`, `bmad-quick-dev`, etc.) have execution steps that
 
 > **Read this together with the carve-out at the top.** `bmad-quick-dev` appears in that list because a
 > **bare** invocation of it is gated like any other skill. It is NOT gated when it runs as the engine of
-> `/sudo-quick-dev` — that command's invocation IS the skip instruction, and its EJECT tripwire re-arms
+> `/cicd-quick-dev` — that command's invocation IS the skip instruction, and its EJECT tripwire re-arms
 > the gate. Same skill, two callers, two answers; the caller decides, never the skill and never the size
 > of the change.
 

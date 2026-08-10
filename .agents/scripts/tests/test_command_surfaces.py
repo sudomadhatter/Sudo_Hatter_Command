@@ -62,7 +62,7 @@ def main() -> int:
     c = Cases("command surface contracts")
 
     cmds = sorted(p for p in (ROOT / ".agents/commands").glob("*.md")
-                  if not p.stem.endswith("_AP") and p.name != "INDEX.md")
+                  if not p.stem.endswith("-AP") and p.name != "INDEX.md")
     master_skills = ROOT / ".agents/skills"
     claude_skills = ROOT / ".claude/skills"
 
@@ -135,8 +135,8 @@ def main() -> int:
 
     # ── Hand-authored skills are never overwritten by the generator ───────────
     # These carry real content (boundaries, routing notes) a stub would destroy.
-    hand = ["sudo-park", "sudo-resume", "sudo-close-workingtree", "close-task-merge-tree",
-            "sudo-update-sprint-memory", "update-maps-indexes"]
+    hand = ["cicd-park", "cicd-resume", "cicd-close-workingtree", "smh-close-task-merge-tree",
+            "cicd-update-sprint-memory", "smh-update-maps-indexes"]
     clobbered = [n for n in hand
                  if (master_skills / n / "SKILL.md").is_file()
                  and GEN in read(master_skills / n / "SKILL.md")]
@@ -168,11 +168,11 @@ def main() -> int:
             "one door per platform per command" in agents_md.lower()
             and "launcher skill" in agents_md,
             "AGENTS.md no longer documents the door model")
-    sync_cmd = read(ROOT / ".agents/commands/sync-agents.md")
+    sync_cmd = read(ROOT / ".agents/commands/smh-sync-agents.md")
     c.check("sync-agents command doc names both retired doors",
             "RETIRED door" in sync_cmd and "/prompts:<name>" in sync_cmd
             and "Do not use `-Maintained`" in sync_cmd,
-            "sync-agents.md no longer matches what the engine does")
+            "smh-sync-agents.md no longer matches what the engine does")
 
     return c.finish()
 

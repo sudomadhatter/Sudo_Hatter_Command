@@ -361,7 +361,7 @@ through each as needed:
   >
   > ⚠️ **`gitnexus analyze` rewrites tracked skill docs** (`.claude/skills/gitnexus/*/SKILL.md`) to
   > match the installed version. Upstream those to the `.agents/` master before committing, or the
-  > next `/sync-agents` reverts them — and keep every machine on the same gitnexus version, or they
+  > next `/smh-sync-agents` reverts them — and keep every machine on the same gitnexus version, or they
   > will flip-flop the same three files forever.
 - **opencode**: one of the four platforms the toolkit syncs to, and **none of it travels** (2026-08-06,
   the Mac). A clone brings the repo-side surface only — `opencode.json`, `.opencode/commands/` (47) and
@@ -372,8 +372,8 @@ through each as needed:
   pwsh -File .agents/scripts/sync-agents.ps1 -GlobalsOnly   # 2. the ~/.config/opencode/commands cache
   opencode auth login               # 3. provider credentials — INTERACTIVE, cannot be scripted
   ```
-  > **The global command cache is what makes `/sudo-*` work outside a synced repo.** Step 2 is the same
-  > `/sync-agents -GlobalsOnly` used on Windows; it also refreshes the Antigravity workflows, the Codex
+  > **The global command cache is what makes `/cicd-*` work outside a synced repo.** Step 2 is the same
+  > `/smh-sync-agents -GlobalsOnly` used on Windows; it also refreshes the Antigravity workflows, the Codex
   > prompts and the 56 bmad-* Codex skills. Expect `opencode global -> 47 cmds`.
   >
   > ⛔ **`sync-agents.ps1` could not do step 2 on macOS before 2026-08-06 — and it failed in the two ways
@@ -388,7 +388,7 @@ through each as needed:
   > `~/.local/share/opencode/auth.json`, are machine-local like every other login in this section, and
   > `opencode auth login` is a TUI — an agent cannot run it. Until it is done, `opencode models` lists
   > only the free `opencode/*` tier and every pinned agent fails. The `.opencode/agent/opus-*` files and
-  > `/autopilot_opencode` pin **`openrouter/…`** models, so the provider to authenticate is **OpenRouter**
+  > `/cicd-autopilot-opencode` pin **`openrouter/…`** models, so the provider to authenticate is **OpenRouter**
   > unless that pin changes. Verify with `opencode auth list`, then `opencode models | grep openrouter`.
   >
   > ⚠️ **opencode gets no MCP servers from this repo — on any platform.** It reads `mcp` out of
@@ -494,7 +494,7 @@ through each as needed:
   > rename re-points it — see `rename-fix.ps1`'s header and §3 of this folder's
   > `INDEX.md`. Skipping that step is what stranded 15 memory files here.
 - **Git worktrees**: never travel between machines. If the operator parked
-  work with `/sudo-park`, run `/sudo-resume` to recreate worktrees from the
+  work with `/cicd-park`, run `/cicd-resume` to recreate worktrees from the
   pushed branches — do not expect `git worktree list` to show anything.
 
 ## 6. Manual restore (no script available)

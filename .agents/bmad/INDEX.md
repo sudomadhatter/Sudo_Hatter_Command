@@ -2,7 +2,7 @@
 
 BMAD install (agents, workflows, install manifests). Regenerated on BMAD update — never hand-edit.
 
-> ⛔ **NOT mirrored to projects.** `/sync-agents` excludes `bmad/` from the vendor **entirely** — BMAD
+> ⛔ **NOT mirrored to projects.** `/smh-sync-agents` excludes `bmad/` from the vendor **entirely** — BMAD
 > self-installs per repo and `project_name` is per-project identity, so master never overwrites it.
 > (Corrected 2026-08-08, SCC-40: this line previously claimed the opposite, and that false claim is why
 > two team overrides were hand-edited here — where nothing reads them — while the live copies stayed
@@ -14,7 +14,7 @@ BMAD install (agents, workflows, install manifests). Regenerated on BMAD update 
 > never here.
 
 ## Top-level contents
-<!-- auto-listed by /update-maps-indexes — refresh via /update-maps-indexes; do not hand-edit entries -->
+<!-- auto-listed by /smh-update-maps-indexes — refresh via /smh-update-maps-indexes; do not hand-edit entries -->
 - `_config/`
 - `bmm/`
 - `config.toml`

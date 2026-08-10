@@ -1,7 +1,7 @@
 """task_preflight.py — is this TASK branch safe to merge to main, and by WHICH gate? (SCC-49)
 
-`/close-task-merge-tree` closes **Task** work — workflow / IDE / rules / skills changes that
-never got an epic and a story, and so can never reach `/sudo-update-sprint-memory`. It merges
+`/smh-close-task-merge-tree` closes **Task** work — workflow / IDE / rules / skills changes that
+never got an epic and a story, and so can never reach `/cicd-update-sprint-memory`. It merges
 to `main`, which makes it the second command in the system allowed anywhere near production,
 and that is exactly why its preconditions are a script rather than a checklist.
 
@@ -9,7 +9,7 @@ The load-bearing question is the LANE, and it is the one an agent is worst at an
 honestly about its own work: *does this change reach anything that deploys?*
 
     LOCAL    - nothing deployable changed. The repo's own enforcement suite IS the whole gate.
-    HANDOFF  - a deployable path changed. STOP; this is `/sudo-push-e2e`'s job, not a task.
+    HANDOFF  - a deployable path changed. STOP; this is `/cicd-push-e2e`'s job, not a task.
 
 It is derived from the repo, never asserted:
 
@@ -49,10 +49,10 @@ BRANCH_RE = re.compile(r"^chore/([A-Z][A-Z0-9]*)-(\d+)-(.+)$")
 # Branches this command is deliberately NOT for, and where each one actually goes. A refusal
 # that names the right command costs nothing; a bare "wrong branch" sends someone hunting.
 WRONG_LANE = {
-    "epic/": ("/sudo-push-e2e", "an epic branch ships through the full gate, not this one"),
-    "claude/": ("/sudo-update-sprint-memory",
+    "epic/": ("/cicd-push-e2e", "an epic branch ships through the full gate, not this one"),
+    "claude/": ("/cicd-update-sprint-memory",
                 "a story branch lands on its EPIC branch at close-out, never on main"),
-    "incident/": ("/sudo-mobile-error-team", "incident branches have their own lane"),
+    "incident/": ("/cicd-mobile-error-team", "incident branches have their own lane"),
 }
 
 # Directories whose contents deploy. Presence answers "does this repo deploy at all?";
@@ -157,7 +157,7 @@ def check_intent(branch: str, key: str | None, expect: str, rep: wf.Report) -> N
 # ── 1c. The task manifest, when one exists ─────────────────────────────────────
 
 MANIFEST_SCHEMA = ("task_key: SCC-00 | primary_repo: <name> | branch: chore/SCC-00-<slug> | "
-                   "close_command: close-task-merge-tree | "
+                   "close_command: smh-close-task-merge-tree | "
                    "secondary_repos: [{repo, landing: independent-task|retain-on-epic, ticket}]")
 
 
@@ -237,7 +237,7 @@ def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report) -> None:
 def check_base(repo: Path, branch: str, rep: wf.Report) -> None:
     """Absorb main HERE, so a conflict surfaces on the chore branch and never on main.
 
-    Same reason `/sudo-push-e2e` merges `origin/main` into the epic branch before it gates:
+    Same reason `/cicd-push-e2e` merges `origin/main` into the epic branch before it gates:
     whatever the gate runs on has to be what the merge will actually produce."""
     base = base_ref(repo)
     ahead = wf.git(["rev-list", "--count", f"{base}..{branch}"], repo)
@@ -289,7 +289,7 @@ def check_scope(repo: Path, branch: str, rep: wf.Report) -> tuple[str, list[str]
         # reaches deployable code is not a task; it is a change to the product, and the
         # product has one road to main.
         rep.err("scope", f"deployable path(s) changed: {', '.join(touched)} - this is NOT "
-                         f"task-lane work. STOP and ship it with /sudo-push-e2e.")
+                         f"task-lane work. STOP and ship it with /cicd-push-e2e.")
         return "HANDOFF", touched
     rep.info("scope", f"repo deploys ({', '.join(surface)}) but this diff touches none of "
                       f"them - the deploy gate cannot be affected by it")
@@ -327,7 +327,7 @@ def check_artifacts(repo: Path, key: str | None, rep: wf.Report) -> None:
 def check_worktree(repo: Path, branch: str, rep: wf.Report) -> None:
     """A worktree checked out on this branch blocks `git branch -d` after the merge, and
     deleting through one destroys the shared assets it junctions to
-    (`/sudo-close-workingtree` Step 3a)."""
+    (`/cicd-close-workingtree` Step 3a)."""
     out = wf.git(["worktree", "list", "--porcelain"], repo).stdout
     # [0] is the MAIN checkout, which is standing on this branch by definition when the
     # command runs from it - reporting that as "a worktree holds your branch" is a warning
@@ -337,7 +337,7 @@ def check_worktree(repo: Path, branch: str, rep: wf.Report) -> None:
         br = re.search(r"^branch refs/heads/(.+)$", block, re.MULTILINE)
         if wt and br and br.group(1).strip() == branch:
             rep.warn("worktree", f"{Path(wt.group(1)).name} is checked out on {branch} - "
-                                 f"remove it with /sudo-close-workingtree before deleting "
+                                 f"remove it with /cicd-close-workingtree before deleting "
                                  f"the branch (never delete through its junctions)")
 
 
@@ -347,7 +347,7 @@ def gate_plan(repo: Path, lane: str) -> list[str]:
     """The commands the caller must actually run. Printed rather than executed: this script
     reports, and a gate that a preflight ran quietly is a gate nobody read the output of."""
     if lane != "LOCAL":
-        return ["/sudo-push-e2e   (the full gate: suite + build + /sudo-e2e GREEN)"]
+        return ["/cicd-push-e2e   (the full gate: suite + build + /cicd-e2e GREEN)"]
     plan: list[str] = []
     if (repo / ".agents/scripts/tests/run_all.py").is_file():
         plan.append("python3 .agents/scripts/tests/run_all.py")

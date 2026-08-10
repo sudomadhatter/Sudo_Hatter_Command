@@ -122,7 +122,7 @@ _SPAN_RE = re.compile(r"`[^`\n]*`")
 def strip_code(text: str) -> str:
     """Blank out fenced blocks and inline code spans.
 
-    Docs that TEACH a bad pattern quote it verbatim — `sudo-prune-context.md` says
+    Docs that TEACH a bad pattern quote it verbatim — `cicd-prune-context.md` says
     "no `a-hat-euro` mojibake, use a real em dash" — so a naive scan flags the very file
     telling you not to do it. Same shape as the source-grep gate a comment satisfied
     (memory: comment-literals-invert-source-grep-tests): match PROSE, not quoted examples."""
