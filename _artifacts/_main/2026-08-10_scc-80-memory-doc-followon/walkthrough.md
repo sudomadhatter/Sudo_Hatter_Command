@@ -126,11 +126,34 @@ sentinels"* is being claimed. The only real deltas are the two the operator's mo
 > generator, kills the class permanently, and silences the false `STALE` for every future lane.
 > It touches a shared generator plus `check_maps.py`, so it deserves its own ticket.
 
+## Third pass — SCC-78 landed mid-lane
+
+Preflight caught it, exactly as designed: `origin/main has 9 commit(s) NOT on this branch` and
+`1 file(s) changed on BOTH sides: workflows_testing_SOP.md`. Merged down; **no conflict**, and both
+sides' facts verified present afterwards — SCC-80's `rotted_pointers` sentence in the
+`/smh-memory-audit` row, and SCC-78's whole `smh-*` Task-lane section.
+
+**This is also the trap's second, cleaner proof.** 25 files arrived from that lane, `check_maps` said
+`AUTO block is STALE`, and regenerating produced **exactly one changed line: the root label**. The
+new files are all under `.agents/`, `.claude/`, `.opencode/` — dot-directories the AUTO tree does not
+descend into — and the `_artifacts/` addition falls inside a collapsed summary. Re-proved
+byte-identical against a correctly-named root *after* the merge. **The map was already current; the
+warning had nothing but the worktree's own name to report.**
+
+One real gap surfaced and was fixed: SCC-78's merge landed **without its `_artifacts/_main/INDEX.md`
+row**, which `check_maps` flagged as `missing row for 2026-08-10_scc-78-smh-task-lane-dev-cycle/`.
+Row written here from that lane's own walkthrough and attributed — a drift on `main` that this
+branch would otherwise have carried forward silently.
+
 ## Gates
 
-`run_all` **12/12** (SOP-folder block **16/16**) · memory gate **16/16** · **50 links, 0 dead** ·
-lint **0 errors** (2 warnings, pre-existing on main) · `check_maps` clean on every real check —
-repo-map paths, folder coverage, INDEX paths, level-2 INDEX presence, structure conformance.
+`run_all` **12/12 exit 0** (SOP-folder block **16/16**, memory store green) · lint `--toolkit-only`
+**0 errors** (2 warnings, pre-existing on main) · `sop_currency` **exit 0** (no usage surface
+touched) · `check_maps` **clean on every real check** — repo-map paths, folder coverage, INDEX paths,
+level-2 INDEX presence, depth-3 `_artifacts` INDEX, structure conformance. The one remaining
+`check_maps` line is the worktree label phantom documented above, now also written to memory as
+[`check-maps-stale-is-false-in-worktrees`](../../_memory/check-maps-stale-is-false-in-worktrees.md)
+so the next lane inherits the cure rather than the warning.
 
 ## ⚠ Handed back — open items
 
