@@ -129,6 +129,12 @@ that can pass while git never invokes the hook at all, which is precisely the fa
 - **`core.hooksPath` is per-machine and does not travel.** The PC needs `git config core.hooksPath
   .githooks` set independently or it is silently ungated. The suite now asserts it is set *and*
   relative.
+- ⭐ **A trailing slash in `.gitignore` matches directories ONLY — and worktree assets are symlinks.**
+  `**/node_modules/` ignored the real directory in the shared checkout and **missed the symlink**
+  `link-worktree-assets.py` creates in every worktree. `task_preflight.py` counted that link as an
+  uncommitted change and returned `BLOCKED` for a lane that was completely clean. It blocked this
+  one. Fixed by dropping the trailing slash on `node_modules`, `.venv`, `venv` — verified no
+  previously-tracked path becomes ignored. **This affected every worktree lane, not just this task.**
 
 ## Known limits — documented in `git-policy.md` and the SOP, not hidden
 
