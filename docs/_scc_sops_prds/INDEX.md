@@ -25,7 +25,7 @@ this folder, and they cover **different things** — neither is a substitute for
 
 | Mechanism | What it actually catches | Blind to |
 |---|---|---|
-| `.agents/scripts/tests/test_sops_prds_folder.py` (in `run_all`) | this INDEX vs the directory **both ways**, every **markdown link** target, every `/command` reference resolving to a real master, the 13-doc manifest, and the SOP gate's two paths agreeing | prose that names no link |
+| `.agents/scripts/tests/test_sops_prds_folder.py` (in `run_all`) | this INDEX vs the directory **both ways**, every **markdown link** target, every `/command` reference resolving to a real master, the 11-doc manifest, and the SOP gate's two paths agreeing | prose that names no link |
 | `check_maps.py` | **backticked multi-segment paths inside table rows**, plus level-2 INDEX presence and repo-map coverage | markdown links, and anything outside a table row |
 
 That split is worth knowing before trusting either: `check_maps.py` reads table cells, so a dead
@@ -34,7 +34,14 @@ folder landed (a planted dead path fails one, a planted dead link fails the othe
 
 **Adding a doc here** is a deliberate act: drop the file, add a row below, and add its filename to
 `EXPECTED` in that test. The manifest is a contract — a doc appearing without a test change is
-exactly the drift being guarded against.
+exactly the drift being guarded against. **Removing one is the same three edits in reverse** — file,
+row, `EXPECTED` — and the test fails loudly if you do fewer than all three.
+
+**What does not belong here:** machine-setup and install guides. They tell you how to *build a
+workstation*, not how to run the workflow, and they are read once per machine rather than during
+work. `../md_feedback_setup_guide.md` was moved up to `docs/` on that basis (2026-08-10). It stays
+inside `docs/`, so it is still on the maintained surface and still covered by `check_maps.py` — the
+boundary being drawn is "SOP vs setup," never "watched vs unwatched."
 
 ## The operator's PRD
 
@@ -56,7 +63,6 @@ exactly the drift being guarded against.
 |---|---|
 | [file_folder_structure+maintaining.md](file_folder_structure+maintaining.md) | **The one-stop guide to the home base — and the single system overview.** SCC-80 retired `complete-system-overview.md` into it (2026-08-10): 7 of that doc's 10 sections had a counterpart here, its §8 named a script that no longer exists and its §9 was a completed rollout plan. Its Glossary survives as §10a. — the folder-as-workspace routing system, what lives where, and how it is kept healthy. The living overview that sits on top of `../workspace-standard.md`. |
 | [autopilot_bmad_dev_loop.md](autopilot_bmad_dev_loop.md) | **The autopilot reference** — the 4-stage Dev/QA relay (Plan → Audit → Implement → Review+Fix): engine/harness split, the Engine Adapter, session continuity, the resilience + test-gate model, the model/effort ladder (§5b), and the worktree-based concurrency model. Covers every engine — `/cicd-autopilot-claude`, `/cicd-autopilot-deepseek4`, `/cicd-autopilot-opencode`. Moved out of the toolkit's retired `reference` folder by SCC-74, which also resolved a six-week-stale duplicate. |
-| [md_feedback_setup_guide.md](md_feedback_setup_guide.md) | Setting up the **MD Feedback** MCP server (annotations read straight from markdown) for Claude, opencode and Antigravity on a new machine. |
 
 ## Testing & quality
 

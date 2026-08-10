@@ -48,6 +48,7 @@
 - [Pruned worktree blocks re-add](pruned-worktree-leaves-a-blocking-shell.md) — the empty dir blocks `worktree add`; only PowerShell deletes it.
 - [Worktrees skip gitignored assets](worktrees-do-not-inherit-gitignored-assets.md) — copy auth_keys/ + .env; junction node_modules; `npm ci` for E2E.
 - **Ops surfaces** — [overseer jobs paused by design](overseer-jobs-paused-by-design.md) (both PAUSED 07-17; resume overseer-nightly only) · [Sentry API](sentry-api-access-aviationchat.md) (token in backend/.env; control vs region host split; loop-guard filter is sacred) · [incident pipeline 16.2](incident-pipeline-16-2-operations.md) (agent lane PRIMARY; fire endpoint is the fallback).
+- [GitHub 408 on satellite wifi](github-408-on-satellite-uplink.md) — operator flies; push dies mid-upload while reads pass; never a hook/gate/limit — chunk via scratch-ref commits or wait for landing.
 
 ## Testing
 - **A green or a red can lie** — [a red can die pre-assertion](red-test-can-die-before-its-assertion.md) (a failure in SEEDING looks identical; read WHICH line raised) · [stubbed children = vacuous green](stubbed-children-make-green-vacuous.md) (mocking its panels proves NAVIGATION, only) · [a piped gate hides its exit code](piping-a-gate-hides-its-exit-code.md) (`| tail` → `$?` is TAIL's; run gates bare) · [`echo` truncates at `\c`](echo-truncates-at-backslash-c.md) (`.claude\commands` has one; use `printf`).

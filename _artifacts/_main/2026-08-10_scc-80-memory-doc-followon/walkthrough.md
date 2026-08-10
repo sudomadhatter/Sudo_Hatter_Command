@@ -73,22 +73,77 @@ together, 13 → 12 docs, and the suite stayed green.
 (*how you drive it* / *why it is built that way*) and cross-reference each other; merging yields a
 73 KB doc forcing GUI work through hook internals.
 
+## Second pass — the operator's own edits, rolled in
+
+Made on `main` in the working tree and folded onto this branch on instruction (*"roll any of my
+folder and file changes into this push"*):
+
+**`md_feedback_setup_guide.md` moved up out of `_scc_sops_prds/` to `docs/`.** A machine-setup
+guide, not an SOP: it tells you how to build a *workstation*, not how to run the workflow, and it is
+read once per machine rather than during work. **This is a scope line, not a demotion** — the file
+stays inside `docs/`, so `check_maps.py` still covers it. The distinction being drawn is *SOP vs
+setup*, never *watched vs unwatched*; that sentence is now written into the INDEX, `docs/AGENTS.md`
+and the test docstring, because the failure mode this whole folder exists to prevent is a doc
+drifting out of scanner scope while everyone assumes it is covered.
+
+The contract took all three edits again — file, INDEX row, `EXPECTED` — **13 → 11 docs**. The
+docstring now records both shrinks and why each happened, so the next reader sees a manifest that
+moves in both directions rather than a number that only grew.
+
+**The parked memory pair is committed** (open item 4 below, now closed): `github-408-on-satellite-uplink.md`
+plus its one `MEMORY.md` index line, carried across byte-identical to the main checkout's copy. It
+now travels to the PC.
+
+## ⭐ The repo-map trap, resolved by proof instead of avoidance
+
+Open item 1 said *don't touch it*. The operator's move forces a regen — `docs/AGENTS.md` requires
+one whenever a file is added or removed there — so avoidance stopped being available and the trap
+had to be disarmed properly.
+
+`generate_repo_map.py` labels the tree with **`Path(root).name`**. Run inside a worktree that is
+`scc-80-followon/`, and it writes *that* as the repo root into a file destined for `main`. Worse,
+`check_maps.py` compares the two and reports the **correct** map as `AUTO block is STALE`, with a
+regenerate command that would introduce the very corruption it appears to be reporting:
+
+```
+[x] AUTO block is STALE - regenerate: ... --root .../scc-80-followon
+[x]   on disk but not in map: scc-80-followon/      <- the worktree's own name
+[x]   in map but not on disk: Sudo_Hatter_Command/  <- the CORRECT label it wants removed
+```
+
+So the warning is not merely noise — **it is an instruction to ship a defect**, and it fires on every
+lane, every time. What it actually detects is *"you are in a worktree,"* which is never drift.
+
+Handled: regenerated in place, then corrected that one label line, then **proved** the result rather
+than asserting it — the tree was copied to a directory whose basename *is* `Sudo_Hatter_Command`, the
+generator run against it, and the output compared. **Byte-identical.** The committed AUTO body is
+therefore genuine generator output, not a hand-edit, and no exception to *"never hand-edit inside the
+sentinels"* is being claimed. The only real deltas are the two the operator's move caused:
+`_scc_sops_prds` 14 → 12 files, `docs/` 9 → 10.
+
+> **Recommended follow-up (not taken here — out of this lane's scope):** derive the label from git's
+> **common dir** (the main worktree) instead of the CWD basename. That is a few lines in the
+> generator, kills the class permanently, and silences the false `STALE` for every future lane.
+> It touches a shared generator plus `check_maps.py`, so it deserves its own ticket.
+
 ## Gates
 
-`run_all` **12/12** · memory gate **16/16** · **50 links, 0 dead** · lint **0 errors** (2 warnings,
-pre-existing on main).
+`run_all` **12/12** (SOP-folder block **16/16**) · memory gate **16/16** · **50 links, 0 dead** ·
+lint **0 errors** (2 warnings, pre-existing on main) · `check_maps` clean on every real check —
+repo-map paths, folder coverage, INDEX paths, level-2 INDEX presence, structure conformance.
 
 ## ⚠ Handed back — open items
 
-1. **Pre-existing repo-map drift on `main`** (small file-count deltas) — **not this lane's**, and a
-   worktree *cannot* fix it: regenerating there writes the worktree's own directory name as the repo
-   root. That is the SCC-74 bug (fixed at `05938cf`). It must be regenerated from the main checkout.
-   ⛔ Do not "fix" the worktree's `AUTO block is STALE` warning — it is false there by construction.
+1. ~~**Pre-existing repo-map drift**~~ — **CLOSED in the second pass.** It was never drift on `main`;
+   it was the worktree label trap described above. Regenerated and proved byte-identical. The
+   underlying generator flaw remains and is written up as a recommended follow-up ticket.
 2. **`tea_testing_guide.md`** — titled *"**AviationChat** Test-Architecture Retrofit"*, 84
    project-specific hits in 926 lines. An AGY field guide the lobby now gates. Whether it belongs
    here is an architecture call needing an **AVCH** ticket.
 3. **AGY's `sudo_workflows_testing.md`** still at the old path/name — recorded as open drift in
    `sop-currency.md`; needs an AVCH ticket.
-4. **The parked pair** in the main checkout (`MEMORY.md` +1 line and
-   `github-408-on-satellite-uplink.md`) is still uncommitted, so that memory does not travel to the
-   PC. Not mine to commit under an audit.
+4. ~~**The parked pair**~~ — **CLOSED in the second pass**, committed here on operator instruction.
+5. **`rollout`** — an untracked 15-byte file at the repo root containing `YES - COMPLETE`. Nothing in
+   the toolkit writes it and no commit has ever touched it; it looks like a shell redirect that caught
+   an answer meant for a prompt. **Left untracked and undeleted** — not this lane's to remove, and a
+   stray file is cheaper than guessing wrong about one.
