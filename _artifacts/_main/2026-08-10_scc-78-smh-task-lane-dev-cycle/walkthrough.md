@@ -184,10 +184,15 @@ Audit verdict: GO   (after SA-2 was applied; GO was NOT available before it)
 ## Code Review (2026-08-10)
 
 ```
-Verdict: CONCERNS @ 467367d
+Verdict: CONCERNS @ 3e97408
 ```
 
-Suite evidence measured on `467367d` — the same sha as HEAD at review time, post-merge. No receipts:
+**Re-run 2026-08-10 at `3e97408`.** The first pass issued `CONCERNS @ 467367d`. Everything committed
+since is `_artifacts/` only, so the verdict survived its own validity test — but the whole floor was
+re-run bare at `3e97408` anyway rather than inherited, and the numbers below are that run. One
+disposition changed on an operator ruling (CR-3).
+
+Suite evidence measured on `3e97408` — the same sha as HEAD at review time, post-merge. No receipts:
 `gate_receipt.py` resolves a BMAD board and exits in the command centre, so the contract here is pasted
 output plus this recorded sha (the limit is stated in `/smh-code-review` Step 3).
 
@@ -201,21 +206,25 @@ ticket's ACCEPTANCE block; the command-centre gate; `/smh-clean-code-audit` at S
 |---|---|---|---|---|---|
 | CR-1 | `smh-clean-code-audit.md:20`, `smh-code-review.md:139` | FAIL | dead-reference | see SA-2 — the standard each command loads had moved | applied |
 | CR-2 | *(design)* | PASS-with-note | cross-family duplicate | The duplication the operator asked for is justified **mechanically**: `ruff`, `eslint`, `pyrefly` and `tsc` are absent here (`command -v` returns nothing; no venv, no `package.json`), so `/cicd-clean-code-audit` yields four SKIPPED checks — under its own rule, nothing checked, presenting as a pass. Named as a deliberate duplicate in both bodies. | kept |
-| CR-3 | `sync-agents.ps1:894` | FAIL (pre-existing) | door-parity | see SA-3 — repo-local mirror emits a 1,113 B launcher; the global cache gets the 13,042 B body | deferred |
+| CR-3 | `sync-agents.ps1:894` | ~~FAIL~~ → CONCERNS (pre-existing) | door-parity | see SA-3 — repo-local mirror emits a 1,113 B launcher; the Antigravity **global** cache gets the 13,042 B body, so 9 commands are silently dropped there | **accepted — operator ruling 2026-08-10: Antigravity/Gemini is the weak link and is out of the dev-workflow loop, so the only platform this breaks is one we are not using.** Repo-local door parity is 16/16 and unaffected. Recorded in SCC-79 §Related as a separate, deliberately un-folded fix |
 | CR-4 | *(tooling)* | CONCERNS | gate-has-no-tool | Both new commands mandate a "link + anchor" check with **no implementation behind it**. Written ad-hoc for this review; the first cut produced 15 false positives out of 16 by reading `<name>` and `*.md` placeholders as real paths. A gate defined only in prose is one an agent will improvise or skip. | deferred — see Your Actions #2 |
 | CR-5 | *(process)* | CONCERNS | evidence-order | The first gate run of this session executed in the **main checkout**, not the worktree, because `cwd` reset after a failed command. It produced a clean-looking but meaningless main-vs-main result. Caught by re-deriving branch state with explicit `git -C`. This is exactly what Step 0's "echo from command output, never from belief" exists to prevent — the discipline held, the habit did not. | applied — every later measurement uses `git -C <worktree>` |
 
 **Gate**
 
+All run **bare** at `3e97408` (never piped — a pipe returns the pipe's exit code, which is how a red
+gate reads as green):
+
 | Check | Result |
 |---|---|
-| `run_all.py` | **12/12 files passed** (includes SCC-74's new `test_sops_prds_folder.py`) |
-| `workflow_lint.py --toolkit-only` | **0 errors**, 2 warnings, 8 info — all pre-existing on `main` |
-| Link + anchor (my changed docs) | **53 real references, 0 dead** (15 placeholders skipped) |
+| `run_all.py` | **exit 0 · 12/12 files passed** (includes SCC-74's new `test_sops_prds_folder.py`) |
+| `workflow_lint.py --toolkit-only` | exit 1 · **0 errors**, 2 warnings, 8 info — every one pre-existing on `main` |
+| `sop_currency.py` (whole branch diff) | **exit 0** — the SOP moved with the surface |
+| Link + anchor, **all 23 changed `.md`** | **85 real references, 0 dead** (30 placeholders/globs skipped) |
 | Door parity (repo-local) | **16/16** — 4 commands × 4 platforms |
 | opencode mirrors vs masters | in sync, all 4 |
-| Antigravity global cache | ⛔ **FAIL** — see CR-3 |
-| SOP currency | satisfied — the SOP moved with the surface in the same commit |
+| Secrets / bare-`python` scan on the diff | clean |
+| Antigravity global cache | broken — **out of scope by operator ruling**, see CR-3 |
 | Acceptance items | 8/8 evidenced, including the operator's two mid-flight additions |
 
 **Independent validation worth recording:** SCC-74's new `test_sops_prds_folder.py` checks that every
@@ -244,16 +253,13 @@ typed command. Verdict held at **CONCERNS** by CR-3, CR-4 and CR-5; nothing bloc
 
 ## Your Actions
 
-1. **⛔ File a ticket for the Antigravity global-cache bug (CR-3 / SA-3).** `sync-agents.ps1` emits a
-   thin launcher into `.agents/workflows/` for any command over 11.5 KB (line 526) — but the machine-
-   global target at line 894 copies the **raw command body**. Nine commands now sit over Antigravity's
-   12k cap in `~/.gemini/antigravity/global_workflows` and are silently dropped there: mine ×4, plus
-   `cicd-close-workingtree`, `cicd-code-review`, `cicd-dev-story-tests`, `cicd-update-sprint-memory`,
-   `smh-close-task-merge-tree`. This is the **same failure class as SCC-56** — Antigravity missing
-   commands, silently. The fix looks small: publish the global Antigravity cache from
-   `.agents/workflows/` (which already holds the launchers) instead of `.agents/commands/`. Not done
-   here — it changes a usage surface and needs its own RED test. **I did not create the ticket; say the
-   word and I will.**
+1. **CLOSED — SCC-79 filed** (*Compact or split the long command workflow bodies into multiple files*,
+   under SCC-33). It carries the 9-command size census and, in a **Related** section, the
+   `sync-agents.ps1:894` bug kept deliberately separate. Per the operator ruling of 2026-08-10 that
+   bug is **de-prioritised, not forgotten**: Antigravity is out of the dev-workflow loop, so it is the
+   only platform it breaks. SCC-79 also states the constraint that matters most — do **not** byte-golf
+   prose to fit a cap for a platform we are not using; `artifacts-always-first` already rules that
+   length is never a reason to drop a finding, an AC, or evidence.
 2. **Consider making the link + anchor check a real script (CR-4).** Two new commands mandate it and
    nothing implements it. `.agents/scripts/` is the right home, `<placeholder>`/glob skipping is the
    one non-obvious requirement, and `run_all.py` is the natural gate.
