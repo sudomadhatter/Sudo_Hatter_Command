@@ -136,7 +136,7 @@ Artifact- and doc-only commits after that run do **not** invalidate it; code or 
 ## Step 3.5 — Gate: clean code (ALWAYS runs)
 
 **Invoke `/smh-clean-code-audit`**, bound to the same worktree Step 0 resolved. Its standards are
-`_my_resources/_quick_reference/sudo_workflows_testing.md` (the command centre's own) and
+`docs/_scc_sops_prds/workflows_testing_SOP.md` (the command centre's own) and
 `.agents/rules/code-standards.md` (for real code).
 
 - **No double drift-hunt.** Step 1 already walked these hunks — run the machine floor and the comment

@@ -119,7 +119,7 @@ reads at first like the Jira gate misbehaving:
 | Hook | Refuses | Armed by | Escape |
 |---|---|---|---|
 | **`pre-commit-encoding.sh`** | staged bytes that don't decode, or a literal `U+FFFD` | always on where installed | `<!-- wf-lint: allow-encoding-literals -->` in the file, for a doc that *quotes* mojibake on purpose |
-| **`sop-currency.sh`** | a change to `.agents/commands/`, `.agents/rules/`, `.agents/scripts/`, the git hooks or root `AGENTS.md` that does **not** also stage `_my_resources/_quick_reference/sudo_workflows_testing.md` | `.agents/scripts/git-hooks/SOP-ENFORCE` | `[sop-ok]` in the commit message |
+| **`sop-currency.sh`** | a change to `.agents/commands/`, `.agents/rules/`, `.agents/scripts/`, the git hooks or root `AGENTS.md` that does **not** also stage `docs/_scc_sops_prds/workflows_testing_SOP.md` | `.agents/scripts/git-hooks/SOP-ENFORCE` | `[sop-ok]` in the commit message |
 
 The second one is why changing a command and updating its documentation are one commit here rather than
 two, and why "I'll document it after" is not an available option.
@@ -344,7 +344,7 @@ flowchart TD
 ```
 
 **`/cicd-e2e` is not a separate step you run first.** It is the fourth item of the gate *inside*
-`/cicd-push-e2e` ([`cicd-push-e2e.md` Step 3](../../../.agents/commands/cicd-push-e2e.md)). The suite
+`/cicd-push-e2e` ([`cicd-push-e2e.md` Step 3](../../.agents/commands/cicd-push-e2e.md)). The suite
 runs **once per epic merge**. If you ever find yourself running `/cicd-e2e` and then `/cicd-push-e2e`
 back to back, you have paid for the suite twice for one merge.
 
@@ -410,7 +410,7 @@ you hunting for a suite that was never supposed to exist:
 | Why | it ships a product with a browser in front of it | it ships markdown, PowerShell and Python — there is no journey to drive |
 
 The lobby has no `frontend/` at all. Never improvise a substitute suite to fill the gap — `run_all.py`
-**is** the gate here, and [`cicd-push-e2e.md` Step 1](../../../.agents/commands/cicd-push-e2e.md)
+**is** the gate here, and [`cicd-push-e2e.md` Step 1](../../.agents/commands/cicd-push-e2e.md)
 already grants `chore/*` branches the light gate only.
 
 ---
@@ -847,7 +847,7 @@ Revoking is instant and total — the old string dies everywhere at once, so you
 
 - `.agents/rules/jira.md` — **the canonical agent-facing copy.** Edit that first; this doc is the human mirror
 - `_my_resources/_quick_reference/jira_manual.md` — the same system driven entirely by hand, no terminal
-- `_my_resources/_quick_reference/sudo_workflows_testing.md` — the dev system on one page; §6 is shipping
+- `docs/_scc_sops_prds/workflows_testing_SOP.md` — the dev system on one page; §6 is shipping
 - `_my_resources/_quick_reference/git_walkthrough_settings.md` — the ten global git settings; §8 is the branch flow
 - `.agents/rules/git-policy.md` — the branch model: `main` is the only long-lived branch (`main_debug` retired 2026-08-07)
 - `Projects/AGY_AVIATIONCHAT/_bmad-output/implementation-artifacts/sprint-status.yaml` — AviationChat's sprint state. `SCC` has no equivalent; its Jira board is the board

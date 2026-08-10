@@ -89,7 +89,7 @@ Runs **after** the work, on the diff since the skill's `baseline_commit`. Tiered
 - Link + anchor check on every path and `#L` anchor touched.
 - **SOP-currency check** — a usage-surface change (`.agents/commands/`, `.agents/rules/`,
   `.agents/scripts/`, git hooks, root `AGENTS.md`) must move
-  `_my_resources/_quick_reference/sudo_workflows_testing.md` in the same commit, or the armed gate
+  `docs/_scc_sops_prds/workflows_testing_SOP.md` in the same commit, or the armed gate
   rejects the commit.
 
 Classify findings **patch / defer / reject**; auto-fix patches, append deferrals to the deferred-work

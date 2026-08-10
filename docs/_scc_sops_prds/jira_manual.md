@@ -4,7 +4,7 @@
 > and pushing code through the VS Code Source Control panel. No commands, no agents, no terminal.
 > Written 2026-08-07 from an actual run — including the parts that went wrong. **Refreshed 2026-08-09.**
 >
-> **Companion doc:** [jira_integration_guide.md](../diagrams_guides/system/jira_integration_guide.md) explains *why* the system is
+> **Companion doc:** [jira_integration_guide.md](jira_integration_guide.md) explains *why* the system is
 > built this way. This one is *how you drive it*.
 >
 > **What changed on 2026-08-09 — read §2.2 if you read nothing else.** This doc used to tell you the
@@ -497,7 +497,7 @@ Read this once and be honest with yourself about it.
 |---|---|
 | `commit-msg` hook — the Jira key | ✅ **armed** — no key, no commit |
 | `pre-commit` hook — encoding | ✅ **armed** — undecodable bytes, or a stray `U+FFFD`, block the commit |
-| `commit-msg` hook — SOP currency | ✅ **armed** — change a command, a rule, a script or a git hook and you must stage `sudo_workflows_testing.md` in the same commit. `[sop-ok]` opts out |
+| `commit-msg` hook — SOP currency | ✅ **armed** — change a command, a rule, a script or a git hook and you must stage `workflows_testing_SOP.md` in the same commit. `[sop-ok]` opts out |
 | The test gate | ⚠️ **only when invoked.** `/cicd-e2e` is a command someone types. Nothing triggers it on a push |
 | Server-side branch protection | ❌ **does not exist** — GitHub Free can't put rulesets on private repos (`403`) |
 
@@ -603,11 +603,11 @@ WHEN SOMETHING IS SILENT
 
 ## 8. Related reading
 
-- [jira_integration_guide.md](../diagrams_guides/system/jira_integration_guide.md) — why it's built this way; the two-channel model;
+- [jira_integration_guide.md](jira_integration_guide.md) — why it's built this way; the two-channel model;
   the work-item type rule and the `Bug` lifecycle in full (§6); the BMAD-number ↔ Jira-key join;
   Smart Commits; the `jira_feed.py` verb table; the live-vs-not-built ledger
 - [git_walkthrough_settings.md](git_walkthrough_settings.md) — git setup and settings
-- [sudo_workflows_testing.md](sudo_workflows_testing.md)
+- [workflows_testing_SOP.md](workflows_testing_SOP.md)
   — the command lanes and the test gate in full
 - `.agents/rules/jira.md` — the agent-facing canonical copy. If these two docs ever disagree with it,
   it wins and they're stale

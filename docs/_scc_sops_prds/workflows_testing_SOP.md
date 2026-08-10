@@ -30,7 +30,7 @@ thing that tells you what's local.
 | What runs next | the [SCC Jira board](https://sudo-command.atlassian.net/jira/software/projects/SCC/boards/2) — sprint view (§11) |
 | The shared toolkit — the only copy | [`.agents/`](../../.agents/) — commands, rules, skills, workflows, scripts |
 | What a project owns vs. what it reads from here | [`project-law.md`](../../.agents/rules/project-law.md) |
-| Long-form depth | [`../diagrams_guides/`](../diagrams_guides/) |
+| Long-form depth | [`INDEX.md`](INDEX.md) |
 | Projects this **lints** (`/smh-update-maps-indexes`) | the [maintained list](../../.agents/maintained-projects.txt) — AGY_AVIATIONCHAT · NEXgen-VR-Director. It is a lint worklist, **not** a sync target: nothing is pushed into a project. |
 
 AGY_AVIATIONCHAT keeps its own copy of this page, localized in the header block, §11 and §13. **The body
@@ -409,6 +409,8 @@ flowchart LR
 | `sop_currency.py` | **This page falling behind the system it describes.** Change a `/` command, a rule, a safety-net script, a commit gate, or the root `AGENTS.md`, and the commit is refused unless this file is staged with it. Say `[sop-ok]` in the message when a change genuinely alters no usage — that stays in the git log as the record of the call. It checks only that the two moved together; no program can judge whether the *edit* was right, and the point is to make you look while you still have the context. |
 | `jira_feed.py` | **A Jira ticket that is only a title.** Every story ticket used to be minted with a summary and nothing else, and close-out posted one verdict line — so the board could tell you a story existed, never what it was about or what building it taught. Now ① mints the ticket with an outline rendered *from the story file* (its statement, its acceptance criteria — nothing invented; a story with no ACs says exactly that), and the close-out files a **Dev Record**: the decisions, the pitfalls, and what is still owed. Both write paths **read the ticket back** and fail if what they claimed to write is not there. **Exactly one Dev Record per ticket** — `/cicd-quick-dev` closes its own branch and files one too, and a later close-out updates that record instead of stacking a second. It also picks the ticket **type** for you: **Story** = BMAD sprint work (debug stories included), **Task** = workflow/IDE/rules/skills work under one of your grouping epics (`CI/CD Improvment`, `New Epic Feature or Fix`). *Everything* is parented, so the parent never decides it. **`Bug` is a flag, not a kind of work** — it means *this ticket turned out to be broken.* Two things raise it: an audit that finds a live bug and traces it back to the ticket that introduced it, or you, by hand. Either way the ticket comes back out of Done wearing `Bug`, and the close-out puts it back to **Story or Task** — whichever it actually is — once the fix lands, because the bug is gone. Nothing else ever touches it: a bulk pass can't tell "still broken" from "fixed", and only close-out can. `jira_feed.py audit --jira-project <P>` checks a whole board and `--apply` migrates it. **Raising a `Bug` is two commands on purpose:** `trace` reads git history and *proposes* which ticket last touched the broken line; `flag` does the flip. They stay separate because "which ticket last touched this line" is not "which ticket introduced this bug" — a later unrelated edit takes the blame — and a wrong flip drags a finished ticket back out of Done with nothing to undo it. So a machine may propose; only you may confirm. Full model + the AVCH worked example: [`.agents/rules/jira.md`](../../.agents/rules/jira.md) §Work-item types. |
 | `task_preflight.py` | **A change to the product sneaking onto `main` labelled a "task".** `/smh-close-task-merge-tree` is cheaper than `/cicd-push-e2e` for exactly one reason — it skips the end-to-end suite — and the only honest justification is *nothing that deploys changed.* That is the claim an agent is worst at checking about its own work, so this derives it instead of asking. Two questions, both answered from the repo: does this repo **have** anything that deploys (`backend/ · frontend/ · firebase/ · functions/ · mobile/ · .github/`), and did **this diff** touch it? No deployable surface at all is the command centre's case — there is no E2E suite there to skip, so nothing is being got away with. Touch one and it **stops dead and sends the work to `/cicd-push-e2e`. There is no override flag, on purpose.** It also checks the branch really is `chore/<KEY>-<slug>` with a key this repo owns, that the tree is clean and pushed, that `origin/main` was absorbed (so a conflict lands on your branch and never on production) — and when it hasn't been, **which of your files the other lanes also touched** (see below) — and that the walkthrough the Dev Record will point at actually exists. Point it at an `epic/`, `claude/` or `incident/` branch and it names the command that IS right rather than just refusing. |
+| `check_maps.py` | **The maps and INDEXes drifting from what is actually on disk.** Every level-2 folder must carry an `INDEX.md`, every backticked path in an INDEX table row must resolve, and the repo-map must still name every top-level folder. Ledgers under `_artifacts/` are exempt on purpose — their rows are history, and a row describing work that *deleted* something has to be able to name it. |
+| `tests/test_sops_prds_folder.py` | **The SOPs and PRDs going stale again.** Pins the 13-doc manifest in `docs/_scc_sops_prds/`, checks its `INDEX.md` against the directory in BOTH directions, verifies every markdown link resolves and every `/command` reference names a real command master, and asserts the SOP gate's two halves still point at the same file. Complements `check_maps.py` rather than repeating it: that one reads table cells, this one reads links. |
 | `split_sprint_status.py` | The one-time migration that shrank the board (§11). |
 | `wf_common.py` | Shared plumbing the others import. You'll never call it. |
 
@@ -453,7 +455,7 @@ either tell you:
 
 or name the ones that collide:
 
-> `2 file(s) changed on BOTH sides — resolve by keeping both sides' facts, never by picking a winner: _my_resources/_quick_reference/sudo_workflows_testing.md, .agents/rules/jira.md`
+> `2 file(s) changed on BOTH sides — resolve by keeping both sides' facts, never by picking a winner: docs/_scc_sops_prds/workflows_testing_SOP.md, .agents/rules/jira.md`
 
 "Keep both sides' facts" is the standing rule for these, not a suggestion — parallel lanes record
 *different true things*, so picking a winner silently deletes someone's work. The `/` commands you type
@@ -701,9 +703,9 @@ something works on one box and not the other, check this table before suspecting
 Windows-authored assumption reads as "the Mac is broken," and a Mac-authored one reads the same way in
 reverse.
 
-> **Setting up a machine?** The short version is [machine_setup_card.md](../migrations/install_guides/machine_setup_card.md) — arm the gates, check the Python name, restore what git doesn't carry. The full path for a
+> **Setting up a machine?** The short version is [machine_setup_card.md](../../_my_resources/migrations/install_guides/machine_setup_card.md) — arm the gates, check the Python name, restore what git doesn't carry. The full path for a
 > genuinely fresh box (secrets, venvs, toolchains, the five test gates) is the
-> [migrations kit](../migrations/INDEX.md).
+> [migrations kit](../../_my_resources/migrations/INDEX.md).
 
 ---
 
@@ -860,7 +862,7 @@ tickets. Two more things came with it:
 sprint holds the current batch, the backlog holds everything else, and every ticket links to its
 branches and commits through the key. How to drive it by hand:
 [jira_manual.md](jira_manual.md); why it's built this way:
-[jira_integration_guide.md](../diagrams_guides/system/jira_integration_guide.md).
+[jira_integration_guide.md](jira_integration_guide.md).
 
 > **The command menu kept advertising it for two days after it was deleted** — the `/` index still
 > listed `/sudo-update-scrum-board` under session ops with a full description, which is what sent you
@@ -1010,9 +1012,9 @@ This page is the how-to. Everything longer lives elsewhere.
 | **Why this page can't go stale** — the trigger, the surfaces, the opt-out | [`.agents/rules/sop-currency.md`](../../.agents/rules/sop-currency.md) |
 | What a project owns vs. what it reads from the center | [`.agents/rules/project-law.md`](../../.agents/rules/project-law.md) |
 | The safety-net scripts in detail | [`.agents/scripts/INDEX.md`](../../.agents/scripts/INDEX.md) |
-| Testing method in depth | [tea_deep_reference.md](../diagrams_guides/workflows_tea_testing/tea_deep_reference.md) |
-| The long-form testing field guide | [tea_testing_guide.md](../diagrams_guides/workflows_tea_testing/tea_testing_guide.md) |
-| The incident system in full, with diagrams | [sentry_error_response_team.md](../diagrams_guides/security/sentry_error_response_team.md) |
-| The Adviser Board in full | [smh-adviser-board-REFERENCE.md](../diagrams_guides/workflows_tea_testing/smh-adviser-board-REFERENCE.md) |
+| Testing method in depth | [tea_deep_reference.md](tea_deep_reference.md) |
+| The long-form testing field guide | [tea_testing_guide.md](tea_testing_guide.md) |
+| The incident system in full, with diagrams | [sentry_error_response_team.md](sentry_error_response_team.md) |
+| The Adviser Board in full | [smh-adviser-board-REFERENCE.md](smh-adviser-board-REFERENCE.md) |
 | Workspace layout plus artifact rules | [docs/workspace-standard.md](../../docs/workspace-standard.md) |
 | The toolkit's front door | [AGENTS.md](../../AGENTS.md) |

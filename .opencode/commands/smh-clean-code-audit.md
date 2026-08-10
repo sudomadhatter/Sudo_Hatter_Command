@@ -17,7 +17,7 @@ Checks a **Task diff** against the two documents that define clean *here*:
 
 | Document | Governs |
 |---|---|
-| `_my_resources/_quick_reference/sudo_workflows_testing.md` | **the command centre's own standard** — the command menu, the two rules above every command, the safety net, the door model, the shipping roads. The SOP is the PRD for how this system is used, so a change that contradicts it is a defect even when every script passes. |
+| `docs/_scc_sops_prds/workflows_testing_SOP.md` | **the command centre's own standard** — the command menu, the two rules above every command, the safety net, the door model, the shipping roads. The SOP is the PRD for how this system is used, so a change that contradicts it is a defect even when every script passes. |
 | `.agents/rules/code-standards.md` | the house definition of clean **code** — the comment contract (§1), the AI-drift bans (§2), severity (§7) |
 
 **Load both now.** This command is the auditor; those files are the standard. Never audit from memory —

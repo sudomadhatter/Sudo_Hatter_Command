@@ -23,7 +23,7 @@ cd "$REPO_ROOT" || exit 0
 # Only the command center carries the SOP doc. A project clone has no doc to keep current,
 # so the gate has nothing to say there — same graceful degradation as the Jira gate in a
 # repo with no jira.conf.
-[ -f _my_resources/_quick_reference/sudo_workflows_testing.md ] || exit 0
+[ -f docs/_scc_sops_prds/workflows_testing_SOP.md ] || exit 0
 [ -f .agents/scripts/sop_currency.py ] || exit 0
 
 # ─── Interpreter ───────────────────────────────────────────────────────────────────────────

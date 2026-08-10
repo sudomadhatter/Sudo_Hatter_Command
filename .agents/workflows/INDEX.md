@@ -32,6 +32,12 @@ mirror and DELETE it. SCC-63 hit exactly that.
 
 > **Not everything explanatory belongs here.** Antigravity surfaces every file in this folder as an
 > invocable `/`, so a doc that is *pure reference* — no `/` of its own, or one that only runs on a
-> specific LLM — belongs in [`.agents/reference/`](../reference/INDEX.md) instead. That's where
-> `autopilot_bmad_dev_loop.md` moved (2026-07-20): it documents a Claude/opencode-only pipeline that
+> specific LLM — belongs in [`docs/_scc_sops_prds/`](../../docs/_scc_sops_prds/INDEX.md) instead.
+> That is where `autopilot_bmad_dev_loop.md` lives: it documents a Claude/opencode-only pipeline that
 > Gemini can't run, so listing it as a Gemini workflow was an invitation to run the wrong thing.
+>
+> It moved there in SCC-74 (2026-08-10), which retired the `.agents/reference/` folder that had held
+> it since 2026-07-20. The constraint that folder existed for is unchanged and now better served:
+> a doc under `docs/` is off every command surface **by construction**, so it cannot be swept into a
+> mirror by a future sync — and `platforms: []` never solved that, because the sync vendors whole
+> directories without platform filtering.

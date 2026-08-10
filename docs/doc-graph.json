@@ -1,15 +1,15 @@
 {
-  "root": "/Users/sudohatter/Sudo_Hatter_Command/.agents",
+  "root": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/scc-74-sops-prds/.agents",
   "counts": {
-    "files": 267,
+    "files": 265,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 401,
+    "edges": 395,
     "external": 33,
-    "ambiguous": 47,
-    "dangling": 189,
-    "broken_paths": 47,
-    "unresolved_names": 142
+    "ambiguous": 49,
+    "dangling": 185,
+    "broken_paths": 48,
+    "unresolved_names": 137
   },
   "nodes": [
     {
@@ -30,7 +30,7 @@
     {
       "path": "INDEX.md",
       "in": 9,
-      "out": 8
+      "out": 7
     },
     {
       "path": "commands/INDEX.md",
@@ -59,13 +59,13 @@
     },
     {
       "path": "commands/cicd-autopilot-claude.md",
-      "in": 2,
+      "in": 0,
       "out": 4
     },
     {
       "path": "commands/cicd-autopilot-deepseek4.md",
       "in": 0,
-      "out": 1
+      "out": 0
     },
     {
       "path": "commands/cicd-autopilot-opencode.md",
@@ -375,16 +375,6 @@
     {
       "path": "opencode-agents/opus-reviewer.md",
       "in": 1,
-      "out": 2
-    },
-    {
-      "path": "reference/INDEX.md",
-      "in": 2,
-      "out": 1
-    },
-    {
-      "path": "reference/autopilot_bmad_dev_loop.md",
-      "in": 3,
       "out": 2
     },
     {
@@ -1205,7 +1195,7 @@
     {
       "path": "workflows/INDEX.md",
       "in": 4,
-      "out": 11
+      "out": 9
     },
     {
       "path": "workflows/cicd-bdd-tests.md",
@@ -1443,11 +1433,6 @@
     },
     {
       "from": "INDEX.md",
-      "to": "reference/INDEX.md",
-      "kind": "ref"
-    },
-    {
-      "from": "INDEX.md",
       "to": "rules/INDEX.md",
       "kind": "ref"
     },
@@ -1489,11 +1474,6 @@
     {
       "from": "commands/cicd-autopilot-claude.md",
       "to": "rules/worktree-per-story.md",
-      "kind": "ref"
-    },
-    {
-      "from": "commands/cicd-autopilot-deepseek4.md",
-      "to": "reference/autopilot_bmad_dev_loop.md",
       "kind": "ref"
     },
     {
@@ -2150,16 +2130,6 @@
       "from": "opencode-agents/opus-reviewer.md",
       "to": "rules/constitution.md",
       "kind": "ref"
-    },
-    {
-      "from": "reference/INDEX.md",
-      "to": "reference/autopilot_bmad_dev_loop.md",
-      "kind": "ref"
-    },
-    {
-      "from": "reference/autopilot_bmad_dev_loop.md",
-      "to": "commands/cicd-autopilot-claude.md",
-      "kind": "link"
     },
     {
       "from": "rules/000-PLAN-FIRST-GATE.md",
@@ -2988,16 +2958,6 @@
     },
     {
       "from": "workflows/INDEX.md",
-      "to": "reference/INDEX.md",
-      "kind": "link"
-    },
-    {
-      "from": "workflows/INDEX.md",
-      "to": "reference/autopilot_bmad_dev_loop.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/INDEX.md",
       "to": "workflows/cicd-self-audit.md",
       "kind": "ref"
     },
@@ -3716,30 +3676,6 @@
       "target": "review-findings.md"
     },
     {
-      "from": "reference/autopilot_bmad_dev_loop.md",
-      "target": "_RUN-STATUS.md"
-    },
-    {
-      "from": "reference/autopilot_bmad_dev_loop.md",
-      "target": "code-review.md"
-    },
-    {
-      "from": "reference/autopilot_bmad_dev_loop.md",
-      "target": "decisions-log.md"
-    },
-    {
-      "from": "reference/autopilot_bmad_dev_loop.md",
-      "target": "implementation_plan.md"
-    },
-    {
-      "from": "reference/autopilot_bmad_dev_loop.md",
-      "target": "self-audit-stress-test.md"
-    },
-    {
-      "from": "reference/autopilot_bmad_dev_loop.md",
-      "target": "walkthrough.md"
-    },
-    {
       "from": "rules/000-PLAN-FIRST-GATE.md",
       "target": "implementation_plan.md"
     },
@@ -3876,6 +3812,10 @@
       "target": "constitution.project.md"
     },
     {
+      "from": "rules/sop-currency.md",
+      "target": "Projects/AGY_AVIATIONCHAT/_my_resources/_quick_reference/sudo_workflows_testing.md"
+    },
+    {
       "from": "rules/worktree-per-story.md",
       "target": "active-context.md"
     },
@@ -3918,6 +3858,10 @@
     {
       "from": "skills/ui-ux-pro-max/SKILL.md",
       "target": "design-system/pages/dashboard.md"
+    },
+    {
+      "from": "workflows/INDEX.md",
+      "target": "autopilot_bmad_dev_loop.md"
     },
     {
       "from": "workflows/INDEX.md",
@@ -4127,7 +4071,11 @@
     },
     {
       "from": "commands/INDEX.md",
-      "target": "_my_resources/diagrams_guides/workflows_tea_testing/smh-adviser-board-REFERENCE.md"
+      "target": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md"
+    },
+    {
+      "from": "commands/cicd-autopilot-deepseek4.md",
+      "target": "docs/_scc_sops_prds/autopilot_bmad_dev_loop.md"
     },
     {
       "from": "commands/cicd-boot-sprint-memory.md",
@@ -4135,7 +4083,7 @@
     },
     {
       "from": "commands/cicd-quick-dev.md",
-      "target": "_my_resources/_quick_reference/sudo_workflows_testing.md"
+      "target": "docs/_scc_sops_prds/workflows_testing_SOP.md"
     },
     {
       "from": "commands/cicd-self-audit.md",
@@ -4143,11 +4091,11 @@
     },
     {
       "from": "commands/smh-adviser-board.md",
-      "target": "_my_resources/diagrams_guides/workflows_tea_testing/smh-adviser-board-REFERENCE.md"
+      "target": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md"
     },
     {
       "from": "commands/smh-close-task-merge-tree.md",
-      "target": "_my_resources/_quick_reference/sudo_workflows_testing.md"
+      "target": "docs/_scc_sops_prds/workflows_testing_SOP.md"
     },
     {
       "from": "commands/smh-memory-audit.md",
@@ -4163,11 +4111,11 @@
     },
     {
       "from": "commands/smh-sync-agents.md",
-      "target": "_my_resources/_quick_reference/sudo_workflows_testing.md"
+      "target": "docs/_scc_sops_prds/workflows_testing_SOP.md"
     },
     {
       "from": "rules/INDEX.md",
-      "target": "_my_resources/_quick_reference/sudo_workflows_testing.md"
+      "target": "docs/_scc_sops_prds/workflows_testing_SOP.md"
     },
     {
       "from": "rules/artifacts-always-first.md",
@@ -4187,11 +4135,7 @@
     },
     {
       "from": "rules/sop-currency.md",
-      "target": "Projects/AGY_AVIATIONCHAT/_my_resources/_quick_reference/sudo_workflows_testing.md"
-    },
-    {
-      "from": "rules/sop-currency.md",
-      "target": "_my_resources/_quick_reference/sudo_workflows_testing.md"
+      "target": "docs/_scc_sops_prds/workflows_testing_SOP.md"
     },
     {
       "from": "rules/sop-currency.md",
@@ -4199,7 +4143,7 @@
     },
     {
       "from": "scripts/INDEX.md",
-      "target": "_my_resources/_quick_reference/sudo_workflows_testing.md"
+      "target": "docs/_scc_sops_prds/workflows_testing_SOP.md"
     },
     {
       "from": "skills/INDEX.md",
@@ -4219,7 +4163,7 @@
     },
     {
       "from": "workflows/cicd-quick-dev.md",
-      "target": "_my_resources/_quick_reference/sudo_workflows_testing.md"
+      "target": "docs/_scc_sops_prds/workflows_testing_SOP.md"
     },
     {
       "from": "workflows/cicd-self-audit.md",
@@ -4239,7 +4183,7 @@
     },
     {
       "from": "workflows/smh-sync-agents.md",
-      "target": "_my_resources/_quick_reference/sudo_workflows_testing.md"
+      "target": "docs/_scc_sops_prds/workflows_testing_SOP.md"
     },
     {
       "from": "workflows/smh-update-maps-indexes.md",
@@ -4264,6 +4208,21 @@
       ]
     },
     {
+      "from": "INDEX.md",
+      "target": "reference/INDEX.md",
+      "candidates": [
+        "INDEX.md",
+        "bmad",
+        "commands/INDEX.md",
+        "hooks/INDEX.md",
+        "opencode-agents/INDEX.md",
+        "rules/INDEX.md",
+        "scripts/INDEX.md",
+        "skills/INDEX.md",
+        "workflows/INDEX.md"
+      ]
+    },
+    {
       "from": "commands/cicd-mobile-error-team.md",
       "target": "_artifacts/INDEX.md",
       "candidates": [
@@ -4272,7 +4231,6 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
-        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -4288,7 +4246,6 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
-        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -4356,7 +4313,6 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
-        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -4388,7 +4344,6 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
-        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -4420,7 +4375,6 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
-        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -4436,7 +4390,6 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
-        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -4460,7 +4413,6 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
-        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -4476,7 +4428,6 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
-        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -4492,7 +4443,6 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
-        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -5253,6 +5203,21 @@
       ]
     },
     {
+      "from": "workflows/INDEX.md",
+      "target": "../../docs/_scc_sops_prds/INDEX.md",
+      "candidates": [
+        "INDEX.md",
+        "bmad",
+        "commands/INDEX.md",
+        "hooks/INDEX.md",
+        "opencode-agents/INDEX.md",
+        "rules/INDEX.md",
+        "scripts/INDEX.md",
+        "skills/INDEX.md",
+        "workflows/INDEX.md"
+      ]
+    },
+    {
       "from": "workflows/cicd-push-e2e.md",
       "target": "PROJECT_ROOT/_artifacts/INDEX.md",
       "candidates": [
@@ -5261,7 +5226,6 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
-        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -5345,7 +5309,6 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
-        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -5377,7 +5340,6 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
-        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -5393,7 +5355,6 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
-        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -5409,7 +5370,6 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
-        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",
@@ -5425,7 +5385,6 @@
         "commands/INDEX.md",
         "hooks/INDEX.md",
         "opencode-agents/INDEX.md",
-        "reference/INDEX.md",
         "rules/INDEX.md",
         "scripts/INDEX.md",
         "skills/INDEX.md",

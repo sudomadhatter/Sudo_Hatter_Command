@@ -164,7 +164,7 @@ runs on a docs-only diff:
 - **Link + anchor check** on every path and `#L` anchor the diff touched.
 - **SOP currency** — a usage-surface change (`.agents/commands/`, `.agents/rules/`,
   `.agents/scripts/`, git hooks, root `AGENTS.md`) must have moved
-  `_my_resources/_quick_reference/sudo_workflows_testing.md`. The armed commit-msg gate already
+  `docs/_scc_sops_prds/workflows_testing_SOP.md`. The armed commit-msg gate already
   enforced this per commit, so a surprise here means a commit was made with `--no-verify` or
   `[sop-ok]` — say which.
 
