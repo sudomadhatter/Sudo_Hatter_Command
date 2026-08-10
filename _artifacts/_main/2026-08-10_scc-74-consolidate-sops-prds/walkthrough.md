@@ -130,12 +130,24 @@ working on its author.
 
 ## Handed back — open items for the operator
 
-1. **⚠ SCC-77 overlaps this lane.** `chore/SCC-77-main-write-gate` is live and edits
-   `_my_resources/_quick_reference/sudo_workflows_testing.md` (53 lines) and
+1. **⚠ SCC-77 overlaps this lane — and should land FIRST.** `chore/SCC-77-main-write-gate` is live
+   and edits `_my_resources/_quick_reference/sudo_workflows_testing.md` (53 lines) and
    `.agents/commands/smh-close-task-merge-tree.md` (17) — files this branch **moves and renames**.
-   Git handles rename-vs-edit, but **land SCC-77 first** and the question disappears entirely;
-   land SCC-74 first and SCC-77's merge needs a real review. No hook-file collision: SCC-77 adds
+   Git handles rename-vs-edit, but landing SCC-77 first makes the question disappear; landing SCC-74
+   first means SCC-77's merge needs a real review. No hook-file collision: SCC-77 adds
    `pre-push-main-approval.sh` / `mint-push-token.sh`, this touches `sop-currency.sh` only.
+
+   **A second, independent reason to sequence it that way:** this lane's first preflight came back
+   `BLOCKED — 1 uncommitted change`, on `.opencode/node_modules`. The cause is a genuine repo bug —
+   `.gitignore` line 24 read `**/node_modules/` **with a trailing slash**, which matches directories
+   only, while `link-worktree-assets.py` puts a **symlink** at that path. Git treats a symlink as a
+   file, so it was ignored in the shared checkout and *not* ignored in any worktree, and
+   `task_preflight.py` counted it as uncommitted — blocking the close-out of a lane that was clean.
+   **SCC-77 already carries the exact fix** (drop the trailing slash, with a comment recording why),
+   so it was deliberately NOT fixed here — a duplicate edit to the same three lines would collide
+   head-on. This lane instead ran `link-worktree-assets.py --unlink`, which the worktree rule
+   requires before removal anyway; the preflight then came back **clear**. Until SCC-77 lands, every
+   lane hits this, and the workaround is the unlink.
 2. **Memory will be stale after the merge.** `sop-doc-currency-gate.md` and
    `relocated-doc-links-are-mispathed-not-dead.md` name the old SOP path. The store is read-only
    outside the sanctioned flows, so nothing was edited — **your call at close-out.**
