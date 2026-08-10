@@ -1,0 +1,8 @@
+> Written at task START, where cwd-drift can't reach it. `task_preflight.py --expect-key`
+> cross-reads this file; the branch below must match the branch actually being closed.
+
+task_key: SCC-74
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-74-consolidate-sops-prds
+close_command: smh-close-task-merge-tree
+secondary_repos: []
