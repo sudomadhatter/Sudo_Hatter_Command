@@ -5,7 +5,7 @@
 > finished-but-uncommitted work back to Daniel for close-out.
 >
 > **Engine:** [`scripts/autopilot-dev-story.ps1`](../../scripts/autopilot-dev-story.ps1) ·
-> **Trigger:** `<story> /autopilot_claude` ([`.claude/commands/autopilot_claude.md`](../../.claude/commands/autopilot_claude.md)) ·
+> **Trigger:** `<story> /cicd-autopilot-claude` ([`.claude/commands/cicd-autopilot-claude.md`](../../.claude/commands/cicd-autopilot-claude.md)) ·
 > **Status:** v2, hardened — anchored matcher, evidence-gated (no verdict tokens), hard-stop artifact
 > gate, dedicated `_AP` commands, independent test gate, auto story→`review`, and **concurrency-safe**
 > (run as many stories at once as you want). Proven end-to-end on **Story 14.2** (full 4-stage run,
@@ -47,10 +47,10 @@ itself rather than trusting any pasted "tests green."
 ## 3. The four-stage relay
 
 ```
-Stage 1  Plan        Dev/Amelia 4.8  NEW dev     /sudo-dev-story-tests_AP plan       -> implementation_plan.md
-Stage 2  Audit       QA /Murat  4.8  NEW qa      /sudo-self-audit_AP  -> self-audit-stress-test.md
-Stage 3  Implement   Dev/Amelia 4.8  RESUME dev  /sudo-dev-story-tests_AP implement  -> code + walkthrough.md
-Stage 4  Review+Fix  QA /Murat  4.8  RESUME qa   /sudo-code-review_AP          -> code-review.md + fixes
+Stage 1  Plan        Dev/Amelia 4.8  NEW dev     /cicd-dev-story-tests-AP plan       -> implementation_plan.md
+Stage 2  Audit       QA /Murat  4.8  NEW qa      /cicd-self-audit-AP  -> self-audit-stress-test.md
+Stage 3  Implement   Dev/Amelia 4.8  RESUME dev  /cicd-dev-story-tests-AP implement  -> code + walkthrough.md
+Stage 4  Review+Fix  QA /Murat  4.8  RESUME qa   /cicd-code-review-AP          -> code-review.md + fixes
   then   TEST GATE   orchestrator (no LLM) re-runs pytest+vitest -> green: flip story to review -> Daniel
 ```
 
@@ -63,17 +63,17 @@ empty downstream work.
 
 ```mermaid
 flowchart TD
-    D(["Daniel: 14.2 /autopilot_claude"]) --> LK{"per-story lock<br/>_pipeline/.run.lock"}
+    D(["Daniel: 14.2 /cicd-autopilot-claude"]) --> LK{"per-story lock<br/>_pipeline/.run.lock"}
     LK -->|"same story already live"| X7["ALREADY RUNNING — exit 7<br/>(refuse the double-run)"]
     LK -->|"lock acquired"| M1["orchestrator mints dev UUID -> sessions.json"]
-    M1 --> S1["Stage 1 PLAN — NEW dev session (Amelia, Opus 4.8)<br/>/sudo-dev-story-tests_AP plan"]
+    M1 --> S1["Stage 1 PLAN — NEW dev session (Amelia, Opus 4.8)<br/>/cicd-dev-story-tests-AP plan"]
     S1 -->|"writes implementation_plan.md"| F[("shared run folder<br/>_artifacts/epic_N/&lt;date&gt;_autopilot-&lt;id&gt;/")]
     F --> M2["orchestrator mints qa UUID -> sessions.json"]
-    M2 --> S2["Stage 2 AUDIT — NEW qa session (Murat, Opus 4.8)<br/>/sudo-self-audit_AP"]
+    M2 --> S2["Stage 2 AUDIT — NEW qa session (Murat, Opus 4.8)<br/>/cicd-self-audit-AP"]
     S2 -->|"reads plan -> writes self-audit-stress-test.md (findings + fixes)"| F
-    F --> S3["Stage 3 IMPLEMENT — RESUME dev (plan still in context)<br/>/sudo-dev-story-tests_AP implement"]
+    F --> S3["Stage 3 IMPLEMENT — RESUME dev (plan still in context)<br/>/cicd-dev-story-tests-AP implement"]
     S3 -->|"reads audit -> writes source code + walkthrough.md"| F
-    F --> S4["Stage 4 REVIEW+FIX — RESUME qa (audit still in context)<br/>/sudo-code-review_AP"]
+    F --> S4["Stage 4 REVIEW+FIX — RESUME qa (audit still in context)<br/>/cicd-code-review-AP"]
     S4 -->|"reads diff -> re-runs tests, applies fixes, writes code-review.md + OUT-OF-SPEC + OPEN QUESTIONS"| F
     F --> G{"orchestrator TEST GATE<br/>independent pytest + vitest"}
     G -->|"RED"| RED["TESTS RED — exit 4<br/>(resume -ResumeFrom 4)"]
@@ -87,12 +87,12 @@ flowchart TD
 
 | Stage | Command invoked | May write | Must NOT |
 |---|---|---|---|
-| 1 Plan | `/sudo-dev-story-tests_AP plan` | `implementation_plan.md`, `decisions-log.md` | touch source code |
-| 2 Audit | `/sudo-self-audit_AP` | `self-audit-stress-test.md`, `decisions-log.md` | hard-halt on findings (fixes flow to S3) |
-| 3 Implement | `/sudo-dev-story-tests_AP implement` | source, tests, `walkthrough.md` | re-plan; commit; touch story status |
-| 4 Review+Fix | `/sudo-code-review_AP` | `code-review.md`, fixes, walkthrough sections | commit; touch story status / `sprint-status.yaml` (the **orchestrator** owns the `review` flip) |
+| 1 Plan | `/cicd-dev-story-tests-AP plan` | `implementation_plan.md`, `decisions-log.md` | touch source code |
+| 2 Audit | `/cicd-self-audit-AP` | `self-audit-stress-test.md`, `decisions-log.md` | hard-halt on findings (fixes flow to S3) |
+| 3 Implement | `/cicd-dev-story-tests-AP implement` | source, tests, `walkthrough.md` | re-plan; commit; touch story status |
+| 4 Review+Fix | `/cicd-code-review-AP` | `code-review.md`, fixes, walkthrough sections | commit; touch story status / `sprint-status.yaml` (the **orchestrator** owns the `review` flip) |
 
-### The Pre-Dev Audit (`/sudo-self-audit`) Breakdown
+### The Pre-Dev Audit (`/cicd-self-audit`) Breakdown
 
 The Stage 2 audit is an adversarial review of the `implementation_plan.md` *before any code is written*. It runs in five phases to catch flaws while fixing them costs nothing:
 
@@ -150,7 +150,7 @@ story-dependent, not a law.
 | **Orchestrator** | Windows PowerShell 5.1 | One script, no external deps. Plain control flow — the "coordinator" is `if`/`for`, not an LLM. |
 | **Worker** | `claude` CLI (headless) | `claude -p <prompt> --model <id> --permission-mode bypassPermissions --output-format json` |
 | **Continuity** | CLI session flags | `--session-id <uuid>` + `--name <label>` (first call) · `--resume <uuid>` (second call) |
-| **Agents** | Dedicated headless **`_AP` commands** | Prompts invoke `/sudo-dev-story-tests_AP plan`, `/sudo-self-audit_AP`, `/sudo-dev-story-tests_AP implement`, `/sudo-code-review_AP` (agent-tuned variants of the interactive BMAD skills). |
+| **Agents** | Dedicated headless **`_AP` commands** | Prompts invoke `/cicd-dev-story-tests-AP plan`, `/cicd-self-audit-AP`, `/cicd-dev-story-tests-AP implement`, `/cicd-code-review-AP` (agent-tuned variants of the interactive BMAD skills). |
 | **Models** | Opus 4.8 (Dev) · Opus 4.8 (QA) | Both default to `claude-opus-4-8`; independence is the *separate session + persona*, not a stronger model. Pin asymmetrically via `-DevModel` / `-AuditModel`. |
 | **Test gate** | `pytest` + `vitest`, run by the script | After Stage 4 the orchestrator re-runs the suites itself (`-TestScope auto` derives backend/frontend from the baseline diff). It refuses to stamp COMPLETE on red. |
 | **Handoff** | Artifact files | One canonical `_artifacts/epic_<epic>/<date>_autopilot-<id>/` folder; `_pipeline/` holds raw JSON + `sessions.json` + a self-contained `run.log` + the `.run.lock`. |
@@ -269,23 +269,23 @@ flowchart TD
 
 The whole design is keyed off **one thing: the story id** (`14.2` → normalized `14-2`). Nothing is
 keyed off a chat name, a tab, or a global file — so two autopilots have nothing to collide on. You
-fire each the way you always do: `<story> /autopilot_claude`.
+fire each the way you always do: `<story> /cicd-autopilot-claude`.
 
 ```mermaid
 flowchart TB
-    subgraph A["14.2 /autopilot_claude"]
+    subgraph A["14.2 /cicd-autopilot-claude"]
         LA[".run.lock = pid|ticks"] --> RA["_artifacts/epic_14/&lt;date&gt;_autopilot-14-2/"]
         RA --> GA["_autopilot-run-14-2.log"]
     end
-    subgraph B["15.3 /autopilot_claude"]
+    subgraph B["15.3 /cicd-autopilot-claude"]
         LB[".run.lock = pid|ticks"] --> RB["_artifacts/epic_15/&lt;date&gt;_autopilot-15-3/"]
         RB --> GB["_autopilot-run-15-3.log"]
     end
-    subgraph C["9.1 /autopilot_claude"]
+    subgraph C["9.1 /cicd-autopilot-claude"]
         LC[".run.lock = pid|ticks"] --> RC["_artifacts/epic_9/&lt;date&gt;_autopilot-9-1/"]
         RC --> GC["_autopilot-run-9-1.log"]
     end
-    DUP(["2nd '14.2 /autopilot_claude'<br/>while 14.2 is still live"]) -.->|"lock held by live PID<br/>=> ALREADY RUNNING, exit 7"| LA
+    DUP(["2nd '14.2 /cicd-autopilot-claude'<br/>while 14.2 is still live"]) -.->|"lock held by live PID<br/>=> ALREADY RUNNING, exit 7"| LA
 ```
 
 Three things make this safe, and nothing more (the design was deliberately trimmed back to exactly
@@ -294,7 +294,7 @@ these — see §9):
 - **Per-story run folder.** `_artifacts/epic_<epic>/<date>_autopilot-<id>/` — derived from the
   resolved story id. Each story's artifacts, `_pipeline/`, sessions, and stage logs live only here.
 - **Per-story monitoring log.** `_artifacts/_autopilot-run-<id>.log` — the stable, known-up-front path
-  the `/autopilot_claude` skill tails for live stage notifications. It's **per story**, so two runs
+  the `/cicd-autopilot-claude` skill tails for live stage notifications. It's **per story**, so two runs
   streaming at once never cross-wire into one file. (The run folder also keeps a self-contained copy at
   `_pipeline/run.log`.)
 - **Per-story lock.** `_pipeline/.run.lock` holds `"<pid>|<startTicks>"`. A second run of the **same**
@@ -333,7 +333,7 @@ _artifacts/epic_<epic>/<date>_autopilot-<id>/
 ```
 
 > **The run is self-contained.** The live-tail monitoring log lives at the per-story path
-> `_artifacts/_autopilot-run-<id>.log` (the stable path the `/autopilot_claude` skill tails), but the
+> `_artifacts/_autopilot-run-<id>.log` (the stable path the `/cicd-autopilot-claude` skill tails), but the
 > folder *also* keeps its own `_pipeline/run.log` copy — so opening just the run folder shows the whole
 > story without hunting for the global log.
 
@@ -488,7 +488,7 @@ Each of these is a real bug or insight from the shakedown runs, now baked into t
 .\scripts\autopilot-dev-story.ps1 -Story 13.4 -ResumeFrom 4
 ```
 
-Or trigger via the slash command: **`13.4 /autopilot_claude`** (state the story, then the command).
+Or trigger via the slash command: **`13.4 /cicd-autopilot-claude`** (state the story, then the command).
 Fire as many at once as you like — each is keyed by its story id and runs independently (§7).
 
 | Parameter | Default | Purpose |
@@ -522,7 +522,7 @@ The pipeline stops at "developed + reviewed + fixed, gate-verified green, story 
 
 Daniel's close-out: read the **QA CLOSE-OUT** + **OUT-OF-SPEC DECISIONS** + **OPEN QUESTIONS FOR
 DANIEL** at the top of `walkthrough.md`, ratify (or reverse) the team's story-silent calls, run
-`/sudo-update-sprint-memory`, run the git command from the walkthrough's "Your Actions," and flip
+`/cicd-update-sprint-memory`, run the git command from the walkthrough's "Your Actions," and flip
 `review → done`. That last mile is the point — the autopilot does the labor and parks the story at
 `review`; the human owns the judgment, the `done` flip, and the commit.
 
@@ -548,5 +548,5 @@ verified at $0 and exercised on real runs (`>>> STORY STATUS - … flipped to re
 
 ---
 
-*Source of truth is always the script + `.claude/commands/autopilot_claude.md`. This doc is the map, not
+*Source of truth is always the script + `.claude/commands/cicd-autopilot-claude.md`. This doc is the map, not
 the territory — if they disagree, the script wins.*

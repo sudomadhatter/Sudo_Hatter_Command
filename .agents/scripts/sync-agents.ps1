@@ -22,7 +22,7 @@
 
   PLATFORM REACH. A command may declare its reach with frontmatter `platforms: [claude, opencode, antigravity, codex]`.
   Absent = universal (all four). The sync copies a command only to the platforms it lists, so e.g.
-  /autopilot_claude (claude-only) never lands in the opencode/gemini/codex surfaces.
+  /cicd-autopilot-claude (claude-only) never lands in the opencode/gemini/codex surfaces.
 
   PURGE POLICY.
     - Local tool dirs (.claude, .opencode): copy eligible commands; purge only commands that ARE master-managed
@@ -54,7 +54,7 @@
 
 .PARAMETER GlobalsOnly
   Refresh only the machine-global caches (opencode + Antigravity command caches, Codex prompts, and the Codex
-  bmad-* skills mirror) from the lobby master. Skips local tool dirs. /slash_command_updating delegates to this.
+  bmad-* skills mirror) from the lobby master. Skips local tool dirs. /smh-slash-command-updating delegates to this.
 
 .PARAMETER NoGlobals
   Sync local tool dirs only; skip the machine-global caches (incl. the Codex prompts + skills mirror) even on a
@@ -446,7 +446,7 @@ function Get-CommandPlatforms($file) {
 #   -WhatIf       : report actions but do not copy or delete
 # Returns the list of eligible file names.
 function Sync-CommandDir {
-  # -SkipAP: robot-lane commands (*_AP.md — invoked by the autopilot engines, never typed by a human) are
+  # -SkipAP: robot-lane commands (*-AP.md — invoked by the autopilot engines, never typed by a human) are
   # vendored ONLY into project tool dirs (the engines Push-Location into the project and resolve them there).
   # The lobby's typeable menus and the machine-global caches skip them; the purge branch below then removes
   # any stale copies automatically on every sync.
@@ -456,7 +456,7 @@ function Sync-CommandDir {
   $masterNames = @($masterFiles | Select-Object -ExpandProperty Name)
   $eligible = @()
   foreach ($f in $masterFiles) {
-    if ($SkipAP -and ($f.Name -match '_AP\.md$')) { continue }
+    if ($SkipAP -and ($f.Name -match '-AP\.md$')) { continue }
     if ((Get-CommandPlatforms $f.FullName) -contains $Platform) {
       if (-not $WhatIf) {
         Copy-Item -Path $f.FullName -Destination $Dst -Force
@@ -488,19 +488,19 @@ function Sync-CommandDir {
 # edit the command, not these.
 # THE GATE IS `platforms:`, NOT THE FILENAME (SCC-56, 2026-08-09). This used to filter by NAME first
 # ($allowed = sudo-*, 1_*, new-project, slash_command_updating) and only then consult Get-CommandPlatforms,
-# so a command's DECLARED reach was never read unless its filename happened to match. Five commands that
-# claim Antigravity reached it zero times: close-task-merge-tree, sync-agents, review, webm-alpha-video,
+# so a command's DECLARED reach was never read unless its filename happened to match. Four commands that
+# claim Antigravity reached it zero times: close-task-merge-tree, sync-agents, review,
 # and clean-code-audit -- which declares `platforms: [opencode, antigravity]` in the documented mechanism
 # and was dropped anyway. The name filter was ALSO redundant: its stated reason was keeping BMAD personas
 # and 1_* workflows out of the / menu, but every persona and testarch-* wrapper already declares
 # `platforms: [opencode]` (so Get-CommandPlatforms excludes them unaided) and no 1_*.md command has existed
 # for some time. It blocked nothing it was written to block. Now: absent/empty `platforms:` == universal ==
-# mirrored; `platforms: []` == nowhere; _AP stays claude-only by name convention.
+# mirrored; `platforms: []` == nowhere; -AP stays claude-only by name convention.
 # BIG COMMANDS (2026-07-25): a command over ~11.5 KB gets a GENERATED THIN LAUNCHER instead of a verbatim
 # copy -- Antigravity silently drops workflows over its 12,000-char cap, and hand-trimmed twins drifted and
 # needed byte-golf on every edit. The launcher points the agent at .agents/commands/<name>.md (the single
 # source of truth), so the command can grow freely and no workflow can ever hit the cap again. Same pattern
-# as the hand-authored sudo-adviser-board launcher, now automatic.
+# as the hand-authored smh-adviser-board launcher, now automatic.
 function Sync-AntigravityWorkflowMirror {
   param([string]$MasterDir, [switch]$WhatIf)
   $cmdDir = Join-Path $MasterDir "commands"
@@ -509,19 +509,19 @@ function Sync-AntigravityWorkflowMirror {
   $mirrored = @()
 
   # HAND-OWNED files in workflows/: never written by this mirror, never pruned by it. Each has a reason.
-  #   update-maps-indexes.md - the REAL workflow lives here; commands/ holds only a thin wrapper, so a
+  #   smh-update-maps-indexes.md - the REAL workflow lives here; commands/ holds only a thin wrapper, so a
   #                            mirror would overwrite 38 KB of workflow with a 4 KB wrapper.
-  #   sudo-adviser-board.md  - hand-authored thin launcher (the command is ~25k, over AG's 12k cap).
+  #   smh-adviser-board.md   - hand-authored thin launcher (the command is ~25k, over AG's 12k cap).
   #   INDEX.md               - the workflows router. It has NO frontmatter and NO source in commands/, and
   #                            survived only because it failed the old name filter. With that filter gone
   #                            the prune below would DELETE it on the next sync. Load-bearing guard.
-  $excluded = @('update-maps-indexes.md', 'sudo-adviser-board.md', 'INDEX.md')
+  $excluded = @('smh-update-maps-indexes.md', 'smh-adviser-board.md', 'INDEX.md')
 
   $files = Get-ChildItem -Path $cmdDir -Filter '*.md' -File |
     Where-Object { $excluded -notcontains $_.Name }
 
   foreach ($f in $files) {
-    if (($f.Name -notmatch '_AP\.md$') -and ((Get-CommandPlatforms $f.FullName) -contains 'antigravity')) {
+    if (($f.Name -notmatch '-AP\.md$') -and ((Get-CommandPlatforms $f.FullName) -contains 'antigravity')) {
       $dest = Join-Path $wfDir $f.Name
       if ((Get-Item $f.FullName).Length -gt 11500) {
         # Over (or near) the 12k cap: emit a generated launcher, never a doomed verbatim copy.
@@ -619,7 +619,7 @@ function New-LauncherSkillStub {
 #   antigravity -> the workflow mirror in .agents\workflows (unchanged)
 # Publishing commands into .claude\commands and ~/.codex/prompts is RETIRED - both double-doored every
 # command beside its skill. This stage generates the skill door for every claude/codex-eligible command:
-#   - eligible = `platforms:` includes claude or codex (absent = universal = eligible); _AP robot lane skipped;
+#   - eligible = `platforms:` includes claude or codex (absent = universal = eligible); -AP robot lane skipped;
 #   - a HAND-AUTHORED SKILL.md (no GENERATED marker) always wins - it already IS the door; never overwritten;
 #   - claude-ONLY commands are NOT emitted here: .agents\skills is Codex-visible by definition, so their
 #     launcher goes straight into the .claude\skills cache at the local stage instead;
@@ -631,7 +631,7 @@ function Sync-LauncherSkills {
   if (-not $WhatIf) { New-Item -ItemType Directory -Force -Path $skDir | Out-Null }
   $made = @()
   foreach ($f in (Get-ChildItem -Path $cmdDir -Filter '*.md' -File)) {
-    if ($f.Name -match '_AP\.md$') { continue }
+    if ($f.Name -match '-AP\.md$') { continue }
     $pl = Get-CommandPlatforms $f.FullName
     if (-not (($pl -contains 'claude') -or ($pl -contains 'codex'))) { continue }
     if (($pl -contains 'claude') -and -not ($pl -contains 'codex')) { continue }
@@ -649,7 +649,7 @@ function Sync-LauncherSkills {
     $made += $f.BaseName
   }
   # Prune stale GENERATED launchers. Only a SKILL.md carrying the marker is a candidate - hand-authored
-  # skills (knowledge skills, the rich sudo-* launchers) are structurally unreachable here.
+  # skills (knowledge skills, the rich cicd-*/smh-* launchers) are structurally unreachable here.
   foreach ($d in @(Get-ChildItem -Path $skDir -Directory -ErrorAction SilentlyContinue)) {
     if ($made -contains $d.Name) { continue }
     $sf = Join-Path $d.FullName 'SKILL.md'
@@ -733,7 +733,7 @@ if ($Status) {
 # Regenerate the Antigravity workflow mirrors in the master BEFORE vendoring, so projects pick them up via
 # the (additive) .agents vendor. (Global command cache still mirrors commands/ separately, unchanged.)
 $agWf = Sync-AntigravityWorkflowMirror $Master -WhatIf:$WhatIf
-Write-Host "sync-agents: antigravity workflow mirror -> $($agWf.Count) sudo-* in .agents/workflows/"
+Write-Host "sync-agents: antigravity workflow mirror -> $($agWf.Count) commands in .agents/workflows/"
 
 # Regenerate the Claude+Codex skill doors in the master BEFORE the local copy stage picks them up.
 $genSk = Sync-LauncherSkills $Master -WhatIf:$WhatIf
@@ -772,13 +772,13 @@ if (-not $GlobalsOnly) {
   # sync (robocopy overwrites same-named files). Exclude bmad-* so BMAD stays the single source for its own skills.
   # Skills are the THIRD invocable surface, not just content: Claude Code publishes a slash command for every
   # .claude\skills\*\SKILL.md, so a RENAMED skill leaves a typeable ghost exactly the way a retired command file
-  # does (/sudo-write-epics-stories-sprint survived its own rename this way). Sync-Dir is additive robocopy, so
+  # does (/cicd-write-epics-stories-sprint survived its own rename this way). Sync-Dir is additive robocopy, so
   # the manifest carries the same ownership record here that it already carries for commands.
   # Per-platform reach for the SKILL door (SCC-66): .agents\skills is Codex's NATIVE surface and
   # .claude\skills is Claude's cache, so `platforms:` splits here rather than in Sync-CommandDir -
   # a codex-only command's launcher must not ride the tree copy into Claude's menu, and a claude-only
   # command's launcher never enters the master at all (it is emitted below, cache-only).
-  $doorCmds = @(Get-ChildItem -Path $cmdDir -Filter '*.md' -File | Where-Object { $_.Name -notmatch '_AP\.md$' })
+  $doorCmds = @(Get-ChildItem -Path $cmdDir -Filter '*.md' -File | Where-Object { $_.Name -notmatch '-AP\.md$' })
   $cxOnly = @(); $clOnly = @()
   foreach ($f in $doorCmds) {
     $pl = Get-CommandPlatforms $f.FullName

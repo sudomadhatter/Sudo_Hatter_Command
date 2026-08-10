@@ -28,7 +28,7 @@ def main() -> int:
 
     # ── A-E: the surfaces that MUST fire ──────────────────────────────────────
     for label, path in [
-        ("A a /command file", ".agents/commands/sudo-push-e2e.md"),
+        ("A a /command file", ".agents/commands/cicd-push-e2e.md"),
         ("B a rule", ".agents/rules/git-policy.md"),
         ("C a safety-net script", ".agents/scripts/closeout_preflight.py"),
         ("D a commit gate", ".agents/scripts/git-hooks/commit-msg-jira.sh"),

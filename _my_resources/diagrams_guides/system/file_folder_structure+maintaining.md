@@ -10,7 +10,7 @@
 > | `_my_resources/youtube_transcripts/implementation-plan_folder-as-workspace-routing-system.md` | the **theory** (mentor transcript, distilled) |
 > | `_my_resources/docs/master-implementation-plan.md` | the **rollout record** (how it got built) + evolution log (§8) |
 > | `docs/workspace-standard.md` | the **standing spec** (PATH CONTRACT, tier model, upkeep rules) |
-> | `.agents/workflows/update-maps-indexes.md` | the **maintenance workflow** (how it stays honest) |
+> | `.agents/workflows/smh-update-maps-indexes.md` | the **maintenance workflow** (how it stays honest) |
 > | *this file* | the **guide & overview** (read this first) |
 
 ---
@@ -40,7 +40,7 @@ flowchart TD
     subgraph TOOLKIT [".agents/ — MASTER TOOLKIT (single source of authorship)"]
         RULES["rules/\nconstitution, karpathy, artifacts-always-first,\ngit-policy, lobby-search, mobile-mode"]
         SCRIPTS["scripts/\ncheck_maps.py (linter)\nsync-agents.ps1 · record_map_changes.py"]
-        CMDS["commands/ + workflows/\nINDEX.md (command registry)\nupdate-maps-indexes.md (the workflow)"]
+        CMDS["commands/ + workflows/\nINDEX.md (command registry)\nsmh-update-maps-indexes.md (the workflow)"]
         OTHER["skills/, templates/, bmad/"]
     end
 
@@ -55,7 +55,7 @@ flowchart TD
     MYRES["_my_resources/\nDaniel's personal area (Tier-2 law)\nopen_tasks/ read-only carve-out"]
     BMADL["_bmad/ + _bmad-output/\nBMAD module + state (lobby)"]
     CANARY["_routing-canary/\nrouting regression check"]
-    SYS["_system/\nbuilder: /new-project, /sync-agents"]
+    SYS["_system/\nbuilder: /smh-new-project, /smh-sync-agents"]
     SETTINGS[".claude/settings.json + .mcp.json\nhooks + MCP servers (gitnexus, md-feedback)"]
     PROJ["Projects/(name)/ — nested git repos, gitignored\neach: adapters + AGENTS.md + vendored .agents/"]
 
@@ -125,7 +125,7 @@ flowchart TD
     GATE -- "No" --> WAIT["wait / revise (no file edits)"]
     GATE -- "Yes" --> EX["4. Execute with live TodoWrite"]
     EX --> CL["5. Close: ONE walkthrough.md\n(ends: Task Checklist + Your Actions)\n+ INDEX row + active-context hand-off"]
-    CL --> MAPS["6. Run /update-maps-indexes if structure changed\n(depth-3 INDEX, repo-map, linter)"]
+    CL --> MAPS["6. Run /smh-update-maps-indexes if structure changed\n(depth-3 INDEX, repo-map, linter)"]
     CL --> GIT["GIT: commit and push your own work\non your branch — explicit paths, never add -A;\nmain only through the gated epic merge"]
 
     classDef gate fill:#fff3d6,stroke:#b8860b,color:#000
@@ -200,7 +200,7 @@ flowchart TD
     HOOK["SessionStart hooks\n(.claude/settings.json)\nClaude Code only"]
     HOOK -->|"depth-3 nag + journal nag\n(non-fatal)"| C7
 
-    WORKFLOW["/update-maps-indexes command\nthe reconciliation workflow"]
+    WORKFLOW["/smh-update-maps-indexes command\nthe reconciliation workflow"]
     WORKFLOW -->|"Step 3: audit all checks"| LINTER
     WORKFLOW -->|"Step 5: fix drift\nregen AUTO (mode-preserving)\nadd missing depth-3 INDEXes\nprune (MOVE to archives)"| LINTER
     WORKFLOW -->|"Step 6: commit per repo\n+ --set-anchor (consumes journal)"| ANCHOR["docs/.maps-state.json\nbaseline for next drift check"]
@@ -220,7 +220,7 @@ flowchart TD
 | `--set-anchor` | Write current state to `docs/.maps-state.json` + consume the maps-journal (run AFTER committing) |
 | `--ignore <dirs>` | Skip dirs (lobby: `Projects,_my_resources`; projects: `_my_resources,_bmad`) |
 
-**Fan-out:** run from the home base, `/update-maps-indexes` reconciles the lobby **and every conformant
+**Fan-out:** run from the home base, `/smh-update-maps-indexes` reconciles the lobby **and every conformant
 project** in one pass (each repo commits + re-anchors separately). Run inside a project, it does just
 that workspace.
 
@@ -235,7 +235,7 @@ that workspace.
 | PT | git push approval | PreToolUse on Bash: `.claude/hooks/require-push-approval.py` guards agent `git commit`/`push` |
 
 > **Platform note:** hooks fire only on Claude Code. opencode and Antigravity/Gemini get the full
-> linter when `/update-maps-indexes` runs.
+> linter when `/smh-update-maps-indexes` runs.
 
 ### The routing canary (`_routing-canary/`)
 
@@ -250,19 +250,19 @@ new LLM/CLI; reset `Power.md` to its placeholder after. (Last green: 2026-07-09,
 ```mermaid
 flowchart LR
     EDIT["Edit rules HERE only"] --> SRC[".agents/ (master = single source)"]
-    SRC -->|"/sync-agents vendors copies"| LOBBY[".claude/ and .opencode/ (lobby)\n+ opencode global cache\n+ Antigravity global cache"]
-    SRC -->|"/sync-agents vendors copies"| PROJ["Projects/(name)/.agents/\n+ .claude/ + .opencode/"]
+    SRC -->|"/smh-sync-agents vendors copies"| LOBBY[".claude/ and .opencode/ (lobby)\n+ opencode global cache\n+ Antigravity global cache"]
+    SRC -->|"/smh-sync-agents vendors copies"| PROJ["Projects/(name)/.agents/\n+ .claude/ + .opencode/"]
     NEVER["NEVER hand-edit a vendored copy\nproject-specific rules go in constitution.project.md"] --> PROJ
 
     classDef warn fill:#fff3d6,stroke:#b8860b,color:#000
     class NEVER warn
 ```
 
-- **The loop:** edit master `.agents/` → `/sync-agents` (or `/sync-agents <project>`) → byte-identical
+- **The loop:** edit master `.agents/` → `/smh-sync-agents` (or `/smh-sync-agents <project>`) → byte-identical
   copies land on all three platforms + the projects.
 - **Fresh_Workspace_BMAD is the living template** — every new project clones it (`<PROJECT_NAME>`
   placeholders, one find-replace). Any structural change at the home base must land in Fresh
-  (`living-template-sync` rule; `/sync-agents` auto-flags Fresh drift). `/new-project` scaffolds and
+  (`living-template-sync` rule; `/smh-sync-agents` auto-flags Fresh drift). `/smh-new-project` scaffolds and
   registers a new workspace in `router.md`.
 - **Lobby-only search gotcha:** from the lobby root, Grep/Glob are **blind to `Projects/`** (ripgrep
   honors the lobby `.gitignore`). Point Grep at `Projects/<name>` or sweep with Bash `find`. Full
@@ -275,7 +275,7 @@ flowchart LR
   per-action commit. Enforced by the PreToolUse hook.
 - **Branch model:** `main` is the ONLY long-lived branch (live production — a push deploys). Each epic
   gets a short-lived `epic/<key>-<slug>` branch off `main`; story worktrees branch from and land on it;
-  the epic merges to `main` only via `/sudo-push-e2e` (full gate + `/sudo-e2e` green + Daniel's
+  the epic merges to `main` only via `/cicd-push-e2e` (full gate + `/cicd-e2e` green + Daniel's
   sign-off, `--no-ff`, epic branch deleted after). Ad-hoc work: short-lived `chore/*` off `main`,
   merged same-session with sign-off. Canon: `.agents/rules/git-policy.md`.
 - **Web/mobile** (`CLAUDE_CODE_REMOTE=true`): the agent owns git delivery instead → `mobile-mode.md`.
@@ -302,7 +302,7 @@ Node 18+ (`npx -y md-feedback`). New/changed servers appear after a session rest
 | AGY_AVIATIONCHAT | ✅ Yes | `content` | ignore `_my_resources,_bmad`; project rules in `constitution.project.md`; `_bmad/custom/` guard + TDAD dialect tomls (2026-07-09) |
 | Fresh_Workspace_BMAD | ✅ Yes | `auto` | ignore `_my_resources,_bmad`; **the living template — born enforcing since 2026-07-09**: armed TEA gate (`_bmad-output/sudo-tests.yaml`), CI gating `main` + `epic/**` (`pr-check.yml`), BDD layer (`backend/tests/features/` + self-binding `tests/bdd/steps_*.py`), `_bmad/custom/` guard + dialect tomls + resolver scripts |
 | BRKN_Tattoos | ⏳ active | — | active in `router.md`; conformance not yet audited |
-| RAG_Pipeline_AC (AviationChat ingestion) | ❌ No | — | needs `/new-project` or manual standardization |
+| RAG_Pipeline_AC (AviationChat ingestion) | ❌ No | — | needs `/smh-new-project` or manual standardization |
 | B-L-WorldWide · NEXGen-Films · OpenChat-Openrouter | ❌ pending | — | registered in `router.md`, not yet converted |
 
 ## 11. Quick-reference: key files
@@ -313,10 +313,10 @@ Node 18+ (`npx -y md-feedback`). New/changed servers appear after a session rest
 | `router.md` | The master map — categories → workspaces, routes up & down |
 | `docs/workspace-standard.md` | The WHAT — structure contract (PATH CONTRACT, tier model, depth-3 rule, end-of-task checklist) |
 | `_artifacts/AGENTS.md` · `_my_resources/AGENTS.md` · `docs/AGENTS.md` | Tier-2 local law (+ adapters) — auto-attached at point of contact |
-| `.agents/workflows/update-maps-indexes.md` | The HOW — reconciliation workflow (audit → fix → commit → anchor) |
+| `.agents/workflows/smh-update-maps-indexes.md` | The HOW — reconciliation workflow (audit → fix → commit → anchor) |
 | `.agents/scripts/check_maps.py` | The linter — 9 checks + unnumbered 2.5 + `--depth3-only` + `--set-anchor` |
 | `.agents/scripts/sync-agents.ps1` | The propagator — mirrors master `.agents/` to all platforms + projects (**excludes `_bmad/`** — see next row) |
-| `_bmad/custom/*.toml` + `_bmad/scripts/resolve_*.py` (projects only) | The BMAD guard layer — plan-first + artifact-insurance overrides (`bmad-dev-story`/`quick-dev`), TDAD dialect pins (`bmad-testarch-atdd`/`automate`, pytest-bdd + automate-evidence `on_complete`). Lives in ALL THREE repos (lobby included — direct BMAD skill runs from the lobby seat bind `{project-root}` to the lobby, Daniel's management lane; the sudo story flow binds to the child project). Propagates ONLY by cloning Fresh or 3-way hand-copy — never `/sync-agents` |
+| `_bmad/custom/*.toml` + `_bmad/scripts/resolve_*.py` (projects only) | The BMAD guard layer — plan-first + artifact-insurance overrides (`bmad-dev-story`/`quick-dev`), TDAD dialect pins (`bmad-testarch-atdd`/`automate`, pytest-bdd + automate-evidence `on_complete`). Lives in ALL THREE repos (lobby included — direct BMAD skill runs from the lobby seat bind `{project-root}` to the lobby, Daniel's management lane; the sudo story flow binds to the child project). Propagates ONLY by cloning Fresh or 3-way hand-copy — never `/smh-sync-agents` |
 | `.agents/rules/lobby-search.md` | The lobby search gotcha (Grep/Glob blind to `Projects/`) — mechanics |
 | `docs/repo-map.md` | Hybrid nav index (curated header + AUTO body) — per workspace |
 | `_artifacts/INDEX.md` | Depth-2 session ledger — per workspace |
@@ -329,12 +329,12 @@ Node 18+ (`npx -y md-feedback`). New/changed servers appear after a session rest
 
 | Moment | Do |
 |---|---|
-| Session start (from the lobby) | say **"pick up"** / run `/sudo-boot-sprint-memory` for sprint work — brief + open tasks surface |
+| Session start (from the lobby) | say **"pick up"** / run `/cicd-boot-sprint-memory` for sprint work — brief + open tasks surface |
 | Starting any file-touching task | plan-first: `implementation_plan.md` in the right bucket → STOP for "approved" |
 | Closing a task | ONE `walkthrough.md` (Task Checklist + Your Actions) + INDEX row + **"hand off"** |
-| After any structural change (folders moved/added, sessions created) | `/update-maps-indexes` — then commit, then `--set-anchor` |
-| After editing master `.agents/` | `/sync-agents` (lobby) or `/sync-agents <project>` |
+| After any structural change (folders moved/added, sessions created) | `/smh-update-maps-indexes` — then commit, then `--set-anchor` |
+| After editing master `.agents/` | `/smh-sync-agents` (lobby) or `/smh-sync-agents <project>` |
 | After changing routing structure (`AGENTS.md`, `router.md`, adapters) | re-run `_routing-canary/` + reset `Power.md` |
 | After committing (if check 9 hinted) | `node .gitnexus/run.cjs analyze` in the stale repo |
 | Reviewing a doc Daniel annotated | say **"review"** → md-feedback loop (§9) |
-| Adding a new project | `/new-project <name>` — scaffold from Fresh, register in `router.md` |
+| Adding a new project | `/smh-new-project <name>` — scaffold from Fresh, register in `router.md` |

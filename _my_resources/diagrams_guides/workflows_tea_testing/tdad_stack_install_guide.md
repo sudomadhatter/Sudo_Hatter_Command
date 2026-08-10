@@ -1,14 +1,14 @@
 # TDAD Stack — Quick Reference Install Guide
 
 **What this is:** The BDD contract and autonomous coding layer added to **both** the
-`/sudo` manual workflow and the `/autopilot_claude` autonomous workflow.
+`/sudo` manual workflow and the `/cicd-autopilot-claude` autonomous workflow.
 
 ---
 
 ## What We're Setting Up & Why
 
 The BDD Vision Lock (`pytest-bdd`) is being added to **both** the `/sudo` and
-`/autopilot_claude` dev flows. The goal is to replace ambiguous English ACs with strict
+`/cicd-autopilot-claude` dev flows. The goal is to replace ambiguous English ACs with strict
 Gherkin contracts (`Given`/`When`/`Then`) so agents test against machine-readable physics
 rather than interpreting narrative text.
 
@@ -38,7 +38,7 @@ goes into `requirements.txt`.
 
 - Lives at `~/.local/bin/aider` (available on PATH after install)
 - Uses its own isolated Python 3.12 regardless of your project's Python version
-- Scoped to `/autopilot_claude` only — the `/sudo` flow does NOT use aider
+- Scoped to `/cicd-autopilot-claude` only — the `/sudo` flow does NOT use aider
 
 ---
 
@@ -51,7 +51,7 @@ goes into `requirements.txt`.
 > [!NOTE]
 > **Most of the stack ships in the repos — `git clone`/`pull` IS the install for it.**
 > The BMAD testarch skills (`.claude/skills/bmad-testarch-*`), the commands
-> (`.agents/commands/sudo-bdd-tests.md`, `testarch-*.md`), the TEA pins
+> (`.agents/commands/cicd-bdd-tests.md`, `testarch-*.md`), the TEA pins
 > (`_bmad/custom/bmad-testarch-*.toml`, `_bmad/tea/config.yaml`), the pyproject marker
 > registry, and the test trees (`backend/tests/features/` + `backend/tests/bdd/`) are all
 > versioned files. Only TWO things are per-machine: each project venv's packages (Step 2)
@@ -156,7 +156,7 @@ interpreter (see the Step-2 warning) or the venv isn't synced.
 |---|---|---|
 | `pytest-bdd` | Each project's `backend/.venv` | It's a test library — runs in the test suite |
 | `aider` | Global (`~/.local/bin`) via `uv` | It's a CLI dev tool — like `git`, not a library |
-| `md-feedback` | MCP config — **root `.mcp.json`** per repo (Claude Code does NOT read `.claude/mcp.json` — that misplacement is why it never loaded; fixed ×4 surfaces 2026-07-09) + `.opencode/mcp.json` for opencode | Provides the AI agents with markdown annotation capabilities for `/sudo-self-audit` |
+| `md-feedback` | MCP config — **root `.mcp.json`** per repo (Claude Code does NOT read `.claude/mcp.json` — that misplacement is why it never loaded; fixed ×4 surfaces 2026-07-09) + `.opencode/mcp.json` for opencode | Provides the AI agents with markdown annotation capabilities for `/cicd-self-audit` |
 | Listed in | `requirements-tdad.txt` (lobby root) | Documentation / team reference |
 
 > [!IMPORTANT]
@@ -197,7 +197,7 @@ The current BMAD `/sudo` dev flow is excellent but conversational. The agent wri
 a plan, you approve it, the agent codes, you review, the agent fixes, and so on.
 The quality is high but the back-and-forth takes developer attention throughout.
 
-The TDAD pipeline is designed to make the **autonomous** `/autopilot_claude` mode
+The TDAD pipeline is designed to make the **autonomous** `/cicd-autopilot-claude` mode
 production-grade. Right now autopilot can drift — it sometimes misinterprets an AC,
 builds something adjacent to what was asked, or produces code that passes its own
 tests but not the original intent. The root cause is that English ACs are ambiguous.
@@ -208,22 +208,22 @@ BDD contracts apply to **both** tracks. The only difference is whether you're wa
 
 | Track | Command | BDD Contracts | Difference |
 |---|---|---|---|
-| **Manual** | `/sudo-write-story-tests` (BDD Vision Lock fires inside — mandatory) → `/sudo-self-audit` → `/sudo-dev-story-tests` (hard-gates on the BDD record) → `/sudo-code-review` | ✅ Yes | **You watch.** You can see when the agent is struggling and intervene. You approve each phase gate. |
-| **Autonomous** | `/autopilot_claude` | ✅ Yes | **Headless.** Agent locks into the loop and runs until tests are green. You only see the final result. `dev_AP` enforces the same BDD gate: no contract/waiver → `PIPELINE_BLOCKER` (a headless lane never authors the lock itself). |
+| **Manual** | `/cicd-write-story-tests` (BDD Vision Lock fires inside — mandatory) → `/cicd-self-audit` → `/cicd-dev-story-tests` (hard-gates on the BDD record) → `/cicd-code-review` | ✅ Yes | **You watch.** You can see when the agent is struggling and intervene. You approve each phase gate. |
+| **Autonomous** | `/cicd-autopilot-claude` | ✅ Yes | **Headless.** Agent locks into the loop and runs until tests are green. You only see the final result. `dev_AP` enforces the same BDD gate: no contract/waiver → `PIPELINE_BLOCKER` (a headless lane never authors the lock itself). |
 
 > [!IMPORTANT]
 > **The sandbox (OpenHands) is ACTIVE for Desktop tracks.**
-> We are using OpenHands for `/autopilot_claude` and `opencode` (Stage 3). 
+> We are using OpenHands for `/cicd-autopilot-claude` and `opencode` (Stage 3). 
 > The Mobile track remains cloud-native and defers to desktop for OpenHands.
 
 ### How the BDD Vision Lock Works
 
-Today: `/sudo-bdd-tests` engages the Vision Lock to interactively align on expected behaviors, translating them into strict Gherkin contracts (stack-appropriate: `pytest-bdd` `.feature` for backend, BDD-structured vitest/Playwright scaffolds for frontend). Then `/sudo-write-story-tests` generates the remaining acceptance tests from the contracts.
+Today: `/cicd-bdd-tests` engages the Vision Lock to interactively align on expected behaviors, translating them into strict Gherkin contracts (stack-appropriate: `pytest-bdd` `.feature` for backend, BDD-structured vitest/Playwright scaffolds for frontend). Then `/cicd-write-story-tests` generates the remaining acceptance tests from the contracts.
 The agent no longer interprets ambiguous English or writes what it thinks you mean.
 
 **Enforced end-to-end (2026-07-10):** the Vision Lock is a MANDATORY phase of ① — the only exit without
 a contract is a *recorded*, human-approved waiver (`bdd: waived — <rationale>` in the story frontmatter,
-for stories with no behavior surface). ② (`/sudo-dev-story-tests`) and the `dev_AP` autopilot twin
+for stories with no behavior surface). ② (`/cicd-dev-story-tests`) and the `dev_AP` autopilot twin
 **hard-gate on that frontmatter record** (`bdd: locked` + contract files on disk, or `bdd: waived`) and
 refuse to plan/code without it — headless lanes raise `PIPELINE_BLOCKER` instead of self-locking.
 
@@ -252,7 +252,7 @@ isolated Docker environment where agents can spin up real databases, run full
 end-to-end suites, and verify cascading effects without touching production.
 
 **Status: Active for Desktop Tracks.** We have wired OpenHands into Stage 3 (Implement)
-of `/autopilot_claude` and `/autopilot-dev-story-opencode.ps1`. The mobile track
+of `/cicd-autopilot-claude` and `/autopilot-dev-story-opencode.ps1`. The mobile track
 (`/autopilot_mobile`) remains cloud-native due to infrastructure constraints; when 
 mobile users need the sandbox, they remote into the desktop.
 
@@ -262,8 +262,8 @@ The PRP also proposed a "Clean-Room Adversarial Agent" — a fresh agent spun up
 with zero context, given only the BDD contract and the final code, and asked to
 audit for security holes, memory leaks, and logic flaws.
 
-This maps directly to what `/sudo-code-review` already does — but the difference
-is the zero-context injection. The current `/sudo-code-review` agent carries the
+This maps directly to what `/cicd-code-review` already does — but the difference
+is the zero-context injection. The current `/cicd-code-review` agent carries the
 full dev session context, which can introduce builder's bias ("I know why I wrote
 it that way"). A clean-room agent has no such bias.
 
@@ -307,17 +307,17 @@ backend/tests/
    full suite collects 2335/0 via the venv. Supporting docs: `_bmad-output/test-artifacts/test-design-epic-16.md`
    + `atdd-checklist-16-2-always-live-trigger-pipeline.md`. Activation = 16.2 dev start (remove one
    `pytestmark` line → 8 RED → build the relay to green).
-2. **Update `/sudo-write-story-tests`** to optionally output a `.feature` file
+2. **Update `/cicd-write-story-tests`** to optionally output a `.feature` file
    alongside the standard `test_*.py` red-phase scaffold.
-   — Note 2026-07-09: `/sudo-bdd-tests` (step ①b) already authors the `.feature`, and the new atdd toml
+   — Note 2026-07-09: `/cicd-bdd-tests` (step ①b) already authors the `.feature`, and the new atdd toml
    instructs red-phase scaffolds to BIND to an existing ①b contract via `scenarios()` instead of
    duplicating assertions — the command-file edit itself is still open.
    — ✅ **DONE 2026-07-10:** the command files now enforce it end-to-end. ①'s Step 2 (Vision Lock) is
-   MANDATORY (sole escape = a recorded, human-approved `bdd: waived` frontmatter entry); `/sudo-bdd-tests`
+   MANDATORY (sole escape = a recorded, human-approved `bdd: waived` frontmatter entry); `/cicd-bdd-tests`
    writes stack-appropriate contracts + stamps `bdd: locked`/`bdd_contract:` into the story frontmatter;
    ② + `dev_AP` hard-gate on that record before any plan/code (headless → `PIPELINE_BLOCKER`). Mirrored
    to `.agents/workflows/`; guide updates in this folder same day.
-3. **Wire aider into `/autopilot_claude`** — Completed.
+3. **Wire aider into `/cicd-autopilot-claude`** — Completed.
 4. **Deploy OpenHands** — Completed for Desktop tracks. Stage 3 now launches OpenHands via Docker volume mount.
 
 <!-- CHECKPOINT id="ckpt_mrdjqxf2_c9xtcr" time="2026-07-09T13:32:42.542Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->

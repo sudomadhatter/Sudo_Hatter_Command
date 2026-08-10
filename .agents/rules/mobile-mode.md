@@ -44,7 +44,7 @@ On the phone there is no terminal, so the "hand Daniel the command" default does
 - **Ask before the PR.** Opening / converting a draft PR is an outward action — present it as a
   **tap-confirm** (see Override 2) and wait for the tap before creating it. A story PR targets **the
   story's epic branch** (`epic/<JIRA-KEY>-<slug>`), **never `main`** — see `git-policy.md` → "Branch model".
-  - **Hotfix carve-out (incident lane ONLY).** A `/sudo-mobile-error-team` production hotfix PR targets
+  - **Hotfix carve-out (incident lane ONLY).** A `/cicd-mobile-error-team` production hotfix PR targets
     **`main`** directly: the incident lane is anchored on production (`incident-response.yml` checks
     out `ref: main`), and the quality gate `pr-check.yml` runs on PRs whose base is `main` — so the
     hotfix gets real CI. Everything else still holds: it opens as a **draft**, the tap-confirm above

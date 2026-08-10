@@ -1,4 +1,0 @@
-interface:
-  display_name: "Close Task Merge Tree"
-  short_description: "Gate, merge, record, and prune Task work"
-  default_prompt: "Use $close-task-merge-tree to safely close this Task branch."

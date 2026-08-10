@@ -15,7 +15,7 @@ layers → triage → present) is unchanged; only the orchestration below is ove
   three layers sequentially, or fan them out as real subagents if you have them, but complete and
   synthesize all three before returning. Never return a partial review.
 - **Silent defaults, no checkpoints.** Auto-answer the Step 1 questions; skip every confirmation pause.
-- **Stop at `review`, never `done`.** The human close-out (`/sudo-update-sprint-memory`) owns `review → done`.
+- **Stop at `review`, never `done`.** The human close-out (`/cicd-update-sprint-memory`) owns `review → done`.
 - **The one allowed stop:** a genuine `decision_needed` finding (Step 4) — a judgment call only the human can make.
 
 ## Step 1 — Context (auto-answer, don't ask)
@@ -67,7 +67,7 @@ Run the workflow's normalization, deduplication, and classification exactly as w
 - **Status** — ensure the story is at `review` (idempotent — the dev step normally set it already). **Never write `done`** to the story file or `sprint-status.yaml`; this overrides step-04-present's `done` default.
 
 ## Close-out
-1. Confirm: `✅ Story <key> reviewed — left at review for human close-out. Run /sudo-update-sprint-memory to advance review → done.`
+1. Confirm: `✅ Story <key> reviewed — left at review for human close-out. Run /cicd-update-sprint-memory to advance review → done.`
 2. Commit the reviewed work **inside the story worktree**, explicit paths only — never `git add -A`
    (it sweeps other teams' work in). Do NOT land it on the epic branch; that is close-out's job:
    `git add <paths> && git commit -m 'feat(epic-N): Story X.Y.Z — <Title>'`

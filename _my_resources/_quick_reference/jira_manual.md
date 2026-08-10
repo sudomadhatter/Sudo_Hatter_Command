@@ -59,9 +59,9 @@ but only at four named seams, and every one of them is a moment you started:
 
 | Seam | What it does |
 |---|---|
-| `/sudo-create-epic-sprint` at kickoff | mints the **epic** ticket |
-| `/sudo-write-story-tests` at story pickup | mints the **story** ticket and stamps `jira_key:` into the story file |
-| `/sudo-push-e2e` at the epic merge · `/sudo-update-sprint-memory` and `/close-task-merge-tree` at close-out | move the ticket to `Done` and file the Dev Record |
+| `/cicd-create-epic-sprint` at kickoff | mints the **epic** ticket |
+| `/cicd-write-story-tests` at story pickup | mints the **story** ticket and stamps `jira_key:` into the story file |
+| `/cicd-push-e2e` at the epic merge · `/cicd-update-sprint-memory` and `/smh-close-task-merge-tree` at close-out | move the ticket to `Done` and file the Dev Record |
 | `jira_feed.py flag` | moves a ticket **out of `Done`** when it's found broken (§2.6) |
 
 Outside those four: status and comments only, and only when you ask. **Nothing ever decides placement,
@@ -127,8 +127,8 @@ flowchart TD
     C{"Is it a CONTAINER for other work?"}
     C -->|"yes"| E["EPIC"]
     C -->|"no"| Q{"Does it have a dotted BMAD number (19.2, 12.3.4),\na debug- id, or a story file in _bmad/bmm/stories/ ?"}
-    Q -->|"yes — any ONE is enough"| S["STORY\nbranch claude/KEY-slug off the epic branch\ncloses with /sudo-update-sprint-memory"]
-    Q -->|"no"| T["TASK\nworkflow · IDE · rules · skills · toolkit\nbranch chore/KEY-slug off main\ncloses with /close-task-merge-tree"]
+    Q -->|"yes — any ONE is enough"| S["STORY\nbranch claude/KEY-slug off the epic branch\ncloses with /cicd-update-sprint-memory"]
+    Q -->|"no"| T["TASK\nworkflow · IDE · rules · skills · toolkit\nbranch chore/KEY-slug off main\ncloses with /smh-close-task-merge-tree"]
 
     classDef good fill:#d4f7d4,stroke:#2e7d32,color:#000
     classDef gate fill:#fff4d6,stroke:#f9a825,color:#000
@@ -224,7 +224,7 @@ reason these are labels:
 
 | Label | Means |
 |---|---|
-| `quick-dev` | ships via `/sudo-quick-dev` instead of the full three-step loop |
+| `quick-dev` | ships via `/cicd-quick-dev` instead of the full three-step loop |
 | `parallel-ok` | no file overlap with the epic's other in-flight work — safe to run beside it |
 | `blocked` | pair with the `Blocking` status and a `Blocks` link |
 | `descoped` | with `Deferred`: a terminal ruling, never to be built |
@@ -255,7 +255,7 @@ That does the whole flip and proves each part landed: type `Story|Task → Bug`,
 a **Bug flag** comment carrying your reason, your evidence, and *what the ticket was* so the restore is
 auditable later.
 
-The other way is an audit — `/sudo-live-testing-team` flies the running app, finds a symptom, and traces
+The other way is an audit — `/cicd-live-testing-team` flies the running app, finds a symptom, and traces
 it back to a candidate ticket. **It will stop and ask you before flagging anything.** That pause is
 deliberate, not caution: "which ticket last touched this line" is not the same question as "which ticket
 broke this", and a wrong flip pulls a finished ticket out of `Done` with nothing to undo it. **You are the
@@ -284,7 +284,7 @@ Five starred filters, cross-project on purpose: one view per *question*, not per
 | `Deferred` | parked work, still open | 16 |
 | `Blocked` | waiting on something else | 2 |
 | `Descoped` | terminally ruled out, never to be built | 0 |
-| `Quick-Dev` | eligible for `/sudo-quick-dev` | 0 |
+| `Quick-Dev` | eligible for `/cicd-quick-dev` | 0 |
 | `Parallel-OK` | safe to run alongside its siblings | 0 |
 
 > ⚠️ **A filter that returns the wrong list looks exactly like one that works.** Two of these were broken
@@ -298,7 +298,7 @@ The three zeros are honest, and only one of them is waiting on you:
 - **`Descoped` should be empty.** Nothing has been terminally killed — AviationChat's deferred ledger says
   outright that everything parked is *parked, not queued*.
 - **`Quick-Dev` and `Parallel-OK` fill themselves.** Those labels get written at story pickup by
-  `/sudo-write-story-tests`. Every ticket on the board today predates that seam or was made by hand in the
+  `/cicd-write-story-tests`. Every ticket on the board today predates that seam or was made by hand in the
   UI, so there's nothing to find yet. The next story picked up will populate them.
 
 ---
@@ -436,7 +436,7 @@ The one step with a gate in front of it, and **the gate is different per repo**:
 | Repo | Gate | Command |
 |---|---|---|
 | Sudo Command Center (lobby) | `run_all.py` — **no E2E exists, by design** | `python3 .agents/scripts/tests/run_all.py` |
-| AviationChat | full suite + build + the E2E harness | `/sudo-push-e2e` runs all of it |
+| AviationChat | full suite + build + the E2E harness | `/cicd-push-e2e` runs all of it |
 
 The lobby has no `frontend/`. There is no browser journey to drive, so there is no E2E suite and there
 never will be. Don't go looking for one, and never improvise a substitute and call it the gate.
@@ -458,13 +458,13 @@ drag the ticket to **Done**.
 > **`-d`, never `-D`.** Lowercase refuses to delete a branch that didn't merge. That refusal is the check
 > working — if it fires after a merge you thought succeeded, go and look, don't force it.
 
-### 3.8 The one-command version — `/close-task-merge-tree`
+### 3.8 The one-command version — `/smh-close-task-merge-tree`
 
 *Added 2026-08-08.* Everything in §3.7 for a **Task** is one command, and it does several things the hand
 version can't:
 
 ```
-/close-task-merge-tree
+/smh-close-task-merge-tree
 ```
 
 | It does | Which by hand you'd skip |
@@ -479,7 +479,7 @@ version can't:
 cheaper to land than an epic, and the only honest reason to skip it is *nothing that deploys changed*. So
 the command works that out from the diff rather than asking: a `chore/*` branch that touches `backend/`,
 `frontend/`, `firebase/`, `functions/`, `mobile/` or `.github/` prints **`LANE: HANDOFF`**, stops, and
-tells you to use `/sudo-push-e2e`. **There is deliberately no override flag.** A change that reaches
+tells you to use `/cicd-push-e2e`. **There is deliberately no override flag.** A change that reaches
 deployable code is a product change whatever its ticket says.
 
 In the lobby you'll always see `LANE: LOCAL`, and for a permanent reason: there is no deployable surface
@@ -498,7 +498,7 @@ Read this once and be honest with yourself about it.
 | `commit-msg` hook — the Jira key | ✅ **armed** — no key, no commit |
 | `pre-commit` hook — encoding | ✅ **armed** — undecodable bytes, or a stray `U+FFFD`, block the commit |
 | `commit-msg` hook — SOP currency | ✅ **armed** — change a command, a rule, a script or a git hook and you must stage `sudo_workflows_testing.md` in the same commit. `[sop-ok]` opts out |
-| The test gate | ⚠️ **only when invoked.** `/sudo-e2e` is a command someone types. Nothing triggers it on a push |
+| The test gate | ⚠️ **only when invoked.** `/cicd-e2e` is a command someone types. Nothing triggers it on a push |
 | Server-side branch protection | ❌ **does not exist** — GitHub Free can't put rulesets on private repos (`403`) |
 
 **You have an alarm, not a lock.** Nothing physically prevents a push to `main`. The discipline in §3 is
@@ -530,7 +530,7 @@ flowchart TD
     J --> I
     I -->|"green"| K["11 · merge --no-ff to main, push,\ndelete the branch, verify 0 0"]
     K --> L["12 · drag the card to Done"]
-    K -.->|"or skip 10-12 entirely"| CMD["/close-task-merge-tree\ndoes the gate, the merge, the Dev Record,\nthe transition and the prune"]
+    K -.->|"or skip 10-12 entirely"| CMD["/smh-close-task-merge-tree\ndoes the gate, the merge, the Dev Record,\nthe transition and the prune"]
 
     classDef mine fill:#e3f2fd,stroke:#1565c0,color:#000
     classDef good fill:#d4f7d4,stroke:#2e7d32,color:#000
@@ -570,9 +570,9 @@ JIRA
   Completing a sprint never changes a status.
 
 WORK TYPE — a rule, not a preference
-  dotted number / debug- id / story file?  -> STORY  -> /sudo-update-sprint-memory
-  none of those?                           -> TASK   -> /close-task-merge-tree
-  a container?                             -> EPIC   -> /sudo-push-e2e
+  dotted number / debug- id / story file?  -> STORY  -> /cicd-update-sprint-memory
+  none of those?                           -> TASK   -> /smh-close-task-merge-tree
+  a container?                             -> EPIC   -> /cicd-push-e2e
   In the lobby the answer is always TASK.
   BUG is a FLAG on an existing ticket. Never a new ticket.
 
@@ -589,7 +589,7 @@ COMMIT
 
 REPO → KEY
   Sudo_Hatter_Command  → SCC       gate: run_all.py   (no E2E, by design)
-  AGY_AVIATIONCHAT     → AVCH      gate: /sudo-push-e2e
+  AGY_AVIATIONCHAT     → AVCH      gate: /cicd-push-e2e
 
 FOUND SOMETHING BROKEN THAT ALREADY SHIPPED
   jira_feed.py flag --key <K> --reason "..." --apply

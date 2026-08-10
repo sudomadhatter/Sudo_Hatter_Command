@@ -8,11 +8,11 @@
 # TEA Testing — Quick Reference Guide
 
 **Owner:** Daniel (Lead — Tech Lead / Engineering Manager)
-**Source:** TEA Academy (Teach Me Testing, 7/7 sessions) + the `sudo-` dev-flow walkthrough, consolidated.
+**Source:** TEA Academy (Teach Me Testing, 7/7 sessions) + the `cicd-` dev-flow walkthrough, consolidated.
 **Working anchor:** Epic 8 — Evolution Engine (`AGY_AVIATIONCHAT`)
 **What this is:** the single page to keep open while writing tests, reviewing PRs, or running the dev loop. Two halves:
 > **Part A — The Method** (TEA concepts: what to test, how much, what "good" means).
-> **Part B — The Machine** (the `/` commands and the `sudo-` flow that execute the method).
+> **Part B — The Machine** (the `/` commands and the `cicd-` flow that execute the method).
 
 ---
 
@@ -22,27 +22,27 @@ The exact sequence, top to bottom, from a fresh epic to a shipped story. Run it 
 
 ```
 # ── Orient (start of every session) ───────────────────────────
-/sudo-boot-sprint-memory <PROJECT>           # where am I? what's next? (read-only)
+/cicd-boot-sprint-memory <PROJECT>           # where am I? what's next? (read-only)
 
 # ── Phase A · Epic kickoff — ONCE per epic ────────────────────
-/sudo-create-epic-sprint <PROJECT> <requirements-source>
+/cicd-create-epic-sprint <PROJECT> <requirements-source>
 #   → epic + stories → sprint board → interactive P0–P3 risk-score (one story at a time)
 
 # ── Phase B · Per-story loop — REPEAT per story, P0 first ──────
-/sudo-write-story-tests    <story>   # ① BDD Vision Lock (MANDATORY, waiver-recorded) + ATDD red tests (must fail now; lock scenarios live IN the red files)
-/sudo-dev-story-tests      <story>   # ② BDD gate → plan → ⛔ SELF-AUDIT STOP (you pick: model / fresh team / continue) → build to green → automate
-/sudo-code-review          <story>   # ③ adversarial review + TEST GATE → PASS/CONCERNS/FAIL
-/sudo-update-sprint-memory <story>   # close-out = your sign-off → flip to done → you git commit
+/cicd-write-story-tests    <story>   # ① BDD Vision Lock (MANDATORY, waiver-recorded) + ATDD red tests (must fail now; lock scenarios live IN the red files)
+/cicd-dev-story-tests      <story>   # ② BDD gate → plan → ⛔ SELF-AUDIT STOP (you pick: model / fresh team / continue) → build to green → automate
+/cicd-code-review          <story>   # ③ adversarial review + TEST GATE → PASS/CONCERNS/FAIL
+/cicd-update-sprint-memory <story>   # close-out = your sign-off → flip to done → you git commit
 ```
 
 | # | Agile step | Command |
 |---|------------|---------|
-| — | Orient — where am I / what's next | `/sudo-boot-sprint-memory` |
-| **1–2** | Epic + stories + sprint, then map test levels (P0–P3) | `/sudo-create-epic-sprint` |
-| **3** | Write the failing test | `/sudo-write-story-tests` |
-| **4–6** | Dev plan → self-audit → code the story | `/sudo-dev-story-tests` |
-| **7** | Code review + run tests | `/sudo-code-review` |
-| **8** | Close out + git push + log learnings | `/sudo-update-sprint-memory` |
+| — | Orient — where am I / what's next | `/cicd-boot-sprint-memory` |
+| **1–2** | Epic + stories + sprint, then map test levels (P0–P3) | `/cicd-create-epic-sprint` |
+| **3** | Write the failing test | `/cicd-write-story-tests` |
+| **4–6** | Dev plan → self-audit → code the story | `/cicd-dev-story-tests` |
+| **7** | Code review + run tests | `/cicd-code-review` |
+| **8** | Close out + git push + log learnings | `/cicd-update-sprint-memory` |
 
 > **P0 first.** The kickoff's Step 3 risk-scores every story with you; work the P0s through Phase B before P1/P2. Nothing is committed by an agent — you run `git commit` after each close-out.
 
@@ -50,23 +50,23 @@ The exact sequence, top to bottom, from a fresh epic to a shipped story. Run it 
 
 ## 🔎 What each thin `/` command actually fires (the full call-graph)
 
-Every `/sudo-*` you type is a **thin launcher**: the `.claude/skills/sudo-*/SKILL.md` just says "read `.agents/commands/sudo-*.md` and follow it end-to-end." That `.agents/commands/` file is the real script — it resolves the target project, then calls the underlying **BMAD + TEA skills** in order. Below is what's under the hood for each one, so you know exactly what's running when you fire a command.
+Every `/cicd-*` you type is a **thin launcher**: the `.claude/skills/cicd-*/SKILL.md` just says "read `.agents/commands/cicd-*.md` and follow it end-to-end." That `.agents/commands/` file is the real script — it resolves the target project, then calls the underlying **BMAD + TEA skills** in order. Below is what's under the hood for each one, so you know exactly what's running when you fire a command.
 
 > **Every command shares Step 0:** resolve the child project (`$ARGUMENTS` name → `.agents/active-project.txt` pointer → ask you), echo `Target: Projects/<name>`, and bind every path under it. Never touches the lobby. Omitted below to avoid repetition.
 
 ---
 
-### `/sudo-boot-sprint-memory` — Orient (read-only, no sub-skills)
+### `/cicd-boot-sprint-memory` — Orient (read-only, no sub-skills)
 Doesn't call other commands — it just **reads state** and tells you what to run next.
 ```
 1. active-context.md        → Sprint Objective · Stable (don't-touch) · Broken · In Play · Pitfalls
 2. component-specs/          → Invariants of any in-scope spec
-3. sprint-status.yaml        → story counts + the NEXT story to pick up + which sudo- step it needs
+3. sprint-status.yaml        → story counts + the NEXT story to pick up + which cicd- step it needs
 4. confirm guardrails        → G2 spec-compliance · G3 targeted-edits · G5 agent-authority · G6 get_db() · G8 research-first
                               → then STOPS. Discovery only — waits for your instruction.
 ```
 
-### `/sudo-create-epic-sprint` — Phase A epic kickoff (calls 3 skills)
+### `/cicd-create-epic-sprint` — Phase A epic kickoff (calls 3 skills)
 ```
 1. bmad-create-epics-and-stories   → writes the epic + its user stories with acceptance criteria (ACs)
 2. bmad-sprint-planning            → lands those stories in sprint-status.yaml as `ready-for-dev`
@@ -75,10 +75,10 @@ Doesn't call other commands — it just **reads state** and tells you what to ru
                                      (recommended P-level + why + what-it-is + levels-it-earns; you confirm/override each)
 ```
 
-### `/sudo-write-story-tests` ① — story prep + red tests (calls 3 skills)
+### `/cicd-write-story-tests` ① — story prep + red tests (calls 3 skills)
 ```
 1. bmad-create-story    → writes the story file under _bmad/bmm/stories/ with its ACs
-2. /sudo-bdd-tests      → BDD Vision Lock (MANDATORY): interactive w/ Murat until behaviors are 100% locked.
+2. /cicd-bdd-tests      → BDD Vision Lock (MANDATORY): interactive w/ Murat until behaviors are 100% locked.
                           The locked Given/When/Then goes INTO the story's ATDD red test file(s) —
                           BDD-structured pytest scenarios (BE) / describe-it scaffolds (FE). A standalone
                           pytest-bdd .feature + step defs is OPT-IN ONLY (you choose it at the lock, when
@@ -92,16 +92,16 @@ Doesn't call other commands — it just **reads state** and tells you what to ru
                           → leaves tests staged & red. Does NOT implement.
 ```
 
-### `/sudo-dev-story-tests` ② — build to green (calls bmad-dev-story twice + 2 skills)
+### `/cicd-dev-story-tests` ② — build to green (calls bmad-dev-story twice + 2 skills)
 ```
 0.5 resolve ARTIFACT_DIR              → _artifacts/epic_<E>/<story>/ (all artifacts land here)
 0.7 BDD contract gate (HARD)          → story frontmatter must carry `bdd: locked` (+ every cited contract
                                         file ON DISK — a locked flag with missing files FAILS, the 17.7
                                         phantom lesson) or `bdd: waived — <rationale>`; NEITHER (incl.
-                                        pre-gate stories) → STOP, run /sudo-bdd-tests first. No plan, no code.
+                                        pre-gate stories) → STOP, run /cicd-bdd-tests first. No plan, no code.
 1.  bmad-dev-story (PLAN mode)        → writes implementation_plan.md into ARTIFACT_DIR
 2.  ⛔ SELF-AUDIT STOP GATE (MANDATORY)→ posts the plan link and STOPS. You pick:
-                                        (a) run /sudo-self-audit here — name a model for the lane
+                                        (a) run /cicd-self-audit here — name a model for the lane
                                             (e.g. "use Fable" on an easy story; subagent model override)
                                         (b) you take implementation_plan.md to a FRESH team/session — it waits
                                         (c) "continue" — resumes the remainder; no audit run/provided →
@@ -114,7 +114,7 @@ Doesn't call other commands — it just **reads state** and tells you what to ru
                                         → MAY flip story to `review`. NEVER flips to `done`, NEVER commits.
 ```
 
-### `/sudo-self-audit` — adversarial pre-dev audit (fires inside ② at the STOP gate; no sub-skills, 5 phases)
+### `/cicd-self-audit` — adversarial pre-dev audit (fires inside ② at the STOP gate; no sub-skills, 5 phases)
 Audits the **plan, not a diff** — catches flaws while fixing them is still free. ② stops before running it
 so you choose the lane: run it in-session (optionally on a cheaper model for easy stories), or hand the
 plan doc to a fresh team and say **continue** when their audit lands.
@@ -127,7 +127,7 @@ Phase 3  Pre-mortem scenarios          → happy · rehydration · error/timeout
 Phase 4  Verdict                       → SAFE / NEEDS-REVISION / UNSAFE + Go/No-Go; bakes fixes inline into the plan
 ```
 
-### `/sudo-code-review` ③ — review + TEST GATE (calls bmad-code-review + the gate chain)
+### `/cicd-code-review` ③ — review + TEST GATE (calls bmad-code-review + the gate chain)
 ```
 1. bmad-code-review              → clean-room adversarial review of the diff (AI drift, over-eng, bloat, logic flaws);
                                     applies actionable fixes itself + re-runs suites
@@ -138,12 +138,12 @@ Phase 4  Verdict                       → SAFE / NEEDS-REVISION / UNSAFE + Go/N
      • bmad-testarch-nfr             → perf / security / reliability (when nfr:true or agent_bearing:true)
      • bmad-testarch-test-review     → quality/flake of the tests themselves
      • automate-evidence check       → confirms ②'s expansion pass left evidence (else caps at CONCERNS)
-4. Verdict → PASS / CONCERNS / FAIL / WAIVED  → writes sudo-code-review-<story>.md (+ current git HEAD ref)
+4. Verdict → PASS / CONCERNS / FAIL / WAIVED  → writes cicd-code-review-<story>.md (+ current git HEAD ref)
 5. reflects the review back INTO walkthrough.md
                                     → NEVER commits, NEVER flips story status.
 ```
 
-### `/sudo-update-sprint-memory` — close-out / sign-off (no sub-skills, 6 steps)
+### `/cicd-update-sprint-memory` — close-out / sign-off (no sub-skills, 6 steps)
 Running this **IS your sign-off.** Only objectively-red tests can block the flip.
 ```
 1. read state + this session's artifacts (plan + walkthrough; lift ## Close-Out Handoff if present)
@@ -167,7 +167,7 @@ Running this **IS your sign-off.** Only objectively-red tests can block the flip
 | `bmad-sprint-planning` | Generate/populate `sprint-status.yaml` from the epic's stories |
 | `bmad-testarch-test-design` | Risk-score stories P0–P3 (Probability × Impact); the interactive kickoff step |
 | `bmad-create-story` | Write ONE story file with its ACs under `_bmad/bmm/stories/` |
-| `/sudo-bdd-tests` | Interactive BDD Vision Lock (MANDATORY phase of ①) → locked scenarios codified INTO the story's ATDD red files (standalone `pytest-bdd` `.feature` = opt-in only) or a recorded waiver; ② hard-gates on the frontmatter record + files-on-disk |
+| `/cicd-bdd-tests` | Interactive BDD Vision Lock (MANDATORY phase of ①) → locked scenarios codified INTO the story's ATDD red files (standalone `pytest-bdd` `.feature` = opt-in only) or a recorded waiver; ② hard-gates on the frontmatter record + files-on-disk |
 | `bmad-testarch-atdd` | Write **failing** (red) acceptance tests before any code |
 | `bmad-dev-story` | The dev engine — PLAN mode writes the plan; IMPLEMENT mode writes code to green |
 | `bmad-testarch-automate` | Expand coverage on existing code (passes immediately) |
@@ -194,7 +194,7 @@ Glossary / one-line cheat sheet
 | **Trace gate** | Requirements → tests → GREEN/YELLOW/RED ship decision |
 | **5 dimensions** | Determinism · Isolation · Assertions · Structure · Performance |
 | **L1–L4** | Deterministic → Constrained LLM → LLM-judge → Human |
-| **TEST GATE** | The opt-in, baseline-diff gate inside `/sudo-code-review` (③) |
+| **TEST GATE** | The opt-in, baseline-diff gate inside `/cicd-code-review` (③) |
 
 ---
 
@@ -455,7 +455,7 @@ Break complex workflows into micro-files: self-contained, loaded just-in-time, s
 
 ## 7.5 BDD (Behavior-Driven Development) — the Vision Lock, right-sized
 
-The **Vision Lock conversation** (① `/sudo-bdd-tests`) is the mandatory part: an interactive session that
+The **Vision Lock conversation** (① `/cicd-bdd-tests`) is the mandatory part: an interactive session that
 pins exact `Given-When-Then` behaviors before any code. The **artifact** rides the story's ATDD red test
 file(s) — BDD-structured pytest scenarios (BE) / `describe("Given …")`-`it("When … Then …")` (FE) — one
 red file per story per stack.
@@ -537,7 +537,7 @@ flowchart TD
 
 | Workflow | Fires | Job |
 |----------|-------|-----|
-| **test-design** | epic kickoff — final interactive step of `/sudo-create-epic-sprint` | risk-score the epic's work P0–P3 **with Daniel, one story at a time** → tells ① which ACs deserve the heaviest tests |
+| **test-design** | epic kickoff — final interactive step of `/cicd-create-epic-sprint` | risk-score the epic's work P0–P3 **with Daniel, one story at a time** → tells ① which ACs deserve the heaviest tests |
 | **atdd** | ① per story | write acceptance tests that MUST fail now (red) |
 | **automate** | ② per story | expand API / UI / contract coverage on existing code |
 | **trace** | ③ gate | map requirements → tests, coverage vs. floor, GREEN/YELLOW/RED verdict |
@@ -573,23 +573,23 @@ flowchart TD
 |---------|------|
 | `/bmad-teach-me-testing` | The TEA Academy — 7 self-paced sessions. (Re-run Session 7 anytime to explore the 42 knowledge fragments.) |
 
-### The `sudo-` dev-flow orchestrators (human lane — thin wrappers that call the TEA workflows in order)
+### The `cicd-` dev-flow orchestrators (human lane — thin wrappers that call the TEA workflows in order)
 | Command | One-line job |
 |---------|--------------|
-| `/sudo-boot-sprint-memory` | Where am I? What story is next? Which command do I run? (read-only) |
-| `/sudo-create-epic-sprint` | **Phase A / epic kickoff** — write the epic + stories → sprint board → interactive P0–P3 risk-score (one story at a time). |
-| `/sudo-write-story-tests` | ① Create the story → **BDD Vision Lock (mandatory)** → write its **failing** acceptance tests (lock scenarios + ATDD reds share one file per stack). |
-| `/sudo-bdd-tests` | ①-inner (also standalone) — interactive Vision Lock w/ Murat → scenarios codified into the ATDD red files (standalone pytest-bdd opt-in only) or a **recorded** waiver, stamped into story frontmatter. |
-| `/sudo-dev-story-tests` | ② **BDD contract gate (hard)** → plan → **⛔ self-audit STOP gate** (you pick: run here w/ chosen model · fresh team · continue) → build → drive tests green → automate. |
-| `/sudo-self-audit` | Adversarial pre-dev audit of the plan (fires inside ② at the STOP gate — or standalone by a fresh team on the plan doc). |
-| `/sudo-code-review` | ③ Review the diff + run the **TEST GATE** → PASS/CONCERNS/FAIL/WAIVED. |
-| `/sudo-update-sprint-memory` | Close-out: verify verdict, flip story → `done`, route learnings, prune. |
-| `*_AP` variants | Autopilot lanes (`sudo-dev-story-tests_AP`, `sudo-code-review_AP`, `sudo-self-audit_AP`) — same ideas, different engine. `dev_AP` plan-stage enforces the BDD gate too: contract-or-waiver missing → `PIPELINE_BLOCKER` (headless lanes never author the lock themselves). |
+| `/cicd-boot-sprint-memory` | Where am I? What story is next? Which command do I run? (read-only) |
+| `/cicd-create-epic-sprint` | **Phase A / epic kickoff** — write the epic + stories → sprint board → interactive P0–P3 risk-score (one story at a time). |
+| `/cicd-write-story-tests` | ① Create the story → **BDD Vision Lock (mandatory)** → write its **failing** acceptance tests (lock scenarios + ATDD reds share one file per stack). |
+| `/cicd-bdd-tests` | ①-inner (also standalone) — interactive Vision Lock w/ Murat → scenarios codified into the ATDD red files (standalone pytest-bdd opt-in only) or a **recorded** waiver, stamped into story frontmatter. |
+| `/cicd-dev-story-tests` | ② **BDD contract gate (hard)** → plan → **⛔ self-audit STOP gate** (you pick: run here w/ chosen model · fresh team · continue) → build → drive tests green → automate. |
+| `/cicd-self-audit` | Adversarial pre-dev audit of the plan (fires inside ② at the STOP gate — or standalone by a fresh team on the plan doc). |
+| `/cicd-code-review` | ③ Review the diff + run the **TEST GATE** → PASS/CONCERNS/FAIL/WAIVED. |
+| `/cicd-update-sprint-memory` | Close-out: verify verdict, flip story → `done`, route learnings, prune. |
+| `*_AP` variants | Autopilot lanes (`cicd-dev-story-tests-AP`, `cicd-code-review-AP`, `cicd-self-audit-AP`) — same ideas, different engine. `dev_AP` plan-stage enforces the BDD gate too: contract-or-waiver missing → `PIPELINE_BLOCKER` (headless lanes never author the lock themselves). |
 
 ### Supporting test commands
 | Command | Does |
 |---------|------|
-| `/sudo-live-testing-team` | Live / manual QA lane. |
+| `/cicd-live-testing-team` | Live / manual QA lane. |
 
 ### Ops drill command — outside the per-story loop
 Not part of the ①②③ dev flow — a standalone **incident-response drill** (Epic 16). Fire it any time to
@@ -597,21 +597,21 @@ exercise the production triage runbook; it never touches the sprint board.
 
 | Command | Does |
 |---------|------|
-| `/security_team_aviationchat [issue-id\|latest]` | **Drill harness** (16.1) for the Sentry incident-triage runbook (`.github/claude/incident-triage.md`). Thin — carries no triage logic: resolves the project → loads its runbook → runs it verbatim (**interactive lane**, Sentry MCP) → drops an `incident-report.md` under `_artifacts/debugging/`. **Drill:** force a P1 (`_test_scripts/sentry_smoke_test.py`) then run `/security_team_aviationchat latest`; a pass = the report names the planted failure, the right file, and a sane fix. The runbook is the product; this is only its test rig. Full picture: [security/sentry_error_response_team.md](../security/sentry_error_response_team.md). |
+| `/sentry-security-team-avch [issue-id\|latest]` | **Drill harness** (16.1) for the Sentry incident-triage runbook (`.github/claude/incident-triage.md`). Thin — carries no triage logic: resolves the project → loads its runbook → runs it verbatim (**interactive lane**, Sentry MCP) → drops an `incident-report.md` under `_artifacts/debugging/`. **Drill:** force a P1 (`_test_scripts/sentry_smoke_test.py`) then run `/sentry-security-team-avch latest`; a pass = the report names the planted failure, the right file, and a sane fix. The runbook is the product; this is only its test rig. Full picture: [security/sentry_error_response_team.md](../security/sentry_error_response_team.md). |
 
 #### The incident lane's **E2E test** — the headless dispatch (read this if the last line confused you)
 
 There are **two** ways to test the incident system, and they cover **opposite halves.** The command above
-(`/security_team_aviationchat`) tests the *triage brain* in a chat window. The **headless E2E dispatch** tests
+(`/sentry-security-team-avch`) tests the *triage brain* in a chat window. The **headless E2E dispatch** tests
 the *production wiring* — the real GitHub Actions lane, end to end. It's "E2E" in the truest §3 sense: the
 **full workflow over the real stack** (Actions runner → real HTTP → Telegram), not a mocked slice.
 
-| | `/security_team_aviationchat` — interactive drill | **Headless E2E dispatch** — the real lane |
+| | `/sentry-security-team-avch` — interactive drill | **Headless E2E dispatch** — the real lane |
 |---|---|---|
 | **Lane** | an interactive Claude chat session | the real **GitHub Actions** runner (`.github/workflows/incident-response.yml`) |
 | **What it proves** | the runbook finds the right cause · file · fix | CI secrets/auth · fix-branch push · **the Telegram pager** — the whole chain fires |
 | **Output** | `incident-report.md` in `_artifacts/debugging/` | a **real GitHub issue** + fix branch + a **page to your phone** |
-| **How it fires** | `/security_team_aviationchat latest` | a hand-crafted `repository_dispatch` (`gh api repos/<owner>/<repo>/dispatches -f event_type=incident …`) |
+| **How it fires** | `/sentry-security-team-avch latest` | a hand-crafted `repository_dispatch` (`gh api repos/<owner>/<repo>/dispatches -f event_type=incident …`) |
 | **Built-in command?** | ✅ yes | ❌ **no** — manual dispatch, or wait for a real Sentry fatal |
 
 **Why you need both (the 2026-07-14 lesson).** A Telegram-paging bug lived *only* in the headless lane's
@@ -637,34 +637,34 @@ green, confirms the page landed, and cleans up any throwaway issue/branch after.
 
 ---
 
-## 11. The `sudo-` dev flow — the human-driven story loop
+## 11. The `cicd-` dev flow — the human-driven story loop
 
-The `sudo-` commands are **thin orchestrators** — they don't reimplement anything; they *call* the BMAD + TEA workflows in the right order and bake a **test gate** into review.
+The `cicd-` commands are **thin orchestrators** — they don't reimplement anything; they *call* the BMAD + TEA workflows in the right order and bake a **test gate** into review.
 
 **Two phases, eight steps.** An **epic kickoff** runs once; the **per-story loop** repeats:
 
 | # | Step | Command |
 |---|------|---------|
-| — | Orient (where am I / what's next) | `/sudo-boot-sprint-memory` |
-| **1** | Epic + stories + sprint | `/sudo-create-epic-sprint` |
+| — | Orient (where am I / what's next) | `/cicd-boot-sprint-memory` |
+| **1** | Epic + stories + sprint | `/cicd-create-epic-sprint` |
 | **2** | Map test levels (P0–P3) | ↳ its final interactive step |
-| **3** | Write failing test | `/sudo-write-story-tests` |
-| **4** | Dev implementation plan | `/sudo-dev-story-tests` → plan |
-| **5** | ⛔ STOP → self-audit stress test | `/sudo-dev-story-tests` → you pick lane/model (or fresh team), then audit |
-| **6** | Code the story (on "continue") | `/sudo-dev-story-tests` → build + automate |
-| **7** | Code review + run tests | `/sudo-code-review` |
-| **8** | Close out + git push + log learnings | `/sudo-update-sprint-memory` + commit |
+| **3** | Write failing test | `/cicd-write-story-tests` |
+| **4** | Dev implementation plan | `/cicd-dev-story-tests` → plan |
+| **5** | ⛔ STOP → self-audit stress test | `/cicd-dev-story-tests` → you pick lane/model (or fresh team), then audit |
+| **6** | Code the story (on "continue") | `/cicd-dev-story-tests` → build + automate |
+| **7** | Code review + run tests | `/cicd-code-review` |
+| **8** | Close out + git push + log learnings | `/cicd-update-sprint-memory` + commit |
 
 Steps 1–2 are the once-per-epic kickoff; 3–8 repeat per story.
 
 ```mermaid
 flowchart TD
-    BOOT["/sudo-boot-sprint-memory<br/>boot + story pick-up"] --> KICK["/sudo-create-epic-sprint<br/>(once per epic)<br/>epics + stories + sprint + risk-score P0–P3"]
-    KICK --> W["① /sudo-write-story-tests<br/>write RED tests (BDD Vision Lock + ATDD)"]
-    W --> DEV["② /sudo-dev-story-tests<br/>plan → ⛔ audit STOP (pick model / fresh team) → build → automate"]
-    DEV --> CR["③ /sudo-code-review<br/>review + TEST GATE → verdict"]
+    BOOT["/cicd-boot-sprint-memory<br/>boot + story pick-up"] --> KICK["/cicd-create-epic-sprint<br/>(once per epic)<br/>epics + stories + sprint + risk-score P0–P3"]
+    KICK --> W["① /cicd-write-story-tests<br/>write RED tests (BDD Vision Lock + ATDD)"]
+    W --> DEV["② /cicd-dev-story-tests<br/>plan → ⛔ audit STOP (pick model / fresh team) → build → automate"]
+    DEV --> CR["③ /cicd-code-review<br/>review + TEST GATE → verdict"]
     CR --> GATE{"verdict?"}
-    GATE -->|"PASS / CONCERNS / WAIVED"| UPD["/sudo-update-sprint-memory<br/>flip story → done, save learnings, prune"]
+    GATE -->|"PASS / CONCERNS / WAIVED"| UPD["/cicd-update-sprint-memory<br/>flip story → done, save learnings, prune"]
     GATE -.->|"FAIL — fix & re-review"| DEV
     UPD --> COMMIT["git commit (Daniel)"]
     UPD -.->|"next story"| W
@@ -672,14 +672,14 @@ flowchart TD
 
 | Step | Command | Calls (TEA workflows) |
 |------|---------|------------------------|
-| boot | `sudo-boot-sprint-memory` | — (reads active-context + sprint-status, recommends next command) |
-| kickoff | `sudo-create-epic-sprint` | `bmad-create-epics-and-stories` → `bmad-sprint-planning` → `bmad-testarch-test-design` (interactive P0–P3, one story at a time) |
-| ① | `sudo-write-story-tests` | `bmad-create-story` → `/sudo-bdd-tests` (BDD Vision Lock, **mandatory** — contract or recorded waiver) → `testarch-atdd` |
-| ② | `sudo-dev-story-tests` | **BDD contract gate** → `bmad-dev-story` (plan) → **⛔ STOP** → `sudo-self-audit` (chosen lane/model, or fresh team) → `bmad-dev-story` (implement) → `testarch-automate` |
-| ③ | `sudo-code-review` | `bmad-code-review` → `/1_run-all-tests-back_front` → `testarch-trace` → `testarch-nfr` → `testarch-test-review` |
-| close | `sudo-update-sprint-memory` | — (reads ③'s verdict; only command that flips a story to `done`) |
+| boot | `cicd-boot-sprint-memory` | — (reads active-context + sprint-status, recommends next command) |
+| kickoff | `cicd-create-epic-sprint` | `bmad-create-epics-and-stories` → `bmad-sprint-planning` → `bmad-testarch-test-design` (interactive P0–P3, one story at a time) |
+| ① | `cicd-write-story-tests` | `bmad-create-story` → `/cicd-bdd-tests` (BDD Vision Lock, **mandatory** — contract or recorded waiver) → `testarch-atdd` |
+| ② | `cicd-dev-story-tests` | **BDD contract gate** → `bmad-dev-story` (plan) → **⛔ STOP** → `cicd-self-audit` (chosen lane/model, or fresh team) → `bmad-dev-story` (implement) → `testarch-automate` |
+| ③ | `cicd-code-review` | `bmad-code-review` → `/1_run-all-tests-back_front` → `testarch-trace` → `testarch-nfr` → `testarch-test-review` |
+| close | `cicd-update-sprint-memory` | — (reads ③'s verdict; only command that flips a story to `done`) |
 
-> **Epic kickoff (once per epic):** `/sudo-create-epic-sprint` bundles this — it ends with an interactive `testarch-test-design` pass where you risk-score every story P0–P3 one at a time. Same first move to retrofit an untested codebase.
+> **Epic kickoff (once per epic):** `/cicd-create-epic-sprint` bundles this — it ends with an interactive `testarch-test-design` pass where you risk-score every story P0–P3 one at a time. Same first move to retrofit an untested codebase.
 
 ### The TEST GATE (the heart of ③)
 Opt-in and baseline-diff aware: a project with no `_bmad-output/sudo-tests.yaml` baseline **auto-WAIVED** (never blocks a test-less project); legacy red is grandfathered — only **NEW** regressions fail.
@@ -700,7 +700,7 @@ waive: false                   # hard override (force WAIVED)
 | **FAIL** | NEW regression OR a required tier missing |
 | **WAIVED** | no baseline (gate off) |
 
-> Close-out (`sudo-update-sprint-memory`) only *reads* the verdict — it never re-runs tests. ③ is the only place a ship/no-ship decision is made.
+> Close-out (`cicd-update-sprint-memory`) only *reads* the verdict — it never re-runs tests. ③ is the only place a ship/no-ship decision is made.
 
 ---
 
@@ -730,7 +730,7 @@ flowchart TD
 | L1 deterministic | `testarch-atdd` (①) + `testarch-automate` (②); run by `/1_run-all-tests-back_front` (③) | every story |
 | L2 constrained | `testarch-automate` (②); checked in the gate (③) | every story |
 | L3 judge | authored via `atdd`/`automate`; scored in `testarch-trace` / `nfr` (③) | agent-bearing stories |
-| L4 human | `sudo-update-sprint-memory` close-out + live-test gate | close-out |
+| L4 human | `cicd-update-sprint-memory` close-out + live-test gate | close-out |
 
 ---
 
@@ -818,7 +818,7 @@ Session 7 is a returnable reference. Re-run `/bmad-teach-me-testing` → Session
 
 ---
 
-*Generated from TEA Academy (7/7 complete) + the `sudo-` TEA-gated dev-flow walkthrough. The `sudo-` commands are thin orchestrators over the TEA workflows; the gate in ③ is the only ship/no-ship decision point.*
+*Generated from TEA Academy (7/7 complete) + the `cicd-` TEA-gated dev-flow walkthrough. The `cicd-` commands are thin orchestrators over the TEA workflows; the gate in ③ is the only ship/no-ship decision point.*
 
 <!-- CHECKPOINT id="ckpt_mrefjgkp_cqegiw" time="2026-07-10T04:22:41.833Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
 

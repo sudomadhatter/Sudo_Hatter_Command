@@ -5,13 +5,13 @@ description: "The clone source for new projects is the sudo-project-skeleton REP
 
 # Living Template — keep the skeleton repo current
 
-**`sudomadhatter/sudo-project-skeleton` is the one clone source for new projects.** `/new-project`
+**`sudomadhatter/sudo-project-skeleton` is the one clone source for new projects.** `/smh-new-project`
 clones it, strips its history, and git-inits. If the skeleton drifts behind the home base, every new
 project starts stale — and unlike the old model, **nothing detects that for you**.
 
 > **History (2026-08-07, SCC-25 + SCC-31).** `Projects/Fresh_Workspace_BMAD` was the living template
 > until it was retired: de-listed from `maintained-projects.txt`, frozen on disk, and left deliberately
-> stale. The `/sync-agents` Fresh drift-check that used to warn you was deleted with the project-vendor
+> stale. The `/smh-sync-agents` Fresh drift-check that used to warn you was deleted with the project-vendor
 > path. There is no automated detector now — this rule is the whole mechanism.
 
 ## What propagates, and what does NOT

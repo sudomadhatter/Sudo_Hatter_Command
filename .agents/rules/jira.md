@@ -104,7 +104,7 @@ empty rank is genuinely "nothing queued", and a non-zero exit is a real failure 
 retired as an agent source (ruling 2026-08-09) — it is the operator's personal notes, it is stale,
 and it duplicates tickets that already exist. Read the board.
 
-**On a BMAD project, `To Do Next` overrides the computed pick.** `/sudo-boot-sprint-memory` derives
+**On a BMAD project, `To Do Next` overrides the computed pick.** `/cicd-boot-sprint-memory` derives
 the next story from `sprint-status.yaml`; that YAML lags **by design** (② and ③ never write it, only
 close-out does). A card the operator placed in `To Do Next` beats a stale computed recommendation —
 report the override explicitly rather than silently replacing one with the other.
@@ -154,15 +154,15 @@ been right. `flag` therefore takes `--key` and only `--key`; it will not read a 
 
 **Both raisers are legitimate**, and the audit is the primary one: it is the path that finds bugs
 nobody has noticed yet. The manual flip is the same operation done by a human who spotted it first.
-**`/sudo-live-testing-team` is the wired entry point** (Step 3.5) — it is the one command that flies
+**`/cicd-live-testing-team` is the wired entry point** (Step 3.5) — it is the one command that flies
 the running app and files a researched bug doc per symptom, so it already holds exactly what `trace`
 needs. Any other audit can call the same two verbs; nothing about them is that command's private.
 
 ⛔ **Nothing else may retype a `Bug`.** It carries the same number and the same story file it always
 did, so every rule here reads it as a mistype — and "correcting" it mid-flight **erases the only
 signal that the work is broken.** Exactly one thing clears it: `jira_feed.py devrecord --closing`,
-run by whichever close-out owns the ticket (`/sudo-update-sprint-memory` Step 4.5 for a Story,
-`/close-task-merge-tree` Step 4 for a Task), because close-out is the one moment anything can know
+run by whichever close-out owns the ticket (`/cicd-update-sprint-memory` Step 4.5 for a Story,
+`/smh-close-task-merge-tree` Step 4 for a Task), because close-out is the one moment anything can know
 the fix landed. The bulk `audit` **cannot** tell "still broken" from "fixed", so it reports Bugs and
 moves on.
 
@@ -207,16 +207,16 @@ above, and the reason `Task` needed a command of its own:
 
 | Type | Branch | Closes out with | Why the other one cannot |
 |---|---|---|---|
-| **`Story`** | `claude/<KEY>-<slug>` off the epic branch | `/sudo-update-sprint-memory` | it lands on the **epic** branch, never `main` |
-| **`Task`** | `chore/<KEY>-<slug>` off `main` | **`/close-task-merge-tree`** (SCC-49) | close-out reads a sprint board, flips a story status and lands on an epic branch — a Task has **none of the three**, so the command has nothing to operate on |
-| **`Epic`** | `epic/<KEY>-<slug>` off `main` | `/sudo-push-e2e` | — |
+| **`Story`** | `claude/<KEY>-<slug>` off the epic branch | `/cicd-update-sprint-memory` | it lands on the **epic** branch, never `main` |
+| **`Task`** | `chore/<KEY>-<slug>` off `main` | **`/smh-close-task-merge-tree`** (SCC-49) | close-out reads a sprint board, flips a story status and lands on an epic branch — a Task has **none of the three**, so the command has nothing to operate on |
+| **`Epic`** | `epic/<KEY>-<slug>` off `main` | `/cicd-push-e2e` | — |
 
-`/close-task-merge-tree` files the same **one** Dev Record through `jira_feed.py devrecord` and moves
+`/smh-close-task-merge-tree` files the same **one** Dev Record through `jira_feed.py devrecord` and moves
 the ticket to `Done` itself, and it **does** pass `--closing` — a Task can be flagged `Bug` exactly
 like a Story, so the Task lane has to clear it too, restoring `Task` rather than `Story`. Before it
 merges, `task_preflight.py` re-asks the type question **from the diff**: a
 `chore/*` branch that touches `backend/ · frontend/ · firebase/ · functions/ · mobile/ · .github/` is
-refused and handed to `/sudo-push-e2e`, because a change reaching deployable code is a product change
+refused and handed to `/cicd-push-e2e`, because a change reaching deployable code is a product change
 whatever its ticket type says.
 
 **Auditing the board:** `python3 .agents/scripts/jira_feed.py audit --jira-project <PROJ> --project
@@ -231,9 +231,9 @@ label is not cosmetic:**
 
 | Label | Means | Written by |
 |---|---|---|
-| `quick-dev` | ships via `/sudo-quick-dev` instead of the full ①②③ loop | ① `/sudo-write-story-tests`, at pickup |
-| `blocked` | waiting on a linked blocker (the `Blocks` link names WHAT; pair with the `Blocking` status where the board has it) | ① `/sudo-write-story-tests`, at pickup |
-| **`parallel-ok`** | in the approved set the last check computed — safe to run beside **every other** 🟢 of that epic | ⭐ **`/sudo-parallel-check <EPIC-KEY>`, and nothing else** |
+| `quick-dev` | ships via `/cicd-quick-dev` instead of the full ①②③ loop | ① `/cicd-write-story-tests`, at pickup |
+| `blocked` | waiting on a linked blocker (the `Blocks` link names WHAT; pair with the `Blocking` status where the board has it) | ① `/cicd-write-story-tests`, at pickup |
+| **`parallel-ok`** | in the approved set the last check computed — safe to run beside **every other** 🟢 of that epic | ⭐ **`/cicd-parallel-check <EPIC-KEY>`, and nothing else** |
 
 ⛔ **`parallel-ok` is meaningless without its stamp, and ① must never write it** (operator ruling
 2026-08-09, SCC-56). It is a property of a **set at a moment**, not of one story: ① mints 19.1's
@@ -296,7 +296,7 @@ python3 .agents/scripts/jira_feed.py flag      --key AVCH-15 --reason "..." --ev
 - **`mint`** (① Step 1.6) dedupes on the BMAD number, renders the **description from the story file**
   (statement + ACs + lane rulings + file path), creates it bare and parented, then re-reads the ticket
   and exits 2 if the description did not land. Prints `JIRA_KEY=<KEY>`.
-- **`devrecord`** (close-out Step 4.5, `/sudo-quick-dev` Step 3.5) files THE Dev Record — decisions,
+- **`devrecord`** (close-out Step 4.5, `/cicd-quick-dev` Step 3.5) files THE Dev Record — decisions,
   pitfalls, follow-ons, outcome, evidence. **Exactly one per ticket:** an existing record is updated in
   place, never stacked, so the branch-closer and the story-closer cannot leave two partial records.
 - **`check`** answers "does this ticket carry both halves?" — exit 2 if not.
@@ -317,8 +317,8 @@ session's learnings, so pass them with `--decision` / `--pitfall` / `--followon`
 Agents MAY mint (operator ruling 2026-08-07): every ticket carries its provenance — the BMAD number
 in the summary, the board row / spec pointer in the description — so nothing lands untraceable.
 
-- **Epics** → `/sudo-create-epic-sprint` Step 1.5, at kickoff (the operator is in the room).
-- **Stories** → `/sudo-write-story-tests` ① Step 1.6, at pickup: child of the epic ticket, bare,
+- **Epics** → `/cicd-create-epic-sprint` Step 1.5, at kickoff (the operator is in the room).
+- **Stories** → `/cicd-write-story-tests` ① Step 1.6, at pickup: child of the epic ticket, bare,
   labels from ①'s lane/parallel/blocked ruling, `jira_key:` stamped into the story frontmatter.
 - **Toolkit/chore work** → mint the repo's chore ticket before cutting `chore/<KEY>-<slug>`.
 
@@ -358,12 +358,12 @@ unrecognized tickets on sight.
    evidence — sprint/backlog placement, priorities, and board layout are human decisions.
 3. **Bare-state board.** Only OPEN work gets tickets. Never resurrect finished epics as tickets —
    done work is file history (`sprint-status.yaml`, `epics.md`), not board rows.
-4. **Don't double-move.** Four transitions are already automated: `/sudo-push-e2e` Step 6.5 moves the
-   EPIC ticket at merge; `/sudo-update-sprint-memory` Step 4.5 moves the STORY ticket at close-out;
-   `/close-task-merge-tree` Step 4 moves the TASK ticket to `Done`; and `jira_feed.py flag` moves a
+4. **Don't double-move.** Four transitions are already automated: `/cicd-push-e2e` Step 6.5 moves the
+   EPIC ticket at merge; `/cicd-update-sprint-memory` Step 4.5 moves the STORY ticket at close-out;
+   `/smh-close-task-merge-tree` Step 4 moves the TASK ticket to `Done`; and `jira_feed.py flag` moves a
    ticket **out of `Done`** when it is found broken. Outside those, transition a ticket only when the
    operator asks.
-   **`/sudo-parallel-check` is not a fifth** — it writes the `parallel-ok` **label** and one comment
+   **`/cicd-parallel-check` is not a fifth** — it writes the `parallel-ok` **label** and one comment
    on the epic, and deliberately transitions nothing. Placement stays the operator's (guardrail 2);
    "these three are safe together" is not a reason to move a card.
 5. **The token stays in the OS credential store.** Never echo, copy, or persist it anywhere — and

@@ -1,6 +1,6 @@
 """task_preflight.py must never let deployable code reach `main` through the task lane.
 
-`/close-task-merge-tree` merges to `main`. Everything else that does (`/sudo-push-e2e`) runs
+`/smh-close-task-merge-tree` merges to `main`. Everything else that does (`/cicd-push-e2e`) runs
 the end-to-end suite first, and the ONLY thing that justifies this command skipping it is the
 claim "nothing that deploys changed". That claim is exactly the kind an agent makes about its
 own work with unearned confidence, so it is derived here from the repo and the diff, and the
@@ -58,7 +58,7 @@ def commit(repo: Path, message: str) -> None:
 
 
 MANIFEST = ("task_key: SCC-11\nprimary_repo: repo\nbranch: chore/SCC-11-thing\n"
-            "close_command: close-task-merge-tree\nsecondary_repos: []\n")
+            "close_command: smh-close-task-merge-tree\nsecondary_repos: []\n")
 
 
 def make_repo(root: Path, *, deployable: bool = False, remote: bool = True,
@@ -114,7 +114,7 @@ def main() -> int:
         code, out = preflight(repo)
         c.check("deployable diff -> HANDOFF", "LANE: HANDOFF" in out, out.strip()[-200:])
         c.check("deployable diff -> exit 2", code == 2, f"exit {code}")
-        c.check("handoff names /sudo-push-e2e", "/sudo-push-e2e" in out)
+        c.check("handoff names /cicd-push-e2e", "/cicd-push-e2e" in out)
         c.check("handoff names the offending dir", "backend/" in out)
 
     # A deploy dir touched only on ANOTHER path must still not be reachable by prefix luck:
@@ -149,9 +149,9 @@ def main() -> int:
                 "run_all.py" in out, out.strip()[-300:])
 
     # ── Wrong lane: each refusal must name the command that IS right ──
-    for name, expect in (("epic/SCC-11-thing", "/sudo-push-e2e"),
-                         ("claude/SCC-11-thing", "/sudo-update-sprint-memory"),
-                         ("incident/SCC-11-thing", "/sudo-mobile-error-team")):
+    for name, expect in (("epic/SCC-11-thing", "/cicd-push-e2e"),
+                         ("claude/SCC-11-thing", "/cicd-update-sprint-memory"),
+                         ("incident/SCC-11-thing", "/cicd-mobile-error-team")):
         with TempDir() as t:
             repo = make_repo(t)
             branch(repo, name, {"docs/x.md": "x\n"})

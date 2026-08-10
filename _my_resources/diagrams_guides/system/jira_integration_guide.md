@@ -246,9 +246,9 @@ python3 .agents/scripts/jira_feed.py audit --jira-project SCC --project Sudo_Hat
 
 | Type | Branch | Closes out with | Why the others can't |
 |---|---|---|---|
-| **`Story`** | `claude/<KEY>-<slug>` off the epic branch | `/sudo-update-sprint-memory` | it lands on the **epic** branch, never `main` |
-| **`Task`** | `chore/<KEY>-<slug>` off `main` | **`/close-task-merge-tree`** | the story close-out reads a sprint board, flips a story status and lands on an epic branch — a Task has **none of the three** |
-| **`Epic`** | `epic/<KEY>-<slug>` off `main` | `/sudo-push-e2e` | — |
+| **`Story`** | `claude/<KEY>-<slug>` off the epic branch | `/cicd-update-sprint-memory` | it lands on the **epic** branch, never `main` |
+| **`Task`** | `chore/<KEY>-<slug>` off `main` | **`/smh-close-task-merge-tree`** | the story close-out reads a sprint board, flips a story status and lands on an epic branch — a Task has **none of the three** |
+| **`Epic`** | `epic/<KEY>-<slug>` off `main` | `/cicd-push-e2e` | — |
 
 ### `Bug` is a flag, not a category of work
 
@@ -260,7 +260,7 @@ ticket goes back to being whatever it always was.
 ```mermaid
 flowchart TD
     subgraph IN ["TWO DOORS IN"]
-        A["an audit finds a live bug\n/sudo-live-testing-team Step 3.5"] --> TR["jira_feed.py trace --path file.py:42\nreads git blame + log\nPROPOSES a ticket"]
+        A["an audit finds a live bug\n/cicd-live-testing-team Step 3.5"] --> TR["jira_feed.py trace --path file.py:42\nreads git blame + log\nPROPOSES a ticket"]
         TR --> YOU{"YOU confirm\nor reject"}
         H["you spot it yourself"] --> YOU
     end
@@ -322,12 +322,12 @@ flowchart TD
     REVIEW -->|"more stories in this epic"| STORY
     REVIEW -->|"every story landed"| SHIP
 
-    SHIP["/sudo-push-e2e\ninvoking it IS your sign-off"] --> SYNC
+    SHIP["/cicd-push-e2e\ninvoking it IS your sign-off"] --> SYNC
 
-    subgraph PUSH["all of this is inside /sudo-push-e2e — ONE suite run"]
+    subgraph PUSH["all of this is inside /cicd-push-e2e — ONE suite run"]
         SYNC["merge origin/main into the epic branch\nso the gate tests what actually ships"] --> LIGHT
         LIGHT["light gate\npytest + frontend build + CI creds"] --> E2E
-        E2E["calls /sudo-e2e — the end-to-end suite"] --> VERDICT{"GREEN?"}
+        E2E["calls /cicd-e2e — the end-to-end suite"] --> VERDICT{"GREEN?"}
     end
 
     VERDICT -->|"RED"| STOP["STOP. Nothing merges."]
@@ -343,33 +343,33 @@ flowchart TD
     class SYNC,LIGHT,E2E,VERDICT gate
 ```
 
-**`/sudo-e2e` is not a separate step you run first.** It is the fourth item of the gate *inside*
-`/sudo-push-e2e` ([`sudo-push-e2e.md` Step 3](../../../.agents/commands/sudo-push-e2e.md)). The suite
-runs **once per epic merge**. If you ever find yourself running `/sudo-e2e` and then `/sudo-push-e2e`
+**`/cicd-e2e` is not a separate step you run first.** It is the fourth item of the gate *inside*
+`/cicd-push-e2e` ([`cicd-push-e2e.md` Step 3](../../../.agents/commands/cicd-push-e2e.md)). The suite
+runs **once per epic merge**. If you ever find yourself running `/cicd-e2e` and then `/cicd-push-e2e`
 back to back, you have paid for the suite twice for one merge.
 
-You *may* still run `/sudo-e2e` alone — it is documented as runnable solo — but that is **early warning
+You *may* still run `/cicd-e2e` alone — it is documented as runnable solo — but that is **early warning
 during development**, not part of shipping. Use it when you want end-to-end confidence mid-epic, before
-you are anywhere near merging. When you are ready to ship, go straight to `/sudo-push-e2e` and let it
+you are anywhere near merging. When you are ready to ship, go straight to `/cicd-push-e2e` and let it
 run the gate.
 
-Nothing about this replaces the existing gate. `/sudo-push-e2e` is still the one door to `main` **for
+Nothing about this replaces the existing gate. `/cicd-push-e2e` is still the one door to `main` **for
 product work**, and it still refuses to open on red. Jira rides along and records what happened.
 
 ### The Task lane — the other road to `main`
 
 The diagram above is the **Story** lane. Task work (§6) never enters it: there is no epic branch, no story
 file and often no sprint board, so every step of it would have nothing to read. Tasks take a much shorter
-road, and the whole of it is one command — **`/close-task-merge-tree`**:
+road, and the whole of it is one command — **`/smh-close-task-merge-tree`**:
 
 ```mermaid
 flowchart TD
     T["Task ticket, e.g. SCC-55"] --> BR["chore/SCC-55-slug off main"]
     BR --> WORK["commits, each carrying SCC-55"]
-    WORK --> CMD["/close-task-merge-tree"]
+    WORK --> CMD["/smh-close-task-merge-tree"]
     subgraph INSIDE ["all of this is inside the one command"]
         PRE["task_preflight.py\nbranch name · clean tree · base absorbed\n· walkthrough exists · WHICH LANE?"] --> LANE{"does the diff touch\nbackend/ frontend/ firebase/\nfunctions/ mobile/ .github/ ?"}
-        LANE -->|"yes — LANE: HANDOFF"| HAND["STOP.\nThis is a product change.\nHand it to /sudo-push-e2e"]
+        LANE -->|"yes — LANE: HANDOFF"| HAND["STOP.\nThis is a product change.\nHand it to /cicd-push-e2e"]
         LANE -->|"no — LANE: LOCAL"| GATE["run the repo's gate\nrun_all.py + workflow_lint.py"]
         GATE --> MERGE["merge --no-ff to main"]
         MERGE --> REC["jira_feed.py devrecord --closing\nONE Dev Record + clears any Bug flag"]
@@ -391,7 +391,7 @@ road is cheaper than the epic road, and the only honest justification for skippi
 deploys changed*. That is precisely the claim an agent is worst at auditing about its own work — so the
 script derives it **from the diff**, prints it, and there is deliberately **no override flag**. A
 `chore/*` branch that reaches deployable code is a product change whatever its ticket type says, and it
-gets sent to `/sudo-push-e2e`.
+gets sent to `/cicd-push-e2e`.
 
 `LANE: LOCAL` has two quite different causes and it's worth knowing which you're getting: either the diff
 touched no deployable path, **or** the repo has no deployable surface at all. The lobby is the second case
@@ -405,12 +405,12 @@ you hunting for a suite that was never supposed to exist:
 | | AviationChat (`AVCH`) | the lobby (`SCC`) |
 |---|---|---|
 | E2E suite | `frontend/e2e/run-e2e.mjs` — the TEA-16 harness | **none, by design** |
-| What `/sudo-e2e` does | runs it | **stops** — Step 1 finds no harness |
-| The real gate | light gate + `/sudo-e2e` | `python3 .agents/scripts/tests/run_all.py` |
+| What `/cicd-e2e` does | runs it | **stops** — Step 1 finds no harness |
+| The real gate | light gate + `/cicd-e2e` | `python3 .agents/scripts/tests/run_all.py` |
 | Why | it ships a product with a browser in front of it | it ships markdown, PowerShell and Python — there is no journey to drive |
 
 The lobby has no `frontend/` at all. Never improvise a substitute suite to fill the gap — `run_all.py`
-**is** the gate here, and [`sudo-push-e2e.md` Step 1](../../../.agents/commands/sudo-push-e2e.md)
+**is** the gate here, and [`cicd-push-e2e.md` Step 1](../../../.agents/commands/cicd-push-e2e.md)
 already grants `chore/*` branches the light gate only.
 
 ---
@@ -544,7 +544,7 @@ JIRA_KEYS="SCC"
 This makes the gate repo-aware: an `SCC-9` commit is **rejected inside AviationChat**, because it belongs
 to a different project.
 
-> ⚠️ **`jira.conf` is deliberately excluded from `/sync-agents`.** The sync vendors the master `.agents/`
+> ⚠️ **`jira.conf` is deliberately excluded from `/smh-sync-agents`.** The sync vendors the master `.agents/`
 > tree into every project, overwriting same-named files — which would have pushed the lobby's `SCC` over
 > AGY's `AVCH`, making AviationChat's gate reject its own work items and accept the lobby's, backwards,
 > with the file reading perfectly plausibly. It is excluded in **both** the vendor copy and the manifest
@@ -688,11 +688,11 @@ whole answer.
 ### Labels — because a card holds one status but stacks labels
 
 That's the whole reason these are labels: a story can be quick-dev-eligible **and** blocked at once. All
-three are ruled by `/sudo-write-story-tests` at story pickup.
+three are ruled by `/cicd-write-story-tests` at story pickup.
 
 | Label | Means |
 |---|---|
-| `quick-dev` | ships via `/sudo-quick-dev` instead of the full ①②③ loop |
+| `quick-dev` | ships via `/cicd-quick-dev` instead of the full ①②③ loop |
 | `parallel-ok` | no file overlap with the epic's other in-flight stories — safe to run beside them |
 | `blocked` | waiting on a linked blocker (the `Blocks` link names *what*) |
 | `descoped` | with `Deferred`: a terminal ruling, never to be built |
@@ -742,7 +742,7 @@ across either board carries **any** label. That is not a filter bug; the JQL is 
 - `Descoped` is **correctly empty.** AviationChat's `deferred-work.md` is explicit — *"assume every entry
   is parked, not queued"* — so nothing has been terminally ruled out. An empty `Descoped` is the honest
   answer, and it should stay empty until something is actually killed.
-- `Quick-Dev` and `Parallel-OK` are **set at story pickup**, by `/sudo-write-story-tests` Step 1.6 —
+- `Quick-Dev` and `Parallel-OK` are **set at story pickup**, by `/cicd-write-story-tests` Step 1.6 —
   `jira_feed.py mint` writes them at create time from ①'s lane ruling. Every current ticket predates that
   seam or was created by hand in the UI, so there is nothing for them to find *yet*. They will populate
   on their own from the next story picked up; nothing needs fixing for that to happen.
@@ -760,7 +760,7 @@ across either board carries **any** label. That is not a filter bug; the JQL is 
 - `acli` installed and authenticated as `sudomadhatter@gmail.com`
 - GitHub for Atlassian app installed; Smart Commits enabled
 - `commit-msg` hook in the lobby and AviationChat, **ENFORCE mode** (flag tracked, so it travels)
-- `.agents/jira.conf` per repo; excluded from `/sync-agents` in both the vendor and the manifest —
+- `.agents/jira.conf` per repo; excluded from `/smh-sync-agents` in both the vendor and the manifest —
   vendoring it would push the lobby's `SCC` over AGY's `AVCH` and reverse both gates, plausibly
 - `JIRA_API_TOKEN` + `JIRA_EMAIL` secrets on both GitHub repos
 - Atlassian MCP declared in `.mcp.json` — optional, and in practice unused: agents run `acli`
@@ -771,8 +771,8 @@ across either board carries **any** label. That is not a filter bug; the JQL is 
 | Was listed as not built | Shipped | What it is |
 |---|---|---|
 | the `acli` wrapper in `.agents/scripts/` | **2026-08-08** (SCC-49), `Bug` verbs 2026-08-09 (SCC-54) | `jira_feed.py`, seven verbs — §12 |
-| `/sudo-*` wiring: kickoff mints + stamps `jira_key` | **2026-08-08** | `/sudo-write-story-tests` Step 1.6 mints the ticket, rules the lane, and writes `jira_key:` into the story frontmatter |
-| `/sudo-*` wiring: transition + gate evidence at merge | **2026-08-08** | `/sudo-push-e2e` Step 6.5 moves the **epic** ticket and posts the gate result |
+| `/cicd-*` wiring: kickoff mints + stamps `jira_key` | **2026-08-08** | `/cicd-write-story-tests` Step 1.6 mints the ticket, rules the lane, and writes `jira_key:` into the story frontmatter |
+| `/cicd-*` wiring: transition + gate evidence at merge | **2026-08-08** | `/cicd-push-e2e` Step 6.5 moves the **epic** ticket and posts the gate result |
 | Jira epics and tickets for open work | **done** | `SCC` **37** items (5 Epics + 32 Tasks) · `AVCH` **40** (8 Epics + 21 Stories + 11 Tasks) |
 | the 16 Atlassian onboarding sample tickets | **deleted** | both projects are clean; `SCC-1`…`SCC-3` no longer resolve |
 
@@ -781,7 +781,7 @@ across either board carries **any** label. That is not a filter bug; the JQL is 
 - **The work-item type rule** — §6. One implementation, `jira_feed.py work_type()`; `audit` checks the
   whole board against it
 - **The `Bug` flag** — §6. Raise half `trace`/`flag` (SCC-54), clear half `devrecord --closing` (SCC-53)
-- **`/close-task-merge-tree`** — the Task lane's close-out (SCC-49), §7
+- **`/smh-close-task-merge-tree`** — the Task lane's close-out (SCC-49), §7
 - **`task_preflight.py`** — six mechanical preconditions before a Task merges, including the derived
   `LANE:` that decides whether this is even a Task at all (SCC-41)
 - **Two more armed commit hooks** — SOP currency and encoding, §3
@@ -836,7 +836,7 @@ Revoking is instant and total — the old string dies everywhere at once, so you
 | A field reads back **empty** and you know it isn't | `--fields` is a whitelist and you left that field off it | Name every field you intend to read. §12, gotcha 2 |
 | `acli … edit` sits there forever | It's waiting on a confirm you can't see | Add `--yes` |
 | Commit blocked and the message says nothing about Jira | The **encoding** or **SOP-currency** hook, not the key gate | §3. Read which hook actually spoke |
-| `/close-task-merge-tree` refuses with `LANE: HANDOFF` | Your diff touches deployable code | Working as designed. Hand it to `/sudo-push-e2e`; there is no override |
+| `/smh-close-task-merge-tree` refuses with `LANE: HANDOFF` | Your diff touches deployable code | Working as designed. Hand it to `/cicd-push-e2e`; there is no override |
 | A ticket is typed `Bug` and you didn't do that | An audit or a tester flagged it broken — §6 | Don't retype it. Fix it, and close-out clears the flag |
 | `gh secret set` → `HTTP 403` | `gh` login lost a scope | `gh auth refresh -s repo` |
 | Nothing appears while pasting a secret | Deliberate — input is hidden | Paste and press Enter anyway |

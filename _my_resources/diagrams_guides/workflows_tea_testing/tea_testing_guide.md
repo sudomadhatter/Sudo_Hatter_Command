@@ -1,4 +1,4 @@
-# AviationChat Test-Architecture Retrofit — Field Guide (TEA-Gated `sudo-` Flow)
+# AviationChat Test-Architecture Retrofit — Field Guide (TEA-Gated `cicd-` Flow)
 
 > **Status — 2026-07-09 (CURRENT — supersedes the 7/02 block below):** the tea-12..18 backlog is done, as of 2026-07-18
 
@@ -26,11 +26,11 @@ The PRD's ~47 FR families are now classified against **your Test Priorities Matr
 
 ### The MINIMUM flow (the finding — pick by story type, not by habit)
 
-The full sudo loop is **not** wrong — it's the deluxe path. The insight from 8 TEA stories + the audit: `/sudo-code-review`'s gate internally re-runs suite + trace + nfr + test-review **per story**, but the trace was just done audit-wide, and for **test-only** stories there is no production diff for the 3-layer adversarial review to hunt in. So:
+The full sudo loop is **not** wrong — it's the deluxe path. The insight from 8 TEA stories + the audit: `/cicd-code-review`'s gate internally re-runs suite + trace + nfr + test-review **per story**, but the trace was just done audit-wide, and for **test-only** stories there is no production diff for the 3-layer adversarial review to hunt in. So:
 
 | Story type | Minimum flow | What you skip | Never skip |
 |---|---|---|---|
-| **Test-only gap story** (tea-12, 13, 14, 15, 17, 18) | `/bmad-testarch-automate` → `/bmad-testarch-test-review` | Full 3-layer `/bmad-code-review` (no production diff to hunt); per-story trace + nfr | Keyless full-suite run (`GEMINI_API_KEY="" pytest backend/tests/`) as the zero-new-regression proof; `/sudo-update-sprint-memory` close-out |
+| **Test-only gap story** (tea-12, 13, 14, 15, 17, 18) | `/bmad-testarch-automate` → `/bmad-testarch-test-review` | Full 3-layer `/bmad-code-review` (no production diff to hunt); per-story trace + nfr | Keyless full-suite run (`GEMINI_API_KEY="" pytest backend/tests/`) as the zero-new-regression proof; `/cicd-update-sprint-memory` close-out |
 | **E2E new-dev** (tea-16) | `/bmad-testarch-automate` (it levels tests: E2E/API/component/unit) → `/bmad-testarch-test-review` | `bmad-testarch-framework` — **do NOT re-run it**: Playwright config + CI job exist since 11.16; framework would re-scaffold, not audit | Same as above + the specs must run green in the blocking `frontend-e2e` CI job |
 | **Normal feature story** (product code changes) | `/bmad-testarch-atdd` (red) → `/bmad-dev-story` (green) → `/bmad-code-review` | The sudo wrappers' plan/self-audit ceremony — *if* the story is small and off the P0 surface | An implement step in the middle — atdd→review alone builds nothing |
 | **P0-surface feature story** (touches A1–A9 areas) | The **full sudo loop** (bdd → write → audit → dev → review) | Nothing | The armed gate (`sudo-tests.yaml`) exists precisely for these |
@@ -65,7 +65,7 @@ One caveat carried from the TEA stories: if a test-only story turns out to need 
 There are **two layers** with **two cadences** — don't confuse them.
 
 1. **Test *design* — the planning layer (runs once per scope).** `bmad-testarch-test-design`, driven by Murat (the Master Test Architect), ranks what can hurt you (P0–P3) and emits scoped stories with acceptance criteria. You run it **once per body of work**, up front — not per story.
-2. **The `sudo-` story loop — the execution layer (runs once per story).** `/sudo-write-story-tests` (① create story → **BDD Vision Lock, mandatory** — `/sudo-bdd-tests` fires inside it; contract or *recorded* waiver stamped in story frontmatter → red ATDD) → `/sudo-self-audit` (plan pressure-test) → `/sudo-dev-story-tests` (② **hard-gates on the BDD record**, then green — executed inside the OpenHands Docker sandbox) → `/sudo-code-review` (gate) → `/sudo-update-sprint-memory` (your sign-off). `/sudo-bdd-tests` is also runnable standalone to lock/waive a story whose file already exists.
+2. **The `cicd-` story loop — the execution layer (runs once per story).** `/cicd-write-story-tests` (① create story → **BDD Vision Lock, mandatory** — `/cicd-bdd-tests` fires inside it; contract or *recorded* waiver stamped in story frontmatter → red ATDD) → `/cicd-self-audit` (plan pressure-test) → `/cicd-dev-story-tests` (② **hard-gates on the BDD record**, then green — executed inside the OpenHands Docker sandbox) → `/cicd-code-review` (gate) → `/cicd-update-sprint-memory` (your sign-off). `/cicd-bdd-tests` is also runnable standalone to lock/waive a story whose file already exists.
 
 ### Do I re-run all of this for a new epic?
 
@@ -76,8 +76,8 @@ A **new epic** going forward is much lighter:
 ```
 New epic
   └─ bmad-testarch-test-design   (scoped to THAT epic's handful of stories — fast)
-       └─ for each story:  /sudo-write-story-tests (create → BDD Vision Lock → red) → /sudo-self-audit
-                            → /sudo-dev-story-tests (BDD gate → green) → /sudo-code-review → /sudo-update-sprint-memory
+       └─ for each story:  /cicd-write-story-tests (create → BDD Vision Lock → red) → /cicd-self-audit
+                            → /cicd-dev-story-tests (BDD gate → green) → /cicd-code-review → /cicd-update-sprint-memory
 ```
 
 Test design is **risk-proportional**, not mandatory ceremony. A high-stakes epic (FAA accuracy, Sully safety, auth) earns the full design pass; a low-risk epic (a settings page, a copy change) can skip straight to the sudo loop with a one-line risk note. The design skill has **Create / Resume / Validate / Edit** modes so you can revise an old plan instead of starting cold — and each epic gets cheaper as this retrofit hardens the foundation (armed gate, coverage floor, schema-contract pattern).
@@ -104,7 +104,7 @@ Read it top to bottom once, then live in the **Coverage Scorecard** (§1) and th
 > **2026-07-02 staleness note:** facts 2 and 3 below (and the §1 scorecard) are **historical — written 2026-06-29 before the TEA stories ran**. Today: coverage IS measured (54.02% branch baseline on specialist+routers, CI `--cov-fail-under=54`, `l1_coverage_min: 0.54` — TEA-5) and a **local** nightly eval-drift runner exists (`run_nightly.ps1` + `drift.py`, TEA-7; still no GitHub nightly, by design/B5). Fact 1 is still true and stronger — the TEA-2 determinism guard now *enforces* zero-live-LLM at L1. Current state of record = the §0 audit matrix.
 -->
 
-1. **The gate is already armed.** `_bmad-output/sudo-tests.yaml` exists and `waive: false`, so `/sudo-code-review` enforces for real on every story. Required tiers are `[L1, L2]`; L3 (LLM-as-judge) is intentionally *not* required in the gate.
+1. **The gate is already armed.** `_bmad-output/sudo-tests.yaml` exists and `waive: false`, so `/cicd-code-review` enforces for real on every story. Required tiers are `[L1, L2]`; L3 (LLM-as-judge) is intentionally *not* required in the gate.
 2. **Branch coverage is currently UNMEASURED.** Backend has zero coverage tooling (no `pytest-cov`, no `.coveragerc`, no `[tool.coverage]`). Frontend has `@vitest/coverage-v8` installed but **not wired** (no `coverage` key in `vitest.config.ts`, no `--coverage` in any command). That is why `l1_coverage_min` is `0.0` — a deliberate grandfather setting, not an oversight.
 3. **There is no Test Impact Analysis and no nightly test/eval job.** The PR gate (`pr-check.yml`) runs the **full** `pytest backend/tests/` suite on every qualifying PR. The only scheduled workflow in the repo is `firestore-backup.yml` (a data backup, not tests).
 
@@ -123,7 +123,7 @@ Read it top to bottom once, then live in the **Coverage Scorecard** (§1) and th
 | **P7** — Test Impact Analysis (PR gate runs only impacted tests) | Not yet | `pr-check.yml` runs full `pytest backend/tests/ -v` — no `-k`/`--testmon`/changed-file selection. GitNexus `impact()` is documented but its engine files are NOT on disk and NOT wired to CI. | §P7 — `bmad-testarch-ci` scaffolds TIA selection; resolve GitNexus (human lane) |
 | **P8** — Semantic-eval separation (L3 judge decoupled, nightly) | Not yet | L3 correctly absent from the PR gate by policy, but there is no nightly/scheduled eval job (only `firestore-backup` cron). | §P8 — `bmad-testarch-ci` adds a scheduled nightly L3 job |
 | **P9** — Machine-enforced standards (ruleset bans string-match on LLM output) | Partial | `agent_bearing: true` arms the Test-Adequacy auditor and "no string-match on generative output"; `prompt-tdd.md` codifies it *scoped to `prompts.py` only*. No single Always-On rule, no blocking linter. | §P9 — consolidate into one named `testing-standards.md`; sync scope is Daniel's call |
-| **P10** — Test-first for agentic code (new workflows ship L1 mock + L2 schema by default) | Partial | `/sudo-write-story-tests` writes failing ATDD tests before code; gate requires `[L1, L2]`; baseline `at-opt-in`. But `l1_coverage_min: 0.0` makes the tier a presence-check, not a real floor; "by default" is convention, not a hard stop. | §P10 — the per-story loop IS this; ratchet the floor (human lane) |
+| **P10** — Test-first for agentic code (new workflows ship L1 mock + L2 schema by default) | Partial | `/cicd-write-story-tests` writes failing ATDD tests before code; gate requires `[L1, L2]`; baseline `at-opt-in`. But `l1_coverage_min: 0.0` makes the tier a presence-check, not a real floor; "by default" is convention, not a hard stop. | §P10 — the per-story loop IS this; ratchet the floor (human lane) |
 
 ---
 
@@ -147,7 +147,7 @@ flowchart TD
 
     subgraph S2 ["Step 2 — Execute per story (test-first loop)"]
         Exec["Vision lock, red tests, audit, then green"]
-        ExecCmd["Commands: /sudo-write-story-tests (BDD Vision Lock inside) then\n/sudo-self-audit then /sudo-dev-story-tests (BDD gate) then /sudo-code-review"]
+        ExecCmd["Commands: /cicd-write-story-tests (BDD Vision Lock inside) then\n/cicd-self-audit then /cicd-dev-story-tests (BDD gate) then /cicd-code-review"]
         Exec --> ExecCmd
     end
 
@@ -184,8 +184,8 @@ Before you install a single tool or write a single test, you turn an aspirationa
 2. **Run the planner.** Invoke `bmad-testarch-test-design` (say *"lets design test plan"*). Feed it **both** inputs:
    - the **mentor brief** (D1–D4 / P1–P10), and
    - the **real component inventory** — `SpecialistOrchestrator` (3-lane Expert Witness pipeline), `Librarian` (`backend/tools/librarian.py`), `FirestoreSessionService`, `SullySessionTelemetry`, `DossierContextBuilder` (JIT Context Assembler, Story 3.6), System Override (Story 5.3) / `confidence_reset`, and the two structured-output contracts `SocraticExecutorResponse` + `SullyResponse`.
-3. **Get back the strategy artifacts.** `bmad-testarch-test-design` produces an epic-level test plan (`test-design-epic-{epic_num}.md`) and/or system-level docs under `{test_artifacts}`, carrying a **P0–P3 risk map**, NFR thresholds, and planned evidence. That risk map is what later steps consume: `sudo-write-story-tests` pulls it so **P0 ACs get priority coverage**.
-4. **Reconcile principles vs reality, on the page.** As Murat ranks risk, *you* confirm the P0/P1 calls **and** mark each mentor target as `real → scope it` or `NOT FOUND → decide with Daniel`. The output is a set of scoped stories you can actually run the `sudo-` loop against — not a wish list.
+3. **Get back the strategy artifacts.** `bmad-testarch-test-design` produces an epic-level test plan (`test-design-epic-{epic_num}.md`) and/or system-level docs under `{test_artifacts}`, carrying a **P0–P3 risk map**, NFR thresholds, and planned evidence. That risk map is what later steps consume: `cicd-write-story-tests` pulls it so **P0 ACs get priority coverage**.
+4. **Reconcile principles vs reality, on the page.** As Murat ranks risk, *you* confirm the P0/P1 calls **and** mark each mentor target as `real → scope it` or `NOT FOUND → decide with Daniel`. The output is a set of scoped stories you can actually run the `cicd-` loop against — not a wish list.
 
 ```mermaid
 flowchart TD
@@ -208,7 +208,7 @@ flowchart TD
     Design --> Risk
     Design --> Decide
     Risk --> Stories
-    Risk -.->|"sudo-write-story-tests pulls this so P0 ACs get priority"| Stories
+    Risk -.->|"cicd-write-story-tests pulls this so P0 ACs get priority"| Stories
 ```
 
 ---
@@ -255,7 +255,7 @@ c:\Users\dlohn\.gemini\antigravity\scratch\Sudo_Hatter_Command\Projects\AGY_AVIA
                            lambda *a, **k: (_ for _ in ()).throw(
                                RuntimeError("Live LLM call in L1 — mock it.")))
    ```
-   Ship this through the loop so the guard arrives with tests: `/sudo-write-story-tests` then `/sudo-dev-story-tests` on a tiny "P1 determinism guard" story.
+   Ship this through the loop so the guard arrives with tests: `/cicd-write-story-tests` then `/cicd-dev-story-tests` on a tiny "P1 determinism guard" story.
 
 ```mermaid
 flowchart TD
@@ -297,7 +297,7 @@ flowchart TD
    pytest backend/tests/ --cov --cov-branch --cov-report=term-missing --cov-report=html
    ```
    Open `htmlcov/index.html`, find the uncovered branches in `SpecialistOrchestrator`, and **write the headline branch-% down.** Say it comes back 61%.
-4. **Set the floor at the baseline.** In `_bmad-output/sudo-tests.yaml`, change `l1_coverage_min: 0.0` → `l1_coverage_min: 0.61`. The gate (`bmad-testarch-trace` inside `/sudo-code-review`) now fails any story that drops below 61%. **THE key rule:** the floor "must only ever go UP." Record 85% as the *destination* in the `tier_map` doc (`_bmad-output/test-artifacts/ai-test-tiers.md`), not as today's gate value.
+4. **Set the floor at the baseline.** In `_bmad-output/sudo-tests.yaml`, change `l1_coverage_min: 0.0` → `l1_coverage_min: 0.61`. The gate (`bmad-testarch-trace` inside `/cicd-code-review`) now fails any story that drops below 61%. **THE key rule:** the floor "must only ever go UP." Record 85% as the *destination* in the `tier_map` doc (`_bmad-output/test-artifacts/ai-test-tiers.md`), not as today's gate value.
 5. **Wire `--cov` into CI.** The backend job in `.github/workflows/pr-check.yml` runs `pytest backend/tests/ -v --tb=short` with no `--cov`. Change it to `... --cov --cov-branch --cov-fail-under=61`. Keep `--cov-fail-under` and `l1_coverage_min` in sync — ratchet both in the same commit.
 
 ```mermaid
@@ -335,13 +335,13 @@ flowchart TD
 
 > **Decide with Daniel — "JIT prompt injection":** there *is* a real, named, already-tested subsystem that is the closest match — `DossierContextBuilder`, the "JIT Context Assembler (Story 3.6)" in `backend/services/dossier_context_builder.py`, tested at `backend/tests/services/test_dossier_context_builder.py`. **Do not silently assume the mentor's phrase and this subsystem are the same target.** Confirm with Daniel before writing P3 tests against it; until then, scope P3 to the two confirmed triggers.
 
-**Walkthrough (first-timer):** this is the one principle where you write net-new behavioral tests, so use the full `sudo-` loop. The pattern: set up a **state** (consequence depth, override count), invoke the component, and **assert the intervention fired** — on the **structured signal** (flag, counter, enum), never by string-matching the model's prose (banned by `agent_bearing: true`).
+**Walkthrough (first-timer):** this is the one principle where you write net-new behavioral tests, so use the full `cicd-` loop. The pattern: set up a **state** (consequence depth, override count), invoke the component, and **assert the intervention fired** — on the **structured signal** (flag, counter, enum), never by string-matching the model's prose (banned by `agent_bearing: true`).
 
 1. **(Optional, once)** If you lack shared websocket/telemetry fixtures, run `bmad-testarch-framework` (*"lets setup test framework"*). With 148 existing tests and rich sub-conftests, this is often redundant — skip if the conftests already serve you.
-2. **Write RED tests first** via `/sudo-write-story-tests` (e.g. story "P3 behavioral triggers — telemetry + Sully override"). Target: telemetry → assert `SullySessionTelemetry.override_count` increments and depth/technique fields populate; Sully override → at depth ≥ 3 assert a `[SYSTEM OVERRIDE]` injection is produced and `override_count` rises. If a draft test does `assert "you must" in reply`, rewrite it to assert the override flag.
-3. **Drive green** via `/sudo-dev-story-tests` — produces `implementation_plan.md`, turns red green with **actual pytest output pasted**, then `bmad-testarch-automate` expands edges (depth 2 vs 3 boundary, override-then-reset). If a trigger needs a live model, mock `backend/core/model_runtime.py` and assert the deterministic trigger logic around it.
+2. **Write RED tests first** via `/cicd-write-story-tests` (e.g. story "P3 behavioral triggers — telemetry + Sully override"). Target: telemetry → assert `SullySessionTelemetry.override_count` increments and depth/technique fields populate; Sully override → at depth ≥ 3 assert a `[SYSTEM OVERRIDE]` injection is produced and `override_count` rises. If a draft test does `assert "you must" in reply`, rewrite it to assert the override flag.
+3. **Drive green** via `/cicd-dev-story-tests` — produces `implementation_plan.md`, turns red green with **actual pytest output pasted**, then `bmad-testarch-automate` expands edges (depth 2 vs 3 boundary, override-then-reset). If a trigger needs a live model, mock `backend/core/model_runtime.py` and assert the deterministic trigger logic around it.
 4. **Resolve the JIT item with Daniel.** If he confirms `DossierContextBuilder`, add a third trigger test using `test_dossier_context_builder.py` as the pattern; if not, log a `decide-with-Daniel` line and do **not** scaffold.
-5. **Gate it** via `/sudo-code-review`.
+5. **Gate it** via `/cicd-code-review`.
 
 ```mermaid
 flowchart TD
@@ -352,12 +352,12 @@ flowchart TD
     T3 --> D{"Decide with Daniel:\nis JIT Context Assembler the target?"}
     D -->|"yes"| T3b["Add JIT dossier trigger test\n(pattern: test_dossier_context_builder.py)"]
     D -->|"no / unclear"| HOLD["Log as decide-with-Daniel, do NOT scaffold"]
-    T1 --> W["/sudo-write-story-tests (BDD Vision Lock + RED trigger tests)"]
+    T1 --> W["/cicd-write-story-tests (BDD Vision Lock + RED trigger tests)"]
     T2 --> W
     T3b --> W
     W --> X["Assert flag / counter / enum\nNEVER string-match LLM prose"]
-    X --> Y["/sudo-self-audit then /sudo-dev-story-tests (drive green + automate edges)"]
-    Y --> Z["/sudo-code-review (suite + trace + nfr + test-review)"]
+    X --> Y["/cicd-self-audit then /cicd-dev-story-tests (drive green + automate edges)"]
+    Y --> Z["/cicd-code-review (suite + trace + nfr + test-review)"]
     Z --> V["PASS / CONCERNS / FAIL verdict"]
 ```
 
@@ -503,7 +503,7 @@ flowchart TD
 2. **Add a "compute changed files" + "select impacted tests" step BEFORE pytest** — `git diff --name-only origin/<base>...HEAD -- 'backend/**'` piped into `impact()` to emit pytest node-ids into `impacted.txt`.
 3. **Make the gate consume the list, with a fail-safe:** if `impacted.txt` is empty or errored, run the full suite. TIA is an optimization, never a hole — an under-inclusive `impact()` is worse than a slow full suite (the `baseline: at-opt-in` posture agrees: the gate only ever gets stricter).
 4. **Refresh the impact graph in CI** (because the index is not on disk) via an index step before impact runs — confirm the exact command with Daniel.
-5. **Gate the change itself** with `/sudo-code-review`: inside the verdict, `bmad-testarch-trace` is your proof the impacted-only selection still covers the P0 ACs. If a P0 AC's test is missing from `impacted.txt`, widen the selection before trusting it.
+5. **Gate the change itself** with `/cicd-code-review`: inside the verdict, `bmad-testarch-trace` is your proof the impacted-only selection still covers the P0 ACs. If a P0 AC's test is missing from `impacted.txt`, widen the selection before trusting it.
 
 ```mermaid
 flowchart TD
@@ -590,24 +590,24 @@ flowchart TD
 
 ### P9 — Codified Ruleset (ban string-matching on probabilistic LLM output)
 
-**Covered? — PARTIAL.** The *spirit* is codified and partly enforced: (1) `Projects/AGY_AVIATIONCHAT/.agents/rules/prompt-tdd.md` already says exactly this — "Test What You Control, Not What the Model Does" — but only **triggers on edits to `backend/agents/**/prompts.py`**, so it governs prompt construction, not every agent test; (2) `sudo-tests.yaml` `agent_bearing: true` carries the gate-level prose "generative output must use soft assertions/judges, not string-match"; (3) that flag **arms the Test-Adequacy auditor** inside `/sudo-code-review`, which with `bmad-testarch-test-review` can catch a brittle assertion at review; (4) `code-standards.md` (Always On, synced) already mandates `unittest.mock`. **Missing:** no single Always-On `testing-standards.md` rule, advisory-only enforcement (a passing string-match test still sails through `pytest backend/tests/ -v`), and no AST/linter check that fails on `assert "..." in llm_response`.
+**Covered? — PARTIAL.** The *spirit* is codified and partly enforced: (1) `Projects/AGY_AVIATIONCHAT/.agents/rules/prompt-tdd.md` already says exactly this — "Test What You Control, Not What the Model Does" — but only **triggers on edits to `backend/agents/**/prompts.py`**, so it governs prompt construction, not every agent test; (2) `sudo-tests.yaml` `agent_bearing: true` carries the gate-level prose "generative output must use soft assertions/judges, not string-match"; (3) that flag **arms the Test-Adequacy auditor** inside `/cicd-code-review`, which with `bmad-testarch-test-review` can catch a brittle assertion at review; (4) `code-standards.md` (Always On, synced) already mandates `unittest.mock`. **Missing:** no single Always-On `testing-standards.md` rule, advisory-only enforcement (a passing string-match test still sails through `pytest backend/tests/ -v`), and no AST/linter check that fails on `assert "..." in llm_response`.
 
 **DECISION for Daniel (do not assume):**
 
 | Option | Where | Propagation | Pick when |
 |---|---|---|---|
-| **A — Synced lobby rule** | `.agents/rules/testing-standards.md` (lobby root) | Auto-propagates to every project + surface on next `/sync-agents` | You want a workspace-wide law |
+| **A — Synced lobby rule** | `.agents/rules/testing-standards.md` (lobby root) | Auto-propagates to every project + surface on next `/smh-sync-agents` | You want a workspace-wide law |
 | **B — Project-local** (DEFAULT) | `Projects/AGY_AVIATIONCHAT/.agents/rules/testing-standards.md` | AviationChat only (same scope as `prompt-tdd.md`) | Prove it here first |
 | **C — `AGENTS.md`** | The project's actual brain (not `CLAUDE.md`) | Read every session | You want it read regardless of trigger |
 
-> Daniel has previously chosen lobby-local / no auto-propagation, so **do not run `/sync-agents` on a hunch** — Option A changes every project. Default to **B (project-local)**, then ask before promoting.
+> Daniel has previously chosen lobby-local / no auto-propagation, so **do not run `/smh-sync-agents` on a hunch** — Option A changes every project. Default to **B (project-local)**, then ask before promoting.
 
 **Walkthrough (first-timer):** consolidate the scattered policy into one named file. This writes it; it does **not** sync it.
 
 1. **Confirm what exists:** read `prompt-tdd.md` and `grep "agent_bearing" _bmad-output/sudo-tests.yaml` — the policy language exists; you are consolidating, not inventing.
 2. **Write the standalone rule** (project-local, Option B) at `Projects/AGY_AVIATIONCHAT/.agents/rules/testing-standards.md` with `activation: Always On`: **ban** `assert <exact string> in <llm_output>` on probabilistic text; **require** schema validation, prompt-structure assertions, or an L3 judge; **allow** string-match only on deterministic envelopes (a routing tag, a `__tool_call__` sentinel, an enum).
 3. **Point the reviewer at it** — no code change; `agent_bearing: true` already arms the lens, your rule gives it a concrete checklist.
-4. **STOP and ask Daniel the DECISION** (project-local vs `/sync-agents` to lobby). Nothing synced, nothing committed.
+4. **STOP and ask Daniel the DECISION** (project-local vs `/smh-sync-agents` to lobby). Nothing synced, nothing committed.
 
 ```mermaid
 flowchart TD
@@ -618,7 +618,7 @@ flowchart TD
     subgraph Enforce ["What enforces it today (Partial)"]
         E1["prompt-tdd.md (scoped to prompts.py only)"]
         E2["sudo-tests.yaml agent_bearing=true (gate prose)"]
-        E3["Test-Adequacy lens in sudo-code-review (advisory)"]
+        E3["Test-Adequacy lens in cicd-code-review (advisory)"]
         E4["code-standards.md Always On: mock the APIs"]
         E1 --> E3
         E2 --> E3
@@ -630,33 +630,33 @@ flowchart TD
         D3["C: AGENTS.md (not CLAUDE.md)"]
     end
     Enforce -.->|"codify the gap into one named rule"| Decide
-    Decide -.->|"do NOT run sync-agents without Daniel"| Start
+    Decide -.->|"do NOT run smh-sync-agents without Daniel"| Start
 ```
 
 ### P10 — Test-First for Agentic Code (new code ships L1 mock + L2 schema by default)
 
-**Covered? — PARTIAL.** The test-first *workflow* exists and the L1+L2 floor is *gate-required*: `required_tiers: [L1, L2]` with `waive: false` (LIVE) means a story missing a required tier gets a **FAIL** in `/sudo-code-review`; `/sudo-write-story-tests` writes failing ATDD tests **before** code; `/sudo-dev-story-tests` drives them green then `bmad-testarch-automate` expands; `code-standards.md` mandates mocking (proven by 148 backend tests incl. `test_tool_call_detection.py`); real L2 schema targets exist (`SocraticExecutorResponse`, `SullyResponse`, `InvestigationDossier`). **Missing:** `l1_coverage_min: 0.0` makes the tier a *presence* check, not a real floor (a token L1 test passes); backend coverage is unmeasurable (P2); and "by default" is workflow convention — nothing blocks a dev who skips the loop and writes code first.
+**Covered? — PARTIAL.** The test-first *workflow* exists and the L1+L2 floor is *gate-required*: `required_tiers: [L1, L2]` with `waive: false` (LIVE) means a story missing a required tier gets a **FAIL** in `/cicd-code-review`; `/cicd-write-story-tests` writes failing ATDD tests **before** code; `/cicd-dev-story-tests` drives them green then `bmad-testarch-automate` expands; `code-standards.md` mandates mocking (proven by 148 backend tests incl. `test_tool_call_detection.py`); real L2 schema targets exist (`SocraticExecutorResponse`, `SullyResponse`, `InvestigationDossier`). **Missing:** `l1_coverage_min: 0.0` makes the tier a *presence* check, not a real floor (a token L1 test passes); backend coverage is unmeasurable (P2); and "by default" is workflow convention — nothing blocks a dev who skips the loop and writes code first.
 
 **DECISION for Daniel:** same A/B/C fork as P9 (the test-first clause lives in the same `testing-standards.md`). Two sub-decisions ride along, both Daniel's: (i) install `pytest-cov` and lift `l1_coverage_min` above `0.0` (the P2 ratchet — must only ever go UP); (ii) keep test-first gate-enforced only, or make it a pre-dev hard stop. Do **not** bump the floor or install deps without Daniel ("Ask First" per the constitution).
 
 **Walkthrough (first-timer):** ship a new agentic behavior test-first.
 
 1. **Confirm the gate is armed:** `grep -E "required_tiers|l1_coverage_min|waive" _bmad-output/sudo-tests.yaml` → `[L1, L2]`, `0.0`, `false`.
-2. **Write red tests FIRST:** `/sudo-write-story-tests <story-id>` → failing files + `atdd-checklist-<story>.md`.
+2. **Write red tests FIRST:** `/cicd-write-story-tests <story-id>` → failing files + `atdd-checklist-<story>.md`.
 3. **Write the L1 mock test** (mock every LLM call; pattern: `test_tool_call_detection.py`) — zero live calls.
 4. **Write the L2 schema test** — assert output `model_validate(...)` succeeds and a malformed payload raises `ValidationError` (P5). Do not string-match the prose (P9).
-5. **Drive green + expand:** `/sudo-dev-story-tests <story-id>` — pastes actual output, runs `bmad-testarch-automate`.
-6. **Gate it:** `/sudo-code-review <story-id>` → `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md`. PASS = both tiers present and green, no new regression. With `l1_coverage_min: 0.0` a *thin* L1 passes the tier check — so make your L1 actually exercise the new branch even though no machine measures it yet.
+5. **Drive green + expand:** `/cicd-dev-story-tests <story-id>` — pastes actual output, runs `bmad-testarch-automate`.
+6. **Gate it:** `/cicd-code-review <story-id>` → `_bmad-output/implementation-artifacts/cicd-code-review-<story>.md`. PASS = both tiers present and green, no new regression. With `l1_coverage_min: 0.0` a *thin* L1 passes the tier check — so make your L1 actually exercise the new branch even though no machine measures it yet.
 7. **STOP for the DECISION** (rule scope + whether to start the floor ratchet).
 
 ```mermaid
 flowchart TD
-    New["New agentic code (new sub-agent / output field)"] --> S1["Step 1: sudo-write-story-tests (ATDD red tests first)"]
+    New["New agentic code (new sub-agent / output field)"] --> S1["Step 1: cicd-write-story-tests (ATDD red tests first)"]
     S1 --> L1["Write L1 test: mock ALL LLM calls (zero live API)"]
     S1 --> L2["Write L2 test: validate output vs Pydantic schema;\nmalformed raises ValidationError"]
-    L1 --> S2["Step 2: sudo-dev-story-tests (implement, drive green, automate)"]
+    L1 --> S2["Step 2: cicd-dev-story-tests (implement, drive green, automate)"]
     L2 --> S2
-    S2 --> Gate["Step 3: sudo-code-review reads sudo-tests.yaml"]
+    S2 --> Gate["Step 3: cicd-code-review reads sudo-tests.yaml"]
     subgraph GateLogic ["Gate enforcement today (Partial)"]
         G1{"Both required_tiers [L1, L2] present and green?"}
         G2{"Any NEW regression vs baseline?"}
@@ -687,14 +687,14 @@ The retrofit is a two-lane operation. The agents do the mechanical, repeatable w
 - **Set the coverage number.** The mentor said 85%; today it is unmeasured and `l1_coverage_min` is `0.0`. After Step 1 wires coverage, *you* pick the first floor at the measured baseline (it must only ratchet up).
 - **Curate the FAA adversarial fixtures and judge rubrics (P6/P8).** Wrong-FAA-query cases and LLM-judge rubrics need aviation-regulatory judgment; the agents run them, *you* author what counts as wrong. The empty `evals/` dir is your fill.
 - **Decide ruleset sync scope (P9/P10).** Project-local `sudo-tests.yaml`/`testing-standards.md`, or propagate to master `.agents/` for all projects. Editing master `.agents/` auto-syncs everywhere; default project-local and ask first.
-- **Do the L4 review.** `/sudo-update-sprint-memory` treats *your invocation* as the sign-off that flips a story `review → done`; only objectively-red gate tests block you.
+- **Do the L4 review.** `/cicd-update-sprint-memory` treats *your invocation* as the sign-off that flips a story `review → done`; only objectively-red gate tests block you.
 
 **The agents' lane (the mechanical work):**
 
 - `bmad-testarch-test-design` — drafts the risk-based epic test plan you then rank (Step 0).
-- `/sudo-write-story-tests` → `bmad-testarch-atdd` — writes the failing (red) acceptance tests, one per AC, before any code.
-- `/sudo-dev-story-tests` → `bmad-dev-story` + `/sudo-self-audit` + `bmad-testarch-automate` — plans, self-audits, implements to green, expands coverage.
-- `/sudo-code-review` — adversarial review, full suite (NEW regressions only), `bmad-testarch-trace`, `bmad-testarch-nfr`, `bmad-testarch-test-review`, then ONE verdict artifact.
+- `/cicd-write-story-tests` → `bmad-testarch-atdd` — writes the failing (red) acceptance tests, one per AC, before any code.
+- `/cicd-dev-story-tests` → `bmad-dev-story` + `/cicd-self-audit` + `bmad-testarch-automate` — plans, self-audits, implements to green, expands coverage.
+- `/cicd-code-review` — adversarial review, full suite (NEW regressions only), `bmad-testarch-trace`, `bmad-testarch-nfr`, `bmad-testarch-test-review`, then ONE verdict artifact.
 - `bmad-testarch-ci` — scaffolds CI changes for TIA selection and the nightly L3 job.
 
 **"Decide with Daniel" — mentor targets NOT FOUND in the repo (no walkthroughs for these):**
@@ -709,9 +709,9 @@ The retrofit is a two-lane operation. The agents do the mechanical, repeatable w
 
 ## Worked example — TEA-9, the local TIA gate, start to finish
 
-TEA-9 was the **last** story of the retrofit: build a **local pre-push Test Impact Analysis gate** — run only the tests a working diff can break, with a full-suite fail-safe, gated on the code index being fresh. It's a good teaching example because it exercises the **full** `sudo-` loop *and* shows the pure/impure test split, a fail-safe design, and how adversarial review catches "green but silently wrong."
+TEA-9 was the **last** story of the retrofit: build a **local pre-push Test Impact Analysis gate** — run only the tests a working diff can break, with a full-suite fail-safe, gated on the code index being fresh. It's a good teaching example because it exercises the **full** `cicd-` loop *and* shows the pure/impure test split, a fail-safe design, and how adversarial review catches "green but silently wrong."
 
-### ① `/sudo-write-story-tests` — story + RED tests first
+### ① `/cicd-write-story-tests` — story + RED tests first
 
 Wrote the story (`_bmad/bmm/stories/tea-9-tia-ci.md`) and a **failing** spec for the pure decision layer: `backend/tests/tia/test_tia_select.py` — 12 tests, all red because the module `backend.tia.select` didn't exist yet. The red phase is the proof-of-test: a spec that fails *before* the code exists proves the test actually pins something.
 
@@ -720,7 +720,7 @@ Wrote the story (`_bmad/bmm/stories/tea-9-tia-ci.md`) and a **failing** spec for
 - **Freshness = `indexed_commit == HEAD`** — a dirty working tree is *not* stale (uncommitted changes are the intended input to a pre-push check).
 - **Selection is file-level** (`git diff --name-only` → a test-map), *not* an `impact()` call — sidestepping that `impact()`/`detect_changes()` are MCP-only and under-select on attribute-dispatch. GitNexus is used **only** for the freshness check.
 
-### ② `/sudo-dev-story-tests` — plan → self-audit → build to green
+### ② `/cicd-dev-story-tests` — plan → self-audit → build to green
 
 Delivered a clean **pure/impure split** (the TEA-7 precedent — test the brain, keep the I/O thin):
 
@@ -739,16 +739,16 @@ any unmapped file ─┘
    fresh + ok + non-empty + all-mapped ─► SELECTED  (run just the affected tests)
 ```
 
-### ③ `/sudo-code-review` — the gate + adversarial review
+### ③ `/cicd-code-review` — the gate + adversarial review
 
 The pure layer reviewed clean. The adversarial pass on the impure runner found **two defects the green tests couldn't** — the reason a P0-surface story gets a human-grade review, not just a passing suite:
 
 - **F-CR1 (fixed):** `_dispatch` captured pytest output via `capture_output=True` and **discarded it** → the developer saw no test results. Fixed with a `_stream()` helper (inherited stdio) so pytest prints straight to the terminal.
 - **F-CR2 (fixed):** `--include-e2e` was a **no-op** that contradicted its own help text. Fixed to actually dispatch `npm run test:e2e` on opt-in.
 
-All four gate checks PASS (suite baseline-diff-aware · trace · nfr · test-review). **Verdict: PASS** (artifact: `_bmad-output/implementation-artifacts/sudo-code-review-tea-9-tia-ci.md`, HEAD `9825e91`). Evidence recorded: 28/28 TIA tests green post-fix (0.17s); a live `--dry-run` still failed safe (`RUN_ALL` / `STALE_INDEX`, indexed `1fc85d1` ≠ head `9825e91`); the ② full-suite baseline was **2316 passed / 2 skipped / 0 failed** — and since the edit is confined to the untested-but-reviewed `gate.py` (imported by nothing; `select.py` untouched), that's **0 new regressions**.
+All four gate checks PASS (suite baseline-diff-aware · trace · nfr · test-review). **Verdict: PASS** (artifact: `_bmad-output/implementation-artifacts/cicd-code-review-tea-9-tia-ci.md`, HEAD `9825e91`). Evidence recorded: 28/28 TIA tests green post-fix (0.17s); a live `--dry-run` still failed safe (`RUN_ALL` / `STALE_INDEX`, indexed `1fc85d1` ≠ head `9825e91`); the ② full-suite baseline was **2316 passed / 2 skipped / 0 failed** — and since the edit is confined to the untested-but-reviewed `gate.py` (imported by nothing; `select.py` untouched), that's **0 new regressions**.
 
-### Close-out — `/sudo-update-sprint-memory`
+### Close-out — `/cicd-update-sprint-memory`
 
 Daniel's invocation **is** the sign-off. Because the verdict wasn't FAIL, the story flipped `review → done` in **both** the story frontmatter and `sprint-status.yaml`; learnings routed to memory; active-context pruned. TEA-9 was the last story, so **this close-out closed the entire retrofit.**
 
@@ -771,21 +771,21 @@ Daniel's invocation **is** the sign-off. Because the verdict wasn't FAIL, the st
 | `bmad-testarch-test-design` | Risk-rank the epic P0–P3; emit the strategy doc | Step 0 (once per epic) |
 | `bmad-testarch-framework` | One-time test-framework bootstrap (Playwright/Cypress + fixtures) | Project setup, once (often redundant here) |
 | `bmad-testarch-ci` | Scaffold CI pipeline (TIA selection, nightly job, burn-in) | Step 3 (P7, P8) |
-| `bmad-testarch-atdd` | Write RED acceptance tests before code | `sudo-write-story-tests` ① |
-| `bmad-testarch-automate` | Expand coverage at the right level (E2E/API/component/unit) | `sudo-dev-story-tests` ②; standalone for brownfield |
-| `bmad-testarch-trace` | Traceability matrix + PASS/CONCERNS/FAIL/WAIVED gate vs `l1_coverage_min` | `sudo-code-review` ③ |
-| `bmad-testarch-nfr` | NFR audit (perf/security/reliability/maintainability) | `sudo-code-review` ③ (when `nfr`/`agent_bearing`) |
-| `bmad-testarch-test-review` | 0–100 test-quality/flake score (coverage out of scope) | `sudo-code-review` ③ |
-| `/sudo-boot-sprint-memory` | Boot: where am I, what story is next, which command | First step of a session (read-only) |
-| `/sudo-write-story-tests` | ① Create story + write failing acceptance tests | After boot picks a not-started story |
-| `/sudo-dev-story-tests` | ② Plan → self-audit → implement → automate | After ① |
-| `/sudo-code-review` | ③ Review + the test gate → one verdict artifact | After ② |
-| `/sudo-update-sprint-memory` | Close-out: flip story → done, route learnings, prune | Last step closing a story/session |
+| `bmad-testarch-atdd` | Write RED acceptance tests before code | `cicd-write-story-tests` ① |
+| `bmad-testarch-automate` | Expand coverage at the right level (E2E/API/component/unit) | `cicd-dev-story-tests` ②; standalone for brownfield |
+| `bmad-testarch-trace` | Traceability matrix + PASS/CONCERNS/FAIL/WAIVED gate vs `l1_coverage_min` | `cicd-code-review` ③ |
+| `bmad-testarch-nfr` | NFR audit (perf/security/reliability/maintainability) | `cicd-code-review` ③ (when `nfr`/`agent_bearing`) |
+| `bmad-testarch-test-review` | 0–100 test-quality/flake score (coverage out of scope) | `cicd-code-review` ③ |
+| `/cicd-boot-sprint-memory` | Boot: where am I, what story is next, which command | First step of a session (read-only) |
+| `/cicd-write-story-tests` | ① Create story + write failing acceptance tests | After boot picks a not-started story |
+| `/cicd-dev-story-tests` | ② Plan → self-audit → implement → automate | After ① |
+| `/cicd-code-review` | ③ Review + the test gate → one verdict artifact | After ② |
+| `/cicd-update-sprint-memory` | Close-out: flip story → done, route learnings, prune | Last step closing a story/session |
 | `regulatory-verification-protocol` | Citation-accuracy doctrine for FAA fixtures (P6) | Before authoring adversarial fixtures |
 
 ### The `sudo-tests.yaml` dial
 
-Located at `_bmad-output/sudo-tests.yaml`. Its **presence** arms the gate (absent → `/sudo-code-review` returns WAIVED). Verbatim values today:
+Located at `_bmad-output/sudo-tests.yaml`. Its **presence** arms the gate (absent → `/cicd-code-review` returns WAIVED). Verbatim values today:
 
 | Key | Value | What it does |
 |---|---|---|
@@ -802,7 +802,7 @@ Located at `_bmad-output/sudo-tests.yaml`. Its **presence** arms the gate (absen
 - **Strategy (Step 0):** `test-design-epic-{epic_num}.md` (and system-level `test-design-qa.md` / `test-design-architecture.md`) under `{test_artifacts}`.
 - **Red tests + checklist (①):** new story under `_bmad/bmm/stories/`; failing acceptance test files; `atdd-checklist-{story_key}.md`.
 - **Dev (②):** `implementation_plan.md`; implemented code; green + expanded tests.
-- **Gate (③):** verdict at `_bmad-output/implementation-artifacts/sudo-code-review-<story>.md` (verdict + each gate result + actual suite output + story id + git HEAD); updated `_artifacts/<epic>/<story>/walkthrough.md`; `{test_artifacts}/traceability-matrix.md`; `{test_artifacts}/nfr-assessment.md`; `test-review.md`.
+- **Gate (③):** verdict at `_bmad-output/implementation-artifacts/cicd-code-review-<story>.md` (verdict + each gate result + actual suite output + story id + git HEAD); updated `_artifacts/<epic>/<story>/walkthrough.md`; `{test_artifacts}/traceability-matrix.md`; `{test_artifacts}/nfr-assessment.md`; `test-review.md`.
 - **Coverage (P2):** `htmlcov/index.html` (local report).
 - **Adversarial evals (P6):** `backend/evals/scenarios/*.json`; reports under `backend/evals/reports/`.
 - **Close-out:** updated `active-context.md`, `sprint-status.yaml`, story frontmatter, component specs/rules, and memory files.
@@ -901,7 +901,7 @@ cd firebase/tests && npm test        # 61/61 green; non-vacuity via the emulator
 |---|---|---|
 | **B1** | The coverage floor only ever ratchets **UP** | Set it above today's real number and every story fails the gate → people switch it off. |
 | **B2** | FAA adversarial fixtures are **human-authored/ratified** first | Regulatory judgment is Daniel's lane; verify against primary FAA sources, not memory (memory `domain-gated-fixtures-web-verify`). |
-| **B4** | Testing standards are **project-local**, not synced to the lobby | Prove it in AviationChat first; editing master `.agents/` auto-syncs everywhere — do **not** `/sync-agents` on a hunch. |
+| **B4** | Testing standards are **project-local**, not synced to the lobby | Prove it in AviationChat first; editing master `.agents/` auto-syncs everywhere — do **not** `/smh-sync-agents` on a hunch. |
 | **B5** | The TIA gate + eval-drift runner are **local, never CI** | The GitNexus index is machine-local/absent from a CI runner, and the live key stays off CI. The full suite remains the merge gate. |
 
 ---

@@ -1,0 +1,5 @@
+task_key: SCC-63
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-63-naming-convention-2-0
+close_command: smh-close-task-merge-tree
+secondary_repos: []

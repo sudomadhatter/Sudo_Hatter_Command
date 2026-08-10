@@ -1,6 +1,6 @@
 ---
 name: project-law
-description: "The two-tier rule model. The command center owns ALL workflow law (rules, commands, skills, sync); a project owns ONLY its own product law — `.agents/rules/` + `.agents/skills/` routed by its `.agents/INDEX.md`. Fires when you BIND a project (every /sudo-* Step 0 — reading that INDEX is mandatory, not optional), and when you AUTHOR a rule/skill and must decide which tier it belongs to."
+description: "The two-tier rule model. The command center owns ALL workflow law (rules, commands, skills, sync); a project owns ONLY its own product law — `.agents/rules/` + `.agents/skills/` routed by its `.agents/INDEX.md`. Fires when you BIND a project (every /cicd-* Step 0 — reading that INDEX is mandatory, not optional), and when you AUTHOR a rule/skill and must decide which tier it belongs to."
 ---
 
 # Project Law — the two-tier rule model
@@ -44,7 +44,7 @@ the only moment that reliably happens is when a target gets bound.
 > triggers. A converted project whose `.agents/INDEX.md` is **missing** → **STOP and say so** — never
 > proceed as if the project had no law. Absence is a defect, never a default.
 
-This is bound into `sudo-target-resolution.md` §BIND (which every `/sudo-*` Step 0 walks), stated inline
+This is bound into `smh-target-resolution.md` §BIND (which every `/cicd-*` Step 0 walks), stated inline
 in the lobby and project `AGENTS.md`, carried as a Hard Stop in the always-loaded `constitution.md`, and
 enforced by `check_maps.py` (a converted project with no `.agents/INDEX.md` is a lint ERROR). Five
 anchors, one obligation — if you ever find a sixth path that binds a project without reading its INDEX,
@@ -65,7 +65,7 @@ reference material the INDEX points you at; that is the whole difference.
 
 ## Authoring — which tier does this belong to?
 
-**The command center authors project law.** When a session (usually `/sudo-update-sprint-memory`'s
+**The command center authors project law.** When a session (usually `/cicd-update-sprint-memory`'s
 learning-routing step) produces a durable lesson, rule, or reference, it is written into the tier its
 content belongs to — and a project-specific one goes into **that project's** `.agents/`, never the
 master.
@@ -92,7 +92,7 @@ this way. Inline it, and leave the full rule at the center as the canonical copy
 
 - NEVER bind a project without reading its `.agents/INDEX.md` — missing INDEX in a converted project is a
   STOP, not a shrug.
-- NEVER vendor tier 1 into a project. `/sync-agents` targets the command center and the machine-global
+- NEVER vendor tier 1 into a project. `/smh-sync-agents` targets the command center and the machine-global
   caches only.
 - NEVER write a project-specific rule or skill into the master `.agents/`, or a shared workflow rule into
   a project.

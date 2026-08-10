@@ -16,7 +16,7 @@ Receipts land in `_bmad-output/gates/<story>/<gate>.json`.
 
 FOUR results, not two. `unrunnable` is its own state because `No module named ruff` means
 the floor never ran, and the house rule is that a missing tool is a FINDING, not a skip
-(`/sudo-code-review` Step 3.5). Collapsing it into `fail` loses that distinction; collapsing
+(`/cicd-code-review` Step 3.5). Collapsing it into `fail` loses that distinction; collapsing
 it into `pass` is how a green gets faked. `warn` (opt-in via `--warn-exit N`) is the same
 argument one level down: a tool that grades its OWN findings — `workflow_lint` exits 1 for
 warnings and 2 for errors — has that grading erased if every non-zero is `fail`, and a

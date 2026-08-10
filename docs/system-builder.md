@@ -14,10 +14,10 @@ the lobby in sync, and keep `../router.md` current. This is the "system-builder 
 talk to *this* workspace to grow the home base.
 
 ## TOOLS
-- **`/new-project <name>`** → scaffold `Projects/<name>/` by cloning the thin skeleton repo
+- **`/smh-new-project <name>`** → scaffold `Projects/<name>/` by cloning the thin skeleton repo
   (`sudomadhatter/sudo-project-skeleton` — no vendored toolkit; see `.agents/rules/project-law.md`),
   register it in `../router.md`, add it to `../.gitignore`, and `git init` its own repo.
-- **`/sync-agents [target]`** → push `.agents/{commands,skills,opencode-agents}` into a target's tool
+- **`/smh-sync-agents [target]`** → push `.agents/{commands,skills,opencode-agents}` into a target's tool
   dirs (the lobby, or a project). Markdown only — never `node_modules`.
 - **`_my_resources/migrations/rename-fix.ps1`** → rename-day restructure: move projects into
   `Projects/` and repair every absolute-path reference in one pass. Dry-run by default; `-Apply`
@@ -25,7 +25,7 @@ talk to *this* workspace to grow the home base.
 
 ## RULES
 - **Single source of authorship = `.agents/`.** Copies in `.claude/`, `.opencode/`, and per-project
-  tool dirs are vendored by `/sync-agents` — never hand-edit a copy; edit the master and re-sync.
+  tool dirs are vendored by `/smh-sync-agents` — never hand-edit a copy; edit the master and re-sync.
 - **Lobby = categories only** (`../router.md`); detail lives in each workspace's `AGENTS.md`.
 - **Adding a workspace must not require a central rebuild** — folder + `AGENTS.md` + one router row.
 - **Don't break projects:** when converting a project, move it into `Projects/`, fix absolute paths

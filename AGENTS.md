@@ -90,7 +90,7 @@ workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 | Docs | `docs/` | home-base documentation (master implementation plan, workspace standard) |
 | Navigation index | `docs/repo-map.md` | the lobby's repo-map (curated header + auto body); drift-checked at SessionStart |
 | Routing canary | `_routing-canary/` | model-agnostic proof the routing works (Claude/opencode/Antigravity) |
-| System builder | `docs/system-builder.md` | how to add/maintain workspaces (`/new-project`, `/sync-agents`) |
+| System builder | `docs/system-builder.md` | how to add/maintain workspaces (`/smh-new-project`, `/smh-sync-agents`) |
 | New-machine setup (disposable) | `_my_resources/migrations/` | secrets export/restore + rename-day tooling; start at its `INDEX.md`. Not day-to-day infra — deleted once a machine is set up |
 | Lobby tool dirs | `.claude/`, `.opencode/` | synced copies of the master. **One door per platform per command (SCC-66):** Claude + Codex enter through a **launcher skill** (generated per eligible command into `.agents/skills/`, tree-copied to `.claude/skills/`; hand-authored `SKILL.md` wins); opencode through `.opencode/commands/`; Antigravity through `.agents/workflows/`. `.claude/commands/` and `~/.codex/prompts` are **retired** doors; `platforms:` frontmatter limits a command's reach |
 | Personal area | `_my_resources/` | Daniel's notes (docs · transcripts · open_tasks) — protected, Tier-2 law; `open_tasks/` (read-only) & `_quick_reference/` (read/write) allow-list carve-outs |
@@ -116,7 +116,7 @@ files, per §3); full model →
 ## 6. GATES  (consult before acting)
 - **ROUTING GATE**: confirm the target workspace via `router.md` before touching files in it.
 - **PROJECT-LAW GATE — binding a project = loading its law.** The moment a target project is bound
-  (`/sudo-*` Step 0 §BIND, or any work under `Projects/<name>/`), read `PROJECT_ROOT/.agents/INDEX.md`
+  (`/cicd-*` Step 0 §BIND, or any work under `Projects/<name>/`), read `PROJECT_ROOT/.agents/INDEX.md`
   and honor its `Load` column — a converted (thin) project's INDEX routes its own rules + skills; a
   converted project missing it → STOP. Two-tier contract → `.agents/rules/project-law.md`.
 - **SEARCH GATE** — a root-level Grep is blind to `Projects/` (ripgrep honors the lobby `.gitignore`) and
@@ -129,7 +129,7 @@ files, per §3); full model →
   chore lane beside a story lane collides exactly as hard). What differs by lane is the **branch and its
   base, never whether you isolate**: a story lane takes `claude/<KEY>-<slug>` off **the story's epic
   branch** (`epic/<KEY>-<slug>`, never `main`), ad-hoc/Task work takes `chore/<KEY>-<slug>` off `main`.
-  Each is pruned by its own close-out — `/sudo-close-workingtree` for a story, `/close-task-merge-tree`
+  Each is pruned by its own close-out — `/cicd-close-workingtree` for a story, `/smh-close-task-merge-tree`
   Step 5 for a Task. Commits stay explicit-path (`git add -A`/`.`/`-u` banned). Read-only sessions and a
   single trivial edit the operator is watching are exempt. A fresh tree does not inherit gitignored
   assets (`.env`, `auth_keys/`, `.venv`, `node_modules`) — run `.agents/scripts/link-worktree-assets.py`,
@@ -138,12 +138,12 @@ files, per §3); full model →
   **Parallel teams are the NORM — up to four lanes (sometimes more) run at once:** expect other lanes'
   dirty files in the shared checkout (never sweep, revert, or "fix" work you didn't do) and expect the
   epic branch to move mid-session; several lanes
-  landing together go through `/sudo-merge-epic-workingtrees`, never one-by-one. Full lifecycle →
+  landing together go through `/cicd-merge-epic-workingtrees`, never one-by-one. Full lifecycle →
   `.agents/rules/worktree-per-story.md`.
 - **GIT WRITE APPROVAL — the gate is WHERE a write lands.** FREE: your own `claude/*` or `chore/*`
   branch — commits **and** pushes. SIGN-OFF (per-action, never carries): landing on **the epic branch** —
-  Daniel's in-the-moment "approved", or invoking `/sudo-update-sprint-memory` (its Step 7 does the
-  landing; invoking it IS the sign-off). OWNER-ONLY: **`main`** — only via `/sudo-push-e2e` (epic merge,
+  Daniel's in-the-moment "approved", or invoking `/cicd-update-sprint-memory` (its Step 7 does the
+  landing; invoking it IS the sign-off). OWNER-ONLY: **`main`** — only via `/cicd-push-e2e` (epic merge,
   full gate) or Daniel's direct ask. Full branch model + enforcement → `.agents/rules/git-policy.md`
   (web/mobile → `mobile-mode.md`).
 - Full hard stops + "ask first" list → `.agents/rules/constitution.md`.
@@ -166,7 +166,7 @@ files, per §3); full model →
   index — one line per memory, ≤25 KB) and open the full files relevant to your task. Recalled facts
   reflect when they were written — verify against the live repo before acting on one.
   **The store is READ-ONLY except through the sanctioned flows** (the Claude harness auto-memory and
-  `/sudo-update-sprint-memory`'s learning-routing step): never edit, delete, reorganize, sweep, or
+  `/cicd-update-sprint-memory`'s learning-routing step): never edit, delete, reorganize, sweep, or
   commit `_artifacts/_memory/` files otherwise — a dirty memory file in your tree that you did not
   write is another session's work in flight. Write law, for the writers: one index line per memory;
   update the existing file, never fork a duplicate; wrong → **delete** (git is the undo);
@@ -177,10 +177,10 @@ files, per §3); full model →
   `tests/test_memory_store.py` (in `run_all`) enforces the 25 KB index cap + link↔file integrity, and at
   **90 % of the cap** it prints a `MEMORY AUDIT DUE` block — below the cap, while the run still passes,
   so the trigger prevents the red instead of being it. **If you see that block, STOP and ask the
-  operator whether to run `/memory-audit` now.** It is a script: it can print, it cannot ask. You are the
+  operator whether to run `/smh-memory-audit` now.** It is a script: it can print, it cannot ask. You are the
   half that asks — do not silently note it, do not defer it to a later command, and do not decide for
   them. ⛔ And do not act on it yourself: **never compact, merge, or retire a memory on your own
-  judgment, and never raise the cap.** Compaction is `/memory-audit`'s work, applied per item on the
+  judgment, and never raise the cap.** Compaction is `/smh-memory-audit`'s work, applied per item on the
   operator's word — a model summarizing away a hard-won pitfall is silent, permanent loss of exactly
   the recall this store exists for.
 
@@ -188,7 +188,7 @@ files, per §3); full model →
 `AGENTS.md` is the universal contract; `CLAUDE.md` / `GEMINI.md` are one-line adapters pointing here (nothing
 model-specific in shared files). **Codex** reads `AGENTS.md` **and** the Agent Skills in `.agents/skills/`
 natively — it needs no adapter file. One command set (`.agents/commands/`) reaches **all four** LLM surfaces
-via `/sync-agents`, with **one door per platform per command (SCC-66)**: Claude and Codex invoke the
+via `/smh-sync-agents`, with **one door per platform per command (SCC-66)**: Claude and Codex invoke the
 **launcher skill** (generated per claude/codex-eligible command; the skill's whole body is "read the command
 file, follow it end to end", so the command stays the single brain); opencode invokes its command mirror;
 Antigravity its workflow mirror (12k-cap thin launchers included). `platforms:` frontmatter limits reach;
@@ -196,6 +196,22 @@ default = everywhere. The retired doors — `.claude/commands/` and Codex custom
 `/prompts:<name>`) — double-doored commands beside their skills and are purged by the sync. BMAD's skills —
 which install to `.claude/skills`, outside Codex's search path — are mirrored to `~/.codex/skills` so BMAD is
 reachable there too. Full model → `docs/workspace-standard.md`.
+
+**⭐ Command naming law (SCC-63, 2026-08-09).** A command's prefix declares what it IS, and the prefix
+is load-bearing — it decides what the command is allowed to touch:
+
+| Family | What it is | Target |
+|---|---|---|
+| **`cicd-*`** | the BMAD-paired story/epic dev loop and its logistics (write → dev → review → close, boards, worktrees, autopilot, shipping) | binds `smh-target-resolution.md` — **exactly ONE project, never the lobby** |
+| **`smh-*`** | workflows run ON the command centre + everyday operator tasks (sync, maps, memory, Task close-out, ideation) | allowed to act on the repo you are standing in |
+| **`sentry-*`** | the Sentry incident system — a separate system from the dev loop | reserved family; one member today |
+
+Rules: **hyphens only, never underscores.** An autopilot twin appends **`-AP`**. Vendor BMAD bridges
+(`dev`, `pm`, `qa`, `sm`, `tea`, `analyst`, `architect`, `testarch-*`, …) keep their upstream names and
+take **no** prefix. **Skills take no prefix** — a prefix marks a command; a generated launcher inherits
+its command's name, a hand-authored skill is named for what it knows. ⛔ The `sudo-` prefix is
+**RETIRED**: any `/sudo-` reference anywhere in this system is stale by definition. Enforced
+mechanically by `workflow_lint.py --toolkit-only`.
 
 > **GitNexus** — code-intelligence (impact · detect_changes · query · context) for this repo →
 > `docs/gitnexus.md`. (Lobby index is routing-surface only; product work uses `repo: "AGY_AVIATIONCHAT"`.)

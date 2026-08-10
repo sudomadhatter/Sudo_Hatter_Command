@@ -8,7 +8,7 @@
 > projects**, so there is deliberately no link: there is no one file to point at. Read the copy in
 > the project you are running (`Projects/AGY_AVIATIONCHAT/scripts/`, which is its own repo and does
 > not materialize in a lobby worktree) ·
-> **Trigger:** `/autopilot_claude <story>` ([`.claude/commands/autopilot_claude.md`](../../.claude/commands/autopilot_claude.md)) ·
+> **Trigger:** `/cicd-autopilot-claude <story>` ([`.claude/commands/cicd-autopilot-claude.md`](../../.claude/commands/cicd-autopilot-claude.md)) ·
 > **Status:** v2, hardened — anchored matcher, evidence-gated (no verdict tokens), dedicated `_AP`
 > commands, independent test gate, auto story→`review`. Proven end-to-end on **Story 14.2** (full
 > 4-stage run, $9.00, clean APPROVE, backend 1723 passed / frontend 270 passed).
@@ -31,7 +31,7 @@ root and concurrent stories cannot see each other's edits. After its own indepen
 green, the script flips the story to `review`, **commits the tree** with explicit paths and a
 Jira-keyed subject, and moves the work item to In Review. It **never pushes, never touches `main`, and
 never marks the story `done`** — landing the branch on the epic branch and closing the story are
-`/sudo-update-sprint-memory`'s, and that last mile is always human.
+`/cicd-update-sprint-memory`'s, and that last mile is always human.
 
 ---
 
@@ -55,10 +55,10 @@ itself rather than trusting any pasted "tests green."
 ## 3. The four-stage relay
 
 ```
-Stage 1  Plan        Dev/Amelia 4.8    NEW dev     /sudo-dev-story-tests_AP plan       -> implementation_plan.md
-Stage 2  Audit       QA /Murat  4.8    NEW audit   /sudo-self-audit_AP  -> ## Self-Audit appended into implementation_plan.md
-Stage 3  Implement   Dev/Amelia 4.8    RESUME dev  /sudo-dev-story-tests_AP implement  -> code + walkthrough.md
-Stage 4  Review+Fix  QA /Murat  Fable  NEW review  /sudo-code-review_AP          -> ## Code Review appended into walkthrough.md + fixes
+Stage 1  Plan        Dev/Amelia 4.8    NEW dev     /cicd-dev-story-tests-AP plan       -> implementation_plan.md
+Stage 2  Audit       QA /Murat  4.8    NEW audit   /cicd-self-audit-AP  -> ## Self-Audit appended into implementation_plan.md
+Stage 3  Implement   Dev/Amelia 4.8    RESUME dev  /cicd-dev-story-tests-AP implement  -> code + walkthrough.md
+Stage 4  Review+Fix  QA /Murat  Fable  NEW review  /cicd-code-review-AP          -> ## Code Review appended into walkthrough.md + fixes
   then   TEST GATE   orchestrator (no LLM) re-runs pytest+vitest -> green: flip story to review -> Daniel
 ```
 
@@ -69,16 +69,16 @@ command file.
 
 ```mermaid
 flowchart TD
-    D(["Daniel: /autopilot_claude 14.2"]) --> M1["orchestrator mints dev UUID -> sessions.json"]
-    M1 --> S1["Stage 1 PLAN — NEW dev session (Amelia, Opus 4.8)<br/>/sudo-dev-story-tests_AP plan"]
+    D(["Daniel: /cicd-autopilot-claude 14.2"]) --> M1["orchestrator mints dev UUID -> sessions.json"]
+    M1 --> S1["Stage 1 PLAN — NEW dev session (Amelia, Opus 4.8)<br/>/cicd-dev-story-tests-AP plan"]
     S1 -->|"writes implementation_plan.md"| F[("shared run folder")]
     F --> M2["orchestrator mints audit UUID -> sessions.json"]
-    M2 --> S2["Stage 2 AUDIT — NEW audit session (Murat, Opus 4.8)<br/>/sudo-self-audit_AP"]
+    M2 --> S2["Stage 2 AUDIT — NEW audit session (Murat, Opus 4.8)<br/>/cicd-self-audit-AP"]
     S2 -->|"reads plan -> appends ## Self-Audit into it (findings + fixes)"| F
-    F --> S3["Stage 3 IMPLEMENT — RESUME dev (plan still in context)<br/>/sudo-dev-story-tests_AP implement"]
+    F --> S3["Stage 3 IMPLEMENT — RESUME dev (plan still in context)<br/>/cicd-dev-story-tests-AP implement"]
     S3 -->|"reads audit -> writes source code + walkthrough.md"| F
     F --> M3["orchestrator mints review UUID -> sessions.json"]
-    M3 --> S4["Stage 4 REVIEW+FIX — NEW review session (Murat, Fable 5)<br/>reads plan + audit + walkthrough + diff<br/>/sudo-code-review_AP"]
+    M3 --> S4["Stage 4 REVIEW+FIX — NEW review session (Murat, Fable 5)<br/>reads plan + audit + walkthrough + diff<br/>/cicd-code-review-AP"]
     S4 -->|"reads diff -> re-runs tests, applies fixes, appends ## Code Review + OUT-OF-SPEC + OPEN QUESTIONS"| F
     F --> G{"orchestrator TEST GATE<br/>independent pytest + vitest"}
     G -->|"RED"| RED["TESTS RED — exit 4<br/>(resume -ResumeFrom 4)"]
@@ -86,17 +86,17 @@ flowchart TD
     RV --> CM["orchestrator COMMITS the worktree<br/>explicit paths, Jira-keyed subject, NO push"]
     CM --> JR["ticket -> In Review + Dev Record<br/>(jira_feed.py)"]
     JR --> DONE["PIPELINE COMPLETE<br/>committed on claude/*, not pushed, not 'done'"]
-    DONE --> D2(["Daniel: ratify decisions, /sudo-update-sprint-memory<br/>lands the branch, flips review -> done, prunes the tree"])
+    DONE --> D2(["Daniel: ratify decisions, /cicd-update-sprint-memory<br/>lands the branch, flips review -> done, prunes the tree"])
 ```
 
 **What each stage may and may not do:**
 
 | Stage | Command invoked | May write | Must NOT |
 |---|---|---|---|
-| 1 Plan | `/sudo-dev-story-tests_AP plan` | `implementation_plan.md`, `decisions-log.md` | touch source code |
-| 2 Audit | `/sudo-self-audit_AP` | the plan's `## Self-Audit` section, `decisions-log.md` | hard-halt on findings (fixes flow to S3) |
-| 3 Implement | `/sudo-dev-story-tests_AP implement` | source, tests, `walkthrough.md` | re-plan; **run git at all**; touch story status |
-| 4 Review+Fix | `/sudo-code-review_AP` | the walkthrough's `## Code Review` section, fixes, other walkthrough sections | **run git at all**; touch story status / `sprint-status.yaml` (the **orchestrator** owns the `review` flip AND the commit) |
+| 1 Plan | `/cicd-dev-story-tests-AP plan` | `implementation_plan.md`, `decisions-log.md` | touch source code |
+| 2 Audit | `/cicd-self-audit-AP` | the plan's `## Self-Audit` section, `decisions-log.md` | hard-halt on findings (fixes flow to S3) |
+| 3 Implement | `/cicd-dev-story-tests-AP implement` | source, tests, `walkthrough.md` | re-plan; **run git at all**; touch story status |
+| 4 Review+Fix | `/cicd-code-review-AP` | the walkthrough's `## Code Review` section, fixes, other walkthrough sections | **run git at all**; touch story status / `sprint-status.yaml` (the **orchestrator** owns the `review` flip AND the commit) |
 
 Every stage's cwd is the story worktree. No stage may read or write anything in the shared checkout —
 that is a different tree on a different branch, so a write there is silently lost to the story.
@@ -164,8 +164,8 @@ not a law.
 |---|---|---|
 | **Orchestrator** | Windows PowerShell 5.1 | One script, no external deps. Plain control flow — the "coordinator" is `if`/`for`, not an LLM. |
 | **Worker** | `claude` CLI (headless) | `claude -p <prompt> --model <id> --permission-mode bypassPermissions --output-format json` |
-| **Continuity** | CLI session flags | `--session-id <uuid>` + `--name <label>` (new session) · `--resume <uuid>` (Stage 3 only — the QA audit/review sessions are one-shot, §4) |
-| **Agents** | Dedicated headless **`_AP` commands** | Prompts invoke `/sudo-dev-story-tests_AP plan`, `/sudo-self-audit_AP`, `/sudo-dev-story-tests_AP implement`, `/sudo-code-review_AP` (agent-tuned variants of the interactive BMAD skills). |
+| **Continuity** | CLI session flags | `--session-id <uuid>` + `--name <label>` (new session) · `--resume <uuid>` (Stage 3 only — the QA audit/smh-review sessions are one-shot, §4) |
+| **Agents** | Dedicated headless **`_AP` commands** | Prompts invoke `/cicd-dev-story-tests-AP plan`, `/cicd-self-audit-AP`, `/cicd-dev-story-tests-AP implement`, `/cicd-code-review-AP` (agent-tuned variants of the interactive BMAD skills). |
 | **Models** | Opus 4.8 (Dev) · Opus 4.8 (QA audit) · **Fable 5 (QA review)** | Dev `claude-opus-4-8`, Stage 2 audit `claude-opus-4-8`, Stage 4 review `claude-fable-5` (QA split 2026-07-23). Repin via `-DevModel` / `-AuditModel` / `-ReviewModel` — one flag per *session*, since the QA gates are decoupled (§4, §5b). |
 | **Effort** | `medium` (Dev) · **`max`** (QA, both stages) | Passed per call as `--effort`; set by `-DevEffort` / `-AuditEffort` / `-ReviewEffort`. This is the depth control — see §5b. |
 | **Test gate** | `pytest` + `vitest`, run by the script | After Stage 4 the orchestrator re-runs the suites itself (`-TestScope auto` derives scope from the baseline diff: backend-only / frontend-only / both — and a shared-contract change (schemas / models / OpenAPI / generated types) forces both, so a cross-stack break can't slip through). It refuses to stamp COMPLETE on red. |
@@ -204,14 +204,14 @@ That splits "works for all LLMs" into two independent things:
 
 | Engine | Headless call | Session new / resume | Telemetry | Status |
 |---|---|---|---|---|
-| **Claude** (`claude` CLI) | `claude -p … --output-format json` | `--session-id`+`--name` / `--resume` | result JSON (`.total_cost_usd`, `.num_turns`, `.is_error`, `.modelUsage`) | **proven runtime** (`/autopilot_claude`, Opus audit + Fable-5 review via subscription) |
-| **opencode** (`opencode` CLI) | `opencode run … --auto --format json` | `--session <id>` (id **captured from the event stream** on the "new" stage, not pre-minted) | NDJSON event stream (parse adapter: `text` events -> result, `step_finish.part.cost` -> cost, `error` events -> is_error) | **second runtime** (`/autopilot_opencode`, Dev=selected default, QA=`openrouter/z-ai/glm-5.2` `--variant max`) |
+| **Claude** (`claude` CLI) | `claude -p … --output-format json` | `--session-id`+`--name` / `--resume` | result JSON (`.total_cost_usd`, `.num_turns`, `.is_error`, `.modelUsage`) | **proven runtime** (`/cicd-autopilot-claude`, Opus audit + Fable-5 review via subscription) |
+| **opencode** (`opencode` CLI) | `opencode run … --auto --format json` | `--session <id>` (id **captured from the event stream** on the "new" stage, not pre-minted) | NDJSON event stream (parse adapter: `text` events -> result, `step_finish.part.cost` -> cost, `error` events -> is_error) | **second runtime** (`/cicd-autopilot-opencode`, Dev=selected default, QA=`openrouter/z-ai/glm-5.2` `--variant max`) |
 | **Antigravity / Gemini** | — | — | — | IDE-bound, not headless-scriptable; **out of scope** |
 
-> **TWO RUNTIMES NOW EXIST.** `/autopilot_claude` is the Claude-engine proven path (Opus audit +
+> **TWO RUNTIMES NOW EXIST.** `/cicd-autopilot-claude` is the Claude-engine proven path (Opus audit +
 > Fable-5 review via the Claude subscription, `--max-budget-usd` per-stage cap, `.modelUsage` mismatch
 > assertion).
-> `/autopilot_opencode` is the opencode-engine sibling (GLM 5.2 at `--variant max` for QA, no API
+> `/cicd-autopilot-opencode` is the opencode-engine sibling (GLM 5.2 at `--variant max` for QA, no API
 > keys, no per-stage cap, mismatch assertion is a no-op — the opencode event stream carries no
 > `model` field). Both share the same artifact contract, test gate, story->`review` flip, and
 > resilience model; only the `Invoke-Stage` seam + the telemetry adapter differ.
@@ -352,7 +352,7 @@ these files instead of re-deriving:
 history; the two-doc model replaced them.)
 
 > **The run is self-contained.** The global live-tail log lives at `_artifacts/_autopilot-run.log`
-> (the stable path the `/autopilot_claude` skill tails), but the folder *also* keeps its own `_pipeline/run.log`
+> (the stable path the `/cicd-autopilot-claude` skill tails), but the folder *also* keeps its own `_pipeline/run.log`
 > copy — so opening just the run folder shows the whole story without hunting for the global log.
 
 The artifact/section-presence map *is* the resume logic: `1 = implementation_plan.md exists`,
@@ -481,7 +481,7 @@ Each of these is a real bug or insight from the shakedown runs, now baked into t
 .\scripts\autopilot-dev-story.ps1 -Story 13.4 -ResumeFrom 4
 ```
 
-Or trigger via the slash command: **`/autopilot_claude 13.4`**.
+Or trigger via the slash command: **`/cicd-autopilot-claude 13.4`**.
 
 | Parameter | Default | Purpose |
 |---|---|---|
@@ -524,11 +524,11 @@ Jira-keyed subject, files the Dev Record, and moves the work item. But it delibe
 
 Daniel's close-out: read the **QA CLOSE-OUT** + **OUT-OF-SPEC DECISIONS** + **OPEN QUESTIONS FOR
 DANIEL** at the top of `walkthrough.md`, ratify (or reverse) the team's story-silent calls, then run
-`/sudo-update-sprint-memory` — it lands the `claude/*` branch on the epic branch, flips `review → done`,
+`/cicd-update-sprint-memory` — it lands the `claude/*` branch on the epic branch, flips `review → done`,
 and prunes the tree. That last mile is the point: the autopilot does the labor and parks the story at
 `review` with the work already committed; the human owns the judgment, the landing, and the `done` flip.
 
-**Why the worktree is what unblocked this.** `/sudo-update-sprint-memory` Step 7 refuses to land a story
+**Why the worktree is what unblocked this.** `/cicd-update-sprint-memory` Step 7 refuses to land a story
 whose HEAD is not a `claude/*` branch inside a worktree. Until the engines opened one, the autopilot's
 output could not be closed out by the normal flow at all — the close-out was not "not automated", it was
 *impossible*. The tree, not tidiness, is the payoff.
@@ -544,7 +544,7 @@ output could not be closed out by the normal flow at all — the close-out was n
   What a first real run has to show, per engine: two concurrent stories cannot see each other's files ·
   the gate runs green inside the tree and finds the right interpreter · `-ResumeFrom` re-binds to the
   SAME tree instead of cutting a second one · the orchestrator's commit passes the armed `commit-msg`
-  hook · `/sudo-update-sprint-memory` accepts the result and lands it. Start with `-DryRun` (it creates
+  hook · `/cicd-update-sprint-memory` accepts the result and lands it. Start with `-DryRun` (it creates
   nothing and prints the tree, branch and base it *would* use), then a small story with `-MaxStage 2`.
 - **The retry *loop* firing live.** The backoff path is verified by code inspection + a regex
   classification test, but no real transient failure has been forced on demand (a bad model id is
@@ -562,5 +562,5 @@ headless command expansion, and the anchored matcher / clean folder slug.
 
 ---
 
-*Source of truth is always the script + `.claude/commands/autopilot_claude.md`. This doc is the map, not
+*Source of truth is always the script + `.claude/commands/cicd-autopilot-claude.md`. This doc is the map, not
 the territory — if they disagree, the script wins.*

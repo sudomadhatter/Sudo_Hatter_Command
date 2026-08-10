@@ -5,8 +5,8 @@ step reintroduces every time:
 
   * a ticket that reports success while carrying nothing (acli exits 0, the comment is not
     there) - covered by the `swallow` stub mode, the load-bearing negative here;
-  * two Dev Records for one story, because /sudo-quick-dev closed the branch and then
-    /sudo-update-sprint-memory closed the story and both posted.
+  * two Dev Records for one story, because /cicd-quick-dev closed the branch and then
+    /cicd-update-sprint-memory closed the story and both posted.
 
 Plus the positive control: a fully-fed ticket must report clean, or `check` is dead weight
 that nobody will trust.

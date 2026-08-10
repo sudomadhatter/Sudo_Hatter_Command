@@ -70,8 +70,8 @@ python3 .agents/scripts/tests/run_all.py     # PC: python .agents/scripts/tests/
 ## 4. Then pick the work back up
 
 ```
-/sudo-resume                 # pulls everything down, rebuilds your working setup
-/sudo-boot-sprint-memory     # loads the sprint, tells you the next move
+/cicd-resume                 # pulls everything down, rebuilds your working setup
+/cicd-boot-sprint-memory     # loads the sprint, tells you the next move
 ```
 
 ---
