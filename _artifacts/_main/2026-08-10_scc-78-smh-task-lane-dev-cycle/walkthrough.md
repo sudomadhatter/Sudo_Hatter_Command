@@ -47,8 +47,10 @@ work has none of those and lives **in** the lobby.
 
 ## Evidence
 
-**Measured at:** `git rev-parse HEAD` on `chore/SCC-78-smh-task-lane-dev-cycle` — recorded at commit
-time below. No receipts on this lane: `gate_receipt.py` resolves a BMAD board and exits in the command
+**Measured at:** `c0e0f44` on `chore/SCC-78-smh-task-lane-dev-cycle` — the sha every gate result below
+was measured on, and the last commit containing code. The only later commit on this branch is this
+artifact update, which per the lane's own rule does not invalidate the evidence. No receipts on this
+lane: `gate_receipt.py` resolves a BMAD board and exits in the command
 centre (`die("no project resolved")`, `wf_common.resolve_project_root`). That limit is now written into
 `/smh-code-review` Step 3 rather than left to be rediscovered.
 
