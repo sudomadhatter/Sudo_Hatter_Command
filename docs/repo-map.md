@@ -71,7 +71,7 @@ nags if a new top-level folder isn't named here. Rebuild the AUTO body:
      mode=content, collapse-threshold=8 files. Edit the CURATED block above. -->
 
 ```text
-scc-74-sops-prds/
+Sudo_Hatter_Command/
   _bmad/
     _config/
         [4 files: .csvx3, .yamlx1 | e.g. bmad-help.csv]
