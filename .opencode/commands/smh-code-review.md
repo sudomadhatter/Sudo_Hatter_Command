@@ -1,5 +1,5 @@
 ---
-description: Review + gate TASK work — clean-room adversarial review of the diff, an acceptance audit against the task's checkable list, the command-centre gate (enforcement suite + assertion evidence + link/anchor + SOP currency + door parity) and /smh-clean-code-audit, producing a PASS/CONCERNS/FAIL/WAIVED verdict in the task walkthrough. The smh- counterpart of /cicd-code-review, for work with no story, no board and no epic branch. Use when the user says "review this task" / "smh code review".
+description: Review + gate TASK work — re-derives the blast radius against current main (Step 0.7, because sibling lanes land while you build), then a clean-room adversarial review of the diff, an acceptance audit against the task's checkable list, the command-centre gate (enforcement suite + assertion evidence + link/anchor + SOP currency + door parity) and /smh-clean-code-audit, producing a PASS/CONCERNS/FAIL/WAIVED verdict in the task walkthrough. The smh- counterpart of /cicd-code-review, for work with no story, no board and no epic branch. Use when the user says "review this task" / "smh code review".
 platforms: [opencode, antigravity, claude, codex]
 ---
 
@@ -63,6 +63,54 @@ Echo the file count. **An empty set is a STOP, not a pass.**
 
 Dirty files under `_artifacts/_memory/` are **named separately and left alone** — another session's
 memory is never swept, deleted, or committed under this task.
+
+## Step 0.7 — ⭐ Re-derive the blast radius against **current** `main` (MANDATORY)
+
+**The pre-work audit expires.** `/smh-self-audit` traced this work's blast radius against the `main`
+that existed when the plan was written. On a Task lane, sibling `chore/*` branches land while you
+build, so by the time you get here that trace can describe a repo that no longer exists. **Every gate
+in Step 3 can be green while a landed lane has moved a file this work depends on** — a green suite
+proves your code runs, not that your references still resolve.
+
+That is not hypothetical: on SCC-78 a sibling lane relocated the SOP PRD mid-task, and two commands in
+the diff still named its old path as the standard they load. The full floor was green before and after.
+Only this re-derivation caught it, which is why it is a step and not advice.
+
+```bash
+env -u GITHUB_TOKEN git -C "$REPO" fetch origin main
+BASE=$(git -C "$REPO" merge-base HEAD main)
+git -C "$REPO" diff --name-only "$BASE"..main | sort > /tmp/theirs.txt   # what landed while you built
+git -C "$REPO" diff --name-only main...HEAD   | sort > /tmp/mine.txt     # what you changed
+grep -Fxf /tmp/mine.txt /tmp/theirs.txt                                  # the TRUE overlap
+git -C "$REPO" merge-tree --write-tree --messages HEAD main | head -40   # conflicts, before they are real
+git -C "$REPO" worktree list                                             # sibling lanes still live
+```
+
+⚠ **`zsh` does not word-split an unquoted variable** the way `bash` does. Build file lists into a file
+and expand with `$(cat …)`, or the whole list arrives as one argument and your sweep silently checks
+nothing — a vacuous green in the tool you brought to prevent vacuous greens.
+
+Then answer these three, in writing:
+
+1. **Did anything this diff REFERENCES move, get renamed, or get deleted on `main`?** Re-resolve every
+   repo path and `#L` anchor the diff names — especially the ones a command or rule loads as its
+   *standard*, its *rule pointer*, or its *script*. A reference that a landed lane moved out from
+   under you is a **FAIL**, not a nit: the command still reads correctly and instructs the agent to
+   open a file that is not there.
+2. **What is the true overlap, and does the merge conflict?** Report the intersection and the
+   `merge-tree` result. A conflict in a **generated** file (a sync manifest, a mirror, an INDEX the
+   tooling writes) is resolved by **regenerating it**, never by hand-merging.
+3. **Which sibling lanes are still live, and does one of them need to land first?** Name the
+   landing-order dependency and what happens to this work if the order is reversed.
+
+**Absorb `main` now, before the verdict** — conflicts belong on this branch, never on `main`
+(`git-policy`). Re-run Step 3's floor **after** absorbing; a verdict measured on a pre-merge sha is a
+verdict about code that will never exist.
+
+> This step is the post-dev half of `/smh-self-audit`, deliberately placed **here** rather than offered
+> as a second invocation of that command. An opt-in re-audit is one nobody runs — the memory audit sat
+> unused inside `/smh-update-maps-indexes` for exactly that reason. See that command's
+> **§ Running it after the work is built** for which phases go stale and which do not.
 
 ---
 
@@ -172,12 +220,15 @@ The section carries:
 - each gate's result in one line with its **actual** output;
 - the acceptance matrix from Step 2 — every item → its proving assertion;
 - a `### Clean-Code Gate` subsection carrying Step 3.5's table and pasted output;
-- any **sibling-lane landing-order dependency** the review found.
+- **Step 0.7's re-derivation**, in three lines — what `main` moved under this diff, the true overlap +
+  `merge-tree` result, and any **sibling-lane landing-order dependency**. "Nothing moved" is a
+  reportable result; silence is not.
 
 **Verdict rules:**
 
 - **FAIL** — the enforcement suite is red · a `workflow_lint --toolkit-only` **error** · an acceptance
-  item the diff does not deliver · a dead link the diff introduced · a door-parity break · a committed
+  item the diff does not deliver · a dead link the diff introduced · **a reference this diff depends on
+  that a landed lane moved, renamed or deleted (Step 0.7)** · a door-parity break · a committed
   secret · a banned pattern shipped · a gate that cannot fail · a deployable path in the diff (which is
   also an immediate handoff to `/cicd-push-e2e`).
 - **CONCERNS** — soft issues only: `workflow_lint` warnings · comment-contract gaps · bloat,

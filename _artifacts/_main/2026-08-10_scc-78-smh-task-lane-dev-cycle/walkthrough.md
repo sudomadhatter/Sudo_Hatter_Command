@@ -43,6 +43,15 @@ work has none of those and lives **in** the lobby.
       detection carried the section into the relocated file on merge) — new §3 subsection with the four
       commands, the lane-choice rule, and a flow diagram
 - [x] All 16 platform doors generated via `sync-agents.ps1 -NoGlobals` (4 commands × 4 platforms)
+- [x] **Post-review follow-on (operator-approved, landed in this branch):** the pre-work audit expires
+      while you build, so the stale half of it now re-runs automatically
+  - `/smh-code-review` **Step 0.7** — re-derive the blast radius against current `main` before the
+    verdict: what moved under this diff, the true overlap + `merge-tree` prediction, live sibling
+    lanes. A reference a landed lane moved out from under the diff is now an enumerated **FAIL**
+  - `/smh-self-audit` — two explicit modes. **PRE-WORK** keeps the "no plan → STOP" refusal;
+    **POST-DEV** audits the ticket's ACCEPTANCE block instead of inventing a plan and must stamp the
+    run `retroactive`. New **§ Running it after the work is built** states which phases go stale
+    (1, and the external-state rows of 3) and which do not (0 and 2), and points at Step 0.7
 
 ---
 
@@ -267,4 +276,9 @@ typed command. Verdict held at **CONCERNS** by CR-3, CR-4 and CR-5; nothing bloc
    because SCC-74 owns that sweep.
 4. **`/smh-quick-dev` is still unexercised.** You said the next task audits it — worth noting that its
    Step 1.5 plan gate is the one control that would have prevented SA-1 here.
+5. **SA-1's structural half is closed; its process half is not.** The lane can now audit post-dev
+   (`/smh-code-review` Step 0.7, plus the self-audit's POST-DEV mode). What that does **not** fix is
+   that the plan gate was skipped on this task in the first place — a retroactive audit is a strictly
+   worse instrument than one that runs in time, and the new modes must not become the reason to skip
+   the plan. The self-audit says so in its own POST-DEV bullet; worth watching that it holds.
 5. **Close-out is yours** — `/smh-close-task-merge-tree`, and typing it is the merge sign-off.

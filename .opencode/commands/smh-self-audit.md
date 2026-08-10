@@ -1,5 +1,5 @@
 ---
-description: Pre-work adversarial audit for TASK work — pressure-tests an implementation_plan.md that has no story file and no story ACs against the repo it will actually modify. Acts on the repo you are standing in, so the command centre is a valid subject. Auto-invoked by /smh-quick-dev; also runnable standalone. Use when the user says "audit the task plan" / "smh self audit".
+description: Adversarial audit for TASK work — pressure-tests an implementation_plan.md that has no story file and no story ACs against the repo it will actually modify. Two modes - PRE-WORK (the default; no plan means STOP) and POST-DEV/retroactive (audit the ticket's ACCEPTANCE block plus the change set, and label the run retroactive). Acts on the repo you are standing in, so the command centre is a valid subject. Auto-invoked by /smh-quick-dev; the stale half re-runs automatically as /smh-code-review Step 0.7. Use when the user says "audit the task plan" / "smh self audit".
 platforms: [opencode, antigravity, claude, codex]
 ---
 
@@ -44,9 +44,19 @@ echo "Repo: $(basename "$REPO") | Branch: $BRANCH"
 ⛔ **Echo that line from the commands, never from memory.** With sibling `chore/*` lanes live, where
 you stand is not evidence of what you mean, and a self-reported echo can only confirm a wrong belief.
 
-**Name the plan** you are auditing (its path) and **the ticket key** it belongs to. No plan file yet →
-STOP and say so: this command audits a written plan, and inventing one to audit is the failure it
-exists to catch.
+**Name the plan** you are auditing (its path) and **the ticket key** it belongs to.
+
+**No plan file? The answer depends on which mode you are in — say which, out loud, before Phase 0:**
+
+- **PRE-WORK (the default).** Nothing is built yet and there is no plan → **STOP and say so.** This
+  command audits a written plan, and inventing one to audit is the exact failure it exists to catch.
+  Write the plan, then come back.
+- **POST-DEV (retroactive).** The work already exists and the plan gate was skipped or the plan was
+  never written. Do **not** invent a plan. Audit against **the ticket's SCOPE + ACCEPTANCE block**
+  (`acli jira workitem view <KEY>`) — Phase 0 already names it as the authority for the checkable list
+  — plus the actual change set. **Label the run `retroactive` in the section you write**, because a
+  retroactive audit cannot change a decision that is already built, and a reader must not mistake it
+  for a gate that ran in time. See § Running it after the work is built.
 
 ---
 
@@ -197,6 +207,29 @@ the affected section, plus the findings table) so the builder reads it in contex
 the phases the change touched.
 
 ---
+
+## Running it after the work is built
+
+**Most of this audit does not go stale — two parts of it do, and only those are worth re-running.**
+
+| Phase | Post-dev? | Why |
+|---|---|---|
+| **0** — scope, right-size, checkable list | **No** | A judgment about a plan. Once the thing is built the decision is made; re-asking it is theatre. The acceptance list still matters, but `/smh-code-review` Step 2 already audits the diff against it. |
+| **1** — blast radius | **⭐ YES — this is the one** | It was traced against the `main` that existed when the plan was written. Sibling `chore/*` lanes land while you build, so the trace can describe a repo that no longer exists. |
+| **2** — over-engineering gate | **No** | Cutting an abstraction is cheap in a plan and expensive in a diff. Post-dev, this is `/smh-code-review` Step 1's job, on the code that actually exists. |
+| **3** — pre-mortem | **Partly** | Only the rows that depend on **external** state: *a sibling lane lands first*, *the four platform caches*, *a fresh clone*. The rest were settled by building it. |
+
+**You do not invoke this command to get that.** The stale half runs automatically as
+**`/smh-code-review` Step 0.7**, which re-derives the blast radius against current `main` before the
+verdict. That placement is deliberate: an opt-in re-audit is one nobody runs — the memory audit sat
+unused inside `/smh-update-maps-indexes` Step 3.9 for exactly that reason, because nobody opens a *map*
+command when memory feels heavy, and nobody will open a *pre-work* command after dev.
+
+**Invoke it directly post-dev only in the narrow case** where Step 0.7's three questions are not
+enough: a long-lived branch that `main` has moved under repeatedly, a lane resumed after days away, or
+work whose acceptance list itself is now in doubt. Then run it in **POST-DEV** mode (Step 0), walk
+Phase 1 and the external-state rows of Phase 3, skip Phases 0 and 2 with a one-line why, and write the
+section labelled `retroactive`.
 
 ## Stay in lane
 Audit and annotate the plan; write no implementation, touch no file the plan is about, transition no
