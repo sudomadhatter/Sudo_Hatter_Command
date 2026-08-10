@@ -7,7 +7,7 @@ description: Publish the home-base .agents command and skill masters to the lobb
 > **Rules in force for this command:**
 > - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
 > - `.agents/rules/sop-currency.md` — **if this run is publishing a command you added, renamed, or retired,
->   the `/` menu changed.** Update `_my_resources/_quick_reference/sudo_workflows_testing.md` §3 in the same
+>   the `/` menu changed.** Update `docs/_scc_sops_prds/workflows_testing_SOP.md` §3 in the same
 >   commit; the armed commit-msg gate rejects it otherwise (`[sop-ok]` opts out and is logged).
 
 Publish the two authored invocable sets — `.agents/commands/` and `.agents/skills/` — with **one door per

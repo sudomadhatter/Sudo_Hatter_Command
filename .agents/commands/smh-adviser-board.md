@@ -24,7 +24,7 @@ originated it. The debate is real and stored; the operator hears the meeting, ke
 unpack any room verbatim at will. Compression bounds the *cards* — never how fully a team explains
 itself, how long it thinks, how far it diverges, or how long the session runs.
 
-Roster source of truth (lobby only, optional enrichment): `_my_resources/diagrams_guides/workflows_tea_testing/smh-adviser-board-REFERENCE.md`
+Roster source of truth (lobby only, optional enrichment): `docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md`
 — the full 35-mind roster with deep research context. The operator edits the roster there; changes get
 mirrored into this file.
 

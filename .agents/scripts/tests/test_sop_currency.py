@@ -49,7 +49,12 @@ def main() -> int:
         ("H rules INDEX churn", ".agents/rules/INDEX.md"),
         ("I commands INDEX churn", ".agents/commands/INDEX.md"),
         ("J this gate's own tests", ".agents/scripts/tests/test_sop_currency.py"),
-        ("K reference material", ".agents/reference/INDEX.md"),
+        # K was `.agents/reference/INDEX.md` until SCC-74 retired that folder - and it only
+        # repeated what L and M already cover. Repointed at something newly worth pinning:
+        # docs/ now HOLDS the SOP doc, so a sibling doc in the same folder must still not
+        # read as a usage surface. Otherwise editing any SOP would demand the PRD move too,
+        # and the gate would fire on its own subject matter.
+        ("K a sibling SOP doc", "docs/_scc_sops_prds/tea_deep_reference.md"),
         ("L templates", ".agents/templates/story.md"),
         ("M skills", ".agents/skills/foo/SKILL.md"),
         ("N artifacts history", "_artifacts/_main/x/implementation_plan.md"),

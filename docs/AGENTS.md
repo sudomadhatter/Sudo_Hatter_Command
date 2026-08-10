@@ -7,6 +7,15 @@ Workspace docs for the home base. Load per task — nothing here is a startup pa
 - `workspace-standard.md` — **THE structure contract** (PATH CONTRACT, tier model, upkeep loop).
   Canonical copy lives HERE; each project carries a vendored copy. **`docs/` is NOT covered by
   `/smh-sync-agents`** — edit the canon here, re-vendor to projects deliberately (per-project pass).
+- **`_scc_sops_prds/`** — **every SOP and PRD in the system** (SCC-74, 2026-08-10): the pages that
+  tell the *operator* what to do and what to type. Start at its `INDEX.md`. `workflows_testing_SOP.md`
+  is THE quick reference and is protected by an armed commit-msg gate — change how the system is USED
+  and it moves in the same commit (`.agents/rules/sop-currency.md`). The folder is pinned by
+  `.agents/scripts/tests/test_sops_prds_folder.py` in `run_all`: manifest, INDEX-vs-disk both ways,
+  live links, and every `/command` reference resolving to a real master. **Adding a doc here means
+  adding a row to that INDEX and a name to that test's `EXPECTED` set** — the manifest is a contract.
+  ⛔ Procedural docs do NOT go in `_my_resources/`; that folder is excluded from every drift-checker,
+  which is exactly why these thirteen rotted there.
 - `repo-map.md` — hybrid navigation index. **CURATED header: hand-edited. AUTO body (between the
   sentinels): machine-owned** — regenerate via `.agents/scripts/generate_repo_map.py` (mode-preserving;
   match the header's documented `--ignore`/`--mode`), never hand-edit inside the sentinels.

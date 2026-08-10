@@ -50,7 +50,7 @@ def check_commands(lobby: Path, rep: wf.Report) -> None:
 
     if index_text:
         # Dead pointers — LINKS only. INDEX prose legitimately names files that live
-        # elsewhere (`_my_resources/.../smh-adviser-board-REFERENCE.md`) and records
+        # elsewhere (`docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md`) and records
         # historical renames (`sprint-dependency-map.md` -> ...); a bare-filename scan
         # reads those as missing commands.
         for target in set(_LINK_RE.findall(index_text)):

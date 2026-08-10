@@ -277,7 +277,7 @@ If you find a doc that still mentions it, that doc is stale.)
 
 The full law lives in [`.agents/rules/git-policy.md`](../../.agents/rules/git-policy.md), the Jira
 half in [`.agents/rules/jira.md`](../../.agents/rules/jira.md); the walkthrough for humans is §6 of
-[sudo_workflows_testing.md](sudo_workflows_testing.md). This is just the git-command-level view.
+[workflows_testing_SOP.md](workflows_testing_SOP.md). This is just the git-command-level view.
 
 ```mermaid
 flowchart TD
