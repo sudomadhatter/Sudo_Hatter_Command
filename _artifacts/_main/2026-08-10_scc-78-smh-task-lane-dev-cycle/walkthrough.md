@@ -39,7 +39,8 @@ work has none of those and lives **in** the lobby.
   - Blind hunt on the diff FIRST, plan/walkthrough only after · acceptance audit · the gate · Step 3.5
     · one `Verdict:` line into the walkthrough
 - [x] `.agents/commands/INDEX.md` — new **Task dev lane** group row
-- [x] `_my_resources/_quick_reference/sudo_workflows_testing.md` — new §3 subsection with the four
+- [x] `docs/_scc_sops_prds/workflows_testing_SOP.md` (edited at its pre-SCC-74 path; git's rename
+      detection carried the section into the relocated file on merge) — new §3 subsection with the four
       commands, the lane-choice rule, and a flow diagram
 - [x] All 16 platform doors generated via `sync-agents.ps1 -NoGlobals` (4 commands × 4 platforms)
 
