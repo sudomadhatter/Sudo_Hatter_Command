@@ -72,6 +72,13 @@ def make_repo(root: Path, *, deployable: bool = False, remote: bool = True,
     git(repo, "config", "commit.gpgsign", "false")
     write(repo, ".agents/jira.conf", JIRA_CONF)
     write(repo, ".agents/scripts/tests/run_all.py", "# fixture\n")
+    # SCC-110: a repo carrying `.agents/jira.conf` is CLAIMING a commit gate, so the fixture
+    # has to carry the hook that enforces it and the per-machine switch that runs it. Without
+    # these the fixture modelled a repo in a state none of the real ones are in — declared
+    # gates, nothing running them — and the arm-check rightly objected.
+    write(repo, ".githooks/commit-msg", "#!/bin/sh\nexit 0\n")
+    (repo / ".githooks/commit-msg").chmod(0o755)
+    git(repo, "config", "core.hooksPath", ".githooks")
     write(repo, "README.md", "# fixture\n")
     if deployable:
         write(repo, "backend/app.py", "x = 1\n")

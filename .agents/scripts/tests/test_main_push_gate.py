@@ -25,6 +25,7 @@ import pathlib
 from pathlib import Path
 
 from _harness import Cases, TempDir
+import hooks_armed  # SCC-110 — _harness puts .agents/scripts on sys.path
 
 REPO = Path(__file__).resolve().parents[3]
 HOOKDIR = REPO / ".agents/scripts/git-hooks"
@@ -118,6 +119,20 @@ def main() -> int:
         print(f"[note] {len(predating)} worktree(s) predate the gate and are UNGATED: "
               f"{predating} — inherent to per-worktree hook resolution; see git-policy.md "
               f"§'A fresh clone ships this gate OFF'. Merging this lane gates the main checkout.")
+
+    # ── ⭐ SCC-110: the GENERIC arm-check must agree with this gate-specific one ──────────
+    # Extraction was the original SCC-110 plan and was rejected on evidence: the block above
+    # covers `mint-push-token.sh` and per-worktree hook resolution, neither of which
+    # `hooks_armed` models, so lifting it out would have deleted coverage that SCC-77's
+    # adversarial review put here. What the extraction was actually FOR was preventing two
+    # checkers from drifting apart — and a cross-check catches that directly, without
+    # removing anything. If these two ever disagree, one of them is wrong and this fails.
+    generic = hooks_armed.scan(REPO)
+    c.check("the generic arm-check agrees this repo is ARMED", generic["armed"],
+            str([f["msg"] for f in generic["findings"] if f["sev"] == "ERROR"]))
+    c.check("this gate's hook is in the generic check's DERIVED set, and executable",
+            any(h["name"] == "pre-push" and h["executable"] for h in generic["hooks"]),
+            "drift: hooks_armed no longer sees the hook this whole file is about")
 
     # ── settings.json may never name one platform's binary again ─────────────────────────
     raw = (REPO / ".claude/settings.json").read_text()
