@@ -457,9 +457,28 @@ def _check_depth3_tree(root, adir):
             problems.append(f"{rel_bucket}/INDEX.md: missing (has {len(sessions)} session folders (>=2) -- create it)")
             continue
 
-        # Parse INDEX for session folder names mentioned in table rows (backticked tokens)
+        # Parse INDEX table rows. TWO sets, deliberately, because the two checks want opposite
+        # things (SCC-96):
+        #
+        #   `mentioned` — any backticked token anywhere in the row. Permissive on purpose: it
+        #     only ever SUPPRESSES a "missing row" complaint, so being generous here cannot
+        #     invent a problem, only decline to raise one.
+        #
+        #   `declared` — the row's FIRST cell, written as a folder reference (trailing `/`).
+        #     Strict on purpose: it is the only thing allowed to raise "stale row". A row
+        #     declares its session folder in column one, with a slash — every INDEX in this
+        #     repo writes them that way — so anything else in the row is prose.
+        #
+        # The old code kept one permissive set and `rstrip("/")`-ed the trailing slash off,
+        # throwing away the very signal that separates the two. SESSION_FOLDER_RE then decided
+        # the question, and that regex classifies DIRECTORY NAMES, not arbitrary prose: any
+        # memory slug starting `story-`/`tea-`/`epic-`/`autopilot-`/`wave-`/`close-out-` read as
+        # a folder that had gone missing. Nine memories in the lobby store match. A ledger row
+        # exists to say WHY, and naming the memory a decision rests on is exactly that — so the
+        # gate was firing on the behaviour the convention asks for. See test_check_maps.py.
         text = idx.read_text(encoding="utf-8")
         mentioned = set()
+        declared = set()
         for line in text.splitlines():
             if "|" not in line:
                 continue
@@ -467,9 +486,14 @@ def _check_depth3_tree(root, adir):
                 tok = tok.strip().rstrip("/")
                 if tok and not SHAPE_NOISE.search(tok):
                     mentioned.add(tok)
+            first_cell = line.split("|")[1] if line.lstrip().startswith("|") else ""
+            for tok in re.findall(r"`([^`]+/)`", first_cell):
+                tok = tok.strip().rstrip("/")
+                if tok and not SHAPE_NOISE.search(tok):
+                    declared.add(tok)
 
         missing = [s for s in sessions if s not in mentioned]
-        stale = sorted(m for m in mentioned if m not in sessions and SESSION_FOLDER_RE.match(m))
+        stale = sorted(d for d in declared if d not in sessions and SESSION_FOLDER_RE.match(d))
 
         for s in missing:
             problems.append(f"{rel_bucket}/INDEX.md: missing row for `{s}/`")
