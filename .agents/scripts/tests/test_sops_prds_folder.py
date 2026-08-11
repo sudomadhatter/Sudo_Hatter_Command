@@ -315,12 +315,19 @@ class RootIndex:
         self.paths: set[str] = set()
         self.leaves: dict[str, str] = {}
         self.heads: set[str] = set()
-        self.unreadable: list[str] = []
-        # An unreadable directory contributes nothing, so every path under it reports
-        # "resolves nowhere" with no hint that the index simply could not look. Recorded so
-        # the check can say so (SCC-83 round-2 review, LOW).
-        for dirpath, dirnames, filenames in os.walk(
-                root, onerror=lambda e: self.unreadable.append(str(e))):
+        # ⛔ NOT HANDLING PermissionError, and that is a decision with a reason (SCC-83).
+        #    An unreadable directory contributes nothing to the index, so every path under
+        #    it reports "resolves nowhere" -- false findings that look real. Round 2 added
+        #    an `onerror` recorder for exactly that; round 3 found nothing ever READ the
+        #    list, then found the control written for it was vacuous too (it exercised a
+        #    Python list, not the consumer). Making it genuinely falsifiable needs
+        #    `chmod 000`, which is a NO-OP on Windows -- so the control would pass on the PC
+        #    for the wrong reason, in a repo read on both machines. This file's own law is
+        #    that machinery nothing can falsify is decoration, and it has already deleted
+        #    six NOT_A_PATH alternations and a redundant STRUCK half on that basis. Same
+        #    ruling here. Carried as a NAMED limitation in the round-3 verdict instead of
+        #    as code that reads like a fix.
+        for dirpath, dirnames, filenames in os.walk(root):
             if os.path.relpath(dirpath, root) == "." and skip_top:
                 # The lobby does not index `Projects/` -- each project is indexed as its
                 # OWN root, so indexing it here walks all eight of them a second time.
@@ -1069,6 +1076,11 @@ def main() -> int:
                   + (f"; {len(blocked)} reference(s) into them unverified: "
                      + "; ".join(sorted(set(blocked))[:3]) if blocked else "; unreferenced")
                   + ")")
+        # ⛔ An unreadable directory contributes nothing to the index, so every path under it
+        #    reports "resolves nowhere" -- a FALSE finding that looks exactly like a real
+        #    one. Round 2 recorded these and then never read the list: a fix that was
+        #    written, shipped, and consumed by nothing (SCC-83 round-3 review). Reported
+        #    alongside the findings, because it is the reason to distrust them.
         c.check("T9 every prose path reference resolves", not found,
                 "; ".join(f"{k} ({v})" for k, v in sorted(found.items())[:8]))
         # ⭐ B1: the property whose absence let the round-1 fail hide. Project roots come
