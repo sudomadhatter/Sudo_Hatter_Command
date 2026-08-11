@@ -13,7 +13,7 @@
      is scanned too, and the first draft of it tripped the check it was written to warn about. -->
 Settled project-only facts are relocated OUT of this index into the project's own store (SCC-73) —
 this section is the signpost. Working in one? Read its store too; it is not loaded for you.
-- **AGY_AVIATIONCHAT** → `Projects/AGY_AVIATIONCHAT/_artifacts/_memory/` — 48 memories: the entitlement claim + fail-closed authz, sprint/epic state, Cloud Run + ops surfaces, the test-harness and machine gates, Firestore write hazards.
+- **AGY_AVIATIONCHAT** → `Projects/AGY_AVIATIONCHAT/_artifacts/_memory/` — the entitlement claim + fail-closed authz, sprint/epic state, Cloud Run + ops surfaces, the test-harness and machine gates, Firestore write hazards.
 - **NEXgen-VR-Director** → `Projects/NEXgen-VR-Director/_artifacts/_memory/` — no memories yet.
 
 ## Jira & tickets

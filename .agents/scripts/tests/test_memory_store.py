@@ -377,18 +377,33 @@ def audit_signals(store: Path, repo: Path | None = None) -> list[str]:
     # the same explicit opt-in as project_store_signals - see this function's docstring for the leak
     # that put a live-state read behind a default and turned main red for every unrelated lane.
     relocated: dict[str, str] = {}
+    unreadable: list[str] = []
     if repo is not None and dangling:
-        for s in project_stores(repo)[0]:
+        stores, skips = project_stores(repo)
+        for s in stores:
             project = s.parent.parent.name        # <repo>/Projects/<name>/_artifacts/_memory
             for stem in (p.stem for p in s.glob("*.md")):
                 if stem in dangling:
                     relocated.setdefault(stem, project)
+        # ⛔ The skips are the difference between "these are danglers" and "I could not look".
+        # `Projects/` is an empty stub in every `git worktree`, so in the place nearly all work
+        # happens EVERY project store is skipped and this split resolves nothing - reporting the
+        # full "fix the source" list it exists to prevent, with no hint that the project tier was
+        # never consulted. Discarding these was the same blind spot `pointer_problems` was
+        # restructured to avoid.
+        unreadable = [s for s in skips if "not checked out" in s]
     true_dangling = sorted(dangling - set(relocated))
     if true_dangling:
+        caveat = ""
+        if unreadable:
+            names = ", ".join(s.split(":")[0] for s in unreadable)
+            caveat = (f" ⚠ {len(unreadable)} project store(s) could not be read here ({names}) - "
+                      f"some of these may be RELOCATED rather than dangling; re-check where the "
+                      f"submodules are populated before repairing any source")
         out.append(f"{len(true_dangling)} dangling [[link]] target(s) "
                    f"({', '.join(true_dangling[:4])}"
                    f"{'...' if len(true_dangling) > 4 else ''}) - either a forward reference (fine, "
-                   f"leave it) or danglers left behind by a retirement (fix the source)")
+                   f"leave it) or danglers left behind by a retirement (fix the source).{caveat}")
     if relocated:
         moved = sorted(relocated)
         out.append(f"{len(moved)} [[link]] target(s) RELOCATED to a project store "
@@ -608,8 +623,18 @@ def main() -> int:
         # assert it is clean, so a fixture file left there reads as an orphan and fails a check
         # that has nothing to do with this one. (It did. That is why this line is not `mem`.)
         lobby = repo / "mem-scc88"
+        # `LIVE_STEM` is a memory that really exists in the LIVE AGY store and not in this fixture.
+        # Without it the hermetic assertion below could not fail: the fixture's own stems exist
+        # only in this TempDir, so a leak to the module-global REPO_ROOT resolves nothing and the
+        # output is byte-identical to the intended "split OFF".
+        # ⚠ It bites in the MAIN CHECKOUT only. In a worktree `Projects/` is an empty stub, so
+        # there is nothing for a leak to resolve against and this pair goes quiet again - a green
+        # here is not evidence the opt-in holds. Recorded rather than papered over: the leak class
+        # it guards (a live-state read behind a default) is the one that redded main once already.
+        LIVE_STEM = "tenancy-scoped-user-query-chokepoint"
         write(lobby, "refers.md",
-              MEMO.replace("The fact.", "See [[p-fact]] and [[never-written-anywhere]]."))
+              MEMO.replace("The fact.",
+                           f"See [[p-fact]], [[never-written-anywhere]] and [[{LIVE_STEM}]]."))
         write(lobby, "MEMORY.md",
               f"# Index\n{POINTER_HEADING}\n- PRESENT\n- UNCLONED\n- NOSTORE\n"
               f"- [refers](refers.md) - hook\n")
@@ -622,6 +647,13 @@ def main() -> int:
                 any("dangling" in s and "never-written-anywhere" in s for s in sig), str(sig)[:150])
         c.check("...and the relocated one is NOT also counted as dangling (one row, one verdict)",
                 not any("dangling" in s and "p-fact" in s for s in sig), str(sig)[:150])
+        # A store that could not be READ is not evidence that its targets are danglers. The fixture
+        # has UNCLONED (an empty stub, exactly like every submodule in a worktree), so the dangler
+        # line must say so - otherwise the worktree, where nearly all work happens, prints the full
+        # "fix the source" list this split exists to prevent and looks authoritative doing it.
+        c.check("a project store that could not be read is NAMED on the dangler line, not ignored",
+                any("could not be read here" in s and "UNCLONED" in s for s in sig),
+                str(sig)[:220])
         # The split reads live sibling repos, so it must stay behind the explicit opt-in. Without
         # a repo there is nothing to resolve against and BOTH are danglers - which is correct, not
         # a regression: a hermetic caller cannot know a file moved.
@@ -629,6 +661,12 @@ def main() -> int:
         c.check("without a repo the split is OFF and a moved target is still called dangling",
                 any("dangling" in s and "p-fact" in s for s in hermetic)
                 and not any("RELOCATED" in s for s in hermetic), str(hermetic)[:150])
+        # The half that actually bites: LIVE_STEM exists in the real AGY store, so if the lookup
+        # ever reaches for REPO_ROOT instead of the caller's `repo`, it is reported RELOCATED here
+        # with no repo passed. Silent in a worktree (empty `Projects/`) - see LIVE_STEM's note.
+        c.check("...and a stem that exists in the LIVE store is not resolved either (no leak)",
+                not any(LIVE_STEM in s and "RELOCATED" in s for s in hermetic),
+                str(hermetic)[:200])
 
         # F1: asserted against the ALLOWLIST, so it still bites where Projects/ is an empty stub.
         write(repo / "mem", "MEMORY.md", "# Index\n(no pointer section)\n")
