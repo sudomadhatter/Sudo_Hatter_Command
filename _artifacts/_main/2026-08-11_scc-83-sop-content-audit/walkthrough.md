@@ -537,3 +537,32 @@ The tree moved under the adversarial pass again (`3f4553c` → `aed8228` mid-rev
 detected it, re-verified every finding at the new sha, and reported the shift — and one of its
 findings was already fixed by that commit. **Every finding above was reproduced here before being
 accepted**; the subagent's report is evidence, not a verdict.
+
+## Merge Reconciliation (2026-08-11) — landing #5, last of the set
+
+Verdict: PASS @ (this commit) — re-measured after absorbing **four** landed lanes; supersedes
+`PASS @ 00c4dc6`.
+
+Landing last means this lane absorbed everything: SCC-90 (`0b380d4`), SCC-89 (`238e0ec`),
+SCC-94 (`dd3c9d7`), SCC-88 (`3d2cfa6`).
+
+**One conflict, and it was the mechanical kind.** `_artifacts/_main/INDEX.md` — 1 row ours, 7 rows
+theirs, **no deletions on either side**. Kept all eight, this lane's row on top (it lands last;
+the table is newest-first). The tie-break rule was needed because all eight rows carry the same
+date, so "newest-first" alone does not order them — **later-landing goes on top** makes the file
+reproducible from `git log` by anyone reading it afterwards.
+
+**The result that matters.** This lane hardened `test_sops_prds_folder.py`, and the document it
+audits was **rewritten end to end by SCC-90** and **edited again by SCC-94** while this branch sat
+open. The suite was re-run against the fully-reconciled tree:
+
+```
+python3 .agents/scripts/tests/test_sops_prds_folder.py  -> exit 0   57/57 passed
+python3 .agents/scripts/tests/run_all.py                -> exit 0   12/12 files passed
+python3 .agents/scripts/workflow_lint.py --toolkit-only -> exit 0   0 errors, 0 warnings, 8 info
+```
+
+57/57 against a rewritten SOP is the strongest evidence this lane could produce — the checks were
+written against the old document and still hold against the new one, which means they are testing
+the *contract* rather than the prose. A suite that only passed against the text it was written for
+would have gone red here.
