@@ -48,6 +48,10 @@ from pathlib import Path
 
 from _harness import SCRIPTS, Cases, TempDir
 
+# _harness puts SCRIPTS on sys.path, so the lobby's own scripts import as top-level modules.
+# SCC-73: reuse check_maps' allowlist parser rather than adding a fourth copy of it.
+import check_maps  # noqa: E402  (must follow the _harness path insert)
+
 INDEX_CAP = 25 * 1024
 TRIGGER_PCT = 0.90          # audit is DUE here — below the cap, on purpose (see module docstring)
 BODY_SOFT_CAP = 4 * 1024    # a memory this long is usually narrative that wants compressing
@@ -72,19 +76,48 @@ REPO_ROOT = REAL_STORE.parent.parent
 POINTER_HEADING = "## Project stores"
 
 
-def maintained_project_names(repo: Path) -> list[str]:
-    """Projects the home base keeps in sync, from the TRACKED allowlist.
+def maintained_project_names(repo: Path) -> list[str] | None:
+    """Projects the home base keeps in sync, from the TRACKED allowlist. None = file ABSENT.
 
     Read the allowlist, never `Projects/*` on disk. The allowlist is a committed file present in
     every checkout; `Projects/` is an EMPTY STUB in every `git worktree` - which is where nearly
     all work happens. A pointer contract asserted against directories would therefore pass
     vacuously in exactly the place it needs to hold, and a check that cannot fail where you work
-    is not a check."""
-    f = repo / ".agents" / "maintained-projects.txt"
-    if not f.is_file():
-        return []
-    return [ln.split("#")[0].strip() for ln in f.read_text(encoding="utf-8").splitlines()
-            if ln.split("#")[0].strip()]
+    is not a check.
+
+    Delegates to `check_maps.maintained_projects()` - ONE parser for this file, not a fourth. Its
+    None-vs-set distinction is the load-bearing part and the reason not to hand-roll this: an
+    absent allowlist must be a LOUD failure, never an empty list. An empty list silently disarms
+    both tiers and prints output identical to a normal worktree run (`[COVERAGE] 0`, no `[SKIP]`
+    lines) - the fail-open this module exists to make impossible."""
+    names = check_maps.maintained_projects(repo)
+    return None if names is None else sorted(names)
+
+
+def _section(text: str, heading: str) -> str | None:
+    """The heading's OWN section - bounded at the next `## `, not 'the rest of the file'.
+
+    `text.split(heading)[1]` is the whole remainder. `## Project stores` sits near the top of a
+    21 KB index, so ~99% of every memory row in the file would count as being 'in' the section,
+    and one future row mentioning a project path would anaesthetize the check permanently."""
+    if heading not in text:
+        return None
+    rest = text.split(heading, 1)[1]
+    out: list[str] = []
+    for line in rest.splitlines():
+        if line.startswith("## "):
+            break
+        out.append(line)
+    return "\n".join(out)
+
+
+def _names_a_project(section: str, name: str) -> bool:
+    """Is `name` listed as its OWN entry - not merely a substring of a longer sibling?
+
+    Raw containment lets `NEXgen-VR-Director`'s row satisfy an allowlist entry for `NEXgen`, so a
+    genuinely missing signpost reads as present. Latent with today's two names; armed the moment
+    anyone adds a name that prefixes another - which the allowlist header openly invites."""
+    return re.search(rf"^\s*[-*].*(?<![\w-]){re.escape(name)}(?![\w-])", section, re.M) is not None
 
 
 def project_stores(repo: Path) -> tuple[list[Path], list[str]]:
@@ -100,7 +133,13 @@ def project_stores(repo: Path) -> tuple[list[Path], list[str]]:
     checking nothing - the same vacuous pass this module exists to prevent."""
     stores: list[Path] = []
     skips: list[str] = []
-    for name in maintained_project_names(repo):
+    names = maintained_project_names(repo)
+    if names is None:
+        # LOUD, never an empty list. Absent allowlist = both tiers disarmed, and the output would
+        # be indistinguishable from a healthy worktree run except for two lines nobody watches for.
+        return [], ["ALLOWLIST MISSING: .agents/maintained-projects.txt is gone - the project tier "
+                    "is checking NOTHING and cannot say which projects it should have checked"]
+    for name in names:
         root = repo / "Projects" / name
         store = root / "_artifacts" / "_memory"
         if (store / "MEMORY.md").is_file():
@@ -120,17 +159,26 @@ def pointer_problems(store: Path, repo: Path) -> list[str]:
     a compaction if something is left behind saying where it went; without the signpost it is
     silent removal from every session's view, and the failure mode of this store has always been
     "the agent repeated a mistake it had a memory for"."""
-    text = index_text(store)
     names = maintained_project_names(repo)
+    if names is None:
+        return [f"cannot verify `{POINTER_HEADING}`: .agents/maintained-projects.txt is missing, "
+                f"so there is no list of projects this index is required to signpost"]
     if not names:
         return []
-    if POINTER_HEADING not in text:
+    section = _section(index_text(store), POINTER_HEADING)
+    if section is None:
         return [f"MEMORY.md has no `{POINTER_HEADING}` section - project memories relocate out "
                 f"of this index, and with no signpost left behind they are invisible to every "
                 f"session that loads it"]
-    section = text.split(POINTER_HEADING, 1)[1]
     return [f"`{POINTER_HEADING}` never names `{n}` - that project's store is unreachable from "
-            f"the one index every platform loads" for n in names if n not in section]
+            f"the one index every platform loads" for n in names if not _names_a_project(section, n)]
+
+
+# The back-pointer must be recognisable by a token that CANNOT also describe the project's own
+# store. `_artifacts/_memory` fails that test outright: it is the project's own path too, so a
+# project index saying nothing but "my memories live in _artifacts/_memory/" would satisfy a check
+# meant to prove it points somewhere ELSE. This sentinel names the lobby unambiguously.
+LOBBY_BACKPOINTER = "Sudo_Hatter_Command/_artifacts/_memory/"
 
 
 def backpointer_problems(repo: Path) -> list[str]:
@@ -141,9 +189,9 @@ def backpointer_problems(repo: Path) -> list[str]:
     `-m`) are absent for exactly the sessions doing the most dangerous work. One line fixes it."""
     stores, _ = project_stores(repo)
     return [f"`{s.parent.parent.name}`'s MEMORY.md never names the lobby store "
-            f"(`_artifacts/_memory/`) - a lane launched inside that project reads only its own "
+            f"(`{LOBBY_BACKPOINTER}`) - a lane launched inside that project reads only its own "
             f"store, so cross-project law and hazards are invisible there"
-            for s in stores if "_artifacts/_memory" not in index_text(s)]
+            for s in stores if LOBBY_BACKPOINTER not in index_text(s)]
 
 
 # ── Why the two-tier checks are ADVISORY, and it is not a hedge ───────────────────────────────
@@ -283,8 +331,17 @@ def rotted_pointers(store: Path, repo: Path, sibling: Path | None = None) -> dic
     return out
 
 
-def audit_signals(store: Path) -> list[str]:
+def audit_signals(store: Path, repo: Path | None = None) -> list[str]:
     """A worklist for /memory-audit, derived mechanically so the audit opens on evidence.
+
+    ⛔ `repo` is EXPLICIT and defaults to None - cross-repo signals are opt-in per call. It was a
+    module global for one commit and that was a blocking bug: a hermetic fixture store, holding
+    nothing but its own two files, inherited AGY's missing back-pointer and failed the fixture
+    assertion "a healthy store produces NO candidates". In a worktree `Projects/` is empty so it
+    passed; on `main` it would have turned `run_all` red for every unrelated lane, over a defect
+    this repo is forbidden to commit a fix for - verbatim the failure the ownership split below
+    exists to prevent, reintroduced by the wiring. A function that reads live state a caller never
+    handed it cannot be tested hermetically, and this one is called from inside its own test file.
 
     SIGNALS, NOT VERDICTS. Every one of these can be legitimate - a `CLOSED` row whose lesson
     is still load-bearing stays; a dangling `[[link]]` is the sanctioned way to mark a memory
@@ -318,7 +375,8 @@ def audit_signals(store: Path) -> list[str]:
                    f"({', '.join(big[:3])}{'...' if len(big) > 3 else ''}) - long bodies are "
                    f"usually narrative; the lesson is what earns the space")
 
-    out += project_store_signals(REPO_ROOT)
+    if repo is not None:
+        out += project_store_signals(repo)
 
     rotted = rotted_pointers(store, REPO_ROOT, REPO_ROOT / "Projects" / "AGY_AVIATIONCHAT")
     if rotted:
@@ -329,8 +387,11 @@ def audit_signals(store: Path) -> list[str]:
     return out
 
 
-def audit_block(store: Path) -> str:
-    """The imperative the agent must surface. Loud on purpose - this is the whole trigger."""
+def audit_block(store: Path, repo: Path | None = None) -> str:
+    """The imperative the agent must surface. Loud on purpose - this is the whole trigger.
+
+    `repo` threads through to audit_signals: the REAL block wants cross-repo candidates, fixtures
+    must not inherit them. Same opt-in contract, same reason (see audit_signals)."""
     size = len(index_text(store).encode("utf-8"))
     pct = size * 100 / INDEX_CAP
     lines = [
@@ -356,7 +417,7 @@ def audit_block(store: Path) -> str:
         "   SCC-73 Phase 2 (thin root index + per-category files), NOT another audit.",
         "   Compaction was measured spent in SCC-69 - 145 memories, 633 bytes freed.",
     ]
-    sig = audit_signals(store)
+    sig = audit_signals(store, repo)
     if sig:
         lines.append("")
         lines.append("   Candidates the audit will ground-truth against the live repo:")
@@ -463,6 +524,15 @@ def main() -> int:
         write(s, "MEMORY.md", "# Index\n- [A fact](a-fact.md) - hook\n")
         c.check("a healthy store produces NO candidates", audit_signals(s) == [],
                 str(audit_signals(s))[:150])
+        # ⛔ REGRESSION PIN (the SCC-73 blocker). This exact fixture passed in a worktree and failed
+        # on main, because audit_signals reached for a module-global REPO_ROOT and inherited AGY's
+        # missing back-pointer. A hermetic store must stay hermetic no matter what the live repo
+        # holds - assert it against the REAL repo, which is the state that broke it.
+        c.check("...even when the live repo has real cross-repo findings (hermetic stays hermetic)",
+                audit_signals(s, None) == [] and audit_signals(s) == [],
+                str(audit_signals(s, REPO_ROOT))[:110])
+        c.check("...and passing a repo explicitly is what opts INTO cross-repo signals",
+                audit_signals(s, REPO_ROOT) == project_store_signals(REPO_ROOT), "")
 
     # ── SCC-73: the two-tier contract, on fixtures first ──
     with TempDir() as t:
@@ -470,13 +540,22 @@ def main() -> int:
         (repo / ".agents").mkdir(parents=True)
         (repo / ".agents" / "maintained-projects.txt").write_text(
             "# a comment\n\nPRESENT\nUNCLONED\nNOSTORE\n", encoding="utf-8")
+        # SORTED, not file order: check_maps returns a set, so insertion order is not a property
+        # to rely on. Deterministic ordering is what the reports need; sorted gives that.
         c.check("the allowlist is read from the tracked file, comments and blanks dropped",
-                maintained_project_names(repo) == ["PRESENT", "UNCLONED", "NOSTORE"],
+                maintained_project_names(repo) == ["NOSTORE", "PRESENT", "UNCLONED"],
                 str(maintained_project_names(repo)))
+        c.check("an ABSENT allowlist is None (loud), never an empty list (silently disarmed)",
+                maintained_project_names(t / "no-such-repo") is None, "")
 
         ps = repo / "Projects" / "PRESENT" / "_artifacts" / "_memory"
         write(ps, "p-fact.md", MEMO)
-        write(ps, "MEMORY.md", "# P\n- [A fact](p-fact.md) - hook\n`_artifacts/_memory/`\n")
+        # The good case must be TEXTUALLY DISTINCT from the project's own store path. Writing the
+        # bare `_artifacts/_memory/` here is what made the old check unfalsifiable: that string
+        # also describes where this very file lives, so the "has a back-pointer" fixture proved
+        # nothing. It must name the LOBBY unambiguously.
+        write(ps, "MEMORY.md",
+              f"# P\n- [A fact](p-fact.md) - hook\nlobby law: `{LOBBY_BACKPOINTER}`\n")
         (repo / "Projects" / "PRESENT" / ".git").write_text("gitdir: x", encoding="utf-8")
         (repo / "Projects" / "NOSTORE").mkdir(parents=True)
         (repo / "Projects" / "NOSTORE" / ".git").write_text("gitdir: x", encoding="utf-8")
@@ -512,9 +591,34 @@ def main() -> int:
         c.check("a section naming every allowlisted project passes",
                 pointer_problems(repo / "mem", repo) == [], str(pointer_problems(repo / "mem", repo)))
 
+        # ── the two ways this check could be DEFEATED, both pinned ──
+        # An EMPTY section whose names appear in unrelated rows further down the index. The old
+        # code took `split(heading)[1]` - the whole rest of the file - so ~99% of a 21 KB index
+        # counted as "the section", and one future memory row naming a project path would have
+        # anaesthetized this permanently.
+        write(repo / "mem", "MEMORY.md",
+              f"# Index\n{POINTER_HEADING}\n(nothing here)\n\n## Other memories\n"
+              f"- [a row](x.md) - about PRESENT and UNCLONED and NOSTORE\n")
+        got = pointer_problems(repo / "mem", repo)
+        c.check("an EMPTY section is not saved by names appearing elsewhere in the index",
+                len(got) == 3, str(got)[:130])
+
+        # A LONGER sibling satisfying a SHORTER allowlisted name by raw containment.
+        (repo / ".agents" / "maintained-projects.txt").write_text(
+            "PRESENT\nPRESENT-VR\n", encoding="utf-8")
+        write(repo / "mem", "MEMORY.md", f"# Index\n{POINTER_HEADING}\n- PRESENT-VR -> somewhere\n")
+        got = pointer_problems(repo / "mem", repo)
+        c.check("a longer sibling row does NOT satisfy a shorter allowlisted name",
+                any("PRESENT`" in p for p in got), str(got)[:130])
+        (repo / ".agents" / "maintained-projects.txt").write_text(
+            "# a comment\n\nPRESENT\nUNCLONED\nNOSTORE\n", encoding="utf-8")
+
         c.check("a project index that names the lobby store passes the back-pointer check",
                 backpointer_problems(repo) == [], str(backpointer_problems(repo)))
-        write(ps, "MEMORY.md", "# P\n- [A fact](p-fact.md) - hook\n")   # back-pointer removed
+        # The AMBIGUOUS case, pinned: an index that names only its OWN store path must still FIRE.
+        # This is the case the pre-review check could not see, and the reason the sentinel exists.
+        write(ps, "MEMORY.md",
+              "# P\n- [A fact](p-fact.md) - hook\nmy memories live in `_artifacts/_memory/`\n")
         c.check("a project index with no back-pointer to the lobby fires",
                 any("PRESENT" in p for p in backpointer_problems(repo)),
                 str(backpointer_problems(repo))[:150])
@@ -566,7 +670,7 @@ def main() -> int:
         print(f"[SIGNAL] {s}")
     # AFTER the tally, so it is the last thing on screen and survives a `| tail`.
     if audit_due(REAL_STORE):
-        print(audit_block(REAL_STORE))
+        print(audit_block(REAL_STORE, REPO_ROOT))
     return rc
 
 

@@ -47,7 +47,11 @@ canonical because it travels via git. Claude's `~/.claude/projects/<slug>/memory
 symlink *into* it, never the mechanism. Echo `Store: <abs path> | index: <bytes> / 25600` before
 any work, read from disk, not from belief.
 
-If you are standing in a project rather than the lobby, say so and stop — there is one store.
+**Bind to the LOBBY store, always — but "there is one store" stopped being true at SCC-73.** If you
+are standing in a project, say so and stop: this command audits the lobby index, and it is the lobby
+that pays the per-session cost. What changed is the *destination*: Step 5's relocation writes into
+`Projects/<name>/_artifacts/_memory/`, so the audit reads one store and may write to two. Stopping
+because a project store exists would halt the very flow this command now owns.
 
 ## Step 1 — Run the floor
 

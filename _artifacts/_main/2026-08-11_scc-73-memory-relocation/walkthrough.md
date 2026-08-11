@@ -39,6 +39,22 @@
 - [x] **S7 — docs + indexes.** SOP (same commit, as the armed gate requires), `workspace-standard.md`
       PATH CONTRACT gained a per-project row, `_artifacts/_main/INDEX.md` gained its session row.
 - [x] Doors regenerated via `sync-agents` (never hand-edited); `run_all` + lint green.
+  - *finding:* the relocation section took the command past the generator's 11,500 B threshold, so
+    Antigravity's door **changed kind** — verbatim mirror → launcher stub. Sanctioned, but reading
+    that stub is what exposed the next one.
+  - *finding:* a launcher carries the command's frontmatter `description:` verbatim, and it still
+    advertised *"retire / merge / compress"* — **every** platform's menu entry claimed three
+    dispositions for a command with four. The same rot fixed in `commands/INDEX.md` one commit
+    earlier, sitting one field above it. Both descriptions corrected and re-synced.
+- [x] **Review gate — a blocker found and killed before landing.** The adversarial layer proved this
+      branch turned `run_all` RED on `main`: `audit_signals` read a module global, so a hermetic
+      fixture inherited AGY's cross-repo defect. Green in a worktree, red on main — the exact failure
+      the ownership split exists to prevent, reintroduced by the wiring. Reproduced, fixed with an
+      explicit opt-in param, and pinned by a regression test asserted against the live repo.
+  - *finding:* my "proved before landing" evidence had measured the wrong function. Retracted.
+  - *finding:* three more soundness holes in checks that read as sound — the back-pointer token was
+    also the project's own path, the "section" was the rest of the file, and name matching was raw
+    containment. All three now have fixtures that must fire.
 
 ## Evidence
 
@@ -74,16 +90,24 @@ operator ruling against future drift, not a behavior this lane adds.)*
 LANE exit=0
 ```
 
-**GREEN — main-tree behavior, proved before landing** (the environment the operator actually runs in,
-where the submodules *are* populated):
+**⚠ RETRACTED — the original "main-tree behavior, proved before landing" claim was false.** It probed
+`project_stores` / `check_store` / `project_store_signals` directly and never ran `main()`. The suite
+*was* red on `main` at that moment (see the Code Review section, finding 1): `audit_signals` reached
+for a module-global `REPO_ROOT`, so a hermetic fixture inherited AGY's missing back-pointer. The probe
+answered a real question and not the one the heading claimed. Corrected evidence, after the fix:
 
 ```
-stores read : ['AGY_AVIATIONCHAT']
-skips       : ['NEXgen-VR-Director: no memory store yet - nothing to gate']
---- would any of this BLOCK the lobby? ---
-  check_store(AGY_AVIATIONCHAT) -> CLEAN
---- advisory signals (loud, never blocking) ---
-  [SIGNAL] `AGY_AVIATIONCHAT`'s MEMORY.md never names the lobby store (`_artifacts/_memory/`) - ...
+BLOCKER REGRESSION CHECK
+  hermetic fixture, REPO_ROOT=main -> []          (was: AGY's back-pointer signal -> fixture FAILED)
+
+MAIN-TREE HARD GATES (these can block)
+  check_store(lobby)           -> CLEAN
+  pointer_problems(post-merge) -> CLEAN
+
+MAIN-TREE ADVISORY (loud, never blocking)
+  [SIGNAL] `AGY_AVIATIONCHAT`'s MEMORY.md never names the lobby store (`Sudo_Hatter_Command/_artifacts/_memory/`)
+
+  coverage: ['AGY_AVIATIONCHAT'] | skips: ['NEXgen-VR-Director: no memory store yet - nothing to gate']
 ```
 
 **The gates, run bare (never piped — a pipe reports the pipe's exit code):**
@@ -93,8 +117,110 @@ run_all exit=0        -- 12/12 files passed
 lint    exit=0        -- 0 error(s), 0 warning(s), 8 info
 ```
 
-**Index size:** 20,390 B → **21,107 B** (82 % of the 25 KB cap; trigger at 90 % untouched). The section
-costs ~700 B now and is what makes it safe to remove far more than that in the first sweep.
+**Index size:** 20,390 B → **21,296 B** — **83.2 %** of the 25 KB cap; trigger at 90 % untouched. The
+section costs **906 B** and is what makes it safe to remove far more than that in the first sweep.
+*(Corrected: this first read "21,107 B / 82 % / ~700 B" — wrong in all three figures, in the one
+document whose thesis is measurement discipline. Caught by the adversarial review, not by me.)*
+
+## Code Review (2026-08-11)
+
+```
+Verdict: CONCERNS @ <FINAL-SHA>
+```
+
+Suite evidence measured on the same sha; every gate below was re-run after the last code change.
+
+**Scope** — 17 files, `main...HEAD`, no uncommitted work but untracked `.opencode/node_modules`.
+**Method** — Step 0.7 re-derivation vs current `main`; clean-room adversarial layer in a subagent with
+no conversation context (hunted the diff before reading the plan); acceptance audit; command-centre
+gate; `/smh-clean-code-audit`.
+
+**Step 0.7 — re-derivation.** *(1)* Nothing this diff references moved: `BASE == main == ef0af3a`,
+zero files landed since S0, so the pre-work trace still describes the live repo. *(2)* True overlap
+**none**; `merge-tree` returns a clean tree, no conflicts. *(3)* Live siblings: `SCC-77` (`8e2ee83`)
+and `SCC-83` (`ef0af3a`, still pre-work). **SCC-83 shares `workflows_testing_SOP.md`** — different
+sections, so whoever lands second merges `main` down and re-runs the gate; its new prose-path gate
+(A3b/A3c) already permits the project-relative path class this lane introduces, checked against their
+plan rather than assumed.
+
+### Findings
+
+| # | file:line | Sev | Failure scenario | Disposition |
+|---|---|---|---|---|
+| 1 | `test_memory_store.py` `audit_signals` | **HIGH** | **Blocker — this branch turned `run_all` RED on `main` the moment it landed.** `audit_signals` reached for the module-global `REPO_ROOT` and appended `project_store_signals` unconditionally, so the hermetic fixture *"a healthy store produces NO candidates"* inherited AGY's missing back-pointer. Green in a worktree (`Projects/` empty), red on main — blocking every unrelated lane over a defect this repo is forbidden to fix. Verbatim the failure the ownership-split comment claims to prevent, reintroduced by the wiring. | **applied** — `repo` is now an explicit opt-in param, `None` by default. **Reproduced before fixing and pinned by a regression test** asserting the fixture stays clean *against the live repo*. |
+| 2 | `walkthrough.md` Evidence | **HIGH** | The block headed *"main-tree behavior, proved before landing"* probed `check_store`/`project_store_signals` directly and never ran `main()` — it answered a real question, not the one the heading claimed, while the suite was red. | **applied** — retracted in place, re-measured, corrected evidence pasted. |
+| 3 | `test_memory_store.py` `backpointer_problems` | **HIGH** | Matched `"_artifacts/_memory"` — **also the project's own store path**. A project index saying only *"my memories live in `_artifacts/_memory/`"* passed a check meant to prove it points somewhere *else*. The fixture used that exact ambiguous literal as its "good" case, so it could never catch it. | **applied** — discriminating `LOBBY_BACKPOINTER` sentinel; the ambiguous case is now a pinned fixture that must FIRE. |
+| 4 | `test_memory_store.py` `pointer_problems` | MED | `split(heading)[1]` is the rest of the file, not the section — ~99 % of a 21 KB index counted as "in" the section, so one future memory row naming a project path would have anaesthetized the only hard tier-two check permanently. | **applied** — `_section()` bounds at the next `## `; empty-section-rescued-by-later-rows is a pinned fixture. |
+| 5 | `test_memory_store.py` `pointer_problems` | MED | Raw substring containment: a longer sibling (`NEXgen-VR-Director`) satisfies a shorter allowlisted name (`NEXgen`), so a genuinely missing signpost reads as present. Latent today, armed by the next name added. | **applied** — line-anchored word-boundary match; pinned by fixture. |
+| 6 | `maintained_project_names` | MED | Missing allowlist → `[]` → **both tiers silently disarm**, with output visually identical to a healthy worktree run. | **applied** — `None` (loud) vs list; absent allowlist is now a named skip and a pointer-check failure. |
+| 7 | `smh-memory-audit.md` Step 0 | MED | Step 0 still said *"there is one store"* and to stop — halting the agent before it reached the relocation flow the command now owns. | **applied** — Step 0 rewritten: binds the lobby, reads one store, may write to two. |
+| 8 | `AGENTS.md` vs `workspace-standard.md` | MED | Law documents disagreed: *"both gated"* vs *"never blocking"*. | **applied** — AGENTS.md now states one blocks, one reports, and why. |
+| 9 | `AGENTS.md` §7 | MED | The structural carve-out was **self-authorizing** — satisfied by writing the ticket title — and "structural" was undefined, in the one rule protecting memory from invisible edits. | **applied** — defined by enumeration (3 acts) and bound to explicit operator approval. |
+| 10 | `maintained-projects.txt` header | LOW | Undocumented two-file coupling: adding a name reds `run_all` in every checkout unless the index is edited too. | **applied** — written into the header where you stand when adding a name. |
+| 11 | `walkthrough.md` index figures | LOW | Claimed 21,107 B / 82 % / ~700 B; actual **21,296 B / 83.2 % / 906 B** — wrong in all three, in the document whose thesis is measurement. | **applied** — re-measured and corrected, with the error left visible. |
+| 12 | `.agents/workflows/smh-memory-audit.md` | LOW | A platform door **changed kind** (verbatim mirror → launcher stub) when the command crossed the generator's 11,500 B threshold. Sanctioned mechanism, but the blast radius recorded only *"doors 8/8 present"* — present, yes; same kind, no. | **applied** — recorded here and in the checklist. This is also what exposed the stale-description defect. |
+| 13 | `test_memory_store.py` (perf) | LOW | `project_stores()` re-reads every project store several times per run; O(stores × files) as the tier grows. | **deferred** — 1 store / 17 files today; revisit when a third project store gains content. |
+| 14 | RED probe (scratchpad) | LOW | Two probe assertions were tautological (`False if gated else True`) or aimed at a function the design never calls, so the probe is not valid re-run evidence. | **dismissed as a gate, recorded as a lesson** — the permanent suite is the evidence; the probe was a one-shot absence demonstration and is not committed. |
+
+**Layer health:** the adversarial layer ran (no retry needed) and produced findings 1–13; nothing was
+skipped or degraded. Its two dropped findings — frontmatter-description drift and one duplicate — had
+already been fixed at `bc1ddfd` before it reported.
+
+### Gates
+
+| Gate | Result |
+|---|---|
+| Enforcement suite | `run_all.py` — **12/12 files, exit 0** |
+| Toolkit lint | `--toolkit-only` — **0 errors, 0 warnings, 8 info, exit 0** |
+| Assertion evidence | `test_memory_store.py` **39/39, exit 0** in-lane; post-merge simulation of the hard gates **CLEAN**; blocker regression reproduced red then pinned green |
+| SOP currency | **exit 0** — SOP staged in the same commit; `[sop-ok]` **not** taken (the boot row genuinely needed the update) |
+| py_compile | **PASS** |
+| Link + anchor | **0 dead introduced** — every flagged path is a branch name, prose shorthand, or a by-design submodule path |
+| Door parity | **4/4 both commands**; none added, renamed or deleted; one door legitimately changed *kind* (finding 12) |
+| Lint / types | **not applicable to this repo** — no venv, no ruff, no tsc |
+
+### Acceptance matrix
+
+| # | Item | Proving assertion | Status |
+|---|---|---|---|
+| A1 | Relocate is a fourth disposition with cross-repo mechanics | `smh-memory-audit.md` Step 5 block; all 4 doors carry it; lint 0/0 | **met** |
+| A2a | Lobby index signposts every maintained project | `pointer_problems` — hard fail, fires on missing section / omitted name / empty section / substring collision | **met** |
+| A2b | Each project index carries the mirror back-pointer | `backpointer_problems` ships and fires correctly; **AGY's line is not written** — blocked by the `AVCH`-only hook | **NOT met — owed, and the reason the verdict is CONCERNS** |
+| A3 | Boot reads the bound project's index | `cicd-boot-sprint-memory.md` Step 1.5 + description; lint 0/0 | **met** |
+| A4 | Fan-out over checked-out stores; absence is a named skip | fixtures both directions + `[COVERAGE]`/`[SKIP]` disclosure; main-tree sim reads AGY, skips NEXgen by name | **met** |
+| A5 | `audit_block` names Phase 2 | asserted substring `SCC-73 Phase 2` | **met** |
+| A6 | Cap and trigger unchanged | `INDEX_CAP == 25*1024`, `TRIGGER_PCT == 0.90` pinned | **met** |
+
+**Drift check (the other direction):** nothing in the diff falls outside the acceptance list. The three
+files the pre-work audit added (F4/F5/F6) each correct a document this change made untrue.
+
+### Clean-Code Gate — CONCERNS
+
+**Machine floor** — run_all **PASS** (12/12, exit 0) · workflow_lint **PASS** (0 errors, 0 warnings) ·
+sop_currency **PASS** (exit 0) · py_compile **PASS** · link+anchor **PASS** (0 dead) · door parity
+**PASS** (4/4) · lint/types **n-a to this repo**.
+
+**Changed-line scan:** no committed secret, no debug print beyond the deliberate `[COVERAGE]`/`[SKIP]`/
+`[SIGNAL]` reporting lines, no commented-out code, no bare/broad `except`, no absolute or `C:/` path,
+no unowned TODO, no bare `python` (the one operator-typed command is dual-form `python3` / PC `python`).
+
+**Judgment pass:** comment contract satisfied — 8 ticket-keyed provenance comments, no stale
+`AIDEV-NOTE`. Convention table clean: naming law (no new commands, no `/sudo-` refs), prefix-permission
+(`smh-*` acts on the lobby, `cicd-*` binds a project), one door per platform, generated surfaces
+regenerated not hand-edited, rule pointers already present, both-machines spelling, artifacts in the
+tree, no personal name in `.agents/` bodies. **Findings 13 and 14 above are the residual CONCERNS**,
+plus finding 16 from the review — the block comment asserting the split "is not a hedge" was, for one
+commit, contradicted by the code; re-verified true after finding 1's fix.
+
+### Why CONCERNS and not PASS
+
+**A2b is not delivered.** The mirror back-pointer needs a commit in `Projects/AGY_AVIATIONCHAT`, whose
+`jira.conf` is `JIRA_KEYS="AVCH"` — an `SCC`-keyed commit there is rejected by the armed hook. That is
+a repo boundary discovered mid-build, not an oversight, and the lane ships the *detection* for it. But
+an acceptance item without evidence does not get called satisfied, so the verdict stays below PASS.
+
+**Not FAIL:** every gate is green on the changed set, the blocker was found, reproduced, fixed and
+pinned before landing, and no reference this diff depends on has moved.
 
 ## Your Actions
 
