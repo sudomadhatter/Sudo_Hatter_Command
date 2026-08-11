@@ -215,7 +215,10 @@ CODE_SPAN = re.compile(r"`([^`\n]+)`")
 #
 # ⛔ And the ONE class is narrower than it first looks: a TRAILING ellipsis never reaches
 # here, because the token is rstrip'd of ".,;:)" before matching -- `docs/...` becomes
-# `docs/` and resolves. Only a MID-path elision (`docs/.../deep.md`) is live. Round 2's
+# `docs/`, which then fails PATH_LIKE (it needs two segments) and is dropped there, not
+# here. (An earlier draft of this line said `docs/` "resolves". Right conclusion, wrong
+# mechanism -- and a comment that names the wrong guard sends the next maintainer to the
+# wrong line.) Only a MID-path elision (`docs/.../deep.md`) is live. Round 2's
 # first fixture used the trailing form and the mutation run caught it: deleting this regex
 # still left the suite green. The control below uses the mid-path form.
 NOT_A_PATH = re.compile(r"\.\.\.")            # `docs/.../x` -- an elision, not a directory

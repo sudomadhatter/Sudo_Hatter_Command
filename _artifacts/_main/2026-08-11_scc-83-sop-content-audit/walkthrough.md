@@ -16,10 +16,13 @@ ArtifactMetadata:
 
 ## Task Checklist
 
-- [x] **SCC-87** — T9 added to `test_sops_prds_folder.py`, RED first, **16 controls**
-  - Four of them exist because the RED found false-positive classes the plan had not predicted
-- [x] **SCC-84/85/86** — all **12** genuine references fixed; **0 findings from a worktree AND from
-      the main checkout**
+- [x] **SCC-87** — T9 in `test_sops_prds_folder.py`, RED first, now **54 controls**
+  - Four exist because the RED found false-positive classes the plan had not predicted; the rest
+    because **two code reviews** found mechanisms that were green against code that did nothing
+- [x] **SCC-84/85/86** — all **12** genuine references fixed; T9 reports **0 findings**, and a lane
+      and `main` return an **identical** set (0/0 shipped, 8/8 with every exemption lifted, keys
+      *and* values). ⛔ Round 1 claimed "0 in both environments" while the check was dead code —
+      the number was right and meaningless. The equality is now a fixture, not a hand-run probe
 - [x] **A8 / F4** — `INDEX.md` now states T9's scope, its environment-dependent reach, and that
       `git log` dates are meaningless in this folder
 - [x] Gates: `run_all` 12/12 exit 0 · lint 0/0 exit 0 · `sop_currency` exit 0
@@ -106,17 +109,25 @@ T9 controls green: 13
     jira_integration_guide.md  -> _my_resources/_quick_reference/git_walkthrough_settings.md (moved -> docs/_scc_sops_prds/...)
     jira_integration_guide.md  -> _my_resources/_quick_reference/jira_manual.md (moved -> docs/_scc_sops_prds/...)
 ```
-**GREEN**, both environments:
+**GREEN — final, measured at `42886fb`** (this REPLACES round 1's totals; that run reported
+`16 controls · 34/34 · 0 findings in both environments` against a check whose primary arm never
+executed):
 ```
-WORKTREE (9 stubs): 0 finding(s)      MAIN CHECKOUT: 0 finding(s), 1 stubbed
-T9 controls green: 16 · -- 34/34 passed -- · run_all 12/12 exit 0
+lane   : 0 findings   |  allow-list lifted: 8   |  stubbed: Fresh_Workspace_BMAD (named, with
+main   : 0 findings   |  allow-list lifted: 8   |          the doc that references it)
+identical, keys AND values, both ways
+-- 54/54 passed --   run_all 12/12 exit 0   workflow_lint --toolkit-only 0 errors 0 warnings
+23/23 mutations caught (every mechanism goes red when broken)
 ```
 
 ## Your Actions
 
-Branch pushed, preflight to follow. **Landing-order:** `chore/SCC-77-main-write-gate` also touches
-`workflows_testing_SOP.md`; `git merge-tree` verified clean either way — whoever lands second merges
-main down.
+Branch pushed, preflight to follow. **Landing-order (re-derived 2026-08-11, it moved twice):**
+`main` is fully absorbed at `78d69e7` — SCC-73 landed mid-review and its `_artifacts/_main/INDEX.md`
+conflict is resolved (both rows kept). ⚠ **`chore/SCC-88-memory-relocation-sweep` now conflicts on
+that same file** (`merge-tree` three-stage entries, verified — not predicted): trivial, keep both
+rows, whoever lands second merges main down first. `chore/SCC-77-main-write-gate` (20 files) and
+`chore/SCC-89-migrations-to-docs` (0 so far): no overlap.
 
 **Still owed, unchanged and deliberately not done here:** whether `tea_testing_guide.md` belongs in
 the lobby at all (48 project-relative refs) is an **AVCH** architecture call; AGY's stale
@@ -283,3 +294,140 @@ each entry with its written reason; the narrowness control already covers it.
   checkout itself (exit 1, correct `Sudo_Hatter_Command` label — so not the worktree false positive
   in `check-maps-stale-is-false-in-worktrees`). It arrived with SCC-73's merge at `50e357b`. Left for
   the close-out, from `main`, where regenerating cannot ship a lane name into the map.
+
+## Code Review (2026-08-11) — round 2
+
+Verdict: PASS @ 42886fbcc0116277069357e3c947cb518e0cff49
+Suite evidence measured at that same sha (`run_all` 12/12 exit 0). One later commit is
+comment-only (a comment that named the wrong guard); no code or test change since.
+
+**Scope:** 12 files, `main...HEAD`. **Method:** `/smh-code-review` end to end — Step 0.7
+re-derivation, a clean-room adversarial pass in a subagent with **no conversation context** at the
+same model capability, acceptance audit against the tickets' own `ACCEPTANCE` blocks, the
+command-centre gate run **bare**, and `/smh-clean-code-audit`.
+
+### ⭐ The review earned its keep again — two HIGHs, both real, both mine
+
+The adversarial pass ran 43 mutations against my 15 and found **7 my suite did not have**. Two were
+HIGH, and I reproduced both independently before accepting them.
+
+**H-A is the one that matters,** because it is this ticket's own lesson repeating at one remove.
+`remediation_plan.md` names *"one stray `.DS_Store` in a stub flips an entire run"* as **the defect**,
+and gives it as the reason `strict` was deleted rather than made per-token. My replacement then
+decided "is this project checked out?" with `any(d.iterdir())` — **the same untracked-state trigger,
+one layer down.** There is already a `.DS_Store` in `Projects/`. One in the uninitialised
+`Fresh_Workspace_BMAD` submodule would have promoted it to a populated root and turned
+`tdad_stack_install_guide.md`'s correct reference into a hard RED in `run_all`, on a machine where
+nothing is wrong. Now tests `.git`, which is what "checked out" actually means here.
+
+**And its structural half is round 1's lesson verbatim:** `_scan_roots()` had **no fixture**. Every
+one of the controls hand-built its own `roots` list, so the single function that decides what "here"
+means — the thing that produced the round-1 failure — was untested. *Round 1 shipped an argument no
+fixture exercised; round 2 nearly shipped the function that chooses the argument.* It now has an
+end-to-end control.
+
+**H-B: a round-1 MED I marked closed and had not fixed.** M3 was dispositioned under D1. D1 changed
+*which* roots are consulted, not the `any()` semantics — so half of M3 was fixed and **the half
+actually written down was not**. The consequence was not theoretical: `any(idx[r].has(t) …)` let an
+unrelated project answer for a path only the lobby can own, silently hiding the single most likely
+stale reference in the folder — the SOP's own pre-SCC-74 name — because AGY happens to carry a file
+at the same relative path. The allow-list comment *promised* that files under a vacated folder still
+fire; it was true by luck for `jira_manual.md` and false for its neighbours.
+
+I measured before choosing the scope: blanket lobby-first resolution would have flagged **13**
+project-relative paths that **SCC-85 already ruled on** ("state the root once"). So the fix is narrow
+— `VACATED` folders only — and a control asserts the leniency **survives** everywhere else.
+
+### Findings
+
+| # | file:line | Sev | Failure scenario | Disposition |
+|---|---|---|---|---|
+| H-A | `test_sops_prds_folder.py:565` | **HIGH** | `any(d.iterdir())` promotes an uninitialised submodule to a root on one `.DS_Store` → a correct doc reference goes hard RED in `run_all`. The trigger the plan calls "the defect", re-armed. Plus: `_scan_roots()` had no fixture at all. | **applied** — tests `.git`; end-to-end control added |
+| H-B | `:461` | **HIGH** | An unrelated project answers for a lobby-only path; `_my_resources/_quick_reference/sudo_workflows_testing.md` (the SOP's own old name) silently resolved via AGY. Round-1 M3, marked closed, still live. | **applied** — `VACATED` resolves lobby-only, both existence and `moved ->` |
+| M-A | `:394` | MED | "No such project" was indistinguishable from "not cloned here", so a project **rename** — the likeliest defect in an explicit project path — was permanently silent. | **applied** — lobby index records one level into `Projects/` |
+| M-B | `:702` | MED | The provenance control's `mkdir` ran **eight lines after** the control, so the first-segment rule killed the token before the allow-list was consulted. Dropping that allow-list entry left the suite green. | **applied** — `mkdir` moved first; mutation now red |
+| M-C | `:487` | MED | `moved -> X` is whichever same-named file `os.walk` reached first, stated as fact — the exact output round 1 acted on to produce the M2 doc regression. | **applied** — ambiguity is now declared with a count |
+| M-D | `:193` | MED | `CODE_SPAN`'s `\n` guard had no control, though `STRUCK`'s identical guard has three. An unbalanced backtick re-pairs every span below it. | **applied** — control added |
+| M-E | `:214`, `:509`, `INDEX.md` | MED | **Three shipped numbers were false.** "1 and 1" (actual: 0/0 shipped, 8/8 lifted) · "all twelve report `2026-08-10`" (7 of 12 are `08-11`) · "242 tokens" (true when measured, **260** two commits later). | **applied** — corrected; the rotting count is **deleted** and replaced by the probe |
+| L1 | `:311` | LOW | `os.walk` swallowed `PermissionError`: every path under an unreadable directory reported `resolves nowhere` with no diagnostic. | **applied** — recorded via `onerror` |
+| L2 | `:216` | LOW | Comment claimed a trailing ellipsis "becomes `docs/` and resolves" — it fails `PATH_LIKE`. Right conclusion, wrong guard named. | **applied** |
+| L3 | `:410` | LOW | `rstrip(".,;:)")` is unfalsifiable and changes no real outcome — the same "decoration that reads as coverage" this file deleted six `NOT_A_PATH` alternations for. | **deferred** — harmless (it can only truncate a token `PATH_LIKE` would reject); named rather than quietly kept |
+| L4 | `:894` | LOW | T4 skips `INDEX.md` while T3/T9 include it; a retired command name there would be unreachable. All five it names are live today. | **deferred** — no live defect |
+| L5 | `PATH_LIKE` | LOW | An NFD-normalised `docs/café.md` fails `PATH_LIKE` (combining marks are not `\w`) and is dropped silently — the L3 lesson, one encoding over. | **deferred** — named limit |
+| L6 | `_by_design`, `_main_checkout` | LOW | Set rebuilt per token; `_main_checkout()` spawns a second subprocess for the check's detail string. | **deferred** — measured cost is noise at this scale |
+
+### Gates — actual output, all run bare
+
+| Gate | Result |
+|---|---|
+| Enforcement suite | `12/12 files passed`, **exit 0** |
+| Toolkit lint | `-- 0 error(s), 0 warning(s), 8 info --`, **exit 0** — SCC-82's baseline held |
+| Assertion evidence | T9 `-- 54/54 passed --`, exit 0 |
+| **Mutation** | **23/23 caught** (baseline 54/54 green) — every mechanism goes red when broken |
+| SOP currency | **exit 0** |
+| Link + anchor | 10 changed `.md`, **14 links, 0 dead**, 0 `#L` anchors |
+| `py_compile` | exit 0 |
+| Door parity | n/a — no command added, renamed or deleted |
+| lint / types | not applicable to this repo (no venv, no ruff, no tsc) |
+
+### Acceptance audit
+
+| Item | Proving assertion | Result |
+|---|---|---|
+| **SCC-83.1** every reference resolves | T9 real run: **0 findings**; with all exemptions lifted, 8 — each a written by-design or prospective entry | ✅ |
+| **SCC-83.2** a check that would have caught them; fires on a planted defect, quiet on the three look-alikes; RED first | `A2` fires · `A3a`/`A3b`/`A3c`/`A3c-bis` · **23/23 mutations** prove each is falsifiable | ✅ |
+| **SCC-83.3** `run_all` N/N exit 0, lint stays 0/0 | 12/12 exit 0 · 0 errors 0 warnings exit 0 | ✅ |
+| **SCC-87.1** fixture fires on a planted dead prose path | `T9-fixture A2` | ✅ |
+| **SCC-87.2** one control per look-alike class | bare filename · project-relative populated · stub (implicit + explicit) | ✅ |
+| **SCC-87.3** degrades to silence, not noise, when `Projects/` is unpopulated — **asserted, not assumed** | `A3c-bis` + the lane/main equality fixture. ⚠ **Deviation, stated:** after D1 a lane no longer *has* unpopulated projects, so the degraded case now arises only for a genuinely uninitialised repo. Strictly stronger than the AC asks, and asserted either way | ✅ (deviation named) |
+| **SCC-87.4** wired into `run_all`, no wiring, both machines | auto-discovery; 12/12; Windows-separator control covers the PC | ✅ |
+| **SCC-87.5** the `git mv` freshness blind spot | `INDEX.md` — and its wording **corrected this round**, because the original claim ("all twelve report 2026-08-10") was itself false | ✅ |
+| **SCC-84/85/86** the 12 genuine references | all resolve; `git diff --stat` shows the five doc fixes intact; M2's regression reverted | ✅ |
+
+**Drift check (the other direction):** nothing in the diff is outside the ticket. The one judgement
+call is `_artifacts/opencode/` and the two `testing-standards.md` paths entering the allow-list as
+**prospective** rather than being "fixed" — named in D5 with a written reason each, and guarded by
+the narrowness control.
+
+### Clean-Code Gate — PASS
+
+**Machine floor** — `run_all` PASS 12/12 exit 0 · `workflow_lint` PASS 0 errors 0 warnings ·
+`sop_currency` PASS exit 0 · `py_compile` PASS · link+anchor PASS 14/0 · door parity n/a ·
+lint/types not applicable to this repo.
+
+| # | file:line | Sev | Category | Finding | Disposition |
+|---|---|---|---|---|---|
+| 1 | `test_sops_prds_folder.py:486` | CONCERNS | banned-pattern | `except Exception: pass` in `_main_checkout()` swallowed git-off-PATH / timeout / permissions and returned `ROOT` — **in a lane that is the worktree**, silently reinstating the lane-dependent coverage the function exists to remove. H1's failure mode via the error path. | **applied** — reason recorded, check fails with the cause named; verified by simulating git absent |
+| 2 | `:294` | CONCERNS | comment-contract | Shipped docstring asserted "+18.3s", inherited from round 1's review and not reproducible. | **applied** — measured 1.06 s/token (~7.4 s here) vs 0.11 s indexed, ~69× |
+| 3 | T9 section head | CONCERNS | comment-contract | 15 comments referenced "round 1"/"round 2" with no ticket key — meaningless to a later reader. | **applied** — one anchor defining both, rather than stamping 15 lines |
+| 4 | `:565` | CONCERNS | readability | My first H-A fix was an unreadable conditional-expression chain. | **applied** — rewritten as a plain `if/else` |
+
+No secrets (all 9 `token`-matching hits are the identifier `_project_token`), one `print(` and it is
+the intentional coverage note, no bare `python`, no commented-out code, no unowned TODO.
+
+### Step 0.7 — re-derivation against current `main`
+
+1. **Nothing moved under this diff.** `main` is fully absorbed (`merge-base --is-ancestor` → yes);
+   `diff --name-only BASE..main` is **empty**; local `main` == `origin/main` == `50e357b`. All five
+   doc-fix targets re-resolved on disk.
+2. **True overlap with `main`: none.** `merge-tree --write-tree` returns a clean tree, no conflict
+   messages.
+3. **⚠ Sibling landing order — it moved twice during this review.** SCC-73 landed mid-round-1 and its
+   `_artifacts/_main/INDEX.md` conflict is resolved here (both rows kept). **`chore/SCC-88-memory-relocation-sweep`
+   now conflicts on that same file** — confirmed by `merge-tree` three-stage entries, not predicted.
+   Trivial (keep both rows); whoever lands second merges `main` down first. `chore/SCC-77-main-write-gate`
+   (20 files) and `chore/SCC-89-migrations-to-docs` (0 changes yet): **no overlap**.
+
+### Process notes
+
+- **The adversarial pass ran while the tree moved under it.** HEAD went `78d69e7` → `1be7540`
+  mid-review (the clean-code fixes). The subagent detected it, re-verified every finding at
+  `1be7540`, and reported the shift — and two of the things it had independently flagged were
+  already fixed by that commit. Recorded because a review measured against a moving target is worth
+  knowing about even when it survived.
+- **Every finding above was reproduced here before being accepted.** The subagent's report is
+  evidence, not a verdict.
+- **`check_maps` AUTO-block drift is pre-existing on `main`,** verified from the main checkout itself
+  (exit 1, correct `Sudo_Hatter_Command` label — so *not* the worktree false positive in
+  `check-maps-stale-is-false-in-worktrees`). It arrived with SCC-73 at `50e357b`. Left for close-out,
+  run from `main`, where regenerating cannot ship a lane name into the map.
