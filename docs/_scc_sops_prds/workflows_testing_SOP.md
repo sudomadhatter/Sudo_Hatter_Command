@@ -754,6 +754,36 @@ flowchart TD
 
 **Typing it IS your merge sign-off** — the same contract `/cicd-push-e2e` carries for an epic.
 
+**⭐ A cross-repo task can be blocked by the *other* repo's state (SCC-94).** If your `task.yaml`
+declares `secondary_repos`, the preflight no longer treats it as a note — it goes and looks. It
+refuses to clear unless that repo is reachable, its declared ticket key is one that repo's own
+`jira.conf` answers to, it is clean and `0/0` with its origin, and its memory store passes the same
+integrity contract the lobby's does. It also **warns when the other half has not landed yet**,
+naming the ticket to merge first.
+
+Write the row in **block** form and replace the `[]` — never leave an empty list above it:
+
+```yaml
+secondary_repos:
+  - repo: AGY_AVIATIONCHAT
+    landing: independent-task     # or retain-on-epic
+    ticket: AVCH-53
+```
+
+> ⓘ **Why "unreadable" is an error and not a skip.** `secondary_repos` present but unparseable exits
+> non-zero on purpose: *"I could not check"* must not share an exit code with *"there was nothing to
+> check."* One is a question; the other is an answer.
+>
+> **And why the clean-and-pushed check has no substitute.** Submodules are configured `ignore = all`,
+> so this repo's `git status` reads clean no matter what state the project half is in — nothing else
+> in the toolkit looks. A detached HEAD is fine and expected (it is what `git submodule update
+> --init` produces), so containment is checked against the remote rather than against a branch name.
+>
+> **The ordering warning is the load-bearing one.** A task that *deletes* what the other half
+> receives depends on that order absolutely: land the deletion first and the received work is
+> stranded against an unmerged branch in another repo. That is not hypothetical — it is exactly the
+> AVCH-53 → SCC-88 dependency this section was written during.
+
 > ⓘ **Why the E2E answer is mechanical.** The one thing making this command cheaper than
 > `/cicd-push-e2e` is skipping the end-to-end suite, and the only honest justification is *nothing
 > that deploys changed.* That is precisely the claim an agent is worst at auditing about its own work,
@@ -1531,7 +1561,7 @@ ticket that shipped it ([§12](#12-the-board--what-runs-next)).
 | `/cicd-close-workingtree` | The janitor. Confirms the branch really merged, then removes the workspace and deletes the branch. Both close-outs call it automatically. |
 | `/cicd-e2e` | Runs the real end-to-end suite — a complete stand-in for the live app, with test users. Green means safe to ship. |
 | `/cicd-push-e2e` | The one shipping command — the only road an epic takes to `main`. **Refuses to run** until the end-to-end suite is green. After the merge it comments the evidence on the epic's Jira ticket and moves it to **Done**. |
-| `/smh-close-task-merge-tree` | **The Task lane's close-out.** Gate, merge to `main` with `--no-ff`, one Dev Record, ticket → Done, prune. **Typing it IS your merge sign-off.** Refuses the moment a deployable path is in the diff and hands the work to `/cicd-push-e2e`, with no override flag. |
+| `/smh-close-task-merge-tree` | **The Task lane's close-out.** Gate, merge to `main` with `--no-ff`, one Dev Record, ticket → Done, prune. **Typing it IS your merge sign-off.** Refuses the moment a deployable path is in the diff and hands the work to `/cicd-push-e2e`, with no override flag. Since SCC-94 it also refuses on a **secondary repo's** state — unreachable, dirty, unpushed, wrong ticket project, or a rotted memory store — and warns when the other half has not landed yet ([§7](#7-landing-and-shipping--the-close-out-family)). |
 
 **The fast lane** — [§8](#8-the-fast-lane--cicd-quick-dev)
 
