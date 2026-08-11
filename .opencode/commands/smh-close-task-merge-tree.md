@@ -79,12 +79,35 @@ task_key: SCC-00
 primary_repo: <repo folder name>
 branch: chore/SCC-00-<slug>
 close_command: smh-close-task-merge-tree
-secondary_repos: []        # or [{repo: <name>, landing: independent-task|retain-on-epic, ticket: KEY-00}]
+secondary_repos: []        # single-repo task — the common case
+```
+
+**Cross-repo?** Then `secondary_repos` takes the block form instead — **replace** the `[]` line, never
+leave it above a second one:
+
+```yaml
+secondary_repos:
+  - repo: Projects/<name>
+    landing: independent-task      # or retain-on-epic
+    ticket: KEY-00
 ```
 
 Cross-repo work: each `secondary_repos` row is **its own ticket in its own repo** closed through
 its own lane — `landing: retain-on-epic` records the exception where a commit stays on a live epic
 branch and must never be presented as merged to production.
+
+⛔ **Since SCC-94 these rows are ENFORCED, not just recorded.** For every row, the preflight blocks
+unless that repo is reachable, its declared ticket key is one that repo's own `jira.conf` answers
+to, it is clean and `0/0` with its origin, and its memory store passes the same integrity contract
+the lobby's does. Two consequences worth knowing before you write the row:
+
+- **The lobby cannot see a dirty project half.** Submodules are `ignore = all`, so this repo's
+  `git status` is clean no matter what state the project is in. This check is the only thing that
+  looks.
+- **A wrong key is caught here, not at the commit.** A project answering only to `AVCH` rejects an
+  `SCC`-keyed commit at its hook; declaring the wrong one used to surface after the work was done.
+- The inline `[{…}]` form is **not read** — it warns and verifies nothing rather than failing open.
+  Use the block form.
 
 ⛔ **Echoing `Repo | Branch` from memory defeats the only guard here.** The line exists to catch a
 wrong belief about where you are standing; a self-reported echo can only ever confirm the belief.
@@ -164,7 +187,7 @@ runs on a docs-only diff:
 - **Link + anchor check** on every path and `#L` anchor the diff touched.
 - **SOP currency** — a usage-surface change (`.agents/commands/`, `.agents/rules/`,
   `.agents/scripts/`, git hooks, root `AGENTS.md`) must have moved
-  `_my_resources/_quick_reference/sudo_workflows_testing.md`. The armed commit-msg gate already
+  `docs/_scc_sops_prds/workflows_testing_SOP.md`. The armed commit-msg gate already
   enforced this per commit, so a surprise here means a commit was made with `--no-verify` or
   `[sop-ok]` — say which.
 

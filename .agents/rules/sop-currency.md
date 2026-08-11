@@ -1,11 +1,11 @@
 ---
 name: sop-currency
-description: Activates when you change how the command center is USED — a `/` command, a rule, a safety-net script, a commit gate, or the front door. The SOP quick-reference (`_my_resources/_quick_reference/sudo_workflows_testing.md`) is the PRD for the operating system and must move in the same commit. An armed commit-msg gate enforces it; `[sop-ok]` is the logged opt-out.
+description: Activates when you change how the command center is USED — a `/` command, a rule, a safety-net script, a commit gate, or the front door. The SOP quick-reference (`docs/_scc_sops_prds/workflows_testing_SOP.md`) is the PRD for the operating system and must move in the same commit. An armed commit-msg gate enforces it; `[sop-ok]` is the logged opt-out.
 ---
 
 # SOP currency — the quick-reference is not documentation, it is the spec
 
-`_my_resources/_quick_reference/sudo_workflows_testing.md` is the **PRD for how this system is
+`docs/_scc_sops_prds/workflows_testing_SOP.md` is the **PRD for how this system is
 operated**. It is the only page that answers *what do I type*, and the only one an operator reads
 start to finish. Everything else — `.agents/rules/`, `.agents/commands/`, `AGENTS.md` — describes the
 system to an **agent**. This one describes it to the **human**, and it is the surface where a stale
@@ -70,12 +70,24 @@ plumbing. Three habits keep it honest:
 - [`project-law.md`](project-law.md) — which tier a rule or skill belongs to. This page describes the
   centralized system that rule defines; a change to the tier model is always a usage change.
 
-## Known drift (open)
+## Known drift (open — widened by SCC-74)
 
-`Projects/AGY_AVIATIONCHAT/_my_resources/_quick_reference/sudo_workflows_testing.md` is a
-second copy. By design only its header block, §11 ordering, and link paths differ — the body is
-meant to be identical. It is **currently behind** the lobby copy, and its header still calls that
-project's `.agents/` "a synced copy — edit the master in the lobby," which the 2026-08-07
-centralization made false (a project's `.agents/` is now its OWN tier-2 law). The gate does not
-reach across repos. Re-sync the body on the operator's word, or collapse to one copy and have the
-project point at the center — the same call the toolkit already made for `docs/workspace-standard.md`.
+`Projects/AGY_AVIATIONCHAT/_my_resources/_quick_reference/sudo_workflows_testing.md` is a second
+copy. By design only its header block, §11 ordering, and link paths differ — the body is meant to be
+identical. It was already **behind** the lobby copy, and its header still calls that project's
+`.agents/` "a synced copy — edit the master in the lobby," which the 2026-08-07 centralization made
+false (a project's `.agents/` is now its OWN tier-2 law).
+
+**SCC-74 widened the gap on purpose, and left it open on purpose.** The lobby copy is now
+`docs/_scc_sops_prds/workflows_testing_SOP.md` — different folder, different filename — while the
+AGY copy still sits at the old `_my_resources/` path under its old name. So the two now differ in
+*location* as well as content.
+
+That was not fixed here because **cross-repo work takes a ticket per repo**: AGY is a separate git
+repo with its own board, and a lobby ticket editing files inside it produces a commit no AVCH ticket
+accounts for. The gate cannot reach across repos either, so nothing there enforces this.
+
+Two live options, both the operator's call, both needing an **AVCH** ticket:
+1. mirror the move inside AGY and re-sync the body; or
+2. collapse to one copy and have the project point at the center — the same call the toolkit already
+   made for `docs/workspace-standard.md`, and the cheaper one now that the paths have diverged.

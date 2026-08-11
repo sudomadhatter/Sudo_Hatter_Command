@@ -1,0 +1,8 @@
+task_key: SCC-95
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-95-smh-merge-multi-lanes
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+note: >-
+  Built DURING the live six-lane landing it describes, so every worked example in
+  the command body is measured from that run rather than imagined.

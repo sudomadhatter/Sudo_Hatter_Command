@@ -8,7 +8,7 @@ metadata:
   modified: 2026-08-07T12:55:53.629Z
 ---
 
-`_my_resources/_quick_reference/git_walkthrough_settings.md` documents ten global git settings and its
+`docs/_scc_sops_prds/git_walkthrough_settings.md` documents ten global git settings and its
 frontmatter says *"machine-wide … applies to every repo on this machine."* That was written on the
 **Windows** box (2026-06-24). `~/.gitconfig` is **per-machine and does not travel** — verified
 2026-08-07 that **none of the ten are set on the Mac**; `/Users/sudohatter/.gitconfig` holds only

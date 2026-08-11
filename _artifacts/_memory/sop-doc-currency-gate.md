@@ -1,6 +1,6 @@
 ---
 name: sop-doc-currency-gate
-description: "Since 2026-08-08 an ARMED commit-msg gate rejects any change to a usage surface (.agents/commands|rules|scripts, git-hooks, .githooks, root AGENTS.md) that does not also stage _my_resources/_quick_reference/sudo_workflows_testing.md. `[sop-ok]` in the message is the logged opt-out."
+description: "Since 2026-08-08 an ARMED commit-msg gate rejects any change to a usage surface (.agents/commands|rules|scripts, git-hooks, .githooks, root AGENTS.md) that does not also stage docs/_scc_sops_prds/workflows_testing_SOP.md. `[sop-ok]` in the message is the logged opt-out."
 metadata: 
   node_type: memory
   type: feedback
@@ -8,7 +8,7 @@ metadata:
   modified: 2026-08-08T05:57:14.734Z
 ---
 
-`_my_resources/_quick_reference/sudo_workflows_testing.md` is the **operator's PRD** — the one page
+`docs/_scc_sops_prds/workflows_testing_SOP.md` is the **operator's PRD** — the one page
 that answers "what do I type." It is inside the protected `_my_resources/` area but is explicitly
 maintained (the operator asked for it by name and approved the gate).
 

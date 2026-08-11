@@ -7,6 +7,10 @@ platforms: [opencode, antigravity]
 
 > **Rules in force for this command:**
 > - `.agents/rules/worktree-per-story.md` — one worktree per story, resolve-or-STOP, never delete through a junction
+> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never
+>   force-push; every branch and every commit carries the repo's Jira key (armed 2026-08-07).
+>   This command merges every live lane and pushes to the shared epic branch, so it is the one
+>   place where a single `git add -A` sweeps another lane's in-flight work into your commit.
 
 Up to four story lanes (sometimes more) run at once, and lanes of one epic descend on the same
 surfaces. Closing them one-by-one without looking sideways ships what no single lane ever saw: two

@@ -1,6 +1,6 @@
 """sop_currency.py — keep the SOP quick-reference from going stale (SCC-31, 2026-08-08).
 
-`_my_resources/_quick_reference/sudo_workflows_testing.md` is the PRD for how this system is
+`docs/_scc_sops_prds/workflows_testing_SOP.md` is the PRD for how this system is
 USED: the command menu, the two rules above every command, the safety net, the shipping road.
 It is the one document an operator reads start-to-finish, and the only one that answers "what
 do I type." A stale line there is worse than a missing one — it is an instruction that fails
@@ -57,7 +57,7 @@ import sys
 from pathlib import Path
 
 # The document this whole file exists to protect.
-SOP_DOC = "_my_resources/_quick_reference/sudo_workflows_testing.md"
+SOP_DOC = "docs/_scc_sops_prds/workflows_testing_SOP.md"
 
 # Opt-out token. Matched case-insensitively so [SOP-OK] works at 2am.
 SKIP_TOKEN = "[sop-ok]"

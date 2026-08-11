@@ -1,0 +1,40 @@
+task_key: SCC-89
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-89-migrations-to-docs
+close_command: smh-close-task-merge-tree
+epic: SCC-48
+linked: [SCC-90]
+carries_subtask: SCC-93   # the Antigravity guide lands inside the folder this move creates
+
+in_scope:
+  - docs/migrations/                      # the relocated kit (git-visible half)
+  - _my_resources/migrations/             # its deletion
+  - AGENTS.md, router.md                  # usage surfaces naming the old path
+  - docs/repo-map.md, docs/system-builder.md, docs/workspace-standard.md
+  - docs/_scc_sops_prds/workflows_testing_SOP.md   # the two links SCC-90 deliberately left
+  - .agents/scripts/link-memory.sh, .gitignore, .gitattributes
+  - _artifacts/_memory/                   # 6 bodies whose pointers named the old path
+  - _artifacts/_main/INDEX.md, _artifacts/_main/active-context.md
+
+secondary_repos:
+  - repo: AGY_AVIATIONCHAT
+    landing: independent-task
+    ticket: AVCH-53
+    why: >-
+      A project is a separate repo whose armed hook rejects SCC keys, so the
+      repair cannot ride this ticket. AVCH-53 must merge BEFORE SCC-88, which
+      deletes memories whose destination is that branch.
+    files: # FIVE, not two - the first count missed three (review finding)
+      - docs/repo-map.md                     # 3 hits: master.env, Restore-EnvMaster.ps1, the guide
+      - _artifacts/_memory/README.md         # 2 hits
+      - backend/requirements.txt             # :59
+      - scripts/git-hooks/INDEX.md           # :18
+      - _artifacts/quick_fixes/quick-fix-1.1-xdist-tail-hang/walkthrough.md   # :127, :164 (history - verify before touching)
+    note: >-
+      Several of these were ALREADY dead before this branch - they name
+      migrations/env-migration-guide.md, renamed away in August. So AVCH-53 is
+      repairing two generations of rot, not one.
+
+excluded:
+  - Projects/sudo-project-skeleton/docs/repo-map.md   # separate repo, own ticket
+  - docs/migrations/auth_keys/**                      # gitignored credentials, never committed

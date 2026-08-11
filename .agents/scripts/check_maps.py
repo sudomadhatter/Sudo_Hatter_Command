@@ -91,7 +91,19 @@ STATE_BASENAME = ".maps-state.json"   # sits in the docs folder beside the repo-
 
 # Append-only NARRATIVE ledgers: rows are immutable history (cross-repo + renamed/deleted paths by
 # design), so path-existence linting is a category error here — old rows SHOULD keep their old paths.
-NARRATIVE_LEDGERS = {"_artifacts/INDEX.md"}
+#
+# EVERY INDEX under `_artifacts/` qualifies, not just the top-level one (SCC-74, 2026-08-10). The
+# depth-3 bucket ledgers (`_artifacts/_main/INDEX.md`, `_artifacts/epic_8/INDEX.md`, ...) are where
+# the detailed narrative actually lives, and a row describing work that RETIRED a path must name
+# that path to be worth reading. Listing only `_artifacts/INDEX.md` left those permanently red on
+# `main` — for `.claude/commands` and `docs/file_structure_rules/README.md`, both correctly recorded
+# as removed — and a lint that is red for reasons nobody may fix trains people to skip its output.
+_NARRATIVE_LEDGER_ROOT = "_artifacts/"
+
+
+def is_narrative_ledger(rel: str) -> bool:
+    """True for append-only history ledgers, where old paths are the point."""
+    return rel.startswith(_NARRATIVE_LEDGER_ROOT) and rel.endswith("INDEX.md")
 
 # Session-folder name patterns (depth-3 INDEX rows reference these)
 SESSION_FOLDER_RE = re.compile(r"^(story-|\d{4}-|tea-|wave-|close-out-|epic-|autopilot-)")
@@ -445,9 +457,28 @@ def _check_depth3_tree(root, adir):
             problems.append(f"{rel_bucket}/INDEX.md: missing (has {len(sessions)} session folders (>=2) -- create it)")
             continue
 
-        # Parse INDEX for session folder names mentioned in table rows (backticked tokens)
+        # Parse INDEX table rows. TWO sets, deliberately, because the two checks want opposite
+        # things (SCC-96):
+        #
+        #   `mentioned` — any backticked token anywhere in the row. Permissive on purpose: it
+        #     only ever SUPPRESSES a "missing row" complaint, so being generous here cannot
+        #     invent a problem, only decline to raise one.
+        #
+        #   `declared` — the row's FIRST cell, written as a folder reference (trailing `/`).
+        #     Strict on purpose: it is the only thing allowed to raise "stale row". A row
+        #     declares its session folder in column one, with a slash — every INDEX in this
+        #     repo writes them that way — so anything else in the row is prose.
+        #
+        # The old code kept one permissive set and `rstrip("/")`-ed the trailing slash off,
+        # throwing away the very signal that separates the two. SESSION_FOLDER_RE then decided
+        # the question, and that regex classifies DIRECTORY NAMES, not arbitrary prose: any
+        # memory slug starting `story-`/`tea-`/`epic-`/`autopilot-`/`wave-`/`close-out-` read as
+        # a folder that had gone missing. Nine memories in the lobby store match. A ledger row
+        # exists to say WHY, and naming the memory a decision rests on is exactly that — so the
+        # gate was firing on the behaviour the convention asks for. See test_check_maps.py.
         text = idx.read_text(encoding="utf-8")
         mentioned = set()
+        declared = set()
         for line in text.splitlines():
             if "|" not in line:
                 continue
@@ -455,9 +486,14 @@ def _check_depth3_tree(root, adir):
                 tok = tok.strip().rstrip("/")
                 if tok and not SHAPE_NOISE.search(tok):
                     mentioned.add(tok)
+            first_cell = line.split("|")[1] if line.lstrip().startswith("|") else ""
+            for tok in re.findall(r"`([^`]+/)`", first_cell):
+                tok = tok.strip().rstrip("/")
+                if tok and not SHAPE_NOISE.search(tok):
+                    declared.add(tok)
 
         missing = [s for s in sessions if s not in mentioned]
-        stale = sorted(m for m in mentioned if m not in sessions and SESSION_FOLDER_RE.match(m))
+        stale = sorted(d for d in declared if d not in sessions and SESSION_FOLDER_RE.match(d))
 
         for s in missing:
             problems.append(f"{rel_bucket}/INDEX.md: missing row for `{s}/`")
@@ -637,7 +673,7 @@ def lint_one(root, ignore_override=None):
 
     index_problems = []
     for idx in find_indexes(root):
-        if idx.relative_to(root).as_posix() in NARRATIVE_LEDGERS:
+        if is_narrative_ledger(idx.relative_to(root).as_posix()):
             continue  # immutable narrative ledger — don't lint historical paths
         index_problems.extend(check_paths(root, idx, top_level))
     drift["INDEX.md paths"] = index_problems

@@ -27,8 +27,8 @@ the opencode/AG caches → re-run per machine):
 Frontmatter reach (`platforms:` in `.agents/commands/`): absent = all four. `+codex` only on the 3 skill-less
 sudo commands (quick-dev, bdd-tests, incident-response); the 7 with skill twins stay off (native discovery).
 The `_AP` autopilot trio is pinned `[claude, opencode]` (was keyless=universal → leaked into codex+AG menus).
-Full wiring: `docs/workspace-standard.md` "one master, four platforms"; setup guide at
-`_my_resources/open_tasks/2026-07-13_codex-setup-all-machines.md`. Note: this makes
+Full wiring: `docs/workspace-standard.md` "one master, four platforms" (the per-machine setup
+guide it used to cite is gone; the sync itself is the install). Note: this makes
 [[autopilot-has-three-drifting-engines]] a **four**-platform world for the sync surface (autopilot engines are
 still claude/opencode/mobile only).
 

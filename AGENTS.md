@@ -63,7 +63,7 @@ workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 > **A second on-demand rule is named HERE for the same reason — its trigger is invisible from inside the
 > edit: `sop-currency.md`.** Editing a `/` command, a rule, a safety-net script, a commit gate, or this
 > file **changes how the operator uses the system**, so
-> `_my_resources/_quick_reference/sudo_workflows_testing.md` — the operator's PRD, the one page that
+> `docs/_scc_sops_prds/workflows_testing_SOP.md` — the operator's PRD, the one page that
 > answers "what do I type" — must be updated **in the same commit**. An armed commit-msg gate rejects the
 > commit otherwise; `[sop-ok]` in the message is the logged opt-out for changes that genuinely alter no
 > usage. Load the rule before you touch any of those surfaces.
@@ -91,9 +91,10 @@ workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 | Navigation index | `docs/repo-map.md` | the lobby's repo-map (curated header + auto body); drift-checked at SessionStart |
 | Routing canary | `_routing-canary/` | model-agnostic proof the routing works (Claude/opencode/Antigravity) |
 | System builder | `docs/system-builder.md` | how to add/maintain workspaces (`/smh-new-project`, `/smh-sync-agents`) |
-| New-machine setup (disposable) | `_my_resources/migrations/` | secrets export/restore + rename-day tooling; start at its `INDEX.md`. Not day-to-day infra — deleted once a machine is set up |
+| New-machine setup | `docs/migrations/` | secrets export/restore + rename-day tooling; start at its `INDEX.md`. Not day-to-day infra, but standing reference — run when pointed at, never deleted (moved out of `_my_resources/` under SCC-89) |
 | Lobby tool dirs | `.claude/`, `.opencode/` | synced copies of the master. **One door per platform per command (SCC-66):** Claude + Codex enter through a **launcher skill** (generated per eligible command into `.agents/skills/`, tree-copied to `.claude/skills/`; hand-authored `SKILL.md` wins); opencode through `.opencode/commands/`; Antigravity through `.agents/workflows/`. `.claude/commands/` and `~/.codex/prompts` are **retired** doors; `platforms:` frontmatter limits a command's reach |
-| Personal area | `_my_resources/` | Daniel's notes (docs · transcripts · open_tasks) — protected, Tier-2 law; `open_tasks/` (read-only) & `_quick_reference/` (read/write) allow-list carve-outs |
+| SOPs & PRDs | `docs/_scc_sops_prds/` | **every procedural doc** — what the *operator* does and types, as opposed to `.agents/`, which describes the system to an *agent*. Start at its `INDEX.md`; `workflows_testing_SOP.md` is THE quick reference and is gated by `sop-currency.md`. Consolidated here by SCC-74 |
+| Thinking space | `_my_resources/` | Daniel's brainstorming + personal notes. **⛔ IGNORE unless he links a specific document** (ruling 2026-08-10). Not authoritative, deliberately un-scanned, staleness fine by design. Standing exception: `open_tasks/todo_list.md` (the `## Open Tasks` list only). The `migrations/` exception is **retired** — SCC-89 moved that kit to `docs/migrations/`, so it is now scanned documentation like everything else under `docs/`. Local law → `_my_resources/AGENTS.md` |
 | BMAD (lobby) | `_bmad/` · `_bmad-output/` | BMAD module (regenerated — never hand-edit) + its state/output |
 | Projects | `Projects/<name>/` | project-owned workspaces, each with its own repo and `_artifacts/`, except the explicit Sudo-managed exceptions in `router.md` |
 
@@ -173,6 +174,32 @@ files, per §3); full model →
   closed-but-instructive → compress to a one-line lesson. (Claude's `~/.claude/...` harness path is a
   per-machine symlink into this store — a convenience, never the mechanism; fresh machine →
   migrations kit §1 step 8.)
+  **That read-only rule governs memory CONTENT.** A **structural** change is a different act —
+  and "structural" means exactly three things, by enumeration, because an undefined word here is a
+  self-authorizing exemption to the one rule protecting memory: (1) the index's **section layout**,
+  (2) the **`## Project stores` pointers**, (3) **relocating** a memory file between tiers. Anything
+  touching what a memory *says* is content and stays read-only. ⛔ **All three still require the
+  operator's explicit approval** — the same per-item yes relocation already needs; a ticket whose
+  title you wrote is not authorization. Editing someone's memory in passing is what the rule
+  forbids; rebuilding the shelf, on a branch that says so and with a yes in hand, is not (SCC-73).
+- **The store is TWO-TIER — lobby = inbox + cross-project, project = settled project history (SCC-73).**
+  The lobby store `_artifacts/_memory/` is where **every** platform writes, always: Claude's harness
+  bakes an absolute per-workspace path into its own memory instruction, and no repo law can redirect
+  it — so a rule saying "write project facts over there" would be unenforceable for the writer that
+  produces most of them. **Do not change where you write.** What settles into project-only truth is
+  **relocated** to that project's own `Projects/<name>/_artifacts/_memory/` by `/smh-memory-audit`, per
+  item, on the operator's word — its fourth disposition beside retire / merge / compress, and its first
+  lever, since SCC-69 measured compaction spent (145 memories, 633 bytes freed). ⛔ **Never relocate a
+  memory on your own judgment, and never outside that command.** Two obligations follow, and
+  `test_memory_store.py` treats them **differently on purpose — one blocks, one only reports**: the
+  lobby index must carry a **`## Project stores`** section signposting every maintained project (a
+  memory moved out with no pointer left behind is indistinguishable from a deletion) — that is a
+  **hard failure**, because this repo owns it. Each project index must carry the **mirror line back**
+  to the lobby (a lane launched inside a project reads only that repo's store, so workflow law and
+  cross-cutting hazards would otherwise be invisible to it) — that is a **`[SIGNAL]`, never a
+  failure**, because it lives in a repo whose armed hook rejects this repo's ticket keys, and a gate
+  that reds for a defect nobody standing here may fix blocks every unrelated lane instead. Cross-project law, operator rulings and the ⛔ hazards **stay in the
+  lobby** — they are not any one project's.
 - **⚠ The memory-audit trigger — a standing obligation for every platform (SCC-68).** Upkeep is gated:
   `tests/test_memory_store.py` (in `run_all`) enforces the 25 KB index cap + link↔file integrity, and at
   **90 % of the cap** it prints a `MEMORY AUDIT DUE` block — below the cap, while the run still passes,

@@ -11,6 +11,12 @@
 # Never hand-loop over Projects/* — that touches repos we deliberately do not keep current.
 #
 # To add a new project to upkeep: add its folder name below.
+# ⛔ TWO-FILE EDIT since SCC-73. Adding a name here without also adding its row to the
+#    `## Project stores` section of `_artifacts/_memory/MEMORY.md` turns `run_all` RED
+#    immediately, in every checkout — `test_memory_store.py` asserts that every name on this
+#    list is signposted in the index. That is deliberate (a project store nothing points at is
+#    unreachable from the one index every platform loads), but it is not guessable, so it is
+#    written here where you are standing when you add the name.
 # De-listed 2026-08-07: Fresh_Workspace_BMAD — frozen template (deliberate legacy vendor must not red
 # the lint; new projects clone the sudo-project-skeleton repo instead).
 

@@ -1,6 +1,12 @@
 ---
 description: Autopilot (headless) Review+Fix+Gate command — review the implementation in the shared autopilot run folder, apply fixes, run the TEA test gate, and hand to Daniel. Modeled off /cicd-code-review but tuned for agent-to-agent handoff. NOT for interactive use; the autopilot orchestrator invokes it.
 platforms: [claude, opencode]
+# Diffed against /cicd-code-review at this sha; nothing to port (SCC-82, 2026-08-11).
+# That commit restored the historic artifact name `sudo-code-review-<story>.md`, which
+# this twin does not contain and does not need: it writes its verdict into walkthrough.md
+# and forbids a standalone file outright, and it never globs for a pre-2026-08-02 verdict.
+# Re-diff and restamp when the linter says this sha is stale — do NOT just bump it.
+ap_reconciled: 3eea4d06d7d7d26c3158c0de0063764950f0ba87
 ---
 
 # /cicd-code-review-AP — Autopilot Review + Fix + Test Gate (Murat)
