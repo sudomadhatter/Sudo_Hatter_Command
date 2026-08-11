@@ -431,3 +431,109 @@ the intentional coverage note, no bare `python`, no commented-out code, no unown
   (exit 1, correct `Sudo_Hatter_Command` label — so *not* the worktree false positive in
   `check-maps-stale-is-false-in-worktrees`). It arrived with SCC-73 at `50e357b`. Left for close-out,
   run from `main`, where regenerating cannot ship a lane name into the map.
+
+## Code Review (2026-08-11) — round 3
+
+Verdict: PASS @ 00c4dc609217c77c6dd91f5bb208d2c6bf8baccd
+Suite evidence measured at that same sha, all gates run bare and unpiped.
+
+**Why a third round:** a merge team lands this next, so this was the last gate before it ships.
+**Method:** `/smh-code-review` end to end, with a fresh clean-room adversarial pass (no conversation
+context, same model capability). It ran 43+ mutations against the suite's own set.
+
+### ⛔ Two HIGHs, and both were about the edges I had stopped checking
+
+Rounds 1 and 2 were about the *logic*. Round 3 found the **environment** the check runs in and the
+**channel** it prints on — neither of which any previous round had touched.
+
+**H2 — the file dies on a Windows console.** The module docstring has promised *"plain ASCII output —
+Windows consoles are cp1252"* since SCC-74, and this ticket then put **U+2B50 in a check name** and
+**U+26A0 in a finding detail**. `run_all` captures each child through a **pipe**, so Python encodes
+with the locale's preferred encoding — cp1252 on a stock Windows box — and the file dies with
+`UnicodeEncodeError` before reporting anything. Reproduced on the Mac with `PYTHONIOENCODING=cp1252`.
+It was the only file in the suite carrying such a character, and this diff introduced both.
+**This repo is read on two machines and I could not test on the PC** — which is exactly when a
+machine check beats a promise in a docstring. Now ASCII, and **T10** enforces it against what the run
+actually *prints*, so a decorative character in a comment stays free.
+
+**H1 — a fresh clone reds the gate.** Clone without `--recurse-submodules` and the docs'
+project-relative paths — which SCC-85 ruled are written that way **deliberately** — have nothing to
+resolve against: **13 findings, exit 1, on a correct machine.** SCC-87's AC3 forbids that in those
+words, and round 2 marked it satisfied on two controls that never ran the scan with nothing cloned.
+
+**I could not fix it by classifying tokens, and did not ship a classifier I could not justify.**
+Three discriminators were tried and **measured**, all three failing:
+
+| Discriminator | Why it fails |
+|---|---|
+| "not lobby-owned" | also suppresses `docs/gone.md` — a real defect |
+| "head not tracked in git" | `_bmad-output` and `docs` are **both** tracked |
+| "lobby lacks the parent" | `_bmad-output/sudo-tests.yaml` **has** its parent |
+
+`_bmad-output/sudo-tests.yaml` is structurally identical to `docs/gone.md`; only *intent* separates
+them, and no rule reads intent. Guessing trades a false RED for a **silent miss**, and this file
+exists because the miss is worse. So the check stays **strict**, and the failure now carries its own
+remedy — it names the uncloned projects and the one command that fixes them.
+
+⭐ **My first attempt did ship the classifier.** The fixture I wrote for it went red because it also
+suppressed `docs/gone.md` — the fixture doing its job *to* me rather than *for* me, which is the
+first time this ticket's controls caught me before a reviewer did.
+
+### Findings
+
+| # | file:line | Sev | Failure scenario | Disposition |
+|---|---|---|---|---|
+| H2 | `:829`, `:499` | **HIGH** | `⭐` in a check name and `⚠` in a detail → `UnicodeEncodeError` under cp1252, killing the file before it reports. Violates the module's own stated contract. Would hit the PC every run. | **applied** — ASCII, plus T10 + a fixtured detector |
+| H1 | `:1043` | **HIGH** | Fresh clone without submodules → 13 unfixable findings, exit 1. The false worklist AC3 forbids. | **applied** — strict retained (no honest classifier exists, 3 measured), failure now carries `git submodule update --init` |
+| M1 | `:318` | MED | `self.unreadable` written, read by nothing — a fix that existed only as a comment. | **applied at `aed8228`**, found independently before the review reported |
+| M3 | `_artifacts/_main/INDEX.md` | MED | Ledger row shipped `15/15 mutations, 45/45 controls` — already wrong. **Third rotting number this ticket shipped.** | **applied** — replaced with the property; counts live in the walkthrough |
+| M4 | `docs/_scc_sops_prds/INDEX.md:43` | MED | Operator-facing doc still shipped **242**, the number the `.py` comment calls a false claim *in the same diff*. | **applied** — count removed, magnitude + reason kept |
+| M2 | `:465` | MED | `_lobby_owned` disarms if `_my_resources/` is ever removed; no control covers that arm. | **deferred** — live state is safe (`_my_resources/` exists); named, not silently kept |
+| M5 | round-2 Step 0.7 | MED | Landing order named 1 of 3 conflicting lanes. | **applied** — re-derived below against all six live lanes |
+| L1 | `:342` | LOW | `iterdir()` on a `Projects` that is a file / broken symlink / unreadable → traceback, not a red check. | **deferred** — exotic; named |
+| L2 | various | LOW | Three mechanisms with no control (`if "." in leaf`, `setdefault` first-wins, the backtick in `blocked`). | **deferred** — named |
+
+### Gates — actual output, all run bare
+
+| Gate | Result |
+|---|---|
+| Enforcement suite | `12/12 files passed`, **exit 0** |
+| Toolkit lint | `0 error(s), 0 warning(s), 8 info`, **exit 0** |
+| Assertion evidence | T9 `-- 57/57 passed --`, exit 0 |
+| **Mutation** | **27/27 caught** (baseline 57/57) |
+| **cp1252 console** | `PYTHONIOENCODING=cp1252` → `57/57`, **exit 0** (was `UnicodeEncodeError`) |
+| SOP currency | **exit 0** |
+| Link + anchor | **14 links, 0 dead** |
+| `py_compile` | exit 0 |
+| Door parity | n/a — no command added, renamed or deleted |
+
+### Acceptance — one status corrected
+
+Round 2's table stands **except** for one row, which round 3 proved was wrong to mark satisfied:
+
+| Item | Round 2 | Round 3 |
+|---|---|---|
+| **SCC-87.3** *"degrades to silence, not noise, when `Projects/` is unpopulated — asserted, not assumed"* | ✅ | ⚠ **PARTIAL, and now genuinely asserted.** It does **not** degrade to silence on a fresh clone — measured, 13 findings — and no honest per-token rule exists to make it (3 measured). What *is* delivered: the failure is no longer unfixable noise (it names the cause and the one-command fix), the case is now covered by a real fixture instead of two that never ran it, and the deviation is stated rather than marked green. **The AC as written is not fully met; recording that is the fix.** |
+
+Every other item is unchanged and evidenced in the round-2 table.
+
+### Step 0.7 — re-derivation (six live lanes now, three of them new)
+
+1. **Nothing moved under this diff.** `main` fully absorbed; `diff BASE..main` empty; local `main` ==
+   `origin/main` == `50e357b`; `merge-tree` against `main` clean.
+2. **True overlap with `main`: none.**
+3. **Three lanes conflict on `_artifacts/_main/INDEX.md`** — all confirmed by `merge-tree`, all the
+   same trivial "both added a row at the table head" shape:
+   `SCC-88-memory-relocation-sweep` (39 files) · `SCC-90-sop-teaching-restructure` (4) ·
+   `SCC-94-secondary-repos-enforcement` (10). No overlap: `SCC-77-main-write-gate` (20),
+   `SCC-89-migrations-to-docs` (0), `SCC-95-smh-merge-multi-lanes` (0).
+   **Checked specifically, because SCC-90 edits a file inside the folder this lane gates:** built the
+   true post-merge state (this lane's doc fixes + SCC-90's `workflows_testing_SOP.md`) and ran T9
+   against it — **0 findings.** The gate stays green whichever order those two land in.
+
+### Process note
+
+The tree moved under the adversarial pass again (`3f4553c` → `aed8228` mid-review). The subagent
+detected it, re-verified every finding at the new sha, and reported the shift — and one of its
+findings was already fixed by that commit. **Every finding above was reproduced here before being
+accepted**; the subagent's report is evidence, not a verdict.
