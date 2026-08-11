@@ -1,6 +1,6 @@
 ---
 name: git-branch-model-standard
-description: "The dev branch standard across all repos — main is the ONLY long-lived branch; epics integrate on short-lived epic/* branches merged to main via /sudo-push-e2e. main_debug was retired 2026-08-07."
+description: "The dev branch standard — main is the ONLY long-lived branch and the only destination; the prefix names the work (claude/ story, chore/ task, epic/ integration). TWO commands reach main (/cicd-push-e2e, /smh-close-task-merge-tree) and since SCC-77 a pre-push hook enforces it. The epic branch is optional scaffolding, NOT a universal step."
 metadata:
   node_type: memory
   type: feedback
@@ -13,17 +13,36 @@ Daniel declared (2026-08-07): **epic branches → `main` is THE dev standard for
 
 - **`main` is LIVE PRODUCTION and the only long-lived branch.** On AGY a push to `main` fires three
   deploy workflows (Cloud Run backend, frontend, Firestore rules). Never work on it directly.
-- **Each epic gets a short-lived `epic/<epic-key>-<slug>` branch off `main`**, cut at epic kickoff
-  (`/sudo-create-epic-sprint`). Story worktrees (`claude/<story-slug>`) branch FROM the epic branch
-  and land back ON it (close-out sign-off unchanged: invoking `/sudo-update-sprint-memory` IS it).
-- **The epic reaches `main` exactly one way: `/sudo-push-e2e`** — Daniel's own words: "it will now be
-  run to merge in the epics to main." Full gate first (backend suite + frontend build + `/sudo-e2e`
-  GREEN), then his per-merge sign-off, `--no-ff` merge, deploy watch, live verify, and the epic
-  branch is DELETED. `/merge_main_debug` is deleted outright — do not resurrect it.
-- **Ad-hoc work** takes a `chore/<slug>` branch off `main`, merged back same-session with sign-off —
-  it no longer commits to a standing integration branch.
-- The push-approval hook now gates **`main` only**; `epic/*`, `chore/*`, and `claude/*` pushes run
-  free (the landing/merge approvals are procedural, not hook-enforced).
+⛔ **Amended 2026-08-10 (SCC-77) — the prefix names the WORK; `main` is the only destination.** The
+line below used to read as though every repo ran epic-branch-first. It does not, and reading it that
+way sent a lane building a gate around branches nobody pushes. The epic branch is **optional
+scaffolding** for parallel story lanes, not a universal step — and the lobby has no stories at all
+(`jira.md` §work-item types: every SCC ticket is a `Task`).
+
+| Prefix | Cut from | Reaches `main` via |
+|---|---|---|
+| `claude/<KEY>-<slug>` story | the epic branch if the epic has one, else `main` | its epic branch, then `/cicd-push-e2e` |
+| `chore/<KEY>-<slug>` task | `main` | **`/smh-close-task-merge-tree`** |
+| `epic/<KEY>-<slug>` integration | `main` | **`/cicd-push-e2e`** |
+
+- **Exactly TWO commands reach `main`**, plus the operator's direct in-the-moment "approved".
+  `/cicd-update-sprint-memory` is **NOT** one of them — it lands a story on its **epic branch** and
+  its own body says "main is untouched". The SOP's SCC-71 block read as if it were a third door;
+  corrected 2026-08-10.
+- **Each epic that needs one gets a short-lived `epic/<epic-key>-<slug>` branch off `main`**, cut at
+  kickoff (`/cicd-create-epic-sprint`), and DELETED after it merges. `/merge_main_debug` is deleted
+  outright — do not resurrect it.
+- ⭐ **`main` is now gated MECHANICALLY (SCC-77).** `.githooks/pre-push` refuses any push landing on
+  `main` without a single-use token that only the two door commands mint, and spends it on the way
+  through. It records the sha it was minted for, so anything committed after the sign-off is refused
+  — **and it requires the push to advance `main` by exactly ONE merge on the remote's current tip,
+  of the branch the token names.** That second half is what actually implements one-sign-off-one-
+  merge: a token authorises a *push*, and batching six merges into one push defeats a sha check
+  completely (reproduced in SCC-77's review before the fix). It also refuses a force-push rewind.
+  Before this, the *only* claimed enforcement was `require-push-approval.py`, wired as
+  `powershell -Command "python …"` — neither binary exists on the Mac, so it exited **127 in silence**
+  on every push for weeks, and six merges rode one sign-off. The gate is pure `sh` for that reason.
+  `epic/*`, `chore/*`, and `claude/*` pushes still run free.
 
 **The migration itself (2026-08-07, all gates green):** every repo was a clean fast-forward, `main`
 0 ahead everywhere — lobby 245, AGY 270 (+lockfile fix `0dbe694b`), Fresh 31, NEXgen 34; OpenChat's
@@ -49,9 +68,10 @@ main_debug failure modes: the shared-checkout reconcile debt, the "main drifted 
 `main_debug` now resolve their base dynamically (the live `epic/*` branch, else `main`) — that's how
 `closeout_preflight.py`, `clean-code-audit`, `sudo-update-scrum-board`, and AGY's TIA gate
 (`--base main` default) were rewired. The canonical source of truth remains
-`.agents/rules/git-policy.md` § "Branch model — epic branches → main", enforced by
-`.agents/hooks/require-push-approval.py` (`PROTECTED = ("main",)`). See also
-`.agents/rules/git-policy.md` (no self-commit).
+`.agents/rules/git-policy.md` § "The write gate", enforced by `.githooks/pre-push` +
+`.agents/scripts/git-hooks/pre-push-main-approval.sh`. `.agents/hooks/require-push-approval.py` is
+the Claude-only second layer and **nothing depends on it** — that is the lesson of SCC-77, not a
+detail.
 
 **A checkout should normally read `main`** (`git rev-parse --abbrev-ref HEAD`) — the shared checkout
 lives on production and only moves when an epic merges; anything else standing there is a branch
@@ -63,6 +83,14 @@ someone forgot to clean up or in-flight work. Submodule gitlink hygiene is uncha
 immediately after the prefix (Atlassian joins on the literal string and reads branch names too). The
 key must match the repo's `.agents/jira.conf` — `SCC` in the lobby, `AVCH` in AviationChat — and the
 `commit-msg` hook is ARMED, so a keyless or wrong-project commit is **rejected**. `.agents/rules/git-policy.md`
-carries this in the branch-model section and in "the write gate"; the lobby and AGY copies were updated
-together (AGY keeps its own identical copy — rules are read in place, never synced). Details:
-[[jira-integration-live]].
+carries this in the branch-model section and in "the write gate". Details: [[jira-integration-live]].
+
+⛔ **Corrected 2026-08-10: AGY does NOT keep its own copy of the rules.** This memory used to say
+"AGY keeps its own identical copy — rules are read in place, never synced", and that is false and was
+actively misleading. The command centre owns **all** rules, commands and workflows; projects are thin
+by design and hold only what BMAD needs, so the Dev Record stays with the project. Binding a project
+MEANS reading the centre's `.agents/`. What *is* repo-local is **enforcement** — git hooks,
+`jira.conf`, BMAD tomls — which never centralises because it has to live in the repo it gates. So the
+`main` gate built in SCC-77 does **not** propagate to AGY by itself: AGY needs the same two files and
+its own `core.hooksPath`, under its own AVCH ticket. See [[thin-projects-center-owns-workflow-law]]
+and [[repo-local-enforcement-never-centralizes]].

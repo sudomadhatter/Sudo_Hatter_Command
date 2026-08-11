@@ -722,11 +722,11 @@ flowchart TD
     S6 --> S65["Step 6.5 — comment the evidence\nepic ticket → Done"]
 ```
 
-**Invoking it IS your per-merge sign-off for the one epic it ships.** The command doc expects a
-push-approval prompt on the final push — but today no pre-push hook is armed on this machine (see
-the ⓘ aside on the one-invocation rule later in this section), so no prompt fires until SCC-77
-lands one. When a prompt or token gate *does* appear there, it is expected, not an error — satisfy
-it, never bypass it.
+**Invoking it IS your per-merge sign-off for the one epic it ships.** Since SCC-77 that sign-off is
+also mechanical: the command mints a **single-use approval token** immediately before the final
+push, and `.githooks/pre-push` refuses any push landing on `main` without one. The token is spent on
+the way through, so one invocation ships exactly one epic. See the ⛔ block on the one-invocation
+rule later in this section for what the gate checks and how to get past it when you need to.
 
 `/cicd-e2e` also runs solo any time you want end-to-end confidence without shipping.
 
@@ -840,11 +840,68 @@ test "$(git -C "$REPO" rev-parse --abbrev-ref HEAD)" = "main" || { echo "NOT ON 
 > did not authorise for *that* task, that is the bug, and the merge SHA's timestamp against your
 > message is how you prove it.
 >
-> **Not yet fixed mechanically.** This machine has **no pre-push hook** (`.githooks/` holds
-> `commit-msg`, `post-commit`, `pre-commit` only) even though the command doc claims a push-approval
-> hook prompts. The proposed fix — a single-use token written when you invoke the command and consumed
-> by the merge, plus a pre-push hook that refuses `main` without one — is **not built**. Until it is,
-> this rule is enforced by reading, which is exactly the weakness it describes.
+> ⭐ **Now fixed mechanically (2026-08-10, SCC-77).** `.githooks/pre-push` refuses any push landing
+> on `main` without a **single-use approval token**, and spends it on the way through. The two door
+> commands — `/cicd-push-e2e` and `/smh-close-task-merge-tree` — mint it at their sign-off step,
+> immediately before the push. One invocation, one merge, enforced by the machine rather than by
+> reading.
+>
+> **What it checks**, in order — every refusal names its own reason:
+>
+> | Check | Refused when |
+> |---|---|
+> | armed | `MAIN-PUSH-ENFORCE` deleted or `DISABLE` present → passes through, deliberately |
+> | destination | only `refs/heads/main`, whole-ref — so `epic/main-fix` never trips it |
+> | exists | no token at all |
+> | fresh | minted more than **30 minutes** ago |
+> | same commit | the token names one sha and the push carries another |
+> | **⭐ one merge** | **the push does not advance `main` by exactly one merge sitting on the remote tip** |
+> | **⭐ named branch** | **the merge's second parent is not the branch the token authorised** |
+> | delete / rewind | anything that would delete `main`, or force-push it backwards |
+>
+> ⭐ **The "one merge" check is the one that catches the six merges above — and the first cut of
+> this gate did not have it.** Worth knowing, because the reasoning error is easy to repeat: a token
+> authorises a **push**, and what needs authorising is a **merge**. Merge six branches into `main`
+> locally, mint once, push once — the sha matches the whole way, and six merges land on one
+> approval. That was reproduced during SCC-77's own review, against a real remote: one token, six
+> merges, and the approval line cheerfully naming one of them.
+>
+> What actually holds the line is the shape of the history: `main` must advance by **exactly one
+> merge commit sitting directly on top of what the remote already has**. Batching breaks it — the
+> previous merge sits in between. Force-pushing a rewind breaks it too, which is why that is now
+> refused rather than merely deleting being refused.
+>
+> Every refusal also **discards** the token, so a failed sign-off is spent rather than left lying
+> around for a later push to match by accident.
+>
+> **Why it is a git hook and not a Claude hook.** The gate this replaced never ran once.
+> `require-push-approval.py` was wired in `.claude/settings.json` as
+> `powershell -Command "python …"`, and the Mac has **neither** binary — only `pwsh` and `python3`.
+> It exited **127, silently**, on every push for weeks, along with all four SessionStart hooks. That
+> silence is why six merges met no resistance. A git hook is the only layer both machines, all four
+> agent platforms, and your own terminal share, so the replacement is **pure POSIX `sh`** with no
+> interpreter anywhere in its path. The Claude-side hook is repaired too, but nothing depends on it.
+>
+> **What it does not do — worth knowing before you trust it.** An agent can write files, so an agent
+> can write a token. This is not a security boundary against a determined agent and is not sold as
+> one. It converts a *silent* violation into a *deliberate, traceable* one, and it closes the drift
+> failure described above. Merges through the GitHub web UI or `gh pr merge` never reach a local hook
+> at all; that gap is tracked separately under SCC-75.
+>
+> **If you are legitimately stuck:** `git push --no-verify` once, or delete
+> `.agents/scripts/git-hooks/MAIN-PUSH-ENFORCE` to disarm it entirely. Both are loud and neither is
+> hidden — going around the gate should be a decision, not an accident.
+>
+> ⛔ **On a NEW machine or a fresh clone, this gate is OFF until you arm it** — and so are the Jira,
+> SOP and encoding gates. `core.hooksPath` is per-machine config; git never carries it, so a new
+> checkout does not consult `.githooks/` at all. First command after cloning:
+>
+> ```bash
+> git config core.hooksPath .githooks   # relative — an absolute path won't survive the next clone
+> ```
+>
+> You will not have to remember: `run_all.py` asserts it is set and relative, so the enforcement
+> suite is RED until you do. Off, but never quietly.
 
 ### The branch model underneath all of it
 

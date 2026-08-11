@@ -22,7 +22,7 @@ This hook only ever sees the AGENT's Bash tool — Daniel's own terminal is neve
 
 Canonical source: `.agents/hooks/`. Deployed to each workspace's `.claude/hooks/` — never hand-edit
 the `.claude/hooks/` copy; edit here and re-deploy."""
-import json, re, shlex, subprocess, sys
+import json, re, shlex, subprocess, sys, time
 
 PROTECTED = ("main",)  # whole-token match below, so epic/main-fix or claude/maintenance never trip it
 
@@ -93,13 +93,52 @@ def head_branch(at):
     return name or None
 
 
+def fresh_token_present(at):
+    """True when a valid, unexpired approval token already covers this push.
+
+    SCC-77: `.githooks/pre-push` is now the authoritative gate, and it checks far more than this
+    hook can (one-merge-only, the named branch, the exact sha). Asking again on top of it is not a
+    second opinion — it is a second *prompt*, and `permissionDecision: "ask"` becomes an auto-DENY
+    in auto mode. That combination strands a headless close-out with `main` merged locally, the
+    push denied, and the token going stale in 30 minutes: a full re-gate to recover.
+
+    So when the operator has already signed off (a token exists, names HEAD, and is inside its TTL)
+    this layer stands down and lets the git hook do the deciding. Fails toward ASKING: any doubt,
+    any error, and the prompt still fires.
+    """
+    try:
+        common = subprocess.run(["git", "-C", at, "rev-parse", "--git-common-dir"],
+                                capture_output=True, text=True, timeout=5)
+        head = subprocess.run(["git", "-C", at, "rev-parse", "HEAD"],
+                              capture_output=True, text=True, timeout=5)
+        if common.returncode != 0 or head.returncode != 0:
+            return False
+        base = common.stdout.strip()
+        if not base.startswith("/"):
+            top = subprocess.run(["git", "-C", at, "rev-parse", "--show-toplevel"],
+                                 capture_output=True, text=True, timeout=5)
+            if top.returncode != 0:
+                return False
+            base = f"{top.stdout.strip()}/{base}"
+        with open(f"{base}/main-push-approval", encoding="utf-8") as fh:
+            fields = dict(
+                line.rstrip("\n").split("=", 1) for line in fh if "=" in line)
+        if fields.get("tip") != head.stdout.strip():
+            return False
+        return (time.time() - int(fields["minted"])) <= 1800
+    except Exception:
+        return False
+
+
 # 1 — pushes aimed at an owner branch (catches `git push` AND `git -C <path> push` etc.)
 if re.search(GIT_CALL + r"push\b", command):
     hit = targeted_protected_branch(command)
-    if hit:
+    if hit and not fresh_token_present(effective_git_cwd(command)):
         ask(f"This git push targets `{hit}` — live production — and needs your per-push approval. "
             "Pushes to the agent's own claude/*, epic/*, or chore/* branch run free; only main is "
-            "gated. Catches `git push` however it's wrapped, including `git -C <path> push`.")
+            "gated. Catches `git push` however it's wrapped, including `git -C <path> push`. "
+            "No approval token is present: if you meant to ship, the door command "
+            "(/cicd-push-e2e or /smh-close-task-merge-tree) mints one at its sign-off step.")
 
 # 2 — commits attempted outside a worktree, on an owner branch (HEAD read at the -C target, not cwd)
 if re.search(GIT_CALL + r"commit\b", command):

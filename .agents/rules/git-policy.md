@@ -72,11 +72,57 @@ description: "Git policy: main is the ONLY long-lived branch. Each epic gets a s
 Approval for an epic-branch landing or a `main` merge is **per-action and never carries forward**.
 One "approved" lands one story; the next needs its own.
 
-**Enforcement:** the `require-push-approval.py` PreToolUse hook (canonical source `.agents/hooks/`,
-deployed to every `.claude/hooks/`) forces the approval prompt on any `git push` targeting `main`
-however it's wrapped, and on any `git commit` attempted while HEAD is `main` (work always happens
-on a branch). `merge_pull_request` (+ GitHub write tools) is gated in `.claude/settings.json`. The
-hook only ever sees the **agent's** Bash tool — Daniel's own terminal is never affected by it.
+**Enforcement — two layers, and only the first one counts.**
+
+1. ⭐ **`.githooks/pre-push` (SCC-77) — this is the gate.** It refuses any push landing on `main`
+   without a single-use approval token, and spends the token on the way through. The two `main`
+   doors mint it at their sign-off step (`.agents/scripts/git-hooks/mint-push-token.sh`), after the
+   merge commit exists and immediately before the push. The token lives in the **common** git dir,
+   so every worktree on the machine shares exactly one; it records the sha it was minted for, so
+   anything committed after the sign-off is refused.
+
+   ⭐ **And it enforces ONE MERGE, which is the part that actually implements SCC-71.** A token
+   authorises a *push*; what needs authorising is a *merge*. So `main` must advance by **exactly one
+   merge commit sitting directly on the remote's current tip**, and that merge's second parent must
+   be the branch the token names. Without this, merging six branches locally and then minting once
+   lands all six on one approval — reproduced during SCC-77's own review. The same invariant refuses
+   a force-push rewind, which is the destructive twin of the delete that was already refused.
+   The minter refuses a stacked batch too, so it fails where the message can still name the fix.
+
+   Armed by the tracked
+   `.agents/scripts/git-hooks/MAIN-PUSH-ENFORCE`; bypass once with `git push --no-verify`.
+   Pure POSIX `sh` **on purpose** — see below.
+
+   ⛔ **A fresh clone ships this gate OFF**, and so does every other hook here — `core.hooksPath` is
+   per-machine config that git never carries, so on a new checkout `.githooks/` is simply not
+   consulted. **First command on any new clone:**
+
+   ```bash
+   git config core.hooksPath .githooks    # relative — an absolute path cannot survive the next clone
+   ```
+
+   It is **loudly** off rather than silently off: `run_all.py` asserts `core.hooksPath` is set *and*
+   relative, so the enforcement suite stays RED until you arm it.
+
+2. `require-push-approval.py` **PreToolUse hook** (canonical source `.agents/hooks/`, deployed to
+   every `.claude/hooks/`) — prompts earlier and reads better, but it is Claude-only and nothing
+   depends on it. `merge_pull_request` (+ GitHub write tools) is gated in `.claude/settings.json`.
+   It only ever sees the **agent's** Bash tool; the operator's own terminal is never affected.
+
+⛔ **Why layer 1 refuses to depend on an interpreter.** Layer 2 was, for weeks, the *entire* claimed
+enforcement — and it had never executed once. `.claude/settings.json` invoked it as
+`powershell -NoProfile -Command "python ..."` and the Mac has **neither** binary (only `pwsh` and
+`python3`), so it exited 127 in silence on every push, as did all four SessionStart hooks. Six
+merges reached `main` on one sign-off (SCC-64 → SCC-69, 2026-08-09) with nothing in the way. A git
+hook is the only layer both machines, all four agent platforms, and the operator's own terminal
+share — so the gate is `sh`, with no interpreter probe and no Python anywhere in its path.
+
+**What this buys, and what it does not.** An agent can write files, so an agent can write a token.
+This is not a security boundary against a determined agent and must not be described as one. It
+converts a silent violation into a deliberate, traceable one, and it closes the drift failure this
+rule keeps losing to — a close-out command whose body stays in context and still reads exactly as
+valid on task six as on task one. Merges via `gh pr merge` or the GitHub web UI never reach a local
+hook at all; that gap is tracked under SCC-75.
 
 ## A commit is not done until it is pushed
 
@@ -173,6 +219,13 @@ message (`-> main`, because that is what was typed) were all indistinguishable f
   ```bash
   test "$(git -C "$REPO" rev-parse --abbrev-ref HEAD)" = "main" || { echo "NOT ON main — STOP"; exit 1; }
   ```
+
+- **On the two `main` lanes this assertion is already mechanical (SCC-77).**
+  `mint-push-token.sh` **refuses to mint unless `HEAD` is `main`**, and it is called between the
+  merge and the push — so a token cannot be minted from a sibling lane, and a merge that landed on
+  the wrong branch cannot produce one. That covers `/cicd-push-e2e` and
+  `/smh-close-task-merge-tree`. It does **not** cover a bare `git merge` typed by hand, which is why
+  the assertion above stays the rule rather than the fallback.
 
 - **Recovery, if it happens anyway — do not reset and do not force.** The merge commit is usually
   correct in every way except which pointer moved. Verify its tree carries nothing from the wrong

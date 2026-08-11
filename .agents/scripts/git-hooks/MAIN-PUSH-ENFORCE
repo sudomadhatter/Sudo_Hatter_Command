@@ -1,0 +1,16 @@
+# Presence of this file arms pre-push-main-approval.sh: a push landing on `main` without a
+# single-use approval token is REJECTED. The hook tests existence only — nothing reads these lines.
+#
+# Armed 2026-08-10 (SCC-77), after the gate was found to have never run at all. `git-policy.md`
+# documented a write gate enforced by the require-push-approval.py PreToolUse hook; that hook was
+# wired in .claude/settings.json as `powershell -NoProfile -Command "python ..."` and this Mac has
+# NEITHER binary — only pwsh and python3. It exited 127, silently, on every push. There was also no
+# pre-push hook in either repo. Six merges reached main on one sign-off (SCC-64 -> SCC-69,
+# 2026-08-09) with nothing in the way.
+#
+# This file is TRACKED on purpose. Untracked, the gate would be armed on one machine and silent on
+# every other clone — failing exactly when you switch machines, which is the failure mode this
+# whole system keeps hitting.
+#
+# To disarm for one push:  git push --no-verify
+# To disarm entirely:      delete this file (or .agents/scripts/git-hooks/DISABLE)
