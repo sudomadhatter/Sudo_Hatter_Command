@@ -82,6 +82,18 @@ One "approved" lands one story; the next needs its own.
    anything committed after the sign-off is refused. Armed by the tracked
    `.agents/scripts/git-hooks/MAIN-PUSH-ENFORCE`; bypass once with `git push --no-verify`.
    Pure POSIX `sh` **on purpose** — see below.
+
+   ⛔ **A fresh clone ships this gate OFF**, and so does every other hook here — `core.hooksPath` is
+   per-machine config that git never carries, so on a new checkout `.githooks/` is simply not
+   consulted. **First command on any new clone:**
+
+   ```bash
+   git config core.hooksPath .githooks    # relative — an absolute path cannot survive the next clone
+   ```
+
+   It is **loudly** off rather than silently off: `run_all.py` asserts `core.hooksPath` is set *and*
+   relative, so the enforcement suite stays RED until you arm it.
+
 2. `require-push-approval.py` **PreToolUse hook** (canonical source `.agents/hooks/`, deployed to
    every `.claude/hooks/`) — prompts earlier and reads better, but it is Claude-only and nothing
    depends on it. `merge_pull_request` (+ GitHub write tools) is gated in `.claude/settings.json`.

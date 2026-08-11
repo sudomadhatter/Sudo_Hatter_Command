@@ -146,6 +146,34 @@ def main() -> int:
         rc, out = gate(d, sha)
         c.check("malformed token is refused", rc != 0 and "malformed" in out)
 
+        # The gate does arithmetic on `minted`, which is read from a FILE. A non-numeric or
+        # future-dated value must fail CLOSED, not error out or silently pass. `$(( ))` treats an
+        # unset name as 0, so garbage reads as epoch 0 — ancient, hence stale. Asserted rather than
+        # assumed, because "it happens to fail safe" and "it is guaranteed to" are different claims.
+        token_path(d).write_text(
+            f"branch=b\ntip={sha}\ncommand=/x\nkey=K\nminted=NOTANUMBER\n")
+        rc, out = gate(d, sha)
+        c.check("non-numeric timestamp fails CLOSED", rc != 0 and "REFUSED" in out,
+                "arithmetic on untrusted file content must never fall through to allow")
+
+        write_token(d, sha, minted=int(time.time()) + 99999)
+        rc, out = gate(d, sha)
+        c.check("future-dated token is refused (clock skew)", rc != 0 and "REFUSED" in out,
+                "a negative age must not read as 'fresh'")
+
+        # pre-push receives ONE LINE PER REF. A push carrying several refs must still be gated on
+        # main wherever main appears in that list — not only when it is the first line.
+        write_token(d, sha)
+        r = subprocess.run(
+            ["sh", str(d / ".agents/scripts/git-hooks/pre-push-main-approval.sh"), "origin", "url"],
+            cwd=str(d), text=True, capture_output=True,
+            input=f"refs/heads/a {sha} refs/heads/a {ZERO}\n"
+                  f"refs/heads/main {sha} refs/heads/main {ZERO}\n"
+                  f"refs/heads/z {sha} refs/heads/z {ZERO}\n")
+        c.check("multi-ref push is gated on main wherever it appears",
+                "approved" in (r.stdout + r.stderr) and not token_path(d).exists(),
+                "a `git push --all` must not smuggle main past the gate on a later line")
+
         rc, out = gate(d, ZERO)
         c.check("deleting main is always refused", rc != 0 and "DELETE" in out)
 

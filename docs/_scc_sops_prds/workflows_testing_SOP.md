@@ -879,6 +879,17 @@ test "$(git -C "$REPO" rev-parse --abbrev-ref HEAD)" = "main" || { echo "NOT ON 
 > **If you are legitimately stuck:** `git push --no-verify` once, or delete
 > `.agents/scripts/git-hooks/MAIN-PUSH-ENFORCE` to disarm it entirely. Both are loud and neither is
 > hidden — going around the gate should be a decision, not an accident.
+>
+> ⛔ **On a NEW machine or a fresh clone, this gate is OFF until you arm it** — and so are the Jira,
+> SOP and encoding gates. `core.hooksPath` is per-machine config; git never carries it, so a new
+> checkout does not consult `.githooks/` at all. First command after cloning:
+>
+> ```bash
+> git config core.hooksPath .githooks   # relative — an absolute path won't survive the next clone
+> ```
+>
+> You will not have to remember: `run_all.py` asserts it is set and relative, so the enforcement
+> suite is RED until you do. Off, but never quietly.
 
 ### The branch model underneath all of it
 

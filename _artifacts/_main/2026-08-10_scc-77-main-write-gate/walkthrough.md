@@ -192,7 +192,7 @@ that can pass while git never invokes the hook at all, which is precisely the fa
 
 | Where | What |
 |---|---|
-| **SCC-74** (procedures consolidation) | `git_walkthrough_settings.md:299` still says `main` = `/cicd-push-e2e` **only**, predating `/smh-close-task-merge-tree`. **And:** [sop-currency.sh:26](../../../.agents/scripts/git-hooks/sop-currency.sh#L26) is `[ -f _my_resources/_quick_reference/sudo_workflows_testing.md ] \|\| exit 0` — **moving that file into `_scc_sops_prds/` silently disarms the armed SOP gate.** Same bug class as the exit-127 hooks. The hook's path must move in the same commit. |
+| **SCC-74** (procedures consolidation) | [`docs/_scc_sops_prds/git_walkthrough_settings.md:299`](../../../docs/_scc_sops_prds/git_walkthrough_settings.md#L299) still says `main` = **`/cicd-push-e2e` only** — it predates `/smh-close-task-merge-tree`, and now that the gate is armed it contradicts an *enforced* mechanism rather than just a written rule. Re-verified against current `main` at review time, still stale. Left here deliberately: it is SCC-74's file by the operator's routing, and fixing it in this diff would be scope drift. |
 | **SCC-75** (Security · Auth · Testing) | One child: the incident lane creates `claude/incident-<id>` while `task_preflight.py` guards `incident/`; the incident lane lands via GitHub PR; `gh pr merge` is ungated and no local hook can see it. |
 | **New AVCH ticket** | AGY needs this same gate — two files + `core.hooksPath`. It does **not** propagate: enforcement is repo-local by design. |
 

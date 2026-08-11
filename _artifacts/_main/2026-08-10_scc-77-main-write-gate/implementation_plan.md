@@ -111,7 +111,9 @@ hook, so that is the only available order, and it fails safe.
 
 ## Divergences from the approved plan — and why
 
-1. **The minter is `sh`, not Python.** The plan said `.agents/scripts/mint_push_token.py`. Making the
+1. **The minter is `sh`, not Python.** The approved plan named a Python minter under
+   `.agents/scripts/` (never created — the shipped file is
+   [`mint-push-token.sh`](../../../.agents/scripts/git-hooks/mint-push-token.sh)). Making the
    *enforcement* path depend on an interpreter would reproduce the exact bug inside the fix. Now
    nothing in the gate path needs Python at all.
 2. **`run-hook.sh` and `session-start-context.sh` were added.** The plan treated the settings repair
