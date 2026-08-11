@@ -28,4 +28,4 @@ PATH line, which is **interactive-only** — scripts, agent-run commands, hooks 
 all still got Node 26, so the suite passed by hand and failed in automation on the same machine. Verify
 all three modes, not one: `for m in -c -lc -ic; do zsh $m 'node --version'; done`. After the switch AGY
 frontend ran `581 passed / 1 skipped / 0 failed`. Recorded in the migration kit's vitest section
-(`_my_resources/migrations/install_guides/python_vytest-updates-other-machines.md`). Related: [[agy-frontend-vitest-harness]].
+(`docs/migrations/install_guides/python_vytest-updates-other-machines.md`). Related: [[agy-frontend-vitest-harness]].

@@ -8,7 +8,7 @@
 # ...and a CRLF git hook silently stops firing. Both are miserable to diagnose
 # because the file looks perfect in an editor.
 #
-# Added 2026-08-03 alongside `_my_resources/migrations/restore-env-master.sh`,
+# Added 2026-08-03 alongside `docs/migrations/scripts/restore-env-master.sh`,
 # the macOS twin of the secrets restore — the first script here that is REQUIRED
 # to run on a Mac. All 4 tracked .sh blobs were already LF at that point, so this
 # rule renormalises nothing; it pins the current state.

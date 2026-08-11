@@ -1,7 +1,9 @@
 # ACTIVE CONTEXT — _main  (you own this, not a vendor)
 
 ## 1. PRIME STATE
-Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-08-08
+Current workspace: `_main` (lobby; bucket renamed from `_home` on 2026-06-26)   |   Last session: 2026-08-11
+**2026-08-11: Windows-PC → Mac Antigravity IDE extension migration guide added.**
+Exports portable extension IDs on Windows, transfers them by Git or direct upload, compares against the Mac, and installs only missing IDs. Guide: `docs/migrations/install_guides/antigravity-ide-extension-migration.md`; session: `_artifacts/_main/2026-08-11_antigravity-extension-migration-guide/`.
 **2026-08-08 (latest): the operator's SOP page is now gate-enforced, and the system is TWO machines.**
 An armed commit-msg gate (`sop_currency.py`) rejects any usage-surface change that leaves
 `_my_resources/_quick_reference/sudo_workflows_testing.md` behind — `[sop-ok]` is the logged opt-out.

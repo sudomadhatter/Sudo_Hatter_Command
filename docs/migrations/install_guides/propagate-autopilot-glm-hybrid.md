@@ -5,7 +5,7 @@
 > hybrid lane (`/autopilot_glm`) was built and proven in **AGY_AVIATIONCHAT**. Your job is to bring the
 > SAME change into the target project's local engine + drop in the `/autopilot_glm` command, then verify.
 > The canonical source of truth is AGY's engine; the exact change is captured in
-> [`autopilot-glm-hybrid.patch`](autopilot-glm-hybrid.patch) (this folder).
+> [`autopilot-glm-hybrid.patch`](../scripts/autopilot-glm-hybrid.patch) (this folder).
 
 **What the change does:** adds opt-in flags (`-DevBaseUrl` / `-DevModel` / `-DevAuthToken` + the `-Glm`
 sugar switch) that route the **Dev lane (Stage 1 Plan + Stage 3 Implement)** through an
@@ -47,9 +47,9 @@ Then go to §4.
 
 ## Path B — surgical patch (diverged targets)
 
-Apply [`autopilot-glm-hybrid.patch`](autopilot-glm-hybrid.patch). Try the patch tool first:
+Apply [`autopilot-glm-hybrid.patch`](../scripts/autopilot-glm-hybrid.patch). Try the patch tool first:
 ```
-git apply --3way _my_resources/migrations/autopilot-glm-hybrid.patch   # adjust -p / path if needed
+git apply --3way docs/migrations/scripts/autopilot-glm-hybrid.patch   # adjust -p / path if needed
 ```
 If the hunks don't land cleanly (because of divergence), apply these **9 idempotent edits by hand** —
 each anchors on stable, unchanged lines. (The patch file is the exact reference for each block's text.)

@@ -1,11 +1,11 @@
-# Restore-EnvMaster.ps1 — split _my_resources/migrations/_secrets/master.env back
+# Restore-EnvMaster.ps1 — split docs\migrations\auth_keys\_secrets\master.env back
 # into the individual .env / credential files it was exported from, at their
 # original relative paths.
 #
 # Run from the lobby root of the NEW machine after cloning the repos:
-#   powershell -File _my_resources\migrations\Restore-EnvMaster.ps1
+#   powershell -File docs\migrations\scripts\Restore-EnvMaster.ps1
 # or point at a master file sitting anywhere (e.g. straight off the USB stick):
-#   powershell -File _my_resources\migrations\Restore-EnvMaster.ps1 -MasterPath D:\master.env
+#   powershell -File docs\migrations\scripts\Restore-EnvMaster.ps1 -MasterPath D:\master.env
 #
 # Behavior:
 #   - Creates missing directories (e.g. auth_keys/) as needed.
@@ -16,13 +16,13 @@
 
 param(
     # $Root must be the LOBBY ROOT — manifest paths are relative to it. This script
-    # lives two levels down (_my_resources/migrations/), so walk up twice.
-    [string]$Root = (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent),
+    # lives three levels down (docs/migrations/scripts/), so walk up three times.
+    [string]$Root = (Split-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) -Parent),
     [string]$MasterPath = ''
 )
 
 $ErrorActionPreference = 'Stop'
-if (-not $MasterPath) { $MasterPath = Join-Path $Root '_my_resources\migrations\_secrets\master.env' }
+if (-not $MasterPath) { $MasterPath = Join-Path $Root 'docs\migrations\auth_keys\_secrets\master.env' }
 if (-not (Test-Path $MasterPath)) { throw "Master file not found: $MasterPath" }
 
 $lines = [System.IO.File]::ReadAllLines($MasterPath)
@@ -73,4 +73,4 @@ Write-Host ''
 # NOTE: keep this string pure ASCII. This file is UTF-8 WITHOUT a BOM, and Windows
 # PowerShell 5.1 parses a no-BOM script as the ANSI codepage — so a non-ASCII char
 # here prints mangled at runtime (a section sign came out as "A§"). Verified 2026-08-03.
-Write-Host "Done. $written file(s) written/updated. Now run the verification checklist in _my_resources/migrations/new_machine-migration-guide.md (section 4)."
+Write-Host "Done. $written file(s) written/updated. Now run the verification checklist in docs/migrations/install_guides/new_machine-migration-guide.md (section 4)."
