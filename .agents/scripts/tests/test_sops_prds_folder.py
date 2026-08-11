@@ -168,6 +168,16 @@ def unresolved_commands(text: str, masters: set[str]) -> set[str]:
 
 
 # ── T9: backticked PATHS in prose (SCC-83) ───────────────────────────────────────────
+#
+# ⛔ "ROUND 1" and "ROUND 2" below both mean SCC-83, and the distinction is load-bearing
+# rather than trivia. ROUND 1 (sha 6cdca82) shipped this check and FAILED code review: its
+# call site passed `strict=not stubbed`, a mode that was OFF in every checkout that exists,
+# so the primary detection arm was dead code while every gate reported green -- and it was
+# "verified" by calling the function with its DEFAULT argument, i.e. against a program that
+# was never committed. ROUND 2 is the remediation. Comments naming round 1 are recording
+# what was wrong and why the current shape is not an accident; deleting them re-opens the
+# door. Full verdict + findings: _artifacts/_main/2026-08-11_scc-83-sop-content-audit/
+# walkthrough.md, sections "Code Review (2026-08-11)" and "Round 2 - remediation".
 # T3 above reads markdown LINK targets. check_maps.py reads backticked paths, but only
 # inside TABLE ROWS. So a path written in a sentence, a bullet or a fenced block is seen
 # by nothing -- which is how these docs accumulated references to folders that two landed
@@ -281,9 +291,12 @@ PRUNE = {".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build"
 class RootIndex:
     """One pruned walk per root, built once -- paths, leaf names and top-level dirs.
 
-    ⛔ REPLACES a per-token `rglob` that cost +18.3s on every run_all and never
-    short-circuited (`[:1]` slices AFTER full evaluation). Measured replacement: 9 roots,
-    20,447 entries, 0.12s.
+    ⛔ REPLACES a per-token `rglob` that never short-circuited (`[:1]` slices AFTER full
+    evaluation). Measured HERE, at 9 roots: **1.06s per unresolved token**, so ~7.4s at this
+    folder's current finding count -- against **0.11s for the whole index, built once**
+    (20,508 paths). ~69x. (The SCC-83 round-1 review reported +18.3s; that was at its own
+    higher defect count and does not reproduce at this one. Repeating it here would ship a
+    number I had not measured -- the exact defect finding M4 was about.)
 
     ⭐ And it fixes a correctness bug the rglob could not: membership here is EXACT-CASE.
     macOS is case-insensitive, so `(root / "DOCS/foo.md").exists()` is True and a
@@ -439,6 +452,11 @@ def unresolved_paths(text: str, roots: list[Path], base: Path | None = None,
     return out
 
 
+# Why _main_checkout() fell back to ROOT, or "" when it resolved. Read by T9's check so a
+# degraded resolution is reported rather than passing as a healthy one (SCC-83).
+_MAIN_CHECKOUT_FALLBACK: str = ""
+
+
 def _by_design(t: str) -> bool:
     """Allow-list membership, insensitive to a trailing slash on either side -- `docs/x`
     and `docs/x/` name the same thing and an exact-string match said otherwise."""
@@ -457,7 +475,15 @@ def _main_checkout() -> Path:
     A worktree's .git FILE points at <main>/.git/worktrees/<lane>, and --git-common-dir
     resolves to <main>/.git regardless. Its parent is the checkout holding the projects.
     Measured: a lane and main then report an IDENTICAL finding set (1 and 1, vs 0 and 14).
+
+    ⛔ THE FALLBACK IS NAMED, NEVER SILENT (SCC-83, clean-code gate). Falling back to ROOT
+    in a LANE reinstates the exact lane-dependent coverage this function exists to remove --
+    H1's failure mode returning through the error path. `except Exception: pass` would hide
+    git being off PATH, a timeout, or a permissions error behind a result that merely looks
+    reduced. The reason is recorded for the T9 check below to print, so a degraded
+    resolution is legible instead of being indistinguishable from a healthy one.
     """
+    global _MAIN_CHECKOUT_FALLBACK
     try:
         out = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--git-common-dir"],
                              capture_output=True, text=True, timeout=10)
@@ -465,9 +491,12 @@ def _main_checkout() -> Path:
             g = Path(out.stdout.strip())
             if not g.is_absolute():
                 g = ROOT / g
+            _MAIN_CHECKOUT_FALLBACK = ""
             return g.resolve().parent
-    except Exception:
-        pass
+        _MAIN_CHECKOUT_FALLBACK = (f"git rev-parse --git-common-dir rc={out.returncode} "
+                                   f"{(out.stderr or '').strip()[:120]}")
+    except Exception as e:                               # git absent, timeout, permissions
+        _MAIN_CHECKOUT_FALLBACK = f"{type(e).__name__}: {e}"
     return ROOT                                          # not a git tree -> best effort
 
 
@@ -822,7 +851,7 @@ def main() -> int:
     else:
         roots, stubbed = _scan_roots()
         # Built ONCE for the whole scan, not per token. See RootIndex: the round-1 rglob
-        # cost +18.3s per run_all and walked into sibling lanes' worktrees.
+        # cost ~1.06s per unresolved token and walked into sibling lanes' worktrees.
         index = build_index(roots)
         found, blocked = {}, []
         for p in _md_files(FOLDER) + ([idx] if idx.is_file() else []):
@@ -854,9 +883,13 @@ def main() -> int:
         # ⭐ B1: the property whose absence let the round-1 fail hide. Project roots come
         #    from git's COMMON dir, so a lane and main see the same set. In a worktree
         #    ROOT/.git is a FILE; the resolved main checkout's is always a directory.
-        gitdir_ok = (_main_checkout() / ".git").is_dir()
+        mc = _main_checkout()
+        gitdir_ok = (mc / ".git").is_dir() and not _MAIN_CHECKOUT_FALLBACK
         c.check("T9 project roots resolve to the MAIN checkout, not this lane", gitdir_ok,
-                det(gitdir_ok, f"_main_checkout()={_main_checkout()} has no .git directory"))
+                det(gitdir_ok,
+                    f"_main_checkout()={mc}"
+                    + (f" - FELL BACK: {_MAIN_CHECKOUT_FALLBACK}" if _MAIN_CHECKOUT_FALLBACK
+                       else " has no .git directory")))
 
     # -- T5: the gate points somewhere real. A SOP_DOC aimed at a moved file is a gate that can
     #        never be satisfied -- it blocks every usage-surface commit until someone notices.

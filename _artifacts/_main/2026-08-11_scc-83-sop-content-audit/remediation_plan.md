@@ -84,8 +84,10 @@ a list mixing `Path` and `str`. One evaluation, two homogeneous lists.
 run, yielding exact-case `paths: set[str]`, `leaves: dict[str, str]`, and `heads: set[str]`.
 Resolution becomes set membership — no filesystem call per token.
 
-**Measured:** 9 roots, 20,447 entries → **0.12 s**, 10,793 paths, 4,390 leaves. Against **+18.3 s**
-for the `rglob` it replaces.
+**Measured:** 9 roots, 20,447 entries → **0.12 s**, 10,793 paths, 4,390 leaves. The `rglob` it
+replaces costs **1.06 s per unresolved token** (~7.4 s at this folder's count) — ~69×. ⚠ The round-1
+review's *+18.3 s* was measured at a higher defect count and does not reproduce here; the figures
+above are mine.
 
 Prune set: `.git`, `node_modules`, `.venv`, `venv`, `__pycache__`, `dist`, `build`, `.next`,
 `.pytest_cache`, `.mypy_cache`, `.ruff_cache`, `.turbo`, `coverage`, **`worktrees`**.

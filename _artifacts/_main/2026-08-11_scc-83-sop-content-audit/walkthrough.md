@@ -267,7 +267,7 @@ each entry with its written reason; the narrowness control already covers it.
 | `run_all` | **12/12 exit 0** (bare, unpiped) |
 | `workflow_lint --toolkit-only` | **0 errors, 0 warnings, exit 0** — baseline held |
 | T9 lane vs main | **identical keys and values**, exemptions lifted |
-| Index cost | 9 roots / 20,447 entries / **0.12 s** (replaces **+18.3 s** of `rglob`); lobby index 3,574 paths, not 20,597 |
+| Index cost | **1.06 s per unresolved token** with the round-1 `rglob` (~7.4 s here) vs **0.11 s for the whole index, built once** — ~69×, measured on this machine. The round-1 review's *+18.3 s* was at its own higher defect count and does **not** reproduce at this one; repeating it would have shipped a number I had not measured. Lobby index 3,574 paths, not 20,597 |
 | Both arms fire | with the 4 by-design entries lifted: 2 × `resolves nowhere`, 1 × `moved ->` |
 
 ### Two things I did NOT do, and why
