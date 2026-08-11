@@ -59,9 +59,16 @@ explaining the change. What T4 really guards is "no doc tells you to RUN somethi
 exist," and a fixture proves the exemption stays narrow rather than becoming an off-switch.
 
   -- THE MANIFEST IS A CONTRACT, NOT AN INVENTORY ------------------------------------------
-T1/T6 pin an explicit 13-doc list. That is deliberate: adding a 14th doc must be a conscious
-edit here. A doc appearing or vanishing without a test change is exactly the drift being
-guarded against, and an auto-discovered manifest would rubber-stamp it.
+T1/T6 pin an explicit 11-doc list. That is deliberate: a 12th doc must be a conscious edit
+here. A doc appearing or vanishing without a test change is exactly the drift being guarded
+against, and an auto-discovered manifest would rubber-stamp it.
+
+It has shrunk twice from the 13 SCC-74 moved, and both times the contract did its job -- the
+suite went red until all three edits (file, INDEX row, EXPECTED) landed together:
+    -1  complete-system-overview.md   retired INTO file_folder_structure+maintaining.md (SCC-80)
+    -1  md_feedback_setup_guide.md    relocated UP to docs/ -- a machine-setup guide, not an SOP
+The second is a scope call, not a demotion: it stays inside docs/, so check_maps.py still
+covers it. The line this folder draws is "SOP vs setup," never "watched vs unwatched."
 
 Stdlib only, plain ASCII output -- same constraints as its siblings (Windows consoles are cp1252).
 """
@@ -86,8 +93,6 @@ EXPECTED = {
     "autopilot_bmad_dev_loop.md",
     "sentry_error_response_team.md",
     "file_folder_structure+maintaining.md",
-    "complete-system-overview.md",
-    "md_feedback_setup_guide.md",
     "tea_testing_guide.md",
     "tea_deep_reference.md",
     "tdad_stack_install_guide.md",

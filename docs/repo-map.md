@@ -103,8 +103,8 @@ Sudo_Hatter_Command/
       [6 files: .mdx6 | e.g. AGENTS.md]
   docs/
     _scc_sops_prds/
-        [14 files: .mdx14 | e.g. INDEX.md]
-      [9 files: .mdx8, .jsonx1 | e.g. AGENTS.md]
+        [12 files: .mdx12 | e.g. INDEX.md]
+      [10 files: .mdx9, .jsonx1 | e.g. AGENTS.md]
   scratch/
       [1 files: .pyx1 | e.g. find_brainstorm.py]
     [8 files: .mdx4, .txtx3, .jsonx1 | e.g. AGENTS.md]

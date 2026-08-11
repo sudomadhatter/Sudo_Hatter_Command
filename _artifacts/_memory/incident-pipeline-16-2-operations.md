@@ -9,7 +9,7 @@ metadata:
 
 AGY's incident pipeline SHIPPED and CLOSED (Daniel, 2026-07-13). **Agent lane is PRIMARY**: Sentry fatal → rule 17286663 (workflow 3695667 on the new Monitors engine, `frequency: 5`) → relay Cloud Function (`sentry-incident-relay-gmqbddc6aq-uc`, us-central1, `TARGET=github`) → `repository_dispatch: incident` → `.github/workflows/incident-response.yml` → claude-code-action (model UNPINNED by Daniel's call) runs `.github/claude/incident-triage.md` verbatim → full report issue + `claude/incident-*` branch → **Telegram page AFTER the report exists** (bot `@AvCh_Security_Bot`, chat 5556604669). Proven twice: manual dispatch → issue #20; fully autonomous front door → drill fatal `PYTHON-FASTAPI-B` (numeric 7607174913) dispatched in **15 seconds**, issue #21. `TARGET=routines` = the FALLBACK thin pager (`POST /api/incident/fire`), Claude Routines itself is dead (no trigger API).
 
-**Why:** future incidents, drills, and replication on other projects run against these contracts; the plan doc's §6 replication playbook (`_my_resources/diagrams_guides/security/sentry_error_response_team.md`) is the full recipe.
+**Why:** future incidents, drills, and replication on other projects run against these contracts; the plan doc's §6 replication playbook (`docs/_scc_sops_prds/sentry_error_response_team.md`) is the full recipe.
 
 **How to apply:**
 - Probe contract (fallback lane): unauth POST `/api/incident/fire` → **401 = armed**, 503 = secrets lost, 404 = router gone.

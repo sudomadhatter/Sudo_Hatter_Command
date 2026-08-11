@@ -70,8 +70,8 @@ rulesets on private repos (verified `403`), so there is **no server-side block o
 not a lock. Daniel committed to GitHub Pro 2026-08-07; once active, `main` becomes unpushable except
 through a passing PR and the docs' "alarm not lock" sections need updating.
 
-**Docs:** `_my_resources/diagrams_guides/system/jira_integration_guide.md` (the why) and
-`_my_resources/_quick_reference/jira_manual.md` (the by-hand how-to; relocated there by the operator 2026-08-07). Both carry a live-vs-not-built ledger — keep it honest.
+**Docs:** `docs/_scc_sops_prds/jira_integration_guide.md` (the why) and
+`docs/_scc_sops_prds/jira_manual.md` (the by-hand how-to; relocated there by the operator 2026-08-07). Both carry a live-vs-not-built ledger — keep it honest.
 
 **The AVCH board is populated (2026-08-07 evening, SCC-29):** AVCH-13 = Epic 12 (In Progress) with
 AVCH-14/15/16 = 12.3 umbrella + 12.3.4/12.3.7 (In Review); AVCH-17..20 = Epics 18/19/20/22 (Deferred).

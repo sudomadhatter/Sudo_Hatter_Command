@@ -334,6 +334,25 @@ Node 18+ (`npx -y md-feedback`). New/changed servers appear after a session rest
 | RAG_Pipeline_AC (AviationChat ingestion) | ❌ No | — | needs `/smh-new-project` or manual standardization |
 | B-L-WorldWide · NEXGen-Films · OpenChat-Openrouter | ❌ pending | — | registered in `router.md`, not yet converted |
 
+## 10a. Glossary — the vocabulary
+
+Absorbed from `complete-system-overview.md` when SCC-80 retired it (2026-08-10): seven of that
+doc's ten sections had a counterpart here, and this table was the part that did not.
+
+| Term | Means |
+|---|---|
+| **Lobby** | The home base root — you start here, route out from here. |
+| **Floor / workspace** | A project under `Projects/<name>/`, with its own `AGENTS.md` and git repo. |
+| **Adapter** | The one-line `CLAUDE.md` / `GEMINI.md` that just says "read `AGENTS.md`." |
+| **The brain** | `AGENTS.md` — the single source of behavior for a folder. |
+| **Routing table** | The task → read / skip / skills table inside an `AGENTS.md` (the heart of the system). |
+| **Master toolkit** | `.agents/` — the one place rules, commands and skills are authored. |
+| **Vendored copy** | A synced copy of the master in a tool dir or project (never hand-edited). |
+| **Shared memory** | `_artifacts/` — the ledger + per-workspace continuity you own. |
+| **Canary** | `_routing-canary/` — the smallest test that proves routing works in a tool. |
+| **Pick up / Hand off** | Codewords to load / save state from `_artifacts/`. |
+| **SOPs & PRDs** | `docs/_scc_sops_prds/` — every procedural doc, gated so it cannot go stale (§2.1). |
+
 ## 11. Quick-reference: key files
 
 | Path | What it is |

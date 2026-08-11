@@ -1,6 +1,6 @@
 # TEA Deep Reference (companion — not the quick guide)
 
-> **Read [sudo_workflows_testing.md](workflows_testing_SOP.md) first** — that is the clean quick
+> **Read [workflows_testing_SOP.md](workflows_testing_SOP.md) first** — that is the clean quick
 > reference. This file is the deep archive it was carved from (2026-07-14): full call-graphs, the
 > method curriculum, the Epic-8 anchor index, and the 42-fragment TEA library. Kept for depth, not
 > for daily use.
