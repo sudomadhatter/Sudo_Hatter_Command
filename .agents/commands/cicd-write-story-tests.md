@@ -91,9 +91,13 @@ repo's project from `.agents/jira.conf` and the EPIC's ticket key (it's in the e
    Not blocked → **`python3 .agents/scripts/jira_feed.py start --key <KEY> --apply`** (SCC-113).
 
    > This was a prose `acli transition` step until SCC-113. It is the script now for the reason
-   > SCC-49 gave for the other four seams: it reads the ticket back and exits 2 if the move did not
-   > land, and it is idempotent, so ① re-run on an existing ticket cannot double-move it. Full acli
-   > reference: `.agents/rules/jira.md`.
+   > SCC-49 gave for the other four seams: it reads the ticket back rather than trusting an `acli`
+   > that exits 0 on a write it never made, and it is idempotent, so ① re-run on an existing ticket
+   > cannot double-move it. **Read the exit code:** `0` moved or already there · `3` left alone
+   > (the ticket is `Blocking`/`In Review`/`Deferred` — expected when you just linked a blocker
+   > above, so continue) · `2` the board REFUSED it (a `Done` key means the key is wrong — STOP) ·
+   > `4` the board was UNREACHABLE (transport, not a verdict — carry on, and ⛔ do **not** mint a
+   > second ticket). Full reference: `.agents/rules/jira.md`.
 
 ## Step 2 — BDD Vision Lock (ATDD Contract Phase — MANDATORY, never silently skipped)
 Invoke the **`/cicd-bdd-tests`** workflow. This is an interactive session with the Test Architect (Murat)

@@ -100,9 +100,21 @@ def acli_bin(explicit: str | None) -> str:
     return found
 
 
+ACLI_UNREACHABLE = 124   # conventional "timed out"; also covers a binary that is not there
+
+
 def acli(binary: str, args: list[str], timeout: int = 90) -> subprocess.CompletedProcess:
-    return subprocess.run([binary, *args], capture_output=True, text=True,
-                          errors="replace", timeout=timeout)
+    try:
+        return subprocess.run([binary, *args], capture_output=True, text=True,
+                              errors="replace", timeout=timeout)
+    except (subprocess.TimeoutExpired, OSError) as e:
+        # A hung uplink and a missing/unresolvable binary both used to escape as an UNCAUGHT
+        # traceback - process exit 1, which is not one of the documented codes. The hook
+        # swallows any non-zero, so it never showed there; the agent lane is where it bit.
+        # `/smh-quick-dev` reads this code, and its table says exit 2 means "the key is
+        # wrong, mint a new ticket" - so a dead uplink was instructing a DUPLICATE ticket.
+        return subprocess.CompletedProcess([binary, *args], ACLI_UNREACHABLE, "",
+                                           f"acli unreachable: {e}")
 
 
 def acli_json(binary: str, args: list[str], timeout: int = 90) -> object | None:
@@ -487,7 +499,8 @@ def render_devrecord(project: Path, story: str, args) -> tuple[str, list[str]]:
 
 # ── Ticket I/O ─────────────────────────────────────────────────────────────────
 
-def view_fields(binary: str, key: str, timeout: int = 90) -> dict:
+def view_fields(binary: str, key: str, timeout: int = 90,
+                strict: bool = True) -> dict | None:
     """`--fields` is a WHITELIST, and `issuetype` has to be on it (SCC-54).
 
     It was not, and every type read in this file goes through here - so `have` came back `""`
@@ -501,6 +514,11 @@ def view_fields(binary: str, key: str, timeout: int = 90) -> dict:
                               "key,summary,status,description,parent,labels,issuetype",
                               "--json"], timeout=timeout)
     if data is None:
+        if not strict:
+            # The caller wants to TELL APART "the board said no" from "I could not reach the
+            # board". Dying here collapses those into one exit code, and they call for
+            # opposite actions: fix your key, versus try again later.
+            return None
         wf.die(f"could not read {key} from Jira (is acli authenticated? "
                f"`acli jira auth status`)")
     if isinstance(data, list):
@@ -1004,7 +1022,12 @@ def cmd_start(args) -> int:
     which is precisely the failure SCC-113 exists to close.
     """
     binary = acli_bin(args.acli)
-    fields = view_fields(binary, args.key, timeout=args.timeout)
+    fields = view_fields(binary, args.key, timeout=args.timeout, strict=False)
+    if fields is None:
+        say(f"jira-feed: could not reach the board to read {args.key} - nothing was "
+            f"changed. This is a TRANSPORT failure, not a verdict on the ticket: retry "
+            f"when you have a connection. (If it persists: `acli jira auth status`.)")
+        return 4
     have = ((fields.get("issuetype") or {}).get("name") or "").strip()
     status = ((fields.get("status") or {}).get("name") or "").strip()
     summary = field_text(fields.get("summary"))
@@ -1048,8 +1071,14 @@ def cmd_start(args) -> int:
     # trap jira.md:268 names and three call sites shipped without.
     t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,
                       "--status", target, "--yes"], timeout=args.timeout)
-    now = ((view_fields(binary, args.key, timeout=args.timeout)
-            .get("status") or {}).get("name") or "").strip()
+    back = view_fields(binary, args.key, timeout=args.timeout, strict=False)
+    if back is None:
+        # The write may or may not have landed and we cannot see which. NOT settled: no
+        # marker, so the next commit re-reads and settles it.
+        say(f"jira-feed: {args.key} was sent {status} -> {target}, but the board could not "
+            f"be re-read to confirm it. Treating as unconfirmed; it will be retried.")
+        return 4
+    now = ((back.get("status") or {}).get("name") or "").strip()
     if t.returncode != 0 or now != target:
         say(f"jira-feed: {args.key} is still {now or '?'} - the move did NOT land: "
             f"{(t.stderr or t.stdout).strip()[:160]}")

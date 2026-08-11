@@ -17,8 +17,10 @@ it fires after the commit is sealed, so it can never block one, and every error 
 This runs the REAL hook against a REAL git repo with a stubbed `acli`. The things that can
 only be proved by executing it, and that prose could not hold:
 
-  * it costs exactly ONE acli call per branch - a marker short-circuits every later commit,
-    or a network round-trip rides every commit forever;
+  * it costs exactly ONE TRANSITION per branch - a marker short-circuits every later commit,
+    or a round-trip rides every commit forever. (One transition, not one CALL: the exchange is
+    view -> transition -> read-back. Round-trip cost is the whole argument for post-commit over
+    commit-msg, so the number is stated precisely rather than flatteringly.)
   * a FAILED call writes no marker, so an offline commit retries on the next one;
   * it can never block or fail a commit, whatever the hook does;
   * `main` and unkeyed branches are silent.
@@ -27,6 +29,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -129,14 +132,16 @@ def main() -> int:
             "the Mac has no bare `python`; the PC has no `python3`")
     c.check("hook: covers chore/, claude/ AND epic/",
             all(p in stripped for p in ("chore", "claude", "epic")))
+    # Value-aware, not presence-aware: `"--timeout" in text` passes for `--timeout 900`,
+    # which is the whole defect it would be guarding against. The runtime half of this
+    # (silence on a failure path) is the TEST-9 case below - a presence check for
+    # `>/dev/null 2>&1` was VACUOUS here, satisfied by the interpreter probe's own
+    # `command -v "$c" >/dev/null 2>&1` line, and passed against the unfixed hook.
     c.check("hook: passes a SHORT --timeout, not the 90s default",
-            "--timeout" in stripped,
+            re.search(r"--timeout\s+(\d+)", stripped)
+            and int(re.search(r"--timeout\s+(\d+)", stripped).group(1)) <= 15,
             "it runs inline on every commit until it succeeds; 90s stalls each commit "
             "for a minute and a half on a dead uplink")
-    c.check("hook: swallows BOTH streams, not just stderr",
-            ">/dev/null 2>&1" in stripped,
-            "jira_feed prints through say() -> STDOUT, so redirecting stderr alone let "
-            "every failure through to the terminal on EVERY commit")
 
     with TempDir() as tmp:
         repo, acli, state = build(tmp)
@@ -163,7 +168,7 @@ def main() -> int:
         # ── every later commit is free ─────────────────────────────────────────
         commit(repo, acli, state, "two.txt")
         commit(repo, acli, state, "three.txt")
-        c.check("hook: later commits cost NO further acli call",
+        c.check("hook: later commits cost NO further transition",
                 len(get_state(state).get("transitions", [])) == after_first,
                 "without the marker this is a network round-trip on every commit forever")
 
@@ -241,7 +246,12 @@ def main() -> int:
         # Promised by the plan's audit finding F-3 and not delivered in the first cut: every
         # case above uses `git checkout -b` in one ordinary checkout, and --absolute-git-dir
         # resolves DIFFERENTLY in a worktree (.git/worktrees/<name>). If it resolved to the
-        # shared .git, two lanes would share one marker and the second would never fire.
+        # shared .git, the marker PATH would differ from where the hook looks. (It is named
+        # for the BRANCH and git forbids two worktrees on one branch, so the git dir is not
+        # what prevents a cross-lane collision - the branch name is. What this case actually
+        # earns is proof the hook RUNS from inside a worktree at all, and it paid for itself
+        # immediately: build() never COMMITTED .agents/, so a fresh worktree had no
+        # jira_feed.py to call, which reads exactly like the hook failing.)
         set_state(state, types={"TEST-5": "Task"}, statuses={"TEST-5": "To Do"})
         wt = tmp / "wt-lane"
         git(repo, "worktree", "add", "-q", str(wt), "-b", "chore/TEST-5-in-a-worktree")
@@ -256,6 +266,28 @@ def main() -> int:
                 (marker_dir(wt) / "jira-started-chore-TEST-5-in-a-worktree").exists()
                 and "worktrees" in str(marker_dir(wt)),
                 "a shared marker would let one lane silence another")
+
+        # ── SILENCE on a say()-to-stdout failure, at RUNTIME ───────────────────
+        # ⭐ The load-bearing one, and the previous cut had NO effective coverage of it: the
+        # assertion was `">/dev/null 2>&1" in text`, which the interpreter probe's own
+        # `command -v "$c" >/dev/null 2>&1` satisfies — so it passed against the UNFIXED
+        # hook. A `Done` key is the right probe because jira_feed refuses it through say(),
+        # which prints to STDOUT; the old `2>/dev/null` swallowed only stderr, so this
+        # five-line refusal hit the terminal on EVERY commit of the branch.
+        set_state(state, types={"TEST-9": "Task"}, statuses={"TEST-9": "Done"})
+        git(repo, "checkout", "-q", "-b", "chore/TEST-9-done-key")
+        (repo / "nine9.txt").write_text("x", encoding="utf-8")
+        git(repo, "add", "nine9.txt")
+        r = git(repo, "commit", "-q", "-m", "TEST-9 chore: a key that is already Done",
+                env={"ACLI_BIN": str(acli), "STUB_STATE": str(state)})
+        noise = (r.stdout or "") + (r.stderr or "")
+        c.check("hook: a refusal is SILENT - nothing reaches the terminal",
+                r.returncode == 0 and "not your key" not in noise and not noise.strip(),
+                f"leaked: {noise.strip()[:160]!r}")
+        c.check("hook: a refused key writes NO marker, and did not move the ticket",
+                not (marker_dir(repo) / "jira-started-chore-TEST-9-done-key").exists()
+                and get_state(state)["statuses"]["TEST-9"] == "Done")
+        git(repo, "checkout", "-q", "main")
 
         # ── a re-opened ticket, cut as a fresh lane, fires again ───────────────
         # The marker is named for the BRANCH, not the key. A key-named marker made this go

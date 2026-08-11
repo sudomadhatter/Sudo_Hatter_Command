@@ -326,8 +326,11 @@ python3 .agents/scripts/jira_feed.py start     --key SCC-113 --apply
   reverse, because a ticket you are starting cannot already be finished. An **`Epic` is allowed**
   here and refused by `flag`; that difference is deliberate (an epic under development is genuinely
   in progress; an epic is never itself broken work).
-  **Three exit codes, because the caller must tell them apart:** `0` moved or already there
-  (settled) · **`3` left alone — NOT settled, ask again** · `2` refused, or the move did not land.
+  **Four exit codes, because the caller must tell them apart:** `0` moved or already there
+  (settled) · **`3` left alone — NOT settled, ask again** · `2` the board REFUSED it (a `Done` key,
+  a Subtask, a move that did not land) · **`4` the board was UNREACHABLE** — transport, not a
+  verdict, so retry rather than concluding anything about the key. Collapsing `4` into `2` told an
+  agent on a dead uplink to mint a duplicate ticket.
   The `post-commit` recorder writes its once-per-branch marker **only on `0`**; collapsing `3` into
   `0` silenced a lane whose ticket was `Blocking` when it opened and returned to `To Do` an hour
   later — the very failure this seam exists to prevent.

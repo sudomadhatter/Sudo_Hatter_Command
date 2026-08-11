@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import stat
 import subprocess
 import sys
@@ -829,6 +830,20 @@ def main() -> int:
                 code == 2 and get_state(state)["statuses"]["TEST-7"] == "To Do",
                 out.strip()[:200])
 
+        # ⭐ "the board said no" and "I could not reach the board" are OPPOSITE instructions
+        # - fix your key, versus try again later - and they shared exit 2 until the second
+        # review pass. Worse, a missing binary escaped as an uncaught traceback (exit 1,
+        # which is not a documented code at all), while /smh-quick-dev's table read exit 2
+        # as "the key is wrong, mint a new ticket": a dead uplink instructed a DUPLICATE.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "To Do"})
+        code, out = run_script("jira_feed.py", "start", "--key", "TEST-7", "--apply",
+                               "--project", str(repo), "--acli", str(tmp / "not-a-binary"))
+        c.check("start: an UNREACHABLE board is exit 4, not 2 and not a traceback",
+                code == 4 and "transport" in out.lower(), out.strip()[:200])
+        c.check("start: unreachable changes nothing on the board",
+                get_state(state)["statuses"]["TEST-7"] == "To Do"
+                and not get_state(state).get("transitions"))
+
         # The load-bearing negative, same as every other write verb here: acli exits 0 on a
         # transition it did not perform.
         set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "To Do"},
@@ -844,38 +859,61 @@ def main() -> int:
         lobby = SCRIPTS.parent.parent
         me = Path(__file__).resolve()
 
+        # Matches the START of a real invocation, in either shape this repo writes:
+        #   shell/markdown   acli jira workitem transition --key …
+        #   python argv      acli(binary, ["jira", "workitem", "transition", …
+        # Anchoring on `acli` ALONE was wrong: `ln.find("acli")` locks onto a prose mention
+        # earlier in the sentence ("make sure acli is authenticated, then run `acli jira
+        # workitem transition … --yes`") and truncates the span before the real call.
+        CALL = re.compile(r"""acli(?:\s+jira\s+workitem\s+transition
+                                  |\s*\(.*?["']jira["']\s*,\s*["']workitem["']\s*,
+                                                       \s*["']transition["'])""", re.X)
+
+        def argv_of(ln: str) -> str:
+            """The part of a line that is actually ARGV: inline code ends at its closing
+            backtick, and a trailing `# …` comment is commentary, not an argument."""
+            return ln.split("`", 1)[0].split("#", 1)[0]
+
+        def unterminated(span: str) -> bool:
+            t = span.rstrip()
+            return (t.endswith(("\\", ","))
+                    or span.count("[") > span.count("]")
+                    or span.count("(") > span.count(")"))
+
         def offending_lines(lines: list[str]) -> list[int]:
             """Line numbers whose `acli … workitem transition` call omits `--yes`.
 
-            ⭐ Anchored to the COMMAND SPAN, not to a window. A 3-line window passed a site
-            whose real flag had been deleted because prose on the same line still said the
-            word `--yes` — and one of the two it let through was
-            `smh-merge-multiple-workingtrees.md`, a site THIS ticket was written to fix.
-            The note explaining the flag was excusing its absence.
+            ⭐ Anchored to the COMMAND SPAN, not to a window — a window let prose on the
+            same line excuse a deleted flag, at a site this very ticket was fixing.
 
-            Three things the span has to survive, each a real line in this repo:
-              * markdown inline code — the call ends at its closing backtick; the prose
-                after it is commentary, not argv;
-              * a trailing `# TRAP: … --yes …` comment on the cheat-sheet line;
-              * a call that WRAPS — jira_feed.py builds argv across two physical lines, so
-                a line-local scan indicts the one caller that always got it right.
+            ⭐ And every JOINED line is stripped too. The first cut stripped backticks and
+            comments from the matched line, then appended the next two lines RAW — which
+            re-opened the identical hole for WRAPPED calls, and `jira_feed.py`'s own
+            transition is the repo's only executable call site and is wrapped. Deleting its
+            `--yes` and writing `# --yes: see jira.md` below read clean.
+
+            Known, deliberate limits (real call sites in this repo are fenced blocks or
+            inline instructions, never these):
+              * a line starting `>` is treated as commentary — jira.md TEACHES the trap by
+                quoting the un-flagged form in a callout, and the positive control below
+                pins that this stays true;
+              * `docs/` is out of scope (see the caller).
             """
             out = []
             for n, ln in enumerate(lines, 1):
                 if ln.lstrip().startswith(("#", ">", "//")):
                     continue              # a comment quoting the trap is not a call site
-                # `acli` is the discriminator, not the bare phrase: a CALL SITE invokes the
-                # binary. Prose ABOUT the rule mentions the phrase and is not a call.
-                if not all(t in ln for t in ("acli", "workitem", "transition")):
-                    continue
-                span = ln[ln.find("acli"):]
-                span = span.split("`", 1)[0]          # inline code ends at the backtick
-                span = span.split("#", 1)[0]          # a trailing comment is not argv
-                if (span.rstrip().endswith(("\\", ","))
-                        or span.count("[") > span.count("]")):
-                    span += " " + " ".join(lines[n:n + 2])    # the call wraps
-                if "--yes" not in span:
-                    out.append(n)
+                # finditer, not search: `… --yes && acli … transition --key K2 --status X`
+                # is two call sites on one line and only the first was ever scanned.
+                for m in CALL.finditer(argv_of(ln) if "`" not in ln else ln):
+                    span = argv_of(ln[m.start():])
+                    j = n
+                    while unterminated(span) and j < len(lines) and j - n < 6:
+                        span += " " + argv_of(lines[j])       # STRIP each joined line too
+                        j += 1
+                    if "--yes" not in span:
+                        out.append(n)
+                        break
             return out
 
         def yes_offenders() -> list[str]:
@@ -900,6 +938,19 @@ def main() -> int:
              '  # TRAP: needs --key; --yes skips the interactive confirm'],
             ['t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,',
              '                  "--status", target])'],
+            # ⭐ The shapes that defeated the previous cut: the joined lines were appended
+            # RAW, so a comment BELOW a wrapped call excused the missing flag - and the
+            # repo's only executable call site is exactly this shape.
+            ['t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,',
+             '                  "--status", target])   # --yes is required here, see jira.md'],
+            ['t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,',
+             '                  "--status", target])',
+             '# --yes: see jira.md for why this flag is mandatory'],
+            ['acli jira workitem transition --key K --status "Done" \\',
+             '# NOTE: --yes skips the confirm'],
+            # Two calls on one line - only the first was ever scanned.
+            ['acli jira workitem transition --key K1 --status "Done" --yes && '
+             'acli jira workitem transition --key K2 --status "Done"'],
         ]
         for i, rows in enumerate(must_catch):
             c.check(f"yes-guard NEGATIVE CONTROL {i}: an un-flagged call IS caught",
@@ -912,6 +963,17 @@ def main() -> int:
             ['t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,',
              '                  "--status", target, "--yes"])'],
             ['`tests/test_jira_feed.py` fails if any `workitem transition` omits it.'],
+            # A compliant call wrapped over FOUR lines - the repo's own continuation style,
+            # and the two-line lookahead indicted it. A guard that flags correct code
+            # pressures the next author into a worse layout to appease it.
+            ['acli jira workitem transition \\', '  --key K \\', '  --status "Done" \\',
+             '  --yes'],
+            ['t = acli(binary, ["jira", "workitem", "transition",', '  "--key", args.key,',
+             '  "--status", target,', '  "--yes"])'],
+            # A prose mention of `acli` BEFORE the real call: anchoring on the first `acli`
+            # truncated the span before the command and indicted a compliant line.
+            ['Make sure acli is authenticated, then run '
+             '`acli jira workitem transition --key K --status "Done" --yes`.'],
         ]
         for i, rows in enumerate(must_pass):
             c.check(f"yes-guard POSITIVE CONTROL {i}: a compliant line is NOT caught",

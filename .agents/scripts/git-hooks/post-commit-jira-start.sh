@@ -30,6 +30,11 @@
 # refusal, or a "left alone" status writes nothing, so the next commit retries: self-healing by
 # construction. (A failed call that wrote the marker anyway would silence the ticket forever.)
 #
+# ⚠ The flip side, stated because "one exchange per branch" is only true of the settled path: a
+# branch whose ticket sits in `In Review`/`Deferred` and never returns to `To Do` re-reads on every
+# commit, forever — one `view`, capped by --timeout. That is the price of never silencing a ticket
+# that might still start, and it is bounded, not unbounded.
+#
 # Kill switch: create .agents/scripts/git-hooks/DISABLE (untracked) to turn it off entirely.
 
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
