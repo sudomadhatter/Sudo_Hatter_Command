@@ -85,8 +85,15 @@ repo's project from `.agents/jira.conf` and the EPIC's ticket key (it's in the e
    this field), plus the rulings: `lane: quick-dev|full`, `blocked_by: [<keys>]` (omit when empty).
    ⛔ No `parallel_ok:` — same reason as above; `/cicd-parallel-check` owns that field.
 4. **Set its state:** blocked → `acli jira workitem link create --out <BLOCKER-KEY> --in <KEY> --type
-   Blocks`, then transition to `Blocked` if the board has that status (else the label carries it).
-   Not blocked → transition to `In Progress` (`--yes`). Full acli reference: `.agents/rules/jira.md`.
+   Blocks`, then transition to `Blocking` if the board has that status (else the label carries it).
+   ⛔ The status is **`Blocking`**, not `Blocked` — `Blocked` exists on neither board and the
+   transition fails outright (`jira.md` §The map).
+   Not blocked → **`python3 .agents/scripts/jira_feed.py start --key <KEY> --apply`** (SCC-113).
+
+   > This was a prose `acli transition` step until SCC-113. It is the script now for the reason
+   > SCC-49 gave for the other four seams: it reads the ticket back and exits 2 if the move did not
+   > land, and it is idempotent, so ① re-run on an existing ticket cannot double-move it. Full acli
+   > reference: `.agents/rules/jira.md`.
 
 ## Step 2 — BDD Vision Lock (ATDD Contract Phase — MANDATORY, never silently skipped)
 Invoke the **`/cicd-bdd-tests`** workflow. This is an interactive session with the Test Architect (Murat)

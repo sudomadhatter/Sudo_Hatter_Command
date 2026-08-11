@@ -222,7 +222,8 @@ it. Rejected push (remote moved) → STOP and report; never force.
 
 **4e — Dev Record, then the ticket — per lane, at ITS merge, never batched.**
 `jira_feed.py devrecord --key <KEY> … --closing --apply` (updates in place — never `--append-new`),
-then `acli jira workitem transition --key <KEY> --status "Done"`, then `jira_feed.py check --key
+then `acli jira workitem transition --key <KEY> --status "Done" --yes` (**`--yes` or acli stops on a
+confirm prompt no agent shell can answer** — SCC-113), then `jira_feed.py check --key
 <KEY>` exit 0. **One Dev Record per ticket.** Close a parent ticket only once every sub-task and
 linked ticket has landed.
 

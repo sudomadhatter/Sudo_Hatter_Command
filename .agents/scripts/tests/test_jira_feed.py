@@ -147,9 +147,15 @@ if head[:3] == ["jira", "workitem", "view"]:
         fields = {k: v for k, v in fields.items() if k in keep}
     print(json.dumps({"key": vkey, "fields": fields}))
 elif head[:3] == ["jira", "workitem", "transition"]:
+    # Record EVERY call, landed or not. Two SCC-113 assertions need the count rather than
+    # the end state: `start` must be idempotent (a second run makes no second call), and
+    # the post-commit hook must make exactly ONE call per branch (the marker short-circuit).
+    # An end-state check cannot tell "did not call" from "called and it was already right".
+    state.setdefault("transitions", []).append(
+        {"key": val("--key"), "status": val("--status"), "yes": "--yes" in args})
     if not state.get("stuck_status"):
         state.setdefault("statuses", {})[val("--key")] = val("--status")
-        save()
+    save()
     print("Work item transitioned")
 elif head == ["jira", "workitem", "comment", "list"]:
     print(json.dumps({"comments": [{"id": c["id"], "body": adf(c["body"])}
@@ -748,6 +754,139 @@ def main() -> int:
         code, out = jf("flag", "--key", "TEST-7", "--reason", "still broken", "--apply")
         c.check("flag: a transition that silently no-ops is reported, not assumed",
                 code == 2 and "still Done" in out, out.strip()[:240])
+
+        # ── start: the OTHER end of the lifecycle (SCC-113) ────────────────────
+        # Four seams wrote `Done` and exactly one wrote `In Progress` - the BMAD story lane -
+        # so on a board where every non-epic ticket is a Task, nothing was ever visible as in
+        # flight. This is that seam, as a verb rather than a prose step, because the prose one
+        # is the one that never ran.
+
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "To Do"})
+        code, out = jf("start", "--key", "TEST-7")
+        c.check("start: renders without --apply and writes NOTHING",
+                code == 0 and not get_state(state).get("transitions")
+                and get_state(state)["statuses"]["TEST-7"] == "To Do", out.strip()[:200])
+
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "To Do"})
+        code, out = jf("start", "--key", "TEST-7", "--apply")
+        st = get_state(state)
+        c.check("start: To Do -> In Progress", code == 0
+                and st["statuses"]["TEST-7"] == "In Progress", out.strip()[:200])
+        c.check("start: passes --yes, or acli blocks on a prompt no agent can answer",
+                bool(st.get("transitions")) and st["transitions"][0]["yes"],
+                "jira.md:268 names this trap; three call sites still omit it")
+
+        # `To Do Next` is the operator's hand-picked queue - a To Do-category status, so it
+        # starts exactly like `To Do`. It exists on SCC and not on AVCH; per-board-optional.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "To Do Next"})
+        code, out = jf("start", "--key", "TEST-7", "--apply")
+        c.check("start: To Do Next -> In Progress (the queue is a To Do category)",
+                code == 0 and get_state(state)["statuses"]["TEST-7"] == "In Progress",
+                out.strip()[:200])
+
+        # Idempotence is not cosmetic: the post-commit hook fires on EVERY commit, and two
+        # lanes can hold the same key. A second call must make no second transition.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+        code, out = jf("start", "--key", "TEST-7", "--apply")
+        c.check("start: already In Progress is a no-op that exits 0",
+                code == 0 and "already" in out.lower(), out.strip()[:200])
+        c.check("start: the no-op makes NO transition call at all",
+                not get_state(state).get("transitions"),
+                "an end-state check would pass here even if it called acli every commit")
+
+        # Guardrail 1, in reverse. Borrowing a finished ticket's key is the defect that
+        # silently decorates the wrong ticket and overwrites its Dev Record.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "Done"})
+        code, out = jf("start", "--key", "TEST-7", "--apply")
+        c.check("start: a Done ticket is REFUSED - that means the key is wrong",
+                code == 2 and "not your key" in out.lower()
+                and get_state(state)["statuses"]["TEST-7"] == "Done", out.strip()[:240])
+
+        # Narrow on purpose, exactly like flag's "only out of Done": a verb that moves from
+        # anywhere erases real state. `Blocking` is an impediment and `In Review` is finished
+        # work waiting on a human - starting either would destroy the only signal they carry.
+        for held in ("Blocking", "In Review", "Deferred"):
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": held})
+            code, out = jf("start", "--key", "TEST-7", "--apply")
+            c.check(f"start: {held} is left alone, and says why",
+                    code == 0 and get_state(state)["statuses"]["TEST-7"] == held
+                    and not get_state(state).get("transitions"), out.strip()[:200])
+
+        # An Epic is allowed here and refused by `flag` - the difference is deliberate. An
+        # epic under active development IS in progress; an epic is never itself broken work.
+        set_state(state, types={"TEST-5": "Epic"}, statuses={"TEST-5": "To Do"})
+        code, out = jf("start", "--key", "TEST-5", "--apply")
+        c.check("start: an Epic IS allowed (unlike flag) - epic/ is in scope",
+                code == 0 and get_state(state)["statuses"]["TEST-5"] == "In Progress",
+                out.strip()[:200])
+
+        set_state(state, types={"TEST-7": "Subtask"}, statuses={"TEST-7": "To Do"})
+        code, out = jf("start", "--key", "TEST-7", "--apply")
+        c.check("start: a Subtask is refused",
+                code == 2 and get_state(state)["statuses"]["TEST-7"] == "To Do",
+                out.strip()[:200])
+
+        # The load-bearing negative, same as every other write verb here: acli exits 0 on a
+        # transition it did not perform.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "To Do"},
+                  stuck_status=True)
+        code, out = jf("start", "--key", "TEST-7", "--apply")
+        c.check("start: a transition that silently no-ops is reported, not assumed",
+                code == 2 and "still" in out.lower(), out.strip()[:240])
+
+        # ── every acli transition in .agents/ carries --yes (SCC-113) ──────────
+        # The guard that stops a FOURTH call site shipping without it. Comment lines are
+        # stripped first: `jira.md` documents the trap by quoting the flag, and a raw scan
+        # would read that prose as coverage for the three call sites that lack it.
+        lobby = SCRIPTS.parent.parent
+        me = Path(__file__).resolve()
+
+        def yes_offenders() -> list[str]:
+            """Every call site, not "the good form appears somewhere" - that reads as
+            covered off jira.md's own cheat-sheet line while three real sites lack it.
+
+            Two false-positive classes the first cut hit, both load-bearing:
+              * a call WRAPS - jira_feed.py puts `--yes` on the next physical line, so a
+                line-local scan indicts the one caller that always got it right;
+              * this file MATCHES the verb (the acli stub) without ever calling it.
+            """
+            out = []
+            for p in sorted((lobby / ".agents").rglob("*")):
+                if p.suffix not in (".md", ".py", ".sh") or not p.is_file():
+                    continue
+                if p.resolve() == me:
+                    continue
+                lines = p.read_text(encoding="utf-8").splitlines()
+                for n, ln in enumerate(lines, 1):
+                    if ln.lstrip().startswith(("#", ">", "//")):
+                        continue          # a comment quoting the trap is not a call site
+                    # `acli` is the discriminator, not the bare phrase: a CALL SITE always
+                    # invokes the binary. Prose ABOUT the rule ("...if any `workitem
+                    # transition` omits it") mentions the phrase and is not a call - and
+                    # the first cut indicted this file's own documentation for saying so.
+                    if not all(t in ln for t in ("acli", "workitem", "transition")):
+                        continue
+                    if "--yes" not in " ".join(lines[n - 1:n + 2]):   # the call may wrap
+                        out.append(f"{p.relative_to(lobby)}:{n}")
+            return out
+
+        offenders = yes_offenders()
+        c.check("yes-guard: every `workitem transition` under .agents/ passes --yes",
+                not offenders,
+                "acli prompts without -y and an agent shell cannot answer: "
+                + ", ".join(offenders[:6]))
+
+        # Positive control, same shape as the interpreter probe's below: the rule documents
+        # this trap by quoting the bad form in prose. If stripping ever dies, that quote
+        # becomes an offender and this assertion goes red - which is the point.
+        c.check("yes-guard: the comment/quote strip is load-bearing, not decorative",
+                any(all(t in ln for t in ("acli", "workitem", "transition"))
+                    and "--yes" not in ln
+                    for ln in (lobby / ".agents/rules/jira.md")
+                    .read_text(encoding="utf-8").splitlines()
+                    if ln.lstrip().startswith((">", "#"))),
+                "jira.md must keep quoting the un-flagged form in prose, or this guard "
+                "is no longer being exercised against the case that inverts it")
 
         # ── the interpreter probe, in every hook that has one ──────────────────
         # The suite cannot EXECUTE these (a .sh will not run on the PC), so this asserts the

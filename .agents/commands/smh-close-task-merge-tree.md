@@ -241,9 +241,13 @@ python3 .agents/scripts/jira_feed.py devrecord --key <JIRA-KEY> --story <branch-
        --pitfall "<what nearly bit>" \
        --followon "<anything still owed>" --closing --apply
 
-acli jira workitem transition --key <JIRA-KEY> --status "Done"
+acli jira workitem transition --key <JIRA-KEY> --status "Done" --yes
 python3 .agents/scripts/jira_feed.py check --key <JIRA-KEY>     # must exit 0
 ```
+
+⛔ **`--yes` or acli stops on an interactive confirm no agent shell can answer.** This line shipped
+without it until SCC-113; `Done` was landing on luck. `tests/test_jira_feed.py` now fails if any
+`workitem transition` under `.agents/` omits it.
 
 **Exactly one Dev Record per ticket.** If `/cicd-quick-dev` already filed one at Step 4.5, this
 **updates it in place** — **never pass `--append-new`.** `devrecord --apply` reads the ticket back

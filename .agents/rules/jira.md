@@ -273,6 +273,14 @@ acli jira workitem edit --key SCC-14 --labels "quick-dev,parallel-ok"   # REPLAC
 acli jira workitem link create --out SCC-10 --in SCC-14 --type Blocks   # reads: SCC-10 blocks SCC-14
 ```
 
+> ⛔ **`--yes` is not decoration, and dropping it is silent.** Written without it —
+> `acli jira workitem transition --key SCC-14 --status "Done"` — acli stops on an interactive
+> confirm, which an agent's non-interactive shell can never answer. Three shipped call sites
+> omitted it (`/cicd-push-e2e`, `/smh-close-task-merge-tree`, `/smh-merge-multiple-workingtrees`);
+> `Done` was landing on luck until SCC-113. `tests/test_jira_feed.py` now fails if any
+> `workitem transition` under `.agents/` is missing it — comment and blockquote lines stripped
+> first, so this very paragraph does not read as coverage for a real call site.
+
 Smart Commits (`#comment` / `#time` / `#transition` in a commit message) also work and cost zero
 automation quota — but the branch-name join already links commits, so use them sparingly.
 
@@ -291,6 +299,7 @@ python3 .agents/scripts/jira_feed.py devrecord --key AVCH-15 --story 12.3.4 --pr
 python3 .agents/scripts/jira_feed.py check     --key AVCH-15 --story 12.3.4
 python3 .agents/scripts/jira_feed.py trace     --path backend/x.py:42 --path frontend/y.tsx
 python3 .agents/scripts/jira_feed.py flag      --key AVCH-15 --reason "..." --evidence "..." --apply
+python3 .agents/scripts/jira_feed.py start     --key SCC-113 --apply
 ```
 
 - **`mint`** (① Step 1.6) dedupes on the BMAD number, renders the **description from the story file**
@@ -305,6 +314,15 @@ python3 .agents/scripts/jira_feed.py flag      --key AVCH-15 --reason "..." --ev
   and it only ever proposes keys from the project(s) in this repo's `.agents/jira.conf`.
 - **`flag`** (SCC-54) is the raise half of the `Bug` rule, above. Needs `--reason`; reads the type
   and the status back after writing them.
+- **`start`** (SCC-113) is the seam that did not exist: work has begun, so the ticket reads
+  `In Progress`. **Idempotent** — already there is a no-op, so the `post-commit` recorder firing on
+  every commit and two lanes holding one key cannot fight over the board. It moves **only out of
+  `To Do` / `To Do Next`**, the same narrowness as `flag`'s "only out of `Done`": `Blocking` is an
+  impediment, `In Review` is finished work waiting on a human, `Deferred` is descoped, and starting
+  any of them erases the only signal it carries. A **`Done`** ticket is **refused** — guardrail 1 in
+  reverse, because a ticket you are starting cannot already be finished. An **`Epic` is allowed**
+  here and refused by `flag`; that difference is deliberate (an epic under development is genuinely
+  in progress; an epic is never itself broken work).
 
 Two rules that bind on YOU, not the script: **nothing is invented** (a missing story section renders
 `(none found ...)` and warns — do not paper over it), and **the buckets are yours to fill.** The
@@ -358,10 +376,21 @@ unrecognized tickets on sight.
    evidence — sprint/backlog placement, priorities, and board layout are human decisions.
 3. **Bare-state board.** Only OPEN work gets tickets. Never resurrect finished epics as tickets —
    done work is file history (`sprint-status.yaml`, `epics.md`), not board rows.
-4. **Don't double-move.** Four transitions are already automated: `/cicd-push-e2e` Step 6.5 moves the
-   EPIC ticket at merge; `/cicd-update-sprint-memory` Step 4.5 moves the STORY ticket at close-out;
-   `/smh-close-task-merge-tree` Step 4 moves the TASK ticket to `Done`; and `jira_feed.py flag` moves a
-   ticket **out of `Done`** when it is found broken. Outside those, transition a ticket only when the
+4. **Don't double-move.** These transitions are already automated — **at both ends of the lifecycle
+   since SCC-113**, which is the ticket that closed the start seam:
+
+   | When | What moves it | To |
+   |---|---|---|
+   | **first commit on `chore/ · claude/ · epic/`** | **the `post-commit` recorder** → `jira_feed.py start` | **`In Progress`** |
+   | worktree-open, Task lane | `/smh-quick-dev` Step 0.5 → `jira_feed.py start` | `In Progress` |
+   | story pickup, ① | `/cicd-write-story-tests` Step 1.6.4 → `jira_feed.py start` | `In Progress` |
+   | story close-out | `/cicd-update-sprint-memory` Step 4.5 | `Done` |
+   | task close-out | `/smh-close-task-merge-tree` Step 4 | `Done` |
+   | epic merge | `/cicd-push-e2e` Step 6.5 | `Done` |
+   | found broken | `jira_feed.py flag` | **out of** `Done` |
+
+   The three `In Progress` writers are all the same idempotent verb, so they cannot fight: whichever
+   fires first moves it, the rest are no-ops. Outside this table, transition a ticket only when the
    operator asks.
    **`/cicd-parallel-check` is not a fifth** — it writes the `parallel-ok` **label** and one comment
    on the epic, and deliberately transitions nothing. Placement stays the operator's (guardrail 2);

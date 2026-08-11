@@ -975,6 +975,77 @@ def cmd_trace(args) -> int:
     return 0
 
 
+# The statuses a ticket can legitimately be STARTED from. Deliberately narrow, exactly like
+# `flag`'s "only out of Done": a verb that moves from anywhere erases real state. `Blocking` is
+# an impediment, `In Review` is finished work waiting on a human, `Deferred` is descoped - and
+# starting any of them destroys the only signal each one carries. A board that lacks one of
+# these simply never matches it (per-board-optional, like every other rule in jira.md).
+STARTABLE = ("to do", "to do next")
+
+
+def cmd_start(args) -> int:
+    """Work has started: move a ticket to `In Progress` (SCC-113).
+
+    The seam that did not exist. Four wrote `Done` and one wrote `In Progress` - the BMAD
+    story lane - so on a board whose every non-epic ticket is a Task, nothing was ever
+    visible in flight. This is a verb rather than a prose step for the reason SCC-49 gave
+    for the other four: prose could not hold the failure mode. The prose one never ran.
+
+    Idempotent on purpose. The post-commit recorder fires on every commit and two lanes can
+    hold one key, so a second call must make no second transition.
+    """
+    binary = acli_bin(args.acli)
+    fields = view_fields(binary, args.key)
+    have = ((fields.get("issuetype") or {}).get("name") or "").strip()
+    status = ((fields.get("status") or {}).get("name") or "").strip()
+    summary = field_text(fields.get("summary"))
+    target = args.status
+
+    if have in ("Subtask", "Sub-task"):
+        wf.die(f"{args.key} is a {have} - start the parent it belongs to.")
+
+    # An Epic IS allowed, and this is the one place `start` differs from `flag`, which
+    # refuses containers outright. An epic under active development is genuinely in
+    # progress; an epic is never itself broken work. `epic/` is in the branch scope.
+
+    if status.lower() == target.lower():
+        say(f"jira-feed: {args.key} is already {target} - nothing to do ({summary[:60]})")
+        return 0
+
+    if status.lower() == "done":
+        # Guardrail 1, in reverse. Borrowing a finished ticket's key because the work is
+        # adjacent is how a closed ticket silently accumulates branches - and `devrecord`
+        # keeps ONE record per ticket and updates it in place, so a close-out under a
+        # borrowed key overwrites the record of the work that earned it.
+        say(f"[ERR] {args.key} is Done - that is not your key. A ticket you are starting "
+            f"work on cannot already be finished ({summary[:60]}). Mint one at the seam "
+            f"in jira.md #Who-mints-tickets; never reuse a closed key.")
+        return 2
+
+    if status.lower() not in STARTABLE:
+        say(f"jira-feed: {args.key} is {status or '?'} - left alone. `start` only moves a "
+            f"ticket out of {' / '.join(STARTABLE)}; {status} carries state this would "
+            f"erase.")
+        return 0
+
+    if not args.apply:
+        say(f"jira-feed: DRY RUN - would move {args.key} {status} -> {target} "
+            f"({summary[:60]})")
+        return 0
+
+    # --yes or acli blocks on an interactive confirm no agent shell can answer. This is the
+    # trap jira.md:268 names and three call sites shipped without.
+    t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,
+                      "--status", target, "--yes"])
+    now = ((view_fields(binary, args.key).get("status") or {}).get("name") or "").strip()
+    if t.returncode != 0 or now != target:
+        say(f"jira-feed: {args.key} is still {now or '?'} - the move did NOT land: "
+            f"{(t.stderr or t.stdout).strip()[:160]}")
+        return 2
+    say(f"jira-feed: {args.key} {status} -> {target}")
+    return 0
+
+
 def render_flag(args, was: str, status: str) -> str:
     lines = [f"**Bug flag** - {args.date}",
              "",
@@ -1175,6 +1246,13 @@ def main() -> int:
     p_flag.add_argument("--date", default=date.today().isoformat())
     p_flag.add_argument("--apply", action="store_true", help="without this, renders only")
 
+    p_start = sub.add_parser("start", help="work has started: move it to In Progress")
+    common(p_start)
+    p_start.add_argument("--key", required=True, help="the ticket, from the BRANCH name")
+    p_start.add_argument("--status", default="In Progress",
+                         help="the board's in-flight status (default: In Progress)")
+    p_start.add_argument("--apply", action="store_true", help="without this, renders only")
+
     p_chk = sub.add_parser("check", help="does this ticket carry outline + Dev Record?")
     common(p_chk)
     p_chk.add_argument("--key", required=True)
@@ -1183,7 +1261,7 @@ def main() -> int:
     args = ap.parse_args()
     return {"outline": cmd_outline, "mint": cmd_mint, "devrecord": cmd_devrecord,
             "audit": cmd_audit, "check": cmd_check, "trace": cmd_trace,
-            "flag": cmd_flag}[args.verb](args)
+            "flag": cmd_flag, "start": cmd_start}[args.verb](args)
 
 
 if __name__ == "__main__":

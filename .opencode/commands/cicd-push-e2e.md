@@ -131,10 +131,12 @@ merge IS the epic shipping, and Daniel's invocation of this command IS the sign-
 ```bash
 acli jira workitem comment create --key <JIRA-KEY> \
   --body "Merged to main at <merge-sha> via /cicd-push-e2e. Gate: pytest + build + /cicd-e2e green (<evidence-link>). Deploy verified live."
-acli jira workitem transition --key <JIRA-KEY> --status "Done"
+acli jira workitem transition --key <JIRA-KEY> --status "Done" --yes
 ```
 (`comment create` needs `--key`; `transition` too — `view` is the only one that takes the key
-positionally.) Full acli reference: `.agents/rules/jira.md`. Transition the EPIC ticket only — child stories were already moved one-by-one at their
+positionally. **`--yes` is not optional**: without it acli stops on an interactive confirm no
+agent shell can answer, and this line shipped without it until SCC-113.) Full acli reference:
+`.agents/rules/jira.md`. Transition the EPIC ticket only — child stories were already moved one-by-one at their
 close-outs by `/cicd-update-sprint-memory`. If Step 1's sanity check was honest, they are all `Done`
 before this runs; if the transition fails because children are open, that is the sanity check telling
 you it was skipped — go run the close-outs, do not force the epic.
