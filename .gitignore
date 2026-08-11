@@ -21,8 +21,17 @@
 **/docs/.maps-journal*.jsonl
 
 # Build / runtime junk anywhere
+# ⛔ Both forms of node_modules/.venv are needed, and the slash-less one is not redundant.
+# A trailing slash matches DIRECTORIES ONLY. In a git worktree these are not directories:
+# `link-worktree-assets.py` creates them as symlinks (Mac) / junctions (PC) pointing at the
+# main checkout, and git reports a symlink as a FILE. So the directory-only rule missed them,
+# every worktree sat permanently dirty, and `task_preflight.py` blocked the Task close-out on
+# "1 uncommitted change" produced by this repo's own tooling. Invisible from the main checkout,
+# where they really are directories and really are ignored. Found closing SCC-73.
 **/node_modules/
+**/node_modules
 **/.venv/
+**/.venv
 **/venv/
 **/__pycache__/
 **/.pytest_cache/

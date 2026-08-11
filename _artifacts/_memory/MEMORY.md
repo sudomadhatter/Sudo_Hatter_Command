@@ -6,6 +6,16 @@
 ## ⛔ Read first
 - [TWO machines: Mac AND PC](two-machines-mac-and-pc.md) — every shared doc is read on both; `python3` vs `python`; `core.hooksPath` is per-machine → gates silently OFF on a fresh clone.
 
+## Project stores
+<!-- Paths stay BACKTICKED, never markdown links: check_store() resolves every markdown link to a
+     .md file by BASENAME against THIS store, so linking a project index would read as a dead link
+     to a file that plainly exists. Do not write the literal link form here either - this comment
+     is scanned too, and the first draft of it tripped the check it was written to warn about. -->
+Settled project-only facts are relocated OUT of this index into the project's own store (SCC-73) —
+this section is the signpost. Working in one? Read its store too; it is not loaded for you.
+- **AGY_AVIATIONCHAT** → `Projects/AGY_AVIATIONCHAT/_artifacts/_memory/` — grading-event ordering, the tenancy chokepoint, Firestore merge-vs-list, the pytest suite lock, AGY test-harness quirks.
+- **NEXgen-VR-Director** → `Projects/NEXgen-VR-Director/_artifacts/_memory/` — no memories yet.
+
 ## Jira & tickets
 - [Jira is LIVE (SCC + AVCH)](jira-integration-live.md) — `acli`, already authed; every branch/commit carries a key; gate ARMED, wrong-project key rejected.
 - [Cross-repo work = a ticket PER REPO](cross-repo-work-needs-a-ticket-per-repo.md) — widening a project's `jira.conf` is ruled out in writing; and the key comes from the `epic/*` branch, never from the BMAD epic number.
