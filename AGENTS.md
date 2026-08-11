@@ -174,6 +174,25 @@ files, per §3); full model →
   closed-but-instructive → compress to a one-line lesson. (Claude's `~/.claude/...` harness path is a
   per-machine symlink into this store — a convenience, never the mechanism; fresh machine →
   migrations kit §1 step 8.)
+  **That read-only rule governs memory CONTENT.** A **structural** change to the store — the index's
+  section layout, the project-store pointers — is a different act, and it is sanctioned when it is the
+  declared subject of a ticket. Editing someone's memory in passing is what the rule forbids; rebuilding
+  the shelf it sits on, on a branch that says so, is not (SCC-73).
+- **The store is TWO-TIER — lobby = inbox + cross-project, project = settled project history (SCC-73).**
+  The lobby store `_artifacts/_memory/` is where **every** platform writes, always: Claude's harness
+  bakes an absolute per-workspace path into its own memory instruction, and no repo law can redirect
+  it — so a rule saying "write project facts over there" would be unenforceable for the writer that
+  produces most of them. **Do not change where you write.** What settles into project-only truth is
+  **relocated** to that project's own `Projects/<name>/_artifacts/_memory/` by `/smh-memory-audit`, per
+  item, on the operator's word — its fourth disposition beside retire / merge / compress, and its first
+  lever, since SCC-69 measured compaction spent (145 memories, 633 bytes freed). ⛔ **Never relocate a
+  memory on your own judgment, and never outside that command.** Two obligations follow, both gated by
+  `test_memory_store.py`: the lobby index carries a **`## Project stores`** section signposting every
+  maintained project (a memory moved out with no pointer left behind is indistinguishable from a
+  deletion), and each project index carries the **mirror line back** to the lobby (a lane launched
+  inside a project reads only that repo's store, so workflow law and cross-cutting hazards would
+  otherwise be invisible to it). Cross-project law, operator rulings and the ⛔ hazards **stay in the
+  lobby** — they are not any one project's.
 - **⚠ The memory-audit trigger — a standing obligation for every platform (SCC-68).** Upkeep is gated:
   `tests/test_memory_store.py` (in `run_all`) enforces the 25 KB index cap + link↔file integrity, and at
   **90 % of the cap** it prints a `MEMORY AUDIT DUE` block — below the cap, while the run still passes,

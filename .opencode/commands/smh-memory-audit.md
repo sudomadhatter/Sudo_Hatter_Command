@@ -113,6 +113,9 @@ Index: <before> / 25600 bytes (<pct>%)  →  projected <after> (<pct>%)
 ### 🗜️ Compress (index line only, body untouched)
 - `<a>` + `<b>` + `<c>` → one grouped row                           [frees ~<N> B]
 
+### 📦 Relocate to a project store
+- `<file>.md` → `Projects/<name>/_artifacts/_memory/`                [frees ~<N> B from the index]
+
 ### ✅ Kept despite the signal
 - `<file>.md` — marked CLOSED but the lesson still bites: <why>
 
@@ -135,6 +138,49 @@ referenced a retired memory (a retirement that leaves danglers just moves the me
 **Compression is a rewrite of the index line, never of a memory body.** If a lesson genuinely needs
 shortening, that is a per-file approval of its own — the body is where the content is supposed to
 live.
+
+### 📦 Relocation — the fourth disposition, and the first lever to reach for (SCC-73)
+
+**Why it leads.** SCC-69 ground-truthed all 145 memories and freed **633 bytes** — compaction is
+spent, and an audit that opens expecting slack will find none. What is left is that a third of this
+index is true only inside one project. Relocation moves those out; nothing is lost and nothing is
+summarized away.
+
+**What relocates:** a fact that is only true inside one project — its paths, its collections, its
+harness quirks. **What never relocates:** cross-project law, operator rulings, the ⛔ hazards, and
+anything two projects both depend on. When it is genuinely both, it stays in the lobby — reach beats
+tidiness, and this store's failure mode has always been a memory the session could not see.
+
+**⛔ Two repos, two commits, two ticket keys.** A project is a separate repo with its own armed
+`commit-msg` hook: AGY answers to **AVCH** keys only, and an SCC-keyed commit there is *rejected*. So
+a relocation is not a `git mv` — it is a move plus **two** commits under **two** tickets, and the
+project half needs its own ticket in that project. Say so before starting; do not discover it at the
+commit.
+
+```bash
+# 1. move it (from the LOBBY repo root; the project is a submodule checkout beneath it)
+mv _artifacts/_memory/<file>.md Projects/<name>/_artifacts/_memory/<file>.md
+
+# 2. the LOBBY half — drop its index line, keep the `## Project stores` signpost accurate
+git -C . add _artifacts/_memory/MEMORY.md
+git -C . rm --cached _artifacts/_memory/<file>.md    # tracked here until the move is staged
+
+# 3. the PROJECT half — its own repo, its own key (AVCH-…, never SCC-…)
+git -C Projects/<name> add _artifacts/_memory/<file>.md _artifacts/_memory/MEMORY.md
+```
+
+**Then, in the project's index:** add the memory's one-line pointer **and** make sure the mirror line
+back to the lobby store (`_artifacts/_memory/`) is present — a lane launched inside that project
+reads only its own store, so without it the cross-project law is invisible exactly where the
+riskiest work happens.
+
+**Commit and push BOTH repos before you call the relocation done.** `ignore = all` is set on the
+submodule, so the lobby's `git status` will **not** show a dirty project store — the usual "is my
+tree clean?" check cannot see the half you are most likely to strand.
+
+**Verify, do not assume:** re-run `python3 .agents/scripts/tests/test_memory_store.py` (PC: `python`).
+Project-store findings surface as `[SIGNAL]`, not failures — they are in a repo this one may not
+commit to — so read the signal lines, not just the exit code.
 
 ## Step 6 — Verify this machine's harness link
 

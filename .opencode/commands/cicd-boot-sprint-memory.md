@@ -36,6 +36,19 @@ Read `_bmad-output/active-context/active-context.md` and output a `<context>` bl
 - **Pitfalls** — active-context only POINTS at them now: GREP `_bmad-output/active-context/known-pitfalls.md`
   for the next story's files/components and surface ONLY the matching entries — never bulk-load that file.
 
+## Step 1.5 — Read THIS project's memory store (SCC-73)
+Read `<PROJECT_ROOT>/_artifacts/_memory/MEMORY.md` — the project's own memory index — and open the
+files relevant to the story you are about to pick up.
+
+**Why this step exists.** The memory store is two-tier. The lobby index you loaded at session start
+holds cross-project law; the facts that are true only inside *this* project are **relocated** into
+its own store, so they are **not** in the index you already have. Skip this and the boot is missing
+exactly the project-specific hazards it exists to surface — the harness quirks, the chokepoints, the
+gotchas that cost someone a session the first time.
+
+If the file does not exist, the project simply has no memories yet — say so in one line and move on.
+It is a beginning, not a fault.
+
 ## Step 2 — Load in-scope component specs
 For each spec flagged in-scope (or implied by the sprint objective), read it from
 `_bmad-output/component-specs/` and note its **Invariants** section. If none are flagged, say:
