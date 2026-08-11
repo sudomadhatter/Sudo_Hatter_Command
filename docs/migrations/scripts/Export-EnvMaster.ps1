@@ -1,8 +1,8 @@
 # Export-EnvMaster.ps1 — gather every secret env/credential file in the lobby +
-# all sub-projects into ONE master file: _my_resources/migrations/_secrets/master.env
+# all sub-projects into ONE master file: docs/migrations/auth_keys/_secrets/master.env
 #
-# Run from anywhere:  powershell -File _my_resources\migrations\Export-EnvMaster.ps1
-# Output is GITIGNORED (**/_secrets/). Carry it to the new machine yourself
+# Run from anywhere:  powershell -File docs\migrations\scripts\Export-EnvMaster.ps1
+# Output is GITIGNORED (**/auth_keys/ AND **/_secrets/ both match it). Carry it to the new machine yourself
 # (USB / password manager attachment) — never commit, email, or cloud-sync it in plaintext.
 #
 # What it collects (auto-discovered, so new projects are picked up automatically):
@@ -15,8 +15,8 @@
 
 # $Root must be the LOBBY ROOT — every path in the manifest is stored relative to
 # it, and Restore-EnvMaster.ps1 rebuilds against the same base. This script lives
-# two levels down (_my_resources/migrations/), so walk up twice.
-param([string]$Root = (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent))
+# three levels down (docs/migrations/scripts/), so walk up three times.
+param([string]$Root = (Split-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) -Parent))
 
 $ErrorActionPreference = 'Stop'
 Set-Location $Root
@@ -49,7 +49,7 @@ $sb = New-Object System.Text.StringBuilder
 [void]$sb.AppendLine('#   # >>> FILE: <path relative to lobby root>')
 [void]$sb.AppendLine('#   ...content...')
 [void]$sb.AppendLine('#   # <<< END FILE: <same path>')
-[void]$sb.AppendLine('# Restore with _my_resources/migrations/Restore-EnvMaster.ps1 (or by hand per the guide).')
+[void]$sb.AppendLine('# Restore with docs/migrations/scripts/Restore-EnvMaster.ps1 (or by hand per the guide).')
 [void]$sb.AppendLine('#')
 [void]$sb.AppendLine("# MANIFEST ($($targets.Count) files):")
 foreach ($t in $targets) { [void]$sb.AppendLine("#   - $t") }
@@ -65,7 +65,7 @@ foreach ($t in $targets) {
     [void]$sb.AppendLine('')
 }
 
-$vaultRel = '_my_resources/migrations/_secrets/master.env'
+$vaultRel = 'docs/migrations/auth_keys/_secrets/master.env'
 New-Item -ItemType Directory -Force -Path (Split-Path (Join-Path $Root ($vaultRel.Replace('/', '\'))) -Parent) | Out-Null
 $out = Join-Path $Root ($vaultRel.Replace('/', '\'))
 [System.IO.File]::WriteAllText($out, $sb.ToString(), (New-Object System.Text.UTF8Encoding $false))
@@ -74,7 +74,7 @@ $out = Join-Path $Root ($vaultRel.Replace('/', '\'))
 $ignored = git -C $Root check-ignore $vaultRel 2>$null
 if (-not $ignored) {
     Remove-Item $out -Force
-    throw ($vaultRel + ' is NOT gitignored — add "**/_secrets/" to .gitignore, then re-run.')
+    throw ($vaultRel + ' is NOT gitignored — the vault lives under auth_keys/, so "**/auth_keys/" is the rule that must be in .gitignore ("**/_secrets/" alone no longer covers it). Add it, then re-run.')
 }
 
 Write-Host "Wrote $out ($($targets.Count) files bundled):"

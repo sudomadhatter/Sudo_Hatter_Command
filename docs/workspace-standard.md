@@ -279,7 +279,7 @@ Two operational rules, both learned the expensive way:
   slug. That gap stranded **15 memory files** across two dead slugs before this was set up. Once junctioned,
   a rename costs nothing but re-pointing the link — the data was never in the slug directory.
 
-Full contract → `_artifacts/_memory/README.md`; setup steps → `_my_resources/migrations/INDEX.md` §1 step 8
+Full contract → `_artifacts/_memory/README.md`; setup steps → `docs/migrations/INDEX.md` §1 step 8
 (new machine) and §3 (rename day).
 
 ### Routing canary — the regression cadence

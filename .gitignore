@@ -50,7 +50,7 @@
 **/*.pre-restore.bak
 **/auth_keys/
 # Master env bundle for machine migration (built by
-# _my_resources/migrations/Export-EnvMaster.ps1) — never committed. Pattern is
+# docs/migrations/scripts/Export-EnvMaster.ps1) — never committed. Pattern is
 # deliberately path-independent: the vault stays ignored wherever it lands.
 **/_secrets/
 .claude/settings.local.json
