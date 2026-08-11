@@ -262,6 +262,151 @@ def main() -> int:
                 errs[:140])
         c.check("SCC-63 the vendor allowlist stays CLOSED (20 names)",
                 len(lint.VENDOR_COMMANDS) == 20, str(len(lint.VENDOR_COMMANDS)))
+
+        # ── SCC-82: the AP-twin check must be SATISFIABLE ────────────────────
+        # It compared commit timestamps and nothing else, so a pair that had been
+        # diffed and needed no port warned forever. The only way to clear it was to
+        # touch the twin - a false claim encoded in a timestamp, and exactly the
+        # "accepted noise" that makes a non-zero baseline useless.
+        #
+        # `ap_reconciled: <primary-sha>` is the twin's auditable claim: "I read the
+        # primary at this sha and there is nothing to port." The danger is obvious -
+        # a claim mechanism is one bad line away from being an off-switch - so the
+        # cases below assert BOTH directions, and the one that matters is case D:
+        # the moment the primary genuinely moves, the stamp must go stale and the
+        # warning must come back on its own.
+        tw = tmp / "twinrepo"
+        (tw / ".agents/commands").mkdir(parents=True)
+        tcmds = tw / ".agents/commands"
+
+        def tgit(*args: str) -> str:
+            r = subprocess.run(["git", *args], cwd=tw, capture_output=True,
+                               text=True, errors="replace")
+            return r.stdout.strip()
+
+        # ⛔ Commit dates are PINNED, and the first RED run is why. Git timestamps
+        # have 1-second resolution, so fixture commits made back-to-back land on the
+        # same second and `pr_ts > ap_ts` is false - case B did not fire, and case C
+        # then "passed" while proving nothing at all, because the check was silent
+        # for a reason that had nothing to do with the stamp. A vacuous green that
+        # looks identical to a real one is the failure this whole file guards.
+        import os
+        _clock = [0]
+
+        def tcommit(msg: str) -> None:
+            _clock[0] += 86400
+            stamp = f"{1780000000 + _clock[0]} +0000"
+            env = {**os.environ, "GIT_AUTHOR_DATE": stamp, "GIT_COMMITTER_DATE": stamp}
+            subprocess.run(["git", "add", "-A"], cwd=tw, capture_output=True)
+            subprocess.run(["git", "commit", "-qm", msg], cwd=tw,
+                           capture_output=True, env=env)
+
+        tgit("init", "-q")
+        tgit("config", "user.email", "t@t.t")
+        tgit("config", "user.name", "t")
+
+        def twin_report() -> wf.Report:
+            r = wf.Report()
+            lint.check_ap_twins(tw, r)
+            return r
+
+        def ap_msgs(r: wf.Report) -> str:
+            return " ".join(i["msg"] for i in r.items if i["section"] == "ap-twins")
+
+        prim, twin = tcmds / "thing.md", tcmds / "thing-AP.md"
+        # The twin names its primary's stem - that is the OTHER drift signal, and
+        # leaving it out here would make every case below fire for the wrong reason.
+        twin.write_text("---\ndescription: x\n---\n# /thing-AP - modeled off thing\n",
+                        encoding="utf-8")
+        prim.write_text("---\ndescription: x\n---\n# /thing\nv1\n", encoding="utf-8")
+        tcommit("both together")
+
+        # A. Committed together -> nothing to report. If this fires, every later
+        #    case is meaningless because the detector is simply always-on.
+        c.check("SCC-82 A twins committed together are silent",
+                not ap_msgs(twin_report()), ap_msgs(twin_report())[:140])
+
+        # B. POSITIVE CONTROL: primary moves alone -> the check must fire. This is
+        #    the behaviour being preserved, not replaced.
+        prim.write_text("---\ndescription: x\n---\n# /thing\nv2 changed\n",
+                        encoding="utf-8")
+        tcommit("primary only")
+        c.check("SCC-82 B primary committed after the twin still fires",
+                "diff the twin" in ap_msgs(twin_report()), ap_msgs(twin_report())[:140])
+
+        # C. The stamp alone must satisfy it. ⛔ The twin is deliberately NOT
+        #    committed here. Committing it would make the twin newer than the
+        #    primary, the timestamp path would go quiet by itself, and this case
+        #    would pass identically with the feature unbuilt - which is exactly what
+        #    the first draft did. Left uncommitted, silence can ONLY come from the
+        #    stamp being read.
+        prim_sha = tgit("log", "-1", "--format=%H", "--", str(prim))
+        stamped_twin = (f"---\ndescription: x\nap_reconciled: {prim_sha}\n---\n"
+                        "# /thing-AP - modeled off thing\n")
+        twin.write_text(stamped_twin, encoding="utf-8")
+        c.check("SCC-82 C ap_reconciled alone silences it, twin history untouched",
+                not ap_msgs(twin_report()), ap_msgs(twin_report())[:140])
+        tcommit("stamp the twin")
+
+        # D. ⭐ THE CASE THE TICKET EXISTS FOR, and it is built so the OLD check
+        #    would call it clean. The primary moves, then the twin is committed
+        #    AFTER it while still carrying the old sha - i.e. someone touched the
+        #    twin and reset the clock without diffing anything. Timestamps say
+        #    "fine"; the stamp says "you reconciled against a primary that no longer
+        #    exists". If the stamp were a mute button rather than a claim, this is
+        #    where it would show, and it must WARN.
+        prim.write_text("---\ndescription: x\n---\n# /thing\nv3 changed again\n",
+                        encoding="utf-8")
+        tcommit("primary moves again")
+        twin.write_text(stamped_twin + "\na cosmetic edit\n", encoding="utf-8")
+        tcommit("touch the twin WITHOUT diffing - the cheat this must block")
+        ap_ts = tgit("log", "-1", "--format=%ct", "--", str(twin))
+        pr_ts = tgit("log", "-1", "--format=%ct", "--", str(prim))
+        c.check("SCC-82 D the twin is genuinely NEWER here (the old check saw clean)",
+                int(ap_ts) > int(pr_ts), f"twin={ap_ts} primary={pr_ts}")
+        c.check("SCC-82 D a stale stamp warns even when the twin is newer",
+                "diff the twin" in ap_msgs(twin_report()), ap_msgs(twin_report())[:140])
+
+        # E. A sha that is not the primary's current one is not a claim about
+        #    anything - garbage must not buy silence. Twin is newest here too, so
+        #    again only the stamp check can produce the warning.
+        twin.write_text("---\ndescription: x\nap_reconciled: 0000000000000000000"
+                        "000000000000000000000\n---\n# /thing-AP - modeled off thing\n",
+                        encoding="utf-8")
+        tcommit("bogus stamp")
+        c.check("SCC-82 E a bogus ap_reconciled sha does not silence it",
+                "diff the twin" in ap_msgs(twin_report()), ap_msgs(twin_report())[:140])
+
+        # F. The pre-existing signals are untouched: a twin that stopped naming its
+        #    primary, and a twin with no primary at all.
+        # `thing` is a SUBSTRING of `thing-AP`, so a twin that still says its own
+        # name trivially contains its primary's stem - the first draft of this case
+        # could not fail. The text below names neither.
+        twin.write_text(f"---\ndescription: x\nap_reconciled: {prim_sha}\n---\n"
+                        "# /renamed-AP - points at nobody\n", encoding="utf-8")
+        c.check("SCC-82 F a twin that stopped naming its primary still warns",
+                "no longer references" in ap_msgs(twin_report()),
+                ap_msgs(twin_report())[:140])
+        orphan = tcmds / "orphan-AP.md"
+        orphan.write_text("---\ndescription: x\n---\n# /orphan-AP\n", encoding="utf-8")
+        r = twin_report()
+        c.check("SCC-82 F a twin with no primary is still an ERROR",
+                any(i["sev"] == "ERROR" for i in r.items if i["section"] == "ap-twins"),
+                ap_msgs(r)[:140])
+        orphan.unlink()
+
+        # G. The real repo is the point of the ticket: zero warnings, and the twins
+        #    that were never stale must not have been stamped to make that true.
+        real = Path(__file__).resolve().parents[3]
+        rep = wf.Report()
+        lint.check_ap_twins(real, rep)
+        c.check("SCC-82 G the live repo's AP twins report nothing",
+                not [i for i in rep.items if i["section"] == "ap-twins"],
+                str([i["msg"] for i in rep.items])[:200])
+        stamped = [p.name for p in sorted((real / ".agents/commands").glob("*-AP.md"))
+                   if "ap_reconciled" in wf.read_text(p)]
+        c.check("SCC-82 G only the twin that was actually diffed carries a stamp",
+                stamped == ["cicd-code-review-AP.md"], str(stamped))
     return c.finish()
 
 
