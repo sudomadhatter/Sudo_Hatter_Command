@@ -74,7 +74,9 @@ Stdlib only, plain ASCII output -- same constraints as its siblings (Windows con
 """
 from __future__ import annotations
 
+import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -172,28 +174,51 @@ def unresolved_commands(text: str, masters: set[str]) -> set[str]:
 # tickets had deleted, with every gate green.
 #
 # ⛔ SCOPE, stated because an unstated one reads as total coverage: this sees BACKTICKED
-# tokens only. Measured folder-wide at build time: exactly 2 path-shaped tokens sit
-# outside backticks, so the convention holds and widening the net would buy 2 checks at
-# the cost of matching ordinary prose. The INDEX's mechanism table carries this as a row.
+# tokens only. Measured folder-wide: 242 slash-bearing tokens sit outside backticks, and
+# they are overwhelmingly PROSE -- `Dev/QA`, `and/or`, `PASS/CONCERNS/FAIL`, `7/7`. So
+# widening the net trades a handful of real checks for hundreds of false ones. The
+# backtick convention IS the boundary; that is the honest reason, not a low count.
+# (An earlier build of this comment claimed "exactly 2". It was never measured. -- SCC-83
+# code review, and the reason every number in this file now names its probe.)
 CODE_SPAN = re.compile(r"`([^`\n]+)`")
 
-# Tokens that are shaped like a path and are not one. ⭐ THE FIXTURED PART: the first
-# sweep for this ticket excluded 2392 tokens through a regex written by eye, with nothing
-# proving it. Too broad and real dead references vanish silently while this reads green;
-# too narrow and 153 false positives come back and the signal gets ignored. Every class
-# below has a control in T9-fixture.
-NOT_A_PATH = re.compile(
-    r"^(origin|upstream|epic|chore|claude|story|incident|main|HEAD)/"  # branch names
-    r"|^/(api|ws|v\d)/"                                               # URL routes
-    r"|^(openrouter|anthropics|google|openai)/"                       # vendor/model ids
-    r"|^@"                                                            # npm scopes
-    r"|[*?\[\]]|\.\.\.|\s"                                            # globs, ellipses, prose
-)
+# ⭐ WHAT ACTUALLY REJECTS A NON-PATH, because knowing this is the difference between
+# maintaining the filter and decorating it. Two rules do essentially all the work:
+#
+#   1. PATH_LIKE's character class. Anything carrying a glob char, whitespace, a leading
+#      `/`, or any other punctuation outside [\w.@+-] never matches in the first place.
+#      That alone kills globs (`docs/*.md`), URL routes (`/api/incident/fire`) and prose.
+#   2. The first-segment rule in unresolved_paths(): the head must name a real directory
+#      in some root, or the token is skipped. That kills branch names (`origin/main`),
+#      vendor model ids (`openrouter/z-ai/glm-5.2`) and npm scopes (`@firebase/...`),
+#      because no such directory exists.
+#
+# ⛔ Round 1 of SCC-83 shipped SEVEN alternations here as belt-and-braces. Measured against
+# the lobby plus all 8 populated projects, SIX could never fire -- and the code review
+# proved it the only way that counts: deleting the whole regex left the suite 34/34 GREEN.
+# A filter nothing can falsify is not defence in depth, it is decoration that reads as
+# coverage. Cut to the one class that is genuinely live, which has a control below.
+#
+# ⛔ And the ONE class is narrower than it first looks: a TRAILING ellipsis never reaches
+# here, because the token is rstrip'd of ".,;:)" before matching -- `docs/...` becomes
+# `docs/` and resolves. Only a MID-path elision (`docs/.../deep.md`) is live. Round 2's
+# first fixture used the trailing form and the mutation run caught it: deleting this regex
+# still left the suite green. The control below uses the mid-path form.
+NOT_A_PATH = re.compile(r"\.\.\.")            # `docs/.../x` -- an elision, not a directory
 PATH_LIKE = re.compile(r"^[\w.@+-]+(?:/[\w.@+-]+)+/?$")
 
 # Absent ON PURPOSE. Each entry states why, because an allow-list is one line away from
 # being an off-switch -- the DISCUSSED_AS_RETIRED lesson from T4, one tier down.
+#
+# ⛔ TWO CLASSES, and missing the second one caused a shipped regression. "Absent" is not
+# one thing: a path can be absent because it must never exist, or because it does not
+# exist YET. Round 1 had no class for the second, so the only way to quieten a correct
+# sentence about a file the reader is being told to CREATE was to make the doc wrong --
+# and that is exactly what happened to tea_testing_guide.md's decision table, which ended
+# up giving two different options the same path. The inversion this list exists to prevent,
+# committed by the person maintaining the list.
 ABSENT_BY_DESIGN = {
+    # -- class 1: must never exist ---------------------------------------------------
     # A kill switch: its ABSENCE is the armed state. Creating it to satisfy a doc would
     # disarm every git hook in the repo. The doc is right to name it.
     ".agents/scripts/git-hooks/DISABLE":
@@ -211,71 +236,170 @@ ABSENT_BY_DESIGN = {
     # instruction to open a file that moved.
     "_my_resources/_quick_reference/": "retired by SCC-74 - named as provenance",
     "_my_resources/diagrams_guides/": "retired by SCC-74 - named as provenance",
+    # Named as the WRONG place, and the sentence depends on it being empty: "without
+    # core.hooksPath git reads `.git/hooks`, which is empty - so the gates are silently
+    # off." Flagging it asks the author to delete the warning. (Structurally it could never
+    # resolve anyway: `.git` is pruned from the index, and in a worktree it is a FILE.)
+    ".git/hooks": "named as the empty default core.hooksPath bypasses - the SOP's point",
+
+    # -- class 2: PROSPECTIVE -- the doc is telling you to create it -------------------
+    # Each of these sits in a sentence whose whole job is "make this". Flagging them asks
+    # the author to delete the instruction. Narrowness is enforced by the A4 control: a
+    # sibling in the same directory that is NOT listed here still fires.
+    "_artifacts/opencode/":
+        "prospective - the opencode namespace is 'created on first use' by the engine",
+    ".agents/rules/testing-standards.md":
+        "prospective - tea_testing_guide P9 option A tells the reader to write it",
+    "Projects/AGY_AVIATIONCHAT/.agents/rules/testing-standards.md":
+        "prospective - the same rule, option B (project-local, the documented default)",
 }
 
 # `~~`path`~~` -- the author has explicitly struck it through as gone. Reporting it asks
 # them to delete the very line recording the removal. Found by the RED: line 11 of
 # file_folder_structure+maintaining.md already says "**gone**" and was flagged anyway.
-STRUCK = re.compile(r"~~[^~]*~~")
+#
+# ⛔ `[^~\n]*` -- the `\n` is the whole fix. Round 1 used `[^~]*`, which spanned newlines:
+# one unbalanced `~~` plus any later strikethrough blanked everything between them, and a
+# `~~~` fence was eaten whole. A whole-file off-switch reachable by a typo, inside the gate
+# written to stop silent misses. (Latent, not live -- the folder measures 2 and 8
+# occurrences, both balanced -- but the failure mode is silent.)
+#
+# ONE mechanism, not two. Round 2 first bounded the class AND applied it per line; the
+# mutation run showed each alone was sufficient, so neither mutation was observable and
+# both fixtures were green against a defect. Same disease as the six dead NOT_A_PATH
+# alternations above, so it got the same treatment: keep the one that is falsifiable.
+# Matches CODE_SPAN's idiom (`[^`\n]+`) -- markdown inline spans do not cross lines.
+STRUCK = re.compile(r"~~[^~\n]*~~")
+
+# Directories that are never part of an answer. `worktrees` is the one that matters: the
+# round-1 index descended into `.claude/worktrees/` and cited a SIBLING LANE's transient
+# copy as the place a file had moved to.
+PRUNE = {".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build", ".next",
+         ".pytest_cache", ".mypy_cache", ".ruff_cache", ".turbo", "coverage", "worktrees"}
 
 
-def _is_stub_project(t: str, roots: list[Path]) -> bool:
-    """`Projects/<name>/...` where <name> is checked out as an empty stub.
+class RootIndex:
+    """One pruned walk per root, built once -- paths, leaf names and top-level dirs.
+
+    ⛔ REPLACES a per-token `rglob` that cost +18.3s on every run_all and never
+    short-circuited (`[:1]` slices AFTER full evaluation). Measured replacement: 9 roots,
+    20,447 entries, 0.12s.
+
+    ⭐ And it fixes a correctness bug the rglob could not: membership here is EXACT-CASE.
+    macOS is case-insensitive, so `(root / "DOCS/foo.md").exists()` is True and a
+    wrong-case path resolved silently on the Mac while being dead on the PC.
+    """
+
+    def __init__(self, root: Path, skip_top: frozenset[str] = frozenset()) -> None:
+        self.root = root
+        self.paths: set[str] = set()
+        self.leaves: dict[str, str] = {}
+        self.heads: set[str] = set()
+        for dirpath, dirnames, filenames in os.walk(root):
+            if os.path.relpath(dirpath, root) == "." and skip_top:
+                # The lobby does not index `Projects/` -- each project is indexed as its
+                # OWN root, so indexing it here walks all eight of them a second time.
+                # MEASURED, which is the only reason this is here: from the main checkout
+                # the lobby index drops from 20,597 paths to 3,574 (0.12s -> 0.02s). From a
+                # lane it changes nothing (the projects are stubs there). It is a
+                # double-indexing fix, NOT the lane/main equality fix -- that is the
+                # `Projects/<name>/` prefix on the moved-> target below. The directory
+                # itself is still recorded, so `Projects/` remains a valid head and path.
+                dirnames[:] = [d for d in dirnames if d not in skip_top]
+                self.heads.update(skip_top & set(os.listdir(root)))
+                self.paths.update(skip_top & set(os.listdir(root)))
+            rel = os.path.relpath(dirpath, root)
+            # ⛔ RECORD FIRST, prune SECOND. Pruning before recording made every pruned
+            #    directory read as absent, and the docs legitimately name several of them:
+            #    `backend/.venv`, `frontend/node_modules`. The first run of this index
+            #    reported all three as dead. Pruning is about not DESCENDING; the directory
+            #    itself still exists and is still a valid answer.
+            for n in dirnames + filenames:
+                q = n if rel == "." else f"{rel}/{n}"
+                self.paths.add(q)
+                self.leaves.setdefault(n, q)
+            if rel == ".":
+                self.heads.update(dirnames)
+            dirnames[:] = [d for d in dirnames if d not in PRUNE]
+
+    def has(self, t: str) -> bool:
+        return t.rstrip("/") in self.paths
+
+
+def build_index(roots: list[Path]) -> dict[Path, RootIndex]:
+    """ONE construction site, used by the real run AND by every fixture.
+
+    ⛔ Round 1's defect in miniature: the shipped call site passed `strict=not stubbed`
+    while every fixture and every verification took the default. Two programs, one of them
+    never exercised. Any per-root asymmetry belongs here, where both paths get it."""
+    return {r: RootIndex(r, frozenset({"Projects"}) if i == 0 else frozenset())
+            for i, r in enumerate(roots)}
+
+
+def _project_token(t: str, roots: list[Path], idx: dict[Path, RootIndex]) -> str | None:
+    """Classify `Projects/<name>/<rest>`: "skip", "ok", or "miss" (None if not that shape).
 
     ⛔ Found by the RED, and it is the trap this test exists to avoid. The first-segment
     rule below skips `backend/tests/` because no `backend/` exists here -- but an EXPLICIT
     `Projects/AGY_AVIATIONCHAT/scripts/` sails straight past it, because `Projects/` does
-    exist. Every git worktree checks those out empty, so without this the check reports a
-    dead reference for every project path in every lane. The A3c control covered only the
-    implicit form and would have shipped this.
+    exist. Without this, any project not checked out on this machine reports a dead
+    reference for every path it owns.
+
+    ⛔ TWO JOBS, and round 2's first cut conflated them -- which left a lane and main
+    still disagreeing on this one token class, invisibly, because the allow-list happened
+    to mask the only example. The old version asked "is `<root>/Projects/<name>` an empty
+    directory?", and in a LANE every one of them is, so every explicit project path was
+    skipped there and checked from main. Separated:
+
+      - no root is named <name>  -> this machine genuinely cannot see it        -> "skip"
+      - otherwise resolve <rest> INSIDE that root, because the token is spelled
+        lobby-relative while the project is its own checkout                    -> ok/miss
+
+    Deriving both from `roots` (never from the filesystem directly) is what keeps the
+    fixtures honest: they pass their own roots and get the same code path.
     """
-    parts = Path(t).parts
+    parts = t.rstrip("/").split("/")
     if len(parts) < 2 or parts[0] != "Projects":
-        return False
-    for r in roots:
-        d = r / parts[0] / parts[1]
-        if d.is_dir() and not any(d.iterdir()):
-            return True
-    return False
+        return None
+    pr = next((r for r in roots if r.name == parts[1]), None)
+    if pr is None:
+        return "skip"                                   # not absent -- NOT CHECKED OUT here
+    return "ok" if (len(parts) == 2 or idx[pr].has("/".join(parts[2:]))) else "miss"
 
 
 def unresolved_paths(text: str, roots: list[Path], base: Path | None = None,
-                     strict: bool = True) -> dict[str, str]:
-    """(see below) -- `strict=False` when some project is only a stub in this checkout.
-
-    ⛔ WHY strict EXISTS, measured: the same folder yields 25 findings from a worktree and
-    12 from the main checkout. Tokens like `_bmad-output/sudo-tests.yaml` have a first
-    segment the lobby also has, so the skip rules above pass them through, and then they
-    fail because the project that really owns them is an empty stub. Fix the 12 and every
-    lane would still be red on 13 findings its author cannot fix -- which is how a gate
-    gets ignored, then deleted (the same reasoning T3 carries about Projects/ links).
-
-    So when anything is stubbed, T9 asserts only what is PROVABLE without the projects: a
-    token whose leaf was found again INSIDE THE LOBBY, i.e. a file that demonstrably moved.
-    "Resolves nowhere" is downgraded to unprovable and dropped. It still fails -- it just
-    fails on the subset that cannot be an artefact of where you are standing."""
+                     index: dict[Path, RootIndex] | None = None) -> dict[str, str]:
     """Backticked paths in `text` that resolve under none of `roots`.
 
     `roots` is injected so fixtures drive this without touching the real tree, and so the
-    caller decides what "here" means -- the lobby alone, or the lobby plus each POPULATED
-    project root.
+    caller decides what "here" means -- the lobby plus each project root.
 
     ⭐ The first path segment must name a directory that exists in some root, or the token
-    is SKIPPED rather than reported. That one rule is what keeps this honest in a worktree:
-    `Projects/<name>/` is an empty stub there, so `backend/tests/` is not absent, it is
-    NOT CHECKED OUT -- and a checker that cannot tell those apart produces a worklist that
-    is mostly wrong. Measured on this very folder: 10 of 11 such hits were false. Same
-    ruling as rotted_pointers() in test_memory_store.py -- return nothing rather than noise,
-    because a signal people learn to skip is worse than no signal.
+    is SKIPPED rather than reported. Measured on this very folder: 10 of 11 such hits were
+    false. Same ruling as rotted_pointers() in test_memory_store.py -- return nothing
+    rather than noise, because a signal people learn to skip is worse than no signal.
 
     Returns {token: reason} so the caller can say WHY, and in particular can separate
     "moved" from "gone" -- a relocated file's references are mis-pathed, not dead.
+
+    ⛔ THERE IS NO `strict` MODE, and its removal is the point of round 2. Round 1 passed
+    `strict=not stubbed`: a GLOBAL switch, off whenever any project was a stub. A lane sees
+    9 stubs and main sees 1 (an uninitialised submodule), so it was off EVERYWHERE and the
+    "resolves nowhere" arm was dead code in every checkout that exists. Worse, it keyed on
+    untracked state -- one stray .DS_Store in a stub would flip a whole run strict and turn
+    every lane red. The cure is not a per-token version of the same switch; it is
+    _scan_roots() below, which makes coverage identical no matter where you stand.
     """
     out: dict[str, str] = {}
+    idx = index if index is not None else build_index(roots)
     text = STRUCK.sub(" ", text)          # struck-through == the author already said "gone"
     for m in CODE_SPAN.finditer(text):
         t = m.group(1).strip().rstrip(".,;:)")
-        if t in ABSENT_BY_DESIGN or NOT_A_PATH.search(t) or not PATH_LIKE.match(t):
+        # This repo is read on a Mac AND a PC, and a doc written on Windows says
+        # `docs\foo.md`. PATH_LIKE rejects the backslash, so round 1 skipped those in
+        # total silence -- unchecked, and indistinguishable from clean.
+        t = t.replace("\\", "/")
+        if _by_design(t) or NOT_A_PATH.search(t) or not PATH_LIKE.match(t):
             continue
         # `./x` and `../x` are relative to the FILE, not the repo root. Resolving them
         # against the root reports a correct reference as dead -- the RED caught two of
@@ -287,12 +411,13 @@ def unresolved_paths(text: str, roots: list[Path], base: Path | None = None,
                 continue                                # cannot judge without the file
             out[t] = "resolves nowhere (relative to this file)"
             continue
-        if _is_stub_project(t, roots):
-            continue                                    # not absent -- NOT CHECKED OUT here
+        pj = _project_token(t, roots, idx)
+        if pj in ("skip", "ok"):
+            continue                    # not checked out here / resolves inside that project
         head = t.split("/", 1)[0]
-        if not any((r / head).is_dir() for r in roots):
+        if not any(head in idx[r].heads for r in roots):
             continue                                    # not checkable here -> not a claim
-        if any((r / t).exists() for r in roots):
+        if any(idx[r].has(t) for r in roots):
             continue
         # It is missing. Does a file of that name live somewhere else? Then the reference
         # is MIS-PATHED, not dead -- the more common and more confusing failure, and the
@@ -300,28 +425,66 @@ def unresolved_paths(text: str, roots: list[Path], base: Path | None = None,
         # `leaf`, NOT `base` -- naming it `base` reassigned the parameter mid-loop, so
         # every token after the first was measured against a string. The RED crashed on it.
         leaf = Path(t.rstrip("/")).name
-        elsewhere = [str(q.relative_to(r)) for r in roots
-                     for q in r.rglob(leaf) if ".git" not in q.parts][:1] if "." in leaf else []
-        if elsewhere:
-            out[t] = f"moved -> {elsewhere[0]}"
-        elif strict:
-            out[t] = "resolves nowhere"
-        # else: unprovable here -- the project that owns it is not checked out. Dropped
-        # rather than reported, per the same ruling as rotted_pointers() in SCC-80.
+        # Report the target relative to the LOBBY, whichever root it was found in --
+        # `Projects/<name>/...` for a project hit. An answer whose spelling depends on
+        # which checkout you ran from is an answer you cannot paste into a doc.
+        elsewhere = []
+        if "." in leaf:
+            for i, r in enumerate(roots):
+                if leaf in idx[r].leaves:
+                    rel = idx[r].leaves[leaf]
+                    elsewhere = [rel if i == 0 else f"Projects/{r.name}/{rel}"]
+                    break
+        out[t] = f"moved -> {elsewhere[0]}" if elsewhere else "resolves nowhere"
     return out
+
+
+def _by_design(t: str) -> bool:
+    """Allow-list membership, insensitive to a trailing slash on either side -- `docs/x`
+    and `docs/x/` name the same thing and an exact-string match said otherwise."""
+    return t.rstrip("/") in {k.rstrip("/") for k in ABSENT_BY_DESIGN}
+
+
+def _main_checkout() -> Path:
+    """The checkout that owns `Projects/`, asked of GIT rather than of the CWD.
+
+    ⭐ THE FIX FOR THE ROUND-1 FAIL, and the same cure as the repo-map label bug: a tool
+    that asks the CWD what repo it is in gets a DIFFERENT ANSWER PER LANE. `Projects/*`
+    are separate gitignored repos, so `git worktree add` leaves them as empty stubs -- a
+    lane saw 9 stubs, main saw 1. Round 1 built a `strict` mode to cope with the
+    difference, and the mode swallowed the entire check.
+
+    A worktree's .git FILE points at <main>/.git/worktrees/<lane>, and --git-common-dir
+    resolves to <main>/.git regardless. Its parent is the checkout holding the projects.
+    Measured: a lane and main then report an IDENTICAL finding set (1 and 1, vs 0 and 14).
+    """
+    try:
+        out = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--git-common-dir"],
+                             capture_output=True, text=True, timeout=10)
+        if out.returncode == 0 and out.stdout.strip():
+            g = Path(out.stdout.strip())
+            if not g.is_absolute():
+                g = ROOT / g
+            return g.resolve().parent
+    except Exception:
+        pass
+    return ROOT                                          # not a git tree -> best effort
 
 
 def _scan_roots() -> tuple[list[Path], list[str]]:
     """The lobby, plus every POPULATED project root. Returns the roots and the names of
-    projects skipped because this checkout has only their stub -- reported, never silent,
-    so a reduced run is visible instead of looking like a clean one."""
+    projects this machine has only as a stub -- named, never silent, because a partial run
+    that reads like a clean one is the failure this whole file exists to prevent."""
     roots, skipped = [ROOT], []
-    projects = ROOT / "Projects"
+    projects = _main_checkout() / "Projects"
     if projects.is_dir():
         for d in sorted(projects.iterdir()):
             if not d.is_dir():
                 continue
-            (roots if any(d.iterdir()) else skipped).append(d if any(d.iterdir()) else d.name)
+            if any(d.iterdir()):
+                roots.append(d)
+            else:
+                skipped.append(d.name)
     return roots, skipped
 
 
@@ -371,13 +534,14 @@ def main() -> int:
         c.check("T9-fixture A3b quiet on a project-relative path when the project IS populated",
                 not rel, det(not rel, f"got {sorted(rel)}"))
 
-        # ⭐ The one that has burned this system repeatedly. Same text, same token, but the
-        #    project is an empty stub -- which is EVERY git worktree. It must go silent, not
-        #    report a defect it cannot possibly verify.
-        (fx / "Projects" / "STUB").mkdir()
-        stub = unresolved_paths("add it under `backend/tests/conftest.py`", lobby)
-        c.check("T9-fixture A3c SILENT when the project is an unpopulated stub (worktrees)",
-                not stub, det(not stub, f"got {sorted(stub)} - a mostly-false worklist"))
+        # ⛔ NAMED FOR WHAT IT ACTUALLY CONTROLS. Round 1 called this the stub control and
+        #    mkdir'd a stub for it -- but `backend/...` never reaches _is_stub_project(),
+        #    which only handles the explicit `Projects/<name>/` form. The mkdir was inert
+        #    and the comment claimed otherwise. What is really under test is the
+        #    FIRST-SEGMENT rule: no `backend/` in any root, so the token is not a claim.
+        seg = unresolved_paths("add it under `backend/tests/conftest.py`", lobby)
+        c.check("T9-fixture A3c first-segment rule: silent when no root has that head",
+                not seg, det(not seg, f"got {sorted(seg)} - a mostly-false worklist"))
 
         # ⭐ A3c-bis. Both of these were found BY THE RED, not by design, and each would
         #    have made the check a permanent false red in every lane.
@@ -391,6 +555,15 @@ def main() -> int:
         c.check("T9-fixture A3c-bis still fires when the project IS populated",
                 set(realp) == {"Projects/DEMO/nope/"},
                 det(set(realp) == {"Projects/DEMO/nope/"}, f"got {sorted(realp)}"))
+        # ⛔ ...and the token is spelled LOBBY-relative while the project is its own
+        #    checkout, so it has to resolve INSIDE that root. Without this the lane's empty
+        #    `Projects/<name>/` made every explicit project path unresolvable there while
+        #    main resolved it -- a lane/main disagreement that the allow-list happened to
+        #    mask on the only real example. Nothing found it until this control existed.
+        inside = unresolved_paths("see `Projects/DEMO/backend/tests/conftest.py`", both)
+        c.check("T9-fixture an explicit project path resolves INSIDE that project's root",
+                not inside, det(not inside, f"got {sorted(inside)} - the lane would disagree "
+                                            f"with main on every Projects/<name>/ token"))
 
         # `../` is relative to the FILE: from fx/docs, `../top.md` is fx/top.md -- not
         # fx/docs/top.md. The first draft of this control asserted the wrong target and
@@ -404,11 +577,23 @@ def main() -> int:
                 set(rel_bad) == {"../gone.md"},
                 det(set(rel_bad) == {"../gone.md"}, f"got {sorted(rel_bad)}"))
 
+        # ⭐ A3d, REBUILT SO IT CAN FAIL. The round-1 version asserted this same silence and
+        #    was worthless: every token in it was already killed by PATH_LIKE or the
+        #    first-segment rule, so deleting NOT_A_PATH entirely left the suite 34/34 GREEN.
+        #    The elision class is the one alternation that survived measurement -- and here
+        #    its head (`docs/`) DOES exist, so NOT_A_PATH is the only thing that can hold
+        #    it. Delete that regex and this control goes red, which is the whole job.
+        elide = unresolved_paths("under `docs/.../deep.md` somewhere", lobby)
+        c.check("T9-fixture A3d NOT_A_PATH holds the elision class (head exists, so only it can)",
+                not elide, det(not elide, f"got {sorted(elide)}"))
+
+        # ...and the classes round 1 listed are silenced by a DIFFERENT mechanism. Pinned
+        # here so nobody re-adds them believing the filter is what stops them.
         noise = ("merge `origin/main` into `epic/AVCH-13-x`, POST `/api/incident/fire`, "
                  "model `openrouter/z-ai/glm-5.2`, install `@firebase/rules-unit-testing`, "
                  "glob `docs/*.md`")
         nz = unresolved_paths(noise, lobby)
-        c.check("T9-fixture A3d quiet on branch names, URL routes, model ids, npm scopes, globs",
+        c.check("T9-fixture A3d branch/route/vendor/scope/glob quiet via PATH_LIKE + first-segment",
                 not nz, det(not nz, f"got {sorted(nz)}"))
 
         # A4: the allow-list must stay narrow. The by-design entry is silent; a sibling
@@ -420,19 +605,14 @@ def main() -> int:
                 set(al) == {".agents/scripts/git-hooks/INVENTED"},
                 det(set(al) == {".agents/scripts/git-hooks/INVENTED"}, f"got {sorted(al)}"))
 
-        # ⭐ strict=False is the worktree posture, and it must NOT become an off-switch:
-        #    a demonstrably-moved file still fires, an unprovable one is dropped. Measured
-        #    reason for existing: 25 findings from a worktree vs 12 from the main checkout.
-        (fx / "docs" / "here.md").write_text("x", encoding="utf-8")
-        loose = unresolved_paths("`docs/gone-forever.md` and `docs/sub/here.md`",
-                                 lobby, strict=False)
-        c.check("T9-fixture strict=False drops the unprovable but KEEPS the moved",
-                set(loose) == {"docs/sub/here.md"},
-                det(set(loose) == {"docs/sub/here.md"}, f"got {sorted(loose)}"))
-        tight = unresolved_paths("`docs/gone-forever.md`", lobby, strict=True)
-        c.check("T9-fixture strict=True still reports the unprovable one",
-                set(tight) == {"docs/gone-forever.md"},
-                det(set(tight) == {"docs/gone-forever.md"}, f"got {sorted(tight)}"))
+        # ⛔ THE ROUND-1 FAIL, fixtured. There is no `strict` mode any more: a dead path is
+        #    reported wherever you stand. The old pair of controls asserted that a mode
+        #    worked, while the shipped call site pinned that mode OFF in every checkout
+        #    that exists -- green fixtures guarding dead code.
+        gone = unresolved_paths("`docs/gone-forever.md`", lobby)
+        c.check("T9-fixture the 'resolves nowhere' arm EXECUTES (no mode can switch it off)",
+                set(gone) == {"docs/gone-forever.md"},
+                det(set(gone) == {"docs/gone-forever.md"}, f"got {sorted(gone)}"))
 
         struck = unresolved_paths("~~`docs/retired.md`~~ - **gone**, see the new one", lobby)
         c.check("T9-fixture quiet on a struck-through path (the author already said gone)",
@@ -443,19 +623,133 @@ def main() -> int:
         c.check("T9-fixture strikethrough does not silence its neighbours",
                 set(mixed) == {"docs/alsogone.md"},
                 det(set(mixed) == {"docs/alsogone.md"}, f"got {sorted(mixed)}"))
+
+        # ⛔ H2: an UNBALANCED `~~` must not reach across lines. With the round-1 regex the
+        #    stray marker below paired with the one two lines down and blanked everything
+        #    between -- a whole-file off-switch reachable by a typo. 6 real references
+        #    vanished when this was measured.
+        stray = ("~~`docs/one.md`~~ retired\n"
+                 "a stray ~~ marker left by a typo\n"
+                 "`docs/survivor.md` must still be checked\n"
+                 "~~`docs/two.md`~~ also retired\n")
+        sv = unresolved_paths(stray, lobby)
+        c.check("T9-fixture an unbalanced ~~ cannot blank the lines below it",
+                set(sv) == {"docs/survivor.md"},
+                det(set(sv) == {"docs/survivor.md"}, f"got {sorted(sv)}"))
+        fence = "~~~\nsee `docs/infence.md`\n~~~\n"
+        fv = unresolved_paths(fence, lobby)
+        c.check("T9-fixture a ~~~ fence is not swallowed as a strikethrough",
+                set(fv) == {"docs/infence.md"},
+                det(set(fv) == {"docs/infence.md"}, f"got {sorted(fv)}"))
+
         # PROVENANCE folders are exempt; a FILE under them is not - that is a live
         # instruction to open something that moved, not a record of where it went.
         prov = unresolved_paths("consolidated from `_my_resources/_quick_reference/`", lobby)
         c.check("T9-fixture quiet on a retired folder named as provenance",
                 not prov, det(not prov, f"got {sorted(prov)}"))
+        # ...and the allow-list is written without a trailing slash on some entries and with
+        # one on others. Both spellings name the same thing; an exact-string match did not.
+        # The mkdir is LOad-BEARING: without it the first-segment rule kills the token before
+        # the allow-list is ever consulted, and this control passes no matter what (caught by
+        # the mutation run, which is the only reason it is here).
+        (fx / "_my_resources").mkdir()
+        slash = unresolved_paths("see `_my_resources/diagrams_guides`", lobby)
+        c.check("T9-fixture allow-list ignores a trailing-slash mismatch",
+                not slash, det(not slash, f"got {sorted(slash)}"))
 
-        # Mis-path vs gone: a relocated file's references resolve to nothing and look
-        # identical to a deleted one. The reason string has to tell them apart.
+        # ⛔ Mis-path vs gone. Round 1's version was `X if 'tests/real.md' in moved else True`
+        #    -- a ternary whose else-branch is literally True, and `tests/` did not exist so
+        #    the token never reached the arm at all. The ONE working arm had zero coverage;
+        #    mutating it survived. Assert the set AND the reason.
+        (fx / "tests").mkdir()
         moved = unresolved_paths("run `docs/real.md` from `tests/real.md`", lobby)
-        c.check("T9-fixture separates MOVED from gone",
-                moved.get("tests/real.md", "").startswith("moved ->")
-                if "tests/real.md" in moved else True,
-                f"got {moved}")
+        ok_mv = (set(moved) == {"tests/real.md"}
+                 and moved["tests/real.md"] == "moved -> docs/real.md")
+        c.check("T9-fixture separates MOVED from gone, and names where it went",
+                ok_mv, det(ok_mv, f"got {moved}"))
+
+        # L3: this repo is read on a Mac AND a PC. A Windows-authored `docs\nope.md` failed
+        #     PATH_LIKE and was skipped in silence -- unchecked, yet indistinguishable from
+        #     clean. Normalising the separator makes it a real check.
+        win = unresolved_paths("open `docs\\nope.md` to see", lobby)
+        c.check("T9-fixture a Windows-separator path is checked, not silently skipped",
+                set(win) == {"docs/nope.md"},
+                det(set(win) == {"docs/nope.md"}, f"got {sorted(win)}"))
+
+        # L4: macOS is case-insensitive, so Path.exists() said `docs/case.md` was fine when
+        #     only `docs/Case.md` was on disk -- green on the Mac, dead on the PC. Exact-case
+        #     set membership is what makes this reachable at all.
+        (fx / "docs" / "Case.md").write_text("x", encoding="utf-8")
+        case = unresolved_paths("open `docs/case.md`", lobby)
+        c.check("T9-fixture wrong CASE is a finding (the Mac's FS would have hidden it)",
+                "docs/case.md" in case, det("docs/case.md" in case, f"got {sorted(case)}"))
+
+        # ⛔ H3, and the reason PRUNE has `worktrees` in it. The round-1 index descended into
+        #    `.claude/worktrees/` and named a SIBLING LANE's transient copy as the place a
+        #    file had moved to -- advice that points at a directory which will not exist
+        #    tomorrow. Un-prune and this control goes red, which is what makes the prune set
+        #    a decision rather than a comment. (Nothing asserted this until the mutation run
+        #    showed un-pruning was invisible.)
+        ghost = fx / ".claude" / "worktrees" / "other-lane" / "docs"
+        ghost.mkdir(parents=True)
+        (ghost / "ghost.md").write_text("x", encoding="utf-8")
+        (fx / "elsewhere").mkdir()
+        wt = unresolved_paths("see `elsewhere/ghost.md`", lobby)
+        ok_wt = wt.get("elsewhere/ghost.md") == "resolves nowhere"
+        c.check("T9-fixture never cites a sibling lane's worktree as where a file went",
+                ok_wt, det(ok_wt, f"got {wt} - a moved-> into .claude/worktrees/ is advice "
+                                  f"pointing at a directory that will not exist tomorrow"))
+
+    # ⭐⭐ THE ROUND-1 FAIL AS A FIXTURE. Everything above runs in ONE checkout, and a suite
+    #     that only ever stands in one place cannot see the defect that shipped: an answer
+    #     that changes depending on where you stand. Round 1 "confirmed" this out of band
+    #     and got it wrong; round 2 found a SECOND asymmetry the same out-of-band probe
+    #     missed, because an allow-list entry happened to mask the only example. So the
+    #     equality itself is asserted here -- same docs, same project root, two lobbies:
+    #     one with `Projects/DEMO` populated (the main checkout) and one where it is an
+    #     empty stub (every git worktree). The two must agree exactly.
+    with TempDir() as fxm, TempDir() as fxl:
+        demo = fxm / "Projects" / "DEMO"
+        (demo / "src").mkdir(parents=True)
+        (demo / "src" / "moved.md").write_text("x", encoding="utf-8")
+        (fxl / "Projects" / "DEMO").mkdir(parents=True)      # the lane: an empty stub
+        for b in (fxm, fxl):
+            (b / "docs").mkdir()
+
+        txt = ("see `Projects/DEMO/src/moved.md`, `Projects/DEMO/gone.md` "
+               "and `docs/moved.md`")
+        as_main = unresolved_paths(txt, [fxm, demo])
+        as_lane = unresolved_paths(txt, [fxl, demo])
+        same = as_main == as_lane
+        c.check("T9-fixture ⭐ a lane and the main checkout return the IDENTICAL answer",
+                same, det(same, f"main={as_main} lane={as_lane}"))
+
+        # ...and the moved-> target must be pastable: spelled from the LOBBY, so it names
+        # the same file whichever root the index happened to find it in.
+        tgt = as_main.get("docs/moved.md")
+        ok_t = tgt == "moved -> Projects/DEMO/src/moved.md"
+        c.check("T9-fixture the moved-> target is lobby-relative, not root-relative",
+                ok_t, det(ok_t, f"got {tgt!r} - a bare 'src/moved.md' names no real file"))
+
+        # The lobby must not index `Projects/` -- each project is its own root, so doing
+        # both walks every project twice (measured: 20,597 paths vs 3,574 from main). This
+        # asserts the PROPERTY rather than a wall-clock number, because a timing assertion
+        # in a test suite is a flake waiting to happen.
+        li = build_index([fxm, demo])[fxm]
+        ok_i = "Projects" in li.paths and "Projects/DEMO/src/moved.md" not in li.paths
+        c.check("T9-fixture the lobby index records Projects/ without duplicating it",
+                ok_i, det(ok_i, f"{len(li.paths)} paths; project contents indexed twice"))
+
+    # ⭐ And the mechanism behind A3d's second row, pinned in its own tree so the assertion
+    #    above cannot be read as "NOT_A_PATH stops branch names". It does not; the absence
+    #    of a directory by that name does. Create one and the token becomes a real claim.
+    with TempDir() as fx2:
+        (fx2 / "origin").mkdir()
+        br = unresolved_paths("merge `origin/main` into it", [fx2])
+        c.check("T9-fixture branch names are held by the FIRST-SEGMENT rule, not the filter",
+                set(br) == {"origin/main"},
+                det(set(br) == {"origin/main"}, f"got {sorted(br)} - if quiet, something "
+                                                f"else is filtering and the comment lies"))
 
     # -- T1: the manifest
     present = {p.name for p in _md_files(FOLDER)}
@@ -527,18 +821,42 @@ def main() -> int:
                 "folder absent - nothing scanned (not a pass)")
     else:
         roots, stubbed = _scan_roots()
-        found = {}
+        # Built ONCE for the whole scan, not per token. See RootIndex: the round-1 rglob
+        # cost +18.3s per run_all and walked into sibling lanes' worktrees.
+        index = build_index(roots)
+        found, blocked = {}, []
         for p in _md_files(FOLDER) + ([idx] if idx.is_file() else []):
-            for t, why in unresolved_paths(
-                    p.read_text(encoding="utf-8", errors="replace"),
-                    roots, base=p.parent, strict=not stubbed).items():
+            txt = p.read_text(encoding="utf-8", errors="replace")
+            for t, why in unresolved_paths(txt, roots, base=p.parent, index=index).items():
                 found.setdefault(f"{p.name} -> {t}", why)
+            for s in stubbed:
+                if f"`Projects/{s}/" in txt:
+                    blocked.append(f"{p.name} -> Projects/{s}/...")
+        # ⛔ A NOTE, DELIBERATELY NOT A CHECK -- and the reason is worth writing down.
+        #    Round 1 emitted this through c.check(..., True, "") : a print dressed as a
+        #    passing check, inflating the count and reading as coverage (L5). Round 2 first
+        #    tried the opposite -- FAIL when a doc reaches into a project this machine
+        #    cannot see -- and that fired immediately on tdad_stack_install_guide.md naming
+        #    `Projects/Fresh_Workspace_BMAD/backend/requirements.txt`. That is a DECLARED
+        #    submodule (.gitmodules, `ignore = all`) deliberately left uninitialised here:
+        #    the doc is right, the machine is right, and nothing is broken. A gate that goes
+        #    permanently red on a correct state is the same disease as one that never fires.
+        #    So: named, counted, and attributed to the docs that depend on it -- loud enough
+        #    that a partial run cannot read as a clean one, without asserting a defect.
         if stubbed:
-            # Never silent about reduced coverage: a partial run must not read as a clean one.
-            c.check(f"T9 coverage note: {len(stubbed)} project(s) not checked out here", True,
-                    "")
+            print(f"     (T9 coverage: {len(stubbed)} project(s) not checked out here: "
+                  f"{', '.join(stubbed)}"
+                  + (f"; {len(blocked)} reference(s) into them unverified: "
+                     + "; ".join(sorted(set(blocked))[:3]) if blocked else "; unreferenced")
+                  + ")")
         c.check("T9 every prose path reference resolves", not found,
                 "; ".join(f"{k} ({v})" for k, v in sorted(found.items())[:8]))
+        # ⭐ B1: the property whose absence let the round-1 fail hide. Project roots come
+        #    from git's COMMON dir, so a lane and main see the same set. In a worktree
+        #    ROOT/.git is a FILE; the resolved main checkout's is always a directory.
+        gitdir_ok = (_main_checkout() / ".git").is_dir()
+        c.check("T9 project roots resolve to the MAIN checkout, not this lane", gitdir_ok,
+                det(gitdir_ok, f"_main_checkout()={_main_checkout()} has no .git directory"))
 
     # -- T5: the gate points somewhere real. A SOP_DOC aimed at a moved file is a gate that can
     #        never be satisfied -- it blocks every usage-surface commit until someone notices.

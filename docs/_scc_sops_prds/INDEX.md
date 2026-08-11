@@ -27,14 +27,25 @@ this folder, and they cover **different things** — neither is a substitute for
 |---|---|---|
 | `.agents/scripts/tests/test_sops_prds_folder.py` (in `run_all`) | this INDEX vs the directory **both ways**, every **markdown link** target, every `/command` reference resolving to a real master, the 11-doc manifest, and the SOP gate's two paths agreeing | prose that names no link |
 | `check_maps.py` | **backticked multi-segment paths inside table rows**, plus level-2 INDEX presence and repo-map coverage | markdown links, and anything outside a table row |
-| T9 in that same test (SCC-83) | **backticked paths in PROSE** — sentences, bullets, fenced blocks: the gap between the two rows above | paths written *without* backticks (measured: exactly 2 folder-wide, so the convention holds), and anything a stubbed project owns |
+| T9 in that same test (SCC-83) | **backticked paths in PROSE** — sentences and bullets: the gap between the two rows above | paths written *without* backticks, and the interior of a project this machine has not checked out |
 
-⚠️ **T9's reach depends on where you run it, and it says so rather than pretending otherwise.** From
-a worktree, `Projects/<name>/` is an empty stub, so a reference the project really owns cannot be
-told apart from one that is dead — the same folder yields **25 findings from a lane and 12 from the
-main checkout**. Rather than go red in every lane on 13 things a lane author cannot fix, T9 asserts
-only what is provable without the projects (a file that demonstrably *moved*) and prints how many
-projects it could not see. **A reduced run is visible; it never reads as a clean one.**
+⚠️ **T9 gives the same answer from a lane as from `main`, and that equality is the feature.**
+`Projects/*` are separate gitignored repos, so `git worktree add` leaves them as empty stubs — a lane
+sees 9, `main` sees 1. The first build of T9 coped with that through a `strict` mode, and the mode
+turned out to be **off in both checkouts**, which made the primary check dead code while every gate
+read green (SCC-83 code review, 2026-08-11). T9 now resolves project roots from `git rev-parse
+--git-common-dir` instead of the working directory, so coverage no longer depends on where you are
+standing: **1 finding from a lane, 1 from `main`** — the same one. Anything still unreachable (an
+uninitialised submodule) is **named in the run output along with the docs that reference it**, so a
+reduced run is visible and never reads as a clean one.
+
+⛔ **On non-backticked paths — the honest version.** A folder-wide sweep finds **242** slash-bearing
+tokens outside backticks, but they are overwhelmingly prose: `Dev/QA`, `and/or`,
+`PASS/CONCERNS/FAIL`, `7/7`. Widening the net trades a handful of real checks for hundreds of false
+ones, so **the backtick convention is the boundary** — not because few paths escape it, but because
+nothing outside it can be told from ordinary writing. (An earlier version of this row claimed
+"exactly 2", which was never measured, and claimed fenced blocks were covered, which is impossible —
+the matcher requires backticks.)
 
 ⛔ **And `git log` cannot tell you which of these is rotting.** SCC-74 moved every file here with
 `git mv`, so all twelve report a last-commit date of `2026-08-10` and the folder looks uniformly

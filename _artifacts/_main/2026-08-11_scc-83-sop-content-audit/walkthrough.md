@@ -192,3 +192,94 @@ That is how H1 hid: I verified a different program from the one I committed.
 
 **Changes applied: none.** The four HIGHs are design-level, not trivial patches — `/smh-quick-dev`
 Step 3.5's eject tripwire applies, so this is handed back rather than patched under a review.
+
+## Round 2 — remediation (2026-08-11)
+
+Plan: `remediation_plan.md` beside this file. Every design choice there is preceded by the probe
+that decided it, because round 1 failed for verifying a program it had not committed.
+
+### The reframe: four HIGHs, one root cause
+
+H1, H3 and half of M3 were three symptoms of one property — **the checker's answer depended on where
+you were standing.** `Projects/*` are separate gitignored repos, so a worktree sees empty stubs while
+`main` sees them populated. Round 1 coped: a `strict` mode to suppress the unprovable, and an
+`rglob` to recover what the suppression lost. Both coping mechanisms failed.
+
+`_scan_roots()` now resolves project roots from `git rev-parse --git-common-dir` — the same cure as
+the repo-map label bug. **`strict` is deleted outright**, not made per-token: once coverage stops
+varying by lane there is no mode to switch, and a per-token version of a switch driven by untracked
+state would be a smaller defect of the same kind.
+
+| Configuration | shipped round 1 | `strict=True` | **round 2** |
+|---|---|---|---|
+| Worktree (9 stubs) | 0 findings | 14 | **7** |
+| `main` (8 populated) | 0 findings | 1 | **7** |
+
+Both columns measured with the allow-list **lifted**, keys *and* values compared. They are identical.
+
+### What the mutation run found that I did not
+
+B4 said a fixture only counts if breaking its target turns the suite red. The first run said
+**7/12 caught** — five of my new fixtures controlled nothing:
+
+- **`docs/...`** never reaches `NOT_A_PATH`: the token is `rstrip`'d of `.,;:)` first, so it becomes
+  `docs/` and resolves. Only a *mid-path* elision is live. My H4 control tested the dead form.
+- **H2's two halves were each sufficient**, so neither mutation was observable — the same
+  belt-and-braces decoration I had just cut from `NOT_A_PATH`, re-introduced in the fix for it. Kept
+  the newline-bounded regex, dropped the per-line application.
+- **L2's fixture** ran in a temp root with no `_my_resources/`, so the first-segment rule killed the
+  token before the allow-list was consulted.
+- **H3** asserted nothing about un-pruning.
+
+### A second lane/main asymmetry, found only because the first fix was fixtured
+
+`_is_stub_project()` asked "is `<root>/Projects/<name>` empty?" — and in a lane *every one of them
+is*. So explicit `Projects/<name>/…` tokens were skipped in a lane and checked from `main`. **The
+out-of-band B1 probe missed it, because an allow-list entry happened to mask the only real example.**
+Split into two jobs: no root named `<name>` → not checked out; otherwise resolve the remainder
+*inside* that root, since the token is spelled lobby-relative while the project is its own checkout.
+
+A related one: the `moved ->` target was reported relative to whichever root the index hit, so a lane
+printed `_bmad-output/x.md` where `main` printed `Projects/AGY_AVIATIONCHAT/_bmad-output/x.md`. Same
+file, two answers, and the lane's names nothing. Now always lobby-relative.
+
+**The lesson, and it is the round-1 lesson again:** a suite that only ever runs in one checkout
+cannot see an answer that changes with where you stand. So the equality is now **a fixture** — same
+docs, same project root, two lobbies (one populated, one stubbed) — not a probe I ran by hand.
+
+### Prospective paths were a missing class, not a doc defect
+
+**M2 was mine.** I took the detector's first `rglob` hit as a remediation instruction and rewrote
+`tea_testing_guide.md`'s options A and B to identical paths while line 603 still contrasted them.
+Reverted.
+
+Reading the one real finding showed the same class: `_artifacts/opencode/` is documented as *"created
+on first use"*. Both are **create-me** paths, and `ABSENT_BY_DESIGN` had no class for them — so the
+only way to quieten a correct sentence was to make the doc wrong. That is the inversion the
+allow-list exists to prevent, committed by the person maintaining the list. Added as a second class,
+each entry with its written reason; the narrowness control already covers it.
+
+### Evidence
+
+| Gate | Result |
+|---|---|
+| **Mutations caught** | **15/15**, baseline **45/45** green — including a mutation for every fix above |
+| `run_all` | **12/12 exit 0** (bare, unpiped) |
+| `workflow_lint --toolkit-only` | **0 errors, 0 warnings, exit 0** — baseline held |
+| T9 lane vs main | **identical keys and values**, exemptions lifted |
+| Index cost | 9 roots / 20,447 entries / **0.12 s** (replaces **+18.3 s** of `rglob`); lobby index 3,574 paths, not 20,597 |
+| Both arms fire | with the 4 by-design entries lifted: 2 × `resolves nowhere`, 1 × `moved ->` |
+
+### Two things I did NOT do, and why
+
+- **The "reduced coverage must FAIL" check was wrong and I removed it.** It fired immediately on
+  `tdad_stack_install_guide.md` naming `Projects/Fresh_Workspace_BMAD/backend/requirements.txt` — a
+  declared submodule (`.gitmodules`, `ignore = all`) deliberately left uninitialised. The doc is
+  right, the machine is right, nothing is broken. **A gate that goes permanently red on a correct
+  state is the same disease as one that never fires.** It is now a named note that counts the
+  affected docs — visible, not assertive. This walks back D1's claim in the plan; recording it here
+  rather than quietly changing it.
+- **`check_maps` AUTO-block drift is pre-existing on `main`, not this lane.** Verified from the main
+  checkout itself (exit 1, correct `Sudo_Hatter_Command` label — so not the worktree false positive
+  in `check-maps-stale-is-false-in-worktrees`). It arrived with SCC-73's merge at `50e357b`. Left for
+  the close-out, from `main`, where regenerating cannot ship a lane name into the map.
