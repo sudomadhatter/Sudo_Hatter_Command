@@ -161,16 +161,26 @@ flowchart TD
     class GATE,GIT,MAPS gate
 ```
 
-**Bucket rule — artifacts go where you work FROM (your cwd):**
-- Project work from the lobby → `_artifacts/(project-folder-name)/` (e.g. `_artifacts/AGY_AVIATIONCHAT/`)
-- Main / home-base / cross-project → `_artifacts/_main/`
+**Bucket rule — artifacts go where the work is OWNED, not where you were standing.**
+⚠️ This rule was inverted on 2026-07-30 (`_artifacts/_main/2026/07/2026-07-30_project-first-artifact-locality/`)
+and this page described the old one until SCC-83 caught it. It used to say *"where you work
+FROM (your cwd)"*, which put a project's history in the lobby whenever a chat happened to start
+there — the same history then existed in two places depending on where someone sat.
+- A **project's** work → **that project's own** `Projects/<name>/_artifacts/`, *even when the
+  chat started in the lobby*. Ownership decides, cwd never does.
+- **Home-base / cross-project** work → `_artifacts/_main/` (this repo's own ledger)
+- Sudo-managed exceptions → their named home-base buckets
 - Stories → nest under the parent epic: `(epic)/(story)/` — the epic folder houses its stories
-- Inside a project → that project's own `_artifacts/` (its rules, not the lobby ledger)
-- opencode → the same rules inside its `_artifacts/opencode/` namespace
+- opencode → the same rules, inside an `_artifacts/opencode/` namespace created on first use
+
+Full model: root `AGENTS.md` §7 · `.agents/rules/artifacts-always-first.md`.
 
 **Persistence (pick up / hand off):** *"pick up"* reads a read-only continuity brief from the right
-`active-context.md` (+ surfaces `_my_resources/open_tasks/todo_list.md`, READ-ONLY); *"hand off"*
-prepends one dated block to the brief, appends one `INDEX.md` row, and reads it back to verify. Memory
+`active-context.md`, then surfaces open work **from the live Jira board** — `In Progress` →
+`To Do Next` → `To Do`, first non-empty rank wins. ⛔ **Not from `todo_list.md`** — that was retired
+as an agent source on 2026-08-09: it is personal notes, it goes stale, and it duplicates tickets that
+already exist. This page said otherwise until SCC-83; the board is the queue. *"hand off"* prepends
+one dated block to the brief, appends one `INDEX.md` row, and reads it back to verify. Memory
 lives in **our files**, not the vendor's — survive any context reset, switch LLMs freely.
 
 **Pruning is a MOVE, never a delete** (verified 2026-07-09 end-to-end): old brief blocks →

@@ -27,6 +27,18 @@ this folder, and they cover **different things** — neither is a substitute for
 |---|---|---|
 | `.agents/scripts/tests/test_sops_prds_folder.py` (in `run_all`) | this INDEX vs the directory **both ways**, every **markdown link** target, every `/command` reference resolving to a real master, the 11-doc manifest, and the SOP gate's two paths agreeing | prose that names no link |
 | `check_maps.py` | **backticked multi-segment paths inside table rows**, plus level-2 INDEX presence and repo-map coverage | markdown links, and anything outside a table row |
+| T9 in that same test (SCC-83) | **backticked paths in PROSE** — sentences, bullets, fenced blocks: the gap between the two rows above | paths written *without* backticks (measured: exactly 2 folder-wide, so the convention holds), and anything a stubbed project owns |
+
+⚠️ **T9's reach depends on where you run it, and it says so rather than pretending otherwise.** From
+a worktree, `Projects/<name>/` is an empty stub, so a reference the project really owns cannot be
+told apart from one that is dead — the same folder yields **25 findings from a lane and 12 from the
+main checkout**. Rather than go red in every lane on 13 things a lane author cannot fix, T9 asserts
+only what is provable without the projects (a file that demonstrably *moved*) and prints how many
+projects it could not see. **A reduced run is visible; it never reads as a clean one.**
+
+⛔ **And `git log` cannot tell you which of these is rotting.** SCC-74 moved every file here with
+`git mv`, so all twelve report a last-commit date of `2026-08-10` and the folder looks uniformly
+fresh. Use `git log --follow -- <file>` for real content history; the bare date is meaningless here.
 
 That split is worth knowing before trusting either: `check_maps.py` reads table cells, so a dead
 markdown link sails past it — T2/T3 are what catch those. Verified in both directions when this

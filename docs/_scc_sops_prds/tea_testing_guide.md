@@ -596,8 +596,8 @@ flowchart TD
 
 | Option | Where | Propagation | Pick when |
 |---|---|---|---|
-| **A — Synced lobby rule** | `.agents/rules/testing-standards.md` (lobby root) | Auto-propagates to every project + surface on next `/smh-sync-agents` | You want a workspace-wide law |
-| **B — Project-local** (DEFAULT) | `Projects/AGY_AVIATIONCHAT/.agents/rules/testing-standards.md` | AviationChat only (same scope as `prompt-tdd.md`) | Prove it here first |
+| **A — Synced lobby rule** | `Projects/AGY_AVIATIONCHAT/_bmad-output/test-artifacts/testing-standards.md` (lobby root) | Auto-propagates to every project + surface on next `/smh-sync-agents` | You want a workspace-wide law |
+| **B — Project-local** (DEFAULT) | `Projects/AGY_AVIATIONCHAT/_bmad-output/test-artifacts/testing-standards.md` | AviationChat only (same scope as `prompt-tdd.md`) | Prove it here first |
 | **C — `AGENTS.md`** | The project's actual brain (not `CLAUDE.md`) | Read every session | You want it read regardless of trigger |
 
 > Daniel has previously chosen lobby-local / no auto-propagation, so **do not run `/smh-sync-agents` on a hunch** — Option A changes every project. Default to **B (project-local)**, then ask before promoting.
@@ -605,7 +605,7 @@ flowchart TD
 **Walkthrough (first-timer):** consolidate the scattered policy into one named file. This writes it; it does **not** sync it.
 
 1. **Confirm what exists:** read `prompt-tdd.md` and `grep "agent_bearing" _bmad-output/sudo-tests.yaml` — the policy language exists; you are consolidating, not inventing.
-2. **Write the standalone rule** (project-local, Option B) at `Projects/AGY_AVIATIONCHAT/.agents/rules/testing-standards.md` with `activation: Always On`: **ban** `assert <exact string> in <llm_output>` on probabilistic text; **require** schema validation, prompt-structure assertions, or an L3 judge; **allow** string-match only on deterministic envelopes (a routing tag, a `__tool_call__` sentinel, an enum).
+2. **Write the standalone rule** (project-local, Option B) at `Projects/AGY_AVIATIONCHAT/_bmad-output/test-artifacts/testing-standards.md` with `activation: Always On`: **ban** `assert <exact string> in <llm_output>` on probabilistic text; **require** schema validation, prompt-structure assertions, or an L3 judge; **allow** string-match only on deterministic envelopes (a routing tag, a `__tool_call__` sentinel, an enum).
 3. **Point the reviewer at it** — no code change; `agent_bearing: true` already arms the lens, your rule gives it a concrete checklist.
 4. **STOP and ask Daniel the DECISION** (project-local vs `/smh-sync-agents` to lobby). Nothing synced, nothing committed.
 
@@ -746,7 +746,7 @@ The pure layer reviewed clean. The adversarial pass on the impure runner found *
 - **F-CR1 (fixed):** `_dispatch` captured pytest output via `capture_output=True` and **discarded it** → the developer saw no test results. Fixed with a `_stream()` helper (inherited stdio) so pytest prints straight to the terminal.
 - **F-CR2 (fixed):** `--include-e2e` was a **no-op** that contradicted its own help text. Fixed to actually dispatch `npm run test:e2e` on opt-in.
 
-All four gate checks PASS (suite baseline-diff-aware · trace · nfr · test-review). **Verdict: PASS** (artifact: `_bmad-output/implementation-artifacts/cicd-code-review-tea-9-tia-ci.md`, HEAD `9825e91`). Evidence recorded: 28/28 TIA tests green post-fix (0.17s); a live `--dry-run` still failed safe (`RUN_ALL` / `STALE_INDEX`, indexed `1fc85d1` ≠ head `9825e91`); the ② full-suite baseline was **2316 passed / 2 skipped / 0 failed** — and since the edit is confined to the untested-but-reviewed `gate.py` (imported by nothing; `select.py` untouched), that's **0 new regressions**.
+All four gate checks PASS (suite baseline-diff-aware · trace · nfr · test-review). **Verdict: PASS** (artifact: `_bmad-output/implementation-artifacts/sudo-code-review-tea-9-tia-ci.md`, HEAD `9825e91`). Evidence recorded: 28/28 TIA tests green post-fix (0.17s); a live `--dry-run` still failed safe (`RUN_ALL` / `STALE_INDEX`, indexed `1fc85d1` ≠ head `9825e91`); the ② full-suite baseline was **2316 passed / 2 skipped / 0 failed** — and since the edit is confined to the untested-but-reviewed `gate.py` (imported by nothing; `select.py` untouched), that's **0 new regressions**.
 
 ### Close-out — `/cicd-update-sprint-memory`
 
