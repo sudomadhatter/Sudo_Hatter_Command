@@ -80,14 +80,45 @@ The token is consumed *before* the push. There is no `post-push` hook, so that i
 order — and it fails safe: a rejected push (remote moved) needs a fresh sign-off, which is right,
 because re-running the door command re-runs the preflight against the remote that moved.
 
+## The reconcile — 73 commits absorbed (2026-08-11)
+
+This lane was parked while five other Task lanes landed. `origin/main` moved 73 commits. **Every
+file of the gate itself is a new file, so all of it merged clean**; three files conflicted.
+
+| Conflict | Resolution |
+|---|---|
+| `.gitignore` | **Took theirs.** SCC-73 hit the identical symlink-vs-directory bug independently and fixed it *better* — keeping both the slashed and slashless forms instead of replacing one. Mine was superseded; the finding below still stands. |
+| `MEMORY.md` | **Union.** My rewritten branch-model pointer replaces the stale line; SCC-97's `nothing-guards-the-merge-target` row keeps its place. |
+| the SOP | **Accepted the move, re-placed the content.** SCC-91 restructured it as a teaching document (970 → 1694 lines) at `docs/_scc_sops_prds/workflows_testing_SOP.md`. My 53 lines were **re-placed into the new structure, not pasted**, at *both* sites that still claimed the gate was unbuilt — `:726` and the SCC-71 block. Precedent: SCC-94 did exactly this on this same file. |
+
+**Two things the reconcile settled:**
+
+- The restructure had **already removed** the three-door sentence that misread
+  `/cicd-update-sprint-memory` as a `main` door. That fix was no longer needed — independent
+  confirmation the reading was right.
+- **SCC-97 and SCC-77 turn out to reinforce each other.** SCC-97 asks you to assert `HEAD` is `main`
+  immediately before merging. `mint-push-token.sh` already **refuses to mint unless `HEAD` is
+  `main`**, and it runs between the merge and the push — so on the two door lanes that assertion is
+  now mechanical. Cross-referenced in `git-policy.md` rather than left for someone to rediscover.
+- The SOP-move disarm trap I flagged **was caught** — `sop-currency.sh:26` now points at the new
+  path. Confirmed on main, not assumed.
+
 ## Evidence
 
+At the merged tree `47c0cd1`:
+
 ```
+run_all.py                        14/14   exit 0     (13/13 on main + this lane's file)
+workflow_lint --toolkit-only      0 errors, 0 WARNINGS, exit 0
 test_main_push_gate.py            36/36   exit 0
-run_all.py                        12/12   exit 0
-workflow_lint --toolkit-only      0 errors, 2 warnings   (both pre-existing — identical to SCC-63's baseline)
-test_memory_store.py              16/16   exit 0
+test_sops_prds_folder.py          57/57   exit 0     (the SOP gate that did not exist pre-merge)
+task_preflight --expect-key       clear to close out and merge · LANE LOCAL
 ```
+
+The two lint warnings present pre-merge are gone — main fixed them. This lane adds none.
+
+**Pre-merge run, retained for the record** (at `8e2ee83`, against the old main): `run_all` 12/12,
+`test_main_push_gate` 36/36, lint 0 errors / 2 pre-existing warnings, `test_memory_store` 16/16.
 
 **Live, on this repo, not in a fixture:**
 
