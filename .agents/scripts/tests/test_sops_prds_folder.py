@@ -494,6 +494,30 @@ def unresolved_paths(text: str, roots: list[Path], base: Path | None = None,
                     rel = idx[r].leaves[leaf]
                     elsewhere.append(rel if i == 0 else f"Projects/{r.name}/{rel}")
         if not elsewhere:
+            # ⛔ FRESH CLONE (SCC-83 round-3 review, H1). These docs legitimately carry
+            #    project-relative paths -- SCC-85 ruled "state the root once" -- and those
+            #    resolve only because a cloned project answers for them. Clone the command
+            #    centre WITHOUT `--recurse-submodules` and nothing answers: 13 findings, exit
+            #    1, run_all RED, on a correct machine. That is the false worklist SCC-87's
+            #    AC3 forbids in those words, and the plan's A3c fixture claims to prevent.
+            #
+            #    So a token that could belong to an un-cloned project is UNPROVABLE here,
+            #    not dead -- dropped, and counted in the coverage note so the reduced run is
+            #    visible. On a fully-cloned machine `uncloned` is 0 and this never fires,
+            #    which is why it is NOT the round-1 `strict` mode returning: that switch was
+            #    off in every checkout that existed, this one is off in every checkout that
+            #    is complete. A LOBBY-OWNED token is never unprovable -- no project can own
+            #    it -- so H-B's guarantee is untouched.
+            #    ⛔ AND NO PER-TOKEN CLASSIFIER, because I could not build an honest one.
+            #    Three discriminators were tried and MEASURED, all three failing:
+            #      - "not lobby-owned"        -> also suppresses `docs/gone.md`, a real defect
+            #      - "head not tracked in git" -> `_bmad-output` and `docs` are both tracked
+            #      - "lobby lacks the parent"  -> `_bmad-output/sudo-tests.yaml` has its parent
+            #    `_bmad-output/sudo-tests.yaml` is structurally identical to `docs/gone.md`;
+            #    only intent separates them, and no rule reads intent. Guessing would trade a
+            #    false RED for a false GREEN, and this file exists because a silent miss is
+            #    the worse of the two. So the check stays strict and the CALLER makes the
+            #    failure actionable -- see the `git submodule update --init` hint in T9.
             out[t] = "resolves nowhere"
         elif len(elsewhere) == 1:
             out[t] = f"moved -> {elsewhere[0]}"
@@ -503,14 +527,46 @@ def unresolved_paths(text: str, roots: list[Path], base: Path | None = None,
             #    is whichever the walk reached first -- and round 1 shipped a doc regression
             #    by acting on exactly that output as if it were an instruction. A reader who
             #    is told there are four candidates checks; one handed a single path pastes.
-            out[t] = (f"moved -> {elsewhere[0]} (⚠ {len(elsewhere)} files share this name - "
-                      f"verify before using)")
+            # ASCII only in anything PRINTED -- see the module docstring. run_all captures
+            # each child through a pipe, so Python encodes with the locale's preferred
+            # encoding; on a cp1252 Windows console a `!` is fine and a `⚠` raises
+            # UnicodeEncodeError and takes the whole file down (SCC-83 round-3 review, H2).
+            out[t] = (f"moved -> {elsewhere[0]} (!! {len(elsewhere)} files share this name "
+                      f"- verify before using)")
     return out
 
 
 # Why _main_checkout() fell back to ROOT, or "" when it resolved. Read by T9's check so a
 # degraded resolution is reported rather than passing as a healthy one (SCC-83).
 _MAIN_CHECKOUT_FALLBACK: str = ""
+
+
+def cp1252_offenders(rows: list[tuple[str, bool, str]]) -> list[str]:
+    """Emitted strings a cp1252 console cannot print. A function ONLY so it is fixturable --
+    T10 is a meta-check over the other checks, so it cannot catch its own removal, and this
+    file has already shipped fixes nothing could falsify (SCC-83)."""
+    out = []
+    for name, _ok, detail in rows:
+        for label, s in (("name", name), ("detail", detail)):
+            try:
+                s.encode("cp1252")
+            except UnicodeEncodeError as e:
+                out.append(f"{label} {name[:40]!r}: {e.object[e.start:e.end]!r}")
+    return out
+
+
+def uncloned_note(stubbed: list[str]) -> str:
+    """The remedy appended to a T9 failure when some project is not cloned here.
+
+    A separate function ONLY so it can be fixtured: built inline it was unreachable from
+    any control, and this file has already shipped two 'fixes' that nothing could falsify
+    (SCC-83). Empty when everything is cloned, so a complete machine sees a clean message.
+    """
+    if not stubbed:
+        return ""
+    return (f" | NOTE: {len(stubbed)} project(s) not cloned here ({', '.join(stubbed)}) - "
+            f"project-relative paths cannot resolve without them. Run "
+            f"`git submodule update --init` and re-run BEFORE treating the above as defects.")
 
 
 def _lobby_owned(t: str) -> bool:
@@ -833,7 +889,7 @@ def main() -> int:
         as_main = unresolved_paths(txt, [fxm, demo])
         as_lane = unresolved_paths(txt, [fxl, demo])
         same = as_main == as_lane
-        c.check("T9-fixture ⭐ a lane and the main checkout return the IDENTICAL answer",
+        c.check("T9-fixture a lane and the main checkout return the IDENTICAL answer",
                 same, det(same, f"main={as_main} lane={as_lane}"))
 
         # ...and the moved-> target must be pastable: spelled from the LOBBY, so it names
@@ -931,6 +987,42 @@ def main() -> int:
                                   f"['NOISY','NOTCLONED']; a stray .DS_Store must not "
                                   f"promote an uninitialised submodule to a root"))
 
+    # ⛔⛔ THE FRESH CLONE (round-3 review, H1), asserted rather than assumed. Clone without
+    #     `--recurse-submodules` and the docs' project-relative paths have nothing to
+    #     resolve against: measured, 13 findings on a correct machine. SCC-87's AC3 asks for
+    #     "silence, not noise" there, and round 2 marked it satisfied on two controls that
+    #     never ran the scan with nothing cloned.
+    #
+    #     ⛔ The check is deliberately NOT silenced -- see unresolved_paths for the three
+    #     discriminators that were tried and measured failing. A guess would trade a false
+    #     RED for a silent MISS. What IS asserted: the failure names the cause and the one
+    #     command that fixes it, so the operator is never left staring at unfixable rows.
+    with TempDir() as fxfc:
+        (fxfc / "docs").mkdir()
+        (fxfc / "backend").mkdir()                  # a project-shaped head the lobby also has
+        fresh = unresolved_paths("run `backend/tests/conftest.py` and see `docs/gone.md`",
+                                 [fxfc])
+        both_flagged = set(fresh) == {"backend/tests/conftest.py", "docs/gone.md"}
+        # ...and the REMEDY is what makes that acceptable. Asserted against the SAME
+        # function the check calls -- not a copy of the string, which would assert nothing.
+        remedy = uncloned_note(["AGY_AVIATIONCHAT", "Fresh_Workspace_BMAD"])
+        ok_fc = (both_flagged
+                 and "git submodule update --init" in remedy
+                 and "AGY_AVIATIONCHAT" in remedy
+                 and uncloned_note([]) == "")        # silent on a fully-cloned machine
+        c.check("T9-fixture a fresh clone still reports, and the failure carries its remedy",
+                ok_fc, det(ok_fc, f"found={sorted(fresh)} remedy={remedy!r}"))
+
+    # T10 is a meta-check over the other rows, so it cannot catch its own removal. Its
+    # detector is fixtured here instead: it must FIRE on a star and stay QUIET on an em dash
+    # (which IS in cp1252, so banning all non-ASCII would be wrong).
+    star, dash = "⭐", "—"
+    fires = cp1252_offenders([(f"name {star}", True, ""), ("ok", True, f"detail {star}")])
+    quiet = cp1252_offenders([(f"name {dash}", True, "plain ascii")])
+    ok_cp = len(fires) == 2 and quiet == []
+    c.check("T10-fixture the cp1252 detector fires on U+2B50 and is quiet on an em dash",
+            ok_cp, det(ok_cp, f"fires={fires} quiet={quiet}"))
+
     # ⛔ A token headed by a PRUNED directory must still be checkable: `heads` is recorded
     #    before the prune for exactly that reason, and nothing tested the heads half.
     with TempDir() as fxp2:
@@ -950,7 +1042,7 @@ def main() -> int:
             (b / "docs" / "dupe.md").write_text("x", encoding="utf-8")
         (fxa / "elsewhere").mkdir()
         many = unresolved_paths("see `elsewhere/dupe.md`", [fxa, fxb])
-        ok_many = "⚠" in many.get("elsewhere/dupe.md", "")
+        ok_many = "share this name" in many.get("elsewhere/dupe.md", "")
         c.check("T9-fixture an ambiguous moved-> target says it is ambiguous",
                 ok_many, det(ok_many, f"got {many} - a single path reads as an instruction"))
 
@@ -1071,18 +1163,26 @@ def main() -> int:
         #    So: named, counted, and attributed to the docs that depend on it -- loud enough
         #    that a partial run cannot read as a clean one, without asserting a defect.
         if stubbed:
-            print(f"     (T9 coverage: {len(stubbed)} project(s) not checked out here: "
+            print(f"     (T9 coverage: {len(stubbed)} project(s) not cloned here: "
                   f"{', '.join(stubbed)}"
-                  + (f"; {len(blocked)} reference(s) into them unverified: "
+                  + (f"; {len(blocked)} explicit reference(s) into them unverified: "
                      + "; ".join(sorted(set(blocked))[:3]) if blocked else "; unreferenced")
-                  + ")")
+                  + " - run `git submodule update --init` for full coverage)")
         # ⛔ An unreadable directory contributes nothing to the index, so every path under it
         #    reports "resolves nowhere" -- a FALSE finding that looks exactly like a real
         #    one. Round 2 recorded these and then never read the list: a fix that was
         #    written, shipped, and consumed by nothing (SCC-83 round-3 review). Reported
         #    alongside the findings, because it is the reason to distrust them.
+        # ⛔ A FAILURE THAT CARRIES ITS OWN REMEDY (SCC-83 round-3 review, H1). Clone this
+        #    repo without `--recurse-submodules` and the docs' project-relative paths --
+        #    which SCC-85 ruled are written that way on purpose -- have nothing to resolve
+        #    against: 13 findings on a correct machine. The check stays STRICT (see
+        #    unresolved_paths: no honest per-token classifier exists), so instead the
+        #    failure says WHY it might be lying and what one command fixes it. Silence
+        #    would be a silent miss; noise without a remedy is how a gate gets ignored.
+        detail = "; ".join(f"{k} ({v})" for k, v in sorted(found.items())[:8])
         c.check("T9 every prose path reference resolves", not found,
-                "; ".join(f"{k} ({v})" for k, v in sorted(found.items())[:8]))
+                detail + (uncloned_note(stubbed) if found else ""))
         # ⭐ B1: the property whose absence let the round-1 fail hide. Project roots come
         #    from git's COMMON dir, so a lane and main see the same set. In a worktree
         #    ROOT/.git is a FILE; the resolved main checkout's is always a directory.
@@ -1152,6 +1252,23 @@ def main() -> int:
         copies.append(rel)
     ok = len(copies) == 1
     c.check("T7 exactly one autopilot_bmad_dev_loop.md", ok, det(ok, f"copies: {sorted(copies)}"))
+
+    # -- T10: everything this file PRINTS must survive a cp1252 console. LAST, so it sees
+    #    every row above -- and it checks the emitted strings rather than the source, so a
+    #    decorative character in a comment is free while one in a check name or a runtime
+    #    detail is caught.
+    #
+    #    ⛔ The docstring has promised "plain ASCII output" since SCC-74 and nothing enforced
+    #    it. This diff then put a U+2B50 in a check NAME and a U+26A0 in a finding detail.
+    #    run_all captures each child through a PIPE, so Python encodes with the locale's
+    #    preferred encoding -- cp1252 on a stock Windows box -- and the whole file dies with
+    #    UnicodeEncodeError before reporting anything. Reproduced on the Mac with
+    #    PYTHONIOENCODING=cp1252 (SCC-83 round-3 review, H2). This repo is read on BOTH
+    #    machines and the PC was not reachable to test on, which is exactly when a machine
+    #    check beats a promise in a docstring.
+    unencodable = cp1252_offenders(c.rows)
+    c.check("T10 all printed output survives a cp1252 (Windows) console", not unencodable,
+            det(not unencodable, f"{len(unencodable)} string(s): " + "; ".join(unencodable[:3])))
 
     return c.finish()
 

@@ -40,8 +40,8 @@ with every by-design exemption lifted, keys *and* values equal both ways. Anythi
 (an uninitialised submodule) is **named in the run output along with the docs that reference it**, so
 a reduced run is visible and never reads as a clean one.
 
-⛔ **On non-backticked paths — the honest version.** A folder-wide sweep finds **242** slash-bearing
-tokens outside backticks, but they are overwhelmingly prose: `Dev/QA`, `and/or`,
+⛔ **On non-backticked paths — the honest version.** Strip the code spans and the markdown links and a couple of
+hundred slash-bearing tokens remain, but they are overwhelmingly prose: `Dev/QA`, `and/or`,
 `PASS/CONCERNS/FAIL`, `7/7`. Widening the net trades a handful of real checks for hundreds of false
 ones, so **the backtick convention is the boundary** — not because few paths escape it, but because
 nothing outside it can be told from ordinary writing. (An earlier version of this row claimed
