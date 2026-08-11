@@ -13,7 +13,7 @@
      is scanned too, and the first draft of it tripped the check it was written to warn about. -->
 Settled project-only facts are relocated OUT of this index into the project's own store (SCC-73) —
 this section is the signpost. Working in one? Read its store too; it is not loaded for you.
-- **AGY_AVIATIONCHAT** → `Projects/AGY_AVIATIONCHAT/_artifacts/_memory/` — grading-event ordering, the tenancy chokepoint, Firestore merge-vs-list, the pytest suite lock, AGY test-harness quirks.
+- **AGY_AVIATIONCHAT** → `Projects/AGY_AVIATIONCHAT/_artifacts/_memory/` — 48 memories: the entitlement claim + fail-closed authz, sprint/epic state, Cloud Run + ops surfaces, the test-harness and machine gates, Firestore write hazards.
 - **NEXgen-VR-Director** → `Projects/NEXgen-VR-Director/_artifacts/_memory/` — no memories yet.
 
 ## Jira & tickets
@@ -22,23 +22,17 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [`To Do Next` IS the queue](to-do-next-is-the-queue.md) — lead every "what's next" with it; `todo_list.md` is RETIRED as an agent source; the doc's `Blocked` doesn't exist (it's `Blocking`).
 - [VS Code hides hook output](vscode-hides-git-hook-output.md) — a warn-only hook looks like clean success; ship hooks ARMED.
 
-## AGY access & data
+## ⛔ AGY data safety — AGY-scoped, kept HERE on purpose
+<!-- Ruled 2026-08-11 (SCC-88): AGY-only by subject, so a later sweep reads these as unfinished
+     business. They are not. They guard real production data — do not "finish" the move. -->
 - [Corpus IS the asset](agy-corpus-is-the-asset.md) — real-user data is a revenue line; demo data is placeholder by design.
 - [Archive, never delete](agy-archive-never-delete-ruling.md) — no delete affordance ever ships; removal = archive + `revoked` in one call. ⚠ Its price: BY-ID→BY-FIELD lookups make every superseded doc a live duplicate.
 - [Real NDA-signed users](agy-has-real-nda-users.md) — production `users/` is NOT test data; delete only from an allow-list.
-- **The entitlement claim** — [no provenance](agy-entitled-claim-has-no-provenance.md) (one shared boolean; a billing revoke kills school access) · [claim-primary authz](agy-authz-claim-primary-ruling.md) (never a Firestore read on the gate) · [two redemption doors](agy-redemption-has-two-doors.md) (REST endpoint AND the HR tool).
-- **Fail closed, both of them** — [admin role](agy-admin-role-fail-closed.md) (roleless/invalid → DENY, never a defaulted super_admin) · [seat cap](agy-school-seat-cap-fails-closed.md) (no `max_seats` → cap 0 → every redemption REDEEM_FULL; check for None).
-- [Single-writer gate needs literals](single-writer-gate-needs-literal-payloads.md) — the AST gate flags variable/spread payloads on `users/{uid}` writes.
-- **Product truths that get re-litigated** — [/hanger-talk IS the free tier](agy-hanger-talk-is-the-free-tier.md) (free ACCOUNT by design; don't re-file 4.27 as unbuilt) · [always .org](agy-domain-is-always-org.md) (every `@aviationchat.com` was a TYPO; demo = `schools/ACDEMO`) · [voice-router entitlement vs cost](voice-router-entitlement-vs-cost-cap.md) (4030 is PAID-only; free routers ungated but 4029 cost-capped).
-- [Error envelope shapes](agy-error-envelope-shapes.md) — HTTPException → `body.detail.error.message`; app handlers → top-level `body.error`.
 
-## AGY sprint & stories
-- [Epic 19 REOPENED 08-08](agy-epic-19-deferred-pin-cascade.md) — AVCH-18 on `epic/AVCH-18-adk-2x-runtime`; adk 2.6.3 4-family bump; start at 19.5; don't merge to main early.
+## Sprint, stories & close-out
 - **Reading the board** — [it recommends stale work](sprint-dependency-map-recommends-stale-work.md) (lags the YAML; check status first) · [⛔ scrum board RETIRED 08-07](sudo-update-scrum-board-five-zones.md) (SCC-13; recovery ref + the SCC-56 spec are inside).
 - [`parallel-ok` is a SET property](parallel-ok-is-a-set-property.md) — ① can't rule it (siblings don't exist yet); moved OUT of ① to on-request SCC-56 `/sudo-parallel-check`. `quick-dev` + `blocked` stay.
-- **State rots independently** — [epic keys rot silently](agy-epic-keys-rot-silently.md) (a stale REASON keeps a row alive) · [epics.md + YAML check each other](agy-epics-md-is-partial.md) (YAML wins on state, epics.md for the why) · [deferred EPIC, never deferred-v3](agy-deferred-epic-not-deferred-v3.md) (parked rows hold a finished epic open forever).
 - **Multi-lane landing** — [lanes fix one finding](parallel-lanes-fix-the-same-finding.md) (re-diff the epic branch; the SET rule binds on file OVERLAP) · [close-out shape](multi-lane-closeout-board-merge-shape.md) (flip from the STORY FILE) · [landing ≠ close-out](landing-is-not-closeout.md) (check git BEFORE closing out).
-- [Story files canonical dir](agy-story-files-canonical-dir.md) — `_bmad/bmm/stories/`; grep dot AND dash forms; next ID from sprint-status.yaml.
 - [Status-flip contract](story-status-flip-contract.md) — dev sets `review`; only human close-out sets `done`.
 - [Follow-ons are NOT a new story](followon-fixes-are-not-a-new-story.md) — no worktree/board key; fix on the epic branch (or `chore/*` off main).
 - [Close-out is the sign-off](close-out-command-is-daniels-signoff.md) — an operator-invoked sudo-* command IS the sign-off; never punt back.
@@ -46,9 +40,8 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - **Scoping discipline** — [settled decisions are not gaps](settled-decisions-are-not-gaps.md) (never file a ruled-on decision under "limitations") · [recon reframes scope](recon-reframes-story-scope.md) (the feature already existed ×3; ground-truth by BEHAVIOR) · [test-debt = characterization](test-debt-stories-are-characterization.md) (retrofit tests pass green-first).
 - [TEA retrofit (CLOSED)](tea-retrofit-active-initiative.md) — hub node only; lessons live in the linked memories.
 
-## AGY infra & ops
-- **A wedged process fans out** — [wedged backend](wedged-backend-fans-out-three-symptoms.md) (serves /health fast while hanging every Firestore route — restart FIRST; admin-cred drift merged in, re-verified clean) · [git merge wedges Next dev](git-merge-wedges-next-dev-tailwind.md) (a merge under `npm run dev` wedges Tailwind).
-- **Cloud Run** — [deploys backend/ only](agy-cloud-run-deploys-backend-only.md) (docs in git cost $0) · [stale revision fakes an incident](stale-cloud-run-revision-fakes-prod-incident.md) (only `release` reveals a 0%-traffic revision) · [FAH secrets need viewer too](fah-secret-needs-viewer-role.md) (accessor AND viewer).
+## Git, machines & worktrees
+- [git merge wedges Next dev](git-merge-wedges-next-dev-tailwind.md) — a merge under `npm run dev` wedges Tailwind.
 - **Per-machine, never travels** — [env migration kit](env-migration-kit.md) (clone first, restore second) · [secrets layout is operator-owned](secrets-bundle-layout-is-operator-owned.md) (never reorganize; use his copy) · [`.zshrc` invisible to automation](zshrc-is-invisible-to-automation.md) (shared env → `~/.zshenv`) · [gitconfig didn't travel](gitconfig-never-migrated-to-the-mac.md) (`autoSetupRemote` can't retro-fix old branches).
 - [Commit and push are ONE action](commit-and-push-are-one-action.md) — never end a step unpushed or dirty; verify `0 0` + clean per repo.
 - [⛔ Backticks in `-m "…"` EXECUTE](commit-message-backticks-execute.md) — a message quoting a git command RUNS it; it created a branch mid-commit. Use `-F <file>`.
@@ -57,21 +50,18 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [Hook `ask` = DENY in auto mode](hook-ask-becomes-autodeny-in-auto-mode.md) — gates main only; reads pass, mutations die; retry once, then hand over the rule.
 - [Pruned worktree blocks re-add](pruned-worktree-leaves-a-blocking-shell.md) — the empty dir blocks `worktree add`; only PowerShell deletes it.
 - [Worktrees skip gitignored assets](worktrees-do-not-inherit-gitignored-assets.md) — copy auth_keys/ + .env; junction node_modules; `npm ci` for E2E.
-- **Ops surfaces** — [overseer jobs paused by design](overseer-jobs-paused-by-design.md) (both PAUSED 07-17; resume overseer-nightly only) · [Sentry API](sentry-api-access-aviationchat.md) (token in backend/.env; control vs region host split; loop-guard filter is sacred) · [incident pipeline 16.2](incident-pipeline-16-2-operations.md) (agent lane PRIMARY; fire endpoint is the fallback).
 - [GitHub 408 on satellite wifi](github-408-on-satellite-uplink.md) — operator flies; push dies mid-upload while reads pass; never a hook/gate/limit — chunk via scratch-ref commits or wait for landing.
 
 ## Testing
 - **A green or a red can lie** — [a red can die pre-assertion](red-test-can-die-before-its-assertion.md) (a failure in SEEDING looks identical; read WHICH line raised) · [stubbed children = vacuous green](stubbed-children-make-green-vacuous.md) (mocking its panels proves NAVIGATION, only) · [a piped gate hides its exit code](piping-a-gate-hides-its-exit-code.md) (`| tail` → `$?` is TAIL's; run gates bare) · [`echo` truncates at `\c`](echo-truncates-at-backslash-c.md) (`.claude\commands` has one; use `printf`).
 - **Source-grep guards are blind two ways** — [comments invert them](comment-literals-invert-source-grep-tests.md) (a comment with the pinned literal matches FIRST) · [they can't see ORDER](source-grep-guards-cannot-see-order.md) (a guard moved after the write it protects still passes).
-- **The two E2E tiers** — [learner harness](agy-learner-e2e-harness.md) (TEA-16 emulator harness is the ONE e2e suite) · [backend emulator tier](agy-backend-emulator-e2e-tier.md) (sibling conftests global-mock the tree; verify via `-m emulator`).
-- **Toolchain pins** — [venv is Python 3.11](agy-canonical-test-venv.md) (`backend/.venv`) · [rules tests need Java](firestore-rules-tests-need-java.md) (brew `openjdk@17`; JAVA_HOME in `~/.zshenv`) · [Node 26 breaks vitest jsdom storage](node-26-breaks-vitest-jsdom-storage.md) (run Node 22 LTS).
+- **Toolchain pins** — [rules tests need Java](firestore-rules-tests-need-java.md) (brew `openjdk@17`; JAVA_HOME in `~/.zshenv`) · [Node 26 breaks vitest jsdom storage](node-26-breaks-vitest-jsdom-storage.md) (run Node 22 LTS).
 - **BDD** — [Vision Lock right-sized](bdd-vision-lock-rightsized.md) (lock conversation mandatory, standalone pytest-bdd opt-in) · [sync step needs asyncio.run](bdd-sync-step-needs-asyncio-run.md) (a skip-guarded RED masks it).
-- **Machine gates** — [typecheck: BE gated, FE not](agy-typecheck-is-enforced-nowhere.md) (pyrefly changed-files; frontend `tsc` ungated) · [ruff changed-files](agy-ruff-changed-files-is-a-hard-gate.md) (lints WHOLE files; re-run after `--fix`) · [coverage `source` ignores paths](coverage-source-silently-ignores-file-paths.md) (use `source_pkgs`) · [governance gate scans venv](governance-gate-scans-venv.md) (CLOSED — WAS the xdist tail-hang; prune BY NAME).
-- **Risk + certification** — [priorities matrix](test-priorities-matrix.md) (P0 100 / P1 80 / P2 50 / P3 20%; P0+P1 need E2E) · [true-P0 surface](agy-true-p0-surface.md) (Orchestrator, RAG, Sully override, admin auth, PII scrub) · [certification at shipping SHA](test-certification-at-shipping-sha.md) (②→③ `certification-<story>.json`).
+- [coverage `source` ignores paths](coverage-source-silently-ignores-file-paths.md) — use `source_pkgs`, never file paths.
+- **Risk + certification** — [priorities matrix](test-priorities-matrix.md) (P0 100 / P1 80 / P2 50 / P3 20%; P0+P1 need E2E) · [certification at shipping SHA](test-certification-at-shipping-sha.md) (②→③ `certification-<story>.json`).
 - **Secrets in tests** — [live-guard needs @live](test-live-guard-needs-live-marker.md) (or the guard is swallowed) · lesson from the closed Gemini-key leak: **`setdefault` is the wrong idiom for seeding a secret** — it defers to an exported real key; assign unconditionally in every conftest.
-- **Harness quirks** — [frontend vitest](agy-frontend-vitest-harness.md) (jsdom rAF stub, zustand fresh-object resets; `vi.mock` can't close over a spy) · [⛔ "jsdom OOM" was a mock bug](sudo-admin-jsdom-oom-machine-bound.md) (unstable `useRouter()` → render loop) · [full-suite contention](vitest-full-suite-contends-across-lanes.md) (locks per-STACK; bg shells die on chat close).
+- [full-suite contention](vitest-full-suite-contends-across-lanes.md) — locks per-STACK; bg shells die on chat close.
 - **Spec + fixture conventions** — [eval negative controls](eval-harness-negative-control-convention.md) (`_negative_control:true` + `NC_` id) · [E2E gate fiction](e2e-gate-fiction-test-guardrails.md) (report-only gate hid a fiction spec) · [ATDD mocks match the contract](atdd-mock-shape-must-match-backend-contract.md) · [red-file hosts expansions](red-file-hosts-expansion-tests.md) (ONE per tier; extend, never fork) · [domain-gated fixtures](domain-gated-fixtures-web-verify.md) (verify against PRIMARY sources).
-- [Importing backend.database inits](agy-database-import-is-an-init-step.md) — module-scope `get_db()` needs `initialize_app()` ABOVE it. Smoke-run.
 - [Windows-authored code hides POSIX bugs](windows-authored-code-hides-posix-bugs.md) — chmod, `C:/` paths, `;` PATH joins, `robocopy`, bare `python`; 3 of 7 printed SUCCESS.
 - [JWT last-char tamper is a no-op](jwt-tamper-last-char-is-a-noop.md) — that char carries 4 bits; mutate leading chars instead.
 
@@ -79,7 +69,6 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [New read regresses siblings](new-read-on-shared-endpoint-regresses-siblings.md) — run the whole endpoint suite, not just your test.
 - [Shared registration entangles](shared-registration-file-entangles-stories.md) — registry.py carries sibling hunks; staged imports need staged modules.
 - [Relocating drops mount guards](relocating-drops-mount-guards.md) — moving a conditional into a render guard drops mount preconditions.
-- [Async routers must not block](agy-async-routers-must-not-block-the-loop.md) — sync Firestore in `async def` freezes every concurrent SSE stream.
 - [Destructive re-verify reads FRESH](destructive-reverify-must-read-fresh.md) — a cached re-check no-ops the delete, and it looks like success.
 
 ## GitNexus

@@ -366,10 +366,34 @@ def audit_signals(store: Path, repo: Path | None = None) -> list[str]:
         dangling |= {w for w in re.findall(r"\[\[([^\]]+)\]\]", body) if w not in names}
         if len(body.encode("utf-8")) > BODY_SOFT_CAP:
             big.append(p.name)
-    if dangling:
-        out.append(f"{len(dangling)} dangling [[link]] target(s) ({', '.join(sorted(dangling)[:4])}"
-                   f"{'...' if len(dangling) > 4 else ''}) - either a forward reference (fine, "
+    # A dangling target that lives in a PROJECT store is not a dangler - it is a cross-store
+    # reference, the ordinary residue of a relocation. SCC-88 moved 33 memories out of this index
+    # and created 34 of these in one commit; reported as danglers they would have told every future
+    # audit to "fix the source", which is the wrong repair and would have burned the signal down to
+    # noise. The two need opposite handling: a true dangler is fixed where it is written, a
+    # relocated one is FOLLOWED to the other store.
+    #
+    # Told apart only when a `repo` is passed. The lookup reads live sibling repos, so it must ride
+    # the same explicit opt-in as project_store_signals - see this function's docstring for the leak
+    # that put a live-state read behind a default and turned main red for every unrelated lane.
+    relocated: dict[str, str] = {}
+    if repo is not None and dangling:
+        for s in project_stores(repo)[0]:
+            project = s.parent.parent.name        # <repo>/Projects/<name>/_artifacts/_memory
+            for stem in (p.stem for p in s.glob("*.md")):
+                if stem in dangling:
+                    relocated.setdefault(stem, project)
+    true_dangling = sorted(dangling - set(relocated))
+    if true_dangling:
+        out.append(f"{len(true_dangling)} dangling [[link]] target(s) "
+                   f"({', '.join(true_dangling[:4])}"
+                   f"{'...' if len(true_dangling) > 4 else ''}) - either a forward reference (fine, "
                    f"leave it) or danglers left behind by a retirement (fix the source)")
+    if relocated:
+        moved = sorted(relocated)
+        out.append(f"{len(moved)} [[link]] target(s) RELOCATED to a project store "
+                   f"({', '.join(moved[:4])}{'...' if len(moved) > 4 else ''}) - not lost and not "
+                   f"a repair: read them in {'/'.join(sorted(set(relocated.values())))}")
     if big:
         out.append(f"{len(big)} memory file(s) over {BODY_SOFT_CAP // 1024} KB "
                    f"({', '.join(big[:3])}{'...' if len(big) > 3 else ''}) - long bodies are "
@@ -575,6 +599,36 @@ def main() -> int:
         got = check_store(stores[0])
         c.check("a defect seeded in a PROJECT store fires the same contract as the lobby",
                 any("orphan.md" in p for p in got), str(got)[:150])
+
+        # ── SCC-88: a relocated target is NOT a dangler ──
+        # The sweep that moved 33 memories into a project store created 34 of these at once. Called
+        # danglers, they tell the next audit to "fix the source" - a repair that cannot work, on a
+        # list too long to re-triage, which is how a signal becomes noise people skip.
+        # Its OWN store dir, not the shared `mem` one: later cases rewrite that index and then
+        # assert it is clean, so a fixture file left there reads as an orphan and fails a check
+        # that has nothing to do with this one. (It did. That is why this line is not `mem`.)
+        lobby = repo / "mem-scc88"
+        write(lobby, "refers.md",
+              MEMO.replace("The fact.", "See [[p-fact]] and [[never-written-anywhere]]."))
+        write(lobby, "MEMORY.md",
+              f"# Index\n{POINTER_HEADING}\n- PRESENT\n- UNCLONED\n- NOSTORE\n"
+              f"- [refers](refers.md) - hook\n")
+        sig = audit_signals(lobby, repo)
+        c.check("a [[link]] whose target MOVED to a project store reads as relocated, not dangling",
+                any("RELOCATED" in s and "p-fact" in s for s in sig), str(sig)[:150])
+        c.check("...and it names the project to read it in, since that is the actual next move",
+                any("RELOCATED" in s and "PRESENT" in s for s in sig), str(sig)[:150])
+        c.check("...while a target that exists NOWHERE is still a plain dangler",
+                any("dangling" in s and "never-written-anywhere" in s for s in sig), str(sig)[:150])
+        c.check("...and the relocated one is NOT also counted as dangling (one row, one verdict)",
+                not any("dangling" in s and "p-fact" in s for s in sig), str(sig)[:150])
+        # The split reads live sibling repos, so it must stay behind the explicit opt-in. Without
+        # a repo there is nothing to resolve against and BOTH are danglers - which is correct, not
+        # a regression: a hermetic caller cannot know a file moved.
+        hermetic = audit_signals(lobby)
+        c.check("without a repo the split is OFF and a moved target is still called dangling",
+                any("dangling" in s and "p-fact" in s for s in hermetic)
+                and not any("RELOCATED" in s for s in hermetic), str(hermetic)[:150])
 
         # F1: asserted against the ALLOWLIST, so it still bites where Projects/ is an empty stub.
         write(repo / "mem", "MEMORY.md", "# Index\n(no pointer section)\n")
