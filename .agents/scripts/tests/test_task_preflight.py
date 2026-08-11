@@ -368,6 +368,137 @@ def main() -> int:
         c.check("SCC-64 no-deploy repo prints workflow_lint --toolkit-only",
                 "workflow_lint.py --toolkit-only" in out, out.strip()[-300:])
 
+    # ── SCC-94: secondary_repos was documented in three places and read by NOTHING ──
+    # A cross-repo task could declare "this also lands in <repo> under <KEY>" and close out green
+    # while that key was one the repo's hook rejects, the branch was never pushed, or the half was
+    # not even checked out. The positive control matters as much as the refusals: a correctly
+    # declared secondary repo must still exit 0, or this becomes "always stop" and gets designed
+    # around inside a week - the same argument the deployable-lane cases above are built on.
+
+    def secondary(t: Path, *, keys: str = "AVCH", clean: bool = True, pushed: bool = True,
+                  store: str | None = "ok", checked_out: bool = True) -> Path:
+        """A sibling repo under `Projects/`, like a real submodule checkout.
+
+        `Projects/` is gitignored in the primary so the sibling reads as untracked-but-clean -
+        which is what `ignore = all` produces for real, and is exactly why the primary's own
+        `git status` cannot see a dirty project half."""
+        proj = t / "repo" / "Projects" / "SECONDARY"
+        proj.mkdir(parents=True)
+        if not checked_out:
+            return proj                                   # an empty stub: submodule not init'd
+        git(proj, "init", "-q", "-b", "main")
+        git(proj, "config", "user.email", "t@example.com")
+        git(proj, "config", "user.name", "T")
+        git(proj, "config", "commit.gpgsign", "false")
+        write(proj, ".agents/jira.conf", f'JIRA_KEYS="{keys}"\n')
+        write(proj, "README.md", "# secondary\n")
+        if store:
+            mem = "_artifacts/_memory"
+            write(proj, f"{mem}/a-fact.md",
+                  "---\nname: a-fact\ndescription: one fact\n---\n\nThe fact.\n")
+            # "broken" seeds an ORPHAN: a memory file with no index line, invisible to every
+            # session. Same defect check_store() catches in the lobby - the point of this case
+            # is that here it must BLOCK, not merely be reported.
+            index = "# Index\n- [A fact](a-fact.md) - hook\n" if store == "ok" else "# Index\n"
+            write(proj, f"{mem}/MEMORY.md", index)
+        commit(proj, "AVCH-1 chore: base")
+        bare = t / "secondary-origin.git"
+        subprocess.run(["git", "init", "-q", "--bare", str(bare)], capture_output=True)
+        git(proj, "remote", "add", "origin", str(bare))
+        if pushed:
+            git(proj, "push", "-q", "-u", "origin", "main")
+        if not clean:
+            write(proj, "uncommitted.md", "in flight\n")
+        return proj
+
+    def with_secondary(t: Path, ticket: str = "AVCH-53", **kw) -> Path:
+        repo = make_repo(t)
+        write(repo, ".gitignore", "Projects/\n")
+        write(repo, "_artifacts/_main/2026-08-08_scc-11-thing/task.yaml",
+              "task_key: SCC-11\nprimary_repo: repo\nbranch: chore/SCC-11-thing\n"
+              "close_command: smh-close-task-merge-tree\nsecondary_repos:\n"
+              f"  - repo: Projects/SECONDARY\n    landing: independent-task\n"
+              f"    ticket: {ticket}\n")
+        commit(repo, "SCC-11 chore: declare the secondary repo")
+        git(repo, "push", "-q", "origin", "main")
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        secondary(t, **kw)
+        return repo
+
+    with TempDir() as t:                                   # POSITIVE CONTROL, first
+        repo = with_secondary(t)
+        code, out = preflight(repo)
+        c.check("SCC-94 a correctly declared secondary repo still exits 0",
+                code == 0, out.strip()[-500:])
+        c.check("SCC-94 ...and says which repo/ticket pair it verified",
+                "SECONDARY" in out and "AVCH-53" in out, out.strip()[-500:])
+
+    with TempDir() as t:
+        repo = with_secondary(t, ticket="SCC-99")           # a key that repo's hook rejects
+        code, out = preflight(repo)
+        c.check("SCC-94 a ticket key the secondary repo does not answer to BLOCKS",
+                code == 2 and "SCC-99" in out and "AVCH" in out, out.strip()[-500:])
+
+    with TempDir() as t:
+        repo = with_secondary(t, clean=False)
+        code, out = preflight(repo)
+        c.check("SCC-94 a dirty secondary repo blocks - the lobby's own status cannot see it",
+                code == 2 and "SECONDARY" in out, out.strip()[-500:])
+
+    with TempDir() as t:
+        repo = with_secondary(t, pushed=False)
+        code, out = preflight(repo)
+        c.check("SCC-94 an unpushed secondary repo blocks (commit-and-push are ONE action)",
+                code == 2 and "SECONDARY" in out, out.strip()[-500:])
+
+    with TempDir() as t:
+        repo = with_secondary(t, checked_out=False)
+        code, out = preflight(repo)
+        c.check("SCC-94 a declared-but-uncheckedout secondary repo blocks, never passes quietly",
+                code == 2 and "SECONDARY" in out, out.strip()[-500:])
+
+    with TempDir() as t:
+        repo = with_secondary(t, store="broken")
+        code, out = preflight(repo)
+        c.check("SCC-94 a broken secondary memory store BLOCKS here, unlike run_all's SIGNAL",
+                code == 2 and "a-fact" in out, out.strip()[-500:])
+
+    with TempDir() as t:                                   # no store at all is a beginning
+        repo = with_secondary(t, store=None)
+        code, out = preflight(repo)
+        c.check("SCC-94 a secondary repo with no memory store yet is NOT a failure",
+                code == 0, out.strip()[-500:])
+
+    with TempDir() as t:                                   # regression: the common case is empty
+        repo = make_repo(t)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        code, out = preflight(repo)
+        c.check("SCC-94 `secondary_repos: []` is untouched - single-repo tasks see nothing new",
+                code == 0 and "secondary" not in out.lower(), out.strip()[-400:])
+
+    # ⭐ The case the fixtures above CANNOT see, and the one that matters: close-outs run from a
+    # worktree, and submodules do not populate there - `Projects/<name>/` is an empty stub in
+    # every lane. Resolving only under the lane made this check block every cross-repo close-out
+    # in the one place they all happen. Found by running it against a real lane, not by a fixture,
+    # which is why this test exists: a real linked worktree, secondary present only in the main
+    # checkout, preflight aimed at the LANE.
+    with TempDir() as t:
+        repo = with_secondary(t)
+        lane = t / "lane"
+        # The primary goes back to `main` first: git refuses to check a branch out twice, and a
+        # main checkout sitting on main while the work happens in a lane is the real arrangement.
+        git(repo, "checkout", "-q", "main")
+        git(repo, "worktree", "add", "-q", str(lane), "chore/SCC-11-thing")
+        (lane / "Projects" / "SECONDARY").mkdir(parents=True, exist_ok=True)   # the empty stub
+        code, out = run_script("task_preflight.py", "--repo", str(lane),
+                               "--branch", "chore/SCC-11-thing", "--expect-key", "SCC-11")
+        # Not `code == 0`: a live lane always warns that the worktree is still checked out, which
+        # is exit 1. The property under test is that the secondary check does not BLOCK - exit 2.
+        c.check("SCC-94 a lane resolves the secondary in the SHARED checkout, not the stub",
+                code != 2 and "VERDICT: clear" in out, out.strip()[-600:])
+        c.check("SCC-94 ...and says so, so the operator knows which checkout was verified",
+                "shared checkout" in out, out.strip()[-600:])
+
     return c.finish()
 
 

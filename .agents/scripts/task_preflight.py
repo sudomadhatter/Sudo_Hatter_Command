@@ -157,8 +157,9 @@ def check_intent(branch: str, key: str | None, expect: str, rep: wf.Report) -> N
 # ── 1c. The task manifest, when one exists ─────────────────────────────────────
 
 MANIFEST_SCHEMA = ("task_key: SCC-00 | primary_repo: <name> | branch: chore/SCC-00-<slug> | "
-                   "close_command: smh-close-task-merge-tree | "
-                   "secondary_repos: [{repo, landing: independent-task|retain-on-epic, ticket}]")
+                   "close_command: smh-close-task-merge-tree | secondary_repos: [] or a BLOCK "
+                   "list of `- repo: <path>` / `landing: independent-task|retain-on-epic` / "
+                   "`ticket: KEY-00` rows (the inline [{...}] form is not read)")
 
 
 def manifest_field(text: str, field: str) -> str | None:
@@ -166,14 +167,19 @@ def manifest_field(text: str, field: str) -> str | None:
     return m.group(1).strip() if m else None
 
 
+def task_manifests(repo: Path, expect: str) -> list[tuple[Path, str]]:
+    """Every `task.yaml` under `_artifacts/` that declares THIS task key."""
+    root = repo / "_artifacts"
+    manifests = list(root.glob("**/task.yaml")) if root.is_dir() else []
+    return [(p, t) for p in manifests
+            if (t := wf.read_text(p)) and manifest_field(t, "task_key") == expect]
+
+
 def check_manifest(repo: Path, branch: str, expect: str, rep: wf.Report) -> None:
     """`task.yaml` is intent written down at task START - it exists before any branch can
     drift. When one declares this task, it must agree with what the preflight resolved;
     a manifest nobody checks against is decorative."""
-    root = repo / "_artifacts"
-    manifests = list(root.glob("**/task.yaml")) if root.is_dir() else []
-    mine = [(p, t) for p in manifests
-            if (t := wf.read_text(p)) and manifest_field(t, "task_key") == expect]
+    mine = task_manifests(repo, expect)
     if not mine:
         rep.warn("manifest", f"no task.yaml declares task_key: {expect} - intent rests on "
                              f"--expect-key alone. Author one in the task's _artifacts "
@@ -188,6 +194,163 @@ def check_manifest(repo: Path, branch: str, expect: str, rep: wf.Report) -> None
         else:
             rep.info("manifest", f"{rel_or_abs(p, repo)} agrees: {expect} on "
                                  f"{declared or branch}")
+
+
+# ── 1d. The cross-repo half this repo's `git status` CANNOT see ────────────────
+#
+# `secondary_repos` was in MANIFEST_SCHEMA, in smh-quick-dev.md and in the close-out command, and
+# was read by nothing: check_manifest() validated task_key and branch only. So a task could
+# declare "this also lands in Projects/X under KEY-00" and close out green while that key was one
+# X's commit-msg hook rejects, its branch was never pushed, or X was not even checked out.
+#
+# WHY THIS IS BLOCKING HERE AND ONLY A [SIGNAL] IN run_all. Project-store defects cannot fail the
+# lobby's memory gate: a project is a separate repo whose hook rejects this repo's keys, so a
+# blocking gate there would red every unrelated lane over a defect nobody in the lobby may fix.
+# That objection does not survive at close-out. A lane that DECLARES a secondary repo has asserted
+# it is cross-repo work - it can commit there, and it is about to merge. Blocking it is fair, and
+# a single-repo lane never reaches any of this.
+
+def secondary_rows(text: str) -> tuple[list[dict[str, str]], str | None]:
+    """`(rows, unparsed)`. No PyYAML on these machines - the rest of this file parses the manifest
+    by regex for the same reason.
+
+    `unparsed` carries the raw value when the manifest uses the inline `[{...}]` form this reader
+    does not handle. Returning `[]` for it would fail OPEN: an unverified cross-repo declaration
+    would read as "no secondary repos" and pass silently, which is the exact bug this check exists
+    to close."""
+    # `[^\S\n]*`, NOT `\s*`: under re.MULTILINE `$` matches before a newline, but `\s` matches the
+    # newline itself, so `\s*(.*)` runs past the line end and captures the NEXT line. The block
+    # form then read as an inline one and every declared repo went unverified behind a warning
+    # that looked like a manifest style problem. Horizontal whitespace only.
+    m = re.search(r"^secondary_repos:[^\S\n]*(.*)$", text, re.MULTILINE)
+    if not m:
+        return [], None
+    inline = m.group(1).split("#")[0].strip()
+    if inline:
+        return ([], None) if inline in ("[]", "[ ]") else ([], inline)
+    rows: list[dict[str, str]] = []
+    for line in text[m.end():].splitlines():
+        if line.strip() and not line.startswith((" ", "\t")):
+            break                                    # dedented to a new top-level key
+        s = line.strip()
+        if not s or s.startswith("#"):
+            continue
+        if s.startswith("- "):
+            rows.append({})
+            s = s[2:].strip()
+        if rows and ":" in s:
+            k, _, v = s.partition(":")
+            rows[-1][k.strip()] = v.split("#")[0].strip().strip("\"'")
+    return rows, None
+
+
+def store_problems(store: Path) -> tuple[list[str], str | None]:
+    """`(problems, unavailable_reason)` for a memory store, reusing the gate's own contract.
+
+    Imported from the gate rather than reimplemented: a second copy of "what makes a store valid"
+    would drift from the one `run_all` enforces, and then two checks would disagree about the same
+    store. In this repo `.agents/scripts/tests/` IS the enforcement layer (`run_all.py` is the
+    gate), so depending on it from here is not a test/production inversion.
+
+    An import failure is REPORTED, never swallowed - a check that quietly becomes a no-op when its
+    dependency moves is worse than no check, because the green still looks earned."""
+    try:
+        tests = Path(__file__).resolve().parent / "tests"
+        if str(tests) not in sys.path:
+            sys.path.insert(0, str(tests))
+        from test_memory_store import check_store          # noqa: PLC0415 (deliberately lazy)
+    except Exception as e:                                 # noqa: BLE001 - any failure must speak
+        return [], f"could not load the memory-store contract ({type(e).__name__}: {e})"
+    return check_store(store), None
+
+
+def worktree_main_root(repo: Path) -> Path | None:
+    """The MAIN checkout when `repo` is a linked worktree, else None.
+
+    Submodules do not populate in a `git worktree`: `Projects/<name>/` is an empty stub in every
+    lane, and lanes are where close-outs run. Resolving there is not a workaround - the submodule
+    content lives in the main checkout and is SHARED, so there is exactly one checkout of that
+    repo and exactly one branch state to verify. Looking only under the lane made this check
+    block every cross-repo close-out in the one place they all happen."""
+    r = wf.git(["rev-parse", "--git-common-dir"], repo)
+    if r.returncode != 0 or not r.stdout.strip():
+        return None
+    common = Path(r.stdout.strip())
+    if not common.is_absolute():
+        common = (repo / common).resolve()
+    root = common.parent
+    return root if root.resolve() != repo.resolve() else None
+
+
+def check_secondary(repo: Path, expect: str, rep: wf.Report) -> None:
+    """Every declared cross-repo half: reachable, right key, clean, pushed, store intact."""
+    for path, text in task_manifests(repo, expect):
+        rows, unparsed = secondary_rows(text)
+        if unparsed:
+            rep.warn("secondary", f"{rel_or_abs(path, repo)} declares secondary_repos in an "
+                                  f"inline form this check does not read (`{unparsed}`) - it was "
+                                  f"NOT verified; use the block form ({MANIFEST_SCHEMA})")
+        for row in rows:
+            name = row.get("repo")
+            ticket = row.get("ticket", "")
+            if not name:
+                rep.err("secondary", f"{rel_or_abs(path, repo)}: a secondary_repos row has no "
+                                     f"`repo:` - there is nothing to verify")
+                continue
+            sec = (repo / name).resolve()
+            if not (sec / ".git").exists():
+                main_root = worktree_main_root(repo)
+                shared = (main_root / name).resolve() if main_root else None
+                if shared and (shared / ".git").exists():
+                    sec = shared
+                    rep.info("secondary", f"{name}: empty stub in this lane (submodules do not "
+                                          f"populate in a worktree) - verified in the shared "
+                                          f"checkout at {shared}")
+                else:
+                    rep.err("secondary", f"{name}: declared as a secondary repo but not a git "
+                                         f"checkout, here or in the main worktree - its half of "
+                                         f"this task cannot be confirmed landed "
+                                         f"(git submodule update --init -- {name})")
+                    continue
+
+            # The key, against that repo's OWN jira.conf. Widening a project's keys is ruled out
+            # in writing, so a mismatch is not a preference - the hook there will reject the
+            # commit, and finding that out at the commit is finding out too late.
+            keys = repo_keys(sec)
+            if not ticket:
+                rep.err("secondary", f"{name}: no `ticket:` - cross-repo work is a ticket PER "
+                                     f"REPO, and this half has none")
+            elif keys and ticket.split("-")[0].upper() not in [k.upper() for k in keys]:
+                rep.err("secondary", f"{name}: declared ticket {ticket} but that repo answers "
+                                     f"only to {'/'.join(keys)} - its commit-msg hook will "
+                                     f"reject a {ticket.split('-')[0].upper()}-keyed commit")
+            else:
+                rep.info("secondary", f"{name}: {ticket} matches its jira.conf ({'/'.join(keys)})")
+
+            dirty = wf.git(["status", "--porcelain"], sec).stdout.strip()
+            if dirty:
+                rep.err("secondary", f"{name}: {len(dirty.splitlines())} uncommitted change(s) - "
+                                     f"this repo's own `git status` cannot see them (submodules "
+                                     f"are `ignore = all`), so nothing else will catch this")
+            head = wf.git(["rev-parse", "--abbrev-ref", "HEAD"], sec).stdout.strip()
+            counts = wf.git(["rev-list", "--left-right", "--count", f"origin/{head}...{head}"], sec)
+            if counts.returncode != 0 or not counts.stdout.strip():
+                rep.err("secondary", f"{name}: branch `{head}` was never pushed - its half of "
+                                     f"this task exists on one disk")
+            else:
+                behind, ahead = (counts.stdout.split() + ["?", "?"])[:2]
+                if ahead != "0" or behind != "0":
+                    rep.err("secondary", f"{name}: `{head}` is {ahead} ahead / {behind} behind "
+                                         f"origin - commit and push are ONE action")
+
+            store = sec / "_artifacts" / "_memory"
+            if not (store / "MEMORY.md").is_file():
+                continue                     # no store yet is a beginning, not rot
+            problems, unavailable = store_problems(store)
+            if unavailable:
+                rep.warn("secondary", f"{name}: memory store NOT checked - {unavailable}")
+            for p in problems:
+                rep.err("secondary", f"{name} memory store: {p}")
 
 
 # ── 2. Is the branch clean, pushed, and current with main? ─────────────────────
@@ -382,6 +545,7 @@ def main() -> int:
     key = check_branch(repo, branch, rep)
     check_intent(branch, key, expect, rep)
     check_manifest(repo, branch, expect, rep)
+    check_secondary(repo, expect, rep)
     check_sync(repo, branch, args.fetch, rep)
     check_base(repo, branch, rep)
     lane, touched = check_scope(repo, branch, rep)
