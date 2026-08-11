@@ -1,5 +1,5 @@
 ---
-description: Audit the shared memory store (`_artifacts/_memory/`) and compact it — ground-truth every candidate memory against the live repo (does the rule/script/flag it names still exist? is the thing it calls CLOSED actually gone?), then propose retire / merge / compress with bytes freed and apply ONLY what the operator approves per item. Triggered by `tests/test_memory_store.py` at 90% of the 25 KB index cap; also runnable any time recall feels noisy. Never auto-deletes.
+description: Audit the shared memory store (`_artifacts/_memory/`) and compact it — ground-truth every candidate memory against the live repo (does the rule/script/flag it names still exist? is the thing it calls CLOSED actually gone?), then propose retire / merge / compress / relocate with bytes freed and apply ONLY what the operator approves per item. Relocation is the fourth disposition and the first lever (SCC-73) — the store is two-tier, so a fact true only inside one project moves to that project's own store, which is a separate repo needing its own ticket key. Triggered by `tests/test_memory_store.py` at 90% of the 25 KB index cap; also runnable any time recall feels noisy. Never auto-deletes.
 ---
 
 # /smh-memory-audit — Ground-truth the memory store, then compact it
