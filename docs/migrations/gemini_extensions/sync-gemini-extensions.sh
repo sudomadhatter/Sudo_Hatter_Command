@@ -3,7 +3,11 @@
 # Syncs Gemini/Antigravity extensions (plugins & skills) between the local machine and this git repo.
 
 ACTION=$1
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/gemini_extensions"
+# The script lives IN gemini_extensions/, so its own directory IS the repo dir.
+# It used to append "/gemini_extensions" onto that, producing a path one level too
+# deep: import then found no plugins/ or skills/, copied nothing, and still printed
+# "Done." A silent success on the fresh-machine path (SCC-89).
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOCAL_DIR="$HOME/.gemini/config"
 
 if [ "$ACTION" == "export" ]; then

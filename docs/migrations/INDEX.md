@@ -1,12 +1,15 @@
-# `_my_resources/migrations/` — machine setup & one-off migrations
+# `docs/migrations/` — machine setup & one-off migrations
 
-**Disposable by design.** Everything here is new-machine / rename-day material, not day-to-day
-infrastructure. It lives in the personal area (out of the top level) so it can be deleted outright
-once a migration is done, instead of sitting at the root going stale.
+**Standing reference — run when pointed at, never deleted.** ⛔ This folder used to say *"disposable
+by design… can be deleted outright once a migration is done."* **That was reversed by SCC-89**, and
+the reversal is the reason it now lives under `docs/`: this is the kit a **fresh machine** depends
+on, and while it sat in `_my_resources/` — named in `SCAN_IGNORES`, `DEFAULT_REGEN_IGNORE` and the
+GitNexus ignore list — no drift-checker was allowed to look at it, so it could not rot loudly. A
+guide nothing validates is worth less than no guide. It is scanned documentation now, like
+everything else under `docs/`.
 
-**Read-only posture does NOT apply here while a migration is running.** `_my_resources/` is normally
-protected, but the operator pointing an agent at this folder IS the instruction to use it — read the
-guides, run the scripts.
+**Using it is always in-bounds.** The operator pointing an agent at this folder IS the instruction
+to use it — read the guides, run the scripts. Nothing here is read-only-protected.
 
 > **Agent setting up ANY machine — laptop, desktop, Mac, or a fresh clone: start at §1 and go in
 > order.** The path is the **same on every machine**; §1's table has a column per OS where the
@@ -73,8 +76,10 @@ guides, run the scripts.
 | 4 | The secret bundle step 3 reads | `_secrets/master.env` — **gitignored, hand-carried, never committed** | ✅ | ✅ |
 | 5 | Rebuild the AGY Python venv + verify the test infra | [`python_vytest-updates-other-machines.md`](install_guides/python_vytest-updates-other-machines.md) | ✅ | ✅ (use its macOS column) |
 | 6 | Per-machine logins & toolchains — gcloud, gh, firebase, Java 17, Node, GitNexus re-index | that guide, §5 | ✅ | ✅ |
-| 7 | Scrum-board stale-stamp git hooks (per machine, per project — AGY today) | [`git-hooks-board-stale-install.md`](../open_tasks/git-hooks-board-stale-install.md) | ✅ | needs `pwsh` (installer is `.ps1`) |
+| 7 | Scrum-board stale-stamp git hooks (per machine, per project — AGY today) | [`git-hooks-board-stale-install.md`](../../_my_resources/open_tasks/git-hooks-board-stale-install.md) | ✅ | needs `pwsh` (installer is `.ps1`) |
 | 8 | **Link the Claude auto-memory store** so memory travels via git instead of dying on this box | `.agents/scripts/link-memory.ps1` · macOS → `link-memory.sh` | ✅ | ✅ **use the `.sh`** |
+| 9 | Carry the **Antigravity IDE extensions** across (export on the old box, import on the new one) | [`antigravity-ide-extension-migration.md`](install_guides/antigravity-ide-extension-migration.md) | ✅ export | ✅ import |
+| 10 | Carry the **Gemini/Antigravity plugins + skills** via the repo | [`gemini-extensions-sync-guide.md`](gemini_extensions/gemini-extensions-sync-guide.md) | ✅ | ✅ |
 
 ```powershell
 # step 8 — Windows, from the LOBBY ROOT. Dry run first; -Apply only once the plan reads right.
@@ -99,12 +104,12 @@ bash .agents/scripts/link-memory.sh --all --apply    # then apply
 
 ```powershell
 # step 3 — Windows, from the LOBBY ROOT (not from this folder)
-powershell -File _my_resources\migrations\Restore-EnvMaster.ps1
+powershell -File docs\migrations\scripts\Restore-EnvMaster.ps1
 ```
 ```bash
 # step 3 — macOS / Linux. Finds the lobby root itself, so run it from anywhere.
-bash _my_resources/migrations/restore-env-master.sh --dry-run   # look first
-bash _my_resources/migrations/restore-env-master.sh             # then apply
+bash docs/migrations/scripts/restore-env-master.sh --dry-run   # look first
+bash docs/migrations/scripts/restore-env-master.sh             # then apply
 ```
 
 **Step 5 is not optional on a fast machine.** It is a *correctness* step, not a performance one — CI
@@ -117,7 +122,7 @@ box does not get a reduced checklist; it gets its own `-n` value. That doc says 
 
 | What | Situation |
 |---|---|
-| **Secrets restore** | ✅ **Solved — use [`restore-env-master.sh`](scripts/restore-env-master.sh).** `Restore-EnvMaster.ps1` cannot do this on macOS even under `pwsh`: it joins `'_my_resources\migrations\_secrets\master.env'` and does `$relPath.Replace('/', '\')`, so it would hunt for one literal back-slashed filename and write `backend\.env` as a single file instead of nesting it. Rather than change a working Windows script, the `.sh` is its **twin** — same markers, same backups, same refusals, **verified byte-identical output** on the same master. It also strips the CRLF that a Windows-exported `master.env` carries (a naive shell read would append `\r` to every secret), adds `--dry-run`, and `chmod 600`s what it writes. |
+| **Secrets restore** | ✅ **Solved — use [`restore-env-master.sh`](scripts/restore-env-master.sh).** `Restore-EnvMaster.ps1` cannot do this on macOS even under `pwsh`: it joins `'docs\migrations\auth_keys\_secrets\master.env'` and does `$relPath.Replace('/', '\')`, so it would hunt for one literal back-slashed filename and write `backend\.env` as a single file instead of nesting it. Rather than change a working Windows script, the `.sh` is its **twin** — same markers, same backups, same refusals, **verified byte-identical output** on the same master. It also strips the CRLF that a Windows-exported `master.env` carries (a naive shell read would append `\r` to every secret), adds `--dry-run`, and `chmod 600`s what it writes. |
 | **`rename-fix.ps1`** | ⛔ Windows-only *by design* — it rewrites `%USERPROFILE%` and `.claude\settings.json` paths. Not applicable on a Mac; do not run it. |
 | **`link-memory.sh`** | ✅ **Use this, not the `.ps1`.** Twin of `link-memory.ps1`: symlink instead of junction, `~/.claude/projects/` instead of `%USERPROFILE%\.claude\projects\`, everything else identical. The macOS slug shape is **inferred from Windows paths** — a POSIX path's leading `/` should render as a leading `-`. The script verifies the computed directory exists and **refuses rather than guessing** if nothing matches, so run the dry run and read it. One command settles it for good: `ls ~/.claude/projects/`. |
 | **`.ps1` files generally** | Need `pwsh` (`brew install --cask powershell`). Only `Export-EnvMaster.ps1` and the git-hooks installer are likely to matter. |
