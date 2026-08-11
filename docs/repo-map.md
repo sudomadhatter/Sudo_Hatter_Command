@@ -108,10 +108,10 @@ Sudo_Hatter_Command/
       gemini_extensions/
           [2 files: .mdx1, .shx1 | e.g. gemini-extensions-sync-guide.md]
       install_guides/
-          [4 files: .mdx4 | e.g. machine_setup_card.md]
+          [5 files: .mdx5 | e.g. antigravity-ide-extension-migration.md]
       scripts/
           [5 files: .ps1x3, .patchx1, .shx1 | e.g. Export-EnvMaster.ps1]
-        [2 files: .mdx2 | e.g. INDEX.md]
+        [1 files: .mdx1 | e.g. INDEX.md]
       [10 files: .mdx9, .jsonx1 | e.g. AGENTS.md]
   scratch/
       [1 files: .pyx1 | e.g. find_brainstorm.py]
