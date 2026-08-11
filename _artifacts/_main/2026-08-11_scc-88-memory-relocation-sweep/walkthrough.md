@@ -169,3 +169,60 @@ correct. No banned patterns, no secrets, no unowned TODOs.
    its repoint must be carried into AGY's copy or it is lost silently, since nothing gates path rot
    inside a project store. `.gitignore` conflicts against SCC-77 are **not** from this diff —
    SCC-77 is **31 behind main** and independently re-fixes what SCC-73 already landed.
+
+## Merge Reconciliation (2026-08-11) — landing #4
+
+Verdict: PASS @ (this commit) — re-measured after absorbing `main`; supersedes `PASS @ b5d3180`,
+measured before SCC-90, SCC-89 and SCC-94 landed.
+
+### The modify/delete, and why it was NOT resolved blindly
+
+`_artifacts/_memory/agy-canonical-test-venv.md` — **deleted in HEAD, modified in `origin/main`.**
+
+SCC-89 repointed a path *inside* the file this lane deletes. Git presents this as a conflict with
+two mechanical options, and **both are wrong on their own**: keep the file and this lane's whole
+purpose is undone for one memory; drop it and SCC-89's fix disappears with no message. Ordering does
+not rescue it either — the earlier report suggesting it might was checked and is incorrect. Both
+orders end with the lobby copy deleted.
+
+**Resolved as a decision, with the precondition proven first.** The deletion wins, per SCC-73's
+two-tier law: the memory is AGY's, and the lobby copy is the one that should not exist. That is only
+safe if the path fix survives at the destination — so it was **verified before accepting the
+deletion**, not after:
+
+```
+AGY  main:_artifacts/_memory/agy-canonical-test-venv.md:20
+  -> `docs/migrations/install_guides/python_vytest-updates-other-machines.md` (lobby repo)   ✓ fixed
+```
+
+The repair travelled to AGY under **AVCH-53**, which landed at `eba1fae5` **before** this lane —
+exactly the ordering this walkthrough's landing note demanded.
+
+### The anti-stranding check
+
+Deleting 33 memories from the lobby is only safe if all 33 exist on a **merged** branch in AGY. Not
+assumed — enumerated:
+
+```
+for each file deleted from _artifacts/_memory/ in main...HEAD:
+    git -C Projects/AGY_AVIATIONCHAT cat-file -e main:_artifacts/_memory/<file>
+-> deleted-from-lobby files absent in AGY main: 0
+```
+
+### The ledger
+
+`_artifacts/_main/INDEX.md` — 1 row ours, 6 rows theirs, **no deletions either side**. Kept all
+seven; this lane's row on top, because it lands last and the table is newest-first.
+
+### Gates after the reconcile (bare)
+
+```
+python3 .agents/scripts/tests/run_all.py                -> exit 0   12/12 files passed
+python3 .agents/scripts/workflow_lint.py --toolkit-only -> exit 0   0 errors, 0 warnings, 8 info
+python3 .agents/scripts/tests/test_memory_store.py      -> exit 0   46/46 passed
+```
+
+`test_memory_store.py` reports `project store not gated — submodule not checked out` for both
+projects. That is the **designed** behaviour in a worktree (`Projects/` is an empty stub there), and
+it is a *named* skip rather than a silent pass — the distinction SCC-73 built deliberately, so a
+project store nobody can read never reds a lane nobody in the lobby could repair.
