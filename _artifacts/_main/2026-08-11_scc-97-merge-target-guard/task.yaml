@@ -1,0 +1,6 @@
+task_key: SCC-97
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-97-merge-target-guard
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+found_by: the seven-lane landing on 2026-08-11 — it happened to this session, not to a report about it
