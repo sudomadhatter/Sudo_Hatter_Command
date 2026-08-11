@@ -278,8 +278,11 @@ acli jira workitem link create --out SCC-10 --in SCC-14 --type Blocks   # reads:
 > confirm, which an agent's non-interactive shell can never answer. Three shipped call sites
 > omitted it (`/cicd-push-e2e`, `/smh-close-task-merge-tree`, `/smh-merge-multiple-workingtrees`);
 > `Done` was landing on luck until SCC-113. `tests/test_jira_feed.py` now fails if any
-> `workitem transition` under `.agents/` is missing it — comment and blockquote lines stripped
-> first, so this very paragraph does not read as coverage for a real call site.
+> `workitem transition` under `.agents/` is missing it — anchored to the **command span** on the
+> matched line, so neither this paragraph nor a trailing `# …--yes…` comment reads as coverage for a
+> real call site. **Scope is `.agents/` only:** `docs/_scc_sops_prds/jira_manual.md` still shows the
+> un-flagged form, deliberately — it is the *by hand at a terminal* row, where a human can answer
+> the prompt.
 
 Smart Commits (`#comment` / `#time` / `#transition` in a commit message) also work and cost zero
 automation quota — but the branch-name join already links commits, so use them sparingly.
@@ -323,6 +326,11 @@ python3 .agents/scripts/jira_feed.py start     --key SCC-113 --apply
   reverse, because a ticket you are starting cannot already be finished. An **`Epic` is allowed**
   here and refused by `flag`; that difference is deliberate (an epic under development is genuinely
   in progress; an epic is never itself broken work).
+  **Three exit codes, because the caller must tell them apart:** `0` moved or already there
+  (settled) · **`3` left alone — NOT settled, ask again** · `2` refused, or the move did not land.
+  The `post-commit` recorder writes its once-per-branch marker **only on `0`**; collapsing `3` into
+  `0` silenced a lane whose ticket was `Blocking` when it opened and returned to `To Do` an hour
+  later — the very failure this seam exists to prevent.
 
 Two rules that bind on YOU, not the script: **nothing is invented** (a missing story section renders
 `(none found ...)` and warns — do not paper over it), and **the buckets are yours to fill.** The

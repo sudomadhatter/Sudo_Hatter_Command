@@ -105,14 +105,14 @@ def acli(binary: str, args: list[str], timeout: int = 90) -> subprocess.Complete
                           errors="replace", timeout=timeout)
 
 
-def acli_json(binary: str, args: list[str]) -> object | None:
+def acli_json(binary: str, args: list[str], timeout: int = 90) -> object | None:
     """Parse acli's --json output, which is an ARRAY on some verbs and an OBJECT on others.
 
     `workitem search --json` returns a bare list of issues while `view` and `comment list`
     return objects, so a parser that only accepts one shape reads a perfectly good response
     as a failure. It also scans for the first balanced value rather than parsing the whole
     stream: acli prints human chatter alongside JSON on several paths."""
-    r = acli(binary, args)
+    r = acli(binary, args, timeout=timeout)
     if r.returncode != 0:
         return None
     out = r.stdout or ""
@@ -487,7 +487,7 @@ def render_devrecord(project: Path, story: str, args) -> tuple[str, list[str]]:
 
 # ── Ticket I/O ─────────────────────────────────────────────────────────────────
 
-def view_fields(binary: str, key: str) -> dict:
+def view_fields(binary: str, key: str, timeout: int = 90) -> dict:
     """`--fields` is a WHITELIST, and `issuetype` has to be on it (SCC-54).
 
     It was not, and every type read in this file goes through here - so `have` came back `""`
@@ -499,7 +499,7 @@ def view_fields(binary: str, key: str) -> dict:
     data = acli_json(binary, ["jira", "workitem", "view", key,
                               "--fields",
                               "key,summary,status,description,parent,labels,issuetype",
-                              "--json"])
+                              "--json"], timeout=timeout)
     if data is None:
         wf.die(f"could not read {key} from Jira (is acli authenticated? "
                f"`acli jira auth status`)")
@@ -993,9 +993,18 @@ def cmd_start(args) -> int:
 
     Idempotent on purpose. The post-commit recorder fires on every commit and two lanes can
     hold one key, so a second call must make no second transition.
+
+    ⭐ THREE outcomes, three exit codes, because the caller has to tell them apart:
+        0  moved, or already there        -> settled; the hook may stop asking
+        3  LEFT ALONE (see STARTABLE)     -> not settled; the hook must ASK AGAIN later
+        2  refused or the move failed     -> not settled either
+    Collapsing 3 into 0 is a real defect, not a nicety: a lane opened while its ticket sat
+    in `Blocking` wrote the hook's marker, and when the blocker cleared and the ticket went
+    back to `To Do` nothing ever asked again - the ticket stayed there for the whole build,
+    which is precisely the failure SCC-113 exists to close.
     """
     binary = acli_bin(args.acli)
-    fields = view_fields(binary, args.key)
+    fields = view_fields(binary, args.key, timeout=args.timeout)
     have = ((fields.get("issuetype") or {}).get("name") or "").strip()
     status = ((fields.get("status") or {}).get("name") or "").strip()
     summary = field_text(fields.get("summary"))
@@ -1023,10 +1032,12 @@ def cmd_start(args) -> int:
         return 2
 
     if status.lower() not in STARTABLE:
+        # Exit 3, NOT 0. This ticket is not settled - it is waiting on something (an
+        # impediment, a reviewer, a descope decision). Whatever asked must ask again.
         say(f"jira-feed: {args.key} is {status or '?'} - left alone. `start` only moves a "
-            f"ticket out of {' / '.join(STARTABLE)}; {status} carries state this would "
-            f"erase.")
-        return 0
+            f"ticket out of {' / '.join(STARTABLE)}, so that a status carrying real state "
+            f"is never overwritten. Nothing was recorded; ask again later.")
+        return 3
 
     if not args.apply:
         say(f"jira-feed: DRY RUN - would move {args.key} {status} -> {target} "
@@ -1036,8 +1047,9 @@ def cmd_start(args) -> int:
     # --yes or acli blocks on an interactive confirm no agent shell can answer. This is the
     # trap jira.md:268 names and three call sites shipped without.
     t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,
-                      "--status", target, "--yes"])
-    now = ((view_fields(binary, args.key).get("status") or {}).get("name") or "").strip()
+                      "--status", target, "--yes"], timeout=args.timeout)
+    now = ((view_fields(binary, args.key, timeout=args.timeout)
+            .get("status") or {}).get("name") or "").strip()
     if t.returncode != 0 or now != target:
         say(f"jira-feed: {args.key} is still {now or '?'} - the move did NOT land: "
             f"{(t.stderr or t.stdout).strip()[:160]}")
@@ -1251,6 +1263,12 @@ def main() -> int:
     p_start.add_argument("--key", required=True, help="the ticket, from the BRANCH name")
     p_start.add_argument("--status", default="In Progress",
                          help="the board's in-flight status (default: In Progress)")
+    p_start.add_argument("--timeout", type=int, default=90, metavar="SEC",
+                         help="per-acli-call ceiling. The post-commit hook passes a SHORT "
+                              "one: it runs inline on every commit until it succeeds, and "
+                              "the default 90 would stall each commit for a minute and a "
+                              "half on a dead uplink - which is exactly where the operator "
+                              "commits from")
     p_start.add_argument("--apply", action="store_true", help="without this, renders only")
 
     p_chk = sub.add_parser("check", help="does this ticket carry outline + Dev Record?")

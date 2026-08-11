@@ -79,6 +79,13 @@ def build(root: Path) -> tuple[Path, Path, Path]:
     git(repo, "config", "user.email", "t@t.t")
     git(repo, "config", "user.name", "t")
     git(repo, "config", "core.hooksPath", ".githooks")
+
+    # COMMIT the toolkit, don't just drop it in the working tree. `git worktree add` checks
+    # out a commit, so an uncommitted .agents/ leaves the worktree case with no jira_feed.py
+    # to call and no jira.conf to read - which reads exactly like the hook failing, and cost
+    # a wrong diagnosis once already.
+    git(repo, "add", ".agents", ".githooks")
+    git(repo, "commit", "-q", "-m", "TEST-0 chore: the toolkit under test")
     return repo, launcher, root / "state.json"
 
 
@@ -120,15 +127,16 @@ def main() -> int:
     c.check("hook: probes python3, python AND py",
             "for c in python3 python py" in stripped,
             "the Mac has no bare `python`; the PC has no `python3`")
-    c.check("hook: honours the git-hooks DISABLE kill switch",
-            "DISABLE" in stripped, "every other hook here does")
-    c.check("hook: reads the repo's own jira.conf, never a hardcoded key",
-            "jira.conf" in stripped)
     c.check("hook: covers chore/, claude/ AND epic/",
             all(p in stripped for p in ("chore", "claude", "epic")))
-    c.check("hook: can never fail a commit - it exits 0 unconditionally",
-            stripped.rstrip().endswith("exit 0"),
-            "post-commit's contract: a broken recorder is invisible to your workflow")
+    c.check("hook: passes a SHORT --timeout, not the 90s default",
+            "--timeout" in stripped,
+            "it runs inline on every commit until it succeeds; 90s stalls each commit "
+            "for a minute and a half on a dead uplink")
+    c.check("hook: swallows BOTH streams, not just stderr",
+            ">/dev/null 2>&1" in stripped,
+            "jira_feed prints through say() -> STDOUT, so redirecting stderr alone let "
+            "every failure through to the terminal on EVERY commit")
 
     with TempDir() as tmp:
         repo, acli, state = build(tmp)
@@ -144,8 +152,13 @@ def main() -> int:
                 "this is the whole point of the lane")
         c.check("hook: it wrote the marker",
                 (marker_dir(repo) / "jira-started-chore-TEST-1-a-task").exists())
+        # Exactly one TRANSITION - which is not the same as one acli call, and the first
+        # cut's assertion name claimed the latter while measuring the former. The exchange
+        # is three round-trips (view -> transition -> read-back). Round-trip cost is the
+        # whole argument for post-commit over commit-msg, so the number has to be honest.
         after_first = len(get_state(state).get("transitions", []))
-        c.check("hook: exactly ONE acli call", after_first == 1, f"made {after_first}")
+        c.check("hook: exactly ONE transition per branch", after_first == 1,
+                f"made {after_first}")
 
         # ── every later commit is free ─────────────────────────────────────────
         commit(repo, acli, state, "two.txt")
@@ -175,6 +188,75 @@ def main() -> int:
                     get_state(state)["statuses"]["TEST-1"] == "In Progress")
             git(repo, "checkout", "-q", "main")
 
+        # ── the DISABLE kill switch, at RUNTIME ────────────────────────────────
+        # This was a source-grep (`"DISABLE" in text`), which any string containing those
+        # letters satisfies and which cannot see whether the check runs BEFORE the call it
+        # guards - the repo's own source-grep-guards-cannot-see-order lesson.
+        set_state(state, types={"TEST-3": "Task"}, statuses={"TEST-3": "To Do"})
+        git(repo, "checkout", "-q", "-b", "chore/TEST-3-killswitch")
+        (repo / ".agents/scripts/git-hooks/DISABLE").write_text("", encoding="utf-8")
+        commit(repo, acli, state, "killed.txt")
+        c.check("hook: DISABLE actually stops it - no call, no marker",
+                not get_state(state).get("transitions")
+                and not (marker_dir(repo) / "jira-started-chore-TEST-3-killswitch").exists(),
+                "a kill switch checked AFTER the call is not a kill switch")
+        (repo / ".agents/scripts/git-hooks/DISABLE").unlink()
+        commit(repo, acli, state, "revived.txt")
+        c.check("hook: removing DISABLE revives it",
+                get_state(state)["statuses"]["TEST-3"] == "In Progress")
+        git(repo, "checkout", "-q", "main")
+
+        # ── jira.conf is READ, not merely mentioned ────────────────────────────
+        # A repo with no board binding has nothing to move. Same reason: the old assertion
+        # ("jira.conf" in text) could not tell reading from mentioning.
+        set_state(state, types={"TEST-4": "Task"}, statuses={"TEST-4": "To Do"})
+        conf = repo / ".agents/jira.conf"
+        conf.rename(repo / ".agents/jira.conf.off")
+        git(repo, "checkout", "-q", "-b", "chore/TEST-4-noconf")
+        commit(repo, acli, state, "noconf.txt")
+        c.check("hook: no jira.conf means no board binding, so nothing moves",
+                not get_state(state).get("transitions"),
+                "graceful degradation, the same as the armed commit-msg gate")
+        (repo / ".agents/jira.conf.off").rename(conf)
+        git(repo, "checkout", "-q", "main")
+
+        # ── a status that is NOT startable must not write the marker ───────────
+        # The bug the clean-room review found: `Blocking` exited 0, the marker was written,
+        # and when the blocker cleared the ticket sat in `To Do` for the whole build - the
+        # exact defect this lane exists to close, reintroduced by the lane itself.
+        set_state(state, types={"TEST-6": "Task"}, statuses={"TEST-6": "Blocking"})
+        git(repo, "checkout", "-q", "-b", "chore/TEST-6-blocked")
+        commit(repo, acli, state, "blocked.txt")
+        c.check("hook: a Blocking ticket writes NO marker",
+                not (marker_dir(repo) / "jira-started-chore-TEST-6-blocked").exists(),
+                "'left alone' is not 'settled'")
+        set_state(state, types={"TEST-6": "Task"}, statuses={"TEST-6": "To Do"})
+        commit(repo, acli, state, "unblocked.txt")
+        c.check("hook: once the blocker clears, the NEXT commit starts it",
+                get_state(state)["statuses"]["TEST-6"] == "In Progress",
+                "this is what marking on exit 0 destroyed")
+        git(repo, "checkout", "-q", "main")
+
+        # ── a real WORKTREE, which is where this toolkit actually runs ─────────
+        # Promised by the plan's audit finding F-3 and not delivered in the first cut: every
+        # case above uses `git checkout -b` in one ordinary checkout, and --absolute-git-dir
+        # resolves DIFFERENTLY in a worktree (.git/worktrees/<name>). If it resolved to the
+        # shared .git, two lanes would share one marker and the second would never fire.
+        set_state(state, types={"TEST-5": "Task"}, statuses={"TEST-5": "To Do"})
+        wt = tmp / "wt-lane"
+        git(repo, "worktree", "add", "-q", str(wt), "-b", "chore/TEST-5-in-a-worktree")
+        (wt / "w.txt").write_text("x", encoding="utf-8")
+        git(wt, "add", "w.txt")
+        r = git(wt, "commit", "-q", "-m", "TEST-5 chore: from inside a worktree",
+                env={"ACLI_BIN": str(acli), "STUB_STATE": str(state)})
+        c.check("hook: fires from inside a real worktree", r.returncode == 0
+                and get_state(state)["statuses"]["TEST-5"] == "In Progress",
+                (r.stderr or r.stdout).strip()[:200])
+        c.check("hook: the marker lands in the WORKTREE's git dir, not the shared one",
+                (marker_dir(wt) / "jira-started-chore-TEST-5-in-a-worktree").exists()
+                and "worktrees" in str(marker_dir(wt)),
+                "a shared marker would let one lane silence another")
+
         # ── a re-opened ticket, cut as a fresh lane, fires again ───────────────
         # The marker is named for the BRANCH, not the key. A key-named marker made this go
         # silent: `flag` moves a broken ticket Done -> To Do and the fix is cut as a new
@@ -188,24 +270,50 @@ def main() -> int:
                 "a key-named marker would leave the rebuild sitting in To Do")
         git(repo, "checkout", "-q", "main")
 
-        # ── offline: no marker, so the NEXT commit retries ─────────────────────
-        # The self-healing property. If a failed call wrote the marker anyway, one commit
-        # made on a plane would silence the ticket permanently.
+        # ── a move that SILENTLY NO-OPS: no marker, so the NEXT commit retries ──
+        # `stuck_status` makes the stub exit 0 and print "Work item transitioned" while
+        # changing nothing - acli's real swallow, which is why every write verb here reads
+        # the ticket back. This is NOT the offline case; that one is below. Naming it
+        # "unreachable" was wrong and hid the fact that the genuine transport failure was
+        # never driven from this file.
         set_state(state, types={"TEST-2": "Task"}, statuses={"TEST-2": "To Do"},
                   stuck_status=True)
-        git(repo, "checkout", "-q", "-b", "chore/TEST-2-offline")
+        git(repo, "checkout", "-q", "-b", "chore/TEST-2-silent-noop")
         r = commit(repo, acli, state, "six.txt")
-        c.check("hook: a commit still succeeds when the board is unreachable",
+        c.check("hook: a commit still succeeds when the move silently no-ops",
                 r.returncode == 0, (r.stderr or r.stdout).strip()[:200])
-        c.check("hook: a FAILED move writes NO marker",
-                not (marker_dir(repo) / "jira-started-chore-TEST-2-offline").exists(),
-                "otherwise one offline commit silences the ticket forever")
+        c.check("hook: a move that did not land writes NO marker",
+                not (marker_dir(repo) / "jira-started-chore-TEST-2-silent-noop").exists(),
+                "the read-back is what turns a swallowed write into a retry")
 
         set_state(state, types={"TEST-2": "Task"}, statuses={"TEST-2": "To Do"})
         commit(repo, acli, state, "seven.txt")
         c.check("hook: the next commit retries and lands it",
                 get_state(state)["statuses"]["TEST-2"] == "In Progress",
                 "self-healing, by construction")
+        git(repo, "checkout", "-q", "main")
+
+        # ── genuinely unreachable: acli itself fails ───────────────────────────
+        # The transport failure, driven for real by pointing ACLI_BIN at a binary that is
+        # not there - the plane case. Distinct code path (acli_json -> None -> wf.die) from
+        # the silent no-op above, and it was never exercised until the review said so.
+        set_state(state, types={"TEST-8": "Task"}, statuses={"TEST-8": "To Do"})
+        git(repo, "checkout", "-q", "-b", "chore/TEST-8-no-board")
+        (repo / "eight.txt").write_text("x", encoding="utf-8")
+        git(repo, "add", "eight.txt")
+        r = git(repo, "commit", "-q", "-m", "TEST-8 chore: committed with no board",
+                env={"ACLI_BIN": str(tmp / "does-not-exist"), "STUB_STATE": str(state)})
+        c.check("hook: a commit succeeds with NO board reachable at all",
+                r.returncode == 0, (r.stderr or r.stdout).strip()[:200])
+        c.check("hook: an unreachable board is SILENT - nothing on stdout or stderr",
+                not (r.stdout or "").strip() and not (r.stderr or "").strip(),
+                "jira_feed prints through say() -> STDOUT; redirecting stderr alone printed "
+                "a five-line refusal on EVERY commit")
+        c.check("hook: unreachable writes no marker, so it retries when you land",
+                not (marker_dir(repo) / "jira-started-chore-TEST-8-no-board").exists())
+        commit(repo, acli, state, "nine.txt")
+        c.check("hook: back online, the next commit starts it",
+                get_state(state)["statuses"]["TEST-8"] == "In Progress")
 
     return c.finish()
 

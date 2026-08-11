@@ -82,8 +82,13 @@ tree.
 python3 .agents/scripts/jira_feed.py start --key <KEY> --apply    # PC: `python`
 ```
 
-Idempotent, so a re-run or a resumed lane is a no-op; it refuses a `Done` key outright, because a
-ticket you are starting work on cannot already be finished — that means the key is wrong.
+Idempotent, so a re-run or a resumed lane is a no-op. **Read its exit code — three outcomes:**
+
+| Exit | Means | What you do |
+|---|---|---|
+| `0` | moved, or already `In Progress` | carry on |
+| `3` | **left alone** — the ticket is `Blocking` / `In Review` / `Deferred` | **stop and ask.** You are opening a lane on a ticket that is waiting on something; say which and confirm that is intended |
+| `2` | refused (a **`Done`** key — so the key is wrong) or the move did not land | **stop.** Never work a closed ticket's key; mint one at the `jira.md` §Who-mints-tickets seam |
 
 > **The `post-commit` hook does this too, and that is deliberate, not redundant.** The hook fires on
 > the first commit of any `chore/ · claude/ · epic/` branch, so work started without this command

@@ -20,9 +20,14 @@
 # never block or corrupt one, and every error is swallowed. A network call is safe HERE.
 #
 # ─── THE COST, AND WHY IT IS PAID ONCE ──────────────────────────────────────────────────────
-# A marker under the git dir short-circuits every later commit before any network call. So
-# this is ONE acli round-trip per branch, ever — not one per commit. The marker is written
-# ONLY on success, so a commit made offline retries on the next one: self-healing by
+# A marker under the git dir short-circuits every later commit before any network call. So the
+# cost is ONE exchange per branch, ever — not one per commit. Be precise about what that
+# exchange is: `start` makes THREE acli round-trips (view -> transition -> view, the read-back
+# every write verb here does). Round-trip cost is the whole reason this is post-commit rather
+# than commit-msg, so understating it 3x would be arguing the case dishonestly.
+#
+# The marker is written ONLY on a SETTLED result — moved, or already there. A failed call, a
+# refusal, or a "left alone" status writes nothing, so the next commit retries: self-healing by
 # construction. (A failed call that wrote the marker anyway would silence the ticket forever.)
 #
 # Kill switch: create .agents/scripts/git-hooks/DISABLE (untracked) to turn it off entirely.
@@ -91,10 +96,23 @@ for c in python3 python py; do
 done
 [ -n "$PY" ] || exit 0
 
-# stdout passes through so a terminal shows the move; stderr is swallowed so an unreachable
-# board is invisible. `start` is idempotent and refuses a `Done` key, so the worst case of a
-# spurious run is a no-op.
-if "$PY" .agents/scripts/jira_feed.py start --key "$KEY" --apply 2>/dev/null; then
+# ⛔ BOTH streams, and the reason is not obvious: jira_feed prints through say(), which goes
+# to STDOUT — so redirecting only stderr let every failure through to the terminal. A branch
+# whose key was `Done` printed a five-line refusal on EVERY commit. Matching the drift
+# recorder above (>/dev/null 2>&1) is what makes "invisible when it fails" true rather than
+# merely claimed.
+#
+# --timeout: this runs INLINE on every commit until it succeeds, so the 90s default would
+# stall each commit for a minute and a half on a dead uplink — and a plane is exactly where
+# the operator commits from (github-408-on-satellite-uplink). 10s is past a healthy call and
+# nowhere near a wedged one.
+#
+# Exit 0 means SETTLED — moved, or already there. Exit 3 means "left alone, ask again"
+# (`Blocking`, `In Review`, `Deferred`), and exit 2 is a refusal or a failed move; neither
+# writes the marker, so the next commit retries. Marking on 3 is what silenced a lane whose
+# ticket was `Blocking` at open and returned to `To Do` an hour later.
+if "$PY" .agents/scripts/jira_feed.py start --key "$KEY" --timeout 10 --apply \
+     >/dev/null 2>&1; then
   : > "$MARKER"
 fi
 

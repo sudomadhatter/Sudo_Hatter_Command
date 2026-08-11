@@ -808,8 +808,11 @@ def main() -> int:
         for held in ("Blocking", "In Review", "Deferred"):
             set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": held})
             code, out = jf("start", "--key", "TEST-7", "--apply")
-            c.check(f"start: {held} is left alone, and says why",
-                    code == 0 and get_state(state)["statuses"]["TEST-7"] == held
+            # Exit 3, not 0: "left alone" is NOT settled. The hook writes its once-per-branch
+            # marker on 0, so returning 0 here silenced a lane whose ticket was `Blocking`
+            # when it opened and went back to `To Do` when the blocker cleared.
+            c.check(f"start: {held} is left alone, and says ASK AGAIN (exit 3, not 0)",
+                    code == 3 and get_state(state)["statuses"]["TEST-7"] == held
                     and not get_state(state).get("transitions"), out.strip()[:200])
 
         # An Epic is allowed here and refused by `flag` - the difference is deliberate. An
@@ -841,34 +844,79 @@ def main() -> int:
         lobby = SCRIPTS.parent.parent
         me = Path(__file__).resolve()
 
-        def yes_offenders() -> list[str]:
-            """Every call site, not "the good form appears somewhere" - that reads as
-            covered off jira.md's own cheat-sheet line while three real sites lack it.
+        def offending_lines(lines: list[str]) -> list[int]:
+            """Line numbers whose `acli … workitem transition` call omits `--yes`.
 
-            Two false-positive classes the first cut hit, both load-bearing:
-              * a call WRAPS - jira_feed.py puts `--yes` on the next physical line, so a
-                line-local scan indicts the one caller that always got it right;
-              * this file MATCHES the verb (the acli stub) without ever calling it.
+            ⭐ Anchored to the COMMAND SPAN, not to a window. A 3-line window passed a site
+            whose real flag had been deleted because prose on the same line still said the
+            word `--yes` — and one of the two it let through was
+            `smh-merge-multiple-workingtrees.md`, a site THIS ticket was written to fix.
+            The note explaining the flag was excusing its absence.
+
+            Three things the span has to survive, each a real line in this repo:
+              * markdown inline code — the call ends at its closing backtick; the prose
+                after it is commentary, not argv;
+              * a trailing `# TRAP: … --yes …` comment on the cheat-sheet line;
+              * a call that WRAPS — jira_feed.py builds argv across two physical lines, so
+                a line-local scan indicts the one caller that always got it right.
             """
+            out = []
+            for n, ln in enumerate(lines, 1):
+                if ln.lstrip().startswith(("#", ">", "//")):
+                    continue              # a comment quoting the trap is not a call site
+                # `acli` is the discriminator, not the bare phrase: a CALL SITE invokes the
+                # binary. Prose ABOUT the rule mentions the phrase and is not a call.
+                if not all(t in ln for t in ("acli", "workitem", "transition")):
+                    continue
+                span = ln[ln.find("acli"):]
+                span = span.split("`", 1)[0]          # inline code ends at the backtick
+                span = span.split("#", 1)[0]          # a trailing comment is not argv
+                if (span.rstrip().endswith(("\\", ","))
+                        or span.count("[") > span.count("]")):
+                    span += " " + " ".join(lines[n:n + 2])    # the call wraps
+                if "--yes" not in span:
+                    out.append(n)
+            return out
+
+        def yes_offenders() -> list[str]:
             out = []
             for p in sorted((lobby / ".agents").rglob("*")):
                 if p.suffix not in (".md", ".py", ".sh") or not p.is_file():
                     continue
                 if p.resolve() == me:
                     continue
-                lines = p.read_text(encoding="utf-8").splitlines()
-                for n, ln in enumerate(lines, 1):
-                    if ln.lstrip().startswith(("#", ">", "//")):
-                        continue          # a comment quoting the trap is not a call site
-                    # `acli` is the discriminator, not the bare phrase: a CALL SITE always
-                    # invokes the binary. Prose ABOUT the rule ("...if any `workitem
-                    # transition` omits it") mentions the phrase and is not a call - and
-                    # the first cut indicted this file's own documentation for saying so.
-                    if not all(t in ln for t in ("acli", "workitem", "transition")):
-                        continue
-                    if "--yes" not in " ".join(lines[n - 1:n + 2]):   # the call may wrap
-                        out.append(f"{p.relative_to(lobby)}:{n}")
+                for n in offending_lines(p.read_text(encoding="utf-8").splitlines()):
+                    out.append(f"{p.relative_to(lobby)}:{n}")
             return out
+
+        # ⭐ NEGATIVE CONTROL — nothing else in this suite pins that the guard CAN fire.
+        # Each row is a real shape from this repo with the flag surgically removed; the
+        # guard must indict every one, or it is decoration.
+        must_catch = [
+            ['acli jira workitem transition --key K --status "Done"'],
+            ['then `acli jira workitem transition --key K --status "Done"` (**`--yes` or '
+             'acli stops on a confirm prompt no agent shell can answer**)'],
+            ['acli jira workitem transition --key K --status "In Review"'
+             '  # TRAP: needs --key; --yes skips the interactive confirm'],
+            ['t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,',
+             '                  "--status", target])'],
+        ]
+        for i, rows in enumerate(must_catch):
+            c.check(f"yes-guard NEGATIVE CONTROL {i}: an un-flagged call IS caught",
+                    offending_lines(rows) == [1],
+                    "prose or a comment saying --yes must never excuse the missing flag: "
+                    + rows[0][:90])
+
+        must_pass = [
+            ['acli jira workitem transition --key K --status "Done" --yes'],
+            ['t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,',
+             '                  "--status", target, "--yes"])'],
+            ['`tests/test_jira_feed.py` fails if any `workitem transition` omits it.'],
+        ]
+        for i, rows in enumerate(must_pass):
+            c.check(f"yes-guard POSITIVE CONTROL {i}: a compliant line is NOT caught",
+                    offending_lines(rows) == [],
+                    "a guard that indicts the fix is worse than none: " + rows[0][:90])
 
         offenders = yes_offenders()
         c.check("yes-guard: every `workitem transition` under .agents/ passes --yes",
