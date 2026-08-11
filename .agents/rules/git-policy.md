@@ -79,7 +79,17 @@ One "approved" lands one story; the next needs its own.
    doors mint it at their sign-off step (`.agents/scripts/git-hooks/mint-push-token.sh`), after the
    merge commit exists and immediately before the push. The token lives in the **common** git dir,
    so every worktree on the machine shares exactly one; it records the sha it was minted for, so
-   anything committed after the sign-off is refused. Armed by the tracked
+   anything committed after the sign-off is refused.
+
+   ⭐ **And it enforces ONE MERGE, which is the part that actually implements SCC-71.** A token
+   authorises a *push*; what needs authorising is a *merge*. So `main` must advance by **exactly one
+   merge commit sitting directly on the remote's current tip**, and that merge's second parent must
+   be the branch the token names. Without this, merging six branches locally and then minting once
+   lands all six on one approval — reproduced during SCC-77's own review. The same invariant refuses
+   a force-push rewind, which is the destructive twin of the delete that was already refused.
+   The minter refuses a stacked batch too, so it fails where the message can still name the fix.
+
+   Armed by the tracked
    `.agents/scripts/git-hooks/MAIN-PUSH-ENFORCE`; bypass once with `git push --no-verify`.
    Pure POSIX `sh` **on purpose** — see below.
 

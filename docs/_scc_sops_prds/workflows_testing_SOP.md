@@ -854,13 +854,25 @@ test "$(git -C "$REPO" rev-parse --abbrev-ref HEAD)" = "main" || { echo "NOT ON 
 > | destination | only `refs/heads/main`, whole-ref — so `epic/main-fix` never trips it |
 > | exists | no token at all |
 > | fresh | minted more than **30 minutes** ago |
-> | **same commit** | **the token names one sha and the push carries another** |
-> | delete | anything that would delete `main` — always, no path |
+> | same commit | the token names one sha and the push carries another |
+> | **⭐ one merge** | **the push does not advance `main` by exactly one merge sitting on the remote tip** |
+> | **⭐ named branch** | **the merge's second parent is not the branch the token authorised** |
+> | delete / rewind | anything that would delete `main`, or force-push it backwards |
 >
-> **The "same commit" check is the one that would have caught the six merges above.** The token
-> records the sha it was minted for, so anything committed *after* your sign-off is refused — which
-> is exactly the shape of that failure. Every refusal also **discards** the token, so a failed
-> sign-off is spent rather than left lying around for a later push to match by accident.
+> ⭐ **The "one merge" check is the one that catches the six merges above — and the first cut of
+> this gate did not have it.** Worth knowing, because the reasoning error is easy to repeat: a token
+> authorises a **push**, and what needs authorising is a **merge**. Merge six branches into `main`
+> locally, mint once, push once — the sha matches the whole way, and six merges land on one
+> approval. That was reproduced during SCC-77's own review, against a real remote: one token, six
+> merges, and the approval line cheerfully naming one of them.
+>
+> What actually holds the line is the shape of the history: `main` must advance by **exactly one
+> merge commit sitting directly on top of what the remote already has**. Batching breaks it — the
+> previous merge sits in between. Force-pushing a rewind breaks it too, which is why that is now
+> refused rather than merely deleting being refused.
+>
+> Every refusal also **discards** the token, so a failed sign-off is spent rather than left lying
+> around for a later push to match by accident.
 >
 > **Why it is a git hook and not a Claude hook.** The gate this replaced never ran once.
 > `require-push-approval.py` was wired in `.claude/settings.json` as

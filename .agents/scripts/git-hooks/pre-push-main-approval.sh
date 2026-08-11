@@ -94,6 +94,16 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     refuse "the approval token is malformed (no tip / no timestamp). It has been discarded."
   fi
 
+  # ⛔ VALIDATE BEFORE ARITHMETIC. `$(( ))` in POSIX sh recursively expands its operands, so a
+  # token containing `minted=z[$(...)]` EXECUTES that command, and a token containing `minted=now`
+  # resolves to this script's own `now` variable — age 0, forever, TTL bypassed. Both were live
+  # (SCC-77 review). Digits only, checked as a string, before the value goes anywhere near `$(( ))`.
+  case "$t_minted" in
+    ''|*[!0-9]*)
+      rm -f "$TOKEN"
+      refuse "the approval token's timestamp is not a number. It has been discarded." ;;
+  esac
+
   now=$(date +%s)
   age=$((now - t_minted))
   if [ "$age" -lt 0 ] || [ "$age" -gt "$TTL_SECONDS" ]; then
@@ -101,13 +111,50 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     refuse "the approval token is stale — minted ${age}s ago, limit ${TTL_SECONDS}s. It has been discarded."
   fi
 
-  # ⭐ The check that matters. The token names the sha it was minted for. If what is actually
-  # being pushed is a different commit, work appeared AFTER the sign-off and no gate has ever
-  # seen it — which is precisely how six merges rode one approval.
+  # The token names the sha it was minted for. A different sha means work appeared AFTER the
+  # sign-off, so no gate has seen it.
   if [ "$t_tip" != "$local_sha" ]; then
     rm -f "$TOKEN"
     refuse "the approval token is for $t_tip but this push carries $local_sha.
         Commits appeared after the sign-off, so no gate has seen them. Token discarded."
+  fi
+
+  # ⭐⭐ THE CHECK THAT ACTUALLY ENFORCES ONE-SIGN-OFF-ONE-MERGE.
+  #
+  # The sha check above is NOT sufficient and the first cut of this gate wrongly claimed it was.
+  # A token authorises a PUSH; what SCC-71 needs gated is a MERGE. Merge six branches into main
+  # locally, then mint once, then push once — `t_tip == local_sha` holds the whole way and six
+  # merges land on one approval, which is the exact failure this gate exists to stop. Reproduced
+  # during the SCC-77 review: one token, six merges on the remote, the approval line naming one
+  # of them.
+  #
+  # The invariant that actually holds: `main` advances by EXACTLY ONE merge commit sitting
+  # directly on top of what the remote already has. So the pushed commit's FIRST parent must be
+  # the remote's current tip. Batching breaks it (the previous merge sits in between), and so
+  # does a force-push rewind (the rewound tip is not a child of the remote's).
+  if [ "$remote_sha" != "$ZERO" ]; then
+    parent1=$(git rev-parse --verify --quiet "${local_sha}^1") || parent1=""
+    if [ "$parent1" != "$remote_sha" ]; then
+      rm -f "$TOKEN"
+      refuse "this push does not advance main by exactly one merge.
+        remote main is at $remote_sha
+        the pushed commit's first parent is ${parent1:-<none>}
+        One sign-off authorises ONE merge (SCC-71). Batching several merges into a single push,
+        or rewinding main and force-pushing, both land here. Token discarded."
+    fi
+
+    # And the merge must be OF the branch the token names — otherwise the token is a blank cheque
+    # that any merge can spend.
+    if [ -n "$t_branch" ]; then
+      merged=$(git rev-parse --verify --quiet "${local_sha}^2") || merged=""
+      claimed=$(git rev-parse --verify --quiet "refs/heads/$t_branch") || claimed=""
+      if [ -n "$claimed" ] && [ "$merged" != "$claimed" ]; then
+        rm -f "$TOKEN"
+        refuse "the token authorises landing '$t_branch' ($claimed),
+        but this merge's second parent is ${merged:-<none> (not a merge commit)}.
+        A sign-off is for one named branch, not for whatever happens to be on main. Token discarded."
+      fi
+    fi
   fi
 
   # Consumed BEFORE the push. There is no post-push hook, so this is the only available order —

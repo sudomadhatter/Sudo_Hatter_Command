@@ -34,7 +34,11 @@ scaffolding** for parallel story lanes, not a universal step — and the lobby h
   outright — do not resurrect it.
 - ⭐ **`main` is now gated MECHANICALLY (SCC-77).** `.githooks/pre-push` refuses any push landing on
   `main` without a single-use token that only the two door commands mint, and spends it on the way
-  through. It records the sha it was minted for, so anything committed after the sign-off is refused.
+  through. It records the sha it was minted for, so anything committed after the sign-off is refused
+  — **and it requires the push to advance `main` by exactly ONE merge on the remote's current tip,
+  of the branch the token names.** That second half is what actually implements one-sign-off-one-
+  merge: a token authorises a *push*, and batching six merges into one push defeats a sha check
+  completely (reproduced in SCC-77's review before the fix). It also refuses a force-push rewind.
   Before this, the *only* claimed enforcement was `require-push-approval.py`, wired as
   `powershell -Command "python …"` — neither binary exists on the Mac, so it exited **127 in silence**
   on every push for weeks, and six merges rode one sign-off. The gate is pure `sh` for that reason.

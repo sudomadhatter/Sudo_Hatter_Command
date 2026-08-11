@@ -19,7 +19,9 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 import time
+import pathlib
 from pathlib import Path
 
 from _harness import Cases, TempDir
@@ -86,10 +88,36 @@ def main() -> int:
     hp = out.strip()
     c.check("core.hooksPath is set", rc == 0 and bool(hp),
             "unset -> git uses .git/hooks and every gate here is OFF")
-    c.check("core.hooksPath is RELATIVE", not hp.startswith("/") and ":" not in hp,
-            f"got {hp!r} — an absolute path cannot survive a clone to the other machine")
     c.check("core.hooksPath resolves to a dir holding pre-push",
-            (REPO / hp / "pre-push").is_file() if hp else False)
+            (REPO / hp).is_absolute() and (pathlib.Path(hp) / "pre-push").is_file()
+            if hp.startswith("/") else (REPO / hp / "pre-push").is_file() if hp else False)
+
+    # ⭐ EVERY LIVE WORKTREE, not just this one. `core.hooksPath` is relative here, so git resolves
+    # `.githooks/` PER WORKTREE — and a worktree cut from a commit before this gate existed has no
+    # `.githooks/pre-push` at all. It is then completely ungated, and pushes from it print nothing:
+    # the dispatcher's "not present in this worktree" warning only fires when the dispatcher itself
+    # exists. Found by the SCC-77 adversarial review, reproduced against a real remote.
+    # Scoped to worktrees whose CHECKED-OUT TREE actually carries the dispatcher. A worktree cut
+    # before this gate existed legitimately has no `.githooks/pre-push` in its tree — that is the
+    # known hazard, documented in git-policy.md, and merging this lane is what fixes it. What must
+    # never happen is a tree that HAS the dispatcher while git resolves hooks somewhere that does
+    # not: that is silent, and it is the drift this assertion exists to catch.
+    rc, out = sh("git", "worktree", "list", "--porcelain", cwd=REPO)
+    trees = [ln.split(" ", 1)[1] for ln in out.splitlines() if ln.startswith("worktree ")]
+    ungated, predating = [], []
+    for t in trees:
+        if not (pathlib.Path(t) / ".githooks/pre-push").is_file():
+            predating.append(pathlib.Path(t).name)
+            continue
+        resolved = pathlib.Path(hp) if hp.startswith("/") else pathlib.Path(t) / (hp or ".git/hooks")
+        if not (resolved / "pre-push").is_file():
+            ungated.append(t)
+    c.check("every worktree carrying the gate resolves hooks to it", not ungated,
+            f"resolves elsewhere: {ungated} — pushes from these are ungated AND silent")
+    if predating:
+        print(f"[note] {len(predating)} worktree(s) predate the gate and are UNGATED: "
+              f"{predating} — inherent to per-worktree hook resolution; see git-policy.md "
+              f"§'A fresh clone ships this gate OFF'. Merging this lane gates the main checkout.")
 
     # ── settings.json may never name one platform's binary again ─────────────────────────
     raw = (REPO / ".claude/settings.json").read_text()
@@ -104,15 +132,19 @@ def main() -> int:
     with TempDir() as tmp:
         d = make_repo(tmp)
         sha = sh("git", "rev-parse", "HEAD", cwd=d)[1].strip()
-        old = sh("git", "rev-parse", "HEAD~0", cwd=d)[1].strip()
 
         # ── BEHAVIOUR ────────────────────────────────────────────────────────────────────
         rc, out = gate(d, sha, ref="refs/heads/chore/x")
         c.check("non-main ref passes with no token", rc == 0 and "REFUSED" not in out)
 
-        rc, out = gate(d, sha, ref="refs/heads/epic/main-fix")
-        c.check("`epic/main-fix` does not trip the match", rc == 0,
-                "must be a whole-ref match, not a substring")
+        # `epic/main-fix` alone proves nothing: it does not contain "refs/heads/main" as a
+        # substring, so a naive substring implementation would pass it too. The refs that
+        # actually discriminate are the ones where "refs/heads/main" IS a prefix/substring.
+        for near in ("refs/heads/main-backup", "refs/heads/mainx", "refs/heads/epic/main-fix"):
+            rc, out = gate(d, sha, ref=near)
+            c.check(f"`{near}` does not trip the match", rc == 0,
+                    "whole-ref equality — main-backup and mainx are the cases that catch a "
+                    "substring or prefix implementation")
 
         rc, out = gate(d, sha)
         c.check("main with NO token is refused", rc != 0 and "REFUSED" in out)
@@ -233,6 +265,131 @@ def main() -> int:
         rc, out = sh("git", "ls-remote", "--heads", str(bare), "main", cwd=d)
         c.check("the commit reached the remote", "refs/heads/main" in out)
         c.check("the token was consumed by the real push", not token_path(d).exists())
+
+    # ── ⭐ ONE SIGN-OFF = ONE MERGE (the check the first cut of this gate did NOT have) ──────
+    #
+    # The sha check is not sufficient, and claiming it was is what this block exists to stop
+    # recurring. A token authorises a PUSH; what SCC-71 needs gated is a MERGE. Merge six branches
+    # locally, mint once, push once — the sha matches the whole way and six merges land on one
+    # approval. Reproduced during review before the fix: 6 merges on the remote, one token.
+    with TempDir() as tmp:
+        d = make_repo(tmp)
+        bare = tmp / "remote.git"
+        sh("git", "init", "-q", "--bare", str(bare), cwd=tmp)
+        sh("git", "remote", "add", "origin", str(bare), cwd=d)
+        (d / ".githooks").mkdir()
+        shutil.copy2(DISPATCH, d / ".githooks/pre-push")
+        (d / ".githooks/pre-push").chmod(0o755)
+        sh("git", "push", "-q", "--no-verify", "origin", "main", cwd=d)
+        sh("git", "fetch", "-q", "origin", cwd=d)
+        sh("git", "config", "core.hooksPath", ".githooks", cwd=d)
+        mint = str(d / ".agents/scripts/git-hooks/mint-push-token.sh")
+
+        def merge_lane(name):
+            sh("git", "checkout", "-q", "-b", name, "main", cwd=d)
+            (d / f"{name.replace('/', '_')}.txt").write_text("x\n")
+            sh("git", "add", "-A", cwd=d)
+            sh("git", "commit", "-qm", f"work {name}", cwd=d)
+            sh("git", "checkout", "-q", "main", cwd=d)
+            sh("git", "merge", "-q", "--no-ff", name, "-m", f"merge: {name} -> main", cwd=d)
+
+        # --- the happy path must still work, or the fix is worse than the bug ---
+        merge_lane("chore/SCC-77-a")
+        rc, out = sh("sh", mint, "--command", "/smh-close-task-merge-tree",
+                     "--branch", "chore/SCC-77-a", "--key", "SCC-77", cwd=d)
+        c.check("minter accepts a single merge sitting on origin/main", rc == 0, out.strip()[:160])
+        rc, out = sh("git", "push", "origin", "main", cwd=d)
+        c.check("ONE merge with a token lands", rc == 0, out.strip()[-160:])
+        rc, out = sh("git", "--git-dir", str(bare), "rev-list", "--count", "--merges", "main", cwd=d)
+        c.check("exactly 1 merge on the remote", out.strip() == "1", f"got {out.strip()}")
+
+        # --- the attack: batch several merges behind one sign-off ---
+        sh("git", "fetch", "-q", "origin", cwd=d)
+        for lane in ("chore/SCC-77-b", "chore/SCC-77-c", "chore/SCC-77-d"):
+            merge_lane(lane)
+        rc, out = sh("sh", mint, "--command", "/smh-close-task-merge-tree",
+                     "--branch", "chore/SCC-77-b", "--key", "SCC-77", cwd=d)
+        c.check("minter REFUSES to mint for a batch of merges", rc != 0 and "exactly one merge" in out,
+                "caught at mint time, where the message can still name the fix")
+
+        # even a hand-forged token must not get the batch through — the gate is the backstop
+        write_token(d, sh("git", "rev-parse", "HEAD", cwd=d)[1].strip())
+        rc, out = sh("git", "push", "origin", "main", cwd=d)
+        c.check("gate REFUSES a batched push even with a valid-looking token",
+                rc != 0 and "does not advance main by exactly one merge" in out,
+                "THE regression guard: 6 merges rode 1 token before this check existed")
+        rc, out = sh("git", "--git-dir", str(bare), "rev-list", "--count", "--merges", "main", cwd=d)
+        c.check("the batch did NOT reach the remote", out.strip() == "1", f"got {out.strip()}")
+
+        # --- force-push rewind: the same invariant covers it ---
+        before = sh("git", "--git-dir", str(bare), "rev-parse", "main", cwd=d)[1].strip()
+        sh("git", "reset", "-q", "--hard", "main~1", cwd=d)
+        write_token(d, sh("git", "rev-parse", "HEAD", cwd=d)[1].strip())
+        rc, out = sh("git", "push", "--force", "origin", "main", cwd=d)
+        c.check("force-push REWIND of main is refused", rc != 0 and "REFUSED" in out,
+                "delete was refused but rewind was not — same destructive outcome")
+        after = sh("git", "--git-dir", str(bare), "rev-parse", "main", cwd=d)[1].strip()
+        c.check("the remote tip is unchanged after the rewind attempt", before == after)
+
+        # --- the token is for ONE NAMED branch, not a blank cheque ---
+        sh("git", "fetch", "-q", "origin", cwd=d)
+        sh("git", "reset", "-q", "--hard", "origin/main", cwd=d)
+        merge_lane("chore/SCC-77-e")
+        tip = sh("git", "rev-parse", "HEAD", cwd=d)[1].strip()
+        token_path(d).write_text(
+            f"branch=chore/SCC-77-a\ntip={tip}\ncommand=/x\nkey=K\nminted={int(time.time())}\n")
+        rc, out = sh("git", "push", "origin", "main", cwd=d)
+        c.check("a token naming a DIFFERENT branch than the merge is refused",
+                rc != 0 and "authorises landing" in out,
+                "otherwise one sign-off is a blank cheque any merge can spend")
+
+        # --- the documented escape hatch must actually work (acceptance item 6) ---
+        write_token(d, "irrelevant")   # deliberately wrong; --no-verify skips the hook entirely
+        rc, out = sh("git", "push", "--no-verify", "origin", "main", cwd=d)
+        c.check("`git push --no-verify` bypasses the gate, as documented", rc == 0,
+                "the escape hatch is evidence, not a doc claim")
+
+        # ── LAYER 2: the Claude PreToolUse hook must not fight the door commands ─────────
+        #
+        # `permissionDecision: "ask"` becomes an auto-DENY in auto mode. Before SCC-77 that hook
+        # was dead (exit 127) so nobody noticed; reviving it without this means a headless
+        # close-out merges, mints, then has its own push denied — leaving `main` merged locally
+        # with a token that expires in 30 minutes. So it stands down when a valid token already
+        # covers the push, and asks in every other case.
+        hook = REPO / ".agents/hooks/require-push-approval.py"
+        if hook.is_file():
+            def decide(cmd="env -u GITHUB_TOKEN git push origin main"):
+                r = subprocess.run(
+                    [sys.executable, str(hook)], cwd=str(d), text=True, capture_output=True,
+                    input=json.dumps({"tool_name": "Bash", "cwd": str(d),
+                                      "tool_input": {"command": cmd}}))
+                body = (r.stdout or "").strip()
+                if not body:
+                    return "allow"
+                return json.loads(body)["hookSpecificOutput"]["permissionDecision"]
+
+            token_path(d).unlink(missing_ok=True)
+            c.check("PreToolUse ASKS on a push to main with no token", decide() == "ask")
+
+            head = sh("git", "rev-parse", "HEAD", cwd=d)[1].strip()
+            write_token(d, head)
+            c.check("PreToolUse STANDS DOWN when a valid token covers the push",
+                    decide() == "allow",
+                    "otherwise ask->auto-deny strands a headless close-out mid-merge")
+
+            write_token(d, "deadbeef" * 5)
+            c.check("PreToolUse ASKS when the token is for another sha", decide() == "ask")
+
+            write_token(d, head, minted=int(time.time()) - 9999)
+            c.check("PreToolUse ASKS when the token is stale", decide() == "ask")
+
+            token_path(d).write_text(f"branch=b\ntip={head}\ncommand=/x\nkey=K\nminted=NOTNUM\n")
+            c.check("PreToolUse ASKS when the timestamp is garbage", decide() == "ask",
+                    "fails toward asking — any doubt and the prompt still fires")
+
+            token_path(d).unlink(missing_ok=True)
+            c.check("PreToolUse ignores a push to a non-protected branch",
+                    decide("git push origin HEAD:chore/x") == "allow")
 
     return c.finish()
 

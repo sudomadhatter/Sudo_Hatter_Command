@@ -71,9 +71,11 @@ shares exactly one token and a sign-off cannot be minted in one lane and spent i
 | 1 | armed | `MAIN-PUSH-ENFORCE` deleted or `DISABLE` present → passes through |
 | 2 | destination | not `refs/heads/main` (whole-ref) → exits 0 immediately |
 | 3 | exists | no token |
-| 4 | fresh | minted > 30 min ago |
-| 5 | **same commit** | **token names one sha, push carries another** |
-| 6 | delete | anything that would delete `main` — unconditional |
+| 4 | fresh | minted > 30 min ago, or the timestamp is not digits (validated **before** `$(( ))`) |
+| 5 | same commit | token names one sha, push carries another |
+| 6 | **⭐ one merge** | **the push does not advance `main` by exactly one merge on the remote's tip** |
+| 7 | **⭐ named branch** | **the merge's second parent is not the branch the token authorised** |
+| 8 | delete / rewind | anything that deletes `main`, or force-pushes it backwards |
 
 **Every refusal also discards the token**, so a failed sign-off is spent rather than left to match a
 later push by accident. On success the token is consumed *before* the push — there is no `post-push`
@@ -91,7 +93,7 @@ hook, so that is the only available order, and it fails safe.
 | `.agents/scripts/git-hooks/pre-push-main-approval.sh` | the gate |
 | `.agents/scripts/git-hooks/mint-push-token.sh` | the minter |
 | `.agents/scripts/git-hooks/MAIN-PUSH-ENFORCE` | tracked arm flag |
-| `.agents/scripts/tests/test_main_push_gate.py` | 36 assertions; auto-discovered by `run_all.py` |
+| `.agents/scripts/tests/test_main_push_gate.py` | 51 assertions; auto-discovered by `run_all.py` |
 | `.agents/hooks/run-hook.sh` (+ `.claude/hooks/` copy) | interpreter shim that **announces** rather than exiting 127 |
 | `.agents/hooks/session-start-context.sh` | inline PowerShell hook ported to `sh` |
 
@@ -147,7 +149,8 @@ Authority: SCC-77's `ACCEPTANCE` block. Every item names the assertion that prov
 | 3 | Token for a different sha is refused (the SCC-71 shape) | *"token minted for another sha is refused"* |
 | 4 | Stale + malformed refused; deleting `main` refused unconditionally | *"token older than 30 min…"*, *"malformed token…"*, *"deleting main is always refused"* |
 | 5 | Only `refs/heads/main`, whole-ref | *"non-main ref passes"*, *"`epic/main-fix` does not trip the match"* |
-| 6 | All three disarm paths work and are loud | *"disarmed … passes through"*, *"DISABLE kill switch passes through"*; `--no-verify` documented in the gate header, SOP and `git-policy.md` |
+| 6 | All three disarm paths work | *"disarmed … passes through"*, *"DISABLE kill switch passes through"*, *"`git push --no-verify` bypasses the gate, as documented"* — all three now **tested**. ("and are loud" was dropped from the claim: `--no-verify` is silent by construction, and citing documentation as proof of behaviour is not evidence.) |
+| 6b | **One sign-off = ONE merge** (added after review — the original acceptance list did not ask for it, and that omission is why the gap shipped) | *"minter REFUSES to mint for a batch of merges"*, *"gate REFUSES a batched push even with a valid-looking token"*, *"the batch did NOT reach the remote"*, *"force-push REWIND of main is refused"*, *"a token naming a DIFFERENT branch than the merge is refused"* |
 | 7 | Both doors mint after the merge, before the push; `/cicd-update-sprint-memory` does not | mint steps in both command bodies; *"minter refuses when HEAD is not main"*; *"the refusal does NOT name update-sprint-memory as a door"* |
 | 8 | No interpreter anywhere in the gate path | `pre-push`, the gate and the minter are `sh`, `sh -n` clean; no `python`/`powershell` token in any of the three |
 | 9 | `settings.json` names no single-platform binary; all 5 hooks execute; a hook that can't run announces it | *"no hook command is bound to one platform's binaries"*; all four SessionStart hooks run (hook 3 surfaced real INDEX drift); `run-hook.sh` prints and exits 0 |
@@ -171,7 +174,7 @@ own header, and the ticket.
 ```
 run_all.py                    14/14  exit 0      (13/13 on main + this lane's file)
 workflow_lint --toolkit-only  0 errors, 0 warnings, exit 0
-test_main_push_gate.py        36/36  exit 0
+test_main_push_gate.py        51/51  exit 0
 test_sops_prds_folder.py      57/57  exit 0
 task_preflight --expect-key   clear to close out and merge · LANE LOCAL
 ```
