@@ -74,7 +74,7 @@ $out = Join-Path $Root ($vaultRel.Replace('/', '\'))
 $ignored = git -C $Root check-ignore $vaultRel 2>$null
 if (-not $ignored) {
     Remove-Item $out -Force
-    throw ($vaultRel + ' is NOT gitignored — add "**/_secrets/" to .gitignore, then re-run.')
+    throw ($vaultRel + ' is NOT gitignored — the vault lives under auth_keys/, so "**/auth_keys/" is the rule that must be in .gitignore ("**/_secrets/" alone no longer covers it). Add it, then re-run.')
 }
 
 Write-Host "Wrote $out ($($targets.Count) files bundled):"

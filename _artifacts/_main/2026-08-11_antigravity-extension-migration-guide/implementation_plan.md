@@ -14,9 +14,9 @@ Add a practical guide for exporting the installed Antigravity IDE extension IDs 
 
 ## File to Add
 
-- [`docs/migrations/install_guides/antigravity-ide-extension-migration.md`](../../../../docs/migrations/install_guides/antigravity-ide-extension-migration.md) — the Windows-to-Mac export, upload, import, verification, and troubleshooting procedure. This is the final location explicitly supplied by the operator.
+- [`docs/migrations/install_guides/antigravity-ide-extension-migration.md`](../../../docs/migrations/install_guides/antigravity-ide-extension-migration.md) — the Windows-to-Mac export, upload, import, verification, and troubleshooting procedure. This is the final location explicitly supplied by the operator.
 
-The existing [`docs/migrations/INDEX.md`](../../../../docs/migrations/INDEX.md) is part of an uncommitted folder relocation already in progress in the shared checkout. This task will not modify that other lane's file. Its normal map/index reconciliation can inventory the new guide after the relocation lands.
+The existing [`docs/migrations/INDEX.md`](../../../docs/migrations/INDEX.md) is part of an uncommitted folder relocation already in progress in the shared checkout. This task will not modify that other lane's file. Its normal map/index reconciliation can inventory the new guide after the relocation lands.
 
 ## Guide Content
 

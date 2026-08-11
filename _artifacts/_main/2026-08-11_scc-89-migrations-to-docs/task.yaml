@@ -21,10 +21,19 @@ secondary_repos:
     landing: independent-task
     ticket: AVCH-53
     why: >-
-      Its docs/repo-map.md and _artifacts/_memory/README.md name the lobby's old
-      migrations path. A project is a separate repo whose armed hook rejects SCC
-      keys, so the repair cannot ride this ticket. AVCH-53 must merge BEFORE
-      SCC-88, which deletes memories whose destination is that branch.
+      A project is a separate repo whose armed hook rejects SCC keys, so the
+      repair cannot ride this ticket. AVCH-53 must merge BEFORE SCC-88, which
+      deletes memories whose destination is that branch.
+    files: # FIVE, not two - the first count missed three (review finding)
+      - docs/repo-map.md                     # 3 hits: master.env, Restore-EnvMaster.ps1, the guide
+      - _artifacts/_memory/README.md         # 2 hits
+      - backend/requirements.txt             # :59
+      - scripts/git-hooks/INDEX.md           # :18
+      - _artifacts/quick_fixes/quick-fix-1.1-xdist-tail-hang/walkthrough.md   # :127, :164 (history - verify before touching)
+    note: >-
+      Several of these were ALREADY dead before this branch - they name
+      migrations/env-migration-guide.md, renamed away in August. So AVCH-53 is
+      repairing two generations of rot, not one.
 
 excluded:
   - Projects/sudo-project-skeleton/docs/repo-map.md   # separate repo, own ticket

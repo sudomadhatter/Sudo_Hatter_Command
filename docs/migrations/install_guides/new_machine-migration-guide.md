@@ -6,13 +6,13 @@ Sudo_Hatter_Command lobby and its sub-projects.
 file (hand-carried — it is never in git).
 
 **Where this kit lives:** `docs/migrations/` — this guide, both
-`*-EnvMaster.ps1` scripts, `rename-fix.ps1`, the `_secrets/` vault, and the
+`*-EnvMaster.ps1` scripts, `rename-fix.ps1`, the `auth_keys/_secrets/` vault, and the
 companion guide `python_vytest-updates-other-machines.md` (venv rebuild — §5). It sits
-in the personal area on purpose: it is new-machine-only, not day-to-day
-infrastructure, so it stays out of the top level and can be deleted outright
-once a machine is set up rather than left to go stale. The lobby's read-only
-posture for `_my_resources/` does not apply while you are running this guide —
-the operator pointing you here IS the instruction to use it.
+under `docs/` on purpose (moved there by SCC-89): this is what a fresh machine
+follows, so it must be **scanned and kept current**, not parked somewhere the
+drift-checkers are forbidden to look. **Never delete it** once a machine is set
+up. Using it is always in-bounds — the operator pointing you here IS the
+instruction to read the guides and run the scripts.
 
 ---
 
