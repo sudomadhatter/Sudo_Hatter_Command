@@ -9,7 +9,7 @@
 > next sync with `origin/main`.
 >
 > Designed + approved 2026-07-09. Stories: `Projects/AGY_AVIATIONCHAT/_bmad/bmm/stories/story-16-*.md` ·
-> Decision record: `_artifacts/AGY_AVIATIONCHAT/2026-07-09_incident-response-story-draft/always-live-trigger-brainstorm.md`
+> Decision record: `Projects/AGY_AVIATIONCHAT/_artifacts/_main/2026-07-09_incident-response-story-draft/always-live-trigger-brainstorm.md`
 
 ---
 

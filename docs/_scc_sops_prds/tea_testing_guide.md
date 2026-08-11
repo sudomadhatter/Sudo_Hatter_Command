@@ -746,7 +746,7 @@ The pure layer reviewed clean. The adversarial pass on the impure runner found *
 - **F-CR1 (fixed):** `_dispatch` captured pytest output via `capture_output=True` and **discarded it** → the developer saw no test results. Fixed with a `_stream()` helper (inherited stdio) so pytest prints straight to the terminal.
 - **F-CR2 (fixed):** `--include-e2e` was a **no-op** that contradicted its own help text. Fixed to actually dispatch `npm run test:e2e` on opt-in.
 
-All four gate checks PASS (suite baseline-diff-aware · trace · nfr · test-review). **Verdict: PASS** (artifact: `_bmad-output/implementation-artifacts/cicd-code-review-tea-9-tia-ci.md`, HEAD `9825e91`). Evidence recorded: 28/28 TIA tests green post-fix (0.17s); a live `--dry-run` still failed safe (`RUN_ALL` / `STALE_INDEX`, indexed `1fc85d1` ≠ head `9825e91`); the ② full-suite baseline was **2316 passed / 2 skipped / 0 failed** — and since the edit is confined to the untested-but-reviewed `gate.py` (imported by nothing; `select.py` untouched), that's **0 new regressions**.
+All four gate checks PASS (suite baseline-diff-aware · trace · nfr · test-review). **Verdict: PASS** (artifact: `_bmad-output/implementation-artifacts/sudo-code-review-tea-9-tia-ci.md`, HEAD `9825e91`). Evidence recorded: 28/28 TIA tests green post-fix (0.17s); a live `--dry-run` still failed safe (`RUN_ALL` / `STALE_INDEX`, indexed `1fc85d1` ≠ head `9825e91`); the ② full-suite baseline was **2316 passed / 2 skipped / 0 failed** — and since the edit is confined to the untested-but-reviewed `gate.py` (imported by nothing; `select.py` untouched), that's **0 new regressions**.
 
 ### Close-out — `/cicd-update-sprint-memory`
 

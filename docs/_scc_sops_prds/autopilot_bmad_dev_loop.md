@@ -8,7 +8,7 @@
 > projects**, so there is deliberately no link: there is no one file to point at. Read the copy in
 > the project you are running (`Projects/AGY_AVIATIONCHAT/scripts/`, which is its own repo and does
 > not materialize in a lobby worktree) ·
-> **Trigger:** `/cicd-autopilot-claude <story>` ([`.claude/commands/cicd-autopilot-claude.md`](../../.agents/commands/cicd-autopilot-claude.md)) ·
+> **Trigger:** `/cicd-autopilot-claude <story>` ([`.agents/commands/cicd-autopilot-claude.md`](../../.agents/commands/cicd-autopilot-claude.md)) ·
 > **Status:** v2, hardened — anchored matcher, evidence-gated (no verdict tokens), dedicated `_AP`
 > commands, independent test gate, auto story→`review`. Proven end-to-end on **Story 14.2** (full
 > 4-stage run, $9.00, clean APPROVE, backend 1723 passed / frontend 270 passed).
@@ -562,5 +562,5 @@ headless command expansion, and the anchored matcher / clean folder slug.
 
 ---
 
-*Source of truth is always the script + `.claude/commands/cicd-autopilot-claude.md`. This doc is the map, not
+*Source of truth is always the script + `.agents/commands/cicd-autopilot-claude.md`. This doc is the map, not
 the territory — if they disagree, the script wins.*

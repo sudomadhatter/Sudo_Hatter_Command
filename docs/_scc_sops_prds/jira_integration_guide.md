@@ -846,9 +846,9 @@ Revoking is instant and total — the old string dies everywhere at once, so you
 ## 16. Related reading
 
 - `.agents/rules/jira.md` — **the canonical agent-facing copy.** Edit that first; this doc is the human mirror
-- `_my_resources/_quick_reference/jira_manual.md` — the same system driven entirely by hand, no terminal
+- `docs/_scc_sops_prds/jira_manual.md` — the same system driven entirely by hand, no terminal
 - `docs/_scc_sops_prds/workflows_testing_SOP.md` — the dev system on one page; §6 is shipping
-- `_my_resources/_quick_reference/git_walkthrough_settings.md` — the ten global git settings; §8 is the branch flow
+- `docs/_scc_sops_prds/git_walkthrough_settings.md` — the ten global git settings; §8 is the branch flow
 - `.agents/rules/git-policy.md` — the branch model: `main` is the only long-lived branch (`main_debug` retired 2026-08-07)
 - `Projects/AGY_AVIATIONCHAT/_bmad-output/implementation-artifacts/sprint-status.yaml` — AviationChat's sprint state. `SCC` has no equivalent; its Jira board is the board
 

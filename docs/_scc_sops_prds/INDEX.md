@@ -27,6 +27,32 @@ this folder, and they cover **different things** — neither is a substitute for
 |---|---|---|
 | `.agents/scripts/tests/test_sops_prds_folder.py` (in `run_all`) | this INDEX vs the directory **both ways**, every **markdown link** target, every `/command` reference resolving to a real master, the 11-doc manifest, and the SOP gate's two paths agreeing | prose that names no link |
 | `check_maps.py` | **backticked multi-segment paths inside table rows**, plus level-2 INDEX presence and repo-map coverage | markdown links, and anything outside a table row |
+| T9 in that same test (SCC-83) | **backticked paths in PROSE** — sentences and bullets: the gap between the two rows above | paths written *without* backticks, and the interior of a project this machine has not checked out |
+
+⚠️ **T9 gives the same answer from a lane as from `main`, and that equality is the feature.**
+`Projects/*` are separate gitignored repos, so `git worktree add` leaves them as empty stubs — a lane
+sees 9, `main` sees 1. The first build of T9 coped with that through a `strict` mode, and the mode
+turned out to be **off in both checkouts**, which made the primary check dead code while every gate
+read green (SCC-83 code review, 2026-08-11). T9 now resolves project roots from `git rev-parse
+--git-common-dir` instead of the working directory, so coverage no longer depends on where you are
+standing: a lane and `main` return an **identical** finding set — **0 and 0** as shipped, **8 and 8**
+with every by-design exemption lifted, keys *and* values equal both ways. Anything still unreachable
+(an uninitialised submodule) is **named in the run output along with the docs that reference it**, so
+a reduced run is visible and never reads as a clean one.
+
+⛔ **On non-backticked paths — the honest version.** Strip the code spans and the markdown links and a couple of
+hundred slash-bearing tokens remain, but they are overwhelmingly prose: `Dev/QA`, `and/or`,
+`PASS/CONCERNS/FAIL`, `7/7`. Widening the net trades a handful of real checks for hundreds of false
+ones, so **the backtick convention is the boundary** — not because few paths escape it, but because
+nothing outside it can be told from ordinary writing. (An earlier version of this row claimed
+"exactly 2", which was never measured, and claimed fenced blocks were covered, which is impossible —
+the matcher requires backticks.)
+
+⛔ **And `git log` cannot tell you which of these is rotting.** SCC-74 moved every file here with
+`git mv` on 2026-08-10, so a bare last-commit date reports *when the file was relocated or last
+touched editorially*, never when its content was last true — the dates cluster on the move and on
+whatever ticket edited a page since, in neither case telling you anything about staleness. Use
+`git log --follow -- <file>` for real content history.
 
 That split is worth knowing before trusting either: `check_maps.py` reads table cells, so a dead
 markdown link sails past it — T2/T3 are what catch those. Verified in both directions when this
