@@ -174,6 +174,32 @@ files, per §3); full model →
   closed-but-instructive → compress to a one-line lesson. (Claude's `~/.claude/...` harness path is a
   per-machine symlink into this store — a convenience, never the mechanism; fresh machine →
   migrations kit §1 step 8.)
+  **That read-only rule governs memory CONTENT.** A **structural** change is a different act —
+  and "structural" means exactly three things, by enumeration, because an undefined word here is a
+  self-authorizing exemption to the one rule protecting memory: (1) the index's **section layout**,
+  (2) the **`## Project stores` pointers**, (3) **relocating** a memory file between tiers. Anything
+  touching what a memory *says* is content and stays read-only. ⛔ **All three still require the
+  operator's explicit approval** — the same per-item yes relocation already needs; a ticket whose
+  title you wrote is not authorization. Editing someone's memory in passing is what the rule
+  forbids; rebuilding the shelf, on a branch that says so and with a yes in hand, is not (SCC-73).
+- **The store is TWO-TIER — lobby = inbox + cross-project, project = settled project history (SCC-73).**
+  The lobby store `_artifacts/_memory/` is where **every** platform writes, always: Claude's harness
+  bakes an absolute per-workspace path into its own memory instruction, and no repo law can redirect
+  it — so a rule saying "write project facts over there" would be unenforceable for the writer that
+  produces most of them. **Do not change where you write.** What settles into project-only truth is
+  **relocated** to that project's own `Projects/<name>/_artifacts/_memory/` by `/smh-memory-audit`, per
+  item, on the operator's word — its fourth disposition beside retire / merge / compress, and its first
+  lever, since SCC-69 measured compaction spent (145 memories, 633 bytes freed). ⛔ **Never relocate a
+  memory on your own judgment, and never outside that command.** Two obligations follow, and
+  `test_memory_store.py` treats them **differently on purpose — one blocks, one only reports**: the
+  lobby index must carry a **`## Project stores`** section signposting every maintained project (a
+  memory moved out with no pointer left behind is indistinguishable from a deletion) — that is a
+  **hard failure**, because this repo owns it. Each project index must carry the **mirror line back**
+  to the lobby (a lane launched inside a project reads only that repo's store, so workflow law and
+  cross-cutting hazards would otherwise be invisible to it) — that is a **`[SIGNAL]`, never a
+  failure**, because it lives in a repo whose armed hook rejects this repo's ticket keys, and a gate
+  that reds for a defect nobody standing here may fix blocks every unrelated lane instead. Cross-project law, operator rulings and the ⛔ hazards **stay in the
+  lobby** — they are not any one project's.
 - **⚠ The memory-audit trigger — a standing obligation for every platform (SCC-68).** Upkeep is gated:
   `tests/test_memory_store.py` (in `run_all`) enforces the 25 KB index cap + link↔file integrity, and at
   **90 % of the cap** it prints a `MEMORY AUDIT DUE` block — below the cap, while the run still passes,
