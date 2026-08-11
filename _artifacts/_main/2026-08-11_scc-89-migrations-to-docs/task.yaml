@@ -1,0 +1,31 @@
+task_key: SCC-89
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-89-migrations-to-docs
+close_command: smh-close-task-merge-tree
+epic: SCC-48
+linked: [SCC-90]
+carries_subtask: SCC-93   # the Antigravity guide lands inside the folder this move creates
+
+in_scope:
+  - docs/migrations/                      # the relocated kit (git-visible half)
+  - _my_resources/migrations/             # its deletion
+  - AGENTS.md, router.md                  # usage surfaces naming the old path
+  - docs/repo-map.md, docs/system-builder.md, docs/workspace-standard.md
+  - docs/_scc_sops_prds/workflows_testing_SOP.md   # the two links SCC-90 deliberately left
+  - .agents/scripts/link-memory.sh, .gitignore, .gitattributes
+  - _artifacts/_memory/                   # 6 bodies whose pointers named the old path
+  - _artifacts/_main/INDEX.md, _artifacts/_main/active-context.md
+
+secondary_repos:
+  - repo: AGY_AVIATIONCHAT
+    landing: independent-task
+    ticket: AVCH-53
+    why: >-
+      Its docs/repo-map.md and _artifacts/_memory/README.md name the lobby's old
+      migrations path. A project is a separate repo whose armed hook rejects SCC
+      keys, so the repair cannot ride this ticket. AVCH-53 must merge BEFORE
+      SCC-88, which deletes memories whose destination is that branch.
+
+excluded:
+  - Projects/sudo-project-skeleton/docs/repo-map.md   # separate repo, own ticket
+  - docs/migrations/auth_keys/**                      # gitignored credentials, never committed

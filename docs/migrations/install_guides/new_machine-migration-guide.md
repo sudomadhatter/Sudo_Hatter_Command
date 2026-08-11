@@ -5,7 +5,7 @@ Sudo_Hatter_Command lobby and its sub-projects.
 **You need exactly two things:** this document, and the operator's `master.env`
 file (hand-carried — it is never in git).
 
-**Where this kit lives:** `_my_resources/migrations/` — this guide, both
+**Where this kit lives:** `docs/migrations/` — this guide, both
 `*-EnvMaster.ps1` scripts, `rename-fix.ps1`, the `_secrets/` vault, and the
 companion guide `python_vytest-updates-other-machines.md` (venv rebuild — §5). It sits
 in the personal area on purpose: it is new-machine-only, not day-to-day
@@ -23,7 +23,7 @@ Every secret in this system lives in gitignored files (`**/.env`,
 them are bundled into one hand-carried file:
 
 ```
-_my_resources/migrations/_secrets/master.env   <- gitignored; the operator copies this over manually
+docs/migrations/auth_keys/_secrets/master.env   <- gitignored; the operator copies this over manually
 ```
 
 The master is a plain-text concatenation of every real env/credential file,
@@ -47,7 +47,7 @@ those paths. A script does it for you (§3), or you can do it by hand (§6).
 > (`RAG_Pipeline_AC`, `NEXgen-VR-Director`, `Fresh_Workspace_BMAD`, `OpenChat-Openrouter`,
 > `NEXGen-Films`, `B-L-WorldWide`) and it is still correct — those projects simply carry no real
 > secrets yet. Count the markers before trusting it on any future master:
-> `grep -c '^# >>> FILE:' _my_resources/migrations/_secrets/master.env`
+> `grep -c '^# >>> FILE:' docs/migrations/auth_keys/_secrets/master.env`
 
 | File (relative to lobby root) | What it powers |
 |---|---|
@@ -131,13 +131,13 @@ missing directories, and `git clone` refuses to clone into a non-empty folder.
    > anything new that walks `maintained-projects.txt`, copy that guard — a directory existing is
    > **not** proof the project is here.
 3. **Place the operator's copy of `master.env`** at
-   `_my_resources/migrations/_secrets/master.env` (create the `_secrets` folder
+   `docs/migrations/auth_keys/_secrets/master.env` (create the `_secrets` folder
    if needed), or leave it on the USB stick and pass its path with `-MasterPath`.
 4. **Run the restore script** from the lobby root:
 
    ```powershell
-   powershell -File _my_resources\migrations\Restore-EnvMaster.ps1
-   # or: powershell -File _my_resources\migrations\Restore-EnvMaster.ps1 -MasterPath D:\master.env
+   powershell -File docs\migrations\scripts\Restore-EnvMaster.ps1
+   # or: powershell -File docs\migrations\scripts\Restore-EnvMaster.ps1 -MasterPath D:\master.env
    ```
 
    It writes every file to its original path, creates missing dirs, and backs
@@ -147,12 +147,12 @@ missing directories, and `git clone` refuses to clone into a non-empty folder.
    itself, so it runs from anywhere:
 
    ```bash
-   bash _my_resources/migrations/restore-env-master.sh --dry-run   # look first
-   bash _my_resources/migrations/restore-env-master.sh             # then apply
+   bash docs/migrations/scripts/restore-env-master.sh --dry-run   # look first
+   bash docs/migrations/scripts/restore-env-master.sh             # then apply
    ```
 
    > ⛔ **Do not run the `.ps1` on macOS, even under `pwsh`.** It is
-   > path-separator-bound — it joins `'_my_resources\migrations\_secrets\master.env'`
+   > path-separator-bound — it joins `'docs\migrations\auth_keys\_secrets\master.env'`
    > and does `$relPath.Replace('/', '\')`, so it would hunt for one literal
    > back-slashed filename and write `backend\.env` as a single file rather than
    > nesting it into `backend/`. The `.sh` is a verified twin (byte-identical
@@ -161,7 +161,7 @@ missing directories, and `git clone` refuses to clone into a non-empty folder.
    > remains the fallback if you have neither.
 5. **Verify** (§4). Do not skip this.
 6. **Delete the master from any transfer medium** (USB stick, download folder)
-   once verified. Keep only `_my_resources/migrations/_secrets/master.env` on the
+   once verified. Keep only `docs/migrations/auth_keys/_secrets/master.env` on the
    machine.
 
 ## 4. Verification checklist (agent: run every line)
@@ -169,7 +169,7 @@ missing directories, and `git clone` refuses to clone into a non-empty folder.
 ```powershell
 # a) Every restored file must be IGNORED by its own repo — none may show as untracked.
 git -C . status --short                                   # lobby: no .env, no _secrets/ anywhere
-git check-ignore -v _my_resources/migrations/_secrets/master.env   # must print a .gitignore rule
+git check-ignore -v docs/migrations/auth_keys/_secrets/master.env   # must print a .gitignore rule
 git -C Projects/AGY_AVIATIONCHAT status --short           # no .env*, no auth_keys/
 git -C Projects/BRKN_Tattoos status --short               # no .env.local
 
@@ -509,13 +509,13 @@ UTF-8 without BOM. Then run §4.
 Any time a secret is added, rotated, or a new project gains a real `.env`:
 
 ```powershell
-powershell -File _my_resources\migrations\Export-EnvMaster.ps1
+powershell -File docs\migrations\scripts\Export-EnvMaster.ps1
 ```
 
 It re-scans everything (lobby `.env`, all real `.env`/`.env.local`/
 `.env.production` under `Projects/`, all `auth_keys/` contents; skips
 `.env.example`, `node_modules`, venvs, worktrees) and rewrites
-`_my_resources/migrations/_secrets/master.env` with a fresh manifest. It refuses
+`docs/migrations/auth_keys/_secrets/master.env` with a fresh manifest. It refuses
 to run if the output isn't gitignored.
 
 ## 8. Security rules (non-negotiable)

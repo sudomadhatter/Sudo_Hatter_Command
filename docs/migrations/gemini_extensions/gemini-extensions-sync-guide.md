@@ -6,7 +6,7 @@ If you want to sync your installed Gemini/Antigravity extensions (plugins and sk
 
 First, run the export command to copy your installed extensions into this git repository:
 ```bash
-cd _my_resources/migrations
+cd docs/migrations
 ./sync-gemini-extensions.sh export
 ```
 
@@ -26,7 +26,7 @@ git pull
 
 Next, run the import command to copy those extensions into this machine's local Gemini configuration:
 ```bash
-cd _my_resources/migrations
+cd docs/migrations
 ./sync-gemini-extensions.sh import
 ```
 

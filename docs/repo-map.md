@@ -19,8 +19,8 @@
 | How to add / maintain workspaces (`/smh-new-project`, `/smh-sync-agents`) | `docs/system-builder.md` |
 | Model-agnostic proof the routing works | `_routing-canary/` |
 | BMAD-generated output (planning/implementation/test artifacts from running BMAD workflows at the home base) | `_bmad-output/` |
-| Daniel's thinking space — **⛔ IGNORE unless he links a document** (ruling 2026-08-10) | `_my_resources/` — not authoritative, deliberately un-scanned, staleness fine by design. Exceptions: `open_tasks/todo_list.md` + `migrations/` |
-| Secrets / env files — ALL gitignored, so never in the AUTO tree below | lobby `.env` (root) + per-project files; master bundle master.env under the migrations `auth_keys/` tree (hand-carried, NEVER committed; the whole `auth_keys/` tree is gitignored, so it is invisible to git and to this lint); export/restore: `_my_resources/migrations/scripts/Export-EnvMaster.ps1` / `scripts/Restore-EnvMaster.ps1` — ⚠ both still default to the pre-move location (a `_secrets` folder directly under `migrations/`); pass `-MasterPath` or update them |
+| Daniel's thinking space — **⛔ IGNORE unless he links a document** (ruling 2026-08-10) | `_my_resources/` — not authoritative, deliberately un-scanned, staleness fine by design. Exception: `open_tasks/todo_list.md` (the `migrations/` exception retired under SCC-89 — that kit now lives in `docs/migrations/`) |
+| Secrets / env files — ALL gitignored, so never in the AUTO tree below | lobby `.env` (root) + per-project files; master bundle master.env under the migrations `auth_keys/` tree (hand-carried, NEVER committed; the whole `auth_keys/` tree is gitignored, so it is invisible to git and to this lint); export/restore: `docs/migrations/scripts/Export-EnvMaster.ps1` / `scripts/Restore-EnvMaster.ps1` — both now default to the operator's real bundle location (`docs/migrations/auth_keys/_secrets/master.env`) and resolve the lobby root three levels up, fixed under SCC-89; `-MasterPath` still overrides for a USB copy |
 | **"What do we do next" / open tasks / Daniel's plans & PRPs** — READ-ONLY, never edit | `_my_resources/open_tasks/` (start at `todo_list.md`; cross-check vs live project files) |
 | Scratch scripts and temp files | `scratch/` |
 
@@ -34,7 +34,7 @@
 | a project's `Projects/<name>/AGENTS.md` | When you go work inside that project (not this file) |
 | `_my_resources/open_tasks/` | Daniel asks "what do we do next / what's left" — read his todo + saved plans/PRPs (read-only) |
 | `docs/system-builder.md` | Growing/maintaining the home base itself — `/new-project`, `/sync-agents`, workspace-conversion rules |
-| `_my_resources/migrations/INDEX.md` | New-machine setup / repopulating any `.env` or `auth_keys/` file (→ `new_machine-migration-guide.md`; the manifest inside the hand-carried master.env lists every secret file + its exact path). Disposable kit — `_my_resources/` is excluded from repo-map regen, so it never appears in the AUTO tree below |
+| `docs/migrations/INDEX.md` | New-machine setup / repopulating any `.env` or `auth_keys/` file (→ `new_machine-migration-guide.md`; the manifest inside the hand-carried master.env lists every secret file + its exact path). Standing reference kit. Moved out of `_my_resources/` (excluded from regen) into `docs/` under SCC-89, so it now DOES appear in the AUTO tree below — its `auth_keys/` subtree does not, being ignored by name |
 
 > **⚠ There are actually TWO indexes here, and the lint checks the one you don't query** (found
 > 2026-08-08). `check_maps.py`'s freshness hint reads the **root** `.gitnexus/meta.json` — a small
@@ -104,6 +104,14 @@ Sudo_Hatter_Command/
   docs/
     _scc_sops_prds/
         [12 files: .mdx12 | e.g. INDEX.md]
+    migrations/
+      gemini_extensions/
+          [2 files: .mdx1, .shx1 | e.g. gemini-extensions-sync-guide.md]
+      install_guides/
+          [4 files: .mdx4 | e.g. machine_setup_card.md]
+      scripts/
+          [5 files: .ps1x3, .patchx1, .shx1 | e.g. Export-EnvMaster.ps1]
+        [2 files: .mdx2 | e.g. INDEX.md]
       [10 files: .mdx9, .jsonx1 | e.g. AGENTS.md]
   scratch/
       [1 files: .pyx1 | e.g. find_brainstorm.py]

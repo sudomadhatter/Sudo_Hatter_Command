@@ -1327,9 +1327,9 @@ and every item below has already cost a debug cycle.
 something works on one box and not the other, check this table before suspecting the code.
 
 > **Setting up a machine?** The short version is
-> [machine_setup_card.md](../../_my_resources/migrations/install_guides/machine_setup_card.md) — arm
+> [machine_setup_card.md](../migrations/install_guides/machine_setup_card.md) — arm
 > the gates, check the Python name, restore what git doesn't carry. The full path for a genuinely
-> fresh box is the [migrations kit](../../_my_resources/migrations/INDEX.md).
+> fresh box is the [migrations kit](../migrations/INDEX.md).
 
 ## 14. How we test
 

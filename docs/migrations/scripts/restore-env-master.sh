@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # restore-env-master.sh — macOS / Linux twin of Restore-EnvMaster.ps1.
 #
-# Splits _my_resources/migrations/_secrets/master.env back into the individual
+# Splits docs/migrations/auth_keys/_secrets/master.env back into the individual
 # .env / credential files it was exported from, at their original relative paths.
 #
-# Run from ANYWHERE (the script finds the lobby root itself — two levels up):
-#   bash _my_resources/migrations/restore-env-master.sh
-#   bash _my_resources/migrations/restore-env-master.sh --master-path /Volumes/USB/master.env
-#   bash _my_resources/migrations/restore-env-master.sh --dry-run       # show, write nothing
+# Run from ANYWHERE (the script finds the lobby root itself — three levels up):
+#   bash docs/migrations/scripts/restore-env-master.sh
+#   bash docs/migrations/scripts/restore-env-master.sh --master-path /Volumes/USB/master.env
+#   bash docs/migrations/scripts/restore-env-master.sh --dry-run       # show, write nothing
 #
 # Behavior — deliberately identical to the PowerShell original:
 #   - Creates missing directories (e.g. auth_keys/) as needed.
@@ -28,7 +28,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"   # _my_resources/migrations -> lobby root
+ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"   # docs/migrations/scripts -> lobby root
 MASTER_PATH=""
 DRY_RUN=0
 
@@ -42,7 +42,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-[ -n "$MASTER_PATH" ] || MASTER_PATH="$ROOT/_my_resources/migrations/_secrets/master.env"
+[ -n "$MASTER_PATH" ] || MASTER_PATH="$ROOT/docs/migrations/auth_keys/_secrets/master.env"
 
 if [ ! -f "$MASTER_PATH" ]; then
   echo "Master file not found: $MASTER_PATH" >&2
@@ -140,5 +140,5 @@ if [ "$DRY_RUN" -eq 1 ]; then
   echo "Dry run complete. $written file(s) WOULD be written/updated. Re-run without --dry-run to apply."
 else
   echo "Done. $written file(s) written/updated (mode 600)."
-  echo "Now run the verification checklist in _my_resources/migrations/new_machine-migration-guide.md (section 4)."
+  echo "Now run the verification checklist in docs/migrations/install_guides/new_machine-migration-guide.md (section 4)."
 fi

@@ -33,9 +33,9 @@
   -NoMove to fix paths only (no Projects/ move).
 
 .EXAMPLE
-  .\_my_resources\migrations\rename-fix.ps1                     # dry-run preview (move + fixes)
-  .\_my_resources\migrations\rename-fix.ps1 -Apply              # move projects + fix paths
-  .\_my_resources\migrations\rename-fix.ps1 -Apply -RemoveVenvs # also delete venvs to recreate
+  .\docs\migrations\scripts\rename-fix.ps1                     # dry-run preview (move + fixes)
+  .\docs\migrations\scripts\rename-fix.ps1 -Apply              # move projects + fix paths
+  .\docs\migrations\scripts\rename-fix.ps1 -Apply -RemoveVenvs # also delete venvs to recreate
   .\.agents\scripts\link-memory.ps1 -All -Apply                 # THEN re-point the memory junction
 #>
 param(
@@ -47,7 +47,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$HomeRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent   # _my_resources/migrations -> home-base root (rename-safe)
+$HomeRoot = Split-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) -Parent   # docs/migrations/scripts -> home-base root (rename-safe)
 
 # Folder names as they exist on disk under Projects\. VERIFIED 2026-08-04 against the actual tree.
 # The previous list named seven folders, NONE of which still existed (aviationChat-AGY,

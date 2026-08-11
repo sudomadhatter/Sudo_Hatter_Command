@@ -1,4 +1,4 @@
-# `_my_resources/migrations/` — machine setup & one-off migrations
+# `docs/migrations/` — machine setup & one-off migrations
 
 **Disposable by design.** Everything here is new-machine / rename-day material, not day-to-day
 infrastructure. It lives in the personal area (out of the top level) so it can be deleted outright
@@ -99,12 +99,12 @@ bash .agents/scripts/link-memory.sh --all --apply    # then apply
 
 ```powershell
 # step 3 — Windows, from the LOBBY ROOT (not from this folder)
-powershell -File _my_resources\migrations\Restore-EnvMaster.ps1
+powershell -File docs\migrations\scripts\Restore-EnvMaster.ps1
 ```
 ```bash
 # step 3 — macOS / Linux. Finds the lobby root itself, so run it from anywhere.
-bash _my_resources/migrations/restore-env-master.sh --dry-run   # look first
-bash _my_resources/migrations/restore-env-master.sh             # then apply
+bash docs/migrations/scripts/restore-env-master.sh --dry-run   # look first
+bash docs/migrations/scripts/restore-env-master.sh             # then apply
 ```
 
 **Step 5 is not optional on a fast machine.** It is a *correctness* step, not a performance one — CI
@@ -117,7 +117,7 @@ box does not get a reduced checklist; it gets its own `-n` value. That doc says 
 
 | What | Situation |
 |---|---|
-| **Secrets restore** | ✅ **Solved — use [`restore-env-master.sh`](scripts/restore-env-master.sh).** `Restore-EnvMaster.ps1` cannot do this on macOS even under `pwsh`: it joins `'_my_resources\migrations\_secrets\master.env'` and does `$relPath.Replace('/', '\')`, so it would hunt for one literal back-slashed filename and write `backend\.env` as a single file instead of nesting it. Rather than change a working Windows script, the `.sh` is its **twin** — same markers, same backups, same refusals, **verified byte-identical output** on the same master. It also strips the CRLF that a Windows-exported `master.env` carries (a naive shell read would append `\r` to every secret), adds `--dry-run`, and `chmod 600`s what it writes. |
+| **Secrets restore** | ✅ **Solved — use [`restore-env-master.sh`](scripts/restore-env-master.sh).** `Restore-EnvMaster.ps1` cannot do this on macOS even under `pwsh`: it joins `'docs\migrations\auth_keys\_secrets\master.env'` and does `$relPath.Replace('/', '\')`, so it would hunt for one literal back-slashed filename and write `backend\.env` as a single file instead of nesting it. Rather than change a working Windows script, the `.sh` is its **twin** — same markers, same backups, same refusals, **verified byte-identical output** on the same master. It also strips the CRLF that a Windows-exported `master.env` carries (a naive shell read would append `\r` to every secret), adds `--dry-run`, and `chmod 600`s what it writes. |
 | **`rename-fix.ps1`** | ⛔ Windows-only *by design* — it rewrites `%USERPROFILE%` and `.claude\settings.json` paths. Not applicable on a Mac; do not run it. |
 | **`link-memory.sh`** | ✅ **Use this, not the `.ps1`.** Twin of `link-memory.ps1`: symlink instead of junction, `~/.claude/projects/` instead of `%USERPROFILE%\.claude\projects\`, everything else identical. The macOS slug shape is **inferred from Windows paths** — a POSIX path's leading `/` should render as a leading `-`. The script verifies the computed directory exists and **refuses rather than guessing** if nothing matches, so run the dry run and read it. One command settles it for good: `ls ~/.claude/projects/`. |
 | **`.ps1` files generally** | Need `pwsh` (`brew install --cask powershell`). Only `Export-EnvMaster.ps1` and the git-hooks installer are likely to matter. |

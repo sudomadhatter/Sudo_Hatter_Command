@@ -49,7 +49,7 @@ Then go to §4.
 
 Apply [`autopilot-glm-hybrid.patch`](autopilot-glm-hybrid.patch). Try the patch tool first:
 ```
-git apply --3way _my_resources/migrations/autopilot-glm-hybrid.patch   # adjust -p / path if needed
+git apply --3way docs/migrations/scripts/autopilot-glm-hybrid.patch   # adjust -p / path if needed
 ```
 If the hunks don't land cleanly (because of divergence), apply these **9 idempotent edits by hand** —
 each anchors on stable, unchanged lines. (The patch file is the exact reference for each block's text.)

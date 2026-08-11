@@ -1,6 +1,6 @@
 # ⚠️ Migration — every OTHER machine needs its venv rebuilt (Python 3.11 + test-infra overhaul + vitest suite lock, 2026-08-01; gate went PARALLEL 2026-08-03)
 
-Part of the `_my_resources/migrations/` kit — the Python/venv companion to
+Part of the `docs/migrations/` kit — the Python/venv companion to
 [`new_machine-migration-guide.md`](new_machine-migration-guide.md) (which covers secrets;
 its §5 points here). Applies to EXISTING machines pulling the 2026-08-01 changes AND to
 fresh-machine setups.
