@@ -184,12 +184,16 @@ def unresolved_commands(text: str, masters: set[str]) -> set[str]:
 # tickets had deleted, with every gate green.
 #
 # ⛔ SCOPE, stated because an unstated one reads as total coverage: this sees BACKTICKED
-# tokens only. Measured folder-wide: 242 slash-bearing tokens sit outside backticks, and
-# they are overwhelmingly PROSE -- `Dev/QA`, `and/or`, `PASS/CONCERNS/FAIL`, `7/7`. So
-# widening the net trades a handful of real checks for hundreds of false ones. The
-# backtick convention IS the boundary; that is the honest reason, not a low count.
-# (An earlier build of this comment claimed "exactly 2". It was never measured. -- SCC-83
-# code review, and the reason every number in this file now names its probe.)
+# tokens only. Widening the net is not a close call: strip the code spans and the markdown
+# links from this folder and a couple of hundred slash-bearing PATH_LIKE tokens remain, and
+# they are overwhelmingly PROSE -- `Dev/QA`, `and/or`, `PASS/CONCERNS/FAIL`, `7/7`. So the
+# backtick convention IS the boundary, and that -- not a low count -- is the reason.
+#
+# ⛔ NO EXACT COUNT HERE, deliberately. Round 1 wrote "exactly 2" (fabricated). Round 2
+# wrote "242" (real, but method-dependent and already 260 two commits later, because it
+# moves with every doc edit). A number that rots is a false claim with a delay on it. If
+# you want today's figure, run the probe rather than trusting a comment:
+#   strip CODE_SPAN and []() links, then count PATH_LIKE tokens that NOT_A_PATH keeps.
 CODE_SPAN = re.compile(r"`([^`\n]+)`")
 
 # ⭐ WHAT ACTUALLY REJECTS A NON-PATH, because knowing this is the difference between
@@ -308,7 +312,12 @@ class RootIndex:
         self.paths: set[str] = set()
         self.leaves: dict[str, str] = {}
         self.heads: set[str] = set()
-        for dirpath, dirnames, filenames in os.walk(root):
+        self.unreadable: list[str] = []
+        # An unreadable directory contributes nothing, so every path under it reports
+        # "resolves nowhere" with no hint that the index simply could not look. Recorded so
+        # the check can say so (SCC-83 round-2 review, LOW).
+        for dirpath, dirnames, filenames in os.walk(
+                root, onerror=lambda e: self.unreadable.append(str(e))):
             if os.path.relpath(dirpath, root) == "." and skip_top:
                 # The lobby does not index `Projects/` -- each project is indexed as its
                 # OWN root, so indexing it here walks all eight of them a second time.
@@ -319,8 +328,15 @@ class RootIndex:
                 # `Projects/<name>/` prefix on the moved-> target below. The directory
                 # itself is still recorded, so `Projects/` remains a valid head and path.
                 dirnames[:] = [d for d in dirnames if d not in skip_top]
-                self.heads.update(skip_top & set(os.listdir(root)))
-                self.paths.update(skip_top & set(os.listdir(root)))
+                present = skip_top & set(os.listdir(root))
+                self.heads.update(present)
+                self.paths.update(present)
+                # ...plus ONE level inside, so "is `Projects/<name>` a project this repo
+                # knows about?" is answerable without walking it. Without this, a typo'd or
+                # renamed project name is indistinguishable from one that is simply not
+                # checked out, and both go silent (SCC-83 round-2 review, M-A).
+                for d in present:
+                    self.paths.update(f"{d}/{c.name}" for c in (root / d).iterdir())
             rel = os.path.relpath(dirpath, root)
             # ⛔ RECORD FIRST, prune SECOND. Pruning before recording made every pruned
             #    directory read as absent, and the docs legitimately name several of them:
@@ -376,7 +392,12 @@ def _project_token(t: str, roots: list[Path], idx: dict[Path, RootIndex]) -> str
         return None
     pr = next((r for r in roots if r.name == parts[1]), None)
     if pr is None:
-        return "skip"                                   # not absent -- NOT CHECKED OUT here
+        # ⛔ "Not checked out" and "no such project" are DIFFERENT, and collapsing them made
+        #    the likeliest defect in an explicit project path -- a rename or a typo --
+        #    permanently invisible (SCC-83 round-2 review, M-A). A name the lobby knows is
+        #    skipped; a name nothing has ever heard of is a dead reference.
+        known = any(idx[r].has(f"Projects/{parts[1]}") for r in roots)
+        return "skip" if known else "miss"
     return "ok" if (len(parts) == 2 or idx[pr].has("/".join(parts[2:]))) else "miss"
 
 
@@ -428,9 +449,20 @@ def unresolved_paths(text: str, roots: list[Path], base: Path | None = None,
         if pj in ("skip", "ok"):
             continue                    # not checked out here / resolves inside that project
         head = t.split("/", 1)[0]
-        if not any(head in idx[r].heads for r in roots):
+        # ⛔ LOBBY-OWNED namespaces resolve against the LOBBY ONLY (SCC-83 round-2 review,
+        #    H-B). Cross-root leniency is deliberate everywhere else -- a lobby doc that
+        #    writes `_bmad-output/x.yaml` means the project's, and SCC-85 ruled that "state
+        #    the root once" is the fix for those, not 13 red rows. But `any()` also let an
+        #    unrelated repo answer for a path only the LOBBY can own, and it silently hid
+        #    the single most likely stale reference in this folder: the SOP's own
+        #    pre-SCC-74 name, `_my_resources/_quick_reference/sudo_workflows_testing.md`,
+        #    resolved because AGY_AVIATIONCHAT happens to have a file at that same relative
+        #    path. The allow-list comment above PROMISES that a file under a vacated folder
+        #    still fires; it was true by luck for one filename and false for its neighbours.
+        cands = [roots[0]] if _lobby_owned(t) else [r for r in roots if head in idx[r].heads]
+        if not any(head in idx[r].heads for r in cands):
             continue                                    # not checkable here -> not a claim
-        if any(idx[r].has(t) for r in roots):
+        if any(idx[r].has(t) for r in cands):
             continue
         # It is missing. Does a file of that name live somewhere else? Then the reference
         # is MIS-PATHED, not dead -- the more common and more confusing failure, and the
@@ -443,18 +475,42 @@ def unresolved_paths(text: str, roots: list[Path], base: Path | None = None,
         # which checkout you ran from is an answer you cannot paste into a doc.
         elsewhere = []
         if "." in leaf:
-            for i, r in enumerate(roots):
+            # Same scope as the resolution above: if only the lobby may ANSWER for this
+            # token, only the lobby may say where it went. Otherwise a vacated-folder
+            # reference is told it "moved" to a project's identically-named copy -- true as
+            # a statement, useless as advice, and the class of output round 1 acted on.
+            for i, r in enumerate(cands if _lobby_owned(t) else roots):
                 if leaf in idx[r].leaves:
                     rel = idx[r].leaves[leaf]
-                    elsewhere = [rel if i == 0 else f"Projects/{r.name}/{rel}"]
-                    break
-        out[t] = f"moved -> {elsewhere[0]}" if elsewhere else "resolves nowhere"
+                    elsewhere.append(rel if i == 0 else f"Projects/{r.name}/{rel}")
+        if not elsewhere:
+            out[t] = "resolves nowhere"
+        elif len(elsewhere) == 1:
+            out[t] = f"moved -> {elsewhere[0]}"
+        else:
+            # ⛔ SAY when the answer is a guess (SCC-83 round-2 review, M-C). `leaves` is a
+            #    setdefault map over an os.walk, so with several same-named files the target
+            #    is whichever the walk reached first -- and round 1 shipped a doc regression
+            #    by acting on exactly that output as if it were an instruction. A reader who
+            #    is told there are four candidates checks; one handed a single path pastes.
+            out[t] = (f"moved -> {elsewhere[0]} (⚠ {len(elsewhere)} files share this name - "
+                      f"verify before using)")
     return out
 
 
 # Why _main_checkout() fell back to ROOT, or "" when it resolved. Read by T9's check so a
 # degraded resolution is reported rather than passing as a healthy one (SCC-83).
 _MAIN_CHECKOUT_FALLBACK: str = ""
+
+
+def _lobby_owned(t: str) -> bool:
+    """Namespaces only the LOBBY can own, so a project checkout must not answer for them.
+
+    Scoped to `VACATED` on purpose: those folders were emptied by SCC-74, so every live
+    reference into them is by definition a lobby path that moved -- and a project having
+    the same relative layout is a coincidence, never an answer. Widening this to every
+    shared head would flag the 13 project-relative paths SCC-85 already ruled on."""
+    return any(t.startswith(v + "/") for v in VACATED)
 
 
 def _by_design(t: str) -> bool:
@@ -474,7 +530,12 @@ def _main_checkout() -> Path:
 
     A worktree's .git FILE points at <main>/.git/worktrees/<lane>, and --git-common-dir
     resolves to <main>/.git regardless. Its parent is the checkout holding the projects.
-    Measured: a lane and main then report an IDENTICAL finding set (1 and 1, vs 0 and 14).
+    Measured at the shipping sha: a lane and main report an IDENTICAL finding set -- 0 and 0
+    with the allow-list on, 8 and 8 with every exemption lifted, keys AND values equal both
+    ways. (Round 1 was 0 and 0 shipped but 14 and 1 under the mode it never actually ran in.
+    An earlier draft of this line said "1 and 1"; that was a projection written before the
+    doc fixes landed, and it shipped as a present-tense measurement. Third time in this
+    ticket, hence the no-unverified-numbers rule at the top of the T9 section.)
 
     ⛔ THE FALLBACK IS NAMED, NEVER SILENT (SCC-83, clean-code gate). Falling back to ROOT
     in a LANE reinstates the exact lane-dependent coverage this function exists to remove --
@@ -510,7 +571,17 @@ def _scan_roots() -> tuple[list[Path], list[str]]:
         for d in sorted(projects.iterdir()):
             if not d.is_dir():
                 continue
-            if any(d.iterdir()):
+            # ⛔ `.git`, NOT "is it non-empty" (SCC-83 round-2 review, H-A). Every project
+            #    here is its own repo or submodule, so `.git` is exactly the "is this
+            #    checked out" signal. `any(d.iterdir())` looked equivalent and was not:
+            #    Finder writes `.DS_Store` into any folder a human opens -- there is
+            #    already one in `Projects/` itself -- and one such file would have promoted
+            #    an uninitialised submodule to a "populated root", after which
+            #    `tdad_stack_install_guide.md`'s correct reference into it goes hard RED in
+            #    run_all on a machine where nothing is wrong. That is the SAME
+            #    untracked-state trigger this ticket deleted `strict` to be rid of; the
+            #    replacement had quietly re-armed it one layer down.
+            if (d / ".git").exists():
                 roots.append(d)
             else:
                 skipped.append(d.name)
@@ -673,15 +744,17 @@ def main() -> int:
 
         # PROVENANCE folders are exempt; a FILE under them is not - that is a live
         # instruction to open something that moved, not a record of where it went.
+        # ⛔ The mkdir is LOAD-BEARING and must come FIRST: without `_my_resources/` on
+        #    disk the first-segment rule kills the token before the allow-list is consulted,
+        #    and this control passes no matter what the allow-list says. Round 2 shipped it
+        #    eight lines too late -- documented that exact trap for the NEXT control and
+        #    missed it here (SCC-83 round-2 review, M-B).
+        (fx / "_my_resources").mkdir()
         prov = unresolved_paths("consolidated from `_my_resources/_quick_reference/`", lobby)
         c.check("T9-fixture quiet on a retired folder named as provenance",
                 not prov, det(not prov, f"got {sorted(prov)}"))
         # ...and the allow-list is written without a trailing slash on some entries and with
         # one on others. Both spellings name the same thing; an exact-string match did not.
-        # The mkdir is LOad-BEARING: without it the first-segment rule kills the token before
-        # the allow-list is ever consulted, and this control passes no matter what (caught by
-        # the mutation run, which is the only reason it is here).
-        (fx / "_my_resources").mkdir()
         slash = unresolved_paths("see `_my_resources/diagrams_guides`", lobby)
         c.check("T9-fixture allow-list ignores a trailing-slash mismatch",
                 not slash, det(not slash, f"got {sorted(slash)}"))
@@ -768,6 +841,121 @@ def main() -> int:
         ok_i = "Projects" in li.paths and "Projects/DEMO/src/moved.md" not in li.paths
         c.check("T9-fixture the lobby index records Projects/ without duplicating it",
                 ok_i, det(ok_i, f"{len(li.paths)} paths; project contents indexed twice"))
+        # ...but it must record ONE level in, or "no such project" and "not cloned here"
+        # are indistinguishable and both go silent (round-2 review, M-A).
+        ok_k = "Projects/DEMO" in li.paths
+        c.check("T9-fixture the lobby index knows WHICH projects exist",
+                ok_k, det(ok_k, "a typo'd project name would be silently unchecked"))
+        unknown = unresolved_paths("see `Projects/NoSuchProject/x.md`", [fxm, demo])
+        c.check("T9-fixture a project name nothing knows about is a FINDING, not a skip",
+                set(unknown) == {"Projects/NoSuchProject/x.md"},
+                det(set(unknown) == {"Projects/NoSuchProject/x.md"},
+                    f"got {sorted(unknown)} - a rename is the likeliest defect here"))
+
+        # ⛔ H-A: "populated" is decided by `.git`, never by "is the folder non-empty".
+        #    Finder writes .DS_Store into any folder a human opens - there is already one in
+        #    the real `Projects/` - and under the non-empty test one such file promotes an
+        #    uninitialised submodule to a root, turning a correct reference into it hard RED
+        #    on a machine where nothing is wrong. That is the same untracked-state trigger
+        #    this ticket deleted `strict` to be rid of (round-2 review, H-A).
+        (fxm / "Projects" / "NOTCLONED").mkdir()
+        (fxm / "Projects" / "NOTCLONED" / ".DS_Store").write_bytes(b"\x00" * 8)
+        noise_ok = not (fxm / "Projects" / "NOTCLONED" / ".git").exists()
+        seen = unresolved_paths("see `Projects/NOTCLONED/backend/req.txt`", [fxm, demo])
+        c.check("T9-fixture OS noise (.DS_Store) does not promote an uncloned project",
+                noise_ok and not seen,
+                det(noise_ok and not seen, f"got {sorted(seen)} - a stray Finder file "
+                                           f"would red every lane"))
+
+    # ⛔⛔ H-B (round-2 review): cross-root leniency must NOT answer for a namespace only the
+    #     lobby can own. This hid the single most likely stale reference in the folder --
+    #     the SOP's own pre-SCC-74 name under `_my_resources/_quick_reference/` -- because
+    #     AGY_AVIATIONCHAT happens to carry a file at the same relative path. The allow-list
+    #     comment PROMISED a file under a vacated folder still fires; it was true by luck
+    #     for one filename and false for its neighbours, and nothing tested it.
+    with TempDir() as fxl, TempDir() as fxp:
+        (fxl / VACATED[0]).mkdir(parents=True)          # the emptied lobby folder
+        (fxp / VACATED[0]).mkdir(parents=True)          # a project with the SAME layout
+        (fxp / VACATED[0] / "moved_away.md").write_text("x", encoding="utf-8")
+        (fxl / "docs").mkdir()
+        (fxp / "docs").mkdir()
+        (fxp / "docs" / "shared.md").write_text("x", encoding="utf-8")
+
+        masked = unresolved_paths(f"open `{VACATED[0]}/moved_away.md`", [fxl, fxp])
+        # Assert the REASON too: if the relocation search still ranges over every root, the
+        # finding fires but points at the project's copy as "where it went" -- true as a
+        # statement, useless as advice, and the shape round 1 acted on.
+        ok_m = masked.get(f"{VACATED[0]}/moved_away.md") == "resolves nowhere"
+        c.check("T9-fixture a project copy cannot answer for a vacated LOBBY path",
+                ok_m, det(ok_m, f"got {masked} - this is the exact silent miss H-B found "
+                                f"on the SOP's own pre-SCC-74 name"))
+        # ...and the leniency itself must SURVIVE, or 13 project-relative paths SCC-85
+        # already ruled on ("state the root once") come back as red rows.
+        lenient = unresolved_paths("see `docs/shared.md`", [fxl, fxp])
+        c.check("T9-fixture cross-root leniency still holds outside vacated folders",
+                not lenient, det(not lenient, f"got {sorted(lenient)} - SCC-85's 13 would return"))
+
+    # ⛔⛔ _scan_roots() ITSELF, driven end to end (round-2 review, H-A structural note).
+    #     Every control above hands `unresolved_paths` a roots list it built by hand, so the
+    #     ONE function that decides what "here" means -- and which produced the round-1
+    #     failure -- had no test at all. Round 1 shipped an argument no fixture exercised;
+    #     round 2 nearly shipped the function that chooses the argument. ROOT and
+    #     _main_checkout are module state, so they are swapped and restored in a finally.
+    with TempDir() as fxr:
+        (fxr / "Projects" / "CLONED" / ".git").mkdir(parents=True)
+        (fxr / "Projects" / "NOTCLONED").mkdir(parents=True)
+        (fxr / "Projects" / "NOISY").mkdir(parents=True)
+        (fxr / "Projects" / "NOISY" / ".DS_Store").write_bytes(b"\x00" * 8)
+        _root, _mc = ROOT, _main_checkout
+        try:
+            globals()["ROOT"] = fxr
+            globals()["_main_checkout"] = lambda: fxr
+            sr_roots, sr_stubbed = _scan_roots()
+        finally:
+            globals()["ROOT"] = _root
+            globals()["_main_checkout"] = _mc
+        got_r, got_s = sorted(p.name for p in sr_roots[1:]), sorted(sr_stubbed)
+        ok_sr = got_r == ["CLONED"] and got_s == ["NOISY", "NOTCLONED"]
+        c.check("T9-fixture _scan_roots counts .git as checked-out and OS noise as not",
+                ok_sr, det(ok_sr, f"roots={got_r} stubbed={got_s} - expected ['CLONED'] / "
+                                  f"['NOISY','NOTCLONED']; a stray .DS_Store must not "
+                                  f"promote an uninitialised submodule to a root"))
+
+    # ⛔ A token headed by a PRUNED directory must still be checkable: `heads` is recorded
+    #    before the prune for exactly that reason, and nothing tested the heads half.
+    with TempDir() as fxp2:
+        (fxp2 / "node_modules").mkdir()
+        pruned_head = unresolved_paths("see `node_modules/gone.md`", [fxp2])
+        ok_ph = set(pruned_head) == {"node_modules/gone.md"}
+        c.check("T9-fixture a token headed by a pruned dir is still checked",
+                ok_ph, det(ok_ph, f"got {sorted(pruned_head)} - heads recorded after the "
+                                  f"prune silently skips every such token"))
+
+    # ⛔ M-C: a `moved ->` target is whichever same-named file os.walk reached first. With
+    #    more than one candidate it must SAY so -- round 1 shipped a doc regression by
+    #    treating exactly this output as an instruction.
+    with TempDir() as fxa, TempDir() as fxb:
+        for b in (fxa, fxb):
+            (b / "docs").mkdir()
+            (b / "docs" / "dupe.md").write_text("x", encoding="utf-8")
+        (fxa / "elsewhere").mkdir()
+        many = unresolved_paths("see `elsewhere/dupe.md`", [fxa, fxb])
+        ok_many = "⚠" in many.get("elsewhere/dupe.md", "")
+        c.check("T9-fixture an ambiguous moved-> target says it is ambiguous",
+                ok_many, det(ok_many, f"got {many} - a single path reads as an instruction"))
+
+    # ⛔ M-D: CODE_SPAN's `\n` is the same guard STRUCK gets three fixtures for, and it had
+    #    none. An unbalanced backtick would re-pair every span after it and silently swallow
+    #    real tokens -- the identical silent-miss shape, one line above the fix for it.
+    with TempDir() as fxc:
+        (fxc / "docs").mkdir()
+        spill = ("a stray ` backtick opened here\n"
+                 "`docs/still-checked.md` must still be seen\n"
+                 "and ` another one closes far below\n")
+        sp = unresolved_paths(spill, [fxc])
+        ok_sp = set(sp) == {"docs/still-checked.md"}
+        c.check("T9-fixture an unbalanced backtick cannot swallow the spans below it",
+                ok_sp, det(ok_sp, f"got {sorted(sp)}"))
 
     # ⭐ And the mechanism behind A3d's second row, pinned in its own tree so the assertion
     #    above cannot be read as "NOT_A_PATH stops branch names". It does not; the absence
