@@ -121,3 +121,74 @@ main down.
 **Still owed, unchanged and deliberately not done here:** whether `tea_testing_guide.md` belongs in
 the lobby at all (48 project-relative refs) is an **AVCH** architecture call; AGY's stale
 `sudo_workflows_testing.md` needs its own key in that repo.
+
+---
+
+## Code Review (2026-08-11)
+
+Verdict: FAIL @ 6cdca82ff98f1473cee6896a30c3c4168cdb4f16
+Suite evidence measured at the same sha (`run_all` 12/12 exit 0) — green, and **green is not the point**.
+
+**Scope:** 11 files, 292 new lines of Python. **Method:** `/smh-code-review` end to end — Step 0.7
+re-derivation, a clean-room adversarial pass in a subagent with no conversation context, acceptance
+audit against A1–A8, the command-centre gate run bare.
+
+### ⛔ Why FAIL, in one line
+
+**Every gate is green and the gate does not gate.** The adversarial pass mutation-tested the code and
+proved the primary arm never executes in any checkout that exists — the exact failure this file was
+written to prevent, shipped inside the fix for it.
+
+### Findings
+
+| # | file:line | Sev | Failure scenario | Disposition |
+|---|---|---|---|---|
+| H1 | `test_sops_prds_folder.py:534,314-325` | **HIGH** | `strict=not stubbed` is a **global** switch. Worktree: 9 stubs → `strict=False`. **Main checkout: `Fresh_Workspace_BMAD` is an uninitialised submodule → also `strict=False`.** So `out[t] = "resolves nowhere"` never runs anywhere; only the `moved ->` arm can fire. Independently reproduced: shipped mode **0/0** findings, `strict=True` **14/1**. Worse, the switch is driven by *untracked* state — one `.DS_Store` in a stub flips the whole run strict and every lane goes red on 14 findings its author cannot fix. | **open** — downgrade must be **per token** (drop only tokens whose head also exists in a *stubbed* project; keep `resolves nowhere` for lobby-only heads) |
+| H2 | `:219,275` | **HIGH** | `STRUCK = ~~[^~]*~~` matches across newlines and is applied to the whole document before tokenizing. One unbalanced `~~` plus any later strikethrough blanks everything between them — proven: 6 dead references vanished. A `~~~` fence is eaten whole. **A whole-file off-switch reachable by a typo.** | **open** — `[^~\n]*`, apply per line, fixture the unbalanced case |
+| H3 | `:303-304` | **HIGH** | `r.rglob(leaf)` per token across 9 roots: **+18.3s on every `run_all`** at the realistic defect count, and `[:1]` slices *after* full evaluation so it never short-circuits. It descends into `.claude/worktrees/` and **cited a sibling lane's transient copy as the remediation target** — I saw that string in my own output and did not act on it. | **open** — one pruned leaf index per run |
+| H4 | `:185-191`, fixture `:411` | **HIGH** | **The plan's own headline finding F1 is not fixed.** Deleting `NOT_A_PATH` entirely leaves the suite **34/34 PASS**; 6 of its 7 alternations are provably dead. A3d — the control written to make it falsifiable — controls nothing. The module comment claiming *"every class below has a control"* is false. | **open** |
+| M1 | `:455-459` | MED | The MOVED-vs-gone fixture's ternary evaluates to literal `True`; mutating the `moved ->` arm survives. The one working arm has **zero** coverage. Also prints detail on PASS, violating `det()` at `:137`. | **open** |
+| M2 | `tea_testing_guide.md:599-603` | MED | **A regression I introduced.** Options A and B now carry identical paths and line 603 still says *"Option A changes every project."* `.agents/rules/testing-standards.md` was a **prospective** path ("write the rule here"); I took the detector's first `rglob` hit as a remediation instruction. Same inversion `ABSENT_BY_DESIGN` exists to prevent, with no exemption class for create-me paths. | **open — revert first** |
+| M3 | `:292-294` | MED | Cross-root resolution accepts a lobby path because *some* project has that layout (`frontend/package.json` resolves in 6 roots). | **open** |
+| M4 | `INDEX.md` new block | MED | Two shipped claims false: *"exactly 2 non-backticked tokens"* is **18** by T9's own filters (~9× off), and *"fenced blocks"* is impossible — `CODE_SPAN` requires backticks. | **open** |
+| M5 | `:379` | MED | A3c asserts on a token killed by the first-segment rule, not by `_is_stub_project`. The `mkdir` is inert; the comment claims otherwise. | **open** |
+| L1–L6 | various | LOW | Dead docstring (two adjacent literals); `ABSENT_BY_DESIGN` exact-string/asymmetric on trailing slash; Windows separators silently skipped; case-insensitive false negative; `:538` is a print dressed as a check, inflating 34/34; `_scan_roots` double-evaluates and returns a heterogeneous list. | **open** |
+
+**Confirmed clean (not findings):** no catastrophic backtracking (40k-char inputs ≤1 ms) · `CODE_SPAN`
+correctly bounds stray-backtick damage to one line · **T9 *is* correctly inside the `scannable` guard,
+so plan finding F3 was genuinely honoured** · all five doc-fix targets resolve, including the
+`cicd-` → `sudo-` historical-artifact revert.
+
+### Acceptance audit
+
+| Item | Evidence | Result |
+|---|---|---|
+| A1 no unresolved prose path | 0 findings both environments — **but both are weak-mode runs (H1)**, presented in the body as two independent confirmations when it is one | **NOT satisfied** |
+| A2 fires on a planted dead path | fixture green | ✅ |
+| A3a/A3b/A3c bare · project-relative · stub | green — **A3c is inert (M5)**; A3b/A3a real | ⚠ partial |
+| A3d non-path classes | **controls nothing (H4)** | **NOT satisfied** |
+| A4 by-design absences | both still absent on disk; narrowness fixture real. Plan said `_pipeline/*`; built `_artifacts/_autopilot-run.log` — undeclared deviation | ⚠ |
+| A5 run_all auto-discovers | 12/12 exit 0 | ✅ |
+| A6 lint baseline held | 0 errors 0 warnings exit 0 | ✅ |
+| A7 SOP currency | exit 0 | ✅ |
+| A8 freshness note | present in INDEX | ✅ |
+
+### Step 0.7 — re-derivation against current `main`
+
+1. **Nothing moved under this diff.** Zero files landed on `main` since the fork at `ef0af3a`.
+2. **True overlap with `main`: none**; `merge-tree` clean.
+3. **⚠ Landing order: `chore/SCC-73-memory-relocation` committed work mid-review and now CONFLICTS**
+   with this lane on `_artifacts/_main/INDEX.md` (both add a row at the table head) — confirmed by
+   `merge-tree` three-stage entries, not predicted. Trivial to resolve (keep both rows); whoever lands
+   second merges main down. `chore/SCC-77-main-write-gate`: no overlap.
+
+### Process note
+
+My shell's cwd silently reset from the worktree to the main checkout mid-review, and one verification
+probe ran in the wrong tree before I caught it. Step 3's evidence is unaffected (its `git rev-parse
+HEAD` printed `6cdca82f`). **The earlier "12 findings from the main checkout" figure in this
+walkthrough was measured with the default `strict=True` — a mode the shipped gate never runs in.**
+That is how H1 hid: I verified a different program from the one I committed.
+
+**Changes applied: none.** The four HIGHs are design-level, not trivial patches — `/smh-quick-dev`
+Step 3.5's eject tripwire applies, so this is handed back rather than patched under a review.
