@@ -49,5 +49,5 @@ data before this was set up:
 ## Related
 
 - `docs/workspace-standard.md` — PATH CONTRACT row + the upkeep note
-- `_my_resources/migrations/INDEX.md` — new-machine setup (§1) and rename day (§3)
+- `docs/migrations/INDEX.md` — new-machine setup (§1) and rename day (§3)
 - `.agents/rules/artifacts-always-first.md` — what belongs in memory vs. an artifact

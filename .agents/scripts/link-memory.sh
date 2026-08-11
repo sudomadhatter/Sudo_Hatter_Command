@@ -17,7 +17,7 @@
 # becomes a SYMLINK pointing at it.
 #
 # TWINS BY CONTRACT with link-memory.ps1 — if either changes, change both. Same standing rule the
-# Restore-EnvMaster.ps1 / restore-env-master.sh pair lives under (see _my_resources/migrations/INDEX.md).
+# Restore-EnvMaster.ps1 / restore-env-master.sh pair lives under (see docs/migrations/INDEX.md).
 #
 # SAFETY. This script never deletes memory. If canonical already holds files AND the local slug dir
 # holds its own, the local ones are moved ASIDE to memory.local-backup-<timestamp> and reported — never

@@ -315,8 +315,9 @@ def check_gates(project: Path, story: str, require: list[str], rep: wf.Report,
 
 
 def check_epic(project: Path, key: str, rep: wf.Report) -> None:
-    """An umbrella cannot close itself (memory: agy-epic-keys-rot-silently). When every
-    child is terminal the epic key is the only thing left holding the epic open."""
+    """An umbrella cannot close itself (memory: `agy-epic-keys-rot-silently`, relocated by SCC-88
+    to AGY's own store — `Projects/AGY_AVIATIONCHAT/_artifacts/_memory/`). When every child is
+    terminal the epic key is the only thing left holding the epic open."""
     m = re.match(r"^(\d+)-", wf.norm_id(key))
     if not m:
         return
