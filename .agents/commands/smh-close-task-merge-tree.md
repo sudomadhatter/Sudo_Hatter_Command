@@ -80,11 +80,16 @@ primary_repo: <repo folder name>
 branch: chore/SCC-00-<slug>
 close_command: smh-close-task-merge-tree
 secondary_repos: []        # single-repo task — the common case
-# cross-repo: use the BLOCK form below, never an inline [{…}] list
-# secondary_repos:
-#   - repo: Projects/<name>
-#     landing: independent-task      # or retain-on-epic
-#     ticket: KEY-00
+```
+
+**Cross-repo?** Then `secondary_repos` takes the block form instead — **replace** the `[]` line, never
+leave it above a second one:
+
+```yaml
+secondary_repos:
+  - repo: Projects/<name>
+    landing: independent-task      # or retain-on-epic
+    ticket: KEY-00
 ```
 
 Cross-repo work: each `secondary_repos` row is **its own ticket in its own repo** closed through

@@ -41,5 +41,5 @@ reading it is the person who can act on it.
 
 RED first, against real git repos in temp dirs with real bare origins — these are ahead/behind and
 ancestry questions, and a mocked git would only prove the mock agrees with itself. The RED run was
-6 of 8 failing, with the three cases that *should* pass without the feature passing, which is what
-distinguishes a real RED from fixtures that fail for setup reasons.
+**6 of 9 failing**, with the three cases that *should* pass without the feature passing, which is
+what distinguishes a real RED from fixtures that fail for setup reasons.

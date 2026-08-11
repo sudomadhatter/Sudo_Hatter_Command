@@ -476,6 +476,121 @@ def main() -> int:
         c.check("SCC-94 `secondary_repos: []` is untouched - single-repo tasks see nothing new",
                 code == 0 and "secondary" not in out.lower(), out.strip()[-400:])
 
+    # ── SCC-94 review: the parser could not tell "none declared" from "I could not read it" ──
+    # Every row below returned ([], None) from the first implementation: verified nothing, said
+    # nothing, exit 0. The adversarial review found four valid YAML spellings that did it, and the
+    # worst was self-inflicted - this command's own template shipped `secondary_repos: []` above a
+    # COMMENTED block, so uncommenting it (the edit the comment invites) left the `[]` to win the
+    # search. These are unit-level on purpose: the failure is in the reader, and a fixture repo
+    # per spelling would hide which spelling broke.
+    import importlib.util as _ilu
+    _spec = _ilu.spec_from_file_location(
+        "tp", Path(__file__).resolve().parents[1] / "task_preflight.py")
+    tp = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(tp)
+
+    ROW = "  - repo: Projects/SECONDARY\n    landing: independent-task\n    ticket: SCC-99\n"
+    for label, text in (
+        ("the shipped template with its block UNCOMMENTED (two keys)",
+         f"task_key: SCC-11\nsecondary_repos: []\nsecondary_repos:\n{ROW}"),
+        ("a zero-indent block, which is what yaml.dump emits",
+         "secondary_repos:\n- repo: Projects/SECONDARY\n  ticket: SCC-99\n"),
+        ("a space before the colon, which manifest_field already accepts",
+         f"secondary_repos :\n{ROW}"),
+        ("`-` alone on its line (valid non-compact sequence)",
+         "secondary_repos:\n  -\n    repo: Projects/SECONDARY\n    ticket: SCC-99\n"),
+        ("a mapping key before any `- ` item",
+         "secondary_repos:\n    repo: Projects/SECONDARY\n    ticket: SCC-99\n"),
+    ):
+        rows, unparsed = tp.secondary_rows(text)
+        c.check(f"SCC-94 review: {label} is READ or reported, never silently empty",
+                bool(rows) or bool(unparsed), f"rows={rows} unparsed={unparsed}")
+
+    rows, unparsed = tp.secondary_rows(
+        "secondary_repos:\n  - repo: A\n    ticket: AVCH-1\n# a comment at column 0\n"
+        "  - repo: B\n    ticket: SCC-99\n")
+    c.check("SCC-94 review: a column-0 comment does not truncate the list (YAML allows it anywhere)",
+            len(rows) == 2 or bool(unparsed), f"rows={rows} unparsed={unparsed}")
+
+    c.check("SCC-94 review: `#` inside a value is a path, not a comment",
+            tp.secondary_rows("secondary_repos:\n  - repo: Projects/C#App\n    ticket: AVCH-1\n"
+                              )[0][0]["repo"] == "Projects/C#App",
+            str(tp.secondary_rows("secondary_repos:\n  - repo: Projects/C#App\n    ticket: AVCH-1\n")))
+
+    # The negative controls: the two forms that legitimately mean "nothing to verify" must stay
+    # silent, or every single-repo task in the system starts failing.
+    for label, text in (("an absent key", "task_key: SCC-11\n"),
+                        ("the inline empty list", "secondary_repos: []\n"),
+                        ("the inline empty list with a trailing comment",
+                         "secondary_repos: []   # single-repo task\n")):
+        rows, unparsed = tp.secondary_rows(text)
+        c.check(f"SCC-94 review: {label} stays silent - no rows AND no complaint",
+                rows == [] and unparsed is None, f"rows={rows} unparsed={unparsed}")
+
+    # A5's two refusals, which the review found implemented and completely untested.
+    with TempDir() as t:
+        repo = with_secondary(t, ticket="")
+        code, out = preflight(repo)
+        c.check("SCC-94 review: a row with no `ticket:` blocks (a ticket PER REPO)",
+                code == 2 and "no `ticket:`" in out, out.strip()[-400:])
+
+    with TempDir() as t:
+        repo = make_repo(t)
+        write(repo, "_artifacts/_main/2026-08-08_scc-11-thing/task.yaml",
+              "task_key: SCC-11\nprimary_repo: repo\nbranch: chore/SCC-11-thing\n"
+              "secondary_repos: [{repo: Projects/X, ticket: SCC-99}]\n")
+        commit(repo, "SCC-11 chore: inline form")
+        git(repo, "push", "-q", "origin", "main")
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        code, out = preflight(repo)
+        c.check("SCC-94 review: the unreadable inline form BLOCKS - it verified nothing",
+                code == 2 and "not " in out and "readable" in out, out.strip()[-400:])
+
+    # Detached HEAD is not a mistake: `git submodule update --init` produces it, so every
+    # submodule on a fresh clone is detached. The first version asked `origin/HEAD...HEAD`,
+    # inventing a branch, and blocked with a remedy that does not apply.
+    with TempDir() as t:
+        repo = with_secondary(t)
+        proj = repo / "Projects" / "SECONDARY"
+        git(proj, "checkout", "-q", "--detach", "HEAD")
+        code, out = preflight(repo)
+        c.check("SCC-94 review: a DETACHED secondary that is pushed does not block",
+                code == 0 and "detached" in out, out.strip()[-500:])
+    with TempDir() as t:
+        repo = with_secondary(t, pushed=False)
+        proj = repo / "Projects" / "SECONDARY"
+        git(proj, "checkout", "-q", "--detach", "HEAD")
+        code, out = preflight(repo)
+        c.check("SCC-94 review: ...but a detached secondary on NO remote branch still blocks",
+                code == 2 and "on one disk" in out, out.strip()[-500:])
+
+    # A repo with no jira.conf used to print `matches its jira.conf ()` - a claimed verification
+    # whose own empty parens prove it never happened. `check_branch` warns for the primary; this
+    # now matches it.
+    with TempDir() as t:
+        repo = with_secondary(t)
+        (repo / "Projects" / "SECONDARY" / ".agents" / "jira.conf").unlink()
+        code, out = preflight(repo)
+        c.check("SCC-94 review: no jira.conf WARNS, never claims a match it did not make",
+                "cannot be checked against" in out and "matches its jira.conf ()" not in out,
+                out.strip()[-500:])
+
+    # A cp1252 byte in a project's MEMORY.md raised UnicodeDecodeError straight out of the check,
+    # killing the run at exit 1 - which this script's own contract grades as *warnings* - with no
+    # VERDICT line and the deployable-lane question never asked.
+    with TempDir() as t:
+        repo = with_secondary(t)
+        proj = repo / "Projects" / "SECONDARY"
+        (proj / "_artifacts" / "_memory" / "MEMORY.md").write_bytes(
+            b"# Index\n- [A fact](a-fact.md) \x97 an em-dash in cp1252\n")
+        # Committed and pushed, so the ONLY thing wrong is that the store cannot be decoded -
+        # otherwise the dirty-tree error fires and the assertion passes for the wrong reason.
+        commit(proj, "AVCH-1 chore: cp1252 byte")
+        git(proj, "push", "-q", "origin", "main")
+        code, out = preflight(repo)
+        c.check("SCC-94 review: an unreadable secondary store is reported, never raised",
+                code != 2 and "VERDICT" in out and "could not be read" in out, out.strip()[-500:])
+
     # ⭐ The case the fixtures above CANNOT see, and the one that matters: close-outs run from a
     # worktree, and submodules do not populate there - `Projects/<name>/` is an empty stub in
     # every lane. Resolving only under the lane made this check block every cross-repo close-out

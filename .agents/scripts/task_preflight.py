@@ -210,37 +210,64 @@ def check_manifest(repo: Path, branch: str, expect: str, rep: wf.Report) -> None
 # it is cross-repo work - it can commit there, and it is about to merge. Blocking it is fair, and
 # a single-repo lane never reaches any of this.
 
+def _scalar(v: str) -> str:
+    """A YAML scalar's value. `#` only opens a comment after whitespace - `Projects/C#App` is a
+    path, not a truncated one."""
+    return re.split(r"\s#", v, maxsplit=1)[0].strip().strip("\"'")
+
+
 def secondary_rows(text: str) -> tuple[list[dict[str, str]], str | None]:
     """`(rows, unparsed)`. No PyYAML on these machines - the rest of this file parses the manifest
     by regex for the same reason.
 
-    `unparsed` carries the raw value when the manifest uses the inline `[{...}]` form this reader
-    does not handle. Returning `[]` for it would fail OPEN: an unverified cross-repo declaration
-    would read as "no secondary repos" and pass silently, which is the exact bug this check exists
-    to close."""
+    ⛔ `unparsed` is the FLOOR, and it is what makes this readable-or-loud rather than
+    readable-or-silent. Every way of not understanding the value returns it: the inline `[{...}]`
+    form, a duplicated key, and - the one that mattered - **the key present but yielding no rows**.
+    Without that last case there is no difference between "no secondary repos" and "I could not
+    read the secondary repos", so four valid YAML spellings verified nothing and reported nothing.
+    The worst was self-inflicted: this command's own template shipped `secondary_repos: []` with a
+    commented block underneath, and uncommenting it - the edit the comment invites - left the `[]`
+    above to win the search. A cross-repo lane declaring a key its target repo REJECTS closed out
+    green and silent. Never return an empty list from a branch that found the key."""
     # `[^\S\n]*`, NOT `\s*`: under re.MULTILINE `$` matches before a newline, but `\s` matches the
-    # newline itself, so `\s*(.*)` runs past the line end and captures the NEXT line. The block
-    # form then read as an inline one and every declared repo went unverified behind a warning
-    # that looked like a manifest style problem. Horizontal whitespace only.
-    m = re.search(r"^secondary_repos:[^\S\n]*(.*)$", text, re.MULTILINE)
-    if not m:
+    # newline itself, so `\s*(.*)` runs past the line end and captures the NEXT line. Horizontal
+    # whitespace only. `\s*:` before it, because `secondary_repos :` is valid YAML and
+    # `manifest_field` already accepts that spelling.
+    keys = list(re.finditer(r"^secondary_repos[^\S\n]*:[^\S\n]*(.*)$", text, re.MULTILINE))
+    if not keys:
         return [], None
-    inline = m.group(1).split("#")[0].strip()
+    if len(keys) > 1:
+        return [], f"{len(keys)} `secondary_repos:` keys - which one is authoritative is undefined"
+    m = keys[0]
+    inline = _scalar(m.group(1))
     if inline:
         return ([], None) if inline in ("[]", "[ ]") else ([], inline)
+
     rows: list[dict[str, str]] = []
+    stray = False
     for line in text[m.end():].splitlines():
-        if line.strip() and not line.startswith((" ", "\t")):
-            break                                    # dedented to a new top-level key
         s = line.strip()
         if not s or s.startswith("#"):
-            continue
-        if s.startswith("- "):
+            continue          # blank or comment at ANY indent - neither ends a block in YAML
+        item = s.startswith("- ") or s == "-"
+        if not line.startswith((" ", "\t")) and not item:
+            break             # a real dedent to the next top-level key
+        if item:
             rows.append({})
-            s = s[2:].strip()
-        if rows and ":" in s:
-            k, _, v = s.partition(":")
-            rows[-1][k.strip()] = v.split("#")[0].strip().strip("\"'")
+            s = s[2:].strip() if s != "-" else ""     # `-` alone is a valid non-compact item
+        if not s:
+            continue
+        if ":" not in s:
+            stray = True
+            continue
+        k, _, v = s.partition(":")
+        if not rows:          # a mapping key before any `- ` item: not a list this reader knows
+            stray = True
+            continue
+        rows[-1][k.strip()] = _scalar(v)
+
+    if not rows or stray or any(not r for r in rows):
+        return [], (m.group(0).strip() or "secondary_repos:") + " (block form unreadable here)"
     return rows, None
 
 
@@ -252,8 +279,14 @@ def store_problems(store: Path) -> tuple[list[str], str | None]:
     store. In this repo `.agents/scripts/tests/` IS the enforcement layer (`run_all.py` is the
     gate), so depending on it from here is not a test/production inversion.
 
-    An import failure is REPORTED, never swallowed - a check that quietly becomes a no-op when its
-    dependency moves is worse than no check, because the green still looks earned."""
+    Failures are REPORTED, never swallowed and never raised - a check that quietly becomes a no-op
+    when its dependency moves is worse than no check, because the green still looks earned; and one
+    that escapes as an exception is worse again. ⛔ The CALL is guarded as well as the import. It
+    was not, and `check_store` reads the index with plain `read_text(encoding="utf-8")`: a single
+    cp1252 byte in a project's MEMORY.md - the em-dash hazard this system has hit before - raised
+    UnicodeDecodeError out of here and killed the whole preflight at exit 1, which this script's
+    own contract grades as *warnings*. No VERDICT printed, and because this runs first, the
+    deployable-lane question the script exists to answer never got asked at all."""
     try:
         tests = Path(__file__).resolve().parent / "tests"
         if str(tests) not in sys.path:
@@ -261,7 +294,10 @@ def store_problems(store: Path) -> tuple[list[str], str | None]:
         from test_memory_store import check_store          # noqa: PLC0415 (deliberately lazy)
     except Exception as e:                                 # noqa: BLE001 - any failure must speak
         return [], f"could not load the memory-store contract ({type(e).__name__}: {e})"
-    return check_store(store), None
+    try:
+        return check_store(store), None
+    except Exception as e:                                 # noqa: BLE001 - same reasoning
+        return [], f"the store could not be read ({type(e).__name__}: {e})"
 
 
 def worktree_main_root(repo: Path) -> Path | None:
@@ -287,31 +323,44 @@ def check_secondary(repo: Path, expect: str, rep: wf.Report) -> None:
     for path, text in task_manifests(repo, expect):
         rows, unparsed = secondary_rows(text)
         if unparsed:
-            rep.warn("secondary", f"{rel_or_abs(path, repo)} declares secondary_repos in an "
-                                  f"inline form this check does not read (`{unparsed}`) - it was "
-                                  f"NOT verified; use the block form ({MANIFEST_SCHEMA})")
+            # ERROR, not a warning. "I could not read your cross-repo declaration" and "there is
+            # no cross-repo half" must never share an exit code: the whole point of this check is
+            # that an unverified secondary repo does not reach a merge.
+            rep.err("secondary", f"{rel_or_abs(path, repo)}: secondary_repos is present but not "
+                                 f"readable (`{unparsed}`) - so it was NOT verified. Use the block "
+                                 f"form, one `- repo:` per row ({MANIFEST_SCHEMA})")
         for row in rows:
             name = row.get("repo")
             ticket = row.get("ticket", "")
+            landing = row.get("landing", "")
             if not name:
                 rep.err("secondary", f"{rel_or_abs(path, repo)}: a secondary_repos row has no "
                                      f"`repo:` - there is nothing to verify")
                 continue
-            sec = (repo / name).resolve()
-            if not (sec / ".git").exists():
-                main_root = worktree_main_root(repo)
-                shared = (main_root / name).resolve() if main_root else None
-                if shared and (shared / ".git").exists():
-                    sec = shared
-                    rep.info("secondary", f"{name}: empty stub in this lane (submodules do not "
-                                          f"populate in a worktree) - verified in the shared "
-                                          f"checkout at {shared}")
-                else:
-                    rep.err("secondary", f"{name}: declared as a secondary repo but not a git "
-                                         f"checkout, here or in the main worktree - its half of "
-                                         f"this task cannot be confirmed landed "
-                                         f"(git submodule update --init -- {name})")
-                    continue
+            if landing and landing not in ("independent-task", "retain-on-epic"):
+                rep.err("secondary", f"{name}: landing `{landing}` is not one of "
+                                     f"independent-task / retain-on-epic - retain-on-epic is the "
+                                     f"exception that must never be presented as merged to "
+                                     f"production, so an unrecognised value cannot be assumed safe")
+
+            # Two spellings are in the wild: `Projects/<name>` and a bare `<name>` (see the SCC-62
+            # manifest). Accept both rather than hand the next author a hard block whose printed
+            # remedy - a submodule path - cannot succeed for a bare name.
+            candidates = [repo / name, repo / "Projects" / name]
+            main_root = worktree_main_root(repo)
+            if main_root:
+                candidates += [main_root / name, main_root / "Projects" / name]
+            sec = next((c.resolve() for c in candidates if (c / ".git").exists()), None)
+            if sec is None:
+                rep.err("secondary", f"{name}: declared as a secondary repo but not a git "
+                                     f"checkout, here or in the main worktree - its half of "
+                                     f"this task cannot be confirmed landed "
+                                     f"(git submodule update --init -- {name})")
+                continue
+            if not (repo / name / ".git").exists():
+                rep.info("secondary", f"{name}: not a checkout in this lane (submodules do not "
+                                      f"populate in a worktree) - verified in the shared checkout "
+                                      f"at {sec}")
 
             # The key, against that repo's OWN jira.conf. Widening a project's keys is ruled out
             # in writing, so a mismatch is not a preference - the hook there will reject the
@@ -320,7 +369,16 @@ def check_secondary(repo: Path, expect: str, rep: wf.Report) -> None:
             if not ticket:
                 rep.err("secondary", f"{name}: no `ticket:` - cross-repo work is a ticket PER "
                                      f"REPO, and this half has none")
-            elif keys and ticket.split("-")[0].upper() not in [k.upper() for k in keys]:
+            elif "-" not in ticket or not ticket.split("-", 1)[1].strip():
+                rep.err("secondary", f"{name}: `{ticket}` is a project key, not a ticket - a "
+                                     f"cross-repo half is a specific work item (KEY-00)")
+            elif not keys:
+                # `check_branch` already handles this shape for the primary; matching it here
+                # matters more, because the alternative was printing `matches its jira.conf ()` -
+                # a claimed verification whose own empty parens are the proof it never happened.
+                rep.warn("secondary", f"{name}: no .agents/jira.conf - {ticket} cannot be checked "
+                                      f"against the keys that repo actually answers to")
+            elif ticket.split("-")[0].upper() not in [k.upper() for k in keys]:
                 rep.err("secondary", f"{name}: declared ticket {ticket} but that repo answers "
                                      f"only to {'/'.join(keys)} - its commit-msg hook will "
                                      f"reject a {ticket.split('-')[0].upper()}-keyed commit")
@@ -333,15 +391,45 @@ def check_secondary(repo: Path, expect: str, rep: wf.Report) -> None:
                                      f"this repo's own `git status` cannot see them (submodules "
                                      f"are `ignore = all`), so nothing else will catch this")
             head = wf.git(["rev-parse", "--abbrev-ref", "HEAD"], sec).stdout.strip()
-            counts = wf.git(["rev-list", "--left-right", "--count", f"origin/{head}...{head}"], sec)
-            if counts.returncode != 0 or not counts.stdout.strip():
-                rep.err("secondary", f"{name}: branch `{head}` was never pushed - its half of "
-                                     f"this task exists on one disk")
+            if head == "HEAD":
+                # Detached is not a mistake here - it is what `git submodule update --init`
+                # produces, so every submodule on a fresh clone lands in this state. Asking
+                # `origin/HEAD...HEAD` invents a branch and reports "never pushed" or a bogus
+                # ahead/behind, with a remedy that does not apply.
+                sha = wf.git(["rev-parse", "HEAD"], sec).stdout.strip()
+                reachable = wf.git(["branch", "-r", "--contains", sha], sec).stdout.strip()
+                if reachable:
+                    rep.info("secondary", f"{name}: detached at {sha[:8]}, and that commit is on "
+                                          f"{reachable.split()[0]} - pushed")
+                else:
+                    rep.err("secondary", f"{name}: detached at {sha[:8]} and that commit is on no "
+                                         f"remote branch - its half of this task exists on one disk")
             else:
-                behind, ahead = (counts.stdout.split() + ["?", "?"])[:2]
-                if ahead != "0" or behind != "0":
-                    rep.err("secondary", f"{name}: `{head}` is {ahead} ahead / {behind} behind "
-                                         f"origin - commit and push are ONE action")
+                counts = wf.git(["rev-list", "--left-right", "--count",
+                                 f"origin/{head}...{head}"], sec)
+                if counts.returncode != 0 or not counts.stdout.strip():
+                    rep.err("secondary", f"{name}: branch `{head}` was never pushed - its half of "
+                                         f"this task exists on one disk")
+                else:
+                    behind, ahead = (counts.stdout.split() + ["?", "?"])[:2]
+                    if ahead != "0" or behind != "0":
+                        rep.err("secondary", f"{name}: `{head}` is {ahead} ahead / {behind} behind "
+                                             f"origin - commit and push are ONE action")
+
+            # Has the other half actually LANDED? `independent-task` says it lands through its own
+            # lane, so closing this one while that lane is unmerged ships half the work - and when
+            # this half is a deletion whose destination is the other, it destroys what it moved.
+            # A warning, not an error: the landing order between two open lanes is a real judgment
+            # call. But it fires mechanically at the merge, which prose in a walkthrough does not.
+            if landing != "retain-on-epic":
+                sha = wf.git(["rev-parse", "HEAD"], sec).stdout.strip()
+                base = base_ref(sec)
+                landed = wf.git(["merge-base", "--is-ancestor", sha, base], sec).returncode == 0
+                if not landed:
+                    rep.warn("secondary", f"{name}: HEAD {sha[:8]} is NOT yet on {base} - this "
+                                          f"half has not landed. Merge {ticket or 'it'} FIRST if "
+                                          f"this task depends on it being there (a task that "
+                                          f"deletes what the other half receives always does)")
 
             store = sec / "_artifacts" / "_memory"
             if not (store / "MEMORY.md").is_file():

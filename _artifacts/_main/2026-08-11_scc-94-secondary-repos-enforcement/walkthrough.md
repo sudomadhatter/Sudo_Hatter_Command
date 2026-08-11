@@ -1,7 +1,13 @@
 # SCC-94 — walkthrough
 
-**`secondary_repos` is now enforced.** Nine new cases; `test_task_preflight` 48 → 59, all passing.
-`run_all` 12/12 exit 0 · `workflow_lint --toolkit-only` 0/0 exit 0 · `sop_currency` exit 0.
+**`secondary_repos` is now enforced.** `test_task_preflight` **48 → 75** (9 cases built here,
+16 more added after the review found the parser had no floor — see the Code Review section, which
+carries the authoritative findings). `run_all` 12/12 exit 0 · `workflow_lint --toolkit-only` 0/0
+exit 0 · `sop_currency` exit 0.
+
+⚠ The section below records the two bugs I caught **while building**. The review then found a
+BLOCKER and four MAJORs I had not — most notably that this commit's own documentation taught an
+edit which silently disabled the check. Read the Code Review section for the real defect list.
 
 Verified end to end against the live **SCC-88** lane, not only fixtures:
 
@@ -73,3 +79,77 @@ learn before it happens, not during.
 
 The AGY-side memory gate stays an AVCH ticket. Repo-local enforcement never centralises; this is
 the half the command center actually owns.
+
+---
+
+## Code Review (2026-08-11)
+
+Verdict: CONCERNS @ 5dfe233 → one BLOCKER + four MAJOR applied; re-measured below
+**The review found the feature had no floor.** The parser could not distinguish *"no secondary
+repos"* from *"I could not read the secondary repos"*, so its green was only as trustworthy as the
+manifest's whitespace. That is the same class of defect this ticket was written to close, one layer
+down.
+
+**Scope** — the 10-file diff of `chore/SCC-94-secondary-repos-enforcement` vs `main`.
+**Method** — clean-room adversarial hunt in a subagent with no conversation context, acceptance
+audit against A1–A8, command-centre gate, Step 0.7 re-derivation.
+
+### Findings
+
+| file:line | severity | failure scenario | disposition |
+|---|---|---|---|
+| `task_preflight.py:225,233` | **BLOCKER** | `secondary_rows()` returned `([], None)` — verified nothing, said nothing, exit 0 — for **four valid YAML spellings** of a declared block list, each carrying a ticket key the target repo *rejects*. Worst case was self-inflicted: this commit's own template shipped `secondary_repos: []` above a **commented** block, so uncommenting it (the edit the comment invites) left the `[]` to win `re.search`. The documentation taught an edit that silently disabled the check. | **applied** — every branch that finds the key now returns `unparsed` rather than an empty list; `unparsed` is an **ERROR**, not a warning. Handles two keys, zero-indent blocks, `secondary_repos :`, bare `-` items, and a mapping key before any item. The template no longer ships a commentable second key. |
+| `task_preflight.py:233` | MAJOR | A column-0 comment mid-list read as a dedent and truncated the list: a second declared repo carrying a rejected key was dropped with **no output at all**. Partial parses read as coverage. | **applied** — comments and blanks are skipped at any indent, as YAML requires. |
+| `task_preflight.py:323` | MAJOR | A secondary with no `jira.conf` fell through to the success branch and printed `matches its jira.conf ()` — a claimed verification whose own empty parens prove it never happened. `check_branch` already warns correctly for the primary. | **applied** — now warns, matching its sibling. |
+| `task_preflight.py:264` | MAJOR | `check_store` reads with plain `read_text(encoding="utf-8")`; one cp1252 byte in a project's `MEMORY.md` raised `UnicodeDecodeError` **out of** `store_problems`, killing the run at **exit 1** — which this script grades as *warnings* — with no `VERDICT` line, and since this check runs first, the deployable-lane question the script exists to answer never ran. | **applied** — the call is guarded as well as the import; an unreadable store is reported, never raised. |
+| `task_preflight.py:335` | MAJOR | Detached HEAD → `rev-parse --abbrev-ref` returns `HEAD`, and the code queried `origin/HEAD...HEAD`, blocking with "never pushed" or a bogus ahead/behind. **Detached is what `git submodule update --init` produces**, so every submodule on a fresh clone hit this. | **applied** — detached is detected and the SHA checked for remote containment instead. |
+| `task_preflight.py:300` | MINOR | Only `Projects/<name>` resolved; the repo's own only non-empty manifest (SCC-62) writes bare names, giving a hard block whose printed remedy cannot succeed. | **applied** — both spellings resolve. Swept all 15 committed manifests: **0 newly block.** |
+| `task_preflight.py:293` | MINOR | `landing:` was parsed and never read — `retain-on-epic`, documented as "must never be presented as merged to production", was treated identically to `independent-task`. The decorative-field failure this ticket indicts. | **applied** — an unrecognised `landing` errors, and `retain-on-epic` now suppresses the landed-check. |
+| `task_preflight.py:323` | MINOR | `ticket: AVCH` (a project key, no number) passed and was reported as a match. | **applied** — rejected. |
+| `task_preflight.py:243` | MINOR | `#` inside a value truncated it (`Projects/C#App` → `Projects/C`). YAML opens a comment only after whitespace. | **applied** — `_scalar()`. |
+| `test_task_preflight.py` | MINOR | A5's two refusals were implemented and **completely untested**; no case for a missing `repo:` either. | **applied** — 16 new cases; every parser case mutation-proven to fail against the original. |
+| `smh-close-task-merge-tree.md:141` | MINOR | The Step 1 reading guide gained no `secondary` row, so the new blocking check is documented everywhere except where the operator is told to look. | **deferred** — the command body and SOP both carry it; the Step 1 table is a separate edit better made where SCC-90's restructure lands. |
+| `implementation_plan.md` | NIT | "6 of 8 failing … the three that should pass" — 6+3=9, not 8. | **applied** — corrected below. |
+
+### Gates — actual output
+
+- **Enforcement suite** — `python3 .agents/scripts/tests/run_all.py` → `12/12 files passed`, **exit 0**
+- **Preflight suite** — `python3 .agents/scripts/tests/test_task_preflight.py` → `-- 75/75 passed --`, **exit 0** (48 pre-task → 59 → **75** after review). The many `N error(s)` lines inside are fixtures asserting the preflight *blocks* correctly.
+- **Toolkit lint** — `--toolkit-only` → `-- 0 error(s), 0 warning(s), 8 info --`, **exit 0**
+- **SOP currency** — **exit 0**
+- **Door parity** — re-synced after the template edit; the `.opencode` full mirror updated, both launcher skills and the Antigravity stub current
+- **A gate must reject AND allow** — both halves proven: 16 refusal cases, plus negative controls that an absent key, `[]`, and `[] # comment` stay silent, and that a correct declaration still exits 0
+
+### Acceptance
+
+| item | proving assertion |
+|---|---|
+| A1 resolves incl. from a worktree | real-linked-worktree fixture; verified live on the SCC-88 lane |
+| A2 key matches the target's `jira.conf` | mismatch blocks; **missing conf now warns** (was a false match) |
+| A3 clean + `0/0` | dirty and unpushed fixtures block; **detached handled** |
+| A4 store passes `check_store()` | seeded-orphan fixture blocks; unreadable store reported not raised |
+| A5 no silent pass | 6 spellings + inline form + missing `ticket:`/`repo:`, all mutation-proven against the original parser |
+| A6 negative controls | correct declaration exits 0; no store yet is not a failure; `[]` unchanged |
+| A7 doors + SOP | re-synced, pasted above |
+| A8 gates | pasted above |
+
+### Clean-Code Gate
+
+Machine floor green. Step 1's drift/bloat pass imported per Step 3.5: no over-engineering or dead
+code found; the reviewer independently cleared CRLF handling, tabs, quoted values, ahead/behind
+ordering, `worktree_main_root` across plain/nested/bare/submodule cases, and import side effects
+(16 ms, no I/O). `except Exception` scope was flagged as too broad on the import and is now
+deliberate on both import and call, each with the reason written at the line.
+
+### Step 0.7 — re-derivation against current `main`
+
+1. **Nothing moved under this diff.** `origin/main` = `main` = merge-base = `50e357b`; **0 files
+   landed** since branching.
+2. **True overlap with `main`: none;** `merge-tree` clean.
+3. **Landing order.** `_artifacts/_main/INDEX.md` conflicts with SCC-88, SCC-83 and SCC-90 —
+   mechanical, keep every row. ⚠ **`docs/_scc_sops_prds/workflows_testing_SOP.md` conflicts with
+   SCC-90**, which rewrites that file wholesale (1,294 insertions / 695 deletions) and **no longer
+   contains the paragraph this diff edits** — so the resolution is not mechanical: the enforcement
+   note must be re-placed in the new structure whichever order they land. `.gitignore` conflicts
+   against SCC-77 are not from this diff: SCC-77 is **31 behind main** and independently re-fixes
+   what SCC-73 already landed there.
