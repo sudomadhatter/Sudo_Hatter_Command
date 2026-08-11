@@ -102,9 +102,11 @@ which is why this work was done in a worktree rather than on the main checkout.
 
 ## Code Review (2026-08-11)
 
-Verdict: CONCERNS @ aec47e5 → fixes applied, re-measured at HEAD
-Suite evidence measured at the post-fix HEAD of this branch (see `## Evidence` below); the
-pre-review sha `aec47e5` is superseded — code changed after it, so its totals do not carry.
+Verdict: PASS @ b5d3180
+Suite evidence measured at `b5d3180` — the sha carrying every fix below. The review opened at
+`aec47e5` as **CONCERNS** (one BLOCKER, three MAJOR); all of them are applied and re-measured
+here, so the verdict is stated at the code that will actually land, not at the code that was
+reviewed. Only this doc-line changes after `b5d3180`, which does not invalidate the run.
 
 **Scope** — the 39-file diff of `chore/SCC-88-memory-relocation-sweep` vs `main`, plus its paired
 half `AVCH-53 @ c0b53879`.
