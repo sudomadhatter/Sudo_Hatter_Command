@@ -125,10 +125,12 @@ document whose thesis is measurement discipline. Caught by the adversarial revie
 ## Code Review (2026-08-11)
 
 ```
-Verdict: CONCERNS @ <FINAL-SHA>
+Verdict: CONCERNS @ 9ee6df5
 ```
 
-Suite evidence measured on the same sha; every gate below was re-run after the last code change.
+Suite evidence measured on `9ee6df5`, the last code-bearing commit; every gate below was re-run after
+it. `run_all` **12/12 exit 0** · memory suite **39/39 exit 0** · `workflow_lint --toolkit-only`
+**0 errors, 0 warnings, exit 0** · `py_compile` **PASS**. Only doc/artifact edits follow this sha.
 
 **Scope** — 17 files, `main...HEAD`, no uncommitted work but untracked `.opencode/node_modules`.
 **Method** — Step 0.7 re-derivation vs current `main`; clean-room adversarial layer in a subagent with
