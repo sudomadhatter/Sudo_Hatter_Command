@@ -550,7 +550,7 @@ flowchart LR
     UM --> CW["/cicd-close-workingtree"]
     ME["/cicd-merge-epic-workingtrees"] --> PC
     ME --> CW
-    ME --> E2E["/cicd-e2e"]
+    ME -.->|"only if the set is being promoted"| E2E["/cicd-e2e"]
     PE["/cicd-push-e2e"] --> E2E
     TM["/smh-close-task-merge-tree"] --> OWN["prunes its OWN tree\ndoes NOT call the janitor"]
     UM -.->|"2+ live lanes: hands over"| ME
@@ -675,7 +675,7 @@ flowchart TD
     S3 --> WHY["⛔ a recursive delete FOLLOWS junctions\nand destroys the shared .venv and node_modules\nTARGETS, not just the links.\nENUMERATE, never assume — tools plant their own."]
     WHY --> S3B["Step 3b — git worktree remove --force\nStep 3c — delete the leftover directory"]
     S3B --> S4["Step 4 — PROBE the shared assets survived\nrun them, do not just Test-Path"]
-    S4 --> S5{"Step 5 — delete branches\npassed Step 1 AND Step 1.7?"}
+    S4 --> S5{"Step 5 — delete branches\npassed Step 1 (code landed)\nAND Step 1.7 (story finished)?"}
     S5 -- "no" --> KEEP["keep the branch. Report why.\nRemoving a TREE is cheap — the branch recreates it.\nDeleting the BRANCH destroys the only copy."]
     S5 -- "yes" --> DEL["REMOTE first, local second\n— the reverse fails"]
     DEL --> S6["Step 6 — VERIFY, then report\nevery check from a command you actually ran"]
@@ -721,8 +721,11 @@ flowchart TD
     S6 --> S65["Step 6.5 — comment the evidence\nepic ticket → Done"]
 ```
 
-**Invoking it IS your per-merge sign-off for the one epic it ships.** The push-approval hook still
-prompts on the final push; that prompt is expected, not an error.
+**Invoking it IS your per-merge sign-off for the one epic it ships.** The command doc expects a
+push-approval prompt on the final push — but today no pre-push hook is armed on this machine (see
+the ⓘ aside on the one-invocation rule later in this section), so no prompt fires until SCC-77
+lands one. When a prompt or token gate *does* appear there, it is expected, not an error — satisfy
+it, never bypass it.
 
 `/cicd-e2e` also runs solo any time you want end-to-end confidence without shipping.
 
@@ -1015,8 +1018,9 @@ claims). Its judgment half checks the conventions **this page** defines.
 
 ## 10. The safety net — what checks your work
 
-**Nine small programs plus two armed git hooks** do the checking that used to be a person holding
-eight rules in their head. What matters to you is *what they refuse to let happen.*
+**Nine small programs plus three git hooks — two that block (`pre-commit`, `commit-msg`, carrying
+the encoding, lint, Jira-key and SOP-currency checks) and one that records (`post-commit`, the
+map-drift journal)** — do the checking that used to be a person holding eight rules in their head. What matters to you is *what they refuse to let happen.*
 
 *Which safety check fires inside which command:*
 
@@ -1077,7 +1081,8 @@ flowchart LR
 | `wf_common.py` | Shared plumbing the others import. You'll never call it. |
 
 **Run all their tests any time:** `python3 .agents/scripts/tests/run_all.py` (on the PC, `python …`) —
-202 checks across 7 files, about ten seconds. Full detail in
+408 checks across 12 files as of 2026-08-11, about ten seconds — the suite prints its live totals,
+which outrank this sentence. Full detail in
 [`.agents/scripts/INDEX.md`](../../.agents/scripts/INDEX.md).
 
 > ⓘ **Three design decisions that look like bugs until you know why.**

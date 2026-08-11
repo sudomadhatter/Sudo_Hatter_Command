@@ -52,7 +52,7 @@ commit therefore stands alone and cannot red `main` on its own, in either landin
   - Six parts replacing 13 flat sections; **two reading levels** — a spine anyone can read start to
     finish, plus skippable `ⓘ Why it works this way` asides holding the incident history, so the
     review surface survives without blocking a first read.
-  - 8 diagrams → **23**. A new internals diagram for every command that *contains* another: ①, ②,
+  - 9 diagrams → **23**. A new internals diagram for every command that *contains* another: ①, ②,
     ③, the four close-outs, `/cicd-push-e2e`, `/cicd-quick-dev`, `/smh-quick-dev`, `/smh-code-review`.
   - New §5 lane chooser and §7 close-out decision tree. The §7 tree is the reason the ticket exists:
     the page described the close-out family as four interchangeable commands when they are four
@@ -98,7 +98,7 @@ content sweep, same tree:
   anchors     19 links vs 63 headings -> 0 broken
   file links  20 unique               -> 0 broken
   mermaid     23 blocks               -> 0 bare angle brackets in labels
-  size        1632 lines, 108 KB
+  size        1636 lines (at review-fix sha), 108 KB
 
 check_maps.py is NOT cited here on purpose: its AUTO-block staleness check labels
 the tree by the CWD basename, so it reports a FALSE stale inside any worktree.
