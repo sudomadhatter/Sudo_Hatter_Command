@@ -802,6 +802,32 @@ Typing `/smh-close-task-merge-tree` authorises **the one task you typed it for**
 authorise the next one, no matter how soon it follows. Same for `/cicd-update-sprint-memory`. Every
 other merge to `main` needs you to say so directly.
 
+### ⛔ And the merge has to land where you think it does (SCC-97)
+
+Two different things can go wrong with a merge, and the section above only covers the first:
+**right branch, wrong authority** — and **right authority, wrong branch.**
+
+Every guard in this system protects the branch you merge **from**: `--expect-key`, the preflight's
+header line, and the "cwd is not intent" rule, which is written about which *tree you review*.
+**Nothing checks the branch you merge onto.** On 2026-08-11 a `cd` in one step and a bare
+`git merge` in a later one put a production merge commit on a **sibling lane's branch**, and
+reported success — the output, the file list and the message all read correctly, because the message
+says `-> main` only because someone typed that.
+
+So: pass `-C "$REPO"` on every git call (a `cd` is not a lock across steps), and **assert the target
+before merging**, so it stops you rather than informs you:
+
+```bash
+test "$(git -C "$REPO" rev-parse --abbrev-ref HEAD)" = "main" || { echo "NOT ON main — STOP"; exit 1; }
+```
+
+> ⓘ **If it happens anyway, do not reset and do not force.** The commit is usually correct in every
+> way except which pointer moved. Check that its tree carries nothing from the wrong branch
+> (`git diff --name-only <main-tip> <sha>`) and that its first parent is `main`'s tip
+> (`git log -1 --format='%p' <sha>`), then `git merge --ff-only <sha>` from the tree holding `main`.
+> The sibling branch keeps its uncommitted work untouched — which is what makes it recoverable, and
+> why `reset --hard` would be the expensive move. Full detail in `.agents/rules/git-policy.md`.
+
 > ⓘ **This got broken, and it is worth knowing how (2026-08-09, SCC-71).** In one long session the
 > command was invoked **once** and then rode **six** merges (SCC-64 → SCC-69). Not defiance — the
 > command's whole body stays sitting in the agent's context after you type it, and on task six it

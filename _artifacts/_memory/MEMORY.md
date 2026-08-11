@@ -46,6 +46,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [Commit and push are ONE action](commit-and-push-are-one-action.md) — never end a step unpushed or dirty; verify `0 0` + clean per repo.
 - [⛔ Backticks in `-m "…"` EXECUTE](commit-message-backticks-execute.md) — a message quoting a git command RUNS it; it created a branch mid-commit. Use `-F <file>`.
 - [Git branch model](git-branch-model-standard.md) — main is the ONLY long-lived branch; `epic/*` merges via /sudo-push-e2e; branches carry a Jira key.
+- [⛔ Nothing guards the merge TARGET](nothing-guards-the-merge-target.md) — every gate checks what you merge FROM; a bare `git merge` after a `cd` landed production work on a sibling lane and reported success. `-C` on every call; recovery is `--ff-only`, never reset.
 - [⛔ One invocation = ONE merge](one-shot-permission-persists-in-context.md) — the close-out's body stays in context and reads like standing permission; 6 merges rode 1 sign-off. Merge-ready → STOP and hand back.
 - [Hook `ask` = DENY in auto mode](hook-ask-becomes-autodeny-in-auto-mode.md) — gates main only; reads pass, mutations die; retry once, then hand over the rule.
 - [Pruned worktree blocks re-add](pruned-worktree-leaves-a-blocking-shell.md) — the empty dir blocks `worktree add`; only PowerShell deletes it.

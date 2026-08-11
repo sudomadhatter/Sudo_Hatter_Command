@@ -157,6 +157,31 @@ checkout boring: it is always exactly production.
 - **If a push is rejected** (remote moved under you), **STOP and report.** Do not force-push, and do
   not blind-rebase while other uncommitted work sits in the tree.
 
+### ⛔ Pin the merge TARGET, not just the source — `-C` on every call, and assert before you merge
+
+Every guard above protects the branch you are merging **from**. Nothing protects the branch you are
+merging **onto**, and on 2026-08-11 that gap put a production merge commit on a sibling lane's
+branch: `cd <worktree> && git checkout main` ran in one step, and a **bare** `git merge <lane>` ran
+in a later one, by which point the working directory had reset to the shared checkout — which was
+standing on `chore/SCC-89-…`. It reported success. The output, the changed-file list and the commit
+message (`-> main`, because that is what was typed) were all indistinguishable from a correct merge.
+
+- **A `cd` is not a lock.** Pass `-C "$REPO"` on every `git` invocation rather than relying on where
+  a previous step left you.
+- **Assert the target immediately before merging**, and let it stop you:
+
+  ```bash
+  test "$(git -C "$REPO" rev-parse --abbrev-ref HEAD)" = "main" || { echo "NOT ON main — STOP"; exit 1; }
+  ```
+
+- **Recovery, if it happens anyway — do not reset and do not force.** The merge commit is usually
+  correct in every way except which pointer moved. Verify its tree carries nothing from the wrong
+  branch (`git diff --name-only <main-tip> <sha>`), confirm its first parent is `main`'s tip
+  (`git log -1 --format='%p' <sha>`), then `git merge --ff-only <sha>` from the tree that holds
+  `main`. The sibling branch keeps its uncommitted work untouched.
+
+See `_artifacts/_memory/nothing-guards-the-merge-target.md`.
+
 ## Sync-first — check the remote before you land
 
 Phone and desktop share branches, so landing from a **stale** branch is what causes the
