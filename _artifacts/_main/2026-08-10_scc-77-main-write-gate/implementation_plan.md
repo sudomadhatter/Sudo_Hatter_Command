@@ -1,181 +1,185 @@
-# SCC-77 — Enforce the main-branch write gate
+---
+IsArtifact: true
+ArtifactMetadata:
+  title: SCC-77 — the main write gate
+  type: implementation_plan
+  date: 2026-08-10
+---
 
-**Branch:** `chore/SCC-77-main-write-gate` (Task lane → `/smh-close-task-merge-tree`)
-**Base:** `main` @ `9a6a026`
-**Lane:** LOCAL (command centre has no deployable surface)
+# SCC-77 — Enforce the `main` write gate
+
+**Branch** `chore/SCC-77-main-write-gate` · **Lane** LOCAL · **Cut from** `main` @ `9a6a026`
+**Reconciled onto** `main` @ `48e95c5` (73 commits absorbed 2026-08-11 — see the walkthrough)
+
+> **Status: AS BUILT.** This document was approved as a plan on 2026-08-10 and has been rewritten to
+> describe what actually shipped. Where the build diverged from the plan, the divergence is called out
+> in-place rather than quietly edited over — those are the entries worth reading.
 
 ---
 
-## The problem, in one line
+## The problem
 
-`git-policy.md` documents a write gate that has never executed on this machine.
+`git-policy.md` documented a `main` write gate. **It had never executed once on this machine.**
 
-| Layer | Claimed | Actual |
+| Layer | Claimed | Found |
 |---|---|---|
-| `pre-push` git hook | — | **does not exist** in either repo |
-| `require-push-approval.py` PreToolUse | "forces the approval prompt on any `git push` targeting `main`" | wired to `powershell -Command "python …"`; this Mac has **neither** (only `pwsh`, `python3`) → exit 127, silent |
-| 4× SessionStart hooks | continuity + drift checks | same defect, all dead |
-| AGY `.claude/hooks/` | — | directory does not exist |
+| `pre-push` git hook | — | **did not exist**, in either repo |
+| `require-push-approval.py` | "forces the approval prompt on any `git push` targeting `main`" | wired as `powershell -Command "python …"`; this Mac has **neither** — only `pwsh`, `python3` → **exit 127, silent** |
+| 4× SessionStart hooks | continuity · drift · INDEX · journal | same defect, all dead |
+| AGY `.claude/hooks/` | — | directory absent |
+| `core.hooksPath` (SCC) | — | **absolute** — cannot survive a clone to the PC |
 
-Six merges rode one sign-off on 2026-08-09 because nothing was there to stop them.
+That is the whole explanation for six merges riding one sign-off (SCC-64 → SCC-69). The rule was
+enforced by reading, which is exactly the weakness it describes.
 
-Extra find: SCC's `core.hooksPath` is the **absolute** `/Users/sudohatter/Sudo_Hatter_Command/.githooks`.
-AGY's is the relative `.githooks`. AGY's is correct — an absolute path cannot survive a clone to the PC.
+## The door set (operator ruling, 2026-08-10)
 
----
+Two commands plus the operator. This is what `git-policy.md`, both command bodies, and the ticket
+already said — **no rule doc's door table needed changing.**
 
-## The door set (operator ruling 2026-08-10)
-
-Two doors, plus the operator. This is what `git-policy.md:70`, the command bodies, and the SCC-77
-ticket already say — **no rule doc changes.**
-
-| Destination | Key |
+| Destination | Doors |
 |---|---|
-| `main` | `/cicd-push-e2e` (epic, full gate + e2e) · `/smh-close-task-merge-tree` (task, preflight + lane gate) · operator's direct "approved" |
-| epic branch | `/cicd-update-sprint-memory` — **never main** |
+| `main` | `/cicd-push-e2e` · `/smh-close-task-merge-tree` · the operator's direct "approved" |
+| epic branch | `/cicd-update-sprint-memory` — **never `main`** |
 
-The SOP's SCC-71 block reads as if `/cicd-update-sprint-memory` were a third main door. It is making
-the one-typing-one-merge point about both close-outs, but the sentence that follows turns it into a
-door list. That sentence is the only surface carrying the wrong model; it gets fixed here.
-
----
+The only surface carrying a third-door reading was the SOP's SCC-71 block. Correcting it was in
+scope; by the time of the reconcile, SCC-91's restructure had **already removed** that sentence.
 
 ## Architecture — two layers, one authoritative
 
-**Layer A — git `pre-push` hook. THIS IS THE GATE.** Plain `sh`; Git-for-Windows bundles `sh`, so it
-runs identically on both machines, under every agent platform, and in the operator's own terminal.
-Per the ticket: *"Git hooks are the only enforcement layer both machines and all platforms share."*
+**Layer A — `.githooks/pre-push`. This is the gate.** Pure POSIX `sh`. Runs on both machines, under
+every agent platform, and in the operator's own terminal.
 
-**Layer B — Claude `PreToolUse` hook. UX only.** Prompts earlier with a better message. Repaired, but
-nothing depends on it. If it dies again the gate still holds.
+**Layer B — the Claude `PreToolUse` hook. UX only.** Repaired, but nothing depends on it. If it dies
+again the gate still holds.
 
----
+> ⭐ **The design rule that falls out of the bug:** the enforcement layer may not depend on the class
+> of thing that broke it. That is why Layer A has no interpreter in its path at all.
 
 ## The token contract
 
-**Path** `$(git rev-parse --git-common-dir)/main-push-approval`
+**Path** `$(git rev-parse --git-common-dir)/main-push-approval` — the *common* dir, so every worktree
+shares exactly one token and a sign-off cannot be minted in one lane and spent in another; under
+`.git/`, so it never travels with a clone and can never land in a commit.
 
-`--git-common-dir` (not `--git-dir`) so every worktree shares one token. Under `.git/`, so it never
-travels with a clone and never lands in a commit.
+**Fields** `branch` · `tip` (sha at mint) · `command` · `key` · `minted` (epoch)
 
-**Content**
+**Gate order** — each step its own refusal message:
 
-```
-branch=chore/SCC-77-main-write-gate
-tip=<sha of the branch at mint time>
-command=/smh-close-task-merge-tree
-key=SCC-77
-minted=<epoch seconds>
-```
+| # | Check | Refused when |
+|---|---|---|
+| 1 | armed | `MAIN-PUSH-ENFORCE` deleted or `DISABLE` present → passes through |
+| 2 | destination | not `refs/heads/main` (whole-ref) → exits 0 immediately |
+| 3 | exists | no token |
+| 4 | fresh | minted > 30 min ago |
+| 5 | **same commit** | **token names one sha, push carries another** |
+| 6 | delete | anything that would delete `main` — unconditional |
 
-**Gate order** — each step its own refusal message, so a failure says which rule fired:
-
-1. `DISABLE` present, or `MAIN-PUSH-ENFORCE` absent → pass through (unarmed).
-2. Ref is not `refs/heads/main` → **exit 0 immediately.** `main` is the only protected destination;
-   whole-token match so `epic/main-fix` never trips it.
-3. No token → **REFUSE**, printing the two doors by name.
-4. `minted` older than 30 min → **REFUSE** (stale sign-off).
-5. `tip` ≠ the sha actually being pushed → **REFUSE.** The branch moved after the sign-off, so commits
-   exist that no gate ever saw. This is the check that matters most.
-6. Consume — delete the token, **then** allow.
-
-**Deliberate: the token is consumed before the push, so a rejected push needs a fresh sign-off.**
-There is no `post-push` hook, so this is the only available order — and it fails in the safe
-direction. A rejected push means the remote moved, which means re-running the door command to
-re-preflight anyway. That is SCC-71's rule working, not friction.
-
-**Escape hatches** — all three loud and documented, none silent:
-`git push --no-verify` · delete `MAIN-PUSH-ENFORCE` · `.agents/scripts/git-hooks/DISABLE`.
+**Every refusal also discards the token**, so a failed sign-off is spent rather than left to match a
+later push by accident. On success the token is consumed *before* the push — there is no `post-push`
+hook, so that is the only available order, and it fails safe.
 
 ---
 
-## Files
+## Files as built
 
 ### New
 
-| # | Path | What |
-|---|---|---|
-| 1 | `.githooks/pre-push` | Thin dispatcher. Copies the `commit-msg`/`pre-commit` house pattern **including the SCC-32 worktree guard** — a tree cut before the script existed must warn and allow, never die on `exec` |
-| 2 | `.agents/scripts/git-hooks/pre-push-main-approval.sh` | The gate. `main` only |
-| 3 | `.agents/scripts/git-hooks/MAIN-PUSH-ENFORCE` | Tracked arm flag, same prose shape as `JIRA-ENFORCE` — tracked on purpose, or it arms one machine and is silent on the other |
-| 4 | `.agents/scripts/mint_push_token.py` | Writes the token. **One** implementation, called by both doors |
-| 5 | `.agents/scripts/tests/test_main_push_gate.py` | Registered in `run_all.py` → 12/12 |
-| 6 | `.agents/hooks/run-hook.sh` + deployed `.claude/hooks/run-hook.sh` | Interpreter shim: `python3` else `python` |
+| Path | Role |
+|---|---|
+| `.githooks/pre-push` | dispatcher; carries the SCC-32 worktree guard (missing script → warn + allow) |
+| `.agents/scripts/git-hooks/pre-push-main-approval.sh` | the gate |
+| `.agents/scripts/git-hooks/mint-push-token.sh` | the minter |
+| `.agents/scripts/git-hooks/MAIN-PUSH-ENFORCE` | tracked arm flag |
+| `.agents/scripts/tests/test_main_push_gate.py` | 36 assertions; auto-discovered by `run_all.py` |
+| `.agents/hooks/run-hook.sh` (+ `.claude/hooks/` copy) | interpreter shim that **announces** rather than exiting 127 |
+| `.agents/hooks/session-start-context.sh` | inline PowerShell hook ported to `sh` |
 
 ### Modified
 
-| # | Path | Change |
+| Path | Change |
+|---|---|
+| `.claude/settings.json` | all 5 hook commands off `powershell`/`python` |
+| `.agents/commands/cicd-push-e2e.md` | mint step before Step 4's push |
+| `.agents/commands/smh-close-task-merge-tree.md` | mint step before Step 3's push |
+| `.agents/rules/git-policy.md` | Enforcement rewritten; the honest limits put in writing; cross-ref to SCC-97 |
+| `docs/_scc_sops_prds/workflows_testing_SOP.md` | the built gate documented at both stale sites |
+| `_artifacts/_memory/git-branch-model-standard.md` + `MEMORY.md` | the branch model corrected |
+| *(git config)* | `core.hooksPath` absolute → **relative** |
+
+---
+
+## Divergences from the approved plan — and why
+
+1. **The minter is `sh`, not Python.** The plan said `.agents/scripts/mint_push_token.py`. Making the
+   *enforcement* path depend on an interpreter would reproduce the exact bug inside the fix. Now
+   nothing in the gate path needs Python at all.
+2. **`run-hook.sh` and `session-start-context.sh` were added.** The plan treated the settings repair
+   as a rewiring job. Two of the five hooks were PowerShell *logic*, not just a bad interpreter name,
+   so they had to be ported. The shim also fixes the *class* of bug: no hook can exit 127 silently
+   again.
+3. **Defect 6 was in a different file than stated.** The false *"AGY keeps its own identical copy"*
+   sentence is at **line 67 of the memory file**, not `git-policy.md:67` — two line-67s were conflated
+   during the survey. `git-policy.md` never carried the claim. Fixed in the right place.
+4. **A `.gitignore` fix was made, then superseded.** `**/node_modules/` (trailing slash) matches
+   directories only, but worktree assets are *symlinks* — so `task_preflight.py` counted the link as
+   uncommitted and **blocked a clean lane**. Fixed here; at the reconcile, SCC-73 turned out to have
+   found the same bug independently and fixed it better (keeping both forms). **Took theirs.**
+5. **One SOP fix became unnecessary.** SCC-91's restructure had already deleted the three-door
+   sentence. Independent confirmation the reading was right.
+6. **SCC-97 landed while parked, and reinforces this.** It asks you to assert `HEAD` is `main`
+   immediately before merging. `mint-push-token.sh` already **refuses to mint unless `HEAD` is
+   `main`**, and runs between merge and push — so on the two door lanes that assertion is mechanical.
+   Cross-referenced in `git-policy.md`.
+
+---
+
+## Acceptance — the checkable list
+
+Authority: SCC-77's `ACCEPTANCE` block. Every item names the assertion that proves it.
+
+| # | Item | Proven by |
 |---|---|---|
-| 7 | `.claude/settings.json` | All 5 hook commands off `powershell`/`python` |
-| 8 | `.agents/commands/cicd-push-e2e.md` | Mint step immediately before Step 4's `git push origin main` |
-| 9 | `.agents/commands/smh-close-task-merge-tree.md` | Mint step immediately before Step 3's `git push origin main` |
-| 10 | `_my_resources/_quick_reference/sudo_workflows_testing.md` | Fix the SCC-71 door sentence; document the gate (SOP currency requires this anyway) |
-| 11 | `.agents/rules/git-policy.md` | Rewrite the `Enforcement:` paragraph to describe what actually enforces; **fix `:67`'s false "AGY keeps its own identical copy"** (ruled defect 6) |
-| 12 | *(config, not a file)* | `git config core.hooksPath .githooks` — relative, matching AGY |
+| 1 | `pre-push` exists, executable, refuses an unapproved push to `main` — by a **real** `git push`, not only stdin | `test_main_push_gate.py` — installed ×6, *"REAL git push to main is refused with no token"*, *"nothing reached the remote"* |
+| 2 | Token single-use: consumed on success **and** discarded on every refusal | *"the token is consumed"*, *"replaying the same push is refused"*, *"a refused token is discarded too"* |
+| 3 | Token for a different sha is refused (the SCC-71 shape) | *"token minted for another sha is refused"* |
+| 4 | Stale + malformed refused; deleting `main` refused unconditionally | *"token older than 30 min…"*, *"malformed token…"*, *"deleting main is always refused"* |
+| 5 | Only `refs/heads/main`, whole-ref | *"non-main ref passes"*, *"`epic/main-fix` does not trip the match"* |
+| 6 | All three disarm paths work and are loud | *"disarmed … passes through"*, *"DISABLE kill switch passes through"*; `--no-verify` documented in the gate header, SOP and `git-policy.md` |
+| 7 | Both doors mint after the merge, before the push; `/cicd-update-sprint-memory` does not | mint steps in both command bodies; *"minter refuses when HEAD is not main"*; *"the refusal does NOT name update-sprint-memory as a door"* |
+| 8 | No interpreter anywhere in the gate path | `pre-push`, the gate and the minter are `sh`, `sh -n` clean; no `python`/`powershell` token in any of the three |
+| 9 | `settings.json` names no single-platform binary; all 5 hooks execute; a hook that can't run announces it | *"no hook command is bound to one platform's binaries"*; all four SessionStart hooks run (hook 3 surfaced real INDEX drift); `run-hook.sh` prints and exits 0 |
+| 10 | `core.hooksPath` set **and** relative | *"core.hooksPath is set"*, *"is RELATIVE"*, *"resolves to a dir holding pre-push"* |
+| 11 | `run_all.py` green with the new file; lint 0 errors | `run_all.py` **14/14 exit 0**; `workflow_lint --toolkit-only` **0 errors, 0 warnings, exit 0** |
+| 12 | SOP moves in the same commit; `git-policy.md` carries the canonical statement incl. what it does *not* buy | armed `sop_currency` passed each commit; `test_sops_prds_folder.py` **57/57**; limits written into both |
 
----
+**Out of scope, deliberately:** AGY (own AVCH ticket — enforcement is repo-local); `gh pr merge` and
+the GitHub web UI (SCC-75); making the token unforgeable (explicitly *not* a goal — see below).
 
-## Tests (`test_main_push_gate.py`)
+## What this does not buy — stated, not hidden
 
-1. `.githooks/pre-push` exists and is executable.
-2. `core.hooksPath` resolves to a directory containing it.
-3. Push to a non-`main` ref → allowed with no token.
-4. Push to `main`, no token → **refused**, exit non-zero.
-5. Push to `main`, valid token → allowed.
-6. Push to `main`, same token again → **refused** (consumed).
-7. Token whose `tip` ≠ pushed sha → **refused**.
-8. Token older than 30 min → **refused**.
-9. Arm flag absent → allowed (unarmed passes through).
-10. **No hook command in `.claude/settings.json` names a single-platform binary** — the regression
-    test for the actual bug. Bans bare `powershell`, bare `python`, `C:\`, `.ps1` as the entry point.
+**An agent can write files, so an agent can forge a token.** This is not a security boundary against a
+determined agent and must not be described as one. It converts a *silent* violation into a
+*deliberate, traceable* one, and it closes the real SCC-71 failure: a close-out command whose body
+stays in context and still reads valid on task six. Written into `git-policy.md`, the SOP, the gate's
+own header, and the ticket.
 
----
+## Verification
 
-## Stated limitations — not defects, and they go in the docs
+```
+run_all.py                    14/14  exit 0      (13/13 on main + this lane's file)
+workflow_lint --toolkit-only  0 errors, 0 warnings, exit 0
+test_main_push_gate.py        36/36  exit 0
+test_sops_prds_folder.py      57/57  exit 0
+task_preflight --expect-key   clear to close out and merge · LANE LOCAL
+```
 
-1. **An agent can write files, so an agent can forge a token.** This is not a security boundary
-   against a determined agent. It converts a *silent* violation into a *deliberate, traceable* one,
-   and it stops the real SCC-71 failure mode — a command body sitting in context that still reads
-   valid on task six. That is the correct target.
-2. **`gh pr merge` and the GitHub web UI never reach a local hook.** Structurally out of reach.
-   Already routed to the SCC-75 child.
+Plus the live proof on this repo: `git push` of the chore branch passes freely; `git push origin
+HEAD:main` is refused with no token.
 
----
+## Still owed — nothing minted, placement is the operator's
 
-## Scope
-
-**This repo only.** SCC-77 is an SCC ticket. AGY needs the same two files plus `core.hooksPath` —
-that is a separate AVCH ticket, per the cross-repo rule (a ticket per repo).
-
----
-
-## Also riding along (operator-confirmed)
-
-- The exit-127 hook repair (items 6, 7) — it is the same root cause and the ticket already lists it as
-  point 3.
-- Defect 6: `git-policy.md:67`'s false AGY claim (item 11).
-- The parked memory correction for `git-branch-model-standard.md` — its description states the epic
-  model as universal, which is what misleads every session reading it in the lobby.
-
-## Routed elsewhere — not built here
-
-- Defect 2 (stale `git_walkthrough_settings.md:299`) → **SCC-74**.
-- Defects 3/4/5 (incident prefix mismatch; incident lands via PR; `gh pr merge` ungated) → one new
-  child of **SCC-75**.
-- Neither minted — placement is the operator's (`jira.md` guardrail 2).
-
----
-
-## Order of work
-
-1. Cut `chore/SCC-77-main-write-gate` + worktree off `main`, author `task.yaml`.
-2. Rewrite the SCC-77 Jira description (it still names `/close-task-merge-tree` and `/sudo-push-e2e`).
-3. Gate script + dispatcher + arm flag (1, 2, 3).
-4. Minter (4), then wire both doors (8, 9).
-5. Hook-wiring repair (6, 7) + `core.hooksPath` (12).
-6. Tests (5) → `run_all.py` 12/12.
-7. Docs (10, 11) + memory correction.
-8. **Live proof on the branch:** push to main with no token → refused · mint → allowed · retry →
-   refused. Paste the real terminal output into the walkthrough; a gate reported from intent is the
-   exact failure this toolkit exists to remove.
-9. `/smh-close-task-merge-tree` — and this branch's own merge is the gate's first real customer.
+- **SCC-74** — `git_walkthrough_settings.md` still names `/cicd-push-e2e` as `main`'s only door.
+- **SCC-75** — one child: `claude/incident-<id>` vs `task_preflight.py`'s `incident/` guard; the
+  incident lane lands via GitHub PR; `gh pr merge` ungated.
+- **New AVCH ticket** — AGY needs this gate; it does not propagate.

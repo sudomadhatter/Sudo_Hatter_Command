@@ -1,6 +1,15 @@
+---
+IsArtifact: true
+ArtifactMetadata:
+  title: SCC-77 — the main write gate
+  type: walkthrough
+  date: 2026-08-10
+---
+
 # SCC-77 — the `main` write gate
 
 **Branch** `chore/SCC-77-main-write-gate` · **Lane** LOCAL · **Base** `main` @ `9a6a026`
+**Reconciled onto** `main` @ `48e95c5` (73 commits, 2026-08-11)
 
 ---
 
