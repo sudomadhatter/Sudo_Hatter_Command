@@ -224,7 +224,7 @@ token that lets the push through. This branch is the gate's first real customer.
 
 ## Code Review (2026-08-11)
 
-Verdict: PASS @ 3a6c3933b2b7d0623a0bffec79e14bb5a8b1c16f
+Verdict: PASS @ ea307613ea0fbcb7e8f0581489d62b86703fee17
 Suite evidence measured at the same sha: `run_all.py` 14/14 exit 0 · `test_main_push_gate.py` 57/57
 exit 0 · `workflow_lint --toolkit-only` 0 errors 0 warnings exit 0 · `test_sops_prds_folder.py`
 57/57 exit 0 · `sop_currency` exit 0.
