@@ -513,6 +513,7 @@ Each command below operates on a different thing. None can substitute for anothe
 | **2. Disk cleanup** | verify merged, remove the worktree, delete the branch | `/cicd-close-workingtree` |
 | **3. Epic branch → `main`** | the epic ships to production | `/cicd-push-e2e` |
 | **3. Chore branch → `main`** | a Task ships | `/smh-close-task-merge-tree` |
+| **3. Chore branch → `main`** | *several* finished Tasks land together | `/smh-merge-multiple-workingtrees` |
 
 **Two facts dissolve most of the confusion:**
 
@@ -1558,6 +1559,7 @@ ticket that shipped it ([§12](#12-the-board--what-runs-next)).
 |---|---|
 | `/cicd-update-sprint-memory` | Close-out for **one story**. Pre-flights everything mechanically, marks the story done on **your** word, saves what was learned, lands the code on the **epic branch** — and moves the story's Jira ticket to match, with the evidence attached. |
 | `/cicd-merge-epic-workingtrees` | Lands **all** of one epic's finished lanes in a single reviewed pass. Ends at the epic branch. |
+| `/smh-merge-multiple-workingtrees` | The Task-lane sibling: lands **several** finished `chore/*` lanes on `main`, one merge at a time. Derives the order from measured overlap, classifies every shared file (ledger · rewrite-vs-edit · modify-delete · gate-or-script), forces lanes that change commit or push machinery LAST, honours cross-repo dependencies, and ends with a **combined gate on `main`** — the only run that sees the whole set together. **Stops before every merge:** a Task lane lands on production directly, so N lanes are N sign-offs. |
 | `/cicd-close-workingtree` | The janitor. Confirms the branch really merged, then removes the workspace and deletes the branch. Both close-outs call it automatically. |
 | `/cicd-e2e` | Runs the real end-to-end suite — a complete stand-in for the live app, with test users. Green means safe to ship. |
 | `/cicd-push-e2e` | The one shipping command — the only road an epic takes to `main`. **Refuses to run** until the end-to-end suite is green. After the merge it comments the evidence on the epic's Jira ticket and moves it to **Done**. |
