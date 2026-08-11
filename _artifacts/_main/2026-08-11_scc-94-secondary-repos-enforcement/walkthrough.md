@@ -157,3 +157,45 @@ deliberate on both import and call, each with the reason written at the line.
    note must be re-placed in the new structure whichever order they land. `.gitignore` conflicts
    against SCC-77 are not from this diff: SCC-77 is **31 behind main** and independently re-fixes
    what SCC-73 already landed there.
+
+## Merge Reconciliation (2026-08-11) — landing #3
+
+Verdict: PASS @ (this commit) — re-measured after absorbing `main`; supersedes `PASS @ 46622dc`,
+which was measured before SCC-90 and SCC-89 landed.
+
+**Why a re-measure was required, not optional.** The original verdict was true about a `main` that
+no longer exists. Two lanes landed underneath this one:
+
+| Landed | sha | What it did to this lane |
+|---|---|---|
+| SCC-90 | `0b380d4` | rewrote `workflows_testing_SOP.md` end to end |
+| SCC-89 | `238e0ec` | relocated the migrations kit; added 2 ledger rows |
+
+**Conflicts, and how each was resolved:**
+
+| File | Shape | Resolution |
+|---|---|---|
+| `_artifacts/_main/INDEX.md` | ledger — 1 row ours, 3 rows theirs, no deletions either side | **kept all 4.** SCC-94's row on top, because this lane lands last and the table is newest-first. Never picked a winner. |
+| `docs/_scc_sops_prds/workflows_testing_SOP.md` | ⚠ **not mechanical** — SCC-90 rewrote the file and the paragraph this lane edited no longer exists in that form | took `main`'s file whole, then **re-authored** the `secondary_repos` content into the new structure. |
+
+**The SOP content was re-placed, not pasted.** SCC-94's original edit was one 900-word table cell —
+the shape the old flat reference page used. The rewrite has two reading levels, so the content was
+split to match: a **spine** paragraph plus a copyable `task.yaml` block in
+§7's `/smh-close-task-merge-tree` section (what you do), and a `ⓘ` **aside** carrying the three
+"why"s (unreadable-is-an-error, why the clean/pushed check has no substitute, and why the ordering
+warning is load-bearing). The §17 reference row gained one sentence pointing back at §7. Pasting the
+old cell into the new file would have produced a page that contradicts its own stated format — which
+is the failure mode a rewrite-versus-edit conflict always has, and why git cannot resolve it.
+
+### Gates after the reconcile (bare)
+
+```
+python3 .agents/scripts/tests/run_all.py                  -> exit 0   12/12 files passed
+python3 .agents/scripts/workflow_lint.py --toolkit-only   -> exit 0   0 errors, 0 warnings, 8 info
+python3 .agents/scripts/tests/test_sops_prds_folder.py    -> exit 0   16/16 passed
+python3 .agents/scripts/tests/test_task_preflight.py      -> exit 0   75/75 passed
+SOP link + anchor sweep                                   -> 77 links, 0 dead
+```
+
+`test_task_preflight.py` 75/75 is the one that matters: this lane's own assertions still gate after
+absorbing a rewrite of the document they describe.
