@@ -1200,7 +1200,7 @@ flowchart LR
 | `wf_common.py` | Shared plumbing the others import. You'll never call it. |
 
 **Run all their tests any time:** `python3 .agents/scripts/tests/run_all.py` (on the PC, `python …`) —
-585 checks across 15 files as of 2026-08-11, about ten seconds — the suite prints its live totals,
+646 checks across 16 files as of 2026-08-11, about ten seconds — the suite prints its live totals,
 which outrank this sentence. Full detail in
 [`.agents/scripts/INDEX.md`](../../.agents/scripts/INDEX.md).
 
