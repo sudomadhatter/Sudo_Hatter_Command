@@ -179,22 +179,59 @@ def task_manifests(repo: Path, expect: str) -> list[tuple[Path, str]]:
             if (t := wf.read_text(p)) and manifest_field(t, "task_key") == expect]
 
 
+def git_ok(repo: Path, args: list[str]) -> bool:
+    return wf.git(args, repo).returncode == 0
+
+
+def branch_alive(repo: Path, branch: str) -> bool:
+    """Does `branch` still exist, locally or on origin? A branch that is gone was merged and
+    pruned (Step 5 deletes both) or abandoned - either way it is not a lane you could aim at."""
+    return (git_ok(repo, ["rev-parse", "--verify", "--quiet", f"refs/heads/{branch}"])
+            or git_ok(repo, ["rev-parse", "--verify", "--quiet",
+                             f"refs/remotes/origin/{branch}"]))
+
+
 def check_manifest(repo: Path, branch: str, expect: str, rep: wf.Report) -> None:
     """`task.yaml` is intent written down at task START - it exists before any branch can
     drift. When one declares this task, it must agree with what the preflight resolved;
-    a manifest nobody checks against is decorative."""
+    a manifest nobody checks against is decorative.
+
+    ⭐ ONE TICKET CAN HAVE MORE THAN ONE LANE. `followon-fixes-are-not-a-new-story` is a
+    written ruling here: a follow-on fix rides the ticket it came from rather than minting a
+    new key, so the second lane authors a second `task.yaml` under the SAME `task_key`. This
+    check used to error on every manifest that named a different branch, which made the
+    repo's own documented workflow a hard block at close-out - SCC-113 hit it as the first
+    ticket ever to have two lanes, with the first lane already merged and pruned.
+
+    A manifest is treated as HISTORY, not as a competing lane, only when both hold:
+      * its branch no longer exists locally or on origin - so "aim at the declared branch",
+        which is half the error's own remedy, is impossible; and
+      * some OTHER manifest for this key agrees with the branch we resolved.
+
+    ⛔ The second condition is what keeps this from failing OPEN. Without it, a lone stale
+    manifest pointing at a deleted branch would silently excuse a close-out aimed at the
+    wrong lane - the exact 2026-08-09 failure this check exists for. With it, the resolved
+    branch must be positively declared by someone before any mismatch is forgiven.
+    """
     mine = task_manifests(repo, expect)
     if not mine:
         rep.warn("manifest", f"no task.yaml declares task_key: {expect} - intent rests on "
                              f"--expect-key alone. Author one in the task's _artifacts "
                              f"folder ({MANIFEST_SCHEMA})")
         return
+    declared_all = [manifest_field(t, "branch") for _, t in mine]
+    confirmed = branch in declared_all
     for p, text in mine:
         declared = manifest_field(text, "branch")
         if declared and declared != branch:
-            rep.err("manifest", f"{rel_or_abs(p, repo)} declares branch `{declared}` but "
-                                f"this preflight resolved `{branch}` - one of them is "
-                                f"wrong; fix the manifest or aim at the declared branch")
+            if confirmed and not branch_alive(repo, declared):
+                rep.info("manifest", f"{rel_or_abs(p, repo)} is a CLOSED lane on {expect} "
+                                     f"(`{declared}` is merged and pruned) - one ticket, two "
+                                     f"lanes; this one is `{branch}`")
+            else:
+                rep.err("manifest", f"{rel_or_abs(p, repo)} declares branch `{declared}` but "
+                                    f"this preflight resolved `{branch}` - one of them is "
+                                    f"wrong; fix the manifest or aim at the declared branch")
         else:
             rep.info("manifest", f"{rel_or_abs(p, repo)} agrees: {expect} on "
                                  f"{declared or branch}")

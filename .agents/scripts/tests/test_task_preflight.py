@@ -372,6 +372,45 @@ def main() -> int:
         code, out = preflight(repo)
         c.check("SCC-64 a manifest naming a DIFFERENT branch blocks",
                 code == 2 and "declares branch" in out, out.strip()[-400:])
+    # ⛔ That case is ALSO the fail-open control for SCC-113 below: `chore/SCC-11-thing` was
+    # never created, so the declared branch does not exist - and it must STILL block, because
+    # nothing declares the branch actually resolved. Only the `confirmed` half of the new
+    # condition keeps it blocking; drop that half and this case goes green on the wrong lane.
+
+    # ── SCC-113: ONE TICKET, TWO LANES - the follow-on ruling, mechanically ──
+    # `followon-fixes-are-not-a-new-story` says a follow-on rides the ticket it came from, so
+    # the second lane writes a second task.yaml under the same key. The old check errored on
+    # every manifest naming a different branch, which made the documented workflow a hard
+    # block at close-out the first time a ticket ever had two lanes.
+    with TempDir() as t:
+        repo = make_repo(t)                                  # declares chore/SCC-11-thing
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        git(repo, "checkout", "-q", "main")
+        git(repo, "merge", "--no-ff", "-q", "-m", "SCC-11 merge: lane one", "chore/SCC-11-thing")
+        git(repo, "push", "-q", "origin", "main")
+        git(repo, "branch", "-q", "-D", "chore/SCC-11-thing")            # Step 5, local
+        git(repo, "push", "-q", "origin", "--delete", "chore/SCC-11-thing")   # Step 5, remote
+        branch(repo, "chore/SCC-11-followon", {"docs/y.md": "y\n"}, push=False)
+        write(repo, "_artifacts/_main/2026-08-12_scc-11-followon/task.yaml",
+              MANIFEST.replace("chore/SCC-11-thing", "chore/SCC-11-followon"))
+        commit(repo, "SCC-11 chore: the follow-on lane's own manifest")
+        git(repo, "push", "-q", "-u", "origin", "chore/SCC-11-followon")
+        code, out = preflight(repo)
+        c.check("SCC-113 a CLOSED lane's manifest does not block the follow-on lane",
+                code == 0 and "CLOSED lane" in out, out.strip()[-500:])
+
+    with TempDir() as t:
+        repo = make_repo(t)                                  # declares chore/SCC-11-thing
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})   # LEFT ALIVE
+        git(repo, "checkout", "-q", "main")
+        branch(repo, "chore/SCC-11-followon", {"docs/y.md": "y\n"}, push=False)
+        write(repo, "_artifacts/_main/2026-08-12_scc-11-followon/task.yaml",
+              MANIFEST.replace("chore/SCC-11-thing", "chore/SCC-11-followon"))
+        commit(repo, "SCC-11 chore: the second manifest")
+        git(repo, "push", "-q", "-u", "origin", "chore/SCC-11-followon")
+        code, out = preflight(repo)
+        c.check("SCC-113 a LIVE sibling lane still blocks - only a PRUNED one is history",
+                code == 2 and "declares branch" in out, out.strip()[-500:])
 
     # ── SCC-64: dirty memory files are named, with the park-don't-sweep instruction ──
     with TempDir() as t:
