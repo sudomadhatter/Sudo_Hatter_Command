@@ -211,3 +211,60 @@ Audit verdict: GO
 **GO**, with A-1 folded into the plan and A-2/A-3 tightening two assertions before any code is
 written. The lesson from the parent lane is applied up front: **both new assertions must be shown
 failing against real stale bytes before they are believed.**
+
+---
+
+## Addendum 2 (2026-08-12) — the two recorded gaps, now IN scope
+
+The operator took the "found, deliberately not fixed" pair above and said fix them. Acceptance
+widens by exactly those two items; nothing else.
+
+### What I checked first, because "pre-existing" is not the same as "harmless"
+
+**Gap A — `.opencode/commands` has no ghost check.** Read the engine rather than assumed:
+`Sync-CommandDir` is called for opencode at `sync-agents.ps1:821` **without `-Mirror`**, and its
+purge branch ends `else { $false } # local: keep foreign/project-own files`. So when a command
+brain is **deleted**, its opencode door is not eligible, is no longer in `$masterNames`, and is not
+a mirror — it falls to that final `$false` and is **kept forever**. Nothing in the tree notices.
+`.agents/workflows` is not exposed this way (that mirror prunes), which is precisely why the
+workflows ghost check has existed all along and this one never did.
+
+**Gap B — no mirror surface asserts a door belongs where it sits.** Swept both surfaces against
+every command's `platforms:`. **One hit today**, and it is not a bug:
+`.agents/workflows/smh-adviser-board.md` exists while the command declares
+`platforms: [claude, opencode, codex]`. That workflow is *hand-authored* — it is in the engine's
+`$excluded`, and it carries `platforms: [antigravity]` in its own frontmatter. The engine derives
+generated doors from the command's `platforms:`; it makes **no such promise for hand-owned files**.
+
+### The design — and why the exemption is earned, not announced
+
+That is the same trap as A-2′, so the hand-owned exemption is not a `continue`:
+
+- The rule lives in one pure helper, `mirror_place_error()`, with **four string controls** covering
+  both directions (claimed+present, unclaimed+present, unclaimed+present+hand-owned,
+  unclaimed+absent) — a sweep that is clean today proves nothing about a check's teeth.
+- Exemption is **conditional on the hand-owned door declaring the surface it sits on**, parsed with
+  the *same* `platforms_of()` the engine's rule uses (absent = universal). To smuggle a misplaced
+  door past this you must add it to `$excluded` in PowerShell **and** write antigravity frontmatter
+  into it — which is the deliberate act of authoring a hand-owned Antigravity door, not an accident.
+  It fails **closed** on the real attack: a hand-owned workflow that claims `platforms: [claude]`.
+- Misplaced mirrors join the **existing** `wrong_place` list rather than getting their own check —
+  one rule, one implementation, the discipline A-2′ forced on `is_launcher_for`.
+
+### Also, in the same idiom, 1 line
+
+Both ghost checks get the non-empty-sweep guard the parity sweep already carries (A-3). Shipping a
+guarded new ghost check beside an unguarded old one is incoherent; a renamed cache directory would
+read as "0 ghosts" forever.
+
+### Assertions
+
+| # | Claim | How it is shown failing |
+|---|---|---|
+| 1 | A door on an unclaimed surface is an ERROR | control + mutation: drop `opencode` from a real command's `platforms:` |
+| 2 | A hand-owned door is exempt **only while it declares that surface** | control + mutation: rewrite the adviser-board workflow's `platforms:` to `[claude]` |
+| 3 | An opencode door with no brain is a ghost | mutation: delete a real command brain, leave its mirror |
+| 4 | Neither ghost sweep can pass vacuously | mutation: point the glob at an empty directory |
+
+Every one runs against **real tree bytes** in a throwaway copy, not shapes I imagined. Baseline
+must be 0 FAILs first, or the battery proves nothing.

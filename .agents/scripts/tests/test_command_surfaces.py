@@ -107,9 +107,9 @@ def is_launcher_for(body: str, brain: str, cmd_name: str) -> bool:
     return fm_field(body, "description") == fm_field(brain, "description")
 
 
-def platforms(cmd: Path) -> tuple[str, ...]:
+def platforms_of(text: str) -> tuple[str, ...]:
     """Same parse as sync-agents' Get-CommandPlatforms: absent = universal, [] = nowhere."""
-    lines = read(cmd).splitlines()
+    lines = text.splitlines()
     if not lines or lines[0].strip() != "---":
         return ALL
     for ln in lines[1:60]:
@@ -119,6 +119,28 @@ def platforms(cmd: Path) -> tuple[str, ...]:
         if m:
             return tuple(x.strip().strip("\"'").lower() for x in m.group(1).split(",") if x.strip())
     return ALL
+
+
+def platforms(cmd: Path) -> tuple[str, ...]:
+    return platforms_of(read(cmd))
+
+
+def mirror_place_error(platform: str, pl: tuple[str, ...], present: bool,
+                       hand_owned_door: bool) -> bool:
+    """Does a mirror door sit on a surface its command does not claim?
+
+    The skill doors have asserted this in BOTH directions since SCC-66 - this file's own header
+    says "a door in the wrong place is exactly as wrong as a missing one" - but the two MIRROR
+    surfaces only ever asserted the missing direction. Now they assert both.
+
+    ⛔ `hand_owned_door` is the ONE exemption, and it is EARNED by the caller, never announced:
+    the engine derives generated doors from `platforms:` and makes no such promise for files in
+    `$excluded`, so the exemption applies only while the hand-owned door itself declares the
+    surface it is sitting on. See the call site.
+    """
+    if not present or platform in pl:
+        return False
+    return not hand_owned_door
 
 
 def main() -> int:
@@ -146,12 +168,30 @@ def main() -> int:
     # regenerating both hand-owned workflows and shrinking $excluded to just INDEX.md is a
     # perfectly legitimate future state, and it would have failed with the actively
     # misleading message "not guessed" - when the list had been read correctly.
+    # Only INDEX.md is legitimately SOURCELESS - see the ghost check near the end of this file,
+    # where the difference between this set and `hand_owned` is load-bearing.
+    SOURCELESS = {"INDEX.md"}
     unknown = sorted(n for n in hand_owned
                      if n != "INDEX.md" and not (ROOT / ".agents/workflows" / n).is_file())
     c.check("the hand-owned workflow list was READ from the sync engine, not guessed",
             "INDEX.md" in hand_owned and not unknown,
             f"parsed {sorted(hand_owned)} from $excluded; names with no such workflow: "
             f"{unknown}")
+
+    # ⭐ What makes the hand-owned exemption below EARNED. A file in `$excluded` is exempt from
+    # "does its command claim antigravity?" because the engine never derives it from `platforms:`
+    # - `smh-adviser-board` declares `[claude, opencode, codex]` yet keeps a hand-authored
+    # Antigravity door, and that is correct. But the exemption survives only while the door
+    # itself says it belongs here. Parsed with the SAME rule the engine uses (absent = universal),
+    # so it fails CLOSED on the shape that matters: a hand-owned workflow declaring
+    # `platforms: [claude]` while sitting in Antigravity's surface, exempt from every other check.
+    disowned = sorted(n for n in hand_owned - SOURCELESS
+                      if (ROOT / ".agents/workflows" / n).is_file()
+                      and "antigravity" not in platforms_of(read(ROOT / ".agents/workflows" / n)))
+    c.check("every hand-owned workflow declares the surface it sits on",
+            not disowned,
+            f"{disowned} - excluded from the sync AND from the placement check, so a wrong "
+            f"`platforms:` here is invisible to everything else")
 
     c.check("the sync engine states the door model and both retirements",
             "THE DOOR MODEL" in sync_ps1
@@ -191,13 +231,47 @@ def main() -> int:
                 if GEN in body and not is_launcher_for(body, read(cmd), cmd.name):
                     bad_body.append(str(sk.relative_to(ROOT)))
 
-        if "opencode" in pl and not (ROOT / ".opencode/commands" / cmd.name).is_file():
+        # ── The mirror surfaces, BOTH directions ──────────────────────────────
+        # Missing was always asserted; misplaced never was. The engine purges a mirror whose
+        # command stopped claiming that platform (`Sync-CommandDir`'s `$masterNames` branch;
+        # `Sync-AntigravityWorkflowMirror`'s `$stale`), so a misplaced door means the reach
+        # changed and NOBODY RAN THE SYNC - which is exactly how SCC-77 shipped stale doors.
+        oc_here = (ROOT / ".opencode/commands" / cmd.name).is_file()
+        ag_here = (ROOT / ".agents/workflows" / cmd.name).is_file()
+        if "opencode" in pl and not oc_here:
             missing_oc.append(name)
-        if "antigravity" in pl and not (ROOT / ".agents/workflows" / cmd.name).is_file():
+        if "antigravity" in pl and not ag_here:
             missing_ag.append(name)
+        # hand_owned_door is False for opencode, per-surface like the launcher exemption (A-8):
+        # `Sync-CommandDir` has no exclusion list at all - every file it recognises it manages.
+        if mirror_place_error("opencode", pl, oc_here, hand_owned_door=False):
+            wrong_place.append(f"{name}: does not claim opencode, but .opencode/commands has it")
+        # EARNED AT THE POINT OF USE: hand-owned is not enough on its own - the door must also
+        # declare this surface. `disowned` above is not redundant with this; it catches the case
+        # placement cannot see, where the COMMAND claims antigravity and the door denies it.
+        hand_ag = (cmd.name in hand_owned and ag_here
+                   and "antigravity" in platforms_of(read(ROOT / ".agents/workflows" / cmd.name)))
+        if mirror_place_error("antigravity", pl, ag_here, hand_owned_door=hand_ag):
+            wrong_place.append(f"{name}: does not claim antigravity, but .agents/workflows has it")
 
     c.check("every claude/codex-eligible command has its skill door",
             not missing_skill, f"{len(missing_skill)} missing: {missing_skill[:6]}")
+
+    # Controls for the placement rule, both directions - a sweep that is clean today says
+    # nothing about whether the check has teeth.
+    OC_ONLY = ("opencode",)
+    c.check("door-place CONTROL: a mirror on a claimed surface is fine",
+            not mirror_place_error("opencode", OC_ONLY, True, False))
+    c.check("door-place CONTROL: a mirror on an UNCLAIMED surface is caught",
+            mirror_place_error("antigravity", OC_ONLY, True, False),
+            "the reach changed and nobody ran /smh-sync-agents")
+    c.check("door-place CONTROL: a hand-owned door on an unclaimed surface is exempt",
+            not mirror_place_error("antigravity", OC_ONLY, True, True),
+            "smh-adviser-board is real: hand-authored Antigravity door, command claims three "
+            "other platforms - and the exemption is earned above, not announced")
+    c.check("door-place CONTROL: no door, no error (the condition is not inverted)",
+            not mirror_place_error("antigravity", OC_ONLY, False, False))
+
     c.check("no door sits on a platform its command does not claim",
             not wrong_place, f"{len(wrong_place)}: {wrong_place[:4]}")
     c.check("every generated launcher points at its own command body, END TO END",
@@ -363,7 +437,7 @@ def main() -> int:
     c.check("every skill door carries frontmatter with a description",
             not no_fm, f"{len(no_fm)}: {no_fm[:6]}")
 
-    # ── Stale mirrors: a workflow with no command source is a ghost ───────────
+    # ── Stale mirrors: a door with no command source is a ghost ───────────────
     cmd_names = {p.name for p in (ROOT / ".agents/commands").glob("*.md")}
     # ⛔ The ghost exemption is NOT `hand_owned`, and the difference is load-bearing. Only
     # `INDEX.md` is legitimately SOURCELESS; the other two hand-owned workflows are variants
@@ -371,15 +445,35 @@ def main() -> int:
     # reusing `hand_owned`) made this check go silent on the one shape it most needs to
     # catch - a hand-authored launcher left pointing at a brain that was deleted. Verified:
     # delete `.agents/commands/smh-adviser-board.md` and the loose version reports 0 ghosts.
-    SOURCELESS = {"INDEX.md"}
-    ghosts = sorted(p.name for p in (ROOT / ".agents/workflows").glob("*.md")
-                    if p.name not in cmd_names and p.name not in SOURCELESS)
+    wf_present = sorted(p.name for p in (ROOT / ".agents/workflows").glob("*.md"))
+    ghosts = [n for n in wf_present if n not in cmd_names and n not in SOURCELESS]
     c.check("no ghost workflow mirrors (every one has a command source)",
             not ghosts, f"{len(ghosts)}: {ghosts[:6]}")
     orphaned_hand = sorted(n for n in hand_owned - SOURCELESS if n not in cmd_names)
     c.check("every hand-owned workflow still has the command it is a variant of",
             not orphaned_hand,
             f"{orphaned_hand} - excluded from the sync, so nothing else would notice")
+
+    # ⭐ The SAME check for opencode, which never had one - and here it is not a backstop, it is
+    # the ONLY thing that would ever notice. `Sync-CommandDir` runs for opencode WITHOUT
+    # `-Mirror` (sync-agents.ps1:821), and its purge branch ends
+    # `else { $false }  # local: keep foreign/project-own files`. Delete a command brain and its
+    # opencode door is not eligible, no longer in `$masterNames`, and not a mirror - it falls to
+    # that final `$false` and is kept FOREVER, still offering an opencode agent a retired flow.
+    # The workflows mirror prunes, which is why that side has been guarded all along.
+    oc_present = sorted(p.name for p in (ROOT / ".opencode/commands").glob("*.md"))
+    oc_ghosts = [n for n in oc_present if n not in cmd_names]
+    c.check("no ghost opencode mirrors (every one has a command source)",
+            not oc_ghosts,
+            f"{len(oc_ghosts)}: {oc_ghosts[:6]} - the opencode sync KEEPS these; only this "
+            f"check will ever say so")
+
+    # Both sweeps get A-3's guard: "0 ghosts" out of 0 files read is the vacuous green, and a
+    # renamed cache directory is exactly how you get one. Today: 34 workflows, 53 opencode.
+    c.check("the ghost sweeps read a real number of doors (not two empty directories)",
+            len(wf_present) >= 20 and len(oc_present) >= 40,
+            f"workflows={len(wf_present)} opencode={len(oc_present)} - a glob resolved to "
+            f"nothing, so every ghost check above passed on an empty set")
 
     # ── The docs agree with the engine ────────────────────────────────────────
     agents_md = read(ROOT / "AGENTS.md")
