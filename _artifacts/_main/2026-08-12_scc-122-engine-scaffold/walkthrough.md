@@ -127,9 +127,14 @@ absolute or `C:/` paths, no `TODO`/`FIXME`. The eight `token` matches are the En
 
 ## Code Review (2026-08-12)
 
-Verdict: PASS @ <PENDING-SHA>
-Suite evidence measured at the same sha: `run_all.py` 17/17 files exit 0 · `workflow_lint
---toolkit-only` 0 errors 0 warnings exit 0 · `test_review_engine.py` 233/233 exit 0.
+Verdict: PASS @ e77e180
+Suite evidence measured on that code (the review's fixes are the final change; only this
+walkthrough's sha stamp and the Dev Record follow it): `run_all.py` 17/17 files exit 0 ·
+`workflow_lint --toolkit-only` 0 errors 0 warnings exit 0 · `test_review_engine.py` 233/233 exit 0.
+
+**The verdict at the first commit `4ce6948` would have been FAIL** — the guard could not fail on
+content, which the command's own rules name as a FAIL condition. PASS applies to `e77e180`, after
+all 21 findings were applied and re-verified.
 
 **Scope** — the 16-file diff `main...HEAD` plus the review fixes below (engine markdown, its cache
 copy, the guard test, both INDEX files, the sync manifest, two artifact plans).
@@ -238,3 +243,13 @@ and the reasoning for its shape.
    messages. `origin/main` == local `main`, so there is nothing to absorb.
 3. **Sibling lanes: none live** — `git worktree list` shows only `main` and this lane. No
    landing-order dependency.
+
+## Your Actions
+
+- [ ] **Merge** — `/smh-close-task-merge-tree` is the operator's per-merge sign-off, and typing it
+      authorises exactly this one merge. The lane is merge-ready: `main` has not moved since the
+      fork, `merge-tree` writes cleanly, no sibling lane is live.
+- [x] Board state — the parent **SCC-116** carries `In Progress` (the board refuses `start` on a
+      Subtask and says so); SCC-122 stays a subtask row. Agent-handled.
+- [x] Dev Record filed on SCC-122.
+- [x] All 21 review findings applied and re-verified — nothing deferred, nothing dismissed.
