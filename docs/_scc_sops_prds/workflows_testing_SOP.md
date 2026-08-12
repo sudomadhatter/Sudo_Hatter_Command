@@ -885,8 +885,40 @@ test "$(git -C "$REPO" rev-parse --abbrev-ref HEAD)" = "main" || { echo "NOT ON 
 > **What it does not do — worth knowing before you trust it.** An agent can write files, so an agent
 > can write a token. This is not a security boundary against a determined agent and is not sold as
 > one. It converts a *silent* violation into a *deliberate, traceable* one, and it closes the drift
-> failure described above. Merges through the GitHub web UI or `gh pr merge` never reach a local hook
-> at all; that gap is tracked separately under SCC-75.
+> failure described above.
+>
+> ⭐ **The second half — merges made on GitHub itself (2026-08-12, SCC-118).** Everything above runs
+> on a computer, at `git push`. A merge you perform in the **browser** — the green *Merge pull
+> request* button — or that a web/mobile agent performs through the API happens on GitHub's servers
+> and never touches your machine. The hook is not skipped there; it does not exist. That is how
+> PR #2 landed on `main` on 2026-08-12: authorised, nothing bad in it, and no gate able to look.
+>
+> `main` now also requires a green GitHub check called **`main-write-gate`**, which runs the same
+> enforcement suite plus a check that the merge came from an `epic/*` or `chore/*` branch with a
+> real ticket key. **It is not a copy of the token gate.** The token proves *you said yes, once*;
+> the check proves *the change is fit to land*. The token half genuinely cannot be moved to a
+> server — it lives in `.git/`, and restricting *who* may merge does not work here because the web
+> agent merges **as you**, on your own GitHub account. So the two halves guard different things and
+> neither replaces the other.
+>
+> **What changes for you when you ship:** `/smh-close-task-merge-tree` now waits a couple of minutes
+> for that check before it pushes `main`. It handles this itself — it sends the merge commit to a
+> throwaway `gate/main-<sha>` branch, waits, then mints the token and pushes. Nothing new to type.
+> If the check is red, **stop**; do not disable the ruleset to get past it.
+>
+> ⚠ **This covers THIS repo only.** `/cicd-push-e2e` ships project epics (AviationChat, etc.) and
+> those repos publish no such check — adding it to one is that project's own ticket. It deliberately
+> does **not** wait, or it would hang forever on a check that never runs.
+>
+> **If CI is down and `main` must move** — the server-side twin of deleting `MAIN-PUSH-ENFORCE`:
+>
+> ```bash
+> gh api repos/{owner}/{repo}/rulesets                       # find the id
+> gh api -X PUT repos/{owner}/{repo}/rulesets/<id> -f enforcement=disabled
+> ```
+>
+> Re-arm it with `-f enforcement=active` the moment CI is back. `run_all.py` will fail on this
+> machine for as long as it is disabled, which is the point — a disarmed gate should be loud.
 >
 > **If you are legitimately stuck:** `git push --no-verify` once, or delete
 > `.agents/scripts/git-hooks/MAIN-PUSH-ENFORCE` to disarm it entirely. Both are loud and neither is
@@ -1161,6 +1193,7 @@ flowchart LR
         SC["sop_currency.py — ARMED\nrefuses a usage change that\nleaves this page behind"]
         JF["jira_feed.py\nputs the outline and the\ndev record ON the ticket\n— and raises/clears the Bug flag"]
         TP["task_preflight.py\ndecides the LANE:\nis anything deployable in here?"]
+        MW["main_write_gate.py — ARMED\nthe half that runs ON GITHUB\nrequired check before main moves"]
     end
     R --> GR
     M --> CP
@@ -1169,6 +1202,7 @@ flowchart LR
     S --> JF
     Q --> JF
     T --> TP
+    T --> MW
     T --> JF
     L -->|"you confirm the ticket"| JF
     W --> CP
@@ -1196,6 +1230,8 @@ flowchart LR
 | `tests/test_command_surfaces.py` | **A `/` menu that lies — including a door that still reads last month's steps.** It holds the one-door-per-platform contract: every command has exactly one door on each platform its `platforms:` claims, none on a platform it doesn't, no ghosts, and the retired doors stay retired. ⚠ That sentence was **true of the skill doors only** for *placement* until SCC-113's follow-on; the two *mirror* surfaces asserted the missing direction and never the misplaced one. For *ghosts* it was never true of any surface — `.agents/skills` and `.claude/skills` are unswept to this day. ⛔ **Two claims in this row were wrong and are corrected here (SCC-113):** it said opencode's sync *"keeps a door whose command was deleted, forever"* — it does not; `Invoke-ManifestPurge` (`sync-agents.ps1:822`) retires it on the next run, and the original claim came from reading `Sync-CommandDir` in isolation and stopping one line short of its caller. The true and narrower gap: `Invoke-ManifestPurge` (`sync-agents.ps1:365`) only removes **a name the last run recorded writing**, so a door that predates the manifest, was hand-dropped, or is genuinely this repo's own survives indefinitely and nothing else notices — which is exactly what the `project-own.txt` keep-list adjudicates, and the opencode ghost sweep honours it. That file is staged into `.agents/` by the first `sync-agents -Reconcile` **that finds orphans** (with none, it short-circuits and writes nothing) and **does not exist until then**; creating an empty one is not harmless, because an authored-but-empty list reads as "purge every unclaimed orphan" where an absent one blocks purging entirely. A hand-owned Antigravity workflow is exempt from placement only while the door **explicitly** declares that surface; since SCC-113 silence no longer counts as a declaration (absent `platforms:` used to parse as universal, so the exemption could be earned by saying nothing). **Since SCC-113 it also checks door CONTENT**, not just presence: a full mirror must be byte-identical to its command body, and a thin launcher is exempt only while it genuinely points at *that* body — the marker alone does not excuse drift. That gap shipped a live break. SCC-77 landed the armed `main` write gate without running `/smh-sync-agents`, so opencode and Antigravity kept the pre-token merge steps and would have walked into a push the gate refuses, with nothing telling them to mint one; SCC-94 had already recorded the same class of drift as *"noted, not fixed."* Claude and Codex never saw it, because their doors are launchers that read the brain live — which is exactly why a human spot-check missed it. The engine's hand-owned list is **read from `sync-agents.ps1`**, never restated, after a copied subset produced two false positives on its first run. |
 | `tests/test_sops_prds_folder.py` | **The SOPs and PRDs going stale again.** Pins the 11-doc manifest in `docs/_scc_sops_prds/`, checks its `INDEX.md` against the directory in BOTH directions, verifies every markdown link resolves and every `/command` reference names a real command master, and asserts the SOP gate's two halves still point at the same file. |
 | `pre-push-main-approval.sh` | **Anything reaching `main` without a fresh, single-use sign-off.** The `pre-push` hook refuses a push landing on `main` unless a token minted for that exact sha is present, and the token is spent on use — so one approval buys exactly one push. It closed the hole where six merges rode a single sign-off. *(Shipped 2026-08-10 by SCC-77; this row was owed and is added here.)* |
+| `main_write_gate.py` | **A merge made on GitHub itself reaching `main` with no gate having run.** Everything in the row above happens on your computer, at `git push`; a merge performed in the browser or through the API happens on GitHub's servers and never touches your computer, so that hook is not bypassed — it is **absent**. This is the half that runs *there*, as a required check called `main-write-gate`: the real enforcement suite, the toolkit lint, and a check that the merge came from an `epic/*` or `chore/*` branch with a key this repo answers to (and, for a pre-flighted local merge, that `main` advances by exactly one merge of a genuinely pushed branch). ⛔ **It is not a copy of the token gate and must not be described as one** — the token proves *you said yes*, this proves *the change is fit*. The authorisation half cannot move to a server: the token lives in `.git/`, and restricting *who* may merge cannot work when the web agent merges under your own account. Covers **this repo only**; a project repo gaining the same check is its own ticket. *(SCC-118, 2026-08-12.)* |
+| `tests/test_main_ruleset_armed.py` | **The GitHub half being switched off without leaving a trace in any commit.** The ruleset lives on the server and can be deleted or disabled from a browser; no file in this repo would change. This asks GitHub directly, on every suite run, and **fails hard** if the ruleset is missing, disabled, or has picked up a bypass actor — a bypass for "repository admin" would re-open the whole hole while still *looking* armed, because the agent merges as you. When it cannot reach GitHub at all (offline, no `gh`, no credentials) it prints `[SIGNAL]` and passes: that is refusing to claim knowledge it does not have, not a soft gate. |
 | `hooks_armed.py` | **Every other check on this page reporting green while switched OFF.** Three ways a gate dies quietly, and it reports all three: `core.hooksPath` is per-machine and git never carries it, so a fresh clone reads an empty `.git/hooks` and *nothing* runs; every dispatcher in `.githooks/` ends `[ -x "$SCRIPT" ] || exit 0`, so a deleted or merely non-executable inner script makes the hook exit 0 with **no output at all**; and deleting a `<NAME>-ENFORCE` flag downgrades a gate from *reject* to *warn*, which reads as clean success because hook output is rendered nowhere you look. It asks **git** what is tracked rather than listing the directory — a listing cannot tell *"this gate was deleted"* from *"this repo never had it"*, and an early cut of this script reported ARMED on a repo whose three gate scripts had all been removed. It folds into `task_preflight.py`, which now prints `GATES: ARMED` or `NOT ARMED`; on a repo that **claims** gates and is not running them the words *"clear to close out and merge"* no longer appear at all. It **reports and never arms**: changing your git config for you would be worse than telling you, and the one-line remedy is printed. |
 | `split_sprint_status.py` | The one-time migration that shrank the board. |
 | `wf_common.py` | Shared plumbing the others import. You'll never call it. |
