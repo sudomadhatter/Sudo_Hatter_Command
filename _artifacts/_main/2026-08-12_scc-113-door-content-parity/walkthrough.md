@@ -8,7 +8,7 @@ ArtifactMetadata:
 
 # SCC-113 follow-on — the door gate could not see a stale door
 
-**Branch** `chore/SCC-113-door-content-parity` · **Lane** LOCAL · **HEAD** `97dc770`
+**Branch** `chore/SCC-113-door-content-parity` · **Lane** LOCAL · **HEAD** `5fef0a8`
 **Plan** [implementation_plan.md](implementation_plan.md) · **Ticket** SCC-113 (reopened)
 
 ---
@@ -86,11 +86,18 @@ support, observed rather than asserted.
 ## Code Review (2026-08-12)
 
 ```
-Verdict: PASS @ 97dc770
+Verdict: PASS @ 5fef0a8
 ```
 
 One clean-room pass (`bmad-review-adversarial-general`, subagent, no context, Opus), returning
 **CONCERNS** with one HIGH. Everything it claimed, it verified by running. All findings closed.
+
+⚠ **What that verdict does and does not cover.** The clean-room pass ran at `97dc770`. The addendum
+below (`5fef0a8`) landed **after** it, on the operator's ruling, and has **not** had its own
+independent pass — it is covered by a five-attack mutation battery against real tree bytes, not by a
+second reviewer. Stated here rather than left for someone to infer from the shas. Three consecutive
+rounds in this lane shipped guards that failed **open** and were caught only by a clean-room pass, so
+this is a real gap and not a formality; say the word and it runs.
 
 | # | Sev | Finding | Closed by |
 |---|---|---|---|
@@ -102,12 +109,14 @@ One clean-room pass (`bmad-review-adversarial-general`, subagent, no context, Op
 | **AC 3** | — | Claimed *"the one that earns the lane"*, verified **by hand, recorded nowhere** | shipped as a test, real bytes + loud fallback |
 | **plan** | — | Blast radius said `sync-agents.ps1` "not written" while the diff hard-couples to its PowerShell quoting; A-3 said "three caches" (it is two, and no skill doors) | corrected in the plan's post-review addenda |
 
-**Found, deliberately NOT fixed.** `.opencode/commands` has no ghost check, and neither mirror
+**Found, deliberately NOT fixed.** ~~`.opencode/commands` has no ghost check, and neither mirror
 surface asserts a door belongs on the platform its `platforms:` claims — enforced for *skill* doors
 only, though this file's own docstring says a door in the wrong place is as wrong as a missing one.
 Both verified green by the reviewer, ~4 lines each. **Pre-existing and outside this lane's acceptance
 list**; widening scope mid-lane is the drift Phase 2 exists to stop. Recorded in the plan so it is
-captured rather than lost.
+captured rather than lost.~~
+→ **Both FIXED on the operator's ruling** — see the section below. Neither was ~4 lines, and the
+opencode one was not the harmless tidy-up this paragraph implies.
 
 ### Step 0.7 — blast radius against current `main`
 
@@ -126,8 +135,64 @@ That obligation was written into the plan before the merge, and SCC-110's own co
 
 ---
 
+## Addendum — the two recorded gaps, closed (2026-08-12)
+
+The operator took the "deliberately not fixed" pair and said fix them. Both are now in.
+
+### One of them was not cosmetic
+
+I recorded `.opencode/commands` having no ghost check as tidy-up. Reading the engine instead of
+assuming: `Sync-CommandDir` runs for opencode **without `-Mirror`** (`sync-agents.ps1:821`), and its
+purge branch ends `else { $false }  # local: keep foreign/project-own files`. Delete a command brain
+and its opencode door is not eligible, no longer in `$masterNames`, and not a mirror — so it falls to
+that final `$false` and is **kept forever**, still handing an opencode agent a retired flow. The
+workflows mirror prunes, which is why that side has been guarded since long before this lane. The two
+surfaces were never equivalent, and my note said they were.
+
+### One real inconsistency surfaced, and it is not a bug
+
+The placement sweep found exactly one hit: `.agents/workflows/smh-adviser-board.md` exists while its
+command declares `platforms: [claude, opencode, codex]`. That workflow is **hand-authored** — in the
+engine's `$excluded`, carrying `platforms: [antigravity]` itself. The engine derives generated doors
+from `platforms:` and makes no such promise for excluded files. So it is exempt — but **earned at the
+point of use**, not a `continue`: the exemption holds only while the door declares the surface it sits
+on, parsed with the same rule the engine uses. To smuggle a misplaced door past it you must edit
+PowerShell *and* write antigravity frontmatter into the file, which is the deliberate act of authoring
+a hand-owned Antigravity door.
+
+A second check covers what placement structurally cannot see: a door denying a surface its **command**
+claims. Placement never fires there, and nothing else looks.
+
+### Mutation battery — five attacks on a throwaway copy of the real tree
+
+Baseline **0 FAILs** (33/33). Every attack caught:
+
+| Attack | FAILs |
+|---|---|
+| a command drops `opencode`, its mirror left behind | **2** |
+| a command drops `antigravity`, its workflow mirror left behind | **2** |
+| the hand-owned Antigravity door denies the surface it sits on | **2** |
+| a command brain deleted — the opencode sync **keeps** its door | **2** |
+| a cache directory renamed, so the ghost sweeps read nothing | **3** |
+
+The first attempt at attack 1 **did not land** — I picked a command with no `platforms:` key, so the
+mutation was a no-op and the assert caught it. Recorded because a mutation that silently fails to
+mutate is a green that proves nothing, which is the whole failure mode this battery exists to avoid.
+
+Both ghost sweeps also picked up A-3's non-empty guard, in the same idiom as the parity sweep —
+shipping a guarded new check beside an unguarded old one is incoherent.
+
+**The SOP was ahead of the code.** Its row already claimed "none on a platform it doesn't, no ghosts";
+that held for skill doors only. The row now says which surfaces were covered and why the opencode side
+is different.
+
+**Gates:** `run_all` **16/16 exit 0** (command surfaces **33/33**, was 26/26) · `workflow_lint
+--toolkit-only` 0 errors 0 warnings exit 0 · `py_compile` 0.
+
+---
+
 ## Your Actions
 
 1. **Close out** — `/smh-close-task-merge-tree`, `--expect-key SCC-113`.
-2. **Nothing else owed.** Both items from the parent lane are settled: AGY is by design, this was
-   the other one.
+2. **Nothing else owed.** Both items from the parent lane are settled: AGY is by design, and the
+   other one is now fixed rather than recorded.
