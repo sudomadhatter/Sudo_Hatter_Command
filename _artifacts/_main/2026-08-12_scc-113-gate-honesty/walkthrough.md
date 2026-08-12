@@ -27,7 +27,8 @@ two of them blocked correct work while claiming to protect it.
 - [x] Gates run **bare**
 - [x] **Code review — `CONCERNS @ 6cd01c7`.** Three HIGHs; two were defects in code this lane
       wrote and are fixed, one is the revert blocking this lane's own close-out.
-  - ⛔ **H-1 is unresolved and is an operator decision.** See `## Your Actions`.
+  - ✅ **H-1 resolved 2026-08-12: the operator chose option A** — the positive-ancestry
+        rule, built the same day at `866d185`. See `## Your Actions` and the review addendum.
 
 ---
 
@@ -224,6 +225,19 @@ instead of the claim is how this ticket got here.
 
 ## Your Actions
 
+### ✅ H-1 RESOLVED (2026-08-12) — the operator chose option A, and the rule is built
+
+At hand-back the operator picked **A: the positive-ancestry rule**, which turned the queued
+scope into directed scope. Built the same day as `866d185`: a `task.yaml` already recorded
+**blob for blob on `origin/main`** is a landed lane's receipt and reads as history; anything
+short of that positive evidence — unlanded, edited since landing, no mainline to ask — blocks
+exactly as hard as before. This repo's preflight now shows the two former ERRORs as settled
+INFOs while this lane's own manifest still binds. Evidence, red-first numbers, and the mutation
+battery are in the addendum under `## Code Review`.
+
+The block below is preserved as the decision record; its "will not land this branch" sentence
+was true when written and is what the operator was asked to resolve.
+
 ### ⛔ BLOCKER — this lane cannot mechanically close, and the revert is why
 
 `task_preflight.py`, run bare against this repo after the revert:
@@ -261,18 +275,24 @@ review finding is bigger than a trivial patch. Options, with my recommendation f
 
 ⚠️ I have **not** picked one. Nothing is merged and nothing is transitioned.
 
+→ **2026-08-12, at hand-back: the operator picked A.** Built the same day — see the resolution
+block at the top of this section.
+
 ### State
 
-- Branch `chore/SCC-113-gate-honesty` pushed. **The tree is not clean** — see the correction
-  below; a stale "tree clean" claim stood here and is the second time this lane made it.
-- SCC-113 is **In Progress**; this lane has filed **no** Dev Record — proved, not assumed:
-  `check --story scc-113-gate-honesty` → exit 2.
+- Branch `chore/SCC-113-gate-honesty` pushed and clean at each stop since the mid-review
+  correction (a stale "tree clean" claim stood here once — the second time this lane made it —
+  so the claim is now re-verified at every write, never carried forward).
+- SCC-113 is **In Progress**; this lane's Dev Record is **filed and verified both directions**:
+  `check --key SCC-113` → exit 0 (3 records, one per lane) and
+  `check --story scc-113-gate-honesty` → exit 0. An earlier revision of this section recorded
+  the pre-filing state (`--story` → exit 2 at that time), proved rather than assumed.
 
 **Queued, not done here:**
 
 | Item | Why it is not in this lane |
 |---|---|
-| **The positive-ancestry preflight rule** (option A above) | The revert removed the wrong answer. The right one needs its own red and its own lane — and it is now this lane's blocker. |
+| ~~**The positive-ancestry preflight rule** (option A above)~~ **pulled IN-lane 2026-08-12: the operator chose A at hand-back.** Built at `866d185` with its own red (81/84 → 84/84) — see the review addendum | The revert removed the wrong answer. The right one needed its own red, and it got it — in this lane, on the operator's word |
 | Ghost sweeps for `.agents/skills` and `.claude/skills` | Correction 3 found them unswept. Widening scope mid-lane is the drift Phase 2 exists to stop. |
 | `find_devrecord`'s id match is plain containment | Pre-existing on the **write** path, where over-matching is conservative. The **read** gate no longer depends on it (see H-3). |
 | Wire `--story "$BRANCH_SLUG"` into `smh-close-task-merge-tree.md:245` | M-4: no Task surface passes `--story` to `check`, so the close-out cannot yet verify its *own* lane filed a record. A command-body change is a usage surface with door regeneration — not a review fix. |
@@ -290,6 +310,11 @@ after the last code change.
 the verdict is held down by **H-1**, which is not a code defect but a design consequence that
 **mechanically blocks this branch's own close-out**. See `## Your Actions`. The preflight will
 refuse regardless of this line.
+
+> **Resolution (2026-08-12, post-verdict):** the operator chose option A at hand-back; the
+> positive-ancestry rule landed as `866d185` and this repo's preflight no longer blocks on the
+> two landed lanes' receipts. The verdict line above is preserved exactly as issued; the
+> addendum at the end of this section carries the evidence.
 
 **Scope:** 11 files, `main @ 2e8aa46` → `chore/SCC-113-gate-honesty @ 6cd01c7`, resolved from
 `rev-parse`, not from belief.
@@ -390,3 +415,50 @@ unexercisable disk path, and the workflows-sweep scope cut was re-derived indepe
 H-2, H-3, M-1, M-2, M-3, L-1..L-5 fixed and committed as `6cd01c7`, each with an assertion seen
 red first. H-1 and M-4 deferred with reasons above. Evidence totals and the `## Your Actions`
 section above were rewritten to match this run — no pre-review numbers left standing.
+
+### Addendum (2026-08-12, post-verdict) — H-1 resolved: the positive-ancestry rule
+
+**Operator direction at hand-back: option A.** One code commit, `866d185`, same day as the
+verdict, following the door-content-parity precedent: a post-verdict addendum carries its own
+mutation battery instead of a second clean-room pass.
+
+**The rule.** `manifest_settled()` in `task_preflight.py`: a `task.yaml` is settled when this
+exact receipt — blob for blob, `git hash-object` against `rev-parse <base_ref>:<path>` — is
+already recorded on the mainline (`base_ref()` is the file's existing convention: `origin/main`,
+or `main` when there is no remote). Settled receipts become INFO — *"a landed lane's receipt,
+not this lane's contract"* — and only unlanded ones bind the run. All-settled-with-no-live
+still **warns**, so a lane that never wrote its manifest cannot ride the exemption. Every way
+the probe can fail (no mainline, path never merged, edited since landing) answers NOT settled:
+absence of evidence never relaxes the gate.
+
+**Red first — 81/84 → 84/84.** Three assertions watched fail against the pre-fix code: the
+settled sibling skipped, all-settled-warns, and the real H-1 shape (two landed lanes plus the
+live one → exit 0). One existing control was **rebuilt, not weakened**: *"SCC-64 a manifest
+naming a DIFFERENT branch blocks"* had a fixture whose receipt was committed and pushed to main
+— under the new semantics that fixture IS the settled case, so the control now stages a
+genuinely unlanded receipt and still demands exit 2.
+
+**Mutation battery — 4 mutations, each caught, the file diff-verified byte-clean after each:**
+
+| # | Mutation | Caught by |
+|---|---|---|
+| M1 | `manifest_settled` returns True unconditionally | drift, edited-after-landing, absent-evidence — 3 red |
+| M2 | path exists on mainline, blob identity ignored | edited-after-landing |
+| M3 | the all-settled warn deleted | all-settled-warns (exit 0 where 1 is demanded) |
+| M4 | settled evidence drawn from the branch under judgment | drift, edited-after-landing, absent-evidence — 3 red |
+
+M4's first attempt appended a comment that swallowed the `if`-line's trailing colon — a
+SyntaxError reds the whole suite and proves nothing about any assertion. Redone compiling
+(`py_compile` checked first), then caught semantically. Recorded because a battery that counts
+a syntax error as a kill is decoration.
+
+**Live, this repo, at `866d185`:** the two H-1 `[ERROR] manifest:` lines are now
+`[INFO] … already recorded on origin/main - a landed lane's receipt, not this lane's contract`,
+and this lane's own manifest still binds (`agrees: SCC-113 on chore/SCC-113-gate-honesty`).
+`run_all.py` **16/16 files exit 0** (preflight suite 84/84) · `workflow_lint --toolkit-only`
+**0 errors 0 warnings exit 0** — all bare. The SOP moved in the same commit (the gates-table
+row and the SCC-64 close-out blockquote).
+
+**Known bound, stated:** §1d (`secondary_repos`) still reads ALL manifests carrying the key,
+settled or not. The settled lanes here declare none, so nothing fires today; if a landed lane
+with secondaries ever re-blocks a follow-on, it is this same fix one section lower.

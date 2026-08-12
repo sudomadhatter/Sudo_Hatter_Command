@@ -341,3 +341,11 @@ Audit verdict: GO
 GO **conditional on the plan as amended above** — 2.4 rewritten, 2.1 cut to one sweep, the
 acceptance table replacing the prose list. 2.4a is a blocker: this lane cannot close until
 `jira_feed.py check --key SCC-113` exits 0.
+
+## Addendum (2026-08-12) — H-1: option A pulled in-lane by the operator
+
+This plan queued the positive-ancestry preflight rule as its own future lane; the review then
+showed the revert makes it THIS lane's close-out blocker (H-1). At hand-back the operator chose
+option A, which makes the scope expansion a directed decision, not drift. Built at `866d185`
+with its own red (preflight suite 81/84 → 84/84) and a 4-mutation battery — evidence in the
+walkthrough's review addendum.
