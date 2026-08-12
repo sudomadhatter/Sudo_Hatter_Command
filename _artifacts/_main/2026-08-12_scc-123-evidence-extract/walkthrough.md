@@ -72,25 +72,25 @@ still scored 67/67. The full 19-finding table with dispositions:
 
 | # | Sev | Where (at `6d51047`) | Failure scenario | Disposition |
 |---|---|---|---|---|
-| H-1 | HIGH | [evidence_extract.py:763](../../../.agents/scripts/evidence_extract.py#L763), `_safe_extract` :796 | `line_start: 1e400` → `int(inf)` raises `OverflowError`, escapes `pool.map`, every finding's evidence destroyed | applied — caught + per-finding isolation; guard :746 |
-| H-2 | HIGH | [evidence_extract.py:824](../../../.agents/scripts/evidence_extract.py#L824) | duplicate titles (expected for multi-lens fan-out) collapse onto one package with the wrong file's code | applied — output is a LIST in finding order; guard :538 |
-| H-3 | HIGH | guard rows rebuilt at :474/:731/:480/:469 | four content checks pass inverted implementations (67/67 each) | applied — path:line + marker anchors, 3-hunk middle-target fixture, head-decoy blast fixture, never-named negative; 12/12 mutants killed |
-| H-4 | HIGH | [evidence_extract.py:115](../../../.agents/scripts/evidence_extract.py#L115) | `.claude/worktrees/<lane>/` copies listed as importers/callers — another branch's code, unlabelled | applied — (parent,child) pair prune in walk + `_under_skip_dir`; guard :596 |
-| H-5 | HIGH | [evidence_extract.py:855](../../../.agents/scripts/evidence_extract.py#L855) | `PYTHONIOENCODING=cp1252` → `UnicodeEncodeError`; could not pack its own source on the PC | applied — both streams UTF-8 `errors=replace`; guard :697 |
-| M-6 | MED | [evidence_extract.py:704](../../../.agents/scripts/evidence_extract.py#L704) | 6 bad paths + 1 good → sliced before validation → empty pack, exit 0 | applied — cap counts files PACKED; guard row |
-| M-7 | MED | [evidence_extract.py:585](../../../.agents/scripts/evidence_extract.py#L585) | added `++ x` source line renders `+++ x` → treated as header → patch truncated + bogus key | applied — positional header detection; guard 5b rows |
-| M-8 | MED | [evidence_extract.py:252](../../../.agents/scripts/evidence_extract.py#L252) | `../../../../etc/hosts` read and printed as evidence | applied — every escaping candidate dropped, fallback included; guard :677 |
+| H-1 | HIGH | [evidence_extract.py:773](../../../.agents/scripts/evidence_extract.py#L773), `_safe_extract` [:806](../../../.agents/scripts/evidence_extract.py#L806) | `line_start: 1e400` → `int(inf)` raises `OverflowError`, escapes `pool.map`, every finding's evidence destroyed | applied — caught + per-finding isolation; guard :778 |
+| H-2 | HIGH | [evidence_extract.py:834](../../../.agents/scripts/evidence_extract.py#L834) | duplicate titles (expected for multi-lens fan-out) collapse onto one package with the wrong file's code | applied — output is a LIST in finding order; guard :538 |
+| H-3 | HIGH | guard rows rebuilt at :474 / :763 / :480 / :469 | four content checks pass inverted implementations (67/67 each) | applied — path:line + marker anchors, 3-hunk middle-target fixture, head-decoy blast fixture, never-named negative; 12/12 mutants killed |
+| H-4 | HIGH | [evidence_extract.py:115](../../../.agents/scripts/evidence_extract.py#L115), `_under_skip_dir` [:202](../../../.agents/scripts/evidence_extract.py#L202) | `.claude/worktrees/<lane>/` copies listed as importers/callers — another branch's code, unlabelled | applied — (parent,child) pair prune in walk + `_under_skip_dir`; guard :596 |
+| H-5 | HIGH | [evidence_extract.py:868](../../../.agents/scripts/evidence_extract.py#L868) | `PYTHONIOENCODING=cp1252` → `UnicodeEncodeError`; could not pack its own source on the PC | applied — both streams UTF-8 `errors=replace`; guard :729 |
+| M-6 | MED | [evidence_extract.py:714](../../../.agents/scripts/evidence_extract.py#L714) | 6 bad paths + 1 good → sliced before validation → empty pack, exit 0 | applied — cap counts files PACKED; guard row |
+| M-7 | MED | [evidence_extract.py:593](../../../.agents/scripts/evidence_extract.py#L593) | added `++ x` source line renders `+++ x` → treated as header → patch truncated + bogus key | applied — positional header detection; guard 5b rows |
+| M-8 | MED | [evidence_extract.py:252](../../../.agents/scripts/evidence_extract.py#L252) | `../../../../etc/hosts` read and printed as evidence | applied — every escaping candidate dropped, fallback included; guard :709 |
 | M-9 | MED | `_note` :151 + call sites | silent-empty/partial: nothing on stderr for skips, blown deadlines, degraded findings | applied — stderr notes everywhere the contract promises one |
 | M-10 | MED | guard §2b | four caps (callers 10 · cross-refs 10 · blast 5 · slice 1200) had no rows | applied — four rows, each with the cap proven to bite |
 | M-11 | MED | docstring + INDEX.md | both named `_import_specifiers`, which does not exist | applied — real names (`_python_module_names`/`_python_importers`/`_ts_importers`) |
 | M-12 | MED | docstring + guard header | both still claimed the discredited PATH-emptied proof | applied — sitecustomize wording with the `os.defpath` reason kept |
-| L-13 | LOW | `_extract_diff_hunk` :643 | dead `line is None` branch (caller always coerces) | applied — removed |
+| L-13 | LOW | `_extract_diff_hunk` [:653](../../../.agents/scripts/evidence_extract.py#L653) | dead `line is None` branch (caller always coerces) | applied — removed |
 | L-14 | LOW | `_extract_mentioned_file_paths` | space-check claimed dead | **dismissed** — live for the backtick regex, its other source; not dead code |
-| L-15 | LOW | guard :898 | third-party tripwire checked 2 names; `import numpy` passed | applied — every import vs `sys.stdlib_module_names` |
+| L-15 | LOW | guard :959 | third-party tripwire checked 2 names; `import numpy` passed | applied — every import vs `sys.stdlib_module_names` |
 | L-16 | LOW | guard §7 | docstring tripwires inflate the row count | **dismissed** — disclosed as tripwires in place; disclosure, not deception |
 | L-17 | LOW | `main()` | `--pack` silently ignored `--diff`/`--blast-radius` | applied — usage error, exit 2 |
 | L-18 | LOW | plan D5 | determinism claimed unqualified; 10s deadlines make big-repo output load-dependent | applied — claim scoped to inside-deadline runs, partials now carry a note |
-| L-19 | LOW | `_alias_roots` :491 | tsconfig without `paths` got an invented `@/ → src` root → confident wrong resolutions | applied — default only when NO config exists; guard :648 |
+| L-19 | LOW | `_alias_roots` [:499](../../../.agents/scripts/evidence_extract.py#L499) | tsconfig without `paths` got an invented `@/ → src` root → confident wrong resolutions | applied — default only when NO config exists; guard :666 |
 
 **Gates (Step 3, all bare, at the staged tree of `6d51047`):** `run_all.py` 21/21 files, 1086/1086
 cases, exit 0 · `workflow_lint --toolkit-only` 0 errors 0 warnings, exit 0 · guard 98/98, exit 0 ·
@@ -122,7 +122,7 @@ Suite counts in the SOP and `INDEX.md` re-trued to **1091/21** in the same commi
 | Item | Verdict | Proving assertion |
 |---|---|---|
 | 1 stdlib-only, UTF-8-forced streams | PASS | guard `tripwire: every import is stdlib` + cp1252 row :697 |
-| 2 pack caps (6/400/16000/1200) | PASS | four cap rows + counter-examples; slice row :581 (exactly 1200) |
+| 2 pack caps (6/400/16000/1200) | PASS | four cap rows + counter-examples; slice row :581 (exactly 1200) — all line numbers in this document are at the merged sha |
 | 3 findings LIST + six fields + caps | PASS | list-shape row, six-fields row, §2b cap rows, dup-title rows :538 |
 | 4 no grep subprocess, both modes | PASS | sitecustomize block rows + control shell-out dies; byte-identical both modes |
 | 5 IMPORTED BY true positives + negatives | PASS | §3 rows: flat/package/parent-form/TS-relative/alias/index, each with counters |
