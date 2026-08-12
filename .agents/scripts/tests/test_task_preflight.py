@@ -62,7 +62,8 @@ MANIFEST = ("task_key: SCC-11\nprimary_repo: repo\nbranch: chore/SCC-11-thing\n"
 
 
 def make_repo(root: Path, *, deployable: bool = False, remote: bool = True,
-              walkthrough: bool = True, manifest: bool = True, hooks: bool = True) -> Path:
+              walkthrough: bool = True, manifest: bool = True, hooks: bool = True,
+              ci: bool = False) -> Path:
     """A repo standing on `main`, optionally with a bare origin it is in sync with."""
     repo = root / "repo"
     repo.mkdir(parents=True)
@@ -84,6 +85,11 @@ def make_repo(root: Path, *, deployable: bool = False, remote: bool = True,
     if deployable:
         write(repo, "backend/app.py", "x = 1\n")
         write(repo, "frontend/page.tsx", "export default () => null\n")
+    if ci:
+        # A repo carrying CI. Independent of `deployable` on purpose: the whole point of
+        # SCC-118's split is that these two are different questions, and the fixture has to
+        # be able to ask them separately.
+        write(repo, ".github/workflows/gate.yml", "name: gate\non: [push]\n")
     if walkthrough:
         write(repo, "_artifacts/_main/2026-08-08_scc-11-thing/walkthrough.md", WALKTHROUGH)
     if manifest:
@@ -142,6 +148,46 @@ def main() -> int:
         c.check("docs-only diff -> exit 0", code == 0, out.strip()[-300:])
         c.check("says the deploy gate cannot be affected",
                 "touches none of them" in out, out.strip()[-300:])
+
+    # ── SCC-118: `.github/` is a deploy surface only where something SHIPS ────────────
+    # The regression, first. Before this split the command centre had no `.github/` at all,
+    # so one list served both questions and nothing could tell. SCC-118 gave it one — the
+    # server-side half of the main write gate — and the next close-out here was refused as
+    # "NOT task-lane work" and routed to /cicd-push-e2e: a command that binds a PROJECT,
+    # refuses the lobby, and gates on an E2E suite this repo does not have. Unfollowable.
+    with TempDir() as t:
+        repo = make_repo(t, deployable=False, ci=True)
+        branch(repo, "chore/SCC-11-thing", {".github/workflows/gate.yml": "name: gate2\n"})
+        code, out = preflight(repo)
+        c.check("CI-only repo touching .github/ -> LOCAL", "LANE: LOCAL" in out,
+                out.strip()[-300:])
+        c.check("CI-only repo touching .github/ -> exit 0", code == 0, out.strip()[-300:])
+        c.check("and it says WHY: nothing here deploys",
+                "no deployable surface" in out, out.strip()[-300:])
+        c.check("it does NOT route to a command that refuses this repo",
+                "/cicd-push-e2e" not in out, out.strip()[-300:])
+
+    # ⛔ THE CONTROL THAT MAKES THE NARROWING DEFENSIBLE. Assert only the case above and you
+    # have proved the softening and not the strictness. Where a product exists, `.github/`
+    # is deployable exactly as before — a workflow edit there can change WHAT ships.
+    with TempDir() as t:
+        repo = make_repo(t, deployable=True, ci=True)
+        branch(repo, "chore/SCC-11-thing", {".github/workflows/gate.yml": "name: gate2\n"})
+        code, out = preflight(repo)
+        c.check("CONTROL a product repo touching .github/ still HANDOFFs",
+                "LANE: HANDOFF" in out, out.strip()[-300:])
+        c.check("CONTROL that handoff is still a hard exit 2", code == 2, f"exit {code}")
+        c.check("CONTROL it still names .github/ as the offender",
+                ".github/" in out, out.strip()[-300:])
+
+    # And the other half of the product case is untouched: a product repo whose diff stays
+    # clear of every deploy dir is still LOCAL, with `.github/` present.
+    with TempDir() as t:
+        repo = make_repo(t, deployable=True, ci=True)
+        branch(repo, "chore/SCC-11-thing", {".agents/rules/x.md": "rule\n"})
+        code, out = preflight(repo)
+        c.check("CONTROL product repo + CI, docs-only diff -> LOCAL", "LANE: LOCAL" in out,
+                out.strip()[-300:])
 
     # ── The command centre: no deployable surface at all ──
     with TempDir() as t:
