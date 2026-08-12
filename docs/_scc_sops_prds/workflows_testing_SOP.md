@@ -1238,7 +1238,7 @@ flowchart LR
 | `wf_common.py` | Shared plumbing the others import. You'll never call it. |
 
 **Run all their tests any time:** `python3 .agents/scripts/tests/run_all.py` (on the PC, `python …`) —
-**988 checks across 18 files, measured 2026-08-12, about seventy-five seconds** — the suite prints
+**1086 checks across 21 files, measured 2026-08-12, about eighty seconds** — the suite prints
 its live totals, which outrank this sentence.
 
 > ⚠ **This number had gone stale, and the gate was right not to catch it.** It read *"646 checks
@@ -1246,7 +1246,9 @@ its live totals, which outrank this sentence.
 > is an explicit exemption in `sop_currency.py` — so SCC-122's new test file moved the total from 16
 > to 17 inside a commit that was correctly exempt from end to end. There was nothing for a blocking
 > gate to block. A count like this one goes wrong through changes nobody should be stopped for,
-> which is why the sentence above defers to what the suite prints.
+> which is why the sentence above defers to what the suite prints. It then went stale **twice more
+> on the same day it was corrected** — SCC-118 landed three test files mid-review, and SCC-123's
+> review rebuild grew its own guard — which is the deferral proving itself, not a failure of it.
 
 Full detail in
 [`.agents/scripts/INDEX.md`](../../.agents/scripts/INDEX.md).

@@ -23,7 +23,10 @@ Two of those pairs are the whole reason SCC-123 exists:
     reproduces the exact silent emptiness this subtask was written to remove (plan finding F3).
 
 One check deliberately does NOT use a source grep as its evidence. "No `grep` subprocess" is proven
-by running the script with **PATH emptied** and requiring byte-identical output; a source-level ban
+by running the script with **process creation blocked inside the interpreter** — a sitecustomize.py
+on PYTHONPATH that makes every spawn primitive raise, with a control shell-out asserted to die
+under the same block — and requiring byte-identical output. (Emptying PATH proves nothing: CPython
+falls back to `os.defpath`, so `/bin/grep` survives a no-PATH run untouched.) A source-level ban
 on the word `subprocess` ships too, but only as a cheap tripwire — a comment containing the banned
 literal inverts that style of check, which is a known house pitfall.
 
@@ -31,6 +34,9 @@ Stdlib only, no pytest, ASCII output — same constraints as every script under 
 """
 from __future__ import annotations
 
+import ast
+import contextlib
+import io
 import json
 import os
 import subprocess
@@ -164,6 +170,16 @@ def build_python_repo(root: Path) -> None:
     # identifier the finding mentions -- otherwise related_code is empty for a reason that
     # has nothing to do with the code under test.
     write(root, "src/pkg/sibling.py", "def other_fn():\n    return target_fn(0)  # SIBLING_MARKER\n")
+    # blast-radius fixture with the identifier match DEEP in the file and a decoy at the head:
+    # an implementation that ignores identifiers and dumps the head emits the decoy and never
+    # the marker, so the pair discriminates where a "something came back" row could not.
+    write(root, "src/pkg/blast_deep.py",
+          "\n".join(["# BLAST_HEAD_DECOY - an identifier-blind impl emits this line"]
+                    + [f"# filler {i}" for i in range(2, 29)]
+                    + ["def blast_helper():",
+                       "    return target_fn(3)  # BLAST_MATCH_MARKER"]) + "\n")
+    # named by NO finding in any fixture: the cross-ref and blast negatives anchor on it
+    write(root, "src/pkg/never_named.py", "NEVER_NAMED_MARKER = 'not in any finding body'\n")
 
     # the flat sys.path shape
     write(root, "scripts/flat_tool.py", "def flat_helper():\n    return 'flat'\n")
@@ -178,6 +194,9 @@ def build_python_repo(root: Path) -> None:
                     + ["result = target_fn(7)  # CALLER_VISIBLE_MARKER"]) + "\n")
     write(root, "node_modules/evil.py", "target_fn(999)  # CALLER_HIDDEN_MARKER\n")
     write(root, ".venv/also_evil.py", "target_fn(998)  # CALLER_HIDDEN_MARKER\n")
+    # a nested checkout: ANOTHER BRANCH's copy of the repo, which must never be evidence
+    write(root, ".claude/worktrees/lane/scripts/wt_dup.py", "import flat_tool\n")
+    write(root, ".claude/worktrees/lane/wt_caller.py", "target_fn(996)  # CALLER_HIDDEN_MARKER\n")
 
     write(root, "docs/notes.md", "# notes\nMentions target_fn but is prose.\n")
 
@@ -247,6 +266,19 @@ def imported_by(blob: str) -> str:
     return ""
 
 
+def pkg_for(out: str, title: str) -> dict:
+    """The package for `title` out of findings-mode stdout — a LIST of packages since the
+    duplicate-title fix. Unparseable or wrong-shaped stdout yields {}, so rows fail on their
+    own assertions rather than on a raise here."""
+    try:
+        data = json.loads(out)
+    except ValueError:
+        return {}
+    if not isinstance(data, list):
+        return {}
+    return next((p for p in data if isinstance(p, dict) and p.get("finding_title") == title), {})
+
+
 def main() -> int:
     c = Guard("evidence_extract (SCC-123)")
 
@@ -261,6 +293,8 @@ def main() -> int:
     c.check("no arguments is a usage error (exit 2)", rc == 2, f"exit {rc}")
     rc, _, _ = run_ee("--repo", ".", "--pack", "a.py", "--findings", "f.json")
     c.check("both modes at once is a usage error (exit 2)", rc == 2, f"exit {rc}")
+    rc, _, _ = run_ee("--repo", ".", "--pack", "a.py", "--diff", "x.patch")
+    c.check("pack with --diff is a usage error (exit 2), not silently ignored", rc == 2, f"exit {rc}")
     rc, _, _ = run_ee("--repo", "/nonexistent/repo/path", "--pack", "a.py")
     c.check("a repo path that does not exist is a usage error (exit 2)", rc == 2, f"exit {rc}")
 
@@ -331,6 +365,20 @@ def main() -> int:
         rc, out, _ = run_ee("--repo", str(repo), "--pack", "assets/blob.bin")
         c.check("pack: a non-text extension yields nothing", out.strip() == "", out[:80])
 
+        # the cap counts files PACKED, not files asked for: six bad paths must not evict the
+        # one real file into an empty pack with a clean exit
+        rc, out, _ = run_ee("--repo", str(repo), "--pack",
+                            *[f"ghost/g{i}.py" for i in range(6)], "src/pkg/target.py")
+        c.check("pack: 6 invalid targets do not evict the valid 7th",
+                "TARGET_SENTINEL" in out, "the real file was sliced away before validation")
+
+        # silent-empty is closed at the CLI: a bad target degrades WITH a stderr note
+        rc, out, err = run_ee("--repo", str(repo), "--pack", "does/not/exist.py")
+        c.check("pack: a nonexistent target still exits 0 with empty output",
+                rc == 0 and out.strip() == "", f"exit {rc} out={out[:80]!r}")
+        c.check("pack: ...and stderr NAMES the skipped path (no silent empties)",
+                "note:" in err and "does/not/exist.py" in err, err[:160] or "stderr empty")
+
     # ── 2. findings mode — shape, snippets, caps ──────────────────────────────
     with TempDir() as tmp:
         repo = tmp / "repoA"
@@ -338,6 +386,10 @@ def main() -> int:
         build_python_repo(repo)
 
         diff = repo / "_diff.patch"
+        # THREE hunks with the finding's line in the MIDDLE one: an implementation that always
+        # returns the first hunk, always returns the last, or dumps the whole patch fails this
+        # fixture three different ways. The prior two-hunk fixture put the target in the LAST
+        # hunk, and an always-the-last-hunk mutant scored a full pass.
         diff.write_text(
             "diff --git a/src/pkg/target.py b/src/pkg/target.py\n"
             "--- a/src/pkg/target.py\n"
@@ -347,8 +399,12 @@ def main() -> int:
             "+FIRST_HUNK_MARKER\n"
             " more_head\n"
             "@@ -39,3 +40,4 @@\n"
+            " mid_context\n"
+            "+MIDDLE_HUNK_MARKER\n"
+            " more_mid\n"
+            "@@ -78,3 +80,4 @@\n"
             " tail_context\n"
-            "+SECOND_HUNK_MARKER\n"
+            "+THIRD_HUNK_MARKER\n"
             " more_tail\n",
             encoding="utf-8")
 
@@ -361,19 +417,25 @@ def main() -> int:
         }])
 
         rc, out, err = run_ee("--repo", str(repo), "--findings", fpath,
-                              "--diff", str(diff), "--blast-radius", "src/pkg/sibling.py")
+                              "--diff", str(diff),
+                              "--blast-radius", "src/pkg/blast_deep.py", "src/pkg/never_named.py")
         c.check("findings: exits 0", rc == 0, f"exit {rc} err={err[:160]}")
 
         try:
             data = json.loads(out)
         except json.JSONDecodeError as exc:
-            data = {}
+            data = []
             c.check("findings: stdout is valid JSON", False, str(exc))
         else:
             c.check("findings: stdout is valid JSON", True)
 
-        pkg = data.get("target_fn returns the wrong value", {})
-        c.check("findings: keyed by finding title", bool(pkg), f"keys={list(data)[:3]}")
+        c.check("findings: output is a LIST of packages, one per finding",
+                isinstance(data, list) and len(data) == 1,
+                f"type={type(data).__name__}")
+        pkg = data[0] if isinstance(data, list) and data else {}
+        c.check("findings: the package names its finding",
+                pkg.get("finding_title") == "target_fn returns the wrong value",
+                f"finding_title={pkg.get('finding_title')!r}")
 
         fields = ("primary_code", "caller_snippets", "cross_ref_snippets",
                   "diff_hunk", "import_context", "related_code")
@@ -404,14 +466,26 @@ def main() -> int:
         xrefs = "\n".join(pkg.get("cross_ref_snippets", []))
         c.check("findings: a real path named in the body is cross-referenced",
                 "other_fn" in xrefs, "cross-ref missing")
+        c.check("findings COUNTER-EXAMPLE: a file named by NO finding is never cross-referenced",
+                "NEVER_NAMED_MARKER" not in xrefs,
+                "an unnamed file leaked in - a return-everything impl passes the row above")
 
-        c.check("findings: diff_hunk is the hunk containing the line, not the first hunk",
-                "SECOND_HUNK_MARKER" in pkg.get("diff_hunk", "")
-                and "FIRST_HUNK_MARKER" not in pkg.get("diff_hunk", ""),
-                pkg.get("diff_hunk", "")[:80])
+        hunk = pkg.get("diff_hunk", "")
+        c.check("findings: diff_hunk is the hunk CONTAINING the line - of three, the middle",
+                "MIDDLE_HUNK_MARKER" in hunk and "FIRST_HUNK_MARKER" not in hunk
+                and "THIRD_HUNK_MARKER" not in hunk,
+                hunk[:120] or "empty diff_hunk")
 
-        c.check("findings: related_code comes from the blast-radius file",
-                "other_fn" in pkg.get("related_code", ""), "blast-radius snippet missing")
+        related = pkg.get("related_code", "")
+        c.check("findings: related_code is anchored AT the identifier match, deep in the file",
+                "src/pkg/blast_deep.py:30" in related and "BLAST_MATCH_MARKER" in related,
+                related[:120] or "empty related_code")
+        c.check("findings COUNTER-EXAMPLE: related_code is not the blast file's HEAD",
+                "BLAST_HEAD_DECOY" not in related,
+                "file-head dump - an identifier-blind impl emits line 1, not line 30")
+        c.check("findings COUNTER-EXAMPLE: a blast file with NO mentioned identifier "
+                "contributes nothing",
+                "NEVER_NAMED_MARKER" not in related, "identifier-free blast file leaked in")
 
         # identifier cap: 12 mentioned, at most 8 searched
         # Each identifier must resolve to EXACTLY ONE file, or the 10-snippet cap truncates
@@ -426,7 +500,7 @@ def main() -> int:
             "file_path": "src/pkg/target.py", "line_start": 41,
         }])
         rc, out, _ = run_ee("--repo", str(repo), "--findings", fpath)
-        many_pkg = json.loads(out).get("many identifiers", {})
+        many_pkg = pkg_for(out, "many identifiers")
         hit = {i for i in range(12)
                if f"IDENT_CALL_{i:02d}" in "\n".join(many_pkg.get("caller_snippets", []))}
         c.check("findings: at most 8 identifiers are searched per finding",
@@ -441,12 +515,71 @@ def main() -> int:
             "evidence": "", "file_path": "src/pkg/target.py", "line_start": 41,
         }])
         rc, out, _ = run_ee("--repo", str(repo), "--findings", fpath)
-        prose = json.loads(out).get("prose only", {})
+        prose = pkg_for(out, "prose only")
         c.check("findings: a stop-word-only body yields no caller search",
                 prose.get("caller_snippets") == [], str(prose.get("caller_snippets"))[:120])
         c.check("findings COUNTER-EXAMPLE: that same body still returns primary_code",
                 "TARGET_SENTINEL" in prose.get("primary_code", ""),
                 "empty package - the check above would pass vacuously")
+
+        # two findings SHARING a title must both survive, each with its OWN file's code:
+        # duplicate titles are the expected case for a multi-lens fan-out over one diff, and
+        # a dict keyed by title collapsed them onto one package with the wrong file's code
+        fpath = findings_file(repo, [
+            {"title": "dup", "body": "", "evidence": "",
+             "file_path": "src/pkg/target.py", "line_start": 41},
+            {"title": "dup", "body": "", "evidence": "",
+             "file_path": "src/pkg/sibling.py", "line_start": 2},
+        ])
+        rc, out, _ = run_ee("--repo", str(repo), "--findings", fpath)
+        parsed = json.loads(out) if out.strip() else []
+        dups = ([p for p in parsed if p.get("finding_title") == "dup"]
+                if isinstance(parsed, list) else [])
+        c.check("findings: two findings sharing a title BOTH survive",
+                len(dups) == 2, f"{len(dups)} packages for 'dup'")
+        c.check("findings: ...each carrying its OWN file's code, in input order",
+                len(dups) == 2 and "TARGET_SENTINEL" in dups[0].get("primary_code", "")
+                and "SIBLING_MARKER" in dups[1].get("primary_code", ""),
+                "wrong primary_code pairing")
+
+    # ── 2b. the caps that had no rows: callers 10 · cross-refs 10 · blast 5 · slice 1200 ──
+    with TempDir() as tmp:
+        repo = tmp / "caps"
+        repo.mkdir()
+        write(repo, "lib/subject.py", "def capped_fn():\n    return 1\n")
+        for i in range(14):
+            write(repo, f"callers/c{i:02d}.py", f"capped_fn()  # CAP_CALLER_{i:02d}\n")
+        for i in range(12):
+            write(repo, f"refs/r{i:02d}.py", f"REF_MARKER_{i:02d} = {i}\n")
+        for i in range(8):
+            write(repo, f"blast/b{i}.py", f"x = capped_fn  # BLAST_CAP_{i}\n")
+
+        body = ("`capped_fn` misbehaves. See "
+                + " and ".join(f"refs/r{i:02d}.py" for i in range(12)) + ".")
+        fpath = findings_file(repo, [{
+            "title": "caps", "body": body, "evidence": "",
+            "file_path": "lib/subject.py", "line_start": 1,
+        }])
+        rc, out, _ = run_ee("--repo", str(repo), "--findings", fpath,
+                            "--blast-radius", *[f"blast/b{i}.py" for i in range(8)])
+        cap_pkg = pkg_for(out, "caps")
+        c.check("findings: caller snippets cap at 10 (fixture offers 14)",
+                len(cap_pkg.get("caller_snippets", [])) == 10,
+                f"{len(cap_pkg.get('caller_snippets', []))} snippets")
+        c.check("findings: cross-ref files cap at 10 (fixture names 12)",
+                len(cap_pkg.get("cross_ref_snippets", [])) == 10,
+                f"{len(cap_pkg.get('cross_ref_snippets', []))} snippets")
+        blast_hits = sum(1 for i in range(8)
+                         if f"BLAST_CAP_{i}" in cap_pkg.get("related_code", ""))
+        c.check("findings: blast-radius snippets cap at 5 (fixture offers 8)",
+                blast_hits == 5, f"{blast_hits} blast snippets")
+
+        write(repo, "lib/heavy.py",
+              "\n".join(f"import module_{i:03d}_{'x' * 40}" for i in range(40)) + "\n")
+        rc, out, _ = run_ee("--repo", str(repo), "--pack", "lib/heavy.py")
+        seg = out.split("_import/usage context:_ ", 1)[-1].split("\n```", 1)[0]
+        c.check("pack: the import-context slice caps at exactly 1200 chars",
+                len(seg) == 1200, f"{len(seg)} chars")
 
     # ── 3. IMPORTED BY — the reason this subtask exists ───────────────────────
     with TempDir() as tmp:
@@ -460,6 +593,9 @@ def main() -> int:
                 "scripts/flat_user.py" in line, line or "no IMPORTED BY line")
         c.check("python flat COUNTER-EXAMPLE: `import flat_toolbox` is NOT a hit for flat_tool",
                 "scripts/box_user.py" not in line, line)
+        c.check("python flat COUNTER-EXAMPLE: a nested checkout under .claude/worktrees is "
+                "NOT an importer",
+                ".claude/worktrees" not in line, line)
 
         rc, out, _ = run_ee("--repo", str(repo), "--pack", "src/pkg/target.py")
         line = imported_by(out)
@@ -499,6 +635,28 @@ def main() -> int:
         c.check("ts: a directory import IS found for the index file",
                 "frontend/src/pages/dir.tsx" in line, line or "no IMPORTED BY line")
 
+    # a tsconfig that EXISTS but declares no `paths` means the repo has no alias; inventing
+    # the `@/ -> src/` default there produces confident wrong resolutions
+    with TempDir() as tmp:
+        repo = tmp / "repoC"
+        repo.mkdir()
+        write(repo, "tsconfig.json", json.dumps({"compilerOptions": {"strict": True}}))
+        write(repo, "src/components/Thing.tsx", "export const Thing = () => null;\n")
+        write(repo, "pages/uses.tsx", "import { Thing } from '@/components/Thing';\n")
+        rc, out, _ = run_ee("--repo", str(repo), "--pack", "src/components/Thing.tsx")
+        line = imported_by(out)
+        c.check("ts: a tsconfig WITHOUT `paths` gets no invented alias root",
+                line.endswith("none"), line or "no IMPORTED BY line")
+
+        repo = tmp / "repoD"
+        repo.mkdir()
+        write(repo, "src/components/Thing.tsx", "export const Thing = () => null;\n")
+        write(repo, "pages/uses.tsx", "import { Thing } from '@/components/Thing';\n")
+        rc, out, _ = run_ee("--repo", str(repo), "--pack", "src/components/Thing.tsx")
+        line = imported_by(out)
+        c.check("ts COUNTER-EXAMPLE: with NO config at all, the `@/ -> src/` default still applies",
+                "pages/uses.tsx" in line, line or "no IMPORTED BY line")
+
     # ── 4. path normalization where the repo name recurs (D3) ─────────────────
     with TempDir() as tmp:
         repo = tmp / "myrepo"
@@ -507,6 +665,37 @@ def main() -> int:
         rc, out, _ = run_ee("--repo", str(repo), "--pack", "myrepo/core.py")
         c.check("a path whose first segment repeats the repo name still resolves",
                 "RECURRENCE_SENTINEL" in out, out[:120] or "empty pack")
+
+    # ── 4b. evidence never leaves the repo ────────────────────────────────────
+    with TempDir() as tmp:
+        repo = tmp / "inner"
+        repo.mkdir()
+        build_python_repo(repo)
+        write(tmp, "outside_secret.py", "OUTSIDE_MARKER = 'must never be evidence'\n")
+
+        rc, out, err = run_ee("--repo", str(repo), "--pack", "../outside_secret.py")
+        c.check("pack: a relative path escaping the repo is refused",
+                rc == 0 and "OUTSIDE_MARKER" not in out and out.strip() == "",
+                f"exit {rc} out={out[:80]!r}")
+        c.check("pack: ...and the refusal is on stderr", "note:" in err, err[:120] or "no note")
+
+        fpath = findings_file(repo, [{"title": "escape", "body": "", "evidence": "",
+                                      "file_path": "../outside_secret.py", "line_start": 1}])
+        rc, out, _ = run_ee("--repo", str(repo), "--findings", fpath)
+        esc = pkg_for(out, "escape")
+        c.check("findings: an escaping file_path yields an empty package, not the file",
+                esc.get("primary_code", "x") == "" and "OUTSIDE_MARKER" not in out, out[:120])
+
+    # ── 4c. non-ASCII content on a cp1252 console (the PC's default) ──────────
+    with TempDir() as tmp:
+        repo = tmp / "uni"
+        repo.mkdir()
+        write(repo, "src/naive.py",
+              'label = "naïve café ✓"  # UNICODE_SENTINEL\n')
+        env = {**os.environ, "PYTHONIOENCODING": "cp1252"}
+        rc, out, err = run_ee("--repo", str(repo), "--pack", "src/naive.py", env=env)
+        c.check("pack: non-ASCII repo content survives a cp1252 console",
+                rc == 0 and "UNICODE_SENTINEL" in out, f"exit {rc} err={err[:160]}")
 
     # ── 5. degrade, never die (plan D6) ───────────────────────────────────────
     with TempDir() as tmp:
@@ -526,17 +715,43 @@ def main() -> int:
         rc, out, err = run_ee("--repo", str(repo), "--findings", fpath)
         c.check("degrade: a missing file, a binary file and an absent line still exit 0",
                 rc == 0, f"exit {rc} err={err[:160]}")
-        degraded = json.loads(out) if out.strip() else {}
+        packages = json.loads(out) if out.strip() else []
+        by_title = ({p.get("finding_title"): p for p in packages}
+                    if isinstance(packages, list) else {})
         c.check("degrade: the missing-file package is empty, not absent",
-                degraded.get("gone", {}).get("primary_code", None) == "",
-                str(degraded.get("gone"))[:120])
-        # A finding with no line number reads from line 1 -- so the proof that this run did not
-        # wholesale degrade is the FILE HEAD, not the line-43 sentinel.
-        c.check("degrade: an absent line_start falls back to the head of the file",
-                "1: # padding 1" in degraded.get("no line number", {}).get("primary_code", ""),
-                "the whole run degraded - the check above would pass vacuously")
+                by_title.get("gone", {}).get("primary_code", None) == "",
+                str(by_title.get("gone"))[:120])
+        c.check("degrade: the missing file is NAMED in a stderr note, not skipped silently",
+                "note:" in err and "does_not_exist" in err, err[:200] or "stderr empty")
+        # A finding with no line number reads from line 1. Anchored by EXACT first-line
+        # equality: "1: # padding 1" as a substring also matches "11: # padding 11", which is
+        # how a wrong fallback (line 41's window starts at 11) passed this row's earlier form.
+        head = by_title.get("no line number", {}).get("primary_code", "")
+        first = head.split("\n", 1)[0]
+        c.check("degrade: an absent line_start falls back to the head of the file (line 1 exactly)",
+                first == "1: # padding 1", f"first emitted line is {first!r}")
         c.check("degrade: no traceback reaches stderr",
                 "Traceback" not in err, err[:160])
+
+        # line_start 1e400 is legal JSON and parses to float infinity; int() then raises
+        # OverflowError, which is NOT a ValueError. Uncaught, it escaped the thread pool and
+        # took every finding's evidence down with it.
+        overflow = repo / "_overflow.json"
+        overflow.write_text('[{"title": "overflow line", "body": "", "evidence": "", '
+                            '"file_path": "src/pkg/target.py", "line_start": 1e400}, '
+                            '{"title": "bystander", "body": "", "evidence": "", '
+                            '"file_path": "src/pkg/target.py", "line_start": 41}]',
+                            encoding="utf-8")
+        rc, out, err = run_ee("--repo", str(repo), "--findings", str(overflow))
+        c.check("degrade: line_start 1e400 (JSON infinity) cannot kill the run",
+                rc == 0 and "Traceback" not in err, f"exit {rc} err={err[:200]}")
+        over = pkg_for(out, "overflow line")
+        c.check("degrade: ...it falls back to the file head",
+                over.get("primary_code", "").split("\n", 1)[0] == "1: # padding 1",
+                repr(over.get("primary_code", "")[:60]))
+        c.check("degrade: ...and the BYSTANDER finding keeps its evidence",
+                "TARGET_SENTINEL" in pkg_for(out, "bystander").get("primary_code", ""),
+                "the poisoned finding took the healthy one down with it")
 
         bad = repo / "_bad.json"
         bad.write_text("{not json at all", encoding="utf-8")
@@ -549,6 +764,65 @@ def main() -> int:
                                                "line_start": 41}]))
         c.check("findings accepts '-' for stdin",
                 rc == 0 and "via stdin" in (out or ""), f"exit {rc}")
+
+    # ── 5b. isolation and the diff splitter, proven in process ────────────────
+    sys.path.insert(0, str(SCRIPTS))
+    import evidence_extract as ee
+
+    with TempDir() as tmp:
+        repo = tmp / "repoA"
+        repo.mkdir()
+        build_python_repo(repo)
+
+        class Poison(dict):
+            """A finding whose every access raises: the shape no pre-screen can see coming."""
+
+            def get(self, key, default=None):
+                raise RuntimeError("poisoned finding")
+
+        cap = io.StringIO()
+        with contextlib.redirect_stderr(cap):
+            packages = ee.extract_for_findings(
+                str(repo),
+                [Poison(), {"title": "healthy", "body": "", "evidence": "",
+                            "file_path": "src/pkg/target.py", "line_start": 41}],
+                {}, [])
+        c.check("isolation: a finding that raises degrades ALONE; its sibling keeps its evidence",
+                len(packages) == 2
+                and "TARGET_SENTINEL" in packages[1].get("primary_code", "")
+                and packages[0].get("primary_code") == "",
+                f"{len(packages)} packages")
+        fields = ("finding_title", "primary_code", "caller_snippets", "cross_ref_snippets",
+                  "diff_hunk", "import_context", "related_code")
+        c.check("isolation: the degraded package still carries every field",
+                all(f in packages[0] for f in fields),
+                f"missing={[f for f in fields if f not in packages[0]]}")
+        c.check("isolation: the degradation is NAMED on stderr, not silent",
+                "degraded to an empty package" in cap.getvalue(),
+                cap.getvalue()[:120] or "silent")
+
+    # header detection is positional: an added source line beginning `++ ` renders as `+++ `,
+    # and an implementation that headers on the TEXT truncates the patch and invents a key
+    tricky = ("diff --git a/real.py b/real.py\n"
+              "--- a/real.py\n"
+              "+++ b/real.py\n"
+              "@@ -1,4 +1,5 @@\n"
+              " context\n"
+              "+++ this ADDED line begins with two pluses\n"
+              "--- this REMOVED line begins with two minuses\n"
+              " more\n"
+              "diff --git a/second.py b/second.py\n"
+              "--- a/second.py\n"
+              "+++ b/second.py\n"
+              "@@ -1,1 +1,2 @@\n"
+              "+SECOND_FILE_LINE\n")
+    split = ee.split_unified_diff(tricky)
+    c.check("diff split: keys are exactly the two real files (no key invented from a body line)",
+            sorted(split) == ["real.py", "second.py"], f"keys={sorted(split)}")
+    c.check("diff split: an added `++ ...` body line stays IN the patch as content",
+            "++ this ADDED line" in split.get("real.py", ""), split.get("real.py", "")[:120])
+    c.check("diff split: a removed `-- ...` body line stays IN the patch as content",
+            "-- this REMOVED line" in split.get("real.py", ""), split.get("real.py", "")[:120])
 
     # ── 6. no grep subprocess — proven by behaviour, not by grepping source ───
     with TempDir() as tmp:
@@ -589,7 +863,7 @@ def main() -> int:
                 rc_d == 0, f"exit {rc_d} err={err_d[:200]}")
         c.check("no grep subprocess in findings mode: byte-identical with spawning disabled",
                 out_c == out_d and out_c != "", "output differed or was empty")
-        blocked_pkg = json.loads(out_d).get("spawn-blocked path coverage", {}) if out_d.strip() else {}
+        blocked_pkg = pkg_for(out_d, "spawn-blocked path coverage")
         c.check("spawn-blocked COUNTER-EXAMPLE: the caller search really ran under the block",
                 "CALLER_VISIBLE_MARKER" in "\n".join(blocked_pkg.get("caller_snippets", [])),
                 "no caller found - the two rows above would compare two empty results")
@@ -612,9 +886,17 @@ def main() -> int:
     code_only = "\n".join(ln for ln in src.splitlines() if not ln.strip().startswith("#"))
     c.check("tripwire: imports no subprocess module",
             "import subprocess" not in code_only, "subprocess import present")
-    c.check("tripwire: no third-party import (stdlib only)",
-            "pydantic" not in code_only and "import requests" not in code_only,
-            "third-party import present")
+    # Every import checked against the interpreter's own stdlib list: a name test for two
+    # hand-picked packages let `import numpy` straight through.
+    tops: set[str] = set()
+    for node in ast.walk(ast.parse(src)):
+        if isinstance(node, ast.Import):
+            tops.update(alias.name.split(".")[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+            tops.add(node.module.split(".")[0])
+    non_stdlib = sorted(tops - set(sys.stdlib_module_names))
+    c.check("tripwire: every import is stdlib (checked against sys.stdlib_module_names)",
+            not non_stdlib, f"non-stdlib imports: {non_stdlib}")
     c.check("docstring records the GitNexus decision (plan D7)",
             "GitNexus" in src[:4000] and "machine-local" in src[:4000],
             "rationale missing from the module docstring")

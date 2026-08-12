@@ -38,12 +38,17 @@ walks the tree once, prunes the skip-dirs, and matches compiled patterns over a 
 cache: the same work, in process. The repo's file list is built once and reused, so eight
 identifier searches cost one walk, not eight.
 
-The guard for this file proves that claim by running it with **PATH emptied** and requiring
-byte-identical output — a source-level scan for the word would be inverted by this very paragraph.
+The guard for this file proves that claim by running it with **process creation blocked inside the
+interpreter** — a `sitecustomize.py` on `PYTHONPATH` that makes every spawn primitive raise, with a
+control shell-out asserted to die under the same block — and requiring byte-identical output.
+Emptying PATH is NOT that proof: CPython falls back to `os.defpath` (`:/bin:/usr/bin`), so a
+shelled-out grep survives a no-PATH run untouched. A source-level scan for the word would be
+inverted by this very paragraph.
 
   ── DEVIATIONS FROM THE PORT, EACH ON PURPOSE ──────────────────────────────────────────────
-* `_import_specifiers` replaces pr-af's `_path_to_module`, which returns one dotted name and, for
-  anything that is not `.py`, the empty string. Two consequences it had, both silent: every
+* `_python_module_names`/`_python_importers` (Python) and `_ts_importers` (TS/JS) replace pr-af's
+  `_path_to_module`, which returns one dotted name and, for anything that is not `.py`, the empty
+  string. Two consequences it had, both silent: every
   TypeScript file reported `IMPORTED BY: none`, and so did every script in THIS repo, because
   `.agents/scripts/wf_common.py` is imported as bare `wf_common` off a `sys.path` entry and never
   as `.agents.scripts.wf_common`. "Nothing depends on this file" is the most dangerous false
@@ -67,7 +72,9 @@ cap a verdict. So a missing file, an undecodable file, a malformed finding, or a
 its deadline yields an empty or partial field — never a traceback. Exit 2 is reserved for a usage
 error (bad flags, unreadable input), which is the caller's mistake rather than the repo's.
 
-Stdlib only, plain ASCII output — same constraints as its siblings (Windows consoles are cp1252).
+Stdlib only. The script's own labels are ASCII, but repo content is arbitrary text, so both output
+streams are forced to UTF-8 with `errors="replace"`: a cp1252 Windows console degrades a character
+rather than killing the run. Unfixed, this script could not pack its own source on the PC.
 """
 from __future__ import annotations
 
@@ -101,6 +108,11 @@ _IMPORT_LIST = 30                # evidence.py:430-431
 _DIFF_HUNK_LINES = 200           # evidence.py:372-377
 
 _SKIP_DIRS = (".git", "node_modules", "__pycache__", ".venv", "vendor", "venv")  # evidence.py:57
+# A nested checkout under `.claude/worktrees/<lane>/` is ANOTHER BRANCH'S copy of this repo:
+# listing its files as importers or callers primes the lens with code that is not on the branch
+# under review. Matched as an adjacent (parent, child) pair, not a bare name, so a legitimate
+# `worktrees/` directory elsewhere in a repo is not swallowed with it.
+_SKIP_DIR_PAIRS = ((".claude", "worktrees"),)
 
 _TEXT_EXTENSIONS = {
     ".py", ".js", ".jsx", ".ts", ".tsx", ".go", ".rs", ".java", ".rb", ".php",
@@ -134,6 +146,12 @@ _FILE_CACHE_BYTES = 0
 # so the workers only ever read it.
 _REPO_FILES: dict[str, list[str]] = {}
 _ALIAS_ROOTS: dict[str, list[tuple[str, str]]] = {}
+
+
+def _note(message: str) -> None:
+    """Degrading is allowed; degrading SILENTLY is not (the failure contract above). Notes go to
+    stderr so stdout stays parseable — it is pack text or findings JSON."""
+    sys.stderr.write("note: " + message + "\n")
 
 
 def _read_file_lines(abspath: str) -> list[str]:
@@ -182,7 +200,10 @@ def _is_text_file(path: str) -> bool:
 
 
 def _under_skip_dir(rel: str) -> bool:
-    return any(part in _SKIP_DIRS for part in rel.split("/"))
+    parts = rel.split("/")
+    if any(part in _SKIP_DIRS for part in parts):
+        return True
+    return any(tuple(parts[i:i + 2]) in _SKIP_DIR_PAIRS for i in range(len(parts) - 1))
 
 
 def _repo_files(repo: str) -> list[str]:
@@ -192,7 +213,9 @@ def _repo_files(repo: str) -> list[str]:
         return cached
     found: list[str] = []
     for dirpath, dirnames, filenames in os.walk(repo):
-        dirnames[:] = sorted(d for d in dirnames if d not in _SKIP_DIRS)
+        base = os.path.basename(dirpath)
+        dirnames[:] = sorted(d for d in dirnames
+                             if d not in _SKIP_DIRS and (base, d) not in _SKIP_DIR_PAIRS)
         for name in sorted(filenames):
             abspath = os.path.join(dirpath, name)
             if _is_text_file(abspath):
@@ -227,11 +250,16 @@ def _normalize_relative_path(repo: str, file_path: str) -> str:
 
 
 def _resolve_rel(repo: str, file_path: str) -> str:
-    """Repo-relative path, trying the DIRECT join first.
+    """Repo-relative path, trying the DIRECT join first — and never resolving OUTSIDE the repo.
 
     The fallback normalizer strips a `<repo-name>/` marker found anywhere in the path, so a repo
     containing a directory named after itself has every such path mangled into one that does not
     exist. pr-af hit this and fixed it in one function; the fix belongs at every entry point.
+
+    Containment is the other half: absolute paths were always neutralised, but a relative
+    `../../..` walked straight out of the repo and read whatever it landed on. Evidence comes
+    from the repo under review or it is not evidence, so every candidate that escapes is
+    dropped — including the not-a-file fallback, which callers go on to open.
     """
     raw = (file_path or "").strip().replace("\\", "/")
     if not raw:
@@ -241,10 +269,18 @@ def _resolve_rel(repo: str, file_path: str) -> str:
         direct = raw[2:] if raw.startswith("./") else raw
         candidates.append(direct.lstrip("/"))
     candidates.append(_normalize_relative_path(repo, raw))
-    for cand in candidates:
-        if cand and os.path.isfile(os.path.join(repo, cand)):
+
+    repo_abs = os.path.abspath(repo)
+
+    def contained(cand: str) -> bool:
+        abspath = os.path.abspath(os.path.join(repo_abs, cand))
+        return abspath == repo_abs or abspath.startswith(repo_abs + os.sep)
+
+    inside = [c for c in candidates if c and contained(c)]
+    for cand in inside:
+        if os.path.isfile(os.path.join(repo_abs, cand)):
             return os.path.normpath(cand).replace("\\", "/")
-    return candidates[-1] if candidates else ""
+    return os.path.normpath(inside[-1]).replace("\\", "/") if inside else ""
 
 
 # ── Snippets ──────────────────────────────────────────────────────────────────
@@ -306,7 +342,11 @@ def _find_function_callers(repo: str, function_name: str, exclude_rel: str = "")
 
     snippets: list[str] = []
     for rel in _repo_files(repo):
-        if time.monotonic() > deadline or len(snippets) >= _CALLER_SNIPPETS:
+        if len(snippets) >= _CALLER_SNIPPETS:
+            break
+        if time.monotonic() > deadline:
+            _note(f"caller search for '{ident}' hit its {_SEARCH_SECONDS}s deadline; "
+                  "the list is partial")
             break
         if rel == exclude_rel:
             continue
@@ -387,6 +427,8 @@ def _python_importers(repo: str, rel: str) -> list[str]:
     importers: list[str] = []
     for cand in _repo_files(repo):
         if time.monotonic() > deadline:
+            _note(f"importer search for '{rel}' hit its {_SEARCH_SECONDS}s deadline; "
+                  "IMPORTED BY is partial")
             break
         if cand == rel or not cand.endswith(".py"):
             continue
@@ -421,9 +463,11 @@ def _alias_roots(repo: str) -> list[tuple[str, str]]:
         return cached
 
     roots: list[tuple[str, str]] = []
+    saw_config = False
     for rel in _repo_files(repo):
         if posixpath.basename(rel) not in ("tsconfig.json", "jsconfig.json"):
             continue
+        saw_config = True
         try:
             data = json.loads("\n".join(_read_file_lines(os.path.join(repo, rel))))
         except (ValueError, TypeError):
@@ -444,8 +488,11 @@ def _alias_roots(repo: str) -> list[tuple[str, str]]:
                 roots.append((key[:-1], "" if root == "." else root))
                 break
 
-    if not roots:
-        roots = [("@/", "src")]           # the common default, for a repo with no config at all
+    if not roots and not saw_config:
+        # Default ONLY when no config exists anywhere. A tsconfig that declares no `paths` means
+        # the repo has no alias — inventing one produces confident wrong resolutions, which is
+        # the exact silent failure this function documents itself as preventing.
+        roots = [("@/", "src")]
     roots.sort(key=lambda pair: -len(pair[0]))
     _ALIAS_ROOTS[repo] = roots
     return roots
@@ -473,11 +520,21 @@ def _resolve_specifier(repo: str, importer_rel: str, spec: str,
 
 
 def _ts_importers(repo: str, rel: str) -> list[str]:
+    """Files that import `rel`, for TS/JS, resolved per importer rather than by name.
+
+    A JS specifier means different things depending on who wrote it, so every candidate's
+    specifiers are resolved against ITS own directory (relative), against the tsconfig that
+    declared the alias (`@/`), and through `index.*` for a directory import. Matching a bare
+    module string instead is what emptied IMPORTED BY for the whole TS side in the port.
+    Bounded by `_SEARCH_SECONDS`: a huge repo returns a partial answer, never a hang.
+    """
     aliases = _alias_roots(repo)
     deadline = time.monotonic() + _SEARCH_SECONDS
     importers: list[str] = []
     for cand in _repo_files(repo):
         if time.monotonic() > deadline:
+            _note(f"importer search for '{rel}' hit its {_SEARCH_SECONDS}s deadline; "
+                  "IMPORTED BY is partial")
             break
         if cand == rel or os.path.splitext(cand)[1].lower() not in _TS_EXTS:
             continue
@@ -526,10 +583,20 @@ def _normalize_patch_key(file_path: str) -> str:
 
 
 def split_unified_diff(text: str) -> dict[str, str]:
-    """A unified diff -> {repo-relative path: that file's patch text}."""
+    """A unified diff -> {repo-relative path: that file's patch text}.
+
+    Header detection is POSITIONAL, not textual. An added source line that itself begins `++ `
+    renders in the body as `+++ `, and treating every such line as a file header truncates the
+    real patch AND invents a bogus key. So `--- ` opens a header pair only where a header can
+    be — before any file's body has started — and `+++ ` is a header only immediately after that
+    `--- ` half; inside a body, both spellings are kept as content. Accepted cost: a bare
+    concatenated multi-file diff with no `diff --git` separators keeps only its first file — git
+    output, which is what the engine feeds this, always carries them.
+    """
     patches: dict[str, str] = {}
     key: str | None = None
     body: list[str] = []
+    minus_header = False       # was the previous line the `--- ` half of a header pair?
 
     def flush() -> None:
         if key is not None:
@@ -539,17 +606,18 @@ def split_unified_diff(text: str) -> dict[str, str]:
         if line.startswith("diff --git "):
             flush()
             key, body = None, []
-            continue
-        if line.startswith("+++ "):
+            minus_header = False
+        elif line.startswith("--- ") and key is None:
+            minus_header = True
+        elif line.startswith("+++ ") and minus_header:
             path = _normalize_patch_key(line[4:].strip())
             if path and path != "dev/null":
-                flush()
                 key, body = path, []
-            continue
-        if line.startswith("--- "):
-            continue
-        if key is not None:
-            body.append(line)
+            minus_header = False
+        else:
+            minus_header = False
+            if key is not None:
+                body.append(line)
     flush()
     return patches
 
@@ -572,7 +640,7 @@ def _extract_hunk_for_line(patch_lines: list[str], line: int) -> list[str]:
     return []
 
 
-def _extract_diff_hunk(patches: dict[str, str], rel: str, line: int | None) -> str:
+def _extract_diff_hunk(patches: dict[str, str], rel: str, line: int) -> str:
     normalized = _normalize_patch_key(rel)
     patch = patches.get(normalized, "")
     if not patch:
@@ -583,8 +651,6 @@ def _extract_diff_hunk(patches: dict[str, str], rel: str, line: int | None) -> s
     if not patch:
         return ""
     patch_lines = patch.splitlines()
-    if line is None:
-        return "\n".join(patch_lines[:_DIFF_HUNK_LINES])
     hunk = _extract_hunk_for_line(patch_lines, line)
     return "\n".join((hunk or patch_lines)[:_DIFF_HUNK_LINES])
 
@@ -592,6 +658,13 @@ def _extract_diff_hunk(patches: dict[str, str], rel: str, line: int | None) -> s
 # ── Blast radius ──────────────────────────────────────────────────────────────
 def _extract_blast_radius_code(repo: str, rel: str, identifiers: list[str],
                                blast_radius: list[str]) -> str:
+    """Code from the files a finding claims it also touches, capped at `_BLAST_SNIPPETS`.
+
+    The blast-radius list arrives from the caller as untrusted strings, so each entry is
+    re-resolved against the repo and dropped if it does not exist -- an asserted radius is a
+    claim, not a fact. The finding's own file and anything under `_SKIP_DIRS` are excluded, or
+    the lens gets its own subject back as corroboration.
+    """
     if not identifiers or not blast_radius:
         return ""
     snippets: list[str] = []
@@ -633,15 +706,23 @@ def build_pack(repo: str, target_files: list[str]) -> str:
     if not repo or not target_files:
         return ""
     blocks: list[str] = []
-    for raw in target_files[:_PACK_MAX_FILES]:
+    for raw in target_files:
+        # The cap counts files PACKED, not files asked for: slicing the request first let six
+        # bad paths evict the one real file and produce an empty pack with a clean exit.
+        if len(blocks) >= _PACK_MAX_FILES:
+            _note(f"pack: file cap ({_PACK_MAX_FILES}) reached; remaining targets skipped")
+            break
         rel = _resolve_rel(repo, raw)
         if not rel or _under_skip_dir(rel):
+            _note(f"pack: skipped (outside the repo, or under a skip-dir): {raw}")
             continue
         abspath = os.path.join(repo, rel)
         if not (os.path.isfile(abspath) and _is_text_file(abspath)):
+            _note(f"pack: skipped (missing, or not a text file): {raw}")
             continue
         lines = _read_file_lines(abspath)
         if not lines:
+            _note(f"pack: skipped (empty or unreadable): {raw}")
             continue
         shown = lines[:_PACK_MAX_LINES]
         body = "\n".join(f"{i + 1}: {line.rstrip()}" for i, line in enumerate(shown))
@@ -660,21 +741,38 @@ def build_pack(repo: str, target_files: list[str]) -> str:
             block += f"\n_import/usage context:_ {context[:_PACK_IMPORT_SLICE]}"
         block += f"\n```\n{body}\n```"
         blocks.append(block)
+    if not blocks:
+        _note(f"pack: nothing packed — none of the {len(target_files)} target(s) was readable")
     return "\n\n".join(blocks)[:_PACK_MAX_CHARS]
 
 
 # ── Mode 2: per-finding evidence ──────────────────────────────────────────────
 def _extract_one(repo: str, finding: dict, patches: dict[str, str],
                  blast_radius: list[str]) -> dict:
+    """One finding's `EvidencePackage`, as a dict carrying all six fields -- always.
+
+    Every field is present even when empty, because a consumer that has to distinguish "absent"
+    from "nothing found" will get it wrong. A finding naming a file that does not exist, or a
+    line past the end of one, yields empty strings and exit 0: this primes a reviewer, so it
+    degrades rather than dying and taking the other findings' evidence with it.
+    """
     title = str(finding.get("title") or "")
     rel = _resolve_rel(repo, str(finding.get("file_path") or ""))
     try:
         line = int(finding.get("line_start") or 1)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
+        # OverflowError is real input, not paranoia: JSON accepts `1e400`, which parses to
+        # float infinity, and int(inf) raises it. Uncaught, it escaped the thread pool and
+        # destroyed every OTHER finding's evidence with it.
         line = 1
 
     blob = "\n".join(str(finding.get(key) or "") for key in ("title", "body", "evidence"))
     identifiers = _extract_mentioned_identifiers(blob)[:_MAX_IDENTIFIERS_PER_FINDING]
+
+    primary = _read_code_snippet(repo, rel, line, _PRIMARY_CONTEXT)
+    if not primary:
+        _note(f"finding {title!r}: no readable code at "
+              f"{str(finding.get('file_path') or '')!r} line {line}")
 
     callers = _dedupe([snippet for ident in identifiers
                        for snippet in _find_function_callers(repo, ident, rel)])[:_CALLER_SNIPPETS]
@@ -686,7 +784,7 @@ def _extract_one(repo: str, finding: dict, patches: dict[str, str],
 
     return {
         "finding_title": title,
-        "primary_code": _read_code_snippet(repo, rel, line, _PRIMARY_CONTEXT),
+        "primary_code": primary,
         "caller_snippets": callers,
         "cross_ref_snippets": cross_refs,
         "diff_hunk": _extract_diff_hunk(patches, rel, line),
@@ -695,16 +793,49 @@ def _extract_one(repo: str, finding: dict, patches: dict[str, str],
     }
 
 
+def _safe_extract(repo: str, finding: dict, patches: dict[str, str],
+                  blast_radius: list[str]) -> dict:
+    """The contract boundary: one poisoned finding degrades to an empty package, WITH a note.
+
+    `_extract_one` absorbs every malformed-input shape it can see coming; this catch is for the
+    one it cannot, because an exception here propagates out of `pool.map` and destroys every
+    OTHER finding's evidence with it — the exact failure the contract forbids.
+    """
+    try:
+        return _extract_one(repo, finding, patches, blast_radius)
+    except Exception as exc:  # noqa: BLE001 — deliberate: degrade one, never kill all
+        title = ""
+        try:
+            title = str(finding.get("title") or "")
+        except Exception:
+            pass
+        _note(f"finding {title!r} degraded to an empty package: {exc!r}")
+        return {
+            "finding_title": title,
+            "primary_code": "",
+            "caller_snippets": [],
+            "cross_ref_snippets": [],
+            "diff_hunk": "",
+            "import_context": "",
+            "related_code": "",
+        }
+
+
 def extract_for_findings(repo: str, findings: list[dict], patches: dict[str, str],
-                         blast_radius: list[str]) -> dict[str, dict]:
+                         blast_radius: list[str]) -> list[dict]:
+    """One `EvidencePackage` per finding, as a LIST in the caller's finding order.
+
+    Not a dict keyed by title: duplicate titles are the EXPECTED case for a multi-lens fan-out
+    over one diff, and keying by title silently collapsed them onto one package carrying the
+    wrong file's code. Order is input order, so an index join is always available.
+    """
     if not findings:
-        return {}
+        return []
     _repo_files(repo)          # build the index BEFORE the pool, so workers only read it
     _alias_roots(repo)
     with ThreadPoolExecutor(max_workers=_EXTRACT_WORKERS) as pool:
-        packages = list(pool.map(
-            lambda finding: _extract_one(repo, finding, patches, blast_radius), findings))
-    return {package["finding_title"]: package for package in packages}
+        return list(pool.map(
+            lambda finding: _safe_extract(repo, finding, patches, blast_radius), findings))
 
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
@@ -716,6 +847,12 @@ def _read_input(source: str) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Repo content is arbitrary text and a cp1252 console (the Windows default) cannot encode
+    # all of it; the run must degrade a character, never die. hasattr-guarded because a captured
+    # or StringIO stream has no reconfigure.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(
         prog="evidence_extract.py",
         description="Ground-truth code evidence for the house review engine. Prints to stdout.")
@@ -732,6 +869,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if bool(args.pack) == bool(args.findings):
         parser.error("exactly one of --pack or --findings is required")
+    if args.pack and (args.diff or args.blast_radius):
+        parser.error("--diff and --blast-radius apply to --findings only")
     if not os.path.isdir(args.repo):
         parser.error(f"--repo is not a directory: {args.repo}")
     if args.findings == "-" and args.diff == "-":

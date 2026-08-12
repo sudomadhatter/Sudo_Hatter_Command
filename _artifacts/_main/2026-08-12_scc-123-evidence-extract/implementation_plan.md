@@ -77,11 +77,24 @@ Windows PC, so a `grep` subprocess is banned. The replacement walks once with `o
 `grep -RIn` does, in-process. The **file-path list is built once per repo and reused**; only the
 reads are repeated, and those hit the cache. That is why this is not slower than 8 grep children.
 ⛔ The proof that no subprocess grep survives is not `"subprocess" not in source` — a comment
-inverts that check (a known house pitfall). The real proof runs the script **with `PATH` emptied**
-so no `grep` binary is reachable, and asserts byte-identical output. The source ban ships too, as a
-cheap tripwire, but it is not the evidence.
+inverts that check (a known house pitfall). The source ban ships too, as a cheap tripwire, but it
+is not the evidence.
 
-**D2 — `_path_to_module` becomes `_import_specifiers`, and resolves per importer.**
+⛔ **CORRECTED DURING THE BUILD — `PATH=""` proves nothing, and this plan said it did.** The
+method written here was *"run with `PATH` emptied so no `grep` binary is reachable."* That is
+false, and it is left on the record rather than quietly swapped because it is the more useful
+half. When `PATH` is empty CPython does **not** give up: `subprocess` falls back to
+**`os.defpath`** (`:/bin:/usr/bin`), so `/bin/grep` is still found and still runs. A guard built
+that way passes against a script that shells out on every call — it proves the opposite of what it
+claims. The real proof installs a `sitecustomize.py` on `PYTHONPATH` that makes process creation
+itself raise, so a shell-out **dies** instead of silently succeeding, and asserts byte-identical
+output under it. It ships with a control row that shells out deliberately and must die, because a
+blocker that is not installed is indistinguishable from a script that never spawns.
+
+**D2 — `_path_to_module` is replaced by per-importer resolution.** (As built, that is
+`_python_module_names` + `_python_importers` on the Python side and `_ts_importers` +
+`_resolve_specifier` on the TS side — the single name `_import_specifiers` this plan first used
+was never shipped, and the review caught the repo map pointing at the phantom.)
 A single module string cannot express how JS/TS names a module. The function returns the set of
 ways a file can be referred to, and matching is exact rather than fuzzy:
 
@@ -129,8 +142,12 @@ locate the hunk containing the finding's line; fall back to the file's first 200
 **D5 — concurrency by `ThreadPoolExecutor(max_workers=10)`, over an immutable path index.**
 The direct analogue of pr-af's `asyncio.Semaphore(10)` without asyncio. The repo path index is built
 **before** the pool starts, so no thread mutates shared state; the file cache takes a lock. Output
-is sorted and deterministic — the same inputs give byte-identical output, which is what makes the
-guard's discrimination proofs meaningful.
+is sorted and deterministic **while the searches complete inside their 10s deadlines** — the same
+inputs then give byte-identical output, which is what makes the guard's discrimination proofs
+meaningful. ⚠️ Scoped during review: on a repo big enough to blow a deadline, the cut-off is
+load-dependent by design (bounded seconds, not bounded files), so a partial result is possible and
+now announces itself with a stderr note. The guard's determinism row runs on a fixture the deadline
+cannot touch.
 
 **D6 — it degrades, it does not die.** SCC-116 §SCC-127 sets the contract: *"extractor is code, not
 a lens — if it dies, the verifier runs cold; it does NOT cap the verdict."* So: a missing file, an
@@ -147,15 +164,25 @@ into a blast-radius tool.
 ## Acceptance — the checkable list
 
 1. **`.agents/scripts/evidence_extract.py` exists** and runs on `python3` and `python` (stdlib only,
-   no third-party import, ASCII output).
+   no third-party import; its own labels ASCII, with both output streams forced to UTF-8
+   `errors="replace"` because repo content is arbitrary and a cp1252 console must degrade a
+   character, not kill the run — review H-5).
 2. **`--pack` mode** emits the primed dossier and honours all four pack caps: ≤6 files, ≤400 lines
    per file with a truncation notice, ≤16000 chars total, import context sliced at 1200.
-3. **`--findings` mode** emits JSON keyed by finding title, each value carrying the six
-   `EvidencePackage` fields (`primary_code`, `caller_snippets`, `cross_ref_snippets`, `diff_hunk`,
-   `import_context`, `related_code`), and honours ≤8 identifiers, ≤10 caller snippets, ≤10 cross-ref
-   files, ≤5 blast-radius snippets.
-4. **No `grep` subprocess** — proven by running with `PATH` emptied and getting byte-identical
-   output, not by grepping the source.
+3. **`--findings` mode** emits a JSON **list** of packages in finding order, each carrying
+   `finding_title` plus the six `EvidencePackage` fields (`primary_code`, `caller_snippets`,
+   `cross_ref_snippets`, `diff_hunk`, `import_context`, `related_code`), and honours ≤8 identifiers,
+   ≤10 caller snippets, ≤10 cross-ref files, ≤5 blast-radius snippets. ⚠️ **This item originally
+   said "keyed by finding title" and that shape was wrong**: duplicate titles are the expected case
+   for a multi-lens fan-out over one diff, and a title-keyed dict silently collapsed them onto one
+   package carrying the wrong file's code (review H-2). Corrected before any consumer existed —
+   SCC-127 builds against the list.
+4. **No `grep` subprocess** — proven by running with **process creation blocked at the interpreter**
+   (a `sitecustomize.py` on `PYTHONPATH` that raises) and getting byte-identical output, in **both**
+   modes, not by grepping the source. ⚠️ **This item originally said "with `PATH` emptied" and that
+   was wrong** — see D1: CPython falls back to `os.defpath`, so `/bin/grep` stays reachable and the
+   check would pass against a script that shells out every time. A control row asserts a deliberate
+   shell-out really does die under the blocker, or "no spawn happened" is unfalsifiable.
 5. **`IMPORTED BY` is non-empty where an import genuinely exists, and empty where it does not** —
    for a flat `sys.path` Python script, a packaged Python module, a TS relative import, a TS
    `index.*` directory import, and a TS `@/` alias import; and a file that imports a *different*
