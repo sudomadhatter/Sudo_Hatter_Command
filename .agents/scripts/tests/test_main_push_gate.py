@@ -25,6 +25,7 @@ import pathlib
 from pathlib import Path
 
 from _harness import Cases, TempDir
+import hooks_armed  # SCC-110 — _harness puts .agents/scripts on sys.path
 
 REPO = Path(__file__).resolve().parents[3]
 HOOKDIR = REPO / ".agents/scripts/git-hooks"
@@ -80,7 +81,10 @@ def main() -> int:
     # ── INSTALLED ────────────────────────────────────────────────────────────────────────
     for p in (DISPATCH, GATE, MINT):
         c.check(f"{p.name} exists", p.is_file())
-        c.check(f"{p.name} is executable", p.is_file() and p.stat().st_mode & 0o111 != 0,
+        # SCC-110: `hooks_armed.is_executable` carries the Windows guard — CPython there
+        # synthesises st_mode and never sets the exec bit for an extensionless hook or a .sh,
+        # so this assertion was red on the PC for a gate that runs fine.
+        c.check(f"{p.name} is executable", hooks_armed.is_executable(p),
                 "chmod +x — git silently ignores a non-executable hook")
     c.check("MAIN-PUSH-ENFORCE present (gate is ARMED)", ARM.is_file())
 
@@ -118,6 +122,21 @@ def main() -> int:
         print(f"[note] {len(predating)} worktree(s) predate the gate and are UNGATED: "
               f"{predating} — inherent to per-worktree hook resolution; see git-policy.md "
               f"§'A fresh clone ships this gate OFF'. Merging this lane gates the main checkout.")
+
+    # ── ⭐ SCC-110: the GENERIC arm-check must agree with this gate-specific one ──────────
+    # Extraction was the original SCC-110 plan and was rejected on evidence: the block above
+    # covers `mint-push-token.sh` and per-worktree hook resolution, neither of which
+    # `hooks_armed` models, so lifting it out would have deleted coverage that SCC-77's
+    # adversarial review put here. What the extraction was actually FOR was preventing two
+    # checkers from drifting apart — and a cross-check catches that directly, without
+    # removing anything. If these two ever disagree, one of them is wrong and this fails.
+    # Only the DERIVED-set assertion is kept. An "is this repo armed" check here would be a
+    # verbatim restatement of test_hooks_armed case A, and it would couple the files the wrong
+    # way round — deleting SOP-ENFORCE would red a file titled "main write gate".
+    generic = hooks_armed.scan(REPO)
+    c.check("this gate's hook is in the generic check's DERIVED set, and executable",
+            any(h["name"] == "pre-push" and h["executable"] for h in generic["hooks"]),
+            "drift: hooks_armed no longer sees the hook this whole file is about")
 
     # ── settings.json may never name one platform's binary again ─────────────────────────
     raw = (REPO / ".claude/settings.json").read_text()

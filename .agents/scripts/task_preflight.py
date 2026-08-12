@@ -40,6 +40,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import wf_common as wf
+import hooks_armed
 
 # The chore lane's branch shape, from `git-policy.md`: the key sits IMMEDIATELY after the
 # prefix (`chore/SCC-11-acli-wrapper`, never `chore/fix-SCC-11`) because Atlassian's GitHub
@@ -129,10 +130,13 @@ def check_branch(repo: Path, branch: str, rep: wf.Report) -> str | None:
         rep.warn("branch", f"{key}: no .agents/jira.conf in this repo - the key cannot be "
                            f"checked against the repo's project")
     elif m.group(1) not in allowed:
-        # The same rule the armed commit-msg hook enforces. If it were wrong the commits on
-        # this branch could not exist, so reaching here means the hook was bypassed.
+        # The same rule the armed commit-msg hook enforces - so reaching here means it did not
+        # run. TWO causes, and the message must name both: the hook was bypassed (--no-verify),
+        # or it was never ARMED on this machine. `core.hooksPath` is per-machine and a fresh
+        # clone has it unset, which makes the second cause the likelier one (SCC-110).
         rep.err("branch", f"{key} is not one of this repo's projects ({', '.join(allowed)}) "
-                          f"- a wrong-project key means these commits skipped the hook")
+                          f"- these commits did not pass the commit-msg gate: it was either "
+                          f"bypassed, or never armed here (see the `hooks` findings)")
         return None
     else:
         rep.info("branch", f"{branch} -> {key} (project {m.group(1)} matches this repo)")
@@ -639,21 +643,42 @@ def main() -> int:
     lane, touched = check_scope(repo, branch, rep)
     check_artifacts(repo, key, rep)
     check_worktree(repo, branch, rep)
+    # Every check above this line reads a repo whose commits it ASSUMES were gated. That
+    # assumption is only true while `core.hooksPath` is set - it is per-machine, git never
+    # carries it, and a fresh clone has it unset with no error. Ask, do not assume (SCC-110).
+    armed = hooks_armed.check(repo, rep)
     plan = gate_plan(repo, lane)
 
     if args.json:
         print(json.dumps({"repo": str(repo), "branch": branch, "key": key,
                           "expect_key": expect, "lane": lane,
                           "deployable_touched": touched, "gate": plan,
+                          "hooks_armed": armed["armed"], "hooks": armed,
                           "findings": rep.items, "exit": rep.exit_code()}, indent=2))
     else:
         rep.print_human(f"task preflight - {branch}")
         print(f"LANE: {lane}")
+        # Hoisted, not inlined: a replacement field spanning two physical lines is PEP 701 and
+        # needs Python 3.12+. This file must parse on the PC too, and it is the one script the
+        # close-out cannot run without (SCC-110 review, H1).
+        gates = ("ARMED" if armed["armed"] else
+                 "NOT ARMED - the checks above assume hooks that are not running")
+        print(f"GATES: {gates}")
         for cmd in plan:
             print(f"  gate: {cmd}")
         e, _ = rep.counts()
-        print("VERDICT: " + ("BLOCKED - resolve the errors above" if e
-                             else "clear to close out and merge"))
+        # A repo that CLAIMS gates and is not running them must never see the word "clear":
+        # every check above it inferred something from commits that nothing actually checked.
+        # A repo that never claimed gates is a different animal - it gets the normal line, with
+        # the warning still standing above it (SCC-110 review, M4).
+        if e:
+            verdict = "BLOCKED - resolve the errors above"
+        elif not armed["armed"] and armed["claims_gates"]:
+            verdict = ("NOT CLEAR - no blocking error, but this repo's commit gates are not "
+                       "running, so nothing mechanical checked any of the commits above")
+        else:
+            verdict = "clear to close out and merge"
+        print("VERDICT: " + verdict)
     return rep.exit_code()
 
 

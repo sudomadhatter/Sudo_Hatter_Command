@@ -1132,9 +1132,11 @@ claims). Its judgment half checks the conventions **this page** defines.
 
 ## 10. The safety net — what checks your work
 
-**Nine small programs plus three git hooks — two that block (`pre-commit`, `commit-msg`, carrying
-the encoding, lint, Jira-key and SOP-currency checks) and one that records (`post-commit`, the
-map-drift journal)** — do the checking that used to be a person holding eight rules in their head. What matters to you is *what they refuse to let happen.*
+**A set of small programs plus four git hooks — three that block (`pre-commit`, `commit-msg` and
+`pre-push`, carrying the encoding, lint, Jira-key, SOP-currency and `main`-push-approval checks) and
+one that records (`post-commit`, the map-drift journal)** — do the checking that used to be a person
+holding eight rules in their head. The table below is the live list, and it outranks any count in
+this sentence. What matters to you is *what they refuse to let happen.*
 
 *Which safety check fires inside which command:*
 
@@ -1192,11 +1194,13 @@ flowchart LR
 | `task_preflight.py` | **A change to the product sneaking onto `main` labelled a "task".** It derives the lane from the repo rather than asking: does this repo **have** anything that deploys, and did **this diff** touch it? Touch one and it **stops dead and sends the work to `/cicd-push-e2e`. There is no override flag, on purpose.** It also checks the branch shape, the `--expect-key` match, the `task.yaml` manifest, that the tree is clean and pushed, and that `origin/main` was absorbed. |
 | `check_maps.py` | **The maps and INDEXes drifting from what is actually on disk.** Every level-2 folder must carry an `INDEX.md`, every backticked path in a **map's** table row must resolve, and the repo-map must still name every top-level folder. Ledgers under `_artifacts/` are exempt on purpose — their rows are history, and a row describing work that *deleted* something has to be able to name it. **That exemption is why a session-folder row is matched on its FIRST cell written with a trailing `/` (SCC-96):** anything else in the row is prose, and prose is where a ledger explains *why* — including by naming the memory a decision rests on. Matching prose instead made every memory slugged `story-`/`tea-`/`epic-`/`autopilot-` read as a folder gone missing, so the gate fired on exactly the behaviour the convention asks for. |
 | `tests/test_sops_prds_folder.py` | **The SOPs and PRDs going stale again.** Pins the 11-doc manifest in `docs/_scc_sops_prds/`, checks its `INDEX.md` against the directory in BOTH directions, verifies every markdown link resolves and every `/command` reference names a real command master, and asserts the SOP gate's two halves still point at the same file. |
+| `pre-push-main-approval.sh` | **Anything reaching `main` without a fresh, single-use sign-off.** The `pre-push` hook refuses a push landing on `main` unless a token minted for that exact sha is present, and the token is spent on use — so one approval buys exactly one push. It closed the hole where six merges rode a single sign-off. *(Shipped 2026-08-10 by SCC-77; this row was owed and is added here.)* |
+| `hooks_armed.py` | **Every other check on this page reporting green while switched OFF.** Three ways a gate dies quietly, and it reports all three: `core.hooksPath` is per-machine and git never carries it, so a fresh clone reads an empty `.git/hooks` and *nothing* runs; every dispatcher in `.githooks/` ends `[ -x "$SCRIPT" ] || exit 0`, so a deleted or merely non-executable inner script makes the hook exit 0 with **no output at all**; and deleting a `<NAME>-ENFORCE` flag downgrades a gate from *reject* to *warn*, which reads as clean success because hook output is rendered nowhere you look. It asks **git** what is tracked rather than listing the directory — a listing cannot tell *"this gate was deleted"* from *"this repo never had it"*, and an early cut of this script reported ARMED on a repo whose three gate scripts had all been removed. It folds into `task_preflight.py`, which now prints `GATES: ARMED` or `NOT ARMED`; on a repo that **claims** gates and is not running them the words *"clear to close out and merge"* no longer appear at all. It **reports and never arms**: changing your git config for you would be worse than telling you, and the one-line remedy is printed. |
 | `split_sprint_status.py` | The one-time migration that shrank the board. |
 | `wf_common.py` | Shared plumbing the others import. You'll never call it. |
 
 **Run all their tests any time:** `python3 .agents/scripts/tests/run_all.py` (on the PC, `python …`) —
-408 checks across 12 files as of 2026-08-11, about ten seconds — the suite prints its live totals,
+646 checks across 16 files as of 2026-08-11, about ten seconds — the suite prints its live totals,
 which outrank this sentence. Full detail in
 [`.agents/scripts/INDEX.md`](../../.agents/scripts/INDEX.md).
 
