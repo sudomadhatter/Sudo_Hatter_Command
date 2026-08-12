@@ -597,6 +597,24 @@ def main() -> int:
                 "NOT an importer",
                 ".claude/worktrees" not in line, line)
 
+        # the OTHER leg of the nested-checkout prune: a DIRECT request for a worktrees path.
+        # The walk prune cannot stop this one -- _resolve_rel joins the path straight to disk,
+        # so only _under_skip_dir's pair clause refuses it. The re-review's one surviving
+        # mutant deleted exactly that clause and scored a full pass; these two rows pin it.
+        rc, out, err = run_ee("--repo", str(repo), "--pack",
+                              ".claude/worktrees/lane/scripts/wt_dup.py")
+        c.check("pack: a DIRECT target inside .claude/worktrees is refused, with a note",
+                rc == 0 and out.strip() == "" and "note:" in err,
+                f"exit {rc} out={out[:80]!r}")
+        fpath = findings_file(repo, [{"title": "wt", "body": "", "evidence": "",
+                                      "file_path": ".claude/worktrees/lane/wt_caller.py",
+                                      "line_start": 1}])
+        rc, out, _ = run_ee("--repo", str(repo), "--findings", fpath)
+        c.check("findings: a file_path inside .claude/worktrees yields empty primary_code",
+                pkg_for(out, "wt").get("primary_code", "x") == ""
+                and "CALLER_HIDDEN_MARKER" not in out,
+                out[:120])
+
         rc, out, _ = run_ee("--repo", str(repo), "--pack", "src/pkg/target.py")
         line = imported_by(out)
         c.check("python package: the package-chain name (pkg.target) is found",
@@ -656,6 +674,20 @@ def main() -> int:
         line = imported_by(out)
         c.check("ts COUNTER-EXAMPLE: with NO config at all, the `@/ -> src/` default still applies",
                 "pages/uses.tsx" in line, line or "no IMPORTED BY line")
+
+        # JSONC (comments, trailing commas) is legal in real tsconfigs and fails strict
+        # json.loads -- the skip must be NAMED, or an aliased frontend silently reads
+        # IMPORTED BY: none with no way to know why
+        repo = tmp / "repoE"
+        repo.mkdir()
+        write(repo, "tsconfig.json",
+              '{\n  // a JSONC comment, legal for TypeScript, fatal for json.loads\n'
+              '  "compilerOptions": {"paths": {"@/*": ["./src/*"]}}\n}\n')
+        write(repo, "src/components/Thing.tsx", "export const Thing = () => null;\n")
+        write(repo, "pages/uses.tsx", "import { Thing } from '@/components/Thing';\n")
+        rc, out, err = run_ee("--repo", str(repo), "--pack", "src/components/Thing.tsx")
+        c.check("ts: an unparseable (JSONC) tsconfig is NAMED on stderr, never skipped silently",
+                "note:" in err and "tsconfig.json" in err, err[:160] or "silent skip")
 
     # ── 4. path normalization where the repo name recurs (D3) ─────────────────
     with TempDir() as tmp:
@@ -753,6 +785,31 @@ def main() -> int:
                 "TARGET_SENTINEL" in pkg_for(out, "bystander").get("primary_code", ""),
                 "the poisoned finding took the healthy one down with it")
 
+        # junk entries degrade IN PLACE: titles are not unique (the duplicate-title fix), so a
+        # consumer's only reliable join is by index -- a silently dropped entry would misassign
+        # every package after it. 4 in, 4 out, order kept, every field present.
+        mixed = repo / "_mixed.json"
+        mixed.write_text('[{"title": "first ok", "body": "", "evidence": "", '
+                         '"file_path": "src/pkg/target.py", "line_start": 41}, '
+                         '"just a string", '
+                         '{"body": "titleless", "file_path": "src/pkg/target.py"}, '
+                         '{"title": "last ok", "body": "", "evidence": "", '
+                         '"file_path": "src/pkg/target.py", "line_start": 41}]',
+                         encoding="utf-8")
+        rc, out, err = run_ee("--repo", str(repo), "--findings", str(mixed))
+        mixed_pkgs = json.loads(out) if out.strip() else []
+        c.check("degrade: junk findings yield packages IN PLACE - 4 in, 4 out, order kept",
+                rc == 0 and isinstance(mixed_pkgs, list) and len(mixed_pkgs) == 4
+                and mixed_pkgs[0].get("finding_title") == "first ok"
+                and mixed_pkgs[3].get("finding_title") == "last ok",
+                f"exit {rc} len={len(mixed_pkgs) if isinstance(mixed_pkgs, list) else '-'}")
+        pkg_fields = ("finding_title", "primary_code", "caller_snippets", "cross_ref_snippets",
+                      "diff_hunk", "import_context", "related_code")
+        c.check("degrade: the junk entries still carry every field",
+                len(mixed_pkgs) == 4
+                and all(k in mixed_pkgs[1] and k in mixed_pkgs[2] for k in pkg_fields),
+                "degraded package missing fields")
+
         bad = repo / "_bad.json"
         bad.write_text("{not json at all", encoding="utf-8")
         rc, _, _ = run_ee("--repo", str(repo), "--findings", str(bad))
@@ -781,12 +838,16 @@ def main() -> int:
                 raise RuntimeError("poisoned finding")
 
         cap = io.StringIO()
-        with contextlib.redirect_stderr(cap):
-            packages = ee.extract_for_findings(
-                str(repo),
-                [Poison(), {"title": "healthy", "body": "", "evidence": "",
-                            "file_path": "src/pkg/target.py", "line_start": 41}],
-                {}, [])
+        try:
+            with contextlib.redirect_stderr(cap):
+                packages = ee.extract_for_findings(
+                    str(repo),
+                    [Poison(), {"title": "healthy", "body": "", "evidence": "",
+                                "file_path": "src/pkg/target.py", "line_start": 41}],
+                    {}, [])
+        except Exception as exc:  # a raise here must be a RED ROW, not a dead guard --
+            packages = []         # every row after this section would go unreported otherwise
+            c.check("isolation: extract_for_findings must not raise in-process", False, repr(exc))
         c.check("isolation: a finding that raises degrades ALONE; its sibling keeps its evidence",
                 len(packages) == 2
                 and "TARGET_SENTINEL" in packages[1].get("primary_code", "")
@@ -795,8 +856,8 @@ def main() -> int:
         fields = ("finding_title", "primary_code", "caller_snippets", "cross_ref_snippets",
                   "diff_hunk", "import_context", "related_code")
         c.check("isolation: the degraded package still carries every field",
-                all(f in packages[0] for f in fields),
-                f"missing={[f for f in fields if f not in packages[0]]}")
+                bool(packages) and all(f in packages[0] for f in fields),
+                f"missing={[f for f in fields if f not in packages[0]] if packages else 'all'}")
         c.check("isolation: the degradation is NAMED on stderr, not silent",
                 "degraded to an empty package" in cap.getvalue(),
                 cap.getvalue()[:120] or "silent")

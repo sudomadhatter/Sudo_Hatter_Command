@@ -1238,7 +1238,7 @@ flowchart LR
 | `wf_common.py` | Shared plumbing the others import. You'll never call it. |
 
 **Run all their tests any time:** `python3 .agents/scripts/tests/run_all.py` (on the PC, `python …`) —
-**1086 checks across 21 files, measured 2026-08-12, about eighty seconds** — the suite prints
+**1091 checks across 21 files, measured 2026-08-12, about eighty seconds** — the suite prints
 its live totals, which outrank this sentence.
 
 > ⚠ **This number had gone stale, and the gate was right not to catch it.** It read *"646 checks

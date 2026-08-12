@@ -257,9 +257,12 @@ def _resolve_rel(repo: str, file_path: str) -> str:
     exist. pr-af hit this and fixed it in one function; the fix belongs at every entry point.
 
     Containment is the other half: absolute paths were always neutralised, but a relative
-    `../../..` walked straight out of the repo and read whatever it landed on. Evidence comes
-    from the repo under review or it is not evidence, so every candidate that escapes is
-    dropped — including the not-a-file fallback, which callers go on to open.
+    `../../..` walked straight out of the repo and read whatever it landed on. Every candidate
+    that LEXICALLY escapes is dropped — including the not-a-file fallback, which callers go on
+    to open. Lexical means `abspath`, not `realpath`, and that is a choice: a path through an
+    in-repo symlink is treated as the repo's own content, because this system plants junctions
+    inside repos on purpose (the portable memory store) and following them is the intended
+    read. A repo that links to a file outside itself has vouched for that file.
     """
     raw = (file_path or "").strip().replace("\\", "/")
     if not raw:
@@ -471,7 +474,12 @@ def _alias_roots(repo: str) -> list[tuple[str, str]]:
         try:
             data = json.loads("\n".join(_read_file_lines(os.path.join(repo, rel))))
         except (ValueError, TypeError):
-            continue                      # not strict JSON: degrade, never die
+            # JSONC (comments, trailing commas) is legal in real tsconfigs and fails strict
+            # json.loads. Any paths it declares are invisible here, so IMPORTED BY can read
+            # empty for every aliased import -- the silent-emptiness class this file exists
+            # to kill. Degrade, never die, but NAME the skip.
+            _note(f"tsconfig is not strict JSON, alias paths unread: {rel}")
+            continue
         if not isinstance(data, dict):
             continue
         paths = (data.get("compilerOptions") or {}).get("paths") or {}
@@ -590,8 +598,10 @@ def split_unified_diff(text: str) -> dict[str, str]:
     real patch AND invents a bogus key. So `--- ` opens a header pair only where a header can
     be — before any file's body has started — and `+++ ` is a header only immediately after that
     `--- ` half; inside a body, both spellings are kept as content. Accepted cost: a bare
-    concatenated multi-file diff with no `diff --git` separators keeps only its first file — git
-    output, which is what the engine feeds this, always carries them.
+    concatenated multi-file diff with no `diff --git` separators collapses into the FIRST
+    file's patch — the later files' headers and hunks are absorbed into its body, so a hunk
+    lookup there can return a later file's hunk under the first file's key. Git output, which
+    is what the engine feeds this, always carries the separators.
     """
     patches: dict[str, str] = {}
     key: str | None = None
@@ -823,11 +833,14 @@ def _safe_extract(repo: str, finding: dict, patches: dict[str, str],
 
 def extract_for_findings(repo: str, findings: list[dict], patches: dict[str, str],
                          blast_radius: list[str]) -> list[dict]:
-    """One `EvidencePackage` per finding, as a LIST in the caller's finding order.
+    """One `EvidencePackage` per finding, as a LIST in the caller's finding order — ALWAYS
+    one per input entry, junk included (a non-dict or titleless entry degrades in place).
 
     Not a dict keyed by title: duplicate titles are the EXPECTED case for a multi-lens fan-out
     over one diff, and keying by title silently collapsed them onto one package carrying the
-    wrong file's code. Order is input order, so an index join is always available.
+    wrong file's code. Order is input order, so an index join is always available — which is
+    exactly why nothing may be dropped: titles being non-unique makes the index THE join, and
+    a silent drop would misassign every package after it.
     """
     if not findings:
         return []
@@ -895,8 +908,11 @@ def main(argv: list[str] | None = None) -> int:
         except OSError as exc:
             parser.error(f"--diff could not be read: {exc}")
 
-    usable = [f for f in findings if isinstance(f, dict) and str(f.get("title") or "")]
-    result = extract_for_findings(repo, usable, patches, list(args.blast_radius))
+    # No pre-filter: every input entry yields exactly one package, IN PLACE. Titles are not
+    # unique (H-2), so a consumer's only reliable join is by index -- silently dropping a
+    # titleless or non-dict entry would misassign every package after it. Junk degrades
+    # inside _safe_extract, with a note.
+    result = extract_for_findings(repo, findings, patches, list(args.blast_radius))
     sys.stdout.write(json.dumps(result, indent=2, sort_keys=True) + "\n")
     return 0
 
