@@ -1,0 +1,7 @@
+task_key: SCC-113
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-113-jira-in-progress-seam
+close_command: smh-close-task-merge-tree
+secondary_repos: []        # AGY inherits NOTHING (audit F-1): .githooks/ + git-hooks/ are repo-local
+                           # enforcement and never centralize, and AGY has no jira_feed.py at all.
+                           # AVCH coverage is its own ticket — deliberately NOT declared here.

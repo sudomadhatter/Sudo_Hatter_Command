@@ -76,6 +76,27 @@ echo "Lane: $BRANCH"
 Echo the branch **from `rev-parse`, never from memory.** Every path and command from here binds to that
 tree.
 
+**Move the ticket to `In Progress` — now, at the tree, not at the merge (SCC-113):**
+
+```bash
+python3 .agents/scripts/jira_feed.py start --key <KEY> --apply    # PC: `python`
+```
+
+Idempotent, so a re-run or a resumed lane is a no-op. **Read its exit code — three outcomes:**
+
+| Exit | Means | What you do |
+|---|---|---|
+| `0` | moved, or already `In Progress` | carry on |
+| `3` | **left alone** — the ticket is `Blocking` / `In Review` / `Deferred` | **stop and ask.** You are opening a lane on a ticket that is waiting on something; say which and confirm that is intended |
+| `2` | **the board refused it** — a `Done` key (so the key is wrong), a Subtask, or a move that did not land | **stop.** Never work a closed ticket's key; mint one at the `jira.md` §Who-mints-tickets seam |
+| `4` | **the board was unreachable** — transport, not a verdict | **carry on and retry later.** ⛔ Do *not* mint a ticket: nothing here says your key is wrong. Sandboxed shells cannot reach the credential store (`jira.md` top), and the operator commits from planes |
+
+> **The `post-commit` hook does this too, and that is deliberate, not redundant.** The hook fires on
+> the first commit of any `chore/ · claude/ · epic/` branch, so work started without this command
+> still shows on the board. This call moves it *earlier* — at the tree, before the first commit —
+> and visibly. Neither layer is load-bearing alone: `core.hooksPath` is per-machine, so on a fresh
+> clone the hook is silently OFF until it is set, and this line is what still works.
+
 **⭐ Read the sibling lanes now, not at merge time.** Several `chore/*` lanes run at once and their
 uncommitted work is invisible to `grep`:
 
