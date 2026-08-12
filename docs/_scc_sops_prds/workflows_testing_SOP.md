@@ -1233,12 +1233,24 @@ flowchart LR
 | `main_write_gate.py` | **A merge made on GitHub itself reaching `main` with no gate having run.** Everything in the row above happens on your computer, at `git push`; a merge performed in the browser or through the API happens on GitHub's servers and never touches your computer, so that hook is not bypassed — it is **absent**. This is the half that runs *there*, as a required check called `main-write-gate`: the real enforcement suite, the toolkit lint, and a check that the merge came from an `epic/*` or `chore/*` branch with a key this repo answers to (and, for a pre-flighted local merge, that `main` advances by exactly one merge of a genuinely pushed branch). ⛔ **It is not a copy of the token gate and must not be described as one** — the token proves *you said yes*, this proves *the change is fit*. The authorisation half cannot move to a server: the token lives in `.git/`, and restricting *who* may merge cannot work when the web agent merges under your own account. Covers **this repo only**; a project repo gaining the same check is its own ticket. *(SCC-118, 2026-08-12.)* |
 | `tests/test_main_ruleset_armed.py` | **The GitHub half being switched off without leaving a trace in any commit.** The ruleset lives on the server and can be deleted or disabled from a browser; no file in this repo would change. This asks GitHub directly, on every suite run, and **fails hard** if the ruleset is missing, disabled, or has picked up a bypass actor — a bypass for "repository admin" would re-open the whole hole while still *looking* armed, because the agent merges as you. When it cannot reach GitHub at all (offline, no `gh`, no credentials) it prints `[SIGNAL]` and passes: that is refusing to claim knowledge it does not have, not a soft gate. |
 | `hooks_armed.py` | **Every other check on this page reporting green while switched OFF.** Three ways a gate dies quietly, and it reports all three: `core.hooksPath` is per-machine and git never carries it, so a fresh clone reads an empty `.git/hooks` and *nothing* runs; every dispatcher in `.githooks/` ends `[ -x "$SCRIPT" ] || exit 0`, so a deleted or merely non-executable inner script makes the hook exit 0 with **no output at all**; and deleting a `<NAME>-ENFORCE` flag downgrades a gate from *reject* to *warn*, which reads as clean success because hook output is rendered nowhere you look. It asks **git** what is tracked rather than listing the directory — a listing cannot tell *"this gate was deleted"* from *"this repo never had it"*, and an early cut of this script reported ARMED on a repo whose three gate scripts had all been removed. It folds into `task_preflight.py`, which now prints `GATES: ARMED` or `NOT ARMED`; on a repo that **claims** gates and is not running them the words *"clear to close out and merge"* no longer appear at all. It **reports and never arms**: changing your git config for you would be worse than telling you, and the one-line remedy is printed. |
+| `evidence_extract.py` | **Nothing — and it is on this list on purpose.** It is the one entry here that is *not* a gate: it refuses nothing, no hook calls it, and you never type it. It is the review engine's fact-fetcher (SCC-123), and what it prevents is a reviewer reasoning about only the files it happened to open — it reads the changed files and their callers *first* and hands the lens a dossier. It is listed because this table calls itself the live list, and a script in `.agents/scripts/` missing from it would make that sentence false. |
 | `split_sprint_status.py` | The one-time migration that shrank the board. |
 | `wf_common.py` | Shared plumbing the others import. You'll never call it. |
 
 **Run all their tests any time:** `python3 .agents/scripts/tests/run_all.py` (on the PC, `python …`) —
-646 checks across 16 files as of 2026-08-11, about ten seconds — the suite prints its live totals,
-which outrank this sentence. Full detail in
+**1091 checks across 21 files, measured 2026-08-12, about eighty seconds** — the suite prints
+its live totals, which outrank this sentence.
+
+> ⚠ **This number had gone stale, and the gate was right not to catch it.** It read *"646 checks
+> across 16 files"* until 2026-08-12. Adding a test file lands under `.agents/scripts/tests/`, which
+> is an explicit exemption in `sop_currency.py` — so SCC-122's new test file moved the total from 16
+> to 17 inside a commit that was correctly exempt from end to end. There was nothing for a blocking
+> gate to block. A count like this one goes wrong through changes nobody should be stopped for,
+> which is why the sentence above defers to what the suite prints. It then went stale **twice more
+> on the same day it was corrected** — SCC-118 landed three test files mid-review, and SCC-123's
+> review rebuild grew its own guard — which is the deferral proving itself, not a failure of it.
+
+Full detail in
 [`.agents/scripts/INDEX.md`](../../.agents/scripts/INDEX.md).
 
 > ⓘ **Three design decisions that look like bugs until you know why.**
