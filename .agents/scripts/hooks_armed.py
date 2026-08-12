@@ -89,7 +89,7 @@ def _tracked(repo: Path, pathspec: str) -> list[str]:
     return sorted(p for p in r.stdout.split("\0") if p) if r.returncode == 0 else []
 
 
-def _executable(p: Path) -> bool:
+def is_executable(p: Path) -> bool:
     """⚠ Windows has no POSIX executable bit.
 
     CPython synthesises `st_mode` there from file attributes and sets the exec bits only for
@@ -149,7 +149,7 @@ def scan(repo: Path) -> dict:
 
     for name in expected:
         present = bool(resolved) and (resolved / name).is_file()
-        ok_exec = bool(resolved) and _executable(resolved / name)
+        ok_exec = bool(resolved) and is_executable(resolved / name)
         hooks.append({"name": name, "present": present, "executable": ok_exec})
         if not present:
             err(f"hook {name!r} is tracked in {HOOK_DIR}/ but absent from the directory git "
@@ -165,7 +165,7 @@ def scan(repo: Path) -> dict:
         if not disk.is_file():
             err(f"{name} is TRACKED but missing from disk — its dispatcher guards the call with "
                 f"`[ -x ... ] || exit 0`, so the hook exits 0 and allows the operation UNCHECKED.")
-        elif not _executable(disk):
+        elif not is_executable(disk):
             err(f"{name} is NOT EXECUTABLE — its dispatcher skips it and exits 0 SILENTLY, with "
                 f"no warning at all. Remedy: chmod +x {disk}")
 

@@ -81,10 +81,10 @@ def main() -> int:
     # ── INSTALLED ────────────────────────────────────────────────────────────────────────
     for p in (DISPATCH, GATE, MINT):
         c.check(f"{p.name} exists", p.is_file())
-        # SCC-110: `hooks_armed._executable` carries the Windows guard — CPython there
+        # SCC-110: `hooks_armed.is_executable` carries the Windows guard — CPython there
         # synthesises st_mode and never sets the exec bit for an extensionless hook or a .sh,
         # so this assertion was red on the PC for a gate that runs fine.
-        c.check(f"{p.name} is executable", hooks_armed._executable(p),
+        c.check(f"{p.name} is executable", hooks_armed.is_executable(p),
                 "chmod +x — git silently ignores a non-executable hook")
     c.check("MAIN-PUSH-ENFORCE present (gate is ARMED)", ARM.is_file())
 
