@@ -569,6 +569,38 @@ def uncloned_note(stubbed: list[str]) -> str:
             f"`git submodule update --init` and re-run BEFORE treating the above as defects.")
 
 
+def t9_inconclusive(found: dict, stubbed: list[str], env: dict) -> bool:
+    """Can T9's failure be believed in THIS checkout? (SCC-118)
+
+    ⛔ Read the round-3 ruling above `uncloned_note` before touching this. That ruling —
+    "the check stays STRICT, and the failure carries its own remedy" — is CORRECT and is not
+    being reversed. It rests on one assumption that was true of every checkout that existed
+    when it was written: **the remedy is actionable.** Tell a laptop
+    `git submodule update --init` and it complies, so a red there is a real red.
+
+    A CI runner is the case that assumption never met. 4 of the 9 declared submodules are
+    PRIVATE, and the runner holds no credential for them — supplying one would mean parking a
+    token with read access to every private repo inside a PUBLIC repo's Actions, to satisfy a
+    doc-link check. The remedy is not merely unrun there; it is unavailable. A gate that goes
+    permanently red on a correct state is the disease that ruling named, and this is that
+    state, reached from the other direction.
+
+    So the strictness is unchanged everywhere it can mean anything, and narrows ONLY where
+    all three hold at once:
+
+      found    there is something to report at all
+      stubbed  projects really are missing from this checkout — with a COMPLETE clone the
+               remedy is irrelevant and any finding is real, in CI exactly as anywhere else
+      env      this is a runner, declared by the platform, not inferred from a symptom
+
+    Keyed on the environment rather than on the shape of the findings on purpose: there is no
+    honest per-token classifier separating "dead" from "unreachable" (see `unresolved_paths`),
+    and inventing one is how this file previously shipped fixes nothing could falsify. An env
+    var is a fact the platform states, and a control can set it both ways — which C-T9a/b/c do.
+    """
+    return bool(found) and bool(stubbed) and bool(env.get("GITHUB_ACTIONS") or env.get("CI"))
+
+
 def _lobby_owned(t: str) -> bool:
     """Namespaces only the LOBBY can own, so a project checkout must not answer for them.
 
@@ -1013,6 +1045,27 @@ def main() -> int:
         c.check("T9-fixture a fresh clone still reports, and the failure carries its remedy",
                 ok_fc, det(ok_fc, f"found={sorted(fresh)} remedy={remedy!r}"))
 
+        # ── C-T9a/b/c: the narrowing added by SCC-118, driven directly ────────────────
+        # Three cases, because the change is only defensible if the FIRST one holds: the
+        # gate must be untouched on a developer machine, which is the only place its
+        # remedy works. Asserting only the CI case would prove the softening and not the
+        # strictness -- the shape of fix this file has shipped twice and had to undo.
+        FOUND = {"doc.md -> a/b.md": "resolves nowhere"}
+        STUB = ["AGY_AVIATIONCHAT"]
+        c.check("C-T9a a developer checkout still HARD FAILS (remedy works there)",
+                not t9_inconclusive(FOUND, STUB, {}),
+                "no CI marker -> the ruling above uncloned_note stands, unchanged")
+        c.check("C-T9b a runner with projects uncloned is INCONCLUSIVE, not a defect",
+                t9_inconclusive(FOUND, STUB, {"GITHUB_ACTIONS": "true"})
+                and t9_inconclusive(FOUND, STUB, {"CI": "true"}),
+                "4 of 9 submodules are private; a runner cannot clone them")
+        c.check("C-T9c a runner with a COMPLETE checkout still HARD FAILS",
+                not t9_inconclusive(FOUND, [], {"GITHUB_ACTIONS": "true"}),
+                "nothing is missing, so the finding is real wherever it was found")
+        c.check("C-T9d nothing found is never 'inconclusive'",
+                not t9_inconclusive({}, STUB, {"GITHUB_ACTIONS": "true"}),
+                "a clean scan reports clean, not unanswerable")
+
     # T10 is a meta-check over the other rows, so it cannot catch its own removal. Its
     # detector is fixtured here instead: it must FIRE on a star and stay QUIET on an em dash
     # (which IS in cp1252, so banning all non-ASCII would be wrong).
@@ -1181,8 +1234,19 @@ def main() -> int:
         #    failure says WHY it might be lying and what one command fixes it. Silence
         #    would be a silent miss; noise without a remedy is how a gate gets ignored.
         detail = "; ".join(f"{k} ({v})" for k, v in sorted(found.items())[:8])
-        c.check("T9 every prose path reference resolves", not found,
-                detail + (uncloned_note(stubbed) if found else ""))
+        if t9_inconclusive(found, stubbed, os.environ):
+            # Loud, attributed, and NOT counted as a pass — the exact failure mode the round-1
+            # `c.check(..., True, "")` had. Nothing green is printed here; the check is simply
+            # not asked, because in this checkout it has no answer. See t9_inconclusive.
+            print(f"[SIGNAL] T9 cannot be answered on this runner: {len(found)} unresolved "
+                  f"path(s) with {len(stubbed)} project(s) uncloned and no credential to "
+                  f"clone them. NOT proven absent, NOT proven dead.")
+            print(f"[SIGNAL]   {detail}")
+            print("[SIGNAL] T9 gates on a developer checkout, where the remedy works: "
+                  "`git submodule update --init`.")
+        else:
+            c.check("T9 every prose path reference resolves", not found,
+                    detail + (uncloned_note(stubbed) if found else ""))
         # ⭐ B1: the property whose absence let the round-1 fail hide. Project roots come
         #    from git's COMMON dir, so a lane and main see the same set. In a worktree
         #    ROOT/.git is a FILE; the resolved main checkout's is always a directory.

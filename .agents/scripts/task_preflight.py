@@ -57,8 +57,29 @@ WRONG_LANE = {
 }
 
 # Directories whose contents deploy. Presence answers "does this repo deploy at all?";
-# a diff touching one answers "did THIS change reach it?". Both questions, one list.
-DEPLOY_DIRS = ("backend/", "frontend/", "firebase/", "functions/", "mobile/", ".github/")
+# a diff touching one answers "did THIS change reach it?".
+#
+# ⭐ TWO LISTS, NOT ONE, AND THE SPLIT IS LOAD-BEARING (SCC-118, 2026-08-12).
+#
+# `.github/` differs in kind from the other five. They hold a PRODUCT — code that ships to
+# somewhere a user can reach. `.github/` holds machinery ABOUT the repo: CI, issue templates,
+# the gates. In a repo that ships something, a workflow edit can change WHAT ships, so it is
+# rightly deployable there. In a repo that ships nothing, it cannot deploy anything, because
+# there is nothing to deploy.
+#
+# Collapsing both into one list was invisible for as long as the command centre had no
+# `.github/` at all — and SCC-118 gave it one, the very first, holding the server-side half of
+# the `main` write gate. The next close-out in this repo was refused as "NOT task-lane work"
+# and sent to `/cicd-push-e2e`: a `cicd-*` command that binds exactly ONE PROJECT and never the
+# lobby, running an E2E suite this repo does not have and never will. A verdict nobody could
+# comply with — the same shape as SCC-113's "the gate could not express one ticket, two lanes."
+#
+# ⛔ The guard is NOT weakened where it means anything. A repo with a product surface still
+# hands off the moment a diff touches `.github/` — that is the case this check exists for, and
+# `test_task_preflight.py` asserts it as a control alongside the narrowing.
+PRODUCT_DIRS = ("backend/", "frontend/", "firebase/", "functions/", "mobile/")
+CI_DIR = ".github/"
+DEPLOY_DIRS = PRODUCT_DIRS + (CI_DIR,)
 
 
 def git_root(arg: str | None) -> Path:
@@ -556,9 +577,19 @@ def deploy_surface(repo: Path) -> list[str]:
 
     Empty means the repo cannot deploy, so there is no E2E suite for a gate to skip - the
     command centre's case, and the reason `git-policy.md` says its whole gate is
-    `run_all.py`. This is derived from the tree so no repo needs a config file saying so."""
+    `run_all.py`. This is derived from the tree so no repo needs a config file saying so.
+
+    ⭐ `.github/` only counts once something SHIPS here (SCC-118 - see PRODUCT_DIRS). A repo
+    holding CI and nothing else deploys nothing, so calling its workflow directory a deploy
+    surface routes an unshippable repo to `/cicd-push-e2e` - a command that binds a project,
+    refuses the lobby, and gates on an E2E suite that does not exist here. Where a product
+    DOES exist, `.github/` is returned exactly as before and a diff touching it still hands
+    off."""
     tracked = wf.git(["ls-files"], repo).stdout.splitlines()
-    return [d for d in DEPLOY_DIRS if any(p.startswith(d) for p in tracked)]
+    product = [d for d in PRODUCT_DIRS if any(p.startswith(d) for p in tracked)]
+    if not product:
+        return []
+    return product + ([CI_DIR] if any(p.startswith(CI_DIR) for p in tracked) else [])
 
 
 def check_scope(repo: Path, branch: str, rep: wf.Report) -> tuple[str, list[str]]:

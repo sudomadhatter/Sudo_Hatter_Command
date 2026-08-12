@@ -1,0 +1,5 @@
+task_key: SCC-118
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-118-server-side-main-gate
+close_command: smh-close-task-merge-tree
+secondary_repos: []        # single-repo task — the server-side half is the lobby's only

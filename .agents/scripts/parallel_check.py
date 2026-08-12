@@ -619,7 +619,13 @@ def set_labels(binary: str, key: str, current: list[str], approved: bool,
 
 
 def cmd_stamp(args) -> int:
-    binary = acli_bin(args.acli)
+    # Resolve the CLI only when we are actually going to call it. Every use of `binary` below
+    # is guarded by `apply`, so a dry run never touches it — yet resolving it up front made
+    # `stamp` die with "acli not found" on any machine that has no acli, for a binary it was
+    # never going to invoke. That is a dependency on the OPERATOR'S MACHINE hiding inside a
+    # command whose whole purpose is to preview without writing, and it made this script
+    # unrunnable on a CI runner (found by SCC-118, when the suite first ran off a laptop).
+    binary = acli_bin(args.acli) if args.apply else (args.acli or "")
     res = json.loads(Path(args.verdicts).read_text(encoding="utf-8"))
     packet = json.loads(Path(args.plan).read_text(encoding="utf-8"))
     by_key = {c["key"]: c for c in packet["children"]}
