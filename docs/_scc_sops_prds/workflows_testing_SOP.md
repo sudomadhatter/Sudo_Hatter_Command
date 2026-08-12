@@ -1197,12 +1197,22 @@ flowchart LR
 | `tests/test_sops_prds_folder.py` | **The SOPs and PRDs going stale again.** Pins the 11-doc manifest in `docs/_scc_sops_prds/`, checks its `INDEX.md` against the directory in BOTH directions, verifies every markdown link resolves and every `/command` reference names a real command master, and asserts the SOP gate's two halves still point at the same file. |
 | `pre-push-main-approval.sh` | **Anything reaching `main` without a fresh, single-use sign-off.** The `pre-push` hook refuses a push landing on `main` unless a token minted for that exact sha is present, and the token is spent on use — so one approval buys exactly one push. It closed the hole where six merges rode a single sign-off. *(Shipped 2026-08-10 by SCC-77; this row was owed and is added here.)* |
 | `hooks_armed.py` | **Every other check on this page reporting green while switched OFF.** Three ways a gate dies quietly, and it reports all three: `core.hooksPath` is per-machine and git never carries it, so a fresh clone reads an empty `.git/hooks` and *nothing* runs; every dispatcher in `.githooks/` ends `[ -x "$SCRIPT" ] || exit 0`, so a deleted or merely non-executable inner script makes the hook exit 0 with **no output at all**; and deleting a `<NAME>-ENFORCE` flag downgrades a gate from *reject* to *warn*, which reads as clean success because hook output is rendered nowhere you look. It asks **git** what is tracked rather than listing the directory — a listing cannot tell *"this gate was deleted"* from *"this repo never had it"*, and an early cut of this script reported ARMED on a repo whose three gate scripts had all been removed. It folds into `task_preflight.py`, which now prints `GATES: ARMED` or `NOT ARMED`; on a repo that **claims** gates and is not running them the words *"clear to close out and merge"* no longer appear at all. It **reports and never arms**: changing your git config for you would be worse than telling you, and the one-line remedy is printed. |
+| `evidence_extract.py` | **Nothing — and it is on this list on purpose.** It is the one entry here that is *not* a gate: it refuses nothing, no hook calls it, and you never type it. It is the review engine's fact-fetcher (SCC-123), and what it prevents is a reviewer reasoning about only the files it happened to open — it reads the changed files and their callers *first* and hands the lens a dossier. It is listed because this table calls itself the live list, and a script in `.agents/scripts/` missing from it would make that sentence false. |
 | `split_sprint_status.py` | The one-time migration that shrank the board. |
 | `wf_common.py` | Shared plumbing the others import. You'll never call it. |
 
 **Run all their tests any time:** `python3 .agents/scripts/tests/run_all.py` (on the PC, `python …`) —
-646 checks across 16 files as of 2026-08-11, about ten seconds — the suite prints its live totals,
-which outrank this sentence. Full detail in
+**988 checks across 18 files, measured 2026-08-12, about seventy-five seconds** — the suite prints
+its live totals, which outrank this sentence.
+
+> ⚠ **This number had gone stale, and the gate was right not to catch it.** It read *"646 checks
+> across 16 files"* until 2026-08-12. Adding a test file lands under `.agents/scripts/tests/`, which
+> is an explicit exemption in `sop_currency.py` — so SCC-122's new test file moved the total from 16
+> to 17 inside a commit that was correctly exempt from end to end. There was nothing for a blocking
+> gate to block. A count like this one goes wrong through changes nobody should be stopped for,
+> which is why the sentence above defers to what the suite prints.
+
+Full detail in
 [`.agents/scripts/INDEX.md`](../../.agents/scripts/INDEX.md).
 
 > ⓘ **Three design decisions that look like bugs until you know why.**
