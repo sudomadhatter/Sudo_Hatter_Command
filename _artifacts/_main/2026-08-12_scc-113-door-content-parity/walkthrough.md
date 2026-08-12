@@ -145,6 +145,26 @@ The operator took the "deliberately not fixed" pair and said fix them. Both are 
 
 ### One of them was not cosmetic
 
+> ⛔ **CORRECTION — filed 2026-08-12 by the `chore/SCC-113-gate-honesty` lane. The paragraph below
+> is left standing because it is the record, and it contains a false claim.**
+>
+> *"it falls to that final `$false` and is **kept forever**"* — **false.** I read `Sync-CommandDir`
+> in isolation and stopped one line short of its caller. `Invoke-ManifestPurge`
+> (`sync-agents.ps1:822`) runs immediately after the opencode sweep and retires that door on the
+> next sync.
+>
+> The true gap is narrower and the check is still worth having: `Invoke-ManifestPurge` iterates
+> only **the names the last run recorded writing** (`sync-agents.ps1:364-365`). A door that predates the
+> manifest, was hand-dropped, or is genuinely this repo's own is unreachable by it and survives
+> indefinitely — which is what the `project-own.txt` keep-list now adjudicates in the sweep. That
+> file is staged into `.agents/` by the first `sync-agents -Reconcile` and does not exist until
+> then; an authored-but-empty one would read as "purge every unclaimed orphan", so it is not
+> created to satisfy a lint.
+>
+> The claim below also said the one-door contract held "of the skill doors only". For *placement*
+> that was right; for *ghosts* it was true of no surface — `.agents/skills` and `.claude/skills`
+> are unswept to this day.
+
 I recorded `.opencode/commands` having no ghost check as tidy-up. Reading the engine instead of
 assuming: `Sync-CommandDir` runs for opencode **without `-Mirror`** (`sync-agents.ps1:821`), and its
 purge branch ends `else { $false }  # local: keep foreign/project-own files`. Delete a command brain

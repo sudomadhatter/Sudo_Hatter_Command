@@ -179,59 +179,59 @@ def task_manifests(repo: Path, expect: str) -> list[tuple[Path, str]]:
             if (t := wf.read_text(p)) and manifest_field(t, "task_key") == expect]
 
 
-def git_ok(repo: Path, args: list[str]) -> bool:
-    return wf.git(args, repo).returncode == 0
-
-
-def branch_alive(repo: Path, branch: str) -> bool:
-    """Does `branch` still exist, locally or on origin? A branch that is gone was merged and
-    pruned (Step 5 deletes both) or abandoned - either way it is not a lane you could aim at."""
-    return (git_ok(repo, ["rev-parse", "--verify", "--quiet", f"refs/heads/{branch}"])
-            or git_ok(repo, ["rev-parse", "--verify", "--quiet",
-                             f"refs/remotes/origin/{branch}"]))
+def manifest_settled(repo: Path, p: Path, ref: str) -> bool:
+    """True only on POSITIVE evidence: this exact receipt, blob for blob, is already
+    recorded on the mainline - the lane that wrote it has landed, so its claims are
+    history, not this run's contract. Every way the probe can fail (no mainline, path
+    never merged, file edited since landing) answers False and keeps the strict path:
+    absence of evidence never relaxes a gate. (H-1 - the reverted fe46b4a asked "does
+    the declared branch still exist?", which blessed the pruned-branch state a finished
+    close-out is SUPPOSED to end in.)"""
+    try:
+        rel = p.resolve().relative_to(repo.resolve()).as_posix()
+    except ValueError:  # symlinked checkout / macOS /tmp - same hazard rel_or_abs guards
+        return False
+    landed = wf.git(["rev-parse", "--verify", "--quiet", f"{ref}:{rel}"], repo)
+    if landed.returncode != 0 or not landed.stdout.strip():
+        return False
+    ours = wf.git(["hash-object", str(p)], repo)
+    return ours.returncode == 0 and ours.stdout.strip() == landed.stdout.strip()
 
 
 def check_manifest(repo: Path, branch: str, expect: str, rep: wf.Report) -> None:
-    """`task.yaml` is intent written down at task START - it exists before any branch can
-    drift. When one declares this task, it must agree with what the preflight resolved;
-    a manifest nobody checks against is decorative.
-
-    ⭐ ONE TICKET CAN HAVE MORE THAN ONE LANE. `followon-fixes-are-not-a-new-story` is a
-    written ruling here: a follow-on fix rides the ticket it came from rather than minting a
-    new key, so the second lane authors a second `task.yaml` under the SAME `task_key`. This
-    check used to error on every manifest that named a different branch, which made the
-    repo's own documented workflow a hard block at close-out - SCC-113 hit it as the first
-    ticket ever to have two lanes, with the first lane already merged and pruned.
-
-    A manifest is treated as HISTORY, not as a competing lane, only when both hold:
-      * its branch no longer exists locally or on origin - so "aim at the declared branch",
-        which is half the error's own remedy, is impossible; and
-      * some OTHER manifest for this key agrees with the branch we resolved.
-
-    ⛔ The second condition is what keeps this from failing OPEN. Without it, a lone stale
-    manifest pointing at a deleted branch would silently excuse a close-out aimed at the
-    wrong lane - the exact 2026-08-09 failure this check exists for. With it, the resolved
-    branch must be positively declared by someone before any mismatch is forgiven.
-    """
+    """`task.yaml` is intent written down at task START - authored on the lane's own
+    branch, it reaches the mainline only WHEN that lane lands. So multi-lane tickets
+    leave one receipt PER landed lane in the tree, and re-litigating those would block
+    every follow-on: a receipt settled on the mainline is read as history, and only the
+    unlanded ones can bind this run. Those still must agree with what the preflight
+    resolved - a manifest nobody checks against is decorative."""
     mine = task_manifests(repo, expect)
     if not mine:
         rep.warn("manifest", f"no task.yaml declares task_key: {expect} - intent rests on "
                              f"--expect-key alone. Author one in the task's _artifacts "
                              f"folder ({MANIFEST_SCHEMA})")
         return
-    declared_all = [manifest_field(t, "branch") for _, t in mine]
-    confirmed = branch in declared_all
+    ref = base_ref(repo)
+    live: list[tuple[Path, str | None]] = []
     for p, text in mine:
         declared = manifest_field(text, "branch")
+        if declared and declared != branch and manifest_settled(repo, p, ref):
+            rep.info("manifest", f"{rel_or_abs(p, repo)} declares `{declared}` and is "
+                                 f"already recorded on {ref} - a landed lane's receipt, "
+                                 f"not this lane's contract")
+        else:
+            live.append((p, declared))
+    if not live:
+        rep.warn("manifest", f"every task.yaml for {expect} is a landed lane's receipt - "
+                             f"THIS lane has no manifest, so intent rests on --expect-key "
+                             f"alone. Author one in the task's _artifacts folder "
+                             f"({MANIFEST_SCHEMA})")
+        return
+    for p, declared in live:
         if declared and declared != branch:
-            if confirmed and not branch_alive(repo, declared):
-                rep.info("manifest", f"{rel_or_abs(p, repo)} is a CLOSED lane on {expect} "
-                                     f"(`{declared}` is merged and pruned) - one ticket, two "
-                                     f"lanes; this one is `{branch}`")
-            else:
-                rep.err("manifest", f"{rel_or_abs(p, repo)} declares branch `{declared}` but "
-                                    f"this preflight resolved `{branch}` - one of them is "
-                                    f"wrong; fix the manifest or aim at the declared branch")
+            rep.err("manifest", f"{rel_or_abs(p, repo)} declares branch `{declared}` but "
+                                f"this preflight resolved `{branch}` - one of them is "
+                                f"wrong; fix the manifest or aim at the declared branch")
         else:
             rep.info("manifest", f"{rel_or_abs(p, repo)} agrees: {expect} on "
                                  f"{declared or branch}")

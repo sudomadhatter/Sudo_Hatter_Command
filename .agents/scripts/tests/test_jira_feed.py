@@ -507,8 +507,84 @@ def main() -> int:
                   comments=[{"id": "1", "body": "Dev Record - 9.1 (quick-dev)"},
                             {"id": "2", "body": "Dev Record - 9.1 (close-out)"}])
         code, out = jf("check", "--key", "TEST-7")
-        c.check("check: two Dev Records -> warns, does not block",
+        c.check("check: two Dev Records for ONE story id -> warns, does not block",
                 code == 1 and "there should be" in out, out.strip()[:200])
+
+        # ── SCC-113: two LANES on one ticket is the designed state, not a defect ──
+        # `find_devrecord` filters by story id ON PURPOSE - its docstring: "so a ticket that
+        # legitimately carries records for two ids does not have one overwrite the other" - and
+        # both Task surfaces pass `--story <branch-slug>` (smh-close-task-merge-tree.md:236,
+        # smh-quick-dev.md:246), which changes per lane. A follow-on lane rides the ticket it
+        # came from rather than minting a key, so N lanes -> N records is NORMAL.
+        #
+        # Counting records cannot tell "one lane posted twice" (the real defect, pinned by the
+        # case ABOVE, which must stay red-capable) from "two lanes each posted once" (this
+        # case). Grouping by id can. The test above is this fix's negative control: if it ever
+        # goes green, the check was deleted rather than narrowed.
+        set_state(state,
+                  description="9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive.",
+                  comments=[{"id": "1",
+                             "body": "Dev Record - scc-113-jira-in-progress-seam (close-out)"},
+                            {"id": "2",
+                             "body": "Dev Record - scc-113-door-content-parity (close-out)"}])
+        code, out = jf("check", "--key", "TEST-7")
+        c.check("check: two lanes, two story ids -> exit 0 (the designed state)",
+                code == 0 and "0 error(s), 0 warning(s)" in out, out.strip()[:200])
+
+        # `--story` is documented on THREE surfaces (jira_feed.py:15 usage, jira.md:302 a RULE,
+        # cicd-update-sprint-memory.md:191 a command) and read by none of them. Story-awareness
+        # gives it the meaning a close-out actually needs: did THIS lane file its record?
+        # It delegates to find_devrecord, so it answers exactly "would devrecord update this
+        # one?" - one rule, one implementation.
+        code, out = jf("check", "--key", "TEST-7", "--story", "scc-113-door-content-parity")
+        c.check("check: --story scopes to that lane's record -> exit 0",
+                code == 0 and "one Dev Record" in out, out.strip()[:200])
+
+        # The load-bearing half: a lane that never filed one must be an ERROR, not silence.
+        # Asserted on the MESSAGE, because an unknown flag also exits 2 - which is exactly how
+        # this would pass for the wrong reason while `--story` stayed unwired.
+        code, out = jf("check", "--key", "TEST-7", "--story", "scc-113-lane-that-never-filed")
+        c.check("check: --story naming a lane with no record -> exit 2, names the lane",
+                code == 2 and "no Dev Record" in out
+                and "scc-113-lane-that-never-filed" in out, out.strip()[:200])
+
+        # ⛔ A record whose header will not parse is NOT evidence of a lane (clean-room H-2).
+        # `record_story_id` returns "" for it, and the first cut let that "" sit beside a real id
+        # and read as "two lanes, the designed state" - exit 0 where the old count-based check
+        # warned. The trigger is not exotic: the record filter is bare containment on the first
+        # 400 chars, so ANY human comment saying "Dev Record" becomes a second record.
+        set_state(state,
+                  description="9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive.",
+                  comments=[{"id": "1", "body": "Dev Record - 9.1 (close-out, 2026-08-12)"},
+                            {"id": "2", "body": "See the Dev Record above, I fixed the typo."}])
+        code, out = jf("check", "--key", "TEST-7")
+        c.check("check: a record with no parseable header never reads as a second LANE",
+                code == 1 and "no parseable header" in out, out.strip()[:200])
+
+        # ⛔ `--story` is a READ GATE, and over-matching inverts on a read gate (clean-room H-3).
+        # `find_devrecord` matches `want not in norm_id(text[:400])` - the whole head, not the
+        # header - and Dev Record bodies are SCRAPED FROM WALKTHROUGH BULLETS, which routinely
+        # name sibling lanes. Over-match on the WRITE path is conservative (it updates in place);
+        # here it certifies that a lane filed a record when it never did.
+        set_state(state,
+                  description="9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive.",
+                  comments=[{"id": "1", "body": "Dev Record - scc-113-gate-honesty (close-out)"
+                                                "\n\nDecisions made during dev\n"
+                                                "- supersedes the scc-113-door-content-parity lane"}])
+        code, out = jf("check", "--key", "TEST-7", "--story", "scc-113-door-content-parity")
+        c.check("check: --story does not match a sibling lane NAMED IN THE BODY",
+                code == 2 and "no Dev Record" in out, out.strip()[:200])
+        code, out = jf("check", "--key", "TEST-7", "--story", "scc-113-gate-honesty")
+        c.check("check: --story still matches its OWN header (positive control)",
+                code == 0 and "one Dev Record" in out, out.strip()[:200])
+
+        # The separator trap slug_matches() was written for: 9.1 must not adopt 9.10's record.
+        set_state(state,
+                  description="9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive.",
+                  comments=[{"id": "1", "body": "Dev Record - 9.10 (close-out)"}])
+        code, out = jf("check", "--key", "TEST-7", "--story", "9.1")
+        c.check("check: --story 9.1 does not adopt 9.10's record",
+                code == 2 and "no Dev Record" in out, out.strip()[:200])
 
         # ── the type rule, all four arms ──────────────────────────────────────
         # `Bug` is deliberately absent from the computed vocabulary. It is TEMPORARY: a Story

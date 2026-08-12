@@ -548,6 +548,40 @@ def find_devrecord(comments: list[dict], story: str | None) -> dict | None:
     return None
 
 
+_RECORD_ID_RE = re.compile(r"^\s*" + re.escape(MARKER) + r"\s*[-–—]\s*(.+?)\s*\(",
+                           re.IGNORECASE)
+
+
+def record_story_id(comment: dict) -> str:
+    """The story id out of a Dev Record's own header - `Dev Record - <id> (<stage>, <date>)`.
+
+    Two records on one ticket is TWO different situations and only one of them is a defect
+    (SCC-113):
+
+      * one id, two records - /cicd-quick-dev closed the branch and /cicd-update-sprint-memory
+        closed the story and both posted. That is the failure SCC-49 wrote `check` for.
+      * two ids, one record each - two LANES on one ticket. `find_devrecord` filters by id on
+        purpose, exactly "so a ticket that legitimately carries records for two ids does not
+        have one overwrite the other", and both Task surfaces pass `--story <branch-slug>`,
+        which changes per lane. A follow-on rides the ticket it came from rather than minting
+        a key, so this is the normal shape of a second lane - not something posting around
+        the update path.
+
+    Counting cannot tell them apart; the id can. A header that will not parse returns `""`, and
+    `cmd_check` treats that bucket as UNIDENTIFIABLE rather than as a lane - an unparseable
+    header is not evidence that a second lane exists, and letting it read as one turned a
+    warning into a clean exit.
+
+    ⚠ The id stops at the first `(`, so an id containing parentheses truncates and two such
+    records collapse into one bucket - a FALSE duplicate warning. Ids are branch slugs and BMAD
+    numbers today, neither of which carries parentheses; noted rather than guarded, because the
+    failure is loud (a warning) rather than silent.
+    """
+    head = field_text(comment.get("body"))[:400]
+    m = _RECORD_ID_RE.search(head)
+    return wf.norm_id(m.group(1)) if m else ""
+
+
 def write_temp(body: str) -> Path:
     fd, name = tempfile.mkstemp(prefix="jira-feed-", suffix=".txt", text=True)
     with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
@@ -1198,16 +1232,64 @@ def cmd_check(args) -> int:
 
     comments = list_comments(binary, args.key)
     records = [c for c in comments if MARKER.lower() in field_text(c.get("body"))[:400].lower()]
-    if not records:
+
+    story = getattr(args, "story", None)
+    if story:
+        # Scoped to ONE lane: "did this lane file its record?" - the question a close-out
+        # actually needs. Until SCC-113 this flag was accepted and ignored, while three
+        # surfaces - including a rule - told agents to pass it.
+        #
+        # ⛔ This does NOT delegate to find_devrecord, and the difference is the whole safety of
+        # it. A first cut did, on a "one rule, one implementation" argument - and that argument
+        # INVERTS between the two paths. find_devrecord matches `want not in norm_id(text[:400])`,
+        # bare containment over the whole head; on the WRITE path over-matching is conservative
+        # (it updates a record in place instead of posting a twin), but here it CERTIFIES that a
+        # lane filed a record when it never did. Dev Record bodies are scraped from walkthrough
+        # bullets, which routinely name sibling lanes, so the collision is the normal case rather
+        # than a corner: a record for lane A whose body mentions lane B passed `--story B`.
+        # Matched on the HEADER, exactly - the primitive record_story_id() already provides.
+        want = wf.norm_id(story)
+        rec = next((c for c in reversed(records) if record_story_id(c) == want), None)
+        if rec is None:
+            rep.err("devrecord", f"{args.key}: no Dev Record for '{story}' - that lane never "
+                                 f"filed one ({len(records)} record(s) on the ticket: "
+                                 f"{', '.join(sorted(filter(None, (record_story_id(c) for c in records)))) or 'none with a parseable header'})")
+        else:
+            rep.info("devrecord", f"{args.key}: one Dev Record for '{story}' "
+                                  f"({len(field_text(rec.get('body')))} chars)")
+    elif not records:
         rep.err("devrecord", f"{args.key}: no Dev Record - the decisions and pitfalls from "
                              f"dev never reached the ticket")
-    elif len(records) > 1:
-        # Not fatal, but it means something posted around the update path.
-        rep.warn("devrecord", f"{args.key}: {len(records)} Dev Records - there should be "
-                              f"exactly one, updated in place")
     else:
-        rep.info("devrecord", f"{args.key}: one Dev Record "
-                              f"({len(field_text(records[0].get('body')))} chars)")
+        # GROUP, never count - see record_story_id(). The defect is one id carrying two
+        # records; distinct ids are two lanes, which is the designed state.
+        by_id: dict[str, list] = {}
+        for c in records:
+            by_id.setdefault(record_story_id(c), []).append(c)
+        dupes = {sid: rs for sid, rs in by_id.items() if len(rs) > 1}
+        if dupes:
+            for sid, rs in sorted(dupes.items()):
+                rep.warn("devrecord", f"{args.key}: {len(rs)} Dev Records for "
+                                      f"'{sid or '(unparseable header)'}' - there should be "
+                                      f"exactly one per lane, updated in place")
+        elif "" in by_id and len(records) > 1:
+            # ⛔ An unparseable header is NOT evidence of a lane, so it must never be counted as
+            # one. The first cut let a "" bucket sit beside a real id and satisfy the "two lanes"
+            # arm below - INFO, exit 0, where the old count-based check warned. The trigger is
+            # not exotic: `records` is bare containment on the first 400 chars, so any ordinary
+            # comment saying "Dev Record" becomes a second record and silences the duplicate
+            # check for the whole ticket.
+            rep.warn("devrecord", f"{args.key}: {len(records)} Dev Records and "
+                                  f"{len(by_id[''])} with no parseable header - cannot tell "
+                                  f"which lane filed what. A real record's header reads "
+                                  f"`Dev Record - <lane> (<stage>, <date>)`")
+        elif len(by_id) > 1:
+            rep.info("devrecord", f"{args.key}: {len(by_id)} Dev Records, one per lane "
+                                  f"({', '.join(sorted(by_id))}) - a follow-on lane rides the "
+                                  f"ticket it came from, so this is the designed state")
+        else:
+            rep.info("devrecord", f"{args.key}: one Dev Record "
+                                  f"({len(field_text(records[0].get('body')))} chars)")
     rep.print_human(f"jira-feed check {args.key}")
     return rep.exit_code()
 
@@ -1303,7 +1385,9 @@ def main() -> int:
     p_chk = sub.add_parser("check", help="does this ticket carry outline + Dev Record?")
     common(p_chk)
     p_chk.add_argument("--key", required=True)
-    p_chk.add_argument("--story")
+    p_chk.add_argument("--story", help="scope to ONE lane's record (a BMAD story id, or the "
+                                       "branch slug a Task lane passes to devrecord): "
+                                       "did THIS lane file one? missing is an error")
 
     args = ap.parse_args()
     return {"outline": cmd_outline, "mint": cmd_mint, "devrecord": cmd_devrecord,

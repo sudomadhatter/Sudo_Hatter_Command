@@ -366,51 +366,72 @@ def main() -> int:
                 code == 1 and "no task.yaml declares task_key: SCC-11" in out,
                 out.strip()[-400:])
 
+    # ── SCC-113 H-1: a receipt already ON the mainline is a landed lane's, not drift ──
+    # Multi-lane tickets leave one task.yaml per landed lane in the tree (SCC-113 carries
+    # three), so "a manifest naming a different branch" is the DESIGNED end-state of every
+    # closed sibling - re-litigating those blocks every follow-on lane. The reverted
+    # fe46b4a asked "does the declared branch still exist?", which blessed exactly the
+    # pruned-branch state a close-out ends in. The sound question needs POSITIVE evidence:
+    # is this exact receipt, blob for blob, already recorded on the mainline? Landed ->
+    # settled, skipped. Unlanded, edited since landing, or no mainline to ask -> the same
+    # hard block as before; absence of evidence never relaxes the gate.
+
     with TempDir() as t:
-        repo = make_repo(t)  # its manifest declares chore/SCC-11-thing
+        repo = make_repo(t)  # its manifest (chore/SCC-11-thing) is committed AND pushed to main
         branch(repo, "chore/SCC-11-other", {"docs/x.md": "x\n"})
         code, out = preflight(repo)
-        c.check("SCC-64 a manifest naming a DIFFERENT branch blocks",
-                code == 2 and "declares branch" in out, out.strip()[-400:])
-    # ⛔ That case is ALSO the fail-open control for SCC-113 below: `chore/SCC-11-thing` was
-    # never created, so the declared branch does not exist - and it must STILL block, because
-    # nothing declares the branch actually resolved. Only the `confirmed` half of the new
-    # condition keeps it blocking; drop that half and this case goes green on the wrong lane.
+        c.check("H-1 a landed receipt for another branch is settled, never an error",
+                "already recorded on origin/main" in out and "declares branch" not in out,
+                out.strip()[-400:])
+        c.check("H-1 all receipts settled -> THIS lane has no manifest, and that warns",
+                code == 1 and "intent rests on --expect-key alone" in out,
+                out.strip()[-400:])
 
-    # ── SCC-113: ONE TICKET, TWO LANES - the follow-on ruling, mechanically ──
-    # `followon-fixes-are-not-a-new-story` says a follow-on rides the ticket it came from, so
-    # the second lane writes a second task.yaml under the same key. The old check errored on
-    # every manifest naming a different branch, which made the documented workflow a hard
-    # block at close-out the first time a ticket ever had two lanes.
-    with TempDir() as t:
-        repo = make_repo(t)                                  # declares chore/SCC-11-thing
-        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
-        git(repo, "checkout", "-q", "main")
-        git(repo, "merge", "--no-ff", "-q", "-m", "SCC-11 merge: lane one", "chore/SCC-11-thing")
+    with TempDir() as t:  # the real H-1 shape: two landed lanes + the live one, same ticket
+        repo = make_repo(t)
+        for lane in ("a", "b"):
+            write(repo, f"_artifacts/_main/2026-08-08_scc-11-{lane}/task.yaml",
+                  MANIFEST.replace("chore/SCC-11-thing", f"chore/SCC-11-{lane}"))
+        commit(repo, "SCC-11 chore: two landed lanes")
         git(repo, "push", "-q", "origin", "main")
-        git(repo, "branch", "-q", "-D", "chore/SCC-11-thing")            # Step 5, local
-        git(repo, "push", "-q", "origin", "--delete", "chore/SCC-11-thing")   # Step 5, remote
-        branch(repo, "chore/SCC-11-followon", {"docs/y.md": "y\n"}, push=False)
-        write(repo, "_artifacts/_main/2026-08-12_scc-11-followon/task.yaml",
-              MANIFEST.replace("chore/SCC-11-thing", "chore/SCC-11-followon"))
-        commit(repo, "SCC-11 chore: the follow-on lane's own manifest")
-        git(repo, "push", "-q", "-u", "origin", "chore/SCC-11-followon")
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
         code, out = preflight(repo)
-        c.check("SCC-113 a CLOSED lane's manifest does not block the follow-on lane",
-                code == 0 and "CLOSED lane" in out, out.strip()[-500:])
+        c.check("H-1 two settled siblings + this lane's own receipt -> clean exit 0",
+                code == 0 and out.count("already recorded on origin/main") == 2
+                and "agrees: SCC-11 on chore/SCC-11-thing" in out,
+                out.strip()[-500:])
 
-    with TempDir() as t:
-        repo = make_repo(t)                                  # declares chore/SCC-11-thing
-        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})   # LEFT ALIVE
-        git(repo, "checkout", "-q", "main")
-        branch(repo, "chore/SCC-11-followon", {"docs/y.md": "y\n"}, push=False)
-        write(repo, "_artifacts/_main/2026-08-12_scc-11-followon/task.yaml",
-              MANIFEST.replace("chore/SCC-11-thing", "chore/SCC-11-followon"))
-        commit(repo, "SCC-11 chore: the second manifest")
-        git(repo, "push", "-q", "-u", "origin", "chore/SCC-11-followon")
+    with TempDir() as t:  # drift is still drift: an UNLANDED receipt naming another branch
+        repo = make_repo(t, manifest=False)
+        branch(repo, "chore/SCC-11-other",
+               {"docs/x.md": "x\n",
+                "_artifacts/_main/2026-08-08_scc-11-thing/task.yaml": MANIFEST})
         code, out = preflight(repo)
-        c.check("SCC-113 a LIVE sibling lane still blocks - only a PRUNED one is history",
-                code == 2 and "declares branch" in out, out.strip()[-500:])
+        c.check("SCC-64/H-1 an unlanded receipt naming a DIFFERENT branch still blocks",
+                code == 2 and "declares branch `chore/SCC-11-thing`" in out,
+                out.strip()[-400:])
+
+    with TempDir() as t:  # edited since landing = the receipt on disk is NOT the one that merged
+        repo = make_repo(t)
+        branch(repo, "chore/SCC-11-other",
+               {"docs/x.md": "x\n",
+                "_artifacts/_main/2026-08-08_scc-11-thing/task.yaml": MANIFEST + "# amended\n"})
+        code, out = preflight(repo)
+        c.check("H-1 a landed receipt EDITED after landing loses settled status and blocks",
+                code == 2 and "declares branch `chore/SCC-11-thing`" in out
+                and "already recorded" not in out,
+                out.strip()[-400:])
+
+    with TempDir() as t:  # no mainline to ask -> the probe fails -> strict, never lenient
+        repo = make_repo(t, remote=False, manifest=False)
+        branch(repo, "chore/SCC-11-other",
+               {"docs/x.md": "x\n",
+                "_artifacts/_main/2026-08-08_scc-11-thing/task.yaml": MANIFEST},
+               push=False)
+        code, out = preflight(repo)
+        c.check("H-1 absent evidence keeps the hard block (no remote, receipt unlanded)",
+                code == 2 and "declares branch `chore/SCC-11-thing`" in out,
+                out.strip()[-400:])
 
     # ── SCC-64: dirty memory files are named, with the park-don't-sweep instruction ──
     with TempDir() as t:
