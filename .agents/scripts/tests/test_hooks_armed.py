@@ -14,6 +14,7 @@ before anything is installed, which is exactly when the arm state is wrong.
 """
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -34,9 +35,16 @@ def git(*args: str, cwd: Path) -> str:
 
 def seed(d: Path, *, hooks=("commit-msg", "pre-commit", "post-commit", "pre-push"),
          flags=("JIRA-ENFORCE", "SOP-ENFORCE", "MAIN-PUSH-ENFORCE"),
-         scripts=("commit-msg-jira.sh", "sop-currency.sh", "pre-push-main-approval.sh"),
+         scripts=("commit-msg-jira.sh", "sop-currency.sh", "pre-push-main-approval.sh",
+                  "pre-commit-encoding.sh"),
          arm=True) -> None:
-    """A minimal repo shaped like this one: hook dispatchers, inner scripts, arm flags."""
+    """A minimal repo shaped like this one: hook dispatchers, inner scripts, arm flags.
+
+    Everything is `git add`ed, because the checker reads the INDEX, not the filesystem — see
+    the module docstring in hooks_armed.py for why that distinction is the whole correctness
+    of it. `pre-commit-encoding.sh` is included deliberately: it is armed unconditionally and
+    has NO flag, so it is the case that falls out of any flag-keyed executable check.
+    """
     git("init", "-q", cwd=d)
     hd = d / ".githooks"
     hd.mkdir(parents=True, exist_ok=True)
@@ -52,6 +60,7 @@ def seed(d: Path, *, hooks=("commit-msg", "pre-commit", "post-commit", "pre-push
         p.chmod(0o755)
     for f in flags:
         (gh / f).write_text("armed\n", encoding="utf-8")
+    git("add", "-A", cwd=d)          # fixture only; the real lane is explicit-paths
     if arm:
         subprocess.run(["git", "config", "core.hooksPath", ".githooks"], cwd=str(d),
                        capture_output=True)
@@ -169,6 +178,69 @@ def main() -> int:
         c.check("K · check() pushes a blocking ERROR into a Report", rep.exit_code() == 2,
                 f"exit_code={rep.exit_code()} - anything less and the VERDICT still reads clear")
 
+    # ── M · ⛔ THE REVIEW'S H2 — a DELETED gate script must not read as ARMED ─────────────
+    # The first cut used iterdir()/glob and skipped any script absent from disk, reasoning "a
+    # repo without the script never had the gate". Applied unconditionally, that meant: delete
+    # all three gate scripts and this tool reported ARMED with ZERO findings, while every
+    # dispatcher's `[ -x ... ] || exit 0` silently allowed the operation. The index tells
+    # deleted from never-had; the filesystem cannot.
+    with TempDir() as d:
+        seed(d)
+        for s in ("commit-msg-jira.sh", "sop-currency.sh", "pre-push-main-approval.sh"):
+            (d / ".agents/scripts/git-hooks" / s).unlink()
+        r = hooks_armed.scan(d)
+        c.check("M · deleting the gate scripts is NOT armed", r["armed"] is False,
+                "iterdir() reported ARMED with 0 findings here - the tool's own failure class")
+        c.check("M · each deleted script is named", len(errs(r)) >= 3, str(errs(r)))
+        c.check("M · the message says the hook allows the operation unchecked",
+                any("UNCHECKED" in m for m in errs(r)), str(errs(r)))
+
+    # ── N · ⛔ THE REVIEW'S M5 — a gate with NO arm flag is still executable-checked ───────
+    # `.githooks/pre-commit` is literally `[ -x "$HOOK" ] || exit 0`. The encoding gate is armed
+    # unconditionally and has no *-ENFORCE flag, so a flag-keyed check exempts the one hook the
+    # silent-exit-0 finding applies to most.
+    with TempDir() as d:
+        seed(d)
+        (d / ".agents/scripts/git-hooks/pre-commit-encoding.sh").chmod(0o644)
+        r = hooks_armed.scan(d)
+        c.check("N · a flagless gate script is executable-checked too", bool(errs(r)),
+                "ARM_FLAGS governs the FLAG question only, never executability")
+        c.check("N · it names the encoding gate",
+                any("pre-commit-encoding.sh" in m for m in errs(r)), str(errs(r)))
+
+    # ── O · ⛔ THE REVIEW'S M6 — an UNTRACKED arm flag arms one clone and travels nowhere ──
+    # The old remedy was a bare `touch`, which produces exactly this: green here, off on the
+    # other machine. In a documented two-machine system that is the tool printing its own bypass.
+    with TempDir() as d:
+        seed(d)
+        (d / ".agents/scripts/git-hooks/LOCAL-ENFORCE").write_text("armed\n", encoding="utf-8")
+        r = hooks_armed.scan(d)
+        c.check("O · an untracked arm flag is reported",
+                any("UNTRACKED" in f["msg"] for f in r["findings"]), str(r["findings"]))
+        c.check("O · the remedy says git add, not just touch",
+                any("git add" in f["msg"] for f in r["findings"]), "a bare touch does not travel")
+
+    # ── P · ⛔ THE REVIEW'S M4 — the downgrade is gated on whether the repo CLAIMS gates ───
+    # A repo that never had gates warns (blocking would strand close-out in several Projects/*).
+    # A repo that DECLARES a Jira project and yet tracks no hooks is drift, and drift blocks.
+    # A worktree cut before .githooks/ existed is exactly that case, and it is fully ungated.
+    with TempDir() as d:
+        git("init", "-q", cwd=d)
+        rep = wf.Report()
+        hooks_armed.check(d, rep)
+        c.check("P · a repo that never claimed gates warns", rep.exit_code() == 1,
+                f"exit_code={rep.exit_code()}")
+    with TempDir() as d:
+        git("init", "-q", cwd=d)
+        (d / ".agents").mkdir(parents=True)
+        (d / ".agents/jira.conf").write_text('JIRA_KEYS="SCC"\n', encoding="utf-8")
+        rep = wf.Report()
+        res = hooks_armed.check(d, rep)
+        c.check("P · a repo that CLAIMS gates but tracks none BLOCKS",
+                res["claims_gates"] and rep.exit_code() == 2,
+                f"claims={res['claims_gates']} exit_code={rep.exit_code()} - this is the "
+                f"ungated-worktree case the review found printing 'clear to close out'")
+
     # ── L · the two OFF states are NOT the same, and preflight must weigh them apart ──────
     # Found by test_task_preflight regressing: its fixtures are throwaway repos with no gate
     # infrastructure at all, and hard-blocking those would mean a close-out could never
@@ -181,13 +253,25 @@ def main() -> int:
         c.check("L · a repo shipping NO gates warns, it does not block", rep.exit_code() == 1,
                 f"exit_code={rep.exit_code()} - blocking strands close-out in such a repo")
         c.check("L · but 'nothing is checking this repo' is still said out loud",
-                any("no commit gates" in i["msg"] for i in rep.items),
+                any("nothing mechanical is checking" in i["msg"] for i in rep.items),
                 "silence here would be the vacuous green this ticket exists to close")
 
+    # ── Q · the seam is really wired, and carries the REAL answer ─────────────────────────
+    # The branch is read from git, never hardcoded — a literal lane name evaporates at prune and
+    # takes this assertion with it. And the value is compared against a live scan, so a stub
+    # that always answered `true` would fail here.
+    branch = git("rev-parse", "--abbrev-ref", "HEAD", cwd=REPO)
     rc, out = run_script("task_preflight.py", "--expect-key", "SCC-110",
-                         "--repo", str(REPO), "--branch", "chore/SCC-110-hooks-armed", "--json")
-    c.check("K · preflight's JSON carries the arm state", '"hooks_armed"' in out,
+                         "--repo", str(REPO), "--branch", branch, "--json")
+    c.check("Q · preflight's JSON carries the arm state", '"hooks_armed"' in out,
             "the check must run where the operator reads the verdict, not only in the suite")
+    try:
+        payload = json.loads(out)
+    except json.JSONDecodeError:
+        payload = {}
+    c.check("Q · and it carries the REAL answer, not a constant",
+            payload.get("hooks_armed") == hooks_armed.scan(REPO)["armed"],
+            f"preflight said {payload.get('hooks_armed')!r}; a live scan disagrees")
 
     return c.finish()
 

@@ -658,13 +658,27 @@ def main() -> int:
     else:
         rep.print_human(f"task preflight - {branch}")
         print(f"LANE: {lane}")
-        print(f"GATES: {'ARMED' if armed['armed'] else 'NOT ARMED - the checks above assume '
-                                                       'hooks that are not running'}")
+        # Hoisted, not inlined: a replacement field spanning two physical lines is PEP 701 and
+        # needs Python 3.12+. This file must parse on the PC too, and it is the one script the
+        # close-out cannot run without (SCC-110 review, H1).
+        gates = ("ARMED" if armed["armed"] else
+                 "NOT ARMED - the checks above assume hooks that are not running")
+        print(f"GATES: {gates}")
         for cmd in plan:
             print(f"  gate: {cmd}")
         e, _ = rep.counts()
-        print("VERDICT: " + ("BLOCKED - resolve the errors above" if e
-                             else "clear to close out and merge"))
+        # A repo that CLAIMS gates and is not running them must never see the word "clear":
+        # every check above it inferred something from commits that nothing actually checked.
+        # A repo that never claimed gates is a different animal - it gets the normal line, with
+        # the warning still standing above it (SCC-110 review, M4).
+        if e:
+            verdict = "BLOCKED - resolve the errors above"
+        elif not armed["armed"] and armed["claims_gates"]:
+            verdict = ("NOT CLEAR - no blocking error, but this repo's commit gates are not "
+                       "running, so nothing mechanical checked any of the commits above")
+        else:
+            verdict = "clear to close out and merge"
+        print("VERDICT: " + verdict)
     return rep.exit_code()
 
 

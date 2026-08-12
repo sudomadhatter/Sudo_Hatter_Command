@@ -62,7 +62,7 @@ MANIFEST = ("task_key: SCC-11\nprimary_repo: repo\nbranch: chore/SCC-11-thing\n"
 
 
 def make_repo(root: Path, *, deployable: bool = False, remote: bool = True,
-              walkthrough: bool = True, manifest: bool = True) -> Path:
+              walkthrough: bool = True, manifest: bool = True, hooks: bool = True) -> Path:
     """A repo standing on `main`, optionally with a bare origin it is in sync with."""
     repo = root / "repo"
     repo.mkdir(parents=True)
@@ -76,9 +76,10 @@ def make_repo(root: Path, *, deployable: bool = False, remote: bool = True,
     # has to carry the hook that enforces it and the per-machine switch that runs it. Without
     # these the fixture modelled a repo in a state none of the real ones are in — declared
     # gates, nothing running them — and the arm-check rightly objected.
-    write(repo, ".githooks/commit-msg", "#!/bin/sh\nexit 0\n")
-    (repo / ".githooks/commit-msg").chmod(0o755)
-    git(repo, "config", "core.hooksPath", ".githooks")
+    if hooks:
+        write(repo, ".githooks/commit-msg", "#!/bin/sh\nexit 0\n")
+        (repo / ".githooks/commit-msg").chmod(0o755)
+        git(repo, "config", "core.hooksPath", ".githooks")
     write(repo, "README.md", "# fixture\n")
     if deployable:
         write(repo, "backend/app.py", "x = 1\n")
@@ -288,6 +289,25 @@ def main() -> int:
         c.check("main checkout does not trigger the worktree warning",
                 "is checked out on" not in out, out.strip()[-300:])
         c.check("clean task branch -> exit 0 (positive control)", code == 0, out.strip()[-300:])
+        c.check("SCC-110 an ARMED repo still says GATES: ARMED", "GATES: ARMED" in out,
+                out.strip()[-300:])
+
+    # ── SCC-110 · the whole point, end to end ────────────────────────────────────────────
+    # A repo that CLAIMS gates (it declares a Jira project) while tracking no hooks is
+    # completely ungated: every check above the verdict inferred something from commits that
+    # nothing actually checked. Before SCC-110 this printed "clear to close out and merge".
+    # Asserted here rather than in test_hooks_armed because only the real script proves it -
+    # a unit assertion on wf.Report proves the plumbing, not the printed verdict.
+    with TempDir() as t:
+        repo = make_repo(t, hooks=False)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        code, out = preflight(repo)
+        c.check("SCC-110 an UNARMED repo that claims gates is BLOCKED", code == 2,
+                out.strip()[-400:])
+        c.check("SCC-110 and the words 'clear to close out and merge' never appear",
+                "clear to close out and merge" not in out, out.strip()[-400:])
+        c.check("SCC-110 the operator is told which layer is off", "GATES: NOT ARMED" in out,
+                out.strip()[-400:])
 
     # A real extra worktree DOES trigger it - or the check above passes by being dead.
     with TempDir() as t:

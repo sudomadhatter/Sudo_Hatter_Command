@@ -81,7 +81,10 @@ def main() -> int:
     # ── INSTALLED ────────────────────────────────────────────────────────────────────────
     for p in (DISPATCH, GATE, MINT):
         c.check(f"{p.name} exists", p.is_file())
-        c.check(f"{p.name} is executable", p.is_file() and p.stat().st_mode & 0o111 != 0,
+        # SCC-110: `hooks_armed._executable` carries the Windows guard — CPython there
+        # synthesises st_mode and never sets the exec bit for an extensionless hook or a .sh,
+        # so this assertion was red on the PC for a gate that runs fine.
+        c.check(f"{p.name} is executable", hooks_armed._executable(p),
                 "chmod +x — git silently ignores a non-executable hook")
     c.check("MAIN-PUSH-ENFORCE present (gate is ARMED)", ARM.is_file())
 
@@ -127,9 +130,10 @@ def main() -> int:
     # adversarial review put here. What the extraction was actually FOR was preventing two
     # checkers from drifting apart — and a cross-check catches that directly, without
     # removing anything. If these two ever disagree, one of them is wrong and this fails.
+    # Only the DERIVED-set assertion is kept. An "is this repo armed" check here would be a
+    # verbatim restatement of test_hooks_armed case A, and it would couple the files the wrong
+    # way round — deleting SOP-ENFORCE would red a file titled "main write gate".
     generic = hooks_armed.scan(REPO)
-    c.check("the generic arm-check agrees this repo is ARMED", generic["armed"],
-            str([f["msg"] for f in generic["findings"] if f["sev"] == "ERROR"]))
     c.check("this gate's hook is in the generic check's DERIVED set, and executable",
             any(h["name"] == "pre-push" and h["executable"] for h in generic["hooks"]),
             "drift: hooks_armed no longer sees the hook this whole file is about")
