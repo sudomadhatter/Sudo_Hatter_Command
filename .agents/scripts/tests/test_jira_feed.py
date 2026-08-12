@@ -548,6 +548,44 @@ def main() -> int:
                 code == 2 and "no Dev Record" in out
                 and "scc-113-lane-that-never-filed" in out, out.strip()[:200])
 
+        # ⛔ A record whose header will not parse is NOT evidence of a lane (clean-room H-2).
+        # `record_story_id` returns "" for it, and the first cut let that "" sit beside a real id
+        # and read as "two lanes, the designed state" - exit 0 where the old count-based check
+        # warned. The trigger is not exotic: the record filter is bare containment on the first
+        # 400 chars, so ANY human comment saying "Dev Record" becomes a second record.
+        set_state(state,
+                  description="9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive.",
+                  comments=[{"id": "1", "body": "Dev Record - 9.1 (close-out, 2026-08-12)"},
+                            {"id": "2", "body": "See the Dev Record above, I fixed the typo."}])
+        code, out = jf("check", "--key", "TEST-7")
+        c.check("check: a record with no parseable header never reads as a second LANE",
+                code == 1 and "no parseable header" in out, out.strip()[:200])
+
+        # ⛔ `--story` is a READ GATE, and over-matching inverts on a read gate (clean-room H-3).
+        # `find_devrecord` matches `want not in norm_id(text[:400])` - the whole head, not the
+        # header - and Dev Record bodies are SCRAPED FROM WALKTHROUGH BULLETS, which routinely
+        # name sibling lanes. Over-match on the WRITE path is conservative (it updates in place);
+        # here it certifies that a lane filed a record when it never did.
+        set_state(state,
+                  description="9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive.",
+                  comments=[{"id": "1", "body": "Dev Record - scc-113-gate-honesty (close-out)"
+                                                "\n\nDecisions made during dev\n"
+                                                "- supersedes the scc-113-door-content-parity lane"}])
+        code, out = jf("check", "--key", "TEST-7", "--story", "scc-113-door-content-parity")
+        c.check("check: --story does not match a sibling lane NAMED IN THE BODY",
+                code == 2 and "no Dev Record" in out, out.strip()[:200])
+        code, out = jf("check", "--key", "TEST-7", "--story", "scc-113-gate-honesty")
+        c.check("check: --story still matches its OWN header (positive control)",
+                code == 0 and "one Dev Record" in out, out.strip()[:200])
+
+        # The separator trap slug_matches() was written for: 9.1 must not adopt 9.10's record.
+        set_state(state,
+                  description="9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive.",
+                  comments=[{"id": "1", "body": "Dev Record - 9.10 (close-out)"}])
+        code, out = jf("check", "--key", "TEST-7", "--story", "9.1")
+        c.check("check: --story 9.1 does not adopt 9.10's record",
+                code == 2 and "no Dev Record" in out, out.strip()[:200])
+
         # ── the type rule, all four arms ──────────────────────────────────────
         # `Bug` is deliberately absent from the computed vocabulary. It is TEMPORARY: a Story
         # or Task found broken wears it until the fix lands, carrying the same number and story

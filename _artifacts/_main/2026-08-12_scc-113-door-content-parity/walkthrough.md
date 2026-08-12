@@ -156,7 +156,10 @@ The operator took the "deliberately not fixed" pair and said fix them. Both are 
 > The true gap is narrower and the check is still worth having: the manifest can only retire
 > **a name a previous run recorded writing** (`sync-agents.ps1:380`). A door that predates the
 > manifest, was hand-dropped, or is genuinely this repo's own is unreachable by it and survives
-> indefinitely — which is what `.agents/project-own.txt` now adjudicates in the sweep.
+> indefinitely — which is what the `project-own.txt` keep-list now adjudicates in the sweep. That
+> file is staged into `.agents/` by the first `sync-agents -Reconcile` and does not exist until
+> then; an authored-but-empty one would read as "purge every unclaimed orphan", so it is not
+> created to satisfy a lint.
 >
 > The claim below also said the one-door contract held "of the skill doors only". For *placement*
 > that was right; for *ghosts* it was true of no surface — `.agents/skills` and `.claude/skills`

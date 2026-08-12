@@ -567,8 +567,15 @@ def record_story_id(comment: dict) -> str:
         a key, so this is the normal shape of a second lane - not something posting around
         the update path.
 
-    Counting cannot tell them apart; the id can. A header that will not parse returns `""`,
-    which buckets the unidentifiable together - two of THOSE are still suspicious.
+    Counting cannot tell them apart; the id can. A header that will not parse returns `""`, and
+    `cmd_check` treats that bucket as UNIDENTIFIABLE rather than as a lane - an unparseable
+    header is not evidence that a second lane exists, and letting it read as one turned a
+    warning into a clean exit.
+
+    ⚠ The id stops at the first `(`, so an id containing parentheses truncates and two such
+    records collapse into one bucket - a FALSE duplicate warning. Ids are branch slugs and BMAD
+    numbers today, neither of which carries parentheses; noted rather than guarded, because the
+    failure is loud (a warning) rather than silent.
     """
     head = field_text(comment.get("body"))[:400]
     m = _RECORD_ID_RE.search(head)
@@ -1229,14 +1236,24 @@ def cmd_check(args) -> int:
     story = getattr(args, "story", None)
     if story:
         # Scoped to ONE lane: "did this lane file its record?" - the question a close-out
-        # actually needs. It delegates to find_devrecord rather than re-implementing id
-        # matching, so the answer is exactly "would `devrecord` update this one?" One rule,
-        # one implementation. Until SCC-113 this flag was accepted and ignored, while three
+        # actually needs. Until SCC-113 this flag was accepted and ignored, while three
         # surfaces - including a rule - told agents to pass it.
-        rec = find_devrecord(comments, story)
+        #
+        # ⛔ This does NOT delegate to find_devrecord, and the difference is the whole safety of
+        # it. A first cut did, on a "one rule, one implementation" argument - and that argument
+        # INVERTS between the two paths. find_devrecord matches `want not in norm_id(text[:400])`,
+        # bare containment over the whole head; on the WRITE path over-matching is conservative
+        # (it updates a record in place instead of posting a twin), but here it CERTIFIES that a
+        # lane filed a record when it never did. Dev Record bodies are scraped from walkthrough
+        # bullets, which routinely name sibling lanes, so the collision is the normal case rather
+        # than a corner: a record for lane A whose body mentions lane B passed `--story B`.
+        # Matched on the HEADER, exactly - the primitive record_story_id() already provides.
+        want = wf.norm_id(story)
+        rec = next((c for c in reversed(records) if record_story_id(c) == want), None)
         if rec is None:
             rep.err("devrecord", f"{args.key}: no Dev Record for '{story}' - that lane never "
-                                 f"filed one ({len(records)} record(s) on the ticket)")
+                                 f"filed one ({len(records)} record(s) on the ticket: "
+                                 f"{', '.join(sorted(filter(None, (record_story_id(c) for c in records)))) or 'none with a parseable header'})")
         else:
             rep.info("devrecord", f"{args.key}: one Dev Record for '{story}' "
                                   f"({len(field_text(rec.get('body')))} chars)")
@@ -1255,6 +1272,17 @@ def cmd_check(args) -> int:
                 rep.warn("devrecord", f"{args.key}: {len(rs)} Dev Records for "
                                       f"'{sid or '(unparseable header)'}' - there should be "
                                       f"exactly one per lane, updated in place")
+        elif "" in by_id and len(records) > 1:
+            # ⛔ An unparseable header is NOT evidence of a lane, so it must never be counted as
+            # one. The first cut let a "" bucket sit beside a real id and satisfy the "two lanes"
+            # arm below - INFO, exit 0, where the old count-based check warned. The trigger is
+            # not exotic: `records` is bare containment on the first 400 chars, so any ordinary
+            # comment saying "Dev Record" becomes a second record and silences the duplicate
+            # check for the whole ticket.
+            rep.warn("devrecord", f"{args.key}: {len(records)} Dev Records and "
+                                  f"{len(by_id[''])} with no parseable header - cannot tell "
+                                  f"which lane filed what. A real record's header reads "
+                                  f"`Dev Record - <lane> (<stage>, <date>)`")
         elif len(by_id) > 1:
             rep.info("devrecord", f"{args.key}: {len(by_id)} Dev Records, one per lane "
                                   f"({', '.join(sorted(by_id))}) - a follow-on lane rides the "
