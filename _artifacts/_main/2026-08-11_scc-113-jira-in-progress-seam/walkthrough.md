@@ -8,7 +8,7 @@ ArtifactMetadata:
 
 # SCC-113 — Nothing moved a ticket to `In Progress`
 
-**Branch** `chore/SCC-113-jira-in-progress-seam` · **Lane** LOCAL · **HEAD** `f4ae128`
+**Branch** `chore/SCC-113-jira-in-progress-seam` · **Lane** LOCAL · **HEAD** `446b43c`
 **Plan** [implementation_plan.md](implementation_plan.md) · **Ticket** SCC-113 under SCC-12
 
 ---
@@ -32,7 +32,7 @@ ArtifactMetadata:
 
 ## Evidence
 
-**Every gate below was run bare (no pipe) at `f4ae128`, the sha that ships.**
+**Every gate below was run bare (no pipe) at `446b43c`, the sha that ships.**
 
 | # | Acceptance item | Assertion | RED → GREEN |
 |---|---|---|---|
@@ -59,7 +59,7 @@ jira_feed.py: error: argument verb: invalid choice: 'start'          (× 11 star
 [FAIL] hook: the recorder script exists          -- 0/1 passed --
 ```
 
-### The GREEN, at `f4ae128`
+### The GREEN, at `446b43c`
 
 ```
 run_all.py                        15/15 files passed          exit 0
@@ -97,8 +97,16 @@ once-per-branch property observed rather than asserted.
 ## Code Review (2026-08-11)
 
 ```
-Verdict: PASS @ f4ae128
+Verdict: PASS @ 446b43c
 ```
+
+> **Re-stamped at close-out.** The review ran at `f4ae128`; `origin/main` then moved (two commits
+> authored on the operator's other machine, adding `_my_resources/open_tasks/pr-af-dev-system-upgrade.md`)
+> and the close-out preflight **blocked** until it was absorbed here rather than resolved on `main`.
+> The absorb touched **1 file, zero overlap** with this branch's 26, so no reviewed hunk changed —
+> but a verdict measured on a pre-merge sha is a verdict about code that will never exist, so the
+> full floor was re-run on the merged tree and the sha re-stamped. Both readings below are the
+> post-absorb run.
 
 **Two independent clean-room passes ran** (`bmad-review-adversarial-general` in a subagent with no
 conversation context, Opus, hunting the diff before reading the plan). Both returned **CONCERNS**.
@@ -163,7 +171,7 @@ Controls now stand at **8 negative / 6 positive** for the `--yes` guard.
 |---|---|
 | Enforcement suite | **15/15 files, exit 0** |
 | Toolkit lint | **0 errors, 0 warnings, exit 0** |
-| Assertion evidence | RED captured → GREEN at `f4ae128` |
+| Assertion evidence | RED captured → GREEN at `446b43c` |
 | SOP currency | exit 0 — the SOP moved in the same commits |
 | Link + anchor | 17 md files, **0 dead links** |
 | Door parity | 4 doors regenerated per touched brain via `/smh-sync-agents` |
