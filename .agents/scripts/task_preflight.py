@@ -179,18 +179,55 @@ def task_manifests(repo: Path, expect: str) -> list[tuple[Path, str]]:
             if (t := wf.read_text(p)) and manifest_field(t, "task_key") == expect]
 
 
+def manifest_settled(repo: Path, p: Path, ref: str) -> bool:
+    """True only on POSITIVE evidence: this exact receipt, blob for blob, is already
+    recorded on the mainline - the lane that wrote it has landed, so its claims are
+    history, not this run's contract. Every way the probe can fail (no mainline, path
+    never merged, file edited since landing) answers False and keeps the strict path:
+    absence of evidence never relaxes a gate. (H-1 - the reverted fe46b4a asked "does
+    the declared branch still exist?", which blessed the pruned-branch state a finished
+    close-out is SUPPOSED to end in.)"""
+    try:
+        rel = p.resolve().relative_to(repo.resolve()).as_posix()
+    except ValueError:  # symlinked checkout / macOS /tmp - same hazard rel_or_abs guards
+        return False
+    landed = wf.git(["rev-parse", "--verify", "--quiet", f"{ref}:{rel}"], repo)
+    if landed.returncode != 0 or not landed.stdout.strip():
+        return False
+    ours = wf.git(["hash-object", str(p)], repo)
+    return ours.returncode == 0 and ours.stdout.strip() == landed.stdout.strip()
+
+
 def check_manifest(repo: Path, branch: str, expect: str, rep: wf.Report) -> None:
-    """`task.yaml` is intent written down at task START - it exists before any branch can
-    drift. When one declares this task, it must agree with what the preflight resolved;
-    a manifest nobody checks against is decorative."""
+    """`task.yaml` is intent written down at task START - authored on the lane's own
+    branch, it reaches the mainline only WHEN that lane lands. So multi-lane tickets
+    leave one receipt PER landed lane in the tree, and re-litigating those would block
+    every follow-on: a receipt settled on the mainline is read as history, and only the
+    unlanded ones can bind this run. Those still must agree with what the preflight
+    resolved - a manifest nobody checks against is decorative."""
     mine = task_manifests(repo, expect)
     if not mine:
         rep.warn("manifest", f"no task.yaml declares task_key: {expect} - intent rests on "
                              f"--expect-key alone. Author one in the task's _artifacts "
                              f"folder ({MANIFEST_SCHEMA})")
         return
+    ref = base_ref(repo)
+    live: list[tuple[Path, str | None]] = []
     for p, text in mine:
         declared = manifest_field(text, "branch")
+        if declared and declared != branch and manifest_settled(repo, p, ref):
+            rep.info("manifest", f"{rel_or_abs(p, repo)} declares `{declared}` and is "
+                                 f"already recorded on {ref} - a landed lane's receipt, "
+                                 f"not this lane's contract")
+        else:
+            live.append((p, declared))
+    if not live:
+        rep.warn("manifest", f"every task.yaml for {expect} is a landed lane's receipt - "
+                             f"THIS lane has no manifest, so intent rests on --expect-key "
+                             f"alone. Author one in the task's _artifacts folder "
+                             f"({MANIFEST_SCHEMA})")
+        return
+    for p, declared in live:
         if declared and declared != branch:
             rep.err("manifest", f"{rel_or_abs(p, repo)} declares branch `{declared}` but "
                                 f"this preflight resolved `{branch}` - one of them is "
