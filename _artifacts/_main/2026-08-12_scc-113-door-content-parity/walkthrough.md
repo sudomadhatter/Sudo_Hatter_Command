@@ -8,7 +8,7 @@ ArtifactMetadata:
 
 # SCC-113 follow-on — the door gate could not see a stale door
 
-**Branch** `chore/SCC-113-door-content-parity` · **Lane** LOCAL · **HEAD** `5fef0a8`
+**Branch** `chore/SCC-113-door-content-parity` · **Lane** LOCAL · **HEAD** `fe46b4a`
 **Plan** [implementation_plan.md](implementation_plan.md) · **Ticket** SCC-113 (reopened)
 
 ---
@@ -25,6 +25,10 @@ ArtifactMetadata:
 - [x] **Correct the `workflow_lint` misattribution** I shipped in the parent lane.
 - [x] Absorbed SCC-110 mid-lane and re-read the merged SOP table.
 - [x] Review gate — clean-room pass, CONCERNS, all findings closed.
+- [x] **Both recorded gaps closed** on the operator's ruling — opencode ghost check + placement on
+      both mirror surfaces. Addendum 1.
+- [x] **The close-out's own preflight blocked, and the block was a gate defect** — one ticket may
+      have two lanes. Fixed and mutation-proven. Addendum 2.
 
 ---
 
@@ -86,16 +90,16 @@ support, observed rather than asserted.
 ## Code Review (2026-08-12)
 
 ```
-Verdict: PASS @ 5fef0a8
+Verdict: PASS @ fe46b4a
 ```
 
 One clean-room pass (`bmad-review-adversarial-general`, subagent, no context, Opus), returning
 **CONCERNS** with one HIGH. Everything it claimed, it verified by running. All findings closed.
 
-⚠ **What that verdict does and does not cover.** The clean-room pass ran at `97dc770`. The addendum
-below (`5fef0a8`) landed **after** it, on the operator's ruling, and has **not** had its own
-independent pass — it is covered by a five-attack mutation battery against real tree bytes, not by a
-second reviewer. Stated here rather than left for someone to infer from the shas. Three consecutive
+⚠ **What that verdict does and does not cover.** The clean-room pass ran at `97dc770`. The two addenda
+below (`5fef0a8`, `fe46b4a`) landed **after** it, on the operator's ruling, and have **not** had an
+independent pass of their own — they are covered by mutation batteries against real bytes (five
+attacks on the door gate, one on the preflight), not by a second reviewer. Stated here rather than left for someone to infer from the shas. Three consecutive
 rounds in this lane shipped guards that failed **open** and were caught only by a clean-room pass, so
 this is a real gap and not a formality; say the word and it runs.
 
@@ -188,6 +192,49 @@ is different.
 
 **Gates:** `run_all` **16/16 exit 0** (command surfaces **33/33**, was 26/26) · `workflow_lint
 --toolkit-only` 0 errors 0 warnings exit 0 · `py_compile` 0.
+
+---
+
+## Addendum 2 — the close-out blocked itself, and it was right to
+
+Running `/smh-close-task-merge-tree` produced **exit 2** on the first preflight:
+
+```
+[ERROR] manifest: .../2026-08-11_scc-113-jira-in-progress-seam/task.yaml declares branch
+`chore/SCC-113-jira-in-progress-seam` but this preflight resolved
+`chore/SCC-113-door-content-parity` - one of them is wrong
+```
+
+**Neither was wrong.** The parent lane is merged (`302bd37` on `origin/main`) and pruned local and
+remote — by Step 5 of this same command. What the gate hit is a ruling it had no way to express:
+`followon-fixes-are-not-a-new-story` says a follow-on rides the ticket it came from rather than
+minting a new key, so the second lane writes a second `task.yaml` under the **same** `task_key`.
+`check_manifest()` errored on every manifest naming a different branch — making the repo's own
+documented workflow a hard block at close-out. **SCC-113 is the first ticket in 26 manifests to have
+two lanes**, so this is the first time it could fire.
+
+Its own remedy — *"fix the manifest or aim at the declared branch"* — is unavailable in both halves:
+the declared branch is gone, and rewriting a completed lane's manifest to name a different branch
+would falsify that lane's record.
+
+**A manifest is history, not a competing lane, when BOTH hold:** its branch exists nowhere (local or
+origin), **and** some other manifest for this key declares the branch actually resolved.
+
+**The second condition is the entire safety of it.** Without it, a lone stale manifest pointing at a
+deleted branch silently excuses a close-out aimed at the wrong lane — the 2026-08-09 failure
+`--expect-key` exists for, re-opened by a fix for something else.
+
+**Proven by mutation, not asserted.** The *pre-existing* control `SCC-64 a manifest naming a
+DIFFERENT branch blocks` is exactly that shape — its declared branch was never created either — and
+must still block. Drop the `confirmed` half: **80/81, red**. Two new cases added: a closed lane does
+not block its follow-on (real fixture — `merge --no-ff`, delete the branch both sides, second lane
+writes its own manifest), and a **live** sibling lane still blocks.
+
+**Second preflight: `0 error(s), 1 warning(s)` — `VERDICT: clear to close out and merge`**, LANE
+`LOCAL`, GATES `ARMED`. The one warning is the worktree, which Step 5 prunes.
+
+**Gates at `fe46b4a`:** `run_all` **16/16 exit 0** (command surfaces **33/33**, task_preflight
+**81/81** ← 79/79) · `workflow_lint --toolkit-only` 0/0 exit 0 · `py_compile` 0.
 
 ---
 
