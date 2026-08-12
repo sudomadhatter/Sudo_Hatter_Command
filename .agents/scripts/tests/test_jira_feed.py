@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import stat
 import subprocess
 import sys
@@ -147,9 +148,15 @@ if head[:3] == ["jira", "workitem", "view"]:
         fields = {k: v for k, v in fields.items() if k in keep}
     print(json.dumps({"key": vkey, "fields": fields}))
 elif head[:3] == ["jira", "workitem", "transition"]:
+    # Record EVERY call, landed or not. Two SCC-113 assertions need the count rather than
+    # the end state: `start` must be idempotent (a second run makes no second call), and
+    # the post-commit hook must make exactly ONE call per branch (the marker short-circuit).
+    # An end-state check cannot tell "did not call" from "called and it was already right".
+    state.setdefault("transitions", []).append(
+        {"key": val("--key"), "status": val("--status"), "yes": "--yes" in args})
     if not state.get("stuck_status"):
         state.setdefault("statuses", {})[val("--key")] = val("--status")
-        save()
+    save()
     print("Work item transitioned")
 elif head == ["jira", "workitem", "comment", "list"]:
     print(json.dumps({"comments": [{"id": c["id"], "body": adf(c["body"])}
@@ -748,6 +755,248 @@ def main() -> int:
         code, out = jf("flag", "--key", "TEST-7", "--reason", "still broken", "--apply")
         c.check("flag: a transition that silently no-ops is reported, not assumed",
                 code == 2 and "still Done" in out, out.strip()[:240])
+
+        # ── start: the OTHER end of the lifecycle (SCC-113) ────────────────────
+        # Four seams wrote `Done` and exactly one wrote `In Progress` - the BMAD story lane -
+        # so on a board where every non-epic ticket is a Task, nothing was ever visible as in
+        # flight. This is that seam, as a verb rather than a prose step, because the prose one
+        # is the one that never ran.
+
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "To Do"})
+        code, out = jf("start", "--key", "TEST-7")
+        c.check("start: renders without --apply and writes NOTHING",
+                code == 0 and not get_state(state).get("transitions")
+                and get_state(state)["statuses"]["TEST-7"] == "To Do", out.strip()[:200])
+
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "To Do"})
+        code, out = jf("start", "--key", "TEST-7", "--apply")
+        st = get_state(state)
+        c.check("start: To Do -> In Progress", code == 0
+                and st["statuses"]["TEST-7"] == "In Progress", out.strip()[:200])
+        c.check("start: passes --yes, or acli blocks on a prompt no agent can answer",
+                bool(st.get("transitions")) and st["transitions"][0]["yes"],
+                "jira.md:268 names this trap; three call sites still omit it")
+
+        # `To Do Next` is the operator's hand-picked queue - a To Do-category status, so it
+        # starts exactly like `To Do`. It exists on SCC and not on AVCH; per-board-optional.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "To Do Next"})
+        code, out = jf("start", "--key", "TEST-7", "--apply")
+        c.check("start: To Do Next -> In Progress (the queue is a To Do category)",
+                code == 0 and get_state(state)["statuses"]["TEST-7"] == "In Progress",
+                out.strip()[:200])
+
+        # Idempotence is not cosmetic: the post-commit hook fires on EVERY commit, and two
+        # lanes can hold the same key. A second call must make no second transition.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+        code, out = jf("start", "--key", "TEST-7", "--apply")
+        c.check("start: already In Progress is a no-op that exits 0",
+                code == 0 and "already" in out.lower(), out.strip()[:200])
+        c.check("start: the no-op makes NO transition call at all",
+                not get_state(state).get("transitions"),
+                "an end-state check would pass here even if it called acli every commit")
+
+        # Guardrail 1, in reverse. Borrowing a finished ticket's key is the defect that
+        # silently decorates the wrong ticket and overwrites its Dev Record.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "Done"})
+        code, out = jf("start", "--key", "TEST-7", "--apply")
+        c.check("start: a Done ticket is REFUSED - that means the key is wrong",
+                code == 2 and "not your key" in out.lower()
+                and get_state(state)["statuses"]["TEST-7"] == "Done", out.strip()[:240])
+
+        # Narrow on purpose, exactly like flag's "only out of Done": a verb that moves from
+        # anywhere erases real state. `Blocking` is an impediment and `In Review` is finished
+        # work waiting on a human - starting either would destroy the only signal they carry.
+        for held in ("Blocking", "In Review", "Deferred"):
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": held})
+            code, out = jf("start", "--key", "TEST-7", "--apply")
+            # Exit 3, not 0: "left alone" is NOT settled. The hook writes its once-per-branch
+            # marker on 0, so returning 0 here silenced a lane whose ticket was `Blocking`
+            # when it opened and went back to `To Do` when the blocker cleared.
+            c.check(f"start: {held} is left alone, and says ASK AGAIN (exit 3, not 0)",
+                    code == 3 and get_state(state)["statuses"]["TEST-7"] == held
+                    and not get_state(state).get("transitions"), out.strip()[:200])
+
+        # An Epic is allowed here and refused by `flag` - the difference is deliberate. An
+        # epic under active development IS in progress; an epic is never itself broken work.
+        set_state(state, types={"TEST-5": "Epic"}, statuses={"TEST-5": "To Do"})
+        code, out = jf("start", "--key", "TEST-5", "--apply")
+        c.check("start: an Epic IS allowed (unlike flag) - epic/ is in scope",
+                code == 0 and get_state(state)["statuses"]["TEST-5"] == "In Progress",
+                out.strip()[:200])
+
+        set_state(state, types={"TEST-7": "Subtask"}, statuses={"TEST-7": "To Do"})
+        code, out = jf("start", "--key", "TEST-7", "--apply")
+        c.check("start: a Subtask is refused",
+                code == 2 and get_state(state)["statuses"]["TEST-7"] == "To Do",
+                out.strip()[:200])
+
+        # ⭐ "the board said no" and "I could not reach the board" are OPPOSITE instructions
+        # - fix your key, versus try again later - and they shared exit 2 until the second
+        # review pass. Worse, a missing binary escaped as an uncaught traceback (exit 1,
+        # which is not a documented code at all), while /smh-quick-dev's table read exit 2
+        # as "the key is wrong, mint a new ticket": a dead uplink instructed a DUPLICATE.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "To Do"})
+        code, out = run_script("jira_feed.py", "start", "--key", "TEST-7", "--apply",
+                               "--project", str(repo), "--acli", str(tmp / "not-a-binary"))
+        c.check("start: an UNREACHABLE board is exit 4, not 2 and not a traceback",
+                code == 4 and "transport" in out.lower(), out.strip()[:200])
+        c.check("start: unreachable changes nothing on the board",
+                get_state(state)["statuses"]["TEST-7"] == "To Do"
+                and not get_state(state).get("transitions"))
+
+        # The load-bearing negative, same as every other write verb here: acli exits 0 on a
+        # transition it did not perform.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "To Do"},
+                  stuck_status=True)
+        code, out = jf("start", "--key", "TEST-7", "--apply")
+        c.check("start: a transition that silently no-ops is reported, not assumed",
+                code == 2 and "still" in out.lower(), out.strip()[:240])
+
+        # ── every acli transition in .agents/ carries --yes (SCC-113) ──────────
+        # The guard that stops a FOURTH call site shipping without it. Comment lines are
+        # stripped first: `jira.md` documents the trap by quoting the flag, and a raw scan
+        # would read that prose as coverage for the three call sites that lack it.
+        lobby = SCRIPTS.parent.parent
+        me = Path(__file__).resolve()
+
+        # Matches the START of a real invocation, in either shape this repo writes:
+        #   shell/markdown   acli jira workitem transition --key …
+        #   python argv      acli(binary, ["jira", "workitem", "transition", …
+        # Anchoring on `acli` ALONE was wrong: `ln.find("acli")` locks onto a prose mention
+        # earlier in the sentence ("make sure acli is authenticated, then run `acli jira
+        # workitem transition … --yes`") and truncates the span before the real call.
+        CALL = re.compile(r"""acli(?:\s+jira\s+workitem\s+transition
+                                  |\s*\(.*?["']jira["']\s*,\s*["']workitem["']\s*,
+                                                       \s*["']transition["'])""", re.X)
+
+        def argv_of(ln: str) -> str:
+            """The part of a line that is actually ARGV: inline code ends at its closing
+            backtick, and a trailing `# …` comment is commentary, not an argument."""
+            return ln.split("`", 1)[0].split("#", 1)[0]
+
+        def unterminated(span: str) -> bool:
+            t = span.rstrip()
+            return (t.endswith(("\\", ","))
+                    or span.count("[") > span.count("]")
+                    or span.count("(") > span.count(")"))
+
+        def offending_lines(lines: list[str]) -> list[int]:
+            """Line numbers whose `acli … workitem transition` call omits `--yes`.
+
+            ⭐ Anchored to the COMMAND SPAN, not to a window — a window let prose on the
+            same line excuse a deleted flag, at a site this very ticket was fixing.
+
+            ⭐ And every JOINED line is stripped too. The first cut stripped backticks and
+            comments from the matched line, then appended the next two lines RAW — which
+            re-opened the identical hole for WRAPPED calls, and `jira_feed.py`'s own
+            transition is the repo's only executable call site and is wrapped. Deleting its
+            `--yes` and writing `# --yes: see jira.md` below read clean.
+
+            Known, deliberate limits (real call sites in this repo are fenced blocks or
+            inline instructions, never these):
+              * a line starting `>` is treated as commentary — jira.md TEACHES the trap by
+                quoting the un-flagged form in a callout, and the positive control below
+                pins that this stays true;
+              * `docs/` is out of scope (see the caller).
+            """
+            out = []
+            for n, ln in enumerate(lines, 1):
+                if ln.lstrip().startswith(("#", ">", "//")):
+                    continue              # a comment quoting the trap is not a call site
+                # finditer, not search: `… --yes && acli … transition --key K2 --status X`
+                # is two call sites on one line and only the first was ever scanned.
+                for m in CALL.finditer(argv_of(ln) if "`" not in ln else ln):
+                    span = argv_of(ln[m.start():])
+                    j = n
+                    while unterminated(span) and j < len(lines) and j - n < 6:
+                        span += " " + argv_of(lines[j])       # STRIP each joined line too
+                        j += 1
+                    if "--yes" not in span:
+                        out.append(n)
+                        break
+            return out
+
+        def yes_offenders() -> list[str]:
+            out = []
+            for p in sorted((lobby / ".agents").rglob("*")):
+                if p.suffix not in (".md", ".py", ".sh") or not p.is_file():
+                    continue
+                if p.resolve() == me:
+                    continue
+                for n in offending_lines(p.read_text(encoding="utf-8").splitlines()):
+                    out.append(f"{p.relative_to(lobby)}:{n}")
+            return out
+
+        # ⭐ NEGATIVE CONTROL — nothing else in this suite pins that the guard CAN fire.
+        # Each row is a real shape from this repo with the flag surgically removed; the
+        # guard must indict every one, or it is decoration.
+        must_catch = [
+            ['acli jira workitem transition --key K --status "Done"'],
+            ['then `acli jira workitem transition --key K --status "Done"` (**`--yes` or '
+             'acli stops on a confirm prompt no agent shell can answer**)'],
+            ['acli jira workitem transition --key K --status "In Review"'
+             '  # TRAP: needs --key; --yes skips the interactive confirm'],
+            ['t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,',
+             '                  "--status", target])'],
+            # ⭐ The shapes that defeated the previous cut: the joined lines were appended
+            # RAW, so a comment BELOW a wrapped call excused the missing flag - and the
+            # repo's only executable call site is exactly this shape.
+            ['t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,',
+             '                  "--status", target])   # --yes is required here, see jira.md'],
+            ['t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,',
+             '                  "--status", target])',
+             '# --yes: see jira.md for why this flag is mandatory'],
+            ['acli jira workitem transition --key K --status "Done" \\',
+             '# NOTE: --yes skips the confirm'],
+            # Two calls on one line - only the first was ever scanned.
+            ['acli jira workitem transition --key K1 --status "Done" --yes && '
+             'acli jira workitem transition --key K2 --status "Done"'],
+        ]
+        for i, rows in enumerate(must_catch):
+            c.check(f"yes-guard NEGATIVE CONTROL {i}: an un-flagged call IS caught",
+                    offending_lines(rows) == [1],
+                    "prose or a comment saying --yes must never excuse the missing flag: "
+                    + rows[0][:90])
+
+        must_pass = [
+            ['acli jira workitem transition --key K --status "Done" --yes'],
+            ['t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,',
+             '                  "--status", target, "--yes"])'],
+            ['`tests/test_jira_feed.py` fails if any `workitem transition` omits it.'],
+            # A compliant call wrapped over FOUR lines - the repo's own continuation style,
+            # and the two-line lookahead indicted it. A guard that flags correct code
+            # pressures the next author into a worse layout to appease it.
+            ['acli jira workitem transition \\', '  --key K \\', '  --status "Done" \\',
+             '  --yes'],
+            ['t = acli(binary, ["jira", "workitem", "transition",', '  "--key", args.key,',
+             '  "--status", target,', '  "--yes"])'],
+            # A prose mention of `acli` BEFORE the real call: anchoring on the first `acli`
+            # truncated the span before the command and indicted a compliant line.
+            ['Make sure acli is authenticated, then run '
+             '`acli jira workitem transition --key K --status "Done" --yes`.'],
+        ]
+        for i, rows in enumerate(must_pass):
+            c.check(f"yes-guard POSITIVE CONTROL {i}: a compliant line is NOT caught",
+                    offending_lines(rows) == [],
+                    "a guard that indicts the fix is worse than none: " + rows[0][:90])
+
+        offenders = yes_offenders()
+        c.check("yes-guard: every `workitem transition` under .agents/ passes --yes",
+                not offenders,
+                "acli prompts without -y and an agent shell cannot answer: "
+                + ", ".join(offenders[:6]))
+
+        # Positive control, same shape as the interpreter probe's below: the rule documents
+        # this trap by quoting the bad form in prose. If stripping ever dies, that quote
+        # becomes an offender and this assertion goes red - which is the point.
+        c.check("yes-guard: the comment/quote strip is load-bearing, not decorative",
+                any(all(t in ln for t in ("acli", "workitem", "transition"))
+                    and "--yes" not in ln
+                    for ln in (lobby / ".agents/rules/jira.md")
+                    .read_text(encoding="utf-8").splitlines()
+                    if ln.lstrip().startswith((">", "#"))),
+                "jira.md must keep quoting the un-flagged form in prose, or this guard "
+                "is no longer being exercised against the case that inverts it")
 
         # ── the interpreter probe, in every hook that has one ──────────────────
         # The suite cannot EXECUTE these (a .sh will not run on the PC), so this asserts the

@@ -201,8 +201,23 @@ env -u GITHUB_TOKEN git pull --ff-only origin main
 git merge chore/<JIRA-KEY>-<slug> --no-ff \
   -m "merge: chore/<JIRA-KEY>-<slug> -> main (task: <gate summary>)"
 # 🛑 summarize the commits + changed files before pushing
-env -u GITHUB_TOKEN git push origin main       # hook prompts — the expected approval moment
+
+# Mint the single-use approval token — AFTER the merge, IMMEDIATELY before the push (SCC-77).
+sh .agents/scripts/git-hooks/mint-push-token.sh \
+   --command /smh-close-task-merge-tree --branch chore/<JIRA-KEY>-<slug> --key <JIRA-KEY>
+
+env -u GITHUB_TOKEN git push origin main       # the pre-push gate spends the token here
 ```
+
+**The token is the machine half of "invoking this IS the sign-off."** `.githooks/pre-push` refuses
+any push landing on `main` without one, and consumes it on the way through — so this invocation
+authorises exactly one merge and the next task needs its own, mechanically rather than by reading
+(`git-policy.md` § "The write gate"; the failure it fixes is SCC-71's six-merges-on-one-sign-off).
+
+⛔ **Mint last. Do not commit anything after it.** The token records the sha it was minted for, so a
+commit made between the mint and the push makes the push carry a different sha and the gate refuses
+it — correctly, because nothing gated that commit. If that happens: re-run the gate, then re-mint.
+A refusal always discards the token, so there is never a stale one left to match by accident.
 
 `--no-ff` keeps the task visible as one reviewable unit on `main`'s first-parent history, and
 because the branch name (with its key) rides in the merge message, Jira links the merge commit to
@@ -226,9 +241,13 @@ python3 .agents/scripts/jira_feed.py devrecord --key <JIRA-KEY> --story <branch-
        --pitfall "<what nearly bit>" \
        --followon "<anything still owed>" --closing --apply
 
-acli jira workitem transition --key <JIRA-KEY> --status "Done"
+acli jira workitem transition --key <JIRA-KEY> --status "Done" --yes
 python3 .agents/scripts/jira_feed.py check --key <JIRA-KEY>     # must exit 0
 ```
+
+⛔ **`--yes` or acli stops on an interactive confirm no agent shell can answer.** This line shipped
+without it until SCC-113; `Done` was landing on luck. `tests/test_jira_feed.py` now fails if any
+`workitem transition` under `.agents/` omits it.
 
 **Exactly one Dev Record per ticket.** If `/cicd-quick-dev` already filed one at Step 4.5, this
 **updates it in place** — **never pass `--append-new`.** `devrecord --apply` reads the ticket back

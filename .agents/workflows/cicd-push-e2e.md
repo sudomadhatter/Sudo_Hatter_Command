@@ -84,9 +84,20 @@ Any failure → **STOP**. Summarize the failures, file/link the evidence, and su
 git checkout main
 $env:GITHUB_TOKEN = ""; git pull --ff-only origin main
 git merge epic/<JIRA-KEY>-<slug> --no-ff -m "merge: epic/<JIRA-KEY>-<slug> -> main (gated: suite + build + e2e green)"
-# 🛑 summarize the commits + changed files for Daniel before pushing
-$env:GITHUB_TOKEN = ""; git push origin main    # hook prompts — this is the expected approval moment
+# 🛑 summarize the commits + changed files for the operator before pushing
+
+# Mint the single-use approval token — AFTER the merge, IMMEDIATELY before the push (SCC-77).
+sh .agents/scripts/git-hooks/mint-push-token.sh \
+   --command /cicd-push-e2e --branch epic/<JIRA-KEY>-<slug> --key <JIRA-KEY>
+
+$env:GITHUB_TOKEN = ""; git push origin main    # the pre-push gate spends the token here
 ```
+
+**The token is the machine half of "invoking this IS the sign-off."** `.githooks/pre-push` refuses
+any push landing on `main` without one and consumes it on the way through, so this invocation ships
+exactly one epic. It records the sha it was minted for — **mint last, and commit nothing after it**,
+or the push carries a different sha and the gate refuses it (correctly: nothing gated that commit).
+Re-gate, then re-mint. A refusal always discards the token. See `git-policy.md` § "The write gate".
 The `--no-ff` merge commit records the epic as one reviewable unit on `main`'s first-parent history,
 and because the branch name (with its key) is in the message, Jira links the merge commit to the epic
 ticket automatically. (The commit-msg hook exempts merges — the key riding in the branch name is what
@@ -120,10 +131,12 @@ merge IS the epic shipping, and Daniel's invocation of this command IS the sign-
 ```bash
 acli jira workitem comment create --key <JIRA-KEY> \
   --body "Merged to main at <merge-sha> via /cicd-push-e2e. Gate: pytest + build + /cicd-e2e green (<evidence-link>). Deploy verified live."
-acli jira workitem transition --key <JIRA-KEY> --status "Done"
+acli jira workitem transition --key <JIRA-KEY> --status "Done" --yes
 ```
 (`comment create` needs `--key`; `transition` too — `view` is the only one that takes the key
-positionally.) Full acli reference: `.agents/rules/jira.md`. Transition the EPIC ticket only — child stories were already moved one-by-one at their
+positionally. **`--yes` is not optional**: without it acli stops on an interactive confirm no
+agent shell can answer, and this line shipped without it until SCC-113.) Full acli reference:
+`.agents/rules/jira.md`. Transition the EPIC ticket only — child stories were already moved one-by-one at their
 close-outs by `/cicd-update-sprint-memory`. If Step 1's sanity check was honest, they are all `Done`
 before this runs; if the transition fails because children are open, that is the sanity check telling
 you it was skipped — go run the close-outs, do not force the epic.

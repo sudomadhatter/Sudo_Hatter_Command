@@ -1189,7 +1189,8 @@ flowchart LR
 | ⤷ `ap_reconciled:` | **Silencing the AP-twin check by touching the twin.** The `*-AP.md` robot-lane commands are headless adaptations of their primaries, and the linter warns when a primary was committed after its twin — *go and diff them.* The twin now writes `ap_reconciled: <primary-sha>` in its frontmatter — a claim you can audit — and the check goes quiet **only** while that sha is the primary's current one. |
 | `commit-msg-jira.sh` | **A commit with no ticket.** Each repo declares its Jira project in `.agents/jira.conf`; a commit whose message carries no valid key for *that* repo — or the wrong project's key — is refused outright. A rejected commit is a no-op: your staged files are untouched, nothing to undo. Merges, reverts, and rebases are exempt (the branch name carries the key for them). |
 | `sop_currency.py` | **This page falling behind the system it describes.** Change a `/` command, a rule, a safety-net script, a commit gate, or the root `AGENTS.md`, and the commit is refused unless this file is staged with it. Say `[sop-ok]` in the message when a change genuinely alters no usage — that stays in the git log as the record of the call. It checks only that the two moved together; no program can judge whether the *edit* was right, and the point is to make you look while you still have the context. |
-| `jira_feed.py` | **A Jira ticket that is only a title.** ① mints the ticket with an outline rendered *from the story file*, and the close-out files a **Dev Record**: the decisions, the pitfalls, and what is still owed. Both write paths **read the ticket back** and fail if what they claimed to write is not there. **Exactly one Dev Record per ticket.** It also picks the ticket **type** for you ([§12](#12-the-board--what-runs-next)). |
+| `jira_feed.py` | **A Jira ticket that is only a title.** ① mints the ticket with an outline rendered *from the story file*, and the close-out files a **Dev Record**: the decisions, the pitfalls, and what is still owed. Both write paths **read the ticket back** and fail if what they claimed to write is not there. **Exactly one Dev Record per ticket.** It also picks the ticket **type** for you ([§12](#12-the-board--what-runs-next)). Its `start` verb moves a ticket to `In Progress` and is **idempotent**, which is what lets three different seams call it without any of them double-moving a card. |
+| `post-commit-jira-start.sh` | **A ticket that never shows as in flight.** Your first commit on a `chore/ · claude/ · epic/` branch moves that ticket to `In Progress` — see [§12](#12-the-board--what-runs-next). It reads the key from the **branch name** and never invents one; `main` and unkeyed branches are silent. It costs **one exchange per branch** on the normal path (a marker short-circuits the rest before any network call), it **can never block or fail a commit**, and an offline commit simply retries on the next one. A ticket that is not startable yet (`Blocking`, `In Review`, `Deferred`) deliberately writes no marker, so that branch re-reads once per commit until it is — the price of never silencing a ticket that might still start. |
 | `task_preflight.py` | **A change to the product sneaking onto `main` labelled a "task".** It derives the lane from the repo rather than asking: does this repo **have** anything that deploys, and did **this diff** touch it? Touch one and it **stops dead and sends the work to `/cicd-push-e2e`. There is no override flag, on purpose.** It also checks the branch shape, the `--expect-key` match, the `task.yaml` manifest, that the tree is clean and pushed, and that `origin/main` was absorbed. |
 | `check_maps.py` | **The maps and INDEXes drifting from what is actually on disk.** Every level-2 folder must carry an `INDEX.md`, every backticked path in a **map's** table row must resolve, and the repo-map must still name every top-level folder. Ledgers under `_artifacts/` are exempt on purpose — their rows are history, and a row describing work that *deleted* something has to be able to name it. **That exemption is why a session-folder row is matched on its FIRST cell written with a trailing `/` (SCC-96):** anything else in the row is prose, and prose is where a ledger explains *why* — including by naming the memory a decision rests on. Matching prose instead made every memory slugged `story-`/`tea-`/`epic-`/`autopilot-` read as a folder gone missing, so the gate fired on exactly the behaviour the convention asks for. |
 | `tests/test_sops_prds_folder.py` | **The SOPs and PRDs going stale again.** Pins the 11-doc manifest in `docs/_scc_sops_prds/`, checks its `INDEX.md` against the directory in BOTH directions, verifies every markdown link resolves and every `/command` reference names a real command master, and asserts the SOP gate's two halves still point at the same file. |
@@ -1307,6 +1308,35 @@ file carries `jira_key:` in frontmatter, and the branch carries the Jira key.
 **Statuses are per board and they differ** — SCC runs `To Do · To Do Next · Blocking · In Progress ·
 Done`, AVCH runs `To Do · In Progress · In Review · Deferred · Done`. Note the SCC name is
 **`Blocking`**, not `Blocked`; there is no `Blocked` status on either board.
+
+### The board moves itself — at both ends, since SCC-113
+
+**You do not have to drag cards.** Until 2026-08-11 only *one* seam ever wrote `In Progress` (the
+BMAD story lane, at ① pickup) while four wrote `Done`. Since every non-epic SCC ticket is a **Task**,
+that meant work in this command center was *never* visible as in flight: a `chore/*` ticket sat in
+`To Do` while you built it, then jumped to `Done` at the merge. Now:
+
+| When | What moves it | To |
+|---|---|---|
+| **your first commit on a `chore/ · claude/ · epic/` branch** | the `post-commit` hook | **`In Progress`** |
+| you run `/smh-quick-dev` (Task lane) | its Step 0.5, at worktree-open | `In Progress` |
+| you run `/cicd-write-story-tests` ① (story lane) | its Step 1.6 | `In Progress` |
+| you close a story / task / epic out | `/cicd-update-sprint-memory` · `/smh-close-task-merge-tree` · `/cicd-push-e2e` | `Done` |
+
+**The commit is the trigger, and that is the point.** You don't always run `/smh-quick-dev`, so
+hanging it on the command would have meant the board is only honest when you remember. Commit on a
+keyed branch by any route — the command, a bare `git commit`, another agent — and the ticket moves.
+
+**It costs one exchange per branch, ever.** A marker file short-circuits every later commit before
+any network call, so this never slows your commits down. If you're offline the move is skipped
+**silently** and retried on your next commit — same if the ticket isn't startable yet (it's sitting in
+`Blocking`, say). Nothing is ever lost, a hook failure can never fail a commit, and each call is
+capped at 10 seconds — three calls per move, so a dead uplink costs you at most ~30s on that one
+commit, not a hang.
+
+> ⚠️ **On the PC (or any fresh clone) this is OFF until you run `git config core.hooksPath .githooks`**
+> — the same one-time arming every other hook here needs. That is exactly why `/smh-quick-dev` moves
+> the ticket too: when the hook is dead, the command still works.
 
 > ⛔ **If an agent tells you the board is unreachable, ask it to re-run outside its sandbox
 > (2026-08-09).** A sandboxed tool call can't reach the OS credential store, so `acli` fails there

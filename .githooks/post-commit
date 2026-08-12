@@ -17,4 +17,15 @@ for c in python3 python py; do
   if command -v "$c" >/dev/null 2>&1; then PY="$c"; break; fi
 done
 [ -n "$PY" ] && "$PY" .agents/scripts/record_map_changes.py --commit HEAD >/dev/null 2>&1
+
+# SCC-113 — the second recorder: a keyed branch's first commit moves its ticket to
+# `In Progress`. Same non-blocking contract as the drift journal above; it is a separate
+# script so the suite can drive it directly (test_jira_start_hook.py), exactly as commit-msg
+# delegates to commit-msg-jira.sh and sop-currency.sh.
+#
+# GUARD (SCC-32): a worktree cut from a commit before this script existed has no script to
+# exec, and a bare exec on a missing file kills the hook. Missing -> skip, silently.
+JIRA_START="$(git rev-parse --show-toplevel 2>/dev/null)/.agents/scripts/git-hooks/post-commit-jira-start.sh"
+[ -x "$JIRA_START" ] && "$JIRA_START"
+
 exit 0

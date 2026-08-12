@@ -100,19 +100,31 @@ def acli_bin(explicit: str | None) -> str:
     return found
 
 
+ACLI_UNREACHABLE = 124   # conventional "timed out"; also covers a binary that is not there
+
+
 def acli(binary: str, args: list[str], timeout: int = 90) -> subprocess.CompletedProcess:
-    return subprocess.run([binary, *args], capture_output=True, text=True,
-                          errors="replace", timeout=timeout)
+    try:
+        return subprocess.run([binary, *args], capture_output=True, text=True,
+                              errors="replace", timeout=timeout)
+    except (subprocess.TimeoutExpired, OSError) as e:
+        # A hung uplink and a missing/unresolvable binary both used to escape as an UNCAUGHT
+        # traceback - process exit 1, which is not one of the documented codes. The hook
+        # swallows any non-zero, so it never showed there; the agent lane is where it bit.
+        # `/smh-quick-dev` reads this code, and its table says exit 2 means "the key is
+        # wrong, mint a new ticket" - so a dead uplink was instructing a DUPLICATE ticket.
+        return subprocess.CompletedProcess([binary, *args], ACLI_UNREACHABLE, "",
+                                           f"acli unreachable: {e}")
 
 
-def acli_json(binary: str, args: list[str]) -> object | None:
+def acli_json(binary: str, args: list[str], timeout: int = 90) -> object | None:
     """Parse acli's --json output, which is an ARRAY on some verbs and an OBJECT on others.
 
     `workitem search --json` returns a bare list of issues while `view` and `comment list`
     return objects, so a parser that only accepts one shape reads a perfectly good response
     as a failure. It also scans for the first balanced value rather than parsing the whole
     stream: acli prints human chatter alongside JSON on several paths."""
-    r = acli(binary, args)
+    r = acli(binary, args, timeout=timeout)
     if r.returncode != 0:
         return None
     out = r.stdout or ""
@@ -487,7 +499,8 @@ def render_devrecord(project: Path, story: str, args) -> tuple[str, list[str]]:
 
 # ── Ticket I/O ─────────────────────────────────────────────────────────────────
 
-def view_fields(binary: str, key: str) -> dict:
+def view_fields(binary: str, key: str, timeout: int = 90,
+                strict: bool = True) -> dict | None:
     """`--fields` is a WHITELIST, and `issuetype` has to be on it (SCC-54).
 
     It was not, and every type read in this file goes through here - so `have` came back `""`
@@ -499,8 +512,13 @@ def view_fields(binary: str, key: str) -> dict:
     data = acli_json(binary, ["jira", "workitem", "view", key,
                               "--fields",
                               "key,summary,status,description,parent,labels,issuetype",
-                              "--json"])
+                              "--json"], timeout=timeout)
     if data is None:
+        if not strict:
+            # The caller wants to TELL APART "the board said no" from "I could not reach the
+            # board". Dying here collapses those into one exit code, and they call for
+            # opposite actions: fix your key, versus try again later.
+            return None
         wf.die(f"could not read {key} from Jira (is acli authenticated? "
                f"`acli jira auth status`)")
     if isinstance(data, list):
@@ -975,6 +993,100 @@ def cmd_trace(args) -> int:
     return 0
 
 
+# The statuses a ticket can legitimately be STARTED from. Deliberately narrow, exactly like
+# `flag`'s "only out of Done": a verb that moves from anywhere erases real state. `Blocking` is
+# an impediment, `In Review` is finished work waiting on a human, `Deferred` is descoped - and
+# starting any of them destroys the only signal each one carries. A board that lacks one of
+# these simply never matches it (per-board-optional, like every other rule in jira.md).
+STARTABLE = ("to do", "to do next")
+
+
+def cmd_start(args) -> int:
+    """Work has started: move a ticket to `In Progress` (SCC-113).
+
+    The seam that did not exist. Four wrote `Done` and one wrote `In Progress` - the BMAD
+    story lane - so on a board whose every non-epic ticket is a Task, nothing was ever
+    visible in flight. This is a verb rather than a prose step for the reason SCC-49 gave
+    for the other four: prose could not hold the failure mode. The prose one never ran.
+
+    Idempotent on purpose. The post-commit recorder fires on every commit and two lanes can
+    hold one key, so a second call must make no second transition.
+
+    ⭐ THREE outcomes, three exit codes, because the caller has to tell them apart:
+        0  moved, or already there        -> settled; the hook may stop asking
+        3  LEFT ALONE (see STARTABLE)     -> not settled; the hook must ASK AGAIN later
+        2  refused or the move failed     -> not settled either
+    Collapsing 3 into 0 is a real defect, not a nicety: a lane opened while its ticket sat
+    in `Blocking` wrote the hook's marker, and when the blocker cleared and the ticket went
+    back to `To Do` nothing ever asked again - the ticket stayed there for the whole build,
+    which is precisely the failure SCC-113 exists to close.
+    """
+    binary = acli_bin(args.acli)
+    fields = view_fields(binary, args.key, timeout=args.timeout, strict=False)
+    if fields is None:
+        say(f"jira-feed: could not reach the board to read {args.key} - nothing was "
+            f"changed. This is a TRANSPORT failure, not a verdict on the ticket: retry "
+            f"when you have a connection. (If it persists: `acli jira auth status`.)")
+        return 4
+    have = ((fields.get("issuetype") or {}).get("name") or "").strip()
+    status = ((fields.get("status") or {}).get("name") or "").strip()
+    summary = field_text(fields.get("summary"))
+    target = args.status
+
+    if have in ("Subtask", "Sub-task"):
+        wf.die(f"{args.key} is a {have} - start the parent it belongs to.")
+
+    # An Epic IS allowed, and this is the one place `start` differs from `flag`, which
+    # refuses containers outright. An epic under active development is genuinely in
+    # progress; an epic is never itself broken work. `epic/` is in the branch scope.
+
+    if status.lower() == target.lower():
+        say(f"jira-feed: {args.key} is already {target} - nothing to do ({summary[:60]})")
+        return 0
+
+    if status.lower() == "done":
+        # Guardrail 1, in reverse. Borrowing a finished ticket's key because the work is
+        # adjacent is how a closed ticket silently accumulates branches - and `devrecord`
+        # keeps ONE record per ticket and updates it in place, so a close-out under a
+        # borrowed key overwrites the record of the work that earned it.
+        say(f"[ERR] {args.key} is Done - that is not your key. A ticket you are starting "
+            f"work on cannot already be finished ({summary[:60]}). Mint one at the seam "
+            f"in jira.md #Who-mints-tickets; never reuse a closed key.")
+        return 2
+
+    if status.lower() not in STARTABLE:
+        # Exit 3, NOT 0. This ticket is not settled - it is waiting on something (an
+        # impediment, a reviewer, a descope decision). Whatever asked must ask again.
+        say(f"jira-feed: {args.key} is {status or '?'} - left alone. `start` only moves a "
+            f"ticket out of {' / '.join(STARTABLE)}, so that a status carrying real state "
+            f"is never overwritten. Nothing was recorded; ask again later.")
+        return 3
+
+    if not args.apply:
+        say(f"jira-feed: DRY RUN - would move {args.key} {status} -> {target} "
+            f"({summary[:60]})")
+        return 0
+
+    # --yes or acli blocks on an interactive confirm no agent shell can answer. This is the
+    # trap jira.md:268 names and three call sites shipped without.
+    t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,
+                      "--status", target, "--yes"], timeout=args.timeout)
+    back = view_fields(binary, args.key, timeout=args.timeout, strict=False)
+    if back is None:
+        # The write may or may not have landed and we cannot see which. NOT settled: no
+        # marker, so the next commit re-reads and settles it.
+        say(f"jira-feed: {args.key} was sent {status} -> {target}, but the board could not "
+            f"be re-read to confirm it. Treating as unconfirmed; it will be retried.")
+        return 4
+    now = ((back.get("status") or {}).get("name") or "").strip()
+    if t.returncode != 0 or now != target:
+        say(f"jira-feed: {args.key} is still {now or '?'} - the move did NOT land: "
+            f"{(t.stderr or t.stdout).strip()[:160]}")
+        return 2
+    say(f"jira-feed: {args.key} {status} -> {target}")
+    return 0
+
+
 def render_flag(args, was: str, status: str) -> str:
     lines = [f"**Bug flag** - {args.date}",
              "",
@@ -1175,6 +1287,19 @@ def main() -> int:
     p_flag.add_argument("--date", default=date.today().isoformat())
     p_flag.add_argument("--apply", action="store_true", help="without this, renders only")
 
+    p_start = sub.add_parser("start", help="work has started: move it to In Progress")
+    common(p_start)
+    p_start.add_argument("--key", required=True, help="the ticket, from the BRANCH name")
+    p_start.add_argument("--status", default="In Progress",
+                         help="the board's in-flight status (default: In Progress)")
+    p_start.add_argument("--timeout", type=int, default=90, metavar="SEC",
+                         help="per-acli-call ceiling. The post-commit hook passes a SHORT "
+                              "one: it runs inline on every commit until it succeeds, and "
+                              "the default 90 would stall each commit for a minute and a "
+                              "half on a dead uplink - which is exactly where the operator "
+                              "commits from")
+    p_start.add_argument("--apply", action="store_true", help="without this, renders only")
+
     p_chk = sub.add_parser("check", help="does this ticket carry outline + Dev Record?")
     common(p_chk)
     p_chk.add_argument("--key", required=True)
@@ -1183,7 +1308,7 @@ def main() -> int:
     args = ap.parse_args()
     return {"outline": cmd_outline, "mint": cmd_mint, "devrecord": cmd_devrecord,
             "audit": cmd_audit, "check": cmd_check, "trace": cmd_trace,
-            "flag": cmd_flag}[args.verb](args)
+            "flag": cmd_flag, "start": cmd_start}[args.verb](args)
 
 
 if __name__ == "__main__":
