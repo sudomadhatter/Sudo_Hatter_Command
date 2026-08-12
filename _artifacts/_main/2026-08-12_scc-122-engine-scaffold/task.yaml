@@ -1,0 +1,5 @@
+task_key: SCC-122
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-122-engine-scaffold
+close_command: smh-close-task-merge-tree
+secondary_repos: []

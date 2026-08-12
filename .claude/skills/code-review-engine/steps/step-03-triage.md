@@ -35,10 +35,14 @@ the four house levels before anything downstream looks at severity:
 Case-insensitive. The unrecognized-falls-to-`suggestion` rule is deliberate: an unknown word must
 never be *promoted* into something that gates a merge.
 
-**A revised severity wins.** When step 2 has supplied a `revised_severity` for a finding — evidence
-in hand — that value replaces the hunter's assertion outright. Hunters assert; verification is what
-makes a severity load-bearing. (At scaffold stage no revised value exists, so hunter severity
-stands, and step 2 has already recorded that in the notes.)
+**A revised severity outranks the hunter's.** When step 2 has supplied a `revised_severity` for a
+finding — evidence in hand — that value replaces the hunter's assertion outright. Hunters assert;
+verification is what makes a severity load-bearing.
+
+⚠ **Today no revised severity exists** (step 2 is a pass-through until SCC-127), so every severity
+below is hunter-asserted and unverified. The table in §5 is applied to it anyway — deliberately, so
+that this engine gates exactly as hard as the path it replaces, no harder and no softer, and so
+SCC-124's head-to-head trial measures real behavior rather than a temporarily-softened one.
 
 ## 3. Deduplicate
 
@@ -59,30 +63,33 @@ In `review_mode: no-spec`, a finding that would be `decision_needed` becomes `pa
 unambiguous, otherwise `defer`. There is no spec to resolve the ambiguity against, so parking it as
 a decision nobody can take is worse than either.
 
-Drop the `dismiss` findings; keep the count.
+**`dismiss` is counted, `defer` is recorded.** A dismissed finding leaves the record as a number in
+the summary; a deferred one is written down in full by step 4. The count is never omitted — a
+review that silently drops what it rejected is a summary of its own conclusion.
 
 ## 5. Score the severity floor — the one place severity becomes a verdict
 
-This table is defined **once**, here, and every caller reads it rather than inventing its own:
+This table is the single definition; every caller reads it rather than inventing its own:
 
 | Surviving finding | Effect on `severity_floor` |
 |---|---|
 | `critical`, in `decision_needed` or `patch` | **FAIL** |
-| `important`, in `decision_needed` or `patch` | **CONCERNS** (a floor, not a ceiling) |
+| `important`, in `decision_needed` or `patch` | **CONCERNS** |
 | `suggestion` or `nitpick`, any bucket | **never gate** — recorded, never raising the floor |
 | anything in `defer` | **never gate** — it is not this change's defect |
-| a lens that died (step 1) | **CONCERNS**, independent of any finding |
+| a lens still `dead` after retry AND inline rerun | **CONCERNS** |
 
-The floor is the **highest** applicable row. `FAIL` beats `CONCERNS` beats none.
+The floor is the **most severe** applicable row, on the axis `none` < `CONCERNS` < `FAIL`. A lens
+recorded `recovered-inline` is not a dead lens and does not appear here at all.
 
-⛔ **A `dismiss` never gates and a `defer` never gates** — but both are recorded. Suppressing a
-finding from the record because it did not gate is how a review becomes a summary of its own
-conclusion.
+⛔ **A `dismiss` never gates and a `defer` never gates** — but a `defer` is still written into the
+record. Suppressing a finding from the record because it did not gate is how a review becomes a
+summary of its own conclusion.
 
 ## 6. Nothing left
 
-If zero findings survive: report a clean review. If zero survive **and** a lens died, report the
-degradation instead — the review may simply not have looked where the problem is.
+If zero findings survive: report a clean review. If zero survive **and** a lens is `dead`, report
+the degradation instead — the review may simply not have looked where the problem is.
 
 ## NEXT
 

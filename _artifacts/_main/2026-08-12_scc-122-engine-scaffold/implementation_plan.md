@@ -104,8 +104,9 @@ SCC-128. This subtask only has to make SCC-124's head-to-head trial possible.
   lens (SCC-126). No verifier/compound prompts (SCC-127).
 - Vendor skill files are never touched — `.claude/skills/bmad-code-review/` stays as the
   regenerator left it.
-- Surgical diff: skill dir + cache dir + one test file + one INDEX row + the two artifact
-  folders. Anything else is drift.
+- Surgical diff: skill dir + cache dir + one test file + one INDEX row (both trees) +
+  `.agents/.sync-manifest.json` (written by the sync the INDEX row requires; hand-editing it is
+  banned) + the two artifact folders. Anything else is drift.
 
 ## Self-Audit (2026-08-12)
 

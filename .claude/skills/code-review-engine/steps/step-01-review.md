@@ -33,9 +33,10 @@ independence is the entire value of the fan-out. Wall-clock is the slowest lens,
 prompt, that **the pack is a starting point, not the search space**: live files in `REPO` are the
 authority, and a lens that only reads the pack will find only what the pack anticipated.
 
-**If subagents are unavailable in this runtime**, write one prompt file per lens into the caller's
-artifact folder, tell the caller they must be run externally and pasted back, and return. Do not
-simulate a lens by imagining its output.
+**If subagents are unavailable in this runtime**, write one prompt file per lens into `ARTIFACT_DIR`
+(or, when the caller gave none, return the prompts in the summary and say they were not written),
+tell the caller they must be run externally and pasted back, and return. Do not simulate a lens by
+imagining its output.
 
 ## When a lens fails — a dead lens is a finding, never a silent skip
 
@@ -43,21 +44,30 @@ Applied to any lens that errors, times out, or comes back empty:
 
 1. **Retry it once.** Transient tool and API failures are the common case.
 2. **Still failing → run that lens INLINE yourself, here, in this context.** A lens is a prompt,
-   not a privileged tool; losing the parallelism costs time, not coverage. Record it as
-   `recovered-inline`.
+   not a privileged tool; losing the parallelism costs time, not coverage.
 3. **Record the degradation** in the returned summary — name the lens, the failure, the recovery.
    "4 lenses ran" and "3 ran plus 1 rerun inline" are different evidence and must read differently.
-4. **A lens that never ran at all sets `severity_floor: CONCERNS`.** Not clean. An unexamined
-   surface is an unknown, and an unknown is never a pass.
+4. **Only a lens that is still dead after BOTH the retry and the inline rerun raises the floor.**
+
+The three end states, and the one that costs you:
+
+| End state | Recorded as | Effect on the floor |
+|---|---|---|
+| ran first time, or after the retry | `ok` | none |
+| died, then produced findings when rerun inline | `recovered-inline` | **none — coverage is complete** |
+| died, and the inline rerun also failed | `dead` | **raises `severity_floor` to CONCERNS** |
+
+A lens recovered inline cost time, not coverage, so it must never be scored as a gap. A lens that
+never produced findings at all leaves a surface unexamined, and an unknown is never a pass.
 
 ## Skipped-by-mode is not the same as dead — and the difference is load-bearing
 
 The Acceptance Auditor **does not run** in `review_mode: no-spec`, because there is nothing for it
 to audit against. That is the mode working correctly, not a lens dying.
 
-- Record it as **`n/a (mode)`** — not as a failure, and not inside the `<n>/<total>` ran count.
-- It **does not cap the verdict.** `n/a (mode)` never raises `severity_floor`; only a lens that
-  died after both recovery attempts does that.
+- Record it on `lenses_na`, **not** as a failure, and **not** inside the `<n>/<applicable>` count —
+  a spec-less review reports `3/3`, never `3/4`, because `3/4` reads as degraded.
+- **A lens skipped by mode never raises `severity_floor`.** Only a `dead` lens does that.
 
 Conflating the two is how a correctly-configured spec-less review gets reported as degraded
 forever, and how a real dead lens gets waved through as "just the mode".
