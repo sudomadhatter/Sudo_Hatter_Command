@@ -1,6 +1,7 @@
 ---
 name: smh-update-maps-indexes
 description: Update the Maps, INDEX.md, AGENTS.md, and README files (any workspace)
+platforms: [antigravity]
 ---
 
 # Workflow — Update the Maps, INDEXes, AGENTS + READMEs (any workspace)

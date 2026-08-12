@@ -548,6 +548,33 @@ def find_devrecord(comments: list[dict], story: str | None) -> dict | None:
     return None
 
 
+_RECORD_ID_RE = re.compile(r"^\s*" + re.escape(MARKER) + r"\s*[-–—]\s*(.+?)\s*\(",
+                           re.IGNORECASE)
+
+
+def record_story_id(comment: dict) -> str:
+    """The story id out of a Dev Record's own header - `Dev Record - <id> (<stage>, <date>)`.
+
+    Two records on one ticket is TWO different situations and only one of them is a defect
+    (SCC-113):
+
+      * one id, two records - /cicd-quick-dev closed the branch and /cicd-update-sprint-memory
+        closed the story and both posted. That is the failure SCC-49 wrote `check` for.
+      * two ids, one record each - two LANES on one ticket. `find_devrecord` filters by id on
+        purpose, exactly "so a ticket that legitimately carries records for two ids does not
+        have one overwrite the other", and both Task surfaces pass `--story <branch-slug>`,
+        which changes per lane. A follow-on rides the ticket it came from rather than minting
+        a key, so this is the normal shape of a second lane - not something posting around
+        the update path.
+
+    Counting cannot tell them apart; the id can. A header that will not parse returns `""`,
+    which buckets the unidentifiable together - two of THOSE are still suspicious.
+    """
+    head = field_text(comment.get("body"))[:400]
+    m = _RECORD_ID_RE.search(head)
+    return wf.norm_id(m.group(1)) if m else ""
+
+
 def write_temp(body: str) -> Path:
     fd, name = tempfile.mkstemp(prefix="jira-feed-", suffix=".txt", text=True)
     with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
@@ -1198,16 +1225,43 @@ def cmd_check(args) -> int:
 
     comments = list_comments(binary, args.key)
     records = [c for c in comments if MARKER.lower() in field_text(c.get("body"))[:400].lower()]
-    if not records:
+
+    story = getattr(args, "story", None)
+    if story:
+        # Scoped to ONE lane: "did this lane file its record?" - the question a close-out
+        # actually needs. It delegates to find_devrecord rather than re-implementing id
+        # matching, so the answer is exactly "would `devrecord` update this one?" One rule,
+        # one implementation. Until SCC-113 this flag was accepted and ignored, while three
+        # surfaces - including a rule - told agents to pass it.
+        rec = find_devrecord(comments, story)
+        if rec is None:
+            rep.err("devrecord", f"{args.key}: no Dev Record for '{story}' - that lane never "
+                                 f"filed one ({len(records)} record(s) on the ticket)")
+        else:
+            rep.info("devrecord", f"{args.key}: one Dev Record for '{story}' "
+                                  f"({len(field_text(rec.get('body')))} chars)")
+    elif not records:
         rep.err("devrecord", f"{args.key}: no Dev Record - the decisions and pitfalls from "
                              f"dev never reached the ticket")
-    elif len(records) > 1:
-        # Not fatal, but it means something posted around the update path.
-        rep.warn("devrecord", f"{args.key}: {len(records)} Dev Records - there should be "
-                              f"exactly one, updated in place")
     else:
-        rep.info("devrecord", f"{args.key}: one Dev Record "
-                              f"({len(field_text(records[0].get('body')))} chars)")
+        # GROUP, never count - see record_story_id(). The defect is one id carrying two
+        # records; distinct ids are two lanes, which is the designed state.
+        by_id: dict[str, list] = {}
+        for c in records:
+            by_id.setdefault(record_story_id(c), []).append(c)
+        dupes = {sid: rs for sid, rs in by_id.items() if len(rs) > 1}
+        if dupes:
+            for sid, rs in sorted(dupes.items()):
+                rep.warn("devrecord", f"{args.key}: {len(rs)} Dev Records for "
+                                      f"'{sid or '(unparseable header)'}' - there should be "
+                                      f"exactly one per lane, updated in place")
+        elif len(by_id) > 1:
+            rep.info("devrecord", f"{args.key}: {len(by_id)} Dev Records, one per lane "
+                                  f"({', '.join(sorted(by_id))}) - a follow-on lane rides the "
+                                  f"ticket it came from, so this is the designed state")
+        else:
+            rep.info("devrecord", f"{args.key}: one Dev Record "
+                                  f"({len(field_text(records[0].get('body')))} chars)")
     rep.print_human(f"jira-feed check {args.key}")
     return rep.exit_code()
 
@@ -1303,7 +1357,9 @@ def main() -> int:
     p_chk = sub.add_parser("check", help="does this ticket carry outline + Dev Record?")
     common(p_chk)
     p_chk.add_argument("--key", required=True)
-    p_chk.add_argument("--story")
+    p_chk.add_argument("--story", help="scope to ONE lane's record (a BMAD story id, or the "
+                                       "branch slug a Task lane passes to devrecord): "
+                                       "did THIS lane file one? missing is an error")
 
     args = ap.parse_args()
     return {"outline": cmd_outline, "mint": cmd_mint, "devrecord": cmd_devrecord,

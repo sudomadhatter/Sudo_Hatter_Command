@@ -507,8 +507,46 @@ def main() -> int:
                   comments=[{"id": "1", "body": "Dev Record - 9.1 (quick-dev)"},
                             {"id": "2", "body": "Dev Record - 9.1 (close-out)"}])
         code, out = jf("check", "--key", "TEST-7")
-        c.check("check: two Dev Records -> warns, does not block",
+        c.check("check: two Dev Records for ONE story id -> warns, does not block",
                 code == 1 and "there should be" in out, out.strip()[:200])
+
+        # ── SCC-113: two LANES on one ticket is the designed state, not a defect ──
+        # `find_devrecord` filters by story id ON PURPOSE - its docstring: "so a ticket that
+        # legitimately carries records for two ids does not have one overwrite the other" - and
+        # both Task surfaces pass `--story <branch-slug>` (smh-close-task-merge-tree.md:236,
+        # smh-quick-dev.md:246), which changes per lane. A follow-on lane rides the ticket it
+        # came from rather than minting a key, so N lanes -> N records is NORMAL.
+        #
+        # Counting records cannot tell "one lane posted twice" (the real defect, pinned by the
+        # case ABOVE, which must stay red-capable) from "two lanes each posted once" (this
+        # case). Grouping by id can. The test above is this fix's negative control: if it ever
+        # goes green, the check was deleted rather than narrowed.
+        set_state(state,
+                  description="9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive.",
+                  comments=[{"id": "1",
+                             "body": "Dev Record - scc-113-jira-in-progress-seam (close-out)"},
+                            {"id": "2",
+                             "body": "Dev Record - scc-113-door-content-parity (close-out)"}])
+        code, out = jf("check", "--key", "TEST-7")
+        c.check("check: two lanes, two story ids -> exit 0 (the designed state)",
+                code == 0 and "0 error(s), 0 warning(s)" in out, out.strip()[:200])
+
+        # `--story` is documented on THREE surfaces (jira_feed.py:15 usage, jira.md:302 a RULE,
+        # cicd-update-sprint-memory.md:191 a command) and read by none of them. Story-awareness
+        # gives it the meaning a close-out actually needs: did THIS lane file its record?
+        # It delegates to find_devrecord, so it answers exactly "would devrecord update this
+        # one?" - one rule, one implementation.
+        code, out = jf("check", "--key", "TEST-7", "--story", "scc-113-door-content-parity")
+        c.check("check: --story scopes to that lane's record -> exit 0",
+                code == 0 and "one Dev Record" in out, out.strip()[:200])
+
+        # The load-bearing half: a lane that never filed one must be an ERROR, not silence.
+        # Asserted on the MESSAGE, because an unknown flag also exits 2 - which is exactly how
+        # this would pass for the wrong reason while `--story` stayed unwired.
+        code, out = jf("check", "--key", "TEST-7", "--story", "scc-113-lane-that-never-filed")
+        c.check("check: --story naming a lane with no record -> exit 2, names the lane",
+                code == 2 and "no Dev Record" in out
+                and "scc-113-lane-that-never-filed" in out, out.strip()[:200])
 
         # ── the type rule, all four arms ──────────────────────────────────────
         # `Bug` is deliberately absent from the computed vocabulary. It is TEMPORARY: a Story
