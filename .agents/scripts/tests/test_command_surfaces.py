@@ -22,6 +22,7 @@ Both directions are asserted — a door in the wrong place is exactly as wrong a
 from __future__ import annotations
 
 import re
+import subprocess
 from pathlib import Path
 
 from _harness import Cases
@@ -43,8 +44,17 @@ def wf_hand_owned(sync_ps1: str) -> set[str]:
     Two parsers of one fact must agree, so this reads the fact instead of copying it. A parse
     that returns nothing fails SAFE (nothing is exempted, so the sweep gets noisier, never
     quieter); the assertion in main() pins that it parsed at all.
+
+    ⛔ ANCHORED to the function that owns it. An unscoped search takes the FIRST
+    `$excluded = @(...)` in a 900-line file - and the file already has `$ExcludeDirs` /
+    `$ExcludeFiles` in nearby scope, so a same-named local is not exotic. A clean-room pass
+    defeated the unscoped version by adding an earlier array carrying one extra name: the
+    ghost check then went silent on a genuinely orphaned workflow and the suite stayed green.
+    OVERBROAD is the one direction that fails OPEN, which is why the scope is not optional.
     """
-    m = re.search(r"\$excluded\s*=\s*@\(([^)]*)\)", sync_ps1)
+    start = sync_ps1.find("function Sync-AntigravityWorkflowMirror")
+    m = re.search(r"\$excluded\s*=\s*@\(([^)]*)\)",
+                  sync_ps1[start:] if start != -1 else sync_ps1)
     return set(re.findall(r"'([^']+)'", m.group(1))) if m else set()
 
 
@@ -56,6 +66,45 @@ def read(p: Path) -> str:
     # test then demands Claude/Codex/Antigravity doors for eight opencode-only bridges. Two parsers
     # of one file must agree byte-for-byte or the gate invents work.
     return p.read_text(encoding="utf-8-sig", errors="replace")
+
+
+def fm_field(text: str, key: str) -> str | None:
+    """A frontmatter scalar, or None. Used to compare a launcher against its brain."""
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return None
+    for ln in lines[1:80]:
+        if ln.strip() == "---":
+            break
+        if ln.startswith(f"{key}:"):
+            return ln[len(key) + 1:].strip()
+    return None
+
+
+# The launcher's ONE instruction. Anchored to `read `…`` on purpose: a bare "does the path
+# appear anywhere" test is satisfied by a stale `<!-- generated from … -->` comment sitting
+# above a pointer that now names a DIFFERENT command - the repo's own
+# comment-literals-invert-source-grep-tests lesson, reproduced against this very check.
+LAUNCH_RE = re.compile(r"read\s+`\.agents/commands/([A-Za-z0-9._-]+\.md)`")
+
+
+def is_launcher_for(body: str, brain: str, cmd_name: str) -> bool:
+    """Is `body` the generated thin launcher for THIS command, still current?
+
+    ⭐ Four conditions, and the third and fourth are what make the exemption EARNED rather
+    than announced. An earlier cut tested three substrings anywhere in the file, which a
+    clean-room pass defeated three ways without touching the launcher at all: change the
+    BRAIN's description and never re-sync (the exact forgotten-sync shape this whole check
+    exists for) and the launcher still passed, because nothing compared them.
+    """
+    if GEN not in body or "END TO END" not in body:
+        return False
+    m = LAUNCH_RE.search(body)
+    if not m or m.group(1) != cmd_name:
+        return False
+    # The engine copies the brain's description into the stub verbatim, so a drifted
+    # description IS a drifted door - it is what the Antigravity menu actually displays.
+    return fm_field(body, "description") == fm_field(brain, "description")
 
 
 def platforms(cmd: Path) -> tuple[str, ...]:
@@ -93,9 +142,16 @@ def main() -> int:
     # value gates the ghost check below, where an empty set is the SAFE direction and a
     # runaway one is not. Assert it parsed, so a silent parse failure cannot drift either way.
     hand_owned = wf_hand_owned(sync_ps1)
+    # Identity, not cardinality. `2 <= len(...) <= 8` encoded TODAY's count as a contract:
+    # regenerating both hand-owned workflows and shrinking $excluded to just INDEX.md is a
+    # perfectly legitimate future state, and it would have failed with the actively
+    # misleading message "not guessed" - when the list had been read correctly.
+    unknown = sorted(n for n in hand_owned
+                     if n != "INDEX.md" and not (ROOT / ".agents/workflows" / n).is_file())
     c.check("the hand-owned workflow list was READ from the sync engine, not guessed",
-            2 <= len(hand_owned) <= 8 and "INDEX.md" in hand_owned,
-            f"parsed {sorted(hand_owned)} from sync-agents.ps1 $excluded")
+            "INDEX.md" in hand_owned and not unknown,
+            f"parsed {sorted(hand_owned)} from $excluded; names with no such workflow: "
+            f"{unknown}")
 
     c.check("the sync engine states the door model and both retirements",
             "THE DOOR MODEL" in sync_ps1
@@ -127,11 +183,12 @@ def main() -> int:
                 wrong_place.append(f"{name}: claude-only but present in .agents/skills")
 
         # Whichever copy exists, a GENERATED launcher must point at its own command body.
+        # Shares `is_launcher_for` with the parity sweep below - one rule, one implementation,
+        # so the next tightening cannot land in only one of the two places.
         for sk in (master_skills / name / "SKILL.md", claude_skills / name / "SKILL.md"):
             if sk.is_file():
                 body = read(sk)
-                if GEN in body and not (f".agents/commands/{cmd.name}" in body
-                                        and "END TO END" in body):
+                if GEN in body and not is_launcher_for(body, read(cmd), cmd.name):
                     bad_body.append(str(sk.relative_to(ROOT)))
 
         if "opencode" in pl and not (ROOT / ".opencode/commands" / cmd.name).is_file():
@@ -162,48 +219,91 @@ def main() -> int:
     #
     # SCC-77's close-out reported a fully green floor. This is the check that was missing.
 
-    def door_verdict(brain: str, body: str, cmd_name: str) -> str:
-        """'ok' | 'stale' | 'unmarked' - for ONE mirror door against its command body.
+    def door_verdict(brain: str, body: str, cmd_name: str, launcher_ok: bool) -> str:
+        """'ok' | 'stale' | 'badlauncher' - for ONE mirror door against its command body.
 
         A mirror is one of exactly two legal things:
           * a FULL MIRROR, byte-identical to the brain; or
-          * a THIN LAUNCHER, emitted when the body clears Antigravity's 12k cap.
+          * a THIN LAUNCHER - but ONLY on `.agents/workflows`, and only a current one.
 
-        ⭐ The launcher exemption must be EARNED, not announced. Accepting any file carrying
-        the GENERATED marker makes a drifted launcher invisible - and a launcher is ~15 lines
-        whose entire job is naming its command, so one pointing at a renamed or deleted brain
-        is the realistic failure. The marker plus the pairing the existing launcher check
-        already demands (names THIS command body, says END TO END) is the exemption.
+        ⛔ `launcher_ok` is passed per-surface because **opencode has no launcher form.**
+        `Sync-CommandDir` is `Copy-Item -Force` and nothing else; the launcher branch exists
+        solely in `Sync-AntigravityWorkflowMirror`, for Antigravity's 12k cap. Offering the
+        exemption to an opencode door let a 9 KB shipping command be replaced by a 9-line
+        pointer with the suite green - an opencode agent invoking it would get a signpost
+        instead of the gate-and-merge steps.
         """
         if body == brain:
             return "ok"
-        if GEN in body and f".agents/commands/{cmd_name}" in body and "END TO END" in body:
+        if launcher_ok and is_launcher_for(body, brain, cmd_name):
             return "ok"
         if GEN in body:
-            return "unmarked"      # claims to be generated but does not name its own brain
+            return "badlauncher"   # claims to be generated, but is not a current launcher
         return "stale"
 
     # Controls first, as pure string cases - the live sweep below can only ever prove the
     # tree is currently clean, which is not the same as proving the check has teeth.
-    BRAIN = "---\nplatforms: [opencode]\n---\n# /x\n\nfull body, many lines\n"
-    LAUNCHER = ("# /x - launcher (GENERATED by sync-agents; do not edit)\n"
-                "read `.agents/commands/x.md` and follow it END TO END\n")
+    BRAIN = "---\ndescription: Do the thing.\nplatforms: [antigravity]\n---\n# /x\n\nbody\n"
+    LAUNCHER = ("---\ndescription: Do the thing.\n---\n"
+                "# /x - launcher (GENERATED by sync-agents; do not edit)\n"
+                "**Execute now:** read `.agents/commands/x.md` and follow it END TO END\n")
+    WF, OC = True, False          # launcher form exists on workflows only
+
     c.check("door-parity CONTROL: an identical mirror is ok",
-            door_verdict(BRAIN, BRAIN, "x.md") == "ok")
+            door_verdict(BRAIN, BRAIN, "x.md", WF) == "ok")
     c.check("door-parity CONTROL: a STALE mirror is caught",
-            door_verdict(BRAIN, BRAIN.replace("full body, many lines", "old body"), "x.md")
-            == "stale",
+            door_verdict(BRAIN, BRAIN.replace("body", "old body"), "x.md", WF) == "stale",
             "this is the SCC-77 shape - a door that still reads the pre-change steps")
     c.check("door-parity CONTROL: a truncated mirror is caught",
-            door_verdict(BRAIN, "---\nplatforms: [opencode]\n---\n# /x\n", "x.md") == "stale")
-    c.check("door-parity CONTROL: a real thin launcher is exempt",
-            door_verdict(BRAIN, LAUNCHER, "x.md") == "ok")
-    c.check("door-parity CONTROL: a launcher naming the WRONG brain is caught",
-            door_verdict(BRAIN, LAUNCHER.replace("x.md", "y.md"), "x.md") == "unmarked",
-            "the exemption is earned by the pairing, not announced by the marker")
+            door_verdict(BRAIN, "---\ndescription: Do the thing.\n---\n# /x\n", "x.md", WF)
+            == "stale")
+    c.check("door-parity CONTROL: a current thin launcher is exempt",
+            door_verdict(BRAIN, LAUNCHER, "x.md", WF) == "ok")
+
+    # ⭐ The three shapes a clean-room pass used to defeat the FIRST cut of this exemption,
+    # which tested three substrings appearing anywhere in the file.
+    c.check("door-parity CONTROL: a launcher whose BRAIN's description moved on is caught",
+            door_verdict(BRAIN.replace("Do the thing.", "RETIRED - use /y instead."),
+                         LAUNCHER, "x.md", WF) == "badlauncher",
+            "the forgotten-sync shape: nobody touched the launcher, and it is now lying to "
+            "the Antigravity menu about what this command does")
+    c.check("door-parity CONTROL: a launcher REPOINTED at another brain is caught, even "
+            "with the old path still present in a comment",
+            door_verdict(BRAIN,
+                         "<!-- generated from .agents/commands/x.md -->\n"
+                         + LAUNCHER.replace("read `.agents/commands/x.md`",
+                                            "read `.agents/commands/other.md`"),
+                         "x.md", WF) == "badlauncher",
+            "a substring test reads the stale COMMENT as the pointer - the exact "
+            "comment-literals-invert-source-grep-tests inversion")
     c.check("door-parity CONTROL: the marker alone does NOT excuse drift",
-            door_verdict(BRAIN, "# GENERATED by sync-agents\nanything at all\n", "x.md")
-            == "unmarked")
+            door_verdict(BRAIN, "# GENERATED by sync-agents\nanything at all\n", "x.md", WF)
+            == "badlauncher")
+
+    # opencode has no launcher form at all - Copy-Item, or it is wrong.
+    c.check("door-parity CONTROL: a launcher on an OPENCODE door is NOT exempt",
+            door_verdict(BRAIN, LAUNCHER, "x.md", OC) == "badlauncher",
+            "the engine never emits a launcher there; a pointer would replace the steps")
+
+    # ⭐ REGRESSION CONTROL — the real historical defect, not a shape I imagined.
+    # `ea8fe97` is the commit that re-synced the doors SCC-77 left stale; its parent holds the
+    # genuinely stale `.opencode/commands/cicd-push-e2e.md` (8464b, zero mint-push-token
+    # references) that the pre-SCC-113 gate passed 13/13. Every other control here is a string
+    # I wrote, which only ever proves the check does what I expected it to.
+    # Degrades LOUDLY, never silently: with no history reachable it synthesizes an equivalent
+    # stale door and says so in the message, so the control always runs.
+    hist = subprocess.run(["git", "show", "ea8fe97^:.opencode/commands/cicd-push-e2e.md"],
+                          cwd=ROOT, capture_output=True, text=True)
+    pushe2e = read(ROOT / ".agents/commands/cicd-push-e2e.md")
+    if hist.returncode == 0 and hist.stdout.strip():
+        stale_door, src = hist.stdout, "the REAL pre-ea8fe97 bytes"
+    else:
+        stale_door, src = pushe2e.split("## Step 6")[0], "a synthesized stale door (no history)"
+    c.check(f"door-parity REGRESSION CONTROL fires on {src}",
+            door_verdict(pushe2e, stale_door, "cicd-push-e2e.md", launcher_ok=False)
+            == "stale",
+            "the gate reported 13/13 green on exactly this file - that is the whole reason "
+            "this check exists")
 
     MIRRORS = (".opencode/commands", ".agents/workflows")
     drifted, examined = [], 0
@@ -219,7 +319,8 @@ def main() -> int:
             if not door.is_file():
                 continue
             examined += 1
-            v = door_verdict(brain, read(door), cmd.name)
+            v = door_verdict(brain, read(door), cmd.name,
+                             launcher_ok=(rel == ".agents/workflows"))
             if v != "ok":
                 drifted.append(f"{rel}/{cmd.name} [{v}]")
 
@@ -264,10 +365,21 @@ def main() -> int:
 
     # ── Stale mirrors: a workflow with no command source is a ghost ───────────
     cmd_names = {p.name for p in (ROOT / ".agents/commands").glob("*.md")}
+    # ⛔ The ghost exemption is NOT `hand_owned`, and the difference is load-bearing. Only
+    # `INDEX.md` is legitimately SOURCELESS; the other two hand-owned workflows are variants
+    # OF a command and must keep having one. Exempting them here (as a first cut did, by
+    # reusing `hand_owned`) made this check go silent on the one shape it most needs to
+    # catch - a hand-authored launcher left pointing at a brain that was deleted. Verified:
+    # delete `.agents/commands/smh-adviser-board.md` and the loose version reports 0 ghosts.
+    SOURCELESS = {"INDEX.md"}
     ghosts = sorted(p.name for p in (ROOT / ".agents/workflows").glob("*.md")
-                    if p.name not in cmd_names and p.name not in hand_owned)
+                    if p.name not in cmd_names and p.name not in SOURCELESS)
     c.check("no ghost workflow mirrors (every one has a command source)",
             not ghosts, f"{len(ghosts)}: {ghosts[:6]}")
+    orphaned_hand = sorted(n for n in hand_owned - SOURCELESS if n not in cmd_names)
+    c.check("every hand-owned workflow still has the command it is a variant of",
+            not orphaned_hand,
+            f"{orphaned_hand} - excluded from the sync, so nothing else would notice")
 
     # ── The docs agree with the engine ────────────────────────────────────────
     agents_md = read(ROOT / "AGENTS.md")

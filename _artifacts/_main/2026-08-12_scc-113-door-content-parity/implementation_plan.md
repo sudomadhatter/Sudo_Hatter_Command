@@ -154,8 +154,9 @@ a gate pulls in Phase 3 by the command's own rule. Phases 0, 1, 2 and the gate-r
 | # | Sev | Finding | Disposition |
 |---|---|---|---|
 | **A-1** | **HIGH** | The plan's landing-order section was **already stale when written** — SCC-110 went from "uncommitted" to 7 commits mid-audit, and it overlaps the SOP. A plan that mis-states the sibling picture is how two lanes edit one table blind. | **FIXED IN PLAN** above, with the re-read obligation named rather than assumed. |
-| **A-2** | MED | **Phase-2 tripwire: "a gate that cannot fail."** Draft Step 2 exempted any door carrying the launcher marker. A stale *launcher* would then be invisible — and a launcher is only ~15 lines, so a drifted one (pointing at a renamed command) is entirely possible. | **TIGHTENED:** the exemption is not "carries the marker" but "carries the marker **and** matches what the generator would emit for that name" — the existing check already asserts a launcher points at its own command body, so Step 2 asserts *that* pairing rather than waving the file through. |
-| **A-3** | MED | **Empty input reads as pass.** If the door globs resolve to nothing (a path typo, a renamed cache dir), "0 offenders" is indistinguishable from "0 doors examined" — the exact vacuous green `tests-must-gate-for-real` names. | **ADDED to Step 5:** assert a **minimum door count** (> 40 today across the three caches) alongside 0 offenders, so an empty sweep fails loudly. |
+| **A-2** | MED | **Phase-2 tripwire: "a gate that cannot fail."** Draft Step 2 exempted any door carrying the launcher marker. A stale *launcher* would then be invisible — and a launcher is only ~15 lines, so a drifted one (pointing at a renamed command) is entirely possible. | **TIGHTENED:** the exemption is not "carries the marker" but "carries the marker **and** matches what the generator would emit for that name". ⚠️ **This disposition was then under-delivered and the review caught it — see A-2′.** |
+| **A-2′** | **HIGH** | ⚠️ **Added post-review, 2026-08-12.** A-2 above names the right fix and then *walks itself back mid-sentence* ("the existing check already asserts a launcher points at its own command body, so Step 2 asserts that pairing"). What shipped in `e8bcc0a` was **three substrings appearing anywhere in the file**, which is not "what the generator would emit". A clean-room pass defeated it three ways, all verified green: change a **brain's** description and never re-sync (the forgotten-sync shape this check exists for); repoint a launcher at another command while leaving the old path in a comment (`comment-literals-invert-source-grep-tests`, reproduced against my own guard); and a hostile 3-line body. | **FIXED:** `is_launcher_for()` now requires the marker, `END TO END`, an **anchored** `read \`.agents/commands/<this>.md\`` pointer, **and** a `description:` equal to the brain's. Shared with the pre-existing skill-launcher check so one rule has one implementation. All three attacks now caught. |
+| **A-3** | MED | **Empty input reads as pass.** If the door globs resolve to nothing (a path typo, a renamed cache dir), "0 offenders" is indistinguishable from "0 doors examined" — the exact vacuous green `tests-must-gate-for-real` names. | **ADDED to Step 5:** assert a **minimum door count** alongside 0 offenders, so an empty sweep fails loudly. ⚠️ **Wording corrected post-review:** this said *"> 40 today across the **three** caches"*. The sweep covers **two** mirror surfaces (`.opencode/commands`, `.agents/workflows`) and **no** skill doors; 40 is a floor, and today's count is **84**. The review verified the guard is genuinely load-bearing — a typo'd `MIRRORS` tuple makes it the *only* check that fires. |
 | **A-4** | LOW | Step 4's assertion (`grep` returns nothing) would be satisfied by deleting the sentence rather than correcting it. | Acceptable: the SOP row is separately asserted to **name** `test_command_surfaces.py`, so silence alone cannot pass. Noted, not changed. |
 | **A-5** | LOW | The reopen is a **board write already performed** before approval. | Recorded in the plan's own header. It is reversible in one command and the ticket genuinely is not finished; no artifact claims otherwise. |
 
@@ -177,6 +178,31 @@ a gate pulls in Phase 3 by the command's own rule. Phases 0, 1, 2 and the gate-r
 - **Any step vague enough to guess?** Step 2 was — A-2 tightened it.
 - **Convention fit?** ✅ — extends the existing door test rather than adding a file; `workflow_lint`
   deliberately left alone (it does not own doors).
+
+### Post-review addenda (2026-08-12) — what the clean-room pass found that this audit missed
+
+**The riskiest new mechanism received zero audit.** `wf_hand_owned()` — a regex over *another
+language's source* — appears nowhere above: not in the blast radius (which lists `sync-agents.ps1`
+as **"Not written"** while the diff creates a hard coupling to its exact PowerShell quoting), not in
+the tripwires, not in the pre-mortem. Three of the review's findings live in that unaudited half:
+
+| # | What | Fixed by |
+|---|---|---|
+| **A-6** | The `$excluded` regex was **unscoped** — first match in a 900-line file wins, and `$ExcludeDirs`/`$ExcludeFiles` already live nearby. A decoy array earlier in the file silenced the **ghost** check on a real orphan, suite green. **Overbroad is the direction that fails OPEN.** | anchored to `function Sync-AntigravityWorkflowMirror`; parsed names must exist as real workflows |
+| **A-7** | Reusing `hand_owned` for the **ghost** check silently loosened it on the two names that *do* have brains — exactly the "launcher pointing at a deleted brain" case. Verified: delete `smh-adviser-board.md` and the loose version reports **0 ghosts**. | ghost exemption narrowed to genuinely sourceless `INDEX.md`; new check that every hand-owned workflow still has its command |
+| **A-8** | The launcher exemption was offered to `.opencode/commands`, where the engine **never** emits a launcher (`Sync-CommandDir` is `Copy-Item -Force`). A 9 KB shipping command replaced by a 9-line pointer passed. | exemption is per-surface (`launcher_ok`) |
+
+**AC 3 was claimed but not shipped.** The plan called the real-bytes regression control *"the one
+that earns the lane"*; `e8bcc0a` verified it **by hand and recorded nothing**. Now a real test:
+`git show ea8fe97^:…` with a loud synthesized fallback, so the control always runs and names its mode.
+
+**Found, deliberately NOT fixed — pre-existing, outside this acceptance list:**
+`.opencode/commands` has **no ghost check**, and neither mirror surface asserts a door belongs on the
+platform its `platforms:` claims (that is enforced for *skill* doors only, though the file's own
+docstring says "a door in the wrong place is exactly as wrong as a missing one"). Both verified green
+by the reviewer. ~4 lines each, and the sweep already walks those paths — but neither is in this
+lane's acceptance, and widening scope mid-lane is the drift Phase 2 exists to stop. **Recorded here so
+it is captured rather than lost.**
 
 ```
 Audit verdict: GO
