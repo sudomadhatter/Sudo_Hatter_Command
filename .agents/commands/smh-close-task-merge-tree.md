@@ -202,12 +202,43 @@ git merge chore/<JIRA-KEY>-<slug> --no-ff \
   -m "merge: chore/<JIRA-KEY>-<slug> -> main (task: <gate summary>)"
 # 🛑 summarize the commits + changed files before pushing
 
-# Mint the single-use approval token — AFTER the merge, IMMEDIATELY before the push (SCC-77).
+# ── Pre-flight the SERVER-SIDE gate on this exact commit (SCC-118) ──────────────────────
+# `main` requires a green check named below. The merge commit you just made has never been
+# to GitHub, so it carries no check and the push would be refused. Send that exact commit
+# to a throwaway ref, let CI run on it, and the green travels with the SHA — a check
+# attaches to a commit, not to a branch.
+SHA=$(git rev-parse HEAD)
+env -u GITHUB_TOKEN git push origin HEAD:refs/heads/gate/main-$SHA
+
+sleep 10                                       # let the run register before asking for it
+until gh api repos/{owner}/{repo}/commits/$SHA/check-runs \
+        --jq '.check_runs[] | select(.name=="main-write-gate") | .status' \
+      | grep -qx completed; do sleep 10; done
+
+gh api repos/{owner}/{repo}/commits/$SHA/check-runs \
+  --jq '.check_runs[] | select(.name=="main-write-gate") | .conclusion' | grep -qx success \
+  || { echo "server-side gate is RED on $SHA — fix on the branch, do NOT push main"; exit 1; }
+
+# Mint the single-use approval token — AFTER the pre-flight, IMMEDIATELY before the push (SCC-77).
+# ⚠ ORDER IS LOAD-BEARING: the token's TTL is 30 minutes. Mint it before the CI wait and a
+# slow run eats its life — everything else passes, then the push dies on "stale token" and
+# the close-out has to be re-run having already done all its work (SCC-118).
 sh .agents/scripts/git-hooks/mint-push-token.sh \
    --command /smh-close-task-merge-tree --branch chore/<JIRA-KEY>-<slug> --key <JIRA-KEY>
 
 env -u GITHUB_TOKEN git push origin main       # the pre-push gate spends the token here
+
+env -u GITHUB_TOKEN git push origin --delete gate/main-$SHA   # pre-flight ref, done with
 ```
+
+**Two halves, and they are not copies of each other.** The pre-flight proves the change is
+*fit* to land — the real suite ran, on a runner, at this exact commit. The token proves *you
+said yes*, once, for this merge. Neither substitutes for the other, and only the second one can
+ever be a judgement about intent: an agent can write a file, so it can write a token, but it
+cannot make a red suite green. The server-side half exists because a merge performed on
+GitHub — the web *Merge pull request* button, or the API — never touches this machine, so the
+`pre-push` hook is not bypassed there, it is **absent** (SCC-118; PR #2 landed that way).
+If the check is red, **STOP** — never `--no-verify`, never disable the ruleset to get past it.
 
 **The token is the machine half of "invoking this IS the sign-off."** `.githooks/pre-push` refuses
 any push landing on `main` without one, and consumes it on the way through — so this invocation

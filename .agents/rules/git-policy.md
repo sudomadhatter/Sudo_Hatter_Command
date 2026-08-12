@@ -117,12 +117,46 @@ merges reached `main` on one sign-off (SCC-64 → SCC-69, 2026-08-09) with nothi
 hook is the only layer both machines, all four agent platforms, and the operator's own terminal
 share — so the gate is `sh`, with no interpreter probe and no Python anywhere in its path.
 
+3. ⭐ **The `main-write-gate` check on GitHub (SCC-118) — the half that is not on a machine.**
+   Layers 1 and 2 both live on a computer and run at `git push`. A merge performed on GitHub's
+   servers — the web **Merge pull request** button, or the REST API — never touches a computer, so
+   those layers are not bypassed there: they are **absent**. PR #2 (`dabb3c3`, 2026-08-12) landed on
+   `main` exactly that way, from a Claude Code web session, with nothing structurally able to look
+   at it.
+
+   A ruleset on `main` now requires a green check named `main-write-gate`
+   (`.github/workflows/main-write-gate.yml`): the real enforcement suite, the toolkit lint, and
+   `.agents/scripts/main_write_gate.py` — which checks the merge came from an `epic/*` or `chore/*`
+   branch carrying a key this repo answers to, and, for a pre-flighted local merge, that `main`
+   advances by exactly one merge commit of a real pushed branch. The **bypass list is empty on
+   purpose** and must stay that way.
+
+   ⛔ **This is NOT a copy of layer 1, and describing it as one is the mistake to avoid.** Layer 1
+   enforces **authorisation** — one sign-off buys one merge — via a token under `.git/` that by
+   design never leaves the machine. That half **cannot** cross to a server, and identity cannot
+   stand in for it: the agent that merged PR #2 did so as `sudomadhatter (User)`, the operator's own
+   account. There is no *who* to restrict, which is why the server-side lever had to be a status
+   check. Layer 3 enforces **fitness**, not permission. Neither half covers the other's ground.
+
+   Because a required check refuses a commit that carries no check, and a merge commit made locally
+   has never been to GitHub, `/smh-close-task-merge-tree` pre-flights: it pushes that exact commit
+   to a throwaway `gate/main-<sha>` ref, waits for the check, and only then mints the token and
+   pushes `main` (checks attach to a commit, so the green travels with it). **Mint after the wait,
+   never before** — the token's TTL is 30 minutes and a slow run would eat it.
+
+   ⚠ **Scope: this repo only, today.** `/cicd-push-e2e` ships `epic/*` branches in *project* repos,
+   which publish no such check — a wait there would poll forever. Giving a project the server-side
+   half is its own ticket in its own tracker. Break-glass if CI is down and `main` must move:
+   `gh api -X PUT repos/{owner}/{repo}/rulesets/{id} -f enforcement=disabled` — the server-side twin
+   of deleting `MAIN-PUSH-ENFORCE`.
+
 **What this buys, and what it does not.** An agent can write files, so an agent can write a token.
 This is not a security boundary against a determined agent and must not be described as one. It
 converts a silent violation into a deliberate, traceable one, and it closes the drift failure this
 rule keeps losing to — a close-out command whose body stays in context and still reads exactly as
 valid on task six as on task one. Merges via `gh pr merge` or the GitHub web UI never reach a local
-hook at all; that gap is tracked under SCC-75.
+hook at all — the gap tracked under epic SCC-75, closed **for this repo** by SCC-118's layer 3
+above, and still open for every project repo until each files its own.
 
 ## A commit is not done until it is pushed
 
