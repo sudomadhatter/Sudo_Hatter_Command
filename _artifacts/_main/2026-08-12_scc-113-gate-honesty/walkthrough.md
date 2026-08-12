@@ -196,11 +196,21 @@ I wrote that opencode's sync keeps a deleted command's door forever. It does not
 retires it. **I read `Sync-CommandDir` in isolation and stopped one line short of its caller** —
 then repeated the claim into a code comment, the SOP row, and the previous lane's walkthrough.
 
-The true gap is narrower and still worth a check: the manifest can only retire *a name a previous
-run recorded writing* (`sync-agents.ps1:380`). A door predating the manifest, hand-dropped, or
-genuinely this repo's own is unreachable by it — which is exactly what `project-own.txt`
-adjudicates. Corrected in all four places, with the original text left standing in the prior
-walkthrough per `story-artifacts-two-doc-close`.
+The true gap is narrower and still worth a check: `Invoke-ManifestPurge` iterates `$was` — only
+the names the last run recorded writing (`sync-agents.ps1:364-365`) — so a door predating the
+manifest, hand-dropped, or genuinely this repo's own is unreachable by it, which is exactly what
+`project-own.txt` adjudicates. Corrected in all four places, with the original text left standing
+in the prior walkthrough per `story-artifacts-two-doc-close`.
+
+> **Residual caught at close-out (2026-08-12).** The sentence above cited `sync-agents.ps1:380`
+> until the close-out's link-and-anchor check ran. That is the wrong function *and* off by one:
+> the quoted wording — *"only a NAME a previous run recorded writing"* — is at **`:379`**, inside
+> `Invoke-ManifestPurgeDir`, the `.claude\skills` **directory** variant, while the opencode
+> command doors this paragraph is about are swept by `Invoke-ManifestPurge` at **`:365`**. The
+> review found exactly this and fixed it in the `test_command_surfaces.py` comment; the two
+> walkthroughs making the same claim in prose were missed. Both now cite the applicable function.
+> **A finding is not closed until every surface that repeats it moves** — the lane's own lesson,
+> arriving one surface late.
 
 ### Correction 3 — "true of the skill doors only"
 

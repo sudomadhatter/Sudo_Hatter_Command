@@ -153,8 +153,8 @@ The operator took the "deliberately not fixed" pair and said fix them. Both are 
 > (`sync-agents.ps1:822`) runs immediately after the opencode sweep and retires that door on the
 > next sync.
 >
-> The true gap is narrower and the check is still worth having: the manifest can only retire
-> **a name a previous run recorded writing** (`sync-agents.ps1:380`). A door that predates the
+> The true gap is narrower and the check is still worth having: `Invoke-ManifestPurge` iterates
+> only **the names the last run recorded writing** (`sync-agents.ps1:364-365`). A door that predates the
 > manifest, was hand-dropped, or is genuinely this repo's own is unreachable by it and survives
 > indefinitely — which is what the `project-own.txt` keep-list now adjudicates in the sweep. That
 > file is staged into `.agents/` by the first `sync-agents -Reconcile` and does not exist until
