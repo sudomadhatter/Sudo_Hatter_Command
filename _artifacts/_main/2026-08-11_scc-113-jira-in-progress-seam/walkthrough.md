@@ -196,6 +196,16 @@ Controls now stand at **8 negative / 6 positive** for the `--yes` guard.
    Preflight will want `--expect-key SCC-113`.
 2. **Restart opencode and start a new Codex chat** — the sync refreshed the machine-global caches.
 3. **On the PC**, once this lands: `git config core.hooksPath .githooks` or the hook is silently OFF.
-4. **Decide on the AVCH ticket** for AGY coverage (plan F-1 + F-6).
-5. **Decide on the `workflow_lint` door-content gap** — it checks door *presence*, not *content*,
+4. ~~**Decide on the AVCH ticket** for AGY coverage (plan F-1 + F-6).~~ — **✅ SETTLED 2026-08-12,
+   nothing owed.** Operator ruling: repo-local enforcement not centralizing **is the architecture**,
+   not a gap, and nothing about AGY regressed here. The story lane needs nothing AGY-side either —
+   `/cicd-write-story-tests` runs `jira_feed.py` from the lobby with `--project`, exactly as `mint`
+   already did, so the `start` call there works unchanged. Only the commit hook cannot reach AGY,
+   and that is the thin model working as designed. Filing this as a debt was my mis-framing.
+5. ~~**Decide on the `workflow_lint` door-content gap**~~ — **✅ DONE, and the attribution here was
+   wrong.** Corrected 2026-08-12: `workflow_lint.py` does not check doors **at all** (`grep -n door`
+   returns nothing). The door gate is **`tests/test_command_surfaces.py`**, and it was presence-only.
+   Folded into this same ticket on the operator's ruling rather than minted separately →
+   [2026-08-12_scc-113-door-content-parity/](../2026-08-12_scc-113-door-content-parity/implementation_plan.md).
+   *Original text, kept because a corrected instruction should show what it corrected:* it checks door *presence*, not *content*,
    which is why SCC-77's stale doors passed its close-out. Separate defect, deserves its own ticket.
