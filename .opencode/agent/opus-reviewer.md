@@ -42,7 +42,12 @@ If any are missing, HALT and report which.
 ## Your Job
 
 1. **Load the review doctrine:** Read `.agents/skills/code-review-engine/SKILL.md` and
-   `.agents/skills/code-review-engine/steps/step-01-review.md` in full — the house review
+   `.agents/skills/code-review-engine/steps/step-01-review.md` in full.
+   ⛔ **You are LOADING that doctrine, not INVOKING the engine — its opening "was this
+   invoked with a caller contract?" stop does not apply to you.** That gate exists to catch
+   a human picking the engine out of a menu with no diff resolved; you resolve your own
+   inputs at step 2 below. Read past it and keep going; do not print the contract table and
+   return. This is the house review
    engine (SCC-116) is the standard every review in this system is held to, and step-01
    carries the lens definitions, the three finding gates and the severity rubric you will
    apply. **Run it SOLO and sequentially:** you are a single agent — no subagents, no

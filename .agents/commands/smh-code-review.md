@@ -129,11 +129,15 @@ stop, not a guess:**
 |---|---|
 | `REPO` | the repo Step 0 resolved |
 | `WORKTREE` | this task's tree (Step 0 pinned it from `git worktree list`) |
-| `DIFF` | Step 0.5's diff — `main...HEAD`, committed work only |
-| `HEAD_SHA` | Step 0's `HEAD_SHA` — the sha the verdict line will cite |
+| `DIFF` | the `main...HEAD` diff, **re-taken after Step 0.7 absorbed `main`** — committed work only |
+| `HEAD_SHA` | `git rev-parse HEAD` **re-read here, after that absorb** — never Step 0's value |
 | `review_mode` | `full` when the task's `implementation_plan.md` exists; `no-spec` when it does not |
 | `STORY_FILE` | that `implementation_plan.md` — on this lane the plan's acceptance list **is** the spec |
 | `ARTIFACT_DIR` | `_artifacts/_main/<YYYY-MM-DD>_<slug>/` inside this tree |
+
+⚠ **Step 0 read `HEAD_SHA` before Step 0.7 absorbed `main`.** Re-read both it and the diff here, or
+the engine reviews a tree that no longer exists and your verdict cites a commit that is no longer the
+tip — the exact invariant Step 0.7 opens by stating.
 
 **Hunt the DIFF first. Open the plan and the walkthrough only AFTER the engine's summary comes
 back** — for claimed evidence, plan-vs-built deviations, and the `## Your Actions` rows. Reading the
@@ -240,7 +244,9 @@ The section carries:
   plus one line naming the sha the suite evidence was measured on.
 - scope + method, one line each;
 - **ONE findings table** — `file:line` · severity · failure scenario · disposition
-  (`applied`/`deferred`/`dismissed`). The only copy anywhere; the plan links here, never restates;
+  (`applied`/`deferred`/`dismissed`). **The authoritative copy**; the plan links here, never restates.
+  (In `full` mode the engine may also leave `[ ] [Review]…` action items in the file you passed as
+  `STORY_FILE` — a worklist carrying no dispositions, never a second record. This table wins.)
 - each gate's result in one line with its **actual** output;
 - the acceptance matrix from Step 2 — every item → its proving assertion;
 - a `### Clean-Code Gate` subsection carrying Step 3.5's table and pasted output;

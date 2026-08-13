@@ -42,7 +42,7 @@ required input is a stop, not a guess:**
 | `REPO` | `PROJECT_ROOT` from Step 0 |
 | `WORKTREE` | the tree Step 0.5 resolved (the story tree when one exists — the built code often lives ONLY there) |
 | `DIFF` | the story's diff, taken in that worktree |
-| `HEAD_SHA` | `git rev-parse HEAD` in that worktree — the sha your verdict line will cite |
+| `HEAD_SHA` | `git rev-parse HEAD` in that worktree, taken **now** — this is the sha the engine records the review against, **not** necessarily the sha your verdict cites: you apply fixes below, and Step 4's verdict must cite the FINAL sha its full-suite evidence was measured on |
 | `review_mode` | `full` when the story file exists; `no-spec` when it does not |
 | `STORY_FILE` | the story file (`full` mode) |
 | `ARTIFACT_DIR` | `_artifacts/epic_<E>/<story>/` **inside that worktree** |
@@ -173,8 +173,10 @@ new one. The section carries:
   the full-suite evidence was measured on and whose run it was (②'s inherited certification or ③'s
   own). Any code/test diff between that SHA and HEAD invalidates the verdict.
 - scope + method, one line each; then ONE findings table (`file:line` · severity · failure scenario ·
-  disposition applied / deferred / dismissed) — the only copy anywhere; the story file links here,
-  never restates,
+  disposition applied / deferred / dismissed) — **the authoritative copy**; the story file links here,
+  never restates. (The engine's step-04 may leave unresolved findings as `[ ] [Review]…` action items
+  in `STORY_FILE` so the builder sees them — that is a worklist, not a second record, and it carries
+  no dispositions. Where the two differ, this table is right; reconcile the story's boxes to it.)
 - each gate check's result in one line + the **actual** suite totals (runs also ledgered in
   `## Suite Ledger`), each **citing its receipt** — `suite: pass @ <sha> (gates/<story>/suite.json)`.
   Run `gate_receipt.py list --story <id>` and paste the block; an `unrunnable` row is a finding that

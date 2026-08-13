@@ -491,6 +491,13 @@ then read the story.*
 > ⓘ **The split is deliberate: objective checks block a story, taste does not.** Taste gets recorded,
 > argued, and fixed on its merits — never used to stall a story on a reviewer's preference.
 
+> ⓘ **Where to read the findings, now that the engine runs the review (SCC-128).** The
+> `## Code Review` table in the **walkthrough** is authoritative — it is the one with dispositions
+> (`applied` / `deferred` / `dismissed`), and it is what close-out reads. The engine may *also* leave
+> `[ ] [Review]…` checkboxes in the story file (or, on a Task, the plan) so the builder sees open work
+> where they are already looking. That is a **worklist, not a second record**: it carries no
+> dispositions, and where the two disagree the walkthrough table is right.
+
 **Where the verdict lives:** a `## Code Review` section in the story's `walkthrough.md`. Stories
 closed before 2026-08-02 keep it in the old standalone `sudo-code-review-<story>.md` file instead,
 and that historic filename stays as it is on purpose — the files already exist on disk in the project
