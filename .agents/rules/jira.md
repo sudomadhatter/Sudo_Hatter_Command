@@ -121,14 +121,15 @@ There are **two kinds of Epic** and they are indistinguishable in Jira's UI:
 | **BMAD epic** | summary carries the BMAD number — `Epic 19 — ADK 2.x Runtime Upgrade`; it has a matching epic in the project's `epics.md` and rows on `sprint-status.yaml` | **`Story`** — each carries a BMAD number (`19.1`, `12.3.4`) and **has a story file** in `_bmad/bmm/stories/` |
 | **Grouping epic** | no BMAD number — `CI/CD Improvment`, `New Epic Feature or Fix`, `Thin toolkit` | **`Task`** — chore/toolkit/ad-hoc work with **no story file and no BMAD epic**, filed under the umbrella so it does not float loose |
 
-**The four types, and how each is decided:**
+**The five types, and how each is decided:**
 
 | Type | What it is | How it is recognized |
 |---|---|---|
 | **`Epic`** | a container — BMAD epic *or* grouping epic | minted by hand; never computed |
 | **`Story`** | BMAD sprint work: a planned story in `epics.md` + `sprint-status.yaml`, under a BMAD epic. **Debug stories are Stories** — they run the same loop, they just fix rather than build | a **dotted BMAD number** (`19.2`, `12.3.4`) **OR** a **`debug-` id** (`debug-4.1-hr-date-fixes`) **OR** a **story file** in `_bmad/bmm/stories/` |
 | **`Task`** | workflow / IDE / rules / skills / toolkit work — **not** a story, filed under a grouping epic because Jira offers no other container | none of the above |
-| **`Bug`** | **TEMPORARY.** A `Story` **or** a `Task` found to be broken wears `Bug` and comes back out of a finished status until the fix lands. Same ticket, same number, same story file — flagged | never computed — **raised** by an audit or by hand, **cleared at close-out** |
+| **`Subtask`** | one piece of a single `Task`'s job, big enough to earn **its own branch and its own worktree** — ⭐ see §Subtasks | its **parent's type** is a `Story`/`Task` rather than an `Epic`. A board read, never a string test |
+| **`Bug`** | **TEMPORARY.** A `Story` **or** a `Task` found to be broken wears `Bug` and comes back out of a finished status until the fix lands. Same ticket, same number, same story file — flagged. ⛔ **Never a `Subtask`** — see §Subtasks | never computed — **raised** by an audit or by hand, **cleared at close-out** |
 
 **The `Bug` lifecycle — two doors in, one door out.** All three moves are one script (SCC-54):
 
@@ -209,6 +210,7 @@ above, and the reason `Task` needed a command of its own:
 |---|---|---|---|
 | **`Story`** | `claude/<KEY>-<slug>` off the epic branch | `/cicd-update-sprint-memory` | it lands on the **epic** branch, never `main` |
 | **`Task`** | `chore/<KEY>-<slug>` off `main` | **`/smh-close-task-merge-tree`** (SCC-49) | close-out reads a sprint board, flips a story status and lands on an epic branch — a Task has **none of the three**, so the command has nothing to operate on |
+| **`Subtask`** | `chore/<KEY>-<slug>` off `main` — **its own**, exactly like a Task | **`/smh-close-task-merge-tree`** | nothing else: a subtask is a leaf that ships code, so it lands its own branch as it finishes. Its **parent** closes LAST, and `task_preflight.py` refuses the parent while any child is still open (SCC-119) |
 | **`Epic`** | `epic/<KEY>-<slug>` off `main` | `/cicd-push-e2e` | — |
 
 `/smh-close-task-merge-tree` files the same **one** Dev Record through `jira_feed.py devrecord` and moves
@@ -223,7 +225,11 @@ whatever its ticket type says.
 <P>` reports every ticket whose type disagrees with this table; `--apply` converts them and reads
 each one back. It **never retypes a `Bug`** — a bulk pass cannot tell "still broken" from "fixed",
 and that judgment is not the rule's to make. Only close-out knows, so only `devrecord --closing`
-clears it.
+clears it. **Subtasks are no longer skipped** (SCC-119): they were passed over as "containers",
+which was wrong twice — a subtask is a leaf, and skipping meant nothing ever checked the things
+that actually rot. It now checks **placement** instead of type (no parent · parented to an `Epic` ·
+nested under another subtask · a parent lagging its children) and **never auto-fixes any of them**,
+because re-parenting is a board move and the right parent is the operator's call.
 
 **Label vocabulary** — a card holds ONE status but stacks labels, which is exactly why these are
 labels (a story can be quick-dev-eligible AND blocked at once). **Two writers, and which one owns a
@@ -246,6 +252,99 @@ re-run, never trust.** `parallel_check.py check --parent <KEY>` answers that in 
 
 Filter any of them:
 `acli jira workitem search --jql "project = AVCH AND labels = quick-dev AND status != Done"`.
+
+## Subtasks — the ticket you were handed is the top-level one
+
+⭐ **Operator ruling 2026-08-12 (SCC-119).** When you are handed a ticket and your plan breaks it into
+several pieces of real work, those pieces go **underneath it as `Subtask`s** — not beside it as more
+`Task`s. Flatten them into siblings under the grouping epic and the one fact that mattered is
+destroyed: *these are all one job.* This writes down what the board already did by hand — SCC-38,
+SCC-98 and SCC-116 each parent their own set, and SCC-116's own description says
+*"make all the tasks sub tasks to these two tasks for organization."*
+
+### The hierarchy — three levels, and it does not nest
+
+| Level | Type | Parent must be |
+|---|---|---|
+| 1 | `Epic` | — (top) |
+| 0 | `Story` · `Task` · `Bug` | an `Epic` |
+| **−1** | **`Subtask`** | a **`Story` or `Task`** — never an `Epic` |
+
+⛔ **A `Subtask` cannot have children.** `hierarchyLevel: -1` is the floor. A subtask that turns out to
+need its own breakdown has exactly two legal moves: keep that breakdown as a **checklist inside it**, or
+**promote it to a `Task`** and re-parent. Trying to nest returns an opaque Jira error, so decide here.
+
+⛔ **The parent is still not the discriminator — the parent's TYPE is.** Everything on this board is
+parented (§Work-item types), so *having* a parent says nothing. Parent is an `Epic` → the ticket is a
+`Story`/`Task`. Parent is a `Story`/`Task` → it is a `Subtask`. That is a **board read**, which is why
+`work_type()` does not and cannot answer it.
+
+### The ONE test — does a durable breakdown already exist in the tree?
+
+| Lane | What already holds the breakdown | Subtasks? |
+|---|---|---|
+| **BMAD Story** (AVCH) | the story file's `Tasks / Subtasks` section **+** its `sprint-status.yaml` row | ⛔ **NEVER** |
+| **Command-centre Task** (SCC) | nothing — the ticket description **is** the spec | ✅ **the only place it can live** |
+
+This is the same question `work_type()` already asks (*is this BMAD sprint work?*), so it adds no new
+axis. A story's breakdown is already written down and machine-joined (`jira_key:` frontmatter, a YAML
+row key that never changes); mirroring it onto the board makes a **second copy that nothing syncs**, and
+it drifts on the first edit of either side. A Task has no such file. **The live boards already match
+this rule exactly: AVCH has zero subtasks, SCC has fourteen.**
+
+### The threshold — its own branch AND its own worktree, or it is not a ticket
+
+A piece earns a `Subtask` when it earns **its own `chore/<KEY>-<slug>` branch in its own worktree**.
+One worktree = one branch = one key = one ticket = one gate run = one merge — the unit this whole system
+is already keyed to: Atlassian's GitHub app joins commits **by branch name**, `task_preflight.py
+--expect-key` binds branch↔ticket, and `post-commit-jira-start.sh` parses the key **out of the branch**.
+
+**A ticket with no branch is a row nothing will ever write to** — no commits, no Dev Record, no
+transitions. That is board noise, which is the thing this rule exists to prevent. Everything under the
+threshold stays a checklist line in the parent's `ACCEPTANCE` block or in `implementation_plan.md`.
+**Three edits in one commit are not three subtasks.**
+
+### Minting them — propose, then stop
+
+Subtasks are minted **exactly like the Tasks they hang under: by hand, with raw `acli`.** There is no
+`jira_feed.py` seam and deliberately so — `mint` exists to render a description *from a story file*, and
+a subtask has none.
+
+```bash
+acli jira workitem create --project SCC --type Subtask --parent <PARENT-TASK-KEY> \
+  --summary "…" --description "…"        # bare, never --assignee
+```
+
+⛔ **The agent PROPOSES the set and writes nothing until the operator says go**, and it proposes only
+**after the `implementation_plan.md` is approved.** Minting off a first read of the ticket is
+speculative work (guardrail 3), and placement stays the operator's (guardrail 2). Print one line per
+subtask naming the branch each will get, then stop.
+
+### Lifecycle
+
+| Moment | What happens |
+|---|---|
+| first commit on `chore/<SUBTASK-KEY>-<slug>` | `post-commit` → `jira_feed.py start` moves **the subtask** to `In Progress`. **The child only** — there is no cascade, so `start` keeps one board write and one verdict |
+| subtask close-out | `/smh-close-task-merge-tree`, unchanged — it lands its own branch and goes `Done` on its own |
+| **found broken** | ⭐ **flag the PARENT, never the subtask.** A subtask is **never** labelled `Bug`; breakage is recorded on the ticket that owns the job. `jira_feed.py flag` refuses a subtask and names its parent in the refusal |
+| **parent close-out** | ⛔ **refused while any child is not `Done` or `Deferred`** (`task_preflight.py`). The parent closes **LAST** — that is the moment the whole job is done |
+
+**`Deferred` is the escape hatch, and it is not a `--force` flag.** A child that is genuinely out of
+scope gets descoped properly (`Deferred` + the `descoped` label) and stops blocking. A gate with no
+legitimate exit gets `--no-verify`'d into oblivion; fixing the board leaves a trail, a bypass flag does
+not.
+
+**A parent that lags its children is reported by `jira_feed.py audit`, not fixed by a write verb.**
+`audit` also reports a subtask with **no parent**, one parented **straight to an `Epic`**, and one
+**nested under another subtask** — none of which it will auto-fix, because re-parenting is a board move
+and *which* parent is a judgment about the work.
+
+⚠️ **Two `acli` facts that will bite anyone extending this** (both measured against the live board,
+2026-08-12): `parent` is **rejected** as a `--fields` value on `workitem search` (exit **1**) but
+accepted on `workitem view`, where it returns the parent's own `issuetype` and `status` too — so one
+`view` answers every placement question. And `parent = <KEY>` **is** valid JQL. Beware the trap that
+joins those: a bad key and a genuinely childless parent **both return zero rows**, and only the exit
+code tells them apart. Never read row count alone.
 
 ## Reading the board
 
@@ -316,7 +415,10 @@ python3 .agents/scripts/jira_feed.py start     --key SCC-113 --apply
   file — and ranks the tickets whose commits touched it, blame first. **No network, no board write**,
   and it only ever proposes keys from the project(s) in this repo's `.agents/jira.conf`.
 - **`flag`** (SCC-54) is the raise half of the `Bug` rule, above. Needs `--reason`; reads the type
-  and the status back after writing them.
+  and the status back after writing them. It refuses an `Epic` (a container is never broken work)
+  **and a `Subtask`** — the latter for a different reason, so the two refusals say different things:
+  a subtask is a **leaf**, and the ruling is that breakage is recorded on the ticket that owns the
+  job, so the refusal **names the parent to flag instead** (SCC-119).
 - **`start`** (SCC-113) is the seam that did not exist: work has begun, so the ticket reads
   `In Progress`. **Idempotent** — already there is a no-op, so the `post-commit` recorder firing on
   every commit and two lanes holding one key cannot fight over the board. It moves **only out of
@@ -326,9 +428,13 @@ python3 .agents/scripts/jira_feed.py start     --key SCC-113 --apply
   reverse, because a ticket you are starting cannot already be finished. An **`Epic` is allowed**
   here and refused by `flag`; that difference is deliberate (an epic under development is genuinely
   in progress; an epic is never itself broken work).
+  **A `Subtask` is ACCEPTED** (SCC-119) — it used to be refused here, and that refusal was a live
+  defect rather than a guard: a subtask carries its own branch, so `start` exited 2 on a real lane,
+  the `post-commit` marker (written only on exit 0) never landed, and the recorder re-hit the board
+  on **every commit** while the ticket sat in `To Do` for the whole build. SCC-123 shipped that way.
   **Four exit codes, because the caller must tell them apart:** `0` moved or already there
   (settled) · **`3` left alone — NOT settled, ask again** · `2` the board REFUSED it (a `Done` key,
-  a Subtask, a move that did not land) · **`4` the board was UNREACHABLE** — transport, not a
+  a move that did not land) · **`4` the board was UNREACHABLE** — transport, not a
   verdict, so retry rather than concluding anything about the key. Collapsing `4` into `2` told an
   agent on a dead uplink to mint a duplicate ticket.
   The `post-commit` recorder writes its once-per-branch marker **only on `0`**; collapsing `3` into
@@ -350,6 +456,8 @@ in the summary, the board row / spec pointer in the description — so nothing l
 - **Stories** → `/cicd-write-story-tests` ① Step 1.6, at pickup: child of the epic ticket, bare,
   labels from ①'s lane/parallel/blocked ruling, `jira_key:` stamped into the story frontmatter.
 - **Toolkit/chore work** → mint the repo's chore ticket before cutting `chore/<KEY>-<slug>`.
+- ⭐ **Subtasks** → `/smh-quick-dev`, **after** the plan is approved: the agent proposes the set and
+  **stops**; the operator's go is what writes it. Raw `acli`, parented to the Task. See §Subtasks.
 
 Outside these seams: status + comments only. Never mint speculative work — a ticket asserts a
 decision already made; "maybe" items live in the deferred ledgers, and the operator purges

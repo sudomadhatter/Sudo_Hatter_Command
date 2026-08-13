@@ -136,6 +136,18 @@ if head[:3] == ["jira", "workitem", "view"]:
               "summary": state.get("summary", ""),
               "status": {"name": state.get("statuses", {}).get(vkey, "To Do")},
               "issuetype": {"name": state.get("types", {}).get(vkey, "Task")}}
+    # `parent` is returned by the real `view` (and IS on view_fields' whitelist) but is
+    # REJECTED by `search` - verified against the live board 2026-08-12, SCC-119. Modelling
+    # it only here is what makes that asymmetry testable: a caller that tries to read a
+    # parent out of a search result gets nothing, exactly as it would in production.
+    pkey = state.get("parents", {}).get(vkey)
+    if pkey:
+        fields["parent"] = {"key": pkey,
+                            "fields": {"issuetype":
+                                       {"name": state.get("types", {}).get(pkey, "Task")},
+                                       "status":
+                                       {"name": state.get("statuses", {}).get(pkey, "To Do")},
+                                       "summary": state.get("summaries", {}).get(pkey, "")}}
     # `--fields` is a WHITELIST on the real acli, so this stub honours it (SCC-54). It did
     # not, and that gap hid a live defect for two tickets: production asked for a field list
     # with `issuetype` missing from it, read `issuetype` out of the answer, and got nothing -
@@ -174,6 +186,20 @@ elif head == ["jira", "workitem", "comment", "update"]:
     save()
     print("Comment updated")
 elif head[:3] == ["jira", "workitem", "search"]:
+    # ⛔ `parent` is NOT an allowed --fields value on search - the real acli exits 1 with
+    # "field 'parent' is not allowed" (verified live 2026-08-12, SCC-119). The stub enforces
+    # it for the same reason it enforces the view whitelist: a stub more generous than the
+    # tool it stands in for cannot fail on the bug it exists to catch. Asking for `parent`
+    # while checking parentage is the natural mistake, and it must fail HERE too.
+    if "parent" in [w.strip() for w in (val("--fields") or "").split(",")]:
+        print("Error: field 'parent' is not allowed", file=sys.stderr)
+        sys.exit(1)
+    # A failing search (bad key, malformed JQL) exits NON-ZERO with no rows - which is
+    # byte-identical to a legitimately empty result unless the caller reads the exit code.
+    # That is the whole point of the gate in task_preflight.py.
+    if state.get("search_fail"):
+        print("Error: the search failed", file=sys.stderr)
+        sys.exit(1)
     print(json.dumps(state.get("search", [])))
 elif head[:3] == ["jira", "workitem", "create"]:
     if not state.get("swallow_desc"):
@@ -645,13 +671,35 @@ def main() -> int:
         c.check("closing: without --closing the Bug flag stands",
                 code == 0 and get_state(state)["types"]["TEST-7"] == "Bug")
 
+        # ⭐ SCC-119 CHARACTERIZATION - no code backs this, and that is the point. A subtask
+        # closes its own branch and files its own Dev Record, so it DOES reach this path; it
+        # simply never carries `Bug` (operator ruling), so the restore branch never fires.
+        # Pinning it costs nothing and catches the promotion a future edit would introduce:
+        # `work_type()` answers "Task" for a subtask's slug, so any change that widened the
+        # restore beyond `have == "Bug"` would silently lift a subtask out of its parent.
+        set_state(state, types={"TEST-7": "Subtask", "TEST-4": "Task"},
+                  parents={"TEST-7": "TEST-4"})
+        code, out = jf("devrecord", "--story", "subtask-thing", "--key", "TEST-7", "--apply",
+                       "--closing", "--followon", "none")
+        st = get_state(state)
+        c.check("closing: a Subtask files its record and is NEVER re-typed to Task (SCC-119)",
+                code == 0 and st["types"]["TEST-7"] == "Subtask" and "retyped" not in st,
+                out.strip()[:200])
+
         # ── audit: report + migrate types, and NEVER touch a Bug ───────────────
-        def board(*rows):
-            """rows: (key, type, summary)"""
+        def board(*rows, **extra):
+            """rows: (key, type, summary). `extra` seeds parents/statuses for SCC-119.
+
+            ⛔ The search rows carry NO `parent` on purpose - the real acli rejects that
+            field on search (exit 1), so the audit has to `view` each subtask to learn its
+            parentage. Putting parents in the search rows here would test a call production
+            can never make."""
+            types = {k: t for k, t, _ in rows}
+            types.update(extra.pop("types", {}))
             set_state(state,
                       search=[{"key": k, "fields": {"issuetype": {"name": t},
                                                     "summary": s}} for k, t, s in rows],
-                      types={k: t for k, t, _ in rows})
+                      types=types, **extra)
 
         board(("T-1", "Task", "9.1 - Widget Archive"),
               ("T-2", "Task", "Separate the front end"),
@@ -702,6 +750,60 @@ def main() -> int:
                                "--acli", str(acli), "--jira-project", "TEST")
         c.check("audit: a correct board reports clean (positive control)",
                 code == 0 and "every type agrees" in out, out.strip()[:200])
+
+        # ── audit: subtask invariants (SCC-119) ───────────────────────────────
+        # The old pass SKIPPED every Subtask as "a container", which is doubly wrong: a
+        # subtask is a LEAF, and skipping meant nothing ever checked the three things that
+        # actually rot on a parented board. `work_type()` is deliberately NOT run on them -
+        # it answers Story|Task from a summary, and a subtask's type comes from its PARENT'S
+        # type, which is a board read.
+        def aud(*extra):
+            return run_script("jira_feed.py", "audit", "--project", str(repo),
+                              "--acli", str(acli), "--jira-project", "TEST", *extra)
+
+        board(("T-1", "Task", "Parent job"), ("T-2", "Subtask", "A real piece of work"),
+              parents={"T-2": "T-1"},
+              statuses={"T-1": "In Progress", "T-2": "In Progress"})
+        code, out = aud()
+        c.check("audit: a well-formed Subtask under a Task is OK, not noise",
+                code == 0 and "every type agrees" in out, out.strip()[:240])
+
+        board(("T-1", "Task", "Parent job"), ("T-2", "Subtask", "Orphan"))
+        code, out = aud()
+        c.check("audit: a PARENTLESS Subtask is reported (it was silently skipped before)",
+                code == 1 and "T-2" in out and "no parent" in out.lower(),
+                out.strip()[:240])
+
+        board(("T-1", "Epic", "Grouping epic"), ("T-2", "Subtask", "Wrong level"),
+              parents={"T-2": "T-1"})
+        code, out = aud()
+        c.check("audit: a Subtask parented to an EPIC is reported - Jira's level -1 sits "
+                "under a Story or Task, never an Epic",
+                code == 1 and "T-2" in out and "Epic" in out, out.strip()[:240])
+
+        board(("T-1", "Subtask", "A subtask"), ("T-2", "Subtask", "Nested under it"),
+              parents={"T-2": "T-1"})
+        code, out = aud()
+        c.check("audit: a NESTED Subtask is reported - hierarchyLevel -1 is the floor",
+                code == 1 and "T-2" in out, out.strip()[:240])
+
+        # ⭐ This row is what replaced the cut parent-cascade (F6). The board still gets told
+        # when a parent lags its children - it is just told by the audit, which reports, and
+        # not by `start`, which writes.
+        board(("T-1", "Task", "Parent job"), ("T-2", "Subtask", "Already shipping"),
+              parents={"T-2": "T-1"},
+              statuses={"T-1": "To Do Next", "T-2": "In Progress"})
+        code, out = aud()
+        c.check("audit: reports a parent that LAGS its children (replaces the cut cascade)",
+                code == 1 and "T-1" in out and "behind" in out.lower(),
+                out.strip()[:240])
+
+        # A subtask flagged Bug by hand in the UI: still hands-off, same reason as always.
+        board(("T-1", "Task", "Parent job"), ("T-2", "Bug", "Hand-flagged in the UI"),
+              parents={"T-2": "T-1"})
+        code, out = aud("--apply")
+        c.check("audit: a hand-flagged Bug under a parent is still left for close-out",
+                "retyped" not in get_state(state), out.strip()[:240])
 
         # ── trace: propose the ticket behind a path. Reads git, NEVER the board ──
         traced = make_trace_repo(tmp)
@@ -824,6 +926,31 @@ def main() -> int:
                 code == 2 and "container is never a Bug" in out
                 and get_state(state)["types"]["TEST-9"] == "Epic", out.strip()[:200])
 
+        # ⭐ SCC-119, operator ruling: a Subtask is never labelled `Bug`. Breakage is recorded
+        # on the MAIN ticket - the parent that owns the job. So `flag` still refuses a
+        # subtask, but for the RIGHT reason: the old message called it a container, which is
+        # false (it is a leaf), and told the operator to "flag the child ticket whose work
+        # broke" - which IS the subtask, so the message argued against itself.
+        set_state(state, types={"TEST-7": "Subtask", "TEST-4": "Task"},
+                  statuses={"TEST-7": "Done", "TEST-4": "In Progress"},
+                  parents={"TEST-7": "TEST-4"})
+        code, out = jf("flag", "--key", "TEST-7", "--reason", "broke", "--apply")
+        c.check("flag: a Subtask is refused and REDIRECTS to its parent by key (SCC-119)",
+                code == 2 and "TEST-4" in out
+                and get_state(state)["types"]["TEST-7"] == "Subtask",
+                out.strip()[:240])
+        c.check("flag: the refusal no longer calls a Subtask a container - it is a leaf",
+                "container" not in out.lower(), out.strip()[:240])
+
+        # A parentless subtask must still refuse rather than crash on the missing field. The
+        # board should never hold one (audit reports it), but `flag` is a write verb and a
+        # traceback here would read as "the board rejected it".
+        set_state(state, types={"TEST-7": "Subtask"}, statuses={"TEST-7": "Done"})
+        code, out = jf("flag", "--key", "TEST-7", "--reason", "broke", "--apply")
+        c.check("flag: a PARENTLESS Subtask refuses cleanly, never tracebacks",
+                code == 2 and get_state(state)["types"]["TEST-7"] == "Subtask",
+                out.strip()[:240])
+
         # acli exits 0 on a transition it did not perform - the same swallow the whole script
         # exists to catch, one verb further on.
         set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "Done"},
@@ -900,11 +1027,34 @@ def main() -> int:
                 code == 0 and get_state(state)["statuses"]["TEST-5"] == "In Progress",
                 out.strip()[:200])
 
+        # ⭐ SCC-119: this assertion is INVERTED from its first cut, which pinned the defect
+        # in place. A Subtask is a LEAF (`hierarchyLevel: -1`), not a container - it carries
+        # its own `chore/<KEY>-<slug>` branch and ships code exactly like a Task. Refusing it
+        # here exited 2, and `post-commit-jira-start.sh` writes its once-per-branch marker
+        # ONLY on exit 0 - so a subtask lane re-fired a board round-trip on EVERY commit, with
+        # both streams swallowed, while its ticket sat in `To Do` for the whole build. That is
+        # the exact failure SCC-113 exists to close, returning through a type check. Proven on
+        # SCC-123, which shipped from `chore/SCC-123-evidence-extract` and was never seen
+        # `In Progress`.
         set_state(state, types={"TEST-7": "Subtask"}, statuses={"TEST-7": "To Do"})
         code, out = jf("start", "--key", "TEST-7", "--apply")
-        c.check("start: a Subtask is refused",
-                code == 2 and get_state(state)["statuses"]["TEST-7"] == "To Do",
+        c.check("start: a Subtask is ACCEPTED - it is a leaf that carries a branch (SCC-119)",
+                code == 0 and get_state(state)["statuses"]["TEST-7"] == "In Progress",
                 out.strip()[:200])
+
+        # The cascade was CUT (SCC-119, operator ruling): `start` moves the child and ONLY
+        # the child. One board write, one verdict - which is what post-commit's
+        # write-the-marker-only-on-settled logic depends on. `audit` reports a parent that
+        # lags its children instead.
+        set_state(state, types={"TEST-7": "Subtask", "TEST-4": "Task"},
+                  statuses={"TEST-7": "To Do", "TEST-4": "To Do Next"},
+                  parents={"TEST-7": "TEST-4"})
+        code, out = jf("start", "--key", "TEST-7", "--apply")
+        moved = [t["key"] for t in get_state(state).get("transitions", [])]
+        c.check("start: the parent is NOT cascaded - one board write, one verdict",
+                code == 0 and moved == ["TEST-7"]
+                and get_state(state)["statuses"]["TEST-4"] == "To Do Next",
+                f"transitioned={moved} " + out.strip()[:160])
 
         # ⭐ "the board said no" and "I could not reach the board" are OPPOSITE instructions
         # - fix your key, versus try again later - and they shared exit 2 until the second
