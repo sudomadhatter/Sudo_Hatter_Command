@@ -774,6 +774,20 @@ def gate_plan(repo: Path, lane: str) -> list[str]:
         # be named in .agents/active-project.txt (SCC-64).
         flag = " --toolkit-only" if not deploy_surface(repo) else ""
         plan.append(f"python3 .agents/scripts/workflow_lint.py{flag}")
+    if (repo / ".agents/scripts/check_maps.py").is_file():
+        # SCC-138. Without this the gate could not fail on the map/INDEX linter, because it
+        # never ran it - and twice in one day the two disagreed with only the linter right
+        # (SCC-124 landed a session folder with no INDEX row; SCC-119 nearly did) while
+        # run_all reported 21/21 PASS. A clean verdict printed over a red linter is worse
+        # than no verdict: it turns a detectable problem into a trusted one.
+        #
+        # ⛔ `--depth3-only --strict`, never bare check_maps. The close-out runs from a
+        # WORKTREE, and bare check_maps there exits 1 on two GUARANTEED false positives
+        # ("AUTO block is STALE" and "on disk but not in map: <lane-name>/") whose printed
+        # remedy would ship the lane name into the map bound for main. `--depth3-only` is
+        # the subset free of both. `--strict` is what makes it a gate at all: the bare form
+        # exits 0 even on drift, because SessionStart runs it as a nag.
+        plan.append("python3 .agents/scripts/check_maps.py --depth3-only --strict")
     if not plan:
         plan.append("(no enforcement suite in this repo - say so; do not report a gate "
                     "that did not run)")
@@ -834,13 +848,16 @@ def main() -> int:
         # every check above it inferred something from commits that nothing actually checked.
         # A repo that never claimed gates is a different animal - it gets the normal line, with
         # the warning still standing above it (SCC-110 review, M4).
-        if e:
-            verdict = "BLOCKED - resolve the errors above"
-        elif not armed["armed"] and armed["claims_gates"]:
-            verdict = ("NOT CLEAR - no blocking error, but this repo's commit gates are not "
-                       "running, so nothing mechanical checked any of the commits above")
-        else:
-            verdict = "clear to close out and merge"
+        #
+        # ⛔ That rule is enforced ENTIRELY by `hooks_armed.check()`, which is why there is no
+        # third branch here. A `NOT CLEAR` verdict used to sit between these two and was
+        # UNREACHABLE (SCC-140): reaching it needed `armed=False` AND `claims_gates=True`, but
+        # check() makes every finding a hard `rep.err` in exactly that case, so `e` is non-zero
+        # and BLOCKED always wins. It was also self-contradictory - the text refused the merge
+        # while `rep.exit_code()` returned 1, which callers read as "warnings only". Deleted
+        # rather than pinned with a test: a test over unreachable code buys nothing and makes
+        # the dead branch look load-bearing to the next reader.
+        verdict = "BLOCKED - resolve the errors above" if e else "clear to close out and merge"
         print("VERDICT: " + verdict)
     return rep.exit_code()
 
