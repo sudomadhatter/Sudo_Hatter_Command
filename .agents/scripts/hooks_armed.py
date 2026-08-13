@@ -68,24 +68,42 @@ ARM_FLAGS = {
 }
 
 
+def _run(args: list[str]):
+    """Run git. `None` means the BINARY is not there at all.
+
+    Every call in this file used to let `FileNotFoundError` escape, so on a machine without
+    git — or with a PATH the agent shell does not share — the arm-check ended in a raw
+    traceback. A traceback is not a verdict: it tells the operator nothing about whether
+    their gates run, and it takes the close-out down with it.
+    """
+    try:
+        return subprocess.run(args, capture_output=True, text=True, errors="replace")
+    except OSError:
+        return None
+
+
 def git_root(start: str | Path) -> Path:
     """Walk up for the repo root. Running from a subdirectory must not read as 'no hooks'."""
-    r = subprocess.run(["git", "-C", str(start), "rev-parse", "--show-toplevel"],
-                       capture_output=True, text=True, errors="replace")
-    return Path(r.stdout.strip()) if r.returncode == 0 and r.stdout.strip() else Path(start)
+    r = _run(["git", "-C", str(start), "rev-parse", "--show-toplevel"])
+    return Path(r.stdout.strip()) if r and r.returncode == 0 and r.stdout.strip() else Path(start)
 
 
 def _git_config(repo: Path, key: str) -> str:
     """`git config --get` exits 1 when the key is unset — that is data, not an error."""
-    r = subprocess.run(["git", "-C", str(repo), "config", "--get", key],
-                       capture_output=True, text=True, errors="replace")
-    return r.stdout.strip() if r.returncode == 0 else ""
+    r = _run(["git", "-C", str(repo), "config", "--get", key])
+    return r.stdout.strip() if r and r.returncode == 0 else ""
 
 
-def _tracked(repo: Path, pathspec: str) -> list[str]:
-    """Repo-relative paths git actually tracks. The index, not the filesystem — see module doc."""
-    r = subprocess.run(["git", "-C", str(repo), "ls-files", "-z", "--", pathspec],
-                       capture_output=True, text=True, errors="replace")
+def _tracked(repo: Path, pathspec: str) -> list[str] | None:
+    """Repo-relative paths git actually tracks. The index, not the filesystem — see module doc.
+
+    `None` is NOT `[]`. Empty means "git answered: nothing matches"; None means "git could not
+    be asked at all", and collapsing the two would turn a missing binary into the confident
+    claim that this repo tracks no hooks — the exact vacuous answer this file exists to refuse.
+    """
+    r = _run(["git", "-C", str(repo), "ls-files", "-z", "--", pathspec])
+    if r is None:
+        return None
     return sorted(p for p in r.stdout.split("\0") if p) if r.returncode == 0 else []
 
 
@@ -139,14 +157,29 @@ def scan(repo: Path) -> dict:
     # helpers), and no suffix. A git hook is named exactly after the git event — `commit-msg`,
     # `pre-push` — and never carries an extension, so `.md` is documentation and `.sh` is a
     # library. Neither is a dispatcher git will ever run.
-    expected = [Path(p).name for p in _tracked(repo, f"{HOOK_DIR}/")
+    hook_files = _tracked(repo, f"{HOOK_DIR}/")
+    if hook_files is None:
+        err("git is not runnable from here, so NOTHING about this repo's gates could be "
+            "checked. This is not a clean result - it is the absence of one. Put git on "
+            "PATH and re-run.", code="no_git")
+        return {"repo": str(repo), "hooks_path": None, "resolved": None, "armed": False,
+                "claims_gates": True, "hooks": [], "flags": [], "findings": findings}
+
+    expected = [Path(p).name for p in hook_files
                 if Path(p).parent.as_posix() == HOOK_DIR and not Path(p).suffix]
-    gate_scripts = _tracked(repo, f"{SCRIPT_DIR}/*.sh")
-    tracked_flags = [Path(p).name for p in _tracked(repo, f"{SCRIPT_DIR}/*-ENFORCE")]
+    gate_scripts = _tracked(repo, f"{SCRIPT_DIR}/*.sh") or []
+    tracked_flags = [Path(p).name for p in (_tracked(repo, f"{SCRIPT_DIR}/*-ENFORCE") or [])]
 
     # Does this repo CLAIM to have gates? Used only to weigh the "no hooks at all" finding —
     # see `check()`. A repo declaring a Jira project, or shipping gate scripts, is asserting
     # that its commits are checked; a repo doing neither never made that claim.
+    # ⓘ `jira.conf` is read from DISK, not the index, and that is DELIBERATE (SCC-140,
+    # decision A). It looks inconsistent beside this file's ask-the-index doctrine, so it
+    # gets a line rather than being re-found by every review: this is not the deleted-vs-
+    # never-had question the doctrine exists for. It asks only "is this repo asserting that
+    # its commits are checked", and a declaration present in the working tree is that
+    # assertion whether or not it has been committed yet. Over-claiming is also the SAFE
+    # direction here - it makes drift BLOCK rather than warn.
     claims_gates = bool(gate_scripts) or (repo / ".agents/jira.conf").is_file()
 
     # ⭐ Nothing to check must NEVER read as clean. But "no gates at all" is a different
@@ -169,10 +202,19 @@ def scan(repo: Path) -> dict:
             err(f"core.hooksPath = {configured!r} resolves to no directory ({resolved}) — "
                 f"every gate is OFF. Remedy: {REMEDY}")
 
+    # ⛔ ONE CAUSE, ONE ERROR. When hooksPath is unset or points nowhere, `resolved` is None
+    # and this loop used to add a finding PER TRACKED HOOK — five errors on a fresh clone,
+    # four of them printing "absent from the directory git actually reads (None)". A fresh
+    # clone is the first time anyone reads this output, and it opened with four lines of
+    # noise wrapped around the one line that mattered. The cause is already reported above;
+    # the hooks are still listed so the --json shape does not change.
+    gates_off = resolved is None or not resolved.is_dir()
     for name in expected:
-        present = bool(resolved) and (resolved / name).is_file()
-        ok_exec = bool(resolved) and is_executable(resolved / name)
+        present = (not gates_off) and (resolved / name).is_file()
+        ok_exec = (not gates_off) and is_executable(resolved / name)
         hooks.append({"name": name, "present": present, "executable": ok_exec})
+        if gates_off:
+            continue
         if not present:
             err(f"hook {name!r} is tracked in {HOOK_DIR}/ but absent from the directory git "
                 f"actually reads ({resolved}) — it will never run. Remedy: {REMEDY}")
@@ -311,8 +353,17 @@ def main() -> int:
             print(f"[{f['sev']:5}] {f['msg']}")
         print(f"\n{'ARMED' if res['armed'] else 'NOT ARMED'} - "
               f"core.hooksPath={res['hooks_path'] or '(unset)'}")
-    errors = sum(1 for f in res["findings"] if f["sev"] == "ERROR")
-    warns = sum(1 for f in res["findings"] if f["sev"] == "WARN")
+    # ⭐ ONE STATE, ONE VERDICT. `check()` downgrades `no_hook_dir` for a repo that never
+    # claimed gates; this exit code did not, so the same repo was a warning through preflight
+    # and a hard 2 from the CLI. Nothing in the system gates on this CLI — `task_preflight`
+    # via `check()` is the only programmatic caller and the SOP documents this as something a
+    # human types — so the CLI was the half that was wrong. The downgrade is applied here too,
+    # from the same predicate, rather than described in two places and drifted apart.
+    def _soft(f: dict) -> bool:
+        return f.get("code") == "no_hook_dir" and not res["claims_gates"]
+
+    errors = sum(1 for f in res["findings"] if f["sev"] == "ERROR" and not _soft(f))
+    warns = sum(1 for f in res["findings"] if f["sev"] == "WARN" or _soft(f))
     return 2 if errors else (1 if warns else 0)
 
 
