@@ -15,12 +15,25 @@
 #
 #   For a pushed `refs/heads/chore/*` or `refs/heads/claude/*`:
 #     refuse if any OTHER local chore/claude branch is an ancestor of the pushed sha
-#     AND is not an ancestor of origin/main.
+#     AND is not reachable from this lane's own INTEGRATION BRANCH.
 #
-# ⛔ THE `origin/main` HALF IS WHAT MAKES IT USABLE. After a sibling lands and you absorb `main`,
-# that sibling's commits are ancestors of your lane too — the single most common thing a lane does.
-# Keying on containment alone would refuse it. Asking whether the foreign lane is reachable from
-# origin/main separates "landed, so it is everyone's" from "still someone else's work in flight".
+# ⛔ THE "ALREADY LANDED" HALF IS WHAT MAKES IT USABLE. After a sibling lands and you absorb the
+# branch you integrate on, that sibling's commits are ancestors of your lane too — the single most
+# common thing a lane does. Keying on containment alone would refuse it. Asking whether the foreign
+# lane has already landed separates "landed, so it is everyone's" from "still in flight".
+#
+# ⛔⛔ AND "LANDED" IS NOT ALWAYS `origin/main`. The first cut of this file asked only about
+# `origin/main`, which is right for a `chore/*` lane and WRONG FOR EVERY STORY LANE: a `claude/*`
+# lane integrates on its `epic/*` branch, and an epic does not reach `main` until `/cicd-push-e2e`
+# ships the whole epic. So the moment one story landed on the epic and a sibling absorbed it, this
+# refused a push that `git-policy.md` marks FREE — no approval — and that `/cicd-park` performs
+# verbatim (`git merge origin/epic/<KEY>-<slug>` then `git push -u origin claude/<KEY>-<slug>`).
+# Park exists to stop work being stranded on one machine; refusing it strands the work.
+#
+# Found by three independent review lenses, two of which reproduced it end to end against a real
+# remote. It is the exact failure this file's own header calls the expensive one, committed by the
+# file that names it: the `origin/main` reasoning was derived for chore→main and then applied to
+# story lanes without being re-derived. The reference set is now per-class.
 #
 # ⛔ AND IT NEVER RUNS ON `main` OR `epic/*`, ON PURPOSE. `/smh-close-task-merge-tree` merges
 # chore/X into main and pushes main; at that moment chore/X is contained and unlanded BY
@@ -46,6 +59,16 @@ ENFORCE=1
 ZERO="0000000000000000000000000000000000000000"
 STATUS=0
 
+# Where a lane of this class lands, so the remedy names the operator's actual next move rather
+# than a generic one. The first cut printed "land it on main first" at a story lane, which is the
+# one thing merge-target-guard.sh refuses (`main:story` -> refuse).
+integration_of() {
+  case "$1" in
+    claude/*) echo "its epic/* branch" ;;
+    *)        echo "main" ;;
+  esac
+}
+
 refuse() {   # $1 = the lane being pushed, $2 = the foreign lane riding on it
   if [ "$ENFORCE" = "1" ]; then
     echo ""
@@ -57,15 +80,15 @@ refuse() {   # $1 = the lane being pushed, $2 = the foreign lane riding on it
   fi
   echo ""
   echo "     pushing:        $1"
-  echo "     also contains:  $2   — which is NOT reachable from origin/main"
+  echo "     also contains:  $2   — which has NOT landed on $(integration_of "$2")"
   echo ""
   echo "     A fast-forward merge creates no commit, so no commit-time hook could refuse it"
   echo "     (SCC-144). This is the net for that. The usual cause is a merge run from the wrong"
   echo "     working directory — a cd is not a lock across steps (SCC-97)."
   echo ""
-  echo "     Remedy:  git log --oneline origin/main..$1     # see what actually rode along"
-  echo "              git reset --hard origin/$1            # if the lane was already pushed"
-  echo "     If '$2' genuinely belongs in this lane, land it on main first."
+  echo "     Remedy:  git log --oneline $BASE_DESC..$1     # see what actually rode along"
+  echo "              git reset --hard origin/$1            # ONLY if this lane was already pushed"
+  echo "     If '$2' genuinely belongs in this lane, land it on $(integration_of "$2") first."
   echo "     Bypass once: git push --no-verify"
   echo ""
   [ "$ENFORCE" = "1" ] && STATUS=1
@@ -81,19 +104,61 @@ while read -r local_ref local_sha remote_ref remote_sha; do
 
   lane=${remote_ref#refs/heads/}
 
-  # "Landed" means landed on the REMOTE. A local `main` is not a fallback for this — it can be
-  # arbitrarily ahead of, or behind, what the rest of the system has actually seen.
-  base=$(git rev-parse --verify --quiet refs/remotes/origin/main) || base=""
-  if [ -z "$base" ]; then
-    echo "  ⓘ merge-target backstop: no origin/main in this clone, so there is no reference"
-    echo "    point for 'already landed' — declined to judge '$lane'. Push allowed."
+  # ─── Where "already landed" is measured from, per lane class ─────────────────────────────
+  # Always the REMOTE. A local branch is not a fallback: it can be arbitrarily ahead of, or
+  # behind, what the rest of the system has actually seen.
+  #
+  # A `chore/*` lane integrates on `main`. A `claude/*` story lane integrates on its `epic/*`,
+  # which does not reach `main` until the epic ships — so for a story lane every remote epic
+  # counts as a landing point too. That is deliberately a slight over-allow (a sibling landed on
+  # a DIFFERENT epic also reads as landed); the alternative is refusing `/cicd-park` on a
+  # policy-free push, and this file's own header rules that a false red costs more than a miss.
+  BASES=$(git rev-parse --verify --quiet refs/remotes/origin/main)
+  BASE_DESC="origin/main"
+  case "$lane" in
+    claude/*)
+      epics=$(git for-each-ref --format='%(objectname)' refs/remotes/origin/epic 2>/dev/null)
+      if [ -n "$epics" ]; then
+        BASES="$BASES
+$epics"
+        BASE_DESC="origin/main or the epic"
+      fi
+      ;;
+  esac
+  BASES=$(printf '%s\n' "$BASES" | sed '/^$/d')
+
+  if [ -z "$BASES" ]; then
+    echo "  ⓘ merge-target backstop: no origin/main (nor any origin/epic/*) in this clone, so"
+    echo "    there is no reference point for 'already landed' — declined to judge '$lane'."
+    echo "    Push allowed."
     continue
   fi
 
   for other in $(git for-each-ref --format='%(refname:short)' refs/heads/chore refs/heads/claude 2>/dev/null); do
     [ "$other" = "$lane" ] && continue
+
+    # ⛔ The LOCAL name too, not only the remote one. `git push origin chore/a:refs/heads/renamed`
+    # makes `lane` the REMOTE name while `other` is a LOCAL one, so the check above misses and the
+    # lane is reported as contaminated BY ITSELF. Found in review, reproduced.
+    #
+    # ⚠ And it has to be by NAME, not by sha. Skipping any `other` whose tip equals `$local_sha`
+    # reads as the tighter fix and silently deletes the primary case: a lane contaminated by a
+    # FAST-FORWARD sits at exactly the foreign lane's tip, which is the whole topology this file
+    # exists to catch. That regression was caught by case G going red — it is in this comment so
+    # the next person tightening this line knows what it costs.
+    [ "$other" = "${local_ref#refs/heads/}" ] && continue
+
     git merge-base --is-ancestor "$other" "$local_sha" 2>/dev/null || continue
-    git merge-base --is-ancestor "$other" "$base" 2>/dev/null && continue
+
+    landed=0
+    for base in $BASES; do
+      if git merge-base --is-ancestor "$other" "$base" 2>/dev/null; then
+        landed=1
+        break
+      fi
+    done
+    [ "$landed" = "1" ] && continue
+
     refuse "$lane" "$other"
   done
 done

@@ -28,17 +28,37 @@
 # strands the operator with no way to ship — but it says so loudly, and the arm flag being tracked
 # means this state only ever exists on a tree cut before SCC-77 landed.
 ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT" || exit 0
 
 # Under the git dir, so it never travels with a clone and can never land in a commit. `--git-path`
 # rather than a literal `.git/...`: in a worktree `.git` is a FILE, and a path probe there is
 # always false — the same bug this lane fixed in commit-msg-jira.sh and sop-currency.sh.
+#
+# ⛔ THE ANSWER IS USED AS GIT GIVES IT, and the `cd` above is what makes that safe. `--git-path`
+# returns a RELATIVE path in the main checkout and an ABSOLUTE one in a worktree — measured. The
+# first cut normalised that by hand with `case "$REFS" in /*)`, which is correct on POSIX and
+# WRONG on the PC: git-for-windows answers `C:/repo/.git/worktrees/<name>/...`, which does not
+# match `/*`, so the repo root was prepended to an already-absolute path and the write failed.
+# In a worktree. On one of this system's two machines. Every lane here is a worktree.
 REFS="$(git rev-parse --git-path pre-push-refs.$$)"
-case "$REFS" in
-  /*) : ;;
-  *)  REFS="$ROOT/$REFS" ;;
-esac
 trap 'rm -f "$REFS"' EXIT HUP INT TERM
-cat > "$REFS" || exit 0
+
+# ⛔ AND IT FAILS CLOSED. This was `|| exit 0`, which returned success and skipped BOTH gates —
+# including the SCC-77 token gate — with no message at all. That is the silent-pass class this
+# whole gate family exists to close, sitting inside it. The SCC-32 allow-on-missing rule below is
+# about a STALE WORKTREE with no script to run, where a hard door would strand the operator with
+# no way to ship; an unwritable git dir is not that, it is an anomaly, and `--no-verify` is right
+# there for anyone it inconveniences.
+if ! cat > "$REFS"; then
+  echo ""
+  echo "  ⛔ PUSH REFUSED — the pre-push hook could not stage the refs it was handed."
+  echo "     Could not write: $REFS"
+  echo "     Two gates read that file, so continuing would run NEITHER — including the"
+  echo "     approval-token gate on main. Refusing rather than passing silently (SCC-144)."
+  echo "     Bypass once: git push --no-verify"
+  echo ""
+  exit 1
+fi
 
 BACKSTOP="$ROOT/.agents/scripts/git-hooks/pre-push-merge-backstop.sh"
 if [ ! -x "$BACKSTOP" ]; then

@@ -87,27 +87,60 @@ TARGET=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
 #
 # No MERGE_HEAD means this is an ordinary commit, which is not this gate's business — the two gates
 # that run after it are the ones for those.
-MERGE_SHA=$(git rev-parse --verify --quiet MERGE_HEAD) || exit 0
+#
+# ⛔ EVERY PARENT, NOT THE FIRST — AND THAT MEANS READING THE FILE. On an OCTOPUS merge MERGE_HEAD
+# holds one sha per line, and BOTH rev-parse forms return only the first: `--verify --quiet` prints
+# it and exits 0 rather than failing, and bare `rev-parse MERGE_HEAD` does the same. So
+# `git merge main <sibling-lane>` from a lane was judged on `main` alone, returned allow, and
+# sealed a commit whose later parent was an illegal source — position-dependently, since reversing
+# the arguments refused. Measured; found by two review lenses.
+#
+# ⭐ `--git-path`, never a literal `.git/MERGE_HEAD`: in a worktree `.git` is a FILE. This is the
+# same probe the F-D half of this lane fixed in the two sibling gates, and reading the file rather
+# than asking rev-parse is what makes the octopus case answerable at all.
+MERGE_HEAD_FILE=$(git rev-parse --git-path MERGE_HEAD 2>/dev/null)
+MERGE_SHAS=""
+if [ -n "$MERGE_HEAD_FILE" ] && [ -f "$MERGE_HEAD_FILE" ]; then
+  MERGE_SHAS=$(sed '/^$/d' "$MERGE_HEAD_FILE")
+fi
 
-# ─── Naming the source ─────────────────────────────────────────────────────────────────────
+# ─── The squash path, which writes no MERGE_HEAD at all ────────────────────────────────────
+# `git merge --squash` is documented as not recording MERGE_HEAD, and it rewrites history, so the
+# source is not an ancestor of the result either — meaning NEITHER this guard nor the pre-push
+# backstop could see it. That made it a second silent hole, not the "one measured blind spot" the
+# backstop's header claimed. What git does leave is SQUASH_MSG, listing the squashed commits, and
+# the first one is the tip of the branch that was squashed — which is all the naming machinery
+# below needs.
+if [ -z "$MERGE_SHAS" ]; then
+  SQUASH_FILE=$(git rev-parse --git-path SQUASH_MSG 2>/dev/null)
+  if [ -n "$SQUASH_FILE" ] && [ -f "$SQUASH_FILE" ]; then
+    MERGE_SHAS=$(sed -n 's/^commit \([0-9a-f]\{7,\}\)$/\1/p' "$SQUASH_FILE" | head -1)
+  fi
+fi
+
+[ -n "$MERGE_SHAS" ] || exit 0
+
+# ─── Naming a source ───────────────────────────────────────────────────────────────────────
 # A sha is not a branch. Collect every name that points at it — local branches first, then
 # remote-tracking ones (`git merge origin/main` is an everyday move), with `origin/` stripped so
 # `origin/main` and `main` classify identically. If nothing points at it, fall back to the message
 # git itself wrote, which names the branch even after that branch is deleted.
-CANDIDATES=$(
-  {
-    git branch --points-at "$MERGE_SHA" --format='%(refname:short)' 2>/dev/null
-    git branch -r --points-at "$MERGE_SHA" --format='%(refname:short)' 2>/dev/null
-  } | sed 's#^origin/##' | sed '/^$/d' | sort -u
-)
-
-if [ -z "$CANDIDATES" ]; then
-  MERGE_MSG_FILE=$(git rev-parse --git-path MERGE_MSG 2>/dev/null)
-  if [ -n "$MERGE_MSG_FILE" ] && [ -f "$MERGE_MSG_FILE" ]; then
-    CANDIDATES=$(sed -n "1s/^Merge \(remote-tracking \)\{0,1\}branch '\([^']*\)'.*/\2/p" \
-                 "$MERGE_MSG_FILE" | sed 's#^origin/##')
+names_for() {
+  _n=$(
+    {
+      git branch --points-at "$1" --format='%(refname:short)' 2>/dev/null
+      git branch -r --points-at "$1" --format='%(refname:short)' 2>/dev/null
+    } | sed 's#^origin/##' | sed '/^$/d' | sort -u
+  )
+  if [ -z "$_n" ]; then
+    _msg=$(git rev-parse --git-path MERGE_MSG 2>/dev/null)
+    if [ -n "$_msg" ] && [ -f "$_msg" ]; then
+      _n=$(sed -n "1s/^Merge \(remote-tracking \)\{0,1\}branch '\([^']*\)'.*/\2/p" \
+           "$_msg" | sed 's#^origin/##')
+    fi
   fi
-fi
+  printf '%s\n' "$_n"
+}
 
 # ─── The branch model, as a function ───────────────────────────────────────────────────────
 classify() {
@@ -150,34 +183,66 @@ destination() {
 
 TARGET_CLASS=$(classify "$TARGET")
 
-ALLOWED=""
 REFUSED=""
 REFUSED_SRC=""
 REFUSED_CLASS=""
-SEEN=""
+UNJUDGED=""
+UNJUDGED_NAMES=""
+ANY_NAMED=""
 
-for name in $CANDIDATES; do
-  SEEN=1
-  # The same branch by another name (`git merge origin/<self>`) is never a target violation.
-  if [ "$name" = "$TARGET" ]; then
-    ALLOWED=1
+# ⭐ ONE VERDICT PER SOURCE, and the aggregate refuses if ANY source is unambiguously in the wrong
+# place. Within a single source, ANY LEGAL NAME WINS — one sha can carry several branch names and
+# the bias there is deliberately toward the false negative. ACROSS sources it is the opposite: an
+# octopus merge with one legal and one illegal parent is not ambiguous, it is illegal.
+for sha in $MERGE_SHAS; do
+  CANDIDATES=$(names_for "$sha")
+  src_allowed=""
+  src_refused=""
+  src_refused_name=""
+  src_refused_class=""
+  seen=""
+
+  for name in $CANDIDATES; do
+    seen=1
+    ANY_NAMED=1
+    # The same branch by another name (`git merge origin/<self>`) is never a target violation.
+    if [ "$name" = "$TARGET" ]; then
+      src_allowed=1
+      continue
+    fi
+    SRC_CLASS=$(classify "$name")
+    case "$(judge "$TARGET_CLASS" "$SRC_CLASS")" in
+      allow)  src_allowed=1 ;;
+      refuse) src_refused=1; src_refused_name=$name; src_refused_class=$SRC_CLASS ;;
+    esac
+  done
+
+  if [ -n "$src_allowed" ]; then
     continue
   fi
-  SRC_CLASS=$(classify "$name")
-  case "$(judge "$TARGET_CLASS" "$SRC_CLASS")" in
-    allow)  ALLOWED=1 ;;
-    refuse) REFUSED=1; REFUSED_SRC=$name; REFUSED_CLASS=$SRC_CLASS ;;
-  esac
+  if [ -n "$src_refused" ]; then
+    REFUSED=1
+    REFUSED_SRC=$src_refused_name
+    REFUSED_CLASS=$src_refused_class
+    continue
+  fi
+  # Nothing judgeable about this source — record it so the decision is announced, never silent.
+  UNJUDGED=1
+  if [ -z "$seen" ]; then
+    UNJUDGED_NAMES="$UNJUDGED_NAMES $sha"
+  else
+    UNJUDGED_NAMES="$UNJUDGED_NAMES $(printf '%s' "$CANDIDATES" | tr '\n' '/')"
+  fi
 done
 
-# ⭐ ANY ALLOW WINS. Only a source that is unambiguously in the wrong place is refused.
-if [ -n "$ALLOWED" ] || [ -z "$REFUSED" ]; then
-  if [ -z "$ALLOWED" ] && [ -z "$REFUSED" ]; then
-    if [ -z "$SEEN" ]; then
-      echo "  ⓘ merge-target-guard: nothing names $MERGE_SHA, so the source branch could not be"
-      echo "    determined — declined to judge, merge allowed. The pre-push backstop still sees it."
+if [ -z "$REFUSED" ]; then
+  if [ -n "$UNJUDGED" ]; then
+    if [ -z "$ANY_NAMED" ]; then
+      echo "  ⓘ merge-target-guard: nothing names$UNJUDGED_NAMES, so the source branch could not"
+      echo "    be determined — declined to judge, merge allowed. The pre-push backstop still"
+      echo "    sees it."
     else
-      echo "  ⓘ merge-target-guard: '$TARGET' <- '$CANDIDATES' is outside the branch model"
+      echo "  ⓘ merge-target-guard: '$TARGET' <-$UNJUDGED_NAMES is outside the branch model"
       echo "    (.agents/rules/git-policy.md), so this guard declined to judge it. Merge allowed."
     fi
   fi

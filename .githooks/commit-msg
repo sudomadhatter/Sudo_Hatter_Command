@@ -8,7 +8,7 @@
 # ⭐ GATE 1 IS THE ONLY ONE HERE THAT EXISTS *FOR* MERGES (SCC-144). Gates 2 and 3 both carve merges
 # OUT — git writes those messages, so blocking them blocks the tool. Gate 1 runs on nothing else.
 # It is FIRST because a merge landing on the wrong branch should not be assessed for message
-# content at all, and because it is the cheapest of the three (two rev-parses, no interpreter).
+# content at all, and because it is the cheapest of the three (a few rev-parses, no interpreter spawn).
 #
 # ⓘ It lives here rather than in `pre-merge-commit`, which is where SCC-144 was written to put it,
 # because a trace of real merges showed `pre-merge-commit` runs BEFORE git writes MERGE_HEAD and
@@ -26,7 +26,8 @@ ROOT="$(git rev-parse --show-toplevel)"
 
 MERGETARGET="$ROOT/.agents/scripts/git-hooks/merge-target-guard.sh"
 if [ ! -x "$MERGETARGET" ]; then
-  echo "  ⚠ merge-target gate not present in this worktree ($MERGETARGET) — merge allowed, UNCHECKED."
+  echo "  ⚠ merge-target gate not present in this worktree ($MERGETARGET) — MERGES in this"
+  echo "    worktree are UNCHECKED. (This line prints on every commit, not only merges.)"
   echo "    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it."
 else
   "$MERGETARGET" "$@" || exit $?

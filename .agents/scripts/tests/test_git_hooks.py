@@ -189,8 +189,15 @@ def main() -> int:
             f"{MERGE_DISPATCH} — git has nothing to invoke")
     c.check("the guard is executable", hooks_armed.is_executable(GUARD),
             "a non-executable gate is skipped by its dispatcher in SILENCE")
-    c.check("the arm flag is tracked in the live repo", FLAG.is_file(),
-            f"{FLAG} — without it the gate warns instead of refusing")
+    # ⛔ TRACKED, not merely present. `Path.is_file()` cannot tell the two apart, and the
+    # difference IS the failure mode: a flag on disk but not in the index arms this clone and
+    # reaches no other machine — which is the state this lane was actually in for a while, and
+    # `hooks_armed.py` said so in exactly those words. An assertion whose NAME says "tracked" and
+    # whose predicate says "exists" is the prose-pinning shape (SCC-125) in an assertion.
+    tracked = sh("git", "ls-files", "--error-unmatch",
+                 ".agents/scripts/git-hooks/MERGE-TARGET-ENFORCE", cwd=REPO)[0] == 0
+    c.check("the arm flag is TRACKED in the live repo (not merely on disk)", tracked,
+            f"{FLAG} — untracked, it arms this clone only and reaches no other machine")
 
     # ── A · chore -> main · ALLOW ─────────────────────────────────────────────────────────
     # NEGATIVE CONTROL. This is the shipping path `/smh-close-task-merge-tree` drives on every
@@ -229,6 +236,156 @@ def main() -> int:
                 rc2 != 0 and "MERGE REFUSED" in out2, out2.strip()[-300:])
         c.check("B2 · ...and still no merge commit exists", head(d) == before_b,
                 "the second door has to hold, or the first one is decorative")
+
+    # ── B3 · the refusal carries the DESTINATION and the SIGNATURE, not just the diagnosis ─
+    # A mutation sweep found `destination()` and the SCC-97 signature block could both be gutted
+    # with the suite green: case B matched `git merge --abort`, which is a STATIC line, so the
+    # generated half of the message was unasserted.
+    with TempDir() as tmp:
+        d = make_repo(tmp)
+        lane(d, "chore/SCC-144-a")
+        lane(d, "chore/SCC-144-b", "main")
+        rc, out, _ = merge(d, "chore/SCC-144-b", "chore/SCC-144-a")
+        c.check("B3 · the refusal names where a chore lane SHOULD land",
+                "/smh-close-task-merge-tree" in out, out.strip()[-300:])
+        c.check("B3 · ...and names the SCC-97 signature", "SCC-97 signature" in out,
+                out.strip()[-300:])
+
+    # ── ⭐ THE REFUSE HALF OF THE VERDICT TABLE ────────────────────────────────────────────
+    # A review mutation sweep flipped SEVEN refusal cells to `allow` with this suite fully green:
+    # only chore:chore was defended. Every refusing cell now has a case, so a flipped verdict is
+    # a failed case rather than a silent hole.
+    for label, target, source, cut_from in (
+        ("story -> main", "main", "claude/SCC-144-s", "main"),
+        ("chore -> epic", "epic/SCC-144-e", "chore/SCC-144-c", "main"),
+        ("epic  -> epic", "epic/SCC-144-e", "epic/SCC-144-f", "main"),
+        ("story -> chore", "chore/SCC-144-c", "claude/SCC-144-s", "main"),
+        ("story -> story", "claude/SCC-144-t", "claude/SCC-144-s", "main"),
+        ("chore -> story", "claude/SCC-144-t", "chore/SCC-144-c", "main"),
+    ):
+        with TempDir() as tmp:
+            d = make_repo(tmp)
+            lane(d, source, cut_from)
+            lane(d, target, "main")
+            rc, out, moved = merge(d, target, source)
+            # `moved` is measured inside merge(), AFTER it checks out the target — capturing a
+            # `before` out here reads the SOURCE branch's tip and compares two unrelated shas.
+            c.check(f"TBL · {label} is REFUSED", rc != 0, out.strip()[-200:])
+            c.check(f"TBL · {label} — no merge commit", not moved, "HEAD moved")
+
+    # ── ⭐ THE ALLOW HALF, for the cells the shipping paths actually use ───────────────────
+    for label, target, source in (
+        ("main  -> epic (absorb before /cicd-push-e2e)", "epic/SCC-144-e", "main"),
+        ("epic  -> story (a story lane absorbs its epic)", "claude/SCC-144-s", "epic/SCC-144-e"),
+        ("main  -> story", "claude/SCC-144-s", "main"),
+    ):
+        with TempDir() as tmp:
+            d = make_repo(tmp)
+            lane(d, "epic/SCC-144-e")
+            lane(d, "claude/SCC-144-s", "epic/SCC-144-e")
+            # The epic and main must BOTH move after the story lane was cut, or the "absorb"
+            # merges are `Already up to date` and prove nothing about the verdict table.
+            sh("git", "checkout", "-q", "epic/SCC-144-e", cwd=d)
+            (d / "onepic.txt").write_text("x\n", encoding="utf-8")
+            sh("git", "add", "onepic.txt", cwd=d)
+            sh("git", "commit", "-qm", "SCC-144 on the epic", cwd=d)
+            sh("git", "checkout", "-q", "main", cwd=d)
+            (d / "onmain.txt").write_text("x\n", encoding="utf-8")
+            sh("git", "add", "onmain.txt", cwd=d)
+            sh("git", "commit", "-qm", "SCC-144 on main", cwd=d)
+            rc, out, moved = merge(d, target, source)
+            c.check(f"TBL · {label} is ALLOWED", rc == 0 and moved, out.strip()[-200:])
+            # ⛔ ALLOWED, not merely not-refused. A `claude/*` misclassified as `unknown` also
+            # exits 0 — while printing "declined to judge" — so rc alone cannot tell a correct
+            # classification from a lost one. A mutant that made `claude/*` unknown survived
+            # until this assertion existed.
+            c.check(f"TBL · {label} — classified, not declined", "declined" not in out,
+                    out.strip()[-200:])
+
+    # ── ⭐ THE GUARD, INSIDE A REAL WORKTREE — where every lane in this system lives ───────
+    # Mutants that reverted `git rev-parse MERGE_HEAD` and `--git-path MERGE_MSG` to the literal
+    # `.git/...` probes SURVIVED the suite: the guard could be reverted to the exact worktree-blind
+    # shape this same lane removes from two sibling gates, and nothing would have noticed.
+    with TempDir() as tmp:
+        d = make_repo(tmp)
+        lane(d, "chore/SCC-144-a")
+        sh("git", "checkout", "-q", "main", cwd=d)
+        wt = tmp / "lane"
+        sh("git", "worktree", "add", "-q", str(wt), "-b", "chore/SCC-144-b", "main", cwd=d)
+        c.check("WT · .git in the worktree really is a FILE", (wt / ".git").is_file(),
+                "if this is a directory the fixture is not reproducing the condition")
+        before = head(wt)
+        rc, out = sh("git", "merge", "--no-ff", "-m", "SCC-144 merge: a -> b",
+                     "chore/SCC-144-a", cwd=wt)
+        c.check("WT · chore -> chore is REFUSED inside a worktree too",
+                rc != 0 and head(wt) == before, out.strip()[-300:])
+        c.check("WT · ...and the refusal is the real one", "MERGE REFUSED" in out,
+                out.strip()[-300:])
+
+    # ── OCT · an octopus merge is judged on EVERY parent, not just the first ──────────────
+    # `git rev-parse --verify --quiet MERGE_HEAD` prints the FIRST sha and exits 0 on an octopus
+    # merge — it does not fail. So `git merge main <sibling-lane>` was judged on `main` alone and
+    # ALLOWED, sealing a commit whose third parent was a sibling lane. Position-dependent, too:
+    # reversing the argument order refused. Found by two review lenses, both measured.
+    with TempDir() as tmp:
+        d = make_repo(tmp)
+        lane(d, "chore/SCC-144-a")
+        lane(d, "chore/SCC-144-b", "main")
+        sh("git", "checkout", "-q", "main", cwd=d)
+        (d / "onmain.txt").write_text("x\n", encoding="utf-8")
+        sh("git", "add", "onmain.txt", cwd=d)
+        sh("git", "commit", "-qm", "SCC-144 on main", cwd=d)
+        sh("git", "checkout", "-q", "chore/SCC-144-b", cwd=d)
+        before = head(d)
+        rc, out = sh("git", "merge", "--no-ff", "-m", "SCC-144 merge: octopus",
+                     "main", "chore/SCC-144-a", cwd=d)
+        c.check("OCT · a legal FIRST parent does not launder an illegal later one",
+                rc != 0 and head(d) == before, out.strip()[-300:])
+        c.check("OCT · ...and the refusal names the illegal parent",
+                "chore/SCC-144-a" in out, out.strip()[-300:])
+
+    # ── SQ · `git merge --squash` — the second blind spot, now closed ─────────────────────
+    # `--squash` records SQUASH_MSG and NO MERGE_HEAD, and it rewrites history, so the source is
+    # not an ancestor of the result either: neither this guard nor the pre-push backstop could
+    # see it. It was a silent hole while the backstop's header claimed exactly one.
+    with TempDir() as tmp:
+        d = make_repo(tmp)
+        lane(d, "chore/SCC-144-a")
+        lane(d, "chore/SCC-144-b", "main")
+        before = head(d)
+        sh("git", "merge", "--squash", "chore/SCC-144-a", cwd=d)
+        rc, out = sh("git", "commit", "-m", "SCC-144 squashed the sibling in", cwd=d)
+        c.check("SQ · a squash-merge of a sibling lane is REFUSED",
+                rc != 0 and head(d) == before, out.strip()[-300:])
+        c.check("SQ · ...and it names the sibling it recovered from SQUASH_MSG",
+                "chore/SCC-144-a" in out, out.strip()[-300:])
+
+    # ── SELF · `git merge origin/<self>` — the two-machine sync move, never a violation ────
+    with TempDir() as tmp:
+        d, bare = make_pushable(tmp)
+        lane(d, "chore/SCC-144-a")
+        sh("git", "push", "-q", "--no-verify", "origin", "chore/SCC-144-a", cwd=d)
+        (d / "more.txt").write_text("x\n", encoding="utf-8")
+        sh("git", "add", "more.txt", cwd=d)
+        sh("git", "commit", "-qm", "SCC-144 more work", cwd=d)
+        rc, out = sh("git", "merge", "--no-ff", "-m", "SCC-144 merge: absorb my own remote",
+                     "origin/chore/SCC-144-a", cwd=d)
+        c.check("SELF · merging origin/<this same branch> is ALLOWED", rc == 0,
+                out.strip()[-300:])
+
+    # ── ORD · an ordinary commit passes in SILENCE ───────────────────────────────────────
+    # This guard now runs on every commit in the repo as gate 1 of commit-msg. A mutant that
+    # dropped the not-a-merge early exit made it comment on every ordinary commit, and the suite
+    # stayed green.
+    with TempDir() as tmp:
+        d = make_repo(tmp)
+        sh("git", "checkout", "-q", "-b", "chore/SCC-144-a", cwd=d)
+        (d / "plain.txt").write_text("x\n", encoding="utf-8")
+        sh("git", "add", "plain.txt", cwd=d)
+        rc, out = sh("git", "commit", "-m", "SCC-144 an ordinary commit", cwd=d)
+        c.check("ORD · an ordinary commit succeeds", rc == 0, out.strip()[-200:])
+        c.check("ORD · ...and the guard says nothing at all",
+                "merge-target" not in out.lower(), out.strip()[-200:])
 
     # ── C · epic -> main · ALLOW ──────────────────────────────────────────────────────────
     with TempDir() as tmp:
@@ -424,6 +581,84 @@ def main() -> int:
         sh("git", "merge", "--no-ff", "-m", "SCC-144 merge: s -> e", "claude/SCC-144-s", cwd=d)
         rc, out = sh("git", "push", "origin", "epic/SCC-144-e", cwd=d)
         c.check("I2 · landing a story on its epic is ALLOWED", rc == 0, out.strip()[-400:])
+
+    # ── ⛔⛔ PARK · THE CRITICAL CONTROL — a story lane pushes after absorbing its epic ─────
+    # This is `/cicd-park` verbatim: absorb `origin/epic/<KEY>` inside the worktree, then push the
+    # `claude/*` branch. `git-policy.md` marks that push FREE — no approval. The first cut of the
+    # backstop measured "already landed" against `origin/main` ONLY, so the moment one story landed
+    # on the epic and a sibling absorbed it, this push was REFUSED — with a remedy naming a ref that
+    # does not exist yet, on the one command whose job is stopping work being stranded on a machine.
+    #
+    # Three review lenses found it independently and two reproduced it end to end. It is the exact
+    # failure this file's own header calls the expensive one, committed by the file that names it.
+    with TempDir() as tmp:
+        d, bare = make_pushable(tmp)
+        lane(d, "epic/SCC-144-e")
+        sh("git", "push", "-q", "origin", "epic/SCC-144-e", cwd=d)
+        lane(d, "claude/SCC-144-s1", "epic/SCC-144-e")           # story 1
+        sh("git", "checkout", "-q", "epic/SCC-144-e", cwd=d)     # ...lands on the EPIC, not main
+        sh("git", "merge", "--no-ff", "-m", "SCC-144 merge: s1 -> e", "claude/SCC-144-s1", cwd=d)
+        sh("git", "push", "-q", "origin", "epic/SCC-144-e", cwd=d)
+        sh("git", "fetch", "-q", "origin", cwd=d)
+        lane(d, "claude/SCC-144-s2", "epic/SCC-144-e")           # story 2 absorbs it
+        rc, out = sh("git", "push", "origin", "claude/SCC-144-s2", cwd=d)
+        c.check("PARK · a story lane carrying a sibling that landed on the EPIC pushes fine",
+                rc == 0,
+                "the epic does not reach main until /cicd-push-e2e ships it, so measuring "
+                "'landed' against origin/main alone refuses every parked story lane: "
+                + out.strip()[-300:])
+        rc, out = sh("git", "ls-remote", "--heads", str(bare), "claude/SCC-144-s2", cwd=d)
+        c.check("PARK · ...and it reached the remote", "claude/SCC-144-s2" in out, out)
+
+    # ── G2 · the backstop still REFUSES a story lane carrying a genuinely unlanded sibling ─
+    # The other half of the PARK fix: widening the reference set must not disarm the check for
+    # story lanes, or the fix traded a false red for a silent hole.
+    with TempDir() as tmp:
+        d, bare = make_pushable(tmp)
+        lane(d, "epic/SCC-144-e")
+        sh("git", "push", "-q", "origin", "epic/SCC-144-e", cwd=d)
+        sh("git", "fetch", "-q", "origin", cwd=d)
+        lane(d, "claude/SCC-144-s1", "epic/SCC-144-e")           # never landed anywhere
+        sh("git", "checkout", "-q", "-b", "claude/SCC-144-s2", "epic/SCC-144-e", cwd=d)
+        sh("git", "merge", "--ff-only", "claude/SCC-144-s1", cwd=d)
+        rc, out = sh("git", "push", "origin", "claude/SCC-144-s2", cwd=d)
+        c.check("G2 · a story lane carrying an UNLANDED sibling is still REFUSED", rc != 0,
+                out.strip()[-300:])
+        c.check("G2 · ...and the remedy names the EPIC, not main",
+                "its epic/* branch" in out,
+                "'land it on main first' is the one thing merge-target-guard REFUSES for a "
+                "story lane: " + out.strip()[-300:])
+
+    # ── G3 · the backstop's DISARMED path — warn, never refuse ────────────────────────────
+    with TempDir() as tmp:
+        d, bare = make_pushable(tmp)
+        (d / ".agents/scripts/git-hooks/MERGE-TARGET-ENFORCE").unlink()
+        lane(d, "chore/SCC-144-a")
+        sh("git", "checkout", "-q", "-b", "chore/SCC-144-b", "main", cwd=d)
+        sh("git", "merge", "--ff-only", "chore/SCC-144-a", cwd=d)
+        rc, out = sh("git", "push", "origin", "chore/SCC-144-b", cwd=d)
+        c.check("G3 · disarmed, a contaminated push is ALLOWED", rc == 0, out.strip()[-300:])
+        c.check("G3 · ...but it still says so", "disarmed" in out, out.strip()[-300:])
+
+    # ── G4 · the backstop's DISABLE kill switch ───────────────────────────────────────────
+    with TempDir() as tmp:
+        d, bare = make_pushable(tmp)
+        (d / ".agents/scripts/git-hooks/DISABLE").write_text("off\n", encoding="utf-8")
+        lane(d, "chore/SCC-144-a")
+        sh("git", "checkout", "-q", "-b", "chore/SCC-144-b", "main", cwd=d)
+        sh("git", "merge", "--ff-only", "chore/SCC-144-a", cwd=d)
+        rc, out = sh("git", "push", "origin", "chore/SCC-144-b", cwd=d)
+        c.check("G4 · DISABLE allows the contaminated push", rc == 0, out.strip()[-300:])
+
+    # ── G5 · a renamed refspec must not flag the lane against ITSELF ──────────────────────
+    with TempDir() as tmp:
+        d, bare = make_pushable(tmp)
+        lane(d, "chore/SCC-144-a")
+        rc, out = sh("git", "push", "origin",
+                     "chore/SCC-144-a:refs/heads/chore/SCC-144-renamed", cwd=d)
+        c.check("G5 · pushing a lane under a different remote name is ALLOWED", rc == 0,
+                "the self-skip compared the REMOTE name against LOCAL branch names: "
+                + out.strip()[-300:])
 
     # ── O · no origin/main — there is no reference point, so it declines and SAYS so ───────
     # Refusing on the absence of a reference point is the vacuous red, the mirror of the vacuous
