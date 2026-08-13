@@ -31,11 +31,15 @@ the way this kind of control actually dies. It is the padlock, not the inspectio
    guards that matched the DESCRIPTION of a rule let a file mutated to the exact opposite meaning
    score 323/323. `README.md` is held to existence and non-emptiness ONLY, on purpose — pinning
    its prose would re-buy that exact defect.
-2. **Every check ships its own counter-example.** Each intactness assertion is re-run against a
-   mutated copy that drops the marker, and is required to go red; the `git apply --check` rot
-   guard is re-run against a corrupted context line and required to refuse. A check that cannot
-   fail is a finding (`tests-must-gate-for-real`), and this file's whole subject is a control that
-   must be able to fail.
+2. **Every check that could be vacuous ships a counter-example** — not every check, and the
+   distinction is the honest one: a structural row like "this file exists" cannot be vacuous, so
+   proving it can fail would be theatre. The rows that CAN quietly stop meaning anything all
+   carry one: the five marker self-proofs, the `git apply --check` corruption probe, the `parse`
+   arity mutation, and the assertion predicate against an independently-written stub. A check
+   that cannot fail is a finding (`tests-must-gate-for-real`), and this file's whole subject is a
+   control that must be able to fail — ⚠ **which it got wrong once, here, and shipped:** the
+   assertion counter-example originally gutted its own input by dropping assertion-bearing lines
+   and then asserted none remained. Empty by construction. Two independent lenses caught it.
 3. **Non-empty is asserted BEFORE anything quantified.** Every per-defect loop below is vacuously
    true over an empty list — `all()` over an empty set is `True`, the exact form that once let a
    case pass against a gutted detector. The defect list is proven non-empty first, and every
@@ -104,6 +108,29 @@ def added(diff_text: str) -> str:
                      if ln.startswith("+") and not ln.startswith("+++"))
 
 
+def added_by_file(diff_text: str) -> dict[str, str]:
+    """Added lines, grouped by the file they belong to.
+
+    Needed because a whole-diff scan cannot answer a per-file question: "does the clean control's
+    TEST file assert anything" is not the same as "does any added line in the diff contain the
+    word assert". Gut the test body to `pass`, leave one comment saying "no assert needed" in the
+    other file, and an unscoped check stays green — the comment-literal inversion this repo
+    already has a memory for.
+    """
+    out: dict[str, list[str]] = {}
+    cur: str | None = None
+    for ln in diff_text.splitlines():
+        if ln.startswith("+++"):
+            m = re.match(r"^\+\+\+ [ab]/(.+)$", ln)
+            cur = m.group(1).strip() if m else None       # `+++ /dev/null` -> no file
+            if cur:
+                out.setdefault(cur, [])
+            continue
+        if cur is not None and ln.startswith("+"):
+            out[cur].append(ln[1:])
+    return {k: "\n".join(v) for k, v in out.items()}
+
+
 def diff_paths(diff_text: str) -> list[str]:
     """Every repo-relative path a unified diff touches, from its ---/+++ headers.
 
@@ -121,6 +148,36 @@ def diff_paths(diff_text: str) -> list[str]:
 def is_test_path(path: str) -> bool:
     name = path.rsplit("/", 1)[-1]
     return name.startswith("test_") or name.endswith("_test.py")
+
+
+def has_assertion(text: str) -> bool:
+    """Does this test source actually assert anything?
+
+    Factored out so the counter-example can feed it an INDEPENDENTLY-WRITTEN stub instead of a
+    mutation of its own input. The first version of this proof gutted the real text by dropping
+    assertion-bearing lines and then checked no assertion-bearing lines remained — empty by
+    construction, so the row was a tautology that reduced to the check above it. A check whose
+    counter-example is the De Morgan complement of the check proves nothing.
+    """
+    return any("assert" in ln or "raise AssertionError" in ln for ln in text.splitlines())
+
+
+# An independently-written stub with the shape of a gutted specimen: a test in name only.
+# `has_assertion` must return False for it, or the check above cannot detect the real thing.
+GUTTED_STUB = "def test_refund_reduces_the_paid_total() -> None:\n    pass\n"
+
+
+def lens_rows(step01: str) -> set[str]:
+    """The lens names step-01's fan-out table actually routes.
+
+    LENSES below is otherwise a local literal, and the set-equality check is one-directional:
+    a sixth defect in the manifest goes red, but a sixth lens added to the ENGINE leaves the
+    fixture at five with every case green — silently retiring the fixture's whole reason for
+    existing (one defect per lens, so a live run proves each lens is alive). SCC-126 added the
+    fifth lens days before this fixture was written, so a sixth is the demonstrated pattern.
+    """
+    body = step01.split("## The lenses", 1)[-1].split("\n## ", 1)[0]
+    return {m.group(1).strip() for m in re.finditer(r"^\|\s*\*\*(.+?)\*\*\s*\|", body, re.M)}
 
 
 def flat(text: str) -> str:
@@ -201,13 +258,21 @@ def main() -> int:
     c.check("manifest declares _negative_control: true", neg,
             "" if neg else f"got {man.get('_negative_control')!r} — the convention is a literal true")
 
-    # The manifest names the two specs; a rename that updates only one side leaves a live run
-    # pointing STORY_FILE at a file that is not there.
+    # ⛔ The manifest names the two specs, and a LIVE RUN follows the manifest, not the constants
+    # below. Existence alone is not enough: swap the two keys and every file still exists, every
+    # clause is still findable in *some* spec, and all rows stay green — while the bad arm gets
+    # audited against the refunds spec, where `record_payment` is never mentioned, so NC_ACCEPT
+    # becomes uncatchable with no attributable cause. So pin the VALUES, not just resolvability.
     for key, want in (("spec", SPEC), ("clean_spec", CLEAN_SPEC)):
         named = man.get(key)
-        resolves = bool(named) and (FIX / str(named)).is_file()
-        c.check(f"manifest `{key}` names a spec that exists on disk", resolves,
-                "" if resolves else f"declares {named!r}; expected {want!r} beside the manifest")
+        ok = named == want and (FIX / str(named)).is_file()
+        c.check(f"manifest `{key}` names {want} and it exists", ok,
+                "" if ok else (f"declares {named!r}, expected {want!r} — a live run passes this as "
+                               f"STORY_FILE, so the arms would be audited against each other's spec"))
+    c.check("the two specs are distinct files",
+            man.get("spec") != man.get("clean_spec"),
+            "" if man.get("spec") != man.get("clean_spec")
+            else "both keys name the same file — one spec per change is the whole point")
 
     defects = man.get("defects") if isinstance(man.get("defects"), list) else []
     defects = [d for d in defects if isinstance(d, dict)]
@@ -226,6 +291,16 @@ def main() -> int:
             else f"{len(ids) - len(set(ids))} duplicate(s) in {sorted(ids)}")
 
     # ── B. Lens coverage — one defect per lens, so the control proves each lens is ALIVE ───
+    # First, bind the count to the ENGINE rather than to the literal below it: a sixth lens
+    # added upstream must fail HERE, or the fixture quietly stops covering the fan-out.
+    step01 = ROOT / ".agents/skills/code-review-engine/steps/step-01-review.md"
+    routed = lens_rows(read(step01)) if step01.is_file() else set()
+    c.check("step-01 still routes exactly as many lenses as the fixture seeds",
+            len(routed) == len(LENSES),
+            "" if len(routed) == len(LENSES) else
+            f"step-01's fan-out table routes {len(routed)} lens(es) {sorted(routed)} but the "
+            f"fixture seeds {len(LENSES)} — seed the new lens or the control stops covering it")
+
     lenses = {d.get("lens") for d in defects}
     c.check("the five engine lenses each carry exactly one seeded defect",
             lenses == set(LENSES) and len(defects) == len(LENSES),
@@ -262,9 +337,11 @@ def main() -> int:
     # The acceptance defect is only a defect RELATIVE to the spec, so the clause it violates is
     # pinned too: delete that line from spec.md and the seeded defect stops being one.
     acc = [d for d in defects if d.get("lens") == "acceptance"]
-    c.check("the acceptance defect pins the spec clause it violates",
-            bool(acc) and all(d.get("spec_must_contain") for d in acc),
-            "" if acc else "no acceptance defect declared")
+    acc_pinned = bool(acc) and all(d.get("spec_must_contain") for d in acc)
+    c.check("the acceptance defect pins the spec clause it violates", acc_pinned,
+            "" if acc_pinned else
+            (f"{[d.get('id') for d in acc if not d.get('spec_must_contain')]} declares no "
+             f"spec_must_contain — {REMEDY}" if acc else "no acceptance defect declared"))
     for d in defects:
         want = d.get("spec_must_contain")
         did = d.get("id", "?")
@@ -326,6 +403,34 @@ def main() -> int:
             c.check("  ^ that apply-check is proven able to fail", rc != 0,
                     "" if rc != 0 else "a corrupted diff still applied — the rot guard is vacuous")
 
+    # ── C2. Preconditions that live OUTSIDE the added lines ───────────────────────────────
+    # ⛔ A seeded defect is only a defect relative to something. For NC_LITERAL that is a
+    # signature (F2 below); for NC_ACCEPT a spec clause (above); for NC_BLIND it is the
+    # docstring in `codebase/billing.py` saying the total INCLUDES tax — which appears in
+    # bad.diff only as a CONTEXT line, and `added()` keeps `+` lines only, so no marker check
+    # can see it. Reword that docstring, regenerate bad.diff, and all sixty cases stay green
+    # while the Blind Hunter has nothing left to find.
+    base_txt = read(FIX / "codebase" / "billing.py") if (FIX / "codebase" / "billing.py").is_file() else ""
+    for d in defects:
+        want, did = d.get("base_must_contain"), d.get("id", "?")
+        if want is None:
+            continue                            # only base-relative defects declare one
+        found = bool(want) and flat(str(want)) in flat(base_txt)
+        c.check(f"{did}: the base-state line it contradicts is still in codebase/billing.py",
+                found, "" if found else f"{want!r} absent from the base module — {REMEDY}")
+    based = [d for d in defects if d.get("base_must_contain")]
+    c.check("the blind defect pins the base-state line it contradicts",
+            any(d.get("lens") == "blind" and d.get("base_must_contain") for d in defects),
+            "" if based else "no defect pins a base-state precondition; NC_BLIND needs one")
+
+    # ⛔ `spec_must_contain` is optional, so the loop above `continue`s past a defect that lost
+    # it — silently deleting a check. Pin the COUNT of spec-relative pins so dropping one from
+    # the manifest goes red instead of quietly reducing coverage.
+    pinned = sorted(d.get("id", "?") for d in defects if d.get("spec_must_contain"))
+    c.check("both spec-relative defects still carry their clause pin", len(pinned) >= 2,
+            "" if len(pinned) >= 2 else
+            f"only {pinned} pin a spec clause; NC_ACCEPT and NC_TESTADQ both must — {REMEDY}")
+
     # ── F2. NC_LITERAL's premise — the definition the seeded call fails to bind against ────
     hp = FIX / "codebase" / "helpers.py"
     sig_ok, sig_detail = parse_arity(read(hp)) if hp.is_file() else (False, "helpers.py absent")
@@ -360,16 +465,19 @@ def main() -> int:
     # A filename is not a test. Gutting that file's body to `pass` would leave the row above
     # green while the clean control stopped demonstrating the tested shape it exists to show —
     # the same vacuity class this file's docstring guards against everywhere else.
-    asserts = [ln for ln in clean_added.splitlines()
-               if "assert" in ln or "raise AssertionError" in ln]
-    c.check("clean.diff's test actually asserts something", bool(asserts),
-            "" if asserts else "the added test file carries no assertion — a test in name only")
-    gutted = "\n".join(ln for ln in clean_added.splitlines()
-                       if "assert" not in ln and "raise AssertionError" not in ln)
-    c.check("  ^ that check is proven able to fail",
-            bool(asserts) and not [ln for ln in gutted.splitlines()
-                                   if "assert" in ln or "raise AssertionError" in ln],
-            "" if asserts else "no assertions to remove, so the proof would be vacuous")
+    # Scoped to the TEST file's own hunk — an `assert` in the other file must not satisfy it.
+    test_added = "\n".join(txt for path, txt in added_by_file(clean_txt).items()
+                           if is_test_path(path))
+    real_asserts = has_assertion(test_added)
+    c.check("clean.diff's test actually asserts something", real_asserts,
+            "" if real_asserts else "the added test file carries no assertion — a test in name only")
+    # ...and proven able to fail by running the SAME predicate over an independently-written
+    # stub, never over a mutation of its own input (see `has_assertion`).
+    stub_asserts = has_assertion(GUTTED_STUB)
+    c.check("  ^ the assertion check is proven able to fail", real_asserts and not stub_asserts,
+            "" if not stub_asserts else
+            "has_assertion() returned True for a stub whose body is `pass` — it cannot tell a "
+            "real test from a test in name only")
 
     # ── H. The live half's run log — shape only, never "all hits" ─────────────────────────
     # ⛔ This deliberately does NOT assert every defect was found. A check that went red on a
@@ -391,19 +499,50 @@ def main() -> int:
     c.check("every live_runs.jsonl line is a JSON object", bool(lines) and not broken,
             "; ".join(broken) if broken else ("no lines to parse" if not lines else ""))
 
-    need = {"date", "sha", "ticket", "diff", "floor", "results"}
+    # `key_read` records which roles saw the answer key on that run. Contamination belongs in the
+    # log, not only in a note someone has to remember to write: the first run had it in the step-2
+    # verifier, the role whose revised severities DECIDE the clean arm.
+    need = {"date", "sha", "ticket", "diff", "floor", "results", "key_read"}
     thin = [f"{e.get('diff', '?')}@{e.get('sha', '?')}: missing {sorted(need - set(e))}"
             for e in entries if not need <= set(e)]
-    c.check("every logged run names its sha, diff, floor and results",
-            bool(entries) and not thin, "; ".join(thin) if thin else "no entries")
+    newest = max((str(e.get("date", "")) for e in entries), default="never")
+    c.check("every logged run names its sha, diff, floor, results and key_read",
+            bool(entries) and not thin,
+            "; ".join(thin) if thin else (f"{len(entries)} run(s), newest {newest}" if entries
+                                          else "no entries"))
 
-    ids = {d.get("id") for d in defects}
+    # ⛔ Scoped to entries that overlap the CURRENT ids. Renaming a defect is an explicitly
+    # permitted redesign, and a check that reddened every historical entry on a rename would make
+    # rewriting the log the path of least resistance — the same pressure the design note above
+    # avoids by never asserting a hit.
+    ids = {str(d.get("id", "")) for d in defects}
     partial = [f"{e.get('diff')}@{e.get('sha')}: {sorted(ids - set(e.get('results') or {}))}"
                for e in entries
-               if e.get("diff") == BAD and not ids <= set(e.get("results") or {})]
+               if e.get("diff") == BAD and (set(e.get("results") or {}) & ids)
+               and not ids <= set(e.get("results") or {})]
     c.check("every logged bad.diff run reports a verdict for all five seeded defects",
             bool(entries) and not partial,
-            "; ".join(f"no verdict for {p}" for p in partial) if partial else "no entries")
+            "; ".join(f"no verdict for {p}" for p in partial) if partial
+            else (f"{sum(1 for e in entries if e.get('diff') == BAD)} bad-arm run(s)" if entries
+                  else "no entries"))
+
+    # ── I. The two safeguards that are prose, and are load-bearing anyway ─────────────────
+    # README.md is held to existence-only everywhere else in this file, on purpose (SCC-125:
+    # pinning a DESCRIPTION of wiring is vacuous). These two strings are the exception, and the
+    # distinction is real: they have no separate implementation to diverge from, so their
+    # PRESENCE is the safeguard rather than a description of one. The answer key is greppable —
+    # a lens that never opens a file still gets `manifest.json`'s marker, expected severity and
+    # pre-written failure text in the output of an ordinary `grep "def parse"` — so the
+    # prohibition is all that stands between a review and a readback.
+    readme = read(FIX / README) if (FIX / README).is_file() else ""
+    for label, needle in (
+        ("the answer-key prohibition", "Do not open `manifest.json`, `README.md`, `bad.diff` or `clean.diff`"),
+        ("the both-halves rule", "A reviewer that flags everything is as broken as one that flags nothing"),
+    ):
+        present = flat(needle) in flat(readme)
+        c.check(f"README still carries {label}", present,
+                "" if present else f"{needle!r} is gone — without it the live control silently "
+                                   f"degrades into a readback that passes whatever the engine does")
 
     # Safety: a fixture diff naming a real repo path could be applied against live files.
     every = bad_paths + clean_paths

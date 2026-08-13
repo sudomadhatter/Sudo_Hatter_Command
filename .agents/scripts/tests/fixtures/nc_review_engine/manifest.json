@@ -21,6 +21,7 @@
       "file": "codebase/billing.py",
       "expected_severity": "critical",
       "diff_must_contain": "subtotal - tax_amount",
+      "base_must_contain": "What the customer owes: the subtotal with tax INCLUDED.",
       "why_this_lens": "Provable from the diff text alone: the unchanged docstring says the total includes tax, the removed line added it, the added line subtracts it. No repo access needed, which is what the Blind Hunter has.",
       "failure_scenario": "Every invoice silently bills subtotal minus tax instead of subtotal plus tax - a wrong number that never raises."
     },

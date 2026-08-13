@@ -196,11 +196,60 @@ Recorded prominently because a negative control that quietly loses its integrity
 
 ### 8. The engine on this lane's own diff
 
-`/smh-code-review` — appended as `## Code Review` with the canonical `Verdict:` line.
+`/smh-code-review` Step 1 — the engine on the `main...HEAD` diff at `2ff1829` (16 files, 1520 diff
+lines). Findings and the canonical `Verdict:` line are in `## Code Review` below.
 
-### 9. Full gate, bare
+### Step 0.7 — blast radius re-derived against current `main`
 
-Recorded below at the landing sha.
+Three answers, in writing, as the command requires:
+
+1. **Did anything this diff REFERENCES move on `main`?** No. `git diff --name-only $(merge-base)..main`
+   returns **zero files** — `main` is still at `5dadcd6`, the sha this lane branched from. Every path
+   this diff names was re-resolved anyway by the link sweep: 0 broken.
+2. **True overlap and conflict?** Against `main`: none, and `merge-tree` produces a clean tree. But a
+   **sibling lane appeared while I built** — `chore/SCC-144-merge-target-guard` @ `91218aa` — and it
+   overlaps on **two files**: `.agents/scripts/INDEX.md` and
+   `docs/_scc_sops_prds/workflows_testing_SOP.md`. `merge-tree` says both **auto-merge** with no
+   textual conflict.
+3. **Landing order, and what breaks if it is reversed?** ⭐ **This lane should land FIRST.** SCC-144
+   changes `.githooks/pre-push`, `.githooks/commit-msg` and the hook scripts — commit-and-push
+   machinery — and the standing rule forces those lanes to the END. This lane touches no gate
+   machinery.
+
+   **The real dependency is semantic, not textual, and auto-merge is exactly why it is dangerous.**
+   SCC-144 adds `test_git_hooks.py`, a **23rd** test file. The moment it lands, my two refreshed
+   count lines (*"1762 checks across 22 files"*) are wrong — and because both files auto-merge, git
+   will report success while leaving a stale number in the operator's SOP page. **Whoever lands
+   second owns re-measuring and updating both lines**, and it will be SCC-144. Named here so it is
+   inherited rather than rediscovered.
+
+### 9. Full gate, bare — at the landing sha `2ff1829`
+
+Every gate run **bare**; a pipe returns the pipe's exit code, which is how a red gate reads green.
+
+```
+python3 .agents/scripts/tests/run_all.py                  -> 22/22 files, 1762/1762 cases, EXIT=0
+python3 .agents/scripts/workflow_lint.py --toolkit-only   -> 0 error(s), 0 warning(s), 8 info, EXIT=0
+python3 .agents/scripts/check_maps.py --depth3-only --strict                              EXIT=0
+python3 .agents/scripts/sop_currency.py --paths <changed> --message "<subject>"            EXIT=0
+py_compile on all 3 changed .py files                                                      ok
+link + anchor sweep over the diff's markdown                              0 broken
+door parity: 0 commands touched · deployable paths in diff: 0
+```
+
+**Additivity is measured, not inherited.** I ran the suite in `main`'s own checkout rather than
+trusting the number in the brief:
+
+```
+main @ 5dadcd6:  21/21 files, 1702/1702 cases
+this tree:       22/22 files, 1762/1762 cases
+delta:           +1 file, +60 cases  ==  test_review_fixture.py's own 60/60
+```
+
+Exactly additive — nothing displaced another file's tests.
+
+⚠ **Both count lines will go stale when SCC-144 lands** — see the landing-order note below. That is
+the same silent rot `scripts/INDEX.md`'s own text warns about, now with a named owner.
 
 ## What the control found in its own fixture
 
