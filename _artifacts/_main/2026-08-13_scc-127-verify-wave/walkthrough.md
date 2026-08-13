@@ -212,3 +212,33 @@ pre-review totals are labelled as such.
 
 - [ ] **Merge and close out** — `/smh-close-task-merge-tree` (that invocation is the merge sign-off;
       one invocation, one merge). Nothing else here is owed by the operator.
+
+## Post-absorb re-measurement (2026-08-13, landing set 126→127→128)
+
+**Verdict: PASS @ eeffd8f** — re-measured after absorbing `main` at `a4975bf` (SCC-126's literal
+lens). The pre-absorb `Verdict: PASS @ 49ea340` above is **left standing on purpose**: it described
+a `main` that no longer exists, and the record of what was true then is worth more than a tidy file.
+
+The absorb was not doc-only, so the earlier verdict did not carry itself — four files conflicted and
+three resolutions were judgement calls, written up in the merge commit `eeffd8f`:
+
+- **`step-03-triage.md`** — 126 added `literal` to the finding `source` vocabulary, this lane added
+  `compound`. **Either side winning orphans a source**, so both survive.
+- **`test_review_engine.py`** — a true three-way hunk. This lane retires the five step-02
+  pass-through checks (they pin text this lane deleted); 126 kept them, having no reason to know.
+  Merged as: this lane's side in full + 126's 39 additions, the five superseded entries not
+  restored. A naive union would have re-armed five checks against deleted text.
+- **`_artifacts/_main/INDEX.md`** — ⚠ the first resolution **dropped SCC-137's pre-existing row**,
+  which sat inside the conflict region because both lanes append at the same table head. `run_all`
+  caught it — and the catcher was the `check_maps` missing-row gate SCC-137 itself shipped, firing
+  on the loss of its own ledger row. Restored in date order.
+- **Generated mirrors** — resolved by re-running `sync-agents`, never hand-merged.
+
+```
+python3 .agents/scripts/tests/run_all.py                -> 21/21 files, 1690/1690 cases, exit 0
+python3 .agents/scripts/workflow_lint.py --toolkit-only -> 0 errors, 0 warnings, 8 info, exit 0
+python3 .agents/scripts/check_maps.py --depth3-only --strict -> exit 0
+```
+
+**Case total exactly additive across both lanes: 1335 (main) + 121 (SCC-126) + 234 (this lane) =
+1690.** Neither lane displaced the other's tests, despite both editing the same guard file.
