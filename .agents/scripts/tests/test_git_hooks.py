@@ -86,6 +86,27 @@ def make_repo(tmp: Path, *, name: str = "work",
     return d
 
 
+def make_pushable(tmp: Path, *, push_main: bool = True,
+                  scripts=(GUARD, BACKSTOP), extra_flags=()) -> tuple[Path, Path]:
+    """A repo with a REAL bare remote, so the push cases drive `git push` and not a stub.
+
+    Everything the push gates need can be faked at the script level; whether git actually invokes
+    the dispatcher, and whether the dispatcher actually feeds both gates, cannot. That is the
+    whole point of these fixtures — `test_main_push_gate.py` learned the same lesson ("if this
+    passes, git is not running the hook — the whole gate is decorative").
+    """
+    d = make_repo(tmp, scripts=scripts, hooks=(MERGE_DISPATCH, PUSH_DISPATCH))
+    for f in extra_flags:
+        (d / ".agents/scripts/git-hooks" / f).write_text("armed\n", encoding="utf-8")
+    bare = tmp / "remote.git"
+    sh("git", "init", "-q", "--bare", str(bare), cwd=tmp)
+    sh("git", "remote", "add", "origin", str(bare), cwd=d)
+    if push_main:
+        sh("git", "push", "-q", "--no-verify", "origin", "main", cwd=d)
+        sh("git", "fetch", "-q", "origin", cwd=d)
+    return d, bare
+
+
 def lane(d: Path, branch: str, from_ref: str = "main", *, work: bool = True) -> None:
     """Cut `branch` from `from_ref` and (by default) put one commit on it."""
     sh("git", "checkout", "-q", "-b", branch, from_ref, cwd=d)
@@ -271,6 +292,98 @@ def main() -> int:
         c.check("N · an unclassified SOURCE is allowed", rc == 0 and moved, out.strip()[-300:])
         c.check("N · ...and the guard says it declined to judge",
                 "declined" in out.lower(), out.strip()[-300:])
+
+    # ═══ THE FAST-FORWARD BACKSTOP ════════════════════════════════════════════════════════
+    # Case E measured the gap: a ff merge creates no commit, so NO commit-time hook can see it.
+    # What it leaves behind is evidence — another lane's unlanded commits are now contained in
+    # yours — and push time is the last moment anything can refuse.
+
+    # ── G · a lane carrying another UNLANDED lane's commits is REFUSED at push ────────────
+    with TempDir() as tmp:
+        d, bare = make_pushable(tmp)
+        lane(d, "chore/SCC-144-a")                             # never landed
+        sh("git", "checkout", "-q", "-b", "chore/SCC-144-b", "main", cwd=d)
+        sh("git", "merge", "--ff-only", "chore/SCC-144-a", cwd=d)   # the gap from case E
+        rc, out = sh("git", "push", "origin", "chore/SCC-144-b", cwd=d)
+        c.check("G · pushing a lane contaminated by a FF merge is REFUSED", rc != 0,
+                out.strip()[-400:])
+        c.check("G · ...and the refusal names the foreign lane", "chore/SCC-144-a" in out,
+                out.strip()[-400:])
+        c.check("G · ...and names the remedy", "reset" in out, out.strip()[-400:])
+        rc, out = sh("git", "ls-remote", "--heads", str(bare), "chore/SCC-144-b", cwd=d)
+        c.check("G · ...and nothing reached the remote", "chore/SCC-144-b" not in out, out)
+
+    # ── H · ⭐ THE FALSE-RED CONTROL — absorbing main after a sibling LANDED is fine ───────
+    # This is the everyday move: a sibling lane lands on main, you absorb main, you push. Those
+    # commits are now contained in your lane too. If the check keyed on containment alone it would
+    # refuse this — the single most common thing a lane does — which is why it asks whether the
+    # foreign lane is reachable from origin/main.
+    with TempDir() as tmp:
+        d, bare = make_pushable(tmp)
+        lane(d, "chore/SCC-144-a")
+        sh("git", "checkout", "-q", "main", cwd=d)
+        sh("git", "merge", "--no-ff", "-m", "SCC-144 merge: land a", "chore/SCC-144-a", cwd=d)
+        sh("git", "push", "-q", "origin", "main", cwd=d)       # the sibling LANDS
+        sh("git", "fetch", "-q", "origin", cwd=d)
+        sh("git", "checkout", "-q", "-b", "chore/SCC-144-b", "origin/main", cwd=d)
+        (d / "b.txt").write_text("x\n", encoding="utf-8")
+        sh("git", "add", "b.txt", cwd=d)
+        sh("git", "commit", "-qm", "SCC-144 work on b", cwd=d)
+        rc, out = sh("git", "push", "origin", "chore/SCC-144-b", cwd=d)
+        c.check("H · a lane holding a LANDED sibling's commits pushes fine", rc == 0,
+                out.strip()[-400:])
+
+    # ── I · ⭐ THE SHIPPING-PATH CONTROL — main carrying the lane it is landing ────────────
+    # `/smh-close-task-merge-tree` merges chore/X into main and pushes main. chore/X is contained
+    # and unlanded BY DEFINITION at that moment — that is what landing IS. A backstop that did not
+    # exempt main and epic/* would refuse this system's primary shipping path on every close-out.
+    with TempDir() as tmp:
+        d, bare = make_pushable(tmp)
+        lane(d, "chore/SCC-144-a")
+        sh("git", "checkout", "-q", "main", cwd=d)
+        sh("git", "merge", "--no-ff", "-m", "SCC-144 merge: a -> main", "chore/SCC-144-a", cwd=d)
+        rc, out = sh("git", "push", "origin", "main", cwd=d)
+        c.check("I · landing a lane on main is ALLOWED", rc == 0, out.strip()[-400:])
+
+    # ── I2 · the same control for a story lane landing on its epic ────────────────────────
+    with TempDir() as tmp:
+        d, bare = make_pushable(tmp)
+        lane(d, "epic/SCC-144-e")
+        sh("git", "push", "-q", "origin", "epic/SCC-144-e", cwd=d)
+        lane(d, "claude/SCC-144-s", "epic/SCC-144-e")
+        sh("git", "checkout", "-q", "epic/SCC-144-e", cwd=d)
+        sh("git", "merge", "--no-ff", "-m", "SCC-144 merge: s -> e", "claude/SCC-144-s", cwd=d)
+        rc, out = sh("git", "push", "origin", "epic/SCC-144-e", cwd=d)
+        c.check("I2 · landing a story on its epic is ALLOWED", rc == 0, out.strip()[-400:])
+
+    # ── O · no origin/main — there is no reference point, so it declines and SAYS so ───────
+    # Refusing on the absence of a reference point is the vacuous red, the mirror of the vacuous
+    # green. Pinned so the hole cannot widen quietly.
+    with TempDir() as tmp:
+        d, bare = make_pushable(tmp, push_main=False)
+        lane(d, "chore/SCC-144-a")
+        sh("git", "checkout", "-q", "-b", "chore/SCC-144-b", "main", cwd=d)
+        sh("git", "merge", "--ff-only", "chore/SCC-144-a", cwd=d)
+        rc, out = sh("git", "push", "origin", "chore/SCC-144-b", cwd=d)
+        c.check("O · with no origin/main the push is ALLOWED", rc == 0, out.strip()[-400:])
+        c.check("O · ...and it says it could not judge", "origin/main" in out, out.strip()[-400:])
+
+    # ── P · ⛔⛔ THE STDIN TEE — pre-push gets ONE stdin and there are now TWO gates ────────
+    # A pre-push hook receives one line per ref ON STDIN, and stdin can be consumed exactly once.
+    # If the dispatcher hands the raw stream to the first gate, the second reads EOF, its `while
+    # read` loop never runs, and it exits 0 — SILENTLY ALLOWING EVERYTHING. That is this ticket's
+    # own failure class inside this ticket's own fix, so it gets a case that can only pass if the
+    # SECOND gate really saw its input: a push to main with no approval token must still be
+    # refused by the token gate, which is the gate that runs last.
+    with TempDir() as tmp:
+        d, bare = make_pushable(tmp, push_main=False,
+                               scripts=(GUARD, BACKSTOP, HOOKDIR / "pre-push-main-approval.sh"),
+                               extra_flags=("MAIN-PUSH-ENFORCE",))
+        rc, out = sh("git", "push", "origin", "main", cwd=d)
+        c.check("P · the token gate STILL refuses an unapproved push to main", rc != 0,
+                "the backstop consumed stdin and the token gate read EOF - every push now passes")
+        c.check("P · ...with its own message, not the backstop's", "PUSH TO main REFUSED" in out,
+                out.strip()[-400:])
 
     # ── L · the arm accounting — a fresh clone must report this gate OFF, not green ────────
     # `core.hooksPath` is local config git NEVER carries, so a fresh clone has every gate silently
