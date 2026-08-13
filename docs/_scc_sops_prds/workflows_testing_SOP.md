@@ -1627,6 +1627,21 @@ flowchart TD
 Each stage runs in a **fresh session** so none inherits the previous one's assumptions — the same
 reason ③ hunts blind in the human lane.
 
+**Stage 4 runs the house review engine, in capped mode (SCC-126).** The robot's reviewer no longer
+carries a review of its own: `/cicd-code-review-AP` resolves the inputs — the diff alone first, then
+one batched grounding pull — and hands them to `.agents/skills/code-review-engine/`, which runs its
+lenses in parallel. Nothing changes about what you do; two things change about what it costs and
+what it catches:
+
+- **A fifth lens hunts literal correctness** — for every changed line it opens the real definition of
+  each symbol that line leans on and checks the assumption actually holds. The other four lenses are
+  high-altitude by design and glide over exactly this, which is where most missed defects live.
+- **That lens is the one real token cost in the engine, so overnight it runs CAPPED**: diff-scoped,
+  20 changed files, patch material spilled to a file past ~9,000 characters, and no top-up. Typed by
+  hand, the same lens runs in `full` mode and may earn one targeted top-up. **The caps are defined
+  once, inside the engine's own step-01** — a caller names the mode and never restates the numbers,
+  because a cap each caller repeats is a cap that drifts.
+
 **It's resumable.** Re-run the launcher and it works out which stages finished by looking for their
 *sections inside* those two documents, not for the files themselves. A half-written plan doesn't
 count as a finished plan.

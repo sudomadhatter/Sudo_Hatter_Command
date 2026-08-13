@@ -17,9 +17,8 @@ ap_reconciled: 3eea4d06d7d7d26c3158c0de0063764950f0ba87
 > **Headless autopilot teammate, and the LAST agent before Daniel.** Your launch context (just above)
 > names the **shared run folder** and the **target story**. Everything you need is in that folder.
 
-You are **Murat (QA)** doing the final review-and-fix pass (the solo, no-swarm adaptation in
-`.agents/rules/bmad_code_review_sudo_fix.md` applies — run it yourself, sequentially, no subagents,
-no halting for confirmation).
+You are **Murat (QA)** doing the final review-and-fix pass. The review itself is **not yours to
+improvise** — you invoke the house engine and then act on what it returns.
 
 ## Your direction (read fresh from the shared folder)
 - `implementation_plan.md` — the plan, including its **`## Self-Audit`** section (your own earlier
@@ -28,23 +27,24 @@ no halting for confirmation).
   + `## Your Actions`).
 - the target story (for the acceptance pass).
 
-> **Do NOT open these first.** They are Ingest 2 — see the two-ingest contract below. The blind pass
-> runs on the diff alone, and the builder's own account of the work is precisely what biases it.
+> **Do NOT open these first.** They are Ingest 2 — see the two-ingest contract below. The engine's
+> blind lens runs on the diff alone, and the builder's own account of the work is precisely what
+> biases a reader against finding what is wrong with it.
 
-## The work (TWO ingests, three lenses)
+## The work — resolve the inputs, then run the engine in CAPPED mode
 
-This is the read-budget contract from `.agents/rules/bmad_code_review_sudo_fix.md` §Step 2, spelled out
-for the autopilot's artifact set — the two MUST agree. You are the most expensive model in the pipeline
-and you are billed on every token you pull. **Pull the material in exactly two reads, then think.** The
-three lenses are three *questions asked of context you already hold*, not three traversals of the repo.
+The review is `.agents/skills/code-review-engine/` — five lenses in parallel, a verify wave, triage,
+and a findings record. **The engine never resolves its own inputs; that is this command's job**, and
+it is the whole reason the two-ingest read budget below still exists. You are the most expensive
+model in the pipeline and you are billed on every token you pull, so pull the material in exactly
+two reads, hand it over, and spend your own thinking on the findings.
 
 **Ingest 1 — the diff, alone.** One `git diff <baseline> -- <the plan's Files Touched>`, and *nothing
-else in context yet*. Run lens 1 on it immediately, before anything below lands. This ordering is the
-whole point: reading the builder's plan or walkthrough first imports exactly the bias the blind pass
-exists to zero out.
+else in context yet*. That diff is the engine's `DIFF`. Resolving it first, before any artifact
+lands in your context, is what keeps the Blind Hunter's starvation real.
 
-**Ingest 2 — one batched grounding pull**, only after lens 1 has produced its findings:
-- each **changed file whole** (you need the surroundings the diff elides);
+**Ingest 2 — one batched grounding pull**, which becomes the engine's `EVIDENCE_PACK`:
+- each **changed file whole** (the engine's repo-access lenses need the surroundings the diff elides);
 - the **direct callers/dependents** of what changed — the files the diff's own symbols reach;
 - the **tests** covering those files;
 - the artifacts named above (plan + `## Self-Audit`, walkthrough, the story).
@@ -53,27 +53,32 @@ That is the read budget. **There is no full-repo sweep** — an unbounded "read 
 this stage used to do, and it burned the run's budget without finding what a targeted read of the blast
 radius finds. Do not restore it.
 
-**The three lenses**, no fresh traversal between them:
-1. **Blind diff** — over Ingest 1 ONLY. Is the change correct on its own terms? Bugs, logic errors,
-   security, smells.
-2. **Edge cases** — over Ingest 2. Boundaries, nulls, ordering, concurrency, failure paths, and the
-   callers you already pulled.
-3. **Acceptance** — over Ingest 2. Every AC in the story, and every finding from your `## Self-Audit`,
-   satisfied?
+**Invoke the engine with the full caller contract**, and name the mode:
 
-**Top-ups are allowed but must be earned.** If a lens surfaces a *specific* lead — a symbol you cannot
-resolve, a caller you did not anticipate — read that named file. Read it because you can say what you
-are looking for, never "to be thorough." One targeted top-up beats a second sweep; a second sweep is
-the failure mode. **Never trade away a real finding to save tokens** — this is the last gate before
-production, and a missed defect costs far more than the read. Efficiency here means *not re-reading what
-you already have*, not reviewing less.
+```
+REPO · WORKTREE · DIFF (Ingest 1) · HEAD_SHA · review_mode: full   (no-spec if the story is absent)
+STORY_FILE: the target story · EVIDENCE_PACK: Ingest 2 · ARTIFACT_DIR: the shared run folder
+DEFERRED_WORK: the project's deferred-work.md · literal-correctness lens: CAPPED mode
+```
 
-**Do not re-run the full suite** to reconfirm a green baseline — the orchestrator runs the authoritative
-pytest/vitest gate itself after you. Spend the budget on the CODE.
+**`capped` is not optional here and this command does not define what it means** — step-01 of the
+engine does, once, and an overnight loop multiplies every token it spends with nobody watching.
+
+⛔ **If subagents are unavailable in this runtime, run every lens INLINE, sequentially, yourself.**
+The engine's fallback writes prompt files and returns, which is correct for an interactive caller
+who can paste them back — **headless, that is a review that silently never ran, and the pipeline
+would read it as a clean pass.** A lens is a prompt, not a privileged tool: losing the parallelism
+costs wall-clock, not coverage. Record in the verdict that the lenses ran inline.
+
+The engine hands back `lenses_run` · `lenses_na` · the bucketed findings · `severity_floor` ·
+`notes`. **The floor is a floor:** your verdict may be that severe or worse, never better.
 
 **Then: apply the actionable fixes yourself** (you have full context). If you change code, re-run the
 **relevant** suite(s) until green and paste the **actual** output. If you change nothing, you do not need
 to run tests.
+
+**Do not re-run the full suite** to reconfirm a green baseline — the orchestrator runs the authoritative
+pytest/vitest gate itself after you. Spend the budget on the CODE.
 
 ## The test gate (TEA traceability / nfr / test-quality verdict layer)
 After review + fix, run the gate and record the verdict INSIDE the walkthrough's
@@ -91,9 +96,11 @@ This matters more headless than interactively — nobody is watching. `unrunnabl
 is its own result, and it caps the verdict at `CONCERNS`; it is never a skip. Cite the receipt set in
 the verdict via `gate_receipt.py list --story <id>`, and commit the receipts with the story.
 
-**A dead lens is a finding, not a skip.** If a review layer errors or returns nothing: retry once → then
-re-run it inline yourself → record the degradation in the verdict → a layer that never ran at all caps
-the verdict at **CONCERNS**, never PASS. Headless, an unrecovered layer is invisible unless written down.
+**A dead layer is a finding, not a skip.** The engine already applies this to its own lenses and
+returns the result on `lenses_run`; the same rule binds every TEA gate below: retry once → then
+re-run it inline yourself → record the degradation in the verdict → a layer that never ran at all
+caps the verdict at **CONCERNS**, never PASS. Headless, an unrecovered layer is invisible unless it
+is written down.
 
 1. **Opt-in check** — read `_bmad-output/sudo-tests.yaml`.
    - **Absent** → the project has no test baseline → verdict **`WAIVED`** (do NOT block). Skip to the
@@ -133,7 +140,7 @@ the verdict at **CONCERNS**, never PASS. Headless, an unrecovered layer is invis
   human close-out owns both.
 - **Append `## Code Review (<date>)` to `walkthrough.md`** (REQUIRED even if the review is clean — a
   Stage-4 no-op must still leave the section): the canonical `Verdict: … @ <sha>` first line, scope,
-  the 3 passes, ONE findings table (`file:line` + severity + disposition), your independent test
+  the engine's `lenses_run` / `lenses_na` line, ONE findings table (`file:line` + severity + disposition), your independent test
   output, the test gate's per-check results — and, if you changed nothing, an explicit "Changes
   applied: none — implementation is correct as-is." Do NOT write a standalone `code-review.md`
   (retired 2026-08-02).

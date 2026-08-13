@@ -74,4 +74,4 @@ anything less severe. When a caller's own law says a dead layer *"caps the verdi
 that phrase and this floor mean the same thing: the verdict may not come back better than CONCERNS.
 
 `<applicable>` excludes any lens that does not run in this `review_mode`; those are listed on
-`lenses_na` instead. A spec-less review therefore reports `3/3`, never `3/4` — see step-01.
+`lenses_na` instead. A spec-less review therefore reports `4/4`, never `4/5` — see step-01.

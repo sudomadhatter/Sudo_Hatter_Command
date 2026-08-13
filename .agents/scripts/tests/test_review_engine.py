@@ -123,6 +123,9 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     ("skill: return block counts applicable lenses", SKILL,
      r"^lenses_run:\s+<n>/<applicable>", re.M,
      "lenses_run:      <n>/<applicable>", "lenses_run:      <n>/<total>"),
+    ("skill: the spec-less count agrees with step-01 (4/4)", SKILL,
+     r"reports `4/4`, never `4/5`", 0,
+     "reports `4/4`, never `4/5`", "reports `4/5`, never `4/4`"),
 
     # ── step-01: the fan-out table, the failure contract, NA-vs-dead ────────────────────────
     ("step-01: Blind Hunter is a lens row that always runs", STEPS[0],
@@ -158,9 +161,11 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     ("step-01: a mode-skipped lens never raises the floor", STEPS[0],
      r"^- \*\*A lens skipped by mode never raises `severity_floor`\.\*\*", re.M,
      "never raises `severity_floor`", "also raises `severity_floor`"),
-    ("step-01: a spec-less review reports 3/3, not 3/4", STEPS[0],
-     r"reports `3/3`, never `3/4`", 0,
-     "reports `3/3`, never `3/4`", "reports `3/4`, never `3/3`"),
+    # Five lenses since SCC-126, and only the Acceptance Auditor is mode-skipped — so the
+    # spec-less count is 4/4. The arithmetic is pinned in BOTH files that state it.
+    ("step-01: a spec-less review reports 4/4, not 4/5", STEPS[0],
+     r"reports `4/4`, never `4/5`", 0,
+     "reports `4/4`, never `4/5`", "reports `4/5`, never `4/4`"),
 
     # ── step-01 (SCC-125): the ROUTING that makes the asymmetry real ────────────────────────
     # These bind the `How` cells and the assembly convention, not the prose that describes them.
@@ -369,6 +374,78 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     ("step-01: the recall cost of a worthiness gate is recorded", STEPS[0],
      r"recall falls from 0\.69 to 0\.52", 0,
      "recall falls from 0.69 to 0.52", "recall is unaffected"),
+
+    # ── step-01 (SCC-126): the literal-correctness lens, and the caps that make it affordable ─
+    # This lens is the epic's only real token cost, so every check below binds either its WIRING
+    # (the table cells that route it) or a cap that bounds it. Prose about the lens is not pinned;
+    # a description cannot route a lens and cannot bound a cost.
+    ("step-01: Literal-Correctness Hunter is a lens row that always runs", STEPS[0],
+     r"^\|\s*\*\*Literal-Correctness Hunter\*\*\s*\|[^|]*\|\s*always\s*\|", re.M,
+     "| **Literal-Correctness Hunter** | `DIFF` + read access to `REPO` | always |",
+     "| **Literal-Correctness Hunter** | `DIFF` + read access to `REPO` | interactive only |"),
+    ("step-01: the literal lens's row wires in the hunter contract", STEPS[0],
+     r"^\|\s*\*\*Literal-Correctness Hunter\*\*\s*\|[^|]*\|[^|]*\|[^|]*\+ the hunter contract\s*\|",
+     re.M,
+     "the literal-correctness discipline + the hunter contract",
+     "the literal-correctness discipline alone"),
+    # The counter-example must name the DISCIPLINE, not just `+ the hunter contract | yes |` —
+    # that substring hits the Edge Case Hunter's row first, so `.replace(old, new, 1)` would
+    # mutate a different lens and leave this check green. The harness caught exactly that.
+    ("step-01: the literal lens is primed with the evidence pack", STEPS[0],
+     r"^\|\s*\*\*Literal-Correctness Hunter\*\*\s*\|[^|]*\|[^|]*\|[^|]*\|\s*yes\s*\|$", re.M,
+     "the literal-correctness discipline + the hunter contract | yes |",
+     "the literal-correctness discipline + the hunter contract | **never** |"),
+
+    # The discipline itself — as prompt text (blockquoted), or it never reaches the lens.
+    ("step-01: the literal lens opens the real definition of what the code leans on", STEPS[0],
+     r"^> .*open the actual definition and verify the assumption holds", re.M,
+     "open the actual definition and verify the assumption holds",
+     "assume the definition matches what its name suggests"),
+    ("step-01: the literal lens is exhaustive, not selective", STEPS[0],
+     r"^> \*\*Be EXHAUSTIVE, not selective\.\*\*", re.M,
+     "> **Be EXHAUSTIVE, not selective.**", "> **Sample the most interesting ones.**"),
+    ("step-01: the literal lens is a discipline, not a bug checklist", STEPS[0],
+     r"^> This is a reasoning DISCIPLINE, not a bug checklist", re.M,
+     "This is a reasoning DISCIPLINE, not a bug checklist",
+     "This is a checklist of bug categories to pattern-match"),
+
+    # The four caps. Each is the cost contract; an unbounded lens is what this epic cannot ship.
+    ("step-01: the literal lens is diff-scoped, never whole-repo", STEPS[0],
+     r"\*\*Diff-scoped, never whole-repo\.\*\*", 0,
+     "**Diff-scoped, never whole-repo.**", "**Sweep the repository for context.**"),
+    ("step-01: an empty patch set early-exits the literal lens", STEPS[0],
+     r"\*\*An empty patch set → the lens early-exits\.\*\*", 0,
+     "**An empty patch set → the lens early-exits.**",
+     "**An empty patch set → review the whole tree instead.**"),
+    # F6: the early-exit must score `ok`. Scored `dead` it would raise the floor on every clean
+    # diff; scored `n/a` it would read as degraded. Both are wrong and both look like a pass here.
+    ("step-01: the early-exit is recorded ok, never dead and never n/a", STEPS[0],
+     r"recorded \*\*`ok`\*\*, never `dead` and never `n/a`", 0,
+     "recorded **`ok`**, never `dead` and never `n/a`",
+     "recorded **`dead`**, like any lens that returned nothing"),
+    ("step-01: the literal lens caps at 20 changed files", STEPS[0],
+     r"\*\*A 20-file cap\.\*\*", 0,
+     "**A 20-file cap.**", "**No file cap.**"),
+    ("step-01: the literal lens spills above ~9,000 chars", STEPS[0],
+     r"\*\*Spill above ~9,000 chars\.\*\*", 0,
+     "**Spill above ~9,000 chars.**", "**Inline the patches at any size.**"),
+
+    # Mode: defined once, HERE. A caller that re-defines a cap is how cost governance rots.
+    ("step-01: full and capped modes are defined in the lens spec, once", STEPS[0],
+     r"^### Full mode and capped mode — defined here, once$", re.M,
+     "### Full mode and capped mode — defined here, once",
+     "### Full mode and capped mode — each caller sets its own"),
+    ("step-01: a caller names the mode and never re-defines the caps", STEPS[0],
+     r"A caller \*\*names\*\* the mode; it never re-defines the caps", 0,
+     "A caller **names** the mode; it never re-defines the caps",
+     "A caller may raise or lower the caps to suit its budget"),
+    ("step-01: capped mode is the autopilot's, with the caps mandatory", STEPS[0],
+     r"^\|\s*`capped`\s*\|\s*`/cicd-code-review-AP` \(autopilot\)\s*\|[^|]*MANDATORY", re.M,
+     "| `capped` | `/cicd-code-review-AP` (autopilot) |",
+     "| `capped` | nobody yet |"),
+    ("step-01: full mode's top-up must be earned, never a sweep", STEPS[0],
+     r"^\|\s*`full`\s*\|\s*interactive callers\s*\|[^|]*earn\b", re.M,
+     "| `full` | interactive callers |", "| `full` | everyone, uncapped |"),
 
     # ── step-02: honest scaffold-stage pass-through ─────────────────────────────────────────
     ("step-02: findings carry forward unverified", STEPS[1],

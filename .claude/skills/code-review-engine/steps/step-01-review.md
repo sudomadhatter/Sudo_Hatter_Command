@@ -10,6 +10,7 @@ independence is the entire value of the fan-out. Wall-clock is the slowest lens,
 |---|---|---|---|---|
 | **Blind Hunter** | `DIFF` only — no spec, no repo access, no context docs | always | the `bmad-review-adversarial-general` skill + the hunter contract | **never** — starved by design |
 | **Edge Case Hunter** | `DIFF` + read access to `REPO` | always | the `bmad-review-edge-case-hunter` skill + the hunter contract | yes |
+| **Literal-Correctness Hunter** | `DIFF` + read access to `REPO` | always | the literal-correctness discipline + the hunter contract | yes |
 | **Acceptance Auditor** | `DIFF` + `STORY_FILE` + any context docs | `review_mode: full` only | the auditor rubric | **never** — cannot verify it |
 | **Test-Adequacy Auditor** | `DIFF` + read access to `REPO` | always | the auditor rubric | yes |
 
@@ -73,6 +74,62 @@ for: it has no repo access by design, so its trace runs on the diff text, and
 **it never downgrades the bar to compensate** for the narrower view. The starvation is deliberate —
 this lens exists to find what a fully-informed reader rationalizes away — so do not "help" it by
 handing it the repo or the pack.
+
+## The literal-correctness lens — the one lens with a real token cost
+
+The other four lenses are high-altitude: topology, lifecycle, acceptance criteria, test tiers.
+This one is deliberately not, and the gap it closes is one the harness this discipline is ported
+from measured against a benchmark and then confessed in its own docstring: a multi-agent
+architectural review reliably surfaces the high-level findings and **systematically glides over
+the meticulous line-level check** — is the code, *as literally written*, correct against the actual
+definitions of the symbols it depends on? Almost every defect such a review misses is one
+symbol-level assumption violation: a called method that does not exist, an argument that is the
+wrong variable, a type that is not the assumed subclass, a value dereferenced that can be nil, a
+comparison whose invariant does not hold, code that will not compile.
+
+The prompt text that carries the discipline to the lens:
+
+> You are a Literal-Correctness Hunter. For each changed line, identify every external thing the
+> code DEPENDS ON and RELIES ON being true — every call, argument, assignment, condition and type
+> assumption — then open the actual definition and verify the assumption holds. Where the ground
+> truth contradicts what the code assumes, that is a finding.
+>
+> **Be EXHAUSTIVE, not selective.** Walk EVERY changed call, argument, assignment, condition and
+> type assumption, one at a time. Emit a finding for EVERY violation you confirm.
+>
+> This is a reasoning DISCIPLINE, not a bug checklist. The violation kinds named above are
+> illustrative of what a symbol-level assumption failure looks like — they are not an enumeration
+> to pattern-match, and a violation that resembles none of them is still a finding.
+
+### Scope — four rules, and they are what keep this lens affordable
+
+**Diff-scoped, never whole-repo.** The subject is the changed lines. Repo access exists so the lens
+can open the real definition of what those lines lean on; it is not a licence to sweep. An
+unbounded version of this lens is the one thing this engine cannot afford to run on every review.
+
+**An empty patch set → the lens early-exits.** No changed patches means there is nothing to verify:
+it returns zero findings and is recorded **`ok`**, never `dead` and never `n/a`. A lens that
+correctly found nothing to do has not degraded anything, and the other two scorings both corrupt
+the record — `dead` would raise `severity_floor` to CONCERNS on every clean diff forever, and `n/a`
+would report a fully-run review as partially skipped.
+
+**A 20-file cap.** Take the first 20 changed files. On a diff wider than that, the cap is reported
+in the lens's own output — a truncated pass that says so is evidence; one that stays quiet is a
+false all-clear over the files it never opened.
+
+**Spill above ~9,000 chars.** Past that, write the patch material to a context file in
+`ARTIFACT_DIR` and hand the lens the path instead of the text. When no `ARTIFACT_DIR` was supplied,
+say so and reduce the file count rather than inlining an oversized prompt.
+
+### Full mode and capped mode — defined here, once
+
+A caller **names** the mode; it never re-defines the caps. Cost governance lives with the lens that
+incurs the cost, because a cap that each caller restates is a cap that drifts per caller.
+
+| Mode | Used by | The caps |
+|---|---|---|
+| `full` | interactive callers | as written above; the lens may **earn** ONE top-up past the file cap by naming the specific file and what it is looking for — never a sweep, and never "to be thorough" |
+| `capped` | `/cicd-code-review-AP` (autopilot) | the same caps, MANDATORY, and no top-up — an overnight loop multiplies every token it spends, and nobody is watching it spend them |
 
 ## The auditor rubric — Acceptance Auditor and Test-Adequacy Auditor
 
@@ -260,7 +317,7 @@ The Acceptance Auditor **does not run** in `review_mode: no-spec`, because there
 to audit against. That is the mode working correctly, not a lens dying.
 
 - Record it on `lenses_na`, **not** as a failure, and **not** inside the `<n>/<applicable>` count —
-  a spec-less review reports `3/3`, never `3/4`, because `3/4` reads as degraded.
+  a spec-less review reports `4/4`, never `4/5`, because `4/5` reads as degraded.
 - **A lens skipped by mode never raises `severity_floor`.** Only a `dead` lens does that.
 
 Conflating the two is how a correctly-configured spec-less review gets reported as degraded
