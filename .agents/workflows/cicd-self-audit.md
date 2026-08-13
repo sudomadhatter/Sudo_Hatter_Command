@@ -15,7 +15,7 @@ Phase 0 right-size gate (a Light plan does not get the Full pass) and the Phase 
 (strict — default NO-GO).
 
 > No build commands here — there is no code yet. This audits the *plan*, not a diff. For shipped code,
-> use `bmad-code-review`.
+> use `/cicd-code-review`.
 
 ---
 

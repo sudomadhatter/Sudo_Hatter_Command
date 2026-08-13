@@ -94,6 +94,41 @@ def check_rule_pointers(lobby: Path, rep: wf.Report) -> None:
                          f"`.agents/rules/{rule}.md`")
 
 
+# SCC-128: `bmad-code-review` (the vendor skill) and `bmad_code_review_sudo_fix` (the
+# adapter rule that patched it) are RETIRED - the house `code-review-engine` skill replaces
+# both. This guard is permanent rather than a one-time sweep because BMAD's installer
+# re-emits the vendor skill on every regen: the file comes back on its own, so the thing
+# worth policing is not the skill's existence but whether any of OUR surfaces still routes
+# work to it.
+#
+# Scope is the three routing surfaces, and it stops there deliberately: commands (what an
+# operator invokes), rules (what an agent loads mid-run) and skills (the door Claude and
+# Codex enter through). Vendor manifests under `.agents/bmad/` are regenerated and never
+# hand-edited, `_artifacts/` is history that must stay readable as it was written, and the
+# generated mirrors (`.opencode/`, `.agents/workflows/`) follow their command source - all
+# three would make this unsatisfiable without guarding anything a caller can reach.
+_RETIRED_REVIEW_RE = re.compile(r"bmad[-_]code[-_]review")
+_RETIRED_SURFACES = ("commands", "rules", "skills")
+
+
+def check_retired_review_surface(lobby: Path, rep: wf.Report) -> None:
+    """No routing surface may point at the retired vendor review skill (SCC-128).
+
+    Both spellings are caught on purpose: `bmad-code-review` is the skill, and
+    `bmad_code_review_sudo_fix` was the rule that adapted it - the second half is the one
+    that survives as a dangling file path an agent is told to open.
+    """
+    for sub in _RETIRED_SURFACES:
+        root = lobby / ".agents" / sub
+        if not root.is_dir():
+            continue
+        for f in sorted(root.rglob("*.md")):
+            if _RETIRED_REVIEW_RE.search(wf.read_text(f)):
+                rep.err("retired-surface",
+                        f"{f.name}: references the RETIRED vendor review surface - "
+                        f"route it to the `code-review-engine` skill instead (SCC-128)")
+
+
 def _last_commit_ts(path: Path, cwd: Path) -> int | None:
     r = wf.git(["log", "-1", "--format=%ct", "--", str(path)], cwd)
     out = r.stdout.strip()
@@ -439,6 +474,7 @@ def main() -> int:
         check_rule_pointers(lobby, rep)
         check_ap_twins(lobby, rep)
         check_naming_law(lobby, rep)
+        check_retired_review_surface(lobby, rep)
         scan += [(f"commands/{f.name}", f)
                  for f in sorted((lobby / ".agents" / "commands").glob("*.md"))]
     else:

@@ -222,7 +222,7 @@ Do NOT split any section into a separate file — one doc holds the outline, the
 and the actions.
 
 ### 6. Append `## Code Review (<date>)` to `walkthrough.md` (whenever a code review runs)
-**Any code review — `/cicd-code-review`, `/code-review`, `bmad-code-review`, or an ad-hoc review —
+**Any code review — `/cicd-code-review`, `/smh-code-review`, `/code-review`, or an ad-hoc review —
 writes its findings INTO the session/story `walkthrough.md` as a `## Code Review (<date>)` section.**
 Presenting findings only inline in the chat is NOT sufficient, and a standalone review file is no
 longer the home. The section carries:

@@ -116,30 +116,54 @@ verdict about code that will never exist.
 
 ## Step 1 — Clean-room adversarial review  *(the blind hunt — ORDERING IS DELIBERATE)*
 
-Invoke **`bmad-review-adversarial-general`** in a subagent with **NO conversation context**, at the
-same model capability, on the diff. Zero out any builder's bias: an agent reviewing its own reasoning
-anchors on it.
+Invoke the **`code-review-engine`** skill on the diff — the same house engine `/cicd-code-review`
+runs (SCC-116), so Task work is reviewed to the story lane's standard: a parallel lens fan-out, an
+evidence-verification pass over what they find, then triage. The lenses each run in their own clean
+context, which is what zeroes out the builder's bias — an agent reviewing its own reasoning anchors
+on it.
 
-**Hunt the DIFF first. Open the plan and the walkthrough only AFTER** — for claimed evidence,
-plan-vs-built deviations, and the `## Your Actions` rows. Reading the builder's account before hunting
-imports exactly the bias this step exists to remove.
+**Resolve every input first — the engine resolves nothing itself, and a missing required input is a
+stop, not a guess:**
 
-Hunt for: logic flaws · AI drift · over-engineering · bloat · unnecessary abstraction · a check that
-cannot fail · a claim in the walkthrough that the diff does not support.
+| Input | What you pass |
+|---|---|
+| `REPO` | the repo Step 0 resolved |
+| `WORKTREE` | this task's tree (Step 0 pinned it from `git worktree list`) |
+| `DIFF` | Step 0.5's diff — `main...HEAD`, committed work only |
+| `HEAD_SHA` | Step 0's `HEAD_SHA` — the sha the verdict line will cite |
+| `review_mode` | `full` when the task's `implementation_plan.md` exists; `no-spec` when it does not |
+| `STORY_FILE` | that `implementation_plan.md` — on this lane the plan's acceptance list **is** the spec |
+| `ARTIFACT_DIR` | `_artifacts/_main/<YYYY-MM-DD>_<slug>/` inside this tree |
 
-**Subagent-failure contract — a dead layer is a FINDING, never a silent skip:**
-1. **Retry it once.** Transient tool failures are the common case.
-2. **Still failing → re-run that lens INLINE yourself**, in this context. A lens is a prompt, not a
-   privileged tool; losing the parallelism costs time, not coverage.
-3. **Record the degradation in the verdict** — name the layer, the failure, and the recovery. "ran" and
-   "died, re-run inline" are different evidence and must read differently.
-4. **A layer that never ran at all caps the verdict at `CONCERNS`.** An unexamined surface is an
-   unknown, and an unknown is not a pass.
+**Hunt the DIFF first. Open the plan and the walkthrough only AFTER the engine's summary comes
+back** — for claimed evidence, plan-vs-built deviations, and the `## Your Actions` rows. Reading the
+builder's account before the hunt imports exactly the bias this step exists to remove, which is why
+the Blind Hunter is starved of context on purpose.
+
+The lenses hunt for: logic flaws · AI drift · over-engineering · bloat · unnecessary abstraction · a
+check that cannot fail · a claim in the walkthrough the diff does not support · missing test tiers ·
+acceptance items the diff does not deliver.
+
+**The engine returns a `severity_floor`, and it BINDS Step 4.** `none` < `CONCERNS` < `FAIL`: this
+command's verdict may be the floor or anything more severe — Step 3's gates add their own reasons —
+never anything less.
+
+**Degradation is reported, never silent.** The engine owns the per-lens failure contract (retry once,
+re-run inline, and only a lens still dead after both raises the floor) and hands back each lens as
+`ok | recovered-inline | dead`, plus any lens that was `n/a` for the mode. **Copy that line into the
+verdict as it came back:** "4 lenses ran" and "3 ran plus 1 rerun inline" are different evidence. A
+lens skipped by mode is not a degradation; a lens that never ran is an unexamined surface, and an
+unknown is not a pass.
 
 ## Step 2 — Acceptance audit  *(against the checkable list, not against the code)*
 
 Recover the task's acceptance list — `/smh-quick-dev` Step 1 echoed it, the plan carries it, and the
 ticket's own `ACCEPTANCE` block is the authority behind both (`acli jira workitem view <KEY>`).
+
+**No double audit.** In `full` mode the engine's Acceptance Auditor lens already walked the diff
+against that plan — **import its findings** into the matrix below (source `review`) rather than
+re-deriving them. What stays yours is the matrix itself: every item paired with the assertion that
+proves it, which is a claim about evidence a lens cannot make for you.
 
 For **each item**: name where the diff satisfies it, and **the assertion that proves it**. Then the
 other direction — **anything in the diff beyond the list is drift**: cut it, or name why it stays.

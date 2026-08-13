@@ -1,20 +1,20 @@
 {
-  "root": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/scc-74-sops-prds/.agents",
+  "root": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/scc-128-rewire-callers/.agents",
   "counts": {
-    "files": 265,
+    "files": 284,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 395,
-    "external": 33,
-    "ambiguous": 49,
-    "dangling": 185,
-    "broken_paths": 48,
-    "unresolved_names": 137
+    "edges": 440,
+    "external": 36,
+    "ambiguous": 50,
+    "dangling": 205,
+    "broken_paths": 53,
+    "unresolved_names": 152
   },
   "nodes": [
     {
       "path": "AGENTS.md",
-      "in": 40,
+      "in": 42,
       "out": 9
     },
     {
@@ -34,7 +34,7 @@
     },
     {
       "path": "commands/INDEX.md",
-      "in": 6,
+      "in": 7,
       "out": 3
     },
     {
@@ -95,7 +95,7 @@
     {
       "path": "commands/cicd-code-review-AP.md",
       "in": 0,
-      "out": 2
+      "out": 1
     },
     {
       "path": "commands/cicd-code-review.md",
@@ -130,7 +130,7 @@
     {
       "path": "commands/cicd-merge-epic-workingtrees.md",
       "in": 2,
-      "out": 3
+      "out": 4
     },
     {
       "path": "commands/cicd-mobile-error-team.md",
@@ -155,7 +155,7 @@
     {
       "path": "commands/cicd-push-e2e.md",
       "in": 1,
-      "out": 3
+      "out": 4
     },
     {
       "path": "commands/cicd-quick-dev.md",
@@ -185,7 +185,7 @@
     {
       "path": "commands/cicd-write-story-tests.md",
       "in": 1,
-      "out": 2
+      "out": 3
     },
     {
       "path": "commands/dev.md",
@@ -218,13 +218,28 @@
       "out": 1
     },
     {
+      "path": "commands/smh-clean-code-audit.md",
+      "in": 2,
+      "out": 5
+    },
+    {
       "path": "commands/smh-close-task-merge-tree.md",
       "in": 2,
       "out": 7
     },
     {
+      "path": "commands/smh-code-review.md",
+      "in": 2,
+      "out": 6
+    },
+    {
       "path": "commands/smh-memory-audit.md",
-      "in": 1,
+      "in": 2,
+      "out": 4
+    },
+    {
+      "path": "commands/smh-merge-multiple-workingtrees.md",
+      "in": 2,
       "out": 4
     },
     {
@@ -233,9 +248,19 @@
       "out": 5
     },
     {
+      "path": "commands/smh-quick-dev.md",
+      "in": 2,
+      "out": 7
+    },
+    {
       "path": "commands/smh-review.md",
       "in": 1,
       "out": 0
+    },
+    {
+      "path": "commands/smh-self-audit.md",
+      "in": 2,
+      "out": 8
     },
     {
       "path": "commands/smh-slash-command-updating.md",
@@ -249,8 +274,8 @@
     },
     {
       "path": "commands/smh-update-maps-indexes.md",
-      "in": 1,
-      "out": 4
+      "in": 2,
+      "out": 8
     },
     {
       "path": "commands/tea.md",
@@ -310,7 +335,7 @@
     {
       "path": "hooks/INDEX.md",
       "in": 0,
-      "out": 0
+      "out": 1
     },
     {
       "path": "opencode-agents/INDEX.md",
@@ -375,31 +400,26 @@
     {
       "path": "opencode-agents/opus-reviewer.md",
       "in": 1,
-      "out": 2
+      "out": 4
     },
     {
       "path": "rules/000-PLAN-FIRST-GATE.md",
-      "in": 1,
+      "in": 3,
       "out": 1
     },
     {
       "path": "rules/INDEX.md",
       "in": 6,
-      "out": 26
+      "out": 25
     },
     {
       "path": "rules/artifacts-always-first.md",
-      "in": 13,
+      "in": 15,
       "out": 5
     },
     {
-      "path": "rules/bmad_code_review_sudo_fix.md",
-      "in": 3,
-      "out": 0
-    },
-    {
       "path": "rules/code-standards.md",
-      "in": 8,
+      "in": 10,
       "out": 1
     },
     {
@@ -414,7 +434,7 @@
     },
     {
       "path": "rules/constitution.md",
-      "in": 16,
+      "in": 17,
       "out": 1
     },
     {
@@ -424,12 +444,12 @@
     },
     {
       "path": "rules/git-policy.md",
-      "in": 37,
+      "in": 45,
       "out": 3
     },
     {
       "path": "rules/jira.md",
-      "in": 21,
+      "in": 25,
       "out": 0
     },
     {
@@ -479,12 +499,12 @@
     },
     {
       "path": "rules/reproduce-before-you-fix.md",
-      "in": 6,
+      "in": 7,
       "out": 0
     },
     {
       "path": "rules/smh-target-resolution.md",
-      "in": 47,
+      "in": 49,
       "out": 3
     },
     {
@@ -494,17 +514,17 @@
     },
     {
       "path": "rules/tests-must-gate-for-real.md",
-      "in": 1,
+      "in": 2,
       "out": 0
     },
     {
       "path": "rules/worktree-per-story.md",
-      "in": 19,
+      "in": 24,
       "out": 1
     },
     {
       "path": "scripts/INDEX.md",
-      "in": 0,
+      "in": 1,
       "out": 4
     },
     {
@@ -671,6 +691,31 @@
       "path": "skills/cicd-write-story-tests/SKILL.md",
       "in": 0,
       "out": 1
+    },
+    {
+      "path": "skills/code-review-engine/SKILL.md",
+      "in": 1,
+      "out": 4
+    },
+    {
+      "path": "skills/code-review-engine/steps/step-01-review.md",
+      "in": 2,
+      "out": 1
+    },
+    {
+      "path": "skills/code-review-engine/steps/step-02-verify.md",
+      "in": 2,
+      "out": 1
+    },
+    {
+      "path": "skills/code-review-engine/steps/step-03-triage.md",
+      "in": 3,
+      "out": 1
+    },
+    {
+      "path": "skills/code-review-engine/steps/step-04-record.md",
+      "in": 2,
+      "out": 0
     },
     {
       "path": "skills/firebase-ai-logic-basics/SKILL.md",
@@ -1088,7 +1133,17 @@
       "out": 1
     },
     {
+      "path": "skills/smh-clean-code-audit/SKILL.md",
+      "in": 0,
+      "out": 1
+    },
+    {
       "path": "skills/smh-close-task-merge-tree/SKILL.md",
+      "in": 0,
+      "out": 1
+    },
+    {
+      "path": "skills/smh-code-review/SKILL.md",
       "in": 0,
       "out": 1
     },
@@ -1098,12 +1153,27 @@
       "out": 1
     },
     {
+      "path": "skills/smh-merge-multiple-workingtrees/SKILL.md",
+      "in": 0,
+      "out": 1
+    },
+    {
       "path": "skills/smh-new-project/SKILL.md",
       "in": 0,
       "out": 1
     },
     {
+      "path": "skills/smh-quick-dev/SKILL.md",
+      "in": 0,
+      "out": 1
+    },
+    {
       "path": "skills/smh-review/SKILL.md",
+      "in": 0,
+      "out": 1
+    },
+    {
+      "path": "skills/smh-self-audit/SKILL.md",
       "in": 0,
       "out": 1
     },
@@ -1245,7 +1315,7 @@
     {
       "path": "workflows/cicd-merge-epic-workingtrees.md",
       "in": 0,
-      "out": 3
+      "out": 4
     },
     {
       "path": "workflows/cicd-parallel-check.md",
@@ -1265,7 +1335,7 @@
     {
       "path": "workflows/cicd-push-e2e.md",
       "in": 0,
-      "out": 3
+      "out": 4
     },
     {
       "path": "workflows/cicd-quick-dev.md",
@@ -1290,7 +1360,7 @@
     {
       "path": "workflows/cicd-write-story-tests.md",
       "in": 0,
-      "out": 2
+      "out": 3
     },
     {
       "path": "workflows/sentry-security-team-avch.md",
@@ -1303,14 +1373,29 @@
       "out": 1
     },
     {
+      "path": "workflows/smh-clean-code-audit.md",
+      "in": 0,
+      "out": 1
+    },
+    {
       "path": "workflows/smh-close-task-merge-tree.md",
+      "in": 0,
+      "out": 1
+    },
+    {
+      "path": "workflows/smh-code-review.md",
       "in": 0,
       "out": 1
     },
     {
       "path": "workflows/smh-memory-audit.md",
       "in": 0,
-      "out": 4
+      "out": 1
+    },
+    {
+      "path": "workflows/smh-merge-multiple-workingtrees.md",
+      "in": 0,
+      "out": 1
     },
     {
       "path": "workflows/smh-new-project.md",
@@ -1318,9 +1403,19 @@
       "out": 5
     },
     {
+      "path": "workflows/smh-quick-dev.md",
+      "in": 0,
+      "out": 1
+    },
+    {
       "path": "workflows/smh-review.md",
       "in": 0,
       "out": 0
+    },
+    {
+      "path": "workflows/smh-self-audit.md",
+      "in": 0,
+      "out": 1
     },
     {
       "path": "workflows/smh-slash-command-updating.md",
@@ -1334,8 +1429,8 @@
     },
     {
       "path": "workflows/smh-update-maps-indexes.md",
-      "in": 2,
-      "out": 8
+      "in": 1,
+      "out": 3
     },
     {
       "path": "bmad",
@@ -1543,11 +1638,6 @@
     },
     {
       "from": "commands/cicd-code-review-AP.md",
-      "to": "rules/bmad_code_review_sudo_fix.md",
-      "kind": "ref"
-    },
-    {
-      "from": "commands/cicd-code-review-AP.md",
       "to": "rules/git-policy.md",
       "kind": "ref"
     },
@@ -1609,6 +1699,11 @@
     {
       "from": "commands/cicd-live-testing-team.md",
       "to": "rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-merge-epic-workingtrees.md",
+      "to": "rules/git-policy.md",
       "kind": "ref"
     },
     {
@@ -1797,6 +1892,31 @@
       "kind": "ref"
     },
     {
+      "from": "commands/smh-clean-code-audit.md",
+      "to": "rules/code-standards.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-clean-code-audit.md",
+      "to": "rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-clean-code-audit.md",
+      "to": "rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-clean-code-audit.md",
+      "to": "AGENTS.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-clean-code-audit.md",
+      "to": "rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
       "from": "commands/smh-close-task-merge-tree.md",
       "to": "rules/artifacts-always-first.md",
       "kind": "ref"
@@ -1827,6 +1947,36 @@
       "kind": "ref"
     },
     {
+      "from": "commands/smh-code-review.md",
+      "to": "rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-code-review.md",
+      "to": "rules/code-standards.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-code-review.md",
+      "to": "rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-code-review.md",
+      "to": "rules/tests-must-gate-for-real.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-code-review.md",
+      "to": "rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-code-review.md",
+      "to": "rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
       "from": "commands/smh-memory-audit.md",
       "to": "rules/artifacts-always-first.md",
       "kind": "ref"
@@ -1844,6 +1994,26 @@
     {
       "from": "commands/smh-memory-audit.md",
       "to": "rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-merge-multiple-workingtrees.md",
+      "to": "rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-merge-multiple-workingtrees.md",
+      "to": "rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-merge-multiple-workingtrees.md",
+      "to": "rules/jira.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-merge-multiple-workingtrees.md",
+      "to": "rules/worktree-per-story.md",
       "kind": "ref"
     },
     {
@@ -1872,6 +2042,81 @@
       "kind": "ref"
     },
     {
+      "from": "commands/smh-quick-dev.md",
+      "to": "rules/000-PLAN-FIRST-GATE.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-quick-dev.md",
+      "to": "rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-quick-dev.md",
+      "to": "rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-quick-dev.md",
+      "to": "rules/reproduce-before-you-fix.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-quick-dev.md",
+      "to": "rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-quick-dev.md",
+      "to": "AGENTS.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-quick-dev.md",
+      "to": "rules/jira.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-self-audit.md",
+      "to": "rules/000-PLAN-FIRST-GATE.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-self-audit.md",
+      "to": "rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-self-audit.md",
+      "to": "rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-self-audit.md",
+      "to": "rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-self-audit.md",
+      "to": "rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-self-audit.md",
+      "to": "AGENTS.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-self-audit.md",
+      "to": "commands/INDEX.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-self-audit.md",
+      "to": "scripts/INDEX.md",
+      "kind": "ref"
+    },
+    {
       "from": "commands/smh-sync-agents.md",
       "to": "rules/git-policy.md",
       "kind": "ref"
@@ -1888,12 +2133,17 @@
     },
     {
       "from": "commands/smh-update-maps-indexes.md",
+      "to": "commands/INDEX.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
       "to": "rules/artifacts-always-first.md",
       "kind": "ref"
     },
     {
       "from": "commands/smh-update-maps-indexes.md",
-      "to": "workflows/smh-update-maps-indexes.md",
+      "to": "rules/git-policy.md",
       "kind": "ref"
     },
     {
@@ -1903,7 +2153,17 @@
     },
     {
       "from": "commands/smh-update-maps-indexes.md",
-      "to": "commands/INDEX.md",
+      "to": "CLAUDE.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "to": "GEMINI.md",
+      "kind": "ref"
+    },
+    {
+      "from": "hooks/INDEX.md",
+      "to": "rules/git-policy.md",
       "kind": "ref"
     },
     {
@@ -2123,12 +2383,22 @@
     },
     {
       "from": "opencode-agents/opus-reviewer.md",
-      "to": "rules/bmad_code_review_sudo_fix.md",
+      "to": "rules/constitution.md",
       "kind": "ref"
     },
     {
       "from": "opencode-agents/opus-reviewer.md",
-      "to": "rules/constitution.md",
+      "to": "skills/code-review-engine/SKILL.md",
+      "kind": "ref"
+    },
+    {
+      "from": "opencode-agents/opus-reviewer.md",
+      "to": "skills/code-review-engine/steps/step-01-review.md",
+      "kind": "ref"
+    },
+    {
+      "from": "opencode-agents/opus-reviewer.md",
+      "to": "skills/code-review-engine/steps/step-03-triage.md",
       "kind": "ref"
     },
     {
@@ -2154,11 +2424,6 @@
     {
       "from": "rules/INDEX.md",
       "to": "rules/artifacts-always-first.md",
-      "kind": "ref"
-    },
-    {
-      "from": "rules/INDEX.md",
-      "to": "rules/bmad_code_review_sudo_fix.md",
       "kind": "ref"
     },
     {
@@ -2707,6 +2972,41 @@
       "kind": "ref"
     },
     {
+      "from": "skills/code-review-engine/SKILL.md",
+      "to": "skills/code-review-engine/steps/step-01-review.md",
+      "kind": "ref"
+    },
+    {
+      "from": "skills/code-review-engine/SKILL.md",
+      "to": "skills/code-review-engine/steps/step-02-verify.md",
+      "kind": "ref"
+    },
+    {
+      "from": "skills/code-review-engine/SKILL.md",
+      "to": "skills/code-review-engine/steps/step-03-triage.md",
+      "kind": "ref"
+    },
+    {
+      "from": "skills/code-review-engine/SKILL.md",
+      "to": "skills/code-review-engine/steps/step-04-record.md",
+      "kind": "ref"
+    },
+    {
+      "from": "skills/code-review-engine/steps/step-01-review.md",
+      "to": "skills/code-review-engine/steps/step-02-verify.md",
+      "kind": "ref"
+    },
+    {
+      "from": "skills/code-review-engine/steps/step-02-verify.md",
+      "to": "skills/code-review-engine/steps/step-03-triage.md",
+      "kind": "ref"
+    },
+    {
+      "from": "skills/code-review-engine/steps/step-03-triage.md",
+      "to": "skills/code-review-engine/steps/step-04-record.md",
+      "kind": "ref"
+    },
+    {
       "from": "skills/firebase-ai-logic-basics/SKILL.md",
       "to": "skills/firebase-ai-logic-basics/references/usage_patterns_web.md",
       "kind": "link"
@@ -2872,8 +3172,18 @@
       "kind": "ref"
     },
     {
+      "from": "skills/smh-clean-code-audit/SKILL.md",
+      "to": "commands/smh-clean-code-audit.md",
+      "kind": "ref"
+    },
+    {
       "from": "skills/smh-close-task-merge-tree/SKILL.md",
       "to": "commands/smh-close-task-merge-tree.md",
+      "kind": "ref"
+    },
+    {
+      "from": "skills/smh-code-review/SKILL.md",
+      "to": "commands/smh-code-review.md",
       "kind": "ref"
     },
     {
@@ -2882,13 +3192,28 @@
       "kind": "ref"
     },
     {
+      "from": "skills/smh-merge-multiple-workingtrees/SKILL.md",
+      "to": "commands/smh-merge-multiple-workingtrees.md",
+      "kind": "ref"
+    },
+    {
       "from": "skills/smh-new-project/SKILL.md",
       "to": "commands/smh-new-project.md",
       "kind": "ref"
     },
     {
+      "from": "skills/smh-quick-dev/SKILL.md",
+      "to": "commands/smh-quick-dev.md",
+      "kind": "ref"
+    },
+    {
       "from": "skills/smh-review/SKILL.md",
       "to": "commands/smh-review.md",
+      "kind": "ref"
+    },
+    {
+      "from": "skills/smh-self-audit/SKILL.md",
+      "to": "commands/smh-self-audit.md",
       "kind": "ref"
     },
     {
@@ -3083,6 +3408,11 @@
     },
     {
       "from": "workflows/cicd-merge-epic-workingtrees.md",
+      "to": "rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/cicd-merge-epic-workingtrees.md",
       "to": "rules/smh-target-resolution.md",
       "kind": "ref"
     },
@@ -3222,28 +3552,28 @@
       "kind": "ref"
     },
     {
+      "from": "workflows/smh-clean-code-audit.md",
+      "to": "commands/smh-clean-code-audit.md",
+      "kind": "ref"
+    },
+    {
       "from": "workflows/smh-close-task-merge-tree.md",
       "to": "commands/smh-close-task-merge-tree.md",
       "kind": "ref"
     },
     {
-      "from": "workflows/smh-memory-audit.md",
-      "to": "rules/artifacts-always-first.md",
+      "from": "workflows/smh-code-review.md",
+      "to": "commands/smh-code-review.md",
       "kind": "ref"
     },
     {
       "from": "workflows/smh-memory-audit.md",
-      "to": "rules/git-policy.md",
+      "to": "commands/smh-memory-audit.md",
       "kind": "ref"
     },
     {
-      "from": "workflows/smh-memory-audit.md",
-      "to": "AGENTS.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/smh-memory-audit.md",
-      "to": "rules/smh-target-resolution.md",
+      "from": "workflows/smh-merge-multiple-workingtrees.md",
+      "to": "commands/smh-merge-multiple-workingtrees.md",
       "kind": "ref"
     },
     {
@@ -3272,6 +3602,16 @@
       "kind": "ref"
     },
     {
+      "from": "workflows/smh-quick-dev.md",
+      "to": "commands/smh-quick-dev.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/smh-self-audit.md",
+      "to": "commands/smh-self-audit.md",
+      "kind": "ref"
+    },
+    {
       "from": "workflows/smh-sync-agents.md",
       "to": "rules/git-policy.md",
       "kind": "ref"
@@ -3288,32 +3628,12 @@
     },
     {
       "from": "workflows/smh-update-maps-indexes.md",
-      "to": "commands/INDEX.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "to": "rules/artifacts-always-first.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "to": "rules/git-policy.md",
+      "to": "commands/smh-update-maps-indexes.md",
       "kind": "ref"
     },
     {
       "from": "workflows/smh-update-maps-indexes.md",
       "to": "AGENTS.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "to": "CLAUDE.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "to": "GEMINI.md",
       "kind": "ref"
     },
     {
@@ -3369,6 +3689,10 @@
     },
     {
       "from": "commands/cicd-boot-sprint-memory.md",
+      "target": "/_artifacts/_memory/MEMORY.md"
+    },
+    {
+      "from": "commands/cicd-boot-sprint-memory.md",
       "target": "/walkthrough.md"
     },
     {
@@ -3386,6 +3710,10 @@
     {
       "from": "commands/cicd-boot-sprint-memory.md",
       "target": "code-review.md"
+    },
+    {
+      "from": "commands/cicd-code-review-AP.md",
+      "target": ".agents/rules/bmad_code_review_sudo_fix.md"
     },
     {
       "from": "commands/cicd-code-review-AP.md",
@@ -3414,6 +3742,10 @@
     {
       "from": "commands/cicd-code-review.md",
       "target": "/walkthrough.md"
+    },
+    {
+      "from": "commands/cicd-code-review.md",
+      "target": "deferred-work.md"
     },
     {
       "from": "commands/cicd-code-review.md",
@@ -3604,7 +3936,27 @@
       "target": "PROJECT_ROOT/.github/claude/incident-triage.md"
     },
     {
+      "from": "commands/smh-clean-code-audit.md",
+      "target": ".agents/commands/smh-x.md"
+    },
+    {
+      "from": "commands/smh-clean-code-audit.md",
+      "target": "/walkthrough.md"
+    },
+    {
       "from": "commands/smh-close-task-merge-tree.md",
+      "target": "walkthrough.md"
+    },
+    {
+      "from": "commands/smh-code-review.md",
+      "target": "/walkthrough.md"
+    },
+    {
+      "from": "commands/smh-code-review.md",
+      "target": "implementation_plan.md"
+    },
+    {
+      "from": "commands/smh-code-review.md",
       "target": "walkthrough.md"
     },
     {
@@ -3612,12 +3964,100 @@
       "target": "MEMORY.md"
     },
     {
+      "from": "commands/smh-merge-multiple-workingtrees.md",
+      "target": "CHANGELOG.md"
+    },
+    {
+      "from": "commands/smh-merge-multiple-workingtrees.md",
+      "target": "MEMORY.md"
+    },
+    {
+      "from": "commands/smh-merge-multiple-workingtrees.md",
+      "target": "walkthrough.md"
+    },
+    {
       "from": "commands/smh-new-project.md",
       "target": "_bmad-output/project-context.md"
     },
     {
+      "from": "commands/smh-quick-dev.md",
+      "target": "/walkthrough.md"
+    },
+    {
+      "from": "commands/smh-quick-dev.md",
+      "target": "docs/_scc_sops_prds/x.md"
+    },
+    {
+      "from": "commands/smh-quick-dev.md",
+      "target": "implementation_plan.md"
+    },
+    {
+      "from": "commands/smh-quick-dev.md",
+      "target": "walkthrough.md"
+    },
+    {
+      "from": "commands/smh-self-audit.md",
+      "target": "implementation_plan.md"
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "/active-context-archive.md"
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "/active-context.md"
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "/docs/repo-map.md"
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "INDEX-archive.md"
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "_artifacts/active-context.md"
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "_bmad-output/active-context/active-context.md"
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "active-context.md"
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "docs/x.md"
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "docs/y.md"
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "new-prp.md"
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "repo-map.md"
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "shipped-task.md"
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "slug.md"
+    },
+    {
       "from": "commands/smh-update-maps-indexes.md",
       "target": "todo_list.md"
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "workspace-standard.md"
     },
     {
       "from": "opencode-agents/bmad-architect.md",
@@ -3796,6 +4236,10 @@
       "target": "epics.md"
     },
     {
+      "from": "rules/jira.md",
+      "target": "implementation_plan.md"
+    },
+    {
       "from": "rules/mobile-mode.md",
       "target": "active-context.md"
     },
@@ -3836,6 +4280,10 @@
       "target": "implementation_plan.md"
     },
     {
+      "from": "skills/code-review-engine/SKILL.md",
+      "target": "deferred-work.md"
+    },
+    {
       "from": "skills/react-best-practices/README.md",
       "target": "area-description.md"
     },
@@ -3846,6 +4294,10 @@
     {
       "from": "skills/skills_explained.md",
       "target": "react-patterns.md"
+    },
+    {
+      "from": "skills/smh-self-audit/SKILL.md",
+      "target": "implementation_plan.md"
     },
     {
       "from": "skills/ui-ux-pro-max/SKILL.md",
@@ -3878,6 +4330,10 @@
     {
       "from": "workflows/INDEX.md",
       "target": "todo_list.md"
+    },
+    {
+      "from": "workflows/cicd-boot-sprint-memory.md",
+      "target": "/_artifacts/_memory/MEMORY.md"
     },
     {
       "from": "workflows/cicd-boot-sprint-memory.md",
@@ -3996,72 +4452,16 @@
       "target": "PROJECT_ROOT/.github/claude/incident-triage.md"
     },
     {
-      "from": "workflows/smh-memory-audit.md",
-      "target": "MEMORY.md"
-    },
-    {
       "from": "workflows/smh-new-project.md",
       "target": "_bmad-output/project-context.md"
     },
     {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "/active-context-archive.md"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "/active-context.md"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "/docs/repo-map.md"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "INDEX-archive.md"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "_artifacts/active-context.md"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "_bmad-output/active-context/active-context.md"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "active-context.md"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "docs/x.md"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "docs/y.md"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "new-prp.md"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "repo-map.md"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "shipped-task.md"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "slug.md"
+      "from": "workflows/smh-self-audit.md",
+      "target": "implementation_plan.md"
     },
     {
       "from": "workflows/smh-update-maps-indexes.md",
       "target": "todo_list.md"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "workspace-standard.md"
     }
   ],
   "external": [
@@ -4094,7 +4494,15 @@
       "target": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md"
     },
     {
+      "from": "commands/smh-clean-code-audit.md",
+      "target": "docs/_scc_sops_prds/workflows_testing_SOP.md"
+    },
+    {
       "from": "commands/smh-close-task-merge-tree.md",
+      "target": "docs/_scc_sops_prds/workflows_testing_SOP.md"
+    },
+    {
+      "from": "commands/smh-code-review.md",
       "target": "docs/_scc_sops_prds/workflows_testing_SOP.md"
     },
     {
@@ -4114,6 +4522,18 @@
       "target": "docs/_scc_sops_prds/workflows_testing_SOP.md"
     },
     {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "_artifacts/INDEX-archive.md"
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "_my_resources/open_tasks/todo_list.md"
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "docs/repo-map.md"
+    },
+    {
       "from": "rules/INDEX.md",
       "target": "docs/_scc_sops_prds/workflows_testing_SOP.md"
     },
@@ -4126,8 +4546,16 @@
       "target": "router.md"
     },
     {
+      "from": "rules/git-policy.md",
+      "target": "_artifacts/_memory/nothing-guards-the-merge-target.md"
+    },
+    {
       "from": "rules/jira.md",
       "target": "_my_resources/open_tasks/todo_list.md"
+    },
+    {
+      "from": "rules/jira.md",
+      "target": "docs/_scc_sops_prds/jira_manual.md"
     },
     {
       "from": "rules/prose-formatting.md",
@@ -4170,10 +4598,6 @@
       "target": "docs/gitnexus.md"
     },
     {
-      "from": "workflows/smh-memory-audit.md",
-      "target": "_artifacts/_memory/MEMORY.md"
-    },
-    {
       "from": "workflows/smh-new-project.md",
       "target": "_my_resources/open_tasks/todo_list.md"
     },
@@ -4184,18 +4608,6 @@
     {
       "from": "workflows/smh-sync-agents.md",
       "target": "docs/_scc_sops_prds/workflows_testing_SOP.md"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "_artifacts/INDEX-archive.md"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "_my_resources/open_tasks/todo_list.md"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "docs/repo-map.md"
     }
   ],
   "ambiguous": [
@@ -4253,6 +4665,21 @@
       ]
     },
     {
+      "from": "commands/smh-merge-multiple-workingtrees.md",
+      "target": "_artifacts/_main/INDEX.md",
+      "candidates": [
+        "INDEX.md",
+        "bmad",
+        "commands/INDEX.md",
+        "hooks/INDEX.md",
+        "opencode-agents/INDEX.md",
+        "rules/INDEX.md",
+        "scripts/INDEX.md",
+        "skills/INDEX.md",
+        "workflows/INDEX.md"
+      ]
+    },
+    {
       "from": "commands/smh-sync-agents.md",
       "target": "SKILL.md",
       "candidates": [
@@ -4277,6 +4704,7 @@
         "skills/cicd-self-audit/SKILL.md",
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
+        "skills/code-review-engine/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -4289,10 +4717,15 @@
         "skills/react-best-practices/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
+        "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
+        "skills/smh-code-review/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
+        "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-quick-dev/SKILL.md",
         "skills/smh-review/SKILL.md",
+        "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
         "skills/smh-sync-agents/SKILL.md",
         "skills/smh-update-maps-indexes/SKILL.md",
@@ -4302,6 +4735,22 @@
         "skills/v3-prompt-architecture/SKILL.md",
         "skills/webm-alpha-video/SKILL.md",
         "skills/workspace-structure/SKILL.md"
+      ]
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": ".agents/scripts/README.md",
+      "candidates": [
+        "bmad",
+        "skills/react-best-practices/README.md"
+      ]
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "/AGENTS.md",
+      "candidates": [
+        "AGENTS.md",
+        "skills/react-best-practices/AGENTS.md"
       ]
     },
     {
@@ -4320,11 +4769,169 @@
       ]
     },
     {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "README.md",
+      "candidates": [
+        "bmad",
+        "skills/react-best-practices/README.md"
+      ]
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "_artifacts/AGENTS.md",
+      "candidates": [
+        "AGENTS.md",
+        "skills/react-best-practices/AGENTS.md"
+      ]
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "_artifacts/INDEX.md",
+      "candidates": [
+        "INDEX.md",
+        "bmad",
+        "commands/INDEX.md",
+        "hooks/INDEX.md",
+        "opencode-agents/INDEX.md",
+        "rules/INDEX.md",
+        "scripts/INDEX.md",
+        "skills/INDEX.md",
+        "workflows/INDEX.md"
+      ]
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "_artifacts/_main/INDEX.md",
+      "candidates": [
+        "INDEX.md",
+        "bmad",
+        "commands/INDEX.md",
+        "hooks/INDEX.md",
+        "opencode-agents/INDEX.md",
+        "rules/INDEX.md",
+        "scripts/INDEX.md",
+        "skills/INDEX.md",
+        "workflows/INDEX.md"
+      ]
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "_artifacts/epic_8/INDEX.md",
+      "candidates": [
+        "INDEX.md",
+        "bmad",
+        "commands/INDEX.md",
+        "hooks/INDEX.md",
+        "opencode-agents/INDEX.md",
+        "rules/INDEX.md",
+        "scripts/INDEX.md",
+        "skills/INDEX.md",
+        "workflows/INDEX.md"
+      ]
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "_artifacts/tea/INDEX.md",
+      "candidates": [
+        "INDEX.md",
+        "bmad",
+        "commands/INDEX.md",
+        "hooks/INDEX.md",
+        "opencode-agents/INDEX.md",
+        "rules/INDEX.md",
+        "scripts/INDEX.md",
+        "skills/INDEX.md",
+        "workflows/INDEX.md"
+      ]
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "_my_resources/AGENTS.md",
+      "candidates": [
+        "AGENTS.md",
+        "skills/react-best-practices/AGENTS.md"
+      ]
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "_my_resources/README.md",
+      "candidates": [
+        "bmad",
+        "skills/react-best-practices/README.md"
+      ]
+    },
+    {
+      "from": "commands/smh-update-maps-indexes.md",
+      "target": "docs/AGENTS.md",
+      "candidates": [
+        "AGENTS.md",
+        "skills/react-best-practices/AGENTS.md"
+      ]
+    },
+    {
       "from": "opencode-agents/bmad-master.md",
       "target": "_bmad/core/agents/bmad-master.md",
       "candidates": [
         "commands/bmad-master.md",
         "opencode-agents/bmad-master.md"
+      ]
+    },
+    {
+      "from": "opencode-agents/opus-reviewer.md",
+      "target": "SKILL.md",
+      "candidates": [
+        "skills/backend-dev-guidelines/SKILL.md",
+        "skills/cicd-bdd-tests/SKILL.md",
+        "skills/cicd-boot-sprint-memory/SKILL.md",
+        "skills/cicd-clean-code-audit/SKILL.md",
+        "skills/cicd-close-workingtree/SKILL.md",
+        "skills/cicd-code-review/SKILL.md",
+        "skills/cicd-create-epic-sprint/SKILL.md",
+        "skills/cicd-deploy-backend/SKILL.md",
+        "skills/cicd-dev-story-tests/SKILL.md",
+        "skills/cicd-e2e/SKILL.md",
+        "skills/cicd-live-testing-team/SKILL.md",
+        "skills/cicd-merge-epic-workingtrees/SKILL.md",
+        "skills/cicd-parallel-check/SKILL.md",
+        "skills/cicd-park/SKILL.md",
+        "skills/cicd-prune-context/SKILL.md",
+        "skills/cicd-push-e2e/SKILL.md",
+        "skills/cicd-quick-dev/SKILL.md",
+        "skills/cicd-resume/SKILL.md",
+        "skills/cicd-self-audit/SKILL.md",
+        "skills/cicd-update-sprint-memory/SKILL.md",
+        "skills/cicd-write-story-tests/SKILL.md",
+        "skills/code-review-engine/SKILL.md",
+        "skills/firebase-ai-logic-basics/SKILL.md",
+        "skills/firebase-app-hosting-basics/SKILL.md",
+        "skills/firebase-auth-basics/SKILL.md",
+        "skills/firebase-basics/SKILL.md",
+        "skills/firebase-data-connect-basics/SKILL.md",
+        "skills/firebase-firestore-basics/SKILL.md",
+        "skills/firebase-hosting-basics/SKILL.md",
+        "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/python-patterns/SKILL.md",
+        "skills/react-best-practices/SKILL.md",
+        "skills/sentry-security-team-avch/SKILL.md",
+        "skills/smh-adviser-board/SKILL.md",
+        "skills/smh-clean-code-audit/SKILL.md",
+        "skills/smh-close-task-merge-tree/SKILL.md",
+        "skills/smh-code-review/SKILL.md",
+        "skills/smh-memory-audit/SKILL.md",
+        "skills/smh-merge-multiple-workingtrees/SKILL.md",
+        "skills/smh-new-project/SKILL.md",
+        "skills/smh-quick-dev/SKILL.md",
+        "skills/smh-review/SKILL.md",
+        "skills/smh-self-audit/SKILL.md",
+        "skills/smh-slash-command-updating/SKILL.md",
+        "skills/smh-sync-agents/SKILL.md",
+        "skills/smh-update-maps-indexes/SKILL.md",
+        "skills/systematic-debugging/SKILL.md",
+        "skills/troubleshoot-cloudrun-deployment/SKILL.md",
+        "skills/ui-ux-pro-max/SKILL.md",
+        "skills/v3-prompt-architecture/SKILL.md",
+        "skills/webm-alpha-video/SKILL.md",
+        "skills/workspace-structure/SKILL.md"
       ]
     },
     {
@@ -4474,6 +5081,7 @@
         "skills/cicd-self-audit/SKILL.md",
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
+        "skills/code-review-engine/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -4486,10 +5094,15 @@
         "skills/react-best-practices/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
+        "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
+        "skills/smh-code-review/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
+        "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-quick-dev/SKILL.md",
         "skills/smh-review/SKILL.md",
+        "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
         "skills/smh-sync-agents/SKILL.md",
         "skills/smh-update-maps-indexes/SKILL.md",
@@ -4526,6 +5139,7 @@
         "skills/cicd-self-audit/SKILL.md",
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
+        "skills/code-review-engine/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -4538,10 +5152,15 @@
         "skills/react-best-practices/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
+        "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
+        "skills/smh-code-review/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
+        "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-quick-dev/SKILL.md",
         "skills/smh-review/SKILL.md",
+        "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
         "skills/smh-sync-agents/SKILL.md",
         "skills/smh-update-maps-indexes/SKILL.md",
@@ -4578,6 +5197,7 @@
         "skills/cicd-self-audit/SKILL.md",
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
+        "skills/code-review-engine/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -4590,10 +5210,15 @@
         "skills/react-best-practices/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
+        "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
+        "skills/smh-code-review/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
+        "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-quick-dev/SKILL.md",
         "skills/smh-review/SKILL.md",
+        "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
         "skills/smh-sync-agents/SKILL.md",
         "skills/smh-update-maps-indexes/SKILL.md",
@@ -4630,6 +5255,7 @@
         "skills/cicd-self-audit/SKILL.md",
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
+        "skills/code-review-engine/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -4642,10 +5268,15 @@
         "skills/react-best-practices/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
+        "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
+        "skills/smh-code-review/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
+        "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-quick-dev/SKILL.md",
         "skills/smh-review/SKILL.md",
+        "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
         "skills/smh-sync-agents/SKILL.md",
         "skills/smh-update-maps-indexes/SKILL.md",
@@ -4682,6 +5313,7 @@
         "skills/cicd-self-audit/SKILL.md",
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
+        "skills/code-review-engine/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -4694,10 +5326,15 @@
         "skills/react-best-practices/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
+        "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
+        "skills/smh-code-review/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
+        "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-quick-dev/SKILL.md",
         "skills/smh-review/SKILL.md",
+        "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
         "skills/smh-sync-agents/SKILL.md",
         "skills/smh-update-maps-indexes/SKILL.md",
@@ -4734,6 +5371,7 @@
         "skills/cicd-self-audit/SKILL.md",
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
+        "skills/code-review-engine/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -4746,10 +5384,15 @@
         "skills/react-best-practices/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
+        "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
+        "skills/smh-code-review/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
+        "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-quick-dev/SKILL.md",
         "skills/smh-review/SKILL.md",
+        "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
         "skills/smh-sync-agents/SKILL.md",
         "skills/smh-update-maps-indexes/SKILL.md",
@@ -4786,6 +5429,7 @@
         "skills/cicd-self-audit/SKILL.md",
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
+        "skills/code-review-engine/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -4798,10 +5442,15 @@
         "skills/react-best-practices/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
+        "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
+        "skills/smh-code-review/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
+        "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-quick-dev/SKILL.md",
         "skills/smh-review/SKILL.md",
+        "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
         "skills/smh-sync-agents/SKILL.md",
         "skills/smh-update-maps-indexes/SKILL.md",
@@ -4838,6 +5487,7 @@
         "skills/cicd-self-audit/SKILL.md",
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
+        "skills/code-review-engine/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -4850,10 +5500,15 @@
         "skills/react-best-practices/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
+        "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
+        "skills/smh-code-review/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
+        "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-quick-dev/SKILL.md",
         "skills/smh-review/SKILL.md",
+        "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
         "skills/smh-sync-agents/SKILL.md",
         "skills/smh-update-maps-indexes/SKILL.md",
@@ -4890,6 +5545,7 @@
         "skills/cicd-self-audit/SKILL.md",
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
+        "skills/code-review-engine/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -4902,10 +5558,15 @@
         "skills/react-best-practices/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
+        "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
+        "skills/smh-code-review/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
+        "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-quick-dev/SKILL.md",
         "skills/smh-review/SKILL.md",
+        "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
         "skills/smh-sync-agents/SKILL.md",
         "skills/smh-update-maps-indexes/SKILL.md",
@@ -4942,6 +5603,7 @@
         "skills/cicd-self-audit/SKILL.md",
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
+        "skills/code-review-engine/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -4954,10 +5616,15 @@
         "skills/react-best-practices/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
+        "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
+        "skills/smh-code-review/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
+        "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-quick-dev/SKILL.md",
         "skills/smh-review/SKILL.md",
+        "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
         "skills/smh-sync-agents/SKILL.md",
         "skills/smh-update-maps-indexes/SKILL.md",
@@ -4994,6 +5661,7 @@
         "skills/cicd-self-audit/SKILL.md",
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
+        "skills/code-review-engine/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -5006,10 +5674,15 @@
         "skills/react-best-practices/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
+        "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
+        "skills/smh-code-review/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
+        "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-quick-dev/SKILL.md",
         "skills/smh-review/SKILL.md",
+        "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
         "skills/smh-sync-agents/SKILL.md",
         "skills/smh-update-maps-indexes/SKILL.md",
@@ -5046,6 +5719,7 @@
         "skills/cicd-self-audit/SKILL.md",
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
+        "skills/code-review-engine/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -5058,10 +5732,15 @@
         "skills/react-best-practices/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
+        "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
+        "skills/smh-code-review/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
+        "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-quick-dev/SKILL.md",
         "skills/smh-review/SKILL.md",
+        "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
         "skills/smh-sync-agents/SKILL.md",
         "skills/smh-update-maps-indexes/SKILL.md",
@@ -5098,6 +5777,7 @@
         "skills/cicd-self-audit/SKILL.md",
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
+        "skills/code-review-engine/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -5110,10 +5790,15 @@
         "skills/react-best-practices/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
+        "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
+        "skills/smh-code-review/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
+        "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-quick-dev/SKILL.md",
         "skills/smh-review/SKILL.md",
+        "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
         "skills/smh-sync-agents/SKILL.md",
         "skills/smh-update-maps-indexes/SKILL.md",
@@ -5167,6 +5852,7 @@
         "skills/cicd-self-audit/SKILL.md",
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
+        "skills/code-review-engine/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -5179,10 +5865,15 @@
         "skills/react-best-practices/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
+        "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
+        "skills/smh-code-review/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
+        "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-quick-dev/SKILL.md",
         "skills/smh-review/SKILL.md",
+        "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
         "skills/smh-sync-agents/SKILL.md",
         "skills/smh-update-maps-indexes/SKILL.md",
@@ -5257,6 +5948,7 @@
         "skills/cicd-self-audit/SKILL.md",
         "skills/cicd-update-sprint-memory/SKILL.md",
         "skills/cicd-write-story-tests/SKILL.md",
+        "skills/code-review-engine/SKILL.md",
         "skills/firebase-ai-logic-basics/SKILL.md",
         "skills/firebase-app-hosting-basics/SKILL.md",
         "skills/firebase-auth-basics/SKILL.md",
@@ -5269,10 +5961,15 @@
         "skills/react-best-practices/SKILL.md",
         "skills/sentry-security-team-avch/SKILL.md",
         "skills/smh-adviser-board/SKILL.md",
+        "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
+        "skills/smh-code-review/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
+        "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-quick-dev/SKILL.md",
         "skills/smh-review/SKILL.md",
+        "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
         "skills/smh-sync-agents/SKILL.md",
         "skills/smh-update-maps-indexes/SKILL.md",
@@ -5282,137 +5979,6 @@
         "skills/v3-prompt-architecture/SKILL.md",
         "skills/webm-alpha-video/SKILL.md",
         "skills/workspace-structure/SKILL.md"
-      ]
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": ".agents/scripts/README.md",
-      "candidates": [
-        "bmad",
-        "skills/react-best-practices/README.md"
-      ]
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "/AGENTS.md",
-      "candidates": [
-        "AGENTS.md",
-        "skills/react-best-practices/AGENTS.md"
-      ]
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "/INDEX.md",
-      "candidates": [
-        "INDEX.md",
-        "bmad",
-        "commands/INDEX.md",
-        "hooks/INDEX.md",
-        "opencode-agents/INDEX.md",
-        "rules/INDEX.md",
-        "scripts/INDEX.md",
-        "skills/INDEX.md",
-        "workflows/INDEX.md"
-      ]
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "README.md",
-      "candidates": [
-        "bmad",
-        "skills/react-best-practices/README.md"
-      ]
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "_artifacts/AGENTS.md",
-      "candidates": [
-        "AGENTS.md",
-        "skills/react-best-practices/AGENTS.md"
-      ]
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "_artifacts/INDEX.md",
-      "candidates": [
-        "INDEX.md",
-        "bmad",
-        "commands/INDEX.md",
-        "hooks/INDEX.md",
-        "opencode-agents/INDEX.md",
-        "rules/INDEX.md",
-        "scripts/INDEX.md",
-        "skills/INDEX.md",
-        "workflows/INDEX.md"
-      ]
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "_artifacts/_main/INDEX.md",
-      "candidates": [
-        "INDEX.md",
-        "bmad",
-        "commands/INDEX.md",
-        "hooks/INDEX.md",
-        "opencode-agents/INDEX.md",
-        "rules/INDEX.md",
-        "scripts/INDEX.md",
-        "skills/INDEX.md",
-        "workflows/INDEX.md"
-      ]
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "_artifacts/epic_8/INDEX.md",
-      "candidates": [
-        "INDEX.md",
-        "bmad",
-        "commands/INDEX.md",
-        "hooks/INDEX.md",
-        "opencode-agents/INDEX.md",
-        "rules/INDEX.md",
-        "scripts/INDEX.md",
-        "skills/INDEX.md",
-        "workflows/INDEX.md"
-      ]
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "_artifacts/tea/INDEX.md",
-      "candidates": [
-        "INDEX.md",
-        "bmad",
-        "commands/INDEX.md",
-        "hooks/INDEX.md",
-        "opencode-agents/INDEX.md",
-        "rules/INDEX.md",
-        "scripts/INDEX.md",
-        "skills/INDEX.md",
-        "workflows/INDEX.md"
-      ]
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "_my_resources/AGENTS.md",
-      "candidates": [
-        "AGENTS.md",
-        "skills/react-best-practices/AGENTS.md"
-      ]
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "_my_resources/README.md",
-      "candidates": [
-        "bmad",
-        "skills/react-best-practices/README.md"
-      ]
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "docs/AGENTS.md",
-      "candidates": [
-        "AGENTS.md",
-        "skills/react-best-practices/AGENTS.md"
       ]
     }
   ],

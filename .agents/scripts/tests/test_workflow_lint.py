@@ -407,6 +407,109 @@ def main() -> int:
                    if "ap_reconciled" in wf.read_text(p)]
         c.check("SCC-82 G only the twin that was actually diffed carries a stamp",
                 stamped == ["cicd-code-review-AP.md"], str(stamped))
+
+        # ── SCC-128: the resurrection lint ───────────────────────────────────
+        # The vendor `bmad-code-review` skill is RETIRED in favour of the house
+        # `code-review-engine`, but BMAD's installer re-emits the vendor skill on every
+        # regen - so "we deleted the references" is a state that undoes itself. The guard
+        # has to be permanent, and it has to scan the two surfaces that can route work
+        # BACK to the vendor skill: commands (what an operator invokes) and rules (what an
+        # agent loads mid-run). Both spellings matter - `bmad-code-review` is the skill,
+        # `bmad_code_review_sudo_fix` was the adapter rule that patched it.
+        #
+        # ⛔ The literals below are DELIBERATELY the retired forms. They are the negative
+        # controls; a rename sweep that "fixes" them leaves a check that passes while
+        # proving nothing. INDEX.md is scanned here (unlike check_commands, which skips
+        # it) because a router row pointing at a retired surface IS the resurrection.
+        res = tmp / "resurrect"
+        (res / ".agents/commands").mkdir(parents=True)
+        (res / ".agents/rules").mkdir(parents=True)
+        rcmds, rrules = res / ".agents/commands", res / ".agents/rules"
+
+        def res_report(root: Path) -> wf.Report:
+            r = wf.Report()
+            lint.check_retired_review_surface(root, r)
+            return r
+
+        def res_msgs(r: wf.Report) -> str:
+            return " ".join(i["msg"] for i in r.items
+                            if i["section"] == "retired-surface")
+
+        # A. Positive control FIRST: a clean toolkit is silent. Without this the rest
+        #    only proves the detector is always-on, which is not a detector.
+        (rcmds / "clean-cmd.md").write_text(
+            "---\ndescription: x\n---\nInvoke the `code-review-engine` skill.\n",
+            encoding="utf-8")
+        (rrules / "clean-rule.md").write_text(
+            "---\nname: clean\n---\nThe engine owns the lens fan-out.\n", encoding="utf-8")
+        c.check("SCC-128 A positive control: a clean toolkit is silent",
+                not res_msgs(res_report(res)), res_msgs(res_report(res))[:140])
+
+        # B. A command that routes back to the vendor skill is an ERROR.
+        (rcmds / "stale-cmd.md").write_text(
+            "---\ndescription: x\n---\nInvoke the **`bmad-code-review`** skill on the diff.\n",
+            encoding="utf-8")
+        rep = res_report(res)
+        c.check("SCC-128 B a command naming the vendor skill is an ERROR",
+                any(i["sev"] == "ERROR" and "stale-cmd.md" in i["msg"]
+                    for i in rep.items if i["section"] == "retired-surface"),
+                res_msgs(rep)[:140])
+
+        # C. The UNDERSCORE form - the retired adapter rule - fires too. A guard that
+        #    only knows the skill's spelling misses every pointer at the rule that
+        #    patched it, which is the half that survives as a dangling file path.
+        (rrules / "stale-rule.md").write_text(
+            "---\nname: x\n---\nRead `.agents/rules/bmad_code_review_sudo_fix.md` in full.\n",
+            encoding="utf-8")
+        rep = res_report(res)
+        c.check("SCC-128 C the underscore form (the retired rule) also fires",
+                any(i["sev"] == "ERROR" and "stale-rule.md" in i["msg"]
+                    for i in rep.items if i["section"] == "retired-surface"),
+                res_msgs(rep)[:140])
+
+        # D. A router row is a resurrection: INDEX.md is in scope on both surfaces.
+        (rrules / "INDEX.md").write_text(
+            "| `bmad_code_review_sudo_fix.md` | on-demand | run-to-completion review. |\n",
+            encoding="utf-8")
+        rep = res_report(res)
+        c.check("SCC-128 D an INDEX row pointing at a retired surface fires",
+                any(i["sev"] == "ERROR" and "INDEX.md" in i["msg"]
+                    for i in rep.items if i["section"] == "retired-surface"),
+                res_msgs(rep)[:140])
+
+        # D2. The SKILLS router is in scope too, and nested - `.agents/skills/` is the door
+        #     Claude and Codex actually enter through (one door per platform, SCC-66), so a
+        #     row there routes an agent to the vendor skill exactly as a rule row does. It
+        #     is satisfiable because no vendor `bmad-*` skill lives under `.agents/skills/`;
+        #     that directory is ours.
+        (res / ".agents/skills/some-skill").mkdir(parents=True)
+        (res / ".agents/skills/some-skill/SKILL.md").write_text(
+            "---\nname: some-skill\n---\nRun `bmad-code-review` on the diff.\n",
+            encoding="utf-8")
+        rep = res_report(res)
+        c.check("SCC-128 D2 a nested skill file routing to the vendor skill fires",
+                any(i["sev"] == "ERROR" and "SKILL.md" in i["msg"]
+                    for i in rep.items if i["section"] == "retired-surface"),
+                res_msgs(rep)[:140])
+
+        # E. The message must carry the REMEDY. Whoever trips this is mid-regen and did
+        #    not read this ticket; an error that only says "no" gets worked around.
+        c.check("SCC-128 E the error names the replacement engine",
+                "code-review-engine" in res_msgs(rep), res_msgs(rep)[:140])
+
+        # F. ⭐ The live tree. `cicd-code-review-AP.md` is the ONE allowed hit while it
+        #    is unlanded: its rewire is SCC-126's (operator-approved scope transfer), so
+        #    this lane may not edit it. The exemption lives HERE and not in the linter on
+        #    purpose - `workflow_lint --toolkit-only` stays honestly RED on that file, so
+        #    the violation is visible at every gate instead of being silently allowed,
+        #    while run_all.py (the floor every lane runs) stays green. When SCC-126 lands,
+        #    the AP file goes clean and this case still passes - it asserts "nothing
+        #    ELSE", never "the AP file is dirty".
+        real_rep = res_report(real)
+        offenders = sorted({i["msg"].split(":")[0] for i in real_rep.items
+                            if i["section"] == "retired-surface"})
+        c.check("SCC-128 F no command or rule outside SCC-126's AP file resurrects it",
+                all(o == "cicd-code-review-AP.md" for o in offenders), str(offenders))
     return c.finish()
 
 
