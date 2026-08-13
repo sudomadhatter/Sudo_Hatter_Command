@@ -119,3 +119,76 @@ concluding anything is missing.
   the out-of-order `scc-77` row, and the non-HEAD anchor are all still present on this branch.
 - `_artifacts/_main/2026-08-12_scc-119-subtask-rule/` was left **untracked**: the SCC-119 worktree
   holds its own newer copy (30,191 b vs 29,554 b), so the copy on main is a stray duplicate.
+
+---
+
+## Self-Audit (2026-08-12) — `retroactive`
+
+**Mode: POST-DEV.** The work was already built and pushed at `0fef0c8` when this ran, and no
+`implementation_plan.md` was ever written for SCC-135. Per `/smh-self-audit` Step 0 this is the
+retroactive path: audited against the ticket's SCOPE + ACCEPTANCE block plus the actual change set,
+**not** against an invented plan. ⚠ A retroactive audit cannot change a decision that is already
+built — do not read this as a gate that ran in time.
+
+**Right-size: FULL.** It changes a script other scripts import (`sync-agents.ps1`), the door law, and
+more than one platform surface.
+
+**Repo pinned from command output:** `Sudo_Hatter_Command` | `chore/SCC-135-update-maps-launcher` |
+HEAD `0fef0c8` | `main` `2151568`. `merge-base == main tip`, so the lane is a clean descendant and
+needs no absorb.
+
+| Phase | Walked? | One line |
+|---|---|---|
+| 0 — scope / checkable list | **Skipped** | The decision is built; `/smh-code-review` Step 2 audits the diff against acceptance. Traceability was still checked (see F3). |
+| 1 — blast radius | **⭐ Walked** | Re-derived against current `main`; all five doors verified; two sibling lanes read. |
+| 2 — over-engineering | **Skipped** | Cutting an abstraction is cheap in a plan, expensive in a diff — that is `/smh-code-review` Step 1's job now. |
+| 3 — pre-mortem | **Partly** | Only the external-state rows, per the command's own table. |
+
+### Phase 1 — blast radius (re-derived, not trusted from earlier in the session)
+
+Doors for `smh-update-maps-indexes`, all five present and correctly shaped:
+`.claude/skills` 675 · `.agents/skills` 675 · `.agents/workflows` 1,173 (launcher) ·
+`.opencode/commands` 40,414 · `.agents/commands` 40,414 (the body). `commands/INDEX.md` describes
+behaviour, not doors — unaffected, cleared.
+
+**Sibling lanes read live** (`git worktree list`): `chore/SCC-119-subtask-rule` @ `a2b102a` and
+`chore/SCC-124-baseline-trial` @ `aa44d52`. SCC-124 has **zero** overlap. SCC-119 overlaps on two
+files, both **committed** on its side — see F2.
+
+### Phase 3 — external-state rows only
+
+| Scenario | Handled? |
+|---|---|
+| **The other machine** | ✅ The fold added for exactly this: `python3` on the Mac, `python` on a python.org PC, retry the other name on *command not found*. |
+| **A fresh clone** | ✅ No new gate ships here; the regenerated workflows are committed, so a clone gets them. |
+| **The four platform caches** | ⚠️ Repo-local doors are committed, but the **global** caches this sync wrote (`~/.gemini/antigravity/global_workflows`, `~/.config/opencode/commands`) are machine-local. The PC needs its own `/smh-sync-agents` before the fix is live there. |
+| **A sibling lane lands first** | ⚠️ See F2 — this lane should land first. |
+| **Rollback** | ✅ Revert the commit and re-run the sync; the launchers are generated, so nothing is hand-authored to restore. Nothing irreversible: no delete, no history rewrite, no force-push. |
+
+### Findings
+
+| # | Where | Sev | Failure scenario | Disposition |
+|---|---|---|---|---|
+| F1 | `_artifacts/_main/INDEX.md` (scc-117 row) | **HIGH** | I wrote `(see branch history)` in the Artifacts column, but the folder actually holds `task.yaml` + `walkthrough.md`. An INDEX row that lies about what is on disk — the same defect class as the truncated run's, committed by the fix for it. | **FIXED in this audit** → `task.yaml + walkthrough` |
+| F2 | `.agents/.sync-manifest.json`, `docs/_scc_sops_prds/workflows_testing_SOP.md` | **MED** | Both are `changed in both` against `chore/SCC-119-subtask-rule`, committed on its side. SOP hunks are ~600 lines apart (mine 1706–1790, theirs 1080–1132) so the 3-way merge should resolve; the manifest is **generated** and will conflict textually. | **Land this lane first.** SCC-119 then absorbs `main`. ⛔ Resolve the manifest by **re-running the sync**, never by hand-merging JSON. |
+| F3 | `.agents/scripts/check_maps.py` | **MED** | The `test-results` → `SCAN_IGNORES` change is the operator's, carried from the working tree, and traces to **no SCC-135 acceptance item** — textbook scope leakage. No test covers `SCAN_IGNORES` (only a prose mention in `test_sops_prds_folder.py`), so it ships unproven. | **Accept, disclosed.** Carried at the operator's explicit instruction; named here so it is not mistaken for audited work. |
+| F4 | `.opencode/commands/smh-update-maps-indexes.md` | **LOW** | opencode now receives a 40,414-char command where it previously received a 4,167-char wrapper. No opencode size cap is known — **unverified assumption**. Strictly less indirection than before either way. | **Accept, flagged.** Re-check if opencode ever renders it truncated. |
+| F5 | Antigravity runtime | **INFO** | The fix is proven structurally (launcher generated, nothing over cap) but **not** proven in the IDE — that cannot be verified from here. | Operator reloads Antigravity and re-runs to confirm the door. |
+
+### Four quick gates
+
+- **Verification strategy present?** ✅ Every acceptance item has a command and an expected output;
+  all six were run bare, and the SOP gate carries a positive control at exit 1.
+- **Anything irreversible?** ✅ No. No delete, no history rewrite, no force-push. The Jira transition
+  to *In Progress* is reversible.
+- **Any step vague enough that the builder will guess?** ✅ N/A — built.
+- **Convention fit?** ✅ Frontmatter matches sibling commands (`description:` only, no `name:`, no
+  `platforms:` = all four); artifacts in `_artifacts/_main/<date>_<slug>/`; launcher shape
+  byte-consistent with the other twelve.
+
+```
+Audit verdict: GO
+```
+
+GO with F2 binding: **this lane lands before SCC-119**, and SCC-119 resolves `.sync-manifest.json`
+by re-running the sync rather than hand-merging it.
