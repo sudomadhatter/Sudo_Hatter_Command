@@ -20,10 +20,12 @@ Stdlib only, no pytest — same constraint as the script under test.
 """
 from __future__ import annotations
 
+import os
+import subprocess
 import sys
 from pathlib import Path
 
-from _harness import Cases, TempDir
+from _harness import Cases, TempDir, run_script
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from check_maps import _check_depth3_tree  # noqa: E402
@@ -114,6 +116,116 @@ def main() -> int:
     repo = Path(__file__).resolve().parents[3]
     live = [p for p in _check_depth3_tree(repo, repo / "_artifacts") if "stale row" in p]
     c.check("F the live _artifacts tree reports no stale rows", not live, f"got {live}")
+
+    # ── G–J · ⭐ SCC-138 — the lane gate can FAIL on a drifted index ──────────────────────
+    # `gate_plan()` built the Task lane's gate from run_all + workflow_lint only, so the
+    # close-out printed "clear to close out and merge" over a repo whose own linter was RED.
+    # It happened twice in one day: SCC-124 landed a session folder with no INDEX row and
+    # SCC-119 nearly did, both while run_all reported 21/21 PASS.
+    #
+    # ⛔ Why the gate runs `--depth3-only --strict` and NOT bare `check_maps`: the close-out
+    # runs from a WORKTREE, and there bare check_maps exits 1 on two GUARANTEED false
+    # positives — "AUTO block is STALE" and "on disk but not in map: <lane-name>/" — whose
+    # printed remedy would ship the lane name into the map bound for main. Those live in the
+    # repo-map comparison; `--depth3-only` runs the depth-3 INDEX reconciliation ALONE, which
+    # reads only `root/` and never the CWD. Case K proves both halves against a real worktree.
+    drifted = ["2026-08-11_scc-88-memory-relocation-sweep", "2026-08-11_scc-90-sop-restructure"]
+    one_row = (
+        "# _main — INDEX\n\n| Session folder | What | Artifacts |\n|---|---|---|\n"
+        f"| `{drifted[0]}/` | only one row for two folders | walkthrough |\n"
+    )
+
+    with TempDir() as root:
+        _bucket(root, drifted, one_row)
+        rc, out = run_script("check_maps.py", "--root", str(root), "--depth3-only", "--strict")
+        c.check("G --depth3-only --strict EXITS 1 on a missing INDEX row", rc == 1,
+                f"rc={rc} - a gate that cannot fail is worse than no gate; out={out[:200]}")
+        c.check("G and it names the folder that has no row", drifted[1] in out, out[:200])
+
+    with TempDir() as root:
+        _bucket(root, drifted, one_row)
+        rc, _ = run_script("check_maps.py", "--root", str(root), "--depth3-only")
+        c.check("H bare --depth3-only STILL exits 0 on the same drift", rc == 0,
+                f"rc={rc} - SessionStart runs this as a nag; making it block would gate boot")
+
+    with TempDir() as root:
+        _bucket(root, drifted, one_row.replace("only one row for two folders", "a")
+                + f"| `{drifted[1]}/` | b | walkthrough |\n")
+        rc, _ = run_script("check_maps.py", "--root", str(root), "--depth3-only", "--strict")
+        c.check("I --strict exits 0 on a CLEAN tree", rc == 0,
+                f"rc={rc} - a gate that fires on a clean repo is noise, and noise gets disabled")
+
+    with TempDir() as root:
+        # F7 — empty input must not be a silent pass by accident. A workspace with no
+        # _artifacts/ has nothing that CAN drift, so 0 is right; assert it deliberately
+        # rather than leave it reading as the vacuous-gate tripwire.
+        rc, _ = run_script("check_maps.py", "--root", str(root), "--depth3-only", "--strict")
+        c.check("J --strict on a workspace with no _artifacts/ exits 0 (nothing can drift)",
+                rc == 0, f"rc={rc}")
+
+    # ── K · ⛔ THE WORKTREE PROOF — why the gate is a SUBSET and not the whole linter ──────
+    # SCC-138 acceptance: "Proven from inside a worktree - the false-positive rows do not
+    # block, and the real ones do." This cannot be shown on a synthetic fixture: the two
+    # false positives come from the repo-map comparison, which needs the real map. So it runs
+    # against a REAL detached worktree of this repo - the same thing a close-out stands in.
+    #
+    # Both halves are asserted, and the first is what makes the second mean anything: if bare
+    # check_maps ever stops exiting 1 here, the subset is no longer buying anything and this
+    # case says so instead of quietly passing.
+    #
+    # ⚠ POSIX only. `is_executable` aside, the teardown is the problem: on Windows a pruned
+    # worktree leaves a directory shell that blocks a later `worktree add`, and only PowerShell
+    # removes it. Skipped rather than shipped red on the machine that cannot clean up after it.
+    if os.name != "nt" and (repo / ".git").exists():
+        with TempDir() as tmp:
+            wt = tmp / "lane-probe"
+            add = subprocess.run(["git", "-C", str(repo), "worktree", "add", "--detach",
+                                  str(wt), "HEAD"], capture_output=True, text=True)
+            if add.returncode != 0:
+                c.check("K worktree fixture could be created", False, add.stderr.strip()[:200])
+            else:
+                try:
+                    # ⛔ Point the WORKING COPY of the script at the worktree, rather than
+                    # running the worktree's own copy. `git worktree add` checks out HEAD, so
+                    # the worktree carries the COMMITTED script - a test written this way goes
+                    # green only after the commit that introduces the flag, which makes it
+                    # useless during the change it exists to prove. `root` is resolved from
+                    # --root here and from the script's own location otherwise, so a worktree
+                    # path as --root reproduces exactly the condition under test: a workspace
+                    # whose basename is the lane name.
+                    bare_rc, bare_out = run_script("check_maps.py", "--root", str(wt))
+                    strict_rc, strict_out = run_script("check_maps.py", "--root", str(wt),
+                                                       "--depth3-only", "--strict")
+                    c.check("K bare check_maps on a worktree FALSE-BLOCKS (this is why --depth3-only)",
+                            bare_rc == 1,
+                            f"rc={bare_rc} - if this ever passes, the subset buys nothing "
+                            f"and the gate should just run the whole linter")
+                    c.check("K ...and the false positive names the LANE, whose remedy would "
+                            "ship that name to main",
+                            "not in map" in bare_out or "AUTO block" in bare_out,
+                            bare_out[-300:])
+                    # The property is "the false-positive rows do not block", NOT "exit 0" -
+                    # HEAD may carry genuine depth-3 drift, and that SHOULD block. Asserting
+                    # the exit code would couple this case to whatever the tree happens to
+                    # hold; asserting the rows proves the actual contract either way.
+                    c.check("K --depth3-only --strict reports NEITHER worktree false positive",
+                            "AUTO block" not in strict_out and "not in map" not in strict_out,
+                            f"the close-out gate must not fire on an artefact of standing in "
+                            f"a worktree; out={strict_out[-300:]}")
+
+                    # ...and the mirror, or "reports nothing" would pass by going blind.
+                    ghost = wt / "_artifacts" / "_main" / "2026-08-13_no-row-for-this-one"
+                    ghost.mkdir(parents=True, exist_ok=True)
+                    real_rc, real_out = run_script("check_maps.py", "--root", str(wt),
+                                                   "--depth3-only", "--strict")
+                    c.check("K ...and a REAL missing row still blocks from inside the worktree",
+                            real_rc == 1 and "2026-08-13_no-row-for-this-one" in real_out,
+                            f"rc={real_rc} out={real_out[-300:]}")
+                finally:
+                    subprocess.run(["git", "-C", str(repo), "worktree", "remove", "--force",
+                                    str(wt)], capture_output=True)
+                    subprocess.run(["git", "-C", str(repo), "worktree", "prune"],
+                                   capture_output=True)
 
     return c.finish()
 

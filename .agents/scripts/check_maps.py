@@ -755,19 +755,42 @@ def main():
                     help="home base: fan out across the lobby + every conformant Projects/<name> in one run")
     ap.add_argument("--set-anchor", action="store_true", help="record HEAD as the reconciled baseline and exit")
     ap.add_argument("--depth3-only", action="store_true",
-                    help="fast check: only run the depth-3 _artifacts INDEX reconciliation (for SessionStart; always exits 0)")
+                    help="fast check: only run the depth-3 _artifacts INDEX reconciliation (for SessionStart; exits 0 unless --strict)")
+    ap.add_argument("--strict", action="store_true",
+                    help="with --depth3-only: EXIT 1 on drift instead of 0, so a close-out gate can fail on it (SCC-138)")
     args = ap.parse_args()
     root = Path(args.root).resolve()
     is_home, _ = detect_mode(root)
 
-    # --depth3-only: fast SessionStart nag — only checks _artifacts/ depth-3 INDEXes, always exits 0
+    # --depth3-only: only the depth-3 _artifacts INDEX reconciliation.
+    #
+    # TWO callers, and they need OPPOSITE exit codes from the same check:
+    #   SessionStart  -> a nag. Must exit 0 even when drifted, or boot itself starts failing.
+    #   the lane gate -> a GATE. Must exit 1 on drift, or the close-out prints "clear to close
+    #                    out and merge" over a repo whose own linter is red (SCC-138).
+    # `--strict` is that switch. Defaulting to 1 here would have gated SessionStart; defaulting
+    # to 0 forever is what let SCC-124 land a session folder with no INDEX row while the suite
+    # reported 21/21 PASS.
+    #
+    # ⭐ WHY THE GATE RUNS THIS SUBSET AND NOT THE WHOLE LINTER. The close-out runs from a
+    # WORKTREE. Bare check_maps there exits 1 on two GUARANTEED false positives — "AUTO block
+    # is STALE" and "on disk but not in map: <lane-name>/" — because the repo-map comparison
+    # labels the home base from the CWD basename, and its printed remedy would ship the lane
+    # name into the map bound for main. This reconciliation is free of both: it reads only
+    # `root/` (resolved from THIS FILE's location, never the CWD) and compares INDEX rows to
+    # directories. Verified in a real detached worktree, 2026-08-13.
+    #
+    # ⚠ It is therefore a SUBSET, not "the linter". Checks 1-6 — AUTO-block freshness, level-2
+    # INDEX presence, structure conformance — are NOT gated at close-out. That is deliberate
+    # (the incidents this closes were all missing INDEX rows) but it must never be described as
+    # "the gate runs check_maps", or a reader will believe the full linter runs.
     if args.depth3_only:
         problems = check_depth3_indexes(root)
         if problems:
             print("⚠️  Depth-3 _artifacts INDEX drift (run /update-maps-indexes to reconcile):")
             for p in problems:
                 print(f"  • {p}")
-        sys.exit(0)  # always 0 — it's a nag, not a gate
+        sys.exit(1 if (problems and args.strict) else 0)
 
     # Worklist: `--all` at a home base fans out (lobby first, then each conformant project); otherwise the
     # single --root. `--all` outside a home base is a harmless no-op so the SAME command is safe everywhere.

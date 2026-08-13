@@ -618,6 +618,36 @@ def main() -> int:
         c.check("SCC-64 no-deploy repo prints workflow_lint --toolkit-only",
                 "workflow_lint.py --toolkit-only" in out, out.strip()[-300:])
 
+    # ── SCC-138 · the lane gate must RUN the map linter, not just the test suite ──────────
+    # `gate_plan()` built the LOCAL gate from run_all + workflow_lint ONLY, so the close-out
+    # could not fail on a linter it never ran. Twice in one day the two disagreed and only the
+    # linter was right: SCC-124 landed a session folder with no INDEX row and SCC-119 nearly
+    # did, both while run_all reported 21/21 PASS. A gate that prints a clean verdict over a
+    # red linter is worse than no gate - it converts a detectable problem into a trusted one.
+    with TempDir() as t:
+        repo = make_repo(t)
+        write(repo, ".agents/scripts/check_maps.py", "# fixture\n")
+        commit(repo, "SCC-11 chore: check_maps fixture")
+        git(repo, "push", "-q", "origin", "main")
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        code, out = preflight(repo)
+        c.check("SCC-138 the printed gate includes check_maps",
+                "check_maps.py" in out, out.strip()[-400:])
+        # ⛔ The `--strict` token is the whole gate. `--depth3-only` ALONE exits 0 even on
+        # drift (it is SessionStart's nag), so the entry without it is a gate that cannot
+        # fail - the exact vacuous green this ticket closes. Pin the token, not the prose.
+        c.check("SCC-138 ...with --strict, or the entry is a gate that cannot fail",
+                "check_maps.py --depth3-only --strict" in out, out.strip()[-400:])
+
+    # A repo that does not ship the linter must not be told to run it - never report a gate
+    # that did not run (the same rule the empty-plan branch already states).
+    with TempDir() as t:
+        repo = make_repo(t)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        code, out = preflight(repo)
+        c.check("SCC-138 a repo without check_maps is not told to run it",
+                "check_maps.py" not in out, out.strip()[-400:])
+
     # ── SCC-94: secondary_repos was documented in three places and read by NOTHING ──
     # A cross-repo task could declare "this also lands in <repo> under <KEY>" and close out green
     # while that key was one the repo's hook rejects, the branch was never pushed, or the half was
