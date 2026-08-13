@@ -192,3 +192,27 @@ Audit verdict: GO
 
 GO with F2 binding: **this lane lands before SCC-119**, and SCC-119 resolves `.sync-manifest.json`
 by re-running the sync rather than hand-merging it.
+
+---
+
+## Close-out addendum (2026-08-12) — F6, found by the preflight
+
+**The preflight blocked at exit 2 and it was right to.** `sync: 1 uncommitted change(s)` — the
+untracked `_artifacts/_main/2026-08-12_scc-119-subtask-rule/` this walkthrough had already flagged as
+a stray. Verified redundant first (SCC-119 has `implementation_plan.md` + `task.yaml` +
+`walkthrough.md` all **committed** on its branch, and its copy is newer: 30,191 b vs 29,554 b), then
+**parked** to scratch rather than deleted or committed — another lane's work is never swept under
+this ticket.
+
+**Parking it turned the gate RED, which is the gate working.** `run_all` went 20/21 with
+`test_check_maps.py` failing, because `_artifacts/_main/INDEX.md` still carried a **row** for the
+folder that was no longer on disk — `stale row 2026-08-12_scc-119-subtask-rule/ (folder not on disk)`.
+That row came from the truncated Antigravity run, which had added an INDEX row for a stray duplicate
+of another lane's folder. Removing the row corrects that run's ungated output; it does not touch
+SCC-119's own work.
+
+| # | Where | Sev | Failure scenario | Disposition |
+|---|---|---|---|---|
+| F6 | `_artifacts/_main/INDEX.md` | **HIGH** | ⛔ **SCC-119 adds NO `_artifacts/_main/INDEX.md` row of its own** — verified, 0 hits in its committed diff vs `main`. It was relying on the row the truncated run happened to leave behind, which this lane has now removed. When SCC-119 lands its three files, `main` will have a session folder with **no INDEX row**, which `check_maps` reports as fatal drift. | **Handoff, binding.** SCC-119 must add its own INDEX row in the same commit as its folder. This lane ships internally consistent — no folder, no row — and cannot fix SCC-119's half without committing another lane's work. |
+
+Gates re-run after the row removal: `check_maps` exit 0, `run_all` **21/21** exit 0.
