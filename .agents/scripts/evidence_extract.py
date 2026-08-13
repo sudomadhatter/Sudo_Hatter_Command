@@ -711,8 +711,16 @@ def _dedupe(values: list[str]) -> list[str]:
 
 
 # ── Mode 1: the pre-lens pack ─────────────────────────────────────────────────
-def _render_pack_block(rel: str, context: str, body_lines: list[str], total: int) -> str:
-    """One file's pack block. The truncation label always states what is ACTUALLY shown.
+_LINE_TRUNCATED = " ...[line truncated to fit the pack budget]"
+
+
+def _render_pack_block(rel: str, context: str, body_lines: list[str], total: int,
+                       partial: bool = False) -> str:
+    """One file's pack block. The label always states what is ACTUALLY shown.
+
+    The label is derived here rather than passed in because a block is rendered more than once:
+    at full size to measure it, then again at whatever line count its share of the char budget
+    turns out to fund. A label carried in from the first render would describe the first.
 
     Import context goes ABOVE the body, which is a deliberate deviation from the port. pr-af
     appends it, then truncates the assembled blob -- and one 400-line file fills the whole budget
@@ -722,29 +730,27 @@ def _render_pack_block(rel: str, context: str, body_lines: list[str], total: int
     byte in the pack and the reason a lens is primed at all.
     """
     shown = len(body_lines)
-    trunc = f" (showing first {shown} of {total})" if shown < total else ""
+    if partial:
+        trunc = f" (showing part of line 1 of {total})"
+    elif shown < total:
+        trunc = f" (showing first {shown} of {total})"
+    else:
+        trunc = ""
     block = f"### {rel}{trunc}"
     if context:
         block += f"\n_import/usage context:_ {context}"
     return block + "\n```\n" + "\n".join(body_lines) + "\n```"
 
 
-def _fair_shares(sizes: list[int], available: int) -> list[int]:
-    """Split `available` chars across blocks: small blocks keep all, big ones divide the rest.
-
-    Water-filling, smallest first. The port simply sliced the assembled blob at _PACK_MAX_CHARS,
-    which spends the budget first-come: SCC-124's baseline trial caught a real run packing
-    `task_preflight.py` at 11 of its 686 lines while quoting smaller files in full, so the lens
-    was primed to believe the largest file in the change set was a stub. The TOTAL cap is
-    unchanged -- only its distribution is.
-    """
-    shares = [0] * len(sizes)
-    remaining, left = available, len(sizes)
-    for i in sorted(range(len(sizes)), key=lambda j: sizes[j]):
-        shares[i] = max(0, min(sizes[i], remaining // left if left else 0))
-        remaining -= shares[i]
-        left -= 1
-    return shares
+def _fit_lines(body: list[str], room: int) -> int:
+    """How many whole lines fit in `room` chars, each costing its length plus one newline."""
+    used = keep = 0
+    for line in body:
+        if used + len(line) + 1 > room:
+            break
+        used += len(line) + 1
+        keep += 1
+    return keep
 
 
 def build_pack(repo: str, target_files: list[str]) -> str:
@@ -783,28 +789,63 @@ def build_pack(repo: str, target_files: list[str]) -> str:
     if sum(len(b) for b in full) + separators <= _PACK_MAX_CHARS:
         return "\n\n".join(full)
 
-    shares = _fair_shares([len(b) for b in full], _PACK_MAX_CHARS - separators)
-    blocks: list[str] = []
-    for (rel, context, body, total), whole, share in zip(parts, full, shares):
-        if len(whole) <= share:
-            blocks.append(whole)
+    # Divide the budget instead of spending it first-come. The port sliced the assembled blob at
+    # _PACK_MAX_CHARS, so whatever sat at the end lost: SCC-124's trial caught a real run packing
+    # `task_preflight.py` at 11 of its 686 lines while quoting smaller files whole. The TOTAL cap
+    # is unchanged; only its distribution is.
+    #
+    # Smallest block first, carrying the residue forward. A block that spends less than its share
+    # -- it fits whole, or its whole lines do not divide evenly into the share -- leaves the
+    # difference to the blocks after it, and the biggest file, the one trimming actually costs,
+    # is served last with everything the others did not use. Without that carry, whole-line
+    # rounding silently threw away up to half the budget.
+    #
+    # ⚠ The cost of the split, so nobody reads it as free: on a six-file change set every file
+    # gets a ~2.6k share, of which the header plus the protected import context can be a third,
+    # so each lands a preamble rather than a readable extent. That is still better than five
+    # files packed as nothing, but it is a trade, not a win.
+    blocks: dict[int, str] = {}
+    remaining, left = _PACK_MAX_CHARS - separators, len(parts)
+    for i in sorted(range(len(parts)), key=lambda j: len(full[j])):
+        share = remaining // left if left else 0
+        left -= 1
+        if len(full[i]) <= share:
+            blocks[i] = full[i]
+            remaining -= len(full[i])
             continue
-        # Trim whole LINES, never mid-line: a lens reading half a statement reasons about a
-        # syntax error that is not in the file. Estimate the fit, then step back until it holds
-        # -- the label's own digit count changes as lines drop, so the estimate can overshoot.
-        overhead = len(_render_pack_block(rel, context, [], total))
-        keep, size = 0, overhead
-        for n, line in enumerate(body, 1):
-            size += len(line) + 1
-            if size > share:
-                break
-            keep = n
-        while keep and len(_render_pack_block(rel, context, body[:keep], total)) > share:
-            keep -= 1
-        _note(f"pack: {rel} trimmed to {keep} of {len(body)} packed lines to share the "
-              f"{_PACK_MAX_CHARS}-char budget across {len(parts)} file(s)")
-        blocks.append(_render_pack_block(rel, context, body[:keep], total))
-    return "\n\n".join(blocks)[:_PACK_MAX_CHARS]
+        rel, context, body, total = parts[i]
+        # Whole lines, never mid-line: a lens reading half a statement reasons about a syntax
+        # error that is not in the file. Step back after rendering -- the label's own digit
+        # count shifts as lines drop, so the arithmetic can overshoot by a character or two.
+        keep = _fit_lines(body, share - len(_render_pack_block(rel, context, [], total)))
+        block = None
+        if keep:
+            block = _render_pack_block(rel, context, body[:keep], total)
+            while len(block) > share and keep > 1:
+                keep -= 1
+                block = _render_pack_block(rel, context, body[:keep], total)
+        elif body:
+            # A file can be ONE line -- minified JS, a lock file, a base64 data URI -- and a
+            # whole-lines rule alone would render an empty fence under its header, telling the
+            # lens the file is empty. That is the single most dangerous thing a primer can say,
+            # so this one case degrades to a marked partial line instead.
+            room = share - len(_render_pack_block(rel, context, [""], total, True))
+            if room > len(_LINE_TRUNCATED):
+                head = body[0][:room - len(_LINE_TRUNCATED)] + _LINE_TRUNCATED
+                block = _render_pack_block(rel, context, [head], total, True)
+        if block is None or len(block) > share:
+            # Dropping beats emitting a header over an empty fence: absent from the pack, the
+            # lens still has the live file: present but empty, it has a false fact.
+            _note(f"pack: {rel} dropped — a {share}-char share cannot carry its header and a line")
+            continue
+        if len(block) < len(full[i]):
+            _note(f"pack: {rel} trimmed to fit a {share}-char share of the "
+                  f"{_PACK_MAX_CHARS}-char budget across {len(parts)} file(s)")
+        blocks[i] = block
+        remaining -= len(block)
+    # No final slice: every block was measured against its own share and sum(shares) never
+    # exceeds the budget, so the whole-line guarantee cannot be undone by a trailing cut.
+    return "\n\n".join(blocks[i] for i in sorted(blocks))
 
 
 # ── Mode 2: per-finding evidence ──────────────────────────────────────────────

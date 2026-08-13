@@ -366,7 +366,7 @@ def main() -> int:
         shown_n = (int(header.split("showing first ")[1].split(" of ")[0])
                    if "showing first " in header else -1)
         c.check("pack COUNTER-EXAMPLE: that file really did hit the CHAR cap, not just the line cap",
-                0 < shown_n < 400 and len(out.strip()) <= 16000,
+                0 < shown_n < 400 and 15000 < len(out.strip()) <= 16000,
                 f"shown={shown_n} lines (line cap 400), {len(out.strip())} chars")
 
         # ── the budget is DIVIDED across files, never spent first-come (SCC-125) ──────
@@ -401,6 +401,35 @@ def main() -> int:
         c.check("pack COUNTER-EXAMPLE: the fixture really did exceed the budget",
                 fixture_chars > 16000,
                 f"{fixture_chars} chars - too small to exercise the split")
+
+        # A share the whole-lines rule cannot spend must not be thrown away (SCC-125 review F2).
+        # The split allocates smallest-block-first and carries the residue forward; without that
+        # carry, rounding down to whole lines left up to half the budget unused while the file
+        # that needed it most was the one being cut.
+        c.check("pack: the split spends the budget it divided, rather than rounding it away",
+                len(out.strip()) > 13000, f"only {len(out.strip())} of 16000 chars used")
+
+        # ONE-LINE FILES (SCC-125 review F1). A minified bundle, a lock file or a base64 data URI
+        # is a single line longer than any share. Trimming whole lines alone kept ZERO of them and
+        # emitted a header over an empty fence, which tells the lens the file is empty -- a
+        # regression against even the old blob-slice, which at least handed over a prefix.
+        one = tmp / "repoOneLine"
+        one.mkdir()
+        write(one, "dist/bundle.js", "var BUNDLE_SENTINEL=1;" + "z" * 40000 + "\n")
+        write(one, "src/plain.py", "\n".join(f"plain_{i} = {i}" for i in range(400)) + "\n")
+        rc, out1, _ = run_ee("--repo", str(one), "--pack", "dist/bundle.js", "src/plain.py")
+        c.check("pack: a single-line file too long for its share is NOT emitted as empty",
+                "BUNDLE_SENTINEL" in out1, "the one-line file was packed as an empty fence")
+        c.check("pack: and it is labelled as a partial line, not as a whole file",
+                "showing part of line 1 of 1" in out1,
+                "label does not disclose that the line was cut")
+        c.check("pack COUNTER-EXAMPLE: the label never claims zero lines of a non-empty file",
+                "showing first 0 of" not in out1, "a 'showing first 0' label was emitted")
+        c.check("pack: every code fence it emits is closed",
+                out1.count("```") % 2 == 0, f"{out1.count('```')} fence markers - odd means unclosed")
+        c.check("pack COUNTER-EXAMPLE: the one-line fixture really did overrun its share",
+                len(out1.strip()) <= 16000 and "z" * 100 in out1,
+                f"{len(out1.strip())} chars - fixture did not exercise the partial path")
 
         # skips
         rc, out, _ = run_ee("--repo", str(repo), "--pack", "node_modules/evil.py")
