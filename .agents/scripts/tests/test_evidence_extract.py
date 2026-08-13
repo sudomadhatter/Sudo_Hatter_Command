@@ -355,8 +355,81 @@ def main() -> int:
         c.check("pack: a file long enough to hit the char cap STILL carries its import context",
                 "big/long_user.py" in imported_by(out),
                 imported_by(out) or "IMPORTED BY was truncated off the end of the pack")
-        c.check("pack COUNTER-EXAMPLE: that file really did hit the cap",
-                len(out.strip()) >= 16000, f"{len(out.strip())} chars - cap never bit")
+        # This control asserted `len(out.strip()) >= 16000` until SCC-125. That exact-byte
+        # equality was an artifact of the old `[:16000]` slice, not the contract: the pack now
+        # trims whole LINES, so a fixture that overruns lands just under the cap instead of
+        # exactly on it. The intent is unchanged and is now asserted directly -- the CHAR cap
+        # bit, which is only provable by the file being cut below the 400-line cap that would
+        # otherwise bound it.
+        header = next((ln for ln in out.splitlines()
+                       if ln.startswith("### big/imported_long.py")), "")
+        shown_n = (int(header.split("showing first ")[1].split(" of ")[0])
+                   if "showing first " in header else -1)
+        c.check("pack COUNTER-EXAMPLE: that file really did hit the CHAR cap, not just the line cap",
+                0 < shown_n < 400 and 15000 < len(out.strip()) <= 16000,
+                f"shown={shown_n} lines (line cap 400), {len(out.strip())} chars")
+
+        # ── the budget is DIVIDED across files, never spent first-come (SCC-125) ──────
+        # SCC-124's B2 meta-finding: a real run packed `task_preflight.py` at 11 of its 686
+        # lines while quoting smaller files in full, because the assembled blob was simply
+        # sliced at _PACK_MAX_CHARS and whatever sat at the end lost. The lens was told the
+        # largest file in the change set was a stub. The total cap is unchanged and still
+        # pinned above; what changes is that each file gets a share of it.
+        budget = tmp / "repoBudget"
+        budget.mkdir()
+        for name, tag in (("first", "a"), ("second", "b")):
+            write(budget, f"hog/{name}.py",
+                  "\n".join(f"{name}_{i} = '{tag * 55}'" for i in range(400)) + "\n")
+        write(budget, "hog/last.py", "LAST_SENTINEL = 1\nlast_tail = 2\n")
+        rc, out, _ = run_ee("--repo", str(budget), "--pack",
+                            "hog/first.py", "hog/second.py", "hog/last.py")
+        heads = pack_of(out)
+        c.check("pack: every packed file keeps its header when the char cap bites",
+                heads == ["hog/first.py", "hog/second.py", "hog/last.py"], f"headers={heads}")
+        c.check("pack: the file packed LAST is not starved by the ones before it",
+                "LAST_SENTINEL" in out, "the last file lost its whole body to earlier files")
+        c.check("pack: two oversized files each keep a fair share of the budget",
+                out.count("first_") > 40 and out.count("second_") > 40,
+                f"first={out.count('first_')} lines second={out.count('second_')} lines")
+        c.check("pack: a share-truncated file says how much of it is shown",
+                out.count("(showing first ") >= 2,
+                f"{out.count('(showing first ')} truncation notice(s) for 2 cut files")
+        c.check("pack COUNTER-EXAMPLE: the total cap still holds under the split",
+                len(out.strip()) <= 16000, f"{len(out.strip())} chars")
+        fixture_chars = sum(len((budget / "hog" / f"{n}.py").read_text(encoding="utf-8"))
+                            for n in ("first", "second"))
+        c.check("pack COUNTER-EXAMPLE: the fixture really did exceed the budget",
+                fixture_chars > 16000,
+                f"{fixture_chars} chars - too small to exercise the split")
+
+        # A share the whole-lines rule cannot spend must not be thrown away (SCC-125 review F2).
+        # The split allocates smallest-block-first and carries the residue forward; without that
+        # carry, rounding down to whole lines left up to half the budget unused while the file
+        # that needed it most was the one being cut.
+        c.check("pack: the split spends the budget it divided, rather than rounding it away",
+                len(out.strip()) > 13000, f"only {len(out.strip())} of 16000 chars used")
+
+        # ONE-LINE FILES (SCC-125 review F1). A minified bundle, a lock file or a base64 data URI
+        # is a single line longer than any share. Trimming whole lines alone kept ZERO of them and
+        # emitted a header over an empty fence, which tells the lens the file is empty -- a
+        # regression against even the old blob-slice, which at least handed over a prefix.
+        one = tmp / "repoOneLine"
+        one.mkdir()
+        write(one, "dist/bundle.js", "var BUNDLE_SENTINEL=1;" + "z" * 40000 + "\n")
+        write(one, "src/plain.py", "\n".join(f"plain_{i} = {i}" for i in range(400)) + "\n")
+        rc, out1, _ = run_ee("--repo", str(one), "--pack", "dist/bundle.js", "src/plain.py")
+        c.check("pack: a single-line file too long for its share is NOT emitted as empty",
+                "BUNDLE_SENTINEL" in out1, "the one-line file was packed as an empty fence")
+        c.check("pack: and it is labelled as a partial line, not as a whole file",
+                "showing part of line 1 of 1" in out1,
+                "label does not disclose that the line was cut")
+        c.check("pack COUNTER-EXAMPLE: the label never claims zero lines of a non-empty file",
+                "showing first 0 of" not in out1, "a 'showing first 0' label was emitted")
+        c.check("pack: every code fence it emits is closed",
+                out1.count("```") % 2 == 0, f"{out1.count('```')} fence markers - odd means unclosed")
+        c.check("pack COUNTER-EXAMPLE: the one-line fixture really did overrun its share",
+                len(out1.strip()) <= 16000 and "z" * 100 in out1,
+                f"{len(out1.strip())} chars - fixture did not exercise the partial path")
 
         # skips
         rc, out, _ = run_ee("--repo", str(repo), "--pack", "node_modules/evil.py")

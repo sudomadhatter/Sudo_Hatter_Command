@@ -711,15 +711,57 @@ def _dedupe(values: list[str]) -> list[str]:
 
 
 # ── Mode 1: the pre-lens pack ─────────────────────────────────────────────────
+_LINE_TRUNCATED = " ...[line truncated to fit the pack budget]"
+
+
+def _render_pack_block(rel: str, context: str, body_lines: list[str], total: int,
+                       partial: bool = False) -> str:
+    """One file's pack block. The label always states what is ACTUALLY shown.
+
+    The label is derived here rather than passed in because a block is rendered more than once:
+    at full size to measure it, then again at whatever line count its share of the char budget
+    turns out to fund. A label carried in from the first render would describe the first.
+
+    Import context goes ABOVE the body, which is a deliberate deviation from the port. pr-af
+    appends it, then truncates the assembled blob -- and one 400-line file fills the whole budget
+    on its own, so the context is cut off the end. Caught by running this on a real file in this
+    repo (`wf_common.py`, 16093 bytes, IMPORTED BY truncated away). Keeping it above means what
+    trimming eats is body lines rather than the dependency map, which is the highest value per
+    byte in the pack and the reason a lens is primed at all.
+    """
+    shown = len(body_lines)
+    if partial:
+        trunc = f" (showing part of line 1 of {total})"
+    elif shown < total:
+        trunc = f" (showing first {shown} of {total})"
+    else:
+        trunc = ""
+    block = f"### {rel}{trunc}"
+    if context:
+        block += f"\n_import/usage context:_ {context}"
+    return block + "\n```\n" + "\n".join(body_lines) + "\n```"
+
+
+def _fit_lines(body: list[str], room: int) -> int:
+    """How many whole lines fit in `room` chars, each costing its length plus one newline."""
+    used = keep = 0
+    for line in body:
+        if used + len(line) + 1 > room:
+            break
+        used += len(line) + 1
+        keep += 1
+    return keep
+
+
 def build_pack(repo: str, target_files: list[str]) -> str:
     """Pre-read a lens's target files (+ import context) so it reasons over a primed dossier."""
     if not repo or not target_files:
         return ""
-    blocks: list[str] = []
+    parts: list[tuple[str, str, list[str], int]] = []
     for raw in target_files:
         # The cap counts files PACKED, not files asked for: slicing the request first let six
         # bad paths evict the one real file and produce an empty pack with a clean exit.
-        if len(blocks) >= _PACK_MAX_FILES:
+        if len(parts) >= _PACK_MAX_FILES:
             _note(f"pack: file cap ({_PACK_MAX_FILES}) reached; remaining targets skipped")
             break
         rel = _resolve_rel(repo, raw)
@@ -735,25 +777,75 @@ def build_pack(repo: str, target_files: list[str]) -> str:
             _note(f"pack: skipped (empty or unreadable): {raw}")
             continue
         shown = lines[:_PACK_MAX_LINES]
-        body = "\n".join(f"{i + 1}: {line.rstrip()}" for i, line in enumerate(shown))
-        trunc = (f" (showing first {_PACK_MAX_LINES} of {len(lines)})"
-                 if len(lines) > _PACK_MAX_LINES else "")
-        # Import context goes ABOVE the body, which is a deliberate deviation from the port.
-        # pr-af appends it, then truncates the assembled blob at _PACK_MAX_CHARS -- and one
-        # 400-line file fills that budget on its own, so the context is cut off the end. Caught
-        # by running this on a real file in this repo (`wf_common.py`, 16093 bytes, IMPORTED BY
-        # truncated away). The caps are pinned and unchanged; only the ORDER changed, so what
-        # truncation eats is body lines rather than the dependency map -- which is the highest
-        # value per byte in the whole pack and the reason a lens is primed at all.
-        block = f"### {rel}{trunc}"
-        context = _build_import_context(repo, rel)
-        if context:
-            block += f"\n_import/usage context:_ {context[:_PACK_IMPORT_SLICE]}"
-        block += f"\n```\n{body}\n```"
-        blocks.append(block)
-    if not blocks:
+        body = [f"{i + 1}: {line.rstrip()}" for i, line in enumerate(shown)]
+        context = _build_import_context(repo, rel)[:_PACK_IMPORT_SLICE]
+        parts.append((rel, context, body, len(lines)))
+    if not parts:
         _note(f"pack: nothing packed — none of the {len(target_files)} target(s) was readable")
-    return "\n\n".join(blocks)[:_PACK_MAX_CHARS]
+        return ""
+
+    full = [_render_pack_block(*p) for p in parts]
+    separators = 2 * (len(full) - 1)
+    if sum(len(b) for b in full) + separators <= _PACK_MAX_CHARS:
+        return "\n\n".join(full)
+
+    # Divide the budget instead of spending it first-come. The port sliced the assembled blob at
+    # _PACK_MAX_CHARS, so whatever sat at the end lost: SCC-124's trial caught a real run packing
+    # `task_preflight.py` at 11 of its 686 lines while quoting smaller files whole. The TOTAL cap
+    # is unchanged; only its distribution is.
+    #
+    # Smallest block first, carrying the residue forward. A block that spends less than its share
+    # -- it fits whole, or its whole lines do not divide evenly into the share -- leaves the
+    # difference to the blocks after it, and the biggest file, the one trimming actually costs,
+    # is served last with everything the others did not use. Without that carry, whole-line
+    # rounding silently threw away up to half the budget.
+    #
+    # ⚠ The cost of the split, so nobody reads it as free: on a six-file change set every file
+    # gets a ~2.6k share, of which the header plus the protected import context can be a third,
+    # so each lands a preamble rather than a readable extent. That is still better than five
+    # files packed as nothing, but it is a trade, not a win.
+    blocks: dict[int, str] = {}
+    remaining, left = _PACK_MAX_CHARS - separators, len(parts)
+    for i in sorted(range(len(parts)), key=lambda j: len(full[j])):
+        share = remaining // left if left else 0
+        left -= 1
+        if len(full[i]) <= share:
+            blocks[i] = full[i]
+            remaining -= len(full[i])
+            continue
+        rel, context, body, total = parts[i]
+        # Whole lines, never mid-line: a lens reading half a statement reasons about a syntax
+        # error that is not in the file. Step back after rendering -- the label's own digit
+        # count shifts as lines drop, so the arithmetic can overshoot by a character or two.
+        keep = _fit_lines(body, share - len(_render_pack_block(rel, context, [], total)))
+        block = None
+        if keep:
+            block = _render_pack_block(rel, context, body[:keep], total)
+            while len(block) > share and keep > 1:
+                keep -= 1
+                block = _render_pack_block(rel, context, body[:keep], total)
+        elif body:
+            # A file can be ONE line -- minified JS, a lock file, a base64 data URI -- and a
+            # whole-lines rule alone would render an empty fence under its header, telling the
+            # lens the file is empty. That is the single most dangerous thing a primer can say,
+            # so this one case degrades to a marked partial line instead.
+            room = share - len(_render_pack_block(rel, context, [""], total, True))
+            if room > len(_LINE_TRUNCATED):
+                head = body[0][:room - len(_LINE_TRUNCATED)] + _LINE_TRUNCATED
+                block = _render_pack_block(rel, context, [head], total, True)
+        if block is None or len(block) > share:
+            # Dropping beats emitting a header over an empty fence: absent from the pack, the
+            # lens still has the live file: present but empty, it has a false fact.
+            _note(f"pack: {rel} dropped — a {share}-char share cannot carry its header and a line")
+            continue
+        if len(block) < len(full[i]):
+            _note(f"pack: {rel} trimmed to fit a {share}-char share of the "
+                  f"{_PACK_MAX_CHARS}-char budget across {len(parts)} file(s)")
+        blocks[i] = block
+        remaining -= len(block)
+    # No final slice: every block was measured against its own share and sum(shares) never
+    # exceeds the budget, so the whole-line guarantee cannot be undone by a trailing cut.
+    return "\n\n".join(blocks[i] for i in sorted(blocks))
 
 
 # ── Mode 2: per-finding evidence ──────────────────────────────────────────────
