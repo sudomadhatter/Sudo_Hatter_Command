@@ -28,7 +28,8 @@ from pathlib import Path
 from _harness import Cases, TempDir, run_script
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from check_maps import _check_depth3_tree  # noqa: E402
+import check_maps  # noqa: E402
+from check_maps import _check_depth3_tree, check_level2_indexes, find_indexes  # noqa: E402
 
 MEMORY_PREFIXED = [
     "tea-retrofit-active-initiative",
@@ -116,6 +117,58 @@ def main() -> int:
     repo = Path(__file__).resolve().parents[3]
     live = [p for p in _check_depth3_tree(repo, repo / "_artifacts") if "stale row" in p]
     c.check("F the live _artifacts tree reports no stale rows", not live, f"got {live}")
+
+    # ── F2 · ⭐ SCC-139 — the OTHER half of the same contract, which nothing asserted ──────
+    # Case F pinned "no STALE rows" and stopped there. Nothing asserted "no MISSING rows",
+    # so a session folder with no INDEX row passed the whole suite - which is exactly how
+    # SCC-124 landed one and how SCC-119 nearly did, both at 21/21 PASS. Half a contract
+    # under test reads identically to a whole one right up until the day it doesn't.
+    live_missing = [p for p in _check_depth3_tree(repo, repo / "_artifacts") if "missing row" in p]
+    c.check("F2 the live _artifacts tree reports no MISSING rows", not live_missing,
+            f"got {live_missing} - add the INDEX row before closing out")
+
+    # ...and the teeth, ON THE LIVE TREE. A fixture-only assertion is precisely what left
+    # this hole open, so the folder is seeded into the real _artifacts and removed again.
+    probe = repo / "_artifacts" / "_main" / "2026-08-13_scc-139-liveness-probe"
+    try:
+        probe.mkdir(parents=True, exist_ok=False)
+        seeded = [p for p in _check_depth3_tree(repo, repo / "_artifacts") if "missing row" in p]
+        c.check("F2 ...and a rowless folder seeded into the LIVE tree IS reported",
+                any(probe.name in p for p in seeded),
+                f"got {seeded} - without this, F2 above passes by having nothing to find")
+    finally:
+        probe.rmdir()
+
+    # ── L · ⭐ SCC-139 — SCAN_IGNORES, which had ZERO coverage ────────────────────────────
+    # It rode in on SCC-135 as a carried operator change with no acceptance item and no test.
+    #
+    # ⛔ Driven through its REAL consumers - `check_level2_indexes` and `find_indexes` - and
+    # NOT through the close-out gate. `_check_depth3_tree` never reads SCAN_IGNORES (it filters
+    # on `_archived` and dotfiles only), so an assertion routed through `--depth3-only` would
+    # pass no matter what the set contained: a vacuous green inside the ticket that exists to
+    # kill vacuous greens. Characterization, so it is green-first by design; the mutation below
+    # is what proves it is load-bearing.
+    with TempDir() as root:
+        # `Projects` IS in SCAN_IGNORES - separate repos, own maps, own linter.
+        (root / "Projects" / "SomeProject").mkdir(parents=True)
+        # `workspace` is NOT - an ordinary level-2 folder, which owes an INDEX.md.
+        (root / "workspace" / "a-real-folder").mkdir(parents=True)
+        probs = check_level2_indexes(root)
+        c.check("L an ignored dir (Projects/) is NOT required to carry an INDEX",
+                not any("Projects/" in p for p in probs), f"got {probs}")
+        c.check("L ...while a non-ignored level-2 folder still IS (the mirror)",
+                any("workspace/a-real-folder" in p for p in probs), f"got {probs}")
+
+    with TempDir() as root:
+        (root / "node_modules" / "pkg").mkdir(parents=True)
+        (root / "node_modules" / "pkg" / "INDEX.md").write_text("# vendor\n", encoding="utf-8")
+        (root / "real").mkdir()
+        (root / "real" / "INDEX.md").write_text("# ours\n", encoding="utf-8")
+        found = [p.as_posix() for p in find_indexes(root)]
+        c.check("L find_indexes skips an INDEX.md inside an ignored dir",
+                not any("node_modules" in p for p in found), f"got {found}")
+        c.check("L ...and still collects the real one", any("/real/INDEX.md" in p for p in found),
+                f"got {found}")
 
     # ── G–J · ⭐ SCC-138 — the lane gate can FAIL on a drifted index ──────────────────────
     # `gate_plan()` built the Task lane's gate from run_all + workflow_lint only, so the
