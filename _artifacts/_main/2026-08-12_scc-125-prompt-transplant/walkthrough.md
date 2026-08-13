@@ -1,7 +1,7 @@
 # SCC-125 — Prompt transplant: FP gates on hunter lenses, adapted rubrics for auditors
 
 **Ticket:** SCC-125 (Subtask of SCC-116) · **Lane:** `chore/SCC-125-prompt-transplant`
-**Plan:** [implementation_plan.md](implementation_plan.md) (Audit verdict: GO) · **HEAD:** `2c503fd`
+**Plan:** [implementation_plan.md](implementation_plan.md) (Audit verdict: GO) · **HEAD:** `e38fc85` (last code commit; artifacts follow)
 
 ## Task Checklist
 
@@ -124,7 +124,7 @@ python3 -m py_compile (the 3 changed .py files)          -> OK
 ```
 Case count 1091 → 1187 (+90 engine, +6 extractor) → **1262** after the review's fixes (+69 engine
 routing/precedence, +6 extractor regression). Both gates run **bare** — piping one would have
-reported the pipe's exit code, not the gate's. Final figures measured at `06c3b1e`, from an
+reported the pipe's exit code, not the gate's. Final figures measured at `e38fc85`, from an
 absolute path, after the cwd incident noted in the checklist.
 
 **SOP currency, with a positive control rather than an assumption:**
@@ -139,7 +139,7 @@ moved. Scoping it to one commit keeps the record precise about which change clai
 ## Code Review (2026-08-12)
 
 ```
-Verdict: PASS @ 06c3b1e
+Verdict: PASS @ e38fc85
 ```
 Suite evidence measured at the same sha: `run_all.py` 21/21 files, **1262/1262** cases, exit 0.
 
