@@ -107,6 +107,53 @@ def make_pushable(tmp: Path, *, push_main: bool = True,
     return d, bare
 
 
+def make_carveout_repo(tmp: Path, *, flag: str, script: str) -> Path:
+    """A repo carrying ONE of the two merge-exempting gates, armed, plus what it needs to run.
+
+    Deliberately one gate at a time: with both armed, a message satisfying the Jira gate would
+    mask whether the SOP gate ran at all, and the failure being measured is a shared carve-out
+    that either of them can be blind to independently.
+    """
+    d = tmp / "carveout"
+    d.mkdir()
+    sh("git", "init", "-q", "-b", "main", cwd=d)
+    sh("git", "config", "user.email", "t@t.t", cwd=d)
+    sh("git", "config", "user.name", "t", cwd=d)
+    (d / ".agents/scripts/git-hooks").mkdir(parents=True)
+    (d / ".agents/commands").mkdir(parents=True)
+    (d / "docs/_scc_sops_prds").mkdir(parents=True)
+    (d / ".githooks").mkdir()
+    shutil.copy2(HOOKDIR / script, d / ".agents/scripts/git-hooks" / script)
+    (d / ".agents/scripts/git-hooks" / script).chmod(0o755)
+    shutil.copy2(REPO / ".githooks/commit-msg", d / ".githooks/commit-msg")
+    (d / ".githooks/commit-msg").chmod(0o755)
+    shutil.copy2(REPO / ".agents/scripts/sop_currency.py", d / ".agents/scripts/sop_currency.py")
+    (d / ".agents/scripts/git-hooks" / flag).write_text("armed\n", encoding="utf-8")
+    (d / ".agents/jira.conf").write_text('JIRA_KEYS="SCC"\n', encoding="utf-8")
+    (d / "docs/_scc_sops_prds/workflows_testing_SOP.md").write_text("# sop\n", encoding="utf-8")
+    (d / "README").write_text("x\n", encoding="utf-8")
+    sh("git", "add", "-A", cwd=d)      # fixture only; the real lane is explicit-paths
+    sh("git", "commit", "-qm", "SCC-144 base [sop-ok]", cwd=d)
+    sh("git", "config", "core.hooksPath", ".githooks", cwd=d)
+    return d
+
+
+def seed_and_merge(tree: Path, branch: str) -> tuple[int, str]:
+    """Make a branch that edits a USAGE SURFACE, then merge it with a message that satisfies
+    NEITHER gate's fallback — no Jira key, no SOP doc staged, and a subject that does not start
+    with the capital-M `Merge ` the carve-out's second test matches. Exactly the shape of this
+    repo's own absorb-main merges (`SCC-127 merge: absorb main`), minus the key.
+    """
+    here = sh("git", "rev-parse", "--abbrev-ref", "HEAD", cwd=tree)[1].strip()
+    sh("git", "checkout", "-q", "-b", branch, cwd=tree)
+    (tree / ".agents/commands" / f"{branch.replace('/', '_')}.md").write_text("# cmd\n",
+                                                                             encoding="utf-8")
+    sh("git", "add", ".agents/commands", cwd=tree)
+    sh("git", "commit", "-qm", "SCC-144 a usage surface changed [sop-ok]", cwd=tree)
+    sh("git", "checkout", "-q", here, cwd=tree)
+    return sh("git", "merge", "--no-ff", "-m", "merge: absorbing the lane", branch, cwd=tree)
+
+
 def lane(d: Path, branch: str, from_ref: str = "main", *, work: bool = True) -> None:
     """Cut `branch` from `from_ref` and (by default) put one commit on it."""
     sh("git", "checkout", "-q", "-b", branch, from_ref, cwd=d)
@@ -293,6 +340,28 @@ def main() -> int:
         c.check("N · ...and the guard says it declined to judge",
                 "declined" in out.lower(), out.strip()[-300:])
 
+    # ── N2 · a source NO branch name points at — the other half of the hole ───────────────
+    # Merging a commit that is not any branch's tip: `git branch --points-at` returns nothing and
+    # git's own message reads "Merge commit '<sha>'", which the `Merge branch 'x'` fallback does
+    # not match either. The guard therefore knows the target and cannot name the source at all.
+    # Found by a mutation sweep — this path had no case, so its output could have gone silent
+    # without a single assertion noticing.
+    with TempDir() as tmp:
+        d = make_repo(tmp)
+        lane(d, "chore/SCC-144-a")
+        (d / "second.txt").write_text("x\n", encoding="utf-8")
+        sh("git", "add", "second.txt", cwd=d)
+        sh("git", "commit", "-qm", "SCC-144 a second commit on a", cwd=d)
+        mid = sh("git", "rev-parse", "chore/SCC-144-a~1", cwd=d)[1].strip()
+        sh("git", "checkout", "-q", "-b", "chore/SCC-144-b", "main", cwd=d)
+        before = head(d)
+        rc, out = sh("git", "merge", "--no-ff", "-m", "SCC-144 merge: a mid-branch commit",
+                     mid, cwd=d)
+        c.check("N2 · an UNNAMEABLE source is allowed", rc == 0 and head(d) != before,
+                out.strip()[-300:])
+        c.check("N2 · ...and the guard says so rather than passing in silence",
+                "declined to judge" in out, out.strip()[-300:])
+
     # ═══ THE FAST-FORWARD BACKSTOP ════════════════════════════════════════════════════════
     # Case E measured the gap: a ff merge creates no commit, so NO commit-time hook can see it.
     # What it leaves behind is evidence — another lane's unlanded commits are now contained in
@@ -384,6 +453,49 @@ def main() -> int:
                 "the backstop consumed stdin and the token gate read EOF - every push now passes")
         c.check("P · ...with its own message, not the backstop's", "PUSH TO main REFUSED" in out,
                 out.strip()[-400:])
+
+    # ═══ THE MERGE CARVE-OUT WAS BLIND INSIDE A WORKTREE (SCC-144 F-D) ════════════════════
+    # `commit-msg-jira.sh` and `sop-currency.sh` both exempt merges — git writes those messages, so
+    # blocking them blocks the tool rather than the author. Both probed for it with
+    # `[ -f .git/MERGE_HEAD ]`.
+    #
+    # ⛔ IN A WORKTREE `.git` IS A FILE, NOT A DIRECTORY. The real path is
+    # `.git/worktrees/<name>/MERGE_HEAD`, so that probe is ALWAYS FALSE there — and every lane in
+    # this system is a worktree. The subject fallback does not cover it either: it matches
+    # `'Merge '*`, case-sensitively, while this repo's own merge subjects read
+    # `merge: chore/... -> main` and `SCC-127 merge: absorb main`.
+    #
+    # So the absorb-main merge that /smh-merge-multiple-workingtrees Step 4b performs INSIDE the
+    # lane was gated, while the identical merge in the shared checkout was exempt. Found while
+    # answering this ticket's own open question about `[sop-ok]`.
+    for gate_name, flag, script in (("jira", "JIRA-ENFORCE", "commit-msg-jira.sh"),
+                                    ("sop", "SOP-ENFORCE", "sop-currency.sh")):
+        with TempDir() as tmp:
+            d = make_carveout_repo(tmp, flag=flag, script=script)
+
+            # The CONTROL, and it is the whole point: the SAME merge in the SHARED CHECKOUT.
+            # If this ever fails, the carve-out is broken outright and the worktree case below
+            # is measuring the wrong thing.
+            rc, out = seed_and_merge(d, "chore/SCC-144-shared")
+            c.check(f"F-D · {gate_name}: a merge in the SHARED CHECKOUT is exempt",
+                    rc == 0, out.strip()[-300:])
+
+            wt = tmp / "lane"
+            sh("git", "worktree", "add", "-q", str(wt), "-b", "chore/SCC-144-wt", "main", cwd=d)
+            c.check(f"F-D · {gate_name}: .git in that worktree really is a FILE",
+                    (wt / ".git").is_file(),
+                    "if this is a directory the fixture is not reproducing the condition")
+            rc, out = seed_and_merge(wt, "chore/SCC-144-inwt")
+            c.check(f"F-D · {gate_name}: the SAME merge inside a WORKTREE is exempt too",
+                    rc == 0, out.strip()[-300:])
+
+            # ...and the gate must still be a gate. An ordinary commit in that same worktree,
+            # touching the same surface, is still refused — otherwise the fix disarmed it.
+            (wt / ".agents/commands/plain.md").write_text("# plain\n", encoding="utf-8")
+            sh("git", "add", ".agents/commands/plain.md", cwd=wt)
+            rc, out = sh("git", "commit", "-m", "no key here and no sop doc", cwd=wt)
+            c.check(f"F-D · {gate_name}: an ORDINARY commit in the worktree is still REFUSED",
+                    rc != 0, out.strip()[-300:])
 
     # ── L · the arm accounting — a fresh clone must report this gate OFF, not green ────────
     # `core.hooksPath` is local config git NEVER carries, so a fresh clone has every gate silently

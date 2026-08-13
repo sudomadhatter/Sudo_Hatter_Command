@@ -43,7 +43,15 @@ fi
 
 # Carve-outs match the Jira gate exactly: git writes these messages, so blocking them blocks
 # the tool rather than the author.
-if [ -f .git/MERGE_HEAD ] || [ -d .git/rebase-merge ] || [ -d .git/rebase-apply ]; then
+#
+# ⛔ `$(git rev-parse --git-dir)`, NOT the literal `.git/` (SCC-144) — and it matters MORE here
+# than it does on the Jira gate. In a WORKTREE `.git` is a FILE, so a literal probe is always
+# false; the Jira gate's blindness is usually masked because this repo's merge messages carry a
+# key anyway, but a merge cannot sanely be asked to stage the SOP doc, so this gate was refusing
+# absorb-main merges inside lanes on a condition no author could satisfy. Every lane is a
+# worktree, which is what made the live half of this carve-out the half nobody ran.
+GITDIR=$(git rev-parse --git-dir 2>/dev/null) || GITDIR=.git
+if [ -f "$GITDIR/MERGE_HEAD" ] || [ -d "$GITDIR/rebase-merge" ] || [ -d "$GITDIR/rebase-apply" ]; then
   exit 0
 fi
 
