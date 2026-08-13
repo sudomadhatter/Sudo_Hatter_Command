@@ -19,10 +19,12 @@ These are folder paths to see the open todo list in the sub projects:
     - make sure to do this on its own branch this is a high risk change that could break our production system
 3. /mobile-error_team still needs to be pushed to main to work, there is a note in claude memory about it, just ask. 
 
-<!-- open_tasks files — auto-listed by /update-maps-indexes -->
+<!-- open_tasks files — auto-listed by /smh-update-maps-indexes -->
 - `architecture-decision-proposal-2026-08-05-firestore-schema-scope.md`
 - `git-hooks-board-stale-install.md`
 - `plan_optimize-sudo-dev-story-tests.md`
+- `pr-af-dev-system-upgrade.md`
+- `proposal_graphrag_executiblity.md`
 
 ----
 

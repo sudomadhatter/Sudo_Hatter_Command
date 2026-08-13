@@ -57,7 +57,7 @@ import record_map_changes as rmc  # noqa: E402  (commit-time journal — consume
 # own linter). _my_resources is PROTECTED (don't even read); _bmad is BMAD-regenerated. Rest is noise.
 SCAN_IGNORES = {
     ".git", ".venv", "venv", "env", "__pycache__", "node_modules", ".next", "dist", "build",
-    ".pytest_cache", ".turbo", ".cache", "coverage", "_my_resources", "_bmad", "Projects", ".gitnexus",
+    ".pytest_cache", ".turbo", ".cache", "coverage", "test-results", "_my_resources", "_bmad", "Projects", ".gitnexus",
     ".claude", ".opencode", "_bmad-output", ".github", ".vscode",
 }
 # Extra ignores fed to the generator's regen — MUST match the documented invocation in the repo-map
