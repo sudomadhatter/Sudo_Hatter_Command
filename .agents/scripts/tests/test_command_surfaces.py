@@ -211,6 +211,62 @@ def mirror_place_error(platform: str, pl: tuple[str, ...], present: bool,
     return not hand_owned_door
 
 
+def rif_block(text: str) -> str:
+    """The `> **Rules in force for this command:**` blockquote, or `""` when there is none.
+
+    ⛔ BLOCK-SCOPED, and that scoping IS the check (SCC-145). A command can name a rule anywhere
+    in 400 lines of prose — a step body, an aside, an example — and a file-wide `in` test reads
+    every one of those as "the rule is loaded." It is not. The rules-in-force block is what an
+    agent reads as standing law **before Step 0**; a citation buried in step prose arrives after
+    the decision it governs. Measured: `/smh-code-review` carries the mutation rule in its block,
+    `/cicd-clean-code-audit` cites it twice in step prose and never loaded it. A file-grep calls
+    those two the same, which is `prose-pinning-guards-are-vacuous` in the guard itself.
+
+    Returns `""` for a file with no block, so callers fail CLOSED — a command that dropped its
+    whole block must go red, never pass quietly on an empty search space.
+    """
+    lines = text.splitlines()
+    start = next((i for i, ln in enumerate(lines)
+                  if "Rules in force for this command" in ln), None)
+    if start is None:
+        return ""
+    out = []
+    for ln in lines[start:]:
+        if not ln.lstrip().startswith(">"):   # a blank line ends a blockquote in markdown too
+            break
+        out.append(ln)
+    return "\n".join(out)
+
+
+def md_section(text: str, heading_rx: str) -> str:
+    """One `##`-level section — its heading through to the next `## ` — or `""` when absent.
+
+    ⛔ Anchored to the HEADING, never to the body, and the difference is the whole reason this
+    exists. `tests-must-gate-for-real.md` has carried the word "mutation" since the day it was
+    written — once, at line 76, inside `## Why`, narrating an old AGY story — while the practice
+    itself was an unnamed fourth sub-bullet under a rule headlined about certification SHAs. A
+    body search for the word was satisfied by that provenance sentence, so it would have reported
+    the doctrine "documented" for as long as the file has existed.
+
+    ⛔ Bounded at the next `## ` because a source-grep guard CANNOT SEE ORDER
+    (`source-grep-guards-cannot-see-order`): the mutant-table obligation pinned file-wide stays
+    green when it drifts into Step 2, where it fires before the assertions it governs are
+    written — re-creating the exact defect SCC-145 exists to close, inside the guard meant to
+    prevent it.
+    """
+    rx = re.compile(heading_rx, re.I)
+    lines = text.splitlines()
+    start = next((i for i, ln in enumerate(lines) if rx.search(ln)), None)
+    if start is None:
+        return ""
+    out = [lines[start]]
+    for ln in lines[start + 1:]:
+        if ln.startswith("## "):
+            break
+        out.append(ln)
+    return "\n".join(out)
+
+
 def main() -> int:
     c = Cases("command surface contracts")
 
@@ -636,6 +692,104 @@ def main() -> int:
             "RETIRED door" in sync_cmd and "/prompts:<name>" in sync_cmd
             and "Do not use `-Maintained`" in sync_cmd,
             "smh-sync-agents.md no longer matches what the engine does")
+
+    # ── Mutation doctrine: named, loaded into the task lane, and pinned (SCC-145) ─────
+    # Mutation testing was a doctrine nobody was handed, nothing named, and no gate could see:
+    # `grep -rn "mutant\|mutation" .agents/commands/` returned two hits, one of them a biologist
+    # in the adviser board. The whole procedure was ONE sub-bullet under Rule 4 of
+    # `tests-must-gate-for-real.md`, and the two TASK-lane commands that write the assertions
+    # (`/smh-quick-dev`, `/smh-self-audit`) did not load that rule at all — so on a task lane the
+    # doctrine arrived at REVIEW, one step after the mutants were designed.
+    #
+    # It was measured twice, in unrelated lanes, as the same wasted work: SCC-144 aimed a mutant
+    # at the wrong gate's stdin and paid a second run; its 13-mutant sweep left a survivor that
+    # turned out to be a DEFECTIVE mutant (it commented out one echo of a two-line message, so the
+    # asserted word still printed); a `timeout`-killed sweep left a MUTATED GATE on disk,
+    # uncommitted, in the very lane whose job was fixing that gate; and its review measured 24 of
+    # 25 code-derived mutants surviving the 14 case-derived ones. SCC-129 hit the same class inside
+    # a test file — a "proven able to fail" row that gutted its own input, empty by construction.
+    #
+    # Nothing here can be pinned by wiring, because the artifact IS prose. So the check pins the
+    # two things prose can still get structurally wrong: WHERE the obligation sits (the block an
+    # agent reads as law; the step that routes the mutating) and WHETHER each technique is present
+    # by name. Both helpers above fail closed on an empty search space.
+    RULE_STEM = "tests-must-gate-for-real"
+
+    # The TASK-lane commands that write or judge assertions. Story-lane commands
+    # (`cicd-dev-story-tests`, `cicd-write-story-tests`, `cicd-code-review`, both clean-code
+    # audits) bake the rule into the STEP BODIES that route the work instead — the stronger form
+    # per `restate-alwayson-obligations-in-command-bodies` — and two of them carry no
+    # rules-in-force block at all. Widening those five is a change to five contracts and two `-AP`
+    # twins; it is deliberately not this ticket. `smh-code-review` is listed because it already
+    # complies, and an unpinned compliance is one edit from being gone.
+    LOADERS = ("smh-quick-dev.md", "smh-self-audit.md", "smh-code-review.md")
+    unloaded = [n for n in LOADERS
+                if RULE_STEM not in rif_block(read(ROOT / ".agents/commands" / n))]
+    c.check("the mutation rule is LOADED (in the rules-in-force block) by every task-lane "
+            "command that writes or judges assertions",
+            not unloaded,
+            f"{unloaded} - cite `.agents/rules/{RULE_STEM}.md` INSIDE the block, not in step "
+            f"prose. The block is what an agent reads as standing law before Step 0; SCC-144 "
+            f"designed 14 mutants on a lane where this rule was never loaded")
+
+    # Controls — pure strings, no disk. The sweep above can only prove the tree is clean today.
+    RIF = ("> **Rules in force for this command:**\n"
+           "> - `.agents/rules/git-policy.md` — explicit paths only\n")
+    c.check("rules-in-force CONTROL: a rule cited INSIDE the block is loaded",
+            RULE_STEM in rif_block(RIF + f"> - `.agents/rules/{RULE_STEM}.md` — the why\n"))
+    c.check("rules-in-force CONTROL: a rule cited only in BODY PROSE is NOT loaded",
+            RULE_STEM not in rif_block(
+                RIF + f"\n## Step 3\n\nrun one sweep per `{RULE_STEM}`\n"),
+            "a file-wide grep reads this as loaded - it is the shape five commands are actually "
+            "in, and it arrives after the decision it governs")
+    c.check("rules-in-force CONTROL: no block at all fails CLOSED",
+            rif_block("# /x\n\nprose only, no block here\n") == "",
+            "an empty search space must never read as a pass")
+
+    # ⭐ The obligation must sit in the step that routes the mutating. Step 3 is GREEN (where the
+    # mutants get run); Step 3.5 is the eject tripwire and Step 2 is RED - a bullet that drifts
+    # into either fires at the wrong moment, and file-wide pinning cannot see the difference.
+    STEP3_RX = r"^## Step 3(?![\d.])"
+    step3 = md_section(read(ROOT / ".agents/commands/smh-quick-dev.md"), STEP3_RX)
+    # One term per technique the bullet must carry, each load-bearing:
+    #   "mutant table" - declared up front, so the sweep is auditable rather than improvised
+    #   "one sweep"    - the check hand-running one-at-a-time structurally cannot do
+    #   "DEFECTIVE"    - a mutant that removes nothing is a SKIP that counts as a survivor
+    #   "from the code"- drawn from the source, not from your own cases (SCC-144: 24 of 25)
+    #   "git status"   - the sweep is verified restored; a killed sweep leaves a live mutant
+    MUTANT_TERMS = ("mutant table", "one sweep", "DEFECTIVE", "from the code", "git status")
+    missing_terms = [t for t in MUTANT_TERMS if t.lower() not in step3.lower()]
+    c.check("/smh-quick-dev Step 3 carries the mutant-table obligation, in the step that "
+            "actually routes the mutating",
+            step3 != "" and not missing_terms,
+            f"missing from `## Step 3`: {missing_terms}" if step3 else
+            "`## Step 3` not found at all - the section heading moved and the obligation is "
+            "now anchored to nothing")
+
+    c.check("section CONTROL: a named section is found and bounded at the next heading",
+            md_section("## A\nx\n## B\ny\n", r"^## A$") == "## A\nx")
+    c.check("section CONTROL: `## Step 3` does not swallow `## Step 3.5`",
+            "3.5" not in md_section("## Step 3 — GREEN\na\n## Step 3.5 — EJECT\nb\n", STEP3_RX),
+            "the eject tripwire is a different step; an obligation drifting into it must go red")
+    c.check("section CONTROL: the practice named only in BODY PROSE is not a section",
+            md_section("## Why\n\nthe first mutation check deleted the guard\n",
+                       r"^##\s+.*mutation") == "",
+            "the rule has carried the word 'mutation' in its `## Why` narrative since it was "
+            "written, while the practice itself was an unnamed sub-bullet - a body search would "
+            "have called the doctrine documented all along")
+
+    # ⭐ The rule must NAME the practice in a heading, and carry every technique. One technique is
+    # what it used to have, and it was the wrong one for a gate: RELOCATE assumes a structural
+    # guard and a behavioral test in one file, and a shell gate has nothing to relocate.
+    mutation_sec = md_section(read(ROOT / f".agents/rules/{RULE_STEM}.md"), r"^##\s+.*mutation")
+    TECHNIQUES = ("RELOCATE", "INVERT", "DEFECTIVE", "CODE-DERIVED", "RESTORE")
+    absent = [t for t in TECHNIQUES if t not in mutation_sec]
+    c.check("the mutation rule has a section whose HEADING names the practice, carrying every "
+            "technique",
+            mutation_sec != "" and not absent,
+            f"techniques missing from the section: {absent}" if mutation_sec else
+            f"no `##` heading in {RULE_STEM}.md names mutation - the doctrine is unfindable by "
+            f"anyone grepping for how to do it, which is the whole finding")
 
     return c.finish()
 

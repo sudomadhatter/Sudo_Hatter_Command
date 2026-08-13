@@ -16,6 +16,9 @@ platforms: [opencode, antigravity, claude, codex]
 >   `_artifacts/_main/<YYYY-MM-DD>_<slug>/`; the closing `walkthrough.md` is never skipped
 > - `.agents/rules/reproduce-before-you-fix.md` — **when the task is a BUG fix**: reproduce → minimize
 >   → pin a test seen red → falsify one hypothesis at a time → minimal fix → prove by reverting
+> - `.agents/rules/tests-must-gate-for-real.md` — Step 2's red must fail for the RIGHT reason, and
+>   Step 3's mutants follow its **§ Mutation testing**. Loaded HERE, at the command that *writes* the
+>   assertions — it used to arrive only at review, one step after the mutants were designed (SCC-145)
 
 **The dev cycle BMAD has no answer for.** `/cicd-dev-story-tests` carries the test-first discipline but
 needs a story file, a sprint board, an epic branch and a status flip. `/cicd-quick-dev` is the fast lane
@@ -229,6 +232,20 @@ cut it or name why it stays.
   `/smh-sync-agents`.
 - **Re-run the RED check and paste it GREEN.** Then run the full enforcement suite once —
   `python3 .agents/scripts/tests/run_all.py` — on the code that will actually land.
+- **⭐ Declare the mutant table BEFORE you mutate, and draw every mutant *from the code*.** One row per
+  mutant: the mutant, the file, and **the NAMED case it must kill.** Run them as **one sweep**, never
+  one at a time — a sweep improvised one mutant at a time cannot check itself. Then:
+  - A **surviving** mutant is a finding.
+  - A mutant whose edit does not appear in the original text is **DEFECTIVE** — a SKIP that **counts
+    as a survivor** — and it must be re-aimed before it is believed.
+  - Mutants drawn from your own **cases** rather than **from the code** are circular; they die on
+    arrival and prove only that the suite agrees with itself (SCC-144: 24 of 25 code-derived mutants
+    survived the 14 case-derived ones).
+  - **Restore in a `finally`/trap and re-check `git status` when the sweep ends.** A killed sweep
+    leaves the mutant on disk, and a mutated gate is committable.
+
+  Record the table in the walkthrough. Full doctrine, including which technique fits which shape:
+  `.agents/rules/tests-must-gate-for-real.md` **§ Mutation testing**.
 
 ## Step 3.5 — ⛔ EJECT TRIPWIRE (check here, and again as you go)
 

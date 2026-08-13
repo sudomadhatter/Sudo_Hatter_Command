@@ -1100,13 +1100,39 @@ flowchart TD
     S2 --> TIER["script → a real test\ngate or hook → it REFUSES the bad case AND ALLOWS the good one\ncommand or rule → workflow_lint --toolkit-only reporting the error\nmove or rename → the link sweep, captured BEFORE the move\ndoc or structure → a machine-verifiable assertion"]
     TIER --> READ["run it, paste the RED, and read WHICH LINE RAISED\n— a check that dies in setup looks identical\nto one that fails its assertion"]
     READ --> S3["Step 3 — GREEN: implement MINIMALLY\nsurgical changes · explicit paths · key in every subject"]
-    S3 --> S35{"Step 3.5 — ⛔ EJECT TRIPWIRE"}
+    S3 --> MUT["⭐ DECLARE THE MUTANT TABLE BEFORE YOU MUTATE\neach mutant · its file · the NAMED case it must kill\nrun as ONE sweep, never one at a time\nsurviving mutant = a finding\nremoves nothing = DEFECTIVE: a SKIP that COUNTS as a survivor\ndrawn FROM THE CODE, never from your own cases\nrestore in a finally/trap · re-check git status when it ends"]
+    MUT --> S35{"Step 3.5 — ⛔ EJECT TRIPWIRE"}
     S35 -- "a deployable path is in the diff" --> EJ1["→ /cicd-push-e2e. No override."]
     S35 -- "it turns out to be BMAD story work" --> EJ2["→ ① /cicd-write-story-tests"]
     S35 -- "clear" --> S4["Step 4 — /smh-code-review, mandatory"]
     S4 --> S5["Step 5 — walkthrough + task.yaml manifest\n+ the Dev Record, because this lane may end here"]
     S5 --> STOPX["⛔ STOP. Do NOT merge, transition, or prune.\nThat is /smh-close-task-merge-tree, and typing it\nis YOUR per-merge sign-off."]
 ```
+
+### Mutation — how you prove the check you just wrote can actually fail
+
+**A test you have never seen fail is a claim, not a check.** Step 2 gets you one honest RED; mutation
+is what keeps it honest afterwards, and until SCC-145 the practice was **not named anywhere an
+operator or an agent would look** — not in this page, and not in any command. It was one sub-bullet
+under a rule headlined about certification SHAs, and the two Task-lane commands that *write* the
+assertions never loaded that rule at all, so the doctrine arrived at review, one step after the
+mutants had already been designed.
+
+**The procedure, now a Step 3 obligation rather than advice.** Declare the table *before* you mutate
+— each mutant, its file, and **the named case it must kill** — and run them as **one sweep**. A sweep
+improvised one mutant at a time cannot check itself; a declared one can.
+
+| The rule | Why it exists |
+|---|---|
+| A **surviving** mutant is a finding | the coverage hole you came to find |
+| A mutant that **removes nothing** is **DEFECTIVE** — a SKIP that **counts as a survivor** | SCC-144's `M3` commented out one `echo` of a two-line message; the second line still printed the asserted word, so the case passed **correctly**. Read as a coverage gap it buys a test for a hole that does not exist |
+| Mutants are **CODE-DERIVED**, never drawn from your own cases | case-derived mutants are circular — they die on arrival and prove only that the suite agrees with itself. Measured: **24 of 25 code-derived mutants survived the 14 case-derived ones** |
+| **RESTORE** in a `finally`/trap; never start dirty; re-check `git status` after | a `timeout`-killed sweep left a **mutated gate on disk, uncommitted** — and a mutated gate is committable |
+
+**Which technique fits which shape** — the part that used to be missing. *RELOCATE the guard* (never
+delete it) is for a structural guard and a behavioral test in the same file. *INVERT the decision* is
+for gates, hooks and shell checks, where there is nothing to relocate. Full doctrine:
+`.agents/rules/tests-must-gate-for-real.md` **§ Mutation Testing**.
 
 ### Subtasks — the ticket you were handed is the top-level one
 
