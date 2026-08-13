@@ -1,0 +1,5 @@
+task_key: SCC-124
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-124-baseline-trial
+close_command: smh-close-task-merge-tree
+secondary_repos: []
