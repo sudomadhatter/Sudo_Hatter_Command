@@ -261,7 +261,7 @@ IMPORTED BY: .agents/scripts/task_preflight.py, .agents/scripts/tests/test_hooks
 257:     sys.exit(main())
 ```
 
-### .agents/scripts/task_preflight.py (showing first 400 of 754)
+### .agents/scripts/task_preflight.py (showing first 400 of 686)
 _import/usage context:_ IMPORTS: from __future__ import annotations, import argparse, import json, import re, import sys, from pathlib import Path, import wf_common as wf, import hooks_armed, from test_memory_store import check_store          # noqa: PLC0415 (deliberately lazy)
 IMPORTED BY: none
 ```
