@@ -1,0 +1,278 @@
+### .agents/scripts/hooks_armed.py
+_import/usage context:_ IMPORTS: from __future__ import annotations, import argparse, import json, import os, import subprocess, import sys, from pathlib import Path, # condition from "gates that exist and are switched off", and `check()` weighs them apart.
+IMPORTED BY: .agents/scripts/task_preflight.py, .agents/scripts/tests/test_hooks_armed.py, .agents/scripts/tests/test_main_push_gate.py
+```
+1: """hooks_armed.py — are this repo's git gates actually RUNNING? (SCC-110)
+2: 
+3: git NEVER carries `core.hooksPath`. It is local config, per repo, per machine, and a fresh clone
+4: has it UNSET. Unset does not fail: git reads `.git/hooks`, which is empty, so every gate this
+5: system owns — the Jira key check, the encoding check, the SOP-currency check, the main-push
+6: approval gate — is silently OFF, and every flow reports green.
+7: 
+8: SCC-77 proved the cost. Five Claude hooks were wired to `powershell` + `python`, neither of which
+9: exists on the Mac, and all five exited 127 silently for weeks; six merges reached `main` on one
+10: sign-off. It then built this check for exactly ONE gate, inside `test_main_push_gate.py`. This
+11: generalises it and — more importantly — moves it to where the operator actually reads a verdict.
+12: 
+13: THREE WAYS A GATE IS OFF, and each is silent on its own:
+14: 
+15:     1. core.hooksPath   UNTRACKED, per machine. The master switch. Unset -> nothing runs.
+16:     2. the inner script  Every dispatcher in `.githooks/` ends with the same two-liner —
+17:                          `[ -x "$SCRIPT" ] || exit 0`. Delete the script, or merely drop its
+18:                          executable bit, and the hook exits 0 with NO OUTPUT AT ALL.
+19:     3. <NAME>-ENFORCE    TRACKED, per gate. Absent -> the gate WARNS instead of REJECTING, and
+20:                          hook output is rendered nowhere the operator looks. See JIRA-ENFORCE.
+21: 
+22: ⭐ THE EXPECTED SET COMES FROM `git ls-files`, NOT FROM `iterdir()`. The difference is the whole
+23: correctness of this script. A directory listing cannot tell "this gate was deleted" from "this
+24: repo never had that gate", so an earlier cut of this file reported ARMED with zero findings on a
+25: repo whose three gate scripts had all been removed — the exact vacuous green it exists to prevent.
+26: Asking the index answers both, and it also ignores untracked junk (a stray `.DS_Store` in
+27: `.githooks/` is not a broken hook).
+28: 
+29: It REPORTS. It never arms. Silently rewriting a machine's git config out from under the operator
+30: is worse than telling them; the remedy is one line and it is printed.
+31: 
+32:     hooks_armed.py [--repo PATH] [--json]
+33: 
+34: Exit: 0 clean · 1 warnings · 2 blocking.
+35: """
+36: from __future__ import annotations
+37: 
+38: import argparse
+39: import json
+40: import os
+41: import subprocess
+42: import sys
+43: from pathlib import Path
+44: 
+45: HOOK_DIR = ".githooks"
+46: SCRIPT_DIR = ".agents/scripts/git-hooks"
+47: # NOT `--global`. A relative path set globally arms `.githooks/` in EVERY repo on the machine,
+48: # including third-party clones that happen to ship that directory. Per-repo is what the rest of
+49: # this system actually does — see `.githooks/post-commit` and `new-project.ps1`.
+50: REMEDY = "git config core.hooksPath .githooks"
+51: 
+52: # ⛔ DECLARED, not derived — and that is deliberate. `core.hooksPath` tells you which hook FILES
+53: # git runs. Nothing on disk tells you which inner script a `*-ENFORCE` flag arms, because the
+54: # mapping is not one-to-one: `.githooks/commit-msg` dispatches BOTH `commit-msg-jira.sh`
+55: # (JIRA-ENFORCE) and `sop-currency.sh` (SOP-ENFORCE) — two flags, two scripts, ONE hook file —
+56: # and SOP-ENFORCE corresponds to no `.githooks/sop` at all. A filename-derivation cannot answer
+57: # it. So the pairing is written down, and a flag that appears without a row is REPORTED rather
+58: # than swallowed, which is what keeps this table from going stale silently.
+59: #
+60: # This table governs the FLAG question ONLY. Script executability is checked for every tracked
+61: # `*.sh` in `git-hooks/`, flag or no flag — `pre-commit-encoding.sh` is armed unconditionally and
+62: # has no flag, and leaving it out of the executable check would exempt the encoding gate from the
+63: # very failure mode this script was written for.
+64: ARM_FLAGS = {
+65:     "JIRA-ENFORCE":      ("commit-msg-jira.sh", "commit-msg"),
+66:     "SOP-ENFORCE":       ("sop-currency.sh", "commit-msg"),
+67:     "MAIN-PUSH-ENFORCE": ("pre-push-main-approval.sh", "pre-push"),
+68: }
+69: 
+70: 
+71: def git_root(start: str | Path) -> Path:
+72:     """Walk up for the repo root. Running from a subdirectory must not read as 'no hooks'."""
+73:     r = subprocess.run(["git", "-C", str(start), "rev-parse", "--show-toplevel"],
+74:                        capture_output=True, text=True, errors="replace")
+75:     return Path(r.stdout.strip()) if r.returncode == 0 and r.stdout.strip() else Path(start)
+76: 
+77: 
+78: def _git_config(repo: Path, key: str) -> str:
+79:     """`git config --get` exits 1 when the key is unset — that is data, not an error."""
+80:     r = subprocess.run(["git", "-C", str(repo), "config", "--get", key],
+81:                        capture_output=True, text=True, errors="replace")
+82:     return r.stdout.strip() if r.returncode == 0 else ""
+83: 
+84: 
+85: def _tracked(repo: Path, pathspec: str) -> list[str]:
+86:     """Repo-relative paths git actually tracks. The index, not the filesystem — see module doc."""
+87:     r = subprocess.run(["git", "-C", str(repo), "ls-files", "-z", "--", pathspec],
+88:                        capture_output=True, text=True, errors="replace")
+89:     return sorted(p for p in r.stdout.split("\0") if p) if r.returncode == 0 else []
+90: 
+91: 
+92: def is_executable(p: Path) -> bool:
+93:     """⚠ Windows has no POSIX executable bit.
+94: 
+95:     CPython synthesises `st_mode` there from file attributes and sets the exec bits only for
+96:     `.exe/.bat/.cmd/.com`, so every extensionless hook and every `.sh` would read as dead — and
+97:     git-for-windows does not consult that bit for hooks anyway. Reporting a running gate as dead
+98:     is worse than not checking: it would block close-out on the PC and print `chmod +x` as the
+99:     remedy on a machine that has no `chmod`. Existence is the honest answer there.
+100:     """
+101:     if not p.is_file():
+102:         return False
+103:     if os.name == "nt":
+104:         return True
+105:     return p.stat().st_mode & 0o111 != 0
+106: 
+107: 
+108: def scan(repo: Path) -> dict:
+109:     """Read the arm state of every gate in `repo`. Pure inspection — writes nothing."""
+110:     repo = Path(repo)
+111:     findings: list[dict] = []
+112:     hooks: list[dict] = []
+113:     flags: list[dict] = []
+114: 
+115:     def err(msg: str, code: str = "unarmed") -> None:
+116:         findings.append({"sev": "ERROR", "code": code, "msg": msg})
+117: 
+118:     def warn(msg: str, code: str = "advisory") -> None:
+119:         findings.append({"sev": "WARN", "code": code, "msg": msg})
+120: 
+121:     expected = [Path(p).name for p in _tracked(repo, f"{HOOK_DIR}/*")]
+122:     gate_scripts = _tracked(repo, f"{SCRIPT_DIR}/*.sh")
+123:     tracked_flags = [Path(p).name for p in _tracked(repo, f"{SCRIPT_DIR}/*-ENFORCE")]
+124: 
+125:     # Does this repo CLAIM to have gates? Used only to weigh the "no hooks at all" finding —
+126:     # see `check()`. A repo declaring a Jira project, or shipping gate scripts, is asserting
+127:     # that its commits are checked; a repo doing neither never made that claim.
+128:     claims_gates = bool(gate_scripts) or (repo / ".agents/jira.conf").is_file()
+129: 
+130:     # ⭐ Nothing to check must NEVER read as clean. But "no gates at all" is a different
+131:     # condition from "gates that exist and are switched off", and `check()` weighs them apart.
+132:     if not expected:
+133:         err(f"no hooks tracked in {HOOK_DIR}/ — nothing mechanical is checking this repo's "
+134:             f"commits. Never 'nothing to check, therefore fine'.", code="no_hook_dir")
+135:         return {"repo": str(repo), "hooks_path": _git_config(repo, "core.hooksPath") or None,
+136:                 "resolved": None, "armed": False, "claims_gates": claims_gates,
+137:                 "hooks": [], "flags": [], "findings": findings}
+138: 
+139:     configured = _git_config(repo, "core.hooksPath")
+140:     if not configured:
+141:         err(f"core.hooksPath is UNSET — git is reading .git/hooks, which is empty, so every "
+142:             f"gate in this repo is OFF and says nothing. Remedy: {REMEDY}")
+143:         resolved = None
+144:     else:
+145:         resolved = Path(configured) if Path(configured).is_absolute() else repo / configured
+146:         if not resolved.is_dir():
+147:             err(f"core.hooksPath = {configured!r} resolves to no directory ({resolved}) — "
+148:                 f"every gate is OFF. Remedy: {REMEDY}")
+149: 
+150:     for name in expected:
+151:         present = bool(resolved) and (resolved / name).is_file()
+152:         ok_exec = bool(resolved) and is_executable(resolved / name)
+153:         hooks.append({"name": name, "present": present, "executable": ok_exec})
+154:         if not present:
+155:             err(f"hook {name!r} is tracked in {HOOK_DIR}/ but absent from the directory git "
+156:                 f"actually reads ({resolved}) — it will never run. Remedy: {REMEDY}")
+157:         elif not ok_exec:
+158:             err(f"hook {name!r} is present but NOT EXECUTABLE — git ignores it in silence. "
+159:                 f"Remedy: chmod +x {resolved / name}")
+160: 
+161:     # ── layer 2: the inner scripts every dispatcher guards with `[ -x ... ] || exit 0` ───────
+162:     for rel in gate_scripts:
+163:         disk = repo / rel
+164:         name = Path(rel).name
+165:         if not disk.is_file():
+166:             err(f"{name} is TRACKED but missing from disk — its dispatcher guards the call with "
+167:                 f"`[ -x ... ] || exit 0`, so the hook exits 0 and allows the operation UNCHECKED.")
+168:         elif not is_executable(disk):
+169:             err(f"{name} is NOT EXECUTABLE — its dispatcher skips it and exits 0 SILENTLY, with "
+170:                 f"no warning at all. Remedy: chmod +x {disk}")
+171: 
+172:     # ── layer 3: the arm flags ───────────────────────────────────────────────────────────────
+173:     script_names = {Path(p).name for p in gate_scripts}
+174:     for flag, (script, hook) in ARM_FLAGS.items():
+175:         if script not in script_names:
+176:             continue  # this repo does not ship that gate; its flag is not owed
+177:         present = flag in tracked_flags
+178:         flags.append({"name": flag, "present": present, "arms": script, "via": hook})
+179:         if not present:
+180:             err(f"{flag} is not tracked — {script} still runs but only WARNS, and hook output is "
+181:                 f"rendered nowhere the operator looks. A warning nobody reads is not a gate. "
+182:                 f"Remedy: touch {SCRIPT_DIR}/{flag} && git add {SCRIPT_DIR}/{flag}")
+183: 
+184:     for extra in tracked_flags:
+185:         if extra not in ARM_FLAGS:
+186:             warn(f"{extra} is an arm flag this script's declared table does not know. The "
+187:                  f"flag-to-script pairing cannot be derived from disk (see ARM_FLAGS) — add a "
+188:                  f"row for it, or the gate it arms goes unchecked.")
+189: 
+190:     # An arm flag on disk but not in the index arms this machine and travels to no other. That
+191:     # is the two-machine trap, and it is exactly what a bare `touch` remedy would produce.
+192:     sdir = repo / SCRIPT_DIR
+193:     if sdir.is_dir():
+194:         for p in sorted(sdir.glob("*-ENFORCE")):
+195:             if p.name not in tracked_flags:
+196:                 warn(f"{p.name} exists but is UNTRACKED — it arms this clone only and reaches no "
+197:                      f"other machine. Remedy: git add {SCRIPT_DIR}/{p.name}")
+198: 
+199:     return {
+200:         "repo": str(repo),
+201:         "hooks_path": configured or None,
+202:         "resolved": str(resolved) if resolved else None,
+203:         "armed": not any(f["sev"] == "ERROR" for f in findings),
+204:         "claims_gates": claims_gates,
+205:         "hooks": hooks,
+206:         "flags": flags,
+207:         "findings": findings,
+208:     }
+209: 
+210: 
+211: def check(repo: Path, rep) -> dict:
+212:     """Fold a scan into a `wf_common.Report`. Used by task_preflight.
+213: 
+214:     Findings land as ERRORs on purpose. A warn-only arm-check would be the very thing this
+215:     script exists to catch: preflight's VERDICT reads "clear to close out and merge" whenever
+216:     the error count is zero, so a warning would leave the clean line intact on a repo whose
+217:     gates never ran.
+218: 
+219:     ⭐ ONE finding is conditionally downgraded: `no_hook_dir`, and ONLY for a repo that never
+220:     claimed to have gates. Several `Projects/*` ship no `.githooks/` at all and never did;
+221:     hard-blocking those would strand close-out in each of them forever. But a repo that DOES
+222:     claim gates — it declares a Jira project, or ships the gate scripts — and yet tracks no
+223:     hooks is drift, and drift blocks. A worktree cut before `.githooks/` existed is exactly
+224:     that case, and it is completely ungated.
+225:     """
+226:     res = scan(repo)
+227:     for f in res["findings"]:
+228:         soft = f.get("code") == "no_hook_dir" and not res["claims_gates"]
+229:         (rep.err if f["sev"] == "ERROR" and not soft else rep.warn)("hooks", f["msg"])
+230:     if res["armed"]:
+231:         rep.info("hooks", f"ARMED - {len(res['hooks'])} hook(s) via core.hooksPath="
+232:                           f"{res['hooks_path']}, {len(res['flags'])} arm flag(s) tracked")
+233:     return res
+234: 
+235: 
+236: def main() -> int:
+237:     ap = argparse.ArgumentParser(description="Are this repo's git gates actually running? (SCC-110)")
+238:     ap.add_argument("--repo", default=".", help="anywhere inside the repo; default: cwd")
+239:     ap.add_argument("--json", action="store_true")
+240:     args = ap.parse_args()
+241: 
+242:     res = scan(git_root(args.repo))
+243:     if args.json:
+244:         print(json.dumps(res, indent=2))
+245:     else:
+246:         print(f"== hooks arm-check - {res['repo']} ==")
+247:         for f in res["findings"]:
+248:             print(f"[{f['sev']:5}] {f['msg']}")
+249:         print(f"\n{'ARMED' if res['armed'] else 'NOT ARMED'} - "
+250:               f"core.hooksPath={res['hooks_path'] or '(unset)'}")
+251:     errors = sum(1 for f in res["findings"] if f["sev"] == "ERROR")
+252:     warns = sum(1 for f in res["findings"] if f["sev"] == "WARN")
+253:     return 2 if errors else (1 if warns else 0)
+254: 
+255: 
+256: if __name__ == "__main__":
+257:     sys.exit(main())
+```
+
+### .agents/scripts/task_preflight.py (showing first 400 of 686)
+_import/usage context:_ IMPORTS: from __future__ import annotations, import argparse, import json, import re, import sys, from pathlib import Path, import wf_common as wf, import hooks_armed, from test_memory_store import check_store          # noqa: PLC0415 (deliberately lazy)
+IMPORTED BY: none
+```
+1: """task_preflight.py — is this TASK branch safe to merge to main, and by WHICH gate? (SCC-49)
+2: 
+3: `/smh-close-task-merge-tree` closes **Task** work — workflow / IDE / rules / skills changes that
+4: never got an epic and a story, and so can never reach `/cicd-update-sprint-memory`. It merges
+5: to `main`, which makes it the second command in the system allowed anywhere near production,
+6: and that is exactly why its preconditions are a script rather than a checklist.
+7: 
+8: The load-bearing question is the LANE, and it is the one an agent is worst at answering
+9: honestly about its own work: *does this change reach anything that deploys?*
+10: 
+11:     LOCAL    - nothing deployable changed. The repo's own enforce
