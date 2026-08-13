@@ -78,9 +78,12 @@ This table is the single definition; every caller reads it rather than inventing
 | `suggestion` or `nitpick`, any bucket | **never gate** — recorded, never raising the floor |
 | anything in `defer` | **never gate** — it is not this change's defect |
 | a lens still `dead` after retry AND inline rerun | **CONCERNS** |
+| a step-2 role still `dead` after retry AND inline rerun | **CONCERNS** |
 
 The floor is the **most severe** applicable row, on the axis `none` < `CONCERNS` < `FAIL`. A lens
-recorded `recovered-inline` is not a dead lens and does not appear here at all.
+recorded `recovered-inline` is not a dead lens and does not appear here at all, and neither does a
+step-2 role that recovered inline — including one recorded `cold (no dossier)`, which is a lost head
+start, not a lost surface. A role the step-2 self-gate never launched is likewise not dead.
 
 ⛔ **A `dismiss` never gates and a `defer` never gates** — but a `defer` is still written into the
 record. Suppressing a finding from the record because it did not gate is how a review becomes a

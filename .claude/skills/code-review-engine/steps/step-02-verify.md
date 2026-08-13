@@ -21,10 +21,21 @@ Count the findings step 1 collected, and gate on that count before anything else
 - **Fewer than 2 findings → no compound pass.** Compound synthesis exists to find what emerges from
   findings *interacting*; with one finding there is nothing to interact with.
 
+**The count is the RAW step-1 count, before dedupe.** Two lenses reporting the same issue counts as
+two, because dedupe belongs to step 3 and doing it here would undo the independence the fan-out just
+paid for. The cost of the boundary case is a compound role that reads a finding beside its own
+duplicate and correctly returns an empty list, which is the cheapest outcome this role has.
+
 ⛔ **A skipped wave is recorded, never silent.** Add `verify wave: skipped (0 findings)` — or
 `compound: skipped (<2 findings)` — to the engine's returned `notes`. A review that verified nothing
 and a review whose findings were all confirmed are different evidence, and a reader who
 cannot tell them apart has been handed the wrong one.
+
+⚠ **Zero findings has two causes and the note must say which.** A clean diff and a fan-out where
+every lens died both arrive here as zero. When any lens is `dead`, write
+`verify wave: skipped (0 findings — but <n> lens(es) dead)`; step 3 raises the floor for the dead
+lens either way, and step 1 already says the review may simply not have looked where the problem
+is. The bare note is for a review that genuinely found nothing.
 
 ## The evidence dossier — this part is code, not a lens
 
@@ -32,32 +43,66 @@ Both roles work from the same programmatically-extracted dossier: `evidence_extr
 repository and prints facts, and nothing in it is anybody's judgment.
 
 **The engine's tool grant excludes Bash on purpose, so the orchestrator never runs the extractor
-itself.** Each role runs it as its own first action, in its own context:
+itself.** You can WRITE the inputs and you cannot RUN anything, so the work splits in two:
 
-```bash
-python3 .agents/scripts/evidence_extract.py --repo "$REPO" --findings findings.json --diff diff.patch
-```
+- **You prepare the inputs.** Serialize the step-1 findings as a JSON list, **in step-1 order**,
+  one object per finding, carrying the keys the extractor reads: `title` · `file_path` ·
+  `line_start` · `body` · `evidence`. The diff is `DIFF`, as the caller resolved it.
+- **Each role runs the extractor itself**, as its own first action, because a role is a subagent
+  with its own shell. That instruction lives in the dossier block below and is appended to both
+  prompts. It is not decoration: a role merely *told* a dossier exists, and never told to build
+  one, reviews cold while the record says it did not.
 
-`python` on the PC — this system runs on two machines and only one of them has `python3`.
+⛔ **Substitute every placeholder before you send a prompt.** The block below carries
+`<WORKTREE>`, `<FINDINGS_JSON>` and `<DIFF>`; replace each with the real absolute path or the real
+content. A subagent inherits none of your shell variables, so a literal `$REPO` arrives undefined
+and the extractor exits 2 — a plumbing failure that would then be recorded as a cold review.
 
-Hand each role the step-1 findings as a JSON list, **in step-1 order**, one object per finding,
-carrying the keys the extractor reads: `title` · `file_path` · `line_start` · `body` · `evidence`.
-Hand it the diff as well, or every `diff_hunk` comes back empty.
+⛔ **The extractor reads `WORKTREE`, never `REPO`, wherever the two differ.** The caller contract
+keeps them apart precisely because a lane's diff comes from a worktree. Point the extractor at the
+repository root instead and it reads `main`'s copy of every file at the lane's line numbers — so
+the verifier would truthfully refute correct findings about code it was never shown.
 
 ⭐ **The join is BY INDEX, never by title.** The extractor returns exactly one package per input
 finding, in input order — and titles are NOT unique, because a multi-lens fan-out over one diff
 produces duplicate titles as the expected case. Reconcile every result to its finding by position.
 
-**If the extractor cannot run, or dies: the verifier runs COLD** — repo access only, no dossier —
-and the run carries the note `evidence extractor unavailable: verifier ran cold`.
+### The dossier block — appended to BOTH role prompts
 
-⛔ **A cold verifier does NOT cap the verdict.** The extractor is code, not a lens: the failure
+> **Before you review anything, build your evidence dossier.** Write the findings JSON below to
+> `findings.json`, and the diff below to `diff.patch`, in a scratch directory you own. Then run:
+>
+> ```bash
+> python3 <WORKTREE>/.agents/scripts/evidence_extract.py --repo <WORKTREE> --findings findings.json --diff diff.patch
+> ```
+>
+> On Windows that interpreter is `python`, not `python3` — this system runs on two machines and
+> only one of them has `python3`. The result is a JSON list holding exactly one package per
+> finding, in the order you sent them, so **join it to the findings by INDEX, never by title.**
+>
+> **If that command fails for any reason, carry on COLD:** work from the repository alone and say
+> in your output that you had no dossier. Do not stop, do not retry it more than once, and never
+> report the extractor's failure as if it were a finding about the code.
+>
+> FINDINGS JSON:
+> `<FINDINGS_JSON>`
+>
+> DIFF:
+> `<DIFF>`
+
+**If the extractor fails, that role runs COLD** — repo access only, no dossier — and the engine's
+notes carry `evidence extractor unavailable: <role> ran cold`. This applies to **both** roles, and
+naming the role in the note is what keeps one cold role distinguishable from two.
+
+⛔ **A cold role does NOT cap the verdict.** The extractor is code, not a lens: the failure
 contract at the end of this file covers roles that die, and a dead script is not a dead role.
 Gating a merge on it would be gating on a convenience.
 
 ## Evidence Verifier
 
-Launch it with the dossier, the findings, and read access to `REPO`. Its prompt:
+Assemble as: **the prompt below, then the dossier block**, and launch it with read access to
+`WORKTREE`. Both parts, every time — the prompt without the block is a role that believes it has
+evidence it was never given.
 
 > You are not the original reviewer, and you are not the adversary. You are an independent
 > investigator. Your job is to determine what the code ACTUALLY does at each finding location, and
@@ -96,8 +141,9 @@ Launch it with the dossier, the findings, and read access to `REPO`. Its prompt:
 
 ## Compound Synthesis
 
-Launch it with the same dossier and the same findings — **at the same time as the verifier, not
-after it.** The two roles do not read each other, and triage reconciles them. Its prompt:
+Assemble the same way — **the prompt below, then the dossier block** — and launch it **at the same
+time as the verifier, not after it.** The two roles do not read each other, and triage reconciles
+them.
 
 > You are given every finding from an independent review of one change, and the extracted code each
 > one refers to. Whether any single finding is correct is not your question — another investigator
@@ -131,6 +177,16 @@ after it.** The two roles do not read each other, and triage reconciles them. It
    `contributing_findings` preserved into `detail`, and its own severity. Compound findings are not
    re-verified in this pass; they reach triage on their own evidence.
 
+⚠ **A compound finding can FAIL a merge on less evidence than any other finding, and that is a
+decision, not an oversight.** It passed neither step 1's three hunter gates nor this step's
+verifier, so its `critical` rests on one unverified role — while step 3 says plainly that
+verification is what makes a severity load-bearing. It is left able to gate anyway, for the reason
+the no-noise-filter law gives: this reviewer applies the fixes it finds, so a compound finding
+raised wrongly costs one triage decision, and a real escalation path missed because the only role
+looking for it was pre-emptively discounted ships. The named parents are what make it cheap to
+check. **Revisit this the moment a compound re-verify pass exists** — that pass, deferred from this
+epic, is exactly what would earn the severity rather than assume it.
+
 ⛔ **This step drops NOTHING.** A refuted finding travels to triage annotated `verified: false`
 with the verifier's reasoning behind it; triage owns the `dismiss` bucket and decides with that
 evidence in hand. Deleting it here would erase the disagreement that makes the record worth reading,
@@ -152,6 +208,13 @@ Inherited from step 1 unchanged, because a role is a subagent exactly as a lens 
 
 A role the self-gate skipped is **not** a dead role and never raises the floor — the same
 distinction step 1 draws between a lens skipped by mode and a lens that died.
+
+⚠ **A role you rerun inline is COLD by construction, and must be recorded that way.** Step 2 runs
+inline in *your* context, and you have no Bash — so no dossier can be built for it, ever. Record
+`<role> rerun inline: cold (no dossier)`. It is still `recovered-inline` and still does not raise
+the floor: what was lost is the head start, not the coverage, and you have the same repo access the
+dossier was summarizing. Recording it as an ordinary recovery would claim evidence that could not
+have existed.
 
 ## NEXT
 
