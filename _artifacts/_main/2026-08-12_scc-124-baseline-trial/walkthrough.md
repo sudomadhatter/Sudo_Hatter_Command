@@ -96,6 +96,6 @@ touched, no `[sop-ok]` taken on any commit).
   2. SCC-125 inherits two recorded inputs: blind-lens pack exemption (speed lever) and pack-cap
      rebalance. Both are in this walkthrough and scoring.md — no separate ticket minted (SCC-125
      already owns lens prompts).
-  3. The trial re-found real defects in landed SCC-110 code (vacuous-ARMED family, unreachable
-     NOT-CLEAR branch, Windows-red tests). They are evidence records here, deliberately unfixed
-     (landed history, out of this lane's scope). Say the word if any should become a ticket.
+  3. ~~Ticket the SCC-110 defects~~ → done on your word (2026-08-12): **SCC-136** minted under
+     SCC-75 with the full confirmed-defect set + the three decision items; another team runs it
+     in parallel. The findings stay unfixed in this lane by design.
