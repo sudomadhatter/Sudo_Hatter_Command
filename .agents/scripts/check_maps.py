@@ -759,6 +759,13 @@ def main():
     ap.add_argument("--strict", action="store_true",
                     help="with --depth3-only: EXIT 1 on drift instead of 0, so a close-out gate can fail on it (SCC-138)")
     args = ap.parse_args()
+    # `--strict` is read ONLY inside the --depth3-only branch, so on its own it was silently
+    # accepted and ran the FULL linter instead — which from a worktree exits 1 on the two
+    # documented false positives whose printed remedy ships the lane name into the map. A flag
+    # that quietly does something else is worse than one that refuses (SCC-140 review).
+    if args.strict and not args.depth3_only:
+        ap.error("--strict only applies to --depth3-only. The full lint already exits non-zero "
+                 "on drift; run `--depth3-only --strict` for the worktree-safe close-out gate.")
     root = Path(args.root).resolve()
     is_home, _ = detect_mode(root)
 

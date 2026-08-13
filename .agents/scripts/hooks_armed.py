@@ -30,6 +30,16 @@ found the tool reporting ARMED with ZERO findings in every one of cases 3b, 4 an
     5. the DISPATCHER    A flag arming a script reached through a hook that is not tracked in
                          `.githooks/`. Nothing dispatches it, so it never runs.
 
+⚠ KNOWN GAP, stated rather than papered over (SCC-140 review). Cases 4 and 5 are FLAG-KEYED:
+they walk `ARM_FLAGS`, so a gate with NO flag is invisible to them. Drop `.githooks/pre-commit`
+from the index while `pre-commit-encoding.sh` stays tracked and executable and this reports
+ARMED with zero findings — and the encoding gate is precisely the flagless one. It is not
+derivable either: `mint-push-token.sh` is a tracked `git-hooks/*.sh` that NO dispatcher
+references, so "every gate script needs a referencing dispatcher" would fire on a correct repo.
+That is the same wall `ARM_FLAGS` documents — the flag-to-script mapping is declared because it
+cannot be derived. Closing this needs a declared dispatcher table for flagless gates; until
+then, layer 2's executability check is the only thing standing behind them.
+
 ⭐ THE EXPECTED SET COMES FROM `git ls-files`, NOT FROM `iterdir()`. The difference is the whole
 correctness of this script. A directory listing cannot tell "this gate was deleted" from "this
 repo never had that gate", so an earlier cut of this file reported ARMED with zero findings on a
@@ -176,8 +186,16 @@ def scan(repo: Path) -> dict:
         return {"repo": str(repo), "hooks_path": None, "resolved": None, "armed": False,
                 "claims_gates": True, "hooks": [], "flags": [], "findings": findings}
 
+    # ⛔ THE DOTFILE FILTER IS NOT REDUNDANT WITH THE SUFFIX ONE. `Path(".gitignore").suffix`
+    # is `''` — pathlib reads a leading dot as the start of a NAME, not a suffix — so a
+    # `.gitignore`, `.gitattributes` or `.keep` tracked in `.githooks/` sailed straight through
+    # the suffix test, entered `expected` as a required hook, and hard-blocked close-out with
+    # `chmod +x .githooks/.gitignore`. Found by the SCC-140 review: the same false-red this
+    # filter exists to close, left half-closed by checking only one of the two shapes.
     expected = [Path(p).name for p in hook_files
-                if Path(p).parent.as_posix() == HOOK_DIR and not Path(p).suffix]
+                if Path(p).parent.as_posix() == HOOK_DIR
+                and not Path(p).suffix
+                and not Path(p).name.startswith(".")]
     gate_scripts = _tracked(repo, f"{SCRIPT_DIR}/*.sh") or []
     tracked_flags = [Path(p).name for p in (_tracked(repo, f"{SCRIPT_DIR}/*-ENFORCE") or [])]
 
@@ -324,6 +342,17 @@ def scan(repo: Path) -> dict:
     }
 
 
+def is_soft(finding: dict, res: dict) -> bool:
+    """Is this finding downgraded to a warning?
+
+    ONE definition, called by BOTH `check()` (preflight's path) and `main()` (the CLI), because
+    a repo that never claimed gates must get the same answer whichever door you came through.
+    It lived in two places for exactly one review cycle — SCC-140 aligned the CLI's exit code
+    to `check()` and left the predicate written out twice, under a comment claiming it was not.
+    """
+    return finding.get("code") == "no_hook_dir" and not res["claims_gates"]
+
+
 def check(repo: Path, rep) -> dict:
     """Fold a scan into a `wf_common.Report`. Used by task_preflight.
 
@@ -341,7 +370,7 @@ def check(repo: Path, rep) -> dict:
     """
     res = scan(repo)
     for f in res["findings"]:
-        soft = f.get("code") == "no_hook_dir" and not res["claims_gates"]
+        soft = is_soft(f, res)
         (rep.err if f["sev"] == "ERROR" and not soft else rep.warn)("hooks", f["msg"])
     if res["armed"]:
         rep.info("hooks", f"ARMED - {len(res['hooks'])} hook(s) via core.hooksPath="
@@ -368,13 +397,10 @@ def main() -> int:
     # claimed gates; this exit code did not, so the same repo was a warning through preflight
     # and a hard 2 from the CLI. Nothing in the system gates on this CLI — `task_preflight`
     # via `check()` is the only programmatic caller and the SOP documents this as something a
-    # human types — so the CLI was the half that was wrong. The downgrade is applied here too,
-    # from the same predicate, rather than described in two places and drifted apart.
-    def _soft(f: dict) -> bool:
-        return f.get("code") == "no_hook_dir" and not res["claims_gates"]
-
-    errors = sum(1 for f in res["findings"] if f["sev"] == "ERROR" and not _soft(f))
-    warns = sum(1 for f in res["findings"] if f["sev"] == "WARN" or _soft(f))
+    # human types — so the CLI was the half that was wrong. Both now call `is_soft()`; the
+    # predicate is defined once, beside `check()`.
+    errors = sum(1 for f in res["findings"] if f["sev"] == "ERROR" and not is_soft(f, res))
+    warns = sum(1 for f in res["findings"] if f["sev"] == "WARN" or is_soft(f, res))
     return 2 if errors else (1 if warns else 0)
 
 

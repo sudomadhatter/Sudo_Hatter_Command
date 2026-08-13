@@ -28,7 +28,6 @@ from pathlib import Path
 from _harness import Cases, TempDir, run_script
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import check_maps  # noqa: E402
 from check_maps import _check_depth3_tree, check_level2_indexes, find_indexes  # noqa: E402
 
 MEMORY_PREFIXED = [
@@ -129,15 +128,31 @@ def main() -> int:
 
     # ...and the teeth, ON THE LIVE TREE. A fixture-only assertion is precisely what left
     # this hole open, so the folder is seeded into the real _artifacts and removed again.
+    # ⛔ THE TEARDOWN IS GUARDED ON "WE CREATED IT" (SCC-140 review). The first cut ran
+    # `probe.rmdir()` in a bare `finally`, so if the directory ALREADY existed the `mkdir`
+    # raised FileExistsError and the finally then DELETED SOMEBODY ELSE'S DIRECTORY on the way
+    # out. Measured, not theorised. A test that mutates the live tree has to be able to say
+    # exactly what it owns.
     probe = repo / "_artifacts" / "_main" / "2026-08-13_scc-139-liveness-probe"
+    created = False
     try:
-        probe.mkdir(parents=True, exist_ok=False)
-        seeded = [p for p in _check_depth3_tree(repo, repo / "_artifacts") if "missing row" in p]
-        c.check("F2 ...and a rowless folder seeded into the LIVE tree IS reported",
-                any(probe.name in p for p in seeded),
-                f"got {seeded} - without this, F2 above passes by having nothing to find")
+        try:
+            probe.mkdir(parents=True, exist_ok=False)
+            created = True
+        except FileExistsError:
+            pass
+        c.check("F2 the live probe directory is ours to create", created,
+                f"{probe} already existed - a previous run was killed before its teardown. "
+                f"Remove it by hand; this case will not delete a directory it did not make.")
+        if created:
+            seeded = [p for p in _check_depth3_tree(repo, repo / "_artifacts")
+                      if "missing row" in p]
+            c.check("F2 ...and a rowless folder seeded into the LIVE tree IS reported",
+                    any(probe.name in p for p in seeded),
+                    f"got {seeded} - without this, F2 above passes by having nothing to find")
     finally:
-        probe.rmdir()
+        if created:
+            probe.rmdir()
 
     # ── L · ⭐ SCC-139 — SCAN_IGNORES, which had ZERO coverage ────────────────────────────
     # It rode in on SCC-135 as a carried operator change with no acceptance item and no test.
@@ -216,6 +231,19 @@ def main() -> int:
         c.check("J --strict on a workspace with no _artifacts/ exits 0 (nothing can drift)",
                 rc == 0, f"rc={rc}")
 
+    # ── J2 · `--strict` ALONE is refused, not silently reinterpreted (SCC-140 review) ─────
+    # It is read only inside the --depth3-only branch, so on its own it used to be accepted
+    # and run the FULL linter instead — which from a worktree exits 1 on the two documented
+    # false positives whose printed remedy ships the lane name into the map. A flag that
+    # quietly does something ELSE is worse than one that refuses. Caught by mutation: the
+    # refusal shipped with no assertion behind it, and the mutant survived until this case.
+    with TempDir() as root:
+        _bucket(root, drifted, one_row)
+        rc, out = run_script("check_maps.py", "--root", str(root), "--strict")
+        c.check("J2 --strict without --depth3-only is REFUSED", rc == 2, f"rc={rc}")
+        c.check("J2 ...and the refusal names the combination that works",
+                "--depth3-only --strict" in out, out[-200:])
+
     # ── K · ⛔ THE WORKTREE PROOF — why the gate is a SUBSET and not the whole linter ──────
     # SCC-138 acceptance: "Proven from inside a worktree - the false-positive rows do not
     # block, and the real ones do." This cannot be shown on a synthetic fixture: the two
@@ -275,10 +303,15 @@ def main() -> int:
                             real_rc == 1 and "2026-08-13_no-row-for-this-one" in real_out,
                             f"rc={real_rc} out={real_out[-300:]}")
                 finally:
+                    # ⛔ `remove --force` ONLY — never a bare `worktree prune` (SCC-140 review).
+                    # `prune` is REPO-WIDE: it deregisters every worktree whose directory is
+                    # currently missing, which in this system is a real state (an external
+                    # volume, or the known "pruned worktree leaves a blocking shell" case). A
+                    # sibling lane losing its registration as a side effect of someone running
+                    # the test suite is a far worse outcome than a stale entry here, and
+                    # `remove --force` already deregisters the one we created.
                     subprocess.run(["git", "-C", str(repo), "worktree", "remove", "--force",
                                     str(wt)], capture_output=True)
-                    subprocess.run(["git", "-C", str(repo), "worktree", "prune"],
-                                   capture_output=True)
 
     return c.finish()
 

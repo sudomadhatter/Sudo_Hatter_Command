@@ -421,6 +421,27 @@ def main() -> int:
         c.check("W · so a repo with a README in .githooks/ still reads ARMED",
                 r["armed"] is True, f"errors={errs(r)}")
 
+    # ── W2 · ⛔ THE HALF THE SUFFIX FILTER MISSED (SCC-140 review) ────────────────────────
+    # `Path(".gitignore").suffix` is `''` — pathlib reads a leading dot as the start of a NAME,
+    # not a suffix — so every dotfile walked straight through W's filter and became a
+    # "required executable hook". A `.gitignore` in `.githooks/` is an ordinary thing to add,
+    # and it hard-blocked close-out with `chmod +x .githooks/.gitignore`. The same false-red
+    # class as W, which is exactly why one filter was not enough.
+    with TempDir() as d:
+        seed(d)
+        for dotfile in (".gitignore", ".gitattributes", ".keep"):
+            (d / ".githooks" / dotfile).write_text("x\n", encoding="utf-8")
+        git("add", "-A", cwd=d)
+        r = hooks_armed.scan(d)
+        names = {h["name"] for h in r["hooks"]}
+        c.check("W2 · a tracked DOTFILE in .githooks/ is not a required hook",
+                not any(n.startswith(".") for n in names), f"hooks={sorted(names)}")
+        c.check("W2 · ...and the repo still reads ARMED", r["armed"] is True,
+                f"errors={errs(r)}")
+        c.check("W2 · ...while the four real dispatchers survive BOTH filters",
+                {"commit-msg", "pre-commit", "post-commit", "pre-push"} <= names,
+                f"hooks={sorted(names)}")
+
     # ── X · a tilde in core.hooksPath — git expands it, pathlib does not ─────────────────
     # A correctly armed machine reads NOT ARMED and is falsely blocked.
     c.check("X · `~` in core.hooksPath is expanded, not treated as a relative dir",
