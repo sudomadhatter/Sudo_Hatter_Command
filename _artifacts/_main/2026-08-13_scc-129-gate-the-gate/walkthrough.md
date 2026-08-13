@@ -13,7 +13,7 @@ lens** so a live run also proves each of the five lenses is alive. The ticket's 
 **could not be built as written**, and deciding what it becomes instead was the first real decision
 of the lane. The engine is five markdown files executed by an LLM; the enforcement suite is
 stdlib-only, deterministic and LLM-free. So the halves are split: a **mechanical** guard that asserts
-the fixture is INTACT (60 cases, every `run_all.py`, forever) and a **live** control run at the review
+the fixture is INTACT (67 cases, every `run_all.py`, forever) and a **live** control run at the review
 gate with its output recorded here. The mechanical half is the padlock, not the inspection — it is
 what stops the control being silently neutered later, which is how controls actually die.
 
@@ -22,8 +22,8 @@ what stops the control being silently neutered later, which is how controls actu
 - [x] Fixture built: `bad.diff`, `clean.diff`, `manifest.json`, `spec.md`, `spec-refunds.md`,
       `codebase/`, `README.md`, `live_runs.jsonl`
 - [x] One seeded defect per lens, `_negative_control: true`, `NC_`-prefixed ids (eval-harness convention)
-- [x] `test_review_fixture.py` joins `run_all.py` by auto-discovery — 60 cases, intactness only
-- [x] RED proven before GREEN (0/25 → 47/47 → 60/60)
+- [x] `test_review_fixture.py` joins `run_all.py` by auto-discovery — 67 cases, intactness only
+- [x] RED proven before GREEN (0/25 → 47/47 → 60/60 → 67/67 after the review fixes)
 - [x] On-disk removal proof: `run_all.py` goes red when a seeded defect is deleted
 - [x] Live control, bad arm: all five seeded defects reported
 - [x] Live control, clean arm: no gating finding after verification
@@ -52,10 +52,11 @@ that died on import.
 EXIT=1
 ```
 
-**GREEN** — after the fixture landed, and after the two additions the live control earned:
+**GREEN** — after the fixture landed (60 cases, once the live control had earned two additions),
+and **67/67** after the eight fixes the engine's review of this lane produced:
 
 ```
--- 60/60 passed --
+-- 67/67 passed --
 EXIT=0
 ```
 
@@ -218,7 +219,7 @@ Three answers, in writing, as the command requires:
 
    **The real dependency is semantic, not textual, and auto-merge is exactly why it is dangerous.**
    SCC-144 adds `test_git_hooks.py`, a **23rd** test file. The moment it lands, my two refreshed
-   count lines (*"1762 checks across 22 files"*) are wrong — and because both files auto-merge, git
+   count lines (*"1769 checks across 22 files"*) are wrong — and because both files auto-merge, git
    will report success while leaving a stale number in the operator's SOP page. **Whoever lands
    second owns re-measuring and updating both lines**, and it will be SCC-144. Named here so it is
    inherited rather than rediscovered.
@@ -228,7 +229,7 @@ Three answers, in writing, as the command requires:
 Every gate run **bare**; a pipe returns the pipe's exit code, which is how a red gate reads green.
 
 ```
-python3 .agents/scripts/tests/run_all.py                  -> 22/22 files, 1762/1762 cases, EXIT=0
+python3 .agents/scripts/tests/run_all.py                  -> 22/22 files, 1769/1769 cases, EXIT=0
 python3 .agents/scripts/workflow_lint.py --toolkit-only   -> 0 error(s), 0 warning(s), 8 info, EXIT=0
 python3 .agents/scripts/check_maps.py --depth3-only --strict                              EXIT=0
 python3 .agents/scripts/sop_currency.py --paths <changed> --message "<subject>"            EXIT=0
@@ -242,8 +243,8 @@ trusting the number in the brief:
 
 ```
 main @ 5dadcd6:  21/21 files, 1702/1702 cases
-this tree:       22/22 files, 1762/1762 cases
-delta:           +1 file, +60 cases  ==  test_review_fixture.py's own 60/60
+this tree:       22/22 files, 1769/1769 cases
+delta:           +1 file, +67 cases  ==  test_review_fixture.py's own 67/67
 ```
 
 Exactly additive — nothing displaced another file's tests.
@@ -328,3 +329,101 @@ arithmetic, which has an inexhaustible supply of legitimate edge-case findings �
 change the subject to a pure string function to make the findings stop. That would have been the
 wrong fix for the right observation: the engine was not flagging everything, it was correctly finding
 real bugs, and the missing step was verification, not a quieter subject.
+
+## Code Review (2026-08-13)
+
+Verdict: CONCERNS @ b3b3e48a08c131768ec39a60d611eaa3e010dc7f
+Suite evidence measured at b3b3e48a08c131768ec39a60d611eaa3e010dc7f — run_all 22/22 files, 1769/1769 cases, exit 0.
+
+**Scope:** the lane's own `main...HEAD` diff (16 files, 1520 lines at review time).
+**Method:** `/smh-code-review` Step 1 invoked the `code-review-engine` on this diff — the
+integration test the ticket asks for. Three lenses ran (Blind, Literal-Correctness, and a combined
+Acceptance/Test-Adequacy audit against the plan's 9-item list). This is the engine reviewing the
+fixture that tests the engine, which is the point.
+
+### Why CONCERNS and not PASS
+
+Every gate is green and every acceptance item is delivered. The verdict is capped for **one
+reason, stated plainly: both live-control arms were measured on contaminated runs and neither was
+re-run after the fix.** The Acceptance Auditor put it better than I would have — *"re-derivation by
+the author is not the independent verification the acceptance item is buying; it is the author
+checking their own homework, which is the thing step-02 exists to replace."* That is correct.
+
+What is contaminated, precisely:
+
+- **Bad arm** — the answer-key prohibition did not exist when the fan-out ran; the Test-Adequacy
+  lens read `manifest.json`. **Mitigated but not erased:** every seeded defect has at least one
+  finder that could not have read the key (the contamination audit in §Evidence 6 names which).
+- **Clean arm** — the step-02 verifier, whose revised severities *decide* that arm's floor, read
+  the README including its pass criterion, and the diff it was handed was hand-trimmed by me and
+  does not apply. Its conclusions were re-derived independently and hold, but the author is the
+  wrong person to be the independent check.
+
+**Remedy, and it is one run, not a redesign:** re-run both arms under the now-pinned prohibition
+with `DIFF` passed as a path, and append the entries to `live_runs.jsonl`. The `key_read` field
+added this pass exists exactly so the next run records whether it was clean. Everything needed is
+landed; only the measurement is owed.
+
+### Findings — 13 raised, 8 applied, 5 recorded
+
+| # | file | sev | failure scenario | disposition |
+|---|---|---|---|---|
+| 1 | `test_review_fixture.py` assertion proof | important | "Proven able to fail" row gutted its own input by the same predicate it then re-tested — empty by construction, so it reduced to the row above and could only fail when that one already had | **applied** — predicate factored out, run against an independent stub |
+| 2 | `test_review_fixture.py` / `manifest.json` | important | NC_BLIND's precondition (the "tax INCLUDED" docstring) is a *context* line, and `added()` reads `+` lines only — reword it, regenerate, all green, defect gone | **applied** — `base_must_contain` pinned against the base module |
+| 3 | `manifest.json` spec keys | important | Checked for existence while the clause was read from a constant; swapping `spec`/`clean_spec` keeps every row green but makes NC_ACCEPT uncatchable in a live run | **applied** — values pinned, keys asserted distinct |
+| 4 | live evidence | important | Both arms measured contaminated, never re-run | **recorded** — the CONCERNS above; remedy named |
+| 5 | `test_review_fixture.py` `LENSES` | suggestion | Hardcoded five; a sixth lens added to the engine leaves the fixture green and silently stops covering the fan-out | **applied** — bound to step-01's table |
+| 6 | `README.md` | important | The prohibition is the control's integrity property and nothing carried or pinned it | **applied** — pinned as bytes; `key_read` logs contamination per run |
+| 7 | assertion check scope | suggestion | Scanned the whole diff, so an `assert` in a comment elsewhere would satisfy it | **applied** — scoped to the test file's hunk |
+| 8 | `spec_must_contain` | suggestion | Optional, so dropping it silently deletes a check | **applied** — count pinned |
+| 9 | `live_runs.jsonl` checks | suggestion | Renaming a defect id would redden every historical entry, making log rewriting the easy path | **applied** — scoped to overlapping entries |
+| 10 | two PASS rows | suggestion | Printed "no entries" on a healthy log — the inverse of the field's purpose | **applied** — print count + newest date |
+| 11 | `_artifacts/_main/INDEX.md` | nitpick | Ledger pinned 47 cases (the mid-lane figure) and claimed *every* check is proven able to fail | **applied** — 67, and the claim narrowed to the true one |
+| 12 | `live_runs.jsonl` line numbers | nitpick | Reported after blank lines were dropped, so they point at the wrong record | **recorded** — one-line-per-run log has no blanks today |
+| 13 | drift: `live_runs.jsonl` admitted while three findings were declined | nitpick | Asymmetry unexplained | **recorded** — it closes a rule that was otherwise unenforceable; the declined three each guard a *different* file or need new suite capability |
+
+**Nothing was dismissed as noise.** Two lenses independently reported finding 1, which is the
+strongest evidence in this document that the engine works: the fixture's own guard shipped the
+exact defect the fixture exists to detect, and the engine caught it.
+
+### Gates
+
+| Gate | Result |
+|---|---|
+| Enforcement suite | `run_all.py` — **22/22 files, 1769/1769 cases, exit 0** |
+| Toolkit lint | `workflow_lint.py --toolkit-only` — **0 errors, 0 warnings**, 8 pre-existing BOM infos, exit 0 |
+| Maps | `check_maps.py --depth3-only --strict` — **exit 0** |
+| SOP currency | `sop_currency.py --paths <changed>` — **exit 0** (SOP page updated in the same commits) |
+| Assertion evidence | every Step-2 RED re-run GREEN; 8 review fixes each proven red first |
+| Link + anchor | 0 broken across the diff's markdown |
+| Door parity | 0 commands touched — n/a |
+| Clean code | `py_compile` clean on all 3 changed `.py`; UTF-8, no BOM; manifest valid JSON |
+
+### Step 0.7 — re-derivation against current `main`
+
+1. **Nothing moved under this diff.** `main` is still `5dadcd6`; zero files landed since the branch point.
+2. **Overlap:** none with `main`. With sibling lane `chore/SCC-144-merge-target-guard` @ `91218aa`:
+   two files (`.agents/scripts/INDEX.md`, the SOP page), both **auto-merging**.
+3. **Landing order:** ⭐ **this lane first.** SCC-144 changes `.githooks/pre-push`, `.githooks/commit-msg`
+   and hook scripts — commit/push machinery — which the standing rule forces to the end. The
+   dependency is semantic and auto-merge is why it is dangerous: SCC-144 adds a **23rd** test file,
+   so both count lines go stale the moment it lands while git reports a clean merge. **SCC-144 owns
+   re-measuring them.**
+
+## Your Actions
+
+Everything agent-solvable is done. What remains is genuinely the operator's:
+
+- [ ] **Close out and merge** — `/smh-close-task-merge-tree`. Invoking it IS the merge sign-off;
+      one invocation authorises exactly one merge. **Land this lane BEFORE `chore/SCC-144-merge-target-guard`**
+      (Step 0.7 §3: SCC-144 changes push machinery, which the standing rule forces to the end).
+- [ ] **Decide whether the CONCERNS is worth clearing before the merge.** The cap is the contaminated
+      live evidence, and the remedy is one clean re-run of both arms under the now-pinned prohibition
+      with `DIFF` passed as a path — appended to `live_runs.jsonl`, whose new `key_read` field exists
+      to record that it was clean. The fixture, the guard and every gate are landed and green either
+      way; only that measurement is owed. **This is a judgement call about evidence, not a defect.**
+- [ ] **Hand SCC-144 the count-line dependency** — it lands second, adds a 23rd test file, and
+      therefore owns re-measuring both count lines. Recorded in Step 0.7 §3.
+
+Agent-side, already done: all 8 applied review findings, the 3 recorded ones, both count-line
+refreshes, the ledger row, the artifacts, and the operator-requested [rework audit](rework-audit.md).
