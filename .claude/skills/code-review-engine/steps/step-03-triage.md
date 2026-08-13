@@ -14,7 +14,7 @@ Each finding becomes:
 | field | meaning |
 |---|---|
 | `id` | sequential integer |
-| `source` | `blind` · `edge` · `acceptance` · `test-adequacy`, or merged (`blind+edge`) |
+| `source` | `blind` · `edge` · `acceptance` · `test-adequacy` · `compound`, or merged (`blind+edge`) |
 | `title` | one line |
 | `detail` | the full description, plus any evidence |
 | `location` | `file:line` when available |
@@ -39,10 +39,10 @@ never be *promoted* into something that gates a merge.
 finding — evidence in hand — that value replaces the hunter's assertion outright. Hunters assert;
 verification is what makes a severity load-bearing.
 
-⚠ **Today no revised severity exists** (step 2 is a pass-through until SCC-127), so every severity
-below is hunter-asserted and unverified. The table in §5 is applied to it anyway — deliberately, so
-that this engine gates exactly as hard as the path it replaces, no harder and no softer, and so
-SCC-124's head-to-head trial measures real behavior rather than a temporarily-softened one.
+⚠ **A finding with no revised severity keeps the hunter's** — step 2's self-gate skipped the wave,
+or its verifier died. The table in §5 is applied to that severity anyway, deliberately, because an
+unverified finding is not a softer finding: this engine
+gates exactly as hard as the path it replaces, no harder and no softer.
 
 ## 3. Deduplicate
 
