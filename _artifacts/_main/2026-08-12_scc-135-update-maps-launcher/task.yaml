@@ -1,0 +1,5 @@
+task_key: SCC-135
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-135-update-maps-launcher
+close_command: smh-close-task-merge-tree
+secondary_repos: []        # single-repo task — toolkit work, lives in the command centre
