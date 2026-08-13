@@ -88,7 +88,7 @@ Idempotent, so a re-run or a resumed lane is a no-op. **Read its exit code — t
 |---|---|---|
 | `0` | moved, or already `In Progress` | carry on |
 | `3` | **left alone** — the ticket is `Blocking` / `In Review` / `Deferred` | **stop and ask.** You are opening a lane on a ticket that is waiting on something; say which and confirm that is intended |
-| `2` | **the board refused it** — a `Done` key (so the key is wrong), a Subtask, or a move that did not land | **stop.** Never work a closed ticket's key; mint one at the `jira.md` §Who-mints-tickets seam |
+| `2` | **the board refused it** — a `Done` key (so the key is wrong), or a move that did not land | **stop.** Never work a closed ticket's key; mint one at the `jira.md` §Who-mints-tickets seam |
 | `4` | **the board was unreachable** — transport, not a verdict | **carry on and retry later.** ⛔ Do *not* mint a ticket: nothing here says your key is wrong. Sandboxed shells cannot reach the credential store (`jira.md` top), and the operator commits from planes |
 
 > **The `post-commit` hook does this too, and that is deliberate, not redundant.** The hook fires on
@@ -148,6 +148,41 @@ word yourself and reading it back is how this gate actually gets bypassed.
 
 **The one exemption**, and it is narrow: the self-audit's Phase 0 returned **Skip** — a typo, a comment,
 a one-line doc tweak. Say which, then proceed. Anything above that gets the gate.
+
+---
+
+## Step 1.6 — Subtasks: PROPOSE the breakdown, then stop (SCC-119)
+
+**Runs only after `approved`, and only on a `Task`** — never on a BMAD Story, whose story file already
+holds its breakdown (`jira.md` §Subtasks: the story lane's answer is **NEVER**).
+
+Read the approved plan and ask **one** question of each piece of work in it:
+
+> **Does this piece earn its own `chore/<KEY>-<slug>` branch in its own worktree?**
+
+- **No** → it stays a checklist line in the plan or in the ticket's `ACCEPTANCE` block. Three edits in
+  one commit are not three subtasks, and a ticket with no branch is a row nothing will ever write to.
+- **Yes** → it is a `Subtask` under **the ticket you were handed**, which is the top-level one.
+
+**If nothing clears the bar, say so and move on — that is the normal answer for most tasks.**
+
+⛔ **PROPOSE, then STOP. You write nothing to the board until the operator says go.** Print one line
+per proposed subtask, each naming the branch it would get. Placement is the operator's (guardrail 2)
+and minting off your own reading is speculative work (guardrail 3).
+
+On the operator's go, mint each one with raw `acli` — parented to this ticket, bare, no `--assignee`:
+
+```bash
+acli jira workitem create --project <PROJ> --type Subtask --parent <THIS-TICKET-KEY> \
+  --summary "…" --description "…"
+```
+
+Then work each subtask as its own lane: its own worktree, its own branch, its own run of this command,
+its own `/smh-close-task-merge-tree`. **The parent closes LAST**, when every child is `Done` or
+`Deferred` — `task_preflight.py` refuses it otherwise.
+
+⚠️ A `Subtask` cannot have children (`hierarchyLevel: -1` is the floor). If a piece needs its own
+breakdown, either keep that as a checklist inside it or promote it to a `Task` — do not try to nest.
 
 ---
 

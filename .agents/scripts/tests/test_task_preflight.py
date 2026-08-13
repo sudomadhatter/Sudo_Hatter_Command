@@ -22,6 +22,9 @@ itself. Commits use --no-verify: these fixtures must not inherit the machine's h
 """
 from __future__ import annotations
 
+import json
+import os
+import stat
 import subprocess
 import sys
 from pathlib import Path
@@ -112,8 +115,69 @@ def branch(repo: Path, name: str, files: dict[str, str], *, push: bool = True) -
         git(repo, "push", "-q", "-u", "origin", name)
 
 
+# ── The board stub (SCC-119) ───────────────────────────────────────────────────
+# `check_children` is the first thing in this script that talks to the network, and these
+# fixtures use REAL Jira keys (SCC-11 exists). Without a stub the suite would query the live
+# board once per preflight - slow, machine-dependent, and green or red by accident. The stub
+# is a real executable for the same reason jira_feed's is: the production path (subprocess,
+# --json, exit code) then runs unchanged.
+BOARD_STUB = r'''
+import json, os, sys
+state = json.load(open(os.environ["PF_BOARD_STATE"], encoding="utf-8"))
+args = sys.argv[1:]
+if args[:3] != ["jira", "workitem", "search"]:
+    print("stub: unhandled " + " ".join(args), file=sys.stderr)
+    sys.exit(9)
+fields = ""
+if "--fields" in args:
+    fields = args[args.index("--fields") + 1]
+# The real acli REJECTS `parent` as a --fields value on search (exit 1). Enforced here so a
+# caller that asks for it fails in the suite exactly as it would in production - otherwise
+# the natural mistake reads as "no children" and the gate passes vacuously.
+if "parent" in [f.strip() for f in fields.split(",")]:
+    print("Error: field 'parent' is not allowed", file=sys.stderr)
+    sys.exit(1)
+if state.get("fail"):
+    print("Error: the search failed", file=sys.stderr)
+    sys.exit(1)
+print(json.dumps([{"key": k, "fields": {"status": {"name": s}, "summary": "child"}}
+                  for k, s in state.get("children", [])]))
+'''
+
+
+def board(root: Path, children: object = (), fail: bool = False) -> None:
+    """Point ACLI_BIN at a stub board holding `children` = [(key, status), ...]."""
+    stub_py = root / "board_stub.py"
+    stub_py.write_text(BOARD_STUB, encoding="utf-8")
+    if os.name == "nt":
+        launcher = root / "acli.bat"
+        launcher.write_text(f'@echo off\r\n"{sys.executable}" "{stub_py}" %*\r\n',
+                            encoding="utf-8")
+    else:
+        launcher = root / "acli"
+        launcher.write_text(f'#!/bin/sh\nexec "{sys.executable}" "{stub_py}" "$@"\n',
+                            encoding="utf-8")
+        launcher.chmod(launcher.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+    state = root / "board_state.json"
+    state.write_text(json.dumps({"children": list(children), "fail": fail}),
+                     encoding="utf-8")
+    os.environ["ACLI_BIN"] = str(launcher)
+    os.environ["PF_BOARD_STATE"] = str(state)
+
+
 def preflight(repo: Path, *extra: str, expect: str = "SCC-11") -> tuple[int, str]:
     # --expect-key is REQUIRED since SCC-64; the fixtures' branches carry SCC-11.
+    # A childless board by default, unless this repo's test set one up - so every pre-SCC-119
+    # case keeps its exact verdict and none of them reach the real network.
+    #
+    # ⚠ Test the FILE, not the env var. Each block runs in its own TempDir, so the state file
+    # is deleted at the end of the block while `os.environ` survives the whole process - an
+    # env-var-only guard left every later block pointing at a path that no longer exists, the
+    # stub crashed, and eleven previously-clean cases went red for a reason that had nothing
+    # to do with what they test.
+    state = os.environ.get("PF_BOARD_STATE")
+    if not state or not Path(state).exists():
+        board(repo.parent)
     return run_script("task_preflight.py", "--repo", str(repo),
                       "--expect-key", expect, *extra)
 
@@ -337,6 +401,59 @@ def main() -> int:
         c.check("clean task branch -> exit 0 (positive control)", code == 0, out.strip()[-300:])
         c.check("SCC-110 an ARMED repo still says GATES: ARMED", "GATES: ARMED" in out,
                 out.strip()[-300:])
+
+    # ── SCC-119 · a parent does not close while its subtasks are open ────────────────────
+    # The whole job closes together at the end (operator ruling): each subtask lands its own
+    # branch as it finishes, and the PARENT is what closes last. Nothing mechanical enforced
+    # that before - a parent could go Done over five open children and the board would read
+    # as finished work.
+    with TempDir() as t:
+        repo = make_repo(t)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+
+        board(t, children=[("SCC-20", "Done"), ("SCC-21", "In Progress")])
+        code, out = preflight(repo)
+        c.check("open subtask BLOCKS the parent close",
+                code == 2 and "SCC-21" in out and "open subtask" in out, out.strip()[-400:])
+        c.check("the block names the finished child too, so the state is readable",
+                "SCC-20" not in out.split("open subtask")[1][:200], out.strip()[-400:])
+
+        # ⭐ THE escape hatch, and the reason it is not a --force flag: a gate with no
+        # legitimate exit gets --no-verify'd. Descoping through `Deferred` leaves a trail.
+        board(t, children=[("SCC-20", "Done"), ("SCC-21", "Deferred")])
+        code, out = preflight(repo)
+        c.check("a Deferred child does NOT block - descoping is the auditable escape",
+                code == 0 and "clear to close out and merge" in out, out.strip()[-400:])
+
+        board(t, children=[("SCC-20", "Done"), ("SCC-21", "Done")])
+        code, out = preflight(repo)
+        c.check("all children Done -> the parent is clear to close last",
+                code == 0 and "last thing to close" in out, out.strip()[-400:])
+
+        board(t, children=[])
+        code, out = preflight(repo)
+        c.check("a childless ticket passes for the RIGHT reason, not by accident",
+                code == 0 and "no subtasks" in out, out.strip()[-400:])
+
+        # ⛔ THE load-bearing negative. A failed query and a childless parent BOTH return zero
+        # rows - measured on the live board 2026-08-12: `parent = <bad key>` exits 1 with no
+        # rows, exactly like a real childless parent exits 0 with no rows. A gate that counted
+        # rows would read "the key was wrong" as "nothing is open" and wave the close through.
+        board(t, children=[("SCC-21", "In Progress")], fail=True)
+        code, out = preflight(repo)
+        c.check("a FAILED query is never read as 'no children' (exit code, not row count)",
+                "NOT checked" in out, out.strip()[-400:])
+        c.check("...and it says transport, not a verdict - the operator must not mint or "
+                "assume anything from it",
+                "transport, not a verdict" in out, out.strip()[-400:])
+
+        # The deliberate divergence from the plan, pinned so it cannot drift back silently:
+        # an unreachable board WARNS and does not flip the headline. Sandboxed agent shells
+        # cannot reach the credential store at all, so blocking here would make "NOT CLEAR"
+        # the normal output and stop it meaning anything. /smh-close-task-merge-tree
+        # re-asserts this with the board in hand, immediately before it writes `Done`.
+        c.check("an unreachable board warns (exit 1) rather than blocking (exit 2)",
+                code == 1, f"exit {code}: " + out.strip()[-300:])
 
     # ── SCC-110 · the whole point, end to end ────────────────────────────────────────────
     # A repo that CLAIMS gates (it declares a Jira project) while tracking no hooks is

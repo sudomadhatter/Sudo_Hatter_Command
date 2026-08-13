@@ -1080,7 +1080,8 @@ flowchart TD
     S15 --> AUD{"Audit verdict?"}
     AUD -- "NO-GO" --> FIXPLAN["fix the plan and re-audit.\nDo not proceed. Do not re-run hoping."]
     AUD -- "GO" --> APPR{"STOP — wait for the literal 'approved'"}
-    APPR --> S2["Step 2 — ⭐ RED: write the assertion that FAILS, first"]
+    APPR --> S16["Step 1.6 — SUBTASKS: does a piece of the plan earn\nits OWN branch AND its OWN worktree?\nyes → a Subtask under THIS ticket\nno → a checklist line. PROPOSE, then STOP."]
+    S16 --> S2["Step 2 — ⭐ RED: write the assertion that FAILS, first"]
     S2 --> TIER["script → a real test\ngate or hook → it REFUSES the bad case AND ALLOWS the good one\ncommand or rule → workflow_lint --toolkit-only reporting the error\nmove or rename → the link sweep, captured BEFORE the move\ndoc or structure → a machine-verifiable assertion"]
     TIER --> READ["run it, paste the RED, and read WHICH LINE RAISED\n— a check that dies in setup looks identical\nto one that fails its assertion"]
     READ --> S3["Step 3 — GREEN: implement MINIMALLY\nsurgical changes · explicit paths · key in every subject"]
@@ -1091,6 +1092,40 @@ flowchart TD
     S4 --> S5["Step 5 — walkthrough + task.yaml manifest\n+ the Dev Record, because this lane may end here"]
     S5 --> STOPX["⛔ STOP. Do NOT merge, transition, or prune.\nThat is /smh-close-task-merge-tree, and typing it\nis YOUR per-merge sign-off."]
 ```
+
+### Subtasks — the ticket you were handed is the top-level one
+
+**The rule, in one line: work your agent breaks out of a ticket goes UNDERNEATH it, not beside it.**
+Flatten the pieces into more `Task`s under the grouping epic and you destroy the one fact that
+mattered — *these are all one job*. Full law: `.agents/rules/jira.md` §Subtasks (SCC-119).
+
+**What earns a subtask ticket: its own branch AND its own worktree.** Nothing smaller. A ticket with
+no branch is a row nothing will ever write to — no commits, no Dev Record, no transitions — and that
+is board noise. Three edits in one commit are not three subtasks.
+
+**The two lanes differ, and the test is one question: does a durable breakdown already exist in the
+tree?**
+
+| Lane | What already holds the breakdown | Subtasks? |
+|---|---|---|
+| **BMAD story** (AVCH) | the story file's `Tasks / Subtasks` + its `sprint-status.yaml` row | ⛔ **NEVER** — mirroring it makes a second copy nothing syncs |
+| **Command-centre Task** (SCC) | nothing — the ticket description **is** the spec | ✅ the only place it can live |
+
+**What you will see:**
+
+- **The agent proposes and stops.** It prints the set with the branch each would get, and writes
+  nothing to the board until you say go. Placement stays yours.
+- **Each subtask is its own lane** — own worktree, own branch, own review, own
+  `/smh-close-task-merge-tree`. They land as they finish.
+- **The parent closes LAST.** `task_preflight.py` refuses to close it while any child is still open,
+  and `/smh-close-task-merge-tree` re-checks with the board in hand before it writes `Done`. A child
+  that is genuinely out of scope gets descoped to `Deferred` — that is the escape hatch, and it is
+  deliberately not a `--force` flag.
+- **A subtask is never labelled `Bug`.** If work under a parent turns out broken, the flag goes on
+  the **parent** — the ticket that owns the job. `jira_feed.py flag` refuses a subtask and names its
+  parent for you.
+- **A subtask cannot have children.** Jira's floor. Needs its own breakdown → keep it as a checklist,
+  or promote it to a `Task`.
 
 ### `/smh-code-review` — the Task lane's verdict
 
