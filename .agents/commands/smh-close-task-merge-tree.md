@@ -263,6 +263,27 @@ Capture the merge SHA — Step 4 puts it on the ticket.
 board; a merge that landed while the record lags is one command away from correct. Take the
 recoverable failure.
 
+> ⭐ **Before you write `Done`, re-assert the children (SCC-119).** If this ticket is a **parent**, it
+> closes **LAST** — the whole job closes together at the end, so a parent going `Done` over open
+> subtasks is exactly the lie above, one level up.
+>
+> ```bash
+> acli jira workitem search --jql "parent = <JIRA-KEY>" --fields "key,summary,status"
+> ```
+>
+> Any child that is not `Done` or `Deferred` → **STOP.** Finish it, or descope it properly
+> (`Deferred` + the `descoped` label — that is the auditable escape, and the reason there is no
+> `--force` flag).
+>
+> **This is a second layer, not a duplicate.** `task_preflight.py check_children()` already ran it at
+> Step 1 and blocks on open children — but it **warns rather than blocks when the board is
+> unreachable**, and a sandboxed shell cannot reach the credential store at all. This line runs where
+> the board is provably reachable, because the very next command transitions the ticket. Neither
+> layer is load-bearing alone — the same shape as the two `start` seams (SCC-113).
+>
+> ⛔ A **`Subtask`** closes here exactly like a `Task`: its own branch, its own gate, its own `Done`.
+> It is never labelled `Bug` — if it turns out broken, the flag goes on its **parent**.
+
 ```bash
 python3 .agents/scripts/jira_feed.py devrecord --key <JIRA-KEY> --story <branch-slug> \
        --stage close-out --walkthrough <the walkthrough> \

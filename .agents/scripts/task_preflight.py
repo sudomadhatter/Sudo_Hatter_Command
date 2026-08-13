@@ -34,13 +34,20 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import shutil
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import wf_common as wf
 import hooks_armed
+# ONE acli resolution path in this repo, not two. `jira_feed` already owns
+# --acli / $ACLI_BIN / PATH and the "a hung uplink is not a verdict" wrapper; duplicating
+# that here is exactly how the python3/python probe orders drifted apart before SCC-49.
+# Import-safe: the module is guarded by `if __name__ == "__main__"` and pulls only stdlib.
+import jira_feed
 
 # The chore lane's branch shape, from `git-policy.md`: the key sits IMMEDIATELY after the
 # prefix (`chore/SCC-11-acli-wrapper`, never `chore/fix-SCC-11`) because Atlassian's GitHub
@@ -505,6 +512,85 @@ def check_secondary(repo: Path, expect: str, rep: wf.Report) -> None:
 
 # ── 2. Is the branch clean, pushed, and current with main? ─────────────────────
 
+# A child that is `Done` is finished; a child that is `Deferred` was descoped on purpose
+# (jira.md: `Deferred` is a To Do-CATEGORY status precisely so descoped work does not read as
+# shipped, and it pairs with the `descoped` label). Everything else is still open.
+#
+# ⭐ `Deferred` IS the escape hatch, and it is deliberately not a `--force` flag. A gate with
+# no legitimate exit gets `--no-verify`d into oblivion; the legitimate exit here is to fix the
+# BOARD - descope the child properly - which leaves an auditable trail. A bypass flag would
+# leave none.
+CHILD_CLOSED = ("done", "deferred")
+
+
+def check_children(key: str | None, rep: wf.Report, timeout: int = 20) -> None:
+    """A parent Task does not close while its subtasks are still open (SCC-119).
+
+    ⛔ THREE ways this check could have passed without checking anything, all measured
+    against the live board 2026-08-12 - this is the one gate in this file that talks to the
+    network, so its failure modes are not the usual ones:
+
+      1. **Row count is not the signal, the EXIT CODE is.** `parent = <KEY>` returns zero rows
+         for a childless parent (exit 0) AND zero rows for a bad key (exit 1). Reading rows
+         alone makes a wrong key look like a clean pass. `acli_json` returns None on any
+         non-zero exit, so `None` here means UNKNOWN and never "no children".
+      2. **`parent` is not a legal `--fields` value on `search`** - the real acli exits 1 with
+         "field 'parent' is not allowed". Asking for it is the natural mistake when checking
+         parentage, and it would have turned every run into a silent pass via (1). We ask for
+         `key,summary,status` and get parentage from the JQL instead.
+      3. **`acli_bin()` DIES when acli is absent.** Calling it here would have taken a local,
+         offline-capable preflight and made it exit 2 on any machine without the CLI. Resolved
+         gently instead.
+
+    ⚠ Deliberate divergence from this ticket's own plan (§4a.3), recorded rather than
+    silently taken: an unreachable board WARNS and does **not** flip the headline VERDICT.
+    Making a local preflight's verdict depend on network reachability is a capability
+    regression - sandboxed agent shells cannot reach the OS credential store at all
+    (jira.md §top), so "NOT CLEAR" would become the normal output and stop meaning anything.
+    The second layer is `/smh-close-task-merge-tree`, which re-asserts this immediately before
+    it transitions the ticket to `Done` - a step that already holds the board. Neither layer
+    is load-bearing alone, which is the same shape as the two `start` seams (SCC-113).
+    """
+    if key is None:
+        return  # check_branch already errored; a second message would bury the first
+    binary = os.environ.get("ACLI_BIN") or shutil.which("acli")
+    if not binary:
+        rep.warn("children", f"{key}: acli is not on this machine, so its subtasks were NOT "
+                             f"checked - if this ticket is a parent, open children would not "
+                             f"stop the close. Verify by hand: acli jira workitem search "
+                             f'--jql "parent = {key}"')
+        return
+    data = jira_feed.acli_json(
+        binary, ["jira", "workitem", "search", "--json", "--limit", "200",
+                 # NOT `parent` - see (2) above. The JQL carries the parentage.
+                 "--fields", "key,summary,status",
+                 "--jql", f"parent = {key} ORDER BY key"], timeout=timeout)
+    if data is None:
+        rep.warn("children", f"{key}: the board could not be read, so its subtasks were NOT "
+                             f"checked - this is transport, not a verdict on the ticket. "
+                             f"Re-run when you have a connection, or check by hand.")
+        return
+
+    items = jira_feed.as_items(data, "issues")
+    open_children = []
+    for item in items:
+        fields = item.get("fields") or {}
+        status = ((fields.get("status") or {}).get("name") or "").strip()
+        if status.lower() not in CHILD_CLOSED:
+            open_children.append(f"{item.get('key') or '?'} ({status or '?'})")
+
+    if open_children:
+        rep.err("children", f"{key} has {len(open_children)} open subtask(s) - the parent "
+                            f"closes LAST, when the whole job is done: "
+                            f"{', '.join(open_children)}. Finish them, or descope one to "
+                            f"`Deferred` if it is genuinely out of scope.")
+    elif items:
+        rep.info("children", f"{key}: all {len(items)} subtask(s) are Done or Deferred - "
+                             f"this parent is the last thing to close")
+    else:
+        rep.info("children", f"{key}: no subtasks")
+
+
 def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report) -> None:
     """`commit-and-push-are-one-action`: clean + 0/0, or the work is not finished. Merging
     an unpushed branch to main puts commits on production that exist on one disk."""
@@ -704,6 +790,7 @@ def main() -> int:
     rep = wf.Report()
     key = check_branch(repo, branch, rep)
     check_intent(branch, key, expect, rep)
+    check_children(key, rep)
     check_manifest(repo, branch, expect, rep)
     check_secondary(repo, expect, rep)
     check_sync(repo, branch, args.fetch, rep)

@@ -831,6 +831,73 @@ def cmd_devrecord(args) -> int:
     return 0
 
 
+# A subtask's own status vs its parent's. Only these two ranks mean "not started yet" -
+# `Blocking`, `In Review` and `Deferred` all carry real state that a lag report would
+# misread as neglect.
+_STARTED = ("in progress", "in review", "done")
+_NOT_STARTED = ("to do", "to do next")
+
+
+def check_subtask(binary: str, key: str, summary: str, rep: "wf.Report") -> bool:
+    """Subtask PLACEMENT invariants (SCC-119). True = something is wrong.
+
+    `work_type()` is deliberately not run on a subtask: it answers Story-or-Task from a
+    SUMMARY, and a subtask is not a third answer to that question. What makes a ticket a
+    subtask is its parent's type - Jira's own hierarchy (Epic=1, Story/Task=0, Subtask=-1) -
+    which is a board read, not a string test. That is why the old pass skipping every subtask
+    as "a container" was wrong twice: a subtask is a LEAF, and skipping meant nothing ever
+    checked the three things that actually rot on a parented board.
+
+    ⛔ One `view` per subtask, and it cannot be folded into the bulk search: `parent` is
+    REJECTED as a `--fields` value on `search` (the real acli exits 1), while `view` returns
+    it complete with the parent's own type and status. One call answers every check here.
+    """
+    fields = view_fields(binary, key, strict=False)
+    if fields is None:
+        # Transport, not a verdict - and reported rather than swallowed, because "I could not
+        # look" must never read the same as "I looked and it was fine".
+        rep.warn("subtask", f"{key}: could not be read back - placement UNCHECKED")
+        return True
+
+    parent = fields.get("parent") or {}
+    pkey = parent.get("key")
+    if not pkey:
+        rep.warn("subtask", f"{key}: Subtask with no parent - nothing owns this work, and no "
+                            f"close-out can reach it ({summary[:40]})")
+        return True
+
+    pfields = parent.get("fields") or {}
+    ptype = ((pfields.get("issuetype") or {}).get("name") or "").strip()
+    pstatus = ((pfields.get("status") or {}).get("name") or "").strip()
+
+    if ptype == "Epic":
+        rep.warn("subtask", f"{key}: parented to {pkey}, which is an Epic - a Subtask sits "
+                            f"under a Story or Task, never directly under an Epic")
+        return True
+    if ptype in ("Subtask", "Sub-task"):
+        rep.warn("subtask", f"{key}: nested under {pkey}, itself a {ptype} - hierarchyLevel "
+                            f"-1 is the floor. Promote it to a Task, or keep the breakdown "
+                            f"as a checklist inside {pkey}")
+        return True
+    if ptype not in ("Story", "Task", "Bug"):
+        rep.warn("subtask", f"{key}: parent {pkey} reads as type '{ptype or '?'}' - refusing "
+                            f"to judge a placement this rule does not know")
+        return True
+
+    # ⭐ The replacement for the parent cascade that SCC-119 cut out of `start`. The board
+    # still gets told when a parent lags its children - it is told by this pass, which
+    # REPORTS, instead of by a write verb that would have needed a second board call and a
+    # second verdict on the one path post-commit's marker logic depends on.
+    cstatus = ((fields.get("status") or {}).get("name") or "").strip()
+    if cstatus.lower() in _STARTED and pstatus.lower() in _NOT_STARTED:
+        rep.warn("subtask", f"{pkey}: parent is behind its children - {key} is already "
+                            f"{cstatus} while {pkey} is still {pstatus}")
+        return True
+
+    rep.info("subtask", f"{key}: under {pkey} ({ptype}) OK")
+    return False
+
+
 def cmd_audit(args) -> int:
     """Does every ticket's TYPE agree with what the work actually is?
 
@@ -851,13 +918,20 @@ def cmd_audit(args) -> int:
 
     rep = wf.Report()
     wrong: list[tuple[str, str, str]] = []
+    sub_problems: list[str] = []
     for item in items:
         fields = item.get("fields") or {}
         key = item.get("key") or ""
         have = ((fields.get("issuetype") or {}).get("name") or "").strip()
         summary = field_text(fields.get("summary"))
-        if have in ("Epic", "Subtask", "Sub-task"):
-            continue  # containers are not this rule's business
+        if have == "Epic":
+            continue  # a container - the type rule has nothing to say about it
+        if have in ("Subtask", "Sub-task"):
+            # NOT skipped any more (SCC-119). A subtask is a leaf, and its own set of things
+            # that can be wrong is placement, not type - checked one `view` at a time.
+            if check_subtask(binary, key, summary, rep):
+                sub_problems.append(key)
+            continue
         if have == "Bug":
             # HANDS OFF - and this is the one skip that matters. `Bug` is TEMPORARY: a Story or
             # Task found broken wears it until the fix lands. It carries the same number and the
@@ -879,12 +953,23 @@ def cmd_audit(args) -> int:
             wrong.append((key, have, want))
             rep.warn("type", f"{key}: {have} -> {want} ({why}) - {summary[:52]}")
 
+    # print_human moved OUT of the branches (SCC-119): the --apply path never printed the
+    # report, so subtask placement findings would have been invisible on exactly the run an
+    # operator makes when they intend to fix the board.
+    rep.print_human(f"jira-feed audit {args.jira_project}")
+    if sub_problems:
+        # ⛔ Never auto-fixed, and not for lack of nerve: re-parenting is a board MOVE, not a
+        # type edit, and WHICH parent a stray subtask belongs under is a judgment about the
+        # work - guardrail 2, placement stays the operator's.
+        say(f"jira-feed: {len(sub_problems)} subtask placement problem(s) - "
+            f"{', '.join(sub_problems)}. NOT auto-fixable: re-parenting is a board move and "
+            f"the right parent is the operator's call.")
     if not wrong:
-        rep.print_human(f"jira-feed audit {args.jira_project}")
-        say(f"jira-feed: every type agrees with the rule ({len(items)} items)")
-        return 0
+        if not sub_problems:
+            say(f"jira-feed: every type agrees with the rule ({len(items)} items)")
+            return 0
+        return 1
     if not args.apply:
-        rep.print_human(f"jira-feed audit {args.jira_project}")
         say(f"jira-feed: DRY RUN - {len(wrong)} ticket(s) mistyped; re-run with --apply")
         return 1
 
@@ -900,7 +985,12 @@ def cmd_audit(args) -> int:
             say(f"jira-feed: {key} {have} -> {want}")
     say(f"jira-feed: converted {len(wrong) - len(failed)}/{len(wrong)}"
         + (f"; FAILED: {', '.join(failed)}" if failed else ""))
-    return 2 if failed else 0
+    if failed:
+        return 2
+    # A clean conversion run still exits 1 when a subtask is misplaced: --apply fixed the
+    # types it can fix, and reporting 0 would say "the board is now correct" over a board
+    # that still has work hanging off nothing.
+    return 1 if sub_problems else 0
 
 
 # ── The raise path: a live bug -> the ticket that introduced it (SCC-54) ───────
@@ -1062,17 +1152,27 @@ def cmd_start(args) -> int:
             f"changed. This is a TRANSPORT failure, not a verdict on the ticket: retry "
             f"when you have a connection. (If it persists: `acli jira auth status`.)")
         return 4
-    have = ((fields.get("issuetype") or {}).get("name") or "").strip()
+    # No `issuetype` read here any more: with the Subtask refusal gone (SCC-119) and an Epic
+    # already allowed, `start` gates on STATUS alone - every type this repo's branches can
+    # carry is startable. It stays on view_fields' whitelist for the callers that do read it.
     status = ((fields.get("status") or {}).get("name") or "").strip()
     summary = field_text(fields.get("summary"))
     target = args.status
 
-    if have in ("Subtask", "Sub-task"):
-        wf.die(f"{args.key} is a {have} - start the parent it belongs to.")
-
-    # An Epic IS allowed, and this is the one place `start` differs from `flag`, which
-    # refuses containers outright. An epic under active development is genuinely in
-    # progress; an epic is never itself broken work. `epic/` is in the branch scope.
+    # ⭐ A Subtask IS allowed (SCC-119). It used to be refused here - "start the parent it
+    # belongs to" - and that refusal was a live defect, not a guard: a subtask carries its
+    # own `chore/<KEY>-<slug>` branch and ships code exactly like a Task, so the refusal
+    # exited 2 on a real lane. `post-commit-jira-start.sh` writes its once-per-branch marker
+    # ONLY on exit 0, so the lane never marked, re-fired a board round-trip on EVERY commit
+    # with both streams swallowed, and its ticket sat in `To Do` for the whole build - the
+    # precise failure SCC-113 exists to close, coming back through a type check. SCC-123
+    # shipped that way. There is deliberately NO parent cascade: one board write, one
+    # verdict, because the marker logic hangs off there being exactly one. A parent that
+    # lags its children is reported by `audit`, which reports rather than writes.
+    #
+    # An Epic is allowed too, and that is where `start` differs from `flag`, which refuses
+    # containers outright. An epic under active development is genuinely in progress; an
+    # epic is never itself broken work. `epic/` is in the branch scope.
 
     if status.lower() == target.lower():
         say(f"jira-feed: {args.key} is already {target} - nothing to do ({summary[:60]})")
@@ -1154,9 +1254,26 @@ def cmd_flag(args) -> int:
     status = ((fields.get("status") or {}).get("name") or "").strip()
     summary = field_text(fields.get("summary"))
 
-    if have in ("Epic", "Subtask", "Sub-task"):
-        wf.die(f"{args.key} is an {have} - a container is never a Bug. Flag the child ticket "
+    if have == "Epic":
+        wf.die(f"{args.key} is an Epic - a container is never a Bug. Flag the child ticket "
                f"whose work broke.")
+    if have in ("Subtask", "Sub-task"):
+        # ⭐ SCC-119, operator ruling: a subtask is NEVER labelled `Bug`. Breakage is recorded
+        # on the main ticket - the parent that owns the job - so the flag goes up, not onto
+        # the leaf. The old message lumped this in with Epic and called a subtask "a
+        # container", which is false twice over: it is a leaf (hierarchyLevel -1), and its
+        # own advice - "flag the child ticket whose work broke" - pointed straight back at
+        # the ticket it had just refused.
+        #
+        # The redirect NAMES the parent, because a refusal the operator cannot act on is a
+        # dead end. `parent` is on view_fields' whitelist and comes back from `view` (it is
+        # rejected on `search`, which is why nothing here reads it that way).
+        parent = (fields.get("parent") or {}).get("key")
+        wf.die(f"{args.key} is a {have} - a subtask is never labelled Bug (SCC-119); "
+               f"breakage is recorded on the ticket that owns the job. "
+               + (f"Flag {parent} instead." if parent else
+                  "It has no parent on the board, which is itself the defect - "
+                  "`jira_feed.py audit` reports it, and re-parenting is a board fix."))
     if have == "Bug":
         # Idempotent on purpose: two testers finding the same bug must not fight over the
         # board, and a re-run must not stack a second flag comment on a ticket already flagged.
