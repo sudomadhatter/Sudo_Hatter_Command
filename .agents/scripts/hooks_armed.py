@@ -82,10 +82,24 @@ REMEDY = "git config core.hooksPath .githooks"
 # `*.sh` in `git-hooks/`, flag or no flag — `pre-commit-encoding.sh` is armed unconditionally and
 # has no flag, and leaving it out of the executable check would exempt the encoding gate from the
 # very failure mode this script was written for.
+#
+# ⓘ THREE flags now name `commit-msg` as their dispatcher, and `MERGE-TARGET-ENFORCE` is the one
+# that looks misfiled until you know why (SCC-144): the merge-target guard was written for
+# `pre-merge-commit`, which fires BEFORE git writes MERGE_HEAD and never fires at all on the
+# conflicted path, so it had nothing to judge with. `commit-msg` sees both merge paths. The two
+# older gates on that hook exempt merges; this one runs on nothing else.
+#
+# ⚠ ONE FLAG, TWO HALVES. `MERGE-TARGET-ENFORCE` also arms `pre-push-merge-backstop.sh`, the
+# fast-forward net — a ff merge creates no commit, so no commit-time hook can see it. That second
+# script is deliberately absent from this table: a flag maps to ONE script here, and splitting the
+# guard across two flags would let an operator disarm the commit-time half while believing the push
+# half still covered them. It is still executable-checked by layer 2, which is the same position
+# `pre-commit-encoding.sh` is in — see the KNOWN GAP note above.
 ARM_FLAGS = {
-    "JIRA-ENFORCE":      ("commit-msg-jira.sh", "commit-msg"),
-    "SOP-ENFORCE":       ("sop-currency.sh", "commit-msg"),
-    "MAIN-PUSH-ENFORCE": ("pre-push-main-approval.sh", "pre-push"),
+    "JIRA-ENFORCE":        ("commit-msg-jira.sh", "commit-msg"),
+    "SOP-ENFORCE":         ("sop-currency.sh", "commit-msg"),
+    "MAIN-PUSH-ENFORCE":   ("pre-push-main-approval.sh", "pre-push"),
+    "MERGE-TARGET-ENFORCE": ("merge-target-guard.sh", "commit-msg"),
 }
 
 

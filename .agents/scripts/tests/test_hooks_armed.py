@@ -46,9 +46,9 @@ def git(*args: str, cwd: Path) -> str:
 
 
 def seed(d: Path, *, hooks=("commit-msg", "pre-commit", "post-commit", "pre-push"),
-         flags=("JIRA-ENFORCE", "SOP-ENFORCE", "MAIN-PUSH-ENFORCE"),
+         flags=("JIRA-ENFORCE", "SOP-ENFORCE", "MAIN-PUSH-ENFORCE", "MERGE-TARGET-ENFORCE"),
          scripts=("commit-msg-jira.sh", "sop-currency.sh", "pre-push-main-approval.sh",
-                  "pre-commit-encoding.sh"),
+                  "pre-commit-encoding.sh", "merge-target-guard.sh"),
          arm=True) -> None:
     """A minimal repo shaped like this one: hook dispatchers, inner scripts, arm flags.
 
@@ -344,7 +344,11 @@ def main() -> int:
     # deeper than the shell, which is why grepping the hook scripts alone makes it look unread.
     # sop-currency.sh:12 tells you to disarm by DELETING the flag. Follow your own documented
     # instruction and the index still has it, so the tool says ARMED while the gate only warns.
-    for flag in ("JIRA-ENFORCE", "SOP-ENFORCE", "MAIN-PUSH-ENFORCE"):
+    # ⛔ MERGE-TARGET-ENFORCE (SCC-144) is in this loop, and its absence was a REAL GAP: the gate
+    # shipped with an ARM_FLAGS row and nothing in this family — the five vacuous-ARMED shapes —
+    # ever exercised it, because `seed()`'s defaults did not carry it and `scan()` skips a flag
+    # that is neither tracked nor shipped. The row existed; the accounting did not.
+    for flag in ("JIRA-ENFORCE", "SOP-ENFORCE", "MAIN-PUSH-ENFORCE", "MERGE-TARGET-ENFORCE"):
         with TempDir() as d:
             seed(d)
             (d / ".agents/scripts/git-hooks" / flag).unlink()   # tracked, gone from disk

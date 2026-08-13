@@ -1,0 +1,75 @@
+== merge-target guard (SCC-144) ==
+[FAIL] the guard script exists: /Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/merge-target-guard/.agents/scripts/git-hooks/merge-target-guard.sh — nothing to arm
+[FAIL] the pre-merge-commit dispatcher exists: /Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/merge-target-guard/.githooks/pre-merge-commit — git has nothing to invoke
+[FAIL] the guard is executable: a non-executable gate is skipped by its dispatcher in SILENCE
+[FAIL] the arm flag is tracked in the live repo: /Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/merge-target-guard/.agents/scripts/git-hooks/MERGE-TARGET-ENFORCE — without it the gate warns instead of refusing
+[PASS] A · chore -> main is ALLOWED: Merge made by the 'ort' strategy.
+ chore_SCC-144-a.txt | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 chore_SCC-144-a.txt
+[FAIL] B · chore -> chore is REFUSED: Merge made by the 'ort' strategy.
+ chore_SCC-144-a.txt | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 chore_SCC-144-a.txt
+[FAIL] B · ...and NO merge commit was created: the refusal has to happen BEFORE the commit is sealed, or it is a post-mortem
+[FAIL] B · the refusal names the TARGET: Merge made by the 'ort' strategy.
+ chore_SCC-144-a.txt | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 chore_SCC-144-a.txt
+[FAIL] B · the refusal names the SOURCE: Merge made by the 'ort' strategy.
+ chore_SCC-144-a.txt | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 chore_SCC-144-a.txt
+[FAIL] B · the refusal names the RULE: Merge made by the 'ort' strategy.
+ chore_SCC-144-a.txt | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 chore_SCC-144-a.txt
+[FAIL] B · the refusal names the REMEDY: Merge made by the 'ort' strategy.
+ chore_SCC-144-a.txt | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 chore_SCC-144-a.txt
+[FAIL] B · the refusal names the OVERRIDE: Merge made by the 'ort' strategy.
+ chore_SCC-144-a.txt | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 chore_SCC-144-a.txt
+[PASS] C · epic -> main is ALLOWED: Merge made by the 'ort' strategy.
+ epic_SCC-144-e.txt | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 epic_SCC-144-e.txt
+[PASS] D · story -> epic is ALLOWED: Merge made by the 'ort' strategy.
+ claude_SCC-144-s.txt | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 claude_SCC-144-s.txt
+[PASS] D2 · main -> chore (absorb) is ALLOWED: Merge made by the 'ort' strategy.
+ onmain.txt | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 onmain.txt
+[PASS] E · a FAST-FORWARD of a forbidden topology is NOT caught by the merge hook: if this ever goes red, git now fires a hook on a ff merge and the pre-push backstop's justification has changed — read it before 'fixing' this
+[PASS] F · --no-verify bypasses the guard: Merge made by the 'ort' strategy.
+ chore_SCC-144-a.txt | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 chore_SCC-144-a.txt
+[FAIL] F · ...and the guard's own header says so: an undocumented override gets 'fixed' by the next person who finds it
+[PASS] J · without MERGE-TARGET-ENFORCE the merge is ALLOWED: Merge made by the 'ort' strategy.
+ chore_SCC-144-a.txt | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 chore_SCC-144-a.txt
+[FAIL] J · ...but it still says something: a disarmed gate that is also silent is indistinguishable from a deleted one
+[PASS] K · DISABLE allows the merge: Merge made by the 'ort' strategy.
+ chore_SCC-144-a.txt | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 chore_SCC-144-a.txt
+[PASS] M · a sha carrying both a legal and an illegal name is ALLOWED: Merge made by the 'ort' strategy.
+ chore_SCC-144-a.txt | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 chore_SCC-144-a.txt
+[PASS] N · an unclassified SOURCE is allowed: Merge made by the 'ort' strategy.
+ incident-42.txt | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 incident-42.txt
+[FAIL] N · ...and the guard says it declined to judge: Merge made by the 'ort' strategy.
+ incident-42.txt | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 incident-42.txt
+-- 10/24 passed --
+FAILED: the guard script exists, the pre-merge-commit dispatcher exists, the guard is executable, the arm flag is tracked in the live repo, B · chore -> chore is REFUSED, B · ...and NO merge commit was created, B · the refusal names the TARGET, B · the refusal names the SOURCE, B · the refusal names the RULE, B · the refusal names the REMEDY, B · the refusal names the OVERRIDE, F · ...and the guard's own header says so, J · ...but it still says something, N · ...and the guard says it declined to judge

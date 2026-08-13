@@ -48,7 +48,16 @@ JIRA_KEYS=""
 # replays commits that were already checked once. Blocking any of these means blocking the
 # tool, not the author. (Ruling 2026-08-07: every chore/* branch DOES need its own ticket —
 # these three are the only exemptions.)
-if [ -f .git/MERGE_HEAD ] || [ -d .git/rebase-merge ] || [ -d .git/rebase-apply ]; then
+#
+# ⛔ `$(git rev-parse --git-dir)`, NOT the literal `.git/` (SCC-144). In a WORKTREE `.git` is a
+# FILE, not a directory — the real state lives in `.git/worktrees/<name>/` — so a literal path
+# probe is ALWAYS FALSE there, and every lane in this system is a worktree. This carve-out was
+# therefore live in the shared checkout and dead in every lane: the absorb-main merge that
+# /smh-merge-multiple-workingtrees Step 4b performs INSIDE the lane was gated while the identical
+# merge in the shared checkout was exempt. The subject fallback below does not cover it either —
+# it matches a capital `Merge `, while this repo's own merges read `merge: chore/... -> main`.
+GITDIR=$(git rev-parse --git-dir 2>/dev/null) || GITDIR=.git
+if [ -f "$GITDIR/MERGE_HEAD" ] || [ -d "$GITDIR/rebase-merge" ] || [ -d "$GITDIR/rebase-apply" ]; then
   exit 0
 fi
 

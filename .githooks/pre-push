@@ -1,19 +1,78 @@
 #!/bin/sh
-# pre-push — one gate: nothing reaches `main` without a single-use approval token.
+# pre-push — two gates, run in order. Both must pass.
+#
+#   1. merge-target backstop  a lane is not carrying another lane's unlanded work (SCC-144)
+#   2. main approval          nothing reaches `main` without a single-use token   (SCC-77)
+#
+# ⛔⛔ STDIN IS THE HAZARD HERE, AND IT IS NOT THE ONE `commit-msg` HAS. A `commit-msg` gate is
+# handed a FILE PATH, so any number of gates can read it. `pre-push` is handed its refs ON STDIN,
+# and a stream can be consumed exactly once: hand the raw stdin to the first gate and the second
+# one reads EOF, its `while read` loop never executes, and IT EXITS 0 — silently allowing every
+# push, including the ones to `main` it exists to refuse. That is the same silent-pass failure
+# class this whole gate family was built to close, and it would live inside the fix for it.
+#
+# So the refs are read ONCE into a file under the git dir and each gate is fed from that file.
+# `test_git_hooks.py` case P pins it with a real `git push` to `main` carrying no token: the token
+# gate runs LAST, so that case can only pass if the second gate genuinely saw its input.
+#
+# ⓘ AND THAT IS WHY THE LAST GATE IS NO LONGER `exec`d. `exec` replaces this shell, so the EXIT
+# trap never fires and the temp file leaks into `.git/` on every push. The exit code is propagated
+# by hand instead. (`commit-msg` still execs its last gate — it has no temp file to clean up.)
 #
 # GUARD (SCC-32): `--show-toplevel` resolves to the WORKTREE root, not the main checkout, so a
-# worktree cut from a commit before the script existed has no script to exec — and a bare `exec`
-# on a missing file kills the push outright with a shell error. Missing script -> say so, allow.
-# Same trap, same handling, as commit-msg and pre-commit.
+# worktree cut from a commit before a script existed has no script to exec — and a bare `exec` on
+# a missing file kills the push outright with a shell error. Missing script -> say so, allow.
 #
 # Note the asymmetry with commit-msg: a missing gate here means an UNGATED push to main, which is
 # worse than a missing commit gate. It still allows, because a hard door on a stale worktree
 # strands the operator with no way to ship — but it says so loudly, and the arm flag being tracked
 # means this state only ever exists on a tree cut before SCC-77 landed.
-HOOK="$(git rev-parse --show-toplevel)/.agents/scripts/git-hooks/pre-push-main-approval.sh"
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT" || exit 0
+
+# Under the git dir, so it never travels with a clone and can never land in a commit. `--git-path`
+# rather than a literal `.git/...`: in a worktree `.git` is a FILE, and a path probe there is
+# always false — the same bug this lane fixed in commit-msg-jira.sh and sop-currency.sh.
+#
+# ⛔ THE ANSWER IS USED AS GIT GIVES IT, and the `cd` above is what makes that safe. `--git-path`
+# returns a RELATIVE path in the main checkout and an ABSOLUTE one in a worktree — measured. The
+# first cut normalised that by hand with `case "$REFS" in /*)`, which is correct on POSIX and
+# WRONG on the PC: git-for-windows answers `C:/repo/.git/worktrees/<name>/...`, which does not
+# match `/*`, so the repo root was prepended to an already-absolute path and the write failed.
+# In a worktree. On one of this system's two machines. Every lane here is a worktree.
+REFS="$(git rev-parse --git-path pre-push-refs.$$)"
+trap 'rm -f "$REFS"' EXIT HUP INT TERM
+
+# ⛔ AND IT FAILS CLOSED. This was `|| exit 0`, which returned success and skipped BOTH gates —
+# including the SCC-77 token gate — with no message at all. That is the silent-pass class this
+# whole gate family exists to close, sitting inside it. The SCC-32 allow-on-missing rule below is
+# about a STALE WORKTREE with no script to run, where a hard door would strand the operator with
+# no way to ship; an unwritable git dir is not that, it is an anomaly, and `--no-verify` is right
+# there for anyone it inconveniences.
+if ! cat > "$REFS"; then
+  echo ""
+  echo "  ⛔ PUSH REFUSED — the pre-push hook could not stage the refs it was handed."
+  echo "     Could not write: $REFS"
+  echo "     Two gates read that file, so continuing would run NEITHER — including the"
+  echo "     approval-token gate on main. Refusing rather than passing silently (SCC-144)."
+  echo "     Bypass once: git push --no-verify"
+  echo ""
+  exit 1
+fi
+
+BACKSTOP="$ROOT/.agents/scripts/git-hooks/pre-push-merge-backstop.sh"
+if [ ! -x "$BACKSTOP" ]; then
+  echo "  ⚠ merge-target backstop not present in this worktree ($BACKSTOP) — the fast-forward"
+  echo "    blind spot is UNCOVERED on this tree. Merge/rebase onto a commit that carries it."
+else
+  "$BACKSTOP" "$@" < "$REFS" || exit $?
+fi
+
+HOOK="$ROOT/.agents/scripts/git-hooks/pre-push-main-approval.sh"
 if [ ! -x "$HOOK" ]; then
   echo "  ⚠ main-push gate not present in this worktree ($HOOK) — push allowed, UNCHECKED."
   echo "    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it."
   exit 0
 fi
-exec "$HOOK" "$@"
+"$HOOK" "$@" < "$REFS"
+exit $?
