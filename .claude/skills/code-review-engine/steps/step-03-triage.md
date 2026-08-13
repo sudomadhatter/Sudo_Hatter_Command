@@ -14,7 +14,7 @@ Each finding becomes:
 | field | meaning |
 |---|---|
 | `id` | sequential integer |
-| `source` | `blind` · `edge` · `literal` · `acceptance` · `test-adequacy`, or merged (`blind+edge`) |
+| `source` | `blind` · `edge` · `literal` · `acceptance` · `test-adequacy` · `compound`, or merged (`blind+edge`) |
 | `title` | one line |
 | `detail` | the full description, plus any evidence |
 | `location` | `file:line` when available |
@@ -39,10 +39,10 @@ never be *promoted* into something that gates a merge.
 finding — evidence in hand — that value replaces the hunter's assertion outright. Hunters assert;
 verification is what makes a severity load-bearing.
 
-⚠ **Today no revised severity exists** (step 2 is a pass-through until SCC-127), so every severity
-below is hunter-asserted and unverified. The table in §5 is applied to it anyway — deliberately, so
-that this engine gates exactly as hard as the path it replaces, no harder and no softer, and so
-SCC-124's head-to-head trial measures real behavior rather than a temporarily-softened one.
+⚠ **A finding with no revised severity keeps the hunter's** — step 2's self-gate skipped the wave,
+or its verifier died. The table in §5 is applied to that severity anyway, deliberately, because an
+unverified finding is not a softer finding: this engine
+gates exactly as hard as the path it replaces, no harder and no softer.
 
 ## 3. Deduplicate
 
@@ -78,9 +78,12 @@ This table is the single definition; every caller reads it rather than inventing
 | `suggestion` or `nitpick`, any bucket | **never gate** — recorded, never raising the floor |
 | anything in `defer` | **never gate** — it is not this change's defect |
 | a lens still `dead` after retry AND inline rerun | **CONCERNS** |
+| a step-2 role still `dead` after retry AND inline rerun | **CONCERNS** |
 
 The floor is the **most severe** applicable row, on the axis `none` < `CONCERNS` < `FAIL`. A lens
-recorded `recovered-inline` is not a dead lens and does not appear here at all.
+recorded `recovered-inline` is not a dead lens and does not appear here at all, and neither does a
+step-2 role that recovered inline — including one recorded `cold (no dossier)`, which is a lost head
+start, not a lost surface. A role the step-2 self-gate never launched is likewise not dead.
 
 ⛔ **A `dismiss` never gates and a `defer` never gates** — but a `defer` is still written into the
 record. Suppressing a finding from the record because it did not gate is how a review becomes a
