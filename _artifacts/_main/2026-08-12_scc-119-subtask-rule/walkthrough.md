@@ -201,6 +201,42 @@ Machine floor — all bare, all above: `run_all` · `workflow_lint` · `sop_curr
    **only `_artifacts/`**. **No landing-order dependency in either direction** — this lane may land
    first or last without consequence.
 
+## Rolled in at the operator's direction (2026-08-12) — a parallel team's audit
+
+A second team audited `main` @ `b1ac733` and handed over a findings list. **Every claim below was
+re-verified in source before acting** — they were all accurate. Four rolled in; the rest are tickets,
+because they belong to other subsystems and folding them here would be exactly the drift this
+ticket's own review gate would FAIL on.
+
+| Rolled in | Was | Now |
+|---|---|---|
+| **`_artifacts/_main/INDEX.md` row** ⛔ **blocking** | SCC-119 had **no INDEX row of its own** — it was silently riding a row a truncated Antigravity run left behind, which SCC-135 then removed. `check_maps` would have gone **RED the moment this landed**. | Row added. `check_maps`'s missing-row drift is **gone**. |
+| **`task_preflight.py` printed a false statement** | *"this repo has no deployable surface (no … `.github`)"* — while `.github/workflows/main-write-gate.yml` sits right there. The **verdict** was right (a CI dir cannot deploy a repo that ships nothing); the **sentence** was untrue. | Renders `PRODUCT_DIRS` (the list actually consulted) and says `.github/` exists but ships nothing here. |
+| **Dead link, target never existed** | `active-context.md` linked `docs/gitnexus-sync.md` through `file:///c:/Users/dlohn/.gemini/antigravity/scratch/…`. **0 commits in git history, absent from disk.** Not a mis-pathed link — the guide was authored in an Antigravity scratch dir on the PC and never landed. | De-linked, with the loss recorded in place. **Repair was never an option: there is nothing to point at.** |
+| **Mojibake** | `lobbyâ€"it` — a cp1252 round-trip of an em-dash. | Repaired to `lobby—it`. |
+| **INDEX date ordering** | `2026-08-10_scc-77` sat between two `2026-08-11` rows. | Moved; the column is now **strictly descending**, verified programmatically. |
+
+**Filed instead of folded — `SCC-137` (Bug) + two subtasks, the rule's first real use:**
+
+The other team found that the close-out gate reported GREEN while `check_maps` was RED. **They named
+the symptom; the root cause is worse and I verified it in source:** `task_preflight.gate_plan()`
+builds the lane's gate from exactly two entries — `run_all.py` and `workflow_lint.py`. **`check_maps`
+is not in it.** The gate cannot fail on a linter it never runs.
+
+- **SCC-137** `Bug` — close-out reports GREEN while `check_maps` is RED (under epic SCC-33).
+- **SCC-138** `Subtask` — wire `check_maps` into `gate_plan`, handling the worktree false-positives.
+- **SCC-139** `Subtask` — `test_check_maps` live-tree **MISSING-row** coverage (case F asserts *stale*
+  only — verified) + `SCAN_IGNORES`, which has **zero** coverage. Both mutation-proven.
+
+Each subtask earns its own branch and worktree — different files, independently shippable, its own
+gate run. **That is the threshold applied honestly, not mechanically.** `jira_feed.py audit` was then
+run against the **live board** and reads both children as well-formed under a `Bug` parent:
+`0 error(s), 0 warning(s), 110 info`.
+
+**Deliberately NOT rolled in:** the stale maps anchor (must be set from the shared checkout on `main`
+— from a worktree the remedy ships the **lane name**), the GitNexus re-index and the PC cache sync
+(machine-local, not commits), and the Antigravity runtime re-verification (needs an IDE reload).
+
 ## Your Actions
 
 **Landed on the branch, not on `main`.** `chore/SCC-119-subtask-rule`, reviewed at `cc553bc`, with

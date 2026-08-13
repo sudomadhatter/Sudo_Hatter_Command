@@ -133,14 +133,14 @@ Regenerated the lobby, AGY AviationChat, and Fresh Workspace AUTO map blocks in 
 Session: `_artifacts/_main/2026/07/2026-07-23_update-maps-indexes/`.
 
 **2026-07-14 (latest): GitNexus graphs updated & dev tooling excluded. Sync guide created.**
-Refined product GitNexus index scope to exclude development/testing tooling (`load/`, `scripts/`, `_test_scripts/`, `auth_keys/`, `scratch/`, and root scripts) from indexing. Documented the new scope in `Projects/AGY_AVIATIONCHAT/docs/gitnexus.md`. Created a new guide [docs/gitnexus-sync.md](file:///c:/Users/dlohn/.gemini/antigravity/scratch/Sudo_Hatter_Command/docs/gitnexus-sync.md) explaining how the index files are machine-local and do not sync via Git, with instructions for re-indexing other machines. Executed GitNexus analysis on lobby (`Sudo_Hatter_Command`) and product project (`AGY_AVIATIONCHAT`), successfully updating local indexes. Regenerated content-mode AUTO blocks for both repo-maps, and resolved a missing debug index row drift for `password-reset-fix`. Verify maps checks clean (`exit 0`).
+Refined product GitNexus index scope to exclude development/testing tooling (`load/`, `scripts/`, `_test_scripts/`, `auth_keys/`, `scratch/`, and root scripts) from indexing. Documented the new scope in `Projects/AGY_AVIATIONCHAT/docs/gitnexus.md`. Wrote a guide on the index files being machine-local and how to re-index other machines — **that guide was never tracked and is LOST**: it was authored in an Antigravity scratch dir on the PC (`docs/gitnexus-sync.md`, 0 commits in git history, absent from disk), and the link here was a Windows absolute `file:///c:/...` path that resolved on no machine. De-linked 2026-08-12 rather than repaired: there is nothing to point at. The fact it recorded survives in `.agents/rules/` and the GitNexus memories. Executed GitNexus analysis on lobby (`Sudo_Hatter_Command`) and product project (`AGY_AVIATIONCHAT`), successfully updating local indexes. Regenerated content-mode AUTO blocks for both repo-maps, and resolved a missing debug index row drift for `password-reset-fix`. Verify maps checks clean (`exit 0`).
 Session: `_artifacts/_main/2026/07/2026-07-14_update-gitnexus-graphs/`.
 
 ## 5. PICK UP  (read-only brief)
 - 5.1 Doing: map/index maintenance is complete; no process is running.
 - 5.2 Changed this session: regenerated three declared-mode AUTO map blocks; added the missing lobby and AGY artifact-ledger rows; created the AGY `frontend/test-results/INDEX.md` and `epic_debug_2/INDEX.md` inventories; verified fan-out lint clean.
 - 5.3 Remaining: after the relevant commits, re-anchor with `python .agents/scripts/check_maps.py --set-anchor --all`; re-index lobby GitNexus; decide whether and how to compact AGY's undated 391-line continuity brief.
-- 5.4 Git: do not mass-stage the lobbyâ€”it already contained unrelated uncommitted changes before this reconciliation.
+- 5.4 Git: do not mass-stage the lobby—it already contained unrelated uncommitted changes before this reconciliation.
 - 5.5 Historical hand-off from 2026-07-14 follows.
 - 5.1 Doing: maintaining GitNexus indexing and map/index health.
 - 5.2 Changed this session:

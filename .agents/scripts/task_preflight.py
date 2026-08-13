@@ -687,9 +687,17 @@ def check_scope(repo: Path, branch: str, rep: wf.Report) -> tuple[str, list[str]
     rep.info("scope", f"{len(changed)} file(s) changed vs {base}")
 
     if not surface:
+        # ⚠ This line USED to render DEPLOY_DIRS, which appends `.github/` - so in the command
+        # centre it printed "no ... .github" while `.github/workflows/main-write-gate.yml` sat
+        # right there. The VERDICT was correct (a CI dir cannot deploy a repo that ships
+        # nothing - see the TWO LISTS note above); only the sentence was false, and a gate that
+        # states something plainly untrue teaches the reader to stop believing its output.
+        # It renders PRODUCT_DIRS now, which is the list actually consulted here.
         rep.info("scope", "this repo has no deployable surface (no "
-                          + ", ".join(d.rstrip('/') for d in DEPLOY_DIRS)
-                          + ") - there is no E2E suite here to skip")
+                          + ", ".join(d.rstrip('/') for d in PRODUCT_DIRS)
+                          + ") - there is no E2E suite here to skip"
+                          + (f"; `{CI_DIR}` exists but ships nothing on its own here"
+                             if (repo / CI_DIR).is_dir() else ""))
         return "LOCAL", []
 
     touched = sorted({d for d in surface for p in changed if p.startswith(d)})
