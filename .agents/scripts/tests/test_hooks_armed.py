@@ -295,6 +295,105 @@ def main() -> int:
             payload.get("hooks_armed") == hooks_armed.scan(REPO)["armed"],
             f"preflight said {payload.get('hooks_armed')!r}; a live scan disagrees")
 
+    # ═══ SCC-140 · the vacuous-ARMED family ═══════════════════════════════════════════════
+    # Five ways this tool reported ARMED while gates were off. Its ONE job is not to do that,
+    # so each is a fixture here and each must read NOT ARMED with a named finding.
+
+    # ── R · ⛔ the INDEX/DISK split — the disarm procedure this repo DOCUMENTS ─────────────
+    # scan() reads the arm flags from the git INDEX. Every consumer reads them from DISK:
+    # commit-msg-jira.sh:85 `[ -f ... ]`, pre-push-main-approval.sh:38 `[ -f ... ] || exit 0`,
+    # and SOP-ENFORCE at sop_currency.py:165 `(repo / ENFORCE_MARKER).exists()` — one layer
+    # deeper than the shell, which is why grepping the hook scripts alone makes it look unread.
+    # sop-currency.sh:12 tells you to disarm by DELETING the flag. Follow your own documented
+    # instruction and the index still has it, so the tool says ARMED while the gate only warns.
+    for flag in ("JIRA-ENFORCE", "SOP-ENFORCE", "MAIN-PUSH-ENFORCE"):
+        with TempDir() as d:
+            seed(d)
+            (d / ".agents/scripts/git-hooks" / flag).unlink()   # tracked, gone from disk
+            r = hooks_armed.scan(d)
+            c.check(f"R · {flag} deleted from DISK is NOT armed", r["armed"] is False,
+                    f"the hooks read this file from disk; errors={errs(r)}")
+            c.check(f"R · ...and the finding names {flag}",
+                    any(flag in m for m in errs(r)), str(errs(r)))
+
+    # ── S · a gate script dropped from the INDEX while its flag stays tracked ─────────────
+    # `git rm --cached` leaves the file on disk, so nothing looks wrong; the script vanishes
+    # from `_tracked`, layer 2 never sees it, and layer 3's `continue` skipped its flag.
+    with TempDir() as d:
+        seed(d)
+        git("rm", "--cached", "-q", ".agents/scripts/git-hooks/commit-msg-jira.sh", cwd=d)
+        r = hooks_armed.scan(d)
+        c.check("S · a gate script removed from the INDEX is NOT armed", r["armed"] is False,
+                f"errors={errs(r)} - the dispatcher's `[ -x ] || exit 0` allows it unchecked")
+        c.check("S · ...and the finding names the orphaned flag",
+                any("JIRA-ENFORCE" in m for m in errs(r)), str(errs(r)))
+
+    # ── T · a TRACKED flag whose paired script was never tracked ─────────────────────────
+    # Acceptance item 2 of the original ticket is "reports every flag". The `continue`
+    # silently skipped exactly the flags whose gate is missing — the ones worth reporting.
+    with TempDir() as d:
+        seed(d, scripts=("sop-currency.sh", "pre-push-main-approval.sh", "pre-commit-encoding.sh"))
+        r = hooks_armed.scan(d)
+        c.check("T · a tracked flag with no tracked script is REPORTED, not skipped",
+                any("JIRA-ENFORCE" in m for m in errs(r)),
+                f"errors={errs(r)} - a flag arming nothing is the loudest case, not the quietest")
+
+    # ── U · ⭐ jira.conf + dispatchers + ZERO gate scripts certified ARMED ────────────────
+    # The repo CLAIMS gates (it declares a Jira project) and ships hooks that dispatch to
+    # scripts that do not exist. Every dispatcher exits 0. This is the shape a project
+    # scaffolded by /smh-new-project is in before its gate scripts land.
+    with TempDir() as d:
+        seed(d, scripts=(), flags=())
+        (d / ".agents").mkdir(parents=True, exist_ok=True)
+        (d / ".agents/jira.conf").write_text('JIRA_KEYS="SCC"\n', encoding="utf-8")
+        git("add", "-A", cwd=d)
+        r = hooks_armed.scan(d)
+        c.check("U · claiming gates while tracking ZERO gate scripts is NOT armed",
+                r["armed"] is False,
+                f"claims={r['claims_gates']} errors={errs(r)} - it reported ARMED with no findings")
+
+    # ── V · ARM_FLAGS declares a `via` hook per flag and never checked it was tracked ─────
+    with TempDir() as d:
+        seed(d, hooks=("pre-commit", "post-commit", "pre-push"))   # no commit-msg dispatcher
+        r = hooks_armed.scan(d)
+        c.check("V · a flag whose declared `via` hook is untracked is NOT armed",
+                r["armed"] is False, f"errors={errs(r)}")
+        c.check("V · ...and the finding names the missing dispatcher",
+                any("commit-msg" in m for m in errs(r)), str(errs(r)))
+
+    # ── W · ⛔ the pathspec crosses slashes — a FALSE RED that hard-blocks close-out ──────
+    # `git ls-files -- '.githooks/*'` matches across `/`, and `Path(p).name` then turns a
+    # README and any nested file into "required executable hooks". Adding a README to that
+    # directory blocked the close-out with "hook 'README.md' is present but NOT EXECUTABLE".
+    with TempDir() as d:
+        seed(d)
+        (d / ".githooks/README.md").write_text("# what these are\n", encoding="utf-8")
+        (d / ".githooks/lib").mkdir(parents=True, exist_ok=True)
+        (d / ".githooks/lib/helper.sh").write_text("#!/bin/sh\n", encoding="utf-8")
+        git("add", "-A", cwd=d)
+        r = hooks_armed.scan(d)
+        names = {h["name"] for h in r["hooks"]}
+        c.check("W · a tracked non-hook in .githooks/ is not a required hook",
+                "README.md" not in names, f"hooks={sorted(names)}")
+        c.check("W · a NESTED tracked file is not a required hook either",
+                "helper.sh" not in names, f"hooks={sorted(names)}")
+        c.check("W · ...and the four real dispatchers are still required",
+                {"commit-msg", "pre-commit", "post-commit", "pre-push"} <= names,
+                f"hooks={sorted(names)}")
+        c.check("W · so a repo with a README in .githooks/ still reads ARMED",
+                r["armed"] is True, f"errors={errs(r)}")
+
+    # ── X · a tilde in core.hooksPath — git expands it, pathlib does not ─────────────────
+    # A correctly armed machine reads NOT ARMED and is falsely blocked.
+    c.check("X · `~` in core.hooksPath is expanded, not treated as a relative dir",
+            hooks_armed.resolve_hooks_dir(Path("/repo"), "~/hooks")
+            == Path("~/hooks").expanduser(),
+            f"got {hooks_armed.resolve_hooks_dir(Path('/repo'), '~/hooks')}")
+    c.check("X · ...while a genuinely relative path still resolves inside the repo",
+            hooks_armed.resolve_hooks_dir(Path("/repo"), ".githooks") == Path("/repo/.githooks"))
+    c.check("X · ...and an absolute path is left alone",
+            hooks_armed.resolve_hooks_dir(Path("/repo"), "/etc/hooks") == Path("/etc/hooks"))
+
     return c.finish()
 
 

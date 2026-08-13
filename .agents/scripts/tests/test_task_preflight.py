@@ -83,6 +83,15 @@ def make_repo(root: Path, *, deployable: bool = False, remote: bool = True,
     if hooks:
         write(repo, ".githooks/commit-msg", "#!/bin/sh\nexit 0\n")
         (repo / ".githooks/commit-msg").chmod(0o755)
+        # SCC-140: the dispatcher alone was NOT enough, and the gap was the bug. This fixture
+        # declared a Jira project and shipped the hook that enforces it while tracking ZERO
+        # gate scripts - so every dispatcher's `[ -x ... ] || exit 0` allowed the operation,
+        # and the arm-check certified ARMED with no findings. No real repo is in that state;
+        # the fixture was modelling the defect. It now carries the inner script the dispatcher
+        # actually calls, and the flag that arms it.
+        write(repo, ".agents/scripts/git-hooks/commit-msg-jira.sh", "#!/bin/sh\nexit 0\n")
+        (repo / ".agents/scripts/git-hooks/commit-msg-jira.sh").chmod(0o755)
+        write(repo, ".agents/scripts/git-hooks/JIRA-ENFORCE", "armed\n")
         git(repo, "config", "core.hooksPath", ".githooks")
     write(repo, "README.md", "# fixture\n")
     if deployable:

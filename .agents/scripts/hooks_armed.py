@@ -89,6 +89,18 @@ def _tracked(repo: Path, pathspec: str) -> list[str]:
     return sorted(p for p in r.stdout.split("\0") if p) if r.returncode == 0 else []
 
 
+def resolve_hooks_dir(repo: Path, configured: str) -> Path:
+    """Where git will ACTUALLY look for hooks, given `core.hooksPath = configured`.
+
+    ⚠ `~` is the whole reason this is a function. GIT expands it; `pathlib` does not, and
+    `Path("~/hooks").is_absolute()` is False — so a tilde path was joined onto the repo root,
+    resolved to nothing, and a correctly armed machine read NOT ARMED and was falsely blocked
+    from closing out. A gate you cannot satisfy is one you learn to route around.
+    """
+    p = Path(configured).expanduser()
+    return p if p.is_absolute() else repo / p
+
+
 def is_executable(p: Path) -> bool:
     """⚠ Windows has no POSIX executable bit.
 
@@ -118,7 +130,17 @@ def scan(repo: Path) -> dict:
     def warn(msg: str, code: str = "advisory") -> None:
         findings.append({"sev": "WARN", "code": code, "msg": msg})
 
-    expected = [Path(p).name for p in _tracked(repo, f"{HOOK_DIR}/*")]
+    # ⚠ A git pathspec `*` CROSSES SLASHES — `.githooks/*` returns `.githooks/README.md` AND
+    # `.githooks/lib/helper.sh`, and taking `.name` of those made a README a "required
+    # executable hook". Close-out then hard-blocked with `hook 'README.md' is present but NOT
+    # EXECUTABLE` — a false red produced by documenting your own hooks directory.
+    #
+    # TWO filters, because both failure shapes are real: direct children only (no nested
+    # helpers), and no suffix. A git hook is named exactly after the git event — `commit-msg`,
+    # `pre-push` — and never carries an extension, so `.md` is documentation and `.sh` is a
+    # library. Neither is a dispatcher git will ever run.
+    expected = [Path(p).name for p in _tracked(repo, f"{HOOK_DIR}/")
+                if Path(p).parent.as_posix() == HOOK_DIR and not Path(p).suffix]
     gate_scripts = _tracked(repo, f"{SCRIPT_DIR}/*.sh")
     tracked_flags = [Path(p).name for p in _tracked(repo, f"{SCRIPT_DIR}/*-ENFORCE")]
 
@@ -142,7 +164,7 @@ def scan(repo: Path) -> dict:
             f"gate in this repo is OFF and says nothing. Remedy: {REMEDY}")
         resolved = None
     else:
-        resolved = Path(configured) if Path(configured).is_absolute() else repo / configured
+        resolved = resolve_hooks_dir(repo, configured)
         if not resolved.is_dir():
             err(f"core.hooksPath = {configured!r} resolves to no directory ({resolved}) — "
                 f"every gate is OFF. Remedy: {REMEDY}")
@@ -169,17 +191,58 @@ def scan(repo: Path) -> dict:
             err(f"{name} is NOT EXECUTABLE — its dispatcher skips it and exits 0 SILENTLY, with "
                 f"no warning at all. Remedy: chmod +x {disk}")
 
+    # ⭐ A repo that CLAIMS gates and tracks not one gate script is the vacuous green in its
+    # purest form: `jira.conf` + the four dispatchers + zero scripts reported ARMED with no
+    # findings at all, while every dispatcher's `[ -x ... ] || exit 0` allowed the operation.
+    # That is the state a project scaffolded from the skeleton sits in before its gate scripts
+    # land, and the shipped `make_repo` test fixture was in it too.
+    if claims_gates and not gate_scripts:
+        err(f"this repo CLAIMS gates (it declares a Jira project or ships hook dispatchers) but "
+            f"tracks NO gate scripts in {SCRIPT_DIR}/ — every dispatcher ends `[ -x ... ] || "
+            f"exit 0`, so all of them exit 0 and allow the operation UNCHECKED.")
+
     # ── layer 3: the arm flags ───────────────────────────────────────────────────────────────
     script_names = {Path(p).name for p in gate_scripts}
+    hook_names = set(expected)
     for flag, (script, hook) in ARM_FLAGS.items():
-        if script not in script_names:
-            continue  # this repo does not ship that gate; its flag is not owed
-        present = flag in tracked_flags
-        flags.append({"name": flag, "present": present, "arms": script, "via": hook})
-        if not present:
+        tracked = flag in tracked_flags
+        # ⛔ NOT `if script not in script_names: continue`. That single line was FOUR defects.
+        # It read as "this repo does not ship that gate, so its flag is not owed" — true only
+        # when the flag is absent too. A TRACKED flag whose script is gone is the loudest case
+        # there is: the gate was deleted (or dropped from the index with `git rm --cached`,
+        # which leaves the file on disk so nothing looks wrong) while the marker that claims it
+        # is armed stayed behind. Skipping it is how a deleted gate certified ARMED.
+        shipped = script in script_names
+        if not shipped and not tracked:
+            continue  # genuinely never had this gate — nothing is owed and nothing is claimed
+        flags.append({"name": flag, "present": tracked, "arms": script, "via": hook})
+
+        if not shipped:
+            err(f"{flag} is tracked but {script} is NOT — the flag says this gate is armed and "
+                f"the gate it names does not exist in the index. Its dispatcher exits 0 and "
+                f"allows the operation UNCHECKED. Remedy: restore {SCRIPT_DIR}/{script}, or "
+                f"git rm {SCRIPT_DIR}/{flag} if the gate was retired on purpose.")
+        elif not tracked:
             err(f"{flag} is not tracked — {script} still runs but only WARNS, and hook output is "
                 f"rendered nowhere the operator looks. A warning nobody reads is not a gate. "
                 f"Remedy: touch {SCRIPT_DIR}/{flag} && git add {SCRIPT_DIR}/{flag}")
+        elif not (repo / SCRIPT_DIR / flag).is_file():
+            # ⛔ THE INDEX/DISK SPLIT. Everything else here asks the index on purpose — it is
+            # the only thing that can tell "deleted" from "never had". The flags are the ONE
+            # exception, because every consumer reads them from DISK at runtime:
+            # commit-msg-jira.sh:85 and pre-push-main-approval.sh:38 both `[ -f ... ]`, and
+            # SOP-ENFORCE is read by sop_currency.py:165 as `(repo / ENFORCE_MARKER).exists()`.
+            # sop-currency.sh:12 documents "disarm to warn-only: delete SOP-ENFORCE" — so
+            # following this repo's OWN written instruction left the tool reporting ARMED.
+            err(f"{flag} is tracked but MISSING FROM DISK — the hooks read this file from the "
+                f"filesystem, not the index, so {script} has been silently downgraded to "
+                f"warn-only on this machine. Remedy: git checkout {SCRIPT_DIR}/{flag}")
+        elif hook not in hook_names:
+            # ARM_FLAGS declares which dispatcher carries each gate and nothing ever checked
+            # that dispatcher was tracked. A flag arming a script reached through a hook that
+            # does not exist is armed in name only.
+            err(f"{flag} arms {script} via the {hook!r} hook, which is NOT tracked in "
+                f"{HOOK_DIR}/ — nothing dispatches this gate, so it never runs.")
 
     for extra in tracked_flags:
         if extra not in ARM_FLAGS:
