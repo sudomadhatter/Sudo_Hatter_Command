@@ -29,6 +29,7 @@ runs only as a step of `/cicd-code-review`, `/smh-code-review` or `/cicd-code-re
 | `DIFF` | the diff text, or a path to it — already scoped by the caller | yes |
 | `HEAD_SHA` | the sha the diff was taken at, for the record the caller writes | yes |
 | `review_mode` | `full` (a spec exists) or `no-spec` (none) | yes |
+| `lens_budget` | `standard` or `capped` — the literal lens's cost axis, **independent of `review_mode`**; absent defaults to `capped` (step-01 defines both) | optional |
 | `STORY_FILE` | story or task acceptance source; present in `full` mode | optional |
 | `EVIDENCE_PACK` | pre-extracted evidence dossier; absent is normal today | optional |
 | `FINDINGS_SINK` | file the findings are written to | optional |

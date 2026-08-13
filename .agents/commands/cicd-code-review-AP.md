@@ -33,8 +33,11 @@ improvise** — you invoke the house engine and then act on what it returns.
 
 ## The work — resolve the inputs, then run the engine in CAPPED mode
 
-The review is `.agents/skills/code-review-engine/` — five lenses in parallel, a verify wave, triage,
-and a findings record. **The engine never resolves its own inputs; that is this command's job**, and
+The review is `.agents/skills/code-review-engine/` — five lenses in parallel, then triage and a
+findings record. (Its step-02 verify pass is an honest pass-through until SCC-127 lands, so every
+severity you receive is **hunter-asserted and unverified** — weigh it as a claim, not as a
+confirmed fact, and check the ones that would gate before you let them gate.) **The engine never
+resolves its own inputs; that is this command's job**, and
 it is the whole reason the two-ingest read budget below still exists. You are the most expensive
 model in the pipeline and you are billed on every token you pull, so pull the material in exactly
 two reads, hand it over, and spend your own thinking on the findings.
@@ -53,22 +56,35 @@ That is the read budget. **There is no full-repo sweep** — an unbounded "read 
 this stage used to do, and it burned the run's budget without finding what a targeted read of the blast
 radius finds. Do not restore it.
 
-**Invoke the engine with the full caller contract**, and name the mode:
+**Invoke the engine with the full caller contract**, naming `lens_budget` explicitly:
 
 ```
 REPO · WORKTREE · DIFF (Ingest 1) · HEAD_SHA · review_mode: full   (no-spec if the story is absent)
 STORY_FILE: the target story · EVIDENCE_PACK: Ingest 2 · ARTIFACT_DIR: the shared run folder
-DEFERRED_WORK: the project's deferred-work.md · literal-correctness lens: CAPPED mode
+DEFERRED_WORK: the project's deferred-work.md · lens_budget: capped
 ```
 
-**`capped` is not optional here and this command does not define what it means** — step-01 of the
-engine does, once, and an overnight loop multiplies every token it spends with nobody watching.
+⛔ **`lens_budget: capped` is not optional here, and it is NOT the same field as `review_mode`.**
+This stage is normally `review_mode: full` *and* `lens_budget: capped` at once — a spec exists, and
+the budget is still tight. Reading `review_mode: full` as permission to relax the literal lens's
+caps is the expensive mistake, overnight, unattended. This command does not define what the caps
+are; step-01 of the engine does, once.
 
 ⛔ **If subagents are unavailable in this runtime, run every lens INLINE, sequentially, yourself.**
 The engine's fallback writes prompt files and returns, which is correct for an interactive caller
 who can paste them back — **headless, that is a review that silently never ran, and the pipeline
 would read it as a clean pass.** A lens is a prompt, not a privileged tool: losing the parallelism
 costs wall-clock, not coverage. Record in the verdict that the lenses ran inline.
+
+⭐ **On that inline path the ORDER is not a preference, and it changes the two-ingest sequence
+above.** Running lenses in your own context means each one inherits whatever that context already
+holds — so the Blind Hunter, defined as `DIFF`-only, is not blind if the plan, the walkthrough and
+the pack are already in front of you. **Therefore, inline: pull Ingest 1, run the Blind Hunter
+immediately on the diff alone, and only THEN pull Ingest 2 and run the remaining four.** That is
+the original ordering of this command, and it exists for exactly this reason. If for any reason the
+blind pass could not run first, it still runs — but you record it as `ok (not blind — context held
+<what>)`, because reporting a fully-informed lens as the blind one is a false record rather than a
+smaller one.
 
 The engine hands back `lenses_run` · `lenses_na` · the bucketed findings · `severity_floor` ·
 `notes`. **The floor is a floor:** your verdict may be that severe or worse, never better.
@@ -140,7 +156,8 @@ is written down.
   human close-out owns both.
 - **Append `## Code Review (<date>)` to `walkthrough.md`** (REQUIRED even if the review is clean — a
   Stage-4 no-op must still leave the section): the canonical `Verdict: … @ <sha>` first line, scope,
-  the engine's `lenses_run` / `lenses_na` line, ONE findings table (`file:line` + severity + disposition), your independent test
+  the engine's `lenses_run` / `lenses_na` line, ONE findings table (`file:line` + severity +
+  disposition), your independent test
   output, the test gate's per-check results — and, if you changed nothing, an explicit "Changes
   applied: none — implementation is correct as-is." Do NOT write a standalone `code-review.md`
   (retired 2026-08-02).
