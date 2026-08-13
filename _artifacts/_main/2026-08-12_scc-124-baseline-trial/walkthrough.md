@@ -53,15 +53,18 @@ AND costs +38.6 s of the +33.0 s total gap. Pack the repo-access lenses only; mo
 disappears and the blind lens returns to its design. Second input: the 16 k pack cap truncated
 task_preflight.py to 11/686 lines (B2 meta-finding) — rebalance per-file budgets in SCC-125/126.
 
-**Gates (bare, at `aa8adb7`):**
+**Gates (bare, at `aa8adb7`; re-run bare at close-out on `aa44d52` after absorbing `origin/main`):**
 
 ```
 python3 .agents/scripts/tests/run_all.py                 -> 21/21 files, 1091/1091 cases
 python3 .agents/scripts/workflow_lint.py --toolkit-only  -> 0 errors, 0 warnings, 8 info; exit=0
+link + anchor check, 11 changed docs                     -> 3 relative links, 0 problems
+sop_currency on the 38-path change set                   -> exit 0; positive control exit 1
 ```
 
-Static checks: no code shipped — artifacts only; sop_currency owes nothing (no usage surface
-touched, no `[sop-ok]` taken on any commit).
+Static checks: no code shipped — artifacts only; sop_currency owes nothing (all 38 changed paths
+are under `_artifacts/`, and zero commits on the lane carry `[sop-ok]`). The gate was proven to
+still have teeth rather than assumed: a control run naming `.agents/commands/` was rejected.
 
 ## Suite Ledger
 
@@ -91,8 +94,15 @@ touched, no `[sop-ok]` taken on any commit).
   6 run records with stamp files, scoring, this walkthrough. No project file outside
   `_artifacts/` was touched; nothing merged.
 - **On you:**
-  1. `/smh-close-task-merge-tree` when you want SCC-124 landed on `main` (invoking it is the
-     merge sign-off; it also prunes this lane's tree + branch).
+  1. `/smh-close-task-merge-tree` **re-invoked from a session standing in the shared checkout.**
+     Invoked 2026-08-12 from inside this lane's worktree: Steps 0–2 completed green (preflight
+     `clear to close out and merge`, LANE LOCAL, gates above), then Step 3 **could not run** —
+     a worktree-isolated session's git operations are confined to its own worktree, so it can
+     neither check out `main` nor prune the tree it is standing in. Nothing was merged and
+     nothing is half-done; the lane is left exactly as the preflight found it, plus the two
+     absorb/gate commits. **Also note:** the shared checkout is currently sitting on
+     `chore/SCC-135-update-maps-launcher` (another team, actively moving), so `main` is checked
+     out nowhere — that lane needs parking before the close-out can stand on `main`.
   2. SCC-125 inherits two recorded inputs: blind-lens pack exemption (speed lever) and pack-cap
      rebalance. Both are in this walkthrough and scoring.md — no separate ticket minted (SCC-125
      already owns lens prompts).
