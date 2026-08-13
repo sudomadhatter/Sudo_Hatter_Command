@@ -142,6 +142,17 @@ not self-blocked (audit F6).
    buys nothing and makes a dead branch look load-bearing.
 4. **Decision A: no code change**, one comment. It is not the deleted-vs-never-had question the
    index doctrine exists for, and over-claiming is the safe direction.
+5. ⚠ **A CARRIED OPERATOR CHANGE RODE THIS LANE — disclosed, not silent.**
+   `Projects/sudo-command-center` was created by the operator during this lane: its own repo,
+   own remote, one commit, and **untracked** in the lobby while all nine sibling projects are
+   registered submodules. An untracked directory counts as an uncommitted change, so it
+   blocked the close-out. Registered here (`afa29b1`, gitlink `160000` at `b466a09`, verified
+   present on its origin so the pointer cannot dangle) **on the operator's explicit
+   instruction**, rather than on its own `chore/*` branch with its own key.
+   **This has no acceptance item and is not SCC-137's work.** It is written down because
+   SCC-135 shipped a carried operator change (`SCAN_IGNORES`) with no acceptance item and no
+   test, and *this lane's own review had to file that as a finding*. A carry is fine; an
+   undisclosed carry is how the next reviewer inherits a mystery.
 
 ---
 
