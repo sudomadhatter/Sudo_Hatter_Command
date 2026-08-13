@@ -170,7 +170,12 @@ session into a different procedure.
 **unmerged branch in another repo** lands AFTER that branch merges there. Get this wrong and the
 content exists on no merged branch in either repo, and nothing says so.
 
-State the full landing order and every dependency in writing. Then proceed to Step 4 with the FIRST
+State the full landing order and every dependency in writing. **Dump the eligibility table, the
+landing order and every conflict decision to a scratch file** (`_artifacts/_main/<date>_<slug>/`, or
+the session scratchpad) — a landing runs long enough to be compacted, and re-reading four lines
+costs less than re-deriving them. It is a convenience, not a durable-state mechanism: a session
+*was* compacted mid-landing on 2026-08-13 and lost nothing, because the set is cheap to re-derive
+and the real decisions were already in the merge commits. Then proceed to Step 4 with the FIRST
 lane only.
 
 ## Step 4 — The landing loop (per lane, in the derived order)
@@ -197,6 +202,40 @@ A doc-only absorb keeps the lane's `Verdict:` valid. A code or script change dur
 re-review, re-stamp, continue. On 2026-08-11 a lane went `FAIL` here (two dead links the move
 introduced), was fixed in place, and landed `PASS` — with the `FAIL` left in the record.
 
+**⚠ The fixes you make here are ORDINARY COMMITS, and the armed SOP gate applies to them.** The
+absorb-merge itself is exempt — git writes merge messages, and the two `commit-msg` gates carve
+merges out (since SCC-144 they do so inside a worktree too; the probe used to be blind there, so
+this step could refuse an absorb on a condition no author could satisfy). A hand fix is not a merge:
+touch a usage surface (`.agents/commands/` · `.agents/rules/` · `.agents/scripts/*.py|.ps1` ·
+`.githooks/` · root `AGENTS.md`) while fixing, and the commit is **rejected** unless
+`docs/_scc_sops_prds/workflows_testing_SOP.md` moves with it. Stage the doc, or say `[sop-ok]` when
+the fix genuinely changes nothing an operator types — that token stays in the log as the record of
+the call.
+
+**The re-measurement stamp — append it, never edit the old verdict away.** The shape, from the
+2026-08-13 landing (`_artifacts/_main/2026-08-13_scc-127-verify-wave/walkthrough.md`):
+
+```markdown
+## Post-absorb re-measurement (<date>, landing set <keys in order>)
+
+**Verdict: <PASS|CONCERNS> @ <post-absorb sha>** — re-measured after absorbing `main` at <sha>
+(<what landed there>). The pre-absorb `Verdict: … @ <sha>` above is **left standing on purpose**:
+it described a `main` that no longer exists.
+
+<Doc-only absorb? say so and stop here. Otherwise, one bullet per conflicted file naming the
+resolution and WHY — the judgement calls are the part nobody can re-derive later.>
+
+    python3 .agents/scripts/tests/run_all.py                     -> 21/21 files, N/N cases, exit 0
+    python3 .agents/scripts/workflow_lint.py --toolkit-only      -> 0 errors, 0 warnings, exit 0
+    python3 .agents/scripts/check_maps.py --depth3-only --strict -> exit 0
+
+**Case total additive: <main> + <lane A> + <lane B> = <total>.** <Or say which lane displaced
+which, and why that was correct.>
+```
+
+The case-total line is the cheapest real check in the whole step: if the totals are not additive,
+one lane's tests displaced another's and the merge ate coverage neither review would ever see.
+
 **4c — 🛑 STOP. Hand back for THIS lane's sign-off.** Print the lane's key, tip, verdict line, gate
 totals, and what the merge changes on `main`. **One invocation of this command is not N
 authorisations** (SCC-71). Wait for the operator's word for THIS lane.
@@ -219,6 +258,11 @@ git -C "$REPO" rev-list --left-right --count main...origin/main    # must be 0 0
 
 A push-approval prompt or token requirement is **expected, not an error** — satisfy it, never bypass
 it. Rejected push (remote moved) → STOP and report; never force.
+
+⭐ **Since SCC-144 the `test … = "main"` line above has a machine behind it.** The `commit-msg` hook
+refuses a merge whose target is not a legal destination for its source and names the SCC-97
+signature — a lane landing on a sibling lane — when it sees one. Keep the assertion anyway: it stops
+you one step earlier, and it is the half that still works under `--no-verify`.
 
 **4e — Dev Record, then the ticket — per lane, at ITS merge, never batched.**
 `jira_feed.py devrecord --key <KEY> … --closing --apply` (updates in place — never `--append-new`),

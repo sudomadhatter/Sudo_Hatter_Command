@@ -1,0 +1,134 @@
+== merge-target guard (SCC-144) ==
+[PASS] the guard script exists: /Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/merge-target-guard/.agents/scripts/git-hooks/merge-target-guard.sh — nothing to arm
+[PASS] the commit-msg dispatcher carries the merge-target gate: /Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/merge-target-guard/.githooks/commit-msg — git has nothing to invoke
+[PASS] the guard is executable: a non-executable gate is skipped by its dispatcher in SILENCE
+[PASS] the arm flag is tracked in the live repo: /Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/merge-target-guard/.agents/scripts/git-hooks/MERGE-TARGET-ENFORCE — without it the gate warns instead of refusing
+[PASS] A · chore -> main is ALLOWED: 44-a.txt
+  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-f4vr__u0/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
+[PASS] B · chore -> chore is REFUSED: edy:  git merge --abort   then re-check where you are standing:
+                git -C "$REPO" rev-parse --abbrev-ref HEAD
+              A cd is not a lock across steps — pass -C on every git call.
+     Bypass once: git merge --no-verify
+
+Not committing merge; use 'git commit' to complete the merge.
+[PASS] B · ...and NO merge commit was created: the refusal has to happen BEFORE the commit is sealed, or it is a post-mortem
+[PASS] B · the refusal names the TARGET: edy:  git merge --abort   then re-check where you are standing:
+                git -C "$REPO" rev-parse --abbrev-ref HEAD
+              A cd is not a lock across steps — pass -C on every git call.
+     Bypass once: git merge --no-verify
+
+Not committing merge; use 'git commit' to complete the merge.
+[PASS] B · the refusal names the SOURCE: edy:  git merge --abort   then re-check where you are standing:
+                git -C "$REPO" rev-parse --abbrev-ref HEAD
+              A cd is not a lock across steps — pass -C on every git call.
+     Bypass once: git merge --no-verify
+
+Not committing merge; use 'git commit' to complete the merge.
+[PASS] B · the refusal names the RULE: edy:  git merge --abort   then re-check where you are standing:
+                git -C "$REPO" rev-parse --abbrev-ref HEAD
+              A cd is not a lock across steps — pass -C on every git call.
+     Bypass once: git merge --no-verify
+
+Not committing merge; use 'git commit' to complete the merge.
+[PASS] B · the refusal names the REMEDY: edy:  git merge --abort   then re-check where you are standing:
+                git -C "$REPO" rev-parse --abbrev-ref HEAD
+              A cd is not a lock across steps — pass -C on every git call.
+     Bypass once: git merge --no-verify
+
+Not committing merge; use 'git commit' to complete the merge.
+[PASS] B · the refusal names the OVERRIDE: edy:  git merge --abort   then re-check where you are standing:
+                git -C "$REPO" rev-parse --abbrev-ref HEAD
+              A cd is not a lock across steps — pass -C on every git call.
+     Bypass once: git merge --no-verify
+
+Not committing merge; use 'git commit' to complete the merge.
+[PASS] B2 · git's own 'use git commit to complete the merge' is ALSO refused: s it. This hook is the only layer that can refuse it.
+
+     Remedy:  git merge --abort   then re-check where you are standing:
+                git -C "$REPO" rev-parse --abbrev-ref HEAD
+              A cd is not a lock across steps — pass -C on every git call.
+     Bypass once: git merge --no-verify
+[PASS] B2 · ...and still no merge commit exists: the second door has to hold, or the first one is decorative
+[PASS] C · epic -> main is ALLOWED: 44-e.txt
+  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-3clbpnjh/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
+[PASS] D · story -> epic is ALLOWED: 44-s.txt
+  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-txh1qde0/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
+[PASS] D2 · main -> chore (absorb) is ALLOWED: main.txt
+  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-rmgqh4_5/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
+[PASS] E · a FAST-FORWARD of a forbidden topology is NOT caught by the merge hook: if this ever goes red, git now fires a hook on a ff merge and the pre-push backstop's justification has changed — read it before 'fixing' this
+[PASS] F · --no-verify bypasses the guard: Merge made by the 'ort' strategy.
+ chore_SCC-144-a.txt | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 chore_SCC-144-a.txt
+[PASS] F · ...and the guard's own header says so: an undocumented override gets 'fixed' by the next person who finds it
+[PASS] J · without MERGE-TARGET-ENFORCE the merge is ALLOWED: -verify
+
+  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-portsviv/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
+[PASS] J · ...but it still says something: a disarmed gate that is also silent is indistinguishable from a deleted one
+[PASS] K · DISABLE allows the merge: 44-a.txt
+  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-46bqrh57/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
+[PASS] M · a sha carrying both a legal and an illegal name is ALLOWED: main.txt
+  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-btu64p3x/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
+[PASS] N · an unclassified SOURCE is allowed: allowed.
+  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-qkagzjg0/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
+[PASS] N · ...and the guard says it declined to judge: allowed.
+  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-qkagzjg0/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
+[FAIL] G · pushing a lane contaminated by a FF merge is REFUSED: n this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-n7k8bktg/work/.agents/scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
+    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
+To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-n7k8bktg/remote.git
+ * [new branch]      chore/SCC-144-b -> chore/SCC-144-b
+[FAIL] G · ...and the refusal names the foreign lane: n this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-n7k8bktg/work/.agents/scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
+    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
+To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-n7k8bktg/remote.git
+ * [new branch]      chore/SCC-144-b -> chore/SCC-144-b
+[FAIL] G · ...and names the remedy: n this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-n7k8bktg/work/.agents/scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
+    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
+To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-n7k8bktg/remote.git
+ * [new branch]      chore/SCC-144-b -> chore/SCC-144-b
+[FAIL] G · ...and nothing reached the remote: 6af5c00e01e45b7f25d6a0f284350da772c4ea47	refs/heads/chore/SCC-144-b
+
+[PASS] H · a lane holding a LANDED sibling's commits pushes fine: n this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-uq3_r4nl/work/.agents/scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
+    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
+To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-uq3_r4nl/remote.git
+ * [new branch]      chore/SCC-144-b -> chore/SCC-144-b
+[PASS] I · landing a lane on main is ALLOWED: ush gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-9r1uyo9m/work/.agents/scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
+    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
+To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-9r1uyo9m/remote.git
+   e9b5dc5..9ad3894  main -> main
+[PASS] I2 · landing a story on its epic is ALLOWED:  in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-fhsk0gvv/work/.agents/scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
+    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
+To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-fhsk0gvv/remote.git
+   6c24bd0..3c2c034  epic/SCC-144-e -> epic/SCC-144-e
+[PASS] O · with no origin/main the push is ALLOWED: n this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-4zyfc4k6/work/.agents/scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
+    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
+To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-4zyfc4k6/remote.git
+ * [new branch]      chore/SCC-144-b -> chore/SCC-144-b
+[FAIL] O · ...and it says it could not judge: n this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-4zyfc4k6/work/.agents/scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
+    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
+To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-4zyfc4k6/remote.git
+ * [new branch]      chore/SCC-144-b -> chore/SCC-144-b
+[PASS] P · the token gate STILL refuses an unapproved push to main: the backstop consumed stdin and the token gate read EOF - every push now passes
+[PASS] P · ...with its own message, not the backstop's:  full gate + /cicd-e2e green
+       /smh-close-task-merge-tree   a chore branch, after the preflight + the lane's gate
+       the operator's direct in-the-moment approval
+
+     A sign-off authorises ONE merge and never carries forward (SCC-71).
+     Bypass once: git push --no-verify
+
+error: failed to push some refs to '/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-k_lopk1q/remote.git'
+[PASS] L · ARM_FLAGS carries a row for the merge-target gate: a gate outside the accounting certifies ARMED while switched off
+[PASS] L · ...naming the script it actually arms: merge-target-guard.sh
+[PASS] L · ...and the dispatcher that really carries it: commit-msg
+[PASS] L · ...which really does call it: .githooks/commit-msg does not mention the script ARM_FLAGS says it dispatches
+[PASS] L · the live repo reports the new flag as tracked: flags=['JIRA-ENFORCE', 'SOP-ENFORCE', 'MAIN-PUSH-ENFORCE', 'MERGE-TARGET-ENFORCE']
+-- 37/42 passed --
+FAILED: G · pushing a lane contaminated by a FF merge is REFUSED, G · ...and the refusal names the foreign lane, G · ...and names the remedy, G · ...and nothing reached the remote, O · ...and it says it could not judge
