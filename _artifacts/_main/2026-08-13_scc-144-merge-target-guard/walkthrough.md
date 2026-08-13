@@ -24,7 +24,14 @@
 - [x] **F-D** — the merge carve-out was blind in every worktree. Fixed on the operator's ruling.
 - [x] **Mutation pass** — 14 mutants, 14 killed
   - ⚠ **One mutant SURVIVED and the mutant was what was wrong** — see *Mutation* below.
-- [x] **Step 4** — `/smh-code-review`
+- [x] **Step 4** — `/smh-code-review` — **5/5 lenses, PASS @ `30f93aa` after fixes**
+  - ⛔ It found a **critical** defect the builder did not: the backstop refused every legitimate
+        `claude/*` story-lane push once a sibling had landed on the shared epic — `/cicd-park`'s
+        exact sequence, on a push `git-policy.md` marks FREE. Three lenses, two reproductions.
+  - ⚠ Four more real defects: octopus merges judged on the first parent only, `--squash` invisible
+        to both halves, `pre-push` failing **open** and skipping the token gate, and a Windows path
+        corruption in a worktree.
+  - ⚠ Seven of eight refusal cells were undefended, and the guard had never been run in a worktree.
 - [x] **Step 5** — artifacts, manifest, Dev Record
 
 ---
@@ -115,7 +122,7 @@ tracked, and `hooks_armed.py` said so in the words it was built to say:
 
 ### A6 · six fixtures, both halves, every check red first
 
-52 cases. **The ALLOW half outnumbers the REFUSE half on purpose** — A, C, D, D2, H, I, I2, M, N,
+90 cases. **The ALLOW half outnumbers the REFUSE half on purpose** — A, C, D, D2, H, I, I2, M, N,
 N2, O are negative controls. The expensive failure here is the false red: a gate that blocks a
 correct merge gets routed around, and this repo has shipped four of those.
 
@@ -125,15 +132,18 @@ correct merge gets routed around, and this repo has shipped four of those.
 · `4b` the worked re-measurement stamp · plus one line at `4d`. Doors regenerated with
 `/smh-sync-agents`; only the opencode mirror is a full copy, the other three read the body live.
 
-### A8 · the gate, bare, at `89aa410`
+### A8 · the gate, bare, at `30f93aa`
+
+⚠ **REPLACED after the review.** The pre-review stamp read `1754 @ 89aa410`; the fixes added 38
+cases and moved the sha, so that pair is void by this repo's own (totals, SHA) contract.
 
 ```
-python3 .agents/scripts/tests/run_all.py                     -> 22/22 files, 1754/1754 cases, exit 0
+python3 .agents/scripts/tests/run_all.py                     -> 22/22 files, 1794/1794 cases, exit 0
 python3 .agents/scripts/workflow_lint.py --toolkit-only      -> 0 errors, 0 warnings, 8 info, exit 0
 python3 .agents/scripts/check_maps.py --depth3-only --strict -> exit 0
 ```
 
-**Case total exactly additive: 1702 (main) + 52 (this lane) = 1754.** One new file, no displaced
+**Case total exactly additive: 1702 (main) + 92 (this lane) = 1794.** One new file, no displaced
 coverage.
 
 ⚠ The doc gate went red once, on this lane's **own prose**: `T9 every prose path reference resolves`
@@ -207,9 +217,113 @@ the mutation pass rather than by review.
 
 ---
 
+## Code Review (2026-08-13)
+
+```
+Verdict: PASS @ 30f93aa
+```
+
+Gate evidence measured at **`30f93aa`** — the landing sha, after every fix below.
+
+- **Scope:** 19 files, `main...HEAD`, committed work only. `main` had not moved since the lane was
+  cut (`BASE == main == 5dadcd6`), so no reference this diff depends on was relocated under it.
+- **Method:** `code-review-engine`, `review_mode: full`. **5/5 lenses ran** (Blind Hunter,
+  Literal-Correctness, Edge Case, Acceptance Auditor, Test-Adequacy Auditor), each in its own clean
+  context, `lenses_na: none`, no degradation. Two lenses reproduced their headline finding
+  end-to-end against a real bare remote rather than reasoning about it.
+
+**The review changed the outcome of this lane.** It found a critical defect the builder did not,
+plus four more real ones. Everything below is `applied`.
+
+| file:line | sev | failure scenario | disposition |
+|---|---|---|---|
+| `pre-push-merge-backstop.sh` (landed-check) | **critical** | A `claude/*` story lane that absorbed its epic after a sibling landed on that epic was **REFUSED at push**. "Already landed" was measured against `origin/main` only, and an epic does not reach `main` until `/cicd-push-e2e` ships it. `/cicd-park` performs that exact sequence and `git-policy.md` marks the push **FREE**. Found by 3 lenses, reproduced by 2. | **applied** — reference set is per-class (`origin/main`, plus every `origin/epic/*` for a story lane); controls `PARK` and `G2` |
+| `pre-push-merge-backstop.sh` `refuse()` | important | The remedy named `origin/<lane>`, which does not exist on a first push, and said "land it on main first" — the one thing the guard **refuses** for a story lane | **applied** — `integration_of()`, per-class remedy |
+| `merge-target-guard.sh` (source resolution) | important | **Octopus merge:** both `rev-parse MERGE_HEAD` forms return only the *first* parent, exiting 0 rather than failing. `git merge main <sibling>` was judged on `main`, allowed, and sealed an illegal later parent — position-dependently | **applied** — reads the MERGE_HEAD *file* via `--git-path`; case `OCT` |
+| `merge-target-guard.sh` (source resolution) | important | **`git merge --squash`** writes no `MERGE_HEAD` and rewrites history, so the source is not an ancestor either — invisible to **both** halves, while the backstop's header claimed exactly one blind spot | **applied** — recovered from `SQUASH_MSG`; case `SQ` |
+| `.githooks/pre-push:47` | important | `cat > "$REFS" \|\| exit 0` **failed open**, skipping both gates including the SCC-77 token gate, printing nothing | **applied** — fails closed, names the remedy and the override |
+| `.githooks/pre-push` (path normalisation) | important | `--git-path` is absolute in a worktree; the hand-rolled `case "$REFS" in /*)` is correct on POSIX and wrong on git-for-windows, where `C:/…` fails that test and the repo root was prepended to an absolute path — **in a worktree, on the PC** | **applied** — `cd "$ROOT"`, git's answer used as given |
+| `test_git_hooks.py` (arm flag) | suggestion | `the arm flag is tracked` asserted `Path.is_file()` — existence, not the index. The untracked state it names is the one this lane was actually in | **applied** — `git ls-files --error-unmatch` |
+| `merge-target-guard.sh` `judge()` | important | **Seven of eight refusal cells were undefended** — a sweep flipped them to `allow` with the suite green; only `chore:chore` had a case | **applied** — every refusing cell + three shipping-path ALLOW cells, each asserting *classified, not declined* |
+| `merge-target-guard.sh` | important | The guard was **never run inside a worktree** — where every lane lives. Mutants reverting it to the literal `.git/` probes survived | **applied** — case `WT` |
+| `test_hooks_armed.py` `seed()`, case R | important | The `ARM_FLAGS` row existed while the five vacuous-ARMED shapes never exercised it (A5's promised assertion) | **applied** |
+| `pre-push-merge-backstop.sh` | important | `DISABLE`, the disarmed path, and the whole `claude/*` half it names in its own pattern had no case | **applied** — `G3`, `G4`, `G5` |
+| `.githooks/commit-msg:29` | nitpick | The missing-guard warning claimed "merge allowed" on **every ordinary commit** | **applied** |
+| `.agents/scripts/INDEX.md:52` | nitpick | Said 21 files / 1091 cases while this diff makes it 22 — and the diff already edits that file | **applied** — 22 / 1794 |
+| folds oversized vs "ONE LINE" | suggestion | +45 lines against a 3-line spec | **dismissed with reason** — the extra length in fold 1 *is* the answer to the open question the ticket ordered determined; fold 3's template is the "worked example" asked for |
+| SOP §10 mermaid node | suggestion | The plan listed it; not added | **deferred** — `pre-push-main-approval.sh` is absent from that diagram too, so adding one gate alone would misrepresent the set. Its own ticket |
+
+**Two fixture bugs and one self-inflicted regression, all caught by cases going red, all recorded**
+rather than quietly fixed: a `before` sha captured while HEAD was still on the source branch; an
+absorb fixture whose epic never moved, so the merge was *Already up to date* and proved nothing; and
+the renamed-refspec fix skipped by **sha**, which silently deleted the primary fast-forward case,
+because a contaminated lane sits at exactly the foreign lane's tip. Case `G` caught that one.
+
+⛔ **Mutation residue was found on a live gate before it could be committed.** A `timeout`-killed
+sweep left `commit-msg-jira.sh` reverted to the worktree-blind `.git/MERGE_HEAD` probe — this
+lane's own bug, sitting on disk, uncommitted. Restored, re-gated, and it is the reason the harness
+needs restore-on-interrupt. **See `Your Actions`.**
+
+### Gates
+
+| Gate | Result |
+|---|---|
+| Enforcement suite | `run_all.py` → **22/22 files, 1794/1794 cases, exit 0** |
+| Toolkit lint | `workflow_lint.py --toolkit-only` → **0 errors, 0 warnings, 8 info, exit 0** |
+| Map/INDEX | `check_maps.py --depth3-only --strict` → **exit 0** |
+| Assertion evidence | every Step 2 RED is GREEN; RED artifacts committed beside this file |
+| SOP currency | the three usage-surface commits each staged the SOP doc; the doc-only commits carry `[sop-ok]` |
+| Link + anchor | `test_sops_prds_folder.py` T9 — went **red on this lane's own prose** and was fixed |
+| Door parity | `test_command_surfaces.py` green after `/smh-sync-agents` |
+
+**Case total additive:** 1702 (main) + 92 (this lane) = **1794**.
+
+### Step 0.7 — re-derivation against current `main`
+
+1. **Nothing moved.** `main` is still `5dadcd6`; `BASE == main`, so no reference this diff names was
+   relocated, renamed or deleted while it was built.
+2. **True overlap with `main`: none.** `merge-tree` produced a clean tree, no conflict messages.
+3. **Sibling lane `chore/SCC-129-gate-the-gate` is live and now has commits.** Overlap is exactly
+   the three shared files every lane touches — `.agents/scripts/INDEX.md`, `_artifacts/_main/INDEX.md`,
+   `docs/_scc_sops_prds/workflows_testing_SOP.md`. All append-shaped. **Landing order: either.**
+   Whoever lands second absorbs `main` and re-gates; the `check_maps` missing-row gate catches a
+   dropped ledger row, as it did on 2026-08-13.
+
+### Clean-Code Gate
+
+The command-centre machine floor is the three gates above, and all three are green at `30f93aa`.
+Judgment pass: the two new scripts follow the house shape exactly (POSIX `sh`, dumb dispatcher,
+`*-ENFORCE` flag, `DISABLE` kill switch, `hooks_armed` row, `--no-verify` documented in-file). No
+`|| true`, no report-only step, no unowned TODO. Comment density is high and deliberately so —
+every non-obvious decision carries the measurement or the incident behind it, which is this repo's
+own convention.
+
 ## Your Actions
 
 - **Review and close out** — `/smh-close-task-merge-tree`. Invoking it is the merge sign-off.
+- **⛔ File the mutation-harness ticket (operator has one open).** Two separate failures in this lane
+  came from the same absence: **there is no mutation procedure anywhere in the command surface.**
+  `grep -rn "mutant\|mutation" .agents/commands/` returns **one** hit, and it is Lynn Margulis in the
+  adviser board. The entire doctrine is a single sentence buried as the fifth sub-bullet of Rule 4 in
+  `tests-must-gate-for-real.md` (a rule headlined about certification SHAs), it never names the
+  practice, and the one technique it gives — *relocate, never delete* — is shape-specific to a
+  structural-guard-plus-behavioural-test pair and does not transfer to a gate, where the useful
+  mutant **inverts a decision**. Worse, `/smh-quick-dev` and `/smh-self-audit` — the commands that
+  *write* the assertions — do not load that rule at all; only `/smh-code-review`, which runs after
+  the mutants are already designed. Three concrete fixes, cheapest first:
+  1. Add `tests-must-gate-for-real.md` to `/smh-quick-dev`'s and `/smh-self-audit`'s rules-in-force.
+  2. A Step 3 bullet: *declare the mutant table before mutating — each mutant, the file, and the
+     named case it must kill. Run them in one sweep. A **surviving** mutant is a finding; a mutant
+     that kills **nothing** is a **defective mutant** and must be re-aimed before it is believed.*
+     That check is what hand-running structurally cannot do, and it is what cost this lane two
+     re-runs.
+  3. **Restore-on-interrupt.** A `timeout`-killed sweep left a mutated gate on disk in this very
+     lane. The harness must restore in a `finally`/signal handler, and a sweep should refuse to
+     start against a dirty tree.
+  4. The review's own finding on top: *the mutant set was drawn from the cases rather than from the
+     code* — 24 of 25 code-derived mutants survived the 14 that were case-derived. That is
+     `prose-pinning-guards-are-vacuous` recurring one level up, inside the mutation pass.
+- **⚠ Arm the gate on the PC.** `core.hooksPath` is per-machine and git never carries it.
 - **⚠ Arm the gate on the other machine.** `core.hooksPath` is per-machine and git never carries it.
   This lane adds a gate to a hook that is already armed here, so nothing new is owed on this box —
   but on the PC, `git config core.hooksPath .githooks` is still what makes any of it run.
