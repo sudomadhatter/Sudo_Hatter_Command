@@ -1,12 +1,21 @@
 ---
 description: Autopilot (headless) Review+Fix+Gate command — review the implementation in the shared autopilot run folder, apply fixes, run the TEA test gate, and hand to Daniel. Modeled off /cicd-code-review but tuned for agent-to-agent handoff. NOT for interactive use; the autopilot orchestrator invokes it.
 platforms: [claude, opencode]
-# Diffed against /cicd-code-review at this sha; nothing to port (SCC-82, 2026-08-11).
-# That commit restored the historic artifact name `sudo-code-review-<story>.md`, which
-# this twin does not contain and does not need: it writes its verdict into walkthrough.md
-# and forbids a standalone file outright, and it never globs for a pre-2026-08-02 verdict.
+# Diffed against /cicd-code-review at this sha; nothing to port (SCC-128, 2026-08-13).
+# Both commands were rewired onto `code-review-engine` in the same landing set — the primary
+# by SCC-128, this twin by SCC-126 — so they agree on the thing that matters: the caller
+# resolves every input, the engine resolves none, and `severity_floor` binds the verdict.
+# THREE divergences remain, all deliberate and all autopilot-only:
+#   1. this twin passes `lens_budget: capped`; the primary passes none and takes the
+#      `capped` default. ⚠ For an INTERACTIVE caller `standard` is the intended budget —
+#      raised as a follow-on against /cicd-code-review, not patched from inside its twin.
+#   2. this twin passes `EVIDENCE_PACK` (its Ingest-2 batched pull); the primary does not
+#      pull one, so its repo-access lenses read the tree directly.
+#   3. this twin overrides the engine's no-subagent fallback to run lenses INLINE, and
+#      fixes the blind-lens-first ordering that override requires. The primary is
+#      interactive, so handing prompts back is a real option there and it keeps that path.
 # Re-diff and restamp when the linter says this sha is stale — do NOT just bump it.
-ap_reconciled: 3eea4d06d7d7d26c3158c0de0063764950f0ba87
+ap_reconciled: fb3a9bab60d0848333cadae5789ea36298fe8201
 ---
 
 # /cicd-code-review-AP — Autopilot Review + Fix + Test Gate (Murat)

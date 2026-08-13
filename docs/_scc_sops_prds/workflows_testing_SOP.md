@@ -456,10 +456,10 @@ again. Any code or test change after it voids the pair.
 
 ```mermaid
 flowchart TD
-    S0["Step 0 — resolve project\nStep 0.5 — re-enter the story worktree\nthe built code often lives ONLY there"] --> S1["Step 1 — CLEAN-ROOM adversarial review\nbmad-code-review on the DIFF"]
+    S0["Step 0 — resolve project\nStep 0.5 — re-enter the story worktree\nthe built code often lives ONLY there"] --> S1["Step 1 — CLEAN-ROOM adversarial review\ncode-review-engine on the DIFF\nyou pass REPO · WORKTREE · DIFF · HEAD_SHA · review_mode"]
     S1 --> ORD["⭐ ORDER IS DELIBERATE\nhunt the diff FIRST\nopen ②'s walkthrough and plan ONLY AFTER"]
-    ORD --> LAYER{"did a review layer die?"}
-    LAYER -- "yes" --> REC["retry once → re-run it INLINE\nrecord the degradation\na layer that never ran caps at CONCERNS"]
+    ORD --> LAYER{"did a review lens die?"}
+    LAYER -- "yes" --> REC["the engine retries once → re-runs it INLINE\ncopy its degradation line into the verdict\na lens still dead after both raises the floor to CONCERNS"]
     LAYER -- "no" --> S2{"Step 2 — is there a test baseline?\nread sudo-tests.yaml"}
     REC --> S2
     S2 -- "absent" --> WAIV["verdict WAIVED\nbut Step 3.5 still runs"]
@@ -484,12 +484,19 @@ then read the story.*
 | Verdict | Means | Does close-out land it? |
 |---|---|---|
 | **PASS** | every required tier green, and the clean-code floor green on changed lines | yes |
-| **CONCERNS** | soft issues only — bloat, duplication, an unowned TODO, a stale note, a review layer that never ran | yes, and they get recorded |
+| **CONCERNS** | soft issues only — bloat, duplication, an unowned TODO, a stale note, a review lens that never ran | yes, and they get recorded |
 | **FAIL** | a new test regression, a required tier missing, a machine-floor error on a changed line, or a banned pattern shipped | **no — this is the only thing that blocks** |
 | **WAIVED** | the project has no test baseline at all | yes |
 
 > ⓘ **The split is deliberate: objective checks block a story, taste does not.** Taste gets recorded,
 > argued, and fixed on its merits — never used to stall a story on a reviewer's preference.
+
+> ⓘ **Where to read the findings, now that the engine runs the review (SCC-128).** The
+> `## Code Review` table in the **walkthrough** is authoritative — it is the one with dispositions
+> (`applied` / `deferred` / `dismissed`), and it is what close-out reads. The engine may *also* leave
+> `[ ] [Review]…` checkboxes in the story file (or, on a Task, the plan) so the builder sees open work
+> where they are already looking. That is a **worklist, not a second record**: it carries no
+> dispositions, and where the two disagree the walkthrough table is right.
 
 **Where the verdict lives:** a `## Code Review` section in the story's `walkthrough.md`. Stories
 closed before 2026-08-02 keep it in the old standalone `sudo-code-review-<story>.md` file instead,
@@ -1138,7 +1145,7 @@ flowchart TD
     Q1 --> ABS["absorb main NOW, before the verdict —\na verdict on a pre-merge sha describes\ncode that will never exist"]
     Q2 --> ABS
     Q3 --> ABS
-    ABS --> S1["Step 1 — clean-room adversarial review\nin a subagent with NO conversation context"]
+    ABS --> S1["Step 1 — clean-room adversarial review\ncode-review-engine — the SAME engine ③ runs\neach lens in its own clean context"]
     S1 --> ORD["hunt the DIFF first.\nOpen the plan and walkthrough ONLY AFTER."]
     ORD --> S2["Step 2 — acceptance audit\nagainst the CHECKABLE LIST, not against the code"]
     S2 --> EV{"does each item name\nthe assertion that proves it?"}

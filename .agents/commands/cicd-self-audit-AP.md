@@ -1,6 +1,13 @@
 ---
 description: Autopilot (headless) pre-dev Audit command — stress-test the plan inside the shared autopilot run folder. Modeled off /cicd-self-audit but tuned for agent-to-agent handoff. NOT for interactive use; the autopilot orchestrator invokes it.
 platforms: [claude, opencode]
+# Diffed against /cicd-self-audit at this sha; nothing to port (SCC-128, 2026-08-13).
+# That commit changed one line of the primary — the "for shipped code, use ..." pointer,
+# retargeted from the retired vendor review skill to `/cicd-code-review`. This twin carries
+# no such pointer: it is invoked by the autopilot orchestrator, which routes the review
+# stage itself, so there is nothing here to retarget.
+# Re-diff and restamp when the linter says this sha is stale — do NOT just bump it.
+ap_reconciled: 024f58a
 ---
 
 # /cicd-self-audit-AP — Autopilot Audit (Murat)

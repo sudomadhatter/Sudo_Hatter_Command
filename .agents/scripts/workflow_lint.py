@@ -94,6 +94,68 @@ def check_rule_pointers(lobby: Path, rep: wf.Report) -> None:
                          f"`.agents/rules/{rule}.md`")
 
 
+# SCC-128: `bmad-code-review` (the vendor skill) and `bmad_code_review_sudo_fix` (the
+# adapter rule that patched it) are RETIRED - the house `code-review-engine` skill replaces
+# both. This guard is permanent rather than a one-time sweep because BMAD's installer
+# re-emits the vendor skill on every regen: the file comes back on its own, so the thing
+# worth policing is not the skill's existence but whether any of OUR surfaces still routes
+# work to it.
+#
+# Scope is every AUTHORED routing surface under `.agents/`: commands (what an operator
+# invokes), rules (what an agent loads mid-run), skills (the door Claude and Codex enter
+# through), workflows (Antigravity's door) and opencode-agents (the opencode subagent
+# definitions - `opus-reviewer.md` loaded the retired rule BY PATH, so this is the surface
+# the regression actually lived on).
+#
+# ⛔ The first draft excluded `workflows/` on the reasoning that it holds generated mirrors
+# which follow their command source. That is true of `workflows/<command>.md` and FALSE of
+# `workflows/INDEX.md`, which sync-agents lists in its `$excluded` set - hand-written router
+# prose with no command upstream, so it follows nothing and no regeneration can fix it. It
+# was carrying a live stale pointer while this guard reported the toolkit clean. A mirror
+# being scanned twice is harmless noise; a hand-owned router being scanned never is a hole.
+#
+# Still out of scope, each for a reason that is about ownership rather than convenience:
+# `.agents/bmad/` (vendor manifests, regenerated, never hand-edited), `_artifacts/` (history
+# that must stay readable exactly as it was written), and the machine-global/`.opencode/`,
+# `.claude/` copies (byte mirrors of masters that ARE guarded here).
+_RETIRED_REVIEW_RE = re.compile(r"bmad[-_]code[-_]review", re.I)
+_RETIRED_SURFACES = ("commands", "rules", "skills", "workflows", "opencode-agents")
+
+
+def check_retired_review_surface(lobby: Path, rep: wf.Report) -> None:
+    """No routing surface may point at the retired vendor review skill (SCC-128).
+
+    Both spellings are caught on purpose: `bmad-code-review` is the skill, and
+    `bmad_code_review_sudo_fix` was the rule that adapted it - the second half is the one
+    that survives as a dangling file path an agent is told to open. Case-insensitive
+    because the half that varies is the half a human retypes.
+
+    The message carries the path relative to the lobby, never the bare filename: `SKILL.md`
+    and `INDEX.md` each name dozens of files here, and a gate that blocks a close-out
+    without saying WHICH file to open is a gate people learn to route around.
+    """
+    for sub in _RETIRED_SURFACES:
+        root = lobby / ".agents" / sub
+        if not root.is_dir():
+            continue
+        for f in sorted(root.rglob("*.md")):
+            # rglob yields DIRECTORIES whose name ends in `.md` too, and read_text's
+            # errors="replace" covers decoding, not I/O - either would take the whole
+            # linter down with a traceback instead of a finding.
+            if not f.is_file():
+                continue
+            try:
+                text = wf.read_text(f)
+            except OSError as exc:
+                rep.warn("retired-surface", f"{f.relative_to(lobby)}: unreadable ({exc})")
+                continue
+            if _RETIRED_REVIEW_RE.search(text):
+                rep.err("retired-surface",
+                        f"{f.relative_to(lobby)}: references the RETIRED vendor review "
+                        f"surface - route it to the `code-review-engine` skill instead "
+                        f"(SCC-128)")
+
+
 def _last_commit_ts(path: Path, cwd: Path) -> int | None:
     r = wf.git(["log", "-1", "--format=%ct", "--", str(path)], cwd)
     out = r.stdout.strip()
@@ -439,6 +501,7 @@ def main() -> int:
         check_rule_pointers(lobby, rep)
         check_ap_twins(lobby, rep)
         check_naming_law(lobby, rep)
+        check_retired_review_surface(lobby, rep)
         scan += [(f"commands/{f.name}", f)
                  for f in sorted((lobby / ".agents" / "commands").glob("*.md"))]
     else:

@@ -403,10 +403,211 @@ def main() -> int:
         c.check("SCC-82 G the live repo's AP twins report nothing",
                 not [i for i in rep.items if i["section"] == "ap-twins"],
                 str([i["msg"] for i in rep.items])[:200])
-        stamped = [p.name for p in sorted((real / ".agents/commands").glob("*-AP.md"))
-                   if "ap_reconciled" in wf.read_text(p)]
-        c.check("SCC-82 G only the twin that was actually diffed carries a stamp",
-                stamped == ["cicd-code-review-AP.md"], str(stamped))
+        # ⛔ SCC-128 rewrote this assertion, and said so rather than quietly widening a list.
+        # It used to be `stamped == ["cicd-code-review-AP.md"]` — a hard-coded snapshot of
+        # which twins happened to be stamped that week. SCC-128 edited `cicd-self-audit.md`,
+        # which correctly woke this check on ITS twin; that twin was then genuinely diffed
+        # (nothing to port) and stamped — the exact behaviour the mechanism exists to
+        # reward — and the snapshot failed. A test that reds when someone does the right
+        # thing teaches people to stop doing it.
+        #
+        # What the assertion was actually defending is unchanged and is now stated
+        # directly: nobody may buy silence with a bare stamp. Every stamp must be
+        # accompanied by a written reason in the same frontmatter — that is what
+        # distinguishes "I read the primary and there is nothing to port" from
+        # "I pasted a sha to make the linter shut up", and it is the one part a
+        # touch-to-silence sweep will not bother to forge. Staleness itself is already
+        # covered by the assertion above, which reads every stamp against its primary's
+        # current sha.
+        stamped = {p.name: wf.read_text(p)
+                   for p in sorted((real / ".agents/commands").glob("*-AP.md"))
+                   if "ap_reconciled" in wf.read_text(p)}
+        unexplained = [n for n, t in stamped.items()
+                       if "Diffed against" not in t or "nothing to port" not in t]
+        c.check("SCC-82 G every stamped twin records WHY it was reconciled",
+                stamped and not unexplained,
+                f"stamped={sorted(stamped)} unexplained={unexplained}")
+
+        # ── SCC-128: the resurrection lint ───────────────────────────────────
+        # The vendor `bmad-code-review` skill is RETIRED in favour of the house
+        # `code-review-engine`, but BMAD's installer re-emits the vendor skill on every
+        # regen - so "we deleted the references" is a state that undoes itself. The guard
+        # has to be permanent, and it has to scan the two surfaces that can route work
+        # BACK to the vendor skill: commands (what an operator invokes) and rules (what an
+        # agent loads mid-run). Both spellings matter - `bmad-code-review` is the skill,
+        # `bmad_code_review_sudo_fix` was the adapter rule that patched it.
+        #
+        # ⛔ The literals below are DELIBERATELY the retired forms. They are the negative
+        # controls; a rename sweep that "fixes" them leaves a check that passes while
+        # proving nothing. INDEX.md is scanned here (unlike check_commands, which skips
+        # it) because a router row pointing at a retired surface IS the resurrection.
+        res = tmp / "resurrect"
+        (res / ".agents/commands").mkdir(parents=True)
+        (res / ".agents/rules").mkdir(parents=True)
+        rcmds, rrules = res / ".agents/commands", res / ".agents/rules"
+
+        def res_report(root: Path) -> wf.Report:
+            r = wf.Report()
+            lint.check_retired_review_surface(root, r)
+            return r
+
+        def res_msgs(r: wf.Report) -> str:
+            return " ".join(i["msg"] for i in r.items
+                            if i["section"] == "retired-surface")
+
+        # A. Positive control FIRST: a clean toolkit is silent. Without this the rest
+        #    only proves the detector is always-on, which is not a detector.
+        (rcmds / "clean-cmd.md").write_text(
+            "---\ndescription: x\n---\nInvoke the `code-review-engine` skill.\n",
+            encoding="utf-8")
+        (rrules / "clean-rule.md").write_text(
+            "---\nname: clean\n---\nThe engine owns the lens fan-out.\n", encoding="utf-8")
+        c.check("SCC-128 A positive control: a clean toolkit is silent",
+                not res_msgs(res_report(res)), res_msgs(res_report(res))[:140])
+
+        # B. A command that routes back to the vendor skill is an ERROR.
+        (rcmds / "stale-cmd.md").write_text(
+            "---\ndescription: x\n---\nInvoke the **`bmad-code-review`** skill on the diff.\n",
+            encoding="utf-8")
+        rep = res_report(res)
+        c.check("SCC-128 B a command naming the vendor skill is an ERROR",
+                any(i["sev"] == "ERROR" and "stale-cmd.md" in i["msg"]
+                    for i in rep.items if i["section"] == "retired-surface"),
+                res_msgs(rep)[:140])
+
+        # C. The UNDERSCORE form - the retired adapter rule - fires too. A guard that
+        #    only knows the skill's spelling misses every pointer at the rule that
+        #    patched it, which is the half that survives as a dangling file path.
+        (rrules / "stale-rule.md").write_text(
+            "---\nname: x\n---\nRead `.agents/rules/bmad_code_review_sudo_fix.md` in full.\n",
+            encoding="utf-8")
+        rep = res_report(res)
+        c.check("SCC-128 C the underscore form (the retired rule) also fires",
+                any(i["sev"] == "ERROR" and "stale-rule.md" in i["msg"]
+                    for i in rep.items if i["section"] == "retired-surface"),
+                res_msgs(rep)[:140])
+
+        # D. A router row is a resurrection: INDEX.md is in scope on both surfaces.
+        (rrules / "INDEX.md").write_text(
+            "| `bmad_code_review_sudo_fix.md` | on-demand | run-to-completion review. |\n",
+            encoding="utf-8")
+        rep = res_report(res)
+        c.check("SCC-128 D an INDEX row pointing at a retired surface fires",
+                any(i["sev"] == "ERROR" and "INDEX.md" in i["msg"]
+                    for i in rep.items if i["section"] == "retired-surface"),
+                res_msgs(rep)[:140])
+
+        # D2. The SKILLS router is in scope too, and nested - `.agents/skills/` is the door
+        #     Claude and Codex actually enter through (one door per platform, SCC-66), so a
+        #     row there routes an agent to the vendor skill exactly as a rule row does. It
+        #     is satisfiable because no vendor `bmad-*` skill lives under `.agents/skills/`;
+        #     that directory is ours.
+        #     ⭐ The assertion pins the RELATIVE PATH, not the basename: ~50 skills own a
+        #     file called `SKILL.md`, so a message naming only the basename cannot be acted
+        #     on. Asserting the bare name would have locked in exactly that useless message.
+        (res / ".agents/skills/some-skill").mkdir(parents=True)
+        (res / ".agents/skills/some-skill/SKILL.md").write_text(
+            "---\nname: some-skill\n---\nRun `bmad-code-review` on the diff.\n",
+            encoding="utf-8")
+        rep = res_report(res)
+        c.check("SCC-128 D2 a nested skill file fires, and the message LOCATES it",
+                any(i["sev"] == "ERROR"
+                    and ".agents/skills/some-skill/SKILL.md" in i["msg"].replace("\\", "/")
+                    for i in rep.items if i["section"] == "retired-surface"),
+                res_msgs(rep)[:160])
+
+        # D3. Case-insensitivity. The generator re-emits one fixed spelling; the HUMAN half
+        #     of the resurrection is the half that varies, and `BMAD-Code-Review` routes an
+        #     agent exactly as well as the lower-case form.
+        (rcmds / "shouty.md").write_text(
+            "---\ndescription: x\n---\nRun the BMAD-Code-Review skill.\n", encoding="utf-8")
+        rep = res_report(res)
+        c.check("SCC-128 D3 a differently-cased spelling still fires",
+                any(i["sev"] == "ERROR" and "shouty.md" in i["msg"]
+                    for i in rep.items if i["section"] == "retired-surface"),
+                res_msgs(rep)[:160])
+
+        # D4. ⭐ EVERY offender is reported, not just the first one per surface. A linter
+        #     that names one of five resurrections and stops is materially worse, and every
+        #     case above uses `any(...)` on a fresh report - so a `break` after the first
+        #     `rep.err` would survive all of them. This asserts the SET, which also pins the
+        #     `sorted()` walk (nothing else does).
+        offenders = sorted(i["msg"].split(":")[0].replace("\\", "/")
+                           for i in res_report(res).items
+                           if i["section"] == "retired-surface")
+        c.check("SCC-128 D4 every offender is reported, across all scanned surfaces",
+                offenders == [".agents/commands/shouty.md",
+                              ".agents/commands/stale-cmd.md",
+                              ".agents/rules/INDEX.md",
+                              ".agents/rules/stale-rule.md",
+                              ".agents/skills/some-skill/SKILL.md"],
+                str(offenders))
+
+        # D5. The positive control, re-run with all three surfaces POPULATED and clean.
+        #     Case A ran before `.agents/skills/` existed, so "a clean skills surface is
+        #     silent" was never actually asserted - the control covered two of the surfaces
+        #     it appeared to cover.
+        clean = tmp / "resurrect-clean"
+        for sub in ("commands", "rules", "skills/some-skill", "workflows",
+                    "opencode-agents"):
+            (clean / ".agents" / sub).mkdir(parents=True)
+        (clean / ".agents/commands/ok.md").write_text("Run `code-review-engine`.\n",
+                                                      encoding="utf-8")
+        (clean / ".agents/rules/ok.md").write_text("The engine owns the fan-out.\n",
+                                                   encoding="utf-8")
+        (clean / ".agents/skills/some-skill/SKILL.md").write_text("---\nname: ok\n---\n",
+                                                                  encoding="utf-8")
+        (clean / ".agents/workflows/INDEX.md").write_text("| a | b |\n", encoding="utf-8")
+        (clean / ".agents/opencode-agents/agent.md").write_text("A reviewer.\n",
+                                                                encoding="utf-8")
+        c.check("SCC-128 D5 positive control: ALL five populated surfaces, clean, silent",
+                not res_msgs(res_report(clean)), res_msgs(res_report(clean))[:160])
+
+        # E. The message must carry the REMEDY. Whoever trips this is mid-regen and did
+        #    not read this ticket; an error that only says "no" gets worked around.
+        c.check("SCC-128 E the error names the replacement engine",
+                "code-review-engine" in res_msgs(rep), res_msgs(rep)[:140])
+
+        # F. ⭐ The live tree. This case carried a one-file exemption while SCC-126 was
+        #    unlanded: `cicd-code-review-AP.md` was the ONE allowed hit, because its rewire
+        #    was SCC-126's (operator-approved scope transfer) and this lane may not edit it.
+        #    The exemption lived HERE and not in the linter on purpose - `workflow_lint
+        #    --toolkit-only` stayed honestly RED on that file, so the violation was visible
+        #    at every gate instead of being silently allowed, while run_all.py stayed green.
+        #
+        #    ⛔ The list is EXACT, and the first draft's `all(o == ...)` was not: `all()`
+        #    over an empty set is True, so that form passed against a detector gutted to
+        #    `return` - the one case touching the real tree could not fail for the reason
+        #    it exists. Exact-match also made the carve-out SELF-EXPIRING.
+        #
+        #    ⭐ IT EXPIRED, AS DESIGNED (2026-08-13, landing set 126->127->128). SCC-126
+        #    landed at a4975bf, this lane absorbed it, and its rewire cleared the file -
+        #    so the case went red exactly as its author predicted, and the instruction was
+        #    to DELETE the exemption rather than inherit a permanent hole. Done: the live
+        #    tree must now be CLEAN, with no offender at all. Keeping the old assertion
+        #    would have pinned a transient broken state as the expected one forever.
+        real_rep = res_report(real)
+        offenders = sorted({i["msg"].split(":")[0].replace("\\", "/")
+                            for i in real_rep.items
+                            if i["section"] == "retired-surface"})
+        c.check("SCC-128 F the live tree has NO retired-surface offender",
+                offenders == [], str(offenders))
+
+        # G. ⭐ THE WIRING. Every case above calls the function directly, so deleting its
+        #    one line in main() passes all of them while `workflow_lint --toolkit-only` -
+        #    what CI, the close-out gate and the clean-code floor actually run - goes
+        #    permanently silent. Verified: that deletion left the SCC-128 block at 100%.
+        #    This drives the real CLI in a synthetic lobby, so the call site is asserted.
+        (lob / ".agents/commands/resurrect-me.md").write_text(
+            "---\ndescription: x\n---\nInvoke `bmad-code-review`.\n", encoding="utf-8")
+        code_res, out_res = lint_at("--toolkit-only")
+        c.check("SCC-128 G the check is WIRED into --toolkit-only (exit 2 + names it)",
+                code_res == 2 and "retired-surface" in out_res
+                and "resurrect-me.md" in out_res,
+                f"exit={code_res} {out_res.strip()[:140]}")
+        (lob / ".agents/commands/resurrect-me.md").unlink()
+        c.check("SCC-128 G control: with the offender gone the CLI is clean again",
+                "retired-surface" not in lint_at("--toolkit-only")[1], "")
     return c.finish()
 
 

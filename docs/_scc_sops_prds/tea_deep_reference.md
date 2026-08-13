@@ -127,10 +127,10 @@ Phase 3  Pre-mortem scenarios          → happy · rehydration · error/timeout
 Phase 4  Verdict                       → SAFE / NEEDS-REVISION / UNSAFE + Go/No-Go; bakes fixes inline into the plan
 ```
 
-### `/cicd-code-review` ③ — review + TEST GATE (calls bmad-code-review + the gate chain)
+### `/cicd-code-review` ③ — review + TEST GATE (calls code-review-engine + the gate chain)
 ```
-1. bmad-code-review              → clean-room adversarial review of the diff (AI drift, over-eng, bloat, logic flaws);
-                                    applies actionable fixes itself + re-runs suites
+1. code-review-engine            → clean-room adversarial review of the diff (AI drift, over-eng, bloat, logic flaws);
+                                    the command applies the actionable fixes + re-runs suites
 2. gate opt-in check             → read _bmad-output/sudo-tests.yaml — ABSENT → verdict WAIVED (skip gate)
 3. gate checks (baseline-diff, fail only on NEW regressions):
      • direct test execution         → pytest + vitest
@@ -171,7 +171,7 @@ Running this **IS your sign-off.** Only objectively-red tests can block the flip
 | `bmad-testarch-atdd` | Write **failing** (red) acceptance tests before any code |
 | `bmad-dev-story` | The dev engine — PLAN mode writes the plan; IMPLEMENT mode writes code to green |
 | `bmad-testarch-automate` | Expand coverage on existing code (passes immediately) |
-| `bmad-code-review` | Adversarial clean-room review of the diff; applies fixes |
+| `code-review-engine` | Adversarial clean-room review of the diff (the house engine, SCC-116); the calling command applies the fixes |
 | `bmad-testarch-trace` | Requirements→tests traceability matrix + coverage verdict |
 | `bmad-testarch-nfr` | Audit non-functional evidence (perf / security / reliability) |
 | `bmad-testarch-test-review` | Score the tests on the 5 quality dimensions |
@@ -676,7 +676,7 @@ flowchart TD
 | kickoff | `cicd-create-epic-sprint` | `bmad-create-epics-and-stories` → `bmad-sprint-planning` → `bmad-testarch-test-design` (interactive P0–P3, one story at a time) |
 | ① | `cicd-write-story-tests` | `bmad-create-story` → `/cicd-bdd-tests` (BDD Vision Lock, **mandatory** — contract or recorded waiver) → `testarch-atdd` |
 | ② | `cicd-dev-story-tests` | **BDD contract gate** → `bmad-dev-story` (plan) → **⛔ STOP** → `cicd-self-audit` (chosen lane/model, or fresh team) → `bmad-dev-story` (implement) → `testarch-automate` |
-| ③ | `cicd-code-review` | `bmad-code-review` → `/1_run-all-tests-back_front` → `testarch-trace` → `testarch-nfr` → `testarch-test-review` |
+| ③ | `cicd-code-review` | `code-review-engine` → `/1_run-all-tests-back_front` → `testarch-trace` → `testarch-nfr` → `testarch-test-review` |
 | close | `cicd-update-sprint-memory` | — (reads ③'s verdict; only command that flips a story to `done`) |
 
 > **Epic kickoff (once per epic):** `/cicd-create-epic-sprint` bundles this — it ends with an interactive `testarch-test-design` pass where you risk-score every story P0–P3 one at a time. Same first move to retrofit an untested codebase.

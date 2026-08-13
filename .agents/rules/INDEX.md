@@ -35,7 +35,6 @@ from here by every session. A project carries only its OWN rules, routed from it
 | `dependency-awareness.md` | on-demand | modifying `package.json` / `requirements.txt` / `pyproject.toml` or any dependency manifest. |
 | `powershell-encoding-safety.md` | on-demand | writing/restoring file content via shell on Windows — avoid UTF-16/BOM corruption. |
 | `lobby-search.md` | on-demand | searching the tree FROM the lobby root — Grep/Glob are blind to `Projects/` (gitignore); the correct search patterns. Lobby-specific. |
-| `bmad_code_review_sudo_fix.md` | on-demand | the `bmad-code-review` skill/workflow runs — run-to-completion review (any agent), no halting; stops at `review`. |
 | `reproduce-before-you-fix.md` | on-demand | **something is reported broken** — a bug, a red suite, an incident, "it's not working". The house debug loop as five gates: reproduce (citable, or say it doesn't) → minimize → pin with a test SEEN red → falsify one hypothesis at a time under a stop condition → minimal fix at the cause → prove it by reverting the fix. Pulled by `karpathy-guidelines` §1; `collaborative-debug-first` is its G1 branch. |
 | `collaborative-debug-first.md` | on-demand | you can't observe runtime (browser/network/Firestore/UI) but Daniel can — instrument + ask, don't guess. The **G1 can't-observe branch** of `reproduce-before-you-fix`. |
 | `completion-not-illusion.md` | on-demand | a workflow emits polished intermediate artifacts — a polished artifact is a claim, not proof of done. |

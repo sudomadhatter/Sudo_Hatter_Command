@@ -29,18 +29,45 @@ this story's plan/walkthrough/verdict live in THIS tree — absent here = that s
 in the shared checkout is a SIBLING lane's, not evidence. Echo the story's ①②③ step-state before Step 1.
 
 ## Step 1 — Clean-Room Adversarial Code Review
-Invoke the **`bmad-code-review`** skill on the story's diff. You MUST act as a **Clean-Room** agent: zero out any builder's bias. Your only job is to aggressively audit the final diff against the strict BDD contract. Hunt specifically for **AI Drift**, over-engineering, bloat, unnecessary abstractions, and logic flaws. **Ordering (deliberate): run the blind hunt on the DIFF first — open ②'s `walkthrough.md` and plan only AFTER it**, for claimed evidence, plan-vs-built deviations, and the `## Your Actions` rows; reading the builder's story before hunting imports exactly the bias this step exists to zero out. Apply the actionable fixes yourself; if you change code, re-run the relevant suite(s) — scoped, not full; the ONE full-suite run lands after your last change (Step 3.1) — and paste actual output.
 
-**Subagent-failure contract (a dead layer is a FINDING, never a silent skip).** This review runs as
-several parallel lenses; on 2026-08-02 two of four died and recovery was improvised. When any layer
-errors, times out, or returns nothing:
-1. **Retry it once.** Transient tool/API failures are the common case.
-2. **Still failing → re-run that lens INLINE yourself**, in this context. A lens is a prompt, not a
-   privileged tool; losing the parallelism costs time, not coverage.
-3. **Record the degradation in the verdict** — name the layer, the failure, and how it was recovered.
-   "4 layers ran" and "3 ran plus 1 rerun inline" are different evidence and must read differently.
-4. **A layer that never ran at all caps the verdict at `CONCERNS`.** Not PASS. An unexamined surface is
-   an unknown, and an unknown is not a pass — the same rule as a missing tool in Step 3.5.
+Invoke the **`code-review-engine`** skill on the story's diff — the house review engine (SCC-116). It
+runs the lens fan-out, verifies what the lenses find, triages it and records it; **you own everything
+around it**: the inputs, the fixes, the gates and the verdict.
+
+**Resolve every input before you invoke it — the engine resolves nothing itself, and a missing
+required input is a stop, not a guess:**
+
+| Input | What you pass |
+|---|---|
+| `REPO` | `PROJECT_ROOT` from Step 0 |
+| `WORKTREE` | the tree Step 0.5 resolved (the story tree when one exists — the built code often lives ONLY there) |
+| `DIFF` | the story's diff, taken in that worktree |
+| `HEAD_SHA` | `git rev-parse HEAD` in that worktree, taken **now** — this is the sha the engine records the review against, **not** necessarily the sha your verdict cites: you apply fixes below, and Step 4's verdict must cite the FINAL sha its full-suite evidence was measured on |
+| `review_mode` | `full` when the story file exists; `no-spec` when it does not |
+| `STORY_FILE` | the story file (`full` mode) |
+| `ARTIFACT_DIR` | `_artifacts/epic_<E>/<story>/` **inside that worktree** |
+| `DEFERRED_WORK` | the project's `deferred-work.md`, when it has one |
+
+**Ordering (deliberate): the engine hunts the DIFF first — open ②'s `walkthrough.md` and plan only
+AFTER its summary comes back**, for claimed evidence, plan-vs-built deviations, and the `## Your
+Actions` rows. Reading the builder's story before the hunt imports exactly the bias the Blind Hunter
+exists to zero out, and that lens is starved of context on purpose — never hand it the story.
+
+**Then act on what it hands back.** Apply the actionable fixes yourself; if you change code, re-run
+the relevant suite(s) — scoped, not full; the ONE full-suite run lands after your last change
+(Step 3.1) — and paste actual output.
+
+**The engine returns a `severity_floor`, and it BINDS Step 4.** `none` < `CONCERNS` < `FAIL`: your
+verdict may be the floor or anything more severe (your own gates add their own reasons), never
+anything less. A confirmed `critical` finding is a FAIL; an `important` one is a CONCERNS floor.
+
+**Failure and degradation are the engine's to report, and yours to carry into the verdict.** It owns
+the per-lens contract — retry once, re-run inline, and only a lens still dead after both raises the
+floor — and reports each lens as `ok | recovered-inline | dead` plus any lens that was `n/a` for the
+mode. **Copy that line into the verdict as it came back.** "4 lenses ran" and "3 ran plus 1 rerun
+inline" are different evidence and must read differently; a lens skipped because there is no spec is
+not a degradation and never caps the verdict, while one that never ran at all is an unexamined
+surface — and an unknown is not a pass, the same rule as a missing tool in Step 3.5.
 
 ## Step 2 — Gate: opt-in check
 Read `_bmad-output/sudo-tests.yaml`.
@@ -146,8 +173,10 @@ new one. The section carries:
   the full-suite evidence was measured on and whose run it was (②'s inherited certification or ③'s
   own). Any code/test diff between that SHA and HEAD invalidates the verdict.
 - scope + method, one line each; then ONE findings table (`file:line` · severity · failure scenario ·
-  disposition applied / deferred / dismissed) — the only copy anywhere; the story file links here,
-  never restates,
+  disposition applied / deferred / dismissed) — **the authoritative copy**; the story file links here,
+  never restates. (The engine's step-04 may leave unresolved findings as `[ ] [Review]…` action items
+  in `STORY_FILE` so the builder sees them — that is a worklist, not a second record, and it carries
+  no dispositions. Where the two differ, this table is right; reconcile the story's boxes to it.)
 - each gate check's result in one line + the **actual** suite totals (runs also ledgered in
   `## Suite Ledger`), each **citing its receipt** — `suite: pass @ <sha> (gates/<story>/suite.json)`.
   Run `gate_receipt.py list --story <id>` and paste the block; an `unrunnable` row is a finding that
