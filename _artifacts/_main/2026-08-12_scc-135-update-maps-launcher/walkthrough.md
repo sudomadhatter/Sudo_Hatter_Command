@@ -216,3 +216,21 @@ SCC-119's own work.
 | F6 | `_artifacts/_main/INDEX.md` | **HIGH** | ⛔ **SCC-119 adds NO `_artifacts/_main/INDEX.md` row of its own** — verified, 0 hits in its committed diff vs `main`. It was relying on the row the truncated run happened to leave behind, which this lane has now removed. When SCC-119 lands its three files, `main` will have a session folder with **no INDEX row**, which `check_maps` reports as fatal drift. | **Handoff, binding.** SCC-119 must add its own INDEX row in the same commit as its folder. This lane ships internally consistent — no folder, no row — and cannot fix SCC-119's half without committing another lane's work. |
 
 Gates re-run after the row removal: `check_maps` exit 0, `run_all` **21/21** exit 0.
+
+### F6 confirmed in the wild, by a different lane, mid-close-out
+
+Between the preflight and Step 3, **`chore/SCC-124-baseline-trial` landed on `main`** (`2151568` →
+`8c927dd`), so this lane stopped being a clean descendant and had to absorb `origin/main` before
+merging — conflicts surface on the lane, never on `main`. The absorb was clean.
+
+**SCC-124 landed its session folder with no `_artifacts/_main/INDEX.md` row**, which is precisely the
+F6 failure predicted for SCC-119 one section above, demonstrated by a third lane within the hour.
+`check_maps` went red (`missing row for 2026-08-12_scc-124-baseline-trial/`) and this lane added the
+row — legitimate reconciliation rather than committing another lane's work, because the folder was
+**already on `main`**; only its INDEX row was absent.
+
+⚠️ **A gap worth its own ticket:** `run_all` stayed **21/21 green** while `check_maps` was **red**.
+`test_check_maps.py` case F asserts the live tree reports no *stale* rows; nothing in the suite
+asserts it reports no *missing* rows. So a lane can land a session folder with no INDEX row, pass the
+close-out gate, and leave `main` failing its own linter — which is exactly what just happened. The
+lane gate and the linter disagree, and only the linter is right.
