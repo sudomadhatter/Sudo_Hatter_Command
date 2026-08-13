@@ -34,6 +34,13 @@ refused subtasks were fixed, including one that was corrupting the board on ever
       `/smh-close-task-merge-tree` re-checks children with the board in hand before writing `Done`.
 - [x] **`scripts/INDEX.md`** — three sentences this change made false, corrected.
 - [x] **SOP** + **8 platform doors** regenerated via `sync-agents`.
+- [x] **Review fix (R1)** — `test_hooks_armed.py` was quietly querying the **live Jira board**.
+  - ⚠️ `task_preflight.py` gained its **first ever network call** in this ticket, and that test runs
+    the preflight to check something unrelated (the arm-state seam). It set no `ACLI_BIN`, so acli
+    resolved off PATH and hit production: **1.90s per run**, credential-dependent, and up to a **20s
+    block** on a dead uplink. The assertions never touched the board, which is precisely why the
+    suite stayed green and nothing caught it. Adding a network call to a shared script reaches
+    further than the diff that adds it.
 
 ### Cut during the build — both are the audit's own tripwires firing on my plan
 
@@ -96,20 +103,131 @@ garbage input reports clean, exactly like a gate handed good input.
 |---|---|---|
 | `test_jira_feed.py` | 141/141 | **152/152** |
 | `test_task_preflight.py` | 92/92 | **100/100** |
-| `run_all.py` (all files) | 1091/1091 | **1110/1110** |
+| `test_hooks_armed.py` | 31/31 | **31/31** (unchanged count — made hermetic, R1) |
+| `run_all.py` (all files) | 1091/1091 | **1110/1110** @ `cc553bc` |
+
+## Code Review (2026-08-12)
+
+```
+Verdict: CONCERNS @ cc553bc
+```
+
+**Suite evidence measured on:** `cc553bc` — the run below post-dates the last code/test change.
+Only doc commits follow it.
+
+**Scope:** 16 files, `chore/SCC-119-subtask-rule` (15 from the build + `test_hooks_armed.py` from
+this review), after absorbing `origin/main`.
+**Method:** ⚠️ **DEGRADED — Step 1's clean-room subagent did not run.** The operator declined the
+subagent invocation, so the adversarial hunt was re-run **inline, by the builder**, per the
+subagent-failure contract (retry → inline → *record the degradation*). **That is the entire reason
+this is CONCERNS and not PASS:** every gate is green and every acceptance item is evidenced, but a
+diff hunted by its own author has lost the one property Step 1 exists to provide. The hunt was not
+vacuous — it found and fixed a real defect (R1) — but self-review is weaker evidence and must read
+as weaker. **Clearing it is one clean-room run away, or the operator's explicit accept.**
+
+### Findings
+
+| # | file:line | Sev | Failure scenario | Disposition |
+|---|---|---|---|---|
+| **R1** | `.agents/scripts/tests/test_hooks_armed.py:264` | **CONCERNS** | That test runs `task_preflight.py`, which this ticket gave its **first ever network call** (`check_children`, resolving `acli` off PATH). The test set no `ACLI_BIN`, so **every suite run queried the live Jira board.** Proven: the preflight printed `SCC-119: no subtasks` in **1.90s** — obtainable only from the real board. Cost: a round-trip per run, credential-dependent, divergent on a machine with no acli or a sandboxed shell, and up to a **20s block** on a dead uplink. The assertions never depended on the board, which is exactly why the suite stayed green and nothing caught it. | **applied** @ `cc553bc` — `ACLI_BIN` pinned to a childless stub around that call. Proven hermetic: **31/31 with PATH stripped of acli entirely.** |
+
+**Refuted during the hunt — recorded so they are not re-litigated:**
+
+| Suspicion | Why it is not a finding |
+|---|---|
+| `os.environ["ACLI_BIN"]` in `test_task_preflight.py` leaks into sibling test files | `run_all.py:26` spawns each file as a **subprocess** (`subprocess.run([sys.executable, …])`). Env cannot cross. |
+| `import jira_feed` in `task_preflight.py` is unsafe / cyclic | Import measured at **0.019s**, no module-level side effects, and `jira_feed` imports neither `task_preflight` nor `hooks_armed` — no cycle. |
+| `check_children` can pass without checking | Every path traced: acli absent → warn; non-zero exit → `acli_json` returns `None` → warn; malformed JSON → `None` → warn; timeout → `ACLI_UNREACHABLE` → warn. **No path reaches "no open children" without a successful read.** Mutation-proven, 3/3 killed. |
+| A doc still claims `start` refuses a Subtask | Swept all four changed docs — every "refuses" hit is `flag` (correct) or the parent gate (correct); `jira.md:431` states ACCEPTED explicitly. |
+| Status matching is case- or None-fragile | Verified: `Done/done/DEFERRED` → closed; `Blocking`, `In Review`, `''` → **open (blocks)**. Unknown status fails **safe**. |
+| `cmd_audit`'s restructure broke an exit-code contract | Traced every return. `0` clean · `1` dry-run mistypes **or** subtask placement problems · `2` a conversion that failed. Pre-existing cases keep their codes; `print_human` hoisting only **adds** output on the `--apply` path, where findings were previously invisible. |
+
+### Gates
+
+| Gate | Result |
+|---|---|
+| Enforcement suite | `21/21 files · 1110/1110 cases` **exit 0** (bare) |
+| Toolkit lint | `0 error(s), 0 warning(s), 8 info` **exit 0** (bare) — the 8 are pre-existing UTF-8 BOMs on `testarch-*` |
+| Assertion evidence | every Step-2 RED assertion re-run and **GREEN** — `start` accepts a Subtask · `flag` redirects naming `TEST-4` · parentless refuses cleanly · all four `audit` placement cases · open-blocks / `Deferred`-does-not / failed-query-never-clean |
+| SOP currency | **exit 0** with the doc · **exit 1** without it (positive control — the gate is alive and ARMED) |
+| Link + anchor | `24 links / 9 changed docs, 0 problems` |
+| Door parity | both commands **modified, none added/renamed/deleted**; all 4 doors present for each (`claude · agents · opencode · workflow`) |
+| py_compile | clean on all 5 changed `.py` |
+
+### Acceptance matrix
+
+| AC | Proving assertion | Result |
+|---|---|---|
+| AC1 rule written | `jira.md` §Subtasks + the 5-type and close-out tables | ✅ inspection |
+| AC2 story lane NEVER | rule text; AVCH re-queried — still **0** subtasks | ✅ board-verified |
+| AC3 branch+worktree threshold | rule text + `/smh-quick-dev` Step 1.6 | ✅ inspection |
+| AC4 propose then stop | Step 1.6; **no board write exists in any code path** in this diff | ✅ verified by absence |
+| AC5 subtask lane no longer breaks the board | `test_jira_feed.py` L905 **inverted** (`code == 2` → `code == 0`) | ✅ 152/152 |
+| AC6 parent closes last | `test_task_preflight.py` — open blocks, `Deferred` does not, failed query never reads clean | ✅ 100/100, 3/3 mutants |
+| AC7 subtask never `Bug` | `flag` refuses + names parent; `devrecord` characterization | ✅ 152/152 |
+| AC8 nothing says stop-on-Subtask | exit-2 row deleted; doc sweep clean | ✅ inspection |
+
+**Drift check (the other direction):** nothing in the diff is outside the list. Two planned items
+were **cut** during the build (`devrecord` guard, `mint --parent-key`) — both recorded in the plan
+with reasons; cuts narrow scope and are not drift.
+
+### Clean-Code Gate
+
+Machine floor — all bare, all above: `run_all` · `workflow_lint` · `sop_currency` (+ control) ·
+`py_compile` · link+anchor. **No FAIL-tier finding.**
+
+| Check | Result |
+|---|---|
+| Comment contract | ✅ Every non-obvious block carries its ticket and the *why*. Density matches the surrounding file, which is deliberately heavy-comment. |
+| AI-drift bans | ✅ None found — no placeholder, no dead branch, no invented API. |
+| Over-engineering | ✅ Two abstractions **removed** mid-build by the audit's own tripwires. `check_subtask` is the only new function and each of its four checks maps to a named board failure. |
+| Convention fit | ✅ Law in `jira.md`, obligation restated as command **steps**, doors regenerated not hand-edited, table-parse asserts over bare greps. |
+| Diff-scoped | ✅ Legacy debt in untouched files noted, not gated on (the 8 BOM infos). |
+
+**Changes applied by this review:** one — R1.
+
+### Step 0.7 — re-derivation against current `main`
+
+1. **Did anything this diff references move?** **No.** `main` advanced `af821b0 → 2151568` (SCC-117's
+   artifacts, 2 files). All 13 repo paths this diff introduces were re-resolved; 10 exist, and the 3
+   that do not are **prose or fixtures**, verified line by line — the dead SOP path appears *only* in
+   text stating it does not exist, `docs/x.md` is a temp-repo fixture, and the worktree path names a
+   real dir in the main checkout. Every load-bearing reference re-checked against `origin/main`
+   itself, including `SOP_DOC`, which a sibling had **not** changed.
+2. **True overlap + merge:** **zero overlap**; `merge-tree` **clean** (exit 0). `origin/main`
+   absorbed at `a2b102a`, before this verdict.
+3. **Sibling lanes:** `chore/SCC-135-update-maps-launcher` (the shared checkout moved onto it
+   mid-build, at `main`, no commits yet) and `chore/SCC-124-baseline-trial` @ `bd097ee`, which holds
+   **only `_artifacts/`**. **No landing-order dependency in either direction** — this lane may land
+   first or last without consequence.
 
 ## Your Actions
 
-**Landed on the branch, not on `main`.** `chore/SCC-119-subtask-rule` is committed and pushed; the
-worktree is at `.claude/worktrees/SCC-119-subtask-rule`.
+**Landed on the branch, not on `main`.** `chore/SCC-119-subtask-rule`, reviewed at `cc553bc`, with
+`origin/main` absorbed. Worktree: `.claude/worktrees/SCC-119-subtask-rule`.
 
-1. **Review, then `/smh-code-review`** — this lane stops here by design. I have not merged,
-   transitioned SCC-119, or pruned anything.
-2. **SCC-119 itself gets no subtasks, and that is the rule working.** The doc and the machinery that
-   enforces it must land together or one of them is a lie, and one gate covers both.
-3. **Two things outside this ticket's scope, for your call:**
-   - `jira_feed.py start`'s refusal was broken shipped work from SCC-113. Per your ruling it is
-     recorded here rather than flagged `Bug` — say the word if you want it flagged instead.
-   - Your **memory index carries a dead SOP path** (`_my_resources/_quick_reference/sudo_workflows_testing.md`);
-     the real one is `docs/_scc_sops_prds/workflows_testing_SOP.md`. It misled this plan once already.
-     Worth a `/memory-audit`.
+- [x] **`/smh-code-review` run** — verdict `CONCERNS @ cc553bc`, one finding, applied.
+- [x] **`main` absorbed** (`a2b102a`) so conflicts cannot reach `main`.
+- [x] **SCC-119 itself gets no subtasks, and that is the rule working.** Doc and enforcement must
+      land together or one is a lie, and one gate covers both.
+
+**Genuine operator calls, all that remain:**
+
+1. **The `CONCERNS` is one thing only: the clean-room review did not run.** You declined the Step 1
+   subagent, so the adversarial hunt was re-run inline **by the author of the diff**. Every gate is
+   green and every acceptance item is evidenced — the cap is purely the lost independence. Clear it
+   by running the clean-room pass, or by accepting it explicitly.
+2. **The merge** — `/smh-close-task-merge-tree`. Not done here by design.
+3. **`jira_feed.py start`'s refusal was broken shipped work from SCC-113.** Per your ruling it is
+   recorded in this Dev Record rather than flagged `Bug`. Say the word to flag it instead.
+4. **Your memory index carries a dead SOP path**
+   (`_my_resources/_quick_reference/sudo_workflows_testing.md`); the live one is
+   `docs/_scc_sops_prds/workflows_testing_SOP.md`. It misled this plan once already, and it will
+   mislead the next session the same way. Worth a `/memory-audit`.
+
+**Landed alongside, in a different repo — reported here so it is not lost:** two GitNexus-pass
+updates in `Projects/AGY_AVIATIONCHAT` (`docs/.maps-state.json` reconcile stamp,
+`scripts/git-hooks/INDEX.md` wording) were committed as **`AVCH-18` @ `428a19d9`** and pushed to
+`epic/AVCH-18-adk-2x-runtime`. **They could not ride this ticket** — a separate git repo whose
+`.agents/jira.conf` declares `AVCH`, so its files cannot enter this branch and its armed commit-msg
+gate rejects an `SCC` key. No deployable path touched, so no E2E was owed.
