@@ -15,6 +15,8 @@ before anything is installed, which is exactly when the arm state is wrong.
 from __future__ import annotations
 
 import json
+import os
+import stat
 import subprocess
 import sys
 from pathlib import Path
@@ -261,8 +263,28 @@ def main() -> int:
     # takes this assertion with it. And the value is compared against a live scan, so a stub
     # that always answered `true` would fail here.
     branch = git("rev-parse", "--abbrev-ref", "HEAD", cwd=REPO)
-    rc, out = run_script("task_preflight.py", "--expect-key", "SCC-110",
-                         "--repo", str(REPO), "--branch", branch, "--json")
+    # ⛔ Pin acli to a childless stub before invoking the preflight (SCC-119). This test is
+    # about the ARM STATE, not the board - but `task_preflight.check_children()` is the first
+    # network call that script has ever made, and it resolves `acli` off PATH. Without this,
+    # the suite quietly queried the LIVE Jira board on every run: ~2s, dependent on
+    # credentials, and different on a machine where acli is absent or sandboxed (an agent
+    # shell cannot reach the OS credential store at all). Measured before the pin: the run
+    # printed "SCC-119: no subtasks", a fact it could only have learned from the real board.
+    with TempDir() as board:
+        stub = board / "acli_stub.py"
+        stub.write_text("import sys\nprint('[]')\n", encoding="utf-8")
+        launcher = board / ("acli.bat" if os.name == "nt" else "acli")
+        if os.name == "nt":
+            launcher.write_text(f'@echo off\r\n"{sys.executable}" "{stub}" %*\r\n',
+                                encoding="utf-8")
+        else:
+            launcher.write_text(f'#!/bin/sh\nexec "{sys.executable}" "{stub}" "$@"\n',
+                                encoding="utf-8")
+            launcher.chmod(launcher.stat().st_mode | stat.S_IXUSR)
+        os.environ["ACLI_BIN"] = str(launcher)
+        rc, out = run_script("task_preflight.py", "--expect-key", "SCC-110",
+                             "--repo", str(REPO), "--branch", branch, "--json")
+        os.environ.pop("ACLI_BIN", None)
     c.check("Q · preflight's JSON carries the arm state", '"hooks_armed"' in out,
             "the check must run where the operator reads the verdict, not only in the suite")
     try:
