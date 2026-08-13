@@ -10,14 +10,25 @@ exists on the Mac, and all five exited 127 silently for weeks; six merges reache
 sign-off. It then built this check for exactly ONE gate, inside `test_main_push_gate.py`. This
 generalises it and — more importantly — moves it to where the operator actually reads a verdict.
 
-THREE WAYS A GATE IS OFF, and each is silent on its own:
+FIVE WAYS A GATE IS OFF, and each is silent on its own. This said THREE until SCC-140, which
+found the tool reporting ARMED with ZERO findings in every one of cases 3b, 4 and 5:
 
     1. core.hooksPath   UNTRACKED, per machine. The master switch. Unset -> nothing runs.
     2. the inner script  Every dispatcher in `.githooks/` ends with the same two-liner —
                          `[ -x "$SCRIPT" ] || exit 0`. Delete the script, or merely drop its
                          executable bit, and the hook exits 0 with NO OUTPUT AT ALL.
-    3. <NAME>-ENFORCE    TRACKED, per gate. Absent -> the gate WARNS instead of REJECTING, and
-                         hook output is rendered nowhere the operator looks. See JIRA-ENFORCE.
+    3. <NAME>-ENFORCE    Absent -> the gate WARNS instead of REJECTING, and hook output is
+                         rendered nowhere the operator looks. Checked (a) in the INDEX and
+                         (b) ON DISK, because every consumer reads the flag from the
+                         filesystem — `commit-msg-jira.sh`, `pre-push-main-approval.sh`, and
+                         `sop_currency.py` via `.exists()` — while `sop-currency.sh` documents
+                         "delete the flag" as the disarm. An index-only check therefore said
+                         ARMED to an operator following this system's own instructions.
+    4. an ORPHANED flag  A tracked flag whose gate script is NOT tracked: the marker claims the
+                         gate is armed and the gate does not exist, so its dispatcher exits 0.
+                         Includes the whole-repo case — claims gates, tracks zero gate scripts.
+    5. the DISPATCHER    A flag arming a script reached through a hook that is not tracked in
+                         `.githooks/`. Nothing dispatches it, so it never runs.
 
 ⭐ THE EXPECTED SET COMES FROM `git ls-files`, NOT FROM `iterdir()`. The difference is the whole
 correctness of this script. A directory listing cannot tell "this gate was deleted" from "this

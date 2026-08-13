@@ -223,9 +223,12 @@ warn-only and the tool must say so.
 index-only → dies.
 
 **3b. A tracked flag whose script is untracked is reported (items 1a, 1c, 1d, 1e).**
-[hooks_armed.py:176](../../../.agents/scripts/hooks_armed.py#L176) reads
+The layer-3 flag loop in `scan()`
+([hooks_armed.py](../../../.agents/scripts/hooks_armed.py)) read
 `if script not in script_names: continue` — one line causing four of the ticket's five listed
-defects. Realistic trigger: a project scaffolded by `/smh-new-project` carries `jira.conf` and
+defects. *(Cited by function, not by line: this plan first said `#L176`, and the very fix it
+describes pushed that line to 269, leaving an anchor that still resolved and pointed at
+unrelated code — a mis-pathed reference reads as correct, which is worse than a dead one.)* Realistic trigger: a project scaffolded by `/smh-new-project` carries `jira.conf` and
 `.githooks/` while the gate scripts arrive later — that repo certifies ARMED with zero gate
 scripts. Replace the bare `continue`: if the flag is tracked but its script is not, that is a
 finding, not a skip. Also validate that the `via` hook named in `ARM_FLAGS` is tracked (1e).
