@@ -88,6 +88,14 @@ missed. **Acceptance: clean-diff wall-clock ≤ current review.** If the bar fai
 does not proceed until the regression is fixed. This subtask produces the timing evidence the
 operator conditioned adoption on.
 
+> **DONE 2026-08-12 — verdict GO for SCC-128.** Best-of-3 interleaved on the SCC-110 diff:
+> incumbent mean 304.7 s, engine 337.6 s (+10.8 %) — the ≤ bar as written was NOT met; the
+> operator amended the rule mid-trial (*better process + more accurate wins if close in time*)
+> and ruled GO on it. Per-lens attribution: the whole gap is the lenses consuming the 16 KB
+> evidence pack, two-thirds of it in the Blind Hunter. Evidence:
+> `_artifacts/_main/2026-08-12_scc-124-baseline-trial/` (walkthrough + scoring + 6 run records).
+> Trial-found defects in landed SCC-110 code → ticketed **SCC-136**, run by a parallel team.
+
 ### SCC-125 — Prompt transplant (recall-first)
 pr-af three FP gates + severity rubric + evidence-chain format + "what's NOT in the diff" +
 author-intent engagement rule (research doc Appendix B) onto the **hunter lenses only**
@@ -98,6 +106,11 @@ author-intent engagement rule (research doc Appendix B) onto the **hunter lenses
   recall 0.69→0.52. Our reviewer applies fixes, so noise is cheap and misses are expensive.
 - Every lens prompt states: the evidence pack is a starting point, NOT the search space; live-file
   verification beats the pack (anti shared-anchor bias).
+- **Two SCC-124-measured inputs (2026-08-12): (1) stop priming the Blind Hunter with the pack** —
+  step-01 currently primes every lens, which contradicts that lens's context-starvation design AND
+  cost +38.6 s of the trial's +33.0 s total gap (per-lens table in the SCC-124 scoring). Pack the
+  repo-access lenses only. **(2) Rebalance the pack's per-file budget** — the 16 k cap truncated
+  `task_preflight.py` to 11 of 686 lines while fully quoting smaller files (B2 meta-finding).
 
 ### SCC-126 — 5th lens: literal-correctness
 Port `deepen_findings` discipline (harnesses.py:1524): resolve every symbol the changed code leans
