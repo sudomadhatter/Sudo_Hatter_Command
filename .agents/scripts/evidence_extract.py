@@ -711,15 +711,51 @@ def _dedupe(values: list[str]) -> list[str]:
 
 
 # ── Mode 1: the pre-lens pack ─────────────────────────────────────────────────
+def _render_pack_block(rel: str, context: str, body_lines: list[str], total: int) -> str:
+    """One file's pack block. The truncation label always states what is ACTUALLY shown.
+
+    Import context goes ABOVE the body, which is a deliberate deviation from the port. pr-af
+    appends it, then truncates the assembled blob -- and one 400-line file fills the whole budget
+    on its own, so the context is cut off the end. Caught by running this on a real file in this
+    repo (`wf_common.py`, 16093 bytes, IMPORTED BY truncated away). Keeping it above means what
+    trimming eats is body lines rather than the dependency map, which is the highest value per
+    byte in the pack and the reason a lens is primed at all.
+    """
+    shown = len(body_lines)
+    trunc = f" (showing first {shown} of {total})" if shown < total else ""
+    block = f"### {rel}{trunc}"
+    if context:
+        block += f"\n_import/usage context:_ {context}"
+    return block + "\n```\n" + "\n".join(body_lines) + "\n```"
+
+
+def _fair_shares(sizes: list[int], available: int) -> list[int]:
+    """Split `available` chars across blocks: small blocks keep all, big ones divide the rest.
+
+    Water-filling, smallest first. The port simply sliced the assembled blob at _PACK_MAX_CHARS,
+    which spends the budget first-come: SCC-124's baseline trial caught a real run packing
+    `task_preflight.py` at 11 of its 686 lines while quoting smaller files in full, so the lens
+    was primed to believe the largest file in the change set was a stub. The TOTAL cap is
+    unchanged -- only its distribution is.
+    """
+    shares = [0] * len(sizes)
+    remaining, left = available, len(sizes)
+    for i in sorted(range(len(sizes)), key=lambda j: sizes[j]):
+        shares[i] = max(0, min(sizes[i], remaining // left if left else 0))
+        remaining -= shares[i]
+        left -= 1
+    return shares
+
+
 def build_pack(repo: str, target_files: list[str]) -> str:
     """Pre-read a lens's target files (+ import context) so it reasons over a primed dossier."""
     if not repo or not target_files:
         return ""
-    blocks: list[str] = []
+    parts: list[tuple[str, str, list[str], int]] = []
     for raw in target_files:
         # The cap counts files PACKED, not files asked for: slicing the request first let six
         # bad paths evict the one real file and produce an empty pack with a clean exit.
-        if len(blocks) >= _PACK_MAX_FILES:
+        if len(parts) >= _PACK_MAX_FILES:
             _note(f"pack: file cap ({_PACK_MAX_FILES}) reached; remaining targets skipped")
             break
         rel = _resolve_rel(repo, raw)
@@ -735,24 +771,39 @@ def build_pack(repo: str, target_files: list[str]) -> str:
             _note(f"pack: skipped (empty or unreadable): {raw}")
             continue
         shown = lines[:_PACK_MAX_LINES]
-        body = "\n".join(f"{i + 1}: {line.rstrip()}" for i, line in enumerate(shown))
-        trunc = (f" (showing first {_PACK_MAX_LINES} of {len(lines)})"
-                 if len(lines) > _PACK_MAX_LINES else "")
-        # Import context goes ABOVE the body, which is a deliberate deviation from the port.
-        # pr-af appends it, then truncates the assembled blob at _PACK_MAX_CHARS -- and one
-        # 400-line file fills that budget on its own, so the context is cut off the end. Caught
-        # by running this on a real file in this repo (`wf_common.py`, 16093 bytes, IMPORTED BY
-        # truncated away). The caps are pinned and unchanged; only the ORDER changed, so what
-        # truncation eats is body lines rather than the dependency map -- which is the highest
-        # value per byte in the whole pack and the reason a lens is primed at all.
-        block = f"### {rel}{trunc}"
-        context = _build_import_context(repo, rel)
-        if context:
-            block += f"\n_import/usage context:_ {context[:_PACK_IMPORT_SLICE]}"
-        block += f"\n```\n{body}\n```"
-        blocks.append(block)
-    if not blocks:
+        body = [f"{i + 1}: {line.rstrip()}" for i, line in enumerate(shown)]
+        context = _build_import_context(repo, rel)[:_PACK_IMPORT_SLICE]
+        parts.append((rel, context, body, len(lines)))
+    if not parts:
         _note(f"pack: nothing packed — none of the {len(target_files)} target(s) was readable")
+        return ""
+
+    full = [_render_pack_block(*p) for p in parts]
+    separators = 2 * (len(full) - 1)
+    if sum(len(b) for b in full) + separators <= _PACK_MAX_CHARS:
+        return "\n\n".join(full)
+
+    shares = _fair_shares([len(b) for b in full], _PACK_MAX_CHARS - separators)
+    blocks: list[str] = []
+    for (rel, context, body, total), whole, share in zip(parts, full, shares):
+        if len(whole) <= share:
+            blocks.append(whole)
+            continue
+        # Trim whole LINES, never mid-line: a lens reading half a statement reasons about a
+        # syntax error that is not in the file. Estimate the fit, then step back until it holds
+        # -- the label's own digit count changes as lines drop, so the estimate can overshoot.
+        overhead = len(_render_pack_block(rel, context, [], total))
+        keep, size = 0, overhead
+        for n, line in enumerate(body, 1):
+            size += len(line) + 1
+            if size > share:
+                break
+            keep = n
+        while keep and len(_render_pack_block(rel, context, body[:keep], total)) > share:
+            keep -= 1
+        _note(f"pack: {rel} trimmed to {keep} of {len(body)} packed lines to share the "
+              f"{_PACK_MAX_CHARS}-char budget across {len(parts)} file(s)")
+        blocks.append(_render_pack_block(rel, context, body[:keep], total))
     return "\n\n".join(blocks)[:_PACK_MAX_CHARS]
 
 
