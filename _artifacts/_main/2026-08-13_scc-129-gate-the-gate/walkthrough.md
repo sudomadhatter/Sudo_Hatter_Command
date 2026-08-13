@@ -252,6 +252,13 @@ Exactly additive — nothing displaced another file's tests.
 ⚠ **Both count lines will go stale when SCC-144 lands** — see the landing-order note below. That is
 the same silent rot `scripts/INDEX.md`'s own text warns about, now with a named owner.
 
+> ✅ **This happened, and it is discharged.** SCC-144 landed at `ba062a0`; both count lines were
+> stale exactly as predicted and both are re-measured at `9c7e684`. Two corrections to the
+> prediction: the owner was this lane, not SCC-144 — and the overlap was **three** files, not two.
+> The third is `_artifacts/_main/INDEX.md`, which *conflicted* rather than auto-merging, because
+> SCC-144 had not yet written its ledger row when this note measured the sibling at `91218aa`. An
+> overlap map taken against a lane still under construction is a snapshot, not a forecast.
+
 ## What the control found in its own fixture
 
 The control was pointed at the fixture that houses it, and it found six real defects in this lane's
@@ -335,6 +342,15 @@ real bugs, and the missing step was verification, not a quieter subject.
 Verdict: CONCERNS @ b3b3e48a08c131768ec39a60d611eaa3e010dc7f
 Suite evidence measured at b3b3e48a08c131768ec39a60d611eaa3e010dc7f — run_all 22/22 files, 1769/1769 cases, exit 0.
 
+> ⚠ **Left standing on purpose — it described a tree that no longer exists.** SCC-144 landed after
+> this verdict was taken and this lane absorbed it; the suite is now 23 files / 1861 cases, green at
+> `9c7e684` ([§Post-absorb re-measurement](#post-absorb-re-measurement--at-9c7e684)). **The verdict
+> itself survives the absorb unchanged, and that is a claim worth checking rather than assuming:**
+> the cap is contamination in the *live-control fan-out*, a property of how those two runs were
+> measured, not of anything in `main`. SCC-144 touched git hooks and dispatchers and nothing in the
+> review engine or the fixture, so there is no path by which absorbing it clears or worsens this.
+> Only the suite line above went stale.
+
 **Scope:** the lane's own `main...HEAD` diff (16 files, 1520 lines at review time).
 **Method:** `/smh-code-review` Step 1 invoked the `code-review-engine` on this diff — the
 integration test the ticket asks for. Three lenses ran (Blind, Literal-Correctness, and a combined
@@ -388,6 +404,10 @@ exact defect the fixture exists to detect, and the engine caught it.
 
 ### Gates
 
+⚠ **Measured pre-absorb, at `b3b3e48`.** SCC-144 has since landed on `main` and this lane absorbed
+it; the suite is now 23 files. The numbers below described the tree they were taken on and are left
+standing — the shipping figures are in [§Post-absorb re-measurement](#post-absorb-re-measurement--at-9c7e684).
+
 | Gate | Result |
 |---|---|
 | Enforcement suite | `run_all.py` — **22/22 files, 1769/1769 cases, exit 0** |
@@ -410,20 +430,84 @@ exact defect the fixture exists to detect, and the engine caught it.
    so both count lines go stale the moment it lands while git reports a clean merge. **SCC-144 owns
    re-measuring them.**
 
+   > ⛔ **This conclusion was overruled, and the reversal was right.** SCC-144 landed FIRST, at
+   > `ba062a0`. The "gate machinery lands last" rule this cited is not written anywhere — grepping
+   > `.agents/rules/` and `smh-close-task-merge-tree.md` for it returns nothing, so it was precedent
+   > repeated as law. The actual argument runs the other way: SCC-144 arms the first guard in this
+   > system that checks the branch you merge *into*, two worktree→`main` merges were imminent, and
+   > landing it second would have left that guard blind through exactly the window it exists for.
+   > **The hazard named above was real and arrived on schedule; only its owner was wrong.** It is
+   > this lane's, and it is discharged below. Being wrong about *who* while right about *what* is
+   > the note doing its job — the stale count was inherited rather than rediscovered.
+
+## Post-absorb re-measurement — at `9c7e684`
+
+`main` moved to `ba062a0` (SCC-144) and this lane absorbed it at `9c7e684`. Three files overlapped,
+exactly the set predicted, and **the third is the one that mattered**:
+
+| File | git's view | Reality |
+|---|---|---|
+| `.agents/scripts/INDEX.md` | CONFLICT | Both sides rewrote the same count sentence. Re-measured, not picked. |
+| `_artifacts/_main/INDEX.md` | CONFLICT | Pure position collision — base empty, each lane added its own row. Both kept, SCC-129 above SCC-144 per SCC-95's same-day tie-break (later-landing on top). |
+| `docs/_scc_sops_prds/workflows_testing_SOP.md` | **auto-merged clean** | **Still wrong.** SCC-144 added gate rows in one region while this lane rewrote the count sentence in another, so git saw no conflict and left `1769 checks across 22 files` standing in the operator's SOP page. |
+
+That third row is the whole point of the warning above. A conflict announces itself; an auto-merge
+does not, and the file most likely to carry a stale number is the one git will never stop you on.
+
+**Shipping gates, every command run bare** (a pipe returns the *pipe's* exit code, which is how a
+red gate reads green — and `${PIPESTATUS[0]}` is bash-only, so under zsh it reads empty, not wrong):
+
+```
+python3 .agents/scripts/tests/run_all.py                     -> 23/23 files, 1861/1861 cases, EXIT=0
+python3 .agents/scripts/workflow_lint.py --toolkit-only      -> 0 error(s), 0 warning(s), 8 info, EXIT=0
+python3 .agents/scripts/check_maps.py --depth3-only --strict -> EXIT=0
+python3 .agents/scripts/hooks_armed.py --repo .              -> ARMED, core.hooksPath=.githooks
+```
+
+**Additivity re-measured across both lanes, not inherited:**
+
+```
+main @ 5dadcd6:   21 files, 1702 cases   (the base both lanes branched from)
++ SCC-129:        +1 file,   +67 cases   (test_review_fixture.py)
++ SCC-144:        +1 file,   +92 cases   (test_git_hooks.py + its test_hooks_armed.py rows)
+                  ------------------
+merged @ 9c7e684: 23 files, 1861 cases   measured
+```
+
+1702 + 67 + 92 = 1861 exactly. **Neither lane displaced the other's tests** — worth checking rather
+than assuming, because both landed a new file into an auto-discovered suite and both edited the
+count line that describes it.
+
+⭐ **This merge is the first real-world exercise of SCC-144's guard, and it exercised the ALLOW
+half.** `main → chore/SCC-129-gate-the-gate` is a legal absorb under the branch model, the guard
+was armed (`hooks_armed` confirms the hook path and all four arm flags), and it passed silently —
+which is what a correct allow looks like. Worth stating precisely, because SCC-144's own record
+says the expensive failure here is the false red, and this lane had no false red. The REFUSE half
+gets its first live exercise at close-out, when a lane merges to `main`.
+
 ## Your Actions
 
 Everything agent-solvable is done. What remains is genuinely the operator's:
 
 - [ ] **Close out and merge** — `/smh-close-task-merge-tree`. Invoking it IS the merge sign-off;
-      one invocation authorises exactly one merge. **Land this lane BEFORE `chore/SCC-144-merge-target-guard`**
-      (Step 0.7 §3: SCC-144 changes push machinery, which the standing rule forces to the end).
-- [ ] **Decide whether the CONCERNS is worth clearing before the merge.** The cap is the contaminated
-      live evidence, and the remedy is one clean re-run of both arms under the now-pinned prohibition
-      with `DIFF` passed as a path — appended to `live_runs.jsonl`, whose new `key_read` field exists
-      to record that it was clean. The fixture, the guard and every gate are landed and green either
-      way; only that measurement is owed. **This is a judgement call about evidence, not a defect.**
-- [ ] **Hand SCC-144 the count-line dependency** — it lands second, adds a 23rd test file, and
-      therefore owns re-measuring both count lines. Recorded in Step 0.7 §3.
+      one invocation authorises exactly one merge. SCC-144 has already landed (`ba062a0`), this lane
+      has absorbed it, and the merged tree is certified green at `9c7e684`. Nothing is queued behind
+      it. ⚠ **This will be the first live exercise of SCC-144's REFUSE half** — if the merge-target
+      guard produces a false red, `git merge --no-verify` is its own documented, auditable override,
+      but it is worth knowing that it *fired* rather than routing around it silently.
+- [ ] **Decide whether the CONCERNS is worth clearing before the merge.** Unchanged by the absorb
+      and deliberately not actioned here: the remedy is a live LLM fan-out, and re-running both arms
+      is a fresh measurement, not a mechanical step. The cap is the contaminated live evidence, and
+      the remedy is one clean re-run of both arms under the now-pinned prohibition with `DIFF` passed
+      as a path — appended to `live_runs.jsonl`, whose `key_read` field exists to record that it was
+      clean. The fixture, the guard and every gate are landed and green either way; only that
+      measurement is owed. **This is a judgement call about evidence, not a defect.**
+- [ ] **Optional, and not this lane's to fix:** SCC-144's ledger row in `_artifacts/_main/INDEX.md`
+      reads *"52 cases … 14/14 mutants killed"*, which was true at its build and not at its landing —
+      its own merge commit records `52 -> 90` cases after the review added 38. It is a landed row
+      belonging to another ticket, and nothing in this lane's reconciliation invalidated it, so it
+      was left exactly as found rather than quietly rewritten. Flagged, not patched.
 
 Agent-side, already done: all 8 applied review findings, the 3 recorded ones, both count-line
-refreshes, the ledger row, the artifacts, and the operator-requested [rework audit](rework-audit.md).
+refreshes, the ledger row, the artifacts, the operator-requested [rework audit](rework-audit.md),
+and the absorb + reconcile + re-certification recorded above.
