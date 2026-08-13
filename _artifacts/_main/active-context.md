@@ -136,36 +136,6 @@ Session: `_artifacts/_main/2026/07/2026-07-23_update-maps-indexes/`.
 Refined product GitNexus index scope to exclude development/testing tooling (`load/`, `scripts/`, `_test_scripts/`, `auth_keys/`, `scratch/`, and root scripts) from indexing. Documented the new scope in `Projects/AGY_AVIATIONCHAT/docs/gitnexus.md`. Created a new guide [docs/gitnexus-sync.md](file:///c:/Users/dlohn/.gemini/antigravity/scratch/Sudo_Hatter_Command/docs/gitnexus-sync.md) explaining how the index files are machine-local and do not sync via Git, with instructions for re-indexing other machines. Executed GitNexus analysis on lobby (`Sudo_Hatter_Command`) and product project (`AGY_AVIATIONCHAT`), successfully updating local indexes. Regenerated content-mode AUTO blocks for both repo-maps, and resolved a missing debug index row drift for `password-reset-fix`. Verify maps checks clean (`exit 0`).
 Session: `_artifacts/_main/2026/07/2026-07-14_update-gitnexus-graphs/`.
 
-**2026-07-09: Docs truth-sync + root-law slim DONE — audits passed, drift fixed, canary green.**
-Transcript-vs-setup audit: R1–R8 met/exceeded (architecture sound); `/1_update-maps` prune verified
-**move-never-delete** (workflow prose + Step-4 gate + `consume()` archives before rewriting). Doc-drift fixes:
-`master-implementation-plan.md` (status→built-live, "how to read" banner, §2 tree real names/paths, §4 as-built
-§1–§8, §7 historical, new §8 entry), guide `file_folder_structure+maintaining.md` (hook table → 4 SessionStart +
-PreToolUse, workspace table synced to router, diagram +`_my_resources`/`_bmad`), `router.md` transcript path.
-Root `AGENTS.md` slimmed: grep mechanics → **NEW `.agents/rules/lobby-search.md`** (trigger stays inline §6;
-includes the Glob-blind-in-Projects caveat; rules INDEX row added), git-write gate 10→4 lines; §4 +2 rows.
-Reconciled: repo-map AUTO regen, `_main` depth-3 INDEX +6 rows, NEW `_artifacts/AGY_AVIATIONCHAT/INDEX.md` +
-`_bmad-output/brainstorming/INDEX.md`. **Canary GREEN post-slim** (entry path only → "done boss", Power.md
-verified + reset). Per Daniel's memos: **bmad-\* skills + `.agent/` left alone.** OWED (Daniel): explicit-path
-commit (other lanes' sudo-\* edits in tree — never `git add -A`) → `--set-anchor` → `/sync-agents` (vendors
-lobby-search + fills `.claude`/`.opencode` command INDEXes) → GitNexus re-index → `check_maps_output.txt` call
-(TRACKED: delete vs `git rm --cached`+ignore). Surfaced: stray `Projects/aviationChat-AGY/` non-workspace dir.
-Session: `_artifacts/_main/2026/07/2026-07-09_system-docs-truth-sync/`.
-**2026-07-04: Tier-2 per-project rollout DONE — the 07-03 session's flagged follow-up is closed.**
-AGY_AVIATIONCHAT + Fresh_Workspace_BMAD each carry their 9 Tier-2 files (`_artifacts/`, `_my_resources/`,
-`docs/` — local-law `AGENTS.md` + `CLAUDE.md`/`GEMINI.md` adapters, bodies digested from each project's own
-canon: AGY keeps `tea/`/local `_main/`/GitNexus-exclusion note, Fresh has neither `tea/` nor GitNexus),
-vendored `docs/workspace-standard.md` refreshed hash-identical to lobby canon, reading-order rule in each
-root `AGENTS.md` §2, one-doc close aligned (root §5 + `_artifacts/README.md`), repo-map AUTO regenerated
-(mode-preserving). Verified: check 8 `[ok] (redirects verified)` in both + AGY negative test; AUTO freshness
-`[ok]` ×2. Untouched pre-existing backlog: AGY 14 depth-3 INDEX gaps + stale GitNexus index (re-index AFTER
-committing), Fresh dead curated `_bmad/bmm/stories` — a future `/1_update-maps` run's work. Check 8 can go
-hint→fatal only after the 3 unconverted projects (B-L, NEXGen, OpenChat) get Tier-1 brains.
-Session: `_artifacts/_main/2026/07/2026-07-04_tier2-project-rollout/`. Git: AGY committed `dc58a20e` (bundled into
-story 8.23.2's commit by the live story lane — content diff-verified intact; two-lanes convergence again,
-cf. 8.22.2), Fresh committed `52a5c93` **on `main`** (not `main_debug` — flagged); lobby session files
-staged, awaiting Daniel's commit + `--set-anchor` (cmds in walkthrough; per-project set-anchor + AGY
-re-index owed after the 8.23.2 lane settles).
 ## 5. PICK UP  (read-only brief)
 - 5.1 Doing: map/index maintenance is complete; no process is running.
 - 5.2 Changed this session: regenerated three declared-mode AUTO map blocks; added the missing lobby and AGY artifact-ledger rows; created the AGY `frontend/test-results/INDEX.md` and `epic_debug_2/INDEX.md` inventories; verified fan-out lint clean.
