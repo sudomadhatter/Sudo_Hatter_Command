@@ -90,12 +90,27 @@ Assertions: grep for the two vendor spellings over the AP file = 0 hits · `work
 source — never hand-edited). Then the full suite bare (no pipes): `run_all.py`, `workflow_lint.py
 --toolkit-only`.
 
-### Step E — stopwatch, on THIS branch, before any SCC-127 content arrives
-Re-run the SCC-124 measurement (same SCC-110 diff, same best-of-N protocol from
-`_artifacts/_main/2026-08-12_scc-124-baseline-trial/`) with the 5-lens engine. Record wall-clock in
-the walkthrough. Bar (ticket text): ≤ the SCC-124 baseline; a miss is a regression to fix **here**,
-where it is still attributable to this lens. Ordering is load-bearing: SCC-127's verify wave adds
-its own wall-clock, so measuring after a merge from that lane destroys attribution.
+### Step E — stopwatch — ⛔ CLOSED BY OPERATOR RULING (2026-08-13), not run
+
+The ticket asked for a re-run of the SCC-124 measurement against the 5-lens engine, with the bar
+`≤ the SCC-124 baseline`. **The operator ruled that question already answered and directed the
+lane to skip the re-measurement:** *"we already did this, it passes the stopwatch test, we are
+developing and switching, it is much more accurate."*
+
+That is the SCC-124 amended acceptance rule applied a second time, to the same trade and by the
+same authority that amended it: *a better process that is more accurate wins if the two are close
+in time.* SCC-124 measured the 4-lens engine at 337.6 s vs the incumbent's 304.7 s (+10.8 %),
+recorded the original `≤` bar as **NOT met**, and ruled **GO** on the amendment. Adoption is
+therefore already decided on accuracy, and this lens is the largest single accuracy gain in the
+epic — it is the only lens that checks whether the code is correct as literally written.
+
+**What this costs, recorded honestly rather than buried:** there is now no measured wall-clock
+figure for the 5-lens engine. This lens joins an existing parallel wave, so it adds wall-clock only
+if it becomes the *slowest* member of that wave — the four caps in Step B exist precisely to bound
+that, and `capped` mode binds it hardest where it would multiply (overnight). The attribution
+window is also gone: once SCC-127's verify wave lands, no later measurement can separate this
+lens's cost from that wave's. Anyone wanting the number must take it against the whole 5-lens
+engine, as a property of the engine rather than of this lens.
 
 ## Landing order + cross-lane facts (carried from Step 0.5 sibling scan)
 - All three lanes append to `test_review_engine.py` — trivial textual merges, later lanes rebase.
