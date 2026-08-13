@@ -1,0 +1,71 @@
+{
+  "_negative_control": true,
+  "id": "NC_REVIEW_ENGINE",
+  "ticket": "SCC-129",
+  "subject": ".agents/skills/code-review-engine/",
+  "guard": ".agents/scripts/tests/test_review_fixture.py",
+  "base": "codebase/",
+  "bad_diff": "bad.diff",
+  "clean_diff": "clean.diff",
+  "spec": "spec.md",
+  "clean_spec": "spec-refunds.md",
+  "why_two_specs": "ONE SPEC PER CHANGE, and the live control found this the hard way. A single spec covering both diffs made the Acceptance Auditor correctly report every section the diff in front of it did not implement - harmless noise on bad.diff, fatal on clean.diff, where three 'missing implementation' findings would have failed the clean control and measured the fixture's spec-scoping rather than the engine. Each diff is now audited against the spec for THAT change, which is what a real review does.",
+  "expected_floor_bad": "FAIL",
+  "expected_floor_clean": "none",
+  "note": "One seeded defect per lens, so the live control also proves each of the five lenses is ALIVE. A lens that silently stopped working is otherwise invisible. The guard beside this file asserts INTACTNESS only; it never asserts an LLM found anything. See README.md.",
+  "defects": [
+    {
+      "id": "NC_BLIND",
+      "lens": "blind",
+      "title": "invoice_total subtracts the tax its own docstring says is included",
+      "file": "codebase/billing.py",
+      "expected_severity": "critical",
+      "diff_must_contain": "subtotal - tax_amount",
+      "why_this_lens": "Provable from the diff text alone: the unchanged docstring says the total includes tax, the removed line added it, the added line subtracts it. No repo access needed, which is what the Blind Hunter has.",
+      "failure_scenario": "Every invoice silently bills subtotal minus tax instead of subtotal plus tax - a wrong number that never raises."
+    },
+    {
+      "id": "NC_EDGE",
+      "lens": "edge",
+      "title": "unit_price divides by an unguarded quantity",
+      "file": "codebase/billing.py",
+      "expected_severity": "important",
+      "diff_must_contain": "total / quantity",
+      "why_this_lens": "A boundary condition on a new input, with no guard on the path. spec.md section 1 states a zero quantity must not surface as ZeroDivisionError out of the billing layer.",
+      "failure_scenario": "quantity=0 raises ZeroDivisionError out of the billing layer."
+    },
+    {
+      "id": "NC_LITERAL",
+      "lens": "literal",
+      "title": "helpers.parse is called with a keyword argument that does not exist",
+      "file": "codebase/billing.py",
+      "expected_severity": "critical",
+      "diff_must_contain": "helpers.parse(raw, strict=True)",
+      "why_this_lens": "Catchable ONLY by opening the real definition in codebase/helpers.py, which bad.diff does not touch. The changed line looks entirely reasonable on its face - the symbol-level assumption failure the Literal-Correctness Hunter exists for.",
+      "failure_scenario": "load_line_items raises TypeError on every call: parse() got an unexpected keyword argument 'strict'."
+    },
+    {
+      "id": "NC_ACCEPT",
+      "lens": "acceptance",
+      "title": "record_payment clamps a negative amount the spec says MUST raise",
+      "file": "codebase/billing.py",
+      "expected_severity": "critical",
+      "diff_must_contain": "amount = 0.0",
+      "spec_must_contain": "MUST raise ValueError",
+      "why_this_lens": "Only a defect RELATIVE to spec.md section 2 - the code is internally consistent and looks defensive. Without the spec in hand there is nothing to catch, which is why the Acceptance Auditor is the designated lens and why the clause it violates is pinned too.",
+      "failure_scenario": "A negative payment is recorded as zero instead of raising: the ledger reconciles to a transaction that did not happen, and nothing downstream looks for it again."
+    },
+    {
+      "id": "NC_TESTADQ",
+      "lens": "test-adequacy",
+      "title": "new deterministic billing logic ships with no test at any tier",
+      "file": "codebase/billing.py",
+      "expected_severity": "important",
+      "diff_must_contain": "def unit_price(",
+      "spec_must_contain": "carries a fast unit test covering its guard clauses",
+      "why_this_lens": "spec.md section 4 requires a unit test for every deterministic function added, in the same change. bad.diff adds three (and rewrites a fourth) and tests none.",
+      "failure_scenario": "Three new deterministic functions plus a rewritten invoice_total land with zero coverage at any tier; the next change to them has nothing to break.",
+      "asserted_as": "The marker pins the new logic that ought to have been tested. The gap itself is ABSENCE, which no marker can prove, so the guard also asserts the property: bad.diff names no test file, and clean.diff does."
+    }
+  ]
+}

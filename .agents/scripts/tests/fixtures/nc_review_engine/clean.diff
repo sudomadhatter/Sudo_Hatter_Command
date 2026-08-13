@@ -1,0 +1,122 @@
+diff --git a/.agents/scripts/tests/fixtures/nc_review_engine/codebase/billing.py b/.agents/scripts/tests/fixtures/nc_review_engine/codebase/billing.py
+index 512c257..638b6e7 100644
+--- a/.agents/scripts/tests/fixtures/nc_review_engine/codebase/billing.py
++++ b/.agents/scripts/tests/fixtures/nc_review_engine/codebase/billing.py
+@@ -11,6 +11,8 @@ noise to every hunk without changing anything this fixture exists to test.
+ """
+ from __future__ import annotations
+ 
++import math
++
+ TAX_RATE = 0.08
+ 
+ 
+@@ -27,3 +29,27 @@ def invoice_total(subtotal: float) -> float:
+ def new_ledger() -> dict:
+     """A fresh, empty payment ledger."""
+     return {"paid": 0.0}
++
++
++def refund(ledger: dict, amount: float) -> dict:
++    """Refund `amount` against `ledger`, per the refunds spec.
++
++    Amounts are floats rounded to two places, matching `invoice_total` above — the module's
++    stated convention, not an oversight in this change.
++
++    `NaN` is rejected explicitly because it is the one value the guards below cannot catch:
++    `nan < 0` and `nan > paid` are both False, so it would fall straight through into the
++    ledger, after which every later comparison against that balance is False forever. `±inf`
++    is already caught by those two guards; rejecting it here as well only buys a truthful
++    error message instead of a misleading one. Both reach us from `json.loads`, which accepts
++    them by default.
++    """
++    if not math.isfinite(amount):
++        raise ValueError("refund amount must be a finite number")
++    if amount < 0:
++        raise ValueError("refund amount must not be negative")
++    paid = ledger.get("paid", 0.0)
++    if amount > paid:
++        raise ValueError("refund exceeds the amount paid")
++    ledger["paid"] = round(paid - amount, 2)
++    return ledger
+diff --git a/.agents/scripts/tests/fixtures/nc_review_engine/codebase/test_billing.py b/.agents/scripts/tests/fixtures/nc_review_engine/codebase/test_billing.py
+new file mode 100644
+index 0000000..cfa7580
+--- /dev/null
++++ b/.agents/scripts/tests/fixtures/nc_review_engine/codebase/test_billing.py
+@@ -0,0 +1,75 @@
++"""Unit tests for the refund guard clauses.
++
++Fixture data: `run_all.py` globs `test_*.py` one level deep in the tests directory, so nothing
++here is ever collected or executed.
++
++Each case is written to DIE on a specific regression, not merely to pass: the boundaries are
++stood on (an exact full refund is legal, zero is legal), every rejection asserts the ledger was
++left untouched as well as that it raised, and the non-finite case asserts WHICH guard rejected
++it — without that, `inf` is caught by the over-refund guard and the case proves nothing about
++the guard it is named for.
++"""
++from __future__ import annotations
++
++import billing
++
++
++def test_refund_reduces_the_paid_total() -> None:
++    assert billing.refund({"paid": 50.0}, 20.0)["paid"] == 30.0
++
++
++def test_refund_rounds_the_result_to_two_places() -> None:
++    # Drop the round() and this is 0.19999999999999998.
++    assert billing.refund({"paid": 0.30}, 0.10)["paid"] == 0.2
++
++
++def test_refund_returns_the_very_ledger_it_mutated() -> None:
++    ledger = {"paid": 50.0}
++    assert billing.refund(ledger, 20.0) is ledger
++    assert ledger["paid"] == 30.0
++
++
++def test_refund_allows_a_zero_amount() -> None:
++    # Only NEGATIVE amounts are caller errors, so `< 0` must not creep to `<= 0`.
++    assert billing.refund({"paid": 50.0}, 0.0)["paid"] == 50.0
++
++
++def test_refund_allows_an_exact_full_refund() -> None:
++    # Only refunds LARGER than paid are errors, so `> paid` must not creep to `>= paid`.
++    assert billing.refund({"paid": 50.0}, 50.0)["paid"] == 0.0
++
++
++def test_refund_treats_a_missing_paid_key_as_zero() -> None:
++    assert billing.refund({}, 0.0)["paid"] == 0.0
++
++
++def test_refund_rejects_a_negative_amount_and_leaves_the_ledger_alone() -> None:
++    ledger = {"paid": 50.0}
++    try:
++        billing.refund(ledger, -1.0)
++    except ValueError:
++        assert ledger == {"paid": 50.0}
++        return
++    raise AssertionError("a negative refund must raise ValueError")
++
++
++def test_refund_rejects_more_than_was_paid_and_leaves_the_ledger_alone() -> None:
++    ledger = {"paid": 10.0}
++    try:
++        billing.refund(ledger, 25.0)
++    except ValueError:
++        assert ledger == {"paid": 10.0}
++        return
++    raise AssertionError("an over-refund must raise ValueError")
++
++
++def test_refund_rejects_every_non_finite_amount_by_the_finite_guard() -> None:
++    for bad in (float("nan"), float("inf"), float("-inf")):
++        ledger = {"paid": 50.0}
++        try:
++            billing.refund(ledger, bad)
++        except ValueError as exc:
++            assert "finite" in str(exc), f"{bad} was rejected by the wrong guard: {exc}"
++            assert ledger == {"paid": 50.0}
++            continue
++        raise AssertionError(f"a {bad} refund must raise ValueError")

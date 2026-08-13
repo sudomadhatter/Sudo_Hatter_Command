@@ -1,8 +1,13 @@
-# Billing: line items, payments and refunds — the spec for the fixture change
+# Billing: line items and payments — the spec for THIS change
 
-This is the `STORY_FILE` for the review engine's negative control (SCC-129). The two diffs beside
-it are proposed changes to `codebase/`, and this document is what the engine's **Acceptance
-Auditor** audits them against. It is fixture data: no real work is specified here.
+This is the `STORY_FILE` for one change to `codebase/` in the review engine's negative control
+(SCC-129). It specifies line items, payments and totals, and nothing else. Refunds are a separate
+change with its own spec (`spec-refunds.md`) — **a reviewer holding this document should not
+expect refunds in the diff it is auditing, and vice versa.**
+
+Keeping one spec per change is not bookkeeping: an auditor handed a spec covering work that is not
+in front of it correctly reports every unimplemented section as a gap, which is a finding about
+the pairing rather than about the code.
 
 ## 1. Line items
 
@@ -23,23 +28,17 @@ never be clamped, coerced to zero, or silently ignored. A clamped negative payme
 transaction that did not happen, reconciles to the wrong number, and nothing downstream is looking
 for it again — the caller's bug becomes the ledger's bug.
 
-## 3. Refunds
-
-`refund(ledger, amount)` subtracts `amount` from the ledger's `paid` total. Both a negative amount
-and a refund larger than the amount already paid are caller errors and **MUST raise ValueError**,
-for the same reason as §2 — a silently absorbed bad refund is a wrong balance nobody notices.
-
-## 4. Totals
+## 3. Totals
 
 `invoice_total(subtotal)` returns what the customer owes with tax **INCLUDED** — the subtotal
 plus the tax on it.
 
-## 5. Tests
+## 4. Tests
 
 Every deterministic function added under this spec carries a fast unit test covering its guard
 clauses, in the same change that adds it.
 
-## 6. Conventions
+## 5. Conventions
 
 Amounts are floats rounded to two places, matching the existing module. That is a stated fixture
 convention, not an oversight, and a change here is not expected to migrate it.
