@@ -1706,6 +1706,28 @@ ticket that shipped it ([§12](#12-the-board--what-runs-next)).
 > skill list when a chat opens, so a sync mid-chat is invisible until you open a fresh one. Restart
 > opencode for the same reason. And each machine has its own caches, so a sync on the Mac does not
 > reach the PC — run it once on each.
+>
+> ### ⛔ Antigravity has a size cap, and going over it does NOT fail loudly (SCC-135)
+>
+> Antigravity reads its `/` menu from `.agents/workflows/`, and a workflow file over **12,000
+> characters** is **truncated at the cap — not rejected**. That distinction is the whole hazard: a
+> rejected file is an obvious failure, a truncated one *runs* and looks like it worked, because the
+> agent gets a clean-looking opening and no indication anything is missing.
+>
+> **You never have to think about this.** `/smh-sync-agents` measures every command and, over ~11.5 KB,
+> publishes a **thin launcher** to Antigravity instead of a copy — a stub that just says "read the real
+> command and follow it end to end." The command itself can be any size. **Never trim a command to fit
+> the cap**; the sync handles it.
+>
+> **What it looked like when one command escaped that rule.** `/smh-update-maps-indexes` was the only
+> command whose body lived in `workflows/` rather than `commands/`, which exempted it from the launcher
+> rule. At 39,594 characters, Antigravity delivered the header, the target list, Step 0 and half of
+> Step 0.5, cut mid-sentence — 70% of the steps gone, **including the Step 4 approval gate**. It ran the
+> linter, then improvised a partial reconcile and edited files with no findings report and no approval.
+> Fixed by moving the body to `commands/` so it gets a launcher like everything else.
+>
+> **The tell, if you ever see it again:** a command that starts correctly, does the first mechanical
+> thing right, then goes vague, skips its stop-and-ask, and produces a thinner result than it should.
 
 **The story loop** — [§6](#6-the-story-lane)
 
@@ -1768,7 +1790,7 @@ ticket that shipped it ([§12](#12-the-board--what-runs-next)).
 
 | Command | What it does for you |
 |---|---|
-| `/smh-update-maps-indexes` | Reconciles the repo maps, every index, and every cross-reference across the lobby and the maintained projects. It **no longer touches the memory store** — that moved to `/smh-memory-audit` (SCC-68). |
+| `/smh-update-maps-indexes` | Reconciles the repo maps, every index, and every cross-reference across the lobby and the maintained projects. It **no longer touches the memory store** — that moved to `/smh-memory-audit` (SCC-68). ⚠ **Its Antigravity door was broken until SCC-135** and the failure was invisible: this was the one command whose body lived in `.agents/workflows/` instead of `.agents/commands/`, which exempted it from the thin-launcher rule, so Antigravity truncated it at 12,000 chars and the agent ran on the first 30% with no approval gate. If you ran it in Antigravity before 2026-08-12, **re-check what it edited** — a run could reconcile partially and never show you a findings report. It is a normal launcher now. |
 | `/smh-memory-audit` | Cleans up the shared memory store (`_artifacts/_memory/`) — the one document every model on every machine loads *before* doing any work, which is why letting it fill costs you on every session everywhere. It checks each memory's claim against the live repo, then shows you *retire · merge · compress · relocate* with the bytes each frees, and waits. **Nothing is deleted without your yes on that specific item**; git is the undo either way. See the box below. |
 | `/smh-sync-agents` | Publishes the toolkit to all four platforms — one door each. It reaches **the lobby and this machine's caches only**; projects read from the center, so there is nothing to push. It *generates* the Claude/Codex skill door for every command instead of publishing a second command copy beside it, and purges the two retired doors. Hand-written skills are never overwritten. What a command *declares* decides where it publishes — nothing is inferred from its filename any more (SCC-56 fixed five commands that were invisible in Antigravity). |
 | `/smh-slash-command-updating` | A thin alias for the globals-only half of `/smh-sync-agents`. Plain `/smh-sync-agents` does this *and* the local dirs, so prefer it. |
