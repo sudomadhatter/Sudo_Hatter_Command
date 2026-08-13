@@ -1634,6 +1634,29 @@ flowchart TD
 Each stage runs in a **fresh session** so none inherits the previous one's assumptions — the same
 reason ③ hunts blind in the human lane.
 
+**Stage 4 runs the house review engine (SCC-126).** The robot's reviewer no longer carries a review
+of its own: `/cicd-code-review-AP` resolves the inputs — the diff alone first, then one batched
+grounding pull — and hands them to `.agents/skills/code-review-engine/`, which runs its lenses in
+parallel. Nothing changes about what you type. Three things change underneath, and the first is the
+one that actually moves the bill:
+
+- **Stage 4 goes from one agent to an orchestrator plus five lenses.** It used to be a single
+  reviewer asking three questions of context it already held. It is now five independent lenses,
+  three of which are primed with the grounding pull — so the grounding material is read several
+  times over rather than once. That is the real cost increase, and it is the price of the
+  independence: lenses that cannot see each other cannot inherit each other's blind spots.
+- **A fifth lens hunts literal correctness** — for every changed line it opens the real definition of
+  each symbol that line leans on and checks the assumption actually holds. The other four lenses are
+  high-altitude by design and glide over exactly this, which is where most missed defects live.
+- **That fifth lens is the only one whose cost is unbounded by nature, so overnight it runs
+  `lens_budget: capped`**: diff-scoped, 20 changed files, patch material spilled to a file past
+  ~9,000 characters, and no top-up. Typed by hand it runs `standard` — the same caps, plus one
+  top-up it has to earn by naming the file it wants and why. ⚠️ **`lens_budget` is not
+  `review_mode`**: an autopilot review is normally `review_mode: full` *and* `lens_budget: capped`
+  at once, and reading the first as permission to relax the second is the expensive mistake. **The
+  caps live once, inside the engine's own step-01** — a caller names its budget and never restates
+  the numbers, because a cap each caller repeats is a cap that drifts.
+
 **It's resumable.** Re-run the launcher and it works out which stages finished by looking for their
 *sections inside* those two documents, not for the files themselves. A half-written plan doesn't
 count as a finished plan.

@@ -568,25 +568,30 @@ def main() -> int:
         c.check("SCC-128 E the error names the replacement engine",
                 "code-review-engine" in res_msgs(rep), res_msgs(rep)[:140])
 
-        # F. ⭐ The live tree. `cicd-code-review-AP.md` is the ONE allowed hit while it is
-        #    unlanded: its rewire is SCC-126's (operator-approved scope transfer), so this
-        #    lane may not edit it. The exemption lives HERE and not in the linter on
-        #    purpose - `workflow_lint --toolkit-only` stays honestly RED on that file, so
-        #    the violation is visible at every gate instead of being silently allowed,
-        #    while run_all.py (the floor every lane runs) stays green.
+        # F. ⭐ The live tree. This case carried a one-file exemption while SCC-126 was
+        #    unlanded: `cicd-code-review-AP.md` was the ONE allowed hit, because its rewire
+        #    was SCC-126's (operator-approved scope transfer) and this lane may not edit it.
+        #    The exemption lived HERE and not in the linter on purpose - `workflow_lint
+        #    --toolkit-only` stayed honestly RED on that file, so the violation was visible
+        #    at every gate instead of being silently allowed, while run_all.py stayed green.
         #
         #    ⛔ The list is EXACT, and the first draft's `all(o == ...)` was not: `all()`
         #    over an empty set is True, so that form passed against a detector gutted to
         #    `return` - the one case touching the real tree could not fail for the reason
-        #    it exists. Exact-match also makes the carve-out SELF-EXPIRING: when SCC-126
-        #    lands, this goes red and whoever is here deletes the exemption instead of
-        #    inheriting a permanent silent hole in the floor.
+        #    it exists. Exact-match also made the carve-out SELF-EXPIRING.
+        #
+        #    ⭐ IT EXPIRED, AS DESIGNED (2026-08-13, landing set 126->127->128). SCC-126
+        #    landed at a4975bf, this lane absorbed it, and its rewire cleared the file -
+        #    so the case went red exactly as its author predicted, and the instruction was
+        #    to DELETE the exemption rather than inherit a permanent hole. Done: the live
+        #    tree must now be CLEAN, with no offender at all. Keeping the old assertion
+        #    would have pinned a transient broken state as the expected one forever.
         real_rep = res_report(real)
         offenders = sorted({i["msg"].split(":")[0].replace("\\", "/")
                             for i in real_rep.items
                             if i["section"] == "retired-surface"})
-        c.check("SCC-128 F the live tree's ONLY offender is SCC-126's AP file",
-                offenders == [".agents/commands/cicd-code-review-AP.md"], str(offenders))
+        c.check("SCC-128 F the live tree has NO retired-surface offender",
+                offenders == [], str(offenders))
 
         # G. ⭐ THE WIRING. Every case above calls the function directly, so deleting its
         #    one line in main() passes all of them while `workflow_lint --toolkit-only` -
