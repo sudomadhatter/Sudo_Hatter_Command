@@ -56,6 +56,14 @@ STEPS = ("steps/step-01-review.md", "steps/step-02-verify.md",
          "steps/step-03-triage.md", "steps/step-04-record.md")
 ENGINE_FILES = (SKILL,) + STEPS
 
+# The engine's callers are NOT engine files — they are resolved from ROOT, they are exempt from the
+# vendor-identifier ban scan (a caller may legitimately still name things the engine may not), and
+# they are not part of the `.claude/skills/` cache comparison. But they must be pinned HERE, because
+# a rule about a caller that lives only in the engine's own step file is a rule nothing enforces:
+# reverting the caller leaves every engine check green while the wiring is gone (SCC-126 review, F7).
+AP_CMD = ".agents/commands/cicd-code-review-AP.md"
+CALLER_FILES = (AP_CMD,)
+
 # Vendor identifiers that must appear NOWHERE in the engine. `HALT` is deliberately the only
 # case-SENSITIVE one: lower-case "halt" is ordinary English and banning it generates false reds.
 BANNED = (
@@ -123,6 +131,9 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     ("skill: return block counts applicable lenses", SKILL,
      r"^lenses_run:\s+<n>/<applicable>", re.M,
      "lenses_run:      <n>/<applicable>", "lenses_run:      <n>/<total>"),
+    ("skill: the spec-less count agrees with step-01 (4/4)", SKILL,
+     r"reports `4/4`, never `4/5`", 0,
+     "reports `4/4`, never `4/5`", "reports `4/5`, never `4/4`"),
 
     # ── step-01: the fan-out table, the failure contract, NA-vs-dead ────────────────────────
     ("step-01: Blind Hunter is a lens row that always runs", STEPS[0],
@@ -143,9 +154,12 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     ("step-01: a still-failing lens is rerun inline", STEPS[0],
      r"run that lens INLINE yourself, here, in this context", 0,
      "run that lens INLINE yourself", "drop that lens and carry on"),
+    # Counter-example must name the retry+inline clause: bare "raises the floor" also occurs in
+    # the zero-findings-is-not-dead paragraph above, and `.replace(old, new, 1)` would mutate that
+    # one instead — leaving this check unable to fail (SCC-126 review, same class as F12).
     ("step-01: only a still-dead lens raises the floor", STEPS[0],
      r"^4\. \*\*Only a lens that is still dead after BOTH the retry and the inline rerun raises",
-     re.M, "raises the floor", "leaves the floor alone"),
+     re.M, "the inline rerun raises the floor", "the inline rerun leaves the floor alone"),
     ("step-01: a dead lens raises the floor to CONCERNS", STEPS[0],
      r"^\|\s*died, and the inline rerun also failed\s*\|\s*`dead`\s*\|\s*\*\*raises `severity_floor` to CONCERNS\*\*",
      re.M, "**raises `severity_floor` to CONCERNS**", "**no effect**"),
@@ -158,9 +172,11 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     ("step-01: a mode-skipped lens never raises the floor", STEPS[0],
      r"^- \*\*A lens skipped by mode never raises `severity_floor`\.\*\*", re.M,
      "never raises `severity_floor`", "also raises `severity_floor`"),
-    ("step-01: a spec-less review reports 3/3, not 3/4", STEPS[0],
-     r"reports `3/3`, never `3/4`", 0,
-     "reports `3/3`, never `3/4`", "reports `3/4`, never `3/3`"),
+    # Five lenses since SCC-126, and only the Acceptance Auditor is mode-skipped — so the
+    # spec-less count is 4/4. The arithmetic is pinned in BOTH files that state it.
+    ("step-01: a spec-less review reports 4/4, not 4/5", STEPS[0],
+     r"reports `4/4`, never `4/5`", 0,
+     "reports `4/4`, never `4/5`", "reports `4/5`, never `4/4`"),
 
     # ── step-01 (SCC-125): the ROUTING that makes the asymmetry real ────────────────────────
     # These bind the `How` cells and the assembly convention, not the prose that describes them.
@@ -659,6 +675,194 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      r"A role the self-gate skipped is \*\*not\*\* a dead role and never raises the floor", 0,
      "is **not** a dead role and never raises the floor",
      "is a dead role and raises the floor"),
+    # ── step-01 (SCC-126): the literal-correctness lens, and the caps that make it affordable ─
+    # This lens is the epic's only real token cost, so every check below binds either its WIRING
+    # (the table cells that route it) or a cap that bounds it. Prose about the lens is not pinned;
+    # a description cannot route a lens and cannot bound a cost.
+    ("step-01: Literal-Correctness Hunter is a lens row that always runs", STEPS[0],
+     r"^\|\s*\*\*Literal-Correctness Hunter\*\*\s*\|[^|]*\|\s*always\s*\|", re.M,
+     "| **Literal-Correctness Hunter** | `DIFF` + read access to `REPO` | always |",
+     "| **Literal-Correctness Hunter** | `DIFF` + read access to `REPO` | interactive only |"),
+    ("step-01: the literal lens's row wires in the hunter contract", STEPS[0],
+     r"^\|\s*\*\*Literal-Correctness Hunter\*\*\s*\|[^|]*\|[^|]*\|[^|]*\+ the hunter contract\s*\|",
+     re.M,
+     "the literal-correctness discipline + the hunter contract",
+     "the literal-correctness discipline alone"),
+    # The counter-example must name the DISCIPLINE, not just `+ the hunter contract | yes |` —
+    # that substring hits the Edge Case Hunter's row first, so `.replace(old, new, 1)` would
+    # mutate a different lens and leave this check green. The harness caught exactly that.
+    ("step-01: the literal lens is primed with the evidence pack", STEPS[0],
+     r"^\|\s*\*\*Literal-Correctness Hunter\*\*\s*\|[^|]*\|[^|]*\|[^|]*\|\s*yes\s*\|$", re.M,
+     "the literal-correctness discipline + the hunter contract | yes |",
+     "the literal-correctness discipline + the hunter contract | **never** |"),
+
+    # The discipline itself — as prompt text (blockquoted), or it never reaches the lens.
+    ("step-01: the literal lens opens the real definition of what the code leans on", STEPS[0],
+     r"^> .*open the actual definition and verify the assumption holds", re.M,
+     "open the actual definition and verify the assumption holds",
+     "assume the definition matches what its name suggests"),
+    ("step-01: the literal lens is exhaustive, not selective", STEPS[0],
+     r"^> \*\*Be EXHAUSTIVE, not selective\.\*\*", re.M,
+     "> **Be EXHAUSTIVE, not selective.**", "> **Sample the most interesting ones.**"),
+    ("step-01: the literal lens is a discipline, not a bug checklist", STEPS[0],
+     r"^> This is a reasoning DISCIPLINE, not a bug checklist", re.M,
+     "This is a reasoning DISCIPLINE, not a bug checklist",
+     "This is a checklist of bug categories to pattern-match"),
+
+    # The four caps. Each is the cost contract; an unbounded lens is what this epic cannot ship.
+    # ⭐ Every regex here binds the OPERATIVE sentence — the number, the destination, the scoring
+    # word — not the bolded headline above it. The review of this task is why: with only the
+    # headlines pinned, editing "at most **20**" to "at most **200**" left all 440 cases green
+    # while the cap was gone. A guard on the label of a cap is not a guard on the cap.
+    ("step-01: the literal lens is diff-scoped, never whole-repo", STEPS[0],
+     r"diff-scoped, never whole-repo\.\*\* Repo access\s*\n?> exists for exactly one purpose", re.M,
+     "Repo access\n> exists for exactly one purpose",
+     "Repo access\n> exists to survey whatever seems related"),
+    ("step-01: the diff-scope rule is BLOCKQUOTED, so it reaches the lens", STEPS[0],
+     r"^> \*\*Your subject is the diff, never the repository", re.M,
+     "> **Your subject is the diff, never the repository",
+     "**Your subject is the diff, never the repository"),
+    ("step-01: sweeping is forbidden in the lens's own prompt", STEPS[0],
+     r"^> specific symbol on a specific changed line\.$", re.M,
+     "> specific symbol on a specific changed line.",
+     "> whatever else looks worth a look."),
+    ("step-01: an empty patch set early-exits the literal lens", STEPS[0],
+     r"\*\*An empty patch set → the lens early-exits\.\*\* No changed patches means there is nothing to verify,\s*\nso do not launch it at all",
+     re.M,
+     "so do not launch it at all", "so launch it against the whole tree"),
+    # F6: the early-exit must score `ok`. Scored `dead` it would raise the floor on every clean
+    # diff; scored `n/a` it would read as degraded. Both are wrong and both look like a pass here.
+    ("step-01: the early-exit is recorded ok, never dead and never n/a", STEPS[0],
+     r"record \*\*`ok` with zero findings\*\*, never `dead` and never `n/a`", 0,
+     "record **`ok` with zero findings**, never `dead` and never `n/a`",
+     "record **`dead`**, like any lens that returned nothing"),
+    # The NUMBER, not the headline.
+    ("step-01: the literal lens caps at 20 changed files", STEPS[0],
+     r"\*\*A 20-file cap\.\*\* Hand over at most \*\*20\*\* changed files", 0,
+     "Hand over at most **20** changed files", "Hand over at most **200** changed files"),
+    ("step-01: exceeding the cap must be disclosed to the lens AND to notes", STEPS[0],
+     r"you MUST tell the lens how many files it did not receive[^.]*\*\*and\*\* carry the truncation into the\s*\nengine's returned `notes` yourself",
+     re.M,
+     "**and** carry the truncation into the", "and you may omit from the"),
+    ("step-01: the lens is told to report truncation FIRST in its output", STEPS[0],
+     r"^> your output\*\*, naming what you got and what you did not", re.M,
+     "> your output**, naming what you got and what you did not",
+     "> your output**, if you consider it worth mentioning"),
+    # The THRESHOLD and the DESTINATION, not the headline.
+    ("step-01: the literal lens spills above ~9,000 chars to a context file", STEPS[0],
+     r"\*\*Spill above ~9,000 chars\.\*\* Past that, write the patch material to a context file in\s*\n`ARTIFACT_DIR`",
+     re.M,
+     "Past that, write the patch material to a context file in",
+     "Past that, inline the patch material rather than writing it to"),
+
+    # lens_budget: defined once, HERE, and NOT the same axis as review_mode. A caller that
+    # re-defines a cap — or conflates the two axes — is how cost governance rots overnight.
+    ("step-01: the cost axis is named lens_budget and defined once", STEPS[0],
+     r"^### `lens_budget` — this lens's cost axis, defined here, once$", re.M,
+     "### `lens_budget` — this lens's cost axis, defined here, once",
+     "### `lens_budget` — each caller sets its own"),
+    ("step-01: lens_budget is explicitly NOT review_mode", STEPS[0],
+     r"⛔ \*\*`lens_budget` is NOT `review_mode`, and the two are independent\.\*\*", 0,
+     "**`lens_budget` is NOT `review_mode`, and the two are independent.**",
+     "**`lens_budget` is another name for `review_mode`.**"),
+    ("step-01: full review_mode plus capped budget is the normal state", STEPS[0],
+     r"routinely `review_mode: full`\s*\nand `lens_budget: capped` at the same time", re.M,
+     "routinely `review_mode: full`", "never `review_mode: full`"),
+    ("step-01: a caller names the budget and never re-defines the caps", STEPS[0],
+     r"A caller \*\*names\*\* its `lens_budget`; it never re-defines the caps", 0,
+     "A caller **names** its `lens_budget`; it never re-defines the caps",
+     "A caller may raise or lower the caps to suit its budget"),
+    ("step-01: an unnamed budget defaults to capped, the safe side", STEPS[0],
+     r"\*\*A caller that names none gets `capped`\*\*", 0,
+     "**A caller that names none gets `capped`**",
+     "**A caller that names none gets `standard`**"),
+    ("step-01: capped is the autopilot's, with the caps mandatory and no top-up", STEPS[0],
+     r"^\|\s*`capped`\s*\|\s*`/cicd-code-review-AP` \(autopilot\)[^|]*\|[^|]*MANDATORY[^|]*\*\*no top-up\*\*",
+     re.M,
+     "the same caps, MANDATORY, and **no top-up**", "the caps are advisory"),
+    ("step-01: standard budget still binds the caps, and its top-up is earned", STEPS[0],
+     r"^\|\s*`standard`\s*\|\s*interactive callers\s*\|\s*MANDATORY as written above;[^|]*\*\*earn\*\*",
+     re.M,
+     "| `standard` | interactive callers | MANDATORY as written above;",
+     "| `standard` | interactive callers | caps are optional;"),
+
+    # Gate 1 adaptation — without it the lens must DROP the defect class it was added to catch.
+    ("step-01: Gate 1 is adapted for the literal lens, and only for it", STEPS[0],
+     r"^> \*\*Gate 1 is adapted for you, and only for you\.\*\*", re.M,
+     "> **Gate 1 is adapted for you, and only for you.**",
+     "> **Gate 1 binds you exactly as it binds every other hunter.**"),
+    ("step-01: for always-raised violations the changed line IS the proof", STEPS[0],
+     r"\*\*the changed line IS the reachability\s*\n> proof\*\* and you owe no further trace", re.M,
+     "**the changed line IS the reachability", "**a full production trace IS the reachability"),
+    ("step-01: state-dependent violations still owe the full Gate 1 trace", STEPS[0],
+     r"\*\*Gate 1 binds in full\*\* and\s*\n> you owe the ordinary trace\. Gates 2 and 3 bind unchanged", re.M,
+     "**Gate 1 binds in full** and", "**Gate 1 is waived** and"),
+
+    # A lens that RAN and found nothing is not a dead lens. Conflating the two caps every clean
+    # review at CONCERNS — the same failure F6 guards for the empty-diff case, at diff-wide scale.
+    ("step-01: zero findings is explicitly not a dead lens", STEPS[0],
+     r"⛔ \*\*First, the distinction this whole section turns on: a lens that ran and found nothing is NOT\s*\na dead lens\.\*\*",
+     re.M,
+     "a lens that ran and found nothing is NOT", "a lens that ran and found nothing is"),
+    ("step-01: the dead-lens contract applies to no usable OUTPUT, not to no findings", STEPS[0],
+     r"Applied to any lens that errors, times out, or\s*\nreturns no usable output", re.M,
+     "returns no usable output", "comes back empty"),
+
+    # The headless override, and the ordering that keeps the blind lens blind while inline.
+    ("step-01: a caller may override the return-the-prompts fallback", STEPS[0],
+     r"⭐ \*\*A caller may override that return, and one already does\.\*\*", 0,
+     "**A caller may override that return, and one already does.**",
+     "**No caller may override that return.**"),
+    ("step-01: returning unrun prompts headless is a review that never ran", STEPS[0],
+     r"\*\*in a headless pipeline nobody is, and returning unrun prompts is a review\s*\nthat silently never ran\*\*",
+     re.M,
+     "that silently never ran**", "that is merely deferred**"),
+    ("step-01: inline execution must run the blind lens FIRST, on the diff alone", STEPS[0],
+     r"run the blind lens \*\*first — on the diff alone, before\s*\nany spec, plan, walkthrough or evidence pack is pulled into context\.\*\*",
+     re.M,
+     "**first — on the diff alone, before", "**last — after everything else, including"),
+    ("step-01: a non-blind blind lens is recorded as such, never silently", STEPS[0],
+     r"`ok \(not blind — context held <what>\)`", 0,
+     "`ok (not blind — context held <what>)`", "`ok`"),
+
+    # ── step-01 (SCC-126): the CALLER's wiring — pinned in the caller's own file ─────────────
+    # F7 from this task's review: every check above lives in step-01, i.e. the engine's CLAIM
+    # about its caller. Reverting cicd-code-review-AP.md to its pre-change solo three-lens review
+    # left all 440 cases green and workflow_lint clean, while the literal lens never ran in the
+    # autopilot at all — the exact behavior this ticket is named for. A guard in the wrong file
+    # is not a guard. These read the caller's body directly.
+    ("AP caller: invokes the engine, not a review of its own", AP_CMD,
+     r"The review is `\.agents/skills/code-review-engine/`", 0,
+     "The review is `.agents/skills/code-review-engine/`",
+     "The review is yours to run solo, sequentially, no subagents"),
+    ("AP caller: passes lens_budget capped in the contract block", AP_CMD,
+     r"^DEFERRED_WORK: [^\n]*· lens_budget: capped$", re.M,
+     "· lens_budget: capped", "· lens_budget: standard"),
+    ("AP caller: says capped is not optional and not review_mode", AP_CMD,
+     r"⛔ \*\*`lens_budget: capped` is not optional here, and it is NOT the same field as `review_mode`\.\*\*",
+     0,
+     "**`lens_budget: capped` is not optional here, and it is NOT the same field as `review_mode`.**",
+     "**`lens_budget: capped` is a synonym for `review_mode: full`.**"),
+    ("AP caller: does not re-define the caps it names", AP_CMD,
+     r"This command does not define what the caps\s*\nare; step-01 of the engine does, once", re.M,
+     "This command does not define what the caps", "This command overrides what the caps"),
+    ("AP caller: mandates inline lenses when subagents are unavailable", AP_CMD,
+     r"⛔ \*\*If subagents are unavailable in this runtime, run every lens INLINE, sequentially, yourself\.\*\*",
+     0,
+     "run every lens INLINE, sequentially, yourself",
+     "hand the prompt files back and return"),
+    ("AP caller: inline runs the blind lens before Ingest 2", AP_CMD,
+     r"pull Ingest 1, run the Blind Hunter\s*\nimmediately on the diff alone, and only THEN pull Ingest 2", re.M,
+     "immediately on the diff alone, and only THEN pull Ingest 2",
+     "after Ingest 2 has landed, alongside the other four"),
+    ("AP caller: warns that step-02 severities are unverified today", AP_CMD,
+     r"\*\*hunter-asserted and unverified\*\*", 0,
+     "**hunter-asserted and unverified**", "**verified against the evidence**"),
+    ("AP caller: treats the engine's floor as a floor", AP_CMD,
+     r"\*\*The floor is a floor:\*\* your verdict may be that severe or worse, never better", 0,
+     "your verdict may be that severe or worse, never better",
+     "your verdict may be softened if the findings look minor"),
+
 
     # ── step-03: buckets, alias map, and the severity-to-verdict table ──────────────────────
     ("step-03: decision_needed bucket is defined", STEPS[2],
@@ -796,8 +1000,15 @@ def main() -> int:
         p = MASTER / rel
         c.check(f"{rel} exists with a body", has_body(p),
                 "" if has_body(p) else ("absent" if not p.is_file() else "present but under 200 chars"))
+    for rel in CALLER_FILES:
+        p = ROOT / rel
+        c.check(f"{rel} exists with a body", has_body(p),
+                "" if has_body(p) else ("absent" if not p.is_file() else "present but under 200 chars"))
 
     texts = {rel: (read(MASTER / rel) if (MASTER / rel).is_file() else "") for rel in ENGINE_FILES}
+    # Callers resolve from ROOT, not from the engine dir. Same CHECKS loop, same counter-example
+    # proof — the only difference is where the file lives.
+    texts.update({rel: (read(ROOT / rel) if (ROOT / rel).is_file() else "") for rel in CALLER_FILES})
 
     # ── 2. Content: every rule bound to its meaning, and proven able to reject its negation ─
     for name, rel, pattern, flags, old, new in CHECKS:

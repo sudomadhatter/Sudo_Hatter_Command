@@ -29,6 +29,7 @@ runs only as a step of `/cicd-code-review`, `/smh-code-review` or `/cicd-code-re
 | `DIFF` | the diff text, or a path to it — already scoped by the caller | yes |
 | `HEAD_SHA` | the sha the diff was taken at, for the record the caller writes | yes |
 | `review_mode` | `full` (a spec exists) or `no-spec` (none) | yes |
+| `lens_budget` | `standard` or `capped` — the literal lens's cost axis, **independent of `review_mode`**; absent defaults to `capped` (step-01 defines both) | optional |
 | `STORY_FILE` | story or task acceptance source; present in `full` mode | optional |
 | `EVIDENCE_PACK` | pre-extracted evidence dossier; absent is normal today | optional |
 | `FINDINGS_SINK` | file the findings are written to | optional |
@@ -74,4 +75,4 @@ anything less severe. When a caller's own law says a dead layer *"caps the verdi
 that phrase and this floor mean the same thing: the verdict may not come back better than CONCERNS.
 
 `<applicable>` excludes any lens that does not run in this `review_mode`; those are listed on
-`lenses_na` instead. A spec-less review therefore reports `3/3`, never `3/4` — see step-01.
+`lenses_na` instead. A spec-less review therefore reports `4/4`, never `4/5` — see step-01.

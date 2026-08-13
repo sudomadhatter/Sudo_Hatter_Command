@@ -14,7 +14,7 @@ Each finding becomes:
 | field | meaning |
 |---|---|
 | `id` | sequential integer |
-| `source` | `blind` · `edge` · `acceptance` · `test-adequacy` · `compound`, or merged (`blind+edge`) |
+| `source` | `blind` · `edge` · `literal` · `acceptance` · `test-adequacy` · `compound`, or merged (`blind+edge`) |
 | `title` | one line |
 | `detail` | the full description, plus any evidence |
 | `location` | `file:line` when available |
