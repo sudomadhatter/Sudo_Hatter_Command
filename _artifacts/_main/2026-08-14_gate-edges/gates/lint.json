@@ -3,7 +3,7 @@
   "story": "scc-154",
   "result": "pass",
   "exit_code": 0,
-  "sha": "71329dc4ca0b698c31b8d206713f102e5237e3fc",
+  "sha": "b14eeb4c3ae85c7ad2cb37614300cbefbb9b2ac8",
   "dirty_tree": false,
   "dirty_paths": [],
   "totals": null,
@@ -14,6 +14,6 @@
   ],
   "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/gate-edges",
   "duration_s": 0.2,
-  "recorded_at": "2026-08-14T16:41:00+00:00",
+  "recorded_at": "2026-08-14T17:42:33+00:00",
   "output_tail": "== workflow_lint - toolkit-only ==\n[INFO ] commands: testarch-atdd.md: UTF-8 BOM present\n[INFO ] commands: testarch-automate.md: UTF-8 BOM present\n[INFO ] commands: testarch-ci.md: UTF-8 BOM present\n[INFO ] commands: testarch-framework.md: UTF-8 BOM present\n[INFO ] commands: testarch-nfr.md: UTF-8 BOM present\n[INFO ] commands: testarch-test-design.md: UTF-8 BOM present\n[INFO ] commands: testarch-test-review.md: UTF-8 BOM present\n[INFO ] commands: testarch-trace.md: UTF-8 BOM present\n-- 0 error(s), 0 warning(s), 8 info --\n"
 }

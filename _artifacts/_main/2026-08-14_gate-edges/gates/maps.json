@@ -3,9 +3,11 @@
   "story": "scc-154",
   "result": "pass",
   "exit_code": 0,
-  "sha": "faf10baf3773a836a6ac7f06af190dcc56d9c3b4",
-  "dirty_tree": false,
-  "dirty_paths": [],
+  "sha": "b14eeb4c3ae85c7ad2cb37614300cbefbb9b2ac8",
+  "dirty_tree": true,
+  "dirty_paths": [
+    "_artifacts/_main/2026-08-14_gate-edges/gates/lint.json"
+  ],
   "totals": null,
   "command": [
     "python3",
@@ -15,6 +17,6 @@
   ],
   "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/gate-edges",
   "duration_s": 0.1,
-  "recorded_at": "2026-08-14T16:41:01+00:00",
+  "recorded_at": "2026-08-14T17:42:38+00:00",
   "output_tail": ""
 }
