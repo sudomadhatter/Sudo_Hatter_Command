@@ -752,8 +752,11 @@ flowchart TD
     CHECKS --> LANE{"⭐ THE LANE — derived, not asked"}
     LANE -- "HANDOFF — a deployable\npath is in the diff" --> HAND["⛔ STOP. This is a product change\nwhatever the ticket says.\nHand it to /cicd-push-e2e.\nNO OVERRIDE FLAG, deliberately."]
     LANE -- "LOCAL — nothing that\ndeploys changed" --> S2["Step 2 — run the gate the lane selected\nPASTE THE REAL OUTPUT"]
-    S2 --> G["run_all.py · workflow_lint.py\ncheck_maps.py --depth3-only --strict\n+ link and anchor check\n+ SOP currency"]
-    G --> S3["Step 3 — merge to main --no-ff"]
+    S2 --> SKIPQ{"did the preflight print gate: SKIP?\nverdict PASS or CONCERNS · code-fresh ·\nreceipts valid — SCC-146"}
+    SKIPQ -- "yes — ONLY the preflight\nmay decide this" --> G0["paste the SKIP line — the evidence\nalready ran and rode the branch here.\na FAIL verdict was a Step-1 exit 2:\nthat lane never reaches this step"]
+    SKIPQ -- "no — commands printed\n= commands run, all of them" --> G["run_all.py · workflow_lint.py\ncheck_maps.py --depth3-only --strict\n+ link and anchor check\n+ SOP currency"]
+    G0 --> S3["Step 3 — merge to main --no-ff"]
+    G --> S3
     S3 --> S4["Step 4 — AFTER the merge, never before:\none Dev Record → ticket → Done"]
     S4 --> WHY4["a ticket reading Done while the merge failed\nis a lie nothing will correct.\nA merge that landed while the record lags\nis one command from right."]
     WHY4 --> S5["Step 5 — UNLINK → remove tree → delete branch\nin that order, every time"]
@@ -1106,7 +1109,7 @@ flowchart TD
     S16 --> S2["Step 2 — ⭐ RED: write the assertion that FAILS, first"]
     S2 --> TIER["script → a real test\ngate or hook → it REFUSES the bad case AND ALLOWS the good one\ncommand or rule → workflow_lint --toolkit-only reporting the error\nmove or rename → the link sweep, captured BEFORE the move\ndoc or structure → a machine-verifiable assertion"]
     TIER --> READ["run it, paste the RED, and read WHICH LINE RAISED\n— a check that dies in setup looks identical\nto one that fails its assertion"]
-    READ --> S3["Step 3 — GREEN: implement MINIMALLY\nsurgical changes · explicit paths · key in every subject"]
+    READ --> S3["Step 3 — GREEN: implement MINIMALLY\nsurgical changes · explicit paths · key in every subject\nfull suite ONCE, through gate_receipt.py run --task --root\n→ the receipt rides the branch for review + close-out — SCC-146"]
     S3 --> MUT["⭐ DECLARE THE MUTANT TABLE BEFORE YOU MUTATE\neach mutant · its file · the NAMED case it must kill\nrun as ONE sweep, never one at a time\nsurviving mutant = a finding\nremoves nothing = DEFECTIVE: a SKIP that COUNTS as a survivor\ndrawn FROM THE CODE, never from your own cases\nrestore in a finally/trap · re-check git status when it ends"]
     MUT --> S35{"Step 3.5 — ⛔ EJECT TRIPWIRE"}
     S35 -- "a deployable path is in the diff" --> EJ1["→ /cicd-push-e2e. No override."]
@@ -1193,7 +1196,7 @@ flowchart TD
     EV -- "no evidence" --> CONC["CONCERNS floor.\n'I read it and it looks right' is not evidence."]
     EV -- "yes" --> S3["Step 3 — the command-centre gate"]
     CONC --> S3
-    S3 --> G1["run_all.py — always, N/N, exit 0"]
+    S3 --> G1["run_all.py — inherit quick-dev's suite receipt\nwhen pass · clean-stamped · code-fresh — SCC-146\nelse run it yourself and RE-STAMP\nfail toward running, never toward trusting"]
     S3 --> G2["workflow_lint --toolkit-only — always\nerrors FAIL, warnings are CONCERNS"]
     S3 --> G3["re-run the task's own RED assertions — GREEN now"]
     S3 --> G4["sop_currency · link+anchor · door parity"]

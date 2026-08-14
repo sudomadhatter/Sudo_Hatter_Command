@@ -174,12 +174,30 @@ means Step 3 would merge something no other machine has.
 The preflight prints the exact commands under `gate:`. Run them and **paste the real output** — a
 gate reported from intent is the failure this whole toolkit exists to remove.
 
-In the command centre that is:
+**⭐ The preflight is also the ONLY thing that may skip this gate (SCC-146).** When the review
+verdict is `PASS`/`CONCERNS` at a code-fresh sha, the tree is clean, and the lane's receipts
+(`<task-artifacts>/gates/*.json`) all validate, it prints one line instead of the commands:
+
+```
+gate: SKIP - verdict PASS @ <sha>, receipts valid (suite, ...)
+```
+
+That line **is** Step 2 — paste it and move on; the evidence already ran and rode the branch here.
+Two hard edges: **you never decide a skip by reading the walkthrough yourself** — commands printed
+means commands run, all of them; and **a FAIL verdict is a preflight exit 2**, which Step 1 already
+stopped on — a lane whose review said FAIL does not reach this step, let alone the merge.
+
+When the commands do print, in the command centre that is:
 
 ```bash
 python3 .agents/scripts/tests/run_all.py        # the enforcement suite — must be N/N files passed
-python3 .agents/scripts/workflow_lint.py        # toolkit self-consistency
+python3 .agents/scripts/workflow_lint.py        # lint — the preflight prints the exact flags
 ```
+
+**Run the lint with exactly the flags the preflight printed.** In the lobby that is
+`--toolkit-only` (SCC-64); in a repo with a deployable surface it prints the bare, full-scope run.
+Where the flags differ from the review's `--toolkit-only` run, that is a **different scope, not
+duplication** — keep both runs and do not "clean up" the wider one into the narrower.
 
 Plus, because task work is almost always **docs and rules**, the two checks `/cicd-quick-dev` Step 3
 runs on a docs-only diff:

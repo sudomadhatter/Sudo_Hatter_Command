@@ -970,6 +970,135 @@ def main() -> int:
         c.check("SCC-94 ...and says so, so the operator knows which checkout was verified",
                 "shared checkout" in out, out.strip()[-600:])
 
+    # ── SCC-146: the close-out reads the review VERDICT and the gate RECEIPTS ────────────
+    # check_artifacts only ever proved a walkthrough EXISTS. The review's canonical
+    # `Verdict: ... @ <sha>` line was never read, so a FAIL review did not block the merge,
+    # and a PASS could not spare the lane its fourth identical suite run. The contract:
+    #   FAIL                                       -> exit 2, the merge is refused
+    #   PASS/CONCERNS + code-fresh + receipts valid + clean -> `gate: SKIP` prints
+    #   code moved / dirty tree / no receipt        -> the gate commands print, as today
+    # "code-fresh" deliberately means `git diff <verdict-sha>..HEAD` touches nothing
+    # outside `_artifacts/` — /smh-code-review Step 3's own rule ("artifact- and doc-only
+    # commits after that run do not invalidate it; code or test changes do") made
+    # mechanical, and the only reading under which a lane can ever reach ONE suite run
+    # end-to-end: the verdict always lands as a docs commit AFTER the sha it cites
+    # (SCC-149 review, compound finding C4 — observed live, twice).
+
+    ADIR = "_artifacts/_main/2026-08-08_scc-11-thing"
+
+    def stamp_and_verdict(repo: Path, verdict: str, *, receipt: bool = True,
+                          commit_docs: bool = True) -> str:
+        """The real close-out shape: receipt stamped on a CLEAN tree at the code sha,
+        then the walkthrough (verdict citing that sha) lands as an artifacts-only commit."""
+        sha = git(repo, "rev-parse", "HEAD").stdout.strip()
+        if receipt:
+            run_script("gate_receipt.py", "run", "--task", "SCC-11",
+                       "--gate", "suite", "--root", str(repo / ADIR),
+                       "--cwd", str(repo),
+                       "--", sys.executable, "-c", "print('ok')")
+        # The indented decoy is deliberate: prose ABOUT a verdict must never read as one.
+        # VERDICT_RE anchors at line start; an unanchored mutant matches the decoy's FAIL
+        # and every PASS case here goes red (the comment-literals-invert-grep class).
+        write(repo, f"{ADIR}/walkthrough.md",
+              WALKTHROUGH
+              + "\n  (the reviewer writes Verdict: FAIL @ 0000000 when the gate is red)\n"
+              + f"\n## Code Review (2026-08-08)\n\nVerdict: {verdict} @ {sha}\n")
+        if commit_docs:
+            commit(repo, "SCC-11 chore: walkthrough + receipts (artifacts only)")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+        return sha
+
+    with TempDir() as t:   # the ALLOW half (acceptance 4)
+        repo = make_repo(t, walkthrough=False)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        sha = stamp_and_verdict(repo, "PASS")
+        code, out = preflight(repo)
+        c.check("SCC-146 PASS + code-fresh + receipt + clean -> gate: SKIP, exit 0",
+                code == 0 and "gate: SKIP" in out and "receipts valid" in out,
+                f"exit {code}: " + out.strip()[-400:])
+        c.check("SCC-146 the SKIP names the verdict and its sha",
+                f"PASS @ {sha[:8]}" in out, out.strip()[-300:])
+        # The fixture itself pins the C4 deviation: HEAD is the artifacts commit, NOT the
+        # verdict sha, and the SKIP must survive that — else no real lane can ever SKIP.
+        c.check("SCC-146 artifacts-only commits since the verdict do not invalidate it",
+                git(repo, "rev-parse", "HEAD").stdout.strip() != sha,
+                "fixture must move HEAD past the verdict sha")
+
+    with TempDir() as t:   # acceptance 5a — code moved since the verdict
+        repo = make_repo(t, walkthrough=False)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        stamp_and_verdict(repo, "PASS")
+        write(repo, "docs/x.md", "changed after the verdict\n")
+        commit(repo, "SCC-11 chore: code moved after the verdict")
+        git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+        code, out = preflight(repo)
+        c.check("SCC-146 code moved since the verdict -> commands print, never SKIP",
+                code == 0 and "gate: SKIP" not in out and "run_all.py" in out,
+                f"exit {code}: " + out.strip()[-300:])
+
+    with TempDir() as t:   # acceptance 5b — dirty tree
+        repo = make_repo(t, walkthrough=False)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        stamp_and_verdict(repo, "PASS")
+        write(repo, "docs/x.md", "uncommitted\n")
+        code, out = preflight(repo)
+        c.check("SCC-146 a dirty tree never SKIPs (sync blocks AND the commands print)",
+                code == 2 and "gate: SKIP" not in out and "run_all.py" in out,
+                f"exit {code}: " + out.strip()[-300:])
+
+    with TempDir() as t:   # acceptance 5c — no receipt
+        repo = make_repo(t, walkthrough=False)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        stamp_and_verdict(repo, "PASS", receipt=False)
+        code, out = preflight(repo)
+        c.check("SCC-146 verdict PASS but NO receipt -> commands print (fail toward running)",
+                code == 0 and "gate: SKIP" not in out and "run_all.py" in out,
+                f"exit {code}: " + out.strip()[-300:])
+
+    with TempDir() as t:   # a STALE verdict must not ride a FRESH receipt (M4's killer)
+        # The real shape: review stamps the verdict, then "one more fix" commit lands, the
+        # suite is re-run and re-stamped mechanically — receipt fresh, verdict stale. The
+        # verdict-freshness check is the ONLY thing standing between that lane and a SKIP
+        # citing evidence about code that no longer exists; the first sweep proved the
+        # receipt check alone cannot see it (receipt sha == verdict sha in every fixture
+        # above, so mutant M4 survived at 115/115).
+        repo = make_repo(t, walkthrough=False)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        stamp_and_verdict(repo, "PASS", receipt=False)     # verdict cites sha W
+        write(repo, "docs/x.md", "the one-more-fix commit\n")
+        commit(repo, "SCC-11 chore: code moved after the verdict")
+        run_script("gate_receipt.py", "run", "--task", "SCC-11",   # re-stamped at C: FRESH
+                   "--gate", "suite", "--root", str(repo / ADIR), "--cwd", str(repo),
+                   "--", sys.executable, "-c", "print('ok')")
+        commit(repo, "SCC-11 chore: receipt re-stamped (artifacts only)")
+        git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+        code, out = preflight(repo)
+        c.check("SCC-146 a STALE verdict cannot ride a FRESH receipt - verdict freshness "
+                "is checked independently",
+                code == 0 and "gate: SKIP" not in out and "code moved since the verdict" in out,
+                f"exit {code}: " + out.strip()[-300:])
+
+    with TempDir() as t:   # receipts exist, but none of them is the SUITE run
+        repo = make_repo(t, walkthrough=False)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        run_script("gate_receipt.py", "run", "--task", "SCC-11", "--gate", "lint",
+                   "--root", str(repo / ADIR), "--cwd", str(repo),
+                   "--", sys.executable, "-c", "print('ok')")
+        stamp_and_verdict(repo, "PASS", receipt=False)   # lint receipt only, no `suite`
+        code, out = preflight(repo)
+        c.check("SCC-146 receipts WITHOUT a `suite` receipt never SKIP - the one that "
+                "matters must have run",
+                code == 0 and "gate: SKIP" not in out and "run_all.py" in out,
+                f"exit {code}: " + out.strip()[-300:])
+
+    with TempDir() as t:   # the REJECT half (acceptance 6)
+        repo = make_repo(t, walkthrough=False)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        stamp_and_verdict(repo, "FAIL")
+        code, out = preflight(repo)
+        c.check("SCC-146 a FAIL verdict BLOCKS the merge (exit 2), and says why",
+                code == 2 and "FAIL" in out, f"exit {code}: " + out.strip()[-300:])
+
     return c.finish()
 
 

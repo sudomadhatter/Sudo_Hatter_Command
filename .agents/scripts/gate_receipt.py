@@ -14,6 +14,14 @@ trailing `--project X` becomes two more arguments to the tool under test, not a 
 
 Receipts land in `_bmad-output/gates/<story>/<gate>.json`.
 
+The TASK lane (SCC-146) has no board for the resolver to find, so it passes `--root` with
+the task's own artifacts dir and receipts land at `<root>/gates/<gate>.json` instead —
+riding the chore branch through the merge exactly like story receipts ride theirs.
+`--task` is an alias for `--story` (same receipt field):
+
+    gate_receipt.py run --task SCC-146 --gate suite \
+        --root _artifacts/_main/<date>_<slug> --cwd <worktree> -- python3 .agents/scripts/tests/run_all.py
+
 FOUR results, not two. `unrunnable` is its own state because `No module named ruff` means
 the floor never ran, and the house rule is that a missing tool is a FINDING, not a skip
 (`/cicd-code-review` Step 3.5). Collapsing it into `fail` loses that distinction; collapsing
@@ -85,12 +93,19 @@ def _classify(exit_code: int, output: str, warn_exit: int | None = None) -> str:
     return "fail"
 
 
-def receipt_dir(project: Path, story: str) -> Path:
+def receipt_dir(project: Path, story: str, flat: bool = False) -> Path:
+    # `flat` is the Task lane (SCC-146): `project` is already the one task's artifacts dir
+    # (`_artifacts/_main/<date>_<slug>/`), so receipts land at <root>/gates/<gate>.json with
+    # no story segment. Default False keeps the story lane and closeout_preflight's calls
+    # byte-identical.
+    if flat:
+        return project / "gates"
     return project / wf.GATES_REL / wf.norm_id(story)
 
 
 def cmd_run(project: Path, story: str, gate: str, command: list[str],
-            allow_fail: bool, cwd: Path | None, warn_exit: int | None = None) -> int:
+            allow_fail: bool, cwd: Path | None, warn_exit: int | None = None,
+            flat: bool = False) -> int:
     if not command:
         wf.die("no command given - put it after `--`")
     work = cwd or project
@@ -128,7 +143,7 @@ def cmd_run(project: Path, story: str, gate: str, command: list[str],
         "recorded_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "output_tail": output[-1500:],
     }
-    out_dir = receipt_dir(project, story)
+    out_dir = receipt_dir(project, story, flat)
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / f"{gate}.json"
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
@@ -179,8 +194,9 @@ def check_receipt(repo: Path, data: dict, gate: str, target: str | None,
                           f"{' - ' + data['totals'] if data.get('totals') else ''}")
 
 
-def load_receipt(project: Path, story: str, gate: str, rep: wf.Report) -> dict | None:
-    path = receipt_dir(project, story) / f"{gate}.json"
+def load_receipt(project: Path, story: str, gate: str, rep: wf.Report,
+                 flat: bool = False) -> dict | None:
+    path = receipt_dir(project, story, flat) / f"{gate}.json"
     if not path.is_file():
         rep.err("gates", f"{gate}: NO RECEIPT - the gate has no evidence it ran")
         return None
@@ -192,7 +208,7 @@ def load_receipt(project: Path, story: str, gate: str, rep: wf.Report) -> dict |
 
 
 def cmd_check(project: Path, story: str, require: list[str], advisory: bool,
-              sha: str | None, cwd: Path | None) -> int:
+              sha: str | None, cwd: Path | None, flat: bool = False) -> int:
     # The receipt was stamped wherever the gate RAN (often a story worktree), so the repo
     # that resolves its commits may not be the project root.
     repo = cwd or project
@@ -200,7 +216,7 @@ def cmd_check(project: Path, story: str, require: list[str], advisory: bool,
     rep = wf.Report()
 
     for gate in require:
-        data = load_receipt(project, story, gate, rep)
+        data = load_receipt(project, story, gate, rep, flat)
         if data is not None:
             check_receipt(repo, data, gate, target, rep)
 
@@ -213,10 +229,11 @@ def cmd_check(project: Path, story: str, require: list[str], advisory: bool,
     return code
 
 
-def cmd_list(project: Path, story: str) -> int:
-    out_dir = receipt_dir(project, story)
+def cmd_list(project: Path, story: str, flat: bool = False) -> int:
+    out_dir = receipt_dir(project, story, flat)
     if not out_dir.is_dir():
-        print(f"(no receipts under {wf.GATES_REL}/{wf.norm_id(story)})")
+        where = f"{project}/gates" if flat else f"{wf.GATES_REL}/{wf.norm_id(story)}"
+        print(f"(no receipts under {where})")
         return 1
     for path in sorted(out_dir.glob("*.json")):
         d = json.loads(path.read_text(encoding="utf-8"))
@@ -229,10 +246,16 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Execute gates and record tamper-evident receipts")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
+    # SCC-146: `--task` is an argparse ALIAS for `--story` (one dest, one receipt field —
+    # no schema churn), and `--root <dir>` is the Task lane's resolver bypass: no board
+    # exists there, so wf.resolve_project_root() would die. With --root, receipts live at
+    # <root>/gates/<gate>.json; without it, behaviour is byte-identical to before.
     p_run = sub.add_parser("run")
-    p_run.add_argument("--story", required=True)
+    p_run.add_argument("--story", "--task", dest="story", required=True)
     p_run.add_argument("--gate", required=True)
     p_run.add_argument("--project")
+    p_run.add_argument("--root", help="task-lane receipts root (the task's _artifacts dir); "
+                                      "bypasses project resolution entirely")
     p_run.add_argument("--cwd", help="run the command here (e.g. a worktree) instead of the project root")
     p_run.add_argument("--allow-fail", action="store_true",
                        help="always exit 0; the receipt still records the true result")
@@ -243,8 +266,9 @@ def main() -> int:
     p_run.add_argument("command", nargs=argparse.REMAINDER)
 
     p_check = sub.add_parser("check")
-    p_check.add_argument("--story", required=True)
+    p_check.add_argument("--story", "--task", dest="story", required=True)
     p_check.add_argument("--project")
+    p_check.add_argument("--root", help="task-lane receipts root; see `run --root`")
     p_check.add_argument("--require", required=True, help="comma-separated gate names")
     p_check.add_argument("--sha", help="check against THIS commit (the shipping sha) "
                                        "instead of the current HEAD")
@@ -254,22 +278,27 @@ def main() -> int:
                          help="report but do not block (first-sprint rollout only)")
 
     p_list = sub.add_parser("list")
-    p_list.add_argument("--story", required=True)
+    p_list.add_argument("--story", "--task", dest="story", required=True)
     p_list.add_argument("--project")
+    p_list.add_argument("--root", help="task-lane receipts root; see `run --root`")
 
     args = ap.parse_args()
-    project = wf.resolve_project_root(args.project)
+    # ⛔ With --root the resolver is never called — that is the entire point (SCC-146):
+    # the Task lane has no board file for it to find, and a "helpful" fallback here would
+    # resurrect the exact blocker this flag removes. Without --root, unchanged.
+    flat = bool(getattr(args, "root", None))
+    project = Path(args.root).resolve() if flat else wf.resolve_project_root(args.project)
 
     if args.cmd == "run":
         command = args.command[1:] if args.command[:1] == ["--"] else args.command
         cwd = Path(args.cwd).resolve() if args.cwd else None
         return cmd_run(project, args.story, args.gate, command, args.allow_fail, cwd,
-                       args.warn_exit)
+                       args.warn_exit, flat)
     if args.cmd == "check":
         gates = [g.strip() for g in args.require.split(",") if g.strip()]
         return cmd_check(project, args.story, gates, args.advisory, args.sha,
-                         Path(args.cwd).resolve() if args.cwd else None)
-    return cmd_list(project, args.story)
+                         Path(args.cwd).resolve() if args.cwd else None, flat)
+    return cmd_list(project, args.story, flat)
 
 
 if __name__ == "__main__":
