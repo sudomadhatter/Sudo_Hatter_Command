@@ -166,10 +166,24 @@ in this one.
 **The artifacts ledger.** `check_maps` failed with `_artifacts/_main/INDEX.md: missing row for
 2026-08-14_scc-147-lens-budget/` — added.
 
-### Gate at the landing sha
+### Gate at the landing sha — `964fdbd`
 
-Filled in below, every command run **bare** (a piped gate reports the pipe's exit code, not the
-gate's — and `${PIPESTATUS[0]}` is bash-only, which bit this session once already in `zsh`).
+Every command run **bare** (a piped gate reports the pipe's exit code, not the gate's — and
+`${PIPESTATUS[0]}` is bash-only, which bit this session once already in `zsh`).
+
+| Gate | Result | Exit |
+|---|---|---|
+| `python3 .agents/scripts/tests/run_all.py` | 23/23 files, **1883/1883 cases** | `0` |
+| `python3 .agents/scripts/workflow_lint.py --toolkit-only` | 0 errors, 0 warnings, 8 info | `0` |
+| `python3 .agents/scripts/check_maps.py --depth3-only --strict` | clean | `0` |
+
+**The case total is exactly additive and was predicted before the work:** `main`'s baseline is
+**1875** (measured at `0677441`), this lane adds **8** — two checks × three sub-assertions each
+(the check, "counter-example applies", "counter-example is rejected") + two `CALLER_FILES`
+existence checks — closing at **1883**. The audit's first arithmetic said +6 and was corrected to
++8 *in the plan* before any edit; the measurement matches the corrected figure.
+
+Raw output: `green-02-run-all.txt` · `green-03-workflow-lint.txt` · `green-04-check-maps.txt`.
 
 ## Your Actions
 
