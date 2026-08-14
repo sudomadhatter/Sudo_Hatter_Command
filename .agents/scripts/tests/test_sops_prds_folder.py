@@ -269,6 +269,10 @@ ABSENT_BY_DESIGN = {
         "prospective - tea_testing_guide P9 option A tells the reader to write it",
     "Projects/AGY_AVIATIONCHAT/.agents/rules/testing-standards.md":
         "prospective - the same rule, option B (project-local, the documented default)",
+    "_test_scripts/sentry_smoke_test.py":
+        "prospective - drill test script referenced in sentry runbooks",
+    ".venv/Scripts/python.exe":
+        "example / runtime binary path referenced in autopilot PRD",
 }
 
 # `~~`path`~~` -- the author has explicitly struck it through as gone. Reporting it asks
@@ -291,7 +295,7 @@ STRUCK = re.compile(r"~~[^~\n]*~~")
 # Directories that are never part of an answer. `worktrees` is the one that matters: the
 # round-1 index descended into `.claude/worktrees/` and cited a SIBLING LANE's transient
 # copy as the place a file had moved to.
-PRUNE = {".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build", ".next",
+PRUNE = {".git", "node_modules", ".venv", "venv", ".venv_stale", "__pycache__", "dist", "build", ".next",
          ".pytest_cache", ".mypy_cache", ".ruff_cache", ".turbo", "coverage", "worktrees"}
 
 
@@ -346,8 +350,8 @@ class RootIndex:
                 # renamed project name is indistinguishable from one that is simply not
                 # checked out, and both go silent (SCC-83 round-2 review, M-A).
                 for d in present:
-                    self.paths.update(f"{d}/{c.name}" for c in (root / d).iterdir())
-            rel = os.path.relpath(dirpath, root)
+                    self.paths.update(f"{d}/{c.name}".replace("\\", "/") for c in (root / d).iterdir())
+            rel = os.path.relpath(dirpath, root).replace("\\", "/")
             # ⛔ RECORD FIRST, prune SECOND. Pruning before recording made every pruned
             #    directory read as absent, and the docs legitimately name several of them:
             #    `backend/.venv`, `frontend/node_modules`. The first run of this index
@@ -359,7 +363,7 @@ class RootIndex:
                 self.leaves.setdefault(n, q)
             if rel == ".":
                 self.heads.update(dirnames)
-            dirnames[:] = [d for d in dirnames if d not in PRUNE]
+            dirnames[:] = [d for d in dirnames if d not in PRUNE and "venv" not in d.lower()]
 
     def has(self, t: str) -> bool:
         return t.rstrip("/") in self.paths
