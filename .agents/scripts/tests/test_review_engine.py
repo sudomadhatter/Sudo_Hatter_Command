@@ -62,7 +62,15 @@ ENGINE_FILES = (SKILL,) + STEPS
 # a rule about a caller that lives only in the engine's own step file is a rule nothing enforces:
 # reverting the caller leaves every engine check green while the wiring is gone (SCC-126 review, F7).
 AP_CMD = ".agents/commands/cicd-code-review-AP.md"
-CALLER_FILES = (AP_CMD,)
+# The two INTERACTIVE callers (SCC-147). step-01 defines `lens_budget` and states that a caller
+# naming none gets `capped` — the safe default, chosen for the unwatched overnight loop. That
+# default is the WRONG budget for a review a human is sitting in front of, and neither of these
+# named one, so both silently ran the autopilot's budget and the literal lens lost the top-up it
+# is supposed to be able to earn. Pinned in the CALLERS' own bodies for the F7 reason above: the
+# rule lived only in step-01, which is a claim about a caller, not a check on one.
+CICD_CMD = ".agents/commands/cicd-code-review.md"
+SMH_CMD = ".agents/commands/smh-code-review.md"
+CALLER_FILES = (AP_CMD, CICD_CMD, SMH_CMD)
 
 # Vendor identifiers that must appear NOWHERE in the engine. `HALT` is deliberately the only
 # case-SENSITIVE one: lower-case "halt" is ordinary English and banning it generates false reds.
@@ -740,10 +748,18 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     ("step-01: the literal lens caps at 20 changed files", STEPS[0],
      r"\*\*A 20-file cap\.\*\* Hand over at most \*\*20\*\* changed files", 0,
      "Hand over at most **20** changed files", "Hand over at most **200** changed files"),
-    ("step-01: exceeding the cap must be disclosed to the lens AND to notes", STEPS[0],
-     r"you MUST tell the lens how many files it did not receive[^.]*\*\*and\*\* carry the truncation into the\s*\nengine's returned `notes` yourself",
+    # SCC-147 (rolled in on the operator's ruling): the disclosure names PATHS, never a count.
+    # A count was useless twice over — the blockquote orders the lens to NAME what it did not
+    # get, and the `standard` top-up is earned by naming a specific withheld file. Neither is
+    # possible from a number.
+    ("step-01: withheld files are disclosed by NAME, never as a count", STEPS[0],
+     r"you MUST tell the lens WHICH files it did not receive — the paths,\s*\nnever just a count",
      re.M,
-     "**and** carry the truncation into the", "and you may omit from the"),
+     "WHICH files it did not receive — the paths,", "how many files it did not receive —"),
+    ("step-01: the truncation still reaches the engine's notes", STEPS[0],
+     r"Carry the truncation into the engine's returned `notes` yourself", 0,
+     "Carry the truncation into the engine's returned `notes` yourself",
+     "The truncation needs no note of the engine's own"),
     ("step-01: the lens is told to report truncation FIRST in its output", STEPS[0],
      r"^> your output\*\*, naming what you got and what you did not", re.M,
      "> your output**, naming what you got and what you did not",
@@ -785,6 +801,24 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      re.M,
      "| `standard` | interactive callers | MANDATORY as written above;",
      "| `standard` | interactive callers | caps are optional;"),
+
+    # SCC-147, second half (rolled in on the operator's ruling): the top-up ROW is definition
+    # only — a table cell is unquoted, and this file pins twice that unquoted text never reaches
+    # a lens. So for as long as the row was all there was, `standard` and `capped` were
+    # behaviourally identical: a lens never told a top-up exists cannot spend one. The clause is
+    # now BLOCKQUOTED and routed by budget; these three pin the quote, the routing, and the
+    # capped-side absence that IS the `no top-up` enforcement.
+    ("step-01: the top-up clause is blockquoted, so it reaches the lens", STEPS[0],
+     r"^> \*\*You may earn ONE top-up past the file cap\.\*\*", re.M,
+     "> **You may earn ONE top-up past the file cap.**",
+     "**You may earn ONE top-up past the file cap.**"),
+    ("step-01: the top-up quote is routed to standard runs only", STEPS[0],
+     r"you append\s*\nit \*\*only when the caller passed `lens_budget: standard`\*\*", re.M,
+     "it **only when the caller passed `lens_budget: standard`**",
+     "it **on every run, whatever the budget**"),
+    ("step-01: under capped, absence of the clause is the enforcement", STEPS[0],
+     r"a lens that was never handed\s*\nthe clause has no top-up to spend", re.M,
+     "a lens that was never handed", "a lens may assume a top-up even when it was never handed"),
 
     # Gate 1 adaptation — without it the lens must DROP the defect class it was added to catch.
     ("step-01: Gate 1 is adapted for the literal lens, and only for it", STEPS[0],
@@ -862,6 +896,39 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      r"\*\*The floor is a floor:\*\* your verdict may be that severe or worse, never better", 0,
      "your verdict may be that severe or worse, never better",
      "your verdict may be softened if the findings look minor"),
+
+    # ── SCC-147: the INTERACTIVE callers name their budget, in their own invocation tables ────
+    # The counter-example here is `capped` — not a nonsense string — because `capped` is the
+    # exact value these two silently inherited by naming nothing. A row that says `capped`
+    # reads as deliberate and is the defect; the check has to reject it, not just notice an
+    # absent word.
+    #
+    # ⛔ The pattern is anchored to the ENGINE-INVOCATION TABLE, and that shape is the whole
+    # point. This lane's review ran two mutants against the first version — a bare
+    # `^\|\s*`lens_budget`\s*\|\s*`standard`` — and BOTH survived with every case green:
+    #   A. move the row out of the invocation table into any other table in the file. The
+    #      caller then passes NO budget and silently takes `capped` — the exact defect this
+    #      ticket exists to fix — while a file-wide grep still sees a matching row somewhere.
+    #   B. leave the row where it is and append "— but pass `capped` when the diff is large"
+    #      INSIDE the same cell, which the old pattern never read: it stopped at the value
+    #      token and never closed the cell.
+    # `^\|\s*`HEAD_SHA`` + `(?:\|[^\n]*\n)*?` binds the row to the same CONTIGUOUS run of table
+    # rows as a required engine input — a blank line or any prose ends the run, so an appendix
+    # table cannot satisfy it. That kills A. The tempered `(?:(?!capped)[^|\n])*\|` reads to the
+    # cell's closing pipe and refuses `capped` anywhere inside it. That kills B — and it is why
+    # neither row's prose may name `capped`: they say "the autopilot's budget" instead.
+    # This is the `source-grep-guards-cannot-see-order` class caught inside a guard written to
+    # close SCC-126's F7, which is the same defect one layer up.
+    ("interactive caller /cicd-code-review: invocation table passes lens_budget standard",
+     CICD_CMD,
+     r"^\|\s*`HEAD_SHA`[^\n]*\n(?:\|[^\n]*\n)*?\|\s*`lens_budget`\s*\|\s*`standard`"
+     r"(?:(?!capped)[^|\n])*\|", re.M,
+     "| `lens_budget` | `standard`", "| `lens_budget` | `capped`"),
+    ("interactive caller /smh-code-review: invocation table passes lens_budget standard",
+     SMH_CMD,
+     r"^\|\s*`HEAD_SHA`[^\n]*\n(?:\|[^\n]*\n)*?\|\s*`lens_budget`\s*\|\s*`standard`"
+     r"(?:(?!capped)[^|\n])*\|", re.M,
+     "| `lens_budget` | `standard`", "| `lens_budget` | `capped`"),
 
 
     # ── step-03: buckets, alias map, and the severity-to-verdict table ──────────────────────
@@ -1026,6 +1093,51 @@ def main() -> int:
                 applies and rx.search(mutated) is None,
                 "" if applies and rx.search(mutated) is None
                 else "check survives its own counter-example — it cannot fail on content")
+
+    # ── 2b. SCC-147: CALLER_FILES is the COMPLETE set of engine callers ───────────────────
+    # The checks above pin the three callers that exist today, one hand-written row each. That
+    # closes the defect and NOT the class: a fourth command wired onto the engine tomorrow can
+    # name no budget, silently take `capped`, and every check above stays green because none of
+    # them knows it exists. This check is the one that notices — it derives the caller set from
+    # the commands themselves and fails when it stops matching what is pinned. Raised by this
+    # lane's own review. The default itself is deliberately NOT re-litigated here: `capped` is
+    # the right default for an UNWATCHED overnight loop, and the failure being guarded is a
+    # caller that never chose at all.
+    cmd_dir = ROOT / ".agents" / "commands"
+    discovered = sorted(f".agents/commands/{p.name}" for p in cmd_dir.glob("*.md")
+                        if "code-review-engine" in read(p)) if cmd_dir.is_dir() else []
+    c.check("engine callers were discovered at all (anti-vacuity)", bool(discovered),
+            f"{len(discovered)} found")
+    c.check("CALLER_FILES is every command that invokes the engine",
+            bool(discovered) and set(discovered) == set(CALLER_FILES),
+            "" if set(discovered) == set(CALLER_FILES)
+            else f"unpinned: {sorted(set(discovered) - set(CALLER_FILES))} | "
+                 f"pinned but no longer a caller: {sorted(set(CALLER_FILES) - set(discovered))}")
+    # ⛔ Scope of that scan, ruled explicitly rather than left to a reader to wonder about:
+    # `.agents/opencode-agents/opus-reviewer.md` also LOADS step-01 and runs the fan-out solo,
+    # and it names no budget — so by step-01's default it runs `capped`. That is the CORRECT
+    # answer for it: it is a Stage-4 autopilot role, and `capped` is what an unwatched loop
+    # should get. It is therefore deliberately out of `CALLER_FILES`, which pins the commands
+    # that invoke the engine as a skill. Raised by this lane's review; recorded so the next
+    # person does not have to re-derive it.
+    #
+    # A SECOND, contradictory row elsewhere in the same file is invisible to `re.search`, which
+    # returns on first match. The review proved it: a later "## Step 3.9 — budget override"
+    # section carrying `| `lens_budget` | `capped` — overrides the Step 1 table |` left the
+    # Step 1 row untouched and the whole gate green, while an LLM reading the command
+    # top-to-bottom passes `capped`. So the rows are COUNTED, not just found.
+    for rel in (CICD_CMD, SMH_CMD):
+        txt = texts.get(rel) or read(ROOT / rel)
+        n = len(re.findall(r"^\|\s*`lens_budget`\s*\|", txt, re.M))
+        c.check(f"{Path(rel).name} carries exactly ONE lens_budget row", n == 1,
+                "" if n == 1 else f"found {n} — a second row can contradict the first")
+    # Every caller must NAME a budget. Which value is each caller's own business — the AP twin's
+    # `capped` is as correct as an interactive `standard` — but naming nothing is the defect.
+    for rel in discovered:
+        txt = texts.get(rel) or read(ROOT / rel)
+        named = re.search(r"lens_budget`?\s*[|:]\s*`?(standard|capped)\b", txt) is not None
+        c.check(f"{Path(rel).name} names a lens_budget explicitly", named,
+                "" if named else "names none, so it silently inherits `capped` (SCC-147)")
 
     # ── 3. Vendor identifiers: scanned across EVERY markdown file in the engine ────────────
     found = sorted(str(p.relative_to(MASTER)).replace("\\", "/")

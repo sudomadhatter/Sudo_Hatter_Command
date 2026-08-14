@@ -1,21 +1,28 @@
 ---
 description: Autopilot (headless) Review+Fix+Gate command — review the implementation in the shared autopilot run folder, apply fixes, run the TEA test gate, and hand to Daniel. Modeled off /cicd-code-review but tuned for agent-to-agent handoff. NOT for interactive use; the autopilot orchestrator invokes it.
 platforms: [claude, opencode]
-# Diffed against /cicd-code-review at this sha; nothing to port (SCC-128, 2026-08-13).
+# Diffed against /cicd-code-review at this sha; nothing to port (SCC-147, 2026-08-14).
+# TWO diffs were read at this stamp, both ONE hunk on the same row, and neither ports:
+#   - the primary gained an explicit `lens_budget: standard` row. This twin already named
+#     `capped` in its own contract block, so the change only made the primary say out loud
+#     what it had been inheriting silently; the divergence it creates is #1 below.
+#   - the review then reworded that row to drop a restatement of step-01's caps. It now
+#     carries THIS twin's own phrasing — "does not define what the caps are; step-01 of the
+#     engine does, once" — so the two commands have converged on the wording, not diverged.
 # Both commands were rewired onto `code-review-engine` in the same landing set — the primary
 # by SCC-128, this twin by SCC-126 — so they agree on the thing that matters: the caller
 # resolves every input, the engine resolves none, and `severity_floor` binds the verdict.
 # THREE divergences remain, all deliberate and all autopilot-only:
-#   1. this twin passes `lens_budget: capped`; the primary passes none and takes the
-#      `capped` default. ⚠ For an INTERACTIVE caller `standard` is the intended budget —
-#      raised as a follow-on against /cicd-code-review, not patched from inside its twin.
+#   1. this twin passes `lens_budget: capped`; the primary passes `standard`. Both now name
+#      their budget EXPLICITLY (SCC-147) — the primary used to name none and silently take
+#      the `capped` default, which is the autopilot's budget applied to a watched review.
 #   2. this twin passes `EVIDENCE_PACK` (its Ingest-2 batched pull); the primary does not
 #      pull one, so its repo-access lenses read the tree directly.
 #   3. this twin overrides the engine's no-subagent fallback to run lenses INLINE, and
 #      fixes the blind-lens-first ordering that override requires. The primary is
 #      interactive, so handing prompts back is a real option there and it keeps that path.
 # Re-diff and restamp when the linter says this sha is stale — do NOT just bump it.
-ap_reconciled: fb3a9bab60d0848333cadae5789ea36298fe8201
+ap_reconciled: 7e4f4068cdd16172dde80e6512e8e12f70a94e2c
 ---
 
 # /cicd-code-review-AP — Autopilot Review + Fix + Test Gate (Murat)

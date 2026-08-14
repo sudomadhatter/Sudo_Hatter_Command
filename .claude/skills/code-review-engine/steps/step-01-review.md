@@ -114,10 +114,12 @@ never told about is a cap it can neither honour nor report.**
 **Orchestrator-enforced, before the lens is launched:**
 
 **A 20-file cap.** Hand over at most **20** changed files' patches, taken in the diff's own order.
-When the diff changed more, you MUST tell the lens how many files it did not receive — the
-blockquote below is where it is required to pass that on — **and** carry the truncation into the
-engine's returned `notes` yourself. A truncated pass that says so is evidence; one that stays quiet
-is a false all-clear over every file nobody opened.
+When the diff changed more, you MUST tell the lens WHICH files it did not receive — the paths,
+never just a count — because the blockquote below orders the lens to NAME what it did not get, and
+the `standard` top-up is earned by naming a specific withheld file: neither is possible from a
+number (SCC-147). Carry the truncation into the engine's returned `notes` yourself as well. A
+truncated pass that says so is evidence; one that stays quiet is a false all-clear over every file
+nobody opened.
 
 **Spill above ~9,000 chars.** Past that, write the patch material to a context file in
 `ARTIFACT_DIR` and hand the lens the path instead of the text. When no `ARTIFACT_DIR` was supplied,
@@ -159,6 +161,19 @@ in the other direction is an unbounded overnight spend nobody is watching.
 |---|---|---|
 | `standard` | interactive callers | MANDATORY as written above; the lens may additionally **earn** ONE top-up past the file cap by naming the specific file and what it is looking for — never a sweep, and never "to be thorough" |
 | `capped` | `/cicd-code-review-AP` (autopilot), and any caller that names nothing | the same caps, MANDATORY, and **no top-up** — an overnight loop multiplies every token it spends, and nobody is watching it spend them |
+
+**The top-up must REACH the lens, and it must reach ONLY the `standard` lens.** The table above is
+the definition, and a table cell is unquoted — orchestrator text, which the assembly convention
+says never enters a prompt. Left at that, `standard` and `capped` are behaviourally identical
+(SCC-147). So the clause is blockquoted below, and you append
+it **only when the caller passed `lens_budget: standard`**. Under `capped` you append nothing —
+the same convention that caused the defect is the enforcement, because a lens that was never handed
+the clause has no top-up to spend.
+
+> **You may earn ONE top-up past the file cap.** If a withheld file becomes necessary — you can
+> name the file and the specific symbol or assumption you must verify inside it — open that one
+> file from the repo, and say in your output that you did, naming the file and why. ONE means one:
+> never a second file, never a sweep, and never "to be thorough".
 
 ### Gate 1, adapted for this lens — and the adaptation is load-bearing
 
