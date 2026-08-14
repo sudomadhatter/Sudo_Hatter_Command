@@ -149,7 +149,7 @@ All four located verbatim by recon; ONE commit (+ SOP :740–:820, :1030–:1039
 - 6b `smh-code-review.md` :202–:204 — DELETE the false auto-invalidation sentence (freshness is a
   TREE comparison — `wf_common.same_tree()`, `gate_receipt.py:201`); state: ONE re-stamp after the
   LAST code-touching change; artifact-only commits and no-op absorbs do NOT re-run. Fix the SAME
-  stale claim at `smh-merge-multiple-workingtrees.md:198` (same falsehood, SCC-154 precedent).
+  stale claim at `.agents/commands/smh-merge-multiple-workingtrees.md:198` (same falsehood, SCC-154 precedent).
 - 6c `smh-close-task-merge-tree.md` :216–:224 — when the verdict is code-fresh, cite the review's
   link/anchor + SOP sweeps instead of re-walking them (armed hook + CI stay the net).
 - 6d `smh-merge-multiple-workingtrees.md` :187–:199 (4b) + :288–:299 (Step 5) — the FINAL lane's 4b
@@ -165,7 +165,7 @@ All four located verbatim by recon; ONE commit (+ SOP :740–:820, :1030–:1039
   write the merge summary / draft the Dev Record during the ~50 s CI wall; poll
   `gh run watch --exit-status`. **Token mint stays strictly post-green** (TTL ordering
   load-bearing — sentence stays put). Same commit: SOP close-out mermaid (:745–:764).
-- 8: `code-review-engine/steps/step-02-verify.md` — findings with identical `file:line` AND
+- 8: `.agents/skills/code-review-engine/steps/step-02-verify.md` — findings with identical `file:line` AND
   identical claimed behavior group into ONE verification query as **query-fan-in / result-fan-out**
   (N findings → 1 query → N indexed results), preserving the two recon-confirmed invariants: the
   BY-INDEX join (:66–:68) and the RAW pre-dedupe count for the self-gate (:24–:27). Step-03's
@@ -304,13 +304,13 @@ chore/SCC-156-lane-speed`.
 - **Phase 1** — blast radius walked row by row: commands → four doors via `/smh-sync-agents` +
   door-parity gate (S5/S6); rule edit → `tests-must-gate-for-real` is NOT in `workflow_lint.py`'s
   `_RULE_POINTERS` (verified :70-78), citing commands keep their § anchors; scripts → tests named
-  per step, `scripts/INDEX.md` rows folded in (F6); gates ship riding the EXISTING armed hooks (no
+  per step, `.agents/scripts/INDEX.md` rows folded in (F6); gates ship riding the EXISTING armed hooks (no
   new arming surface, no new fresh-clone silent-off); no file moves except the whale split, which
   keeps the original filename live (no orphaned links; `sop_currency` exempts tests, SOP :1343);
   SOP same-commit named in every S; memory store untouched. **Sibling lane**: `label-tasks`
   (`chore/SCC-155-label-tasks`) appeared after this lane opened — holds ONLY its untracked
   artifacts dir, zero committed diff, zero file overlap today; its eventual shape (new command +
-  SOP section) shares the two ledger files (`workflows_testing_SOP.md`, `commands/INDEX.md`) —
+  SOP section) shares the two ledger files (`docs/_scc_sops_prds/workflows_testing_SOP.md`, `.agents/commands/INDEX.md`) —
   re-diff at absorb (review Step 0.7 re-derives mechanically); **no landing-order dependency**.
 - **Phase 2** — tripwires: two planned new test files collapsed to one (F3); every flag traces to
   an acceptance item (`--case`→A3, `--jobs`/`--serial`→ticket item 4, `--accept-unpushed-main`→C7's

@@ -53,7 +53,7 @@ Plan + self-audit (verdict **GO**, 7 findings baked in): [implementation_plan.md
     auto-invalidates the receipt. It is false because freshness is a **TREE** comparison
     (`wf_common.same_tree` → `git diff --quiet`), not a sha comparison, so a no-op or
     artifacts-only absorb leaves the receipt valid. Replaced with the ONE-re-stamp rule.
-    The **same stale claim** at `smh-merge-multiple-workingtrees.md:198` ("a doc-only absorb keeps
+    The **same stale claim** at `.agents/commands/smh-merge-multiple-workingtrees.md:198` ("a doc-only absorb keeps
     the Verdict valid") was corrected in the same commit — SCC-154 had already disproven the
     doc-only exemption in the sibling file and left this copy behind.
   - **6c** `smh-close-task-merge-tree` — under a code-fresh verdict, **cite** the review's
