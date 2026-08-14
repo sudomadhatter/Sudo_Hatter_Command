@@ -137,12 +137,12 @@ That is `prose-pinning-guards-are-vacuous` (SCC-125), defeated in advance instea
 
 ## Gates
 
-**Certification measured at `3809e00`** — re-run after the review fixes, every command **bare** (a
-piped gate returns the *pipe's* exit code, and `zsh` has no `PIPESTATUS[0]`).
+**Certification measured at `54ce267`** — the post-absorb tree, every command **bare** (a piped gate
+returns the *pipe's* exit code, and `zsh` has no `PIPESTATUS[0]`).
 
 | Gate | Result |
 |---|---|
-| Enforcement suite | `run_all.py` → **22/22 files, 1808/1808 cases, exit 0** |
+| Enforcement suite | `run_all.py` → **23/23 files, 1875/1875 cases, exit 0** |
 | Toolkit lint | `workflow_lint.py --toolkit-only` → **0 errors, 0 warnings, 8 info, exit 0** |
 | Map / INDEX | `check_maps.py --depth3-only --strict` → **exit 0** |
 | SOP currency | `sop_currency.py --paths <16 changed> --message "<subject>"` → **exit 0** |
@@ -152,10 +152,20 @@ piped gate returns the *pipe's* exit code, and `zsh` has no `PIPESTATUS[0]`).
 | Assertion evidence | RED **49/52 exit 1** → GREEN **52/52 exit 0**, both captured bare and committed |
 | Mutation | **8/8 killed**, `restored clean: YES` |
 
-**Case total exactly additive:** 1794 (`main` after SCC-144) + 14 (this lane,
-`test_command_surfaces.py` 43 → 57) = **1808**. Neither lane displaced the other's tests. The +14 is
-9 from the build and **5 more added by the review** — every one of those five pinning a mutant that
-had been a live survivor.
+**Case total exactly additive — and MEASURED, after the first attempt did not add up.** `main`'s own
+baseline was taken by running the suite in a detached worktree at `8ce9abb`: **1861**. This lane:
+**1875**. Delta **+14**, matching `test_command_surfaces.py` 43 → 57 exactly — 9 from the build and
+**5 added by the review**, each pinning a mutant that had been a live survivor. This lane touches no
+other test file, so the delta is fully attributable.
+
+⛔ **The first post-absorb run gave 1872, not 1875, and the "exactly additive" claim was false as
+stated.** Found by diffing the **per-file** summary lines rather than trusting the total: file 12,
+`test_main_ruleset_armed.py`, ran **2/2 here against 5/5 on main**. Not a regression and not this
+lane's doing — that file is not in this diff. Its server-side half queries the GitHub ruleset API,
+could not reach GitHub during that run, and degraded to `[SIGNAL]` by its author's design, which says
+the half is *"UNVERIFIED in this run, not proven absent."* Re-run with the network back: **1875, zero
+SIGNAL lines**. The total alone read as a clean pass both times — only the per-file comparison showed
+three cases had silently not run, which is this ticket's own subject one layer out.
 
 ⚠ **One link-sweep false positive, reported rather than hidden:** the sweep flagged
 `commit-msg-jira.sh` as DEAD. It is a **bare filename in prose**, not a repo-relative path — the real
@@ -179,8 +189,8 @@ false-positive class SCC-87 is open to handle.
 
 ## Code Review (2026-08-13)
 
-Verdict: PASS @ 3809e00
-Suite evidence measured at the same sha; no code or test change after it (doc-only commits follow).
+Verdict: PASS @ 0692f0c
+Suite evidence measured at `54ce267` (the absorb merge); `0692f0c` is the doc-only commit carrying it, which Rule 4 exempts. **Re-stamped** — the first verdict was `PASS @ 3809e00`, and a re-run of this gate found `main` had moved under it (see *Step 0.7, second pass*).
 
 **Scope** — `main...HEAD`, 17 files. **Method** — two independent clean-room lenses (blind
 adversarial hunt on the diff with the walkthrough withheld; acceptance audit against the ticket's
@@ -261,7 +271,7 @@ recurs.
 
 | Gate | Result |
 |---|---|
-| Enforcement suite | `run_all.py` → **22/22 files, 1808/1808 cases, exit 0** @ `3809e00` |
+| Enforcement suite | `run_all.py` → **23/23 files, 1875/1875 cases, exit 0** @ `54ce267` |
 | Toolkit lint | `workflow_lint.py --toolkit-only` → **0 errors, 0 warnings, 8 info, exit 0** |
 | Map / INDEX | `check_maps.py --depth3-only --strict` → **exit 0** |
 | Assertion evidence | every Step 2 RED is GREEN; guard **52 → 57 cases** after the review fixes |
@@ -273,3 +283,70 @@ recurs.
 
 All 14 findings applied; 1 rejected with evidence; 1 recorded as an inherent limit. Commits
 `07c490f` (guard + doc fixes) and `3809e00` (evidence + count correction).
+
+---
+
+## Code Review — second pass (2026-08-13, re-invoked)
+
+**Verdict: PASS @ `0692f0c`** (suite measured at `54ce267`; `0692f0c` is doc-only, which Rule 4 exempts).
+
+The gate was re-invoked after the first verdict. **It was right to be** — Step 0.7 found `main` had
+moved underneath the lane, so the earlier `PASS @ 3809e00` was a verdict about a repo that no longer
+existed. Nothing about the lane's own work changed; the re-stamp is what makes the verdict true of
+the tree that will actually merge.
+
+### Step 0.7, second pass — `main` moved
+
+1. **SCC-129 landed at `8ce9abb`** (review-engine negative control) while this lane was in review.
+   `merge-base` was still `ba062a0`. **Nothing this diff references moved** — all seven paths the new
+   prose names re-resolved OK — and SCC-129 touches **no file this lane edits** (verified by grep over
+   `ba062a0..main`: no `test_command_surfaces`, no `tests-must-gate-for-real`, no `smh-quick-dev`,
+   no `smh-self-audit`, no `rules/INDEX`).
+2. **True overlap: two ledger-class files**, exactly as this lane's *first* Step 0.7 predicted in
+   writing before it happened. `merge-tree` called it precisely: `workflows_testing_SOP.md`
+   **auto-merges** (this lane's hunks ~1100–1140, SCC-129's ~1292); `_artifacts/_main/INDEX.md`
+   **CONFLICTS** — both lanes prepend a row.
+3. **Absorbed here, not at merge time** (`54ce267`), because conflicts belong on this branch and never
+   on `main`. The ledger conflict was resolved by **keeping BOTH rows** — dropping the other lane's row
+   is the known failure mode of this conflict class, it is what `check_maps --strict` catches, and
+   SCC-129's own absorb commit hit the same thing one lane earlier. Verified after resolution: **zero
+   conflict markers, all three rows present** (145, 129, 144).
+
+### ⛔ The additivity claim was false as first stated, and the total would never have shown it
+
+`main`'s baseline was **measured**, not assumed — the suite run in a detached worktree at `8ce9abb`:
+**1861**. First post-absorb run of this lane: **1872**. That is **+11** against a guard that added
+**+14**, so three cases were unaccounted for.
+
+Found by diffing the **per-file** summary lines instead of trusting the total: file 12,
+`test_main_ruleset_armed.py`, ran **2/2** here against **5/5** on `main`. Not a regression, and not
+this lane's doing — that file is not in this diff. Its server-side half queries the GitHub ruleset
+API, could not reach GitHub during that run, and degraded to `[SIGNAL]` by its author's design, which
+states the half is *"UNVERIFIED in this run, not proven absent."* Re-run with the network back:
+**1875 cases, zero SIGNAL lines** — those three verified green and the arithmetic closes exactly at
+**1861 + 14 = 1875**.
+
+**The total alone read as a clean pass both times.** Only the per-file comparison showed three cases
+had silently not run — which is this ticket's own subject, one layer out: *a check that did not run is
+not a check that passed.*
+
+Separately, an interrupted run left a **partial artifact** on disk — 789 cases, cut mid-suite, exit
+code lost — which was overwritten by the complete run. Same residue class as the `timeout`-killed
+sweep that motivated the **RESTORE** technique this lane adds to the rule.
+
+### Gates, re-run on the post-absorb tree
+
+| Gate | Result |
+|---|---|
+| Enforcement suite | `run_all.py` → **23/23 files, 1875/1875 cases, 0 failing, 0 SIGNAL, exit 0** @ `54ce267` |
+| Toolkit lint | `workflow_lint.py --toolkit-only` → **0 errors, 0 warnings, 8 info, exit 0** |
+| Map / INDEX | `check_maps.py --depth3-only --strict` → **exit 0** (after the ledger reconcile) |
+| This lane's guard | **57/57, exit 0** |
+| Mutation | sweep #2 re-run post-absorb: **14/14 killed**, `restored clean: YES` |
+| Merge state | conflicts resolved on this branch; `main` untouched |
+
+### Changes applied in this pass
+
+The absorb merge and the re-stamp. **No code or doctrine changed** — the first pass's fourteen
+findings all still stand as applied, and the guard still kills all fourteen mutants on the merged
+tree, which is the thing absorbing a sibling lane could plausibly have broken.
