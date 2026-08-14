@@ -247,7 +247,21 @@ conventions: naming law clean, generated files regenerated never hand-edited, bo
 **Changes applied by this review:** one — finding 4/C2 (`4fa5596`, doc + mirrors). Everything else:
 implementation correct as-is.
 
+### ⛔ Post-verdict note (2026-08-14 08:32, after the stamp)
+
+Minutes after the Verdict was stamped and committed, an **uncommitted, untested behavioral edit to
+`merge-target-guard.sh` appeared in this worktree from another session** (re-judges
+`incident:story|incident:chore|story:incident|chore:incident` to refuse, adds a `destination()`
+incident row, replaces the note lines — i.e. it implements this review's DEFERRED findings 1/3).
+**It is NOT covered by `Verdict: PASS @ 4fa5596`**, which binds committed work only. It ships no
+test and lands exactly inside compound finding C3's warning: the width-mutants provably survive
+today, so this change is unauthorable red-first until finding 2's target-side test + width-killing
+mutants land FIRST. Per the convergence rule (one review per lane) it must NOT be folded into this
+lane's verdict — either move it to the C1/C3 follow-on ticket lane and restore the tree, or the
+close-out preflight will (correctly) refuse the dirty tree.
+
 ## Your Actions
 
+- [ ] **Resolve the post-verdict working-tree edit** (note above) — not this review's work and not covered by the verdict: relocate it to the follow-on lane (test-first, per C3) or explicitly re-open dev on this lane, which then needs its own close-out gate.
 - [ ] **Merge sign-off** — run `/smh-close-task-merge-tree` (mechanical close-out; the Verdict above is the review of record — one review per lane, per the SCC-147 convergence rule).
 - [ ] **Follow-on ticket decision (C1/C3 + deferred tests)** — one Task: teach `pre-push-merge-backstop.sh` the incident class (its refusal currently prescribes the SCC-148 misroute for incident refs), landing the target-side INC test + width-killing mutants FIRST (C3's sequencing), plus the deferred boundary/multi-name pins (findings 2, 3, 12, 13, 5).
