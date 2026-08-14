@@ -112,6 +112,12 @@ zero merges is the gate that cannot fail.
 python3 .agents/scripts/task_preflight.py --fetch --repo "$REPO" --branch "chore/<KEY>-<slug>" --expect-key "<KEY>"
 ```
 
+⭐ **A `landing:` STALLED LANDING error here is the whole set's problem, not one lane's
+(SCC-159).** This command merges lane after lane onto local `main`; if `main` was already ahead of
+`origin/main` when you started, every lane in the loop lands on the stuck one and the run reports
+success N times over. The preflight now refuses at the first lane instead. `--accept-unpushed-main`
+is the auditable offline exit, and it is stated in the output when used.
+
 🛑 **Read the header line before the verdict** — it echoes the branch the script actually resolved.
 A key mismatch is a mechanical exit 2. Pass `--repo` and `--branch` explicitly: the script can
 guess, and the guess is exactly what fails when a sibling lane has moved the shared checkout.

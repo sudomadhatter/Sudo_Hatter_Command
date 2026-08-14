@@ -241,6 +241,63 @@ def main() -> int:
             code, out = preflight(repo)
             c.check("never-pushed branch warns", "never pushed" in out, out.strip()[-200:])
 
+        # ── SCC-159 · THE STALLED LANDING ────────────────────────────────────────────────
+        # Every check in this script asks about the LANE. None asked whether the DESTINATION
+        # was itself unpushed — and local `main` ahead of `origin/main` is exactly that: an
+        # earlier lane merged and never landed. Every lane behind it then queues invisibly
+        # (it happened live 2026-08-14, for about an hour), and the close-out's own
+        # `pull --ff-only` cannot catch it: that succeeds silently when local is merely
+        # AHEAD, so the next lane merges cleanly onto the stuck main and reports success.
+        with TempDir() as t:
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            git(repo, "checkout", "-q", "main")
+            write(repo, "docs/stalled.md", "an earlier lane that never landed\n")
+            commit(repo, "SCC-11 merge: an earlier lane (never pushed)")
+            git(repo, "checkout", "-q", "chore/SCC-11-thing")
+            git(repo, "merge", "-q", "--no-ff", "-m", "SCC-11 chore: absorb main", "main")
+            # Push the LANE, so the only thing wrong with this fixture is the stalled main.
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            code, out = preflight(repo, "--fetch")
+            c.check("SCC-159 local main ahead of origin/main BLOCKS the close-out",
+                    code == 2 and "main is 1 commit(s) ahead of origin/main" in out,
+                    out.strip()[-400:])
+            c.check("SCC-159 ...and names it a stalled landing, with the remedy",
+                    "STALLED LANDING" in out and "git push origin main" in out,
+                    out.strip()[-400:])
+            c.check("SCC-159 ...and names the flag that overrides it",
+                    "--accept-unpushed-main" in out, out.strip()[-400:])
+
+            # The offline exit. Reads pass and pushes die on the operator's satellite uplink,
+            # so a hard refusal with no auditable way through would brick every close-out
+            # made from a plane. The flag is typed per invocation and prints itself back.
+            code, out = preflight(repo, "--fetch", "--accept-unpushed-main")
+            c.check("SCC-159 --accept-unpushed-main downgrades it to a warning",
+                    code != 2 and "main is 1 commit(s) ahead of origin/main" in out,
+                    out.strip()[-400:])
+            c.check("SCC-159 ...and the override is stated in the output, not silent",
+                    "accepted by --accept-unpushed-main" in out, out.strip()[-400:])
+
+            # ⭐ THE SEVERITY SPLIT, and it had NO case until a width mutant survived: with no
+            # --fetch the comparison is only as good as the last one, which on a plane is
+            # nothing — so it may WARN and must not hard-refuse. Hardening this to an error
+            # would brick every offline close-out for a question that was never asked freshly.
+            code, out = preflight(repo)
+            c.check("SCC-159 WITHOUT --fetch the stalled landing only WARNS",
+                    code != 2 and "main is 1 commit(s) ahead of origin/main" in out,
+                    out.strip()[-400:])
+            c.check("SCC-159 ...and says the comparison is against the last fetch",
+                    "vs the LAST fetch" in out, out.strip()[-400:])
+
+        with TempDir() as t:
+            # ⭐ THE FALSE-RED CONTROL. main level with origin ⇒ silence: a check that fires on
+            # the normal case is one every close-out learns to read past.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            code, out = preflight(repo, "--fetch")
+            c.check("SCC-159 control: main level with origin/main is CLEAR and silent",
+                    code == 0 and "stalled landing" not in out, out.strip()[-300:])
+
         with TempDir() as t:
             repo = make_repo(t)
             branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})

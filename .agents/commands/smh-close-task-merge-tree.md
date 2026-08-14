@@ -176,6 +176,15 @@ own work, so the script derives it and prints it as `LANE:`:
 Exit 2 → stop and report. Exit 1 (warnings) → read them; a "never pushed" warning in particular
 means Step 3 would merge something no other machine has.
 
+⭐ **A `landing:` STALLED LANDING error is about `main`, not about your lane (SCC-159).** Local
+`main` is ahead of `origin/main`, so an earlier close-out merged and never pushed — and every lane
+behind it, this one included, queues invisibly. Nothing else catches it: Step 3's
+`git pull --ff-only origin main` **succeeds silently when local is merely ahead**, and the `0 0`
+check runs only after the push. Land or inspect that commit first. Offline — the operator pushes
+from planes, where reads succeed while pushes die mid-upload — `--accept-unpushed-main` is the
+auditable way through: it downgrades this one check to a warning and prints itself back into the
+output, so the record shows it was used.
+
 ## Step 2 — Run the gate the lane selected
 
 The preflight prints the exact commands under `gate:`. Run them and **paste the real output** — a

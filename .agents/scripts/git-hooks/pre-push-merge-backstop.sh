@@ -108,16 +108,23 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   [ "$local_sha" = "$ZERO" ] && continue        # a deletion carries no commits
 
   # An incident lane is the incident pipeline's business (/cicd-mobile-error-team) — same
-  # posture as merge-target-guard's carve-out: its one legitimate merge is the emergency
-  # hotfix onto main, and a refusal here lands on a phone mid-incident, the false red this
-  # file's own header prices above a miss (SCC-149 C1). Sits BELOW the deletion check on
-  # purpose (SCC-154 review): a branch deletion carries no commits, and announcing "Push
-  # allowed" about one was noise.
+  # posture as merge-target-guard's carve-out. Sits BELOW the deletion check on purpose
+  # (SCC-154 review): a branch deletion carries no commits, and announcing "Push allowed"
+  # about one was noise.
+  #
+  # ⛔ SCC-159 (finding 28) NARROWED this from a skip to a NOTE. Keyed on the pushed ref
+  # alone, it waved an incident ref through carrying ANYTHING — while merge-target-guard
+  # refuses that same content at commit time as story:incident / chore:incident. A
+  # fast-forward creates no commit, so the ff variant of an already-refused merge escaped
+  # BOTH gates, and it escaped them hardest during an incident, when mistakes are likeliest.
+  # What the pipeline owns is the LANE, not other lanes' unlanded work riding inside it: the
+  # containment loop below now runs for incident refs too, and `integration_of` keeps the
+  # remedy pointed at main via the pipeline rather than the SCC-148 epic misroute.
   case "$remote_ref" in
     refs/heads/claude/incident-*)
       echo "  ⓘ merge-target backstop: '${remote_ref#refs/heads/}' is an incident lane —"
-      echo "    /cicd-mobile-error-team owns it; declined to judge. Push allowed."
-      continue ;;
+      echo "    /cicd-mobile-error-team owns it. Checking only that it carries no OTHER"
+      echo "    lane's unlanded work; its own commits are its business." ;;
   esac
 
   lane=${remote_ref#refs/heads/}

@@ -606,6 +606,48 @@ def check_children(key: str | None, rep: wf.Report, timeout: int = 20) -> None:
         rep.info("children", f"{key}: no subtasks")
 
 
+def check_stalled_landing(repo: Path, fetch: bool, accept: bool, rep: wf.Report) -> None:
+    """Is the DESTINATION itself unpushed? (SCC-159)
+
+    Every other check in this file asks about the lane. None asked about `main` — and a local
+    `main` ahead of `origin/main` is a landing that stalled: an earlier lane merged and never
+    reached the remote. Every lane behind it then queues invisibly, which happened live on
+    2026-08-14 for about an hour.
+
+    Nothing downstream catches it either. Both close-out commands run `git pull --ff-only
+    origin main` before merging, and that SUCCEEDS silently when local is merely ahead — it
+    only errors on true divergence — so the next lane merges cleanly onto the stuck main and
+    reports success. The `0 0` check they do run happens AFTER the push.
+
+    Severity is deliberately split. With a fresh fetch the answer is trustworthy and this is
+    an ERROR. Without one — no `--fetch`, or a fetch that failed — the comparison is against
+    whatever the last fetch saw, which on a plane is nothing, so it can only WARN. And because
+    reads succeed while pushes die on that same uplink, `--accept-unpushed-main` is the
+    auditable way through: it downgrades this one check and says so in the output, so the
+    walkthrough records that the operator chose it.
+    """
+    counts = wf.git(["rev-list", "--left-right", "--count", "origin/main...main"], repo)
+    if counts.returncode != 0 or not counts.stdout.strip():
+        rep.info("landing", "no local main and origin/main to compare")
+        return
+    behind, ahead = (counts.stdout.split() + ["?", "?"])[:2]
+    if ahead == "0":
+        rep.info("landing", "main is level with origin/main (nothing stalled ahead of you)")
+        return
+
+    what = (f"main is {ahead} commit(s) ahead of origin/main - a STALLED LANDING: an earlier "
+            f"lane merged and never reached the remote, and every lane behind it queues "
+            f"behind that. Land it (`git push origin main`) or inspect it before merging; "
+            f"`pull --ff-only` will NOT catch this, it succeeds when local is merely ahead")
+    if accept:
+        rep.warn("landing", f"{what} - accepted by --accept-unpushed-main")
+    elif fetch:
+        rep.err("landing", f"{what} [--accept-unpushed-main to proceed anyway]")
+    else:
+        rep.warn("landing", f"{what} - vs the LAST fetch, so re-run with --fetch to be sure "
+                            f"[--accept-unpushed-main to proceed anyway]")
+
+
 def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report) -> None:
     """`commit-and-push-are-one-action`: clean + 0/0, or the work is not finished. Merging
     an unpushed branch to main puts commits on production that exist on one disk."""
@@ -1029,6 +1071,12 @@ def main() -> int:
     ap.add_argument("--repo", help="repo root; default: walk up from cwd")
     ap.add_argument("--branch", help="branch to close; default: current HEAD")
     ap.add_argument("--fetch", action="store_true", help="fetch first (network)")
+    ap.add_argument("--accept-unpushed-main", action="store_true",
+                    help="proceed with a local main ahead of origin/main (SCC-159). "
+                         "The auditable offline exit: reads succeed while pushes die "
+                         "on a satellite uplink, so a hard refusal would brick every "
+                         "close-out made from a plane. Prints itself back into the "
+                         "output; typed per invocation, never sticky")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
 
@@ -1043,6 +1091,7 @@ def main() -> int:
     check_manifest(repo, branch, expect, rep)
     check_secondary(repo, expect, rep)
     check_sync(repo, branch, args.fetch, rep)
+    check_stalled_landing(repo, args.fetch, args.accept_unpushed_main, rep)
     check_base(repo, branch, rep)
     lane, touched = check_scope(repo, branch, rep)
     art_hits = check_artifacts(repo, key, rep)

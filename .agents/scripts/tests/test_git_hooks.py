@@ -697,6 +697,55 @@ def main() -> int:
             c.check("INC3 · ...and the refusal names the incident destination",
                     "incident pipeline" in out, out.strip()[-300:])
 
+    # ── INC5 · SCC-159: incident <-> incident is REFUSED, both directions ──────────────────
+    if c.block("INC5 · SCC-159: incident <-> incident is REFUSED, both direction"):
+        # Two concurrent incidents + a `cd` slip cross-lands one incident's work on the other,
+        # and BOTH gates waved it through with a friendly note: judge() sent the pair to the
+        # `incident:*|*:incident` unknown arm, which is positively-classified-then-unjudged.
+        # "Unjudged" was right for incident<->main; for a sibling incident lane it is the SCC-97
+        # wrong-target shape wearing a second incident name, and the pair has no legitimate use.
+        #
+        # BOTH DIRECTIONS are pinned even though the classes are identical, because the arm is
+        # matched on the "$target:$source" pair — a mutant narrowing it to one side would be
+        # invisible to a single-direction case.
+        for label, target, source in (
+            ("A <- B", "claude/incident-aaa111", "claude/incident-bbb222"),
+            ("B <- A", "claude/incident-bbb222", "claude/incident-aaa111"),
+        ):
+            with TempDir() as tmp:
+                d = make_repo(tmp)
+                lane(d, source)
+                lane(d, target, "main")
+                rc, out, moved = merge(d, target, source)
+                c.check(f"INC5 · incident {label} incident is REFUSED",
+                        rc != 0 and not moved, out.strip()[-300:])
+                c.check(f"INC5 · ...and the {label} refusal names the incident pipeline",
+                        "incident pipeline" in out, out.strip()[-300:])
+
+        # ⭐ THE FALSE-RED CONTROLS — the arms this narrowing must NOT eat. An incident lane
+        # absorbing main (or an epic) is the everyday mid-incident move and stays ALLOWED
+        # outright; SCC-154 landed that allow arm precisely because a refusal there costs more
+        # than a miss, and INC5 sits between it and the unknown wildcard.
+        with TempDir() as tmp:
+            d = make_repo(tmp)
+            lane(d, "claude/incident-aaa111")
+            # main must MOVE first, or the absorb is "Already up to date" and this control
+            # passes on a merge that never happened.
+            sh("git", "checkout", "-q", "main", cwd=d)
+            (d / "on_main.txt").write_text("x\n", encoding="utf-8")
+            sh("git", "add", "on_main.txt", cwd=d)
+            sh("git", "commit", "-qm", "SCC-159 work on main", "--no-verify", cwd=d)
+            rc, out, moved = merge(d, "claude/incident-aaa111", "main")
+            c.check("INC5 · control: incident <- main absorb is still ALLOWED",
+                    rc == 0 and moved, out.strip()[-300:])
+        with TempDir() as tmp:
+            d = make_repo(tmp)
+            lane(d, "epic/SCC-159-e")
+            lane(d, "claude/incident-aaa111", "main")
+            rc, out, moved = merge(d, "claude/incident-aaa111", "epic/SCC-159-e")
+            c.check("INC5 · control: incident <- epic absorb is still ALLOWED",
+                    rc == 0 and moved, out.strip()[-300:])
+
         # ═══ THE FAST-FORWARD BACKSTOP ════════════════════════════════════════════════════════
         # Case E measured the gap: a ff merge creates no commit, so NO commit-time hook can see it.
         # What it leaves behind is evidence — another lane's unlanded commits are now contained in
@@ -853,18 +902,66 @@ def main() -> int:
         # as story lanes: refusal + the SCC-148 misroute remedy ("its epic/* branch"), printed to a
         # phone mid-incident (SCC-149 C1). An incident lane's merges are the incident pipeline's
         # business, same posture as the guard: note, never a refusal.
+        # ⭐ SCC-159 NARROWED THIS (finding 28). The skip was keyed on the pushed ref alone, so
+        # an incident ref was waved through carrying ANYTHING — while the commit-time guard
+        # refuses exactly that content as story:incident / chore:incident. A fast-forward makes
+        # no commit, so the ff variant of a refused merge escaped both gates: the divergence was
+        # widest precisely during an incident, when mistakes are most likely.
+        #
+        # What stays allowed is the lane ITSELF — that is what "the pipeline owns it" means.
         with TempDir() as tmp:
             d, bare = make_pushable(tmp)
-            lane(d, "chore/SCC-154-x")                                  # unlanded foreign work
-            sh("git", "checkout", "-q", "-b", "claude/incident-abc123", "main", cwd=d)
-            sh("git", "merge", "--ff-only", "chore/SCC-154-x", cwd=d)   # the contaminated topology
+            lane(d, "claude/incident-abc123")                           # its own work only
             rc, out = sh("git", "push", "origin", "claude/incident-abc123", cwd=d)
-            c.check("G6 · pushing an incident lane is ALLOWED (the pipeline owns it)", rc == 0,
-                    out.strip()[-400:])
+            c.check("G6 · pushing an incident lane carrying ONLY its own work is ALLOWED",
+                    rc == 0, out.strip()[-400:])
             c.check("G6 · ...and says so, naming the pipeline", "/cicd-mobile-error-team" in out,
                     out.strip()[-400:])
             c.check("G6 · ...never the story-lane misroute", "its epic/* branch" not in out,
                     out.strip()[-400:])
+
+        # ── G6b · SCC-159: the ff-variant hole — an incident ref carrying a FOREIGN lane ────
+        with TempDir() as tmp:
+            d, bare = make_pushable(tmp)
+            lane(d, "chore/SCC-159-x")                                  # unlanded foreign work
+            sh("git", "checkout", "-q", "-b", "claude/incident-abc123", "main", cwd=d)
+            sh("git", "merge", "--ff-only", "chore/SCC-159-x", cwd=d)   # the contaminated topology
+            rc, out = sh("git", "push", "origin", "claude/incident-abc123", cwd=d)
+            c.check("G6b · an incident ref carrying an UNLANDED chore lane is REFUSED",
+                    rc != 0, out.strip()[-400:])
+            c.check("G6b · ...and the refusal names the contaminating lane",
+                    "chore/SCC-159-x" in out, out.strip()[-400:])
+            c.check("G6b · ...and still routes incidents to the pipeline, never the epic misroute",
+                    "/cicd-mobile-error-team" in out and "its epic/* branch" not in out,
+                    out.strip()[-400:])
+
+        # ── G6c · SCC-159: incident carrying a sibling INCIDENT — the push half of INC5 ─────
+        with TempDir() as tmp:
+            d, bare = make_pushable(tmp)
+            lane(d, "claude/incident-bbb222")
+            sh("git", "checkout", "-q", "-b", "claude/incident-aaa111", "main", cwd=d)
+            sh("git", "merge", "--ff-only", "claude/incident-bbb222", cwd=d)
+            rc, out = sh("git", "push", "origin", "claude/incident-aaa111", cwd=d)
+            c.check("G6c · an incident ref carrying a SIBLING incident lane is REFUSED",
+                    rc != 0, out.strip()[-400:])
+            c.check("G6c · ...and names the sibling",
+                    "claude/incident-bbb222" in out, out.strip()[-400:])
+
+        # ── G6d · the false-red control: incident content already on main is NOT foreign ────
+        with TempDir() as tmp:
+            d, bare = make_pushable(tmp)
+            lane(d, "chore/SCC-159-y")
+            sh("git", "checkout", "-q", "main", cwd=d)
+            sh("git", "merge", "--no-ff", "-m", "SCC-159 merge: landed", "chore/SCC-159-y",
+               "--no-verify", cwd=d)
+            sh("git", "push", "-q", "origin", "main", cwd=d)            # it LANDED
+            sh("git", "checkout", "-q", "-b", "claude/incident-abc123", "main", cwd=d)
+            (d / "fix.txt").write_text("hotfix\n", encoding="utf-8")
+            sh("git", "add", "fix.txt", cwd=d)
+            sh("git", "commit", "-qm", "SCC-159 hotfix", "--no-verify", cwd=d)
+            rc, out = sh("git", "push", "origin", "claude/incident-abc123", cwd=d)
+            c.check("G6d · an incident lane cut from a main that already carries the lane is ALLOWED",
+                    rc == 0, out.strip()[-400:])
 
     # ── G7 · SCC-154: incident-as-FOREIGN — still refused, remedy re-routed ────────────────
     if c.block("G7 · SCC-154: incident-as-FOREIGN — still refused, remedy re-rou"):
