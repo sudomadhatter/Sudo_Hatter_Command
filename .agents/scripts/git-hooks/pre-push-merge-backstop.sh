@@ -102,19 +102,23 @@ refuse() {   # $1 = the lane being pushed, $2 = the foreign lane riding on it
 # stdin: <local ref> <local sha> <remote ref> <remote sha>, one line per ref being pushed.
 while read -r local_ref local_sha remote_ref remote_sha; do
   case "$remote_ref" in
-    # ⛔ ORDER IS LOAD-BEARING (SCC-154): the incident arm sits ABOVE the `refs/heads/claude/*`
-    # glob that also matches it. An incident lane is the incident pipeline's business
-    # (/cicd-mobile-error-team) — same posture as merge-target-guard's carve-out: its one
-    # legitimate merge is the emergency hotfix onto main, and a refusal here lands on a phone
-    # mid-incident, the false red this file's own header prices above a miss (SCC-149 C1).
-    refs/heads/claude/incident-*)
-      echo "  ⓘ merge-target backstop: '${remote_ref#refs/heads/}' is an incident lane —"
-      echo "    /cicd-mobile-error-team owns it; declined to judge. Push allowed."
-      continue ;;
     refs/heads/chore/*|refs/heads/claude/*) ;;
     *) continue ;;
   esac
   [ "$local_sha" = "$ZERO" ] && continue        # a deletion carries no commits
+
+  # An incident lane is the incident pipeline's business (/cicd-mobile-error-team) — same
+  # posture as merge-target-guard's carve-out: its one legitimate merge is the emergency
+  # hotfix onto main, and a refusal here lands on a phone mid-incident, the false red this
+  # file's own header prices above a miss (SCC-149 C1). Sits BELOW the deletion check on
+  # purpose (SCC-154 review): a branch deletion carries no commits, and announcing "Push
+  # allowed" about one was noise.
+  case "$remote_ref" in
+    refs/heads/claude/incident-*)
+      echo "  ⓘ merge-target backstop: '${remote_ref#refs/heads/}' is an incident lane —"
+      echo "    /cicd-mobile-error-team owns it; declined to judge. Push allowed."
+      continue ;;
+  esac
 
   lane=${remote_ref#refs/heads/}
 

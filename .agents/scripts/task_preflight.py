@@ -767,26 +767,43 @@ VERDICT_RE = re.compile(r"^Verdict:\s*(PASS|CONCERNS|FAIL|WAIVED)\s*@\s*([0-9a-f
 
 # A line that LOOKS like a verdict stamp but fails the canonical regex — bolded, lowercased,
 # or heading-prefixed (the three real-world shapes the SCC-146 review named). Requiring a
-# status word AND an `@` is what keeps prose out: the indented decoy, table rows and bullets
-# never carry both at line start. A stamp missing its `@` entirely is missed here, and that
-# is safe BY CONSTRUCTION: a stamp the canonical regex cannot read can never grant a SKIP,
-# and the governing-latest rule below means it cannot demote a canonical one either.
-NEAR_MISS_LINE = re.compile(r"^[#>*_`\s]{0,6}verdict\b[^\n]*?\b(?:pass|concerns|fail|waived)"
+# status word AND an `@` is what keeps prose out. ⛔ The marker class is DELIBERATELY narrow
+# (SCC-154 review): `\s`, backtick and `>` were in it and made INDENTED code-block quotes,
+# inline-code citations and blockquoted stamps — house-standard EVIDENCE shapes that carry
+# the `@` by construction — a hard exit-2 false red on the shipping path. Now only heading /
+# bold / italic markers match. Known safe misses, on purpose: a dash-bulleted, blockquoted,
+# indented or backtick-quoted stamp is ignored, which can never grant a SKIP and, under
+# governing-latest, can never demote a canonical stamp either. (`* `-bulleted stamps still
+# err — `*` must stay for `**Verdict…**` — the asymmetry is documented here, not papered
+# over.)
+NEAR_MISS_LINE = re.compile(r"^[#*_]{0,4} ?verdict\b[^\n]*?\b(?:pass|concerns|fail|waived)"
                             r"\b[^\n]*@", re.IGNORECASE)
 
 
 def strip_fenced(text: str) -> str:
     """Markdown code fences removed before any verdict scan (SCC-154, finding 8).
 
-    A canonical stamp pasted AS EVIDENCE inside a ``` fence sits at column 0 and matched
-    VERDICT_RE — a fenced FAIL was a permanent block. An UNCLOSED fence drops everything
-    after it: no verdict then means the full gate runs, the safe direction."""
-    out, fenced = [], False
+    A canonical stamp pasted AS EVIDENCE inside a fence sits at column 0 and matched
+    VERDICT_RE — a fenced FAIL was a permanent block. ⛔ Fences close per CommonMark: the
+    SAME marker kind, at least the opening length — the first cut toggled on ANY marker
+    line, so a ````-or-~~~-wrapped paste whose content held a ``` pair LEAKED its inner
+    lines back into the scan (measured by this lane's own review: a quoted FAIL became the
+    governing latest stamp, a permanent false block). Marker lines inside an open fence of
+    another kind are content and stay dropped. An UNCLOSED fence still drops everything
+    after it: no verdict then means the full gate runs, the safe direction — pinned as
+    declared design."""
+    out: list[str] = []
+    fence: tuple[str, int] | None = None      # (marker char, opening length) while inside
     for line in text.splitlines():
-        if re.match(r"^[ \t]{0,3}(```|~~~)", line):
-            fenced = not fenced
+        m = re.match(r"^[ \t]{0,3}(`{3,}|~{3,})", line)
+        if m:
+            marker = m.group(1)
+            if fence is None:
+                fence = (marker[0], len(marker))
+            elif marker[0] == fence[0] and len(marker) >= fence[1]:
+                fence = None
             continue
-        if not fenced:
+        if fence is None:
             out.append(line)
     return "\n".join(out)
 
@@ -810,11 +827,11 @@ def nonartifact_moved(repo: Path, sha: str) -> list[str] | None:
             if p.strip() and not p.strip().startswith("_artifacts/")]
 
 
-def check_gate(repo: Path, hits: list[Path], lane: str, expect: str,
+def check_gate(repo: Path, hits: list[Path], lane: str, expect: str, branch: str,
                rep: wf.Report) -> str | None:
     """Read the review's `Verdict: ... @ <sha>` and decide the close-out gate's fate:
 
-      governing FAIL (latest stamp)                 -> rep.err: the merge is REFUSED
+      any governing latest-stamp FAIL               -> rep.err: the merge is REFUSED
       governing PASS/CONCERNS + code-fresh
         + receipts valid                            -> return the `SKIP` line
       anything else (no governing verdict, WAIVED,
@@ -828,15 +845,27 @@ def check_gate(repo: Path, hits: list[Path], lane: str, expect: str,
     pool (SCC-146 review findings 1/2/3). Foreign evidence neither grants a SKIP nor
     blocks: this lane's gate runs in full instead, which never trusts and never wedges.
 
-    Within the governing walkthrough the LATEST stamp governs — a re-review APPENDS its
-    stamp, so FAIL-then-PASS clears and PASS-then-FAIL blocks. The old any(FAIL) rule made
-    the FAIL error's own remedy (re-run the review) unable to ever clear it.
+    ⭐ And a LANDED lane's dir is history, not this run's contract — the same
+    `manifest_settled` rule check_manifest applies: a settled manifest declaring another
+    branch neither governs nor counts as ambiguity, or every follow-on lane of a
+    multi-lane ticket would be wedged forever by its landed sibling (SCC-154 review).
+
+    ⛔ THE FAIL SCAN RUNS BEFORE THE AMBIGUITY RETURN, and the order is load-bearing: with
+    the guard first, a lane whose OWN latest stamp said FAIL slid past on an info line
+    whenever a second stamped dir existed — a typo'd FAIL blocked harder than a canonical
+    one (three review lenses converged on it). Ambiguity may withhold a SKIP; it must
+    never withhold the block.
+
+    Within one walkthrough the LATEST stamp governs — a re-review APPENDS its stamp, so
+    FAIL-then-PASS clears and PASS-then-FAIL blocks. The old any(FAIL)-over-all-hits rule
+    made the FAIL error's own remedy (re-run the review) unable to ever clear it.
 
     Fail toward running, never toward trusting (/cicd-code-review Step 3, ported). ONLY
     this function may produce a SKIP — the close-out command never decides one by reading.
     """
     if lane != "LOCAL" or not hits:
         return None
+    ref = base_ref(repo)
     stamped: list[tuple[Path, list[tuple[str, str]]]] = []
     foreign_stamped = 0
     for p in hits:
@@ -846,6 +875,11 @@ def check_gate(repo: Path, hits: list[Path], lane: str, expect: str,
         found = [(m.group(1).upper(), m.group(2)) for m in VERDICT_RE.finditer(text)]
         if not (man_text and manifest_field(man_text, "task_key") == expect):
             foreign_stamped += 1 if found else 0
+            continue
+        declared = manifest_field(man_text, "branch")
+        if declared and declared != branch and manifest_settled(repo, man, ref):
+            rep.info("gate", f"{rel_or_abs(p, repo)}: a landed lane's dir (settled on "
+                             f"{ref}) - history, neither governing nor ambiguous")
             continue
         # Near-miss stamps are an ERROR, and only in GOVERNING walkthroughs: a typo'd FAIL
         # must never demote to "no verdict, clean full run" (SCC-146 finding 6), while a
@@ -866,16 +900,16 @@ def check_gate(repo: Path, hits: list[Path], lane: str, expect: str,
             rep.info("gate", "no review Verdict line in this task's own walkthrough - "
                              "the full gate runs")
         return None
+    if any(v[-1][0] == "FAIL" for _, v in stamped):
+        rep.err("gate", "the review verdict is FAIL - fix on the branch and re-run the "
+                        "review; a FAIL lane does not merge")
+        return None
     if len(stamped) > 1:
         rep.info("gate", f"{len(stamped)} walkthroughs under {expect} carry verdict "
                          f"stamps - which one governs is ambiguous; the full gate runs")
         return None
     wt, verdicts = stamped[0]
     status, sha = verdicts[-1]          # the LATEST stamp governs; a re-review APPENDS
-    if status == "FAIL":
-        rep.err("gate", "the review verdict is FAIL - fix on the branch and re-run the "
-                        "review; a FAIL lane does not merge")
-        return None
     if status == "WAIVED":
         rep.info("gate", "verdict WAIVED (no suite exists to receipt) - treated as "
                          "CONCERNS; the printed gate plan stands")
@@ -913,8 +947,8 @@ def check_gate(repo: Path, hits: list[Path], lane: str, expect: str,
             paths = data.get("dirty_paths")
             if not (paths and all(str(p).replace("\\", "/").startswith("_artifacts/")
                                   for p in paths)):
-                got = "result=pass DIRTY (non-artifacts dirt)" if paths else \
-                      f"result={data.get('result')} DIRTY"
+                got = (f"result={data.get('result')} DIRTY"
+                       + (" (non-artifacts dirt)" if paths else ""))
         if got:
             rep.info("gate", f"receipt {rpath.stem}: {got} - the full gate runs")
             return None
@@ -1020,7 +1054,7 @@ def main() -> int:
     # SCC-146: the review verdict + its receipts can spare the lane a fourth identical
     # suite run — or refuse the merge outright on a FAIL. Runs after every other check so
     # its no-upstream-errors guard sees the complete picture.
-    skip = check_gate(repo, art_hits, lane, expect, rep)
+    skip = check_gate(repo, art_hits, lane, expect, branch, rep)
     plan = gate_plan(repo, lane)
     if skip:
         # ⛔ A SKIP spares the SUITE ONLY (SCC-154, review compound C4). Every SKIPping lane

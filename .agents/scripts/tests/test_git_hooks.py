@@ -581,8 +581,14 @@ def main() -> int:
         rc, out, moved = merge(d, "claude/incident-abc123", "main")
         c.check("INC2 · main -> incident (absorb) is ALLOWED", rc == 0 and moved,
                 out.strip()[-300:])
-        c.check("INC2 · ...with the pipeline note, never a refusal",
-                "/cicd-mobile-error-team" in out and "MERGE REFUSED" not in out,
+        # Amended by the SCC-154 review: the absorb is now sanctioned OUTRIGHT (`allow`, not
+        # unjudged-with-note) — `allow` is what lets any-legal-name-wins protect the absorb
+        # when a sibling lane's tip coincides with main's (case INC4). The original pin
+        # asserted the pipeline note here, and that note-shape was itself the defect: an
+        # unjudged incident target had no allow arm, so a coincident story name forced a
+        # refusal on the emergency path.
+        c.check("INC2 · ...never a refusal, never the generic decline",
+                "MERGE REFUSED" not in out and "outside the branch model" not in out,
                 out.strip()[-300:])
     with TempDir() as tmp:
         d = make_repo(tmp)
@@ -609,6 +615,38 @@ def main() -> int:
         c.check("INC2 · a sha carrying incident + story names vs main is REFUSED "
                 "(unknown never launders a refusable name)",
                 rc != 0 and not moved and "claude/SCC-154-s" in out, out.strip()[-300:])
+
+    # ── INC4 · SCC-154 review fix: the absorb survives a COINCIDENT sibling tip ────────────
+    # The review's measured false red: a freshly-cut story/chore lane sitting at main's tip
+    # (the normal state between cut and first commit) adds its name to main's sha; with no
+    # allow arm for incident targets, judge(incident:story)=refuse won the aggregate and the
+    # EMERGENCY absorb ate a story-lane refusal mid-incident. incident:main|incident:epic are
+    # now `allow`, and any-legal-name-wins does the rest.
+    with TempDir() as tmp:
+        d = make_repo(tmp)
+        lane(d, "claude/incident-abc123")
+        sh("git", "checkout", "-q", "main", cwd=d)
+        (d / "onmain.txt").write_text("x\n", encoding="utf-8")
+        sh("git", "add", "onmain.txt", cwd=d)
+        sh("git", "commit", "-qm", "SCC-154 on main", cwd=d)
+        sh("git", "branch", "claude/SCC-154-fresh", "main", cwd=d)   # tip == main's tip
+        rc, out, moved = merge(d, "claude/incident-abc123", "main")
+        c.check("INC4 · the absorb is ALLOWED with a fresh sibling lane at main's tip",
+                rc == 0 and moved and "MERGE REFUSED" not in out, out.strip()[-300:])
+    with TempDir() as tmp:
+        d = make_repo(tmp)
+        # ...and the epic direction of the sanctioned absorb (the header's own words):
+        # `allow`, so no note prints — the width pin that kills a dropped incident:epic arm.
+        lane(d, "epic/SCC-154-e")
+        lane(d, "claude/incident-abc123", "main")
+        sh("git", "checkout", "-q", "epic/SCC-154-e", cwd=d)
+        (d / "onepic.txt").write_text("x\n", encoding="utf-8")
+        sh("git", "add", "onepic.txt", cwd=d)
+        sh("git", "commit", "-qm", "SCC-154 on the epic", cwd=d)
+        rc, out, moved = merge(d, "claude/incident-abc123", "epic/SCC-154-e")
+        c.check("INC4 · epic -> incident (absorb) is ALLOWED outright, no decline note",
+                rc == 0 and moved and "MERGE REFUSED" not in out
+                and "/cicd-mobile-error-team" not in out, out.strip()[-300:])
 
     # ── INC3 · SCC-154: the four story/chore <-> incident pairs are POSITIVELY refused ─────
     # Before this, all four fell through to the `*)` unknown default — allowed with a note —

@@ -50,9 +50,10 @@
 # ─── What it refuses, and what it deliberately does not ────────────────────────────────────
 # It refuses ONLY known-bad topologies. An incident lane — `claude/incident-<short-id-lower>`, the
 # ONLY shape the incident pipeline creates (cicd-mobile-error-team.md), and it MATCHES the
-# `claude/*` glob — is positively classified by a carve-out ABOVE the story arm; its merges WITH
-# MAIN (or an epic) are deliberately unjudged, because an emergency local hotfix merge to main
-# must never eat a story-lane refusal mid-incident (SCC-149; this comment once claimed a bare
+# `claude/*` glob — is positively classified by a carve-out ABOVE the story arm; ABSORBING main
+# (or an epic) into it is allowed outright, and its hotfix landing ON main is deliberately
+# unjudged, because an emergency local merge must never eat a story-lane refusal mid-incident
+# (SCC-149/SCC-154; this comment once claimed a bare
 # incident prefix was outside the branch model while no such arm existed and the real prefix
 # classified as STORY). Its four pairings with story and chore lanes are REFUSED since SCC-154 —
 # they previously fell to the unjudged default, and a story or chore lane exchanging work with an
@@ -169,15 +170,23 @@ classify() {
 # judge <target-class> <source-class>  ->  allow | refuse | unknown
 judge() {
   case "$1:$2" in
+    # ⭐ The ABSORB is sanctioned OUTRIGHT (SCC-154 review): an incident TARGET taking main
+    # (or an epic) in is the everyday mid-incident move, and `allow` — not `unknown` — is
+    # what lets any-legal-name-wins protect it when a freshly-cut sibling lane's tip
+    # coincides with main's (an incident target otherwise has NO allow arm, so a coincident
+    # story name forced a story-lane refusal onto the emergency path — the false red this
+    # file's own charter prices above a miss, measured by the review).
+    incident:main|incident:epic)  echo allow ;;
     # ⛔ ORDER IS LOAD-BEARING (SCC-154): these four sit ABOVE the incident wildcard because
     # `case` is first-match — below it they are dead code and the pairs fall back to unjudged,
     # which is exactly where the SCC-149 review measured them. An incident lane exchanges work
-    # with main (the emergency hotfix) and ONLY main: a story or chore lane merging with an
-    # incident lane is the SCC-97 wrong-target shape wearing an incident name.
+    # with main (or an epic, absorbing) and NEVER with a story or chore lane: that pairing is
+    # the SCC-97 wrong-target shape wearing an incident name.
     story:incident|chore:incident|incident:story|incident:chore) echo refuse ;;
-    # An incident lane with main (or an epic) is positively classified, then DELIBERATELY
-    # unjudged — its merges are the incident pipeline's business (/cicd-mobile-error-team), and
-    # the one local merge that matters, an emergency hotfix onto main, must never eat a refusal
+    # Everything else incident-shaped (the hotfix landing on main or an epic, incident with
+    # unknown, incident with incident) is positively classified, then DELIBERATELY unjudged —
+    # those merges are the incident pipeline's business (/cicd-mobile-error-team), and the one
+    # local merge that matters, an emergency hotfix onto main, must never eat a refusal
     # mid-incident (SCC-149).
     incident:*|*:incident)        echo unknown ;;
     unknown:*|*:unknown)          echo unknown ;;
@@ -201,7 +210,7 @@ destination() {
     epic)    echo "an epic/* branch merges into main (/cicd-push-e2e)" ;;
     story)   echo "a claude/* story lane merges into ITS epic/* branch" ;;
     main)    echo "main is absorbed INTO a lane, never the other way around" ;;
-    incident) echo "claude/incident-* is the incident pipeline's lane (/cicd-mobile-error-team); it exchanges work with main only, never with a story or chore lane" ;;
+    incident) echo "claude/incident-* is the incident pipeline's lane (/cicd-mobile-error-team); it exchanges work with main (or an epic), never with a story or chore lane" ;;
     *)       echo "see .agents/rules/git-policy.md § Branch model" ;;
   esac
 }

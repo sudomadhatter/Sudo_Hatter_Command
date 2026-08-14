@@ -182,13 +182,16 @@ def receipt_defect(data: dict | None) -> str | None:
 def check_receipt(repo: Path, data: dict, gate: str, target: str | None,
                   rep: wf.Report) -> None:
     """One receipt against one target commit. Shared with closeout_preflight so the two
-    never disagree about what 'stale' means."""
+    never disagree about what 'stale' means. The RESULT half reads through
+    receipt_defect() — the same helper task_preflight reads — so the two consumers cannot
+    drift about what a usable result is (SCC-154 review: this docstring claimed that
+    unification one commit before it was true)."""
     if data.get("result") == "warn":
         # Advisory findings: recorded, never blocking. Still WARN-not-INFO so it is read.
         rep.warn("gates", f"{gate}: advisory findings only (exit {data.get('exit_code')}) "
                           f"- not blocking, but read them")
-    elif data.get("result") != "pass":
-        rep.err("gates", f"{gate}: result={data.get('result')} "
+    elif receipt_defect(data):
+        rep.err("gates", f"{gate}: {receipt_defect(data)} "
                          f"(exit {data.get('exit_code')})")
         return
     sha = str(data.get("sha") or "")
@@ -301,6 +304,8 @@ def main() -> int:
     p_list.add_argument("--story", "--task", dest="story", required=True)
     p_list.add_argument("--project")
     p_list.add_argument("--root", help="task-lane receipts root; see `run --root`")
+    p_list.add_argument("--cwd", help="anchor for a RELATIVE --root; without it a relative "
+                                      "root resolves against the invoker's cwd")
 
     args = ap.parse_args()
     # ⛔ With --root the resolver is never called — that is the entire point (SCC-146):
@@ -321,9 +326,12 @@ def main() -> int:
                    "artifacts dir and records `fail` for a suite that never ran (SCC-154)")
         root = Path(args.root)
         if not root.is_absolute() and cwd_arg:
-            # A relative --root resolves against --CWD, never the invoker's cwd: from the
-            # wrong checkout it landed the receipt as an untracked stray with
-            # success-shaped output (SCC-146 review finding 5 / compound C5).
+            # A relative --root resolves against --cwd WHEN SUPPLIED: from the wrong
+            # checkout, `run` landed the receipt as an untracked stray with success-shaped
+            # output (SCC-146 review finding 5 / compound C5) — which is why `run` REQUIRES
+            # --cwd above. For `check`/`list` the flag is optional and a relative root
+            # without it still resolves against the invoker's cwd — read-only, and the
+            # failure is a loud "no receipt", never a stray write (SCC-154 review).
             root = Path(cwd_arg).resolve() / root
         project = root.resolve()
     else:

@@ -1327,6 +1327,156 @@ def main() -> int:
         c.check("SCC-154 a bolded FAIL stamp is an ERROR, never a demotion to a clean run",
                 code == 2 and "does not parse" in out, f"exit {code}: " + out.strip()[-300:])
 
+    # ── SCC-154 review fixes: the FAIL block outranks ambiguity, settled lanes step aside,
+    # fences close by kind+length, and the near-miss class stops false-redding evidence ──────
+
+    with TempDir() as t:   # R1 · a governing latest-FAIL blocks EVEN under ambiguity
+        # The review's convergent finding (three lenses + compound): the len>1 info-return sat
+        # ABOVE the FAIL branch, so a typo'd FAIL blocked harder than a canonical one.
+        repo = make_repo(t, walkthrough=False)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        sha = git(repo, "rev-parse", "HEAD").stdout.strip()
+        d2 = "_artifacts/_main/2026-08-09_scc-11-more"
+        write(repo, f"{ADIR}/walkthrough.md",
+              WALKTHROUGH + f"\n## Code Review\n\nVerdict: FAIL @ {sha}\n")
+        write(repo, f"{d2}/task.yaml", MANIFEST)
+        write(repo, f"{d2}/walkthrough.md",
+              WALKTHROUGH + f"\n## Code Review\n\nVerdict: PASS @ {sha}\n")
+        commit(repo, "SCC-11 chore: two stamped walkthroughs, one FAIL (artifacts only)")
+        git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+        code, out = preflight(repo)
+        c.check("SCC-154 a governing latest-FAIL blocks even when a second stamped "
+                "walkthrough makes the SKIP ambiguous",
+                code == 2 and "FAIL" in out, f"exit {code}: " + out.strip()[-300:])
+
+    with TempDir() as t:   # R2 · a LANDED lane's dir is history: it neither governs nor
+        # counts as ambiguity (same manifest_settled rule check_manifest already applies).
+        # The landed dir lives ON MAIN (declaring its own, pruned branch); THIS lane's
+        # manifest is authored on the branch, the way quick-dev actually writes it.
+        repo = make_repo(t, walkthrough=False, manifest=False)
+        d0 = "_artifacts/_main/2026-08-01_scc-11-landed"
+        base = git(repo, "rev-parse", "HEAD").stdout.strip()
+        write(repo, f"{d0}/task.yaml", MANIFEST.replace("chore/SCC-11-thing",
+                                                        "chore/SCC-11-old"))
+        write(repo, f"{d0}/walkthrough.md",
+              WALKTHROUGH + f"\n## Code Review\n\nVerdict: PASS @ {base}\n")
+        commit(repo, "SCC-11 chore: a landed lane's artifacts on main")
+        git(repo, "push", "-q", "origin", "main")
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n",
+                                            f"{ADIR}/task.yaml": MANIFEST})
+        stamp_and_verdict(repo, "PASS")
+        code, out = preflight(repo)
+        c.check("SCC-154 a landed lane's stamped dir does not wedge the follow-on "
+                "(settled = history, not ambiguity)",
+                code == 0 and "gate: SKIP" in out, f"exit {code}: " + out.strip()[-300:])
+
+    with TempDir() as t:   # R3/R4 · fences close by KIND and LENGTH: wrapped inner fences
+        # never leak a pasted stamp into the scan (verified live by the review: the shipped
+        # toggle flipped on any marker, so a quoted FAIL after the real PASS became governing)
+        for label, fence_open, fence_close in (("4-backtick", "````", "````"),
+                                               ("tilde", "~~~", "~~~")):
+            repo_dir = t / f"repo-{label}"
+            repo_dir.mkdir()
+            repo = make_repo(repo_dir, walkthrough=False)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            sha = stamp_and_verdict(repo, "PASS", commit_docs=False)
+            write(repo, f"{ADIR}/walkthrough.md",
+                  WALKTHROUGH + f"\n## Code Review\n\nVerdict: PASS @ {sha}\n"
+                  + f"\nevidence paste (markdown containing its own fence):\n\n"
+                  + f"{fence_open}\n```\nVerdict: FAIL @ {sha}\n```\n{fence_close}\n")
+            commit(repo, "SCC-11 chore: walkthrough + receipts (artifacts only)")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            code, out = preflight(repo)
+            c.check(f"SCC-154 a {label}-wrapped inner fence never leaks its stamp "
+                    f"(the real PASS still SKIPs)",
+                    code == 0 and "gate: SKIP" in out, f"exit {code}: " + out.strip()[-300:])
+
+    with TempDir() as t:   # R5 · the UNCLOSED fence drops the tail — pinned as the declared
+        # design (fail toward running: no verdict -> the full gate runs, no err either way)
+        repo = make_repo(t, walkthrough=False)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        sha = git(repo, "rev-parse", "HEAD").stdout.strip()
+        write(repo, f"{ADIR}/walkthrough.md",
+              WALKTHROUGH + "\nan unclosed evidence fence:\n\n```\n"
+              + f"Verdict: FAIL @ {sha}\n")
+        commit(repo, "SCC-11 chore: walkthrough (artifacts only)")
+        git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+        code, out = preflight(repo)
+        c.check("SCC-154 an UNCLOSED fence drops the tail: full gate, no block, no SKIP",
+                code == 0 and "gate: SKIP" not in out and "run_all.py" in out,
+                f"exit {code}: " + out.strip()[-300:])
+
+    with TempDir() as t:   # R6 · an INDENTED canonical stamp is evidence, not a near-miss
+        # (the review's false-red: \s in the prefix class exit-2'd correct evidence content)
+        repo = make_repo(t, walkthrough=False)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        sha = stamp_and_verdict(repo, "PASS", commit_docs=False)
+        write(repo, f"{ADIR}/walkthrough.md",
+              WALKTHROUGH + f"\n## Code Review\n\nVerdict: PASS @ {sha}\n"
+              + f"\nprior review, quoted as an indented code block:\n\n"
+              + f"    Verdict: PASS @ {sha}\n")
+        commit(repo, "SCC-11 chore: walkthrough + receipts (artifacts only)")
+        git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+        code, out = preflight(repo)
+        c.check("SCC-154 an INDENTED quoted stamp never false-reds (the real PASS SKIPs)",
+                code == 0 and "gate: SKIP" in out, f"exit {code}: " + out.strip()[-300:])
+
+    with TempDir() as t:   # R7/R8 · the detector's WIDTH: lowercase and heading shapes err
+        for label, stamp_line in (("lowercase", "verdict: fail @ {sha}"),
+                                  ("heading", "## Verdict: FAIL @ {sha}")):
+            repo_dir = t / f"repo-{label}"
+            repo_dir.mkdir()
+            repo = make_repo(repo_dir, walkthrough=False)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            sha = git(repo, "rev-parse", "HEAD").stdout.strip()
+            write(repo, f"{ADIR}/walkthrough.md",
+                  WALKTHROUGH + "\n## Code Review\n\n" + stamp_line.format(sha=sha) + "\n")
+            commit(repo, "SCC-11 chore: walkthrough (artifacts only)")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            code, out = preflight(repo)
+            c.check(f"SCC-154 a {label} FAIL stamp is an ERROR (detector width)",
+                    code == 2 and "does not parse" in out,
+                    f"exit {code}: " + out.strip()[-300:])
+
+    with TempDir() as t:   # R9 · a canonical PASS beside a malformed FAIL still blocks
+        repo = make_repo(t, walkthrough=False)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        sha = stamp_and_verdict(repo, "PASS", commit_docs=False)
+        write(repo, f"{ADIR}/walkthrough.md",
+              WALKTHROUGH + f"\n## Code Review\n\nVerdict: PASS @ {sha}\n"
+              + f"\n**Verdict: FAIL @ {sha}**\n")
+        commit(repo, "SCC-11 chore: walkthrough + receipts (artifacts only)")
+        git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+        code, out = preflight(repo)
+        c.check("SCC-154 a canonical PASS cannot ride past a malformed FAIL beside it",
+                code == 2 and "does not parse" in out and "gate: SKIP" not in out,
+                f"exit {code}: " + out.strip()[-300:])
+
+    with TempDir() as t:   # R10 · PASS-then-WAIVED: the latest stamp governs there too
+        repo = make_repo(t, walkthrough=False)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        sha = stamp_and_verdict(repo, "PASS", commit_docs=False)
+        write(repo, f"{ADIR}/walkthrough.md",
+              WALKTHROUGH + f"\n## Code Review\n\nVerdict: PASS @ {sha}\n"
+              + f"\n## Code Review (re-run)\n\nVerdict: WAIVED @ {sha}\n")
+        commit(repo, "SCC-11 chore: walkthrough + receipts (artifacts only)")
+        git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+        code, out = preflight(repo)
+        c.check("SCC-154 PASS-then-WAIVED: WAIVED governs, the plan stands (no SKIP)",
+                code == 0 and "gate: SKIP" not in out and "WAIVED" in out
+                and "run_all.py" in out, f"exit {code}: " + out.strip()[-300:])
+
+    with TempDir() as t:   # R11 · a WARN receipt is SKIP-eligible (the pass-or-warn width)
+        repo = make_repo(t, walkthrough=False)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        run_script("gate_receipt.py", "run", "--task", "SCC-11", "--gate", "suite",
+                   "--warn-exit", "1", "--root", str(repo / ADIR), "--cwd", str(repo),
+                   "--", sys.executable, "-c", "import sys; sys.exit(1)")
+        stamp_and_verdict(repo, "PASS", receipt=False)
+        code, out = preflight(repo)
+        c.check("SCC-154 a WARN receipt (advisory findings) is SKIP-eligible",
+                code == 0 and "gate: SKIP" in out, f"exit {code}: " + out.strip()[-300:])
+
     with TempDir() as t:   # a FENCED canonical stamp is evidence, not a verdict
         repo = make_repo(t, walkthrough=False)
         branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
