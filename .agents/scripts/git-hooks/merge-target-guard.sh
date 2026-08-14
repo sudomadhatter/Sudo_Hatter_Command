@@ -50,12 +50,16 @@
 # ─── What it refuses, and what it deliberately does not ────────────────────────────────────
 # It refuses ONLY known-bad topologies. An incident lane — `claude/incident-<short-id-lower>`, the
 # ONLY shape the incident pipeline creates (cicd-mobile-error-team.md), and it MATCHES the
-# `claude/*` glob — is positively classified by a carve-out ABOVE the story arm and then
-# deliberately unjudged: an emergency local hotfix merge to main must never eat a story-lane
-# refusal mid-incident (SCC-149; this comment once claimed a bare incident prefix was outside the
-# branch model while no such arm existed and the real prefix classified as STORY). A branch no
-# arm classifies, or a merge whose source cannot be named at all, is ALLOWED — with a line saying
-# so. And where one sha carries several branch names, ANY legal name wins.
+# `claude/*` glob — is positively classified by a carve-out ABOVE the story arm; its merges WITH
+# MAIN (or an epic) are deliberately unjudged, because an emergency local hotfix merge to main
+# must never eat a story-lane refusal mid-incident (SCC-149; this comment once claimed a bare
+# incident prefix was outside the branch model while no such arm existed and the real prefix
+# classified as STORY). Its four pairings with story and chore lanes are REFUSED since SCC-154 —
+# they previously fell to the unjudged default, and a story or chore lane exchanging work with an
+# incident lane is the SCC-97 wrong-target shape wearing an incident name. A branch no arm
+# classifies, or a merge whose source cannot be named at all, is ALLOWED — with a line saying
+# so. And where one sha carries several branch names, ANY legal name wins — except through
+# `unknown`: an incident name never launders a refusable sibling name (unknown ≠ allow).
 #
 # That bias is deliberate and it is not laziness. A gate that blocks a correct merge is one an
 # operator learns to route around, and this repo has already shipped four of those (`hooks_armed`
