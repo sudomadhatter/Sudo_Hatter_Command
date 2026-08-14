@@ -996,8 +996,13 @@ def main() -> int:
                        "--gate", "suite", "--root", str(repo / ADIR),
                        "--cwd", str(repo),
                        "--", sys.executable, "-c", "print('ok')")
+        # The indented decoy is deliberate: prose ABOUT a verdict must never read as one.
+        # VERDICT_RE anchors at line start; an unanchored mutant matches the decoy's FAIL
+        # and every PASS case here goes red (the comment-literals-invert-grep class).
         write(repo, f"{ADIR}/walkthrough.md",
-              WALKTHROUGH + f"\n## Code Review (2026-08-08)\n\nVerdict: {verdict} @ {sha}\n")
+              WALKTHROUGH
+              + "\n  (the reviewer writes Verdict: FAIL @ 0000000 when the gate is red)\n"
+              + f"\n## Code Review (2026-08-08)\n\nVerdict: {verdict} @ {sha}\n")
         if commit_docs:
             commit(repo, "SCC-11 chore: walkthrough + receipts (artifacts only)")
             git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
@@ -1047,6 +1052,19 @@ def main() -> int:
         stamp_and_verdict(repo, "PASS", receipt=False)
         code, out = preflight(repo)
         c.check("SCC-146 verdict PASS but NO receipt -> commands print (fail toward running)",
+                code == 0 and "gate: SKIP" not in out and "run_all.py" in out,
+                f"exit {code}: " + out.strip()[-300:])
+
+    with TempDir() as t:   # receipts exist, but none of them is the SUITE run
+        repo = make_repo(t, walkthrough=False)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        run_script("gate_receipt.py", "run", "--task", "SCC-11", "--gate", "lint",
+                   "--root", str(repo / ADIR), "--cwd", str(repo),
+                   "--", sys.executable, "-c", "print('ok')")
+        stamp_and_verdict(repo, "PASS", receipt=False)   # lint receipt only, no `suite`
+        code, out = preflight(repo)
+        c.check("SCC-146 receipts WITHOUT a `suite` receipt never SKIP - the one that "
+                "matters must have run",
                 code == 0 and "gate: SKIP" not in out and "run_all.py" in out,
                 f"exit {code}: " + out.strip()[-300:])
 
