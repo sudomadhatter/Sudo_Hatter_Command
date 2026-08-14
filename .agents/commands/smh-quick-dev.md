@@ -17,7 +17,7 @@ platforms: [opencode, antigravity, claude, codex]
 > - `.agents/rules/reproduce-before-you-fix.md` — **when the task is a BUG fix**: reproduce → minimize
 >   → pin a test seen red → falsify one hypothesis at a time → minimal fix → prove by reverting
 > - `.agents/rules/tests-must-gate-for-real.md` — Step 2's red must fail for the RIGHT reason, and
->   Step 3's mutants follow its **§ Mutation testing**. Loaded HERE, at the command that *writes* the
+>   Step 3's mutants follow its **§ Mutation Testing**. Loaded HERE, at the command that *writes* the
 >   assertions — it used to arrive only at review, one step after the mutants were designed (SCC-145)
 
 **The dev cycle BMAD has no answer for.** `/cicd-dev-story-tests` carries the test-first discipline but
@@ -238,14 +238,14 @@ cut it or name why it stays.
   - A **surviving** mutant is a finding.
   - A mutant whose edit does not appear in the original text is **DEFECTIVE** — a SKIP that **counts
     as a survivor** — and it must be re-aimed before it is believed.
-  - Mutants drawn from your own **cases** rather than **from the code** are circular; they die on
-    arrival and prove only that the suite agrees with itself (SCC-144: 24 of 25 code-derived mutants
-    survived the 14 case-derived ones).
+  - Mutants drawn from your own **cases** rather than **from the code** are circular; they prove only
+    that the suite agrees with itself (SCC-144: its 14 case-derived mutants were all killed, while a
+    later set drawn from the code left **24 of 25 surviving**).
   - **Restore in a `finally`/trap and re-check `git status` when the sweep ends.** A killed sweep
     leaves the mutant on disk, and a mutated gate is committable.
 
   Record the table in the walkthrough. Full doctrine, including which technique fits which shape:
-  `.agents/rules/tests-must-gate-for-real.md` **§ Mutation testing**.
+  `.agents/rules/tests-must-gate-for-real.md` **§ Mutation Testing**.
 
 ## Step 3.5 — ⛔ EJECT TRIPWIRE (check here, and again as you go)
 

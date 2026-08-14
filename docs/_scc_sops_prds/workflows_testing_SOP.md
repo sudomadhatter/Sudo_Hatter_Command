@@ -1126,7 +1126,7 @@ improvised one mutant at a time cannot check itself; a declared one can.
 |---|---|
 | A **surviving** mutant is a finding | the coverage hole you came to find |
 | A mutant that **removes nothing** is **DEFECTIVE** — a SKIP that **counts as a survivor** | SCC-144's `M3` commented out one `echo` of a two-line message; the second line still printed the asserted word, so the case passed **correctly**. Read as a coverage gap it buys a test for a hole that does not exist |
-| Mutants are **CODE-DERIVED**, never drawn from your own cases | case-derived mutants are circular — they die on arrival and prove only that the suite agrees with itself. Measured: **24 of 25 code-derived mutants survived the 14 case-derived ones** |
+| Mutants are **CODE-DERIVED**, never drawn from your own cases | case-derived mutants are circular — they prove only that the suite agrees with itself. Measured in SCC-144: its 14 case-derived mutants were all killed, and a later set drawn from the code left **24 of 25 surviving** — every survivor a hole the first sweep had reported as covered |
 | **RESTORE** in a `finally`/trap; never start dirty; re-check `git status` after | a `timeout`-killed sweep left a **mutated gate on disk, uncommitted** — and a mutated gate is committable |
 
 **Which technique fits which shape** — the part that used to be missing. *RELOCATE the guard* (never

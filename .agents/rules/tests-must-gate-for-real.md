@@ -54,8 +54,9 @@ step with a "flip to hard gate later" comment READS as a temporary measure. All 
      ORDER — a guard relocated below the write it protects passes them identically. Behavioral coverage is
      therefore **owed**, not optional. Give every scenario a **positive control** (the unguarded path must
      still do the thing), or the test passes against a helper that does nothing at all. **Proving a new
-     test non-vacuous is a mutation — the procedure is § Mutation testing below**, which is where the
-     *relocate, never delete* technique now lives alongside the three shapes it does not transfer to.
+     test non-vacuous is a mutation — the procedure is § Mutation Testing below**, which is where the
+     *relocate, never delete* technique now lives, alongside the shape it does not transfer to and the
+     two rules that bind every mutant whatever its shape.
 
 ## Mutation Testing — proving a check can actually fail
 
@@ -76,14 +77,15 @@ finished table in the walkthrough: each mutant, its file, its named case, and th
   nothing. That is how this technique was first got wrong (AGY 21.8b), and for a long time it was the
   *only* technique written down.
 - **INVERT the decision** — for **gates, hooks and shell checks**, where there is nothing to relocate.
-  Flip one refusal to an allow, one comparison, one exit code. This is the shape RELOCATE does not
-  transfer to, so anyone mutating a gate was following advice designed for a different problem — and
-  improvised instead.
+  Flip one refusal to an allow, one comparison, one exit code. This is the shape the technique above
+  does not transfer to, so anyone mutating a gate was following advice designed for a different
+  problem — and improvised instead.
 - **CODE-DERIVED, never case-derived** — draw every mutant from a **decision in the source under test**,
   never by reading your own cases and asking what would break them. Case-derived mutants are circular:
-  they die on arrival and prove only that the suite agrees with itself. Measured in SCC-144: **24 of 25
-  code-derived mutants survived the 14 case-derived ones.** That is
-  [[prose-pinning-guards-are-vacuous]] recurring one level up, *inside* the mutation pass.
+  they prove only that the suite agrees with itself. Measured in SCC-144 — its 14 case-derived mutants
+  were all killed, and a later set drawn from the code left **24 of 25 surviving**, every survivor a
+  hole the first sweep had reported as covered. That is [[prose-pinning-guards-are-vacuous]] recurring
+  one level up, *inside* the mutation pass.
 - **RESTORE on interrupt, and never start dirty** — restore in a `finally`/trap, refuse to start against
   a dirty tree, and re-check `git status` when the sweep ends. In SCC-144 a `timeout`-killed sweep left
   `commit-msg-jira.sh` **mutated on disk, uncommitted** — reverted to the exact bug that lane existed to

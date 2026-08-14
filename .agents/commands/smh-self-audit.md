@@ -15,9 +15,10 @@ while fixing it still costs nothing. Assume the plan is wrong somewhere, then tr
 > - `.agents/rules/constitution.md` — the Ask-First and surgical-change obligations it audits against
 > - `.agents/rules/worktree-per-story.md` §"cwd is not intent" — why Step 0 pins the repo from command
 >   output, and why Phase 1 reads the sibling lanes instead of assuming this tree is the whole picture
-> - `.agents/rules/tests-must-gate-for-real.md` — the plan's **test strategy** is audited against it:
->   Phase 2's "a gate that cannot fail" tripwire is its Rule 3, and a plan that names no way to prove
->   its checks non-vacuous is missing its **§ Mutation testing** step (SCC-145)
+> - `.agents/rules/tests-must-gate-for-real.md` — the plan's **test strategy** is audited against it.
+>   Phase 2's "a gate that cannot fail" tripwire spans both halves of that rule: a *soft* gate is its
+>   Rule 3, and *a check whose empty input reads as a pass* is its Rule 1 plus **§ Mutation Testing**.
+>   A plan that names no way to prove its checks non-vacuous is missing that step (SCC-145)
 
 **Why this exists as an `smh-*` command.** `/cicd-self-audit` binds
 `.agents/rules/smh-target-resolution.md` — *"exactly ONE project, never the lobby"* — and every phase
