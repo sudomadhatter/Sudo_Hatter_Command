@@ -25,7 +25,7 @@ this folder, and they cover **different things** — neither is a substitute for
 
 | Mechanism | What it actually catches | Blind to |
 |---|---|---|
-| `.agents/scripts/tests/test_sops_prds_folder.py` (in `run_all`) | this INDEX vs the directory **both ways**, every **markdown link** target, every `/command` reference resolving to a real master, the 11-doc manifest, and the SOP gate's two paths agreeing | prose that names no link |
+| `.agents/scripts/tests/test_sops_prds_folder.py` (in `run_all`) | this INDEX vs the directory **both ways**, every **markdown link** target, every `/command` reference resolving to a real master, the 12-doc manifest, and the SOP gate's two paths agreeing | prose that names no link |
 | `check_maps.py` | **backticked multi-segment paths inside table rows**, plus level-2 INDEX presence and repo-map coverage | markdown links, and anything outside a table row |
 | T9 in that same test (SCC-83) | **backticked paths in PROSE** — sentences and bullets: the gap between the two rows above | paths written *without* backticks, and the interior of a project this machine has not checked out |
 
@@ -103,6 +103,7 @@ boundary being drawn is "SOP vs setup," never "watched vs unwatched."
 | Doc | What it is |
 |---|---|
 | [sentry_error_response_team.md](sentry_error_response_team.md) | AviationChat's automated incident-response system (Epic 16): production breaks → a cloud agent investigates, builds the fix on its own hotfix branch, and the report lands on Daniel's phone. |
+| [sharing_keys_secrets_secure.md](sharing_keys_secrets_secure.md) | **How to get a key onto a teammate's machine without it ever existing in a chat message.** The Keyway vault: install per machine, `keyway login` + `keyway init` per repo, and the daily loop — `keyway run` injects secrets into RAM so nothing durable lands on disk. The team half is the point: GitHub repo access decides **who is in at all**, production is a permission boundary rather than a label, and **offboarding is three steps — revoke, clear the dashboard role, then rotate**, because cutting GitHub access cannot un-copy a `.env` someone already pulled. Documents the flags that destroy data (`push --prune` against a stale file silently deletes your teammates' keys; `sync` is bidirectional and the one command defaulting to **production**; `-e` means `--exclude` on `scan` alone) and ⛔ **the hazard the tool creates itself: `keyway push` appends `.env*` to your `.gitignore` unprompted** — observed live, which is why `git diff .gitignore` after a first push is in the card. Also records why Keyway over GCP Secret Manager or Vault. Flags checked command-by-command against the live 0.5.3 binary (SCC-37). |
 | [smh-adviser-board-REFERENCE.md](smh-adviser-board-REFERENCE.md) | The `/smh-adviser-board` roster: every mind with a full cognitive signature, so any bench mind can be subbed into a seat with a copy-paste. |
 
 ## A note inherited from the toolkit's retired reference folder

@@ -81,6 +81,15 @@ One "approved" lands one story; the next needs its own.
    so every worktree on the machine shares exactly one; it records the sha it was minted for, so
    anything committed after the sign-off is refused.
 
+   ⛔ **And since SCC-37 the token carries APPROVAL EVIDENCE — the operator's verbatim words.**
+   The recurrence the first cut missed: an agent reading standing context as consent ("you can
+   move it to done" taken as a merge sign-off — ticket permission is never merge permission). The
+   mint now refuses in any non-interactive shell without `--operator-approval '<their exact,
+   this-turn words>'`; at a terminal the operator types the ticket key instead. The quote is
+   recorded in the token, printed at mint, and printed again by the push gate — an inference
+   stretched into an authorization has to survive being read back at every step. A token with no
+   approval record is refused and consumed at the push.
+
    ⭐ **And it enforces ONE MERGE, which is the part that actually implements SCC-71.** A token
    authorises a *push*; what needs authorising is a *merge*. So `main` must advance by **exactly one
    merge commit sitting directly on the remote's current tip**, and that merge's second parent must

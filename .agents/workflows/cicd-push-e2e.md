@@ -87,8 +87,12 @@ git merge epic/<JIRA-KEY>-<slug> --no-ff -m "merge: epic/<JIRA-KEY>-<slug> -> ma
 # 🛑 summarize the commits + changed files for the operator before pushing
 
 # Mint the single-use approval token — AFTER the merge, IMMEDIATELY before the push (SCC-77).
+# ⛔ SCC-37: the mint requires operator-approval evidence — the operator's verbatim, this-turn
+# merge yes. Ticket-status permission is never merge permission. At a terminal the operator types
+# the key instead. No such words this turn → STOP and ask; do not paraphrase or infer.
 sh .agents/scripts/git-hooks/mint-push-token.sh \
-   --command /cicd-push-e2e --branch epic/<JIRA-KEY>-<slug> --key <JIRA-KEY>
+   --command /cicd-push-e2e --branch epic/<JIRA-KEY>-<slug> --key <JIRA-KEY> \
+   --operator-approval '<the operator words that approved THIS merge, verbatim>'
 
 $env:GITHUB_TOKEN = ""; git push origin main    # the pre-push gate spends the token here
 ```
