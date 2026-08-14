@@ -36,7 +36,9 @@ Echo exactly `Target: Projects/<name>` before any work.
    machine switches: `git worktree list` + `git branch -a --list "*claude/*"`. A branch alive on
    origin with no local tree is still a lane (re-create its worktree if it belongs to the set — a
    re-created tree has ONLY tracked files: restore gitignored assets per the project's known
-   pitfalls before trusting its test runs).
+   pitfalls before trusting its test runs). **`claude/incident-*` matches are EXCLUDED from the
+   inventory:** they are the incident pipeline's (`/cicd-mobile-error-team`), never story lanes —
+   never fix, merge, land or PRUNE one here (SCC-149).
 2. Map each lane → story id → board row + story frontmatter status → review verdict: the
    `Verdict: … @ <sha>` line in the lane's `_artifacts/epic_<E>/<story>/walkthrough.md`
    `## Code Review` section (pre-2026-08-02 stories: fall back to

@@ -99,7 +99,9 @@ happened on a story lives in `_bmad-output/history/<epic>/<key>.md` (and the cha
   laptop, and mobile. Whenever `git worktree list` shows nothing for the next story, ALSO run
   `git ls-remote --heads origin 'refs/heads/claude/*'`. A `claude/<JIRA-KEY>-<story-slug>` branch on origin means the
   step was already done on another machine — report it as **"exists on origin, not on this machine"** and
-  point at `/cicd-resume` to re-create the working surface. Only when BOTH are empty may you say the next
+  point at `/cicd-resume` to re-create the working surface. **Except `claude/incident-*`:** that is the
+  incident pipeline's lane (`/cicd-mobile-error-team`), never a parked story step — report it as an
+  incident branch and route it nowhere (SCC-149). Only when BOTH are empty may you say the next
   step opens a worktree at first edit.
 Read-only — cross-check against live files; never edit anything.
 
