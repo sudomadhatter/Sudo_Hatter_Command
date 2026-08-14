@@ -57,7 +57,23 @@ npm install -g @keywaysh/cli
 ```bash
 keyway --version
 # Expected output: keyway version 0.5.x
+
+keyway doctor
+# Checks CLI version, auth state, GitHub repo detection, API connectivity,
+# env file presence and .gitignore rules. Run this FIRST whenever anything is wrong.
 ```
+
+> [!WARNING]
+> **`keyway doctor`'s `.gitignore` check is a known false positive in this system.** It does naive
+> literal matching and cannot read the recursive glob form, so it reports *"Missing .env patterns"*
+> against a `.gitignore` that ignores `.env` via `**/.env`. **Never edit `.gitignore` on the strength
+> of that warning** — verify with `git check-ignore -v .env`, which is git itself answering, and
+> which prints the exact rule and line number when the file IS ignored.
+
+> [!NOTE]
+> **Installation and login are per-machine.** This system runs on a Mac and a PC; credentials live in
+> the OS keyring, so they cannot travel. A machine that has never run `keyway login` is not logged in,
+> regardless of what the other machine has done.
 
 ---
 
@@ -153,7 +169,28 @@ Audit your codebase for accidentally committed secrets:
 ```bash
 keyway scan
 keyway scan ./backend
+keyway scan --json                 # machine-readable, for CI
+keyway scan -e node_modules        # exclude noisy directories
+keyway scan --show-all             # include probable false positives
 ```
+
+### E. Provider Sync (`keyway connect` / `sync`)
+Push vault secrets straight into a hosting provider instead of copying them by hand:
+```bash
+keyway connect vercel              # or: railway
+keyway connections                 # list what is connected
+keyway sync -e production          # push the vault into the connected provider
+keyway disconnect vercel
+```
+
+### F. ⛔ Destructive Flags — Verified Against 0.5.3
+| Flag | Effect | Hazard |
+|---|---|---|
+| `keyway push --prune` | Deletes vault secrets absent from the local file | A stale or partial local `.env` **silently deletes teammates' keys**. Push is additive by default precisely so this must be opted into. |
+| `keyway pull --force` | Replaces the whole env file instead of merging | Destroys local-only overrides. |
+| `keyway set -l` | Writes to the local file, **not** the vault (legacy) | Looks like a vault update. It is not — teammates receive nothing. |
+| `keyway diff --show-values` | Prints live secret values | A disclosure on any shared screen or recording. |
+| `-y` / `--yes` | Skips the confirmation prompt | The prompt is the last guard before `--prune`. Never pair them reflexively. |
 
 ---
 
@@ -182,8 +219,16 @@ Keyway Cloud Vault (Automatic Sync)
    - The teammate clones the repo.
    - Installs CLI (`brew install keywaysh/tap/keyway` on Mac, `npm install -g @keywaysh/cli` on Windows).
    - Runs `keyway login` and `keyway pull` (or `keyway run`).
-3. **Revoking Access**:
-   - Removing a user from the GitHub repository or organization instantly revokes their ability to pull secrets or decrypt the vault.
+3. **Revoking Access — this is TWO steps, and the second is the one that gets skipped**:
+   - **Step 1 — revoke.** Removing a user from the GitHub repository or organization instantly ends
+     their ability to pull secrets or decrypt the vault.
+   - **Step 2 — rotate.** ⛔ **Revocation does not reach backwards.** If they ever ran `keyway pull`,
+     a plain-text `.env` is still on their laptop and cutting GitHub access does nothing to it.
+     Regenerate every credential they could have pulled at the provider, then `keyway set <KEY>` to
+     put the new value in the vault. Production first, then staging.
+   - Doing step 1 alone is the most common way a vault-based setup still gets breached. It is also
+     the strongest reason to make `keyway run` the team default over `keyway pull` — secrets that
+     never touched disk leave nothing to rotate.
 4. **Keyway Organizations (Web Dashboard)**:
    - Visit [app.keyway.sh](https://app.keyway.sh) to configure granular Role-Based Access Control (RBAC), restricting `production` vault access to senior leads while granting `development` access to all developers.
 
@@ -197,3 +242,12 @@ Keyway Cloud Vault (Automatic Sync)
 | **Network** | Requires internet & GitHub auth | 100% offline & local filesystem |
 | **Scope** | Repository `.env` variables | Multi-project bundle (`.env`, `auth_keys/`, GCP service accounts) |
 | **Execution** | Supports in-memory RAM execution (`keyway run`) | Restores files directly to workspace hierarchy |
+| **Revocable** | **Yes** — remove GitHub access (then rotate, §5.3) | No — it is a file copy |
+
+---
+
+## 📖 7. The Operator Guide
+
+The human-facing version of this page — install → auth → daily loop → **correct team usage** →
+failure modes, written for the operator rather than for an agent — is
+`docs/_scc_sops_prds/sharing_keys_secrets_secure.md`. Point Daniel there rather than restating it.

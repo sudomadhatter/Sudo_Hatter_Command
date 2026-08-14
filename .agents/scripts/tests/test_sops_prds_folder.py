@@ -59,16 +59,24 @@ explaining the change. What T4 really guards is "no doc tells you to RUN somethi
 exist," and a fixture proves the exemption stays narrow rather than becoming an off-switch.
 
   -- THE MANIFEST IS A CONTRACT, NOT AN INVENTORY ------------------------------------------
-T1/T6 pin an explicit 11-doc list. That is deliberate: a 12th doc must be a conscious edit
+T1/T6 pin an explicit 12-doc list. That is deliberate: a 13th doc must be a conscious edit
 here. A doc appearing or vanishing without a test change is exactly the drift being guarded
 against, and an auto-discovered manifest would rubber-stamp it.
 
-It has shrunk twice from the 13 SCC-74 moved, and both times the contract did its job -- the
-suite went red until all three edits (file, INDEX row, EXPECTED) landed together:
+It has moved three times from the 13 SCC-74 brought, and every time the contract did its job --
+the suite went red until all three edits (file, INDEX row, EXPECTED) landed together:
     -1  complete-system-overview.md   retired INTO file_folder_structure+maintaining.md (SCC-80)
     -1  md_feedback_setup_guide.md    relocated UP to docs/ -- a machine-setup guide, not an SOP
+    +1  sharing_keys_secrets_secure.md  the Keyway secrets-sharing guide (SCC-37)
 The second is a scope call, not a demotion: it stays inside docs/, so check_maps.py still
 covers it. The line this folder draws is "SOP vs setup," never "watched vs unwatched."
+
+The third is that same line read the other way, and it is worth stating because the obvious
+call was the wrong one. A secrets guide LOOKS like setup -- it opens with two install commands,
+which is precisely what got md_feedback_setup_guide.md moved OUT. What keeps it here is the
+other 90%: onboarding and offboarding a teammate, which environment a person may hold, and the
+rotate-after-revoke rule. Those are things you do DURING the work and repeatedly, not once per
+machine. Install lives in machine_setup_card.md; the procedure lives here.
 
 Stdlib only, plain ASCII output -- same constraints as its siblings (Windows consoles are cp1252).
 """
@@ -99,6 +107,7 @@ EXPECTED = {
     "tea_deep_reference.md",
     "tdad_stack_install_guide.md",
     "smh-adviser-board-REFERENCE.md",
+    "sharing_keys_secrets_secure.md",     # SCC-37 - the Keyway secrets-sharing guide
 }
 
 # Folders that must hold no procedural docs once the move lands. Both are removed by SCC-74;
