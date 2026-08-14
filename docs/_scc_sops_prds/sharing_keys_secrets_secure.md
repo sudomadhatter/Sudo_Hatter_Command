@@ -4,8 +4,11 @@
 onto a teammate's machine — or onto your *other* machine — **without it ever existing in a chat
 message, an email, or a file somebody forgot to delete.**
 
-Verified against **Keyway 0.5.3** on macOS, 2026-08-14. Every command and flag below was run against
-the live binary, not copied from vendor docs.
+**Verified against Keyway 0.5.3 on macOS, 2026-08-14.** Every command name and flag below was checked
+against the live binary's own `--help`, not copied from vendor docs. Where a statement describes
+*behaviour* rather than a flag — what `login` stores, what `init` requires — it comes from vendor
+documentation and is marked. The one behaviour that **was** observed directly is in §8, because it
+bites.
 
 > **The one-line version.** Secrets live in an encrypted cloud vault. **Your GitHub account is your
 > key.** If you can push to the repo, you can read its secrets; if you lose repo access, you lose
@@ -103,17 +106,34 @@ keyway init           # links THIS repo to its vault (run from the repo root)
 ```
 
 `keyway login` stores a session token in **macOS Keychain** / **Windows Credential Manager** — not in
-a dotfile, so it is not something you can accidentally commit or sync to a backup.
+a dotfile, so it is not something you can accidentally commit or sync to a backup. *(Vendor-documented
+behaviour, not observed here.)*
 
 `keyway init` needs write access to the GitHub repo, because creating a vault is an administrative act
 on that repo. Run it once per repo, by one person; everyone else just logs in and pulls.
 
-**Seed the vault the first time** by pushing whatever you already have:
+### Seeding the vault — read §8 first, then sort before you push
+
+> ### ⛔ `keyway push` writes to your `.gitignore` without asking.
+>
+> This was **observed directly** on 0.5.3, in this repo, before authenticating. A bare `keyway push`
+> prints `✓ Added .env* to .gitignore` and `✓ Created .env file`, and appends `.env*` to the file. No
+> prompt, no `-y` required. **Check `git diff .gitignore` after your first push and revert it if you
+> did not want it** — this repo's ignore rules are deliberately chosen and commented, and a blanket
+> `.env*` also swallows the tracked `.env.example` template.
+
+⛔ **Sort your keys before the first push, not after.** Bare `keyway push` sends the whole file into
+one environment. If your local `.env` mixes sandbox and live credentials — the lobby's root `.env` does —
+then a bare push files live production keys into `development`, which §6.3 says **every developer**
+can read. Split them first:
 
 ```bash
-keyway push                          # pushes ./.env into the 'development' environment
-keyway push -f .env.production -e production
+keyway push -f .env.development -e development   # be explicit; push advertises no default
+keyway push -f .env.production  -e production
 ```
+
+`keyway push` is the one documented command whose `--help` states **no** default environment, so name
+`-e` explicitly rather than relying on one.
 
 ---
 
@@ -142,12 +162,18 @@ Nothing is written to disk. Close the terminal and the secrets are gone from the
 ### Adding a new secret
 
 ```bash
-keyway set STRIPE_SECRET_KEY                  # prompts, input is masked
-keyway set DATABASE_URL="postgres://..." -e production
+keyway set STRIPE_SECRET_KEY                  # prompts, input is masked  ← use this form
+keyway set DATABASE_URL -e production         # same, for another environment
 ```
 
 Prefer this over editing `.env` and running `keyway push` — it touches exactly one key, so it cannot
 accidentally wipe or resurrect a neighbour.
+
+> ⚠️ **Use the prompted form, not `keyway set KEY=value`.** The inline form works, but it writes the
+> live secret into your shell history (`~/.zsh_history`, PowerShell's `ConsoleHost_history.txt`),
+> your terminal scrollback, and any agent tool-call log. That is a durable plain-text copy of the
+> credential — the exact thing §1 says a vault exists to prevent — and it survives the rotation you
+> were probably running the command to perform.
 
 ---
 
@@ -158,8 +184,14 @@ This is the part that matters. The tool is easy; the *discipline* is what keeps 
 ### 6.1 Access is granted on GitHub, never in Keyway
 
 Adding a collaborator to the GitHub repo (or the org team that owns it) is what grants vault access.
-There is no second list to maintain, and that is deliberate — **two access lists always drift**, and
-the drift is invisible until an ex-contractor still has your Stripe key.
+Keep GitHub as the list that decides **who is in at all** — that is deliberate, because **two access
+lists always drift**, and the drift is invisible until an ex-contractor still has your Stripe key.
+
+> **One honest qualification, because the rest of this section depends on it.** Keyway's web dashboard
+> (§6.3) *can* hold per-environment roles, which is a second surface. Use it for **which environment
+> an already-approved person may reach**, never as a way to grant someone access GitHub did not.
+> Keep membership decisions in one place and scope decisions in the other, and **§6.4 makes you check
+> both on the way out** — a role left behind in a dashboard is exactly the drift this rule is about.
 
 ### 6.2 Onboarding a teammate — the whole checklist
 
@@ -203,13 +235,16 @@ the vault. That is the easy half.
 > now, and cutting their GitHub access does nothing to it. **Revocation stops future reads. It does
 > not reach backwards.**
 
-So offboarding is **two** steps, always:
+So offboarding is **three** steps, always:
 
 1. Remove them from the GitHub repo/org. *(stops future access)*
-2. **Rotate every secret they could have pulled** — regenerate the key at the provider, then
+2. **Clear any per-environment role you gave them in the Keyway dashboard** (§6.3). If you never used
+   the dashboard, there is nothing here to do — but check rather than assume, because this is the one
+   surface GitHub removal does not obviously cover.
+3. **Rotate every secret they could have pulled** — regenerate the key at the provider, then
    `keyway set <KEY>` to put the new value in the vault. *(neutralises copies they already hold)*
 
-Skipping step 2 is the single most common way a vault-based setup still gets breached. Rotate first
+Skipping step 3 is the single most common way a vault-based setup still gets breached. Rotate first
 for production, then staging; development sandbox keys are usually low enough risk to batch.
 
 This is also the strongest practical argument for §6.5.
@@ -224,8 +259,8 @@ Pull when a tool genuinely cannot start without a file on disk. Otherwise, don't
 
 ### 6.6 Never commit the `.env`, and prove it rather than trusting it
 
-`.env` is already ignored in this repo — `.gitignore:42` carries `**/.env`. Confirm on any repo before
-you trust it:
+`.env` is already ignored in this repo — `.gitignore` carries `**/.env`. Confirm on any repo before
+you trust it, rather than taking anyone's word (including this page's):
 
 ```bash
 git check-ignore -v .env     # prints the rule that ignores it; silence + exit 1 means NOT ignored
@@ -235,9 +270,15 @@ Add `keyway scan` to CI so a leaked key fails the build rather than being discov
 
 ```bash
 keyway scan
-keyway scan --json           # machine-readable, for a pipeline
-keyway scan -e node_modules  # exclude noisy directories
+keyway scan --json                  # machine-readable, for a pipeline
+keyway scan --exclude node_modules  # exclude noisy directories
 ```
+
+> ⚠️ **`-e` means something different on `scan`.** Everywhere else in this guide `-e` is `--env`
+> (which environment). On `scan` alone, `-e` is `--exclude` (which directories to skip). So
+> `keyway scan -e production` does **not** scan the production environment — it silently excludes any
+> directory named `production` and reports clean. **Write `--exclude` in full on `scan`**, and never
+> reach for `-e` there out of habit.
 
 ### 6.7 Announce key changes; the vault is shared mutable state
 
@@ -262,10 +303,17 @@ it prints live secrets to the terminal.
 | Flag | What it does | Why it bites |
 |---|---|---|
 | `keyway push --prune` | Deletes vault secrets that are **not** in your local file | If your local `.env` is stale or partial, this **silently deletes** your teammates' keys from the vault. Push is additive *by default* for exactly this reason — `--prune` opts out of the safety. |
+| `keyway sync --allow-delete` | Deletes secrets at the **provider** during a push | The `--prune` of the provider world, and worse-defaulted: `sync` defaults to **`-e production`** (see below), so the blast radius is live infrastructure. |
+| `keyway sync` with no direction flag | `sync` is **bidirectional** | It is not "push to provider". `--push` sends vault → provider; `--pull` sends provider → **vault**, overwriting your secrets from Vercel/Railway. Name the direction every time. |
 | `keyway pull --force` | Replaces your whole env file instead of merging | Blows away local-only overrides you forgot you had. |
 | `keyway diff --show-values` | Prints real secret values | Fine alone at your desk. A disclosure on a screen-share. |
 | `keyway set -l` | Writes to the local file instead of the vault (legacy) | Looks like it updated the vault. It did not. Your teammates get nothing. |
 | `-y` / `--yes` | Skips the confirmation prompt | The prompt is the last thing standing between `--prune` and a bad afternoon. Do not pair them out of habit. |
+
+> ⛔ **`keyway sync` is the one command that defaults to production.** Its `--help` reads
+> `-e, --env string   Keyway environment (default: production)` — every other command here defaults to
+> `development`. So a bare `keyway sync`, which the CLI's own examples encourage, operates on your
+> **live** environment. Always name `-e` and the direction explicitly.
 
 ---
 
@@ -291,6 +339,17 @@ and commented, including the non-obvious cases (`.env.local`, and the `.pre-rest
 migration scripts leave behind). Trust `git check-ignore`, which is git itself answering, over a
 third-party tool's guess about git.
 
+> ### ⛔ But `keyway push` will make that edit for you, unprompted.
+>
+> The warning above is advisory. **`keyway push` is not** — observed live on 0.5.3 in this repo: it
+> printed `✓ Added .env* to .gitignore`, appended `.env*`, and created an empty `.env`, with no prompt
+> and before any authentication. So "don't act on the warning" is not sufficient advice; the tool acts
+> on it for you.
+>
+> **After your first `keyway push` in any repo, run `git diff .gitignore`** and revert the addition if
+> you did not want it. A blanket `.env*` is broader than `**/.env` and would also ignore the tracked
+> `.env.example` template this system ships.
+
 ---
 
 ## 9. When something is wrong — `keyway doctor` first
@@ -299,24 +358,30 @@ third-party tool's guess about git.
 keyway doctor
 ```
 
-Checks the CLI version, whether you are authenticated, that the GitHub repo is detected, API
-connectivity, whether an env file exists, and the ignore rules. A healthy result on a set-up machine
-is 6 passed. Two warnings are normal and expected:
+Six checks: CLI version, authentication, GitHub repo detection, API connectivity, env-file presence,
+and the ignore rules.
 
-- *"Not logged in"* — you have not run `keyway login` **on this machine** yet (§3's two-machine note).
-- *".gitignore missing .env patterns"* — the false positive in §8.
+**On this repo, a fully set-up machine reads `5 passed, 1 warning, 0 failed`, and that is the healthy
+state — not 6/6.** The one remaining warning is the `.gitignore` false positive from §8, which is
+**permanent here** because Keyway cannot read the `**/` glob form and §8 forbids "fixing" it. Chasing
+6/6 means editing `.gitignore`, which is the one action this page exists to prevent.
+
+Before you have logged in on a machine you will see `4 passed, 2 warnings` — the extra warning is
+*"Not logged in"*, and unlike the other one it is **real**: it means §4 has not been run **on this
+machine** yet (§3's two-machine note). Do not learn to ignore that one.
 
 | Symptom | Cause | Fix |
 |---|---|---|
 | `command not found: keyway` | Not installed on *this* machine | §3 |
 | "Not logged in" after logging in elsewhere | Credentials are per-machine by design | `keyway login` here too |
 | Teammate can't pull | They lack GitHub access, or never ran `keyway login` | Check the GitHub collaborator list first |
-| Secrets missing after a colleague's push | Someone ran `--prune` against a stale file | Restore the key with `keyway set` |
+| Secrets missing after a colleague's push | Someone ran `--prune` against a stale file | **Regenerate at the provider**, then `keyway set <KEY>`. `set` prompts for a value — if the vault held the only copy, nobody has one to type, so treat this as the rotation in §6.4 step 3, not as an undo. |
 | App can't see the variables | Ran the app directly rather than through Keyway | `keyway run -- <cmd>` |
 
-Other commands that exist and are occasionally useful: `keyway logout`, `keyway connect` /
-`keyway connections` / `keyway sync` / `keyway disconnect` (push secrets straight into Vercel or
-Railway), and `keyway completion` (shell autocomplete).
+Other commands that exist and are occasionally useful: `keyway logout` (clears stored credentials on
+this machine), `keyway connect` / `keyway connections` / `keyway disconnect` / `keyway sync`
+(**bidirectional** provider sync with Vercel or Railway — see the §7 warnings before using it), and
+`keyway completion` (shell autocomplete).
 
 ---
 
@@ -337,6 +402,20 @@ from scratch,** where you have no network trust yet and need service-account fil
 a `.env` to begin with. Setup context lives in
 `docs/migrations/install_guides/machine_setup_card.md`.
 
+### Why Keyway and not GCP Secret Manager or HashiCorp Vault
+
+Recorded here because the question will be asked again, and because AGY already runs on GCP:
+
+| Option | Why it was not chosen |
+|---|---|
+| **GCP Secret Manager** | Strong for *runtime* secrets a deployed service reads via IAM, and worth using there. But access is granted by GCP IAM, which is a **second identity system** to keep in step with GitHub, and there is no ergonomic "developer runs the app locally with the right `.env`" path — the daily loop this page exists for. |
+| **HashiCorp Vault** | The most capable of the three and the most operational overhead: a server to run, seal/unseal to manage, policies to write. Disproportionate for a small team whose actual problem is "stop sending `.env` files to each other." |
+| **Keyway** ✅ | The access list is **already** the GitHub repo, so there is no second identity system; `keyway run` gives a zero-disk local loop; setup is one install plus one `login` per machine. |
+
+The trade accepted: a third-party hosted vault, and a smaller feature set than Vault. If runtime
+secret management for deployed services becomes the problem, Secret Manager is the right tool for
+*that* job and the two can coexist.
+
 ---
 
 ## 11. Quick reference
@@ -351,18 +430,20 @@ keyway init                          # per repo, from the repo root
 # --- daily ---
 keyway run -- npm run dev            # ★ secrets in RAM, nothing on disk
 keyway run -e production -- ./deploy.sh
-keyway set NEW_API_KEY               # add/rotate one secret, masked
+keyway set NEW_API_KEY               # add/rotate one secret, masked (never KEY=value)
 keyway diff development production   # what differs
-keyway scan                          # leak check
-keyway doctor                        # health check
+keyway scan                          # leak check  (--exclude, NOT -e, on this one)
+keyway doctor                        # health check: 5 passed / 1 warning is healthy here
 
 # --- occasionally ---
 keyway pull                          # only when a tool needs a real file
-keyway push                          # after editing .env by hand (additive)
+keyway push -e development           # additive; always name -e, push has no default
+git diff .gitignore                  # ⛔ after any first push: it edits .gitignore for you
 
-# --- offboarding a teammate: BOTH steps ---
+# --- offboarding a teammate: ALL THREE steps ---
 # 1. remove them from the GitHub repo/org
-# 2. rotate every secret they could have pulled  -> keyway set <KEY>
+# 2. clear any per-environment role in the Keyway dashboard
+# 3. rotate every secret they could have pulled  -> keyway set <KEY>
 ```
 
 ---
