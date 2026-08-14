@@ -48,9 +48,14 @@
 # weeks (SCC-71/SCC-77). A gate must not depend on the class of thing that broke the last gate.
 #
 # ─── What it refuses, and what it deliberately does not ────────────────────────────────────
-# It refuses ONLY known-bad topologies. An unclassified branch (`incident-*` is explicitly outside
-# the branch model), or a merge whose source cannot be named at all, is ALLOWED — with a line
-# saying so. And where one sha carries several branch names, ANY legal name wins.
+# It refuses ONLY known-bad topologies. An incident lane — `claude/incident-<short-id-lower>`, the
+# ONLY shape the incident pipeline creates (cicd-mobile-error-team.md), and it MATCHES the
+# `claude/*` glob — is positively classified by a carve-out ABOVE the story arm and then
+# deliberately unjudged: an emergency local hotfix merge to main must never eat a story-lane
+# refusal mid-incident (SCC-149; this comment once claimed bare `incident-*` was "outside the
+# branch model" while no such arm existed and the real prefix classified as STORY). A branch no
+# arm classifies, or a merge whose source cannot be named at all, is ALLOWED — with a line saying
+# so. And where one sha carries several branch names, ANY legal name wins.
 #
 # That bias is deliberate and it is not laziness. A gate that blocks a correct merge is one an
 # operator learns to route around, and this repo has already shipped four of those (`hooks_armed`
@@ -148,6 +153,10 @@ classify() {
     main)      echo main ;;
     epic/*)    echo epic ;;
     chore/*)   echo chore ;;
+    # ⛔ ORDER IS LOAD-BEARING: `claude/incident-*` sits ABOVE `claude/*` because `case` is
+    # first-match — below it this arm is dead code and a real incident lane classifies as story
+    # (SCC-149; the same first-match shape SCC-148 fixed in task_preflight's WRONG_LANE).
+    claude/incident-*) echo incident ;;
     claude/*)  echo story ;;
     *)         echo unknown ;;
   esac
@@ -156,6 +165,10 @@ classify() {
 # judge <target-class> <source-class>  ->  allow | refuse | unknown
 judge() {
   case "$1:$2" in
+    # An incident lane is positively classified, then DELIBERATELY unjudged — its merges are the
+    # incident pipeline's business (/cicd-mobile-error-team), and the one local merge that
+    # matters, an emergency hotfix onto main, must never eat a refusal mid-incident (SCC-149).
+    incident:*|*:incident)        echo unknown ;;
     unknown:*|*:unknown)          echo unknown ;;
     main:main|main:epic|main:chore) echo allow ;;
     main:story)                   echo refuse ;;
@@ -189,6 +202,8 @@ REFUSED_CLASS=""
 UNJUDGED=""
 UNJUDGED_NAMES=""
 ANY_NAMED=""
+INCIDENT_SEEN=""
+[ "$TARGET_CLASS" = "incident" ] && INCIDENT_SEEN=1
 
 # ⭐ ONE VERDICT PER SOURCE, and the aggregate refuses if ANY source is unambiguously in the wrong
 # place. Within a single source, ANY LEGAL NAME WINS — one sha can carry several branch names and
@@ -211,6 +226,7 @@ for sha in $MERGE_SHAS; do
       continue
     fi
     SRC_CLASS=$(classify "$name")
+    [ "$SRC_CLASS" = "incident" ] && INCIDENT_SEEN=1
     case "$(judge "$TARGET_CLASS" "$SRC_CLASS")" in
       allow)  src_allowed=1 ;;
       refuse) src_refused=1; src_refused_name=$name; src_refused_class=$SRC_CLASS ;;
@@ -244,6 +260,10 @@ if [ -z "$REFUSED" ]; then
     else
       echo "  ⓘ merge-target-guard: '$TARGET' <-$UNJUDGED_NAMES is outside the branch model"
       echo "    (.agents/rules/git-policy.md), so this guard declined to judge it. Merge allowed."
+    fi
+    if [ -n "$INCIDENT_SEEN" ]; then
+      echo "    (claude/incident-* is the incident pipeline's lane — /cicd-mobile-error-team"
+      echo "    owns it. Positively classified, deliberately unjudged; not a gap. SCC-149)"
     fi
   fi
   exit 0

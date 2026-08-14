@@ -486,9 +486,11 @@ def main() -> int:
                 rc == 0 and moved, out.strip()[-300:])
 
     # ── N · an unclassified branch — allowed, and SAID OUT LOUD ───────────────────────────
-    # `incident-*` is explicitly outside the branch model (git-policy.md). A gate that fires on a
-    # branch class it was never given a rule for is a gate that gets disarmed. But an unpinned
-    # hole widens silently, so the decision has to be visible in the output.
+    # A gate that fires on a branch class it was never given a rule for is a gate that gets
+    # disarmed. But an unpinned hole widens silently, so the decision has to be visible in the
+    # output. The bare `incident-42` fixture is a genuinely unclassified name — NO command
+    # creates that shape (this comment once called it "the" incident prefix; the real one is
+    # `claude/incident-*`, which has its own carve-out and its own case block, INC — SCC-149).
     with TempDir() as tmp:
         d = make_repo(tmp)
         lane(d, "incident-42")
@@ -518,6 +520,36 @@ def main() -> int:
                 out.strip()[-300:])
         c.check("N2 · ...and the guard says so rather than passing in silence",
                 "declined to judge" in out, out.strip()[-300:])
+
+    # ── INC · the REAL incident shape — `claude/incident-*` — carved out BEFORE the story arm ─
+    # SCC-149. The only incident branch any command creates is `claude/incident-<short-id-lower>`
+    # (cicd-mobile-error-team.md:47 writes nothing else), and it MATCHES the `claude/*` glob:
+    # without a carve-out the guard classified it STORY and refused an emergency local hotfix
+    # merge to main with story-lane instructions — during an incident. Case N above keeps its
+    # bare-name fixture (`incident-42`): that shape genuinely is unclassified and no command
+    # creates it; THIS is the shape the incident pipeline actually pushes.
+    # ⛔ BOTH ARMS IN ONE BLOCK, deliberately: the last case proves the carve-out did not swallow
+    # the story arm — a gate that allows everything is as broken as one that refuses everything.
+    # The TBL loop also holds the story->main cell; the local pair keeps this block self-contained
+    # and gives mutant M4 (arm pattern widened to `claude/*`) a kill that lives NEXT TO the allow.
+    with TempDir() as tmp:
+        d = make_repo(tmp)
+        lane(d, "claude/incident-abc123")
+        rc, out, moved = merge(d, "main", "claude/incident-abc123")
+        c.check("INC · a claude/incident-* hotfix merge into main is ALLOWED",
+                rc == 0 and moved, out.strip()[-300:])
+        c.check("INC · ...and it is never the story-lane refusal",
+                "MERGE REFUSED" not in out and "story lane merges into ITS epic" not in out,
+                out.strip()[-300:])
+        # Positive, not just absence-of-strings: a crashed or silent run passes the two negatives
+        # above on empty output (the SCC-148 review's own finding class, pre-applied here).
+        c.check("INC · ...and the note names the pipeline that owns the lane",
+                "/cicd-mobile-error-team" in out, out.strip()[-300:])
+        # The paired arm: an ordinary story lane is still refused AFTER the carve-out exists.
+        lane(d, "claude/SCC-149-s", "main")
+        rc, out, moved = merge(d, "main", "claude/SCC-149-s")
+        c.check("INC · the ordinary story arm still refuses (the carve-out swallowed nothing)",
+                rc != 0 and not moved and "MERGE REFUSED" in out, out.strip()[-300:])
 
     # ═══ THE FAST-FORWARD BACKSTOP ════════════════════════════════════════════════════════
     # Case E measured the gap: a ff merge creates no commit, so NO commit-time hook can see it.
