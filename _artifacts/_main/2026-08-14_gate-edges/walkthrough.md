@@ -121,6 +121,105 @@ No empty-body mutants were declared (the SCC-149 M5 crash class excluded by cons
 none of the kills was a crashed run: every red total above sits within 4 of its suite's green
 total. Sweep script: session scratchpad `scc154_mutation_sweep.py`; restores from COPIES.
 
+## Code Review (2026-08-14)
+
+Verdict: CONCERNS @ b14eeb4
+
+Suite evidence measured at `b14eeb4` (the patch-bucket commit; every later commit on this branch
+is artifacts-only — receipts and this section).
+
+**Scope:** the `main...HEAD` diff at `59f6e65` — both clusters (guard/backstop incident class ·
+check_gate verdict resolution + receipt edges), their suites, SOP rows, INDEXes, lane artifacts —
+plus the patch bucket the review itself produced (fixed test-first, landed as `b14eeb4`).
+**Method:** `code-review-engine` (5-lens fan-out, `review_mode: full`, `lens_budget: standard`),
+verify wave (Evidence Verifier over the 40-finding dossier + Compound Synthesis), triage per
+SCC-147 (fix the patch bucket now, defer the design seams, never loop), gates run bare.
+
+### Engine summary
+
+```
+lenses_run:      5/5  (blind ok · edge ok · literal ok · acceptance ok · test-adequacy ok)
+lenses_na:       none
+findings:        40 raw -> 20 deduped clusters: 5 patch clusters + 7 small patches applied ·
+                 9 deferred · 1 refuted · rest dismissed-with-measurement or folded
+severity_floor:  CONCERNS
+notes:           Evidence Verifier: 39/40 TRUE, 1 REFUTED (workflows mirrors "missing" — they are
+                 platforms-scoped thin launchers; nothing stale). Verifier corrections applied:
+                 finding 1's example surviving-mutant (drop-IGNORECASE) is wrong — the existing
+                 bolded case kills it; finding 13 settled real-but-declared (the walkthrough's
+                 Decisions section carries the commit-shape deviation, the sweep compensates);
+                 finding 28's "both halves wave it through" holds only for pushes of the incident
+                 ref ITSELF — G7 still catches the reverse direction.
+```
+
+### Patch bucket — fixed test-first, all in `b14eeb4`
+
+RED against the pre-fix code: **112/114 hooks + 140/145 preflight**, each red case failing at its
+own assertion (the remaining new cases are declared characterizations, born green on purpose).
+GREEN after: **114/114 hooks · 145/145 preflight · 31/31 gate_receipt · 26/26 closeout**, bare.
+
+| # | findings | defect | fix + named pins |
+|---|---|---|---|
+| P1 | 12, 20 (important) | the `len(stamped)>1` ambiguity info-return sat ABOVE the FAIL scan — two governing stamped dirs neutralized a governing latest-FAIL into a mergeable full gate | FAIL-scan across ALL governing stamped walkthroughs now runs BEFORE the ambiguity return (order load-bearing, commented) — R1 pins it; width W7 |
+| P2 | 25 (important) | the governing filter tested `task_key` only — a LANDED sibling lane of the same ticket governed forever: no follow-on lane could SKIP, and ambiguity ate FAIL blocks | settled sibling manifests (`manifest_settled` + declared branch ≠ current) are history — excluded from the pool; R2 pins it (landed dir on origin/main, this lane authored on-branch); width W6 |
+| P3 | 24 (important) | `judge(incident,*)` could never produce `allow`, so any sibling lane tip coinciding with main's tip made the EMERGENCY absorb refuse with a story-lane diagnosis | `incident:main\|incident:epic → allow` sits above the refuse arm — any-legal-name-wins now protects the absorb; destination row + header updated (also closes the 23/41 text contradiction); INC4 pins the coincident-tip absorb AND epic→incident allowed outright; width W4 |
+| P4 | 21, 26, 34 (important) | `strip_fenced` toggled on ANY marker — a 4-backtick or `~~~` wrapper with an inner ``` inverted parity and a QUOTED FAIL became the governing latest stamp (permanent false block, verified live) | CommonMark parity: close requires same marker KIND, length ≥ opening; other-kind markers inside an open fence are content — R3/R4 pin both wrappers; width W2. Unclosed fence still drops the tail: declared design, R5 characterizes it (finding 3's residue accepted + documented) |
+| P5 | 15, 22, 27, 38 (important) | the near-miss class `[#>*_\`\s]{0,6}` hard-errored on indented, blockquoted and backtick-quoted verdict prose — the house style quotes stamps constantly; a correct SKIP died to its own evidence paste | class narrowed to `[#*_]{0,4} ?` — R6 pins an indented stamp beside a real PASS → SKIP; R7/R8 pin lowercase + heading FAIL still ERR (finding 1's width gap closed); widths W1/W5. The `*`-bullet vs dash-bullet asymmetry (38) is documented at the regex |
+| P6 | 33 · 18/40 · 35 · 32/36 · 4 · 10 · 7 | seven small ones | backstop incident arm below the ZERO deletion check (no note on deletions) · dirt message no longer hardcodes `result=pass` · `check_receipt` reads through `receipt_defect()` (one validity definition) · `list` gains `--cwd`, relative-root comment scoped honestly · warn-receipt SKIP-eligibility pinned (R11, width W3) · PASS-then-WAIVED → no SKIP pinned (R10) · canonical PASS beside a malformed FAIL → the near-miss ERROR wins (R9) |
+
+### Width sweep — the killers compound finding 6 said existence-deletions cannot supply
+
+| id | narrowing (not deletion) | named killer case |
+|---|---|---|
+| W1 | near-miss class drops `#` | a heading FAIL stamp is an ERROR (R8) |
+| W2 | fence close ignores opening length | 4-backtick-wrapped inner fence never leaks (R3) |
+| W3 | receipt_defect drops `warn` | a WARN receipt is SKIP-eligible (R11) |
+| W4 | allow arm drops `incident:epic` | epic → incident absorb is ALLOWED outright (INC4) |
+| W5 | near-miss class widened back to `[#>*_\`\s]{0,6}` | an INDENTED quoted stamp never false-reds (R6) |
+| W6 | settled-manifest exclusion disabled | a landed lane's stamped dir does not wedge (R2) |
+| W7 | governing FAIL-scan disabled | a governing latest-FAIL blocks even under ambiguity (R1) |
+
+Result: **7/7 KILLED, each by its NAMED case alone, one pass, zero re-aims**, restores verified
+from copies; closing greens above. With the existence sweep's 17/17 this lane's mutant record is
+24/24.
+
+### Deferred (→ ONE follow-on task; the SCC-149 backstop item folds in here)
+
+Sequencing constraint carried from compound C3: land the target-side INC pins + width mutants for
+the backstop FIRST, then behavior.
+
+1. ff-variant coherence (28): the four-pair refusal binds only commit-creating merges; the
+   backstop deliberately skips incident refs — divergence is real, stated nowhere. Document or
+   teach the backstop the four-pair check for incident-ref pushes.
+2. `incident:incident` policy (29): falls to the unknown arm; two concurrent incidents + a
+   cd-slip cross-land with friendly notes from both gates.
+3. G7 story-direction pin (17): only the chore-rider direction is tested.
+4. Rename dirt across the `_artifacts/` boundary records only the NEW path (30/37) — the reader
+   exemption can bless non-artifacts dirt.
+5. Latest-stamp-governs is FILE order, not time order (31) — a re-review section inserted above
+   the old one makes the stale PASS govern.
+6. Reader-parity test binding `check_receipt` ↔ `receipt_defect` (11) — the unification landed;
+   the test that keeps them bound did not.
+7. `dirty_paths` readback test (5) — rename-row and quoted-path parses uncovered.
+8. A validly-earned SKIP evaporates unannounced when `gate_plan` has no `run_all.py` entry
+   (39, nitpick — local repos without the suite file only).
+9. Boot prompt behavior (8) — no judge tier exists for agent-facing prose; likely wontfix, decide
+   there.
+
+**Cap source:** the deferred important-class residue (1/2 sit in compound territory) plus the
+deferred suggestions — hence CONCERNS, not PASS. Every patch-bucket important is fixed and pinned
+above. No FAIL row fired.
+
+### Gates (run bare at `b14eeb4`, receipts committed beside this file under `gates/`)
+
+| Gate | Result |
+|---|---|
+| Enforcement suite | re-stamped at `b14eeb4` post-patch-bucket: `[PASS] suite exit=0` — 25/25 files (the six-file fix commit staled the 59f6e65-era receipt; code-fresh working as built) |
+| Toolkit lint | `workflow_lint.py --toolkit-only`: 0 errors, 0 warnings, exit 0 — re-stamped |
+| check_maps | `--depth3-only --strict` exit 0 — re-stamped |
+| Assertion evidence | the four suites bare after the width sweep's restore: 114/114 · 145/145 · 31/31 · 26/26, all exit 0 |
+| SOP currency | `[sop-ok]` carried on `b14eeb4` with its rationale in the commit body: semantics refined inside surfaces whose SOP rows this branch already rewrote; no new operator-facing step |
+
 ## Your Actions
 
 - [ ] **Close-out** — the operator's "we need this finished" is recorded as this ONE merge's
