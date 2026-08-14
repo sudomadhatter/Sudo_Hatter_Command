@@ -18,9 +18,13 @@ story: SCC-148
   scan); finding fixed with a case seen red under the mutant, re-sweep 5/5 killed
   - The first sweep run was timeout-killed mid-mutant and **left a mutant on disk** — caught by
     `git status` + restore, exactly the RESTORE hazard the doctrine names (SCC-144 had the same)
-- [x] Full suite bare: run_all 23/23 files, 1878/1878 cases, exit 0 (1875 + 3, exactly additive);
-  workflow_lint --toolkit-only 0/0 exit 0; check_maps --depth3-only --strict exit 0
-- [ ] `/smh-code-review` verdict
+- [x] Full suite bare at the dev sha: run_all 23/23 files, 1878/1878 cases, exit 0 (1875 + 3,
+  exactly additive); workflow_lint --toolkit-only 0/0 exit 0; check_maps --depth3-only --strict exit 0
+- [x] `/smh-code-review` — 5/5 lenses + verify wave + compound pass; 2 importants found and fixed
+  in-lane (the close-out command's stale refusal row; the resume universal claim made newly false);
+  a third same-class instance caught by the review-corrected repo-wide sweep (close-workingtree);
+  suite re-run at the review-fix sha — Verdict: PASS @ b50da78 (section below)
+  - The review changed the diff: 8 files → 13 (three command bodies + mirrors + manifest)
 
 ## Evidence
 
@@ -49,9 +53,11 @@ assertion (the output named `/cicd-update-sprint-memory`), not in setup; the key
 naming the actual stale keys. The shadow check **passes pre-fix by design** — today's table has
 no shadowing (its bug is a dead-by-nonexistence entry plus the misroute); the shadow assertion
 exists for the *future* re-sort that would re-kill the fix under a green set pin (plan review F2).
-The stale tuple `("incident/SCC-11-thing", "/cicd-mobile-error-team")` was rewritten in the same
-edit — post-fix it would have gone red for a predicted, uninteresting reason (falls through to the
-shape regex).
+The stale tuple `("incident/SCC-11-thing", "/cicd-mobile-error-team")` was removed from the loop
+and replaced by the standalone real-shape block (the loop's `split('/')[0]` labeling would have
+collided) — post-fix the old tuple would have gone red for a predicted, uninteresting reason
+(falls through to the shape regex). The review later added a dedicated bare-`incident/`
+fall-through case, so that path is pinned again rather than merely absent.
 
 ### Acceptance 2 — post-fix routing, both halves
 
@@ -82,18 +88,44 @@ Two module-level assertions on the imported `WRONG_LANE` (not grepped prose):
 `git-policy.md:210-212` now reads `claude/incident-*` (and notes the branches match the
 `claude/*` glob, so a resume reading that listing must skip the `incident-` infix);
 `scripts/INDEX.md`'s task_preflight row names the corrected scan order and why it is
-load-bearing. Sweep for any surviving bare prefix in the three touched files:
+load-bearing.
+
+**The evidence here was rewritten by the review (compound finding 1):** the original sweep
+covered only the three touched files — structurally incapable of finding a stale reference in
+a file this lane forgot, and exactly such a file existed (`smh-close-task-merge-tree.md:147`,
+found by the Literal lens, fixed in the review commit). The honest sweep is repo-wide over the
+surfaces that can carry a branch prefix, run post-fix, pasted verbatim:
 
 ```
-$ grep -rn "incident" <touched files> | grep -v "claude/incident" | <noise filter>
-(only this walkthrough's own prose matches)
+$ grep -rnE '`incident[-/]' .agents/commands/ .agents/rules/ .agents/scripts/*.py \
+    --include="*.md" --include="*.py" | grep -v "claude/incident"
+.agents/commands/cicd-mobile-error-team.md:17:  (`incident:<short-id>`)          # a GitHub label, not a branch
+.agents/commands/cicd-mobile-error-team.md:234: (`incident-response.yml` ...)    # a workflow filename
+.agents/rules/git-policy.md:212:  must skip the `incident-` infix ...            # this lane's own carve-out prose
+.agents/rules/mobile-mode.md:48:  (`incident-response.yml` checks ...)           # a workflow filename
 ```
+
+Zero bare branch-prefix survivors. Known and deferred with the follow-on ticket (outside this
+sweep's command/rule scope, disclosed): `merge-target-guard.sh:51`'s comment and the SOP's
+gate-table row 1304, both `.sh`/`docs/` surfaces carrying the old `incident-*` wording.
 
 ### Acceptance 5 — the SOP gate, cleared as a decision
 
 `[sop-ok]` carried on the fix commit: verified before commit that the SOP's `task_preflight.py`
 row (workflows_testing_SOP.md:1307) does not enumerate the `WRONG_LANE` prefixes, so nothing in
 the SOP becomes false; the change corrects a refusal message's routing, no operator-typed surface.
+
+Evidence (added by the review — the claim was true but unpasted):
+
+```
+$ git log d408ce6 -1 --format=%B | head -1
+SCC-148 fix(preflight): route real incident branches to their lane; kill the dead incident/ entry [sop-ok]
+# ...body carries the full [sop-ok] justification paragraph; the armed commit-msg gate accepted it.
+$ python3 .agents/scripts/sop_currency.py --paths .agents/scripts/task_preflight.py \
+    .agents/rules/git-policy.md .agents/scripts/INDEX.md \
+    .agents/scripts/tests/test_task_preflight.py --message "<the subject above>"
+# exit 0
+```
 
 ### Full suite at the code sha (2727ec1), every command bare
 
@@ -173,21 +205,90 @@ timeout-killed between mutants and **left a mutant on disk** — caught by the r
 (SCC-144's timeout-killed sweep left `commit-msg-jira.sh` mutated the same way). The remaining
 mutants were re-run with an adequate timeout; every result above is from a verified-clean start.
 
-## Code Review (<date>)
+## Code Review (2026-08-14)
 
-(appended by /smh-code-review)
+Verdict: PASS @ b50da78
+Suite evidence measured at b50da78 (the review-fix commit; the only later commit is this
+artifacts-only walkthrough/plan commit, which per the gate's own rule does not invalidate it).
+
+**Scope:** the SCC-148 diff, `main...HEAD` (8 files at review start, 13 after review fixes).
+**Method:** house `code-review-engine` — 5 parallel clean-room lenses (`lens_budget: standard`),
+then the verify wave (Evidence Verifier + Compound Synthesis, both dossier-backed via
+`evidence_extract.py`), then triage; Step 0.7 re-derivation; command-centre gate; clean-code gate.
+
+**Engine summary, as returned:**
+
+```
+lenses_run:      5/5   (blind ok · edge ok · literal ok · acceptance ok · test-adequacy ok)
+lenses_na:       none
+findings:        0 decision · 6 patch · 2 defer   (3 dismissed; 16 raw → 11 after dedupe, +5 compound)
+severity_floor:  none   (both importants patched in-lane at b50da78; nothing surviving gates)
+notes:           verify wave ran (16 raw findings; all 16 verified true, severities revised);
+                 compound pass emitted 5; literal lens received 4/8 files (the 4 artifact docs
+                 withheld as prose records — stated by the lens as its first line)
+```
+
+**Findings table (authoritative; verifier-revised severities):**
+
+| # | file:line | sev | failure scenario | disposition |
+|---|---|---|---|---|
+| 1 | .agents/commands/smh-close-task-merge-tree.md:147 | important | the check table of the exact command this script backs promised the deleted bare `incident/` refusal "by name" and omitted `claude/incident-` — an operator at close-out reads a false claim (Literal lens, conf 0.9) | **applied** @ b50da78: row corrected; + bare-`incident/` fall-through case added so the row's claim has a machine behind it (compound 4) |
+| 2 | .agents/rules/git-policy.md:210 ↔ .agents/commands/cicd-resume.md:56 | important | this lane's corrected rule line is the first written admission incident branches match the `claude/*` glob, making resume's universal "every claude/* listed is in-flight story work" newly false in writing; an agent resuming on a cold machine classifies an incident branch as parked story work (Literal, conf 0.85; 4 lenses converged) | **applied** @ b50da78 in the direction compound 3 constrained (implement in the consumer, never delete the rule sentence): the carve-out now lives in resume's own step list |
+| 3 | .agents/commands/cicd-close-workingtree.md:326 | important-class (found post-triage by the corrected sweep) | the branch-DELETING command carried the same bare `incident-*` pattern (compound 2 named it a consumer whose failure escalates from misreport to prune) | **applied** @ b50da78: `claude/incident-*` + explicit never-sweep-a-listing line |
+| 4 | .agents/scripts/tests/test_task_preflight.py:329 | suggestion | the anchored-scan case (sole M4 kill) asserted only string-absence — a crash's traceback contains neither pinned string, so the case would score green over a dead run (4 lenses independently; verifier conf 0.95) | **applied** @ b50da78: pins the positive post-scan marker `-> SCC-11` + `code in (0,1)` |
+| 5 | .agents/scripts/task_preflight.py:66 | nitpick (verifier downgraded from suggestion) | the comment over-claimed the key-set pin verifies creator linkage; it verifies the exact set, forcing a conscious edit — the verifier ruled a derivation test would be the prose-pinning anti-pattern the repo just retired | **applied** @ b50da78: comment precision fix, mechanism unchanged |
+| 6 | walkthrough Acceptance 4/5 | suggestion | Acceptance-4's sweep was scoped to touched files — structurally incapable of catching finding 1 (compound 1); Acceptance-5's claim was true but unpasted (verifier settled it with `git log` itself) | **applied**: repo-wide sweep run post-fix and pasted verbatim; commit-message + sop_currency evidence pasted |
+| 7 | resume-claim consumer surfaces (cicd-boot-sprint-memory.md:100 · cicd-merge-epic-workingtrees Step 1 · cicd-update-sprint-memory.md:237) | suggestion | compound 2: the same universal claim has more consumers; merge-epic's inventory → land → prune path escalates a misclassified incident branch from misreport to swept-and-pruned | **deferred** → follow-on ticket (below), enlarged to the full consumer set; the two worst arms (resume, close-workingtree) are fixed in-lane |
+| 8 | .agents/scripts/git-hooks/merge-target-guard.sh:51 + SOP:1304 | suggestion | the twin defect: dead `incident-*` carve-out comment, no case arm, real prefix matches `claude/*)` → STORY (pre-existing, not this diff's) | **deferred** → the same follow-on ticket (proposed at plan time) |
+| 9 | wrong-lane reason-text pinning · tuple-wording nitpick · plan-ambiguity note | nitpick | reason strings are explanatory prose, the command token is the load-bearing half (verifier); tuple wording corrected in walkthrough; ambiguity already resolved in the doc | **dismissed** (3), each with the verifier's reasoning recorded here |
+
+**Acceptance matrix (Step 2 — engine's Acceptance Auditor imported, source `review`):** all five
+items delivered, each with its proving assertion in `## Evidence` above; items 4 and 5's evidence
+strengthened by this review (repo-wide sweep; pasted commit message). Reverse direction: every
+diff element traces to an acceptance item or a disposition in this table — nothing unjustified.
+
+**Command-centre gate (each run bare, actual output in `## Evidence` and here):**
+- Enforcement suite @ b50da78: `run_all.py` — 23/23 files, 1879/1879 cases, exit 0 (1875 main + 3 dev + 1 review case, exactly additive)
+- `workflow_lint.py --toolkit-only`: 0 errors, 0 warnings, exit 0 (re-run after the command edits + sync)
+- RED assertions re-run GREEN: test_task_preflight 107/107
+- `sop_currency.py`: exit 0; both command-touching commits carry `[sop-ok]` with written justification
+- Link + anchor: no new md links introduced; `check_maps.py --depth3-only --strict` exit 0
+- Door parity: no command added/renamed/deleted; the 3 edited commands' mirrors regenerated via `sync-agents.ps1 -NoGlobals` (manifest committed)
+
+### Clean-Code Gate (/smh-clean-code-audit, diff-scoped)
+Machine floor: `workflow_lint --toolkit-only` 0/0 exit 0 · `py_compile` both changed `.py` exit 0 ·
+`check_maps --depth3-only --strict` exit 0 · `sop_currency` exit 0 — all pasted above.
+§2A comment contract: changed hunks carry why-comments matched to surrounding density (the ORDER
+comment cites its incident and its guards; the test comments name which property each pins). §2C
+conventions: house voice, no hand-edited generated surfaces (sync ran), explicit-path commits,
+key-led subjects. §2B drift imported from Step 1: the lenses raised no over-engineering or bloat
+findings; every addition traces to an acceptance item or a review disposition. **Result: clean.**
+
+**Step 0.7 re-derivation (three lines):** nothing moved under this diff — `main`'s tip is the
+merge-base (0677441), zero landed files since branch, merge-tree clean. True overlap with `main`:
+none. Sibling lane `chore/SCC-147-lens-budget` is live with commits; single shared file
+`_artifacts/_main/INDEX.md` (both prepend a ledger row — the predicted conflict class, resolved by
+keeping both rows, either landing order); 147 also rewrites `smh-code-review.md`, which does not
+overlap this diff.
+
+**Changes applied:** findings 1–6 above, at b50da78; walkthrough refreshed (this section, the
+evidence rewrites, the checklist). Nothing else changed.
 
 ## Your Actions
 
-- The branch is local-only until review; close-out is yours via `/smh-close-task-merge-tree`
-  (typing it is the merge sign-off).
-- Proposed NEW ticket (operator's call, not minted): `merge-target-guard.sh` carries SCC-148's
-  twin — its `incident-*` carve-out comment (line 51) is dead: no case arm exists, and the real
-  `claude/incident-*` matches the `claude/*)` arm (line 151), so an emergency LOCAL merge of an
-  incident hotfix to `main` would be refused as "a claude/* story lane merges into ITS epic/*
-  branch". Low reach (incident merges land via GitHub PR, which never runs local hooks) but the
-  same confidently-wrong-under-pressure shape. The SOP's §gate-table row (line 1304) repeats the
-  bare `incident-*` pattern and would ride the same fix.
+- ~~The branch is local-only until review~~ pushed; review PASS @ b50da78; close-out invoked by
+  the operator mid-review and executed under that sign-off.
+- **Proposed NEW ticket (operator's call, not minted) — enlarged by the review:** the incident
+  branch-prefix taxonomy still has stale/unguarded copies outside this lane's scope:
+  1. `merge-target-guard.sh:51` — dead `incident-*` carve-out comment, no case arm; real
+     `claude/incident-*` matches `claude/*)` → STORY, so an emergency LOCAL merge of an incident
+     hotfix to `main` is refused with wrong instructions (low reach — incident merges land via
+     GitHub PR — but SCC-148's shape verbatim). SOP §gate-table row 1304 rides the same fix.
+  2. Remaining consumers of the "claude/* on origin = story work" claim (compound finding 2):
+     `cicd-boot-sprint-memory.md:100` · `cicd-merge-epic-workingtrees` Step 1 (inventory→prune —
+     the escalating arm) · `cicd-update-sprint-memory.md:237` (an incident branch satisfies its
+     "HEAD must be claude/*" precondition). The two worst arms (resume; close-workingtree's
+     delete step) were fixed in this lane.
 - Assessed, from your ticket note: "preflight runs twice" does not hold against current source —
   `task_preflight.py` is invoked exactly once in the flow (`/smh-close-task-merge-tree` Step 1);
   `/smh-code-review` never calls it. The close-out's Step 4 child re-check is a documented
