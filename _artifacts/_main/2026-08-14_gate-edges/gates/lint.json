@@ -1,0 +1,19 @@
+{
+  "gate": "lint",
+  "story": "scc-154",
+  "result": "pass",
+  "exit_code": 0,
+  "sha": "c6ef6948a2aa2f5b9ca664bed99b54acdc4d2c75",
+  "dirty_tree": false,
+  "dirty_paths": [],
+  "totals": null,
+  "command": [
+    "python3",
+    ".agents/scripts/workflow_lint.py",
+    "--toolkit-only"
+  ],
+  "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/gate-edges",
+  "duration_s": 0.2,
+  "recorded_at": "2026-08-14T16:36:38+00:00",
+  "output_tail": "== workflow_lint - toolkit-only ==\n[INFO ] commands: testarch-atdd.md: UTF-8 BOM present\n[INFO ] commands: testarch-automate.md: UTF-8 BOM present\n[INFO ] commands: testarch-ci.md: UTF-8 BOM present\n[INFO ] commands: testarch-framework.md: UTF-8 BOM present\n[INFO ] commands: testarch-nfr.md: UTF-8 BOM present\n[INFO ] commands: testarch-test-design.md: UTF-8 BOM present\n[INFO ] commands: testarch-test-review.md: UTF-8 BOM present\n[INFO ] commands: testarch-trace.md: UTF-8 BOM present\n-- 0 error(s), 0 warning(s), 8 info --\n"
+}
