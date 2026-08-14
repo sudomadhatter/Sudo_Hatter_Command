@@ -1,0 +1,19 @@
+{
+  "gate": "maps",
+  "story": "scc-146",
+  "result": "pass",
+  "exit_code": 0,
+  "sha": "4090e81baed85a92a34b3e5636c5988ae9fb1dfe",
+  "dirty_tree": true,
+  "totals": null,
+  "command": [
+    "python3",
+    ".agents/scripts/check_maps.py",
+    "--depth3-only",
+    "--strict"
+  ],
+  "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/gate-receipts",
+  "duration_s": 0.1,
+  "recorded_at": "2026-08-14T14:11:02+00:00",
+  "output_tail": ""
+}
