@@ -1,0 +1,9 @@
+task_key: SCC-156
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-156-lane-speed
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+# SCC-159 is SCC-156's subtask and is worked in THIS lane, on THIS branch, by the operator's
+# explicit ruling on 2026-08-14 ("do SCC-156 and its sub task in the same working tree just one
+# push. one story then the other"). The parent closes LAST, so the close-out moves SCC-159 to
+# Done first; task_preflight's check_children() enforces that order mechanically.

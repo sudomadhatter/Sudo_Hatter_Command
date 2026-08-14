@@ -755,7 +755,8 @@ flowchart TD
     S2 --> SKIPQ{"did the preflight print gate: SKIP?\nGOVERNING verdict PASS or CONCERNS (latest\nstamp, own task.yaml) · code-fresh ·\nreceipts valid — SCC-146/SCC-154"}
     SKIPQ -- "yes — ONLY the preflight\nmay decide this" --> G0["the SKIP spares the SUITE ONLY (SCC-154):\npaste the SKIP line, then run the still-printed\nartifact-scoped checks — lint · check_maps.\na FAIL verdict was a Step-1 exit 2:\nthat lane never reaches this step"]
     SKIPQ -- "no — commands printed\n= commands run, all of them" --> G["run_all.py · workflow_lint.py\ncheck_maps.py --depth3-only --strict\n+ link and anchor check\n+ SOP currency"]
-    G0 --> S3["Step 3 — merge to main --no-ff"]
+    G0 --> CITE["code-fresh ⇒ CITE the review's link+anchor\nand SOP sweeps instead of re-walking them — SCC-156\nthe armed commit-msg gate and CI at the landing sha\nare the two nets that remain either way"]
+    CITE --> S3["Step 3 — merge to main --no-ff"]
     G --> S3
     S3 --> S4["Step 4 — AFTER the merge, never before:\none Dev Record → ticket → Done"]
     S4 --> WHY4["a ticket reading Done while the merge failed\nis a lie nothing will correct.\nA merge that landed while the record lags\nis one command from right."]
@@ -1115,9 +1116,9 @@ flowchart TD
     APPR --> S16["Step 1.6 — SUBTASKS: does a piece of the plan earn\nits OWN branch AND its OWN worktree?\nyes → a Subtask under THIS ticket\nno → a checklist line. PROPOSE, then STOP."]
     S16 --> S2["Step 2 — ⭐ RED: write the assertion that FAILS, first"]
     S2 --> TIER["script → a real test\ngate or hook → it REFUSES the bad case AND ALLOWS the good one\ncommand or rule → workflow_lint --toolkit-only reporting the error\nmove or rename → the link sweep, captured BEFORE the move\ndoc or structure → a machine-verifiable assertion"]
-    TIER --> READ["run it, paste the RED, and read WHICH LINE RAISED\n— a check that dies in setup looks identical\nto one that fails its assertion"]
-    READ --> S3["Step 3 — GREEN: implement MINIMALLY\nsurgical changes · explicit paths · key in every subject\nfull suite ONCE, through gate_receipt.py run --task --root\n→ the receipt rides the branch for review + close-out — SCC-146"]
-    S3 --> MUT["⭐ DECLARE THE MUTANT TABLE BEFORE YOU MUTATE\neach mutant · its file · the NAMED case it must kill\nrun as ONE sweep, never one at a time\nsurviving mutant = a finding\nremoves nothing = DEFECTIVE: a SKIP that COUNTS as a survivor\ndrawn FROM THE CODE, never from your own cases\nrestore in a finally/trap · re-check git status when it ends"]
+    TIER --> READ["run it, paste the RED, and read WHICH LINE RAISED\n— a check that dies in setup looks identical\nto one that fails its assertion\nrun YOUR cases only: --case 'label' where the file has blocks\nexit 3 = the filter matched nothing: a typo, not a result"]
+    READ --> S3["Step 3 — GREEN: implement MINIMALLY\nsurgical changes · explicit paths · key in every subject\n⭐ STAMP-FIRST: the receipt run IS the suite run — never run\nrun_all bare 'to check' and then again through the writer\na RED receipt is the mechanism working, not a mistake\n→ the receipt rides the branch for review + close-out — SCC-146"]
+    S3 --> MUT["⭐ DECLARE THE MUTANT TABLE BEFORE YOU MUTATE\neach mutant · its file · the NAMED case it must kill\nrun as ONE sweep, never one at a time — and NEVER in parallel\n⭐ TARGETED KILLS: run the named case alone via --case\nnon-zero = killed · 0 = re-run the FULL file before believing it\n3 = the filter matched nothing — a sweep error, never a kill\nsurviving mutant = a finding\nremoves nothing = DEFECTIVE: a SKIP that COUNTS as a survivor\ndrawn FROM THE CODE, never from your own cases\nWIDTH mutants too — narrowings, not only deletions\nrestore in a finally/trap · re-check git status when it ends\n⭐ then the CLOSING GREEN: affected FILES bare, unfiltered"]
     MUT --> S35{"Step 3.5 — ⛔ EJECT TRIPWIRE"}
     S35 -- "a deployable path is in the diff" --> EJ1["→ /cicd-push-e2e. No override."]
     S35 -- "it turns out to be BMAD story work" --> EJ2["→ ① /cicd-write-story-tests"]
@@ -1148,7 +1149,18 @@ improvised one mutant at a time cannot check itself; a declared one can.
 
 **Which technique fits which shape** — the part that used to be missing. *RELOCATE the guard* (never
 delete it) is for a structural guard and a behavioral test in the same file. *INVERT the decision* is
-for gates, hooks and shell checks, where there is nothing to relocate. Full doctrine:
+for gates, hooks and shell checks, where there is nothing to relocate. *WIDTH* mutants — narrowings
+rather than deletions — are what certifies a boundary; SCC-154 killed 17/17 existence mutants and its
+review still found width unproven, so a second sweep of 7 narrowings had to run.
+
+**How long a sweep takes, and why it no longer takes 21 minutes (SCC-156).** A mutant is a claim about
+ONE case, so the sweep runs that case alone — `python3 <suite> --case "<block label>"` — instead of the
+whole file. Read the three outcomes as distinct: **non-zero = killed**; **0 = re-run against the whole
+file before calling it a survivor** (a mis-aimed label looks identical to a real hole); **3 = the filter
+matched nothing, which is a sweep error, never a kill.** The mutant loop stays strictly sequential —
+mutants edit shared files on disk. ⭐ **And the closing run is still the whole affected FILES, bare and
+green**, after every restore is verified byte-identical: targeted kills prove each mutant died, only
+that closing green proves the tree you hand back is the one you started with. Full doctrine:
 `.agents/rules/tests-must-gate-for-real.md` **§ Mutation Testing**.
 
 ### Subtasks — the ticket you were handed is the top-level one
@@ -1203,9 +1215,9 @@ flowchart TD
     EV -- "no evidence" --> CONC["CONCERNS floor.\n'I read it and it looks right' is not evidence."]
     EV -- "yes" --> S3["Step 3 — the command-centre gate"]
     CONC --> S3
-    S3 --> G1["run_all.py — inherit quick-dev's suite receipt\nwhen pass · clean-stamped · code-fresh — SCC-146\nelse run it yourself and RE-STAMP\nfail toward running, never toward trusting"]
+    S3 --> G1["run_all.py — inherit quick-dev's suite receipt\nwhen pass · clean-stamped · code-fresh — SCC-146\nelse run it yourself and RE-STAMP — ONCE, after the\nLAST code-touching change — SCC-156\nfreshness is a TREE comparison, not a sha one:\na no-op or artifacts-only absorb leaves it VALID\nfail toward running, never toward trusting"]
     S3 --> G2["workflow_lint --toolkit-only — always\nerrors FAIL, warnings are CONCERNS"]
-    S3 --> G3["re-run the task's own RED assertions — GREEN now"]
+    S3 --> G3["re-run the task's own RED assertions — GREEN now\ncite the NAMED cases via --case where the file has blocks"]
     S3 --> G4["sop_currency · link+anchor · door parity"]
     S3 --> G5["check_maps --depth3-only --strict\na drifted INDEX BLOCKS the close-out"]
     G1 --> S35["Step 3.5 — /smh-clean-code-audit"]

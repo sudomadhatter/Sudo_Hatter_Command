@@ -195,8 +195,28 @@ Plus whatever this lane's own assertions are — **run the lane's own tests agai
 tree**, because that is the real question. A suite that only passes against the text it was written
 for goes red here, and that is the check working.
 
-A doc-only absorb keeps the lane's `Verdict:` valid. A code or script change during 4a voids it.
+An **artifacts-only** absorb keeps the lane's `Verdict:` valid. A code, script **or doc** change
+during 4a voids it — only `_artifacts/` is exempt, and a `docs/` commit invalidates (SCC-154
+corrected the old "doc-only" wording after a docs commit staled a receipt mid-review; the same
+correction applies here).
 **Append the re-measurement to the walkthrough; never edit the old verdict away.**
+
+⭐ **The LAST lane's 4b and Step 5's combined gate can be the same run — skip one, mechanically
+(SCC-156).** After the final lane's absorb-and-merge, `main`'s tree and the tree 4b just gated are
+frequently byte-identical, and running the 25-file suite twice over identical content buys nothing.
+Ask git, never your memory of what happened:
+
+```bash
+python3 - <<'PY'
+import sys; sys.path.insert(0, ".agents/scripts")
+import wf_common as wf
+from pathlib import Path
+print("identical" if wf.same_tree(Path("."), "<4b-sha>", "main") else "DIFFERENT — run both")
+PY
+```
+
+Identical ⇒ run the combined gate once and say in the summary which run covered both. Different, or
+either sha unknown (`same_tree` returns `None`) ⇒ **run both.** Fail toward running.
 
 **⚠ A review can fail at this stage, and that is not a reason to drop the lane.** Fix on the branch,
 re-review, re-stamp, continue. On 2026-08-11 a lane went `FAIL` here (two dead links the move

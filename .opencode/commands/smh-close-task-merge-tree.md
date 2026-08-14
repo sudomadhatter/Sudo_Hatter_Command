@@ -223,6 +223,14 @@ runs on a docs-only diff:
   enforced this per commit, so a surprise here means a commit was made with `--no-verify` or
   `[sop-ok]` — say which.
 
+⭐ **When the verdict is code-fresh, CITE those two instead of re-walking them (SCC-156).**
+`/smh-code-review` Step 3 ran both against this same diff, and if nothing outside `_artifacts/` has
+changed since the verdict sha — the condition the preflight already computed for the SKIP — then the
+diff they walked *is* the diff landing. Print which review run they came from and move on. This is
+the same fail-toward-running rule the suite receipt follows: **cite only under code-fresh; if any
+non-artifact file moved, walk them again.** Two live nets remain either way — the armed `commit-msg`
+gate refused any SOP-less usage-surface commit as it was made, and CI re-checks at the landing sha.
+
 Any failure → **STOP**. Fix it on the branch and re-run; do not carry a red gate into a merge.
 
 ⛔ **This gate is MECHANICAL only — never re-run the LLM review here.** The lane's review already
@@ -252,6 +260,14 @@ git merge chore/<JIRA-KEY>-<slug> --no-ff \
 SHA=$(git rev-parse HEAD)
 env -u GITHUB_TOKEN git push origin HEAD:refs/heads/gate/main-$SHA
 
+# ⭐ PUSH THE GATE REF FIRST, THEN WRITE — the CI wall is ~50 s of doing nothing (SCC-156).
+# The moment the merge commit exists and its ref is pushed, CI is running whether you watch
+# it or not. Spend that wall on the two things this close-out still owes and that depend on
+# NOTHING the run will say: the merge summary, and the Dev Record draft. Then come back and
+# read the verdict. ⛔ What may NOT move into that window: the token mint (its TTL is the
+# reason this order exists at all), the push itself, and the Jira transition — all three are
+# strictly post-green. Drafting is not filing: if the gate comes back red, the draft is
+# discarded with the merge, and nothing was reported that did not happen.
 sleep 10                                       # let the run register before asking for it
 until gh api repos/{owner}/{repo}/commits/$SHA/check-runs \
         --jq '.check_runs[] | select(.name=="main-write-gate") | .status' \
