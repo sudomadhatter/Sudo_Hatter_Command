@@ -277,14 +277,48 @@ def main() -> int:
 
     # ── Wrong lane: each refusal must name the command that IS right ──
     for name, expect in (("epic/SCC-11-thing", "/cicd-push-e2e"),
-                         ("claude/SCC-11-thing", "/cicd-update-sprint-memory"),
-                         ("incident/SCC-11-thing", "/cicd-mobile-error-team")):
+                         ("claude/SCC-11-thing", "/cicd-update-sprint-memory")):
         with TempDir() as t:
             repo = make_repo(t)
             branch(repo, name, {"docs/x.md": "x\n"})
             code, out = preflight(repo)
             c.check(f"{name.split('/')[0]}/ branch refused", code == 2, f"exit {code}")
             c.check(f"{name.split('/')[0]}/ refusal names {expect}", expect in out)
+
+    # ── SCC-148: the REAL incident branch. `/cicd-mobile-error-team` writes ONLY
+    # `claude/incident-<short-id-lower>` — no command anywhere creates a bare `incident/`
+    # branch. The old table scanned `claude/` first, so a live incident branch was refused
+    # with instructions to run the STORY close-out — the wrong command, told confidently,
+    # on the one path that runs under production pressure, often from a phone. The refusal
+    # must name the incident lane and must NOT name the story close-out anywhere.
+    with TempDir() as t:
+        repo = make_repo(t)
+        branch(repo, "claude/incident-abc123", {"docs/x.md": "x\n"})
+        code, out = preflight(repo)
+        c.check("SCC-148 claude/incident-* (the real shape) is refused", code == 2,
+                f"exit {code}")
+        c.check("SCC-148 ...naming /cicd-mobile-error-team, never the story close-out",
+                "/cicd-mobile-error-team" in out and "/cicd-update-sprint-memory" not in out,
+                out.strip()[-300:])
+
+    # ── SCC-148: WRONG_LANE table integrity. An entry can die two ways, and each gets its
+    # own guard because each is blind to the other:
+    #   * dead-by-nonexistence — a prefix no command creates (the old bare `incident/`).
+    #     The key-set pin catches it; an order check cannot.
+    #   * dead-by-shadowing — the scan is first-match `startswith` over insertion order, so
+    #     a generic prefix listed before a specific one makes the specific entry unreachable
+    #     (the actual SCC-148 bug: `claude/` before `claude/incident-`). The shadow check
+    #     catches ANY entry hidden behind an earlier generic prefix — a set pin is
+    #     order-blind, and order is exactly what a future alphabetical "tidy" would break.
+    import task_preflight as _tp
+    lane_keys = list(_tp.WRONG_LANE)
+    c.check("SCC-148 WRONG_LANE holds exactly the prefixes real commands create",
+            set(lane_keys) == {"epic/", "claude/incident-", "claude/"},
+            f"got {sorted(lane_keys)}")
+    shadowed = [(a, b) for i, a in enumerate(lane_keys) for b in lane_keys[i + 1:]
+                if b.startswith(a)]
+    c.check("SCC-148 no WRONG_LANE entry is shadowed by an earlier prefix (first-match scan)",
+            not shadowed, f"unreachable: {shadowed}")
 
     with TempDir() as t:
         repo = make_repo(t)
