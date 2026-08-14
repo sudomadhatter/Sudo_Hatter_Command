@@ -195,18 +195,21 @@ exit code, which is how a red gate reads as green.
 **Receipts ride this lane too (SCC-146).** `/smh-quick-dev` Step 3 stamps the suite run at
 `_artifacts/_main/<date>_<slug>/gates/` via `gate_receipt.py run --task <KEY> --gate suite --root
 <task-artifacts> --cwd <worktree>`. Inherit it the way `/cicd-code-review` inherits a certification:
-**receipt result `pass` + stamped on a clean tree + no non-artifact file changed between its sha and
+**receipt result `pass` or `warn` (advisory findings — read them before adopting; the preflight
+accepts both, SCC-154) + stamped on a clean tree + no non-artifact file changed between its sha and
 HEAD → adopt it, cite the receipt, do not re-run the suite.** Anything else — no receipt, a `fail`
-or `DIRTY` stamp, code or test changes since — **run it yourself and re-stamp** with the same
+or `DIRTY` stamp, code, test or doc changes since — **run it yourself and re-stamp** with the same
 command. Port the rule verbatim: **fail toward running, never toward trusting.** Step 0.7 absorbs
 `main` and moves HEAD, so the freshness check invalidates an inherited receipt automatically —
 that is correct, and needs no special case.
 
 **Run the suite ONCE, on the code that will actually land.** While fixing, run scoped — the tests for
 what you touched. **After your LAST change**, run `run_all.py` in full **through the receipt writer**
-and paste it, with the sha. Artifact- and doc-only commits after that run do **not** invalidate it;
-code or test changes do — the receipt's freshness check reads exactly that line, mechanically
-(`task_preflight.py` § code-fresh). The evidence contract is unchanged: **pasted real output, plus
+and paste it, with the sha. Artifact-only commits after that run do **not** invalidate it; code,
+test **or doc** changes do — only `_artifacts/` is exempt, and a `docs/` commit invalidates
+(SCC-154; the old "doc-only" wording overstated the exemption and was disproven live when a docs
+commit staled a receipt mid-review). The receipt's freshness check reads exactly that rule,
+mechanically (`task_preflight.py` § code-fresh). The evidence contract is unchanged: **pasted real output, plus
 `git rev-parse HEAD` recorded beside it**, in the walkthrough's `## Evidence` — the receipt is how
 the close-out *verifies* the claim, never a substitute for the pasted run.
 

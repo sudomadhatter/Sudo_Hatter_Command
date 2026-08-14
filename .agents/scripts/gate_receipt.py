@@ -111,7 +111,8 @@ def cmd_run(project: Path, story: str, gate: str, command: list[str],
     work = cwd or project
     sha_before = wf.git_head(work)
     dirty_r = wf.git(["status", "--porcelain"], work)
-    dirty = bool(dirty_r.stdout.strip())
+    dirty_lines = [ln for ln in dirty_r.stdout.splitlines() if ln.strip()]
+    dirty = bool(dirty_lines)
 
     started = time.time()
     try:
@@ -136,6 +137,11 @@ def cmd_run(project: Path, story: str, gate: str, command: list[str],
         "exit_code": exit_code,
         "sha": sha_after,
         "dirty_tree": dirty,
+        # WHICH paths were dirty, so a READER can apply policy (e.g. task_preflight exempts
+        # `_artifacts/`-only dirt, C6). The recorder itself stays strict: `dirty_tree` is
+        # unchanged and this field is additive — an older receipt without it gets no
+        # exemption anywhere. Rename rows record the NEW path (`old -> new`).
+        "dirty_paths": [ln[3:].split(" -> ")[-1].strip() for ln in dirty_lines],
         "totals": _totals(output),
         "command": command,
         "cwd": str(work),
@@ -157,6 +163,20 @@ def cmd_run(project: Path, story: str, gate: str, command: list[str],
     if result in ("pass", "warn") or allow_fail:
         return 0
     return 1 if result == "fail" else 2
+
+
+def receipt_defect(data: dict | None) -> str | None:
+    """The RESULT half of receipt validity, shared by every reader (SCC-154, finding 10:
+    one receipt format, one reader — the rationale task_preflight already imports this
+    module under). Returns the defect (`unreadable`, `result=fail`, ...) or None when the
+    result is usable (pass/warn). Staleness and dirty-tree POLICY stay with the caller —
+    the two consumers deliberately differ there (closeout_preflight: tree-identity + warn
+    on dirt; task_preflight: code-fresh + `_artifacts/`-exempt dirt)."""
+    if data is None:
+        return "unreadable"
+    if data.get("result") not in ("pass", "warn"):
+        return f"result={data.get('result')}"
+    return None
 
 
 def check_receipt(repo: Path, data: dict, gate: str, target: str | None,
@@ -287,7 +307,27 @@ def main() -> int:
     # the Task lane has no board file for it to find, and a "helpful" fallback here would
     # resurrect the exact blocker this flag removes. Without --root, unchanged.
     flat = bool(getattr(args, "root", None))
-    project = Path(args.root).resolve() if flat else wf.resolve_project_root(args.project)
+    if flat and getattr(args, "project", None):
+        wf.die("--project and --root are mutually exclusive - --root IS the receipts "
+               "root, and a project resolution beside it could only disagree (SCC-154)")
+    if flat:
+        cwd_arg = getattr(args, "cwd", None)
+        if args.cmd == "run" and not cwd_arg:
+            # Without --cwd, root-mode `run` executed the gate INSIDE the artifacts dir and
+            # recorded `fail` for a suite that never ran — a fabricated result from the one
+            # tool whose whole point is that results cannot be fabricated (SCC-146 review
+            # finding 5, adjacent id 10).
+            wf.die("run --root requires --cwd: without it the gate executes inside the "
+                   "artifacts dir and records `fail` for a suite that never ran (SCC-154)")
+        root = Path(args.root)
+        if not root.is_absolute() and cwd_arg:
+            # A relative --root resolves against --CWD, never the invoker's cwd: from the
+            # wrong checkout it landed the receipt as an untracked stray with
+            # success-shaped output (SCC-146 review finding 5 / compound C5).
+            root = Path(cwd_arg).resolve() / root
+        project = root.resolve()
+    else:
+        project = wf.resolve_project_root(args.project)
 
     if args.cmd == "run":
         command = args.command[1:] if args.command[:1] == ["--"] else args.command

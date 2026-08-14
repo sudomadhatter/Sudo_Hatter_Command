@@ -752,8 +752,8 @@ flowchart TD
     CHECKS --> LANE{"⭐ THE LANE — derived, not asked"}
     LANE -- "HANDOFF — a deployable\npath is in the diff" --> HAND["⛔ STOP. This is a product change\nwhatever the ticket says.\nHand it to /cicd-push-e2e.\nNO OVERRIDE FLAG, deliberately."]
     LANE -- "LOCAL — nothing that\ndeploys changed" --> S2["Step 2 — run the gate the lane selected\nPASTE THE REAL OUTPUT"]
-    S2 --> SKIPQ{"did the preflight print gate: SKIP?\nverdict PASS or CONCERNS · code-fresh ·\nreceipts valid — SCC-146"}
-    SKIPQ -- "yes — ONLY the preflight\nmay decide this" --> G0["paste the SKIP line — the evidence\nalready ran and rode the branch here.\na FAIL verdict was a Step-1 exit 2:\nthat lane never reaches this step"]
+    S2 --> SKIPQ{"did the preflight print gate: SKIP?\nGOVERNING verdict PASS or CONCERNS (latest\nstamp, own task.yaml) · code-fresh ·\nreceipts valid — SCC-146/SCC-154"}
+    SKIPQ -- "yes — ONLY the preflight\nmay decide this" --> G0["the SKIP spares the SUITE ONLY (SCC-154):\npaste the SKIP line, then run the still-printed\nartifact-scoped checks — lint · check_maps.\na FAIL verdict was a Step-1 exit 2:\nthat lane never reaches this step"]
     SKIPQ -- "no — commands printed\n= commands run, all of them" --> G["run_all.py · workflow_lint.py\ncheck_maps.py --depth3-only --strict\n+ link and anchor check\n+ SOP currency"]
     G0 --> S3["Step 3 — merge to main --no-ff"]
     G --> S3

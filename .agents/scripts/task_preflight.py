@@ -765,16 +765,44 @@ def check_artifacts(repo: Path, key: str | None, rep: wf.Report) -> list[Path]:
 VERDICT_RE = re.compile(r"^Verdict:\s*(PASS|CONCERNS|FAIL|WAIVED)\s*@\s*([0-9a-fA-F]{7,40})\b",
                         re.MULTILINE)
 
+# A line that LOOKS like a verdict stamp but fails the canonical regex — bolded, lowercased,
+# or heading-prefixed (the three real-world shapes the SCC-146 review named). Requiring a
+# status word AND an `@` is what keeps prose out: the indented decoy, table rows and bullets
+# never carry both at line start. A stamp missing its `@` entirely is missed here, and that
+# is safe BY CONSTRUCTION: a stamp the canonical regex cannot read can never grant a SKIP,
+# and the governing-latest rule below means it cannot demote a canonical one either.
+NEAR_MISS_LINE = re.compile(r"^[#>*_`\s]{0,6}verdict\b[^\n]*?\b(?:pass|concerns|fail|waived)"
+                            r"\b[^\n]*@", re.IGNORECASE)
+
+
+def strip_fenced(text: str) -> str:
+    """Markdown code fences removed before any verdict scan (SCC-154, finding 8).
+
+    A canonical stamp pasted AS EVIDENCE inside a ``` fence sits at column 0 and matched
+    VERDICT_RE — a fenced FAIL was a permanent block. An UNCLOSED fence drops everything
+    after it: no verdict then means the full gate runs, the safe direction."""
+    out, fenced = [], False
+    for line in text.splitlines():
+        if re.match(r"^[ \t]{0,3}(```|~~~)", line):
+            fenced = not fenced
+            continue
+        if not fenced:
+            out.append(line)
+    return "\n".join(out)
+
 
 def nonartifact_moved(repo: Path, sha: str) -> list[str] | None:
     """Paths changed between `sha` and HEAD that are NOT under `_artifacts/`.
 
-    This is /smh-code-review Step 3's freshness rule made mechanical: "artifact- and
-    doc-only commits after that run do not invalidate it; code or test changes do." The
-    verdict and the receipts always predate the artifacts commit that carries them (the
-    stamp cannot cite the commit it rides in), so strict sha equality would mean no real
-    lane could ever SKIP — observed live on SCC-149 (review finding C4). None = unknown sha
-    here, which the callers treat as stale (fail toward running)."""
+    This is /smh-code-review Step 3's freshness rule made mechanical: artifact-only commits
+    after the run do not invalidate it; code, test or doc changes do (the rule once said
+    "doc-only" too, which overstated the mechanism — only `_artifacts/` is exempt, and a
+    `docs/` commit invalidates; SCC-146 review finding 12, proven live when a docs commit
+    staled a receipt mid-review). The verdict and the receipts always predate the artifacts
+    commit that carries them (the stamp cannot cite the commit it rides in), so strict sha
+    equality would mean no real lane could ever SKIP — observed live on SCC-149 (review
+    finding C4). None = unknown sha here, which the callers treat as stale (fail toward
+    running)."""
     r = wf.git(["diff", "--name-only", f"{sha}..HEAD"], repo)
     if r.returncode != 0:
         return None
@@ -782,31 +810,72 @@ def nonartifact_moved(repo: Path, sha: str) -> list[str] | None:
             if p.strip() and not p.strip().startswith("_artifacts/")]
 
 
-def check_gate(repo: Path, hits: list[Path], lane: str, rep: wf.Report) -> str | None:
+def check_gate(repo: Path, hits: list[Path], lane: str, expect: str,
+               rep: wf.Report) -> str | None:
     """Read the review's `Verdict: ... @ <sha>` and decide the close-out gate's fate:
 
-      FAIL                                          -> rep.err: the merge is REFUSED
-      PASS/CONCERNS + code-fresh + receipts valid   -> return the `SKIP` line
-      anything else (no verdict, WAIVED, moved,
-      upstream errors, missing/invalid receipts)    -> return None: the plan prints as today
+      governing FAIL (latest stamp)                 -> rep.err: the merge is REFUSED
+      governing PASS/CONCERNS + code-fresh
+        + receipts valid                            -> return the `SKIP` line
+      anything else (no governing verdict, WAIVED,
+      ambiguous, moved, upstream errors,
+      missing/invalid receipts)                     -> return None: the plan prints as today
+
+    ⭐ GOVERNING means the walkthrough sits in this task's OWN session dir — beside a
+    `task.yaml` declaring `task_key: <expect>`. check_artifacts matches by SUBSTRING
+    (SCC-14 ⊂ SCC-146) and by content mention, so its pool can hold FOREIGN walkthroughs —
+    proven live when this system's own close-out saw a sibling lane's PASS stamp in its
+    pool (SCC-146 review findings 1/2/3). Foreign evidence neither grants a SKIP nor
+    blocks: this lane's gate runs in full instead, which never trusts and never wedges.
+
+    Within the governing walkthrough the LATEST stamp governs — a re-review APPENDS its
+    stamp, so FAIL-then-PASS clears and PASS-then-FAIL blocks. The old any(FAIL) rule made
+    the FAIL error's own remedy (re-run the review) unable to ever clear it.
 
     Fail toward running, never toward trusting (/cicd-code-review Step 3, ported). ONLY
     this function may produce a SKIP — the close-out command never decides one by reading.
     """
     if lane != "LOCAL" or not hits:
         return None
-    verdicts: list[tuple[str, str, Path]] = []
+    stamped: list[tuple[Path, list[tuple[str, str]]]] = []
+    foreign_stamped = 0
     for p in hits:
-        for m in VERDICT_RE.finditer(wf.read_text(p)):
-            verdicts.append((m.group(1).upper(), m.group(2), p))
-    if not verdicts:
-        rep.info("gate", "no review Verdict line in the walkthrough - the full gate runs")
+        man = p.parent / "task.yaml"
+        man_text = wf.read_text(man) if man.is_file() else ""
+        text = strip_fenced(wf.read_text(p))
+        found = [(m.group(1).upper(), m.group(2)) for m in VERDICT_RE.finditer(text)]
+        if not (man_text and manifest_field(man_text, "task_key") == expect):
+            foreign_stamped += 1 if found else 0
+            continue
+        # Near-miss stamps are an ERROR, and only in GOVERNING walkthroughs: a typo'd FAIL
+        # must never demote to "no verdict, clean full run" (SCC-146 finding 6), while a
+        # foreign lane's odd prose must never block a lane it does not govern.
+        for ln in text.splitlines():
+            if NEAR_MISS_LINE.match(ln) and not VERDICT_RE.match(ln):
+                rep.err("gate", f"{rel_or_abs(p, repo)}: a verdict-looking line does not "
+                                f"parse as the canonical stamp (`{ln.strip()[:70]}`) - fix "
+                                f"the stamp; an unreadable verdict cannot gate a merge")
+        if found:
+            stamped.append((p, found))
+    if not stamped:
+        if foreign_stamped:
+            rep.info("gate", f"verdict stamp(s) exist only in {foreign_stamped} "
+                             f"walkthrough(s) whose task.yaml does not declare {expect} - "
+                             f"foreign evidence never gates this lane; the full gate runs")
+        else:
+            rep.info("gate", "no review Verdict line in this task's own walkthrough - "
+                             "the full gate runs")
         return None
-    if any(v == "FAIL" for v, _, _ in verdicts):
+    if len(stamped) > 1:
+        rep.info("gate", f"{len(stamped)} walkthroughs under {expect} carry verdict "
+                         f"stamps - which one governs is ambiguous; the full gate runs")
+        return None
+    wt, verdicts = stamped[0]
+    status, sha = verdicts[-1]          # the LATEST stamp governs; a re-review APPENDS
+    if status == "FAIL":
         rep.err("gate", "the review verdict is FAIL - fix on the branch and re-run the "
                         "review; a FAIL lane does not merge")
         return None
-    status, sha, wt = verdicts[-1]      # one review per lane; the latest stamp is current
     if status == "WAIVED":
         rep.info("gate", "verdict WAIVED (no suite exists to receipt) - treated as "
                          "CONCERNS; the printed gate plan stands")
@@ -834,10 +903,19 @@ def check_gate(repo: Path, hits: list[Path], lane: str, rep: wf.Report) -> str |
     names: list[str] = []
     for rpath in receipts:
         data = gr.load_receipt(wt.parent, "unused", rpath.stem, wf.Report(), flat=True)
-        if (data is None or data.get("result") not in ("pass", "warn")
-                or data.get("dirty_tree")):
-            got = "unreadable" if data is None else (
-                f"result={data.get('result')}" + (" DIRTY" if data.get("dirty_tree") else ""))
+        # The RESULT half of validity is the shared loader's (one receipt format, one
+        # reader — SCC-146's own rationale, finished by SCC-154 finding 10). Dirt POLICY
+        # stays here: the recorder records strictly, and THIS consumer exempts dirt that
+        # cannot affect the gate — `_artifacts/` is exactly what the freshness checks
+        # already exempt (C6). No recorded paths (an older receipt) = no exemption.
+        got = gr.receipt_defect(data)
+        if got is None and data.get("dirty_tree"):
+            paths = data.get("dirty_paths")
+            if not (paths and all(str(p).replace("\\", "/").startswith("_artifacts/")
+                                  for p in paths)):
+                got = "result=pass DIRTY (non-artifacts dirt)" if paths else \
+                      f"result={data.get('result')} DIRTY"
+        if got:
             rep.info("gate", f"receipt {rpath.stem}: {got} - the full gate runs")
             return None
         rsha = str(data.get("sha") or "")
@@ -942,8 +1020,15 @@ def main() -> int:
     # SCC-146: the review verdict + its receipts can spare the lane a fourth identical
     # suite run — or refuse the merge outright on a FAIL. Runs after every other check so
     # its no-upstream-errors guard sees the complete picture.
-    skip = check_gate(repo, art_hits, lane, rep)
-    plan = [skip] if skip else gate_plan(repo, lane)
+    skip = check_gate(repo, art_hits, lane, expect, rep)
+    plan = gate_plan(repo, lane)
+    if skip:
+        # ⛔ A SKIP spares the SUITE ONLY (SCC-154, review compound C4). Every SKIPping lane
+        # structurally carries at least one post-verdict `_artifacts/` commit the suite
+        # receipt never inspected — the stamp cannot cite the commit it rides in — and
+        # map/INDEX drift is exactly `_artifacts/`-borne. The cheap artifact-scoped checks
+        # therefore still print; only the run the receipts actually prove is replaced.
+        plan = [skip if "run_all.py" in cmd else cmd for cmd in plan]
 
     if args.json:
         print(json.dumps({"repo": str(repo), "branch": branch, "key": key,
