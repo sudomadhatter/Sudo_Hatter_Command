@@ -1,0 +1,5 @@
+task_key: SCC-155
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-155-label-tasks
+close_command: smh-close-task-merge-tree
+secondary_repos: []
