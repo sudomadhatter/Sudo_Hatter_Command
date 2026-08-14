@@ -362,7 +362,7 @@ flip it to `- [x]`, commit that (an artifacts-only commit), and re-run `finish`.
 flag, deliberately: a gate with no legitimate exit gets worked around, and this one's exit leaves a
 trail.
 
-⛔ **Do NOT fall back to `acli jira workitem transition --status "Done"` when `finish` exits 3.**
+⛔ **Do NOT fall back to a hand-written `acli … transition` to `Done` when `finish` exits 3.**
 That is the exact behaviour it replaces, and it writes a lie onto the board.
 
 ⛔ **`--yes` or acli stops on an interactive confirm no agent shell can answer.** This shipped
