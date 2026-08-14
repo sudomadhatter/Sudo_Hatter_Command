@@ -1,0 +1,43 @@
+diff --git a/.agents/scripts/tests/fixtures/nc_review_engine/codebase/billing.py b/.agents/scripts/tests/fixtures/nc_review_engine/codebase/billing.py
+index 512c257..d5005d7 100644
+--- a/.agents/scripts/tests/fixtures/nc_review_engine/codebase/billing.py
++++ b/.agents/scripts/tests/fixtures/nc_review_engine/codebase/billing.py
+@@ -11,6 +11,8 @@ noise to every hunk without changing anything this fixture exists to test.
+ """
+ from __future__ import annotations
+ 
++import helpers
++
+ TAX_RATE = 0.08
+ 
+ 
+@@ -21,9 +23,28 @@ def tax_for(subtotal: float) -> float:
+ 
+ def invoice_total(subtotal: float) -> float:
+     """What the customer owes: the subtotal with tax INCLUDED."""
+-    return round(subtotal + tax_for(subtotal), 2)
++    tax_amount = tax_for(subtotal)
++    return round(subtotal - tax_amount, 2)
+ 
+ 
+ def new_ledger() -> dict:
+     """A fresh, empty payment ledger."""
+     return {"paid": 0.0}
++
++
++def load_line_items(raw: str) -> list[str]:
++    """Parse a raw line-item blob into entries, rejecting malformed ones."""
++    return helpers.parse(raw, strict=True)
++
++
++def unit_price(total: float, quantity: int) -> float:
++    """The per-unit price for a line item, rounded to two places."""
++    return round(total / quantity, 2)
++
++
++def record_payment(ledger: dict, amount: float) -> dict:
++    """Record a payment of `amount` against `ledger`."""
++    if amount < 0:
++        amount = 0.0
++    ledger["paid"] = round(ledger.get("paid", 0.0) + amount, 2)
++    return ledger
