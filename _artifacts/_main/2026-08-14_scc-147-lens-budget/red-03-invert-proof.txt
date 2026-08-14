@@ -1,0 +1,25 @@
+### INVERT mutants (SCC-145 § Mutation Testing): flip the VALUE rather than delete the row.
+### This is the realistic drift - a later editor sets 'capped' deliberately, and the row still
+### reads as configured. Deletion is the ticket's named case; this is the one that looks fine.
+
+=== MUTANT: standard -> capped in .agents/commands/cicd-code-review.md ===
+mutation applied (1 substitution)
+guard EXIT=1  (1 = KILLED)
+[FAIL] interactive caller /cicd-code-review: invocation table passes lens_budget standard
+[FAIL]   ^ counter-example applies: .agents/commands/cicd-code-review.md: '| `lens_budget` | `standard`' not present, so the proof would be vacuous
+[FAIL]   ^ counter-example is rejected: check survives its own counter-example — it cannot fail on content
+-- 752/755 passed --
+RESTORED -> guard EXIT=0  -- 755/755 passed --
+
+=== MUTANT: standard -> capped in .agents/commands/smh-code-review.md ===
+mutation applied (1 substitution)
+guard EXIT=1  (1 = KILLED)
+[FAIL] interactive caller /smh-code-review: invocation table passes lens_budget standard
+[FAIL]   ^ counter-example applies: .agents/commands/smh-code-review.md: '| `lens_budget` | `standard`' not present, so the proof would be vacuous
+[FAIL]   ^ counter-example is rejected: check survives its own counter-example — it cannot fail on content
+-- 752/755 passed --
+RESTORED -> guard EXIT=0  -- 755/755 passed --
+
+=== final: tree clean, guard green ===
+guard EXIT=0
+-- 755/755 passed --

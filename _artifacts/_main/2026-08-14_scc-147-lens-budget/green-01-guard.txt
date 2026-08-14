@@ -1,0 +1,757 @@
+== review engine (SCC-116) ==
+[PASS] SKILL.md exists with a body
+[PASS] steps/step-01-review.md exists with a body
+[PASS] steps/step-02-verify.md exists with a body
+[PASS] steps/step-03-triage.md exists with a body
+[PASS] steps/step-04-record.md exists with a body
+[PASS] .agents/commands/cicd-code-review-AP.md exists with a body
+[PASS] .agents/commands/cicd-code-review.md exists with a body
+[PASS] .agents/commands/smh-code-review.md exists with a body
+[PASS] skill: tool grant excludes Bash and Edit
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] skill: menu invocation is refused
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] skill: menu invocation returns without running
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] skill: REPO is a required input row
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] skill: WORKTREE is a required input row
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] skill: DIFF is a required input row
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] skill: HEAD_SHA is a required input row
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] skill: review_mode row names both modes and is required
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] skill: a missing input stops the engine
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] skill: never re-derives a resolved input
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] skill: an absent optional input is never invented
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] skill: severity axis is stated once, ascending
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] skill: caller may escalate, never soften
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] skill: the never-do list is a prohibition
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] skill: return block counts applicable lenses
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] skill: the spec-less count agrees with step-01 (4/4)
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: Blind Hunter is a lens row that always runs
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: Edge Case Hunter is a lens row that always runs
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: Acceptance Auditor is a lens row gated to full mode
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: Test-Adequacy Auditor is a lens row that always runs
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: a failed lens is retried once
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: a still-failing lens is rerun inline
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: only a still-dead lens raises the floor
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: a dead lens raises the floor to CONCERNS
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: a lens recovered inline costs no coverage
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: a mode-skipped lens is not a failure and not counted
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: a mode-skipped lens never raises the floor
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: a spec-less review reports 4/4, not 4/5
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the Blind Hunter's row wires in the hunter contract
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the Edge Case Hunter's row wires in the hunter contract
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the Acceptance Auditor's row wires in the auditor rubric
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the Test-Adequacy Auditor's row wires in the auditor rubric
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: no lens is given the other role's block
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the How cell is the wiring, not decoration
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: blockquoted text is what reaches the lens
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: unquoted text is orchestrator instruction, never sent
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the contract outranks a vendor skill it is stacked on
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: an unresolved collision is called out as randomness
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: zero findings is valid and never padded to a count
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: a fixed vendor output shape still carries severity and the chain
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: a severity label is a classification, not an opinion
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: an unlabelled finding is read as suggestion and never gates
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the shared rubric is appended to both contracts
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: severity and author-intent bind every lens, hunter and auditor
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the hunter contract binds hunter lenses, now and later
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the contract is routed by the How cell, not to every lens
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: a repo-less hunter runs the gates inside its diff
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the auditor rubric reaches the lens as prompt text, not commentary
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the auditor prompt carries the recall-first rule itself
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the auditor prompt still owes the adapted chain
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: Gate 1 is a reachability proof
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: an untraceable finding is speculation, not a finding
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: Gate 2 demands a written evidence chain
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: an unwritable chain means the finding is not reported
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: Gate 3 sets a 0.6 confidence floor
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: below the floor the lens is guessing and stays silent
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: doubt drops the finding
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the Blind Hunter runs the gates inside the diff, at the same bar
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the blind lens never lowers the bar to compensate
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the severity rubric demands the full range
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: critical requires an exact failure scenario
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: a well-calibrated review mixes severities
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the five review moves are the hunter's method
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: move 5 is what is NOT in the diff
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: author intent is engaged with, never deferred to
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: a finding contradicting stated rationale must rebut it
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: both auditors are exempt from Gates 1 and 3
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the exemption's reason is that the subject is absent
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the auditors are recall-first
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: an unsure auditor reports the gap and says it is unsure
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: Gate 2 still binds the auditors, adapted
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the pack goes to repo-access lenses only
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the Blind Hunter's row is marked never-primed
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the Acceptance Auditor is not primed either
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the reason it is excluded is that it cannot verify the pack
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: priming the Blind Hunter is forbidden outright
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the SCC-124 measurement is cited for that ban
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the pack is a starting point, not the search space
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: no noise filter at this layer or any other
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: worthiness gating is banned outright
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the recall cost of a worthiness gate is recorded
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: both roles run concurrently in one wave
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the gate table's columns are verifier then compound
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the Evidence Verifier heading routes the investigator prompt
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the Evidence Verifier heading routes the output fields
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the Compound Synthesis heading routes the synthesis prompt
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the Compound Synthesis heading routes the parents rule
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the verifier is assembled WITH the dossier block
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: compound is assembled WITH the dossier block too
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the gate table gives 0 findings neither role
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the gate table gives 1 finding the verifier only
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the gate table gives 2+ findings both roles
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: zero findings skips the entire step
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: a clean diff costs no new wall-clock
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: under two findings there is no compound pass
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: a skipped wave is recorded, never silent
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the skip note names the zero-finding gate
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the skip note names the compound gate
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: verified-nothing and all-confirmed must read differently
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the orchestrator never runs the extractor itself
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: each role runs the extractor as its own first action
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the dossier block is prompt text appended to BOTH roles
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the role is TOLD to build the dossier, in its own prompt
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the extractor invocation is pinned inside the prompt
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the invocation carries the two-machine interpreter note
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: placeholders are substituted, never sent as shell variables
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the extractor is pointed at WORKTREE, never REPO
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: reading the wrong tree refutes correct findings
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: a failed extractor leaves the role COLD, not stopped
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the cold rule covers BOTH roles, and names which
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the findings JSON carries the keys the extractor reads
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the roles are handed the findings in step-1 order
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the join is by index, never by title
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: titles are not unique, so position is the join
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: a failed extractor leaves that role running cold
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the cold run is named in the record, per role
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: a cold role does NOT cap the verdict
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: an inline rerun is cold by construction and recorded so
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the inline-cold note is pinned
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: an inline rerun still costs coverage nothing
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: a dead script is not a dead role
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the verifier is neither reviewer nor adversary
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the verifier is an independent investigator
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the extracted code and the live repo are both authorities
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: Q1 — does the code behave as claimed
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: Q2 — is the scenario reachable
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: Q3 — what the broader context reveals
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: Q4 — is the severity proportionate
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: results come back in the order they were given
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the result carries a verified boolean
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the result carries what the code actually does
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the result carries a revised severity on the house scale
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the result carries a revised confidence
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the result carries verification notes
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: a refuted finding is a full result, not a failure
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: an unsettled finding is returned, never dropped
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: compound launches beside the verifier, not after it
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: compound asks what the findings mean together
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: compound emits NEW findings only
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: every compound finding names its parents
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: a parentless compound is not a synthesis
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: compound has a 0.6 confidence floor and evidence
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: an empty compound list is valid and expected
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: every step-1 finding is carried forward annotated
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: an unverified finding keeps the hunter's severity
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: compound findings reach triage tagged as their own source
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the compound gate counts RAW findings, before dedupe
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: zero findings from dead lenses reads differently
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the dead-lens variant of the skip note is pinned
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: an unverified compound gating a merge is a stated decision
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the compound exemption is revisited when re-verify exists
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: this step drops nothing
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: a refuted finding still reaches triage
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: the no-noise-filter law binds at this layer too
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: fabricating a verification is forbidden
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: a failed role is retried once
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: a still-failing role is rerun inline
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: only a still-dead role raises the floor
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-02: a gate-skipped role is not a dead role
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: Literal-Correctness Hunter is a lens row that always runs
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the literal lens's row wires in the hunter contract
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the literal lens is primed with the evidence pack
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the literal lens opens the real definition of what the code leans on
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the literal lens is exhaustive, not selective
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the literal lens is a discipline, not a bug checklist
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the literal lens is diff-scoped, never whole-repo
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the diff-scope rule is BLOCKQUOTED, so it reaches the lens
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: sweeping is forbidden in the lens's own prompt
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: an empty patch set early-exits the literal lens
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the early-exit is recorded ok, never dead and never n/a
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the literal lens caps at 20 changed files
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: exceeding the cap must be disclosed to the lens AND to notes
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the lens is told to report truncation FIRST in its output
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the literal lens spills above ~9,000 chars to a context file
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the cost axis is named lens_budget and defined once
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: lens_budget is explicitly NOT review_mode
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: full review_mode plus capped budget is the normal state
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: a caller names the budget and never re-defines the caps
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: an unnamed budget defaults to capped, the safe side
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: capped is the autopilot's, with the caps mandatory and no top-up
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: standard budget still binds the caps, and its top-up is earned
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: Gate 1 is adapted for the literal lens, and only for it
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: for always-raised violations the changed line IS the proof
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: state-dependent violations still owe the full Gate 1 trace
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: zero findings is explicitly not a dead lens
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: the dead-lens contract applies to no usable OUTPUT, not to no findings
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: a caller may override the return-the-prompts fallback
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: returning unrun prompts headless is a review that never ran
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: inline execution must run the blind lens FIRST, on the diff alone
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-01: a non-blind blind lens is recorded as such, never silently
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] AP caller: invokes the engine, not a review of its own
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] AP caller: passes lens_budget capped in the contract block
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] AP caller: says capped is not optional and not review_mode
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] AP caller: does not re-define the caps it names
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] AP caller: mandates inline lenses when subagents are unavailable
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] AP caller: inline runs the blind lens before Ingest 2
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] AP caller: warns that step-02 severities are unverified today
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] AP caller: treats the engine's floor as a floor
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] interactive caller /cicd-code-review: invocation table passes lens_budget standard
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] interactive caller /smh-code-review: invocation table passes lens_budget standard
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: decision_needed bucket is defined
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: patch bucket is defined
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: defer bucket is defined
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: dismiss bucket is defined
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: critical accepts high and blocker
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: important accepts medium and major
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: suggestion absorbs the unrecognized
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: nitpick accepts info, trivia, trivial
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: a revised severity outranks the hunter
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: an unverified finding keeps the hunter's severity
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: an unverified finding is not a softer finding
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: the engine gates as hard as the path it replaces
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: compound is a first-class finding source
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: no-spec reclassifies decisions rather than parking them
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: dismiss is counted and defer is recorded
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: critical maps to FAIL
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: important maps to CONCERNS
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: suggestion and nitpick never gate
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: a deferred finding never gates
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: only a still-dead lens appears in the table
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: a dead step-2 role raises the floor too
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: a recovered or gate-skipped role never gates
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-03: the floor is the most severe row
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-04: an absent sink is reported, never guessed
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-04: decision findings are written unresolved
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-04: patch findings are written unresolved
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-04: deferred findings are written unresolved
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-04: deferred work is routed out of the review
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-04: dismissed findings are counted, not written
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-04: the summary carries a severity floor
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-04 boundary: never advances a story or writes a board
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-04 boundary: never issues the verdict line
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-04 boundary: never applies fixes on its own initiative
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-04 boundary: never merges, pushes or transitions
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] step-04 boundary: never pauses the caller for a decision
+[PASS]   ^ counter-example applies
+[PASS]   ^ counter-example is rejected
+[PASS] ban scan discovered the engine's markdown: 5 file(s)
+[PASS] ban scan covers every known engine file: unscanned: []
+[PASS] SKILL.md carries no new_status
+[PASS] SKILL.md carries no development_status
+[PASS] SKILL.md carries no sprint board file
+[PASS] SKILL.md carries no HALT marker
+[PASS] SKILL.md carries no customization resolver
+[PASS] SKILL.md carries no speech-style variable
+[PASS] SKILL.md carries no vendor review skill
+[PASS] steps/step-01-review.md carries no new_status
+[PASS] steps/step-01-review.md carries no development_status
+[PASS] steps/step-01-review.md carries no sprint board file
+[PASS] steps/step-01-review.md carries no HALT marker
+[PASS] steps/step-01-review.md carries no customization resolver
+[PASS] steps/step-01-review.md carries no speech-style variable
+[PASS] steps/step-01-review.md carries no vendor review skill
+[PASS] steps/step-02-verify.md carries no new_status
+[PASS] steps/step-02-verify.md carries no development_status
+[PASS] steps/step-02-verify.md carries no sprint board file
+[PASS] steps/step-02-verify.md carries no HALT marker
+[PASS] steps/step-02-verify.md carries no customization resolver
+[PASS] steps/step-02-verify.md carries no speech-style variable
+[PASS] steps/step-02-verify.md carries no vendor review skill
+[PASS] steps/step-03-triage.md carries no new_status
+[PASS] steps/step-03-triage.md carries no development_status
+[PASS] steps/step-03-triage.md carries no sprint board file
+[PASS] steps/step-03-triage.md carries no HALT marker
+[PASS] steps/step-03-triage.md carries no customization resolver
+[PASS] steps/step-03-triage.md carries no speech-style variable
+[PASS] steps/step-03-triage.md carries no vendor review skill
+[PASS] steps/step-04-record.md carries no new_status
+[PASS] steps/step-04-record.md carries no development_status
+[PASS] steps/step-04-record.md carries no sprint board file
+[PASS] steps/step-04-record.md carries no HALT marker
+[PASS] steps/step-04-record.md carries no customization resolver
+[PASS] steps/step-04-record.md carries no speech-style variable
+[PASS] steps/step-04-record.md carries no vendor review skill
+[PASS] skills INDEX routes to the engine as caller-only
+[PASS] skills INDEX master and cache are identical
+[PASS] engine is published to the Claude cache
+[PASS] cache holds the same file set as master
+[PASS] cache is byte-identical to master
+-- 755/755 passed --

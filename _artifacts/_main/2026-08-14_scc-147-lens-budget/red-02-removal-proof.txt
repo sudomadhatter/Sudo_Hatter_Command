@@ -1,0 +1,26 @@
+### Removal proof — run against the COMMITTED fix (4319722), so restore returns to the fixed state.
+### The first attempt at this proof was INVALID and is recorded in the walkthrough: the fix was
+### still uncommitted, so 'git checkout --' reverted the FIX, not the mutation. The second caller's
+### red then also carried the first caller's failure, and the final 'restored' run was still red.
+
+=== MUTANT: delete the lens_budget row from .agents/commands/cicd-code-review.md ===
+dropped 1 line(s) -- mutation applied
+guard EXIT=1  (1 = KILLED)
+[FAIL] interactive caller /cicd-code-review: invocation table passes lens_budget standard
+[FAIL]   ^ counter-example applies: .agents/commands/cicd-code-review.md: '| `lens_budget` | `standard`' not present, so the proof would be vacuous
+[FAIL]   ^ counter-example is rejected: check survives its own counter-example — it cannot fail on content
+-- 752/755 passed --
+RESTORED .agents/commands/cicd-code-review.md -> guard EXIT=0  -- 755/755 passed --
+
+=== MUTANT: delete the lens_budget row from .agents/commands/smh-code-review.md ===
+dropped 1 line(s) -- mutation applied
+guard EXIT=1  (1 = KILLED)
+[FAIL] interactive caller /smh-code-review: invocation table passes lens_budget standard
+[FAIL]   ^ counter-example applies: .agents/commands/smh-code-review.md: '| `lens_budget` | `standard`' not present, so the proof would be vacuous
+[FAIL]   ^ counter-example is rejected: check survives its own counter-example — it cannot fail on content
+-- 752/755 passed --
+RESTORED .agents/commands/smh-code-review.md -> guard EXIT=0  -- 755/755 passed --
+
+=== final state: clean tree, guard green ===
+guard EXIT=0
+-- 755/755 passed --
