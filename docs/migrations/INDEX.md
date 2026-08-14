@@ -72,8 +72,8 @@ to use it — read the guides, run the scripts. Nothing here is read-only-protec
 | 1 | Read the whole procedure first (clone → restore → verify) | [`new_machine-migration-guide.md`](install_guides/new_machine-migration-guide.md) | ✅ | ✅ |
 | 2 | Clone both repos (lobby + every project you work in) | that guide, §3 | ✅ | ✅ |
 | 2b | **⛔ Arm the commit gates — one command, and nothing looks wrong if you skip it.** `core.hooksPath` is LOCAL config, so a fresh clone has NO Jira / encoding / SOP gate at all | Windows → [`Install-GitHooks.ps1`](scripts/Install-GitHooks.ps1) · macOS/Linux → [`install-git-hooks.sh`](scripts/install-git-hooks.sh) (arms lobby + projects and verifies via `hooks_armed.py`, SCC-115) | ✅ | ✅ **use the `.sh`** |
-| 3 | Restore every `.env` / `auth_keys/` from the master bundle | Windows → [`Restore-EnvMaster.ps1`](scripts/Restore-EnvMaster.ps1) · macOS/Linux → [`restore-env-master.sh`](scripts/restore-env-master.sh) | ✅ | ✅ **use the `.sh`** |
-| 4 | The secret bundle step 3 reads | `_secrets/master.env` — **gitignored, hand-carried, never committed** | ✅ | ✅ |
+| 3 | Restore every `.env` / `auth_keys/` from the master bundle | Windows → [`Restore-EnvMaster.ps1`](scripts/Restore-EnvMaster.ps1) · macOS/Linux → [`restore-env-master.sh`](scripts/restore-env-master.sh) · or `python docs/migrations/scripts/env_master.py --restore` | ✅ | ✅ **use the `.sh`** |
+| 4 | The secret bundle step 3 reads (export with `env_master.py --export` or `Export-EnvMaster.ps1`) | `docs/migrations/auth_keys/_secrets/master.env` — **gitignored, hand-carried, never committed** (SCC-39) | ✅ | ✅ |
 | 5 | Rebuild the AGY Python venv + verify the test infra | [`python_vytest-updates-other-machines.md`](install_guides/python_vytest-updates-other-machines.md) | ✅ | ✅ (use its macOS column) |
 | 6 | Per-machine logins & toolchains — gcloud, gh, firebase, Java 17, Node, GitNexus re-index | that guide, §5 | ✅ | ✅ |
 | 7 | Scrum-board stale-stamp git hooks (per machine, per project — AGY today) | [`git-hooks-board-stale-install.md`](../../_my_resources/open_tasks/git-hooks-board-stale-install.md) | ✅ | needs `pwsh` (installer is `.ps1`) |

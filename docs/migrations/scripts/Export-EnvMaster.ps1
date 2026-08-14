@@ -29,6 +29,7 @@ $envNames = @('.env', '.env.local', '.env.production')
 Get-ChildItem -Path 'Projects' -Recurse -Force -File -ErrorAction SilentlyContinue |
     Where-Object {
         $_.FullName -notmatch '\\node_modules\\|\\\.venv\\|\\venv\\|\\worktrees\\' -and
+        $_.Name -notmatch '\.example$|\.bak$' -and
         ($envNames -contains $_.Name -or $_.FullName -match '\\auth_keys\\')
     } |
     ForEach-Object {
