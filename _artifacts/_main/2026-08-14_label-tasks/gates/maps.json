@@ -1,0 +1,22 @@
+{
+  "gate": "maps",
+  "story": "scc-155",
+  "result": "pass",
+  "exit_code": 0,
+  "sha": "7f27c5aadaa3e52682b7f2619cd0fbe74f69ef46",
+  "dirty_tree": true,
+  "dirty_paths": [
+    "_artifacts/_main/2026-08-14_label-tasks/gates/"
+  ],
+  "totals": null,
+  "command": [
+    "python3",
+    ".agents/scripts/check_maps.py",
+    "--depth3-only",
+    "--strict"
+  ],
+  "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/label-tasks",
+  "duration_s": 0.1,
+  "recorded_at": "2026-08-14T21:19:25+00:00",
+  "output_tail": ""
+}
