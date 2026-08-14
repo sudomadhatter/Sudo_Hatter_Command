@@ -192,15 +192,23 @@ exit code, which is how a red gate reads as green.
 | **Link + anchor** | resolve every path and `#L` anchor the diff touched | any `.md` in the diff |
 | **Door parity** | every added/renamed command has exactly the doors its `platforms:` claims | a command was added, renamed or deleted |
 
-**No receipts on this lane, and that is a stated limit, not an oversight.** `gate_receipt.py` writes to
-`_bmad-output/gates/<story>/` and resolves a BMAD project; it cannot run here. So the evidence contract
-is: **pasted real output, plus `git rev-parse HEAD` recorded beside it**, in the walkthrough's
-`## Evidence`. Any code or script change between that sha and HEAD invalidates the verdict — which is
-the same invariant the receipt enforces mechanically elsewhere, held by hand here.
+**Receipts ride this lane too (SCC-146).** `/smh-quick-dev` Step 3 stamps the suite run at
+`_artifacts/_main/<date>_<slug>/gates/` via `gate_receipt.py run --task <KEY> --gate suite --root
+<task-artifacts> --cwd <worktree>`. Inherit it the way `/cicd-code-review` inherits a certification:
+**receipt result `pass` + stamped on a clean tree + no non-artifact file changed between its sha and
+HEAD → adopt it, cite the receipt, do not re-run the suite.** Anything else — no receipt, a `fail`
+or `DIRTY` stamp, code or test changes since — **run it yourself and re-stamp** with the same
+command. Port the rule verbatim: **fail toward running, never toward trusting.** Step 0.7 absorbs
+`main` and moves HEAD, so the freshness check invalidates an inherited receipt automatically —
+that is correct, and needs no special case.
 
 **Run the suite ONCE, on the code that will actually land.** While fixing, run scoped — the tests for
-what you touched. **After your LAST change**, run `run_all.py` in full and paste it, with the sha.
-Artifact- and doc-only commits after that run do **not** invalidate it; code or test changes do.
+what you touched. **After your LAST change**, run `run_all.py` in full **through the receipt writer**
+and paste it, with the sha. Artifact- and doc-only commits after that run do **not** invalidate it;
+code or test changes do — the receipt's freshness check reads exactly that line, mechanically
+(`task_preflight.py` § code-fresh). The evidence contract is unchanged: **pasted real output, plus
+`git rev-parse HEAD` recorded beside it**, in the walkthrough's `## Evidence` — the receipt is how
+the close-out *verifies* the claim, never a substitute for the pasted run.
 
 **Guards, per `tests-must-gate-for-real`:**
 - **A missing tool is a finding, not a skip.** `run_all.py` failing to start means the floor is
@@ -220,6 +228,11 @@ Artifact- and doc-only commits after that run do **not** invalidate it; code or 
   contract (§2A) plus the convention table (§2C), and **import Step 1's drift/bloat findings** into the
   table (source `review`) instead of re-running the §2B ban-hunt. The full two-half pass is for
   standalone runs.
+- **No double machine floor either (SCC-146).** Nested here, the audit **imports Step 3's receipts
+  and pasted runs** for `run_all`, `workflow_lint`, `sop_currency` and the link+anchor sweep instead
+  of re-running them, and runs only what Step 3 did not: `py_compile`, the comment contract (§2A),
+  the convention table (§2C). A missing or invalid receipt means Step 3 owes a run — send it back,
+  don't paper over it here. Standalone `/smh-clean-code-audit` is unchanged.
 - **Diff-scoped.** Legacy debt in untouched files is noted, never gated on.
 - **An empty diff is a STOP, not a pass.**
 

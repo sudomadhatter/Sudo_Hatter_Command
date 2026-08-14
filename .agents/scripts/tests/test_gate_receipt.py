@@ -171,6 +171,86 @@ def main() -> int:
         c.check("11 HEAD moving mid-run -> unrunnable",
                 receipt("moving")["result"] == "unrunnable",
                 f"result={receipt('moving')['result']}")
+
+    # ── SCC-146: the Task lane — receipts in a repo with NO board anywhere ─────────
+    # The lobby has `_bmad-output/` but no board file, by definition: Task work has no
+    # sprint board, and resolve_project_root() dies without one. `--root` must bypass
+    # the resolver entirely and land the receipt at <root>/gates/<gate>.json, so the
+    # Task close-out reads the same evidence the story lane gets.
+    #
+    # cwd is pinned INSIDE the temp dir for this block: a mutant that quietly falls
+    # back to the resolver must die "no project resolved" — never walk up from the
+    # tests directory, resolve a REAL project on this machine, and write into it.
+    import os
+    prev_cwd = os.getcwd()
+    with TempDir() as tmp2:
+        try:
+            lobby = tmp2 / "lobby"
+            lobby.mkdir()
+            git(lobby, "init", "-q")
+            git(lobby, "config", "user.email", "t@t.t")
+            git(lobby, "config", "user.name", "t")
+            (lobby / "README.md").write_text("# no board here\n", encoding="utf-8")
+            git(lobby, "add", "README.md")
+            git(lobby, "commit", "-qm", "seed")
+            aroot = lobby / "_artifacts" / "_main" / "2026-08-14_thing"
+            aroot.mkdir(parents=True)
+            os.chdir(lobby)
+
+            def root_receipt() -> dict:
+                return json.loads((aroot / "gates" / "suite.json")
+                                  .read_text(encoding="utf-8"))
+
+            # A1 — and --task is the alias for --story: same field, no schema churn.
+            code, out = run_script("gate_receipt.py", "run", "--task", "SCC-00",
+                                   "--gate", "suite", "--root", str(aroot),
+                                   "--cwd", str(lobby),
+                                   "--", sys.executable, "-c", "print('ok')")
+            wrote = code == 0 and (aroot / "gates" / "suite.json").is_file()
+            c.check("16 SCC-146 --root: receipt lands at <root>/gates/<gate>.json, no board",
+                    wrote and root_receipt()["result"] == "pass",
+                    f"exit={code} " + out.strip()[-150:])
+            c.check("16b SCC-146 --task aliases --story (same receipt field)",
+                    wrote and root_receipt()["story"] == "scc-00",
+                    root_receipt()["story"] if wrote else "(no receipt)")
+
+            # A2 — the control that makes 16 a BYPASS, not a new resolver default:
+            # the same boardless repo WITHOUT --root still dies in the resolver.
+            code, out = run_script("gate_receipt.py", "run", "--story", "SCC-00",
+                                   "--gate", "suite", "--project", str(lobby),
+                                   "--", sys.executable, "-c", "print('ok')")
+            c.check("17 SCC-146 without --root the boardless repo still cannot resolve",
+                    code == 2 and "cannot resolve project" in out,
+                    f"exit={code} " + out.strip()[-150:])
+
+            # A3 in root mode: fresh passes, a content change is STALE, --sha re-pins.
+            code, out = run_script("gate_receipt.py", "check", "--task", "SCC-00",
+                                   "--require", "suite", "--root", str(aroot),
+                                   "--cwd", str(lobby))
+            c.check("18 SCC-146 check --root: fresh receipt at HEAD -> 0",
+                    code == 0, f"exit={code}")
+            orig_sha = git(lobby, "rev-parse", "HEAD").stdout.strip()
+            (lobby / "code.py").write_text("x = 1\n", encoding="utf-8")
+            git(lobby, "add", "code.py")
+            git(lobby, "commit", "-qm", "code moved")
+            code, out = run_script("gate_receipt.py", "check", "--task", "SCC-00",
+                                   "--require", "suite", "--root", str(aroot),
+                                   "--cwd", str(lobby))
+            c.check("18b SCC-146 check --root: content moved -> STALE, exit 2",
+                    code == 2 and "STALE" in out, f"exit={code}")
+            code, out = run_script("gate_receipt.py", "check", "--task", "SCC-00",
+                                   "--require", "suite", "--root", str(aroot),
+                                   "--cwd", str(lobby), "--sha", orig_sha)
+            c.check("18c SCC-146 check --root --sha pins to the shipping commit",
+                    code == 0 and "STALE" not in out, f"exit={code}")
+
+            # list --root reads what run --root wrote.
+            code, out = run_script("gate_receipt.py", "list", "--task", "SCC-00",
+                                   "--root", str(aroot))
+            c.check("19 SCC-146 list --root reads the root-mode receipts",
+                    code == 0 and "suite" in out, f"exit={code} " + out.strip()[-100:])
+        finally:
+            os.chdir(prev_cwd)
     return c.finish()
 
 

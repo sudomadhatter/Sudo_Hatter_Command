@@ -43,6 +43,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import wf_common as wf
 import hooks_armed
+# SCC-146: the close-out reads the review's receipts. Imported the way closeout_preflight
+# imports it, and for the same reason — two tools reading one receipt format must share one
+# loader, or they drift apart about what a receipt even is.
+import gate_receipt as gr
 # ONE acli resolution path in this repo, not two. `jira_feed` already owns
 # --acli / $ACLI_BIN / PATH and the "a hung uplink is not a verdict" wrapper; duplicating
 # that here is exactly how the python3/python probe orders drifted apart before SCC-49.
@@ -726,12 +730,15 @@ def check_scope(repo: Path, branch: str, rep: wf.Report) -> tuple[str, list[str]
 
 # ── 4. Is there a record of what was done? ─────────────────────────────────────
 
-def check_artifacts(repo: Path, key: str | None, rep: wf.Report) -> None:
+def check_artifacts(repo: Path, key: str | None, rep: wf.Report) -> list[Path]:
     """A walkthrough is what the Dev Record points AT, so its absence means the close-out
     would post a record citing nothing. `artifacts-always-first` exempts the plan on this
-    lane; it never exempts the walkthrough."""
+    lane; it never exempts the walkthrough.
+
+    Returns the hit paths: `check_gate` reads the review verdict out of the SAME resolution
+    (SCC-146) — a second walkthrough-finder would be a second chance to disagree."""
     if not key:
-        return
+        return []
     root = repo / "_artifacts"
     lower = key.lower()
     # A missing `_artifacts/` tree is NOT "nothing to check" - it is the strongest possible
@@ -745,9 +752,106 @@ def check_artifacts(repo: Path, key: str | None, rep: wf.Report) -> None:
             else f"no walkthrough.md mentions {key}"
         rep.err("artifacts", f"{where} - write the walkthrough before closing out; "
                              f"the Dev Record links it")
-        return
+        return []
     for p in hits:
         rep.info("artifacts", rel_or_abs(p, repo))
+    return hits
+
+
+# ── 4.5. What did the REVIEW say, and can its evidence spare the gate? (SCC-146) ──────
+
+# The canonical line /smh-code-review Step 4 writes as the review section's first line.
+# Anchored at line start: prose ABOUT a verdict does not match; the stamp does.
+VERDICT_RE = re.compile(r"^Verdict:\s*(PASS|CONCERNS|FAIL|WAIVED)\s*@\s*([0-9a-fA-F]{7,40})\b",
+                        re.MULTILINE)
+
+
+def nonartifact_moved(repo: Path, sha: str) -> list[str] | None:
+    """Paths changed between `sha` and HEAD that are NOT under `_artifacts/`.
+
+    This is /smh-code-review Step 3's freshness rule made mechanical: "artifact- and
+    doc-only commits after that run do not invalidate it; code or test changes do." The
+    verdict and the receipts always predate the artifacts commit that carries them (the
+    stamp cannot cite the commit it rides in), so strict sha equality would mean no real
+    lane could ever SKIP — observed live on SCC-149 (review finding C4). None = unknown sha
+    here, which the callers treat as stale (fail toward running)."""
+    r = wf.git(["diff", "--name-only", f"{sha}..HEAD"], repo)
+    if r.returncode != 0:
+        return None
+    return [p.strip() for p in r.stdout.splitlines()
+            if p.strip() and not p.strip().startswith("_artifacts/")]
+
+
+def check_gate(repo: Path, hits: list[Path], lane: str, rep: wf.Report) -> str | None:
+    """Read the review's `Verdict: ... @ <sha>` and decide the close-out gate's fate:
+
+      FAIL                                          -> rep.err: the merge is REFUSED
+      PASS/CONCERNS + code-fresh + receipts valid   -> return the `SKIP` line
+      anything else (no verdict, WAIVED, moved,
+      upstream errors, missing/invalid receipts)    -> return None: the plan prints as today
+
+    Fail toward running, never toward trusting (/cicd-code-review Step 3, ported). ONLY
+    this function may produce a SKIP — the close-out command never decides one by reading.
+    """
+    if lane != "LOCAL" or not hits:
+        return None
+    verdicts: list[tuple[str, str, Path]] = []
+    for p in hits:
+        for m in VERDICT_RE.finditer(wf.read_text(p)):
+            verdicts.append((m.group(1).upper(), m.group(2), p))
+    if not verdicts:
+        rep.info("gate", "no review Verdict line in the walkthrough - the full gate runs")
+        return None
+    if any(v == "FAIL" for v, _, _ in verdicts):
+        rep.err("gate", "the review verdict is FAIL - fix on the branch and re-run the "
+                        "review; a FAIL lane does not merge")
+        return None
+    status, sha, wt = verdicts[-1]      # one review per lane; the latest stamp is current
+    if status == "WAIVED":
+        rep.info("gate", "verdict WAIVED (no suite exists to receipt) - treated as "
+                         "CONCERNS; the printed gate plan stands")
+        return None
+    errs, _ = rep.counts()
+    if errs:
+        # Something upstream already blocks (dirty tree, unabsorbed main, open children...).
+        # A SKIP printed beside a red finding would be a contradiction wearing a verdict.
+        return None
+    moved = nonartifact_moved(repo, sha)
+    if moved is None:
+        rep.warn("gate", f"verdict sha {sha[:8]} is not a commit here - cannot verify "
+                         f"freshness; the full gate runs")
+        return None
+    if moved:
+        rep.info("gate", f"code moved since the verdict ({len(moved)} non-artifact "
+                         f"file(s), e.g. {moved[0]}) - the full gate runs")
+        return None
+    gates_dir = wt.parent / "gates"
+    receipts = sorted(gates_dir.glob("*.json")) if gates_dir.is_dir() else []
+    if not receipts:
+        rep.info("gate", f"no receipts beside {rel_or_abs(wt, repo)} - the full gate runs "
+                         f"(fail toward running, never toward trusting)")
+        return None
+    names: list[str] = []
+    for rpath in receipts:
+        data = gr.load_receipt(wt.parent, "unused", rpath.stem, wf.Report(), flat=True)
+        if (data is None or data.get("result") not in ("pass", "warn")
+                or data.get("dirty_tree")):
+            got = "unreadable" if data is None else (
+                f"result={data.get('result')}" + (" DIRTY" if data.get("dirty_tree") else ""))
+            rep.info("gate", f"receipt {rpath.stem}: {got} - the full gate runs")
+            return None
+        rsha = str(data.get("sha") or "")
+        rmoved = nonartifact_moved(repo, rsha) if rsha else None
+        if rmoved is None or rmoved:
+            rep.info("gate", f"receipt {rpath.stem}: stamped at {rsha[:8] or '?'} and code "
+                             f"moved since - the full gate runs")
+            return None
+        names.append(rpath.stem)
+    if "suite" not in names:
+        rep.info("gate", "no `suite` receipt (the enforcement-suite run is the one that "
+                         "matters) - the full gate runs")
+        return None
+    return f"SKIP - verdict {status} @ {sha[:8]}, receipts valid ({', '.join(names)})"
 
 
 # ── 5. Anything still holding the branch? ──────────────────────────────────────
@@ -829,13 +933,17 @@ def main() -> int:
     check_sync(repo, branch, args.fetch, rep)
     check_base(repo, branch, rep)
     lane, touched = check_scope(repo, branch, rep)
-    check_artifacts(repo, key, rep)
+    art_hits = check_artifacts(repo, key, rep)
     check_worktree(repo, branch, rep)
     # Every check above this line reads a repo whose commits it ASSUMES were gated. That
     # assumption is only true while `core.hooksPath` is set - it is per-machine, git never
     # carries it, and a fresh clone has it unset with no error. Ask, do not assume (SCC-110).
     armed = hooks_armed.check(repo, rep)
-    plan = gate_plan(repo, lane)
+    # SCC-146: the review verdict + its receipts can spare the lane a fourth identical
+    # suite run — or refuse the merge outright on a FAIL. Runs after every other check so
+    # its no-upstream-errors guard sees the complete picture.
+    skip = check_gate(repo, art_hits, lane, rep)
+    plan = [skip] if skip else gate_plan(repo, lane)
 
     if args.json:
         print(json.dumps({"repo": str(repo), "branch": branch, "key": key,
