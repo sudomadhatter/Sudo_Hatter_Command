@@ -207,8 +207,9 @@ pushes it too, and resume checks it out on the new machine.
 
 **The invariant this buys: a `claude/*` branch on origin means "parked, in-flight, on another machine."**
 Nothing else. Keep it true — it is what makes `/cicd-resume` trustworthy on a cold machine.
-(`incident-*` branches come from the Epic-16 incident pipeline, not story flow; they are outside this rule
-and must not be swept by it.)
+(`claude/incident-*` branches come from the Epic-16 incident pipeline, not story flow; they are outside
+this rule and must not be swept by it — they match the `claude/*` glob, so a resume reading that listing
+must skip the `incident-` infix rather than treat it as parked story work.)
 
 Checking out the epic branch in the shared checkout to merge is **wrong** — the shared checkout stands
 on `main` and stays there; pulling story landings through it drags other teams' uncommitted work into

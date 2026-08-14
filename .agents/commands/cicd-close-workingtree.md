@@ -323,8 +323,9 @@ via `/cicd-park`. So an absent remote branch is the normal case — report it as
 parked) — nothing to delete"*, not as a failure. A remote branch that IS present means this story was
 parked, and deleting it here is what stops `/cicd-resume` from later offering a story that is already done.
 
-⛔ **Never sweep `claude/*` on origin wholesale.** `incident-*` branches come from the Epic-16 incident
-pipeline, not story flow, and are outside this command entirely.
+⛔ **Never sweep `claude/*` on origin wholesale.** `claude/incident-*` branches come from the Epic-16
+incident pipeline, not story flow — they MATCH the `claude/*` glob and are outside this command
+entirely: delete only the one story branch you verified merged, never a listing (SCC-148).
 
 ## Step 6 — Verify, THEN report (never report an unverified success)
 
