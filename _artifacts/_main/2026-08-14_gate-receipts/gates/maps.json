@@ -3,8 +3,8 @@
   "story": "scc-146",
   "result": "pass",
   "exit_code": 0,
-  "sha": "4090e81baed85a92a34b3e5636c5988ae9fb1dfe",
-  "dirty_tree": true,
+  "sha": "f6c6f6c763bb14f1fba8573f12a251af63b97440",
+  "dirty_tree": false,
   "totals": null,
   "command": [
     "python3",
@@ -14,6 +14,6 @@
   ],
   "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/gate-receipts",
   "duration_s": 0.1,
-  "recorded_at": "2026-08-14T14:11:02+00:00",
+  "recorded_at": "2026-08-14T14:11:25+00:00",
   "output_tail": ""
 }
