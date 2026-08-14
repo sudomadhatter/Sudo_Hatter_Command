@@ -35,9 +35,16 @@ is allowed to act on the repo you are standing in. The prefix is the permission;
 ## 🛑 MANDATORY RULES (before you start)
 
 1. **This command merges to `main`.** Invoking it IS the operator's per-merge sign-off for this one
-   task — the same contract `/cicd-push-e2e` carries for an epic. The push-approval hook still
-   prompts on the push; that prompt is expected, not an error. Approval is **per-action and never
-   carries forward** — the next task needs its own invocation.
+   task — the same contract `/cicd-push-e2e` carries for an epic — **when the operator invoked it.**
+   ⛔ **If YOU (the agent) invoked this command autonomously, the invocation authorises nothing:**
+   before the Step 3 mint you must hold the operator's **explicit, this-turn merge approval, in
+   their own words** — "merge it", "push to main", "ship it", "get it done". **Ticket-status
+   permission is NEVER merge permission**: "you can move it to done" flips a Jira status and says
+   nothing about `main` (this exact misreading happened live, 2026-08-14, SCC-37). No such words →
+   STOP at merge-ready and ask; the mint script will refuse you anyway (SCC-37: it requires
+   `--operator-approval '<their verbatim words>'` in any non-interactive shell, records the quote
+   in the token, and the push gate prints it back — a fabricated or stretched quote is visible at
+   every step). Approval is **per-action and never carries forward** — the next task needs its own.
 2. **The preflight is not advisory.** Exit 2 STOPS the command. Report what failed; never "merge
    anyway", and never re-run it with the failing check worked around.
 3. **The lane is not yours to choose.** `LANE: HANDOFF` means a deployable path is in the diff.
@@ -259,7 +266,12 @@ gh api repos/{owner}/{repo}/commits/$SHA/check-runs \
 # slow run eats its life — everything else passes, then the push dies on "stale token" and
 # the close-out has to be re-run having already done all its work (SCC-118).
 sh .agents/scripts/git-hooks/mint-push-token.sh \
-   --command /smh-close-task-merge-tree --branch chore/<JIRA-KEY>-<slug> --key <JIRA-KEY>
+   --command /smh-close-task-merge-tree --branch chore/<JIRA-KEY>-<slug> --key <JIRA-KEY> \
+   --operator-approval '<the operator words that approved THIS merge, verbatim>'
+# ⛔ The quote is MANDATORY REAL EVIDENCE, not a formality (SCC-37): paste the operator's exact
+# words from THIS turn. At a terminal the operator types the key instead and no flag is needed.
+# Read the AUTHORIZED BY OPERATOR line the mint prints back — if those words are not an
+# unambiguous yes to this merge, delete the token and ask.
 
 env -u GITHUB_TOKEN git push origin main       # the pre-push gate spends the token here
 

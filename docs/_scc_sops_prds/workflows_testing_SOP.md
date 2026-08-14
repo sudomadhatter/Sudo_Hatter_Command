@@ -764,6 +764,12 @@ flowchart TD
 ```
 
 **Typing it IS your merge sign-off** — the same contract `/cicd-push-e2e` carries for an epic.
+**⛔ But if an agent invoked it on its own (SCC-37, 2026-08-14), the invocation authorises
+nothing:** the mint now refuses without your explicit, this-turn merge words passed verbatim
+(`--operator-approval '…'`), or you typing the ticket key at a terminal. "You can move it to done"
+is ticket permission, not merge permission — that exact misreading is what this closes. The words
+you said are recorded in the token and printed back at mint and at push, so you can always see
+what an agent claimed authorised a merge.
 
 **⛔ The close-out never re-runs the LLM review (SCC-147).** One review per lane: the walkthrough's
 `Verdict: … @ <sha>` stands, and Step 2's gate is the *mechanical* suite only. The review engine is
@@ -878,6 +884,7 @@ don't.
 > | armed | `MAIN-PUSH-ENFORCE` deleted or `DISABLE` present → passes through, deliberately |
 > | destination | only `refs/heads/main`, whole-ref — so `epic/main-fix` never trips it |
 > | exists | no token at all |
+> | **⭐ approved** | **the token carries no operator-approval record (SCC-37)** — the mint refuses to write one without your verbatim words (non-interactive) or the key typed at a terminal, and the push prints the words back |
 > | fresh | minted more than **30 minutes** ago |
 > | same commit | the token names one sha and the push carries another |
 > | **⭐ one merge** | **the push does not advance `main` by exactly one merge sitting on the remote tip** |
