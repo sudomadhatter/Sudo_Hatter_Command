@@ -3,11 +3,9 @@
   "story": "scc-156",
   "result": "pass",
   "exit_code": 0,
-  "sha": "2dc22051957e32c7d21a83a91c2e7260b3baacec",
-  "dirty_tree": true,
-  "dirty_paths": [
-    "_artifacts/_main/2026-08-14_lane-speed/gates/"
-  ],
+  "sha": "c761b5535d9ae194418c8f33a4edf22fa73cfbf8",
+  "dirty_tree": false,
+  "dirty_paths": [],
   "totals": null,
   "command": [
     "python3",
@@ -17,6 +15,6 @@
   ],
   "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/lane-speed",
   "duration_s": 0.1,
-  "recorded_at": "2026-08-14T21:14:02+00:00",
+  "recorded_at": "2026-08-14T21:17:22+00:00",
   "output_tail": ""
 }
