@@ -52,10 +52,57 @@ step with a "flip to hard gate later" comment READS as a temporary measure. All 
      dominates their cost anyway).
    - **A structural red is a wiring proof, never a behavior proof.** Source-contains asserts cannot see
      ORDER — a guard relocated below the write it protects passes them identically. Behavioral coverage is
-     therefore **owed**, not optional. Prove a new behavioral test non-vacuous by **RELOCATING** the guard
-     (structural reds stay green; only the new test fires), **never by deleting it** — deletion kills both
-     tests and isolates nothing. Give every scenario a **positive control** (the unguarded path must still
-     do the thing), or the test passes against a helper that does nothing at all.
+     therefore **owed**, not optional. Give every scenario a **positive control** (the unguarded path must
+     still do the thing), or the test passes against a helper that does nothing at all. **Proving a new
+     test non-vacuous is a mutation — the procedure is § Mutation Testing below**, which is where the
+     *relocate, never delete* technique now lives, alongside the shape it does not transfer to and the
+     two rules that bind every mutant whatever its shape.
+
+## Mutation Testing — proving a check can actually fail
+
+A test you have never seen fail is a claim, not a check. **Mutation is how the claim gets tested:**
+break the thing on purpose and watch a NAMED case die. Rule 1 is *why* this is owed; Rule 4 is *when*;
+this is the **procedure**, and it is named here so it can be found by anyone grepping for how to do it.
+
+**Declare the table BEFORE you mutate.** One row per mutant — the mutant, the file, and **the named
+case it must kill** — and run them as **ONE sweep**, never one at a time. A sweep improvised one mutant
+at a time cannot check itself; a declared one can. **A surviving mutant is a finding.** Record the
+finished table in the walkthrough: each mutant, its file, its named case, and the outcome.
+
+### The techniques — and which shape each one is for
+
+- **RELOCATE the guard** — for a structural guard and a behavioral test in the **same file**. Move the
+  guard below the write it protects: the structural reds stay green (they cannot see ORDER) and only
+  the new behavioral test fires. ⛔ **Never DELETE it** — deletion kills both tests and isolates
+  nothing. That is how this technique was first got wrong (AGY 21.8b), and for a long time it was the
+  *only* technique written down.
+- **INVERT the decision** — for **gates, hooks and shell checks**, where there is nothing to relocate.
+  Flip one refusal to an allow, one comparison, one exit code. This is the shape the technique above
+  does not transfer to, so anyone mutating a gate was following advice designed for a different
+  problem — and improvised instead.
+- **CODE-DERIVED, never case-derived** — draw every mutant from a **decision in the source under test**,
+  never by reading your own cases and asking what would break them. Case-derived mutants are circular:
+  they prove only that the suite agrees with itself. Measured in SCC-144 — its 14 case-derived mutants
+  were all killed, and a later set drawn from the code left **24 of 25 surviving**, every survivor a
+  hole the first sweep had reported as covered. That is [[prose-pinning-guards-are-vacuous]] recurring
+  one level up, *inside* the mutation pass.
+- **RESTORE on interrupt, and never start dirty** — restore in a `finally`/trap, refuse to start against
+  a dirty tree, and re-check `git status` when the sweep ends. In SCC-144 a `timeout`-killed sweep left
+  `commit-msg-jira.sh` **mutated on disk, uncommitted** — reverted to the exact bug that lane existed to
+  remove. A mutated gate is committable, and residue in a dirty tree is indistinguishable from your own
+  work.
+
+### A mutant that removes nothing is DEFECTIVE — not a coverage gap
+
+**The survivor you must not believe.** If the mutant's edit does not appear in the original text, or it
+does not actually remove the behaviour it claims to remove, it proved nothing: it is a **SKIP that
+counts as a survivor**, and it must be **re-aimed before it is believed.** Verify every mutant's edit
+against the original text *before* the sweep runs.
+
+SCC-144's `M3` commented out one `echo` of a two-line message; the second line still printed the word
+the case asserts, so the case passed — **correctly**. Re-aimed at the whole block it killed, and
+re-aiming it exposed a code path with no case at all. Reading that survivor as a coverage gap would
+have bought a test for a hole that did not exist while the real one stayed open.
 
 ## Why
 Source: AGY 2026-07-13. `frontend/e2e/hanger-talk.spec.ts` asserted four UI strings ("Free Learning

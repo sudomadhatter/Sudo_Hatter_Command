@@ -1,0 +1,1 @@
+exit 0 — check_maps prints nothing when clean

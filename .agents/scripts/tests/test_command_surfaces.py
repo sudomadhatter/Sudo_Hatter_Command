@@ -211,6 +211,62 @@ def mirror_place_error(platform: str, pl: tuple[str, ...], present: bool,
     return not hand_owned_door
 
 
+def rif_block(text: str) -> str:
+    """The `> **Rules in force for this command:**` blockquote, or `""` when there is none.
+
+    ⛔ BLOCK-SCOPED, and that scoping IS the check (SCC-145). A command can name a rule anywhere
+    in 400 lines of prose — a step body, an aside, an example — and a file-wide `in` test reads
+    every one of those as "the rule is loaded." It is not. The rules-in-force block is what an
+    agent reads as standing law **before Step 0**; a citation buried in step prose arrives after
+    the decision it governs. Measured: `/smh-code-review` carries the mutation rule in its block,
+    `/cicd-clean-code-audit` cites it twice in step prose and never loaded it. A file-grep calls
+    those two the same, which is `prose-pinning-guards-are-vacuous` in the guard itself.
+
+    Returns `""` for a file with no block, so callers fail CLOSED — a command that dropped its
+    whole block must go red, never pass quietly on an empty search space.
+    """
+    lines = text.splitlines()
+    start = next((i for i, ln in enumerate(lines)
+                  if "Rules in force for this command" in ln), None)
+    if start is None:
+        return ""
+    out = []
+    for ln in lines[start:]:
+        if not ln.lstrip().startswith(">"):   # a blank line ends a blockquote in markdown too
+            break
+        out.append(ln)
+    return "\n".join(out)
+
+
+def md_section(text: str, heading_rx: str) -> str:
+    """One `##`-level section — its heading through to the next `## ` — or `""` when absent.
+
+    ⛔ Anchored to the HEADING, never to the body, and the difference is the whole reason this
+    exists. `tests-must-gate-for-real.md` has carried the word "mutation" since the day it was
+    written — twice, at lines 76-77, inside `## Why`, narrating an old AGY story — while the
+    practice itself was an unnamed fourth sub-bullet under a rule headlined about certification
+    SHAs. A body search for the word was satisfied by that provenance passage, so it would have
+    reported the doctrine "documented" for as long as the file has existed.
+
+    ⛔ Bounded at the next `## ` because a source-grep guard CANNOT SEE ORDER
+    (`source-grep-guards-cannot-see-order`): the mutant-table obligation pinned file-wide stays
+    green when it drifts into Step 2, where it fires before the assertions it governs are
+    written — re-creating the exact defect SCC-145 exists to close, inside the guard meant to
+    prevent it.
+    """
+    rx = re.compile(heading_rx, re.I)
+    lines = text.splitlines()
+    start = next((i for i, ln in enumerate(lines) if rx.search(ln)), None)
+    if start is None:
+        return ""
+    out = [lines[start]]
+    for ln in lines[start + 1:]:
+        if ln.startswith("## "):
+            break
+        out.append(ln)
+    return "\n".join(out)
+
+
 def main() -> int:
     c = Cases("command surface contracts")
 
@@ -636,6 +692,191 @@ def main() -> int:
             "RETIRED door" in sync_cmd and "/prompts:<name>" in sync_cmd
             and "Do not use `-Maintained`" in sync_cmd,
             "smh-sync-agents.md no longer matches what the engine does")
+
+    # ── Mutation doctrine: named, loaded into the task lane, and pinned (SCC-145) ─────
+    # Mutation testing was a doctrine nobody was handed, nothing named, and no gate could see:
+    # `grep -rn "mutant\|mutation" .agents/commands/` returned two hits, one of them a biologist
+    # in the adviser board. The whole procedure was ONE sub-bullet under Rule 4 of
+    # `tests-must-gate-for-real.md`, and the two TASK-lane commands that write the assertions
+    # (`/smh-quick-dev`, `/smh-self-audit`) did not load that rule at all — so on a task lane the
+    # doctrine arrived at REVIEW, one step after the mutants were designed.
+    #
+    # It was measured twice, in unrelated lanes, as the same wasted work: SCC-144 aimed a mutant
+    # at the wrong gate's stdin and paid a second run; its 13-mutant sweep left a survivor that
+    # turned out to be a DEFECTIVE mutant (it commented out one echo of a two-line message, so the
+    # asserted word still printed); a `timeout`-killed sweep left a MUTATED GATE on disk,
+    # uncommitted, in the very lane whose job was fixing that gate; and its review found its 14
+    # case-derived mutants all killed while a later set drawn from the CODE left 24 of 25 surviving.
+    # SCC-129 hit the same class inside a test file — a "proven able to fail" row that gutted its
+    # own input, empty by construction.
+    #
+    # Nothing here can be pinned by wiring, because the artifact IS prose. So the check pins the
+    # two things prose can still get structurally wrong: WHERE the obligation sits (the block an
+    # agent reads as law; the step that routes the mutating) and WHETHER each technique is present
+    # by name. Both helpers above fail closed on an empty search space.
+    RULE_STEM = "tests-must-gate-for-real"
+
+    # The TASK-lane commands that write or judge assertions. Story-lane commands
+    # (`cicd-dev-story-tests`, `cicd-write-story-tests`, `cicd-code-review`, both clean-code
+    # audits) bake the rule into the STEP BODIES that route the work instead — the stronger form
+    # per `restate-alwayson-obligations-in-command-bodies` — and two of them carry no
+    # rules-in-force block at all. Widening those five is a change to five contracts and two `-AP`
+    # twins; it is deliberately not this ticket. `smh-code-review` is listed because it already
+    # complies, and an unpinned compliance is one edit from being gone.
+    LOADERS = ("smh-quick-dev.md", "smh-self-audit.md", "smh-code-review.md")
+    unloaded = [n for n in LOADERS
+                if RULE_STEM not in rif_block(read(ROOT / ".agents/commands" / n))]
+    c.check("the mutation rule is LOADED (in the rules-in-force block) by every task-lane "
+            "command that writes or judges assertions",
+            not unloaded,
+            f"{unloaded} - cite `.agents/rules/{RULE_STEM}.md` INSIDE the block, not in step "
+            f"prose. The block is what an agent reads as standing law before Step 0; SCC-144 "
+            f"designed 14 mutants on a lane where this rule was never loaded")
+
+    # Controls — pure strings, no disk. The sweep above can only prove the tree is clean today.
+    RIF = ("> **Rules in force for this command:**\n"
+           "> - `.agents/rules/git-policy.md` — explicit paths only\n")
+    c.check("rules-in-force CONTROL: a rule cited INSIDE the block is loaded",
+            RULE_STEM in rif_block(RIF + f"> - `.agents/rules/{RULE_STEM}.md` — the why\n"))
+    c.check("rules-in-force CONTROL: a rule cited only in BODY PROSE is NOT loaded",
+            RULE_STEM not in rif_block(
+                RIF + f"\n## Step 3\n\nrun one sweep per `{RULE_STEM}`\n"),
+            "a file-wide grep reads this as loaded - it is the shape five commands are actually "
+            "in, and it arrives after the decision it governs")
+    c.check("rules-in-force CONTROL: no block at all fails CLOSED",
+            rif_block("# /x\n\nprose only, no block here\n") == "",
+            "an empty search space must never read as a pass")
+    # ⛔ THE ONE THAT PINS `break` RATHER THAN `continue`. The control above uses plain prose, which
+    # a degenerate `rif_block` collecting EVERY blockquote in the file would also pass. These
+    # commands are full of later `> **Note:**` asides (`smh-quick-dev.md` has two within 20 lines
+    # of the block), so "any blockquote anywhere" is not a theoretical degeneration - it is what
+    # the file actually looks like. Mutating `break` to `continue` left all four call sites green.
+    c.check("rules-in-force CONTROL: a LATER blockquote is not part of the block",
+            RULE_STEM not in rif_block(
+                RIF + f"\ntext between\n\n> **Note:** we follow `{RULE_STEM}.md` here\n"),
+            "the block ENDS at the first non-`>` line; a rule named in a later aside is not "
+            "loaded law, and a helper that swept every blockquote would call it one")
+
+    # ⭐ The obligation must sit in the step that routes the mutating. Step 3 is GREEN (where the
+    # mutants get run); Step 3.5 is the eject tripwire and Step 2 is RED - a bullet that drifts
+    # into either fires at the wrong moment, and file-wide pinning cannot see the difference.
+    STEP3_RX = r"^## Step 3(?![\d.])"
+    step3 = md_section(read(ROOT / ".agents/commands/smh-quick-dev.md"), STEP3_RX)
+
+    # Each row is ONE obligation and the phrasings that satisfy it - **alternatives, never a single
+    # literal**. The rule and the SOP name the technique `CODE-DERIVED` where the command says
+    # "from the code", so a meaning-preserving edit that HARMONISES the three surfaces (exactly what
+    # a findability ticket invites) would have gone RED against one pinned string. A guard that
+    # punishes the edit it exists to encourage is a false red, and this repo has shipped four gates
+    # that hard-blocked a close-out on one. Everything is compared case-folded, on both sides,
+    # because the capitalisation of a word in prose is not the contract - its presence is.
+    STEP3_OBLIGATIONS = (
+        ("declare the table", ("mutant table",)),
+        ("ONE sweep", ("one sweep",)),
+        ("a survivor is a finding", ("surviving", "survivor")),
+        ("DEFECTIVE mutants get re-aimed", ("defective",)),
+        ("drawn from the CODE", ("from the code", "code-derived")),
+        ("restore, and verify it restored", ("git status",)),
+    )
+    missing_terms = [n for n, alts in STEP3_OBLIGATIONS
+                     if not any(a in step3.lower() for a in alts)]
+    c.check("/smh-quick-dev Step 3 carries the mutant-table obligation, in the step that "
+            "actually routes the mutating",
+            step3 != "" and not missing_terms,
+            f"missing from `## Step 3`: {missing_terms}" if step3 else
+            "`## Step 3` not found at all - the section heading moved and the obligation is "
+            "now anchored to nothing")
+
+    c.check("section CONTROL: a named section is found and bounded at the next heading",
+            md_section("## A\nx\n## B\ny\n", r"^## A$") == "## A\nx")
+    c.check("section CONTROL: `## Step 3` does not swallow `## Step 3.5`",
+            "3.5" not in md_section("## Step 3 — GREEN\na\n## Step 3.5 — EJECT\nb\n", STEP3_RX),
+            "the eject tripwire is a different step; an obligation drifting into it must go red")
+    # ⛔ THE CONTROL ABOVE CANNOT FAIL ON ITS OWN, and that is why this one exists. Its input
+    # carries BOTH headings in file order, so `md_section` takes `## Step 3` on first-match with or
+    # without the `(?![\d.])` lookahead - deleting the lookahead left all 52 cases green. The input
+    # the lookahead actually guards is the one where `## Step 3` is ABSENT and the obligation has
+    # drifted into the eject step: without it, `## Step 3.5` matches and the drift reads as
+    # compliance. A control that passes against both the guard and its mutant is decoration.
+    c.check("section CONTROL: with `## Step 3` ABSENT, `## Step 3.5` must not stand in for it",
+            md_section("## Step 3.5 — EJECT\nmutant table one sweep defective\n", STEP3_RX) == "",
+            "this is the input that kills the `(?![\\d.])` lookahead; the paired control above "
+            "passes with or without it")
+    c.check("section CONTROL: the practice named only in BODY PROSE is not a section",
+            md_section("## Why\n\nthe first mutation check deleted the guard\n",
+                       r"^##\s+.*mutation") == "",
+            "the rule has carried the word 'mutation' in its `## Why` narrative since it was "
+            "written, while the practice itself was an unnamed sub-bullet - a body search would "
+            "have called the doctrine documented all along")
+
+    # ⭐ The rule must NAME the practice in a heading, and carry every technique. One technique is
+    # what it used to have, and it was the wrong one for a gate: RELOCATE assumes a structural
+    # guard and a behavioral test in one file, and a shell gate has nothing to relocate.
+    #
+    # ⛔ ANCHORED TO EACH BULLET'S OWN LEAD, never to the bare word. Pinning `"RELOCATE"` alone was
+    # a FALSE GREEN: the whole RELOCATE bullet could be deleted and the token still survived one
+    # bullet down, inside INVERT's prose ("the shape RELOCATE does not transfer to") - so the guard
+    # held for the four techniques that happened to be unique and let go of the single one the
+    # section exists to correct.
+    mutation_sec = md_section(read(ROOT / f".agents/rules/{RULE_STEM}.md"),
+                              r"^##\s+.*mutation").lower()
+    TECHNIQUES = (
+        ("RELOCATE", ("relocate the guard",)),
+        ("INVERT", ("invert the decision",)),
+        ("DEFECTIVE", ("defective",)),
+        ("CODE-DERIVED", ("code-derived",)),
+        ("RESTORE", ("restore on interrupt", "restore in a")),
+    )
+    absent = [n for n, alts in TECHNIQUES if not any(a in mutation_sec for a in alts)]
+    c.check("the mutation rule has a section whose HEADING names the practice, carrying every "
+            "technique",
+            mutation_sec != "" and not absent,
+            f"techniques missing from the section: {absent}" if mutation_sec else
+            f"no `##` heading in {RULE_STEM}.md names mutation - the doctrine is unfindable by "
+            f"anyone grepping for how to do it, which is the whole finding")
+
+    # ⭐ The SOP page is the THIRD surface this ticket writes to, and it was the one nobody gated:
+    # the entire `### Mutation` section and its mermaid node could be deleted with the suite green.
+    # `sop_currency.py` only forces the SOP to be STAGED in the same commit - never to still say
+    # anything - so without this the operator's own reference is the surface that silently rots.
+    sop_txt = read(ROOT / "docs/_scc_sops_prds/workflows_testing_SOP.md").lower()
+    sop_named = any(ln.startswith("#") and "mutation" in ln for ln in sop_txt.splitlines())
+    sop_missing = [n for n, alts in STEP3_OBLIGATIONS
+                   if not any(a in sop_txt for a in alts)]
+    c.check("the SOP page names the practice in a heading and carries the same obligation",
+            sop_named and not sop_missing,
+            f"SOP heading names mutation: {sop_named}; obligations missing: {sop_missing} - the "
+            f"operator's own reference had ZERO mentions of the practice before SCC-145")
+
+    # ⛔ THE SCOPE OF THIS SECTION IS ITSELF PINNED - and it is not optional, because this file
+    # already carries two "read a real number of X" guards for exactly this reason: an empty sweep
+    # is indistinguishable from a clean one. `LOADERS`, `MUTANT_TERMS` and `TECHNIQUES` ARE the
+    # scope of every case above, and an unpinned scope is one edit away from checking nothing.
+    #
+    # PROVEN, not supposed. Three CODE-DERIVED mutants on the constants above each left the suite
+    # 52/52 GREEN before these two cases existed:
+    #     LOADERS   -> ("smh-code-review.md",)   ← drops BOTH commands this section exists to
+    #                                              protect, and every case still passed
+    #     MUTANT_TERMS -> ()                     ← the Step 3 obligation unpinned
+    #     TECHNIQUES   -> ()                     ← all five techniques unpinned
+    # That is SCC-145's own new CODE-DERIVED rule catching SCC-145: of its eight declared mutants
+    # only two were drawn from this guard's source, and both hit the HELPERS, never the constants.
+    # Restating a literal is normally circular; here it is what converts a silently mutable knob
+    # into a decision that has to be argued for in a diff - the same reason `hand` and `SOURCELESS`
+    # above are spelled out rather than derived.
+    c.check("the LOADERS sweep still covers BOTH task-lane commands (its scope cannot be "
+            "narrowed silently)",
+            {"smh-quick-dev.md", "smh-self-audit.md"} <= set(LOADERS),
+            f"LOADERS={LOADERS} - `/smh-quick-dev` WRITES the assertions and `/smh-self-audit` "
+            f"judges the plan that picks them. Dropping either restores the exact gap this "
+            f"section exists to close, with every other case here still green")
+    obligations = {n for n, _ in STEP3_OBLIGATIONS}
+    techniques = {n for n, _ in TECHNIQUES}
+    c.check("the obligation and technique lists still name what they are supposed to pin",
+            {"ONE sweep", "DEFECTIVE mutants get re-aimed", "drawn from the CODE"} <= obligations
+            and {"RELOCATE", "INVERT", "CODE-DERIVED", "RESTORE"} <= techniques,
+            f"obligations={sorted(obligations)} techniques={sorted(techniques)} - an emptied list "
+            f"makes its own sweep pass against anything, including a rule with the section gone")
 
     return c.finish()
 

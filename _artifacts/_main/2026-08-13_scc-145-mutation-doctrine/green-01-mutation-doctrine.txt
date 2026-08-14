@@ -1,0 +1,54 @@
+== command surface contracts ==
+[PASS] `.claude/commands` is a retired door - no command mirrors there: 0 left: []
+[PASS] the hand-owned workflow list was READ from the sync engine, not guessed: parsed ['INDEX.md', 'smh-adviser-board.md'] from $excluded; names with no such workflow: []
+[PASS] every hand-owned workflow EXPLICITLY declares the surface it sits on: [] - excluded from the sync AND from the placement check, so a wrong or absent `platforms:` here is invisible to everything else
+[PASS] declaration: silence is NOT a claim (the hand-owned exemption must be spoken): a door with no platforms: key asserts nothing and must not be exempt
+[PASS] declaration: an explicit list is read, and only it earns the exemption: the door must name the surface it is sitting on
+[PASS] declaration: `platforms: []` is a real claim of NOWHERE, not silence: [] means nowhere; it must fail the claim, not read as absent
+[PASS] declaration: COMMANDS keep the engine's rule - absent still means universal: NEGATIVE CONTROL - tightening the exemption must not change door derivation
+[PASS] the sync engine states the door model and both retirements: sync-agents.ps1 no longer states the door model + both retirements
+[PASS] every claude/codex-eligible command has its skill door: 0 missing: []
+[PASS] door-place CONTROL: a mirror on a claimed surface is fine
+[PASS] door-place CONTROL: a mirror on an UNCLAIMED surface is caught: the reach changed and nobody ran /smh-sync-agents
+[PASS] door-place CONTROL: a hand-owned door on an unclaimed surface is exempt: smh-adviser-board is real: hand-authored Antigravity door, command claims three other platforms - and the exemption is earned above, not announced
+[PASS] door-place CONTROL: no door, no error (the condition is not inverted)
+[PASS] no door sits on a platform its command does not claim: 0: []
+[PASS] every generated launcher points at its own command body, END TO END: 0: []
+[PASS] every opencode-eligible command has its mirror: 0 missing: []
+[PASS] every antigravity-eligible command has its workflow mirror (thin launcher counts): 0 missing: []
+[PASS] door-parity CONTROL: an identical mirror is ok
+[PASS] door-parity CONTROL: a STALE mirror is caught: this is the SCC-77 shape - a door that still reads the pre-change steps
+[PASS] door-parity CONTROL: a truncated mirror is caught
+[PASS] door-parity CONTROL: a current thin launcher is exempt
+[PASS] door-parity CONTROL: a launcher whose BRAIN's description moved on is caught: the forgotten-sync shape: nobody touched the launcher, and it is now lying to the Antigravity menu about what this command does
+[PASS] door-parity CONTROL: a launcher REPOINTED at another brain is caught, even with the old path still present in a comment: a substring test reads the stale COMMENT as the pointer - the exact comment-literals-invert-source-grep-tests inversion
+[PASS] door-parity CONTROL: the marker alone does NOT excuse drift
+[PASS] door-parity CONTROL: a launcher on an OPENCODE door is NOT exempt: the engine never emits a launcher there; a pointer would replace the steps
+[PASS] door-parity REGRESSION CONTROL fires on the REAL pre-ea8fe97 bytes: the gate reported 13/13 green on exactly this file - that is the whole reason this check exists
+[PASS] every mirror door still says what its brain says: 0 drifted - run /smh-sync-agents: []
+[PASS] door-parity examined a real number of doors (not a silent empty sweep): only 85 mirror doors examined
+[PASS] the launcher generator produced doors (not a silent no-op): only 18 generated launchers
+[PASS] hand-authored skills survive a sync untouched: overwritten by the generator: []
+[PASS] every skill door carries frontmatter with a description: 0: []
+[PASS] no ghost workflow mirrors (every one has a command source): 0: []
+[PASS] every hand-owned workflow still has the command it is a variant of: [] - excluded from the sync, so nothing else would notice
+[PASS] no ghost opencode mirrors (every one has a command source or a keep-list claim): 0: [] - no command source, and the manifest cannot retire what no previous sync recorded writing, so nothing else will ever say so. If a door is deliberately this repo's own, claim it in .agents/project-own.txt (sync-agents -Reconcile stages that file for you)
+[PASS] the ghost sweeps read a real number of doors (not two empty directories): workflows=34 opencode=53 - a glob resolved to nothing, so every ghost check above passed on an empty set
+[PASS] own-list: a claimed door is not a ghost: the engine keeps a claimed door forever; the sweep must agree
+[PASS] own-list: an UNCLAIMED door is still a ghost: NEGATIVE CONTROL - an exemption that swallows the check is worse than none
+[PASS] own-list: comments and blanks strip exactly as the engine strips them: a parser more generous than sync-agents.ps1:309 exempts doors it still purges
+[PASS] own-list: `*` is a literal name, never a wildcard: a malformed keep-list must never widen the exemption to everything
+[PASS] own-list: a claim is an EXACT name, never a prefix: prefix matching would let one claim cover every sibling door
+[PASS] own-list: a claim matches regardless of CASE, as the engine's -contains does: case-sensitive here + case-insensitive in PowerShell = the sweep calls a door a ghost that the engine keeps forever
+[PASS] root AGENTS.md documents the door model for every platform: AGENTS.md no longer documents the door model
+[PASS] sync-agents command doc names both retired doors: smh-sync-agents.md no longer matches what the engine does
+[PASS] the mutation rule is LOADED (in the rules-in-force block) by every task-lane command that writes or judges assertions: [] - cite `.agents/rules/tests-must-gate-for-real.md` INSIDE the block, not in step prose. The block is what an agent reads as standing law before Step 0; SCC-144 designed 14 mutants on a lane where this rule was never loaded
+[PASS] rules-in-force CONTROL: a rule cited INSIDE the block is loaded
+[PASS] rules-in-force CONTROL: a rule cited only in BODY PROSE is NOT loaded: a file-wide grep reads this as loaded - it is the shape five commands are actually in, and it arrives after the decision it governs
+[PASS] rules-in-force CONTROL: no block at all fails CLOSED: an empty search space must never read as a pass
+[PASS] /smh-quick-dev Step 3 carries the mutant-table obligation, in the step that actually routes the mutating: missing from `## Step 3`: []
+[PASS] section CONTROL: a named section is found and bounded at the next heading
+[PASS] section CONTROL: `## Step 3` does not swallow `## Step 3.5`: the eject tripwire is a different step; an obligation drifting into it must go red
+[PASS] section CONTROL: the practice named only in BODY PROSE is not a section: the rule has carried the word 'mutation' in its `## Why` narrative since it was written, while the practice itself was an unnamed sub-bullet - a body search would have called the doctrine documented all along
+[PASS] the mutation rule has a section whose HEADING names the practice, carrying every technique: techniques missing from the section: []
+-- 52/52 passed --
