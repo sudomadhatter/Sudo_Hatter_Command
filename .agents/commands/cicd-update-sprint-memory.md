@@ -236,7 +236,8 @@ and follow IT end to end: it runs this command's close-out per story itself (fix
 
 **Precondition — check FIRST.** `git rev-parse --abbrev-ref HEAD` must be a **`claude/*`** branch (inside the
 story worktree) — **and never `claude/incident-*`**, which satisfies the glob but is the incident
-pipeline's lane (`/cicd-mobile-error-team`), not story work (SCC-149). If HEAD is the epic branch or `main`,
+pipeline's lane (`/cicd-mobile-error-team`), not story work (SCC-149): an incident HEAD is a **STOP** —
+report it and hand off to `/cicd-mobile-error-team`; nothing below runs. If HEAD is the epic branch or `main`,
 this story wasn't worked in a worktree — **do NOT land
 it.** Report it and stop — never rescue it by committing in the shared checkout.
 
