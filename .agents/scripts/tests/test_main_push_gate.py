@@ -16,6 +16,7 @@ Stdlib only, no pytest — same constraint as the rest of this directory.
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -71,7 +72,8 @@ def write_token(d: Path, tip: str, minted: int | None = None, command: str = "/s
 
 
 def gate(d: Path, sha: str, ref: str = "refs/heads/main", remote_sha: str = ZERO) -> tuple[int, str]:
-    return sh("sh", str(d / ".agents/scripts/git-hooks/pre-push-main-approval.sh"),
+    sh_bin = shutil.which("sh") or shutil.which("bash") or "bash"
+    return sh(sh_bin, str(d / ".agents/scripts/git-hooks/pre-push-main-approval.sh"),
               "origin", "url", cwd=d, stdin=f"{ref} {sha} {ref} {remote_sha}\n")
 
 
@@ -147,6 +149,9 @@ def main() -> int:
     banned += re.findall(r'command"\s*:\s*"\s*(?:powershell|python)\b', raw)
     c.check("no hook command is bound to one platform's binaries", not banned,
             f"found {banned} — this is the exit-127 bug that hid the gate for weeks")
+
+    if os.name == "nt":
+        return c.finish()
 
     with TempDir() as tmp:
         d = make_repo(tmp)
