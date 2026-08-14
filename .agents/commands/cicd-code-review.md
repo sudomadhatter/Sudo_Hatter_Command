@@ -47,7 +47,7 @@ required input is a stop, not a guess:**
 | `STORY_FILE` | the story file (`full` mode) |
 | `ARTIFACT_DIR` | `_artifacts/epic_<E>/<story>/` **inside that worktree** |
 | `DEFERRED_WORK` | the project's `deferred-work.md`, when it has one |
-| `lens_budget` | `standard` — a human is sitting in front of this review, so the literal lens keeps the ONE top-up it can earn by naming the file it wants and why. **Name it; never restate the caps** — step-01 defines them once, and a cap each caller repeats is a cap that drifts. The autopilot twin names `capped`, and a caller naming nothing SILENTLY gets `capped` too, which is why this row is explicit (SCC-147) |
+| `lens_budget` | `standard` — the interactive budget, because a human is sitting in front of this review. **This command does not define what the caps are; step-01 of the engine does, once** — a cap each caller repeats is a cap that drifts. Naming nothing is not neutral: it silently selects the autopilot's budget, which is why this row is explicit (SCC-147) |
 
 **Ordering (deliberate): the engine hunts the DIFF first — open ②'s `walkthrough.md` and plan only
 AFTER its summary comes back**, for claimed evidence, plan-vs-built deviations, and the `## Your

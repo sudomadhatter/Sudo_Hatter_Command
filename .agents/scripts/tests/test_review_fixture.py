@@ -538,6 +538,16 @@ def main() -> int:
     for label, needle in (
         ("the answer-key prohibition", "Do not open `manifest.json`, `README.md`, `bad.diff` or `clean.diff`"),
         ("the both-halves rule", "A reviewer that flags everything is as broken as one that flags nothing"),
+        # SCC-147: the control's own budget. NC_LITERAL is catchable ONLY by opening
+        # `codebase/helpers.py`, which `bad.diff` does not touch — i.e. only via the ONE
+        # top-up `standard` allows and `capped` forbids. Flip this row to `capped` and the
+        # seeded literal defect becomes unreachable, so the control quietly stops
+        # discriminating between lenses — which is the whole point of SCC-129 — with every
+        # one of this file's cases still green. Proven by the review, which flipped it and
+        # watched 67/67 pass. It belongs in THIS list rather than in the existence-only
+        # majority for the same reason as the two above: the row IS the safeguard, not a
+        # description of one.
+        ("the interactive budget both arms run", "| `lens_budget` | `standard` | `standard` |"),
     ):
         present = flat(needle) in flat(readme)
         c.check(f"README still carries {label}", present,
