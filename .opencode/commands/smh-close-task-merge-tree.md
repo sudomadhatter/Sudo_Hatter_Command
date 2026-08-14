@@ -340,13 +340,34 @@ python3 .agents/scripts/jira_feed.py devrecord --key <JIRA-KEY> --story <branch-
        --pitfall "<what nearly bit>" \
        --followon "<anything still owed>" --closing --apply
 
-acli jira workitem transition --key <JIRA-KEY> --status "Done" --yes
+python3 .agents/scripts/jira_feed.py finish --key <JIRA-KEY> \
+       --walkthrough <the walkthrough> --apply
 python3 .agents/scripts/jira_feed.py check --key <JIRA-KEY>     # must exit 0
 ```
 
-⛔ **`--yes` or acli stops on an interactive confirm no agent shell can answer.** This line shipped
-without it until SCC-113; `Done` was landing on luck. `tests/test_jira_feed.py` now fails if any
-`workitem transition` under `.agents/` omits it.
+⭐ **`finish` writes the `Done`, and it may refuse to (SCC-155).** It reads `## Your Actions` in the
+walkthrough you just filed and answers with its exit code — **read it, it is the report:**
+
+| Exit | Means | What you report |
+|---|---|---|
+| `0` | the section had nothing open → the ticket is **`Done`** | closed |
+| `3` | **HELD** — open `- [ ]` items were posted to the ticket as a "User tasks" comment, the `user-tasks` label added, and the review-status ladder tried | **"merged and awaiting you"**, listing the items. Not a failure — the merge landed |
+| `2` | **refused** — no walkthrough, or no `## Your Actions` section. Nothing was written | fix the artifact and re-run; never transition by hand instead |
+| `4` | the board was unreachable — transport, not a verdict | the merge stands; retry the ticket move |
+
+**Why the ticket can be held:** a walkthrough that hands the operator work ("install the board
+column", "run the memory audit") used to close as `Done`, and the record of what was still owed
+died with the lane. **The auditable exit is the checkbox** — when the operator finishes an item they
+flip it to `- [x]`, commit that (an artifacts-only commit), and re-run `finish`. There is no force
+flag, deliberately: a gate with no legitimate exit gets worked around, and this one's exit leaves a
+trail.
+
+⛔ **Do NOT fall back to `acli jira workitem transition --status "Done"` when `finish` exits 3.**
+That is the exact behaviour it replaces, and it writes a lie onto the board.
+
+⛔ **`--yes` or acli stops on an interactive confirm no agent shell can answer.** This shipped
+without it until SCC-113; `Done` was landing on luck. `finish` passes it on every transition, and
+`tests/test_jira_feed.py` fails if any `workitem transition` under `.agents/` omits it.
 
 **Exactly one Dev Record per ticket.** If `/cicd-quick-dev` already filed one at Step 4.5, this
 **updates it in place** — **never pass `--append-new`.** `devrecord --apply` reads the ticket back

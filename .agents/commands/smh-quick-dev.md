@@ -76,6 +76,16 @@ BRANCH=$(git -C "<the new tree>" rev-parse --abbrev-ref HEAD)
 echo "Lane: $BRANCH"
 ```
 
+**⭐ Reusing a tree `/smh-plan-task` cut? Absorb `main` FIRST (SCC-155).** That command cuts every
+lane's worktree at planning time, so a 🔒 lane picked up days later is branched from a `main` its
+siblings have since moved. Absorb before the first edit, never at the merge:
+
+```bash
+git -C "<tree>" fetch origin && git -C "<tree>" merge --no-edit origin/main
+```
+
+Conflicts here are cheap and yours; the same conflicts at close-out are on `main`'s doorstep.
+
 Echo the branch **from `rev-parse`, never from memory.** Every path and command from here binds to that
 tree.
 
@@ -141,6 +151,14 @@ say so and stop.
    canonical `Audit verdict: GO | NO-GO`. A **NO-GO stops the lane** — fix the plan and re-audit; do not
    proceed on a NO-GO and do not re-run it hoping for a different answer.
 3. **STOP and wait for the literal word `approved`.**
+
+> **⭐ Already approved as part of a batch? (SCC-155)** If this lane came from `/smh-plan-task`,
+> its plan already carries a `**Batch approval (<date>):** "<the operator's words>"` line naming
+> this subtask's key. That IS the approval for this plan — go straight to Step 2. **Two conditions,
+> both mechanical:** the quote must name **this** key, and the plan must be **unchanged since the
+> commit that recorded it** (`git log -1 --format=%h -- <the plan>` against that commit). Edited
+> since? The gate re-arms and you stop here like any other lane. See `000-PLAN-FIRST-GATE.md`
+> § "One approval MAY cover several plans".
 
 ⛔ Per `000-PLAN-FIRST-GATE`, these are **not** approval and never have been: "ok" · "looks good" ·
 "continue" · clicking an option you wrote (that answers *which*, never *whether*) · being told to do
@@ -293,6 +311,20 @@ trivial patch fires Step 3.5.
 plus the HEAD sha) → `## Code Review (<date>)` (appended by Step 4, with the `Verdict:` line) →
 `## Your Actions` (what landed, and what is still the operator's). It is never skipped — the close-out
 preflight blocks without it.
+
+> **⭐ `## Your Actions` is a MACHINE CONTRACT now, not prose (SCC-155).** The close-out reads it
+> through `jira_feed.py finish`, and it decides whether the ticket may go `Done`:
+>
+> - **An unchecked `- [ ]` line under that heading is something only the operator can do.** It
+>   holds the ticket out of `Done`, posts itself to the board as a "User tasks" comment, and adds
+>   the `user-tasks` label. Continuation lines indented under it ride along.
+> - **`- [x]` is settled**, and prose is context. Neither holds anything.
+> - **Write the section even when nothing is owed** — an empty `## Your Actions` closes cleanly,
+>   but a *missing* one is a hard refusal. An absent section is not evidence that nothing is owed,
+>   and `finish` will not guess.
+>
+> So: everything genuinely owed to the operator goes in as a checkbox. Everything else — what
+> landed, what you decided — stays prose above them.
 
 **The manifest** — `task.yaml` beside it, so intent lives somewhere no cwd drift can reach:
 

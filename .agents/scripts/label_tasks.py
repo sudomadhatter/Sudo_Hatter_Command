@@ -1,4 +1,10 @@
-"""parallel_check.py — which of a BMAD epic's stories can run side by side? (SCC-56)
+"""label_tasks.py — which of a parent's children can run side by side? (SCC-56, SCC-155)
+
+TWO MODES, one engine. Story mode assesses BMAD stories under a BMAD epic (`/cicd-label-tasks`);
+task mode assesses Subtasks under one Task (`/smh-label-tasks`) - work with no story file, no
+sprint board and no epic branch, which is the set nothing could answer for until SCC-155. The
+mode is DERIVED from the parent's type, and each mode's gate refuses the other's parent BY NAME
+and hands the operator across. It stamps TWO labels, `parallel-ok` and `quick-dev`.
 
 `parallel-ok` used to be ruled by `/cicd-write-story-tests` Step 1.6, at story pickup. That
 mints 19.1's ticket BEFORE 19.2's story file exists, so there is nothing to compare against,
@@ -8,7 +14,11 @@ and AVCH carry the label, and the `Parallel-OK` saved filter returns nothing.
 Parallel-safety is a property of a SET at a MOMENT, never of one story. So the writer moved:
 one operator-invoked pass over ONE parent's children, recomputing every verdict and rewriting
 every label in one go. Same field, opposite property — a per-story writer can never see the
-set, an epic-scoped one is self-correcting on every re-run.
+set, a parent-scoped one is self-correcting on every re-run.
+
+`quick-dev` joined it in SCC-155 for the same reason, with one difference that is load-bearing:
+its decision is TRI-state. A child the pass did not assess is left ALONE (see `label_plan`),
+because reading absence as "not eligible" would strip the label off work marked by hand.
 
     plan     --parent KEY            enumerate + ground; emits the agent's work packet
     resolve  --plan F --touchsets F  the set math; emits verdicts
@@ -41,9 +51,13 @@ rather than silently resolved. Everything else it reads (`_bmad/bmm/stories/`,
 `_bmad-output/planning-artifacts/epics.md`, `epic/*` branches, `_artifacts/**/
 implementation_plan.md`) is a toolkit-wide convention, not one project's layout.
 
-Scope: BMAD stories under a BMAD epic, in whichever repo holds them — so the lobby qualifies
-the day it carries BMAD stories, exactly like any project. Grouping epics and their Tasks are
-refused by name.
+Scope, story mode: BMAD stories under a BMAD epic, in whichever repo holds them — so the lobby
+qualifies the day it carries BMAD stories, exactly like any project. Grouping epics, and any
+non-Epic parent, are refused by name and handed to task mode.
+
+Scope, task mode: the Subtasks under ONE Task. No story file is required or looked for; a lane
+is grounded by its branch diff, the plan its sibling `task.yaml` declares, or its ticket text,
+in that order. An Epic parent is refused by name and handed to story mode.
 
 Exit: 0 clean - 1 warnings - 2 blocking. It reads, computes, and writes LABELS plus one
 comment. It never transitions a ticket, never touches the working tree, never starts anything.

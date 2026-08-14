@@ -266,10 +266,17 @@ you one step earlier, and it is the half that still works under `--no-verify`.
 
 **4e — Dev Record, then the ticket — per lane, at ITS merge, never batched.**
 `jira_feed.py devrecord --key <KEY> … --closing --apply` (updates in place — never `--append-new`),
-then `acli jira workitem transition --key <KEY> --status "Done" --yes` (**`--yes` or acli stops on a
-confirm prompt no agent shell can answer** — SCC-113), then `jira_feed.py check --key
-<KEY>` exit 0. **One Dev Record per ticket.** Close a parent ticket only once every sub-task and
-linked ticket has landed.
+then **`jira_feed.py finish --key <KEY> --walkthrough <that lane's walkthrough> --apply`**, then
+`jira_feed.py check --key <KEY>` exit 0. **One Dev Record per ticket.** Close a parent ticket only
+once every sub-task and linked ticket has landed.
+
+⭐ **`finish` writes the `Done`, and per lane it may refuse to (SCC-155)** — exit `0` closed · `3`
+**HELD** (that lane's walkthrough has open `- [ ]` items under `## Your Actions`; they are posted to
+its ticket with the `user-tasks` label) · `2` refused, no walkthrough or no section · `4` transport.
+**A held lane does not stop the run** — its merge landed and the next lane proceeds; carry it into
+the final report as *merged, awaiting the operator*. ⛔ Never fall back to a bare `acli … transition
+--status "Done"` on a held lane: that is the behaviour `finish` replaces. The operator's auditable
+exit is flipping the box to `- [x]` and re-running `finish`.
 
 **4f — prune what you landed — unlink FIRST, tree second, branch last.**
 
