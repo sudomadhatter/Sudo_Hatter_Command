@@ -16,7 +16,8 @@
   - finding in the sweep itself: M5's kill was a SYNTAX ERROR (empty `if` body), not a caught silent absence — every case crashed and the verdict line still said "killed by its named case". Re-aimed as M5b (note → `:`, script valid): killed by the note assertion ALONE. The red-dies-before-its-assertion class, inside the sweep built to catch it.
 - [x] Full gate at `ec13bc7`, every command bare: run_all **23/23 files, 1911/1911 cases, exit 0** (exactly additive: 1907 main + 4 INC, predicted before measured) · workflow_lint --toolkit-only exit 0 · check_maps --depth3-only --strict exit 0
   - mid-lane hazard, caught before damage: one commit command ran in the SHARED CHECKOUT on main — the shell's cwd silently reverted between tool calls (the SCC-97 signature this very lane's gate exists for). The add was a no-op there and the commit refused empty; redone with `-C` pinned to the worktree, which every git call carries since
-- [ ] Step 4 — /smh-code-review
+- [x] Step 4 — /smh-code-review: **Verdict: PASS @ `4fa5596`** — 5 lenses + verify wave over 17 findings; 3 applied (one doc fix: update-sprint-memory's incident arm gets an explicit STOP, `4fa5596`), 7 deferred to a named follow-on (backstop incident class + target-side/boundary tests, C3's test-first sequencing), 9 dismissed with measurement
+  - finding at the stamp: HEAD advanced `fe225dc`→`2b96202` mid-review (this session sealing `ec13bc7`+`2b96202` as the review started); the delta was re-read and the verdict stamped deliberately past it (compound finding 4)
 
 ## Evidence
 
@@ -143,8 +144,110 @@ the only case that can catch it is the note assertion — run separately, killed
 
 ## Code Review (2026-08-14)
 
-(appended by /smh-code-review)
+Verdict: PASS @ 4fa5596
+
+Suite evidence measured at `4fa5596` (bare re-run after the one review fix; byte-identical totals were
+independently measured by the review on the `2b96202` tree first). **Stamped deliberately past the
+lens-reviewed sha `fe225dc`** — the delta is `ec13bc7` (comment-only guard reword, reviewed by the
+lenses as the then-uncommitted working-tree edit and flagged by the Acceptance lens in committed form),
+`2b96202` (artifacts/docs only), and `4fa5596` (this review's own doc fix) — no code or test change
+post-evidence.
+
+- **Scope:** `main...HEAD`, 13 files at review time (guard carve-out + INC tests + 3 consumer commands
+  + mirrors + SOP row + manifest + INDEX clause), re-derived against current `main` (Step 0.7).
+- **Method:** `code-review-engine` (SCC-116) — 5 parallel clean-context lenses, evidence-verify +
+  compound-synthesis wave over 17 serialized findings, triage per step-03; then acceptance audit,
+  command-centre gate, `/smh-clean-code-audit`.
+
+**Engine summary:**
+
+```
+lenses_run:      5/5   (blind ok · edge ok · literal ok · acceptance ok · test-adequacy ok)
+lenses_na:       none  (review_mode: full, lens_budget: standard; 13 files ≤ cap, no truncation)
+findings:        0 decision · 3 patch (applied) · 7 defer   (9 dismissed)
+severity_floor:  none  (verify wave ran: verifier ok + compound ok, dossier built, extractor exit 0;
+                        no unapplied decision/patch finding above suggestion; deferred never gates)
+notes:           HEAD advanced fe225dc→2b96202 mid-review (dev session sealing ec13bc7+2b96202);
+                 evidence re-based and re-measured at the new tree. Verifier: 16/17 findings true,
+                 1 refuted. All three hunter-asserted importants revised down to suggestion with
+                 traced reasoning; the three compound importants are the record's sharpest content.
+```
+
+### Findings (authoritative table)
+
+| # | file:line | Severity | Finding | Disposition |
+|---|-----------|----------|---------|-------------|
+| 1 | merge-target-guard.sh:171 | suggestion | carve-out width: ALL incident topologies now unjudged (chore←incident, story←incident were refused-as-story pre-diff, now allow-with-note) | dismissed — documented-deliberate: the arm's own comment claims all incident merges for the pipeline, the plan's design decision argues it, and the ticket's "ALLOWED-with-note" wording permits it. Any future narrowing is bound by C3's sequencing |
+| 2 | test_git_hooks.py:535 | suggestion | incident-as-TARGET untested (absorb `main` into the incident lane); the guard:206 note-line mutant survives 94/94 | deferred — follow-on test; verifier traced that no surviving mutant can flip an allow/refuse verdict on the absorb-main move (exposure is note-level) |
+| 3 | merge-target-guard.sh:261 | nitpick | every incident merge prints "outside the branch model" and "positively classified" adjacently | deferred — cosmetic message branch; rides the follow-on |
+| 4 | cicd-update-sprint-memory.md:237 | suggestion | the precondition's incident arm carried no stop verb; the next paragraph merges the epic unconditionally | **applied — `4fa5596`** (explicit STOP + handoff to `/cicd-mobile-error-team`; mirrors regenerated via sync-agents) |
+| 5 | pre-push-merge-backstop.sh:67,100 | suggestion | backstop remedy tells an incident pusher to land on "its epic/* branch"; no incident-shaped ref is tested through it | deferred — pre-existing, outside SCC-149's ticket scope; see C1 follow-on |
+| 6 | .agents/workflows/cicd-update-sprint-memory.md | — | "stale mirror not regenerated" | dismissed with measurement — a 1,086-byte generated thin launcher (12k-cap mechanism); carries no precondition text to go stale |
+| 7 | merge-target-guard.sh:55 | nitpick | committed comment re-tripped the acceptance-5 sweep at fe225dc | dismissed — resolved in-lane by `ec13bc7`; review's own sweep at HEAD: zero survivors |
+| 8 | workflows_testing_SOP.md:1311 | nitpick | acceptance-4 same-commit constraint invisible in a flattened diff | dismissed — verified: `git show --stat f7f6961` carries SOP + guard + tests + INDEX together |
+| 9 | merge-target-guard.sh:264 | nitpick | note nested narrower than the whole no-refusal path | dismissed — traced: a pure incident merge always sets UNJUDGED, so the note always prints; silence occurs only on any-allow-wins, the guard's normal allow behavior |
+| 10 | test_git_hooks.py:535 | nitpick | harness mechanics inherited, not re-proven by this diff | dismissed — shared fixtures already exercised by the file's 90 pre-existing checks; the RED run proves git invoked the hook |
+| 11 | cicd-boot-sprint-memory.md:100 | nitpick | plan said "one sentence each"; carve-outs run 2–3 | dismissed — cosmetic deviation, substance delivered |
+| 12 | merge-target-guard.sh (classify) | suggestion | boundary shapes unpinned: `claude/incident-` (empty suffix → incident) and `claude/INCIDENT-x` (case → story) | deferred — follow-on test; both current behaviors arguably correct, neither pinned |
+| 13 | merge-target-guard.sh:212 | suggestion | a sha carrying incident + a refusable name REFUSES (unknown ≠ allow, so any-legal-name-wins does not extend to incident); semantics unpinned | deferred — intended-semantics question for the follow-on |
+| 14 | the three carve-out sentences | suggestion | no doc-assertion test pins them, incl. merge-epic's prune-guard sentence | dismissed — SCC-147 convergence ruling: deliberately unguarded prose; prune-guard noted as the strongest candidate if ever revisited |
+| 15 | merge-target-guard.sh:171 | nitpick | judge()'s incident row is behaviorally equivalent to the `*` default (its deletion mutant survives by equivalence) | dismissed — documentation + ordering insurance, deliberate; recorded so a future sweep reads the survivor correctly |
+| C1 | backstop ← guard | important | compound: the widened unjudged set drains into a backstop whose refusal prescribes the SCC-148 misroute verbatim ("land it on its epic/* branch") — the enforcement machinery itself printing the taxonomy error, to a phone, mid-incident | deferred — named follow-on ticket: teach `pre-push-merge-backstop.sh` the incident class + drive an incident-shaped ref through it in test |
+| C2 | update-sprint landing path | important | compound: on the incident-worktree → epic-landing path every mechanical layer prints allow (guard unknown×2, backstop exempt on epic pushes) and the only control was finding 4's verbless prose arm — with the guard's new note affirmatively reassuring "not a gap" at both merge points | **applied — `4fa5596`** closes the control-point half; the residual (guard note wording, backstop) rides C1 |
+| C3 | walkthrough mutant table | important | compound: any future narrowing of the judge row is unauthorable red-first today — the width-mutants provably survive (by equivalence + the untested target side), so a botched narrowing ships at full green | deferred — sequencing constraint recorded: land finding 2's target-side test + width-killing mutants BEFORE any narrowing of finding 1 |
+| C4 | verdict sha | suggestion | compound: no single sha carried both the verdict and the acceptance-5 evidence unless stamped deliberately | **applied** — stamped @ `4fa5596` with the fe225dc→HEAD delta enumerated above |
+
+### Gates (each run bare; actual output)
+
+- **Enforcement suite** — `python3 .agents/scripts/tests/run_all.py` → `23/23 files passed`, **1911/1911 cases**, `EXIT=0` (exactly additive: 1907 main + 4 INC)
+- **Toolkit lint** — `workflow_lint.py --toolkit-only` → `-- 0 error(s), 0 warning(s), 8 info --`, `EXIT=0`
+- **Assertion evidence** — the lane's own RED assertions re-run green: `test_git_hooks.py` → `-- 94/94 passed --`, `EXIT=0` (INC allow + no-story-refusal + pipeline-named note + story-arm control all PASS)
+- **SOP currency** — `sop_currency.py --paths <17 changed> --message "SCC-149 …"` → `EXIT=0`
+- **Link + anchor** — every path/`#L` anchor in the changed hunks resolved in-tree (mobile-error-team:17/:47, boot:96, update-sprint:237, SOP row, scripts/INDEX): 0 dead
+- **Door parity** — n/a: no command added, renamed or deleted (three edited; mirrors regenerated, not hand-edited — verified by re-running sync-agents, which changed nothing beyond the review fix)
+- **py_compile / bash -n / manifest JSON** — all OK on the changed `.py` / `.sh` / `.json`
+
+### Acceptance matrix (ticket's 6 items → the assertion that proves each)
+
+| # | Item | Verdict | Proving assertion |
+|---|---|---|---|
+| 1 | guard positively classifies `claude/incident-*`; both arms on real git | DELIVERED | INC block through a real `core.hooksPath`: RED 91/94 pre-fix (story refusal captured), GREEN 94/94 post-fix; story-arm control still refuses |
+| 2 | line-51 comment matches the code that now exists | DELIVERED | guard lines 151–159 (arm + order comment) + 50–58 (header) read against the code; `ec13bc7` de-literalized the removal story |
+| 3 | each Cluster-2 command carries the carve-out in its OWN step list; mirrors via sync | DELIVERED | boot:96–103 ("Except claude/incident-*… route nowhere"), merge-epic Step 1.1 (inventory EXCLUDES; never fix/merge/land/prune), update-sprint:237 (glob exclusion + explicit STOP since `4fa5596`); sync-agents regenerated all mirrors |
+| 4 | SOP row corrected in the SAME commit as the guard fix | DELIVERED | `git show --stat f7f6961`: SOP + guard + tests + INDEX in one commit; row at 1311 (ticket's 1304 drifted with SCC-147 — documented) |
+| 5 | repo-wide sweep zero bare branch-prefix survivors incl. `.sh` + `docs/` | DELIVERED | review's independent `git grep` at HEAD: zero outside the documented noise class (issue label, workflow filename, fixture names, historical comments, the protected git-policy sentence) |
+| 6 | git-policy.md:210–212 byte-identical | DELIVERED | `git diff main...HEAD -- .agents/rules/git-policy.md` → empty (re-measured by the review) |
+
+Nothing in the diff falls outside the acceptance list (no drift found beyond the findings above).
+
+### Clean-Code Gate — PASS
+
+**Machine floor**
+- run_all.py       : PASS — 23/23 files, 1911/1911 cases, exit 0          [pasted above]
+- workflow_lint    : PASS — 0 errors, 0 warnings (8 info: pre-existing BOMs), exit 0
+- sop_currency     : PASS — exit 0 over the real changed set              [pasted above]
+- py_compile       : PASS — test_git_hooks.py
+- bash -n          : PASS — merge-target-guard.sh
+- link + anchor    : PASS — all cited paths/anchors resolve, 0 dead
+- door parity      : n/a — no command added/renamed/deleted
+- lint / types     : not applicable to this repo (no venv, no ruff, no tsc)
+
+**Judgment pass** — comment contract: every non-obvious changed block carries `SCC-149` provenance
+(guard arm/header/judge comments, INC test comments); no stale AIDEV-NOTE touched; no unowned TODO.
+Drift/bloat: imported from the engine table above (findings 1, 14, 15 — all dismissed with reasons);
+conventions: naming law clean, generated files regenerated never hand-edited, both-machine spelling
+(`python3`) respected, the new gate behavior ships armed and its tests prove both arms.
+
+### Step 0.7 — blast radius vs current main (re-derived at review time)
+
+- **Nothing this diff references moved on `main`:** merge-base = `main` = `origin/main` = `44a12c1`; the theirs-set is empty — nothing landed while this lane was built.
+- **True overlap: none; `merge-tree --write-tree HEAD main` writes cleanly (no conflict entries).**
+- **Sibling lanes:** `chore/SCC-146-gate-receipts` live at `44a12c1` (no commits) — no landing-order dependency in either direction.
+
+**Changes applied by this review:** one — finding 4/C2 (`4fa5596`, doc + mirrors). Everything else:
+implementation correct as-is.
 
 ## Your Actions
 
-(filled at close)
+- [ ] **Merge sign-off** — run `/smh-close-task-merge-tree` (mechanical close-out; the Verdict above is the review of record — one review per lane, per the SCC-147 convergence rule).
+- [ ] **Follow-on ticket decision (C1/C3 + deferred tests)** — one Task: teach `pre-push-merge-backstop.sh` the incident class (its refusal currently prescribes the SCC-148 misroute for incident refs), landing the target-side INC test + width-killing mutants FIRST (C3's sequencing), plus the deferred boundary/multi-name pins (findings 2, 3, 12, 13, 5).
