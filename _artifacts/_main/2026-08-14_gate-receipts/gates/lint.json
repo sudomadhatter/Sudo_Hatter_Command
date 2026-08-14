@@ -3,7 +3,7 @@
   "story": "scc-146",
   "result": "pass",
   "exit_code": 0,
-  "sha": "d2f30a67238da377b62013f9815f37fc0b2001ba",
+  "sha": "6ea385f67d0de99bc9b24e4111b0bc207fd32dd2",
   "dirty_tree": false,
   "totals": null,
   "command": [
@@ -13,6 +13,6 @@
   ],
   "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/gate-receipts",
   "duration_s": 0.2,
-  "recorded_at": "2026-08-14T14:11:24+00:00",
+  "recorded_at": "2026-08-14T15:01:16+00:00",
   "output_tail": "== workflow_lint - toolkit-only ==\n[INFO ] commands: testarch-atdd.md: UTF-8 BOM present\n[INFO ] commands: testarch-automate.md: UTF-8 BOM present\n[INFO ] commands: testarch-ci.md: UTF-8 BOM present\n[INFO ] commands: testarch-framework.md: UTF-8 BOM present\n[INFO ] commands: testarch-nfr.md: UTF-8 BOM present\n[INFO ] commands: testarch-test-design.md: UTF-8 BOM present\n[INFO ] commands: testarch-test-review.md: UTF-8 BOM present\n[INFO ] commands: testarch-trace.md: UTF-8 BOM present\n-- 0 error(s), 0 warning(s), 8 info --\n"
 }
