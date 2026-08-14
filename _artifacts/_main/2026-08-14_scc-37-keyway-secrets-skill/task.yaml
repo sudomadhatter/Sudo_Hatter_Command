@@ -1,5 +1,5 @@
-ticket: SCC-37
-story: SCC-37-keyway-secrets-skill
-branch: chore/SCC-37-keyway-secrets-skill
-type: chore
-summary: Add cross-platform Keyway secrets management skill and team sharing guide
+task_key: SCC-150
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-150-keyway-secrets-skill
+close_command: smh-close-task-merge-tree
+secondary_repos: []
