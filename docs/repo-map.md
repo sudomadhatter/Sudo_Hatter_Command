@@ -105,12 +105,14 @@ Sudo_Hatter_Command/
     _scc_sops_prds/
         [12 files: .mdx12 | e.g. INDEX.md]
     migrations/
+      antigravity_extensions/
+          [1 files: .txtx1 | e.g. antigravity-extension-ids.txt]
       gemini_extensions/
           [2 files: .mdx1, .shx1 | e.g. gemini-extensions-sync-guide.md]
       install_guides/
           [5 files: .mdx5 | e.g. antigravity-ide-extension-migration.md]
       scripts/
-          [5 files: .ps1x3, .patchx1, .shx1 | e.g. Export-EnvMaster.ps1]
+          [9 files: .ps1x4, .pyx2, .shx2, .patchx1 | e.g. Export-EnvMaster.ps1]
         [1 files: .mdx1 | e.g. INDEX.md]
       [10 files: .mdx9, .jsonx1 | e.g. AGENTS.md]
   scratch/
