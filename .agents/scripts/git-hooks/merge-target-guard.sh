@@ -52,8 +52,8 @@
 # ONLY shape the incident pipeline creates (cicd-mobile-error-team.md), and it MATCHES the
 # `claude/*` glob — is positively classified by a carve-out ABOVE the story arm and then
 # deliberately unjudged: an emergency local hotfix merge to main must never eat a story-lane
-# refusal mid-incident (SCC-149; this comment once claimed bare `incident-*` was "outside the
-# branch model" while no such arm existed and the real prefix classified as STORY). A branch no
+# refusal mid-incident (SCC-149; this comment once claimed a bare incident prefix was outside the
+# branch model while no such arm existed and the real prefix classified as STORY). A branch no
 # arm classifies, or a merge whose source cannot be named at all, is ALLOWED — with a line saying
 # so. And where one sha carries several branch names, ANY legal name wins.
 #
