@@ -1055,6 +1055,29 @@ def main() -> int:
                 code == 0 and "gate: SKIP" not in out and "run_all.py" in out,
                 f"exit {code}: " + out.strip()[-300:])
 
+    with TempDir() as t:   # a STALE verdict must not ride a FRESH receipt (M4's killer)
+        # The real shape: review stamps the verdict, then "one more fix" commit lands, the
+        # suite is re-run and re-stamped mechanically — receipt fresh, verdict stale. The
+        # verdict-freshness check is the ONLY thing standing between that lane and a SKIP
+        # citing evidence about code that no longer exists; the first sweep proved the
+        # receipt check alone cannot see it (receipt sha == verdict sha in every fixture
+        # above, so mutant M4 survived at 115/115).
+        repo = make_repo(t, walkthrough=False)
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        stamp_and_verdict(repo, "PASS", receipt=False)     # verdict cites sha W
+        write(repo, "docs/x.md", "the one-more-fix commit\n")
+        commit(repo, "SCC-11 chore: code moved after the verdict")
+        run_script("gate_receipt.py", "run", "--task", "SCC-11",   # re-stamped at C: FRESH
+                   "--gate", "suite", "--root", str(repo / ADIR), "--cwd", str(repo),
+                   "--", sys.executable, "-c", "print('ok')")
+        commit(repo, "SCC-11 chore: receipt re-stamped (artifacts only)")
+        git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+        code, out = preflight(repo)
+        c.check("SCC-146 a STALE verdict cannot ride a FRESH receipt - verdict freshness "
+                "is checked independently",
+                code == 0 and "gate: SKIP" not in out and "code moved since the verdict" in out,
+                f"exit {code}: " + out.strip()[-300:])
+
     with TempDir() as t:   # receipts exist, but none of them is the SUITE run
         repo = make_repo(t, walkthrough=False)
         branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
