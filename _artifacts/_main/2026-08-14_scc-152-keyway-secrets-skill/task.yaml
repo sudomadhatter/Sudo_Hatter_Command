@@ -1,0 +1,5 @@
+task_key: SCC-152
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-152-keyway-secrets-skill
+close_command: smh-close-task-merge-tree
+secondary_repos: []

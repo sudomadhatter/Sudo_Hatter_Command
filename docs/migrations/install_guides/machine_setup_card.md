@@ -67,7 +67,7 @@ python3 .agents/scripts/tests/run_all.py     # PC: python .agents/scripts/tests/
 |---|---|
 | `.env` · `auth_keys/` · service accounts | The master bundle (`docs/migrations/auth_keys/_secrets/master.env`) → restore via `python docs/migrations/scripts/env_master.py --restore` (or `Restore-EnvMaster.ps1` / `restore-env-master.sh`). Gitignored. |
 | Python venvs | Rebuilt per project — never cloned. AGY's is `backend/.venv` on **3.11**; follow the companion guide, don't wing it. |
-| CLI logins | `gcloud`, `gh`, `firebase` — each is a per-machine login. |
+| CLI logins | `gcloud`, `gh`, `firebase`, `keyway` — each is a per-machine login (Keyway: `npm install -g @keywaysh/cli` on PC, `brew install keywaysh/tap/keyway` on Mac). |
 | Shell env (Mac) | Anything a *script* needs goes in `~/.zshenv`, **not** `.zshrc` — `.zshrc` is read only by interactive shells, so agents and hooks can't see it. |
 
 ---
