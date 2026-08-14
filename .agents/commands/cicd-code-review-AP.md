@@ -2,10 +2,13 @@
 description: Autopilot (headless) Review+Fix+Gate command — review the implementation in the shared autopilot run folder, apply fixes, run the TEA test gate, and hand to Daniel. Modeled off /cicd-code-review but tuned for agent-to-agent handoff. NOT for interactive use; the autopilot orchestrator invokes it.
 platforms: [claude, opencode]
 # Diffed against /cicd-code-review at this sha; nothing to port (SCC-147, 2026-08-14).
-# That diff was ONE hunk — the primary gained an explicit `lens_budget: standard` row. This
-# twin already named `capped` in its own contract block, so there is nothing to carry over:
-# the change made the primary say out loud what it had been inheriting silently, and the
-# divergence it creates is #1 below, which is deliberate and stated.
+# TWO diffs were read at this stamp, both ONE hunk on the same row, and neither ports:
+#   - the primary gained an explicit `lens_budget: standard` row. This twin already named
+#     `capped` in its own contract block, so the change only made the primary say out loud
+#     what it had been inheriting silently; the divergence it creates is #1 below.
+#   - the review then reworded that row to drop a restatement of step-01's caps. It now
+#     carries THIS twin's own phrasing — "does not define what the caps are; step-01 of the
+#     engine does, once" — so the two commands have converged on the wording, not diverged.
 # Both commands were rewired onto `code-review-engine` in the same landing set — the primary
 # by SCC-128, this twin by SCC-126 — so they agree on the thing that matters: the caller
 # resolves every input, the engine resolves none, and `severity_floor` binds the verdict.
@@ -19,7 +22,7 @@ platforms: [claude, opencode]
 #      fixes the blind-lens-first ordering that override requires. The primary is
 #      interactive, so handing prompts back is a real option there and it keeps that path.
 # Re-diff and restamp when the linter says this sha is stale — do NOT just bump it.
-ap_reconciled: 43197223063bc249e6994694530b46b76dbd5c9b
+ap_reconciled: 7e4f4068cdd16172dde80e6512e8e12f70a94e2c
 ---
 
 # /cicd-code-review-AP — Autopilot Review + Fix + Test Gate (Murat)
