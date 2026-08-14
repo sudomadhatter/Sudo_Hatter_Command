@@ -235,7 +235,9 @@ and follow IT end to end: it runs this command's close-out per story itself (fix
 `done` → combined gate → prune ALL trees) in one shot; nothing returns here.
 
 **Precondition — check FIRST.** `git rev-parse --abbrev-ref HEAD` must be a **`claude/*`** branch (inside the
-story worktree). If HEAD is the epic branch or `main`, this story wasn't worked in a worktree — **do NOT land
+story worktree) — **and never `claude/incident-*`**, which satisfies the glob but is the incident
+pipeline's lane (`/cicd-mobile-error-team`), not story work (SCC-149). If HEAD is the epic branch or `main`,
+this story wasn't worked in a worktree — **do NOT land
 it.** Report it and stop — never rescue it by committing in the shared checkout.
 
 Then execute `git-policy.md` → **"The landing"**, inside the worktree: first commit the close-out edits —
