@@ -6,9 +6,9 @@ platforms: [claude, opencode]
 # by SCC-128, this twin by SCC-126 — so they agree on the thing that matters: the caller
 # resolves every input, the engine resolves none, and `severity_floor` binds the verdict.
 # THREE divergences remain, all deliberate and all autopilot-only:
-#   1. this twin passes `lens_budget: capped`; the primary passes none and takes the
-#      `capped` default. ⚠ For an INTERACTIVE caller `standard` is the intended budget —
-#      raised as a follow-on against /cicd-code-review, not patched from inside its twin.
+#   1. this twin passes `lens_budget: capped`; the primary passes `standard`. Both now name
+#      their budget EXPLICITLY (SCC-147) — the primary used to name none and silently take
+#      the `capped` default, which is the autopilot's budget applied to a watched review.
 #   2. this twin passes `EVIDENCE_PACK` (its Ingest-2 batched pull); the primary does not
 #      pull one, so its repo-access lenses read the tree directly.
 #   3. this twin overrides the engine's no-subagent fallback to run lenses INLINE, and

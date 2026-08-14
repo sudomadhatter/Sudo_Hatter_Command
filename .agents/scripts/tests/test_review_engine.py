@@ -62,7 +62,15 @@ ENGINE_FILES = (SKILL,) + STEPS
 # a rule about a caller that lives only in the engine's own step file is a rule nothing enforces:
 # reverting the caller leaves every engine check green while the wiring is gone (SCC-126 review, F7).
 AP_CMD = ".agents/commands/cicd-code-review-AP.md"
-CALLER_FILES = (AP_CMD,)
+# The two INTERACTIVE callers (SCC-147). step-01 defines `lens_budget` and states that a caller
+# naming none gets `capped` — the safe default, chosen for the unwatched overnight loop. That
+# default is the WRONG budget for a review a human is sitting in front of, and neither of these
+# named one, so both silently ran the autopilot's budget and the literal lens lost the top-up it
+# is supposed to be able to earn. Pinned in the CALLERS' own bodies for the F7 reason above: the
+# rule lived only in step-01, which is a claim about a caller, not a check on one.
+CICD_CMD = ".agents/commands/cicd-code-review.md"
+SMH_CMD = ".agents/commands/smh-code-review.md"
+CALLER_FILES = (AP_CMD, CICD_CMD, SMH_CMD)
 
 # Vendor identifiers that must appear NOWHERE in the engine. `HALT` is deliberately the only
 # case-SENSITIVE one: lower-case "halt" is ordinary English and banning it generates false reds.
@@ -862,6 +870,18 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      r"\*\*The floor is a floor:\*\* your verdict may be that severe or worse, never better", 0,
      "your verdict may be that severe or worse, never better",
      "your verdict may be softened if the findings look minor"),
+
+    # ── SCC-147: the INTERACTIVE callers name their budget, in their own invocation tables ────
+    # The counter-example here is `capped` — not a nonsense string — because `capped` is the
+    # exact value these two silently inherited by naming nothing. A row that says `capped`
+    # reads as deliberate and is the defect; the check has to reject it, not just notice an
+    # absent word.
+    ("interactive caller /cicd-code-review: invocation table passes lens_budget standard",
+     CICD_CMD, r"^\|\s*`lens_budget`\s*\|\s*`standard`", re.M,
+     "| `lens_budget` | `standard`", "| `lens_budget` | `capped`"),
+    ("interactive caller /smh-code-review: invocation table passes lens_budget standard",
+     SMH_CMD, r"^\|\s*`lens_budget`\s*\|\s*`standard`", re.M,
+     "| `lens_budget` | `standard`", "| `lens_budget` | `capped`"),
 
 
     # ── step-03: buckets, alias map, and the severity-to-verdict table ──────────────────────

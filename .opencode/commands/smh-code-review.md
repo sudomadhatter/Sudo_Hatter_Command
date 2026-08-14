@@ -134,6 +134,7 @@ stop, not a guess:**
 | `review_mode` | `full` when the task's `implementation_plan.md` exists; `no-spec` when it does not |
 | `STORY_FILE` | that `implementation_plan.md` — on this lane the plan's acceptance list **is** the spec |
 | `ARTIFACT_DIR` | `_artifacts/_main/<YYYY-MM-DD>_<slug>/` inside this tree |
+| `lens_budget` | `standard` — this lane is typed by hand, so the literal lens keeps the ONE top-up it can earn by naming the file it wants and why. **Name it; never restate the caps** — step-01 defines them once, and a cap each caller repeats is a cap that drifts. Only `/cicd-code-review-AP` runs `capped`, and a caller naming nothing SILENTLY gets `capped` too, which is why this row is explicit (SCC-147) |
 
 ⚠ **Step 0 read `HEAD_SHA` before Step 0.7 absorbed `main`.** Re-read both it and the diff here, or
 the engine reviews a tree that no longer exists and your verdict cites a commit that is no longer the
