@@ -14,8 +14,9 @@
   - ⚠ **Amended after approval, on the operator's call to pull first** — see *Deviations* #1.
 - [x] **Step 2** — RED: **49/52, exit 1**, three cases failing for the right reason
 - [x] **Step 3** — GREEN: **52/52, exit 0**; sync run; SOP + ledger row staged in the same commit
-- [x] **Step 3b** — mutation sweep: **8 declared, 8 killed**, tree verified restored
-- [ ] **Step 4** — `/smh-code-review`
+- [x] **Step 3b** — mutation sweep #1: **8 declared, 8 killed**, tree verified restored
+- [x] **Step 4** — `/smh-code-review` — two independent lenses; **7 more survivors found**, all fixed,
+  then re-swept as **sweep #2 (14 mutants)**. See `## Code Review`.
 - [x] **Step 5** — artifacts, manifest, Dev Record
 
 ## What was actually wrong
@@ -27,7 +28,7 @@ before a line was edited:
 |---|---|
 | The practice is absent from the command surface | `grep -rn "mutant\|mutation\|mutate" .agents/commands/` → **2 hits**: a script that mutates `_my_resources/`, and *"Lynn Margulis — merger beats mutation"* in the adviser board. A biologist. |
 | The doctrine is one sub-bullet, filed under another concern | `tests-must-gate-for-real.md` → `## The Rule` → item **4** (headlined *"Certification is measured at the SHIPPING SHA"*) → **fourth** sub-bullet |
-| The normative text never names the practice | the word "mutation" appeared **once** in that file, at line 76, inside `## Why` — the provenance narrative, not the binding rule |
+| The normative text never names the practice | the word "mutation" appeared **twice** in that file, at lines 76-77, inside `## Why` — the provenance narrative, not the binding rule |
 | The one technique given does not transfer | *relocate, never delete* assumes a structural guard + behavioral test in one file. A shell gate has **nothing to relocate** — the useful mutant **inverts a decision** |
 | ⭐ It reaches the STORY lane but not the TASK lane | loaded by 6 story-lane commands; on the task lane only `/smh-code-review` — **after** the mutants are designed. `/smh-quick-dev` (writes the assertions) and `/smh-self-audit` (judges the plan that picks the strategy) loaded it **not at all** |
 | Nothing mechanical could see any of it | `grep -rln "Rules in force" .agents/scripts/tests/*.py` → **zero files.** No test anywhere asserted on any rules-in-force block |
@@ -86,8 +87,9 @@ explicitly out of scope); the table is the artifact.
 
 ⭐ **M7 and M8 are the CODE-DERIVED half, and they are the point.** M1–M6 mutate the documents the
 guard reads — useful, but drawn close to the cases. M7 and M8 mutate **the guard's own helpers**,
-which is where a vacuous check would actually live. SCC-144's review measured why this matters: 24 of
-25 code-derived mutants survived the 14 case-derived ones.
+which is where a vacuous check would actually live. SCC-144's review measured why this matters: its 14
+case-derived mutants were all killed, while a later set drawn from the code left **24 of 25
+surviving** — every survivor a hole the first sweep had reported as covered.
 
 ⭐ **M1 proves the block-scoping is load-bearing rather than decorative**, and it was verified
 mechanically rather than argued. With M1 applied to `smh-quick-dev.md`:
@@ -113,9 +115,13 @@ That is `prose-pinning-guards-are-vacuous` (SCC-125), defeated in advance instea
    techniques plus the DEFECTIVE rule**, not three.
 2. ⭐ **FIX 4's first bullet was deliberately NOT implemented as written, and this is the one call
    worth overruling if you disagree.** The ticket says *every* command that writes or judges tests
-   must cite the rule inside its own rules-in-force block. Measured, that guard goes red on **six**
+   must cite the rule inside its own rules-in-force block. Measured, that guard goes red on **five**
    commands — two of which (`cicd-code-review`, `cicd-write-story-tests`) have **no such block at
-   all**, and two of which carry `-AP` twins owing a twin re-diff. That is ~3× the ticket's edit set,
+   all**, and two of which carry `-AP` twins owing a twin re-diff. (Six commands sit outside this
+   ticket's two-command edit set, but one of those six — `smh-code-review` — already complies, so
+   five is the number that would actually go red. The guard's own comment said five; these two
+   artifacts said six, and the review caught the mismatch.) Widening is 5 primaries + 2 twins = 7
+   files against the ticket's 2, ~3.5× the edit set,
    entering through a guard's phrasing rather than through its acceptance block. The binding list
    (Step 1's authority order #1) names only the two task-lane commands. **Pinned here:**
    `smh-quick-dev`, `smh-self-audit`, and `smh-code-review` — the last because it already complied,
@@ -130,15 +136,28 @@ That is `prose-pinning-guards-are-vacuous` (SCC-125), defeated in advance instea
 
 ## Gates
 
+**Certification measured at `3b23061`**, every command run **bare** (a piped gate returns the *pipe's*
+exit code, and `zsh` has no `PIPESTATUS[0]`).
+
 | Gate | Result |
 |---|---|
-| Enforcement suite | `run_all.py` → *(final certification below)* |
-| Toolkit lint | `workflow_lint.py --toolkit-only` → *(final certification below)* |
+| Enforcement suite | `run_all.py` → **22/22 files, 1803/1803 cases, exit 0** |
+| Toolkit lint | `workflow_lint.py --toolkit-only` → **0 errors, 0 warnings, 8 info, exit 0** |
 | Map / INDEX | `check_maps.py --depth3-only --strict` → **exit 0** |
-| Assertion evidence | RED and GREEN captured bare, both committed beside this file |
-| Mutation | **8/8 killed**, tree verified restored |
-| SOP currency | `268f894` stages the SOP with the usage-surface change |
-| Door parity | green after `/smh-sync-agents` (went red first — see *Evidence*) |
+| SOP currency | `sop_currency.py --paths <16 changed> --message "<subject>"` → **exit 0** |
+| `py_compile` | `test_command_surfaces.py` → **OK** |
+| Link + anchor | every repo path the new prose names resolves — see the one false positive below |
+| Door parity | both `.opencode` mirrors **byte-identical** to their `.agents/commands/` source |
+| Assertion evidence | RED **49/52 exit 1** → GREEN **52/52 exit 0**, both captured bare and committed |
+| Mutation | **8/8 killed**, `restored clean: YES` |
+
+**Case total exactly additive:** 1794 (`main` after SCC-144) + 9 (this lane, `test_command_surfaces.py`
+43 → 52) = **1803**. Neither lane displaced the other's tests.
+
+⚠ **One link-sweep false positive, reported rather than hidden:** the sweep flagged
+`commit-msg-jira.sh` as DEAD. It is a **bare filename in prose**, not a repo-relative path — the real
+file is `.agents/scripts/git-hooks/commit-msg-jira.sh` and it exists. This is exactly the
+false-positive class SCC-87 is open to handle.
 
 ## Your Actions
 

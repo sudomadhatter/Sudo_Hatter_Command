@@ -40,8 +40,9 @@ the rule at all, and no test pins any of it — measured twice as repeated ad-ho
 ## ⭐ Scope ruling the plan makes explicit (divergence from FIX 4's first bullet)
 
 The ticket's FIX 4 prose says "every command that WRITES or JUDGES tests cites the rule INSIDE its
-own rules-in-force block." Measurement 3 shows that guard would go red on **six** commands, two of
-which have no block to cite it in — forcing a contract edit to six commands, two of which
+own rules-in-force block." Measurement 3 shows that guard would go red on **five** commands (six sit
+outside the edit set, but `smh-code-review` already complies), two of
+which have no block to cite it in — forcing a contract edit to five commands, two of which
 (`cicd-code-review`, `cicd-dev-story-tests`) carry `-AP` twins that would each owe a twin re-diff.
 That is 3× the ticket's edit set, smuggled in through a guard's phrasing.
 
