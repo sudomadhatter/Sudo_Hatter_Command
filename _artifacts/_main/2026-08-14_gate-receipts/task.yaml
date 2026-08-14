@@ -1,0 +1,5 @@
+task_key: SCC-146
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-146-gate-receipts
+close_command: smh-close-task-merge-tree
+secondary_repos: []
