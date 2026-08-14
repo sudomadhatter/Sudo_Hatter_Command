@@ -76,14 +76,15 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   [ -f "$TOKEN" ] || refuse "no approval token."
 
   # Parse the token. Unknown keys are ignored so the format can grow without breaking old hooks.
-  t_branch=""; t_tip=""; t_command=""; t_key=""; t_minted=""
+  t_branch=""; t_tip=""; t_command=""; t_key=""; t_minted=""; t_approval=""
   while IFS='=' read -r k v; do
     case "$k" in
-      branch)  t_branch=$v  ;;
-      tip)     t_tip=$v     ;;
-      command) t_command=$v ;;
-      key)     t_key=$v     ;;
-      minted)  t_minted=$v  ;;
+      branch)   t_branch=$v   ;;
+      tip)      t_tip=$v      ;;
+      command)  t_command=$v  ;;
+      key)      t_key=$v      ;;
+      minted)   t_minted=$v   ;;
+      approval) t_approval=$v ;;
     esac
   done < "$TOKEN"
 
@@ -92,6 +93,18 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   if [ -z "$t_tip" ] || [ -z "$t_minted" ]; then
     rm -f "$TOKEN"
     refuse "the approval token is malformed (no tip / no timestamp). It has been discarded."
+  fi
+
+  # ⛔ NO APPROVAL RECORD, NO PUSH (SCC-37). The minter refuses to write a token without the
+  # operator's words, so a WELL-FORMED token lacking them was written by hand or by a pre-SCC-37
+  # flow — either way it carries a sign-off nobody can point at. After the malformed check on
+  # purpose: garbage is reported as garbage, not as a missing approval. Consumed like every refusal.
+  if [ -z "$t_approval" ]; then
+    rm -f "$TOKEN"
+    refuse "the token carries no operator-approval record.
+        A main merge needs the operator's explicit words for THIS merge, recorded at mint time
+        (mint-push-token.sh --operator-approval '<their exact words>', or typed at a terminal).
+        Ticket-status permission is never merge permission. Token discarded."
   fi
 
   # ⛔ VALIDATE BEFORE ARITHMETIC. `$(( ))` in POSIX sh recursively expands its operands, so a
@@ -163,6 +176,7 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   # remote that moved.
   rm -f "$TOKEN"
   echo "  ✅ main push approved — ${t_command:-<unrecorded>} · ${t_key:-<no key>} · ${t_branch:-<no branch>} @ $local_sha"
+  echo "     AUTHORIZED BY OPERATOR: \"$t_approval\""
   echo "     Token consumed. The next merge needs its own sign-off."
 done
 

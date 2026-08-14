@@ -64,11 +64,16 @@ def token_path(d: Path) -> Path:
     return d / ".git/main-push-approval"
 
 
-def write_token(d: Path, tip: str, minted: int | None = None, command: str = "/smh-close-task-merge-tree") -> None:
-    token_path(d).write_text(
+def write_token(d: Path, tip: str, minted: int | None = None, command: str = "/smh-close-task-merge-tree",
+                approval: str | None = "test fixture: operator said merge it") -> None:
+    # approval=None writes the pre-SCC-37 token shape — the case the gate must now refuse.
+    body = (
         f"branch=chore/SCC-77-x\ntip={tip}\ncommand={command}\nkey=SCC-77\n"
         f"minted={minted if minted is not None else int(time.time())}\n"
     )
+    if approval is not None:
+        body += f"approval={approval}\n"
+    token_path(d).write_text(body)
 
 
 def gate(d: Path, sha: str, ref: str = "refs/heads/main", remote_sha: str = ZERO) -> tuple[int, str]:
@@ -198,6 +203,14 @@ def main() -> int:
         rc, out = gate(d, sha)
         c.check("token older than 30 min is refused", rc != 0 and "stale" in out)
 
+        # ⭐ SCC-37: a token WITHOUT approval evidence is refused and consumed. The minter can no
+        # longer write one, so this shape is either hand-forged or pre-SCC-37 — both unspendable.
+        write_token(d, sha, approval=None)
+        rc, out = gate(d, sha)
+        c.check("token with no approval record is refused", rc != 0 and "no operator-approval" in out,
+                "a hand-written token must not outrank the minter's own refusal")
+        c.check("the approval-less token is discarded", not token_path(d).exists())
+
         token_path(d).write_text("garbage\n")
         rc, out = gate(d, sha)
         c.check("malformed token is refused", rc != 0 and "malformed" in out)
@@ -247,19 +260,47 @@ def main() -> int:
         # ── MINTER ───────────────────────────────────────────────────────────────────────
         rc, out = sh("sh", str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
                      "--command", "/smh-close-task-merge-tree", "--branch", "chore/SCC-77-x",
-                     "--key", "SCC-77", cwd=d)
+                     "--key", "SCC-77", "--operator-approval", "yes, merge SCC-77-x now", cwd=d)
         c.check("minter writes a token from main", rc == 0 and token_path(d).exists())
         c.check("minted token carries HEAD's sha", f"tip={sha}" in token_path(d).read_text())
+        c.check("minted token records the operator's words",
+                "approval=yes, merge SCC-77-x now" in token_path(d).read_text(),
+                "the quote is the approval evidence; a token without it is refused at the push")
         rc, out = gate(d, sha)
         c.check("the minted token is accepted by the gate", rc == 0 and "approved" in out)
+        # ⭐ SCC-37: the spend prints the words back — what claimed to authorise the merge is
+        # visible in the push output, not only in a file nobody opens.
+        # (re-mint for the echo check — the gate above consumed the token)
+        sh("sh", str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
+           "--command", "/smh-close-task-merge-tree", "--branch", "chore/SCC-77-x",
+           "--key", "SCC-77", "--operator-approval", "yes, merge SCC-77-x now", cwd=d)
+        rc, out = gate(d, sha)
+        c.check("the gate PRINTS the approval words at the push",
+                rc == 0 and 'AUTHORIZED BY OPERATOR: "yes, merge SCC-77-x now"' in out,
+                "a stretched quote must survive being read back at push time")
 
         rc, out = sh("sh", str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
                      "--branch", "chore/x", cwd=d)
         c.check("minter requires --command", rc != 0)
 
+        # ⭐ SCC-37: THE RECURRENCE GUARD. A non-interactive shell — every agent shell — cannot
+        # mint without the operator's verbatim words. "You can move the ticket to done" read as a
+        # merge sign-off is the live failure this closes: the minter now demands the words
+        # themselves, so an inference has nothing to type.
+        rc, out = sh("sh", str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
+                     "--command", "/smh-close-task-merge-tree", "--branch", "chore/SCC-77-x",
+                     "--key", "SCC-77", cwd=d)
+        c.check("minter REFUSES without operator approval in a non-TTY shell",
+                rc != 0 and "no operator approval" in out,
+                "an agent shell must not be able to self-authorise a main merge")
+        c.check("the refusal teaches the contract",
+                "never merge permission" in out.lower() or "NEVER merge permission" in out,
+                "the message must name the ticket-permission != merge-permission rule")
+
         sh("git", "checkout", "-qb", "chore/SCC-77-x", cwd=d)
         rc, out = sh("sh", str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
-                     "--command", "/smh-close-task-merge-tree", "--branch", "chore/SCC-77-x", cwd=d)
+                     "--command", "/smh-close-task-merge-tree", "--branch", "chore/SCC-77-x",
+                     "--operator-approval", "merge it", cwd=d)
         c.check("minter refuses when HEAD is not main", rc != 0 and "not 'main'" in out,
                 "a token minted off main names a sha the push will not carry")
         sh("git", "checkout", "-q", "main", cwd=d)
@@ -283,7 +324,7 @@ def main() -> int:
 
         sh("sh", str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
            "--command", "/smh-close-task-merge-tree", "--branch", "chore/SCC-77-x",
-           "--key", "SCC-77", cwd=d)
+           "--key", "SCC-77", "--operator-approval", "yes - land it", cwd=d)
         rc, out = sh("git", "push", "origin", "main", cwd=d)
         c.check("REAL git push to main succeeds with a token", rc == 0, out.strip()[-200:])
         rc, out = sh("git", "ls-remote", "--heads", str(bare), "main", cwd=d)
@@ -320,7 +361,8 @@ def main() -> int:
         # --- the happy path must still work, or the fix is worse than the bug ---
         merge_lane("chore/SCC-77-a")
         rc, out = sh("sh", mint, "--command", "/smh-close-task-merge-tree",
-                     "--branch", "chore/SCC-77-a", "--key", "SCC-77", cwd=d)
+                     "--branch", "chore/SCC-77-a", "--key", "SCC-77",
+                     "--operator-approval", "yes - land it", cwd=d)
         c.check("minter accepts a single merge sitting on origin/main", rc == 0, out.strip()[:160])
         rc, out = sh("git", "push", "origin", "main", cwd=d)
         c.check("ONE merge with a token lands", rc == 0, out.strip()[-160:])
@@ -332,7 +374,8 @@ def main() -> int:
         for lane in ("chore/SCC-77-b", "chore/SCC-77-c", "chore/SCC-77-d"):
             merge_lane(lane)
         rc, out = sh("sh", mint, "--command", "/smh-close-task-merge-tree",
-                     "--branch", "chore/SCC-77-b", "--key", "SCC-77", cwd=d)
+                     "--branch", "chore/SCC-77-b", "--key", "SCC-77",
+                     "--operator-approval", "yes - land it", cwd=d)
         c.check("minter REFUSES to mint for a batch of merges", rc != 0 and "exactly one merge" in out,
                 "caught at mint time, where the message can still name the fix")
 
@@ -361,7 +404,8 @@ def main() -> int:
         merge_lane("chore/SCC-77-e")
         tip = sh("git", "rev-parse", "HEAD", cwd=d)[1].strip()
         token_path(d).write_text(
-            f"branch=chore/SCC-77-a\ntip={tip}\ncommand=/x\nkey=K\nminted={int(time.time())}\n")
+            f"branch=chore/SCC-77-a\ntip={tip}\ncommand=/x\nkey=K\nminted={int(time.time())}\n"
+            f"approval=forged but present - the branch check must still fire\n")
         rc, out = sh("git", "push", "origin", "main", cwd=d)
         c.check("a token naming a DIFFERENT branch than the merge is refused",
                 rc != 0 and "authorises landing" in out,
