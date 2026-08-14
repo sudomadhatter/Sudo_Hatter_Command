@@ -277,14 +277,81 @@ def main() -> int:
 
     # ── Wrong lane: each refusal must name the command that IS right ──
     for name, expect in (("epic/SCC-11-thing", "/cicd-push-e2e"),
-                         ("claude/SCC-11-thing", "/cicd-update-sprint-memory"),
-                         ("incident/SCC-11-thing", "/cicd-mobile-error-team")):
+                         ("claude/SCC-11-thing", "/cicd-update-sprint-memory")):
         with TempDir() as t:
             repo = make_repo(t)
             branch(repo, name, {"docs/x.md": "x\n"})
             code, out = preflight(repo)
             c.check(f"{name.split('/')[0]}/ branch refused", code == 2, f"exit {code}")
             c.check(f"{name.split('/')[0]}/ refusal names {expect}", expect in out)
+
+    # ── SCC-148: the REAL incident branch. `/cicd-mobile-error-team` writes ONLY
+    # `claude/incident-<short-id-lower>` — no command anywhere creates a bare `incident/`
+    # branch. The old table scanned `claude/` first, so a live incident branch was refused
+    # with instructions to run the STORY close-out — the wrong command, told confidently,
+    # on the one path that runs under production pressure, often from a phone. The refusal
+    # must name the incident lane and must NOT name the story close-out anywhere.
+    with TempDir() as t:
+        repo = make_repo(t)
+        branch(repo, "claude/incident-abc123", {"docs/x.md": "x\n"})
+        code, out = preflight(repo)
+        c.check("SCC-148 claude/incident-* (the real shape) is refused", code == 2,
+                f"exit {code}")
+        c.check("SCC-148 ...naming /cicd-mobile-error-team, never the story close-out",
+                "/cicd-mobile-error-team" in out and "/cicd-update-sprint-memory" not in out,
+                out.strip()[-300:])
+
+    # ── SCC-148: WRONG_LANE table integrity. An entry can die two ways, and each gets its
+    # own guard because each is blind to the other:
+    #   * dead-by-nonexistence — a prefix no command creates (the old bare `incident/`).
+    #     The key-set pin catches it; an order check cannot.
+    #   * dead-by-shadowing — the scan is first-match `startswith` over insertion order, so
+    #     a generic prefix listed before a specific one makes the specific entry unreachable
+    #     (the actual SCC-148 bug: `claude/` before `claude/incident-`). The shadow check
+    #     catches ANY entry hidden behind an earlier generic prefix — a set pin is
+    #     order-blind, and order is exactly what a future alphabetical "tidy" would break.
+    import task_preflight as _tp
+    lane_keys = list(_tp.WRONG_LANE)
+    c.check("SCC-148 WRONG_LANE holds exactly the prefixes real commands create",
+            set(lane_keys) == {"epic/", "claude/incident-", "claude/"},
+            f"got {sorted(lane_keys)}")
+    shadowed = [(a, b) for i, a in enumerate(lane_keys) for b in lane_keys[i + 1:]
+                if b.startswith(a)]
+    c.check("SCC-148 no WRONG_LANE entry is shadowed by an earlier prefix (first-match scan)",
+            not shadowed, f"unreachable: {shadowed}")
+
+    # ── SCC-148 sweep survivor: the scan must be ANCHORED at position 0, not a substring
+    # search. `BRANCH_RE`'s slug group is `.+`, which matches slashes, so a chore branch
+    # embedding a lane word mid-name is git-legal AND shape-legal — and a `prefix in branch`
+    # scan (mutant M4, which survived the first sweep with zero failing cases) would
+    # wrong-lane it to /cicd-push-e2e. It is a chore branch and must never be refused as
+    # someone else's lane.
+    with TempDir() as t:
+        repo = make_repo(t)
+        branch(repo, "chore/SCC-11-docs-for-epic/pages", {"docs/x.md": "x\n"})
+        code, out = preflight(repo)
+        # Both halves on purpose (review): the negatives alone would score green over a
+        # crashed run, whose traceback contains neither pinned string — so the case also
+        # pins the POSITIVE marker check_branch prints only after the branch survives the
+        # lane scan and matches BRANCH_RE. This fixture is the only slash-in-slug shape,
+        # so no other case would catch a scan crash here.
+        c.check("SCC-148 a chore slug embedding a lane word is not wrong-laned (anchored scan)",
+                "is not a task branch" not in out and "/cicd-push-e2e" not in out
+                and "-> SCC-11" in out and code in (0, 1),
+                f"exit {code}: " + out.strip()[-300:])
+
+    # ── Review: the bare `incident/` shape lost its WRONG_LANE entry (dead code — nothing
+    # creates it), so its behavior is now the generic shape refusal. Pinned so the close-out
+    # command's check-table claim about this fall-through has a machine behind it, and so
+    # any future drift in what an unclassifiable branch gets told is visible.
+    with TempDir() as t:
+        repo = make_repo(t)
+        branch(repo, "incident/SCC-11-thing", {"docs/x.md": "x\n"})
+        code, out = preflight(repo)
+        c.check("SCC-148 bare incident/ (no creator) falls to the generic shape refusal",
+                code == 2 and "the key must sit" in out
+                and "/cicd-mobile-error-team" not in out,
+                f"exit {code}: " + out.strip()[-300:])
 
     with TempDir() as t:
         repo = make_repo(t)

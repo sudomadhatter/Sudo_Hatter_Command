@@ -144,7 +144,7 @@ It answers, from the repo rather than from your memory of it:
 
 | Check | What a failure means |
 |---|---|
-| **branch** | `chore/<JIRA-KEY>-<slug>`, key immediately after the prefix, key matches `.agents/jira.conf`. An `epic/`, `claude/` or `incident/` branch is refused **by name, with the command that IS right**. |
+| **branch** | `chore/<JIRA-KEY>-<slug>`, key immediately after the prefix, key matches `.agents/jira.conf`. An `epic/`, `claude/incident-` or `claude/` branch is refused **by name, with the command that IS right** — scanned in that order, the specific incident prefix before the generic story one (SCC-148: a bare `incident/` entry no command creates once shadowed the real shape, and a live incident branch was routed to the story close-out). An unclassifiable shape falls to the generic `chore/…` refusal. |
 | **intent** | the branch's key equals `--expect-key`. A mismatch means the preflight is aimed at **another lane's branch** — the 2026-08-09 failure, now a mechanical exit 2 instead of a prose warning. |
 | **manifest** | a `task.yaml` declaring this `task_key` agrees on the branch. Missing manifest = warning (author it, Step 0); a manifest naming a **different branch** = error — one of them is lying. |
 | **sync** | clean tree, `0/0` with origin. Merging an unpushed branch puts commits on production that exist on one disk. Dirty files under `_artifacts/_memory/` are named separately: another session's memory is **parked or left, never swept, deleted, or committed under this task**. |

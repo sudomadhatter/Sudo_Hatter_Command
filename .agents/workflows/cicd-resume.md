@@ -53,7 +53,10 @@ git ls-remote --heads origin 'refs/heads/claude/*'    # parked story branches
 ```
 An `epic/*` branch on origin is the sprint's integration line — check it out locally so the story
 worktrees below have their base (`git checkout --track origin/epic/<JIRA-KEY>-<slug>`, then back to `main`).
-Every `claude/*` branch listed is **in-flight story work**, parked from another machine. Cross-check each
+Every `claude/*` branch listed is **in-flight story work**, parked from another machine — **except
+`claude/incident-*`**, which the incident pipeline pushes (`/cicd-mobile-error-team`; it lands on `main`
+via a GitHub PR, never through story flow). **Skip those rows: never resume one as a story lane, never
+sweep or prune it** (git-policy §parked-invariant, SCC-148). Cross-check each remaining branch
 against `sprint-status.yaml` for its status, and report the whole set — branch, story, step — **before
 touching anything**. Expect branches the handoff card does not mention: parallel sessions open their own.
 (The board carries bare statuses since the Wave 4 split; a row's history, if you need it, is in

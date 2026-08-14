@@ -56,11 +56,22 @@ BRANCH_RE = re.compile(r"^chore/([A-Z][A-Z0-9]*)-(\d+)-(.+)$")
 
 # Branches this command is deliberately NOT for, and where each one actually goes. A refusal
 # that names the right command costs nothing; a bare "wrong branch" sends someone hunting.
+#
+# ⛔ ORDER IS LOAD-BEARING (SCC-148). The scan below is first-match `startswith` over
+# insertion order, so a specific prefix MUST precede any generic prefix of it —
+# `claude/incident-` before `claude/` — or the generic entry swallows it and the specific
+# one is dead code. That was the live bug: `/cicd-mobile-error-team` writes ONLY
+# `claude/incident-<short-id-lower>` (no command anywhere creates a bare `incident/`), and
+# a real incident branch was confidently routed to the STORY close-out — under production
+# pressure, the worst moment for a wrong answer. test_task_preflight.py pins both
+# properties: the exact key set (a reintroduced dead entry, or a dropped live one, forces
+# a conscious edit there — the creator linkage itself was verified by hand at authoring)
+# and no-shadowing (no entry unreachable behind an earlier prefix).
 WRONG_LANE = {
     "epic/": ("/cicd-push-e2e", "an epic branch ships through the full gate, not this one"),
+    "claude/incident-": ("/cicd-mobile-error-team", "incident branches have their own lane"),
     "claude/": ("/cicd-update-sprint-memory",
                 "a story branch lands on its EPIC branch at close-out, never on main"),
-    "incident/": ("/cicd-mobile-error-team", "incident branches have their own lane"),
 }
 
 # Directories whose contents deploy. Presence answers "does this repo deploy at all?";
