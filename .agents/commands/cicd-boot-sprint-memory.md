@@ -101,8 +101,10 @@ happened on a story lives in `_bmad-output/history/<epic>/<key>.md` (and the cha
   step was already done on another machine — report it as **"exists on origin, not on this machine"** and
   point at `/cicd-resume` to re-create the working surface. **Except `claude/incident-*`:** that is the
   incident pipeline's lane (`/cicd-mobile-error-team`), never a parked story step — report it as an
-  incident branch and route it nowhere (SCC-149). Only when BOTH are empty may you say the next
-  step opens a worktree at first edit.
+  incident branch and route it nowhere (SCC-149). Only when both are empty **after setting aside
+  `claude/incident-*` matches** may you say the next step opens a worktree at first edit — an
+  incident branch legitimately lingering on origin must never make this condition unsatisfiable
+  (SCC-154).
 Read-only — cross-check against live files; never edit anything.
 
 > **⛔ This is NOT the master "pick up."** The home-base `pick up` trigger (`AGENTS.md` §7 / `router.md`)

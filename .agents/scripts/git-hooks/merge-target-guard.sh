@@ -165,9 +165,16 @@ classify() {
 # judge <target-class> <source-class>  ->  allow | refuse | unknown
 judge() {
   case "$1:$2" in
-    # An incident lane is positively classified, then DELIBERATELY unjudged — its merges are the
-    # incident pipeline's business (/cicd-mobile-error-team), and the one local merge that
-    # matters, an emergency hotfix onto main, must never eat a refusal mid-incident (SCC-149).
+    # ⛔ ORDER IS LOAD-BEARING (SCC-154): these four sit ABOVE the incident wildcard because
+    # `case` is first-match — below it they are dead code and the pairs fall back to unjudged,
+    # which is exactly where the SCC-149 review measured them. An incident lane exchanges work
+    # with main (the emergency hotfix) and ONLY main: a story or chore lane merging with an
+    # incident lane is the SCC-97 wrong-target shape wearing an incident name.
+    story:incident|chore:incident|incident:story|incident:chore) echo refuse ;;
+    # An incident lane with main (or an epic) is positively classified, then DELIBERATELY
+    # unjudged — its merges are the incident pipeline's business (/cicd-mobile-error-team), and
+    # the one local merge that matters, an emergency hotfix onto main, must never eat a refusal
+    # mid-incident (SCC-149).
     incident:*|*:incident)        echo unknown ;;
     unknown:*|*:unknown)          echo unknown ;;
     main:main|main:epic|main:chore) echo allow ;;
@@ -190,6 +197,7 @@ destination() {
     epic)    echo "an epic/* branch merges into main (/cicd-push-e2e)" ;;
     story)   echo "a claude/* story lane merges into ITS epic/* branch" ;;
     main)    echo "main is absorbed INTO a lane, never the other way around" ;;
+    incident) echo "claude/incident-* is the incident pipeline's lane (/cicd-mobile-error-team); it exchanges work with main only, never with a story or chore lane" ;;
     *)       echo "see .agents/rules/git-policy.md § Branch model" ;;
   esac
 }
@@ -257,13 +265,21 @@ if [ -z "$REFUSED" ]; then
       echo "  ⓘ merge-target-guard: nothing names$UNJUDGED_NAMES, so the source branch could not"
       echo "    be determined — declined to judge, merge allowed. The pre-push backstop still"
       echo "    sees it."
+      if [ -n "$INCIDENT_SEEN" ]; then
+        echo "    (claude/incident-* is the incident pipeline's lane — /cicd-mobile-error-team"
+        echo "    owns it. Positively classified, deliberately unjudged; not a gap. SCC-149)"
+      fi
+    elif [ -n "$INCIDENT_SEEN" ]; then
+      # SCC-154 (finding 3): the incident line REPLACES the generic one. "Positively
+      # classified" printed one line under "outside the branch model" was this guard
+      # contradicting itself about the one class it classifies on purpose — and the pairing
+      # is runtime-assembled, so no source grep could ever see it.
+      echo "  ⓘ merge-target-guard: '$TARGET' <-$UNJUDGED_NAMES — claude/incident-* is the"
+      echo "    incident pipeline's lane (/cicd-mobile-error-team owns it): positively"
+      echo "    classified, deliberately unjudged, not a gap (SCC-149). Merge allowed."
     else
       echo "  ⓘ merge-target-guard: '$TARGET' <-$UNJUDGED_NAMES is outside the branch model"
       echo "    (.agents/rules/git-policy.md), so this guard declined to judge it. Merge allowed."
-    fi
-    if [ -n "$INCIDENT_SEEN" ]; then
-      echo "    (claude/incident-* is the incident pipeline's lane — /cicd-mobile-error-team"
-      echo "    owns it. Positively classified, deliberately unjudged; not a gap. SCC-149)"
     fi
   fi
   exit 0

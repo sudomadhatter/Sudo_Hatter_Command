@@ -498,6 +498,11 @@ def main() -> int:
         c.check("N · an unclassified SOURCE is allowed", rc == 0 and moved, out.strip()[-300:])
         c.check("N · ...and the guard says it declined to judge",
                 "declined" in out.lower(), out.strip()[-300:])
+        # SCC-154 width pin: a bare name must never read as the incident pipeline's lane —
+        # kills the mutant that widens classify's incident arm from `claude/incident-*` to
+        # `*incident*` (the allow verdict would not change here; only this line sees it).
+        c.check("N · ...and never claims the incident pipeline owns a bare name",
+                "/cicd-mobile-error-team" not in out, out.strip()[-300:])
 
     # ── N2 · a source NO branch name points at — the other half of the hole ───────────────
     # Merging a commit that is not any branch's tip: `git branch --points-at` returns nothing and
@@ -523,7 +528,7 @@ def main() -> int:
 
     # ── INC · the REAL incident shape — `claude/incident-*` — carved out BEFORE the story arm ─
     # SCC-149. The only incident branch any command creates is `claude/incident-<short-id-lower>`
-    # (cicd-mobile-error-team.md:47 writes nothing else), and it MATCHES the `claude/*` glob:
+    # (cicd-mobile-error-team.md writes nothing else), and it MATCHES the `claude/*` glob:
     # without a carve-out the guard classified it STORY and refused an emergency local hotfix
     # merge to main with story-lane instructions — during an incident. Case N above keeps its
     # bare-name fixture (`incident-42`): that shape genuinely is unclassified and no command
@@ -545,11 +550,89 @@ def main() -> int:
         # above on empty output (the SCC-148 review's own finding class, pre-applied here).
         c.check("INC · ...and the note names the pipeline that owns the lane",
                 "/cicd-mobile-error-team" in out, out.strip()[-300:])
+        # SCC-154 (finding 3): the note REPLACES the generic line — "positively classified"
+        # printed one line under "outside the branch model" was the guard contradicting itself,
+        # and the line is runtime-assembled, so no source grep can ever see the pairing.
+        c.check("INC · the incident note REPLACES 'outside the branch model'",
+                "outside the branch model" not in out, out.strip()[-300:])
         # The paired arm: an ordinary story lane is still refused AFTER the carve-out exists.
         lane(d, "claude/SCC-149-s", "main")
         rc, out, moved = merge(d, "main", "claude/SCC-149-s")
         c.check("INC · the ordinary story arm still refuses (the carve-out swallowed nothing)",
                 rc != 0 and not moved and "MERGE REFUSED" in out, out.strip()[-300:])
+        # SCC-154 positive pin: the refusal PRESCRIBES the story destination — the wording the
+        # INC allow-case above asserts the ABSENCE of, which was otherwise never asserted
+        # anywhere in the positive direction (the dev-wave finding).
+        c.check("INC · ...and the refusal prescribes the story destination",
+                "story lane merges into ITS epic" in out, out.strip()[-300:])
+
+    # ── INC2 · SCC-154 pins landed BEFORE the judge-arm narrowing (C3's sequencing) ────────
+    # Characterization-green by design: each pins a behavior that is already correct TODAY and
+    # that the narrowing (INC3's arms) could silently break — the safety net goes up first.
+    with TempDir() as tmp:
+        d = make_repo(tmp)
+        # Target-side: the incident lane absorbing main — the everyday mid-incident move. The
+        # SCC-149 review shipped the source-side allow only; this is the unpinned half.
+        lane(d, "claude/incident-abc123")
+        sh("git", "checkout", "-q", "main", cwd=d)
+        (d / "onmain.txt").write_text("x\n", encoding="utf-8")
+        sh("git", "add", "onmain.txt", cwd=d)
+        sh("git", "commit", "-qm", "SCC-154 on main", cwd=d)
+        rc, out, moved = merge(d, "claude/incident-abc123", "main")
+        c.check("INC2 · main -> incident (absorb) is ALLOWED", rc == 0 and moved,
+                out.strip()[-300:])
+        c.check("INC2 · ...with the pipeline note, never a refusal",
+                "/cicd-mobile-error-team" in out and "MERGE REFUSED" not in out,
+                out.strip()[-300:])
+    with TempDir() as tmp:
+        d = make_repo(tmp)
+        # Boundary: the EMPTY suffix still matches the glob — `claude/incident-` is incident.
+        lane(d, "claude/incident-")
+        rc, out, moved = merge(d, "main", "claude/incident-")
+        c.check("INC2 · claude/incident- (empty suffix) classifies as incident",
+                rc == 0 and moved and "/cicd-mobile-error-team" in out, out.strip()[-300:])
+    with TempDir() as tmp:
+        d = make_repo(tmp)
+        # Boundary: the glob is CASE-SENSITIVE — claude/INCIDENT-x is an ordinary story lane.
+        lane(d, "claude/INCIDENT-x")
+        rc, out, moved = merge(d, "main", "claude/INCIDENT-x")
+        c.check("INC2 · claude/INCIDENT-x (case) classifies as story and is REFUSED",
+                rc != 0 and not moved and "MERGE REFUSED" in out, out.strip()[-300:])
+    with TempDir() as tmp:
+        d = make_repo(tmp)
+        # Multi-name: one sha carrying an incident name AND a story name vs main. `unknown`
+        # is not `allow`, so any-legal-name-wins does NOT extend to incident — the story
+        # name's refuse verdict stands (SCC-149 finding 13, semantics now pinned).
+        lane(d, "claude/incident-abc")
+        sh("git", "branch", "claude/SCC-154-s", "claude/incident-abc", cwd=d)
+        rc, out, moved = merge(d, "main", "claude/incident-abc")
+        c.check("INC2 · a sha carrying incident + story names vs main is REFUSED "
+                "(unknown never launders a refusable name)",
+                rc != 0 and not moved and "claude/SCC-154-s" in out, out.strip()[-300:])
+
+    # ── INC3 · SCC-154: the four story/chore <-> incident pairs are POSITIVELY refused ─────
+    # Before this, all four fell through to the `*)` unknown default — allowed with a note —
+    # so narrowing the incident arm alone would NOT have re-refused them (the SCC-149 review's
+    # own measurement). An incident lane exchanges work with main and only main.
+    for label, target, source in (
+        ("incident -> story", "claude/SCC-154-t", "claude/incident-abc123"),
+        ("incident -> chore", "chore/SCC-154-c", "claude/incident-abc123"),
+        ("story -> incident", "claude/incident-abc123", "claude/SCC-154-s"),
+        ("chore -> incident", "claude/incident-abc123", "chore/SCC-154-c"),
+    ):
+        with TempDir() as tmp:
+            d = make_repo(tmp)
+            lane(d, source)
+            lane(d, target, "main")
+            rc, out, moved = merge(d, target, source)
+            c.check(f"INC3 · {label} is REFUSED", rc != 0 and not moved, out.strip()[-300:])
+    with TempDir() as tmp:
+        d = make_repo(tmp)
+        lane(d, "claude/incident-abc123")
+        lane(d, "claude/SCC-154-t", "main")
+        rc, out, _ = merge(d, "claude/SCC-154-t", "claude/incident-abc123")
+        c.check("INC3 · ...and the refusal names the incident destination",
+                "incident pipeline" in out, out.strip()[-300:])
 
     # ═══ THE FAST-FORWARD BACKSTOP ════════════════════════════════════════════════════════
     # Case E measured the gap: a ff merge creates no commit, so NO commit-time hook can see it.
@@ -691,6 +774,40 @@ def main() -> int:
         c.check("G5 · pushing a lane under a different remote name is ALLOWED", rc == 0,
                 "the self-skip compared the REMOTE name against LOCAL branch names: "
                 + out.strip()[-300:])
+
+    # ── G6 · SCC-154: an incident ref through the backstop — the pipeline's business ───────
+    # The backstop matched incident refs through the `refs/heads/claude/*` glob and judged them
+    # as story lanes: refusal + the SCC-148 misroute remedy ("its epic/* branch"), printed to a
+    # phone mid-incident (SCC-149 C1). An incident lane's merges are the incident pipeline's
+    # business, same posture as the guard: note, never a refusal.
+    with TempDir() as tmp:
+        d, bare = make_pushable(tmp)
+        lane(d, "chore/SCC-154-x")                                  # unlanded foreign work
+        sh("git", "checkout", "-q", "-b", "claude/incident-abc123", "main", cwd=d)
+        sh("git", "merge", "--ff-only", "chore/SCC-154-x", cwd=d)   # the contaminated topology
+        rc, out = sh("git", "push", "origin", "claude/incident-abc123", cwd=d)
+        c.check("G6 · pushing an incident lane is ALLOWED (the pipeline owns it)", rc == 0,
+                out.strip()[-400:])
+        c.check("G6 · ...and says so, naming the pipeline", "/cicd-mobile-error-team" in out,
+                out.strip()[-400:])
+        c.check("G6 · ...never the story-lane misroute", "its epic/* branch" not in out,
+                out.strip()[-400:])
+
+    # ── G7 · SCC-154: incident-as-FOREIGN — still refused, remedy re-routed ────────────────
+    # A chore lane genuinely carrying an unlanded incident branch IS contaminated — the refusal
+    # stands. What must change is the prescription: `integration_of` sent the operator to "its
+    # epic/* branch" for a branch class that lands on MAIN via the incident pipeline.
+    with TempDir() as tmp:
+        d, bare = make_pushable(tmp)
+        lane(d, "claude/incident-abc123")                           # unlanded incident work
+        sh("git", "checkout", "-q", "-b", "chore/SCC-154-b", "main", cwd=d)
+        sh("git", "merge", "--ff-only", "claude/incident-abc123", cwd=d)
+        rc, out = sh("git", "push", "origin", "chore/SCC-154-b", cwd=d)
+        c.check("G7 · a chore lane carrying an UNLANDED incident branch is still REFUSED",
+                rc != 0, out.strip()[-400:])
+        c.check("G7 · ...and the remedy routes to the incident pipeline, never the epic misroute",
+                "/cicd-mobile-error-team" in out and "its epic/* branch" not in out,
+                out.strip()[-400:])
 
     # ── O · no origin/main — there is no reference point, so it declines and SAYS so ───────
     # Refusing on the absence of a reference point is the vacuous red, the mirror of the vacuous
