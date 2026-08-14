@@ -183,16 +183,23 @@ gate reported from intent is the failure this whole toolkit exists to remove.
 
 **⭐ The preflight is also the ONLY thing that may skip this gate (SCC-146).** When the review
 verdict is `PASS`/`CONCERNS` at a code-fresh sha, the tree is clean, and the lane's receipts
-(`<task-artifacts>/gates/*.json`) all validate, it prints one line instead of the commands:
+(`<task-artifacts>/gates/*.json`) all validate, it replaces the **suite entry only** with one line:
 
 ```
 gate: SKIP - verdict PASS @ <sha>, receipts valid (suite, ...)
+gate: python3 .agents/scripts/workflow_lint.py --toolkit-only
+gate: python3 .agents/scripts/check_maps.py --depth3-only --strict
 ```
 
-That line **is** Step 2 — paste it and move on; the evidence already ran and rode the branch here.
-Two hard edges: **you never decide a skip by reading the walkthrough yourself** — commands printed
-means commands run, all of them; and **a FAIL verdict is a preflight exit 2**, which Step 1 already
-stopped on — a lane whose review said FAIL does not reach this step, let alone the merge.
+**A SKIP spares the SUITE only (SCC-154).** The artifact-scoped checks still print and still run:
+every SKIPping lane structurally carries at least one post-verdict `_artifacts/` commit the suite
+receipt never inspected (the stamp cannot cite the commit it rides in), and map/INDEX drift is
+exactly `_artifacts/`-borne. Paste the SKIP line for the suite, then run the remaining printed
+commands as normal. Three hard edges: **you never decide a skip by reading the walkthrough
+yourself** — commands printed means commands run, all of them; **only the walkthrough beside this
+task's own `task.yaml` can grant it** — foreign or substring-matched walkthroughs neither grant nor
+block (SCC-154); and **a FAIL verdict is a preflight exit 2**, which Step 1 already stopped on — a
+lane whose review said FAIL does not reach this step, let alone the merge.
 
 When the commands do print, in the command centre that is:
 

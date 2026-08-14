@@ -50,12 +50,17 @@
 # ─── What it refuses, and what it deliberately does not ────────────────────────────────────
 # It refuses ONLY known-bad topologies. An incident lane — `claude/incident-<short-id-lower>`, the
 # ONLY shape the incident pipeline creates (cicd-mobile-error-team.md), and it MATCHES the
-# `claude/*` glob — is positively classified by a carve-out ABOVE the story arm and then
-# deliberately unjudged: an emergency local hotfix merge to main must never eat a story-lane
-# refusal mid-incident (SCC-149; this comment once claimed a bare incident prefix was outside the
-# branch model while no such arm existed and the real prefix classified as STORY). A branch no
-# arm classifies, or a merge whose source cannot be named at all, is ALLOWED — with a line saying
-# so. And where one sha carries several branch names, ANY legal name wins.
+# `claude/*` glob — is positively classified by a carve-out ABOVE the story arm; ABSORBING main
+# (or an epic) into it is allowed outright, and its hotfix landing ON main is deliberately
+# unjudged, because an emergency local merge must never eat a story-lane refusal mid-incident
+# (SCC-149/SCC-154; this comment once claimed a bare
+# incident prefix was outside the branch model while no such arm existed and the real prefix
+# classified as STORY). Its four pairings with story and chore lanes are REFUSED since SCC-154 —
+# they previously fell to the unjudged default, and a story or chore lane exchanging work with an
+# incident lane is the SCC-97 wrong-target shape wearing an incident name. A branch no arm
+# classifies, or a merge whose source cannot be named at all, is ALLOWED — with a line saying
+# so. And where one sha carries several branch names, ANY legal name wins — except through
+# `unknown`: an incident name never launders a refusable sibling name (unknown ≠ allow).
 #
 # That bias is deliberate and it is not laziness. A gate that blocks a correct merge is one an
 # operator learns to route around, and this repo has already shipped four of those (`hooks_armed`
@@ -165,9 +170,24 @@ classify() {
 # judge <target-class> <source-class>  ->  allow | refuse | unknown
 judge() {
   case "$1:$2" in
-    # An incident lane is positively classified, then DELIBERATELY unjudged — its merges are the
-    # incident pipeline's business (/cicd-mobile-error-team), and the one local merge that
-    # matters, an emergency hotfix onto main, must never eat a refusal mid-incident (SCC-149).
+    # ⭐ The ABSORB is sanctioned OUTRIGHT (SCC-154 review): an incident TARGET taking main
+    # (or an epic) in is the everyday mid-incident move, and `allow` — not `unknown` — is
+    # what lets any-legal-name-wins protect it when a freshly-cut sibling lane's tip
+    # coincides with main's (an incident target otherwise has NO allow arm, so a coincident
+    # story name forced a story-lane refusal onto the emergency path — the false red this
+    # file's own charter prices above a miss, measured by the review).
+    incident:main|incident:epic)  echo allow ;;
+    # ⛔ ORDER IS LOAD-BEARING (SCC-154): these four sit ABOVE the incident wildcard because
+    # `case` is first-match — below it they are dead code and the pairs fall back to unjudged,
+    # which is exactly where the SCC-149 review measured them. An incident lane exchanges work
+    # with main (or an epic, absorbing) and NEVER with a story or chore lane: that pairing is
+    # the SCC-97 wrong-target shape wearing an incident name.
+    story:incident|chore:incident|incident:story|incident:chore) echo refuse ;;
+    # Everything else incident-shaped (the hotfix landing on main or an epic, incident with
+    # unknown, incident with incident) is positively classified, then DELIBERATELY unjudged —
+    # those merges are the incident pipeline's business (/cicd-mobile-error-team), and the one
+    # local merge that matters, an emergency hotfix onto main, must never eat a refusal
+    # mid-incident (SCC-149).
     incident:*|*:incident)        echo unknown ;;
     unknown:*|*:unknown)          echo unknown ;;
     main:main|main:epic|main:chore) echo allow ;;
@@ -190,6 +210,7 @@ destination() {
     epic)    echo "an epic/* branch merges into main (/cicd-push-e2e)" ;;
     story)   echo "a claude/* story lane merges into ITS epic/* branch" ;;
     main)    echo "main is absorbed INTO a lane, never the other way around" ;;
+    incident) echo "claude/incident-* is the incident pipeline's lane (/cicd-mobile-error-team); it exchanges work with main (or an epic), never with a story or chore lane" ;;
     *)       echo "see .agents/rules/git-policy.md § Branch model" ;;
   esac
 }
@@ -257,13 +278,21 @@ if [ -z "$REFUSED" ]; then
       echo "  ⓘ merge-target-guard: nothing names$UNJUDGED_NAMES, so the source branch could not"
       echo "    be determined — declined to judge, merge allowed. The pre-push backstop still"
       echo "    sees it."
+      if [ -n "$INCIDENT_SEEN" ]; then
+        echo "    (claude/incident-* is the incident pipeline's lane — /cicd-mobile-error-team"
+        echo "    owns it. Positively classified, deliberately unjudged; not a gap. SCC-149)"
+      fi
+    elif [ -n "$INCIDENT_SEEN" ]; then
+      # SCC-154 (finding 3): the incident line REPLACES the generic one. "Positively
+      # classified" printed one line under "outside the branch model" was this guard
+      # contradicting itself about the one class it classifies on purpose — and the pairing
+      # is runtime-assembled, so no source grep could ever see it.
+      echo "  ⓘ merge-target-guard: '$TARGET' <-$UNJUDGED_NAMES — claude/incident-* is the"
+      echo "    incident pipeline's lane (/cicd-mobile-error-team owns it): positively"
+      echo "    classified, deliberately unjudged, not a gap (SCC-149). Merge allowed."
     else
       echo "  ⓘ merge-target-guard: '$TARGET' <-$UNJUDGED_NAMES is outside the branch model"
       echo "    (.agents/rules/git-policy.md), so this guard declined to judge it. Merge allowed."
-    fi
-    if [ -n "$INCIDENT_SEEN" ]; then
-      echo "    (claude/incident-* is the incident pipeline's lane — /cicd-mobile-error-team"
-      echo "    owns it. Positively classified, deliberately unjudged; not a gap. SCC-149)"
     fi
   fi
   exit 0

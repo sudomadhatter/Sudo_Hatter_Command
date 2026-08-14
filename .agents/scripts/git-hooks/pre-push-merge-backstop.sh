@@ -64,6 +64,11 @@ STATUS=0
 # one thing merge-target-guard.sh refuses (`main:story` -> refuse).
 integration_of() {
   case "$1" in
+    # ⛔ ORDER IS LOAD-BEARING (SCC-154): the incident arm sits ABOVE `claude/*` — `case` is
+    # first-match and the story glob matches incident names too. "its epic/* branch" here was
+    # the SCC-148 misroute verbatim, printed by the enforcement machinery itself, to a phone,
+    # mid-incident (SCC-149 C1): an incident branch lands on MAIN via the incident pipeline.
+    claude/incident-*) echo "main via the incident pipeline (/cicd-mobile-error-team)" ;;
     claude/*) echo "its epic/* branch" ;;
     *)        echo "main" ;;
   esac
@@ -101,6 +106,19 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     *) continue ;;
   esac
   [ "$local_sha" = "$ZERO" ] && continue        # a deletion carries no commits
+
+  # An incident lane is the incident pipeline's business (/cicd-mobile-error-team) — same
+  # posture as merge-target-guard's carve-out: its one legitimate merge is the emergency
+  # hotfix onto main, and a refusal here lands on a phone mid-incident, the false red this
+  # file's own header prices above a miss (SCC-149 C1). Sits BELOW the deletion check on
+  # purpose (SCC-154 review): a branch deletion carries no commits, and announcing "Push
+  # allowed" about one was noise.
+  case "$remote_ref" in
+    refs/heads/claude/incident-*)
+      echo "  ⓘ merge-target backstop: '${remote_ref#refs/heads/}' is an incident lane —"
+      echo "    /cicd-mobile-error-team owns it; declined to judge. Push allowed."
+      continue ;;
+  esac
 
   lane=${remote_ref#refs/heads/}
 

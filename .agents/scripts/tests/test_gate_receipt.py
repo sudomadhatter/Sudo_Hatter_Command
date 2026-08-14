@@ -249,6 +249,41 @@ def main() -> int:
                                    "--root", str(aroot))
             c.check("19 SCC-146 list --root reads the root-mode receipts",
                     code == 0 and "suite" in out, f"exit={code} " + out.strip()[-100:])
+
+            # ── SCC-154: root-mode hardening (review finding 5 / compound C5, finding 13) ──
+            # 20 — run --root WITHOUT --cwd must DIE, not execute the gate inside the
+            # artifacts dir and record `fail` for a suite that never ran.
+            code, out = run_script("gate_receipt.py", "run", "--task", "SCC-00",
+                                   "--gate", "nocwd", "--root", str(aroot),
+                                   "--", sys.executable, "-c", "print('ok')")
+            c.check("20 SCC-154 run --root without --cwd dies, naming the requirement",
+                    code == 2 and "requires --cwd" in out
+                    and not (aroot / "gates" / "nocwd.json").is_file(),
+                    f"exit={code} " + out.strip()[-150:])
+
+            # 21 — a RELATIVE --root resolves against --cwd, never the invoker's cwd: from
+            # the wrong checkout the receipt landed as an untracked stray with
+            # success-shaped output.
+            os.chdir(tmp2)      # the invoker's cwd is deliberately NOT the repo
+            code, out = run_script("gate_receipt.py", "run", "--task", "SCC-00",
+                                   "--gate", "rel", "--root",
+                                   "_artifacts/_main/2026-08-14_thing", "--cwd", str(lobby),
+                                   "--", sys.executable, "-c", "print('ok')")
+            stray = tmp2 / "_artifacts" / "_main" / "2026-08-14_thing" / "gates" / "rel.json"
+            c.check("21 SCC-154 a relative --root resolves against --cwd, not invoker cwd",
+                    code == 0 and (aroot / "gates" / "rel.json").is_file()
+                    and not stray.is_file(),
+                    f"exit={code} " + out.strip()[-150:])
+            os.chdir(lobby)
+
+            # 22 — --project beside --root is a contradiction, not a preference.
+            code, out = run_script("gate_receipt.py", "run", "--task", "SCC-00",
+                                   "--gate", "both", "--root", str(aroot),
+                                   "--project", str(lobby), "--cwd", str(lobby),
+                                   "--", sys.executable, "-c", "print('ok')")
+            c.check("22 SCC-154 --project and --root together are refused",
+                    code == 2 and "mutually exclusive" in out,
+                    f"exit={code} " + out.strip()[-150:])
         finally:
             os.chdir(prev_cwd)
     return c.finish()

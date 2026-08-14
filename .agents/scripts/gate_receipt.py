@@ -111,7 +111,8 @@ def cmd_run(project: Path, story: str, gate: str, command: list[str],
     work = cwd or project
     sha_before = wf.git_head(work)
     dirty_r = wf.git(["status", "--porcelain"], work)
-    dirty = bool(dirty_r.stdout.strip())
+    dirty_lines = [ln for ln in dirty_r.stdout.splitlines() if ln.strip()]
+    dirty = bool(dirty_lines)
 
     started = time.time()
     try:
@@ -136,6 +137,11 @@ def cmd_run(project: Path, story: str, gate: str, command: list[str],
         "exit_code": exit_code,
         "sha": sha_after,
         "dirty_tree": dirty,
+        # WHICH paths were dirty, so a READER can apply policy (e.g. task_preflight exempts
+        # `_artifacts/`-only dirt, C6). The recorder itself stays strict: `dirty_tree` is
+        # unchanged and this field is additive — an older receipt without it gets no
+        # exemption anywhere. Rename rows record the NEW path (`old -> new`).
+        "dirty_paths": [ln[3:].split(" -> ")[-1].strip() for ln in dirty_lines],
         "totals": _totals(output),
         "command": command,
         "cwd": str(work),
@@ -159,16 +165,33 @@ def cmd_run(project: Path, story: str, gate: str, command: list[str],
     return 1 if result == "fail" else 2
 
 
+def receipt_defect(data: dict | None) -> str | None:
+    """The RESULT half of receipt validity, shared by every reader (SCC-154, finding 10:
+    one receipt format, one reader — the rationale task_preflight already imports this
+    module under). Returns the defect (`unreadable`, `result=fail`, ...) or None when the
+    result is usable (pass/warn). Staleness and dirty-tree POLICY stay with the caller —
+    the two consumers deliberately differ there (closeout_preflight: tree-identity + warn
+    on dirt; task_preflight: code-fresh + `_artifacts/`-exempt dirt)."""
+    if data is None:
+        return "unreadable"
+    if data.get("result") not in ("pass", "warn"):
+        return f"result={data.get('result')}"
+    return None
+
+
 def check_receipt(repo: Path, data: dict, gate: str, target: str | None,
                   rep: wf.Report) -> None:
     """One receipt against one target commit. Shared with closeout_preflight so the two
-    never disagree about what 'stale' means."""
+    never disagree about what 'stale' means. The RESULT half reads through
+    receipt_defect() — the same helper task_preflight reads — so the two consumers cannot
+    drift about what a usable result is (SCC-154 review: this docstring claimed that
+    unification one commit before it was true)."""
     if data.get("result") == "warn":
         # Advisory findings: recorded, never blocking. Still WARN-not-INFO so it is read.
         rep.warn("gates", f"{gate}: advisory findings only (exit {data.get('exit_code')}) "
                           f"- not blocking, but read them")
-    elif data.get("result") != "pass":
-        rep.err("gates", f"{gate}: result={data.get('result')} "
+    elif receipt_defect(data):
+        rep.err("gates", f"{gate}: {receipt_defect(data)} "
                          f"(exit {data.get('exit_code')})")
         return
     sha = str(data.get("sha") or "")
@@ -281,13 +304,38 @@ def main() -> int:
     p_list.add_argument("--story", "--task", dest="story", required=True)
     p_list.add_argument("--project")
     p_list.add_argument("--root", help="task-lane receipts root; see `run --root`")
+    p_list.add_argument("--cwd", help="anchor for a RELATIVE --root; without it a relative "
+                                      "root resolves against the invoker's cwd")
 
     args = ap.parse_args()
     # ⛔ With --root the resolver is never called — that is the entire point (SCC-146):
     # the Task lane has no board file for it to find, and a "helpful" fallback here would
     # resurrect the exact blocker this flag removes. Without --root, unchanged.
     flat = bool(getattr(args, "root", None))
-    project = Path(args.root).resolve() if flat else wf.resolve_project_root(args.project)
+    if flat and getattr(args, "project", None):
+        wf.die("--project and --root are mutually exclusive - --root IS the receipts "
+               "root, and a project resolution beside it could only disagree (SCC-154)")
+    if flat:
+        cwd_arg = getattr(args, "cwd", None)
+        if args.cmd == "run" and not cwd_arg:
+            # Without --cwd, root-mode `run` executed the gate INSIDE the artifacts dir and
+            # recorded `fail` for a suite that never ran — a fabricated result from the one
+            # tool whose whole point is that results cannot be fabricated (SCC-146 review
+            # finding 5, adjacent id 10).
+            wf.die("run --root requires --cwd: without it the gate executes inside the "
+                   "artifacts dir and records `fail` for a suite that never ran (SCC-154)")
+        root = Path(args.root)
+        if not root.is_absolute() and cwd_arg:
+            # A relative --root resolves against --cwd WHEN SUPPLIED: from the wrong
+            # checkout, `run` landed the receipt as an untracked stray with success-shaped
+            # output (SCC-146 review finding 5 / compound C5) — which is why `run` REQUIRES
+            # --cwd above. For `check`/`list` the flag is optional and a relative root
+            # without it still resolves against the invoker's cwd — read-only, and the
+            # failure is a loud "no receipt", never a stray write (SCC-154 review).
+            root = Path(cwd_arg).resolve() / root
+        project = root.resolve()
+    else:
+        project = wf.resolve_project_root(args.project)
 
     if args.cmd == "run":
         command = args.command[1:] if args.command[:1] == ["--"] else args.command
