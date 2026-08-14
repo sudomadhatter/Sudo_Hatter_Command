@@ -13,8 +13,8 @@
 [PASS] F2 ...and a rowless folder seeded into the LIVE tree IS reported: got ['_artifacts/_main/INDEX.md: missing row for `2026-08-13_scc-139-liveness-probe/`'] - without this, F2 above passes by having nothing to find
 [PASS] L an ignored dir (Projects/) is NOT required to carry an INDEX: got ['workspace/a-real-folder/INDEX.md: missing (level-2 folder requires an INDEX.md)']
 [PASS] L ...while a non-ignored level-2 folder still IS (the mirror): got ['workspace/a-real-folder/INDEX.md: missing (level-2 folder requires an INDEX.md)']
-[PASS] L find_indexes skips an INDEX.md inside an ignored dir: got ['/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-4ulq82je/real/INDEX.md']
-[PASS] L ...and still collects the real one: got ['/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-4ulq82je/real/INDEX.md']
+[PASS] L find_indexes skips an INDEX.md inside an ignored dir: got ['/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-njtwsh8j/real/INDEX.md']
+[PASS] L ...and still collects the real one: got ['/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-njtwsh8j/real/INDEX.md']
 [PASS] G --depth3-only --strict EXITS 1 on a missing INDEX row: rc=1 - a gate that cannot fail is worse than no gate; out=⚠️  Depth-3 _artifacts INDEX drift (run /update-maps-indexes to reconcile):
   • _artifacts/_main/INDEX.md: missing row for `2026-08-11_scc-90-sop-restructure/`
 
@@ -282,10 +282,10 @@ DRIFT FOUND - run /update-maps-indexes to reconcile (it supplies the prose a scr
 [PASS] 9a a dirty tree is recorded
 [PASS] 9b a dirty tree warns rather than silently passing: exit=1
 [PASS] 10 there is no way to hand in a verdict: exit=2
-[PASS] 12 a merge commit with an identical tree is NOT stale: exit=0 [INFO ] gates: treegate: pass @ cee7998e - different commit than baca98a3, identical tree
+[PASS] 12 a merge commit with an identical tree is NOT stale: exit=0 [INFO ] gates: treegate: pass @ b1a5d4b9 - different commit than 0dd9e9ef, identical tree
 [PASS] 13 --sha pins the comparison to the shipping commit: exit=0
 [PASS] 14 a genuine content change IS still stale: exit=2
-[PASS] 15 an unknown target sha warns, never silently passes: [WARN ] gates: treegate: recorded at cee7998e, which is not a commit in repo (worktree-only or pruned) - CANNOT verify freshness
+[PASS] 15 an unknown target sha warns, never silently passes: [WARN ] gates: treegate: recorded at b1a5d4b9, which is not a commit in repo (worktree-only or pruned) - CANNOT verify freshness
 [PASS] 11 HEAD moving mid-run -> unrunnable: result=unrunnable
 -- 21/21 passed --
 
@@ -295,7 +295,7 @@ DRIFT FOUND - run /update-maps-indexes to reconcile (it supplies the prose a scr
 [PASS] the guard is executable: a non-executable gate is skipped by its dispatcher in SILENCE
 [PASS] the arm flag is TRACKED in the live repo (not merely on disk): /Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/mutation-doctrine/.agents/scripts/git-hooks/MERGE-TARGET-ENFORCE — untracked, it arms this clone only and reaches no other machine
 [PASS] A · chore -> main is ALLOWED: 44-a.txt
-  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-roavmra4/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-tkpbu1g3/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
 [PASS] B · chore -> chore is REFUSED: edy:  git merge --abort   then re-check where you are standing:
                 git -C "$REPO" rev-parse --abbrev-ref HEAD
@@ -389,17 +389,17 @@ Not committing merge; use 'git commit' to complete the merge.
 
 Not committing merge; use 'git commit' to complete the merge.
 [PASS] TBL · chore -> story — no merge commit: HEAD moved
-[PASS] TBL · main  -> epic (absorb before /cicd-push-e2e) is ALLOWED: _8mk_4sw0000gn/T/wfscripts-fkdl1szd/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+[PASS] TBL · main  -> epic (absorb before /cicd-push-e2e) is ALLOWED: _8mk_4sw0000gn/T/wfscripts-53qes7bb/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
-[PASS] TBL · main  -> epic (absorb before /cicd-push-e2e) — classified, not declined: _8mk_4sw0000gn/T/wfscripts-fkdl1szd/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+[PASS] TBL · main  -> epic (absorb before /cicd-push-e2e) — classified, not declined: _8mk_4sw0000gn/T/wfscripts-53qes7bb/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
-[PASS] TBL · epic  -> story (a story lane absorbs its epic) is ALLOWED: _8mk_4sw0000gn/T/wfscripts-k39bem6n/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+[PASS] TBL · epic  -> story (a story lane absorbs its epic) is ALLOWED: _8mk_4sw0000gn/T/wfscripts-0dmppjqj/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
-[PASS] TBL · epic  -> story (a story lane absorbs its epic) — classified, not declined: _8mk_4sw0000gn/T/wfscripts-k39bem6n/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+[PASS] TBL · epic  -> story (a story lane absorbs its epic) — classified, not declined: _8mk_4sw0000gn/T/wfscripts-0dmppjqj/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
-[PASS] TBL · main  -> story is ALLOWED: _8mk_4sw0000gn/T/wfscripts-k1uetcoq/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+[PASS] TBL · main  -> story is ALLOWED: _8mk_4sw0000gn/T/wfscripts-y1lntm2r/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
-[PASS] TBL · main  -> story — classified, not declined: _8mk_4sw0000gn/T/wfscripts-k1uetcoq/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+[PASS] TBL · main  -> story — classified, not declined: _8mk_4sw0000gn/T/wfscripts-y1lntm2r/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
 [PASS] WT · .git in the worktree really is a FILE: if this is a directory the fixture is not reproducing the condition
 [PASS] WT · chore -> chore is REFUSED inside a worktree too: edy:  git merge --abort   then re-check where you are standing:
@@ -439,18 +439,18 @@ Not committing merge; use 'git commit' to complete the merge.
               A cd is not a lock across steps — pass -C on every git call.
      Bypass once: git merge --no-verify
 [PASS] SELF · merging origin/<this same branch> is ALLOWED: Already up to date.
-[PASS] ORD · an ordinary commit succeeds: _8mk_4sw0000gn/T/wfscripts-kdftxvm5/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+[PASS] ORD · an ordinary commit succeeds: _8mk_4sw0000gn/T/wfscripts-taxibb2q/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
-[PASS] ORD · ...and the guard says nothing at all: _8mk_4sw0000gn/T/wfscripts-kdftxvm5/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+[PASS] ORD · ...and the guard says nothing at all: _8mk_4sw0000gn/T/wfscripts-taxibb2q/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
 [PASS] C · epic -> main is ALLOWED: 44-e.txt
-  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-89hhsmq6/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-e1p5rx3m/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
 [PASS] D · story -> epic is ALLOWED: 44-s.txt
-  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-ewf827se/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-fh7gguno/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
 [PASS] D2 · main -> chore (absorb) is ALLOWED: main.txt
-  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-fw87w6jw/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-sddal408/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
 [PASS] E · a FAST-FORWARD of a forbidden topology is NOT caught by the merge hook: if this ever goes red, git now fires a hook on a ff merge and the pre-push backstop's justification has changed — read it before 'fixing' this
 [PASS] F · --no-verify bypasses the guard: Merge made by the 'ort' strategy.
@@ -460,97 +460,97 @@ Not committing merge; use 'git commit' to complete the merge.
 [PASS] F · ...and the guard's own header says so: an undocumented override gets 'fixed' by the next person who finds it
 [PASS] J · without MERGE-TARGET-ENFORCE the merge is ALLOWED: -verify
 
-  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-e00tj8vh/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-yvsw91b0/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
 [PASS] J · ...but it still says something: a disarmed gate that is also silent is indistinguishable from a deleted one
 [PASS] K · DISABLE allows the merge: 44-a.txt
-  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-m8uk29v3/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-njuj2c6t/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
 [PASS] M · a sha carrying both a legal and an illegal name is ALLOWED: main.txt
-  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-sd03szbt/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-n4__brbb/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
 [PASS] N · an unclassified SOURCE is allowed: allowed.
-  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-az18pm6p/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-a1t2k3s0/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
 [PASS] N · ...and the guard says it declined to judge: allowed.
-  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-az18pm6p/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-a1t2k3s0/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
 [PASS] N2 · an UNNAMEABLE source is allowed: sees it.
-  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-mmfrkms6/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-r4r_qyqa/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
 [PASS] N2 · ...and the guard says so rather than passing in silence: sees it.
-  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-mmfrkms6/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-r4r_qyqa/work/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
 [PASS] G · pushing a lane contaminated by a FF merge is REFUSED: in/main..chore/SCC-144-b     # see what actually rode along
               git reset --hard origin/chore/SCC-144-b            # ONLY if this lane was already pushed
      If 'chore/SCC-144-a' genuinely belongs in this lane, land it on main first.
      Bypass once: git push --no-verify
 
-error: failed to push some refs to '/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-84r7pwei/remote.git'
+error: failed to push some refs to '/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-81lhim4i/remote.git'
 [PASS] G · ...and the refusal names the foreign lane: in/main..chore/SCC-144-b     # see what actually rode along
               git reset --hard origin/chore/SCC-144-b            # ONLY if this lane was already pushed
      If 'chore/SCC-144-a' genuinely belongs in this lane, land it on main first.
      Bypass once: git push --no-verify
 
-error: failed to push some refs to '/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-84r7pwei/remote.git'
+error: failed to push some refs to '/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-81lhim4i/remote.git'
 [PASS] G · ...and names the remedy: in/main..chore/SCC-144-b     # see what actually rode along
               git reset --hard origin/chore/SCC-144-b            # ONLY if this lane was already pushed
      If 'chore/SCC-144-a' genuinely belongs in this lane, land it on main first.
      Bypass once: git push --no-verify
 
-error: failed to push some refs to '/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-84r7pwei/remote.git'
+error: failed to push some refs to '/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-81lhim4i/remote.git'
 [PASS] G · ...and nothing reached the remote
-[PASS] H · a lane holding a LANDED sibling's commits pushes fine: n this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-2g2qtpyg/work/.agents/scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
+[PASS] H · a lane holding a LANDED sibling's commits pushes fine: n this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-59feonqc/work/.agents/scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
-To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-2g2qtpyg/remote.git
+To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-59feonqc/remote.git
  * [new branch]      chore/SCC-144-b -> chore/SCC-144-b
-[PASS] I · landing a lane on main is ALLOWED: ush gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-1f9eb5dj/work/.agents/scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
+[PASS] I · landing a lane on main is ALLOWED: ush gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-jwwjyf28/work/.agents/scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
-To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-1f9eb5dj/remote.git
-   560c86b..f7372f9  main -> main
-[PASS] I2 · landing a story on its epic is ALLOWED:  in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-v_jqg71l/work/.agents/scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
+To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-jwwjyf28/remote.git
+   4d20e25..101491a  main -> main
+[PASS] I2 · landing a story on its epic is ALLOWED:  in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-qa0y9o_5/work/.agents/scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
-To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-v_jqg71l/remote.git
-   99f5acc..02f388c  epic/SCC-144-e -> epic/SCC-144-e
+To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-qa0y9o_5/remote.git
+   5392ec7..5ea5b48  epic/SCC-144-e -> epic/SCC-144-e
 [PASS] PARK · a story lane carrying a sibling that landed on the EPIC pushes fine: the epic does not reach main until /cicd-push-e2e ships it, so measuring 'landed' against origin/main alone refuses every parked story lane: s/scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
-To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-0svoan8g/remote.git
+To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-k1zt5490/remote.git
  * [new branch]      claude/SCC-144-s2 -> claude/SCC-144-s2
-[PASS] PARK · ...and it reached the remote: 7844a31afaa9e6b9d95cfec132a32feb41e3f1b3	refs/heads/claude/SCC-144-s2
+[PASS] PARK · ...and it reached the remote: f3f467684d1d0e28c6e2b5caa85d78fdf1ebfb8e	refs/heads/claude/SCC-144-s2
 
 [PASS] G2 · a story lane carrying an UNLANDED sibling is still REFUSED:           # ONLY if this lane was already pushed
      If 'claude/SCC-144-s1' genuinely belongs in this lane, land it on its epic/* branch first.
      Bypass once: git push --no-verify
 
-error: failed to push some refs to '/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-k4yupb7p/remote.git'
+error: failed to push some refs to '/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-lwas2664/remote.git'
 [PASS] G2 · ...and the remedy names the EPIC, not main: 'land it on main first' is the one thing merge-target-guard REFUSES for a story lane:           # ONLY if this lane was already pushed
      If 'claude/SCC-144-s1' genuinely belongs in this lane, land it on its epic/* branch first.
      Bypass once: git push --no-verify
 
-error: failed to push some refs to '/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-k4yupb7p/remote.git'
+error: failed to push some refs to '/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-lwas2664/remote.git'
 [PASS] G3 · disarmed, a contaminated push is ALLOWED: gents/scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
-To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-im5y3oiv/remote.git
+To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-uus8ur4c/remote.git
  * [new branch]      chore/SCC-144-b -> chore/SCC-144-b
 [PASS] G3 · ...but it still says so: gents/scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
-To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-im5y3oiv/remote.git
+To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-uus8ur4c/remote.git
  * [new branch]      chore/SCC-144-b -> chore/SCC-144-b
 [PASS] G4 · DISABLE allows the contaminated push: gents/scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
-To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-k4n767yj/remote.git
+To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-oqn_ryql/remote.git
  * [new branch]      chore/SCC-144-b -> chore/SCC-144-b
 [PASS] G5 · pushing a lane under a different remote name is ALLOWED: the self-skip compared the REMOTE name against LOCAL branch names: scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
-To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-8nkdsh8n/remote.git
+To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-remhtu0v/remote.git
  * [new branch]      chore/SCC-144-a -> chore/SCC-144-renamed
-[PASS] O · with no origin/main the push is ALLOWED: n this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-9kxsqqz9/work/.agents/scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
+[PASS] O · with no origin/main the push is ALLOWED: n this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-kyca35e2/work/.agents/scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
-To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-9kxsqqz9/remote.git
+To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-kyca35e2/remote.git
  * [new branch]      chore/SCC-144-b -> chore/SCC-144-b
-[PASS] O · ...and it says it could not judge: n this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-9kxsqqz9/work/.agents/scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
+[PASS] O · ...and it says it could not judge: n this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-kyca35e2/work/.agents/scripts/git-hooks/pre-push-main-approval.sh) — push allowed, UNCHECKED.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
-To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-9kxsqqz9/remote.git
+To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-kyca35e2/remote.git
  * [new branch]      chore/SCC-144-b -> chore/SCC-144-b
 [PASS] P · the token gate STILL refuses an unapproved push to main: the backstop consumed stdin and the token gate read EOF - every push now passes
 [PASS] P · ...with its own message, not the backstop's:  full gate + /cicd-e2e green
@@ -560,12 +560,12 @@ To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-9kxsqqz9/remote.gi
      A sign-off authorises ONE merge and never carries forward (SCC-71).
      Bypass once: git push --no-verify
 
-error: failed to push some refs to '/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-_dw4o4td/remote.git'
-[PASS] F-D · jira: a merge in the SHARED CHECKOUT is exempt: ders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-8kbl51v7/carveout/.agents/scripts/git-hooks/merge-target-guard.sh) — MERGES in this
+error: failed to push some refs to '/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-8ga8p478/remote.git'
+[PASS] F-D · jira: a merge in the SHARED CHECKOUT is exempt: ders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-oyv2ufjb/carveout/.agents/scripts/git-hooks/merge-target-guard.sh) — MERGES in this
     worktree are UNCHECKED. (This line prints on every commit, not only merges.)
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
 [PASS] F-D · jira: .git in that worktree really is a FILE: if this is a directory the fixture is not reproducing the condition
-[PASS] F-D · jira: the SAME merge inside a WORKTREE is exempt too: /folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-8kbl51v7/lane/.agents/scripts/git-hooks/merge-target-guard.sh) — MERGES in this
+[PASS] F-D · jira: the SAME merge inside a WORKTREE is exempt too: /folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-oyv2ufjb/lane/.agents/scripts/git-hooks/merge-target-guard.sh) — MERGES in this
     worktree are UNCHECKED. (This line prints on every commit, not only merges.)
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
 [PASS] F-D · jira: an ORDINARY commit in the worktree is still REFUSED: ommit message.
@@ -577,11 +577,11 @@ error: failed to push some refs to '/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000
 
     Commit rejected. Add the key, or --no-verify if this genuinely has no ticket.
 [PASS] F-D · sop: a merge in the SHARED CHECKOUT is exempt:  it.
-  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-d63csm7x/carveout/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-xijwfbfs/carveout/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
 [PASS] F-D · sop: .git in that worktree really is a FILE: if this is a directory the fixture is not reproducing the condition
 [PASS] F-D · sop: the SAME merge inside a WORKTREE is exempt too: -arm it.
-  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-d63csm7x/lane/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
+  ⚠ jira commit gate not present in this worktree (/private/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-xijwfbfs/lane/.agents/scripts/git-hooks/commit-msg-jira.sh) — commit allowed, unchecked.
     Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it.
 [PASS] F-D · sop: an ORDINARY commit in the worktree is still REFUSED: ocs/_scc_sops_prds/workflows_testing_SOP.md
     so the page still matches the system it describes, and stage it with this commit.
@@ -605,11 +605,11 @@ error: failed to push some refs to '/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000
 [PASS] B · the remedy command is printed: an operator who cannot see the fix will not apply it
 [PASS] C · hooksPath resolving to an empty dir is NOT armed
 [PASS] D · a non-executable hook is an ERROR
-[PASS] D · the message names chmod: ["hook 'commit-msg' is present but NOT EXECUTABLE — git ignores it in silence. Remedy: chmod +x /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-kba7f7ld/.githooks/commit-msg"]
+[PASS] D · the message names chmod: ["hook 'commit-msg' is present but NOT EXECUTABLE — git ignores it in silence. Remedy: chmod +x /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-espvvt86/.githooks/commit-msg"]
 [PASS] E · a missing arm flag is an ERROR
 [PASS] E · the message names the flag: ['JIRA-ENFORCE is not tracked — commit-msg-jira.sh still runs but only WARNS, and hook output is rendered nowhere the operator looks. A warning nobody reads is not a gate. Remedy: touch .agents/scripts/git-hooks/JIRA-ENFORCE && git add .agents/scripts/git-hooks/JIRA-ENFORCE', 'MERGE-TARGET-ENFORCE is not tracked — merge-target-guard.sh still runs but only WARNS, and hook output is rendered nowhere the operator looks. A warning nobody reads is not a gate. Remedy: touch .agents/scripts/git-hooks/MERGE-TARGET-ENFORCE && git add .agents/scripts/git-hooks/MERGE-TARGET-ENFORCE']
 [PASS] F · a non-executable INNER script is an ERROR
-[PASS] F · the message names the script: ['sop-currency.sh is NOT EXECUTABLE — its dispatcher skips it and exits 0 SILENTLY, with no warning at all. Remedy: chmod +x /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-z85h1z1v/.agents/scripts/git-hooks/sop-currency.sh']
+[PASS] F · the message names the script: ['sop-currency.sh is NOT EXECUTABLE — its dispatcher skips it and exits 0 SILENTLY, with no warning at all. Remedy: chmod +x /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-6ydykyd7/.agents/scripts/git-hooks/sop-currency.sh']
 [PASS] G · a hook nobody hardcoded is still reported: the expected set must come from disk, or it rots the day a 5th hook lands
 [PASS] H · a repo with NO .githooks/ is NOT armed
 [PASS] H · an empty derived set is an ERROR, not a pass: nothing-to-check reporting clean is the exact bug this ticket closes
@@ -620,7 +620,7 @@ error: failed to push some refs to '/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000
 [PASS] M · each deleted script is named: ['commit-msg-jira.sh is TRACKED but missing from disk — its dispatcher guards the call with `[ -x ... ] || exit 0`, so the hook exits 0 and allows the operation UNCHECKED.', 'pre-push-main-approval.sh is TRACKED but missing from disk — its dispatcher guards the call with `[ -x ... ] || exit 0`, so the hook exits 0 and allows the operation UNCHECKED.', 'sop-currency.sh is TRACKED but missing from disk — its dispatcher guards the call with `[ -x ... ] || exit 0`, so the hook exits 0 and allows the operation UNCHECKED.']
 [PASS] M · the message says the hook allows the operation unchecked: ['commit-msg-jira.sh is TRACKED but missing from disk — its dispatcher guards the call with `[ -x ... ] || exit 0`, so the hook exits 0 and allows the operation UNCHECKED.', 'pre-push-main-approval.sh is TRACKED but missing from disk — its dispatcher guards the call with `[ -x ... ] || exit 0`, so the hook exits 0 and allows the operation UNCHECKED.', 'sop-currency.sh is TRACKED but missing from disk — its dispatcher guards the call with `[ -x ... ] || exit 0`, so the hook exits 0 and allows the operation UNCHECKED.']
 [PASS] N · a flagless gate script is executable-checked too: ARM_FLAGS governs the FLAG question only, never executability
-[PASS] N · it names the encoding gate: ['pre-commit-encoding.sh is NOT EXECUTABLE — its dispatcher skips it and exits 0 SILENTLY, with no warning at all. Remedy: chmod +x /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-ovgffw_b/.agents/scripts/git-hooks/pre-commit-encoding.sh']
+[PASS] N · it names the encoding gate: ['pre-commit-encoding.sh is NOT EXECUTABLE — its dispatcher skips it and exits 0 SILENTLY, with no warning at all. Remedy: chmod +x /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-60ur1o8y/.agents/scripts/git-hooks/pre-commit-encoding.sh']
 [PASS] O · an untracked arm flag is reported: [{'sev': 'WARN', 'code': 'advisory', 'msg': 'LOCAL-ENFORCE exists but is UNTRACKED — it arms this clone only and reaches no other machine. Remedy: git add .agents/scripts/git-hooks/LOCAL-ENFORCE'}]
 [PASS] O · the remedy says git add, not just touch: a bare touch does not travel
 [PASS] P · a repo that never claimed gates warns: exit_code=1
@@ -876,22 +876,22 @@ jira-feed: 1 subtask placement probl
 jira-feed: every type agrees with the rule (2 items)
 [PASS] trace: never calls acli (a bad --acli cannot break it): == jira-feed trace (1 path(s)) ==
 [INFO ] trace: SCC-11  2 hit(s), blame + log, last 2026-08-13
-[INFO ] trace:     blame widget.py:2 -> bb94decd SCC-11 fix: beta was wrong
+[INFO ] trace:     blame widget.py:2 -> 2b988817 SCC-11 fix: beta was wrong
 [INFO ] trace:     log  widg
 [PASS] trace: blame on the exact line names the ticket that WROTE it: == jira-feed trace (1 path(s)) ==
 [INFO ] trace: SCC-11  2 hit(s), blame + log, last 2026-08-13
-[INFO ] trace:     blame widget.py:2 -> bb94decd SCC-11 fix: beta was wrong
-[INFO ] trace:     log  widget.py <- bb94decd SCC-11 fix: beta was w
+[INFO ] trace:     blame widget.py:2 -> 2b988817 SCC-11 fix: beta was wrong
+[INFO ] trace:     log  widget.py <- 2b988817 SCC-11 fix: beta was w
 [PASS] trace: says out loud that it is a proposal
 [PASS] trace: hands over the exact flag command, best candidate first: == jira-feed trace (1 path(s)) ==
 [INFO ] trace: SCC-11  2 hit(s), blame + log, last 2026-08-13
-[INFO ] trace:     blame widget.py:2 -> bb94decd SCC-11 fix: beta was wrong
-[INFO ] trace:     log  widget.py <- bb94decd SCC-11 fix: beta was w
+[INFO ] trace:     blame widget.py:2 -> 2b988817 SCC-11 fix: beta was wrong
+[INFO ] trace:     log  widget.py <- 2b988817 SCC-11 fix: beta was w
 [PASS] trace --json: carries every keyed commit on the file: ['SCC-12', 'SCC-11', 'SCC-10']
 [PASS] trace: a foreign project's key is never proposed
-[PASS] trace: a merge subject does not double-count its branch's key: ["log  widget.py <- 56cf560e SCC-12 fix: gamma was wrong too"]
+[PASS] trace: a merge subject does not double-count its branch's key: ["log  widget.py <- cc92ee94 SCC-12 fix: gamma was wrong too"]
 [PASS] trace: a file-only hit is marked as the weaker signal: no :LINE was given
-[PASS] trace: blame follows the LINE, and ranks above file-only hits: {"key": "SCC-12", "hits": 2, "blame": true, "last": "2026-08-13T21:10:11-03:00", "why": ["blame widget.py:3 -> 56cf560e SCC-12 fix: gamma was wrong too", "log  widget.py <- 56cf560e SCC-12 fix: gamma was wrong too"]}
+[PASS] trace: blame follows the LINE, and ranks above file-only hits: {"key": "SCC-12", "hits": 2, "blame": true, "last": "2026-08-13T21:51:45-03:00", "why": ["blame widget.py:3 -> cc92ee94 SCC-12 fix: gamma was wrong too", "log  widget.py <- cc92ee94 SCC-12 fix: gamma was wrong too"]}
 [PASS] trace: no keyed commit -> exit 1, and says so: == jira-feed trace (1 path(s)) ==
 -- 0 error(s), 0 warning(s), 0 info --
 jira-feed: no ticket proposed - no commit touching these paths carries a project key. Flag by hand if you know the ticket.
@@ -1044,17 +1044,17 @@ jira-feed: TEST-7 is Bug but the status is still Done - move it off Done by hand
 [PASS] minter refuses when HEAD is not main: a token minted off main names a sha the push will not carry
 [PASS] REAL git push to main is refused with no token: if this passes, git is not running the hook — the whole gate is decorative
 [PASS] nothing reached the remote
-[PASS] REAL git push to main succeeds with a token: d18d5129b6cc2fcdffd7f6e7
+[PASS] REAL git push to main succeeds with a token: 75ec801efeb58532d1b60294
      Token consumed. The next merge needs its own sign-off.
-To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-p4um6cpa/remote.git
+To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-j6vqqr3g/remote.git
  * [new branch]      main -> main
 [PASS] the commit reached the remote
 [PASS] the token was consumed by the real push
-[PASS] minter accepts a single merge sitting on origin/main: 🔑 main-push token minted — /smh-close-task-merge-tree · SCC-77 · chore/SCC-77-a @ 0fa332b66259d90109bd68559553bf1a9de9c272
+[PASS] minter accepts a single merge sitting on origin/main: 🔑 main-push token minted — /smh-close-task-merge-tree · SCC-77 · chore/SCC-77-a @ 9920221da11cb8cf764f0ae77a29053601e66e49
      Single use, 30-minute limit, spe
 [PASS] ONE merge with a token lands: umed. The next merge needs its own sign-off.
-To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-zfihxjop/remote.git
-   4eeaca2..0fa332b  main -> main
+To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-rgor29tq/remote.git
+   c478d0f..9920221  main -> main
 [PASS] exactly 1 merge on the remote: got 1
 [PASS] minter REFUSES to mint for a batch of merges: caught at mint time, where the message can still name the fix
 [PASS] gate REFUSES a batched push even with a valid-looking token: THE regression guard: 6 merges rode 1 token before this check existed
@@ -1139,7 +1139,7 @@ To /var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-zfihxjop/remote.gi
 [PASS] ...and passing a repo explicitly is what opts INTO cross-repo signals
 [PASS] the allowlist is read from the tracked file, comments and blanks dropped: ['NOSTORE', 'PRESENT', 'UNCLONED']
 [PASS] an ABSENT allowlist is None (loud), never an empty list (silently disarmed)
-[PASS] a checked-out project store with an index IS gated: [PosixPath('/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-2ymg0j5b/repo/Projects/PRESENT/_artifacts/_memory')]
+[PASS] a checked-out project store with an index IS gated: [PosixPath('/var/folders/lq/2cc3c3995pxbvqs3_8mk_4sw0000gn/T/wfscripts-w5gr6eb5/repo/Projects/PRESENT/_artifacts/_memory')]
 [PASS] an uninitialized submodule is skipped, and the skip NAMES itself: ['NOSTORE: no memory store yet - nothing to gate', 'UNCLONED: submodule not checked out - not gated here (git submodule update --init -- Projects/UNCLONED)']
 [PASS] a project with no store yet is skipped as a beginning, not rot: ['NOSTORE: no memory store yet - nothing to gate', 'UNCLONED: submodule not checked out - not gated here (git submodule update --init -- Projects/UNCLONED)']
 [PASS] ...and every skip is a sentence, never a silent pass: ['NOSTORE: no memory store yet - nothing to gate', 'UNCLONED: submodule not checked out - not gated here (git submodule update --init -- Projects/UNCLONED)']
@@ -1224,7 +1224,7 @@ labels: A-1 -parallel-ok, A-2 +parallel-ok, A-3 +parallel-ok   (dry run - pass -
 [PASS] a story id that prefixes a sibling's is an umbrella: {'key': 'K-0', 'story_id': '12.3', 'umbrella': True, 'contains': ['K-1', 'K-2']}
 [PASS] a leaf story is not an umbrella
 [PASS] 12.4 is not swallowed by 12.3 (dot boundary, not string prefix): ['K-1', 'K-2']
-[ERR] wfscripts-teq7cfp1 has no _bmad/bmm/stories/ — no BMAD stories in this repo yet. /cicd-parallel-check assesses BMAD stories only.
+[ERR] wfscripts-wbqn5zwi has no _bmad/bmm/stories/ — no BMAD stories in this repo yet. /cicd-parallel-check assesses BMAD stories only.
 [PASS] a repo with no stories dir is refused: exit=2
 [ERR] `ZZZ-1 CI/CD Improvment` is a GROUPING epic, not a BMAD epic. /cicd-parallel-check assesses BMAD stories under a BMAD epic; a grouping epic's children are Tasks with no story files.
 [PASS] a grouping epic is refused: exit=2
@@ -1993,6 +1993,76 @@ labels: A-1 -parallel-ok, A-2 +parallel-ok, A-3 +parallel-ok   (dry run - pass -
 [PASS] cache is byte-identical to master
 -- 747/747 passed --
 
+== review-engine negative control (SCC-129) — fixture intactness ==
+[PASS] fixture directory exists
+[PASS] manifest.json exists and is non-empty
+[PASS] bad.diff exists and is non-empty
+[PASS] clean.diff exists and is non-empty
+[PASS] spec.md exists and is non-empty
+[PASS] spec-refunds.md exists and is non-empty
+[PASS] README.md exists and is non-empty
+[PASS] live_runs.jsonl exists and is non-empty
+[PASS] codebase/billing.py exists and is non-empty
+[PASS] codebase/helpers.py exists and is non-empty
+[PASS] manifest.json parses as a JSON object
+[PASS] manifest declares _negative_control: true
+[PASS] manifest `spec` names spec.md and it exists
+[PASS] manifest `clean_spec` names spec-refunds.md and it exists
+[PASS] the two specs are distinct files
+[PASS] manifest declares at least one defect
+[PASS] every defect id carries the NC_ prefix
+[PASS] defect ids are unique
+[PASS] step-01 still routes exactly as many lenses as the fixture seeds
+[PASS] the five engine lenses each carry exactly one seeded defect
+[PASS] NC_BLIND: expected_severity is one of step-03's four levels
+[PASS] NC_EDGE: expected_severity is one of step-03's four levels
+[PASS] NC_LITERAL: expected_severity is one of step-03's four levels
+[PASS] NC_ACCEPT: expected_severity is one of step-03's four levels
+[PASS] NC_TESTADQ: expected_severity is one of step-03's four levels
+[PASS] bad.diff seeds at least one `critical` — the floor it must force is FAIL
+[PASS] bad.diff carries added lines to inspect
+[PASS] NC_BLIND: still seeded in bad.diff, exactly once
+[PASS] NC_EDGE: still seeded in bad.diff, exactly once
+[PASS] NC_LITERAL: still seeded in bad.diff, exactly once
+[PASS] NC_ACCEPT: still seeded in bad.diff, exactly once
+[PASS] NC_TESTADQ: still seeded in bad.diff, exactly once
+[PASS] the acceptance defect pins the spec clause it violates
+[PASS] NC_ACCEPT: the spec clause it violates is still in spec.md
+[PASS] NC_TESTADQ: the spec clause it violates is still in spec.md
+[PASS]   ^ NC_BLIND: that check is proven able to fail
+[PASS]   ^ NC_EDGE: that check is proven able to fail
+[PASS]   ^ NC_LITERAL: that check is proven able to fail
+[PASS]   ^ NC_ACCEPT: that check is proven able to fail
+[PASS]   ^ NC_TESTADQ: that check is proven able to fail
+[PASS] clean.diff carries added lines to inspect
+[PASS] NC_BLIND: absent from the clean control
+[PASS] NC_EDGE: absent from the clean control
+[PASS] NC_LITERAL: absent from the clean control
+[PASS] NC_ACCEPT: absent from the clean control
+[PASS] NC_TESTADQ: absent from the clean control
+[PASS] bad.diff still applies to the committed base
+[PASS] clean.diff still applies to the committed base
+[PASS] bad.diff carries a context line to corrupt
+[PASS]   ^ that apply-check is proven able to fail
+[PASS] NC_BLIND: the base-state line it contradicts is still in codebase/billing.py
+[PASS] the blind defect pins the base-state line it contradicts
+[PASS] both spec-relative defects still carry their clause pin
+[PASS] NC_LITERAL's premise holds: helpers.parse takes exactly one parameter
+[PASS]   ^ that check is proven able to fail
+[PASS] bad.diff names the files it touches
+[PASS] bad.diff ships new logic with NO test file — the seeded test-adequacy gap
+[PASS] clean.diff DOES ship a test for what it adds
+[PASS] clean.diff's test actually asserts something
+[PASS]   ^ the assertion check is proven able to fail
+[PASS] live_runs.jsonl records at least one run
+[PASS] every live_runs.jsonl line is a JSON object
+[PASS] every logged run names its sha, diff, floor, results and key_read: 2 run(s), newest 2026-08-13
+[PASS] every logged bad.diff run reports a verdict for all five seeded defects: 1 bad-arm run(s)
+[PASS] README still carries the answer-key prohibition
+[PASS] README still carries the both-halves rule
+[PASS] both diffs touch ONLY paths inside the fixture
+-- 67/67 passed --
+
 == sop_currency ==
 [PASS] A a /command file without the SOP doc is blocked: .agents/commands/cicd-push-e2e.md -> the / command menu
 [PASS] B a rule without the SOP doc is blocked: .agents/rules/git-policy.md -> the rules commands cite
@@ -2088,15 +2158,15 @@ labels: A-1 -parallel-ok, A-2 +parallel-ok, A-3 +parallel-ok   (dry run - pass -
 -- 61/61 passed --
 
 == split_sprint_status ==
-[PASS] A all four stages apply: run: split_sprint_status.py verify --sha 6b834d170177
-[PASS] B positive control: untouched apply verifies byte-clean: [VERIFY] OK - reconstruction is byte-identical to 6b834d170177:_bmad-output/implementation-artifacts/sprint-status.yaml (2164 bytes)
+[PASS] A all four stages apply: run: split_sprint_status.py verify --sha 8ebf69373c03
+[PASS] B positive control: untouched apply verifies byte-clean: [VERIFY] OK - reconstruction is byte-identical to 8ebf69373c03:_bmad-output/implementation-artifacts/sprint-status.yaml (2164 bytes)
 [PASS] C terminal notes gone, banners + state kept: 870B
 [PASS] D short active note kept, long one moved whole
 [PASS] E last_updated promoted to a real key + pointer left
 [PASS] E2 no stale last_updated COMMENT survives the move
 [PASS] F doctrine comment KEPT, dated narrative MOVED
 [PASS] G history file carries the verbatim note
-[PASS] H CRLF worktree verifies clean against the LF blob (F1): [VERIFY] OK - reconstruction is byte-identical to 6b834d170177:_bmad-output/implementation-artifacts/sprint-status.yaml (2164 bytes)
+[PASS] H CRLF worktree verifies clean against the LF blob (F1): [VERIFY] OK - reconstruction is byte-identical to 8ebf69373c03:_bmad-output/implementation-artifacts/sprint-status.yaml (2164 bytes)
 [PASS] N1 one changed SPACE in the board fails, naming the offset: [VERIFY] FAIL - first differing byte at offset 772 (original line ~21); rebuilt 2165 bytes vs blob 2164
 [PASS] N2 one changed char in a history file fails
 [PASS] N3 reordered CHANGELOG entries fail
@@ -2106,7 +2176,7 @@ labels: A-1 -parallel-ok, A-2 +parallel-ok, A-3 +parallel-ok   (dry run - pass -
 [PASS] R3 mid-migration external write stops the next stage
 [PASS] R4 verify refuses a wrong --sha
 [PASS] R5 a stage refuses to run twice
-[PASS] R6 manifest pins the source sha: f1cef1a05b18
+[PASS] R6 manifest pins the source sha: ae2378f1c85b
 -- 19/19 passed --
 
 == story_status ==
@@ -2796,4 +2866,4 @@ VERDICT: clear to close out and merge
 -- 49/49 passed --
 
 ============================================================
-22/22 files passed
+23/23 files passed
