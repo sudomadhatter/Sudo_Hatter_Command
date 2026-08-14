@@ -1221,6 +1221,169 @@ def cmd_start(args) -> int:
     return 0
 
 
+# ── finish: the close-out's Done, held back by the operator's own actions ──────
+
+# The walkthrough section that carries what the OPERATOR still owes. Fixed by name because
+# both close-out commands already require the section, and `artifacts-always-first` fixes
+# its position - this reads an artifact that exists rather than inventing a new one.
+YOUR_ACTIONS = "## Your Actions"
+USER_TASKS_LABEL = "user-tasks"
+# Attempted in order; the first one the board actually has wins. jira.md: a status a board
+# does not carry is "not installed yet", never an error - so this falls THROUGH rather than
+# failing. SCC has neither today, which makes the fall-through the live path, not a corner:
+# until a column is installed the label alone carries the signal.
+REVIEW_LADDER = ("Awaiting Review", "In Review")
+_OPEN_ITEM_RE = re.compile(r"^\s*[-*]\s*\[\s\]\s*(.+?)\s*$")
+_CHECKED_ITEM_RE = re.compile(r"^\s*[-*]\s*\[[xX]\]")
+
+
+def open_actions(text: str) -> list[str] | None:
+    """The unchecked `- [ ]` items under `## Your Actions`, or **None if there is no such
+    section at all** — which is a REFUSAL upstream, never an empty list.
+
+    Collapsing "no section" into "nothing owed" is the empty-input-reads-as-pass shape that
+    `tests-must-gate-for-real` bans, and here it would close a ticket over work the operator
+    was promised. A renamed heading is exactly how that happens in practice.
+
+    Scoped to the section: the walkthrough's `## Task Checklist` is full of `- [ ]` lines
+    that are the AGENT's, and counting those would hold every ticket forever."""
+    lines = text.splitlines()
+    start = next((i for i, ln in enumerate(lines)
+                  if ln.strip().lower() == YOUR_ACTIONS.lower()), None)
+    if start is None:
+        return None
+    items: list[str] = []
+    for ln in lines[start + 1:]:
+        # Any following heading of the same or higher level ends the section. `###` under it
+        # is still the operator's - a close-out that groups its asks must not lose them.
+        s = ln.strip()
+        if s.startswith("## ") or s.startswith("# "):
+            break
+        m = _OPEN_ITEM_RE.match(ln)
+        if m and not _CHECKED_ITEM_RE.match(ln):
+            items.append(m.group(1).strip())
+    return items
+
+
+def render_user_tasks(items: list[str], walkthrough: str, when: str) -> str:
+    lines = [f"**User tasks** - {when}", "",
+             f"This ticket's work is merged, but the walkthrough leaves "
+             f"**{len(items)}** thing{'' if len(items) == 1 else 's'} that only you can do. "
+             f"It is deliberately NOT `Done`:", ""]
+    lines += [f"- [ ] {it}" for it in items]
+    lines += ["", f"Source: `{walkthrough}` -> `{YOUR_ACTIONS}`.", "",
+              "Tick an item off in the walkthrough (`- [x]`), commit that, and re-run "
+              "`jira_feed.py finish` - when the section has no open items left it closes "
+              "the ticket. There is no force flag, on purpose."]
+    return "\n".join(lines) + "\n"
+
+
+def cmd_finish(args) -> int:
+    """Close the ticket - UNLESS the walkthrough still owes the operator something (SCC-155).
+
+    Every close-out wrote `Done` unconditionally, so an operator action recorded in the
+    walkthrough ("install the board column", "run the memory audit") landed on a ticket
+    nobody would open again. The record of what was still owed died with the lane.
+
+    FOUR outcomes, four exit codes, because the caller reports different things:
+        0  closed (or already Done)          -> the close-out says "closed"
+        3  HELD: open user tasks, posted     -> the close-out says "awaiting you"
+        2  refused (no walkthrough/section)  -> fix the artifact; nothing was written
+        4  the board was unreachable         -> transport, not a verdict; retry
+    """
+    binary = acli_bin(args.acli)
+    wt = Path(args.walkthrough)
+    if not wt.is_file():
+        say(f"[ERR] {args.key}: no walkthrough at `{wt}` - refusing to close. The close-out "
+            f"requires one, and a ticket cannot be certified clean against a file that is "
+            f"not there.")
+        return 2
+    items = open_actions(wf.read_text(wt))
+    if items is None:
+        say(f"[ERR] {args.key}: `{wt}` has no `{YOUR_ACTIONS}` section - refusing to close. "
+            f"An absent section is not evidence that nothing is owed; add the section (even "
+            f"empty) so the answer is recorded rather than assumed.")
+        return 2
+
+    fields = view_fields(binary, args.key, timeout=args.timeout, strict=False)
+    if fields is None:
+        say(f"jira-feed: could not reach the board to read {args.key} - nothing was changed. "
+            f"TRANSPORT failure, not a verdict: retry when you have a connection.")
+        return 4
+    status = ((fields.get("status") or {}).get("name") or "").strip()
+    labels = list(fields.get("labels") or [])
+
+    if not items:
+        if status.lower() == args.status.lower():
+            say(f"jira-feed: {args.key} is already {args.status} - nothing to do")
+            return 0
+        if not args.apply:
+            say(f"jira-feed: DRY RUN - `{YOUR_ACTIONS}` is clear, would move {args.key} "
+                f"{status} -> {args.status}")
+            return 0
+        t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,
+                          "--status", args.status, "--yes"], timeout=args.timeout)
+        back = view_fields(binary, args.key, timeout=args.timeout, strict=False)
+        now = ((back or {}).get("status") or {}).get("name") or ""
+        if t.returncode != 0 or now.strip() != args.status:
+            say(f"jira-feed: {args.key} is still {now.strip() or '?'} - the close did NOT "
+                f"land: {(t.stderr or t.stdout).strip()[:160]}")
+            return 2
+        say(f"jira-feed: {args.key} {status} -> {args.status} "
+            f"(`{YOUR_ACTIONS}` had nothing open)")
+        return 0
+
+    # ── HELD ───────────────────────────────────────────────────────────────────
+    body = render_user_tasks(items, str(wt), args.date)
+    if not args.apply:
+        say(f"jira-feed: DRY RUN - {args.key} HELD, {len(items)} open user task(s); would "
+            f"post them, add `{USER_TASKS_LABEL}` and try {' -> '.join(REVIEW_LADDER)}")
+        for it in items:
+            say(f"  - [ ] {it}")
+        return 3
+
+    tmp = write_temp(body)
+    try:
+        cm = acli(binary, ["jira", "workitem", "comment", "create", "--key", args.key,
+                           "--body-file", str(tmp)], timeout=args.timeout)
+    finally:
+        tmp.unlink(missing_ok=True)
+    if cm.returncode != 0:
+        say(f"[ERR] {args.key}: the user-tasks comment did NOT land - the ticket is held but "
+            f"says nothing about why: {(cm.stderr or cm.stdout).strip()[:160]}")
+        return 2
+
+    # `--labels` REPLACES the set, so read-modify-write or every other label is destroyed.
+    if USER_TASKS_LABEL not in labels:
+        want = sorted(set(labels) | {USER_TASKS_LABEL})
+        lr = acli(binary, ["jira", "workitem", "edit", "--key", args.key, "--yes",
+                           "--labels", ",".join(want)], timeout=args.timeout)
+        if lr.returncode != 0:
+            say(f"[WARN] {args.key}: could not add `{USER_TASKS_LABEL}` - "
+                f"{(lr.stderr or lr.stdout).strip()[:120]}")
+
+    moved = ""
+    for target in REVIEW_LADDER:
+        if status.lower() == target.lower():
+            moved = target
+            break
+        acli(binary, ["jira", "workitem", "transition", "--key", args.key,
+                      "--status", target, "--yes"], timeout=args.timeout)
+        back = view_fields(binary, args.key, timeout=args.timeout, strict=False)
+        now = (((back or {}).get("status") or {}).get("name") or "").strip()
+        if now.lower() == target.lower():
+            moved = target
+            break
+
+    where = (f"moved to `{moved}`" if moved else
+             f"left at `{status or '?'}` - no review column on this board yet, so the "
+             f"`{USER_TASKS_LABEL}` label is the signal")
+    say(f"jira-feed: {args.key} HELD, not closed - {len(items)} open user task(s), {where}")
+    for it in items:
+        say(f"  - [ ] {it}")
+    return 3
+
+
 def render_flag(args, was: str, status: str) -> str:
     lines = [f"**Bug flag** - {args.date}",
              "",
@@ -1499,6 +1662,19 @@ def main() -> int:
                               "commits from")
     p_start.add_argument("--apply", action="store_true", help="without this, renders only")
 
+    p_fin = sub.add_parser("finish", help="close it - unless the walkthrough owes the "
+                                          "operator something")
+    common(p_fin)
+    p_fin.add_argument("--key", required=True)
+    p_fin.add_argument("--walkthrough", required=True,
+                       help="the lane's walkthrough.md; its `## Your Actions` section "
+                            "decides whether this closes or holds")
+    p_fin.add_argument("--status", default="Done",
+                       help="the board's terminal status (default: Done)")
+    p_fin.add_argument("--timeout", type=int, default=90, metavar="SEC")
+    p_fin.add_argument("--date", default=date.today().isoformat())
+    p_fin.add_argument("--apply", action="store_true", help="without this, renders only")
+
     p_chk = sub.add_parser("check", help="does this ticket carry outline + Dev Record?")
     common(p_chk)
     p_chk.add_argument("--key", required=True)
@@ -1509,7 +1685,8 @@ def main() -> int:
     args = ap.parse_args()
     return {"outline": cmd_outline, "mint": cmd_mint, "devrecord": cmd_devrecord,
             "audit": cmd_audit, "check": cmd_check, "trace": cmd_trace,
-            "flag": cmd_flag, "start": cmd_start}[args.verb](args)
+            "flag": cmd_flag, "start": cmd_start,
+            "finish": cmd_finish}[args.verb](args)
 
 
 if __name__ == "__main__":

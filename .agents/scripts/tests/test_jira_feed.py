@@ -134,6 +134,7 @@ if head[:3] == ["jira", "workitem", "view"]:
     vkey = args[3] if len(args) > 3 else "TEST-7"
     fields = {"description": adf(state.get("description")),
               "summary": state.get("summary", ""),
+              "labels": list(state.get("labels", {}).get(vkey, [])),
               "status": {"name": state.get("statuses", {}).get(vkey, "To Do")},
               "issuetype": {"name": state.get("types", {}).get(vkey, "Task")}}
     # `parent` is returned by the real `view` (and IS on view_fields' whitelist) but is
@@ -211,6 +212,12 @@ elif head[:3] == ["jira", "workitem", "edit"]:
     if "--type" in args:
         state.setdefault("types", {})[val("--key")] = val("--type")
         state.setdefault("retyped", []).append(val("--key"))
+    elif "--labels" in args:
+        # `--labels` REPLACES the whole set on the real acli, which is exactly why every
+        # writer has to read-modify-write. Modelled as a replace here or a test could not
+        # tell a preserving writer from a clobbering one.
+        state.setdefault("labels", {})[val("--key")] = [
+            x for x in (val("--labels") or "").split(",") if x]
     else:
         state["description"] = read("--description-file")
     state["edit_args"] = args
@@ -1262,6 +1269,139 @@ def main() -> int:
         c.check("probe: the comment-stripping is load-bearing, not decorative",
                 "command -v python |" in raw,
                 "the fix quotes the broken line; a raw grep would flag the fix as the defect")
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # finish — the close-out's Done, held back by the operator's own actions.
+    # SCC-155. Written RED first.
+    #
+    # A close-out today writes `Done` unconditionally. When the walkthrough hands the
+    # operator work ("install the board column", "run the memory audit"), that lands on a
+    # ticket nobody will look at again - the record of what is still owed dies with the
+    # lane. `finish` reads the artifact the close-out already requires and refuses to
+    # close over open items.
+    # ═══════════════════════════════════════════════════════════════════════════
+    with TempDir() as tmp:
+        repo, acli, state = build(tmp)
+
+        def jf(*args: str) -> tuple[int, str]:
+            os.environ["STUB_STATE"] = str(state)
+            return run_script("jira_feed.py", args[0], "--project", str(repo),
+                              "--acli", str(acli), *args[1:])
+
+        def walkthrough(body: str) -> str:
+            p = tmp / "wt.md"
+            p.write_text(body, encoding="utf-8")
+            return str(p)
+
+        CLEAR = """# Walkthrough
+
+## Your Actions
+
+- [x] main absorbed
+- [x] gate green
+
+Nothing else is owed.
+"""
+        OWED = """# Walkthrough
+
+## Your Actions
+
+- [x] main absorbed
+- [ ] Install the `Awaiting Review` column on the SCC board (Jira UI, operator-only)
+      it is a two-minute change and nothing here can do it for you
+- [ ] Run /memory-audit for the dead SOP path
+
+## Something After
+- [ ] this one is NOT under Your Actions and must not count
+"""
+
+        # ── nothing owed: closes exactly as the close-out does today ───────────
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
+                       "--apply")
+        st = get_state(state)
+        c.check("finish: a walkthrough with no open items closes the ticket",
+                code == 0 and st["statuses"]["TEST-7"] == "Done", out.strip()[:200])
+        c.check("finish: the close carries --yes",
+                bool(st.get("transitions")) and all(t["yes"] for t in st["transitions"]),
+                "acli blocks on an interactive confirm no agent shell can answer")
+
+        # ── something owed: HELD, and the board says what and why ──────────────
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
+                       "--apply")
+        st = get_state(state)
+        # Tied to a POSITIVE marker on purpose: "the status is not Done" is also true when
+        # the verb does not exist, so on its own it is a control that can never go red.
+        c.check("finish: an open operator action REFUSES to write Done",
+                st["statuses"]["TEST-7"] != "Done" and "held" in out.lower(),
+                f"{st['statuses']} {out.strip()[:120]}")
+        c.check("finish: holding is its own exit code, not a generic failure",
+                code == 3, f"exit={code}")
+        c.check("finish: the owed items are posted to the ticket",
+                any("Awaiting Review" in cm["body"]
+                    and "memory-audit" in cm["body"]
+                    for cm in st["comments"]),
+                str([cm["body"][:80] for cm in st["comments"]]))
+        c.check("finish: a checkbox OUTSIDE ## Your Actions is not an operator action",
+                bool(st["comments"])
+                and not any("must not count" in cm["body"]
+                            for cm in st["comments"]),
+                "the section is the contract; every other checklist in the file is not")
+        c.check("finish: the ticket is labelled user-tasks so it reads at a glance",
+                "user-tasks" in st.get("labels", {}).get("TEST-7", []),
+                str(st.get("labels")))
+        c.check("finish: a status ladder is attempted before giving up on the move",
+                any(t["status"] in ("Awaiting Review", "In Review")
+                    for t in st.get("transitions", [])),
+                str(st.get("transitions")))
+
+        # ── the ladder is per-board-optional: neither status installed ─────────
+        # jira.md: a status a board does not have is "not installed yet", never an error.
+        # SCC has neither of these today, so this is the LIVE path, not a corner case.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
+                  stuck_status=True)
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
+                       "--apply")
+        st = get_state(state)
+        c.check("finish: a board with no review column still holds, and still exits 3",
+                code == 3 and st["statuses"]["TEST-7"] == "In Progress", out.strip()[:200])
+        c.check("finish: with no column installed the LABEL still lands - it is the signal",
+                "user-tasks" in st.get("labels", {}).get("TEST-7", []), str(st.get("labels")))
+
+        # ── FAIL CLOSED — the audit's HIGH finding ─────────────────────────────
+        # A missing file or a renamed section must never read as "nothing owed". This is
+        # the empty-input-reads-as-pass shape that `tests-must-gate-for-real` bans, and it
+        # would close a ticket over work the operator was promised.
+        # ⛔ These assert the REASON, not just the code. `argparse` exits 2 on an unknown
+        # verb, so `code == 2` alone passes while `finish` does not exist at all - the
+        # vacuous green this whole file exists to refuse. The message has to prove the
+        # refusal came from the walkthrough check.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+        code, out = jf("finish", "--key", "TEST-7",
+                       "--walkthrough", str(tmp / "nope.md"), "--apply")
+        c.check("finish: a MISSING walkthrough refuses; it never closes the ticket",
+                code == 2 and "walkthrough" in out.lower() and "usage:" not in out.lower()
+                and get_state(state)["statuses"]["TEST-7"] != "Done",
+                f"exit={code} {out.strip()[:160]}")
+
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+        code, out = jf("finish", "--key", "TEST-7",
+                       "--walkthrough", walkthrough("# Walkthrough\n\nNo such section.\n"),
+                       "--apply")
+        c.check("finish: a walkthrough with NO '## Your Actions' refuses, never closes",
+                code == 2 and "your actions" in out.lower() and "usage:" not in out.lower()
+                and get_state(state)["statuses"]["TEST-7"] != "Done",
+                f"exit={code} {out.strip()[:160]}")
+
+        # ── dry run is the default, like every other verb here ─────────────────
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR))
+        c.check("finish: without --apply it writes NOTHING",
+                code == 0 and "dry run" in out.lower()
+                and get_state(state)["statuses"]["TEST-7"] == "In Progress"
+                and not get_state(state).get("transitions"), out.strip()[:200])
+
     return c.finish()
 
 
