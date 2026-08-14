@@ -320,6 +320,20 @@ def main() -> int:
     c.check("SCC-148 no WRONG_LANE entry is shadowed by an earlier prefix (first-match scan)",
             not shadowed, f"unreachable: {shadowed}")
 
+    # ── SCC-148 sweep survivor: the scan must be ANCHORED at position 0, not a substring
+    # search. `BRANCH_RE`'s slug group is `.+`, which matches slashes, so a chore branch
+    # embedding a lane word mid-name is git-legal AND shape-legal — and a `prefix in branch`
+    # scan (mutant M4, which survived the first sweep with zero failing cases) would
+    # wrong-lane it to /cicd-push-e2e. It is a chore branch and must never be refused as
+    # someone else's lane.
+    with TempDir() as t:
+        repo = make_repo(t)
+        branch(repo, "chore/SCC-11-docs-for-epic/pages", {"docs/x.md": "x\n"})
+        code, out = preflight(repo)
+        c.check("SCC-148 a chore slug embedding a lane word is not wrong-laned (anchored scan)",
+                "is not a task branch" not in out and "/cicd-push-e2e" not in out,
+                out.strip()[-300:])
+
     with TempDir() as t:
         repo = make_repo(t)
         code, out = preflight(repo, "--branch", "main")
