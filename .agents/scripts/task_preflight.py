@@ -64,8 +64,9 @@ BRANCH_RE = re.compile(r"^chore/([A-Z][A-Z0-9]*)-(\d+)-(.+)$")
 # `claude/incident-<short-id-lower>` (no command anywhere creates a bare `incident/`), and
 # a real incident branch was confidently routed to the STORY close-out — under production
 # pressure, the worst moment for a wrong answer. test_task_preflight.py pins both
-# properties: the key set (no entry without a real creator) and no-shadowing (no entry
-# unreachable behind an earlier prefix).
+# properties: the exact key set (a reintroduced dead entry, or a dropped live one, forces
+# a conscious edit there — the creator linkage itself was verified by hand at authoring)
+# and no-shadowing (no entry unreachable behind an earlier prefix).
 WRONG_LANE = {
     "epic/": ("/cicd-push-e2e", "an epic branch ships through the full gate, not this one"),
     "claude/incident-": ("/cicd-mobile-error-team", "incident branches have their own lane"),

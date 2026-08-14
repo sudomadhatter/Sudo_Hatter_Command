@@ -330,9 +330,28 @@ def main() -> int:
         repo = make_repo(t)
         branch(repo, "chore/SCC-11-docs-for-epic/pages", {"docs/x.md": "x\n"})
         code, out = preflight(repo)
+        # Both halves on purpose (review): the negatives alone would score green over a
+        # crashed run, whose traceback contains neither pinned string — so the case also
+        # pins the POSITIVE marker check_branch prints only after the branch survives the
+        # lane scan and matches BRANCH_RE. This fixture is the only slash-in-slug shape,
+        # so no other case would catch a scan crash here.
         c.check("SCC-148 a chore slug embedding a lane word is not wrong-laned (anchored scan)",
-                "is not a task branch" not in out and "/cicd-push-e2e" not in out,
-                out.strip()[-300:])
+                "is not a task branch" not in out and "/cicd-push-e2e" not in out
+                and "-> SCC-11" in out and code in (0, 1),
+                f"exit {code}: " + out.strip()[-300:])
+
+    # ── Review: the bare `incident/` shape lost its WRONG_LANE entry (dead code — nothing
+    # creates it), so its behavior is now the generic shape refusal. Pinned so the close-out
+    # command's check-table claim about this fall-through has a machine behind it, and so
+    # any future drift in what an unclassifiable branch gets told is visible.
+    with TempDir() as t:
+        repo = make_repo(t)
+        branch(repo, "incident/SCC-11-thing", {"docs/x.md": "x\n"})
+        code, out = preflight(repo)
+        c.check("SCC-148 bare incident/ (no creator) falls to the generic shape refusal",
+                code == 2 and "the key must sit" in out
+                and "/cicd-mobile-error-team" not in out,
+                f"exit {code}: " + out.strip()[-300:])
 
     with TempDir() as t:
         repo = make_repo(t)
