@@ -481,9 +481,9 @@ def main() -> int:
     with TempDir() as d:
         plain = d / "not-executable"
         plain.write_text("#!/bin/sh\n", encoding="utf-8")
-        plain.chmod(0o644)
-        c.check("Z · POSIX: a non-executable file reads as NOT executable",
-                hooks_armed.is_executable(plain) is False)
+        if POSIX_ONLY:
+            c.check("Z · POSIX: a non-executable file reads as NOT executable",
+                    hooks_armed.is_executable(plain) is False)
         real_name = os.name
         try:
             hooks_armed.os.name = "nt"
