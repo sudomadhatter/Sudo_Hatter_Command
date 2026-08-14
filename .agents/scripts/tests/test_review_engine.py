@@ -748,10 +748,18 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     ("step-01: the literal lens caps at 20 changed files", STEPS[0],
      r"\*\*A 20-file cap\.\*\* Hand over at most \*\*20\*\* changed files", 0,
      "Hand over at most **20** changed files", "Hand over at most **200** changed files"),
-    ("step-01: exceeding the cap must be disclosed to the lens AND to notes", STEPS[0],
-     r"you MUST tell the lens how many files it did not receive[^.]*\*\*and\*\* carry the truncation into the\s*\nengine's returned `notes` yourself",
+    # SCC-147 (rolled in on the operator's ruling): the disclosure names PATHS, never a count.
+    # A count was useless twice over — the blockquote orders the lens to NAME what it did not
+    # get, and the `standard` top-up is earned by naming a specific withheld file. Neither is
+    # possible from a number.
+    ("step-01: withheld files are disclosed by NAME, never as a count", STEPS[0],
+     r"you MUST tell the lens WHICH files it did not receive — the paths,\s*\nnever just a count",
      re.M,
-     "**and** carry the truncation into the", "and you may omit from the"),
+     "WHICH files it did not receive — the paths,", "how many files it did not receive —"),
+    ("step-01: the truncation still reaches the engine's notes", STEPS[0],
+     r"Carry the truncation into the engine's returned `notes` yourself", 0,
+     "Carry the truncation into the engine's returned `notes` yourself",
+     "The truncation needs no note of the engine's own"),
     ("step-01: the lens is told to report truncation FIRST in its output", STEPS[0],
      r"^> your output\*\*, naming what you got and what you did not", re.M,
      "> your output**, naming what you got and what you did not",
@@ -793,6 +801,24 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      re.M,
      "| `standard` | interactive callers | MANDATORY as written above;",
      "| `standard` | interactive callers | caps are optional;"),
+
+    # SCC-147, second half (rolled in on the operator's ruling): the top-up ROW is definition
+    # only — a table cell is unquoted, and this file pins twice that unquoted text never reaches
+    # a lens. So for as long as the row was all there was, `standard` and `capped` were
+    # behaviourally identical: a lens never told a top-up exists cannot spend one. The clause is
+    # now BLOCKQUOTED and routed by budget; these three pin the quote, the routing, and the
+    # capped-side absence that IS the `no top-up` enforcement.
+    ("step-01: the top-up clause is blockquoted, so it reaches the lens", STEPS[0],
+     r"^> \*\*You may earn ONE top-up past the file cap\.\*\*", re.M,
+     "> **You may earn ONE top-up past the file cap.**",
+     "**You may earn ONE top-up past the file cap.**"),
+    ("step-01: the top-up quote is routed to standard runs only", STEPS[0],
+     r"you append\s*\nit \*\*only when the caller passed `lens_budget: standard`\*\*", re.M,
+     "it **only when the caller passed `lens_budget: standard`**",
+     "it **on every run, whatever the budget**"),
+    ("step-01: under capped, absence of the clause is the enforcement", STEPS[0],
+     r"a lens that was never handed\s*\nthe clause has no top-up to spend", re.M,
+     "a lens that was never handed", "a lens may assume a top-up even when it was never handed"),
 
     # Gate 1 adaptation — without it the lens must DROP the defect class it was added to catch.
     ("step-01: Gate 1 is adapted for the literal lens, and only for it", STEPS[0],

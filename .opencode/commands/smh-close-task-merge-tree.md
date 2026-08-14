@@ -193,6 +193,16 @@ runs on a docs-only diff:
 
 Any failure → **STOP**. Fix it on the branch and re-run; do not carry a red gate into a merge.
 
+⛔ **This gate is MECHANICAL only — never re-run the LLM review here.** The lane's review already
+happened and stamped `Verdict: … @ <sha>` in the walkthrough; that verdict STANDS for that sha, and
+this step's job is only to prove the deterministic gates are green at the landing sha. The review
+engine is recall-first with no noise filter **by design**, so re-running it on anything — including
+its own fixes — will always surface new findings, and "review until zero findings" is a loop that
+never terminates (SCC-147, observed live: a re-review at close-out produced five fresh findings on
+a lane already at PASS). If new findings somehow exist anyway, triage them by severity instead of
+looping: `suggestion`/`nitpick`/`defer` → record and proceed; only a `critical`/`important` in
+`decision_needed` or `patch` stops the merge.
+
 ## Step 3 — Merge to `main`
 
 ```bash

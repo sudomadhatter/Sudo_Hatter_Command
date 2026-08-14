@@ -762,6 +762,13 @@ flowchart TD
 
 **Typing it IS your merge sign-off** — the same contract `/cicd-push-e2e` carries for an epic.
 
+**⛔ The close-out never re-runs the LLM review (SCC-147).** One review per lane: the walkthrough's
+`Verdict: … @ <sha>` stands, and Step 2's gate is the *mechanical* suite only. The review engine is
+recall-first with no noise filter by design, so re-running it — on anything, including its own
+fixes — always surfaces new findings, and "review until zero findings" is a loop that never ends.
+New findings at close-out anyway? Triage by severity: `suggestion`/`nitpick`/`defer` → record and
+merge; only a `critical`/`important` in `decision_needed` or `patch` stops it.
+
 **⭐ A cross-repo task can be blocked by the *other* repo's state (SCC-94).** If your `task.yaml`
 declares `secondary_repos`, the preflight no longer treats it as a note — it goes and looks. It
 refuses to clear unless that repo is reachable, its declared ticket key is one that repo's own

@@ -127,3 +127,23 @@ verbatim in S1/S2) · convention fit (tuple shape matches the file's own CHECKS 
 wording matches the tables' existing voice).
 
 Audit verdict: GO
+
+## Scope amendment (2026-08-14, operator ruling)
+
+The review's deferred finding 7 — the `standard` top-up clause is UNQUOTED in step-01, so by
+step-01's own assembly convention it never reaches the lens, making `standard` and `capped`
+behaviourally identical — was deferred as a follow-on ticket. The operator ruled it rolled into
+this lane instead ("we don't need to over-engineer this, just fix it"). Amended scope:
+
+- **step-01-review.md** — the top-up clause is now a BLOCKQUOTE routed `standard`-only; under
+  `capped` nothing is appended, so the same convention that caused the defect is the enforcement.
+  The truncation disclosure hands the lens the withheld files' PATHS, never a count — the existing
+  blockquote already ordered the lens to *name* what it did not get, which a count cannot satisfy,
+  and the top-up is earned by naming a specific withheld file.
+- **test_review_engine.py** — +4 net tuples (+12 cases, 762 → 774 in-file): paths-not-count,
+  notes half, blockquoted top-up, standard-only routing, capped-side absence.
+- **smh-close-task-merge-tree.md + SOP** — the anti-loop rule, from the operator's live report on
+  the SCC-148 close-out: the close-out gate is MECHANICAL only; the review verdict stands at its
+  sha; re-running a recall-first no-noise-filter reviewer always yields new findings, so "review
+  until zero findings" never terminates. Prose guidance, deliberately unguarded — a test would be
+  the over-engineering this amendment was ordered to avoid.

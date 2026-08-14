@@ -1,0 +1,35 @@
+=== MUTANT: M1 unquote the top-up clause (strip the > marker) ===
+exit=1  (must be nonzero)
+[FAIL] step-01: the top-up clause is blockquoted, so it reaches the lens
+[FAIL]   ^ counter-example applies: steps/step-01-review.md: '> **You may earn ONE top-up past the file cap.**' not present, so the proof would be vacuous
+[FAIL]   ^ counter-example is rejected: check survives its own counter-example — it cannot fail on content
+[FAIL] cache is byte-identical to master: differs: steps/step-01-review.md
+FAILED: step-01: the top-up clause is blockquoted, so it reaches the lens,   ^ counter-example applies,   ^ counter-example is rejected, cache is byte-identical to master
+
+=== MUTANT: M2 route the quote to every run, not standard only ===
+exit=1  (must be nonzero)
+[FAIL] step-01: the top-up quote is routed to standard runs only
+[FAIL]   ^ counter-example applies: steps/step-01-review.md: 'it **only when the caller passed `lens_budget: standard`**' not present, so the proof would be vacuous
+[FAIL]   ^ counter-example is rejected: check survives its own counter-example — it cannot fail on content
+[FAIL] cache is byte-identical to master: differs: steps/step-01-review.md
+FAILED: step-01: the top-up quote is routed to standard runs only,   ^ counter-example applies,   ^ counter-example is rejected, cache is byte-identical to master
+
+=== MUTANT: M3 revert the disclosure to a count ===
+exit=1  (must be nonzero)
+[FAIL] step-01: withheld files are disclosed by NAME, never as a count
+[FAIL]   ^ counter-example applies: steps/step-01-review.md: 'WHICH files it did not receive — the paths,' not present, so the proof would be vacuous
+[FAIL]   ^ counter-example is rejected: check survives its own counter-example — it cannot fail on content
+[FAIL] cache is byte-identical to master: differs: steps/step-01-review.md
+FAILED: step-01: withheld files are disclosed by NAME, never as a count,   ^ counter-example applies,   ^ counter-example is rejected, cache is byte-identical to master
+
+=== MUTANT: M4 drop the notes half of the disclosure ===
+exit=1  (must be nonzero)
+[FAIL] step-01: the truncation still reaches the engine's notes
+[FAIL]   ^ counter-example applies: steps/step-01-review.md: "Carry the truncation into the engine's returned `notes` yourself" not present, so the proof would be vacuous
+[FAIL]   ^ counter-example is rejected: check survives its own counter-example — it cannot fail on content
+[FAIL] cache is byte-identical to master: differs: steps/step-01-review.md
+FAILED: step-01: the truncation still reaches the engine's notes,   ^ counter-example applies,   ^ counter-example is rejected, cache is byte-identical to master
+
+=== RESTORED — must be green ===
+-- 774/774 passed --
+step-01 byte-identical to pre-mutation copy

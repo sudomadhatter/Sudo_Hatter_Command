@@ -334,3 +334,26 @@ once in the original removal proof and again during the review's own first sweep
 the first was a design flaw in the procedure rather than one careless moment — the tell both times
 was the sweep's closing "everything restored, must be green" line coming back **red**, which is the
 only reason either was caught.
+
+## Addendum — review finding 7 rolled in (2026-08-14, operator ruling)
+
+The deferred engine defect is fixed in this lane rather than a follow-on ticket. What shipped:
+
+1. **The top-up now reaches the lens** (`step-01-review.md`): blockquoted, appended **only when
+   `lens_budget: standard`**. Under `capped` nothing is appended — absence of the clause IS the
+   `no top-up` enforcement, via the same assembly convention whose violation was the defect.
+2. **Truncation is disclosed by PATH, never count**: the lens cannot "name what it did not get"
+   (already ordered by the existing blockquote) or earn a top-up "by naming the specific file"
+   from a number. The two halves of step-01 contradicted each other; now they compose.
+3. **The close-out anti-loop rule** (`smh-close-task-merge-tree.md` Step 2 + SOP §9): the
+   close-out never re-runs the LLM review; the `Verdict @ sha` stands; mechanical gates only.
+   From the operator's live observation on SCC-148: a close-out re-review produced 5 fresh
+   findings on a lane already at PASS — which is the engine's recall-first design working,
+   aimed at the wrong moment.
+
+Evidence: `red-05-topup-mutation-proof.txt` — 4 mutants (unquote the clause / route it to every
+run / revert paths to a count / drop the notes half), **4 killed**, each by its own targeted case,
+restore from COPIES, closing run green 774/774 and step-01 byte-identical to the pre-mutation copy.
+Gates at this state: `run_all` 23/23 exit 0 · `workflow_lint --toolkit-only` 0 errors 0 warnings ·
+`check_maps --depth3-only --strict` exit 0. Case delta +12 (774 in-file vs 762), predicted before
+measured.
