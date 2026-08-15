@@ -1372,7 +1372,7 @@ Nothing else is owed.
                 "user-tasks" in st.get("labels", {}).get("TEST-7", []),
                 str(st.get("labels")))
         c.check("finish: a status ladder is attempted before giving up on the move",
-                any(t["status"] in ("Awaiting Review", "In Review")
+                any(t["status"] in ("Review Required", "Awaiting Review", "In Review")
                     for t in st.get("transitions", [])),
                 str(st.get("transitions")))
 
@@ -1450,15 +1450,15 @@ Nothing else is owed.
 
         # ── the ladder is a ladder: rung two is reached when rung one is absent ─
         set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
-                  no_status=["Awaiting Review"])
+                  no_status=["Review Required"])
         code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
                        "--apply")
         st = get_state(state)
         c.check("finish: a board missing the FIRST rung still lands on the second",
-                code == 3 and st["statuses"]["TEST-7"] == "In Review",
+                code == 3 and st["statuses"]["TEST-7"] == "Awaiting Review",
                 f"exit={code} {st.get('statuses')}")
         c.check("finish: and it says where it put the ticket, not just that it held",
-                "In Review" in out, out.strip()[-200:])
+                "Awaiting Review" in out, out.strip()[-200:])
 
         # ── the close is VERIFIED, never assumed ───────────────────────────────
         # acli prints "Work item transitioned" and exits 0 whether or not the status moved.
@@ -1755,6 +1755,46 @@ Nothing is actually owed.
         c.check("finish: a `###` sub-heading GROUPS the asks, it does not end the section",
                 code == 3 and "install the column" in out,
                 f"exit={code} {out.strip()[:160]}")
+
+        # ── ⛔ REVIEW FINDING #24: acli exits 0 on writes it did not perform ────
+        # The close path already read back its transition for exactly this reason. The HELD
+        # path took the comment on faith, so `swallow` (accepted-then-lost, exit 0) produced
+        # "HELD, moved to Review Required" on a ticket with NO comment at all - the state the
+        # verb's own error message exists to prevent. The label is the signal; the comment is
+        # the only thing that says WHY, so it gets the same read-back.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
+                  swallow=True)
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
+                       "--apply")
+        st = get_state(state)
+        c.check("#24 a comment acli ACCEPTED and lost is caught by a read-back",
+                code == 4 and not st["comments"], f"exit={code} {out.strip()[:200]}")
+        c.check("#24 and the hold is still signalled by the label despite the lost comment",
+                "user-tasks" in st.get("labels", {}).get("TEST-7", []), str(st.get("labels")))
+
+        # ── the operator installed the column, and it is named "Review Required" ──
+        # SCC now carries it (2026-08-14), so the fall-through that used to be the LIVE path
+        # is now the corner case. It is the FIRST rung: a board that has it must land there,
+        # not on a legacy name.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
+                  no_status=["Awaiting Review", "In Review"])
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
+                       "--apply")
+        st = get_state(state)
+        c.check("finish: a board carrying `Review Required` lands the hold there",
+                code == 3 and st["statuses"]["TEST-7"] == "Review Required",
+                f"exit={code} {st.get('statuses')}")
+
+        # ⛔ The exact status STRING is board configuration, not a property of this code, and
+        # a wrong literal makes the ladder silently never fire. `--review-status` overrides
+        # the whole ladder so a rename on the board is a flag, never an edit here.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
+                       "--apply", "--review-status", "Needs Daniel")
+        st = get_state(state)
+        c.check("finish: --review-status overrides the ladder outright",
+                code == 3 and st["statuses"]["TEST-7"] == "Needs Daniel",
+                f"exit={code} {st.get('statuses')}")
 
         # Already parked on a rung: do nothing. Comparing only against the rung being tried
         # dragged a ticket an operator had advanced to `In Review` BACKWARDS.

@@ -164,7 +164,20 @@ section:
 listed in `/smh-plan-task <PARENT-KEY>` Step 5: <SUBKEY-1>, <SUBKEY-2>, …
 ```
 
-Commit that with the plans. **That quote is the artifact** — the same pattern the main-write gate
+**Then commit it in EACH lane's own tree and PUSH — and record the resulting sha into the same
+line, as `— recorded at <sha>`.** Three things about that sentence are load-bearing, and all three
+were missing (SCC-155 review #17/#18):
+
+- **The sha, or the downstream check has nothing to compare against.** `/smh-quick-dev` Step 1.5
+  says the plan must be unchanged *since the commit that recorded the approval* — with only a date
+  and a quote on the page, an agent has one computed value and no second operand, and an agent that
+  wants to proceed will call it unchanged. Write the sha and the comparison becomes real.
+- **Each lane's own tree.** The plans were committed back in Step 3 in **N different worktrees**,
+  on N different branches. There is no single tree where "commit that with the plans" means
+  anything; naming the wrong one silently drops the approval from every other lane.
+- **Pushed, per this command's own MANDATORY RULE 3** — *a plan that is not committed and pushed
+  does not exist for the next machine*. The approval quote is the artifact that unlocks the batch
+  path, so an unpushed one strands the whole batch on this laptop. **That quote is the artifact** — the same pattern the main-write gate
 uses for merges (SCC-37), and for the same reason: an agent can write a plan, so it can write the
 word "approved"; it cannot manufacture the operator's sentence.
 

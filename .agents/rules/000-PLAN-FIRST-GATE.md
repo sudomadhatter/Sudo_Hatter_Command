@@ -73,9 +73,15 @@ is only an approval at all when all four hold:
    same way the main-write gate takes the operator's own sentence rather than a flag (SCC-37).
 2. Every covered plan carried `Audit verdict: GO` **at the moment of the stop**. A NO-GO lane is
    never in a batch.
-3. It covers **those plans as they stood**. Edit one afterwards and **that lane's gate re-arms** —
-   it stops for its own approval at `/smh-quick-dev` Step 1.5. A batch cannot approve text the
-   operator never saw.
+3. It covers **those plans as they stood**, and that is **mechanically checkable** because the
+   approval line ends `— recorded at <sha>`. `/smh-quick-dev` Step 1.5 compares
+   `git log -1 --format=%h -- <the plan>` against that sha; equal means untouched, anything else
+   means **that lane's gate re-arms** and it stops for its own approval. A batch cannot approve
+   text the operator never saw.
+   ⛔ **No sha on the line = no approval.** The clause originally said "unchanged since the commit
+   that recorded it" while nothing anywhere recorded which commit that was — so the check had one
+   operand and an agent wanting to proceed would supply the other. A missing operand is a re-armed
+   gate, never a pass (SCC-155).
 4. It covers **planning only**. It is not merge approval, not a ticket transition, and it never
    carries to a lane that was not on the list.
 

@@ -49,6 +49,9 @@ def val(flag):
 
 head = args[:3]
 if head == ["jira", "workitem", "view"]:
+    if st.get("view_fail"):
+        print("Error: could not reach the board", file=sys.stderr)
+        sys.exit(1)
     key = args[3]
     print(json.dumps({"key": key, "fields": {
         "summary": st.get("summaries", {}).get(key, ""),
@@ -719,6 +722,143 @@ def main() -> int:
                                 "type": "Subtask"})
     c.check("task mode refuses a SUBTASK parent - nothing nests under a Subtask",
             "Subtask" in msg and "parent" in msg.lower(), msg.strip()[:220])
+
+    # ── ⛔ REVIEW FINDINGS #15/#16: the grounding pair, fixed together ─────────
+    # They are ONE defect with two halves and neither can be fixed alone:
+    #   #16  `story_branch` matches on the ticket KEY, so rung 1 fires for every lane
+    #        /smh-plan-task cuts. Such a branch carries only `_artifacts/…`, which
+    #        `source_paths` strips to NOTHING - so `authority` reads `branch-diff` over an
+    #        empty set, an empty touch-set is disjoint from everything, and every planned
+    #        lane comes back 🟢. A manufactured green on the command's own happy path.
+    #   #15  rung 2 can't cover for it: `find_task_plan` scans the CURRENT checkout's
+    #        `_artifacts/`, but the plan was committed to that LANE's branch and never
+    #        merged. So the rung the planner calls "not optional" never fires.
+    # Fix #16 alone and every planned lane is ungrounded; fix #15 alone and rung 1 still
+    # wins with its empty set. Hence one block, one commit.
+    def git_repo(tmp: Path) -> Path:
+        import subprocess
+
+        def g(*a: str) -> None:
+            subprocess.run(["git", "-C", str(tmp), *a], capture_output=True, check=False)
+        g("init", "-q", "-b", "main")
+        g("config", "user.email", "t@t"); g("config", "user.name", "t")
+        (tmp / "seed.txt").write_text("x\n", encoding="utf-8")
+        g("add", "seed.txt"); g("commit", "-qm", "seed")
+        return tmp
+
+    def plan_lane(tmp: Path, key: str, extra: str | None = None) -> None:
+        """A lane exactly as /smh-plan-task leaves it: plan + task.yaml committed to the
+        lane's OWN branch, nothing merged to main."""
+        import subprocess
+
+        def g(*a: str) -> None:
+            subprocess.run(["git", "-C", str(tmp), *a], capture_output=True, check=False)
+        g("checkout", "-q", "-b", f"chore/{key}-thing")
+        d = tmp / "_artifacts" / "_main" / f"2026-01-01_{key.lower()}"
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "task.yaml").write_text(f"task_key: {key}\n", encoding="utf-8")
+        (d / "implementation_plan.md").write_text("# plan\n", encoding="utf-8")
+        g("add", "-A"); g("commit", "-qm", f"{key} plan")
+        if extra:
+            (tmp / extra).parent.mkdir(parents=True, exist_ok=True)
+            (tmp / extra).write_text("code\n", encoding="utf-8")
+            g("add", "-A"); g("commit", "-qm", f"{key} code")
+        g("checkout", "-q", "main")
+
+    with TempDir() as tmp:
+        repo = git_repo(tmp)
+        plan_lane(repo, "SCC-101")                       # plan only - no code yet
+        plan_lane(repo, "SCC-102", extra=".agents/x.py")  # plan AND real code
+        gc = getattr(lt, "ground_child", None)
+
+        g1 = gc(repo, {"key": "SCC-101", "summary": "s", "story_id": None, "description": ""},
+                "main", "task", "SCC-99") if gc else {}
+        c.check("#16 a PLANNING-ONLY lane branch does not ground as branch-diff",
+                g1.get("authority") != "branch-diff", str(g1.get("authority")))
+        c.check("#15 it grounds on the PLAN committed to that lane's own branch",
+                g1.get("authority") == "plan", str(g1.get("authority")))
+        c.check("#15 and the plan source names the branch it was read from",
+                any("SCC-101" in str(s.get("path", "")) or "SCC-101" in str(s.get("ref", ""))
+                    for s in (g1.get("sources") or [])), str(g1.get("sources")))
+
+        g2 = gc(repo, {"key": "SCC-102", "summary": "s", "story_id": None, "description": ""},
+                "main", "task", "SCC-99") if gc else {}
+        c.check("a lane with REAL code still grounds on branch-diff - rung 1 keeps priority",
+                g2.get("authority") == "branch-diff", str(g2.get("authority")))
+        c.check("and its branch-diff carries the source path, not just the plan",
+                any(".agents/x.py" in (s.get("paths") or [])
+                    for s in (g2.get("sources") or [])), str(g2.get("sources")))
+
+    # ── ⛔ REVIEW FINDING #19: umbrellas are a BMAD concept ────────────────────
+    # `mark_umbrellas` keys off story_id_of(summary) and ran in BOTH modes. A Subtask
+    # summarised "2.1 Add the gate" beside "2.1.1 …" became an umbrella: no verdict row and
+    # NO LABEL WRITE AT ALL. Silent exclusion from a labelling pass is the exact failure this
+    # engine exists to prevent.
+    def umbrellas_for(mode: str, summaries: list[tuple[str, str]]) -> list[bool] | str:
+        """A TypeError from a not-yet-widened signature must not abort the FILE - the same
+        `refuses()` discipline, applied to a call rather than a refusal."""
+        fn = getattr(lt, "mark_umbrellas", None)
+        if fn is None:
+            return "<mark_umbrellas does not exist>"
+        kids = [{"key": k, "summary": s, "umbrella": False, "story_id": lt.story_id_of(s)}
+                for k, s in summaries]
+        try:
+            fn(kids, mode=mode)
+        except TypeError:
+            return "<mark_umbrellas takes no mode>"
+        return [bool(k.get("umbrella")) for k in kids]
+
+    c.check("#19 task mode has no umbrellas - a dotted Subtask summary is not a BMAD tree",
+            umbrellas_for("task", [("SCC-100", "2.1 the parent-looking one"),
+                                   ("SCC-101", "2.1.1 the child-looking one")]) == [False, False],
+            str(umbrellas_for("task", [("SCC-100", "2.1 a"), ("SCC-101", "2.1.1 b")])))
+    c.check("#19 story mode still detects them - the gate is on MODE, not on the logic",
+            umbrellas_for("story", [("A-1", "2.1 - story"),
+                                    ("A-2", "2.1.1 - story")]) == [True, False],
+            str(umbrellas_for("story", [("A-1", "2.1 - story"), ("A-2", "2.1.1 - story")])))
+
+    # ── ⛔ REVIEW FINDING #20: `check` must keep its published 0/1 contract ────
+    # Both command docs promise "[FRESH] (exit 0) or [STALE] (exit 1)". SCC-155 added a
+    # `parent_facts()` round-trip to `check` purely to pick one word in one message - and
+    # `parent_facts` calls `wf.die(..., 2)`. A read-only staleness verb on a dropped uplink
+    # (a recorded condition here) now exits 2, a code neither doc lists, before reading a
+    # single comment. The word is cosmetic; the hard board dependency is not.
+    with TempDir() as tmp:
+        launcher, state = acli_stub(tmp)
+        os.environ["STUB_STATE"] = str(state)
+        state.write_text(json.dumps({"view_fail": True}), encoding="utf-8")
+        code, out = run_script("label_tasks.py", "check", "--parent", "SCC-99",
+                               "--acli", str(launcher))
+        c.check("#20 an unreadable parent still yields the STALE contract, never exit 2",
+                code in (0, 1), f"exit={code} {out.strip()[:200]}")
+        os.environ.pop("STUB_STATE", None)
+
+    # ── ⛔ REVIEW FINDING #23: cmd_plan's mode wiring, at the entrypoint ───────
+    # resolve_mode is unit-tested but its CALL SITE was not, so hard-coding `mode = "story"`
+    # inside cmd_plan survived a full green run - task mode could have been dead at its only
+    # door. This is also the case that kills the last live mutant (NF13, the console label).
+    with TempDir() as tmp:
+        launcher, state = acli_stub(tmp)
+        os.environ["STUB_STATE"] = str(state)
+        state.write_text(json.dumps({
+            "types": {"SCC-99": "Task"}, "summaries": {"SCC-99": "Add the labeller"},
+            "rows": [{"key": "SCC-101",
+                      "fields": {"summary": "SCC-101 - do the thing",
+                                 "status": {"name": "To Do",
+                                            "statusCategory": {"key": "new"}},
+                                 "labels": [], "description": None}}]}), encoding="utf-8")
+        code, out = run_script("label_tasks.py", "plan", "--parent", "SCC-99",
+                               "--repo", str(tmp), "--acli", str(launcher),
+                               "--out", str(tmp / "o.json"))
+        packet_out = json.loads((tmp / "o.json").read_text(encoding="utf-8")) \
+            if (tmp / "o.json").is_file() else {}
+        c.check("#23 cmd_plan DERIVES task mode from the parent's type",
+                packet_out.get("mode") == "task", f"exit={code} {out.strip()[:200]}")
+        c.check("#23 and a Task lane's base is main, never an epic branch",
+                packet_out.get("base") == "main", str(packet_out.get("base")))
+        c.check("#23 the console names the verdict the BOARD will name - no [NO-STORY]",
+                "NO-STORY" not in out.upper(), out.strip()[-220:])
+        os.environ.pop("STUB_STATE", None)
 
     # ── ⛔ REVIEW FINDING: the console says [NO-STORY] in a mode with no stories ─
     with TempDir() as tmp:

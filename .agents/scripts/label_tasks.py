@@ -396,23 +396,60 @@ def find_task_plan(repo: Path, key: str) -> Path | None:
     The match is EXACT, never a prefix: `SCC-14` must not be grounded by `SCC-146`'s manifest.
     That substring collision has already misfired in this repo once, in check_gate's own
     verdict pool, and the regex anchors the number's end to keep it from recurring here."""
-    art = repo / "_artifacts"
-    if not art.is_dir():
-        return None
     want = key.strip().upper()
-    for manifest in sorted(art.rglob("task.yaml")):
-        m = _TASK_KEY_RE.search(wf.read_text(manifest))
+    art = repo / "_artifacts"
+    if art.is_dir():
+        for manifest in sorted(art.rglob("task.yaml")):
+            m = _TASK_KEY_RE.search(wf.read_text(manifest))
+            if not m or m.group(1).strip().upper() != want:
+                continue
+            plan = manifest.parent / "implementation_plan.md"
+            if plan.is_file():
+                return plan
+    return None
+
+
+def find_task_plan_on_branch(repo: Path, key: str, branch: str) -> str | None:
+    """The lane's plan read out of its OWN branch — the repo-relative path, or None.
+
+    ⭐ SCC-155 review finding #15. `find_task_plan` above searches the CURRENT checkout, and
+    for the flow this engine was built to serve that is the wrong tree: `/smh-plan-task`
+    commits each lane's `implementation_plan.md` + `task.yaml` to **that lane's branch** and
+    pushes, merging nothing. So the manifest is not in `repo/_artifacts` on any branch but its
+    own, and rung 2 - the rung `smh-plan-task.md` calls "not optional, this is what grounds
+    the lane for the labeller" - could never fire for the lanes the planner had just created.
+
+    `git ls-tree` reads the branch without checking it out, so this stays a read-only pass
+    over a repo whose worktree belongs to somebody else."""
+    r = wf.git(["ls-tree", "-r", "--name-only", branch, "_artifacts/"], repo)
+    if r.returncode != 0:
+        return None
+    manifests = [ln.strip() for ln in (r.stdout or "").splitlines()
+                 if ln.strip().endswith("/task.yaml")]
+    want = key.strip().upper()
+    for manifest in sorted(manifests):
+        show = wf.git(["show", f"{branch}:{manifest}"], repo)
+        if show.returncode != 0:
+            continue
+        m = _TASK_KEY_RE.search(show.stdout or "")
         if not m or m.group(1).strip().upper() != want:
             continue
-        plan = manifest.parent / "implementation_plan.md"
-        if plan.is_file():
+        plan = manifest.rsplit("/", 1)[0] + "/implementation_plan.md"
+        if wf.git(["cat-file", "-e", f"{branch}:{plan}"], repo).returncode == 0:
             return plan
     return None
 
 
-def mark_umbrellas(children: list[dict]) -> None:
+def mark_umbrellas(children: list[dict], mode: str = "story") -> None:
     """A child whose BMAD number is a strict prefix of another child's is an UMBRELLA — it
     contains its siblings rather than competing with them, so it is never a candidate.
+
+    ⭐ STORY MODE ONLY (SCC-155 review finding #19). An umbrella is a BMAD numbering concept,
+    and this keys off `story_id_of(summary)`. Run against Subtasks, a summary that merely
+    starts "2.1" beside one starting "2.1.1" made the first an umbrella - which means NO
+    verdict row and NO LABEL WRITE AT ALL for it. Silently dropping a child out of a
+    labelling pass is the precise failure this engine exists to prevent, so task mode does
+    not get the behaviour rather than getting a careful version of it.
 
     Found by the first live run: `AVCH-14  12.3 — Igor Full-Checkride (Umbrella)` matched all
     EIGHT `story-12-3-*.md` files, because story-file lookup is prefix-based on purpose. Left
@@ -422,6 +459,10 @@ def mark_umbrellas(children: list[dict]) -> None:
     Purely local — no extra board query — and it reads the decomposition off the numbering
     scheme every BMAD project shares. Umbrellas render as a context line, never a verdict row,
     the same way the retired board treated an in-flight story."""
+    for c in children:
+        c["umbrella"] = False
+    if mode != "story":
+        return
     ids = {c["key"]: (c.get("story_id") or "") for c in children}
     for c in children:
         mine = ids[c["key"]]
@@ -446,13 +487,28 @@ def ground_child(repo: Path, child: dict, base: str, mode: str = "story",
         r = wf.git(["diff", "--name-only", f"{base}...{branch}"], repo)
         if r.returncode == 0:
             paths = [ln.strip() for ln in (r.stdout or "").splitlines() if ln.strip()]
-            sources.append({"kind": "branch-diff", "ref": f"{base}...{branch}",
-                            "paths": paths})
+            # ⭐ SCC-155 review finding #16. A branch whose diff is ENTIRELY planning
+            # artifacts is not "code written" - it is the plan, one rung down, wearing rung
+            # one's authority. Every lane `/smh-plan-task` cuts looks exactly like this
+            # (`implementation_plan.md` + `task.yaml`, nothing else), and `source_paths`
+            # strips all of it, so the touch-set derived from this rung is EMPTY - disjoint
+            # from every sibling, and every planned lane came back 🟢. A manufactured green
+            # on the command's own happy path, which is the one thing Rule 3 exists to stop.
+            # An empty diff is the same story: nothing written is not evidence of scope.
+            if source_paths({"paths": paths}):
+                sources.append({"kind": "branch-diff", "ref": f"{base}...{branch}",
+                                "paths": paths})
 
     if mode == "task":
         plan = find_task_plan(repo, child["key"])
-        if plan:
-            sources.append({"kind": "plan", "path": str(plan.relative_to(repo)),
+        rel = str(plan.relative_to(repo)) if plan else None
+        # The lane's own branch is where `/smh-plan-task` left it (finding #15); the current
+        # checkout is only the fallback for a plan that has already landed.
+        if not rel and branch:
+            rel = find_task_plan_on_branch(repo, child["key"], branch)
+        if rel:
+            sources.append({"kind": "plan", "path": rel,
+                            "ref": branch if not plan else None,
                             "read": "the 'Modify/Add' lines AND every source path under "
                                     "'## Self-Audit' (that section exists to catch the edit "
                                     "sites the plan missed)"})
@@ -537,7 +593,7 @@ def cmd_plan(args) -> int:
         child["story_id"] = story_id_of(child["summary"])
         children.append(child)
 
-    mark_umbrellas(children)
+    mark_umbrellas(children, mode)
     for child in children:
         if not child["terminal"] and not child["umbrella"]:
             ground_child(repo, child, base, mode, parent["key"])
@@ -874,7 +930,16 @@ def cmd_stamp(args) -> int:
 
 def cmd_check(args) -> int:
     binary = acli_bin(args.acli)
-    mode = resolve_mode(parent_facts(binary, args.parent), args.mode)
+    # ⭐ `check` publishes a TWO-state contract in both command bodies: `[FRESH]` (0) or
+    # `[STALE]` (1). `parent_facts` dies with exit 2 when the board cannot be read, so
+    # routing the mode through it gave a read-only staleness verb a third exit nobody
+    # documents - and on a dropped uplink it died before reading a single comment. The type
+    # is only ever used to pick which command name to print, so a failure to read it degrades
+    # to the derived default instead of taking the whole verb down (SCC-155 review #20).
+    try:
+        mode = resolve_mode(parent_facts(binary, args.parent), args.mode)
+    except SystemExit:
+        mode = args.mode or "story"
     data = acli_json(binary, ["jira", "workitem", "comment", "list",
                               "--key", args.parent, "--json"])
     comments = data if isinstance(data, list) else (

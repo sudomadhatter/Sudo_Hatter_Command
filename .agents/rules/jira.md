@@ -536,13 +536,20 @@ unrecognized tickets on sight.
    | task close-out | `/smh-close-task-merge-tree` Step 4 | `Done` |
    | epic merge | `/cicd-push-e2e` Step 6.5 | `Done` |
    | found broken | `jira_feed.py flag` | **out of** `Done` |
+   | **close-out HELD by open operator actions** | `jira_feed.py finish` (both task close-outs) | **`Review Required`** → `Awaiting Review` → `In Review`, first one the board carries; **none installed → no move at all**, the `user-tasks` label carries the signal |
 
    The three `In Progress` writers are all the same idempotent verb, so they cannot fight: whichever
    fires first moves it, the rest are no-ops. Outside this table, transition a ticket only when the
    operator asks.
-   **The labelling pass is not a fifth** — `/cicd-label-tasks` and `/smh-label-tasks` write the
+   **The labelling pass is not a writer** — `/cicd-label-tasks` and `/smh-label-tasks` write the
    `parallel-ok` / `quick-dev` **labels** and one comment on the parent, and deliberately transition
-   nothing. `jira_feed.py finish` IS a writer of `Done`, and it is the one in the table above. Placement stays the operator's (guardrail 2);
+   nothing.
+   **`jira_feed.py finish` is two rows, not one**, and the second is why it earned its own line
+   above: on a clean walkthrough it writes the `Done` that the two task-close-out rows name, and on
+   a held one it writes a **review status instead** and refuses `Done` outright. That review row was
+   missing here while the code already wrote it — an undeclared writer against a table this
+   guardrail calls closed (SCC-155). It never moves a ticket the operator has already parked on one
+   of those rungs, and it never moves one backwards. Placement stays the operator's (guardrail 2);
    "these three are safe together" is not a reason to move a card.
 5. **The token stays in the OS credential store.** Never echo, copy, or persist it anywhere — and
    never bake a binary path or a store name into a doc. Both are per-machine, this file is read on

@@ -1246,9 +1246,17 @@ USER_TASKS_LABEL = "user-tasks"
 USER_TASKS_MARKER = "**User tasks**"
 # Attempted in order; the first one the board actually has wins. jira.md: a status a board
 # does not carry is "not installed yet", never an error - so this falls THROUGH rather than
-# failing. SCC has neither today, which makes the fall-through the live path, not a corner:
-# until a column is installed the label alone carries the signal.
-REVIEW_LADDER = ("Awaiting Review", "In Review")
+# failing, and the `user-tasks` label carries the signal on a board with none of them.
+#
+# `Review Required` leads because the operator installed exactly that column on SCC
+# (2026-08-14, this ticket's own `## Your Actions`), which turns the fall-through from the
+# LIVE path into the corner case it was always meant to be. The other two stay as fallbacks
+# for AVCH and any board that named it differently.
+#
+# ⛔ The literal is BOARD CONFIGURATION, not a property of this code: get it wrong and the
+# ladder silently never fires. `--review-status` overrides the whole ladder, so a rename on
+# the board is a flag on one invocation rather than an edit here and a release.
+REVIEW_LADDER = ("Review Required", "Awaiting Review", "In Review")
 # `(.*?)` not `(.+?)`: an unchecked box with no text after it is still an open obligation.
 # Requiring a character silently dropped it - fail-open, one level in from the shape the
 # docstring bans (SCC-155 review finding).
@@ -1434,10 +1442,14 @@ def cmd_finish(args) -> int:
         return 0
 
     # ── HELD ───────────────────────────────────────────────────────────────────
+    # Hoisted ABOVE the dry run: the DRY RUN message names the ladder too, so a
+    # definition further down was a NameError on the path that writes nothing.
+    ladder = ((args.review_status,) if getattr(args, "review_status", None)
+              else REVIEW_LADDER)
     body = render_user_tasks(items, str(wt), args.date)
     if not args.apply:
         say(f"jira-feed: DRY RUN - {args.key} HELD, {len(items)} open user task(s); would "
-            f"post them, add `{USER_TASKS_LABEL}` and try {' -> '.join(REVIEW_LADDER)}")
+            f"post them, add `{USER_TASKS_LABEL}` and try {' -> '.join(ladder)}")
         for it in items:
             say(f"  - [ ] {it}")
         return 3
@@ -1460,7 +1472,16 @@ def cmd_finish(args) -> int:
                                "--body-file", str(tmp)], timeout=args.timeout)
     finally:
         tmp.unlink(missing_ok=True)
+    # VERIFY the write, do not trust the exit code. acli returns 0 on writes the board
+    # accepted and lost - the close path already reads its transition back for exactly that
+    # reason, and the comment is the only thing on the ticket that says WHY it is held, so it
+    # earns the same treatment (SCC-155 review #24).
     comment_failed = cm.returncode != 0
+    if not comment_failed:
+        comment_failed = find_user_tasks(list_comments(binary, args.key)) is None
+        if comment_failed:
+            say(f"[WARN] {args.key}: acli reported the user-tasks comment posted, but a "
+                f"read-back does not find it - the write was accepted and lost.")
     if comment_failed:
         # Do NOT return here. The early return skipped the label and the ladder below, so a
         # failed narration left the ticket held while saying nothing about why - the loss this
@@ -1480,10 +1501,10 @@ def cmd_finish(args) -> int:
     # Already parked on ANY rung? Then there is nothing to do. Comparing only against the rung
     # being tried dragged a ticket an operator had advanced to `In Review` BACKWARDS to
     # `Awaiting Review` on the next held re-run (SCC-155 review finding).
-    moved = next((t for t in REVIEW_LADDER if status.lower() == t.lower()), "")
+    moved = next((t for t in ladder if status.lower() == t.lower()), "")
     unverified = False
     if not moved:
-        for target in REVIEW_LADDER:
+        for target in ladder:
             acli(binary, ["jira", "workitem", "transition", "--key", args.key,
                           "--status", target, "--yes"], timeout=args.timeout)
             back = view_fields(binary, args.key, timeout=args.timeout, strict=False)
@@ -1501,7 +1522,7 @@ def cmd_finish(args) -> int:
     if moved:
         where = f"moved to `{moved}`"
     elif unverified:
-        where = (f"tried `{REVIEW_LADDER[0]}` but the board would not confirm it - status "
+        where = (f"tried `{ladder[0]}` but the board would not confirm it - status "
                  f"UNKNOWN, not unchanged; re-run to settle it")
     else:
         where = (f"left at `{status or '?'}` - no review column on this board yet, so the "
@@ -1801,6 +1822,10 @@ def main() -> int:
                             "decides whether this closes or holds")
     p_fin.add_argument("--status", default="Done",
                        help="the board's terminal status (default: Done)")
+    p_fin.add_argument("--review-status",
+                       help="the board's review column, overriding the whole ladder "
+                            f"({' -> '.join(REVIEW_LADDER)}). The name is board config, "
+                            "not code: use this rather than editing the ladder")
     p_fin.add_argument("--timeout", type=int, default=90, metavar="SEC")
     p_fin.add_argument("--date", default=date.today().isoformat())
     p_fin.add_argument("--apply", action="store_true", help="without this, renders only")

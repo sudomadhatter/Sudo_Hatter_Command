@@ -145,7 +145,15 @@ say so and stop.
 
 ## Step 1.5 — Plan, audit it, then STOP for `approved`
 
-1. **Write `implementation_plan.md`** into `_artifacts/_main/<YYYY-MM-DD>_<slug>/`, right-sized to the
+⛔ **Read the batch box below BEFORE item 1.** It is placed after the list for readability, but an
+agent following the numbered steps literally would rewrite and re-audit the very plan the operator
+already approved — and by clause 3 of `000-PLAN-FIRST-GATE`, editing the plan **re-arms the gate**,
+destroying the approval the box exists to honour. Fail-safe, but it makes the feature unreachable
+by literal reading, which in this house is the same as not shipping it (SCC-155 review #11).
+**If this lane arrived from `/smh-plan-task` with a plan already on it, items 1 and 2 are already
+done — verify the box's four conditions and go straight to Step 2.**
+
+1. **Write `implementation_plan.md`** *(skip if this lane arrived with an approved plan — see the box)* into `_artifacts/_main/<YYYY-MM-DD>_<slug>/`, right-sized to the
    work. Each acceptance item maps to a step, and each step names **the assertion that will prove it**.
 2. **Invoke `/smh-self-audit`** on that plan. It appends its `## Self-Audit (<date>)` section and a
    canonical `Audit verdict: GO | NO-GO`. A **NO-GO stops the lane** — fix the plan and re-audit; do not
@@ -154,10 +162,22 @@ say so and stop.
 
 > **⭐ Already approved as part of a batch? (SCC-155)** If this lane came from `/smh-plan-task`,
 > its plan already carries a `**Batch approval (<date>):** "<the operator's words>"` line naming
-> this subtask's key. That IS the approval for this plan — go straight to Step 2. **Two conditions,
-> both mechanical:** the quote must name **this** key, and the plan must be **unchanged since the
-> commit that recorded it** (`git log -1 --format=%h -- <the plan>` against that commit). Edited
-> since? The gate re-arms and you stop here like any other lane. See `000-PLAN-FIRST-GATE.md`
+> this subtask's key. That IS the approval for this plan — go straight to Step 2.
+>
+> **All FOUR of the rule's conditions, restated here because this is where they are acted on** —
+> the box used to claim "two conditions" and check two of them, and an agent follows the literal
+> step list (SCC-155 review #13/#17):
+>
+> 1. the line carries the operator's **verbatim words**, and they name **this** subtask key;
+> 2. that lane's plan recorded `Audit verdict: GO` at the stop;
+> 3. the plan is **unchanged since the approval was recorded** — and the approval line now ends
+>    `— recorded at <sha>`, so this is a real comparison:
+>    `git log -1 --format=%h -- <the plan>` **must equal that sha**. No sha on the line means the
+>    planner predates this contract: **the gate re-arms, you stop.** A missing operand is never a
+>    pass;
+> 4. the work is still the planning-only scope the batch covered.
+>
+> Any one of them missing? You stop here like any other lane. See `000-PLAN-FIRST-GATE.md`
 > § "One approval MAY cover several plans".
 
 ⛔ Per `000-PLAN-FIRST-GATE`, these are **not** approval and never have been: "ok" · "looks good" ·

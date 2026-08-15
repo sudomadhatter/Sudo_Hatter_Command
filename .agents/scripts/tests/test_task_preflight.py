@@ -42,6 +42,23 @@ story: SCC-11
 
 ## Task Checklist
 - [x] did the thing
+
+## Your Actions
+
+Nothing is owed.
+"""
+
+# The same walkthrough WITHOUT the section `jira_feed.py finish` reads. Kept as its own
+# fixture so the positive control above stays a real control (SCC-155).
+WALKTHROUGH_NO_ACTIONS = """---
+type: walkthrough
+story: SCC-11
+---
+
+# SCC-11 — a task
+
+## Task Checklist
+- [x] did the thing
 """
 
 
@@ -455,6 +472,25 @@ def main() -> int:
         code, out = preflight(repo)
         c.check("a walkthrough for a DIFFERENT key does not count",
                 code == 2 and "no walkthrough.md mentions SCC-11" in out, out.strip()[-300:])
+
+    # ── ⛔ SCC-155 review finding #22: the section finish REQUIRES, checked BEFORE the merge ──
+    # `jira_feed.py finish` refuses (exit 2) on a walkthrough with no `## Your Actions`, and
+    # the close-out runs it at Step 4 - AFTER the merge has landed. Preflight already demands
+    # the walkthrough; demanding its section costs one read and moves an existing hard
+    # failure to the one point where it is still cheap to fix. It ships ARMED because it is
+    # not a new gate: it is the same refusal, earlier, so nothing that passes today breaks.
+    with TempDir() as t:
+        repo = make_repo(t, walkthrough=False)
+        write(repo, "_artifacts/_main/2026-08-08_scc-11-thing/walkthrough.md",
+              WALKTHROUGH_NO_ACTIONS)
+        commit(repo, "SCC-11 chore: walkthrough with no Your Actions")
+        git(repo, "push", "-q", "origin", "main")
+        branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+        code, out = preflight(repo)
+        c.check("#22 a walkthrough with no `## Your Actions` blocks at PREFLIGHT",
+                code == 2 and "Your Actions" in out, out.strip()[-300:])
+        c.check("#22 and it names finish as the reason, not a style preference",
+                "finish" in out, out.strip()[-300:])
 
     # Found by CONTENT, not just by folder name - a walkthrough filed under a date-slug
     # folder that does not carry the key is the normal shape in this repo.
@@ -1248,6 +1284,7 @@ def main() -> int:
         write(repo, f"{fdir}/task.yaml", MANIFEST.replace("SCC-11", "SCC-99"))
         write(repo, f"{fdir}/walkthrough.md",
               "# another lane\n\nmentions SCC-11 in passing\n\n"
+              "## Your Actions\n\nNothing is owed.\n\n"
               f"## Code Review\n\nVerdict: PASS @ {sha}\n")
         commit(repo, "SCC-11 chore: a foreign lane's artifacts (artifacts only)")
         git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
@@ -1264,6 +1301,7 @@ def main() -> int:
         write(repo, f"{fdir}/task.yaml", MANIFEST.replace("SCC-11", "SCC-99"))
         write(repo, f"{fdir}/walkthrough.md",
               "# another lane\n\nmentions SCC-11 in passing\n\n"
+              "## Your Actions\n\nNothing is owed.\n\n"
               f"## Code Review\n\nVerdict: FAIL @ {sha}\n")
         commit(repo, "SCC-11 chore: a foreign lane's artifacts (artifacts only)")
         git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
