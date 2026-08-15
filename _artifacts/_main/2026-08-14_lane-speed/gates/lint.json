@@ -3,7 +3,7 @@
   "story": "scc-156",
   "result": "pass",
   "exit_code": 0,
-  "sha": "5dc2bc1ee5a9e7d496ac7eaea09d9e69be42f5e2",
+  "sha": "7fac099d600f1f7e6bf54bc0ce7c1bf9edd104ce",
   "dirty_tree": false,
   "dirty_paths": [],
   "totals": null,
@@ -14,6 +14,6 @@
   ],
   "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/lane-speed",
   "duration_s": 0.2,
-  "recorded_at": "2026-08-14T21:17:21+00:00",
+  "recorded_at": "2026-08-15T02:03:45+00:00",
   "output_tail": "== workflow_lint - toolkit-only ==\n[INFO ] commands: testarch-atdd.md: UTF-8 BOM present\n[INFO ] commands: testarch-automate.md: UTF-8 BOM present\n[INFO ] commands: testarch-ci.md: UTF-8 BOM present\n[INFO ] commands: testarch-framework.md: UTF-8 BOM present\n[INFO ] commands: testarch-nfr.md: UTF-8 BOM present\n[INFO ] commands: testarch-test-design.md: UTF-8 BOM present\n[INFO ] commands: testarch-test-review.md: UTF-8 BOM present\n[INFO ] commands: testarch-trace.md: UTF-8 BOM present\n-- 0 error(s), 0 warning(s), 8 info --\n"
 }
