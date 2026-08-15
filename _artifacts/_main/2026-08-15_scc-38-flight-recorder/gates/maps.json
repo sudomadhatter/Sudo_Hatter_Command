@@ -1,0 +1,24 @@
+{
+  "gate": "maps",
+  "story": "scc-38",
+  "result": "pass",
+  "exit_code": 0,
+  "sha": "d5a2f8f2c734a1f0bfe2468ed0d5fa66aff6b507",
+  "dirty_tree": true,
+  "dirty_paths": [
+    "_artifacts/_main/2026-08-15_scc-38-flight-recorder/gates/maps.json"
+  ],
+  "totals": null,
+  "command": [
+    "python3",
+    ".agents/scripts/check_maps.py",
+    "--root",
+    ".",
+    "--depth3-only",
+    "--strict"
+  ],
+  "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/scc-38-flight-recorder",
+  "duration_s": 0.1,
+  "recorded_at": "2026-08-15T05:13:51+00:00",
+  "output_tail": ""
+}
