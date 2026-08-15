@@ -1,0 +1,22 @@
+{
+  "gate": "maps",
+  "story": "scc-160",
+  "result": "pass",
+  "exit_code": 0,
+  "sha": "c475fb1390e78aead6cf88459f3c771a34cd224b",
+  "dirty_tree": true,
+  "dirty_paths": [
+    "_artifacts/_main/2026-08-15_fix-in-thread/gates/maps.json"
+  ],
+  "totals": null,
+  "command": [
+    "python3",
+    ".agents/scripts/check_maps.py",
+    "--depth3-only",
+    "--strict"
+  ],
+  "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/scc-160-fix-in-thread",
+  "duration_s": 0.1,
+  "recorded_at": "2026-08-15T06:18:33+00:00",
+  "output_tail": ""
+}
