@@ -82,6 +82,7 @@ re-syncing the twin is an AVCH ticket of its own, not something a lobby lane may
 | fix something small in a project | `/cicd-quick-dev <slug>` — **low-risk work only** ([§8](#8-the-fast-lane--cicd-quick-dev)) |
 | **plan** a big Task — subtasks, lanes, the parallel table | `/smh-plan-task <TASK-KEY>`, then `/smh-label-tasks <TASK-KEY>` ([§9](#9-the-task-lane--work-on-the-system-itself)) |
 | **build** a Task — a command, a rule, a gate, the docs | `/smh-quick-dev <KEY>` → `/smh-code-review` → `/smh-close-task-merge-tree` ([§9](#9-the-task-lane--work-on-the-system-itself)) |
+| ⭐ **just get one specific thing done** — write me a guide, fix a reference, tidy a branch mess | `/smh-quick-fix "<the ask>"` — **no plan, no `approved`, no review**; it does not stop to ask whether to start ([§9a](#the-lightweight-lane--smh-quick-fix)) |
 | land **several** finished Tasks at once | `/smh-merge-multiple-workingtrees` — one sign-off per lane ([§7](#7-landing-and-shipping--the-close-out-family)) |
 | see what a command will do before typing it | [Part VI — the command atlas](#18-every-command-one-diagram) |
 | know whether a review still counts | [§11 — the decision tree](#11-is-this-review-still-valid) |
@@ -130,7 +131,8 @@ personal notes if you like; agents no longer read it, and it is never quoted as 
 [6 The story lane](#6-the-story-lane) ·
 [7 Landing and shipping](#7-landing-and-shipping--the-close-out-family) ·
 [8 The fast lane](#8-the-fast-lane--cicd-quick-dev) ·
-[9 The Task lane](#9-the-task-lane--work-on-the-system-itself)
+[9 The Task lane](#9-the-task-lane--work-on-the-system-itself) ·
+[9a ⭐ The lightweight lane](#the-lightweight-lane--smh-quick-fix)
 
 **Part IV — The machinery**
 [10 The safety net](#10-the-safety-net--what-checks-your-work) ·
@@ -276,6 +278,8 @@ flowchart TD
     AP["/cicd-autopilot-claude + 2 lanes\nthe robot runs ①②③ for you"] -.->|"alternate lane for ①②③"| TWO
     PT["/smh-plan-task\nplan a whole Task, subtasks and all\nONE approval stop"] --> SLABEL["/smh-label-tasks\nwhich subtasks run side by side"]
     SLABEL --> TASK["/smh-quick-dev → /smh-code-review\nwork on the SYSTEM: commands, rules, docs"]
+    QF["/smh-quick-fix\nthe LIGHTWEIGHT lane: a guide, a reference,\na source-control tidy — nothing that can break\nno plan, no approval, no review"] --> TASKCLOSE
+    QF -.->|"the real diff stops qualifying"| TASK
     TASK --> TASKCLOSE["/smh-close-task-merge-tree\nONE chore branch → main DIRECTLY"]
     TASK --> TASKMULTI["/smh-merge-multiple-workingtrees\nSEVERAL chore branches → main\none sign-off per lane"]
     TASKCLOSE --> PROD
@@ -307,9 +311,12 @@ flowchart TD
     P -- "yes" --> LOOP["THE STORY LANE\n① ② ③ then close-out\n§6 and §7"]
     P -- "no, and it is small\nand low-risk" --> FAST["THE FAST LANE\n/cicd-quick-dev\n§8"]
     T -- "yes" --> LOOP
-    T -- "no" --> TASK["THE TASK LANE\n/smh-quick-dev\n§9"]
+    T -- "no" --> Q{"lane_qualify.py\ndoes it touch the development system?\n.agents/ .githooks/ AGENTS.md"}
+    Q -- "TASK — yes, or scope unknown" --> TASK["THE TASK LANE\n/smh-quick-dev\n§9"]
+    Q -- "LIGHT — no" --> LIGHT["THE LIGHTWEIGHT LANE\n/smh-quick-fix\n§9a"]
     FAST -.->|"touches auth, payments, PII,\nDB schema, a cross-service contract,\nor the router says it needs planning"| LOOP
     TASK -.->|"a deployable path shows up\nin the diff mid-build"| LOOP
+    LIGHT -.->|"the REAL diff stops qualifying\nStep 3.5 re-runs the check"| TASK
 ```
 
 **Read the arrows, they matter more than the boxes.** Both dotted lines are **ejects** — tripwires
@@ -320,18 +327,34 @@ that fire mid-build and send the work back to the full loop. You do not get to a
 - The Task lane ejects the moment a **deployable path** appears in the diff. That is a product
   change whatever the ticket says, and the product has exactly one road to `main`. **There is no
   override flag, deliberately** — see [`task_preflight.py`](#the-checks-and-what-each-one-refuses).
+- The lightweight lane ejects when the **real diff** stops qualifying. Step 0 judges what you said
+  you would touch; Step 3.5 judges what you actually touched, so an under-declared scope is caught by
+  `git diff` rather than by an agent's honesty.
 
-### The three lanes side by side
+### The four lanes side by side
 
-| | Story lane | Fast lane | Task lane |
-|---|---|---|---|
-| **For** | sprint features, bug stories | a small project fix, a docs/config change | the toolkit, rules, `/` commands, gates, docs |
-| **Build with** | ① `/cicd-write-story-tests` → ② `/cicd-dev-story-tests` | `/cicd-quick-dev` | `/smh-quick-dev` |
-| **Review with** | ③ `/cicd-code-review` | built into `/cicd-quick-dev` Step 3 | `/smh-code-review` |
-| **Branch** | `claude/<KEY>-<slug>`, off the epic branch | same, or `chore/<KEY>-<slug>` off `main` if ad-hoc | `chore/<KEY>-<slug>`, off `main` |
-| **Close with** | `/cicd-update-sprint-memory` (or `/cicd-merge-epic-workingtrees`) | **it does not close** — hands back to you | `/smh-close-task-merge-tree` |
-| **Code lands on** | the epic branch → `main` via `/cicd-push-e2e` | epic branch, via close-out | `main`, directly |
-| **Story file?** | yes | only on the story lane; never on the ad-hoc lane | no |
+| | Story lane | Fast lane | Task lane | ⭐ Lightweight lane |
+|---|---|---|---|---|
+| **For** | sprint features, bug stories | a small project fix, a docs/config change | the toolkit, rules, `/` commands, gates, docs | a guide, a reference fix, tidying source control — **nothing that can break** |
+| **Build with** | ① `/cicd-write-story-tests` → ② `/cicd-dev-story-tests` | `/cicd-quick-dev` | `/smh-quick-dev` | `/smh-quick-fix` |
+| **Review with** | ③ `/cicd-code-review` | built into `/cicd-quick-dev` Step 3 | `/smh-code-review` | **none** — the gates run, no verdict |
+| **Plan + `approved`?** | yes | no — invoking it IS the skip | yes | **no** — invoking it IS the skip |
+| **Branch** | `claude/<KEY>-<slug>`, off the epic branch | same, or `chore/<KEY>-<slug>` off `main` if ad-hoc | `chore/<KEY>-<slug>`, off `main` | `chore/<KEY>-<slug>`, off `main` |
+| **Close with** | `/cicd-update-sprint-memory` (or `/cicd-merge-epic-workingtrees`) | **it does not close** — hands back to you | `/smh-close-task-merge-tree` | `/smh-close-task-merge-tree` — the same door, unchanged |
+| **Code lands on** | the epic branch → `main` via `/cicd-push-e2e` | epic branch, via close-out | `main`, directly | `main`, directly |
+| **Story file?** | yes | only on the story lane; never on the ad-hoc lane | no | no |
+
+> ⓘ **Why the lightweight lane exists (2026-08-15, SCC-162).** Your ruling, during SCC-161: *"not
+> everything is a full quick dev. sometimes I just want an agent to do something specific… this does
+> not touch anything that can break. so we don't need to over engineer it."* SCC-161 was the proof — a
+> doc-only edit that got a plan-first stop, a worktree, a self-audit and a failing assertion before you
+> said *"we are editing a doc thats all."*
+>
+> The scope is yours too: *"only for the smh / commands, we need this for the command center not
+> normal cicd work."* **No `cicd-*` flow gains a light mode**, and the check refuses outright in a
+> project repo before it even reads the paths. The test is your sentence — ***things that do not
+> affect our development system*** — and it is a script rather than a paragraph because the previous
+> version of this rule was prose and agents talked themselves past it.
 
 > ⓘ **Why the Task lane exists at all (2026-08-10, SCC-78).** Everything in the story lane is
 > *BMAD-paired*: it needs a story file, a sprint board, an epic branch and a `review`→`done` flip,
@@ -1036,6 +1059,56 @@ flowchart LR
     STOP -.->|"your sign-off, ONE lane"| CLOSE["/smh-close-task-merge-tree"]
     STOP -.->|"your sign-off, SEVERAL lanes"| MULTI["/smh-merge-multiple-workingtrees"]
 ```
+
+### The lightweight lane — /smh-quick-fix
+
+**Not everything on this side of the fence is a full Task.** Sometimes you want one specific thing
+done — write me a guide, fix that reference, tidy this branch mess — and it touches nothing that can
+break. Before SCC-162 an agent had two settings for that: the whole ceremony above, or improvisation.
+
+▶ **Diagram:** [`/smh-quick-fix` in the command atlas](#smh-quick-fix) — every step, refusal and eject.
+
+**What you type.** Either the command, or just say it — *"skip the plan, just do it"* names the same
+lane, and the rule now points both at one definition instead of leaving the phrase dead-ending.
+
+**What it does:** mints the ticket, cuts the `chore/<KEY>-<slug>` worktree, does the work, runs the
+gates, pushes, writes a short walkthrough, hands back. **What it skips:** the plan, your `approved`,
+the self-audit, the RED-first assertion, and the review verdict.
+
+**What it will not do is ask your permission to start.** *"Shall I mint a ticket? Shall I open a
+lane? Shall I write a plan?"* — that questioning is the over-engineering the ruling was against, and
+it is now banned in the command body itself.
+
+**The one thing it checks first is not a judgement.**
+
+```bash
+python3 .agents/scripts/lane_qualify.py --repo "$(git rev-parse --show-toplevel)" \
+        --paths <the paths it will touch>                                   # PC: drop the 3
+```
+
+| It says | Meaning |
+|---|---|
+| `LIGHT` | do it |
+| `LIGHT-VCS` | a declared source-control tidy that changes no files |
+| `TASK` | it touches the development system → `/smh-quick-dev`, with a plan |
+| `HANDOFF` | a deployable path → `/cicd-push-e2e` |
+| `NOT-COMMAND-CENTRE` | you are in a project repo → the `cicd-*` lanes |
+
+Two of those answers are there because of how this check could be gamed. **Naming no paths is
+`TASK`, not "nothing to see"** — silence is unknown scope, and an agent that declares nothing would
+otherwise be handed the lane. And the check is deliberately **blunter than the commit gate**: the
+commit gate exempts the test suite (correctly — editing a test changes nothing *you* type), but
+"needs a doc update" and "can break something" are different questions, and reusing one for the
+other would have let this lane rewrite the enforcement suite.
+
+**It still lands the normal way.** `/smh-close-task-merge-tree`, unchanged — there is no lighter door
+to `main`, and there was never going to be one. A lane with no review verdict simply means that
+close-out runs the whole gate itself instead of inheriting a green, which is the safe direction.
+
+**And it can lose the lane it started in.** Step 3.5 re-runs the same check against the *real* diff
+before the walkthrough is written. Anything but `LIGHT` and the work stops being lightweight then and
+there: it continues on `/smh-quick-dev`, with a plan and your `approved`, keeping every commit
+already made.
 
 ### ⭐ `/smh-plan-task <TASK-KEY>` — plan the whole Task, subtasks and all
 
@@ -1903,6 +1976,7 @@ speak; "refuses" means it will not proceed at all and names the fix.*
 | ③ `/cicd-code-review` | never — it verdicts | an empty diff |
 | `/cicd-quick-dev` | Step 1 (the acceptance list) and the end — it never closes out | the eject tripwire (risk, or ACs that will not fix) |
 | `/smh-quick-dev` | Step 1 (the checkable list), Step 1.5 (`approved`), Step 1.6 (proposed subtasks), the end | a NO-GO audit; the eject tripwire (a deployable path) |
+| ⭐ `/smh-quick-fix` | **the end only** — and never to ask whether to mint a ticket or open a lane; a `LIGHT-VCS` tidy still shows you what it will delete first | Step 0 qualification is not `LIGHT`: a project repo, a deployable path, a toolkit path, **or no paths declared at all**; Step 3.5 re-checks the real diff and ejects to `/smh-quick-dev` |
 | `/smh-code-review` | never — it verdicts | an empty diff |
 | `/cicd-update-sprint-memory` | Step 6 for learnings, only if none were auto-routed | preflight exit 2; a `FAIL` verdict; a red suite after absorbing the epic; an incident branch |
 | `/cicd-merge-epic-workingtrees` | Step 1 to confirm the set; Step 5 learnings if none routed | a `FAIL` lane (skipped, the rest proceed); a red combined gate |
@@ -2256,6 +2330,37 @@ flowchart TD
 ```
 
 ### The Task lane
+
+#### /smh-quick-fix
+
+*The lightweight lane (SCC-162): command-centre work that touches nothing which can break. Invoking
+it IS the "skip the plan" instruction, so there is no plan, no `approved`, no self-audit, no RED-first
+assertion and no review verdict — but qualification is a script and it runs TWICE, on what you
+intended and again on what you actually changed. Explained in
+[§9a](#the-lightweight-lane--smh-quick-fix). Calls: `lane_qualify.py`, `link-worktree-assets.py`,
+`jira_feed.py start`, `jira_feed.py devrecord`. Hands to: `/smh-close-task-merge-tree` on your word —
+or to `/smh-quick-dev` if it ejects.*
+
+```mermaid
+flowchart TD
+    S0["Step 0 — lane_qualify.py --paths\nBEFORE minting anything"] --> Q{"verdict?"}
+    Q -- "NOT-COMMAND-CENTRE" --> OUTP["⛔ a project repo\n→ the cicd-* lanes"]
+    Q -- "HANDOFF" --> OUTD["⛔ a deployable path\n→ /cicd-push-e2e"]
+    Q -- "TASK — incl. NO paths given" --> OUTT["⛔ touches the dev system,\nor scope is unknown\n→ /smh-quick-dev, with a plan"]
+    Q -- "LIGHT / LIGHT-VCS" --> S1["Step 1 — mint the ticket, cut\nchore/KEY-slug off main, link assets\nticket → In Progress"]
+    S1 --> NOASK["⛔ never ask 'shall I mint /\nopen a lane / write a plan?'\nasking IS the over-engineering"]
+    NOASK --> S2["Step 2 — do the work\nexplicit-path commits · push"]
+    S2 --> S3["Step 3 — the gates that apply\nrun_all · workflow_lint --toolkit-only\ncheck_maps · the SOP folder test\nrun them BARE, never piped"]
+    S3 --> VCS{"LIGHT-VCS?"}
+    VCS -- "yes" --> RISK["delete only the refs the operator NAMED\nnever a swept set · -C on every call\nshow it, get the word, then delete"]
+    VCS -- "no" --> S35
+    RISK --> S35["Step 3.5 — ⛔ EJECT\nlane_qualify.py against the REAL diff\ngit diff --name-only main...HEAD"]
+    S35 --> EJ{"still LIGHT?"}
+    EJ -- "no" --> EJECT["⛔ the lane is over — keep every commit,\nthe plan-first gate RE-ARMS\n→ /smh-quick-dev"]
+    EJ -- "yes" --> S4["Step 4 — lean walkthrough\n## What changed · ## Evidence\n## Your Actions (required, even if empty)\ntask.yaml · Dev Record"]
+    S4 --> STOP["STOP — hand back\nnever merges, never closes its own ticket"]
+    STOP -.->|"your sign-off"| CLOSE["/smh-close-task-merge-tree\nno verdict to inherit, so the FULL gate runs"]
+```
 
 #### /smh-quick-dev
 
@@ -2814,6 +2919,7 @@ flowchart TD
 | ⭐ `/smh-plan-task <TASK-KEY>` | Plans a **whole** Task in one pass — proposes the subtask breakdown and stops; on your go mints the Subtasks, and per lane writes the plan, audits it, cuts and pushes the worktree, points the ticket at the plan; labels the set; then **one** approval stop for everything. |
 | ⭐ `/smh-label-tasks <TASK-KEY>` | The Task-lane twin of `/cicd-label-tasks`: which **Subtasks** of one Task can run side by side (`parallel-ok`) and which are quick-lane sized (`quick-dev`). States, never starts; a stale answer says "re-run me". |
 | `/smh-quick-dev` | The Task lane's build step. Fixes a checkable acceptance list before anything is written, plans, audits, waits for `approved`, then builds — with something failing first, always. Ends at the review gate and **stops**; it never merges. |
+| ⭐ `/smh-quick-fix` | **The lightweight lane** ([§9a](#the-lightweight-lane--smh-quick-fix)). One specific thing that touches nothing which can break — a guide, a reference fix, a source-control tidy. Mints the ticket, cuts the lane, does it, runs the gates, pushes, hands back. No plan, no `approved`, no self-audit, no failing-check-first, no review verdict — and it **does not ask whether to start**. Qualification is `lane_qualify.py`, not a judgement, and it runs again on the real diff at the end: stop qualifying and the lane ejects to `/smh-quick-dev` with the plan gate re-armed. Lands through `/smh-close-task-merge-tree` like everything else. |
 | `/smh-self-audit` | Pressure-tests the plan before anyone writes anything, pointed at the blast radius toolkit work actually has. Also **reads the other live lanes** and tells you which should land first. Ends in `GO` or `NO-GO`. Has a **retroactive mode** for when the work already exists and no plan was written — it audits the ticket's ACCEPTANCE block instead and stamps the result `retroactive`, so the record never reads as though a gate ran in time when it did not. |
 | `/smh-code-review` | The Task lane's verdict. Re-checks `main` (Step 0.7), hunts the diff cold, audits against the acceptance list, runs the command-centre gate, folds in the clean-code gate, and writes the one `Verdict:` line `/smh-close-task-merge-tree` reads before it will merge. |
 | `/smh-clean-code-audit` | The command centre's machine floor — the enforcement suite, toolkit lint, SOP currency, py_compile, links, door parity. |
