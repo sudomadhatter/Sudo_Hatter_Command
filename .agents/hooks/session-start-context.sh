@@ -35,6 +35,21 @@ One invocation authorises ONE merge and never carries forward (SCC-71). Merge-re
 hand it back. Canonical table: .agents/rules/git-policy.md § "The write gate".
 EOF
 
+# Flight-recorder proposals (SCC-133): action-required recurrences across closed lanes, one line
+# each, or nothing. The script is resolved from $ROOT first (works from EITHER copy of this hook -
+# .agents/hooks/ or the generated .claude/hooks/ mirror), then beside this hook (so a test can
+# point CLAUDE_PROJECT_DIR at a seeded temp repo and still run the real script). python3 on the
+# Mac, python on the PC. `surface` always exits 0 and never blocks; nothing it prints is owed
+# (SCC-160 - the operator's word mints). Output is captured so an empty ledger prints NOTHING.
+HERE=$(cd "$(dirname "$0")" && pwd)
+PY=$(command -v python3 || command -v python)
+FR="$ROOT/.agents/scripts/flight_recorder.py"
+[ -f "$FR" ] || FR="$HERE/../scripts/flight_recorder.py"
+if [ -n "$PY" ] && [ -f "$FR" ]; then
+  FR_OUT=$("$PY" "$FR" surface --repo "$ROOT" 2>/dev/null) || FR_OUT=""
+  [ -n "$FR_OUT" ] && printf '\n%s\n' "$FR_OUT"
+fi
+
 if [ -f docs/repo-map.md ]; then
   echo ""
   echo "# Repo map (navigation index):"

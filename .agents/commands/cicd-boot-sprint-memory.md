@@ -118,6 +118,11 @@ Read-only — cross-check against live files; never edit anything.
 - **Shared-resource singleton** — one client per shared resource (DB / auth / cache), via the
   project's factory (per the constitution).
 - **Research-first** — read files before editing them.
+- **Flight-recorder proposals (SCC-133)** — the lobby's SessionStart hook already printed any
+  `FLIGHT-RECORDER PROPOSAL` lines (recurrences across closed Task lanes at the action-required
+  rung). Read them as *evidence for the operator*, never as work: nothing there is owed, minted or
+  queued (SCC-160). Standing in the lobby, `python3 .agents/scripts/flight_recorder.py surface`
+  reprints them; `candidates` shows the whole ladder.
 
 ## Step 4 — Ready
 Say:

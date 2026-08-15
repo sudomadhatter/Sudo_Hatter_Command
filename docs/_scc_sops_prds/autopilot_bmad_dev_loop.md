@@ -329,6 +329,38 @@ flowchart TD
 
 ---
 
+### 6a. Done-means-green — the law the engines port (SCC-134, under SCC-38)
+
+The seven guarantees above are what the v2 engine *does*. This block is what every engine — the
+Claude, DeepSeek/GLM and opencode lanes, and the four project-local `.ps1` copies that drift from
+them — **must keep doing when it is ported, rewritten or tuned.** Engines are project-local; this
+spec is the propagation layer, so the law lives here and not in any one script.
+
+1. **A stage's gate is a script with an exit code — never the agent's self-assessment.** "Tests
+   green" pasted by an agent is a claim; the orchestrator's own independent suite run (guarantee 7)
+   is the evidence, and only that flips a story to `review`. An engine that lets a stage declare
+   itself done has removed the gate, whatever its log says.
+2. **Retries are engine-owned, deterministic and hard-bounded.** The counter lives in the
+   orchestrator (`-MaxRetries`, backoff, then `CRASHED` — guarantees 1 and 2). The spawned agent has
+   **no authority and no instruction path to spawn further attempts of its own**; an agent that
+   retries itself is an unbounded loop with a budget attached.
+3. **Skip-if-unchanged.** A gate that failed is not re-run while the workspace it failed on is
+   byte-identical — that is pure credit burn. Re-run only after something changed, and say what.
+4. **Park with a receipt on exhaustion, never thrash.** When retries or the cost ceiling run out,
+   the engine stops with the gate output, the attempts and the shas written down for the human
+   (`PAUSED` / `TESTS RED` / `COST CEILING` in `_RUN-STATUS.md`) — not a silent loop, not a
+   softened gate.
+5. **Idempotent resume by `(stage, sha)`.** A stage's completion is recorded against the artifact
+   it produced (guarantee 4); re-running the pipeline returns the record instead of redoing the
+   stage, and `-DryRun` shows the resume plan for $0.
+
+**What is deliberately NOT here — red gates stay human-in-the-loop.** The 08-12 plan for SCC-38
+proposed that a red gate spawn a fresh, engine-owned fix session (max two retries) before parking.
+That was **dropped, not deferred**, on the 2026-08-15 assessment: v2 stops on `TESTS RED` for the
+operator by design (guarantee 5's spirit — only a human decides what a red means), and reviving
+an auto-fix loop is a design reversal, not a tuning knob. If it is ever wanted it returns as an
+opt-in flag under a new ticket, with these five points as its floor.
+
 ## 7. The artifact handoff folder
 
 Everything for a run lives in one place — **inside the story worktree**, because `_artifacts/` is

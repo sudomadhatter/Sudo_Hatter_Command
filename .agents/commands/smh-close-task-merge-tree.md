@@ -253,6 +253,44 @@ looping: `suggestion`/`nitpick` → record and proceed (a `defer` here still nam
 blocker, or it is a patch); only a `critical`/`important` in `decision_needed` or `patch` stops the
 merge — and it is fixed in this lane before the merge, never carried out of it.
 
+## Step 2.5 — Record the flight event (pre-merge, artifacts-only) — SCC-133
+
+The lane's evidence is about to be merged and forgotten. Record it **now, in the worktree, before
+the merge** — the recorder writes one small file keyed on the walkthrough's `Verdict: … @ <sha>`
+sha, and that file rides the merge like a receipt does:
+
+```bash
+python3 "<worktree>/.agents/scripts/flight_recorder.py" record --task <JIRA-KEY> \
+        --root <task-artifacts folder> --repo "<worktree>" --apply      # PC: `python`
+# Commit ONLY when it wrote something: on "already recorded" (a resumed close-out) or a
+# refusal there is nothing staged, and a bare `git commit` would exit 1 for no reason.
+if git -C "<worktree>" status --porcelain _artifacts/_main/workflow-events/ | grep -q .; then
+  git -C "<worktree>" add _artifacts/_main/workflow-events/
+  git -C "<worktree>" commit -F <msg>   # "<KEY> chore(recorder): flight event @ <sha7> [sop-ok]"
+  git -C "<worktree>" push
+fi
+```
+
+The script path is anchored on **`<worktree>`**, not the cwd — the door's cwd is the shared
+checkout, and the lane that ships a recorder change (this one included) does not have that
+change on `main` yet.
+
+**Why here and not after the merge:** after Step 3 the only tree that has the merge is `main`'s,
+and a file written there is either left untracked or committed straight onto `main` outside the
+token you just spent — the exact write the gate refuses. Pre-merge, it is one more artifacts-only
+commit, which the SKIP machinery already ignores (freshness is content-based). **Idempotent:** a
+resumed close-out prints "already recorded" and writes nothing — the key is the verdict sha, not
+HEAD, precisely so this commit does not create a second event on re-run.
+
+**What it records and what it does NOT do (SCC-160):** the verdict sha, the lane's changed files,
+the receipts by gate, and the walkthrough's decisions / pitfalls / follow-ons — the same buckets
+the Dev Record posts — plus four mechanical fingerprints (a rules file rewritten · a red receipt ·
+a non-PASS verdict · a script or command named in a pitfall). Recurrence across lanes climbs a
+ladder (1 evidence · 2 candidate · 3+ action-required) that SessionStart and `/cicd-boot-sprint-memory`
+**surface as proposals** — never as owed work, never as a minted ticket. `flight_recorder.py
+candidates` prints the whole ladder any time. **A `record` failure never blocks the merge** — report
+it like a failed receipt and carry on; nothing downstream depends on it.
+
 ## Step 3 — Merge to `main`
 
 ```bash

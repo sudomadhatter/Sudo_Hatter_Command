@@ -118,8 +118,10 @@ the old "N stories behind" fast-forward died with `main_debug` on 2026-08-07.)*
    paths, follow-on-fix convention (no new story, no new worktree) — and the combined surface
    re-run to green.
 2. Run `/cicd-prune-context` ONCE for the whole set (not per lane); write the queued memory files +
-   `MEMORY.md` pointers; ask the operator the close-out catch question once: *"Set closed. Any
-   manual learnings, new bugs, or sprint-objective changes to add?"*
+   `MEMORY.md` pointers; then the close-out catch question — **once, and only if the set routed
+   ZERO learnings automatically (SCC-133)**: *"Set closed. Any manual learnings, new bugs, or
+   sprint-objective changes to add?"* When something was routed, print the routed list instead of
+   asking.
 
 ## Step 6 — Prune EVERY tree and branch (AUTOMATIC — only after Step 5 is green)
 
