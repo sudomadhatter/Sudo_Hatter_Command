@@ -208,8 +208,10 @@ looks identical to one that fails its assertion, and only one of those is a real
 
 > **Run the new cases, not the whole file.** Where a suite file declares blocks (`if c.block("…"):`),
 > `python3 <suite> --case "<label>"` runs just yours — seconds instead of the file's full wall, which
-> on the two big suites is 51 s and 105 s. ⛔ **Exit 3 means the filter matched NOTHING** (typo'd label,
-> a file with no blocks, a block with no cases) — it is not a red and not a green, it is a mis-typed
+> on the big suites is 58 s (`test_task_preflight.py`), 51 s (`test_git_hooks.py`) and 42 s
+> (`test_task_preflight_receipts.py`). ⛔ **Exit 3 means the filter selected NOTHING to run** (typo'd
+> label, a file with no blocks, a block with no cases, or a label that went missing — a bare
+> `--case`/`--case=`/empty value, which is what an unset shell variable becomes) — it is not a red and not a green, it is a mis-typed
 > command. The full file still runs before you commit; the filter is for the loop, not the proof.
 
 ⛔ **A red that asserts strings, paths or preconditions that do not exist in real source is fiction, not
@@ -240,7 +242,7 @@ cut it or name why it stays.
   whole file once after the LAST fix.
 - **⭐ STAMP-FIRST — the receipt run IS the suite run, not a second opinion.** Do **not** run
   `run_all.py` bare "to check" and then run it again through the receipt writer: that is one
-  3.4-minute suite paid for twice, for nothing. The first full run of the landing code goes through
+  70-second suite paid for twice, for nothing (3.4 minutes if you reach for `--serial`). The first full run of the landing code goes through
   the writer. **A red receipt is the mechanism working** — it records what the suite actually said,
   you fix, you re-stamp. Run the full enforcement suite once, on the code that will actually land —
   **through the receipt writer (SCC-146)**, so the run leaves evidence the review and the close-out

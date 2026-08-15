@@ -963,6 +963,52 @@ def main() -> int:
             c.check("G6d · an incident lane cut from a main that already carries the lane is ALLOWED",
                     rc == 0, out.strip()[-400:])
 
+        # ── G6e · ⛔ THE EPIC-WIDENING HOLE. Two review lenses reproduced this independently.
+        # Removing the `continue` sent incident refs into the containment loop — but `lane` is
+        # then `claude/incident-*`, which MATCHES the `claude/*` glob in the BASES switch. So
+        # every `origin/epic/*` tip was added as a landing point, and any story lane that had
+        # landed on ANY epic scored `landed=1` and rode through.
+        #
+        # The asymmetry is the tell: `integration_of()` was given an ordered `claude/incident-*`
+        # arm above `claude/*` in SCC-154 for this exact first-match reason. The BASES switch is
+        # its sibling and never got the arm. An incident lane integrates on MAIN — the epic
+        # widening exists to spare `/cicd-park` on STORY lanes and has no business here, which
+        # is why the previous G6 cases could not see it: none of their fixtures creates an
+        # `origin/epic/*` ref at all.
+        with TempDir() as tmp:
+            d, bare = make_pushable(tmp)
+            # A story lane that landed on its epic — the ordinary state of a story lane — and
+            # is NOT on main.
+            lane(d, "claude/SCC-201-story")
+            sh("git", "checkout", "-q", "-b", "epic/SCC-200-thing", "main", cwd=d)
+            sh("git", "merge", "--no-ff", "-m", "SCC-200 merge: story onto epic",
+               "claude/SCC-201-story", "--no-verify", cwd=d)
+            sh("git", "push", "-q", "origin", "epic/SCC-200-thing", cwd=d)
+            # The incident lane fast-forwards that unlanded story in.
+            sh("git", "checkout", "-q", "-b", "claude/incident-abc123", "main", cwd=d)
+            sh("git", "merge", "--ff-only", "claude/SCC-201-story", cwd=d)
+            rc, out = sh("git", "push", "origin", "claude/incident-abc123", cwd=d)
+            c.check("G6e · an incident ref carrying epic-only work is REFUSED even when an "
+                    "origin/epic exists", rc != 0, out.strip()[-500:])
+            c.check("G6e · ...and the remedy names MAIN via the pipeline, never 'the epic'",
+                    "origin/main or the epic" not in out, out.strip()[-500:])
+
+        # ── G6f · the control that keeps G6e honest: the SAME epic topology on a STORY lane
+        # must still be ALLOWED. This is the `/cicd-park` path `git-policy.md` marks free, and
+        # refusing it strands work on one machine — the false red this file prices above a miss.
+        with TempDir() as tmp:
+            d, bare = make_pushable(tmp)
+            lane(d, "claude/SCC-201-story")
+            sh("git", "checkout", "-q", "-b", "epic/SCC-200-thing", "main", cwd=d)
+            sh("git", "merge", "--no-ff", "-m", "SCC-200 merge: story onto epic",
+               "claude/SCC-201-story", "--no-verify", cwd=d)
+            sh("git", "push", "-q", "origin", "epic/SCC-200-thing", cwd=d)
+            sh("git", "checkout", "-q", "-b", "claude/SCC-202-sibling", "main", cwd=d)
+            sh("git", "merge", "--ff-only", "claude/SCC-201-story", cwd=d)
+            rc, out = sh("git", "push", "origin", "claude/SCC-202-sibling", cwd=d)
+            c.check("G6f · CONTROL a STORY lane carrying epic-landed work is still ALLOWED",
+                    rc == 0, out.strip()[-500:])
+
     # ── G7 · SCC-154: incident-as-FOREIGN — still refused, remedy re-routed ────────────────
     if c.block("G7 · SCC-154: incident-as-FOREIGN — still refused, remedy re-rou"):
         # A chore lane genuinely carrying an unlanded incident branch IS contaminated — the refusal

@@ -141,6 +141,20 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   BASES=$(git rev-parse --verify --quiet refs/remotes/origin/main)
   BASE_DESC="origin/main"
   case "$lane" in
+    # ⛔⛔ THE INCIDENT ARM SITS ABOVE `claude/*`, AND FOR THE SECOND TIME IN THIS FILE.
+    # SCC-154 gave `integration_of()` this exact ordered arm because `case` is first-match and
+    # the story glob swallows incident names. SCC-159 then removed the `continue` above — so
+    # incident refs reached THIS switch for the first time, matched `claude/*`, and had every
+    # `origin/epic/*` added as a landing point. An epic-landed story lane riding inside a
+    # hotfix therefore scored "landed" and shipped to production through the one lane that
+    # goes straight to main. Measured: identical content, `chore/*` REFUSED and
+    # `claude/incident-*` ALLOWED (case G6e).
+    #
+    # The widening's own charter is why it cannot apply here: it exists to spare `/cicd-park`
+    # on a STORY lane, which integrates on its epic. An incident lane integrates on MAIN —
+    # `integration_of` says so three lines up — so for this class `origin/main` is the whole
+    # reference set, exactly as it is for `chore/*`.
+    claude/incident-*) ;;
     claude/*)
       epics=$(git for-each-ref --format='%(objectname)' refs/remotes/origin/epic 2>/dev/null)
       if [ -n "$epics" ]; then

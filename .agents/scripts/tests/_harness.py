@@ -30,11 +30,20 @@ def _case_filter() -> str | None:
     No argparse: these files are run bare by the sweep, by run_all and by hand, and an
     arg parser that rejects an unknown flag would turn a harmless extra argument into a
     dead suite. Anything that is not --case is ignored.
+
+    ⛔ A `--case` WITH NO VALUE RETURNS `""`, NOT `None`, AND THE TWO MEAN OPPOSITE THINGS.
+    `None` is "no filter was asked for" — run everything. `""` is "a filter was asked for and
+    its label was LOST", which is the same error class as a typo and must reach `NO_MATCH`.
+    The first cut returned `None` for a bare trailing `--case`, so the sweep ran the whole
+    file, printed no filter line, and exited 0/1; `--case ""` and `--case=` were worse, since
+    `"" in label` is true for every label, so every block ran under a note claiming
+    `matched N/N`. Either way a mutant that dies to ANY case in the file is recorded as
+    killed by a named case that never ran alone. All five review lenses found this.
     """
     argv = sys.argv[1:]
     for i, a in enumerate(argv):
-        if a == "--case" and i + 1 < len(argv):
-            return argv[i + 1]
+        if a == "--case":
+            return argv[i + 1] if i + 1 < len(argv) else ""
         if a.startswith("--case="):
             return a.split("=", 1)[1]
     return None
@@ -61,9 +70,14 @@ class Cases:
         exactly as it did before it was wired.
         """
         self.blocks_seen += 1
-        if self.filter is None or self.filter.lower() in label.lower():
+        if self.filter is None:                       # no filter asked for: run everything
             self.blocks_run += 1
             return True
+        if self.filter and self.filter.lower() in label.lower():
+            self.blocks_run += 1
+            return True
+        # An EMPTY filter is a lost label, never "matches everything". Falling through here
+        # leaves blocks_run at 0, which finish() turns into NO_MATCH.
         return False
 
     def check(self, name: str, ok: bool, detail: str = "") -> None:
@@ -79,8 +93,13 @@ class Cases:
             print(f"-- filter '{self.filter}': matched "
                   f"{self.blocks_run}/{self.blocks_seen} blocks --")
             if not self.blocks_run or not self.rows:
-                why = ("no block matched" if not self.blocks_run
-                       else "the matched block ran no cases")
+                if not self.filter:
+                    why = ("--case was given no label (a bare `--case`, `--case=`, or an "
+                           "empty value — a shell variable that vanished)")
+                elif not self.blocks_run:
+                    why = "no block matched"
+                else:
+                    why = "the matched block ran no cases"
                 print(f"NO CASES RAN: {why} — this is a filter error, not a result.")
                 return NO_MATCH
         return 1 if failed else 0

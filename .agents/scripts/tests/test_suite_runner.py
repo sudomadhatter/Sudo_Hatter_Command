@@ -17,6 +17,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -176,6 +177,40 @@ def main() -> int:
             c.check("CASE · zero match runs no cases at all", rc == 3 and "[PASS]" not in out,
                     out)
 
+    # ── CASE · ⛔ A LOST LABEL IS THE SAME ERROR AS A TYPO'D ONE ─────────────────────────
+    # All five review lenses found this independently, which is the signal that it is not a
+    # nitpick. `_case_filter` returned None for a bare trailing `--case`, and None means
+    # UNFILTERED — so the sweep ran the whole file, printed no filter line at all, and exited
+    # 0/1. `--case ""` and `--case=` were worse: the empty string is `in` every label, so all
+    # blocks ran while a filter note claimed `matched N/N`.
+    #
+    # Both are the shape `NO_MATCH` exists for — "the label was lost" — and both landed on the
+    # two codes it exists to avoid. The cost is not wall-clock: a mutant that dies to ANY case
+    # in the file is recorded as killed by a named case that never ran in isolation, so the
+    # mutation record certifies a boundary nothing holds. This repo already carries the memory
+    # for the shell half of it (`zsh-does-not-word-split-gate-args`): an empty variable does
+    # not become an empty argument, it vanishes, turning `--case "$L"` into a bare `--case`.
+    if c.block("CASE · ⛔ a LOST label (bare --case, empty value) is exit 3, not a full run"):
+        with TempDir() as t:
+            d = sandbox(t, FAKE)
+            rc, out = run(d / "test_fake.py", "--case")
+            c.check("CASE · a bare trailing --case exits 3, never a silent full run",
+                    rc == 3, f"rc={rc} out={out!r}")
+            c.check("CASE · ...and says the label was lost, not that nothing matched",
+                    "no label" in out.lower(), out)
+            rc2, out2 = run(d / "test_fake.py", "--case", "")
+            c.check("CASE · an EMPTY --case value exits 3 (it matched every block before)",
+                    rc2 == 3, f"rc={rc2} out={out2!r}")
+            rc3, out3 = run(d / "test_fake.py", "--case=")
+            c.check("CASE · the --case= spelling of the same mistake also exits 3",
+                    rc3 == 3, f"rc={rc3} out={out3!r}")
+            # ⭐ THE CONTROL. Refusing an empty label must not refuse a real one, and the
+            # `--case=<label>` form is shipped, advertised in the docstring, and was covered
+            # by nothing (Test-Adequacy lens) — so it is pinned here rather than assumed.
+            rc4, out4 = run(d / "test_fake.py", "--case=BETA")
+            c.check("CASE · CONTROL the --case=<label> form still selects its block",
+                    rc4 == 0 and "matched 1/3" in out4, f"rc={rc4} out={out4!r}")
+
     # ── CASE · ⛔ an unwired file cannot be filtered — exit 3, not a full run ────────────
     if c.block("CASE · ⛔ an unwired file cannot be filtered — exit 3, not a full"):
         with TempDir() as t:
@@ -274,6 +309,68 @@ def main() -> int:
             rc0, _ = run(d / "run_all.py", "--jobs", "0")
             c.check("RUNALL · --jobs 0 is refused, not silently treated as unlimited",
                     rc0 == 2, f"rc={rc0}")
+
+    # ── RUNALL · ⛔ THE DELIVERABLE ITSELF HAD NO KILLER CASE ─────────────────────────────
+    # Two review lenses independently copied the runner to a scratch dir, pinned
+    # `max_workers=1`, and watched the file stay green. Every assertion above — the summary
+    # line, the FAILED list, the exit codes, the alphabetical order — holds IDENTICALLY in
+    # serial, because ordering comes from `ex.map` yielding in INPUT order, not from overlap.
+    # So the one thing this ticket exists to deliver, a 186 s wall becoming 69 s, was the one
+    # thing nothing could see. That is precisely the WIDTH-mutant class the rule file this
+    # same lane edits now demands be killed by a named case.
+    #
+    # The pin is causal, not a race: four stubs that each sleep, run at a width that MUST
+    # overlap. Serial cannot finish inside the serial floor, so the margin is structural.
+    if c.block("RUNALL · ⭐ the pool is genuinely CONCURRENT, and stderr survives it"):
+        def suite2(root: Path, files: dict[str, str]) -> Path:
+            d = root / "s2"
+            d.mkdir(exist_ok=True)
+            shutil.copy2(RUN_ALL, d / "run_all.py")
+            shutil.copy2(HARNESS, d / "_harness.py")
+            for n, body in files.items():
+                (d / n).write_text(body, encoding="utf-8")
+            return d
+
+        SLEEP = 0.7
+        NFILES = 4
+        slow = {f"test_s{i}.py": (f"import sys, time\ntime.sleep({SLEEP})\n"
+                                  f"print('S{i}')\nsys.exit(0)\n") for i in range(NFILES)}
+        with TempDir() as t:
+            d = suite2(t, slow)
+            t0 = time.monotonic()
+            rc_p, out_p = run(d / "run_all.py", "--jobs", str(NFILES))
+            wall_p = time.monotonic() - t0
+
+            t0 = time.monotonic()
+            rc_s, out_s = run(d / "run_all.py", "--serial")
+            wall_s = time.monotonic() - t0
+
+            serial_floor = SLEEP * NFILES                      # 2.8 s of unavoidable sleeping
+            c.check("RUNALL · --serial really is serial (wall >= the sum of the sleeps)",
+                    rc_s == 0 and wall_s >= serial_floor,
+                    f"serial wall {wall_s:.2f}s vs floor {serial_floor:.2f}s")
+            c.check("RUNALL · the default pool OVERLAPS — a width-1 pool cannot reach this wall",
+                    rc_p == 0 and wall_p < serial_floor * 0.6,
+                    f"parallel wall {wall_p:.2f}s vs serial {wall_s:.2f}s "
+                    f"(floor {serial_floor:.2f}s)")
+            c.check("RUNALL · ...and overlapping did not cost a single file",
+                    f"{NFILES}/{NFILES} files passed" in out_p
+                    and f"{NFILES}/{NFILES} files passed" in out_s, out_p[-200:])
+
+        # STDERR. `run_one` concatenates stdout + stderr, and every existing stub prints to
+        # stdout only — so a lens dropped `+ (r.stderr or "")` and the file stayed green. The
+        # cost of that regression is the worst kind: a file dies on an uncaught exception, the
+        # transcript names it in `FAILED:` and shows no traceback at all.
+        with TempDir() as t:
+            d = suite2(t, {"test_boom.py": "import sys\n"
+                                           "sys.stderr.write('BOOM-TRACEBACK\\n')\n"
+                                           "sys.exit(1)\n"})
+            rc_p, out_p = run(d / "run_all.py")
+            rc_s, out_s = run(d / "run_all.py", "--serial")
+            c.check("RUNALL · a child's STDERR reaches the transcript in PARALLEL mode",
+                    rc_p == 1 and "BOOM-TRACEBACK" in out_p, out_p[-300:])
+            c.check("RUNALL · ...and in serial mode, identically",
+                    rc_s == 1 and "BOOM-TRACEBACK" in out_s, out_s[-300:])
 
     return c.finish()
 

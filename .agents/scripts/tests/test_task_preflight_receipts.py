@@ -13,17 +13,12 @@ git would only prove the mock agrees with itself.
 from __future__ import annotations
 
 import json
-import os
-import stat
-import subprocess
 import sys
-from pathlib import Path
 
 
 from _harness import Cases, TempDir, run_script
-from _pf_fixtures import (ADIR, BOARD_STUB, JIRA_CONF, MANIFEST, WALKTHROUGH,
-                          board, branch, commit, git, make_repo, preflight,
-                          secondary, stamp_and_verdict, with_secondary, write)
+from _pf_fixtures import (ADIR, MANIFEST, WALKTHROUGH, branch, commit, git,
+                          make_repo, preflight, stamp_and_verdict, write)
 
 
 def main() -> int:

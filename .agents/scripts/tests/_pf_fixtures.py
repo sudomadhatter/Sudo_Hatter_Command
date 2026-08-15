@@ -17,7 +17,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from _harness import Cases, TempDir, run_script
+from _harness import run_script
 
 JIRA_CONF = '# test fixture\nJIRA_KEYS="SCC"\n'
 

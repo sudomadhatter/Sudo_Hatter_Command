@@ -22,18 +22,13 @@ itself. Commits use --no-verify: these fixtures must not inherit the machine's h
 """
 from __future__ import annotations
 
-import json
-import os
-import stat
-import subprocess
 import sys
 from pathlib import Path
 
 
 from _harness import Cases, TempDir, run_script
-from _pf_fixtures import (ADIR, BOARD_STUB, JIRA_CONF, MANIFEST, WALKTHROUGH,
-                          board, branch, commit, git, make_repo, preflight,
-                          secondary, stamp_and_verdict, with_secondary, write)
+from _pf_fixtures import (MANIFEST, WALKTHROUGH, board, branch, commit, git,
+                          make_repo, preflight, with_secondary, write)
 
 
 def main() -> int:
@@ -292,12 +287,26 @@ def main() -> int:
         with TempDir() as t:
             # ⭐ THE FALSE-RED CONTROL. main level with origin ⇒ silence: a check that fires on
             # the normal case is one every close-out learns to read past.
+            #
+            # ⛔ THE ASSERTION IS `.lower()` ON PURPOSE (SCC-156 review, Blind Hunter). It read
+            # `"stalled landing" not in out` while the message says "a STALLED LANDING:" in
+            # caps — so the string half was a TAUTOLOGY, absent whether or not the check fired,
+            # and only `code == 0` carried any evidence. A mutant that emits the message at
+            # rep.info severity (exit stays 0) passed this control unchanged. The sibling file
+            # `test_git_hooks.py` already did this correctly with `not in out.lower()`; this is
+            # the same lane committing the vacuous-guard error its own rule file bans, one
+            # block away from where it fixed it.
             repo = make_repo(t)
             branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
             code, out = preflight(repo, "--fetch")
             c.check("SCC-159 control: main level with origin/main is CLEAR and silent",
-                    code == 0 and "stalled landing" not in out, out.strip()[-300:])
+                    code == 0 and "stalled landing" not in out.lower(), out.strip()[-300:])
 
+    # ── SCC-156 review · THE STALLED LANDING'S FOUR UNCOVERED STATES ─────────────────────
+    # Its own block, for two reasons. The review found `--case "SCC-159"` matched 0/20 blocks
+    # (the fixtures lived inside "Clean + pushed + current", so citing them by name was
+    # impossible — exactly what the assertion-evidence row now demands). And every case here
+    # exists because a lens proved the shipped code wrong on a state no fixture reached.
         with TempDir() as t:
             repo = make_repo(t)
             branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
@@ -342,6 +351,91 @@ def main() -> int:
                     out.strip()[-300:])
 
     # ── The walkthrough the Dev Record will point at ──
+    if c.block("SCC-159 · the STALLED LANDING — divergence, behind, no-origin, dead fetch"):
+        with TempDir() as t:
+            # ⛔ DIVERGED, not stalled. `behind, ahead = ...` computed both and read only
+            # `ahead`, so behind=N/ahead=M printed "an earlier lane merged and never reached
+            # the remote" and prescribed `git push origin main` — which git REJECTS
+            # non-fast-forward. The docstring's own justification ("`pull --ff-only` will NOT
+            # catch this") is false here: divergence is the one case it DOES catch.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            # origin/main moves (a merge landed on the server, e.g. via main_write_gate)...
+            git(repo, "checkout", "-q", "main")
+            write(repo, "docs/theirs.md", "landed on the server\n")
+            commit(repo, "SCC-11 chore: a commit that reached origin")
+            git(repo, "push", "-q", "origin", "main")
+            git(repo, "reset", "-q", "--hard", "HEAD~1")
+            # ...while local main grows its own unpushed commit. Now: 1 behind, 1 ahead.
+            write(repo, "docs/mine.md", "never pushed\n")
+            commit(repo, "SCC-11 merge: a local landing that never went out")
+            git(repo, "checkout", "-q", "chore/SCC-11-thing")
+            git(repo, "merge", "-q", "--no-ff", "-m", "SCC-11 chore: absorb main", "main")
+            git(repo, "push", "-q", "-f", "origin", "chore/SCC-11-thing")
+            code, out = preflight(repo, "--fetch")
+            c.check("SCC-159 R1 a DIVERGED main is named as diverged, not as a stalled landing",
+                    "DIVERGED" in out and "never reached the remote" not in out,
+                    out.strip()[-500:])
+            # The property, not the literal. `git push origin main` legitimately APPEARS in
+            # the diverged message — saying "that push is rejected non-fast-forward" is the
+            # point. What must not appear is the stalled-landing PRESCRIPTION, `Land it (...)`,
+            # which is the sentence that sends the operator into the error.
+            c.check("SCC-159 R1 ...and does NOT prescribe a push git would reject",
+                    "Land it (`git push origin main`)" not in out
+                    and "rejected non-fast-forward" in out, out.strip()[-500:])
+
+        with TempDir() as t:
+            # BEHIND ONLY — the commonest real state (a sibling landed, you have not pulled).
+            # `if ahead == "0"` fired the all-clear, so this printed "main is level with
+            # origin/main" while rev-list said `1  0`. An INFO line asserting the opposite of
+            # the truth is the false-read this check exists to prevent.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            git(repo, "checkout", "-q", "main")
+            write(repo, "docs/theirs.md", "a sibling landed\n")
+            commit(repo, "SCC-11 chore: sibling landing")
+            git(repo, "push", "-q", "origin", "main")
+            git(repo, "reset", "-q", "--hard", "HEAD~1")
+            git(repo, "checkout", "-q", "chore/SCC-11-thing")
+            code, out = preflight(repo, "--fetch")
+            c.check("SCC-159 R2 main merely BEHIND is not reported as level with origin/main",
+                    "level with origin/main" not in out, out.strip()[-500:])
+
+        with TempDir() as t:
+            # NO origin/main at all. `rev-list origin/main...main` fails, but the `["?", "?"]`
+            # padding is never the string "0", so the ahead-check fell through and a local-only
+            # repo was told it was "? commit(s) ahead of origin/main" — an err under --fetch,
+            # i.e. a close-out refused on a nonsense diagnosis.
+            repo = make_repo(t, remote=False)
+            code, out = preflight(repo, "--fetch")
+            c.check("SCC-159 R3 a repo with no origin/main is not accused of a stalled landing",
+                    "STALLED LANDING" not in out and "? commit" not in out, out.strip()[-500:])
+
+        with TempDir() as t:
+            # ⭐ THE FETCH THAT FAILED. Three lenses found this independently. The docstring
+            # says the severity split is about EVIDENCE QUALITY — "no `--fetch`, OR A FETCH
+            # THAT FAILED ... can only WARN" — but the code was handed `args.fetch`, the FLAG,
+            # so a dead uplink produced a hard ERROR on a comparison the previous check had
+            # just warned was stale. That is the offline operator hard-blocked on a phantom:
+            # the precise case the split exists to protect, broken by keying on intent
+            # instead of outcome.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            git(repo, "checkout", "-q", "main")
+            write(repo, "docs/stalled.md", "never landed\n")
+            commit(repo, "SCC-11 merge: an earlier lane (never pushed)")
+            git(repo, "checkout", "-q", "chore/SCC-11-thing")
+            git(repo, "merge", "-q", "--no-ff", "-m", "SCC-11 chore: absorb main", "main")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            # Kill the uplink the way a plane does: the remote URL still resolves as a path,
+            # and there is nothing there.
+            git(repo, "remote", "set-url", "origin", str(t / "no-such-remote.git"))
+            code, out = preflight(repo, "--fetch")
+            c.check("SCC-159 R4 a FAILED --fetch warns, never hard-errors, on the landing check",
+                    "fetch failed" in out and "[ERROR] landing" not in out, out.strip()[-600:])
+            c.check("SCC-159 R4 ...and says the comparison is only as good as the last fetch",
+                    "vs the LAST fetch" in out, out.strip()[-600:])
+
     if c.block("The walkthrough the Dev Record will point at"):
         # Two ways it can be absent, and BOTH are errors. "No `_artifacts/` tree at all" is the
         # strongest evidence the walkthrough was never written - reporting that as a warning is

@@ -83,7 +83,11 @@ Plan + self-audit (verdict **GO**, 7 findings baked in): [implementation_plan.md
 - [~] **S8 · template-repo fixtures** (item 9) — **DROPPED at the operator's word**
       (2026-08-14, "thats looks good this works for me"), after A2's post-split number came in at
       71.74 s against a ≤ 60 s target. This was the remaining lever for that gap; not pursued.
-- [x] **S9 · re-measure every baseline** (A1, A2, A5) — below.
+- [x] **S9a · re-measure A2 + A5** — done, table below (and re-measured again after the
+      review fixes).
+- [ ] **S9b · A1's two replay timings** — **NOT DONE**, root cause found, owed to the
+      follow-on. Ticking this with S9a is what the review caught: one box cannot say
+      "half of this is open".
 
 ### SCC-159 — merge-gate residue (the 3 items that survived the wontfix ruling)
 
@@ -222,10 +226,14 @@ Caught by `git status` immediately after the kill, restored from HEAD (every rea
 already committed), and verified: `git diff HEAD -- .agents/scripts/` is empty and the affected
 block re-runs 19/19.
 
-What A1 still owes: the two timed replays. What is already proven about the mechanism they were
-meant to time is in the SCC-156 and SCC-159 sweeps above — 10/10 and 9/9 targeted kills, with
-the per-block timings (21.8 s for the A1 verdict block against 105 s for the whole file) showing
-the same ratio A1 asks to be demonstrated on SCC-154's table specifically.
+**What A1 still owes, stated without substitution.** A1 has two halves and the load-bearing one
+is *identical kill verdicts* on SCC-154's own 17 mutants — a targeted replay could hit ≤ 6 min
+and still disagree with SCC-154 about which mutants died, and detecting that disagreement is the
+whole reason A1 exists. **No ratio substitutes for it**, so the per-block timings this section
+used to cite as consolation have been removed: they measure a different table and the review was
+right that quoting them re-asserted the claim the row above had just withdrawn. What the other
+sweeps do prove is that the *mechanism* works (10/10, 9/9, and 8/9 on the review fixes) — not
+that SCC-154's table replays identically under it. That comparison is owed.
 
 ### SCC-159 — the width sweep, and the hole it found
 

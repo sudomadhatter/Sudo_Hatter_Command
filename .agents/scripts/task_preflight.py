@@ -619,9 +619,13 @@ def check_stalled_landing(repo: Path, fetch: bool, accept: bool, rep: wf.Report)
     only errors on true divergence — so the next lane merges cleanly onto the stuck main and
     reports success. The `0 0` check they do run happens AFTER the push.
 
-    Severity is deliberately split. With a fresh fetch the answer is trustworthy and this is
-    an ERROR. Without one — no `--fetch`, or a fetch that failed — the comparison is against
-    whatever the last fetch saw, which on a plane is nothing, so it can only WARN. And because
+    Severity is deliberately split, and `fetch` here is the fetch's OUTCOME, not the flag —
+    `check_sync` returns whether it actually succeeded. With a fresh fetch the answer is
+    trustworthy and this is an ERROR. Without one — no `--fetch`, or a fetch that failed —
+    the comparison is against whatever the last fetch saw, which on a plane is nothing, so it
+    can only WARN. (The first cut took `args.fetch` and this paragraph was aspirational: a
+    dead uplink hard-blocked the close-out on a stale comparison, found by three lenses.)
+    And because
     reads succeed while pushes die on that same uplink, `--accept-unpushed-main` is the
     auditable way through: it downgrades this one check and says so in the output, so the
     walkthrough records that the operator chose it.
@@ -630,31 +634,73 @@ def check_stalled_landing(repo: Path, fetch: bool, accept: bool, rep: wf.Report)
     if counts.returncode != 0 or not counts.stdout.strip():
         rep.info("landing", "no local main and origin/main to compare")
         return
-    behind, ahead = (counts.stdout.split() + ["?", "?"])[:2]
-    if ahead == "0":
-        rep.info("landing", "main is level with origin/main (nothing stalled ahead of you)")
+    # ⛔ NEVER FALL THROUGH ON AN UNREADABLE COUNT. This was `(split() + ["?", "?"])[:2]`,
+    # and `"?"` is not the string `"0"` — so any answer this could not parse walked straight
+    # into the ahead-branch and told the operator they were "? commit(s) ahead of origin/main",
+    # an ERROR under `--fetch`. A local-only repo got its close-out refused on a diagnosis
+    # that was literally a question mark (SCC-156 review, Test-Adequacy lens).
+    parts = counts.stdout.split()
+    if len(parts) < 2 or not (parts[0].isdigit() and parts[1].isdigit()):
+        rep.info("landing", f"could not read origin/main...main ({counts.stdout.strip()!r}) "
+                            f"- declined to judge the landing")
+        return
+    behind, ahead = int(parts[0]), int(parts[1])
+
+    if ahead == 0:
+        # `behind` was computed and never read. "level with origin/main" printed while
+        # rev-list said `1  0` — an INFO line asserting the opposite of the truth, in the
+        # commonest real state there is (a sibling landed, you have not pulled).
+        if behind:
+            rep.info("landing", f"main is {behind} commit(s) BEHIND origin/main - nothing is "
+                                f"stalled ahead of you; absorb it before you merge")
+        else:
+            rep.info("landing", "main is level with origin/main (nothing stalled ahead of you)")
         return
 
-    what = (f"main is {ahead} commit(s) ahead of origin/main - a STALLED LANDING: an earlier "
-            f"lane merged and never reached the remote, and every lane behind it queues "
-            f"behind that. Land it (`git push origin main`) or inspect it before merging; "
-            f"`pull --ff-only` will NOT catch this, it succeeds when local is merely ahead")
+    if behind:
+        # ⛔ DIVERGED IS NOT STALLED, and the difference decides the remedy. `git push origin
+        # main` is REJECTED non-fast-forward here, so prescribing it sends the operator into
+        # an error; and the stalled-landing rationale ("`pull --ff-only` will NOT catch this")
+        # is FALSE for this shape — divergence is the one case it does catch. Diagnosing both
+        # states with one message meant the check was misdiagnosing and duplicating a net that
+        # already works (SCC-156 review, Blind Hunter).
+        what = (f"main has DIVERGED from origin/main - {ahead} ahead, {behind} behind. NOT a "
+                f"stalled landing: a plain `git push origin main` is rejected "
+                f"non-fast-forward, and `pull --ff-only` DOES catch this one. Reconcile main "
+                f"first, then re-run")
+    else:
+        what = (f"main is {ahead} commit(s) ahead of origin/main - a STALLED LANDING: an "
+                f"earlier lane merged and never reached the remote, and every lane behind it "
+                f"queues behind that. Land it (`git push origin main`) or inspect it before "
+                f"merging; `pull --ff-only` will NOT catch this, it succeeds when local is "
+                f"merely ahead")
     if accept:
         rep.warn("landing", f"{what} - accepted by --accept-unpushed-main")
     elif fetch:
         rep.err("landing", f"{what} [--accept-unpushed-main to proceed anyway]")
     else:
-        rep.warn("landing", f"{what} - vs the LAST fetch, so re-run with --fetch to be sure "
-                            f"[--accept-unpushed-main to proceed anyway]")
+        rep.warn("landing", f"{what} - the landing check ran vs the LAST fetch, so re-run "
+                            f"with --fetch to be sure [--accept-unpushed-main to proceed "
+                            f"anyway]")
 
 
-def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report) -> None:
+def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report) -> bool:
     """`commit-and-push-are-one-action`: clean + 0/0, or the work is not finished. Merging
-    an unpushed branch to main puts commits on production that exist on one disk."""
+    an unpushed branch to main puts commits on production that exist on one disk.
+
+    ⭐ RETURNS WHETHER THE REMOTE COMPARISON IS FRESH — a fetch was asked for AND succeeded.
+    Three review lenses independently found `check_stalled_landing` keying on `args.fetch`,
+    the FLAG, when its own docstring keys the severity on the OUTCOME ("no --fetch, or a
+    fetch that failed ... can only WARN"). A dying uplink fails `git fetch` too, not only
+    `git push`, so the offline operator was hard-blocked at exit 2 on a comparison this
+    function had just warned was stale. Intent is not evidence; only the outcome is."""
+    fresh = False
     if fetch:
         f = wf.git(["fetch", "--quiet"], repo, timeout=180)
         if f.returncode != 0:
             rep.warn("sync", "fetch failed - ahead/behind is vs the LAST fetch")
+        else:
+            fresh = True
     else:
         rep.info("sync", "no --fetch, ahead/behind is vs the LAST fetch")
 
@@ -688,6 +734,7 @@ def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report) -> None:
             rep.info("sync", f"{branch}: 0/0 with origin")
     else:
         rep.warn("sync", f"{branch}: never pushed - the branch exists on this disk only")
+    return fresh
 
 
 def check_base(repo: Path, branch: str, rep: wf.Report) -> None:
@@ -1090,8 +1137,10 @@ def main() -> int:
     check_children(key, rep)
     check_manifest(repo, branch, expect, rep)
     check_secondary(repo, expect, rep)
-    check_sync(repo, branch, args.fetch, rep)
-    check_stalled_landing(repo, args.fetch, args.accept_unpushed_main, rep)
+    # ⭐ `fresh`, not `args.fetch`. check_sync ran the fetch and knows whether it WORKED;
+    # passing the flag instead made a dead uplink produce a hard exit 2 on a stale answer.
+    fresh = check_sync(repo, branch, args.fetch, rep)
+    check_stalled_landing(repo, fresh, args.accept_unpushed_main, rep)
     check_base(repo, branch, rep)
     lane, touched = check_scope(repo, branch, rep)
     art_hits = check_artifacts(repo, key, rep)
