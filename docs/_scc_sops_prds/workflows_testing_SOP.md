@@ -758,7 +758,7 @@ flowchart TD
     G0 --> CITE["code-fresh ⇒ CITE the review's link+anchor\nand SOP sweeps instead of re-walking them — SCC-156\nthe armed commit-msg gate and CI at the landing sha\nare the two nets that remain either way"]
     CITE --> S3["Step 3 — merge to main --no-ff"]
     G --> S3
-    S3 --> S4["Step 4 — AFTER the merge, never before:\none Dev Record → ticket → Done"]
+    S3 --> S4["Step 4 — AFTER the merge, never before:\nriders → Done FIRST (SCC-156) ·\none Dev Record → ticket → Done"]
     S4 --> WHY4["a ticket reading Done while the merge failed\nis a lie nothing will correct.\nA merge that landed while the record lags\nis one command from right."]
     WHY4 --> S5["Step 5 — UNLINK → remove tree → delete branch\nin that order, every time"]
     S5 --> S6["Step 6 — verify, THEN report"]
@@ -771,6 +771,14 @@ nothing:** the mint now refuses without your explicit, this-turn merge words pas
 is ticket permission, not merge permission — that exact misreading is what this closes. The words
 you said are recorded in the token and printed back at mint and at push, so you can always see
 what an agent claimed authorised a merge.
+
+**⭐ You act in words; the agent does every board write (SCC-156, 2026-08-14).** `approved`, "its
+done", or typing a command — that is your entire interface. Every Jira transition inside this
+ceremony, riders included, is the agent's to run. **If a flow ever leaves you a ticket edit to do by
+hand, the flow is broken** — the agent is required to stop and say so rather than hand it back. A
+subtask whose work you ordered into the parent's lane is declared under `riders:` in the lane's
+`task.yaml`; the preflight then warns (with the exact transition queued for the ceremony) instead
+of blocking on it.
 
 **⛔ The close-out never re-runs the LLM review (SCC-147).** One review per lane: the walkthrough's
 `Verdict: … @ <sha>` stands, and Step 2's gate is the *mechanical* suite only. The review engine is
@@ -1186,11 +1194,16 @@ tree?**
 - **The agent proposes and stops.** It prints the set with the branch each would get, and writes
   nothing to the board until you say go. Placement stays yours.
 - **Each subtask is its own lane** — own worktree, own branch, own review, own
-  `/smh-close-task-merge-tree`. They land as they finish.
-- **The parent closes LAST.** `task_preflight.py` refuses to close it while any child is still open,
-  and `/smh-close-task-merge-tree` re-checks with the board in hand before it writes `Done`. A child
-  that is genuinely out of scope gets descoped to `Deferred` — that is the escape hatch, and it is
-  deliberately not a `--force` flag.
+  `/smh-close-task-merge-tree`. They land as they finish. **Unless you order otherwise (SCC-156):**
+  say "do them in one working tree, one push" and the subtask becomes a **rider** — the parent
+  lane's `task.yaml` declares it (`riders: [SCC-00]`), it ships no branch of its own, and the
+  parent's close ceremony transitions it to `Done` first, parent last. You never touch the board
+  for that: the preflight prints the exact transition as a warning instead of blocking, and the
+  agent runs it inside the close you invoked.
+- **The parent closes LAST.** `task_preflight.py` refuses to close it while any child is still open
+  (a declared rider warns instead), and `/smh-close-task-merge-tree` re-checks with the board in
+  hand before it writes `Done`. A child that is genuinely out of scope gets descoped to `Deferred`
+  — that is the escape hatch, and it is deliberately not a `--force` flag.
 - **A subtask is never labelled `Bug`.** If work under a parent turns out broken, the flag goes on
   the **parent** — the ticket that owns the job. `jira_feed.py flag` refuses a subtask and names its
   parent for you.

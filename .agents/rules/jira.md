@@ -54,7 +54,7 @@ table, do not assume a shared set):
 | `To Do` | ✅ | ✅ | the backlog — everything not yet chosen |
 | **`To Do Next`** | ✅ | — | **the operator's hand-picked queue.** See §The queue below |
 | `In Progress` | ✅ | ✅ | |
-| `In Review` | — | ✅ | |
+| `In Review` | — | ✅ | ⭐ **blocked-on-operator ONLY** — the ticket needs something from the operator the agent cannot do (ruling 2026-08-14). Never a resting state for finished work: merge-ready work stays `In Progress`, parked, until the operator's word closes it |
 | **`Blocking`** | ✅ | — | ⛔ the name is `Blocking`, **not** `Blocked` |
 | `Deferred` | — | ✅ | To Do **category** on purpose — a Done-category status would make descoped work read as shipped. Descoped = `Deferred` + the `descoped` label |
 | `Done` | ✅ | ✅ | |
@@ -210,7 +210,7 @@ above, and the reason `Task` needed a command of its own:
 |---|---|---|---|
 | **`Story`** | `claude/<KEY>-<slug>` off the epic branch | `/cicd-update-sprint-memory` | it lands on the **epic** branch, never `main` |
 | **`Task`** | `chore/<KEY>-<slug>` off `main` | **`/smh-close-task-merge-tree`** (SCC-49) | close-out reads a sprint board, flips a story status and lands on an epic branch — a Task has **none of the three**, so the command has nothing to operate on |
-| **`Subtask`** | `chore/<KEY>-<slug>` off `main` — **its own**, exactly like a Task | **`/smh-close-task-merge-tree`** | nothing else: a subtask is a leaf that ships code, so it lands its own branch as it finishes. Its **parent** closes LAST, and `task_preflight.py` refuses the parent while any child is still open (SCC-119) |
+| **`Subtask`** | `chore/<KEY>-<slug>` off `main` — **its own**, exactly like a Task | **`/smh-close-task-merge-tree`** | nothing else: a subtask is a leaf that ships code, so it lands its own branch as it finishes. Its **parent** closes LAST, and `task_preflight.py` refuses the parent while any child is still open (SCC-119). ⭐ **Rider exception (SCC-156):** when the operator orders a subtask's work into the parent's lane ("one working tree, one push"), it ships **no branch of its own** — declare it under `riders:` in the parent lane's `task.yaml`, and the parent's close ceremony transitions it to `Done` first, parent last, as an agent write |
 | **`Epic`** | `epic/<KEY>-<slug>` off `main` | `/cicd-push-e2e` | — |
 
 `/smh-close-task-merge-tree` files the same **one** Dev Record through `jira_feed.py devrecord` and moves
@@ -325,9 +325,9 @@ subtask naming the branch each will get, then stop.
 | Moment | What happens |
 |---|---|
 | first commit on `chore/<SUBTASK-KEY>-<slug>` | `post-commit` → `jira_feed.py start` moves **the subtask** to `In Progress`. **The child only** — there is no cascade, so `start` keeps one board write and one verdict |
-| subtask close-out | `/smh-close-task-merge-tree`, unchanged — it lands its own branch and goes `Done` on its own |
+| subtask close-out | `/smh-close-task-merge-tree`, unchanged — it lands its own branch and goes `Done` on its own. **Rider alternative (SCC-156):** worked in the parent's lane by the operator's order → no branch, no own close-out; the parent lane's `task.yaml` declares it under `riders:` and the parent's ceremony transitions it to `Done` first |
 | **found broken** | ⭐ **flag the PARENT, never the subtask.** A subtask is **never** labelled `Bug`; breakage is recorded on the ticket that owns the job. `jira_feed.py flag` refuses a subtask and names its parent in the refusal |
-| **parent close-out** | ⛔ **refused while any child is not `Done` or `Deferred`** (`task_preflight.py`). The parent closes **LAST** — that is the moment the whole job is done |
+| **parent close-out** | ⛔ **refused while any child is not `Done` or `Deferred`** (`task_preflight.py`). The parent closes **LAST** — that is the moment the whole job is done. A declared **rider** does not refuse: the preflight WARNS with the exact transition the ceremony will run, and the close-out flips riders first, parent last |
 
 **`Deferred` is the escape hatch, and it is not a `--force` flag.** A child that is genuinely out of
 scope gets descoped properly (`Deferred` + the `descoped` label) and stops blocking. A gate with no
@@ -361,6 +361,16 @@ acli jira board list-sprints --id 2 --limit 5
 join each ticket to its local counterpart (join rules below).
 
 ## Writing to the board
+
+> ⭐ **Who writes, and when — the universal law (operator ruling 2026-08-14; every lane, every
+> project).** The operator acts in **WORDS** — `approved`, "its done", or invoking a command — and
+> the **agent performs every board write**, always inside the ceremony those words triggered, never
+> on its own judgment. A flow that leaves the operator a manual Jira edit is **broken by
+> definition**: stop and say the flow is broken, never hand the edit back. Status-as-gate gates the
+> AGENT, not the operator. And read every status rule as **WHEN** (inside which ceremony the write
+> happens), never **WHO** (human vs agent) — the WHO-misreading is how a ban on agent
+> self-certification once became operator data entry (SCC-156: an agent refused to flip a finished
+> rider subtask and assigned the operator the edit).
 
 ```bash
 acli jira workitem comment create --key SCC-14 --body "…"        # TRAP: needs --key
@@ -423,8 +433,9 @@ python3 .agents/scripts/jira_feed.py start     --key SCC-113 --apply
   `In Progress`. **Idempotent** — already there is a no-op, so the `post-commit` recorder firing on
   every commit and two lanes holding one key cannot fight over the board. It moves **only out of
   `To Do` / `To Do Next`**, the same narrowness as `flag`'s "only out of `Done`": `Blocking` is an
-  impediment, `In Review` is finished work waiting on a human, `Deferred` is descoped, and starting
-  any of them erases the only signal it carries. A **`Done`** ticket is **refused** — guardrail 1 in
+  impediment, `In Review` is blocked on the operator (something the agent cannot do — see the
+  status table), `Deferred` is descoped, and starting any of them erases the only signal it
+  carries. A **`Done`** ticket is **refused** — guardrail 1 in
   reverse, because a ticket you are starting cannot already be finished. An **`Epic` is allowed**
   here and refused by `flag`; that difference is deliberate (an epic under development is genuinely
   in progress; an epic is never itself broken work).

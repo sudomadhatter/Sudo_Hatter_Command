@@ -537,6 +537,162 @@ def main() -> int:
             c.check("an unreachable board warns (exit 1) rather than blocking (exit 2)",
                     code == 1, f"exit {code}: " + out.strip()[-300:])
 
+    # ── SCC-156 · riders: a subtask worked in THIS lane rides its close ──────────────────
+    if c.block("SCC-156 · riders: a subtask worked in THIS lane rides its close"):
+        # The hole, measured on this ticket's own close-out: SCC-159's work landed in
+        # SCC-156's lane by the operator's explicit one-lane ruling, so at close-out the
+        # child was still `In Progress` - and check_children read the DESIGNED state as "the
+        # job is not done", BLOCKED, and the agent handed the operator a manual Jira edit.
+        # `riders:` is the manifest declaring that state up front; the close ceremony
+        # transitions riders to Done FIRST, parent LAST - agent writes, every one. A flow
+        # that leaves the operator a board edit is broken by definition (operator ruling,
+        # 2026-08-14).
+        def declare(repo, riders_line):
+            # On the BRANCH: task_manifests() reads the working tree, and the preflight
+            # demands a clean, pushed one - so declare, commit, push.
+            write(repo, "_artifacts/_main/2026-08-08_scc-11-thing/task.yaml",
+                  MANIFEST + riders_line)
+            commit(repo, "SCC-11 chore: declare riders")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+
+        with TempDir() as t:
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            declare(repo, "riders: [SCC-21]\n")
+            board(t, children=[("SCC-20", "Done"), ("SCC-21", "In Progress")])
+            code, out = preflight(repo)
+            c.check("a DECLARED rider does not block its own lane's close (warn, not error)",
+                    code == 1 and "clear to close out and merge" in out,
+                    f"exit {code}: " + out.strip()[-500:])
+            c.check("...and the warn IS the ceremony's instruction, command included",
+                    'acli jira workitem transition --key SCC-21 --status "Done" --yes' in out,
+                    out.strip()[-500:])
+            c.check("...named as an agent step - never an operator edit",
+                    "never an operator edit" in out, out.strip()[-500:])
+
+        with TempDir() as t:
+            # An UNDECLARED open child still blocks - and the error now teaches the third
+            # exit: the exact riders: line to write when the work genuinely rode this lane.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            board(t, children=[("SCC-20", "Done"), ("SCC-21", "In Progress")])
+            code, out = preflight(repo)
+            c.check("an undeclared open child still BLOCKS - riders never weaken the default",
+                    code == 2 and "open subtask" in out, f"exit {code}: " + out.strip()[-400:])
+            c.check("...and the error hands over the exact declaration line",
+                    "riders: [SCC-21]" in out, out.strip()[-500:])
+            c.check("...with the guard sentence that polices it",
+                    "work is not real" in out, out.strip()[-500:])
+
+        with TempDir() as t:
+            # A declared rider next to an undeclared open sibling: the block stands, the
+            # error's open-list names ONLY the undeclared child, and the suggested line is
+            # the COMPLETE corrected declaration - a copy-paste must never clobber riders
+            # already declared.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            declare(repo, "riders: [SCC-21]\n")
+            board(t, children=[("SCC-21", "In Progress"), ("SCC-23", "In Progress")])
+            code, out = preflight(repo)
+            segment = out.split("whole job is done:")[1].split(".")[0] if \
+                "whole job is done:" in out else "(no error fired)"
+            c.check("a rider does not spare its undeclared SIBLING", code == 2,
+                    f"exit {code}: " + out.strip()[-400:])
+            c.check("...the open-list names the undeclared child only",
+                    "SCC-23" in segment and "SCC-21" not in segment, segment)
+            c.check("...and the suggested line is the COMPLETE declaration, rider kept",
+                    "riders: [SCC-21, SCC-23]" in out, out.strip()[-500:])
+
+        with TempDir() as t:
+            # A rider that is already Done needs no instruction - the ceremony re-run after
+            # the flip must read quiet, or the warn becomes noise that never clears.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            declare(repo, "riders: [SCC-21]\n")
+            board(t, children=[("SCC-21", "Done")])
+            code, out = preflight(repo)
+            # "transition --key", not the full command phrase: the yes-guard sweeps every
+            # .agents/ line mentioning the transition verb for `--yes`, and an absence
+            # assertion must not read as an un-flagged call site.
+            c.check("a rider already Done raises no instruction (control: fires only while "
+                    "open)", code == 0 and "transition --key" not in out
+                    and "declared RIDER" not in out,
+                    f"exit {code}: " + out.strip()[-400:])
+            c.check("...and the normal all-closed info stands", "last thing to close" in out,
+                    out.strip()[-300:])
+
+        with TempDir() as t:
+            # Exact-key matching, the SCC-146 lesson re-applied: SCC-2 declared must not
+            # spare SCC-21 by prefix. The complete-line suggestion carries BOTH - the
+            # machine cannot know a declared key is a typo, so it keeps it and lets the
+            # guard sentence police the edit.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            declare(repo, "riders: [SCC-2]\n")
+            board(t, children=[("SCC-21", "In Progress")])
+            code, out = preflight(repo)
+            c.check("rider matching is EXACT - SCC-2 does not spare SCC-21", code == 2,
+                    f"exit {code}: " + out.strip()[-400:])
+            c.check("...and the suggestion keeps the declared key beside the missing one",
+                    "riders: [SCC-2, SCC-21]" in out, out.strip()[-500:])
+
+        with TempDir() as t:
+            # ⛔ The YAML-habituated trap: block-form riders. The hand parser reads the
+            # same-line [flow] form ONLY, so a block list is an UNREAD declaration - and an
+            # unread declaration must fail CLOSED (still blocks) with the flow form in hand,
+            # never silently pass. If block parsing is ever implemented, this case goes red
+            # and the rewrite is a decision, not drift.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            declare(repo, "riders:\n  - SCC-21\n")
+            board(t, children=[("SCC-21", "In Progress")])
+            code, out = preflight(repo)
+            c.check("block-form riders is UNREAD and fails CLOSED - the gate still blocks",
+                    code == 2, f"exit {code}: " + out.strip()[-400:])
+            c.check("...with the flow-form line to write instead",
+                    "riders: [SCC-21]" in out, out.strip()[-500:])
+
+        with TempDir() as t:
+            # A COMMENT quoting the syntax is not a declaration (the comment-literals class:
+            # prose about a gate must never satisfy it). RIDERS_RE's `^\s*` anchor is what
+            # makes this true - this case is that anchor's killer.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            declare(repo, "# declare like this: riders: [SCC-21]\n")
+            board(t, children=[("SCC-21", "In Progress")])
+            code, out = preflight(repo)
+            c.check("a COMMENT quoting riders syntax declares nothing - the gate still "
+                    "blocks", code == 2, f"exit {code}: " + out.strip()[-400:])
+
+        with TempDir() as t:
+            # Key normalization: a lowercase declaration still spares - both sides of the
+            # membership test are upper-cased by their builders.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            declare(repo, "riders: [scc-21]\n")
+            board(t, children=[("SCC-21", "In Progress")])
+            code, out = preflight(repo)
+            c.check("a lowercase rider declaration still spares its child",
+                    code == 1 and "clear to close out and merge" in out,
+                    f"exit {code}: " + out.strip()[-400:])
+
+        with TempDir() as t:
+            # A landed sibling lane's manifest is HISTORY (manifest_settled): its riders were
+            # flipped at ITS close, so inheriting the declaration would spare a child no one
+            # is carrying. Settled = recorded on the mainline blob-for-blob AND declaring
+            # another branch - built here exactly like check_manifest's own settled path.
+            repo = make_repo(t)
+            write(repo, "_artifacts/_main/2026-08-01_scc-11-other/task.yaml",
+                  "task_key: SCC-11\nprimary_repo: repo\nbranch: chore/SCC-11-OTHER\n"
+                  "close_command: smh-close-task-merge-tree\nriders: [SCC-21]\n")
+            commit(repo, "SCC-11 chore: a landed sibling lane's receipt")
+            git(repo, "push", "-q", "origin", "main")
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            board(t, children=[("SCC-21", "In Progress")])
+            code, out = preflight(repo)
+            c.check("a landed sibling's riders are HISTORY - they spare nothing here",
+                    code == 2, f"exit {code}: " + out.strip()[-400:])
+
     # ── SCC-110 · the whole point, end to end ────────────────────────────────────────────
     if c.block("SCC-110 · the whole point, end to end"):
         # A repo that CLAIMS gates (it declares a Jira project) while tracking no hooks is

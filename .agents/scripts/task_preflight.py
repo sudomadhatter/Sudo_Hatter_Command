@@ -206,7 +206,10 @@ def check_intent(branch: str, key: str | None, expect: str, rep: wf.Report) -> N
 MANIFEST_SCHEMA = ("task_key: SCC-00 | primary_repo: <name> | branch: chore/SCC-00-<slug> | "
                    "close_command: smh-close-task-merge-tree | secondary_repos: [] or a BLOCK "
                    "list of `- repo: <path>` / `landing: independent-task|retain-on-epic` / "
-                   "`ticket: KEY-00` rows (the inline [{...}] form is not read)")
+                   "`ticket: KEY-00` rows (the inline [{...}] form is not read) | riders: "
+                   "[KEY-00, ...] subtasks whose work lands IN this lane, transitioned to "
+                   "Done by the close ceremony (one-line flow style - a block list here is "
+                   "not read)")
 
 
 def manifest_field(text: str, field: str) -> str | None:
@@ -239,6 +242,33 @@ def manifest_settled(repo: Path, p: Path, ref: str) -> bool:
         return False
     ours = wf.git(["hash-object", str(p)], repo)
     return ours.returncode == 0 and ours.stdout.strip() == landed.stdout.strip()
+
+
+# One line, flow style, and NOTHING else - `\[` on the same physical line as the key. The
+# hand parser's `\s*` idioms eat newlines, so a lazier pattern would half-read the block-list
+# form and whichever half it kept would be wrong silently. An unread declaration fails CLOSED:
+# check_children still blocks and its error prints the exact flow line to write.
+RIDERS_RE = re.compile(r"^\s*riders\s*:[ \t]*\[([^\]\n]*)\]", re.MULTILINE)
+
+
+def manifest_riders(repo: Path, expect: str, branch: str) -> frozenset[str]:
+    """Subtask keys THIS lane declared it is carrying (SCC-156): their work lands in this
+    lane's diff, so they are still open at preflight time BY DESIGN, and the close ceremony
+    transitions them to Done first, the parent last - agent writes inside the operator-invoked
+    close, never an operator edit. Settled sibling manifests are excluded for the same reason
+    check_manifest() reads them as history: a landed lane's riders were flipped at ITS close,
+    and inheriting the declaration would spare a child no one is actually carrying."""
+    ref = base_ref(repo)
+    keys: set[str] = set()
+    for p, text in task_manifests(repo, expect):
+        declared = manifest_field(text, "branch")
+        if declared and declared != branch and manifest_settled(repo, p, ref):
+            continue
+        m = RIDERS_RE.search(text)
+        if m:
+            keys |= {k.strip().strip("\"'").upper()
+                     for k in m.group(1).split(",") if k.strip()}
+    return frozenset(keys)
 
 
 def check_manifest(repo: Path, branch: str, expect: str, rep: wf.Report) -> None:
@@ -538,8 +568,18 @@ def check_secondary(repo: Path, expect: str, rep: wf.Report) -> None:
 CHILD_CLOSED = ("done", "deferred")
 
 
-def check_children(key: str | None, rep: wf.Report, timeout: int = 20) -> None:
+def check_children(key: str | None, rep: wf.Report,
+                   riders: frozenset[str] = frozenset(), timeout: int = 20) -> None:
     """A parent Task does not close while its subtasks are still open (SCC-119).
+
+    `riders` (SCC-156) are the subtask keys this lane's task.yaml declared it is carrying:
+    work the operator ordered into THIS lane, so "still open at preflight" is the designed
+    state, not an unfinished job. A declared rider WARNS with the ceremony's own transition
+    command instead of blocking - and the warn names it an agent step, because no flow may
+    ever leave the operator a manual board edit (operator ruling, 2026-08-14). The declared
+    set only ever SHRINKS the error, never the check: an undeclared open child blocks
+    exactly as before, and the error now teaches the declaration as the third exit beside
+    finish-it and `Deferred`.
 
     ⛔ THREE ways this check could have passed without checking anything, all measured
     against the live board 2026-08-12 - this is the one gate in this file that talks to the
@@ -587,18 +627,41 @@ def check_children(key: str | None, rep: wf.Report, timeout: int = 20) -> None:
         return
 
     items = jira_feed.as_items(data, "issues")
-    open_children = []
+    open_children: list[str] = []
+    open_keys: list[str] = []
     for item in items:
         fields = item.get("fields") or {}
         status = ((fields.get("status") or {}).get("name") or "").strip()
-        if status.lower() not in CHILD_CLOSED:
-            open_children.append(f"{item.get('key') or '?'} ({status or '?'})")
+        if status.lower() in CHILD_CLOSED:
+            continue
+        ckey = (item.get("key") or "?").strip().upper()
+        if ckey in riders:
+            # Exact-key membership, never substring (the SCC-146 lesson: SCC-14 must not
+            # match inside SCC-146) - both sides normalized upper by their builders.
+            # The command stays on ONE physical line: the yes-guard in test_jira_feed.py
+            # scans the command SPAN per line, and a wrap after `--status` reads as a
+            # transition without `--yes`.
+            cmd = f'acli jira workitem transition --key {ckey} --status "Done" --yes'
+            rep.warn("children", f"{key} subtask {ckey} ({status or '?'}) is a declared "
+                                 f"RIDER - its work lands with this lane, and the close "
+                                 f"ceremony transitions it to Done FIRST, parent last: "
+                                 f"{cmd}  (an agent step inside the operator-invoked "
+                                 f"close - never an operator edit)")
+        else:
+            open_children.append(f"{ckey} ({status or '?'})")
+            open_keys.append(ckey)
 
     if open_children:
+        example = ", ".join(sorted(set(riders) | set(open_keys)))
         rep.err("children", f"{key} has {len(open_children)} open subtask(s) - the parent "
                             f"closes LAST, when the whole job is done: "
                             f"{', '.join(open_children)}. Finish them, or descope one to "
-                            f"`Deferred` if it is genuinely out of scope.")
+                            f"`Deferred` if it is genuinely out of scope. If one's work "
+                            f"genuinely lands IN THIS LANE, declare it in this lane's "
+                            f"task.yaml - riders: [{example}] - and the close ceremony "
+                            f"transitions it to Done first (an agent write inside the "
+                            f"operator-invoked close). Never declare a ticket whose work "
+                            f"is not real.")
     elif items:
         rep.info("children", f"{key}: all {len(items)} subtask(s) are Done or Deferred - "
                              f"this parent is the last thing to close")
@@ -1134,7 +1197,7 @@ def main() -> int:
     rep = wf.Report()
     key = check_branch(repo, branch, rep)
     check_intent(branch, key, expect, rep)
-    check_children(key, rep)
+    check_children(key, rep, riders=manifest_riders(repo, expect, branch))
     check_manifest(repo, branch, expect, rep)
     check_secondary(repo, expect, rep)
     # ⭐ `fresh`, not `args.fetch`. check_sync ran the fetch and knows whether it WORKED;

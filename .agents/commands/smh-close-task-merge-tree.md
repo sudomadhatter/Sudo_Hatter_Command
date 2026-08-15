@@ -335,26 +335,48 @@ Capture the merge SHA — Step 4 puts it on the ticket.
 board; a merge that landed while the record lags is one command away from correct. Take the
 recoverable failure.
 
-> ⭐ **Before you write `Done`, re-assert the children (SCC-119).** If this ticket is a **parent**, it
-> closes **LAST** — the whole job closes together at the end, so a parent going `Done` over open
-> subtasks is exactly the lie above, one level up.
+> ⭐ **Before you write `Done`, settle the children (SCC-119 · riders SCC-156).** If this ticket is a
+> **parent**, it closes **LAST** — the whole job closes together at the end, so a parent going `Done`
+> over open subtasks is exactly the lie above, one level up.
 >
 > ```bash
 > acli jira workitem search --jql "parent = <JIRA-KEY>" --fields "key,summary,status"
 > ```
 >
-> Any child that is not `Done` or `Deferred` → **STOP.** Finish it, or descope it properly
-> (`Deferred` + the `descoped` label — that is the auditable escape, and the reason there is no
-> `--force` flag).
+> **Riders close first, and YOU close them.** A subtask listed under `riders:` in this lane's
+> `task.yaml` did its work IN this lane — the merge that just landed is its work too. For each
+> declared rider that is still open **and appears in the search above**:
 >
-> **This is a second layer, not a duplicate.** `task_preflight.py check_children()` already ran it at
-> Step 1 and blocks on open children — but it **warns rather than blocks when the board is
-> unreachable**, and a sandboxed shell cannot reach the credential store at all. This line runs where
-> the board is provably reachable, because the very next command transitions the ticket. Neither
-> layer is load-bearing alone — the same shape as the two `start` seams (SCC-113).
+> ```bash
+> acli jira workitem transition --key <RIDER-KEY> --status "Done" --yes
+> ```
 >
-> ⛔ A **`Subtask`** closes here exactly like a `Task`: its own branch, its own gate, its own `Done`.
-> It is never labelled `Bug` — if it turns out broken, the flag goes on its **parent**.
+> This is an **agent step inside the ceremony the operator's word invoked** — the operator acts in
+> words, never in board edits. A declared rider that is *not* a subtask of this parent is a
+> declaration error: flip nothing, report it. Never transition a ticket whose work did not actually
+> land here.
+>
+> After the riders: any child still not `Done` or `Deferred` → **STOP.** Finish it, or descope it
+> properly (`Deferred` + the `descoped` label — that is the auditable escape, and the reason there
+> is no `--force` flag).
+>
+> ⛔ **If this command ever leaves the operator a Jira edit to do by hand, the flow is broken —
+> stop and say so.** Not "please move SCC-00 to Done and re-run": the agent performs every board
+> write, always inside this ceremony. A hand-back that assigns the operator data entry is a bug in
+> the flow, never an instruction to relay.
+>
+> **This is a second layer, not a duplicate.** `task_preflight.py check_children()` already ran at
+> Step 1 — it blocks on open undeclared children and WARNS each declared rider with the exact
+> transition above — but it **warns rather than blocks when the board is unreachable**, and a
+> sandboxed shell cannot reach the credential store at all. This step runs where the board is
+> provably reachable, because the very next command transitions the ticket. Neither layer is
+> load-bearing alone — the same shape as the two `start` seams (SCC-113).
+>
+> ⛔ A **`Subtask`** normally closes here exactly like a `Task`: its own branch, its own gate, its
+> own `Done` — **unless the operator ordered its work into the parent's lane**, in which case it is
+> a `riders:` entry in the parent lane's `task.yaml` and closes in the rider step above, right
+> before its parent. Either way it is never labelled `Bug` — if it turns out broken, the flag goes
+> on its **parent**.
 
 ```bash
 python3 .agents/scripts/jira_feed.py devrecord --key <JIRA-KEY> --story <branch-slug> \
