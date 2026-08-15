@@ -3,10 +3,11 @@
   "story": "scc-155",
   "result": "pass",
   "exit_code": 0,
-  "sha": "7f27c5aadaa3e52682b7f2619cd0fbe74f69ef46",
+  "sha": "1e76a8505cfca11a0c410430e92e1e60ec67b268",
   "dirty_tree": true,
   "dirty_paths": [
-    "_artifacts/_main/2026-08-14_label-tasks/gates/"
+    "_artifacts/_main/2026-08-14_label-tasks/gates/lint.json",
+    "_artifacts/_main/2026-08-14_label-tasks/gates/suite.json"
   ],
   "totals": null,
   "command": [
@@ -17,6 +18,6 @@
   ],
   "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/label-tasks",
   "duration_s": 0.1,
-  "recorded_at": "2026-08-14T21:19:25+00:00",
+  "recorded_at": "2026-08-15T01:56:27+00:00",
   "output_tail": ""
 }
