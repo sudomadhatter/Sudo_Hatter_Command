@@ -97,10 +97,11 @@ ride-along, ledgered) · **KILLED** (one-line reason) · **N/A** (not triage's j
 
 | Check | Result |
 |---|---|
-| `run_all.py` | stamped at close (see `gates/suite.json`) |
-| `workflow_lint --toolkit-only` | stamped at close (see `gates/lint.json`) |
-| `check_maps --depth3-only --strict` | stamped at close (see `gates/maps.json`) |
-| LLM review | none — no script or test changed; law + record surgery only, certified by the mechanical gates above |
+| `run_all.py` | PASS 27/27 files, exit 0, 86.9 s @ `8ae3f55` (`gates/suite.json`) — post-absorb |
+| `workflow_lint --toolkit-only` | PASS 0 errors 0 warnings, exit 0 @ `fe20441` (`gates/lint.json`) |
+| `check_maps --depth3-only --strict` | PASS exit 0 @ `9aa0404` (`gates/maps.json`) |
+| Contract pins | the suite's own `test_review_engine.py` pins the law: 2 rewritten sentences re-pinned + 3 NEW self-falsifying pins (gate exists · severity cannot bypass · residue retired) — each proven able to reject its counter-example by the framework itself |
+| LLM review | none — the only script change is the pin table in `test_review_engine.py` (test-only); law + record surgery otherwise, certified by the mechanical gates above |
 
 ## Your Actions
 
