@@ -81,7 +81,15 @@ ride-along, ledgered) · **KILLED** (one-line reason) · **N/A** (not triage's j
 **Tally: 25 items → 8 survive (2 proposed decided tickets) · 3 judged ride-alongs ledgered ·
 13 killed with reasons · 1 stays an open operator ruling.** Zero residue tickets.
 
-## Proposed decided tickets (NOT minted — your word mints, and killing them is equally valid)
+## Proposed decided tickets — SUPERSEDED 2026-08-15 (operator ruling: "not the full fix")
+
+> ⛔ **This section is the defect the follow-on lane fixed.** The operator ruled, after this lane
+> merged: *"160 was not a fix … we need the fixes made in thread not a ticket made every story
+> thats an endless loop that never finishes."* A "proposed decided ticket" the operator must rule
+> on is still a ticket every story spawns. Under the recut law (`chore/SCC-160-fix-in-thread`,
+> `_artifacts/_main/2026-08-15_fix-in-thread/walkthrough.md`) every survivor below was **fixed
+> in that lane or dropped with a reason** — 9 fixed, 2 dropped, zero tickets. The list stays as
+> history of what the first cut got wrong.
 
 - **Ticket A — evidence-integrity fixes** (`run_all` harness + close-out scripts, one lane):
   `--case` exact-match with over-match refusal + un-truncated labels + `--case=` row (156 #1–3,
@@ -105,8 +113,12 @@ ride-along, ledgered) · **KILLED** (one-line reason) · **N/A** (not triage's j
 
 ## Your Actions
 
-- [ ] **Rule on Ticket A and Ticket B** (or kill either — the table above is the whole case).
-      On your word I mint them with the per-item justifications; nothing is created until then.
+- [x] ~~**Rule on Ticket A and Ticket B**~~ — **struck 2026-08-15 by the operator's ruling**
+      ("we need the fixes made in thread not a ticket made every story"): this row was the retired
+      defect wearing a new name, and it is what held SCC-160 on `Review Required`. Resolved
+      in-thread on `chore/SCC-160-fix-in-thread`: A #1/#3/#4/#7/#8/#9 and B #12/#14 fixed with
+      pins, A #2 and B #13 dropped with reasons — see
+      `_artifacts/_main/2026-08-15_fix-in-thread/walkthrough.md`. No ticket was minted.
 - [x] **The merge itself.** Signed off 2026-08-15: you invoked `/smh-close-task-merge-tree`
       (door 3), this ceremony's own act — the token quotes the invocation and Step 6's
       verification is the landing record.
