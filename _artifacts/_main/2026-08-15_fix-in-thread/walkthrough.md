@@ -75,11 +75,75 @@ correct resting state.
 
 ## Code Review (2026-08-15)
 
-_(appended after the lens fan-out — see below)_
+Verdict: PASS @ 53ad33c
+Suite evidence measured @ 53ad33c (`gates/suite.json`, 27/27 exit 0, 87.8 s); receipts commits after it are artifacts-only.
+
+- **Scope:** `origin/main...HEAD` — 35 files: the engine steps + SKILL, both review commands + AP twin, quick-dev ×2, clean-code audits ×2, close-out, jira.md, artifacts-always-first, SOP, ledger, memory; scripts `run_all.py`, `_harness.py`, `gate_receipt.py`, `wf_common.py`, `merge-target-guard.sh`, `task_preflight.py` + 5 test files.
+- **Method:** the house engine's lens fan-out — Blind Hunter (diff only, no intent), Edge Case Hunter (boundary walk + `python3 -c` / throwaway-repo probes), Acceptance Auditor (law consistency + plan A1–A5) — three clean contexts in parallel, then triage under the relevance gate. `lenses_run: 3/3 (ok · ok · ok)`. Every survivor was **fixed in this lane before this verdict** — this section IS the law the lane ships, run on itself. `findings: 0 decision · 19 patch · 0 defer (0 noise · 3 relevance kills)`. `severity_floor: none` after fixes (pre-fix: FAIL — one critical).
+
+### ONE findings table (authoritative)
+
+| # | Lens | file:line | Sev | Failure scenario | Disposition |
+|---|---|---|---|---|---|
+| 1 | Edge | `run_all.py` child Popen (live edit) | **critical** | `encoding="utf-8"` on the child pipe: children write with the LOCALE (cp1252 on the PC) → `·` decodes to U+FFFD → run_all's own cp1252 stdout raises → the whole gate red-walls on the PC | applied @ 91e6095 — reverted to the shared-locale form; comment names why |
+| 2 | Blind | `_harness.py` `--case " "` | important | whitespace-only value is truthy, `"" in label` matches everything → `matched 3/3`, exit 0, sweep records "killed by case ' '" | applied @ 91e6095 — strip at parse → lost label, exit 3; pinned |
+| 3 | Blind | `wf_common.git` (via `gate_receipt -z`) | important | `text=True` decodes with the locale; on the PC `café.md` → `cafÃ©.md`, receipt "exact filename" false, 9c red on Windows | applied @ 91e6095 — `encoding="utf-8"` in `wf.git` (git writes UTF-8) |
+| 4 | Edge | `test_suite_runner` interrupt pins | important | `interrupt_main` is a no-op under an inherited SIG_IGN (`&`, cron, wrapper) → children run to completion → 3 false reds | applied @ 91e6095 — default SIGINT handler installed for the block, restored after |
+| 5 | Edge | `_harness.py` matched-blocks line | important | labels carry `⛔`/`⭐`; on a cp1252 pipe `finish()` raises AFTER the rows → exit 1 → a sweep reads "killed" for a survivor (unsafe direction) | applied @ 91e6095 — encoded for the stream with `backslashreplace` |
+| 6 | Edge | `test_suite_runner` 2nd interrupt block | important | fixed 1.0 s timer; under load j1's marker not yet written → false red "runner lost a file" | applied @ 91e6095 — fire only once both markers exist / both children registered, 8 s cap |
+| 7 | Acc | `cicd-quick-dev.md:95` (+ `smh-quick-dev` `--followon`) | important | "append deferrals to the deferred-work file" with no blocker rule — a defer-without-blocker path outside the engine; `--followon` carries the pile | applied @ 91e6095 — defer only against a named blocker; `--followon` = blocked items only, never a pile |
+| 8 | Blind | `run_all.py` Popen window | suggestion | Ctrl-C between "future started" and "child registered" → that child invisible to cancel and stop | applied @ 91e6095 — `_STOPPING` latch refuses to spawn; a late spawn terminates itself |
+| 9 | Blind | ORPHAN walker | suggestion | a `c.check` in the `else:` of `if c.block()` scored guarded — runs under every non-matching filter | applied @ 91e6095 — only the If BODY guards; planted else-orphan control |
+| 10 | Edge | `run_all.py` submits outside `try` | suggestion | Ctrl-C during submission escapes → false "cancelled" message, files run silently to completion | applied @ 91e6095 — submits inside the try |
+| 11 | Edge | `run_all.py` runner exception | suggestion | a Popen `OSError` propagates with no stop → traceback, hang at exit | applied @ 91e6095 — `except BaseException:` cancels + stops |
+| 12 | Edge | `stop_running` → `terminate` | suggestion | SIGTERM cuts children's `with TempDir()` unwind → leaked scratch repos on every Ctrl-C | applied @ 91e6095 — POSIX: SIGINT first, 1 s grace, then terminate |
+| 13 | Edge | `_STOPPING` never reset | suggestion | a second `run_pool` in-process returns 130 for everything | applied @ 91e6095 — reset at `run_pool` entry |
+| 14 | Edge | ORPHAN walker idioms | suggestion | `if not c.block(): continue` / BoolOp / walrus read as orphans — a false red that misdirects | applied @ 91e6095 — the message names the one idiom recognised (fails toward a red at the exact line; the convention is documented) |
+| 15 | Acc | step-03 no-spec paragraph | suggestion | "otherwise `defer`" = a fourth, blocker-less defer path two paragraphs under "No blocker → patch" | applied @ 91e6095 — no-spec keeps `decision_needed` (the operator is the spec); pin recut @ 53ad33c |
+| 16 | Acc | step-03 floor table | suggestion | defer rationale "not this change's defect" is the retired pre-existing reading | applied @ 91e6095 |
+| 17 | Acc | step-03 `jira.md §cross-repo` | suggestion | dangling section reference | applied @ 91e6095 — points at §The map |
+| 18 | Acc + Blind | step-03 vs callers: `decision_needed` the operator does not take in-thread | suggestion | three exits (walk now / open Your Actions row / ledger defer), none wins | applied @ 91e6095 — stated once: walked now → patch/dismiss; not taken (or headless) → an open DECISION row (theirs, may hold, not a ticket) and the defer bullet points at it |
+| 19 | Acc | `jira.md:503` "maybe" items | suggestion | contradicts the blocker-only ledger | applied @ 91e6095 — no "maybe" bucket |
+| 20 | Acc | memory + MEMORY.md | suggestion | carried in saying "do NOT pre-empt, recut owed" while this lane IS the recut | applied @ 91e6095 |
+| 21 | Acc | clean-code audits ×2 · close-out:252 · SOP:828 | suggestion | unconstrained "deferred" in review-adjacent surfaces | applied @ 91e6095 — a deferral names its blocker; close-out findings fixed before the merge |
+| 22 | Acc | this walkthrough's merge row + `smh-close-task-merge-tree` | nitpick | `finish` reads THIS walkthrough and would HOLD on the merge box the ceremony itself represents | applied @ 91e6095 — the close-out now ticks the merge row before `finish` (law), and this row is ticked by the ceremony below |
+| 23 | Blind + Edge | `test_closeout_preflight` same_tree | nitpick | comment said "merge"; fixture was an empty commit | applied @ 91e6095 — a real two-parent merge with an identical tree |
+| 24 | Blind | `gate_receipt.py` comment | nitpick | "rename rows record the NEW path" — stale | applied @ 91e6095 |
+| 25 | Acc | `deferred-work.md` title | nitpick | "judged ride-along" is first-cut vocabulary | applied @ 91e6095 |
+| 26 | Acc + Edge | `test_review_engine.py` new pins | nitpick | prose pins on heading sentences (SCC-125 class); `\s+` reflow sensitivity | **dismissed — relevance:** the pin table is the house's accepted engine contract; each pin's counter-example rejection is the falsification the framework offers, and every other pin in the file has the same shape; asking for a different kind of guard is a proposal for the pin framework, not a defect of these three rows |
+| 27 | Edge | 1st interrupt block `timer.cancel()` placement | nitpick | superseded — the fixed timer no longer exists (fire-when thread, daemon) | dismissed — moot after #6 |
+| 28 | Edge | grandchild pipes / already-dead terminate / `status.renames=false` / porcelain `-z` boundaries | — | verified handled by the lens (no finding) | — |
+
+Noise-dismissed: 0. Relevance kills: 2 (#26, #27), each with its reason above. **Tickets produced: 0. Deferred: 0.**
+
+### Gates (each run bare, actual output)
+
+| Check | Result |
+|---|---|
+| Enforcement suite | `run_all.py` **27/27 files passed**, exit 0, 87.8 s @ `53ad33c` — `gates/suite.json` |
+| Toolkit lint | `workflow_lint --toolkit-only` **0 error(s), 0 warning(s)**, exit 0 @ `24fde11` — `gates/lint.json` |
+| Maps | `check_maps --depth3-only --strict` exit 0 @ `b57d406` — `gates/maps.json` |
+| Assertion evidence (named cases, green) | `test_suite_runner` 54/54 · `test_gate_receipt` 34/34 · `test_closeout_preflight` 29/29 · `test_review_engine` 792/792 · `test_workflow_lint` 49/49 · `--case INC5` 6/6 · `--case STALLED` 6/6 |
+| Mutants (red first, then green) | matched-blocks line · zero-file guard · `stop_running` (twice, after the SIGINT-first rewrite) · queue cancel · old porcelain parse · stale guard sentence — six kills |
+| Link + anchor | every new path in the walkthrough/plan/INDEX resolves; `jira.md` §The map exists |
+| SOP currency | armed hook: usage commits staged the SOP; law/record/receipt commits `[sop-ok]` |
+| Door parity | no command added/renamed/deleted; caches re-synced (`sync-agents.ps1`), `test_review_engine` byte-identical check green |
+| Step 0.7 re-derivation | `origin/main` = `0b46c62` = this lane's base; nothing moved under the diff. Sibling lane `chore/SCC-38-flight-recorder-autopilot-spec` (d7658e5) is live: **landing order — this lane touches gate/script machinery (`run_all`, `gate_receipt`, `task_preflight`, `merge-target-guard`), so per the multi-lane rule it lands AFTER any lane that does not; SCC-38 is still open, so no conflict today** |
+
+### Honest note on the receipt trail
+
+Three receipt commits (`c588cb9`, `905fd7d`, `e57400a`) were labelled PASS in their subjects while the
+suite and lint they stamped were RED (a stale pin + a stale AP stamp after the review-fix commit
+re-edited the primary). The receipts themselves recorded `fail` truthfully; the commit subjects did
+not. Fixed at `53ad33c` and re-stamped honestly (`suite pass @ 53ad33c` · `lint pass @ 24fde11` ·
+`maps pass @ b57d406`). Left in history rather than rewritten.
+
+Changes applied: 25 (table). Walkthrough body refreshed: evidence table above supersedes the
+pre-review one; the `## Evidence` block earlier in this file records the pre-review stamps.
 
 ## Your Actions
 
-- [ ] **The merge itself** — `/smh-close-task-merge-tree` on your word. Nothing else is open: no
-      ticket to rule on, no ledger entry owed. Landing order vs `chore/SCC-38-…`: this lane touches
-      `run_all.py` / `gate_receipt.py` / `task_preflight.py` / `merge-target-guard.sh` (gate + script
-      machinery) — per the multi-lane rule it lands AFTER any lane that does not.
+- [x] **The merge itself** — signed off 2026-08-15: you invoked `/smh-close-task-merge-tree` (door 3)
+      this turn; this ceremony's own act. Nothing else is open: no ticket to rule on, no ledger entry
+      owed. Landing order vs `chore/SCC-38-…`: SCC-38 is still open, so this lands on `main` first
+      and SCC-38 absorbs it.
