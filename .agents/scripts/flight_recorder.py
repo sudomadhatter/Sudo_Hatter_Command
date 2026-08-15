@@ -157,7 +157,8 @@ def read_receipts(root: Path) -> dict[str, dict]:
     for p in sorted(gates.glob("*.json")):
         try:
             data = json.loads(p.read_text(encoding="utf-8-sig"))
-        except Exception:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001 - evidence-only reader: skip it, SAY so, never raise
+            print(f"[warn] flight_recorder: receipt {p.name}: {e} - skipped", file=sys.stderr)
             continue
         if isinstance(data, dict):
             out[str(data.get("gate") or p.stem)] = data
