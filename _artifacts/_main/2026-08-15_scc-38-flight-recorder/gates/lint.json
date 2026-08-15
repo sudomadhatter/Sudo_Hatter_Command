@@ -3,7 +3,7 @@
   "story": "scc-38",
   "result": "pass",
   "exit_code": 0,
-  "sha": "da055f8d763f0d946d0d03abf124dea47da21393",
+  "sha": "7fd697c0337ceaac9643a2949ce784605edff6da",
   "dirty_tree": false,
   "dirty_paths": [],
   "totals": null,
@@ -14,6 +14,6 @@
   ],
   "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/scc-38-flight-recorder",
   "duration_s": 0.2,
-  "recorded_at": "2026-08-15T05:50:38+00:00",
+  "recorded_at": "2026-08-15T05:53:21+00:00",
   "output_tail": "== workflow_lint - toolkit-only ==\n[INFO ] commands: testarch-atdd.md: UTF-8 BOM present\n[INFO ] commands: testarch-automate.md: UTF-8 BOM present\n[INFO ] commands: testarch-ci.md: UTF-8 BOM present\n[INFO ] commands: testarch-framework.md: UTF-8 BOM present\n[INFO ] commands: testarch-nfr.md: UTF-8 BOM present\n[INFO ] commands: testarch-test-design.md: UTF-8 BOM present\n[INFO ] commands: testarch-test-review.md: UTF-8 BOM present\n[INFO ] commands: testarch-trace.md: UTF-8 BOM present\n-- 0 error(s), 0 warning(s), 8 info --\n"
 }
