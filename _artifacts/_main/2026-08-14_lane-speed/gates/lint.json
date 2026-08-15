@@ -3,9 +3,12 @@
   "story": "scc-156",
   "result": "pass",
   "exit_code": 0,
-  "sha": "7fac099d600f1f7e6bf54bc0ce7c1bf9edd104ce",
-  "dirty_tree": false,
-  "dirty_paths": [],
+  "sha": "5bd29c907ea1fee32c872630dafed54c31e72b7c",
+  "dirty_tree": true,
+  "dirty_paths": [
+    "_artifacts/_main/2026-08-14_lane-speed/gates/lint.json",
+    "_artifacts/_main/2026-08-14_lane-speed/gates/maps.json"
+  ],
   "totals": null,
   "command": [
     "python3",
@@ -14,6 +17,6 @@
   ],
   "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/lane-speed",
   "duration_s": 0.2,
-  "recorded_at": "2026-08-15T02:03:45+00:00",
+  "recorded_at": "2026-08-15T03:34:22+00:00",
   "output_tail": "== workflow_lint - toolkit-only ==\n[INFO ] commands: testarch-atdd.md: UTF-8 BOM present\n[INFO ] commands: testarch-automate.md: UTF-8 BOM present\n[INFO ] commands: testarch-ci.md: UTF-8 BOM present\n[INFO ] commands: testarch-framework.md: UTF-8 BOM present\n[INFO ] commands: testarch-nfr.md: UTF-8 BOM present\n[INFO ] commands: testarch-test-design.md: UTF-8 BOM present\n[INFO ] commands: testarch-test-review.md: UTF-8 BOM present\n[INFO ] commands: testarch-trace.md: UTF-8 BOM present\n-- 0 error(s), 0 warning(s), 8 info --\n"
 }
