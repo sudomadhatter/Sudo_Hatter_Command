@@ -3,12 +3,9 @@
   "story": "scc-156",
   "result": "pass",
   "exit_code": 0,
-  "sha": "13659229f2850fc846f335d143c089e571b1b79f",
-  "dirty_tree": true,
-  "dirty_paths": [
-    "_artifacts/_main/2026-08-14_lane-speed/gates/lint.json",
-    "_artifacts/_main/2026-08-14_lane-speed/gates/suite.json"
-  ],
+  "sha": "655754feda603da8dd31804a8de46a9f599a6959",
+  "dirty_tree": false,
+  "dirty_paths": [],
   "totals": null,
   "command": [
     "python3",
@@ -18,6 +15,6 @@
   ],
   "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/lane-speed",
   "duration_s": 0.1,
-  "recorded_at": "2026-08-15T03:33:55+00:00",
+  "recorded_at": "2026-08-15T03:34:37+00:00",
   "output_tail": ""
 }
