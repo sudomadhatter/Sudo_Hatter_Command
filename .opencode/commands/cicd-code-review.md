@@ -174,7 +174,8 @@ new one. The section carries:
   the full-suite evidence was measured on and whose run it was (②'s inherited certification or ③'s
   own). Any code/test diff between that SHA and HEAD invalidates the verdict.
 - scope + method, one line each; then ONE findings table (`file:line` · severity · failure scenario ·
-  disposition applied / deferred / dismissed) — **the authoritative copy**; the story file links here,
+  disposition applied / deferred — judged, rides a named lane class / dismissed — a relevance kill
+  carries its one-line reason, pure noise is count-only) — **the authoritative copy**; the story file links here,
   never restates. (The engine's step-04 may leave unresolved findings as `[ ] [Review]…` action items
   in `STORY_FILE` so the builder sees them — that is a worklist, not a second record, and it carries
   no dispositions. Where the two differ, this table is right; reconcile the story's boxes to it.)
@@ -205,6 +206,10 @@ of truth** — your Step 4 section is part of it, and the body around it must no
   missing artifact link, a doc fix — and tick it with a one-line note. Leave ONLY genuine human calls
   (product decisions, live checks, `main` promotion). Refresh the branch/commit summary after your
   worktree commits.
+  ⛔ A row assigning a residue ticket — "One follow-on ticket for the N deferred items" — is the
+  retired defect (operator ruling 2026-08-15), never a valid action row: the triage already
+  decided, and survivors live in this lane, the deferred ledger, or a decided ticket the triage
+  proposes itself.
 - **Hard rule: NEVER finish `/cicd-code-review` with the walkthrough body left stale after applying fixes.**
 
 ## Stay in lane

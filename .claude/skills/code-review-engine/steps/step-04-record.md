@@ -15,22 +15,27 @@ written as a completed box**:
 ```
 - [ ] [Review][Decision] <title> — <detail>
 - [ ] [Review][Patch] <title> [<file>:<line>]
-- [ ] [Review][Defer] <title> [<file>:<line>] — deferred, pre-existing
+- [ ] [Review][Defer] <title> [<file>:<line>] — <why it is worth fixing> · rides <lane class>
 ```
 
 Every `defer` also gets a bullet in `DEFERRED_WORK`, under a heading naming this review and its
 date; when the caller supplied no such path, the same bullets come back in the summary instead.
-Deferred work that lives only inside one review's record is deferred to nowhere.
+Deferred work that lives only inside one review's record is deferred to nowhere. **And a `defer`
+bullet is a JUDGED item, never a bare title** — it carries why it matters and the lane class it
+rides ("next lane touching `run_all`"), because it already passed step 3's relevance gate. The
+ledger is not a ticket queue (operator ruling 2026-08-15): nothing in it is owed, and no
+close-out mints a ticket from it as a pile.
 
-Dismissed findings are **not** written here — step 3 settled that they are counted only, and their
-count rides the summary below.
+Dismissed findings are **not** written here — builders must never see dead boxes. Noise kills are
+counted only, in the summary below; a relevance kill (true but not worth implementing) gets its
+ONE line in the walkthrough findings table per step 3, and nowhere else.
 
 ## 2. What the engine hands back
 
 ```
 lenses_run:      <n>/<applicable>   (per-lens: ok | recovered-inline | dead)
 lenses_na:       <lenses not applicable in this mode, or "none">
-findings:        <d> decision · <p> patch · <w> defer   (<r> dismissed)
+findings:        <d> decision · <p> patch · <w> defer   (<n> noise-dismissed · <k> relevance kills)
 severity_floor:  none | CONCERNS | FAIL
 notes:           <degradations, absent optional inputs, verification state>
 ```

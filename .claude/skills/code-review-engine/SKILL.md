@@ -64,7 +64,7 @@ Read each step file fully and follow it. Start with `steps/step-01-review.md`.
 ```
 lenses_run:      <n>/<applicable>   (per-lens: ok | recovered-inline | dead)
 lenses_na:       <lenses not applicable in this mode, or "none">
-findings:        <d> decision · <p> patch · <w> defer   (<r> dismissed)
+findings:        <d> decision · <p> patch · <w> defer   (<n> noise-dismissed · <k> relevance kills)
 severity_floor:  none | CONCERNS | FAIL
 notes:           <degradations, absent optional inputs, verification state>
 ```

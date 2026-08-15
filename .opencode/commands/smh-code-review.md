@@ -271,7 +271,9 @@ The section carries:
   plus one line naming the sha the suite evidence was measured on.
 - scope + method, one line each;
 - **ONE findings table** — `file:line` · severity · failure scenario · disposition
-  (`applied`/`deferred`/`dismissed`). **The authoritative copy**; the plan links here, never restates.
+  (`applied` / `deferred` — judged, rides a named lane class / `dismissed` — a relevance kill
+  carries its one-line reason; pure noise is count-only). **The authoritative copy**; the plan
+  links here, never restates.
   (In `full` mode the engine may also leave `[ ] [Review]…` action items in the file you passed as
   `STORY_FILE` — a worklist carrying no dispositions, never a second record. This table wins.)
 - each gate's result in one line with its **actual** output;
@@ -310,6 +312,10 @@ The walkthrough is the living source of truth, and the body around your section 
 - **`## Your Actions` triage:** attempt every agent-solvable row yourself — a deferred check, a missing
   artifact link, a doc fix — and tick it with a one-line note. Leave ONLY genuine operator calls (a
   product decision, a `main` merge, a ticket transition).
+  ⛔ A row assigning the operator a residue ticket — "One follow-on ticket for the N deferred
+  items" — is the retired defect (operator ruling 2026-08-15), never a valid action row: the
+  triage already decided, and survivors live in this lane, the deferred ledger, or a decided
+  ticket the triage proposes itself.
 - **Hard rule: never finish this command with the walkthrough body left stale after applying fixes.**
 
 ## Stay in lane

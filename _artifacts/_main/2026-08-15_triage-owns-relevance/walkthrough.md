@@ -110,6 +110,11 @@ ride-along, ledgered) · **KILLED** (one-line reason) · **N/A** (not triage's j
       your word — is the per-merge sign-off; the minter refuses without your exact words from
       that turn.
 
-**Landing order vs `chore/SCC-155-label-tasks`: free.** Expected overlap is only the generated
-`.agents/.sync-manifest.json` / `_artifacts/_main/INDEX.md` class; whichever lands second
-re-syncs and re-adds its row.
+**Landing order vs `chore/SCC-155-label-tasks`: resolved live.** SCC-155 landed first
+(`9237d28`); this lane absorbed origin/main at `89cdc86` on the operator's word ("155 just
+pushed / make a pull from main"). One conflict, the predicted class: both lanes' new
+`_artifacts/_main/INDEX.md` rows — resolved keeping both, newest first; jira.md / MEMORY.md /
+SOP auto-merged. Doors + caches re-synced post-absorb (20 launchers regenerated). Of note:
+SCC-155 shipped `jira_feed finish`, which HOLDS a ticket whose walkthrough has open
+`## Your Actions` boxes — the machinery this lane's close-out will meet by design, since the
+Ticket A/B ruling rows above stay open until your word.
