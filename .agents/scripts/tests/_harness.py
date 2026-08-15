@@ -56,6 +56,9 @@ class Cases:
         self.filter = _case_filter()
         self.blocks_seen = 0
         self.blocks_run = 0
+        # Every label that MATCHED, in file order — the transcript names them all, so a
+        # mutation record can never say "killed by case P" when 22 blocks ran (SCC-156 #1).
+        self.blocks_matched: list[str] = []
         print(f"== {title} ==")
 
     def block(self, label: str) -> bool:
@@ -73,12 +76,24 @@ class Cases:
         if self.filter is None:                       # no filter asked for: run everything
             self.blocks_run += 1
             return True
-        if self.filter and self.filter.lower() in label.lower():
+        if self.filter and self._matches(label):
             self.blocks_run += 1
+            self.blocks_matched.append(label)
             return True
         # An EMPTY filter is a lost label, never "matches everything". Falling through here
         # leaves blocks_run at 0, which finish() turns into NO_MATCH.
         return False
+
+    def _matches(self, label: str) -> bool:
+        """Substring, case-insensitive, whitespace-trimmed — and every match is RECORDED.
+
+        The over-match is real (SCC-156 review #1: `--case "E"` on a 40-block file ran all
+        40 and the sweep recorded "killed by case E"). The fix is not an exact-match mode —
+        a family prefix like `CASE ·` is a legitimate multi-select — it is that a
+        multi-match can never be INVISIBLE: `finish()` prints every matched label, so the
+        attribution reads the names, never the count.
+        """
+        return self.filter.strip().lower() in label.strip().lower()
 
     def check(self, name: str, ok: bool, detail: str = "") -> None:
         self.rows.append((name, bool(ok), detail))
@@ -92,6 +107,10 @@ class Cases:
         if self.filter is not None:
             print(f"-- filter '{self.filter}': matched "
                   f"{self.blocks_run}/{self.blocks_seen} blocks --")
+            if self.blocks_run > 1:
+                # A multi-match is legal (a family prefix like `CASE ·`) but it must be
+                # VISIBLE: attribution reads this line, not the count.
+                print("-- matched blocks: " + " | ".join(self.blocks_matched) + " --")
             if not self.blocks_run or not self.rows:
                 if not self.filter:
                     why = ("--case was given no label (a bare `--case`, `--case=`, or an "

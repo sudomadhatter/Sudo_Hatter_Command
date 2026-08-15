@@ -14,9 +14,12 @@ printed tally, and a source-grep guard cannot see either (SCC-125).
 """
 from __future__ import annotations
 
+import ast
+import importlib.util
 import shutil
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -165,6 +168,36 @@ def main() -> int:
             rc, out = run(d / "test_fake.py", "--case", "second")
             c.check("CASE · match is a substring of the label, not the whole label",
                     rc == 0 and "BETA · one" in out, f"rc={rc} out={out!r}")
+
+    # ── CASE · a multi-match is NAMED, never collapsed into a count (SCC-156 #1) ─────────
+    if c.block("CASE · a multi-match names every block that ran"):
+        # `--case "E"` on a 40-block file ran all 40 and the sweep recorded "killed by case
+        # E". Substring stays (a family prefix is a legitimate multi-select); what changed is
+        # that the transcript lists every matched label, so attribution reads NAMES.
+        with TempDir() as t:
+            d = sandbox(t, FAKE)
+            rc, out = run(d / "test_fake.py", "--case", "the")     # matches all three
+            c.check("CASE · a multi-match still runs every matching block",
+                    rc == 0 and "matched 3/3 blocks" in out, out[-300:])
+            c.check("CASE · ...and the transcript NAMES each matched block",
+                    "-- matched blocks: ALPHA · the first block | BETA · the second block | "
+                    "GAMMA · the third block --" in out, out[-300:])
+            rc, out = run(d / "test_fake.py", "--case", "BETA")
+            c.check("CASE · a single match prints no matched-blocks line (the count suffices)",
+                    rc == 0 and "matched 1/3 blocks" in out and "matched blocks:" not in out,
+                    out[-300:])
+
+    # ── CASE · the `--case=<label>` spelling is the same contract (SCC-156 #3) ───────────
+    if c.block("CASE · the --case=<label> spelling runs only its block"):
+        with TempDir() as t:
+            d = sandbox(t, FAKE)
+            rc, out = run(d / "test_fake.py", "--case=BETA")
+            c.check("CASE · --case=BETA runs only BETA",
+                    rc == 0 and "BETA · one" in out and "ALPHA · one" not in out
+                    and "-- 1/1 passed --" in out, f"rc={rc} out={out!r}")
+            rc, out = run(d / "test_fake.py", "--case=this-label-matches-nothing")
+            c.check("CASE · --case=<typo> is exit 3, same as the two-token form",
+                    rc == 3 and "NO CASES RAN" in out, f"rc={rc} out={out!r}")
 
     # ── CASE · ⛔ zero match is exit 3, never a green ────────────────────────────────────
     if c.block("CASE · ⛔ zero match is exit 3, never a green"):
@@ -371,6 +404,148 @@ def main() -> int:
                     rc_p == 1 and "BOOM-TRACEBACK" in out_p, out_p[-300:])
             c.check("RUNALL · ...and in serial mode, identically",
                     rc_s == 1 and "BOOM-TRACEBACK" in out_s, out_s[-300:])
+
+    # ── RUNALL · ⛔ zero files is exit 2, never `0/0 files passed` (SCC-156 #7) ────────────
+    if c.block("RUNALL · zero files is exit 2, never a green 0/0"):
+        # The vacuous-green class one level UP from the harness's exit-3 rule: a tests dir
+        # that lost its files (bad checkout, sparse clone, wrong root) must not print a PASS
+        # line a receipt could adopt to authorize a gate SKIP.
+        with TempDir() as t:
+            d = t / "empty"
+            d.mkdir()
+            shutil.copy2(RUN_ALL, d / "run_all.py")
+            rc, out = run(d / "run_all.py")
+            c.check("RUNALL · an empty tests dir exits 2 (misconfigured, not a result)",
+                    rc == 2, f"rc={rc} out={out!r}")
+            c.check("RUNALL · ...names the reason and prints NO `files passed` line",
+                    "no test_*.py files found" in out and "files passed" not in out,
+                    out[-300:])
+
+    # ── RUNALL · an interrupt STOPS the run — queue cancelled, children ended (SCC-156 #4) ─
+    if c.block("RUNALL · an interrupt cancels queued files AND ends running children"):
+        # The review's one-word fix (`cancel_futures=True`) was measured insufficient while
+        # pinning it: `Executor.map` already cancels the queue when its iteration dies, so the
+        # mutant survived. What actually made an 88 s suite unstoppable was `shutdown(wait=True)`
+        # WAITING for the N children already running. So the pin drives a REAL interrupt
+        # (`_thread.interrupt_main`, cross-platform — no signal plumbing) into a pool of real
+        # sleeping children and requires all three: the interrupt propagates, the queued file
+        # never starts, and the running children are gone well before their sleep would end.
+        import _thread
+        with TempDir() as t:
+            d = t / "intr"
+            d.mkdir()
+            shutil.copy2(RUN_ALL, d / "run_all.py")
+            SLEEP = 6.0
+            for i in range(3):
+                (d / f"test_i{i}.py").write_text(
+                    f"import sys, time\nprint('START{i}', flush=True)\ntime.sleep({SLEEP})\n"
+                    f"print('END{i}')\nsys.exit(0)\n", encoding="utf-8")
+            spec = importlib.util.spec_from_file_location("run_all_intr", d / "run_all.py")
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            files = ["test_i0.py", "test_i1.py", "test_i2.py"]
+
+            timer = threading.Timer(1.0, _thread.interrupt_main)
+            timer.start()
+            t0 = time.monotonic()
+            interrupted = False
+            try:
+                mod.run_pool(files, 2)          # jobs=2: two in flight, one queued
+            except KeyboardInterrupt:
+                interrupted = True
+            wall = time.monotonic() - t0
+            timer.cancel()
+            # Give terminated children a moment to be reaped by their worker threads.
+            deadline = time.monotonic() + 3.0
+            while mod._RUNNING and time.monotonic() < deadline:
+                time.sleep(0.05)
+            c.check("RUNALL · the interrupt propagates out of run_pool (not swallowed)",
+                    interrupted, f"wall={wall:.2f}s")
+            c.check("RUNALL · running children are ENDED, not waited out",
+                    interrupted and not mod._RUNNING and wall < SLEEP - 1.0,
+                    f"still running={len(mod._RUNNING)} wall={wall:.2f}s (sleep was {SLEEP}s)")
+            # The queued third file must never have started: its START line never printed.
+            # We cannot read the pool's transcript after the raise, so ask the children
+            # themselves — a started child writes a marker file.
+        with TempDir() as t:
+            d = t / "intr2"
+            d.mkdir()
+            shutil.copy2(RUN_ALL, d / "run_all.py")
+            for i in range(3):
+                (d / f"test_j{i}.py").write_text(
+                    f"import sys, time, pathlib\n"
+                    f"pathlib.Path(__file__).with_suffix('.started').write_text('1')\n"
+                    f"time.sleep(6)\nsys.exit(0)\n", encoding="utf-8")
+            spec = importlib.util.spec_from_file_location("run_all_intr2", d / "run_all.py")
+            mod2 = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod2)
+            timer = threading.Timer(1.0, _thread.interrupt_main)
+            timer.start()
+            try:
+                mod2.run_pool(["test_j0.py", "test_j1.py", "test_j2.py"], 2)
+            except KeyboardInterrupt:
+                pass
+            timer.cancel()
+            time.sleep(0.5)
+            started = sorted(p.name for p in d.glob("*.started"))
+            c.check("RUNALL · the queued file never starts after the interrupt",
+                    started == ["test_j0.started", "test_j1.started"], f"started={started}")
+        # Control: the same pool, uninterrupted, runs every file in order with no failures.
+        spec = importlib.util.spec_from_file_location("run_all_under_test", RUN_ALL)
+        mod3 = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod3)
+        ran: list[str] = []
+        files = [f"test_q{i}.py" for i in range(6)]
+        fails = mod3.run_pool(files, 1, runner=lambda n: (ran.append(n), (n, 0, ""))[1])
+        c.check("RUNALL · control: an uninterrupted pool runs every file, in order, no failures",
+                ran == files and fails == [], f"ran={ran} fails={fails}")
+
+    # ── ORPHAN · no `c.check` outside every block, AST-verified (SCC-156 #8) ─────────────
+    if c.block("ORPHAN · every c.check in a wired file sits under a c.block guard"):
+        # A `c.check` outside every `if c.block(...)` runs under EVERY filter and counts
+        # toward EVERY filtered tally — a mutant it kills is attributed to whichever case
+        # was named. Zero exist today; the reviewer CREATED one mid-review and caught it
+        # only by reading a count. This walks the AST so the count is no longer the guard.
+        def orphans(path: Path) -> list[int]:
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for parent in ast.walk(tree):
+                for child in ast.iter_child_nodes(parent):
+                    child._parent = parent  # type: ignore[attr-defined]
+            found: list[int] = []
+            for n in ast.walk(tree):
+                if not (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+                        and n.func.attr == "check" and isinstance(n.func.value, ast.Name)
+                        and n.func.value.id == "c"):
+                    continue
+                a = n
+                guarded = False
+                while hasattr(a, "_parent"):
+                    a = a._parent  # type: ignore[attr-defined]
+                    if (isinstance(a, ast.If) and isinstance(a.test, ast.Call)
+                            and isinstance(a.test.func, ast.Attribute)
+                            and a.test.func.attr == "block"):
+                        guarded = True
+                        break
+                if not guarded:
+                    found.append(n.lineno)
+            return found
+
+        wired = [p for p in sorted(HERE.glob("test_*.py"))
+                 if "c.block(" in p.read_text(encoding="utf-8")]
+        c.check("ORPHAN · at least one wired file was found to inspect (the case is not vacuous)",
+                len(wired) >= 1, f"wired={[p.name for p in wired]}")
+        for p in wired:
+            o = orphans(p)
+            c.check(f"ORPHAN · {p.name} has no c.check outside a c.block guard",
+                    o == [], f"orphan c.check at lines {o}")
+        # The walker must be able to SEE an orphan, or the loop above proves nothing.
+        with TempDir() as t:
+            bad = t / "test_orphan.py"
+            bad.write_text("def main():\n    c = None\n    if c.block('A'):\n"
+                           "        c.check('a', True)\n    c.check('orphan', True)\n",
+                           encoding="utf-8")
+            c.check("ORPHAN · control: the walker flags a planted orphan at its line",
+                    orphans(bad) == [5], f"got {orphans(bad)}")
 
     return c.finish()
 

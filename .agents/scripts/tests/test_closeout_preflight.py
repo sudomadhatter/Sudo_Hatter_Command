@@ -189,6 +189,38 @@ def main() -> int:
                 any(s == "WARN" for s, _ in sections(rep, "file-list")),
                 str(sections(rep, "file-list"))[:110])
 
+    # ── wf.same_tree — the predicate two commands trust to SKIP a 25-file gate (SCC-156 #9)
+    # `/smh-quick-dev` 4b and `/smh-code-review` accept a receipt across an absorb when
+    # `same_tree(receipt_sha, HEAD)` says the trees are byte-identical. It was untested while
+    # authorizing that skip. Three states, measured on a real repo: a merge commit with an
+    # IDENTICAL tree (the case SHA-equality gets wrong) -> True; a real content change ->
+    # False; an unknown sha -> None (unknown is never "same").
+    with TempDir() as tmp:
+        d = tmp / "st"
+        d.mkdir()
+        git(d, "init", "-q", "-b", "main")
+        git(d, "config", "user.email", "t@t.t")
+        git(d, "config", "user.name", "t")
+        (d / "a.txt").write_text("a\n", encoding="utf-8")
+        git(d, "add", "a.txt")
+        git(d, "commit", "-qm", "one")
+        base = git(d, "rev-parse", "HEAD").stdout.strip()
+        # An empty --no-ff merge of a no-op branch: new sha, identical tree.
+        git(d, "checkout", "-qb", "noop")
+        git(d, "checkout", "-q", "main")
+        git(d, "commit", "-q", "--allow-empty", "-m", "empty")
+        empty = git(d, "rev-parse", "HEAD").stdout.strip()
+        c.check("same_tree · a new sha with an IDENTICAL tree is True (sha-equality would say stale)",
+                base != empty and wf.same_tree(d, base, empty) is True, f"{base[:7]} vs {empty[:7]}")
+        (d / "a.txt").write_text("b\n", encoding="utf-8")
+        git(d, "commit", "-qam", "change")
+        changed = git(d, "rev-parse", "HEAD").stdout.strip()
+        c.check("same_tree · a content change is False",
+                wf.same_tree(d, base, changed) is False, f"{base[:7]} vs {changed[:7]}")
+        c.check("same_tree · an unknown sha is None, never True (unknown is not 'same')",
+                wf.same_tree(d, base, "0" * 40) is None
+                and wf.same_tree(d, "deadbeef" * 5, empty) is None, "")
+
     return c.finish()
 
 

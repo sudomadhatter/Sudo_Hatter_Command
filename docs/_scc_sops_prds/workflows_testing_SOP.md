@@ -1243,6 +1243,14 @@ green**, after every restore is verified byte-identical: targeted kills prove ea
 that closing green proves the tree you hand back is the one you started with. Full doctrine:
 `.agents/rules/tests-must-gate-for-real.md` **§ Mutation Testing**.
 
+> ⓘ **Three sweep truths that landed with SCC-160 (fixed in-thread from the SCC-156 review).**
+> A short `--case` label is a substring and can match many blocks — the transcript now prints
+> `-- matched blocks: A | B | C --` whenever more than one ran, so a kill record reads the NAMES,
+> never "killed by case P" when 22 blocks ran. **Ctrl-C now stops the suite** — queued files are
+> cancelled and the children already running are terminated (before, an 88 s run could not be
+> interrupted). And **an empty tests dir is exit 2, never `0/0 files passed`** — a checkout that
+> lost its files cannot mint a PASS receipt.
+
 ### Subtasks — the ticket you were handed is the top-level one
 
 **The rule, in one line: work your agent breaks out of a ticket goes UNDERNEATH it, not beside it.**

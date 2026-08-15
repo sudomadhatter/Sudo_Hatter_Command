@@ -117,6 +117,46 @@ def main() -> int:
         c.check("9b a dirty tree warns rather than silently passing",
                 code == 1 and "DIRTY" in out, f"exit={code}")
 
+        # ── 9c-9e · dirty_paths READBACK: what the recorder writes is what the tree holds ──
+        # (SCC-154 review #7, ledgered; fixed in-thread SCC-160). The line-form parse kept
+        # git's C-quoting on a non-ASCII name and dropped a rename's OLD side. The reader
+        # (`task_preflight`) exempts `_artifacts/`-only dirt from staling a receipt, so a
+        # misread decides whether a gate SKIP is authorized. Direction, measured: a quoted
+        # artifacts path was NOT exempted (safe, but a false full-gate); a rename OUT of
+        # code INTO `_artifacts/` recorded only the artifacts side and WOULD have exempted
+        # moved code (unsafe). Both are pinned on exact filenames now.
+        (repo / "dirty.txt").unlink()
+        art = repo / "_artifacts"
+        art.mkdir()
+        (art / "caf\u00e9 notes.md").write_text("é\n", encoding="utf-8")   # non-ASCII + space
+        git(repo, "add", "_artifacts")     # staged, so the path itself is listed (not the dir)
+        # The fixture's receipts dir (`_bmad-output/gates/`) is itself untracked dirt in
+        # every case here; it is filtered so the assertions read only the planted paths.
+        def planted(gate: str) -> list[str]:
+            return [x for x in receipt(gate)["dirty_paths"]
+                    if not x.startswith("_bmad-output/")]
+        gr("run", "--story", "21.8b", "--gate", "quoted",
+           "--", sys.executable, "-c", "print('ok')")
+        got = planted("quoted")
+        c.check("9c a non-ASCII filename is recorded UNQUOTED, exactly",
+                got == ["_artifacts/caf\u00e9 notes.md"], f"got={got!r}")
+        git(repo, "rm", "-q", "--cached", "_artifacts/caf\u00e9 notes.md")
+        (art / "caf\u00e9 notes.md").unlink()
+
+        (repo / "code.py").write_text("x = 1\n", encoding="utf-8")
+        git(repo, "add", "code.py")
+        git(repo, "commit", "-qm", "code")
+        git(repo, "mv", "code.py", "_artifacts/moved.md")       # staged rename OUT of code
+        gr("run", "--story", "21.8b", "--gate", "renamed",
+           "--", sys.executable, "-c", "print('ok')")
+        got = planted("renamed")
+        c.check("9d a staged rename records BOTH sides (the code side is dirt too)",
+                sorted(got) == ["_artifacts/moved.md", "code.py"], f"got={got!r}")
+        c.check("9e ...so an `_artifacts/`-only exemption cannot fire on moved code",
+                not all(str(x).startswith("_artifacts/") for x in got), f"got={got!r}")
+        git(repo, "mv", "_artifacts/moved.md", "code.py")       # put it back for later cases
+        git(repo, "reset", "-q")
+
         code, out = gr("run", "--story", "21.8b", "--gate", "x", "--result", "pass",
                        "--", sys.executable, "-c", "print(1)")
         c.check("10 there is no way to hand in a verdict",
