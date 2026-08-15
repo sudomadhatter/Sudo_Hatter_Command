@@ -183,11 +183,17 @@ judge() {
     # with main (or an epic, absorbing) and NEVER with a story or chore lane: that pairing is
     # the SCC-97 wrong-target shape wearing an incident name.
     story:incident|chore:incident|incident:story|incident:chore) echo refuse ;;
+    # ⛔ SCC-159: a SIBLING incident lane is not "the pipeline's business" either — it is the
+    # SCC-97 wrong-target shape wearing a second incident name. Two incidents run at once, a
+    # `cd` slips, and one incident's hotfix lands on the other's lane; before this, judge()
+    # sent the pair to the unknown arm below and BOTH gates waved it through with a friendly
+    # note. There is no topology in the branch model where this pair is correct. It sits
+    # ABOVE the wildcard for the same first-match reason the four pairs do.
+    incident:incident)            echo refuse ;;
     # Everything else incident-shaped (the hotfix landing on main or an epic, incident with
-    # unknown, incident with incident) is positively classified, then DELIBERATELY unjudged —
-    # those merges are the incident pipeline's business (/cicd-mobile-error-team), and the one
-    # local merge that matters, an emergency hotfix onto main, must never eat a refusal
-    # mid-incident (SCC-149).
+    # unknown) is positively classified, then DELIBERATELY unjudged — those merges are the
+    # incident pipeline's business (/cicd-mobile-error-team), and the one local merge that
+    # matters, an emergency hotfix onto main, must never eat a refusal mid-incident (SCC-149).
     incident:*|*:incident)        echo unknown ;;
     unknown:*|*:unknown)          echo unknown ;;
     main:main|main:epic|main:chore) echo allow ;;

@@ -67,6 +67,24 @@ the verifier would truthfully refute correct findings about code it was never sh
 finding, in input order — and titles are NOT unique, because a multi-lens fan-out over one diff
 produces duplicate titles as the expected case. Reconcile every result to its finding by position.
 
+⭐ **Verify each CLAIM once, not each duplicate (SCC-156) — fan the query in, fan the results back
+out.** Where two or more findings name the **same `file:line`** *and* assert the **same behavior**,
+ask about it **once**: the code's behavior at one location does not change per duplicate, and a
+findings-heavy lane otherwise pays a full verification round trip for the same question three times.
+
+This is a **query** economy, and it changes nothing else about the step:
+
+- **The raw count still governs the self-gate above.** Group AFTER the table has read the count. Two
+  lenses reporting one issue still counts as two, because that is what the fan-out paid for.
+- **The 1:1 result contract is unchanged.** A group of N findings sends one query and expands its
+  verdict back to **N indexed results**, in input order, exactly as if each had been asked
+  separately. Downstream reads no differently, and the by-index join above still holds.
+- **Dedupe still belongs to step 3.** Grouping here decides who shares a question; it never merges,
+  drops, or rewrites a finding, and step 3's merge rule runs on the full set as before.
+- ⛔ **Same location is not enough.** Two findings on one line describing *different* failures are
+  different claims and get their own queries — grouping them would hide one behind the other's
+  verdict, which is exactly what step 3 is forbidden from doing at merge time.
+
 ### The dossier block — appended to BOTH role prompts
 
 > **Before you review anything, build your evidence dossier.** Write the findings JSON below to

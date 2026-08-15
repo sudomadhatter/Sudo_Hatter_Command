@@ -206,7 +206,10 @@ def check_intent(branch: str, key: str | None, expect: str, rep: wf.Report) -> N
 MANIFEST_SCHEMA = ("task_key: SCC-00 | primary_repo: <name> | branch: chore/SCC-00-<slug> | "
                    "close_command: smh-close-task-merge-tree | secondary_repos: [] or a BLOCK "
                    "list of `- repo: <path>` / `landing: independent-task|retain-on-epic` / "
-                   "`ticket: KEY-00` rows (the inline [{...}] form is not read)")
+                   "`ticket: KEY-00` rows (the inline [{...}] form is not read) | riders: "
+                   "[KEY-00, ...] subtasks whose work lands IN this lane, transitioned to "
+                   "Done by the close ceremony (one-line flow style - a block list here is "
+                   "not read)")
 
 
 def manifest_field(text: str, field: str) -> str | None:
@@ -239,6 +242,33 @@ def manifest_settled(repo: Path, p: Path, ref: str) -> bool:
         return False
     ours = wf.git(["hash-object", str(p)], repo)
     return ours.returncode == 0 and ours.stdout.strip() == landed.stdout.strip()
+
+
+# One line, flow style, and NOTHING else - `\[` on the same physical line as the key. The
+# hand parser's `\s*` idioms eat newlines, so a lazier pattern would half-read the block-list
+# form and whichever half it kept would be wrong silently. An unread declaration fails CLOSED:
+# check_children still blocks and its error prints the exact flow line to write.
+RIDERS_RE = re.compile(r"^\s*riders\s*:[ \t]*\[([^\]\n]*)\]", re.MULTILINE)
+
+
+def manifest_riders(repo: Path, expect: str, branch: str) -> frozenset[str]:
+    """Subtask keys THIS lane declared it is carrying (SCC-156): their work lands in this
+    lane's diff, so they are still open at preflight time BY DESIGN, and the close ceremony
+    transitions them to Done first, the parent last - agent writes inside the operator-invoked
+    close, never an operator edit. Settled sibling manifests are excluded for the same reason
+    check_manifest() reads them as history: a landed lane's riders were flipped at ITS close,
+    and inheriting the declaration would spare a child no one is actually carrying."""
+    ref = base_ref(repo)
+    keys: set[str] = set()
+    for p, text in task_manifests(repo, expect):
+        declared = manifest_field(text, "branch")
+        if declared and declared != branch and manifest_settled(repo, p, ref):
+            continue
+        m = RIDERS_RE.search(text)
+        if m:
+            keys |= {k.strip().strip("\"'").upper()
+                     for k in m.group(1).split(",") if k.strip()}
+    return frozenset(keys)
 
 
 def check_manifest(repo: Path, branch: str, expect: str, rep: wf.Report) -> None:
@@ -538,8 +568,18 @@ def check_secondary(repo: Path, expect: str, rep: wf.Report) -> None:
 CHILD_CLOSED = ("done", "deferred")
 
 
-def check_children(key: str | None, rep: wf.Report, timeout: int = 20) -> None:
+def check_children(key: str | None, rep: wf.Report,
+                   riders: frozenset[str] = frozenset(), timeout: int = 20) -> None:
     """A parent Task does not close while its subtasks are still open (SCC-119).
+
+    `riders` (SCC-156) are the subtask keys this lane's task.yaml declared it is carrying:
+    work the operator ordered into THIS lane, so "still open at preflight" is the designed
+    state, not an unfinished job. A declared rider WARNS with the ceremony's own transition
+    command instead of blocking - and the warn names it an agent step, because no flow may
+    ever leave the operator a manual board edit (operator ruling, 2026-08-14). The declared
+    set only ever SHRINKS the error, never the check: an undeclared open child blocks
+    exactly as before, and the error now teaches the declaration as the third exit beside
+    finish-it and `Deferred`.
 
     ⛔ THREE ways this check could have passed without checking anything, all measured
     against the live board 2026-08-12 - this is the one gate in this file that talks to the
@@ -587,18 +627,48 @@ def check_children(key: str | None, rep: wf.Report, timeout: int = 20) -> None:
         return
 
     items = jira_feed.as_items(data, "issues")
-    open_children = []
+    open_children: list[str] = []
+    open_keys: list[str] = []
+    riding = 0
     for item in items:
         fields = item.get("fields") or {}
         status = ((fields.get("status") or {}).get("name") or "").strip()
-        if status.lower() not in CHILD_CLOSED:
-            open_children.append(f"{item.get('key') or '?'} ({status or '?'})")
+        if status.lower() in CHILD_CLOSED:
+            continue
+        ckey = (item.get("key") or "?").strip().upper()
+        if ckey in riders:
+            # Exact-key membership, never substring (the SCC-146 lesson: SCC-14 must not
+            # match inside SCC-146) - both sides normalized upper by their builders.
+            # The command stays on ONE physical line: the yes-guard in test_jira_feed.py
+            # scans the command SPAN per line, and a wrap after `--status` reads as a
+            # transition without `--yes`.
+            cmd = f'acli jira workitem transition --key {ckey} --status "Done" --yes'
+            riding += 1
+            rep.warn("children", f"{key} subtask {ckey} ({status or '?'}) is a declared "
+                                 f"RIDER - its work lands with this lane, and the close "
+                                 f"ceremony transitions it to Done FIRST, parent last: "
+                                 f"{cmd}  (an agent step inside the operator-invoked "
+                                 f"close - never an operator edit)")
+        else:
+            open_children.append(f"{ckey} ({status or '?'})")
+            open_keys.append(ckey)
 
     if open_children:
+        example = ", ".join(sorted(set(riders) | set(open_keys)))
         rep.err("children", f"{key} has {len(open_children)} open subtask(s) - the parent "
                             f"closes LAST, when the whole job is done: "
                             f"{', '.join(open_children)}. Finish them, or descope one to "
-                            f"`Deferred` if it is genuinely out of scope.")
+                            f"`Deferred` if it is genuinely out of scope. If one's work "
+                            f"genuinely lands IN THIS LANE, declare it in this lane's "
+                            f"task.yaml - riders: [{example}] - and the close ceremony "
+                            f"transitions it to Done first (an agent write inside the "
+                            f"operator-invoked close). Never declare a ticket whose work "
+                            f"is not real.")
+    elif riding:
+        # Not "all Done or Deferred" - a rider is still OPEN, by design. Saying otherwise
+        # here would teach the reader the board is ahead of where it actually is.
+        rep.info("children", f"{key}: {riding} rider(s) above are the ceremony's to close; "
+                             f"every other subtask is Done or Deferred")
     elif items:
         rep.info("children", f"{key}: all {len(items)} subtask(s) are Done or Deferred - "
                              f"this parent is the last thing to close")
@@ -606,13 +676,101 @@ def check_children(key: str | None, rep: wf.Report, timeout: int = 20) -> None:
         rep.info("children", f"{key}: no subtasks")
 
 
-def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report) -> None:
+def check_stalled_landing(repo: Path, fetch: bool, accept: bool, rep: wf.Report) -> None:
+    """Is the DESTINATION itself unpushed? (SCC-159)
+
+    Every other check in this file asks about the lane. None asked about `main` — and a local
+    `main` ahead of `origin/main` is a landing that stalled: an earlier lane merged and never
+    reached the remote. Every lane behind it then queues invisibly, which happened live on
+    2026-08-14 for about an hour.
+
+    Nothing downstream catches it either. Both close-out commands run `git pull --ff-only
+    origin main` before merging, and that SUCCEEDS silently when local is merely ahead — it
+    only errors on true divergence — so the next lane merges cleanly onto the stuck main and
+    reports success. The `0 0` check they do run happens AFTER the push.
+
+    Severity is deliberately split, and `fetch` here is the fetch's OUTCOME, not the flag —
+    `check_sync` returns whether it actually succeeded. With a fresh fetch the answer is
+    trustworthy and this is an ERROR. Without one — no `--fetch`, or a fetch that failed —
+    the comparison is against whatever the last fetch saw, which on a plane is nothing, so it
+    can only WARN. (The first cut took `args.fetch` and this paragraph was aspirational: a
+    dead uplink hard-blocked the close-out on a stale comparison, found by three lenses.)
+    And because
+    reads succeed while pushes die on that same uplink, `--accept-unpushed-main` is the
+    auditable way through: it downgrades this one check and says so in the output, so the
+    walkthrough records that the operator chose it.
+    """
+    counts = wf.git(["rev-list", "--left-right", "--count", "origin/main...main"], repo)
+    if counts.returncode != 0 or not counts.stdout.strip():
+        rep.info("landing", "no local main and origin/main to compare")
+        return
+    # ⛔ NEVER FALL THROUGH ON AN UNREADABLE COUNT. This was `(split() + ["?", "?"])[:2]`,
+    # and `"?"` is not the string `"0"` — so any answer this could not parse walked straight
+    # into the ahead-branch and told the operator they were "? commit(s) ahead of origin/main",
+    # an ERROR under `--fetch`. A local-only repo got its close-out refused on a diagnosis
+    # that was literally a question mark (SCC-156 review, Test-Adequacy lens).
+    parts = counts.stdout.split()
+    if len(parts) < 2 or not (parts[0].isdigit() and parts[1].isdigit()):
+        rep.info("landing", f"could not read origin/main...main ({counts.stdout.strip()!r}) "
+                            f"- declined to judge the landing")
+        return
+    behind, ahead = int(parts[0]), int(parts[1])
+
+    if ahead == 0:
+        # `behind` was computed and never read. "level with origin/main" printed while
+        # rev-list said `1  0` — an INFO line asserting the opposite of the truth, in the
+        # commonest real state there is (a sibling landed, you have not pulled).
+        if behind:
+            rep.info("landing", f"main is {behind} commit(s) BEHIND origin/main - nothing is "
+                                f"stalled ahead of you; absorb it before you merge")
+        else:
+            rep.info("landing", "main is level with origin/main (nothing stalled ahead of you)")
+        return
+
+    if behind:
+        # ⛔ DIVERGED IS NOT STALLED, and the difference decides the remedy. `git push origin
+        # main` is REJECTED non-fast-forward here, so prescribing it sends the operator into
+        # an error; and the stalled-landing rationale ("`pull --ff-only` will NOT catch this")
+        # is FALSE for this shape — divergence is the one case it does catch. Diagnosing both
+        # states with one message meant the check was misdiagnosing and duplicating a net that
+        # already works (SCC-156 review, Blind Hunter).
+        what = (f"main has DIVERGED from origin/main - {ahead} ahead, {behind} behind. NOT a "
+                f"stalled landing: a plain `git push origin main` is rejected "
+                f"non-fast-forward, and `pull --ff-only` DOES catch this one. Reconcile main "
+                f"first, then re-run")
+    else:
+        what = (f"main is {ahead} commit(s) ahead of origin/main - a STALLED LANDING: an "
+                f"earlier lane merged and never reached the remote, and every lane behind it "
+                f"queues behind that. Land it (`git push origin main`) or inspect it before "
+                f"merging; `pull --ff-only` will NOT catch this, it succeeds when local is "
+                f"merely ahead")
+    if accept:
+        rep.warn("landing", f"{what} - accepted by --accept-unpushed-main")
+    elif fetch:
+        rep.err("landing", f"{what} [--accept-unpushed-main to proceed anyway]")
+    else:
+        rep.warn("landing", f"{what} - the landing check ran vs the LAST fetch, so re-run "
+                            f"with --fetch to be sure [--accept-unpushed-main to proceed "
+                            f"anyway]")
+
+
+def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report) -> bool:
     """`commit-and-push-are-one-action`: clean + 0/0, or the work is not finished. Merging
-    an unpushed branch to main puts commits on production that exist on one disk."""
+    an unpushed branch to main puts commits on production that exist on one disk.
+
+    ⭐ RETURNS WHETHER THE REMOTE COMPARISON IS FRESH — a fetch was asked for AND succeeded.
+    Three review lenses independently found `check_stalled_landing` keying on `args.fetch`,
+    the FLAG, when its own docstring keys the severity on the OUTCOME ("no --fetch, or a
+    fetch that failed ... can only WARN"). A dying uplink fails `git fetch` too, not only
+    `git push`, so the offline operator was hard-blocked at exit 2 on a comparison this
+    function had just warned was stale. Intent is not evidence; only the outcome is."""
+    fresh = False
     if fetch:
         f = wf.git(["fetch", "--quiet"], repo, timeout=180)
         if f.returncode != 0:
             rep.warn("sync", "fetch failed - ahead/behind is vs the LAST fetch")
+        else:
+            fresh = True
     else:
         rep.info("sync", "no --fetch, ahead/behind is vs the LAST fetch")
 
@@ -646,6 +804,7 @@ def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report) -> None:
             rep.info("sync", f"{branch}: 0/0 with origin")
     else:
         rep.warn("sync", f"{branch}: never pushed - the branch exists on this disk only")
+    return fresh
 
 
 def check_base(repo: Path, branch: str, rep: wf.Report) -> None:
@@ -1029,6 +1188,12 @@ def main() -> int:
     ap.add_argument("--repo", help="repo root; default: walk up from cwd")
     ap.add_argument("--branch", help="branch to close; default: current HEAD")
     ap.add_argument("--fetch", action="store_true", help="fetch first (network)")
+    ap.add_argument("--accept-unpushed-main", action="store_true",
+                    help="proceed with a local main ahead of origin/main (SCC-159). "
+                         "The auditable offline exit: reads succeed while pushes die "
+                         "on a satellite uplink, so a hard refusal would brick every "
+                         "close-out made from a plane. Prints itself back into the "
+                         "output; typed per invocation, never sticky")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
 
@@ -1039,10 +1204,13 @@ def main() -> int:
     rep = wf.Report()
     key = check_branch(repo, branch, rep)
     check_intent(branch, key, expect, rep)
-    check_children(key, rep)
+    check_children(key, rep, riders=manifest_riders(repo, expect, branch))
     check_manifest(repo, branch, expect, rep)
     check_secondary(repo, expect, rep)
-    check_sync(repo, branch, args.fetch, rep)
+    # ⭐ `fresh`, not `args.fetch`. check_sync ran the fetch and knows whether it WORKED;
+    # passing the flag instead made a dead uplink produce a hard exit 2 on a stale answer.
+    fresh = check_sync(repo, branch, args.fetch, rep)
+    check_stalled_landing(repo, fresh, args.accept_unpushed_main, rep)
     check_base(repo, branch, rep)
     lane, touched = check_scope(repo, branch, rep)
     art_hits = check_artifacts(repo, key, rep)

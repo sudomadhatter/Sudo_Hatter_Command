@@ -108,16 +108,23 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   [ "$local_sha" = "$ZERO" ] && continue        # a deletion carries no commits
 
   # An incident lane is the incident pipeline's business (/cicd-mobile-error-team) — same
-  # posture as merge-target-guard's carve-out: its one legitimate merge is the emergency
-  # hotfix onto main, and a refusal here lands on a phone mid-incident, the false red this
-  # file's own header prices above a miss (SCC-149 C1). Sits BELOW the deletion check on
-  # purpose (SCC-154 review): a branch deletion carries no commits, and announcing "Push
-  # allowed" about one was noise.
+  # posture as merge-target-guard's carve-out. Sits BELOW the deletion check on purpose
+  # (SCC-154 review): a branch deletion carries no commits, and announcing "Push allowed"
+  # about one was noise.
+  #
+  # ⛔ SCC-159 (finding 28) NARROWED this from a skip to a NOTE. Keyed on the pushed ref
+  # alone, it waved an incident ref through carrying ANYTHING — while merge-target-guard
+  # refuses that same content at commit time as story:incident / chore:incident. A
+  # fast-forward creates no commit, so the ff variant of an already-refused merge escaped
+  # BOTH gates, and it escaped them hardest during an incident, when mistakes are likeliest.
+  # What the pipeline owns is the LANE, not other lanes' unlanded work riding inside it: the
+  # containment loop below now runs for incident refs too, and `integration_of` keeps the
+  # remedy pointed at main via the pipeline rather than the SCC-148 epic misroute.
   case "$remote_ref" in
     refs/heads/claude/incident-*)
       echo "  ⓘ merge-target backstop: '${remote_ref#refs/heads/}' is an incident lane —"
-      echo "    /cicd-mobile-error-team owns it; declined to judge. Push allowed."
-      continue ;;
+      echo "    /cicd-mobile-error-team owns it. Checking only that it carries no OTHER"
+      echo "    lane's unlanded work; its own commits are its business." ;;
   esac
 
   lane=${remote_ref#refs/heads/}
@@ -134,6 +141,20 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   BASES=$(git rev-parse --verify --quiet refs/remotes/origin/main)
   BASE_DESC="origin/main"
   case "$lane" in
+    # ⛔⛔ THE INCIDENT ARM SITS ABOVE `claude/*`, AND FOR THE SECOND TIME IN THIS FILE.
+    # SCC-154 gave `integration_of()` this exact ordered arm because `case` is first-match and
+    # the story glob swallows incident names. SCC-159 then removed the `continue` above — so
+    # incident refs reached THIS switch for the first time, matched `claude/*`, and had every
+    # `origin/epic/*` added as a landing point. An epic-landed story lane riding inside a
+    # hotfix therefore scored "landed" and shipped to production through the one lane that
+    # goes straight to main. Measured: identical content, `chore/*` REFUSED and
+    # `claude/incident-*` ALLOWED (case G6e).
+    #
+    # The widening's own charter is why it cannot apply here: it exists to spare `/cicd-park`
+    # on a STORY lane, which integrates on its epic. An incident lane integrates on MAIN —
+    # `integration_of` says so three lines up — so for this class `origin/main` is the whole
+    # reference set, exactly as it is for `chore/*`.
+    claude/incident-*) ;;
     claude/*)
       epics=$(git for-each-ref --format='%(objectname)' refs/remotes/origin/epic 2>/dev/null)
       if [ -n "$epics" ]; then
