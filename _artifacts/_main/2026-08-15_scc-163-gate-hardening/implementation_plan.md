@@ -307,6 +307,11 @@ structural check (`EP6`) pins the `case` arm's ref list, not the sentence explai
 **Audit verdict: GO** — conditional on the two operator rulings below. The plan is safe to build once
 B.0 is answered; nothing in Part A waits on anything.
 
+**Approval (2026-08-15):** *"approved"* — the operator's exact word, this turn. Covers **this plan as
+it stands at `12efa6d`**, the commit that recorded both rulings; that sha is the second operand
+`/smh-quick-dev` Step 1.5 compares against, so an edit after this line re-arms the gate and the lane
+stops for its own approval.
+
 ## ⛔ STOP — the rulings are in; the plan approval is not
 
 | Owed | State |
