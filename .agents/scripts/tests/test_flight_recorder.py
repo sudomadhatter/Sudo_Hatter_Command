@@ -129,6 +129,8 @@ def main() -> int:
                     str(data.get("changes")))
             fps = set(data.get("fingerprints", []))
             c.check("A1 fingerprint rule-edited for the rules file", "rule-edited:.agents/rules/r.md" in fps, str(fps))
+            c.check("A1 rule-edited fires ONLY under .agents/rules/ (not the script)",
+                    not any(f.startswith("rule-edited:") and "rules/" not in f for f in fps), str(fps))
             c.check("A1 fingerprint gate-red only for the failing receipt",
                     "gate-red:lint" in fps and "gate-red:suite" not in fps, str(fps))
             c.check("A1 fingerprint mention: script + command named in a pitfall",
