@@ -3,11 +3,9 @@
   "story": "scc-38",
   "result": "pass",
   "exit_code": 0,
-  "sha": "d5a2f8f2c734a1f0bfe2468ed0d5fa66aff6b507",
-  "dirty_tree": true,
-  "dirty_paths": [
-    "_artifacts/_main/2026-08-15_scc-38-flight-recorder/gates/maps.json"
-  ],
+  "sha": "b11271fa53e52b6ddbe1ec46346aa5973f31d01b",
+  "dirty_tree": false,
+  "dirty_paths": [],
   "totals": null,
   "command": [
     "python3",
@@ -19,6 +17,6 @@
   ],
   "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/scc-38-flight-recorder",
   "duration_s": 0.1,
-  "recorded_at": "2026-08-15T05:13:51+00:00",
+  "recorded_at": "2026-08-15T05:50:39+00:00",
   "output_tail": ""
 }
