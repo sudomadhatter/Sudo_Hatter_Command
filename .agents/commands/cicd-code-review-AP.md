@@ -30,7 +30,7 @@ platforms: [claude, opencode]
 #      fixes the blind-lens-first ordering that override requires. The primary is
 #      interactive, so handing prompts back is a real option there and it keeps that path.
 # Re-diff and restamp when the linter says this sha is stale — do NOT just bump it.
-ap_reconciled: 95cba685c73865b61486acc0fec5368ef9d9b464
+ap_reconciled: 91e60952fa763a49a345a241a05a0cc101265c29
 ---
 
 # /cicd-code-review-AP — Autopilot Review + Fix + Test Gate (Murat)
