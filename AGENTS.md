@@ -79,8 +79,22 @@ workspace is shaped + kept healthy → `docs/workspace-standard.md`.
 > too — not only inside projects.** Full protocol → `.agents/rules/artifacts-always-first.md`; the
 > priority-zero kill-chain that enforces it (and the `_bmad/custom/` guard tomls that load it into every
 > dev-story / quick-dev run) → `.agents/rules/000-PLAN-FIRST-GATE.md`. (Skip only for
-> read-only/investigatory asks and trivial one-liners — that exemption list lives in
-> `artifacts-always-first.md` § "When to Skip" and nowhere else.)
+> read-only/investigatory asks, trivial one-liners, `/cicd-quick-dev`, and **the lightweight lane
+> `/smh-quick-fix`** — that exemption list lives in `artifacts-always-first.md` § "When to Skip" and
+> nowhere else.)
+>
+> **⭐ The lightweight lane, because its trigger is a sentence rather than a file (SCC-162, operator
+> ruling 2026-08-15).** *"Not everything is a full quick dev. sometimes I just want an agent to do
+> something specific… this does not touch anything that can break."* Command-centre work only —
+> *"only for the smh / commands, not normal cicd work"* — and the test is his own sentence: **things
+> that do not affect our development system.** Writing a guide, fixing a reference, tidying a messy
+> source-control state. Invoking **`/smh-quick-fix`** IS the "skip the plan" instruction, and so is
+> saying *"skip the plan, just do it"*. ⛔ **Do not ask whether to mint a ticket or open a lane** —
+> asking is the over-engineering the ruling names. **Qualification is a script, never a judgement:**
+> `python3 .agents/scripts/lane_qualify.py --paths <paths>` — `LIGHT`/`LIGHT-VCS` qualify, and **no
+> paths at all is `TASK`**, because silence is unknown scope. The lane still takes a Jira key, a
+> `chore/*` worktree, the gates, a lean walkthrough, and `/smh-close-task-merge-tree` — there is no
+> lighter door to `main`.
 
 ## 4. WHAT LIVES WHERE  (home-base infrastructure)
 | Area | Path | Purpose |

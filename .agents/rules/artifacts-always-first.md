@@ -270,7 +270,40 @@ When Daniel says **"review"** (or asks to review a document/plan), EVERY agent m
 ## When to Skip
 - **Investigatory requests** ("explain how X works", "where is Y?") — no artifacts needed.
 - **Trivial one-liners** (typo, comment fix) — mention what you changed; skip the full cycle.
-- **Daniel explicitly says** "skip the plan, just do it" — still write a walkthrough after.
+- **Daniel explicitly says** "skip the plan, just do it" — that phrase names **the lightweight lane
+  below**, and everything written there applies. It used to dead-end here, telling an agent to skip the
+  plan and nothing about what to do instead; that gap is what put a doc-only edit through the full Task
+  ceremony on SCC-161. Saying it and typing `/smh-quick-fix` are the same instruction.
+- **⭐ `/smh-quick-fix` — THE LIGHTWEIGHT LANE (SCC-162, operator ruling 2026-08-15).** Command-centre
+  work that touches nothing which can break: *"sometimes I just want an agent to do something specific…
+  this does not touch anything that can break. so we don't need to over engineer it."* Scope, from the
+  same operator: **`smh-*` / command centre only — never `cicd-*` product work** — and the test is his
+  own sentence, ***"things that do not affect our development system."*** Typical work: writing a
+  document or a guide, fixing a reference, tidying a messy source-control state.
+  - **Invoking it IS the "skip the plan" instruction**, exactly like `/cicd-quick-dev` above. No
+    `implementation_plan.md`, no `approved`, no `/smh-self-audit`, no RED-first assertion, no review
+    verdict. ⛔ And **do not ask** *"shall I mint a ticket / open a lane / write a plan?"* — asking is
+    the over-engineering the ruling is against. Mint, cut, do, push, hand back.
+  - **Qualification is mechanical, never a judgement** — that is the whole reason this entry can be
+    trusted, because the previous version of this rule was prose and an agent talked itself past it:
+    ```
+    python3 .agents/scripts/lane_qualify.py --paths <the paths you will touch>   # PC: `python`
+    ```
+    `LIGHT` (or `LIGHT-VCS`) qualifies. `TASK` / `HANDOFF` / `NOT-COMMAND-CENTRE` do not — and note
+    that **no paths at all is `TASK`**, because silence is unknown scope, never empty scope. A
+    git-hygiene action that genuinely edits no files declares `--no-file-changes` and may delete only
+    refs the operator named, never a swept set.
+  - **What it still keeps, because each is machine-enforced:** the Jira key and a `chore/<KEY>-<slug>`
+    branch in its own worktree (the armed `commit-msg` hook refuses a keyless commit) · explicit-path
+    commits, pushed before hand-back · the SOP-currency gate where it applies · a lean `walkthrough.md`
+    carrying **`## Your Actions`** (the close-out preflight errors without it) · `task.yaml` beside it ·
+    close-out through **`/smh-close-task-merge-tree`, unchanged** — there is no lighter door to `main`,
+    and a missing review verdict simply means that close-out runs the full gate itself.
+    ⚠️ Those guarantees assume **armed hooks**; `core.hooksPath` is per-machine, so on a fresh clone
+    they are prose until the migrations kit arms them.
+  - **A fired EJECT re-arms this gate** — same rule as `/cicd-quick-dev`. Before the walkthrough,
+    re-run `lane_qualify.py` against the **real** diff (`git diff --name-only main...HEAD`); anything
+    but `LIGHT` and the work continues on `/smh-quick-dev` with a plan and an `approved`.
 - **`/cicd-quick-dev`** — **invoking that command IS the "skip the plan" instruction above**, the same way
   invoking `/cicd-update-sprint-memory` IS the close-out sign-off. It runs no `implementation_plan.md` and
   waits for no "approved"; its gate is the human review at the end. The exemption is conditional on its
