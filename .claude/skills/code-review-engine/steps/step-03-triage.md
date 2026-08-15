@@ -56,7 +56,14 @@ describe different failures — that hides one of them.
 - **decision_needed** — an ambiguous choice needing human input; the code cannot be correctly
   patched without knowing intent. Only possible when `review_mode: full`.
 - **patch** — a real issue whose correct fix is unambiguous — and worth making (the gate below).
-- **defer** — real, worth fixing, but pre-existing and not caused by this change.
+  **The caller applies it in this lane, before its verdict.** Pre-existing is not an exemption: a
+  survivor found in a file this lane touched is fixed where it was found.
+- **defer** — real, worth fixing, **and this lane structurally cannot hold the fix** — one of
+  exactly three blockers, named in the bullet: the file is owned by another LIVE lane (the fix
+  lands there; name it), the fix lives in another repo (which needs its own key — `jira.md`
+  §cross-repo), or it waits on an open `decision_needed`. "Pre-existing and not caused by this
+  change" is NOT a defer reason (operator ruling 2026-08-15, second): that reading turned the
+  ledger into a parking lot. No blocker → it is `patch`.
 - **dismiss** — noise, false positive, already handled elsewhere — **or true but not worth
   implementing.** That last class is a judgment this step OWNS, and it is recorded in one line,
   never hidden.
@@ -91,17 +98,24 @@ symmetry rather than for a suspected hole, style preference, and pins on prose �
 vacuous by the house's own measurement (SCC-125).
 
 ⛔ **The residue class is RETIRED.** No pile of unfixed findings is ever "owed to a follow-on
-ticket" — that phrase and its variants are banned from walkthroughs. A finding that survives
-this gate is fixed in this lane, or written down as a JUDGED ride-along (why it matters + the
-named lane class it rides), or — rarely — proposed to the operator as a decided chore ticket
-naming why each item survived. A ticket asserts a decision already made (`jira.md` §Who mints
-tickets); a parking lot asserts the opposite.
+ticket" — that phrase and its variants are banned from walkthroughs. **A finding that survives
+this gate is fixed in this lane, in this thread, before the verdict — full stop.** The only
+other place it may go is a `defer` bullet naming one of the three structural blockers above.
+
+⛔ **A review never produces a ticket.** Not a residue ticket, not a "proposed" ticket, not a
+"decided" ticket the operator is asked to rule on, not a ticket-ruling row in `## Your Actions`.
+The first cut of this rule (SCC-160, 2026-08-15) allowed "rarely — proposed to the operator as a
+decided chore ticket" and its own close-out ended in a `Rule on Ticket A and Ticket B` row; the
+operator ruled that the same loop under a new name: "we need the fixes made in thread not a
+ticket made every story thats an endless loop that never finishes." A ticket asserts a decision
+already made (`jira.md` §Who mints tickets); a review is where the work gets done, not where the
+next ticket gets born.
 
 **`dismiss` is counted — and a relevance kill is counted AND named.** Pure noise (false
 positive, misparse, duplicate of handled work) leaves the record as a number in the summary. A
 relevance kill — true, but not worth implementing — leaves ONE line in the walkthrough findings
 table: `dismissed — <failed leg + reason>`. A deferred finding is written down in full by
-step 4. The count is never omitted — a review that silently drops what it rejected is a summary
+step 4, blocker named. The count is never omitted — a review that silently drops what it rejected is a summary
 of its own conclusion.
 
 ## 5. Score the severity floor — the one place severity becomes a verdict

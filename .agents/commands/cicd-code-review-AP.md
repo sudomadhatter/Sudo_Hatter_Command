@@ -1,11 +1,14 @@
 ---
 description: Autopilot (headless) Review+Fix+Gate command — review the implementation in the shared autopilot run folder, apply fixes, run the TEA test gate, and hand to Daniel. Modeled off /cicd-code-review but tuned for agent-to-agent handoff. NOT for interactive use; the autopilot orchestrator invokes it.
 platforms: [claude, opencode]
-# Diffed against /cicd-code-review at this sha; nothing to port (SCC-160, 2026-08-15).
-# The primary gained the relevance-kill disposition wording and the ⛔ residue-row ban in its
-# Your Actions triage. Neither ports: the law itself lives in the shared engine's step-03
-# relevance gate + step-04 record rules, which THIS twin already invokes, and this twin's own
-# body never carried a disposition enumeration or the residue-row habit text.
+# Diffed against /cicd-code-review at this sha; ONE sentence ported (SCC-160 follow-on, 2026-08-15).
+# The primary's Step 1 became "fix in thread": every patch applied in-lane before any gate, and
+# nothing that survived the relevance gate leaves the lane as a ticket (residue, proposed, or
+# decided). This twin already applied fixes in-lane; the "never produces a ticket" sentence is
+# ported into its fix paragraph because it is law, not habit text. The disposition wording and
+# the ⛔ Your-Actions ban still do not port (this body carries neither surface).
+# Previous stamp (SCC-160 first landing, 2026-08-15): nothing to port - the law lives in the
+# shared engine's step-03 relevance gate + step-04 record rules, which THIS twin already invokes.
 # Previous stamp (SCC-147, 2026-08-14):
 # TWO diffs were read at this stamp, both ONE hunk on the same row, and neither ports:
 #   - the primary gained an explicit `lens_budget: standard` row. This twin already named
@@ -110,9 +113,11 @@ smaller one.
 The engine hands back `lenses_run` · `lenses_na` · the bucketed findings · `severity_floor` ·
 `notes`. **The floor is a floor:** your verdict may be that severe or worse, never better.
 
-**Then: apply the actionable fixes yourself** (you have full context). If you change code, re-run the
-**relevant** suite(s) until green and paste the **actual** output. If you change nothing, you do not need
-to run tests.
+**Then: apply the actionable fixes yourself, in this lane** (you have full context). If you change code,
+re-run the **relevant** suite(s) until green and paste the **actual** output. If you change nothing, you
+do not need to run tests. Nothing that survived the engine's relevance gate leaves this lane as future
+work — a review never produces a ticket, proposed or otherwise; a `defer` names one structural blocker
+in `deferred-work.md` (operator rulings 2026-08-15, both).
 
 **Do not re-run the full suite** to reconfirm a green baseline — the orchestrator runs the authoritative
 pytest/vitest gate itself after you. Spend the budget on the CODE.

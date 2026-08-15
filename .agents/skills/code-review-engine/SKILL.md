@@ -48,7 +48,10 @@ engine has the findings.
 **What the engine does NOT do, ever** — these belong to the caller and to the human close-out:
 issue the `Verdict:` line · advance any story's state or write any board file · run the test or
 clean-code gates · merge, push, or transition a ticket · stop the caller's flow to ask a question
-(step-04 hands decisions back as findings; it does not wait on them).
+(step-04 hands decisions back as findings; it does not wait on them) · **produce a ticket** — no
+residue ticket, no "proposed" or "decided" ticket, no ticket-ruling row: a finding that survives
+step-03's relevance gate is fixed by the caller in the same lane before its verdict, or deferred
+against ONE named structural blocker (operator rulings 2026-08-15, both).
 
 ## Flow
 

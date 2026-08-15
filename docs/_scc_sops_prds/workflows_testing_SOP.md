@@ -510,9 +510,15 @@ then read the story.*
 > asked to commission as tickets. That practice is retired. The triage step now owns a
 > **relevance gate**: a true finding must show a realistic path to real damage, or undermine
 > evidence the house cites as proof, or be something you asked for — otherwise it dies with a
-> one-line reason in the findings table. What survives is fixed in the lane, ledgered as a
-> judged ride-along, or (rarely) proposed to you as one *decided* ticket naming why each item
-> earned it. You should never again see a "mint the residue ticket" action row.
+> one-line reason in the findings table. **What survives is fixed in the lane, right there, before
+> the verdict.** The first cut of this rule still allowed "rarely — proposed to you as one *decided*
+> ticket", and SCC-160's own close-out handed you a "rule on Ticket A / Ticket B" row; you ruled
+> that the same loop under a new name ("we need the fixes made in thread not a ticket made every
+> story thats an endless loop that never finishes"). So: **a review never produces a ticket** —
+> not residue, not proposed, not decided. The only thing that may leave a lane unfixed is a
+> `defer` that names a structural blocker (another live lane owns the file · another repo · a
+> decision only you can take), and it lives in `deferred-work.md`, not on the board. You should
+> never again see a ticket-ruling row born from a review.
 
 **Where the verdict lives:** a `## Code Review` section in the story's `walkthrough.md`. Stories
 closed before 2026-08-02 keep it in the old standalone `sudo-code-review-<story>.md` file instead,

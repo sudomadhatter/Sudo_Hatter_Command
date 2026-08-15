@@ -149,6 +149,15 @@ The lenses hunt for: logic flaws · AI drift · over-engineering · bloat · unn
 check that cannot fail · a claim in the walkthrough the diff does not support · missing test tiers ·
 acceptance items the diff does not deliver.
 
+**Then fix in thread — before Step 2, before any gate.** Every `patch` the engine hands back is
+applied by you, in this lane, now; every `decision_needed` is walked with the operator now, in this
+thread, and becomes a patch or a dismiss on their word. Re-run the scoped check for what you touched
+(the ONE full gate lands in Step 3, after your last change). **Nothing that survived the relevance
+gate leaves this lane as future work** — not a residue ticket, not a "proposed" or "decided" ticket,
+not a ticket-ruling row (operator ruling 2026-08-15, second: "we need the fixes made in thread not a
+ticket made every story"). The only exception is a `defer` naming one structural blocker (another
+live lane owns the file · another repo · an open decision), written to `_artifacts/_main/deferred-work.md`.
+
 **The engine returns a `severity_floor`, and it BINDS Step 4.** `none` < `CONCERNS` < `FAIL`: this
 command's verdict may be the floor or anything more severe — Step 3's gates add their own reasons —
 never anything less.
@@ -271,9 +280,9 @@ The section carries:
   plus one line naming the sha the suite evidence was measured on.
 - scope + method, one line each;
 - **ONE findings table** — `file:line` · severity · failure scenario · disposition
-  (`applied` / `deferred` — judged, rides a named lane class / `dismissed` — a relevance kill
-  carries its one-line reason; pure noise is count-only). **The authoritative copy**; the plan
-  links here, never restates.
+  (`applied @ <sha>` / `deferred — blocked by <other live lane | other repo | open decision>` /
+  `dismissed` — a relevance kill carries its one-line reason; pure noise is count-only). **The
+  authoritative copy**; the plan links here, never restates.
   (In `full` mode the engine may also leave `[ ] [Review]…` action items in the file you passed as
   `STORY_FILE` — a worklist carrying no dispositions, never a second record. This table wins.)
 - each gate's result in one line with its **actual** output;
@@ -312,10 +321,12 @@ The walkthrough is the living source of truth, and the body around your section 
 - **`## Your Actions` triage:** attempt every agent-solvable row yourself — a deferred check, a missing
   artifact link, a doc fix — and tick it with a one-line note. Leave ONLY genuine operator calls (a
   product decision, a `main` merge, a ticket transition).
-  ⛔ A row assigning the operator a residue ticket — "One follow-on ticket for the N deferred
-  items" — is the retired defect (operator ruling 2026-08-15), never a valid action row: the
-  triage already decided, and survivors live in this lane, the deferred ledger, or a decided
-  ticket the triage proposes itself.
+  ⛔ A row assigning the operator ANY ticket born from review findings — a residue ticket ("One
+  follow-on ticket for the N deferred items"), a "proposed" ticket, a "decided" ticket to rule on —
+  is the retired defect (operator rulings 2026-08-15, both), never a valid action row: the
+  survivors were fixed in Step 1, a `defer` names its structural blocker in the ledger, and a
+  review never produces a ticket. An open box here born from a finding HOLDS the ticket on the
+  review ladder forever (`jira_feed finish`) — that is the loop, not a feature.
 - **Hard rule: never finish this command with the walkthrough body left stale after applying fixes.**
 
 ## Stay in lane
