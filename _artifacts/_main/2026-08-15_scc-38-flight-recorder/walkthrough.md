@@ -26,7 +26,8 @@ ruling: *"we will run them both in one branch. one then the other"*) · **Plan:*
 - [x] Mutant sweep 13/13 killed pre-review; one test gap it exposed (rules-prefix) pinned first (`5fe9393`)
 - [x] Review findings FIXED IN-LANE (`f6cd430`, `6a0541d`, `abbf875`) — operator ruling this session: *fix the relevant findings, ticket nothing*
   - the verifier's surviving mutant (`is_file → is_dir`) now killed; the post-review sweep is 18/18
-- [x] Suite re-stamped ONCE after the last code-touching change (`abbf875`); receipts chained clean → `9530dd4`
+- [x] Suite re-stamped after the last code-touching change (`68bf412`); receipts chained clean → `1d192b3`
+- [x] Preflight false-BLOCKED diagnosed + fixed in-lane (`68bf412`): `task_preflight.check_artifacts` matched the key against the ABSOLUTE walkthrough path, so a worktree named `scc-38-…` made all 148 walkthroughs hits and 35 historic ones without `## Your Actions` blocked this merge; now relative to `_artifacts/`; test red first
 
 ## Evidence
 
@@ -43,10 +44,12 @@ Each acceptance item → the assertion → RED then GREEN. Suite file: `.agents/
 | B1 spec | `grep -c "Done-means-green" docs/_scc_sops_prds/autopilot_bmad_dev_loop.md`; `test_sops_prds_folder.py` | `0` | `1` (§6a, lines 313–362); folder test `61/61 passed` |
 | C1 folded | `grep -c "Delta (2026-08-15)"` master plan; `wc -l` proposal | `0` · `135` | `1` · `12`, both pointer links resolve |
 
-**Suite (through the receipt writer, clean tree) — FINAL, after the review fixes:** `28/28 files passed`,
-exit 0, 87.9 s @ **`abbf875`** → `gates/suite.json` (committed `7fd697c`); lint `0 error(s), 0 warning(s)` @
-`7fd697c` → `gates/lint.json` (`27736c3`); maps exit 0 @ `27736c3` → `gates/maps.json` (`9530dd4`).
-(Pre-review stamps at `aa5a8d3` were superseded — the review's patches were code-touching.)
+**Suite (through the receipt writer, clean tree) — FINAL, after the review fixes AND the preflight fix:**
+`28/28 files passed`, exit 0, 90.8 s @ **`68bf412`** → `gates/suite.json` (committed `5b4197b`); lint
+`0 error(s), 0 warning(s)` @ `5b4197b` → `gates/lint.json` (`8a1f7f9`); maps exit 0 @ `8a1f7f9` →
+`gates/maps.json` (`1d192b3`). (Earlier stamps at `aa5a8d3` and `abbf875` were superseded by later
+code-touching commits — see the waste ledger in the final report: three full-suite stamps where two would
+have done with better sequencing.)
 Assertion evidence, case-scoped: `test_flight_recorder.py` `--case A1` / `A2` / `A3` → `44/44 passed`;
 `test_door_preflight_order.py` → `13/13`; `test_command_surfaces.py` → `57/57` after `sync-agents`.
 
@@ -112,8 +115,8 @@ tickets, no follow-ons, no residue (operator ruling this session).
 
 ## Code Review (2026-08-15)
 
-Verdict: PASS @ abbf875d3690cd255d33422262f81c393996bb57
-Suite evidence measured @ `abbf875` (the last code-touching commit; `28/28 files passed`, exit 0, receipt `gates/suite.json` committed `7fd697c`).
+Verdict: PASS @ 68bf41270116c6178960d50b8b4236e300f96ea6
+Suite evidence measured @ `68bf412` (the last code-touching commit — the review fixes + the preflight fix found at Step 5; `28/28 files passed`, exit 0, 90.8 s, receipt `gates/suite.json` committed `5b4197b`; lint `0/0` → `8a1f7f9`; maps clean → `1d192b3`).
 
 **Scope:** `main...HEAD` — 27 files at review start (`c99ba0b`), 30 after the fixes: 1 new script, 1 new suite file + 1 pinned suite, 1 hook (+ mirror), 5 command bodies (+ opencode/workflow mirrors), 2 docs, the SOP, the master plan Delta, a proposal pointer, this folder.
 **Method:** `/smh-code-review` → `code-review-engine` (5 lenses in parallel clean contexts, `lens_budget: standard`, `review_mode: full` with the lane plan as spec) → verify wave (Evidence Verifier + Compound Synthesis, one wave, dossier built by both) → triage under SCC-160's relevance gate **and the operator's ruling this session: fix the relevant findings in the lane, ticket nothing** → fixes applied → re-sweep → one re-stamp.
@@ -155,6 +158,7 @@ sibling lanes live. Absorb was a no-op.
 | G8 | `cicd-update-sprint-memory.md:224` two predicates (blind) | nitpick | agent reads the parenthetical, asks wrongly | **applied** — one predicate |
 | G14/G16 | §6a splitting the runner diagram; plan A4 row said "Step 4" (acceptance) | nitpick | reading-order / spec-vs-built mismatch | **applied** |
 | clean-code §2A | `read_receipts` silent `except Exception` | nitpick | a malformed receipt vanishes with no reason | **applied** (`abbf875`) |
+| found live at Step 5 | `task_preflight.py check_artifacts` key matched on the ABSOLUTE path | important (blocked this merge) | a worktree named after its key makes every walkthrough a hit; 35 historic walkthroughs without `## Your Actions` → BLOCKED for an unrelated lane | **applied** (`68bf412`) — relative to `_artifacts/`; `test_task_preflight` case red-then-green; not in the review's diff, fixed here under the operator's rule (fix relevant, ticket nothing) |
 | G5 | no `dismiss` path for proposals (blind) | suggestion | a ruled-on proposal reprints at every boot | **dismissed** — relevance leg 3 fails (not asked) and leg 1 (ledger has zero events; nothing can nag yet); recompute-on-read means it stops when the evidence changes; add it in the lane where a real proposal nags |
 | C3 | ledger is fail-open with no completeness reader (compound of G6/G9/G10/G17) | important (compound, unverified) | a skipped Step 2.5 is indistinguishable from "nothing recurred" | **dismissed** — deliberate, audit-approved design (recorder never blocks a merge); a completeness gate on the merge is NEW LAW needing the operator's quoted words; the four contributing defects were each fixed above, which is what shrinks the miss surface |
 | G11 | A3 can't tell `--repo "$ROOT"` from cwd; PC arm unexercised (acceptance · test-adequacy) | nitpick | none — the hook `cd`s to ROOT first, so the guard is redundant; the `python` arm is machine-bound | **dismissed** — no realistic path; the hook-empty case now runs from a foreign cwd anyway |
@@ -162,7 +166,7 @@ sibling lanes live. Absorb was a no-op.
 | G27 | prose edits unpinned (test-adequacy, informational) | nitpick | — | noise (correct per SCC-125) |
 | G28 | "no visible mutation table" (test-adequacy) | nitpick | — | noise (the auditor could not read the walkthrough; the table exists) |
 
-Changes applied: **all `applied` rows above** — `f6cd430` (fixes + pins), `6a0541d` (fixture), `abbf875` (clean-code 2A);
+Changes applied: **all `applied` rows above** — `f6cd430` (fixes + pins), `6a0541d` (fixture), `abbf875` (clean-code 2A), `68bf412` (preflight);
 doors regenerated via `sync-agents`; SOP updated to three families + both doors. Nothing deferred, nothing proposed,
 nothing minted.
 
@@ -170,9 +174,10 @@ nothing minted.
 
 | Gate | Result |
 |---|---|
-| Enforcement suite (receipt writer, clean tree) | `28/28 files passed` · exit 0 · 87.9 s @ `abbf875` → `gates/suite.json` |
-| Toolkit lint | `-- 0 error(s), 0 warning(s), 8 info --` @ `7fd697c` → `gates/lint.json` |
-| check_maps `--depth3-only --strict` | exit 0 @ `27736c3` → `gates/maps.json` |
+| Enforcement suite (receipt writer, clean tree) | `28/28 files passed` · exit 0 · 90.8 s @ `68bf412` → `gates/suite.json` |
+| Toolkit lint | `-- 0 error(s), 0 warning(s), 8 info --` @ `5b4197b` → `gates/lint.json` |
+| check_maps `--depth3-only --strict` | exit 0 @ `8a1f7f9` → `gates/maps.json` |
+| Close-out preflight (`task_preflight.py --expect-key SCC-38`) | after the fix: 0 errors; 3 warnings = the two declared riders (expected — the ceremony closes them first) + the live worktree (expected) |
 | Assertion evidence | `test_flight_recorder.py` (`--case A1/A2/A3`) `44/44` · `test_door_preflight_order.py` `13/13` · `test_command_surfaces.py` `57/57` |
 | SOP currency | armed commit-msg gate accepted every usage-surface commit with the SOP staged (`93dacb2`, `f6cd430`); `[sop-ok]` on the four commits that changed nothing an operator types (receipts, a test fixture, an except-clause reason); `sop_currency.py --paths <all usage paths> … workflows_testing_SOP.md` exit 0 |
 | Link + anchor | 20 md files in the diff, 36 relative links, **0 unresolved** |
