@@ -363,3 +363,5 @@ Resolved in the build without weakening F2, by separating *unknown* from *declar
 the constitution's RISK GATE and [`nothing-guards-the-merge-target`]: **it may delete only refs the
 operator named, never a swept set**, and every `git` call carries `-C`. Deleting a branch is
 destructive, so the lane drops ceremony, never the confirmation.
+
+<!-- CHECKPOINT id="ckpt_msuavaej_ukemd1" time="2026-08-15T11:35:56.779Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->

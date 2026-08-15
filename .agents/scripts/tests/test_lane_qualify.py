@@ -82,6 +82,27 @@ with TempDir() as tmp:
                              "--paths", "backend/api/routes.py")
         c.check("backend/ is HANDOFF", verdict(out) == "HANDOFF", out.strip()[:200])
 
+    if c.block("SCC-118 - .github/ in the command centre is TASK, never HANDOFF"):
+        # ⛔ THE REGRESSION THIS BLOCK EXISTS FOR, and it shipped for one review cycle.
+        # `task_preflight.DEPLOY_DIRS` = PRODUCT_DIRS + (".github/",), and importing the
+        # COMBINED list here recreated SCC-118 precisely: the command centre HAS a .github/
+        # (the server-side half of the main write gate), it ships nothing, and a HANDOFF
+        # verdict sends a toolkit change to /cicd-push-e2e - a cicd-* command barred from the
+        # lobby by smh-target-resolution, running an E2E suite this repo does not have and
+        # never will. "A verdict nobody could comply with", in task_preflight's own words.
+        #
+        # This lane is command-centre-ONLY by condition 0, and the centre ships nothing, so
+        # PRODUCT_DIRS is the whole deployable question here. `.github/` is the development
+        # system - CI and the gates - which is exactly what TASK means.
+        rc, out = run_script("lane_qualify.py", "--repo", str(root),
+                             "--paths", ".github/workflows/main-write-gate.yml")
+        c.check("SCC-118 .github/ is TASK in the command centre",
+                verdict(out) == "TASK", out.strip()[:200])
+        # The control, so the narrowing above can never be mistaken for switching HANDOFF off.
+        rc, out = run_script("lane_qualify.py", "--repo", str(root), "--paths", "frontend/app.tsx")
+        c.check("SCC-118 control: a real product dir still HANDOFFs",
+                verdict(out) == "HANDOFF", out.strip()[:200])
+
     if c.block("TASK - the toolkit is never LIGHT"):
         for p in (".agents/scripts/task_preflight.py", ".agents/rules/git-policy.md",
                   ".agents/commands/smh-quick-dev.md", ".githooks/pre-push", "AGENTS.md"):

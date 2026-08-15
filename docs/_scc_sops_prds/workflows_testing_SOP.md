@@ -1082,7 +1082,8 @@ it is now banned in the command body itself.
 **The one thing it checks first is not a judgement.**
 
 ```bash
-python3 .agents/scripts/lane_qualify.py --paths <the paths it will touch>    # PC: drop the 3
+python3 .agents/scripts/lane_qualify.py --repo "$(git rev-parse --show-toplevel)" \
+        --paths <the paths it will touch>                                   # PC: drop the 3
 ```
 
 | It says | Meaning |

@@ -35,8 +35,13 @@ system.*** Writing a guide. Fixing a reference. Tidying a messy source-control s
 
 ```bash
 REPO=$(git rev-parse --show-toplevel) && echo "Repo: $(basename "$REPO")"
-python3 .agents/scripts/lane_qualify.py --paths <every path you will touch>    # PC: `python`
+python3 .agents/scripts/lane_qualify.py --repo "$REPO" --paths <every path you will touch>
 ```
+
+**Pass `--repo` explicitly.** It defaults to the cwd, and the command-centre check looks for
+`.agents/commands/` there — so from a subdirectory it refuses a repo that would have qualified. The
+refusal is the safe direction, but a wrong answer for the right reason still sends you down the wrong
+lane. *(PC: `python`, not `python3`.)*
 
 | Verdict | What you do |
 |---|---|
@@ -102,8 +107,13 @@ python3 .agents/scripts/tests/test_sops_prds_folder.py           # if you touche
 Step 0 judged what you *intended* to touch. This judges what you *did*.
 
 ```bash
-python3 .agents/scripts/lane_qualify.py --paths $(git -C "<tree>" diff --name-only main...HEAD)
+python3 .agents/scripts/lane_qualify.py --repo "$REPO" \
+        --paths $(git -C "<tree>" diff --name-only main...HEAD)
 ```
+
+*(That `$(…)` **is** split into separate arguments in both shells — command substitution splits where
+a bare `$VAR` in zsh would not. Do not "fix" it by quoting: `"$(…)"` collapses the whole file list
+into one argument and the sweep silently checks nothing.)*
 
 Anything but `LIGHT` and **this lane is over**: say so in one line, keep the branch and everything
 written, and continue on `/smh-quick-dev` — which means a plan, `/smh-self-audit`, and the operator's

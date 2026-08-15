@@ -287,7 +287,8 @@ When Daniel says **"review"** (or asks to review a document/plan), EVERY agent m
   - **Qualification is mechanical, never a judgement** — that is the whole reason this entry can be
     trusted, because the previous version of this rule was prose and an agent talked itself past it:
     ```
-    python3 .agents/scripts/lane_qualify.py --paths <the paths you will touch>   # PC: `python`
+    python3 .agents/scripts/lane_qualify.py --repo "$(git rev-parse --show-toplevel)" \
+            --paths <the paths you will touch>                                  # PC: `python`
     ```
     `LIGHT` (or `LIGHT-VCS`) qualifies. `TASK` / `HANDOFF` / `NOT-COMMAND-CENTRE` do not — and note
     that **no paths at all is `TASK`**, because silence is unknown scope, never empty scope. A

@@ -36,9 +36,11 @@ for scripts; the word is there for the agent, and they always agree.
 3. SILENCE. No paths at all is UNKNOWN scope, not empty scope, and unknown resolves to TASK.
    "A check whose empty input reads as a pass" is a named tripwire in the house audit, and
    this is the one input an agent controls completely.
-4. DEPLOYABLE. Imported from `task_preflight`, never re-typed, so the close-out gate and this
-   one can never disagree about what "deployable" means.
-5. THE TOOLKIT. Anything under `.agents/`, `.githooks/`, `_bmad*` or the root `AGENTS.md`.
+4. DEPLOYABLE. `PRODUCT_DIRS`, imported from `task_preflight` and never re-typed. ⛔ Not
+   `DEPLOY_DIRS` — see the import comment; that one appends `.github/` and using it here
+   reproduced SCC-118, a shipped incident, in this file's first cut.
+5. THE TOOLKIT. Anything under `.agents/`, `.githooks/`, `.github/`, `_bmad*` or the root
+   `AGENTS.md`. CI and the gates are the development system, which is what TASK means.
 
   ⛔ Rule 5 is deliberately BLUNTER than `sop_currency.classify()`, and the difference is the
   point. That function exempts `.agents/scripts/tests/` - correctly, for ITS question, since
@@ -57,13 +59,25 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-# ONE definition of "deployable" in this repo, not two. `task_preflight` already owns it and
-# already carries the SCC-118 reasoning about why `.github/` differs in kind from the product
-# dirs. Import-safe: its work is guarded by `if __name__ == "__main__"`.
-from task_preflight import DEPLOY_DIRS
+# ONE definition of "the product" in this repo, not two. Import-safe: `task_preflight`'s work
+# is guarded by `if __name__ == "__main__"`.
+#
+# ⛔ PRODUCT_DIRS, **never** DEPLOY_DIRS, and the difference is a shipped incident (SCC-118).
+# `DEPLOY_DIRS` is `PRODUCT_DIRS + (".github/",)`, and importing the combined list here
+# recreated that bug exactly: the command centre HAS a `.github/` — the server-side half of
+# the main write gate — and it ships nothing, so a HANDOFF verdict would send a toolkit change
+# to `/cicd-push-e2e`: a `cicd-*` command barred from the lobby, running an E2E suite this
+# repo does not have and never will. *"A verdict nobody could comply with."*
+#
+# `task_preflight` resolves this by asking which deploy dirs a repo actually HAS. This script
+# does not need that machinery, because condition 0 already guarantees the answer: the lane
+# only ever runs in the command centre, which ships nothing. So PRODUCT_DIRS is the whole
+# deployable question here, and `.github/` belongs below, in the toolkit — CI and the gates
+# ARE the development system.
+from task_preflight import PRODUCT_DIRS
 
 # The toolkit itself. Prefix match, plus one exact filename.
-TOOLKIT_PREFIXES = (".agents/", ".githooks/", "_bmad/", "_bmad-output/")
+TOOLKIT_PREFIXES = (".agents/", ".githooks/", ".github/", "_bmad/", "_bmad-output/")
 TOOLKIT_FILES = frozenset({"AGENTS.md"})
 
 VERDICTS = {"LIGHT": 0, "LIGHT-VCS": 0, "TASK": 1, "HANDOFF": 2, "NOT-COMMAND-CENTRE": 3}
@@ -113,7 +127,7 @@ def classify(repo: Path, paths: list[str], no_file_changes: bool) -> tuple[str, 
                 "no paths given - that is UNKNOWN scope, not empty scope. Silence is never a "
                 "pass; declare --no-file-changes if this genuinely edits nothing")
 
-    hits = [p for p in clean if p.startswith(DEPLOY_DIRS)]
+    hits = [p for p in clean if p.startswith(PRODUCT_DIRS)]
     if hits:
         return ("HANDOFF",
                 f"deployable path(s): {', '.join(hits[:3])} - the product has one road to "
