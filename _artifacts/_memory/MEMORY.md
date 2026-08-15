@@ -99,6 +99,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [Takeover: check liveness](autopilot-manual-takeover-check-liveness.md) — a "crashed" autopilot can resume and overwrite run files.
 
 ## Working style
+- [⭐ Lightweight lane for specific, can't-break work](lightweight-lane-for-specific-no-break-work.md) — 2026-08-15 ruling: a doc-only / operator-directed ask is ticket → edit → push, no plan-first stop, no audit ceremony; the defined lane is SCC-162.
 - [Own it plainly](own-it-plainly-dont-make-excuses.md) — own it in one line, then ACT.
 - [Writes for a big-picture operator](writes-for-big-picture-operator.md) — consequence before mechanism; explain every term; never dumb it down.
 - [Daniel sells Hormozi-style](daniel-sells-hormozi-style.md) — direct, prove-it, give-value-first; default for marketing/copy/offers.

@@ -73,7 +73,7 @@ boundary being drawn is "SOP vs setup," never "watched vs unwatched."
 
 | Doc | What it is |
 |---|---|
-| [workflows_testing_SOP.md](workflows_testing_SOP.md) | **THE quick reference — start here.** The whole dev system on one page: the lifecycle map, every `/` command by lane (story loop ①②③, shipping, autopilot, toolkit upkeep), the test gate + verdicts, the P0–P3 risk matrix, and the TEA cheat-sheet. The one page that answers *what do I type*, and the only one an operator reads start to finish. Protected by an armed commit-msg gate (`sop_currency.py`): change how the system is USED and this page moves in the same commit, or the commit is rejected. Was the `sudo_workflows_testing.md` quick-reference in Daniel's personal area; renamed here because SCC-63 retired the `sudo-` prefix. |
+| [workflows_testing_SOP.md](workflows_testing_SOP.md) | **THE quick reference — start here.** The whole dev system on one page: the lifecycle map, every `/` command by lane (story loop ①②③, shipping, autopilot, toolkit upkeep), the test gate + verdicts, the P0–P3 risk matrix, the TEA cheat-sheet — and, since SCC-161, **the command atlas** (Part VI): the call graph, who writes the board, where each command stops for you, and one mermaid diagram per critical command, each checked against the live command body. The one page that answers *what do I type*, and the only one an operator reads start to finish. Protected by an armed commit-msg gate (`sop_currency.py`): change how the system is USED and this page moves in the same commit, or the commit is rejected. Was the `sudo_workflows_testing.md` quick-reference in Daniel's personal area; renamed here because SCC-63 retired the `sudo-` prefix. |
 
 ## Jira & git — the manual half
 
