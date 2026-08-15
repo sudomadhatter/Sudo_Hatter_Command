@@ -1,6 +1,6 @@
 ---
 name: sudo-update-scrum-board-five-zones
-description: "⛔ /sudo-update-scrum-board was RETIRED 2026-08-07 (SCC-13) — Jira is the human view. Recover it with `git show 8144518^:.agents/commands/sudo-update-scrum-board.md`. Its Step 2.5 parallel logic is the surviving value and is the spec for SCC-56 /sudo-parallel-check."
+description: "⛔ /sudo-update-scrum-board was RETIRED 2026-08-07 (SCC-13) — Jira is the human view. Recover it with `git show 8144518^:.agents/commands/sudo-update-scrum-board.md`. Its Step 2.5 parallel logic is the surviving value and is the spec behind SCC-56, now shipped as /cicd-label-tasks + /smh-label-tasks (SCC-155)."
 metadata:
   node_type: memory
   type: project
@@ -25,7 +25,8 @@ git show 8144518^:.agents/commands/sudo-update-scrum-board.md     # 281 lines
 it as authoritative; use the git command above.
 
 **What survives, and why it matters:** Step 2.5 — *Parallel Approved Stories (the set is the
-verdict)* — is the spec for **SCC-56 `/sudo-parallel-check`** → [[parallel-ok-is-a-set-property]].
+verdict)* — is the spec behind SCC-56, shipped today as **`/cicd-label-tasks`** and
+**`/smh-label-tasks`** (SCC-155) → [[parallel-ok-is-a-set-property]].
 Its touch-set authority order (branch diff > `implementation_plan.md` "Modify/Add" lines + every path
 its `## Self-Audit` names > story-file Dev Notes surfaces), its four verdicts, and its grounding gate
 are all still correct.

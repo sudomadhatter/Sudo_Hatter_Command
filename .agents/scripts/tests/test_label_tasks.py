@@ -785,6 +785,26 @@ def main() -> int:
                 "main", "task", "SCC-99") if gc else {}
         c.check("a lane with REAL code still grounds on branch-diff - rung 1 keeps priority",
                 g2.get("authority") == "branch-diff", str(g2.get("authority")))
+
+        # The branch reader owes the same two guards the checkout reader already has: an
+        # EXACT key match (the SCC-14 ⊂ SCC-146 trap), and a manifest with no plan beside it
+        # grounds nothing. Both survived the sweep as unpinned width.
+        fp = getattr(lt, "find_task_plan_on_branch", None)
+        c.check("#15 a FOREIGN task_key on the branch does not ground this key",
+                fp is not None
+                and fp(repo, "SCC-10", "chore/SCC-101-thing") is None,
+                "missing" if fp is None else str(fp(repo, "SCC-10", "chore/SCC-101-thing")))
+        import subprocess as _sp
+        _sp.run(["git", "-C", str(repo), "checkout", "-q", "chore/SCC-101-thing"],
+                capture_output=True)
+        _sp.run(["git", "-C", str(repo), "rm", "-q",
+                 "_artifacts/_main/2026-01-01_scc-101/implementation_plan.md"],
+                capture_output=True)
+        _sp.run(["git", "-C", str(repo), "commit", "-qm", "drop the plan"], capture_output=True)
+        _sp.run(["git", "-C", str(repo), "checkout", "-q", "main"], capture_output=True)
+        c.check("#15 a branch task.yaml with NO plan beside it grounds nothing",
+                fp is not None and fp(repo, "SCC-101", "chore/SCC-101-thing") is None,
+                "missing" if fp is None else str(fp(repo, "SCC-101", "chore/SCC-101-thing")))
         c.check("and its branch-diff carries the source path, not just the plan",
                 any(".agents/x.py" in (s.get("paths") or [])
                     for s in (g2.get("sources") or [])), str(g2.get("sources")))
@@ -808,14 +828,16 @@ def main() -> int:
             return "<mark_umbrellas takes no mode>"
         return [bool(k.get("umbrella")) for k in kids]
 
+    # ⛔ The two calls differ ONLY in `mode`. A first draft gave task mode summaries like
+    # "2.1 the parent-looking one", which `story_id_of` parses to None - so no umbrella was
+    # detected in either mode and the case passed with the guard deleted. The sweep caught
+    # it. Same summaries, one variable.
+    UMB = [("SCC-100", "2.1 - the parent-looking one"),
+           ("SCC-101", "2.1.1 - the child-looking one")]
     c.check("#19 task mode has no umbrellas - a dotted Subtask summary is not a BMAD tree",
-            umbrellas_for("task", [("SCC-100", "2.1 the parent-looking one"),
-                                   ("SCC-101", "2.1.1 the child-looking one")]) == [False, False],
-            str(umbrellas_for("task", [("SCC-100", "2.1 a"), ("SCC-101", "2.1.1 b")])))
+            umbrellas_for("task", UMB) == [False, False], str(umbrellas_for("task", UMB)))
     c.check("#19 story mode still detects them - the gate is on MODE, not on the logic",
-            umbrellas_for("story", [("A-1", "2.1 - story"),
-                                    ("A-2", "2.1.1 - story")]) == [True, False],
-            str(umbrellas_for("story", [("A-1", "2.1 - story"), ("A-2", "2.1.1 - story")])))
+            umbrellas_for("story", UMB) == [True, False], str(umbrellas_for("story", UMB)))
 
     # ── ⛔ REVIEW FINDING #20: `check` must keep its published 0/1 contract ────
     # Both command docs promise "[FRESH] (exit 0) or [STALE] (exit 1)". SCC-155 added a
@@ -840,6 +862,17 @@ def main() -> int:
     with TempDir() as tmp:
         launcher, state = acli_stub(tmp)
         os.environ["STUB_STATE"] = str(state)
+        # ⛔ The repo needs an `epic/SCC-99-*` branch or the base assertion is vacuous:
+        # with none present `epic_base_ref` falls back to "main", so hard-coding the
+        # story-mode branch produced "main" anyway and the mutant survived.
+        import subprocess as _sp
+        _sp.run(["git", "-C", str(tmp), "init", "-q", "-b", "main"], capture_output=True)
+        for cfg in (("user.email", "t@t"), ("user.name", "t")):
+            _sp.run(["git", "-C", str(tmp), "config", *cfg], capture_output=True)
+        (tmp / "seed.txt").write_text("x\n", encoding="utf-8")
+        _sp.run(["git", "-C", str(tmp), "add", "seed.txt"], capture_output=True)
+        _sp.run(["git", "-C", str(tmp), "commit", "-qm", "seed"], capture_output=True)
+        _sp.run(["git", "-C", str(tmp), "branch", "epic/SCC-99-labeller"], capture_output=True)
         state.write_text(json.dumps({
             "types": {"SCC-99": "Task"}, "summaries": {"SCC-99": "Add the labeller"},
             "rows": [{"key": "SCC-101",
