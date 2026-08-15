@@ -532,6 +532,18 @@ def list_comments(binary: str, key: str) -> list[dict]:
                                        "--json", "--limit", "100"]), "comments")
 
 
+def find_user_tasks(comments: list[dict]) -> dict | None:
+    """The existing "User tasks" comment, so `finish` UPDATES rather than stacks (SCC-155).
+
+    Same shape and same reason as `find_devrecord` below: `finish` is designed to be re-run
+    after every box the operator ticks, so posting unconditionally left one held ticket
+    carrying a pile of near-identical comments with nothing marking the current one."""
+    for c in reversed(comments):
+        if USER_TASKS_MARKER.lower() in field_text(c.get("body"))[:200].lower():
+            return c
+    return None
+
+
 def find_devrecord(comments: list[dict], story: str | None) -> dict | None:
     """The existing Dev Record on this ticket, if any - this is what makes it ONE record.
 
@@ -1228,13 +1240,59 @@ def cmd_start(args) -> int:
 # its position - this reads an artifact that exists rather than inventing a new one.
 YOUR_ACTIONS = "## Your Actions"
 USER_TASKS_LABEL = "user-tasks"
+# The marker `find_user_tasks` matches on, and it lives on the BOARD - a rename here cannot
+# be swept, so every comment already posted would go invisible and `finish` would start
+# stacking again. Same reasoning as label_tasks.MARKER, and frozen for the same reason.
+USER_TASKS_MARKER = "**User tasks**"
 # Attempted in order; the first one the board actually has wins. jira.md: a status a board
 # does not carry is "not installed yet", never an error - so this falls THROUGH rather than
 # failing. SCC has neither today, which makes the fall-through the live path, not a corner:
 # until a column is installed the label alone carries the signal.
 REVIEW_LADDER = ("Awaiting Review", "In Review")
-_OPEN_ITEM_RE = re.compile(r"^\s*[-*]\s*\[\s\]\s*(.+?)\s*$")
-_CHECKED_ITEM_RE = re.compile(r"^\s*[-*]\s*\[[xX]\]")
+# `(.*?)` not `(.+?)`: an unchecked box with no text after it is still an open obligation.
+# Requiring a character silently dropped it - fail-open, one level in from the shape the
+# docstring bans (SCC-155 review finding).
+_OPEN_ITEM_RE = re.compile(r"^\s*[-*]\s*\[\s\]\s*(.*?)\s*$")
+_ANY_ITEM_RE = re.compile(r"^\s*[-*]\s+")
+# CommonMark: a fence opens on >=3 backticks or tildes and closes only on the SAME marker
+# kind, at least as long. Ported from check_gate.strip_fenced (SCC-154) rather than
+# re-derived - that lane paid for the close-marker rule with a live miss.
+_FENCE_RE = re.compile(r"^\s{0,3}(`{3,}|~{3,})")
+
+
+def _unfenced(lines: list[str]):
+    """Yield (index, line) for every line OUTSIDE a fenced code block.
+
+    ⛔ SCC-155 review finding (critical). Without this, a walkthrough is read as markup that
+    it isn't, in two directions that are both wrong and one that is dangerous:
+
+      - The house convention writes `# PC: run from the lobby root` inside a ```bash block,
+        and `## Your Actions` is precisely the section that carries "here is what you still
+        have to run". Read line-by-line, that comment looked like a top-level heading and
+        ENDED the section - `open_actions` returned `[]`, not `None`, so no refusal fired and
+        the ticket closed over work the operator was promised. 26 of the 92 walkthroughs
+        already in `_artifacts/` carry that shape.
+      - A doc that TEACHES the convention quotes `## Your Actions` inside a fence. The quoted
+        example won the heading match, its ticked example rows returned `[]`, and the real
+        section below was never read.
+      - Mirror direction: a `- [ ]` template row inside a fence is an EXAMPLE, and counting
+        it holds a ticket nobody can ever close.
+
+    Same class as the source-grep guards a comment inverts, and the same fix SCC-154 landed
+    in `check_gate`: match PROSE, never quoted examples."""
+    fence = ""
+    for i, ln in enumerate(lines):
+        m = _FENCE_RE.match(ln)
+        if m:
+            mark = m.group(1)
+            if not fence:
+                fence = mark
+                continue
+            if mark[0] == fence[0] and len(mark) >= len(fence):
+                fence = ""
+            continue
+        if not fence:
+            yield i, ln
 
 
 def open_actions(text: str) -> list[str] | None:
@@ -1246,22 +1304,45 @@ def open_actions(text: str) -> list[str] | None:
     was promised. A renamed heading is exactly how that happens in practice.
 
     Scoped to the section: the walkthrough's `## Task Checklist` is full of `- [ ]` lines
-    that are the AGENT's, and counting those would hold every ticket forever."""
+    that are the AGENT's, and counting those would hold every ticket forever.
+
+    Fenced blocks are invisible throughout — see `_unfenced` for the three ways that bit."""
     lines = text.splitlines()
-    start = next((i for i, ln in enumerate(lines)
-                  if ln.strip().lower() == YOUR_ACTIONS.lower()), None)
-    if start is None:
+    live = list(_unfenced(lines))
+    starts = [i for i, ln in live if ln.strip().lower() == YOUR_ACTIONS.lower()]
+    if not starts:
         return None
     items: list[str] = []
-    for ln in lines[start + 1:]:
-        # Any following heading of the same or higher level ends the section. `###` under it
-        # is still the operator's - a close-out that groups its asks must not lose them.
+    # EVERY such section, not just the first. `next(...)` took the first heading only, so a
+    # walkthrough that opened a second `## Your Actions` later (a close-out appending its own
+    # asks is exactly how) had those items silently dropped and the ticket closed over them
+    # (SCC-155 review finding).
+    for start in starts:
+        _collect(live, start, items)
+    return items
+
+
+def _collect(live: list[tuple[int, str]], start: int, items: list[str]) -> None:
+    for i, ln in live:
+        if i <= start:
+            continue
+        # Only a heading of the SAME level or higher ends the section. `###` under it is
+        # still the operator's - a close-out that groups its asks under `### Board` must not
+        # lose them, so this must never widen to a bare `#` (SCC-155 review finding: the
+        # narrowing direction was pinned, this widening one was not).
         s = ln.strip()
         if s.startswith("## ") or s.startswith("# "):
             break
         m = _OPEN_ITEM_RE.match(ln)
-        if m and not _CHECKED_ITEM_RE.match(ln):
+        if m:
             items.append(m.group(1).strip())
+        elif items and s and not _ANY_ITEM_RE.match(ln) and ln[:1].isspace():
+            # A continuation line indented under the item it belongs to. `smh-quick-dev.md`
+            # publishes this as a MACHINE CONTRACT ("Continuation lines indented under it
+            # ride along"), and dropping them truncated the operator's own instructions to
+            # their first line - the half that says WHY reached nobody. It must NOT become a
+            # second owed item, so it folds into the item above rather than appending.
+            items[-1] += " " + s
     return items
 
 
@@ -1289,7 +1370,13 @@ def cmd_finish(args) -> int:
         0  closed (or already Done)          -> the close-out says "closed"
         3  HELD: open user tasks, posted     -> the close-out says "awaiting you"
         2  refused (no walkthrough/section)  -> fix the artifact; nothing was written
-        4  the board was unreachable         -> transport, not a verdict; retry
+        4  the board would not take a write  -> transport, not a verdict; retry
+
+    ⛔ SCC-155 review finding: 2 means THE ARTIFACT IS WRONG, and nothing else. It used to
+    also cover a transition that would not land and a comment that would not post - both
+    board failures, both with a write already attempted. An agent reading the close-out's
+    table went hunting for a defect in a walkthrough that was fine, and re-running produced
+    the same result forever. Every board failure is 4, whose row already says "retry".
     """
     binary = acli_bin(args.acli)
     wt = Path(args.walkthrough)
@@ -1327,8 +1414,21 @@ def cmd_finish(args) -> int:
         now = ((back or {}).get("status") or {}).get("name") or ""
         if t.returncode != 0 or now.strip() != args.status:
             say(f"jira-feed: {args.key} is still {now.strip() or '?'} - the close did NOT "
-                f"land: {(t.stderr or t.stdout).strip()[:160]}")
-            return 2
+                f"land. TRANSPORT, not an artifact defect: the walkthrough is fine and there "
+                f"is nothing to fix in it. Retry: {(t.stderr or t.stdout).strip()[:160]}")
+            return 4
+        # The hold is over, so the signal comes OFF. `user-tasks` means "the walkthrough
+        # leaves something only the operator can do"; on a board with no review column it is
+        # THE signal, so a Done ticket still carrying it poisons the filter it exists to
+        # feed. The sibling half of this same change is built on "the strip is the point" -
+        # this writer only ever added (SCC-155 review finding).
+        if USER_TASKS_LABEL in labels:
+            want = sorted(set(labels) - {USER_TASKS_LABEL})
+            lr = acli(binary, ["jira", "workitem", "edit", "--key", args.key, "--yes",
+                               "--labels", ",".join(want)], timeout=args.timeout)
+            if lr.returncode != 0:
+                say(f"[WARN] {args.key}: closed, but `{USER_TASKS_LABEL}` could not be "
+                    f"stripped - {(lr.stderr or lr.stdout).strip()[:120]}")
         say(f"jira-feed: {args.key} {status} -> {args.status} "
             f"(`{YOUR_ACTIONS}` had nothing open)")
         return 0
@@ -1342,16 +1442,31 @@ def cmd_finish(args) -> int:
             say(f"  - [ ] {it}")
         return 3
 
+    # ONE user-tasks comment per ticket, updated in place. `render_user_tasks` tells the
+    # operator to tick a box and re-run, so repeated invocation is the DESIGNED happy path -
+    # posting unconditionally left a held ticket carrying N near-identical comments, each
+    # asserting a different count, with nothing saying which was current. `devrecord` in this
+    # same file is documented as "exactly one per ticket, never stacked"; this verb needs the
+    # same property for the same reason (SCC-155 review finding).
+    existing = find_user_tasks(list_comments(binary, args.key))
+    cid = str(existing.get("id") or "") if existing else ""
     tmp = write_temp(body)
     try:
-        cm = acli(binary, ["jira", "workitem", "comment", "create", "--key", args.key,
-                           "--body-file", str(tmp)], timeout=args.timeout)
+        if cid:
+            cm = acli(binary, ["jira", "workitem", "comment", "update", "--key", args.key,
+                               "--id", cid, "--body-file", str(tmp)], timeout=args.timeout)
+        else:
+            cm = acli(binary, ["jira", "workitem", "comment", "create", "--key", args.key,
+                               "--body-file", str(tmp)], timeout=args.timeout)
     finally:
         tmp.unlink(missing_ok=True)
-    if cm.returncode != 0:
-        say(f"[ERR] {args.key}: the user-tasks comment did NOT land - the ticket is held but "
-            f"says nothing about why: {(cm.stderr or cm.stdout).strip()[:160]}")
-        return 2
+    comment_failed = cm.returncode != 0
+    if comment_failed:
+        # Do NOT return here. The early return skipped the label and the ladder below, so a
+        # failed narration left the ticket held while saying nothing about why - the loss this
+        # verb exists to prevent. Signal the hold, THEN report the transport failure.
+        say(f"[WARN] {args.key}: the user-tasks comment did NOT land - "
+            f"{(cm.stderr or cm.stdout).strip()[:160]}")
 
     # `--labels` REPLACES the set, so read-modify-write or every other label is destroyed.
     if USER_TASKS_LABEL not in labels:
@@ -1362,26 +1477,41 @@ def cmd_finish(args) -> int:
             say(f"[WARN] {args.key}: could not add `{USER_TASKS_LABEL}` - "
                 f"{(lr.stderr or lr.stdout).strip()[:120]}")
 
-    moved = ""
-    for target in REVIEW_LADDER:
-        if status.lower() == target.lower():
-            moved = target
-            break
-        acli(binary, ["jira", "workitem", "transition", "--key", args.key,
-                      "--status", target, "--yes"], timeout=args.timeout)
-        back = view_fields(binary, args.key, timeout=args.timeout, strict=False)
-        now = (((back or {}).get("status") or {}).get("name") or "").strip()
-        if now.lower() == target.lower():
-            moved = target
-            break
+    # Already parked on ANY rung? Then there is nothing to do. Comparing only against the rung
+    # being tried dragged a ticket an operator had advanced to `In Review` BACKWARDS to
+    # `Awaiting Review` on the next held re-run (SCC-155 review finding).
+    moved = next((t for t in REVIEW_LADDER if status.lower() == t.lower()), "")
+    unverified = False
+    if not moved:
+        for target in REVIEW_LADDER:
+            acli(binary, ["jira", "workitem", "transition", "--key", args.key,
+                          "--status", target, "--yes"], timeout=args.timeout)
+            back = view_fields(binary, args.key, timeout=args.timeout, strict=False)
+            if back is None:
+                # CANNOT-VERIFY is not DID-NOT-MOVE. Marching on would transition the ticket a
+                # SECOND time, to a column nobody asked for, and then report "no review column
+                # on this board" - false on both counts (SCC-155 review finding).
+                unverified = True
+                break
+            now = ((back.get("status") or {}).get("name") or "").strip()
+            if now.lower() == target.lower():
+                moved = target
+                break
 
-    where = (f"moved to `{moved}`" if moved else
-             f"left at `{status or '?'}` - no review column on this board yet, so the "
-             f"`{USER_TASKS_LABEL}` label is the signal")
+    if moved:
+        where = f"moved to `{moved}`"
+    elif unverified:
+        where = (f"tried `{REVIEW_LADDER[0]}` but the board would not confirm it - status "
+                 f"UNKNOWN, not unchanged; re-run to settle it")
+    else:
+        where = (f"left at `{status or '?'}` - no review column on this board yet, so the "
+                 f"`{USER_TASKS_LABEL}` label is the signal")
     say(f"jira-feed: {args.key} HELD, not closed - {len(items)} open user task(s), {where}")
     for it in items:
         say(f"  - [ ] {it}")
-    return 3
+    # The hold is real and signalled either way; the exit code says whether the NARRATION
+    # landed. 4 sends the caller to "transport - retry", which is the true remedy.
+    return 4 if comment_failed else 3
 
 
 def render_flag(args, was: str, status: str) -> str:

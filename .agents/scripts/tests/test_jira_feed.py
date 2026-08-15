@@ -131,6 +131,16 @@ def adf(text):
 
 head = args[:4]
 if head[:3] == ["jira", "workitem", "view"]:
+    # `blind_after` models a READ that starts failing partway through while WRITES keep
+    # working - a transport blip on the LADDER's read-back, which view_fields(strict=False)
+    # turns into None. It has to be a COUNT, not a flag: a flag also kills cmd_finish's very
+    # first read, so the run bails at "could not reach the board" and never reaches the
+    # ladder at all - the case would pass while testing nothing.
+    state["views"] = state.get("views", 0) + 1
+    save()
+    if state.get("blind_after") and state["views"] > state["blind_after"]:
+        print("Error: could not read work item", file=sys.stderr)
+        sys.exit(1)
     vkey = args[3] if len(args) > 3 else "TEST-7"
     fields = {"description": adf(state.get("description")),
               "summary": state.get("summary", ""),
@@ -179,6 +189,12 @@ elif head == ["jira", "workitem", "comment", "list"]:
     print(json.dumps({"comments": [{"id": c["id"], "body": adf(c["body"])}
                                    for c in state["comments"]]}))
 elif head == ["jira", "workitem", "comment", "create"]:
+    # `swallow` drops the comment but still reports success (the board accepted it and lost
+    # it); `comment_fail` is the honest failure - acli exits non-zero. They are different
+    # bugs and only the second one a caller can react to.
+    if state.get("comment_fail"):
+        print("Error: could not create comment", file=sys.stderr)
+        sys.exit(1)
     if not state.get("swallow"):
         state["comments"].append({"id": str(1000 + len(state["comments"])),
                                   "body": read("--body-file")})
@@ -1453,8 +1469,13 @@ Nothing else is owed.
         code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
                        "--apply")
         st = get_state(state)
+        # This case owns the DETECTION (acli exits 0 on a move it did not make, so the
+        # read-back is the only thing that knows). The exit code it should carry is pinned
+        # separately below - it was 2 when this was written, and the review moved every board
+        # failure to 4; asserting the code in both places is how a contract change goes half-
+        # applied.
         c.check("finish: a close that REPORTS success but does not land is caught",
-                code == 2 and st["statuses"]["TEST-7"] == "In Progress"
+                code != 0 and st["statuses"]["TEST-7"] == "In Progress"
                 and "did not" in out.lower(), f"exit={code} {out.strip()[:160]}")
 
         # ── re-running on a closed ticket is a no-op, not a second transition ──
@@ -1476,6 +1497,274 @@ Nothing else is owed.
         c.check("finish: a top-level `# ` heading closes the section too",
                 code == 0 and get_state(state)["statuses"]["TEST-7"] == "Done",
                 f"exit={code} {out.strip()[:160]}")
+
+        # ── ⛔ REVIEW FINDING (critical): a FENCED `#` comment is not a heading ──
+        # The house convention puts `# PC: run from the lobby root` inside a bash block, and
+        # `## Your Actions` is exactly the section that carries "here is what you still have
+        # to run". Read line-by-line with no fence awareness, that comment ENDS the section:
+        # open_actions returns [] (not None, so no refusal fires) and the ticket closes over
+        # work the operator was promised. 26 of the 92 walkthroughs already in _artifacts/
+        # carry that shape. This is the SCC-154 `strip_fenced` lesson recurring - and
+        # wf_common already ships _FENCE_RE.
+        FENCED = """# Walkthrough
+
+## Your Actions
+
+Arm the hooks on the PC before anything else:
+
+```bash
+# PC: run from the lobby root
+git config core.hooksPath .githooks
+```
+
+- [ ] Install the `Awaiting Review` column on the SCC board
+- [ ] Run /memory-audit for the dead SOP path
+"""
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(FENCED),
+                       "--apply")
+        st = get_state(state)
+        c.check("finish: a `#` comment INSIDE a fence does not end the section",
+                code == 3 and st["statuses"]["TEST-7"] != "Done",
+                f"exit={code} {st.get('statuses')} {out.strip()[:160]}")
+        c.check("finish: and both items below that fence are still owed",
+                any("Awaiting Review" in cm["body"] and "memory-audit" in cm["body"]
+                    for cm in st["comments"]),
+                str([cm["body"][:80] for cm in st["comments"]]))
+
+        # The mirror direction, and it must hold at the same time: a checkbox that is only an
+        # EXAMPLE inside a fence is not an owed action. A fix that counts everything would
+        # trade a fail-open for a ticket nobody can ever close.
+        EXAMPLE = """# Walkthrough
+
+## Your Actions
+
+Write your own rows in this shape:
+
+```markdown
+- [ ] a template row that is an EXAMPLE, not an obligation
+```
+
+Nothing is actually owed.
+"""
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(EXAMPLE),
+                       "--apply")
+        c.check("finish: a `- [ ]` inside a fence is an EXAMPLE, not an owed action",
+                code == 0 and get_state(state)["statuses"]["TEST-7"] == "Done",
+                f"exit={code} {out.strip()[:160]}")
+
+        # The nastiest shape of the same bug: the section HEADING itself quoted in a fence,
+        # earlier in the file. `start` matched the fenced example, its ticked rows returned
+        # [], and the REAL section below was never read - Done written straight over two live
+        # obligations. A doc teaching the convention is exactly where this shape appears.
+        QUOTED_HEAD = """# Walkthrough
+
+Write the hand-off like this:
+
+```markdown
+## Your Actions
+
+- [x] an EXAMPLE row, already ticked
+```
+
+## Your Actions
+
+- [ ] Install the `Awaiting Review` column on the SCC board
+- [ ] Run /memory-audit for the dead SOP path
+"""
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(QUOTED_HEAD),
+                       "--apply")
+        st = get_state(state)
+        c.check("finish: a FENCED `## Your Actions` example never wins over the real section",
+                code == 3 and st["statuses"]["TEST-7"] != "Done",
+                f"exit={code} {st.get('statuses')} {out.strip()[:160]}")
+
+        # ── ⛔ REVIEW FINDING: the published contract says continuations ride ────
+        # smh-quick-dev.md declares as a MACHINE CONTRACT: "Continuation lines indented under
+        # it ride along." They did not - only the bullet line was collected, so the half of
+        # the instruction that says WHY reached nobody. Either the reader honours the
+        # contract or the contract is a lie; this pins the reader.
+        CONT = """# Walkthrough
+
+## Your Actions
+
+- [ ] Install the `Awaiting Review` column on the SCC board
+      it is a two-minute change and nothing here can do it for you
+- [ ] Run /memory-audit
+"""
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CONT),
+                       "--apply")
+        st = get_state(state)
+        c.check("finish: an item's indented continuation line rides along to the board",
+                any("two-minute change" in cm["body"] for cm in st["comments"]),
+                str([cm["body"][:120] for cm in st["comments"]]))
+        c.check("finish: and the continuation does NOT become a second owed item",
+                any("**2** things" in cm["body"] for cm in st["comments"]),
+                str([cm["body"][:120] for cm in st["comments"]]))
+
+        # ── ⛔ REVIEW FINDING: user-tasks is a one-way door ──────────────────────
+        # The HELD arm adds the label; the close arm never removed it. jira.md defines it as
+        # "the walkthrough leaves something only the operator can do", and on a board with no
+        # review column the runtime message calls it THE signal - so a Done ticket carrying
+        # it poisons the very filter it exists to feed. The sibling half of this same change
+        # is built on "the strip is the point"; this writer only ever added.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
+                  labels={"TEST-7": ["user-tasks", "quick-dev"]})
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
+                       "--apply")
+        st = get_state(state)
+        c.check("finish: closing clean STRIPS user-tasks - the hold is over",
+                "user-tasks" not in st.get("labels", {}).get("TEST-7", []),
+                str(st.get("labels")))
+        c.check("finish: and the strip leaves every other label alone",
+                "quick-dev" in st.get("labels", {}).get("TEST-7", []), str(st.get("labels")))
+
+        # ── ⛔ REVIEW FINDING: exit 2 is overloaded onto BOARD failures ──────────
+        # The docstring and BOTH close-out tables fix exit 2 as "refused - no walkthrough or
+        # no section; NOTHING was written; fix the artifact". A transition that was issued and
+        # did not land is a board problem with a write already attempted, and the agent that
+        # follows the table goes hunting for a defect in a walkthrough that is fine. 4 is the
+        # code that already means "transport, not a verdict; retry".
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
+                  stuck_status=True)
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
+                       "--apply")
+        c.check("finish: a close that does not land is TRANSPORT (4), not a refusal (2)",
+                code == 4, f"exit={code} {out.strip()[:160]}")
+
+        # A comment that fails to post is the same class - and worse, the early return used to
+        # skip the label and the ladder below it, so the ticket was held while saying nothing
+        # about why. The hold must still be SIGNALLED even when the narration fails.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
+                  comment_fail=True)
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
+                       "--apply")
+        st = get_state(state)
+        c.check("finish: a comment that fails to post is TRANSPORT (4), not a refusal (2)",
+                code == 4, f"exit={code} {out.strip()[:160]}")
+        c.check("finish: and the label still lands, so the hold is not silent",
+                "user-tasks" in st.get("labels", {}).get("TEST-7", []), str(st.get("labels")))
+
+        # ── ⛔ REVIEW FINDING: re-running a hold STACKS comments ─────────────────
+        # render_user_tasks tells the operator to tick a box and re-run, so repeated
+        # invocation is the designed happy path, not an edge. Each run posted another "User
+        # tasks" comment, each asserting a different count, with nothing saying which is
+        # current. `devrecord` in this same file is documented as "exactly one per ticket,
+        # updated in place, never stacked" - this verb needs the same property.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+        jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED), "--apply")
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CONT),
+                       "--apply")
+        st = get_state(state)
+        c.check("finish: a second hold UPDATES the user-tasks comment, never stacks it",
+                len([cm for cm in st["comments"] if "User tasks" in cm["body"]]) == 1,
+                str([cm["body"][:60] for cm in st["comments"]]))
+        c.check("finish: and the surviving comment is the CURRENT one",
+                any("two-minute change" in cm["body"] for cm in st["comments"]),
+                str([cm["body"][:120] for cm in st["comments"]]))
+
+        # ── ⛔ REVIEW FINDING: the ladder advances on an UNVERIFIABLE read ───────
+        # The rung's success test is a fresh view_fields(strict=False), which returns None on
+        # any transport blip - indistinguishable from "the move did not take". On a blip the
+        # loop marched to rung two and moved the ticket a SECOND time, to a column nobody
+        # asked for, then reported "left at In Progress - no review column on this board".
+        # Cannot-verify is not the same as did-not-move: stop and say so.
+        # blind_after=1: the opening read succeeds (so we reach the ladder at all), and every
+        # read-back after it fails. Without the count this case is vacuous - see the stub.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
+                  blind_after=1)
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
+                       "--apply")
+        st = get_state(state)
+        moves = [t["status"] for t in st.get("transitions", [])]
+        # ⛔ Both assertions below need a POSITIVE anchor. "at most one move" and "the string
+        # is absent" are BOTH true when the script crashes, which is exactly what the sweep
+        # caught: a mutant that removed the `back is None` guard raised an AttributeError,
+        # produced no output and no second transition, and this case stayed green.
+        c.check("finish: an unverifiable ladder read does NOT march on to the next rung",
+                code == 3 and len(moves) <= 1, f"exit={code} {moves}")
+        c.check("finish: and it says the status is UNKNOWN, not that the column is missing",
+                "UNKNOWN" in out and "no review column" not in out, out.strip()[-220:])
+
+        # The CommonMark close rule: a fence closes only on the SAME marker kind, at least as
+        # long. Without it a ``` inside a ~~~ block (or a shorter run inside a longer one)
+        # ends the fence early and the section is read as markup again - the precise rule
+        # SCC-154 paid for in check_gate, so it is pinned here rather than re-learned.
+        # The fixture has to DISCRIMINATE: everything that must stay invisible is INSIDE the
+        # ~~~ block, and it includes an OPEN box. Correct code sees zero obligations and
+        # closes; a mutant that lets any fence marker close any fence ends the ~~~ at the
+        # inner ``` , exposes that box, and holds. A first draft of this case put the open box
+        # outside the block and passed under the mutant either way.
+        NESTED = """# Walkthrough
+
+## Your Actions
+
+~~~markdown
+Write your rows like this:
+```
+- [ ] an EXAMPLE obligation that must never count
+```
+~~~
+
+Nothing is actually owed.
+"""
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(NESTED),
+                       "--apply")
+        c.check("finish: a ``` inside a ~~~ block does not close it early",
+                code == 0 and get_state(state)["statuses"]["TEST-7"] == "Done",
+                f"exit={code} {out.strip()[:180]}")
+
+        # A SECOND `## Your Actions` - a close-out appending its own asks is exactly how one
+        # appears. Taking only the first heading dropped everything under the later one.
+        TWICE = """# Walkthrough
+
+## Your Actions
+
+- [x] the first round is done
+
+## Notes
+
+## Your Actions
+
+- [ ] the round that was silently dropped
+"""
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(TWICE),
+                       "--apply")
+        c.check("finish: a SECOND `## Your Actions` section is read too, never dropped",
+                code == 3 and get_state(state)["statuses"]["TEST-7"] != "Done",
+                f"exit={code} {out.strip()[:160]}")
+
+        # An unchecked box with no text is still an unchecked box. Requiring a character made
+        # an empty obligation invisible - the fail-open shape, one level in.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+        code, out = jf("finish", "--key", "TEST-7", "--apply", "--walkthrough", walkthrough(
+            "# Walkthrough\n\n## Your Actions\n\n- [ ]\n"))
+        c.check("finish: an EMPTY unchecked box still holds the ticket",
+                code == 3, f"exit={code} {out.strip()[:160]}")
+
+        # `###` groups the operator's asks; it must NOT end the section. The narrowing
+        # direction was pinned (the appendix case); this is the widening one.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+        code, out = jf("finish", "--key", "TEST-7", "--apply", "--walkthrough", walkthrough(
+            "# Walkthrough\n\n## Your Actions\n\n### Board\n\n- [ ] install the column\n"))
+        c.check("finish: a `###` sub-heading GROUPS the asks, it does not end the section",
+                code == 3 and "install the column" in out,
+                f"exit={code} {out.strip()[:160]}")
+
+        # Already parked on a rung: do nothing. Comparing only against the rung being tried
+        # dragged a ticket an operator had advanced to `In Review` BACKWARDS.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Review"})
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
+                       "--apply")
+        st = get_state(state)
+        c.check("finish: a ticket already on a rung is NOT dragged back down the ladder",
+                st["statuses"]["TEST-7"] == "In Review" and not st.get("transitions"),
+                f"{st.get('statuses')} {st.get('transitions')}")
 
     return c.finish()
 

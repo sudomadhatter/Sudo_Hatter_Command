@@ -101,7 +101,12 @@ PLANNING_PREFIXES = ("_bmad-output/", "_bmad/", "_artifacts/", "_my_resources/")
 _ASCII_FOLD = {
     "—": "-", "–": "-", "'": "'", "'": "'", """: '"', """: '"',
     "…": "...", "→": "->", "·": "-", "≥": ">=", "≤": "<=",
-    "🟢": "[OK]", "🔒": "[LOCK]", "⏳": "[WAIT]", "📝": "[NO-STORY]", "🧵": "==",
+    # 📝 folds to a MODE-NEUTRAL mark. It used to fold to `[NO-STORY]`, which the renderer
+    # then followed with its own words - so a task-mode console read `[NO-STORY] no plan`,
+    # naming the one concept that mode exists to say does not apply. The three marks beside
+    # it have the same shape (the glyph is the mark, the words carry the verdict), so this
+    # is the fold matching them rather than a new convention (SCC-155 review finding).
+    "🟢": "[OK]", "🔒": "[LOCK]", "⏳": "[WAIT]", "📝": "[NOTE]", "🧵": "==",
 }
 
 
@@ -267,7 +272,7 @@ def parent_facts(binary: str, key: str) -> dict:
             "type": itype}
 
 
-def gate_bmad(parent: dict, repo: Path) -> str:
+def gate_bmad(parent: dict, repo: Path, forced: bool = False) -> str:
     """Refuse a grouping epic BY NAME, with the reason. A grouping epic's children are Tasks
     with no story files, so every row would be a bare 'no story' — the refusal says why in one
     line instead of printing an empty table and looking broken.
@@ -278,10 +283,18 @@ def gate_bmad(parent: dict, repo: Path) -> str:
     stuck. The type check runs FIRST, because a Task parent refused for the summary's shape
     ("no `Epic N` in it") is right by accident and says the wrong thing."""
     itype = (parent.get("type") or "").strip().lower()
-    if itype and itype != "epic":
+    # `forced` is an EXPLICIT `--mode story`, and it must bypass this arm specifically.
+    # Without that the flag is dead: its own docstring says it exists for "the case the type
+    # is wrong on the board", and this is the check that reads that type - so the one input
+    # the flag was added to serve was the one it could not, and the refusal handed the
+    # operator to the command they had just come from (SCC-155 review finding). Every OTHER
+    # gate below still binds; the operator overrode the board's type, not the whole gate.
+    if itype and itype != "epic" and not forced:
         wf.die(f"`{parent['key']}` is a {parent.get('type')}, not an Epic. Story mode "
                f"assesses BMAD stories under a BMAD epic. A {parent.get('type')} and its "
-               f"Subtasks are Task work — run `{COMMAND['task']} {parent['key']}`.", 2)
+               f"Subtasks are Task work — run `{COMMAND['task']} {parent['key']}`. If the "
+               f"BOARD is wrong and this really is a BMAD epic, force it with `--mode "
+               f"story`.", 2)
     stories_dir = repo / wf.STORIES_REL
     if not stories_dir.is_dir():
         wf.die(f"{repo.name} has no {wf.STORIES_REL}/ — no BMAD stories in this repo yet. "
@@ -316,6 +329,15 @@ def gate_task(parent: dict) -> None:
                f"the Subtasks under ONE Task. For a BMAD epic's stories run "
                f"`{COMMAND['story']} {parent['key']}`; for a grouping epic, run this against "
                f"one of its Tasks.", 2)
+    # The third leg, without which the two gates do not actually refuse INTO each other:
+    # `gate_bmad` hands a Subtask parent here saying "a Subtask and its Subtasks are Task
+    # work", this arm used to ACCEPT it, and the run then died on "no children on the board".
+    # `hierarchyLevel: -1` is the floor - nothing nests under a Subtask - so the honest
+    # answer names the parent Task instead (SCC-155 review finding).
+    if itype == "subtask":
+        wf.die(f"`{parent['key']}` is a Subtask, and nothing nests under one — it is the "
+               f"bottom of the hierarchy, so it has no children to assess. Run this against "
+               f"its parent Task instead.", 2)
     return None
 
 
@@ -489,7 +511,7 @@ def cmd_plan(args) -> int:
     mode = resolve_mode(parent, args.mode)
     epic_num = None
     if mode == "story":
-        epic_num = gate_bmad(parent, repo)
+        epic_num = gate_bmad(parent, repo, forced=bool(args.mode))
     else:
         gate_task(parent)
 
@@ -541,9 +563,14 @@ def cmd_plan(args) -> int:
     for c in umbrellas:
         say(f"  [UMBRELLA] {c['key']} ({c['story_id']}) contains "
             + ", ".join(c["contains"]) + " - not a candidate")
+    # The console verdict must match the BOARD verdict `cmd_resolve` emits for the same
+    # child. It printed `[NO-STORY]` in both modes while the comment said `no plan` - two
+    # names for one verdict in one run, and "story" is the word task mode exists to say does
+    # not apply here (SCC-155 review finding).
+    ungrounded = "[NO-PLAN]" if mode == "task" else "[NO-STORY]"
     for c in live:
         if not c.get("grounded"):
-            say(f"  [NO-STORY] {c['key']}: {c.get('reason')}"
+            say(f"  {ungrounded} {c['key']}: {c.get('reason')}"
                 + (f" -> {c['next_command']}" if c.get("next_command") else ""))
     return 0 if grounded else 1
 

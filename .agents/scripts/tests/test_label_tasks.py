@@ -15,6 +15,8 @@ from __future__ import annotations
 
 import io
 import json
+import os
+import stat
 import sys
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
@@ -24,6 +26,79 @@ from _harness import Cases, TempDir, run_script  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import label_tasks as lt  # noqa: E402
+
+
+# ── a real acli stub, so the board-WRITE path actually executes ────────────────
+# ⛔ SCC-155 review finding (critical). Every case in this file drove `resolve` and `stamp`
+# through temp files with no stub at all, so `--apply` was never passed and the whole write
+# half - the acli argv, the comma-join, the `--key`, the failure arm - was unexecuted. A
+# mutant that threw away the computed label set and wrote the ticket's EXISTING labels back
+# survived a full 78/78 green run. `label_plan` being pure and well-tested proves the
+# decision; nothing proved the decision reached Jira.
+STUB = r'''
+import json, sys
+from pathlib import Path
+args = sys.argv[1:]
+state = Path(__import__("os").environ["STUB_STATE"])
+st = json.loads(state.read_text()) if state.exists() else {}
+
+
+def val(flag):
+    return args[args.index(flag) + 1] if flag in args else None
+
+
+head = args[:3]
+if head == ["jira", "workitem", "view"]:
+    key = args[3]
+    print(json.dumps({"key": key, "fields": {
+        "summary": st.get("summaries", {}).get(key, ""),
+        "issuetype": {"name": st.get("types", {}).get(key, "Task")}}}))
+elif head == ["jira", "workitem", "search"]:
+    print(json.dumps(st.get("rows", [])))
+elif head == ["jira", "workitem", "edit"]:
+    # `--labels` REPLACES the whole set on the real acli - modelled as a replace or a test
+    # cannot tell a preserving writer from a clobbering one.
+    if st.get("label_fail"):
+        print("Error: labels rejected", file=sys.stderr)
+        sys.exit(1)
+    st.setdefault("labels", {})[val("--key")] = [
+        x for x in (val("--labels") or "").split(",") if x]
+    state.write_text(json.dumps(st))
+    print("edited")
+elif head == ["jira", "workitem", "comment"] and args[3] == "create":
+    if st.get("comment_fail"):
+        print("Error: comment rejected", file=sys.stderr)
+        sys.exit(1)
+    # label_tasks posts INLINE with --body; jira_feed writes a temp file and passes
+    # --body-file. The stub honours both rather than the one it was written against, so it
+    # cannot silently pass a caller that switched form.
+    body = val("--body")
+    if body is None and val("--body-file"):
+        body = Path(val("--body-file")).read_text()
+    st.setdefault("comments", []).append(body or "")
+    state.write_text(json.dumps(st))
+    print("commented")
+elif head == ["jira", "workitem", "comment"] and args[3] == "list":
+    print(json.dumps({"comments": []}))
+else:
+    print("{}")
+'''
+
+
+def acli_stub(root: Path) -> tuple[Path, Path]:
+    """(launcher, state-file). A REAL executable on both machines: cmd.exe cannot run a
+    shebang and /bin/sh cannot run a .bat, and everything downstream is the production path."""
+    py = root / "stub.py"
+    py.write_text(STUB, encoding="utf-8")
+    if os.name == "nt":
+        launcher = root / "acli.bat"
+        launcher.write_text(f'@echo off\r\n"{sys.executable}" "{py}" %*\r\n', encoding="utf-8")
+    else:
+        launcher = root / "acli"
+        launcher.write_text(f'#!/bin/sh\nexec "{sys.executable}" "{py}" "$@"\n',
+                            encoding="utf-8")
+        launcher.chmod(launcher.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+    return launcher, root / "state.json"
 
 
 def child(key: str, sid: str, *, grounded: bool = True, terminal: bool = False,
@@ -535,6 +610,122 @@ def main() -> int:
                         mode="story", parent="AVCH-13")
         c.check("a story-mode stamp tells you to re-run /cicd-label-tasks",
                 "/cicd-label-tasks AVCH-13" in out, out[-300:])
+
+    # ── ⛔ REVIEW FINDING (critical): the board-WRITE path, executed for real ───
+    # Everything above stops at the dry run. These pass --apply through a real acli stub, so
+    # the argv, the comma-join, the --key and the failure arm are on the hook.
+    with TempDir() as tmp:
+        launcher, state = acli_stub(tmp)
+        os.environ["STUB_STATE"] = str(state)
+        state.write_text(json.dumps({"labels": {"SCC-100": ["keep-me"],
+                                                "SCC-101": ["keep-me", "parallel-ok"]}}),
+                         encoding="utf-8")
+        # SCC-101 is UNGROUNDED and carries a stale `parallel-ok`, so which child loses the
+        # label is deterministic - a two-way path collision would leave the tie-break to pick
+        # the loser and the assertion would flap.
+        (tmp / "p.json").write_text(json.dumps(
+            packet([subtask("SCC-100", labels=["keep-me"]),
+                    subtask("SCC-101", grounded=False,
+                            labels=["keep-me", "parallel-ok"])], "SCC-99", "task")),
+            encoding="utf-8")
+        (tmp / "t.json").write_text(json.dumps(
+            {"SCC-100": {"paths": [".agents/a.py"],
+                         "quick_dev": {"eligible": True, "evidence": "one file"}}}),
+            encoding="utf-8")
+        run_script("label_tasks.py", "resolve", "--plan", str(tmp / "p.json"),
+                   "--touchsets", str(tmp / "t.json"), "--out", str(tmp / "v.json"))
+        code, out = run_script("label_tasks.py", "stamp", "--plan", str(tmp / "p.json"),
+                               "--verdicts", str(tmp / "v.json"), "--apply",
+                               "--acli", str(launcher))
+        wrote = json.loads(state.read_text(encoding="utf-8")).get("labels", {})
+        c.check("--apply actually WRITES the computed set to the board",
+                "parallel-ok" in wrote.get("SCC-100", []), f"exit={code} {wrote}")
+        c.check("the write PRESERVES labels this engine does not manage",
+                "keep-me" in wrote.get("SCC-100", []), str(wrote))
+        c.check("the write carries quick-dev through to the board, not just to stdout",
+                "quick-dev" in wrote.get("SCC-100", []), str(wrote))
+        c.check("and the STRIP reaches the board too - not merely the printed report",
+                "parallel-ok" not in wrote.get("SCC-101", []), str(wrote))
+        c.check("the stamped verdict comment is POSTED, not just rendered",
+                any("Parallel check" in b
+                    for b in json.loads(state.read_text(encoding="utf-8")).get("comments", [])),
+                str(json.loads(state.read_text(encoding="utf-8")).get("comments"))[:200])
+
+    # A board that REJECTS the label write must not be reported as a successful stamp.
+    with TempDir() as tmp:
+        launcher, state = acli_stub(tmp)
+        os.environ["STUB_STATE"] = str(state)
+        state.write_text(json.dumps({"label_fail": True, "labels": {}}), encoding="utf-8")
+        (tmp / "p.json").write_text(json.dumps(packet([subtask("SCC-100")], "SCC-99", "task")),
+                                    encoding="utf-8")
+        (tmp / "t.json").write_text(json.dumps({"SCC-100": {"paths": [".agents/a.py"]}}),
+                                    encoding="utf-8")
+        run_script("label_tasks.py", "resolve", "--plan", str(tmp / "p.json"),
+                   "--touchsets", str(tmp / "t.json"), "--out", str(tmp / "v.json"))
+        code, out = run_script("label_tasks.py", "stamp", "--plan", str(tmp / "p.json"),
+                               "--verdicts", str(tmp / "v.json"), "--apply",
+                               "--acli", str(launcher))
+        c.check("a REJECTED label write is reported, never silently counted as stamped",
+                "failed" in out.lower() or "could not" in out.lower(), out[-300:])
+        os.environ.pop("STUB_STATE", None)
+
+    # A comment the board REFUSED must not be reported as posted. Same fail-open class the
+    # review found in `jira_feed.finish`, in the sibling writer.
+    with TempDir() as tmp:
+        launcher, state = acli_stub(tmp)
+        os.environ["STUB_STATE"] = str(state)
+        state.write_text(json.dumps({"comment_fail": True, "labels": {}}), encoding="utf-8")
+        (tmp / "p.json").write_text(json.dumps(packet([subtask("SCC-100")], "SCC-99", "task")),
+                                    encoding="utf-8")
+        (tmp / "t.json").write_text(json.dumps({"SCC-100": {"paths": [".agents/a.py"]}}),
+                                    encoding="utf-8")
+        run_script("label_tasks.py", "resolve", "--plan", str(tmp / "p.json"),
+                   "--touchsets", str(tmp / "t.json"), "--out", str(tmp / "v.json"))
+        code, out = run_script("label_tasks.py", "stamp", "--plan", str(tmp / "p.json"),
+                               "--verdicts", str(tmp / "v.json"), "--apply",
+                               "--acli", str(launcher))
+        c.check("a comment the board REFUSED is never reported as posted",
+                "FAILED" in out or "failed" in out.lower(), out[-300:])
+        os.environ.pop("STUB_STATE", None)
+
+    # ── ⛔ REVIEW FINDING: --mode story is inert on `plan` ──────────────────────
+    # resolve_mode's docstring says the flag exists for "the case the type is wrong on the
+    # board" - but gate_bmad then refuses on that very type, so the ONE input the flag was
+    # added for is the one it cannot serve. An operator told to use it lands back on the
+    # command they came from.
+    with TempDir() as tmp:
+        launcher, state = acli_stub(tmp)
+        os.environ["STUB_STATE"] = str(state)
+        (tmp / "_bmad" / "bmm" / "stories").mkdir(parents=True)
+        (tmp / "_bmad-output" / "planning-artifacts").mkdir(parents=True)
+        (tmp / "_bmad-output" / "planning-artifacts" / "epics.md").write_text(
+            "# Epic 12 - Test\n", encoding="utf-8")
+        state.write_text(json.dumps({"types": {"AVCH-13": "Task"},
+                                     "summaries": {"AVCH-13": "Epic 12 - Test"},
+                                     "rows": []}), encoding="utf-8")
+        code, out = run_script("label_tasks.py", "plan", "--parent", "AVCH-13",
+                               "--mode", "story", "--repo", str(tmp),
+                               "--acli", str(launcher), "--out", str(tmp / "o.json"))
+        c.check("--mode story OVERRIDES a board that mistyped a BMAD epic as a Task",
+                "not an Epic" not in out, out.strip()[:220])
+        os.environ.pop("STUB_STATE", None)
+
+    # ── ⛔ REVIEW FINDING: gate_bmad hands a Subtask to a command that cannot serve it ──
+    # gate_bmad refuses a Subtask parent with "a Subtask and its Subtasks are Task work - run
+    # /smh-label-tasks". gate_task then ACCEPTS it, the child search returns nothing, and the
+    # operator dies on "no children". hierarchyLevel -1 is the floor: nothing nests under a
+    # Subtask, so task mode must refuse it by name and point at the parent Task.
+    msg = refuses("gate_task", {"key": "SCC-160", "summary": "do the thing",
+                                "type": "Subtask"})
+    c.check("task mode refuses a SUBTASK parent - nothing nests under a Subtask",
+            "Subtask" in msg and "parent" in msg.lower(), msg.strip()[:220])
+
+    # ── ⛔ REVIEW FINDING: the console says [NO-STORY] in a mode with no stories ─
+    with TempDir() as tmp:
+        out = stamp_out(tmp, [subtask("SCC-100"), subtask("SCC-101", grounded=False)],
+                        {"SCC-100": {"paths": [".agents/a.py"]}})
+        c.check("a task-mode run never prints the word STORY at an ungrounded child",
+                "NO-STORY" not in out.upper(), out[-300:])
 
     return c.finish()
 
