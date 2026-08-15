@@ -1,11 +1,15 @@
 """flight_recorder.py — the close-out flight recorder must be deterministic, idempotent and honest.
 
 Three blocks map to the SCC-133 acceptance items:
-  A1  `record`     one event file per close-out, keyed on the walkthrough's VERDICT sha (never
-                   HEAD — HEAD moves the moment the event itself is committed), changes read
-                   three-dot from the base so an absorbed `main` never pollutes them; a replay
-                   writes nothing; a missing walkthrough / missing Verdict refuses with nothing
-                   written.
+  A1  `record`     one event file per close-out, keyed on the walkthrough's LATEST canonical
+                   VERDICT sha (never HEAD — HEAD moves the moment the event itself is committed;
+                   never the first stamp — a re-review APPENDS; never a fenced quote), read by the
+                   same reader the close-out preflight trusts; changes read three-dot from
+                   origin/main (a lagging LOCAL main must not attribute sibling edits to this
+                   lane); gate-red only for `fail` receipts (warn is advisory); mentions resolve to
+                   real files or are dropped; a replay writes nothing, a NEW verdict sha writes a
+                   second file; a missing walkthrough / Verdict / commit / base refuses with
+                   nothing written.
   A2  `candidates` the ladder counts DISTINCT tasks per fingerprint (1 evidence, 2 candidate,
                    >=3 action-required); an event with no fingerprints yields no rung; --json parses.
   A3  `surface`    prints nothing and exits 0 on an empty ledger (a boot surface is not a gate),
@@ -53,7 +57,8 @@ def build(root: Path) -> Path:
     git(repo, "config", "user.email", "t@t.t")
     git(repo, "config", "user.name", "t")
     git(repo, "config", "commit.gpgsign", "false")
-    commit(repo, "seed", **{".agents/rules/r.md": "# rule\n", "docs/x.md": "x\n"})
+    commit(repo, "seed", **{".agents/rules/git-policy.md": "# rule\n", "docs/x.md": "x\n",
+                            ".agents/commands/smh-code-review.md": "# cmd\n"})
     return repo
 
 
@@ -84,20 +89,35 @@ def main() -> int:
     if c.block("A1 · record: one file, verdict-sha keyed, idempotent"):
         with TempDir() as tmp:
             repo = build(tmp)
-            git(repo, "checkout", "-qb", "chore/SCC-901-lane")
+            seed = git(repo, "rev-parse", "HEAD")
+            # A sibling landed a RULES edit on origin/main and this machine never pulled: local
+            # main lags, origin/main is ahead, and the lane forks from origin/main (a fresh
+            # worktree does). Recorded against LOCAL main, that sibling edit would become this
+            # lane's rule-edited fingerprint - the second-machine trap (review, 2026-08-15).
+            git(repo, "checkout", "-qb", "sibling")
+            om = commit(repo, "SCC-900 sibling rule", **{".agents/rules/other.md": "# other\n"})
+            git(repo, "update-ref", "refs/remotes/origin/main", om)
+            git(repo, "checkout", "-qb", "chore/SCC-901-lane", om)
             l1 = commit(repo, "SCC-901 code",
-                        **{".agents/rules/r.md": "# rule v2\n", ".agents/scripts/new.py": "x=1\n"})
+                        **{".agents/rules/git-policy.md": "# rule v2\n",
+                           ".agents/scripts/gate_receipt.py": "x=1\n"})
             root = "_artifacts/_main/2026-08-15_lane"
-            wt = (f"# W\n\n## Evidence\n\nVerdict: PASS @ {l1[:7]}\n\n"
-                  f"## Pitfalls\n\n- `gate_receipt.py` refused a DIRTY tree; also see /smh-code-review\n"
+            # Walkthrough shape the house actually produces: a stamp quoted inside a fence (must
+            # be ignored), an OLDER stamp, then the LATEST canonical stamp (a re-review APPENDS).
+            wt = (f"# W\n\n## Evidence\n\n```\nVerdict: FAIL @ deadbee\n```\n\n"
+                  f"Verdict: CONCERNS @ {seed[:7]}\n\nVerdict: PASS @ {l1[:7]}\n\n"
+                  f"## Pitfalls\n\n- `.agents/rules/git-policy.md` bit us; `.agents/scripts/gate_receipt.py` "
+                  f"refused a DIRTY tree; also see /smh-code-review, `walkthrough.md`, `MEMORY.md`, "
+                  f"`nonexistent_thing.py` and /smh-not-a-command\n"
                   f"## Decisions\n\n- keyed on the verdict sha\n")
             l2 = commit(repo, "SCC-901 artifacts", **{
                 f"{root}/walkthrough.md": wt,
                 f"{root}/gates/suite.json": receipt("pass", l1, "suite"),
                 f"{root}/gates/lint.json": receipt("fail", l1, "lint"),
+                f"{root}/gates/maps.json": receipt("warn", l1, "maps"),
             })
-            # main moves on AFTER the lane branched: two-dot diffs would now show main's
-            # file as a deletion; three-dot from the merge-base must not.
+            # local main ALSO moves on after the fork (a different file): two-dot diffs would
+            # show it as a deletion; three-dot from the merge-base must not.
             git(repo, "checkout", "-q", "main")
             commit(repo, "main moves", **{"docs/m.md": "m\n"})
             git(repo, "checkout", "-q", "chore/SCC-901-lane")
@@ -118,28 +138,36 @@ def main() -> int:
             c.check("A1 event carries every schema key", need <= set(data), str(sorted(need - set(data))))
             c.check("A1 file name = <KEY>_<verdict sha7>.json", ev and ev[0].name == f"SCC-901_{l1[:7]}.json",
                     ev[0].name if ev else "-")
-            c.check("A1 sha is the VERDICT sha, tip is HEAD",
+            c.check("A1 sha is the LATEST canonical VERDICT sha (not the fenced quote, not the older stamp, not HEAD); tip is HEAD",
                     data.get("sha") == l1 and data.get("tip") == l2,
                     f"sha={str(data.get('sha'))[:7]} tip={str(data.get('tip'))[:7]} l1={l1[:7]} l2={l2[:7]}")
+            c.check("A1 event dir is the sha's own month (from `when`)",
+                    ev and ev[0].parent.name == str(data.get("when", ""))[:7], ev[0].parent.name if ev else "-")
             c.check("A1 when = the sha's own commit date (ISO, not wall clock)",
                     str(data.get("when", "")).startswith(git(repo, "show", "-s", "--format=%cI", l1)[:10]),
                     str(data.get("when")))
-            c.check("A1 changes = the lane's own files, three-dot (main's later file absent)",
-                    set(data.get("changes", [])) == {".agents/rules/r.md", ".agents/scripts/new.py"},
+            c.check("A1 changes = the lane's own files, three-dot from ORIGIN/main (sibling's rule + local main's later file both absent)",
+                    set(data.get("changes", [])) == {".agents/rules/git-policy.md", ".agents/scripts/gate_receipt.py"},
                     str(data.get("changes")))
             fps = set(data.get("fingerprints", []))
-            c.check("A1 fingerprint rule-edited for the rules file", "rule-edited:.agents/rules/r.md" in fps, str(fps))
-            c.check("A1 rule-edited fires ONLY under .agents/rules/ (not the script)",
-                    not any(f.startswith("rule-edited:") and "rules/" not in f for f in fps), str(fps))
-            c.check("A1 fingerprint gate-red only for the failing receipt",
-                    "gate-red:lint" in fps and "gate-red:suite" not in fps, str(fps))
-            c.check("A1 fingerprint mention: script + command named in a pitfall",
-                    {"mention:gate_receipt.py", "mention:/smh-code-review"} <= fps, str(fps))
-            c.check("A1 no verdict fingerprint for a PASS", not any(f.startswith("verdict:") for f in fps), str(fps))
+            c.check("A1 fingerprint rule-edited for the rules file", "rule-edited:.agents/rules/git-policy.md" in fps, str(fps))
+            c.check("A1 rule-edited fires ONLY under .agents/rules/ (not the script, not the sibling's rule)",
+                    not any(f.startswith("rule-edited:") and f != "rule-edited:.agents/rules/git-policy.md" for f in fps), str(fps))
+            c.check("A1 fingerprint gate-red only for the FAIL receipt (pass and warn are not red)",
+                    "gate-red:lint" in fps and "gate-red:suite" not in fps and "gate-red:maps" not in fps, str(fps))
+            c.check("A1 mention: path-form names normalise to their basename and resolve to real files",
+                    {"mention:git-policy.md", "mention:gate_receipt.py", "mention:/smh-code-review"} <= fps, str(fps))
+            c.check("A1 mention: NEG - doc names, unknown scripts and unknown commands are NOT fingerprints",
+                    not any(x in fps for x in ("mention:walkthrough.md", "mention:MEMORY.md",
+                                               "mention:nonexistent_thing.py", "mention:/smh-not-a-command",
+                                               "mention:policy.md")), str(fps))
+            c.check("A1 no verdict fingerprint family at all (measured noise; verdict lives in outcome)",
+                    not any(f.startswith("verdict:") for f in fps) and data.get("outcome", {}).get("verdict") == "PASS", str(fps))
             c.check("A1 outcome/expected/evidence filled",
                     data.get("outcome", {}).get("verdict") == "PASS"
                     and data.get("expected", {}).get("verdict") == "PASS"
                     and data.get("evidence", {}).get("gates", {}).get("lint", "").startswith("fail@")
+                    and data.get("evidence", {}).get("gates", {}).get("maps", "").startswith("warn@")
                     and data.get("evidence", {}).get("walkthrough", "").endswith("walkthrough.md"),
                     json.dumps(data.get("evidence"))[:200])
             c.check("A1 pitfalls + decisions scraped like the Dev Record",
@@ -154,28 +182,51 @@ def main() -> int:
             code, out = rec("--apply")
             c.check("A1 replay after HEAD moved (artifacts commit) still writes nothing",
                     code == 0 and len(events(repo)) == 1, f"exit={code} n={len(events(repo))}")
+            # a re-review APPENDS a new stamp at a new code sha -> a genuinely new event
+            l3 = commit(repo, "SCC-901 more code", **{".agents/scripts/gate_receipt.py": "x=2\n"})
+            (repo / root / "walkthrough.md").write_text(wt + f"\nVerdict: PASS @ {l3[:7]}\n", encoding="utf-8")
+            commit(repo, "SCC-901 re-review", **{f"{root}/walkthrough.md": (repo / root / "walkthrough.md").read_text()})
+            code, out = rec("--apply")
+            names = sorted(p.name for p in events(repo))
+            c.check("A1 a NEW latest verdict sha writes a SECOND file (idempotency is per (task, sha), not per task)",
+                    code == 0 and names == sorted([f"SCC-901_{l1[:7]}.json", f"SCC-901_{l3[:7]}.json"]), str(names))
 
             # negatives
             code, out = run_script("flight_recorder.py", "record", "--task", "SCC-902",
                                    "--root", "_artifacts/_main/nope", "--repo", str(repo), "--apply")
             c.check("A1 NEG no walkthrough -> exit 2, nothing written",
-                    code == 2 and len(events(repo)) == 1, f"exit={code} {out[-160:]}")
+                    code == 2 and len(events(repo)) == 2, f"exit={code} {out[-160:]}")
             nov = "_artifacts/_main/2026-08-15_noverdict"
             (repo / nov).mkdir(parents=True)
             (repo / nov / "walkthrough.md").write_text("# W\n\nno verdict here\n", encoding="utf-8")
             code, out = run_script("flight_recorder.py", "record", "--task", "SCC-903",
                                    "--root", nov, "--repo", str(repo), "--apply")
             c.check("A1 NEG walkthrough without a Verdict line -> exit 2, nothing written",
-                    code == 2 and len(events(repo)) == 1, f"exit={code} {out[-160:]}")
+                    code == 2 and len(events(repo)) == 2, f"exit={code} {out[-160:]}")
+            bad = "_artifacts/_main/2026-08-15_badsha"
+            (repo / bad).mkdir(parents=True)
+            (repo / bad / "walkthrough.md").write_text("# W\n\nVerdict: PASS @ deadbeef1\n", encoding="utf-8")
+            code, out = run_script("flight_recorder.py", "record", "--task", "SCC-904",
+                                   "--root", bad, "--repo", str(repo), "--apply")
+            c.check("A1 NEG verdict sha that is not a commit -> exit 2, nothing written",
+                    code == 2 and len(events(repo)) == 2, f"exit={code} {out[-160:]}")
+            code, out = run_script("flight_recorder.py", "record", "--task", "SCC-901", "--base", "nope",
+                                   "--root", root, "--repo", str(repo), "--apply")
+            c.check("A1 NEG --base naming a missing ref -> exit 2, nothing written",
+                    code == 2 and len(events(repo)) == 2, f"exit={code} {out[-160:]}")
+            code, out = run_script("flight_recorder.py", "record", "--task", "SCC-901",
+                                   "--root", root, "--repo", str(tmp / "not-there"), "--apply")
+            c.check("A1 NEG --repo that is not a directory -> exit 2 with a reason, no traceback",
+                    code == 2 and "Traceback" not in out and "not a git repo" in out, f"exit={code} {out[-160:]}")
 
     # ── A2 · candidates ───────────────────────────────────────────────────────────
     if c.block("A2 · candidates: distinct-task ladder"):
         with TempDir() as tmp:
             repo = build(tmp)
-            seed_event(repo, "SCC-1", "aaaaaaa", ["rule-edited:.agents/rules/X.md", "gate-red:suite", "mention:foo.py"])
-            seed_event(repo, "SCC-2", "bbbbbbb", ["rule-edited:.agents/rules/X.md", "gate-red:suite"])
+            seed_event(repo, "SCC-1", "aaaaaaa", ["rule-edited:.agents/rules/X.md", "gate-red:suite", "mention:foo.py", "gate-red:maps"])
+            seed_event(repo, "SCC-2", "bbbbbbb", ["rule-edited:.agents/rules/X.md", "gate-red:suite", "mention:foo.py"])
             seed_event(repo, "SCC-2", "ccccccc", ["gate-red:suite"])          # same task again
-            seed_event(repo, "SCC-3", "ddddddd", ["rule-edited:.agents/rules/X.md"])
+            seed_event(repo, "SCC-3", "ddddddd", ["rule-edited:.agents/rules/X.md", "mention:foo.py"])
             seed_event(repo, "SCC-4", "eeeeeee", [])                          # negative control
             code, out = run_script("flight_recorder.py", "candidates", "--repo", str(repo), "--json")
             try:
@@ -194,8 +245,15 @@ def main() -> int:
                     g.get("rung") == "candidate" and g.get("count") == 2, json.dumps(g)[:200])
             c.check("A2 candidate rung carries no commission proposal",
                     "commission the script" not in g.get("proposal", ""), g.get("proposal", "-"))
+            c.check("A2 shas are aligned with tasks (one sha per distinct task, so the evidence pairs read off)",
+                    len(g.get("shas", [])) == len(g.get("tasks", [])) == 2, json.dumps(g)[:200])
             m = ladder.get("mention:foo.py", {})
-            c.check("A2 1 task -> evidence", m.get("rung") == "evidence" and m.get("count") == 1, json.dumps(m)[:120])
+            c.check("A2 mention family reaches action-required with its own commission wording",
+                    m.get("rung") == "action-required" and "commission the script" in m.get("proposal", "")
+                    and "foo.py" in m.get("proposal", ""), json.dumps(m)[:200])
+            e = ladder.get("gate-red:maps", {})
+            c.check("A2 1 task -> evidence", e.get("rung") == "evidence" and e.get("count") == 1, json.dumps(e)[:120])
+            c.check("A2 no verdict rungs exist (family removed)", not any(k.startswith("verdict:") for k in ladder), str(list(ladder)))
             c.check("A2 NEG event with no fingerprints yields no rung",
                     not any("SCC-4" in r.get("tasks", []) for r in ladder.values()), str(list(ladder)))
             code, out = run_script("flight_recorder.py", "candidates", "--repo", str(repo))
@@ -207,6 +265,12 @@ def main() -> int:
             repo = build(tmp)
             code, out = run_script("flight_recorder.py", "surface", "--repo", str(repo))
             c.check("A3 empty ledger -> no output, exit 0", code == 0 and out.strip() == "", out[-120:])
+            (tmp / "plain").mkdir()
+            code, out = run_script("flight_recorder.py", "surface", "--repo", str(tmp / "plain"))
+            c.check("A3 non-git --repo -> exit 0 and NOTHING on stdout (no [ERR] leaks into a boot)",
+                    code == 0 and out.strip() == "", out[-120:])
+            code, out = run_script("flight_recorder.py", "surface", "--repo", str(tmp / "missing"))
+            c.check("A3 missing --repo -> exit 0, no traceback", code == 0 and "Traceback" not in out, out[-120:])
             (repo / EVENTS_REL / "2026-08").mkdir(parents=True)
             (repo / EVENTS_REL / "2026-08" / "garbage.json").write_text("{not json", encoding="utf-8")
             code, out = run_script("flight_recorder.py", "surface", "--repo", str(repo))
@@ -228,6 +292,13 @@ def main() -> int:
                     r.returncode == 0 and "gate-red:suite" in r.stdout, (r.stdout + r.stderr)[-300:])
             c.check("A3 hook still prints its standing gate text (nothing lost)",
                     "MAIN IS GATED" in r.stdout, "")
+        with TempDir() as tmp:
+            repo = build(tmp)                                     # empty ledger
+            env = dict(os.environ, CLAUDE_PROJECT_DIR=str(repo))
+            r = subprocess.run(["sh", str(HOOK)], capture_output=True, text=True, env=env, cwd=str(tmp))
+            c.check("A3 hook on an EMPTY ledger adds no recorder text and no extra blank line (run from a foreign cwd)",
+                    r.returncode == 0 and "FLIGHT-RECORDER" not in r.stdout
+                    and not r.stdout.rstrip("\n").endswith("\n\n"), r.stdout[-160:])
 
     return c.finish()
 

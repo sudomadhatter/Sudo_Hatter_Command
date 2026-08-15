@@ -819,9 +819,12 @@ install, and no code changes when you do.
 **⭐ The close-out now leaves a flight event behind (SCC-133, under SCC-38).** Between the gate and
 the merge, Step 2.5 runs `flight_recorder.py record`: one small file per lane under
 `_artifacts/_main/workflow-events/<YYYY-MM>/`, keyed on the walkthrough's verdict sha, carrying the
-changed files, the receipts, the walkthrough's decisions / pitfalls / follow-ons and four mechanical
-fingerprints (a rules file rewritten · a red receipt · a non-PASS verdict · a script or command named
-in a pitfall). Nothing reads across lanes today except this. When the same fingerprint shows up in
+changed files, the receipts, the walkthrough's decisions / pitfalls / follow-ons and three mechanical
+fingerprints (a rules file rewritten · a receipt that **failed** — `warn` is advisory and does not
+count · a script, command or rule that really exists, named in a pitfall). There is deliberately no
+"verdict" fingerprint: CONCERNS merges and FAIL never reaches this step, so it could only propose
+noise. The multi-lane door (`/smh-merge-multiple-workingtrees`, its 4b½) records the same event per
+lane. Nothing reads across lanes today except this. When the same fingerprint shows up in
 **three different lanes**, your next session start prints one `FLIGHT-RECORDER PROPOSAL` line for it —
 phrased "this prose rule was rewritten in 3 lanes — commission the script that enforces it" — with
 the tickets and shas as evidence. **What you should never see:** a ticket minted from it, a

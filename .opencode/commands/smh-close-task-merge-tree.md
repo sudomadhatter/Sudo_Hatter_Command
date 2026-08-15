@@ -259,12 +259,20 @@ the merge** — the recorder writes one small file keyed on the walkthrough's `V
 sha, and that file rides the merge like a receipt does:
 
 ```bash
-python3 .agents/scripts/flight_recorder.py record --task <JIRA-KEY> \
+python3 "<worktree>/.agents/scripts/flight_recorder.py" record --task <JIRA-KEY> \
         --root <task-artifacts folder> --repo "<worktree>" --apply      # PC: `python`
-git -C "<worktree>" add _artifacts/_main/workflow-events/
-git -C "<worktree>" commit -F <msg>     # "<KEY> chore(recorder): flight event @ <sha7> [sop-ok]"
-git -C "<worktree>" push
+# Commit ONLY when it wrote something: on "already recorded" (a resumed close-out) or a
+# refusal there is nothing staged, and a bare `git commit` would exit 1 for no reason.
+if git -C "<worktree>" status --porcelain _artifacts/_main/workflow-events/ | grep -q .; then
+  git -C "<worktree>" add _artifacts/_main/workflow-events/
+  git -C "<worktree>" commit -F <msg>   # "<KEY> chore(recorder): flight event @ <sha7> [sop-ok]"
+  git -C "<worktree>" push
+fi
 ```
+
+The script path is anchored on **`<worktree>`**, not the cwd — the door's cwd is the shared
+checkout, and the lane that ships a recorder change (this one included) does not have that
+change on `main` yet.
 
 **Why here and not after the merge:** after Step 3 the only tree that has the merge is `main`'s,
 and a file written there is either left untracked or committed straight onto `main` outside the

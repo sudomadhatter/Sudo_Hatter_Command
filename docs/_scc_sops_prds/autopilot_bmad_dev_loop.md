@@ -310,6 +310,25 @@ Seven guarantees, each earned by a real incident:
    "tests green." A red gate stamps `TESTS RED` (exit 4); only a green gate advances the story to
    `review` and stamps `COMPLETE`. (A missing runner stamps `TESTS UNVERIFIED` rather than a false green.)
 
+**Per-stage runner logic:**
+
+```mermaid
+flowchart TD
+    A["Invoke-Stage N"] --> B["claude -p ... (attempt)"]
+    B --> C{"parsed JSON<br/>& not is_error?"}
+    C -- yes --> D["add cost; return result text"]
+    C -- no --> E{"transient<br/>& attempt < MaxRetries?"}
+    E -- yes --> F["sleep backoff"] --> B
+    E -- no --> G["throw -> CRASHED stamp"]
+    D --> H{"result has<br/>PIPELINE_BLOCKER?"}
+    H -- yes --> I["PAUSED stamp, exit 2<br/>(needs Daniel, not a crash)"]
+    H -- no --> J{"handoff artifact<br/>on disk?"}
+    J -- missing --> W["! WARNING (no crash)"] --> K
+    J -- present --> K["Set-Progress; next stage"]
+```
+
+---
+
 ### 6a. Done-means-green — the law the engines port (SCC-134, under SCC-38)
 
 The seven guarantees above are what the v2 engine *does*. This block is what every engine — the
@@ -341,25 +360,6 @@ That was **dropped, not deferred**, on the 2026-08-15 assessment: v2 stops on `T
 operator by design (guarantee 5's spirit — only a human decides what a red means), and reviving
 an auto-fix loop is a design reversal, not a tuning knob. If it is ever wanted it returns as an
 opt-in flag under a new ticket, with these five points as its floor.
-
-**Per-stage runner logic:**
-
-```mermaid
-flowchart TD
-    A["Invoke-Stage N"] --> B["claude -p ... (attempt)"]
-    B --> C{"parsed JSON<br/>& not is_error?"}
-    C -- yes --> D["add cost; return result text"]
-    C -- no --> E{"transient<br/>& attempt < MaxRetries?"}
-    E -- yes --> F["sleep backoff"] --> B
-    E -- no --> G["throw -> CRASHED stamp"]
-    D --> H{"result has<br/>PIPELINE_BLOCKER?"}
-    H -- yes --> I["PAUSED stamp, exit 2<br/>(needs Daniel, not a crash)"]
-    H -- no --> J{"handoff artifact<br/>on disk?"}
-    J -- missing --> W["! WARNING (no crash)"] --> K
-    J -- present --> K["Set-Progress; next stage"]
-```
-
----
 
 ## 7. The artifact handoff folder
 

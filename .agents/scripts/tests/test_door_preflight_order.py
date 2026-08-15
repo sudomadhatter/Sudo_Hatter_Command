@@ -174,6 +174,12 @@ def main() -> int:
         ok, detail = order_ok(lines, *REQUIRED_ORDER)
         c.check(f"{label} · ORDER pre-flight → wait → mint → push", ok, detail)
 
+        # SCC-133: the flight event is recorded BEFORE the merge and before the gate ref exists -
+        # after the merge the only tree holding it is main's, and a write there is a main write
+        # outside the token. The paragraph says why; this pins the ORDER of the fenced commands.
+        ok, detail = order_ok(lines, "flight_recorder.py", GATE_REF)
+        c.check(f"{label} · ORDER flight_recorder.py record → pre-flight ref (record is pre-merge)", ok, detail)
+
         c.check(f"{label} · deletes the gate ref afterwards",
                 idx(lines, "--delete gate/main-") >= 0,
                 "an abandoned pre-flight ref per ship, otherwise")

@@ -21,17 +21,35 @@ materialised candidates view - a derived file every lane regenerates is a guaran
 and a second copy that can drift; the ledger is tiny and the ladder is recomputed on every read.
 
 KEYING. `sha` is the walkthrough's `Verdict: ... @ <sha>` sha - the house's existing notion of
-"the code that landed" - NOT HEAD. `record` runs pre-merge (close-out Step 2.5) and its output is
+"the code that landed" - NOT HEAD - read by the SAME reader the close-out preflight trusts
+(`task_preflight.strip_fenced` + `VERDICT_RE`, LATEST stamp governs; a re-review APPENDS). The
+first cut used a first-match search on the raw text: on the landed SCC-83 walkthrough (stamps
+FAIL -> PASS -> PASS) it would have recorded FAIL, and a stamp quoted inside a code fence would
+have won over the real one. Two readers of one stamp is one reader too many.
+BASE. `changes` are diffed three-dot from `origin/main` when that ref exists, else `main`. The
+door requires origin/main absorbed but only fast-forwards LOCAL main after the merge - and on
+the second machine local main routinely lags - so a lane recorded against local `main` would
+carry every sibling rules edit landed since the last pull as its own `rule-edited:` fingerprint. `record` runs pre-merge (close-out Step 2.5) and its output is
 committed as an artifacts-only commit, so HEAD moves the moment the event exists; keyed on HEAD a
 resumed close-out would record a second event whose only change is the first event. `tip`
 records HEAD for the audit trail. `when` is that sha's own commit date, never the wall clock, so
 `record` is reproducible and the tests are deterministic.
 
-FINGERPRINTS - mechanical, four families, no NLP:
+FINGERPRINTS - mechanical, three families, no NLP:
   rule-edited:<path>   a file under .agents/rules/ in the lane's changes (the prose was rewritten)
-  gate-red:<gate>      a receipt whose result is not `pass`
-  verdict:<X>          a review verdict that is not PASS
-  mention:<token>      a script / command / rule name inside a pitfall bullet
+  gate-red:<gate>      a receipt whose result is `fail` - and ONLY fail. gate_receipt.py has four
+                       results (pass / warn / fail / unrunnable); `warn` is advisory and the review
+                       adopts it, `unrunnable` means the tool never ran. Neither is "went red".
+  mention:<name>       a script / command / rule that EXISTS in this repo, named in a pitfall bullet
+                       - path-form or bare, normalised to its basename, and only if the basename is
+                       a real file under .agents/{rules,commands,scripts,hooks} or .githooks (or a
+                       real /smh-* /cicd-* command). A name that resolves to nothing is not a
+                       fingerprint: `walkthrough.md`, `MEMORY.md` and a truncated `policy.md` are
+                       exactly the junk this filter exists to keep off the ladder (review, 2026-08-15).
+There is NO verdict family. Measured over the 83 landed lobby walkthroughs at review time:
+CONCERNS stamps in 10 lanes (CONCERNS merges, so "review verdict CONCERNS in 3 lanes" proposes
+nothing anyone can act on) and FAIL never reaches this step (a FAIL lane does not merge). The
+verdict is still RECORDED in `outcome` - it is evidence, not a recurrence signal.
 The master plan's "post-fix regression" trigger is dropped: nothing here can detect one
 mechanically, and a rung an agent asserts by hand is the vacuous class SCC-125 measured.
 
@@ -48,14 +66,28 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import wf_common as wf                                     # noqa: E402
-from jira_feed import _SCRAPE_HEADS, _VERDICT_RE, scrape_bucket   # noqa: E402
+from jira_feed import _SCRAPE_HEADS, scrape_bucket         # noqa: E402
+from task_preflight import VERDICT_RE, strip_fenced        # noqa: E402  (the governing reader)
 
 SCHEMA_V = 1
 EVENTS_REL = Path("_artifacts/_main/workflow-events")
 RULES_PREFIX = ".agents/rules/"
-# A script/command/rule NAME inside a pitfall bullet. Two shapes: `something.py|.sh|.ps1|.md`
-# and a slash-command `/smh-...` or `/cicd-...`. Backticks and trailing punctuation stripped.
-_MENTION_RE = re.compile(r"(?:(?<![\w/])([\w][\w\-]*\.(?:py|sh|ps1|md))\b|(/(?:smh|cicd)-[\w\-]+))")
+# A script/command/rule NAME inside a pitfall bullet, path-form or bare - the whole path token
+# is consumed and reduced to its basename, so `.agents/rules/git-policy.md` and `git-policy.md`
+# are ONE fingerprint (the first cut's lookbehind restarted mid-token after a hyphen and minted
+# `policy.md`; four of five review lenses found it). Slash commands: `/smh-...` or `/cicd-...`.
+_MENTION_RE = re.compile(r"(?:((?:[\w.~\-]+/)*[\w\-]+\.(?:py|sh|ps1|md))\b|(/(?:smh|cicd)-[\w\-]+))")
+_MENTION_DIRS = (".agents/rules", ".agents/commands", ".agents/scripts", ".agents/hooks", ".githooks")
+
+
+def mention_targets(repo: Path) -> set[str]:
+    """Basenames a `mention:` may resolve to - real files only. Recomputed per record; cheap."""
+    out: set[str] = set()
+    for rel in _MENTION_DIRS:
+        d = repo / rel
+        if d.is_dir():
+            out.update(p.name for p in d.rglob("*") if p.is_file())
+    return out
 
 RUNGS = ((3, "action-required"), (2, "candidate"), (1, "evidence"))
 
@@ -66,12 +98,29 @@ def say(msg: str) -> None:
 
 # ── paths ──────────────────────────────────────────────────────────────────────
 
-def resolve_repo(arg: str | None) -> Path:
+def try_repo(arg: str | None) -> Path | None:
+    """The git toplevel for `arg` (or cwd), or None - never raises, never prints."""
     start = Path(arg).resolve() if arg else Path.cwd()
+    if not start.is_dir():
+        return None
     r = wf.git(["rev-parse", "--show-toplevel"], start)
-    if r.returncode != 0:
-        wf.die(f"not a git repo: {start}")
-    return Path(r.stdout.strip()).resolve()
+    return Path(r.stdout.strip()).resolve() if r.returncode == 0 else None
+
+
+def resolve_repo(arg: str | None) -> Path:
+    repo = try_repo(arg)
+    if repo is None:
+        wf.die(f"not a git repo (or not a directory): {arg or Path.cwd()}")
+    return repo
+
+
+def resolve_base(repo: Path, arg: str | None) -> str:
+    """`--base` if given; else origin/main when the ref exists (what the preflight measures
+    against, and what a lagging local main is NOT); else main."""
+    if arg:
+        return arg
+    r = wf.git(["rev-parse", "--verify", "-q", "origin/main^{commit}"], repo)
+    return "origin/main" if r.returncode == 0 else "main"
 
 
 def events_dir(repo: Path) -> Path:
@@ -115,21 +164,26 @@ def read_receipts(root: Path) -> dict[str, dict]:
     return out
 
 
-def fingerprints(changes: list[str], receipts: dict[str, dict], verdict: str,
-                 pitfalls: list[str]) -> list[str]:
+def fingerprints(changes: list[str], receipts: dict[str, dict], pitfalls: list[str],
+                 targets: set[str]) -> list[str]:
     fps: list[str] = []
     for path in changes:
         if path.startswith(RULES_PREFIX):
             fps.append(f"rule-edited:{path}")
     for gate, data in receipts.items():
-        if str(data.get("result", "")).lower() != "pass":
+        if str(data.get("result", "")).lower() == "fail":       # fail ONLY - see the docstring
             fps.append(f"gate-red:{gate}")
-    if verdict and verdict.upper() != "PASS":
-        fps.append(f"verdict:{verdict.upper()}")
     for bullet in pitfalls:
         for m in _MENTION_RE.finditer(bullet):
-            tok = m.group(1) or m.group(2)
-            fp = f"mention:{tok}"
+            if m.group(2):                                       # /smh-x -> .agents/commands/smh-x.md
+                name = m.group(2)
+                if f"{name[1:]}.md" not in targets:
+                    continue
+            else:
+                name = m.group(1).rsplit("/", 1)[-1]             # basename, path-form or bare
+                if name not in targets:
+                    continue
+            fp = f"mention:{name}"
             if fp not in fps:
                 fps.append(fp)
     return fps
@@ -140,13 +194,14 @@ def build_event(repo: Path, task: str, root: Path, base: str, trigger: str) -> d
     if not wt.is_file():
         wf.die(f"no walkthrough at {wt} - nothing to record (the door blocks on this too)")
     text = wf.read_text(wt)
-    m = _VERDICT_RE.search(text)
-    if not m or not m.group(2):
-        wf.die(f"{wt.name} carries no `Verdict: ... @ <sha>` line - the event is keyed on that sha")
-    verdict = m.group(1).upper()
-    r = wf.git(["rev-parse", "--verify", m.group(2) + "^{commit}"], repo)
+    stamps = [(m.group(1).upper(), m.group(2)) for m in VERDICT_RE.finditer(strip_fenced(text))]
+    if not stamps:
+        wf.die(f"{wt.name} carries no canonical `Verdict: ... @ <sha>` line (fences stripped) - "
+               f"the event is keyed on that sha")
+    verdict, sha7 = stamps[-1]                                   # LATEST governs; a re-review APPENDS
+    r = wf.git(["rev-parse", "--verify", "-q", sha7 + "^{commit}"], repo)
     if r.returncode != 0:
-        wf.die(f"verdict sha {m.group(2)} is not a commit in {repo}")
+        wf.die(f"verdict sha {sha7} is not a commit in {repo}")
     sha = r.stdout.strip()
     tip = wf.git_head(repo) or ""
     when = wf.git(["show", "-s", "--format=%cI", sha], repo).stdout.strip()
@@ -182,7 +237,7 @@ def build_event(repo: Path, task: str, root: Path, base: str, trigger: str) -> d
         "decisions": buckets["decisions"],
         "pitfalls": buckets["pitfalls"],
         "followons": buckets["followons"],
-        "fingerprints": fingerprints(changes, receipts, verdict, buckets["pitfalls"]),
+        "fingerprints": fingerprints(changes, receipts, buckets["pitfalls"], mention_targets(repo)),
     }
 
 
@@ -196,7 +251,7 @@ def cmd_record(args) -> int:
     root = Path(args.root)
     if not root.is_absolute():
         root = repo / root
-    ev = build_event(repo, args.task, root, args.base, args.trigger)
+    ev = build_event(repo, args.task, root, resolve_base(repo, args.base), args.trigger)
     path = event_path(repo, ev)
     rel = str(path.relative_to(repo)).replace("\\", "/")
     if path.is_file():
@@ -225,9 +280,9 @@ def ladder(events: list[dict]) -> list[dict]:
         for fp in ev.get("fingerprints") or []:
             row = seen.setdefault(fp, {"fingerprint": fp, "tasks": [], "shas": [], "first": ev.get("when", ""),
                                        "last": ev.get("when", "")})
-            if ev["task"] not in row["tasks"]:
+            if ev["task"] not in row["tasks"]:                  # one lane = one hit, one sha
                 row["tasks"].append(ev["task"])
-            row["shas"].append(str(ev["sha"])[:7])
+                row["shas"].append(str(ev["sha"])[:7])
             row["first"] = min(row["first"], ev.get("when", "") or row["first"])
             row["last"] = max(row["last"], ev.get("when", "") or row["last"])
     out: list[dict] = []
@@ -253,8 +308,6 @@ def proposal(fp: str, n: int, rung: str) -> str:
                 f"it ({what})")
     if kind == "gate-red":
         return f"gate `{what}` went red in {lanes} - commission the script or fix that makes it stay green"
-    if kind == "verdict":
-        return f"review verdict {what} in {lanes} - commission the script for whatever keeps failing review"
     return f"`{what}` named as a pitfall in {lanes} - commission the script that removes the trap"
 
 
@@ -278,7 +331,9 @@ def cmd_surface(args) -> int:
     """Boot surface: action-required rungs only, one line each, ALWAYS exit 0. Silent when there
     is nothing at that rung - the positive control lives in the test, not in this output."""
     try:
-        repo = resolve_repo(args.repo)
+        repo = try_repo(args.repo)                 # never wf.die here: die prints [ERR] to STDOUT
+        if repo is None:
+            return 0
         rows = [r for r in ladder(load_events(repo)) if r["rung"] == "action-required"]
         for r in rows:
             say(f"FLIGHT-RECORDER PROPOSAL (not owed; the review's triage or the operator's word "
@@ -302,7 +357,7 @@ def main() -> int:
     common(p)
     p.add_argument("--task", required=True, help="the Jira key, e.g. SCC-160")
     p.add_argument("--root", required=True, help="the task's artifacts folder (walkthrough.md + gates/)")
-    p.add_argument("--base", default="main", help="the branch the lane forked from (default main)")
+    p.add_argument("--base", help="the ref the lane forked from (default: origin/main if it exists, else main)")
     p.add_argument("--trigger", default="close-out")
     p.add_argument("--apply", action="store_true", help="write the event file (else dry run)")
     p.set_defaults(fn=cmd_record)
