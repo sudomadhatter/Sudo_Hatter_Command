@@ -58,7 +58,7 @@ repo's project from `.agents/jira.conf` and the EPIC's ticket key (it's in the e
    nothing to compare against, and it is never re-evaluated. A boolean also cannot express
    *"safe after AVCH-34"*. The proof it never worked is empirical — **zero** tickets across `SCC`
    and `AVCH` carried the label. Never re-add it here. Once the epic's stories are all written:
-   **`/cicd-parallel-check <EPIC-KEY>`**.
+   **`/cicd-label-tasks <EPIC-KEY>`**.
 2. **Mint it — one call does the dedupe, the outline, and the proof** (SCC-49: a ticket with only a
    summary is a title, not a ticket, and the whole board was minted that way):
 
@@ -83,7 +83,7 @@ repo's project from `.agents/jira.conf` and the EPIC's ticket key (it's in the e
 3. **Stamp the story file frontmatter** — the file is the machine truth, the board only mirrors it:
    `jira_key: <KEY>` (Step 4.5 of `/cicd-update-sprint-memory` moves the ticket by reading exactly
    this field), plus the rulings: `lane: quick-dev|full`, `blocked_by: [<keys>]` (omit when empty).
-   ⛔ No `parallel_ok:` — same reason as above; `/cicd-parallel-check` owns that field.
+   ⛔ No `parallel_ok:` — same reason as above; `/cicd-label-tasks` owns that field.
 4. **Set its state:** blocked → `acli jira workitem link create --out <BLOCKER-KEY> --in <KEY> --type
    Blocks`, then transition to `Blocking` if the board has that status (else the label carries it).
    ⛔ The status is **`Blocking`**, not `Blocked` — `Blocked` exists on neither board and the

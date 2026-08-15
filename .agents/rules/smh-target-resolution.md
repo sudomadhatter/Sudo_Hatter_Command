@@ -9,13 +9,15 @@ Every `/cicd-*` command operates on exactly ONE target — never the lobby. The 
 the obligations (echo contract · STOP-and-ask · binding STOPs) inline and points at the variant here for
 the mechanics. This file is the only place the ladder is written out.
 
-> **The one named exception: `/cicd-parallel-check` (SCC-56, 2026-08-09).** It does not walk this ladder
+> **The one named exception: `/cicd-label-tasks` (SCC-56, 2026-08-09; renamed from
+> `/cicd-parallel-check` by SCC-155).** It does not walk this ladder
 > at all — it derives its target from the Jira key it was given, via each repo's `.agents/jira.conf`
 > (`AVCH-13` → `Projects/AGY_AVIATIONCHAT`, `SCC-12` → the lobby), so the target is never asked and never
 > guessed. **The lobby is in scope for it, and only for it,** because the lobby carries a full BMAD
 > install and qualifies the day it holds BMAD stories — the discriminator is *BMAD stories*, not
 > project-vs-lobby. It stays `/cicd-*` because it does not *roam* the lobby: it follows the epic it was
-> handed. See `.agents/commands/cicd-parallel-check.md` Step 0.
+> handed. See `.agents/commands/cicd-label-tasks.md` Step 0. Its `smh-` twin `/smh-label-tasks`
+> varies the same way, for the same reason.
 >
 > ⛔ **This exception is CLOSED, not a precedent.** It is one named command with a derived, single
 > target. A command that resolves its target by asking, by the active-project pointer, or by standing in

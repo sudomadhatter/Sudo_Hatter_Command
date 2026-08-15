@@ -48,7 +48,7 @@ single session on 2026-08-09, which is why they are now written down.
   this", "that is a bug and a problem". These commission the work; the plan step is still owed.
   Being told to build something is the *reason* to write a plan, not permission to skip it.
 - ⛔ **An answer to a clarifying question.** That is information, not consent.
-- ⛔ **A correction or an overrule** ("no, it is `cicd-parallel-check`"). A correction narrows the
+- ⛔ **A correction or an overrule** ("no, it is `cicd-label-tasks`"). A correction narrows the
   plan; it does not open the gate. **Edit the plan and stop AGAIN** — a correction restarts the
   wait, it never ends it.
 
@@ -60,6 +60,34 @@ choice you present. Writing the word yourself and then reading it back off the o
 authored by you. This is exactly how the gate was bypassed on 2026-08-09.
 
 Present options for *design forks*. Ask for approval in **plain text**, and wait.
+
+### One approval MAY cover several plans — only as `/smh-plan-task`'s recorded batch (SCC-155)
+
+**Narrow, and every word of it is load-bearing.** `/smh-plan-task` plans a whole Task and all its
+subtasks in one pass, then presents every plan, every `Audit verdict:` and the parallel table at
+**one** stop. The operator's approval there covers **exactly the plans that stop listed** — and it
+is only an approval at all when all four hold:
+
+1. The operator's **verbatim words** are recorded into each covered plan, naming the subtask keys
+   the batch covers. **You never write the gate word yourself** — the quote is the artifact, the
+   same way the main-write gate takes the operator's own sentence rather than a flag (SCC-37).
+2. Every covered plan carried `Audit verdict: GO` **at the moment of the stop**. A NO-GO lane is
+   never in a batch.
+3. It covers **those plans as they stood**, and that is **mechanically checkable** because the
+   approval line ends `— recorded at <sha>`. `/smh-quick-dev` Step 1.5 compares
+   `git log -1 --format=%h -- <the plan>` against that sha; equal means untouched, anything else
+   means **that lane's gate re-arms** and it stops for its own approval. A batch cannot approve
+   text the operator never saw.
+   ⛔ **No sha on the line = no approval.** The clause originally said "unchanged since the commit
+   that recorded it" while nothing anywhere recorded which commit that was — so the check had one
+   operand and an agent wanting to proceed would supply the other. A missing operand is a re-armed
+   gate, never a pass (SCC-155).
+4. It covers **planning only**. It is not merge approval, not a ticket transition, and it never
+   carries to a lane that was not on the list.
+
+⛔ This is **not** a general "batch mode". No other command may claim it, and an approval you
+assemble from several messages is not a quote. Everything in § What is NOT Approval still applies
+to each item inside the batch.
 
 ### The carve-outs are a CLOSED list
 

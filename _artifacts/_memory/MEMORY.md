@@ -31,7 +31,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 
 ## Sprint, stories & close-out
 - **Reading the board** — [it recommends stale work](sprint-dependency-map-recommends-stale-work.md) (lags the YAML; check status first) · [⛔ scrum board RETIRED 08-07](sudo-update-scrum-board-five-zones.md) (SCC-13; recovery ref + the SCC-56 spec are inside).
-- [`parallel-ok` is a SET property](parallel-ok-is-a-set-property.md) — ① can't rule it (siblings don't exist yet); moved OUT of ① to on-request SCC-56 `/sudo-parallel-check`. `quick-dev` + `blocked` stay.
+- [`parallel-ok` is a SET property](parallel-ok-is-a-set-property.md) — ① can't rule it (siblings don't exist yet); moved OUT of ① to an on-request parent pass, renamed TWICE → now `/cicd-label-tasks` + `/smh-label-tasks`, which stamp `quick-dev` too (SCC-155).
 - **Multi-lane landing** — [lanes fix one finding](parallel-lanes-fix-the-same-finding.md) (re-diff the epic branch; the SET rule binds on file OVERLAP) · [close-out shape](multi-lane-closeout-board-merge-shape.md) (flip from the STORY FILE) · [landing ≠ close-out](landing-is-not-closeout.md) (check git BEFORE closing out).
 - [⭐⛔ Operator acts in WORDS; agent does EVERY board write](review-status-means-needs-operator.md) — ALL lanes: `approved` / "its done" / a command trigger a ceremony and the agent types every status inside it; `review` = blocked-on-operator ONLY; a flow leaving the operator a manual Jira edit is BROKEN by definition.
 - [Status-flip contract](story-status-flip-contract.md) — BMAD/AVCH stories; read as WHEN never WHO: `done` only inside the operator-invoked close-out, typed by the agent running it — the rule bans self-certification, not agent typing.

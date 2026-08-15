@@ -1,8 +1,13 @@
 ---
-description: After an epic's stories are WRITTEN, answer "which of these can I run side by side?" — one snapshot over one BMAD epic's children. Reads every story file, extracts what each will actually modify, computes the largest set with no file overlap, and tags the winners `parallel-ok` on the board. Stamps the set it was computed against so it can detect its own staleness. States, never starts.
+description: After an epic's stories are WRITTEN, answer "which of these can I run side by side, and which are small enough for the quick lane?" — one snapshot over one BMAD epic's children. Reads every story file, extracts what each will actually modify, computes the largest set with no file overlap, and tags the winners `parallel-ok` + `quick-dev` on the board. Stamps the set it was computed against so it can detect its own staleness. States, never starts.
+platforms: [opencode, antigravity, claude, codex]
 ---
 
-# /cicd-parallel-check — Which of this epic's stories can run in parallel? (SCC-56)
+# /cicd-label-tasks — Which of this epic's stories can run in parallel? (SCC-56, SCC-155)
+
+> **Renamed from `/cicd-parallel-check` by SCC-155**, when the pass grew its second label and
+> gained an `smh-` twin. Same engine, same set math, same stamp — the old name is retired and
+> nothing in the toolkit answers to it any more.
 
 > **Rules in force for this command:**
 > - `.agents/rules/smh-target-resolution.md` — the Step-0 ladder. **This command varies from
@@ -41,7 +46,7 @@ Grounded stories unlock approval; nothing else does.
 **The target is derived from the key, not asked and not guessed.** Each repo declares its Jira
 project in its own `.agents/jira.conf` (`JIRA_KEYS="SCC"` in the lobby, `"AVCH"` in
 `Projects/AGY_AVIATIONCHAT`), so `AVCH-13` resolves to AGY and `SCC-99` resolves to the command
-centre. `parallel_check.py` does this itself; you do not pick a project.
+centre. `label_tasks.py` does this itself; you do not pick a project.
 
 **This is a deliberate variance from `smh-target-resolution.md` §STD, and it is why a `cicd-*`
 command may reach the lobby here.** It does not roam the command centre — it **follows the epic**.
@@ -55,13 +60,15 @@ project key is a misconfiguration and the script says so rather than picking one
 ## Step 1 — Enumerate and ground
 
 ```bash
-python3 .agents/scripts/parallel_check.py plan --parent <PARENT-KEY> --out /tmp/pc-plan.json
+python3 .agents/scripts/label_tasks.py plan --parent <PARENT-KEY> --out /tmp/lt-plan.json
 ```
 
 It refuses first and enumerates second:
 
-- **not a BMAD epic** → refused **by name**. A grouping epic (`CI/CD Improvment`, `Thin toolkit`)
-  has `Task` children with no story files; this command assesses BMAD stories only.
+- **not an Epic at all** → refused **by name** and handed to **`/smh-label-tasks <TASK-KEY>`**.
+  A `Task` and its `Subtask`s are Task work, and there is a command for exactly that.
+- **a grouping epic** (`CI/CD Improvment`, `Thin toolkit`) → refused by name. Its children are
+  `Task`s with no story files; assess one of those Tasks with `/smh-label-tasks` instead.
 - **no `_bmad/bmm/stories/` in that repo** → refused. That is the lobby's answer *today*, and it
   stops being so on its own.
 
@@ -105,6 +112,7 @@ Write one JSON object keyed by ticket:
     "creates":    ["frontend/src/components/__tests__/CheckrideStates.test.tsx"],
     "imports":    [],
     "blocked_by": [],
+    "quick_dev":  {"eligible": true, "evidence": "one component + its test; P2, no new surface"},
     "evidence":   "story L86 'Files changed:' names AgentCards.tsx (DpeLiveCard) + one new test file"
   }
 }
@@ -115,17 +123,36 @@ Write one JSON object keyed by ticket:
 - **`imports`** — a module or symbol this story consumes that **another story creates**. That is a
   🔒 with zero file overlap today, and it is the edge a pure file-diff cannot see.
 - **`blocked_by`** — from the story's frontmatter. A declared dependency locks regardless of files.
+- **⭐ `quick_dev`** — see Step 2.5. **Omit the key entirely if you did not assess it**; an absent
+  key leaves the label exactly as it is, while `false` actively strips it.
 - **`evidence`** — one line, quoting the story. It goes on the board; a verdict without its evidence
   is an assertion.
 
 ⛔ **Every grounded child needs an entry.** The script refuses the whole run if one is missing —
 an absent touch-set would silently read as "touches nothing", which is a manufactured 🟢.
 
+## Step 2.5 — Rule `quick-dev` in the same pass (SCC-155)
+
+**`quick-dev` means: ships via `/cicd-quick-dev` instead of the full ①②③ loop.** Judge each
+grounded child:
+
+| Eligible when… | Not eligible when… |
+|---|---|
+| the touch-set is small — ≲3 source files, no new subsystem | it adds a subsystem, a migration, or a new contract |
+| risk is P2/P3 where the sprint carries scores | it is P0/P1 — those owe E2E, which is the full lane |
+| no cross-story `imports` edge | it consumes something a sibling has not built yet |
+| the story's ACs are already concrete | the story still says "decide X during the work" |
+
+**Two writers, and this one is authoritative when it runs.** ① `/cicd-write-story-tests` still
+mints `quick-dev` at pickup for stories this pass has never swept; an epic-scoped pass recomputes
+the whole set and rewrites it, the same self-correcting property that moved `parallel-ok` here.
+Leave the key out for any child you did not assess and its label survives untouched.
+
 ## Step 3 — The set math (mechanical)
 
 ```bash
-python3 .agents/scripts/parallel_check.py resolve \
-        --plan /tmp/pc-plan.json --touchsets /tmp/pc-touch.json --out /tmp/pc-verdicts.json
+python3 .agents/scripts/label_tasks.py resolve \
+        --plan /tmp/lt-plan.json --touchsets /tmp/lt-touch.json --out /tmp/lt-verdicts.json
 ```
 
 It computes the **largest set in which every pair is disjoint**, deterministically. Planning
@@ -144,16 +171,19 @@ Print the table the script renders, unedited — approved list first, then one v
 | 🔒 after `<ticket>` | shares ground with that ticket — run after it lands |
 | ⏳ waiting on `<story>` | an in-flight story's surfaces are unknown; clears when its plan lands |
 | 📝 no story | ungrounded — `/cicd-write-story-tests <id>` unlocks it |
+| ⚡ quick-dev | ships via `/cicd-quick-dev` (a separate column, not a verdict) |
 
 ## Step 5 — Stamp the board
 
 ```bash
-python3 .agents/scripts/parallel_check.py stamp \
-        --plan /tmp/pc-plan.json --verdicts /tmp/pc-verdicts.json --apply
+python3 .agents/scripts/label_tasks.py stamp \
+        --plan /tmp/lt-plan.json --verdicts /tmp/lt-verdicts.json --apply
 ```
 
 Adds `parallel-ok` to the 🟢 set **and strips it from everyone else** — that rewrite is what makes
-this self-correcting where the per-story writer rotted, and it preserves every other label. Posts
+this self-correcting where the per-story writer rotted, and it preserves every other label.
+`quick-dev` rides the same pass with the same rewrite, **except where you left it unassessed**,
+which is left exactly as it was. Posts
 one comment on the **epic** carrying the table, the evidence, and the stamp:
 `verified <date> against N children: <keys>`.
 
@@ -162,7 +192,7 @@ one comment on the **epic** carrying the table, the evidence, and the stamp:
 ## Re-checking later — is yesterday's answer still good?
 
 ```bash
-python3 .agents/scripts/parallel_check.py check --parent <PARENT-KEY>
+python3 .agents/scripts/label_tasks.py check --parent <PARENT-KEY>
 ```
 
 `[FRESH]` (exit 0) or `[STALE]` (exit 1) with the children added or removed since. **A stamped set
@@ -175,6 +205,7 @@ both misled on 2026-08-09; this is the check that makes the same failure impossi
 `✅ Parallel check — <PARENT-KEY> (Epic <n>) in <repo>:`
 - `Approved (<n>): <keys>` *(or why nothing was)*
 - `Locked: <key> after <key> — <the shared path>` per row
+- `Quick-dev (<n>): <keys>`
 - `Ungrounded: <keys> → /cicd-write-story-tests <id>`
 - `Board: <n> labels added, <n> stripped · comment on <PARENT-KEY>`
 - `Stamp: verified <date> against <n> children`

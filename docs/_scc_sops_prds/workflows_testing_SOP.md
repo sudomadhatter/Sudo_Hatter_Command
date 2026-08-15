@@ -377,11 +377,16 @@ P0–P3. That score decides how much testing each story earns ([§14](#14-how-we
 epic's **Jira ticket** itself at kickoff — never an invented key: it reads the key from the ticket it
 just created, and the branch is never cut unkeyed.
 
-### ⭐ `/cicd-parallel-check <EPIC-KEY>` — run it once the stories are written
+### ⭐ `/cicd-label-tasks <EPIC-KEY>` — run it once the stories are written
 
-Tells you which stories you can run **side by side**. It reads every story file, works out what each
-will actually *change* (as opposed to merely mention), and hands you the biggest group that touches
-no file in common — tagged `parallel-ok` on the board so the group is one filter away.
+Tells you which stories you can run **side by side**, and which are small enough for the quick lane.
+It reads every story file, works out what each will actually *change* (as opposed to merely
+mention), and hands you the biggest group that touches no file in common — tagged `parallel-ok` on
+the board so the group is one filter away, and `quick-dev` on the ones that do not need the full
+loop. A story it could not assess keeps whatever labels it already had.
+
+> **Renamed 2026-08-14 (SCC-155).** This was `/cicd-parallel-check`; that name is retired. It now
+> has a twin for Task work — `/smh-label-tasks`, below in this section's Task-lane half.
 
 **It never guesses.** A story with no file written yet gets "write the story first", not an opinion.
 When two stories are ambiguous it locks them rather than approving — a wrong green puts two lanes on
@@ -418,7 +423,7 @@ flowchart TD
 **What it leaves you:** a story file carrying `jira_key:`, a locked behavior contract, and tests that
 fail. Failing is the point — a test that has never failed proves nothing.
 
-**⛔ It does not rule `parallel-ok`** — that moved to `/cicd-parallel-check` for the reason above.
+**⛔ It does not rule `parallel-ok`** — that moved to `/cicd-label-tasks` for the reason above.
 
 ### ② `/cicd-dev-story-tests` — plan, stop, build, widen, certify
 
@@ -758,7 +763,7 @@ flowchart TD
     G0 --> CITE["code-fresh ⇒ CITE the review's link+anchor\nand SOP sweeps instead of re-walking them — SCC-156\nthe armed commit-msg gate and CI at the landing sha\nare the two nets that remain either way"]
     CITE --> S3["Step 3 — merge to main --no-ff"]
     G --> S3
-    S3 --> S4["Step 4 — AFTER the merge, never before:\nriders → Done FIRST (SCC-156) ·\none Dev Record → ticket → Done"]
+    S3 --> S4["Step 4 — AFTER the merge, never before:\nriders → Done FIRST (SCC-156) ·\none Dev Record → jira_feed.py finish\n→ Done, OR HELD on open user tasks"]
     S4 --> WHY4["a ticket reading Done while the merge failed\nis a lie nothing will correct.\nA merge that landed while the record lags\nis one command from right."]
     WHY4 --> S5["Step 5 — UNLINK → remove tree → delete branch\nin that order, every time"]
     S5 --> S6["Step 6 — verify, THEN report"]
@@ -779,6 +784,25 @@ hand, the flow is broken** — the agent is required to stop and say so rather t
 subtask whose work you ordered into the parent's lane is declared under `riders:` in the lane's
 `task.yaml`; the preflight then warns (with the exact transition queued for the ceremony) instead
 of blocking on it.
+
+**⭐ A ticket can be merged and still not `Done` (SCC-155).** Step 4 no longer writes `Done`
+unconditionally — it runs `jira_feed.py finish`, which reads the `## Your Actions` section of the
+walkthrough it just filed. Anything left as an unchecked `- [ ]` there is something only **you** can
+do, so the ticket is **HELD**: those items are posted to it as a *User tasks* comment, it gains the
+`user-tasks` label, and it stops short of `Done`. The merge still landed — this is not a failure,
+it is the board finally telling the truth about what is outstanding.
+
+Before this, an operator action recorded in a walkthrough ("install the board column", "run the
+memory audit") went `Done` along with everything else, and the record of what was owed died with
+the lane. **Your exit is the checkbox:** finish the item, tick it to `- [x]`, commit that, and
+re-run `finish`. There is deliberately no force flag — a gate with no legitimate exit gets worked
+around, and this one's exit leaves a trail.
+
+It also **fails closed**: a missing walkthrough, or one with no `## Your Actions` section at all, is
+a refusal rather than a clean close. An absent section is not evidence that nothing is owed. Write
+the section even when it is empty. Neither SCC nor AVCH currently has an `Awaiting Review` column,
+so today the label is the at-a-glance signal; adding that column in the Jira UI is the whole
+install, and no code changes when you do.
 
 **⛔ The close-out never re-runs the LLM review (SCC-147).** One review per lane: the walkthrough's
 `Verdict: … @ <sha>` stands, and Step 2's gate is the *mechanical* suite only. The review engine is
@@ -1102,6 +1126,37 @@ flowchart LR
     V --> STOP["STOP — hand back"]
     STOP -.->|"your sign-off"| CLOSE["/smh-close-task-merge-tree\nmerge to main · Dev Record · prune"]
 ```
+
+### ⭐ `/smh-plan-task <TASK-KEY>` — plan the whole Task, subtasks and all
+
+**The Task lane's version of "write all the stories first."** The parallel question can only be
+answered once every lane's plan exists — that is why the story side writes all the stories before
+labelling. Task work had no equivalent step, so subtasks were planned one at a time and nothing
+could compare them.
+
+This plans the **whole** Task in one pass. It proposes the subtask breakdown and **stops** — it
+never mints work you did not choose. On your go it creates each `Subtask`, and then for each one:
+writes its implementation plan, audits that plan, cuts its worktree, pushes its branch, and points
+its ticket at the plan. Then it labels the set and shows you the parallel table.
+
+**It ends at ONE approval stop for everything.** You read every plan, every audit verdict and the
+parallel table in one message, and your reply — **your actual words, quoted into each plan** —
+is the approval. That batch is deliberately narrow: it covers exactly the plans that stop listed,
+and if any plan is edited afterwards that lane stops for its own approval again. A lane that came
+through a batch skips straight to writing its first failing check.
+
+### ⭐ `/smh-label-tasks <TASK-KEY>` — which subtasks run side by side
+
+The Task-lane twin of `/cicd-label-tasks`, and the same engine underneath. The difference is the
+unit: it assesses the **Subtasks under one Task** rather than the stories under an epic. A subtask
+is grounded by its branch diff, else the plan its `task.yaml` points at, else its ticket text — and
+where the evidence is thin it locks rather than approves, the same way the story side does.
+
+It stamps both labels: `parallel-ok` for the biggest group that shares no file, and `quick-dev` for
+the lanes small enough to ship in one light pass. Run it any time; the answer carries the set it was
+computed against, so a stale one reads *"re-run me"* rather than quietly lying. **It states, it
+never starts.** Point it at an epic and it refuses and sends you to `/cicd-label-tasks`; point that
+one at a Task and it sends you back here.
 
 ### `/smh-quick-dev` — assert-first development
 
@@ -1525,7 +1580,8 @@ commit, not a hang.
 **Minting happens at exactly two seams:** `/cicd-create-epic-sprint` mints the **epic's** ticket at
 kickoff, and ① mints each **story's** ticket at pickup — stamped with two rulings as labels:
 `quick-dev` (fast lane allowed) and `blocked` (waiting on a linked blocker). The third label,
-`parallel-ok`, has its own writer: `/cicd-parallel-check` ([§6](#6-the-story-lane)).
+`parallel-ok`, has its own writer: `/cicd-label-tasks` ([§6](#6-the-story-lane)), which also
+re-rules `quick-dev` for every story it assesses.
 
 **Movement is automated at exactly three moments:** close-out moves the **story's** ticket,
 `/smh-close-task-merge-tree` moves a **task's**, and `/cicd-push-e2e` moves the **epic's** to Done
@@ -1881,7 +1937,7 @@ ticket that shipped it ([§12](#12-the-board--what-runs-next)).
 | `/cicd-boot-sprint-memory` | Start of session. Reads the sprint, tells you the next story and exactly which command it needs. It **reads the review verdict from the artifact** rather than trusting the status file. **Also reads that project's own memory index** — the memory store is two-tier, so facts true only inside one project live in that project's store and are not in the lobby index your session already loaded. No memories yet is a normal answer, not a fault. |
 | `/cicd-create-epic-sprint` | **Once per epic.** Writes the epic and its stories, then risk-scores every story with you. Mints the epic's Jira ticket itself at kickoff. |
 | ① `/cicd-write-story-tests` | Creates the story, locks the intended behavior in plain language, then writes the **failing** tests. Also mints the story's Jira ticket and rules `quick-dev` and `blocked` onto the board as labels. |
-| ⭐ `/cicd-parallel-check <EPIC-KEY>` | Run once an epic's stories are all written: tells you which ones you can run **side by side**. States, never starts. |
+| ⭐ `/cicd-label-tasks <EPIC-KEY>` | Run once an epic's stories are all written: tells you which ones you can run **side by side**, and which are quick-lane sized. States, never starts. Was `/cicd-parallel-check` until 2026-08-14. |
 | ② `/cicd-dev-story-tests` | Plans, **stops for your `approved`**, builds until the tests pass, widens coverage, then records a signed-off snapshot of the results. |
 | ③ `/cicd-code-review` | Hunts the diff cold, runs an adversarial review, audits code quality, runs the test gate, issues a verdict into the walkthrough. |
 | `/cicd-clean-code-audit` | Dead code, duplication, drift. Runs inside ③; also runs solo across a whole area. |

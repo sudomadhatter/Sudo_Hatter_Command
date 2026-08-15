@@ -914,6 +914,18 @@ def check_artifacts(repo: Path, key: str | None, rep: wf.Report) -> list[Path]:
         return []
     for p in hits:
         rep.info("artifacts", rel_or_abs(p, repo))
+        # `jira_feed.py finish` REFUSES to close a ticket whose walkthrough has no
+        # `## Your Actions` - an absent section is not evidence that nothing is owed. Both
+        # close-outs run it at Step 4, which is AFTER the merge, so the refusal used to land
+        # at the one moment it could no longer be acted on cheaply. This is that same
+        # refusal, one gate earlier; nothing that passes the close-out today starts failing
+        # (SCC-155 review #22).
+        if "## your actions" not in wf.read_text(p).lower():
+            rep.err("artifacts", f"{rel_or_abs(p, repo)} has no `## Your Actions` section - "
+                                 f"`jira_feed.py finish` refuses to close a ticket without "
+                                 f"one, so this blocks at the merge either way. Add the "
+                                 f"section (even empty) so the answer is recorded rather "
+                                 f"than assumed")
     return hits
 
 

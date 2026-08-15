@@ -1,6 +1,6 @@
 ---
 name: parallel-ok-is-a-set-property
-description: "`parallel-ok` is a property of a SET at a moment, never of one story — so ① Step 1.6 cannot rule it (the siblings don't exist yet). Operator ruled 2026-08-09: it moves out of ① into an on-request snapshot, SCC-56 /sudo-parallel-check. quick-dev and blocked STAY in ①."
+description: "`parallel-ok` is a property of a SET at a moment, never of one story — so ① Step 1.6 cannot rule it (the siblings don't exist yet). Operator ruled 2026-08-09: it moves out of ① into an on-request parent-scoped pass. SCC-155 renamed that pass and gave it a Task-lane twin: /cicd-label-tasks (BMAD stories) and /smh-label-tasks (Subtasks), which now stamp quick-dev too. blocked STAYS in ①."
 metadata: 
   node_type: memory
   type: project
@@ -19,7 +19,14 @@ filter returns nothing.
 
 **OPERATOR RULING 2026-08-09 — it moves out of ①.** Step 1.6 keeps `quick-dev` and `blocked` (both
 are per-story facts knowable at pickup); `parallel-ok` becomes **on request**, once all the stories
-for a parent are written → **SCC-56 `/sudo-parallel-check <parent-key>`**.
+for a parent are written → the parent-scoped pass.
+
+⚠️ **That pass has been renamed TWICE; only the current names work.** SCC-56 shipped it as
+`/sudo-parallel-check`, SCC-63's naming law made it `/cicd-parallel-check`, and **SCC-155 retired
+that outright** and split it in two: **`/cicd-label-tasks <EPIC-KEY>`** for BMAD stories and
+**`/smh-label-tasks <TASK-KEY>`** for a Task's Subtasks — one engine, `.agents/scripts/label_tasks.py`.
+Both now stamp **`quick-dev` alongside `parallel-ok`**, tri-state: a label the pass did not assess is
+left alone rather than stripped. So ① is no longer quick-dev's only writer.
 
 **The four rulings that define SCC-56:**
 
@@ -54,7 +61,7 @@ checklist — so there is no single field to parse. Agent extracts semantically,
 [[sudo-update-scrum-board-five-zones]] (recover with `git show 8144518^:...`).
 
 **Precondition has teeth today:** epic 19 has **5 stories on the board and 1 story file**, so
-`/sudo-parallel-check` could not run on it — the same fact `workflow_lint` reports as its one
+the parent-scoped pass could not run on it — the same fact `workflow_lint` reports as its one
 standing ERROR (`19-5-adk-agent-evaluation-stage-2`, active, no story file).
 
 **How to apply:** never re-add a parallel ruling to ①; never trust a `parallel-ok` label whose stamp

@@ -237,18 +237,37 @@ label is not cosmetic:**
 
 | Label | Means | Written by |
 |---|---|---|
-| `quick-dev` | ships via `/cicd-quick-dev` instead of the full ①②③ loop | ① `/cicd-write-story-tests`, at pickup |
+| `quick-dev` | ships via one light lane (`/cicd-quick-dev`, or `/smh-quick-dev` for Task work) instead of the full ①②③ loop | ① `/cicd-write-story-tests` at pickup, **and** the labelling pass — see below |
 | `blocked` | waiting on a linked blocker (the `Blocks` link names WHAT; pair with the `Blocking` status where the board has it) | ① `/cicd-write-story-tests`, at pickup |
-| **`parallel-ok`** | in the approved set the last check computed — safe to run beside **every other** 🟢 of that epic | ⭐ **`/cicd-parallel-check <EPIC-KEY>`, and nothing else** |
+| **`parallel-ok`** | in the approved set the last check computed — safe to run beside **every other** 🟢 under that parent | ⭐ **the labelling pass, and nothing else** |
+| **`user-tasks`** | merged, but the walkthrough leaves something only the operator can do — read the "User tasks" comment | ⭐ **`jira_feed.py finish`, at close-out** (SCC-155) |
+
+**The labelling pass is one engine behind two commands**, and which one you run is decided by the
+parent, not by preference:
+
+| Parent | Command | Children it assesses |
+|---|---|---|
+| a **BMAD epic** | `/cicd-label-tasks <EPIC-KEY>` | Stories, grounded by story file / plan / branch diff |
+| a **Task** | `/smh-label-tasks <TASK-KEY>` | its Subtasks, grounded by `task.yaml` plan / branch diff / description |
+
+Point either at the other's parent and it refuses by name and hands you across. ⛔ The old
+`/cicd-parallel-check` is **retired** (SCC-155) — nothing answers to that name.
 
 ⛔ **`parallel-ok` is meaningless without its stamp, and ① must never write it** (operator ruling
 2026-08-09, SCC-56). It is a property of a **set at a moment**, not of one story: ① mints 19.1's
 ticket before 19.2's file exists, so it has nothing to compare against and never re-evaluates.
 Proof it never worked — **zero** tickets across both boards carried it. The fix was the writer, not
-the field: an epic-scoped pass recomputes the set and **rewrites every child's label in one go**,
-so it is self-correcting on re-run. **A `parallel-ok` whose epic comment stamp
-(`verified <date> against N children: …`) no longer matches that epic's current children is stale —
-re-run, never trust.** `parallel_check.py check --parent <KEY>` answers that in one call.
+the field: a parent-scoped pass recomputes the set and **rewrites every child's label in one go**,
+so it is self-correcting on re-run. **A `parallel-ok` whose parent comment stamp
+(`verified <date> against N children: …`) no longer matches that parent's current children is stale
+— re-run, never trust.** `label_tasks.py check --parent <KEY>` answers that in one call.
+
+⭐ **`quick-dev` has TWO writers, and that is deliberate** (SCC-155). ① still mints it at pickup for
+a story the labelling pass has never swept — otherwise a story picked up before any sweep would
+carry nothing. When the pass DOES run it is authoritative for the children it assessed, and it
+rewrites them the same self-correcting way as `parallel-ok`. **A child the pass left unassessed
+keeps its label untouched** — the engine carries "unassessed" as a distinct state from "not
+eligible", so a re-run never strips a label off work marked by hand.
 
 Filter any of them:
 `acli jira workitem search --jql "project = AVCH AND labels = quick-dev AND status != Done"`.
@@ -412,6 +431,7 @@ python3 .agents/scripts/jira_feed.py check     --key AVCH-15 --story 12.3.4
 python3 .agents/scripts/jira_feed.py trace     --path backend/x.py:42 --path frontend/y.tsx
 python3 .agents/scripts/jira_feed.py flag      --key AVCH-15 --reason "..." --evidence "..." --apply
 python3 .agents/scripts/jira_feed.py start     --key SCC-113 --apply
+python3 .agents/scripts/jira_feed.py finish    --key SCC-155 --walkthrough <path> --apply
 ```
 
 - **`mint`** (① Step 1.6) dedupes on the BMAD number, renders the **description from the story file**
@@ -421,6 +441,15 @@ python3 .agents/scripts/jira_feed.py start     --key SCC-113 --apply
   pitfalls, follow-ons, outcome, evidence. **Exactly one per ticket:** an existing record is updated in
   place, never stacked, so the branch-closer and the story-closer cannot leave two partial records.
 - **`check`** answers "does this ticket carry both halves?" — exit 2 if not.
+- **⭐ `finish`** (SCC-155) writes the close-out's `Done` — **unless** the lane's walkthrough still
+  owes the operator something. It reads the unchecked `- [ ]` items under `## Your Actions` and
+  either closes (exit 0), or **HOLDS** (exit 3): posts them as a "User tasks" comment, adds the
+  `user-tasks` label, and walks the `Awaiting Review` → `In Review` ladder, falling through
+  silently on a board that carries neither (SCC does not, today — the label is the signal until a
+  column is installed, which is a Jira-UI change and zero code). **It fails CLOSED**: a missing
+  walkthrough or a missing `## Your Actions` section is a refusal (exit 2), never a clean close —
+  an absent section is not evidence that nothing is owed. Exit 4 is transport, as with `start`.
+  The auditable exit is the checkbox: tick the item to `- [x]`, commit, re-run. No force flag.
 - **`trace`** (SCC-54) reads git history — `blame` on a `file:LINE`, `git log --no-merges` on the
   file — and ranks the tickets whose commits touched it, blame first. **No network, no board write**,
   and it only ever proposes keys from the project(s) in this repo's `.agents/jira.conf`.
@@ -518,12 +547,20 @@ unrecognized tickets on sight.
    | task close-out | `/smh-close-task-merge-tree` Step 4 | `Done` |
    | epic merge | `/cicd-push-e2e` Step 6.5 | `Done` |
    | found broken | `jira_feed.py flag` | **out of** `Done` |
+   | **close-out HELD by open operator actions** | `jira_feed.py finish` (both task close-outs) | **`Review Required`** → `Awaiting Review` → `In Review`, first one the board carries; **none installed → no move at all**, the `user-tasks` label carries the signal |
 
    The three `In Progress` writers are all the same idempotent verb, so they cannot fight: whichever
    fires first moves it, the rest are no-ops. Outside this table, transition a ticket only when the
    operator asks.
-   **`/cicd-parallel-check` is not a fifth** — it writes the `parallel-ok` **label** and one comment
-   on the epic, and deliberately transitions nothing. Placement stays the operator's (guardrail 2);
+   **The labelling pass is not a writer** — `/cicd-label-tasks` and `/smh-label-tasks` write the
+   `parallel-ok` / `quick-dev` **labels** and one comment on the parent, and deliberately transition
+   nothing.
+   **`jira_feed.py finish` is two rows, not one**, and the second is why it earned its own line
+   above: on a clean walkthrough it writes the `Done` that the two task-close-out rows name, and on
+   a held one it writes a **review status instead** and refuses `Done` outright. That review row was
+   missing here while the code already wrote it — an undeclared writer against a table this
+   guardrail calls closed (SCC-155). It never moves a ticket the operator has already parked on one
+   of those rungs, and it never moves one backwards. Placement stays the operator's (guardrail 2);
    "these three are safe together" is not a reason to move a card.
 5. **The token stays in the OS credential store.** Never echo, copy, or persist it anywhere — and
    never bake a binary path or a store name into a doc. Both are per-machine, this file is read on

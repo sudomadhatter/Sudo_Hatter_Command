@@ -281,6 +281,7 @@ def main() -> int:
             write(repo, f"{fdir}/task.yaml", MANIFEST.replace("SCC-11", "SCC-99"))
             write(repo, f"{fdir}/walkthrough.md",
                   "# another lane\n\nmentions SCC-11 in passing\n\n"
+              "## Your Actions\n\nNothing is owed.\n\n"
                   f"## Code Review\n\nVerdict: PASS @ {sha}\n")
             commit(repo, "SCC-11 chore: a foreign lane's artifacts (artifacts only)")
             git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
@@ -297,6 +298,7 @@ def main() -> int:
             write(repo, f"{fdir}/task.yaml", MANIFEST.replace("SCC-11", "SCC-99"))
             write(repo, f"{fdir}/walkthrough.md",
                   "# another lane\n\nmentions SCC-11 in passing\n\n"
+              "## Your Actions\n\nNothing is owed.\n\n"
                   f"## Code Review\n\nVerdict: FAIL @ {sha}\n")
             commit(repo, "SCC-11 chore: a foreign lane's artifacts (artifacts only)")
             git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
