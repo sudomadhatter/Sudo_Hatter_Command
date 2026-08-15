@@ -449,15 +449,71 @@ Carried with the sequencing constraint that the `--case` ergonomics (1–3) are 
     rotted one for being unmaintainable. (The misleading half — per-file numbers reading as the
     suite wall — was fixed in `cade703`.)
 
+## The rider build (2026-08-14, post-review — rolled into this ticket at the operator's word)
+
+The lane's own close-out fired the defect this section fixes: SCC-159's work landed HERE by the
+operator's one-lane ruling, so at preflight the child was still `In Progress` — `check_children`
+read the designed state as an unfinished job, BLOCKED, and the agent handed the operator a manual
+Jira edit. The operator ruled twice: the parent-closes-last logic STAYS ("root 1 is just logic"),
+and no flow may EVER leave the operator a board write ("No were did I ever ask to start having to
+manually adjust the status of tasks in jira"). Fix approved in-ticket: "lets fix this roll this
+into this ticket. I dont want to make a new one. this is tweaking" → "approved".
+
+**The mechanism (commits 8c1b10e + 1365922):**
+
+- `task.yaml` gains `riders: [KEY-00, ...]` — one-line flow style ONLY; the hand parser must not
+  half-read a block list, and an UNREAD declaration fails CLOSED with the flow line printed.
+  This lane's manifest declares `riders: [SCC-159]`.
+- `check_children(riders=…)` WARNS a declared open rider with the ceremony's own transition
+  command, named as an agent step ("never an operator edit"), and still hard-errors any
+  undeclared open child — the error teaches the declaration as the third exit beside finish-it
+  and `Deferred`, suggesting the COMPLETE line so a copy-paste never clobbers existing riders.
+  Settled sibling manifests are history — their riders spare nothing. The all-closed info line
+  counts riders honestly instead of claiming "all Done or Deferred".
+- `/smh-close-task-merge-tree` Step 4: riders → `Done` FIRST (scoped to actual subtasks of the
+  parent, so a foreign declared key is never flipped), parent LAST, plus the broken-flow guard:
+  a hand-back assigning the operator data entry is a bug in the flow, never an instruction to
+  relay.
+- `jira.md`: the universal law under *Writing to the board* (operator acts in WORDS; agent
+  performs every board write inside that ceremony; read status rules as WHEN, never WHO), the
+  `In Review` definition (blocked-on-operator ONLY), and rider rows in the type table +
+  subtask lifecycle. SOP doc: rider bullet, S4 mermaid node, you-act-in-words callout. Doors
+  re-synced (18 launchers).
+
+**Proof:** test-first — 9 RED each at its own assertion (6 declared controls) → 19/19 green,
+including comment-immunity, lowercase normalization, settled-sibling exclusion, and the
+truthful-info pin. Mutation record **10/10 killed by named cases in one pass** (membership
+inverted/always/never/substring, regex line-anchor, `upper()` drop, settled-exclusion disable,
+example completeness, warn→info downgrade, `main()` wiring deletion), restores sha256-verified.
+Closing bare green: `run_all` 27/27 files, lint 0/0, maps clean. **Live proof on THIS lane:**
+`task_preflight --expect-key SCC-156` now exits 1 (warn-only) with the SCC-159 rider
+instruction printed and `VERDICT: clear to close out and merge` — the same board state that
+produced `BLOCKED` before the build.
+
+**Two gate encounters worth recording:** the `--yes` guard rightly indicted my first layout (a
+transition command wrapped across physical lines reads as un-flagged; an absence assertion
+quoting the verb phrase reads as a call site) — both reflowed to comply, the guard untouched.
+And T6 (`test_sops_prds_folder.py`) flagged the operator's own `quick_links.md` rolled in at
+their order; its name joined the by-NAME allowlist beside `INDEX.md` (it is a pure signpost —
+links INTO `docs/_scc_sops_prds/`, no procedure content). **That allowlist edit is flagged for
+your review below.**
+
+**Review coverage, stated plainly:** the verdict above stands at `cade703…` — the 5-lens review
+never saw commits `8c1b10e`/`1365922`. They are operator-approved, test-first, and
+mutation-certified, but not LLM-reviewed; because code moved past the verdict sha, the close-out
+gate correctly prints NO suite-skip and runs the full mechanical gate. Receipts re-stamped on
+the clean-tree chain: suite PASS 88.0 s @ `1365922` (the parallel runner this ticket built,
+timing its own close-out — the pre-ticket floor was ~205 s), lint PASS, maps PASS.
+
 ## Your Actions
 
-Everything agent-solvable was attempted and is ticked. What is left is genuinely yours.
+Everything agent-solvable was attempted and is ticked. What is left is genuinely yours — and
+per the universal law, none of it is a Jira edit.
 
-- [ ] **⛔ SCC-159 must leave `In Progress` BEFORE the merge.** `task_preflight` blocks with
-      `children: SCC-156 has 1 open subtask(s)` — the parent closes last, by design. Because you
-      ruled these land as ONE lane, the subtask's Dev Record and status flip have to happen ahead
-      of the merge rather than after it. This is a sequencing consequence of the one-lane ruling,
-      not a defect.
+- [x] ~~SCC-159 must leave `In Progress` before the merge~~ **Superseded by the rider build:**
+      SCC-159 is declared in `task.yaml` `riders:`, the preflight warns instead of blocking,
+      and the close ceremony transitions it to `Done` first, parent last — agent writes inside
+      the close you invoke. Nothing here is yours to do by hand.
 - [ ] **Rule on A1.** It is not delivered: no replay, no timings, no identical-verdict comparison
       against SCC-154's table. The root cause is known and written down. A strict reading of the
       review command's FAIL rule (*"an acceptance item the diff does not deliver"*) would apply;
@@ -469,6 +525,9 @@ Everything agent-solvable was attempted and is ticked. What is left is genuinely
 - [ ] **Rule on A6's phrasing** — it asks for a "sweep script template" to be grepped, and the
       standing SCC-145 ruling keeps sweep scripts out of the tree. Restate as doctrine-only, or
       commission the template.
+- [ ] **Review the T6 allowlist edit** (rider-build section above): `quick_links.md` is now
+      name-allowed in `_my_resources/_quick_reference/`. If you'd rather it live elsewhere or
+      under `INDEX.md`, say so and the follow-on carries it.
 - [ ] **The merge itself.** This lane is merge-ready and STOPS here. `/smh-close-task-merge-tree`
       is your per-merge sign-off, and since SCC-37 the minter refuses without
       `--operator-approval '<your exact words, this turn>'`.
