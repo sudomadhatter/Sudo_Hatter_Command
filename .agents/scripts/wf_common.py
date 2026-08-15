@@ -258,8 +258,12 @@ def status_drift(project_root: Path) -> list[dict]:
 
 
 def git(args: list[str], cwd: Path, timeout: int = 60) -> subprocess.CompletedProcess:
+    # ⛔ `encoding="utf-8"` is load-bearing on the PC. git writes UTF-8 (paths, messages,
+    # `--porcelain -z` filenames unquoted); `text=True` alone decodes with the LOCALE codec,
+    # which is cp1252 on Windows - so `_artifacts/café.md` came back as `cafÃ©.md` there and
+    # a receipt's "exact filename" was only exact on the Mac (SCC-160 review, Blind Hunter).
     return subprocess.run(["git", *args], cwd=str(cwd), capture_output=True,
-                          text=True, errors="replace", timeout=timeout)
+                          text=True, encoding="utf-8", errors="replace", timeout=timeout)
 
 
 def git_head(cwd: Path) -> str | None:

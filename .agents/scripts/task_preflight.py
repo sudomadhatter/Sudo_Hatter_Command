@@ -743,7 +743,8 @@ def check_stalled_landing(repo: Path, fetch: bool, accept: bool, rep: wf.Report)
                 f"earlier lane merged and never reached the remote, and every lane behind it "
                 f"queues behind that. Land it (`git push origin main`) or inspect it before "
                 f"merging; `pull --ff-only` will NOT catch this, it succeeds when local is "
-                f"merely ahead")
+                f"merely ahead. In a multi-lane run this is usually the lane you JUST "
+                f"merged and have not pushed yet - push main, then continue")
     if accept:
         rep.warn("landing", f"{what} - accepted by --accept-unpushed-main")
     elif fetch:

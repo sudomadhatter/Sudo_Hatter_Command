@@ -231,8 +231,9 @@ longer the home. The section carries:
   flipping a story to `done`; any code/test diff between that SHA and HEAD invalidates the verdict.
 - scope (files/diff reviewed) and method/effort — one line each,
 - **ONE findings table** (the only copy anywhere — the story file links here, never restates):
-  `file:line` · severity · failure scenario · disposition (applied / deferred — judged, rides a
-  named lane class / dismissed — a relevance kill carries its one-line reason, noise is count-only),
+  `file:line` · severity · failure scenario · disposition (applied @ sha / deferred — blocked by
+  another live lane · another repo · an open decision / dismissed — a relevance kill carries its
+  one-line reason, noise is count-only; a review never produces a ticket),
 - each gate check's result in one line, with the actual suite totals (rows also go to
   `## Suite Ledger`).
 

@@ -216,7 +216,7 @@ destination() {
     epic)    echo "an epic/* branch merges into main (/cicd-push-e2e)" ;;
     story)   echo "a claude/* story lane merges into ITS epic/* branch" ;;
     main)    echo "main is absorbed INTO a lane, never the other way around" ;;
-    incident) echo "claude/incident-* is the incident pipeline's lane (/cicd-mobile-error-team); it exchanges work with main (or an epic), never with a story or chore lane" ;;
+    incident) echo "claude/incident-* is the incident pipeline's lane (/cicd-mobile-error-team); it exchanges work with main (or an epic), never with a story, chore, or sibling incident lane" ;;
     *)       echo "see .agents/rules/git-policy.md § Branch model" ;;
   esac
 }
