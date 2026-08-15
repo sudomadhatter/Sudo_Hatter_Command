@@ -317,3 +317,49 @@ other scripts' constants feed — every trigger in the Full list fires. All phas
   `_artifacts/_main/<date>_<slug>/`, exemptions in one closed list, no third door to `main`.
 
 Audit verdict: GO
+
+---
+
+## Approval (2026-08-15)
+
+**Operator's verbatim words, this turn:**
+
+> "1. lets go with quick-fix
+> 2. ok
+> 3. I agree, this lane is for things like cleaning up a messy source control, or writing me a
+> document or guide for something. things that do now effect our development system.
+>
+> approved"
+
+Covers this plan, for SCC-162. Rulings taken from it:
+
+1. **The command is `/smh-quick-fix`.** (`smh-*` family, hyphens only — SCC-63.) The name lands on an
+   existing concept rather than beside one: `artifacts-always-first.md` §2 already defines a
+   **`quick_fixes/`** artifact bucket for *"infra/tooling/config repair… anything that still deserves
+   a record but does not earn a story"*, and its record shape is already this lane's — *"One
+   `walkthrough.md` in the folder is the whole record (no `implementation_plan.md`)"*. The lane
+   therefore **adopts that bucket** instead of minting a new one. ⚠️ One cost, recorded and accepted:
+   `/smh-quick-fix` and `/smh-quick-dev` differ by one word in a menu, and the SOP entry must lead
+   with the distinction rather than the similarity.
+2. **The classifier script stays** (open question 2 — "ok").
+3. **`.agents/rules/` is out of bounds, confirmed.** The operator's own test is now the lane's
+   headline sentence: *"things that do not affect our development system."*
+
+### ⚠️ Consequence of ruling 3 that the approved plan does not yet handle
+
+*"Cleaning up a messy source control"* is named as a target use case, and **it is not a file-path
+question at all** — pruning stale branches, removing dead worktrees and tidying refs can change **zero
+files**. The approved classifier returns `TASK` for an empty path set (finding F2), so as written
+**the lane would refuse the operator's own first example.**
+
+Resolved in the build without weakening F2, by separating *unknown* from *declared*:
+
+| Input | Verdict | Why |
+|---|---|---|
+| no `--paths` given | `TASK` | **unknown scope** — the F2 hazard, unchanged. Silence is never a pass. |
+| `--no-file-changes` given explicitly | `LIGHT-VCS` | a **declared** git-hygiene action: the agent has stated there is no file diff, and the statement is checkable against `git diff` afterwards |
+
+`LIGHT-VCS` inherits every condition (command centre, operator named it this turn) and adds one, from
+the constitution's RISK GATE and [`nothing-guards-the-merge-target`]: **it may delete only refs the
+operator named, never a swept set**, and every `git` call carries `-C`. Deleting a branch is
+destructive, so the lane drops ceremony, never the confirmation.
