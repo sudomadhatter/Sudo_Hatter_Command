@@ -7,6 +7,27 @@
   development system, so it takes the full lane"). Not the lightweight lane. Plan → audit → RED →
   review → close-out.
 
+## ⭐ Operator rulings — 2026-08-15, verbatim
+
+Both open decisions are now **settled**. Recorded here because §B.0.b is a gate-arming question, and
+`blocking-gates-need-a-quoted-ruling` requires the operator's own words rather than a derived
+corollary:
+
+> **Q1 (B.0) — host `jira_feed.py`, ship WARN, `--strict-actions` built and disarmed?**
+> **Operator:** *"1. yes"*
+>
+> **Q2 (A3) — widen the `:105` ref filter, or document the omission?**
+> **Operator:** *"2. A3. no we dont need it."*
+
+**What Q1 authorises, precisely:** the detector lands in `jira_feed.py`, wired into `finish`, and it
+ships **WARN**. `--strict-actions` is **built and disarmed**. ⛔ This is *not* a ruling that the gate
+ships armed — arming it is a separate act of law needing its own quoted words, exactly as the ticket
+states.
+
+**What Q2 settles:** the `:105` ref filter is **not widened**. The omission is documented in the file
+with its reason, which is the branch A3 explicitly permits. The residual `epic:chore` / `epic:epic`
+ff-gap is recorded in the code as deliberate, not left silent.
+
 ## Why one lane and not two subtasks
 
 Operator ruling, verbatim, 2026-08-15: *"add it to the SCC-163 I want to keep as much on one ticket
@@ -85,8 +106,11 @@ file rather than widening**, for three reasons:
    *a false red costs more than a miss*.
 
 A3 authorises exactly this: *"either widened or documented, in the file, as a deliberate omission with
-the reason."* **The operator may overrule and take the widening; it is a bounded add of one more arm
-plus four cases.** Flagged at the approval stop.
+the reason."*
+
+> ⭐ **RULED, 2026-08-15 — operator: *"2. A3. no we dont need it."*** The filter is **not widened**.
+> Step A-4 documents the omission in the file, naming `epic:chore` / `epic:epic` and why the
+> enumeration cannot be shared. The residual gap is recorded as deliberate, never silent.
 
 ## A.3 Steps, each naming the assertion that proves it
 
@@ -117,10 +141,11 @@ Zero survivors required.
 
 ## B.0 ⛔ THE OPEN DECISION — surfaced here, NOT assumed (the ticket's explicit instruction)
 
-The ticket leaves two questions open and forbids assuming them. Both are answered below as
-**recommendations that stop for the operator's word.**
+The ticket left two questions open and forbade assuming them. **Both are now ruled** — operator,
+2026-08-15: *"1. yes"* to the recommendation below in full. The reasoning is kept because it is the
+evidence the ruling was made on.
 
-### B.0.a WHERE it runs — RECOMMENDATION: `jira_feed.py`, answered from the code
+### B.0.a WHERE it runs — ⭐ RULED: `jira_feed.py`
 
 `workflow_lint.py` is the wrong host, and this is measurable rather than a preference:
 
@@ -147,7 +172,7 @@ function exposed, which is also what makes the B.1 corpus run reproducible.
 > `-AP` twin. That is a second lane's worth of blast radius bought for a hypothetical. If the
 > operator wants the authoring-time call site, it is a follow-on with its own key.
 
-### B.0.b BLOCK or WARN — RECOMMENDATION: ship **WARN**, with the arming flag built and disarmed
+### B.0.b BLOCK or WARN — ⭐ RULED: ship **WARN**, arming flag built and disarmed
 
 1. **The ticket says so.** *"The operator's ruling recorded above authorises the WORK and its
    placement on this ticket; it is NOT a ruling that the gate ships armed."* Per
@@ -282,11 +307,21 @@ structural check (`EP6`) pins the `case` arm's ref list, not the sentence explai
 **Audit verdict: GO** — conditional on the two operator rulings below. The plan is safe to build once
 B.0 is answered; nothing in Part A waits on anything.
 
-## ⛔ STOP — this plan is not approved
+## ⛔ STOP — the rulings are in; the plan approval is not
 
-Two things are owed by the operator before code is written:
+| Owed | State |
+|---|---|
+| **B.0 ruling** (host + arming) — the ticket forbade assuming it | ✅ **RULED** 2026-08-15 — *"1. yes"* |
+| **A3** — widen `:105` or document the omission | ✅ **RULED** 2026-08-15 — *"2. A3. no we dont need it."* |
+| **Approval of this plan** (`000-PLAN-FIRST-GATE`) | ⛔ **STILL OWED** |
 
-1. **Approval of this plan** (`000-PLAN-FIRST-GATE`).
-2. **The B.0 ruling** — the ticket forbids assuming it. Recommended: **`jira_feed.py`, WARN, with
-   `--strict-actions` built and disarmed.** Arming it is separate law needing its own quoted words.
-3. *(Optional, A3)* whether to **widen** the `:105` ref filter instead of documenting the omission.
+⛔ **The rulings are not the approval.** `000-PLAN-FIRST-GATE` names *"answering your clarifying
+question"* as one of the things that is **not** approval — alongside "ok", "looks good", "continue",
+and being told to do the work. The operator answered two design questions; nothing has authorised the
+build. That distinction is the whole gate: an agent that reads a settled design question as
+permission is the failure mode the rule was written for.
+
+**Nothing else blocks.** Both parts are fully specified, the audit is GO, the lane is pushed and
+clean, and no sibling lane is live. On the word, the build order is: Part A (`EP1` RED → arm →
+`EP2`–`EP6` → sweep), then Part B (`B1` RED on the vendored fixture → detector → `B2`–`B8` → sweep),
+then the SOP and `scripts/INDEX.md` in the same commit as their surfaces.
