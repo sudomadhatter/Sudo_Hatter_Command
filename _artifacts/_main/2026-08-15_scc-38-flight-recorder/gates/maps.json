@@ -3,7 +3,7 @@
   "story": "scc-38",
   "result": "pass",
   "exit_code": 0,
-  "sha": "b11271fa53e52b6ddbe1ec46346aa5973f31d01b",
+  "sha": "27736c3e26d716fcbdb2bdf488744dbcc1b34725",
   "dirty_tree": false,
   "dirty_paths": [],
   "totals": null,
@@ -17,6 +17,6 @@
   ],
   "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/scc-38-flight-recorder",
   "duration_s": 0.1,
-  "recorded_at": "2026-08-15T05:50:39+00:00",
+  "recorded_at": "2026-08-15T05:53:22+00:00",
   "output_tail": ""
 }
