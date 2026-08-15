@@ -94,12 +94,13 @@ single line has no exemption subtleties to get wrong:
 
 | Verdict | When |
 |---|---|
-| `HANDOFF` | any path in `task_preflight.DEPLOY_DIRS` (imported, repo-aware) → `/cicd-push-e2e`'s road, never a Task |
+| `NOT-COMMAND-CENTRE` | **checked first** — no `.agents/commands/` masters here, so this is a project repo. Refuse and route to the `cicd-*` lanes (operator ruling, above) |
+| `HANDOFF` | any path in `task_preflight.DEPLOY_DIRS` (imported) → `/cicd-push-e2e`'s road, never a Task |
 | `TASK` | any path under `.agents/`, `.githooks/`, `_bmad*`, or root `AGENTS.md` — **or an empty path set** |
 | `LIGHT` | everything else — `docs/`, `_my_resources/`, `README`, `_artifacts/` |
 
 ```
-python3 .agents/scripts/lane_qualify.py --paths <paths>   →  LIGHT | TASK | HANDOFF
+python3 .agents/scripts/lane_qualify.py --paths <paths>   →  LIGHT | TASK | HANDOFF | NOT-COMMAND-CENTRE
 ```
 
 > ⚠️ **AUDIT FINDING (F2, high) — empty input must not read as LIGHT.** *"A check whose empty input
@@ -137,13 +138,25 @@ that "no diff" is itself an assertion below.
 
 ## 3. The lane, as it will read
 
-**Qualifies only if ALL FOUR hold** (any one fails → the full `/smh-quick-dev` lane):
+> ⭐ **OPERATOR CORRECTION (2026-08-15):** *"just for the record this is only for the smh / commands,
+> we need this for the command center not normal cicd work."* This lane is **command-centre work in
+> the `smh-*` family, full stop.** It is not a lighter setting for product work, and no `/cicd-*`
+> flow gains a light mode. Condition 0 below is that ruling made mechanical — a repo check that runs
+> before any other question, so the lane cannot be reached from a project repo by an agent reasoning
+> that the change looked small. Product work has exactly one road to `main` and this does not touch it.
 
+**Qualifies only if ALL FIVE hold** (any one fails → the full `/smh-quick-dev` lane):
+
+0. **You are standing in the command centre.** `lane_qualify.py` refuses anywhere else and says so —
+   derived, not asserted: the command centre is the one repo holding `.agents/commands/` masters,
+   because projects are thin and the centre owns workflow law
+   ([`thin-projects-center-owns-workflow-law`]). Inside a project, the answer is always the `cicd-*`
+   lanes, however small the change looks.
 1. `lane_qualify.py` returns `LIGHT` — no deployable path, no enforcement or usage surface.
 2. **You named the work this turn.** A specific, bounded ask. Scope the agent inferred, widened, or
    carried over from a previous turn does not qualify.
 3. It is **not** a new gate, a rule change, or anything that can refuse a commit or block a merge.
-4. It is **not** a story, and it has no deployable path — i.e. it is Task-shaped to begin with.
+4. It is **not** a story — i.e. it is Task-shaped to begin with.
 
 **What it KEEPS** — every item is mechanically enforced today, which is why none of them are droppable:
 
@@ -190,7 +203,7 @@ Each step names the assertion that proves it.
 | # | File | Change | Assertion |
 |---|---|---|---|
 | 1 | [`.agents/scripts/lane_qualify.py`](.agents/scripts/lane_qualify.py) *(new, D3)* | classify paths → `LIGHT`/`TASK`/`HANDOFF`, importing `task_preflight.DEPLOY_DIRS` | see row 2 |
-| 2 | [`.agents/scripts/tests/test_lane_qualify.py`](.agents/scripts/tests/test_lane_qualify.py) *(new)* | six assertions | `backend/x.ts` → `HANDOFF` · `.agents/scripts/x.py` and `.agents/rules/y.md` → `TASK` · `.agents/scripts/tests/z.py` → `TASK` (**the F3 regression** — `sop_currency` exempts it, this must not) · **empty input → `TASK`** (the F2 regression) · `docs/z.md` → `LIGHT` · **drift cross-check**: every path `sop_currency.classify()` flags comes back non-`LIGHT`. Joins `run_all` by auto-discovery (`run_all.py:43`) |
+| 2 | [`.agents/scripts/tests/test_lane_qualify.py`](.agents/scripts/tests/test_lane_qualify.py) *(new)* | seven assertions | a repo with no `.agents/commands/` → `NOT-COMMAND-CENTRE`, **whatever the paths say** (the F9 regression) · `backend/x.ts` → `HANDOFF` · `.agents/scripts/x.py` and `.agents/rules/y.md` → `TASK` · `.agents/scripts/tests/z.py` → `TASK` (**the F3 regression** — `sop_currency` exempts it, this must not) · **empty input → `TASK`** (the F2 regression) · `docs/z.md` → `LIGHT` · **drift cross-check**: every path `sop_currency.classify()` flags comes back non-`LIGHT`. Joins `run_all` by auto-discovery (`run_all.py:43`) |
 | 3 | [`.agents/rules/artifacts-always-first.md`](.agents/rules/artifacts-always-first.md) | new "When to Skip" entry = the lane; entry 3 (the phrase) rewritten to point at it | grep: the four qualification conditions appear in exactly ONE rule file; `000-PLAN-FIRST-GATE.md` still holds no copy of the list |
 | 4 | [`.agents/commands/smh-just-do-it.md`](.agents/commands/smh-just-do-it.md) *(new)* | the door: qualification check → ticket → branch → do → gates → push → lean walkthrough → hand back | `workflow_lint.py --toolkit-only` clean (frontmatter, no `platforms: []`, INDEX row) |
 | 5 | [`.agents/commands/INDEX.md`](.agents/commands/INDEX.md) | one row | same lint |
@@ -249,8 +262,9 @@ Run bare, never piped — a piped gate reports `tail`'s exit code
 other scripts' constants feed — every trigger in the Full list fires. All phases walked.
 
 - **Phase 0 — scope + checkable list.** Change set named (8 files, §4). Acceptance taken from the
-  ticket's ACCEPTANCE block, tightened to 7 checkable items (the seventh — *the lane ejects when the
-  real diff stops qualifying* — is new, added by finding F1). Traceability run both directions: every
+  ticket's ACCEPTANCE block, tightened to 8 checkable items (#7 *the lane ejects when the real diff
+  stops qualifying*, from F1; #8 *the lane refuses outside the command centre*, from the operator's
+  correction and F9). Traceability run both directions: every
   acceptance item has a step; the one step with no direct item (`AGENTS.md`, row 7) traces to *"one
   place agents load"* via the ⛔ ARTIFACTS block that names the exemption list, and is kept.
 - **Phase 0 lane check — LOCAL.** No deployable path. Confirmed against
@@ -285,7 +299,8 @@ other scripts' constants feed — every trigger in the Full list fires. All phas
 | F5 | §2 D3 | Med | Phase-2 tripwire: **a new script where an existing one could grow a subcommand.** `task_preflight.py` already answers a LOCAL/HANDOFF question. | **Justified, kept.** That script is the *merge* gate (1289 lines, imports four modules); this is a *plan-time* question asked before any diff exists, and `task_preflight` does not hold the usage-surface half. Coupling them would make a plan-time classifier a dependency of the close-out. Shrunk to ~40 lines by F3. |
 | F6 | §3 (what it KEEPS) | Low | On a **fresh clone** `core.hooksPath` is unset, so the keyless-commit refusal the lane leans on is silently OFF — every "kept" guarantee degrades to prose, and nothing says so. | **Bake into the rule at build time** — one line: the lane's guarantees assume armed hooks; a fresh machine arms them via the migrations kit. |
 | F7 | §5 | Low | Verification block is `python3`-only. The PC has only `python`; the SOP text written in step 6 is read on both machines. | **Noted for the build** — plan-local commands stay as-is (this Mac), but the SOP prose must not hard-code either form. |
-| F8 | §2 D3 | Low | `HANDOFF` is unreachable in the lobby (`task_preflight.py:871` — no deployable surface here). Not dead code (the lane may run in a project repo), but a command body implying the lobby can hand off would be wrong. | **Noted for the build.** |
+| F8 | §2 D3 · §3 | **Superseded — see F9** | `HANDOFF` is unreachable in the lobby (`task_preflight.py:871` — no deployable surface here). This finding reasoned that it was not dead code *because the lane may run in a project repo* — the exact assumption the operator has now closed. | **Withdrawn.** `HANDOFF` is kept as a defence-in-depth verdict, not as a supported route. |
+| F9 | §3 (conditions) | **High** | ⭐ **Operator correction, 2026-08-15**, quoted in §3: the lane is `smh-*` / command-centre work only. The plan had it as an *implication* (Task-shaped, no deployable path) rather than a rule, and F8 explicitly left the door ajar to project repos. An agent in a project repo with a small doc change could have reasoned its way in. | **Fixed in plan** — new condition 0, checked first and derived from disk (`.agents/commands/` masters exist only in the centre), returning `NOT-COMMAND-CENTRE`. Becomes acceptance item #8. |
 
 **Sibling-lane landing order:** none — this is the only live lane.
 
