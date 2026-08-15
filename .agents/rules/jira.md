@@ -500,8 +500,9 @@ in the summary, the board row / spec pointer in the description — so nothing l
   **stops**; the operator's go is what writes it. Raw `acli`, parented to the Task. See §Subtasks.
 
 Outside these seams: status + comments only. Never mint speculative work — a ticket asserts a
-decision already made; "maybe" items live in the deferred ledgers, and the operator purges
-unrecognized tickets on sight.
+decision already made. There is no "maybe" bucket anywhere: a finding is fixed in its lane,
+dismissed with a reason, or deferred against a NAMED structural blocker in the deferred ledger —
+and the operator purges unrecognized tickets on sight.
 
 ⭐ **Review findings are the canonical speculative case — and a review never produces a ticket**
 (operator rulings 2026-08-15, both). The review's own triage decides which findings are actually

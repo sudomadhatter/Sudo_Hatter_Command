@@ -249,8 +249,9 @@ engine is recall-first with no noise filter **by design**, so re-running it on a
 its own fixes — will always surface new findings, and "review until zero findings" is a loop that
 never terminates (SCC-147, observed live: a re-review at close-out produced five fresh findings on
 a lane already at PASS). If new findings somehow exist anyway, triage them by severity instead of
-looping: `suggestion`/`nitpick`/`defer` → record and proceed; only a `critical`/`important` in
-`decision_needed` or `patch` stops the merge.
+looping: `suggestion`/`nitpick` → record and proceed (a `defer` here still names its structural
+blocker, or it is a patch); only a `critical`/`important` in `decision_needed` or `patch` stops the
+merge — and it is fixed in this lane before the merge, never carried out of it.
 
 ## Step 3 — Merge to `main`
 
@@ -391,6 +392,13 @@ python3 .agents/scripts/jira_feed.py finish --key <JIRA-KEY> \
        --walkthrough <the walkthrough> --apply
 python3 .agents/scripts/jira_feed.py check --key <JIRA-KEY>     # must exit 0
 ```
+
+⛔ **Before `finish`: tick the merge row.** A walkthrough often carries `- [ ] **The merge itself**` —
+that box IS this ceremony, so this ceremony ticks it (with the merge sha and "signed off by the
+operator's invocation this turn") in the walkthrough commit that precedes `finish`. Left open it reads
+as an owed operator task and `finish` HOLDS a ticket whose only open item was the merge that just
+landed (SCC-160 follow-on review). Every other open box stays exactly as it is — those are the
+operator's.
 
 ⭐ **`finish` writes the `Done`, and it may refuse to (SCC-155).** It reads `## Your Actions` in the
 walkthrough you just filed and answers with its exit code — **read it, it is the report:**

@@ -169,7 +169,7 @@ def cmd_run(project: Path, story: str, gate: str, command: list[str],
         # WHICH paths were dirty, so a READER can apply policy (e.g. task_preflight exempts
         # `_artifacts/`-only dirt, C6). The recorder itself stays strict: `dirty_tree` is
         # unchanged and this field is additive — an older receipt without it gets no
-        # exemption anywhere. Rename rows record the NEW path (`old -> new`).
+        # exemption anywhere. A rename records BOTH paths (old and new are each dirt).
         "dirty_paths": dirty_paths,
         "totals": _totals(output),
         "command": command,

@@ -205,13 +205,23 @@ def main() -> int:
         git(d, "add", "a.txt")
         git(d, "commit", "-qm", "one")
         base = git(d, "rev-parse", "HEAD").stdout.strip()
-        # An empty --no-ff merge of a no-op branch: new sha, identical tree.
+        # A REAL merge commit whose tree equals the base: the lane changes a.txt and changes it
+        # back (two commits, net no-op), then lands --no-ff on main. Two parents, new sha,
+        # byte-identical tree - exactly the shape SHA-equality calls stale (review: an empty
+        # commit had stood in for it, which is a weaker case than the one the docstring names).
         git(d, "checkout", "-qb", "noop")
+        (d / "a.txt").write_text("tmp\n", encoding="utf-8")
+        git(d, "commit", "-qam", "touch")
+        (d / "a.txt").write_text("a\n", encoding="utf-8")
+        git(d, "commit", "-qam", "untouch")
         git(d, "checkout", "-q", "main")
-        git(d, "commit", "-q", "--allow-empty", "-m", "empty")
-        empty = git(d, "rev-parse", "HEAD").stdout.strip()
-        c.check("same_tree · a new sha with an IDENTICAL tree is True (sha-equality would say stale)",
-                base != empty and wf.same_tree(d, base, empty) is True, f"{base[:7]} vs {empty[:7]}")
+        git(d, "merge", "--no-ff", "-q", "-m", "merge noop", "noop")
+        merged = git(d, "rev-parse", "HEAD").stdout.strip()
+        parents = git(d, "rev-list", "--parents", "-n", "1", "HEAD").stdout.split()
+        c.check("same_tree · a MERGE commit (2 parents) with an IDENTICAL tree is True (sha-equality would say stale)",
+                base != merged and len(parents) == 3 and wf.same_tree(d, base, merged) is True,
+                f"{base[:7]} vs {merged[:7]} parents={len(parents) - 1}")
+        empty = merged
         (d / "a.txt").write_text("b\n", encoding="utf-8")
         git(d, "commit", "-qam", "change")
         changed = git(d, "rev-parse", "HEAD").stdout.strip()

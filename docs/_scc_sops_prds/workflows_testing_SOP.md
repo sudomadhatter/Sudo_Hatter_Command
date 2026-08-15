@@ -825,8 +825,9 @@ install, and no code changes when you do.
 `Verdict: … @ <sha>` stands, and Step 2's gate is the *mechanical* suite only. The review engine is
 recall-first with no noise filter by design, so re-running it — on anything, including its own
 fixes — always surfaces new findings, and "review until zero findings" is a loop that never ends.
-New findings at close-out anyway? Triage by severity: `suggestion`/`nitpick`/`defer` → record and
-merge; only a `critical`/`important` in `decision_needed` or `patch` stops it.
+New findings at close-out anyway? Triage by severity: `suggestion`/`nitpick` → record and merge
+(a `defer` still names its blocker); only a `critical`/`important` in `decision_needed` or `patch`
+stops it — and it gets fixed right there, never carried out of the lane.
 
 **⭐ A cross-repo task can be blocked by the *other* repo's state (SCC-94).** If your `task.yaml`
 declares `secondary_repos`, the preflight no longer treats it as a note — it goes and looks. It

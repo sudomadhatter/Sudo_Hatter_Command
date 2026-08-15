@@ -243,6 +243,14 @@ def main() -> int:
             rc4, out4 = run(d / "test_fake.py", "--case=BETA")
             c.check("CASE · CONTROL the --case=<label> form still selects its block",
                     rc4 == 0 and "matched 1/3" in out4, f"rc={rc4} out={out4!r}")
+            # A WHITESPACE-ONLY value is the same lost label wearing a space: `" " in label`
+            # is True for every label, so without the strip it ran everything, printed
+            # `matched 3/3`, and exited 0 (SCC-160 review, Blind Hunter — the hole SCC-156
+            # closed for "" re-opened one character over).
+            rc5, out5 = run(d / "test_fake.py", "--case", "  ")
+            c.check("CASE · a whitespace-only --case value is exit 3 (lost label), never a full run",
+                    rc5 == 3 and "no label" in out5 and "matched 0/3" in out5,
+                    f"rc={rc5} out={out5!r}")
 
     # ── CASE · ⛔ an unwired file cannot be filtered — exit 3, not a full run ────────────
     if c.block("CASE · ⛔ an unwired file cannot be filtered — exit 3, not a full"):
@@ -431,6 +439,28 @@ def main() -> int:
         # sleeping children and requires all three: the interrupt propagates, the queued file
         # never starts, and the running children are gone well before their sleep would end.
         import _thread
+        import signal
+        # `_thread.interrupt_main` is a documented no-op when SIGINT is ignored - and a
+        # process launched from `sh -c '... &'`, cron, or a wrapper INHERITS SIG_IGN, so
+        # under those launchers the interrupt never fires and both blocks would run their
+        # children to completion as a false red (edge-case lens). Install the default
+        # handler for the duration of these blocks and restore it after.
+        prev_sigint = signal.getsignal(signal.SIGINT)
+        signal.signal(signal.SIGINT, signal.default_int_handler)
+
+        def fire_when(ready, deadline: float = 8.0) -> threading.Thread:
+            """Interrupt the main thread once `ready()` is true (or the deadline passes) -
+            never on a fixed timer: under a loaded machine two children may not have
+            registered/started within a second, and firing early tests nothing."""
+            def go():
+                end = time.monotonic() + deadline
+                while time.monotonic() < end and not ready():
+                    time.sleep(0.05)
+                _thread.interrupt_main()
+            th = threading.Thread(target=go, daemon=True)
+            th.start()
+            return th
+
         with TempDir() as t:
             d = t / "intr"
             d.mkdir()
@@ -445,16 +475,14 @@ def main() -> int:
             spec.loader.exec_module(mod)
             files = ["test_i0.py", "test_i1.py", "test_i2.py"]
 
-            timer = threading.Timer(1.0, _thread.interrupt_main)
-            timer.start()
             t0 = time.monotonic()
             interrupted = False
             try:
-                mod.run_pool(files, 2)          # jobs=2: two in flight, one queued
+                fire_when(lambda: len(mod._RUNNING) == 2)   # both in flight, one queued
+                mod.run_pool(files, 2)
             except KeyboardInterrupt:
                 interrupted = True
             wall = time.monotonic() - t0
-            timer.cancel()
             # Give terminated children a moment to be reaped by their worker threads.
             deadline = time.monotonic() + 3.0
             while mod._RUNNING and time.monotonic() < deadline:
@@ -479,17 +507,17 @@ def main() -> int:
             spec = importlib.util.spec_from_file_location("run_all_intr2", d / "run_all.py")
             mod2 = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(mod2)
-            timer = threading.Timer(1.0, _thread.interrupt_main)
-            timer.start()
+            both = lambda: (d / "test_j0.started").exists() and (d / "test_j1.started").exists()
             try:
+                fire_when(both)      # interrupt only once both in-flight children have started
                 mod2.run_pool(["test_j0.py", "test_j1.py", "test_j2.py"], 2)
             except KeyboardInterrupt:
                 pass
-            timer.cancel()
             time.sleep(0.5)
             started = sorted(p.name for p in d.glob("*.started"))
             c.check("RUNALL · the queued file never starts after the interrupt",
                     started == ["test_j0.started", "test_j1.started"], f"started={started}")
+        signal.signal(signal.SIGINT, prev_sigint)
         # Control: the same pool, uninterrupted, runs every file in order with no failures.
         spec = importlib.util.spec_from_file_location("run_all_under_test", RUN_ALL)
         mod3 = importlib.util.module_from_spec(spec)
@@ -508,9 +536,17 @@ def main() -> int:
         # only by reading a count. This walks the AST so the count is no longer the guard.
         def orphans(path: Path) -> list[int]:
             tree = ast.parse(path.read_text(encoding="utf-8"))
+            # Each child remembers its parent AND which field it sits in: a `c.check` in
+            # the `else:` of `if c.block(...)` runs under every filter that does NOT match
+            # that block - it is an orphan wearing the guard's clothes (review, Blind
+            # Hunter), so only the If's BODY counts as guarded.
             for parent in ast.walk(tree):
-                for child in ast.iter_child_nodes(parent):
-                    child._parent = parent  # type: ignore[attr-defined]
+                for field, value in ast.iter_fields(parent):
+                    kids = value if isinstance(value, list) else [value]
+                    for child in kids:
+                        if isinstance(child, ast.AST):
+                            child._parent = parent  # type: ignore[attr-defined]
+                            child._field = field    # type: ignore[attr-defined]
             found: list[int] = []
             for n in ast.walk(tree):
                 if not (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
@@ -520,10 +556,11 @@ def main() -> int:
                 a = n
                 guarded = False
                 while hasattr(a, "_parent"):
-                    a = a._parent  # type: ignore[attr-defined]
+                    via = a._field  # type: ignore[attr-defined]
+                    a = a._parent   # type: ignore[attr-defined]
                     if (isinstance(a, ast.If) and isinstance(a.test, ast.Call)
                             and isinstance(a.test.func, ast.Attribute)
-                            and a.test.func.attr == "block"):
+                            and a.test.func.attr == "block" and via == "body"):
                         guarded = True
                         break
                 if not guarded:
@@ -537,7 +574,8 @@ def main() -> int:
         for p in wired:
             o = orphans(p)
             c.check(f"ORPHAN · {p.name} has no c.check outside a c.block guard",
-                    o == [], f"orphan c.check at lines {o}")
+                    o == [], f"c.check not under an `if c.block(...):` BODY at lines {o} - "
+                             f"that is the only guard idiom this walker recognises")
         # The walker must be able to SEE an orphan, or the loop above proves nothing.
         with TempDir() as t:
             bad = t / "test_orphan.py"
@@ -546,6 +584,13 @@ def main() -> int:
                            encoding="utf-8")
             c.check("ORPHAN · control: the walker flags a planted orphan at its line",
                     orphans(bad) == [5], f"got {orphans(bad)}")
+            bad2 = t / "test_orphan_else.py"
+            bad2.write_text("def main():\n    c = None\n    if c.block('A'):\n"
+                            "        c.check('a', True)\n    else:\n"
+                            "        c.check('runs-when-A-does-NOT', True)\n",
+                            encoding="utf-8")
+            c.check("ORPHAN · control: a c.check in the ELSE of a block guard is an orphan",
+                    orphans(bad2) == [6], f"got {orphans(bad2)}")
 
     return c.finish()
 

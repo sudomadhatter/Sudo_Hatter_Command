@@ -56,7 +56,9 @@ exists to zero out, and that lens is starved of context on purpose — never han
 
 **Then fix in thread — act on what it hands back, here.** Every `patch` is applied by you, in this
 story lane, now; every `decision_needed` is walked with the operator now, in this thread, and
-becomes a patch or a dismiss on their word. If you change code, re-run the relevant suite(s) —
+becomes a patch or a dismiss on their word — one they do not decide now stays an open DECISION row
+in `## Your Actions` (Step 5; a decision is theirs and may hold the story, it is not a ticket) with
+its `defer` bullet pointing at that row. If you change code, re-run the relevant suite(s) —
 scoped, not full; the ONE full-suite run lands after your last change (Step 3.1) — and paste
 actual output. **Nothing that survived the relevance gate leaves this lane as future work** — not
 a residue ticket, not a "proposed" or "decided" ticket, not a ticket-ruling row (operator ruling

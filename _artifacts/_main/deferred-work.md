@@ -1,4 +1,4 @@
-# Deferred work — the center's judged ride-along ledger
+# Deferred work — the center's BLOCKED-work ledger
 
 This is the `DEFERRED_WORK` file the code-review engine's caller contract names, for toolkit
 lanes (the center is its own caller). **Nothing in this file is owed, and nothing in it becomes a

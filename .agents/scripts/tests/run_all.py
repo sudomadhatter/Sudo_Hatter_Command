@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import signal
 import subprocess
 import sys
 import threading
@@ -44,13 +45,32 @@ FILES = sorted(p.name for p in HERE.glob("test_*.py"))
 # Every child still running, so an interrupt can END them rather than wait them out.
 _RUNNING: set[subprocess.Popen] = set()
 _RUNNING_LOCK = threading.Lock()
+_STOPPING = False   # set by stop_running(); a worker that has not spawned yet must not
 
 
 def run_one(name: str) -> tuple[str, int, str]:
+    # The Popen window: a worker between "future started" and "child registered" is
+    # invisible to both `cancel()` and `stop_running()`'s snapshot (review, Blind Hunter).
+    # Two checks close it — refuse to spawn once stopping began, and if the stop landed
+    # while this child was being spawned, terminate it the moment it is registered.
+    if _STOPPING:
+        return name, 130, f"{name}: not started (interrupted)\n"
+    # ⛔ NO `encoding=` here: the children are Python writing to a pipe, so they encode with
+    # the LOCALE (cp1252 on the PC) - parent and child must share it, as they always did.
+    # (git output is UTF-8 by construction, which is why `wf.git` pins utf-8; test children
+    # are not git.) Decoding cp1252 bytes as UTF-8 turned every `·` into U+FFFD, which the
+    # parent's own cp1252 stdout then could not encode - the whole gate red-walled on the
+    # PC. Found by the review's edge-case lens before it shipped.
     p = subprocess.Popen([sys.executable, str(HERE / name)], stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE, text=True, errors="replace")
     with _RUNNING_LOCK:
         _RUNNING.add(p)
+        late = _STOPPING
+    if late:
+        try:
+            p.terminate()
+        except OSError:
+            pass
     try:
         out, err = p.communicate()
     finally:
@@ -59,15 +79,36 @@ def run_one(name: str) -> tuple[str, int, str]:
     return name, p.returncode, (out or "") + (err or "")
 
 
-def stop_running() -> int:
-    """Terminate every child still running; returns how many were told to stop."""
+def stop_running(grace: float = 1.0) -> int:
+    """End every child still running; returns how many were told to stop.
+
+    POSIX: SIGINT first, so a child unwinds its `with TempDir():` blocks (a plain terminate
+    leaks every scratch repo the interrupted files had open), then `terminate()` for any
+    still alive after `grace`. Windows has no SIGINT to send a child: terminate.
+    """
+    global _STOPPING
     with _RUNNING_LOCK:
+        _STOPPING = True
         procs = list(_RUNNING)
+    if os.name != "nt":
+        for p in procs:
+            try:
+                p.send_signal(signal.SIGINT)
+            except OSError:
+                pass
+        for p in procs:
+            try:
+                p.wait(timeout=grace)
+            except subprocess.TimeoutExpired:
+                pass
+            except OSError:
+                pass
     for p in procs:
-        try:
-            p.terminate()
-        except OSError:
-            pass
+        if p.poll() is None:
+            try:
+                p.terminate()
+            except OSError:
+                pass
     return len(procs)
 
 
@@ -84,10 +125,17 @@ def run_pool(files: list[str], jobs: int, runner=run_one) -> list[str]:
     more starts) AND `stop_running()` (every child in flight is terminated). Measured, not
     believed: the case that pins this drives a real interrupt into a pool of sleeping children.
     """
+    global _STOPPING
+    _STOPPING = False          # a fresh pool starts un-stopped (the latch is per run)
     failures: list[str] = []
     ex = ThreadPoolExecutor(max_workers=jobs)
-    futs = [ex.submit(runner, f) for f in files]
+    futs: list = []
     try:
+        # Submits live INSIDE the try: an interrupt during submission must take the same
+        # exit as one during the wait, or it escapes with the "cancelled" message printed
+        # and every file quietly running to completion under the atexit join.
+        for f in files:
+            futs.append(ex.submit(runner, f))
         # Results are read in INPUT order, so the transcript stays alphabetical however the
         # children finish. Each file's output lands whole — never interleaved mid-line.
         # ⛔ A short-timeout poll, not a bare `.result()`: a main thread parked in a lock
@@ -105,7 +153,10 @@ def run_pool(files: list[str], jobs: int, runner=run_one) -> list[str]:
             if rc != 0:
                 failures.append(name)
             print()
-    except KeyboardInterrupt:
+    except BaseException:
+        # KeyboardInterrupt - and ANY runner exception (a Popen OSError: EMFILE under a
+        # huge --jobs, a missing interpreter). Either way nothing more may start and
+        # nothing may keep running behind a traceback.
         for f in futs:
             f.cancel()                                  # queued files never start
         ex.shutdown(wait=False, cancel_futures=True)

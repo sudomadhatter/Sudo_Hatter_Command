@@ -14,9 +14,11 @@ residue ticket, never a "proposed decided" ticket, never a ticket-ruling row in 
 **Why:** a ticket the operator must rule on is still a ticket every story spawns — the loop
 never drains. SCC-160's Ticket A/B row was judged the same loop under a new name.
 
-**How to apply:** the operator develops from Jira, not from memory — the verbatim ruling, what
-stands, and the owed recut (engine + both review commands + AP twin + test_review_engine pins +
-the SCC-160 walkthrough row) are the 2026-08-15 comment on SCC-160. Read it before touching the
-review engine. Do NOT pre-empt: the recut waits on the operator's notes from SCC-38's run.
+**How to apply:** the operator develops from Jira, not from memory — the verbatim ruling and what
+stands are the 2026-08-15 comment on SCC-160. The recut itself landed on `chore/SCC-160-fix-in-thread`
+on the operator's word ("we can start on this in parallel. we know the problem lets fix it"):
+engine step-03/04 + both review commands + AP twin + quick-dev/clean-code/close-out defer rules +
+pins, and SCC-160's own Ticket A/B row resolved in-thread. The operator's notes from SCC-38's run
+may re-cut it again — expected, not a defect.
 Related: [[settled-decisions-are-not-gaps]] · [[review-status-means-needs-operator]] ·
 [[prose-pinning-guards-are-vacuous]].

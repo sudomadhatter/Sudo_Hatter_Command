@@ -151,7 +151,9 @@ acceptance items the diff does not deliver.
 
 **Then fix in thread — before Step 2, before any gate.** Every `patch` the engine hands back is
 applied by you, in this lane, now; every `decision_needed` is walked with the operator now, in this
-thread, and becomes a patch or a dismiss on their word. Re-run the scoped check for what you touched
+thread, and becomes a patch or a dismiss on their word — one they do not decide now stays an open
+DECISION row in `## Your Actions` (Step 5; a decision is theirs and may hold the ticket, it is not a
+ticket) with its `defer` bullet pointing at that row. Re-run the scoped check for what you touched
 (the ONE full gate lands in Step 3, after your last change). **Nothing that survived the relevance
 gate leaves this lane as future work** — not a residue ticket, not a "proposed" or "decided" ticket,
 not a ticket-ruling row (operator ruling 2026-08-15, second: "we need the fixes made in thread not a

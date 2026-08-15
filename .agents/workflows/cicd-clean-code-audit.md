@@ -133,7 +133,9 @@ Emit findings in this exact shape so `/cicd-code-review` can fold them into its 
 - **PASS** — floor green on changed lines, nothing above noise.
 
 Apply the fixes you can make safely, then **re-run the affected check and paste the new output**. Mark
-each finding `applied` / `deferred` / `dismissed` — a dismissal needs a reason.
+each finding `applied` / `deferred` / `dismissed` — a dismissal needs a reason, and a deferral
+names its structural blocker (another live lane · another repo · an open decision); with no blocker it
+is applied here (operator rulings 2026-08-15).
 
 ## Stay in lane
 Audit and fix; never flip a story status, never edit `sprint-status.yaml`, never land on the epic branch.

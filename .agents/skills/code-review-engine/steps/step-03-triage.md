@@ -54,23 +54,30 @@ describe different failures — that hides one of them.
 ## 4. Bucket — exactly one per finding
 
 - **decision_needed** — an ambiguous choice needing human input; the code cannot be correctly
-  patched without knowing intent. Only possible when `review_mode: full`.
+  patched without knowing intent. Walked with the operator in-thread by the caller (see the
+  decision leg under `defer`); in `no-spec` mode it exists too — the operator is the spec.
 - **patch** — a real issue whose correct fix is unambiguous — and worth making (the gate below).
   **The caller applies it in this lane, before its verdict.** Pre-existing is not an exemption: a
   survivor found in a file this lane touched is fixed where it was found.
 - **defer** — real, worth fixing, **and this lane structurally cannot hold the fix** — one of
   exactly three blockers, named in the bullet: the file is owned by another LIVE lane (the fix
-  lands there; name it), the fix lives in another repo (which needs its own key — `jira.md`
-  §cross-repo), or it waits on an open `decision_needed`. "Pre-existing and not caused by this
-  change" is NOT a defer reason (operator ruling 2026-08-15, second): that reading turned the
-  ledger into a parking lot. No blocker → it is `patch`.
+  lands there; name it), the fix lives in another repo (which needs its own ticket key — `jira.md`
+  §The map: each repo declares its own key), or it waits on a `decision_needed` the operator has
+  not taken. "Pre-existing and not caused by this change" is NOT a defer reason (operator ruling
+  2026-08-15, second): that reading turned the ledger into a parking lot. No blocker → it is
+  `patch`. **The decision leg, precisely:** the caller walks every `decision_needed` with the
+  operator in-thread and it becomes a patch or a dismiss on their word; one the operator does not
+  take in-thread (or a headless run, which has no operator) stays an open DECISION row in the
+  walkthrough's `## Your Actions` — a decision is theirs and may hold the ticket; it is not a
+  ticket — and the `defer` bullet points at that row as its blocker.
 - **dismiss** — noise, false positive, already handled elsewhere — **or true but not worth
   implementing.** That last class is a judgment this step OWNS, and it is recorded in one line,
   never hidden.
 
 In `review_mode: no-spec`, a finding that would be `decision_needed` becomes `patch` if the fix is
-unambiguous, otherwise `defer`. There is no spec to resolve the ambiguity against, so parking it as
-a decision nobody can take is worse than either.
+unambiguous; otherwise it is STILL `decision_needed` — there is no spec to resolve the ambiguity
+against, but there is an operator, and the caller walks it with them in-thread like any other
+(headless: an open decision row). What it never becomes is a `defer` with no blocker.
 
 ### The relevance gate — TRUE is not the same as WORTH DOING (operator ruling 2026-08-15)
 
@@ -127,7 +134,7 @@ This table is the single definition; every caller reads it rather than inventing
 | `critical`, in `decision_needed` or `patch` | **FAIL** |
 | `important`, in `decision_needed` or `patch` | **CONCERNS** |
 | `suggestion` or `nitpick`, any bucket | **never gate** — recorded, never raising the floor |
-| anything in `defer` | **never gate** — it is not this change's defect |
+| anything in `defer` | **never gate** — this lane structurally cannot hold the fix (its blocker is named), and a gate cannot block a lane on work it cannot do |
 | a lens still `dead` after retry AND inline rerun | **CONCERNS** |
 | a step-2 role still `dead` after retry AND inline rerun | **CONCERNS** |
 

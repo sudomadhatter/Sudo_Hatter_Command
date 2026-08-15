@@ -42,10 +42,13 @@ def _case_filter() -> str | None:
     """
     argv = sys.argv[1:]
     for i, a in enumerate(argv):
+        # `.strip()` HERE, once: a whitespace-only value (`--case " "`, a variable holding a
+        # blank) is a lost label, not a filter that matches every block - which is exactly
+        # what `" " in label` would have made it (SCC-160 review, Blind Hunter).
         if a == "--case":
-            return argv[i + 1] if i + 1 < len(argv) else ""
+            return argv[i + 1].strip() if i + 1 < len(argv) else ""
         if a.startswith("--case="):
-            return a.split("=", 1)[1]
+            return a.split("=", 1)[1].strip()
     return None
 
 
@@ -93,7 +96,7 @@ class Cases:
         multi-match can never be INVISIBLE: `finish()` prints every matched label, so the
         attribution reads the names, never the count.
         """
-        return self.filter.strip().lower() in label.strip().lower()
+        return self.filter.lower() in label.strip().lower()
 
     def check(self, name: str, ok: bool, detail: str = "") -> None:
         self.rows.append((name, bool(ok), detail))
@@ -109,8 +112,13 @@ class Cases:
                   f"{self.blocks_run}/{self.blocks_seen} blocks --")
             if self.blocks_run > 1:
                 # A multi-match is legal (a family prefix like `CASE ·`) but it must be
-                # VISIBLE: attribution reads this line, not the count.
-                print("-- matched blocks: " + " | ".join(self.blocks_matched) + " --")
+                # VISIBLE: attribution reads this line, not the count. Labels carry `⛔`/`⭐`
+                # and this is the first time they are PRINTED - on a cp1252 pipe (the PC) a
+                # raw print raises AFTER the rows, exit 1, and a sweep reads "killed" for a
+                # mutant that survived. Encode for the stream, escaping what it cannot hold.
+                line = "-- matched blocks: " + " | ".join(self.blocks_matched) + " --"
+                enc = getattr(sys.stdout, "encoding", None) or "utf-8"
+                print(line.encode(enc, "backslashreplace").decode(enc))
             if not self.blocks_run or not self.rows:
                 if not self.filter:
                     why = ("--case was given no label (a bare `--case`, `--case=`, or an "
