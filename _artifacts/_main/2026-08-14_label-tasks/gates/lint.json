@@ -1,21 +1,17 @@
 {
   "gate": "lint",
   "story": "scc-155",
-  "result": "pass",
-  "exit_code": 0,
-  "sha": "5dd5ed962dfb5200d77ea4e207521326a8ceeca8",
-  "dirty_tree": true,
-  "dirty_paths": [
-    "_artifacts/_main/2026-08-14_label-tasks/gates/suite.json"
-  ],
+  "result": "unrunnable",
+  "exit_code": 127,
+  "sha": "77385167a021e55708194b1eb853403b7c6ac34c",
+  "dirty_tree": false,
+  "dirty_paths": [],
   "totals": null,
   "command": [
-    "python3",
-    ".agents/scripts/workflow_lint.py",
-    "--toolkit-only"
+    "python3 .agents/scripts/workflow_lint.py --toolkit-only"
   ],
   "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/label-tasks",
-  "duration_s": 0.2,
-  "recorded_at": "2026-08-15T02:56:38+00:00",
-  "output_tail": "== workflow_lint - toolkit-only ==\n[INFO ] commands: testarch-atdd.md: UTF-8 BOM present\n[INFO ] commands: testarch-automate.md: UTF-8 BOM present\n[INFO ] commands: testarch-ci.md: UTF-8 BOM present\n[INFO ] commands: testarch-framework.md: UTF-8 BOM present\n[INFO ] commands: testarch-nfr.md: UTF-8 BOM present\n[INFO ] commands: testarch-test-design.md: UTF-8 BOM present\n[INFO ] commands: testarch-test-review.md: UTF-8 BOM present\n[INFO ] commands: testarch-trace.md: UTF-8 BOM present\n-- 0 error(s), 0 warning(s), 8 info --\n"
+  "duration_s": 0.0,
+  "recorded_at": "2026-08-15T03:59:57+00:00",
+  "output_tail": "command not found: [Errno 2] No such file or directory: 'python3 .agents/scripts/workflow_lint.py --toolkit-only'"
 }
