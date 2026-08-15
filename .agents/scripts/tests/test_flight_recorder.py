@@ -104,8 +104,9 @@ def main() -> int:
             root = "_artifacts/_main/2026-08-15_lane"
             # Walkthrough shape the house actually produces: a stamp quoted inside a fence (must
             # be ignored), an OLDER stamp, then the LATEST canonical stamp (a re-review APPENDS).
-            wt = (f"# W\n\n## Evidence\n\n```\nVerdict: FAIL @ deadbee\n```\n\n"
+            wt = (f"# W\n\n## Evidence\n\n"
                   f"Verdict: CONCERNS @ {seed[:7]}\n\nVerdict: PASS @ {l1[:7]}\n\n"
+                  f"pasted evidence:\n```\nVerdict: FAIL @ deadbee\n```\n\n"
                   f"## Pitfalls\n\n- `.agents/rules/git-policy.md` bit us; `.agents/scripts/gate_receipt.py` "
                   f"refused a DIRTY tree; also see /smh-code-review, `walkthrough.md`, `MEMORY.md`, "
                   f"`nonexistent_thing.py` and /smh-not-a-command\n"
@@ -116,8 +117,12 @@ def main() -> int:
                 f"{root}/gates/lint.json": receipt("fail", l1, "lint"),
                 f"{root}/gates/maps.json": receipt("warn", l1, "maps"),
             })
-            # local main ALSO moves on after the fork (a different file): two-dot diffs would
-            # show it as a deletion; three-dot from the merge-base must not.
+            # BOTH bases move on after the fork (different files): origin/main gains another
+            # sibling landing, local main gains its own. Two-dot diffs would show those as
+            # deletions; three-dot from the merge-base must not.
+            git(repo, "checkout", "-q", "sibling")
+            om2 = commit(repo, "SCC-900 sibling again", **{"docs/m2.md": "m2\n"})
+            git(repo, "update-ref", "refs/remotes/origin/main", om2)
             git(repo, "checkout", "-q", "main")
             commit(repo, "main moves", **{"docs/m.md": "m\n"})
             git(repo, "checkout", "-q", "chore/SCC-901-lane")
