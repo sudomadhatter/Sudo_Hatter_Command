@@ -34,9 +34,15 @@ lane chooser, and an entry in the plan-first gate's closed exemption list.
     a Python "can't open file" error is not the string `"LIGHT"` — so it **passed while the thing under
     test did not exist**. That is the F2 hazard reproduced *inside the check written to guard against
     it*. Replaced with membership in the known verdict set, which fails on a missing or broken script.
-- [x] **GREEN — `lane_qualify.py`.** 20/20.
-- [x] **Mutation sweep — 10/10 killed, 0 survivors, 0 defective**, mutants drawn from the code, run as
+- [x] **GREEN — `lane_qualify.py`.** 20/20, then **22/22** after the review's regression cases.
+- [x] **Mutation sweep — 12/12 killed, 0 survivors, 0 defective**, mutants drawn from the code, run as
   one sweep, source restored in a `finally` and `git status` re-checked.
+  - Re-run after the review fix. M8 had to be **re-aimed** — the fix changed the line it targeted, and
+    a mutant whose `old` string is absent is DEFECTIVE and counts as a survivor, not a kill.
+- [x] **Review fix — the SCC-118 regression.** The adversarial pass found `lane_qualify.py` importing
+  `DEPLOY_DIRS`, which appends `.github/`; the command centre *has* one and ships nothing, so a change
+  to the main write gate was routed to `/cicd-push-e2e`. Fixed to `PRODUCT_DIRS` with `.github/` in the
+  toolkit list. Full detail in `## Code Review` below.
 - [x] **The law** — the lane written into `artifacts-always-first.md` § "When to Skip".
   - The existing phrase entry *"skip the plan, just do it"* **dead-ended**: it told an agent to skip the
     plan and nothing about what to do instead. That gap is what put SCC-161 through the full ceremony.
@@ -55,7 +61,7 @@ lane chooser, and an entry in the plan-first gate's closed exemption list.
 | Acceptance item | Assertion | Result |
 |---|---|---|
 | 1. Defined in ONE rule an agent loads | the conditions appear in `artifacts-always-first.md` only; `000-PLAN-FIRST-GATE` still points rather than restates | ✅ |
-| 2. Qualification is a script, not prose | `lane_qualify.py` + `test_lane_qualify.py` in `run_all` | ✅ 20/20 |
+| 2. Qualification is a script, not prose | `lane_qualify.py` + `test_lane_qualify.py` in `run_all` | ✅ 22/22 |
 | 3. Empty input and `.agents/` never `LIGHT` | named cases `F2 no --paths is TASK`, `F2 an EMPTY --paths list is TASK too`, `.agents/… is TASK` | ✅ killed by mutants M3, M5 |
 | 4. One door per platform | `test_command_surfaces.py` | ✅ 54/57 RED → **57/57** |
 | 5. SOP §5 routes to it; SOP in the same commit | `test_sops_prds_folder.py`; `sop_currency` passed with **no `[sop-ok]`** | ✅ 61/61 |
@@ -71,11 +77,13 @@ FAILED: F9 a repo with no command masters refuses, … , --no-file-changes CONTR
 EXIT=1
 ```
 
-**GREEN**
+**GREEN (final, at `31ce965`)**
 ```
--- 20/20 passed --   EXIT=0
-killed 10/10 | survived 0 | defective 0
+-- 22/22 passed --   EXIT=0
+killed 12/12 | survived 0 | defective 0
 ```
+The two extra cases and two extra mutants are the review's SCC-118 regression; the intermediate run
+was 20/20 and 10/10 before it was found.
 
 **The gate, at this lane's tip**
 ```
@@ -95,19 +103,94 @@ SOP anchors: 117 defined · 35 internal links · 0 broken
 | new unit | `test_lane_qualify.py` | 3/20 | the RED, before the script existed |
 | new unit | `test_lane_qualify.py` | 20/20 | the GREEN |
 | new unit | mutation sweep, 10 mutants | 10 killed | prove the cases are not vacuous |
+| new unit | `test_lane_qualify.py` | 21/22 | the RED for the review's SCC-118 finding |
+| new unit | `test_lane_qualify.py` | **22/22** | GREEN after the fix — the landing code |
+| new unit | mutation sweep, 12 mutants | **12 killed** | re-run; M8 re-aimed, M11/M12 added for SCC-118 |
 | doors | `test_command_surfaces.py` | 54/57 | RED — the four doors missing |
 | doors | `test_command_surfaces.py` | 57/57 | after `/smh-sync-agents` |
 | full | `run_all.py` | 29/29 files | the landing code |
 | docs | `test_sops_prds_folder.py` | 61/61 | the SOP edit spans six sections |
 | maps | `check_maps.py --depth3-only --strict` | exit 1 → 0 | the artifacts INDEX row |
 
+## Code Review (2026-08-15)
+
+Verdict: CONCERNS @ 31ce965
+Suite evidence measured on `31ce965` (the fix commit — the walkthrough commit after it is
+artifact-only and does not invalidate it).
+
+**Scope:** the 17-file `main...HEAD` diff — one new script + its test, one rule, one command + four
+generated doors, `AGENTS.md`, the SOP across seven places, two INDEXes, the lane's own artifacts.
+**Method:** Step 0.7 re-derivation against current `main`, then an adversarial pass over the diff,
+then the acceptance audit, then the command-centre gate and the clean-code floor.
+
+> ⚠️ **Degradation, reported rather than hidden — and it is why this is CONCERNS and not PASS.** The
+> `code-review-engine` lens fan-out did **not** run as separate clean-context agents; the session is
+> configured not to spawn them, so the adversarial pass ran **inline, in the context that built the
+> code**. That is precisely the bias the blind hunt exists to remove — an agent reviewing its own
+> reasoning anchors on it. The pass still found a FAIL-class defect (below), so it was not empty, but
+> **one independent review layer never ran**, and an unknown is not a pass.
+
+### Step 0.7 — what moved under this diff
+
+1. **Nothing moved.** `origin/main`, `main` and the merge-base are all `0b163d1`; zero files landed
+   while this lane was built, so no path, rule pointer or `#L` anchor this diff depends on was
+   relocated.
+2. **True overlap: none**, therefore no `merge-tree` conflict to resolve.
+3. **Sibling lanes: none** — `git worktree list` shows this tree and the main checkout only. No
+   landing-order dependency.
+
+### Findings
+
+| file:line | severity | failure scenario | disposition |
+|---|---|---|---|
+| `.agents/scripts/lane_qualify.py` (the `task_preflight` import) | **FAIL** | Imported `DEPLOY_DIRS`, which is `PRODUCT_DIRS + (".github/",)`. The command centre **has** `.github/workflows/main-write-gate.yml` and ships nothing, so editing the main write gate returned `HANDOFF` and routed the operator to `/cicd-push-e2e` — a `cicd-*` command barred from the lobby, running an E2E suite this repo will never have. **SCC-118 reproduced verbatim**, in a file whose whole job is routing. | **applied @ `31ce965`** — imports `PRODUCT_DIRS`; `.github/` moved into `TOOLKIT_PREFIXES`, which is the truer statement anyway. Two cases (`.github/` → `TASK`, plus a control that a real product dir still `HANDOFF`s) and two mutants (M11, M12) |
+| `.agents/commands/smh-quick-fix.md` Step 0 | low | The script was invoked without `--repo`, which defaults to cwd; from a subdirectory the `.agents/commands/` probe misses and a qualifying repo is refused. Safe direction, wrong answer. | **applied @ `31ce965`** — `--repo` pinned in the command, the rule and the SOP |
+| `.agents/scripts/tests/test_lane_qualify.py` (drift case) | med | Asserted `!= "LIGHT"`; a Python *"can't open file"* error is not the string `LIGHT`, so the case **passed while the script did not exist** — the vacuous-green hazard reproduced inside the guard against it. | **applied before the first commit** — membership in the known verdict set |
+| `implementation_plan.md` (tail) | noise | An `md-feedback` auto-checkpoint block (`fixes=0 questions=0 highlights=0`) appended itself. | **left alone by rule** — those blocks are never hand-edited; committed as-is |
+
+Changes applied: two, both above. Nothing deferred; no finding left this lane as future work.
+
+### Gates
+
+| Gate | Result |
+|---|---|
+| Enforcement suite | `run_all.py` → **29/29 files passed**, exit 0 |
+| Toolkit lint | `workflow_lint.py --toolkit-only` → **0 error(s), 0 warning(s), 8 info**, exit 0 |
+| Assertion evidence | `test_lane_qualify.py` → **22/22**, exit 0; mutation sweep **12/12 killed, 0 survivors, 0 defective**, source restored |
+| SOP currency | `sop_currency.py --paths <changed> --message …` → exit 0, **no `[sop-ok]` used** |
+| Link + anchor | SOP: **117 anchors, 35 internal links, 0 broken**; `check_maps --depth3-only --strict` exit 0 |
+| Door parity | `test_command_surfaces.py` → **57/57**, exit 0 (54/57 before the sync) |
+
+### Acceptance
+
+All eight items evidenced — the matrix in `## Evidence` above is the authoritative copy; item 7's
+proving run returns `TASK` on this lane's own diff, and item 6's `git diff` over `task_preflight.py`
+and `.githooks/` prints nothing.
+
+### Clean-Code Gate
+
+Machine floor imported from the gates table above (`run_all`, `workflow_lint`, `sop_currency`,
+link+anchor), plus what it owns: `py_compile` on both new Python files → **OK**. Comment contract:
+both files lead with a docstring stating *why the code is shaped this way*, and every non-obvious
+branch cites the incident that motivates it (SCC-118, F2, F3, the `lstrip` trap) rather than
+restating the code. Convention fit: `smh-*` naming law, one door per platform, artifacts under
+`_artifacts/_main/<date>_<slug>/`, gates run bare, both machines named at every `python3`. No
+`TODO`, no dead code, no duplicated path list — the two inputs are imported, and the one deliberate
+divergence from `sop_currency.classify()` is documented at both ends. **No findings.**
+
 ## Your Actions
 
 **What landed on the lane** (`chore/SCC-162-lightweight-lane`, pushed): the rule entry, the command and
 its four doors, `lane_qualify.py` + its test, the SOP across seven places, `AGENTS.md`, both INDEXes.
-Nothing has reached `main`.
+**Nothing has reached `main`**, and the verdict is `CONCERNS @ 31ce965` — not for a defect in the work,
+but because one review layer (the independent lens fan-out) could not run in this session, so the
+adversarial pass was not blind. Every finding it *did* raise was fixed in this lane.
 
 - [ ] **Land it** — `/smh-close-task-merge-tree` when you want it on `main`. Invoking it is the merge
-      sign-off; I will not merge on my own initiative.
+      sign-off; I will not merge on my own initiative. The close-out will run the **full** gate rather
+      than inherit a shortcut, which is correct for a CONCERNS verdict.
+- [ ] **Decide whether CONCERNS is good enough to land**, or whether you want the blind review re-run
+      in a fresh session first. This is a judgement about how much independence you want on a change to
+      the plan-first gate's exemption list, and it is yours, not mine.
 - [ ] **Try the lane on something real** — the first genuine *"write me a guide"* or *"tidy this branch
       mess"* is the only test that matters, and it will tell us whether the refusals are set right.
