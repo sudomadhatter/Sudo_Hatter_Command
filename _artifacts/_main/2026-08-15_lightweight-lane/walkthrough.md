@@ -186,11 +186,15 @@ its four doors, `lane_qualify.py` + its test, the SOP across seven places, `AGEN
 but because one review layer (the independent lens fan-out) could not run in this session, so the
 adversarial pass was not blind. Every finding it *did* raise was fixed in this lane.
 
-- [ ] **Land it** — `/smh-close-task-merge-tree` when you want it on `main`. Invoking it is the merge
-      sign-off; I will not merge on my own initiative. The close-out will run the **full** gate rather
-      than inherit a shortcut, which is correct for a CONCERNS verdict.
-- [ ] **Decide whether CONCERNS is good enough to land**, or whether you want the blind review re-run
-      in a fresh session first. This is a judgement about how much independence you want on a change to
-      the plan-first gate's exemption list, and it is yours, not mine.
+- [x] **Land it** — done, signed off by the operator's `/smh-close-task-merge-tree` invocation this
+      turn. The full gate ran at the lane tip (no receipts existed, so the preflight took the
+      fail-toward-running path rather than any shortcut): `run_all` **29/29 files**, `workflow_lint
+      --toolkit-only` **0 errors 0 warnings**, `check_maps --depth3-only --strict` exit 0,
+      `sop_currency` exit 0 with no `[sop-ok]`, `test_sops_prds_folder` **61/61**,
+      `test_command_surfaces` **57/57**, SOP **117 anchors / 35 links / 0 broken**. `LANE: LOCAL` —
+      this repo has no deployable surface, so there was no E2E gate to skip.
+- [x] **Decide whether CONCERNS is good enough to land** — decided by that same invocation. The
+      verdict stands as recorded: the defect it found was fixed in-lane, and what makes it CONCERNS
+      rather than PASS is the one review layer that could not run, not anything left broken.
 - [ ] **Try the lane on something real** — the first genuine *"write me a guide"* or *"tidy this branch
       mess"* is the only test that matters, and it will tell us whether the refusals are set right.
