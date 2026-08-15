@@ -10,6 +10,7 @@ Maintenance scripts (MASTER here): `check_maps.py` (drift linter), `generate_rep
 | `workflow_lint.py` | is the toolkit + a project self-consistent? | `workflow_lint.py --project AGY_AVIATIONCHAT` |
 | `story_status.py` | do a story's TWO status surfaces agree — and flip both atomically | `story_status.py set 21.8b done` |
 | `gate_receipt.py` | did this gate actually run, at this commit? | `gate_receipt.py run --story 21.8b --gate ruff -- ruff check backend/` |
+| `flight_recorder.py` | what keeps recurring across closed Task lanes? one event file per close-out (verdict-sha keyed, idempotent) → evidence/candidate/action-required ladder, surfaced as PROPOSALS at SessionStart (SCC-133) | `flight_recorder.py record --task SCC-160 --root _artifacts/_main/<folder> --apply` · `flight_recorder.py surface` |
 | `closeout_preflight.py` | is this story safe to close out? | `closeout_preflight.py --story 21.8b --project AGY_AVIATIONCHAT` |
 | `split_sprint_status.py` | move board narrative to history, provably losslessly (Wave 4) | `split_sprint_status.py verify --sha <src> --project P` |
 | `sop_currency.py` | did a **usage** change leave the operator's SOP page behind? (SCC-31) | `sop_currency.py --message-file .git/COMMIT_EDITMSG` |

@@ -262,6 +262,23 @@ which, and why that was correct.>
 The case-total line is the cheapest real check in the whole step: if the totals are not additive,
 one lane's tests displaced another's and the merge ate coverage neither review would ever see.
 
+**4b½ — record the lane's flight event (SCC-133) — the same Step 2.5 the single door runs.**
+The re-gate just proved the post-absorb tree; now, in THIS lane's tree, before its merge:
+
+```bash
+python3 "<tree>/.agents/scripts/flight_recorder.py" record --task <KEY> \
+        --root <this lane's task-artifacts folder> --repo "<tree>" --apply      # PC: `python`
+if git -C "<tree>" status --porcelain _artifacts/_main/workflow-events/ | grep -q .; then
+  git -C "<tree>" add _artifacts/_main/workflow-events/ && git -C "<tree>" commit -F <msg> && git -C "<tree>" push
+fi
+```
+
+Artifacts-only, so the receipts the SKIP just relied on stay valid; idempotent (keyed on the
+verdict sha — a re-run prints "already recorded" and stages nothing); a failure never blocks
+the merge — report it and carry on. Without this step the lanes this door lands would leave no
+event, and the recorder would undercount recurrence across exactly the sets of lanes most
+likely to share one (review, 2026-08-15). Full rationale: `/smh-close-task-merge-tree` Step 2.5.
+
 **4c — 🛑 STOP. Hand back for THIS lane's sign-off.** Print the lane's key, tip, verdict line, gate
 totals, and what the merge changes on `main`. **One invocation of this command is not N
 authorisations** (SCC-71). Wait for the operator's word for THIS lane.

@@ -1,0 +1,6 @@
+task_key: SCC-38
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-38-flight-recorder-autopilot-spec
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+riders: [SCC-133, SCC-134]

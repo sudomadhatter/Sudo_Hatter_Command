@@ -903,8 +903,12 @@ def check_artifacts(repo: Path, key: str | None, rep: wf.Report) -> list[Path]:
     # A missing `_artifacts/` tree is NOT "nothing to check" - it is the strongest possible
     # evidence the walkthrough was never written. Reporting it as a warning is how a check
     # goes quiet on precisely the repo that needed it.
+    # ⛔ Match the path RELATIVE to `_artifacts/`, never the absolute path: a worktree named
+    # after its key (`.claude/worktrees/scc-38-lane/`) puts the key into EVERY walkthrough's
+    # absolute path, and every historic walkthrough without `## Your Actions` then blocks an
+    # unrelated lane (found live, SCC-38 review). Same class as check_maps' cwd-basename trap.
     hits = [p for p in root.glob("**/walkthrough.md")
-            if lower in str(p.parent).lower() or lower in wf.read_text(p).lower()
+            if lower in str(p.parent.relative_to(root)).lower() or lower in wf.read_text(p).lower()
             ] if root.is_dir() else []
     if not hits:
         where = "no _artifacts/ tree in this repo" if not root.is_dir() \

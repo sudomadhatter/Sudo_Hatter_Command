@@ -221,7 +221,7 @@ check; everything else, incl. Step 6's memory write, just applies. Carry its rep
      `MEMORY.md` pointer.
   - Report outcome: `🧠 Memory: wrote [name] (new) · updated [name]`, or `🧠 Memory: nothing cross-session
     — unchanged` (most sessions).
-- **Then ask Daniel (always, separate from memory):** *"Saved the session updates. Any manual learnings, new bugs, or sprint-objective changes to add?"* Apply any additions.
+- **Then ask the operator — CONDITIONALLY (SCC-133):** ask *"Saved the session updates. Any manual learnings, new bugs, or sprint-objective changes to add?"* **only when Step 3 routed ZERO learnings automatically** (nothing went to a spec, a rule, the pitfalls file, or the memory queue in Step 3). When Step 3 routed at least one, print the routed list instead and do not ask — the operator's don't-slow-me-down mandate, without deleting the one guaranteed human-input hook for the sessions that produced nothing. Apply any additions.
 
 ## Step 7 — Land the story on the EPIC branch (the one sanctioned push)
 <!-- JIRA-HOOK: ticket-moved check runs here BEFORE the landing push — the story's Jira ticket must be in the required status or the landing stops. Separate story; not built yet. -->

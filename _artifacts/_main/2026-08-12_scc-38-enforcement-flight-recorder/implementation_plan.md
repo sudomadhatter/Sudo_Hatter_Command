@@ -150,3 +150,19 @@ enforcement + idempotent re-invocation; boot surfaces a seeded action-required c
 - sop_currency fires on every usage-surface subtask — `workflows_testing_SOP.md` rides the same
   commit each time; `[sop-ok]` is not appropriate for any of these.
 - Existing unrelated dirty files are never swept in; material scope expansion = revised plan.
+
+## Delta (2026-08-15) — assessed against main @ `61f2a24`; operator-approved ("yes fix it")
+
+This plan stays **canonical** for SCC-38. Half of it shipped under other keys between 08-12 and
+08-15; the subtask ledger now reads:
+
+| Subtask | Disposition | Where the work actually lives |
+|---|---|---|
+| SCC-130 currency pass | **Done — folded** | this section is the reconciliation; the `open_tasks` proposal copy is now a pointer (this lane's first commit) |
+| SCC-131 typed frontmatter + `workflow_graph.py` + relationship lint | **Done — won't-do** | `workflow_lint.py` grew the scar-class checks organically (`check_ap_twins` with `ap_reconciled`, `check_rule_pointers`, `check_retired_review_surface`); the frontmatter tax + graph substrate no longer pay for themselves. Revival condition = this plan's own "toolkit triples" |
+| SCC-132 lobby CI | **Done — superseded by SCC-118** | `.github/workflows/main-write-gate.yml` runs the FULL `run_all.py` + `workflow_lint --toolkit-only`, on PRs into main and the `gate/**` refs the doors push. `check_maps` in CI = judged ride-along for the next CI-touching lane |
+| SCC-133 flight recorder | **In Progress — reduced** | script renamed `flight_recorder.py` (not `command_center_closeout.py` — a "closeout" name beside `closeout_preflight.py` that only *records* is a trap); struck as already shipped: 20 KB enforcement (`workflow_lint.check_active_context` + `/cicd-prune-context`), PICK UP/HAND OFF refresh, known-pitfalls routing; dropped: the "post-fix regression" ladder trigger (not mechanically detectable). Binds PRE-merge as the door's Step 2.5, one file per event, keyed on the verdict sha. Execution plan: `../2026-08-15_scc-38-flight-recorder/implementation_plan.md` |
+| SCC-134 autopilot gate loop | **In Progress — reduced** | v2 already ships the orchestrator-owned gate, bounded engine retries, CRASHED stamps, resumable stages, cost ceiling, fresh Stage 4. The red-gate auto-fix loop is **dropped, not deferred** (v2 is human-in-the-loop on TESTS RED by design). Remaining: the five done-means-green principles written into `docs/_scc_sops_prds/autopilot_bmad_dev_loop.md` §6 |
+
+Both open subtasks run **in one branch, one then the other** (operator ruling 2026-08-15) —
+`chore/SCC-38-flight-recorder-autopilot-spec`, riders of the parent lane.

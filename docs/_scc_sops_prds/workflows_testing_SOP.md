@@ -772,8 +772,9 @@ flowchart TD
     SKIPQ -- "yes — ONLY the preflight\nmay decide this" --> G0["the SKIP spares the SUITE ONLY (SCC-154):\npaste the SKIP line, then run the still-printed\nartifact-scoped checks — lint · check_maps.\na FAIL verdict was a Step-1 exit 2:\nthat lane never reaches this step"]
     SKIPQ -- "no — commands printed\n= commands run, all of them" --> G["run_all.py · workflow_lint.py\ncheck_maps.py --depth3-only --strict\n+ link and anchor check\n+ SOP currency"]
     G0 --> CITE["code-fresh ⇒ CITE the review's link+anchor\nand SOP sweeps instead of re-walking them — SCC-156\nthe armed commit-msg gate and CI at the landing sha\nare the two nets that remain either way"]
-    CITE --> S3["Step 3 — merge to main --no-ff"]
-    G --> S3
+    CITE --> S25["Step 2.5 — flight_recorder.py record (SCC-133)\npre-merge, artifacts-only commit,\nkeyed on the verdict sha — idempotent"]
+    G --> S25
+    S25 --> S3["Step 3 — merge to main --no-ff"]
     S3 --> S4["Step 4 — AFTER the merge, never before:\nriders → Done FIRST (SCC-156) ·\none Dev Record → jira_feed.py finish\n→ Done, OR HELD on open user tasks"]
     S4 --> WHY4["a ticket reading Done while the merge failed\nis a lie nothing will correct.\nA merge that landed while the record lags\nis one command from right."]
     WHY4 --> S5["Step 5 — UNLINK → remove tree → delete branch\nin that order, every time"]
@@ -814,6 +815,22 @@ a refusal rather than a clean close. An absent section is not evidence that noth
 the section even when it is empty. Neither SCC nor AVCH currently has an `Awaiting Review` column,
 so today the label is the at-a-glance signal; adding that column in the Jira UI is the whole
 install, and no code changes when you do.
+
+**⭐ The close-out now leaves a flight event behind (SCC-133, under SCC-38).** Between the gate and
+the merge, Step 2.5 runs `flight_recorder.py record`: one small file per lane under
+`_artifacts/_main/workflow-events/<YYYY-MM>/`, keyed on the walkthrough's verdict sha, carrying the
+changed files, the receipts, the walkthrough's decisions / pitfalls / follow-ons and three mechanical
+fingerprints (a rules file rewritten · a receipt that **failed** — `warn` is advisory and does not
+count · a script, command or rule that really exists, named in a pitfall). There is deliberately no
+"verdict" fingerprint: CONCERNS merges and FAIL never reaches this step, so it could only propose
+noise. The multi-lane door (`/smh-merge-multiple-workingtrees`, its 4b½) records the same event per
+lane. Nothing reads across lanes today except this. When the same fingerprint shows up in
+**three different lanes**, your next session start prints one `FLIGHT-RECORDER PROPOSAL` line for it —
+phrased "this prose rule was rewritten in 3 lanes — commission the script that enforces it" — with
+the tickets and shas as evidence. **What you should never see:** a ticket minted from it, a
+walkthrough action row citing it, or a rule rewritten because of it. It is evidence for you (and for
+the review's relevance triage); the operator's word decides. `flight_recorder.py candidates` shows
+the whole ladder; a `record` failure never blocks a merge.
 
 **⛔ The close-out never re-runs the LLM review (SCC-147).** One review per lane: the walkthrough's
 `Verdict: … @ <sha>` stands, and Step 2's gate is the *mechanical* suite only. The review engine is

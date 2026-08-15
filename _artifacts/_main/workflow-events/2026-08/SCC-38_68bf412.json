@@ -1,0 +1,79 @@
+{
+  "v": 1,
+  "task": "SCC-38",
+  "sha": "68bf41270116c6178960d50b8b4236e300f96ea6",
+  "tip": "be1f1cf4afb046c7e0f75ef5dadfdac3a090539b",
+  "trigger": "close-out",
+  "when": "2026-08-15T01:57:48-04:00",
+  "changes": [
+    ".agents/.sync-manifest.json",
+    ".agents/commands/cicd-boot-sprint-memory.md",
+    ".agents/commands/cicd-merge-epic-workingtrees.md",
+    ".agents/commands/cicd-update-sprint-memory.md",
+    ".agents/commands/smh-close-task-merge-tree.md",
+    ".agents/commands/smh-merge-multiple-workingtrees.md",
+    ".agents/hooks/session-start-context.sh",
+    ".agents/scripts/INDEX.md",
+    ".agents/scripts/flight_recorder.py",
+    ".agents/scripts/task_preflight.py",
+    ".agents/scripts/tests/test_door_preflight_order.py",
+    ".agents/scripts/tests/test_flight_recorder.py",
+    ".agents/scripts/tests/test_task_preflight.py",
+    ".agents/workflows/cicd-boot-sprint-memory.md",
+    ".agents/workflows/cicd-merge-epic-workingtrees.md",
+    ".claude/hooks/session-start-context.sh",
+    ".opencode/commands/cicd-boot-sprint-memory.md",
+    ".opencode/commands/cicd-merge-epic-workingtrees.md",
+    ".opencode/commands/cicd-update-sprint-memory.md",
+    ".opencode/commands/smh-close-task-merge-tree.md",
+    ".opencode/commands/smh-merge-multiple-workingtrees.md",
+    "_artifacts/_main/2026-08-12_scc-38-enforcement-flight-recorder/implementation_plan.md",
+    "_artifacts/_main/2026-08-15_scc-38-flight-recorder/gates/lint.json",
+    "_artifacts/_main/2026-08-15_scc-38-flight-recorder/gates/maps.json",
+    "_artifacts/_main/2026-08-15_scc-38-flight-recorder/gates/suite.json",
+    "_artifacts/_main/2026-08-15_scc-38-flight-recorder/implementation_plan.md",
+    "_artifacts/_main/2026-08-15_scc-38-flight-recorder/task.yaml",
+    "_artifacts/_main/2026-08-15_scc-38-flight-recorder/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "_my_resources/open_tasks/proposal_graphrag_executiblity.md",
+    "docs/_scc_sops_prds/autopilot_bmad_dev_loop.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-15_scc-38-flight-recorder/walkthrough.md",
+    "verdict": "PASS @ 68bf412",
+    "gates": {
+      "lint": "pass@5b4197b",
+      "maps": "pass@8a1f7f9",
+      "suite": "pass@68bf412"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [
+    "Keyed on the walkthrough's verdict sha, not HEAD \u2014 HEAD moves the moment the event is committed; a resumed close-out must not double-write (audit F1).",
+    "One file per event, no materialised candidates view \u2014 sibling lanes never conflict; the ladder is recomputed on read (F2, F3).",
+    "Bound PRE-merge as Step 2.5 \u2014 a post-merge write is a `main` write outside the token (F1).",
+    "Renamed from the master plan's `command_center_closeout.py` to `flight_recorder.py` \u2014 a \"closeout\" name beside `closeout_preflight.py` that only records is a trap.",
+    "The red-gate auto-fix loop for autopilot is DROPPED, not deferred \u2014 v2 is human-in-the-loop on TESTS RED by design; recorded in \u00a76a and the master plan Delta.",
+    "Cross-link from the autopilot commands to \u00a76a CUT (F4) \u2014 a command-surface touch the ticket did not ask for.",
+    "Operator ruling, this session (verbatim): \"why dont we just fix the relivant findings? This exponetial ticket creation makes no sense \u2026 the agent will always find something during review, its the agents task.\" Applied here: every finding...",
+    "The `verdict:` fingerprint family was REMOVED on measurement (compound synthesis over the 83 landed walkthroughs: CONCERNS in 10 lanes \u2014 merges, unactionable; FAIL never reaches Step 2.5). Three families remain.",
+    "Mentions must RESOLVE to a real file (`.agents/{rules,commands,scripts,hooks}`, `.githooks`, or a real `/smh-` `/cicd-` command) \u2014 a name that resolves to nothing is not a fingerprint. Kills the `walkthrough.md`/`MEMORY.md` noise and the...",
+    "The verdict is read by the SAME reader the preflight trusts (`task_preflight.strip_fenced` + `VERDICT_RE`, latest stamp) \u2014 the first cut would have recorded FAIL on the landed SCC-83 walkthrough.",
+    "`--base` defaults to `origin/main` when present \u2014 the door only fast-forwards LOCAL `main` after the merge, and the second machine routinely lags."
+  ],
+  "pitfalls": [
+    "`run_script` merges stderr into stdout, so a `[warn]` line for a malformed event file counted as \"output\" in the A3 line-count check \u2014 the test filters `[warn]` lines; the warning itself is correct behaviour.",
+    "Lint/maps receipts stamped over an uncommitted suite receipt read `DIRTY` \u2014 chain them (commit each receipt, then stamp the next), exactly as SCC-160's log shows.",
+    "A mutant that widens `RULES_PREFIX` survived the first table on paper \u2014 the original A1 check only asserted the rules file was present, not that the script was absent; pinned before the sweep ran.",
+    "The single-repo fixture could not express \"local `main` \u2260 `origin/main`\" \u2014 the exact state the recorder misbehaved in. `git update-ref refs/remotes/origin/main <sha>` models a remote-tracking ref without a remote; the fixture now forks t...",
+    "A fenced decoy stamp placed BEFORE the real stamps proves nothing under latest-governs; walkthroughs paste fenced evidence AFTER the verdict, and that is where the fixture puts it now."
+  ],
+  "followons": [],
+  "fingerprints": []
+}
