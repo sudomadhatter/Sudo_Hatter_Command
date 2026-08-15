@@ -719,8 +719,13 @@ def main() -> int:
                 rc, out, moved = merge(d, target, source)
                 c.check(f"INC5 · incident {label} incident is REFUSED",
                         rc != 0 and not moved, out.strip()[-300:])
-                c.check(f"INC5 · ...and the {label} refusal names the incident pipeline",
-                        "incident pipeline" in out, out.strip()[-300:])
+                # ⛔ "incident pipeline" alone was satisfied by the STALE destination sentence
+                # ("never with a story or chore lane") — a refusal of an incident<->incident
+                # merge that read as a misfire mid-incident, and a pin that could not fail its
+                # subject (SCC-156 review #12). The sentence now names the sibling case, and
+                # this pins THAT.
+                c.check(f"INC5 · ...and the {label} refusal names the SIBLING incident case",
+                        "sibling incident lane" in out, out.strip()[-300:])
 
         # ⭐ THE FALSE-RED CONTROLS — the arms this narrowing must NOT eat. An incident lane
         # absorbing main (or an epic) is the everyday mid-incident move and stays ALLOWED

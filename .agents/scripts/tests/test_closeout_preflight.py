@@ -189,6 +189,48 @@ def main() -> int:
                 any(s == "WARN" for s, _ in sections(rep, "file-list")),
                 str(sections(rep, "file-list"))[:110])
 
+    # ── wf.same_tree — the predicate two commands trust to SKIP a 25-file gate (SCC-156 #9)
+    # `/smh-quick-dev` 4b and `/smh-code-review` accept a receipt across an absorb when
+    # `same_tree(receipt_sha, HEAD)` says the trees are byte-identical. It was untested while
+    # authorizing that skip. Three states, measured on a real repo: a merge commit with an
+    # IDENTICAL tree (the case SHA-equality gets wrong) -> True; a real content change ->
+    # False; an unknown sha -> None (unknown is never "same").
+    with TempDir() as tmp:
+        d = tmp / "st"
+        d.mkdir()
+        git(d, "init", "-q", "-b", "main")
+        git(d, "config", "user.email", "t@t.t")
+        git(d, "config", "user.name", "t")
+        (d / "a.txt").write_text("a\n", encoding="utf-8")
+        git(d, "add", "a.txt")
+        git(d, "commit", "-qm", "one")
+        base = git(d, "rev-parse", "HEAD").stdout.strip()
+        # A REAL merge commit whose tree equals the base: the lane changes a.txt and changes it
+        # back (two commits, net no-op), then lands --no-ff on main. Two parents, new sha,
+        # byte-identical tree - exactly the shape SHA-equality calls stale (review: an empty
+        # commit had stood in for it, which is a weaker case than the one the docstring names).
+        git(d, "checkout", "-qb", "noop")
+        (d / "a.txt").write_text("tmp\n", encoding="utf-8")
+        git(d, "commit", "-qam", "touch")
+        (d / "a.txt").write_text("a\n", encoding="utf-8")
+        git(d, "commit", "-qam", "untouch")
+        git(d, "checkout", "-q", "main")
+        git(d, "merge", "--no-ff", "-q", "-m", "merge noop", "noop")
+        merged = git(d, "rev-parse", "HEAD").stdout.strip()
+        parents = git(d, "rev-list", "--parents", "-n", "1", "HEAD").stdout.split()
+        c.check("same_tree · a MERGE commit (2 parents) with an IDENTICAL tree is True (sha-equality would say stale)",
+                base != merged and len(parents) == 3 and wf.same_tree(d, base, merged) is True,
+                f"{base[:7]} vs {merged[:7]} parents={len(parents) - 1}")
+        empty = merged
+        (d / "a.txt").write_text("b\n", encoding="utf-8")
+        git(d, "commit", "-qam", "change")
+        changed = git(d, "rev-parse", "HEAD").stdout.strip()
+        c.check("same_tree · a content change is False",
+                wf.same_tree(d, base, changed) is False, f"{base[:7]} vs {changed[:7]}")
+        c.check("same_tree · an unknown sha is None, never True (unknown is not 'same')",
+                wf.same_tree(d, base, "0" * 40) is None
+                and wf.same_tree(d, "deadbeef" * 5, empty) is None, "")
+
     return c.finish()
 
 

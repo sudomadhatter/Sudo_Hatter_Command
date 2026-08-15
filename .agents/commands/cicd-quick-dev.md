@@ -92,9 +92,13 @@ Runs **after** the work, on the diff since the skill's `baseline_commit`. Tiered
   `docs/_scc_sops_prds/workflows_testing_SOP.md` in the same commit, or the armed gate
   rejects the commit.
 
-Classify findings **patch / defer / reject**; auto-fix patches, append deferrals to the deferred-work
-file, drop noise. **Anything bigger than a trivial patch → HALT** (and see Step 1.5). Re-run the affected
-check after applying fixes and paste the output.
+Classify findings **patch / defer / reject**; auto-fix patches NOW, in this lane; drop noise with a
+one-line reason. **`defer` is not a parking lot** (operator rulings 2026-08-15): a finding may be
+deferred ONLY against a named structural blocker — another live lane owns the file, the fix lives in
+another repo, or it waits on a decision the operator has not taken — and the deferred-work entry names
+that blocker; "pre-existing" or "bigger than this lane" is not one. A finding worth fixing with no
+blocker is a patch, or it is the EJECT tripwire (Step 1.5) firing. **Anything bigger than a trivial
+patch → HALT** (and see Step 1.5). Re-run the affected check after applying fixes and paste the output.
 
 ## Step 4 — Artifacts, then stop
 - The **spec** the skill wrote is the working doc (it carries the Suggested Review Order).
@@ -121,7 +125,7 @@ python3 .agents/scripts/jira_feed.py devrecord --key <JIRA-KEY> --story <id-or-s
        --project <PROJECT> --stage quick-dev --walkthrough <the Step 4 walkthrough> \
        --outcome "<what shipped, one line>" --verdict "<the Step 3 verdict>" \
        --decision "<a ruling made while fixing>" --pitfall "<what nearly bit>" \
-       --followon "<anything Step 3 deferred>" --apply
+       --followon "<only what Step 3 deferred against a NAMED blocker - never a pile>" --apply
 ```
 
 **Exactly one Dev Record per ticket.** The script finds an existing record and UPDATES it in place, so

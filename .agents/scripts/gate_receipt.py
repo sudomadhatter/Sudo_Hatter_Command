@@ -103,6 +103,29 @@ def receipt_dir(project: Path, story: str, flat: bool = False) -> Path:
     return project / wf.GATES_REL / wf.norm_id(story)
 
 
+
+def _porcelain_z_paths(z: str) -> list[str]:
+    """Paths from `git status --porcelain -z`, in git's order, both sides of a rename/copy.
+
+    Entries are NUL-terminated `XY path`; when X or Y is R/C the ORIGINAL path follows as
+    its own NUL-terminated field. Untracked (`??`) and ignored (`!!`) rows are ordinary
+    entries. Nothing here is quoted, so what comes back is the exact filename."""
+    fields = z.split("\0")
+    out: list[str] = []
+    k = 0
+    while k < len(fields):
+        entry = fields[k]
+        k += 1
+        if not entry:
+            continue
+        xy, path = entry[:2], entry[3:]
+        if path:
+            out.append(path)
+        if ("R" in xy or "C" in xy) and k < len(fields) and fields[k]:
+            out.append(fields[k])          # the rename/copy SOURCE - dirt too
+            k += 1
+    return out
+
 def cmd_run(project: Path, story: str, gate: str, command: list[str],
             allow_fail: bool, cwd: Path | None, warn_exit: int | None = None,
             flat: bool = False) -> int:
@@ -110,9 +133,15 @@ def cmd_run(project: Path, story: str, gate: str, command: list[str],
         wf.die("no command given - put it after `--`")
     work = cwd or project
     sha_before = wf.git_head(work)
-    dirty_r = wf.git(["status", "--porcelain"], work)
-    dirty_lines = [ln for ln in dirty_r.stdout.splitlines() if ln.strip()]
-    dirty = bool(dirty_lines)
+    # `-z`: NUL-separated, NO C-quoting, and a rename/copy entry carries its ORIGINAL path
+    # as the next field. The line-form parse (`ln[3:].split(" -> ")[-1]`) kept the quotes on
+    # any path git quotes (non-ASCII, tabs, a literal quote) and dropped a rename's old side —
+    # both are misreads of the tree the receipt claims to describe (SCC-154 review #7,
+    # fixed SCC-160). Both sides of a rename are dirt: the reader that exempts
+    # `_artifacts/`-only dirt must SEE `code.py -> _artifacts/x.md` moved code.
+    dirty_r = wf.git(["status", "--porcelain", "-z"], work)
+    dirty_paths = _porcelain_z_paths(dirty_r.stdout)
+    dirty = bool(dirty_paths)
 
     started = time.time()
     try:
@@ -140,8 +169,8 @@ def cmd_run(project: Path, story: str, gate: str, command: list[str],
         # WHICH paths were dirty, so a READER can apply policy (e.g. task_preflight exempts
         # `_artifacts/`-only dirt, C6). The recorder itself stays strict: `dirty_tree` is
         # unchanged and this field is additive — an older receipt without it gets no
-        # exemption anywhere. Rename rows record the NEW path (`old -> new`).
-        "dirty_paths": [ln[3:].split(" -> ")[-1].strip() for ln in dirty_lines],
+        # exemption anywhere. A rename records BOTH paths (old and new are each dirt).
+        "dirty_paths": dirty_paths,
         "totals": _totals(output),
         "command": command,
         "cwd": str(work),

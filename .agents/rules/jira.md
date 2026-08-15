@@ -500,17 +500,22 @@ in the summary, the board row / spec pointer in the description — so nothing l
   **stops**; the operator's go is what writes it. Raw `acli`, parented to the Task. See §Subtasks.
 
 Outside these seams: status + comments only. Never mint speculative work — a ticket asserts a
-decision already made; "maybe" items live in the deferred ledgers, and the operator purges
-unrecognized tickets on sight.
+decision already made. There is no "maybe" bucket anywhere: a finding is fixed in its lane,
+dismissed with a reason, or deferred against a NAMED structural blocker in the deferred ledger —
+and the operator purges unrecognized tickets on sight.
 
-⭐ **Review findings are the canonical speculative case** (operator ruling 2026-08-15):
-verified-TRUE is not worth-implementing. The review's own triage decides which findings are
-actually relevant to implement (`code-review-engine` step-03, the relevance gate) and most
-little ones die there with a one-line reason — the hunters have finding-goals, so their volume
-is a success metric, never a work queue. Survivors are fixed in-lane, ledgered as judged
-ride-alongs, or — rarely — proposed as ONE decided chore ticket naming why each item survived.
-A residue ticket carrying every unfixed finding is banned in both directions: never minted by
-an agent, and never left as a walkthrough action row assigning the minting to the operator.
+⭐ **Review findings are the canonical speculative case — and a review never produces a ticket**
+(operator rulings 2026-08-15, both). The review's own triage decides which findings are actually
+relevant to implement (`code-review-engine` step-03, the relevance gate) and most little ones die
+there with a one-line reason — the hunters have finding-goals, so their volume is a success
+metric, never a work queue. **Every survivor is fixed in the same lane, in the same thread,
+before the verdict.** The only other disposition is a `defer` naming one structural blocker
+(another live lane owns the file · another repo · an open decision) in the deferred ledger —
+never a ticket. Banned in every form: a residue ticket carrying the unfixed pile, a "proposed"
+or "decided" ticket the operator is asked to rule on, and a walkthrough action row assigning
+either to the operator. The first cut of this rule allowed the "proposed decided ticket" leg;
+the operator ruled it the same loop under a new name ("we need the fixes made in thread not a
+ticket made every story thats an endless loop that never finishes").
 
 ## The ticket ↔ file join (all literal strings — no magic)
 

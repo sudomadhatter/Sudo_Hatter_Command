@@ -486,9 +486,15 @@ then read the story.*
 > asked to commission as tickets. That practice is retired. The triage step now owns a
 > **relevance gate**: a true finding must show a realistic path to real damage, or undermine
 > evidence the house cites as proof, or be something you asked for — otherwise it dies with a
-> one-line reason in the findings table. What survives is fixed in the lane, ledgered as a
-> judged ride-along, or (rarely) proposed to you as one *decided* ticket naming why each item
-> earned it. You should never again see a "mint the residue ticket" action row.
+> one-line reason in the findings table. **What survives is fixed in the lane, right there, before
+> the verdict.** The first cut of this rule still allowed "rarely — proposed to you as one *decided*
+> ticket", and SCC-160's own close-out handed you a "rule on Ticket A / Ticket B" row; you ruled
+> that the same loop under a new name ("we need the fixes made in thread not a ticket made every
+> story thats an endless loop that never finishes"). So: **a review never produces a ticket** —
+> not residue, not proposed, not decided. The only thing that may leave a lane unfixed is a
+> `defer` that names a structural blocker (another live lane owns the file · another repo · a
+> decision only you can take), and it lives in `deferred-work.md`, not on the board. You should
+> never again see a ticket-ruling row born from a review.
 
 **Where the verdict lives:** a `## Code Review` section in the story's `walkthrough.md`. Stories
 closed before 2026-08-02 keep it in the old standalone `sudo-code-review-<story>.md` file instead,
@@ -715,8 +721,9 @@ the whole ladder; a `record` failure never blocks a merge.
 `Verdict: … @ <sha>` stands, and Step 2's gate is the *mechanical* suite only. The review engine is
 recall-first with no noise filter by design, so re-running it — on anything, including its own
 fixes — always surfaces new findings, and "review until zero findings" is a loop that never ends.
-New findings at close-out anyway? Triage by severity: `suggestion`/`nitpick`/`defer` → record and
-merge; only a `critical`/`important` in `decision_needed` or `patch` stops it.
+New findings at close-out anyway? Triage by severity: `suggestion`/`nitpick` → record and merge
+(a `defer` still names its blocker); only a `critical`/`important` in `decision_needed` or `patch`
+stops it — and it gets fixed right there, never carried out of the lane.
 
 **⭐ A cross-repo task can be blocked by the *other* repo's state (SCC-94).** If your `task.yaml`
 declares `secondary_repos`, the preflight no longer treats it as a note — it goes and looks. It
@@ -1105,6 +1112,14 @@ mutants edit shared files on disk. ⭐ **And the closing run is still the whole 
 green**, after every restore is verified byte-identical: targeted kills prove each mutant died, only
 that closing green proves the tree you hand back is the one you started with. Full doctrine:
 `.agents/rules/tests-must-gate-for-real.md` **§ Mutation Testing**.
+
+> ⓘ **Three sweep truths that landed with SCC-160 (fixed in-thread from the SCC-156 review).**
+> A short `--case` label is a substring and can match many blocks — the transcript now prints
+> `-- matched blocks: A | B | C --` whenever more than one ran, so a kill record reads the NAMES,
+> never "killed by case P" when 22 blocks ran. **Ctrl-C now stops the suite** — queued files are
+> cancelled and the children already running are terminated (before, an 88 s run could not be
+> interrupted). And **an empty tests dir is exit 2, never `0/0 files passed`** — a checkout that
+> lost its files cannot mint a PASS receipt.
 
 ### Subtasks — the ticket you were handed is the top-level one
 

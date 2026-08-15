@@ -377,7 +377,7 @@ python3 .agents/scripts/jira_feed.py devrecord --key <KEY> --story <branch-slug>
        --stage quick-dev --walkthrough <the walkthrough> \
        --outcome "<what shipped, one line>" --verdict "<the Step 4 verdict>" \
        --decision "<a ruling made while building>" --pitfall "<what nearly bit>" \
-       --followon "<anything Step 4 deferred>" --apply
+       --followon "<only what Step 4 deferred against a NAMED blocker - never a pile>" --apply
 ```
 
 **Exactly one Dev Record per ticket** — the script finds an existing record and UPDATES it, so a later

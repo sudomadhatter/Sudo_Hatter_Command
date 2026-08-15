@@ -54,9 +54,17 @@ AFTER its summary comes back**, for claimed evidence, plan-vs-built deviations, 
 Actions` rows. Reading the builder's story before the hunt imports exactly the bias the Blind Hunter
 exists to zero out, and that lens is starved of context on purpose — never hand it the story.
 
-**Then act on what it hands back.** Apply the actionable fixes yourself; if you change code, re-run
-the relevant suite(s) — scoped, not full; the ONE full-suite run lands after your last change
-(Step 3.1) — and paste actual output.
+**Then fix in thread — act on what it hands back, here.** Every `patch` is applied by you, in this
+story lane, now; every `decision_needed` is walked with the operator now, in this thread, and
+becomes a patch or a dismiss on their word — one they do not decide now stays an open DECISION row
+in `## Your Actions` (Step 5; a decision is theirs and may hold the story, it is not a ticket) with
+its `defer` bullet pointing at that row. If you change code, re-run the relevant suite(s) —
+scoped, not full; the ONE full-suite run lands after your last change (Step 3.1) — and paste
+actual output. **Nothing that survived the relevance gate leaves this lane as future work** — not
+a residue ticket, not a "proposed" or "decided" ticket, not a ticket-ruling row (operator ruling
+2026-08-15, second: "we need the fixes made in thread not a ticket made every story"). The only
+exception is a `defer` naming one structural blocker (another live lane owns the file · another
+repo · an open decision), written to the project's `deferred-work.md`.
 
 **The engine returns a `severity_floor`, and it BINDS Step 4.** `none` < `CONCERNS` < `FAIL`: your
 verdict may be the floor or anything more severe (your own gates add their own reasons), never
@@ -174,7 +182,7 @@ new one. The section carries:
   the full-suite evidence was measured on and whose run it was (②'s inherited certification or ③'s
   own). Any code/test diff between that SHA and HEAD invalidates the verdict.
 - scope + method, one line each; then ONE findings table (`file:line` · severity · failure scenario ·
-  disposition applied / deferred — judged, rides a named lane class / dismissed — a relevance kill
+  disposition applied @ sha / deferred — blocked by other live lane · other repo · open decision / dismissed — a relevance kill
   carries its one-line reason, pure noise is count-only) — **the authoritative copy**; the story file links here,
   never restates. (The engine's step-04 may leave unresolved findings as `[ ] [Review]…` action items
   in `STORY_FILE` so the builder sees them — that is a worklist, not a second record, and it carries
@@ -206,10 +214,12 @@ of truth** — your Step 4 section is part of it, and the body around it must no
   missing artifact link, a doc fix — and tick it with a one-line note. Leave ONLY genuine human calls
   (product decisions, live checks, `main` promotion). Refresh the branch/commit summary after your
   worktree commits.
-  ⛔ A row assigning a residue ticket — "One follow-on ticket for the N deferred items" — is the
-  retired defect (operator ruling 2026-08-15), never a valid action row: the triage already
-  decided, and survivors live in this lane, the deferred ledger, or a decided ticket the triage
-  proposes itself.
+  ⛔ A row assigning ANY ticket born from review findings — a residue ticket ("One follow-on
+  ticket for the N deferred items"), a "proposed" ticket, a "decided" ticket to rule on — is the
+  retired defect (operator rulings 2026-08-15, both), never a valid action row: the survivors were
+  fixed in Step 1, a `defer` names its structural blocker in the ledger, and a review never
+  produces a ticket. An open box born from a finding holds the story on the review ladder — that
+  is the loop, not a feature.
 - **Hard rule: NEVER finish `/cicd-code-review` with the walkthrough body left stale after applying fixes.**
 
 ## Stay in lane

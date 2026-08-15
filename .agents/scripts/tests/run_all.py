@@ -24,25 +24,146 @@ emitted in file order, never in completion order — a transcript that reshuffle
 cannot be diffed against a previous one.
 
 Exit 0 only if every case in every file passed. Exit 2 = this runner was misconfigured (a bad
---jobs), which is not a statement about the suite either way.
+--jobs) or found NOTHING to run, which is not a statement about the suite either way. Ctrl-C
+stops the run: queued files are cancelled, never started (SCC-156 review #4/#7, fixed SCC-160).
 """
 from __future__ import annotations
 
 import argparse
 import os
+import signal
 import subprocess
 import sys
+import threading
 from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeout
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 FILES = sorted(p.name for p in HERE.glob("test_*.py"))
 
+# Every child still running, so an interrupt can END them rather than wait them out.
+_RUNNING: set[subprocess.Popen] = set()
+_RUNNING_LOCK = threading.Lock()
+_STOPPING = False   # set by stop_running(); a worker that has not spawned yet must not
+
 
 def run_one(name: str) -> tuple[str, int, str]:
-    r = subprocess.run([sys.executable, str(HERE / name)],
-                       capture_output=True, text=True, errors="replace")
-    return name, r.returncode, (r.stdout or "") + (r.stderr or "")
+    # The Popen window: a worker between "future started" and "child registered" is
+    # invisible to both `cancel()` and `stop_running()`'s snapshot (review, Blind Hunter).
+    # Two checks close it — refuse to spawn once stopping began, and if the stop landed
+    # while this child was being spawned, terminate it the moment it is registered.
+    if _STOPPING:
+        return name, 130, f"{name}: not started (interrupted)\n"
+    # ⛔ NO `encoding=` here: the children are Python writing to a pipe, so they encode with
+    # the LOCALE (cp1252 on the PC) - parent and child must share it, as they always did.
+    # (git output is UTF-8 by construction, which is why `wf.git` pins utf-8; test children
+    # are not git.) Decoding cp1252 bytes as UTF-8 turned every `·` into U+FFFD, which the
+    # parent's own cp1252 stdout then could not encode - the whole gate red-walled on the
+    # PC. Found by the review's edge-case lens before it shipped.
+    p = subprocess.Popen([sys.executable, str(HERE / name)], stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE, text=True, errors="replace")
+    with _RUNNING_LOCK:
+        _RUNNING.add(p)
+        late = _STOPPING
+    if late:
+        try:
+            p.terminate()
+        except OSError:
+            pass
+    try:
+        out, err = p.communicate()
+    finally:
+        with _RUNNING_LOCK:
+            _RUNNING.discard(p)
+    return name, p.returncode, (out or "") + (err or "")
+
+
+def stop_running(grace: float = 1.0) -> int:
+    """End every child still running; returns how many were told to stop.
+
+    POSIX: SIGINT first, so a child unwinds its `with TempDir():` blocks (a plain terminate
+    leaks every scratch repo the interrupted files had open), then `terminate()` for any
+    still alive after `grace`. Windows has no SIGINT to send a child: terminate.
+    """
+    global _STOPPING
+    with _RUNNING_LOCK:
+        _STOPPING = True
+        procs = list(_RUNNING)
+    if os.name != "nt":
+        for p in procs:
+            try:
+                p.send_signal(signal.SIGINT)
+            except OSError:
+                pass
+        for p in procs:
+            try:
+                p.wait(timeout=grace)
+            except subprocess.TimeoutExpired:
+                pass
+            except OSError:
+                pass
+    for p in procs:
+        if p.poll() is None:
+            try:
+                p.terminate()
+            except OSError:
+                pass
+    return len(procs)
+
+
+def run_pool(files: list[str], jobs: int, runner=run_one) -> list[str]:
+    """Run `files` through a pool of `jobs`, print each transcript in FILE order, and
+    return the names that failed. Factored out so the interrupt path is testable without
+    a signal: a `runner` that raises KeyboardInterrupt stands in for Ctrl-C.
+
+    ⛔ The interrupt path does TWO things, and the second is the one that matters.
+    `Executor.map` already cancels not-yet-started futures when its iteration dies, so
+    `cancel_futures=True` alone was never the whole fix the SCC-156 review named: with N
+    workers each mid-file, `__exit__`'s `shutdown(wait=True)` still WAITED for all N children
+    to finish — an 88 s suite that would not stop. So on interrupt: cancel the queue (nothing
+    more starts) AND `stop_running()` (every child in flight is terminated). Measured, not
+    believed: the case that pins this drives a real interrupt into a pool of sleeping children.
+    """
+    global _STOPPING
+    _STOPPING = False          # a fresh pool starts un-stopped (the latch is per run)
+    failures: list[str] = []
+    ex = ThreadPoolExecutor(max_workers=jobs)
+    futs: list = []
+    try:
+        # Submits live INSIDE the try: an interrupt during submission must take the same
+        # exit as one during the wait, or it escapes with the "cancelled" message printed
+        # and every file quietly running to completion under the atexit join.
+        for f in files:
+            futs.append(ex.submit(runner, f))
+        # Results are read in INPUT order, so the transcript stays alphabetical however the
+        # children finish. Each file's output lands whole — never interleaved mid-line.
+        # ⛔ A short-timeout poll, not a bare `.result()`: a main thread parked in a lock
+        # wait does not see an interrupt until a future completes (and never, on Windows),
+        # which is what made Ctrl-C land only after the in-flight children finished. Waking
+        # four times a second costs nothing and makes the interrupt land within 250 ms.
+        for fut in futs:
+            while True:
+                try:
+                    name, rc, out = fut.result(timeout=0.25)
+                    break
+                except FuturesTimeout:
+                    continue
+            print(out, end="")
+            if rc != 0:
+                failures.append(name)
+            print()
+    except BaseException:
+        # KeyboardInterrupt - and ANY runner exception (a Popen OSError: EMFILE under a
+        # huge --jobs, a missing interpreter). Either way nothing more may start and
+        # nothing may keep running behind a traceback.
+        for f in futs:
+            f.cancel()                                  # queued files never start
+        ex.shutdown(wait=False, cancel_futures=True)
+        stop_running()                                  # running children end now
+        raise
+    ex.shutdown(wait=True)
+    return failures
 
 
 def main() -> int:
@@ -62,15 +183,22 @@ def main() -> int:
         print(f"run_all: --jobs must be >= 1 (got {jobs})", file=sys.stderr)
         return 2
 
-    failures = []
-    # ex.map yields in INPUT order, so the transcript stays alphabetical however the
-    # children finish. Each file's output lands whole — never interleaved mid-line.
-    with ThreadPoolExecutor(max_workers=jobs) as ex:
-        for name, rc, out in ex.map(run_one, FILES):
-            print(out, end="")
-            if rc != 0:
-                failures.append(name)
-            print()
+    if not FILES:
+        # ⛔ Zero files is not a green suite. `0/0 files passed` + exit 0 is the vacuous-green
+        # class the harness closed one level down (a filter that selected nothing exits 3);
+        # one level up it was still standing (SCC-156 review #7). A tests dir that has lost
+        # its files — a bad checkout, a sparse clone, a wrong `--root` — must not authorize
+        # a gate SKIP with a PASS receipt.
+        print(f"run_all: no test_*.py files found under {HERE} - nothing ran, this is not "
+              f"a suite result", file=sys.stderr)
+        return 2
+
+    try:
+        failures = run_pool(FILES, jobs)
+    except KeyboardInterrupt:
+        print("\nrun_all: interrupted - queued files cancelled, running children terminated",
+              file=sys.stderr)
+        return 130
     print("=" * 60)
     print(f"{len(FILES) - len(failures)}/{len(FILES)} files passed"
           + (f"  FAILED: {', '.join(failures)}" if failures else ""))

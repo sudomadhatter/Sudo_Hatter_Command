@@ -191,7 +191,9 @@ Emit findings in this exact shape so `/smh-code-review` can fold them into its v
 - **PASS** — floor green on the changed set, nothing above noise.
 
 Apply the fixes you can make safely, then **re-run the affected check and paste the new output**. Mark
-each finding `applied` / `deferred` / `dismissed` — a dismissal needs a reason.
+each finding `applied` / `deferred` / `dismissed` — a dismissal needs a reason, and a deferral
+names its structural blocker (another live lane · another repo · an open decision); with no blocker it
+is applied here (operator rulings 2026-08-15).
 
 ## Stay in lane
 Audit and fix. Never merge to `main`, never transition a ticket, never prune a branch — that is

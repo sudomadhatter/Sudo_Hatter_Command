@@ -940,7 +940,7 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      "- **patch** — a real issue", "- ~~patch~~ — removed,"),
     ("step-03: defer bucket is defined", STEPS[2],
      r"^- \*\*defer\*\* —", re.M,
-     "- **defer** — real, worth fixing, but pre-existing", "- ~~defer~~ — removed,"),
+     "- **defer** — real, worth fixing, **and this lane", "- ~~defer~~ — removed,"),
     ("step-03: dismiss bucket is defined", STEPS[2],
      r"^- \*\*dismiss\*\* —", re.M,
      "- **dismiss** — noise, false positive", "- ~~dismiss~~ — removed,"),
@@ -972,9 +972,10 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     ("step-03: compound is a first-class finding source", STEPS[2],
      r"^\|\s*`source`\s*\|[^|]*`compound`[^|]*\|", re.M,
      "· `compound`, or merged", ", or merged"),
-    ("step-03: no-spec reclassifies decisions rather than parking them", STEPS[2],
-     r"becomes `patch` if the fix is\nunambiguous, otherwise `defer`", re.M,
-     "becomes `patch` if the fix is", "is discarded rather than being"),
+    ("step-03: no-spec keeps the decision instead of parking it as a blocker-less defer", STEPS[2],
+     r"becomes `patch` if the fix is\nunambiguous; otherwise it is STILL `decision_needed`", re.M,
+     "unambiguous; otherwise it is STILL `decision_needed`",
+     "unambiguous, otherwise `defer`"),
     ("step-03: dismiss is counted and a relevance kill is named", STEPS[2],
      r"\*\*`dismiss` is counted — and a relevance kill is counted AND named\.\*\*", 0,
      "**`dismiss` is counted — and a relevance kill is counted AND named.**",
@@ -995,6 +996,24 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      r"⛔ \*\*The residue class is RETIRED\.\*\*", 0,
      "⛔ **The residue class is RETIRED.**",
      "The residue pile is owed to ONE follow-on ticket"),
+    # ── step-03: fix in thread (SCC-160 follow-on, operator ruling 2026-08-15, second) ──────
+    # The first cut kept a "rarely — proposed to the operator as a decided chore ticket" leg and
+    # its own close-out ended in a ticket-ruling row: "we need the fixes made in thread not a
+    # ticket made every story thats an endless loop that never finishes." Two pins bind the
+    # recut: a review never produces a ticket, and `defer` is a structural blocker, not
+    # "pre-existing". The counter-examples are the exact sentences the first cut shipped.
+    ("step-03: a review never produces a ticket", STEPS[2],
+     r"⛔ \*\*A review never produces a ticket\.\*\*", 0,
+     "⛔ **A review never produces a ticket.**",
+     "A finding that survives may be proposed to the operator as a decided chore ticket."),
+    ("step-03: survivors are fixed in this lane before the verdict", STEPS[2],
+     r"\*\*A finding that survives\s+this gate is fixed in this lane, in this thread, before the verdict — full stop\.\*\*", 0,
+     "**A finding that survives\nthis gate is fixed in this lane, in this thread, before the verdict — full stop.**",
+     "A finding that survives this gate is fixed in this lane, or ledgered, or — rarely — proposed as a decided chore ticket."),
+    ("step-03: defer is a structural blocker, not pre-existing", STEPS[2],
+     r"^- \*\*defer\*\* — real, worth fixing, \*\*and this lane structurally cannot hold the fix\*\*", re.M,
+     "- **defer** — real, worth fixing, **and this lane structurally cannot hold the fix**",
+     "- **defer** — real, worth fixing, but pre-existing and not caused by this change."),
     ("step-03: critical maps to FAIL", STEPS[2],
      r"^\|\s*`critical`, in `decision_needed` or `patch`\s*\|\s*\*\*FAIL\*\*\s*\|", re.M,
      "| `critical`, in `decision_needed` or `patch` | **FAIL** |",
