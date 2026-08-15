@@ -1,9 +1,9 @@
 {
   "gate": "lint",
   "story": "scc-160",
-  "result": "fail",
-  "exit_code": 1,
-  "sha": "c588cb99465681da2d4707d0f03b12c60309941c",
+  "result": "pass",
+  "exit_code": 0,
+  "sha": "24fde116ff62fd66560870484ee6eca9f5a67e23",
   "dirty_tree": false,
   "dirty_paths": [],
   "totals": null,
@@ -14,6 +14,6 @@
   ],
   "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/scc-160-fix-in-thread",
   "duration_s": 0.2,
-  "recorded_at": "2026-08-15T06:33:12+00:00",
-  "output_tail": "== workflow_lint - toolkit-only ==\n[INFO ] commands: testarch-atdd.md: UTF-8 BOM present\n[INFO ] commands: testarch-automate.md: UTF-8 BOM present\n[INFO ] commands: testarch-ci.md: UTF-8 BOM present\n[INFO ] commands: testarch-framework.md: UTF-8 BOM present\n[INFO ] commands: testarch-nfr.md: UTF-8 BOM present\n[INFO ] commands: testarch-test-design.md: UTF-8 BOM present\n[INFO ] commands: testarch-test-review.md: UTF-8 BOM present\n[INFO ] commands: testarch-trace.md: UTF-8 BOM present\n[WARN ] ap-twins: cicd-code-review-AP.md: ap_reconciled names 95cba68, but cicd-code-review.md is now at 91e6095 - diff the twin and restamp\n-- 0 error(s), 1 warning(s), 8 info --\n"
+  "recorded_at": "2026-08-15T06:35:35+00:00",
+  "output_tail": "== workflow_lint - toolkit-only ==\n[INFO ] commands: testarch-atdd.md: UTF-8 BOM present\n[INFO ] commands: testarch-automate.md: UTF-8 BOM present\n[INFO ] commands: testarch-ci.md: UTF-8 BOM present\n[INFO ] commands: testarch-framework.md: UTF-8 BOM present\n[INFO ] commands: testarch-nfr.md: UTF-8 BOM present\n[INFO ] commands: testarch-test-design.md: UTF-8 BOM present\n[INFO ] commands: testarch-test-review.md: UTF-8 BOM present\n[INFO ] commands: testarch-trace.md: UTF-8 BOM present\n-- 0 error(s), 0 warning(s), 8 info --\n"
 }
