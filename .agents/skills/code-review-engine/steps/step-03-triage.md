@@ -55,17 +55,54 @@ describe different failures — that hides one of them.
 
 - **decision_needed** — an ambiguous choice needing human input; the code cannot be correctly
   patched without knowing intent. Only possible when `review_mode: full`.
-- **patch** — a real issue whose correct fix is unambiguous.
-- **defer** — real, but pre-existing and not caused by this change.
-- **dismiss** — noise, false positive, or already handled elsewhere.
+- **patch** — a real issue whose correct fix is unambiguous — and worth making (the gate below).
+- **defer** — real, worth fixing, but pre-existing and not caused by this change.
+- **dismiss** — noise, false positive, already handled elsewhere — **or true but not worth
+  implementing.** That last class is a judgment this step OWNS, and it is recorded in one line,
+  never hidden.
 
 In `review_mode: no-spec`, a finding that would be `decision_needed` becomes `patch` if the fix is
 unambiguous, otherwise `defer`. There is no spec to resolve the ambiguity against, so parking it as
 a decision nobody can take is worse than either.
 
-**`dismiss` is counted, `defer` is recorded.** A dismissed finding leaves the record as a number in
-the summary; a deferred one is written down in full by step 4. The count is never omitted — a
-review that silently drops what it rejected is a summary of its own conclusion.
+### The relevance gate — TRUE is not the same as WORTH DOING (operator ruling 2026-08-15)
+
+Step 2 settles whether a finding is true. This gate settles whether it is worth implementing —
+different questions, and conflating them is the flaw the ruling closed:
+
+> "the agents who review this have the goals of finding things, this doesnt mean they are all
+> actually relivant to impliment" — the operator, retiring the residue-ticket practice.
+
+The hunters are pointed at finding; volume is their success metric. A triage that treats every
+verified finding as owed work converts that metric into a work queue. So before a true finding
+may enter `decision_needed`, `patch`, or `defer`, it must pass at least ONE of:
+
+1. **A realistic path fires today** — from this defect to a wrong merge, false evidence, lost
+   work, or a blocked real flow. Realistic means you can name the actor and the moment; a chain
+   of hypotheticals ("if someone hand-edits X during Y while Z is down") fails this leg.
+2. **It undermines evidence the house already cites as proof** — gate verdicts, receipts,
+   mutation-kill attribution, suite totals. Evidence integrity is bought at full price.
+3. **The operator asked for it** — an acceptance item, a standing ruling, a named request.
+
+Fails all three → `dismiss`, one line: title + which leg it failed and why. Severity does not
+bypass the gate — an `important` with no realistic path is still dead, and §5 reads only the
+findings that survive here. Classes that default to dead: doc symmetry, coverage added for
+symmetry rather than for a suspected hole, style preference, and pins on prose — the last is
+vacuous by the house's own measurement (SCC-125).
+
+⛔ **The residue class is RETIRED.** No pile of unfixed findings is ever "owed to a follow-on
+ticket" — that phrase and its variants are banned from walkthroughs. A finding that survives
+this gate is fixed in this lane, or written down as a JUDGED ride-along (why it matters + the
+named lane class it rides), or — rarely — proposed to the operator as a decided chore ticket
+naming why each item survived. A ticket asserts a decision already made (`jira.md` §Who mints
+tickets); a parking lot asserts the opposite.
+
+**`dismiss` is counted — and a relevance kill is counted AND named.** Pure noise (false
+positive, misparse, duplicate of handled work) leaves the record as a number in the summary. A
+relevance kill — true, but not worth implementing — leaves ONE line in the walkthrough findings
+table: `dismissed — <failed leg + reason>`. A deferred finding is written down in full by
+step 4. The count is never omitted — a review that silently drops what it rejected is a summary
+of its own conclusion.
 
 ## 5. Score the severity floor — the one place severity becomes a verdict
 

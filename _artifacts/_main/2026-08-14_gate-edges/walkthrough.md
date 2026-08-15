@@ -183,7 +183,12 @@ Result: **7/7 KILLED, each by its NAMED case alone, one pass, zero re-aims**, re
 from copies; closing greens above. With the existence sweep's 17/17 this lane's mutant record is
 24/24.
 
-### Deferred (→ ONE follow-on task; the SCC-149 backstop item folds in here)
+### Deferred — ~~→ ONE follow-on task~~ SUPERSEDED 2026-08-15 (the SCC-149 backstop item folded in here)
+
+> **Nothing below is owed.** Retired with the residue-ticket practice (SCC-160, operator ruling
+> 2026-08-15); the nine items were re-triaged under the relevance gate in
+> `_artifacts/_main/2026-08-15_triage-owns-relevance/walkthrough.md` — 8 killed with reasons,
+> 1 (`dirty_paths` readback) ledgered to ride the next receipts lane. Historical record below.
 
 Sequencing constraint carried from compound C3: land the target-side INC pins + width mutants for
 the backstop FIRST, then behavior.

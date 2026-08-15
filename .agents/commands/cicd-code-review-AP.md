@@ -1,7 +1,12 @@
 ---
 description: Autopilot (headless) Review+Fix+Gate command — review the implementation in the shared autopilot run folder, apply fixes, run the TEA test gate, and hand to Daniel. Modeled off /cicd-code-review but tuned for agent-to-agent handoff. NOT for interactive use; the autopilot orchestrator invokes it.
 platforms: [claude, opencode]
-# Diffed against /cicd-code-review at this sha; nothing to port (SCC-147, 2026-08-14).
+# Diffed against /cicd-code-review at this sha; nothing to port (SCC-160, 2026-08-15).
+# The primary gained the relevance-kill disposition wording and the ⛔ residue-row ban in its
+# Your Actions triage. Neither ports: the law itself lives in the shared engine's step-03
+# relevance gate + step-04 record rules, which THIS twin already invokes, and this twin's own
+# body never carried a disposition enumeration or the residue-row habit text.
+# Previous stamp (SCC-147, 2026-08-14):
 # TWO diffs were read at this stamp, both ONE hunk on the same row, and neither ports:
 #   - the primary gained an explicit `lens_budget: standard` row. This twin already named
 #     `capped` in its own contract block, so the change only made the primary say out loud
@@ -22,7 +27,7 @@ platforms: [claude, opencode]
 #      fixes the blind-lens-first ordering that override requires. The primary is
 #      interactive, so handing prompts back is a real option there and it keeps that path.
 # Re-diff and restamp when the linter says this sha is stale — do NOT just bump it.
-ap_reconciled: 7e4f4068cdd16172dde80e6512e8e12f70a94e2c
+ap_reconciled: ccf054bf283150ce100fe08586181104e57d40fb
 ---
 
 # /cicd-code-review-AP — Autopilot Review + Fix + Test Gate (Murat)
