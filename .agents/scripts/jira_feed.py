@@ -1354,6 +1354,86 @@ def _collect(live: list[tuple[int, str]], start: int, items: list[str]) -> None:
     return items
 
 
+# ── SCC-163 Part B: what may go in `## Your Actions` ──────────────────────────
+#
+# Step 5 of /smh-code-review and /cicd-code-review permits the operator to be left exactly
+# three things: A PRODUCT DECISION, A MAIN MERGE, A TICKET TRANSITION. A row handing them any
+# ticket born from review findings - mint it, file it, "fold into <KEY>", rule on where it
+# goes - is the retired defect, and an open box here HOLDS the ticket on the review ladder
+# forever (see `finish` below). That was prose until now, and it was broken the same day it
+# was written: AVCH-58 shipped three unchecked rows, zero of them operator calls.
+#
+# ⛔ WHY THIS IS A VERB x OBJECT PAIR AND NOT A PHRASE LIST. The ticket's own phrase list, read
+# literally, was measured against every walkthrough in `_artifacts/` BEFORE this was written:
+# 101 carry the section, 25 unchecked rows, and the list flags 8 of them - of which at most 4
+# are real. "Rule on A1" is an acceptance dispute. "Rule the landing order" is merge
+# sequencing. "Decide whether the CONCERNS is worth clearing" is a product decision. All three
+# are precisely what Step 5 PERMITS. So a trigger verb alone is never enough: it must land on
+# an object that is ticket-shaped work.
+_BANNED_VERB = re.compile(
+    r"\b(mint|file|open|create|raise|rule\s+on|decide|your\s+call|place|fold)\b", re.I)
+# The object half. A bare Jira key is deliberately NOT here: "Merge AVCH-59 to main" and "Move
+# SCC-99 to Done" both carry one and are both ALLOWED, which is the trap acceptance B3 names.
+# What makes an object ticket-WORK is the noun, or a key being placed INTO something.
+_TICKET_OBJECT = re.compile(
+    r"\bticket\b|\bsubtask\b|\bbacklog\b|board\s+placement|"
+    r"\b(?:new\s+)?(?:jira\s+)?(?:task|key)\b(?![^\n]*\bto\s+Done\b)|"
+    r"fold[^\n]{0,40}\binto\s+[A-Z]{2,10}-\d+", re.I)
+# ⛔ DELIBERATELY NOT DETECTED: a row that is a STATUS NOTE rather than an imperative -
+# AVCH-58's rows 2 and 3 ("X remains AVCH-55's, still correctly deferred", "your local main is
+# behind origin/main"). Both are real defects: neither is an action. But they are not reliably
+# machine-detectable, they read exactly like the context prose that legitimately surrounds an
+# owed item, and a detector that guesses at them false-reds honest walkthroughs. Acceptance B5
+# scopes Part B to row 1's class only. Widening this is a decision, not a tidy-up.
+
+
+def banned_action_rows(text: str) -> list[tuple[str, str]]:
+    """The `## Your Actions` rows that hand the operator ticket work. `(row, reason)` each.
+
+    Reads the same rows `open_actions` does - through `_unfenced`, so a `- [ ]` template
+    quoted inside a ``` block stays documentation (SCC-154 paid for that close-marker rule
+    with a live miss; it is reused here, never re-derived)."""
+    rows = open_actions(text)
+    if not rows:
+        return []
+    out: list[tuple[str, str]] = []
+    for row in rows:
+        verb = _BANNED_VERB.search(row)
+        obj = _TICKET_OBJECT.search(row)
+        if verb and obj:
+            out.append((row, f"'{verb.group(0).strip()}' + '{obj.group(0).strip()}' - this "
+                             f"asks the operator to create or place ticket work"))
+    return out
+
+
+def render_banned_banner(rows: list[tuple[str, str]], walkthrough: str) -> str:
+    """The banner. ⛔ It is LOUD ON PURPOSE and it is pinned by a test.
+
+    The ruling (2026-08-15, "1. yes") is that this ships WARN: a block at `finish` fires AFTER
+    the merge, so it would trade a held ticket for an erroring close-out. But a warn nobody
+    reads is the `vscode-hides-git-hook-output` failure - a warn-only gate reads as clean
+    success - so the fix is volume and a named remedy, not a quieter conscience."""
+    n = len(rows)
+    lines = ["", "  " + "=" * 74,
+             f"  ⛔ BANNED ACTION ROW{'' if n == 1 else 'S'} - {n} row{'' if n == 1 else 's'} "
+             f"in `{YOUR_ACTIONS}` hand{'s' if n == 1 else ''} the operator ticket work",
+             "  " + "=" * 74, ""]
+    for row, reason in rows:
+        lines += [f"    - {row[:160]}", f"      why: {reason}", ""]
+    lines += [
+        "  Step 5 leaves the operator THREE things: a product decision, a main merge, a",
+        "  ticket transition. A ticket born from review findings is not one of them - and an",
+        "  open box here holds this ticket on the review ladder until someone edits the file.",
+        "",
+        f"  Fix the walkthrough ({walkthrough}), do not hand the row over:",
+        "    - the finding is evidenced and in YOUR lane -> file it yourself, or fix it here",
+        "    - it is genuinely the operator's -> say which of the three classes it is",
+        "",
+        "  This is a WARNING. The ticket's hold below is unchanged. `--strict-actions` makes",
+        "  it a refusal.", ""]
+    return "\n".join(lines)
+
+
 def render_user_tasks(items: list[str], walkthrough: str, when: str) -> str:
     lines = [f"**User tasks** - {when}", "",
              f"This ticket's work is merged, but the walkthrough leaves "
@@ -1365,6 +1445,25 @@ def render_user_tasks(items: list[str], walkthrough: str, when: str) -> str:
               "`jira_feed.py finish` - when the section has no open items left it closes "
               "the ticket. There is no force flag, on purpose."]
     return "\n".join(lines) + "\n"
+
+
+def cmd_check_actions(args) -> int:
+    """`## Your Actions` inspected on its own - no board, no key, no network.
+
+    Exit 1 on hits rather than 2: this is a report, and 2 in this script means THE ARTIFACT IS
+    WRONG (`cmd_finish`'s contract). A missing section is not this command's business - that is
+    `finish`'s refusal, and duplicating it here would give the same defect two different exit
+    codes depending on which entry point found it."""
+    wt = Path(args.walkthrough)
+    if not wt.is_file():
+        say(f"[ERR] no walkthrough at `{wt}`")
+        return 2
+    rows = banned_action_rows(wf.read_text(wt))
+    if not rows:
+        say(f"jira-feed: `{wt}` - no banned action rows.")
+        return 0
+    say(render_banned_banner(rows, str(wt)))
+    return 1
 
 
 def cmd_finish(args) -> int:
@@ -1393,12 +1492,25 @@ def cmd_finish(args) -> int:
             f"requires one, and a ticket cannot be certified clean against a file that is "
             f"not there.")
         return 2
-    items = open_actions(wf.read_text(wt))
+    text = wf.read_text(wt)
+    items = open_actions(text)
     if items is None:
         say(f"[ERR] {args.key}: `{wt}` has no `{YOUR_ACTIONS}` section - refusing to close. "
             f"An absent section is not evidence that nothing is owed; add the section (even "
             f"empty) so the answer is recorded rather than assumed.")
         return 2
+
+    # SCC-163 Part B. Runs BEFORE the board is touched, so a refusal under `--strict-actions`
+    # writes nothing at all. Warn-only by the operator's ruling (2026-08-15, "1. yes"): the
+    # rows below still count as owed exactly as they did, and the hold is unchanged - what is
+    # added is that the close-out now SAYS the row should not have been handed over.
+    banned = banned_action_rows(text)
+    if banned:
+        say(render_banned_banner(banned, str(wt)))
+        if args.strict_actions:
+            say(f"[ERR] {args.key}: refusing on {len(banned)} banned action row(s) "
+                f"(--strict-actions). Nothing was written; fix the walkthrough.")
+            return 2
 
     fields = view_fields(binary, args.key, timeout=args.timeout, strict=False)
     if fields is None:
@@ -1829,6 +1941,21 @@ def main() -> int:
     p_fin.add_argument("--timeout", type=int, default=90, metavar="SEC")
     p_fin.add_argument("--date", default=date.today().isoformat())
     p_fin.add_argument("--apply", action="store_true", help="without this, renders only")
+    # ⛔ SHIPS DISARMED, and that is the operator's ruling (2026-08-15), not a default someone
+    # picked. Arming a gate that can block a shipping path is its own act of law and needs its
+    # own quoted words (`blocking-gates-need-a-quoted-ruling`); building the flag now means
+    # arming it later is one flag on one invocation rather than a code change and a release.
+    p_fin.add_argument("--strict-actions", action="store_true",
+                       help="REFUSE (exit 2) when `## Your Actions` carries a row handing the "
+                            "operator ticket work, instead of only warning about it")
+
+    # `check-actions` - the same detector, standalone. It is what makes the corpus run
+    # reproducible ("run it over every walkthrough and show me the hits") without anyone
+    # importing a private helper, and it needs no board, no key and no network.
+    p_ca = sub.add_parser("check-actions",
+                          help=f"does this walkthrough's `{YOUR_ACTIONS}` hand the operator "
+                               f"ticket work? no board, no network")
+    p_ca.add_argument("--walkthrough", required=True)
 
     p_chk = sub.add_parser("check", help="does this ticket carry outline + Dev Record?")
     common(p_chk)
@@ -1840,7 +1967,7 @@ def main() -> int:
     args = ap.parse_args()
     return {"outline": cmd_outline, "mint": cmd_mint, "devrecord": cmd_devrecord,
             "audit": cmd_audit, "check": cmd_check, "trace": cmd_trace,
-            "flag": cmd_flag, "start": cmd_start,
+            "flag": cmd_flag, "start": cmd_start, "check-actions": cmd_check_actions,
             "finish": cmd_finish}[args.verb](args)
 
 
