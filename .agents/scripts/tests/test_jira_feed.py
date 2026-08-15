@@ -167,7 +167,11 @@ elif head[:3] == ["jira", "workitem", "transition"]:
     # An end-state check cannot tell "did not call" from "called and it was already right".
     state.setdefault("transitions", []).append(
         {"key": val("--key"), "status": val("--status"), "yes": "--yes" in args})
-    if not state.get("stuck_status"):
+    # `no_status` models a column the board does not carry: the call is recorded (acli says
+    # it transitioned) but the status does NOT move. That is the shape a missing column
+    # actually has, and it is the only way to test a LADDER - `stuck_status` blocks every
+    # rung at once, so it can never tell "fell through to the second" from "never tried".
+    if not state.get("stuck_status") and val("--status") not in state.get("no_status", []):
         state.setdefault("statuses", {})[val("--key")] = val("--status")
     save()
     print("Work item transitioned")
@@ -1401,6 +1405,77 @@ Nothing else is owed.
                 code == 0 and "dry run" in out.lower()
                 and get_state(state)["statuses"]["TEST-7"] == "In Progress"
                 and not get_state(state).get("transitions"), out.strip()[:200])
+
+        # The HELD path has its OWN dry-run guard, three writes further down (comment, label,
+        # ladder). The case above only covers the close, and the mutation sweep proved the
+        # difference: unguarding the HELD branch left the whole file green.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED))
+        st = get_state(state)
+        c.check("finish: a HELD dry run posts nothing, labels nothing and moves nothing",
+                code == 3 and "dry run" in out.lower() and not st["comments"]
+                and not st.get("labels") and not st.get("transitions"),
+                f"exit={code} {out.strip()[:160]}")
+        c.check("finish: the HELD dry run still PRINTS what it would have posted",
+                "memory-audit" in out, out.strip()[-200:])
+
+        # ── the label write is read-modify-write, and that is load-bearing ─────
+        # `--labels` REPLACES the set on the real acli. A writer that sends only `user-tasks`
+        # passes every "is user-tasks on the ticket?" assertion while silently deleting
+        # `quick-dev`, `parallel-ok` and everything else the board was carrying.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
+                  labels={"TEST-7": ["quick-dev", "parallel-ok"]})
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
+                       "--apply")
+        st = get_state(state)
+        c.check("finish: adding user-tasks PRESERVES every label already on the ticket",
+                set(st["labels"]["TEST-7"]) == {"quick-dev", "parallel-ok", "user-tasks"},
+                str(st.get("labels")))
+
+        # ── the ladder is a ladder: rung two is reached when rung one is absent ─
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
+                  no_status=["Awaiting Review"])
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
+                       "--apply")
+        st = get_state(state)
+        c.check("finish: a board missing the FIRST rung still lands on the second",
+                code == 3 and st["statuses"]["TEST-7"] == "In Review",
+                f"exit={code} {st.get('statuses')}")
+        c.check("finish: and it says where it put the ticket, not just that it held",
+                "In Review" in out, out.strip()[-200:])
+
+        # ── the close is VERIFIED, never assumed ───────────────────────────────
+        # acli prints "Work item transitioned" and exits 0 whether or not the status moved.
+        # Trusting the exit code would report a closed ticket that is still In Progress -
+        # and the close-out would prune the branch on the strength of it.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
+                  stuck_status=True)
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
+                       "--apply")
+        st = get_state(state)
+        c.check("finish: a close that REPORTS success but does not land is caught",
+                code == 2 and st["statuses"]["TEST-7"] == "In Progress"
+                and "did not" in out.lower(), f"exit={code} {out.strip()[:160]}")
+
+        # ── re-running on a closed ticket is a no-op, not a second transition ──
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "Done"})
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
+                       "--apply")
+        st = get_state(state)
+        c.check("finish: an already-Done ticket exits 0 and transitions nothing",
+                code == 0 and "already" in out.lower() and not st.get("transitions"),
+                f"exit={code} {out.strip()[:160]}")
+
+        # ── the section ends at ANY heading of the same level or higher ────────
+        # `## Something After` is covered above; a top-level `# ` is the other boundary, and
+        # an appendix is exactly where a doc-wide checklist tends to live.
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+        code, out = jf("finish", "--key", "TEST-7", "--apply", "--walkthrough", walkthrough(
+            "# Walkthrough\n\n## Your Actions\n\n- [x] all done\n\n"
+            "# Appendix\n\n- [ ] a doc-wide checklist item that is not the operator's\n"))
+        c.check("finish: a top-level `# ` heading closes the section too",
+                code == 0 and get_state(state)["statuses"]["TEST-7"] == "Done",
+                f"exit={code} {out.strip()[:160]}")
 
     return c.finish()
 

@@ -323,11 +323,25 @@ def main() -> int:
                                     "type": "Task"}, tmp)
         c.check("story mode refuses a Task parent and hands it to /smh-label-tasks",
                 "/smh-label-tasks" in msg, msg.strip()[:200])
+        # ⛔ The line above is NOT enough on its own, and the mutation sweep proved it:
+        # deleting the type check entirely leaves it green, because this parent also has no
+        # `Epic N` in its summary, so the GROUPING-epic refusal fires instead — and that one
+        # names `/smh-label-tasks` too. Right answer, wrong reason. Pin the sentence only the
+        # type arm can produce.
+        c.check("...and it refuses for the TYPE, not for the summary's shape",
+                "is a Task, not an Epic" in msg, msg.strip()[:200])
 
     msg = refuses("gate_task", {"key": "AVCH-13", "summary": "Epic 12 - Test",
                                 "type": "Epic"})
     c.check("task mode refuses an Epic parent and hands it to /cicd-label-tasks",
             "/cicd-label-tasks" in msg, msg.strip()[:200])
+
+    # An UNTYPED parent is the other half of that arm. The board can hand back a blank
+    # issuetype, and "we could not read the type" must never be treated as "it is a Task" —
+    # assessing an epic's whole child set as one flat subtask pool answers nobody's question.
+    msg = refuses("gate_task", {"key": "SCC-99", "summary": "Some container"})
+    c.check("task mode refuses an UNTYPED parent too - unknown is not 'a Task'",
+            "untyped container" in msg, msg.strip()[:200])
 
     gate_task = getattr(lt, "gate_task", None)
     c.check("task mode accepts a Task parent",
@@ -358,6 +372,38 @@ def main() -> int:
         orphan = find_task_plan(tmp, "SCC-146") if find_task_plan else "<missing>"
         c.check("a task.yaml with no plan beside it grounds nothing", orphan is None,
                 str(orphan))
+
+    # ── the grounding LADDER itself, driven directly ───────────────────────────
+    # Everything else in this file feeds `resolve` a pre-built packet, so `ground_child`'s
+    # task arm was never actually executed — the fixtures hand-write the `authority` and
+    # `next_command` it is supposed to compute. The mutation sweep caught that: deleting the
+    # ticket rung and blanking the unlock command both survived a full green run. These call
+    # it for real, in a bare temp dir, so there is no branch and no plan and the third rung
+    # is the only one left.
+    ground_child = getattr(lt, "ground_child", None)
+
+    def grounded_via(desc: str) -> dict:
+        if ground_child is None:
+            return {"authority": "<ground_child does not exist>"}
+        with TempDir() as t:
+            return ground_child(t, {"key": "SCC-101", "summary": "SCC-101 - do the thing",
+                                    "story_id": None, "description": desc},
+                                "main", "task", "SCC-99")
+
+    g = grounded_via("ACCEPTANCE\n- `.agents/scripts/x.py` grows the new arm")
+    c.check("a Subtask with only a DESCRIPTION is grounded on the ticket rung",
+            g.get("grounded") is True and g.get("authority") == "ticket", str(g.get("authority")))
+    c.check("the ticket rung tells the agent ambiguity counts as an EDIT",
+            any("fail toward locked" in (s.get("read") or "")
+                for s in (g.get("sources") or [])), str(g.get("sources")))
+
+    g = grounded_via("   ")
+    c.check("a Subtask with a BLANK description is ungrounded, not grounded on whitespace",
+            g.get("grounded") is False, str(g.get("authority")))
+    c.check("ground_child names /smh-plan-task as the Task-lane unlock",
+            g.get("next_command") == "/smh-plan-task SCC-99", str(g.get("next_command")))
+    c.check("its reason names all three rungs, so the operator knows what to supply",
+            g.get("reason") == "no lane branch, no plan, no description", str(g.get("reason")))
 
     # ── an ungrounded Subtask reads 'no plan' and names the planner ────────────
     with TempDir() as tmp:
@@ -412,6 +458,47 @@ def main() -> int:
                          "SCC-101": {"paths": [".agents/b.py"]}})
         c.check("a touch-set with NO quick_dev key leaves the label untouched",
                 "quick-dev" not in out, out[-400:])
+
+    # An ungrounded child is the one place the engine decides quick-dev by ITSELF rather than
+    # carrying the agent's answer: nobody can size a lane they cannot see, so it is an
+    # explicit False and a stale label comes off. `None` here would look identical on a clean
+    # ticket and quietly keep a wrong label on a dirty one.
+    with TempDir() as tmp:
+        out = stamp_out(tmp, [subtask("SCC-100"),
+                              subtask("SCC-101", grounded=False, labels=["quick-dev"])],
+                        {"SCC-100": {"paths": [".agents/a.py"]}})
+        c.check("an UNGROUNDED child LOSES a stale quick-dev - an unseen lane is unsizable",
+                "SCC-101 -quick-dev" in out, out[-400:])
+
+    # The tri-state's other input shape: the block is present but says nothing. A dict with
+    # no `eligible` key is an agent that opened the question and did not answer it, which is
+    # UNASSESSED — reading it as False would strip a hand-set label on a technicality.
+    quick_dev_of = getattr(lt, "quick_dev_of", None)
+    c.check("a quick_dev block with no 'eligible' key is UNASSESSED, not ineligible",
+            quick_dev_of is not None
+            and quick_dev_of({"quick_dev": {"evidence": "looked, did not decide"}})[0] is None,
+            "quick_dev_of missing" if quick_dev_of is None
+            else str(quick_dev_of({"quick_dev": {"evidence": "x"}})))
+    c.check("a quick_dev block that DOES answer is carried through as the answer",
+            quick_dev_of is not None
+            and quick_dev_of({"quick_dev": {"eligible": True, "evidence": "one file"}})
+            == (True, "one file"),
+            "quick_dev_of missing" if quick_dev_of is None else "wrong tuple")
+
+    # ── the mode is DERIVED, and the override still exists ─────────────────────
+    # This is what makes a wrong-mode run impossible to start rather than merely refused.
+    # Both verbs that read the board call it, and neither is reachable offline, so it is
+    # driven directly here — the sweep showed hard-coding it to "story" changed nothing.
+    resolve_mode = getattr(lt, "resolve_mode", None)
+    c.check("a Task parent derives task mode with no flag at all",
+            resolve_mode is not None and resolve_mode({"type": "Task"}, None) == "task",
+            "resolve_mode missing" if resolve_mode is None else "wrong mode")
+    c.check("an Epic parent derives story mode",
+            resolve_mode is not None and resolve_mode({"type": "Epic"}, None) == "story",
+            "resolve_mode missing" if resolve_mode is None else "wrong mode")
+    c.check("--mode overrides the board when the board's type is wrong",
+            resolve_mode is not None and resolve_mode({"type": "Epic"}, "task") == "task",
+            "resolve_mode missing" if resolve_mode is None else "override ignored")
 
     label_plan = getattr(lt, "label_plan", None)
     c.check("label_plan leaves an unassessed label alone",
