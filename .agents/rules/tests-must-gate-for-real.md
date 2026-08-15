@@ -92,6 +92,40 @@ finished table in the walkthrough: each mutant, its file, its named case, and th
   remove. A mutated gate is committable, and residue in a dirty tree is indistinguishable from your own
   work.
 
+- **WIDTH, not only existence** — a deletion mutant proves a case notices the behaviour is *gone*. It
+  proves **nothing about the boundary**, and a narrowing is the shape real regressions take. So sweep
+  **narrowings** too: drop one member from a matched class, shorten a range, require one extra
+  condition, disable one arm of a rule that has several. SCC-154's existence sweep killed 17/17 and its
+  review still found that width was uncertified; a second sweep of 7 narrowings — a character class
+  losing one marker, a fence rule ignoring the opening length, an allow-arm losing one destination —
+  killed 7/7 by named case and is the only reason those boundaries are known to be held.
+
+### Targeted kills — run the NAMED case, not the whole file
+
+A mutant is a claim about **one** case. Running the entire file to test it buys nothing and costs the
+file's full wall: SCC-154's 17-mutant sweep spent ~21 minutes running two large suites 17 times over,
+to watch one named case die each time.
+
+**So run the killer alone** — `python3 <suite> --case "<block label>"` (`_harness.py`'s block filter,
+SCC-156) — and read its exit code with the sweep's three outcomes kept distinct:
+
+| Exit | Means | The sweep does |
+|---|---|---|
+| non-zero (1) | the named case FAILED | **KILLED** — this is the result you declared |
+| 0 | the named case passed with the mutant in place | **not yet a survivor** — re-run that mutant against the **whole file** before believing it. A mis-aimed label and a genuine hole look identical from one filtered run, and only the full file can tell them apart |
+| **3** | the filter selected nothing — a typo'd label, an unwired file, a matched block with no cases | **a sweep error, never a verdict.** Fix the label and re-run. ⛔ Reading 3 as a kill is the failure this exit code exists to prevent: every mutant would "die" and the sweep would certify nothing |
+
+⛔ **Never parallelize the mutant loop.** Mutants edit shared files on disk; two in flight at once mean
+neither result is about the mutant you think it is. The *cases* inside one run may be concurrent; the
+loop over mutants is strictly sequential.
+
+⭐ **The closing full green is MANDATORY, and it is not the same run as the kills.** When the sweep ends
+— after every restore is verified byte-identical against its pre-sweep `sha256` — run the affected test
+**FILES bare, unfiltered**, and require green. Targeted kills prove each mutant died; only the closing
+green proves the tree you are handing back is the tree you started with. A sweep that ends on a filtered
+run has verified nothing about the other 140 cases in the file it just edited 17 times. Every sweep
+script carries this step; a sweep report without it is incomplete evidence, not a fast one.
+
 ### A mutant that removes nothing is DEFECTIVE — not a coverage gap
 
 **The survivor you must not believe.** If the mutant's edit does not appear in the original text, or it

@@ -176,6 +176,15 @@ own work, so the script derives it and prints it as `LANE:`:
 Exit 2 → stop and report. Exit 1 (warnings) → read them; a "never pushed" warning in particular
 means Step 3 would merge something no other machine has.
 
+⭐ **A `landing:` STALLED LANDING error is about `main`, not about your lane (SCC-159).** Local
+`main` is ahead of `origin/main`, so an earlier close-out merged and never pushed — and every lane
+behind it, this one included, queues invisibly. Nothing else catches it: Step 3's
+`git pull --ff-only origin main` **succeeds silently when local is merely ahead**, and the `0 0`
+check runs only after the push. Land or inspect that commit first. Offline — the operator pushes
+from planes, where reads succeed while pushes die mid-upload — `--accept-unpushed-main` is the
+auditable way through: it downgrades this one check to a warning and prints itself back into the
+output, so the record shows it was used.
+
 ## Step 2 — Run the gate the lane selected
 
 The preflight prints the exact commands under `gate:`. Run them and **paste the real output** — a
@@ -223,6 +232,14 @@ runs on a docs-only diff:
   enforced this per commit, so a surprise here means a commit was made with `--no-verify` or
   `[sop-ok]` — say which.
 
+⭐ **When the verdict is code-fresh, CITE those two instead of re-walking them (SCC-156).**
+`/smh-code-review` Step 3 ran both against this same diff, and if nothing outside `_artifacts/` has
+changed since the verdict sha — the condition the preflight already computed for the SKIP — then the
+diff they walked *is* the diff landing. Print which review run they came from and move on. This is
+the same fail-toward-running rule the suite receipt follows: **cite only under code-fresh; if any
+non-artifact file moved, walk them again.** Two live nets remain either way — the armed `commit-msg`
+gate refused any SOP-less usage-surface commit as it was made, and CI re-checks at the landing sha.
+
 Any failure → **STOP**. Fix it on the branch and re-run; do not carry a red gate into a merge.
 
 ⛔ **This gate is MECHANICAL only — never re-run the LLM review here.** The lane's review already
@@ -252,6 +269,14 @@ git merge chore/<JIRA-KEY>-<slug> --no-ff \
 SHA=$(git rev-parse HEAD)
 env -u GITHUB_TOKEN git push origin HEAD:refs/heads/gate/main-$SHA
 
+# ⭐ PUSH THE GATE REF FIRST, THEN WRITE — the CI wall is ~50 s of doing nothing (SCC-156).
+# The moment the merge commit exists and its ref is pushed, CI is running whether you watch
+# it or not. Spend that wall on the two things this close-out still owes and that depend on
+# NOTHING the run will say: the merge summary, and the Dev Record draft. Then come back and
+# read the verdict. ⛔ What may NOT move into that window: the token mint (its TTL is the
+# reason this order exists at all), the push itself, and the Jira transition — all three are
+# strictly post-green. Drafting is not filing: if the gate comes back red, the draft is
+# discarded with the merge, and nothing was reported that did not happen.
 sleep 10                                       # let the run register before asking for it
 until gh api repos/{owner}/{repo}/commits/$SHA/check-runs \
         --jq '.check_runs[] | select(.name=="main-write-gate") | .status' \
@@ -310,26 +335,48 @@ Capture the merge SHA — Step 4 puts it on the ticket.
 board; a merge that landed while the record lags is one command away from correct. Take the
 recoverable failure.
 
-> ⭐ **Before you write `Done`, re-assert the children (SCC-119).** If this ticket is a **parent**, it
-> closes **LAST** — the whole job closes together at the end, so a parent going `Done` over open
-> subtasks is exactly the lie above, one level up.
+> ⭐ **Before you write `Done`, settle the children (SCC-119 · riders SCC-156).** If this ticket is a
+> **parent**, it closes **LAST** — the whole job closes together at the end, so a parent going `Done`
+> over open subtasks is exactly the lie above, one level up.
 >
 > ```bash
 > acli jira workitem search --jql "parent = <JIRA-KEY>" --fields "key,summary,status"
 > ```
 >
-> Any child that is not `Done` or `Deferred` → **STOP.** Finish it, or descope it properly
-> (`Deferred` + the `descoped` label — that is the auditable escape, and the reason there is no
-> `--force` flag).
+> **Riders close first, and YOU close them.** A subtask listed under `riders:` in this lane's
+> `task.yaml` did its work IN this lane — the merge that just landed is its work too. For each
+> declared rider that is still open **and appears in the search above**:
 >
-> **This is a second layer, not a duplicate.** `task_preflight.py check_children()` already ran it at
-> Step 1 and blocks on open children — but it **warns rather than blocks when the board is
-> unreachable**, and a sandboxed shell cannot reach the credential store at all. This line runs where
-> the board is provably reachable, because the very next command transitions the ticket. Neither
-> layer is load-bearing alone — the same shape as the two `start` seams (SCC-113).
+> ```bash
+> acli jira workitem transition --key <RIDER-KEY> --status "Done" --yes
+> ```
 >
-> ⛔ A **`Subtask`** closes here exactly like a `Task`: its own branch, its own gate, its own `Done`.
-> It is never labelled `Bug` — if it turns out broken, the flag goes on its **parent**.
+> This is an **agent step inside the ceremony the operator's word invoked** — the operator acts in
+> words, never in board edits. A declared rider that is *not* a subtask of this parent is a
+> declaration error: flip nothing, report it. Never transition a ticket whose work did not actually
+> land here.
+>
+> After the riders: any child still not `Done` or `Deferred` → **STOP.** Finish it, or descope it
+> properly (`Deferred` + the `descoped` label — that is the auditable escape, and the reason there
+> is no `--force` flag).
+>
+> ⛔ **If this command ever leaves the operator a Jira edit to do by hand, the flow is broken —
+> stop and say so.** Not "please move SCC-00 to Done and re-run": the agent performs every board
+> write, always inside this ceremony. A hand-back that assigns the operator data entry is a bug in
+> the flow, never an instruction to relay.
+>
+> **This is a second layer, not a duplicate.** `task_preflight.py check_children()` already ran at
+> Step 1 — it blocks on open undeclared children and WARNS each declared rider with the exact
+> transition above — but it **warns rather than blocks when the board is unreachable**, and a
+> sandboxed shell cannot reach the credential store at all. This step runs where the board is
+> provably reachable, because the very next command transitions the ticket. Neither layer is
+> load-bearing alone — the same shape as the two `start` seams (SCC-113).
+>
+> ⛔ A **`Subtask`** normally closes here exactly like a `Task`: its own branch, its own gate, its
+> own `Done` — **unless the operator ordered its work into the parent's lane**, in which case it is
+> a `riders:` entry in the parent lane's `task.yaml` and closes in the rider step above, right
+> before its parent. Either way it is never labelled `Bug` — if it turns out broken, the flag goes
+> on its **parent**.
 
 ```bash
 python3 .agents/scripts/jira_feed.py devrecord --key <JIRA-KEY> --story <branch-slug> \

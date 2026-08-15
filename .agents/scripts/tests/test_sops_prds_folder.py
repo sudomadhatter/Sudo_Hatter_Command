@@ -1313,9 +1313,16 @@ def main() -> int:
     # -- T6: nothing left behind. RECURSIVE on purpose -- diagrams_guides/ nested its docs under
     #    system/, security/ and workflows_tea_testing/, so a top-level glob saw 3 of 13 and
     #    reported a near-clean folder while ten procedural docs sat one level down.
+    #
+    #    `quick_links.md` (SCC-156): the OPERATOR's own signpost, rolled in on their order
+    #    2026-08-14 -- links INTO docs/_scc_sops_prds/, no procedure content. That is the
+    #    pointer shape SCC-74 wants _my_resources to hold, same as INDEX.md. The allowlist
+    #    stays by-NAME on purpose (this file's own doctrine: an addition is a conscious
+    #    edit); procedural content under any other name still fails here.
     left = sorted(p.relative_to(ROOT).as_posix()
                   for v in VACATED for p in (ROOT / v).rglob("*.md")
-                  if p.name != "INDEX.md") if any((ROOT / v).is_dir() for v in VACATED) else []
+                  if p.name not in ("INDEX.md", "quick_links.md")
+                  ) if any((ROOT / v).is_dir() for v in VACATED) else []
     c.check("T6 no procedural docs in _my_resources", not left,
             det(not left, f"{len(left)} left: " + "; ".join(left[:4])
                           + (" ..." if len(left) > 4 else "")))

@@ -187,7 +187,7 @@ exit code, which is how a red gate reads as green.
 |---|---|---|
 | **Enforcement suite** | `python3 .agents/scripts/tests/run_all.py` | **always** — N/N files, exit 0 |
 | **Toolkit lint** | `python3 .agents/scripts/workflow_lint.py --toolkit-only` | **always** — errors FAIL, warnings are CONCERNS |
-| **Assertion evidence** | re-run the task's own Step 2 RED assertions | **always** — they must be GREEN now |
+| **Assertion evidence** | re-run the task's own Step 2 RED assertions — `--case "<label>"` where the suite declares blocks, so this row cites the NAMED cases rather than a whole file | **always** — they must be GREEN now |
 | **SOP currency** | `python3 .agents/scripts/sop_currency.py --paths <changed> --message "<subject>"` | a usage surface is in the diff |
 | **Link + anchor** | resolve every path and `#L` anchor the diff touched | any `.md` in the diff |
 | **Door parity** | every added/renamed command has exactly the doors its `platforms:` claims | a command was added, renamed or deleted |
@@ -199,13 +199,23 @@ exit code, which is how a red gate reads as green.
 accepts both, SCC-154) + stamped on a clean tree + no non-artifact file changed between its sha and
 HEAD → adopt it, cite the receipt, do not re-run the suite.** Anything else — no receipt, a `fail`
 or `DIRTY` stamp, code, test or doc changes since — **run it yourself and re-stamp** with the same
-command. Port the rule verbatim: **fail toward running, never toward trusting.** Step 0.7 absorbs
-`main` and moves HEAD, so the freshness check invalidates an inherited receipt automatically —
-that is correct, and needs no special case.
+command. Port the rule verbatim: **fail toward running, never toward trusting.**
 
-**Run the suite ONCE, on the code that will actually land.** While fixing, run scoped — the tests for
-what you touched. **After your LAST change**, run `run_all.py` in full **through the receipt writer**
-and paste it, with the sha. Artifact-only commits after that run do **not** invalidate it; code,
+⛔ **An absorb does NOT automatically invalidate the receipt — freshness is a TREE comparison, not a
+sha comparison.** Step 0.7 moves HEAD, and it is tempting to conclude the inherited receipt died with
+it; it did not. `gate_receipt.check_receipt` asks `wf.same_tree(repo, sha, target)` — literally
+`git diff --quiet <sha> <HEAD>` — so a merge commit whose tree is identical to the stamped one
+(a no-op absorb, or one that only moved `_artifacts/`) leaves the receipt **valid**, and re-running
+the suite there buys a second copy of an answer you already have. What invalidates it is a
+**content** change outside `_artifacts/`, whoever authored it.
+
+**Run the suite ONCE, on the code that will actually land — ONE re-stamp, after the LAST
+code-touching change.** While fixing, run scoped — the tests for what you touched, and where the
+suite file declares blocks, `--case "<label>"` runs just those (exit 3 = the label matched nothing,
+which is a mistyped command, not a result). **After your LAST change**, run `run_all.py` in full
+**through the receipt writer** and paste it, with the sha. Artifact-only commits after that run do
+**not** invalidate it, and neither does a no-op or artifacts-only absorb (same tree ⇒ same
+receipt); code,
 test **or doc** changes do — only `_artifacts/` is exempt, and a `docs/` commit invalidates
 (SCC-154; the old "doc-only" wording overstated the exemption and was disproven live when a docs
 commit staled a receipt mid-review). The receipt's freshness check reads exactly that rule,
