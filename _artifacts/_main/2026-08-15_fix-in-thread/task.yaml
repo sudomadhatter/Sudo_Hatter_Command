@@ -1,0 +1,9 @@
+task_key: SCC-160
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-160-fix-in-thread
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+# Follow-on under SCC-160's own key (a follow-on is never a new ticket). The operator ruled the
+# first landing "not the full fix": it retired residue tickets but still let survivors become a
+# PROPOSED ticket the operator must rule on - the same loop under a new name. This lane makes the
+# survivor path fix-in-thread only, and applies that law to SCC-160's own open Ticket A/B row.
