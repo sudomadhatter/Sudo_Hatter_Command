@@ -9,8 +9,9 @@ metadata:
 ---
 
 `docs/_scc_sops_prds/workflows_testing_SOP.md` is the **operator's PRD** — the one page
-that answers "what do I type." It is inside the protected `_my_resources/` area but is explicitly
-maintained (the operator asked for it by name and approved the gate).
+that answers "what do I type." (It lived under `_my_resources/_quick_reference/` at birth and
+moved to `docs/_scc_sops_prds/`; the gate's path followed. The operator asked for it by name and
+approved the gate.)
 
 **The gate** (`.agents/scripts/sop_currency.py` ← `git-hooks/sop-currency.sh`, second in
 `.githooks/commit-msg` after the Jira gate): a commit touching `.agents/commands/*.md`,

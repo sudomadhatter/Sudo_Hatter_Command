@@ -1,0 +1,8 @@
+task_key: SCC-160
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-160-triage-owns-relevance
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+# Law lane, no riders: the operator's 2026-08-15 ruling retires the residue-ticket practice.
+# The review's own triage now decides which verified-true findings are actually worth
+# implementing; the rest die with a one-line reason instead of banking into a follow-on ticket.

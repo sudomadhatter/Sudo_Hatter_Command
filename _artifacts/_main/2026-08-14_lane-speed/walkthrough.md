@@ -407,7 +407,13 @@ targets met"* — I then corrected that A2's post-split target was **not** met, 
 **no re-affirmation since that correction**. So this verdict does not lean on that message as
 blanket acceptance of A1 or A2.
 
-### Deferred residue — real, non-blocking, owed to ONE follow-on
+### Deferred residue — ~~real, non-blocking, owed to ONE follow-on~~ SUPERSEDED 2026-08-15
+
+> **Nothing below is owed.** The residue-ticket practice was retired by the operator's
+> 2026-08-15 ruling (SCC-160); these 16 items were re-triaged under the new relevance gate in
+> `_artifacts/_main/2026-08-15_triage-owns-relevance/walkthrough.md` — 5 survive into proposed
+> Ticket A/B, 2 are ledgered ride-alongs, 8 killed with reasons, 1 (A6) stays your open ruling.
+> The list stays below as the review's historical record.
 
 Carried with the sequencing constraint that the `--case` ergonomics (1–3) are one change:
 
@@ -531,8 +537,12 @@ per the universal law, none of it is a Jira edit.
 - [ ] **The merge itself.** This lane is merge-ready and STOPS here. `/smh-close-task-merge-tree`
       is your per-merge sign-off, and since SCC-37 the minter refuses without
       `--operator-approval '<your exact words, this turn>'`.
-- [ ] **One follow-on ticket** for the 16 deferred residue items in the review section above,
-      carrying the sequencing note that items 1–3 (the `--case` ergonomics) are one change.
+- [x] ~~**One follow-on ticket** for the 16 deferred residue items in the review section above~~
+      **Superseded by your 2026-08-15 ruling (SCC-160):** residue tickets are retired; the 16
+      items were re-triaged under the relevance gate (see
+      `_artifacts/_main/2026-08-15_triage-owns-relevance/walkthrough.md`) — survivors ride the
+      two proposed decided tickets awaiting your word, the rest died with reasons. This row was
+      never yours to do by hand and no longer exists as work.
 
 **Landing order vs `chore/SCC-155-label-tasks`: free.** The two lanes conflict only in
 `.agents/.sync-manifest.json` and `_artifacts/_main/INDEX.md`, both generated. Whichever lands

@@ -498,6 +498,17 @@ then read the story.*
 > where they are already looking. That is a **worklist, not a second record**: it carries no
 > dispositions, and where the two disagree the walkthrough table is right.
 
+> ⓘ **Found ≠ owed — the triage decides what is actually worth implementing (SCC-160, your
+> 2026-08-15 ruling).** The review's hunter agents are *pointed* at finding; volume is their
+> success metric. For two landings running, every verified-true-but-unfixed finding was banked
+> as a "deferred residue owed to ONE follow-on ticket" — 16 items and 9 items you were being
+> asked to commission as tickets. That practice is retired. The triage step now owns a
+> **relevance gate**: a true finding must show a realistic path to real damage, or undermine
+> evidence the house cites as proof, or be something you asked for — otherwise it dies with a
+> one-line reason in the findings table. What survives is fixed in the lane, ledgered as a
+> judged ride-along, or (rarely) proposed to you as one *decided* ticket naming why each item
+> earned it. You should never again see a "mint the residue ticket" action row.
+
 **Where the verdict lives:** a `## Code Review` section in the story's `walkthrough.md`. Stories
 closed before 2026-08-02 keep it in the old standalone `sudo-code-review-<story>.md` file instead,
 and that historic filename stays as it is on purpose — the files already exist on disk in the project

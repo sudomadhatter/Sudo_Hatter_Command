@@ -474,6 +474,15 @@ Outside these seams: status + comments only. Never mint speculative work — a t
 decision already made; "maybe" items live in the deferred ledgers, and the operator purges
 unrecognized tickets on sight.
 
+⭐ **Review findings are the canonical speculative case** (operator ruling 2026-08-15):
+verified-TRUE is not worth-implementing. The review's own triage decides which findings are
+actually relevant to implement (`code-review-engine` step-03, the relevance gate) and most
+little ones die there with a one-line reason — the hunters have finding-goals, so their volume
+is a success metric, never a work queue. Survivors are fixed in-lane, ledgered as judged
+ride-alongs, or — rarely — proposed as ONE decided chore ticket naming why each item survived.
+A residue ticket carrying every unfixed finding is banned in both directions: never minted by
+an agent, and never left as a walkthrough action row assigning the minting to the operator.
+
 ## The ticket ↔ file join (all literal strings — no magic)
 
 - **Branch names** carry the key immediately after the prefix (`epic|claude|chore/<JIRA-KEY>-<slug>`);
