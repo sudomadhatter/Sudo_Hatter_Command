@@ -107,9 +107,9 @@ ride-along, ledgered) · **KILLED** (one-line reason) · **N/A** (not triage's j
 
 - [ ] **Rule on Ticket A and Ticket B** (or kill either — the table above is the whole case).
       On your word I mint them with the per-item justifications; nothing is created until then.
-- [ ] **The merge itself.** This lane is parked merge-ready. `/smh-close-task-merge-tree` — or
-      your word — is the per-merge sign-off; the minter refuses without your exact words from
-      that turn.
+- [x] **The merge itself.** Signed off 2026-08-15: you invoked `/smh-close-task-merge-tree`
+      (door 3), this ceremony's own act — the token quotes the invocation and Step 6's
+      verification is the landing record.
 
 **Landing order vs `chore/SCC-155-label-tasks`: resolved live.** SCC-155 landed first
 (`9237d28`); this lane absorbed origin/main at `89cdc86` on the operator's word ("155 just
