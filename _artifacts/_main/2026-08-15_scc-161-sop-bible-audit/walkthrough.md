@@ -24,7 +24,7 @@
 | Mermaid renderer spot-check (park/resume with two subgraphs + a cross edge; the review-engine fan-out) | `valid: true` both | MCP tool result |
 | SOP-currency gate | this commit stages the SOP itself; no `[sop-ok]` needed | commit-msg hook |
 
-Measured at lane tip after the rebuild; the commit sha is in the branch (`git log -1 chore/SCC-161-sop-bible-audit`).
+Measured at 57297cc (the rebuild) and again at 1f5b6bf (after absorbing `main` = c9ca3ab, SCC-160's landing): `run_all` **28/28 exit 0**, folder test **61/61**, toolkit lint **0/0**, doc linter **43 blocks · 0 errors**.
 
 ## Findings ledger A — stale or wrong claims, fixed
 
@@ -102,4 +102,4 @@ Measured at lane tip after the rebuild; the commit sha is in the branch (`git lo
 
 ## Your Actions
 
-- [ ] Land it: `/smh-close-task-merge-tree` on `chore/SCC-161-sop-bible-audit` (the SCC-160 lane also edited this file, +17 lines — land SCC-160 first, or this lane absorbs it at close-out; either is a clean merge, no overlap on the same lines).
+- [ ] Land it: `/smh-close-task-merge-tree` on `chore/SCC-161-sop-bible-audit` — branch pushed, `0 0` clean, `main` (c9ca3ab, SCC-160's landing) already absorbed at 1f5b6bf; its three SOP hunks merged clean and its second ruling is reflected in the review diagrams.
