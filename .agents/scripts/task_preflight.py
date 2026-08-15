@@ -629,6 +629,7 @@ def check_children(key: str | None, rep: wf.Report,
     items = jira_feed.as_items(data, "issues")
     open_children: list[str] = []
     open_keys: list[str] = []
+    riding = 0
     for item in items:
         fields = item.get("fields") or {}
         status = ((fields.get("status") or {}).get("name") or "").strip()
@@ -642,6 +643,7 @@ def check_children(key: str | None, rep: wf.Report,
             # scans the command SPAN per line, and a wrap after `--status` reads as a
             # transition without `--yes`.
             cmd = f'acli jira workitem transition --key {ckey} --status "Done" --yes'
+            riding += 1
             rep.warn("children", f"{key} subtask {ckey} ({status or '?'}) is a declared "
                                  f"RIDER - its work lands with this lane, and the close "
                                  f"ceremony transitions it to Done FIRST, parent last: "
@@ -662,6 +664,11 @@ def check_children(key: str | None, rep: wf.Report,
                             f"transitions it to Done first (an agent write inside the "
                             f"operator-invoked close). Never declare a ticket whose work "
                             f"is not real.")
+    elif riding:
+        # Not "all Done or Deferred" - a rider is still OPEN, by design. Saying otherwise
+        # here would teach the reader the board is ahead of where it actually is.
+        rep.info("children", f"{key}: {riding} rider(s) above are the ceremony's to close; "
+                             f"every other subtask is Done or Deferred")
     elif items:
         rep.info("children", f"{key}: all {len(items)} subtask(s) are Done or Deferred - "
                              f"this parent is the last thing to close")

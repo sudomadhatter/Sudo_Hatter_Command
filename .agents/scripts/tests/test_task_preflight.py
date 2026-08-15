@@ -569,6 +569,10 @@ def main() -> int:
                     out.strip()[-500:])
             c.check("...named as an agent step - never an operator edit",
                     "never an operator edit" in out, out.strip()[-500:])
+            c.check("...and the info line does not claim the board is further along than "
+                    "it is", "are Done or Deferred -" not in out
+                    and "rider(s) above are the ceremony's to close" in out,
+                    out.strip()[-500:])
 
         with TempDir() as t:
             # An UNDECLARED open child still blocks - and the error now teaches the third
