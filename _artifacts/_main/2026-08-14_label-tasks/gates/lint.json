@@ -3,9 +3,11 @@
   "story": "scc-155",
   "result": "pass",
   "exit_code": 0,
-  "sha": "1d9d0dfe5e8b678eee851db0fb2443ac808a7a5e",
-  "dirty_tree": false,
-  "dirty_paths": [],
+  "sha": "fa1d4cdf68dad63a96126cb2a2e9c98fbce848da",
+  "dirty_tree": true,
+  "dirty_paths": [
+    "_artifacts/_main/2026-08-14_label-tasks/gates/suite.json"
+  ],
   "totals": null,
   "command": [
     "python3",
@@ -14,6 +16,6 @@
   ],
   "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/label-tasks",
   "duration_s": 0.2,
-  "recorded_at": "2026-08-15T04:03:50+00:00",
+  "recorded_at": "2026-08-15T04:13:12+00:00",
   "output_tail": "== workflow_lint - toolkit-only ==\n[INFO ] commands: testarch-atdd.md: UTF-8 BOM present\n[INFO ] commands: testarch-automate.md: UTF-8 BOM present\n[INFO ] commands: testarch-ci.md: UTF-8 BOM present\n[INFO ] commands: testarch-framework.md: UTF-8 BOM present\n[INFO ] commands: testarch-nfr.md: UTF-8 BOM present\n[INFO ] commands: testarch-test-design.md: UTF-8 BOM present\n[INFO ] commands: testarch-test-review.md: UTF-8 BOM present\n[INFO ] commands: testarch-trace.md: UTF-8 BOM present\n-- 0 error(s), 0 warning(s), 8 info --\n"
 }
