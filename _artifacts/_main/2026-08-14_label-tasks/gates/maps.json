@@ -1,19 +1,22 @@
 {
   "gate": "maps",
   "story": "scc-155",
-  "result": "unrunnable",
-  "exit_code": 127,
-  "sha": "77385167a021e55708194b1eb853403b7c6ac34c",
+  "result": "pass",
+  "exit_code": 0,
+  "sha": "1d9d0dfe5e8b678eee851db0fb2443ac808a7a5e",
   "dirty_tree": true,
   "dirty_paths": [
     "_artifacts/_main/2026-08-14_label-tasks/gates/lint.json"
   ],
   "totals": null,
   "command": [
-    "python3 .agents/scripts/check_maps.py --depth3-only --strict"
+    "python3",
+    ".agents/scripts/check_maps.py",
+    "--depth3-only",
+    "--strict"
   ],
   "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/label-tasks",
-  "duration_s": 0.0,
-  "recorded_at": "2026-08-15T03:59:57+00:00",
-  "output_tail": "command not found: [Errno 2] No such file or directory: 'python3 .agents/scripts/check_maps.py --depth3-only --strict'"
+  "duration_s": 0.1,
+  "recorded_at": "2026-08-15T04:03:50+00:00",
+  "output_tail": ""
 }
