@@ -252,10 +252,229 @@ Re-run: **9/9 killed**. Closing green after all restores: `test_git_hooks` 126/1
 
 ---
 
-## Code Review
+## Code Review (2026-08-14)
 
-_(appended by `/smh-code-review`)_
+Verdict: CONCERNS @ cade70392b81151d01c20f4bdd4395462a2ff60d
+Suite evidence measured at: `cade703` — 27/27 files, exit 0, bare and unfiltered.
+
+**Scope.** The combined `origin/main...HEAD` diff for both tickets — 28 files, +3,746 / −2,175 —
+covering SCC-156 items 1–8 and all three SCC-159 items.
+**Method.** The house `code-review-engine`, `review_mode: full`, `lens_budget: standard`, five
+lenses in parallel clean contexts, then an inline verify pass and a targeted-kill mutation sweep
+over every fix.
+
+### Lens degradation — reported, not silent
+
+```
+lenses_run:      5/5   (Blind Hunter: ok · Edge Case: ok · Literal-Correctness: ok (truncated,
+                        see below) · Acceptance Auditor: ok · Test-Adequacy Auditor: ok)
+lenses_na:       none
+severity_floor:  CONCERNS
+```
+
+⚠ **All five lenses died twice before completing, and the cause was environmental, not the
+review**: the machine slept mid-response, then the stream watchdog stalled at 600 s. Each was
+retried per the engine's contract and all five ultimately returned real findings, so coverage is
+complete — but the record should say that this took three rounds rather than one.
+
+⚠ **The Literal-Correctness Hunter is a TRUNCATED pass and says so in its own first line.** It
+received 18 of 28 changed files (the 10 withheld: `.sync-manifest.json`, the `.claude/` skill
+mirror, the four `.opencode/` command mirrors, and the five `_artifacts/` files — all generated
+or artifact). It then narrowed its *reported* subject further, to the five production files, on
+my instruction when wall-clock ran out. It spent its one earned top-up on the `.claude/` skill
+mirror and found it byte-identical.
+
+### Step 0.7 — the blast radius, re-derived against current `main`
+
+1. **Did anything this diff references move?** No. `origin/main` has not moved since this lane
+   was cut — it is still `61f2a24`, which is also the merge-base. Nothing landed underneath this
+   work, and the link+anchor sweep re-resolved every path the diff added (19 resolved, 0 broken).
+2. **True overlap and merge result.** Overlap with what landed: **zero files**. `merge-tree`
+   against `origin/main` is clean, so **no absorb was needed** and none was performed.
+3. **Sibling-lane landing order.** `chore/SCC-155-label-tasks` is live and overlaps this lane on
+   10 files. `merge-tree` between the two lanes says the four shared **command bodies auto-merge**;
+   the only two conflicts are `.agents/.sync-manifest.json` and `_artifacts/_main/INDEX.md`, both
+   **generated**. Whichever lands second regenerates them (`/smh-sync-agents`, and one INDEX row) —
+   never a hand-merge. **There is no content dependency in either direction, so the order is free.**
+
+### Findings
+
+Five lenses returned ~50 findings. Six were graded `important` by more than one lens, or by one
+lens with a live reproduction; those were fixed test-first in `cade703` and are the table below.
+The remainder are real but non-blocking and are listed as deferred residue.
+
+| # | file:line | sev | failure scenario | disposition |
+|---|---|---|---|---|
+| 1 | `.agents/scripts/task_preflight.py:1093` | important | `--fetch` is passed, the fetch **fails**, and the landing check still hard-ERRORs on a comparison `check_sync` just warned was stale → exit 2, `VERDICT: BLOCKED`. The offline operator — the exact case the severity split exists for — is wedged on a phantom. Found by **3 lenses**, two with live reproductions. | **applied** — `check_sync` now returns whether the fetch succeeded; `main()` threads the outcome, not the flag |
+| 2 | `.agents/scripts/git-hooks/pre-push-merge-backstop.sh:143` | important | `lane=claude/incident-*` matches the `claude/*` glob, so every `origin/epic/*` becomes a landing point. An epic-landed story lane riding inside a hotfix scores "landed" and ships to production through the one lane that goes straight to `main`. Measured, identical content: `chore/*` **REFUSED**, `claude/incident-*` **ALLOWED**. Found by **2 lenses**, both reproduced. | **applied** — ordered `claude/incident-*)` arm above `claude/*)`, the arm `integration_of()` already had |
+| 3 | `.agents/scripts/tests/_harness.py:36` | important | A bare `--case`, `--case=`, or an empty value returned `None` = UNFILTERED. The sweep runs the whole file, prints no filter line, exits 0/1 — so a mutant that dies to **any** case is recorded as killed by a named case that never ran alone. Found by **all five lenses**. | **applied** — a lost label is now the same error class as a typo: exit 3, with a message naming the cause |
+| 4 | `.agents/scripts/task_preflight.py:638` | important | `behind` was computed and never read: a **diverged** `main` was diagnosed as a stalled landing and prescribed `git push origin main`, which git rejects non-fast-forward. The stated rationale (`pull --ff-only` won't catch it) is false for divergence — that is the one shape it does catch. | **applied** — divergence gets its own diagnosis and its own remedy |
+| 5 | `.agents/scripts/tests/run_all.py:71` | important | The ticket's **flagship deliverable had no killer case**: pinning `max_workers=1` left the suite 25/25 green, because every RUNALL assertion holds identically in serial. Two lenses verified live. Same for the stderr concatenation — deleting it kept the file green while a child's traceback vanished. | **applied** — causal concurrency pin (4 × 0.7 s at width 4 vs a 2.8 s serial floor) + a stderr case, both proven by mutation |
+| 6 | `.agents/scripts/tests/test_task_preflight.py:299` | important | The false-red control asserted `"stalled landing" not in out` while the message says `STALLED LANDING` in caps — a **tautology**, absent whether or not the check fired. Only `code == 0` carried evidence. This lane wrote the rule banning exactly this, one block away. | **applied** — `not in out.lower()`, matching the sibling file that always did it correctly |
+
+Two further sub-defects rode cluster 1's fix and are covered by the same block: a **behind-only**
+`main` reported as "level with origin/main" (an INFO line asserting the opposite of the truth in
+the commonest real state), and an **unreadable count** falling through to "? commit(s) ahead"
+because the old `["?", "?"]` padding is never the string `"0"`.
+
+### Mutation record for the fixes — 8/9, one reported survivor
+
+Nine mutants, each the exact narrowing a lens applied by hand. Restore from byte-for-byte copies,
+sha256-verified, `git status` printed at the end.
+
+```
+[R-CONC]   KILLED   the pool collapses to width 1 — the deliverable, silently gone
+[R-ERR]    KILLED   a child's traceback is swallowed
+[R-LOST]   KILLED   a bare --case goes back to meaning UNFILTERED
+[R-EMPTY]  KILLED   an empty filter matches every block again
+[R-BASES]  KILLED   incident lanes inherit the epic widening again
+[R-FRESH]  KILLED   the severity split keys on the FLAG again, not the outcome
+[R-DIV]    KILLED   divergence is misdiagnosed as a stalled landing again
+[R-BEHIND] KILLED   a behind-only main is called 'level with origin/main' again
+[R-PARSE]  ⚠ SURVIVED
+restored byte-identical: True
+killed 8/9 · survived 1 · defective 0
+```
+
+⚠ **R-PARSE survived and is reported rather than papered over.** The parse guard sits behind an
+earlier `returncode != 0` check that dominates it: `git rev-list --left-right --count` either
+fails (caught first) or prints two integers, so **no reachable input distinguishes the two**. That
+makes it defensive code with no reachable case — a survivor no test can honestly close. Left in
+place, named here, so the next reader does not mistake 8/9 for a missed kill.
+
+### Gate results — every one run bare, real output pasted
+
+| Gate | Result |
+|---|---|
+| **Enforcement suite** | `27/27 files passed`, **exit 0** — bare, unfiltered, after the last fix |
+| **Toolkit lint** | `-- 0 error(s), 0 warning(s), 8 info --`, **exit 0** (the 8 info are UTF-8 BOMs on vendor `bmad-*` files, pre-existing) |
+| **check_maps** | `--depth3-only --strict`, **exit 0** |
+| **Assertion evidence** | 13 named `--case` runs green — 25 suite-runner, 19 git-hook, 17 preflight cases — plus the negative control: a mistyped label exits **3**, not 0 |
+| **SOP currency** | **exit 0** with the SOP staged; **exit 1** with it removed from the same path set. Both halves proven — it can still fail |
+| **Link + anchor** | **19 resolved, 0 broken**, exit 0 |
+| **Door parity** | No command added, renamed or deleted. `/smh-sync-agents` re-run after the command edit: 32 workflows · 18 launcher skills · 54 `.claude/skills` · 53 `.opencode/commands` |
+
+⚠ **One gate lied to me first, and the fix is worth recording.** `sop_currency.py --paths $CHANGED`
+returned exit 0 — but **zsh does not word-split an unquoted variable**, so the gate received
+`argc = 1`: one giant path string, and it checked nothing. I proved the arity before believing the
+green and re-ran with `$(cat …)` expansion. The house memory
+`zsh-does-not-word-split-gate-args` exists for exactly this, and the review command's own Step 0.7
+warns about it in writing.
+
+### Acceptance matrix — the ticket's own ACCEPTANCE block, item by item
+
+| Item | Status | The assertion that proves it |
+|---|---|---|
+| **A1** replay SCC-154's 17-mutant sweep targeted ≤ 6 min, width sweep ≤ 2 min, **identical kill verdicts** | ⛔ **NOT MET** | No evidence exists. Root cause now known: `width_sweep.py` has no `def main(` and no `__main__` guard, so the adapter's split-before-`main` returned the whole file and `exec()` ran the entire sweep at import. Owed to the follow-on |
+| **A2** `run_all` ≤ 110 s pre-split, **≤ 60 s post-split**; same summary line + exit semantics; `--serial` works; comparison run pasted | ⚠ **PARTIALLY MET** | Pre-split ≤ 110 s **MET** (101.67 s). Post-split **MISSED**: 68.57 s against ≤ 60 s. Summary-line and file-order identity **proven mechanically** (`diff` of both modes' summary lines and file order — identical), and `--serial` verified at 212.86 s vs 68.57 s parallel, both `27/27` |
+| **A3** `--case` zero-match exits non-zero, with a test | ✅ **MET** | `test_suite_runner.py` — four named cases pin exit 3 across the typo, the unwired file, the vacuous block and now the **lost label**; plus the discriminator that a *failing* filtered case is 1, not 3. Live: `--case "this-label-does-not-exist-anywhere"` → **EXIT 3** |
+| **A4** doctrine + command-body edits in the SAME commits as their mechanisms | ✅ **MET**, with a correction | Satisfied in `884a248`/`c8da9fb`/`76e3962`. The review found the co-committed prose carried **pre-change numbers** (105 s for a file this ticket split into 58+42; "3.4-minute suite" is the serial wall it stopped being the default). Corrected in `cade703` |
+| **A5** every number re-measured at landing and pasted | ⚠ **PARTIALLY MET** | Met for A2 — see the table above, re-measured twice, second time at the landing tree. Not met for A1, which has no numbers to re-measure. The checklist row that ticked both with one box has been split |
+| **A6** the closing full green stays mandatory in doctrine **and in every sweep script template** | ⚠ **MET in doctrine, unverifiable as phrased** | The doctrine half landed and is strong (`tests-must-gate-for-real.md` § *Targeted kills*). The "template" half has nothing to grep: sweep scripts are scratchpad-only under the standing SCC-145 ruling, so A6 asks for an artifact the plan rules out of existence. Honest disposition: **restate A6 as doctrine-only**, an operator call |
+
+**Drift check (the other direction).** Nothing in the diff is outside the ticket's 9 items plus
+SCC-159's 3, except the review fixes above — which are in-lane by `/smh-code-review`'s own
+"commit review fixes inside the task worktree" rule.
+
+### Clean-Code Gate
+
+Machine floor imported from the gates above (no double run, per SCC-146). Run here:
+`py_compile` clean on all changed Python; the comment contract holds — every new block carries the
+measured reason for its existence, not a restatement of the code. Convention table: matches the
+surrounding house style (stdlib-only harness, `main() -> int`, explicit-path commits).
+
+One real finding, applied: **dead imports**. The `test_task_preflight.py` split copied its
+15-name import tuple **whole** into both halves rather than dividing it with the cases. AST-verified
+and trimmed in `cade703`; both halves and `_pf_fixtures.py` now report zero dead names.
+
+### Why CONCERNS and not PASS or FAIL
+
+Every gate is green and every mechanism in both tickets is delivered and now mutation-proven. The
+cap comes from the acceptance list, not the code:
+
+- **A1 is not delivered** — no replay, no numbers, no identical-verdict comparison.
+- **A2's post-split target is missed** — 68.57 s against ≤ 60 s, with the remaining lever
+  (template-repo fixtures, ticket item 9) descoped at the operator's word.
+
+A strict reading of this command's own FAIL rule — *"an acceptance item the diff does not
+deliver"* — could be applied to A1. I am calling **CONCERNS** because A1 is a *measurement* that
+was not run rather than a mechanism that is missing, and because its root cause is now known and
+written down. **That reading is the operator's to overturn**, and it is the first thing the
+close-out should decide.
+
+⚠ **On the earlier acceptance.** The operator said *"thats looks good this works for me all
+targets met"* — I then corrected that A2's post-split target was **not** met, and there has been
+**no re-affirmation since that correction**. So this verdict does not lean on that message as
+blanket acceptance of A1 or A2.
+
+### Deferred residue — real, non-blocking, owed to ONE follow-on
+
+Carried with the sequencing constraint that the `--case` ergonomics (1–3) are one change:
+
+1. **No over-match guard on `--case`.** A short label matches broadly — measured `--case "CASE"` →
+   7/8 blocks; on `test_git_hooks.py` a single letter like `"E"` matches all 40. A sweep records
+   "killed by case P" when 22 blocks ran. Needs an exact-match mode or a loud multi-match warning.
+2. **Block labels hard-truncated at 64 chars mid-word** (37 of ~65) by the bulk wiring transform,
+   while the comment above each carries the full sentence — so copying the visible label fails.
+3. **`--case=<label>` was uncovered** until this review added one control; the form deserves a
+   row of its own alongside the two-token spelling.
+4. **Ctrl-C no longer stops the suite** — `ThreadPoolExecutor.__exit__` drains every queued file,
+   spawning fresh children after the interrupt. `cancel_futures=True` closes it.
+5. **`run_all` exit 2 classifies as a suite `fail`** in `gate_receipt._classify`, contradicting the
+   docstring's "not a statement about the suite either way". Needs a `2 → unrunnable` arm.
+6. **`--serial --jobs 0` is silently coerced** — `--serial` short-circuits before the `jobs < 1`
+   guard the author wrote specifically to refuse that value.
+7. **A zero-file suite prints `0/0 files passed` and exits 0** — the vacuous-green class this lane
+   closed one level down, still standing one level up.
+8. **No invariant stops an orphan `c.check`** outside every block. Zero today (AST-verified across
+   all four wired files) — but I created one *during this review* and only caught it by reading a
+   case count. A meta-case should AST-walk the wired files.
+9. **`wf.same_tree` is untested** while two command bodies now authorise skipping a 25-file gate
+   run on its word.
+10. **The step-02 verify-wave grouping has no pin** — every other invariant in that step file
+    carries a regex pin plus a proven mutation string; the new rule added none.
+11. **The 6d skip landed in the 4b section only** — Step 5, the other half of the pair, never
+    learns it can be skipped.
+12. **`merge-target-guard`'s `destination()` still says an incident lane exchanges work "never
+    with a story or chore lane"** — a rule line that reads as though the gate misfired, printed
+    directly under the new `incident:incident` refusal. `INC5` asserts only `"incident pipeline"
+    in out`, which the stale sentence satisfies.
+13. **No case for an incident ref carrying an unlanded *story* tip** — one quarter of the refused
+    class, unpinned while the other three are pinned.
+14. **The multi-lane transient**: `/smh-merge-multiple-workingtrees` merges lane after lane onto
+    local `main`; if a push is deferred, the next lane's preflight hard-errors "STALLED LANDING"
+    about a landing that is mid-flight, not stalled.
+15. **A6's phrasing** — restate as doctrine-only, or write the template it asks to be grepped.
+16. **`.agents/scripts/INDEX.md` still writes rot-prone counts** one clause after deleting a
+    rotted one for being unmaintainable. (The misleading half — per-file numbers reading as the
+    suite wall — was fixed in `cade703`.)
 
 ## Your Actions
 
-_(filled at hand-back)_
+Everything agent-solvable was attempted and is ticked. What is left is genuinely yours.
+
+- [ ] **⛔ SCC-159 must leave `In Progress` BEFORE the merge.** `task_preflight` blocks with
+      `children: SCC-156 has 1 open subtask(s)` — the parent closes last, by design. Because you
+      ruled these land as ONE lane, the subtask's Dev Record and status flip have to happen ahead
+      of the merge rather than after it. This is a sequencing consequence of the one-lane ruling,
+      not a defect.
+- [ ] **Rule on A1.** It is not delivered: no replay, no timings, no identical-verdict comparison
+      against SCC-154's table. The root cause is known and written down. A strict reading of the
+      review command's FAIL rule (*"an acceptance item the diff does not deliver"*) would apply;
+      I called CONCERNS because A1 is a measurement that was not run, not a mechanism that is
+      missing. **Overturning that to FAIL is your call.**
+- [ ] **Rule on A2's missed target.** 68.57 s measured against ≤ 60 s. The remaining lever
+      (template-repo fixtures, ticket item 9) was descoped at your word. Either accept 68.57 s as
+      the new number and amend the ticket, or re-open item 9 in the follow-on.
+- [ ] **Rule on A6's phrasing** — it asks for a "sweep script template" to be grepped, and the
+      standing SCC-145 ruling keeps sweep scripts out of the tree. Restate as doctrine-only, or
+      commission the template.
+- [ ] **The merge itself.** This lane is merge-ready and STOPS here. `/smh-close-task-merge-tree`
+      is your per-merge sign-off, and since SCC-37 the minter refuses without
+      `--operator-approval '<your exact words, this turn>'`.
+- [ ] **One follow-on ticket** for the 16 deferred residue items in the review section above,
+      carrying the sequencing note that items 1–3 (the `--case` ergonomics) are one change.
+
+**Landing order vs `chore/SCC-155-label-tasks`: free.** The two lanes conflict only in
+`.agents/.sync-manifest.json` and `_artifacts/_main/INDEX.md`, both generated. Whichever lands
+second re-runs `/smh-sync-agents` and re-adds one INDEX row.
