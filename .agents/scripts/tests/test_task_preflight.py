@@ -492,6 +492,24 @@ def main() -> int:
             code, out = preflight(repo)
             c.check("walkthrough found by content, not folder name", code == 0, out.strip()[-300:])
 
+        # ── SCC-38 review: the key is matched against the walkthrough's path RELATIVE to
+        # `_artifacts/`, never the absolute path. A worktree named after its key
+        # (`.claude/worktrees/scc-11-lane/`) put the key into EVERY walkthrough's absolute
+        # path, so every walkthrough in the repo became a "hit" and 35 historic ones without
+        # `## Your Actions` blocked an unrelated lane's merge. Found live, on the first lane
+        # whose worktree carried its key.
+        with TempDir() as t:
+            repo = make_repo(t / "scc-11-lane", walkthrough=False)      # the KEY is in the path
+            write(repo, "_artifacts/_main/2026-08-08_scc-11-thing/walkthrough.md", WALKTHROUGH)
+            write(repo, "_artifacts/_main/2026-08-01_scc-99-other/walkthrough.md",
+                  "# SCC-99 - something else, no actions section\n")
+            commit(repo, "SCC-11 chore: two walkthroughs")
+            git(repo, "push", "-q", "origin", "main")
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            code, out = preflight(repo)
+            c.check("a worktree/dir NAMED with the key does not make every walkthrough a hit",
+                    code == 0 and "scc-99-other" not in out, out.strip()[-300:])
+
     # ── Regression: the MAIN checkout is not "a worktree holding your branch" ──
     if c.block("Regression: the MAIN checkout is not 'a worktree holding your br"):
         with TempDir() as t:
