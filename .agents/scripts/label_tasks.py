@@ -1,4 +1,10 @@
-"""parallel_check.py — which of a BMAD epic's stories can run side by side? (SCC-56)
+"""label_tasks.py — which of a parent's children can run side by side? (SCC-56, SCC-155)
+
+TWO MODES, one engine. Story mode assesses BMAD stories under a BMAD epic (`/cicd-label-tasks`);
+task mode assesses Subtasks under one Task (`/smh-label-tasks`) - work with no story file, no
+sprint board and no epic branch, which is the set nothing could answer for until SCC-155. The
+mode is DERIVED from the parent's type, and each mode's gate refuses the other's parent BY NAME
+and hands the operator across. It stamps TWO labels, `parallel-ok` and `quick-dev`.
 
 `parallel-ok` used to be ruled by `/cicd-write-story-tests` Step 1.6, at story pickup. That
 mints 19.1's ticket BEFORE 19.2's story file exists, so there is nothing to compare against,
@@ -8,7 +14,11 @@ and AVCH carry the label, and the `Parallel-OK` saved filter returns nothing.
 Parallel-safety is a property of a SET at a MOMENT, never of one story. So the writer moved:
 one operator-invoked pass over ONE parent's children, recomputing every verdict and rewriting
 every label in one go. Same field, opposite property — a per-story writer can never see the
-set, an epic-scoped one is self-correcting on every re-run.
+set, a parent-scoped one is self-correcting on every re-run.
+
+`quick-dev` joined it in SCC-155 for the same reason, with one difference that is load-bearing:
+its decision is TRI-state. A child the pass did not assess is left ALONE (see `label_plan`),
+because reading absence as "not eligible" would strip the label off work marked by hand.
 
     plan     --parent KEY            enumerate + ground; emits the agent's work packet
     resolve  --plan F --touchsets F  the set math; emits verdicts
@@ -41,9 +51,13 @@ rather than silently resolved. Everything else it reads (`_bmad/bmm/stories/`,
 `_bmad-output/planning-artifacts/epics.md`, `epic/*` branches, `_artifacts/**/
 implementation_plan.md`) is a toolkit-wide convention, not one project's layout.
 
-Scope: BMAD stories under a BMAD epic, in whichever repo holds them — so the lobby qualifies
-the day it carries BMAD stories, exactly like any project. Grouping epics and their Tasks are
-refused by name.
+Scope, story mode: BMAD stories under a BMAD epic, in whichever repo holds them — so the lobby
+qualifies the day it carries BMAD stories, exactly like any project. Grouping epics, and any
+non-Epic parent, are refused by name and handed to task mode.
+
+Scope, task mode: the Subtasks under ONE Task. No story file is required or looked for; a lane
+is grounded by its branch diff, the plan its sibling `task.yaml` declares, or its ticket text,
+in that order. An Epic parent is refused by name and handed to story mode.
 
 Exit: 0 clean - 1 warnings - 2 blocking. It reads, computes, and writes LABELS plus one
 comment. It never transitions a ticket, never touches the working tree, never starts anything.
@@ -64,7 +78,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import wf_common as wf  # noqa: E402
 
 LABEL = "parallel-ok"
+QUICK = "quick-dev"
+# The marker string lives on the BOARD, not in this repo, so a rename here cannot be swept:
+# every stamp already posted would go invisible and read as never-checked. It is deliberately
+# frozen at the name the SCC-56 pass wrote, and `check` finds those older stamps unchanged.
 MARKER = "Parallel check"
+
+# The two commands this engine serves. Which one a refusal or a stamp NAMES is load-bearing:
+# `/cicd-parallel-check` was retired by SCC-155, and a board comment pointing at a retired
+# command is the SCC-63 failure - the reader follows it and finds nothing.
+COMMAND = {"story": "/cicd-label-tasks", "task": "/smh-label-tasks"}
 # Overlap is decided by SOURCE paths only. A shared story file or a shared plan is two lanes
 # documenting themselves, not two lanes editing the same code.
 #
@@ -78,7 +101,12 @@ PLANNING_PREFIXES = ("_bmad-output/", "_bmad/", "_artifacts/", "_my_resources/")
 _ASCII_FOLD = {
     "—": "-", "–": "-", "'": "'", "'": "'", """: '"', """: '"',
     "…": "...", "→": "->", "·": "-", "≥": ">=", "≤": "<=",
-    "🟢": "[OK]", "🔒": "[LOCK]", "⏳": "[WAIT]", "📝": "[NO-STORY]", "🧵": "==",
+    # 📝 folds to a MODE-NEUTRAL mark. It used to fold to `[NO-STORY]`, which the renderer
+    # then followed with its own words - so a task-mode console read `[NO-STORY] no plan`,
+    # naming the one concept that mode exists to say does not apply. The three marks beside
+    # it have the same shape (the glyph is the mark, the words carry the verdict), so this
+    # is the fold matching them rather than a new convention (SCC-155 review finding).
+    "🟢": "[OK]", "🔒": "[LOCK]", "⏳": "[WAIT]", "📝": "[NOTE]", "🧵": "==",
 }
 
 
@@ -244,14 +272,34 @@ def parent_facts(binary: str, key: str) -> dict:
             "type": itype}
 
 
-def gate_bmad(parent: dict, repo: Path) -> str:
+def gate_bmad(parent: dict, repo: Path, forced: bool = False) -> str:
     """Refuse a grouping epic BY NAME, with the reason. A grouping epic's children are Tasks
     with no story files, so every row would be a bare 'no story' — the refusal says why in one
-    line instead of printing an empty table and looking broken."""
+    line instead of printing an empty table and looking broken.
+
+    ⭐ Every refusal here hands the operator to `/smh-label-tasks` (SCC-155). Before there
+    were two modes the only honest answer was "this is not for me"; now there is a command
+    that DOES assess Tasks, and a refusal that does not name it leaves a wrong-mode run
+    stuck. The type check runs FIRST, because a Task parent refused for the summary's shape
+    ("no `Epic N` in it") is right by accident and says the wrong thing."""
+    itype = (parent.get("type") or "").strip().lower()
+    # `forced` is an EXPLICIT `--mode story`, and it must bypass this arm specifically.
+    # Without that the flag is dead: its own docstring says it exists for "the case the type
+    # is wrong on the board", and this is the check that reads that type - so the one input
+    # the flag was added to serve was the one it could not, and the refusal handed the
+    # operator to the command they had just come from (SCC-155 review finding). Every OTHER
+    # gate below still binds; the operator overrode the board's type, not the whole gate.
+    if itype and itype != "epic" and not forced:
+        wf.die(f"`{parent['key']}` is a {parent.get('type')}, not an Epic. Story mode "
+               f"assesses BMAD stories under a BMAD epic. A {parent.get('type')} and its "
+               f"Subtasks are Task work — run `{COMMAND['task']} {parent['key']}`. If the "
+               f"BOARD is wrong and this really is a BMAD epic, force it with `--mode "
+               f"story`.", 2)
     stories_dir = repo / wf.STORIES_REL
     if not stories_dir.is_dir():
         wf.die(f"{repo.name} has no {wf.STORIES_REL}/ — no BMAD stories in this repo yet. "
-               f"/cicd-parallel-check assesses BMAD stories only.", 2)
+               f"Story mode assesses BMAD stories only; for Task work run "
+               f"`{COMMAND['task']} <TASK-KEY>`.", 2)
     num = bmad_epic_number(parent["summary"])
     if num:
         return num
@@ -261,9 +309,36 @@ def gate_bmad(parent: dict, repo: Path) -> str:
         if head and head.lower() in wf.read_text(epics).lower():
             return head
     wf.die(f"`{parent['key']} {parent['summary']}` is a GROUPING epic, not a BMAD epic. "
-           f"/cicd-parallel-check assesses BMAD stories under a BMAD epic; a grouping epic's "
-           f"children are Tasks with no story files.", 2)
+           f"Story mode assesses BMAD stories under a BMAD epic; a grouping epic's children "
+           f"are Tasks with no story files. Assess one of those Tasks and its Subtasks with "
+           f"`{COMMAND['task']} <TASK-KEY>`.", 2)
     raise AssertionError  # unreachable
+
+
+def gate_task(parent: dict) -> None:
+    """Task mode's mirror of `gate_bmad`, and deliberately much thinner.
+
+    There is no artifact to demand up front: a Task lane's grounding is a branch, a plan or
+    the ticket text, and `ground_child` decides that per child. The ONE thing worth refusing
+    here is the container — an Epic's children are Stories (or Tasks that each own their own
+    Subtasks), so assessing them as one flat set answers a question nobody asked."""
+    itype = (parent.get("type") or "").strip().lower()
+    if itype in ("epic", ""):
+        wf.die(f"`{parent['key']} {parent.get('summary', '')}` is an "
+               f"{parent.get('type') or 'untyped container'}, not a Task. Task mode assesses "
+               f"the Subtasks under ONE Task. For a BMAD epic's stories run "
+               f"`{COMMAND['story']} {parent['key']}`; for a grouping epic, run this against "
+               f"one of its Tasks.", 2)
+    # The third leg, without which the two gates do not actually refuse INTO each other:
+    # `gate_bmad` hands a Subtask parent here saying "a Subtask and its Subtasks are Task
+    # work", this arm used to ACCEPT it, and the run then died on "no children on the board".
+    # `hierarchyLevel: -1` is the floor - nothing nests under a Subtask - so the honest
+    # answer names the parent Task instead (SCC-155 review finding).
+    if itype == "subtask":
+        wf.die(f"`{parent['key']}` is a Subtask, and nothing nests under one — it is the "
+               f"bottom of the hierarchy, so it has no children to assess. Run this against "
+               f"its parent Task instead.", 2)
+    return None
 
 
 # ── grounding ──────────────────────────────────────────────────────────────────
@@ -306,9 +381,75 @@ def find_plan(repo: Path, story: str) -> Path | None:
     return None
 
 
-def mark_umbrellas(children: list[dict]) -> None:
+_TASK_KEY_RE = re.compile(r'^\s*task_key\s*:\s*["\']?([A-Za-z][A-Za-z0-9]*-\d+)["\']?\s*$',
+                          re.MULTILINE)
+
+
+def find_task_plan(repo: Path, key: str) -> Path | None:
+    """A Task lane's plan, joined by DECLARATION — the sibling `task.yaml`'s `task_key`.
+
+    The story side matches a plan directory by slug, which cannot work here: a Task lane's
+    folder is `<date>_<slug>` with no key in it. Every Task lane already writes a `task.yaml`
+    naming its key, and that manifest is the join the rest of this toolkit governs on
+    (`check_gate` resolves a walkthrough's authority exactly this way), so reuse it.
+
+    The match is EXACT, never a prefix: `SCC-14` must not be grounded by `SCC-146`'s manifest.
+    That substring collision has already misfired in this repo once, in check_gate's own
+    verdict pool, and the regex anchors the number's end to keep it from recurring here."""
+    want = key.strip().upper()
+    art = repo / "_artifacts"
+    if art.is_dir():
+        for manifest in sorted(art.rglob("task.yaml")):
+            m = _TASK_KEY_RE.search(wf.read_text(manifest))
+            if not m or m.group(1).strip().upper() != want:
+                continue
+            plan = manifest.parent / "implementation_plan.md"
+            if plan.is_file():
+                return plan
+    return None
+
+
+def find_task_plan_on_branch(repo: Path, key: str, branch: str) -> str | None:
+    """The lane's plan read out of its OWN branch — the repo-relative path, or None.
+
+    ⭐ SCC-155 review finding #15. `find_task_plan` above searches the CURRENT checkout, and
+    for the flow this engine was built to serve that is the wrong tree: `/smh-plan-task`
+    commits each lane's `implementation_plan.md` + `task.yaml` to **that lane's branch** and
+    pushes, merging nothing. So the manifest is not in `repo/_artifacts` on any branch but its
+    own, and rung 2 - the rung `smh-plan-task.md` calls "not optional, this is what grounds
+    the lane for the labeller" - could never fire for the lanes the planner had just created.
+
+    `git ls-tree` reads the branch without checking it out, so this stays a read-only pass
+    over a repo whose worktree belongs to somebody else."""
+    r = wf.git(["ls-tree", "-r", "--name-only", branch, "_artifacts/"], repo)
+    if r.returncode != 0:
+        return None
+    manifests = [ln.strip() for ln in (r.stdout or "").splitlines()
+                 if ln.strip().endswith("/task.yaml")]
+    want = key.strip().upper()
+    for manifest in sorted(manifests):
+        show = wf.git(["show", f"{branch}:{manifest}"], repo)
+        if show.returncode != 0:
+            continue
+        m = _TASK_KEY_RE.search(show.stdout or "")
+        if not m or m.group(1).strip().upper() != want:
+            continue
+        plan = manifest.rsplit("/", 1)[0] + "/implementation_plan.md"
+        if wf.git(["cat-file", "-e", f"{branch}:{plan}"], repo).returncode == 0:
+            return plan
+    return None
+
+
+def mark_umbrellas(children: list[dict], mode: str = "story") -> None:
     """A child whose BMAD number is a strict prefix of another child's is an UMBRELLA — it
     contains its siblings rather than competing with them, so it is never a candidate.
+
+    ⭐ STORY MODE ONLY (SCC-155 review finding #19). An umbrella is a BMAD numbering concept,
+    and this keys off `story_id_of(summary)`. Run against Subtasks, a summary that merely
+    starts "2.1" beside one starting "2.1.1" made the first an umbrella - which means NO
+    verdict row and NO LABEL WRITE AT ALL for it. Silently dropping a child out of a
+    labelling pass is the precise failure this engine exists to prevent, so task mode does
+    not get the behaviour rather than getting a careful version of it.
 
     Found by the first live run: `AVCH-14  12.3 — Igor Full-Checkride (Umbrella)` matched all
     EIGHT `story-12-3-*.md` files, because story-file lookup is prefix-based on purpose. Left
@@ -318,6 +459,10 @@ def mark_umbrellas(children: list[dict]) -> None:
     Purely local — no extra board query — and it reads the decomposition off the numbering
     scheme every BMAD project shares. Umbrellas render as a context line, never a verdict row,
     the same way the retired board treated an in-flight story."""
+    for c in children:
+        c["umbrella"] = False
+    if mode != "story":
+        return
     ids = {c["key"]: (c.get("story_id") or "") for c in children}
     for c in children:
         mine = ids[c["key"]]
@@ -328,9 +473,12 @@ def mark_umbrellas(children: list[dict]) -> None:
             c["contains"] = kids
 
 
-def ground_child(repo: Path, child: dict, base: str) -> dict:
-    """Authority order, first available wins: branch diff > implementation_plan > story file.
-    Code written beats every declaration; a declaration beats an intention."""
+def ground_child(repo: Path, child: dict, base: str, mode: str = "story",
+                 parent_key: str = "") -> dict:
+    """Authority order, first available wins: branch diff > implementation_plan > the
+    declaration of intent. Code written beats every declaration; a declaration beats an
+    intention. Only the third rung differs by mode — a story has a story file, a Subtask has
+    the description `/smh-plan-task` wrote onto it."""
     sources: list[dict] = []
     sid = child.get("story_id")
 
@@ -339,10 +487,40 @@ def ground_child(repo: Path, child: dict, base: str) -> dict:
         r = wf.git(["diff", "--name-only", f"{base}...{branch}"], repo)
         if r.returncode == 0:
             paths = [ln.strip() for ln in (r.stdout or "").splitlines() if ln.strip()]
-            sources.append({"kind": "branch-diff", "ref": f"{base}...{branch}",
-                            "paths": paths})
+            # ⭐ SCC-155 review finding #16. A branch whose diff is ENTIRELY planning
+            # artifacts is not "code written" - it is the plan, one rung down, wearing rung
+            # one's authority. Every lane `/smh-plan-task` cuts looks exactly like this
+            # (`implementation_plan.md` + `task.yaml`, nothing else), and `source_paths`
+            # strips all of it, so the touch-set derived from this rung is EMPTY - disjoint
+            # from every sibling, and every planned lane came back 🟢. A manufactured green
+            # on the command's own happy path, which is the one thing Rule 3 exists to stop.
+            # An empty diff is the same story: nothing written is not evidence of scope.
+            if source_paths({"paths": paths}):
+                sources.append({"kind": "branch-diff", "ref": f"{base}...{branch}",
+                                "paths": paths})
 
-    if sid:
+    if mode == "task":
+        plan = find_task_plan(repo, child["key"])
+        rel = str(plan.relative_to(repo)) if plan else None
+        # The lane's own branch is where `/smh-plan-task` left it (finding #15); the current
+        # checkout is only the fallback for a plan that has already landed.
+        if not rel and branch:
+            rel = find_task_plan_on_branch(repo, child["key"], branch)
+        if rel:
+            sources.append({"kind": "plan", "path": rel,
+                            "ref": branch if not plan else None,
+                            "read": "the 'Modify/Add' lines AND every source path under "
+                                    "'## Self-Audit' (that section exists to catch the edit "
+                                    "sites the plan missed)"})
+        # The third rung is the ticket itself. It is the WEAKEST evidence in the ladder and
+        # it is still evidence: a Subtask minted by /smh-plan-task carries its checkable list
+        # in the description. Rule 3 governs what to do with its ambiguity - when the text
+        # will not say whether a file is edited, count it as an edit and let the set lock.
+        elif (child.get("description") or "").strip():
+            sources.append({"kind": "ticket", "path": f"{child['key']} description",
+                            "read": "the ACCEPTANCE block and any named path; ambiguity "
+                                    "counts as an EDIT (fail toward locked)"})
+    elif sid:
         plan = find_plan(repo, sid)
         if plan:
             sources.append({"kind": "plan", "path": str(plan.relative_to(repo)),
@@ -358,28 +536,50 @@ def ground_child(repo: Path, child: dict, base: str) -> dict:
     child["authority"] = sources[0]["kind"] if sources else None
     child["grounded"] = bool(sources)
     if not child["grounded"]:
-        child["reason"] = (f"no story file for {sid}" if sid
-                           else f"{child['key']} carries no BMAD number in its summary")
-        child["next_command"] = (f"/cicd-write-story-tests {sid}" if sid else None)
+        if mode == "task":
+            child["reason"] = "no lane branch, no plan, no description"
+            child["next_command"] = f"/smh-plan-task {parent_key}" if parent_key else None
+        else:
+            child["reason"] = (f"no story file for {sid}" if sid
+                               else f"{child['key']} carries no BMAD number in its summary")
+            child["next_command"] = (f"/cicd-write-story-tests {sid}" if sid else None)
     return child
 
 
 # ── plan ───────────────────────────────────────────────────────────────────────
 
+def resolve_mode(parent: dict, explicit: str | None) -> str:
+    """Story mode or task mode, DERIVED from the parent's type unless the caller insists.
+
+    Deriving it is what makes a wrong-mode run impossible to start rather than merely
+    refused: an Epic's children are stories, a Task's children are subtasks, and the board
+    already knows which one this is. `--mode` stays for the case the type is wrong on the
+    board — it does not skip the gate, which still refuses a mismatch by name."""
+    if explicit:
+        return explicit
+    return "task" if (parent.get("type") or "").strip().lower() != "epic" else "story"
+
+
 def cmd_plan(args) -> int:
     binary = acli_bin(args.acli)
     repo = repo_for_key(args.parent, args.repo)
     parent = parent_facts(binary, args.parent)
-    epic_num = gate_bmad(parent, repo)
+    mode = resolve_mode(parent, args.mode)
+    epic_num = None
+    if mode == "story":
+        epic_num = gate_bmad(parent, repo, forced=bool(args.mode))
+    else:
+        gate_task(parent)
 
     data = acli_json(binary, ["jira", "workitem", "search", "--json",
-                              "--fields", "key,summary,status,labels",
+                              "--fields", "key,summary,status,labels,description",
                               "--jql", f"parent = {args.parent} ORDER BY key"])
     rows = [r for r in (data if isinstance(data, list) else []) if isinstance(r, dict)]
     if not rows:
         wf.die(f"{args.parent} has no children on the board — nothing to assess.", 2)
 
-    base = epic_base_ref(repo, args.parent)
+    # A Task lane branches off main; only a BMAD story sits under an epic branch.
+    base = epic_base_ref(repo, args.parent) if mode == "story" else "main"
     children = []
     for row in rows:
         f = row.get("fields") or {}
@@ -388,17 +588,18 @@ def cmd_plan(args) -> int:
         child = {"key": row.get("key", ""), "summary": f.get("summary") or "",
                  "status": status.get("name") or "", "category": cat,
                  "labels": list(f.get("labels") or []),
+                 "description": adf_text(f.get("description")),
                  "terminal": cat == "done", "in_flight": cat == "indeterminate"}
         child["story_id"] = story_id_of(child["summary"])
         children.append(child)
 
-    mark_umbrellas(children)
+    mark_umbrellas(children, mode)
     for child in children:
         if not child["terminal"] and not child["umbrella"]:
-            ground_child(repo, child, base)
+            ground_child(repo, child, base, mode, parent["key"])
 
     packet = {"parent": parent["key"], "parent_summary": parent["summary"],
-              "epic": epic_num, "repo": str(repo), "base": base,
+              "epic": epic_num, "mode": mode, "repo": str(repo), "base": base,
               "children": children,
               "child_keys": sorted(c["key"] for c in children)}
 
@@ -412,14 +613,20 @@ def cmd_plan(args) -> int:
     umbrellas = [c for c in children if c.get("umbrella")]
     live = [c for c in children if not c["terminal"] and not c.get("umbrella")]
     grounded = [c for c in live if c.get("grounded")]
-    say(f"\n{parent['key']} (Epic {epic_num}) in {repo.name}: {len(children)} children, "
+    what = f"Epic {epic_num}" if mode == "story" else "Task"
+    say(f"\n{parent['key']} ({what}) in {repo.name}: {len(children)} children, "
         f"{len(live)} assessable, {len(grounded)} grounded, base {base}")
     for c in umbrellas:
         say(f"  [UMBRELLA] {c['key']} ({c['story_id']}) contains "
             + ", ".join(c["contains"]) + " - not a candidate")
+    # The console verdict must match the BOARD verdict `cmd_resolve` emits for the same
+    # child. It printed `[NO-STORY]` in both modes while the comment said `no plan` - two
+    # names for one verdict in one run, and "story" is the word task mode exists to say does
+    # not apply here (SCC-155 review finding).
+    ungrounded = "[NO-PLAN]" if mode == "task" else "[NO-STORY]"
     for c in live:
         if not c.get("grounded"):
-            say(f"  [NO-STORY] {c['key']}: {c.get('reason')}"
+            say(f"  {ungrounded} {c['key']}: {c.get('reason')}"
                 + (f" -> {c['next_command']}" if c.get("next_command") else ""))
     return 0 if grounded else 1
 
@@ -498,10 +705,24 @@ def largest_disjoint(candidates: list[str], g: dict[str, dict[str, str]]) -> lis
     return sorted(best)
 
 
+def quick_dev_of(entry: dict) -> tuple[bool | None, str]:
+    """(the decision, its evidence) for one touch-set. **Absent means UNASSESSED, not False.**
+
+    A pass that never looked at quick-dev eligibility must leave the label alone — see
+    `label_plan`. Reading a missing key as "not eligible" would make every re-run strip the
+    label off work somebody marked deliberately, which is the rot this engine exists to
+    avoid, pointed at the other field."""
+    q = entry.get("quick_dev")
+    if not isinstance(q, dict) or "eligible" not in q:
+        return None, ""
+    return bool(q.get("eligible")), str(q.get("evidence") or "")
+
+
 def cmd_resolve(args) -> int:
     packet = json.loads(Path(args.plan).read_text(encoding="utf-8"))
     touch = json.loads(Path(args.touchsets).read_text(encoding="utf-8"))
     children = packet["children"]
+    mode = packet.get("mode") or "story"
 
     live = [c for c in children if not c.get("terminal") and not c.get("umbrella")]
     umbrellas = [{"key": c["key"], "story_id": c.get("story_id"),
@@ -527,10 +748,16 @@ def cmd_resolve(args) -> int:
     for c in sorted(live, key=lambda x: x["key"]):
         k = c["key"]
         if not c.get("grounded"):
-            verdicts.append({"key": k, "verdict": "no-story", "mark": "📝",
-                             "detail": c.get("reason", "ungrounded"),
-                             "command": c.get("next_command"),
-                             "evidence": "no branch diff, no plan, no story file"})
+            # Ungrounded work is not quick-dev-eligible either — nobody can size a lane they
+            # cannot see. Explicit False, not None: this pass DID assess it and the answer is
+            # no, so a stale label comes off.
+            verdicts.append({"key": k, "verdict": "no-plan" if mode == "task" else "no-story",
+                             "mark": "📝", "detail": c.get("reason", "ungrounded"),
+                             "command": c.get("next_command"), "quick_dev": False,
+                             "quick_dev_evidence": "ungrounded — nothing to size",
+                             "evidence": "no branch diff, no plan, "
+                                         + ("no description" if mode == "task"
+                                            else "no story file")})
         elif k in approved and unknown:
             verdicts.append({"key": k, "verdict": "waiting", "mark": "⏳",
                              "detail": "waiting on " + ", ".join(unknown),
@@ -555,9 +782,17 @@ def cmd_resolve(args) -> int:
                              "detail": f"after {first}",
                              "evidence": g[k].get(first, "shares ground")})
 
+    # quick-dev is decided per child by the AGENT, in the touch-set, for the same reason the
+    # touch-sets themselves are: "small enough for one light lane" is a judgment about the
+    # work, not a number a parser can read off it. The engine only carries the answer, and
+    # carries ABSENCE faithfully (None) so an unassessed label survives the write.
+    for v in verdicts:
+        if "quick_dev" not in v:
+            v["quick_dev"], v["quick_dev_evidence"] = quick_dev_of(touch.get(v["key"]) or {})
+
     stamp = (f"verified {date.today().isoformat()} against {len(packet['child_keys'])} "
              f"children: {', '.join(packet['child_keys'])}")
-    result = {"parent": packet["parent"], "epic": packet.get("epic"),
+    result = {"parent": packet["parent"], "epic": packet.get("epic"), "mode": mode,
               "repo": packet.get("repo"), "approved": [] if unknown else approved,
               "unknown_in_flight": unknown, "umbrellas": umbrellas, "verdicts": verdicts,
               "child_keys": packet["child_keys"], "stamp": stamp}
@@ -589,33 +824,65 @@ def render_comment(res: dict) -> str:
     for u in res.get("umbrellas") or []:
         lines += [f"_{u['key']} ({u['story_id']}) is an umbrella over "
                   + ", ".join(u["contains"]) + " — assessed as those, not as itself._", ""]
-    lines += ["| Ticket | Verdict | Evidence |", "|---|---|---|"]
+    mode = res.get("mode") or "story"
+    lines += ["| Ticket | Verdict | Quick-dev | Evidence |", "|---|---|---|---|"]
     for v in res["verdicts"]:
         mark = {"approved": "🟢 approved", "after": f"🔒 {v['detail']}",
-                "waiting": f"⏳ {v['detail']}", "no-story": "📝 no story"}[v["verdict"]]
+                "waiting": f"⏳ {v['detail']}", "no-story": "📝 no story",
+                "no-plan": "📝 no plan"}[v["verdict"]]
+        q = {True: "⚡ yes", False: "—", None: ""}[v.get("quick_dev")]
+        if v.get("quick_dev") and v.get("quick_dev_evidence"):
+            q += f" ({v['quick_dev_evidence']})"
         eve = v["evidence"] + (f" → `{v['command']}`" if v.get("command") else "")
-        lines.append(f"| {v['key']} | {mark} | {eve} |")
-    lines += ["", "_A verdict is a SNAPSHOT. Writing another story invalidates it — re-run "
-                  "`/cicd-parallel-check " + res["parent"] + "`._"]
+        lines.append(f"| {v['key']} | {mark} | {q} | {eve} |")
+    unit = "story" if mode == "story" else "subtask"
+    lines += ["", f"_A verdict is a SNAPSHOT. Writing another {unit} invalidates it — re-run "
+                  f"`{COMMAND[mode]} " + res["parent"] + "`._"]
     return "\n".join(lines)
 
 
-def set_labels(binary: str, key: str, current: list[str], approved: bool,
-               apply: bool) -> str | None:
+def label_plan(current: list[str],
+               wanted: dict[str, bool | None]) -> tuple[list[str], list[str]]:
+    """(the full label set to write, the actions taken) — pure, no I/O.
+
+    TRI-STATE per label, and the third state is the one that matters: True adds, False
+    strips, and **None leaves it exactly as it is**. A boolean cannot say "this pass did not
+    assess that label", so a bool would force every run to take a position on `quick-dev` —
+    including the runs whose touch-sets never mentioned it, which would silently strip the
+    label off work the operator had marked by hand."""
+    have = set(current)
+    want = set(current)
+    actions = []
+    for label, decision in sorted(wanted.items()):
+        if decision is None:
+            continue
+        if decision and label not in have:
+            want.add(label)
+            actions.append(f"+{label}")
+        elif not decision and label in have:
+            want.discard(label)
+            actions.append(f"-{label}")
+    return sorted(want), actions
+
+
+def set_labels(binary: str, key: str, current: list[str],
+               wanted: dict[str, bool | None], apply: bool) -> str | None:
     """`acli workitem edit --labels` REPLACES the set, so preserve everything else. The strip
     is the point: a child that WAS approved and now overlaps must lose the label on re-run —
-    that is what makes an epic-scoped writer self-correcting where a per-story one rotted."""
-    want = sorted(set(current) - {LABEL} | ({LABEL} if approved else set()))
-    if want == sorted(current):
+    that is what makes a parent-scoped writer self-correcting where a per-story one rotted."""
+    want, actions = label_plan(current, wanted)
+    if not actions:
         return None
-    action = f"{'+' if approved else '-'}{LABEL}"
     if apply:
         r = acli(binary, ["jira", "workitem", "edit", "--key", key,
                           "--labels", ",".join(want)])
         if r.returncode != 0:
             warn(f"{key}: label update failed — {(r.stderr or r.stdout).strip()[:160]}")
             return None
-    return action
+    # Space-joined, NOT comma-joined: the caller joins one ticket's report to the next with
+    # ", ", so a comma in here makes `A +parallel-ok, +quick-dev, B +parallel-ok` unreadable —
+    # nothing tells you the second entry is still A's.
+    return " ".join(actions)
 
 
 def cmd_stamp(args) -> int:
@@ -635,7 +902,8 @@ def cmd_stamp(args) -> int:
     for v in res["verdicts"]:
         c = by_key.get(v["key"]) or {}
         act = set_labels(binary, v["key"], c.get("labels") or [],
-                         v["key"] in approved, args.apply)
+                         {LABEL: v["key"] in approved, QUICK: v.get("quick_dev")},
+                         args.apply)
         if act:
             changes.append(f"{v['key']} {act}")
 
@@ -662,6 +930,16 @@ def cmd_stamp(args) -> int:
 
 def cmd_check(args) -> int:
     binary = acli_bin(args.acli)
+    # ⭐ `check` publishes a TWO-state contract in both command bodies: `[FRESH]` (0) or
+    # `[STALE]` (1). `parent_facts` dies with exit 2 when the board cannot be read, so
+    # routing the mode through it gave a read-only staleness verb a third exit nobody
+    # documents - and on a dropped uplink it died before reading a single comment. The type
+    # is only ever used to pick which command name to print, so a failure to read it degrades
+    # to the derived default instead of taking the whole verb down (SCC-155 review #20).
+    try:
+        mode = resolve_mode(parent_facts(binary, args.parent), args.mode)
+    except SystemExit:
+        mode = args.mode or "story"
     data = acli_json(binary, ["jira", "workitem", "comment", "list",
                               "--key", args.parent, "--json"])
     comments = data if isinstance(data, list) else (
@@ -672,7 +950,7 @@ def cmd_check(args) -> int:
         if MARKER in text and "verified" in text:
             stamped = text
     if not stamped:
-        say(f"[STALE] {args.parent} has never been checked — run /cicd-parallel-check")
+        say(f"[STALE] {args.parent} has never been checked — run {COMMAND[mode]}")
         return 1
 
     m = re.search(r"verified (\d{4}-\d{2}-\d{2}) against \d+ children: ([^\n_*]+)", stamped)
@@ -714,6 +992,8 @@ def main() -> int:
 
     p = sub.add_parser("plan", help="enumerate + ground; emits the agent's work packet")
     p.add_argument("--parent", required=True)
+    p.add_argument("--mode", choices=("story", "task"),
+                   help="default: derived from the parent's type on the board")
     p.add_argument("--repo")
     p.add_argument("--acli")
     p.add_argument("--out")
@@ -734,6 +1014,8 @@ def main() -> int:
 
     c = sub.add_parser("check", help="is the existing stamp still valid, or stale?")
     c.add_argument("--parent", required=True)
+    c.add_argument("--mode", choices=("story", "task"),
+                   help="default: derived from the parent's type on the board")
     c.add_argument("--acli")
     c.set_defaults(fn=cmd_check)
 

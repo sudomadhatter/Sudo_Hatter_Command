@@ -140,6 +140,10 @@ DISCUSSED_AS_RETIRED = {
     # SCC-13 retired the scrum board on 2026-08-07; workflows_testing_SOP.md section 11 is the
     # written record of the scrum-board -> Jira transition and names it to explain what replaced it.
     "sudo-update-scrum-board",
+    # SCC-155 retired this on 2026-08-14, renaming it to `/cicd-label-tasks`;
+    # workflows_testing_SOP.md section 6 names the old command in its rename note, which is
+    # the sentence a reader needs to connect the command they remember to the one that exists.
+    "cicd-parallel-check",
 }
 
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s#]+)")

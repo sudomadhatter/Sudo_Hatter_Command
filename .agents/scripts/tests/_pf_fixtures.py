@@ -30,6 +30,23 @@ story: SCC-11
 
 ## Task Checklist
 - [x] did the thing
+
+## Your Actions
+
+Nothing is owed.
+"""
+
+# The same walkthrough WITHOUT the section `jira_feed.py finish` reads. Its own fixture so the
+# positive control above stays a real control (SCC-155).
+WALKTHROUGH_NO_ACTIONS = """---
+type: walkthrough
+story: SCC-11
+---
+
+# SCC-11 — a task
+
+## Task Checklist
+- [x] did the thing
 """
 
 
