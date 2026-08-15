@@ -102,4 +102,4 @@ Measured at 57297cc (the rebuild) and again at 1f5b6bf (after absorbing `main` =
 
 ## Your Actions
 
-- [ ] Land it: `/smh-close-task-merge-tree` on `chore/SCC-161-sop-bible-audit` — branch pushed, `0 0` clean, `main` (c9ca3ab, SCC-160's landing) already absorbed at 1f5b6bf; its three SOP hunks merged clean and its second ruling is reflected in the review diagrams.
+- [x] **The merge itself** — signed off 2026-08-15: you invoked `/smh-close-task-merge-tree` (twice — the first run was stopped by the Claude Code auto-mode permission classifier at the merge step; nothing had landed). Branch pushed, `0 0` clean, `main` (c9ca3ab, SCC-160's landing) absorbed at 1f5b6bf; its three SOP hunks merged clean and its second ruling is reflected in the review diagrams. Preflight `clear to close out and merge` (LANE: LOCAL, GATES: ARMED); full gate green at the lane tip: `run_all` 28/28 exit 0 · `workflow_lint --toolkit-only` 0/0 · `check_maps --depth3-only --strict` exit 0 · folder test 61/61. Flight event not recorded — no `Verdict:` sha to key on (no review on this lane, by your word).
