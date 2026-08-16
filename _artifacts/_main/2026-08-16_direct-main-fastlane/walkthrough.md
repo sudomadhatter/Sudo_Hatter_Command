@@ -125,11 +125,120 @@ pre-existing sections are now wrapped; no assertion was changed.
 **SCC-164 lands first.** Sole overlap is `docs/_scc_sops_prds/workflows_testing_SOP.md`; re-applying
 one added section onto their rewritten SOP is far cheaper than the reverse.
 
+## Code Review (2026-08-16)
+
+Verdict: FAIL @ 3e4d4f5de8814777012745a68079e3443335acba
+Suite evidence measured at fefa1dbc (receipt `pass`, clean tree); no code changed between that sha
+and the reviewed HEAD except the two in-thread fixes noted below, which were re-run.
+
+**Scope:** the 6 code/doc files of SCC-183 plus artifacts. **Method:** `/smh-code-review` — Step 0.7
+re-derivation, a 5-lens clean-room fan-out, acceptance audit against the plan's 11 items, the
+command-centre gate, and a 13-mutant sweep.
+
+**Lenses: 3 ran + 1 ran + 1 DEAD.** Blind Hunter `ok` · Edge Case Hunter `ok` · Acceptance Auditor
+`ok` · Test-Adequacy Auditor `ok` · **Literal-Correctness Hunter `dead`** — stopped mid-run and not
+recovered, so the symbol-level surface is **unexamined**. An unknown is not a pass; on its own that
+caps this verdict at CONCERNS, and the findings below carry it past that.
+
+### ⛔ The verdict-deciding finding: the lane cannot land on the real `main`
+
+**This feature is non-functional against the actual remote, and every test passed anyway.**
+
+| Fact | Evidence |
+|---|---|
+| `main` carries an ACTIVE GitHub ruleset requiring the `main-write-gate` check | `test_main_ruleset_armed.py` → 5/5, *"ruleset 'main write gate (SCC-118)' … active"* |
+| Nobody may bypass it | *"the bypass list is EMPTY: 0 actor(s)"* |
+| That check is published only on `pull_request` into `main`, or a push to `gate/**` | `.github/workflows/main-write-gate.yml:29-39` |
+| The existing doors earn it by pushing a pre-flight ref first | `smh-close-task-merge-tree.md:309` — `git push origin HEAD:refs/heads/gate/main-$SHA` |
+| The gate script **hard-fails any non-merge commit** | `main_write_gate.py:145` — *"is not a merge commit — it has 1 parent(s). main advances by exactly one merge commit."* |
+| The procedure this lane documents has no pre-flight step at all | `workflows_testing_SOP.md` § direct lane — commit, mint, `git push origin main` |
+
+A single-parent prose commit therefore **can never obtain the required check**, and the push is
+refused server-side by a ruleset with an empty bypass list. The three-step procedure shipped in the
+SOP and `git-policy.md` describes something that cannot happen.
+
+⛔ **And this is a vacuous green of exactly the class this repo gates hardest against.** All 103
+checks pass because `direct_repo()` builds its remote with `git init --bare` — a remote with no
+ruleset and no CI. The suite proves the *local hook* behaves; it cannot see the *server* half, and
+nothing in the harness says so. The local gate and the server gate are deliberately different halves
+(authorisation vs fitness, per the workflow header), and this lane only ever tested one.
+
+### Findings
+
+| # | file:line | Sev | Failure scenario | Disposition |
+|---|---|---|---|---|
+| 1 | `.github/workflows/main-write-gate.yml:29` + `main_write_gate.py:145` | **critical** | A prose commit cannot earn the required check; the ruleset refuses the push. The documented procedure cannot work. | **DECISION — the design must change; options in `## Your Actions`** |
+| 2 | `direct-push-allowlist.sh:48` | **critical** | `docs/**` is not a prose tree. It holds `docs/migrations/scripts/install-git-hooks.sh` (the script that ARMS the gates on a fresh machine) and `restore-env-master.sh` (the secrets kit). Reproduced end-to-end: a neutered hook-installer landed via `--direct` with an innocent subject. | **DECISION — narrow the allowlist; blocked on #1's direction** |
+| 3 | `pre-push-main-approval.sh:136` (dispatch on `t_mode`) | **important** *(downgraded from critical — see note)* | The gate dispatches on a value the *pusher* writes, so the allowlist is opt-in: omit `--direct` and the merge arm takes it, where a plain commit passes (`parent1 == remote_sha`) and the `t_branch` check evaporates when the named branch does not resolve. Reproduced landing a gate-rewriting commit. Pre-existing — reproduces identically on `main` as shipped today, and NOT introduced here. | **DECISION — the fix adds a refusal to the *shipping* merge path, which is new blocking law and needs the operator's quoted ruling** |
+| 4 | plan `[!NOTE]` boundary call | **important** | The mitigation offered to the operator is false for 2 of 3 files: `sop_currency.classify()` special-cases **only** `AGENTS.md`; `CLAUDE.md` and `GEMINI.md` match no surface and return `None` — no backstop at all. The operator approved a boundary against a guard that does not exist for them. | **corrected in `## Your Actions`; allowlist change blocked on #1** |
+| 5 | `mint-push-token.sh` (allowlist source) | important | Present-but-empty predicate file → `command -v` absent → `! cmd` inverts exit 127 to false → no path ever flagged. The mint-side check disappears rather than fails. | **applied** — `command -v` guard added |
+| 6 | both scripts, `diff-tree` | suggestion | `-M`/`-C` added later would emit `R100\tsrc\tdst`; `${line#*"$TAB"}` yields both paths as one string, which `docs/*` matches. Not live today (plumbing ignores `diff.renames`). | **applied** — `--no-renames` pinned |
+| 7 | `pre-push-main-approval.sh:147` | suggestion | `[ -f ]` is not `[ -r ]`. An unreadable predicate dies with a raw shell error, **no refusal banner, and the token is NOT consumed** — breaking the file's own "every refusal consumes the token" invariant. | **deferred to the #1 rework** |
+| 8 | `pre-push-main-approval.sh:56` | nitpick | The refusal banner still says *"main is reached exactly three ways"* and omits the lane the operator just used. Header and minter usage string likewise. | **deferred to the #1 rework** |
+| 9 | tests | important | `160000` (gitlink) and the `command -v` arm have **no case** — deleting either survives the sweep. AC 11 and AC 10 are partially unproven. | **deferred to the #1 rework** |
+| 10 | tests | important | One unexplained **flake**: `direct: shape` failed once in a full run, then passed in isolation and in two consecutive full runs. Unreproduced, cause unknown. A flaky security test is a real defect. | **open — named, not dismissed** |
+| 11 | walkthrough AC 7 | nitpick | "73 pre-existing checks" is wrong; `main`'s file has 58 `c.check` calls / 64 checks. No regression (all 64 labels present in the new run). | noted |
+| 12 | `.agents/scripts/INDEX.md` | nitpick | `direct-push-allowlist.sh` is undocumented; nothing enforces it. | **deferred to the #1 rework** |
+
+### Gates
+
+```
+run_all.py                     29/29 files, exit 0    receipt pass @ fefa1dbc, clean tree
+test_main_push_gate.py         103/103 (×2 consecutive)   ⚠ one unreproduced flake, finding #10
+workflow_lint --toolkit-only   0 error(s), 0 warning(s), 8 info
+sop_currency.py                exit 0
+check_maps.py --depth3-only    exit 0
+sh / dash / zsh -n             all three scripts clean on all three shells
+mutation sweep                 13 killed / 0 survived / 0 defective  (blind to findings #9)
+```
+
+### ⚠ Correction on finding #3, and a history check
+
+Finding #3 was first written as **critical** on the strength of a probe that landed a gate-rewriting
+plain commit "on main". That probe used a **local bare remote** — no ruleset, no CI — so it was blind
+to the server half, which is the *same* blind spot finding #1 is about. Against the real `main` the
+attack is refused: a single-parent commit cannot earn the required `main-write-gate` check. Downgraded
+to **important**, scoped to the local hook. It still deserves closing — the two halves are meant to be
+independent and one of them currently is not — but `main` is not exposed by it.
+
+**Was it ever used?** Checked, not assumed. Of 391 first-parent advances of `main`, 113 are merges.
+Nearly all plain commits predate the local gate (armed `c007594`, 2026-08-10 12:43). Exactly **one**
+landed after it: `05938cf`, 2026-08-10 17:47, a one-line edit to `docs/repo-map.md`, authored as
+`sudomadhatter` — an identity shared by the operator and every agent, so it does not attribute.
+**Zero** plain commits have advanced `main` since the server ruleset was armed (2026-08-12), which is
+causal rather than lucky: `main_write_gate.py:145` refuses exactly that shape.
+
+### Step 0.7 re-derivation
+
+`main` did not move (`a0aceaf` = merge-base = `origin/main`); nothing this diff references was moved,
+renamed or deleted; `merge-tree` clean, nothing absorbed. Sibling lane `chore/SCC-164-command-surface-family`
+is live at `13906ec` and overlaps on two additive ledgers — `workflows_testing_SOP.md` and
+`_artifacts/_main/INDEX.md` — touching neither the hooks nor the gate suite. **SCC-164 still lands first.**
+
 ## Your Actions
 
-- [ ] Merge this lane to `main` — invoking `/smh-close-task-merge-tree` is the sign-off, and it should
-      wait until **SCC-164** has landed (see Landing order).
-- [ ] Confirm or carve out root `AGENTS.md` / `CLAUDE.md` / `GEMINI.md`. They are inside the allowlist
-      you approved (root `*.md`), and are arguably *law* rather than prose. They are not unguarded —
-      the armed `sop_currency` commit-msg gate already treats root `AGENTS.md` as a usage surface — but
-      the call is yours, and changing it is a one-line edit to `direct-push-allowlist.sh`.
+⛔ **This lane is FAIL and does not merge.** The merge row that stood here has been removed: the
+feature cannot land on the real `main` (finding #1), so there is nothing to sign off yet.
+
+Changes applied this review: findings #5 and #6, in thread. Everything else is blocked on the
+direction decision below, because patching an allowlist for a lane that cannot reach `main` is work
+in the wrong order.
+
+- [ ] **Decide the direction on finding #1 — the lane cannot obtain the required status check.**
+      Three routes, and they are materially different:
+      **(a)** teach `main_write_gate.py` a *direct* mode — it runs the same allowlist server-side and
+      accepts a single-parent commit whose paths are all prose, and the lane pushes a `gate/**`
+      pre-flight ref first like the other two doors do. Keeps one bypass-free ruleset; most work.
+      **(b)** make the fast lane a **one-commit auto-merged PR** instead of a direct push. The check
+      already runs on `pull_request`, so nothing server-side changes, and the local `--direct` token
+      work here becomes unnecessary. Least new law, but it is no longer a "direct push".
+      **(c)** add a bypass actor to the ruleset. ⛔ I do not recommend this — it re-opens SCC-118,
+      whose own test asserts the bypass list is empty.
+- [ ] **Rule on finding #3 — the merge-arm hole, which exists on `main` right now.** A token naming a
+      branch that does not resolve locally will land *any* single commit, including one that rewrites
+      the gate. Closing it means adding a refusal to the **shipping** merge path, which is new blocking
+      law and needs your words before I touch it. It is independent of this ticket and could be its own.
+- [ ] **Re-decide the allowlist boundary** once #1 is settled, now that two of its premises are wrong:
+      `docs/**` contains `install-git-hooks.sh` and `restore-env-master.sh` (finding #2), and the
+      `sop_currency` backstop I offered you covers **only** `AGENTS.md` — `CLAUDE.md` and `GEMINI.md`
+      have none (finding #4).

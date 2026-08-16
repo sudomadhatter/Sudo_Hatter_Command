@@ -214,7 +214,7 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     # `--raw` rather than `--name-only` because the MODE is load-bearing too: a symlink at an
     # allowed path (`docs/x -> ../.agents/…`) reads as `docs/x` to any name-only check.
     TAB=$(printf '\t')
-    raw=$(git diff-tree -r --no-commit-id --raw "$remote_sha" "$local_sha")
+    raw=$(git diff-tree -r --no-renames --no-commit-id --raw "$remote_sha" "$local_sha")
     if [ -z "$raw" ]; then
       rm -f "$TOKEN"
       refuse "this direct push changes nothing.

@@ -151,12 +151,24 @@ if [ "$MODE" = "direct" ]; then
     exit 2
   fi
   . "$ALLOWLIST"
+  # ⛔ PRESENT IS NOT THE SAME AS USABLE, and the difference is a check that DISAPPEARS.
+  # If the file exists but defines nothing (a truncated checkout, a syntax error mid-edit),
+  # bash 3.2 — macOS /bin/sh — returns from `.` and carries on. `! direct_push_path_allowed`
+  # then runs a command that does not exist: exit 127, which `!` inverts to false, so no path
+  # is ever appended to BAD and the loop silently approves everything. That is Rule 1 of
+  # tests-must-gate-for-real ("a check whose missing input reads as a pass is not a check"),
+  # in the layer whose only job is protecting the operator's approval. The gate carries the
+  # same guard; this one keeps the mint honest too.
+  if ! command -v direct_push_path_allowed >/dev/null 2>&1; then
+    echo "mint-push-token: $ALLOWLIST defines no direct_push_path_allowed()." >&2
+    exit 2
+  fi
 
   if [ -n "$REMOTE" ]; then
     TAB=$(printf '\t')
     # `if`, not `case`: bash 3.2 (macOS /bin/sh) cannot parse `case` inside `$( )`.
     # See the same note in pre-push-main-approval.sh — it is a real portability trap, not style.
-    BAD=$(git diff-tree -r --no-commit-id --raw "$REMOTE" "$TIP" | while IFS= read -r line; do
+    BAD=$(git diff-tree -r --no-renames --no-commit-id --raw "$REMOTE" "$TIP" | while IFS= read -r line; do
       [ -n "$line" ] || continue
       dstmode=$(printf '%s' "$line" | cut -c9-14)
       path=${line#*"$TAB"}
