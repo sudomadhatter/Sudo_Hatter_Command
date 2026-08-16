@@ -1,274 +1,441 @@
-# Implementation Plan — SCC-183: Direct-to-Main Fast Lane for Non-Deployable Diffs
+# Implementation Plan — SCC-183: Prose Fast Lane to `main`
 
-Let a single commit of **prose** — docs, resources, artifacts, top-level READMEs — go straight to
-`main` with an approval token and a Jira key, skipping the branch, worktree, `--no-ff` merge and
-close-out ceremony that a code change rightly pays for.
+**Revision 2 (2026-08-16) — route (b): a one-commit pull request.**
+Revision 1 designed a *direct push* to `main`. It was built, reviewed **FAIL @ `3e4d4f5`**, and is
+superseded by this document. R1's plan text and its eleven acceptance items are preserved in git
+history at `bd549e6`; the review that killed it is in `walkthrough.md`, which stays as written.
 
-This is a **rebuild**. A prior implementation (branch `chore/SCC-183-direct-main-push`, commit
-`3c66dee`) was reviewed **FAIL** and deleted on operator instruction. Its two proven exploits are the
-first two RED tests here, so this lane cannot repeat them silently.
+Goal, unchanged: let a change that is **only prose** — docs, resources, artifacts — reach `main`
+without the plan → audit → review → close-out ceremony that a code change rightly pays for.
 
 ---
 
-## Operator ruling (verbatim, 2026-08-16)
+## Operator ruling (verbatim)
 
-A new door to `main` is new law, so it carries the operator's own words rather than a derived
-corollary:
+The lane itself, 2026-08-16:
 
 > "yes delete then you take on this task. I do want it, the little changes to documents and updating
 > things that dont touch any code are frustrating."
 
-And, on the safety boundary, chosen from three options presented this turn — **"Prose only, law
-excluded"**:
+The safety boundary, chosen from three options the same turn — **"Prose only, law excluded"**:
 
 > `docs/**` · `_my_resources/**` · `_artifacts/**` · `*.md` at repo root — everything else refused,
 > with `.agents/**`, `.githooks/**` and `tests/**` named as explicit hard refusals.
 
-## User Review Required
+The route, after R1 was reviewed FAIL and two routes were put to the operator:
 
-> [!IMPORTANT]
-> **This lane widens the road to `main`.** Until now two doors reached it, each dragging a full review
-> ladder behind it. This adds a third with no review at all, so the *only* thing standing between it
-> and an unreviewed change to `main` is the path allowlist. That allowlist is therefore **fail-closed**:
-> a path is refused unless it is explicitly permitted. A denylist was tried in the deleted attempt and
-> is what made it exploitable.
+> "b it is then"
 
-> [!NOTE]
-> **One boundary call to confirm, since it cuts close to the line you drew.** Root-level `*.md`
-> includes `AGENTS.md`, `CLAUDE.md` and `GEMINI.md` — which are arguably *law*, not prose, since
-> `AGENTS.md` is the system's brain. They were listed as allowed in the option you picked, so this plan
-> implements that. They are **not** unguarded: the armed `sop_currency` commit-msg gate already treats
-> root `AGENTS.md` as a usage surface and refuses a commit that changes it without staging the SOP. Say
-> the word and I will carve them out; the default here is what you approved.
+Route (b) as it was described to them when they chose it: *"Make the fast lane a one-commit
+auto-merged PR. The check already runs on `pull_request`, so nothing server-side changes and most of
+the `--direct` token work becomes unnecessary. Least new law — but it stops being a 'direct push.'"*
 
 ---
 
-## Why the prior attempt failed (this is the spec, in negative)
+## Why R1 could not work, in one paragraph
 
-Both proven by real pushes at a real bare remote through the real `.githooks/pre-push` dispatch:
+`main` carries an **active** ruleset, `main write gate (SCC-118)`, requiring the `main-write-gate`
+status check with an **empty bypass list** (0 actors — verified this turn against the live API). That
+check is published only by `.github/workflows/main-write-gate.yml`, which triggers on `pull_request`
+into `main` or a push to `gate/**`. On the `gate/**` road the check runs `main_write_gate.py --mode
+gate`, whose first assertion is `main_write_gate.py:145`:
 
-| # | Exploit | Root cause |
-|---|---|---|
-| H1 | `--direct` with **no `--key`** landed a commit carrying **no Jira key at all** | `--key` was optional, and the gate's key assertion was wrapped in `if [ -n "$t_key" ]` — absent key, check skipped |
-| H3 | `--direct` landed a commit that **rewrote `pre-push-main-approval.sh` to approve everything** | the path check was a **denylist** of six product dirs; `.agents/` was not on it, so the gate permitted a commit that disables the gate |
+> `is not a merge commit — it has {len(shas)} parent(s). main advances by exactly one merge commit.`
 
-The generalisation: **a denylist authored against a product repo's layout is vacuous in a governance
-repo**, where the crown jewels are `.agents/` and `.githooks/`, not `backend/`.
+A single-parent prose commit therefore **can never earn the check that `main` requires**. R1's 103
+green tests never saw this because its fixtures build remotes with `git init --bare` — a remote with
+no ruleset and no CI. The design was refuted by the server, not by a bug.
+
+---
+
+## What route (b) is
+
+The prose lane stops trying to push to `main`. It pushes an ordinarily-named branch, opens a pull
+request, and lets the road that **already exists and is already required** carry it:
+
+```text
+chore/<KEY>-<n>-<slug>  ──push──▶  origin
+        │
+        ├── PR into main  ──▶  main-write-gate runs on `pull_request`:
+        │                        · run_all.py (the full enforcement suite)
+        │                        · workflow_lint.py --toolkit-only
+        │                        · main_write_gate.py --mode pr
+        │                            – authorised_branch(): the source branch name must match
+        │                              ^(epic|chore)/(SCC)-\d+-.+
+        │                            – sop_currency across every landing commit
+        │
+        └── merge (a merge commit, never squash/rebase) ──▶ main
+```
+
+`chore/SCC-183-direct-main-fastlane` — this very branch — already matches that pattern. The route
+needs nothing invented.
+
+### Four consequences, stated bluntly
+
+1. **No new *technical* capability is granted — but likelihood is a different axis, and the first
+   draft of this line overclaimed** (audit finding F4). Anyone who can push a `chore/*` branch and
+   merge a PR can do this today, unchanged: PR #2 (`dabb3c3`, 2026-08-12) is the proof, and it is the
+   incident SCC-118 was written about. The local `gh` token carries `repo` + `workflow` already.
+   R1 minted a genuinely new privilege — a single-parent push to `main` — and the whole
+   fail-closed-allowlist-as-security-boundary argument existed to contain it; route (b) mints none,
+   so that threat model evaporates with it. **What (b) does change is normalisation:** a road
+   previously travelled by accident becomes documented, tooled and routine, with an entry in the
+   menu. The risk argument survives that correction; the sentence "no new capability" does not, and
+   this plan will not lean on it.
+2. **Zero server-side change.** No ruleset edit, no workflow edit, no `main_write_gate.py` edit. The
+   ruleset (verified live) carries `required_status_checks` + `deletion` + `non_fast_forward` and
+   **no pull-request rule**, so a PR needs no new permission to exist.
+3. **Zero change to the approval token, the minter, or `pre-push-main-approval.sh`.** Those gate
+   pushes **to `main`**. This lane never pushes to `main`.
+4. **What it does relax, and this is the only new law here:** a local merge through
+   `/smh-close-task-merge-tree` requires the operator's **verbatim words** (SCC-37). A merge
+   performed on GitHub never touches a machine, so that token is not bypassed — it is *structurally
+   absent*, exactly the gap SCC-118 was written about. Route (b) therefore needs a deliberate answer
+   to "what replaces the operator's yes," which is the next section.
+
+---
+
+## The decision that matters: who clicks merge
+
+> [!IMPORTANT]
+> **(b1) — RECOMMENDED, and what this plan implements. The agent opens the PR and stops. The
+> operator merges.**
+> This keeps SCC-37's *substance* — one deliberate human act per landing — while deleting the
+> ceremony that the operator called frustrating: no plan, no self-audit, no code review, no
+> close-out, no token, no verbatim-quote transcription. It is **less** work than today, not more:
+> tapping a green PR is cheaper than dictating approval words, and it works from a phone.
+>
+> **(b2) — the command polls for the green check and merges itself.**
+> This removes the operator from prose landings entirely. That is the SCC-71 / SCC-37 failure mode in
+> a new coat — an agent landing on `main` on standing context rather than a this-turn yes. It is one
+> flag away if the operator rules for it, but this plan will not take it silently.
+
+`allow_auto_merge` is `false` on this repo (verified). Under (b1) that is irrelevant — nothing is
+auto-merged — so **no repository setting changes either**.
+
+**Two things about (b1) that must be said out loud (audit finding F5):**
+
+- **It is stronger than SCC-37's token in the way that matters.** SCC-37 exists because an agent
+  *claimed* an approval it had not been given — ticket-status permission read as merge permission.
+  Under (b1) the operator performs the merge themselves, so there is no claim for an agent to
+  fabricate and nothing to falsify. The token converts a silent inference into a visible one; (b1)
+  removes the inference.
+- **It is a convention, not a gate.** Nothing mechanically stops an agent holding `gh` from merging
+  the PR it just opened. AC-7 pins the command's *wiring* — its terminal step hands back — and a
+  source-grep assertion is exactly the guard this repo's own memory says is blind to order and
+  invertible by a comment. It raises the cost of drift; it does not prevent it. That is the same
+  standing every "the agent must stop here" rule in this system has, and it is stated rather than
+  dressed up.
+
+---
+
+## What survives from R1's code
+
+### DELETE — revert to the pre-SCC-183 state
+
+| File | What goes |
+| --- | --- |
+| `.agents/scripts/git-hooks/mint-push-token.sh` | the whole `--direct` / `MODE=direct` mode, its mandatory-`--key` block, its merge-commit refusal, its allowlist sourcing, `mode=` in the token |
+| `.agents/scripts/git-hooks/pre-push-main-approval.sh` | the whole direct block and the `mode)` token-parser arm |
+| `.agents/scripts/tests/test_main_push_gate.py` | the 21 direct-mode cases, their five helpers, **and the `c.block` wiring** — the whole file reverts |
+
+> ⚠️ **AUDIT FINDING F2 — do not hand-unpick these. Check them out.**
+> R1's change was **not** purely additive, contrary to the first draft of this section. Measured:
+> it removed **25** pre-existing lines from `pre-push-main-approval.sh` and **5** from
+> `mint-push-token.sh` — the merge path's *content* survived byte-identical but its *lines* were
+> reindented into an `else` branch, and `CMD=""; BRANCH=""; KEY=""; APPROVAL=""` was rewritten to add
+> `MODE=""`. A builder who trusts "additive" will unpick by hand and leave residue.
+>
+> The revert is therefore a checkout, not an edit, and it is correct by construction:
+>
+> ```sh
+> git checkout main -- .agents/scripts/git-hooks/mint-push-token.sh \
+>                      .agents/scripts/git-hooks/pre-push-main-approval.sh \
+>                      .agents/scripts/tests/test_main_push_gate.py
+> ```
+>
+> **Run it AFTER absorbing `main`, not before** — see Landing order. If SCC-164's Parts C and D have
+> landed by then, `main` is the correct revert target and this picks them up for free; if this runs
+> against a stale `main` it silently reverts their fixes too.
+
+### KEEP, RENAMED, AND TIGHTENED
+
+`direct-push-allowlist.sh` → **`.agents/scripts/prose-scope.sh`**, predicate `prose_path_allowed()`.
+
+Two honest changes of character:
+
+- **It is a scope guard, not a security boundary,** and the file will say so in its header. Under (b)
+  nothing is protected *by* it — an agent that ignores it and opens an ordinary PR has done nothing it
+  could not do before. Its job is "am I in the right lane," which is a correctness question, not a
+  containment one. Describing it as security when it is not is precisely what
+  `.agents/rules/tests-must-gate-for-real.md` forbids.
+- **Tightened to `*.md` only**, per review findings #2 and #13. R1 allowed whole prefixes, and a
+  census run this turn finds **147 tracked non-`.md` files** under them — including **3 `.sh`, 4
+  `.ps1`, 2 `.py`**, among them `install-git-hooks.sh` (the script that arms every gate in the repo)
+  and `restore-env-master.sh` (the secrets kit). None of those is prose. `.md` under the three
+  prefixes, and nothing else.
+
+```sh
+prose_path_allowed() {
+  case "$1" in
+    "")                                                    return 1 ;;   # F6 — see below
+    AGENTS.md|CLAUDE.md|GEMINI.md)                         return 1 ;;   # law, not prose — see below
+    docs/*.md|docs/*/*.md)                                 return 0 ;;
+    _my_resources/*.md|_my_resources/*/*.md)               return 0 ;;
+    _artifacts/*.md|_artifacts/*/*.md)                     return 0 ;;
+    */*)                                                   return 1 ;;
+    *.md)                                                  return 0 ;;
+    *)                                                     return 1 ;;
+  esac
+}
+```
+
+(The real predicate matches `.md` at any depth; the shape above is illustrative. Depth handling and
+the leading-refusal ordering are AC-4's job to pin, since R1 proved ordering is where this class of
+predicate fails.)
+
+> ⚠️ **AUDIT FINDING F6 — the empty set must not read as a pass.**
+> The predicate is applied per path across a diff, and the caller's verdict is "no offending path was
+> found." With an **empty** diff the loop runs zero times, finds nothing, and the command sails on to
+> open an empty PR — a check whose missing input reads as a pass, which is Rule 1 of
+> `.agents/rules/tests-must-gate-for-real.md` and the tripwire this audit is required to fire on.
+> Two arms close it: `""` refuses inside the predicate (above), and the **caller** refuses a zero-path
+> diff by name — *"nothing to land"* — rather than treating it as clean. AC-10 pins the caller half;
+> the predicate half is one row of AC-4's table.
+
+> [!NOTE]
+> **One narrowing of what you approved, flagged rather than smuggled.** You approved root `*.md`,
+> which is exactly four files: `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `router.md`. The first three are
+> the system's brain and its two front doors — law, not prose. R1's review also found that
+> `sop_currency.classify()` special-cases **only `AGENTS.md`**, so `CLAUDE.md` and `GEMINI.md` have
+> **no backstop at all**, contrary to what I told you when you chose the boundary. This plan excludes
+> all three, which leaves `router.md` as the only root file in the lane.
+>
+> **Second narrowing, same callout (audit finding F10):** you approved whole prefixes — `docs/**`,
+> `_my_resources/**`, `_artifacts/**`. This plan allows only `*.md` inside them, which removes 147
+> tracked files from the lane, including every `.sh`, `.ps1`, `.py`, `.yaml` and `.json` under those
+> roots. `_artifacts/**/task.yaml` is the one you might actually miss.
+>
+> Narrowing is the safe direction to guess in and both are reversible with one word. Say it and I
+> restore either or both.
+
+### CUT — the `c.block` wiring goes back too  *(audit finding F7)*
+
+R1 wrapped the 73 pre-existing checks in `test_main_push_gate.py` under `c.block` guards. It was
+introduced to satisfy the ORPHAN rule for the 21 direct cases; those cases are deleted, so the wiring
+now traces to **no acceptance item in this plan** — Phase 2 scope creep by its own definition. Worse,
+it maximises the conflict surface with **SCC-172**, which is scoped to that exact file and has not
+been built yet.
+
+It is a genuine improvement and should not be lost: fold it into SCC-164 Part D, where that file is
+already open. Recorded on SCC-172 rather than carried here.
+
+### ADD — the lane itself
+
+| File | What |
+| --- | --- |
+| `.agents/commands/smh-prose-push.md` | the command body: ticket → branch → commit → push → PR → **stop**, with the scope check as its first step and a hard refusal that names the offending paths |
+| **all four platform doors** — `.claude/skills/smh-prose-push/`, `.agents/skills/smh-prose-push/`, `.opencode/commands/smh-prose-push.md`, `.agents/workflows/smh-prose-push.md` | generated launchers, emitted by `sync-agents`, never hand-authored. **F9:** the first draft named two of four. One door per platform per command (SCC-66); three of four is the failure mode that rule exists for |
+| `.agents/commands/INDEX.md` · `.agents/.sync-manifest.json` | the command surface's own registries — a new entry that misses these is invisible to the lint |
+| `.agents/scripts/prose-scope.sh` | the predicate above, plus a `--check <path>...` CLI so the tests and the command drive **one** definition |
+| `.agents/scripts/tests/test_prose_scope.py` | the predicate's table, the empty-input refusal, the refusal wiring, the mutants |
 
 ---
 
 ## Checkable Acceptance Criteria
 
-- [ ] **1. `--key` is mandatory in direct mode.** `mint-push-token.sh --direct` without `--key` exits
-      non-zero and mints nothing. *Assertion:* `test_main_push_gate.py --case "direct: minter refuses --direct with no --key"`.
-- [ ] **2. The gate refuses a keyless direct token even if one is hand-written.** A token carrying
-      `mode=direct` and an empty `key=` is refused at push. *Assertion:* `--case "direct: gate refuses a token with an empty key"`.
-- [ ] **3. The allowlist is fail-closed.** Every changed path must match the allowlist or the push is
-      refused; a path on no list at all is **refused**, not permitted. *Assertion:* the refuse half of
-      `--case "direct: allowlist"` — `.agents/`, `.githooks/`, `tests/`, a root non-`.md`, `backend/`,
-      and a mixed commit where one good file rides with one bad one.
-- [ ] **4. The gate cannot be used to rewrite the gate.** A direct push touching
-      `.agents/scripts/git-hooks/pre-push-main-approval.sh` is refused. *Assertion:* `--case "direct: gate refuses a commit that rewrites the gate itself"`.
-- [ ] **5. The allow half genuinely allows.** `docs/**`, nested `docs/a/b.md`, `_my_resources/**`,
-      `_artifacts/**` and root `README.md` each land. *Assertion:* the allow half of `--case "direct: allowlist"`, remote sha advancing to the pushed sha.
-- [ ] **6. One commit, never a merge, never a batch.** 2-ahead is refused at the minter *and* at the
-      gate; a merge commit with a direct token is refused. *Assertion:* `--case "direct: shape"`.
-- [ ] **7. The existing merge path is untouched.** The 73 pre-existing checks in
-      `test_main_push_gate.py` still pass. *Assertion:* full-file run, `>= 73` passing, exit 0.
-- [ ] **8. Policy and SOP record the third door.** `.agents/rules/git-policy.md` and
-      `docs/_scc_sops_prds/workflows_testing_SOP.md` document the lane, its allowlist and its limits.
-      *Assertion:* `workflow_lint.py --toolkit-only` exit 0, link+anchor sweep clean, `sop_currency.py` satisfied.
-- [ ] **9. The minter pre-checks the allowlist**, so an honest mistake is caught before the operator's
-      approval is spent. *Assertion:* `--case "direct: minter refuses a disallowed path before minting"`.
-      *(Added by audit — traces the mint-time check that otherwise mapped to no acceptance item.)*
-- [ ] **10. The gate fails CLOSED on every degenerate input**, never open: a missing/unsourceable
-      allowlist predicate, a remote ref that does not yet exist (`remote_sha` all-zero), and an empty
-      changed set are each **refused**. *Assertion:* `--case "direct: fail-closed"`.
-      *(Added by audit — findings A1, A3.)*
-- [ ] **11. No symlinks via the fast lane.** A commit introducing a symlink (git mode `120000`) or a
-      gitlink is refused even at an allowed path. *Assertion:* `--case "direct: refuses a symlink at an allowed path"`.
-      *(Added by audit — finding A4.)*
+| # | Criterion | How it is checked |
+| --- | --- | --- |
+| AC-1 | `mint-push-token.sh`, `pre-push-main-approval.sh` **and `test_main_push_gate.py`** are byte-identical to the `main` this lane absorbed | `git diff main -- <all three>` is empty — achieved by checkout, not by hand-unpicking (F2) |
+| AC-2 | The full enforcement suite is green at the shipping sha, clean tree | `run_all.py` + a `gate_receipt.py` stamp with `dirty_tree=false` |
+| AC-3 | `prose_path_allowed` refuses every one of the 147 tracked non-`.md` files under the three prefixes | a test that enumerates them from `git ls-files`, not a hand-written list |
+| AC-4 | It refuses `.agents/**`, `.githooks/**`, `tests/**`, root `AGENTS.md`/`CLAUDE.md`/`GEMINI.md`, case variants (`.Agents/x.sh`), `..` segments, paths with spaces, and symlink/gitlink modes | table test, one row per class |
+| AC-5 | An **independent** mutation sweep drawn from the shipped predicate — not from the cases — kills every mutant | sweep run by a fresh agent that has not seen the test file (R1's 13/13 was confirmatory; an independent sweep of the same code found **8 survivors**) |
+| AC-6 | The command refuses, loudly and by name, when the diff contains a non-prose path | a test that drives the command's check step over a mixed diff |
+| AC-7 | The command **stops** at "PR opened" and performs no merge | assertion on the command body: no `gh pr merge`, no `--auto`, no `git push origin main`, and its terminal step hands back. Pins wiring, not prose — and does not pretend to be a gate (F5) |
+| AC-8 | The lane's documented route matches the live gate | `main_write_gate.py --mode pr --branch chore/SCC-999-x` exits 0; `--branch claude/foo` exits non-zero |
+| AC-9 | `.agents/rules/git-policy.md` and `docs/_scc_sops_prds/workflows_testing_SOP.md` describe **three** roads to main and state plainly that the prose road carries no token | doc diff + the armed `sop_currency` gate |
+| AC-10 | An **empty** path set is refused by name, not treated as clean | drive the command's check step over a zero-path diff; it must exit non-zero saying "nothing to land" (F6) |
+| AC-11 | The command reaches **all four** platform doors plus `commands/INDEX.md` and `.sync-manifest.json` | `workflow_lint.py --toolkit-only` and the existing `test_command_surfaces.py` (F9) |
+| AC-12 | The lane depends on no tool absent from the other machine, or says so | `gh` is required by this command and by nothing else in `.agents/scripts/`; AC-12 is satisfied by the command naming that prerequisite and failing with an install hint, not by assuming it (F9) |
 
 ---
 
-## Proposed Changes
+## Verification plan
 
-### [ADD] `.agents/scripts/git-hooks/direct-push-allowlist.sh`
+1. **Assert-first.** AC-3 through AC-6 are written RED against the current tree and must fail before
+   the predicate exists. R1's two proven exploits (H1 keyless, H3 gate-rewrites-itself) are retired
+   with the direct mode they attacked, but their *generalisation* — "a path rule that fails open is
+   vacuous in a governance repo" — is what AC-3/AC-4 carry forward.
+2. **The mutation sweep is run by a separate agent** that reads only `prose-scope.sh`, never the
+   tests. R1's sweep is the cautionary case: 13/13 killed, and an independent pass over the same file
+   found 8 survivors, because the mutants were drawn from branches the cases already covered.
+3. **The road IS rehearsed end-to-end — the first draft excused a gap that is trivially closable
+   (audit finding F8).** It remains true that this lane edits `.agents/**` and `tests/**`, so it is
+   not prose and must land the ordinary way through `/smh-close-task-merge-tree`. But that is an
+   argument about *this diff*, not about the road. Rehearse the road with a throwaway:
 
-One shared predicate, `direct_push_path_allowed()`, sourced by **both** the minter and the gate.
+   ```sh
+   # a scratch branch whose NAME matches what main_write_gate.py --mode pr requires
+   git switch -c chore/SCC-183-prose-rehearsal
+   #  ... one added line in a docs/**.md file, committed with an SCC key ...
+   git push -u origin chore/SCC-183-prose-rehearsal
+   gh pr create --base main --title "SCC-183 rehearsal — DO NOT MERGE" --body "..."
+   gh pr checks --watch          # main-write-gate must go GREEN on pull_request
+   gh pr close --delete-branch   # closed, never merged; main does not move
+   ```
 
-*Why a third file rather than the same `case` block pasted twice:* a security predicate duplicated
-across two files is a drift hazard, and drift in exactly this predicate is what the deleted attempt
-died of. One definition, two callers, and the file itself sits under `.agents/` — so the fast lane
-cannot edit its own allowlist.
-
-```sh
-direct_push_path_allowed() {
-  case "$1" in
-    .agents/*|.githooks/*|tests/*)        return 1 ;;  # law + gates, named explicitly
-    docs/*|_my_resources/*|_artifacts/*)  return 0 ;;  # prose trees (case globs cross '/')
-    */*)                                  return 1 ;;  # any other nested path
-    *.md)                                 return 0 ;;  # root-level markdown only
-    *)                                    return 1 ;;  # fail closed
-  esac
-}
-```
-
-Ordering is load-bearing: the explicit refusals are read before the allows, and `*/*` sweeps every
-remaining nested path, so the trailing `*.md` can only match a root-level file.
-
-### [MODIFY] `.agents/scripts/git-hooks/mint-push-token.sh`
-
-- `--direct` / `--direct-push` sets `MODE=direct`; `--branch` defaults to `main`.
-- **`--key` becomes REQUIRED in direct mode** (AC 1). Costs no friction: the armed `commit-msg` hook
-  already requires a Jira key on every commit in this repo.
-- Refuse at mint if HEAD is a merge commit, or not exactly 1 above `origin/main` — the existing
-  first-parent check already covers the second; the merge check is new for direct mode.
-- Refuse at mint if any changed path fails the allowlist, so an honest mistake is caught **before** the
-  operator's approval is spent rather than after the token is discarded.
-- Write `mode=direct` into the token.
-
-### [MODIFY] `.agents/scripts/git-hooks/pre-push-main-approval.sh`
-
-Source the allowlist; **fail closed if the source is missing or the function is undefined** (a missing
-predicate must refuse, never skip). When `t_mode = direct`:
-
-1. `parent1 == remote_sha` — exactly one commit.
-2. no second parent — not a merge.
-3. **`t_key` non-empty** — refuse outright if absent (AC 2). *Not* conditional.
-4. commit message carries `t_key`.
-5. **every changed path satisfies the allowlist** (AC 3, 4).
-6. **the changed set is non-empty**, and **no entry is a symlink or gitlink** (AC 10, 11).
-
-> ⚠️ **AUDIT FINDING A1 (Critical) — do not nest the direct block inside the existing
-> `if [ "$remote_sha" != "$ZERO" ]` wrapper at [`pre-push-main-approval.sh:148`](.agents/scripts/git-hooks/pre-push-main-approval.sh#L148).**
-> That wrapper guards the *merge* invariants, and skipping them when the remote ref does not exist is
-> correct for a merge. Inheriting it for direct mode is **fail-open**: an all-zero `remote_sha` would
-> skip the key check, the allowlist and the shape checks in one go, approving an arbitrary first push.
-> The deleted attempt had exactly this shape. **Direct mode must handle `remote_sha == ZERO` itself,
-> and REFUSE** — a direct token authorises advancing an existing `main` by one commit, never creating
-> the ref.
-
-> ⚠️ **AUDIT FINDING A2 (Important) — do not copy the dispatch's fail-open when sourcing.**
-> [`.githooks/pre-push:73-77`](.githooks/pre-push#L73) handles a missing gate with
-> *"push allowed, UNCHECKED"* and `exit 0`. That is a deliberate pre-existing choice for a worktree
-> that predates the gate, and it is **not** the right pattern for the allowlist source: by the time the
-> gate is running, direct mode has already been requested. A missing or unsourceable predicate must
-> **refuse the push**, and AC 10 tests that by running the gate with the file removed.
-
-When `t_mode != direct`, the existing merge invariants run byte-identical.
-
-Path iteration reads one path per line (`while IFS= read -r f`) so filenames with spaces are handled;
-git quotes control characters, and a quoted path matches no allow rule and is therefore refused —
-fail-closed by construction.
-
-⛔ **The comment block explaining SCC-71/SCC-77 stays.** The deleted attempt stripped it; that
-provenance is why the check exists and is not incidental commentary.
-
-### [MODIFY] `.agents/scripts/tests/test_main_push_gate.py`
-
-New `c.block(...)` sections — `direct: minter`, `direct: shape`, `direct: allowlist`, `direct: gate
-refuses a commit that rewrites the gate itself` — covering **both halves**: every refuse case above,
-and the five allow cases. Harness gains the new allowlist file in its copy set.
-
-### [MODIFY] `.agents/rules/git-policy.md` · `docs/_scc_sops_prds/workflows_testing_SOP.md`
-
-Document the third door, the allowlist, the operator ruling, and the explicit statement that it
-carries **no review ladder** — which is why its scope is prose only.
+   This proves the claim the whole plan rests on — that a prose PR earns the required check — against
+   the **live** ruleset and the **live** workflow, which is precisely the layer R1's 103 green tests
+   could not see. It lands nothing. Its output goes in the walkthrough as evidence, with the PR
+   number and the check's conclusion.
+4. **What still is not covered, stated rather than glossed:** nobody merges a prose PR during this
+   lane, so the merge half of the road is exercised for the first time on the next genuine doc-only
+   change. The walkthrough says that in those words.
 
 ---
 
 ## Deliberately NOT in this lane
 
-- **Wiring `--direct` into `/smh-quick-fix`.** That file is owned by the live SCC-164 lane (69 files,
-  mid-flight). Editing it here guarantees a conflict on the door command itself. This lane ships the
-  mechanism and documents the manual three-step procedure; the command wiring is a follow-on once
-  SCC-164 lands. **Deferred against a named blocker, not dropped.**
-- **AVCH-63.** The port into `Projects/AGY_AVIATIONCHAT` is its own ticket in its own repo, per the
-  one-ticket-per-repo rule. It runs after this lands, and its allowlist maps to AVCH's layout —
-  where `Dockerfile`, `.firebaserc` and `.gcloudignore` sit at **root**, which a denylist of
-  directories would have missed entirely.
-
-## Landing order
-
-**SCC-164 lands first.** It is the only overlap (`workflows_testing_SOP.md`) and it is a 69-file
-rewrite of the command surface against my 5-file additive change; re-applying one SOP section onto a
-rewritten SOP is far cheaper than the reverse. If this lane lands first, SCC-164 absorbs a conflict in
-a file it is already rewriting wholesale.
-
-## Verification Plan
-
-```bash
-python3 .agents/scripts/tests/test_main_push_gate.py          # both halves, full file
-python3 .agents/scripts/tests/run_all.py                      # through gate_receipt.py
-python3 .agents/scripts/workflow_lint.py --toolkit-only
-python3 .agents/scripts/sop_currency.py --paths <changed> --message "<subject>"
-```
-
-Plus a **mutation sweep** drawn from the shipped code — not from the cases — over the allowlist
-predicate and the direct-mode checks: invert each `return 0`/`return 1`, delete each refuse
-branch, and name the case that must kill each mutant. A survivor is a finding.
+- **Finding #3 — the merge-arm hole in the local hook. → route it to SCC-172, do not mint a key**
+  (audit finding F3). Pre-existing on `main`, and the server gate catches that shape today. The first
+  draft said "its own ticket"; **SCC-172** (Part D of SCC-164) already exists, is `To Do`, is scoped
+  to `pre-push-main-approval.sh` + `.githooks/pre-push` + `test_main_push_gate.py`, and its D1 is the
+  same defect class in the same rung — *"the branch-binding rung fails OPEN when the token's branch
+  does not resolve."* The operator has ruled on this pattern in writing: *"we are not developing 3
+  tasks for every 1 we try to fix."* Comment it onto SCC-172.
+- **Enabling `allow_auto_merge`** on the repository. Not needed under (b1).
+- **Route (b2)**, the self-merging variant. Named above; not built.
+- **AVCH-63**, the port to `Projects/AGY_AVIATIONCHAT`. Its own ticket, its own repo, after this lands.
 
 ---
 
-## Self-Audit (2026-08-16)
+## Landing order
 
-**Mode:** PRE-WORK. **Level:** Full — the plan touches a gate, a hook, a rule, a script that other
-scripts source, and the SOP. **Lane:** `chore/SCC-183-direct-main-fastlane`, no deployable path in the
-change set, so `/smh-close-task-merge-tree` is the correct close-out.
+**SCC-164 lands first.** That call was right in the first draft; the *reason* was badly understated,
+and the understatement is the risk (audit finding F1).
+
+SCC-164 is not a doc lane. It is a live 90-file family lane at `13906ec` with an uncommitted working
+tree, and its overlap with this plan is structural on three axes:
+
+| Axis | SCC-164 | This lane |
+| --- | --- | --- |
+| The two hook scripts | **Part C (SCC-171)** — `--git-common-dir` mis-normalised in `mint-push-token.sh` **and** `pre-push-main-approval.sh`. **Part D (SCC-172)** — three measured fail-opens in `pre-push-main-approval.sh` + `.githooks/pre-push`. **Both still `To Do` — not yet built.** | AC-1 reverts those exact files to `main` |
+| The gate's test file | Part D is scoped to `test_main_push_gate.py` | AC-1 reverts that exact file, and F7 hands the `c.block` wiring to Part D |
+| The command surface | it is *the command-surface correctness family* — `.sync-manifest.json`, `.opencode/commands/`, `.agents/workflows/`, `commands/INDEX.md`, 17 command bodies | this lane **adds a command**, which writes to every one of those registries |
+
+**The failure this ordering prevents is specific, and it is silent.** If this lane reverts the two
+hook scripts to a `main` that predates Parts C and D, and SCC-164 lands after, the merge resolves
+cleanly and *undoes their fixes* — a revert-to-main is indistinguishable from a deliberate change to
+git. Nothing goes red. That is the same shape as the `check_maps` and `preflight` failures already in
+this system's memory: an operation that reports success while acting on the wrong tree.
+
+**So the sequence is not negotiable:**
+
+1. SCC-164 lands on `main` (at minimum Parts C and D — if the family lands as one lane, all of it).
+2. This lane absorbs `main`.
+3. **Only then** run the AC-1 checkout, so `main` is the correct revert target by construction.
+4. Re-diff, re-run the suite, re-stamp the receipt.
+
+If SCC-164 is going to sit for a while, the honest alternative is to build the *additive* half of
+this lane now (`prose-scope.sh`, its tests, the command and its four doors — none of which SCC-164
+touches) and hold AC-1's revert until step 3. That splits cleanly; the plan supports either.
+
+---
+
+## Status
+
+**Awaiting the plan-first gate.** This document supersedes R1, so it re-arms that gate: nothing is
+implemented until `/smh-self-audit` has run against it and the operator has replied `approved`.
+
+---
+
+## Self-Audit (2026-08-16) — Revision 2, PRE-WORK
+
+Repo resolved from command output, not belief:
+`Repo: SCC-183-direct-main-fastlane | Branch: chore/SCC-183-direct-main-fastlane`
+(worktree `/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/SCC-183-direct-main-fastlane`,
+repo root `/Users/sudohatter/Sudo_Hatter_Command`). Plan under audit: this file. Ticket: **SCC-183**.
+
+**Right-size: FULL.** It touches a gate/hook pair, a script other scripts source, the door law, four
+platform surfaces, and it *deletes* shipped code.
 
 ### Phases walked
 
-- **Phase 0 — scope & traceability.** 11 acceptance items, each naming the command that proves it.
-  Both directions checked: every item maps to a step, and one step (the minter's mint-time path
-  pre-check) traced to **no** item — flagged as untested scope and resolved by adding AC 9 rather than
-  cutting it, because without it an honest mistake burns the operator's approval words. Lane check:
-  no `backend/ frontend/ firebase/ functions/ mobile/ .github/` path in the set. ✅
-- **Phase 1 — blast radius.** The predicate was executed, not eyeballed: 19/19 paths classified
-  correctly, including `.Agents/x.sh` (macOS APFS is case-insensitive; git is not, and the glob is
-  case-sensitive so it falls through to the fail-closed arm) and `Projects/AGY/backend/x.py`. Callers
-  of the two scripts: `.githooks/pre-push:71` and the two door commands
-  (`cicd-push-e2e.md:93`, `smh-close-task-merge-tree.md:332`) — all pass `--branch`, none pass
-  `--direct`, so the merge path is unaffected. `sop_currency.py:60` pins exactly one SOP doc and it is
-  in the change set. No rule is renamed, so `_RULE_POINTERS` is untouched. No command file changes, so
-  door parity across the four platforms is not in play.
-- **Phase 2 — over-engineering.** One new file. Justified: it is a *security predicate with two
-  callers*, and a duplicated copy is the drift hazard that killed the prior attempt. Rejected as
-  unjustified: a `--allow-path` override flag (no acceptance item needs it, and an override on a
-  fail-closed allowlist is the allowlist deleted), and a config file for the path list (N=1).
-- **Phase 3 — pre-mortem.** Both machines: pure POSIX `sh`, no bashism, no `python`/`python3` split in
-  the hook path. Fresh clone: `core.hooksPath` is per-machine and this ships no new arming marker, so
-  the existing `MAIN-PUSH-ENFORCE` posture is unchanged. Escape hatch: `git push --no-verify`, already
-  documented and already tested. Empty input: **was** a pass — now AC 10. Rollback: a plain revert; the
-  lane creates no ticket transition and no history rewrite, so nothing here is irreversible.
+- **Phase 0 — scope + checkable list.** Change set enumerated: 3 files reverted, 1 renamed and
+  tightened, 6 added (command + 4 doors + predicate + test) + 2 registries. Acceptance list rewritten
+  from 9 items to **12**; three new items (AC-10/11/12) came from findings, and every plan step now
+  traces to one. **Lane check: clear** — no `backend/`, `frontend/`, `firebase/`, `functions/`,
+  `mobile/` path; `.github/` is *read* to verify the workflow's triggers and not modified, so this
+  stays Task work closing through `/smh-close-task-merge-tree`.
+- **Phase 1 — blast radius.** The sibling sweep is where this audit earned its keep: `git worktree
+  list` + `git -C … status` + `git -C … diff --name-only main...HEAD` found SCC-164 live at `13906ec`
+  with 90 committed files and 11 uncommitted, and `acli jira workitem view SCC-172` showed Parts C
+  and D still `To Do` and scoped to the same two hook scripts and the same test file this plan
+  reverts. That is **F1**, and it changed the plan's landing-order section from one sentence to a
+  sequencing contract. Cleared in one line each: no command *rename* (so no orphaned caches); the
+  predicate has exactly two callers today and both are being deleted; no file this plan moves is the
+  target of a Markdown link; nothing under `_artifacts/_memory/` is touched.
+- **Phase 2 — over-engineering gate.** One tripwire fired: *a plan step tracing to no acceptance
+  item*. The `c.block` wiring survived from R1 with no item behind it → **CUT (F7)**, and handed to
+  SCC-172 where the file is already open. The *new command* tripwire was considered and cleared: no
+  existing command can take this as a flag — `/smh-quick-dev` and `/smh-close-task-merge-tree` are
+  the ceremony this lane exists to skip, so bolting a "skip yourself" flag onto them is worse than a
+  separate door. A second near-miss: minting a new ticket for finding #3 → **routed to SCC-172 (F3)**
+  under the operator's own consolidation ruling.
+- **Phase 3 — pre-mortem.** *The other machine:* the lane now depends on `gh`, which nothing else in
+  `.agents/scripts/` needs — the only genuinely new portability debt here, pinned as **AC-12 (F9)**.
+  *Fresh clone:* nothing ships a gate that is silently off — this lane adds no hook. *Empty input:*
+  **fired — F6**, the zero-path diff read as clean. *The four platform caches:* **fired — F9**, two of
+  four named. *A sibling lane lands first:* **fired — F1**, and the failure is silent (a revert-to-a-
+  stale-main undoes Parts C/D with a clean merge and no red). *Rollback:* a merged prose PR is undone
+  by a revert commit through the ordinary door; nothing here is irreversible. *Escape hatch:* the
+  ordinary ladder is always available and is stricter, so the prose lane needs no `--force` of its own.
+- **Phase 4 — verdict**, below.
 
 ### Findings
 
-| Item | Severity | Failure scenario | Disposition |
-|---|---|---|---|
-| `pre-push-main-approval.sh:148` — `remote_sha != ZERO` wrapper | **Critical** | Direct block nested inside it ⇒ an all-zero remote sha skips key check, allowlist and shape checks; arbitrary content approved | Direct mode handles ZERO itself and **refuses**. Inline finding A1 + AC 10 |
-| Sourcing the shared predicate | **Important** | Copying `.githooks/pre-push`'s "not present ⇒ exit 0" pattern makes a deleted allowlist file a full bypass | Fail closed; AC 10 runs the gate with the file removed. Inline finding A2 |
-| Empty changed set | Moderate | A commit changing nothing produces no disallowed path ⇒ reads as pass (`tests-must-gate-for-real` Rule 1) | Refuse an empty set. AC 10 |
-| Symlink at an allowed path | Moderate | `docs/x -> ../.agents/…` reports as `docs/x` and lands unreviewed. Does **not** rewrite the gate (git stores the link, not the target) so it is not the H3 escape — but this lane has no review ladder, so it must be mechanical | Refuse mode `120000`/`160000`. AC 11 |
-| `grep -q "$t_key"` | Minor | `$t_key` is an unanchored BRE, so a metacharacter in a key behaves oddly | Use `case "$msg" in *"$t_key"*)` — no regex. Substring nuance (`SCC-18` inside `SCC-183`) accepted: the key comes from the operator, not an attacker |
-| Mint-time path pre-check | Minor | Traced to no acceptance item ⇒ shipped untested | Kept, and AC 9 added to test it |
+| # | Where | Severity | Failure scenario | Disposition |
+| --- | --- | --- | --- | --- |
+| F1 | § Landing order | **CRITICAL** | Reverting the hook scripts to a `main` predating SCC-164 Parts C/D silently undoes their fixes — clean merge, no red, nobody notices | **FIXED IN PLAN** — landing order rewritten as a 4-step sequencing contract with the split-build fallback |
+| F2 | § DELETE (AC-1) | HIGH | "Purely additive" is false — R1 removed 25 pre-existing lines from `pre-push-main-approval.sh` and 5 from `mint-push-token.sh`; a builder trusting it hand-unpicks and leaves residue | **FIXED IN PLAN** — revert is now a `git checkout main -- …`, correct by construction; measured numbers recorded |
+| F3 | § Deliberately NOT | HIGH | Minting a new key for finding #3 duplicates SCC-172 (`To Do`, same files, same defect class) against a standing operator ruling | **FIXED IN PLAN** — routed to SCC-172 |
+| F4 | § Four consequences | MEDIUM | "No new capability" is true technically and false in effect; the whole risk argument leans on a sentence that cannot carry it | **FIXED IN PLAN** — restated as capability-unchanged / normalisation-changed, with PR #2 as the evidence |
+| F5 | § who clicks merge | MEDIUM | (b1) presented as if it were a gate; AC-7 is a source-grep guard, which this repo's memory says is invertible by a comment | **FIXED IN PLAN** — both halves stated: stronger than the token in substance, a convention in enforcement |
+| F6 | § predicate | MEDIUM | An empty diff yields zero iterations → no offending path → **pass**, and the command opens an empty PR. `tests-must-gate-for-real` Rule 1 | **FIXED IN PLAN** — `""` arm in the predicate + AC-10 on the caller |
+| F7 | § `c.block` wiring | MEDIUM | Kept with no acceptance item behind it, on the one file SCC-172 is scoped to — pure conflict surface | **CUT** — reverts with the rest; folded into SCC-164 Part D |
+| F8 | § Verification plan | LOW | A closable coverage gap was being excused; the live ruleset + live workflow are exactly the layer R1's tests could not see | **FIXED IN PLAN** — throwaway rehearsal PR added, opened and closed without merging |
+| F9 | § ADD, § Phase 3 | LOW | Two of four platform doors named; `gh` dependency unstated on a two-machine system | **FIXED IN PLAN** — all four doors + both registries listed; AC-11 and AC-12 added |
+| F10 | § narrowing callout | LOW | The prefix→`*.md` narrowing sat in a bullet while the root-law narrowing got a callout; both narrow what the operator approved | **FIXED IN PLAN** — both in one callout, both reversible with one word |
+
+Ten findings, ten dispositions, none deferred. F1 is the one that would have cost real work.
 
 ### Landing-order dependency
 
-**SCC-164 (`chore/SCC-164-command-surface-family`, 69 files, live) lands first.** Sole overlap:
-`docs/_scc_sops_prds/workflows_testing_SOP.md`. It also owns `.agents/commands/smh-quick-fix.md`,
-which is why wiring `--direct` into that command is explicitly out of scope here. If the order
-reverses, SCC-164 absorbs a conflict in a file it is rewriting wholesale — recoverable, but wasteful.
+**SCC-164 must land before this lane's AC-1 revert runs.** Stated in full in § Landing order, with a
+split-build fallback if SCC-164 sits. Naming it here too because a landing-order dependency that
+lives only in a prose section is one nobody re-reads at close-out time.
 
 ### Four gates
 
-- **Verification strategy present?** Yes — every one of the 11 items names the `--case` label or the
-  command that proves it, and the mutation sweep is specified as drawn from the code, not the cases.
-- **Anything irreversible?** No. No delete, no rename, no history rewrite, no Jira transition in this
-  lane; the ticket is already `In Progress`.
-- **Any step vague enough to be guessed?** The allowlist was the one candidate; it is now pinned as
-  literal shipped code with an executed truth table, so there is nothing left to interpret.
-- **Convention fit?** Artifacts in `_artifacts/_main/<date>_<slug>/`, POSIX `sh` to match the existing
-  hooks, SOP staged in the same commit, provenance comments preserved.
+- **Verification strategy present?** ✅ Each of AC-1…AC-12 names the command that proves it. AC-5 is
+  the one that needs a *person* to enforce: the sweep must be run by an agent that has not read the
+  test file, because R1's confirmatory 13/13 is the cautionary case.
+- **Anything irreversible?** ⚠️ One deletion — R1's direct-mode code and its 21 tests. It is
+  recoverable from git (`3499861`, `2219968`, `e6e6290`) and the plan says so. The rehearsal PR is
+  opened and closed, never merged. Nothing else.
+- **Any step vague enough to be guessed?** One was: *"the real predicate matches `.md` at any
+  depth"* left depth handling to the builder. AC-4's table now owns it, and R1 proved this is exactly
+  where the class fails.
+- **Convention fit?** ✅ One door per platform per command; artifacts in
+  `_artifacts/_main/<date>_<slug>/`; POSIX `sh` for the predicate, matching every other hook-adjacent
+  script; the audit appended into the plan rather than a standalone file.
 
+```text
 Audit verdict: GO
+```
+
+**GO, conditional on the sequencing in § Landing order** — the ten findings above were baked into the
+plan before this verdict was written, and Phases 0–3 were re-walked against the amended text. The
+condition is not a formality: F1 is a silent failure, and building the AC-1 revert against today's
+`main` is the way to hit it.
