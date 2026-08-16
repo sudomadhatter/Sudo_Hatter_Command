@@ -262,6 +262,60 @@ than the floor. Two separate causes:
    without re-syncing. Regenerated with `sync-agents.ps1 -NoGlobals` — local surfaces only, so a
    mid-lane body is never pushed to the machine-wide opencode/Antigravity/Codex caches.
 
+### Part M · SCC-182 — a `cd` out of the workspace retargets every later relative path
+
+**Discovered mid-lane, minted as a lettered PART, not a new ticket** (SCC-170's rule). Looked
+first: all 13 riders A–L, none covers it; the parent index row was written at an asserted anchor
+and read back — all 13 prior rows and every heading survived.
+
+**The defect.** Bash cwd persists between calls *until* one ends outside the workspace root. The
+harness then resets it to the **primary working directory** — the MAIN checkout, never the
+worktree — and every later relative path reads main. Nothing errors: the same path exists in both
+trees and both are valid git repos, so the wrong answer is well-formed. It cost this lane twice:
+`mutation_sweep.py` was **written into main** (Part 3), and main's 333-line `test_gate_receipt.py`
+was read as the lane's 463-line one (Part 4). The tell was arithmetic — 333 + 130 = 463.
+
+**The law already existed.** `implementation_plan.md:134`, lane rule 8. Stated, never enforced,
+and silent about *file* reads — the half that actually bit. Same shape as Part E.
+
+**The remedy is measured, not assumed** — run on this lane before a line of the hook was written:
+
+```
+( cd /tmp && … )   →  after the call, cwd UNCHANGED, no reset
+cd /tmp && …       →  reset to the main checkout
+```
+
+**RED, and the vacuity it hid.** First capture `18/37`. Then: *an absent hook prints nothing,
+which is indistinguishable from "allowed"* — every M2/M3/M5 allow-case was passing against a
+script that did not exist. Binding them to `exit 0` took RED to **3/37**, exposing 15 vacuous
+passes. **GREEN 39/39**; floor **32/32**.
+
+**Live check, against the exact command that caused the bug:**
+
+| Command | Verdict |
+|---|---|
+| `cd /tmp && … git -C <main> worktree add …` (the Part 4 offender) | **ASKED** |
+| `( cd /tmp && … )` | allowed |
+| `git -C /abs/worktree status` | allowed |
+
+**Mutation sweep — 6/6, and three of them failed FIRST and were real gaps:**
+
+| Mutant | Must kill | Result |
+|---|---|---|
+| N1 ignore paren depth | M2 subshell | KILLED |
+| N2 drop the `~`/`-`/bare-`cd` arm | M4 | KILLED |
+| N3 stop skipping comments | M4 apostrophe | **SURVIVED first** → the case I declared was inert. A comment only matters when it contains an apostrophe, which opens a quote that swallows the later real `cd`. New case added |
+| N4 stop skipping heredoc bodies | M5 heredoc | KILLED |
+| N5 outer catch-all `raise`s | M6 unparseable | **SURVIVED first** → aimed at an *inner* try that the outer handler already subsumed (`allow()` raises SystemExit, which `except Exception` misses). Unreachable-by-behaviour, so unkillable. Deleted the inner one and re-aimed at the outer |
+| N6 `startswith(root)` without the `/` boundary | M4 sibling | **SURVIVED first** → a sibling named `<root>-sibling` read as *inside*. The fixture never tested the boundary. New case added |
+
+**Arming:** `permissionDecision: "ask"`, matching `require-push-approval.py`'s house rule. Note
+`ask` resolves to an auto-DENY in auto mode — wanted here, since the point is to stop the command
+*before* it retargets the tree. It **fails open** on anything it cannot judge. Operator ruling,
+verbatim 2026-08-16: *"this is a reocurring error we need to fix"* / *"no not memory a real fix"*.
+⚠ It arms on **landing**: `$CLAUDE_PROJECT_DIR` is the main checkout, so the worktree's
+`settings.json` has no effect until this lane merges.
+
 ## Your Actions
 
 _Filled in at the end of the lane._
