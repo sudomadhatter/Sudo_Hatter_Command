@@ -32,3 +32,31 @@ The doc fix (Step 0 derives from output + names the expected key; Step 1 asserts
 STOPs on mismatch) was scoped 2026-08-09 and **deferred** — so this memory is the only place it
 lives. It now belongs in `.agents/skills/close-task-merge-tree/SKILL.md`, not the command file:
 SCC-59 is converting that command to a skill. See `.agents/rules/worktree-per-story.md` (it forbids chore worktrees).
+
+## ⛔ Passing both flags is NOT enough — `--repo` must be the WORKTREE (2026-08-15, AVCH-59)
+
+I passed `--repo` and `--branch` and `--expect-key`, all correct, and still got a **false
+`VERDICT: BLOCKED`** at close-out. `--repo` named the repo's **main checkout**; the lane lives in a
+worktree. The preflight then split its answers across two trees:
+
+- **ref-based checks read the BRANCH and were right** — `base` (9 ahead, origin/main absorbed),
+  `scope`, `landing`, `intent`, `branch`.
+- **file-based checks read the WORKING TREE and were wrong** — `manifest` warned "no task.yaml
+  declares AVCH-59" (it is in the worktree), `artifacts` listed two *other* lanes' walkthroughs,
+  `gate` concluded "foreign evidence never gates this lane", and `sync` raised an ERROR for an
+  unrelated uncommitted file that belonged to a different piece of work entirely.
+
+Nothing in the output says which tree it read, so the report looks internally consistent and the
+error looks like the lane's. **Point `--repo` at the tree where the branch is checked out** — the
+worktree path is a legitimate `--show-toplevel` — and re-read: the same call went to
+`0 error(s)`, `clear to close out and merge`.
+
+**And the dirt was not mine.** The main checkout carried an uncommitted `README.md`; it belonged to
+another lane. A wrong `--repo` makes another session's dirty tree look like your blocker — and the
+temptation is to "clean it up". Don't: park or leave it, exactly as the memory-store rule says
+([[commit-and-push-are-one-action]] is about YOUR work, not someone else's).
+
+**Also: cwd persists across Bash calls.** A `cd` I ran to inspect the submodule made the very next
+`python3 .agents/scripts/…` resolve against AGY and die on a missing file. Use absolute script
+paths and `git -C` on every call — [[nothing-guards-the-merge-target]] is the same failure class
+with a worse ending.

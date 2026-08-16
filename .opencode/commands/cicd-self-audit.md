@@ -104,6 +104,20 @@ grep -rn "symbolName" --include="*.ts" --include="*.tsx" --include="*.py"
 
 ---
 
+**Cross-repo ports are a blast radius of their own — `.agents/rules/port-checklist.md` (SCC-176).**
+When a file the plan changes
+**exists in more than one repo** — the centre and a project, in either direction — the audit is not
+finished until the plan carries a section answering all six port checks, each with the command output
+that answered it. The trigger is mechanical, never self-reported:
+
+```bash
+git diff --no-index -- <centre>/<path> <project>/<path> ; echo "differ=$?"   # 1 = they differ
+```
+
+Differing copies with no such section is a **NO-GO**, not a note: the centre's copy is subtly wrong
+the moment it runs in a submodule, on Windows, in a worktree, or in a thin repo, and every AVCH-59
+divergence came from that one short list.
+
 ## Phase 2 — AI Drift & Over-Engineering Gate  *(STRICT — default NO-GO)*
 
 > The simplest implementation that satisfies the story's ACs **wins.** Complexity is guilty until

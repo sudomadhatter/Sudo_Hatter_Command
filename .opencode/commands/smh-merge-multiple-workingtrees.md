@@ -73,12 +73,19 @@ key you cannot name is not in the set.
 
 ## Step 1 — Inventory every lane (the eligibility table)
 
+Fetch first — every count in this table is against `origin/main`, and a bare `main` is whatever
+this checkout last pulled:
+
+```bash
+env -u GITHUB_TOKEN git -C "$REPO" fetch origin main
+```
+
 Per `chore/*` lane, from ITS tree (or a `--detach` throwaway if the branch has none):
 
 | Column | Source — command output, never memory |
 |---|---|
 | branch · tip | `git -C <tree> rev-parse --abbrev-ref HEAD` · `rev-parse --short HEAD` |
-| **commits ahead** | `git -C "$REPO" rev-list --count main..<branch>` — **see below** |
+| **commits ahead** | `git -C "$REPO" rev-list --count origin/main..<branch>` — **see below** |
 | key | the segment after `chore/` — must match a Step 0 key |
 | `task.yaml` | the lane's `_artifacts/_main/<date>_<slug>/task.yaml` |
 | **verdict** | the LAST `Verdict:` line in that folder's `walkthrough.md` |
@@ -86,7 +93,7 @@ Per `chore/*` lane, from ITS tree (or a `--detach` throwaway if the branch has n
 
 **⚠ "Ready" does not mean committed.** A lane reported finished can have **zero commits**, its work
 sitting uncommitted in a shared checkout. That happened on 2026-08-11 to a lane whose team had
-reported it done. `rev-list --count main..<branch> == 0` with a dirty tree means the lane has not
+reported it done. `rev-list --count origin/main..<branch> == 0` with a dirty tree means the lane has not
 been built yet in any sense git can see — it needs commit, artifacts and review before it is in the
 set at all.
 
@@ -136,8 +143,8 @@ The rest of the set continues without it.
 ## Step 2.5 — Staleness against **current** `main`
 
 ```bash
-git -C "$REPO" rev-list --count "chore/<KEY>-<slug>..main"     # commits behind
-git -C "$REPO" diff --name-only main..."chore/<KEY>-<slug>"    # then re-resolve every path it REFERENCES
+git -C "$REPO" rev-list --count "chore/<KEY>-<slug>..origin/main"     # commits behind
+git -C "$REPO" diff --name-only origin/main..."chore/<KEY>-<slug>"    # then re-resolve every path it REFERENCES
 ```
 
 Behind `main` **and** referencing a path that no longer exists there = **not eligible until it
@@ -147,7 +154,7 @@ lane 31 commits behind, all gates green, editing a file a landed sibling had **d
 
 ## Step 3 — The overlap map (before ANY merge)
 
-Pairwise-intersect every eligible lane's `git diff --name-only main...<branch>` and classify each
+Pairwise-intersect every eligible lane's `git diff --name-only origin/main...<branch>` and classify each
 shared file. **Four classes, and only the first is mechanical:**
 
 | Class | Looks like | Resolution law |

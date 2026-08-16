@@ -1,0 +1,17 @@
+== command surface contracts ==
+[FAIL] the port checklist exists and carries its six checks: got 0 `### ` items in .agents/rules/port-checklist.md - the six AVCH-59 divergence classes, no more and no fewer
+[FAIL] every checklist item is ANSWERED BY A COMMAND, not phrased as a reminder: items with no fenced command: [] - H1 requires each item be a CHECK with the command that answers it; a reminder is what already failed
+[FAIL] items 4 and 6 CITE project-law.md instead of restating the thin-repo law: the thin-repo and repo-local-enforcement items already live in `project-law.md`; a second copy is the drift this rule set exists to avoid
+[FAIL] the header says the checklist runs in BOTH directions (H5): the AVCH-59 -> lobby port is a port too; a checklist that reads one-way is skipped on exactly the half this ticket is
+[FAIL] the rules INDEX routes to the checklist: a rule with no INDEX row is unreachable by the router every session scans
+[FAIL] smh-plan-task.md carries the port trigger and cites the checklist: trigger=False cite=False - the trigger without the citation is what the lint row is keyed to catch
+[FAIL] smh-self-audit.md carries the port trigger and cites the checklist: trigger=False cite=False - the trigger without the citation is what the lint row is keyed to catch
+[FAIL] cicd-self-audit.md carries the port trigger and cites the checklist: trigger=False cite=False - the trigger without the citation is what the lint row is keyed to catch
+[FAIL] WIRING: the live row fires on a porting command that cites nothing: check_rule_pointers said [] - with no row in `_RULE_POINTERS` a command can describe a port and point at nothing
+[FAIL] WIRING: the second arm - a command that diffs the two copies also fires: the row keys on the trigger PHRASE and on the command that answers it; one arm alone goes blind the moment a command words the trigger differently
+[PASS] CONTROL: the same command WITH the citation is silent: NEGATIVE CONTROL - a row that warns even after the citation lands can never reach the tip's 0/0, so it would be disarmed rather than satisfied
+[PASS] CONTROL: a command that says nothing about porting is silent: NEGATIVE CONTROL - the sketched `\bport\b` key matched seven unrelated command bodies (audit F26); a row that fires on everything is not a row
+[PASS] the live toolkit has no un-cited porting command: []
+-- 3/13 passed --
+FAILED: the port checklist exists and carries its six checks, every checklist item is ANSWERED BY A COMMAND, not phrased as a reminder, items 4 and 6 CITE project-law.md instead of restating the thin-repo law, the header says the checklist runs in BOTH directions (H5), the rules INDEX routes to the checklist, smh-plan-task.md carries the port trigger and cites the checklist, smh-self-audit.md carries the port trigger and cites the checklist, cicd-self-audit.md carries the port trigger and cites the checklist, WIRING: the live row fires on a porting command that cites nothing, WIRING: the second arm - a command that diffs the two copies also fires
+-- filter 'CS-12': matched 1/12 blocks --

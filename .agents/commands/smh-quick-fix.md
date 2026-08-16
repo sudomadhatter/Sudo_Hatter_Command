@@ -59,9 +59,17 @@ no files, say so with `--no-file-changes` and read the rider in Step 3.
 ⛔ **Never ask *"shall I mint a ticket / open a lane?"*** — that question is the over-engineering this
 lane exists to remove. The operator's ask IS the decision; agents mint.
 
+> ⭐ **But look for a home first (`work-consolidation.md` rule 1).** Minting is the agent's call, not
+> the operator's — and the call starts by checking whether an **open parent** already covers this
+> surface, in which case this is its next lettered Subtask (add the index row with
+> `jira_feed.py index-row`, which proves the parent's other rows survived the write). Mint when
+> nothing fits, and say in one line what you looked at.
+
 ```bash
 acli jira workitem create --project SCC --type Task --summary "…" --description "…"
-git -C "$REPO" worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> main
+git -C "$REPO" fetch origin                                                    # ⛔ base = origin/main
+git -C "$REPO" worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> origin/main
+git -C "<the new tree>" branch --unset-upstream                                # origin/main start-point sets upstream to MAIN
 python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>       # PC: `python`
 BRANCH=$(git -C "<the new tree>" rev-parse --abbrev-ref HEAD) && echo "Lane: $BRANCH"
 python3 .agents/scripts/jira_feed.py start --key <KEY> --apply
@@ -108,7 +116,7 @@ Step 0 judged what you *intended* to touch. This judges what you *did*.
 
 ```bash
 python3 .agents/scripts/lane_qualify.py --repo "$REPO" \
-        --paths $(git -C "<tree>" diff --name-only main...HEAD)
+        --paths $(git -C "<tree>" diff --name-only origin/main...HEAD)
 ```
 
 *(That `$(…)` **is** split into separate arguments in both shells — command substitution splits where
@@ -131,10 +139,13 @@ close-out preflight blocks without it, and `## Your Actions` is a machine contra
   operator can do and holds the ticket out of `Done`; `- [x]` is settled; prose is context.
 
 Write `task.yaml` beside it (`task_key`, `primary_repo`, `branch`, `close_command:
-smh-close-task-merge-tree`, `secondary_repos: []`), then file the Dev Record:
+smh-close-task-merge-tree`, `secondary_repos: []`), then file the Dev Record. ⛔ **The manifest
+first, and no `--story` (SCC-174)** — `devrecord` reads the slug out of the `branch:` you just
+wrote, which is the same source `/smh-close-task-merge-tree` uses. Passing a slug by hand is how
+one lane ends up with two Dev Records.
 
 ```bash
-python3 .agents/scripts/jira_feed.py devrecord --key <KEY> --story <branch-slug> \
+python3 .agents/scripts/jira_feed.py devrecord --key <KEY> \
        --stage quick-fix --walkthrough <the walkthrough> \
        --outcome "<what shipped, one line>" --apply
 ```

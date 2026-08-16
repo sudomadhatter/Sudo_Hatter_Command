@@ -64,11 +64,13 @@ It refuses first and enumerates second. An **Epic** parent is refused by name an
 and assessing them as one flat set answers a question nobody asked. **Done children are excluded**
 automatically.
 
-Then, per child, the **grounding ladder** — first available wins:
+Then, per child, the **grounding ladder** — first available wins. Fetch before rung 1:
+`env -u GITHUB_TOKEN git -C "$REPO" fetch origin main` — a bare `main` is this checkout's last pull,
+and grounding a label on a stale diff reads a lane as touching files it does not.
 
 | Authority | Source | Why it outranks the next |
 |---|---|---|
-| 1. `branch-diff` | `git diff --name-only main...chore/<KEY>-<slug>` | code written beats every declaration |
+| 1. `branch-diff` | `git diff --name-only origin/main...chore/<KEY>-<slug>` | code written beats every declaration |
 | 2. `plan` | the `implementation_plan.md` whose sibling `task.yaml` declares `task_key: <KEY>` | a declaration beats an intention |
 | 3. `ticket` | the Subtask's own description | the intention is all there is — **weakest rung**, and rule 3 governs its ambiguity |
 

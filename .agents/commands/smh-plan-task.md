@@ -16,6 +16,8 @@ platforms: [opencode, antigravity, claude, codex]
 > - `.agents/rules/artifacts-always-first.md` — each lane's plan lives in **that lane's tree**, at
 >   `_artifacts/_main/<YYYY-MM-DD>_<slug>/implementation_plan.md`
 > - `.agents/rules/git-policy.md` — explicit paths only, never push `main`
+> - `.agents/rules/port-checklist.md` — MANDATORY RULE 5's six checks, and the diff that proves the
+>   trigger; it runs in **both** directions, so the port BACK to the centre is a port too
 
 **The Task lane's version of "write all the stories first."** BMAD's parallel lever needs every
 story on disk before the set can be compared; the Task lane had no equivalent, so subtasks were
@@ -38,6 +40,15 @@ step: it plans the **whole** Task at once and leaves every lane grounded, cut, p
 4. **No deployable paths.** If a subtask's plan reaches `backend/`, `frontend/`, `firebase/`,
    `functions/`, `mobile/` or `.github/`, that lane is not Task work — say so and route it to
    `/cicd-push-e2e`. There is no override.
+5. **A port gets its own plan section.** When a file in SCOPE **exists in more than one repo** — a
+   lobby↔project port, in **either** direction — the plan carries a section answering all six port
+   checks, each with the command output that answered it. Prove the trigger rather than asserting
+   it, before the breakdown is proposed:
+   ```bash
+   git diff --no-index -- <lobby>/<path> <project>/<path> ; echo "differ=$?"   # 1 = they differ
+   ```
+   Both copies differing is the whole trigger: three of AVCH-59's four divergences were answerable
+   at plan time and surfaced at review instead (SCC-176).
 
 ## Step 0 — Resolve the repo and the parent (FIRST) — from command output, never belief
 
@@ -91,12 +102,73 @@ acli jira workitem create --project <PROJ> --type Subtask --parent <PARENT-KEY> 
   --summary "…" --description "…"
 ```
 
+## Step 2.5 — ⭐ Pick the MODE: one consolidated lane, or a lane per subtask (SCC-170)
+
+> Governed by `.agents/rules/work-consolidation.md` — rule 2 ("when able, ONE worktree and ONE branch
+> for the whole Task") and rule 1 ("look for a home before you mint"). Read it if this is the first
+> consolidated lane you have cut.
+
+**Answer this before you cut anything, and say why in one line.** Two modes exist and the choice is
+yours — the operator ruled it judgment, not ceremony (*"when able use one workingtree/branch to
+develope the whole ticket including subtasks"*).
+
+| | **CONSOLIDATED** — one lane for the whole Task | **PER-SUBTASK** — a lane each |
+|---|---|---|
+| When | same repo, same lane class, no genuine need for parallelism — **the default when able** | the subtasks really do run side by side (a 🟢 set from Step 4), or different repos |
+| Worktree / branch | **ONE**, keyed by the **parent**: `chore/<PARENT-KEY>-<slug>` | one per subtask, keyed by the subtask |
+| Plan | **ONE** `implementation_plan.md` with N part sections | one per lane |
+| Manifest | `riders:` lists **every** subtask key, written at cut time | no riders |
+| Commits | **the SUBTASK's key leads each commit** — each child's dev panel shows its own commits, and a part reverts as a unit | the lane's own key |
+| Gate | **ONCE**, at the tip, through the receipt writer | once per lane |
+| Close-out | ONE ceremony: riders flip first, parent last | one per lane |
+
+**Cutting a CONSOLIDATED lane** — the whole Step 3 loop collapses to one tree:
+
+```bash
+git -C "$REPO" fetch origin                                   # ⛔ the base is origin/main, never a bare `main`
+git -C "$REPO" worktree add .claude/worktrees/<slug> -b chore/<PARENT-KEY>-<slug> origin/main
+git -C "<the new tree>" branch --unset-upstream               # a start-point of origin/main sets upstream to MAIN
+python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>   # PC: `python`
+BRANCH=$(git -C "<the new tree>" rev-parse --abbrev-ref HEAD)
+echo "Lane: $BRANCH"
+```
+
+⛔ **`git branch --unset-upstream` is not optional.** Branching from `origin/main` sets this lane's
+upstream to `main` itself, so a later bare `git push` targets **main** and a bare `git status` reports
+"ahead of main" — this lane hit exactly that.
+
+Then write ONE plan with a part section per subtask, and ONE `task.yaml` declaring them all:
+
+```yaml
+task_key: <PARENT-KEY>
+primary_repo: <repo folder name>
+branch: chore/<PARENT-KEY>-<slug>
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+riders: [<SUBKEY-1>, <SUBKEY-2>, …]        # one line, flow form — a block list is UNREAD
+```
+
+**Build order is Step 4's output, not a preference.** Run the labeller first if the set is large: parts
+that share a file are sequenced, and whichever part makes the *rest of this lane* cheaper goes first.
+Then run `/smh-quick-dev` once per part **inside that one tree**, and close the whole thing with a
+single `/smh-close-task-merge-tree --expect-key <PARENT-KEY>`.
+
+**If the lane must ship before every part is built:** write `landing_mode: partial` into `task.yaml` and
+**trim `riders:` to the subset that actually landed.** The declared riders flip, the parent stays open,
+and the remainder becomes the next `chore/<PARENT-KEY>-<slug2>` lane. `task_preflight.py` checks the
+trim against the lane's commits and refuses a rider that leads no commit there.
+
 ## Step 3 — Per subtask: plan it, audit it, cut it, push it
+
+**PER-SUBTASK mode only** — in CONSOLIDATED mode Step 2.5 already cut the one tree, and the per-subtask
+plan/audit/cut/push loop below collapses into part sections of that lane's single plan.
 
 **For each subtask, in dependency order.** Everything here happens **inside that lane's own tree**.
 
 ```bash
-git -C "$REPO" worktree add .claude/worktrees/<slug> -b chore/<SUBKEY>-<slug> main
+git -C "$REPO" fetch origin                                   # ⛔ the base is origin/main, never a bare `main`
+git -C "$REPO" worktree add .claude/worktrees/<slug> -b chore/<SUBKEY>-<slug> origin/main
+git -C "<the new tree>" branch --unset-upstream               # a start-point of origin/main sets upstream to MAIN
 python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>   # PC: `python`
 BRANCH=$(git -C "<the new tree>" rev-parse --abbrev-ref HEAD)
 echo "Lane: $BRANCH"

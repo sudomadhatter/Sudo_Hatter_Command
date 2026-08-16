@@ -271,6 +271,68 @@ def manifest_riders(repo: Path, expect: str, branch: str) -> frozenset[str]:
     return frozenset(keys)
 
 
+# SCC-170: the ONLY value that means anything. Anything else - a typo, `full`, a mode a
+# future ticket invents - is UNKNOWN and fails CLOSED, exactly like the block-form riders
+# case: an unread declaration must never read as the permissive one.
+LANDING_PARTIAL = "partial"
+
+# ⛔ COLUMN-0 ANCHORED, and the key is `landing_mode`, not `landing`. `task.yaml` ALREADY has a
+# `landing:` key - nested inside each `secondary_repos:` entry, values `independent-task` /
+# `retain-on-epic` - and manifest_field's `^\s*` idiom happily matches an indented line, so the
+# first cut of this read every cross-repo manifest's nested key as a landing MODE and blocked
+# five green SCC-94 cases. Same family as the RIDERS_RE lesson: a permissive hand-parser pattern
+# reads a neighbouring key and is confidently wrong. A distinct name plus `^` (no `\s*`) makes
+# the collision unrepresentable rather than merely unlikely.
+LANDING_MODE_RE = re.compile(r"^landing_mode\s*:[ \t]*([^\n#]*)", re.MULTILINE)
+
+
+def manifest_landing(repo: Path, expect: str, branch: str) -> str | None:
+    """The lane's declared landing mode, or None (SCC-170).
+
+    A consolidated lane carries N subtasks on one branch. If it must ship before every part
+    is built, the riders that DID land flip, the parent STAYS OPEN, and the rest becomes the
+    next lane. Before this, check_children could not express that state: an open child that
+    is not a declared rider blocks, full stop - so the only way to land early was to declare
+    riders whose work is NOT in the diff, which is the exact lie the rider guard sentence
+    forbids. The gate was pushing the lane into the failure it exists to prevent.
+
+    Read from the SAME manifests as manifest_riders, on identical settled-lane rules: a landed
+    sibling's `landing_mode: partial` is history and must not relax THIS close."""
+    ref = base_ref(repo)
+    value: str | None = None
+    for p, text in task_manifests(repo, expect):
+        declared = manifest_field(text, "branch")
+        if declared and declared != branch and manifest_settled(repo, p, ref):
+            continue
+        m = LANDING_MODE_RE.search(text)
+        if m and m.group(1).strip():
+            value = m.group(1).strip().strip("\"'").lower()
+    return value
+
+
+def lane_commit_keys(repo: Path, branch: str) -> frozenset[str]:
+    """Every Jira key that leads a commit subject on THIS lane, ahead of the mainline.
+
+    The evidence half of `landing_mode: partial`. Declaring a rider says "this child's work is in
+    this diff", and the ceremony flips it to Done on that word alone - so on a partial landing
+    the word is checked against the commits. Range is explicit (`<merge-base>..HEAD` on this
+    repo, via -C) rather than a bare `git log`: grep reads the branch you are parked on, and
+    the preflight is routinely run from another tree."""
+    ref = base_ref(repo)
+    mb = wf.git(["merge-base", ref, branch], repo)
+    if mb.returncode != 0 or not mb.stdout.strip():
+        return frozenset()
+    log = wf.git(["log", f"{mb.stdout.strip()}..{branch}", "--format=%s"], repo)
+    if log.returncode != 0:
+        return frozenset()
+    keys: set[str] = set()
+    for line in log.stdout.splitlines():
+        m = re.match(r"\s*([A-Z][A-Z0-9]+-\d+)\b", line.strip())
+        if m:
+            keys.add(m.group(1).upper())
+    return frozenset(keys)
+
+
 def check_manifest(repo: Path, branch: str, expect: str, rep: wf.Report) -> None:
     """`task.yaml` is intent written down at task START - authored on the lane's own
     branch, it reaches the mainline only WHEN that lane lands. So multi-lane tickets
@@ -569,7 +631,9 @@ CHILD_CLOSED = ("done", "deferred")
 
 
 def check_children(key: str | None, rep: wf.Report,
-                   riders: frozenset[str] = frozenset(), timeout: int = 20) -> None:
+                   riders: frozenset[str] = frozenset(), timeout: int = 20,
+                   landing: str | None = None,
+                   lane_keys: frozenset[str] | None = None) -> None:
     """A parent Task does not close while its subtasks are still open (SCC-119).
 
     `riders` (SCC-156) are the subtask keys this lane's task.yaml declared it is carrying:
@@ -608,6 +672,32 @@ def check_children(key: str | None, rep: wf.Report,
     """
     if key is None:
         return  # check_branch already errored; a second message would bury the first
+
+    # SCC-170. `partial` is the one value that relaxes anything, and it earns the relaxation
+    # below by paying for it here: on a partial landing every declared rider must have real
+    # work on the lane. Without that price, `landing_mode: partial` is a way to declare thirteen
+    # riders, land two and flip all thirteen at the ceremony - the guard sentence's exact
+    # failure, wearing a new key. Scoped to `partial` deliberately: a full landing's riders
+    # are already covered by "the parent closes when the whole job is done", and widening it
+    # would put a new blocking condition on every lane that has ever declared a rider.
+    partial = False
+    if landing is not None:
+        if landing == LANDING_PARTIAL:
+            partial = True
+        else:
+            rep.err("children", f"{key}: task.yaml says `landing_mode: {landing}` and nothing "
+                                f"reads that value - the only landing mode is "
+                                f"`landing_mode: {LANDING_PARTIAL}`. An unread declaration fails "
+                                f"CLOSED: this close is gated exactly as if it said nothing.")
+    if partial and riders and lane_keys is not None:
+        absent = sorted(r for r in riders if r not in lane_keys)
+        if absent:
+            rep.err("children", f"{key}: a partial landing flips ONLY riders whose work is on "
+                                f"this lane, and {', '.join(absent)} lead(s) no commit here - "
+                                f"trim riders: to the subset that actually landed before you "
+                                f"close, and carry the rest into the next lane's task.yaml. "
+                                f"Never declare a ticket whose work is not real.")
+
     binary = os.environ.get("ACLI_BIN") or shutil.which("acli")
     if not binary:
         rep.warn("children", f"{key}: acli is not on this machine, so its subtasks were NOT "
@@ -653,7 +743,16 @@ def check_children(key: str | None, rep: wf.Report,
             open_children.append(f"{ckey} ({status or '?'})")
             open_keys.append(ckey)
 
-    if open_children:
+    if open_children and partial:
+        # The declared state, so it warns and proceeds - but it must NAME what is being left
+        # behind and say the parent stays open, or the next lane inherits nothing and the
+        # index quietly reads as finished.
+        rep.warn("children", f"{key}: PARTIAL landing - {len(open_children)} subtask(s) do "
+                             f"NOT land here and stay open: {', '.join(open_children)}. The "
+                             f"declared riders flip at this close and the PARENT STAYS OPEN; "
+                             f"carry the rest into the next lane as its task.yaml riders and "
+                             f"name them in this walkthrough's `## Your Actions`.")
+    elif open_children:
         example = ", ".join(sorted(set(riders) | set(open_keys)))
         rep.err("children", f"{key} has {len(open_children)} open subtask(s) - the parent "
                             f"closes LAST, when the whole job is done: "
@@ -1221,7 +1320,9 @@ def main() -> int:
     rep = wf.Report()
     key = check_branch(repo, branch, rep)
     check_intent(branch, key, expect, rep)
-    check_children(key, rep, riders=manifest_riders(repo, expect, branch))
+    check_children(key, rep, riders=manifest_riders(repo, expect, branch),
+                   landing=manifest_landing(repo, expect, branch),
+                   lane_keys=lane_commit_keys(repo, branch))
     check_manifest(repo, branch, expect, rep)
     check_secondary(repo, expect, rep)
     # ⭐ `fresh`, not `args.fetch`. check_sync ran the fetch and knows whether it WORKED;
