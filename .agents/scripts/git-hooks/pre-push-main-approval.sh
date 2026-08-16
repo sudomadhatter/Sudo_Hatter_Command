@@ -41,10 +41,14 @@ cd "$REPO_ROOT" || exit 0
 # shares a single token, so a sign-off cannot be minted in one worktree and silently spent in
 # another. Under .git/, so it never travels with a clone and can never land in a commit.
 GIT_COMMON=$(git rev-parse --git-common-dir 2>/dev/null) || exit 0
-case "$GIT_COMMON" in
-  /*) : ;;                                  # already absolute
-  *)  GIT_COMMON="$REPO_ROOT/$GIT_COMMON" ;;  # relative to the toplevel — resolve it
-esac
+
+# ⛔⛔ USED AS GIT GIVES IT — no hand-rolled `case "$GIT_COMMON" in /*)` normalisation.
+# The `cd "$REPO_ROOT"` above is what makes a relative answer safe, and an absolute one needs
+# nothing. Normalising by hand is correct on POSIX and WRONG on the PC: git-for-windows answers
+# `C:/Users/.../.git/worktrees/<lane>`, that does not match `/*`, and the repo root gets prepended
+# to an already-absolute path. The gate then looks for the token somewhere that cannot exist and
+# refuses EVERY push to main. Same trap `.githooks/pre-push` documents for `--git-path`; see
+# mint-push-token.sh for the measured reproduction (SCC-171).
 TOKEN="$GIT_COMMON/main-push-approval"
 
 ZERO="0000000000000000000000000000000000000000"
@@ -176,7 +180,12 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   # remote that moved.
   rm -f "$TOKEN"
   echo "  ✅ main push approved — ${t_command:-<unrecorded>} · ${t_key:-<no key>} · ${t_branch:-<no branch>} @ $local_sha"
-  echo "     AUTHORIZED BY OPERATOR: \"$t_approval\""
+  # ⛔ printf, NOT echo — the approval line is arbitrary operator prose. `echo` re-expands
+  # backslash escapes in dash/ash/BusyBox, so a quote like "land it into C:\new-thing" prints with
+  # a real newline in the middle and what is read back is NOT what the operator said. The entire
+  # mechanism is a claim about verbatim words (SCC-37); it has to print them verbatim as well as
+  # store them.
+  printf '     AUTHORIZED BY OPERATOR: "%s"\n' "$t_approval"
   echo "     Token consumed. The next merge needs its own sign-off."
 done
 

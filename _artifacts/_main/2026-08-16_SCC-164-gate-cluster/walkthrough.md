@@ -26,11 +26,31 @@ by part*. Three lines, as Part E7 requires:
    lobby command merges locally any more) but keep their live blast radius — `/cicd-push-e2e` in
    project repos, and the PC. G gains a second defect: the door now contradicts itself.
 3. **What was re-measured:** the door's Step 4 tick instruction (`:493-498`), the `/cicd-push-e2e`
-   carve-out in `test_door_preflight_order.py:284-290`, and the lobby-vs-AGY diff on all four gate
-   files.
+   carve-out in `test_door_preflight_order.py:284-290`, the lobby-vs-AGY diff on all four gate
+   files, and — second pass, 2026-08-16 — **three stale line anchors** in the approved plan
+   (L's SOP pass-fixture `:862` → `:934`, L's `git-policy.md` recovery paragraph → `:324`, G's
+   deleted-instruction target `:434-438` → `:493-498`), plus the merge-row corpus split that
+   inverts F27's premise (7 mandated rows vs 5 legacy, across 92 walkthroughs). Both recorded in
+   the plan's § Stale anchors and § Part 9 corrections. **L is not overlap-free** — the first pass
+   recorded it as untouched; the banner is, its two fixtures are not.
 
 ---
 
 ## Build log
 
 *(filled as each part lands — artifact-first, Rule 2)*
+
+---
+
+## Your Actions
+
+⭐ **This section exists now, before any build, on purpose.** SCC-183's Step 3 refuses to open the
+PR without it *and* without the merge row below, and `jira_feed.py finish` refuses to close without
+it — an absent section is not evidence that nothing is owed. Both are cheap here and expensive five
+minutes before a landing: this exact omission held SCC-183 itself at `Review Required`, at this very
+step.
+
+- [ ] **The merge itself** — lands via this branch's PR. Number-free by design: the PR number is
+  assigned when the PR opens, which is *after* this commit is pushed. The number and merge sha go on
+  the ticket at Step 4, on the `--after-merge SCC-164` re-invocation.
+- [ ] **Nothing else is owed yet.** The lane has not been built; this list is re-checked at close-out.

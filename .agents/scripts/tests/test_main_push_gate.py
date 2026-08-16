@@ -82,6 +82,38 @@ def gate(d: Path, sha: str, ref: str = "refs/heads/main", remote_sha: str = ZERO
               "origin", "url", cwd=d, stdin=f"{ref} {sha} {ref} {remote_sha}\n")
 
 
+def make_git_shim(tmp: Path, fake_common: str) -> Path:
+    """A `git` earlier on PATH that lies about `--git-common-dir` and delegates everything else.
+
+    ⭐ WHY A SHIM AND NOT A GREP (SCC-171). `--git-common-dir` answers RELATIVE (`.git`) in a
+    plain main checkout and ABSOLUTE in a worktree, and git-for-windows spells the absolute one
+    `C:/Users/...`. The scripts call `git` directly, so there is no seam to inject; and asserting
+    the ABSENCE of a `case … in /*)` block with a source grep is blind three ways (a comment
+    matches first, it cannot see order, and it pins prose rather than wiring — SCC-125). A shim
+    that answers the way the PC answers is the only instrument that measures the behaviour on the
+    machine this repo cannot run its tests on.
+    """
+    real = shutil.which("git")
+    if not real:
+        return tmp  # no real git to delegate to; caller's `git_ok` guard turns this into a red
+    d = tmp / "shim"
+    d.mkdir(exist_ok=True)
+    shim = d / "git"
+    shim.write_text(
+        "#!/bin/sh\n"
+        "# Answer --git-common-dir with a Windows-shaped absolute path; delegate the rest.\n"
+        'for a in "$@"; do\n'
+        '  if [ "$a" = "--git-common-dir" ]; then\n'
+        f"    printf '%s\\n' '{fake_common}'\n"
+        "    exit 0\n"
+        "  fi\n"
+        "done\n"
+        f'exec {real} "$@"\n'
+    )
+    shim.chmod(0o755)
+    return d
+
+
 def main() -> int:
     c = Cases("main write gate (SCC-77)")
 
@@ -154,6 +186,37 @@ def main() -> int:
     banned += re.findall(r'command"\s*:\s*"\s*(?:powershell|python)\b', raw)
     c.check("no hook command is bound to one platform's binaries", not banned,
             f"found {banned} — this is the exit-127 bug that hid the gate for weeks")
+
+    # ── C5 (SCC-171) · the STRUCTURAL half, and why it is not redundant with C1-C4 ────────
+    #
+    # C1-C4 drive the MINTER through a `git` shim and measure real behaviour. The GATE's copy of
+    # the same defect cannot be measured that way, and the reason is worth stating: on POSIX,
+    # `case "$GIT_COMMON" in /*)` is a NO-OP. An absolute POSIX path matches `/*` and is left
+    # alone; a relative one is resolved against a root we have already `cd`'d to, so both branches
+    # land on the same file. The block only misbehaves for a string that is absolute on Windows
+    # while not starting with `/` — i.e. only on the machine this suite cannot run on. There is no
+    # POSIX observable, so a behavioural mutant for the gate would be UNKILLABLE, and declaring an
+    # unkillable mutant is worse than declaring none (SCC-179).
+    #
+    # ⛔ SO THE GUARD IS STRUCTURAL — AND IT IS THE TEXTBOOK COMMENT-LITERAL TRAP (SCC-125).
+    # Both scripts now carry an explanation that QUOTES the deleted block verbatim, because
+    # "we removed this and here is why" is the only way the next reader learns not to add it back.
+    # A naive grep matches the documentation and reports the bug as present. So comments are
+    # stripped first, and C5b pins that the fixture which makes stripping necessary still exists —
+    # if the explanation is ever deleted, C5 quietly degrades into a plain grep and C5b says so.
+    def uncommented(text: str) -> str:
+        return "\n".join(ln for ln in text.splitlines() if not ln.lstrip().startswith("#"))
+
+    NORMALISE = 'case "$GIT_COMMON"'
+    for p in (GATE, MINT):
+        c.check(f"C5 · {p.name} does not re-normalise --git-common-dir by hand",
+                NORMALISE not in uncommented(p.read_text(encoding="utf-8")),
+                "the PC path bug: an absolute `C:/…` answer does not match `/*`, so the repo root "
+                "is glued in front of it and the token goes somewhere that cannot exist")
+    c.check("C5b · (control) the deleted block is still QUOTED in the comments",
+            NORMALISE in MINT.read_text(encoding="utf-8"),
+            "the comment-literal fixture is gone, so C5 is now an ordinary grep and no longer "
+            "proves that stripping comments was load-bearing")
 
     if os.name == "nt":
         return c.finish()
@@ -304,6 +367,56 @@ def main() -> int:
         c.check("minter refuses when HEAD is not main", rc != 0 and "not 'main'" in out,
                 "a token minted off main names a sha the push will not carry")
         sh("git", "checkout", "-q", "main", cwd=d)
+
+        # ── C (SCC-171) · the token path as git gives it, and a mint that cannot lie ──────
+        #
+        # Two defects, one road. On the PC, `--git-common-dir` in a worktree answers
+        # `C:/Users/.../.git/worktrees/<name>` — which does NOT match the `case … in /*)` arm the
+        # scripts used to normalise with, so the repo root got prepended to an already-absolute
+        # path. The token was then written nowhere the gate would look, and the gate refused
+        # EVERY push to main. Every lane in this system is a worktree, on one of two machines.
+        #
+        # And the write was never checked, so the failure was SILENT AND THEN LIED: the minter
+        # printed "🔑 main-push token minted" and exited 0 with nothing on disk. The close-out
+        # pushed, and the gate refused for having no token — leaving the operator holding a
+        # success message and a refusal that contradicted it.
+        #
+        # ⛔⛔ GROUND TRUTH IS THE TOKEN ON DISK, NOT THE EXIT CODE. AGY's first cut of these
+        # assertions ended in `… or wrote_ok` where `wrote_ok = returncode == 0` — satisfied BY
+        # THE DEFECT, so they went green on the bug and red on the fix. The three below are
+        # phrased as "the bad thing did not happen", and C4 is the control that keeps them from
+        # being vacuously true.
+        token_path(d).unlink(missing_ok=True)
+        fake_common = "C:/Users/dan/Sudo_Hatter_Command/.git/worktrees/gate-cluster"
+        shim_dir = make_git_shim(tmp, fake_common)
+        r = subprocess.run(
+            ["sh", str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
+             "--command", "/smh-close-task-merge-tree", "--branch", "chore/SCC-77-x",
+             "--key", "SCC-77", "--operator-approval", "pc path check"],
+            cwd=str(d), text=True, capture_output=True,
+            env={**os.environ, "PATH": f"{shim_dir}{os.pathsep}{os.environ.get('PATH', '')}",
+                 "GIT_TERMINAL_PROMPT": "0"})
+        c_out = (r.stdout or "") + (r.stderr or "")
+        # `C:/…` is a RELATIVE path on POSIX, so a *correct* run resolves it under the repo root
+        # too — both spellings are checked, and neither can exist because the parents do not.
+        wrote = token_path(d).is_file() or (d / "C:").exists()
+        banner = ("token minted" in c_out) or ("🔑" in c_out)
+
+        c.check("C1 · the repo root is NOT prepended to an absolute `C:/` path",
+                f"{d}/C:" not in c_out,
+                "the PC normalisation bug: an absolute answer that does not match `/*` gets the "
+                "toplevel glued in front of it, and the token goes somewhere that cannot exist")
+        c.check("C2 · mint does NOT print the success banner when no token was written",
+                wrote or not banner,
+                "printed the minted banner with nothing on disk:\n" + c_out)
+        c.check("C3 · a failed token write EXITS NON-ZERO",
+                wrote or r.returncode != 0,
+                f"exit was {r.returncode} with no token written:\n{c_out}")
+        c.check("C4 · (control) the shim really did divert the token away from disk",
+                not wrote,
+                "a token WAS written — C2/C3 proved nothing this run")
+        token_path(d).unlink(missing_ok=True)
+        shutil.rmtree(d / "C:", ignore_errors=True)
 
         # ── END TO END: a real `git push`, through core.hooksPath, at a real remote ───────
         # Everything above can pass while git never invokes the hook at all.
