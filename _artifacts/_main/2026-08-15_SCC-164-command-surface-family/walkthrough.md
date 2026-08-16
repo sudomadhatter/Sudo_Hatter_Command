@@ -236,7 +236,7 @@ gained, lost or reordered a behaviour. **A4 — arming:** `run_all.py` auto-disc
 | Mutant | Must kill | Result |
 |---|---|---|
 | M1 re-insert a bare `main...HEAD` in a command | the live scan | KILLED |
-| M2 widen the allowlist key to the file alone | `...nor does the same text in a DIFFERENT file` | KILLED |
+| M2 widen the allowlist key to the file alone | `...one changed character does NOT inherit the exemption` | KILLED — ⚠ **not** by the case declared for it. Keying on the file alone also exempts the changed-character line in the SAME file, so that case fires first. The sweep refused the kill until the declaration matched the killer |
 | M3 point the scan at an empty dir | the `≥ 10 files` floor | KILLED |
 | M4 drop the `(?<![\w/.-])` guard | every `origin/main` re-lights | KILLED |
 
