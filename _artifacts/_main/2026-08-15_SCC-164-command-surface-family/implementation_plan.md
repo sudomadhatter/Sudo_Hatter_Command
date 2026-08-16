@@ -109,6 +109,7 @@ verbatim, before either check is written. Every other decision in this plan is s
 | 9 | G | SCC-175 | with/before D: once D1 lands here, the post-merge tick is refused outright |
 | 10 | D | SCC-172 | the main gate itself; last of the script parts |
 | 11 | E + I | SCC-173 + SCC-177 | same files (review commands + engine); E records, I sequences |
+| 12 | L | SCC-180 | the backstop prints `git reset --hard` as its remedy — land it WITH G; they are two halves of one incident |
 
 Overlap map (why the order is what it is): C×D on `pre-push-main-approval.sh` · F×G on
 `smh-close-task-merge-tree.md` Step 4 · E after A/B on `smh-code-review.md` / `cicd-code-review.md` ·
@@ -408,8 +409,10 @@ table above is drawn **from the code**, declared here before the code exists (SC
 - **D touches `.githooks/pre-push`** — the live gate. Scratch repo only; the last thing built.
 - **F and G both edit `jira_feed.py` right after SCC-163 changed it.** Build on `a0aceaf`, not on
   memory of the file.
-- **Untracked memory copies in the lobby's main checkout** (`_artifacts/_memory/{devrecord-…,
-  discovered-work-…, grep-reads-…}.md`) are identical to this lane's committed versions. `git merge`
+- **The main checkout is never a clean tree.** It hosts `_artifacts/_memory/`, which every session
+  on this machine writes. Any recovery run there — `reset`, `clean`, `checkout --` — eats other
+  sessions' work. Use `git reset --keep` (Part L), never `--hard`.
+- **Untracked memory copies in the lobby's main checkout** (`_artifacts/_memory/{devrecord-…, discovered-work-…, grep-reads-…}.md`) are identical to this lane's committed versions. `git merge`
   refuses to overwrite untracked files, so **the close-out's first act is `cmp` each pair, then `rm`
   the three untracked copies in the main checkout** — recorded here so no one meets the error blind.
   (Left in place on purpose: the memory store is read from the main checkout by every session on
@@ -448,9 +451,11 @@ that turn — never solicited.
 The three memory files (`devrecord-story-slug-forks-the-record.md`,
 `discovered-work-becomes-a-lettered-part.md`, `grep-reads-the-branch-you-are-parked-on.md`) and their
 three MEMORY.md index rows, lost from the main checkout by the SCC-163 close-out's `reset --hard` and
-restored here from this session's record. **Not recoverable:** an uncommitted edit to
-`preflight-resolves-repo-from-cwd.md` (another session's; content unknown — likely the AVCH-59 retro's
-"preflight aimed at the wrong tree" note). The untracked `README.md` at the repo root is NOT this
+restored here from this session's record. **RECOVERED 2026-08-15** from the authoring session's transcript (`git fsck` found no dangling blob —
+unstaged work never becomes a git object): the 1,869-character AVCH-59 section of
+`preflight-resolves-repo-from-cwd.md` ("⛔ Passing both flags is NOT enough — `--repo` must be the
+WORKTREE"), restored on this lane. It also answers the `README.md` question below: that memory
+records it as **another lane's uncommitted file**, so leave it alone. The untracked `README.md` at the repo root is NOT this
 lane's; provenance unknown; left untouched.
 
 ## Self-audit

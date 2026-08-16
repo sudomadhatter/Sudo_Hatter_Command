@@ -3,4 +3,4 @@ primary_repo: Sudo_Hatter_Command
 branch: chore/SCC-164-command-surface-family
 close_command: smh-close-task-merge-tree
 secondary_repos: []
-riders: [SCC-170, SCC-178, SCC-179, SCC-165, SCC-166, SCC-176, SCC-174, SCC-171, SCC-175, SCC-172, SCC-173, SCC-177]
+riders: [SCC-170, SCC-178, SCC-179, SCC-165, SCC-166, SCC-176, SCC-174, SCC-171, SCC-175, SCC-172, SCC-173, SCC-177, SCC-180]
