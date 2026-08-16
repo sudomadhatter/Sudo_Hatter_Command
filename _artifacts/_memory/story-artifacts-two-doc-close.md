@@ -31,5 +31,5 @@ duplicate. Cost: every downstream step re-read 4-5 docs.
 - TEA test-artifacts (`atdd-checklist-*`, `automation-summary-*`, `certification-*.json`) stay
   standalone BY RULING — don't re-propose folding them.
 - Propagated: lobby masters + [[sudo-commands-have-ap-twins-that-drift]] `_AP` twins +
-  [[autopilot-has-three-drifting-engines]] all three engines + AGY/Fresh/NEXgen rules, TOMLs,
+  [[autopilot-engine-is-project-local]] desktop engines + AGY/Fresh/NEXgen rules, TOMLs,
   reference, `_artifacts/AGENTS.md`, via hand-copy (rules) + `/sync-agents` (commands).
