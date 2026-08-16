@@ -165,13 +165,68 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     if [ -n "$t_branch" ]; then
       merged=$(git rev-parse --verify --quiet "${local_sha}^2") || merged=""
       claimed=$(git rev-parse --verify --quiet "refs/heads/$t_branch") || claimed=""
-      if [ -n "$claimed" ] && [ "$merged" != "$claimed" ]; then
+      # ⛔⛔ THIS RUNG USED TO FAIL **OPEN**, AND IT IS THE ONLY ONE ENFORCING MERGE-NESS.
+      # The comparison was guarded by `[ -n "$claimed" ]`, so when the token's branch did not
+      # resolve LOCALLY the whole check was skipped — silently. Measured (SCC-172, ported from
+      # the AVCH-59 edge lens, reproduced twice):
+      #
+      #   a PLAIN NON-MERGE COMMIT on main + a token naming a branch that never existed
+      #     -> tip matches, ^1 == remote tip, `claimed` empty, check skipped -> ✅ APPROVED
+      #   a real merge of chore/B + a token naming epic/A (remote-only, not checked out)
+      #     -> ✅ APPROVED, and the gate PRINTS THE FALSE CLAIM BACK as if it had verified it
+      #
+      # The comment two lines up says the point is to stop the token being "a blank cheque that
+      # any merge can spend" — the `-n` guard reopened exactly that, for exactly the inputs the
+      # minter never validates (it requires `--branch` to be non-empty, never to EXIST).
+      #
+      # Reachable without adversarial intent: a fresh clone or the other machine, where you merge
+      # `origin/chore/…` and `refs/heads/chore/…` was never created; a lane pruned before the
+      # mint; a typo. So an unresolvable branch is a REFUSAL, and `^2` must exist unconditionally.
+      if [ -z "$merged" ]; then
+        rm -f "$TOKEN"
+        refuse "this push does not carry a MERGE commit.
+        The token authorises landing '$t_branch', but $local_sha has no second parent.
+        A sign-off is for a merge; a plain commit pushed straight onto main is not one.
+        Token discarded."
+      fi
+      if [ -z "$claimed" ]; then
+        rm -f "$TOKEN"
+        refuse "the token names '$t_branch', which does not resolve in this repository.
+        The gate cannot verify that the merge it is looking at is the merge that was approved,
+        and an unverifiable claim is not an approval. Re-mint from the tree that holds the
+        branch. Token discarded."
+      fi
+      if [ "$merged" != "$claimed" ]; then
         rm -f "$TOKEN"
         refuse "the token authorises landing '$t_branch' ($claimed),
         but this merge's second parent is ${merged:-<none> (not a merge commit)}.
         A sign-off is for one named branch, not for whatever happens to be on main. Token discarded."
       fi
     fi
+  else
+    # ⛔⛔ THE ZERO CASE USED TO FALL STRAIGHT THROUGH TO "APPROVED".
+    # Every check above — the one-merge invariant AND the branch binding — lives inside the
+    # `remote_sha != ZERO` arm, and there was no `else`. So a push that CREATES `main` on a
+    # remote skipped the lot. Measured (SCC-172, ported from AVCH-59): a bare remote with no
+    # `main`, THREE stacked --no-ff merges, one hand-written token -> "✅ main push approved",
+    # `* [new branch] main -> main`, and `rev-list --count --merges` on the remote said 3. That
+    # is the exact SCC-71 failure this gate exists to stop, wearing a green banner.
+    #
+    # ⭐ And this repo's own test fixtures were driving EVERY behaviour case through this arm —
+    # `gate()` defaulted `remote_sha` to ZERO — so the suite's happy path was green BECAUSE of
+    # the hole. Closing it turned five existing cases red; that is the fixture being corrected,
+    # not a regression.
+    #
+    # There is no reference tip to compare a first parent against, so the invariant genuinely
+    # cannot be evaluated here — and an approval that cannot be checked is not an approval.
+    # Creating `main` on a remote is not one of the doors, so refusing strands nobody:
+    # `--no-verify` is right there for the one-off case of seeding a new remote.
+    rm -f "$TOKEN"
+    refuse "this push would CREATE '$PROTECTED_REF' on the remote, which has no main yet.
+        With no remote tip there is nothing to check 'exactly one merge above' against, so the
+        one-sign-off-one-merge invariant cannot be evaluated at all — and it is the invariant
+        this gate exists for. Seeding a new remote is not one of the doors below.
+        Token discarded."
   fi
 
   # Consumed BEFORE the push. There is no post-push hook, so this is the only available order —

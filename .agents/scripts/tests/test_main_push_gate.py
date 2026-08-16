@@ -44,9 +44,18 @@ def sh(*args: str, cwd: Path, stdin: str = "") -> tuple[int, str]:
     return r.returncode, (r.stdout or "") + (r.stderr or "")
 
 
-def make_repo(tmp: Path) -> Path:
-    """A real git repo carrying the real gate files."""
-    d = tmp / "work"
+def make_repo(tmp: Path, name: str = "work") -> tuple[Path, Path]:
+    """A real git repo carrying the real gate files, WITH a bare origin holding `main`.
+
+    ⛔⛔ THE REMOTE IS NOT SCENERY — IT IS THE FIXTURE'S WHOLE POINT (SCC-172 / D2).
+    This helper used to return a repo with no remote, and `gate()` defaulted `remote_sha` to
+    ZERO. Every behaviour case in this file therefore ran through the gate's "the remote has no
+    main yet" arm — and every check the gate performs lived INSIDE the other arm. So the suite
+    measured the gate from inside its own fail-open: the happy path was green BECAUSE of the
+    hole, and a test that never gives the gate a remote tip cannot tell "approved" from
+    "not checked". Closing D2 turned five cases in this file red. They were never right.
+    """
+    d = tmp / name
     d.mkdir()
     sh("git", "init", "-q", "-b", "main", cwd=d)
     sh("git", "config", "user.email", "t@t.t", cwd=d)
@@ -57,7 +66,43 @@ def make_repo(tmp: Path) -> Path:
     (d / "README").write_text("x\n")
     sh("git", "add", "README", ".agents", cwd=d)
     sh("git", "commit", "-qm", "base", cwd=d)
-    return d
+    bare = tmp / f"{name}-remote.git"
+    sh("git", "init", "-q", "--bare", str(bare), cwd=tmp)
+    sh("git", "remote", "add", "origin", str(bare), cwd=d)
+    sh("git", "push", "-q", "--no-verify", "origin", "main", cwd=d)
+    sh("git", "fetch", "-q", "origin", cwd=d)
+    return d, bare
+
+
+def stage_one_merge(d: Path, lane: str = "chore/SCC-77-x") -> str:
+    """Leave `main` exactly ONE `--no-ff` merge above `origin/main`. Returns the lane name.
+
+    This is the state every door produces and the only state the gate approves: first parent
+    is the remote tip, second parent is the branch the token names. Building it explicitly is
+    what lets the D1/D2 cases below be about the GATE rather than about the fixture.
+    """
+    sh("git", "fetch", "-q", "origin", cwd=d)
+    sh("git", "checkout", "-q", "-B", "main", "origin/main", cwd=d)
+    sh("git", "branch", "-q", "-D", lane, cwd=d)
+    sh("git", "checkout", "-q", "-b", lane, cwd=d)
+    f = d / (lane.replace("/", "_") + ".txt")
+    f.write_text(f"{time.time()}\n")
+    # ⛔⛔ `git add -- <this file>`, NEVER `git add -A`, and the reason is a fail-open this
+    # fixture reproduced BY ACCIDENT. `-A` also stages the UNTRACKED `.githooks/pre-push` the
+    # caller just copied in; it then rides onto the lane, and the next `checkout -B main
+    # origin/main` DELETES it, because origin/main never had it. From that point the repo has
+    # no pre-push hook and every push to `main` succeeds with no gate and NO OUTPUT AT ALL —
+    # which is fail-open D3 (SCC-172), staged inside the test written to prove D3 is closed.
+    # It cost a green D2 that was measuring an ungated push.
+    sh("git", "add", "--", str(f), cwd=d)
+    sh("git", "commit", "-qm", f"work on {lane}", "--no-verify", cwd=d)
+    sh("git", "checkout", "-q", "main", cwd=d)
+    sh("git", "merge", "-q", "--no-ff", "--no-verify", lane, "-m", f"merge: {lane} -> main", cwd=d)
+    return lane
+
+
+def remote_main(d: Path) -> str:
+    return sh("git", "rev-parse", "origin/main", cwd=d)[1].strip()
 
 
 def token_path(d: Path) -> Path:
@@ -65,10 +110,11 @@ def token_path(d: Path) -> Path:
 
 
 def write_token(d: Path, tip: str, minted: int | None = None, command: str = "/smh-close-task-merge-tree",
-                approval: str | None = "test fixture: operator said merge it") -> None:
+                approval: str | None = "test fixture: operator said merge it",
+                branch: str = "chore/SCC-77-x") -> None:
     # approval=None writes the pre-SCC-37 token shape — the case the gate must now refuse.
     body = (
-        f"branch=chore/SCC-77-x\ntip={tip}\ncommand={command}\nkey=SCC-77\n"
+        f"branch={branch}\ntip={tip}\ncommand={command}\nkey=SCC-77\n"
         f"minted={minted if minted is not None else int(time.time())}\n"
     )
     if approval is not None:
@@ -76,7 +122,13 @@ def write_token(d: Path, tip: str, minted: int | None = None, command: str = "/s
     token_path(d).write_text(body)
 
 
-def gate(d: Path, sha: str, ref: str = "refs/heads/main", remote_sha: str = ZERO) -> tuple[int, str]:
+def gate(d: Path, sha: str, ref: str = "refs/heads/main",
+         remote_sha: str | None = None) -> tuple[int, str]:
+    """⛔ `remote_sha` DEFAULTS TO THE REAL `origin/main`, never ZERO. ZERO means "the remote
+    has no main", which is fail-open D2 — passing it by default drove this whole file through
+    the one arm where the gate checks nothing (SCC-172)."""
+    if remote_sha is None:
+        remote_sha = remote_main(d) or ZERO
     sh_bin = shutil.which("sh") or shutil.which("bash") or "bash"
     return sh(sh_bin, str(d / ".agents/scripts/git-hooks/pre-push-main-approval.sh"),
               "origin", "url", cwd=d, stdin=f"{ref} {sha} {ref} {remote_sha}\n")
@@ -226,7 +278,12 @@ def main() -> int:
         return c.finish()
 
     with TempDir() as tmp:
-        d = make_repo(tmp)
+        d, bare = make_repo(tmp)
+        # ⭐ `sha` is now a REAL merge commit sitting exactly one above origin/main, with
+        # `chore/SCC-77-x` as its second parent — the only shape any door produces. The old
+        # fixture used a plain base commit, which the gate could only approve because D1 and D2
+        # were both open (no `^2`, no remote tip).
+        stage_one_merge(d)
         sha = sh("git", "rev-parse", "HEAD", cwd=d)[1].strip()
 
         if c.block("BEH · the gate's refusal ladder, rung by rung"):
@@ -305,7 +362,7 @@ def main() -> int:
                 ["sh", str(d / ".agents/scripts/git-hooks/pre-push-main-approval.sh"), "origin", "url"],
                 cwd=str(d), text=True, capture_output=True,
                 input=f"refs/heads/a {sha} refs/heads/a {ZERO}\n"
-                      f"refs/heads/main {sha} refs/heads/main {ZERO}\n"
+                      f"refs/heads/main {sha} refs/heads/main {remote_main(d)}\n"
                       f"refs/heads/z {sha} refs/heads/z {ZERO}\n")
             c.check("multi-ref push is gated on main wherever it appears",
                     "approved" in (r.stdout + r.stderr) and not token_path(d).exists(),
@@ -366,7 +423,8 @@ def main() -> int:
                     "never merge permission" in out.lower() or "NEVER merge permission" in out,
                     "the message must name the ticket-permission != merge-permission rule")
 
-            sh("git", "checkout", "-qb", "chore/SCC-77-x", cwd=d)
+            # `-B`, not `-b`: `chore/SCC-77-x` is the staged lane and already exists.
+            sh("git", "checkout", "-qB", "chore/SCC-77-off-main", cwd=d)
             rc, out = sh("sh", str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
                          "--command", "/smh-close-task-merge-tree", "--branch", "chore/SCC-77-x",
                          "--operator-approval", "merge it", cwd=d)
@@ -430,28 +488,30 @@ def main() -> int:
         if c.block("E2E · a REAL git push through core.hooksPath at a real remote"):
             # ── END TO END: a real `git push`, through core.hooksPath, at a real remote ───────
             # Everything above can pass while git never invokes the hook at all.
-            bare = tmp / "remote.git"
-            sh("git", "init", "-q", "--bare", str(bare), cwd=tmp)
-            sh("git", "remote", "add", "origin", str(bare), cwd=d)
             (d / ".githooks").mkdir()
             shutil.copy2(DISPATCH, d / ".githooks/pre-push")
             (d / ".githooks/pre-push").chmod(0o755)
             sh("git", "config", "core.hooksPath", ".githooks", cwd=d)
             token_path(d).unlink(missing_ok=True)
 
+            before = sh("git", "--git-dir", str(bare), "rev-parse", "main", cwd=d)[1].strip()
             rc, out = sh("git", "push", "origin", "main", cwd=d)
             c.check("REAL git push to main is refused with no token", rc != 0 and "REFUSED" in out,
                     "if this passes, git is not running the hook — the whole gate is decorative")
-            rc, out = sh("git", "ls-remote", "--heads", str(bare), "main", cwd=d)
-            c.check("nothing reached the remote", "refs/heads/main" not in out)
+            after = sh("git", "--git-dir", str(bare), "rev-parse", "main", cwd=d)[1].strip()
+            c.check("the remote tip did NOT move", before == after,
+                    "the remote already carries `main` (it must, or the gate is being asked the "
+                    "D2 question instead of the real one) — so the assertion is that it is UNMOVED")
 
+            lane = stage_one_merge(d)
             sh("sh", str(d / ".agents/scripts/git-hooks/mint-push-token.sh"),
-               "--command", "/smh-close-task-merge-tree", "--branch", "chore/SCC-77-x",
+               "--command", "/smh-close-task-merge-tree", "--branch", lane,
                "--key", "SCC-77", "--operator-approval", "yes - land it", cwd=d)
             rc, out = sh("git", "push", "origin", "main", cwd=d)
             c.check("REAL git push to main succeeds with a token", rc == 0, out.strip()[-200:])
-            rc, out = sh("git", "ls-remote", "--heads", str(bare), "main", cwd=d)
-            c.check("the commit reached the remote", "refs/heads/main" in out)
+            landed = sh("git", "--git-dir", str(bare), "rev-parse", "main", cwd=d)[1].strip()
+            c.check("the merge reached the remote", landed != before and landed != "",
+                    f"before={before[:9]} after={landed[:9]}")
             c.check("the token was consumed by the real push", not token_path(d).exists())
 
     # ── ⭐ ONE SIGN-OFF = ONE MERGE (the check the first cut of this gate did NOT have) ──────
@@ -461,11 +521,8 @@ def main() -> int:
     # locally, mint once, push once — the sha matches the whole way and six merges land on one
     # approval. Reproduced during review before the fix: 6 merges on the remote, one token.
     with TempDir() as tmp:
-        d = make_repo(tmp)
+        d, bare = make_repo(tmp)
         if c.block("ONE · one sign-off = ONE merge, end to end at a real remote"):
-            bare = tmp / "remote.git"
-            sh("git", "init", "-q", "--bare", str(bare), cwd=tmp)
-            sh("git", "remote", "add", "origin", str(bare), cwd=d)
             (d / ".githooks").mkdir()
             shutil.copy2(DISPATCH, d / ".githooks/pre-push")
             (d / ".githooks/pre-push").chmod(0o755)
@@ -583,6 +640,101 @@ def main() -> int:
                 token_path(d).unlink(missing_ok=True)
                 c.check("PreToolUse ignores a push to a non-protected branch",
                         decide("git push origin HEAD:chore/x") == "allow")
+
+    # ── D (SCC-172) · the fail-opens the edge lens MEASURED, now closed ───────────────────
+    #
+    # All three were approved end-to-end before they were closed - reproduced, not reasoned
+    # about. Each gets its own case, because a refusal with no case is the next silent
+    # regression, and each asserts its OWN reason: nine rungs print the same banner, so
+    # matching "REFUSED" would let any rung stand in for the one under test.
+    with TempDir() as tmp:
+        d, bare = make_repo(tmp, "d")
+        (d / ".githooks").mkdir()
+        shutil.copy2(DISPATCH, d / ".githooks/pre-push")
+        (d / ".githooks/pre-push").chmod(0o755)
+        sh("git", "config", "core.hooksPath", ".githooks", cwd=d)
+
+        if c.block("D1 · a token whose branch does not resolve is a REFUSAL, not a skip"):
+            # ⛔ The branch-binding rung was the ONLY thing requiring merge-ness, and it was
+            # skipped whenever `claimed` came back empty. Two shapes, both measured as APPROVED:
+            # a plain non-merge commit with a token naming a branch that never existed, and a
+            # real merge of one branch with a token naming another that is not checked out here.
+            # Reachable with no adversarial intent at all - a fresh clone, the other machine, a
+            # lane pruned before the mint, a typo.
+            sh("git", "fetch", "-q", "origin", cwd=d)
+            sh("git", "checkout", "-q", "-B", "main", "origin/main", cwd=d)
+            (d / "plain.txt").write_text("plain\n")
+            # `--`, not `-A`: see stage_one_merge. `-A` stages the untracked `.githooks/pre-push`
+            # and the next checkout deletes it, leaving the repo silently ungated.
+            sh("git", "add", "--", str(d / "plain.txt"), cwd=d)
+            sh("git", "commit", "-qm", "a PLAIN commit on main", "--no-verify", cwd=d)
+            head = sh("git", "rev-parse", "HEAD", cwd=d)[1].strip()
+            write_token(d, head, branch="chore/SCC-77-never-existed")
+            rc, out = gate(d, head)
+            c.check("D1 · a NON-MERGE commit on main is REFUSED even with a valid-looking token",
+                    rc != 0 and "MERGE commit" in out,
+                    "measured as APPROVED before this: tip matched, ^1 was the remote tip, the "
+                    f"branch did not resolve, so the only merge-ness check was skipped\n{out}")
+            c.check("D1b · ...and the token is discarded like every other refusal",
+                    not token_path(d).exists())
+
+            lane = stage_one_merge(d)
+            head = sh("git", "rev-parse", "HEAD", cwd=d)[1].strip()
+            write_token(d, head, branch="epic/SCC-77-only-on-the-remote")
+            rc, out = gate(d, head)
+            c.check("D1c · a REAL merge with a token naming an UNRESOLVABLE branch is REFUSED",
+                    rc != 0 and "does not resolve" in out,
+                    "the gate used to APPROVE this and print the unverified claim back as if it "
+                    f"had checked it\n{out}")
+
+            # ⛔ The allow-half control: the rung must still pass the shape it exists to permit.
+            write_token(d, head, branch=lane)
+            rc, out = gate(d, head)
+            c.check("D1d · (control) a token naming the branch that WAS merged still passes",
+                    rc == 0 and "approved" in out,
+                    "a refusal that also refuses the legitimate case is not a fix\n" + out)
+
+        if c.block("D2 · a push that CREATES main on a remote is a REFUSAL"):
+            # ⛔ Every check - the one-merge invariant AND the branch binding - lived inside
+            # `remote_sha != ZERO`, with no `else`. Measured: a bare remote with no `main`,
+            # THREE stacked --no-ff merges, one hand-written token -> "main push approved",
+            # and `rev-list --count --merges` on the remote said 3.
+            fresh = tmp / "fresh.git"
+            sh("git", "init", "-q", "--bare", str(fresh), cwd=tmp)
+            sh("git", "remote", "add", "fresh", str(fresh), cwd=d)
+            for n in ("a", "b", "c"):                       # three stacked merges, one token
+                sh("git", "fetch", "-q", "origin", cwd=d)
+                stage_one_merge(d, f"chore/SCC-77-stack-{n}")
+            head = sh("git", "rev-parse", "HEAD", cwd=d)[1].strip()
+            write_token(d, head, branch="chore/SCC-77-stack-c")
+            # ⛔ THE CONTROL THAT MAKES D2 MEAN ANYTHING. A push that is refused and a push that
+            # runs no hook at all are both "the remote did not get what we expected" — and this
+            # fixture really did lose its hook to a stray `git add -A`, so D2 spent a run
+            # measuring an UNGATED push and calling it a fail-open. Assert the instrument first.
+            c.check("D2-pre · (control) the hook is still installed before the push is judged",
+                    (d / ".githooks/pre-push").is_file()
+                    and sh("git", "config", "--get", "core.hooksPath", cwd=d)[1].strip() == ".githooks",
+                    "no hook means an ungated push, which looks nothing like a refusal and "
+                    "everything like one if you only read the remote")
+            rc, out = sh("git", "push", "fresh", "main", cwd=d)
+            c.check("D2 · CREATING main on a remote with no main is REFUSED",
+                    rc != 0 and ("has no main yet" in out or "CREATE" in out),
+                    "three merges rode one token onto a fresh remote before this\n" + out)
+            rc, out = sh("git", "ls-remote", "--heads", str(fresh), "main", cwd=d)
+            c.check("D2b · nothing reached the fresh remote", "refs/heads/main" not in out, out)
+            token_path(d).unlink(missing_ok=True)
+
+            # The reason is asserted separately from the ladder: driving the gate directly with
+            # a ZERO remote_sha isolates the arm from anything git might decide on its own.
+            sh("git", "fetch", "-q", "origin", cwd=d)
+            lane = stage_one_merge(d)
+            head = sh("git", "rev-parse", "HEAD", cwd=d)[1].strip()
+            write_token(d, head, branch=lane)
+            rc, out = gate(d, head, remote_sha=ZERO)
+            c.check("D2c · the ZERO arm refuses ON ITS OWN REASON, not a shared banner",
+                    rc != 0 and "one-sign-off-one-merge invariant cannot be evaluated" in out,
+                    "nine rungs print the same banner; pinning `REFUSED` would let any of them "
+                    f"stand in for this one\n{out}")
 
     return c.finish()
 
