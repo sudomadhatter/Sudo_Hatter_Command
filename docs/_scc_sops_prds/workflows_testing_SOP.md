@@ -932,6 +932,17 @@ don't.
 > (`git log -1 --format='%p' <sha>`), then `git merge --ff-only <sha>` from the tree holding `main`.
 > The sibling branch keeps its uncommitted work untouched — which is what makes it recoverable, and
 > why `reset --hard` would be the expensive move. Full detail in `.agents/rules/git-policy.md`.
+>
+> ⛔ **And if a rewind really is the answer, it is `git reset --keep <ref>` or `git reset --soft
+> HEAD~1` — never `--hard`.** `--keep` **refuses** when a file it would touch has local changes;
+> `--hard` deletes them without a word. That is not theoretical: the merge backstop used to print
+> `--hard` in its refusal banner, an agent ran it in the lobby's **main checkout**, and three other
+> sessions' uncommitted work was destroyed. The main checkout hosts `_artifacts/_memory/`, which
+> every session writes, so it is never clean — and there is no git hook for `reset`, so nothing can
+> refuse it. `test_git_hooks.py` case **RH1** now fails the suite on any line under `.agents/` or
+> `docs/` that prints `git reset --hard` as a step. It reads instructions, not mentions, so the two
+> paragraphs that name the command in order to forbid it — this one and `git-policy.md`'s — keep
+> passing, and are pinned as fixtures. *(SCC-180.)*
 
 > ⓘ **This got broken, and it is worth knowing how (2026-08-09, SCC-71).** In one long session the
 > command was invoked **once** and then rode **six** merges (SCC-64 → SCC-69). Not defiance — the

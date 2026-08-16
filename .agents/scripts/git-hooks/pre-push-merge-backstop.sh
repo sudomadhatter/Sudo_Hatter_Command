@@ -91,8 +91,18 @@ refuse() {   # $1 = the lane being pushed, $2 = the foreign lane riding on it
   echo "     (SCC-144). This is the net for that. The usual cause is a merge run from the wrong"
   echo "     working directory — a cd is not a lock across steps (SCC-97)."
   echo ""
+  # ⛔⛔ NEVER `--hard` HERE, AND THAT IS A MEASURED RULE, NOT A PREFERENCE (SCC-180).
+  # This banner used to print `git reset --hard origin/$1`. On 2026-08-15 an agent read it as the
+  # instruction it looks like, ran it in the lobby's MAIN CHECKOUT, and destroyed three other
+  # sessions' uncommitted work. The main checkout hosts `_artifacts/_memory/`, which every session
+  # on this machine writes, so it is never a clean tree — and there is no git hook for `reset`, so
+  # nothing can refuse it afterwards. A refusal banner is read at the worst moment by whoever is
+  # least sure; whatever it prints WILL be typed. So it prints the one that refuses instead.
   echo "     Remedy:  git log --oneline $BASE_DESC..$1     # see what actually rode along"
-  echo "              git reset --hard origin/$1            # ONLY if this lane was already pushed"
+  echo "              git reset --keep origin/$1            # ONLY if this lane was already pushed"
+  echo "                                                    # --keep REFUSES rather than discarding"
+  echo "              git reset --soft HEAD~1               # to undo a local commit, tree untouched"
+  echo "     ⛔ Never \`--hard\` in a shared checkout — it carries other sessions' uncommitted work."
   echo "     If '$2' genuinely belongs in this lane, land it on $(integration_of "$2") first."
   echo "     Bypass once: git push --no-verify"
   echo ""
