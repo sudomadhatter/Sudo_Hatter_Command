@@ -67,10 +67,52 @@ description: "Git policy: main is the ONLY long-lived branch. Each epic gets a s
 | Your own `claude/*` story branch (commits **and** pushes) | **FREE** — no approval, loops/retries fine |
 | The epic branch (`epic/*`) — a story landing | **Daniel's sign-off** — his in-the-moment "approved", or invoking `/cicd-update-sprint-memory` (which IS the sign-off) |
 | A `chore/*` branch (commits and pushes) | **FREE** — the merge back to `main` is what's gated |
-| `main` | **Only through `/cicd-push-e2e`** (epic merge, full gate + sign-off) or **`/smh-close-task-merge-tree`** (task merge — preflight + the lane's gate; invoking it IS the sign-off), or Daniel's direct in-the-moment ask. Never on an agent's own initiative. |
+| `main` | **THREE roads and no fourth** — see below. Never on an agent's own initiative. |
 
 Approval for an epic-branch landing or a `main` merge is **per-action and never carries forward**.
 One "approved" lands one story; the next needs its own.
+
+### ⭐ The three roads to `main` — the PR door is the default (SCC-183, 2026-08-16)
+
+| # | Road | For | The sign-off |
+|---|---|---|---|
+| 1 | **The PR door** — `.agents/scripts/land_pr.py`, invoked by `/smh-close-task-merge-tree` and `/smh-merge-multiple-workingtrees` | **the default** for any `chore/*` or `epic/*` lane **in this repo** | the operator's **click** on *Merge pull request*, on a PR carrying a green `main-write-gate` |
+| 2 | `/cicd-push-e2e` | epic merges in **project** repos, which publish no `main-write-gate` | the single-use token, carrying verbatim words (SCC-37) |
+| 3 | **Break-glass** — the local token push, kept in the close-out under `## Break-glass` | GitHub unreachable, or the PR door itself broken | the single-use token, as above |
+
+⛔ **Why road 1 carries no token, and why that is not a bypass.** The token proves *the operator said
+yes* before **a machine here** pushes to `main`; it lives in `.git/` and is spent by
+`.githooks/pre-push`. A merge performed on GitHub runs on GitHub's servers and **never touches a
+machine here**, so there is no push for a local hook to gate — the token is *structurally absent*,
+not evaded. That is SCC-118's own finding read forwards, and it is precisely why `main-write-gate`
+exists as a server-side check. Road 1 is gated by that check plus the operator's click; roads 2 and 3
+are gated by the token. Neither half replaces the other and both are required on their own road.
+
+⛔ **Why the ceremony moved at all.** SCC-184 — docs only, every gate green, suite 32/32 — could not
+reach `main` in a full session. The block was never a gate: it was ~15 hand-typed `git`/`gh` strings
+run in the shared checkout, each judged separately by the agent's permission layer, several denied,
+state stranded mid-ceremony. Measured, controlled pair, same op and same target: `git merge X
+--no-ff` **allowed**, `git -C <path> merge X --no-ff` **denied** — and the `-C` form is the one
+[the merge-target rule](#-pin-the-merge-target-not-just-the-source---c-on-every-call-and-assert-before-you-merge)
+below *mandates*. **Obeying the safety law guaranteed the permission miss.** No gate could fix that,
+because the failing thing was the shape: many strings, shared tree. One command and one click is the
+fix, and it was already the road that worked (PR #5, #6, #8 — green in ~45s, zero denials).
+
+⛔ **What the agent may merge on road 1, and what it may not.** `land_pr.py --merge` self-merges
+**only** a lane whose entire diff is prose: `*.md` under `docs/`, `_artifacts/` or `_my_resources/`.
+Two independent predicates must BOTH pass (`lane_qualify` says `LIGHT` **and** every path is prose),
+because either alone is insufficient — measured: `lane_qualify` rates
+`.claude/hooks/require-push-approval.py`, the agent's own permission hook, **`LIGHT`**. Refusals are
+evaluated first and win. Refused however prose they look: **`AGENTS.md` / `CLAUDE.md` / `GEMINI.md`
+at ANY depth** (nine are tracked — routing law, not prose), root `router.md` (the master router),
+anything under `docs/migrations/` (the instructions a human follows on a new machine), anything
+non-`.md`, any symlink or submodule bump, and the empty set. Everything else opens the PR and
+**stops**, link in hand.
+
+⛔ **This is NARROWER than the operator's ruling, deliberately and on the record.** The ruling was
+"doc / index / memory / maps lanes → the agent merges"; a doc lane touching `.agents/rules/*.md` or a
+toolkit `INDEX.md` still needs a click. Widening it is the operator's call and needs their words —
+a derived corollary is a proposal, never law.
 
 **Enforcement — two layers, and only the first one counts.**
 

@@ -441,7 +441,29 @@ The one step with a gate in front of it, and **the gate is different per repo**:
 The lobby has no `frontend/`. There is no browser journey to drive, so there is no E2E suite and there
 never will be. Don't go looking for one, and never improvise a substitute and call it the gate.
 
-Green, then:
+Green, then **open a pull request and click Merge** — that is the road, since SCC-183:
+
+```bash
+python3 .agents/scripts/land_pr.py          # pushes the branch, opens the PR, prints the link
+```
+
+Click *Merge pull request* on the link it prints. **Your click is the sign-off.** Then drag the
+ticket to **Done** (or let `/smh-close-task-merge-tree --after-merge <KEY>` do the ticket, the Dev
+Record and the prune for you).
+
+> ⭐ **Why this replaced the hand-typed merge below (2026-08-16).** SCC-184 was docs-only with every
+> gate green and it still could not reach `main` in a whole session — not because a gate stopped it,
+> but because the *landing* was fifteen separate commands in the shared checkout and the agent's
+> permission layer refused several of them halfway through, leaving the state stranded. One command
+> and one click has none of those failure points, and GitHub still runs the `main-write-gate` check
+> before it will let the button work.
+
+<details>
+<summary><strong>Break-glass only</strong> — the hand-typed merge, for when GitHub is unreachable</summary>
+
+⛔ Not the default any more. It needs a single-use approval token (`mint-push-token.sh`), it must run
+in a checkout that is on `main`, and every one of these calls should carry `-C "$REPO"` in a session
+where a `cd` may have moved you (see `.agents/rules/git-policy.md` § *Pin the merge TARGET*).
 
 ```bash
 git checkout main
@@ -452,11 +474,12 @@ git branch -d <branch> && env -u GITHUB_TOKEN git push origin --delete <branch>
 git rev-list --left-right --count origin/main...main    # must print: 0  0
 ```
 
-`--no-ff` forces a merge commit so the branch reads as one reviewable unit in `main`'s history. Then
-drag the ticket to **Done**.
+`--no-ff` forces a merge commit so the branch reads as one reviewable unit in `main`'s history.
 
 > **`-d`, never `-D`.** Lowercase refuses to delete a branch that didn't merge. That refusal is the check
 > working — if it fires after a merge you thought succeeded, go and look, don't force it.
+
+</details>
 
 ### 3.8 The one-command version — `/smh-close-task-merge-tree`
 

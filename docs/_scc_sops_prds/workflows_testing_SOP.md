@@ -839,9 +839,50 @@ secondary_repos:
 ### The gate under all of it — how `main` is protected
 
 *Everything above lands work. This subsection is about the one branch that is production, and the
-four things that keep a merge to it honest: one typing = one merge; the merge must land where you
-think; a single-use token carrying your words; and a server-side check for merges made on GitHub
-itself. Read it once; the machinery holds the line afterwards.*
+things that keep a merge to it honest: **the road it travels** (below); one typing = one merge; the
+merge must land where you think; a single-use token carrying your words; and a server-side check for
+merges made on GitHub itself. Read it once; the machinery holds the line afterwards.*
+
+#### ⭐ There are THREE roads to `main`, and the default one is a pull request (SCC-183)
+
+**What you do:** nothing new. The close-out runs, and it hands you a **link**. You click *Merge pull
+request*. That click is your sign-off — the same authority the token carries, in a place you can
+actually see.
+
+**Why this changed.** On 2026-08-16 a docs-only Task (SCC-184 — 226 lines, no deletions, whole test
+suite green) could not reach `main` for an entire session. Every gate passed. What failed was the
+*landing*: about fifteen hand-typed `git`/`gh` commands run in the shared checkout, each judged
+separately by the agent's permission layer, several denied, and the state left stranded halfway
+through. Adding another gate could not have fixed that, because no gate was the problem — the
+**shape** of the ceremony was. A pull request replaces all fifteen strings with one command and one
+click, and it is the road that was already working: PR #5, #6 and #8 all landed with
+`main-write-gate` green in about 45 seconds and zero denials.
+
+| Road | When | Who signs off |
+|---|---|---|
+| **The PR door** — `land_pr.py`, called by the close-out | **the default**, for any `chore/*` or `epic/*` lane in this repo | **your click** on *Merge pull request* |
+| `/cicd-push-e2e` | epics in the **project** repos (AviationChat, etc.), which publish no `main-write-gate` | the token, as before |
+| **Break-glass** — the local token push | GitHub is down, or the PR door itself is broken | the token, as before |
+
+**Why the PR door needs no token.** The token exists to prove *you said yes* before something on
+**your machine** pushes to `main`. A merge performed on GitHub happens on GitHub's servers and never
+touches your machine — so there is nothing there for a local hook to guard. The token is
+*structurally absent*, not bypassed. (This is SCC-118's own finding, read forwards: it is exactly
+why `main-write-gate` was built as a server-side check in the first place.)
+
+**When the agent may click for you.** For **prose lanes only** — Markdown under `docs/`,
+`_artifacts/` and `_my_resources/`. Everything else stops and hands you the link. Two things that
+are *not* in that set even though they look like docs, and it is worth knowing why:
+
+- **any `AGENTS.md`, `CLAUDE.md` or `GEMINI.md`, at any depth** — nine of them are tracked, one per
+  folder. They are the routing law that tells every agent, on both machines, what to read on entering
+  that folder. Changing one unread is how the system quietly starts obeying something else.
+- **anything under `docs/migrations/` and anything under `.agents/`** — the first is the set of
+  copy-paste instructions you follow on a new machine, the second is the law itself.
+
+This is deliberately **narrower** than "doc lanes merge themselves": a doc lane that edits
+`.agents/rules/git-policy.md` still comes to you. That is a proposal you can widen later, not a
+line the system will move on its own.
 
 #### ⛔ One typing = ONE merge
 
