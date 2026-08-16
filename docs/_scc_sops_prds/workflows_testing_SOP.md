@@ -714,6 +714,15 @@ The close-out runs everything it always ran — preflight, the lane's gate, the 
 |---|---|
 | a URL | click **Merge pull request**. That click is your sign-off. Then say so, and the agent runs the rest (`--after-merge`): Dev Record, ticket to `Done`, worktree and branch pruned |
 
+> ⓘ **One thing the close-out needs from the walkthrough BEFORE it opens the PR**, and it is worth
+> knowing because it is the difference between a clean close and a stuck one: the walkthrough must
+> already carry its ticked merge row **and a `## Your Actions` section — even when the answer is
+> "nothing is owed."** `jira_feed.py finish` refuses to move a ticket to `Done` without that
+> section, on purpose: an absent section is not evidence that nothing is owed, so the answer has to
+> be *recorded* rather than assumed. Since that check runs after the merge, a missing section would
+> otherwise force a commit onto `main` after the fact — which a different gate then refuses. Both
+> requirements were found the hard way, one of them by SCC-183 landing through its own door.
+
 **You will never be handed a list of git commands to type.** If a close-out ever stops and asks you
 to merge by hand, that is the bug, not the procedure. And it never merges for you — there is no lane
 class that self-merges.

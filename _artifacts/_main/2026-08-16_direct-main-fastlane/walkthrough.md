@@ -174,6 +174,22 @@ permissions. **Nothing else is owed, on any machine.**
 
 - [x] The merge itself — lands via this branch's PR
 
+## Your Actions
+
+**Nothing is owed.** Both operator acts were done during this close-out and verified by reading the
+state back, not by assuming the write worked:
+
+| Act | State | Verified |
+|---|---|---|
+| squash + rebase merges disabled | ✅ done | `gh repo view` → `mergeCommitAllowed:true, squashMergeAllowed:false, rebaseMergeAllowed:false` |
+| `strict_required_status_checks_policy: true` | ✅ done | ruleset `20756052` → `strict:[true]`, `enforcement:active`, `bypass_actors:[]`, check still `main-write-gate` |
+
+Both are server-side, so they cover **both machines and all four agent platforms at once**, and
+neither touches any agent's permissions. No per-machine setup is owed on the PC or anywhere else.
+
+⛔ **No allow-list entry, no `settings.local.json` edit, and no hook change is required by this
+work** — measured: `git diff origin/main -- .claude/settings*.json .claude/hooks` = 0 lines.
+
 ## Limits
 
 - **Not yet exercised end to end.** The road is `gh pr create` → click → `--after-merge`, and this
