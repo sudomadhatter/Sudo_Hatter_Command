@@ -29,7 +29,7 @@ sudo commands (quick-dev, bdd-tests, incident-response); the 7 with skill twins 
 The `_AP` autopilot trio is pinned `[claude, opencode]` (was keyless=universal → leaked into codex+AG menus).
 Full wiring: `docs/workspace-standard.md` "one master, four platforms" (the per-machine setup
 guide it used to cite is gone; the sync itself is the install). Note: this makes
-[[autopilot-has-three-drifting-engines]] a **four**-platform world for the sync surface (autopilot engines are
+[[autopilot-engine-is-project-local]] a **four**-platform world for the sync surface (autopilot engines are
 still claude/opencode/mobile only).
 
 **Mac 2026-08-07 — the caches lie about whether Codex is usable.** `~/.codex/prompts` (18) and

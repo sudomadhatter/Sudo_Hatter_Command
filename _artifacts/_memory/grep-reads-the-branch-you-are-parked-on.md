@@ -12,7 +12,7 @@ A shared checkout parked on a long-lived branch (an `epic/*`, a lane you forgot 
 returns **that branch's** file content to `grep`, `find`, Read, and every agent search. Nothing in
 the output says which commit it came from, so the results look identical to ground truth.
 
-**2026-08-15, AVCH-58.** Swept AGY for dead `_my_resources/migrations` references from the main
+**2026-08-15, AVCH-58.** Swept AGY for dead migration kit references (`docs/migrations/`, relocated from `_my_resources/` under SCC-89) from the main
 checkout, which sat on `epic/AVCH-18-adk-2x-runtime` — 11 commits behind `main`. Found 5 files and
 wrote a whole ticket around them, headlining a "broken secrets path that strands a fresh machine."
 Re-running the identical sweep inside a worktree cut from `main` returned a different set: **AVCH-53

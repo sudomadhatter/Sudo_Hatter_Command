@@ -30,4 +30,4 @@ stage artifacts as "mine to write". A manual lane writing the same files is a si
   automation summary said "49"/"+2". Method: cross-diff every artifact's claimed File-List/test-list
   against the tree, grep for the named tests, then RUN the gate suite for the true count; restore
   from the automation summary's spec (it documents each test's name + non-vacuity property).
-- Related: [[autopilot-has-three-drifting-engines]], [[autopilot-glm-hybrid-lane]].
+- Related: [[autopilot-engine-is-project-local]], [[autopilot-glm-hybrid-lane]].
