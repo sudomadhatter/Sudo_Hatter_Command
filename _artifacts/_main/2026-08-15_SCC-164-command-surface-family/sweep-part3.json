@@ -39,7 +39,7 @@
     {
       "id": "M5 drop the declared-case attribution (something died, so call it killed)",
       "file": ".agents/scripts/mutation_sweep.py",
-      "original": "    if case.lower() not in failed[0].lower():",
+      "original": "    if case.lower() not in failed[-1].lower():",
       "mutated": "    if False:",
       "case": "K2c",
       "block": "K2 \u00b7"
@@ -69,9 +69,9 @@
       "block": "K4 \u00b7"
     },
     {
-      "id": "M9 attribute the kill to any FAILED line, not the FIRST (failed[0] -> the whole output)",
+      "id": "M9 attribute the kill to ANY FAILED line, not the runner's own last one",
       "file": ".agents/scripts/mutation_sweep.py",
-      "original": "    if case.lower() not in failed[0].lower():",
+      "original": "    if case.lower() not in failed[-1].lower():",
       "mutated": "    if case.lower() not in out.lower():",
       "case": "K2c",
       "block": "K2 \u00b7"
@@ -81,8 +81,16 @@
       "file": ".agents/scripts/mutation_sweep.py",
       "original": "    if not failed:\n        return False, (f\"SWEEP ERROR - exit {code} with no `FAILED:` line, so the kill cannot \"\n                       \"be attributed to a named case\")",
       "mutated": "    if False:\n        return False, (f\"SWEEP ERROR - exit {code} with no `FAILED:` line, so the kill cannot \"\n                       \"be attributed to a named case\")",
-      "case": "K2d",
+      "case": "K2f",
       "block": "K2 \u00b7"
+    },
+    {
+      "id": "M11 skip the did-it-APPLY check (a stale mutation reads as a fresh kill)",
+      "file": ".agents/scripts/mutation_sweep.py",
+      "original": "            if src.read_text(encoding=\"utf-8\") == before:",
+      "mutated": "            if False:",
+      "case": "K3f",
+      "block": "K3 \u00b7"
     }
   ]
 }
