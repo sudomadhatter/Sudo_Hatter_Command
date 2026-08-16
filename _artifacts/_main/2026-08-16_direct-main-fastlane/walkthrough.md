@@ -170,6 +170,10 @@ The R3 build is deleted, but three of its findings are about this repo, not abou
 Both apply to both machines and all four platforms at once, and neither touches any agent's
 permissions. **Nothing else is owed, on any machine.**
 
+## Close-out checklist
+
+- [x] The merge itself — lands via this branch's PR
+
 ## Limits
 
 - **Not yet exercised end to end.** The road is `gh pr create` → click → `--after-merge`, and this
@@ -187,7 +191,7 @@ permissions. **Nothing else is owed, on any machine.**
 
 ---
 
-**Verdict: PASS @ <shipping-sha>** — builder's self-review. R4 is a deletion whose safety argument
+**Verdict: PASS @ 3150732d** — builder's self-review. R4 is a deletion whose safety argument
 is a table of what already holds each removed check, and the suite, lint and maps are green after
 it. ⛔ Not an independent review: `/smh-code-review` is available and is the thing that has
 historically caught what a builder's own pass did not — twice on this lane.
