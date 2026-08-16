@@ -29,7 +29,7 @@ SCC-163). The arming ruling was closed separately, quoted in § ARMING.
 - [x] **Part 3 · K / SCC-179** — mutation sweep gets a mechanical restore check
 - [x] **Part 4 · A / SCC-165** — a bare `main` is a stale ref (**25** operands: 4 ruled local, 21 fixed)
 - [x] **Part M · SCC-182** — a `cd` out of the workspace retargets every later relative path (discovered mid-lane, minted as Part M)
-- [ ] **Part 5 · B / SCC-166** — cicd-code-review gains its twin's two steps, ADAPTED
+- [x] **Part 5 · B / SCC-166** — cicd-code-review gains its twin's two steps, ADAPTED (**6** personal-name lines, not the 2 the plan measured; AP twin re-diffed and restamped)
 - [ ] **Part 6 · H / SCC-176** — the plan-time port checklist
 - [ ] **Part 7 · F / SCC-174** — jira_feed check stops blessing a forked Dev Record ⛔ CUT LINE
 - [ ] **Part 8 · C / SCC-171** — the token path as git gives it
