@@ -67,7 +67,7 @@ description: "Git policy: main is the ONLY long-lived branch. Each epic gets a s
 | Your own `claude/*` story branch (commits **and** pushes) | **FREE** — no approval, loops/retries fine |
 | The epic branch (`epic/*`) — a story landing | **Daniel's sign-off** — his in-the-moment "approved", or invoking `/cicd-update-sprint-memory` (which IS the sign-off) |
 | A `chore/*` branch (commits and pushes) | **FREE** — the merge back to `main` is what's gated |
-| `main` | **Only through `/cicd-push-e2e`** (epic merge, full gate + sign-off) or **`/smh-close-task-merge-tree`** (task merge — preflight + the lane's gate; invoking it IS the sign-off), or Daniel's direct in-the-moment ask. Never on an agent's own initiative. |
+| `main` | **Only through `/cicd-push-e2e`** (epic merge, full gate + sign-off) or **`/smh-close-task-merge-tree`** (task merge — preflight + the lane's gate; invoking it IS the sign-off), or the **direct prose lane** (SCC-183 — one commit, allowlisted paths only, `--direct` token; see below), or Daniel's direct in-the-moment ask. Never on an agent's own initiative. |
 
 Approval for an epic-branch landing or a `main` merge is **per-action and never carries forward**.
 One "approved" lands one story; the next needs its own.
@@ -97,6 +97,31 @@ One "approved" lands one story; the next needs its own.
    lands all six on one approval — reproduced during SCC-77's own review. The same invariant refuses
    a force-push rewind, which is the destructive twin of the delete that was already refused.
    The minter refuses a stacked batch too, so it fails where the message can still name the fix.
+
+   ⭐ **The direct prose lane (SCC-183, 2026-08-16) — the third door, and the only one with no
+   review behind it.** A single commit of **prose** may go straight to `main` with a `--direct`
+   token, skipping the branch, worktree, `--no-ff` merge and close-out. Operator ruling: *"the
+   little changes to documents and updating things that dont touch any code are frustrating."*
+
+   Because nothing reviews it, the path **allowlist** is the entire safety argument, and it is
+   **fail-closed** — a path is refused unless explicitly permitted:
+
+   | | |
+   |---|---|
+   | **Allowed** | `docs/**` · `_my_resources/**` · `_artifacts/**` · `*.md` at the repo root |
+   | **Refused** | `.agents/**` · `.githooks/**` · `tests/**` · **and everything else** |
+
+   One definition, in `.agents/scripts/git-hooks/direct-push-allowlist.sh`, sourced by the minter
+   *and* the gate — a security predicate kept in two places is one that drifts. The gate also
+   requires a Jira key (**not** conditional on one being present), exactly one non-merge commit on
+   an existing `main`, a non-empty change set, and no symlinks or submodules. Every degenerate
+   input — missing predicate, absent remote ref, empty diff — **refuses**.
+
+   ⛔ **A denylist was tried first and was exploitable.** The deleted first cut (`3c66dee`) refused
+   six *product* directories, five of which do not exist in this repo, so `.agents/` and
+   `.githooks/` were permitted by omission — the fast lane could ship a change to the gate that
+   guards the fast lane, onto the remote, for every machine that pulls. An allowlist cannot fail
+   that way: the next directory anyone adds is refused before anyone remembers this file exists.
 
    Armed by the tracked
    `.agents/scripts/git-hooks/MAIN-PUSH-ENFORCE`; bypass once with `git push --no-verify`.

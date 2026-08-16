@@ -27,20 +27,34 @@ usage() {
 # shape) hung the minter indefinitely — after the merge, before the push. Guard every shift.
 need() { [ $# -ge 2 ] || { echo "mint-push-token: '$1' needs a value." >&2; usage; }; }
 
-CMD=""; BRANCH=""; KEY=""; APPROVAL=""
+CMD=""; BRANCH=""; KEY=""; APPROVAL=""; MODE=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --command)           need "$@"; CMD="$2";      shift 2 ;;
     --branch)            need "$@"; BRANCH="$2";   shift 2 ;;
     --key)               need "$@"; KEY="$2";      shift 2 ;;
     --operator-approval) need "$@"; APPROVAL="$2"; shift 2 ;;
+    --direct|--direct-push) MODE="direct";         shift 1 ;;
     -h|--help) usage ;;
     *) echo "mint-push-token: unknown argument '$1'" >&2; usage ;;
   esac
 done
 
-[ -n "$CMD" ]    || { echo "mint-push-token: --command is required — the token records WHICH door authorised this." >&2; exit 2; }
-[ -n "$BRANCH" ] || { echo "mint-push-token: --branch is required — the token records WHAT is being landed." >&2; exit 2; }
+[ -n "$CMD" ] || { echo "mint-push-token: --command is required — the token records WHICH door authorised this." >&2; exit 2; }
+if [ "$MODE" = "direct" ]; then
+  # ⭐ SCC-183 H1: --key is REQUIRED in direct mode, and this is not belt-and-braces.
+  # The deleted first cut left it optional, and the gate's key assertion was conditional on
+  # the key being present — so omitting it did not fail the check, it removed it, and a
+  # commit with no ticket reference landed on main. The gate now refuses a keyless token on
+  # its own; this makes the failure land at MINT, where the message can still name the fix.
+  # It costs nothing: the armed commit-msg hook already requires a key on every commit here.
+  [ -n "$KEY" ] || { echo "mint-push-token: --key is required in --direct mode." >&2
+    echo "  A direct push skips the review ladder entirely, so the one thing it must never" >&2
+    echo "  skip is being traceable to a ticket." >&2; exit 2; }
+  [ -n "$BRANCH" ] || BRANCH="main"
+else
+  [ -n "$BRANCH" ] || { echo "mint-push-token: --branch is required — the token records WHAT is being landed." >&2; exit 2; }
+fi
 
 # ⛔ THE APPROVAL IS THE OPERATOR'S WORDS, NOT THE AGENT'S INFERENCE (SCC-37, 2026-08-14).
 # The SCC-71 failure recurred in a new coat: an agent read "you can move the ticket to done" as
@@ -106,12 +120,61 @@ REMOTE=$(git rev-parse --verify --quiet refs/remotes/origin/main) || REMOTE=""
 if [ -n "$REMOTE" ]; then
   PARENT1=$(git rev-parse --verify --quiet "${TIP}^1") || PARENT1=""
   if [ "$PARENT1" != "$REMOTE" ]; then
-    echo "mint-push-token: HEAD does not sit exactly one merge above origin/main." >&2
+    if [ "$MODE" = "direct" ]; then
+      echo "mint-push-token: HEAD does not sit exactly one commit above origin/main." >&2
+    else
+      echo "mint-push-token: HEAD does not sit exactly one merge above origin/main." >&2
+    fi
     echo "  origin/main:               $REMOTE" >&2
     echo "  HEAD's first parent:       ${PARENT1:-<none>}" >&2
-    echo "  One sign-off authorises ONE merge (SCC-71). If several merges are stacked here, land" >&2
+    echo "  One sign-off authorises ONE action (SCC-71). If several are stacked here, land" >&2
     echo "  them one at a time - each with its own invocation of the close-out command." >&2
     exit 2
+  fi
+fi
+
+# ── SCC-183: everything below is direct mode only ────────────────────────────────────────
+# The gate re-checks every one of these and IS the authority. They are here because failing
+# at the mint is failing before the operator's approval has been spent: a token refused at the
+# push is discarded, and recovering costs another round of asking for their words.
+if [ "$MODE" = "direct" ]; then
+  if git rev-parse --verify --quiet "${TIP}^2" >/dev/null 2>&1; then
+    echo "mint-push-token: HEAD is a MERGE commit, so --direct does not apply." >&2
+    echo "  Mint without --direct and let the merge path check the branch you are landing." >&2
+    exit 2
+  fi
+
+  # Same predicate the gate applies, sourced from the same file — never a second copy.
+  ALLOWLIST="$(dirname "$0")/direct-push-allowlist.sh"
+  if [ ! -f "$ALLOWLIST" ]; then
+    echo "mint-push-token: --direct needs $ALLOWLIST, which is missing." >&2
+    exit 2
+  fi
+  . "$ALLOWLIST"
+
+  if [ -n "$REMOTE" ]; then
+    TAB=$(printf '\t')
+    # `if`, not `case`: bash 3.2 (macOS /bin/sh) cannot parse `case` inside `$( )`.
+    # See the same note in pre-push-main-approval.sh — it is a real portability trap, not style.
+    BAD=$(git diff-tree -r --no-commit-id --raw "$REMOTE" "$TIP" | while IFS= read -r line; do
+      [ -n "$line" ] || continue
+      dstmode=$(printf '%s' "$line" | cut -c9-14)
+      path=${line#*"$TAB"}
+      if [ "$dstmode" = "120000" ]; then
+        printf '%s\n' "    $path   (symlink)"
+      elif [ "$dstmode" = "160000" ]; then
+        printf '%s\n' "    $path   (submodule)"
+      elif ! direct_push_path_allowed "$path"; then
+        printf '%s\n' "    $path"
+      fi
+    done)
+    if [ -n "$BAD" ]; then
+      echo "mint-push-token: --direct is for prose, and this commit touches paths that are not:" >&2
+      printf '%s\n' "$BAD" >&2
+      echo "  Allowed: docs/** · _my_resources/** · _artifacts/** · *.md at the repo root." >&2
+      echo "  Anything else lands through /smh-close-task-merge-tree or /cicd-push-e2e." >&2
+      exit 2
+    fi
   fi
 fi
 
@@ -137,6 +200,7 @@ umask 077
   echo "tip=$TIP"
   echo "command=$CMD"
   echo "key=$KEY"
+  [ -n "$MODE" ] && echo "mode=$MODE"
   echo "minted=$(date +%s)"
   echo "approval=$APPROVAL"
 } > "$TOKEN"

@@ -83,6 +83,7 @@ re-syncing the twin is an AVCH ticket of its own, not something a lobby lane may
 | **plan** a big Task — subtasks, lanes, the parallel table | `/smh-plan-task <TASK-KEY>`, then `/smh-label-tasks <TASK-KEY>` ([§9](#9-the-task-lane--work-on-the-system-itself)) |
 | **build** a Task — a command, a rule, a gate, the docs | `/smh-quick-dev <KEY>` → `/smh-code-review` → `/smh-close-task-merge-tree` ([§9](#9-the-task-lane--work-on-the-system-itself)) |
 | ⭐ **just get one specific thing done** — write me a guide, fix a reference, tidy a branch mess | `/smh-quick-fix "<the ask>"` — **no plan, no `approved`, no review**; it does not stop to ask whether to start ([§9a](#the-lightweight-lane--smh-quick-fix)) |
+| ⭐ **push a doc/README/badge fix straight to `main`** — no branch, no worktree, no merge | the **direct prose lane**: commit on `main` with the key, `mint-push-token.sh --direct`, push. **Allowlisted paths only** ([§7](#7-landing-and-shipping--the-close-out-family)) |
 | land **several** finished Tasks at once | `/smh-merge-multiple-workingtrees` — one sign-off per lane ([§7](#7-landing-and-shipping--the-close-out-family)) |
 | see what a command will do before typing it | [Part VI — the command atlas](#18-every-command-one-diagram) |
 | know whether a review still counts | [§11 — the decision tree](#11-is-this-review-still-valid) |
@@ -988,7 +989,47 @@ flowchart TD
     LANE -- "no — the GitHub check + the token" --> MAIN
     LANE -- "yes — handed to /cicd-push-e2e\nlight gate, your direct ask" --> MAIN
     INCID["claude/incident-*\nthe incident pipeline's hotfix lane"] -.->|"/cicd-mobile-error-team\nyour merge decision, real CI"| MAIN
+    PROSE["a single prose commit ON main\ndocs, README, badges"] -.->|"mint-push-token.sh --direct\nallowlist + Jira key, no review"| MAIN
 ```
+
+### ⭐ The direct prose lane — the third door to `main` (SCC-183)
+
+**For the frustrating ones: a typo, a README line, a badge.** Those paid the full branch → worktree
+→ review → `--no-ff` merge → close-out toll, which is the right price for code and an absurd one for
+a sentence. This lane drops it:
+
+```bash
+# 1. commit on main, key in the subject (the commit-msg hook requires it anyway)
+git add docs/some_guide.md && git commit -m "SCC-000 docs: fix the broken link"
+
+# 2. mint a DIRECT token — --key is mandatory here
+sh .agents/scripts/git-hooks/mint-push-token.sh --direct \
+   --command /smh-quick-fix --key SCC-000 --operator-approval "<the operator's words>"
+
+# 3. push
+git push origin main
+```
+
+⛔ **This is the only door to `main` with no review behind it, so the allowlist IS the review** —
+and it is fail-closed: **a path is refused unless it is explicitly permitted.**
+
+| | |
+|---|---|
+| **Allowed** | `docs/**` · `_my_resources/**` · `_artifacts/**` · `*.md` at the repo root |
+| **Refused** | `.agents/**` · `.githooks/**` · `tests/**` · **and everything else** |
+
+The gate additionally requires a Jira key in the message, exactly one **non-merge** commit sitting on
+an existing `main`, a non-empty change set, and no symlinks. A missing allowlist file, an absent
+remote ref or an empty diff all **refuse** — there is no input that reads as a pass.
+
+**One bad path poisons the whole commit.** Pairing a rule change with a doc edit does not smuggle it
+through; the commit is refused entire. If you need that, use `/smh-close-task-merge-tree`.
+
+> **Why not a denylist of "deployable" directories?** That was the first attempt and it was
+> exploitable. It refused `backend/ frontend/ firebase/ functions/ mobile/ .github/` — five of which
+> do not exist in this repo — so `.agents/` and `.githooks/` were permitted by omission, and the fast
+> lane could ship a change to the gate guarding the fast lane. Full write-up:
+> [`.agents/rules/git-policy.md`](../../.agents/rules/git-policy.md).
 
 ### ⭐ Every lane gets its own workspace — not just story lanes
 
