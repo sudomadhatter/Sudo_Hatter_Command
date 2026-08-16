@@ -190,9 +190,15 @@ def main() -> int:  # noqa: C901 — a table-driven suite, flat on purpose
             ok, why = land_pr.merge_eligible(repo, [])
             c.check("eligible/refuses-the-empty-set", not ok, why)
 
+            # Double-covered on purpose: `Projects/AGY` is not `.md`, so is_prose refuses it
+            # even with the mode check gone (the sweep measured this — M9 could not kill via
+            # this case). Kept as defence in depth, but it is NOT what proves the mode check.
             ok, why = land_pr.merge_eligible(repo, [("160000", "Projects/AGY")])
             c.check("eligible/refuses-a-gitlink", not ok, why)
 
+            # ⛔ THIS is the case the mode check alone can save. `docs/link.md` is prose by every
+            # path test there is; only its git mode says it is a symlink — pointing, say, at
+            # `.claude/settings.json`. Delete the mode check and this is the case that reds.
             ok, why = land_pr.merge_eligible(repo, [("120000", "docs/link.md")])
             c.check("eligible/refuses-a-symlink", not ok, why)
 

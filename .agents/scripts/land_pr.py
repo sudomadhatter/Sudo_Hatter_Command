@@ -95,9 +95,15 @@ def is_prose(path: str) -> bool:
         return False                       # the guides that tell a human what to run on a new
         #                                    machine. Refusing only `.../scripts/` missed by one
         #                                    directory level and admitted all six.
-    if "/" not in p:
-        return False                       # no repo-root file is prose. `router.md` IS the
-        #                                    master router; it was an allow arm for three cuts.
+    # ⛔ There is deliberately NO `if "/" not in p: return False` arm here, and the reason is
+    # worth keeping. Root `router.md` — the MASTER ROUTER — was an explicit allow arm for three
+    # cuts of the plan, and cutting THAT ARM is the fix. A root guard on top of it is
+    # unreachable: no root path can start with `docs/`, `_artifacts/` or `_my_resources/`, so
+    # the allow arm below already refuses every one of them. The mutation sweep proved it —
+    # deleting the guard killed nothing (M3 SURVIVED). Unreachable defence reads like
+    # protection and tests like decoration, which is the same tripwire that cut the `..` and
+    # absolute-path arms. `prose/no-root-file-is-prose` stays as a PROPERTY test over the real
+    # repo: it is what fails the day someone adds a root-level allow arm back.
     if not p.endswith(".md"):
         return False                       # `docs/.maps-state.json` is `check_maps`' own
         #                                    baseline and one of THIS lane's gates.
