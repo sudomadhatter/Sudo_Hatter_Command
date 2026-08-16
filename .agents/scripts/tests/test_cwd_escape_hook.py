@@ -104,6 +104,12 @@ def main() -> int:
             code, out = call(cmd, home=home)
             c.check(f"M3 allowed (tilde spelling of the same path): {cmd}",
                     not blocked(out) and code == 0, f"exit={code} {out.strip()[:150]}")
+        # ⛔ The REFUSE direction, in the same breath — without it the allow above proves
+        # nothing: an unexpanded `~/x` returns "cannot tell", which ALSO allows. Only a tilde
+        # path that must be REFUSED can tell expansion apart from a shrug (mutant N9).
+        code, out = call("cd ~/other-repo && ls", home=home)
+        c.check("M3 control: a tilde path OUTSIDE the workspace is still refused",
+                blocked(out), f"exit={code} {out.strip()[:150]}")
         # The cwd-RELATIVE branch, with a cwd that is not the root. Until the frozen default
         # was fixed every payload said `cwd: ""`, so this arm never ran: `cd ..` from a nested
         # dir is INSIDE the workspace and must pass, while the same `cd ..` from the root
