@@ -1,9 +1,9 @@
-# SCC-164 — Command-surface correctness family: twelve parts, one lane, one gate, one close-out
+# SCC-164 — Command-surface correctness family: thirteen parts, one lane, one gate, one close-out
 
 **Lane:** `chore/SCC-164-command-surface-family` · worktree `.claude/worktrees/SCC-164-command-surface-family` ·
 cut from `origin/main` @ `a0aceaf` (the SCC-163 merge) on 2026-08-15 · LANE: LOCAL (this repo has no
 deployable surface) · closes through `/smh-close-task-merge-tree --expect-key SCC-164`.
-**Manifest:** [task.yaml](task.yaml) declares all twelve subtasks as `riders:` — the close ceremony flips
+**Manifest:** [task.yaml](task.yaml) declares all thirteen subtasks as `riders:` — the close ceremony flips
 each rider to Done, then the parent (SCC-156 mechanism, already built).
 **Board:** [SCC-164](https://sudo-command.atlassian.net/browse/SCC-164) is the INDEX; every part's full
 defect, evidence, acceptance and scope lives on its subtask. This plan carries the DECISIONS, the RED /
@@ -39,7 +39,7 @@ approval). See § STOP.
 
 ## Why one lane, and how it is still safe
 
-Twelve subtasks on one branch is deliberate (rule 2) and legal (`riders:`). What keeps it safe:
+Thirteen subtasks on one branch is deliberate (rule 2) and legal (`riders:`). What keeps it safe:
 
 - **Per-part commits, keyed by the subtask** (`SCC-178 fix(gate_receipt): …`). task_preflight compares
   `--expect-key` to the *branch* key only (`task_preflight.py:155-200`) and the commit-msg hook accepts
@@ -88,9 +88,12 @@ verbatim, before either check is written. Every other decision in this plan is s
 6. **Find a home, never mint.** Anything discovered that this lane cannot land goes as the next
    lettered subtask under SCC-164 (or the parent whose SCOPE names the file), with an index row and a
    read-back. Say "none found" out loud before minting anything.
-7. **Never `git reset --hard` on the lobby's main checkout.** The SCC-163 close-out did, and it wiped
-   every uncommitted edit there (memory rows, a memory file's edit, the SCC-169 tick). Recovery is
-   `--ff-only`, never reset. Part G removes the reason anyone reaches for it.
+7. ⛔ **Never `git reset --hard` in the lobby's main checkout — it is never a clean tree.** It hosts
+   `_artifacts/_memory/`, which every session on this machine writes, so a reset there eats OTHER
+   sessions' work: the SCC-163 close-out destroyed two MEMORY.md rows, a 1,869-char AVCH-59 memory
+   section and the SCC-169 tick, none of them its own. Recovery is `git pull --ff-only`, or
+   `git reset --keep` (refuses instead of discarding), or `git reset --soft HEAD~1` to undo a local
+   commit. Part L fixes the banner that printed `--hard`; Part G removes the reason it gets read.
 8. **Every git call carries `-C`/`--repo`/`--branch`; echo the target from `rev-parse`.** Nothing
    guards the merge target.
 
@@ -441,7 +444,7 @@ check before that). Run every independent verification in ONE block (SCC-170 rul
 ## Close-out
 
 `/smh-close-task-merge-tree --expect-key SCC-164` from the lobby's main checkout after the pre-merge
-`rm` above. It flips the twelve riders, then the parent, files ONE Dev Record on SCC-164 (merge sha)
+`rm` above. It flips the thirteen riders, then the parent, files ONE Dev Record on SCC-164 (merge sha)
 and the ceremony's pointer on each rider. SCC-162 and SCC-163 close under Part G's live acceptance
 (step 6 there), inside this lane, before the merge. Merge sign-off is the operator's verbatim words in
 that turn — never solicited.
