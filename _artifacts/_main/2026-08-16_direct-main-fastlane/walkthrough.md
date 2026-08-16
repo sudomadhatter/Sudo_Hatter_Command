@@ -155,7 +155,7 @@ ruling would not be: a derived corollary is a proposal, never law.
 
 ---
 
-**Verdict: PASS @ <shipping-sha>** — builder's self-review. The measured evidence behind it is the
+**Verdict: PASS @ 1149640c** — builder's self-review. The measured evidence behind it is the
 suite (33/33), the RED-first sequence on both test files, and the 15/15 mutation sweep with restore
 verified; the three defects listed above were found by *running* rather than reading, and are fixed
 with tests that kill their mutants. ⛔ It is **not** an independent review: an independent pass
