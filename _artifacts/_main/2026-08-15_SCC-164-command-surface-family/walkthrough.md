@@ -31,7 +31,7 @@ SCC-163). The arming ruling was closed separately, quoted in § ARMING.
 - [x] **Part M · SCC-182** — a `cd` out of the workspace retargets every later relative path (discovered mid-lane, minted as Part M)
 - [x] **Part 5 · B / SCC-166** — cicd-code-review gains its twin's two steps, ADAPTED (**6** personal-name lines, not the 2 the plan measured; AP twin re-diffed and restamped)
 - [x] **Part 6 · H / SCC-176** — the plan-time port checklist (the sketched `\bport\b` key matched **7** unrelated bodies and none of the three; re-keyed on the phrase step 2 introduces)
-- [ ] **Part 7 · F / SCC-174** — jira_feed check stops blessing a forked Dev Record ⛔ CUT LINE
+- [x] **Part 7 · F / SCC-174** — jira_feed check stops blessing a forked Dev Record; the slug now has ONE source and three Task surfaces stopped typing it (the sweep found a case that never reached the code it named) ⛔ CUT LINE
 - [ ] **Part 8 · C / SCC-171** — the token path as git gives it
 - [ ] **Part 9 · G / SCC-175 + Part 12 · L / SCC-180** — no post-merge write to main; the `--hard` remedy
 - [ ] **Part 10 · D / SCC-172** — three fail-opens in the main-write gate
@@ -593,6 +593,123 @@ I/O, lane boundaries and the blocker token, and names no phases of its own. The 
 therefore reaches the autopilot lane through the reference it already carries; a second copy here
 would be the drift the stamp exists to prevent. **Re-diffed, nothing ported, restamped with that
 reasoning** — never a bare bump.
+
+
+# Part 7 — F (SCC-174): a forked Dev Record stops reading as "the designed state"
+
+## The gap, and why it is worse than a missing check
+
+`jira_feed.py devrecord` decides *update this record* vs *post a new one* from the **slug**, never
+from `--key`. So the same lane spelled two ways is two records. Then `check` looked at two ids and
+said:
+
+> `2 Dev Records, one per lane (…) — a follow-on lane rides the ticket it came from, so this is the
+> designed state`
+
+— exit 0. It only ever **warned** once the two ids **matched**. Read that twice: the gate was blind
+precisely when the bug happens (the slugs differ) and loud only after it had been fixed. It answered
+*"are these two lanes?"* when the question is *"is this one lane filed twice?"* — Part D's shape,
+in the board feed instead of the push hook.
+
+It is not hypothetical. **AVCH-59, 2026-08-15:** `/smh-quick-dev` filed under `main-write-gate`; the
+close-out passed `avch-59-main-write-gate` — **the branch slug, which is exactly what the ceremony's
+own text asked for.** Two records, `check` exit 0, and ~7 calls to detect, fix, verify and delete.
+
+## What settles it: the repo, not the strings
+
+The id strings cannot tell the two situations apart, so F2 stops asking them. **An id is a lane only
+if the repo can prove it**, from two sources:
+
+| Source | What it covers | What breaks if you drop it |
+|---|---|---|
+| a `branch:` in any `task.yaml` **git tracks** | the durable half — a landed lane's manifest is committed forever | every landed lane's record reads as a fork the moment a second lane joins the ticket (**F17**) |
+| a **prefixed** ref, `refs/heads` **and** `refs/remotes/*` | an unlanded lane (local branch, manifest not yet committed) and a landed one (local branch pruned, `origin/` survives) | either half alone turns a real lane into a fork |
+
+An id nothing claims is a **FORKED Dev Record** → exit 1, naming the orphan id and which record is
+newest, with the remedy: delete the record filed under the slug that is not a lane, re-run the block.
+Never `--append-new` past it.
+
+**Two decisions inside that are load-bearing, and each has a test that fails without it:**
+
+- **`git ls-files`, never `Path.glob("**/task.yaml")`.** The glob is the obvious shape and it is
+  wrong *here*: this repo is the lobby, where `Projects/` is gitignored and holds **other repos'**
+  manifests and `.claude/worktrees/` holds a **second copy of this repo's own tree**. A glob reads
+  both and hands back slugs that prove nothing about this repo's lanes. The fixture therefore carries
+  an untracked manifest under a gitignored dir *and* a plain uncommitted one — the two
+  implementations cannot both pass.
+- **`lane_slugs` returns `None`, not an empty set, when the repo cannot answer.** *"No lane exists"*
+  is a verdict; *"this is not a git checkout"* is a missing instrument. Blessing a pair because the
+  evidence could not be **read** is the same defect in a new coat, so that path warns and says so.
+
+## F3 — the slug has ONE source, and three surfaces stopped typing it
+
+`--story` is now optional and defaults to the `branch:` in the manifest for the branch you are
+standing on; a *different* slug WARNS and names both. **`/smh-quick-dev`, `/smh-quick-fix` and
+`/smh-close-task-merge-tree` all drop the flag** — the ceremony text and what quick-dev files under
+can no longer disagree, because they read the same file. (`/smh-quick-fix` was not on the plan's file
+list; leaving a third Task surface saying `--story <branch-slug>` would have left the divergence F3
+exists to end.)
+
+A **BMAD story lane still passes its story id and is deliberately silent.** It matches no manifest
+and never should; warning there would put a false alarm on every story close-out in the system. That
+is narrower than F3's literal words (*"WARN when a passed slug matches no manifest"*) and it is the
+half of those words that is true.
+
+**The tracked/untracked split.** `lane_slug_here` may read an **untracked** manifest; `lane_slugs`
+may not. The difference is the anchor: the first intersects the manifests with the branch you are
+**on**, so a manifest git has not seen yet can only ever name *your* lane — and `/smh-quick-fix`
+writes its `task.yaml` in the same breath as the Dev Record, so demanding a commit first would kill
+the default on the one lane that most needs it. The fork verdict has no such anchor, so it trusts
+nothing git is not tracking.
+
+## Evidence
+
+**RED first — `red-part7.txt`, 4/13.** And the four passes are the point: three of them are the
+*negative controls* (two manifested lanes, an `origin/`-only lane, a manifest-only lane), all green
+against a `check` that exited 0 on **everything**. A negative control that passes before the code
+exists is doing its job and is worthless as proof — which is exactly why it cannot be the only
+evidence. The nine reds named the fork verdict, the orphan naming, "newest", the untracked case, the
+non-git case, and all three F3 clauses.
+
+GREEN **17/17** in the block · **257/257** in the file · suite **32/32** · lint **0 error(s), 0
+warning(s)**.
+
+**Mutation sweep — `sweep-part7.json`, 9/9 killed by their declared case**, restore verified against
+pinned sha `7d3c181b`. And the first run did **not** come back clean:
+
+> ⛔ **F3c SURVIVED.** The mutant removed the manifest cross-check in `lane_slug_here`, so any
+> prefixed branch would count as a lane. The case declared against it — *"no manifest for this
+> branch → `--story` is still REQUIRED"* — ran on the non-git fixture, where `git rev-parse` fails
+> and the **branch guard** answered first. The cross-check was never reached, so the case passed with
+> the mutant in place. Fixed by adding the case that actually reaches it: a real git repo, standing
+> on a prefixed branch that no manifest declares. The old case stays, retitled to say what it really
+> proves (*"off a git checkout entirely"*).
+
+That is the sweep earning its keep in the shape SCC-179 built it for: a case that names a line it
+never executes reads exactly like coverage.
+
+## One legacy assertion RETARGETED, not deleted
+
+`check: two lanes, two story ids -> exit 0 (the designed state)` (SCC-113) now reads **exit 1, not
+blessed**. Its fixture is a plain directory, not a git checkout, so it can no longer answer the
+question — and *"cannot answer"* must not read as *"designed state"*. The designed-state control
+moved into the new block, backed by committed manifests and real refs. SCC-113's grouping-not-counting
+fix is untouched and still what gets a genuine two-lane ticket past the duplicate arm.
+
+## Read as a gate change
+
+`check` exit 1 **already** blocked the close-out — `smh-close-task-merge-tree.md` says
+`check --key <KEY>   # must exit 0`, and the check has warned on two records under one id since
+SCC-49. F arms no new blocking path; it makes an existing one answer the question it was written for,
+on the acceptance the ticket itself states (F1: *"must exit non-zero"*). Not a § ARMING item, and no
+operator ruling is owed for it.
+
+## Known limit — loud, not silent
+
+A BMAD story id is not a branch slug, so two of them on one ticket would read as a fork. Ids are
+branch slugs and story numbers, and a story ticket carries one story, so the shape does not occur
+today. Noted rather than guarded — the same call `record_story_id` already made about parentheses in
+an id, and the failure is a warning naming both ids, not a silent wrong answer.
 
 
 ## Your Actions
