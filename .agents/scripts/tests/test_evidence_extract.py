@@ -66,6 +66,17 @@ class Guard:
     def show(self, name: str, ok: bool, detail: str = "") -> None:
         self._cases.check(name, bool(ok), detail)
 
+    def block(self, label: str) -> bool:
+        """Pass-through to `Cases.block`, so `--case` can select a section of this file.
+
+        Added for SCC-187: `mutation_sweep.py` appends `--case <block>` to every mutant run, and
+        a file declaring NO blocks leaves `blocks_run` at 0, which `_harness.finish()` turns into
+        `NO_MATCH` (exit 3). The sweep reads that as SWEEP ERROR rather than a kill — correctly —
+        so an unblocked file cannot be swept at all. Unfiltered, every block still runs and this
+        is always True, so the file behaves exactly as it did before it was wired.
+        """
+        return self._cases.block(label)
+
     def finish(self) -> int:
         return self._cases.finish()
 
@@ -264,6 +275,32 @@ def imported_by(blob: str) -> str:
         if ln.startswith("IMPORTED BY:"):
             return ln
     return ""
+
+
+_CALLER_TAGS = ("[importer] ", "[name-match] ")
+
+
+def caller_tag(snippet: str) -> str:
+    """The rank tag a caller snippet leads with, or '' when it carries none (SCC-187)."""
+    return next((t.strip() for t in _CALLER_TAGS if snippet.startswith(t)), "")
+
+
+def caller_files(pkg: dict) -> list[str]:
+    """The FILE of each caller snippet, tag stripped, in emitted order.
+
+    ⚠ Read the file through this, never with `snippet.startswith("<path>:")`. Once a snippet can
+    lead with a tag, a bare `startswith` on the path is False for EVERY snippet whether or not the
+    thing it guards against happened — a negative assertion written that way passes vacuously and
+    stops being evidence. That is exactly what the self-reference counter-example below was.
+    """
+    files = []
+    for snippet in pkg.get("caller_snippets", []):
+        for tag in _CALLER_TAGS:
+            if snippet.startswith(tag):
+                snippet = snippet[len(tag):]
+                break
+        files.append(snippet.split(":", 1)[0])
+    return files
 
 
 def pkg_for(out: str, title: str) -> dict:
@@ -532,8 +569,11 @@ def main() -> int:
                 "CALLER_VISIBLE_MARKER" in callers, "caller missing")
         c.check("findings COUNTER-EXAMPLE: call sites under skip-dirs are never reported",
                 "CALLER_HIDDEN_MARKER" not in callers, "a node_modules/.venv hit leaked in")
+        # Read through caller_files(), NOT `s.startswith("src/pkg/target.py:")` — see its
+        # docstring: a tagged snippet makes the bare form False for every entry, and this row
+        # would pass while reporting nothing (SCC-187).
         c.check("findings COUNTER-EXAMPLE: the finding's own file is not its own caller",
-                not any(s.startswith("src/pkg/target.py:") for s in pkg.get("caller_snippets", [])),
+                "src/pkg/target.py" not in caller_files(pkg),
                 "self-reference reported")
 
         xrefs = "\n".join(pkg.get("cross_ref_snippets", []))
@@ -653,6 +693,88 @@ def main() -> int:
         seg = out.split("_import/usage context:_ ", 1)[-1].split("\n```", 1)[0]
         c.check("pack: the import-context slice caps at exactly 1200 chars",
                 len(seg) == 1200, f"{len(seg)} chars")
+
+    # ── 2c. caller snippets are RANKED by import, never filtered (SCC-187 A1) ──
+    with TempDir() as tmp:
+        if c.block("SCC-187-A1 · caller ranking"):
+            repo = Path(tmp)
+            build_python_repo(repo)
+            # The stock fixture already carries both classes for `target_fn`:
+            #   src/pkg/user_chain.py   `from pkg.target import target_fn` AND calls it -> importer
+            #   caller_visible / sibling / blast_deep   call it, import nothing -> name-match
+            # and the importer sorts LAST in the walk, so an unranked run puts it at the bottom.
+            fpath = findings_file(repo, [{
+                "title": "ranking",
+                "body": "`target_fn` is wrong",
+                "evidence": "",
+                "file_path": "src/pkg/target.py",
+                "line_start": 41,
+            }])
+            rc, out, err = run_ee("--repo", str(repo), "--findings", fpath)
+            rank_pkg = pkg_for(out, "ranking")
+            snippets = rank_pkg.get("caller_snippets", [])
+            files = caller_files(rank_pkg)
+            tags = {f: caller_tag(s) for f, s in zip(files, snippets)}
+
+            c.check("ranking: exits 0", rc == 0, f"exit {rc} err={err[:160]}")
+            c.check("ranking: a file that IMPORTS the subject is tagged [importer]",
+                    tags.get("src/pkg/user_chain.py") == "[importer]",
+                    f"user_chain tagged {tags.get('src/pkg/user_chain.py')!r}")
+            c.check("ranking: a file that only NAME-MATCHES is tagged [name-match]",
+                    tags.get("src/pkg/caller_visible.py") == "[name-match]",
+                    f"caller_visible tagged {tags.get('src/pkg/caller_visible.py')!r}")
+            # ⛔ The load-bearing row. Ranking must never become filtering: a hard import filter
+            # would drop attribute-dispatch call sites, which the module docstring names as
+            # exactly the shape a review needs to see. M1 is the mutant that proves this row.
+            c.check("ranking: BOTH classes survive — ranking is not filtering",
+                    "src/pkg/user_chain.py" in files and "src/pkg/caller_visible.py" in files,
+                    f"a class was dropped; got {files}")
+            # Computed defensively: an unranked run tags nothing, so a bare `min(...)` over the
+            # name-match indices raises ValueError and the row DIES IN SETUP instead of failing.
+            # A red that raises is indistinguishable from a red that asserts, and only one of
+            # those is evidence.
+            imp_at = files.index("src/pkg/user_chain.py") if "src/pkg/user_chain.py" in files else -1
+            nm_at = [i for i, f in enumerate(files) if tags.get(f) == "[name-match]"]
+            c.check("ranking: the importer sorts ahead of every name-match",
+                    imp_at >= 0 and bool(nm_at) and imp_at < min(nm_at),
+                    f"importer at {imp_at}, name-matches at {nm_at}, order is {files}")
+
+    # ── 2d. a LATE importer survives both caps (SCC-187 A2) ───────────────────
+    with TempDir() as tmp:
+        if c.block("SCC-187-A2 · late importer"):
+            repo = Path(tmp)
+            write(repo, "pkg/__init__.py", "")
+            write(repo, "pkg/target.py", "def target_fn(v):\n    return v\n")
+            # 12 name-match callers that sort BEFORE the importer, so the walk fills its own
+            # _CALLER_SNIPPETS cap before ever reaching it. Measured at plan time: on unranked
+            # code the importer is resolved correctly and is ABSENT from the snippets entirely,
+            # which is why a downstream sort alone cannot satisfy this row — the snippet was
+            # never collected. Both the walk order and the cross-identifier sort are required.
+            for i in range(12):
+                write(repo, f"pkg/aa_{i:02d}_caller.py", "x = target_fn(1)  # NAME_MATCH\n")
+            write(repo, "pkg/zz_importer.py",
+                  "from pkg.target import target_fn\n\ny = target_fn(2)  # LATE_IMPORTER\n")
+
+            fpath = findings_file(repo, [{
+                "title": "late",
+                "body": "`target_fn` is wrong",
+                "evidence": "",
+                "file_path": "pkg/target.py",
+                "line_start": 1,
+            }])
+            rc, out, err = run_ee("--repo", str(repo), "--findings", fpath)
+            late_pkg = pkg_for(out, "late")
+            late_files = caller_files(late_pkg)
+
+            c.check("late importer: exits 0", rc == 0, f"exit {rc} err={err[:160]}")
+            c.check("late importer: it is COLLECTED despite sorting past the walk's own cap",
+                    "pkg/zz_importer.py" in late_files,
+                    f"the importer never made it into the snippets; got {late_files}")
+            c.check("late importer: and it survives the cross-identifier slice at the top",
+                    late_files[:1] == ["pkg/zz_importer.py"],
+                    f"first snippet is {late_files[:1]}")
+            c.check("late importer COUNTER-EXAMPLE: the cap still holds at 10",
+                    len(late_files) == 10, f"{len(late_files)} snippets")
 
     # ── 3. IMPORTED BY — the reason this subtask exists ───────────────────────
     with TempDir() as tmp:

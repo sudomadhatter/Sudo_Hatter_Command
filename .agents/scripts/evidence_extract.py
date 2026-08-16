@@ -66,6 +66,29 @@ inverted by this very paragraph.
   so the split happens here.
 * Concurrency is a thread pool rather than asyncio, bounded at the same 10.
 
+  ── THE CAPS: WHAT WAS TRANSCRIBED, AND WHAT WAS DERIVED (SCC-187) ─────────────────────────
+Every number below the fold was **transcribed** from pr-af `evidence.py` @ `8593130`, and the
+transcription was careful — each one carries the line it came from, and the docstring above says
+why they are not in that project's `config.py`. ⚠ Transcribing a number is not deriving one, and
+nothing here was ever re-derived against THIS repo's files. `_PACK_MAX_CHARS = 16000` is the one
+where that shows: `evidence_extract.py` is ~48,800 bytes, and its first 400 lines — the separate
+`_PACK_MAX_LINES` cap — are already ~20,300, so **the engine cannot pack its own main script**.
+`build_pack`'s own comment concedes the shape of it: a six-file change leaves each file "a
+preamble rather than a readable extent... a trade, not a win."
+
+Only ONE number here was derived rather than inherited: `_CALLER_SNIPPETS` still caps the caller
+search at 10, but *which* 10 is now a ranking (see `_find_function_callers`' `prefer`), because
+measurement showed the walk's own cap silently deciding it.
+
+  ⛔ IF YOU WIRE `--pack` INTO A CALLER, FIX THIS FIRST. When the pack overruns its budget it
+  DROPS whole files (`build_pack`, "pack: <rel> dropped") and trims bodies — and it says so via
+  `_note()`, which writes to **stderr**, while every caller pastes **stdout** into a lens. So the
+  lens is handed a partial evidence set and is never told it is partial: a false all-clear over
+  every file nobody opened, which is the SCC-147 failure class. Nothing calls `--pack` today, so
+  this cannot currently fire. The moment something does, the drop notice has to reach the same
+  stream as the pack, or the truncation has to become a spill that loses nothing. ⛔ Wiring and
+  that fix ship TOGETHER — wiring alone is a net negative.
+
   ── FAILURE CONTRACT ───────────────────────────────────────────────────────────────────────
 This is code, not a review lens: if it dies, the caller runs cold with a note, and it must never
 cap a verdict. So a missing file, an undecodable file, a malformed finding, or a search that blows
@@ -336,15 +359,34 @@ def _extract_mentioned_file_paths(text: str, repo: str) -> list[str]:
 
 
 # ── Caller search (pure Python; replaces `grep -RInE`) ────────────────────────
-def _find_function_callers(repo: str, function_name: str, exclude_rel: str = "") -> list[str]:
+def _find_function_callers(repo: str, function_name: str, exclude_rel: str = "",
+                           prefer: "list[str] | tuple[str, ...]" = ()) -> list[str]:
+    """Call sites for `ident`, capped at `_CALLER_SNIPPETS`, `prefer`-ed files scanned FIRST.
+
+    ⭐ `prefer` is not a nicety and it is not a filter — it is what makes ranking possible at all.
+    This walk stops the moment it has `_CALLER_SNIPPETS` hits, so on a repo where enough
+    lower-value files sort ahead of a high-value one, the high-value file is never READ, never
+    returned, and no downstream sort can reorder a snippet that was never collected. Measured
+    while planning SCC-187: with 12 name-match callers sorting ahead of the importer, the
+    importer resolved correctly and was absent from the output entirely.
+
+    Both groups keep `_repo_files`' sorted order, so the result stays deterministic, and every
+    file is still eligible — a non-preferred file is scanned second, never skipped.
+    """
     ident = function_name.strip()
     if not ident or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", ident):
         return []
     pattern = re.compile(r"\b" + re.escape(ident) + r"\s*\(")
     deadline = time.monotonic() + _SEARCH_SECONDS
 
+    candidates = _repo_files(repo)
+    if prefer:
+        preferred = set(prefer)
+        candidates = ([rel for rel in candidates if rel in preferred]
+                      + [rel for rel in candidates if rel not in preferred])
+
     snippets: list[str] = []
-    for rel in _repo_files(repo):
+    for rel in candidates:
         if len(snippets) >= _CALLER_SNIPPETS:
             break
         if time.monotonic() > deadline:
@@ -554,7 +596,24 @@ def _ts_importers(repo: str, rel: str) -> list[str]:
     return importers
 
 
-def _build_import_context(repo: str, rel: str) -> str:
+def _importers_of(repo: str, rel: str) -> list[str]:
+    """Every file that imports `rel`, dispatched on its extension. `[]` for anything else.
+
+    Split out of `_build_import_context`, which computed this list and kept only the formatted
+    string. `_extract_one` needs the list itself — for caller ranking — and each branch below is
+    a full repo walk under its own deadline, so recomputing it would cost a second walk per
+    finding. One walk, two consumers.
+    """
+    ext = os.path.splitext(rel)[1].lower()
+    if ext == ".py":
+        return _python_importers(repo, rel)
+    if ext in _TS_EXTS:
+        return _ts_importers(repo, rel)
+    return []
+
+
+def _build_import_context(repo: str, rel: str, importers: "list[str] | None" = None) -> str:
+    """`importers` is accepted already-computed; `None` means compute it here (the pack's case)."""
     rel = _resolve_rel(repo, rel)
     if not rel or _under_skip_dir(rel):
         return ""
@@ -568,13 +627,8 @@ def _build_import_context(repo: str, rel: str) -> str:
                     or _JS_SPEC_RE.search(stripped)):
                 imports.append(stripped)
 
-    ext = os.path.splitext(rel)[1].lower()
-    if ext == ".py":
-        importers = _python_importers(repo, rel)
-    elif ext in _TS_EXTS:
-        importers = _ts_importers(repo, rel)
-    else:
-        importers = []
+    if importers is None:
+        importers = _importers_of(repo, rel)
 
     shown_imports = ", ".join(imports[:_IMPORT_LIST]) if imports else "none"
     shown_by = ", ".join(sorted(set(importers))[:_IMPORT_LIST]) if importers else "none"
@@ -876,8 +930,25 @@ def _extract_one(repo: str, finding: dict, patches: dict[str, str],
         _note(f"finding {title!r}: no readable code at "
               f"{str(finding.get('file_path') or '')!r} line {line}")
 
-    callers = _dedupe([snippet for ident in identifiers
-                       for snippet in _find_function_callers(repo, ident, rel)])[:_CALLER_SNIPPETS]
+    # Who imports the finding's file, computed ONCE and spent twice: as the caller search's scan
+    # order, and as the rank tag below. `_build_import_context` takes it too, so the walk that
+    # produces it happens once per finding rather than once per consumer.
+    importers = _importers_of(repo, rel)
+    importer_set = set(importers)
+
+    # ⛔ TAG AND ORDER, NEVER FILTER. A name-match hit is weaker evidence, not absent evidence:
+    # dropping it would take attribute-dispatch call sites (`self.<attr>.<method>()`) with it,
+    # and that is precisely the shape this file exists to surface. The tag lets the reader
+    # discount a hit; a filter would decide for them, invisibly.
+    tagged = ["[importer] " + snippet if snippet.split(":", 1)[0] in importer_set
+              else "[name-match] " + snippet
+              for ident in identifiers
+              for snippet in _find_function_callers(repo, ident, rel, importers)]
+    # Stable, and BEFORE the cap: this slice runs across up to `_MAX_IDENTIFIERS_PER_FINDING`
+    # identifiers, so one noisy identifier can fill all ten slots on its own. Sorting after the
+    # slice would rank ten snippets that had already lost the importer.
+    tagged.sort(key=lambda snippet: 0 if snippet.startswith("[importer] ") else 1)
+    callers = _dedupe(tagged)[:_CALLER_SNIPPETS]
 
     cross_refs = _dedupe([
         _read_code_snippet(repo, path, 1, _PRIMARY_CONTEXT)
@@ -890,7 +961,7 @@ def _extract_one(repo: str, finding: dict, patches: dict[str, str],
         "caller_snippets": callers,
         "cross_ref_snippets": cross_refs,
         "diff_hunk": _extract_diff_hunk(patches, rel, line),
-        "import_context": _build_import_context(repo, rel),
+        "import_context": _build_import_context(repo, rel, importers),
         "related_code": _extract_blast_radius_code(repo, rel, identifiers, blast_radius),
     }
 
