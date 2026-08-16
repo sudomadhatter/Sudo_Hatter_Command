@@ -1,5 +1,7 @@
 {
-  "test": [".agents/scripts/tests/test_stale_base_refs.py"],
+  "test": [
+    ".agents/scripts/tests/test_stale_base_refs.py"
+  ],
   "mutants": [
     {
       "id": "M1",
@@ -7,7 +9,7 @@
       "original": "git -C <each-other-tree> diff --name-only origin/main...HEAD",
       "mutated": "git -C <each-other-tree> diff --name-only main...HEAD",
       "case": "no command diffs, counts or cuts against a bare local",
-      "block": "A1 ·"
+      "block": "A1 \u00b7"
     },
     {
       "id": "M2",
@@ -15,7 +17,7 @@
       "original": "return [h for h in hits if (h[0], h[2]) not in ALLOWED]",
       "mutated": "return [h for h in hits if h[0] not in {k[0] for k in ALLOWED}]",
       "case": "nor does the same text in a DIFFERENT file",
-      "block": "A4 ·"
+      "block": "A4 \u00b7"
     },
     {
       "id": "M3",
@@ -23,15 +25,15 @@
       "original": "MIN_FILES = 10",
       "mutated": "MIN_FILES = 0",
       "case": "an empty folder FAILS the floor",
-      "block": "A4 ·"
+      "block": "A4 \u00b7"
     },
     {
       "id": "M4",
       "file": ".agents/scripts/tests/test_stale_base_refs.py",
-      "original": "(\"range-left\", re.compile(r\"(?<![\\\\w/.-])main\\\\.\\\\.\\\\.?\")),",
-      "mutated": "(\"range-left\", re.compile(r\"main\\\\.\\\\.\\\\.?\")),",
+      "original": "(\"range-left\", re.compile(r\"(?<![\\w/.-])main\\.\\.\\.?\")),",
+      "mutated": "(\"range-left\", re.compile(r\"main\\.\\.\\.?\")),",
       "case": "quiet: origin/main...HEAD",
-      "block": "A3 ·"
+      "block": "A3 \u00b7"
     }
   ]
 }
