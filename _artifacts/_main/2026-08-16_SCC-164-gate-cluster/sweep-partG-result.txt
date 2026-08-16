@@ -1,0 +1,3 @@
+[SWEEP ERROR] these files are already dirty, so residue left by this sweep would be INDISTINGUISHABLE from your own edits (SCC-144):
+         .agents/scripts/jira_feed.py
+         Commit them first, then sweep what will actually land.

@@ -2308,6 +2308,123 @@ Nothing is actually owed.
                     code == 2 and "no task.yaml declares the branch" in out,
                     f"exit={code} {out.strip()[:300]}")
 
+    # ── G (SCC-175) · the merge row is COMPUTED, and a tick is only a claim ───────────────
+    with TempDir() as tmp:
+        if c.block("G · SCC-175: the merge row is computed from the repo, never from a tick"):
+            import jira_feed  # noqa: E402 — the tests run scripts/ on sys.path
+
+            def git(repo, *a):
+                return subprocess.run(["git", *a], cwd=str(repo), capture_output=True, text=True)
+
+            def lane(name: str, *, land: bool, row: str, tick: str = " ",
+                     prune: bool = False, verdict: bool = False, commit_wt: bool = True):
+                """A repo whose `main` has (or has not) absorbed a lane, plus its artifacts."""
+                repo = tmp / name
+                repo.mkdir()
+                bare = tmp / f"{name}.git"
+                git(repo, "init", "-q", "-b", "main")
+                git(repo, "config", "user.email", "t@t.t")
+                git(repo, "config", "user.name", "t")
+                (repo / "README").write_text("x\n")
+                git(repo, "add", "-A"), git(repo, "commit", "-qm", "base", "--no-verify")
+                git(repo, "init", "--bare", "-q", str(bare))
+                git(repo, "remote", "add", "origin", str(bare))
+                git(repo, "push", "-q", "--no-verify", "origin", "main")
+
+                branch = "chore/SCC-999-lane"
+                git(repo, "checkout", "-q", "-b", branch)
+                d = repo / "_artifacts/_main/2026-08-16_lane"
+                d.mkdir(parents=True)
+                (d / "task.yaml").write_text(f"task_key: SCC-999\nbranch: {branch}\n")
+                (d / "walkthrough.md").write_text(
+                    "# W\n\n" + ("Verdict: PASS @ HEADSHA\n\n" if verdict else "")
+                    + f"## Your Actions\n\n- [{tick}] {row}\n")
+                git(repo, "add", "-A")
+                if commit_wt:
+                    git(repo, "commit", "-qm", "lane work", "--no-verify")
+                tip = git(repo, "rev-parse", "HEAD").stdout.strip()
+                if verdict:  # rewrite the placeholder now that the sha exists, and re-commit
+                    wtp = d / "walkthrough.md"
+                    wtp.write_text(wtp.read_text().replace("HEADSHA", tip))
+                    git(repo, "add", "-A"), git(repo, "commit", "-qm", "verdict", "--no-verify")
+                    tip = git(repo, "rev-parse", "HEAD").stdout.strip()
+                # ⛔ Only go back to `main` when the lane LANDS. On an unlanded fixture the
+                # artifacts exist solely on the lane branch, so checking out main deletes the
+                # very walkthrough the case is about — the first cut did exactly that and died
+                # in `committed_copy` on a directory that no longer existed.
+                if land:
+                    git(repo, "checkout", "-q", "main")
+                    git(repo, "merge", "-q", "--no-ff", "--no-verify", branch, "-m", "merge")
+                    git(repo, "push", "-q", "--no-verify", "origin", "main")
+                git(repo, "fetch", "-q", "origin")
+                if prune:
+                    git(repo, "branch", "-q", "-D", branch)
+                return repo / "_artifacts/_main/2026-08-16_lane/walkthrough.md"
+
+            DOOR_ROW = "**Merge and close out** — `/smh-close-task-merge-tree --expect-key SCC-999`"
+
+            # G1 · the row that HELD every landed lane now clears — on evidence, not a tick.
+            st = jira_feed.merge_row_state(lane("g1", land=True, row=DOOR_ROW))
+            c.check("G1 · an OPEN merge row whose lane IS on origin/main is SATISFIED",
+                    st is not None and st["satisfied"] and st["source"] == "HEAD",
+                    str(st))
+
+            # G2 · ⭐ THE POINT. A tick is a claim; the claim is checked.
+            st = jira_feed.merge_row_state(lane("g2", land=False, row=DOOR_ROW, tick="x"))
+            c.check("G2 · a TICKED merge row on a lane that never landed is NOT satisfied",
+                    st is not None and not st["satisfied"] and "NOT an ancestor" in st["why"],
+                    "a `- [x]` closes the ticket on a claim nobody checked - this is the "
+                    f"self-certification house law bans: {st}")
+
+            # G3 · negative control: not landed, still open -> still holds, as it always did.
+            st = jira_feed.merge_row_state(lane("g3", land=False, row=DOOR_ROW))
+            c.check("G3 · (control) an open row on an unlanded lane still HOLDS",
+                    st is not None and not st["satisfied"], str(st))
+
+            # G4 · the pruned-lane fallback (F6a). SCC-162 and SCC-163 were BOTH already pruned
+            # local and remote when this was designed, so without this arm the recogniser could
+            # not compute an answer for either of the two live instances it exists to fix.
+            st = jira_feed.merge_row_state(
+                lane("g4", land=True, row=DOOR_ROW, prune=True, verdict=True))
+            c.check("G4 · a PRUNED lane resolves through the walkthrough's `Verdict: … @ sha`",
+                    st is not None and st["satisfied"], str(st))
+
+            # G5 · unresolvable -> HOLD, naming what it tried. Never a silent pass.
+            wt5 = lane("g5", land=True, row=DOOR_ROW, prune=True)
+            (wt5.parent / "task.yaml").write_text("task_key: SCC-999\n")   # no branch:
+            st = jira_feed.merge_row_state(wt5)
+            c.check("G5 · an UNRESOLVABLE tip HOLDS and says what it tried",
+                    st is not None and not st["satisfied"] and "could not be resolved" in st["why"]
+                    and "Verdict" in st["why"],
+                    "an unresolvable tip is not evidence of a merge: " + str(st))
+
+            # G6 · ⛔ HEAD, NOT THE WORKING TREE (F18). The tick exists only on disk.
+            wt6 = lane("g6", land=False, row=DOOR_ROW)
+            wt6.write_text(wt6.read_text().replace("- [ ]", "- [x]"))      # uncommitted tick
+            st = jira_feed.merge_row_state(wt6)
+            c.check("G6 · an UNCOMMITTED tick does not satisfy the row",
+                    st is not None and st["source"] == "HEAD" and not st["satisfied"],
+                    "SCC-169's tick was left uncommitted in the main checkout and later wiped "
+                    f"by a reset - the committed copy is the only one that survives: {st}")
+
+            # G7 · the recogniser itself, against the LIVE corpus classes measured 2026-08-16.
+            for row, want, why in (
+                    (DOOR_ROW, True, "names a door"),
+                    ("The merge itself — lands via this branch's PR", True, "canonical phrase"),
+                    ("**Land it** — `/cicd-push-e2e`", True, "the other door"),
+                    ("**Rule the landing order.** Recommended: SCC-126 lands first", False,
+                     "a real operator decision"),
+                    ("**Decide whether the CONCERNS is worth clearing before the merge.**", False,
+                     "a real operator decision"),
+                    ("Try the lane on something real", False, "SCC-162's genuinely open row")):
+                c.check(f"G7 · recogniser: {'MERGE' if want else 'not a merge row'} — {why}",
+                        jira_feed.is_merge_row(row) == want, repr(row))
+
+            # G8 · no merge row at all is not the same as a satisfied one.
+            st = jira_feed.merge_row_state(lane("g8", land=True, row="Install the board column"))
+            c.check("G8 · a walkthrough with no merge row returns None, not a verdict",
+                    st is None, str(st))
+
     return c.finish()
 
 

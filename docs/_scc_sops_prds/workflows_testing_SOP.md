@@ -787,6 +787,23 @@ the section even when it is empty. `finish` walks a ladder of holding statuses �
 none of the three, so on SCC the `user-tasks` label is the at-a-glance signal. Adding a column in the
 Jira UI is the whole install, and no code changes when you do.
 
+**⭐ The merge row is the one item `finish` decides for itself (SCC-175).** Almost every walkthrough
+carries a row for the merge, and left open it used to HOLD a ticket whose only outstanding item was
+*the merge that had just landed*. The old remedy was for the close-out to tick it — **after** the
+merge, on `main`, in a commit the write gate then refused, and that refusal is what put `git reset
+--hard` in front of the agent that destroyed three sessions' work. Two changes retired it: the door
+now requires the tick committed **on the lane before the PR opens** (SCC-183), and `finish` no longer
+reads the box at all. It **computes**: is the lane's tip an ancestor of `origin/main`? A row counts as
+the merge row only if it names a door (`/smh-close-task-merge-tree`, `/cicd-push-e2e`) or carries the
+canonical phrase *"the merge itself"* — measured against 145 walkthroughs, because five open rows say
+*merge* or *land* while being real operator decisions (*"Rule the landing order"*), and a bare keyword
+would have cleared all of them. ⛔ **A tick therefore no longer closes a ticket on its own**, which is
+the point: `finish --apply` writes `Done`, and an unverified `- [x]` is the agent certifying its own
+merge. It reads the row from **`HEAD`**, never the working tree, so an uncommitted tick satisfies
+nothing — SCC-169's was left uncommitted and later wiped by a reset. If the lane has not landed, the
+row is put **back** on the owed list with the reason. Every other open box is untouched; those are
+yours.
+
 **⭐ The close-out now leaves a flight event behind (SCC-133, under SCC-38).** Between the gate and
 the merge, Step 2.5 runs `flight_recorder.py record`: one small file per lane under
 `_artifacts/_main/workflow-events/<YYYY-MM>/`, keyed on the walkthrough's verdict sha, carrying the

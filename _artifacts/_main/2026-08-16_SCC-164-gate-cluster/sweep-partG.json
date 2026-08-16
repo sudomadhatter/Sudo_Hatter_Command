@@ -1,0 +1,37 @@
+{
+  "test": ["python3", ".agents/scripts/tests/test_jira_feed.py"],
+  "mutants": [
+    {
+      "id": "M1",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    anc = wf.git([\"merge-base\", \"--is-ancestor\", tip, \"origin/main\"], root)",
+      "mutated": "    anc = wf.git([\"rev-parse\", \"--verify\", \"--quiet\", tip], root)",
+      "case": "G2 ·",
+      "block": "G · SCC-175"
+    },
+    {
+      "id": "M2",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    text, source = committed_copy(wt)\n    lines = list(_unfenced(text.splitlines()))",
+      "mutated": "    text, source = wf.read_text(wt), \"HEAD\"\n    lines = list(_unfenced(text.splitlines()))",
+      "case": "G6 ·",
+      "block": "G · SCC-175"
+    },
+    {
+      "id": "M3",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    m = _VERDICT_RE.search(text)\n    tried.append(\"walkthrough `Verdict: … @ <sha>`\")",
+      "mutated": "    m = None\n    tried.append(\"walkthrough `Verdict: … @ <sha>`\")",
+      "case": "G4 ·",
+      "block": "G · SCC-175"
+    },
+    {
+      "id": "M4",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    return any(d in low for d in MERGE_DOORS) or MERGE_PHRASE in low",
+      "mutated": "    return \"merge\" in low or \"land\" in low",
+      "case": "G7 ·",
+      "block": "G · SCC-175"
+    }
+  ]
+}
