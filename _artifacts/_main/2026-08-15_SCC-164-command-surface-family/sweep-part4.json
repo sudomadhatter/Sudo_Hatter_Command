@@ -1,5 +1,6 @@
 {
   "test": [
+    "python3",
     ".agents/scripts/tests/test_stale_base_refs.py"
   ],
   "mutants": [
