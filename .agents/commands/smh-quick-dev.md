@@ -312,7 +312,26 @@ cut it or name why it stays.
   `<root>/`, another lane's artifacts, any code path.
 - **⭐ Declare the mutant table BEFORE you mutate, and draw every mutant *from the code*.** One row per
   mutant: the mutant, the file, and **the NAMED case it must kill.** Run them as **one sweep**, never
-  one at a time — a sweep improvised one mutant at a time cannot check itself. Then:
+  one at a time — a sweep improvised one mutant at a time cannot check itself.
+
+  **Since SCC-179 the sweep is a SCRIPT, and running it by hand is the defect.** Write the table as
+  JSON and hand it to `mutation_sweep.py`; it refuses to start if a table file is already dirty,
+  restores in a `finally` and on SIGTERM, proves the restore against the pinned pre-sweep sha AND the
+  pre-sweep bytes, and runs the **full** test file unfiltered at the end — the run that would have
+  caught `8681d83`, where every scoped `--case` was green and a live mutant rode into the gate.
+
+  ```bash
+  python3 .agents/scripts/mutation_sweep.py --table _artifacts/_main/<folder>/sweep.json
+  ```
+
+  ```json
+  {"test": ["python3", ".agents/scripts/tests/test_thing.py"],
+   "mutants": [{"id": "M1 what it does", "file": ".agents/scripts/thing.py",
+                "original": "<exact text, EXACTLY once in the file>",
+                "mutated": "<the mutation>", "kills": "<the named case>"}]}
+  ```
+
+  Paste its output into the walkthrough as the sweep record. Then:
   - A **surviving** mutant is a finding.
   - A mutant whose edit does not appear in the original text is **DEFECTIVE** — a SKIP that **counts
     as a survivor** — and it must be re-aimed before it is believed.

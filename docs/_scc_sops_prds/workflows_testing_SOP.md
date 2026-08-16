@@ -1227,12 +1227,28 @@ mutants had already been designed.
 — each mutant, its file, and **the named case it must kill** — and run them as **one sweep**. A sweep
 improvised one mutant at a time cannot check itself; a declared one can.
 
+⭐ **And since SCC-179 you do not run it by hand — `.agents/scripts/mutation_sweep.py` does.** Every
+rule in the table below used to be self-reported, and twice it was reported wrong: SCC-144's
+timeout-killed sweep left a mutated gate on disk, and `8681d83` **committed and pushed a live mutant
+into the gate** because the scoped `--case` re-runs never touched the mutated line. The script takes
+the declared table as JSON and makes each rule mechanical — it refuses to start when a table file is
+already dirty, restores in a `finally` and on SIGTERM, proves the end state twice (the pre-sweep bytes
+*and* `git diff --quiet` against the pinned pre-sweep sha, never a moving HEAD), demands that a kill be
+attributable to the **declared** case, and runs the full file unfiltered at the end. Running the sweep
+by hand is now the defect, not the procedure.
+
+```bash
+python3 .agents/scripts/mutation_sweep.py --table _artifacts/_main/<folder>/sweep.json
+```
+
 | The rule | Why it exists |
 |---|---|
 | A **surviving** mutant is a finding | the coverage hole you came to find |
 | A mutant that **removes nothing** is **DEFECTIVE** — a SKIP that **counts as a survivor** | SCC-144's `M3` commented out one `echo` of a two-line message; the second line still printed the asserted word, so the case passed **correctly**. Read as a coverage gap it buys a test for a hole that does not exist |
 | Mutants are **CODE-DERIVED**, never drawn from your own cases | case-derived mutants are circular — they prove only that the suite agrees with itself. Measured in SCC-144: its 14 case-derived mutants were all killed, and a later set drawn from the code left **24 of 25 surviving** — every survivor a hole the first sweep had reported as covered |
-| **RESTORE** in a `finally`/trap; never start dirty; re-check `git status` after | a `timeout`-killed sweep left a **mutated gate on disk, uncommitted** — and a mutated gate is committable |
+| **RESTORE** in a `finally`/trap; never start dirty; re-check `git status` after | a `timeout`-killed sweep left a **mutated gate on disk, uncommitted** — and a mutated gate is committable. **Enforced by `mutation_sweep.py` since SCC-179**, which also names the file it refuses to start on |
+| A kill must be attributable to the **DECLARED** case | a non-zero exit only says *something* died. `--case "E"` once matched 40 blocks and the sweep recorded "killed by case E" for a case that never ran alone (SCC-156 #1), so a kill needs the declared label on the `FAILED:` line |
+| The **FULL file runs unfiltered** before the next commit | `8681d83`: every scoped case green, the mutant still in the tree, and the bill was a red receipt, a diagnosis, a fix commit and another full suite run |
 
 **Which technique fits which shape** — the part that used to be missing. *RELOCATE the guard* (never
 delete it) is for a structural guard and a behavioral test in the same file. *INVERT the decision* is
