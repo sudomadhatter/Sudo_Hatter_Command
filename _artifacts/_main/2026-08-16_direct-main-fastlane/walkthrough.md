@@ -24,36 +24,61 @@ in a full session. Every gate passed. What failed was `/smh-close-task-merge-tre
 was the problem — the *shape* was: many strings, shared tree. The road that already worked was a
 pull request.
 
-## What was built
+## What shipped (R4) — a deletion, not an addition
 
-| Part | What | State |
-|---|---|---|
-| **A** | `.agents/scripts/land_pr.py` + `test_land_pr.py` (69 cases) | ✅ `05161be` |
-| **B** | both close-out doors split into PR-default + `## Break-glass`; five surfaces each | ✅ `f0c9e48` |
-| **C** | the operator's one-time acts | ⏸ **owed — see below** |
-| **D** | `git-policy.md`, the SOP, `jira_manual.md`, the ticket description | ✅ `05161be` / `f0c9e48` + Jira |
-| **E** | retire R1's `--direct` token push | ✅ `7858710` / `a280117` |
+The operator set three constraints after R3 was built and audited: **not per machine** · **no
+changing the rules for the agent** · **must work for all four platforms**. R3's Part C-2 (allow-list
+lines in `.claude/settings.local.json`) failed all three, and the agent-self-merge split existed
+only because of it. So R4 removed everything that failed a constraint and kept the road that had
+already worked, with the rules exactly as they are — the one that landed PR #5, #6 and #8.
 
-### The check order, and why it is that order
+| | |
+|---|---|
+| **The road** | close-out Steps 0–2.5 unchanged → `gh pr create --base main --head <branch> --fill` → **print the URL, STOP** → *the operator clicks Merge* → `--after-merge <KEY>` verifies with plain git, then Dev Record, ticket, prune |
+| **The gate** | `main-write-gate` on the PR — GitHub refuses the merge button until it is green, for every PR, from every machine, opened by any agent |
+| **The sign-off** | the click. Not a token, not "invoking the command", not an inferred approval |
 
-`R1` repo → `R2` branch shape → `R3` jira key → `R4` dirty tree → **`R7` gh** → **`P` PR state** →
-`R5` nothing-to-land → `R6` diverged → **freshness** → push/create → `R8` eligibility.
+**Deleted:** `land_pr.py` (470 lines) · `test_land_pr.py` (69 cases) · the mutation sweep table and
+result · the `scripts/INDEX.md` row · `## Break-glass` from both doors (~60 lines each) · the
+self-merge split and its `merge_eligible` / `is_prose` predicate · "three roads" from `git-policy.md`
+· the break-glass blocks in the SOP and `jira_manual.md`.
 
-⛔ **`R7` moved ahead of `P` during the build.** The plan had `P` earlier, but `P` is the first check
-that calls `gh` — so a missing `gh` would have produced a raw subprocess error instead of the
-install/login hint `R7` exists to give. Found by running it, not by reading it.
+**Kept:** the two door bodies' PR-default shape and `--after-merge`, both server-side settings, and
+the law/SOP updates — rewritten for one road.
 
-### `merge_eligible` — two predicates, either alone sufficient to refuse
+### Why deleting was right, check by check
 
-```
-lane_qualify says LIGHT   AND   every changed path is prose
-```
+Every refusal `land_pr.py` performed was already held somewhere that works everywhere:
 
-Measured, and the whole reason the second predicate exists: `lane_qualify` rates
-`.claude/hooks/require-push-approval.py` — the agent's own permission hook — **`LIGHT`**.
+| It checked | Already held by |
+|---|---|
+| not a git repo | close-out Step 0 (`rev-parse --show-toplevel`) |
+| branch shape · wrong Jira key | the `commit-msg` hook, and `main-write-gate` on the PR — **server-side** |
+| dirty tree | `task_preflight.py` Step 1: clean **and** pushed |
+| nothing to land | `gh pr create` refuses; the compare page says "nothing to compare" |
+| diverged branch | `git push` refuses a non-fast-forward; force is banned |
+| `gh` missing | the compare URL is printed instead — so **`gh` is now optional**, which it was not before |
+| an existing PR | `gh pr create` prints the existing URL |
+| stale base | `strict_required_status_checks_policy` — server-side, every path, every machine |
+| merge shape | squash/rebase disabled — a repo setting |
+| eligibility, polling, pre-merge ancestry | **nothing — the agent never merges** |
 
-`is_prose` evaluates **refusals first**, and precedence is load-bearing (a path like
-`docs/CLAUDE.md` matches both an allow arm and a refusal).
+### And the break-glass road could never have done its job
+
+I kept it "for when GitHub is down". Measured against its own contents: it pushes to
+`gate/main-<sha>` (**needs github.com**), waits on `main-write-gate` via `gh api` (**needs Actions
+and `gh`**), then mints a token and pushes. That is a strict **superset** of the PR door's
+dependencies — there is no outage in which break-glass works and the PR door does not. It was
+error handling for a state that cannot occur: the same tripwire this lane cut twice elsewhere,
+shipped in the same lane.
+
+### One more thing the constraints fixed
+
+R3 relied on the agent merging prose lanes, which needed the allow-list, which is **gitignored**
+(`.gitignore:56`). Measured while checking: the tracked `.claude/settings.json` has **no `allow`
+list at all** — so no permission grant on this machine has ever travelled to the other one. That is
+a pre-existing property of the system, surfaced by asking the cross-machine question, and it is why
+"the fix needs an allow-list entry" can never be the right shape here.
 
 ## ⛔ The defect this lane kept re-learning — four appearances
 
@@ -71,93 +96,98 @@ The fourth survived the audit that killed the third, because that audit was hunt
 and `router.md` was an exact-path arm. It was found by a twenty-line probe that ran the predicate
 against all 3,235 tracked files and asked what came back.
 
-**So the fix is not another rule.** `AC-4` is now a property test over the real repo — no root file,
-no front door, no non-`.md`, nothing outside the three roots — and every refusal must kill a mutant.
+**And the R4 answer is better than a fifth attempt: the question is gone.** No agent merges, so
+nothing has to decide which files are safe to land unread. Four cuts, two CRITICALs and a mutation
+table went into getting a predicate right that R4 deletes entirely. ⭐ **The lesson worth keeping is
+the technique, not the predicate**: the fourth appearance was found by *running the rule over
+`git ls-files`* instead of reading it, after two careful audits had read it and passed it. Any future
+rule about which files are safe to treat differently should be enumerated against the repo on day one.
 
 ## Evidence
 
 | Gate | Result |
 |---|---|
-| `test_land_pr.py` | **69/69**, RED first (import error before the module existed) |
-| `test_door_preflight_order.py` | **22/22**, RED first (13 failures against the un-edited door) |
-| `run_all.py` | **33/33 files**, exit 0, run **bare** — a piped gate reports `tail`'s exit code |
-| `mutation_sweep.py` (15 declared mutants) | **15/15 KILLED**, restore verified byte-identical |
+| `run_all.py` | **32/32 files**, exit 0, run **bare** (33 before — `test_land_pr.py` was deleted with the script it tested) |
+| `test_door_preflight_order.py` | **15/15** — the lobby door is now checked by **absence** (no mint, no `git push origin main`, no `gate/**` ref) plus the presence of `gh pr create` |
 | `workflow_lint.py --toolkit-only` | 0 errors, 0 warnings |
 | `check_maps.py --depth3-only --strict` | clean |
+| AC-3 — no permission surface touched | `git diff origin/main -- .claude/settings*.json .claude/hooks` = **0 lines** |
+| AC-3b — `.claude/` changes | exactly the two generated `skills/*/SKILL.md` launchers |
+| AC-4 — deletions complete | `git grep -c 'land_pr\|merge_eligible\|is_prose' -- .agents docs` = **0** |
 
-Sweep table and result: [`mutation-sweep.json`](mutation-sweep.json) ·
-[`mutation-sweep-result.txt`](mutation-sweep-result.txt).
+⛔ **Two ACs I wrote were sloppy and were corrected rather than fudged into a pass.** AC-3 originally
+said *"zero files under `.claude/` in the diff"* — impossible, because the two door launchers under
+`.claude/skills/` are **generated from the command's frontmatter** and must move with it. What I
+actually meant, and what is now asserted, is that no **permission** surface is touched. AC-3c
+originally grepped for the string `allow-list` and expected zero; the one hit is the paragraph in
+`git-policy.md` **recording that such an edit was refused**, which is the opposite of requiring one.
+A grep counts mentions, not requirements.
 
-### Three bugs the build found that reading had not
+### Ten door surfaces, kept in agreement
 
-1. **`norm()` written as `lstrip("./")`.** It takes a character *set*, so it ate the leading dot off
-   every `.agents/` and `.claude/` path — `lane_qualify` then stopped classifying them as toolkit,
-   rated them `LIGHT`, and **half of `merge_eligible` was silently switched off while the suite
-   stayed green.** This repo has now shipped that exact bug three times; `lane_qualify.norm`'s
-   docstring exists because of the second. Fixed by importing it rather than writing a fourth.
-2. **`section()` read shell comments as markdown headings.** The break-glass block opens with
-   `# ── Pre-flight the SERVER-SIDE gate …`, which as markdown is an `<h1>` — so extraction stopped
-   two lines in and every break-glass assertion reported the ceremony *missing* on a door that had
-   just been written correctly. Same family as `comment-literals-invert-source-grep-tests`.
-3. **An unreachable guard, proved dead by the sweep.** `if "/" not in p` killed no mutant: no root
-   path can start with `docs/`, so the allow arm already refused `router.md`. The real fix was
-   deleting `router.md`'s allow arm. Cut, with the property test kept.
+Two commands × five surfaces each — `.agents/commands` (the brain), `.opencode/commands` (a
+byte-identical mirror), `.agents/workflows` (Antigravity), and `.claude/skills` + `.agents/skills`
+(generated launchers). The launchers copy the brain's `description:` **verbatim** and
+`is_launcher_for()` compares exactly that, so a frontmatter edit and its regeneration are **one
+commit** or all doors flip to `badlauncher`. `test_command_surfaces.py` is what caught the fifth
+surface existing at all.
 
-### What the ORDER check could not have caught
+⛔ **AC-14b is the check that structural agreement cannot make.** All ten surfaces are generated from
+one source, so **ten consistent copies of a false sentence agree perfectly.** They all said
+*"merges to `main` with `--no-ff` … invoking it IS the merge sign-off"*, which R4 makes false twice
+over. A named-string assertion catches that; a consistency check never can.
 
-Relocating the whole token ceremony under `## Break-glass` leaves every needle present and in
-order, so `REQUIRED_ORDER` **stays green while certifying a road the door no longer takes**. A
-control pins exactly that: `MUTANT_CEREMONY_IS_STILL_DEFAULT` passes the old check and is caught
-only by the section split. All three original negative controls, the `--delete` assertion, the
-flight-recorder ordering and the `PROJECT_DOOR` case survive unchanged (AC-10 / N15).
+### What the ORDER check could not have caught, kept as a control
 
-`AC-14b` is the sibling of the same idea: the five door surfaces are generated from one source, so
-**four consistent copies of a false sentence agree perfectly.** AC-14 structurally cannot catch it;
-a named-string check can.
+`test_door_preflight_order.py` pins the token ceremony's order — and that ordering still binds
+`/cicd-push-e2e`, which ships project epics and still merges locally. But relocating a ceremony
+leaves every needle present and in order, so the order check **stays green while certifying a road
+the door no longer takes**. `MUTANT_CEREMONY_IS_STILL_DEFAULT` pins exactly that: it passes the
+order check and is caught only by checking the section. All three original negative controls, the
+`--delete` assertion and the `PROJECT_DOOR` guard survive unchanged.
 
-## ⏸ Part C — owed by the operator, and the lane is honest about it
+### Bugs found by running rather than reading (R3, kept as record)
 
-1. `gh repo edit --enable-squash-merge=false --enable-rebase-merge=false` — both are **ON** today
-   (measured). Either would put a single-parent commit on `main`.
-2. Allow-list lines in `.claude/settings.local.json`:
-   `Bash(python3 .agents/scripts/land_pr.py *)`, `Bash(gh pr create *)`, `Bash(gh pr view *)`,
-   `Bash(gh pr list *)`. ⛔ **Not** a bare `Bash(gh pr *)` — that is a superset of
-   `gh pr merge --merge` and would hand every future session an unconditional merge that bypasses
-   `merge_eligible` entirely.
-3. **Decide `strict_required_status_checks_policy`** (currently `false`). Setting it `true` closes
-   the stale-PR window on the **click** path, which `land_pr.py` cannot reach. Recommended, and it
-   needs the operator's own words because it can block a shipping path.
+The R3 build is deleted, but three of its findings are about this repo, not about that script:
 
-## ⚠ Declared narrowing — a proposal, not the ruling
+1. **`norm()` written as `lstrip("./")`** — it takes a character *set*, so it ate the leading dot off
+   every `.agents/` and `.claude/` path, and `lane_qualify` stopped seeing them as toolkit paths.
+   This repo has now shipped that exact bug **three times**; `lane_qualify.norm`'s docstring exists
+   because of the second one.
+2. **A fence-blind section reader** — `# ── Pre-flight …` inside a ```bash block is a shell comment,
+   but as markdown it is an `<h1>`. Same family as `comment-literals-invert-source-grep-tests`.
+3. **An unreachable guard** — proved dead because a mutation of it killed nothing.
 
-The ruling was *"doc / index / memory / maps lanes → the agent merges."* This door is **narrower**:
-`.agents/` rules and toolkit `INDEX.md` files still need a click. Measured against real lanes —
-PR #5 (maps) ✅ allowed, PR #8 (memory) ✅ allowed, **PR #6 (SCC-184) ⛔ refused**, because it
-touched `.agents/rules/git-policy.md`. Narrower is the safe direction, but presenting it *as* the
-ruling would not be: a derived corollary is a proposal, never law.
+## The operator's acts — two, both server-side
 
-## What is NOT in this lane
+1. `gh repo edit --enable-squash-merge=false --enable-rebase-merge=false` — **both are ON**
+   (measured). Either rewrites the commit, which would also break `--after-merge`'s
+   `merge-base --is-ancestor` verification.
+2. `strict_required_status_checks_policy: true` on ruleset `20756052` — closes the stale-PR window
+   on the click path. **A yes/no that needs the operator's own words**, because it can block a
+   shipping path.
 
-- The port to project repos (**AVCH-63**) — its own repo, its own ticket, after this lands.
-- Deleting the local token door — kept as break-glass.
-- Widening the prose set — the operator's call.
+Both apply to both machines and all four platforms at once, and neither touches any agent's
+permissions. **Nothing else is owed, on any machine.**
 
 ## Limits
 
-- **`land_pr.py` has never run against real GitHub.** Every test uses an injected `gh` recorder and
-  scratch repos; the one live assertion (`AC-12`, merge-method) is `@live`-guarded and skips
-  offline. The first real invocation is this lane's own landing, which is the correct first test.
-- **⚠ UNVERIFIED — whether subprocess `gh`/`git` calls are visible to the permission layer.** Never
-  measured, and the design deliberately does not depend on it: routing around the operator's own
-  control of the agent is not something this lane will do.
-- The `--after-merge` resume path is written into both doors but has not been exercised end to end;
-  it will be, by this lane.
+- **Not yet exercised end to end.** The road is `gh pr create` → click → `--after-merge`, and this
+  lane's own landing is its first real run. That is deliberate: the door is tested by using it.
+- **`--after-merge` reads the PR number off `origin/main`'s merge subject** (`Merge pull request #N
+  from …`). That is GitHub's format for a merge-commit merge; it is exactly why squash and rebase
+  must be off, and act #1 is what makes it true.
+- **The local token gate still exists** (`.githooks/pre-push`, the minter, `MAIN-PUSH-ENFORCE`) and
+  no `smh-` door uses it any more. In this repo the server ruleset already refuses an unchecked push
+  to `main`, so it is a second refusal on the same act — redundant, not harmful. Retiring it is a
+  **follow-on**, with a real blast radius: `hooks_armed.py`, `task_preflight.py`, four test files,
+  and `/cicd-push-e2e`, which still needs it for project repos.
+- **Project repos are unchanged** and still ship through `/cicd-push-e2e` with the token. Porting
+  the PR door to them is each project's own ticket (AVCH-63).
 
 ---
 
-**Verdict: PASS @ 1149640c** — builder's self-review. The measured evidence behind it is the
-suite (33/33), the RED-first sequence on both test files, and the 15/15 mutation sweep with restore
-verified; the three defects listed above were found by *running* rather than reading, and are fixed
-with tests that kill their mutants. ⛔ It is **not** an independent review: an independent pass
-(`/smh-code-review`) is available and is the one thing that has historically caught what a builder's
-own pass did not — twice on this very lane.
+**Verdict: PASS @ <shipping-sha>** — builder's self-review. R4 is a deletion whose safety argument
+is a table of what already holds each removed check, and the suite, lint and maps are green after
+it. ⛔ Not an independent review: `/smh-code-review` is available and is the thing that has
+historically caught what a builder's own pass did not — twice on this lane.

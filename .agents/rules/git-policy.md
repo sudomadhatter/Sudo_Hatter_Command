@@ -67,52 +67,60 @@ description: "Git policy: main is the ONLY long-lived branch. Each epic gets a s
 | Your own `claude/*` story branch (commits **and** pushes) | **FREE** — no approval, loops/retries fine |
 | The epic branch (`epic/*`) — a story landing | **Daniel's sign-off** — his in-the-moment "approved", or invoking `/cicd-update-sprint-memory` (which IS the sign-off) |
 | A `chore/*` branch (commits and pushes) | **FREE** — the merge back to `main` is what's gated |
-| `main` | **THREE roads and no fourth** — see below. Never on an agent's own initiative. |
+| `main` | **In this repo: a pull request the operator merges.** In project repos: `/cicd-push-e2e`. See below. Never on an agent's own initiative. |
 
-Approval for an epic-branch landing or a `main` merge is **per-action and never carries forward**.
-One "approved" lands one story; the next needs its own.
+Approval for an epic-branch landing is **per-action and never carries forward**. One "approved"
+lands one story; the next needs its own.
 
-### ⭐ The three roads to `main` — the PR door is the default (SCC-183, 2026-08-16)
+### ⭐ The road to `main` — a pull request, and the operator's click (SCC-183, 2026-08-16)
 
-| # | Road | For | The sign-off |
-|---|---|---|---|
-| 1 | **The PR door** — `.agents/scripts/land_pr.py`, invoked by `/smh-close-task-merge-tree` and `/smh-merge-multiple-workingtrees` | **the default** for any `chore/*` or `epic/*` lane **in this repo** | the operator's **click** on *Merge pull request*, on a PR carrying a green `main-write-gate` |
-| 2 | `/cicd-push-e2e` | epic merges in **project** repos, which publish no `main-write-gate` | the single-use token, carrying verbatim words (SCC-37) |
-| 3 | **Break-glass** — the local token push, kept in the close-out under `## Break-glass` | GitHub unreachable, or the PR door itself broken | the single-use token, as above |
+**In this repo there is ONE road**, and no agent on any platform can travel it alone:
 
-⛔ **Why road 1 carries no token, and why that is not a bypass.** The token proves *the operator said
+| Step | Who | What |
+|---|---|---|
+| open the PR | the agent, inside `/smh-close-task-merge-tree` or `/smh-merge-multiple-workingtrees` | `gh pr create --base main --head <branch> --fill` — or, with no `gh`, print the `compare/main...<branch>` URL. Then **STOP** |
+| the gate | GitHub | **`main-write-gate`** must be green: the full enforcement suite plus a check that the source is `epic/*` or `chore/*` with a real ticket key |
+| the merge | **the operator** | clicking *Merge pull request*. **That click IS the sign-off** |
+| after | the agent, on re-invocation | `--after-merge <KEY>` — verify with `git merge-base --is-ancestor`, then Dev Record, ticket, prune |
+
+Project repos (AviationChat, etc.) publish no `main-write-gate`, so their epics still ship through
+`/cicd-push-e2e` with the single-use token (SCC-37/SCC-77). Porting the PR door to them is each
+project's own ticket, in its own tracker.
+
+⛔ **Why no token on this road, and why that is not a bypass.** The token proves *the operator said
 yes* before **a machine here** pushes to `main`; it lives in `.git/` and is spent by
 `.githooks/pre-push`. A merge performed on GitHub runs on GitHub's servers and **never touches a
 machine here**, so there is no push for a local hook to gate — the token is *structurally absent*,
-not evaded. That is SCC-118's own finding read forwards, and it is precisely why `main-write-gate`
-exists as a server-side check. Road 1 is gated by that check plus the operator's click; roads 2 and 3
-are gated by the token. Neither half replaces the other and both are required on their own road.
+not evaded (SCC-118's own finding, read forwards; it is why `main-write-gate` was built server-side
+in the first place). The click is the intent half, `main-write-gate` is the fitness half. Both
+present, both required.
 
-⛔ **Why the ceremony moved at all.** SCC-184 — docs only, every gate green, suite 32/32 — could not
-reach `main` in a full session. The block was never a gate: it was ~15 hand-typed `git`/`gh` strings
-run in the shared checkout, each judged separately by the agent's permission layer, several denied,
-state stranded mid-ceremony. Measured, controlled pair, same op and same target: `git merge X
---no-ff` **allowed**, `git -C <path> merge X --no-ff` **denied** — and the `-C` form is the one
+⭐ **And a click is a STRONGER constraint on the agent than the contract it replaced.** "Invoking
+this command IS the sign-off" is a *document*, and a document sitting in an agent's context still
+reads as valid on task six — which is precisely how one invocation rode six merges (SCC-71), and how
+"you can move it to done" was read as merge permission (SCC-37). A click cannot be inferred from
+context, stretched from an earlier turn, or performed by an agent that was never given the ability.
+
+⛔ **Why the ceremony went, rather than growing another gate.** SCC-184 — docs only, every gate
+green, suite 32/32 — could not reach `main` in a full session. The block was never a gate: it was
+~15 hand-typed `git`/`gh` strings in the shared checkout, each judged separately by the agent's
+permission layer, several denied, state stranded mid-ceremony. Measured, controlled pair, same op
+and same target: `git merge X --no-ff` **allowed**, `git -C <path> merge X --no-ff` **denied** — and
+the `-C` form is the one
 [the merge-target rule](#-pin-the-merge-target-not-just-the-source---c-on-every-call-and-assert-before-you-merge)
-below *mandates*. **Obeying the safety law guaranteed the permission miss.** No gate could fix that,
-because the failing thing was the shape: many strings, shared tree. One command and one click is the
-fix, and it was already the road that worked (PR #5, #6, #8 — green in ~45s, zero denials).
+below *mandates*. **Obeying the safety law guaranteed the permission miss.** No gate could fix a
+failure of shape, and adding a second road would have made the system bigger. So the local ceremony
+was **deleted from the smh doors** instead.
 
-⛔ **What the agent may merge on road 1, and what it may not.** `land_pr.py --merge` self-merges
-**only** a lane whose entire diff is prose: `*.md` under `docs/`, `_artifacts/` or `_my_resources/`.
-Two independent predicates must BOTH pass (`lane_qualify` says `LIGHT` **and** every path is prose),
-because either alone is insufficient — measured: `lane_qualify` rates
-`.claude/hooks/require-push-approval.py`, the agent's own permission hook, **`LIGHT`**. Refusals are
-evaluated first and win. Refused however prose they look: **`AGENTS.md` / `CLAUDE.md` / `GEMINI.md`
-at ANY depth** (nine are tracked — routing law, not prose), root `router.md` (the master router),
-anything under `docs/migrations/` (the instructions a human follows on a new machine), anything
-non-`.md`, any symlink or submodule bump, and the empty set. Everything else opens the PR and
-**stops**, link in hand.
+⛔ **No agent merges to `main` in this repo. There is no eligibility test, no "small enough" class,
+no self-merge.** An earlier cut of SCC-183 proposed one and it was withdrawn under three operator
+constraints — it needed a per-machine allow-list edit (`.claude/settings.local.json` is gitignored,
+so it would arm one machine), it changed the agent's own permission rules, and it worked for one
+platform out of four. **Any future proposal to let an agent merge must clear all three.**
 
-⛔ **This is NARROWER than the operator's ruling, deliberately and on the record.** The ruling was
-"doc / index / memory / maps lanes → the agent merges"; a doc lane touching `.agents/rules/*.md` or a
-toolkit `INDEX.md` still needs a click. Widening it is the operator's call and needs their words —
-a derived corollary is a proposal, never law.
+⛔ **No command may change which branch a checkout is on.** No `git checkout main`, no `switch`, in
+any smh door. The operator works in those checkouts and leaves them wherever they like. Everything
+here reads `origin/main` — a remote-tracking ref, true regardless of what any tree has checked out.
 
 **Enforcement — two layers, and only the first one counts.**
 

@@ -5,14 +5,18 @@ it has never been to GitHub, so it carries no check, and the ruleset refuses it.
 therefore pushes that exact commit to a throwaway `gate/**` ref first, waits for the check, and
 only then pushes `main` — checks attach to a COMMIT, so the green travels with it.
 
-  ── THE ORDERING IS THE WHOLE TEST, AND IT IS NOT COSMETIC ─────────────────────────────────
-The approval token has a 30-minute TTL (`pre-push-main-approval.sh`, `TTL_SECONDS=1800`). The
-doors have always minted it immediately before the push, which was correct when nothing sat in
-between. Insert a CI wait between mint and push and a slow run silently eats the token's life:
-everything else passes, then the push dies on "stale token — it has been discarded", and the
-operator is left re-running a close-out that already did all its work.
+  ── SCC-183: THE LOBBY DOOR NO LONGER TAKES THIS ROAD ──────────────────────────────────────
+`/smh-close-task-merge-tree` now opens a pull request and stops; the operator's click on
+*Merge pull request* is the sign-off, and GitHub enforces `main-write-gate` before allowing it.
+So for that door this file asserts **absence**: no token mint, no `git push origin main`, no
+`gate/**` ref on its road — plus that the road it DOES take is `gh pr create`.
 
-So the required order is:
+The ordering contract below still binds `/cicd-push-e2e`, which ships PROJECT epics and still
+merges locally, and it still governs the mutant fixtures. Keeping it live matters: the reason
+the wait must precede the mint is that the approval token has a 30-minute TTL
+(`pre-push-main-approval.sh`, `TTL_SECONDS=1800`), so a slow CI run inserted between mint and
+push silently eats the token's life and the push dies on "stale token" after all the work is
+done. Required order, where it still applies:
 
     merge locally
     push HEAD to gate/main-<sha>          pre-flight
@@ -173,7 +177,7 @@ SPLIT_REFERENCE = """\
 ## Step 3 — Land it
 
 ```bash
-python3 .agents/scripts/land_pr.py --repo "$REPO"
+gh pr create --base main --head "$BRANCH" --fill
 ```
 
 ## Break-glass — the local token push
@@ -192,14 +196,15 @@ git push origin --delete gate/main-$SHA
 
 REQUIRED_ORDER = (GATE_REF, CHECK_NAME, "mint-push-token.sh", "git push origin main")
 
-# ── SCC-183: the door now has TWO halves and they must not be confused ──────────────────────
-# The default road is the PR door; the token ceremony is kept as break-glass. ⛔ THE ORDER
-# CHECK ALONE CANNOT SEE THIS MOVE: with the whole ceremony relocated under `## Break-glass`,
-# every needle is still present and still in order, so `REQUIRED_ORDER` stays GREEN while
-# certifying a road the door no longer takes by default. That is the failure this section
-# exists to catch (source-grep guards cannot see ORDER's sibling: they cannot see SECTION).
+# ── SCC-183: the lobby door has ONE road, and the ceremony is GONE ─────────────────────────
+# ⛔ THE ORDER CHECK ALONE CANNOT SEE A RELOCATION: move the whole ceremony under any
+# heading and every needle is still present and still in order, so `REQUIRED_ORDER` stays
+# GREEN while certifying a road the door no longer takes. `REQUIRED_ORDER` is therefore
+# kept ONLY for the fixtures below and for `/cicd-push-e2e`, which still takes it. The
+# live lobby door is checked by ABSENCE instead (source-grep guards cannot see ORDER's
+# sibling: they cannot see SECTION).
 BREAK_GLASS = "Break-glass"
-DEFAULT_LANDER = "land_pr.py"
+DEFAULT_LANDER = "gh pr create"
 
 
 def section(text: str, title: str) -> str:
@@ -243,7 +248,7 @@ def without(text: str, title: str) -> str:
 
 
 def main() -> int:
-    c = Cases("door pre-flight + ordering (SCC-118, two-half since SCC-183)")
+    c = Cases("door landing road (SCC-118 ordering; ONE road since SCC-183)")
 
     for label, path in DOORS.items():
         if not path.is_file():
@@ -265,24 +270,7 @@ def main() -> int:
                 idx(default, "git push origin main") < 0)
         c.check(f"{label} · the DEFAULT road does NOT push a gate/** ref",
                 idx(default, GATE_REF) < 0,
-                "the PR carries its own check run; the throwaway ref is break-glass only")
-
-        # ── the BREAK-GLASS road keeps the whole ceremony, in the same load-bearing order ──
-        bg = code_lines(section(text, BREAK_GLASS))
-        c.check(f"{label} · has a {BREAK_GLASS} section with commands in it", bool(bg),
-                "the local token road is KEPT, never deleted — GitHub can be down")
-        c.check(f"{label} · break-glass pre-flights to a gate/** ref", idx(bg, GATE_REF) >= 0,
-                "a locally-made merge commit carries no check and the ruleset refuses it")
-        c.check(f"{label} · break-glass waits on the check by name", idx(bg, CHECK_NAME) >= 0)
-        c.check(f"{label} · break-glass still mints the token", idx(bg, "mint-push-token.sh") >= 0)
-        c.check(f"{label} · break-glass still pushes main", idx(bg, "git push origin main") >= 0)
-
-        ok, detail = order_ok(bg, *REQUIRED_ORDER)
-        c.check(f"{label} · break-glass ORDER pre-flight → wait → mint → push", ok, detail)
-
-        c.check(f"{label} · break-glass deletes the gate ref afterwards",
-                idx(bg, "--delete gate/main-") >= 0,
-                "an abandoned pre-flight ref per ship, otherwise")
+                "the PR carries its own check run on GitHub; nothing is pre-flighted from here")
 
         # SCC-133: the flight event is recorded BEFORE the merge — after the merge the only tree
         # holding it is main's, and a write there is a main write outside the token. Still true
@@ -335,11 +323,9 @@ def main() -> int:
 
     # And the reverse control: a correctly-split door must not trip it.
     good_default = code_lines(without(SPLIT_REFERENCE, BREAK_GLASS))
-    good_bg = code_lines(section(SPLIT_REFERENCE, BREAK_GLASS))
-    ok_bg, _ = order_ok(good_bg, *REQUIRED_ORDER)
-    c.check("control · a correctly-split door passes both halves",
+    c.check("control · a correct door passes: lander present, ceremony absent",
             idx(good_default, DEFAULT_LANDER) >= 0
-            and idx(good_default, "mint-push-token.sh") < 0 and ok_bg)
+            and idx(good_default, "mint-push-token.sh") < 0)
 
     # ── AC-14b: the SEMANTIC check AC-14 structurally cannot make ──────────────────────────
     # All four doors + both SKILL.md launchers agree by construction — they are generated from

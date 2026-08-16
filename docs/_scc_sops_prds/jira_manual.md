@@ -444,7 +444,7 @@ never will be. Don't go looking for one, and never improvise a substitute and ca
 Green, then **open a pull request and click Merge** — that is the road, since SCC-183:
 
 ```bash
-python3 .agents/scripts/land_pr.py          # pushes the branch, opens the PR, prints the link
+gh pr create --base main --head "$BRANCH" --fill    # opens the PR, prints the link
 ```
 
 Click *Merge pull request* on the link it prints. **Your click is the sign-off.** Then drag the
@@ -458,28 +458,12 @@ Record and the prune for you).
 > and one click has none of those failure points, and GitHub still runs the `main-write-gate` check
 > before it will let the button work.
 
-<details>
-<summary><strong>Break-glass only</strong> — the hand-typed merge, for when GitHub is unreachable</summary>
-
-⛔ Not the default any more. It needs a single-use approval token (`mint-push-token.sh`), it must run
-in a checkout that is on `main`, and every one of these calls should carry `-C "$REPO"` in a session
-where a `cd` may have moved you (see `.agents/rules/git-policy.md` § *Pin the merge TARGET*).
-
-```bash
-git checkout main
-env -u GITHUB_TOKEN git pull --ff-only origin main
-git merge <branch> --no-ff -m "merge: <branch> -> main (gated: <evidence>)"
-env -u GITHUB_TOKEN git push origin main
-git branch -d <branch> && env -u GITHUB_TOKEN git push origin --delete <branch>
-git rev-list --left-right --count origin/main...main    # must print: 0  0
-```
-
-`--no-ff` forces a merge commit so the branch reads as one reviewable unit in `main`'s history.
-
-> **`-d`, never `-D`.** Lowercase refuses to delete a branch that didn't merge. That refusal is the check
-> working — if it fires after a merge you thought succeeded, go and look, don't force it.
-
-</details>
+⛔ **There is no hand-typed alternative any more, and that is deliberate.** The old sequence
+(`checkout main` · `merge --no-ff` · mint a token · `push origin main`) is gone from the close-out:
+it needed a checkout parked on `main`, gates armed on *this* machine, and about fifteen separate
+commands — and it depended on GitHub and the same CI check anyway, so it could never be the answer
+for "GitHub is down". If Actions is genuinely broken, disable the ruleset (see the SOP), merge, and
+re-arm it.
 
 ### 3.8 The one-command version — `/smh-close-task-merge-tree`
 

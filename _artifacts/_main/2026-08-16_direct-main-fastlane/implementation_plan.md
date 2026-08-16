@@ -89,7 +89,9 @@ Both apply to both machines and all four platforms at once. Neither touches any 
 |---|---|---|
 | AC-1 | both doors' default road contains **no** `mint-push-token`, `git push origin main`, or `gate/main-` | `test_door_preflight_order.py` (existing negatives, kept) |
 | AC-2 | Step 3 ends in the URL and STOPS; `--after-merge` refuses when the tip is not an ancestor of `origin/main` | wiring assertion on the body; a scratch-repo case |
-| AC-3 | **zero** files under `.claude/` in the diff; **zero** allow-list requirements anywhere in the docs | `git diff --stat origin/main -- .claude` = 0; `git grep -c 'settings.local\|allow-list' -- .agents docs` = 0 |
+| AC-3 | **no permission surface is touched** | `git diff origin/main -- .claude/settings.json .claude/settings.local.json .claude/hooks` = **0 lines** ✅ measured |
+| AC-3b | the only `.claude/` changes are **generated door launchers** | `git diff --name-only origin/main -- .claude` returns exactly the two `skills/*/SKILL.md` files ✅ measured |
+| AC-3c | no doc **instructs** an allow-list edit | the single `allow-list` hit in `.agents/rules/git-policy.md` is the paragraph **recording that such an edit was refused**, which is the opposite of instructing one ✅ read |
 | AC-4 | the deletions are complete | `git grep -c 'land_pr\|Break-glass\|merge_eligible\|is_prose' -- .agents docs` = 0 |
 | AC-5 | suite green, lint 0/0, maps clean; `sop_currency` **without** `[sop-ok]` on the door commit | bare runs |
 | AC-6 | this lane lands **through the road it describes** | the PR link, the click, `--after-merge` — the first real test |
