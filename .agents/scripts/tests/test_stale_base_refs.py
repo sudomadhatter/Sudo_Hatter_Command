@@ -43,6 +43,15 @@ PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     # `merge-base HEAD main`, `merge-tree … HEAD main`, `worktree add … <branch> main`.
     # `[^`\n]*?` cannot cross a backtick, so a code span in prose is scanned as its own unit.
     ("cmd-operand", re.compile(r"\b(?:merge-base|merge-tree|worktree add)\b[^`\n]*?" + _BARE)),
+    # SCC-165 follow-on (Part 6): a bare `main` reached as a shell DEFAULT, not as an operand.
+    # ⛔ `_BARE` cannot be reused here and that is the whole finding: its `(?<![\w/.-])`
+    # lookbehind - the thing that makes `origin/main` and `_main` safe - also rejects the `-`
+    # of `${BASE:-main}`, so the operand scan was structurally blind to the default-value
+    # operator. `cicd-clean-code-audit.md:49` sat unseen through the entire A sweep because of
+    # it: sighted by a human reading the file, invisible to the scan that was supposed to find it.
+    ("ref-default", re.compile(r":-\s*main(?![\w/.-])")),
+    # `BASE=main`, `EPIC="main"` - assignment position, which is operand position one line later.
+    ("ref-assign", re.compile(r"\b(?:BASE|EPIC|TARGET|TRUNK|REF)=\"?" + _BARE)),
 )
 
 # (file name, exact stripped line text) -> why this bare `main` is CORRECT.
@@ -118,6 +127,11 @@ def main() -> int:
                 "merge-tree": "git merge-tree --write-tree --messages HEAD main | head -40",
                 "worktree add": "git worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> main",
                 "in a table cell": "| `git diff --name-only main...chore/<KEY>-<slug>` | code beats talk |",
+                # SCC-165 follow-on: the two shapes the operand scan was blind to. The first is
+                # the real line from `cicd-clean-code-audit.md:49`, verbatim.
+                "${BASE:-main} default": ("BASE=$(git for-each-ref --format='%(refname:short)' "
+                                          "refs/heads/epic/* | head -1); BASE=${BASE:-main}"),
+                "BASE=main assignment": 'BASE=main   # the trunk, one line before it becomes an operand',
             }
             for label, line in caught.items():
                 (plant / "z.md").write_text(line + "\n", encoding="utf-8")
@@ -137,6 +151,9 @@ def main() -> int:
                 "checkout main (local BY DEFINITION)": "git checkout main",
                 "pull/push origin main (local by definition)": "env -u GITHUB_TOKEN git pull --ff-only origin main",
                 "prose about the main checkout": "lanes junction shared assets back to the **main checkout**",
+                "${BASE:-origin/main} (the fix)": "BASE=${BASE:-origin/main}",
+                "BASE=origin/main assignment": "BASE=origin/main",
+                "an epic default is not a trunk default": "BASE=${BASE:-origin/epic/<KEY>-<slug>}",
             }
             for label, line in quiet.items():
                 (plant / "z.md").write_text(line + "\n", encoding="utf-8")

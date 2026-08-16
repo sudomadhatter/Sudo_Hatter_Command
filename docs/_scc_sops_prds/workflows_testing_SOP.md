@@ -2416,6 +2416,13 @@ findings can FAIL; the judgment pass caps at CONCERNS. Explained in
 [§9](#9-the-task-lane--work-on-the-system-itself). Called by: ③ Step 3.5 and `/cicd-quick-dev`
 (the cicd one); `/smh-code-review` Step 3.5 (the smh one); or you.*
 
+> **Step 0's base is the epic branch, fetched (SCC-165 follow-on).** A story lane's diff base is
+> `refs/remotes/origin/epic/*` **before** the local head — a local epic head is only as fresh as the
+> last pull, and sibling stories land on the epic branch while the audit runs — falling back to
+> `origin/main`, never a bare `main`. The line had been carrying `BASE=${BASE:-main}`, invisible to
+> the stale-ref scan because its `(?<![\w/.-])` lookbehind rejects the `-` of the shell
+> default-value operator; the scan now carries `ref-default` and `ref-assign` patterns for that.
+
 ```mermaid
 flowchart TD
     A["/cicd-clean-code-audit\nProduct repo"] --> S0["Step 0 — resolve the diff, worktree-aware\ndiff-scoped ALWAYS — legacy debt never red-walls a story\nload the standard, never audit from memory"]

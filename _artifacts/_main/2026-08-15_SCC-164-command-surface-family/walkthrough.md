@@ -217,7 +217,7 @@ shipping green three lines above the identical live defect. `merge-tree` is now 
 
 **Sighted, deliberately NOT fixed here:** `cicd-clean-code-audit.md:49`, `BASE=${BASE:-main}`. It is
 not in operand position so the scan does not see it, and it is a *fallback* for a story lane whose
-real base is its `epic/*` branch — B1's trap. It belongs to the cicd parts (5/6), not to A.
+real base is its `epic/*` branch — B1's trap. It belongs to the cicd parts (5/6), not to A. **Closed in Part 6** — see *The A2 sighting, closed* below.
 
 **⚠ The fix for `worktree add` is three lines, not one — and a blanket ref-swap would have been a
 regression.** `smh-plan-task.md:117` already carried the correct idiom for the consolidated lane and
@@ -558,6 +558,32 @@ AGY's `mint-push-token.sh:128-141` already carries the corrected form *and the c
 why* (`--git-common-dir` answers absolute in a submodule on both platforms, and git-for-windows
 spells that `C:/…`, which no `/*` glob matches). A one-way checklist would have been skipped on
 exactly the half this ticket is.
+
+## The A2 sighting, closed — and why the scan could not see it
+
+Part 4 sighted `cicd-clean-code-audit.md:49` by hand and recorded it as belonging "to the cicd parts
+(5/6), not to A". Part 6 is the last cicd part, so it is ruled here rather than dropped.
+
+**Why the A sweep missed it is the interesting half.** `test_stale_base_refs.py`'s `_BARE` carries a
+`(?<![\w/.-])` lookbehind, and that lookbehind is what makes the scan precise — it is why
+`origin/main` (the fix), `_main` (`_artifacts/_main/`) and `<epic-branch-or-main>` (a placeholder) do
+not fire. It also rejects the `-` in `${BASE:-main}`. The scan was therefore **structurally blind to
+the shell default-value operator**: the one place a bare `main` hides while looking like a fallback
+rather than an operand. A human reading the file found it; the guard built to find it could not.
+
+Two patterns were added, and `_BARE` is deliberately **not reused** by the first:
+
+| Pattern | Catches | Hits on the tree before the fix |
+|---|---|---|
+| `ref-default` — `:-\s*main(?![\w/.-])` | `${BASE:-main}`, `${EPIC:-main}` | **1**, and only that one |
+| `ref-assign` — `(BASE\|EPIC\|TARGET\|TRUNK\|REF)="?main` | assignment position, which is operand position one line later | 0 |
+
+RED is `red-part6-a2.txt` — one unruled operand, named with its line. The fix is B1's shape, not A's:
+a story lane's base is its **epic branch**, so the line now fetches first, prefers
+`refs/remotes/origin/epic/*` over the local head (a local epic head is only as fresh as the last pull,
+and sibling stories land there while the audit runs), and falls back to `origin/main` rather than a
+bare `main`. **23/23.**
+
 
 ## The AP twin — read, nothing to port
 
