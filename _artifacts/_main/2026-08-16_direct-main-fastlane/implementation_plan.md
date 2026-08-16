@@ -312,8 +312,27 @@ already open. Recorded on SCC-172 rather than carried here.
 
 ## Landing order
 
-**SCC-164 lands first.** That call was right in the first draft; the *reason* was badly understated,
-and the understatement is the risk (audit finding F1).
+> ⚠️ **F1 CORRECTED AFTER MEASUREMENT (2026-08-16, post-approval, pre-build).**
+> The audit asserted this ordering was *not negotiable*. Two synthetic three-way merges were then run
+> to prove it, and they proved the opposite — the hazard is real but runs in the **reverse** direction,
+> and the ordering constraint dissolves. Corrected below; the original claim is struck rather than
+> quietly edited, because it drove a conditional GO.
+>
+> **What was measured** (scratch repos, a lane and a `main` both editing one file):
+>
+> | Order | Result |
+> | --- | --- |
+> | lane reverts the file to **current `main`'s content**, then absorbs `main` later | **SAFE.** The lane's net diff against the merge-base is empty, so git takes `main`'s side. A sibling's fix lands intact. |
+> | lane absorbs `main` **first**, then reverts the file to a **stale sha** | **DESTROYS the fix.** Clean merge, no conflict, nothing red — and it rides onto `main`. |
+>
+> So the risk is not *"revert before SCC-164 lands"*. It is *"revert to anything other than the ref
+> `main` as it stands at the moment of the checkout."* The plan's remedy was already right as written
+> — `git checkout main -- …`, the ref, never a sha — but its stated reason was inverted and its
+> sequencing requirement was unnecessary.
+
+**Corrected rule: SCC-164 does not have to land first. The revert must target the ref `main`, always.**
+Reverting today is safe; SCC-164's Parts C and D will overwrite this lane's (empty) side of those
+files when either lane absorbs the other. What follows is the overlap that remains real.
 
 SCC-164 is not a doc lane. It is a live 90-file family lane at `13906ec` with an uncommitted working
 tree, and its overlap with this plan is structural on three axes:
@@ -324,29 +343,33 @@ tree, and its overlap with this plan is structural on three axes:
 | The gate's test file | Part D is scoped to `test_main_push_gate.py` | AC-1 reverts that exact file, and F7 hands the `c.block` wiring to Part D |
 | The command surface | it is *the command-surface correctness family* — `.sync-manifest.json`, `.opencode/commands/`, `.agents/workflows/`, `commands/INDEX.md`, 17 command bodies | this lane **adds a command**, which writes to every one of those registries |
 
-**The failure this ordering prevents is specific, and it is silent.** If this lane reverts the two
-hook scripts to a `main` that predates Parts C and D, and SCC-164 lands after, the merge resolves
-cleanly and *undoes their fixes* — a revert-to-main is indistinguishable from a deliberate change to
-git. Nothing goes red. That is the same shape as the `check_maps` and `preflight` failures already in
-this system's memory: an operation that reports success while acting on the wrong tree.
+**The rule that replaces the sequencing requirement — one line, and it is the whole of it:**
 
-**So the sequence is not negotiable:**
+> **AC-1's revert targets the ref `main`, never a sha, and never a stale local `main`.**
+> `git fetch origin && git checkout origin/main -- <paths>` is the form that cannot be got wrong. A
+> revert to *current* `main` is a no-op against the merge-base, so git resolves in the sibling's
+> favour whichever lane lands first. A revert to a **sha** — including a `main` from before an absorb
+> — silently deletes whatever landed in between, with no conflict and nothing red. That is the same
+> shape as the `check_maps` and `preflight` failures in this system's memory: an operation reporting
+> success while acting on the wrong tree.
 
-1. SCC-164 lands on `main` (at minimum Parts C and D — if the family lands as one lane, all of it).
-2. This lane absorbs `main`.
-3. **Only then** run the AC-1 checkout, so `main` is the correct revert target by construction.
-4. Re-diff, re-run the suite, re-stamp the receipt.
+**What genuinely remains, and it is ordinary conflict, not silent loss:** both lanes edit
+`docs/_scc_sops_prds/workflows_testing_SOP.md` and `_artifacts/_main/INDEX.md` for real, and both
+write to the command-surface registries (`.agents/.sync-manifest.json`, `commands/INDEX.md`). Those
+will conflict loudly if they collide, which is the failure mode you want. Whichever lane lands second
+re-diffs and resolves.
 
-If SCC-164 is going to sit for a while, the honest alternative is to build the *additive* half of
-this lane now (`prose-scope.sh`, its tests, the command and its four doors — none of which SCC-164
-touches) and hold AC-1's revert until step 3. That splits cleanly; the plan supports either.
+**Build order for this lane, therefore:** build it all now, revert with `origin/main` as the target,
+and re-check `git diff origin/main -- <the three files>` is empty immediately before the close-out —
+because `main` may have moved during the build.
 
 ---
 
 ## Status
 
-**Awaiting the plan-first gate.** This document supersedes R1, so it re-arms that gate: nothing is
-implemented until `/smh-self-audit` has run against it and the operator has replied `approved`.
+**APPROVED — operator replied `approved`, 2026-08-16.** Build proceeding under this revision.
+One post-approval correction was made before any code: F1's mechanism was measured and found
+inverted, which removed the conditional on the GO. See § Landing order.
 
 ---
 
@@ -397,7 +420,7 @@ platform surfaces, and it *deletes* shipped code.
 
 | # | Where | Severity | Failure scenario | Disposition |
 | --- | --- | --- | --- | --- |
-| F1 | § Landing order | **CRITICAL** | Reverting the hook scripts to a `main` predating SCC-164 Parts C/D silently undoes their fixes — clean merge, no red, nobody notices | **FIXED IN PLAN** — landing order rewritten as a 4-step sequencing contract with the split-build fallback |
+| F1 | § Landing order | **HIGH** *(was CRITICAL)* | A revert that targets a **sha** rather than the ref `main` silently deletes whatever a sibling landed in between — clean merge, no red, nobody notices | **FIXED IN PLAN, then CORRECTED** — measured post-approval: the hazard runs the opposite way from the audit's claim, and the sequencing requirement was unnecessary. Remedy is now one rule (revert to `origin/main`, never a sha), not a 4-step contract |
 | F2 | § DELETE (AC-1) | HIGH | "Purely additive" is false — R1 removed 25 pre-existing lines from `pre-push-main-approval.sh` and 5 from `mint-push-token.sh`; a builder trusting it hand-unpicks and leaves residue | **FIXED IN PLAN** — revert is now a `git checkout main -- …`, correct by construction; measured numbers recorded |
 | F3 | § Deliberately NOT | HIGH | Minting a new key for finding #3 duplicates SCC-172 (`To Do`, same files, same defect class) against a standing operator ruling | **FIXED IN PLAN** — routed to SCC-172 |
 | F4 | § Four consequences | MEDIUM | "No new capability" is true technically and false in effect; the whole risk argument leans on a sentence that cannot carry it | **FIXED IN PLAN** — restated as capability-unchanged / normalisation-changed, with PR #2 as the evidence |
@@ -435,7 +458,14 @@ lives only in a prose section is one nobody re-reads at close-out time.
 Audit verdict: GO
 ```
 
-**GO, conditional on the sequencing in § Landing order** — the ten findings above were baked into the
-plan before this verdict was written, and Phases 0–3 were re-walked against the amended text. The
-condition is not a formality: F1 is a silent failure, and building the AC-1 revert against today's
-`main` is the way to hit it.
+**GO — unconditional as of the F1 correction.** The ten findings were baked into the plan before this
+verdict was written, and Phases 0–3 were re-walked against the amended text. The verdict originally
+read *"GO, conditional on the sequencing in § Landing order"*; that condition was retired when F1 was
+measured and its mechanism found inverted. The remaining obligation is a one-line rule, not a
+sequencing contract: **revert to the ref `origin/main`, never to a sha.**
+
+A note worth keeping for the next audit: **F1 was the finding this audit was proudest of, and it was
+half wrong.** It was written from reasoning about three-way merges rather than from running one. The
+severity survived; the mechanism and the remedy did not. The lesson is the one already in this
+system's memory under a different name — *same-context authoring confirms, never falsifies* — and it
+applies to audit findings exactly as it applies to tests.
