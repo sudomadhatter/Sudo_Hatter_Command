@@ -76,14 +76,13 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   [ -f "$TOKEN" ] || refuse "no approval token."
 
   # Parse the token. Unknown keys are ignored so the format can grow without breaking old hooks.
-  t_branch=""; t_tip=""; t_command=""; t_key=""; t_mode=""; t_minted=""; t_approval=""
+  t_branch=""; t_tip=""; t_command=""; t_key=""; t_minted=""; t_approval=""
   while IFS='=' read -r k v; do
     case "$k" in
       branch)   t_branch=$v   ;;
       tip)      t_tip=$v      ;;
       command)  t_command=$v  ;;
       key)      t_key=$v      ;;
-      mode)     t_mode=$v     ;;
       minted)   t_minted=$v   ;;
       approval) t_approval=$v ;;
     esac
@@ -133,159 +132,40 @@ while read -r local_ref local_sha remote_ref remote_sha; do
         Commits appeared after the sign-off, so no gate has seen them. Token discarded."
   fi
 
-  if [ "$t_mode" = "direct" ]; then
-    # ══ SCC-183 — THE DIRECT-TO-MAIN FAST LANE, AND WHY IT IS SHAPED LIKE THIS ═══════════
-    #
-    # A third door to main, and the ONLY one with no review ladder behind it. The path
-    # allowlist is what stands in for that review, so it is sourced rather than inlined
-    # (`mint-push-token.sh` applies the identical predicate, and two copies drift) and every
-    # degenerate input below REFUSES rather than falling through.
-    #
-    # A first cut of this feature was reviewed FAIL and deleted (commit 3c66dee). Its two
-    # proven exploits are marked H1 and H3 at the checks that now stop them.
-    ALLOWLIST="$(dirname "$0")/direct-push-allowlist.sh"
-    if [ ! -f "$ALLOWLIST" ]; then
-      rm -f "$TOKEN"
-      refuse "direct mode was requested but the path allowlist is missing.
-        expected: $ALLOWLIST
-        A missing predicate REFUSES — it never falls through to allow. The dispatcher's own
-        'not present, push allowed UNCHECKED' is for a worktree that predates the gate; by
-        here, direct mode has been ASKED for. Token discarded."
-    fi
-    . "$ALLOWLIST"
-    if ! command -v direct_push_path_allowed >/dev/null 2>&1; then
-      rm -f "$TOKEN"
-      refuse "$ALLOWLIST defines no direct_push_path_allowed(). Token discarded."
-    fi
-
-    # ⛔ DELIBERATELY NOT NESTED IN THE `remote_sha != ZERO` GUARD THE MERGE PATH USES.
-    # That guard is right for a merge — there are no merge invariants to check against a ref
-    # that does not exist yet. Inheriting it here would skip the key check, the allowlist AND
-    # the shape checks in one go, for a push that creates main out of nothing. A direct token
-    # authorises advancing an EXISTING main by one commit; it never creates the ref.
-    if [ "$remote_sha" = "$ZERO" ]; then
-      rm -f "$TOKEN"
-      refuse "a direct token cannot CREATE main — there is no remote main to advance.
-        Token discarded."
-    fi
-
-    # ⭐ H1 — THE KEY ASSERTION MUST FIRE ON ABSENCE.
-    # The deleted cut wrapped this in `if [ -n "$t_key" ]`, so minting without --key did not
-    # fail the check, it DELETED the check, and a commit carrying no ticket reference of any
-    # kind landed on main. Proven with a real push before this rebuild.
-    if [ -z "$t_key" ]; then
-      rm -f "$TOKEN"
-      refuse "the direct token carries no Jira key.
-        Direct mode requires --key: an unreviewed commit on main must at least be traceable.
-        Token discarded."
-    fi
-
+  # ⭐⭐ THE CHECK THAT ACTUALLY ENFORCES ONE-SIGN-OFF-ONE-MERGE.
+  #
+  # The sha check above is NOT sufficient and the first cut of this gate wrongly claimed it was.
+  # A token authorises a PUSH; what SCC-71 needs gated is a MERGE. Merge six branches into main
+  # locally, then mint once, then push once — `t_tip == local_sha` holds the whole way and six
+  # merges land on one approval, which is the exact failure this gate exists to stop. Reproduced
+  # during the SCC-77 review: one token, six merges on the remote, the approval line naming one
+  # of them.
+  #
+  # The invariant that actually holds: `main` advances by EXACTLY ONE merge commit sitting
+  # directly on top of what the remote already has. So the pushed commit's FIRST parent must be
+  # the remote's current tip. Batching breaks it (the previous merge sits in between), and so
+  # does a force-push rewind (the rewound tip is not a child of the remote's).
+  if [ "$remote_sha" != "$ZERO" ]; then
     parent1=$(git rev-parse --verify --quiet "${local_sha}^1") || parent1=""
     if [ "$parent1" != "$remote_sha" ]; then
       rm -f "$TOKEN"
-      refuse "this direct push does not advance main by exactly one commit.
-        remote main is at $remote_sha
-        the pushed commit's first parent is ${parent1:-<none>}
-        One sign-off authorises ONE commit (SCC-71). Token discarded."
-    fi
-
-    if git rev-parse --verify --quiet "${local_sha}^2" >/dev/null 2>&1; then
-      rm -f "$TOKEN"
-      refuse "this direct push carries a MERGE commit.
-        Direct mode authorises one plain commit; a merge lands through the merge path, which
-        checks the branch the token names. Token discarded."
-    fi
-
-    # `case`, not `grep`: $t_key in a grep pattern is a REGULAR EXPRESSION, so a key carrying
-    # a metacharacter matches something other than itself.
-    commit_msg=$(git log -1 --format=%B "$local_sha")
-    case "$commit_msg" in
-      *"$t_key"*) : ;;
-      *) rm -f "$TOKEN"
-         refuse "the commit message does not carry the approved Jira key '$t_key'.
-        Token discarded." ;;
-    esac
-
-    # ⭐ H3 — THE ALLOWLIST. The deleted cut used a DENYLIST of six product directories, five
-    # of which do not exist in this repo, so `.agents/` was permitted: a `--direct` push
-    # carrying a rewritten `pre-push-main-approval.sh` was ACCEPTED and landed. The gate
-    # approved the commit that disables the gate.
-    #
-    # `--raw` rather than `--name-only` because the MODE is load-bearing too: a symlink at an
-    # allowed path (`docs/x -> ../.agents/…`) reads as `docs/x` to any name-only check.
-    TAB=$(printf '\t')
-    raw=$(git diff-tree -r --no-renames --no-commit-id --raw "$remote_sha" "$local_sha")
-    if [ -z "$raw" ]; then
-      rm -f "$TOKEN"
-      refuse "this direct push changes nothing.
-        An empty change set satisfies 'every path is allowed' vacuously. Token discarded."
-    fi
-
-    # Collected through a command substitution: a `while` on the right of a pipe runs in a
-    # SUBSHELL, so a flag set inside it would be lost by the time this `if` reads it.
-    # ⛔ `if`, NOT `case`, and that is not a style choice. macOS `/bin/sh` is bash 3.2, whose
-    # parser cannot handle a `case` statement inside `$( )` — it dies on the first `;;` with
-    # "syntax error near unexpected token". `dash` and `zsh` both accept it, so this reads as
-    # correct everywhere except the machine the operator actually runs. A called FUNCTION is
-    # fine (its body is parsed outside the substitution), which is why the allowlist below can
-    # keep its own `case`; only inline `case` text inside `$( )` trips it.
-    bad=$(printf '%s\n' "$raw" | while IFS= read -r line; do
-      [ -n "$line" ] || continue
-      dstmode=$(printf '%s' "$line" | cut -c9-14)   # :<srcmode> <dstmode> ... — cols 9-14
-      path=${line#*"$TAB"}
-      if [ "$dstmode" = "120000" ]; then
-        printf '%s\n' "       $path   (symlink)"
-      elif [ "$dstmode" = "160000" ]; then
-        printf '%s\n' "       $path   (submodule)"
-      elif ! direct_push_path_allowed "$path"; then
-        printf '%s\n' "       $path"
-      fi
-    done)
-    if [ -n "$bad" ]; then
-      rm -f "$TOKEN"
-      refuse "direct mode is for prose, and this commit touches paths that are not:
-$bad
-        Allowed: docs/** · _my_resources/** · _artifacts/** · *.md at the repo root.
-        Everything else — .agents/, .githooks/, tests/, code, config — lands through
-        /smh-close-task-merge-tree or /cicd-push-e2e, which run a review first.
-        Token discarded."
-    fi
-  else
-    # ⭐⭐ THE CHECK THAT ACTUALLY ENFORCES ONE-SIGN-OFF-ONE-MERGE.
-    #
-    # The sha check above is NOT sufficient and the first cut of this gate wrongly claimed it was.
-    # A token authorises a PUSH; what SCC-71 needs gated is a MERGE. Merge six branches into main
-    # locally, then mint once, then push once — `t_tip == local_sha` holds the whole way and six
-    # merges land on one approval, which is the exact failure this gate exists to stop. Reproduced
-    # during the SCC-77 review: one token, six merges on the remote, the approval line naming one
-    # of them.
-    #
-    # The invariant that actually holds: `main` advances by EXACTLY ONE merge commit sitting
-    # directly on top of what the remote already has. So the pushed commit's FIRST parent must be
-    # the remote's current tip. Batching breaks it (the previous merge sits in between), and so
-    # does a force-push rewind (the rewound tip is not a child of the remote's).
-    if [ "$remote_sha" != "$ZERO" ]; then
-      parent1=$(git rev-parse --verify --quiet "${local_sha}^1") || parent1=""
-      if [ "$parent1" != "$remote_sha" ]; then
-        rm -f "$TOKEN"
-        refuse "this push does not advance main by exactly one merge.
+      refuse "this push does not advance main by exactly one merge.
         remote main is at $remote_sha
         the pushed commit's first parent is ${parent1:-<none>}
         One sign-off authorises ONE merge (SCC-71). Batching several merges into a single push,
         or rewinding main and force-pushing, both land here. Token discarded."
-      fi
+    fi
 
-      # And the merge must be OF the branch the token names — otherwise the token is a blank cheque
-      # that any merge can spend.
-      if [ -n "$t_branch" ]; then
-        merged=$(git rev-parse --verify --quiet "${local_sha}^2") || merged=""
-        claimed=$(git rev-parse --verify --quiet "refs/heads/$t_branch") || claimed=""
-        if [ -n "$claimed" ] && [ "$merged" != "$claimed" ]; then
-          rm -f "$TOKEN"
-          refuse "the token authorises landing '$t_branch' ($claimed),
+    # And the merge must be OF the branch the token names — otherwise the token is a blank cheque
+    # that any merge can spend.
+    if [ -n "$t_branch" ]; then
+      merged=$(git rev-parse --verify --quiet "${local_sha}^2") || merged=""
+      claimed=$(git rev-parse --verify --quiet "refs/heads/$t_branch") || claimed=""
+      if [ -n "$claimed" ] && [ "$merged" != "$claimed" ]; then
+        rm -f "$TOKEN"
+        refuse "the token authorises landing '$t_branch' ($claimed),
         but this merge's second parent is ${merged:-<none> (not a merge commit)}.
         A sign-off is for one named branch, not for whatever happens to be on main. Token discarded."
-        fi
       fi
     fi
   fi
