@@ -1,5 +1,5 @@
 ---
-description: Land a SET of finished Task lanes — multiple `chore/<JIRA-KEY>-<slug>` branches — on `main`, one merge at a time, in an order derived from measurement rather than belief. Inventories every lane (branch, key, commits, `task.yaml`, walkthrough `Verdict:`), preflights each with `--expect-key`, filters stale lanes, and builds an overlap map that classifies every shared file (ledger / rewrite-vs-edit / modify-delete / gate-or-script) and forces lanes that change commit or push machinery to the END. Then, per lane — absorb `main`, reconcile, re-gate, STOP for the operator's sign-off, merge `--no-ff`, Dev Record, ticket to Done, prune — and finishes with a combined gate on `main`, which is the only run that sees the whole set together. The `smh-` counterpart of `/cicd-merge-epic-workingtrees`. Use when several Task lanes are review-complete at once.
+description: Land a SET of finished Task lanes — multiple `chore/<JIRA-KEY>-<slug>` branches — on `main`, one PULL REQUEST at a time, in an order derived from measurement rather than belief. Inventories every lane (branch, key, commits, `task.yaml`, walkthrough `Verdict:`), preflights each with `--expect-key`, filters stale lanes, and builds an overlap map that classifies every shared file (ledger / rewrite-vs-edit / modify-delete / gate-or-script) and forces lanes that change commit or push machinery to the END. Then, per lane — absorb `main`, reconcile, re-gate, open THAT lane's own PR and hand back its link so N lanes are N links and N clicks the operator makes — then Dev Record, ticket to Done, prune — and finishes with a combined gate on `main`, which is the only run that sees the whole set together. It never merges anything itself. The `smh-` counterpart of `/cicd-merge-epic-workingtrees`. Use when several Task lanes are review-complete at once.
 ---
 
 # /smh-merge-multiple-workingtrees — Land a Set of Task Lanes, One Sign-off Per Merge
@@ -295,24 +295,39 @@ authorisations** (SCC-71). Wait for the operator's word for THIS lane.
 > SCC-71 held by something that cannot be talked out of it. Retry once; if it refuses again, hand
 > the rule to the operator rather than routing around it.
 
-**4d — merge, with the target re-checked out loud:**
+**4d — open THIS lane's pull request, and hand back the link.**
 
 ```bash
-git -C "$REPO" checkout main
-test "$(git -C "$REPO" rev-parse --abbrev-ref HEAD)" = "main" || { echo "NOT ON main — STOP"; exit 1; }
-env -u GITHUB_TOKEN git -C "$REPO" pull --ff-only origin main
-git -C "$REPO" merge "chore/<KEY>-<slug>" --no-ff -m "merge: chore/<KEY>-<slug> -> main (task: <gate summary>; review <verdict>)"
-env -u GITHUB_TOKEN git -C "$REPO" push origin main
-git -C "$REPO" rev-list --left-right --count main...origin/main    # must be 0 0
+gh pr create --base main --head "chore/<KEY>-<slug>" --fill
 ```
 
-A push-approval prompt or token requirement is **expected, not an error** — satisfy it, never bypass
-it. Rejected push (remote moved) → STOP and report; never force.
+No `gh`? The lane is pushed, so print the compare URL instead —
+`https://github.com/<owner>/<repo>/compare/main...chore/<KEY>-<slug>?expand=1` — with `<owner>/<repo>`
+read from `git -C "$REPO" remote get-url origin`, never from memory.
 
-⭐ **Since SCC-144 the `test … = "main"` line above has a machine behind it.** The `commit-msg` hook
-refuses a merge whose target is not a legal destination for its source and names the SCC-97
-signature — a lane landing on a sibling lane — when it sees one. Keep the assertion anyway: it stops
-you one step earlier, and it is the half that still works under `--no-verify`.
+⛔ **Pass `--head` explicitly. Never let it infer the branch.** With N lanes live, the branch `gh`
+would infer is whichever one the current directory happens to sit on, and that is the wrong lane N−1
+times out of N. Same class as the `cd`-then-bare-`git` failure in Step 0 that put a production merge
+on a sibling branch: **name the target, never inherit it.**
+
+Each lane gets **its own PR**, which is what keeps "one landing = one authorisation" true here:
+N lanes are N links and N clicks, and there is no shape in which one approval carries the set. The
+operator clicks each one; `main-write-gate` must be green on each before GitHub will allow it.
+
+⛔ **A lane waiting on a click does not block the run, and it also does not get skipped.** Carry it
+into the final report as *PR open, awaiting the operator* with its URL, and move to the next lane in
+the derived order. ⛔ What must NOT happen is the next lane absorbing `main` as though this one had
+landed — 4a re-absorbs from **`origin/main` as it actually is**, so an unmerged lane simply is not
+in it, and the overlap map from Step 3 still governs. Never merge one lane locally "so the next one
+can build on it".
+
+Re-running `gh pr create` on a lane that already has one is safe: it refuses and prints the existing
+URL, which is how you pick a lane back up.
+
+> ⓘ **Why 4c's stop is now structural.** The permission layer already refused `git merge` into
+> `main` in auto mode — correct, but it meant this door could not finish its own job, and 4c was
+> the operator's stop held only by prose. Now there is nothing to hold: this step **cannot** merge
+> anything, on any platform. The authorisation lives on a button only the operator can press.
 
 **4e — Dev Record, then the ticket — per lane, at ITS merge, never batched.**
 `jira_feed.py devrecord --key <KEY> … --closing --apply` (updates in place — never `--append-new`),

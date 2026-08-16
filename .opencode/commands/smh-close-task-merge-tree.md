@@ -1,5 +1,5 @@
 ---
-description: Close out TASK work — a `chore/<JIRA-KEY>-<slug>` branch that never got an epic and a story, so BMAD's `/cicd-update-sprint-memory` cannot close it. Preflights mechanically (branch shape, clean+pushed, main absorbed, and THE LANE — did anything deployable change?), runs the gate the lane selects, merges to `main` with `--no-ff`, files the Dev Record and moves the ticket to Done, then prunes the worktree AND the branch (SCC-62 — unlink assets before removing the tree; a recursive delete through a junction eats the shared targets). Invoking it IS the merge sign-off. Refuses the moment a deployable path is in the diff and hands the work to `/cicd-push-e2e`.
+description: Close out TASK work — a `chore/<JIRA-KEY>-<slug>` branch that never got an epic and a story, so BMAD's `/cicd-update-sprint-memory` cannot close it. Preflights mechanically (branch shape, clean+pushed, main absorbed, and THE LANE — did anything deployable change?), runs the gate the lane selects, then OPENS A PULL REQUEST AND STOPS: it never merges, and the operator's click on Merge pull request is the sign-off, gated by GitHub's main-write-gate check. Re-invoked as `--after-merge <KEY>` it verifies the merge with plain git, files the Jira Dev Record, moves the Task to Done, and prunes the worktree AND the branch (SCC-62 — unlink assets before removing the tree; a recursive delete through a junction eats the shared targets). Refuses the moment a deployable path is in the diff and hands the work to `/cicd-push-e2e`.
 platforms: [opencode, antigravity]
 ---
 
@@ -36,17 +36,22 @@ is allowed to act on the repo you are standing in. The prefix is the permission;
 
 ## 🛑 MANDATORY RULES (before you start)
 
-1. **This command merges to `main`.** Invoking it IS the operator's per-merge sign-off for this one
-   task — the same contract `/cicd-push-e2e` carries for an epic — **when the operator invoked it.**
-   ⛔ **If YOU (the agent) invoked this command autonomously, the invocation authorises nothing:**
-   before the Step 3 mint you must hold the operator's **explicit, this-turn merge approval, in
-   their own words** — "merge it", "push to main", "ship it", "get it done". **Ticket-status
-   permission is NEVER merge permission**: "you can move it to done" flips a Jira status and says
-   nothing about `main` (this exact misreading happened live, 2026-08-14, SCC-37). No such words →
-   STOP at merge-ready and ask; the mint script will refuse you anyway (SCC-37: it requires
-   `--operator-approval '<their verbatim words>'` in any non-interactive shell, records the quote
-   in the token, and the push gate prints it back — a fabricated or stretched quote is visible at
-   every step). Approval is **per-action and never carries forward** — the next task needs its own.
+1. **⛔ THIS COMMAND DOES NOT MERGE TO `main`. It opens a pull request and stops.** Since SCC-183
+   the sign-off is not this invocation and not a token — it is **the operator clicking *Merge pull
+   request*** on the link Step 3 hands back. That is the whole authorisation model now, and it is
+   the same on every machine and for every agent platform, because the button is on GitHub.
+
+   This is *stronger* than what it replaced, not weaker. The old contract ("invoking it IS the
+   sign-off") is a **document**, and a document sitting in context still reads as valid on task six
+   — which is exactly how one invocation rode six merges (SCC-71), and how "you can move it to
+   done" was once read as merge permission (SCC-37; ticket-status permission is **never** merge
+   permission). A click cannot be inferred from context, cannot be stretched from an earlier turn,
+   and cannot be performed by an agent that has not been given that ability. **One click, one
+   merge**, held by something that cannot be talked out of it.
+
+   So: no merge words are needed to *run* this command, because running it merges nothing. If you
+   reach Step 3 and the operator has not clicked, the correct state is **waiting** — report the
+   link and stop. ⛔ Never offer a way to land it without the click.
 2. **The preflight is not advisory.** Exit 2 STOPS the command. Report what failed; never "merge
    anyway", and never re-run it with the failing check worked around.
 3. **The lane is not yours to choose.** `LANE: HANDOFF` means a deployable path is in the diff.
@@ -293,82 +298,83 @@ ladder (1 evidence · 2 candidate · 3+ action-required) that SessionStart and `
 candidates` prints the whole ladder any time. **A `record` failure never blocks the merge** — report
 it like a failed receipt and carry on; nothing downstream depends on it.
 
-## Step 3 — Merge to `main`
+## Step 3 — Hand back the link
+
+⛔ **First: tick the merge row in `walkthrough.md` and commit it ON THIS BRANCH.** It ticks as
+`- [x] The merge itself — lands via this branch's PR` — **number-free on purpose**: the PR number is
+assigned when the PR is opened, which is after this commit is pushed. The number and the merge sha
+go on the ticket in Step 4, where both are known. Ticking here rather than after the merge is what
+closes SCC-175: a *post-merge commit on `main`* is refused by the gate, and there is no longer such
+a commit. (Live proof it is real: on 2026-08-16 `jira_feed.py finish` held SCC-184 at
+`Review Required` over exactly this unticked box, on a merge that had already happened.)
+
+The branch is already on `origin` — Step 1's preflight requires clean **and** pushed. So:
 
 ```bash
-git checkout main
-env -u GITHUB_TOKEN git pull --ff-only origin main
-git merge chore/<JIRA-KEY>-<slug> --no-ff \
-  -m "merge: chore/<JIRA-KEY>-<slug> -> main (task: <gate summary>)"
-# 🛑 summarize the commits + changed files before pushing
-
-# ── Pre-flight the SERVER-SIDE gate on this exact commit (SCC-118) ──────────────────────
-# `main` requires a green check named below. The merge commit you just made has never been
-# to GitHub, so it carries no check and the push would be refused. Send that exact commit
-# to a throwaway ref, let CI run on it, and the green travels with the SHA — a check
-# attaches to a commit, not to a branch.
-SHA=$(git rev-parse HEAD)
-env -u GITHUB_TOKEN git push origin HEAD:refs/heads/gate/main-$SHA
-
-# ⭐ PUSH THE GATE REF FIRST, THEN WRITE — the CI wall is ~50 s of doing nothing (SCC-156).
-# The moment the merge commit exists and its ref is pushed, CI is running whether you watch
-# it or not. Spend that wall on the two things this close-out still owes and that depend on
-# NOTHING the run will say: the merge summary, and the Dev Record draft. Then come back and
-# read the verdict. ⛔ What may NOT move into that window: the token mint (its TTL is the
-# reason this order exists at all), the push itself, and the Jira transition — all three are
-# strictly post-green. Drafting is not filing: if the gate comes back red, the draft is
-# discarded with the merge, and nothing was reported that did not happen.
-sleep 10                                       # let the run register before asking for it
-until gh api repos/{owner}/{repo}/commits/$SHA/check-runs \
-        --jq '.check_runs[] | select(.name=="main-write-gate") | .status' \
-      | grep -qx completed; do sleep 10; done
-
-gh api repos/{owner}/{repo}/commits/$SHA/check-runs \
-  --jq '.check_runs[] | select(.name=="main-write-gate") | .conclusion' | grep -qx success \
-  || { echo "server-side gate is RED on $SHA — fix on the branch, do NOT push main"; exit 1; }
-
-# Mint the single-use approval token — AFTER the pre-flight, IMMEDIATELY before the push (SCC-77).
-# ⚠ ORDER IS LOAD-BEARING: the token's TTL is 30 minutes. Mint it before the CI wait and a
-# slow run eats its life — everything else passes, then the push dies on "stale token" and
-# the close-out has to be re-run having already done all its work (SCC-118).
-sh .agents/scripts/git-hooks/mint-push-token.sh \
-   --command /smh-close-task-merge-tree --branch chore/<JIRA-KEY>-<slug> --key <JIRA-KEY> \
-   --operator-approval '<the operator words that approved THIS merge, verbatim>'
-# ⛔ The quote is MANDATORY REAL EVIDENCE, not a formality (SCC-37): paste the operator's exact
-# words from THIS turn. At a terminal the operator types the key instead and no flag is needed.
-# Read the AUTHORIZED BY OPERATOR line the mint prints back — if those words are not an
-# unambiguous yes to this merge, delete the token and ask.
-
-env -u GITHUB_TOKEN git push origin main       # the pre-push gate spends the token here
-
-env -u GITHUB_TOKEN git push origin --delete gate/main-$SHA   # pre-flight ref, done with
+gh pr create --base main --head "$BRANCH" --fill
 ```
 
-**Two halves, and they are not copies of each other.** The pre-flight proves the change is
-*fit* to land — the real suite ran, on a runner, at this exact commit. The token proves *you
-said yes*, once, for this merge. Neither substitutes for the other, and only the second one can
-ever be a judgement about intent: an agent can write a file, so it can write a token, but it
-cannot make a red suite green. The server-side half exists because a merge performed on
-GitHub — the web *Merge pull request* button, or the API — never touches this machine, so the
-`pre-push` hook is not bypassed there, it is **absent** (SCC-118; PR #2 landed that way).
-If the check is red, **STOP** — never `--no-verify`, never disable the ruleset to get past it.
+`--fill` builds the title and body from the commits, so nothing has to be re-typed. **The last line
+it prints is the PR URL.** Print it and **STOP.**
 
-**The token is the machine half of "invoking this IS the sign-off."** `.githooks/pre-push` refuses
-any push landing on `main` without one, and consumes it on the way through — so this invocation
-authorises exactly one merge and the next task needs its own, mechanically rather than by reading
-(`git-policy.md` § "The write gate"; the failure it fixes is SCC-71's six-merges-on-one-sign-off).
+**No `gh` on this machine?** Nothing is blocked — the branch is pushed, so the PR can be opened in
+the browser. Build the URL from command output, never from memory:
 
-⛔ **Mint last. Do not commit anything after it.** The token records the sha it was minted for, so a
-commit made between the mint and the push makes the push carry a different sha and the gate refuses
-it — correctly, because nothing gated that commit. If that happens: re-run the gate, then re-mint.
-A refusal always discards the token, so there is never a stale one left to match by accident.
+```bash
+git -C "$REPO" remote get-url origin      # -> the owner/repo
+# https://github.com/<owner>/<repo>/compare/main...<BRANCH>?expand=1
+```
 
-`--no-ff` keeps the task visible as one reviewable unit on `main`'s first-parent history, and
-because the branch name (with its key) rides in the merge message, Jira links the merge commit to
-the ticket automatically — the commit-msg hook exempts merges precisely because of that join. If the
-push is rejected (remote moved), **STOP and report**; never force.
+Print that instead. One extra click for the operator, and this door needs no tool the machine does
+not have.
 
-Capture the merge SHA — Step 4 puts it on the ticket.
+⛔ **STOP means stop.** Do not merge it another way, do not mint a token, do not offer to. **The
+operator clicks *Merge pull request*, and that click is the sign-off.** A link they have not clicked
+is not a merge running late — it is a merge that has not been authorised. Waiting is correct
+behaviour, on every platform, on either machine.
+
+**What guards the merge is on GitHub, not here.** `main` requires a green **`main-write-gate`**
+check on the PR — the same enforcement suite, plus a check that the source is an `epic/*` or
+`chore/*` branch carrying a real ticket key. GitHub refuses the merge button until it passes,
+whoever opened the PR, from whatever machine, through whatever agent. That is the whole reason this
+door needs no local token: **a merge performed on GitHub never touches a machine here**, so there is
+no local push for a hook to gate — the token is *structurally absent, not bypassed* (SCC-118's own
+finding). If the check is red, **STOP** — never disable the ruleset to get past it.
+
+> ⓘ **Why this replaced ~15 hand-typed git/gh commands (SCC-183).** SCC-184 — docs only, every gate
+> green, suite 32/32 — could not reach `main` in a full session. No gate stopped it. The *landing*
+> did: each of those strings was judged separately by the agent's permission layer, several were
+> denied, and the state was left stranded halfway. Measured, same op and same target:
+> `git merge X --no-ff` **allowed**, `git -C <path> merge X --no-ff` **denied** — and `-C` is what
+> `.agents/rules/nothing-guards-the-merge-target.md` *mandates*. Obeying the safety law guaranteed
+> the permission miss. `gh pr create` has none of that: it is one command, it needs no checkout on
+> `main`, it writes nothing on this machine, and it is what actually landed PR #5, #6 and #8.
+
+### Resuming after the operator's click
+
+When Step 3 handed back a link, the close-out is **paused, not finished**. Once the operator has
+merged, re-invoke it to run Steps 4–6 only:
+
+```bash
+/smh-close-task-merge-tree --after-merge <JIRA-KEY>
+```
+
+It verifies the merge with plain git — no `gh` required, so this half works on any machine:
+
+```bash
+env -u GITHUB_TOKEN git -C "$REPO" fetch origin main
+git -C "$REPO" merge-base --is-ancestor "$BRANCH" origin/main || { echo "NOT merged yet — STOP"; exit 1; }
+git -C "$REPO" log -1 --format=%s origin/main        # -> "Merge pull request #N from ..."
+```
+
+The PR number comes off that merge subject; the merge sha is `git -C "$REPO" rev-parse --short
+origin/main`. Both go in the Dev Record at Step 4.
+
+⛔ If the ancestor check fails, **STOP** — the ticket does not move and no Dev Record is filed. A
+close-out that reports `Done` on an unmerged PR is the same lie as one that reports it on a failed
+merge. ⛔ The `--is-ancestor` check is also why `/smh-close-task-merge-tree` needs squash and rebase
+merges **disabled** on the repo: either rewrites the commit, so the branch tip would not be an
+ancestor of `main` and a real landing would read as a failure.
 
 ## Step 4 — File the Dev Record, then move the ticket
 
@@ -450,13 +456,15 @@ python3 .agents/scripts/jira_feed.py finish --key <JIRA-KEY> \
 python3 .agents/scripts/jira_feed.py check --key <JIRA-KEY> --project "$REPO"   # must exit 0
 ```
 
-⛔ **`--project "$REPO"` is REQUIRED on both, and Step 3 is why.** Both subcommands resolve their
-repo by walking up from **cwd**, and Step 3 ran `git checkout main` — so by the time you reach here
-cwd is the main checkout, standing on `main`. `devrecord`'s new slug default reads the branch you are
-standing on (`lane_slug_here`), `main` has no `/`, and the lane slug comes back empty: the command
-dies with *"devrecord needs --story"* **after the merge has already landed**, and the recovery it
-prints is the free-text `--story` this part exists to eliminate. `$REPO` is the lane worktree Step 0
-pinned; it is still on the lane branch until Step 5 prunes it, so it is the one tree that can answer.
+⛔ **`--project "$REPO"` is REQUIRED on both.** Both subcommands resolve their repo by walking up
+from **cwd**, and cwd is not intent — it resets to the shared checkout at slash-command boundaries,
+and that checkout is on whatever branch the operator left it on. `devrecord`'s slug default reads
+the branch you are standing on; land on a branch with no `/` (like `main`) and the lane slug comes
+back empty, so the command dies with *"devrecord needs --story"* **after the merge has already
+landed**, and the recovery it prints is the free-text `--story` this part exists to eliminate.
+`$REPO` is the lane worktree Step 0 pinned; it is still on the lane branch until Step 5 prunes it,
+so it is the one tree that can answer. ⛔ **Never `checkout` anything to make this work** — no
+command here may change which branch a checkout is on. The operator uses those checkouts.
 The same applies to `check`: without it, a FORK verdict is computed against whichever repo cwd
 happened to be in, and the message never names the repo it read (`preflight-resolves-repo-from-cwd`).
 

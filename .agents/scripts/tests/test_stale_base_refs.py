@@ -63,8 +63,11 @@ ALLOWED: dict[tuple[str, str], str] = {
      "git rev-list --left-right --count main...origin/main    # must be 0 0"): _SYNC,
     ("smh-close-task-merge-tree.md",
      "git rev-list --left-right --count main...origin/main    # must be 0 0"): _SYNC,
-    ("smh-merge-multiple-workingtrees.md",
-     'git -C "$REPO" rev-list --left-right --count main...origin/main    # must be 0 0'): _SYNC,
+    # ⛔ SCC-183 removed a THIRD row here. `/smh-merge-multiple-workingtrees` step 4d used to
+    # merge and push `main` itself and then verify the sync with `main...origin/main`; it now
+    # lands each lane through its own PR, so that line is gone and its exemption ruled nothing.
+    # The "no rows left ruling nothing" check is what noticed — an exemption that outlives the
+    # line it excused is a hole waiting for a future line to fall into.
     ("smh-merge-multiple-workingtrees.md",
      'git -C "$REPO" rev-list --left-right --count main...origin/main    # 0 0'): _SYNC,
 }

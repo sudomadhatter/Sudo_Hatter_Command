@@ -441,22 +441,29 @@ The one step with a gate in front of it, and **the gate is different per repo**:
 The lobby has no `frontend/`. There is no browser journey to drive, so there is no E2E suite and there
 never will be. Don't go looking for one, and never improvise a substitute and call it the gate.
 
-Green, then:
+Green, then **open a pull request and click Merge** — that is the road, since SCC-183:
 
 ```bash
-git checkout main
-env -u GITHUB_TOKEN git pull --ff-only origin main
-git merge <branch> --no-ff -m "merge: <branch> -> main (gated: <evidence>)"
-env -u GITHUB_TOKEN git push origin main
-git branch -d <branch> && env -u GITHUB_TOKEN git push origin --delete <branch>
-git rev-list --left-right --count origin/main...main    # must print: 0  0
+gh pr create --base main --head "$BRANCH" --fill    # opens the PR, prints the link
 ```
 
-`--no-ff` forces a merge commit so the branch reads as one reviewable unit in `main`'s history. Then
-drag the ticket to **Done**.
+Click *Merge pull request* on the link it prints. **Your click is the sign-off.** Then drag the
+ticket to **Done** (or let `/smh-close-task-merge-tree --after-merge <KEY>` do the ticket, the Dev
+Record and the prune for you).
 
-> **`-d`, never `-D`.** Lowercase refuses to delete a branch that didn't merge. That refusal is the check
-> working — if it fires after a merge you thought succeeded, go and look, don't force it.
+> ⭐ **Why this replaced the hand-typed merge below (2026-08-16).** SCC-184 was docs-only with every
+> gate green and it still could not reach `main` in a whole session — not because a gate stopped it,
+> but because the *landing* was fifteen separate commands in the shared checkout and the agent's
+> permission layer refused several of them halfway through, leaving the state stranded. One command
+> and one click has none of those failure points, and GitHub still runs the `main-write-gate` check
+> before it will let the button work.
+
+⛔ **There is no hand-typed alternative any more, and that is deliberate.** The old sequence
+(`checkout main` · `merge --no-ff` · mint a token · `push origin main`) is gone from the close-out:
+it needed a checkout parked on `main`, gates armed on *this* machine, and about fifteen separate
+commands — and it depended on GitHub and the same CI check anyway, so it could never be the answer
+for "GitHub is down". If Actions is genuinely broken, disable the ruleset (see the SOP), merge, and
+re-arm it.
 
 ### 3.8 The one-command version — `/smh-close-task-merge-tree`
 

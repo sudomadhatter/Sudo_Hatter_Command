@@ -705,11 +705,18 @@ all, so `/cicd-update-sprint-memory` has nothing to operate on and simply cannot
 
 ▶ **Diagram:** [`/smh-close-task-merge-tree` in the command atlas](#smh-close-task-merge-tree) — every step, stop and refusal, checked against the live command.
 
-**Typing it IS your merge sign-off** — the same contract `/cicd-push-e2e` carries for an epic. Since
-SCC-118 the merge is a two-part act you never see: the merge commit goes to a throwaway `gate/main-<sha>`
-ref, the command **waits** for GitHub's `main-write-gate` check to pass on that exact commit, and only
-then mints the token (30-minute life, so it is minted *after* the wait) and pushes `main`. A red check
-is a stop, never a `--no-verify`.
+**⭐ What you actually do now, since SCC-183 (2026-08-16): you get a link, and you click it.**
+
+The close-out runs everything it always ran — preflight, the lane's gate, the flight event — and then
+**Step 3 opens a pull request and prints its URL as the last line.** One of two things follows:
+
+| What it says | What you do |
+|---|---|
+| a URL | click **Merge pull request**. That click is your sign-off. Then say so, and the agent runs the rest (`--after-merge`): Dev Record, ticket to `Done`, worktree and branch pruned |
+
+**You will never be handed a list of git commands to type.** If a close-out ever stops and asks you
+to merge by hand, that is the bug, not the procedure. And it never merges for you — there is no lane
+class that self-merges.
 
 **⛔ But if an agent invoked it on its own (SCC-37, 2026-08-14), the invocation authorises
 nothing:** the mint now refuses without your explicit, this-turn merge words passed verbatim
@@ -839,9 +846,43 @@ secondary_repos:
 ### The gate under all of it — how `main` is protected
 
 *Everything above lands work. This subsection is about the one branch that is production, and the
-four things that keep a merge to it honest: one typing = one merge; the merge must land where you
-think; a single-use token carrying your words; and a server-side check for merges made on GitHub
-itself. Read it once; the machinery holds the line afterwards.*
+things that keep a merge to it honest: **the road it travels** (below); one typing = one merge; the
+merge must land where you think; a single-use token carrying your words; and a server-side check for
+merges made on GitHub itself. Read it once; the machinery holds the line afterwards.*
+
+#### ⭐ The road to `main` is a pull request, and you merge it (SCC-183)
+
+**What you do:** the close-out hands you a **link**. You click *Merge pull request*. That click is
+your sign-off. Then tell the agent, and it finishes the paperwork.
+
+**Why this changed.** On 2026-08-16 a docs-only Task (SCC-184 — 226 lines, no deletions, whole test
+suite green) could not reach `main` for an entire session. Every gate passed. What failed was the
+*landing*: about fifteen hand-typed `git`/`gh` commands run in the shared checkout, each judged
+separately by the agent's permission layer, several denied, and the state left stranded halfway
+through. No gate could fix that, because no gate was the problem — the **shape** was. So the local
+ceremony was **deleted**, not supplemented.
+
+| Where | How it lands | Your sign-off |
+|---|---|---|
+| **This repo** (lobby) | the agent opens a PR and stops | **your click** on *Merge pull request* |
+| **Project repos** (AviationChat, etc.) | `/cicd-push-e2e`, unchanged — they publish no `main-write-gate` | the token, carrying your words |
+
+**⛔ No agent merges to `main` here — there is no "small enough to self-merge" class.** An earlier
+cut proposed one and it was cut, because it needed a per-machine permission edit, it changed the
+agent's own rules, and it only worked on one of the four platforms. Nothing lands without your click.
+
+**Why the PR needs no token.** The token exists to prove *you said yes* before something on **your
+machine** pushes to `main`. A merge performed on GitHub happens on GitHub's servers and never
+touches your machine — so there is nothing there for a local hook to guard. It is *structurally
+absent*, not bypassed. (SCC-118's own finding, which is why `main-write-gate` is server-side.)
+
+**And a click is harder to fake than the old contract.** "Typing the command IS the sign-off" is a
+document, and a document sitting in an agent's context still looks valid six tasks later — which is
+exactly how one invocation once rode six merges. A button cannot be inferred.
+
+**If GitHub Actions is down** and `main` genuinely must move, the answer is the ruleset escape at
+the bottom of this section — not a second road. There is no local road that works when GitHub does
+not: the old one also pushed to GitHub and also waited on the same check.
 
 #### ⛔ One typing = ONE merge
 
