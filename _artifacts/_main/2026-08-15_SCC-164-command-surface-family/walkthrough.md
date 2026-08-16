@@ -30,7 +30,7 @@ SCC-163). The arming ruling was closed separately, quoted in § ARMING.
 - [x] **Part 4 · A / SCC-165** — a bare `main` is a stale ref (**25** operands: 4 ruled local, 21 fixed)
 - [x] **Part M · SCC-182** — a `cd` out of the workspace retargets every later relative path (discovered mid-lane, minted as Part M)
 - [x] **Part 5 · B / SCC-166** — cicd-code-review gains its twin's two steps, ADAPTED (**6** personal-name lines, not the 2 the plan measured; AP twin re-diffed and restamped)
-- [ ] **Part 6 · H / SCC-176** — the plan-time port checklist
+- [x] **Part 6 · H / SCC-176** — the plan-time port checklist (the sketched `\bport\b` key matched **7** unrelated bodies and none of the three; re-keyed on the phrase step 2 introduces)
 - [ ] **Part 7 · F / SCC-174** — jira_feed check stops blessing a forked Dev Record ⛔ CUT LINE
 - [ ] **Part 8 · C / SCC-171** — the token path as git gives it
 - [ ] **Part 9 · G / SCC-175 + Part 12 · L / SCC-180** — no post-merge write to main; the `--hard` remedy
@@ -434,6 +434,139 @@ confirm-scope task. Recorded in the stamp header so the next reader does not re-
 `story_ref_ok` and `name_hits` are now pure functions called by the live checks **and** by their
 controls, so B7 and B8 have something to kill. Same discipline the own-list controls in `CS-08`
 already followed.
+
+
+# Part 6 — H (SCC-176): the plan-time port checklist
+
+## The gap
+
+Every lobby↔project port so far — AVCH-54, then AVCH-59 — cost an afternoon and found the **same
+class** of defect: the centre's copy is subtly wrong the moment it runs in a **submodule**, on
+**Windows**, inside a **worktree**, in a **thin** repo. All four AVCH-59 divergences came from one
+short list, and **two of them are Part C of this very ticket**. Nothing at plan time asked those
+questions, so they surfaced at review, or in production on the other machine.
+
+H is the answer, and it is honest about what it is: **a rule plus prose in three commands, with
+exactly one mechanical piece.** An agent executes the checklist; nothing machine-reads a plan and
+judges whether the six questions were answered. The plan says so (F16 adopted, rev 2), this
+walkthrough says so, and the SOP says so — rather than implying a gate that does not exist.
+
+## The one thing that IS mechanical, and why its key had to change
+
+The wired piece is a `workflow_lint._RULE_POINTERS` row: a command that describes a port must **cite
+the rule**. It is a **WARN / exit 1**, binding on this lane only through the tip's `0/0` — never
+promoted to `rep.err`, which would be new blocking law and needs the operator's own words.
+
+The plan sketched the key as *"port" as a step verb*. Audit F26 called it wrong, and the tree agrees:
+
+| Candidate key | Command files it matches today |
+|---|---|
+| `\bport\b` (the sketch) | **7** — `cicd-autopilot-deepseek4.md`, `cicd-code-review-AP.md`, `cicd-e2e.md` ("port 3100"), `cicd-live-testing-team.md` (`--port`), `cicd-self-audit-AP.md`, `smh-adviser-board.md`, `smh-code-review.md` ("Port the rule verbatim") — and **none** of the three H edits |
+| `exists in more than one repo` | 0 before this part; the exact phrase step (2) writes into all three |
+| `git diff --no-index` | 0 before this part; the command that ANSWERS the trigger |
+
+The plan's audit measured 6; the tree at `96f5372` says **7** — `smh-adviser-board.md` was not on the
+audit's list. Recorded, not silently matched.
+
+Keyed on the sketch, RED would have named seven files that have nothing to do with porting, and the
+tip could never have reached `0/0` — the row would have been *disarmed* rather than satisfied. The
+shipped row carries **both** honest arms: the trigger condition as the commands state it, **and** the
+command that answers it, so a command that words the trigger differently but still tells an agent to
+diff two copies is not silently exempt. Same lesson as SCC-170's row one line above it: **key on the
+machinery, never on the concept.**
+
+## What changed
+
+| File | Change |
+|---|---|
+| `.agents/rules/port-checklist.md` | **new** — six checks, each with the command that answers it; the header states it runs in **both** directions (H5); items 4 and 6 **cite** `project-law.md` rather than restating the thin-repo and repo-local-enforcement law |
+| `.agents/rules/INDEX.md` | router row — the trigger, the six checks in one line, and the lint row |
+| `.agents/scripts/workflow_lint.py` | the `("port-checklist", "porting", …)` row, with the rejected key recorded in its own comment |
+| `.agents/commands/smh-plan-task.md` | MANDATORY RULE **5** — a port gets its own plan section, and the diff **proves** the trigger before the breakdown is proposed; rules-in-force bullet |
+| `.agents/commands/smh-self-audit.md` | a Phase 1 blast-radius row — differing copies with no section is a **NO-GO**, not a note; rules-in-force bullet |
+| `.agents/commands/cicd-self-audit.md` | the same, as a closing paragraph of Phase 1 (this file carries no rules-in-force block, so the citation is inline) |
+| `docs/_scc_sops_prds/workflows_testing_SOP.md` | the top pointer table gains a row; §9 gains the passage, which names the WARN severity and says plainly which part is prose |
+| `.agents/scripts/tests/test_command_surfaces.py` | **CS-12** — 13 checks |
+| the four door caches | regenerated by `sync-agents.ps1`; `CS-03` caught all four as stale before the commit |
+
+## RED → GREEN, in two captures
+
+The part has two red states because it has two claims, and each needed its own.
+
+1. **`red-part6.txt`** — CS-12 written first, against a tree with no rule, no row and no command
+   text: **3/13**. The three that passed are the negative controls, which is what a negative control
+   is supposed to do on an empty tree — and exactly why they cannot be the only evidence.
+2. **`red-part6-lint.txt`** — the row and the trigger text landed, the **citation deliberately
+   withheld**. `workflow_lint --toolkit-only` named **exactly three files, and only those three**:
+
+   ```
+   [WARN ] rule-pointers: cicd-self-audit.md: porting but never points at `.agents/rules/port-checklist.md`
+   [WARN ] rule-pointers: smh-plan-task.md:   porting but never points at `.agents/rules/port-checklist.md`
+   [WARN ] rule-pointers: smh-self-audit.md:  porting but never points at `.agents/rules/port-checklist.md`
+   -- 0 error(s), 3 warning(s), 8 info --
+   ```
+
+   That capture is F26's correction shown working: the sketched key would have printed seven wrong
+   names here and none of these three.
+
+GREEN: CS-12 **13/13**, `workflow_lint --toolkit-only` `0 error(s), 0 warning(s), 8 info`,
+`check_maps.py --depth3-only --strict` exit 0 (the new INDEX row's path resolves), `run_all.py`
+**32/32**.
+
+## Where CS-12 lives, and the file that is still unwired
+
+The natural home for a `check_rule_pointers` test is `test_workflow_lint.py`. It has **zero**
+`c.block(` calls, so it sits outside the ORPHAN walker's wired set entirely — adding one block would
+opt its 57 existing checks in **as orphans**, the same trap Part 5 cleared on
+`test_command_surfaces.py`. The sweep forces the issue rather than merely preferring it:
+`mutation_sweep.py:228` passes `m["block"] or m["case"]` to `--case` **unconditionally**, so a mutant
+aimed at an unwired file exits 3 (`NO_MATCH`) and is scored a sweep error, never a kill.
+
+CS-12 went into `test_command_surfaces.py` instead, which is already fully wired and is the right
+owner on the merits: the contract is *a command surface that describes a port must cite the rule*.
+The block imports `workflow_lint` and calls the **real** `check_rule_pointers` over fixture trees, so
+the row's wiring is what is pinned, not a restatement of its regex — delete the row and the two
+WIRING checks go down with it. A control that re-implemented the pattern would keep passing with the
+row gone; that vacuity is what B7 taught this lane one part ago.
+
+**Owed, not done:** `test_workflow_lint.py` is the largest unwired test file this lane has touched,
+and `check_rule_pointers` had **no** coverage at all before CS-12 — Part 1 added a row to an untested
+function. Wiring that file is a follow-on, not Part 6's scope.
+
+## H4 — the retro run, over Parts C and D, on the current lobby scripts
+
+H4's contract: run the checklist over the code Parts C and D will change, **before** they are built.
+If it does not catch C's two divergences, the checklist is wrong — not the scripts. Measured at
+`96f5372`:
+
+| # | Check | `mint-push-token.sh` | `pre-push-main-approval.sh` | Verdict |
+|---|---|---|---|---|
+| 1 | path used as git gave it | **:119-122** `case "$GIT_COMMON" in /*)` | **:44-47** the same block | ⭐ **CAUGHT — this is C1**, in both scripts. AGY's copies have already dropped it; the lobby's are the stale side |
+| 2 | `printf`, not `echo` | :145 `\"$APPROVAL\"` | :179 `\"$t_approval\"` | clean — an escaped quote inside a double-quoted string, not an escape `echo` interprets. One line, answered |
+| 3 | verify the FILE, not `$?` | **:135-142** `{ … } > "$TOKEN"` with no `\|\| exit`, and the *minted* banner at :144 prints regardless | no redirect | ⭐ **CAUGHT — this is C3** |
+| 4 | no `.agents/rules/` path a thin repo lacks | none | :4, :56 | correct **here** (the lobby carries `git-policy.md`); AGY's copy already adapted it to name the centre's path at its :61-66. The check's job was to make someone look, and the look confirms the divergence is intentional in both directions |
+| 5 | both machines | none | :15 only — the **comment** recording the `python`/`python3` 127 incident; no live invocation | clean, and the comment is the precedent this item exists for |
+| 6 | repo-local hooks, target's own key | — | — | satisfied: the AVCH-59 → lobby port back is carrying an **SCC** key (this ticket), a ticket per repo |
+
+**Two divergences required, two found, both from Part C.** H4 passes, and the retro doubles as Parts
+8 and 10's line-numbered work list.
+
+## H5 in both directions, proved by the run above
+
+The checklist's header states it, and this retro is the proof: the fix flows **AGY → lobby** here.
+AGY's `mint-push-token.sh:128-141` already carries the corrected form *and the comment explaining
+why* (`--git-common-dir` answers absolute in a submodule on both platforms, and git-for-windows
+spells that `C:/…`, which no `/*` glob matches). A one-way checklist would have been skipped on
+exactly the half this ticket is.
+
+## The AP twin — read, nothing to port
+
+`cicd-self-audit-AP.md` delegates: *"running the pre-dev adversarial audit defined in
+`@.agents/commands/cicd-self-audit.md`, adapted for unattended autopilot use"* — it overrides only
+I/O, lane boundaries and the blocker token, and names no phases of its own. The Phase 1 paragraph
+therefore reaches the autopilot lane through the reference it already carries; a second copy here
+would be the drift the stamp exists to prevent. **Re-diffed, nothing ported, restamped with that
+reasoning** — never a bare bump.
 
 
 ## Your Actions

@@ -2879,6 +2879,13 @@ review engine). Done means a script's exit code was green — never the agent's 
 [§15](#15-the-autopilot-lane). Lanes: `/cicd-autopilot-opencode` (opencode engine),
 `/cicd-autopilot-deepseek4` (cheaper Dev model, same QA).*
 
+> **Stage 2's twin inherits the phases rather than copying them.** `/cicd-self-audit-AP` names no
+> phases of its own — it runs *"the pre-dev adversarial audit defined in `@.agents/commands/`*
+> `cicd-self-audit.md`", overriding only its I/O, its lane boundaries and the blocker token. So the
+> cross-repo **port-checklist** paragraph added to the primary's Phase 1 (SCC-176) reaches the
+> autopilot lane through that reference, and was deliberately **not** copied into the twin: the AP
+> stamp exists to stop exactly that kind of second copy from drifting.
+
 ```mermaid
 flowchart TD
     L["launch from the EPIC branch\nelse it refuses to start"] --> W["open the story's own worktree\nclaude/TICKET-story"]
