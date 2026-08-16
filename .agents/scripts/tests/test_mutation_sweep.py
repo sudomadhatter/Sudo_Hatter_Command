@@ -166,6 +166,22 @@ def main() -> int:
                     (repo / SRC).read_text(encoding="utf-8").count(PATTERN) == 1,
                     (repo / SRC).read_text(encoding="utf-8"))
 
+        with TempDir() as t:
+            repo = build(t)
+            # A runner that fails SILENTLY - non-zero, no `FAILED:` line. Nothing can be
+            # attributed, so it is an error in the sweep and never a kill. Without this case
+            # the whole attribution requirement could be deleted and no test noticed.
+            (repo / "silent.py").write_text("import sys\nsys.exit(1)\n", encoding="utf-8")
+            git(repo, "add", "-A")
+            git(repo, "commit", "-qm", "silent")
+            tab = repo / "s.json"
+            tab.write_text(json.dumps({"test": [sys.executable, "silent.py"],
+                                       "mutants": [killer()]}, indent=2), encoding="utf-8")
+            code, out = _run(repo, ["--table", str(tab)])
+            c.check("K2f a runner that fails with no `FAILED:` line cannot attribute a kill",
+                    code != 0 and "no `FAILED:` line" in out,
+                    f"exit={code} " + out[-400:])
+
     # ── K3 · refuse to start dirty · restore on interrupt · an empty table is a refusal ──
     if c.block("K3 · dirty start, interrupt, empty table, bad anchor"):
         with TempDir() as t:

@@ -143,9 +143,14 @@ def judge(code: int, out: str, case: str) -> tuple[bool, str]:
     if not failed:
         return False, (f"SWEEP ERROR - exit {code} with no `FAILED:` line, so the kill cannot "
                        "be attributed to a named case")
-    if case.lower() not in failed[0].lower():
+    # ⛔ The LAST `FAILED:` line, never the first. A test file that runs other processes
+    # prints THEIR summaries too - this script's own suite spawns sweeps whose fixture
+    # runners emit their own `FAILED:` lines - and the harness's own summary is what
+    # `finish()` prints last. Reading `failed[0]` attributed the kill to a nested fixture's
+    # case and reported a real kill as unattributable (found sweeping this file, M1).
+    if case.lower() not in failed[-1].lower():
         return False, (f"SWEEP ERROR - something died, but not `{case}`. The kill is not "
-                       f"evidence about the declared case. Got -> {failed[0][:160]}")
+                       f"evidence about the declared case. Got -> {failed[-1][:160]}")
     return True, f"KILLED by {case}"
 
 
@@ -204,8 +209,21 @@ def main() -> int:
     try:
         for m in mutants:
             src = repo / m["file"]
-            src.write_text(src.read_text(encoding="utf-8")
-                           .replace(m["original"], m["mutated"], 1), encoding="utf-8")
+            before = src.read_text(encoding="utf-8")
+            src.write_text(before.replace(m["original"], m["mutated"], 1), encoding="utf-8")
+            # The anchor was verified UNIQUE before the sweep started, so a no-op apply means
+            # the file is not in its pre-sweep state - the previous mutant was not restored.
+            # The doctrine already called this out ("a mutant that removes nothing is
+            # DEFECTIVE - a SKIP that counts as a survivor"); it is checked here because the
+            # symptom is silent: the stale mutation keeps failing the same case, and the
+            # sweep happily reports a second kill it never earned.
+            if src.read_text(encoding="utf-8") == before:
+                why = ("SWEEP ERROR - the mutant did not APPLY: its anchor is not in the file. "
+                       "The file is not in its pre-sweep state, so nothing before this can be "
+                       "believed either")
+                verdicts.append((m["id"], False, why))
+                print(f"⛔ NOT KILLED {m['id']}\n            {why}")
+                continue
             cmd = m.get("test") or data["test"]
             code, out = run_test(cmd, repo, m.get("block") or m["case"])
             restore()                      # immediately, so the next mutant starts clean
