@@ -2290,11 +2290,23 @@ Nothing is actually owed.
                             "--decision", "x")
             c.check("F3 · ...and the lane's OWN slug is silent (positive control)",
                     code == 0 and "is not this lane" not in out, out.strip()[:300])
-            # Optional does not mean guessable: off a manifested lane there is no source to
-            # default from, and rendering a headerless record would fork the ticket a third way.
+            # Optional does not mean guessable: with no source to default from, rendering a
+            # headerless record would fork the ticket a third way. Both halves of "no source"
+            # get their own case, and the SECOND one is here because the sweep demanded it -
+            # mutant F3c (drop the manifest cross-check, so any prefixed branch is a lane)
+            # SURVIVED against the non-git fixture alone: `rev-parse` fails there, so the
+            # branch guard answered and the cross-check was never reached.
             code, out = jfp(repo, "devrecord", "--decision", "x")
-            c.check("F3 · no manifest for this branch -> --story is still REQUIRED",
-                    code == 2 and "no task.yaml declares the branch" in out, f"exit={code} {out.strip()[:300]}")
+            c.check("F3 · off a git checkout entirely -> --story is still REQUIRED",
+                    code == 2 and "no task.yaml declares the branch" in out,
+                    f"exit={code} {out.strip()[:300]}")
+            stray = make_lane_repo(tmp, "lane_stray",
+                                   manifests=(("2026-08-15_widget", WIDGET),),
+                                   branches=(WIDGET, ROSTER), on=ROSTER)
+            code, out = jfp(stray, "devrecord", "--decision", "x")
+            c.check("F3 · a prefixed branch NO manifest declares is not a lane to default from",
+                    code == 2 and "no task.yaml declares the branch" in out,
+                    f"exit={code} {out.strip()[:300]}")
 
     return c.finish()
 
