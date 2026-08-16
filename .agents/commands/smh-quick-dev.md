@@ -194,6 +194,15 @@ a one-line doc tweak. Say which, then proceed. Anything above that gets the gate
 
 ## Step 1.6 — Subtasks: PROPOSE the breakdown, then stop (SCC-119)
 
+> ⭐ **Look for a home BEFORE you mint (`work-consolidation.md` rule 1, SCC-170).** Work discovered
+> mid-lane — a review finding, a bug met while building, a defect a test exposes — is **not**
+> automatically a new Task. In order: does this lane's own ticket cover it (a checklist line)? is
+> there an **open parent** whose surface this belongs to (then it is the next lettered
+> **Subtask** under it, with an index row added via `jira_feed.py index-row`, which reads the
+> parent's description back and refuses if a line went missing)? only then mint — and say in ONE
+> line what you looked at. Judgment, not a gate; the unstated choice is the thing that is banned.
+> *"we are not developing 3 task for every 1 we try to fix"* (operator, 2026-08-15).
+
 **Runs only after `approved`, and only on a `Task`** — never on a BMAD Story, whose story file already
 holds its breakdown (`jira.md` §Subtasks: the story lane's answer is **NEVER**).
 

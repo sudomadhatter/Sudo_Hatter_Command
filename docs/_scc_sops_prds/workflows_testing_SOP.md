@@ -1085,6 +1085,45 @@ flowchart LR
     STOP -.->|"your sign-off, SEVERAL lanes"| MULTI["/smh-merge-multiple-workingtrees"]
 ```
 
+### One lane for a whole Task — the consolidated mode (SCC-164 · SCC-170)
+
+**The problem it fixes:** every lane found real defects, every defect became its own Task, and the
+queue grew faster than it drained — *"we are not developing 3 task for every 1 we try to fix."*
+
+**The rule is `.agents/rules/work-consolidation.md`**, and it is **judgment, not a gate**. Six rules:
+look for a home before you mint · when able, one worktree for the whole Task · verify the batch in one
+block · artifact-first · two stops only · verify the outcome of a board write, never its exit code.
+
+**What changes when you run a Task as ONE lane:**
+
+| | Consolidated | Per-subtask |
+|---|---|---|
+| branch | ONE, keyed by the **parent** | one per subtask |
+| plan | ONE, with a part section each | one each |
+| `task.yaml` | `riders: [<every subtask key>]` | no riders |
+| commits | **the subtask's key leads each commit** — its dev panel stays populated and a part reverts as a unit | the lane's key |
+| gate | ONCE, at the tip, through the receipt writer | once per lane |
+| close-out | ONE ceremony: riders flip first, parent last | one each |
+
+`/smh-plan-task` **Step 2.5** picks the mode and says why. It cuts the tree from `origin/main` after a
+fetch and immediately runs `git branch --unset-upstream` — branching from `origin/main` otherwise
+points this lane's upstream at **main itself**.
+
+**Shipping before every part is built — partial landing.** Write `landing_mode: partial` into `task.yaml`
+and **trim `riders:` to the subset actually on the branch**. Then the trimmed riders flip, the
+**parent stays open**, and the remainder becomes the next lane. `task_preflight.py` checks every
+declared rider against the lane's commits and refuses one that leads no commit there; an unrecognised
+`landing:` value fails CLOSED, so a typo blocks rather than relaxes.
+
+**Adding a discovered part to the parent's index.** `acli edit --description` **replaces** the field,
+and one such write silently deleted a part row from SCC-164 on 2026-08-15. Use:
+
+```bash
+python3 .agents/scripts/jira_feed.py index-row --key <PARENT> --line "  Part M  SCC-000  one line" --apply
+```
+
+It appends the row, reads the description back, and exits 2 naming any prior line that went missing.
+
 ### The lightweight lane — /smh-quick-fix
 
 **Not everything on this side of the fence is a full Task.** Sometimes you want one specific thing

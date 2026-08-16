@@ -239,7 +239,14 @@ elif head[:3] == ["jira", "workitem", "edit"]:
         state.setdefault("labels", {})[val("--key")] = [
             x for x in (val("--labels") or "").split(",") if x]
     else:
-        state["description"] = read("--description-file")
+        body = read("--description-file")
+        # SCC-170: the LOSSY WRITER. `lossy_drop` models the real failure this guard exists
+        # for - a write that lands, exits 0, and quietly comes back short. Nothing about the
+        # exit code tells you; only reading the field back does.
+        drop = state.get("lossy_drop")
+        if drop:
+            body = "\n".join(ln for ln in body.splitlines() if drop not in ln)
+        state["description"] = body
     state["edit_args"] = args
     save()
     print("Work item edited")
@@ -344,6 +351,71 @@ def main() -> int:
             os.environ["STUB_STATE"] = str(state)
             return run_script("jira_feed.py", args[0], "--project", str(repo),
                               "--acli", str(acli), *args[1:])
+
+        # ── SCC-170 · index-row: a parent's index survives its own edit ────────
+        if c.block("SCC-170 index-row: a parent index survives its own edit"):
+            # `acli edit --description` REPLACES the field. Every "add a row to the parent"
+            # step in this system is therefore a read-modify-write, and one of them lost
+            # SCC-164's Part E row on 2026-08-15 - silently, exit 0. The row was gone and the
+            # only evidence was a human noticing later. This subcommand is the read-BACK that
+            # turns that class of loss into an exit code.
+            INDEX = ("Command-surface family. THE PARTS\n"
+                     "  Part A  SCC-165  stale main refs\n"
+                     "  Part B  SCC-166  review steps\n"
+                     "  Part C  SCC-171  git-common-dir\n")
+            ROW = "  Part M  SCC-999  a newly discovered part"
+
+            set_state(state, description=INDEX, lossy_drop=None)
+            code, out = jf("index-row", "--key", "TEST-1", "--line", ROW, "--apply")
+            st = get_state(state)
+            c.check("index-row: appends the row and exits 0", code == 0, out.strip()[:300])
+            c.check("index-row: the new row is on the ticket",
+                    "SCC-999" in st["description"], st["description"][-200:])
+            c.check("index-row: EVERY pre-existing row survived",
+                    all(k in st["description"] for k in ("SCC-165", "SCC-166", "SCC-171")),
+                    st["description"][-300:])
+
+            # ⛔ THE load-bearing negative. A writer that drops a line still exits 0 at the
+            # acli layer; only the read-back catches it. Without this case the whole
+            # subcommand is a more elaborate way to lose the same row.
+            set_state(state, description=INDEX, lossy_drop="SCC-166")
+            code, out = jf("index-row", "--key", "TEST-1", "--line", ROW, "--apply")
+            # ⛔ `code == 2` alone is vacuous here: argparse ALSO exits 2 on an unknown
+            # subcommand, so before this shipped the assertion passed by the feature not
+            # existing. The output must prove the guard ran, not the parser.
+            c.check("index-row: a write that DROPS a line is caught (exit 2), not blessed",
+                    code == 2 and "usage: jira_feed.py" not in out,
+                    f"exit {code}: " + out.strip()[:300])
+            c.check("index-row: ...and it names the line that went missing",
+                    "SCC-166" in out, out.strip()[:400])
+            c.check("index-row: ...and it says the field was REPLACED, not appended to",
+                    "read back" in out.lower(), out.strip()[:400])
+
+            # A row already present is a no-op, not a duplicate: the discovery step re-runs.
+            set_state(state, description=INDEX + ROW + "\n", lossy_drop=None)
+            code, out = jf("index-row", "--key", "TEST-1", "--line", ROW, "--apply")
+            st = get_state(state)
+            c.check("index-row: an already-present row is a no-op (exit 0)", code == 0,
+                    out.strip()[:200])
+            c.check("index-row: ...and it is not duplicated",
+                    st["description"].count("SCC-999") == 1, st["description"][-300:])
+
+            # Without --apply nothing is written: the dry run is the default, as everywhere
+            # else in this file.
+            set_state(state, description=INDEX, lossy_drop=None)
+            code, out = jf("index-row", "--key", "TEST-1", "--line", ROW)
+            st = get_state(state)
+            c.check("index-row: without --apply nothing is written", code == 0
+                    and "SCC-999" not in st["description"], out.strip()[:200])
+
+            # An EMPTY description is not a licence to replace it with one row - that is the
+            # same data loss wearing a different mask (the ticket may be unreadable, not bare).
+            set_state(state, description="", lossy_drop=None)
+            code, out = jf("index-row", "--key", "TEST-1", "--line", ROW, "--apply")
+            c.check("index-row: refuses to write a row onto an EMPTY description",
+                    code == 2, f"exit {code}: " + out.strip()[:300])
+
+            set_state(state, description="", lossy_drop=None, comments=[])
 
         # ── outline: rendered FROM the story file, never invented ──────────────
         code, out = jf("outline", "--story", "9.1", "--epic-key", "TEST-1", "--lane", "full")

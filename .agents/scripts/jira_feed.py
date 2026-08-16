@@ -1792,6 +1792,94 @@ def cmd_flag(args) -> int:
     return 0
 
 
+def cmd_index_row(args) -> int:
+    """Append ONE row to a parent ticket's index description, and PROVE it survived (SCC-170).
+
+    ⛔ `acli jira workitem edit --description` REPLACES the field. It does not append, it has
+    no merge, and it exits 0 either way. Every "add the new part to the parent's index" step
+    in this system is therefore a read-modify-write against a field other sessions also
+    write - and on 2026-08-15 one of them lost SCC-164's Part E row exactly that way:
+    silently, exit 0, discovered by a human reading the ticket later.
+
+    This is a DATA-LOSS guard, not a policy gate - the one place `work-consolidation.md`
+    puts a mechanism, because the failure is invisible at the point it happens and the lost
+    text is not recoverable from anywhere. The read-back is the entire feature: write, read
+    the field again, and refuse (exit 2) if any line that was there before is missing.
+
+    Exits: 0 appended (or already present, or a dry run) · 2 refused / the read-back lost a
+    line · 4 the board was unreachable (transport, never a verdict on the ticket).
+    """
+    binary = acli_bin(args.acli)
+    row = args.line.rstrip("\n")
+    if not row.strip():
+        say("jira-feed: --line is empty - nothing to add")
+        return 2
+
+    fields = view_fields(binary, args.key, timeout=args.timeout, strict=False)
+    if fields is None:
+        say(f"jira-feed: could not reach the board to read {args.key} - NOTHING was "
+            f"written. Transport, not a verdict: retry when you have a connection.")
+        return 4
+    before = field_text(fields.get("description"))
+    if len(before.strip()) < MIN_DESCRIPTION:
+        # An empty read is not evidence the ticket is bare - it is equally what an
+        # unreadable or partially-fetched description looks like, and writing one row over
+        # it is the same data loss this command exists to stop, wearing a different mask.
+        say(f"jira-feed: {args.key}'s description reads as empty ({len(before.strip())} "
+            f"chars) and this command REPLACES the field - refusing to write one row over "
+            f"it. An empty read is not proof the ticket is bare. Check the ticket, then "
+            f"write the whole description with `acli ... edit --description-file`.")
+        return 2
+
+    keep = [ln for ln in before.splitlines()]
+    if any(ln.strip() == row.strip() for ln in keep):
+        say(f"jira-feed: {args.key} already carries that row - nothing to do "
+            f"(this step is re-run safe)")
+        return 0
+
+    after = before.rstrip("\n") + "\n" + row + "\n"
+    if not args.apply:
+        say(f"jira-feed: DRY RUN - would append to {args.key}:\n  {row}\n"
+            f"(re-run with --apply; the read-back check runs then)")
+        return 0
+
+    tmp = write_temp(after)
+    try:
+        r = acli(binary, ["jira", "workitem", "edit", "--key", args.key, "--yes",
+                          "--description-file", str(tmp)])
+    finally:
+        tmp.unlink(missing_ok=True)
+    if r.returncode != 0:
+        say(f"jira-feed: the edit failed on {args.key} - nothing was written: "
+            f"{(r.stderr or r.stdout).strip()[:400]}")
+        return 2
+
+    # ⭐ THE POINT. acli exited 0; that proves nothing. Read the field back and compare.
+    again = view_fields(binary, args.key, timeout=args.timeout, strict=False)
+    if again is None:
+        say(f"jira-feed: {args.key} was written but could NOT be read back - treat this as "
+            f"UNVERIFIED and check the ticket by hand before relying on the row.")
+        return 2
+    now = field_text(again.get("description"))
+    lost = [ln for ln in keep if ln.strip() and ln.strip() not in
+            {x.strip() for x in now.splitlines()}]
+    if lost:
+        say(f"jira-feed: ⛔ {args.key}'s description was REPLACED and the read back is "
+            f"MISSING {len(lost)} line(s) that were there before:\n"
+            + "\n".join(f"    {ln.strip()[:120]}" for ln in lost[:10])
+            + f"\n  `edit --description` replaces the whole field. Restore the ticket from "
+              f"the text above before doing anything else - this is data loss, not a "
+              f"formatting difference.")
+        return 2
+    if row.strip() not in {x.strip() for x in now.splitlines()}:
+        say(f"jira-feed: {args.key} accepted the edit but the new row is not in the read "
+            f"back - nothing landed. Do not re-run blindly; read the ticket.")
+        return 2
+    say(f"jira-feed: {args.key} index row added and read back "
+        f"({len(keep)} prior line(s) intact):\n  {row.strip()[:160]}")
+    return 0
+
+
 def cmd_check(args) -> int:
     """Is this ticket actually carrying the feed - description AND one Dev Record?"""
     binary = acli_bin(args.acli)
@@ -1988,6 +2076,15 @@ def main() -> int:
                                f"ticket work? no board, no network")
     p_ca.add_argument("--walkthrough", required=True)
 
+    p_ix = sub.add_parser("index-row",
+                          help="append ONE row to a parent's index description and PROVE "
+                               "the rest of it survived (acli edit REPLACES the field)")
+    common(p_ix)
+    p_ix.add_argument("--key", required=True, help="the PARENT ticket whose index this is")
+    p_ix.add_argument("--line", required=True, help="the row to append, verbatim")
+    p_ix.add_argument("--apply", action="store_true", help="without this, renders only")
+    p_ix.add_argument("--timeout", type=int, default=90, metavar="SEC")
+
     p_chk = sub.add_parser("check", help="does this ticket carry outline + Dev Record?")
     common(p_chk)
     p_chk.add_argument("--key", required=True)
@@ -1999,7 +2096,7 @@ def main() -> int:
     return {"outline": cmd_outline, "mint": cmd_mint, "devrecord": cmd_devrecord,
             "audit": cmd_audit, "check": cmd_check, "trace": cmd_trace,
             "flag": cmd_flag, "start": cmd_start, "check-actions": cmd_check_actions,
-            "finish": cmd_finish}[args.verb](args)
+            "finish": cmd_finish, "index-row": cmd_index_row}[args.verb](args)
 
 
 if __name__ == "__main__":

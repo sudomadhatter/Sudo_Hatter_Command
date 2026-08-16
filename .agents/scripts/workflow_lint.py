@@ -75,6 +75,12 @@ _RULE_POINTERS = (
      re.compile(r"git worktree\b")),
     ("smh-target-resolution", "target-resolving",
      re.compile(r"^#+\s*Step 0\b.*(?:target|project)", re.I | re.M)),
+    # SCC-170. Keyed on the machinery the rule OWNS - the `riders:` / `landing:` manifest
+    # keys - not on the word "consolidate". A phrase-keyed row names the files that really
+    # drive the mechanism; a concept-keyed one ("one worktree") matched six unrelated cicd
+    # bodies and none of the three that matter (audit F26).
+    ("work-consolidation", "consolidating",
+     re.compile(r"^\s*riders\s*:|`riders:|landing\s*:\s*partial", re.M)),
 )
 
 

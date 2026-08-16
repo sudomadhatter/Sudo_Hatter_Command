@@ -414,6 +414,12 @@ forever, and how a real dead lens gets waved through as "just the mode".
 
 ## Collect
 
+> ⭐ **A finding that becomes work looks for a home first (`work-consolidation.md` rule 1, SCC-170).**
+> When a survivor is real but out of this lane's scope, it is a lettered **Subtask under an open
+> parent** whose surface it belongs to before it is ever a new Task — the parent's index row goes on
+> with `jira_feed.py index-row` (it reads the description back and refuses if a prior row went
+> missing). Mint only when nothing fits, and name what you looked at. Judgment, not a gate.
+
 Gather the raw output of every lens that produced one, tagged with which lens said it. Do not
 normalize, dedupe, or judge anything here — that is step 3's job, and doing it early loses the
 independence the fan-out just paid for.
