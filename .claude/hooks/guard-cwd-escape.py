@@ -29,6 +29,7 @@ that cannot run must never fail SILENTLY - but this one is advisory, so silence 
 Canonical source: `.agents/hooks/`. Deployed to `.claude/hooks/` - never hand-edit the copy."""
 import json
 import os
+import shlex
 import sys
 
 KEYWORDS = {"{", "}", "!", "time", "do", "then", "else", "elif", "fi", "done", "sudo", "command"}
@@ -81,6 +82,14 @@ def segments(cmd: str) -> list[tuple[str, int]]:
             j = cmd.find("\n", i)
             i = n if j < 0 else j
             continue
+        # ⛔ `<<<` is a HERESTRING, not a heredoc: its operand is one word on the SAME line,
+        # and there is no terminator to look for. Treating it as a heredoc made the delimiter
+        # scan find no `\n`, return `n`, and swallow the whole rest of the command - so a
+        # `cd` after a herestring was never seen and the guard went silently blind.
+        # The whole 3-char token is consumed here: merely declining the heredoc branch left
+        # the SECOND `<<` to be re-read as an opener on the next pass, with the same result.
+        if cmd.startswith("<<<", i):
+            buf.append(cmd[i:i + 3]); i += 3; continue
         if cmd.startswith("<<", i):
             i = _skip_heredoc(cmd, i, n)
             continue
@@ -113,7 +122,12 @@ def _skip_heredoc(cmd: str, i: int, n: int) -> int:
         return i + 2
     eol = cmd.find("\n", k)
     if eol < 0:
-        return n
+        # ⛔ No newline after the delimiter means there is no body and no terminator, so this
+        # is NOT a heredoc - it is `<<<`, an arithmetic `1 << 2`, or a truncated fragment.
+        # Returning `n` swallowed the rest of the command and blinded the guard to any later
+        # `cd`. Advance past the operator instead: on doubt this scanner must see MORE of the
+        # command, never less - the same call `if not delim` already makes two lines up.
+        return i + 2
     j = eol + 1
     while j <= n:
         nl = cmd.find("\n", j)
@@ -128,7 +142,14 @@ def _skip_heredoc(cmd: str, i: int, n: int) -> int:
 
 def first_word_and_arg(seg: str) -> tuple[str, str]:
     """The segment's command and its first non-flag argument, past keywords and VAR=x prefixes."""
-    words = seg.split()
+    # ⛔ Quote-aware, because `seg.split()` is not. `cd "/tmp/my dir"` split to `'"/tmp/my'`,
+    # which `os.path.isabs` reads as RELATIVE (it starts with a quote), so it was joined onto
+    # cwd and judged INSIDE the workspace - the reject half of the guard defeated by ordinary
+    # quoting. shlex raises on an unbalanced quote; fall back rather than fail, per FAIL OPEN.
+    try:
+        words = shlex.split(seg)
+    except ValueError:
+        words = seg.split()
     while words and (words[0] in KEYWORDS or ("=" in words[0] and not words[0].startswith("-"))):
         words.pop(0)
     if not words:
@@ -147,8 +168,15 @@ def unquote(s: str) -> str:
 def leaves_workspace(arg: str, root: str, cwd: str) -> bool | None:
     """True = leaves, False = stays, None = cannot tell (caller allows)."""
     arg = unquote(arg.strip())
-    if arg == "" or arg == "-" or arg == "~" or arg.startswith("~/"):
+    if arg == "" or arg == "-" or arg == "~":
         return True                                   # $HOME, or an unknowable $OLDPWD
+    if arg.startswith("~/"):
+        # `~/x` is NOT $HOME - it is a knowable path, and this workspace normally lives under
+        # $HOME, so refusing it blind is a false ASK on a legal in-workspace cd. `ask` is an
+        # auto-DENY in headless mode, so that false alarm kills an autopilot lane.
+        arg = os.path.expanduser(arg)
+        if arg.startswith("~"):
+            return None                               # no resolvable home: cannot tell
     if arg in ("$HOME", "${HOME}", '"$HOME"'):
         return True
     if "$" in arg or "`" in arg:

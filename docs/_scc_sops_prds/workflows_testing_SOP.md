@@ -1151,7 +1151,11 @@ points this lane's upstream at **main itself**.
 and **trim `riders:` to the subset actually on the branch**. Then the trimmed riders flip, the
 **parent stays open**, and the remainder becomes the next lane. `task_preflight.py` checks every
 declared rider against the lane's commits and refuses one that leads no commit there; an unrecognised
-`landing:` value fails CLOSED, so a typo blocks rather than relaxes.
+`landing_mode:` **value** fails CLOSED, so a typo in the value blocks rather than relaxes.
+⛔ The **key** is `landing_mode`, never `landing` — `task.yaml` already has a different `landing:`
+nested under each `secondary_repos:` entry, which is why the name was changed. A bare `landing: partial`
+at column 0 is not recognised at all: it fails **silently**, not closed — nothing reads it, no
+unknown-value error fires, and the lane is gated exactly as if you had declared nothing.
 
 **Adding a discovered part to the parent's index.** `acli edit --description` **replaces** the field,
 and one such write silently deleted a part row from SCC-164 on 2026-08-15. Use:

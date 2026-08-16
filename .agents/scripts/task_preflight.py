@@ -297,7 +297,7 @@ def manifest_landing(repo: Path, expect: str, branch: str) -> str | None:
     forbids. The gate was pushing the lane into the failure it exists to prevent.
 
     Read from the SAME manifests as manifest_riders, on identical settled-lane rules: a landed
-    sibling's `landing: partial` is history and must not relax THIS close."""
+    sibling's `landing_mode: partial` is history and must not relax THIS close."""
     ref = base_ref(repo)
     value: str | None = None
     for p, text in task_manifests(repo, expect):
@@ -313,7 +313,7 @@ def manifest_landing(repo: Path, expect: str, branch: str) -> str | None:
 def lane_commit_keys(repo: Path, branch: str) -> frozenset[str]:
     """Every Jira key that leads a commit subject on THIS lane, ahead of the mainline.
 
-    The evidence half of `landing: partial`. Declaring a rider says "this child's work is in
+    The evidence half of `landing_mode: partial`. Declaring a rider says "this child's work is in
     this diff", and the ceremony flips it to Done on that word alone - so on a partial landing
     the word is checked against the commits. Range is explicit (`<merge-base>..HEAD` on this
     repo, via -C) rather than a bare `git log`: grep reads the branch you are parked on, and
@@ -675,7 +675,7 @@ def check_children(key: str | None, rep: wf.Report,
 
     # SCC-170. `partial` is the one value that relaxes anything, and it earns the relaxation
     # below by paying for it here: on a partial landing every declared rider must have real
-    # work on the lane. Without that price, `landing: partial` is a way to declare thirteen
+    # work on the lane. Without that price, `landing_mode: partial` is a way to declare thirteen
     # riders, land two and flip all thirteen at the ceremony - the guard sentence's exact
     # failure, wearing a new key. Scoped to `partial` deliberately: a full landing's riders
     # are already covered by "the parent closes when the whole job is done", and widening it

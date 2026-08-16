@@ -437,7 +437,7 @@ recoverable failure.
 > on its **parent**.
 
 ```bash
-python3 .agents/scripts/jira_feed.py devrecord --key <JIRA-KEY> \
+python3 .agents/scripts/jira_feed.py devrecord --key <JIRA-KEY> --project "$REPO" \
        --stage close-out --walkthrough <the walkthrough> \
        --outcome "merged to main at <merge-sha> via /smh-close-task-merge-tree" \
        --verdict "<gate result>" \
@@ -447,8 +447,18 @@ python3 .agents/scripts/jira_feed.py devrecord --key <JIRA-KEY> \
 
 python3 .agents/scripts/jira_feed.py finish --key <JIRA-KEY> \
        --walkthrough <the walkthrough> --apply
-python3 .agents/scripts/jira_feed.py check --key <JIRA-KEY>     # must exit 0
+python3 .agents/scripts/jira_feed.py check --key <JIRA-KEY> --project "$REPO"   # must exit 0
 ```
+
+⛔ **`--project "$REPO"` is REQUIRED on both, and Step 3 is why.** Both subcommands resolve their
+repo by walking up from **cwd**, and Step 3 ran `git checkout main` — so by the time you reach here
+cwd is the main checkout, standing on `main`. `devrecord`'s new slug default reads the branch you are
+standing on (`lane_slug_here`), `main` has no `/`, and the lane slug comes back empty: the command
+dies with *"devrecord needs --story"* **after the merge has already landed**, and the recovery it
+prints is the free-text `--story` this part exists to eliminate. `$REPO` is the lane worktree Step 0
+pinned; it is still on the lane branch until Step 5 prunes it, so it is the one tree that can answer.
+The same applies to `check`: without it, a FORK verdict is computed against whichever repo cwd
+happened to be in, and the message never names the repo it read (`preflight-resolves-repo-from-cwd`).
 
 ⛔ **No `--story` here, and that is the fix (SCC-174).** `devrecord` picks update-vs-create off the
 **slug**, never off `--key`, so the same lane spelled two ways posts a **second** Dev Record — and

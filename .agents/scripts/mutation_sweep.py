@@ -155,6 +155,18 @@ def judge(code: int, out: str, case: str) -> tuple[bool, str]:
 
 
 def main() -> int:
+    # ⛔ The two verdict lines print `⛔`, and the PC's console codec is cp1252, which cannot
+    # encode U+26D4: `print()` would raise UnicodeEncodeError from inside the mutant loop.
+    # That exception is not `Terminated`, so it escapes `main()` BEFORE the K1 end-state
+    # check and the K4 full unfiltered run - the two things this script exists for - and it
+    # exits 1, the code reserved for "a mutant survived". A crash would be indistinguishable
+    # from a result. Same call `_harness.py` already makes for the same reason (SCC-160).
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="backslashreplace")
+        except (AttributeError, ValueError):        # not a reconfigurable text stream
+            pass
+
     ap = argparse.ArgumentParser(description="Run a declared mutant table and verify the restore")
     ap.add_argument("--table", required=True, help="the mutant table (JSON)")
     ap.add_argument("--repo", default=".", help="repo root the paths are relative to")

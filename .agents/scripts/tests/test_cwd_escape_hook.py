@@ -30,10 +30,21 @@ WS = ""   # a REAL directory, built in main(): the hook fails open on a root tha
           # does not exist, and a fixture that trips THAT path proves nothing.
 
 
-def call(command: str, cwd: str = WS, tool: str = "Bash", raw: str | None = None) -> tuple[int, str]:
+def call(command: str, cwd: str | None = None, tool: str = "Bash", raw: str | None = None,
+         home: str | None = None) -> tuple[int, str]:
+    # ⛔ `cwd: str = WS` was frozen at `""`: Python binds a default ONCE, at def time, and
+    # `main()`'s `global WS` rebind cannot reach it. Every payload shipped `"cwd": ""`, the
+    # hook fell through `data.get("cwd") or root` to the ROOT, and the whole cwd-relative
+    # branch went untested - while `cd ..` read as "caught" only because cwd was the root.
+    cwd = WS if cwd is None else cwd
     payload = raw if raw is not None else json.dumps(
         {"tool_name": tool, "tool_input": {"command": command}, "cwd": cwd})
     env = {**os.environ, "CLAUDE_PROJECT_DIR": WS}
+    if home is not None:
+        # `~` is only judgeable against a KNOWN home. Overriding it here is what lets a
+        # fixture put the workspace under `~` — the real machine's shape, which a TempDir
+        # workspace does not otherwise reproduce.
+        env["HOME"] = home
     p = subprocess.run([sys.executable, str(HOOK)], input=payload, capture_output=True,
                        text=True, env=env, errors="replace")
     return p.returncode, (p.stdout or "") + (p.stderr or "")
@@ -85,6 +96,24 @@ def main() -> int:
             code, out = call(cmd)
             c.check(f"M3 allowed: {cmd}", not blocked(out) and code == 0,
                     f"exit={code} {out.strip()[:150]}")
+        # `~/<workspace>` is the SAME directory as the workspace root, spelled differently.
+        # Refusing it is a false ASK, and `ask` is an auto-DENY in headless mode - so the
+        # tilde spelling of a legal in-workspace cd would kill an autopilot lane.
+        home, name = str(Path(WS).parent), Path(WS).name
+        for cmd in (f"cd ~/{name} && ls", f"cd ~/{name}/.agents && ls"):
+            code, out = call(cmd, home=home)
+            c.check(f"M3 allowed (tilde spelling of the same path): {cmd}",
+                    not blocked(out) and code == 0, f"exit={code} {out.strip()[:150]}")
+        # The cwd-RELATIVE branch, with a cwd that is not the root. Until the frozen default
+        # was fixed every payload said `cwd: ""`, so this arm never ran: `cd ..` from a nested
+        # dir is INSIDE the workspace and must pass, while the same `cd ..` from the root
+        # leaves it. Same command, opposite verdicts - that is what proves cwd is read.
+        code, out = call("cd .. && ls", cwd=f"{WS}/.claude/worktrees/lane-x")
+        c.check("M3 allowed: `cd ..` from a NESTED cwd stays inside",
+                not blocked(out) and code == 0, f"exit={code} {out.strip()[:150]}")
+        code, out = call("cd .. && ls", cwd=WS)
+        c.check("M3 control: the SAME `cd ..` from the ROOT leaves and is refused",
+                blocked(out), out.strip()[:150])
 
     if c.block("M4 · every other way of leaving the workspace is caught"):
         for cmd in ("cd", "cd ~", "cd ~/Downloads", "cd -", "cd $HOME", "cd ..",
@@ -94,7 +123,20 @@ def main() -> int:
                     f"cd {WS}-sibling && ls",
                     # an apostrophe in a COMMENT opens a quote that would swallow the rest of
                     # the command — including the real `cd` — unless comments are skipped first.
-                    "ls   # don't do it this way\ncd /tmp && ls"):
+                    "ls   # don't do it this way\ncd /tmp && ls",
+                    # a HERESTRING is not a heredoc. `startswith("<<")` matches `<<<` too, and
+                    # the delimiter scan then finds no terminator line, so the skip swallowed
+                    # the whole rest of the command — including this `cd`.
+                    'cat <<< "x"; cd /tmp && ls',
+                    "grep -q x <<< \"$V\" && cd /tmp && ls",
+                    # an arithmetic SHIFT is not a heredoc either. Same root cause: a `<<`
+                    # with no terminator line made the skip swallow the remainder.
+                    "echo $(( 1 << 2 )) && cd /tmp && ls",
+                    # a QUOTED argument with a space: `seg.split()` is not quote-aware, so the
+                    # arg arrived as `\"/tmp/my` — not absolute, so it was joined onto cwd and
+                    # read as INSIDE the workspace.
+                    'cd "/tmp/my dir" && ls',
+                    "cd '/tmp/my dir' && ls"):
             code, out = call(cmd)
             c.check(f"M4 refused: {cmd!r}", blocked(out), out.strip()[:160])
 

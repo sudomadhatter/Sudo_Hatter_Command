@@ -126,6 +126,7 @@ def _porcelain_z_paths(z: str) -> list[str]:
             k += 1
     return out
 
+
 def _own_output_rel(work: Path, out_dir: Path) -> str | None:
     """The receipt's OWN output dir as a repo-root-relative prefix, or None.
 

@@ -1124,6 +1124,28 @@ def main() -> int:
                 "NEGATIVE CONTROL - the sketched `\\bport\\b` key matched seven unrelated "
                 "command bodies (audit F26); a row that fires on everything is not a row")
 
+        # ── The OTHER row in the same table: `work-consolidation` (Part 1) ────────────────
+        # It shipped with no coverage at all, and its third arm was keyed on `landing:` - a
+        # key `task_preflight` deliberately renamed to `landing_mode` - so it could never
+        # match anything. A dead arm inside a live row is a check that cannot fail.
+        c.check("WIRING: the work-consolidation row fires on a `riders:` body that cites nothing",
+                any("work-consolidation" in m for m in pointer_warns("Set `riders: [SCC-1]`.\n")),
+                f"check_rule_pointers said {pointer_warns('Set `riders: [SCC-1]`.')}")
+        c.check("WIRING: ...and on `landing_mode: partial`, the arm that was DEAD",
+                any("work-consolidation" in m
+                    for m in pointer_warns("Declare `landing_mode: partial` in task.yaml.\n")),
+                "the arm read `landing\\s*:\\s*partial`, which cannot match `landing_mode:` - "
+                "so a body documenting the partial landing without the literal `riders:` "
+                "escaped the pointer requirement entirely")
+        c.check("CONTROL: the retired `landing:` spelling is NOT the machinery and stays silent",
+                pointer_warns("Declare `landing: partial` in task.yaml.\n") == [],
+                "NEGATIVE CONTROL - `landing:` is a DIFFERENT live key (nested under "
+                "`secondary_repos:`); keying on it is what made the arm dead")
+        c.check("CONTROL: the same consolidation body WITH the citation is silent",
+                pointer_warns("Set `riders: [SCC-1]`. See `.agents/rules/work-consolidation.md`.\n")
+                == [],
+                "NEGATIVE CONTROL - a row that warns after the citation lands can never reach 0/0")
+
         live = wf.Report()
         lint.check_rule_pointers(ROOT, live)
         c.check("the live toolkit has no un-cited porting command",

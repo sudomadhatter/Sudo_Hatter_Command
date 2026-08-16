@@ -79,8 +79,13 @@ _RULE_POINTERS = (
     # keys - not on the word "consolidate". A phrase-keyed row names the files that really
     # drive the mechanism; a concept-keyed one ("one worktree") matched six unrelated cicd
     # bodies and none of the three that matter (audit F26).
+    # ⛔ `landing_mode`, NOT `landing`: the key was renamed because `task.yaml` already has a
+    # different `landing:` nested under `secondary_repos:`. `landing\s*:` could never match
+    # `landing_mode: partial`, so this third arm was DEAD - the row fired only through its two
+    # `riders:` arms, and a body documenting the partial-landing contract without the literal
+    # `riders:` was silently exempt from the pointer requirement.
     ("work-consolidation", "consolidating",
-     re.compile(r"^\s*riders\s*:|`riders:|landing\s*:\s*partial", re.M)),
+     re.compile(r"^\s*riders\s*:|`riders:|landing_mode\s*:\s*partial", re.M)),
     # SCC-176. Two arms, both zero-hit on the tree before this part landed: the trigger
     # CONDITION as the three plan/audit commands state it, and the command that answers it.
     # ⛔ "port" as a step verb was the first sketch and was thrown out by audit F26 - it matched

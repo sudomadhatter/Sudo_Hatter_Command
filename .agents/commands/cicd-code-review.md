@@ -60,6 +60,13 @@ swept out of this command family — do not re-plant it here.
 env -u GITHUB_TOKEN git -C "$PROJECT_ROOT" fetch origin
 git -C "$PROJECT_ROOT" branch -a --list '*epic/*'        # normally exactly one live epic branch
 EPIC=<epic/JIRA-KEY-slug>                                # from that list, or the story's epic in the plan
+# ⛔ BIND THE TREE — Step 0.5 said "cd into it" in prose and assigned nothing. `git -C ""` does
+# NOT error: git documents it as "leave the current working directory unchanged", so every line
+# below would silently measure whatever tree the shell is standing in — the shared checkout,
+# whose diff Step 0.5 just told you is empty or stale — and the redirects still create the two
+# /tmp files, so the overlap reads clean. A vacuous green inside the step that exists to prevent
+# vacuous greens (`preflight-resolves-repo-from-cwd`).
+WORKTREE=<the story tree Step 0.5 resolved, or "$PROJECT_ROOT" when none exists>
 BASE=$(git -C "$WORKTREE" merge-base HEAD "origin/$EPIC")
 git -C "$WORKTREE" diff --name-only "$BASE".."origin/$EPIC" | sort > /tmp/theirs.txt  # landed while you built
 git -C "$WORKTREE" diff --name-only "origin/$EPIC"...HEAD | sort > /tmp/mine.txt      # what you changed
