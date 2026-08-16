@@ -1,0 +1,5 @@
+task_key: SCC-183
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-183-direct-main-fastlane
+close_command: smh-close-task-merge-tree
+secondary_repos: []
