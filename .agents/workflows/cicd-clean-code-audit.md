@@ -46,7 +46,11 @@ on a `claude/*` story branch the base is its EPIC branch (exactly one live `epic
 case); otherwise fall back to `main`:
 
 ```bash
-BASE=$(git for-each-ref --format='%(refname:short)' refs/heads/epic/* | head -1); BASE=${BASE:-main}
+env -u GITHUB_TOKEN git -C "$PROJECT_ROOT" fetch origin   # a bare ref is this checkout's LAST PULL
+# origin/ FIRST: a local epic head is only as fresh as the last pull, and a story lane's real
+# base is what the epic branch looks like NOW - sibling stories land there while you audit.
+BASE=$(git for-each-ref --format='%(refname:short)' \
+         refs/remotes/origin/epic/* refs/heads/epic/* | head -1); BASE=${BASE:-origin/main}
 git diff --name-only "${BASE}...HEAD"           # story branch vs the branch it forked from
 git diff --name-only --cached                   # plus staged, if mid-work
 ```

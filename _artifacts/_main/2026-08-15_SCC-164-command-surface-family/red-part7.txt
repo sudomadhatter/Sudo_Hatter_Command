@@ -1,0 +1,82 @@
+== jira_feed ==
+[FAIL] F1 · one lane filed under two slugs -> exit 1, not blessed: exit=0 == jira-feed check TEST-7 ==
+[INFO ] description: TEST-7: outline present (58 chars)
+[INFO ] devrecord: TEST-7: 2 Dev Records, one per lane (test-7-widget-archive, widget-archive) - a follow-on lane rides the ticket it came from, so this is the designed state
+-- 0 error(s), 0 warning(s), 2 info --
+[FAIL] F1 · ...and it names the slug nothing claims, as a slug: == jira-feed check TEST-7 ==
+[INFO ] description: TEST-7: outline present (58 chars)
+[INFO ] devrecord: TEST-7: 2 Dev Records, one per lane (test-7-widget-archive, widget-archive) - a follow-on lane rides the ticket it came from, so this is the designed state
+-- 0 error(s), 0 warning(s), 2 info --
+[FAIL] F1 · ...and it says which record is NEWEST: == jira-feed check TEST-7 ==
+[INFO ] description: TEST-7: outline present (58 chars)
+[INFO ] devrecord: TEST-7: 2 Dev Records, one per lane (test-7-widget-archive, widget-archive) - a follow-on lane rides the ticket it came from, so this is the designed state
+-- 0 error(s), 0 warning(s), 2 info --
+[FAIL] F1 · ...and it does NOT still call the pair the designed state: == jira-feed check TEST-7 ==
+[INFO ] description: TEST-7: outline present (58 chars)
+[INFO ] devrecord: TEST-7: 2 Dev Records, one per lane (test-7-widget-archive, widget-archive) - a follow-on lane rides the ticket it came from, so this is the designed state
+-- 0 error(s), 0 warning(s), 2 info --
+[PASS] F4 · two manifested lanes -> exit 0, the designed-state line survives: exit=0 == jira-feed check TEST-7 ==
+[INFO ] description: TEST-7: outline present (58 chars)
+[INFO ] devrecord: TEST-7: 2 Dev Records, one per lane (test-7-roster-filter, test-7-widget-archive) - a follow-on lane rides the ticket it came from, so this is the designed state
+-- 0 error(s), 0 warning(s), 2 info --
+[PASS] the origin/ ref alone proves a lane (a landed, locally-pruned follow-on): exit=0 == jira-feed check TEST-7 ==
+[INFO ] description: TEST-7: outline present (58 chars)
+[INFO ] devrecord: TEST-7: 2 Dev Records, one per lane (test-7-roster-filter, test-7-widget-archive) - a follow-on lane rides the ticket it came from, so this is the designed state
+-- 0 error(s), 0 warning(s), 2 info --
+[PASS] the committed manifest alone proves a lane (no branch left at all): exit=0 == jira-feed check TEST-7 ==
+[INFO ] description: TEST-7: outline present (58 chars)
+[INFO ] devrecord: TEST-7: 2 Dev Records, one per lane (test-7-roster-filter, test-7-widget-archive) - a follow-on lane rides the ticket it came from, so this is the designed state
+-- 0 error(s), 0 warning(s), 2 info --
+[FAIL] an UNTRACKED manifest under a gitignored dir does not claim a lane: exit=0 == jira-feed check TEST-7 ==
+[INFO ] description: TEST-7: outline present (58 chars)
+[INFO ] devrecord: TEST-7: 2 Dev Records, one per lane (test-7-roster-filter, test-7-widget-archive) - a follow-on lane rides the ticket it came from, so this is the designed state
+-- 0 error(s), 0 warning(s), 2 info --
+[FAIL] no git checkout -> exit 1 and says the lanes could not be read, not 0: exit=0 == jira-feed check TEST-7 ==
+[INFO ] description: TEST-7: outline present (58 chars)
+[INFO ] devrecord: TEST-7: 2 Dev Records, one per lane (test-7-widget-archive, widget-archive) - a follow-on lane rides the ticket it came from, so this is the designed state
+-- 0 error(s), 0 warning(s), 2 info --
+[FAIL] F3 · --story defaults to the branch slug in this lane's task.yaml: exit=2 usage: jira_feed.py devrecord [-h] [--project PROJECT] [--acli ACLI]
+                              --story STORY [--key KEY]
+                              [--walkthrough WALKTHROUGH] [--decision TEXT]
+                              [--pitfall TEXT] [--followon TEXT]
+                              [--e
+[FAIL] F3 · a slug that is not this lane's is WARNED, naming both: jira-feed: DRY RUN - would post to <no --key>
+Dev Record - widget-archive (close-out, 2026-08-16)
+
+Decisions made during dev
+- x
+
+Pitfalls found
+- (none recorded)
+
+Follow-ons / still owed
+- (none recorded)
+
+Evidence
+
+Posted by jira_feed.py - one Dev Record per ticket, updated in place.
+[WARN] no wal
+[PASS] F3 · ...and the lane's OWN slug is silent (positive control): jira-feed: DRY RUN - would post to <no --key>
+Dev Record - TEST-7-widget-archive (close-out, 2026-08-16)
+
+Decisions made during dev
+- x
+
+Pitfalls found
+- (none recorded)
+
+Follow-ons / still owed
+- (none recorded)
+
+Evidence
+
+Posted by jira_feed.py - one Dev Record per ticket, updated in place.
+[WARN]
+[FAIL] F3 · no manifest for this branch -> --story is still REQUIRED: exit=2 usage: jira_feed.py devrecord [-h] [--project PROJECT] [--acli ACLI]
+                              --story STORY [--key KEY]
+                              [--walkthrough WALKTHROUGH] [--decision TEXT]
+                              [--pitfall TEXT] [--followon TEXT]
+                              [--e
+-- 4/13 passed --
+FAILED: F1 · one lane filed under two slugs -> exit 1, not blessed, F1 · ...and it names the slug nothing claims, as a slug, F1 · ...and it says which record is NEWEST, F1 · ...and it does NOT still call the pair the designed state, an UNTRACKED manifest under a gitignored dir does not claim a lane, no git checkout -> exit 1 and says the lanes could not be read, not 0, F3 · --story defaults to the branch slug in this lane's task.yaml, F3 · a slug that is not this lane's is WARNED, naming both, F3 · no manifest for this branch -> --story is still REQUIRED
+-- filter 'SCC-174': matched 1/4 blocks --

@@ -55,7 +55,8 @@ in the shared checkout belongs to another lane and is not evidence.
 ## Step 0.5 — Resolve the diff
 
 ```bash
-git -C "$REPO" diff --name-only main...HEAD           # the task's committed work
+env -u GITHUB_TOKEN git -C "$REPO" fetch origin main  # a bare `main` is this checkout's LAST PULL
+git -C "$REPO" diff --name-only origin/main...HEAD    # the task's committed work
 git -C "$REPO" status --short                         # anything uncommitted (report it; it is not reviewed)
 ```
 
@@ -78,12 +79,12 @@ Only this re-derivation caught it, which is why it is a step and not advice.
 
 ```bash
 env -u GITHUB_TOKEN git -C "$REPO" fetch origin main
-BASE=$(git -C "$REPO" merge-base HEAD main)
-git -C "$REPO" diff --name-only "$BASE"..main | sort > /tmp/theirs.txt   # what landed while you built
-git -C "$REPO" diff --name-only main...HEAD   | sort > /tmp/mine.txt     # what you changed
-grep -Fxf /tmp/mine.txt /tmp/theirs.txt                                  # the TRUE overlap
-git -C "$REPO" merge-tree --write-tree --messages HEAD main | head -40   # conflicts, before they are real
-git -C "$REPO" worktree list                                             # sibling lanes still live
+BASE=$(git -C "$REPO" merge-base HEAD origin/main)
+git -C "$REPO" diff --name-only "$BASE"..origin/main | sort > /tmp/theirs.txt  # what landed while you built
+git -C "$REPO" diff --name-only origin/main...HEAD   | sort > /tmp/mine.txt    # what you changed
+grep -Fxf /tmp/mine.txt /tmp/theirs.txt                                        # the TRUE overlap
+git -C "$REPO" merge-tree --write-tree --messages HEAD origin/main | head -40  # conflicts, before they are real
+git -C "$REPO" worktree list                                                   # sibling lanes still live
 ```
 
 ⚠ **`zsh` does not word-split an unquoted variable** the way `bash` does. Build file lists into a file
@@ -129,7 +130,7 @@ stop, not a guess:**
 |---|---|
 | `REPO` | the repo Step 0 resolved |
 | `WORKTREE` | this task's tree (Step 0 pinned it from `git worktree list`) |
-| `DIFF` | the `main...HEAD` diff, **re-taken after Step 0.7 absorbed `main`** — committed work only |
+| `DIFF` | the `origin/main...HEAD` diff, **re-taken after Step 0.7 absorbed `origin/main`** — committed work only |
 | `HEAD_SHA` | `git rev-parse HEAD` **re-read here, after that absorb** — never Step 0's value |
 | `review_mode` | `full` when the task's `implementation_plan.md` exists; `no-spec` when it does not |
 | `STORY_FILE` | that `implementation_plan.md` — on this lane the plan's acceptance list **is** the spec |

@@ -25,7 +25,10 @@ import re
 import subprocess
 from pathlib import Path
 
-from _harness import Cases
+from _harness import Cases, TempDir
+
+import wf_common as wf          # noqa: E402  (_harness put SCRIPTS on sys.path)
+import workflow_lint as lint    # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[3]
 ALL = ("claude", "opencode", "antigravity", "codex")
@@ -275,12 +278,6 @@ def main() -> int:
     master_skills = ROOT / ".agents/skills"
     claude_skills = ROOT / ".claude/skills"
 
-    # ── The retired doors stay retired ────────────────────────────────────────
-    stale_cmd_mirror = sorted(p.name for p in (ROOT / ".claude/commands").glob("*.md"))
-    c.check("`.claude/commands` is a retired door - no command mirrors there",
-            not stale_cmd_mirror,
-            f"{len(stale_cmd_mirror)} left: {stale_cmd_mirror[:6]}")
-
     sync_ps1 = read(ROOT / ".agents/scripts/sync-agents.ps1")
 
     # The engine's own hand-owned list, read rather than restated (see wf_hand_owned).
@@ -295,156 +292,166 @@ def main() -> int:
     # Only INDEX.md is legitimately SOURCELESS - see the ghost check near the end of this file,
     # where the difference between this set and `hand_owned` is load-bearing.
     SOURCELESS = {"INDEX.md"}
-    unknown = sorted(n for n in hand_owned
-                     if n != "INDEX.md" and not (ROOT / ".agents/workflows" / n).is_file())
-    c.check("the hand-owned workflow list was READ from the sync engine, not guessed",
-            "INDEX.md" in hand_owned and not unknown,
-            f"parsed {sorted(hand_owned)} from $excluded; names with no such workflow: "
-            f"{unknown}")
 
-    # ⭐ What makes the hand-owned exemption below EARNED. A file in `$excluded` is exempt from
-    # "does its command claim antigravity?" because the engine never derives it from `platforms:`
-    # - `smh-adviser-board` declares `[claude, opencode, codex]` yet keeps a hand-authored
-    # Antigravity door, and that is correct. But the exemption survives only while the door
-    # itself says it belongs here. Parsed with the SAME rule the engine uses (absent = universal),
-    # so it fails CLOSED on the shape that matters: a hand-owned workflow declaring
-    # `platforms: [claude]` while sitting in Antigravity's surface, exempt from every other check.
-    # ⭐ SCC-113 tightened this from `platforms_of` to `claims_explicitly`. Under the old
-    # reading a hand-owned door with NO `platforms:` key parsed as universal, so antigravity was
-    # "declared" — and the exemption was earned by saying nothing at all. That is the same
-    # announced-not-earned shape A-2′ already cost this ticket a lane, in the check written to
-    # prevent it. Silence now fails, and `platforms: []` still fails (a real claim of nowhere).
-    disowned = sorted(n for n in hand_owned - SOURCELESS
-                      if (ROOT / ".agents/workflows" / n).is_file()
-                      and not claims_explicitly(read(ROOT / ".agents/workflows" / n),
-                                                "antigravity"))
-    c.check("every hand-owned workflow EXPLICITLY declares the surface it sits on",
-            not disowned,
-            f"{disowned} - excluded from the sync AND from the placement check, so a wrong or "
+    if c.block("CS-01 · the retired doors stay retired"):
+        # ── The retired doors stay retired ────────────────────────────────────────
+        stale_cmd_mirror = sorted(p.name for p in (ROOT / ".claude/commands").glob("*.md"))
+        c.check("`.claude/commands` is a retired door - no command mirrors there",
+                not stale_cmd_mirror,
+                f"{len(stale_cmd_mirror)} left: {stale_cmd_mirror[:6]}")
+
+        unknown = sorted(n for n in hand_owned
+                         if n != "INDEX.md" and not (ROOT / ".agents/workflows" / n).is_file())
+        c.check("the hand-owned workflow list was READ from the sync engine, not guessed",
+                "INDEX.md" in hand_owned and not unknown,
+                f"parsed {sorted(hand_owned)} from $excluded; names with no such workflow: "
+                f"{unknown}")
+
+        # ⭐ What makes the hand-owned exemption below EARNED. A file in `$excluded` is exempt from
+        # "does its command claim antigravity?" because the engine never derives it from `platforms:`
+        # - `smh-adviser-board` declares `[claude, opencode, codex]` yet keeps a hand-authored
+        # Antigravity door, and that is correct. But the exemption survives only while the door
+        # itself says it belongs here. Parsed with the SAME rule the engine uses (absent = universal),
+        # so it fails CLOSED on the shape that matters: a hand-owned workflow declaring
+        # `platforms: [claude]` while sitting in Antigravity's surface, exempt from every other check.
+        # ⭐ SCC-113 tightened this from `platforms_of` to `claims_explicitly`. Under the old
+        # reading a hand-owned door with NO `platforms:` key parsed as universal, so antigravity was
+        # "declared" — and the exemption was earned by saying nothing at all. That is the same
+        # announced-not-earned shape A-2′ already cost this ticket a lane, in the check written to
+        # prevent it. Silence now fails, and `platforms: []` still fails (a real claim of nowhere).
+        disowned = sorted(n for n in hand_owned - SOURCELESS
+                          if (ROOT / ".agents/workflows" / n).is_file()
+                          and not claims_explicitly(read(ROOT / ".agents/workflows" / n),
+                                                    "antigravity"))
+        c.check("every hand-owned workflow EXPLICITLY declares the surface it sits on",
+                not disowned,
+                f"{disowned} - excluded from the sync AND from the placement check, so a wrong or "
             f"absent `platforms:` here is invisible to everything else")
 
-    # Controls for the two readings of silence — pure strings, no disk. These are what stop the
-    # split above from quietly collapsing back into one rule.
-    c.check("declaration: silence is NOT a claim (the hand-owned exemption must be spoken)",
-            platforms_declared("---\nname: x\ndescription: y\n---\n") is None
-            and not claims_explicitly("---\nname: x\n---\n", "antigravity"),
-            "a door with no platforms: key asserts nothing and must not be exempt")
-    c.check("declaration: an explicit list is read, and only it earns the exemption",
-            claims_explicitly("---\nplatforms: [antigravity]\n---\n", "antigravity")
-            and not claims_explicitly("---\nplatforms: [claude]\n---\n", "antigravity"),
-            "the door must name the surface it is sitting on")
-    c.check("declaration: `platforms: []` is a real claim of NOWHERE, not silence",
-            platforms_declared("---\nplatforms: []\n---\n") == ()
-            and not claims_explicitly("---\nplatforms: []\n---\n", "antigravity"),
-            "[] means nowhere; it must fail the claim, not read as absent")
-    c.check("declaration: COMMANDS keep the engine's rule - absent still means universal",
-            platforms_of("---\nname: x\n---\n") == ALL
-            and platforms_of("---\nplatforms: []\n---\n") == (),
-            "NEGATIVE CONTROL - tightening the exemption must not change door derivation")
+        # Controls for the two readings of silence — pure strings, no disk. These are what stop the
+        # split above from quietly collapsing back into one rule.
+        c.check("declaration: silence is NOT a claim (the hand-owned exemption must be spoken)",
+                platforms_declared("---\nname: x\ndescription: y\n---\n") is None
+                and not claims_explicitly("---\nname: x\n---\n", "antigravity"),
+                "a door with no platforms: key asserts nothing and must not be exempt")
+        c.check("declaration: an explicit list is read, and only it earns the exemption",
+                claims_explicitly("---\nplatforms: [antigravity]\n---\n", "antigravity")
+                and not claims_explicitly("---\nplatforms: [claude]\n---\n", "antigravity"),
+                "the door must name the surface it is sitting on")
+        c.check("declaration: `platforms: []` is a real claim of NOWHERE, not silence",
+                platforms_declared("---\nplatforms: []\n---\n") == ()
+                and not claims_explicitly("---\nplatforms: []\n---\n", "antigravity"),
+                "[] means nowhere; it must fail the claim, not read as absent")
+        c.check("declaration: COMMANDS keep the engine's rule - absent still means universal",
+                platforms_of("---\nname: x\n---\n") == ALL
+                and platforms_of("---\nplatforms: []\n---\n") == (),
+                "NEGATIVE CONTROL - tightening the exemption must not change door derivation")
 
-    c.check("the sync engine states the door model and both retirements",
-            "THE DOOR MODEL" in sync_ps1
-            and "codex prompts cache RETIRED" in sync_ps1
-            and "Claude's door is .claude\\skills" in sync_ps1,
-            "sync-agents.ps1 no longer states the door model + both retirements")
+        c.check("the sync engine states the door model and both retirements",
+                "THE DOOR MODEL" in sync_ps1
+                and "codex prompts cache RETIRED" in sync_ps1
+                and "Claude's door is .claude\\skills" in sync_ps1,
+                "sync-agents.ps1 no longer states the door model + both retirements")
 
-    # ── Every eligible command has EXACTLY ONE door on each platform it claims ─
-    missing_skill, wrong_place, bad_body = [], [], []
-    missing_oc, missing_ag = [], []
-    for cmd in cmds:
-        pl = platforms(cmd)
-        name = cmd.stem
-        in_master = (master_skills / name / "SKILL.md").is_file()
-        in_cache = (claude_skills / name / "SKILL.md").is_file()
+    if c.block("CS-02 · one door per platform, on every platform the command claims"):
+        # ── Every eligible command has EXACTLY ONE door on each platform it claims ─
+        missing_skill, wrong_place, bad_body = [], [], []
+        missing_oc, missing_ag = [], []
+        for cmd in cmds:
+            pl = platforms(cmd)
+            name = cmd.stem
+            in_master = (master_skills / name / "SKILL.md").is_file()
+            in_cache = (claude_skills / name / "SKILL.md").is_file()
 
-        if "codex" in pl:
-            # Codex reads .agents/skills directly - the door must be in the master.
-            if not in_master:
-                missing_skill.append(f"{name} (codex)")
-            if "claude" not in pl and in_cache:
-                wrong_place.append(f"{name}: codex-only but present in .claude/skills")
-        if "claude" in pl:
-            # Claude's menu reads the cache; a claude-only launcher must NOT sit in the
-            # Codex-visible master.
-            if not in_cache:
-                missing_skill.append(f"{name} (claude)")
-            if "codex" not in pl and in_master:
-                wrong_place.append(f"{name}: claude-only but present in .agents/skills")
+            if "codex" in pl:
+                # Codex reads .agents/skills directly - the door must be in the master.
+                if not in_master:
+                    missing_skill.append(f"{name} (codex)")
+                if "claude" not in pl and in_cache:
+                    wrong_place.append(f"{name}: codex-only but present in .claude/skills")
+            if "claude" in pl:
+                # Claude's menu reads the cache; a claude-only launcher must NOT sit in the
+                # Codex-visible master.
+                if not in_cache:
+                    missing_skill.append(f"{name} (claude)")
+                if "codex" not in pl and in_master:
+                    wrong_place.append(f"{name}: claude-only but present in .agents/skills")
 
-        # Whichever copy exists, a GENERATED launcher must point at its own command body.
-        # Shares `is_launcher_for` with the parity sweep below - one rule, one implementation,
-        # so the next tightening cannot land in only one of the two places.
-        for sk in (master_skills / name / "SKILL.md", claude_skills / name / "SKILL.md"):
-            if sk.is_file():
-                body = read(sk)
-                if GEN in body and not is_launcher_for(body, read(cmd), cmd.name):
-                    bad_body.append(str(sk.relative_to(ROOT)))
+            # Whichever copy exists, a GENERATED launcher must point at its own command body.
+            # Shares `is_launcher_for` with the parity sweep below - one rule, one implementation,
+            # so the next tightening cannot land in only one of the two places.
+            for sk in (master_skills / name / "SKILL.md", claude_skills / name / "SKILL.md"):
+                if sk.is_file():
+                    body = read(sk)
+                    if GEN in body and not is_launcher_for(body, read(cmd), cmd.name):
+                        bad_body.append(str(sk.relative_to(ROOT)))
 
-        # ── The mirror surfaces, BOTH directions ──────────────────────────────
-        # Missing was always asserted; misplaced never was. The engine purges a mirror whose
-        # command stopped claiming that platform (`Sync-CommandDir`'s `$masterNames` branch;
-        # `Sync-AntigravityWorkflowMirror`'s `$stale`), so a misplaced door means the reach
-        # changed and NOBODY RAN THE SYNC - which is exactly how SCC-77 shipped stale doors.
-        oc_here = (ROOT / ".opencode/commands" / cmd.name).is_file()
-        ag_here = (ROOT / ".agents/workflows" / cmd.name).is_file()
-        if "opencode" in pl and not oc_here:
-            missing_oc.append(name)
-        if "antigravity" in pl and not ag_here:
-            missing_ag.append(name)
-        # hand_owned_door is False for opencode, per-surface like the launcher exemption (A-8):
-        # `Sync-CommandDir` has no exclusion list at all - every file it recognises it manages.
-        if mirror_place_error("opencode", pl, oc_here, hand_owned_door=False):
-            wrong_place.append(f"{name}: does not claim opencode, but .opencode/commands has it")
-        # EARNED AT THE POINT OF USE: hand-owned is not enough on its own - the door must also
-        # declare this surface. `disowned` above is not redundant with this; it catches the case
-        # placement cannot see, where the COMMAND claims antigravity and the door denies it.
-        hand_ag = (cmd.name in hand_owned and ag_here
-                   and claims_explicitly(read(ROOT / ".agents/workflows" / cmd.name),
-                                         "antigravity"))
-        if mirror_place_error("antigravity", pl, ag_here, hand_owned_door=hand_ag):
-            wrong_place.append(f"{name}: does not claim antigravity, but .agents/workflows has it")
+            # ── The mirror surfaces, BOTH directions ──────────────────────────────
+            # Missing was always asserted; misplaced never was. The engine purges a mirror whose
+            # command stopped claiming that platform (`Sync-CommandDir`'s `$masterNames` branch;
+            # `Sync-AntigravityWorkflowMirror`'s `$stale`), so a misplaced door means the reach
+            # changed and NOBODY RAN THE SYNC - which is exactly how SCC-77 shipped stale doors.
+            oc_here = (ROOT / ".opencode/commands" / cmd.name).is_file()
+            ag_here = (ROOT / ".agents/workflows" / cmd.name).is_file()
+            if "opencode" in pl and not oc_here:
+                missing_oc.append(name)
+            if "antigravity" in pl and not ag_here:
+                missing_ag.append(name)
+            # hand_owned_door is False for opencode, per-surface like the launcher exemption (A-8):
+            # `Sync-CommandDir` has no exclusion list at all - every file it recognises it manages.
+            if mirror_place_error("opencode", pl, oc_here, hand_owned_door=False):
+                wrong_place.append(f"{name}: does not claim opencode, but .opencode/commands has it")
+            # EARNED AT THE POINT OF USE: hand-owned is not enough on its own - the door must also
+            # declare this surface. `disowned` above is not redundant with this; it catches the case
+            # placement cannot see, where the COMMAND claims antigravity and the door denies it.
+            hand_ag = (cmd.name in hand_owned and ag_here
+                       and claims_explicitly(read(ROOT / ".agents/workflows" / cmd.name),
+                                             "antigravity"))
+            if mirror_place_error("antigravity", pl, ag_here, hand_owned_door=hand_ag):
+                wrong_place.append(f"{name}: does not claim antigravity, but .agents/workflows has it")
 
-    c.check("every claude/codex-eligible command has its skill door",
-            not missing_skill, f"{len(missing_skill)} missing: {missing_skill[:6]}")
+        c.check("every claude/codex-eligible command has its skill door",
+                not missing_skill, f"{len(missing_skill)} missing: {missing_skill[:6]}")
 
-    # Controls for the placement rule, both directions - a sweep that is clean today says
-    # nothing about whether the check has teeth.
-    OC_ONLY = ("opencode",)
-    c.check("door-place CONTROL: a mirror on a claimed surface is fine",
-            not mirror_place_error("opencode", OC_ONLY, True, False))
-    c.check("door-place CONTROL: a mirror on an UNCLAIMED surface is caught",
-            mirror_place_error("antigravity", OC_ONLY, True, False),
-            "the reach changed and nobody ran /smh-sync-agents")
-    c.check("door-place CONTROL: a hand-owned door on an unclaimed surface is exempt",
-            not mirror_place_error("antigravity", OC_ONLY, True, True),
-            "smh-adviser-board is real: hand-authored Antigravity door, command claims three "
+        # Controls for the placement rule, both directions - a sweep that is clean today says
+        # nothing about whether the check has teeth.
+        OC_ONLY = ("opencode",)
+        c.check("door-place CONTROL: a mirror on a claimed surface is fine",
+                not mirror_place_error("opencode", OC_ONLY, True, False))
+        c.check("door-place CONTROL: a mirror on an UNCLAIMED surface is caught",
+                mirror_place_error("antigravity", OC_ONLY, True, False),
+                "the reach changed and nobody ran /smh-sync-agents")
+        c.check("door-place CONTROL: a hand-owned door on an unclaimed surface is exempt",
+                not mirror_place_error("antigravity", OC_ONLY, True, True),
+                "smh-adviser-board is real: hand-authored Antigravity door, command claims three "
             "other platforms - and the exemption is earned above, not announced")
-    c.check("door-place CONTROL: no door, no error (the condition is not inverted)",
-            not mirror_place_error("antigravity", OC_ONLY, False, False))
+        c.check("door-place CONTROL: no door, no error (the condition is not inverted)",
+                not mirror_place_error("antigravity", OC_ONLY, False, False))
 
-    c.check("no door sits on a platform its command does not claim",
-            not wrong_place, f"{len(wrong_place)}: {wrong_place[:4]}")
-    c.check("every generated launcher points at its own command body, END TO END",
-            not bad_body, f"{len(bad_body)}: {bad_body[:4]}")
-    c.check("every opencode-eligible command has its mirror",
-            not missing_oc, f"{len(missing_oc)} missing: {missing_oc[:6]}")
-    c.check("every antigravity-eligible command has its workflow mirror (thin launcher counts)",
-            not missing_ag, f"{len(missing_ag)} missing: {missing_ag[:6]}")
+        c.check("no door sits on a platform its command does not claim",
+                not wrong_place, f"{len(wrong_place)}: {wrong_place[:4]}")
+        c.check("every generated launcher points at its own command body, END TO END",
+                not bad_body, f"{len(bad_body)}: {bad_body[:4]}")
+        c.check("every opencode-eligible command has its mirror",
+                not missing_oc, f"{len(missing_oc)} missing: {missing_oc[:6]}")
+        c.check("every antigravity-eligible command has its workflow mirror (thin launcher counts)",
+                not missing_ag, f"{len(missing_ag)} missing: {missing_ag[:6]}")
 
-    # ── Door CONTENT parity (SCC-113 follow-on) ──────────────────────────────
-    # Every check above asks whether a door EXISTS. None asks whether it still says what its
-    # brain says, and that gap shipped a live break: SCC-77 landed the armed `main` write gate
-    # on `main` without running /smh-sync-agents, so `.opencode/commands/` and
-    # `.agents/workflows/` kept the pre-token merge steps while MAIN-PUSH-ENFORCE was armed.
-    # An opencode or Antigravity agent following them reaches `git push origin main` with no
-    # token and is refused, with nothing in its instructions telling it to mint one. Claude and
-    # Codex were fine - their doors are thin launchers that read the brain live, which is
-    # exactly why the drift was invisible to a human spot-check.
-    #
-    # SCC-77's close-out reported a fully green floor. This is the check that was missing.
+    if c.block("CS-03 · door CONTENT parity - a door that no longer says what its brain says"):
+        # ── Door CONTENT parity (SCC-113 follow-on) ──────────────────────────────
+        # Every check above asks whether a door EXISTS. None asks whether it still says what its
+        # brain says, and that gap shipped a live break: SCC-77 landed the armed `main` write gate
+        # on `main` without running /smh-sync-agents, so `.opencode/commands/` and
+        # `.agents/workflows/` kept the pre-token merge steps while MAIN-PUSH-ENFORCE was armed.
+        # An opencode or Antigravity agent following them reaches `git push origin main` with no
+        # token and is refused, with nothing in its instructions telling it to mint one. Claude and
+        # Codex were fine - their doors are thin launchers that read the brain live, which is
+        # exactly why the drift was invisible to a human spot-check.
+        #
+        # SCC-77's close-out reported a fully green floor. This is the check that was missing.
 
-    def door_verdict(brain: str, body: str, cmd_name: str, launcher_ok: bool) -> str:
-        """'ok' | 'stale' | 'badlauncher' - for ONE mirror door against its command body.
+        def door_verdict(brain: str, body: str, cmd_name: str, launcher_ok: bool) -> str:
+            """'ok' | 'stale' | 'badlauncher' - for ONE mirror door against its command body.
 
         A mirror is one of exactly two legal things:
           * a FULL MIRROR, byte-identical to the brain; or
@@ -457,426 +464,693 @@ def main() -> int:
         pointer with the suite green - an opencode agent invoking it would get a signpost
         instead of the gate-and-merge steps.
         """
-        if body == brain:
-            return "ok"
-        if launcher_ok and is_launcher_for(body, brain, cmd_name):
-            return "ok"
-        if GEN in body:
-            return "badlauncher"   # claims to be generated, but is not a current launcher
-        return "stale"
+            if body == brain:
+                return "ok"
+            if launcher_ok and is_launcher_for(body, brain, cmd_name):
+                return "ok"
+            if GEN in body:
+                return "badlauncher"   # claims to be generated, but is not a current launcher
+            return "stale"
 
-    # Controls first, as pure string cases - the live sweep below can only ever prove the
-    # tree is currently clean, which is not the same as proving the check has teeth.
-    BRAIN = "---\ndescription: Do the thing.\nplatforms: [antigravity]\n---\n# /x\n\nbody\n"
-    LAUNCHER = ("---\ndescription: Do the thing.\n---\n"
+        # Controls first, as pure string cases - the live sweep below can only ever prove the
+        # tree is currently clean, which is not the same as proving the check has teeth.
+        BRAIN = "---\ndescription: Do the thing.\nplatforms: [antigravity]\n---\n# /x\n\nbody\n"
+        LAUNCHER = ("---\ndescription: Do the thing.\n---\n"
                 "# /x - launcher (GENERATED by sync-agents; do not edit)\n"
                 "**Execute now:** read `.agents/commands/x.md` and follow it END TO END\n")
-    WF, OC = True, False          # launcher form exists on workflows only
+        WF, OC = True, False          # launcher form exists on workflows only
 
-    c.check("door-parity CONTROL: an identical mirror is ok",
-            door_verdict(BRAIN, BRAIN, "x.md", WF) == "ok")
-    c.check("door-parity CONTROL: a STALE mirror is caught",
-            door_verdict(BRAIN, BRAIN.replace("body", "old body"), "x.md", WF) == "stale",
-            "this is the SCC-77 shape - a door that still reads the pre-change steps")
-    c.check("door-parity CONTROL: a truncated mirror is caught",
-            door_verdict(BRAIN, "---\ndescription: Do the thing.\n---\n# /x\n", "x.md", WF)
-            == "stale")
-    c.check("door-parity CONTROL: a current thin launcher is exempt",
-            door_verdict(BRAIN, LAUNCHER, "x.md", WF) == "ok")
+        c.check("door-parity CONTROL: an identical mirror is ok",
+                door_verdict(BRAIN, BRAIN, "x.md", WF) == "ok")
+        c.check("door-parity CONTROL: a STALE mirror is caught",
+                door_verdict(BRAIN, BRAIN.replace("body", "old body"), "x.md", WF) == "stale",
+                "this is the SCC-77 shape - a door that still reads the pre-change steps")
+        c.check("door-parity CONTROL: a truncated mirror is caught",
+                door_verdict(BRAIN, "---\ndescription: Do the thing.\n---\n# /x\n", "x.md", WF)
+                == "stale")
+        c.check("door-parity CONTROL: a current thin launcher is exempt",
+                door_verdict(BRAIN, LAUNCHER, "x.md", WF) == "ok")
 
-    # ⭐ The three shapes a clean-room pass used to defeat the FIRST cut of this exemption,
-    # which tested three substrings appearing anywhere in the file.
-    c.check("door-parity CONTROL: a launcher whose BRAIN's description moved on is caught",
-            door_verdict(BRAIN.replace("Do the thing.", "RETIRED - use /y instead."),
-                         LAUNCHER, "x.md", WF) == "badlauncher",
-            "the forgotten-sync shape: nobody touched the launcher, and it is now lying to "
+        # ⭐ The three shapes a clean-room pass used to defeat the FIRST cut of this exemption,
+        # which tested three substrings appearing anywhere in the file.
+        c.check("door-parity CONTROL: a launcher whose BRAIN's description moved on is caught",
+                door_verdict(BRAIN.replace("Do the thing.", "RETIRED - use /y instead."),
+                             LAUNCHER, "x.md", WF) == "badlauncher",
+                "the forgotten-sync shape: nobody touched the launcher, and it is now lying to "
             "the Antigravity menu about what this command does")
-    c.check("door-parity CONTROL: a launcher REPOINTED at another brain is caught, even "
+        c.check("door-parity CONTROL: a launcher REPOINTED at another brain is caught, even "
             "with the old path still present in a comment",
-            door_verdict(BRAIN,
-                         "<!-- generated from .agents/commands/x.md -->\n"
-                         + LAUNCHER.replace("read `.agents/commands/x.md`",
-                                            "read `.agents/commands/other.md`"),
-                         "x.md", WF) == "badlauncher",
-            "a substring test reads the stale COMMENT as the pointer - the exact "
+                door_verdict(BRAIN,
+                             "<!-- generated from .agents/commands/x.md -->\n"
+                             + LAUNCHER.replace("read `.agents/commands/x.md`",
+                                                "read `.agents/commands/other.md`"),
+                             "x.md", WF) == "badlauncher",
+                "a substring test reads the stale COMMENT as the pointer - the exact "
             "comment-literals-invert-source-grep-tests inversion")
-    c.check("door-parity CONTROL: the marker alone does NOT excuse drift",
-            door_verdict(BRAIN, "# GENERATED by sync-agents\nanything at all\n", "x.md", WF)
-            == "badlauncher")
+        c.check("door-parity CONTROL: the marker alone does NOT excuse drift",
+                door_verdict(BRAIN, "# GENERATED by sync-agents\nanything at all\n", "x.md", WF)
+                == "badlauncher")
 
-    # opencode has no launcher form at all - Copy-Item, or it is wrong.
-    c.check("door-parity CONTROL: a launcher on an OPENCODE door is NOT exempt",
-            door_verdict(BRAIN, LAUNCHER, "x.md", OC) == "badlauncher",
-            "the engine never emits a launcher there; a pointer would replace the steps")
+        # opencode has no launcher form at all - Copy-Item, or it is wrong.
+        c.check("door-parity CONTROL: a launcher on an OPENCODE door is NOT exempt",
+                door_verdict(BRAIN, LAUNCHER, "x.md", OC) == "badlauncher",
+                "the engine never emits a launcher there; a pointer would replace the steps")
 
-    # ⭐ REGRESSION CONTROL — the real historical defect, not a shape I imagined.
-    # `ea8fe97` is the commit that re-synced the doors SCC-77 left stale; its parent holds the
-    # genuinely stale `.opencode/commands/cicd-push-e2e.md` (8464b, zero mint-push-token
-    # references) that the pre-SCC-113 gate passed 13/13. Every other control here is a string
-    # I wrote, which only ever proves the check does what I expected it to.
-    # Degrades LOUDLY, never silently: with no history reachable it synthesizes an equivalent
-    # stale door and says so in the message, so the control always runs.
-    hist = subprocess.run(["git", "show", "ea8fe97^:.opencode/commands/cicd-push-e2e.md"],
-                          cwd=ROOT, capture_output=True, text=True)
-    pushe2e = read(ROOT / ".agents/commands/cicd-push-e2e.md")
-    if hist.returncode == 0 and hist.stdout.strip():
-        stale_door, src = hist.stdout, "the REAL pre-ea8fe97 bytes"
-    else:
-        stale_door, src = pushe2e.split("## Step 6")[0], "a synthesized stale door (no history)"
-    c.check(f"door-parity REGRESSION CONTROL fires on {src}",
-            door_verdict(pushe2e, stale_door, "cicd-push-e2e.md", launcher_ok=False)
-            == "stale",
-            "the gate reported 13/13 green on exactly this file - that is the whole reason "
+        # ⭐ REGRESSION CONTROL — the real historical defect, not a shape I imagined.
+        # `ea8fe97` is the commit that re-synced the doors SCC-77 left stale; its parent holds the
+        # genuinely stale `.opencode/commands/cicd-push-e2e.md` (8464b, zero mint-push-token
+        # references) that the pre-SCC-113 gate passed 13/13. Every other control here is a string
+        # I wrote, which only ever proves the check does what I expected it to.
+        # Degrades LOUDLY, never silently: with no history reachable it synthesizes an equivalent
+        # stale door and says so in the message, so the control always runs.
+        hist = subprocess.run(["git", "show", "ea8fe97^:.opencode/commands/cicd-push-e2e.md"],
+                              cwd=ROOT, capture_output=True, text=True)
+        pushe2e = read(ROOT / ".agents/commands/cicd-push-e2e.md")
+        if hist.returncode == 0 and hist.stdout.strip():
+            stale_door, src = hist.stdout, "the REAL pre-ea8fe97 bytes"
+        else:
+            stale_door, src = pushe2e.split("## Step 6")[0], "a synthesized stale door (no history)"
+        c.check(f"door-parity REGRESSION CONTROL fires on {src}",
+                door_verdict(pushe2e, stale_door, "cicd-push-e2e.md", launcher_ok=False)
+                == "stale",
+                "the gate reported 13/13 green on exactly this file - that is the whole reason "
             "this check exists")
 
-    MIRRORS = (".opencode/commands", ".agents/workflows")
-    drifted, examined = [], 0
-    for cmd in cmds:
-        brain = read(cmd)
-        for rel in MIRRORS:
-            # A hand-owned workflow is authored, not generated, and legitimately differs from
-            # its brain — `smh-adviser-board` is a condensed 2 KB Antigravity variant of a
-            # 52 KB command. The engine never writes these, so parity is not the contract.
-            if rel == ".agents/workflows" and cmd.name in hand_owned:
+        MIRRORS = (".opencode/commands", ".agents/workflows")
+        drifted, examined = [], 0
+        for cmd in cmds:
+            brain = read(cmd)
+            for rel in MIRRORS:
+                # A hand-owned workflow is authored, not generated, and legitimately differs from
+                # its brain — `smh-adviser-board` is a condensed 2 KB Antigravity variant of a
+                # 52 KB command. The engine never writes these, so parity is not the contract.
+                if rel == ".agents/workflows" and cmd.name in hand_owned:
+                    continue
+                door = ROOT / rel / cmd.name
+                if not door.is_file():
+                    continue
+                examined += 1
+                v = door_verdict(brain, read(door), cmd.name,
+                                 launcher_ok=(rel == ".agents/workflows"))
+                if v != "ok":
+                    drifted.append(f"{rel}/{cmd.name} [{v}]")
+
+        c.check("every mirror door still says what its brain says",
+                not drifted,
+                f"{len(drifted)} drifted - run /smh-sync-agents: {drifted[:6]}")
+
+        # ⭐ An empty sweep is indistinguishable from a clean one, and "0 offenders" out of 0 doors
+        # is the vacuous green `tests-must-gate-for-real` names. A renamed cache directory or a
+        # typo'd glob would otherwise read as a pass forever.
+        c.check("door-parity examined a real number of doors (not a silent empty sweep)",
+                examined >= 40, f"only {examined} mirror doors examined")
+
+    if c.block("CS-04 · the generator is actually generating"):
+        # ── Positive control: the generator must actually be generating ───────────
+        # Without this, every check above passes trivially if the emit stage silently no-ops.
+        generated = [d.name for d in master_skills.iterdir()
+                     if (d / "SKILL.md").is_file() and GEN in read(d / "SKILL.md")]
+        c.check("the launcher generator produced doors (not a silent no-op)",
+                len(generated) >= 10, f"only {len(generated)} generated launchers")
+
+    if c.block("CS-05 · hand-authored skills survive a sync untouched"):
+        # ── Hand-authored skills are never overwritten by the generator ───────────
+        # These carry real content (boundaries, routing notes) a stub would destroy.
+        hand = ["cicd-park", "cicd-resume", "cicd-close-workingtree", "smh-close-task-merge-tree",
+                "cicd-update-sprint-memory", "smh-update-maps-indexes"]
+        clobbered = [n for n in hand
+                     if (master_skills / n / "SKILL.md").is_file()
+                     and GEN in read(master_skills / n / "SKILL.md")]
+        c.check("hand-authored skills survive a sync untouched",
+                not clobbered, f"overwritten by the generator: {clobbered}")
+
+    if c.block("CS-06 · every skill door is loadable"):
+        # ── Every skill door is loadable: frontmatter with a description ──────────
+        no_fm = []
+        for d in sorted(master_skills.iterdir()):
+            sk = d / "SKILL.md"
+            if not sk.is_file():
                 continue
-            door = ROOT / rel / cmd.name
-            if not door.is_file():
-                continue
-            examined += 1
-            v = door_verdict(brain, read(door), cmd.name,
-                             launcher_ok=(rel == ".agents/workflows"))
-            if v != "ok":
-                drifted.append(f"{rel}/{cmd.name} [{v}]")
+            head = read(sk)[:1200]
+            if not head.startswith("---") or "description:" not in head:
+                no_fm.append(d.name)
+        c.check("every skill door carries frontmatter with a description",
+                not no_fm, f"{len(no_fm)}: {no_fm[:6]}")
 
-    c.check("every mirror door still says what its brain says",
-            not drifted,
-            f"{len(drifted)} drifted - run /smh-sync-agents: {drifted[:6]}")
+    if c.block("CS-07 · ghost doors - a mirror with no command source"):
+        # ── Stale mirrors: a door with no command source is a ghost ───────────────
+        cmd_names = {p.name for p in (ROOT / ".agents/commands").glob("*.md")}
+        # ⛔ The ghost exemption is NOT `hand_owned`, and the difference is load-bearing. Only
+        # `INDEX.md` is legitimately SOURCELESS; the other two hand-owned workflows are variants
+        # OF a command and must keep having one. Exempting them here (as a first cut did, by
+        # reusing `hand_owned`) made this check go silent on the one shape it most needs to
+        # catch - a hand-authored launcher left pointing at a brain that was deleted. Verified:
+        # delete `.agents/commands/smh-adviser-board.md` and the loose version reports 0 ghosts.
+        wf_present = sorted(p.name for p in (ROOT / ".agents/workflows").glob("*.md"))
+        ghosts = [n for n in wf_present if n not in cmd_names and n not in SOURCELESS]
+        c.check("no ghost workflow mirrors (every one has a command source)",
+                not ghosts, f"{len(ghosts)}: {ghosts[:6]}")
+        orphaned_hand = sorted(n for n in hand_owned - SOURCELESS if n not in cmd_names)
+        c.check("every hand-owned workflow still has the command it is a variant of",
+                not orphaned_hand,
+                f"{orphaned_hand} - excluded from the sync, so nothing else would notice")
 
-    # ⭐ An empty sweep is indistinguishable from a clean one, and "0 offenders" out of 0 doors
-    # is the vacuous green `tests-must-gate-for-real` names. A renamed cache directory or a
-    # typo'd glob would otherwise read as a pass forever.
-    c.check("door-parity examined a real number of doors (not a silent empty sweep)",
-            examined >= 40, f"only {examined} mirror doors examined")
-
-    # ── Positive control: the generator must actually be generating ───────────
-    # Without this, every check above passes trivially if the emit stage silently no-ops.
-    generated = [d.name for d in master_skills.iterdir()
-                 if (d / "SKILL.md").is_file() and GEN in read(d / "SKILL.md")]
-    c.check("the launcher generator produced doors (not a silent no-op)",
-            len(generated) >= 10, f"only {len(generated)} generated launchers")
-
-    # ── Hand-authored skills are never overwritten by the generator ───────────
-    # These carry real content (boundaries, routing notes) a stub would destroy.
-    hand = ["cicd-park", "cicd-resume", "cicd-close-workingtree", "smh-close-task-merge-tree",
-            "cicd-update-sprint-memory", "smh-update-maps-indexes"]
-    clobbered = [n for n in hand
-                 if (master_skills / n / "SKILL.md").is_file()
-                 and GEN in read(master_skills / n / "SKILL.md")]
-    c.check("hand-authored skills survive a sync untouched",
-            not clobbered, f"overwritten by the generator: {clobbered}")
-
-    # ── Every skill door is loadable: frontmatter with a description ──────────
-    no_fm = []
-    for d in sorted(master_skills.iterdir()):
-        sk = d / "SKILL.md"
-        if not sk.is_file():
-            continue
-        head = read(sk)[:1200]
-        if not head.startswith("---") or "description:" not in head:
-            no_fm.append(d.name)
-    c.check("every skill door carries frontmatter with a description",
-            not no_fm, f"{len(no_fm)}: {no_fm[:6]}")
-
-    # ── Stale mirrors: a door with no command source is a ghost ───────────────
-    cmd_names = {p.name for p in (ROOT / ".agents/commands").glob("*.md")}
-    # ⛔ The ghost exemption is NOT `hand_owned`, and the difference is load-bearing. Only
-    # `INDEX.md` is legitimately SOURCELESS; the other two hand-owned workflows are variants
-    # OF a command and must keep having one. Exempting them here (as a first cut did, by
-    # reusing `hand_owned`) made this check go silent on the one shape it most needs to
-    # catch - a hand-authored launcher left pointing at a brain that was deleted. Verified:
-    # delete `.agents/commands/smh-adviser-board.md` and the loose version reports 0 ghosts.
-    wf_present = sorted(p.name for p in (ROOT / ".agents/workflows").glob("*.md"))
-    ghosts = [n for n in wf_present if n not in cmd_names and n not in SOURCELESS]
-    c.check("no ghost workflow mirrors (every one has a command source)",
-            not ghosts, f"{len(ghosts)}: {ghosts[:6]}")
-    orphaned_hand = sorted(n for n in hand_owned - SOURCELESS if n not in cmd_names)
-    c.check("every hand-owned workflow still has the command it is a variant of",
-            not orphaned_hand,
-            f"{orphaned_hand} - excluded from the sync, so nothing else would notice")
-
-    # ⭐ The SAME check for opencode, which never had one.
-    #
-    # ⛔ CORRECTED (SCC-113). This comment used to end "it falls to that final `$false` and is
-    # kept FOREVER". That is FALSE, and it was false because I read `Sync-CommandDir` in
-    # isolation and stopped one line short of its caller: `Invoke-ManifestPurge`
-    # (sync-agents.ps1:822) runs immediately after and retires the door. The claim named a
-    # danger that does not exist, in the comment explaining why the check is needed.
-    #
-    # The TRUE reason, which is narrower and still worth a check. `Sync-CommandDir` runs for
-    # opencode WITHOUT `-Mirror` (sync-agents.ps1:821) and its purge branch ends
-    # `else { $false }  # local: keep foreign/project-own files`, so the sweep itself never
-    # removes a door whose brain was deleted. The manifest then covers exactly one case:
-    # ⭐ `Invoke-ManifestPurge` (sync-agents.ps1:365) iterates `$was` - the names the LAST run
-    # recorded writing - and removes only those the current run no longer owns (`:367`).
-    # So a door the sync once wrote IS retired, and a door it never recorded - one predating
-    # the manifest, hand-dropped, or authored by this repo - survives indefinitely with nothing
-    # in the tree noticing. That residue is what this check covers, and it is precisely the case
-    # `project-own.txt` exists to adjudicate: claimed means deliberate, unclaimed means stale.
-    #
-    # The keep-list is honoured HERE and only here (SCC-113). `Get-SurfaceState` maps
-    # `.agents\workflows` to the MASTER's own workflows (sync-agents.ps1:325), so in this repo
-    # that surface is compared against itself and can never produce an orphan — `-Reconcile`
-    # cannot stage a lobby workflow into the keep-list, and this file is lobby-only
-    # (ROOT = parents[3]). Wiring the exemption into the workflows sweep above would be
-    # unreachable code dressed as symmetry.
-    oc_present = sorted(p.name for p in (ROOT / ".opencode/commands").glob("*.md"))
-    own_list = ROOT / ".agents/project-own.txt"
-    # ABSENT is not the same as EMPTY, and the engine draws that line too: `Get-OwnAllowList`
-    # returns `$null` for a missing file (which BLOCKS `-Reconcile` from purging anything) and
-    # `@()` for an authored-but-empty one (which authorises purging every unclaimed orphan).
-    # Here both read as "claim nothing", which is the strict side of that split in either case.
-    own_claimed = frozenset(parse_own_list(read(own_list)) if own_list.is_file() else ())
-    oc_ghosts = ghost_doors(oc_present, cmd_names, own_claimed)
-    c.check("no ghost opencode mirrors (every one has a command source or a keep-list claim)",
-            not oc_ghosts,
-            f"{len(oc_ghosts)}: {oc_ghosts[:6]} - no command source, and the manifest cannot "
+        # ⭐ The SAME check for opencode, which never had one.
+        #
+        # ⛔ CORRECTED (SCC-113). This comment used to end "it falls to that final `$false` and is
+        # kept FOREVER". That is FALSE, and it was false because I read `Sync-CommandDir` in
+        # isolation and stopped one line short of its caller: `Invoke-ManifestPurge`
+        # (sync-agents.ps1:822) runs immediately after and retires the door. The claim named a
+        # danger that does not exist, in the comment explaining why the check is needed.
+        #
+        # The TRUE reason, which is narrower and still worth a check. `Sync-CommandDir` runs for
+        # opencode WITHOUT `-Mirror` (sync-agents.ps1:821) and its purge branch ends
+        # `else { $false }  # local: keep foreign/project-own files`, so the sweep itself never
+        # removes a door whose brain was deleted. The manifest then covers exactly one case:
+        # ⭐ `Invoke-ManifestPurge` (sync-agents.ps1:365) iterates `$was` - the names the LAST run
+        # recorded writing - and removes only those the current run no longer owns (`:367`).
+        # So a door the sync once wrote IS retired, and a door it never recorded - one predating
+        # the manifest, hand-dropped, or authored by this repo - survives indefinitely with nothing
+        # in the tree noticing. That residue is what this check covers, and it is precisely the case
+        # `project-own.txt` exists to adjudicate: claimed means deliberate, unclaimed means stale.
+        #
+        # The keep-list is honoured HERE and only here (SCC-113). `Get-SurfaceState` maps
+        # `.agents\workflows` to the MASTER's own workflows (sync-agents.ps1:325), so in this repo
+        # that surface is compared against itself and can never produce an orphan — `-Reconcile`
+        # cannot stage a lobby workflow into the keep-list, and this file is lobby-only
+        # (ROOT = parents[3]). Wiring the exemption into the workflows sweep above would be
+        # unreachable code dressed as symmetry.
+        oc_present = sorted(p.name for p in (ROOT / ".opencode/commands").glob("*.md"))
+        own_list = ROOT / ".agents/project-own.txt"
+        # ABSENT is not the same as EMPTY, and the engine draws that line too: `Get-OwnAllowList`
+        # returns `$null` for a missing file (which BLOCKS `-Reconcile` from purging anything) and
+        # `@()` for an authored-but-empty one (which authorises purging every unclaimed orphan).
+        # Here both read as "claim nothing", which is the strict side of that split in either case.
+        own_claimed = frozenset(parse_own_list(read(own_list)) if own_list.is_file() else ())
+        oc_ghosts = ghost_doors(oc_present, cmd_names, own_claimed)
+        c.check("no ghost opencode mirrors (every one has a command source or a keep-list claim)",
+                not oc_ghosts,
+                f"{len(oc_ghosts)}: {oc_ghosts[:6]} - no command source, and the manifest cannot "
             f"retire what no previous sync recorded writing, so nothing else will ever say so. "
             f"If a door is deliberately this repo's own, claim it in .agents/project-own.txt "
             f"(sync-agents -Reconcile stages that file for you)")
 
-    # Both sweeps get A-3's guard: "0 ghosts" out of 0 files read is the vacuous green, and a
-    # renamed cache directory is exactly how you get one. Today: 34 workflows, 53 opencode.
-    c.check("the ghost sweeps read a real number of doors (not two empty directories)",
-            len(wf_present) >= 20 and len(oc_present) >= 40,
-            f"workflows={len(wf_present)} opencode={len(oc_present)} - a glob resolved to "
+        # Both sweeps get A-3's guard: "0 ghosts" out of 0 files read is the vacuous green, and a
+        # renamed cache directory is exactly how you get one. Today: 34 workflows, 53 opencode.
+        c.check("the ghost sweeps read a real number of doors (not two empty directories)",
+                len(wf_present) >= 20 and len(oc_present) >= 40,
+                f"workflows={len(wf_present)} opencode={len(oc_present)} - a glob resolved to "
             f"nothing, so every ghost check above passed on an empty set")
 
-    # ── The engine's keep-list is part of the contract this sweep guards (SCC-113) ─────
-    # `-Reconcile` STAGES `.agents/project-own.txt` (sync-agents.ps1:861) and
-    # `smh-sync-agents.md:55` promises an orphan claimed there is "kept forever". A claimed
-    # opencode door is therefore kept ON PURPOSE - calling it a ghost would indict the engine's
-    # own documented resolution and leave the operator no way to close the finding.
-    #
-    # The rule is a PURE FUNCTION, and these controls pass it literals. `project-own.txt` does
-    # not exist in this repo, so an exemption wired only to disk would be a permanent green
-    # that never once ran the exempting path - the vacuous shape A-3 was raised about.
-    c.check("own-list: a claimed door is not a ghost",
-            ghost_doors(["a.md"], set(), frozenset({"a.md"})) == [],
-            "the engine keeps a claimed door forever; the sweep must agree")
-    c.check("own-list: an UNCLAIMED door is still a ghost",
-            ghost_doors(["a.md"], set(), frozenset({"b.md"})) == ["a.md"],
-            "NEGATIVE CONTROL - an exemption that swallows the check is worse than none")
-    c.check("own-list: comments and blanks strip exactly as the engine strips them",
-            parse_own_list("# header\n\n  a.md  \nb.md # why it is ours\n") == {"a.md", "b.md"},
-            "a parser more generous than sync-agents.ps1:309 exempts doors it still purges")
-    c.check("own-list: `*` is a literal name, never a wildcard",
-            ghost_doors(["a.md", "b.md"], set(), parse_own_list("*\n")) == ["a.md", "b.md"],
-            "a malformed keep-list must never widen the exemption to everything")
-    c.check("own-list: a claim is an EXACT name, never a prefix",
-            ghost_doors(["smh-sync-agents.md"], set(), parse_own_list("smh-sync\n"))
-            == ["smh-sync-agents.md"],
-            "prefix matching would let one claim cover every sibling door")
-    c.check("own-list: a claim matches regardless of CASE, as the engine's -contains does",
-            ghost_doors(["Smh-Review.md"], set(), parse_own_list("smh-review.md\n")) == [],
-            "case-sensitive here + case-insensitive in PowerShell = the sweep calls a door a "
+    if c.block("CS-08 · the engine's project-own keep-list"):
+        # ── The engine's keep-list is part of the contract this sweep guards (SCC-113) ─────
+        # `-Reconcile` STAGES `.agents/project-own.txt` (sync-agents.ps1:861) and
+        # `smh-sync-agents.md:55` promises an orphan claimed there is "kept forever". A claimed
+        # opencode door is therefore kept ON PURPOSE - calling it a ghost would indict the engine's
+        # own documented resolution and leave the operator no way to close the finding.
+        #
+        # The rule is a PURE FUNCTION, and these controls pass it literals. `project-own.txt` does
+        # not exist in this repo, so an exemption wired only to disk would be a permanent green
+        # that never once ran the exempting path - the vacuous shape A-3 was raised about.
+        c.check("own-list: a claimed door is not a ghost",
+                ghost_doors(["a.md"], set(), frozenset({"a.md"})) == [],
+                "the engine keeps a claimed door forever; the sweep must agree")
+        c.check("own-list: an UNCLAIMED door is still a ghost",
+                ghost_doors(["a.md"], set(), frozenset({"b.md"})) == ["a.md"],
+                "NEGATIVE CONTROL - an exemption that swallows the check is worse than none")
+        c.check("own-list: comments and blanks strip exactly as the engine strips them",
+                parse_own_list("# header\n\n  a.md  \nb.md # why it is ours\n") == {"a.md", "b.md"},
+                "a parser more generous than sync-agents.ps1:309 exempts doors it still purges")
+        c.check("own-list: `*` is a literal name, never a wildcard",
+                ghost_doors(["a.md", "b.md"], set(), parse_own_list("*\n")) == ["a.md", "b.md"],
+                "a malformed keep-list must never widen the exemption to everything")
+        c.check("own-list: a claim is an EXACT name, never a prefix",
+                ghost_doors(["smh-sync-agents.md"], set(), parse_own_list("smh-sync\n"))
+                == ["smh-sync-agents.md"],
+                "prefix matching would let one claim cover every sibling door")
+        c.check("own-list: a claim matches regardless of CASE, as the engine's -contains does",
+                ghost_doors(["Smh-Review.md"], set(), parse_own_list("smh-review.md\n")) == [],
+                "case-sensitive here + case-insensitive in PowerShell = the sweep calls a door a "
             "ghost that the engine keeps forever")
 
-    # ── The docs agree with the engine ────────────────────────────────────────
-    agents_md = read(ROOT / "AGENTS.md")
-    c.check("root AGENTS.md documents the door model for every platform",
-            "one door per platform per command" in agents_md.lower()
-            and "launcher skill" in agents_md,
-            "AGENTS.md no longer documents the door model")
-    sync_cmd = read(ROOT / ".agents/commands/smh-sync-agents.md")
-    c.check("sync-agents command doc names both retired doors",
-            "RETIRED door" in sync_cmd and "/prompts:<name>" in sync_cmd
-            and "Do not use `-Maintained`" in sync_cmd,
-            "smh-sync-agents.md no longer matches what the engine does")
+    if c.block("CS-09 · the docs agree with the engine"):
+        # ── The docs agree with the engine ────────────────────────────────────────
+        agents_md = read(ROOT / "AGENTS.md")
+        c.check("root AGENTS.md documents the door model for every platform",
+                "one door per platform per command" in agents_md.lower()
+                and "launcher skill" in agents_md,
+                "AGENTS.md no longer documents the door model")
+        sync_cmd = read(ROOT / ".agents/commands/smh-sync-agents.md")
+        c.check("sync-agents command doc names both retired doors",
+                "RETIRED door" in sync_cmd and "/prompts:<name>" in sync_cmd
+                and "Do not use `-Maintained`" in sync_cmd,
+                "smh-sync-agents.md no longer matches what the engine does")
 
-    # ── Mutation doctrine: named, loaded into the task lane, and pinned (SCC-145) ─────
-    # Mutation testing was a doctrine nobody was handed, nothing named, and no gate could see:
-    # `grep -rn "mutant\|mutation" .agents/commands/` returned two hits, one of them a biologist
-    # in the adviser board. The whole procedure was ONE sub-bullet under Rule 4 of
-    # `tests-must-gate-for-real.md`, and the two TASK-lane commands that write the assertions
-    # (`/smh-quick-dev`, `/smh-self-audit`) did not load that rule at all — so on a task lane the
-    # doctrine arrived at REVIEW, one step after the mutants were designed.
-    #
-    # It was measured twice, in unrelated lanes, as the same wasted work: SCC-144 aimed a mutant
-    # at the wrong gate's stdin and paid a second run; its 13-mutant sweep left a survivor that
-    # turned out to be a DEFECTIVE mutant (it commented out one echo of a two-line message, so the
-    # asserted word still printed); a `timeout`-killed sweep left a MUTATED GATE on disk,
-    # uncommitted, in the very lane whose job was fixing that gate; and its review found its 14
-    # case-derived mutants all killed while a later set drawn from the CODE left 24 of 25 surviving.
-    # SCC-129 hit the same class inside a test file — a "proven able to fail" row that gutted its
-    # own input, empty by construction.
-    #
-    # Nothing here can be pinned by wiring, because the artifact IS prose. So the check pins the
-    # two things prose can still get structurally wrong: WHERE the obligation sits (the block an
-    # agent reads as law; the step that routes the mutating) and WHETHER each technique is present
-    # by name. Both helpers above fail closed on an empty search space.
-    RULE_STEM = "tests-must-gate-for-real"
+    if c.block("CS-10 · mutation doctrine: named, loaded into the task lane, and pinned"):
+        # ── Mutation doctrine: named, loaded into the task lane, and pinned (SCC-145) ─────
+        # Mutation testing was a doctrine nobody was handed, nothing named, and no gate could see:
+        # `grep -rn "mutant\|mutation" .agents/commands/` returned two hits, one of them a biologist
+        # in the adviser board. The whole procedure was ONE sub-bullet under Rule 4 of
+        # `tests-must-gate-for-real.md`, and the two TASK-lane commands that write the assertions
+        # (`/smh-quick-dev`, `/smh-self-audit`) did not load that rule at all — so on a task lane the
+        # doctrine arrived at REVIEW, one step after the mutants were designed.
+        #
+        # It was measured twice, in unrelated lanes, as the same wasted work: SCC-144 aimed a mutant
+        # at the wrong gate's stdin and paid a second run; its 13-mutant sweep left a survivor that
+        # turned out to be a DEFECTIVE mutant (it commented out one echo of a two-line message, so the
+        # asserted word still printed); a `timeout`-killed sweep left a MUTATED GATE on disk,
+        # uncommitted, in the very lane whose job was fixing that gate; and its review found its 14
+        # case-derived mutants all killed while a later set drawn from the CODE left 24 of 25 surviving.
+        # SCC-129 hit the same class inside a test file — a "proven able to fail" row that gutted its
+        # own input, empty by construction.
+        #
+        # Nothing here can be pinned by wiring, because the artifact IS prose. So the check pins the
+        # two things prose can still get structurally wrong: WHERE the obligation sits (the block an
+        # agent reads as law; the step that routes the mutating) and WHETHER each technique is present
+        # by name. Both helpers above fail closed on an empty search space.
+        RULE_STEM = "tests-must-gate-for-real"
 
-    # The TASK-lane commands that write or judge assertions. Story-lane commands
-    # (`cicd-dev-story-tests`, `cicd-write-story-tests`, `cicd-code-review`, both clean-code
-    # audits) bake the rule into the STEP BODIES that route the work instead — the stronger form
-    # per `restate-alwayson-obligations-in-command-bodies` — and two of them carry no
-    # rules-in-force block at all. Widening those five is a change to five contracts and two `-AP`
-    # twins; it is deliberately not this ticket. `smh-code-review` is listed because it already
-    # complies, and an unpinned compliance is one edit from being gone.
-    LOADERS = ("smh-quick-dev.md", "smh-self-audit.md", "smh-code-review.md")
-    unloaded = [n for n in LOADERS
-                if RULE_STEM not in rif_block(read(ROOT / ".agents/commands" / n))]
-    c.check("the mutation rule is LOADED (in the rules-in-force block) by every task-lane "
+        # The TASK-lane commands that write or judge assertions. Story-lane commands
+        # (`cicd-dev-story-tests`, `cicd-write-story-tests`, `cicd-code-review`, both clean-code
+        # audits) bake the rule into the STEP BODIES that route the work instead — the stronger form
+        # per `restate-alwayson-obligations-in-command-bodies` — and two of them carry no
+        # rules-in-force block at all. Widening those five is a change to five contracts and two `-AP`
+        # twins; it is deliberately not this ticket. `smh-code-review` is listed because it already
+        # complies, and an unpinned compliance is one edit from being gone.
+        LOADERS = ("smh-quick-dev.md", "smh-self-audit.md", "smh-code-review.md")
+        unloaded = [n for n in LOADERS
+                    if RULE_STEM not in rif_block(read(ROOT / ".agents/commands" / n))]
+        c.check("the mutation rule is LOADED (in the rules-in-force block) by every task-lane "
             "command that writes or judges assertions",
-            not unloaded,
-            f"{unloaded} - cite `.agents/rules/{RULE_STEM}.md` INSIDE the block, not in step "
+                not unloaded,
+                f"{unloaded} - cite `.agents/rules/{RULE_STEM}.md` INSIDE the block, not in step "
             f"prose. The block is what an agent reads as standing law before Step 0; SCC-144 "
             f"designed 14 mutants on a lane where this rule was never loaded")
 
-    # Controls — pure strings, no disk. The sweep above can only prove the tree is clean today.
-    RIF = ("> **Rules in force for this command:**\n"
+        # Controls — pure strings, no disk. The sweep above can only prove the tree is clean today.
+        RIF = ("> **Rules in force for this command:**\n"
            "> - `.agents/rules/git-policy.md` — explicit paths only\n")
-    c.check("rules-in-force CONTROL: a rule cited INSIDE the block is loaded",
-            RULE_STEM in rif_block(RIF + f"> - `.agents/rules/{RULE_STEM}.md` — the why\n"))
-    c.check("rules-in-force CONTROL: a rule cited only in BODY PROSE is NOT loaded",
-            RULE_STEM not in rif_block(
-                RIF + f"\n## Step 3\n\nrun one sweep per `{RULE_STEM}`\n"),
-            "a file-wide grep reads this as loaded - it is the shape five commands are actually "
+        c.check("rules-in-force CONTROL: a rule cited INSIDE the block is loaded",
+                RULE_STEM in rif_block(RIF + f"> - `.agents/rules/{RULE_STEM}.md` — the why\n"))
+        c.check("rules-in-force CONTROL: a rule cited only in BODY PROSE is NOT loaded",
+                RULE_STEM not in rif_block(
+                    RIF + f"\n## Step 3\n\nrun one sweep per `{RULE_STEM}`\n"),
+                "a file-wide grep reads this as loaded - it is the shape five commands are actually "
             "in, and it arrives after the decision it governs")
-    c.check("rules-in-force CONTROL: no block at all fails CLOSED",
-            rif_block("# /x\n\nprose only, no block here\n") == "",
-            "an empty search space must never read as a pass")
-    # ⛔ THE ONE THAT PINS `break` RATHER THAN `continue`. The control above uses plain prose, which
-    # a degenerate `rif_block` collecting EVERY blockquote in the file would also pass. These
-    # commands are full of later `> **Note:**` asides (`smh-quick-dev.md` has two within 20 lines
-    # of the block), so "any blockquote anywhere" is not a theoretical degeneration - it is what
-    # the file actually looks like. Mutating `break` to `continue` left all four call sites green.
-    c.check("rules-in-force CONTROL: a LATER blockquote is not part of the block",
-            RULE_STEM not in rif_block(
-                RIF + f"\ntext between\n\n> **Note:** we follow `{RULE_STEM}.md` here\n"),
-            "the block ENDS at the first non-`>` line; a rule named in a later aside is not "
+        c.check("rules-in-force CONTROL: no block at all fails CLOSED",
+                rif_block("# /x\n\nprose only, no block here\n") == "",
+                "an empty search space must never read as a pass")
+        # ⛔ THE ONE THAT PINS `break` RATHER THAN `continue`. The control above uses plain prose, which
+        # a degenerate `rif_block` collecting EVERY blockquote in the file would also pass. These
+        # commands are full of later `> **Note:**` asides (`smh-quick-dev.md` has two within 20 lines
+        # of the block), so "any blockquote anywhere" is not a theoretical degeneration - it is what
+        # the file actually looks like. Mutating `break` to `continue` left all four call sites green.
+        c.check("rules-in-force CONTROL: a LATER blockquote is not part of the block",
+                RULE_STEM not in rif_block(
+                    RIF + f"\ntext between\n\n> **Note:** we follow `{RULE_STEM}.md` here\n"),
+                "the block ENDS at the first non-`>` line; a rule named in a later aside is not "
             "loaded law, and a helper that swept every blockquote would call it one")
 
-    # ⭐ The obligation must sit in the step that routes the mutating. Step 3 is GREEN (where the
-    # mutants get run); Step 3.5 is the eject tripwire and Step 2 is RED - a bullet that drifts
-    # into either fires at the wrong moment, and file-wide pinning cannot see the difference.
-    STEP3_RX = r"^## Step 3(?![\d.])"
-    step3 = md_section(read(ROOT / ".agents/commands/smh-quick-dev.md"), STEP3_RX)
+        # ⭐ The obligation must sit in the step that routes the mutating. Step 3 is GREEN (where the
+        # mutants get run); Step 3.5 is the eject tripwire and Step 2 is RED - a bullet that drifts
+        # into either fires at the wrong moment, and file-wide pinning cannot see the difference.
+        STEP3_RX = r"^## Step 3(?![\d.])"
+        step3 = md_section(read(ROOT / ".agents/commands/smh-quick-dev.md"), STEP3_RX)
 
-    # Each row is ONE obligation and the phrasings that satisfy it - **alternatives, never a single
-    # literal**. The rule and the SOP name the technique `CODE-DERIVED` where the command says
-    # "from the code", so a meaning-preserving edit that HARMONISES the three surfaces (exactly what
-    # a findability ticket invites) would have gone RED against one pinned string. A guard that
-    # punishes the edit it exists to encourage is a false red, and this repo has shipped four gates
-    # that hard-blocked a close-out on one. Everything is compared case-folded, on both sides,
-    # because the capitalisation of a word in prose is not the contract - its presence is.
-    STEP3_OBLIGATIONS = (
-        ("declare the table", ("mutant table",)),
-        ("ONE sweep", ("one sweep",)),
-        ("a survivor is a finding", ("surviving", "survivor")),
-        ("DEFECTIVE mutants get re-aimed", ("defective",)),
-        ("drawn from the CODE", ("from the code", "code-derived")),
-        ("restore, and verify it restored", ("git status",)),
-    )
-    missing_terms = [n for n, alts in STEP3_OBLIGATIONS
-                     if not any(a in step3.lower() for a in alts)]
-    c.check("/smh-quick-dev Step 3 carries the mutant-table obligation, in the step that "
+        # Each row is ONE obligation and the phrasings that satisfy it - **alternatives, never a single
+        # literal**. The rule and the SOP name the technique `CODE-DERIVED` where the command says
+        # "from the code", so a meaning-preserving edit that HARMONISES the three surfaces (exactly what
+        # a findability ticket invites) would have gone RED against one pinned string. A guard that
+        # punishes the edit it exists to encourage is a false red, and this repo has shipped four gates
+        # that hard-blocked a close-out on one. Everything is compared case-folded, on both sides,
+        # because the capitalisation of a word in prose is not the contract - its presence is.
+        STEP3_OBLIGATIONS = (
+            ("declare the table", ("mutant table",)),
+            ("ONE sweep", ("one sweep",)),
+            ("a survivor is a finding", ("surviving", "survivor")),
+            ("DEFECTIVE mutants get re-aimed", ("defective",)),
+            ("drawn from the CODE", ("from the code", "code-derived")),
+            ("restore, and verify it restored", ("git status",)),
+        )
+        missing_terms = [n for n, alts in STEP3_OBLIGATIONS
+                         if not any(a in step3.lower() for a in alts)]
+        c.check("/smh-quick-dev Step 3 carries the mutant-table obligation, in the step that "
             "actually routes the mutating",
-            step3 != "" and not missing_terms,
-            f"missing from `## Step 3`: {missing_terms}" if step3 else
-            "`## Step 3` not found at all - the section heading moved and the obligation is "
+                step3 != "" and not missing_terms,
+                f"missing from `## Step 3`: {missing_terms}" if step3 else
+                "`## Step 3` not found at all - the section heading moved and the obligation is "
             "now anchored to nothing")
 
-    c.check("section CONTROL: a named section is found and bounded at the next heading",
-            md_section("## A\nx\n## B\ny\n", r"^## A$") == "## A\nx")
-    c.check("section CONTROL: `## Step 3` does not swallow `## Step 3.5`",
-            "3.5" not in md_section("## Step 3 — GREEN\na\n## Step 3.5 — EJECT\nb\n", STEP3_RX),
-            "the eject tripwire is a different step; an obligation drifting into it must go red")
-    # ⛔ THE CONTROL ABOVE CANNOT FAIL ON ITS OWN, and that is why this one exists. Its input
-    # carries BOTH headings in file order, so `md_section` takes `## Step 3` on first-match with or
-    # without the `(?![\d.])` lookahead - deleting the lookahead left all 52 cases green. The input
-    # the lookahead actually guards is the one where `## Step 3` is ABSENT and the obligation has
-    # drifted into the eject step: without it, `## Step 3.5` matches and the drift reads as
-    # compliance. A control that passes against both the guard and its mutant is decoration.
-    c.check("section CONTROL: with `## Step 3` ABSENT, `## Step 3.5` must not stand in for it",
-            md_section("## Step 3.5 — EJECT\nmutant table one sweep defective\n", STEP3_RX) == "",
-            "this is the input that kills the `(?![\\d.])` lookahead; the paired control above "
+        c.check("section CONTROL: a named section is found and bounded at the next heading",
+                md_section("## A\nx\n## B\ny\n", r"^## A$") == "## A\nx")
+        c.check("section CONTROL: `## Step 3` does not swallow `## Step 3.5`",
+                "3.5" not in md_section("## Step 3 — GREEN\na\n## Step 3.5 — EJECT\nb\n", STEP3_RX),
+                "the eject tripwire is a different step; an obligation drifting into it must go red")
+        # ⛔ THE CONTROL ABOVE CANNOT FAIL ON ITS OWN, and that is why this one exists. Its input
+        # carries BOTH headings in file order, so `md_section` takes `## Step 3` on first-match with or
+        # without the `(?![\d.])` lookahead - deleting the lookahead left all 52 cases green. The input
+        # the lookahead actually guards is the one where `## Step 3` is ABSENT and the obligation has
+        # drifted into the eject step: without it, `## Step 3.5` matches and the drift reads as
+        # compliance. A control that passes against both the guard and its mutant is decoration.
+        c.check("section CONTROL: with `## Step 3` ABSENT, `## Step 3.5` must not stand in for it",
+                md_section("## Step 3.5 — EJECT\nmutant table one sweep defective\n", STEP3_RX) == "",
+                "this is the input that kills the `(?![\\d.])` lookahead; the paired control above "
             "passes with or without it")
-    c.check("section CONTROL: the practice named only in BODY PROSE is not a section",
-            md_section("## Why\n\nthe first mutation check deleted the guard\n",
-                       r"^##\s+.*mutation") == "",
-            "the rule has carried the word 'mutation' in its `## Why` narrative since it was "
+        c.check("section CONTROL: the practice named only in BODY PROSE is not a section",
+                md_section("## Why\n\nthe first mutation check deleted the guard\n",
+                           r"^##\s+.*mutation") == "",
+                "the rule has carried the word 'mutation' in its `## Why` narrative since it was "
             "written, while the practice itself was an unnamed sub-bullet - a body search would "
             "have called the doctrine documented all along")
 
-    # ⭐ The rule must NAME the practice in a heading, and carry every technique. One technique is
-    # what it used to have, and it was the wrong one for a gate: RELOCATE assumes a structural
-    # guard and a behavioral test in one file, and a shell gate has nothing to relocate.
-    #
-    # ⛔ ANCHORED TO EACH BULLET'S OWN LEAD, never to the bare word. Pinning `"RELOCATE"` alone was
-    # a FALSE GREEN: the whole RELOCATE bullet could be deleted and the token still survived one
-    # bullet down, inside INVERT's prose ("the shape RELOCATE does not transfer to") - so the guard
-    # held for the four techniques that happened to be unique and let go of the single one the
-    # section exists to correct.
-    mutation_sec = md_section(read(ROOT / f".agents/rules/{RULE_STEM}.md"),
-                              r"^##\s+.*mutation").lower()
-    TECHNIQUES = (
-        ("RELOCATE", ("relocate the guard",)),
-        ("INVERT", ("invert the decision",)),
-        ("DEFECTIVE", ("defective",)),
-        ("CODE-DERIVED", ("code-derived",)),
-        ("RESTORE", ("restore on interrupt", "restore in a")),
-    )
-    absent = [n for n, alts in TECHNIQUES if not any(a in mutation_sec for a in alts)]
-    c.check("the mutation rule has a section whose HEADING names the practice, carrying every "
+        # ⭐ The rule must NAME the practice in a heading, and carry every technique. One technique is
+        # what it used to have, and it was the wrong one for a gate: RELOCATE assumes a structural
+        # guard and a behavioral test in one file, and a shell gate has nothing to relocate.
+        #
+        # ⛔ ANCHORED TO EACH BULLET'S OWN LEAD, never to the bare word. Pinning `"RELOCATE"` alone was
+        # a FALSE GREEN: the whole RELOCATE bullet could be deleted and the token still survived one
+        # bullet down, inside INVERT's prose ("the shape RELOCATE does not transfer to") - so the guard
+        # held for the four techniques that happened to be unique and let go of the single one the
+        # section exists to correct.
+        mutation_sec = md_section(read(ROOT / f".agents/rules/{RULE_STEM}.md"),
+                                  r"^##\s+.*mutation").lower()
+        TECHNIQUES = (
+            ("RELOCATE", ("relocate the guard",)),
+            ("INVERT", ("invert the decision",)),
+            ("DEFECTIVE", ("defective",)),
+            ("CODE-DERIVED", ("code-derived",)),
+            ("RESTORE", ("restore on interrupt", "restore in a")),
+        )
+        absent = [n for n, alts in TECHNIQUES if not any(a in mutation_sec for a in alts)]
+        c.check("the mutation rule has a section whose HEADING names the practice, carrying every "
             "technique",
-            mutation_sec != "" and not absent,
-            f"techniques missing from the section: {absent}" if mutation_sec else
-            f"no `##` heading in {RULE_STEM}.md names mutation - the doctrine is unfindable by "
+                mutation_sec != "" and not absent,
+                f"techniques missing from the section: {absent}" if mutation_sec else
+                f"no `##` heading in {RULE_STEM}.md names mutation - the doctrine is unfindable by "
             f"anyone grepping for how to do it, which is the whole finding")
 
-    # ⭐ The SOP page is the THIRD surface this ticket writes to, and it was the one nobody gated:
-    # the entire `### Mutation` section and its mermaid node could be deleted with the suite green.
-    # `sop_currency.py` only forces the SOP to be STAGED in the same commit - never to still say
-    # anything - so without this the operator's own reference is the surface that silently rots.
-    sop_txt = read(ROOT / "docs/_scc_sops_prds/workflows_testing_SOP.md").lower()
-    sop_named = any(ln.startswith("#") and "mutation" in ln for ln in sop_txt.splitlines())
-    sop_missing = [n for n, alts in STEP3_OBLIGATIONS
-                   if not any(a in sop_txt for a in alts)]
-    c.check("the SOP page names the practice in a heading and carries the same obligation",
-            sop_named and not sop_missing,
-            f"SOP heading names mutation: {sop_named}; obligations missing: {sop_missing} - the "
+        # ⭐ The SOP page is the THIRD surface this ticket writes to, and it was the one nobody gated:
+        # the entire `### Mutation` section and its mermaid node could be deleted with the suite green.
+        # `sop_currency.py` only forces the SOP to be STAGED in the same commit - never to still say
+        # anything - so without this the operator's own reference is the surface that silently rots.
+        sop_txt = read(ROOT / "docs/_scc_sops_prds/workflows_testing_SOP.md").lower()
+        sop_named = any(ln.startswith("#") and "mutation" in ln for ln in sop_txt.splitlines())
+        sop_missing = [n for n, alts in STEP3_OBLIGATIONS
+                       if not any(a in sop_txt for a in alts)]
+        c.check("the SOP page names the practice in a heading and carries the same obligation",
+                sop_named and not sop_missing,
+                f"SOP heading names mutation: {sop_named}; obligations missing: {sop_missing} - the "
             f"operator's own reference had ZERO mentions of the practice before SCC-145")
 
-    # ⛔ THE SCOPE OF THIS SECTION IS ITSELF PINNED - and it is not optional, because this file
-    # already carries two "read a real number of X" guards for exactly this reason: an empty sweep
-    # is indistinguishable from a clean one. `LOADERS`, `MUTANT_TERMS` and `TECHNIQUES` ARE the
-    # scope of every case above, and an unpinned scope is one edit away from checking nothing.
-    #
-    # PROVEN, not supposed. Three CODE-DERIVED mutants on the constants above each left the suite
-    # 52/52 GREEN before these two cases existed:
-    #     LOADERS   -> ("smh-code-review.md",)   ← drops BOTH commands this section exists to
-    #                                              protect, and every case still passed
-    #     MUTANT_TERMS -> ()                     ← the Step 3 obligation unpinned
-    #     TECHNIQUES   -> ()                     ← all five techniques unpinned
-    # That is SCC-145's own new CODE-DERIVED rule catching SCC-145: of its eight declared mutants
-    # only two were drawn from this guard's source, and both hit the HELPERS, never the constants.
-    # Restating a literal is normally circular; here it is what converts a silently mutable knob
-    # into a decision that has to be argued for in a diff - the same reason `hand` and `SOURCELESS`
-    # above are spelled out rather than derived.
-    c.check("the LOADERS sweep still covers BOTH task-lane commands (its scope cannot be "
+        # ⛔ THE SCOPE OF THIS SECTION IS ITSELF PINNED - and it is not optional, because this file
+        # already carries two "read a real number of X" guards for exactly this reason: an empty sweep
+        # is indistinguishable from a clean one. `LOADERS`, `MUTANT_TERMS` and `TECHNIQUES` ARE the
+        # scope of every case above, and an unpinned scope is one edit away from checking nothing.
+        #
+        # PROVEN, not supposed. Three CODE-DERIVED mutants on the constants above each left the suite
+        # 52/52 GREEN before these two cases existed:
+        #     LOADERS   -> ("smh-code-review.md",)   ← drops BOTH commands this section exists to
+        #                                              protect, and every case still passed
+        #     MUTANT_TERMS -> ()                     ← the Step 3 obligation unpinned
+        #     TECHNIQUES   -> ()                     ← all five techniques unpinned
+        # That is SCC-145's own new CODE-DERIVED rule catching SCC-145: of its eight declared mutants
+        # only two were drawn from this guard's source, and both hit the HELPERS, never the constants.
+        # Restating a literal is normally circular; here it is what converts a silently mutable knob
+        # into a decision that has to be argued for in a diff - the same reason `hand` and `SOURCELESS`
+        # above are spelled out rather than derived.
+        c.check("the LOADERS sweep still covers BOTH task-lane commands (its scope cannot be "
             "narrowed silently)",
-            {"smh-quick-dev.md", "smh-self-audit.md"} <= set(LOADERS),
-            f"LOADERS={LOADERS} - `/smh-quick-dev` WRITES the assertions and `/smh-self-audit` "
+                {"smh-quick-dev.md", "smh-self-audit.md"} <= set(LOADERS),
+                f"LOADERS={LOADERS} - `/smh-quick-dev` WRITES the assertions and `/smh-self-audit` "
             f"judges the plan that picks them. Dropping either restores the exact gap this "
             f"section exists to close, with every other case here still green")
-    obligations = {n for n, _ in STEP3_OBLIGATIONS}
-    techniques = {n for n, _ in TECHNIQUES}
-    c.check("the obligation and technique lists still name what they are supposed to pin",
-            {"ONE sweep", "DEFECTIVE mutants get re-aimed", "drawn from the CODE"} <= obligations
-            and {"RELOCATE", "INVERT", "CODE-DERIVED", "RESTORE"} <= techniques,
-            f"obligations={sorted(obligations)} techniques={sorted(techniques)} - an emptied list "
+        obligations = {n for n, _ in STEP3_OBLIGATIONS}
+        techniques = {n for n, _ in TECHNIQUES}
+        c.check("the obligation and technique lists still name what they are supposed to pin",
+                {"ONE sweep", "DEFECTIVE mutants get re-aimed", "drawn from the CODE"} <= obligations
+                and {"RELOCATE", "INVERT", "CODE-DERIVED", "RESTORE"} <= techniques,
+                f"obligations={sorted(obligations)} techniques={sorted(techniques)} - an emptied list "
             f"makes its own sweep pass against anything, including a rule with the section gone")
+
+    # ── CS-11: the review twins - blast radius, acceptance audit, and each lane's own ref ─────
+    if c.block("CS-11 · the review twins: blast radius, acceptance audit, and each lane's "
+               "own integration ref"):
+        # `/smh-code-review` and `/cicd-code-review` do the same job on two lane shapes, and two
+        # steps existed on the Task side ONLY: the post-dev blast-radius re-derivation (sibling
+        # lanes land while you build, so the pre-work audit expires) and the acceptance audit
+        # against the checkable list. A story lane carries both hazards - sibling STORIES land on
+        # the epic branch mid-story - so the absence was a gap, not a difference. Everything the
+        # comparison found that IS a difference is recorded in the ticket and deliberately left.
+        #
+        # ⛔ ADAPTED, NEVER COPIED, and that is what most of these cases are for. smh re-derives
+        # against `origin/main` because a Task lane merges to main; a story lane merges to its
+        # EPIC branch. Copying smh's step verbatim would plant the exact stale-ref defect
+        # SCC-165 removes, three lines under the guard that removes it.
+        review = {n: read(ROOT / ".agents/commands" / n)
+                  for n in ("smh-code-review.md", "cicd-code-review.md")}
+        blast = {n: md_section(t, r"^##\s.*blast radius") for n, t in review.items()}
+        accept = {n: md_section(t, r"^##\s.*acceptance audit") for n, t in review.items()}
+        step0 = {n: md_section(t, r"^## Step 0 ") for n, t in review.items()}
+
+        # STRUCTURE, not wording. Every item is a command the step RUNS or a shape it must
+        # produce: `merge-base` to find where the lanes parted, `merge-tree` to surface the
+        # conflict before it is real, `worktree list` for the siblings still live, and three
+        # numbered answers that have to be written down. A wording pin is satisfied by a
+        # paraphrase that runs nothing - `prose-pinning-guards-are-vacuous`, in the guard.
+        def blast_gaps(body: str) -> list[str]:
+            gaps = [w for w in ("merge-base", "merge-tree", "worktree list") if w not in body]
+            gaps += [f"answer {i}" for i in (1, 2, 3)
+                     if not re.search(rf"^\s*{i}\.\s", body, re.M)]
+            return gaps
+
+        for n in review:
+            c.check(f"{n} carries the blast-radius re-derivation, with all three answers",
+                    bool(blast[n]) and not blast_gaps(blast[n]),
+                    "no such section" if not blast[n]
+                    else f"missing: {blast_gaps(blast[n])}")
+
+        # ⭐ THE ADAPTATION, made mechanical. Each twin's section must name the ref ITS lane
+        # actually merges into, and must not name the other's. `origin/main` in the story
+        # command's step is not a nit: an agent re-derives against a branch its work will never
+        # meet, reports "nothing moved", and the epic-mate that DID move the file lands anyway.
+        c.check("smh's blast radius re-derives against origin/main (a Task lane merges to main)",
+                "origin/main" in blast["smh-code-review.md"],
+                "the Task lane's integration ref is main; it is not the story lane's")
+        # A PURE FUNCTION, called by the live check AND by its controls below. A control that
+        # restates the rule as its own literal proves the literal, not the rule: drop the
+        # `origin/main` arm here and a restated control stays green while the guard goes blind.
+        def story_ref_ok(body: str) -> bool:
+            return "origin/$EPIC" in body and "origin/main" not in body
+
+        c.check("⭐ cicd's blast radius re-derives against the EPIC branch, and never origin/main",
+                story_ref_ok(blast["cicd-code-review.md"]),
+                "a story lane merges to `epic/<KEY>-<slug>`. Naming origin/main here re-derives "
+                "against a branch this work never meets - SCC-165's defect, re-planted")
+
+        # The acceptance audit is an EVIDENCE contract, so the two clauses that make it one are
+        # what get pinned: no evidence is not satisfied (and caps the verdict), and the reverse
+        # direction - anything in the diff past the list is drift.
+        for n in review:
+            body = accept[n]
+            c.check(f"{n} carries the acceptance audit, with its floor and the drift direction",
+                    bool(body) and "CONCERNS" in body and "drift" in body.lower(),
+                    "no such section" if not body else "section present, but an item with no "
+                    "evidence does not cap the verdict, or nothing names diff-beyond-the-list "
+                    "as drift - both halves are the audit")
+
+        # Step 0 is where a review picks the WRONG TREE, and the fix is the same on both lanes:
+        # echo what the commands returned. `preflight-resolves-repo-from-cwd` is the live
+        # incident - a preflight reported another lane's branch as clear to merge.
+        for n in review:
+            c.check(f"{n} Step 0 resolves its target from command output, never from belief",
+                    "rev-parse" in step0[n] and "never from belief" in step0[n].lower(),
+                    f"Step 0 {'is missing' if not step0[n] else 'does not echo rev-parse output'}")
+
+        # B3, SCOPED (plan rev 2, F7): the per-file sweep covers the files THIS part edits. The
+        # toolkit-wide count is recorded in the walkthrough and is a separate, confirm-scope task
+        # (`no-personal-name-in-directives`) - `rules/operator-profile.md` is a file where the
+        # name IS the subject, so a blanket sweep needs an allowlist and its own ruling.
+        #
+        # ⛔ The name is BUILT from halves, never written. This file lives under `.agents/`; a
+        # guard that spells the operator's name out breaks the rule it enforces, in the file
+        # claiming to enforce it.
+        NAME = "Dan" + "iel"
+
+        def name_hits(text: str) -> list[int]:
+            return [i for i, ln in enumerate(text.splitlines(), 1) if NAME in ln]
+
+        for n in ("cicd-code-review.md", "cicd-push-e2e.md"):
+            hits = name_hits(read(ROOT / ".agents/commands" / n))
+            c.check(f"{n} names a generic referent, not a person", not hits,
+                    f"{len(hits)} line(s): {hits} - a directive addressed to one named human "
+                    f"reads as inapplicable to every other reader, including the agent")
+
+        # Controls. Each of the four rules above is clean on today's tree, and a clean sweep
+        # says nothing about whether the rule has teeth - these are the mutants, run as data.
+        GOOD_BLAST = ("## Step 0.7 - blast radius\n```bash\nmerge-base\nmerge-tree\n"
+                      "worktree list\n```\n1. moved?\n2. overlap?\n3. siblings?\n")
+        c.check("CONTROL: a complete blast-radius section passes",
+                not blast_gaps(GOOD_BLAST))
+        c.check("CONTROL: a blast-radius section that never probes for conflicts is caught",
+                blast_gaps(GOOD_BLAST.replace("merge-tree\n", "")) == ["merge-tree"],
+                "the step reads correctly and surfaces no conflict until the merge is real")
+        c.check("CONTROL: a blast-radius section with only two answers is caught",
+                blast_gaps(GOOD_BLAST.replace("3. siblings?", "and siblings")) == ["answer 3"],
+                "landing order is the answer a green suite can never give you")
+        EPIC_BLAST = GOOD_BLAST + '\nmerge-base HEAD "origin/$EPIC"\n'
+        c.check("CONTROL: a story-lane section naming the epic ref passes",
+                story_ref_ok(EPIC_BLAST))
+        c.check("CONTROL: origin/main planted in a story-lane section is caught",
+                not story_ref_ok(EPIC_BLAST + "git merge-base HEAD origin/main\n"),
+                "NEGATIVE CONTROL - the trunk substituted for the epic branch is the whole "
+                "defect this step was adapted to avoid; the rule must fire on it")
+        c.check("CONTROL: a story-lane section naming NEITHER ref is caught",
+                not story_ref_ok(GOOD_BLAST),
+                "NEGATIVE CONTROL - a section that re-derives against nothing must not pass "
+                "merely by omitting the wrong ref")
+        c.check("CONTROL: the personal-name rule fires on a planted name, at its line",
+                name_hits(f"first line\nInvoking this IS {NAME}'s sign-off\n") == [2],
+                "NEGATIVE CONTROL - a sweep that cannot see the name it searches for is a "
+                "permanent green")
+        c.check("CONTROL: the personal-name rule does not fire on a clean file",
+                name_hits("Invoking this command IS the operator's sign-off\n") == [],
+                "NEGATIVE CONTROL - a rule that fires on everything is not a rule")
+
+    # ── CS-12: the port checklist - the rule, its trigger, and the row that makes it stick ───
+    if c.block("CS-12 · the port checklist: the rule carries six answerable checks, the "
+               "plan/audit commands trigger on it, and the lint row makes the citation "
+               "mechanical"):
+        # Every lobby<->project port so far (AVCH-54, AVCH-59) cost an afternoon and found the
+        # SAME class of defect: the centre's copy is subtly wrong once it runs in a SUBMODULE, on
+        # WINDOWS, in a WORKTREE, in a THIN repo. Nothing asked those questions at PLAN time, so
+        # they surfaced at review or on the other machine. H answers that with a rule plus prose
+        # in three commands - an agent executes both, and neither is machine-checkable. What IS
+        # machine-checkable is pinned here: the rule's SHAPE (six items, each ANSWERED BY A
+        # COMMAND rather than a reminder) and the `_RULE_POINTERS` row's WIRING, exercised by
+        # calling the real `check_rule_pointers` over fixture trees.
+        def safe(rel: str) -> str:
+            p = ROOT / rel
+            return read(p) if p.exists() else ""
+
+        checklist = safe(".agents/rules/port-checklist.md")
+        rules_idx = safe(".agents/rules/INDEX.md")
+        PORT_CMDS = ("smh-plan-task.md", "smh-self-audit.md", "cicd-self-audit.md")
+        # The phrase step (2) writes into all three, and the command that answers "do the two
+        # copies differ?". Both are the ROW's key - see the row's own comment for why the
+        # concept-keyed sketch ("port" as a step verb) was thrown out.
+        TRIGGER = "exists in more than one repo"
+        CITE = ".agents/rules/port-checklist.md"
+
+        def checklist_items(body: str) -> list[tuple[str, str]]:
+            """The `### ` items, each bounded by the next - title and its own text."""
+            parts = re.split(r"^###\s+", body, flags=re.M)[1:]
+            return [(s.splitlines()[0].strip(), s) for s in parts]
+
+        def unanswered(body: str) -> list[str]:
+            """Items with no fenced command block - a REMINDER, which H1 forbids."""
+            return [title for title, text in checklist_items(body) if "```" not in text]
+
+        def preamble(body: str) -> str:
+            """Everything above the first item - WITHOUT the frontmatter.
+
+            The `description:` restates the whole rule, "both directions" included, so a preamble
+            that kept it would stay green with the header sentence deleted: a mutant aimed at the
+            body would survive on the strength of the metadata. Frontmatter is the router's copy,
+            never the reader's.
+            """
+            body = re.sub(r"\A---\n.*?\n---\n", "", body, count=1, flags=re.S)
+            return re.split(r"^###\s+", body, flags=re.M)[0]
+
+        def pointer_warns(cmd_body: str) -> list[str]:
+            """Run the REAL `check_rule_pointers` over a one-command fixture tree.
+
+            Not a re-implementation of the row's regex: the fixture goes through the same
+            function `workflow_lint --toolkit-only` calls, so deleting the row from the table
+            takes these controls down with it. A control that restated the pattern would keep
+            passing with the row gone - the exact vacuity this lane keeps finding.
+            """
+            with TempDir() as t:
+                d = t / ".agents" / "commands"
+                d.mkdir(parents=True)
+                (d / "fixture-port.md").write_text(cmd_body, encoding="utf-8")
+                rep = wf.Report()
+                lint.check_rule_pointers(t, rep)
+                return [i["msg"] for i in rep.items if i["sev"] == "WARN"]
+
+        items = checklist_items(checklist)
+        c.check("the port checklist exists and carries its six checks",
+                len(items) == 6,
+                f"got {len(items)} `### ` items in .agents/rules/port-checklist.md - the six "
+                f"AVCH-59 divergence classes, no more and no fewer")
+        c.check("every checklist item is ANSWERED BY A COMMAND, not phrased as a reminder",
+                checklist and unanswered(checklist) == [],
+                f"items with no fenced command: {unanswered(checklist)} - H1 requires each item "
+                f"be a CHECK with the command that answers it; a reminder is what already failed")
+        c.check("items 4 and 6 CITE project-law.md instead of restating the thin-repo law",
+                sum(1 for _, text in items if "project-law.md" in text) >= 2,
+                "the thin-repo and repo-local-enforcement items already live in "
+                "`project-law.md`; a second copy is the drift this rule set exists to avoid")
+        c.check("the header says the checklist runs in BOTH directions (H5)",
+                "both directions" in preamble(checklist).lower(),
+                "the AVCH-59 -> lobby port is a port too; a checklist that reads one-way is "
+                "skipped on exactly the half this ticket is")
+        c.check("the rules INDEX routes to the checklist",
+                "port-checklist.md" in rules_idx,
+                "a rule with no INDEX row is unreachable by the router every session scans")
+
+        for name in PORT_CMDS:
+            body = safe(f".agents/commands/{name}")
+            c.check(f"{name} carries the port trigger and cites the checklist",
+                    TRIGGER in body and CITE in body,
+                    f"trigger={TRIGGER in body} cite={CITE in body} - the trigger without the "
+                    f"citation is what the lint row is keyed to catch")
+
+        planted = f"Step 9 - when the file {TRIGGER}, stop and diff the copies.\n"
+        c.check("WIRING: the live row fires on a porting command that cites nothing",
+                any("port-checklist" in m for m in pointer_warns(planted)),
+                f"check_rule_pointers said {pointer_warns(planted)} - with no row in "
+                f"`_RULE_POINTERS` a command can describe a port and point at nothing")
+        c.check("WIRING: the second arm - a command that diffs the two copies also fires",
+                any("port-checklist" in m
+                    for m in pointer_warns("Run `git diff --no-index` over both copies.\n")),
+                "the row keys on the trigger PHRASE and on the command that answers it; one arm "
+                "alone goes blind the moment a command words the trigger differently")
+        c.check("CONTROL: the same command WITH the citation is silent",
+                pointer_warns(planted + f"See `{CITE}`.\n") == [],
+                "NEGATIVE CONTROL - a row that warns even after the citation lands can never "
+                "reach the tip's 0/0, so it would be disarmed rather than satisfied")
+        c.check("CONTROL: a command that says nothing about porting is silent",
+                pointer_warns("Step 1 - read the ticket. Step 2 - write the plan.\n") == [],
+                "NEGATIVE CONTROL - the sketched `\\bport\\b` key matched seven unrelated "
+                "command bodies (audit F26); a row that fires on everything is not a row")
+
+        # ── The OTHER row in the same table: `work-consolidation` (Part 1) ────────────────
+        # It shipped with no coverage at all, and its third arm was keyed on `landing:` - a
+        # key `task_preflight` deliberately renamed to `landing_mode` - so it could never
+        # match anything. A dead arm inside a live row is a check that cannot fail.
+        c.check("WIRING: the work-consolidation row fires on a `riders:` body that cites nothing",
+                any("work-consolidation" in m for m in pointer_warns("Set `riders: [SCC-1]`.\n")),
+                f"check_rule_pointers said {pointer_warns('Set `riders: [SCC-1]`.')}")
+        c.check("WIRING: ...and on `landing_mode: partial`, the arm that was DEAD",
+                any("work-consolidation" in m
+                    for m in pointer_warns("Declare `landing_mode: partial` in task.yaml.\n")),
+                "the arm read `landing\\s*:\\s*partial`, which cannot match `landing_mode:` - "
+                "so a body documenting the partial landing without the literal `riders:` "
+                "escaped the pointer requirement entirely")
+        c.check("CONTROL: the retired `landing:` spelling is NOT the machinery and stays silent",
+                pointer_warns("Declare `landing: partial` in task.yaml.\n") == [],
+                "NEGATIVE CONTROL - `landing:` is a DIFFERENT live key (nested under "
+                "`secondary_repos:`); keying on it is what made the arm dead")
+        c.check("CONTROL: the same consolidation body WITH the citation is silent",
+                pointer_warns("Set `riders: [SCC-1]`. See `.agents/rules/work-consolidation.md`.\n")
+                == [],
+                "NEGATIVE CONTROL - a row that warns after the citation lands can never reach 0/0")
+
+        live = wf.Report()
+        lint.check_rule_pointers(ROOT, live)
+        c.check("the live toolkit has no un-cited porting command",
+                [i for i in live.items if "port-checklist" in i["msg"]] == [],
+                f"{[i['msg'] for i in live.items if 'port-checklist' in i['msg']]}")
 
     return c.finish()
 

@@ -1,0 +1,30 @@
+== stale base refs (SCC-165) ==
+[PASS] the scan read at least 10 command files (an empty glob is a FAIL): read 63 from /Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/SCC-164-command-surface-family/.agents/commands
+[FAIL] no command diffs, counts or cuts against a bare local `main`: 1 unruled operand(s)
+      cicd-clean-code-audit.md:49  [ref-default]  BASE=$(git for-each-ref --format='%(refname:short)' refs/heads/epic/* | head -1); BASE=${BASE:-main}
+      REMEDY: `origin/main` preceded by `git fetch origin main` in that command — or, if the line genuinely asks about the LOCAL branch, an ALLOWED row in this file carrying the reason.
+[PASS] every ALLOWED row still matches a real line (no rows left ruling nothing): stale rows: []
+[PASS] caught: main...HEAD: hits=[('z.md', 1, 'git -C "$REPO" diff --name-only main...HEAD', 'range-left')]
+[PASS] caught: X..main: hits=[('z.md', 1, 'git diff --name-only "$BASE"..main | sort', 'range-right')]
+[PASS] caught: ..main quoted: hits=[('z.md', 1, 'git rev-list --count "chore/<KEY>-<slug>..main"', 'range-right')]
+[PASS] caught: merge-base: hits=[('z.md', 1, 'BASE=$(git -C "$REPO" merge-base HEAD main)', 'cmd-operand')]
+[PASS] caught: merge-tree: hits=[('z.md', 1, 'git merge-tree --write-tree --messages HEAD main | head -40', 'cmd-operand')]
+[PASS] caught: worktree add: hits=[('z.md', 1, 'git worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> main', 'cmd-operand')]
+[PASS] caught: in a table cell: hits=[('z.md', 1, '| `git diff --name-only main...chore/<KEY>-<slug>` | code beats talk |', 'range-left')]
+[PASS] quiet: origin/main...HEAD (the fix itself): hits=[]
+[PASS] quiet: merge-base HEAD origin/main: hits=[]
+[PASS] quiet: worktree add … origin/main: hits=[]
+[PASS] quiet: _artifacts/_main/ path: hits=[]
+[PASS] quiet: <epic-branch-or-main> placeholder: hits=[]
+[PASS] quiet: checkout main (local BY DEFINITION): hits=[]
+[PASS] quiet: pull/push origin main (local by definition): hits=[]
+[PASS] quiet: prose about the main checkout: hits=[]
+[PASS] an empty folder FAILS the floor rather than reporting a clean scan: read 0 files -> floor 10 not met
+[PASS] an ALLOWED row exempts its exact line: []
+[PASS] ...and one changed character in that line does NOT inherit the exemption: [('cicd-push-e2e.md', 1, 'git rev-list --left-right --count main...origin/main    # must be 0 1', 'range-left')]
+[PASS] ...nor does the same text in a DIFFERENT file: [('cicd-push-e2e.md', 1, 'git rev-list --left-right --count main...origin/main    # must be 0 1', 'range-left'), ('some-other-command.md', 1, 'git rev-list --left-right --count main...origin/main    # must be 0 0', 'range-left')]
+[PASS] the failure message names file:line and BOTH remedies: 
+      cicd-push-e2e.md:1  [range-left]  git rev-list --left-right --count main...origin/main    # must be 0 1
+      som
+-- 22/23 passed --
+FAILED: no command diffs, counts or cuts against a bare local `main`

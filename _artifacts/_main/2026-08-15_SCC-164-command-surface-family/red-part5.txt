@@ -1,0 +1,19 @@
+== command surface contracts ==
+[PASS] smh-code-review.md carries the blast-radius re-derivation, with all three answers: missing: []
+[FAIL] cicd-code-review.md carries the blast-radius re-derivation, with all three answers: no such section
+[PASS] smh's blast radius re-derives against origin/main (a Task lane merges to main): the Task lane's integration ref is main; it is not the story lane's
+[FAIL] ⭐ cicd's blast radius re-derives against the EPIC branch, and never origin/main: a story lane merges to `epic/<KEY>-<slug>`. Naming origin/main here re-derives against a branch this work never meets - SCC-165's defect, re-planted
+[PASS] smh-code-review.md carries the acceptance audit, with its floor and the drift direction: section present, but an item with no evidence does not cap the verdict, or nothing names diff-beyond-the-list as drift - both halves are the audit
+[FAIL] cicd-code-review.md carries the acceptance audit, with its floor and the drift direction: no such section
+[PASS] smh-code-review.md Step 0 resolves its target from command output, never from belief: Step 0 does not echo rev-parse output
+[FAIL] cicd-code-review.md Step 0 resolves its target from command output, never from belief: Step 0 does not echo rev-parse output
+[PASS] cicd-code-review.md names a generic referent, not a person: 0 line(s): [] - a directive addressed to one named human reads as inapplicable to every other reader, including the agent
+[FAIL] cicd-push-e2e.md names a generic referent, not a person: 6 line(s): [13, 43, 45, 118, 134, 148] - a directive addressed to one named human reads as inapplicable to every other reader, including the agent
+[PASS] CONTROL: a complete blast-radius section passes
+[PASS] CONTROL: a blast-radius section that never probes for conflicts is caught: the step reads correctly and surfaces no conflict until the merge is real
+[PASS] CONTROL: a blast-radius section with only two answers is caught: landing order is the answer a green suite can never give you
+[PASS] CONTROL: origin/main planted in a story-lane section is caught: NEGATIVE CONTROL - the ref rule above must fire on the shape it exists for
+[PASS] CONTROL: the personal-name rule fires on a planted name: NEGATIVE CONTROL - a sweep that cannot see the name it searches for is a permanent green
+-- 10/15 passed --
+FAILED: cicd-code-review.md carries the blast-radius re-derivation, with all three answers, ⭐ cicd's blast radius re-derives against the EPIC branch, and never origin/main, cicd-code-review.md carries the acceptance audit, with its floor and the drift direction, cicd-code-review.md Step 0 resolves its target from command output, never from belief, cicd-push-e2e.md names a generic referent, not a person
+-- filter 'CS-11': matched 1/11 blocks --

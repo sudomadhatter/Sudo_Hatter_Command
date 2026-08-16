@@ -1,13 +1,20 @@
 ---
 description: Autopilot (headless) pre-dev Audit command — stress-test the plan inside the shared autopilot run folder. Modeled off /cicd-self-audit but tuned for agent-to-agent handoff. NOT for interactive use; the autopilot orchestrator invokes it.
 platforms: [claude, opencode]
-# Diffed against /cicd-self-audit at this sha; nothing to port (SCC-128, 2026-08-13).
-# That commit changed one line of the primary — the "for shipped code, use ..." pointer,
-# retargeted from the retired vendor review skill to `/cicd-code-review`. This twin carries
-# no such pointer: it is invoked by the autopilot orchestrator, which routes the review
-# stage itself, so there is nothing here to retarget.
+# Diffed against /cicd-self-audit at this sha; nothing to port (SCC-176, 2026-08-16).
+# That commit added ONE thing to the primary: a closing paragraph of Phase 1 making a
+# cross-repo port its own blast radius (`.agents/rules/port-checklist.md`, six checks, a
+# NO-GO when the copies differ and the plan carries no section). It does NOT port as text.
+# This twin names no phases of its own — its body says it runs "the pre-dev adversarial
+# audit defined in @.agents/commands/cicd-self-audit.md", overriding only I/O, lane
+# boundaries and the blocker token — so the new paragraph already reaches the autopilot
+# lane through the reference this file carries. A second copy here is exactly the drift
+# this stamp exists to prevent.
+# Prior reconciliation (SCC-128, 2026-08-13, 024f58a): the primary retargeted its "for
+# shipped code, use ..." pointer off the retired vendor review skill; this twin carries no
+# such pointer, because the orchestrator routes the review stage itself.
 # Re-diff and restamp when the linter says this sha is stale — do NOT just bump it.
-ap_reconciled: 024f58a
+ap_reconciled: 6dbd8ae
 ---
 
 # /cicd-self-audit-AP — Autopilot Audit (Murat)

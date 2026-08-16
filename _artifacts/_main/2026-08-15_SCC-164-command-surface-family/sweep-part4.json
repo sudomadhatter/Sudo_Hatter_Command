@@ -1,0 +1,40 @@
+{
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_stale_base_refs.py"
+  ],
+  "mutants": [
+    {
+      "id": "M1",
+      "file": ".agents/commands/smh-quick-dev.md",
+      "original": "git -C <each-other-tree> diff --name-only origin/main...HEAD",
+      "mutated": "git -C <each-other-tree> diff --name-only main...HEAD",
+      "case": "no command diffs, counts or cuts against a bare local",
+      "block": "A1 \u00b7"
+    },
+    {
+      "id": "M2",
+      "file": ".agents/scripts/tests/test_stale_base_refs.py",
+      "original": "return [h for h in hits if (h[0], h[2]) not in ALLOWED]",
+      "mutated": "return [h for h in hits if h[0] not in {k[0] for k in ALLOWED}]",
+      "case": "one changed character in that line does NOT inherit the exemption",
+      "block": "A4 \u00b7"
+    },
+    {
+      "id": "M3",
+      "file": ".agents/scripts/tests/test_stale_base_refs.py",
+      "original": "MIN_FILES = 10",
+      "mutated": "MIN_FILES = 0",
+      "case": "an empty folder FAILS the floor",
+      "block": "A4 \u00b7"
+    },
+    {
+      "id": "M4",
+      "file": ".agents/scripts/tests/test_stale_base_refs.py",
+      "original": "(\"range-left\", re.compile(r\"(?<![\\w/.-])main\\.\\.\\.?\")),",
+      "mutated": "(\"range-left\", re.compile(r\"main\\.\\.\\.?\")),",
+      "case": "quiet: origin/main...HEAD",
+      "block": "A3 \u00b7"
+    }
+  ]
+}
