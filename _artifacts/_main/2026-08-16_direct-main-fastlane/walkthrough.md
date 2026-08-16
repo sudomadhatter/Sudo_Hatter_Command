@@ -135,7 +135,7 @@ and the reviewed HEAD except the two in-thread fixes noted below, which were re-
 re-derivation, a 5-lens clean-room fan-out, acceptance audit against the plan's 11 items, the
 command-centre gate, and a 13-mutant sweep.
 
-**Lenses: 3 ran + 1 ran + 1 DEAD.** Blind Hunter `ok` · Edge Case Hunter `ok` · Acceptance Auditor
+**Lenses: 4 ran + 1 DEAD.** Blind Hunter `ok` · Edge Case Hunter `ok` · Acceptance Auditor
 `ok` · Test-Adequacy Auditor `ok` · **Literal-Correctness Hunter `dead`** — stopped mid-run and not
 recovered, so the symbol-level surface is **unexamined**. An unknown is not a pass; on its own that
 caps this verdict at CONCERNS, and the findings below carry it past that.
@@ -175,7 +175,9 @@ nothing in the harness says so. The local gate and the server gate are deliberat
 | 6 | both scripts, `diff-tree` | suggestion | `-M`/`-C` added later would emit `R100\tsrc\tdst`; `${line#*"$TAB"}` yields both paths as one string, which `docs/*` matches. Not live today (plumbing ignores `diff.renames`). | **applied** — `--no-renames` pinned |
 | 7 | `pre-push-main-approval.sh:147` | suggestion | `[ -f ]` is not `[ -r ]`. An unreadable predicate dies with a raw shell error, **no refusal banner, and the token is NOT consumed** — breaking the file's own "every refusal consumes the token" invariant. | **deferred to the #1 rework** |
 | 8 | `pre-push-main-approval.sh:56` | nitpick | The refusal banner still says *"main is reached exactly three ways"* and omits the lane the operator just used. Header and minter usage string likewise. | **deferred to the #1 rework** |
-| 9 | tests | important | `160000` (gitlink) and the `command -v` arm have **no case** — deleting either survives the sweep. AC 11 and AC 10 are partially unproven. | **deferred to the #1 rework** |
+| 9 | tests | **critical** | ⛔ **My 13/13 sweep was confirmatory, not falsifying.** An independent sweep of 10 mutants drawn from the *code* — including branches I never wrote a case for — found **8 survivors**. Deleting the **commit-message Jira-key check** entirely passes 103/103, so H1's actual remedy ("traceable to a ticket") is untested. So are: the gitlink/`160000` arm, the minter's merge-commit refusal, the minter's missing-allowlist refusal, the gate's `command -v` arm, and the non-direct `--branch` requirement. My 13 mutants were all drawn from branches that already had a named case — the exact "same-context authoring confirms, never falsifies" trap. | **deferred to the #1 rework — the suite needs rebuilding, not patching** |
+| 13 | `direct-push-allowlist.sh:42` + allow half | **critical** | **All five allow cases are `*.md`, so the predicate's real contract is unpinned** — narrowing the prose arms to `*.md` survives the suite. The lane in fact permits `docs/migrations/scripts/install-git-hooks.sh`, `Install-GitHooks.ps1`, `env_master.py`, and `_artifacts/**/gates/*.json` — the receipts `task_preflight.py` reads as gate evidence. **147 tracked non-`.md` files** sit under the allowlisted prefixes today. The H3 argument applies verbatim to an allowlist authored against *trees* rather than *what the trees contain*. | **DECISION — same as #2** |
+| 14 | `test_main_push_gate.py` layer-1 checks | important | `rc_m != 0 and not token_path(d).exists()` is satisfied by **all eight** of the minter's `exit 2` paths — the token is written last, so "no token" carries no attribution. I fixed this class twice on the gate half and never carried it to the mint half. | **deferred to the #1 rework** |
 | 10 | tests | important | One unexplained **flake**: `direct: shape` failed once in a full run, then passed in isolation and in two consecutive full runs. Unreproduced, cause unknown. A flaky security test is a real defect. | **open — named, not dismissed** |
 | 11 | walkthrough AC 7 | nitpick | "73 pre-existing checks" is wrong; `main`'s file has 58 `c.check` calls / 64 checks. No regression (all 64 labels present in the new run). | noted |
 | 12 | `.agents/scripts/INDEX.md` | nitpick | `direct-push-allowlist.sh` is undocumented; nothing enforces it. | **deferred to the #1 rework** |
@@ -189,7 +191,8 @@ workflow_lint --toolkit-only   0 error(s), 0 warning(s), 8 info
 sop_currency.py                exit 0
 check_maps.py --depth3-only    exit 0
 sh / dash / zsh -n             all three scripts clean on all three shells
-mutation sweep                 13 killed / 0 survived / 0 defective  (blind to findings #9)
+mutation sweep (mine)          13 killed / 0 survived  ⛔ CONFIRMATORY — see finding #9
+mutation sweep (independent)   10 mutants from the CODE -> 8 SURVIVED / 2 killed
 ```
 
 ### ⚠ Correction on finding #3, and a history check
