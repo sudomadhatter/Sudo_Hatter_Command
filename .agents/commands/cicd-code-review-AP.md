@@ -46,8 +46,12 @@ platforms: [claude, opencode]
 #   3. this twin overrides the engine's no-subagent fallback to run lenses INLINE, and
 #      fixes the blind-lens-first ordering that override requires. The primary is
 #      interactive, so handing prompts back is a real option there and it keeps that path.
+#   4. the primary's Step 0.7 now BINDS `WORKTREE=` in its own bash block (SCC-164 review).
+#      NOT PORTED, and this is the same reason as (1): the orchestrator hands this twin
+#      REPO/WORKTREE in its launch context, so the variable is already bound here. Binding
+#      it again in the body would let a stale in-body value shadow what the caller passed.
 # Re-diff and restamp when the linter says this sha is stale — do NOT just bump it.
-ap_reconciled: 604b124a501b6dbc6cc056dd72d6bcdd02b1fede
+ap_reconciled: 83ecdc781425e8404dcba0592c5073ccf22444cd
 ---
 
 # /cicd-code-review-AP — Autopilot Review + Fix + Test Gate (Murat)
