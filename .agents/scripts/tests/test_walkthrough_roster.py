@@ -198,7 +198,13 @@ def main() -> int:
         # rosterless PASS as clean - a warn-tier gate, which is the exact thing the operator's
         # ruling forbids ("I dont see a case in enterprise dev where a warn should make it to
         # prod"). Only running the real function and reading the SEVERITY closes that.
+        # ⛔ Imported HERE, not borrowed from block W. A `--case W-B` run skips W entirely, so a
+        # name bound only there is unbound in this block — and the failure mode is a traceback
+        # AFTER the first case fails, which the sweep reads as "exit 1 with no `FAILED:` line"
+        # and refuses to score. A block that cannot be run alone cannot kill a mutant alone.
+        # Found by this lane's own sweep: EI-8 and EI-9 both came back unattributable.
         import closeout_preflight
+        import task_preflight
         import wf_common as wf
 
         def sev(rep, section: str) -> list[str]:
