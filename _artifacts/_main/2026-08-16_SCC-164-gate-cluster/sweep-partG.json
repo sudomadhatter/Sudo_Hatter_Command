@@ -1,37 +1,41 @@
 {
-  "test": ["python3", ".agents/scripts/tests/test_jira_feed.py"],
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_jira_feed.py"
+  ],
   "mutants": [
     {
       "id": "M1",
       "file": ".agents/scripts/jira_feed.py",
       "original": "    anc = wf.git([\"merge-base\", \"--is-ancestor\", tip, \"origin/main\"], root)",
       "mutated": "    anc = wf.git([\"rev-parse\", \"--verify\", \"--quiet\", tip], root)",
-      "case": "G2 ·",
-      "block": "G · SCC-175"
+      "case": "G2 \u00b7",
+      "block": "G \u00b7 SCC-175"
     },
     {
       "id": "M2",
       "file": ".agents/scripts/jira_feed.py",
       "original": "    text, source = committed_copy(wt)\n    lines = list(_unfenced(text.splitlines()))",
       "mutated": "    text, source = wf.read_text(wt), \"HEAD\"\n    lines = list(_unfenced(text.splitlines()))",
-      "case": "G6 ·",
-      "block": "G · SCC-175"
+      "case": "G6b \u00b7",
+      "block": "G \u00b7 SCC-175",
+      "note": "re-declared: the first cut named G6, which SURVIVED and was right to - a ticked row matches the row regex either way and the verdict comes from ancestry, which reads no file. G6b is the only divergence: a merge row present in HEAD and deleted on disk."
     },
     {
       "id": "M3",
       "file": ".agents/scripts/jira_feed.py",
-      "original": "    m = _VERDICT_RE.search(text)\n    tried.append(\"walkthrough `Verdict: … @ <sha>`\")",
-      "mutated": "    m = None\n    tried.append(\"walkthrough `Verdict: … @ <sha>`\")",
-      "case": "G4 ·",
-      "block": "G · SCC-175"
+      "original": "    m = _VERDICT_RE.search(text)\n    tried.append(\"walkthrough `Verdict: \u2026 @ <sha>`\")",
+      "mutated": "    m = None\n    tried.append(\"walkthrough `Verdict: \u2026 @ <sha>`\")",
+      "case": "G4 \u00b7",
+      "block": "G \u00b7 SCC-175"
     },
     {
       "id": "M4",
       "file": ".agents/scripts/jira_feed.py",
       "original": "    return any(d in low for d in MERGE_DOORS) or MERGE_PHRASE in low",
       "mutated": "    return \"merge\" in low or \"land\" in low",
-      "case": "G7 ·",
-      "block": "G · SCC-175"
+      "case": "G7 \u00b7",
+      "block": "G \u00b7 SCC-175"
     }
   ]
 }

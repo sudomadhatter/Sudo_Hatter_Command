@@ -2398,7 +2398,7 @@ Nothing is actually owed.
                     and "Verdict" in st["why"],
                     "an unresolvable tip is not evidence of a merge: " + str(st))
 
-            # G6 · ⛔ HEAD, NOT THE WORKING TREE (F18). The tick exists only on disk.
+            # G6 · an uncommitted tick is still only a claim, and still gets checked.
             wt6 = lane("g6", land=False, row=DOOR_ROW)
             wt6.write_text(wt6.read_text().replace("- [ ]", "- [x]"))      # uncommitted tick
             st = jira_feed.merge_row_state(wt6)
@@ -2406,6 +2406,21 @@ Nothing is actually owed.
                     st is not None and st["source"] == "HEAD" and not st["satisfied"],
                     "SCC-169's tick was left uncommitted in the main checkout and later wiped "
                     f"by a reset - the committed copy is the only one that survives: {st}")
+
+            # G6b · ⛔ THE CASE THAT ACTUALLY PINS `HEAD` (F18), AND G6 DOES NOT.
+            # The declared mutant M2 (read the working tree instead of HEAD) SURVIVED G6 — and it
+            # was right to. A ticked row still MATCHES the row regex, and the verdict comes from
+            # ancestry, which does not read the file at all, so both sources agree. The only
+            # divergence is a row that exists in the COMMITTED walkthrough and not on disk:
+            # deleting it locally is how an owed merge silently stops being checked. Working-tree
+            # read -> no row -> None -> no hold. HEAD read -> found -> held.
+            wt6b = lane("g6b", land=False, row=DOOR_ROW)
+            wt6b.write_text("# W\n\n## Your Actions\n\n- [ ] something else entirely\n")
+            st = jira_feed.merge_row_state(wt6b)
+            c.check("G6b · a merge row DELETED from the working tree is still found in HEAD",
+                    st is not None and not st["satisfied"] and st["source"] == "HEAD",
+                    "the committed walkthrough owes a merge; editing the local copy must not "
+                    f"be how that stops being checked: {st}")
 
             # G7 · the recogniser itself, against the LIVE corpus classes measured 2026-08-16.
             for row, want, why in (
