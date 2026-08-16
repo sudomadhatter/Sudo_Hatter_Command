@@ -85,9 +85,11 @@ verbatim, before either check is written. Every other decision in this plan is s
 4. **Stamp-first.** No bare "let me check" `run_all.py`. The receipt run IS the suite run.
 5. **Sweep discipline** until Part K lands: pin the pre-sweep sha, restore, then
    `git diff --quiet -- <mutated files>` yourself — a mutated gate is committable (8681d83).
-6. **Find a home, never mint.** Anything discovered that this lane cannot land goes as the next
-   lettered subtask under SCC-164 (or the parent whose SCOPE names the file), with an index row and a
-   read-back. Say "none found" out loud before minting anything.
+6. **Look for a home first.** Anything discovered that this lane cannot land goes as the next
+   lettered subtask under SCC-164 (or whichever open parent covers that surface), with an index row
+   and a read-back. If nothing fits, mint — and say in one line what you looked at. Judgment, not a
+   gate (operator, 2026-08-15: *"the goal is the agent looks first and tries … this is not black and
+   white"*).
 7. ⛔ **Never `git reset --hard` in the lobby's main checkout — it is never a clean tree.** It hosts
    `_artifacts/_memory/`, which every session on this machine writes, so a reset there eats OTHER
    sessions' work: the SCC-163 close-out destroyed two MEMORY.md rows, a 1,869-char AVCH-59 memory
@@ -128,9 +130,10 @@ cuts a worktree per subtask; nothing routes discovered work to an existing paren
 the enforcement for "don't mint". Full text and brainstorm on
 [SCC-170](https://sudo-command.atlassian.net/browse/SCC-170).
 
-**Settled here (were "open" on the ticket):**
-- Consolidated mode is the **DEFAULT** for a Task with subtasks that share a repo and a lane class;
-  the per-subtask-tree mode stays for genuinely parallel work and is chosen by saying so.
+**Settled by the operator's words (2026-08-15):**
+- Consolidated lane **when able** — same repo, same lane class — and the agent decides and says why;
+  the per-subtask-tree mode stays for genuinely parallel work. Not a mandatory default, not opt-in
+  ceremony: judgment.
 - Commit key on a consolidated lane: **the subtask's key per commit**, parent key on the merge.
   Reason: each child's Jira dev panel shows its own commits, and per-part revert works.
 
@@ -152,23 +155,22 @@ the enforcement for "don't mint". Full text and brainstorm on
    remaining children as the next lane's riders; the "any child still open → STOP" exit is reserved
    for UNDECLARED children. — asserted by extending `test_task_preflight.py`: declared riders subset
    + open undeclared sibling → block; declared subset only → warn + proceed.
-4. The **find-a-home step** restated in the six discovery points: code-review-engine triage
-   (`steps/step-01-review.md` residue), `/smh-quick-dev`, `/smh-quick-fix`, `/smh-self-audit`,
-   `/cicd-code-review`, `/cicd-quick-dev` — the JQL written in, "none found" as the only licence.
-   — asserted by one structural check that each of the six carries the step (pin the wiring: the
-   step's command line, not a sentence).
+4. A one-line **"look for a home first"** reminder where discovery happens — the code-review-engine
+   triage (`steps/step-01-review.md` residue), `/smh-quick-dev`, `/smh-quick-fix`. A reminder in the
+   step list, not a check: the operator ruled this is judgment ("not black and white"), and minting
+   is fine when nothing fits.
 5. `docs/_scc_sops_prds/workflows_testing_SOP.md` — the consolidated-lane section (sop_currency will
    demand it). Memory `discovered-work-becomes-a-lettered-part.md` reconciled (done in the lane's
    first commit; index rows restored — see § Residue).
 6. Re-sync generated launcher skills (one door per platform per command).
 
 **RED first:** step 3's partial-landing case fails against current `task_preflight.py` (it blocks on
-any open child not declared — declared-subset-plus-parent-open is not a state it knows); step 4's
-structural check fails on all six commands. Capture both red.
+any open child not declared — declared-subset-plus-parent-open is not a state it knows). Capture it
+red. The rule text itself is prose on purpose and gets no assertion.
 
 **Mutants (from the code, declared now):** delete `riders:` from the fixture → parent close must BLOCK
-(kills the extended rider case) · remove the find-a-home step from one command → the structural check
-must fail · restore "unless the operator ordered" wording → the wording test fails.
+(kills the extended rider case) · declare a rider that is not a child of the parent → declaration
+error, nothing flips.
 
 **Files:** `.agents/rules/work-consolidation.md`, `.agents/rules/INDEX.md`,
 `.agents/commands/{smh-plan-task,smh-close-task-merge-tree,smh-quick-dev,smh-quick-fix,smh-self-audit,cicd-code-review,cicd-quick-dev}.md`,

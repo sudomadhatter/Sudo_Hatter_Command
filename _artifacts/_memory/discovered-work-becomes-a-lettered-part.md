@@ -24,8 +24,9 @@ first landed as comments/description blocks ("A, B, C, D… as notes") and the o
 **Why:** *"we are not developing 3 task for every 1 we try to fix"* (verbatim, 2026-08-15). One
 fix spawning three tickets is the residue-ticket loop one level up — the queue never drains. This
 extends [[review-findings-are-not-a-work-queue]] past review findings to **anything** discovered
-mid-task. ⛔ Do not propose minting; do not ask which key. Check the board first (the operator
-asked for that explicitly), then append.
+mid-task. Look first — check the board for an open parent that covers the surface — then add it there.
+If nothing fits, minting is fine: say in one line what you looked at. Operator, same day: *"the goal
+is the agent looks first and tries … this is not black and white."* Judgment, not a gate.
 
 **How to apply — and the parent-index write is the dangerous half.** `acli jira workitem edit
 --description` **REPLACES** the whole field, so a careless index update silently deletes rows —
