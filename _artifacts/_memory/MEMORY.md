@@ -18,6 +18,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 
 ## Jira & tickets
 - [Jira is LIVE (SCC + AVCH)](jira-integration-live.md) — `acli`, already authed; every branch/commit carries a key; gate ARMED, wrong-project key rejected.
+- [⛔ acli CANNOT re-parent a subtask](acli-cannot-reparent-a-subtask.md) — `create` takes `--parent`, `edit` has no such flag → "split the ticket in half" is not a board op; a partial landing keeps the ORIGINAL parent open and the second half is a new LANE, never a new parent ticket.
 - [Cross-repo work = a ticket PER REPO](cross-repo-work-needs-a-ticket-per-repo.md) — widening a project's `jira.conf` is ruled out in writing; and the key comes from the `epic/*` branch, never from the BMAD epic number.
 - [`To Do Next` IS the queue](to-do-next-is-the-queue.md) — lead every "what's next" with it; `todo_list.md` is RETIRED as an agent source; the doc's `Blocked` doesn't exist (it's `Blocking`).
 - [VS Code hides hook output](vscode-hides-git-hook-output.md) — a warn-only hook looks like clean success; ship hooks ARMED.
@@ -51,6 +52,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [⛔ Nothing guards the merge TARGET](nothing-guards-the-merge-target.md) — every gate checks what you merge FROM; a bare `git merge` after a `cd` landed production work on a sibling lane and reported success. `-C` on every call; recovery is `--ff-only`, never reset.
 - [⛔ A revert reads from a REF](revert-target-must-be-a-ref.md) — its twin, aimed at the ref you read FROM: `checkout origin/main -- <p>` is safe under any later merge, `checkout <sha> -- <p>` after absorbing silently deletes a sibling's landed fix. Measured, after the audit reasoned it backwards.
 - [⛔ One invocation = ONE merge](one-shot-permission-persists-in-context.md) — the close-out's body stays in context and reads like standing permission; 6 merges rode 1 sign-off. Merge-ready → STOP and hand back.
+- [⭐⛔ The LANDING is the block, not the gates](landing-ceremony-is-the-block-not-the-gates.md) — SCC-184 (docs, all green) never landed: hand-typed Step 3 in the shared checkout vs the permission layer (`git -C merge` denied, bare allowed); the PR door already works — SCC-183 R3; order 184 → 183 → 164-second-half.
 - [⭐ Main merge needs the operator's VERBATIM words](main-merge-needs-operator-verbatim-approval.md) — since SCC-37 (08-14) the minter refuses without `--operator-approval '<their exact words, this turn>'`; stage everything, CI green, then PARK — ⛔ never SOLICIT the words, the operator initiates; one landing = one quote.
 - [⭐ Blocking gates need a QUOTED ruling](blocking-gates-need-a-quoted-ruling.md) — a new gate that can block a shipping path is new LAW: its own plan heading + the operator's words; a derived corollary is a proposal, never law.
 - [Hook `ask` = DENY in auto mode](hook-ask-becomes-autodeny-in-auto-mode.md) — gates main only; reads pass, mutations die; retry once, then hand over the rule.
