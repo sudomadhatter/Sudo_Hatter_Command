@@ -41,6 +41,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import walkthrough_roster as roster
 import wf_common as wf
 import hooks_armed
 # SCC-146: the close-out reads the review's receipts. Imported the way closeout_preflight
@@ -1166,6 +1167,12 @@ def check_gate(repo: Path, hits: list[Path], lane: str, expect: str, branch: str
                                 f"the stamp; an unreadable verdict cannot gate a merge")
         if found:
             stamped.append((p, found))
+            # ⛔ SCC-173/SCC-177 — the same parser closeout_preflight calls, handed the verdict
+            # THIS file's own (stricter) regex just read. A stamp says what the review decided;
+            # the roster is what shows it happened, and 130 of 142 walkthroughs had neither.
+            ok_roster, why = roster.judge(text, p, found[0][0])
+            for line in why:
+                (rep.info if ok_roster else rep.err)("gate", f"{rel_or_abs(p, repo)}: {line}")
     if not stamped:
         if foreign_stamped:
             rep.info("gate", f"verdict stamp(s) exist only in {foreign_stamped} "
