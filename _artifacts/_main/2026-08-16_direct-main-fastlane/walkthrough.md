@@ -191,7 +191,16 @@ permissions. **Nothing else is owed, on any machine.**
 
 ---
 
-**Verdict: PASS @ 3150732d** — builder's self-review. R4 is a deletion whose safety argument
+**Verdict: PASS @ a3512bf** (re-measured post-absorb; the pre-absorb `Verdict: PASS @ 3150732d`
+is left standing on purpose) — builder's self-review. R4 is a deletion whose safety argument
 is a table of what already holds each removed check, and the suite, lint and maps are green after
 it. ⛔ Not an independent review: `/smh-code-review` is available and is the thing that has
 historically caught what a builder's own pass did not — twice on this lane.
+
+## Post-absorb re-measurement (2026-08-16)
+
+**Verdict: PASS @ a3512bf** — re-measured after absorbing `origin/main` at `06b966a` (PR #10, SCC-186
+memory compaction: 13 files, all under `_artifacts/_memory/`). Zero overlap with this lane's change
+set, so the absorb is artifacts-only and does not void the verdict — but it was re-gated anyway:
+**suite 32/32 bare, exit 0**, and `merge-base --is-ancestor origin/main HEAD` now passes, which is
+the freshness condition this lane's own law requires before a PR is opened.
