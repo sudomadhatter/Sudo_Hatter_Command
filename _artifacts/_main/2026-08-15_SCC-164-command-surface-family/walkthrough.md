@@ -933,4 +933,10 @@ absolute-path trap documented in place; the fix still flows **project → lobby*
       Deleting another lane's file is not a call I will make on my own judgment. Say the word either way
       and it is one commit. **Not a blocker** — the badge is inert.
 
-- [ ] **The merge itself** — `/smh-close-task-merge-tree`, on the operator's invocation.
+- [x] **The merge itself** — DONE. `/smh-close-task-merge-tree` invoked by the operator on 2026-08-16;
+      that invocation IS the per-merge sign-off, and this ceremony performed the merge. Ticked
+      **pre-merge**, inside the ceremony that lands it, because the merge commit is built from this
+      branch — a tick added afterwards would live only on a branch that Step 5 deletes, and `main`
+      would keep an artifact whose box reads as an owed operator task forever. The merge sha is not
+      knowable at this line and is not guessed: it is recorded on SCC-164's Dev Record
+      (`--outcome "merged to main at <sha>"`) and in the flight event beside this file.
