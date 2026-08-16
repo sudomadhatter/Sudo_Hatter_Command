@@ -332,6 +332,59 @@ def make_trace_repo(root: Path) -> Path:
     return repo
 
 
+def make_lane_repo(root: Path, name: str,
+                   manifests: tuple[tuple[str, str], ...] = (),
+                   branches: tuple[str, ...] = (),
+                   remotes: tuple[str, ...] = (),
+                   untracked: tuple[tuple[str, str], ...] = (),
+                   on: str = "") -> Path:
+    """A repo whose COMMITTED tree and refs are the only evidence of which lanes exist.
+
+    SCC-174 asks one question - "can this repo PROVE that id is a lane?" - so every source here
+    has to be the real article. `manifests` are `(dir, branch)` pairs written to
+    `_artifacts/_main/<dir>/task.yaml` and COMMITTED. `branches` are real refs. `remotes` are
+    written straight into `refs/remotes/origin/<name>`: a landed lane's local branch is pruned
+    but its origin ref usually survives, there is no network here to fetch one, and a fixture
+    that could only model local branches could not fail on the arm that matters.
+
+    `untracked` writes a manifest git does not track, under a gitignored `Projects/`. That is
+    not a corner case - it is the lobby's actual shape, where `Projects/` holds other repos'
+    manifests and `.claude/worktrees/` holds a second copy of this repo's. A slug from there
+    proves nothing about THIS repo's lanes, and a fixture with no such file cannot tell a
+    `git ls-files` implementation from a `Path.glob` one.
+
+    `on` checks the branch out, because "which lane am I standing on" is F3's whole question and
+    a fixture parked on `main` answers it by accident."""
+    repo = root / name
+    repo.mkdir(parents=True)
+    git(repo, "init", "-q", "-b", "main")
+    git(repo, "config", "user.email", "t@example.com")
+    git(repo, "config", "user.name", "T")
+    git(repo, "config", "commit.gpgsign", "false")
+    (repo / ".gitignore").write_text("Projects/\n", encoding="utf-8")
+    for d, branch in manifests:
+        m = repo / "_artifacts" / "_main" / d
+        m.mkdir(parents=True)
+        (m / "task.yaml").write_text(
+            f"task_key: TEST-7\nprimary_repo: fixture\nbranch: {branch}\n"
+            f"close_command: smh-close-task-merge-tree\n", encoding="utf-8")
+    (repo / "_artifacts").mkdir(exist_ok=True)
+    commit(repo, "TEST-7 chore: the lane manifests")
+    head = git(repo, "rev-parse", "HEAD").stdout.strip()
+    for b in branches:
+        git(repo, "branch", b, head)
+    for r in remotes:
+        git(repo, "update-ref", f"refs/remotes/origin/{r}", head)
+    for d, branch in untracked:
+        m = repo / "Projects" / "other" / "_artifacts" / "_main" / d
+        m.mkdir(parents=True)
+        (m / "task.yaml").write_text(f"task_key: TEST-7\nbranch: {branch}\n",
+                                     encoding="utf-8")
+    if on:
+        git(repo, "checkout", "-q", on)
+    return repo
+
+
 def set_state(path: Path, **kw) -> None:
     state = {"description": "", "comments": [], "search": []}
     state.update(kw)
@@ -653,9 +706,16 @@ def main() -> int:
                                  "body": "Dev Record - scc-113-jira-in-progress-seam (close-out)"},
                                 {"id": "2",
                                  "body": "Dev Record - scc-113-door-content-parity (close-out)"}])
+            # ⚠ SCC-174 RETARGETED this assertion, and the reason is the finding. Two ids used
+            # to be exit 0 on their own say-so; they are now exit 0 only where a manifest or a
+            # ref CLAIMS each one. This fixture is a plain directory - not a git checkout - so
+            # it can no longer answer, and "cannot answer" must not read as "designed state".
+            # The designed-state control moved to the SCC-174 block below, where the lanes are
+            # backed by committed manifests and real refs; grouping-not-counting is still what
+            # gets it past the duplicate arm above.
             code, out = jf("check", "--key", "TEST-7")
-            c.check("check: two lanes, two story ids -> exit 0 (the designed state)",
-                    code == 0 and "0 error(s), 0 warning(s)" in out, out.strip()[:200])
+            c.check("check: two story ids off a repo that cannot be read -> exit 1, not blessed",
+                    code == 1 and "not a git checkout" in out, out.strip()[:280])
 
             # `--story` is documented on THREE surfaces (jira_feed.py:15 usage, jira.md:302 a RULE,
             # cicd-update-sprint-memory.md:191 a command) and read by none of them. Story-awareness
@@ -2072,6 +2132,169 @@ Nothing is actually owed.
                                    walkthrough(CLEAR))
             c.check("B9 · ...and exits 0 on a clean walkthrough", code == 0,
                     f"exit={code} {out.strip()[-200:]}")
+
+        # ── SCC-174 · a FORKED Dev Record stops reading as "two lanes" ─────────
+        # `devrecord` picks update-vs-create off the SLUG, never off --key, so filing one lane
+        # under two slugs is exactly how a ticket GETS two ids. `check` used to read two ids as
+        # self-evidently two lanes and exit 0 - blind precisely when the bug happens (the slugs
+        # differ) and loud only once it has been fixed (the slugs match). AVCH-59 on 2026-08-15
+        # is the live instance: /smh-quick-dev filed under `main-write-gate`, the close-out
+        # passed `avch-59-main-write-gate` - the ceremony's own wording - and the gate blessed
+        # the pair. The id string cannot settle it. The repo can.
+        if c.block("SCC-174 check: a forked Dev Record is not 'the designed state'"):
+
+            def jfp(project: Path, *args: str) -> tuple[int, str]:
+                os.environ["STUB_STATE"] = str(state)
+                return run_script("jira_feed.py", args[0], "--project", str(project),
+                                  "--acli", str(acli), *args[1:])
+
+            FED = "9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive."
+            WIDGET, ROSTER = "chore/TEST-7-widget-archive", "chore/TEST-7-roster-filter"
+
+            def rec(sid: str, cid: str, stage: str = "close-out") -> dict:
+                return {"id": cid,
+                        "body": f"Dev Record - {sid} ({stage}, 2026-08-15)\n\nDecisions made"}
+
+            def forked(project: Path) -> tuple[int, str]:
+                """ONE lane's two slugs: the branch slug, and the truncation quick-dev filed."""
+                set_state(state, description=FED,
+                          comments=[rec("TEST-7-widget-archive", "1", "quick-dev"),
+                                    rec("widget-archive", "2")])
+                return jfp(project, "check", "--key", "TEST-7")
+
+            # ── F1 · the live shape: one manifest, one branch, two records ────────
+            one = make_lane_repo(tmp, "lane_one",
+                                 manifests=(("2026-08-15_widget", WIDGET),),
+                                 branches=(WIDGET,), on=WIDGET)
+            code, out = forked(one)
+            c.check("F1 · one lane filed under two slugs -> exit 1, not blessed",
+                    code == 1, f"exit={code} {out.strip()[:400]}")
+            # ⛔ Asserted WITH the backticks. `widget-archive` is a SUBSTRING of
+            # `test-7-widget-archive`, so a bare containment test passes on any message that
+            # names only the real lane - the assertion would be green against a check that
+            # never noticed the fork at all.
+            c.check("F1 · ...and it names the slug nothing claims, as a slug",
+                    "`widget-archive`" in out and "`test-7-widget-archive`" in out,
+                    out.strip()[:400])
+            c.check("F1 · ...and it says which record is NEWEST",
+                    "newest: `widget-archive`" in out.lower(), out.strip()[:400])
+            c.check("F1 · ...and it does NOT still call the pair the designed state",
+                    "designed state" not in out, out.strip()[:400])
+
+            # ── F4 · the negative control: two manifested lanes on one ticket ─────
+            # A follow-on lane rides the ticket it came from rather than minting a key, so N
+            # lanes -> N records is the DESIGNED state and must stay exit 0. If this ever goes
+            # red the fork check was widened into "two records are bad", which is the count-based
+            # check SCC-113 already removed once.
+            two = make_lane_repo(tmp, "lane_two",
+                                 manifests=(("2026-08-15_widget", WIDGET),
+                                            ("2026-08-15_roster", ROSTER)),
+                                 branches=(WIDGET, ROSTER), on=WIDGET)
+            set_state(state, description=FED,
+                      comments=[rec("TEST-7-widget-archive", "1"),
+                                rec("TEST-7-roster-filter", "2")])
+            code, out = jfp(two, "check", "--key", "TEST-7")
+            c.check("F4 · two manifested lanes -> exit 0, the designed-state line survives",
+                    code == 0 and "one per lane" in out, f"exit={code} {out.strip()[:400]}")
+
+            # ── the `origin/` arm · a landed follow-on whose local branch was pruned ──
+            # /cicd-push-e2e prunes the lane branch on landing. Local-refs-only would read every
+            # landed lane's record as a fork the moment a second lane joins the ticket - F17.
+            landed = make_lane_repo(tmp, "lane_landed",
+                                    manifests=(("2026-08-15_widget", WIDGET),),
+                                    branches=(WIDGET,), remotes=(ROSTER,), on=WIDGET)
+            set_state(state, description=FED,
+                      comments=[rec("TEST-7-widget-archive", "1"),
+                                rec("TEST-7-roster-filter", "2")])
+            code, out = jfp(landed, "check", "--key", "TEST-7")
+            c.check("the origin/ ref alone proves a lane (a landed, locally-pruned follow-on)",
+                    code == 0 and "one per lane" in out, f"exit={code} {out.strip()[:400]}")
+
+            # ── the manifest arm · a lane with no ref left anywhere ───────────────
+            # The durable half: months later both refs are gone and the committed task.yaml is
+            # the only thing that still says the lane existed.
+            pruned = make_lane_repo(tmp, "lane_pruned",
+                                    manifests=(("2026-08-15_widget", WIDGET),
+                                               ("2026-08-15_roster", ROSTER)),
+                                    branches=(WIDGET,), on=WIDGET)
+            set_state(state, description=FED,
+                      comments=[rec("TEST-7-widget-archive", "1"),
+                                rec("TEST-7-roster-filter", "2")])
+            code, out = jfp(pruned, "check", "--key", "TEST-7")
+            c.check("the committed manifest alone proves a lane (no branch left at all)",
+                    code == 0 and "one per lane" in out, f"exit={code} {out.strip()[:400]}")
+
+            # ── a manifest git does not track proves NOTHING ──────────────────────
+            # The lobby keeps other repos under a gitignored `Projects/` and a copy of its own
+            # tree under `.claude/worktrees/`. A `Path.glob("**/task.yaml")` reads both and
+            # would clear a fork using a slug that belongs to a different repo entirely.
+            foreign = make_lane_repo(tmp, "lane_foreign",
+                                     manifests=(("2026-08-15_widget", WIDGET),),
+                                     branches=(WIDGET,),
+                                     untracked=(("2026-08-15_roster", ROSTER),), on=WIDGET)
+            set_state(state, description=FED,
+                      comments=[rec("TEST-7-widget-archive", "1"),
+                                rec("TEST-7-roster-filter", "2")])
+            code, out = jfp(foreign, "check", "--key", "TEST-7")
+            c.check("an UNTRACKED manifest under a gitignored dir does not claim a lane",
+                    code == 1 and "`test-7-roster-filter`" in out,
+                    f"exit={code} {out.strip()[:400]}")
+
+            # ── the split: what `check` may trust vs what the DEFAULT may trust ───
+            # An untracked manifest that git is not ignoring either. `check` must not count it -
+            # a stray file is not a lane, and the fork verdict has nothing to cross-check it
+            # against. `lane_slug_here` may, because it intersects with the branch you are ON,
+            # so an unseen manifest can only ever name your own lane.
+            (foreign / "_artifacts" / "_main" / "stray").mkdir(parents=True)
+            ((foreign / "_artifacts" / "_main" / "stray" / "task.yaml")
+             .write_text(f"task_key: TEST-7\nbranch: {ROSTER}\n", encoding="utf-8"))
+            code, out = jfp(foreign, "check", "--key", "TEST-7")
+            c.check("an UNCOMMITTED manifest does not claim a lane either (check reads --cached)",
+                    code == 1 and "`test-7-roster-filter`" in out,
+                    f"exit={code} {out.strip()[:400]}")
+            # /smh-quick-fix writes its task.yaml in the same breath as the Dev Record, so a
+            # default that demanded a commit first would be dead on the one lane that needs it.
+            fresh = make_lane_repo(tmp, "lane_fresh", manifests=(("2026-08-15_widget", WIDGET),),
+                                   branches=(WIDGET, ROSTER), on=ROSTER)
+            m = fresh / "_artifacts" / "_main" / "2026-08-16_roster"
+            m.mkdir(parents=True)
+            (m / "task.yaml").write_text(f"task_key: TEST-7\nbranch: {ROSTER}\n",
+                                         encoding="utf-8")
+            code, out = jfp(fresh, "devrecord", "--decision", "x")
+            c.check("F3 · a task.yaml written but not yet committed still names YOUR lane",
+                    code == 0 and "Dev Record - TEST-7-roster-filter" in out,
+                    f"exit={code} {out.strip()[:300]}")
+
+            # ── "cannot tell" must never be reported as "designed state" ──────────
+            # None is not the empty set. If the instrument is missing the honest answer is that
+            # it is missing - blessing the pair because the evidence could not be READ is the
+            # same failure in a new coat.
+            code, out = forked(repo)          # `repo` is a fixture tree, not a git checkout
+            c.check("no git checkout -> exit 1 and says the lanes could not be read, not 0",
+                    code == 1 and "not a git checkout" in out,
+                    f"exit={code} {out.strip()[:400]}")
+
+            # ── F3 · ONE slug source, and it is the lane's own manifest ───────────
+            code, out = jfp(one, "devrecord", "--decision", "x")
+            c.check("F3 · --story defaults to the branch slug in this lane's task.yaml",
+                    code == 0 and "Dev Record - TEST-7-widget-archive" in out,
+                    f"exit={code} {out.strip()[:300]}")
+            code, out = jfp(one, "devrecord", "--story", "widget-archive", "--decision", "x")
+            # ⛔ NOT asserted on the `[WARN]` marker. `devrecord` already warns about the
+            # missing walkthrough on this fixture, so the marker is present either way and the
+            # check would have been green against a build that never noticed the wrong slug.
+            c.check("F3 · a slug that is not this lane's is WARNED, naming both",
+                    "is not this lane's slug" in out and "`TEST-7-widget-archive`" in out,
+                    out.strip()[:300])
+            code, out = jfp(one, "devrecord", "--story", "TEST-7-widget-archive",
+                            "--decision", "x")
+            c.check("F3 · ...and the lane's OWN slug is silent (positive control)",
+                    code == 0 and "is not this lane" not in out, out.strip()[:300])
+            # Optional does not mean guessable: off a manifested lane there is no source to
+            # default from, and rendering a headerless record would fork the ticket a third way.
+            code, out = jfp(repo, "devrecord", "--decision", "x")
+            c.check("F3 · no manifest for this branch -> --story is still REQUIRED",
+                    code == 2 and "no task.yaml declares the branch" in out, f"exit={code} {out.strip()[:300]}")
 
     return c.finish()
 

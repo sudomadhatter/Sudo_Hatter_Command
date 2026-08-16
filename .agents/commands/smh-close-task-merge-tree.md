@@ -437,7 +437,7 @@ recoverable failure.
 > on its **parent**.
 
 ```bash
-python3 .agents/scripts/jira_feed.py devrecord --key <JIRA-KEY> --story <branch-slug> \
+python3 .agents/scripts/jira_feed.py devrecord --key <JIRA-KEY> \
        --stage close-out --walkthrough <the walkthrough> \
        --outcome "merged to main at <merge-sha> via /smh-close-task-merge-tree" \
        --verdict "<gate result>" \
@@ -449,6 +449,14 @@ python3 .agents/scripts/jira_feed.py finish --key <JIRA-KEY> \
        --walkthrough <the walkthrough> --apply
 python3 .agents/scripts/jira_feed.py check --key <JIRA-KEY>     # must exit 0
 ```
+
+⛔ **No `--story` here, and that is the fix (SCC-174).** `devrecord` picks update-vs-create off the
+**slug**, never off `--key`, so the same lane spelled two ways posts a **second** Dev Record — and
+this ceremony asking for `<branch-slug>` while `/smh-quick-dev` filed under something shorter is
+exactly how AVCH-59 ended up with two. The slug now comes from **one** place, the lane's `task.yaml`
+`branch:`, and the script reads it. Pass `--story` only to file under a lane you are **not** standing
+on. If `check` reports a **FORKED Dev Record**, an id on the ticket is claimed by no manifest and no
+branch: delete that record and re-run this block — never `--append-new` your way past it.
 
 ⛔ **Before `finish`: tick the merge row.** A walkthrough often carries `- [ ] **The merge itself**` —
 that box IS this ceremony, so this ceremony ticks it (with the merge sha and "signed off by the

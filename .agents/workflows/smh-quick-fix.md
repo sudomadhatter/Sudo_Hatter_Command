@@ -139,10 +139,13 @@ close-out preflight blocks without it, and `## Your Actions` is a machine contra
   operator can do and holds the ticket out of `Done`; `- [x]` is settled; prose is context.
 
 Write `task.yaml` beside it (`task_key`, `primary_repo`, `branch`, `close_command:
-smh-close-task-merge-tree`, `secondary_repos: []`), then file the Dev Record:
+smh-close-task-merge-tree`, `secondary_repos: []`), then file the Dev Record. ⛔ **The manifest
+first, and no `--story` (SCC-174)** — `devrecord` reads the slug out of the `branch:` you just
+wrote, which is the same source `/smh-close-task-merge-tree` uses. Passing a slug by hand is how
+one lane ends up with two Dev Records.
 
 ```bash
-python3 .agents/scripts/jira_feed.py devrecord --key <KEY> --story <branch-slug> \
+python3 .agents/scripts/jira_feed.py devrecord --key <KEY> \
        --stage quick-fix --walkthrough <the walkthrough> \
        --outcome "<what shipped, one line>" --apply
 ```

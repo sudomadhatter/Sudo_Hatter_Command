@@ -1699,6 +1699,24 @@ re-rules `quick-dev` for every story it assesses.
 with the evidence commented. Sprint and backlog *placement* stays yours; outside the two minting
 seams, machinery only ever touches status.
 
+**⛔ On a Task lane you never type the Dev Record's slug (SCC-174).** `jira_feed.py devrecord`
+decides *update this record* vs *post a new one* from the **slug**, not from `--key`. So two
+spellings of one lane are two records — and that is not hypothetical: on 2026-08-15 `/smh-quick-dev`
+filed AVCH-59 under `main-write-gate`, the close-out passed `avch-59-main-write-gate` (the branch
+slug, which is exactly what the ceremony's own text asked for), and the ticket carried two. The three
+Task surfaces — `/smh-quick-dev`, `/smh-quick-fix`, `/smh-close-task-merge-tree` — now omit `--story`
+entirely and the script reads the `branch:` out of the lane's `task.yaml`. One source, so there is
+nothing left to disagree about. Pass `--story` only to file under a lane you are *not* standing on;
+a BMAD story lane still passes its story id, which is its own single source.
+
+**And `check` stopped taking the ids at their word.** Two Dev Record ids on one ticket used to exit 0
+as *"one per lane — the designed state"*, which had the check blind precisely when the bug happens
+(the slugs differ) and loud only once it had been fixed (the slugs match). An id is now a lane only
+if the repo can **prove** it: a tracked `task.yaml branch:` anywhere in the committed tree, or a
+prefixed branch ref — local **or** `origin/`, because a landed lane's local branch is pruned the same
+day and its manifest is not. An id nothing claims is a **FORKED Dev Record**: exit 1, naming the
+orphan id and which record is newest. The remedy is to delete the record filed under the slug that is
+not a lane and re-run the block — never `--append-new` past it.
 ### Two shapes of work on one board — and why it decides the command
 
 Everything on the board is a **Story** or a **Task**, and that is not a label — **it decides which

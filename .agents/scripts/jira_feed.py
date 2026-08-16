@@ -9,7 +9,8 @@ about or what building it taught. SCC-49 closes that.
     jira_feed.py outline   --story 12.3.4 --project P [--epic 12] [--out FILE]
     jira_feed.py mint      --story 12.3.4 --project P --jira-project AVCH --epic-key AVCH-13
                            --summary "..." [--lane quick-dev] [--parallel-ok] [--apply]
-    jira_feed.py devrecord --key AVCH-15 --story 12.3.4 --project P [--decision ...]
+    jira_feed.py devrecord --key AVCH-15 --project P [--story 12.3.4] [--decision ...]
+                           # --story defaults to this lane's task.yaml branch slug
                            [--pitfall ...] [--followon ...] [--apply] [--strict]
     jira_feed.py audit     --jira-project AVCH --project P [--apply]
     jira_feed.py check     --key AVCH-15 [--story 12.3.4]
@@ -30,6 +31,9 @@ Two invariants this file exists to hold, because prose could not:
    first and UPDATES it rather than stacking a second one. Both `/cicd-quick-dev` (which
    closes its own branch) and `/cicd-update-sprint-memory` (which closes the story) post
    through here, and before this they would have produced two records of the same work.
+   ⛔ It finds that record by the **slug**, never by `--key` - so on a Task lane the slug comes
+   from ONE place, the lane's `task.yaml branch:`, and `--story` is left off. Two spellings of
+   one lane post two records, and `check` reports that as a FORK (SCC-174).
 
 Both write verbs READ THE TICKET BACK and exit non-zero if what they claimed to write is not
 there - an acli call that silently no-ops looks exactly like one that worked.
@@ -594,6 +598,111 @@ def record_story_id(comment: dict) -> str:
     return wf.norm_id(m.group(1)) if m else ""
 
 
+# ── SCC-174 · which lanes can this repo PROVE? ─────────────────────────────────
+# A Dev Record's id is a free-text string a caller typed. Two ids on one ticket is therefore
+# TWO situations - two lanes, or one lane filed under two spellings of itself - and the strings
+# alone cannot tell them apart, because `devrecord` picks update-vs-create off the slug. What
+# CAN tell them apart is the repo: a lane leaves a `task.yaml branch:` behind and it leaves refs
+# behind. Everything below answers exactly that and nothing else.
+
+_MANIFEST_BRANCH_RE = re.compile(r"^branch:\s*(\S+)\s*$", re.M)
+
+
+def manifest_branches(repo: Path, include_new: bool = False) -> list[str]:
+    """The `branch:` of every `task.yaml` git knows about - `git ls-files`, never a glob.
+
+    ⛔ `Path.glob("**/task.yaml")` is the obvious shape and it is wrong HERE, for two reasons
+    that are both about the lobby specifically. `Projects/` is gitignored and holds other repos'
+    manifests, and `.claude/worktrees/` holds a second copy of this repo's own tree - a glob
+    reads both and hands back slugs that prove nothing about THIS repo's lanes. `git ls-files`
+    answers from the index, which is the question actually being asked, and `--exclude-standard`
+    keeps both of those directories out even when untracked files are included.
+
+    Tracked, not merely present, also buys the durable half (F17): a LANDED lane's branch is
+    pruned within the day, but its manifest is committed forever. Scoping this to the current
+    lane's own manifest - the first sketch - would have made every landed lane's record read as
+    a fork the moment a second lane joined the ticket.
+
+    `include_new` adds untracked-but-not-ignored manifests, and ONLY `lane_slug_here` may ask
+    for it. The difference is what anchors the answer: that function intersects the manifests
+    with the branch you are standing on, so a manifest git has not seen yet can only ever name
+    YOUR lane - and /smh-quick-fix writes its `task.yaml` in the same breath as the Dev Record,
+    so demanding a commit first would make the default useless exactly where it is needed. The
+    fork verdict has no such anchor, so it trusts nothing git is not tracking."""
+    spec = ["ls-files", "-z", "--exclude-standard"]
+    if include_new:
+        spec += ["--cached", "--others"]
+    r = wf.git(spec + ["--", "*task.yaml"], repo)
+    if r.returncode != 0:
+        return []
+    out: list[str] = []
+    for rel in (r.stdout or "").split("\0"):
+        if not rel.endswith("task.yaml"):
+            continue
+        m = _MANIFEST_BRANCH_RE.search(wf.read_text(repo / rel))
+        if m:
+            out.append(m.group(1).strip())
+    return out
+
+
+def ref_lane_slugs(repo: Path) -> list[str]:
+    """Lane slugs from refs - local heads AND `origin/`, and both arms are load-bearing.
+
+    A lane that has not landed yet may have only a local branch (its manifest is committed on
+    the first push, not before). A lane that HAS landed usually has only its `origin/` ref, the
+    local one having been pruned by the close-out. Drop either arm and a real lane reads as a
+    fork.
+
+    Only a PREFIXED name counts - `chore/<KEY>-<slug>`, `epic/...`, `story/...`. `main` is not a
+    lane, and `origin/main` must not contribute the slug `main`: `main-write-gate` was one half
+    of the live AVCH-59 fork, and a check that accepted bare trunk tails would be one careless
+    branch name away from clearing it."""
+    r = wf.git(["for-each-ref", "--format=%(refname)", "refs/heads", "refs/remotes"], repo)
+    if r.returncode != 0:
+        return []
+    slugs: list[str] = []
+    for ref in (r.stdout or "").splitlines():
+        ref = ref.strip()
+        if ref.startswith("refs/heads/"):
+            name = ref[len("refs/heads/"):]
+        elif ref.startswith("refs/remotes/"):
+            rest = ref[len("refs/remotes/"):]
+            name = rest.split("/", 1)[1] if "/" in rest else ""
+        else:
+            continue
+        if "/" in name:
+            slugs.append(name.rsplit("/", 1)[-1])
+    return slugs
+
+
+def lane_slugs(repo: Path) -> set[str] | None:
+    """Every lane slug this repo can prove, normalised - or None when it CANNOT answer.
+
+    ⛔ None is not the empty set, and a caller that conflates them has rebuilt the defect. "No
+    lane exists" is a verdict; "this is not a git checkout" is a missing instrument. Blessing a
+    pair of Dev Records because the evidence could not be READ is the same silence SCC-174
+    exists to end, wearing a different coat."""
+    if wf.git(["rev-parse", "--is-inside-work-tree"], repo).returncode != 0:
+        return None
+    slugs = [b.rsplit("/", 1)[-1] for b in manifest_branches(repo)]
+    return {wf.norm_id(s) for s in slugs + ref_lane_slugs(repo) if s}
+
+
+def lane_slug_here(repo: Path) -> str:
+    """The branch slug of the lane you are STANDING ON - if a tracked manifest declares it.
+
+    Both conditions are required and neither is sufficient. The branch alone is not a lane
+    (`main` is a branch; so is a stray local experiment), and the manifests alone cannot say
+    which of sixty lanes is yours. Their intersection is unambiguous, and it is the ONE slug
+    source F3 settles on: the same string `check` will later look for."""
+    r = wf.git(["rev-parse", "--abbrev-ref", "HEAD"], repo)
+    branch = (r.stdout or "").strip()
+    if r.returncode != 0 or "/" not in branch:
+        return ""
+    declared = manifest_branches(repo, include_new=True)
+    return branch.rsplit("/", 1)[-1] if branch in declared else ""
+
+
 def write_temp(body: str) -> Path:
     fd, name = tempfile.mkstemp(prefix="jira-feed-", suffix=".txt", text=True)
     with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
@@ -773,6 +882,31 @@ def cmd_mint(args) -> int:
 def cmd_devrecord(args) -> int:
     # need_board=False: an ad-hoc chore fix has a ticket and a walkthrough but no board.
     project = resolve_root(args.project, need_board=False)
+
+    # ── SCC-174 F3 · ONE slug source, and the lane already wrote it down ──────
+    # `devrecord` decides update-vs-create from the SLUG, never from --key, so a free-text
+    # slug is a fork waiting to happen. It happened on AVCH-59 (2026-08-15): /smh-quick-dev
+    # filed under `main-write-gate`, the close-out passed `avch-59-main-write-gate` - the
+    # BRANCH slug, which is what the ceremony's own text literally asks for - and the ticket
+    # ended up carrying two records that `check` then blessed as "two lanes".
+    #
+    # The manifest on the branch you are standing on already knows the answer, so read it
+    # instead of asking. Silence when there is no manifest for this branch is deliberate: a
+    # BMAD story lane passes `--story 12.3.4`, which matches no manifest and never should,
+    # and warning there would put a false alarm on every story close-out in the system.
+    lane = lane_slug_here(project)
+    if not args.story:
+        if not lane:
+            wf.die("devrecord needs --story: no task.yaml declares the branch you are on, "
+                   "so there is no manifest to read the lane slug from")
+        args.story = lane
+        say(f"jira-feed: --story defaults to `{lane}` - this lane's task.yaml branch slug")
+    elif lane and wf.norm_id(args.story) != wf.norm_id(lane):
+        warn(f"--story '{args.story}' is not this lane's slug: the tracked task.yaml for the "
+             f"branch you are on says `{lane}`. Filing under a second slug POSTS A SECOND "
+             f"record instead of updating this lane's, and `check` will call it a fork "
+             f"(SCC-174). Pass `{lane}` unless you really are opening another lane's record.")
+
     body, empty = render_devrecord(project, args.story, args)
     for name in empty:
         warn(f"the '{name}' bucket is empty - pass --{name.rstrip('s')}, or accept that "
@@ -1946,9 +2080,41 @@ def cmd_check(args) -> int:
                                   f"which lane filed what. A real record's header reads "
                                   f"`Dev Record - <lane> (<stage>, <date>)`")
         elif len(by_id) > 1:
-            rep.info("devrecord", f"{args.key}: {len(by_id)} Dev Records, one per lane "
-                                  f"({', '.join(sorted(by_id))}) - a follow-on lane rides the "
-                                  f"ticket it came from, so this is the designed state")
+            # ⛔ SCC-174. Two ids used to be read as self-evidently two lanes, and that is
+            # exactly backwards: `devrecord` picks update-vs-create off the SLUG, so filing ONE
+            # lane under two slugs is how a ticket gets two ids in the first place. The check
+            # was blind precisely when the bug happens (the slugs differ) and loud only once it
+            # had been fixed (the slugs match) - it answered "are these two lanes?" when the
+            # question is "is this one lane filed twice?". Live instance: AVCH-59, 2026-08-15.
+            #
+            # The id strings cannot settle it, so stop asking them. A lane leaves a tracked
+            # `task.yaml branch:` behind, or a prefixed ref, or both. An id nothing claims is
+            # not a lane.
+            project = resolve_root(getattr(args, "project", None), need_board=False)
+            lanes = lane_slugs(project)
+            ids = ", ".join(f"`{s}`" for s in sorted(by_id))
+            newest = record_story_id(records[-1])
+            if lanes is None:
+                rep.warn("devrecord", f"{args.key}: {len(records)} Dev Records under "
+                                      f"{len(by_id)} ids ({ids}), and {project} is not a git "
+                                      f"checkout - so nothing here can tell two LANES from one "
+                                      f"lane filed under two slugs. Point --project at the repo "
+                                      f"the lanes live in; a clean exit off unreadable evidence "
+                                      f"is what this check was written to stop")
+            elif [s for s in sorted(by_id) if s not in lanes]:
+                orphans = ", ".join(f"`{s}`" for s in sorted(by_id) if s not in lanes)
+                rep.warn("devrecord", f"{args.key}: FORKED Dev Record - {len(records)} records "
+                                      f"under {len(by_id)} ids ({ids}), but {orphans} is "
+                                      f"claimed by no tracked `task.yaml` branch: and no "
+                                      f"branch ref. That is not a second lane, it is ONE lane "
+                                      f"filed under two slugs. Newest: `{newest}`. Delete the "
+                                      f"record filed under the slug that is not a lane, then "
+                                      f"re-post with --story <the manifest's branch slug>")
+            else:
+                rep.info("devrecord", f"{args.key}: {len(by_id)} Dev Records, one per lane "
+                                      f"({', '.join(sorted(by_id))}) - each id is claimed by a "
+                                      f"manifest or a branch, and a follow-on lane rides the "
+                                      f"ticket it came from, so this is the designed state")
         else:
             rep.info("devrecord", f"{args.key}: one Dev Record "
                                   f"({len(field_text(records[0].get('body')))} chars)")
@@ -1990,7 +2156,8 @@ def main() -> int:
 
     p_dev = sub.add_parser("devrecord", help="post/update THE Dev Record comment")
     common(p_dev)
-    p_dev.add_argument("--story", required=True)
+    p_dev.add_argument("--story", help="the lane slug this record is filed under; defaults "
+                                       "to the branch slug in this lane's task.yaml (SCC-174)")
     p_dev.add_argument("--key", help="the ticket; required with --apply")
     p_dev.add_argument("--walkthrough", help="explicit walkthrough.md (else found by id)")
     p_dev.add_argument("--decision", action="append", metavar="TEXT")

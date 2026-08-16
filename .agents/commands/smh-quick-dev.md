@@ -416,7 +416,7 @@ secondary_repos: []
 **The Dev Record** — file it now, because this lane may end here:
 
 ```bash
-python3 .agents/scripts/jira_feed.py devrecord --key <KEY> --story <branch-slug> \
+python3 .agents/scripts/jira_feed.py devrecord --key <KEY> \
        --stage quick-dev --walkthrough <the walkthrough> \
        --outcome "<what shipped, one line>" --verdict "<the Step 4 verdict>" \
        --decision "<a ruling made while building>" --pitfall "<what nearly bit>" \
@@ -424,7 +424,11 @@ python3 .agents/scripts/jira_feed.py devrecord --key <KEY> --story <branch-slug>
 ```
 
 **Exactly one Dev Record per ticket** — the script finds an existing record and UPDATES it, so a later
-`/smh-close-task-merge-tree` ends with one current record instead of two partial ones. **Never pass
+`/smh-close-task-merge-tree` ends with one current record instead of two partial ones. ⛔ **It finds it
+by the SLUG, not by `--key`, so do not pass `--story` (SCC-174).** The slug is read from the
+`task.yaml` you wrote in Step 0 — the same source the close-out uses, which is the whole point: this
+step filing AVCH-59 under `main-write-gate` while the close-out passed `avch-59-main-write-gate` gave
+the ticket two records and `check` called it "the designed state". **Never pass
 `--append-new`.** It reads the ticket back and exits 2 if the comment is not there; a non-zero exit
 means the record did **not** land — report that, not success.
 
