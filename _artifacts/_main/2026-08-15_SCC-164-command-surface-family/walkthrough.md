@@ -316,6 +316,126 @@ verbatim 2026-08-16: *"this is a reocurring error we need to fix"* / *"no not me
 ⚠ It arms on **landing**: `$CLAUDE_PROJECT_DIR` is the main checkout, so the worktree's
 `settings.json` has no effect until this lane merges.
 
+# Part 5 — B (SCC-166): the story lane gains its twin's two steps, adapted
+
+**The gap, measured.** `/smh-code-review` carried a **Step 0.7 blast-radius re-derivation** and a
+**Step 2 acceptance audit**; `/cicd-code-review` carried neither. Both are absent for no reason —
+the hazard is the same one branch further in. Sibling *stories* land on the epic branch while a
+story is built, so the blast radius `/cicd-self-audit` traced that morning can describe a tree that
+no longer exists: every gate green, and a reference an epic-mate moved out from under you.
+
+**⛔ The adaptation is the whole part.** A Task lane merges into `main`, so smh re-derives against
+`origin/main`. A story lane merges into `epic/<JIRA-KEY>-<slug>`. Copy-pasting smh's step would have
+re-derived against a branch the story never meets — it reports *"nothing moved"* while the epic-mate
+that did move the file lands anyway. That is the exact stale-ref defect **Part 4 (SCC-165) had just
+swept out of this command family**, re-planted three lines under the guard that removes it. So the
+ref is pinned **both ways**: `origin/$EPIC` must be present *and* `origin/main` must be absent.
+
+**Ground truth vs the plan.** The plan said `cicd-push-e2e.md` carried the personal name at `:13`
+and `:134` — **two** lines. It carries **six**: `:13, :43, :45, :118, :134, :148`. All six now read
+*the operator*; `:46`'s *"his direct ask"* became *"their direct ask"* in the same pass. The
+toolkit-wide count at this commit is **220 occurrences across 64 files** (the plan recorded 213 at
+`a0aceaf`), and it stays out of scope by the plan's own F7 ruling — `rules/operator-profile.md` is a
+file where the name IS the subject, so a blanket sweep needs an allowlist and its own ruling.
+
+## What changed
+
+| File | Change |
+|---|---|
+| `.agents/commands/cicd-code-review.md` | Step 0 heading + a `rev-parse` echo block ("from command output, never from belief"); **new Step 0.7** (blast radius vs `origin/$EPIC`, three written answers, absorb-before-verdict); **new Step 1.5** (acceptance audit, CONCERNS floor, drift direction); frontmatter description updated to name both |
+| `.agents/commands/cicd-push-e2e.md` | six named-human referents → *the operator*; one gendered pronoun → *their* |
+| `.agents/scripts/tests/test_command_surfaces.py` | **wired into blocks `CS-01`…`CS-10`**, then extended with **`CS-11`** — the review-twin contract |
+| `docs/_scc_sops_prds/workflows_testing_SOP.md` | a ⓘ block under `### ③ /cicd-code-review`; the `test_command_surfaces.py` row now names CS-11 |
+| launcher mirrors | `.opencode/commands`, `.agents/workflows`, `.claude/skills` re-synced (`-NoGlobals`) |
+
+**Step 1.5, not Step 2.** cicd's `## Step 2` is the gate's opt-in check. Renumbering it to reach
+literal parity with smh would have moved a heading two other files cite, to buy nothing: the
+contract is that the audit runs **after the blind hunt and before the verdict**, and `1.5` is that
+position. CS-11 pins the heading's *substance*, never its number.
+
+## The lane trap this part had to clear first
+
+`test_command_surfaces.py` had **zero** `c.block(` calls, which is what keeps a file *outside* the
+ORPHAN walker's wired set. Adding one block for CS-11 would have opted the file in and turned its
+**57 existing checks into orphans** — the same trap Parts 1 and 2 sprang on `test_gate_receipt.py`
+and `test_jira_feed.py`, discovered only when the lane tip went red while every part's own file was
+green. So the file was **fully wired first**, along its own `# ── … ──` section comments, with the
+three cross-section values (`sync_ps1`, `hand_owned`, `SOURCELESS`) hoisted above the first block so
+a filtered run cannot `NameError`. Proven behaviour-neutral:
+
+```
+python3 .agents/scripts/tests/test_command_surfaces.py   -> 57/57, verdict BYTE-IDENTICAL to pre-wiring
+python3 ... --case "CS-07"                               -> 4/4,  filter 'CS-07': matched 1/10 blocks
+python3 ... --case "CS-99"                               -> exit 3 (NO_MATCH, not a false kill)
+python3 .agents/scripts/tests/test_suite_runner.py       -> 62/62 (ORPHAN walker clean, file now wired)
+```
+
+## RED → GREEN
+
+RED, before a single command file was touched (`red-part5.txt`): **10/15**, five failures, one per
+defect —
+
+```
+[FAIL] cicd-code-review.md carries the blast-radius re-derivation, with all three answers: no such section
+[FAIL] ⭐ cicd's blast radius re-derives against the EPIC branch, and never origin/main
+[FAIL] cicd-code-review.md carries the acceptance audit, with its floor and the drift direction: no such section
+[FAIL] cicd-code-review.md Step 0 resolves its target from command output, never from belief
+[FAIL] cicd-push-e2e.md names a generic referent, not a person: 6 line(s): [13, 43, 45, 118, 134, 148]
+```
+
+GREEN after the edits: **CS-11 18/18**, whole file **75/75**, floor **32/32 files**,
+`workflow_lint --toolkit-only` → `0 error(s), 0 warning(s), 8 info`.
+
+**What CS-11 pins, and why it is not a prose grep.** Every item is a command the step *runs* or a
+shape it must *produce* — `merge-base`, `merge-tree`, `worktree list`, and three numbered answers —
+never a phrase. A wording pin is satisfied by a paraphrase that runs nothing, which is this repo's
+own `prose-pinning-guards-are-vacuous` lesson reproduced inside the guard. The section is read with
+`md_section`, heading-anchored and bounded at the next `## `, so a step that drifts *after* the
+verdict it governs cannot pass on a file-wide match.
+
+## Mutants — 8/8 killed, restore verified
+
+`sweep-part5.json`. Five behavioural, three CODE-DERIVED from the guard's own source.
+
+| Mutant | Kills | Result |
+|---|---|---|
+| B1 the trap itself: `merge-base HEAD origin/main` back in Step 0.7 | `never origin/main` | KILLED |
+| B2 Step 0.7's heading stops naming the blast radius | blast-radius parity | KILLED |
+| B3 the acceptance audit drops back out | acceptance parity | KILLED |
+| B4 Step 0 resolves from belief again | Step 0 echo | KILLED |
+| B5 one named human returns to the shipping command | generic referent | KILLED |
+| B6 CODE-DERIVED `blast_gaps` stops requiring the three answers | its control | KILLED |
+| B7 CODE-DERIVED `story_ref_ok` keeps the positive arm, drops the trap arm | its control | KILLED |
+| B8 CODE-DERIVED `name_hits` goes blind | its control | KILLED |
+
+`-- restore verified: bytes match, nothing was committed, and git diff --quiet 604b124a is clean --`
+
+## The AP twin — read, two things ported, one recorded as not porting
+
+Editing the primary made `test_workflow_lint.py` red on its own: *`cicd-code-review-AP.md:
+ap_reconciled names 91e6095, but cicd-code-review.md is now at 604b124`*. That linter is the only
+thing standing between the two bodies and silent divergence (`sudo-commands-have-ap-twins-that-drift`),
+and its rule is **re-diff and restamp — never just bump the sha**. The reading:
+
+| The primary gained | Ports? | Why |
+|---|---|---|
+| Step 0.7 blast radius vs `origin/$EPIC` | **yes**, compressed | The hazard is *worse* unattended, not smaller — a sibling story lands and nobody is watching. It is **git output, not a read**, so it does not touch the twin's two-ingest budget, and the twin's "no full-repo sweep" ban is about READS |
+| Step 0's `rev-parse` echo | **yes**, two lines | The orchestrator hands this twin `REPO`/`WORKTREE`; echoing what git returned is what makes a wrong tree visible instead of assumed |
+| Step 1.5 acceptance audit | **not as a section** | The twin already runs the acceptance pass through the engine's Acceptance Auditor in `review_mode: full`. What ported is the two clauses that **bind the verdict** — no evidence is not satisfied (CONCERNS floor), diff-beyond-the-list is drift — because those are law, not habit text. Same reading the SCC-160 stamp used for the "never produces a ticket" sentence |
+| the frontmatter description | no | The twin has its own |
+
+**Left deliberately:** the twin's line 41 still names one human. The generic-referent sweep is
+SCOPED by the plan's F7 ruling to the two files this part edits; the toolkit-wide pass is a separate
+confirm-scope task. Recorded in the stamp header so the next reader does not re-discover it as new.
+
+**B7 is why the controls were refactored mid-part.** The first cut wrote its controls as literals
+(`"origin/main" in <a string I built>`), which proves the literal and not the rule: drop the
+`origin/main` arm from the live check and a restated control stays green while the guard goes blind.
+`story_ref_ok` and `name_hits` are now pure functions called by the live checks **and** by their
+controls, so B7 and B8 have something to kill. Same discipline the own-list controls in `CS-08`
+already followed.
+
+
 ## Your Actions
 
 _Filled in at the end of the lane._

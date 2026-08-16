@@ -1,0 +1,72 @@
+{
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_command_surfaces.py"
+  ],
+  "mutants": [
+    {
+      "id": "B1 the trap itself - the trunk substituted for the epic branch in the merge-base",
+      "file": ".agents/commands/cicd-code-review.md",
+      "original": "BASE=$(git -C \"$WORKTREE\" merge-base HEAD \"origin/$EPIC\")",
+      "mutated": "BASE=$(git -C \"$WORKTREE\" merge-base HEAD origin/main)",
+      "case": "never origin/main",
+      "block": "CS-11"
+    },
+    {
+      "id": "B2 RELOCATE - Step 0.7's heading stops naming the blast radius, so nothing finds it",
+      "file": ".agents/commands/cicd-code-review.md",
+      "original": "## Step 0.7 — ⭐ Re-derive the blast radius against the **current epic branch** (MANDATORY)",
+      "mutated": "## Step 0.7 — ⭐ A pre-verdict pass against the **current epic branch** (MANDATORY)",
+      "case": "cicd-code-review.md carries the blast-radius re-derivation",
+      "block": "CS-11"
+    },
+    {
+      "id": "B3 the acceptance audit is dropped back out of the story lane",
+      "file": ".agents/commands/cicd-code-review.md",
+      "original": "## Step 1.5 — Acceptance audit  *(against the story's acceptance criteria, not against the code)*",
+      "mutated": "## Step 1.5 — A quick read of the story",
+      "case": "cicd-code-review.md carries the acceptance audit",
+      "block": "CS-11"
+    },
+    {
+      "id": "B4 Step 0 goes back to resolving the target from belief",
+      "file": ".agents/commands/cicd-code-review.md",
+      "original": "## Step 0 — Resolve the target project (FIRST) — from command output, never from belief",
+      "mutated": "## Step 0 — Resolve the target project (FIRST — before any other step)",
+      "case": "Step 0 resolves its target from command output",
+      "block": "CS-11"
+    },
+    {
+      "id": "B5 one named human comes back into the shipping command",
+      "file": ".agents/commands/cicd-push-e2e.md",
+      "original": "Invoking this command IS the operator's per-merge sign-off",
+      "mutated": "Invoking this command IS Daniel's per-merge sign-off",
+      "case": "cicd-push-e2e.md names a generic referent",
+      "block": "CS-11"
+    },
+    {
+      "id": "B6 CODE-DERIVED - blast_gaps stops requiring the three written answers",
+      "file": ".agents/scripts/tests/test_command_surfaces.py",
+      "original": "            gaps += [f\"answer {i}\" for i in (1, 2, 3)",
+      "mutated": "            gaps += [f\"answer {i}\" for i in ()",
+      "case": "CONTROL: a blast-radius section with only two answers is caught",
+      "block": "CS-11"
+    },
+    {
+      "id": "B7 CODE-DERIVED - story_ref_ok keeps the positive arm and drops the trap arm",
+      "file": ".agents/scripts/tests/test_command_surfaces.py",
+      "original": "            return \"origin/$EPIC\" in body and \"origin/main\" not in body",
+      "mutated": "            return \"origin/$EPIC\" in body",
+      "case": "CONTROL: origin/main planted in a story-lane section is caught",
+      "block": "CS-11"
+    },
+    {
+      "id": "B8 CODE-DERIVED - name_hits goes blind, so every file reads clean forever",
+      "file": ".agents/scripts/tests/test_command_surfaces.py",
+      "original": "            return [i for i, ln in enumerate(text.splitlines(), 1) if NAME in ln]",
+      "mutated": "            return [i for i, ln in enumerate(text.splitlines(), 1) if False]",
+      "case": "CONTROL: the personal-name rule fires on a planted name",
+      "block": "CS-11"
+    }
+  ]
+}

@@ -1855,7 +1855,13 @@ design reversal, not a tuning knob.
 **Stage 4 runs the house review engine (SCC-126).** The robot's reviewer no longer carries a review
 of its own: `/cicd-code-review-AP` resolves the inputs — the diff alone first, then one batched
 grounding pull — and hands them to `.agents/skills/code-review-engine/`, which runs its lenses in
-parallel. Nothing changes about what you type. Three things change underneath, and the first is the
+parallel. **Since SCC-166 it also re-derives the blast radius against `origin/$EPIC`
+before Ingest 1**, and echoes the branch and sha `rev-parse` returned rather than the ones the
+launch context implied — the same two additions the human lane got, ported because the hazard is
+*worse* unattended, not smaller: a sibling story lands on the epic branch and nobody is watching.
+It costs no read budget (git output is not an ingest), and the twin's ban on a full-repo sweep is
+about **reads**. The acceptance audit did **not** port as a step — the twin already runs that pass
+through the engine's Acceptance Auditor — only its two verdict-binding clauses did. Nothing changes about what you type. Three things change underneath, and the first is the
 one that actually moves the bill:
 
 - **Stage 4 goes from one agent to an orchestrator plus five lenses.** It used to be a single

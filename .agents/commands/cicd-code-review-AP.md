@@ -1,7 +1,24 @@
 ---
 description: Autopilot (headless) Review+Fix+Gate command — review the implementation in the shared autopilot run folder, apply fixes, run the TEA test gate, and hand to Daniel. Modeled off /cicd-code-review but tuned for agent-to-agent handoff. NOT for interactive use; the autopilot orchestrator invokes it.
 platforms: [claude, opencode]
-# Diffed against /cicd-code-review at this sha; ONE sentence ported (SCC-160 follow-on, 2026-08-15).
+# Diffed against /cicd-code-review at this sha; THREE things read, TWO ported (SCC-166, 2026-08-16).
+# The primary gained Step 0.7 (blast radius vs origin/$EPIC), Step 1.5 (acceptance audit) and a
+# rev-parse echo in Step 0.
+#   - Step 0.7 PORTS, compressed: the hazard is worse here, not smaller - sibling stories land on
+#     the epic branch and nobody is watching this run. It is git output, so it costs no read budget,
+#     and the ban above is on a full-repo READ sweep, which this is not.
+#   - Step 0's echo PORTS as two lines. The orchestrator hands this twin REPO/WORKTREE; echoing what
+#     rev-parse returned is what makes a wrong tree visible instead of assumed.
+#   - Step 1.5 does NOT port as a section. This twin already runs the acceptance pass through the
+#     engine's Acceptance Auditor in review_mode: full. What ported is the two clauses that BIND THE
+#     VERDICT - no evidence is not satisfied (CONCERNS floor), and diff-beyond-the-list is drift -
+#     because those are law, not habit text. Same reading as the SCC-160 stamp below.
+#   - the primary's frontmatter description does not port; this twin has its own.
+# NOT in scope and deliberately left: line 41 still names one human. The generic-referent sweep was
+# SCOPED by plan ruling F7 to the two files SCC-166 edits; the toolkit-wide pass (220 hits / 64 files
+# at this sha) is a separate confirm-scope task, because rules/operator-profile.md is a file where
+# the name IS the subject.
+# Previous stamp (SCC-160 follow-on, 2026-08-15): ONE sentence ported.
 # The primary's Step 1 became "fix in thread": every patch applied in-lane before any gate, and
 # nothing that survived the relevance gate leaves the lane as a ticket (residue, proposed, or
 # decided). This twin already applied fixes in-lane; the "never produces a ticket" sentence is
@@ -30,7 +47,7 @@ platforms: [claude, opencode]
 #      fixes the blind-lens-first ordering that override requires. The primary is
 #      interactive, so handing prompts back is a real option there and it keeps that path.
 # Re-diff and restamp when the linter says this sha is stale — do NOT just bump it.
-ap_reconciled: 91e60952fa763a49a345a241a05a0cc101265c29
+ap_reconciled: 604b124a501b6dbc6cc056dd72d6bcdd02b1fede
 ---
 
 # /cicd-code-review-AP — Autopilot Review + Fix + Test Gate (Murat)
@@ -49,11 +66,43 @@ improvise** — you invoke the house engine and then act on what it returns.
   audit, appended by `/cicd-self-audit-AP`).
 - `walkthrough.md` — the Dev stage's outline (`## Task Checklist` + `## Evidence` + `## Suite Ledger`
   + `## Your Actions`).
-- the target story (for the acceptance pass).
+- the target story (for the acceptance pass). **Two clauses of that pass bind the verdict**
+  (ported from the primary, SCC-166): an item with **no evidence is not satisfied**, however
+  obviously true it looks — **CONCERNS floor** — and the other direction, **anything in the
+  diff beyond the list is drift**: fix it or name why it stays.
 
 > **Do NOT open these first.** They are Ingest 2 — see the two-ingest contract below. The engine's
 > blind lens runs on the diff alone, and the builder's own account of the work is precisely what
 > biases a reader against finding what is wrong with it.
+
+## Before Ingest 1 — say which tree, then re-derive the blast radius (SCC-166)
+
+**Echo what git returned, never what the launch context implied.** Two lines, before anything else:
+
+```bash
+git -C "$WORKTREE" rev-parse --abbrev-ref HEAD && git -C "$WORKTREE" rev-parse --short HEAD
+git -C "$PROJECT_ROOT" worktree list                 # sibling story lanes still live
+```
+
+**Then re-derive the blast radius against the epic branch.** Your own `/cicd-self-audit-AP` traced it
+before the code existed; sibling stories land on `epic/<JIRA-KEY>-<slug>` while this one is built, so
+that trace can describe a tree that is gone. Unattended, nobody catches it downstream.
+
+```bash
+env -u GITHUB_TOKEN git -C "$PROJECT_ROOT" fetch origin
+BASE=$(git -C "$WORKTREE" merge-base HEAD "origin/$EPIC")
+git -C "$WORKTREE" diff --name-only "$BASE".."origin/$EPIC" | sort > /tmp/theirs.txt
+git -C "$WORKTREE" diff --name-only "origin/$EPIC"...HEAD | sort > /tmp/mine.txt
+grep -Fxf /tmp/mine.txt /tmp/theirs.txt                                               # the TRUE overlap
+git -C "$WORKTREE" merge-tree --write-tree --messages HEAD "origin/$EPIC" | head -40  # conflicts, early
+```
+
+⛔ **`origin/$EPIC`, never the trunk** — a story lane merges into its epic branch, and re-deriving
+against the trunk reports "nothing moved" while the epic-mate that *did* move the file lands anyway.
+Answer three things in one paragraph: **1.** did anything this diff references move, get renamed or
+get deleted · **2.** the true overlap and the `merge-tree` result · **3.** which sibling lane must
+land first. *"Nothing moved"* is a reportable result. This is **git output, not a read** — it does
+not touch the two-ingest budget below.
 
 ## The work — resolve the inputs, then run the engine in CAPPED mode
 
