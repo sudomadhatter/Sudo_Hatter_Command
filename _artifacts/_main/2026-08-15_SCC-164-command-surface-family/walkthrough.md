@@ -31,6 +31,17 @@ SCC-163). The arming ruling was closed separately, quoted in § ARMING.
 - [x] **Part M · SCC-182** — a `cd` out of the workspace retargets every later relative path (discovered mid-lane, minted as Part M)
 - [x] **Part 5 · B / SCC-166** — cicd-code-review gains its twin's two steps, ADAPTED (**6** personal-name lines, not the 2 the plan measured; AP twin re-diffed and restamped)
 - [x] **Part 6 · H / SCC-176** — the plan-time port checklist (the sketched `\bport\b` key matched **7** unrelated bodies and none of the three; re-keyed on the phrase step 2 introduces)
+- [x] **Code review (2026-08-16)** — `/smh-code-review`, 5/5 lenses, **Verdict CONCERNS @ `971d3b0f`**;
+      12 findings, **all 12 fixed in thread**, 5 relevance kills recorded with reasons.
+  - The one that mattered: **the close-out ceremony could not run.** Part 7 removed `--story`
+    from `/smh-close-task-merge-tree` Step 4, but Step 3 checks out `main` first — so the slug
+    default resolved to `""` and `devrecord` exited 2 *after* the merge. Fixed with
+    `--project "$REPO"` on `devrecord` and `check`.
+  - Part M's new guard had **three live bypasses** (a `<<<` herestring, an arithmetic `1 << 2`,
+    and a quoted `cd "/tmp/my dir"`), and its test file's `cwd` default was frozen at `""`, so
+    the whole cwd-relative branch was untested. All fixed; 39/39 → **49/49**, mutants 6 → **10/10**.
+  - The suite caught the reviewer too: editing `cicd-code-review.md` without re-diffing its AP
+    twin went **31/32** until the twin was reconciled and restamped.
 - [x] **Part 7 · F / SCC-174** — jira_feed check stops blessing a forked Dev Record; the slug now has ONE source and three Task surfaces stopped typing it (the sweep found a case that never reached the code it named) ⛔ CUT LINE
 - [ ] **Part 8 · C / SCC-171** — the token path as git gives it
 - [ ] **Part 9 · G / SCC-175 + Part 12 · L / SCC-180** — no post-merge write to main; the `--hard` remedy
@@ -263,6 +274,11 @@ than the floor. Two separate causes:
    mid-lane body is never pushed to the machine-wide opencode/Antigravity/Codex caches.
 
 ### Part M · SCC-182 — a `cd` out of the workspace retargets every later relative path
+
+> ⚠ **Superseded in part by the 2026-08-16 code review.** The totals below are the build's.
+> The review found three live bypasses in this guard and a frozen default that left its
+> cwd branch untested — R2, R3, R4, R5, R10 in the findings table. Current state: **49/49**
+> checks and **10/10** mutants killed (the 6 declared here plus 4 for the fixes).
 
 **Discovered mid-lane, minted as a lettered PART, not a new ticket** (SCC-170's rule). Looked
 first: all 13 riders A–L, none covers it; the parent index row was written at an asserted anchor
@@ -712,6 +728,161 @@ today. Noted rather than guarded — the same call `record_story_id` already mad
 an id, and the failure is a warning naming both ids, not a silent wrong answer.
 
 
+## Code Review (2026-08-16)
+
+Verdict: CONCERNS @ 971d3b0fdaf092aee5d35194a67a0050dd5ad152
+
+Suite evidence measured on `971d3b0f` — the same sha, on a clean tree; the walkthrough commit that
+carries this section is artifacts-only and does not stale it.
+
+**Scope** — `origin/main...HEAD`, 88 files / 37 commits, the eight BUILT parts (1 · J · K · A · M · B · H · F).
+**Method** — `/smh-code-review`: five-lens fan-out through `code-review-engine`, evidence verification
+by re-measurement, the command-centre gate, and `/smh-clean-code-audit` nested.
+
+**review-runtime: fan-out.** All five lenses ran as clean-context subagents, first attempt, no retries.
+
+```
+lenses_run:      5/5   (Blind Hunter ok · Edge Case ok · Literal-Correctness ok ·
+                        Acceptance Auditor ok · Test-Adequacy ok)
+lenses_na:       none  (review_mode: full — the plan is the spec)
+findings:        12 patch · 0 decision · 0 defer   (5 relevance kills)
+severity_floor:  CONCERNS
+notes:           lens_budget standard. ⚠ CALLER-SIDE SCOPING DEFECT, mine not the engine's — I split
+                 the diff into code/tests/md patches and excluded `.claude/**` as "generated
+                 mirrors". `.claude/hooks/guard-cwd-escape.py` is NOT a mirror; it is an ADDED file
+                 in this diff. Two lenses correctly flagged it as missing and both hedged the
+                 finding on not being able to see it. They were right to; I was wrong to withhold
+                 it. Dismissed as a finding, recorded as a method defect.
+                 The Literal-Correctness lens received 20 of 88 files (its cap) and named the
+                 withheld set; it did not spend its top-up.
+```
+
+### Findings — the authoritative record
+
+Every survivor was **fixed in this lane**. No follow-on ticket, no residue row (operator rulings
+2026-08-15, both).
+
+| # | file:line | Sev | Failure scenario | Disposition |
+|---|---|---|---|---|
+| R1 | `.agents/commands/smh-close-task-merge-tree.md:440` | **critical** | Part 7 removed `--story` from the ceremony's `devrecord`, but Step 3 runs `git checkout main` first. `lane_slug_here()` returns `""` on a branch with no `/`, so `cmd_devrecord` hits `wf.die("devrecord needs --story…")` → **exit 2, after the merge has already landed**. Measured: `lane_slug_here(main checkout)` → `''`. Every Task close-out, including this lane's own | applied @ `83ecdc7` — `--project "$REPO"` on `devrecord` **and** `check` |
+| R2 | `.agents/hooks/guard-cwd-escape.py:84` | important | `cmd.startswith("<<")` also matches a **herestring** `<<<`; the delimiter scan finds no terminator line and returns `n`, swallowing the rest of the command. `cat <<< "x"; cd /tmp && ls` → **ALLOWED**, while the identical `cd` alone → `ask` | applied @ `83ecdc7` |
+| R3 | `.agents/hooks/guard-cwd-escape.py:115` | important | Same root cause, different shape: `echo $(( 1 << 2 )) && cd /tmp && ls` → **ALLOWED**. My first fix (special-casing `<<<`) did not cover it — the real fix is that no newline after the delimiter means it is not a heredoc at all | applied @ `83ecdc7` |
+| R4 | `.agents/hooks/guard-cwd-escape.py:131` | important | `first_word_and_arg` used `seg.split()`, which is not quote-aware. `cd "/tmp/my dir"` yields arg `"/tmp/my` — not absolute, so it was joined onto cwd and judged **inside** the workspace. Measured: `cd "/tmp/my dir" && ls` → ALLOWED, `cd '/tmp/my dir' && ls` → ALLOWED | applied @ `83ecdc7` — `shlex.split` with a `str.split` fallback, so FAIL OPEN survives |
+| R5 | `.agents/scripts/tests/test_cwd_escape_hook.py:33` | important | `def call(…, cwd: str = WS, …)` with `WS = ""` at module level: Python binds defaults **once, at def time**, so `main()`'s `global WS` rebind never reached it. Every payload shipped `"cwd": ""`, the hook fell through `data.get("cwd") or root`, and the entire cwd-relative branch was untested — `cd ..` read as "caught" only because cwd fell back to the root | applied @ `83ecdc7`; pinned both ways at `5476379` (`cd ..` nested = allowed, same `cd ..` from root = refused) |
+| R6 | `.agents/commands/cicd-code-review.md:63-67` | important | Part 5's new MANDATORY Step 0.7 runs four `git -C "$WORKTREE"` commands; nothing ever assigns `WORKTREE` (Step 0.5 says "cd into it" in prose). `git -C ""` does **not** error — git documents it as "leave the cwd unchanged" — and the `>` redirects still create both `/tmp` files, so `grep -Fxf` prints nothing and the step reports its own "nothing moved" clean result. A vacuous green inside the step written to prevent vacuous greens | applied @ `83ecdc7` — `WORKTREE=` bound in the block |
+| R7 | `.agents/scripts/mutation_sweep.py:225,232` | important | The two verdict lines print a raw `⛔` (U+26D4). On the PC's cp1252 console `print()` raises `UnicodeEncodeError` **inside the mutant loop**; it is not `Terminated`, so it escapes `main()` before the K1 end-state check and the K4 full unfiltered run — and exits **1**, the code the module reserves for "a mutant survived". A crash indistinguishable from a result | applied @ `83ecdc7` — `reconfigure(errors="backslashreplace")`, the call `_harness.py` already makes |
+| R8 | `.agents/scripts/workflow_lint.py:83` | important | The new `work-consolidation` row's third arm was `landing\s*:\s*partial`, but the key `task_preflight` implements is `landing_mode` (renamed because `task.yaml` already has a nested `landing:`). The arm **could never match** — a check that cannot fail — so a command body documenting the partial-landing contract without the literal `riders:` was silently exempt. The row also had **no test coverage at all** | applied @ `83ecdc7` — arm fixed, and CS-12 now covers this row; non-vacuity proven by mutant (reverting the key reds 2 checks) |
+| R9 | `docs/_scc_sops_prds/workflows_testing_SOP.md:1154` | important | The SOP taught the retired `landing:` key and claimed "an unrecognised value fails CLOSED, so a typo blocks rather than relaxes". False for the **key**: a column-0 `landing: partial` is not recognised at all, `manifest_landing` returns `None`, the unknown-value error never fires, and the lane is gated as if nothing was declared — it fails **silently**, not closed | applied @ `83ecdc7` |
+| R10 | `.agents/hooks/guard-cwd-escape.py:150` | suggestion | `~/x` was short-circuited to "leaves the workspace" without expansion, so `cd ~/Sudo_Hatter_Command` — the workspace root itself — was refused. `ask` is an auto-DENY in headless mode (`hook-ask-becomes-autodeny-in-auto-mode`), so the tilde spelling of a legal in-workspace `cd` would kill an autopilot lane. Note the asymmetry that made it a parse gap, not policy: `cd $HOME/…` already fell through to "cannot tell" → allow | applied @ `83ecdc7` |
+| R11 | `.agents/scripts/task_preflight.py:300,316,678` | nitpick | Three docstrings/comments teach `landing: partial` — the exact key the constant eleven lines above them was renamed away from. Someone copying the prose writes a key nothing reads | applied @ `83ecdc7` |
+| R12 | `.agents/scripts/gate_receipt.py:128` | nitpick | One blank line before a new module-level function; its sibling in the same hunk uses two (PEP 8 E302) | applied @ `83ecdc7` |
+
+**Found by the gate, not by a lens — and it caught me.** Re-running `run_all` after my own fixes went
+**31/32**: `test_workflow_lint.py` SCC-82 G reported `cicd-code-review-AP.md: ap_reconciled names
+604b124, but cicd-code-review.md is now at 83ecdc7`. I had edited a command without re-diffing its
+AP twin. Re-diffed: the `WORKTREE=` binding is **NOT ported** — the twin's own header records that its
+orchestrator hands it `REPO`/`WORKTREE`, so an in-body binding would let a stale value shadow what the
+caller passed. Reason written into the twin's reconciliation notes, restamped @ `971d3b0f`.
+
+### Relevance kills — recorded with their reason, not silently dropped
+
+- **"`.claude/hooks/guard-cwd-escape.py` is not in the change set"** (Blind Hunter, Acceptance
+  Auditor). It **is** — `git diff --name-status` shows `A .claude/hooks/guard-cwd-escape.py`, byte-identical
+  to the canonical source. My patch scoping hid it from them. Method defect, mine; see `notes`.
+- **The FORK verdict fires on BMAD story ids** (Blind Hunter, Acceptance Auditor). Mechanically true,
+  and the walkthrough's own **Known limit** already engages it: story ids are branch slugs and story
+  numbers, a story ticket carries one story, so two differing ids on one ticket does not occur; and the
+  failure is a warning naming both ids, not a silent wrong answer. The lenses could not see that section
+  (the Acceptance Auditor was deliberately starved of the walkthrough). The **real** half of their
+  finding — `check` resolving its repo from cwd — is R1's second half and is fixed.
+- **Part 3's M11 survivor.** Re-run independently: **10/11**, exactly as recorded. The rationale holds —
+  the empty-table refusal, the `original != mutated` validation, the unique-anchor pre-check, the
+  dirty-start refusal and the independent restore verification together make a single-fault no-op apply
+  unreachable. Kept as second-line defence, not deleted.
+- **20 of 32 test files are unreachable by the mutation tier** (Test-Adequacy). Confirmed and broader
+  than the brief stated — but **pre-existing**, and none of the seven test files this lane added or
+  changed has the unwired shape. It is the next lane's landmine, already named in `## Your Actions`.
+- **`index-row` rewrites the description through the lossy `adf_text`** (three lenses). The sharpest
+  unfixed observation, and recorded rather than patched: `adf_text`/`field_text` **pre-exist on
+  `main`** (neither is added by this diff), and the memory's own prescription — *"walk the ADF for
+  `text`/`hardBreak` nodes"*, never the rendered view — is what the code does. Making the round-trip
+  structure-preserving is a real piece of work on a pre-existing helper, outside this lane's acceptance.
+  **It is the reason this verdict is CONCERNS and not PASS.**
+
+### Gates
+
+| Gate | Result | Output |
+|---|---|---|
+| Enforcement suite | **PASS** | `python3 .agents/scripts/tests/run_all.py` → exit 0, `32/32 files passed` @ `971d3b0f`, clean tree (receipt `gates/suite.json`) |
+| Toolkit lint | **PASS** | `workflow_lint.py --toolkit-only` → exit 0, `-- 0 error(s), 0 warning(s), 8 info --` @ `971d3b0f` (receipt `gates/lint.json`) |
+| Map linter | **PASS** | `check_maps.py --depth3-only --strict` → exit 0, silent @ `971d3b0f` (receipt `gates/maps.json`) |
+| Assertion evidence | **PASS** | every RED case re-run **by name**, all exit 0: `SCC-170 index-row` 10/10 · `SCC-170 partial landing` 14/14 · `SCC-178` 9/9 · `K2` 7/7 · `K3` 10/10 · `K4` 2/2 · `K5` 3/3 · `A1` 3/3 · `A2` 9/9 · `A3` 11/11 · `A4` 5/5 · `M1` 5/5 · `M7` 4/4 · `CS-11` 18/18 · `CS-12` 17/17 · `SCC-174 check` 16/16 |
+| Mutation tier | **PASS** | every table re-run against the **fixed** code: part3 **10/11** (M11, documented) · part4 4/4 · part5 8/8 · part6 8/8 · part7 9/9 · partM **10/10** (6 original + 4 new, for the review fixes). Restore verified on all six; tree clean after each |
+| SOP currency | **PASS** | proven in **both** directions: full 88-path set + no `[sop-ok]` → exit 0; the same set with the SOP withheld → **exit 1, "Commit rejected."**; withheld + `[sop-ok]` → exit 0 |
+| Link + anchor | **PASS** | all **16** markdown links introduced by the diff resolve. 33/39 backticked repo-shaped paths resolve; the 6 that do not are prose shorthand (`rules/INDEX.md`) or `.agents/scripts/walkthrough_roster.py`, which Part 11 declares as **new** and unbuilt |
+| Door parity | **N/A → verified anyway** | no command was added, renamed or deleted, so the row's trigger never fires. Checked regardless: CS-03 content parity green in the suite, and the three commands with no mirrors are `-AP` twins (excluded by name convention in `sync-agents.ps1`) and `cicd-mobile-error-team` (`platforms: [claude]`, its `.claude/skills` door present) |
+
+### Clean-Code Gate  (Step 3.5, `/smh-clean-code-audit` nested)
+
+Machine floor imported from the receipts above, per SCC-146 — not re-run. What this pass owed on its own:
+
+| Check | Result |
+|---|---|
+| `py_compile` | **PASS** — all 14 changed `.py` files compile, exit 0 |
+| JSON validity | **PASS** — all changed `.json` (receipts, six sweep tables, sync manifest) parse |
+| Comment contract (§2A) | **PASS** — every fix I applied carries a `why`, not a `what`; the repo's house style (the defect, the measured evidence, the consequence) is met in R1–R12 |
+| Convention table (§2C) | **PASS** — hyphenated command names, ticket key leading every commit subject, explicit-path staging throughout, generated doors regenerated through `sync-agents.ps1` rather than hand-edited |
+| Drift / bloat (imported from Step 1) | **one item, named below** |
+
+**Drift, named rather than cut:** `README.md` (3 lines, a Keyway secrets badge) is added by this lane and
+belongs to **no Part's file list**. Two lenses flagged it, and this lane's own memory
+`preflight-resolves-repo-from-cwd` says of it: *"the dirt was not mine… it belonged to another lane…
+Don't [clean it up]."* It is now committed under SCC-164's key. I am **not** deleting another lane's file
+on my own judgment — that is the operator's call, and it is carried as a DECISION row in `## Your Actions`.
+
+### Step 0.7 — the blast radius, re-derived against current `main`
+
+1. **Nothing moved.** `origin/main` is still `a0aceaf` — identical to this lane's merge-base — so no
+   sibling landed while it built. Every repo path and `#L` anchor the diff names still resolves.
+2. **True overlap: empty.** `git merge-tree --write-tree --messages HEAD origin/main` returns a clean
+   tree (`642ad5d`) with no conflict messages. `origin/main` is fully absorbed.
+3. **⚠ Landing-order dependency — `chore/SCC-183-direct-main-fastlane` is live** (10 commits, 0/0 with
+   origin). It does not conflict with this lane's *code*, but it overlaps on two files —
+   `_artifacts/_main/INDEX.md` (**conflicts**; a ledger, resolve by re-appending) and
+   `docs/_scc_sops_prds/workflows_testing_SOP.md` (auto-merges). Whichever lands second absorbs `main`
+   first. **This does not block SCC-164.** Its real cost falls on the NEXT lane — see `## Your Actions`.
+
+### Acceptance matrix  (Step 2 — every item paired with the assertion that proves it)
+
+The plan's per-Part acceptance is the contract. The Acceptance Auditor lens walked it independently in
+`full` mode; its findings are imported above rather than re-derived. What is mine is the pairing.
+
+| Part | Acceptance | The assertion that proves it | Verdict |
+|---|---|---|---|
+| 1 · SCC-170 | the consolidation rule is law; riders default; a parent index survives its own edit; partial landing declarable | `test_jira_feed.py --case "SCC-170 index-row"` 10/10 (append · lossy-drop refusal · idempotent no-op · dry run · empty description) · `test_task_preflight.py --case "SCC-170 partial landing"` 14/14 · **and the live preflight**, which printed the partial landing and named all 6 carried subtasks | **met** |
+| 1 (cont.) | the `_RULE_POINTERS` row makes the citation mechanical | ⚠ shipped with **no coverage**, and its third arm was dead — R8. **Now met**: CS-12 covers the row, both arms, both controls, mutant-proven | met **after R8** |
+| 2 · J · SCC-178 | `gate_receipt` stops counting its own `gates/` output as dirt | `test_gate_receipt.py --case "SCC-178"` 9/9, incl. all four widening negative controls | **met** |
+| 3 · K · SCC-179 | K1 mechanical end-state · K2 residue fails · K3 dirty/interrupt/empty/anchor · K4 full unfiltered run · K5 clean sweep exits 0 | `test_mutation_sweep.py` K2 7/7 · K3 10/10 · K4 2/2 · K5 3/3, and the tool re-run six times live in this review | **met** |
+| 4 · A · SCC-165 | no command diffs/counts/cuts against a bare local `main`; every ALLOWED row still matches a real line | `test_stale_base_refs.py` A1 3/3 · A2 9/9 · A3 11/11 · A4 5/5, incl. the ≥10-file floor that makes an empty glob a FAIL | **met** — census shipped **25**, not the plan's 20; the widening is the same defect class and the SOP records the real number |
+| M · SCC-182 | a top-level `cd` out of the workspace is caught, with both remedies; the sanctioned subshell passes; FAIL OPEN | `test_cwd_escape_hook.py` — was 39/39, ⚠ **with three live bypasses** (R2/R3/R4) and its cwd branch untested (R5). **Now 49/49** and 10/10 mutants | met **after R2–R5, R10** |
+| 5 · B · SCC-166 | Step 0.7 against `origin/$EPIC` never the trunk; Step 1.5 acceptance audit with its floor and drift direction; Step 0 resolves from command output | `test_command_surfaces.py --case "CS-11"` 18/18 with both negative controls · sweep part5 8/8 | met **after R6** — the step was present and correct in *content*; its bash block measured the wrong tree |
+| 6 · H · SCC-176 | six answerable checks; items 4 and 6 cite `project-law.md`; the header reads both directions; INDEX routes to it; three commands carry the trigger + citation; the lint row is WIRED | `--case "CS-12"` 17/17 (13 original + 4 added by R8) · sweep part6 8/8 | **met** |
+| 7 · F · SCC-174 | a forked Dev Record exits 1 and names the orphan slug and the newest record; `--story` defaults from the manifest; a mismatched slug is warned | `test_jira_feed.py --case "SCC-174 check"` 16/16 · sweep part7 9/9 | met **after R1** — the Python was right; the **ceremony** the change edited was left unable to run |
+
+**The other direction — anything in the diff beyond the list.** One item: `README.md` (named above, carried
+as a DECISION). The two `-AP` restamps and `smh-quick-fix.md`'s `--story` removal sit outside their
+Part's declared **Files** line but are each required by another rule in force — the file lists are stale,
+not the edits.
+
+⚠ **One acceptance gap that is structural, not a defect in the code: Part M has no plan section.**
+`grep "Part M\|SCC-182" implementation_plan.md` → **0 hits**. SCC-182 ships 213 lines of new hook, a new
+`.claude/settings.json` wiring, a 159-line test file, a memory and an SOP row — with no acceptance list,
+no declared RED and no declared file list to audit against. The plan's own audit finding **F1** condemned
+exactly this shape for Part 12 (*"no steps, no RED, no mutants, no files"*) and Part 12 was written in
+response. Part M was a mid-lane discovery and the walkthrough documents it well, but the artifact that
+makes it **auditable** was never written. Recorded, not fixed: back-writing a plan section after the code
+exists is not an audit, and this lane's evidence is real. It is the second reason for CONCERNS.
+
 ## Your Actions
 
 **This lane lands PARTIALLY, at the plan's declared cut line (after Part 7 / F).** `task.yaml`
@@ -733,7 +904,7 @@ SCC-174.
 |---|---|---|
 | 8 · C | SCC-171 | the PC token path as git gives it; mint that cannot lie. **Work list already measured** by Part 6's H4 retro run: `mint-push-token.sh:119-122` and `pre-push-main-approval.sh:44-47` (C1), `mint-push-token.sh:135-144` (C3 — redirect with no `\|\| exit`, banner at `:144` unconditional). AGY's copy at `:128-141` already carries the corrected form; the fix flows **project → lobby** |
 | 9 · G | SCC-175 | no post-merge write to `main` |
-| 12 · L | SCC-180 | the `--hard` remedy made safe — **and its `# Part 12` plan section still does not exist** (audit F1); write it first |
+| 12 · L | SCC-180 | the `--hard` remedy made safe. ✅ **Correction (review 2026-08-16): its `# Part 12` section DOES now exist** — plan rev 2 (`7ac8f35`) wrote it, at `implementation_plan.md:553`, with steps, both fixtures and its mutants. The old row here told the next lane to write a section that is already there |
 | 10 · D | SCC-172 | three fail-opens in the main-write gate. **D3 (`.githooks/pre-push`) is the LAST edit of that lane** (F22) |
 | 11 · E | SCC-173 | the blind review recorded and enforced — E3 **BLOCKS** per § ARMING |
 | 11 · I | SCC-177 | the review sequenced |
@@ -741,5 +912,25 @@ SCC-174.
 Next lane: `chore/SCC-164-main-write-gate` (or its own key), with those six as its `task.yaml`
 `riders:`. The § ARMING ruling already covers A4, E3 and `--strict-actions`, so **no new operator
 ruling is owed** to build them.
+
+⛔ **The next lane has a landing-order problem this review measured — read it before cutting the branch.**
+`chore/SCC-183-direct-main-fastlane` is live (10 commits) and it rewrites **the exact files C and D are
+scheduled to edit**: `mint-push-token.sh` at hunks `@@ -106,15 +120,76 @@` and `@@ -137,6 +212,7 @@`,
+which **contain both of C's measured targets** (`:119-122` and `:135-144`), plus
+`pre-push-main-approval.sh` and `test_main_push_gate.py`. If SCC-183 lands first — and it should, it is
+smaller — **C's line numbers above are stale on arrival and must be re-derived**, and D3's "last edit of
+the lane" rule (F22) applies to a file SCC-183 will have moved underneath it. `pre-push-main-approval.sh:44-47`
+is unaffected (SCC-183's hunks there start at old-line 76). AGY's corrected `mint-push-token.sh` was
+re-read this review and does carry the fixed form — **no `case` block at all**, with the Windows `C:/`
+absolute-path trap documented in place; the fix still flows **project → lobby**.
+
+### Decisions — the operator's, not the agent's
+
+- [ ] **`README.md` — keep it or cut it.** This lane commits a 3-line Keyway secrets badge stub under
+      SCC-164's key. It belongs to no Part's file list, and this lane's own memory
+      `preflight-resolves-repo-from-cwd` records it as *"the dirt was not mine… it belonged to another
+      lane… Don't [clean it up]."* It is now tracked on this branch and will land with the merge.
+      Deleting another lane's file is not a call I will make on my own judgment. Say the word either way
+      and it is one commit. **Not a blocker** — the badge is inert.
 
 - [ ] **The merge itself** — `/smh-close-task-merge-tree`, on the operator's invocation.
