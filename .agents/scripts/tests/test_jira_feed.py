@@ -1899,6 +1899,45 @@ Nothing is actually owed.
             c.check(f"B5.{i}x · a REAL banned row from the same corpus IS flagged",
                     len(flagged(one_row(row))) == 1, f"{row[:80]}...")
 
+        # ── B11 · each banned SHAPE is pinned ALONE ────────────────────────────
+        # ⛔ Found by a SURVIVING MUTANT, not by reading. Deleting the `fold ... into <KEY>`
+        # pattern outright left the whole suite green: the only row exercising it was AVCH-58's,
+        # which ALSO says "board placement is the operator's" and so kept flagging through a
+        # different pattern. A shape acceptance B2 names by name was therefore unpinned, and
+        # deleting it would have been invisible. Each row below matches exactly ONE pattern.
+        SHAPES = [
+            ("fold into <KEY>", "Fold the one-line fix into AVCH-54 (it hits that lane directly)"),
+            ("board placement", "Board placement is the operator's, not mine"),
+            ("create/mint", "Mint its own AVCH ticket for the remainder"),
+            ("earns a ticket", "Decide whether finding 13 earns a ticket"),
+            ("rule on + ticket", "Rule on whether the residue ticket should exist"),
+            ("ticket + your call", "The nag ticket is optional, your call"),
+        ]
+        for label, row in SHAPES:
+            c.check(f"B11 · the '{label}' shape is flagged on its own",
+                    len(flagged(one_row(row))) == 1,
+                    f"if only a multi-shape row covers this pattern, deleting the pattern is "
+                    f"invisible: {row}")
+
+        # ── B10 · the FALSE POSITIVES a review probe found, pinned ─────────────
+        # ⛔ These four flagged under the first implementation, which searched for a banned VERB
+        # anywhere in the row and a ticket OBJECT anywhere in the row, independently. `file` and
+        # `open` are among the commonest NON-verbs in this vocabulary, and co-occurrence cannot
+        # tell "open a ticket" (create) from "open the ticket" (go read it). None of these came
+        # from the live corpus - they are the rows an honest walkthrough writes NEXT - so
+        # without them the regression returns silently the first time someone says "the ticket
+        # is still open". The fix binds verb and object into one phrase; these hold that line.
+        FALSE_POSITIVE_PROBE = [
+            "The SCC-99 ticket is still open from last sprint",
+            "Ticket SCC-12 remains open; nothing owed here",
+            "Open the ticket and read the Dev Record",
+            "The task file is in `_artifacts/`",
+        ]
+        for i, row in enumerate(FALSE_POSITIVE_PROBE, 1):
+            c.check(f"B10.{i} · a NOUN-sense 'open'/'file' row is not flagged",
+                    flagged(one_row(row)) == [],
+                    f"verb x object must be ONE phrase, not two searches: {row}")
+
         # ── B6 · fenced examples are documentation, not rows (B4) ──────────────
         # `jira_feed._unfenced` was written for exactly this after a live miss (SCC-154,
         # ported from check_gate). Reuse it; a re-derived fence walker is how the close-marker

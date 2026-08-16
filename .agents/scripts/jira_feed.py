@@ -1370,15 +1370,46 @@ def _collect(live: list[tuple[int, str]], start: int, items: list[str]) -> None:
 # sequencing. "Decide whether the CONCERNS is worth clearing" is a product decision. All three
 # are precisely what Step 5 PERMITS. So a trigger verb alone is never enough: it must land on
 # an object that is ticket-shaped work.
-_BANNED_VERB = re.compile(
-    r"\b(mint|file|open|create|raise|rule\s+on|decide|your\s+call|place|fold)\b", re.I)
-# The object half. A bare Jira key is deliberately NOT here: "Merge AVCH-59 to main" and "Move
-# SCC-99 to Done" both carry one and are both ALLOWED, which is the trap acceptance B3 names.
-# What makes an object ticket-WORK is the noun, or a key being placed INTO something.
-_TICKET_OBJECT = re.compile(
-    r"\bticket\b|\bsubtask\b|\bbacklog\b|board\s+placement|"
-    r"\b(?:new\s+)?(?:jira\s+)?(?:task|key)\b(?![^\n]*\bto\s+Done\b)|"
-    r"fold[^\n]{0,40}\binto\s+[A-Z]{2,10}-\d+", re.I)
+# ⛔ THE VERB AND THE OBJECT ARE BOUND AS A PHRASE, NOT SEARCHED INDEPENDENTLY, and that is a
+# review finding rather than a first draft. Two independent searches over the same row - a verb
+# anywhere, an object anywhere - flagged four honest rows in an adversarial probe:
+#
+#     "The SCC-99 ticket is still open from last sprint"   'open' + 'ticket'
+#     "Ticket SCC-12 remains open; nothing owed here"      'open' + 'ticket'
+#     "Open the ticket and read the Dev Record"            'open' + 'ticket'  <- an INSTRUCTION
+#     "The task file is in _artifacts/"                    'file' + 'task'    <- both are NOUNS
+#
+# `file` and `open` are among the most common non-verbs in this vocabulary, and co-occurrence
+# cannot tell "open a ticket" (create) from "open the ticket" (go read it). Binding them into
+# one pattern is also the more faithful reading of acceptance B3's "VERB+OBJECT pair".
+#
+# ⓘ `open` is dropped from the creation verbs outright. It is in the ticket's phrase list, but
+# no row in the 25-row live corpus uses "open a ticket", and the article that would separate
+# creation from reference ("a" vs "the") is not reliable: "File THE follow-on Task" is creation
+# and "Open THE ticket" is not. Dropping the ambiguous verb costs nothing measurable and
+# removes three of the four false positives; the fourth dies with the phrase binding.
+_BANNED_PATTERNS = [
+    # ⓘ `(?:[A-Z]{2,10}\s+)?` is the PROJECT TOKEN, and it was missing until a pinned-shape case
+    # went red. AVCH-58's real row says "or mint its own AVCH key" - the key phrase this ticket
+    # exists to catch - and without this group the pattern stopped dead at `AVCH`. Row 1 still
+    # flagged, which is exactly why it went unnoticed: it ALSO says "board placement", so the
+    # known-positive passed while the creation shape it was supposed to prove did not match.
+    # All-caps only, so it cannot open a general word gap ("file the report about the ticket").
+    (re.compile(r"\b(?:mint|file|create|raise|log)\s+(?:a|an|its\s+own|the|one)?\s*"
+                r"(?:new\s+)?(?:follow[-\s]?on\s+)?(?:jira\s+)?(?:[A-Z]{2,10}\s+)?"
+                r"(?:ticket|task|subtask|issue|key)\b", re.I),
+     "asks the operator to CREATE ticket work"),
+    (re.compile(r"\bfold\b[^\n]{0,60}?\binto\s+[A-Z]{2,10}-\d+", re.I),
+     "asks the operator to PLACE this work onto another ticket"),
+    (re.compile(r"\bboard\s+placement\b", re.I),
+     "'board placement' is the retired hand-off, by name"),
+    (re.compile(r"\bearns?\s+(?:a|an|its\s+own)\s+(?:ticket|task|key)\b", re.I),
+     "asks the operator to rule whether a finding becomes a ticket"),
+    (re.compile(r"\b(?:rule\s+on|decide)\b", re.I),
+     "asks the operator to rule on ticket placement"),
+    (re.compile(r"\bticket\b[^\n]{0,40}?\byour\s+call\b", re.I),
+     "hands a ticket decision to the operator"),
+]
 # ⛔ DELIBERATELY NOT DETECTED: a row that is a STATUS NOTE rather than an imperative -
 # AVCH-58's rows 2 and 3 ("X remains AVCH-55's, still correctly deferred", "your local main is
 # behind origin/main"). Both are real defects: neither is an action. But they are not reliably
@@ -1398,11 +1429,11 @@ def banned_action_rows(text: str) -> list[tuple[str, str]]:
         return []
     out: list[tuple[str, str]] = []
     for row in rows:
-        verb = _BANNED_VERB.search(row)
-        obj = _TICKET_OBJECT.search(row)
-        if verb and obj:
-            out.append((row, f"'{verb.group(0).strip()}' + '{obj.group(0).strip()}' - this "
-                             f"asks the operator to create or place ticket work"))
+        for pat, why in _BANNED_PATTERNS:
+            m = pat.search(row)
+            if m:
+                out.append((row, f"{why} (matched: '{m.group(0).strip()[:60]}')"))
+                break          # one reason per row; the first match is the clearest one
     return out
 
 
