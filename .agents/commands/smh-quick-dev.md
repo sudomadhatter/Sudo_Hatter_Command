@@ -70,7 +70,9 @@ Step 5 does now.
 
 ```bash
 git -C "$REPO" worktree list                                   # reuse this task's tree if it exists
-git -C "$REPO" worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> main
+git -C "$REPO" fetch origin                                    # ⛔ the base is origin/main, never a bare `main`
+git -C "$REPO" worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> origin/main
+git -C "<the new tree>" branch --unset-upstream                # a start-point of origin/main sets upstream to MAIN
 python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>   # PC: `python`
 BRANCH=$(git -C "<the new tree>" rev-parse --abbrev-ref HEAD)
 echo "Lane: $BRANCH"
@@ -115,7 +117,7 @@ uncommitted work is invisible to `grep`:
 
 ```bash
 git worktree list
-git -C <each-other-tree> diff --name-only main...HEAD
+git -C <each-other-tree> diff --name-only origin/main...HEAD
 git -C <each-other-tree> status --short
 ```
 

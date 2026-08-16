@@ -418,795 +418,796 @@ def main() -> int:
             set_state(state, description="", lossy_drop=None, comments=[])
 
         # ── outline: rendered FROM the story file, never invented ──────────────
-        code, out = jf("outline", "--story", "9.1", "--epic-key", "TEST-1", "--lane", "full")
-        c.check("outline: exit 0", code == 0, out.strip()[:120])
-        c.check("outline: carries the title", "Widget Archive" in out)
-        c.check("outline: carries the story statement", "archived widgets to stay readable" in out)
-        c.check("outline: carries both ACs",
-                "AC-1 (archive)" in out and "AC-2 (list)" in out)
-        c.check("outline: numbers the ACs", "1. AC-1" in out and "2. AC-2" in out)
-        c.check("outline: points at the story file",
-                "_bmad/bmm/stories/story-9-1-widget.md" in out)
-        c.check("outline: carries the rulings",
-                "Lane: full" in out and "Parallel-ok: no" in out and "Epic: TEST-1" in out)
-        c.check("outline: carries the bdd record", "BDD: locked" in out)
-        c.check("outline: drops non-bullet prose", "do the thing" not in out)
+        if c.block("jira_feed · legacy A: outline, devrecord, mint, check, types, audit, trace, flag, start"):
+            code, out = jf("outline", "--story", "9.1", "--epic-key", "TEST-1", "--lane", "full")
+            c.check("outline: exit 0", code == 0, out.strip()[:120])
+            c.check("outline: carries the title", "Widget Archive" in out)
+            c.check("outline: carries the story statement", "archived widgets to stay readable" in out)
+            c.check("outline: carries both ACs",
+                    "AC-1 (archive)" in out and "AC-2 (list)" in out)
+            c.check("outline: numbers the ACs", "1. AC-1" in out and "2. AC-2" in out)
+            c.check("outline: points at the story file",
+                    "_bmad/bmm/stories/story-9-1-widget.md" in out)
+            c.check("outline: carries the rulings",
+                    "Lane: full" in out and "Parallel-ok: no" in out and "Epic: TEST-1" in out)
+            c.check("outline: carries the bdd record", "BDD: locked" in out)
+            c.check("outline: drops non-bullet prose", "do the thing" not in out)
 
-        code, out = jf("outline", "--story", "9.1", "--parallel-ok",
-                       "--blocked-by", "TEST-4")
-        c.check("outline: rulings reflect the flags",
-                "Parallel-ok: yes" in out and "Blocked by: TEST-4" in out)
+            code, out = jf("outline", "--story", "9.1", "--parallel-ok",
+                           "--blocked-by", "TEST-4")
+            c.check("outline: rulings reflect the flags",
+                    "Parallel-ok: yes" in out and "Blocked by: TEST-4" in out)
 
-        # A story with no ACs must SAY so. Rendering a confident-looking outline with the
-        # section quietly missing is the failure this whole script exists to prevent.
-        code, out = jf("outline", "--story", "9.2")
-        c.check("outline: no ACs -> says so, exit 0",
-                code == 0 and "(none found in the story file)" in out, out.strip()[:160])
-        c.check("outline: no ACs -> warns on stderr", "[WARN]" in out)
+            # A story with no ACs must SAY so. Rendering a confident-looking outline with the
+            # section quietly missing is the failure this whole script exists to prevent.
+            code, out = jf("outline", "--story", "9.2")
+            c.check("outline: no ACs -> says so, exit 0",
+                    code == 0 and "(none found in the story file)" in out, out.strip()[:160])
+            c.check("outline: no ACs -> warns on stderr", "[WARN]" in out)
 
-        code, out = jf("outline", "--story", "9.9")
-        c.check("outline: unknown story -> exit 2", code == 2, out.strip()[:160])
+            code, out = jf("outline", "--story", "9.9")
+            c.check("outline: unknown story -> exit 2", code == 2, out.strip()[:160])
 
-        code, out = jf("outline", "--epic", "9")
-        c.check("outline --epic: title + goal",
-                code == 0 and "Epic 9 - Widget Lifecycle" in out
-                and "archived instead of deleted" in out, out.strip()[:160])
-        c.check("outline --epic: stops at the next epic", "Something Else" not in out)
+            code, out = jf("outline", "--epic", "9")
+            c.check("outline --epic: title + goal",
+                    code == 0 and "Epic 9 - Widget Lifecycle" in out
+                    and "archived instead of deleted" in out, out.strip()[:160])
+            c.check("outline --epic: stops at the next epic", "Something Else" not in out)
 
-        dest = tmp / "outline.txt"
-        code, out = jf("outline", "--story", "9.1", "--out", str(dest))
-        c.check("outline --out: writes the file",
-                code == 0 and dest.is_file() and "Widget Archive" in dest.read_text(encoding="utf-8"))
+            dest = tmp / "outline.txt"
+            code, out = jf("outline", "--story", "9.1", "--out", str(dest))
+            c.check("outline --out: writes the file",
+                    code == 0 and dest.is_file() and "Widget Archive" in dest.read_text(encoding="utf-8"))
 
-        # ── devrecord: flags first, walkthrough scrape underneath ──────────────
-        set_state(state)
-        code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7",
-                       "--decision", "Archive is a flag, never a delete",
-                       "--followon", "Backfill the old rows")
-        c.check("devrecord: scrapes the walkthrough's decisions",
-                "Roster filters server-side" in out, out.strip()[:200])
-        c.check("devrecord: scrapes the walkthrough's pitfalls",
-                "cached the pre-archive roster" in out)
-        c.check("devrecord: keeps the flag-supplied follow-on", "Backfill the old rows" in out)
-        c.check("devrecord: does not duplicate a flag the walkthrough repeats",
-                out.count("Archive is a flag, never a delete") == 1)
-        c.check("devrecord: lifts the walkthrough verdict", "PASS @ abc1234" in out)
-        c.check("devrecord: dry run posts nothing",
-                code == 0 and get_state(state)["comments"] == [])
+            # ── devrecord: flags first, walkthrough scrape underneath ──────────────
+            set_state(state)
+            code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7",
+                           "--decision", "Archive is a flag, never a delete",
+                           "--followon", "Backfill the old rows")
+            c.check("devrecord: scrapes the walkthrough's decisions",
+                    "Roster filters server-side" in out, out.strip()[:200])
+            c.check("devrecord: scrapes the walkthrough's pitfalls",
+                    "cached the pre-archive roster" in out)
+            c.check("devrecord: keeps the flag-supplied follow-on", "Backfill the old rows" in out)
+            c.check("devrecord: does not duplicate a flag the walkthrough repeats",
+                    out.count("Archive is a flag, never a delete") == 1)
+            c.check("devrecord: lifts the walkthrough verdict", "PASS @ abc1234" in out)
+            c.check("devrecord: dry run posts nothing",
+                    code == 0 and get_state(state)["comments"] == [])
 
-        code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7",
-                       "--walkthrough", str(repo / "_artifacts/epic_9/story-9-1-widget/walkthrough.md"),
-                       "--strict")
-        c.check("devrecord --strict: empty bucket is a hard fail",
-                code == 2 and "followons" in out, out.strip()[:200])
+            code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7",
+                           "--walkthrough", str(repo / "_artifacts/epic_9/story-9-1-widget/walkthrough.md"),
+                           "--strict")
+            c.check("devrecord --strict: empty bucket is a hard fail",
+                    code == 2 and "followons" in out, out.strip()[:200])
 
-        # ── devrecord --apply: post, then PROVE it landed ──────────────────────
-        set_state(state)
-        code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
-                       "--outcome", "review -> done", "--followon", "none")
-        c.check("devrecord --apply: exit 0 and one comment",
-                code == 0 and len(get_state(state)["comments"]) == 1, out.strip()[:200])
-        c.check("devrecord --apply: the comment carries the marker",
-                "Dev Record - 9.1" in get_state(state)["comments"][0]["body"])
+            # ── devrecord --apply: post, then PROVE it landed ──────────────────────
+            set_state(state)
+            code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
+                           "--outcome", "review -> done", "--followon", "none")
+            c.check("devrecord --apply: exit 0 and one comment",
+                    code == 0 and len(get_state(state)["comments"]) == 1, out.strip()[:200])
+            c.check("devrecord --apply: the comment carries the marker",
+                    "Dev Record - 9.1" in get_state(state)["comments"][0]["body"])
 
-        # THE quick-dev requirement: quick-dev closes the branch and posts, then close-out
-        # closes the story and posts. That must leave one record, not two.
-        code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
-                       "--stage", "quick-dev", "--decision", "Second pass ruling",
-                       "--followon", "none")
-        after = get_state(state)["comments"]
-        c.check("devrecord: a second post UPDATES, leaving exactly one record",
-                code == 0 and len(after) == 1, f"{len(after)} comments")
-        c.check("devrecord: the surviving record is the newer one",
-                "Second pass ruling" in after[0]["body"] and "quick-dev" in after[0]["body"])
-        c.check("devrecord: reports that it updated", "updated the existing" in out)
+            # THE quick-dev requirement: quick-dev closes the branch and posts, then close-out
+            # closes the story and posts. That must leave one record, not two.
+            code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
+                           "--stage", "quick-dev", "--decision", "Second pass ruling",
+                           "--followon", "none")
+            after = get_state(state)["comments"]
+            c.check("devrecord: a second post UPDATES, leaving exactly one record",
+                    code == 0 and len(after) == 1, f"{len(after)} comments")
+            c.check("devrecord: the surviving record is the newer one",
+                    "Second pass ruling" in after[0]["body"] and "quick-dev" in after[0]["body"])
+            c.check("devrecord: reports that it updated", "updated the existing" in out)
 
-        code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
-                       "--append-new", "--followon", "none")
-        c.check("devrecord --append-new: opts out of the one-record rule",
-                code == 0 and len(get_state(state)["comments"]) == 2)
+            code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
+                           "--append-new", "--followon", "none")
+            c.check("devrecord --append-new: opts out of the one-record rule",
+                    code == 0 and len(get_state(state)["comments"]) == 2)
 
-        # The load-bearing negative: acli exits 0 and records NOTHING. Indistinguishable
-        # from success unless the ticket is read back.
-        set_state(state, swallow=True)
-        code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
-                       "--followon", "none")
-        c.check("devrecord: silent acli no-op -> exit 2, not a false success",
-                code == 2 and "NOT recorded" in out, out.strip()[:200])
+            # The load-bearing negative: acli exits 0 and records NOTHING. Indistinguishable
+            # from success unless the ticket is read back.
+            set_state(state, swallow=True)
+            code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
+                           "--followon", "none")
+            c.check("devrecord: silent acli no-op -> exit 2, not a false success",
+                    code == 2 and "NOT recorded" in out, out.strip()[:200])
 
-        code, out = jf("devrecord", "--story", "9.1", "--apply", "--followon", "none")
-        c.check("devrecord --apply without --key -> exit 2", code == 2, out.strip()[:120])
+            code, out = jf("devrecord", "--story", "9.1", "--apply", "--followon", "none")
+            c.check("devrecord --apply without --key -> exit 2", code == 2, out.strip()[:120])
 
-        # The command centre has no sprint board on purpose - toolkit chore work is not a
-        # BMAD story - but it has tickets. A record must be fileable there or the one repo
-        # where the workflow is built is the one repo whose tickets stay empty.
-        chore = tmp / "boardless"
-        (chore / "_artifacts/quick_fixes/quick-fix-1-1-thing").mkdir(parents=True)
-        (chore / "_artifacts/quick_fixes/quick-fix-1-1-thing/walkthrough.md").write_text(
-            "# Walkthrough\n\n## Pitfalls\n- The hook was never armed\n", encoding="utf-8")
-        os.environ["STUB_STATE"] = str(state)
-        code, out = run_script("jira_feed.py", "devrecord", "--project", str(chore),
-                               "--acli", str(acli), "--story", "quick-fix-1.1-thing",
-                               "--key", "TEST-7", "--decision", "d", "--followon", "f")
-        c.check("devrecord: works in a repo with no sprint board",
-                code == 0 and "The hook was never armed" in out, out.strip()[:200])
+            # The command centre has no sprint board on purpose - toolkit chore work is not a
+            # BMAD story - but it has tickets. A record must be fileable there or the one repo
+            # where the workflow is built is the one repo whose tickets stay empty.
+            chore = tmp / "boardless"
+            (chore / "_artifacts/quick_fixes/quick-fix-1-1-thing").mkdir(parents=True)
+            (chore / "_artifacts/quick_fixes/quick-fix-1-1-thing/walkthrough.md").write_text(
+                "# Walkthrough\n\n## Pitfalls\n- The hook was never armed\n", encoding="utf-8")
+            os.environ["STUB_STATE"] = str(state)
+            code, out = run_script("jira_feed.py", "devrecord", "--project", str(chore),
+                                   "--acli", str(acli), "--story", "quick-fix-1.1-thing",
+                                   "--key", "TEST-7", "--decision", "d", "--followon", "f")
+            c.check("devrecord: works in a repo with no sprint board",
+                    code == 0 and "The hook was never armed" in out, out.strip()[:200])
 
-        # ── mint ───────────────────────────────────────────────────────────────
-        set_state(state)
-        code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST",
-                       "--epic-key", "TEST-1", "--lane", "quick-dev", "--parallel-ok",
-                       "--apply")
-        st = get_state(state)
-        c.check("mint: exit 0 and echoes the key",
-                code == 0 and "JIRA_KEY=TEST-99" in out, out.strip()[:200])
-        c.check("mint: the created ticket carries the outline",
-                "AC-1 (archive)" in st["description"])
-        c.check("mint: parents to the epic",
-                "--parent" in st["create_args"]
-                and st["create_args"][st["create_args"].index("--parent") + 1] == "TEST-1")
-        labels = st["create_args"][st["create_args"].index("--label") + 1]
-        c.check("mint: labels follow the ruling",
-                "quick-dev" in labels and "parallel-ok" in labels, labels)
+            # ── mint ───────────────────────────────────────────────────────────────
+            set_state(state)
+            code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST",
+                           "--epic-key", "TEST-1", "--lane", "quick-dev", "--parallel-ok",
+                           "--apply")
+            st = get_state(state)
+            c.check("mint: exit 0 and echoes the key",
+                    code == 0 and "JIRA_KEY=TEST-99" in out, out.strip()[:200])
+            c.check("mint: the created ticket carries the outline",
+                    "AC-1 (archive)" in st["description"])
+            c.check("mint: parents to the epic",
+                    "--parent" in st["create_args"]
+                    and st["create_args"][st["create_args"].index("--parent") + 1] == "TEST-1")
+            labels = st["create_args"][st["create_args"].index("--label") + 1]
+            c.check("mint: labels follow the ruling",
+                    "quick-dev" in labels and "parallel-ok" in labels, labels)
 
-        # Type turns on WHETHER THIS IS BMAD SPRINT WORK - never on having a parent. EVERY
-        # ticket is parented: BMAD epics hold numbered stories, GROUPING epics ("CI/CD
-        # Improvment") hold workflow/rules/skills work because Jira offers no other container.
-        # Both look identical in Jira, so keying off the parent types every chore as a Story.
-        c.check("mint: a story file backs it -> Story",
-                st["create_args"][st["create_args"].index("--type") + 1] == "Story",
-                st["create_args"][st["create_args"].index("--type") + 1])
+            # Type turns on WHETHER THIS IS BMAD SPRINT WORK - never on having a parent. EVERY
+            # ticket is parented: BMAD epics hold numbered stories, GROUPING epics ("CI/CD
+            # Improvment") hold workflow/rules/skills work because Jira offers no other container.
+            # Both look identical in Jira, so keying off the parent types every chore as a Story.
+            c.check("mint: a story file backs it -> Story",
+                    st["create_args"][st["create_args"].index("--type") + 1] == "Story",
+                    st["create_args"][st["create_args"].index("--type") + 1])
 
-        set_state(state)
-        code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST", "--apply")
-        st = get_state(state)
-        c.check("mint: still a Story with no epic key - the story file decides, not the parent",
-                st["create_args"][st["create_args"].index("--type") + 1] == "Story",
-                st["create_args"][st["create_args"].index("--type") + 1])
-        c.check("mint: ...but it warns that a BMAD story belongs under its BMAD epic",
-                "belongs under its BMAD epic" in out, out.strip()[:160])
+            set_state(state)
+            code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST", "--apply")
+            st = get_state(state)
+            c.check("mint: still a Story with no epic key - the story file decides, not the parent",
+                    st["create_args"][st["create_args"].index("--type") + 1] == "Story",
+                    st["create_args"][st["create_args"].index("--type") + 1])
+            c.check("mint: ...but it warns that a BMAD story belongs under its BMAD epic",
+                    "belongs under its BMAD epic" in out, out.strip()[:160])
 
-        # The chore case: grouping-epic work has no story file, so the operator types it.
-        set_state(state)
-        code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST",
-                       "--type", "Task", "--epic-key", "TEST-1", "--apply")
-        st = get_state(state)
-        c.check("mint: an explicit --type wins (chore work under a grouping epic)",
-                st["create_args"][st["create_args"].index("--type") + 1] == "Task")
+            # The chore case: grouping-epic work has no story file, so the operator types it.
+            set_state(state)
+            code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST",
+                           "--type", "Task", "--epic-key", "TEST-1", "--apply")
+            st = get_state(state)
+            c.check("mint: an explicit --type wins (chore work under a grouping epic)",
+                    st["create_args"][st["create_args"].index("--type") + 1] == "Task")
 
-        set_state(state)
-        code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST",
-                       "--type", "Bug", "--epic-key", "TEST-1", "--apply")
-        st = get_state(state)
-        c.check("mint: --type passes any board type through",
-                st["create_args"][st["create_args"].index("--type") + 1] == "Bug")
+            set_state(state)
+            code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST",
+                           "--type", "Bug", "--epic-key", "TEST-1", "--apply")
+            st = get_state(state)
+            c.check("mint: --type passes any board type through",
+                    st["create_args"][st["create_args"].index("--type") + 1] == "Bug")
 
-        # A backfilled or re-run board already has the ticket. A second one is worse than
-        # none - two rows, one of which nothing will ever move again.
-        set_state(state, search=[{"key": "TEST-42",
-                                  "fields": {"summary": "9.1 - Widget Archive"}}])
-        code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST", "--apply")
-        st = get_state(state)
-        c.check("mint: reuses the existing ticket instead of minting a twin",
-                code == 0 and "reusing existing ticket TEST-42" in out
-                and "create_args" not in st, out.strip()[:200])
-        c.check("mint: backfills the outline onto the bare ticket",
-                "backfilled" in out and "AC-1 (archive)" in st["description"])
-        c.check("mint: the backfill edit is non-interactive (--yes)",
-                "--yes" in st.get("edit_args", []))
+            # A backfilled or re-run board already has the ticket. A second one is worse than
+            # none - two rows, one of which nothing will ever move again.
+            set_state(state, search=[{"key": "TEST-42",
+                                      "fields": {"summary": "9.1 - Widget Archive"}}])
+            code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST", "--apply")
+            st = get_state(state)
+            c.check("mint: reuses the existing ticket instead of minting a twin",
+                    code == 0 and "reusing existing ticket TEST-42" in out
+                    and "create_args" not in st, out.strip()[:200])
+            c.check("mint: backfills the outline onto the bare ticket",
+                    "backfilled" in out and "AC-1 (archive)" in st["description"])
+            c.check("mint: the backfill edit is non-interactive (--yes)",
+                    "--yes" in st.get("edit_args", []))
 
-        # A fuzzy `~` search returns the children too; 9.1 must not adopt 9.1.2's ticket.
-        set_state(state, search=[{"key": "TEST-43",
-                                  "fields": {"summary": "9.1.2 - A Child Story"}}])
-        code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST", "--apply")
-        c.check("mint: a fuzzy search hit on a CHILD is not a reuse",
-                code == 0 and "reusing" not in out
-                and "create_args" in get_state(state), out.strip()[:200])
+            # A fuzzy `~` search returns the children too; 9.1 must not adopt 9.1.2's ticket.
+            set_state(state, search=[{"key": "TEST-43",
+                                      "fields": {"summary": "9.1.2 - A Child Story"}}])
+            code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST", "--apply")
+            c.check("mint: a fuzzy search hit on a CHILD is not a reuse",
+                    code == 0 and "reusing" not in out
+                    and "create_args" in get_state(state), out.strip()[:200])
 
-        set_state(state, swallow_desc=True)
-        code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST", "--apply")
-        c.check("mint: description that never landed -> exit 2",
-                code == 2 and "description is empty" in out, out.strip()[:200])
+            set_state(state, swallow_desc=True)
+            code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST", "--apply")
+            c.check("mint: description that never landed -> exit 2",
+                    code == 2 and "description is empty" in out, out.strip()[:200])
 
-        set_state(state)
-        code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST")
-        c.check("mint: no --apply is a dry run",
-                code == 0 and "DRY RUN" in out and "create_args" not in get_state(state))
+            set_state(state)
+            code, out = jf("mint", "--story", "9.1", "--jira-project", "TEST")
+            c.check("mint: no --apply is a dry run",
+                    code == 0 and "DRY RUN" in out and "create_args" not in get_state(state))
 
-        # ── check ──────────────────────────────────────────────────────────────
-        set_state(state)
-        code, out = jf("check", "--key", "TEST-7")
-        c.check("check: bare ticket -> exit 2, both halves named",
-                code == 2 and "no outline" in out and "no Dev Record" in out,
-                out.strip()[:200])
+            # ── check ──────────────────────────────────────────────────────────────
+            set_state(state)
+            code, out = jf("check", "--key", "TEST-7")
+            c.check("check: bare ticket -> exit 2, both halves named",
+                    code == 2 and "no outline" in out and "no Dev Record" in out,
+                    out.strip()[:200])
 
-        # Positive control: a checker that never reports clean gets muted.
-        set_state(state,
-                  description="9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive.",
-                  comments=[{"id": "1", "body": "Dev Record - 9.1 (close-out)\nDecisions"}])
-        code, out = jf("check", "--key", "TEST-7")
-        c.check("check: fed ticket -> exit 0 (positive control)",
-                code == 0 and "0 error(s)" in out, out.strip()[:200])
+            # Positive control: a checker that never reports clean gets muted.
+            set_state(state,
+                      description="9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive.",
+                      comments=[{"id": "1", "body": "Dev Record - 9.1 (close-out)\nDecisions"}])
+            code, out = jf("check", "--key", "TEST-7")
+            c.check("check: fed ticket -> exit 0 (positive control)",
+                    code == 0 and "0 error(s)" in out, out.strip()[:200])
 
-        set_state(state,
-                  description="9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive.",
-                  comments=[{"id": "1", "body": "Dev Record - 9.1 (quick-dev)"},
-                            {"id": "2", "body": "Dev Record - 9.1 (close-out)"}])
-        code, out = jf("check", "--key", "TEST-7")
-        c.check("check: two Dev Records for ONE story id -> warns, does not block",
-                code == 1 and "there should be" in out, out.strip()[:200])
+            set_state(state,
+                      description="9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive.",
+                      comments=[{"id": "1", "body": "Dev Record - 9.1 (quick-dev)"},
+                                {"id": "2", "body": "Dev Record - 9.1 (close-out)"}])
+            code, out = jf("check", "--key", "TEST-7")
+            c.check("check: two Dev Records for ONE story id -> warns, does not block",
+                    code == 1 and "there should be" in out, out.strip()[:200])
 
-        # ── SCC-113: two LANES on one ticket is the designed state, not a defect ──
-        # `find_devrecord` filters by story id ON PURPOSE - its docstring: "so a ticket that
-        # legitimately carries records for two ids does not have one overwrite the other" - and
-        # both Task surfaces pass `--story <branch-slug>` (smh-close-task-merge-tree.md:236,
-        # smh-quick-dev.md:246), which changes per lane. A follow-on lane rides the ticket it
-        # came from rather than minting a key, so N lanes -> N records is NORMAL.
-        #
-        # Counting records cannot tell "one lane posted twice" (the real defect, pinned by the
-        # case ABOVE, which must stay red-capable) from "two lanes each posted once" (this
-        # case). Grouping by id can. The test above is this fix's negative control: if it ever
-        # goes green, the check was deleted rather than narrowed.
-        set_state(state,
-                  description="9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive.",
-                  comments=[{"id": "1",
-                             "body": "Dev Record - scc-113-jira-in-progress-seam (close-out)"},
-                            {"id": "2",
-                             "body": "Dev Record - scc-113-door-content-parity (close-out)"}])
-        code, out = jf("check", "--key", "TEST-7")
-        c.check("check: two lanes, two story ids -> exit 0 (the designed state)",
-                code == 0 and "0 error(s), 0 warning(s)" in out, out.strip()[:200])
+            # ── SCC-113: two LANES on one ticket is the designed state, not a defect ──
+            # `find_devrecord` filters by story id ON PURPOSE - its docstring: "so a ticket that
+            # legitimately carries records for two ids does not have one overwrite the other" - and
+            # both Task surfaces pass `--story <branch-slug>` (smh-close-task-merge-tree.md:236,
+            # smh-quick-dev.md:246), which changes per lane. A follow-on lane rides the ticket it
+            # came from rather than minting a key, so N lanes -> N records is NORMAL.
+            #
+            # Counting records cannot tell "one lane posted twice" (the real defect, pinned by the
+            # case ABOVE, which must stay red-capable) from "two lanes each posted once" (this
+            # case). Grouping by id can. The test above is this fix's negative control: if it ever
+            # goes green, the check was deleted rather than narrowed.
+            set_state(state,
+                      description="9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive.",
+                      comments=[{"id": "1",
+                                 "body": "Dev Record - scc-113-jira-in-progress-seam (close-out)"},
+                                {"id": "2",
+                                 "body": "Dev Record - scc-113-door-content-parity (close-out)"}])
+            code, out = jf("check", "--key", "TEST-7")
+            c.check("check: two lanes, two story ids -> exit 0 (the designed state)",
+                    code == 0 and "0 error(s), 0 warning(s)" in out, out.strip()[:200])
 
-        # `--story` is documented on THREE surfaces (jira_feed.py:15 usage, jira.md:302 a RULE,
-        # cicd-update-sprint-memory.md:191 a command) and read by none of them. Story-awareness
-        # gives it the meaning a close-out actually needs: did THIS lane file its record?
-        # It delegates to find_devrecord, so it answers exactly "would devrecord update this
-        # one?" - one rule, one implementation.
-        code, out = jf("check", "--key", "TEST-7", "--story", "scc-113-door-content-parity")
-        c.check("check: --story scopes to that lane's record -> exit 0",
-                code == 0 and "one Dev Record" in out, out.strip()[:200])
+            # `--story` is documented on THREE surfaces (jira_feed.py:15 usage, jira.md:302 a RULE,
+            # cicd-update-sprint-memory.md:191 a command) and read by none of them. Story-awareness
+            # gives it the meaning a close-out actually needs: did THIS lane file its record?
+            # It delegates to find_devrecord, so it answers exactly "would devrecord update this
+            # one?" - one rule, one implementation.
+            code, out = jf("check", "--key", "TEST-7", "--story", "scc-113-door-content-parity")
+            c.check("check: --story scopes to that lane's record -> exit 0",
+                    code == 0 and "one Dev Record" in out, out.strip()[:200])
 
-        # The load-bearing half: a lane that never filed one must be an ERROR, not silence.
-        # Asserted on the MESSAGE, because an unknown flag also exits 2 - which is exactly how
-        # this would pass for the wrong reason while `--story` stayed unwired.
-        code, out = jf("check", "--key", "TEST-7", "--story", "scc-113-lane-that-never-filed")
-        c.check("check: --story naming a lane with no record -> exit 2, names the lane",
-                code == 2 and "no Dev Record" in out
-                and "scc-113-lane-that-never-filed" in out, out.strip()[:200])
+            # The load-bearing half: a lane that never filed one must be an ERROR, not silence.
+            # Asserted on the MESSAGE, because an unknown flag also exits 2 - which is exactly how
+            # this would pass for the wrong reason while `--story` stayed unwired.
+            code, out = jf("check", "--key", "TEST-7", "--story", "scc-113-lane-that-never-filed")
+            c.check("check: --story naming a lane with no record -> exit 2, names the lane",
+                    code == 2 and "no Dev Record" in out
+                    and "scc-113-lane-that-never-filed" in out, out.strip()[:200])
 
-        # ⛔ A record whose header will not parse is NOT evidence of a lane (clean-room H-2).
-        # `record_story_id` returns "" for it, and the first cut let that "" sit beside a real id
-        # and read as "two lanes, the designed state" - exit 0 where the old count-based check
-        # warned. The trigger is not exotic: the record filter is bare containment on the first
-        # 400 chars, so ANY human comment saying "Dev Record" becomes a second record.
-        set_state(state,
-                  description="9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive.",
-                  comments=[{"id": "1", "body": "Dev Record - 9.1 (close-out, 2026-08-12)"},
-                            {"id": "2", "body": "See the Dev Record above, I fixed the typo."}])
-        code, out = jf("check", "--key", "TEST-7")
-        c.check("check: a record with no parseable header never reads as a second LANE",
-                code == 1 and "no parseable header" in out, out.strip()[:200])
+            # ⛔ A record whose header will not parse is NOT evidence of a lane (clean-room H-2).
+            # `record_story_id` returns "" for it, and the first cut let that "" sit beside a real id
+            # and read as "two lanes, the designed state" - exit 0 where the old count-based check
+            # warned. The trigger is not exotic: the record filter is bare containment on the first
+            # 400 chars, so ANY human comment saying "Dev Record" becomes a second record.
+            set_state(state,
+                      description="9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive.",
+                      comments=[{"id": "1", "body": "Dev Record - 9.1 (close-out, 2026-08-12)"},
+                                {"id": "2", "body": "See the Dev Record above, I fixed the typo."}])
+            code, out = jf("check", "--key", "TEST-7")
+            c.check("check: a record with no parseable header never reads as a second LANE",
+                    code == 1 and "no parseable header" in out, out.strip()[:200])
 
-        # ⛔ `--story` is a READ GATE, and over-matching inverts on a read gate (clean-room H-3).
-        # `find_devrecord` matches `want not in norm_id(text[:400])` - the whole head, not the
-        # header - and Dev Record bodies are SCRAPED FROM WALKTHROUGH BULLETS, which routinely
-        # name sibling lanes. Over-match on the WRITE path is conservative (it updates in place);
-        # here it certifies that a lane filed a record when it never did.
-        set_state(state,
-                  description="9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive.",
-                  comments=[{"id": "1", "body": "Dev Record - scc-113-gate-honesty (close-out)"
+            # ⛔ `--story` is a READ GATE, and over-matching inverts on a read gate (clean-room H-3).
+            # `find_devrecord` matches `want not in norm_id(text[:400])` - the whole head, not the
+            # header - and Dev Record bodies are SCRAPED FROM WALKTHROUGH BULLETS, which routinely
+            # name sibling lanes. Over-match on the WRITE path is conservative (it updates in place);
+            # here it certifies that a lane filed a record when it never did.
+            set_state(state,
+                      description="9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive.",
+                      comments=[{"id": "1", "body": "Dev Record - scc-113-gate-honesty (close-out)"
                                                 "\n\nDecisions made during dev\n"
                                                 "- supersedes the scc-113-door-content-parity lane"}])
-        code, out = jf("check", "--key", "TEST-7", "--story", "scc-113-door-content-parity")
-        c.check("check: --story does not match a sibling lane NAMED IN THE BODY",
-                code == 2 and "no Dev Record" in out, out.strip()[:200])
-        code, out = jf("check", "--key", "TEST-7", "--story", "scc-113-gate-honesty")
-        c.check("check: --story still matches its OWN header (positive control)",
-                code == 0 and "one Dev Record" in out, out.strip()[:200])
+            code, out = jf("check", "--key", "TEST-7", "--story", "scc-113-door-content-parity")
+            c.check("check: --story does not match a sibling lane NAMED IN THE BODY",
+                    code == 2 and "no Dev Record" in out, out.strip()[:200])
+            code, out = jf("check", "--key", "TEST-7", "--story", "scc-113-gate-honesty")
+            c.check("check: --story still matches its OWN header (positive control)",
+                    code == 0 and "one Dev Record" in out, out.strip()[:200])
 
-        # The separator trap slug_matches() was written for: 9.1 must not adopt 9.10's record.
-        set_state(state,
-                  description="9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive.",
-                  comments=[{"id": "1", "body": "Dev Record - 9.10 (close-out)"}])
-        code, out = jf("check", "--key", "TEST-7", "--story", "9.1")
-        c.check("check: --story 9.1 does not adopt 9.10's record",
-                code == 2 and "no Dev Record" in out, out.strip()[:200])
+            # The separator trap slug_matches() was written for: 9.1 must not adopt 9.10's record.
+            set_state(state,
+                      description="9.1 - Widget Archive. Acceptance criteria 1. AC-1 archive.",
+                      comments=[{"id": "1", "body": "Dev Record - 9.10 (close-out)"}])
+            code, out = jf("check", "--key", "TEST-7", "--story", "9.1")
+            c.check("check: --story 9.1 does not adopt 9.10's record",
+                    code == 2 and "no Dev Record" in out, out.strip()[:200])
 
-        # ── the type rule, all four arms ──────────────────────────────────────
-        # `Bug` is deliberately absent from the computed vocabulary. It is TEMPORARY: a Story
-        # or Task found broken wears it until the fix lands, carrying the same number and story
-        # file as before - so a rule that "corrects" it erases the signal that it is broken.
-        # Pinned as a table because this rule was WRONG TWICE before the real board settled
-        # it: first keyed on the epic parent (which would type every chore Task a Story,
-        # since everything is parented), then on the story file alone (which typed 19.2 a
-        # Task - a planned sprint story whose file is not written until pickup).
-        import jira_feed  # noqa: E402 - the tests run scripts/ on sys.path
-        table = [
-            ("19.2", False, "Story", "a dotted number, file not written until pickup"),
-            ("12.3.4", True, "Story", "number and file"),
-            ("tea-16-eval", True, "Story", "no dotted number, but a real story file"),
-            ("debug-1.1", True, "Story", "a debug story is an ordinary BMAD story"),
-            ("debug-4.1", False, "Story", "the debug marker stands in for the dotted number"),
-            ("Separate", False, "Task", "workflow/IDE/rules/skills work"),
-            ("quick-fix-1.1", False, "Task", "ad-hoc fix, no BMAD story behind it"),
-        ]
-        for head, has_file, want, why in table:
-            got = jira_feed.work_type(head, has_file)
-            c.check(f"type rule: {head} (file={str(has_file).lower()}) -> {want}",
-                    got == want, f"got {got} - {why}")
+            # ── the type rule, all four arms ──────────────────────────────────────
+            # `Bug` is deliberately absent from the computed vocabulary. It is TEMPORARY: a Story
+            # or Task found broken wears it until the fix lands, carrying the same number and story
+            # file as before - so a rule that "corrects" it erases the signal that it is broken.
+            # Pinned as a table because this rule was WRONG TWICE before the real board settled
+            # it: first keyed on the epic parent (which would type every chore Task a Story,
+            # since everything is parented), then on the story file alone (which typed 19.2 a
+            # Task - a planned sprint story whose file is not written until pickup).
+            import jira_feed  # noqa: E402 - the tests run scripts/ on sys.path
+            table = [
+                ("19.2", False, "Story", "a dotted number, file not written until pickup"),
+                ("12.3.4", True, "Story", "number and file"),
+                ("tea-16-eval", True, "Story", "no dotted number, but a real story file"),
+                ("debug-1.1", True, "Story", "a debug story is an ordinary BMAD story"),
+                ("debug-4.1", False, "Story", "the debug marker stands in for the dotted number"),
+                ("Separate", False, "Task", "workflow/IDE/rules/skills work"),
+                ("quick-fix-1.1", False, "Task", "ad-hoc fix, no BMAD story behind it"),
+            ]
+            for head, has_file, want, why in table:
+                got = jira_feed.work_type(head, has_file)
+                c.check(f"type rule: {head} (file={str(has_file).lower()}) -> {want}",
+                        got == want, f"got {got} - {why}")
 
-        # ── --closing clears the Bug flag, back to Story OR Task ───────────────
-        # A Bug is a TEMPORARY flag on broken work, raised by an audit that traced a live bug
-        # to the ticket that introduced it, or by the operator by hand. When the fix lands the
-        # bug is GONE and the ticket goes back to being what it always was. Close-out is the
-        # only moment anything can know that - which is why the bulk audit must not guess.
-        set_state(state, types={"TEST-7": "Bug"})
-        code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
-                       "--closing", "--outcome", "review -> done", "--followon", "none")
-        st = get_state(state)
-        c.check("closing: a fixed Bug on sprint work goes back to Story",
-                code == 0 and st["types"]["TEST-7"] == "Story"
-                and "the bug is gone" in out, out.strip()[:200])
+            # ── --closing clears the Bug flag, back to Story OR Task ───────────────
+            # A Bug is a TEMPORARY flag on broken work, raised by an audit that traced a live bug
+            # to the ticket that introduced it, or by the operator by hand. When the fix lands the
+            # bug is GONE and the ticket goes back to being what it always was. Close-out is the
+            # only moment anything can know that - which is why the bulk audit must not guess.
+            set_state(state, types={"TEST-7": "Bug"})
+            code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
+                           "--closing", "--outcome", "review -> done", "--followon", "none")
+            st = get_state(state)
+            c.check("closing: a fixed Bug on sprint work goes back to Story",
+                    code == 0 and st["types"]["TEST-7"] == "Story"
+                    and "the bug is gone" in out, out.strip()[:200])
 
-        set_state(state, types={"TEST-7": "Story"})
-        code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
-                       "--closing", "--followon", "none")
-        c.check("closing: an ordinary Story is not re-typed",
-                code == 0 and "retyped" not in get_state(state), out.strip()[:160])
+            set_state(state, types={"TEST-7": "Story"})
+            code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
+                           "--closing", "--followon", "none")
+            c.check("closing: an ordinary Story is not re-typed",
+                    code == 0 and "retyped" not in get_state(state), out.strip()[:160])
 
-        # THE regression (SCC-53). The first cut restored ONLY to Story: a flagged Task hit a
-        # "does not look like BMAD sprint work" warning and STAYED a Bug, with nothing else in
-        # the system able to clear it - a permanent Bug on the board. Task work can be found
-        # broken exactly as easily as a story, so it must restore to Task.
-        set_state(state, types={"TEST-7": "Bug"})
-        code, out = jf("devrecord", "--story", "chore-thing", "--key", "TEST-7", "--apply",
-                       "--closing", "--followon", "none")
-        c.check("closing: a fixed Bug on TASK work goes back to Task, not stranded",
-                code == 0 and get_state(state)["types"]["TEST-7"] == "Task"
-                and "the bug is gone" in out, out.strip()[:200])
+            # THE regression (SCC-53). The first cut restored ONLY to Story: a flagged Task hit a
+            # "does not look like BMAD sprint work" warning and STAYED a Bug, with nothing else in
+            # the system able to clear it - a permanent Bug on the board. Task work can be found
+            # broken exactly as easily as a story, so it must restore to Task.
+            set_state(state, types={"TEST-7": "Bug"})
+            code, out = jf("devrecord", "--story", "chore-thing", "--key", "TEST-7", "--apply",
+                           "--closing", "--followon", "none")
+            c.check("closing: a fixed Bug on TASK work goes back to Task, not stranded",
+                    code == 0 and get_state(state)["types"]["TEST-7"] == "Task"
+                    and "the bug is gone" in out, out.strip()[:200])
 
-        set_state(state, types={"TEST-7": "Bug"})
-        code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
-                       "--followon", "none")
-        c.check("closing: without --closing the Bug flag stands",
-                code == 0 and get_state(state)["types"]["TEST-7"] == "Bug")
+            set_state(state, types={"TEST-7": "Bug"})
+            code, out = jf("devrecord", "--story", "9.1", "--key", "TEST-7", "--apply",
+                           "--followon", "none")
+            c.check("closing: without --closing the Bug flag stands",
+                    code == 0 and get_state(state)["types"]["TEST-7"] == "Bug")
 
-        # ⭐ SCC-119 CHARACTERIZATION - no code backs this, and that is the point. A subtask
-        # closes its own branch and files its own Dev Record, so it DOES reach this path; it
-        # simply never carries `Bug` (operator ruling), so the restore branch never fires.
-        # Pinning it costs nothing and catches the promotion a future edit would introduce:
-        # `work_type()` answers "Task" for a subtask's slug, so any change that widened the
-        # restore beyond `have == "Bug"` would silently lift a subtask out of its parent.
-        set_state(state, types={"TEST-7": "Subtask", "TEST-4": "Task"},
-                  parents={"TEST-7": "TEST-4"})
-        code, out = jf("devrecord", "--story", "subtask-thing", "--key", "TEST-7", "--apply",
-                       "--closing", "--followon", "none")
-        st = get_state(state)
-        c.check("closing: a Subtask files its record and is NEVER re-typed to Task (SCC-119)",
-                code == 0 and st["types"]["TEST-7"] == "Subtask" and "retyped" not in st,
-                out.strip()[:200])
+            # ⭐ SCC-119 CHARACTERIZATION - no code backs this, and that is the point. A subtask
+            # closes its own branch and files its own Dev Record, so it DOES reach this path; it
+            # simply never carries `Bug` (operator ruling), so the restore branch never fires.
+            # Pinning it costs nothing and catches the promotion a future edit would introduce:
+            # `work_type()` answers "Task" for a subtask's slug, so any change that widened the
+            # restore beyond `have == "Bug"` would silently lift a subtask out of its parent.
+            set_state(state, types={"TEST-7": "Subtask", "TEST-4": "Task"},
+                      parents={"TEST-7": "TEST-4"})
+            code, out = jf("devrecord", "--story", "subtask-thing", "--key", "TEST-7", "--apply",
+                           "--closing", "--followon", "none")
+            st = get_state(state)
+            c.check("closing: a Subtask files its record and is NEVER re-typed to Task (SCC-119)",
+                    code == 0 and st["types"]["TEST-7"] == "Subtask" and "retyped" not in st,
+                    out.strip()[:200])
 
-        # ── audit: report + migrate types, and NEVER touch a Bug ───────────────
-        def board(*rows, **extra):
-            """rows: (key, type, summary). `extra` seeds parents/statuses for SCC-119.
+            # ── audit: report + migrate types, and NEVER touch a Bug ───────────────
+            def board(*rows, **extra):
+                """rows: (key, type, summary). `extra` seeds parents/statuses for SCC-119.
 
             ⛔ The search rows carry NO `parent` on purpose - the real acli rejects that
             field on search (exit 1), so the audit has to `view` each subtask to learn its
             parentage. Putting parents in the search rows here would test a call production
             can never make."""
-            types = {k: t for k, t, _ in rows}
-            types.update(extra.pop("types", {}))
-            set_state(state,
-                      search=[{"key": k, "fields": {"issuetype": {"name": t},
-                                                    "summary": s}} for k, t, s in rows],
-                      types=types, **extra)
+                types = {k: t for k, t, _ in rows}
+                types.update(extra.pop("types", {}))
+                set_state(state,
+                          search=[{"key": k, "fields": {"issuetype": {"name": t},
+                                                        "summary": s}} for k, t, s in rows],
+                          types=types, **extra)
 
-        board(("T-1", "Task", "9.1 - Widget Archive"),
-              ("T-2", "Task", "Separate the front end"),
-              ("T-3", "Epic", "CI/CD Improvment"))
-        code, out = run_script("jira_feed.py", "audit", "--project", str(repo),
-                               "--acli", str(acli), "--jira-project", "TEST")
-        c.check("audit: flags a numbered ticket typed Task",
-                code == 1 and "T-1: Task -> Story" in out, out.strip()[:200])
-        c.check("audit: leaves un-numbered chore work as Task", "T-2: Task -> " not in out)
-        c.check("audit: ignores Epics entirely", "T-3" not in out)
-        c.check("audit: a dry run writes nothing", "retyped" not in get_state(state))
+            board(("T-1", "Task", "9.1 - Widget Archive"),
+                  ("T-2", "Task", "Separate the front end"),
+                  ("T-3", "Epic", "CI/CD Improvment"))
+            code, out = run_script("jira_feed.py", "audit", "--project", str(repo),
+                                   "--acli", str(acli), "--jira-project", "TEST")
+            c.check("audit: flags a numbered ticket typed Task",
+                    code == 1 and "T-1: Task -> Story" in out, out.strip()[:200])
+            c.check("audit: leaves un-numbered chore work as Task", "T-2: Task -> " not in out)
+            c.check("audit: ignores Epics entirely", "T-3" not in out)
+            c.check("audit: a dry run writes nothing", "retyped" not in get_state(state))
 
-        board(("T-1", "Task", "9.1 - Widget Archive"),
-              ("T-2", "Task", "Separate the front end"))
-        code, out = run_script("jira_feed.py", "audit", "--project", str(repo),
-                               "--acli", str(acli), "--jira-project", "TEST", "--apply")
-        st = get_state(state)
-        c.check("audit --apply: converts and reads the ticket back",
-                code == 0 and st.get("retyped") == ["T-1"]
-                and st["types"]["T-1"] == "Story", out.strip()[:200])
+            board(("T-1", "Task", "9.1 - Widget Archive"),
+                  ("T-2", "Task", "Separate the front end"))
+            code, out = run_script("jira_feed.py", "audit", "--project", str(repo),
+                                   "--acli", str(acli), "--jira-project", "TEST", "--apply")
+            st = get_state(state)
+            c.check("audit --apply: converts and reads the ticket back",
+                    code == 0 and st.get("retyped") == ["T-1"]
+                    and st["types"]["T-1"] == "Story", out.strip()[:200])
 
-        # THE load-bearing case. A Bug is a Story or Task flagged as broken - same number, same
-        # story file - so every rule here reads it as a mistype. "Correcting" it erases the one
-        # signal that the work is broken. This pass cannot tell "still broken" from "fixed";
-        # only close-out can, so only `devrecord --closing` may clear it.
-        board(("T-1", "Bug", "9.1 - Widget Archive"),
-              ("T-2", "Task", "Separate the front end"))
-        code, out = run_script("jira_feed.py", "audit", "--project", str(repo),
-                               "--acli", str(acli), "--jira-project", "TEST", "--apply")
-        st = get_state(state)
-        c.check("audit: NEVER retypes a Bug, even when it looks like a mistyped Story",
-                "retyped" not in st and st["types"]["T-1"] == "Bug", out.strip()[:200])
-        c.check("audit: says why the Bug was left alone",
-                "left for close-out" in out and code == 0, out.strip()[:200])
+            # THE load-bearing case. A Bug is a Story or Task flagged as broken - same number, same
+            # story file - so every rule here reads it as a mistype. "Correcting" it erases the one
+            # signal that the work is broken. This pass cannot tell "still broken" from "fixed";
+            # only close-out can, so only `devrecord --closing` may clear it.
+            board(("T-1", "Bug", "9.1 - Widget Archive"),
+                  ("T-2", "Task", "Separate the front end"))
+            code, out = run_script("jira_feed.py", "audit", "--project", str(repo),
+                                   "--acli", str(acli), "--jira-project", "TEST", "--apply")
+            st = get_state(state)
+            c.check("audit: NEVER retypes a Bug, even when it looks like a mistyped Story",
+                    "retyped" not in st and st["types"]["T-1"] == "Bug", out.strip()[:200])
+            c.check("audit: says why the Bug was left alone",
+                    "left for close-out" in out and code == 0, out.strip()[:200])
 
-        # ...and the same for a Bug over TASK work, which the first cut could never clear.
-        board(("T-1", "Bug", "Separate the front end"),
-              ("T-2", "Task", "Something else"))
-        code, out = run_script("jira_feed.py", "audit", "--project", str(repo),
-                               "--acli", str(acli), "--jira-project", "TEST", "--apply")
-        c.check("audit: leaves a Bug over TASK work alone too",
-                "retyped" not in get_state(state)
-                and get_state(state)["types"]["T-1"] == "Bug", out.strip()[:200])
+            # ...and the same for a Bug over TASK work, which the first cut could never clear.
+            board(("T-1", "Bug", "Separate the front end"),
+                  ("T-2", "Task", "Something else"))
+            code, out = run_script("jira_feed.py", "audit", "--project", str(repo),
+                                   "--acli", str(acli), "--jira-project", "TEST", "--apply")
+            c.check("audit: leaves a Bug over TASK work alone too",
+                    "retyped" not in get_state(state)
+                    and get_state(state)["types"]["T-1"] == "Bug", out.strip()[:200])
 
-        board(("T-1", "Story", "9.1 - Widget Archive"),
-              ("T-2", "Task", "Separate the front end"))
-        code, out = run_script("jira_feed.py", "audit", "--project", str(repo),
-                               "--acli", str(acli), "--jira-project", "TEST")
-        c.check("audit: a correct board reports clean (positive control)",
-                code == 0 and "every type agrees" in out, out.strip()[:200])
+            board(("T-1", "Story", "9.1 - Widget Archive"),
+                  ("T-2", "Task", "Separate the front end"))
+            code, out = run_script("jira_feed.py", "audit", "--project", str(repo),
+                                   "--acli", str(acli), "--jira-project", "TEST")
+            c.check("audit: a correct board reports clean (positive control)",
+                    code == 0 and "every type agrees" in out, out.strip()[:200])
 
-        # ── audit: subtask invariants (SCC-119) ───────────────────────────────
-        # The old pass SKIPPED every Subtask as "a container", which is doubly wrong: a
-        # subtask is a LEAF, and skipping meant nothing ever checked the three things that
-        # actually rot on a parented board. `work_type()` is deliberately NOT run on them -
-        # it answers Story|Task from a summary, and a subtask's type comes from its PARENT'S
-        # type, which is a board read.
-        def aud(*extra):
-            return run_script("jira_feed.py", "audit", "--project", str(repo),
-                              "--acli", str(acli), "--jira-project", "TEST", *extra)
+            # ── audit: subtask invariants (SCC-119) ───────────────────────────────
+            # The old pass SKIPPED every Subtask as "a container", which is doubly wrong: a
+            # subtask is a LEAF, and skipping meant nothing ever checked the three things that
+            # actually rot on a parented board. `work_type()` is deliberately NOT run on them -
+            # it answers Story|Task from a summary, and a subtask's type comes from its PARENT'S
+            # type, which is a board read.
+            def aud(*extra):
+                return run_script("jira_feed.py", "audit", "--project", str(repo),
+                                  "--acli", str(acli), "--jira-project", "TEST", *extra)
 
-        board(("T-1", "Task", "Parent job"), ("T-2", "Subtask", "A real piece of work"),
-              parents={"T-2": "T-1"},
-              statuses={"T-1": "In Progress", "T-2": "In Progress"})
-        code, out = aud()
-        c.check("audit: a well-formed Subtask under a Task is OK, not noise",
-                code == 0 and "every type agrees" in out, out.strip()[:240])
+            board(("T-1", "Task", "Parent job"), ("T-2", "Subtask", "A real piece of work"),
+                  parents={"T-2": "T-1"},
+                  statuses={"T-1": "In Progress", "T-2": "In Progress"})
+            code, out = aud()
+            c.check("audit: a well-formed Subtask under a Task is OK, not noise",
+                    code == 0 and "every type agrees" in out, out.strip()[:240])
 
-        board(("T-1", "Task", "Parent job"), ("T-2", "Subtask", "Orphan"))
-        code, out = aud()
-        c.check("audit: a PARENTLESS Subtask is reported (it was silently skipped before)",
-                code == 1 and "T-2" in out and "no parent" in out.lower(),
-                out.strip()[:240])
+            board(("T-1", "Task", "Parent job"), ("T-2", "Subtask", "Orphan"))
+            code, out = aud()
+            c.check("audit: a PARENTLESS Subtask is reported (it was silently skipped before)",
+                    code == 1 and "T-2" in out and "no parent" in out.lower(),
+                    out.strip()[:240])
 
-        board(("T-1", "Epic", "Grouping epic"), ("T-2", "Subtask", "Wrong level"),
-              parents={"T-2": "T-1"})
-        code, out = aud()
-        c.check("audit: a Subtask parented to an EPIC is reported - Jira's level -1 sits "
+            board(("T-1", "Epic", "Grouping epic"), ("T-2", "Subtask", "Wrong level"),
+                  parents={"T-2": "T-1"})
+            code, out = aud()
+            c.check("audit: a Subtask parented to an EPIC is reported - Jira's level -1 sits "
                 "under a Story or Task, never an Epic",
-                code == 1 and "T-2" in out and "Epic" in out, out.strip()[:240])
+                    code == 1 and "T-2" in out and "Epic" in out, out.strip()[:240])
 
-        board(("T-1", "Subtask", "A subtask"), ("T-2", "Subtask", "Nested under it"),
-              parents={"T-2": "T-1"})
-        code, out = aud()
-        c.check("audit: a NESTED Subtask is reported - hierarchyLevel -1 is the floor",
-                code == 1 and "T-2" in out, out.strip()[:240])
+            board(("T-1", "Subtask", "A subtask"), ("T-2", "Subtask", "Nested under it"),
+                  parents={"T-2": "T-1"})
+            code, out = aud()
+            c.check("audit: a NESTED Subtask is reported - hierarchyLevel -1 is the floor",
+                    code == 1 and "T-2" in out, out.strip()[:240])
 
-        # ⭐ This row is what replaced the cut parent-cascade (F6). The board still gets told
-        # when a parent lags its children - it is just told by the audit, which reports, and
-        # not by `start`, which writes.
-        board(("T-1", "Task", "Parent job"), ("T-2", "Subtask", "Already shipping"),
-              parents={"T-2": "T-1"},
-              statuses={"T-1": "To Do Next", "T-2": "In Progress"})
-        code, out = aud()
-        c.check("audit: reports a parent that LAGS its children (replaces the cut cascade)",
-                code == 1 and "T-1" in out and "behind" in out.lower(),
-                out.strip()[:240])
+            # ⭐ This row is what replaced the cut parent-cascade (F6). The board still gets told
+            # when a parent lags its children - it is just told by the audit, which reports, and
+            # not by `start`, which writes.
+            board(("T-1", "Task", "Parent job"), ("T-2", "Subtask", "Already shipping"),
+                  parents={"T-2": "T-1"},
+                  statuses={"T-1": "To Do Next", "T-2": "In Progress"})
+            code, out = aud()
+            c.check("audit: reports a parent that LAGS its children (replaces the cut cascade)",
+                    code == 1 and "T-1" in out and "behind" in out.lower(),
+                    out.strip()[:240])
 
-        # A subtask flagged Bug by hand in the UI: still hands-off, same reason as always.
-        board(("T-1", "Task", "Parent job"), ("T-2", "Bug", "Hand-flagged in the UI"),
-              parents={"T-2": "T-1"})
-        code, out = aud("--apply")
-        c.check("audit: a hand-flagged Bug under a parent is still left for close-out",
-                "retyped" not in get_state(state), out.strip()[:240])
+            # A subtask flagged Bug by hand in the UI: still hands-off, same reason as always.
+            board(("T-1", "Task", "Parent job"), ("T-2", "Bug", "Hand-flagged in the UI"),
+                  parents={"T-2": "T-1"})
+            code, out = aud("--apply")
+            c.check("audit: a hand-flagged Bug under a parent is still left for close-out",
+                    "retyped" not in get_state(state), out.strip()[:240])
 
-        # ── trace: propose the ticket behind a path. Reads git, NEVER the board ──
-        traced = make_trace_repo(tmp)
+            # ── trace: propose the ticket behind a path. Reads git, NEVER the board ──
+            traced = make_trace_repo(tmp)
 
-        def tr(*args: str) -> tuple[int, str]:
+            def tr(*args: str) -> tuple[int, str]:
+                os.environ["STUB_STATE"] = str(state)
+                return run_script("jira_feed.py", "trace", "--project", str(traced), *args)
+
+            # THE load-bearing negative for this verb: it must not be able to touch Jira at all.
+            # `--acli` points at a binary that does not exist, so any board call would die.
+            code, out = tr("--path", "widget.py:2", "--acli", str(tmp / "no-such-acli"))
+            c.check("trace: never calls acli (a bad --acli cannot break it)",
+                    code == 0, out.strip()[:200])
+            c.check("trace: blame on the exact line names the ticket that WROTE it",
+                    "SCC-11" in out and "blame widget.py:2" in out, out.strip()[:240])
+            c.check("trace: says out loud that it is a proposal",
+                    "THIS IS A PROPOSAL" in out)
+            c.check("trace: hands over the exact flag command, best candidate first",
+                    "flag --key SCC-11" in out, out.strip()[:240])
+
+            code, out = tr("--path", "widget.py", "--json")
+            data = json.loads(out[out.index("{"):])
+            keys = [c_["key"] for c_ in data["candidates"]]
+            c.check("trace --json: carries every keyed commit on the file",
+                    set(keys) == {"SCC-10", "SCC-11", "SCC-12"}, str(keys))
+            # jira.conf says JIRA_KEYS="SCC". Commit prose says "AVCH-9" all the time; proposing a
+            # ticket in another project would flag a ticket this repo cannot even close.
+            c.check("trace: a foreign project's key is never proposed", "AVCH-9" not in out)
+            by_key = {c_["key"]: c_ for c_ in data["candidates"]}
+            # `merge: SCC-12 -> main` repeats a key its own commit already carries. Counting both
+            # double-weights whichever ticket merged last, for no added information.
+            c.check("trace: a merge subject does not double-count its branch's key",
+                    by_key["SCC-12"]["hits"] == 1, json.dumps(by_key["SCC-12"]["why"]))
+            c.check("trace: a file-only hit is marked as the weaker signal",
+                    by_key["SCC-11"]["blame"] is False, "no :LINE was given")
+
+            # Line 3 was last written by SCC-12; the file's newest keyed commit is AVCH-9 and its
+            # oldest is SCC-10. Ranking must follow the LINE, or the "strong" signal is decoration.
+            code, out = tr("--path", "widget.py:3", "--json")
+            top = json.loads(out[out.index("{"):])["candidates"][0]
+            c.check("trace: blame follows the LINE, and ranks above file-only hits",
+                    top["key"] == "SCC-12" and top["blame"] is True, json.dumps(top)[:240])
+
+            code, out = tr("--path", "orphan.md")
+            c.check("trace: no keyed commit -> exit 1, and says so",
+                    code == 1 and "no ticket proposed" in out, out.strip()[:200])
+
+            code, out = tr("--path", "widget.py:2", "--path", "ghost.py:9")
+            c.check("trace: a path that does not exist warns and is skipped, not fatal",
+                    code == 0 and "ghost.py: not a file" in out, out.strip()[:240])
+
+            # ── flag: the RAISE half. Story|Task -> Bug, and out of Done ────────────
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "Done"},
+                      summary="a shipped task")
+            code, out = jf("flag", "--key", "TEST-7", "--reason", "the roster 500s on load")
+            c.check("flag: dry run renders and writes nothing",
+                    code == 0 and "DRY RUN" in out
+                    and get_state(state)["types"]["TEST-7"] == "Task"
+                    and not get_state(state)["comments"], out.strip()[:200])
+
+            code, out = jf("flag", "--key", "TEST-7", "--reason", "the roster 500s on load",
+                           "--evidence", "500 on GET /roster", "--found-by", "live-testing",
+                           "--apply")
+            st = get_state(state)
+            c.check("flag: a shipped Task becomes a Bug",
+                    code == 0 and st["types"]["TEST-7"] == "Bug", out.strip()[:240])
+            c.check("flag: a Done ticket comes back out of Done",
+                    st["statuses"]["TEST-7"] == "To Do", out.strip()[:200])
+            body = "\n".join(x["body"] for x in st["comments"])
+            c.check("flag: the ticket carries WHY, not just the flag",
+                    "the roster 500s on load" in body and "500 on GET /roster" in body)
+            # Close-out recomputes the type from the rule, but a human reading the board later
+            # needs to see what it WAS - otherwise a flagged ticket has no record of its own kind.
+            c.check("flag: the comment records what it was, so the restore is auditable",
+                    "shipped as a **Task**" in body and "restores it to `Task`" in body)
+            c.check("flag: the comment is not mistaken for the Dev Record",
+                    "dev record" not in body[:400].lower())
+
+            # Every case above reads `issuetype` and `status` back through `--fields`, which is a
+            # WHITELIST on the real acli - and `issuetype` was missing from production's list for
+            # two tickets (SCC-54). It passed anyway, because the stub returned the whole shape no
+            # matter what was asked for. This is the positive control for the fix: the stub must
+            # actually be strict, or every read-back case above is testing nothing.
             os.environ["STUB_STATE"] = str(state)
-            return run_script("jira_feed.py", "trace", "--project", str(traced), *args)
+            probe = subprocess.run([str(acli), "jira", "workitem", "view", "TEST-7",
+                                    "--fields", "key,summary", "--json"],
+                                   capture_output=True, text=True)
+            c.check("fields whitelist: the stub is STRICT, so the read-back cases mean something",
+                    '"issuetype"' not in probe.stdout and '"status"' not in probe.stdout,
+                    "a stub more generous than acli hid this defect twice")
 
-        # THE load-bearing negative for this verb: it must not be able to touch Jira at all.
-        # `--acli` points at a binary that does not exist, so any board call would die.
-        code, out = tr("--path", "widget.py:2", "--acli", str(tmp / "no-such-acli"))
-        c.check("trace: never calls acli (a bad --acli cannot break it)",
-                code == 0, out.strip()[:200])
-        c.check("trace: blame on the exact line names the ticket that WROTE it",
-                "SCC-11" in out and "blame widget.py:2" in out, out.strip()[:240])
-        c.check("trace: says out loud that it is a proposal",
-                "THIS IS A PROPOSAL" in out)
-        c.check("trace: hands over the exact flag command, best candidate first",
-                "flag --key SCC-11" in out, out.strip()[:240])
+            # Idempotent: two testers finding the same bug must not fight over the board.
+            before = len(get_state(state)["comments"])
+            code, out = jf("flag", "--key", "TEST-7", "--reason", "same bug, found again",
+                           "--apply")
+            c.check("flag: an already-flagged ticket is a no-op, not a second flag",
+                    code == 0 and "already flagged" in out
+                    and len(get_state(state)["comments"]) == before, out.strip()[:200])
 
-        code, out = tr("--path", "widget.py", "--json")
-        data = json.loads(out[out.index("{"):])
-        keys = [c_["key"] for c_ in data["candidates"]]
-        c.check("trace --json: carries every keyed commit on the file",
-                set(keys) == {"SCC-10", "SCC-11", "SCC-12"}, str(keys))
-        # jira.conf says JIRA_KEYS="SCC". Commit prose says "AVCH-9" all the time; proposing a
-        # ticket in another project would flag a ticket this repo cannot even close.
-        c.check("trace: a foreign project's key is never proposed", "AVCH-9" not in out)
-        by_key = {c_["key"]: c_ for c_ in data["candidates"]}
-        # `merge: SCC-12 -> main` repeats a key its own commit already carries. Counting both
-        # double-weights whichever ticket merged last, for no added information.
-        c.check("trace: a merge subject does not double-count its branch's key",
-                by_key["SCC-12"]["hits"] == 1, json.dumps(by_key["SCC-12"]["why"]))
-        c.check("trace: a file-only hit is marked as the weaker signal",
-                by_key["SCC-11"]["blame"] is False, "no :LINE was given")
+            # THE round trip - raise and clear are one mechanism or neither works.
+            code, out = jf("devrecord", "--story", "chore-thing", "--key", "TEST-7", "--apply",
+                           "--closing", "--followon", "none")
+            c.check("round trip: flag -> Bug -> close-out restores Task",
+                    code == 0 and get_state(state)["types"]["TEST-7"] == "Task"
+                    and "the bug is gone" in out, out.strip()[:240])
 
-        # Line 3 was last written by SCC-12; the file's newest keyed commit is AVCH-9 and its
-        # oldest is SCC-10. Ranking must follow the LINE, or the "strong" signal is decoration.
-        code, out = tr("--path", "widget.py:3", "--json")
-        top = json.loads(out[out.index("{"):])["candidates"][0]
-        c.check("trace: blame follows the LINE, and ranks above file-only hits",
-                top["key"] == "SCC-12" and top["blame"] is True, json.dumps(top)[:240])
+            # In flight, not finished: shoving it back to To Do would erase real state to record
+            # something the type already says.
+            set_state(state, types={"TEST-8": "Story"}, statuses={"TEST-8": "In Review"})
+            code, out = jf("flag", "--key", "TEST-8", "--reason", "AC-2 never worked", "--apply")
+            c.check("flag: a ticket still in flight keeps its status",
+                    code == 0 and get_state(state)["statuses"]["TEST-8"] == "In Review"
+                    and "nothing to reopen" in out, out.strip()[:240])
+            c.check("flag: a Story is flagged exactly like a Task",
+                    get_state(state)["types"]["TEST-8"] == "Bug")
 
-        code, out = tr("--path", "orphan.md")
-        c.check("trace: no keyed commit -> exit 1, and says so",
-                code == 1 and "no ticket proposed" in out, out.strip()[:200])
+            set_state(state, types={"TEST-9": "Epic"}, statuses={"TEST-9": "Done"})
+            code, out = jf("flag", "--key", "TEST-9", "--reason", "whatever", "--apply")
+            c.check("flag: an Epic is refused - a container is never broken work",
+                    code == 2 and "container is never a Bug" in out
+                    and get_state(state)["types"]["TEST-9"] == "Epic", out.strip()[:200])
 
-        code, out = tr("--path", "widget.py:2", "--path", "ghost.py:9")
-        c.check("trace: a path that does not exist warns and is skipped, not fatal",
-                code == 0 and "ghost.py: not a file" in out, out.strip()[:240])
+            # ⭐ SCC-119, operator ruling: a Subtask is never labelled `Bug`. Breakage is recorded
+            # on the MAIN ticket - the parent that owns the job. So `flag` still refuses a
+            # subtask, but for the RIGHT reason: the old message called it a container, which is
+            # false (it is a leaf), and told the operator to "flag the child ticket whose work
+            # broke" - which IS the subtask, so the message argued against itself.
+            set_state(state, types={"TEST-7": "Subtask", "TEST-4": "Task"},
+                      statuses={"TEST-7": "Done", "TEST-4": "In Progress"},
+                      parents={"TEST-7": "TEST-4"})
+            code, out = jf("flag", "--key", "TEST-7", "--reason", "broke", "--apply")
+            c.check("flag: a Subtask is refused and REDIRECTS to its parent by key (SCC-119)",
+                    code == 2 and "TEST-4" in out
+                    and get_state(state)["types"]["TEST-7"] == "Subtask",
+                    out.strip()[:240])
+            c.check("flag: the refusal no longer calls a Subtask a container - it is a leaf",
+                    "container" not in out.lower(), out.strip()[:240])
 
-        # ── flag: the RAISE half. Story|Task -> Bug, and out of Done ────────────
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "Done"},
-                  summary="a shipped task")
-        code, out = jf("flag", "--key", "TEST-7", "--reason", "the roster 500s on load")
-        c.check("flag: dry run renders and writes nothing",
-                code == 0 and "DRY RUN" in out
-                and get_state(state)["types"]["TEST-7"] == "Task"
-                and not get_state(state)["comments"], out.strip()[:200])
+            # A parentless subtask must still refuse rather than crash on the missing field. The
+            # board should never hold one (audit reports it), but `flag` is a write verb and a
+            # traceback here would read as "the board rejected it".
+            set_state(state, types={"TEST-7": "Subtask"}, statuses={"TEST-7": "Done"})
+            code, out = jf("flag", "--key", "TEST-7", "--reason", "broke", "--apply")
+            c.check("flag: a PARENTLESS Subtask refuses cleanly, never tracebacks",
+                    code == 2 and get_state(state)["types"]["TEST-7"] == "Subtask",
+                    out.strip()[:240])
 
-        code, out = jf("flag", "--key", "TEST-7", "--reason", "the roster 500s on load",
-                       "--evidence", "500 on GET /roster", "--found-by", "live-testing",
-                       "--apply")
-        st = get_state(state)
-        c.check("flag: a shipped Task becomes a Bug",
-                code == 0 and st["types"]["TEST-7"] == "Bug", out.strip()[:240])
-        c.check("flag: a Done ticket comes back out of Done",
-                st["statuses"]["TEST-7"] == "To Do", out.strip()[:200])
-        body = "\n".join(x["body"] for x in st["comments"])
-        c.check("flag: the ticket carries WHY, not just the flag",
-                "the roster 500s on load" in body and "500 on GET /roster" in body)
-        # Close-out recomputes the type from the rule, but a human reading the board later
-        # needs to see what it WAS - otherwise a flagged ticket has no record of its own kind.
-        c.check("flag: the comment records what it was, so the restore is auditable",
-                "shipped as a **Task**" in body and "restores it to `Task`" in body)
-        c.check("flag: the comment is not mistaken for the Dev Record",
-                "dev record" not in body[:400].lower())
+            # acli exits 0 on a transition it did not perform - the same swallow the whole script
+            # exists to catch, one verb further on.
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "Done"},
+                      stuck_status=True)
+            code, out = jf("flag", "--key", "TEST-7", "--reason", "still broken", "--apply")
+            c.check("flag: a transition that silently no-ops is reported, not assumed",
+                    code == 2 and "still Done" in out, out.strip()[:240])
 
-        # Every case above reads `issuetype` and `status` back through `--fields`, which is a
-        # WHITELIST on the real acli - and `issuetype` was missing from production's list for
-        # two tickets (SCC-54). It passed anyway, because the stub returned the whole shape no
-        # matter what was asked for. This is the positive control for the fix: the stub must
-        # actually be strict, or every read-back case above is testing nothing.
-        os.environ["STUB_STATE"] = str(state)
-        probe = subprocess.run([str(acli), "jira", "workitem", "view", "TEST-7",
-                                "--fields", "key,summary", "--json"],
-                               capture_output=True, text=True)
-        c.check("fields whitelist: the stub is STRICT, so the read-back cases mean something",
-                '"issuetype"' not in probe.stdout and '"status"' not in probe.stdout,
-                "a stub more generous than acli hid this defect twice")
+            # ── start: the OTHER end of the lifecycle (SCC-113) ────────────────────
+            # Four seams wrote `Done` and exactly one wrote `In Progress` - the BMAD story lane -
+            # so on a board where every non-epic ticket is a Task, nothing was ever visible as in
+            # flight. This is that seam, as a verb rather than a prose step, because the prose one
+            # is the one that never ran.
 
-        # Idempotent: two testers finding the same bug must not fight over the board.
-        before = len(get_state(state)["comments"])
-        code, out = jf("flag", "--key", "TEST-7", "--reason", "same bug, found again",
-                       "--apply")
-        c.check("flag: an already-flagged ticket is a no-op, not a second flag",
-                code == 0 and "already flagged" in out
-                and len(get_state(state)["comments"]) == before, out.strip()[:200])
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "To Do"})
+            code, out = jf("start", "--key", "TEST-7")
+            c.check("start: renders without --apply and writes NOTHING",
+                    code == 0 and not get_state(state).get("transitions")
+                    and get_state(state)["statuses"]["TEST-7"] == "To Do", out.strip()[:200])
 
-        # THE round trip - raise and clear are one mechanism or neither works.
-        code, out = jf("devrecord", "--story", "chore-thing", "--key", "TEST-7", "--apply",
-                       "--closing", "--followon", "none")
-        c.check("round trip: flag -> Bug -> close-out restores Task",
-                code == 0 and get_state(state)["types"]["TEST-7"] == "Task"
-                and "the bug is gone" in out, out.strip()[:240])
-
-        # In flight, not finished: shoving it back to To Do would erase real state to record
-        # something the type already says.
-        set_state(state, types={"TEST-8": "Story"}, statuses={"TEST-8": "In Review"})
-        code, out = jf("flag", "--key", "TEST-8", "--reason", "AC-2 never worked", "--apply")
-        c.check("flag: a ticket still in flight keeps its status",
-                code == 0 and get_state(state)["statuses"]["TEST-8"] == "In Review"
-                and "nothing to reopen" in out, out.strip()[:240])
-        c.check("flag: a Story is flagged exactly like a Task",
-                get_state(state)["types"]["TEST-8"] == "Bug")
-
-        set_state(state, types={"TEST-9": "Epic"}, statuses={"TEST-9": "Done"})
-        code, out = jf("flag", "--key", "TEST-9", "--reason", "whatever", "--apply")
-        c.check("flag: an Epic is refused - a container is never broken work",
-                code == 2 and "container is never a Bug" in out
-                and get_state(state)["types"]["TEST-9"] == "Epic", out.strip()[:200])
-
-        # ⭐ SCC-119, operator ruling: a Subtask is never labelled `Bug`. Breakage is recorded
-        # on the MAIN ticket - the parent that owns the job. So `flag` still refuses a
-        # subtask, but for the RIGHT reason: the old message called it a container, which is
-        # false (it is a leaf), and told the operator to "flag the child ticket whose work
-        # broke" - which IS the subtask, so the message argued against itself.
-        set_state(state, types={"TEST-7": "Subtask", "TEST-4": "Task"},
-                  statuses={"TEST-7": "Done", "TEST-4": "In Progress"},
-                  parents={"TEST-7": "TEST-4"})
-        code, out = jf("flag", "--key", "TEST-7", "--reason", "broke", "--apply")
-        c.check("flag: a Subtask is refused and REDIRECTS to its parent by key (SCC-119)",
-                code == 2 and "TEST-4" in out
-                and get_state(state)["types"]["TEST-7"] == "Subtask",
-                out.strip()[:240])
-        c.check("flag: the refusal no longer calls a Subtask a container - it is a leaf",
-                "container" not in out.lower(), out.strip()[:240])
-
-        # A parentless subtask must still refuse rather than crash on the missing field. The
-        # board should never hold one (audit reports it), but `flag` is a write verb and a
-        # traceback here would read as "the board rejected it".
-        set_state(state, types={"TEST-7": "Subtask"}, statuses={"TEST-7": "Done"})
-        code, out = jf("flag", "--key", "TEST-7", "--reason", "broke", "--apply")
-        c.check("flag: a PARENTLESS Subtask refuses cleanly, never tracebacks",
-                code == 2 and get_state(state)["types"]["TEST-7"] == "Subtask",
-                out.strip()[:240])
-
-        # acli exits 0 on a transition it did not perform - the same swallow the whole script
-        # exists to catch, one verb further on.
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "Done"},
-                  stuck_status=True)
-        code, out = jf("flag", "--key", "TEST-7", "--reason", "still broken", "--apply")
-        c.check("flag: a transition that silently no-ops is reported, not assumed",
-                code == 2 and "still Done" in out, out.strip()[:240])
-
-        # ── start: the OTHER end of the lifecycle (SCC-113) ────────────────────
-        # Four seams wrote `Done` and exactly one wrote `In Progress` - the BMAD story lane -
-        # so on a board where every non-epic ticket is a Task, nothing was ever visible as in
-        # flight. This is that seam, as a verb rather than a prose step, because the prose one
-        # is the one that never ran.
-
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "To Do"})
-        code, out = jf("start", "--key", "TEST-7")
-        c.check("start: renders without --apply and writes NOTHING",
-                code == 0 and not get_state(state).get("transitions")
-                and get_state(state)["statuses"]["TEST-7"] == "To Do", out.strip()[:200])
-
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "To Do"})
-        code, out = jf("start", "--key", "TEST-7", "--apply")
-        st = get_state(state)
-        c.check("start: To Do -> In Progress", code == 0
-                and st["statuses"]["TEST-7"] == "In Progress", out.strip()[:200])
-        c.check("start: passes --yes, or acli blocks on a prompt no agent can answer",
-                bool(st.get("transitions")) and st["transitions"][0]["yes"],
-                "jira.md:268 names this trap; three call sites still omit it")
-
-        # `To Do Next` is the operator's hand-picked queue - a To Do-category status, so it
-        # starts exactly like `To Do`. It exists on SCC and not on AVCH; per-board-optional.
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "To Do Next"})
-        code, out = jf("start", "--key", "TEST-7", "--apply")
-        c.check("start: To Do Next -> In Progress (the queue is a To Do category)",
-                code == 0 and get_state(state)["statuses"]["TEST-7"] == "In Progress",
-                out.strip()[:200])
-
-        # Idempotence is not cosmetic: the post-commit hook fires on EVERY commit, and two
-        # lanes can hold the same key. A second call must make no second transition.
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
-        code, out = jf("start", "--key", "TEST-7", "--apply")
-        c.check("start: already In Progress is a no-op that exits 0",
-                code == 0 and "already" in out.lower(), out.strip()[:200])
-        c.check("start: the no-op makes NO transition call at all",
-                not get_state(state).get("transitions"),
-                "an end-state check would pass here even if it called acli every commit")
-
-        # Guardrail 1, in reverse. Borrowing a finished ticket's key is the defect that
-        # silently decorates the wrong ticket and overwrites its Dev Record.
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "Done"})
-        code, out = jf("start", "--key", "TEST-7", "--apply")
-        c.check("start: a Done ticket is REFUSED - that means the key is wrong",
-                code == 2 and "not your key" in out.lower()
-                and get_state(state)["statuses"]["TEST-7"] == "Done", out.strip()[:240])
-
-        # Narrow on purpose, exactly like flag's "only out of Done": a verb that moves from
-        # anywhere erases real state. `Blocking` is an impediment and `In Review` is finished
-        # work waiting on a human - starting either would destroy the only signal they carry.
-        for held in ("Blocking", "In Review", "Deferred"):
-            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": held})
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "To Do"})
             code, out = jf("start", "--key", "TEST-7", "--apply")
-            # Exit 3, not 0: "left alone" is NOT settled. The hook writes its once-per-branch
-            # marker on 0, so returning 0 here silenced a lane whose ticket was `Blocking`
-            # when it opened and went back to `To Do` when the blocker cleared.
-            c.check(f"start: {held} is left alone, and says ASK AGAIN (exit 3, not 0)",
-                    code == 3 and get_state(state)["statuses"]["TEST-7"] == held
-                    and not get_state(state).get("transitions"), out.strip()[:200])
+            st = get_state(state)
+            c.check("start: To Do -> In Progress", code == 0
+                    and st["statuses"]["TEST-7"] == "In Progress", out.strip()[:200])
+            c.check("start: passes --yes, or acli blocks on a prompt no agent can answer",
+                    bool(st.get("transitions")) and st["transitions"][0]["yes"],
+                    "jira.md:268 names this trap; three call sites still omit it")
 
-        # An Epic is allowed here and refused by `flag` - the difference is deliberate. An
-        # epic under active development IS in progress; an epic is never itself broken work.
-        set_state(state, types={"TEST-5": "Epic"}, statuses={"TEST-5": "To Do"})
-        code, out = jf("start", "--key", "TEST-5", "--apply")
-        c.check("start: an Epic IS allowed (unlike flag) - epic/ is in scope",
-                code == 0 and get_state(state)["statuses"]["TEST-5"] == "In Progress",
-                out.strip()[:200])
+            # `To Do Next` is the operator's hand-picked queue - a To Do-category status, so it
+            # starts exactly like `To Do`. It exists on SCC and not on AVCH; per-board-optional.
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "To Do Next"})
+            code, out = jf("start", "--key", "TEST-7", "--apply")
+            c.check("start: To Do Next -> In Progress (the queue is a To Do category)",
+                    code == 0 and get_state(state)["statuses"]["TEST-7"] == "In Progress",
+                    out.strip()[:200])
 
-        # ⭐ SCC-119: this assertion is INVERTED from its first cut, which pinned the defect
-        # in place. A Subtask is a LEAF (`hierarchyLevel: -1`), not a container - it carries
-        # its own `chore/<KEY>-<slug>` branch and ships code exactly like a Task. Refusing it
-        # here exited 2, and `post-commit-jira-start.sh` writes its once-per-branch marker
-        # ONLY on exit 0 - so a subtask lane re-fired a board round-trip on EVERY commit, with
-        # both streams swallowed, while its ticket sat in `To Do` for the whole build. That is
-        # the exact failure SCC-113 exists to close, returning through a type check. Proven on
-        # SCC-123, which shipped from `chore/SCC-123-evidence-extract` and was never seen
-        # `In Progress`.
-        set_state(state, types={"TEST-7": "Subtask"}, statuses={"TEST-7": "To Do"})
-        code, out = jf("start", "--key", "TEST-7", "--apply")
-        c.check("start: a Subtask is ACCEPTED - it is a leaf that carries a branch (SCC-119)",
-                code == 0 and get_state(state)["statuses"]["TEST-7"] == "In Progress",
-                out.strip()[:200])
+            # Idempotence is not cosmetic: the post-commit hook fires on EVERY commit, and two
+            # lanes can hold the same key. A second call must make no second transition.
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+            code, out = jf("start", "--key", "TEST-7", "--apply")
+            c.check("start: already In Progress is a no-op that exits 0",
+                    code == 0 and "already" in out.lower(), out.strip()[:200])
+            c.check("start: the no-op makes NO transition call at all",
+                    not get_state(state).get("transitions"),
+                    "an end-state check would pass here even if it called acli every commit")
 
-        # The cascade was CUT (SCC-119, operator ruling): `start` moves the child and ONLY
-        # the child. One board write, one verdict - which is what post-commit's
-        # write-the-marker-only-on-settled logic depends on. `audit` reports a parent that
-        # lags its children instead.
-        set_state(state, types={"TEST-7": "Subtask", "TEST-4": "Task"},
-                  statuses={"TEST-7": "To Do", "TEST-4": "To Do Next"},
-                  parents={"TEST-7": "TEST-4"})
-        code, out = jf("start", "--key", "TEST-7", "--apply")
-        moved = [t["key"] for t in get_state(state).get("transitions", [])]
-        c.check("start: the parent is NOT cascaded - one board write, one verdict",
-                code == 0 and moved == ["TEST-7"]
-                and get_state(state)["statuses"]["TEST-4"] == "To Do Next",
-                f"transitioned={moved} " + out.strip()[:160])
+            # Guardrail 1, in reverse. Borrowing a finished ticket's key is the defect that
+            # silently decorates the wrong ticket and overwrites its Dev Record.
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "Done"})
+            code, out = jf("start", "--key", "TEST-7", "--apply")
+            c.check("start: a Done ticket is REFUSED - that means the key is wrong",
+                    code == 2 and "not your key" in out.lower()
+                    and get_state(state)["statuses"]["TEST-7"] == "Done", out.strip()[:240])
 
-        # ⭐ "the board said no" and "I could not reach the board" are OPPOSITE instructions
-        # - fix your key, versus try again later - and they shared exit 2 until the second
-        # review pass. Worse, a missing binary escaped as an uncaught traceback (exit 1,
-        # which is not a documented code at all), while /smh-quick-dev's table read exit 2
-        # as "the key is wrong, mint a new ticket": a dead uplink instructed a DUPLICATE.
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "To Do"})
-        code, out = run_script("jira_feed.py", "start", "--key", "TEST-7", "--apply",
-                               "--project", str(repo), "--acli", str(tmp / "not-a-binary"))
-        c.check("start: an UNREACHABLE board is exit 4, not 2 and not a traceback",
-                code == 4 and "transport" in out.lower(), out.strip()[:200])
-        c.check("start: unreachable changes nothing on the board",
-                get_state(state)["statuses"]["TEST-7"] == "To Do"
-                and not get_state(state).get("transitions"))
+            # Narrow on purpose, exactly like flag's "only out of Done": a verb that moves from
+            # anywhere erases real state. `Blocking` is an impediment and `In Review` is finished
+            # work waiting on a human - starting either would destroy the only signal they carry.
+            for held in ("Blocking", "In Review", "Deferred"):
+                set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": held})
+                code, out = jf("start", "--key", "TEST-7", "--apply")
+                # Exit 3, not 0: "left alone" is NOT settled. The hook writes its once-per-branch
+                # marker on 0, so returning 0 here silenced a lane whose ticket was `Blocking`
+                # when it opened and went back to `To Do` when the blocker cleared.
+                c.check(f"start: {held} is left alone, and says ASK AGAIN (exit 3, not 0)",
+                        code == 3 and get_state(state)["statuses"]["TEST-7"] == held
+                        and not get_state(state).get("transitions"), out.strip()[:200])
 
-        # The load-bearing negative, same as every other write verb here: acli exits 0 on a
-        # transition it did not perform.
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "To Do"},
-                  stuck_status=True)
-        code, out = jf("start", "--key", "TEST-7", "--apply")
-        c.check("start: a transition that silently no-ops is reported, not assumed",
-                code == 2 and "still" in out.lower(), out.strip()[:240])
+            # An Epic is allowed here and refused by `flag` - the difference is deliberate. An
+            # epic under active development IS in progress; an epic is never itself broken work.
+            set_state(state, types={"TEST-5": "Epic"}, statuses={"TEST-5": "To Do"})
+            code, out = jf("start", "--key", "TEST-5", "--apply")
+            c.check("start: an Epic IS allowed (unlike flag) - epic/ is in scope",
+                    code == 0 and get_state(state)["statuses"]["TEST-5"] == "In Progress",
+                    out.strip()[:200])
 
-        # ── every acli transition in .agents/ carries --yes (SCC-113) ──────────
-        # The guard that stops a FOURTH call site shipping without it. Comment lines are
-        # stripped first: `jira.md` documents the trap by quoting the flag, and a raw scan
-        # would read that prose as coverage for the three call sites that lack it.
-        lobby = SCRIPTS.parent.parent
-        me = Path(__file__).resolve()
+            # ⭐ SCC-119: this assertion is INVERTED from its first cut, which pinned the defect
+            # in place. A Subtask is a LEAF (`hierarchyLevel: -1`), not a container - it carries
+            # its own `chore/<KEY>-<slug>` branch and ships code exactly like a Task. Refusing it
+            # here exited 2, and `post-commit-jira-start.sh` writes its once-per-branch marker
+            # ONLY on exit 0 - so a subtask lane re-fired a board round-trip on EVERY commit, with
+            # both streams swallowed, while its ticket sat in `To Do` for the whole build. That is
+            # the exact failure SCC-113 exists to close, returning through a type check. Proven on
+            # SCC-123, which shipped from `chore/SCC-123-evidence-extract` and was never seen
+            # `In Progress`.
+            set_state(state, types={"TEST-7": "Subtask"}, statuses={"TEST-7": "To Do"})
+            code, out = jf("start", "--key", "TEST-7", "--apply")
+            c.check("start: a Subtask is ACCEPTED - it is a leaf that carries a branch (SCC-119)",
+                    code == 0 and get_state(state)["statuses"]["TEST-7"] == "In Progress",
+                    out.strip()[:200])
 
-        # Matches the START of a real invocation, in either shape this repo writes:
-        #   shell/markdown   acli jira workitem transition --key …
-        #   python argv      acli(binary, ["jira", "workitem", "transition", …
-        # Anchoring on `acli` ALONE was wrong: `ln.find("acli")` locks onto a prose mention
-        # earlier in the sentence ("make sure acli is authenticated, then run `acli jira
-        # workitem transition … --yes`") and truncates the span before the real call.
-        CALL = re.compile(r"""acli(?:\s+jira\s+workitem\s+transition
+            # The cascade was CUT (SCC-119, operator ruling): `start` moves the child and ONLY
+            # the child. One board write, one verdict - which is what post-commit's
+            # write-the-marker-only-on-settled logic depends on. `audit` reports a parent that
+            # lags its children instead.
+            set_state(state, types={"TEST-7": "Subtask", "TEST-4": "Task"},
+                      statuses={"TEST-7": "To Do", "TEST-4": "To Do Next"},
+                      parents={"TEST-7": "TEST-4"})
+            code, out = jf("start", "--key", "TEST-7", "--apply")
+            moved = [t["key"] for t in get_state(state).get("transitions", [])]
+            c.check("start: the parent is NOT cascaded - one board write, one verdict",
+                    code == 0 and moved == ["TEST-7"]
+                    and get_state(state)["statuses"]["TEST-4"] == "To Do Next",
+                    f"transitioned={moved} " + out.strip()[:160])
+
+            # ⭐ "the board said no" and "I could not reach the board" are OPPOSITE instructions
+            # - fix your key, versus try again later - and they shared exit 2 until the second
+            # review pass. Worse, a missing binary escaped as an uncaught traceback (exit 1,
+            # which is not a documented code at all), while /smh-quick-dev's table read exit 2
+            # as "the key is wrong, mint a new ticket": a dead uplink instructed a DUPLICATE.
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "To Do"})
+            code, out = run_script("jira_feed.py", "start", "--key", "TEST-7", "--apply",
+                                   "--project", str(repo), "--acli", str(tmp / "not-a-binary"))
+            c.check("start: an UNREACHABLE board is exit 4, not 2 and not a traceback",
+                    code == 4 and "transport" in out.lower(), out.strip()[:200])
+            c.check("start: unreachable changes nothing on the board",
+                    get_state(state)["statuses"]["TEST-7"] == "To Do"
+                    and not get_state(state).get("transitions"))
+
+            # The load-bearing negative, same as every other write verb here: acli exits 0 on a
+            # transition it did not perform.
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "To Do"},
+                      stuck_status=True)
+            code, out = jf("start", "--key", "TEST-7", "--apply")
+            c.check("start: a transition that silently no-ops is reported, not assumed",
+                    code == 2 and "still" in out.lower(), out.strip()[:240])
+
+            # ── every acli transition in .agents/ carries --yes (SCC-113) ──────────
+            # The guard that stops a FOURTH call site shipping without it. Comment lines are
+            # stripped first: `jira.md` documents the trap by quoting the flag, and a raw scan
+            # would read that prose as coverage for the three call sites that lack it.
+            lobby = SCRIPTS.parent.parent
+            me = Path(__file__).resolve()
+
+            # Matches the START of a real invocation, in either shape this repo writes:
+            #   shell/markdown   acli jira workitem transition --key …
+            #   python argv      acli(binary, ["jira", "workitem", "transition", …
+            # Anchoring on `acli` ALONE was wrong: `ln.find("acli")` locks onto a prose mention
+            # earlier in the sentence ("make sure acli is authenticated, then run `acli jira
+            # workitem transition … --yes`") and truncates the span before the real call.
+            CALL = re.compile(r"""acli(?:\s+jira\s+workitem\s+transition
                                   |\s*\(.*?["']jira["']\s*,\s*["']workitem["']\s*,
                                                        \s*["']transition["'])""", re.X)
 
-        def argv_of(ln: str) -> str:
-            """The part of a line that is actually ARGV: inline code ends at its closing
+            def argv_of(ln: str) -> str:
+                """The part of a line that is actually ARGV: inline code ends at its closing
             backtick, and a trailing `# …` comment is commentary, not an argument."""
-            return ln.split("`", 1)[0].split("#", 1)[0]
+                return ln.split("`", 1)[0].split("#", 1)[0]
 
-        def unterminated(span: str) -> bool:
-            t = span.rstrip()
-            return (t.endswith(("\\", ","))
-                    or span.count("[") > span.count("]")
-                    or span.count("(") > span.count(")"))
+            def unterminated(span: str) -> bool:
+                t = span.rstrip()
+                return (t.endswith(("\\", ","))
+                        or span.count("[") > span.count("]")
+                        or span.count("(") > span.count(")"))
 
-        def offending_lines(lines: list[str]) -> list[int]:
-            """Line numbers whose `acli … workitem transition` call omits `--yes`.
+            def offending_lines(lines: list[str]) -> list[int]:
+                """Line numbers whose `acli … workitem transition` call omits `--yes`.
 
             ⭐ Anchored to the COMMAND SPAN, not to a window — a window let prose on the
             same line excuse a deleted flag, at a site this very ticket was fixing.
@@ -1224,143 +1225,143 @@ def main() -> int:
                 pins that this stays true;
               * `docs/` is out of scope (see the caller).
             """
-            out = []
-            for n, ln in enumerate(lines, 1):
-                if ln.lstrip().startswith(("#", ">", "//")):
-                    continue              # a comment quoting the trap is not a call site
-                # finditer, not search: `… --yes && acli … transition --key K2 --status X`
-                # is two call sites on one line and only the first was ever scanned.
-                for m in CALL.finditer(argv_of(ln) if "`" not in ln else ln):
-                    span = argv_of(ln[m.start():])
-                    j = n
-                    while unterminated(span) and j < len(lines) and j - n < 6:
-                        span += " " + argv_of(lines[j])       # STRIP each joined line too
-                        j += 1
-                    if "--yes" not in span:
-                        out.append(n)
-                        break
-            return out
+                out = []
+                for n, ln in enumerate(lines, 1):
+                    if ln.lstrip().startswith(("#", ">", "//")):
+                        continue              # a comment quoting the trap is not a call site
+                    # finditer, not search: `… --yes && acli … transition --key K2 --status X`
+                    # is two call sites on one line and only the first was ever scanned.
+                    for m in CALL.finditer(argv_of(ln) if "`" not in ln else ln):
+                        span = argv_of(ln[m.start():])
+                        j = n
+                        while unterminated(span) and j < len(lines) and j - n < 6:
+                            span += " " + argv_of(lines[j])       # STRIP each joined line too
+                            j += 1
+                        if "--yes" not in span:
+                            out.append(n)
+                            break
+                return out
 
-        def yes_offenders() -> list[str]:
-            out = []
-            for p in sorted((lobby / ".agents").rglob("*")):
-                if p.suffix not in (".md", ".py", ".sh") or not p.is_file():
-                    continue
-                if p.resolve() == me:
-                    continue
-                for n in offending_lines(p.read_text(encoding="utf-8").splitlines()):
-                    out.append(f"{p.relative_to(lobby)}:{n}")
-            return out
+            def yes_offenders() -> list[str]:
+                out = []
+                for p in sorted((lobby / ".agents").rglob("*")):
+                    if p.suffix not in (".md", ".py", ".sh") or not p.is_file():
+                        continue
+                    if p.resolve() == me:
+                        continue
+                    for n in offending_lines(p.read_text(encoding="utf-8").splitlines()):
+                        out.append(f"{p.relative_to(lobby)}:{n}")
+                return out
 
-        # ⭐ NEGATIVE CONTROL — nothing else in this suite pins that the guard CAN fire.
-        # Each row is a real shape from this repo with the flag surgically removed; the
-        # guard must indict every one, or it is decoration.
-        must_catch = [
-            ['acli jira workitem transition --key K --status "Done"'],
-            ['then `acli jira workitem transition --key K --status "Done"` (**`--yes` or '
+            # ⭐ NEGATIVE CONTROL — nothing else in this suite pins that the guard CAN fire.
+            # Each row is a real shape from this repo with the flag surgically removed; the
+            # guard must indict every one, or it is decoration.
+            must_catch = [
+                ['acli jira workitem transition --key K --status "Done"'],
+                ['then `acli jira workitem transition --key K --status "Done"` (**`--yes` or '
              'acli stops on a confirm prompt no agent shell can answer**)'],
-            ['acli jira workitem transition --key K --status "In Review"'
+                ['acli jira workitem transition --key K --status "In Review"'
              '  # TRAP: needs --key; --yes skips the interactive confirm'],
-            ['t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,',
-             '                  "--status", target])'],
-            # ⭐ The shapes that defeated the previous cut: the joined lines were appended
-            # RAW, so a comment BELOW a wrapped call excused the missing flag - and the
-            # repo's only executable call site is exactly this shape.
-            ['t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,',
-             '                  "--status", target])   # --yes is required here, see jira.md'],
-            ['t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,',
-             '                  "--status", target])',
-             '# --yes: see jira.md for why this flag is mandatory'],
-            ['acli jira workitem transition --key K --status "Done" \\',
-             '# NOTE: --yes skips the confirm'],
-            # Two calls on one line - only the first was ever scanned.
-            ['acli jira workitem transition --key K1 --status "Done" --yes && '
+                ['t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,',
+                 '                  "--status", target])'],
+                # ⭐ The shapes that defeated the previous cut: the joined lines were appended
+                # RAW, so a comment BELOW a wrapped call excused the missing flag - and the
+                # repo's only executable call site is exactly this shape.
+                ['t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,',
+                 '                  "--status", target])   # --yes is required here, see jira.md'],
+                ['t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,',
+                 '                  "--status", target])',
+                 '# --yes: see jira.md for why this flag is mandatory'],
+                ['acli jira workitem transition --key K --status "Done" \\',
+                 '# NOTE: --yes skips the confirm'],
+                # Two calls on one line - only the first was ever scanned.
+                ['acli jira workitem transition --key K1 --status "Done" --yes && '
              'acli jira workitem transition --key K2 --status "Done"'],
-        ]
-        for i, rows in enumerate(must_catch):
-            c.check(f"yes-guard NEGATIVE CONTROL {i}: an un-flagged call IS caught",
-                    offending_lines(rows) == [1],
-                    "prose or a comment saying --yes must never excuse the missing flag: "
-                    + rows[0][:90])
+            ]
+            for i, rows in enumerate(must_catch):
+                c.check(f"yes-guard NEGATIVE CONTROL {i}: an un-flagged call IS caught",
+                        offending_lines(rows) == [1],
+                        "prose or a comment saying --yes must never excuse the missing flag: "
+                        + rows[0][:90])
 
-        must_pass = [
-            ['acli jira workitem transition --key K --status "Done" --yes'],
-            ['t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,',
-             '                  "--status", target, "--yes"])'],
-            ['`tests/test_jira_feed.py` fails if any `workitem transition` omits it.'],
-            # A compliant call wrapped over FOUR lines - the repo's own continuation style,
-            # and the two-line lookahead indicted it. A guard that flags correct code
-            # pressures the next author into a worse layout to appease it.
-            ['acli jira workitem transition \\', '  --key K \\', '  --status "Done" \\',
-             '  --yes'],
-            ['t = acli(binary, ["jira", "workitem", "transition",', '  "--key", args.key,',
-             '  "--status", target,', '  "--yes"])'],
-            # A prose mention of `acli` BEFORE the real call: anchoring on the first `acli`
-            # truncated the span before the command and indicted a compliant line.
-            ['Make sure acli is authenticated, then run '
+            must_pass = [
+                ['acli jira workitem transition --key K --status "Done" --yes'],
+                ['t = acli(binary, ["jira", "workitem", "transition", "--key", args.key,',
+                 '                  "--status", target, "--yes"])'],
+                ['`tests/test_jira_feed.py` fails if any `workitem transition` omits it.'],
+                # A compliant call wrapped over FOUR lines - the repo's own continuation style,
+                # and the two-line lookahead indicted it. A guard that flags correct code
+                # pressures the next author into a worse layout to appease it.
+                ['acli jira workitem transition \\', '  --key K \\', '  --status "Done" \\',
+                 '  --yes'],
+                ['t = acli(binary, ["jira", "workitem", "transition",', '  "--key", args.key,',
+                 '  "--status", target,', '  "--yes"])'],
+                # A prose mention of `acli` BEFORE the real call: anchoring on the first `acli`
+                # truncated the span before the command and indicted a compliant line.
+                ['Make sure acli is authenticated, then run '
              '`acli jira workitem transition --key K --status "Done" --yes`.'],
-        ]
-        for i, rows in enumerate(must_pass):
-            c.check(f"yes-guard POSITIVE CONTROL {i}: a compliant line is NOT caught",
-                    offending_lines(rows) == [],
-                    "a guard that indicts the fix is worse than none: " + rows[0][:90])
+            ]
+            for i, rows in enumerate(must_pass):
+                c.check(f"yes-guard POSITIVE CONTROL {i}: a compliant line is NOT caught",
+                        offending_lines(rows) == [],
+                        "a guard that indicts the fix is worse than none: " + rows[0][:90])
 
-        offenders = yes_offenders()
-        c.check("yes-guard: every `workitem transition` under .agents/ passes --yes",
-                not offenders,
-                "acli prompts without -y and an agent shell cannot answer: "
-                + ", ".join(offenders[:6]))
+            offenders = yes_offenders()
+            c.check("yes-guard: every `workitem transition` under .agents/ passes --yes",
+                    not offenders,
+                    "acli prompts without -y and an agent shell cannot answer: "
+                    + ", ".join(offenders[:6]))
 
-        # Positive control, same shape as the interpreter probe's below: the rule documents
-        # this trap by quoting the bad form in prose. If stripping ever dies, that quote
-        # becomes an offender and this assertion goes red - which is the point.
-        c.check("yes-guard: the comment/quote strip is load-bearing, not decorative",
-                any(all(t in ln for t in ("acli", "workitem", "transition"))
-                    and "--yes" not in ln
-                    for ln in (lobby / ".agents/rules/jira.md")
-                    .read_text(encoding="utf-8").splitlines()
-                    if ln.lstrip().startswith((">", "#"))),
-                "jira.md must keep quoting the un-flagged form in prose, or this guard "
+            # Positive control, same shape as the interpreter probe's below: the rule documents
+            # this trap by quoting the bad form in prose. If stripping ever dies, that quote
+            # becomes an offender and this assertion goes red - which is the point.
+            c.check("yes-guard: the comment/quote strip is load-bearing, not decorative",
+                    any(all(t in ln for t in ("acli", "workitem", "transition"))
+                        and "--yes" not in ln
+                        for ln in (lobby / ".agents/rules/jira.md")
+                        .read_text(encoding="utf-8").splitlines()
+                        if ln.lstrip().startswith((">", "#"))),
+                    "jira.md must keep quoting the un-flagged form in prose, or this guard "
                 "is no longer being exercised against the case that inverts it")
 
-        # ── the interpreter probe, in every hook that has one ──────────────────
-        # The suite cannot EXECUTE these (a .sh will not run on the PC), so this asserts the
-        # contract textually. It is a weak guard by nature - it cannot see order-of-execution
-        # - but it does catch the exact regression it was written for: `pre-commit-encoding.sh`
-        # probed `python || python3`, never tried `py`, and on a box with only `py` the whole
-        # substitution failed so the gate exited 0. Armed in name, checking nothing, silently.
-        hooks = SCRIPTS.parent.parent  # repo root
-        probes = {
-            ".agents/scripts/git-hooks/pre-commit-encoding.sh": True,
-            ".agents/scripts/git-hooks/sop-currency.sh": True,
-            ".githooks/post-commit": False,   # recorder: may skip, must not prefer `python`
-        }
-        for rel, must_announce in probes.items():
-            p = hooks / rel
-            if not p.is_file():
-                c.check(f"probe: {rel} exists", False, "missing")
-                continue
-            # CODE only. The fix's own comment quotes the broken line verbatim, so a whole-file
-            # grep matches the warning ABOUT the bug and reports the fix as the defect - the
-            # same inversion that made a source-grep guard pass on a comment once before.
-            text = "\n".join(ln for ln in p.read_text(encoding="utf-8").splitlines()
-                             if not ln.lstrip().startswith("#"))
-            c.check(f"probe: {rel} tries python3, python AND py",
-                    "for c in python3 python py" in text,
-                    "hooks must probe, never assume - the Mac has no bare `python`")
-            c.check(f"probe: {rel} never falls back to a bare `python` first",
-                    "command -v python |" not in text
-                    and "then PY=python;" not in text)
-            if must_announce:
-                c.check(f"probe: {rel} SAYS so when no interpreter is found",
-                        "no python interpreter found" in text,
-                        "a gate that skips mutely reads as a pass")
-        # Positive control for the strip above: the fix's comment DOES quote the old line, so
-        # a guard reading the raw file would fail here. If this ever passes, the strip is dead.
-        raw = (hooks / ".agents/scripts/git-hooks/pre-commit-encoding.sh").read_text(encoding="utf-8")
-        c.check("probe: the comment-stripping is load-bearing, not decorative",
-                "command -v python |" in raw,
-                "the fix quotes the broken line; a raw grep would flag the fix as the defect")
+            # ── the interpreter probe, in every hook that has one ──────────────────
+            # The suite cannot EXECUTE these (a .sh will not run on the PC), so this asserts the
+            # contract textually. It is a weak guard by nature - it cannot see order-of-execution
+            # - but it does catch the exact regression it was written for: `pre-commit-encoding.sh`
+            # probed `python || python3`, never tried `py`, and on a box with only `py` the whole
+            # substitution failed so the gate exited 0. Armed in name, checking nothing, silently.
+            hooks = SCRIPTS.parent.parent  # repo root
+            probes = {
+                ".agents/scripts/git-hooks/pre-commit-encoding.sh": True,
+                ".agents/scripts/git-hooks/sop-currency.sh": True,
+                ".githooks/post-commit": False,   # recorder: may skip, must not prefer `python`
+            }
+            for rel, must_announce in probes.items():
+                p = hooks / rel
+                if not p.is_file():
+                    c.check(f"probe: {rel} exists", False, "missing")
+                    continue
+                # CODE only. The fix's own comment quotes the broken line verbatim, so a whole-file
+                # grep matches the warning ABOUT the bug and reports the fix as the defect - the
+                # same inversion that made a source-grep guard pass on a comment once before.
+                text = "\n".join(ln for ln in p.read_text(encoding="utf-8").splitlines()
+                                 if not ln.lstrip().startswith("#"))
+                c.check(f"probe: {rel} tries python3, python AND py",
+                        "for c in python3 python py" in text,
+                        "hooks must probe, never assume - the Mac has no bare `python`")
+                c.check(f"probe: {rel} never falls back to a bare `python` first",
+                        "command -v python |" not in text
+                        and "then PY=python;" not in text)
+                if must_announce:
+                    c.check(f"probe: {rel} SAYS so when no interpreter is found",
+                            "no python interpreter found" in text,
+                            "a gate that skips mutely reads as a pass")
+            # Positive control for the strip above: the fix's comment DOES quote the old line, so
+            # a guard reading the raw file would fail here. If this ever passes, the strip is dead.
+            raw = (hooks / ".agents/scripts/git-hooks/pre-commit-encoding.sh").read_text(encoding="utf-8")
+            c.check("probe: the comment-stripping is load-bearing, not decorative",
+                    "command -v python |" in raw,
+                    "the fix quotes the broken line; a raw grep would flag the fix as the defect")
 
     # ═══════════════════════════════════════════════════════════════════════════
     # finish — the close-out's Done, held back by the operator's own actions.
@@ -1406,179 +1407,180 @@ Nothing else is owed.
 ## Something After
 - [ ] this one is NOT under Your Actions and must not count
 """
+        if c.block("jira_feed · legacy B: finish - Done held back by the operator's own actions (SCC-155)"):
 
-        # ── nothing owed: closes exactly as the close-out does today ───────────
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
-                       "--apply")
-        st = get_state(state)
-        c.check("finish: a walkthrough with no open items closes the ticket",
-                code == 0 and st["statuses"]["TEST-7"] == "Done", out.strip()[:200])
-        c.check("finish: the close carries --yes",
-                bool(st.get("transitions")) and all(t["yes"] for t in st["transitions"]),
-                "acli blocks on an interactive confirm no agent shell can answer")
+            # ── nothing owed: closes exactly as the close-out does today ───────────
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
+                           "--apply")
+            st = get_state(state)
+            c.check("finish: a walkthrough with no open items closes the ticket",
+                    code == 0 and st["statuses"]["TEST-7"] == "Done", out.strip()[:200])
+            c.check("finish: the close carries --yes",
+                    bool(st.get("transitions")) and all(t["yes"] for t in st["transitions"]),
+                    "acli blocks on an interactive confirm no agent shell can answer")
 
-        # ── something owed: HELD, and the board says what and why ──────────────
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
-                       "--apply")
-        st = get_state(state)
-        # Tied to a POSITIVE marker on purpose: "the status is not Done" is also true when
-        # the verb does not exist, so on its own it is a control that can never go red.
-        c.check("finish: an open operator action REFUSES to write Done",
-                st["statuses"]["TEST-7"] != "Done" and "held" in out.lower(),
-                f"{st['statuses']} {out.strip()[:120]}")
-        c.check("finish: holding is its own exit code, not a generic failure",
-                code == 3, f"exit={code}")
-        c.check("finish: the owed items are posted to the ticket",
-                any("Awaiting Review" in cm["body"]
-                    and "memory-audit" in cm["body"]
-                    for cm in st["comments"]),
-                str([cm["body"][:80] for cm in st["comments"]]))
-        c.check("finish: a checkbox OUTSIDE ## Your Actions is not an operator action",
-                bool(st["comments"])
-                and not any("must not count" in cm["body"]
-                            for cm in st["comments"]),
-                "the section is the contract; every other checklist in the file is not")
-        c.check("finish: the ticket is labelled user-tasks so it reads at a glance",
-                "user-tasks" in st.get("labels", {}).get("TEST-7", []),
-                str(st.get("labels")))
-        c.check("finish: a status ladder is attempted before giving up on the move",
-                any(t["status"] in ("Review Required", "Awaiting Review", "In Review")
-                    for t in st.get("transitions", [])),
-                str(st.get("transitions")))
+            # ── something owed: HELD, and the board says what and why ──────────────
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
+                           "--apply")
+            st = get_state(state)
+            # Tied to a POSITIVE marker on purpose: "the status is not Done" is also true when
+            # the verb does not exist, so on its own it is a control that can never go red.
+            c.check("finish: an open operator action REFUSES to write Done",
+                    st["statuses"]["TEST-7"] != "Done" and "held" in out.lower(),
+                    f"{st['statuses']} {out.strip()[:120]}")
+            c.check("finish: holding is its own exit code, not a generic failure",
+                    code == 3, f"exit={code}")
+            c.check("finish: the owed items are posted to the ticket",
+                    any("Awaiting Review" in cm["body"]
+                        and "memory-audit" in cm["body"]
+                        for cm in st["comments"]),
+                    str([cm["body"][:80] for cm in st["comments"]]))
+            c.check("finish: a checkbox OUTSIDE ## Your Actions is not an operator action",
+                    bool(st["comments"])
+                    and not any("must not count" in cm["body"]
+                                for cm in st["comments"]),
+                    "the section is the contract; every other checklist in the file is not")
+            c.check("finish: the ticket is labelled user-tasks so it reads at a glance",
+                    "user-tasks" in st.get("labels", {}).get("TEST-7", []),
+                    str(st.get("labels")))
+            c.check("finish: a status ladder is attempted before giving up on the move",
+                    any(t["status"] in ("Review Required", "Awaiting Review", "In Review")
+                        for t in st.get("transitions", [])),
+                    str(st.get("transitions")))
 
-        # ── the ladder is per-board-optional: neither status installed ─────────
-        # jira.md: a status a board does not have is "not installed yet", never an error.
-        # SCC has neither of these today, so this is the LIVE path, not a corner case.
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
-                  stuck_status=True)
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
-                       "--apply")
-        st = get_state(state)
-        c.check("finish: a board with no review column still holds, and still exits 3",
-                code == 3 and st["statuses"]["TEST-7"] == "In Progress", out.strip()[:200])
-        c.check("finish: with no column installed the LABEL still lands - it is the signal",
-                "user-tasks" in st.get("labels", {}).get("TEST-7", []), str(st.get("labels")))
+            # ── the ladder is per-board-optional: neither status installed ─────────
+            # jira.md: a status a board does not have is "not installed yet", never an error.
+            # SCC has neither of these today, so this is the LIVE path, not a corner case.
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
+                      stuck_status=True)
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
+                           "--apply")
+            st = get_state(state)
+            c.check("finish: a board with no review column still holds, and still exits 3",
+                    code == 3 and st["statuses"]["TEST-7"] == "In Progress", out.strip()[:200])
+            c.check("finish: with no column installed the LABEL still lands - it is the signal",
+                    "user-tasks" in st.get("labels", {}).get("TEST-7", []), str(st.get("labels")))
 
-        # ── FAIL CLOSED — the audit's HIGH finding ─────────────────────────────
-        # A missing file or a renamed section must never read as "nothing owed". This is
-        # the empty-input-reads-as-pass shape that `tests-must-gate-for-real` bans, and it
-        # would close a ticket over work the operator was promised.
-        # ⛔ These assert the REASON, not just the code. `argparse` exits 2 on an unknown
-        # verb, so `code == 2` alone passes while `finish` does not exist at all - the
-        # vacuous green this whole file exists to refuse. The message has to prove the
-        # refusal came from the walkthrough check.
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
-        code, out = jf("finish", "--key", "TEST-7",
-                       "--walkthrough", str(tmp / "nope.md"), "--apply")
-        c.check("finish: a MISSING walkthrough refuses; it never closes the ticket",
-                code == 2 and "walkthrough" in out.lower() and "usage:" not in out.lower()
-                and get_state(state)["statuses"]["TEST-7"] != "Done",
-                f"exit={code} {out.strip()[:160]}")
+            # ── FAIL CLOSED — the audit's HIGH finding ─────────────────────────────
+            # A missing file or a renamed section must never read as "nothing owed". This is
+            # the empty-input-reads-as-pass shape that `tests-must-gate-for-real` bans, and it
+            # would close a ticket over work the operator was promised.
+            # ⛔ These assert the REASON, not just the code. `argparse` exits 2 on an unknown
+            # verb, so `code == 2` alone passes while `finish` does not exist at all - the
+            # vacuous green this whole file exists to refuse. The message has to prove the
+            # refusal came from the walkthrough check.
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+            code, out = jf("finish", "--key", "TEST-7",
+                           "--walkthrough", str(tmp / "nope.md"), "--apply")
+            c.check("finish: a MISSING walkthrough refuses; it never closes the ticket",
+                    code == 2 and "walkthrough" in out.lower() and "usage:" not in out.lower()
+                    and get_state(state)["statuses"]["TEST-7"] != "Done",
+                    f"exit={code} {out.strip()[:160]}")
 
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
-        code, out = jf("finish", "--key", "TEST-7",
-                       "--walkthrough", walkthrough("# Walkthrough\n\nNo such section.\n"),
-                       "--apply")
-        c.check("finish: a walkthrough with NO '## Your Actions' refuses, never closes",
-                code == 2 and "your actions" in out.lower() and "usage:" not in out.lower()
-                and get_state(state)["statuses"]["TEST-7"] != "Done",
-                f"exit={code} {out.strip()[:160]}")
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+            code, out = jf("finish", "--key", "TEST-7",
+                           "--walkthrough", walkthrough("# Walkthrough\n\nNo such section.\n"),
+                           "--apply")
+            c.check("finish: a walkthrough with NO '## Your Actions' refuses, never closes",
+                    code == 2 and "your actions" in out.lower() and "usage:" not in out.lower()
+                    and get_state(state)["statuses"]["TEST-7"] != "Done",
+                    f"exit={code} {out.strip()[:160]}")
 
-        # ── dry run is the default, like every other verb here ─────────────────
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR))
-        c.check("finish: without --apply it writes NOTHING",
-                code == 0 and "dry run" in out.lower()
-                and get_state(state)["statuses"]["TEST-7"] == "In Progress"
-                and not get_state(state).get("transitions"), out.strip()[:200])
+            # ── dry run is the default, like every other verb here ─────────────────
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR))
+            c.check("finish: without --apply it writes NOTHING",
+                    code == 0 and "dry run" in out.lower()
+                    and get_state(state)["statuses"]["TEST-7"] == "In Progress"
+                    and not get_state(state).get("transitions"), out.strip()[:200])
 
-        # The HELD path has its OWN dry-run guard, three writes further down (comment, label,
-        # ladder). The case above only covers the close, and the mutation sweep proved the
-        # difference: unguarding the HELD branch left the whole file green.
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED))
-        st = get_state(state)
-        c.check("finish: a HELD dry run posts nothing, labels nothing and moves nothing",
-                code == 3 and "dry run" in out.lower() and not st["comments"]
-                and not st.get("labels") and not st.get("transitions"),
-                f"exit={code} {out.strip()[:160]}")
-        c.check("finish: the HELD dry run still PRINTS what it would have posted",
-                "memory-audit" in out, out.strip()[-200:])
+            # The HELD path has its OWN dry-run guard, three writes further down (comment, label,
+            # ladder). The case above only covers the close, and the mutation sweep proved the
+            # difference: unguarding the HELD branch left the whole file green.
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED))
+            st = get_state(state)
+            c.check("finish: a HELD dry run posts nothing, labels nothing and moves nothing",
+                    code == 3 and "dry run" in out.lower() and not st["comments"]
+                    and not st.get("labels") and not st.get("transitions"),
+                    f"exit={code} {out.strip()[:160]}")
+            c.check("finish: the HELD dry run still PRINTS what it would have posted",
+                    "memory-audit" in out, out.strip()[-200:])
 
-        # ── the label write is read-modify-write, and that is load-bearing ─────
-        # `--labels` REPLACES the set on the real acli. A writer that sends only `user-tasks`
-        # passes every "is user-tasks on the ticket?" assertion while silently deleting
-        # `quick-dev`, `parallel-ok` and everything else the board was carrying.
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
-                  labels={"TEST-7": ["quick-dev", "parallel-ok"]})
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
-                       "--apply")
-        st = get_state(state)
-        c.check("finish: adding user-tasks PRESERVES every label already on the ticket",
-                set(st["labels"]["TEST-7"]) == {"quick-dev", "parallel-ok", "user-tasks"},
-                str(st.get("labels")))
+            # ── the label write is read-modify-write, and that is load-bearing ─────
+            # `--labels` REPLACES the set on the real acli. A writer that sends only `user-tasks`
+            # passes every "is user-tasks on the ticket?" assertion while silently deleting
+            # `quick-dev`, `parallel-ok` and everything else the board was carrying.
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
+                      labels={"TEST-7": ["quick-dev", "parallel-ok"]})
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
+                           "--apply")
+            st = get_state(state)
+            c.check("finish: adding user-tasks PRESERVES every label already on the ticket",
+                    set(st["labels"]["TEST-7"]) == {"quick-dev", "parallel-ok", "user-tasks"},
+                    str(st.get("labels")))
 
-        # ── the ladder is a ladder: rung two is reached when rung one is absent ─
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
-                  no_status=["Review Required"])
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
-                       "--apply")
-        st = get_state(state)
-        c.check("finish: a board missing the FIRST rung still lands on the second",
-                code == 3 and st["statuses"]["TEST-7"] == "Awaiting Review",
-                f"exit={code} {st.get('statuses')}")
-        c.check("finish: and it says where it put the ticket, not just that it held",
-                "Awaiting Review" in out, out.strip()[-200:])
+            # ── the ladder is a ladder: rung two is reached when rung one is absent ─
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
+                      no_status=["Review Required"])
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
+                           "--apply")
+            st = get_state(state)
+            c.check("finish: a board missing the FIRST rung still lands on the second",
+                    code == 3 and st["statuses"]["TEST-7"] == "Awaiting Review",
+                    f"exit={code} {st.get('statuses')}")
+            c.check("finish: and it says where it put the ticket, not just that it held",
+                    "Awaiting Review" in out, out.strip()[-200:])
 
-        # ── the close is VERIFIED, never assumed ───────────────────────────────
-        # acli prints "Work item transitioned" and exits 0 whether or not the status moved.
-        # Trusting the exit code would report a closed ticket that is still In Progress -
-        # and the close-out would prune the branch on the strength of it.
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
-                  stuck_status=True)
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
-                       "--apply")
-        st = get_state(state)
-        # This case owns the DETECTION (acli exits 0 on a move it did not make, so the
-        # read-back is the only thing that knows). The exit code it should carry is pinned
-        # separately below - it was 2 when this was written, and the review moved every board
-        # failure to 4; asserting the code in both places is how a contract change goes half-
-        # applied.
-        c.check("finish: a close that REPORTS success but does not land is caught",
-                code != 0 and st["statuses"]["TEST-7"] == "In Progress"
-                and "did not" in out.lower(), f"exit={code} {out.strip()[:160]}")
+            # ── the close is VERIFIED, never assumed ───────────────────────────────
+            # acli prints "Work item transitioned" and exits 0 whether or not the status moved.
+            # Trusting the exit code would report a closed ticket that is still In Progress -
+            # and the close-out would prune the branch on the strength of it.
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
+                      stuck_status=True)
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
+                           "--apply")
+            st = get_state(state)
+            # This case owns the DETECTION (acli exits 0 on a move it did not make, so the
+            # read-back is the only thing that knows). The exit code it should carry is pinned
+            # separately below - it was 2 when this was written, and the review moved every board
+            # failure to 4; asserting the code in both places is how a contract change goes half-
+            # applied.
+            c.check("finish: a close that REPORTS success but does not land is caught",
+                    code != 0 and st["statuses"]["TEST-7"] == "In Progress"
+                    and "did not" in out.lower(), f"exit={code} {out.strip()[:160]}")
 
-        # ── re-running on a closed ticket is a no-op, not a second transition ──
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "Done"})
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
-                       "--apply")
-        st = get_state(state)
-        c.check("finish: an already-Done ticket exits 0 and transitions nothing",
-                code == 0 and "already" in out.lower() and not st.get("transitions"),
-                f"exit={code} {out.strip()[:160]}")
+            # ── re-running on a closed ticket is a no-op, not a second transition ──
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "Done"})
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
+                           "--apply")
+            st = get_state(state)
+            c.check("finish: an already-Done ticket exits 0 and transitions nothing",
+                    code == 0 and "already" in out.lower() and not st.get("transitions"),
+                    f"exit={code} {out.strip()[:160]}")
 
-        # ── the section ends at ANY heading of the same level or higher ────────
-        # `## Something After` is covered above; a top-level `# ` is the other boundary, and
-        # an appendix is exactly where a doc-wide checklist tends to live.
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
-        code, out = jf("finish", "--key", "TEST-7", "--apply", "--walkthrough", walkthrough(
-            "# Walkthrough\n\n## Your Actions\n\n- [x] all done\n\n"
+            # ── the section ends at ANY heading of the same level or higher ────────
+            # `## Something After` is covered above; a top-level `# ` is the other boundary, and
+            # an appendix is exactly where a doc-wide checklist tends to live.
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+            code, out = jf("finish", "--key", "TEST-7", "--apply", "--walkthrough", walkthrough(
+                "# Walkthrough\n\n## Your Actions\n\n- [x] all done\n\n"
             "# Appendix\n\n- [ ] a doc-wide checklist item that is not the operator's\n"))
-        c.check("finish: a top-level `# ` heading closes the section too",
-                code == 0 and get_state(state)["statuses"]["TEST-7"] == "Done",
-                f"exit={code} {out.strip()[:160]}")
+            c.check("finish: a top-level `# ` heading closes the section too",
+                    code == 0 and get_state(state)["statuses"]["TEST-7"] == "Done",
+                    f"exit={code} {out.strip()[:160]}")
 
-        # ── ⛔ REVIEW FINDING (critical): a FENCED `#` comment is not a heading ──
-        # The house convention puts `# PC: run from the lobby root` inside a bash block, and
-        # `## Your Actions` is exactly the section that carries "here is what you still have
-        # to run". Read line-by-line with no fence awareness, that comment ENDS the section:
-        # open_actions returns [] (not None, so no refusal fires) and the ticket closes over
-        # work the operator was promised. 26 of the 92 walkthroughs already in _artifacts/
-        # carry that shape. This is the SCC-154 `strip_fenced` lesson recurring - and
-        # wf_common already ships _FENCE_RE.
-        FENCED = """# Walkthrough
+            # ── ⛔ REVIEW FINDING (critical): a FENCED `#` comment is not a heading ──
+            # The house convention puts `# PC: run from the lobby root` inside a bash block, and
+            # `## Your Actions` is exactly the section that carries "here is what you still have
+            # to run". Read line-by-line with no fence awareness, that comment ENDS the section:
+            # open_actions returns [] (not None, so no refusal fires) and the ticket closes over
+            # work the operator was promised. 26 of the 92 walkthroughs already in _artifacts/
+            # carry that shape. This is the SCC-154 `strip_fenced` lesson recurring - and
+            # wf_common already ships _FENCE_RE.
+            FENCED = """# Walkthrough
 
 ## Your Actions
 
@@ -1592,22 +1594,22 @@ git config core.hooksPath .githooks
 - [ ] Install the `Awaiting Review` column on the SCC board
 - [ ] Run /memory-audit for the dead SOP path
 """
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(FENCED),
-                       "--apply")
-        st = get_state(state)
-        c.check("finish: a `#` comment INSIDE a fence does not end the section",
-                code == 3 and st["statuses"]["TEST-7"] != "Done",
-                f"exit={code} {st.get('statuses')} {out.strip()[:160]}")
-        c.check("finish: and both items below that fence are still owed",
-                any("Awaiting Review" in cm["body"] and "memory-audit" in cm["body"]
-                    for cm in st["comments"]),
-                str([cm["body"][:80] for cm in st["comments"]]))
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(FENCED),
+                           "--apply")
+            st = get_state(state)
+            c.check("finish: a `#` comment INSIDE a fence does not end the section",
+                    code == 3 and st["statuses"]["TEST-7"] != "Done",
+                    f"exit={code} {st.get('statuses')} {out.strip()[:160]}")
+            c.check("finish: and both items below that fence are still owed",
+                    any("Awaiting Review" in cm["body"] and "memory-audit" in cm["body"]
+                        for cm in st["comments"]),
+                    str([cm["body"][:80] for cm in st["comments"]]))
 
-        # The mirror direction, and it must hold at the same time: a checkbox that is only an
-        # EXAMPLE inside a fence is not an owed action. A fix that counts everything would
-        # trade a fail-open for a ticket nobody can ever close.
-        EXAMPLE = """# Walkthrough
+            # The mirror direction, and it must hold at the same time: a checkbox that is only an
+            # EXAMPLE inside a fence is not an owed action. A fix that counts everything would
+            # trade a fail-open for a ticket nobody can ever close.
+            EXAMPLE = """# Walkthrough
 
 ## Your Actions
 
@@ -1619,18 +1621,18 @@ Write your own rows in this shape:
 
 Nothing is actually owed.
 """
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(EXAMPLE),
-                       "--apply")
-        c.check("finish: a `- [ ]` inside a fence is an EXAMPLE, not an owed action",
-                code == 0 and get_state(state)["statuses"]["TEST-7"] == "Done",
-                f"exit={code} {out.strip()[:160]}")
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(EXAMPLE),
+                           "--apply")
+            c.check("finish: a `- [ ]` inside a fence is an EXAMPLE, not an owed action",
+                    code == 0 and get_state(state)["statuses"]["TEST-7"] == "Done",
+                    f"exit={code} {out.strip()[:160]}")
 
-        # The nastiest shape of the same bug: the section HEADING itself quoted in a fence,
-        # earlier in the file. `start` matched the fenced example, its ticked rows returned
-        # [], and the REAL section below was never read - Done written straight over two live
-        # obligations. A doc teaching the convention is exactly where this shape appears.
-        QUOTED_HEAD = """# Walkthrough
+            # The nastiest shape of the same bug: the section HEADING itself quoted in a fence,
+            # earlier in the file. `start` matched the fenced example, its ticked rows returned
+            # [], and the REAL section below was never read - Done written straight over two live
+            # obligations. A doc teaching the convention is exactly where this shape appears.
+            QUOTED_HEAD = """# Walkthrough
 
 Write the hand-off like this:
 
@@ -1645,20 +1647,20 @@ Write the hand-off like this:
 - [ ] Install the `Awaiting Review` column on the SCC board
 - [ ] Run /memory-audit for the dead SOP path
 """
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(QUOTED_HEAD),
-                       "--apply")
-        st = get_state(state)
-        c.check("finish: a FENCED `## Your Actions` example never wins over the real section",
-                code == 3 and st["statuses"]["TEST-7"] != "Done",
-                f"exit={code} {st.get('statuses')} {out.strip()[:160]}")
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(QUOTED_HEAD),
+                           "--apply")
+            st = get_state(state)
+            c.check("finish: a FENCED `## Your Actions` example never wins over the real section",
+                    code == 3 and st["statuses"]["TEST-7"] != "Done",
+                    f"exit={code} {st.get('statuses')} {out.strip()[:160]}")
 
-        # ── ⛔ REVIEW FINDING: the published contract says continuations ride ────
-        # smh-quick-dev.md declares as a MACHINE CONTRACT: "Continuation lines indented under
-        # it ride along." They did not - only the bullet line was collected, so the half of
-        # the instruction that says WHY reached nobody. Either the reader honours the
-        # contract or the contract is a lie; this pins the reader.
-        CONT = """# Walkthrough
+            # ── ⛔ REVIEW FINDING: the published contract says continuations ride ────
+            # smh-quick-dev.md declares as a MACHINE CONTRACT: "Continuation lines indented under
+            # it ride along." They did not - only the bullet line was collected, so the half of
+            # the instruction that says WHY reached nobody. Either the reader honours the
+            # contract or the contract is a lie; this pins the reader.
+            CONT = """# Walkthrough
 
 ## Your Actions
 
@@ -1666,111 +1668,111 @@ Write the hand-off like this:
       it is a two-minute change and nothing here can do it for you
 - [ ] Run /memory-audit
 """
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CONT),
-                       "--apply")
-        st = get_state(state)
-        c.check("finish: an item's indented continuation line rides along to the board",
-                any("two-minute change" in cm["body"] for cm in st["comments"]),
-                str([cm["body"][:120] for cm in st["comments"]]))
-        c.check("finish: and the continuation does NOT become a second owed item",
-                any("**2** things" in cm["body"] for cm in st["comments"]),
-                str([cm["body"][:120] for cm in st["comments"]]))
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CONT),
+                           "--apply")
+            st = get_state(state)
+            c.check("finish: an item's indented continuation line rides along to the board",
+                    any("two-minute change" in cm["body"] for cm in st["comments"]),
+                    str([cm["body"][:120] for cm in st["comments"]]))
+            c.check("finish: and the continuation does NOT become a second owed item",
+                    any("**2** things" in cm["body"] for cm in st["comments"]),
+                    str([cm["body"][:120] for cm in st["comments"]]))
 
-        # ── ⛔ REVIEW FINDING: user-tasks is a one-way door ──────────────────────
-        # The HELD arm adds the label; the close arm never removed it. jira.md defines it as
-        # "the walkthrough leaves something only the operator can do", and on a board with no
-        # review column the runtime message calls it THE signal - so a Done ticket carrying
-        # it poisons the very filter it exists to feed. The sibling half of this same change
-        # is built on "the strip is the point"; this writer only ever added.
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
-                  labels={"TEST-7": ["user-tasks", "quick-dev"]})
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
-                       "--apply")
-        st = get_state(state)
-        c.check("finish: closing clean STRIPS user-tasks - the hold is over",
-                "user-tasks" not in st.get("labels", {}).get("TEST-7", []),
-                str(st.get("labels")))
-        c.check("finish: and the strip leaves every other label alone",
-                "quick-dev" in st.get("labels", {}).get("TEST-7", []), str(st.get("labels")))
+            # ── ⛔ REVIEW FINDING: user-tasks is a one-way door ──────────────────────
+            # The HELD arm adds the label; the close arm never removed it. jira.md defines it as
+            # "the walkthrough leaves something only the operator can do", and on a board with no
+            # review column the runtime message calls it THE signal - so a Done ticket carrying
+            # it poisons the very filter it exists to feed. The sibling half of this same change
+            # is built on "the strip is the point"; this writer only ever added.
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
+                      labels={"TEST-7": ["user-tasks", "quick-dev"]})
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
+                           "--apply")
+            st = get_state(state)
+            c.check("finish: closing clean STRIPS user-tasks - the hold is over",
+                    "user-tasks" not in st.get("labels", {}).get("TEST-7", []),
+                    str(st.get("labels")))
+            c.check("finish: and the strip leaves every other label alone",
+                    "quick-dev" in st.get("labels", {}).get("TEST-7", []), str(st.get("labels")))
 
-        # ── ⛔ REVIEW FINDING: exit 2 is overloaded onto BOARD failures ──────────
-        # The docstring and BOTH close-out tables fix exit 2 as "refused - no walkthrough or
-        # no section; NOTHING was written; fix the artifact". A transition that was issued and
-        # did not land is a board problem with a write already attempted, and the agent that
-        # follows the table goes hunting for a defect in a walkthrough that is fine. 4 is the
-        # code that already means "transport, not a verdict; retry".
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
-                  stuck_status=True)
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
-                       "--apply")
-        c.check("finish: a close that does not land is TRANSPORT (4), not a refusal (2)",
-                code == 4, f"exit={code} {out.strip()[:160]}")
+            # ── ⛔ REVIEW FINDING: exit 2 is overloaded onto BOARD failures ──────────
+            # The docstring and BOTH close-out tables fix exit 2 as "refused - no walkthrough or
+            # no section; NOTHING was written; fix the artifact". A transition that was issued and
+            # did not land is a board problem with a write already attempted, and the agent that
+            # follows the table goes hunting for a defect in a walkthrough that is fine. 4 is the
+            # code that already means "transport, not a verdict; retry".
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
+                      stuck_status=True)
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
+                           "--apply")
+            c.check("finish: a close that does not land is TRANSPORT (4), not a refusal (2)",
+                    code == 4, f"exit={code} {out.strip()[:160]}")
 
-        # A comment that fails to post is the same class - and worse, the early return used to
-        # skip the label and the ladder below it, so the ticket was held while saying nothing
-        # about why. The hold must still be SIGNALLED even when the narration fails.
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
-                  comment_fail=True)
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
-                       "--apply")
-        st = get_state(state)
-        c.check("finish: a comment that fails to post is TRANSPORT (4), not a refusal (2)",
-                code == 4, f"exit={code} {out.strip()[:160]}")
-        c.check("finish: and the label still lands, so the hold is not silent",
-                "user-tasks" in st.get("labels", {}).get("TEST-7", []), str(st.get("labels")))
+            # A comment that fails to post is the same class - and worse, the early return used to
+            # skip the label and the ladder below it, so the ticket was held while saying nothing
+            # about why. The hold must still be SIGNALLED even when the narration fails.
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
+                      comment_fail=True)
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
+                           "--apply")
+            st = get_state(state)
+            c.check("finish: a comment that fails to post is TRANSPORT (4), not a refusal (2)",
+                    code == 4, f"exit={code} {out.strip()[:160]}")
+            c.check("finish: and the label still lands, so the hold is not silent",
+                    "user-tasks" in st.get("labels", {}).get("TEST-7", []), str(st.get("labels")))
 
-        # ── ⛔ REVIEW FINDING: re-running a hold STACKS comments ─────────────────
-        # render_user_tasks tells the operator to tick a box and re-run, so repeated
-        # invocation is the designed happy path, not an edge. Each run posted another "User
-        # tasks" comment, each asserting a different count, with nothing saying which is
-        # current. `devrecord` in this same file is documented as "exactly one per ticket,
-        # updated in place, never stacked" - this verb needs the same property.
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
-        jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED), "--apply")
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CONT),
-                       "--apply")
-        st = get_state(state)
-        c.check("finish: a second hold UPDATES the user-tasks comment, never stacks it",
-                len([cm for cm in st["comments"] if "User tasks" in cm["body"]]) == 1,
-                str([cm["body"][:60] for cm in st["comments"]]))
-        c.check("finish: and the surviving comment is the CURRENT one",
-                any("two-minute change" in cm["body"] for cm in st["comments"]),
-                str([cm["body"][:120] for cm in st["comments"]]))
+            # ── ⛔ REVIEW FINDING: re-running a hold STACKS comments ─────────────────
+            # render_user_tasks tells the operator to tick a box and re-run, so repeated
+            # invocation is the designed happy path, not an edge. Each run posted another "User
+            # tasks" comment, each asserting a different count, with nothing saying which is
+            # current. `devrecord` in this same file is documented as "exactly one per ticket,
+            # updated in place, never stacked" - this verb needs the same property.
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+            jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED), "--apply")
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CONT),
+                           "--apply")
+            st = get_state(state)
+            c.check("finish: a second hold UPDATES the user-tasks comment, never stacks it",
+                    len([cm for cm in st["comments"] if "User tasks" in cm["body"]]) == 1,
+                    str([cm["body"][:60] for cm in st["comments"]]))
+            c.check("finish: and the surviving comment is the CURRENT one",
+                    any("two-minute change" in cm["body"] for cm in st["comments"]),
+                    str([cm["body"][:120] for cm in st["comments"]]))
 
-        # ── ⛔ REVIEW FINDING: the ladder advances on an UNVERIFIABLE read ───────
-        # The rung's success test is a fresh view_fields(strict=False), which returns None on
-        # any transport blip - indistinguishable from "the move did not take". On a blip the
-        # loop marched to rung two and moved the ticket a SECOND time, to a column nobody
-        # asked for, then reported "left at In Progress - no review column on this board".
-        # Cannot-verify is not the same as did-not-move: stop and say so.
-        # blind_after=1: the opening read succeeds (so we reach the ladder at all), and every
-        # read-back after it fails. Without the count this case is vacuous - see the stub.
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
-                  blind_after=1)
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
-                       "--apply")
-        st = get_state(state)
-        moves = [t["status"] for t in st.get("transitions", [])]
-        # ⛔ Both assertions below need a POSITIVE anchor. "at most one move" and "the string
-        # is absent" are BOTH true when the script crashes, which is exactly what the sweep
-        # caught: a mutant that removed the `back is None` guard raised an AttributeError,
-        # produced no output and no second transition, and this case stayed green.
-        c.check("finish: an unverifiable ladder read does NOT march on to the next rung",
-                code == 3 and len(moves) <= 1, f"exit={code} {moves}")
-        c.check("finish: and it says the status is UNKNOWN, not that the column is missing",
-                "UNKNOWN" in out and "no review column" not in out, out.strip()[-220:])
+            # ── ⛔ REVIEW FINDING: the ladder advances on an UNVERIFIABLE read ───────
+            # The rung's success test is a fresh view_fields(strict=False), which returns None on
+            # any transport blip - indistinguishable from "the move did not take". On a blip the
+            # loop marched to rung two and moved the ticket a SECOND time, to a column nobody
+            # asked for, then reported "left at In Progress - no review column on this board".
+            # Cannot-verify is not the same as did-not-move: stop and say so.
+            # blind_after=1: the opening read succeeds (so we reach the ladder at all), and every
+            # read-back after it fails. Without the count this case is vacuous - see the stub.
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
+                      blind_after=1)
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
+                           "--apply")
+            st = get_state(state)
+            moves = [t["status"] for t in st.get("transitions", [])]
+            # ⛔ Both assertions below need a POSITIVE anchor. "at most one move" and "the string
+            # is absent" are BOTH true when the script crashes, which is exactly what the sweep
+            # caught: a mutant that removed the `back is None` guard raised an AttributeError,
+            # produced no output and no second transition, and this case stayed green.
+            c.check("finish: an unverifiable ladder read does NOT march on to the next rung",
+                    code == 3 and len(moves) <= 1, f"exit={code} {moves}")
+            c.check("finish: and it says the status is UNKNOWN, not that the column is missing",
+                    "UNKNOWN" in out and "no review column" not in out, out.strip()[-220:])
 
-        # The CommonMark close rule: a fence closes only on the SAME marker kind, at least as
-        # long. Without it a ``` inside a ~~~ block (or a shorter run inside a longer one)
-        # ends the fence early and the section is read as markup again - the precise rule
-        # SCC-154 paid for in check_gate, so it is pinned here rather than re-learned.
-        # The fixture has to DISCRIMINATE: everything that must stay invisible is INSIDE the
-        # ~~~ block, and it includes an OPEN box. Correct code sees zero obligations and
-        # closes; a mutant that lets any fence marker close any fence ends the ~~~ at the
-        # inner ``` , exposes that box, and holds. A first draft of this case put the open box
-        # outside the block and passed under the mutant either way.
-        NESTED = """# Walkthrough
+            # The CommonMark close rule: a fence closes only on the SAME marker kind, at least as
+            # long. Without it a ``` inside a ~~~ block (or a shorter run inside a longer one)
+            # ends the fence early and the section is read as markup again - the precise rule
+            # SCC-154 paid for in check_gate, so it is pinned here rather than re-learned.
+            # The fixture has to DISCRIMINATE: everything that must stay invisible is INSIDE the
+            # ~~~ block, and it includes an OPEN box. Correct code sees zero obligations and
+            # closes; a mutant that lets any fence marker close any fence ends the ~~~ at the
+            # inner ``` , exposes that box, and holds. A first draft of this case put the open box
+            # outside the block and passed under the mutant either way.
+            NESTED = """# Walkthrough
 
 ## Your Actions
 
@@ -1783,16 +1785,16 @@ Write your rows like this:
 
 Nothing is actually owed.
 """
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(NESTED),
-                       "--apply")
-        c.check("finish: a ``` inside a ~~~ block does not close it early",
-                code == 0 and get_state(state)["statuses"]["TEST-7"] == "Done",
-                f"exit={code} {out.strip()[:180]}")
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(NESTED),
+                           "--apply")
+            c.check("finish: a ``` inside a ~~~ block does not close it early",
+                    code == 0 and get_state(state)["statuses"]["TEST-7"] == "Done",
+                    f"exit={code} {out.strip()[:180]}")
 
-        # A SECOND `## Your Actions` - a close-out appending its own asks is exactly how one
-        # appears. Taking only the first heading dropped everything under the later one.
-        TWICE = """# Walkthrough
+            # A SECOND `## Your Actions` - a close-out appending its own asks is exactly how one
+            # appears. Taking only the first heading dropped everything under the later one.
+            TWICE = """# Walkthrough
 
 ## Your Actions
 
@@ -1804,272 +1806,272 @@ Nothing is actually owed.
 
 - [ ] the round that was silently dropped
 """
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(TWICE),
-                       "--apply")
-        c.check("finish: a SECOND `## Your Actions` section is read too, never dropped",
-                code == 3 and get_state(state)["statuses"]["TEST-7"] != "Done",
-                f"exit={code} {out.strip()[:160]}")
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(TWICE),
+                           "--apply")
+            c.check("finish: a SECOND `## Your Actions` section is read too, never dropped",
+                    code == 3 and get_state(state)["statuses"]["TEST-7"] != "Done",
+                    f"exit={code} {out.strip()[:160]}")
 
-        # An unchecked box with no text is still an unchecked box. Requiring a character made
-        # an empty obligation invisible - the fail-open shape, one level in.
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
-        code, out = jf("finish", "--key", "TEST-7", "--apply", "--walkthrough", walkthrough(
-            "# Walkthrough\n\n## Your Actions\n\n- [ ]\n"))
-        c.check("finish: an EMPTY unchecked box still holds the ticket",
-                code == 3, f"exit={code} {out.strip()[:160]}")
+            # An unchecked box with no text is still an unchecked box. Requiring a character made
+            # an empty obligation invisible - the fail-open shape, one level in.
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+            code, out = jf("finish", "--key", "TEST-7", "--apply", "--walkthrough", walkthrough(
+                "# Walkthrough\n\n## Your Actions\n\n- [ ]\n"))
+            c.check("finish: an EMPTY unchecked box still holds the ticket",
+                    code == 3, f"exit={code} {out.strip()[:160]}")
 
-        # `###` groups the operator's asks; it must NOT end the section. The narrowing
-        # direction was pinned (the appendix case); this is the widening one.
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
-        code, out = jf("finish", "--key", "TEST-7", "--apply", "--walkthrough", walkthrough(
-            "# Walkthrough\n\n## Your Actions\n\n### Board\n\n- [ ] install the column\n"))
-        c.check("finish: a `###` sub-heading GROUPS the asks, it does not end the section",
-                code == 3 and "install the column" in out,
-                f"exit={code} {out.strip()[:160]}")
+            # `###` groups the operator's asks; it must NOT end the section. The narrowing
+            # direction was pinned (the appendix case); this is the widening one.
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+            code, out = jf("finish", "--key", "TEST-7", "--apply", "--walkthrough", walkthrough(
+                "# Walkthrough\n\n## Your Actions\n\n### Board\n\n- [ ] install the column\n"))
+            c.check("finish: a `###` sub-heading GROUPS the asks, it does not end the section",
+                    code == 3 and "install the column" in out,
+                    f"exit={code} {out.strip()[:160]}")
 
-        # ── ⛔ REVIEW FINDING #24: acli exits 0 on writes it did not perform ────
-        # The close path already read back its transition for exactly this reason. The HELD
-        # path took the comment on faith, so `swallow` (accepted-then-lost, exit 0) produced
-        # "HELD, moved to Review Required" on a ticket with NO comment at all - the state the
-        # verb's own error message exists to prevent. The label is the signal; the comment is
-        # the only thing that says WHY, so it gets the same read-back.
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
-                  swallow=True)
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
-                       "--apply")
-        st = get_state(state)
-        c.check("#24 a comment acli ACCEPTED and lost is caught by a read-back",
-                code == 4 and not st["comments"], f"exit={code} {out.strip()[:200]}")
-        c.check("#24 and the hold is still signalled by the label despite the lost comment",
-                "user-tasks" in st.get("labels", {}).get("TEST-7", []), str(st.get("labels")))
+            # ── ⛔ REVIEW FINDING #24: acli exits 0 on writes it did not perform ────
+            # The close path already read back its transition for exactly this reason. The HELD
+            # path took the comment on faith, so `swallow` (accepted-then-lost, exit 0) produced
+            # "HELD, moved to Review Required" on a ticket with NO comment at all - the state the
+            # verb's own error message exists to prevent. The label is the signal; the comment is
+            # the only thing that says WHY, so it gets the same read-back.
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
+                      swallow=True)
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
+                           "--apply")
+            st = get_state(state)
+            c.check("#24 a comment acli ACCEPTED and lost is caught by a read-back",
+                    code == 4 and not st["comments"], f"exit={code} {out.strip()[:200]}")
+            c.check("#24 and the hold is still signalled by the label despite the lost comment",
+                    "user-tasks" in st.get("labels", {}).get("TEST-7", []), str(st.get("labels")))
 
-        # ── the operator installed the column, and it is named "Review Required" ──
-        # SCC now carries it (2026-08-14), so the fall-through that used to be the LIVE path
-        # is now the corner case. It is the FIRST rung: a board that has it must land there,
-        # not on a legacy name.
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
-                  no_status=["Awaiting Review", "In Review"])
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
-                       "--apply")
-        st = get_state(state)
-        c.check("finish: a board carrying `Review Required` lands the hold there",
-                code == 3 and st["statuses"]["TEST-7"] == "Review Required",
-                f"exit={code} {st.get('statuses')}")
+            # ── the operator installed the column, and it is named "Review Required" ──
+            # SCC now carries it (2026-08-14), so the fall-through that used to be the LIVE path
+            # is now the corner case. It is the FIRST rung: a board that has it must land there,
+            # not on a legacy name.
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"},
+                      no_status=["Awaiting Review", "In Review"])
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
+                           "--apply")
+            st = get_state(state)
+            c.check("finish: a board carrying `Review Required` lands the hold there",
+                    code == 3 and st["statuses"]["TEST-7"] == "Review Required",
+                    f"exit={code} {st.get('statuses')}")
 
-        # ⛔ The exact status STRING is board configuration, not a property of this code, and
-        # a wrong literal makes the ladder silently never fire. `--review-status` overrides
-        # the whole ladder so a rename on the board is a flag, never an edit here.
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
-                       "--apply", "--review-status", "Needs Daniel")
-        st = get_state(state)
-        c.check("finish: --review-status overrides the ladder outright",
-                code == 3 and st["statuses"]["TEST-7"] == "Needs Daniel",
-                f"exit={code} {st.get('statuses')}")
+            # ⛔ The exact status STRING is board configuration, not a property of this code, and
+            # a wrong literal makes the ladder silently never fire. `--review-status` overrides
+            # the whole ladder so a rename on the board is a flag, never an edit here.
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
+                           "--apply", "--review-status", "Needs Daniel")
+            st = get_state(state)
+            c.check("finish: --review-status overrides the ladder outright",
+                    code == 3 and st["statuses"]["TEST-7"] == "Needs Daniel",
+                    f"exit={code} {st.get('statuses')}")
 
-        # Already parked on a rung: do nothing. Comparing only against the rung being tried
-        # dragged a ticket an operator had advanced to `In Review` BACKWARDS.
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Review"})
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
-                       "--apply")
-        st = get_state(state)
-        c.check("finish: a ticket already on a rung is NOT dragged back down the ladder",
-                st["statuses"]["TEST-7"] == "In Review" and not st.get("transitions"),
-                f"{st.get('statuses')} {st.get('transitions')}")
+            # Already parked on a rung: do nothing. Comparing only against the rung being tried
+            # dragged a ticket an operator had advanced to `In Review` BACKWARDS.
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Review"})
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(OWED),
+                           "--apply")
+            st = get_state(state)
+            c.check("finish: a ticket already on a rung is NOT dragged back down the ladder",
+                    st["statuses"]["TEST-7"] == "In Review" and not st.get("transitions"),
+                    f"{st.get('statuses')} {st.get('transitions')}")
 
-        # ═══════════════════════════════════════════════════════════════════════
-        # SCC-163 Part B — what may go in `## Your Actions` is now CHECKED.
-        # Written RED first, against a REAL corpus (acceptance B1).
-        #
-        # Step 5 of both review commands permits exactly three things to be left for the
-        # operator: a product decision, a main merge, a ticket transition. A row assigning
-        # them a ticket BORN FROM REVIEW FINDINGS - mint it, file it, rule on where it goes -
-        # is the retired defect. It is prose, nothing checked it, and it was broken the same
-        # day it was written: AVCH-58 shipped three unchecked rows, zero of them operator
-        # calls, and `finish` held the ticket on Review Required. That is the loop.
-        #
-        # ⛔ THE HARD PART IS THE FALSE POSITIVES, NOT THE DETECTION. Measured before the rule
-        # was written: `open_actions` over every .md in `_artifacts/` finds 101 walkthroughs
-        # carrying the section and 25 unchecked rows. The phrase list read literally
-        # (mint|file|open...ticket|fold...into|rule on|decide whether|your call|board
-        # placement) flags 8 of those 25 - and at most 4 are true positives. "Rule on A1" is
-        # an acceptance dispute; "Rule the landing order" is merge sequencing. Both are
-        # genuine operator calls. So a bare verb is NEVER a trigger: the detector fires only
-        # on a trigger verb PAIRED WITH a ticket-work object, and the survivors of that
-        # measurement are pinned below as negative controls.
-        # ═══════════════════════════════════════════════════════════════════════
-        FIXTURES = Path(__file__).resolve().parent / "fixtures"
-        avch58 = (FIXTURES / "avch58_your_actions.md").read_text(encoding="utf-8")
+            # ═══════════════════════════════════════════════════════════════════════
+            # SCC-163 Part B — what may go in `## Your Actions` is now CHECKED.
+            # Written RED first, against a REAL corpus (acceptance B1).
+            #
+            # Step 5 of both review commands permits exactly three things to be left for the
+            # operator: a product decision, a main merge, a ticket transition. A row assigning
+            # them a ticket BORN FROM REVIEW FINDINGS - mint it, file it, rule on where it goes -
+            # is the retired defect. It is prose, nothing checked it, and it was broken the same
+            # day it was written: AVCH-58 shipped three unchecked rows, zero of them operator
+            # calls, and `finish` held the ticket on Review Required. That is the loop.
+            #
+            # ⛔ THE HARD PART IS THE FALSE POSITIVES, NOT THE DETECTION. Measured before the rule
+            # was written: `open_actions` over every .md in `_artifacts/` finds 101 walkthroughs
+            # carrying the section and 25 unchecked rows. The phrase list read literally
+            # (mint|file|open...ticket|fold...into|rule on|decide whether|your call|board
+            # placement) flags 8 of those 25 - and at most 4 are true positives. "Rule on A1" is
+            # an acceptance dispute; "Rule the landing order" is merge sequencing. Both are
+            # genuine operator calls. So a bare verb is NEVER a trigger: the detector fires only
+            # on a trigger verb PAIRED WITH a ticket-work object, and the survivors of that
+            # measurement are pinned below as negative controls.
+            # ═══════════════════════════════════════════════════════════════════════
+            FIXTURES = Path(__file__).resolve().parent / "fixtures"
+            avch58 = (FIXTURES / "avch58_your_actions.md").read_text(encoding="utf-8")
 
-        import jira_feed as jf_mod  # noqa: E402 - the tests run scripts/ on sys.path
+            import jira_feed as jf_mod  # noqa: E402 - the tests run scripts/ on sys.path
 
-        def flagged(text: str) -> list[str]:
-            return [row for row, _ in jf_mod.banned_action_rows(text)]
+            def flagged(text: str) -> list[str]:
+                return [row for row, _ in jf_mod.banned_action_rows(text)]
 
-        # ── B1 · the known-positive, from the real AVCH-58 walkthrough ─────────
-        hits = flagged(avch58)
-        c.check("B1 · AVCH-58 row 1 (fold into AVCH-54 / mint its own key) is FLAGGED",
-                len(hits) == 1 and "symlink defect" in hits[0],
-                f"the ticket's named known-positive; got {hits}")
-        c.check("B1 · ...and row 2, a settled deferral, is NOT flagged (B5: status notes)",
-                not any("requirements.txt" in h for h in hits), f"{hits}")
-        c.check("B1 · ...and row 3, a branch-freshness note, is NOT flagged (B5)",
-                not any("behind" in h for h in hits), f"{hits}")
+            # ── B1 · the known-positive, from the real AVCH-58 walkthrough ─────────
+            hits = flagged(avch58)
+            c.check("B1 · AVCH-58 row 1 (fold into AVCH-54 / mint its own key) is FLAGGED",
+                    len(hits) == 1 and "symlink defect" in hits[0],
+                    f"the ticket's named known-positive; got {hits}")
+            c.check("B1 · ...and row 2, a settled deferral, is NOT flagged (B5: status notes)",
+                    not any("requirements.txt" in h for h in hits), f"{hits}")
+            c.check("B1 · ...and row 3, a branch-freshness note, is NOT flagged (B5)",
+                    not any("behind" in h for h in hits), f"{hits}")
 
-        # ── B2/B3/B4 · the three named cases from acceptance B3 ────────────────
-        # Two negative controls and one positive, and the first two are the trap: a detector
-        # keyed on a bare ticket key false-reds both, because both CONTAIN one.
-        def one_row(row: str) -> str:
-            return f"# W\n\n## Your Actions\n\n- [ ] {row}\n"
+            # ── B2/B3/B4 · the three named cases from acceptance B3 ────────────────
+            # Two negative controls and one positive, and the first two are the trap: a detector
+            # keyed on a bare ticket key false-reds both, because both CONTAIN one.
+            def one_row(row: str) -> str:
+                return f"# W\n\n## Your Actions\n\n- [ ] {row}\n"
 
-        c.check("B2 · 'Merge AVCH-59 to main' is ALLOWED (a main merge, and it has a key)",
-                flagged(one_row("Merge AVCH-59 to main")) == [],
-                "keying on a bare ticket key false-reds the allowed classes")
-        c.check("B3 · 'Move SCC-99 to Done' is ALLOWED (a ticket transition, verb + key)",
-                flagged(one_row("Move SCC-99 to Done")) == [],
-                "a transition is one of Step 5's three permitted classes")
-        c.check("B4 · 'Mint a ticket for the N deferred items' is FLAGGED",
-                len(flagged(one_row("Mint a ticket for the N deferred items"))) == 1,
-                "the banned shape with no ticket key in it at all")
+            c.check("B2 · 'Merge AVCH-59 to main' is ALLOWED (a main merge, and it has a key)",
+                    flagged(one_row("Merge AVCH-59 to main")) == [],
+                    "keying on a bare ticket key false-reds the allowed classes")
+            c.check("B3 · 'Move SCC-99 to Done' is ALLOWED (a ticket transition, verb + key)",
+                    flagged(one_row("Move SCC-99 to Done")) == [],
+                    "a transition is one of Step 5's three permitted classes")
+            c.check("B4 · 'Mint a ticket for the N deferred items' is FLAGGED",
+                    len(flagged(one_row("Mint a ticket for the N deferred items"))) == 1,
+                    "the banned shape with no ticket key in it at all")
 
-        # ── B5 · the live corpus is the regression suite ───────────────────────
-        # Verbatim rows from walkthroughs already in `_artifacts/`. Every one is a genuine
-        # operator call that the naive phrase list flags. If the detector reds any of these it
-        # is worse than nothing: it teaches the next agent to stop writing honest rows.
-        REAL_ALLOWED = [
-            "**Rule the landing order.** Recommended: **SCC-126 lands first** - merging this "
+            # ── B5 · the live corpus is the regression suite ───────────────────────
+            # Verbatim rows from walkthroughs already in `_artifacts/`. Every one is a genuine
+            # operator call that the naive phrase list flags. If the detector reds any of these it
+            # is worse than nothing: it teaches the next agent to stop writing honest rows.
+            REAL_ALLOWED = [
+                "**Rule the landing order.** Recommended: **SCC-126 lands first** - merging this "
             "lane first would leave the AP autopilot instructed to read a rule file that does "
             "not exist yet.",
-            "**Decide whether the CONCERNS is worth clearing before the merge.** Unchanged by "
+                "**Decide whether the CONCERNS is worth clearing before the merge.** Unchanged by "
             "the absorb and deliberately not actioned here.",
-            "**Rule on A1.** It is not delivered: no replay, no timings, no identical-verdict "
+                "**Rule on A1.** It is not delivered: no replay, no timings, no identical-verdict "
             "comparison against SCC-154's table.",
-            "**Rule on A2's missed target.** 68.57 s measured against <= 60 s.",
-            "**Rule on A6's phrasing** - it asks for a \"sweep script template\" to be grepped, "
+                "**Rule on A2's missed target.** 68.57 s measured against <= 60 s.",
+                "**Rule on A6's phrasing** - it asks for a \"sweep script template\" to be grepped, "
             "and the standing SCC-145 ruling keeps sweep scripts out of the tree.",
-            "**Close out and merge** - `/smh-close-task-merge-tree` with `--expect-key SCC-123`. "
+                "**Close out and merge** - `/smh-close-task-merge-tree` with `--expect-key SCC-123`. "
             "The lane is pushed, clean, 0 behind `origin/main`.",
-            "**Pass SCC-126 the restamp requirement** (`ap_reconciled: 024f58a`, or drop the "
+                "**Pass SCC-126 the restamp requirement** (`ap_reconciled: 024f58a`, or drop the "
             "stamp) - without it, `main` is red once both lanes land.",
-        ]
-        for i, row in enumerate(REAL_ALLOWED, 1):
-            c.check(f"B5.{i} · a REAL operator call from the corpus is not flagged",
-                    flagged(one_row(row)) == [], f"{row[:80]}...")
+            ]
+            for i, row in enumerate(REAL_ALLOWED, 1):
+                c.check(f"B5.{i} · a REAL operator call from the corpus is not flagged",
+                        flagged(one_row(row)) == [], f"{row[:80]}...")
 
-        # ...and the true positives the same corpus carries, so B5 cannot pass by a detector
-        # that simply never fires (the vacuous green this suite exists to refuse).
-        REAL_BANNED = [
-            "**SOP-nag ticket (optional, your call from the plan's 9b):** the suite-count "
+            # ...and the true positives the same corpus carries, so B5 cannot pass by a detector
+            # that simply never fires (the vacuous green this suite exists to refuse).
+            REAL_BANNED = [
+                "**SOP-nag ticket (optional, your call from the plan's 9b):** the suite-count "
             "staleness now has three recorded instances in two days.",
-            "Decide whether finding 13 earns a ticket: the vendor skill is still installed and "
+                "Decide whether finding 13 earns a ticket: the vendor skill is still installed and "
             "BMAD re-emits it.",
-            "**File the follow-on Task** from the review section's \"Follow-on\" block (one "
+                "**File the follow-on Task** from the review section's \"Follow-on\" block (one "
             "ticket: check_gate's remaining edges).",
-        ]
-        for i, row in enumerate(REAL_BANNED, 1):
-            c.check(f"B5.{i}x · a REAL banned row from the same corpus IS flagged",
-                    len(flagged(one_row(row))) == 1, f"{row[:80]}...")
+            ]
+            for i, row in enumerate(REAL_BANNED, 1):
+                c.check(f"B5.{i}x · a REAL banned row from the same corpus IS flagged",
+                        len(flagged(one_row(row))) == 1, f"{row[:80]}...")
 
-        # ── B11 · each banned SHAPE is pinned ALONE ────────────────────────────
-        # ⛔ Found by a SURVIVING MUTANT, not by reading. Deleting the `fold ... into <KEY>`
-        # pattern outright left the whole suite green: the only row exercising it was AVCH-58's,
-        # which ALSO says "board placement is the operator's" and so kept flagging through a
-        # different pattern. A shape acceptance B2 names by name was therefore unpinned, and
-        # deleting it would have been invisible. Each row below matches exactly ONE pattern.
-        SHAPES = [
-            ("fold into <KEY>", "Fold the one-line fix into AVCH-54 (it hits that lane directly)"),
-            ("board placement", "Board placement is the operator's, not mine"),
-            ("create/mint", "Mint its own AVCH ticket for the remainder"),
-            ("earns a ticket", "Decide whether finding 13 earns a ticket"),
-            ("rule on + ticket", "Rule on whether the residue ticket should exist"),
-            ("ticket + your call", "The nag ticket is optional, your call"),
-        ]
-        for label, row in SHAPES:
-            c.check(f"B11 · the '{label}' shape is flagged on its own",
-                    len(flagged(one_row(row))) == 1,
-                    f"if only a multi-shape row covers this pattern, deleting the pattern is "
+            # ── B11 · each banned SHAPE is pinned ALONE ────────────────────────────
+            # ⛔ Found by a SURVIVING MUTANT, not by reading. Deleting the `fold ... into <KEY>`
+            # pattern outright left the whole suite green: the only row exercising it was AVCH-58's,
+            # which ALSO says "board placement is the operator's" and so kept flagging through a
+            # different pattern. A shape acceptance B2 names by name was therefore unpinned, and
+            # deleting it would have been invisible. Each row below matches exactly ONE pattern.
+            SHAPES = [
+                ("fold into <KEY>", "Fold the one-line fix into AVCH-54 (it hits that lane directly)"),
+                ("board placement", "Board placement is the operator's, not mine"),
+                ("create/mint", "Mint its own AVCH ticket for the remainder"),
+                ("earns a ticket", "Decide whether finding 13 earns a ticket"),
+                ("rule on + ticket", "Rule on whether the residue ticket should exist"),
+                ("ticket + your call", "The nag ticket is optional, your call"),
+            ]
+            for label, row in SHAPES:
+                c.check(f"B11 · the '{label}' shape is flagged on its own",
+                        len(flagged(one_row(row))) == 1,
+                        f"if only a multi-shape row covers this pattern, deleting the pattern is "
                     f"invisible: {row}")
 
-        # ── B10 · the FALSE POSITIVES a review probe found, pinned ─────────────
-        # ⛔ These four flagged under the first implementation, which searched for a banned VERB
-        # anywhere in the row and a ticket OBJECT anywhere in the row, independently. `file` and
-        # `open` are among the commonest NON-verbs in this vocabulary, and co-occurrence cannot
-        # tell "open a ticket" (create) from "open the ticket" (go read it). None of these came
-        # from the live corpus - they are the rows an honest walkthrough writes NEXT - so
-        # without them the regression returns silently the first time someone says "the ticket
-        # is still open". The fix binds verb and object into one phrase; these hold that line.
-        FALSE_POSITIVE_PROBE = [
-            "The SCC-99 ticket is still open from last sprint",
-            "Ticket SCC-12 remains open; nothing owed here",
-            "Open the ticket and read the Dev Record",
-            "The task file is in `_artifacts/`",
-        ]
-        for i, row in enumerate(FALSE_POSITIVE_PROBE, 1):
-            c.check(f"B10.{i} · a NOUN-sense 'open'/'file' row is not flagged",
-                    flagged(one_row(row)) == [],
-                    f"verb x object must be ONE phrase, not two searches: {row}")
+            # ── B10 · the FALSE POSITIVES a review probe found, pinned ─────────────
+            # ⛔ These four flagged under the first implementation, which searched for a banned VERB
+            # anywhere in the row and a ticket OBJECT anywhere in the row, independently. `file` and
+            # `open` are among the commonest NON-verbs in this vocabulary, and co-occurrence cannot
+            # tell "open a ticket" (create) from "open the ticket" (go read it). None of these came
+            # from the live corpus - they are the rows an honest walkthrough writes NEXT - so
+            # without them the regression returns silently the first time someone says "the ticket
+            # is still open". The fix binds verb and object into one phrase; these hold that line.
+            FALSE_POSITIVE_PROBE = [
+                "The SCC-99 ticket is still open from last sprint",
+                "Ticket SCC-12 remains open; nothing owed here",
+                "Open the ticket and read the Dev Record",
+                "The task file is in `_artifacts/`",
+            ]
+            for i, row in enumerate(FALSE_POSITIVE_PROBE, 1):
+                c.check(f"B10.{i} · a NOUN-sense 'open'/'file' row is not flagged",
+                        flagged(one_row(row)) == [],
+                        f"verb x object must be ONE phrase, not two searches: {row}")
 
-        # ── B6 · fenced examples are documentation, not rows (B4) ──────────────
-        # `jira_feed._unfenced` was written for exactly this after a live miss (SCC-154,
-        # ported from check_gate). Reuse it; a re-derived fence walker is how the close-marker
-        # rule gets lost a second time.
-        FENCED = (
-            "# W\n\n## Your Actions\n\n"
+            # ── B6 · fenced examples are documentation, not rows (B4) ──────────────
+            # `jira_feed._unfenced` was written for exactly this after a live miss (SCC-154,
+            # ported from check_gate). Reuse it; a re-derived fence walker is how the close-marker
+            # rule gets lost a second time.
+            FENCED = (
+                "# W\n\n## Your Actions\n\n"
             "A doc that TEACHES the convention quotes the banned shape:\n\n"
             "```markdown\n- [ ] Mint a ticket for the deferred items\n```\n\n"
             "- [x] nothing is actually owed\n"
-        )
-        c.check("B6 · a banned-shape row inside a fence is an EXAMPLE, not a row",
-                flagged(FENCED) == [],
-                "counting a fenced template holds a ticket nobody can ever close")
+            )
+            c.check("B6 · a banned-shape row inside a fence is an EXAMPLE, not a row",
+                    flagged(FENCED) == [],
+                    "counting a fenced template holds a ticket nobody can ever close")
 
-        # ── B7 · finish WARNS and does not change its verdict (the ruled arming) ─
-        # Operator ruling 2026-08-15 ("1. yes"): ship WARN. A block here fires AFTER the merge,
-        # trading a held ticket for an erroring close-out. But a warn nobody sees is the
-        # `vscode-hides-git-hook-output` failure, so the BANNER is pinned, not the intention.
-        BANNED_WT = (
-            "# W\n\n## Your Actions\n\n"
+            # ── B7 · finish WARNS and does not change its verdict (the ruled arming) ─
+            # Operator ruling 2026-08-15 ("1. yes"): ship WARN. A block here fires AFTER the merge,
+            # trading a held ticket for an erroring close-out. But a warn nobody sees is the
+            # `vscode-hides-git-hook-output` failure, so the BANNER is pinned, not the intention.
+            BANNED_WT = (
+                "# W\n\n## Your Actions\n\n"
             "- [ ] Rule on the symlink defect - fold the one-line fix into AVCH-54, or mint "
             "its own AVCH key. Board placement is the operator's.\n"
-        )
-        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(BANNED_WT),
-                       "--apply")
-        c.check("B7 · finish prints the banned-row banner", "BANNED ACTION ROW" in out,
-                out.strip()[-400:])
-        c.check("B7 · ...and names the row it objects to", "AVCH-54" in out,
-                out.strip()[-400:])
-        c.check("B7 · ...and the ticket is still HELD exactly as before (warn, not block)",
-                code == 3, f"exit={code} - warn must not change finish's verdict")
+            )
+            set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(BANNED_WT),
+                           "--apply")
+            c.check("B7 · finish prints the banned-row banner", "BANNED ACTION ROW" in out,
+                    out.strip()[-400:])
+            c.check("B7 · ...and names the row it objects to", "AVCH-54" in out,
+                    out.strip()[-400:])
+            c.check("B7 · ...and the ticket is still HELD exactly as before (warn, not block)",
+                    code == 3, f"exit={code} - warn must not change finish's verdict")
 
-        # ── B8 · the arming flag exists and is DISARMED by default ─────────────
-        # ⛔ THIS CASE PASSED VACUOUSLY IN THE RED RUN and the red is what exposed it. With no
-        # such flag defined, argparse exits 2 on "unrecognized arguments" - the same 2 a real
-        # refusal returns - so `code == 2` alone was satisfied by the flag NOT EXISTING. The
-        # exit code is now paired with the banner, and the clean-input half proves the flag is
-        # a real discriminator rather than a blanket refusal: a gate that refuses everything is
-        # as broken as one that refuses nothing.
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(BANNED_WT),
-                       "--apply", "--strict-actions")
-        c.check("B8 · --strict-actions REFUSES the banned row",
-                code == 2 and "BANNED ACTION ROW" in out,
-                f"exit={code} - a bare exit 2 is also what argparse returns for an unknown "
+            # ── B8 · the arming flag exists and is DISARMED by default ─────────────
+            # ⛔ THIS CASE PASSED VACUOUSLY IN THE RED RUN and the red is what exposed it. With no
+            # such flag defined, argparse exits 2 on "unrecognized arguments" - the same 2 a real
+            # refusal returns - so `code == 2` alone was satisfied by the flag NOT EXISTING. The
+            # exit code is now paired with the banner, and the clean-input half proves the flag is
+            # a real discriminator rather than a blanket refusal: a gate that refuses everything is
+            # as broken as one that refuses nothing.
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(BANNED_WT),
+                           "--apply", "--strict-actions")
+            c.check("B8 · --strict-actions REFUSES the banned row",
+                    code == 2 and "BANNED ACTION ROW" in out,
+                    f"exit={code} - a bare exit 2 is also what argparse returns for an unknown "
                 f"flag: {out.strip()[-300:]}")
-        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
-                       "--apply", "--strict-actions")
-        c.check("B8 · ...and ALLOWS a clean walkthrough, so the flag is not a blanket refusal",
-                code == 0, f"exit={code} {out.strip()[-300:]}")
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
+                           "--apply", "--strict-actions")
+            c.check("B8 · ...and ALLOWS a clean walkthrough, so the flag is not a blanket refusal",
+                    code == 0, f"exit={code} {out.strip()[-300:]}")
 
-        # ── B9 · the standalone inspection entry point ─────────────────────────
-        code, out = run_script("jira_feed.py", "check-actions", "--walkthrough",
-                               str(FIXTURES / "avch58_your_actions.md"))
-        c.check("B9 · check-actions reports the fixture's one banned row", code == 1
-                and "symlink defect" in out, f"exit={code} {out.strip()[-300:]}")
-        code, out = run_script("jira_feed.py", "check-actions", "--walkthrough",
-                               walkthrough(CLEAR))
-        c.check("B9 · ...and exits 0 on a clean walkthrough", code == 0,
-                f"exit={code} {out.strip()[-200:]}")
+            # ── B9 · the standalone inspection entry point ─────────────────────────
+            code, out = run_script("jira_feed.py", "check-actions", "--walkthrough",
+                                   str(FIXTURES / "avch58_your_actions.md"))
+            c.check("B9 · check-actions reports the fixture's one banned row", code == 1
+                    and "symlink defect" in out, f"exit={code} {out.strip()[-300:]}")
+            code, out = run_script("jira_feed.py", "check-actions", "--walkthrough",
+                                   walkthrough(CLEAR))
+            c.check("B9 · ...and exits 0 on a clean walkthrough", code == 0,
+                    f"exit={code} {out.strip()[-200:]}")
 
     return c.finish()
 

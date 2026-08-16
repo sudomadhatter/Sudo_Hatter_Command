@@ -12,7 +12,7 @@ platforms: [opencode, antigravity]
 > - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never
 >   force-push; every branch and every commit carries the repo's Jira key (armed 2026-08-07)
 > - `.agents/rules/jira.md` — the `acli` reference, and the work-item type model this lane sits in
-> - `.agents/rules/work-consolidation.md` — the `riders:` / `landing: partial` contract this Step 4
+> - `.agents/rules/work-consolidation.md` — the `riders:` / `landing_mode: partial` contract this Step 4
 >   settles: one lane may carry a whole Task's subtasks, and they flip here, parent last (SCC-170)
 > - `.agents/rules/artifacts-always-first.md` — the plan is skippable on this lane; the closing
 >   `walkthrough.md` is **not**, and the preflight blocks without it
@@ -409,7 +409,7 @@ recoverable failure.
 >    commit that trim on the lane, before the preflight. `task_preflight.py` checks every declared
 >    rider against the lane's commits and refuses one that leads no commit here. *Never declare a
 >    ticket whose work is not real.*
-> 2. **Add `landing: partial`** to the same `task.yaml`. Without it an open undeclared child blocks,
+> 2. **Add `landing_mode: partial`** to the same `task.yaml`. Without it an open undeclared child blocks,
 >    exactly as it always has — the mode is a thing you say, and an unrecognised value fails CLOSED.
 > 3. **The trimmed riders flip** as above. **The PARENT STAYS OPEN** — do not transition it, and do
 >    not treat the preflight's partial-landing warning as noise.

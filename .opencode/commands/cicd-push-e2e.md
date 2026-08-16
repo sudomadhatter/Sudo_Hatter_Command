@@ -41,7 +41,7 @@ git fetch origin
 git branch -a --list '*epic/*'          # live epic branches, local + origin
 ```
 - **Exactly one live epic branch** → that's the candidate; confirm it with Daniel by name.
-- **Several** → show them with `git log --oneline main..<branch> | head` each and decide together.
+- **Several** → show them with `git log --oneline origin/main..<branch> | head` each and decide together.
 - **None** → nothing to ship; if Daniel is pointing at a `chore/<JIRA-KEY>-<slug>` branch, this command
   can merge it with the **light gate** only (his direct ask IS that approval) — otherwise stop.
   (Ruling 2026-08-07: chore branches carry their own ticket key too.)

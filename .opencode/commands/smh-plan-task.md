@@ -142,7 +142,7 @@ that share a file are sequenced, and whichever part makes the *rest of this lane
 Then run `/smh-quick-dev` once per part **inside that one tree**, and close the whole thing with a
 single `/smh-close-task-merge-tree --expect-key <PARENT-KEY>`.
 
-**If the lane must ship before every part is built:** write `landing: partial` into `task.yaml` and
+**If the lane must ship before every part is built:** write `landing_mode: partial` into `task.yaml` and
 **trim `riders:` to the subset that actually landed.** The declared riders flip, the parent stays open,
 and the remainder becomes the next `chore/<PARENT-KEY>-<slug2>` lane. `task_preflight.py` checks the
 trim against the lane's commits and refuses a rider that leads no commit there.
@@ -155,7 +155,9 @@ plan/audit/cut/push loop below collapses into part sections of that lane's singl
 **For each subtask, in dependency order.** Everything here happens **inside that lane's own tree**.
 
 ```bash
-git -C "$REPO" worktree add .claude/worktrees/<slug> -b chore/<SUBKEY>-<slug> main
+git -C "$REPO" fetch origin                                   # ⛔ the base is origin/main, never a bare `main`
+git -C "$REPO" worktree add .claude/worktrees/<slug> -b chore/<SUBKEY>-<slug> origin/main
+git -C "<the new tree>" branch --unset-upstream               # a start-point of origin/main sets upstream to MAIN
 python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>   # PC: `python`
 BRANCH=$(git -C "<the new tree>" rev-parse --abbrev-ref HEAD)
 echo "Lane: $BRANCH"

@@ -67,7 +67,9 @@ lane exists to remove. The operator's ask IS the decision; agents mint.
 
 ```bash
 acli jira workitem create --project SCC --type Task --summary "…" --description "…"
-git -C "$REPO" worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> main
+git -C "$REPO" fetch origin                                                    # ⛔ base = origin/main
+git -C "$REPO" worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> origin/main
+git -C "<the new tree>" branch --unset-upstream                                # origin/main start-point sets upstream to MAIN
 python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>       # PC: `python`
 BRANCH=$(git -C "<the new tree>" rev-parse --abbrev-ref HEAD) && echo "Lane: $BRANCH"
 python3 .agents/scripts/jira_feed.py start --key <KEY> --apply
@@ -114,7 +116,7 @@ Step 0 judged what you *intended* to touch. This judges what you *did*.
 
 ```bash
 python3 .agents/scripts/lane_qualify.py --repo "$REPO" \
-        --paths $(git -C "<tree>" diff --name-only main...HEAD)
+        --paths $(git -C "<tree>" diff --name-only origin/main...HEAD)
 ```
 
 *(That `$(…)` **is** split into separate arguments in both shells — command substitution splits where

@@ -121,9 +121,10 @@ git grep -n "<the-path-being-moved>"
 off `main`, several at a time, and a sibling's uncommitted worktree is invisible to `grep` from here:
 
 ```bash
-git worktree list                                   # who else is live
-git -C <each-tree> status --short                   # what they are holding uncommitted
-git -C <each-tree> diff --name-only main...HEAD     # what they have already committed
+git worktree list                                       # who else is live
+git -C <each-tree> status --short                       # what they are holding uncommitted
+env -u GITHUB_TOKEN git fetch origin main               # a bare `main` is this checkout's LAST PULL
+git -C <each-tree> diff --name-only origin/main...HEAD  # what they have already committed
 ```
 
 Any file appearing in **both** your change set and a sibling's is a landing-order dependency, not a

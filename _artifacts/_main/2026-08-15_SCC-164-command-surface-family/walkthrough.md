@@ -27,7 +27,7 @@ SCC-163). The arming ruling was closed separately, quoted in § ARMING.
 - [x] **Part 1 · SCC-170** — the consolidation rule becomes law, riders default, partial landing
 - [x] **Part 2 · J / SCC-178** — gate_receipt stops counting its own output as dirt
 - [x] **Part 3 · K / SCC-179** — mutation sweep gets a mechanical restore check
-- [ ] **Part 4 · A / SCC-165** — a bare `main` is a stale ref (20 operands)
+- [x] **Part 4 · A / SCC-165** — a bare `main` is a stale ref (**25** operands: 4 ruled local, 21 fixed)
 - [ ] **Part 5 · B / SCC-166** — cicd-code-review gains its twin's two steps, ADAPTED
 - [ ] **Part 6 · H / SCC-176** — the plan-time port checklist
 - [ ] **Part 7 · F / SCC-174** — jira_feed check stops blessing a forked Dev Record ⛔ CUT LINE
@@ -164,6 +164,102 @@ sweep starts agreeing with itself.
 Also fixed from reading the sweep's own output: the echoed tail of the full unfiltered run is now
 prefixed `| `, because that tail is another process's output and can carry its own
 `-- SWEEP FAILED --` banner directly above a passing verdict.
+
+### Part 4 · A / SCC-165 — a bare `main` is a stale ref
+
+**The count is 25, not the plan's 20.** The plan measured by hand at `a0aceaf`; the scan finds
+four more `rev-list --left-right --count main...origin/main` sync-checks (which are **correct**
+and become the allowlist) and one `merge-tree --write-tree --messages HEAD main` that the plan's
+pattern list did not name. Leaving that last one would have been the vacuous shape: a guard
+shipping green three lines above the identical live defect. `merge-tree` is now a scanned pattern.
+
+**RED, captured before any edit** — `-- 22/23 passed --`, the one failure naming all 21:
+
+```
+[PASS] the scan read at least 10 command files (an empty glob is a FAIL): read 63 from .agents/commands
+[FAIL] no command diffs, counts or cuts against a bare local `main`: 21 unruled operand(s)
+      cicd-mobile-error-team.md:147  [range-left]  ... git diff main...claude/incident-<id>
+      cicd-push-e2e.md:44            [range-left]  ... git log --oneline main..<branch> | head
+      smh-code-review.md:81          [cmd-operand] BASE=$(git -C "$REPO" merge-base HEAD main)
+      smh-code-review.md:85          [cmd-operand] ... merge-tree --write-tree --messages HEAD main
+      smh-plan-task.md:158           [cmd-operand] ... worktree add ... -b chore/<SUBKEY>-<slug> main
+      … 16 more …
+      REMEDY: `origin/main` preceded by `git fetch origin main` in that command — or, if the line
+      genuinely asks about the LOCAL branch, an ALLOWED row in this file carrying the reason.
+```
+
+**GREEN:** `-- 23/23 passed --`; full floor `31/31 files passed`.
+
+#### ⛔ A2 — every hit, judged one by one
+
+| File | Line | Operand | Ruling |
+|---|---|---|---|
+| cicd-mobile-error-team | 147 | `git diff main...claude/incident-<id>` | **FIX** — incident branches fork from main; the existing `fetch` named only the incident branch, so main was never refreshed. Fetch now names both |
+| cicd-push-e2e | 44 | `git log --oneline main..<branch>` | **FIX** — `git fetch origin` already runs at :40 |
+| cicd-push-e2e | 125 | `rev-list --left-right --count main...origin/main` | **ALLOW** — the `0 0` sync check; the left operand IS the question |
+| smh-clean-code-audit | 60 | `diff --name-only main...HEAD` | **FIX** + a fetch (the command had none) |
+| smh-close-task-merge-tree | 518 | `…main...origin/main` | **ALLOW** — sync check |
+| smh-code-review | 58 | `diff --name-only main...HEAD` (Step 0.5) | **FIX** + a fetch — Step 0.5 runs *before* Step 0.7's fetch |
+| smh-code-review | 81 | `merge-base HEAD main` | **FIX** — ⚠ it sits one line under `fetch origin main`, which updates `origin/main` and **not** local `main`. The fetch made it look safe |
+| smh-code-review | 82 · 83 | `"$BASE"..main` · `main...HEAD` | **FIX** |
+| smh-code-review | 85 | `merge-tree … HEAD main` | **FIX** — found by widening the scan, not by the plan |
+| smh-code-review | 132 | prose: "the `main...HEAD` diff" | **FIX** — the table documents the input; stale prose re-teaches the defect |
+| smh-label-tasks | 71 | `diff --name-only main...chore/<KEY>-<slug>` | **FIX** + a fetch — grounding a label on a stale diff reads a lane as touching files it does not |
+| smh-merge-multiple-workingtrees | 81 · 89 | `rev-list --count main..<branch>` (+ its prose) | **FIX** + a Step 1 fetch |
+| smh-merge-multiple-workingtrees | 139 · 140 | `…..main` · `main..."chore/…"` | **FIX** — the step is *titled* "Staleness against **current** `main`"; a stale base defeated its whole purpose |
+| smh-merge-multiple-workingtrees | 150 | `diff --name-only main...<branch>` (overlap map) | **FIX** |
+| smh-merge-multiple-workingtrees | 299 · 366 | `…main...origin/main` | **ALLOW** ×2 — both sync checks, after `checkout main` + `pull --ff-only` |
+| smh-plan-task | 158 | `worktree add … -b chore/<SUBKEY>-<slug> main` | **FIX** — see below |
+| smh-quick-dev | 73 · 118 | `worktree add … main` · `diff main...HEAD` | **FIX** |
+| smh-quick-fix | 70 · 117 | `worktree add … main` · `diff main...HEAD` | **FIX** |
+| smh-self-audit | 126 | `diff --name-only main...HEAD` | **FIX** + a fetch |
+
+**Sighted, deliberately NOT fixed here:** `cicd-clean-code-audit.md:49`, `BASE=${BASE:-main}`. It is
+not in operand position so the scan does not see it, and it is a *fallback* for a story lane whose
+real base is its `epic/*` branch — B1's trap. It belongs to the cicd parts (5/6), not to A.
+
+**⚠ The fix for `worktree add` is three lines, not one — and a blanket ref-swap would have been a
+regression.** `smh-plan-task.md:117` already carried the correct idiom for the consolidated lane and
+it says why: `git worktree add -b <lane> origin/main` **sets the new branch's upstream to
+`origin/main`**, so a later bare `git push` from that lane targets **main**. Every fixed
+`worktree add` now carries the fetch, the `origin/main` start-point, **and**
+`git branch --unset-upstream`. Swapping only the ref would have traded a stale base for lanes
+wired to push at main — a strictly worse defect, and the file that documented the hazard was one
+of the three that still had it.
+
+**A5 — rendered-step diff:** refs, the added fetches, and the two `--unset-upstream` lines. No step
+gained, lost or reordered a behaviour. **A4 — arming:** `run_all.py` auto-discovers `test_*.py`
+(`run_all.py:11,:43`), so the guard ships **BLOCKING** with nothing to register, per § ARMING.
+
+**Mutation sweep** — the plan's three, plus one drawn from the code:
+
+| Mutant | Must kill | Result |
+|---|---|---|
+| M1 re-insert a bare `main...HEAD` in a command | the live scan | KILLED |
+| M2 widen the allowlist key to the file alone | `...nor does the same text in a DIFFERENT file` | KILLED |
+| M3 point the scan at an empty dir | the `≥ 10 files` floor | KILLED |
+| M4 drop the `(?<![\w/.-])` guard | every `origin/main` re-lights | KILLED |
+
+### ⚠️ Part 4 turned up a regression Parts 1–3 had already landed
+
+`run_all.py` was **red at the lane tip** — `test_command_surfaces.py` and `test_suite_runner.py` —
+and green on `origin/main`. Neither had been noticed, because Parts 1–3 ran their own files rather
+than the floor. Two separate causes:
+
+1. **The ORPHAN walker (`test_suite_runner.py`).** `test_gate_receipt.py` and `test_jira_feed.py`
+   carried **zero** `c.block(` guards on `origin/main`, which kept them out of the walker's `wired`
+   set entirely. Parts 1 and 2 each added **one** block — which opts the whole file in and exposes
+   every legacy `c.check` as an orphan: 34 and 180 of them. A partially-wired file is the genuine
+   hazard the walker names (an unguarded check runs under **every** `--case` filter and can be
+   credited with a kill it did not make), so weakening the walker was not on the table. Both files
+   are now fully wired into four named regions. Setup stays outside the guards; the multi-line
+   string fixtures were left un-indented so no fixture text changed. Proof the wiring is behaviour-
+   neutral: check names and verdicts **byte-identical** to the pre-wiring capture, `43/43` and
+   `241/241` unchanged, every block runs standalone, and the partitions are exact —
+   24+10+9 = 43, 152+79+10 = 241.
+2. **Door drift (`test_command_surfaces.py`).** 13 mirrors stale; Parts 1–3 edited command bodies
+   without re-syncing. Regenerated with `sync-agents.ps1 -NoGlobals` — local surfaces only, so a
+   mid-lane body is never pushed to the machine-wide opencode/Antigravity/Codex caches.
 
 ## Your Actions
 

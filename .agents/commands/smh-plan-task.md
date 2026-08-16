@@ -155,7 +155,9 @@ plan/audit/cut/push loop below collapses into part sections of that lane's singl
 **For each subtask, in dependency order.** Everything here happens **inside that lane's own tree**.
 
 ```bash
-git -C "$REPO" worktree add .claude/worktrees/<slug> -b chore/<SUBKEY>-<slug> main
+git -C "$REPO" fetch origin                                   # ⛔ the base is origin/main, never a bare `main`
+git -C "$REPO" worktree add .claude/worktrees/<slug> -b chore/<SUBKEY>-<slug> origin/main
+git -C "<the new tree>" branch --unset-upstream               # a start-point of origin/main sets upstream to MAIN
 python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>   # PC: `python`
 BRANCH=$(git -C "<the new tree>" rev-parse --abbrev-ref HEAD)
 echo "Lane: $BRANCH"
