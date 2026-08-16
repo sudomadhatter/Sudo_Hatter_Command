@@ -1806,6 +1806,199 @@ Nothing is actually owed.
                 st["statuses"]["TEST-7"] == "In Review" and not st.get("transitions"),
                 f"{st.get('statuses')} {st.get('transitions')}")
 
+        # ═══════════════════════════════════════════════════════════════════════
+        # SCC-163 Part B — what may go in `## Your Actions` is now CHECKED.
+        # Written RED first, against a REAL corpus (acceptance B1).
+        #
+        # Step 5 of both review commands permits exactly three things to be left for the
+        # operator: a product decision, a main merge, a ticket transition. A row assigning
+        # them a ticket BORN FROM REVIEW FINDINGS - mint it, file it, rule on where it goes -
+        # is the retired defect. It is prose, nothing checked it, and it was broken the same
+        # day it was written: AVCH-58 shipped three unchecked rows, zero of them operator
+        # calls, and `finish` held the ticket on Review Required. That is the loop.
+        #
+        # ⛔ THE HARD PART IS THE FALSE POSITIVES, NOT THE DETECTION. Measured before the rule
+        # was written: `open_actions` over every .md in `_artifacts/` finds 101 walkthroughs
+        # carrying the section and 25 unchecked rows. The phrase list read literally
+        # (mint|file|open...ticket|fold...into|rule on|decide whether|your call|board
+        # placement) flags 8 of those 25 - and at most 4 are true positives. "Rule on A1" is
+        # an acceptance dispute; "Rule the landing order" is merge sequencing. Both are
+        # genuine operator calls. So a bare verb is NEVER a trigger: the detector fires only
+        # on a trigger verb PAIRED WITH a ticket-work object, and the survivors of that
+        # measurement are pinned below as negative controls.
+        # ═══════════════════════════════════════════════════════════════════════
+        FIXTURES = Path(__file__).resolve().parent / "fixtures"
+        avch58 = (FIXTURES / "avch58_your_actions.md").read_text(encoding="utf-8")
+
+        import jira_feed as jf_mod  # noqa: E402 - the tests run scripts/ on sys.path
+
+        def flagged(text: str) -> list[str]:
+            return [row for row, _ in jf_mod.banned_action_rows(text)]
+
+        # ── B1 · the known-positive, from the real AVCH-58 walkthrough ─────────
+        hits = flagged(avch58)
+        c.check("B1 · AVCH-58 row 1 (fold into AVCH-54 / mint its own key) is FLAGGED",
+                len(hits) == 1 and "symlink defect" in hits[0],
+                f"the ticket's named known-positive; got {hits}")
+        c.check("B1 · ...and row 2, a settled deferral, is NOT flagged (B5: status notes)",
+                not any("requirements.txt" in h for h in hits), f"{hits}")
+        c.check("B1 · ...and row 3, a branch-freshness note, is NOT flagged (B5)",
+                not any("behind" in h for h in hits), f"{hits}")
+
+        # ── B2/B3/B4 · the three named cases from acceptance B3 ────────────────
+        # Two negative controls and one positive, and the first two are the trap: a detector
+        # keyed on a bare ticket key false-reds both, because both CONTAIN one.
+        def one_row(row: str) -> str:
+            return f"# W\n\n## Your Actions\n\n- [ ] {row}\n"
+
+        c.check("B2 · 'Merge AVCH-59 to main' is ALLOWED (a main merge, and it has a key)",
+                flagged(one_row("Merge AVCH-59 to main")) == [],
+                "keying on a bare ticket key false-reds the allowed classes")
+        c.check("B3 · 'Move SCC-99 to Done' is ALLOWED (a ticket transition, verb + key)",
+                flagged(one_row("Move SCC-99 to Done")) == [],
+                "a transition is one of Step 5's three permitted classes")
+        c.check("B4 · 'Mint a ticket for the N deferred items' is FLAGGED",
+                len(flagged(one_row("Mint a ticket for the N deferred items"))) == 1,
+                "the banned shape with no ticket key in it at all")
+
+        # ── B5 · the live corpus is the regression suite ───────────────────────
+        # Verbatim rows from walkthroughs already in `_artifacts/`. Every one is a genuine
+        # operator call that the naive phrase list flags. If the detector reds any of these it
+        # is worse than nothing: it teaches the next agent to stop writing honest rows.
+        REAL_ALLOWED = [
+            "**Rule the landing order.** Recommended: **SCC-126 lands first** - merging this "
+            "lane first would leave the AP autopilot instructed to read a rule file that does "
+            "not exist yet.",
+            "**Decide whether the CONCERNS is worth clearing before the merge.** Unchanged by "
+            "the absorb and deliberately not actioned here.",
+            "**Rule on A1.** It is not delivered: no replay, no timings, no identical-verdict "
+            "comparison against SCC-154's table.",
+            "**Rule on A2's missed target.** 68.57 s measured against <= 60 s.",
+            "**Rule on A6's phrasing** - it asks for a \"sweep script template\" to be grepped, "
+            "and the standing SCC-145 ruling keeps sweep scripts out of the tree.",
+            "**Close out and merge** - `/smh-close-task-merge-tree` with `--expect-key SCC-123`. "
+            "The lane is pushed, clean, 0 behind `origin/main`.",
+            "**Pass SCC-126 the restamp requirement** (`ap_reconciled: 024f58a`, or drop the "
+            "stamp) - without it, `main` is red once both lanes land.",
+        ]
+        for i, row in enumerate(REAL_ALLOWED, 1):
+            c.check(f"B5.{i} · a REAL operator call from the corpus is not flagged",
+                    flagged(one_row(row)) == [], f"{row[:80]}...")
+
+        # ...and the true positives the same corpus carries, so B5 cannot pass by a detector
+        # that simply never fires (the vacuous green this suite exists to refuse).
+        REAL_BANNED = [
+            "**SOP-nag ticket (optional, your call from the plan's 9b):** the suite-count "
+            "staleness now has three recorded instances in two days.",
+            "Decide whether finding 13 earns a ticket: the vendor skill is still installed and "
+            "BMAD re-emits it.",
+            "**File the follow-on Task** from the review section's \"Follow-on\" block (one "
+            "ticket: check_gate's remaining edges).",
+        ]
+        for i, row in enumerate(REAL_BANNED, 1):
+            c.check(f"B5.{i}x · a REAL banned row from the same corpus IS flagged",
+                    len(flagged(one_row(row))) == 1, f"{row[:80]}...")
+
+        # ── B11 · each banned SHAPE is pinned ALONE ────────────────────────────
+        # ⛔ Found by a SURVIVING MUTANT, not by reading. Deleting the `fold ... into <KEY>`
+        # pattern outright left the whole suite green: the only row exercising it was AVCH-58's,
+        # which ALSO says "board placement is the operator's" and so kept flagging through a
+        # different pattern. A shape acceptance B2 names by name was therefore unpinned, and
+        # deleting it would have been invisible. Each row below matches exactly ONE pattern.
+        SHAPES = [
+            ("fold into <KEY>", "Fold the one-line fix into AVCH-54 (it hits that lane directly)"),
+            ("board placement", "Board placement is the operator's, not mine"),
+            ("create/mint", "Mint its own AVCH ticket for the remainder"),
+            ("earns a ticket", "Decide whether finding 13 earns a ticket"),
+            ("rule on + ticket", "Rule on whether the residue ticket should exist"),
+            ("ticket + your call", "The nag ticket is optional, your call"),
+        ]
+        for label, row in SHAPES:
+            c.check(f"B11 · the '{label}' shape is flagged on its own",
+                    len(flagged(one_row(row))) == 1,
+                    f"if only a multi-shape row covers this pattern, deleting the pattern is "
+                    f"invisible: {row}")
+
+        # ── B10 · the FALSE POSITIVES a review probe found, pinned ─────────────
+        # ⛔ These four flagged under the first implementation, which searched for a banned VERB
+        # anywhere in the row and a ticket OBJECT anywhere in the row, independently. `file` and
+        # `open` are among the commonest NON-verbs in this vocabulary, and co-occurrence cannot
+        # tell "open a ticket" (create) from "open the ticket" (go read it). None of these came
+        # from the live corpus - they are the rows an honest walkthrough writes NEXT - so
+        # without them the regression returns silently the first time someone says "the ticket
+        # is still open". The fix binds verb and object into one phrase; these hold that line.
+        FALSE_POSITIVE_PROBE = [
+            "The SCC-99 ticket is still open from last sprint",
+            "Ticket SCC-12 remains open; nothing owed here",
+            "Open the ticket and read the Dev Record",
+            "The task file is in `_artifacts/`",
+        ]
+        for i, row in enumerate(FALSE_POSITIVE_PROBE, 1):
+            c.check(f"B10.{i} · a NOUN-sense 'open'/'file' row is not flagged",
+                    flagged(one_row(row)) == [],
+                    f"verb x object must be ONE phrase, not two searches: {row}")
+
+        # ── B6 · fenced examples are documentation, not rows (B4) ──────────────
+        # `jira_feed._unfenced` was written for exactly this after a live miss (SCC-154,
+        # ported from check_gate). Reuse it; a re-derived fence walker is how the close-marker
+        # rule gets lost a second time.
+        FENCED = (
+            "# W\n\n## Your Actions\n\n"
+            "A doc that TEACHES the convention quotes the banned shape:\n\n"
+            "```markdown\n- [ ] Mint a ticket for the deferred items\n```\n\n"
+            "- [x] nothing is actually owed\n"
+        )
+        c.check("B6 · a banned-shape row inside a fence is an EXAMPLE, not a row",
+                flagged(FENCED) == [],
+                "counting a fenced template holds a ticket nobody can ever close")
+
+        # ── B7 · finish WARNS and does not change its verdict (the ruled arming) ─
+        # Operator ruling 2026-08-15 ("1. yes"): ship WARN. A block here fires AFTER the merge,
+        # trading a held ticket for an erroring close-out. But a warn nobody sees is the
+        # `vscode-hides-git-hook-output` failure, so the BANNER is pinned, not the intention.
+        BANNED_WT = (
+            "# W\n\n## Your Actions\n\n"
+            "- [ ] Rule on the symlink defect - fold the one-line fix into AVCH-54, or mint "
+            "its own AVCH key. Board placement is the operator's.\n"
+        )
+        set_state(state, types={"TEST-7": "Task"}, statuses={"TEST-7": "In Progress"})
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(BANNED_WT),
+                       "--apply")
+        c.check("B7 · finish prints the banned-row banner", "BANNED ACTION ROW" in out,
+                out.strip()[-400:])
+        c.check("B7 · ...and names the row it objects to", "AVCH-54" in out,
+                out.strip()[-400:])
+        c.check("B7 · ...and the ticket is still HELD exactly as before (warn, not block)",
+                code == 3, f"exit={code} - warn must not change finish's verdict")
+
+        # ── B8 · the arming flag exists and is DISARMED by default ─────────────
+        # ⛔ THIS CASE PASSED VACUOUSLY IN THE RED RUN and the red is what exposed it. With no
+        # such flag defined, argparse exits 2 on "unrecognized arguments" - the same 2 a real
+        # refusal returns - so `code == 2` alone was satisfied by the flag NOT EXISTING. The
+        # exit code is now paired with the banner, and the clean-input half proves the flag is
+        # a real discriminator rather than a blanket refusal: a gate that refuses everything is
+        # as broken as one that refuses nothing.
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(BANNED_WT),
+                       "--apply", "--strict-actions")
+        c.check("B8 · --strict-actions REFUSES the banned row",
+                code == 2 and "BANNED ACTION ROW" in out,
+                f"exit={code} - a bare exit 2 is also what argparse returns for an unknown "
+                f"flag: {out.strip()[-300:]}")
+        code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
+                       "--apply", "--strict-actions")
+        c.check("B8 · ...and ALLOWS a clean walkthrough, so the flag is not a blanket refusal",
+                code == 0, f"exit={code} {out.strip()[-300:]}")
+
+        # ── B9 · the standalone inspection entry point ─────────────────────────
+        code, out = run_script("jira_feed.py", "check-actions", "--walkthrough",
+                               str(FIXTURES / "avch58_your_actions.md"))
+        c.check("B9 · check-actions reports the fixture's one banned row", code == 1
+                and "symlink defect" in out, f"exit={code} {out.strip()[-300:]}")
+        code, out = run_script("jira_feed.py", "check-actions", "--walkthrough",
+                               walkthrough(CLEAR))
+        c.check("B9 · ...and exits 0 on a clean walkthrough", code == 0,
+                f"exit={code} {out.strip()[-200:]}")
+
     return c.finish()
 
 

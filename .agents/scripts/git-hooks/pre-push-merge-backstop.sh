@@ -101,6 +101,20 @@ refuse() {   # $1 = the lane being pushed, $2 = the foreign lane riding on it
 
 # stdin: <local ref> <local sha> <remote ref> <remote sha>, one line per ref being pushed.
 while read -r local_ref local_sha remote_ref remote_sha; do
+  # ⓘ A PUSHED `epic/*` IS DELIBERATELY NOT JUDGED — a ruled omission, not an oversight
+  # (SCC-163; operator, 2026-08-15: "A3. no we dont need it."). Two pairings therefore still
+  # escape by fast-forward, and they are named here so the gap is recorded rather than merely
+  # unnoticed:
+  #
+  #     epic:chore   refuse   — a chore lane ff'd into an epic branch
+  #     epic:epic    refuse   — one epic ff'd into another
+  #
+  # Widening this line is NOT a one-word change, which is why it was declined. A pushed epic
+  # needs its own THIRD candidate set: `refs/heads/claude` must be EXCLUDED for it, because
+  # `epic:story` is `allow` and stories landing on the epic is what an epic IS — enumerating
+  # them would refuse every ordinary epic push, on the `/cicd-push-e2e` shipping path. This
+  # file's header prices that false red above a miss. Case EP4 pins the current behaviour, so
+  # whoever widens it later gets a red that explains itself instead of a silent regression.
   case "$remote_ref" in
     refs/heads/chore/*|refs/heads/claude/*) ;;
     *) continue ;;
@@ -173,7 +187,26 @@ $epics"
     continue
   fi
 
-  for other in $(git for-each-ref --format='%(refname:short)' refs/heads/chore refs/heads/claude 2>/dev/null); do
+  # ─── Which foreign lanes are even CANDIDATES, per lane class (SCC-163) ───────────────────
+  # `refs/heads/epic` was absent here, so a `chore/*` lane that FAST-FORWARDED an epic carried
+  # that epic's unlanded commits to the remote with nothing looking. `merge-target-guard.sh`
+  # already rules `chore:epic -> refuse`; a ff writes no commit, so the guard never fired and
+  # this loop was not looking. Reproduced end to end against a real remote before the fix.
+  #
+  # ⛔ IT IS KEYED ON THE LANE CLASS, AND THAT IS THE WHOLE FIX — a blanket `refs/heads/epic`
+  # in the line below is WRONG and false-reds three ALLOW arms of the same judge table:
+  #   story:epic    allow  — a story lane absorbing its own epic IS `/cicd-park`, run daily
+  #   incident:epic allow  — "absorbing main (or an epic) is the everyday mid-incident move"
+  #   epic:story    allow  — a pushed epic/* is declined at the ref filter above
+  # Only `chore/*` integrates on `main` with an epic as genuinely foreign work. This mirrors
+  # the BASES switch directly above: same question, same per-class answer, and for the same
+  # reason the incident arm had to be added there twice (SCC-154, SCC-159).
+  SCOPES="refs/heads/chore refs/heads/claude"
+  case "$lane" in
+    chore/*) SCOPES="$SCOPES refs/heads/epic" ;;
+  esac
+
+  for other in $(git for-each-ref --format='%(refname:short)' $SCOPES 2>/dev/null); do
     [ "$other" = "$lane" ] && continue
 
     # ⛔ The LOCAL name too, not only the remote one. `git push origin chore/a:refs/heads/renamed`

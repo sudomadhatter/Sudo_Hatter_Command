@@ -1014,6 +1014,129 @@ def main() -> int:
             c.check("G6f · CONTROL a STORY lane carrying epic-landed work is still ALLOWED",
                     rc == 0, out.strip()[-500:])
 
+    # ── EP · SCC-163: the containment loop was blind to `epic/*` ──────────────────────────
+    if c.block("EP · SCC-163: the containment loop was blind to epic/*"):
+        # ⛔ THE DEFECT. The loop enumerated `refs/heads/chore` and `refs/heads/claude` only, so a
+        # `chore/*` lane that fast-forwarded an epic carried that epic's unlanded commits to the
+        # remote with NOTHING looking. `merge-target-guard.sh` already rules the pairing
+        # `chore:epic -> refuse` (its judge table, `target:source`) — this made the backstop
+        # enforce law the guard had been stating alone since SCC-144. A ff writes no commit, so
+        # the commit-time guard never fired: exactly the blind spot this file exists to cover.
+        #
+        # ⛔⛔ AND IT CANNOT BE A BLANKET WIDENING, WHICH IS THE WHOLE DIFFICULTY. Three arms of
+        # that same table say an epic inside a lane is LEGITIMATE:
+        #     story:epic     allow   (a story lane absorbing its own epic — /cicd-park, every day)
+        #     incident:epic  allow   ("absorbing main (or an epic) is the everyday mid-incident move")
+        #     epic:story     allow   (pushed ref is epic/* — declined at the ref filter above)
+        # Adding `refs/heads/epic` unconditionally false-reds every one of them. So the arm is
+        # keyed on the lane class, mirroring the BASES switch it sits beside: `chore/*` ONLY.
+        # EP2/EP2b/EP3 are the controls that hold that line, and they are why the fix is four
+        # words in a `case` rather than one word in a `for`.
+        with TempDir() as tmp:
+            d, bare = make_pushable(tmp)
+            lane(d, "epic/SCC-163-thing")                              # unlanded epic work
+            sh("git", "checkout", "-q", "-b", "chore/SCC-163-lane", "main", cwd=d)
+            sh("git", "merge", "--ff-only", "epic/SCC-163-thing", cwd=d)   # writes NO commit
+            rc, out = sh("git", "push", "origin", "chore/SCC-163-lane", cwd=d)
+            c.check("EP1 · a chore lane carrying an UNLANDED epic is REFUSED", rc != 0,
+                    "chore:epic is `refuse` in the judge table; the ff variant escaped both "
+                    "gates: " + out.strip()[-500:])
+            c.check("EP1 · ...and the refusal names the epic",
+                    "epic/SCC-163-thing" in out, out.strip()[-500:])
+            c.check("EP1 · ...and prints the standard banner",
+                    "carrying another lane's unlanded work" in out, out.strip()[-500:])
+            rc, out = sh("git", "ls-remote", "--heads", str(bare), "chore/SCC-163-lane", cwd=d)
+            c.check("EP1 · ...and nothing reached the remote",
+                    "chore/SCC-163-lane" not in out, out)
+
+        # ── EP2 · CONTROL story:epic — the epic is LOCAL, so BASES cannot rescue it ──────────
+        # Deliberately an UNPUSHED epic. With the epic on `origin`, a blanket widening would
+        # still score `landed=1` through the `claude/*` arm of the BASES switch and this control
+        # would pass against the very mutant it exists to kill (A-M2). Unpushed, BASES is
+        # `origin/main` alone — so only the lane-class arm can keep this green.
+        with TempDir() as tmp:
+            d, bare = make_pushable(tmp)
+            lane(d, "epic/SCC-163-e")                                  # never pushed
+            lane(d, "claude/SCC-163-s", "epic/SCC-163-e")              # cut from it => contains it
+            rc, out = sh("git", "push", "origin", "claude/SCC-163-s", cwd=d)
+            c.check("EP2 · CONTROL a STORY lane carrying its own (local) epic is ALLOWED",
+                    rc == 0,
+                    "story:epic is `allow`; a blanket widening false-reds every story lane: "
+                    + out.strip()[-500:])
+
+        # ── EP2b · the same control in the /cicd-park shape: the epic IS on origin ───────────
+        with TempDir() as tmp:
+            d, bare = make_pushable(tmp)
+            lane(d, "epic/SCC-163-e")
+            sh("git", "push", "-q", "origin", "epic/SCC-163-e", cwd=d)
+            sh("git", "fetch", "-q", "origin", cwd=d)
+            lane(d, "claude/SCC-163-s", "epic/SCC-163-e")
+            rc, out = sh("git", "push", "origin", "claude/SCC-163-s", cwd=d)
+            c.check("EP2b · CONTROL the same story lane with the epic pushed is ALLOWED",
+                    rc == 0, out.strip()[-500:])
+
+        # ── EP3 · CONTROL incident:epic — `allow` at the judge table, so never enumerated ────
+        with TempDir() as tmp:
+            d, bare = make_pushable(tmp)
+            lane(d, "epic/SCC-163-e")                                  # local, unlanded
+            sh("git", "checkout", "-q", "-b", "claude/incident-abc123", "main", cwd=d)
+            sh("git", "merge", "--ff-only", "epic/SCC-163-e", cwd=d)
+            rc, out = sh("git", "push", "origin", "claude/incident-abc123", cwd=d)
+            c.check("EP3 · CONTROL an INCIDENT lane absorbing an epic is ALLOWED", rc == 0,
+                    "incident:epic is `allow` — the everyday mid-incident move: "
+                    + out.strip()[-500:])
+
+        # ── EP4 · CONTROL epic:story — a pushed epic/* is declined at the ref filter ─────────
+        # This is the arm SCC-163 deliberately did NOT widen (operator ruling: "A3. no we dont
+        # need it."). The case pins the CONSEQUENCE of that ruling — an epic push is not judged —
+        # so if anyone widens the filter later without building the third enumeration set, this
+        # goes red and says why.
+        with TempDir() as tmp:
+            d, bare = make_pushable(tmp)
+            lane(d, "claude/SCC-163-s")
+            sh("git", "checkout", "-q", "-b", "epic/SCC-163-e", "main", cwd=d)
+            sh("git", "merge", "--ff-only", "claude/SCC-163-s", cwd=d)
+            rc, out = sh("git", "push", "origin", "epic/SCC-163-e", cwd=d)
+            c.check("EP4 · CONTROL a pushed epic/* carrying a story is ALLOWED", rc == 0,
+                    "epic:story is `allow`, and the ref filter declines epic pushes outright: "
+                    + out.strip()[-500:])
+
+        # ── EP5 · CONTROL main:epic — landing an epic on main is the shipping path ───────────
+        with TempDir() as tmp:
+            d, bare = make_pushable(tmp)
+            lane(d, "epic/SCC-163-e")
+            sh("git", "checkout", "-q", "main", cwd=d)
+            sh("git", "merge", "--ff-only", "epic/SCC-163-e", cwd=d)
+            rc, out = sh("git", "push", "origin", "main", cwd=d)
+            c.check("EP5 · CONTROL landing an epic on main is ALLOWED", rc == 0,
+                    "main:epic is `allow` — /cicd-push-e2e's whole job: " + out.strip()[-500:])
+
+        # ── EP6 · the ruled omission is WIRING, not a promise in prose ───────────────────────
+        # SCC-125: a guard pinned to a DESCRIPTION is vacuous — the opposite-meaning file scores
+        # full marks. So this reads the two things that are actually load-bearing: the epic
+        # enumeration is inside a chore-only arm, and the pushed-ref filter still does NOT accept
+        # `refs/heads/epic/*`. The prose rationale is required too, but it is checked LAST and
+        # only after the wiring, so a comment can never satisfy this case on its own.
+        src = BACKSTOP.read_text(encoding="utf-8")
+        # ⛔ Read CODE, not the file. An earlier cut of this case compared `src.index(...)`
+        # offsets, which the fix's own explanatory comment then broke by mentioning
+        # `refs/heads/epic` above the arm — a guard a COMMENT can invert, which is the exact
+        # shape memory:comment-literals-invert-source-grep-tests names. Comments are stripped
+        # first, so the only lines left are ones git actually executes.
+        code = [ln for ln in src.splitlines() if not ln.lstrip().startswith("#")]
+        epic_lines = [ln for ln in code if "refs/heads/epic" in ln]
+        c.check("EP6 · the epic enumeration is keyed to chore/* only",
+                len(epic_lines) == 1 and "chore/*)" in epic_lines[0],
+                "the enumeration must sit inside a lane-class arm, not in the bare for-loop; "
+                f"executable lines naming refs/heads/epic: {epic_lines}")
+        c.check("EP6 · the pushed-ref filter still declines epic/* (the ruled omission)",
+                "refs/heads/chore/*|refs/heads/claude/*)" in src
+                and "refs/heads/epic/*)" not in src,
+                "A3 was ruled `document, do not widen` — widening needs its own enumeration set")
+        c.check("EP6 · ...and the omission is documented with its reason",
+                "epic:chore" in src and "epic:epic" in src,
+                "a residual gap recorded nowhere is indistinguishable from one nobody noticed")
+
     # ── G7 · SCC-154: incident-as-FOREIGN — still refused, remedy re-routed ────────────────
     if c.block("G7 · SCC-154: incident-as-FOREIGN — still refused, remedy re-rou"):
         # A chore lane genuinely carrying an unlanded incident branch IS contaminated — the refusal
