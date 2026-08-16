@@ -25,8 +25,8 @@
       "file": ".agents/hooks/guard-cwd-escape.py",
       "original": "        if ch == \"#\" and (not buf or buf[-1].isspace()):",
       "mutated": "        if False:",
-      "case": "M5 not a cd: a comment",
-      "block": "M5 \u00b7"
+      "case": "M4 refused",
+      "block": "M4 \u00b7"
     },
     {
       "id": "N4",
@@ -39,8 +39,8 @@
     {
       "id": "N5",
       "file": ".agents/hooks/guard-cwd-escape.py",
-      "original": "    except Exception:\n        allow()\n    if not isinstance(data, dict)",
-      "mutated": "    except Exception:\n        raise\n    if not isinstance(data, dict)",
+      "original": "    try:\n        main()\n    except Exception:\n        allow()",
+      "mutated": "    try:\n        main()\n    except Exception:\n        raise",
       "case": "M6 allowed on unparseable stdin",
       "block": "M6 \u00b7"
     },

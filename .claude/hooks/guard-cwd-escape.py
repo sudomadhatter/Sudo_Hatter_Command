@@ -180,10 +180,10 @@ REASON = (
 
 
 def main() -> None:
-    try:
-        data = json.load(sys.stdin)
-    except Exception:
-        allow()
+    # No local try/except here: `allow()` raises SystemExit, which `except Exception` does not
+    # catch, so the outer handler at the bottom already turns any parse failure into an allow.
+    # A second one would be unreachable-by-behaviour - a mutant that deletes it cannot be killed.
+    data = json.load(sys.stdin)
     if not isinstance(data, dict) or data.get("tool_name") != "Bash":
         allow()
     command = (data.get("tool_input") or {}).get("command")

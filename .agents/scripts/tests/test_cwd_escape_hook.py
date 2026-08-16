@@ -88,7 +88,13 @@ def main() -> int:
 
     if c.block("M4 · every other way of leaving the workspace is caught"):
         for cmd in ("cd", "cd ~", "cd ~/Downloads", "cd -", "cd $HOME", "cd ..",
-                    "pushd /tmp", f"cd {Path(WS).parent}/other-repo && git status"):
+                    "pushd /tmp", f"cd {Path(WS).parent}/other-repo && git status",
+                    # dir BOUNDARY: a sibling whose name merely EXTENDS the root is OUTSIDE.
+                    # `startswith(root)` without the trailing `/` reads it as inside.
+                    f"cd {WS}-sibling && ls",
+                    # an apostrophe in a COMMENT opens a quote that would swallow the rest of
+                    # the command — including the real `cd` — unless comments are skipped first.
+                    "ls   # don't do it this way\ncd /tmp && ls"):
             code, out = call(cmd)
             c.check(f"M4 refused: {cmd!r}", blocked(out), out.strip()[:160])
 
