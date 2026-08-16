@@ -1,5 +1,5 @@
 ---
-description: Review + gate a story — adversarial code review, then the test gate (suite + TEA trace + nfr + test-review) and the clean-code gate (code-standards conformance), producing a PASS/CONCERNS/FAIL/WAIVED verdict. Step ③ of the sudo dev flow.
+description: Review + gate a story — re-derives the blast radius against the current EPIC branch (Step 0.7, because sibling stories land while you build), then an adversarial code review, an acceptance audit against the story's checkable list, the test gate (suite + TEA trace + nfr + test-review) and the clean-code gate (code-standards conformance), producing a PASS/CONCERNS/FAIL/WAIVED verdict. Step ③ of the sudo dev flow.
 platforms: [opencode, antigravity]
 ---
 
@@ -13,12 +13,26 @@ separate `/test-gate`, `/qa-gate`, or `/lint-gate`.
 
 > Flow position: `cicd-dev-story-tests` → **`cicd-code-review`** → `cicd-update-sprint-memory`.
 
-## Step 0 — Resolve the target project (FIRST — before any other step)
+## Step 0 — Resolve the target project (FIRST) — from command output, never from belief
 Bind the target per `.agents/rules/smh-target-resolution.md` §STD + §BIND: self fast-path → `$ARGUMENTS`
 override → `.agents/active-project.txt` → else **STOP and ask** — never guess, never operate on the lobby.
 Set `PROJECT_ROOT` and **echo exactly** `Target: Projects/<name>` before any work. Every bare path below
 resolves under `PROJECT_ROOT` (nested `bmad-*`/`1_*` skills bind their `{project-root}` to it); a needed
 path missing under `PROJECT_ROOT` → STOP, never fall back to the lobby.
+
+Then say what you resolved **in the words git gave you**, not in the words you expected:
+
+```bash
+PROJECT_ROOT=$(git -C "<the target you bound>" rev-parse --show-toplevel)
+BRANCH=$(git -C "$PROJECT_ROOT" rev-parse --abbrev-ref HEAD)
+HEAD_SHA=$(git -C "$PROJECT_ROOT" rev-parse HEAD)
+echo "Reviewing: $(basename "$PROJECT_ROOT") | $BRANCH @ ${HEAD_SHA:0:8}"
+```
+
+⛔ **Echo that from the commands.** A self-reported echo can only confirm a wrong belief, and with
+sibling story lanes live the shared checkout is the wrong tree more often than not — a preflight once
+printed *another* lane's branch as clear to merge and was believed
+(`preflight-resolves-repo-from-cwd`).
 
 ## Step 0.5 — Re-enter the story worktree if one already exists (fresh-chat resume)
 Before Step 1: `git worktree list` under `PROJECT_ROOT` (`worktree-per-story` → "Resuming"). A
@@ -27,6 +41,53 @@ under it** (the built code often lives ONLY there — the shared checkout would 
 diff); echo `Worktree: reviewing in <path>`. None → review in `PROJECT_ROOT` as usual. Artifacts too:
 this story's plan/walkthrough/verdict live in THIS tree — absent here = that step never ran; a lookalike
 in the shared checkout is a SIBLING lane's, not evidence. Echo the story's ①②③ step-state before Step 1.
+
+## Step 0.7 — ⭐ Re-derive the blast radius against the **current epic branch** (MANDATORY)
+
+**The pre-work audit expires.** `/cicd-self-audit` traced this story's blast radius against the epic
+branch as it stood when the plan was written. Sibling stories land on that branch while you build, so
+by the time you get here that trace can describe a repo that no longer exists. **Every gate in Step 3
+can be green while a landed story has moved a file this one depends on** — a green suite proves your
+code runs, not that your references still resolve.
+
+⛔ **The ref is the EPIC branch, never the trunk.** A story lane merges into `epic/<JIRA-KEY>-<slug>`;
+that branch is the tree this work will actually meet, and the trunk is one merge further out.
+Re-deriving against the trunk answers a question nobody asked: it reports "nothing moved" while the
+epic-mate that *did* move the file lands anyway. That substitution is the stale-ref defect SCC-165
+swept out of this command family — do not re-plant it here.
+
+```bash
+env -u GITHUB_TOKEN git -C "$PROJECT_ROOT" fetch origin
+git -C "$PROJECT_ROOT" branch -a --list '*epic/*'        # normally exactly one live epic branch
+EPIC=<epic/JIRA-KEY-slug>                                # from that list, or the story's epic in the plan
+BASE=$(git -C "$WORKTREE" merge-base HEAD "origin/$EPIC")
+git -C "$WORKTREE" diff --name-only "$BASE".."origin/$EPIC" | sort > /tmp/theirs.txt  # landed while you built
+git -C "$WORKTREE" diff --name-only "origin/$EPIC"...HEAD | sort > /tmp/mine.txt      # what you changed
+grep -Fxf /tmp/mine.txt /tmp/theirs.txt                                               # the TRUE overlap
+git -C "$WORKTREE" merge-tree --write-tree --messages HEAD "origin/$EPIC" | head -40  # conflicts, before they are real
+git -C "$PROJECT_ROOT" worktree list                                                  # sibling story lanes still live
+```
+
+⚠ **`zsh` does not word-split an unquoted variable** the way `bash` does. Build file lists into a file
+and expand with `$(cat …)`, or the whole list arrives as one argument and your sweep silently checks
+nothing — a vacuous green in the tool you brought to prevent vacuous greens.
+
+Then answer these three, in writing. **"Nothing moved" is a reportable result**, not a reason to skip
+the step:
+
+1. **Did anything this diff REFERENCES move, get renamed, or get deleted on the epic branch?**
+   Re-resolve every repo path and `#L` anchor the diff names — especially the ones a component
+   imports, a route registers, or a fixture loads. A reference an epic-mate moved out from under you
+   is a **FAIL**, not a nit: the code still reads correctly and points at a file that is not there.
+2. **What is the true overlap, and does the merge conflict?** Report the intersection and the
+   `merge-tree` result. A conflict in a **generated** file (a lockfile, a build manifest, an INDEX the
+   tooling writes) is resolved by **regenerating it**, never by hand-merging.
+3. **Which sibling story lanes are still live, and does one of them need to land first?** Name the
+   landing-order dependency and what happens to this story if the order is reversed.
+
+**Absorb the epic branch now, before the verdict** — conflicts belong on this story branch, never on
+the epic (`git-policy`). Re-run Step 3's gate **after** absorbing; a verdict measured on a pre-merge
+sha is a verdict about code that will never exist.
 
 ## Step 1 — Clean-Room Adversarial Code Review
 
@@ -77,6 +138,26 @@ mode. **Copy that line into the verdict as it came back.** "4 lenses ran" and "3
 inline" are different evidence and must read differently; a lens skipped because there is no spec is
 not a degradation and never caps the verdict, while one that never ran at all is an unexamined
 surface — and an unknown is not a pass, the same rule as a missing tool in Step 3.5.
+
+## Step 1.5 — Acceptance audit  *(against the story's acceptance criteria, not against the code)*
+
+Recover the story's checkable list — the story file carries it, `/cicd-write-story-tests` turned it
+into assertions, and the ticket's own acceptance block is the authority behind both
+(`acli jira workitem view <JIRA-KEY>`).
+
+**No double audit.** In `full` mode the engine's Acceptance Auditor lens already walked the diff
+against that story — **import its findings** into the matrix below (source `review`) rather than
+re-deriving them. What stays yours is the matrix itself: every item paired with the assertion that
+proves it, which is a claim about evidence a lens cannot make for you.
+
+For **each item**: name where the diff satisfies it, and **the assertion that proves it**. Then the
+other direction — **anything in the diff beyond the list is drift**: cut it, or name why it stays.
+
+- An item with **no evidence** is not satisfied, however obviously true it looks. **CONCERNS floor.**
+- An item whose evidence is *"I read it and it looks right"* is not evidence. Run something.
+- No acceptance list recoverable anywhere → say so and cap the verdict at **CONCERNS**; a review with
+  no contract to review against is an opinion. (`no-spec` mode is exactly this case, declared up
+  front rather than discovered here.)
 
 ## Step 2 — Gate: opt-in check
 Read `_bmad-output/sudo-tests.yaml`.
