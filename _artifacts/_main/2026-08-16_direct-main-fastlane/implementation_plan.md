@@ -367,9 +367,39 @@ because `main` may have moved during the build.
 
 ## Status
 
-**APPROVED — operator replied `approved`, 2026-08-16.** Build proceeding under this revision.
-One post-approval correction was made before any code: F1's mechanism was measured and found
-inverted, which removed the conditional on the GO. See § Landing order.
+**APPROVED, then PARKED — 2026-08-16.**
+
+The operator replied `approved`, and one post-approval correction was made before any code: F1's
+mechanism was measured and found inverted, which removed the conditional on the GO (see § Landing
+order). The build then started and was **stopped by operator instruction on the same turn**:
+
+> "we will wait for SCC sixty four, its a lot and i dont want issues pushing the first half of it now"
+
+So the sequencing this plan's own audit had proposed and then retired is back — **not** because the
+F1 hazard requires it (it does not; that correction stands), but because SCC-164 is a large lane and
+landing this one across it is avoidable churn. That is a scheduling call, and it is the operator's.
+
+**State: nothing is built.** The AC-1 revert was performed in the working tree and then discarded; the
+lane is clean at this commit and carries the plan only. Nothing was merged and `main` was not touched.
+
+**To resume, after SCC-164 lands:**
+
+1. `git fetch origin && git merge origin/main` — absorb SCC-164, including Parts C and D.
+2. Re-run the AC-1 revert **against the ref**, never a sha:
+   `git checkout origin/main -- .agents/scripts/git-hooks/mint-push-token.sh .agents/scripts/git-hooks/pre-push-main-approval.sh .agents/scripts/tests/test_main_push_gate.py`
+   then `git rm .agents/scripts/git-hooks/direct-push-allowlist.sh`.
+3. Re-read § Landing order — the command-surface registries (`.sync-manifest.json`,
+   `commands/INDEX.md`) and the two shared docs will have moved under SCC-164, and this lane writes
+   to all of them.
+4. Build the additive half: `prose_scope`, its RED tests, the command, its four doors.
+
+**One deviation to decide at resume, flagged now rather than discovered later.** This plan specifies
+the predicate as POSIX `sh`, justified as *"matching every other hook-adjacent script."* Under route
+(b) it is **no longer hook-adjacent** — nothing sources it from a shell; a command invokes it and the
+tests drive it. Every other file in `.agents/scripts/` is stdlib Python, which runs on both machines,
+whereas a `.sh` needs a POSIX shell the PC does not have outside Git Bash. The recommendation at
+resume is **`prose_scope.py`, not `prose-scope.sh`**. It is a small change with a two-machine reason
+behind it, so it wants a yes rather than an assumption.
 
 ---
 
