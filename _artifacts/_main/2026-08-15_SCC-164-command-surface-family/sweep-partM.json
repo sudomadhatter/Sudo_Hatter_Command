@@ -7,18 +7,18 @@
     {
       "id": "N1",
       "file": ".agents/hooks/guard-cwd-escape.py",
-      "original": "        if depth > 0:\n            continue                                   # inside ( \u2026 ): the sanctioned form",
-      "mutated": "        if False:\n            continue                                   # inside ( \u2026 ): the sanctioned form",
+      "original": "        if depth > 0:\n            continue                                   # inside ( … ): the sanctioned form",
+      "mutated": "        if False:\n            continue                                   # inside ( … ): the sanctioned form",
       "case": "M2 allowed: ( cd /tmp && ls )",
-      "block": "M2 \u00b7"
+      "block": "M2 ·"
     },
     {
       "id": "N2",
       "file": ".agents/hooks/guard-cwd-escape.py",
-      "original": "    if arg == \"\" or arg == \"-\" or arg == \"~\" or arg.startswith(\"~/\"):",
+      "original": "    if arg == \"\" or arg == \"-\" or arg == \"~\":",
       "mutated": "    if False:",
       "case": "M4 refused",
-      "block": "M4 \u00b7"
+      "block": "M4 ·"
     },
     {
       "id": "N3",
@@ -26,7 +26,7 @@
       "original": "        if ch == \"#\" and (not buf or buf[-1].isspace()):",
       "mutated": "        if False:",
       "case": "M4 refused",
-      "block": "M4 \u00b7"
+      "block": "M4 ·"
     },
     {
       "id": "N4",
@@ -34,7 +34,7 @@
       "original": "        if cmd.startswith(\"<<\", i):",
       "mutated": "        if False:",
       "case": "M5 not a cd: a heredoc body",
-      "block": "M5 \u00b7"
+      "block": "M5 ·"
     },
     {
       "id": "N5",
@@ -42,7 +42,7 @@
       "original": "    try:\n        main()\n    except Exception:\n        allow()",
       "mutated": "    try:\n        main()\n    except Exception:\n        raise",
       "case": "M6 allowed on unparseable stdin",
-      "block": "M6 \u00b7"
+      "block": "M6 ·"
     },
     {
       "id": "N6",
@@ -50,7 +50,39 @@
       "original": "        if target == r or target.startswith(r.rstrip(\"/\") + \"/\"):",
       "mutated": "        if target.startswith(r.rstrip(\"/\")):",
       "case": "M4 refused",
-      "block": "M4 \u00b7"
+      "block": "M4 ·"
+    },
+    {
+      "id": "N7 the heredoc skip goes back to swallowing a single-line `<<` (herestring, shift)",
+      "file": ".agents/hooks/guard-cwd-escape.py",
+      "original": "        return i + 2\n    j = eol + 1",
+      "mutated": "        return n\n    j = eol + 1",
+      "case": "M4 refused",
+      "block": "M4 ·"
+    },
+    {
+      "id": "N8 word splitting stops being quote-aware, so a quoted arg with a space reads relative",
+      "file": ".agents/hooks/guard-cwd-escape.py",
+      "original": "        words = shlex.split(seg)",
+      "mutated": "        words = seg.split()  # noqa",
+      "case": "M4 refused",
+      "block": "M4 ·"
+    },
+    {
+      "id": "N9 `~/x` stops being expanded - a legal in-workspace cd is refused again",
+      "file": ".agents/hooks/guard-cwd-escape.py",
+      "original": "        arg = os.path.expanduser(arg)",
+      "mutated": "        arg = arg",
+      "case": "M3 allowed (tilde spelling",
+      "block": "M3 ·"
+    },
+    {
+      "id": "N10 the test's cwd default re-freezes, so the cwd-relative branch goes untested",
+      "file": ".agents/scripts/tests/test_cwd_escape_hook.py",
+      "original": "    cwd = WS if cwd is None else cwd",
+      "mutated": "    cwd = WS",
+      "case": "M3 allowed: `cd ..` from a NESTED cwd",
+      "block": "M3 ·"
     }
   ]
 }
