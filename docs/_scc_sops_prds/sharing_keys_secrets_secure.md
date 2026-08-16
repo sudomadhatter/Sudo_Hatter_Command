@@ -16,6 +16,34 @@ bites.
 
 ---
 
+## ⚡ Quick Start: Sharing Secrets with a Teammate in 2 Minutes
+
+You never send a `.env` file, link, or password. Access is granted directly through GitHub permissions.
+
+### 1. What You Do (Owner / Admin)
+1. Add the teammate as a collaborator on GitHub ([AGY_AVIATIONCHAT Collaborators](https://github.com/sudomadhatter/AGY_AVIATIONCHAT/settings/access) or Sudo_Hatter_Command).
+2. *(Optional)* Restrict `production` access in the [Keyway Dashboard](https://app.keyway.sh) so developers receive only `development` sandbox keys.
+
+### 2. What Your Teammate Does (New Dev)
+Send your teammate these 4 quick commands:
+```bash
+# 1. Clone the repo and enter it
+git clone <repo-url> && cd <repo-dir>
+
+# 2. Install the Keyway CLI
+brew install keywaysh/tap/keyway      # macOS
+npm install -g @keywaysh/cli          # Windows
+
+# 3. Authenticate via GitHub (one-time browser OAuth)
+keyway login
+
+# 4. Run the app with secrets in RAM (zero files on disk)
+keyway run -- npm run dev             # frontend
+keyway run -- python backend/main.py  # backend
+```
+
+---
+
 ## 1. Why this exists — the problem with `.env` files
 
 A `.env` file is just a text file full of live credentials. It works fine until the moment you need a
