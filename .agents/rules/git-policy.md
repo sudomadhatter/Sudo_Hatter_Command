@@ -279,6 +279,40 @@ message (`-> main`, because that is what was typed) were all indistinguishable f
 
 See `_artifacts/_memory/nothing-guards-the-merge-target.md`.
 
+### ⛔ A revert reads from a REF — `origin/main`, never a sha (SCC-184, measured 2026-08-16)
+
+The rule above protects the branch you merge **onto**. This one protects the ref you **read from**,
+and it is the same disease a third time: an operation that acts on the wrong ref and reports success.
+
+Undoing work in a lane — `git checkout <thing> -- <path>` — is a **read**, and *which ref* decides
+whether a sibling lane's landed work survives your merge. The two forms are not interchangeable:
+
+| Form | What happens when the lanes meet |
+| --- | --- |
+| `git checkout origin/main -- <path>` | **SAFE under any later merge.** Your net diff against the merge-base is empty, so git resolves in the sibling's favour — whichever lane lands first, their work survives. |
+| `git checkout <sha> -- <path>` — or a **stale local `main`**, or any ref captured before you absorbed | **DELETES whatever landed in between.** Clean merge, **no conflict**, nothing red, and it rides onto `main` inside an otherwise correct-looking lane. |
+
+- **The safe form, and it is the only one worth memorising:**
+
+  ```bash
+  git -C "$REPO" fetch origin
+  git -C "$REPO" checkout origin/main -- <paths>
+  ```
+
+- **`main` is not a synonym for `origin/main`.** A local `main` in a worktree is a *cached* pointer.
+  It is stale from the moment a sibling pushes, and it is stale exactly when this matters.
+- **Re-assert immediately before the close-out, not once at the start.** `main` moves while you
+  build. If the revert is meant to be a no-op, prove it is still one:
+  `git -C "$REPO" diff origin/main -- <paths>` must be empty.
+- **Why it is invisible:** git has no way to tell a deliberate revert from a stale read. Both are a
+  legal write of older content. There is no conflict to raise, so nothing goes red — the only thing
+  standing between you and it is which ref you typed.
+- **Measured, not reasoned.** Both directions were run as synthetic three-way merges before this was
+  written down, because the audit that found it had the mechanism backwards on the first pass. A
+  claim about merge semantics is worth exactly as much as the merge you ran to check it.
+
+See `_artifacts/_memory/revert-target-must-be-a-ref.md`.
+
 ## Sync-first — check the remote before you land
 
 Phone and desktop share branches, so landing from a **stale** branch is what causes the

@@ -1,0 +1,10 @@
+task_key: SCC-184
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-184-revert-target-is-a-ref
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+# No subtasks. The lane is one rule + its memory, written on the lightweight lane
+# (operator-directed, doc-only): ticket -> edit -> push, no plan-first stop and no audit
+# ceremony. This manifest was authored at the close-out rather than at task start, which the
+# preflight warns about correctly — recorded here rather than backdated.
+riders: []
