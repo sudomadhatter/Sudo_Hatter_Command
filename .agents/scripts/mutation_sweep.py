@@ -272,7 +272,11 @@ def main() -> int:
     for cmd in [list(x) for x in {tuple(m.get("test") or data["test"]) for m in mutants}]:
         code, out = run_test(cmd, repo, None)
         print(f"-- full file, unfiltered: {' '.join(cmd)} -> exit {code} --")
-        print("\n".join(out.strip().splitlines()[-6:]))
+        # Prefixed, because this tail is ANOTHER process's output and it can carry its own
+        # `-- SWEEP FAILED --` (this script's suite spawns sweeps). Unprefixed, a green run
+        # printed a nested failure banner directly above its own verdict and read as failed.
+        for ln in out.strip().splitlines()[-6:]:
+            print(f"        | {ln}")
         if code != 0:
             failures.append(f"the FULL unfiltered run failed (exit {code}) - a scoped `--case` "
                             "subset is exactly what let 8681d83 through")

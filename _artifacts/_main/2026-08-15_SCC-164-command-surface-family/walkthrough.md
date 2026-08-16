@@ -26,7 +26,7 @@ SCC-163). The arming ruling was closed separately, quoted in § ARMING.
     out. Corrected to: PASS + dead blocks; CONCERNS + dead passes.
 - [x] **Part 1 · SCC-170** — the consolidation rule becomes law, riders default, partial landing
 - [x] **Part 2 · J / SCC-178** — gate_receipt stops counting its own output as dirt
-- [ ] **Part 3 · K / SCC-179** — mutation sweep gets a mechanical restore check
+- [x] **Part 3 · K / SCC-179** — mutation sweep gets a mechanical restore check
 - [ ] **Part 4 · A / SCC-165** — a bare `main` is a stale ref (20 operands)
 - [ ] **Part 5 · B / SCC-166** — cicd-code-review gains its twin's two steps, ADAPTED
 - [ ] **Part 6 · H / SCC-176** — the plan-time port checklist
@@ -108,6 +108,62 @@ case named for them, and the restore verified by re-running the file green:
 `git diff --quiet`, which compares to HEAD, while the fix under test was still uncommitted — the
 normal state of every sweep. Recorded as an input to **Part 3 (SCC-179)**, whose whole subject is
 that check: snapshot the pre-sweep content, never HEAD.
+
+### Part 3 · K / SCC-179 — the sweep's rules stop being self-reported
+
+**RED, captured before any code:** `-- 1/18 passed --` with `mutation_sweep.py` absent. Four of the
+first-cut cases passed **vacuously** — a missing script also exits 2 and touches nothing, so
+"an empty table is refused (exit 2)" and "the file was restored" were both true of a script that did
+not exist. Tightened before building: the refusals now pin their *reason* text, and the
+restore assertions are bound to output proving a sweep actually ran. RED after tightening: `1/18`.
+
+**GREEN:** `-- 22/22 passed --`.
+
+| Acceptance | Assertion | Result |
+|---|---|---|
+| K1 mechanical end-state check | `K5c` bytes · `K2e` nothing reached history · the pinned-sha diff | green |
+| K2 residue fails the check | `K2b` survivor · `K2c` misattributed kill · `K2d` exit 3 · `K2f` silent runner · `K3c2` residue refused next run | green |
+| K3 dirty start · interrupt · empty table | `K3a`+`K3a2` · `K3b`+`K3b2` (SIGTERM) · `K3c` (SIGKILL) · `K3d` · `K3e`/`K3e2` anchors | green |
+| K4 full file runs unfiltered | `K4a`, and `K4b` reproduces 8681d83 exactly — every scoped case green, the full run red, the sweep fails | green |
+| K5 clean sweep exits 0 | `K5a`/`K5b` | green |
+
+**The design changed twice, both times because the sweep swept itself.**
+
+*Round 1 — 0/8 killed.* Not one mutant died, and the reasons were four separate defects:
+
+1. **`kills` was one field doing two jobs in two namespaces.** The harness *selects* by `c.block()`
+   label; attribution *reads* the case name off the `FAILED:` line. Declaring `K2e` as the filter
+   matched no block, the harness exited 3, and the sweep correctly refused to call it a kill. Split
+   into `case` (attribution) and `block` (selection).
+2. **K2c was vacuous** — its filter selected only the case the mutant does not break, so the run
+   exited 0 and the assertion held whether or not attribution existed.
+3. **K2d was too loose** — any "sweep error" satisfied it, so deleting the exit-3 clause fell through
+   to the no-`FAILED:`-line branch and still read as an error.
+4. **K3f did not exist.** Every fixture table held ONE mutant, so nothing noticed when the per-mutant
+   restore was dropped.
+
+*Round 2 — 7/10.* Three survivors, three more real defects:
+
+5. **`judge` read `failed[0]`, the WRONG line.** This script's own suite spawns sweeps whose fixture
+   runners print their own `FAILED:` lines, so the first one belongs to a nested process; the
+   harness's own summary is printed **last**. A genuine kill was being reported as unattributable.
+6. **A mutant that does not APPLY read as a kill.** With the restore dropped, the stale mutation
+   keeps failing the same case and the sweep banks a second kill it never earned. The doctrine
+   already said this ("a mutant that removes nothing is DEFECTIVE — a SKIP that counts as a
+   survivor"); it is checked now because the symptom is silent.
+7. **No case ever ran a runner that fails SILENTLY** — non-zero with no `FAILED:` line — so the whole
+   attribution requirement could be deleted unnoticed. `K2f`.
+
+*Round 3 — 10/11.* **M11 is a DOCUMENTED SURVIVOR, not an oversight.** It removes the
+did-it-apply check, and no single-fault scenario can reach it: the check only fires when a restore
+has *already* failed, and the restore is verified independently. It is kept as second-line defence
+because the failure it converts is silent — a wrong answer that looks like a clean sweep — and it is
+recorded here rather than deleted, because deleting the mutant that embarrasses the design is how a
+sweep starts agreeing with itself.
+
+Also fixed from reading the sweep's own output: the echoed tail of the full unfiltered run is now
+prefixed `| `, because that tail is another process's output and can carry its own
+`-- SWEEP FAILED --` banner directly above a passing verdict.
 
 ## Your Actions
 
