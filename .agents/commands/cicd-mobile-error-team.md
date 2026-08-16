@@ -144,7 +144,7 @@ lane** — it is the diagnosis brain and this command adds nothing to it and ski
 Then do the part the runbook can't: **audit the machine's work.**
 
 - If a report issue and/or `claude/incident-<id>` branch exists, read the report's root-cause claim
-  and the branch diff (`git fetch origin claude/incident-<id> && git diff main...claude/incident-<id>`).
+  and the branch diff (`git fetch origin main claude/incident-<id> && git diff origin/main...claude/incident-<id>`).
 - **Re-verify every cited `file:line` at `RELEASE_SHA`** (`git show <RELEASE_SHA>:<path>`). Does the
   quoted code exist, at that line, saying that?
 - Judge the diff independently: does it address the **mechanism** you derived, or a symptom? Does it

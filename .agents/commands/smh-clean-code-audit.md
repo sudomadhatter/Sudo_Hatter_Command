@@ -54,10 +54,11 @@ BRANCH=$(git -C "$REPO" rev-parse --abbrev-ref HEAD)
 echo "Auditing: $(basename "$REPO") | Branch: $BRANCH"
 ```
 
-Establish the changed-file set — the audit's entire universe. A Task branch forks from `main`:
+Establish the changed-file set — the audit's entire universe. A Task branch forks from `origin/main`:
 
 ```bash
-git -C "$REPO" diff --name-only main...HEAD          # committed on this branch
+env -u GITHUB_TOKEN git -C "$REPO" fetch origin main # a bare `main` is this checkout's LAST PULL
+git -C "$REPO" diff --name-only origin/main...HEAD   # committed on this branch
 git -C "$REPO" diff --name-only                      # plus uncommitted
 git -C "$REPO" diff --name-only --cached             # plus staged
 ```

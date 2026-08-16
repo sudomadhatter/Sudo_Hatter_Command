@@ -10,6 +10,7 @@ exists on the Mac — and exited 127 in silence for weeks (SCC-77).
 
 ## Top-level contents
 <!-- auto-listed by /smh-update-maps-indexes — refresh via /smh-update-maps-indexes; do not hand-edit entries -->
+- `guard-cwd-escape.py`
 - `require-push-approval.py`
 - `run-hook.sh`
 - `session-start-context.sh`

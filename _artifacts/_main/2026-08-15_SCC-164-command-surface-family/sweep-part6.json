@@ -1,0 +1,72 @@
+{
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_command_surfaces.py"
+  ],
+  "mutants": [
+    {
+      "id": "H1 DELETE the _RULE_POINTERS row - a porting command may cite nothing",
+      "file": ".agents/scripts/workflow_lint.py",
+      "original": "    (\"port-checklist\", \"porting\",\n     re.compile(r\"exists in more than one repo|git diff --no-index\", re.I)),\n",
+      "mutated": "    # the row, deleted\n",
+      "case": "WIRING: the live row fires on a porting command that cites nothing",
+      "block": "CS-12"
+    },
+    {
+      "id": "H2 drop the SECOND arm - only the exact phrase triggers, so a reworded port goes exempt",
+      "file": ".agents/scripts/workflow_lint.py",
+      "original": "r\"exists in more than one repo|git diff --no-index\"",
+      "mutated": "r\"exists in more than one repo\"",
+      "case": "WIRING: the second arm - a command that diffs the two copies also fires",
+      "block": "CS-12"
+    },
+    {
+      "id": "H3 RELOCATE - item 6 stops being an item, so the checklist quietly ships five checks",
+      "file": ".agents/rules/port-checklist.md",
+      "original": "### 6. Hooks stay repo-local, and the port needs the target's OWN key",
+      "mutated": "**6. Hooks stay repo-local, and the port needs the target's OWN key**",
+      "case": "the port checklist exists and carries its six checks",
+      "block": "CS-12"
+    },
+    {
+      "id": "H4 item 4 restates the thin-repo law instead of citing project-law.md",
+      "file": ".agents/rules/port-checklist.md",
+      "original": "A thin project holds **only its own** law — see [`project-law.md`](project-law.md) (tier table +",
+      "mutated": "A thin project holds **only its own** law — the centre owns workflow law (tier table +",
+      "case": "items 4 and 6 CITE project-law.md instead of restating the thin-repo law",
+      "block": "CS-12"
+    },
+    {
+      "id": "H5 CODE-DERIVED - the header stops saying both directions, and the port BACK is skipped",
+      "file": ".agents/rules/port-checklist.md",
+      "original": "**⭐ It runs in BOTH directions.**",
+      "mutated": "**⭐ It runs on every lobby→project port.**",
+      "case": "the header says the checklist runs in BOTH directions (H5)",
+      "block": "CS-12"
+    },
+    {
+      "id": "H6 the INDEX row stops naming the rule - unreachable by the router every session scans",
+      "file": ".agents/rules/INDEX.md",
+      "original": "| `port-checklist.md` | on-demand |",
+      "mutated": "| `porting-guide.md` | on-demand |",
+      "case": "the rules INDEX routes to the checklist",
+      "block": "CS-12"
+    },
+    {
+      "id": "H7 smh-plan-task drops the citation - the trigger stays, the rule is unreachable",
+      "file": ".agents/commands/smh-plan-task.md",
+      "original": "> - `.agents/rules/port-checklist.md` — MANDATORY RULE 5's six checks",
+      "mutated": "> - MANDATORY RULE 5's six checks",
+      "case": "smh-plan-task.md carries the port trigger and cites the checklist",
+      "block": "CS-12"
+    },
+    {
+      "id": "H8 INVERT - cicd-self-audit rewords the trigger, so the lint row goes blind on it",
+      "file": ".agents/commands/cicd-self-audit.md",
+      "original": "**exists in more than one repo**",
+      "mutated": "**lives in two places at once**",
+      "case": "cicd-self-audit.md carries the port trigger and cites the checklist",
+      "block": "CS-12"
+    }
+  ]
+}

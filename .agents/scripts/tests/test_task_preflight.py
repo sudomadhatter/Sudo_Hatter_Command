@@ -736,6 +736,154 @@ def main() -> int:
             c.check("a landed sibling's riders are HISTORY - they spare nothing here",
                     code == 2, f"exit {code}: " + out.strip()[-400:])
 
+    # ── SCC-170 · partial landing: a consolidated lane may ship before every part ────────
+    if c.block("SCC-170 partial landing: a consolidated lane ships before every "):
+        # SCC-164's lane carries thirteen subtasks on one branch (the operator's consolidation
+        # ruling, 2026-08-15). If it must land before every part is built, the riders that DID
+        # land flip, the parent STAYS OPEN, and the rest becomes the next lane - but
+        # check_children could not express that: an open child that is not a declared rider
+        # blocks, full stop, so the only way to land early was to declare children whose work
+        # is NOT in the diff. That is precisely what the rider guard sentence forbids ("never
+        # declare a ticket whose work is not real"), so the gate was pushing the lane into the
+        # lie it exists to prevent.
+        #
+        # `landing_mode: partial` is the manifest saying so out loud. It only ever downgrades the
+        # UNDECLARED-child error to a warn; it never touches what a rider means, and it earns
+        # that downgrade by paying for it below - every declared rider must have real work on
+        # the lane, checked against the commits.
+        def declare_manifest(repo, extra, *, msg="SCC-11 chore: declare"):
+            write(repo, "_artifacts/_main/2026-08-08_scc-11-thing/task.yaml", MANIFEST + extra)
+            commit(repo, msg)
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+
+        with TempDir() as t:
+            # THE case. Declared rider SCC-21 rode this lane; SCC-23 did not and stays open.
+            # `landing_mode: partial` -> warn + proceed, and the warn must name the child that is
+            # being left behind, because the walkthrough has to carry it to the next lane.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            git(repo, "commit", "--no-verify", "-q", "--allow-empty",
+                "-m", "SCC-21 fix(thing): the rider's own work")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            declare_manifest(repo, "riders: [SCC-21]\nlanding_mode: partial\n")
+            board(t, children=[("SCC-21", "In Progress"), ("SCC-23", "To Do")])
+            code, out = preflight(repo)
+            c.check("`landing_mode: partial` lets a consolidated lane land with an undeclared "
+                    "child still open (warn, not error)",
+                    code == 1 and "clear to close out and merge" in out,
+                    f"exit {code}: " + out.strip()[-600:])
+            c.check("...and it NAMES the child being left behind, so the walkthrough can "
+                    "hand it to the next lane", "SCC-23" in out, out.strip()[-600:])
+            c.check("...and it says the parent stays OPEN - a partial landing never closes "
+                    "the index", "parent stays open" in out.lower(), out.strip()[-600:])
+            c.check("...the rider still gets its ceremony transition line",
+                    'transition --key SCC-21 --status "Done" --yes' in out,
+                    out.strip()[-600:])
+
+        with TempDir() as t:
+            # ⛔ THE CONTROL that makes the downgrade defensible: without the declaration the
+            # SAME fixture still BLOCKS. Partial landing is a thing you say, never a default.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            git(repo, "commit", "--no-verify", "-q", "--allow-empty",
+                "-m", "SCC-21 fix(thing): the rider's own work")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            declare_manifest(repo, "riders: [SCC-21]\n")
+            board(t, children=[("SCC-21", "In Progress"), ("SCC-23", "To Do")])
+            code, out = preflight(repo)
+            c.check("CONTROL no `landing_mode:` line -> the undeclared child still BLOCKS",
+                    code == 2 and "open subtask" in out, f"exit {code}: " + out.strip()[-400:])
+
+        with TempDir() as t:
+            # The price of the downgrade, and the reason it cannot be abused: a declared rider
+            # with NO commit on the lane is a declaration error - exit 2 naming it. Without
+            # this, `landing_mode: partial` would be a way to declare thirteen riders, land two, and
+            # flip all thirteen to Done at the ceremony. Checked against the COMMITS on the
+            # lane, not against belief.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            declare_manifest(repo, "riders: [SCC-21, SCC-22]\nlanding_mode: partial\n")
+            board(t, children=[("SCC-21", "In Progress"), ("SCC-22", "To Do")])
+            code, out = preflight(repo)
+            c.check("a declared rider with NO commit on the lane is a declaration error",
+                    code == 2, f"exit {code}: " + out.strip()[-600:])
+            c.check("...and it names the rider that declared work it never did",
+                    "SCC-21" in out and "SCC-22" in out, out.strip()[-600:])
+            c.check("...quoting the guard sentence the riders error already teaches",
+                    "work is not real" in out, out.strip()[-600:])
+
+        with TempDir() as t:
+            # CONTROL for the check above: riders that DID commit on the lane pass it, so the
+            # trimmed-riders check is not simply "partial always fails".
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            for k in ("SCC-21", "SCC-22"):
+                git(repo, "commit", "--no-verify", "-q", "--allow-empty",
+                    "-m", f"{k} fix(thing): real work")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            declare_manifest(repo, "riders: [SCC-21, SCC-22]\nlanding_mode: partial\n")
+            board(t, children=[("SCC-21", "In Progress"), ("SCC-22", "To Do")])
+            code, out = preflight(repo)
+            c.check("CONTROL riders that really committed on the lane pass the trim check",
+                    code == 1 and "clear to close out and merge" in out,
+                    f"exit {code}: " + out.strip()[-600:])
+
+        with TempDir() as t:
+            # `landing_mode: partial` with NOTHING left open is just a normal close - it must not
+            # invent a warning, or the ceremony's output stops meaning anything.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            git(repo, "commit", "--no-verify", "-q", "--allow-empty",
+                "-m", "SCC-21 fix(thing): real work")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            declare_manifest(repo, "riders: [SCC-21]\nlanding_mode: partial\n")
+            board(t, children=[("SCC-21", "In Progress"), ("SCC-23", "Done")])
+            code, out = preflight(repo)
+            c.check("CONTROL `landing_mode: partial` with nothing left open raises no "
+                    "left-behind warning", code == 1 and "SCC-23" not in out,
+                    f"exit {code}: " + out.strip()[-500:])
+
+        with TempDir() as t:
+            # An unknown `landing_mode:` value must fail CLOSED. `landing: full`, a typo, or a
+            # future mode nothing implements cannot silently read as "partial" - the whole
+            # RIDERS_RE lesson (an unread declaration blocks) applied to the new key.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            git(repo, "commit", "--no-verify", "-q", "--allow-empty",
+                "-m", "SCC-21 fix(thing): real work")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            declare_manifest(repo, "riders: [SCC-21]\nlanding_mode: prtial\n")
+            board(t, children=[("SCC-21", "In Progress"), ("SCC-23", "To Do")])
+            code, out = preflight(repo)
+            c.check("an unknown `landing_mode:` value fails CLOSED - the child still blocks",
+                    code == 2, f"exit {code}: " + out.strip()[-500:])
+            c.check("...and it names the value it did not understand",
+                    "prtial" in out, out.strip()[-500:])
+
+        with TempDir() as t:
+            # ⛔ THE COLLISION CONTROL, and it is drawn from a real regression this change
+            # caused: `task.yaml` already carries a `landing:` key - NESTED under each
+            # `secondary_repos:` entry, values `independent-task` / `retain-on-epic`. The first
+            # cut of this feature read the mode with manifest_field's `^\s*landing\s*:` idiom,
+            # which matches an INDENTED line, so every cross-repo manifest suddenly declared an
+            # unknown landing mode and five green SCC-94 cases went red. The key is now
+            # `landing_mode` and its pattern is anchored at column 0; this case is what keeps
+            # both true.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            write(repo, "_artifacts/_main/2026-08-08_scc-11-thing/task.yaml",
+                  MANIFEST + "secondary_repos:\n  - repo: Projects/OTHER\n"
+                             "    landing: independent-task\n    ticket: AVCH-53\n")
+            commit(repo, "SCC-11 chore: a cross-repo manifest")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            board(t, children=[("SCC-21", "In Progress")])
+            code, out = preflight(repo)
+            c.check("a NESTED `landing:` under secondary_repos is NOT a landing mode",
+                    "landing_mode" not in out, out.strip()[-500:])
+            c.check("...so the cross-repo lane is gated exactly as it always was (the open "
+                    "child blocks, and nothing else does)",
+                    code == 2 and "open subtask" in out, f"exit {code}: " + out.strip()[-400:])
+
     # ── SCC-110 · the whole point, end to end ────────────────────────────────────────────
     if c.block("SCC-110 · the whole point, end to end"):
         # A repo that CLAIMS gates (it declares a Jira project) while tracking no hooks is

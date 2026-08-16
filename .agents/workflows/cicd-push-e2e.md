@@ -10,7 +10,7 @@ description: "The ONE shipping command — merge a finished epic branch (epic/<J
 
 The one shipping command. It merges a finished **epic branch** (`epic/<JIRA-KEY>-<slug>`) into
 **`main`** — live production — and it **refuses to touch `main` until the full gate is green**.
-Invoking this command IS Daniel's per-merge sign-off for the one epic it ships; the push-approval hook
+Invoking this command IS the operator's per-merge sign-off for the one epic it ships; the push-approval hook
 still prompts on the final push, and that prompt is expected, not an error.
 
 **Branch model (never violate):** `main` is the only long-lived branch. Epics integrate on short-lived
@@ -40,10 +40,10 @@ From `$ARGUMENTS` (an `epic/<JIRA-KEY>-<slug>` name) or by discovery:
 git fetch origin
 git branch -a --list '*epic/*'          # live epic branches, local + origin
 ```
-- **Exactly one live epic branch** → that's the candidate; confirm it with Daniel by name.
-- **Several** → show them with `git log --oneline main..<branch> | head` each and decide together.
-- **None** → nothing to ship; if Daniel is pointing at a `chore/<JIRA-KEY>-<slug>` branch, this command
-  can merge it with the **light gate** only (his direct ask IS that approval) — otherwise stop.
+- **Exactly one live epic branch** → that's the candidate; confirm it with the operator by name.
+- **Several** → show them with `git log --oneline origin/main..<branch> | head` each and decide together.
+- **None** → nothing to ship; if the operator is pointing at a `chore/<JIRA-KEY>-<slug>` branch, this
+  command can merge it with the **light gate** only (their direct ask IS that approval) — otherwise stop.
   (Ruling 2026-08-07: chore branches carry their own ticket key too.)
 
 Extract the epic's Jira key from the branch name — it drives Step 6.5. A branch with no key is a
@@ -114,8 +114,8 @@ gh run list --limit 5                 # watch to completion — all must conclud
 ```
 Then verify live: backend `/health` (expect 200), the production frontend URL, and on Cloud Run
 confirm the serving revision via the RELEASE track (other fields lie about what's serving). A failed
-deploy is an incident: fix forward on a `chore/*` branch or roll back the revision — decide with
-Daniel, immediately.
+deploy is an incident: fix forward on a `chore/*` branch or roll back the revision — decide with the
+operator, immediately.
 
 ## Step 6 — Prune the epic branch + update the ledger
 The epic shipped; its branch is done:
@@ -131,7 +131,7 @@ git rev-list --left-right --count main...origin/main    # must be 0 0
 
 ## Step 6.5 — Move the epic's Jira ticket
 Skip if Step 1 found no key (pre-Jira epic, or a repo with no `.agents/jira.conf`). Otherwise the
-merge IS the epic shipping, and Daniel's invocation of this command IS the sign-off — record it:
+merge IS the epic shipping, and the operator's invocation of this command IS the sign-off — record it:
 ```bash
 acli jira workitem comment create --key <JIRA-KEY> \
   --body "Merged to main at <merge-sha> via /cicd-push-e2e. Gate: pytest + build + /cicd-e2e green (<evidence-link>). Deploy verified live."
@@ -145,6 +145,7 @@ close-outs by `/cicd-update-sprint-memory`. If Step 1's sanity check was honest,
 before this runs; if the transition fails because children are open, that is the sanity check telling
 you it was skipped — go run the close-outs, do not force the epic.
 
-Sprint/backlog placement stays Daniel's — this step changes STATUS and posts evidence, nothing else.
+Sprint/backlog placement stays the operator's — this step changes STATUS and posts evidence, nothing
+else.
 
 Optional additional input (project · epic branch): $ARGUMENTS

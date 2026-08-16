@@ -54,6 +54,7 @@ file is now the only thing that tells you what's local to it.
 | What runs next | the [SCC Jira board](https://sudo-command.atlassian.net/jira/software/projects/SCC/boards/2) — sprint view ([§12](#12-the-board--what-runs-next)) |
 | The shared toolkit — the only copy | [`.agents/`](../../.agents/) — commands, rules, skills, workflows, scripts |
 | What a project owns vs. what it reads from here | [`project-law.md`](../../.agents/rules/project-law.md) |
+| Changing a file that exists in **both** the centre and a project | [`port-checklist.md`](../../.agents/rules/port-checklist.md) — six checks answered at PLAN time, in either direction |
 | Long-form depth | [`INDEX.md`](INDEX.md) |
 | Projects this **lints** | the [maintained list](../../.agents/maintained-projects.txt) — AGY_AVIATIONCHAT · NEXgen-VR-Director. It is a lint worklist, **not** a sync target: nothing is pushed into a project. |
 
@@ -482,6 +483,27 @@ again. Any code or test change after it voids the pair.
 **Why ③ hunts the diff before reading ②'s notes:** opening the builder's write-up first imports the
 builder's framing — the exact blind spot the review exists to remove. Order is always *hunt cold,
 then read the story.*
+
+> ⓘ **Two steps the story lane was missing until SCC-166, and the one word that had to change
+> when they were ported.** `/smh-code-review` had carried a **Step 0.7 blast-radius re-derivation**
+> and a **Step 1.5 acceptance audit** since the Task lane was built; `/cicd-code-review` had neither.
+> The hazard is not smaller here, it is the same hazard one branch further in: sibling **stories**
+> land on the epic branch while you build, so the blast radius `/cicd-self-audit` traced that morning
+> can describe a tree that no longer exists — every gate green, and a reference an epic-mate moved
+> out from under you. Step 0.7 re-derives it and makes you answer three questions in writing
+> (*did anything this diff references move · what is the true overlap and does `merge-tree` conflict ·
+> which sibling lanes must land first*); **"nothing moved" is a reportable result**, not a reason to
+> skip it. Step 1.5 audits the diff against the story's checkable list — an item with no evidence is
+> **not satisfied**, and anything in the diff *beyond* the list is **drift**.
+>
+> ⛔ **The steps were adapted, not copied, and the difference is one ref.** A Task lane merges into
+> `main`, so smh re-derives against `origin/main`. A story lane merges into `epic/<JIRA-KEY>-<slug>`.
+> Pasting smh's step verbatim would have re-derived against a branch the story never meets — it
+> reports "nothing moved" while the epic-mate that *did* move the file lands anyway, which is the
+> exact stale-ref defect SCC-165 had just swept out of this command family. `tests/test_command_surfaces.py`
+> now pins it both ways: cicd's step must name `origin/$EPIC` **and must not name `origin/main`**.
+> *(SCC-166. Also on that ticket: `/cicd-push-e2e` stopped addressing one named human — six lines
+> now read "the operator", so the instruction applies to whoever is actually reading it.)*
 
 **The four verdicts, and what each one means for you:**
 
@@ -1085,6 +1107,65 @@ flowchart LR
     STOP -.->|"your sign-off, SEVERAL lanes"| MULTI["/smh-merge-multiple-workingtrees"]
 ```
 
+### One lane for a whole Task — the consolidated mode (SCC-164 · SCC-170)
+
+**The problem it fixes:** every lane found real defects, every defect became its own Task, and the
+queue grew faster than it drained — *"we are not developing 3 task for every 1 we try to fix."*
+
+**The rule is `.agents/rules/work-consolidation.md`**, and it is **judgment, not a gate**. Six rules:
+look for a home before you mint · when able, one worktree for the whole Task · verify the batch in one
+block · artifact-first · two stops only · verify the outcome of a board write, never its exit code.
+
+**Porting a file between the centre and a project — the plan answers six questions first (SCC-176).**
+Every port so far (AVCH-54, AVCH-59) cost an afternoon and found the same class of defect: the
+centre's copy is subtly wrong the moment it runs in a **submodule**, on **Windows**, in a
+**worktree**, in a **thin** repo. `.agents/rules/port-checklist.md` turns that list into six checks,
+each with the command that answers it — a git-given path used exactly as git gave it · `printf` not
+`echo` · verify the FILE, not `$?` · no `.agents/rules/` path a thin repo lacks · `python3`-vs-`python`
+and per-machine `core.hooksPath` · hooks stay repo-local and the port needs the target's **own** Jira
+key. It runs in **both directions**: the port BACK to the centre is a port too.
+
+The trigger is mechanical, never self-reported — `git diff --no-index -- <a>/<path> <b>/<path>`. 
+`/smh-plan-task` MANDATORY RULE 5 makes the plan carry the section; `/smh-self-audit` Phase 1 and
+`/cicd-self-audit` Phase 1 make its absence a **NO-GO** on differing copies. The one mechanical piece
+is a `workflow_lint._RULE_POINTERS` row, which **warns** (exit 1) when a command describes a port and
+cites nothing — the rest is prose an agent executes, and this page says so rather than implying a
+gate that does not exist.
+
+**What changes when you run a Task as ONE lane:**
+
+| | Consolidated | Per-subtask |
+|---|---|---|
+| branch | ONE, keyed by the **parent** | one per subtask |
+| plan | ONE, with a part section each | one each |
+| `task.yaml` | `riders: [<every subtask key>]` | no riders |
+| commits | **the subtask's key leads each commit** — its dev panel stays populated and a part reverts as a unit | the lane's key |
+| gate | ONCE, at the tip, through the receipt writer | once per lane |
+| close-out | ONE ceremony: riders flip first, parent last | one each |
+
+`/smh-plan-task` **Step 2.5** picks the mode and says why. It cuts the tree from `origin/main` after a
+fetch and immediately runs `git branch --unset-upstream` — branching from `origin/main` otherwise
+points this lane's upstream at **main itself**.
+
+**Shipping before every part is built — partial landing.** Write `landing_mode: partial` into `task.yaml`
+and **trim `riders:` to the subset actually on the branch**. Then the trimmed riders flip, the
+**parent stays open**, and the remainder becomes the next lane. `task_preflight.py` checks every
+declared rider against the lane's commits and refuses one that leads no commit there; an unrecognised
+`landing_mode:` **value** fails CLOSED, so a typo in the value blocks rather than relaxes.
+⛔ The **key** is `landing_mode`, never `landing` — `task.yaml` already has a different `landing:`
+nested under each `secondary_repos:` entry, which is why the name was changed. A bare `landing: partial`
+at column 0 is not recognised at all: it fails **silently**, not closed — nothing reads it, no
+unknown-value error fires, and the lane is gated exactly as if you had declared nothing.
+
+**Adding a discovered part to the parent's index.** `acli edit --description` **replaces** the field,
+and one such write silently deleted a part row from SCC-164 on 2026-08-15. Use:
+
+```bash
+python3 .agents/scripts/jira_feed.py index-row --key <PARENT> --line "  Part M  SCC-000  one line" --apply
+```
+
+It appends the row, reads the description back, and exits 2 naming any prior line that went missing.
+
 ### The lightweight lane — /smh-quick-fix
 
 **Not everything on this side of the fence is a full Task.** Sometimes you want one specific thing
@@ -1188,12 +1269,38 @@ mutants had already been designed.
 — each mutant, its file, and **the named case it must kill** — and run them as **one sweep**. A sweep
 improvised one mutant at a time cannot check itself; a declared one can.
 
+⭐ **And since SCC-179 you do not run it by hand — `.agents/scripts/mutation_sweep.py` does.** Every
+rule in the table below used to be self-reported, and twice it was reported wrong: SCC-144's
+timeout-killed sweep left a mutated gate on disk, and `8681d83` **committed and pushed a live mutant
+into the gate** because the scoped `--case` re-runs never touched the mutated line. The script takes
+the declared table as JSON and makes each rule mechanical — it refuses to start when a table file is
+already dirty, restores in a `finally` and on SIGTERM, proves the end state twice (the pre-sweep bytes
+*and* `git diff --quiet` against the pinned pre-sweep sha, never a moving HEAD), demands that a kill be
+attributable to the **declared** case, and runs the full file unfiltered at the end. Running the sweep
+by hand is now the defect, not the procedure.
+
+```bash
+python3 .agents/scripts/mutation_sweep.py --table _artifacts/_main/<folder>/sweep.json
+```
+
+Each row in the table names the mutant, its file, the **exact** text to replace (it must occur
+exactly once — a non-unique anchor mutates a line you did not declare), the replacement, and **two
+different labels**: `case`, the name that must appear on the runner's `FAILED:` line, and `block`,
+the `c.block()` label passed to `--case`. Those are separate namespaces — the harness *selects* by
+block and the sweep *attributes* by case — and conflating them produces a sweep that selects
+nothing, exits 3, and correctly refuses to report a single kill. The script's own first sweep of
+itself did exactly that on all eight mutants, then found three more defects in its cases once the
+labels were right. It is worth reading that as the recommendation it is: **sweep the sweep's own
+target file the moment you have one, and expect the first run to be about your tests.**
+
 | The rule | Why it exists |
 |---|---|
 | A **surviving** mutant is a finding | the coverage hole you came to find |
 | A mutant that **removes nothing** is **DEFECTIVE** — a SKIP that **counts as a survivor** | SCC-144's `M3` commented out one `echo` of a two-line message; the second line still printed the asserted word, so the case passed **correctly**. Read as a coverage gap it buys a test for a hole that does not exist |
 | Mutants are **CODE-DERIVED**, never drawn from your own cases | case-derived mutants are circular — they prove only that the suite agrees with itself. Measured in SCC-144: its 14 case-derived mutants were all killed, and a later set drawn from the code left **24 of 25 surviving** — every survivor a hole the first sweep had reported as covered |
-| **RESTORE** in a `finally`/trap; never start dirty; re-check `git status` after | a `timeout`-killed sweep left a **mutated gate on disk, uncommitted** — and a mutated gate is committable |
+| **RESTORE** in a `finally`/trap; never start dirty; re-check `git status` after | a `timeout`-killed sweep left a **mutated gate on disk, uncommitted** — and a mutated gate is committable. **Enforced by `mutation_sweep.py` since SCC-179**, which also names the file it refuses to start on |
+| A kill must be attributable to the **DECLARED** case | a non-zero exit only says *something* died. `--case "E"` once matched 40 blocks and the sweep recorded "killed by case E" for a case that never ran alone (SCC-156 #1), so a kill needs the declared label on the `FAILED:` line |
+| The **FULL file runs unfiltered** before the next commit | `8681d83`: every scoped case green, the mutant still in the tree, and the bill was a red receipt, a diagnosis, a fix commit and another full suite run |
 
 **Which technique fits which shape** — the part that used to be missing. *RELOCATE the guard* (never
 delete it) is for a structural guard and a behavioral test in the same file. *INVERT the decision* is
@@ -1375,7 +1482,7 @@ flowchart LR
 
 | The check | What it refuses to let happen |
 |---|---|
-| `gate_receipt.py` | **A claimed test result that never ran.** It *executes* the gate and writes down the real exit code. There is deliberately **no way to hand it a verdict** — a receipt existing means the thing actually ran. It also separates *"the tool is missing"* from *"the tests failed"*, because a missing tool is a finding, not a free pass. |
+| `gate_receipt.py` | **A claimed test result that never ran.** It *executes* the gate and writes down the real exit code. There is deliberately **no way to hand it a verdict** — a receipt existing means the thing actually ran. It also separates *"the tool is missing"* from *"the tests failed"*, because a missing tool is a finding, not a free pass. It records whether the tree was **dirty** at the time, and **since SCC-178 it no longer counts its own receipt as that dirt** — the `<root>/gates/` directory it writes into is excluded from the measurement, so the second gate of a lane stops reading DIRTY off the first one's receipt and no lane pays a second full suite run to clear it. The exemption is that one directory: a sibling file, another lane's artifacts, and any code path all still record DIRTY. |
 | `closeout_preflight.py` | **Closing out a story that didn't really land.** One command answers: did the code merge · is every repo clean and in sync · does the review verdict exist and does it still apply · do the files the story claims it changed actually exist. **Exit 2 means blocked.** A warning that says *"landing was NOT verified"* means exactly that — it is not a pass. |
 | `story_status.py` | **A story marked done in one place and not the other.** Status lives in two files; this flips both together or neither. It refuses a downgrade, refuses an unknown status, and refuses outright if the two surfaces already disagree — that case needs `--reconcile`, which is a decision, not a default. |
 | `workflow_lint.py` | **Broken characters quietly entering a document** — the `—` that turns into `â€"`. Runs on every commit, staged files only, so it stays fast enough that nobody disables it. Its `--toolkit-only` half also checks the toolkit against its own conventions, and **since 2026-08-11 (SCC-82) a clean run is `0 errors, 0 warnings` — exit 0.** |
@@ -1387,7 +1494,9 @@ flowchart LR
 | `post-commit-jira-start.sh` | **A ticket that never shows as in flight.** Your first commit on a `chore/ · claude/ · epic/` branch moves that ticket to `In Progress` — see [§12](#12-the-board--what-runs-next). It reads the key from the **branch name** and never invents one; `main` and unkeyed branches are silent. It costs **one exchange per branch** on the normal path (a marker short-circuits the rest before any network call), it **can never block or fail a commit**, and an offline commit simply retries on the next one. A ticket that is not startable yet (`Blocking`, `In Review`, `Deferred`) deliberately writes no marker, so that branch re-reads once per commit until it is — the price of never silencing a ticket that might still start. |
 | `task_preflight.py` | **A change to the product sneaking onto `main` labelled a "task".** It derives the lane from the repo rather than asking: does this repo **have** anything that deploys, and did **this diff** touch it? Touch one and it **stops dead and sends the work to `/cicd-push-e2e`. There is no override flag, on purpose.** It also checks the branch shape, the `--expect-key` match, the `task.yaml` manifest (a receipt already recorded blob-for-blob on `origin/main` is a **landed** lane's and no longer blocks follow-on lanes of the same ticket — SCC-113; an unlanded or edited-since-landing receipt still blocks hard), that the tree is clean and pushed, and that `origin/main` was absorbed. — *and the history behind it, below.* |
 | `check_maps.py` | **The maps and INDEXes drifting from what is actually on disk.** Every level-2 folder must carry an `INDEX.md`, every backticked path in a **map's** table row must resolve, and the repo-map must still name every top-level folder. Ledgers under `_artifacts/` are exempt on purpose — their rows are history, and a row describing work that *deleted* something has to be able to name it. **That exemption is why a session-folder row is matched on its FIRST cell written with a trailing `/` (SCC-96):** anything else in the row is prose, and prose is where a ledger explains *why* — including by naming the memory a decision rests on. Matching prose instead made every memory slugged `story-`/`tea-`/`epic-`/`autopilot-` read as a folder gone missing, so the gate fired on exactly the behaviour the convention asks for. — *and the history behind it, below.* |
-| `tests/test_command_surfaces.py` | **A `/` menu that lies — including a door that still reads last month's steps.** It holds the one-door-per-platform contract: every command has exactly one door on each platform its `platforms:` claims, none on a platform it doesn't, no ghosts, and the retired doors stay retired. — *and the history behind it, below.* |
+| `tests/test_command_surfaces.py` | **A `/` menu that lies — including a door that still reads last month's steps.** It holds the one-door-per-platform contract: every command has exactly one door on each platform its `platforms:` claims, none on a platform it doesn't, no ghosts, and the retired doors stay retired. Since SCC-166 it also holds the **review-twin contract** (`CS-11`): `/smh-code-review` and `/cicd-code-review` must each carry a blast-radius re-derivation *with all three written answers* and an acceptance audit *with its CONCERNS floor and the drift direction*, each Step 0 must echo `rev-parse` output rather than belief, and each twin must name **its own** integration ref — smh `origin/main`, cicd `origin/$EPIC` and never `origin/main`. The two files that part edited are also swept for a personal name (→ 0); the toolkit-wide sweep is a separate, confirm-scope task, because `rules/operator-profile.md` is a file where the name IS the subject. — *and the history behind it, below.* |
+| `guard-cwd-escape.py` | **The agent quietly working on the wrong copy of the repo.** The Bash tool's directory persists between commands *until* one of them ends outside the workspace — `/tmp`, a scratch dir, another repo. The harness then puts it back to the MAIN checkout, and every path the agent writes from then on is relative to **main**, not the worktree it thinks it is in. ⛔ **Nothing errors**, because the same file exists in both copies — you get a well-formed answer about the wrong tree. It cost SCC-164 twice: a new script written into main, and main's stale 333-line copy of a test file read as the lane's 463-line one. This asks before any `cd` that leaves the workspace, and names the fix: wrap it in a subshell — `( cd /tmp && … )` runs the work in a child whose directory change dies with it, verified — or skip `cd` entirely and use `git -C <abs>` with absolute paths. It **fails open** on anything it cannot judge. *(SCC-182.)* |
+| `tests/test_stale_base_refs.py` | **A command that diffs, counts or cuts against a `main` nobody refreshed.** `git fetch` moves `origin/main`; it does **not** move your local `main`. In a shared checkout that has sat for a week — or in any worktree, where `main` is whatever the main checkout last pulled — every `main...HEAD`, `merge-base HEAD main` and `worktree add … main` answers about a stale ref: the review reads the wrong diff, the "commits behind" count is wrong, and a lane cut from it is **born stale**. It scans every `.agents/commands/*.md` for `main` in operand position and fails naming `file:line`. ⛔ **Not every one is a defect, so a blanket `sed` is the wrong fix** — the `0 0` sync check `rev-list --left-right --count main...origin/main` deliberately asks about the LOCAL branch, and `origin/main...origin/main` would be a tautology that always passes. Those four live in an allowlist keyed on `(file, exact line text, reason)` — never a line **number**, which breaks on the next edit above it and lets a new hit inherit the old line's pass. The scan also asserts it read **≥ 10** files: an empty glob from the wrong CWD must FAIL, not count zero and pass. *(SCC-165: 25 operands found, 4 ruled correct-as-local, 21 fixed.)* |
 | `tests/test_sops_prds_folder.py` | **The SOPs and PRDs going stale again.** Pins the 12-doc manifest in `docs/_scc_sops_prds/`, checks its `INDEX.md` against the directory in BOTH directions, verifies every markdown link resolves and every `/command` reference names a real command master, and asserts the SOP gate's two halves still point at the same file. — *and the history behind it, below.* |
 | `pre-push-main-approval.sh` | **Anything reaching `main` without a fresh, single-use sign-off.** The `pre-push` hook refuses a push landing on `main` unless a token minted for that exact sha is present, and the token is spent on use — so one approval buys exactly one push. It closed the hole where six merges rode a single sign-off. *(Shipped 2026-08-10 by SCC-77; this row was owed and is added here.)* |
 | `pre-push-merge-backstop.sh` | **A lane quietly carrying another lane's unlanded work.** The row above and the merge-target guard both act on a *commit*; a **fast-forward** merge creates no commit, so nothing at commit time can see it — and SCC-97's own recovery deliberately used `--ff-only`, so that path is not hypothetical. What a fast-forward cannot hide is the evidence: another lane's commits are now inside yours. So when you push a `chore/*` or `claude/*` lane, this refuses if any **other** lane branch is contained in it and is **not** reachable from `origin/main`. **Since SCC-163 an `epic/*` counts as one of those "other" branches — but only for a `chore/*` lane.** — *and the history behind it, below.* |
@@ -1594,6 +1703,24 @@ re-rules `quick-dev` for every story it assesses.
 with the evidence commented. Sprint and backlog *placement* stays yours; outside the two minting
 seams, machinery only ever touches status.
 
+**⛔ On a Task lane you never type the Dev Record's slug (SCC-174).** `jira_feed.py devrecord`
+decides *update this record* vs *post a new one* from the **slug**, not from `--key`. So two
+spellings of one lane are two records — and that is not hypothetical: on 2026-08-15 `/smh-quick-dev`
+filed AVCH-59 under `main-write-gate`, the close-out passed `avch-59-main-write-gate` (the branch
+slug, which is exactly what the ceremony's own text asked for), and the ticket carried two. The three
+Task surfaces — `/smh-quick-dev`, `/smh-quick-fix`, `/smh-close-task-merge-tree` — now omit `--story`
+entirely and the script reads the `branch:` out of the lane's `task.yaml`. One source, so there is
+nothing left to disagree about. Pass `--story` only to file under a lane you are *not* standing on;
+a BMAD story lane still passes its story id, which is its own single source.
+
+**And `check` stopped taking the ids at their word.** Two Dev Record ids on one ticket used to exit 0
+as *"one per lane — the designed state"*, which had the check blind precisely when the bug happens
+(the slugs differ) and loud only once it had been fixed (the slugs match). An id is now a lane only
+if the repo can **prove** it: a tracked `task.yaml branch:` anywhere in the committed tree, or a
+prefixed branch ref — local **or** `origin/`, because a landed lane's local branch is pruned the same
+day and its manifest is not. An id nothing claims is a **FORKED Dev Record**: exit 1, naming the
+orphan id and which record is newest. The remedy is to delete the record filed under the slug that is
+not a lane and re-run the block — never `--append-new` past it.
 ### Two shapes of work on one board — and why it decides the command
 
 Everything on the board is a **Story** or a **Task**, and that is not a label — **it decides which
@@ -1767,7 +1894,13 @@ design reversal, not a tuning knob.
 **Stage 4 runs the house review engine (SCC-126).** The robot's reviewer no longer carries a review
 of its own: `/cicd-code-review-AP` resolves the inputs — the diff alone first, then one batched
 grounding pull — and hands them to `.agents/skills/code-review-engine/`, which runs its lenses in
-parallel. Nothing changes about what you type. Three things change underneath, and the first is the
+parallel. **Since SCC-166 it also re-derives the blast radius against `origin/$EPIC`
+before Ingest 1**, and echoes the branch and sha `rev-parse` returned rather than the ones the
+launch context implied — the same two additions the human lane got, ported because the hazard is
+*worse* unattended, not smaller: a sibling story lands on the epic branch and nobody is watching.
+It costs no read budget (git output is not an ingest), and the twin's ban on a full-repo sweep is
+about **reads**. The acceptance audit did **not** port as a step — the twin already runs that pass
+through the engine's Acceptance Auditor — only its two verdict-binding clauses did. Nothing changes about what you type. Three things change underneath, and the first is the
 one that actually moves the bill:
 
 - **Stage 4 goes from one agent to an orchestrator plus five lenses.** It used to be a single
@@ -2305,6 +2438,13 @@ findings can FAIL; the judgment pass caps at CONCERNS. Explained in
 [§9](#9-the-task-lane--work-on-the-system-itself). Called by: ③ Step 3.5 and `/cicd-quick-dev`
 (the cicd one); `/smh-code-review` Step 3.5 (the smh one); or you.*
 
+> **Step 0's base is the epic branch, fetched (SCC-165 follow-on).** A story lane's diff base is
+> `refs/remotes/origin/epic/*` **before** the local head — a local epic head is only as fresh as the
+> last pull, and sibling stories land on the epic branch while the audit runs — falling back to
+> `origin/main`, never a bare `main`. The line had been carrying `BASE=${BASE:-main}`, invisible to
+> the stale-ref scan because its `(?<![\w/.-])` lookbehind rejects the `-` of the shell
+> default-value operator; the scan now carries `ref-default` and `ref-assign` patterns for that.
+
 ```mermaid
 flowchart TD
     A["/cicd-clean-code-audit\nProduct repo"] --> S0["Step 0 — resolve the diff, worktree-aware\ndiff-scoped ALWAYS — legacy debt never red-walls a story\nload the standard, never audit from memory"]
@@ -2767,6 +2907,13 @@ session (Stage 2, same model) and reviews + fixes the finished code in another (
 review engine). Done means a script's exit code was green — never the agent's say-so. Explained in
 [§15](#15-the-autopilot-lane). Lanes: `/cicd-autopilot-opencode` (opencode engine),
 `/cicd-autopilot-deepseek4` (cheaper Dev model, same QA).*
+
+> **Stage 2's twin inherits the phases rather than copying them.** `/cicd-self-audit-AP` names no
+> phases of its own — it runs *"the pre-dev adversarial audit defined in `@.agents/commands/`*
+> `cicd-self-audit.md`", overriding only its I/O, its lane boundaries and the blocker token. So the
+> cross-repo **port-checklist** paragraph added to the primary's Phase 1 (SCC-176) reaches the
+> autopilot lane through that reference, and was deliberately **not** copied into the twin: the AP
+> stamp exists to stop exactly that kind of second copy from drifting.
 
 ```mermaid
 flowchart TD

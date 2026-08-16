@@ -12,6 +12,8 @@ platforms: [opencode, antigravity]
 > - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never
 >   force-push; every branch and every commit carries the repo's Jira key (armed 2026-08-07)
 > - `.agents/rules/jira.md` — the `acli` reference, and the work-item type model this lane sits in
+> - `.agents/rules/work-consolidation.md` — the `riders:` / `landing_mode: partial` contract this Step 4
+>   settles: one lane may carry a whole Task's subtasks, and they flip here, parent last (SCC-170)
 > - `.agents/rules/artifacts-always-first.md` — the plan is skippable on this lane; the closing
 >   `walkthrough.md` is **not**, and the preflight blocks without it
 
@@ -395,9 +397,25 @@ recoverable failure.
 > declaration error: flip nothing, report it. Never transition a ticket whose work did not actually
 > land here.
 >
-> After the riders: any child still not `Done` or `Deferred` → **STOP.** Finish it, or descope it
-> properly (`Deferred` + the `descoped` label — that is the auditable escape, and the reason there
-> is no `--force` flag).
+> After the riders: any **undeclared** child still not `Done` or `Deferred` → **STOP.** Finish it, or
+> descope it properly (`Deferred` + the `descoped` label — that is the auditable escape, and the reason
+> there is no `--force` flag). That exit is for children **nothing declared**; a declared rider is the
+> designed state, not an unfinished job.
+>
+> ⭐ **PARTIAL LANDING — the lane ships before every part is built (SCC-170).** A consolidated lane
+> carrying N subtasks may have to land early. That is legal, and it is **declared, never improvised**:
+>
+> 1. **Trim `riders:` in `task.yaml` to the subset whose work is actually on this branch** — and
+>    commit that trim on the lane, before the preflight. `task_preflight.py` checks every declared
+>    rider against the lane's commits and refuses one that leads no commit here. *Never declare a
+>    ticket whose work is not real.*
+> 2. **Add `landing_mode: partial`** to the same `task.yaml`. Without it an open undeclared child blocks,
+>    exactly as it always has — the mode is a thing you say, and an unrecognised value fails CLOSED.
+> 3. **The trimmed riders flip** as above. **The PARENT STAYS OPEN** — do not transition it, and do
+>    not treat the preflight's partial-landing warning as noise.
+> 4. **The remainder becomes the next lane**: name every left-behind child in this walkthrough's
+>    `## Your Actions` and in the next lane's `task.yaml` `riders:`. The parent closes at *that*
+>    lane's ceremony, when the last child does.
 >
 > ⛔ **If this command ever leaves the operator a Jira edit to do by hand, the flow is broken —
 > stop and say so.** Not "please move SCC-00 to Done and re-run": the agent performs every board
@@ -411,14 +429,15 @@ recoverable failure.
 > provably reachable, because the very next command transitions the ticket. Neither layer is
 > load-bearing alone — the same shape as the two `start` seams (SCC-113).
 >
-> ⛔ A **`Subtask`** normally closes here exactly like a `Task`: its own branch, its own gate, its
-> own `Done` — **unless the operator ordered its work into the parent's lane**, in which case it is
-> a `riders:` entry in the parent lane's `task.yaml` and closes in the rider step above, right
-> before its parent. Either way it is never labelled `Bug` — if it turns out broken, the flag goes
+> ⛔ A **`Subtask`** closes here exactly like a `Task` — its own branch, its own gate, its own
+> `Done` — **whenever it ran as its own lane.** When it rode a consolidated lane instead (the
+> default when able, per `work-consolidation.md` rule 2), it is a `riders:` entry in that lane's
+> `task.yaml` and closes in the rider step above, right before its parent. Both are normal; the
+> manifest says which happened, and it is the only thing that does. Either way it is never labelled `Bug` — if it turns out broken, the flag goes
 > on its **parent**.
 
 ```bash
-python3 .agents/scripts/jira_feed.py devrecord --key <JIRA-KEY> --story <branch-slug> \
+python3 .agents/scripts/jira_feed.py devrecord --key <JIRA-KEY> --project "$REPO" \
        --stage close-out --walkthrough <the walkthrough> \
        --outcome "merged to main at <merge-sha> via /smh-close-task-merge-tree" \
        --verdict "<gate result>" \
@@ -428,8 +447,26 @@ python3 .agents/scripts/jira_feed.py devrecord --key <JIRA-KEY> --story <branch-
 
 python3 .agents/scripts/jira_feed.py finish --key <JIRA-KEY> \
        --walkthrough <the walkthrough> --apply
-python3 .agents/scripts/jira_feed.py check --key <JIRA-KEY>     # must exit 0
+python3 .agents/scripts/jira_feed.py check --key <JIRA-KEY> --project "$REPO"   # must exit 0
 ```
+
+⛔ **`--project "$REPO"` is REQUIRED on both, and Step 3 is why.** Both subcommands resolve their
+repo by walking up from **cwd**, and Step 3 ran `git checkout main` — so by the time you reach here
+cwd is the main checkout, standing on `main`. `devrecord`'s new slug default reads the branch you are
+standing on (`lane_slug_here`), `main` has no `/`, and the lane slug comes back empty: the command
+dies with *"devrecord needs --story"* **after the merge has already landed**, and the recovery it
+prints is the free-text `--story` this part exists to eliminate. `$REPO` is the lane worktree Step 0
+pinned; it is still on the lane branch until Step 5 prunes it, so it is the one tree that can answer.
+The same applies to `check`: without it, a FORK verdict is computed against whichever repo cwd
+happened to be in, and the message never names the repo it read (`preflight-resolves-repo-from-cwd`).
+
+⛔ **No `--story` here, and that is the fix (SCC-174).** `devrecord` picks update-vs-create off the
+**slug**, never off `--key`, so the same lane spelled two ways posts a **second** Dev Record — and
+this ceremony asking for `<branch-slug>` while `/smh-quick-dev` filed under something shorter is
+exactly how AVCH-59 ended up with two. The slug now comes from **one** place, the lane's `task.yaml`
+`branch:`, and the script reads it. Pass `--story` only to file under a lane you are **not** standing
+on. If `check` reports a **FORKED Dev Record**, an id on the ticket is claimed by no manifest and no
+branch: delete that record and re-run this block — never `--append-new` your way past it.
 
 ⛔ **Before `finish`: tick the merge row.** A walkthrough often carries `- [ ] **The merge itself**` —
 that box IS this ceremony, so this ceremony ticks it (with the merge sha and "signed off by the

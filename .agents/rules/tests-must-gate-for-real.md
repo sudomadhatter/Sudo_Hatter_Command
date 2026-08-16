@@ -90,7 +90,19 @@ finished table in the walkthrough: each mutant, its file, its named case, and th
   a dirty tree, and re-check `git status` when the sweep ends. In SCC-144 a `timeout`-killed sweep left
   `commit-msg-jira.sh` **mutated on disk, uncommitted** — reverted to the exact bug that lane existed to
   remove. A mutated gate is committable, and residue in a dirty tree is indistinguishable from your own
-  work.
+  work. ⭐ **Since SCC-179 none of this clause is self-reported: `.agents/scripts/mutation_sweep.py`
+  enforces every word of it** — it refuses to start when a table file is dirty (naming the file and
+  this reason), restores in a `finally` and on SIGTERM, and proves the end state twice over, against
+  the pre-sweep bytes and against the pinned pre-sweep sha. It was written because this paragraph
+  existed and did not hold: `8681d83` shipped a live mutant into the gate anyway.
+- **The scoped `--case` runs are not the sweep's last word** — run the **FULL file, unfiltered, once**
+  before the next commit. `8681d83` is what a scoped subset misses: every named case was green, the
+  mutant was still in the tree, and the cost was a red receipt, a diagnosis, a fix commit and another
+  full suite run. `mutation_sweep.py` does this run itself and fails the sweep on it.
+- **Read the harness's exit 3.** `_harness.NO_MATCH` means the `--case` filter selected NOTHING. A
+  sweep that reads any non-zero as "killed" turns a typo'd label into evidence, so a kill needs a
+  non-zero exit that is not 3, a `FAILED:` line, and the **declared** case named on it. Anything else
+  is an error in the SWEEP, not a result about the code.
 
 - **WIDTH, not only existence** — a deletion mutant proves a case notices the behaviour is *gone*. It
   proves **nothing about the boundary**, and a narrowing is the shape real regressions take. So sweep

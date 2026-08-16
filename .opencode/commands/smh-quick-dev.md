@@ -70,7 +70,9 @@ Step 5 does now.
 
 ```bash
 git -C "$REPO" worktree list                                   # reuse this task's tree if it exists
-git -C "$REPO" worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> main
+git -C "$REPO" fetch origin                                    # ⛔ the base is origin/main, never a bare `main`
+git -C "$REPO" worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> origin/main
+git -C "<the new tree>" branch --unset-upstream                # a start-point of origin/main sets upstream to MAIN
 python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>   # PC: `python`
 BRANCH=$(git -C "<the new tree>" rev-parse --abbrev-ref HEAD)
 echo "Lane: $BRANCH"
@@ -115,7 +117,7 @@ uncommitted work is invisible to `grep`:
 
 ```bash
 git worktree list
-git -C <each-other-tree> diff --name-only main...HEAD
+git -C <each-other-tree> diff --name-only origin/main...HEAD
 git -C <each-other-tree> status --short
 ```
 
@@ -193,6 +195,15 @@ a one-line doc tweak. Say which, then proceed. Anything above that gets the gate
 ---
 
 ## Step 1.6 — Subtasks: PROPOSE the breakdown, then stop (SCC-119)
+
+> ⭐ **Look for a home BEFORE you mint (`work-consolidation.md` rule 1, SCC-170).** Work discovered
+> mid-lane — a review finding, a bug met while building, a defect a test exposes — is **not**
+> automatically a new Task. In order: does this lane's own ticket cover it (a checklist line)? is
+> there an **open parent** whose surface this belongs to (then it is the next lettered
+> **Subtask** under it, with an index row added via `jira_feed.py index-row`, which reads the
+> parent's description back and refuses if a line went missing)? only then mint — and say in ONE
+> line what you looked at. Judgment, not a gate; the unstated choice is the thing that is banned.
+> *"we are not developing 3 task for every 1 we try to fix"* (operator, 2026-08-15).
 
 **Runs only after `approved`, and only on a `Task`** — never on a BMAD Story, whose story file already
 holds its breakdown (`jira.md` §Subtasks: the story lane's answer is **NEVER**).
@@ -295,10 +306,42 @@ cut it or name why it stays.
   Paste the real output exactly as before — the receipt is *additional* evidence, never a
   replacement for reading the run. It lands at `<task-artifacts>/gates/suite.json` and rides the
   chore branch through the merge. Stamp it on a **clean tree** (commit first, then run): a
-  receipt over uncommitted edits records `DIRTY` and inherits as invalid — correctly.
+  receipt over uncommitted **code** edits records `DIRTY` and inherits as invalid — correctly.
+  The receipt is not its own dirt: since **SCC-178** the writer excludes the `<root>/gates/`
+  directory it is writing into from the measurement, so a second gate in the same lane no
+  longer reads DIRTY off the first one's receipt, and no lane pays a second full suite run to
+  clear a smudge the writer made itself. Everything else still counts — a sibling file under
+  `<root>/`, another lane's artifacts, any code path.
 - **⭐ Declare the mutant table BEFORE you mutate, and draw every mutant *from the code*.** One row per
   mutant: the mutant, the file, and **the NAMED case it must kill.** Run them as **one sweep**, never
-  one at a time — a sweep improvised one mutant at a time cannot check itself. Then:
+  one at a time — a sweep improvised one mutant at a time cannot check itself.
+
+  **Since SCC-179 the sweep is a SCRIPT, and running it by hand is the defect.** Write the table as
+  JSON and hand it to `mutation_sweep.py`; it refuses to start if a table file is already dirty,
+  restores in a `finally` and on SIGTERM, proves the restore against the pinned pre-sweep sha AND the
+  pre-sweep bytes, and runs the **full** test file unfiltered at the end — the run that would have
+  caught `8681d83`, where every scoped `--case` was green and a live mutant rode into the gate.
+
+  ```bash
+  python3 .agents/scripts/mutation_sweep.py --table _artifacts/_main/<folder>/sweep.json
+  ```
+
+  ```json
+  {"test": ["python3", ".agents/scripts/tests/test_thing.py"],
+   "mutants": [{"id": "M1 what it does", "file": ".agents/scripts/thing.py",
+                "original": "<exact text, EXACTLY once in the file>",
+                "mutated": "<the mutation>",
+                "case":  "<the case that must appear on the FAILED: line>",
+                "block": "<the c.block() label --case selects; omit if it equals `case`>"}]}
+  ```
+
+  ⛔ **`case` and `block` are different namespaces, and conflating them is a sweep that cannot
+  run.** The harness filters by **block** label; attribution reads the **case** name off the
+  `FAILED:` line. Declaring a case name as the filter matches no block, the harness exits 3, and
+  the sweep refuses to call that a kill — which is the correct answer and a wasted sweep. This
+  script's own first run got it wrong on all eight mutants.
+
+  Paste its output into the walkthrough as the sweep record. Then:
   - A **surviving** mutant is a finding.
   - A mutant whose edit does not appear in the original text is **DEFECTIVE** — a SKIP that **counts
     as a survivor** — and it must be re-aimed before it is believed.
@@ -373,7 +416,7 @@ secondary_repos: []
 **The Dev Record** — file it now, because this lane may end here:
 
 ```bash
-python3 .agents/scripts/jira_feed.py devrecord --key <KEY> --story <branch-slug> \
+python3 .agents/scripts/jira_feed.py devrecord --key <KEY> \
        --stage quick-dev --walkthrough <the walkthrough> \
        --outcome "<what shipped, one line>" --verdict "<the Step 4 verdict>" \
        --decision "<a ruling made while building>" --pitfall "<what nearly bit>" \
@@ -381,7 +424,11 @@ python3 .agents/scripts/jira_feed.py devrecord --key <KEY> --story <branch-slug>
 ```
 
 **Exactly one Dev Record per ticket** — the script finds an existing record and UPDATES it, so a later
-`/smh-close-task-merge-tree` ends with one current record instead of two partial ones. **Never pass
+`/smh-close-task-merge-tree` ends with one current record instead of two partial ones. ⛔ **It finds it
+by the SLUG, not by `--key`, so do not pass `--story` (SCC-174).** The slug is read from the
+`task.yaml` you wrote in Step 0 — the same source the close-out uses, which is the whole point: this
+step filing AVCH-59 under `main-write-gate` while the close-out passed `avch-59-main-write-gate` gave
+the ticket two records and `check` called it "the designed state". **Never pass
 `--append-new`.** It reads the ticket back and exits 2 if the comment is not there; a non-zero exit
 means the record did **not** land — report that, not success.
 
