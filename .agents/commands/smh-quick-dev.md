@@ -304,7 +304,12 @@ cut it or name why it stays.
   Paste the real output exactly as before — the receipt is *additional* evidence, never a
   replacement for reading the run. It lands at `<task-artifacts>/gates/suite.json` and rides the
   chore branch through the merge. Stamp it on a **clean tree** (commit first, then run): a
-  receipt over uncommitted edits records `DIRTY` and inherits as invalid — correctly.
+  receipt over uncommitted **code** edits records `DIRTY` and inherits as invalid — correctly.
+  The receipt is not its own dirt: since **SCC-178** the writer excludes the `<root>/gates/`
+  directory it is writing into from the measurement, so a second gate in the same lane no
+  longer reads DIRTY off the first one's receipt, and no lane pays a second full suite run to
+  clear a smudge the writer made itself. Everything else still counts — a sibling file under
+  `<root>/`, another lane's artifacts, any code path.
 - **⭐ Declare the mutant table BEFORE you mutate, and draw every mutant *from the code*.** One row per
   mutant: the mutant, the file, and **the NAMED case it must kill.** Run them as **one sweep**, never
   one at a time — a sweep improvised one mutant at a time cannot check itself. Then:

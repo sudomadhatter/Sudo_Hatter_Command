@@ -268,6 +268,13 @@ re-worded: "commit first" stays; the second-run advice for receipt dirt goes.
 **Files:** `.agents/scripts/gate_receipt.py`, `.agents/scripts/tests/test_task_preflight_receipts.py`
 (extend), `.agents/commands/smh-quick-dev.md`, `docs/_scc_sops_prds/workflows_testing_SOP.md` (its row).
 
+> ⚠️ **INPUT TO PART 3, found building Part 2 (2026-08-15):** the restore check must compare against a
+> PRE-SWEEP SNAPSHOT of the file, not against HEAD. Part 2's hand sweep used `git diff --quiet` and
+> reported `⛔ DIRTY` on a correctly-restored file, because the fix under test was still uncommitted —
+> which is the normal state of every sweep, since a sweep runs on the code you just wrote. A HEAD-based
+> check is a false alarm on every real run, and a check that always cries wolf gets ignored. K's own
+> negative control: a sweep over an UNCOMMITTED change that restores correctly must report CLEAN.
+
 # Part 3 — K (SCC-179): the mutation sweep gets a mechanical restore check
 
 **Defect:** no sweep script; the sweep is prose (`smh-quick-dev.md:299-306`,

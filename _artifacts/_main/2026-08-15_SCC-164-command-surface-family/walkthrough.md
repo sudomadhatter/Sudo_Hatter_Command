@@ -24,8 +24,8 @@ SCC-163). The arming ruling was closed separately, quoted in § ARMING.
     raises the floor to CONCERNS when a lens stays dead after the inline retry — that IS the escape hatch
     § ARMING promises, and blocking it would have left `--no-verify` or a forged roster as the only ways
     out. Corrected to: PASS + dead blocks; CONCERNS + dead passes.
-- [ ] **Part 1 · SCC-170** — the consolidation rule becomes law, riders default, partial landing
-- [ ] **Part 2 · J / SCC-178** — gate_receipt stops counting its own output as dirt
+- [x] **Part 1 · SCC-170** — the consolidation rule becomes law, riders default, partial landing
+- [x] **Part 2 · J / SCC-178** — gate_receipt stops counting its own output as dirt
 - [ ] **Part 3 · K / SCC-179** — mutation sweep gets a mechanical restore check
 - [ ] **Part 4 · A / SCC-165** — a bare `main` is a stale ref (20 operands)
 - [ ] **Part 5 · B / SCC-166** — cicd-code-review gains its twin's two steps, ADAPTED
@@ -39,6 +39,75 @@ SCC-163). The arming ruling was closed separately, quoted in § ARMING.
 ## Evidence
 
 _Each acceptance item → the assertion that proves it, RED output then GREEN output. Filled in per part._
+
+### Part 1 · SCC-170 — the consolidation rule becomes law   `e856a33`
+
+| Acceptance | Assertion | RED → GREEN |
+|---|---|---|
+| the rule exists and every consolidating command cites it | `workflow_lint._RULE_POINTERS` gains a `work-consolidation` row | row added FIRST → lint exit 1 naming `smh-plan-task.md` and `smh-close-task-merge-tree.md` as pointing nowhere → `0 error(s), 0 warning(s)` once the bodies cite it |
+| a parent whose children are all riders does not block | `test_task_preflight.py`, `landing_mode: partial` block (12 cases + 1 control) | **157/157** |
+| the parent's index row survives its own edit | `test_jira_feed.py`, `index-row` block (6 cases) | **241/241** |
+
+**The defect this part introduced, and what caught it.** The manifest key was first written as
+`landing:`. `task.yaml` ALREADY has a `landing:` key — nested inside each `secondary_repos:` entry
+(`independent-task` / `retain-on-epic`) — and `manifest_field`'s `^\s*` idiom matched the indented
+line, so every cross-repo manifest read as declaring an unknown landing mode and **five green SCC-94
+cases went red**. Fixed by renaming to `landing_mode` with a column-0-anchored regex (no `\s*`), and
+the collision is now pinned as its own negative-control case. Nothing found it by review — the
+pre-existing suite did, which is the argument for running the whole file rather than the new block.
+
+**Guard hazard cleared while writing it.** The first anti-argparse guard read
+`code == 2 and "invalid choice" not in out`; argparse actually emits `unrecognized arguments`, so the
+assertion passed while the feature did not exist. Widened to `"usage: jira_feed.py" not in out`
+(cf. `prose-pinning-guards-are-vacuous`).
+
+### Part 2 · J / SCC-178 — gate_receipt stops counting its own output as dirt
+
+**RED, captured before any edit** (`test_gate_receipt.py`, new `SCC-178` block, 4 of 9 failing —
+each one printing the receipt directory as the dirt it was measuring):
+
+```
+[PASS] J0 the first stamp on a clean tree is clean (baseline, not the bug): paths=[]
+[FAIL] J1 a tree whose ONLY dirt is a prior receipt is NOT dirty: paths=['_artifacts/_main/2026-08-15_j/gates/']
+[FAIL] J2 dirty_paths never names a path under the receipt's own gates/: paths=['_artifacts/_main/2026-08-15_j/gates/']
+[FAIL] J3f the story lane gets the same exemption (_bmad-output/gates/<story>/): paths=['_bmad-output/gates/']
+[FAIL] J3g ...but ANOTHER story's receipts are not this writer's output: paths=['_bmad-output/gates/']
+-- 39/43 passed --
+```
+
+**GREEN:** `-- 43/43 passed --`, and `test_task_preflight.py` **157/157** /
+`test_task_preflight_receipts.py` **38/38** on the reader side (the consumers of `dirty_paths`).
+
+| Acceptance | Assertion | Result |
+|---|---|---|
+| J1 only-dirt-is-a-prior-receipt → not dirty | `J1` | RED above → `paths=[]` |
+| J2 `dirty_paths` never names the own gates dir | `J2` | `paths=[]` |
+| J3 any OTHER path still DIRTY | `J3a` sibling file under `<root>/` · `J3b` modified code · `J3c` dirt elsewhere under `_artifacts/` · `J3d` a sibling merely NAMED like `gates` · `J3g` another story's receipts | all green, each naming the surviving path |
+| J4 `smh-quick-dev.md` re-worded | the "commit first" line now says the receipt is not its own dirt | done, + the SOP's `gate_receipt.py` row |
+
+**Found by the RED, not predicted by the plan: git COLLAPSES an untracked directory to one entry.**
+A story lane whose whole `_bmad-output/gates/` is new reports the **ancestor**, not the writer's
+`_bmad-output/gates/<story>/` — and that ancestor also holds *other stories'* receipts. A plain
+prefix exemption could only have been wrong in one of two directions: too narrow (J3f stays red) or
+too wide (J3g exempts somebody else's output). So ancestor entries are re-read with
+`-uall` scoped by pathspec and filtered file-by-file. J3f and J3g are the two halves of that, and
+`J3g` now reports `['_bmad-output/gates/21-8b/one.json', '_bmad-output/gates/21-8b/two.json']` —
+the expansion visible in the assertion's own output.
+
+**Mutation sweep** — the plan's two, plus two drawn from the code as written. All four killed by the
+case named for them, and the restore verified by re-running the file green:
+
+| Mutant | Must kill | Result |
+|---|---|---|
+| M1 widen the exemption to all of `_artifacts/` | J3c | KILLED (also took 9c, 9d) |
+| M2 remove the exemption entirely | J1 | KILLED |
+| M3 drop the trailing-slash dir-boundary anchor | J3d | KILLED |
+| M4 exempt a collapsed ANCESTOR instead of expanding it | J3g | KILLED |
+
+⚠️ The sweep's own restore check printed `⛔ DIRTY` on a correctly-restored file: it used
+`git diff --quiet`, which compares to HEAD, while the fix under test was still uncommitted — the
+normal state of every sweep. Recorded as an input to **Part 3 (SCC-179)**, whose whole subject is
+that check: snapshot the pre-sweep content, never HEAD.
 
 ## Your Actions
 

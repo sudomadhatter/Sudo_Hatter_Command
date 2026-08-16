@@ -126,6 +126,57 @@ def _porcelain_z_paths(z: str) -> list[str]:
             k += 1
     return out
 
+def _own_output_rel(work: Path, out_dir: Path) -> str | None:
+    """The receipt's OWN output dir as a repo-root-relative prefix, or None.
+
+    `git status --porcelain` reports paths relative to the top of the work tree, and
+    `out_dir` is absolute, so the two only compare through `rev-parse --show-toplevel`.
+    Returns with a TRAILING SLASH: the prefix is anchored on the directory boundary, so a
+    sibling merely NAMED like the dir (`gates_old/`, `gatesnotes.md`) is not swallowed by
+    a bare `startswith("gates")`. None when the dir is outside this work tree - and None
+    means NO exemption, which is the strict behaviour this script had before.
+    """
+    top = wf.git(["rev-parse", "--show-toplevel"], work).stdout.strip()
+    if not top:
+        return None
+    try:
+        rel = out_dir.resolve().relative_to(Path(top).resolve())
+    except (ValueError, OSError):
+        return None
+    return rel.as_posix().rstrip("/") + "/"
+
+
+def _measure_dirt(work: Path, out_dir: Path) -> list[str]:
+    """Tree dirt, MINUS the receipt this script is about to write (SCC-178).
+
+    The writer's own output lands inside the tree it measures (`<root>/gates/<gate>.json`),
+    so the second stamp of a lane read DIRTY because the first one's receipt was untracked -
+    and every lane paid a second full suite run to clear a smudge it had made itself.
+    The exemption is the writer's OWN directory and nothing else: not `_artifacts/`, not
+    every `gates/`, not a sibling of it. `task_preflight` reads `dirty_paths` to decide
+    whether a gate SKIP is authorized, so anything wider hands out that skip over real dirt.
+
+    ⛔ The collapse. `git status` reports an untracked DIRECTORY as ONE entry, so a story
+    lane whose whole `_bmad-output/gates/` is new reports the ANCESTOR, not our dir - and
+    that ancestor also holds OTHER stories' receipts, which are somebody else's output.
+    Ancestor entries are therefore re-read with `-uall` (scoped by pathspec, so the expansion
+    is one subtree, not the repo) and the file-level paths are filtered individually.
+    """
+    raw = _porcelain_z_paths(wf.git(["status", "--porcelain", "-z"], work).stdout)
+    own = _own_output_rel(work, out_dir)
+    if not own:
+        return raw
+    paths: list[str] = []
+    for entry in raw:
+        if entry.endswith("/") and own.startswith(entry):
+            sub = _porcelain_z_paths(
+                wf.git(["status", "--porcelain", "-z", "-uall", "--", entry], work).stdout)
+            paths.extend(sub or [entry])
+        else:
+            paths.append(entry)
+    return [x for x in paths if not x.startswith(own)]
+
+
 def cmd_run(project: Path, story: str, gate: str, command: list[str],
             allow_fail: bool, cwd: Path | None, warn_exit: int | None = None,
             flat: bool = False) -> int:
@@ -139,8 +190,9 @@ def cmd_run(project: Path, story: str, gate: str, command: list[str],
     # both are misreads of the tree the receipt claims to describe (SCC-154 review #7,
     # fixed SCC-160). Both sides of a rename are dirt: the reader that exempts
     # `_artifacts/`-only dirt must SEE `code.py -> _artifacts/x.md` moved code.
-    dirty_r = wf.git(["status", "--porcelain", "-z"], work)
-    dirty_paths = _porcelain_z_paths(dirty_r.stdout)
+    # ...and the receipt this run is about to write is NOT dirt - see _measure_dirt (SCC-178).
+    out_dir = receipt_dir(project, story, flat)
+    dirty_paths = _measure_dirt(work, out_dir)
     dirty = bool(dirty_paths)
 
     started = time.time()
@@ -178,7 +230,6 @@ def cmd_run(project: Path, story: str, gate: str, command: list[str],
         "recorded_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "output_tail": output[-1500:],
     }
-    out_dir = receipt_dir(project, story, flat)
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / f"{gate}.json"
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")

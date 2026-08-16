@@ -326,6 +326,136 @@ def main() -> int:
                     f"exit={code} " + out.strip()[-150:])
         finally:
             os.chdir(prev_cwd)
+
+    # ── SCC-178 (Part J): the writer stops measuring its OWN output as tree dirt ─────────
+    # `dirty_paths` came from `git status --porcelain -z` over the WHOLE tree, and the
+    # receipt lands INSIDE that tree at `<root>/gates/<gate>.json`. So the SECOND stamp of
+    # a lane reads DIRTY because the FIRST one's receipt is untracked — the writer dirtying
+    # the tree it is measuring. Every lane then paid a second full suite run to clear a
+    # smudge it had made itself (SCC-163 self-audit: six suite runs, ~9.5 min, two of them
+    # this). The exemption is the writer's OWN output DIRECTORY and nothing else: not
+    # `_artifacts/`, not `gates/` anywhere, not a sibling of it. Cases J3a-J3d are the
+    # controls that say so, and 9c-9e above are the reason the field has to stay honest —
+    # `task_preflight` reads `dirty_paths` to decide whether a gate SKIP is authorized.
+    if c.block("SCC-178: gate_receipt stops counting its own gates/ output as dirt"):
+        prev_cwd = os.getcwd()
+        with TempDir() as tmp3:
+            try:
+                lob = tmp3 / "lane"
+                lob.mkdir()
+                git(lob, "init", "-q")
+                git(lob, "config", "user.email", "t@t.t")
+                git(lob, "config", "user.name", "t")
+                root = lob / "_artifacts" / "_main" / "2026-08-15_j"
+                root.mkdir(parents=True)
+                (lob / "code.py").write_text("x = 1\n", encoding="utf-8")
+                # The plan is COMMITTED, as it is in a real lane. Without that, git collapses
+                # the whole untracked `_artifacts/` into one entry and the receipt dir is
+                # never named — the fixture would pass with the fix reverted.
+                (root / "implementation_plan.md").write_text("# plan\n", encoding="utf-8")
+                git(lob, "add", "-A")
+                git(lob, "commit", "-qm", "seed")
+                os.chdir(lob)
+                relroot = "_artifacts/_main/2026-08-15_j"
+
+                def stamp(gate: str) -> dict:
+                    run_script("gate_receipt.py", "run", "--task", "SCC-178",
+                               "--gate", gate, "--root", str(root), "--cwd", str(lob),
+                               "--", sys.executable, "-c", "print('ok')")
+                    return json.loads((root / "gates" / f"{gate}.json")
+                                      .read_text(encoding="utf-8"))
+
+                first = stamp("suite")
+                c.check("J0 the first stamp on a clean tree is clean (baseline, not the bug)",
+                        first["dirty_tree"] is False, f"paths={first['dirty_paths']!r}")
+
+                # J1 — THE DEFECT. The only dirt in this tree is `suite.json`, which the
+                # previous line wrote. Today: dirty_tree True.
+                second = stamp("lint")
+                c.check("J1 a tree whose ONLY dirt is a prior receipt is NOT dirty",
+                        second["dirty_tree"] is False, f"paths={second['dirty_paths']!r}")
+                c.check("J2 dirty_paths never names a path under the receipt's own gates/",
+                        not [p for p in second["dirty_paths"]
+                             if p.startswith(f"{relroot}/gates")],
+                        f"paths={second['dirty_paths']!r}")
+
+                # ── J3 · the controls. Each one dies if the exemption is widened. ──
+                (root / "notes.md").write_text("a sibling of gates/, not gates/\n",
+                                               encoding="utf-8")
+                sib = stamp("sibling")
+                c.check("J3a a sibling file under <root>/ that is not gates/ is still DIRTY",
+                        sib["dirty_tree"] is True
+                        and f"{relroot}/notes.md" in sib["dirty_paths"],
+                        f"paths={sib['dirty_paths']!r}")
+                (root / "notes.md").unlink()
+
+                (lob / "code.py").write_text("x = 2\n", encoding="utf-8")
+                cod = stamp("code")
+                c.check("J3b a modified code file is still DIRTY",
+                        cod["dirty_tree"] is True and "code.py" in cod["dirty_paths"],
+                        f"paths={cod['dirty_paths']!r}")
+                git(lob, "checkout", "--", "code.py")
+
+                # J3c — the `_artifacts/`-wide mutant killer: real dirt INSIDE the artifacts
+                # tree, beside receipts that are exempt. A widened exemption swallows both
+                # and this reads clean.
+                other = lob / "_artifacts" / "_main" / "2026-08-15_other"
+                other.mkdir(parents=True)
+                (other / "stray.md").write_text("another lane's dirt\n", encoding="utf-8")
+                art = stamp("artifacts")
+                c.check("J3c dirt elsewhere under _artifacts/ is still DIRTY "
+                        "(the exemption is the gates dir, not the folder)",
+                        art["dirty_tree"] is True
+                        and any(p.startswith("_artifacts/_main/2026-08-15_other")
+                                for p in art["dirty_paths"]),
+                        f"paths={art['dirty_paths']!r}")
+                import shutil
+                shutil.rmtree(other)
+
+                # J3d — the prefix is anchored on the directory boundary. A sibling whose
+                # NAME merely starts with `gates` is not the writer's output.
+                (root / "gates_old").mkdir()
+                (root / "gates_old" / "keep.json").write_text("{}\n", encoding="utf-8")
+                (root / "gatesnotes.md").write_text("not the gates dir\n", encoding="utf-8")
+                near = stamp("near")
+                c.check("J3d a sibling merely NAMED like gates/ is still DIRTY "
+                        "(prefix anchored on the dir boundary, not startswith('gates'))",
+                        near["dirty_tree"] is True
+                        and any(p.startswith(f"{relroot}/gates_old") for p in near["dirty_paths"])
+                        and f"{relroot}/gatesnotes.md" in near["dirty_paths"],
+                        f"paths={near['dirty_paths']!r}")
+                shutil.rmtree(root / "gates_old")
+                (root / "gatesnotes.md").unlink()
+
+                # J3e — story lane: same fix, and the exemption is THIS story's receipt dir.
+                # Another story's receipts are somebody else's output and stay dirt.
+                board = lob / "_bmad-output" / "implementation-artifacts" / "sprint-status.yaml"
+                board.parent.mkdir(parents=True)
+                board.write_text("development_status:\n  21-8b-x: review\n", encoding="utf-8")
+                git(lob, "add", "-A")
+                git(lob, "commit", "-qm", "board")
+
+                def story_stamp(gate: str, story: str = "21.8b") -> dict:
+                    run_script("gate_receipt.py", "run", "--story", story, "--gate", gate,
+                               "--project", str(lob),
+                               "--", sys.executable, "-c", "print('ok')")
+                    sid = story.replace(".", "-")
+                    return json.loads((lob / "_bmad-output" / "gates" / sid / f"{gate}.json")
+                                      .read_text(encoding="utf-8"))
+
+                story_stamp("one")
+                s2 = story_stamp("two")
+                c.check("J3f the story lane gets the same exemption "
+                        "(_bmad-output/gates/<story>/)",
+                        s2["dirty_tree"] is False, f"paths={s2['dirty_paths']!r}")
+                s3 = story_stamp("first", story="99.9z")
+                c.check("J3g ...but ANOTHER story's receipts are not this writer's output",
+                        s3["dirty_tree"] is True
+                        and any("gates/21-8b/" in p for p in s3["dirty_paths"]),
+                        f"paths={s3['dirty_paths']!r}")
+            finally:
+                os.chdir(prev_cwd)
+
     return c.finish()
 
 
