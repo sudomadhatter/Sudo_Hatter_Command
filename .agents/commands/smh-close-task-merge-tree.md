@@ -300,13 +300,27 @@ it like a failed receipt and carry on; nothing downstream depends on it.
 
 ## Step 3 — Hand back the link
 
-⛔ **First: tick the merge row in `walkthrough.md` and commit it ON THIS BRANCH.** It ticks as
-`- [x] The merge itself — lands via this branch's PR` — **number-free on purpose**: the PR number is
-assigned when the PR is opened, which is after this commit is pushed. The number and the merge sha
-go on the ticket in Step 4, where both are known. Ticking here rather than after the merge is what
-closes SCC-175: a *post-merge commit on `main`* is refused by the gate, and there is no longer such
-a commit. (Live proof it is real: on 2026-08-16 `jira_feed.py finish` held SCC-184 at
-`Review Required` over exactly this unticked box, on a merge that had already happened.)
+### ⛔ Everything Step 4 will demand of `walkthrough.md` must be committed ON THIS BRANCH, NOW
+
+Step 4 runs **after** the merge, so anything it finds missing forces a **post-merge commit** — which
+is precisely what the gate refuses, and what SCC-175 is. Both of these are cheap here and expensive
+five minutes later. Check both **before** opening the PR:
+
+| Required | Why here, not later |
+|---|---|
+| `- [x] The merge itself — lands via this branch's PR` | **Number-free on purpose** — the PR number is assigned when the PR is opened, which is *after* this commit is pushed. The number and merge sha go on the ticket in Step 4, where both are known |
+| a `## Your Actions` section, **even if it says nothing is owed** | `jira_feed.py finish` **refuses to close without it**: an absent section is not evidence that nothing is owed, so the answer must be recorded rather than assumed |
+
+```bash
+grep -q "The merge itself" <walkthrough> && grep -q "^## Your Actions" <walkthrough> \
+  || { echo "walkthrough incomplete — fix it BEFORE the PR"; exit 1; }
+```
+
+⭐ **Both of these are measured failures, not hypotheticals.** On 2026-08-16 `jira_feed.py finish`
+held SCC-184 at `Review Required` over the unticked merge box on a merge that had already happened —
+and then held **SCC-183 itself**, at this very step, over a missing `## Your Actions`. The second one
+was found by this lane landing through its own door, which is the only reason it is written down
+here instead of being rediscovered by the next task.
 
 The branch is already on `origin` — Step 1's preflight requires clean **and** pushed. So:
 
