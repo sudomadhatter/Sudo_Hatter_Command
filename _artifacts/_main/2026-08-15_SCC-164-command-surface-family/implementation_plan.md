@@ -32,6 +32,13 @@ GREEN / mutant tables and the file lists — read the subtask for the why, read 
 > *"we are not developing 3 task for every 1 we try to fix."*
 >
 > *"then you are approved to write the whole plan so I can hand it off to the dev team"* — this document.
+>
+> *"I dont see a case in enterprise dev where a warn should make it to prod ?"* — the substance of the
+> arming ruling, unprompted.
+>
+> *"yes you can use those as my words update the plan so we dont have to do that at all"* — adopting
+> **"A4 blocks, E3 blocks, arm strict-actions when the count is clean"** as the operator's own words.
+> ⭐ **The arming question is RULED and CLOSED. No lane stops for it again.**
 
 **What the last line authorises, precisely:** writing this plan. It is **not** build approval
 (`000-PLAN-FIRST-GATE`: being told to do the work, and answering a question, are named as *not*
@@ -55,27 +62,42 @@ Thirteen subtasks on one branch is deliberate (rule 2) and legal (`riders:`). Wh
 - **Push after every part.** Branches travel between machines, worktrees do not — an unpushed part
   is stranded on the wrong laptop.
 
-## ⛔ THE ONE OPEN DECISION — arming. Surfaced, not assumed. RECOMMENDATION given.
+## ⭐ ARMING — RULED 2026-08-15. Nothing stops for this again.
 
-Three parts add a check that could sit on a shipping path: **A4** (the bare-`main` guard), **E3**
-(the lens-roster reader), and SCC-163 Part B (already landed). `blocking-gates-need-a-quoted-ruling`
-says a check that can block a shipping path is new law and needs the operator's own words.
-**Nothing in the tickets authorises arming.** SCC-163 Part B set the precedent on 2026-08-15 —
-*"1. yes"*: host it in `jira_feed.py`, ship **WARN**, `--strict-actions` **built and disarmed**;
-workflow_lint ruled out from its own code for anything that reads `_artifacts/`.
+> **Operator, verbatim:** *"I dont see a case in enterprise dev where a warn should make it to prod ?"*
+> … *"yes you can use those as my words update the plan so we dont have to do that at all"* — adopting
+> **A4 blocks, E3 blocks, arm strict-actions when the count is clean.**
 
-| Check | Where it runs (recommended) | Blocks or warns (recommended) | Why |
+**Provenance, stated plainly** (`blocking-gates-need-a-quoted-ruling` bars a derived corollary from
+becoming law): the plan's first draft recommended WARN for E3 and the operator **rejected it on his own
+reasoning** — the enterprise-prod line above, which matches house law already on record
+(`vscode-hides-git-hook-output`: a warn-only hook looks like clean success, and that is how a wrong-key
+commit reached a project's `main` on 2026-08-07). The wording below was proposed by this plan and
+**adopted verbatim by the operator**. That adoption is what makes it law.
+
+**What it authorises, precisely — three things, no interpretation needed:**
+1. **A4 ships ARMED and BLOCKING** as a `run_all` test.
+2. **E3 ships ARMED and BLOCKING** in the shared preflight parser. There is no `--strict-lenses`
+   opt-in to build: blocking IS the shipped behaviour. The dated cutoff (E4) is the scope limiter, not
+   a warn tier.
+3. **SCC-163's `--strict-actions`, already built and disarmed, ARMS** — conditionally, and Part E owns
+   the condition: re-run that detector over the post-cutoff walkthrough corpus, record the
+   false-positive count in the walkthrough, and flip the flag **if the count is zero**. If it is not
+   zero, the detector is tuned until it is; the count and the decision go in the walkthrough either
+   way. WARN was its measurement window; this ruling ends the window.
+
+⛔ **Consequence the dev team must accept, not route around:** a lane whose review did not truly run
+cannot close. The escape is the inline ladder — run the lenses inline, record `recovered-inline`, take
+the CONCERNS floor — never a bypass. There is no `--force`, and adding one is out of scope.
+
+| Check | Where it runs | RULED | Why |
 |---|---|---|---|
 | **A4** — a bare `main` used as a diff / rev-list / merge-base / worktree-base operand in `.agents/commands/*.md` | a run_all test, `test_stale_base_refs.py` (the label pass already anticipated that filename), with an explicit **allowlist** for the occurrences A2 judges correct-as-LOCAL | **BLOCKS** — as every run_all test does. It is a regression guard over toolkit text that is GREEN at landing; a guard that only warns is the SCC-125 vacuous shape. It sits on no shipping path today because nothing reintroduces the pattern except a future edit, which is exactly what it should stop | not `workflow_lint`: `--toolkit-only` is the right scope but lint is per-file style; the allowlist needs a test |
 | **E3** — a PASS/CONCERNS Verdict with a `dead` lens is a contradiction; a MISSING roster is UNKNOWN | the walkthrough-roster parse lives **once** and both preflights call it (`closeout_preflight.py` for story lanes, `task_preflight.py` for Task lanes — the ticket names the first; smh lanes close through the second) | **BLOCKS.** (Recommendation CHANGED 2026-08-15 after the operator asked *"I don't see a case in enterprise dev where a warn should make it to prod"* — and the house already agrees: `vscode-hides-git-hook-output` records that a warn-only hook looks like clean success and let a wrong-key commit reach a project's main.) The first draft said WARN to match SCC-163 Part B; that precedent's reasons do NOT transfer — it fires AFTER the merge, it is a heuristic over prose with a measured ~50% false-positive class, and it had a legacy problem. E3 fires BEFORE the merge, reads structured data (roster present? lens `dead`?) with no false-positive class, and the dated cutoff already removes the legacy risk. A block strands only a lane that skipped its review or misrecorded it — the inline ladder + `recovered-inline` + the CONCERNS floor is the built-in escape; there is no `--force` | dated cutoff per E4: roster required only where a `Verdict:` line exists AND its date ≥ the day E lands; 130/142 walkthroughs have no roster, 97 have no Verdict at all — the lightweight lane has none by design |
 
-**Ask (one message, alongside the build approval):** *"A4 blocks, E3 blocks, arm strict-actions when
-the count is clean"* — or your own words. The third clause: SCC-163's `--strict-actions` is a prose
-heuristic and earned its measurement window, but a window has an end — Part E re-runs that detector
-over recent walkthroughs, records the false-positive count in the walkthrough, and ARMS it if the
-count is zero (a flag flip; SCC-163 built it for exactly this). WARN is a temporary state for a
-heuristic being tuned, with an arming date — never a permanent home for a check that guards main. ⛔ Whatever is ruled goes into this file under this heading,
-verbatim, before either check is written. Every other decision in this plan is settled below.
+**No ask remains.** The ruling above is complete and quoted; the third clause's *condition* (a clean
+false-positive count) is measurable by Part E and needs no further word. Every other decision in this
+plan is settled below.
 
 ## Rules of the lane (SCC-170's rules, applied to this lane from the first commit)
 
