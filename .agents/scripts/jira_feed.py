@@ -1405,7 +1405,7 @@ _BANNED_PATTERNS = [
      "'board placement' is the retired hand-off, by name"),
     (re.compile(r"\bearns?\s+(?:a|an|its\s+own)\s+(?:ticket|task|key)\b", re.I),
      "asks the operator to rule whether a finding becomes a ticket"),
-    (re.compile(r"\b(?:rule\s+on|decide)\b", re.I),
+    (re.compile(r"\b(?:rule\s+on|decide)\b[^\n]{0,80}?\b(?:ticket|subtask|backlog)\b", re.I),
      "asks the operator to rule on ticket placement"),
     (re.compile(r"\bticket\b[^\n]{0,40}?\byour\s+call\b", re.I),
      "hands a ticket decision to the operator"),
