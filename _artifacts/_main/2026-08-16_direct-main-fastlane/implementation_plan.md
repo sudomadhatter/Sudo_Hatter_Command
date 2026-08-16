@@ -1,4 +1,104 @@
-# Implementation Plan — SCC-183 · Revision 3: the PR door
+# Implementation Plan — SCC-183 · Revision 4: ONE road, no permission changes, nothing per machine
+
+**R4 (2026-08-16) supersedes R3-as-built (`642f08f`).** Triggered by three operator constraints,
+stated after R3 was built and audited: **not per machine** · **no changing the rules for the
+agent** · **must work for all four platforms, not one**. R3 fails all three in one place (Part C-2)
+and two of them in a second (the split). This revision is a **deletion**: it removes everything that
+fails a constraint and keeps only what had already worked — with the rules exactly as they are —
+before any of this was built (PR #6, #7, #8: push the branch, open the PR, hand back the link).
+
+## Audit — R3-as-built against the three constraints
+
+| R3 piece | Per-machine? | Changes the agent's rules? | All 4 platforms? | Verdict |
+|---|---|---|---|---|
+| **Part C-2** — allow-list lines in `.claude/settings.local.json` | **YES** — gitignored (`.gitignore:56`), Mac-only; measured: the tracked `settings.json` has **no `allow` list at all** | **YES** — that is precisely what it is | **NO** — Claude Code only | ⛔ **DELETE** — fails all three |
+| **The split** (agent self-merges prose lanes) | — | **YES** — `gh pr merge` is denied today; the split exists only if C-2 lands | Claude-only | ⛔ **DEAD by constraint** → the operator clicks every PR. This is what the operator said was fine on 2026-08-16 ("if its this straight forward I am ok with it") — the split was the agent's recommendation, not theirs |
+| `--merge` · `merge_eligible` · `is_prose` · `_await_check` · pre-merge ancestry re-check | — | needed C-2 | — | ⛔ **DELETE** — no agent merge, so no eligibility question. The predicate that took four cuts to get right is *unnecessary*, not fixed |
+| **`## Break-glass`** in both doors | **YES** — `core.hooksPath` armed per machine, a token in the per-machine `.git/`, a checkout parked on `main` | no | yes | ⛔ **DELETE** — and it could never do its job: it needs github.com + Actions + `gh`, a **superset** of the PR door's needs, so there is no outage in which it works and the PR door does not. The SOP already holds the real answer for "CI is down" (disable the ruleset, merge, re-arm) |
+| `land_pr.py` — the remaining checks R1–R7, P, freshness, body | `gh` per machine | ⚠ UNVERIFIED whether the outer `python3 …` string passes any platform's layer — a **new** string the classifier has never seen | stdlib | ⛔ **DELETE** — every check is already held by a gate that exists or by a server setting (table below), and the two commands it wraps are the ones **proven** to pass with the rules as they are |
+| **Part B** — PR-default door body, `--after-merge` | no | no | yes, 5 surfaces | ✅ KEEP, simplify |
+| **Part C-1** — squash/rebase off | server-side | no | all | ✅ KEEP |
+| **Part C-3** — `strict_required_status_checks_policy: true` | server-side | no | all | ✅ KEEP + **RECOMMEND** — it *replaces* the client-side stale check, on every path, at the one place that applies everywhere |
+| **Part D** — `git-policy.md`, SOP, `jira_manual.md`, ticket | tracked | no | yes | ✅ KEEP, revise: "three roads" → **one** |
+| **Part E** — retire R1 | — | — | — | ✅ done |
+
+## What holds each deleted check — the proof the deletion is safe
+
+| `land_pr.py` did | Already held by |
+|---|---|
+| R1 not a repo | close-out Step 0 (`rev-parse --show-toplevel`) |
+| R2/R3 branch shape, wrong key | `commit-msg` hook (the key) + `main-write-gate` on the PR (branch pattern) — **server** |
+| R4 dirty tree | `task_preflight.py`, Step 1: "clean + pushed" |
+| R5 nothing to land | `gh pr create` refuses ("no commits between"); the compare page says "nothing to compare" |
+| R6 diverged | `git push` refuses a non-fast-forward; force is banned |
+| R7 `gh` missing | the compare URL is printed instead — deterministic from `remote get-url` + branch; **`gh` becomes optional** |
+| P existing PR | `gh pr create` prints "already exists: <URL>" |
+| freshness / stale base | **C-3**, server-side — every path, every machine, every platform |
+| merge shape | **C-1**, repo setting |
+| PR body from receipts | `--fill` (commit subjects and bodies); the receipts are in the tree the PR shows |
+| `--merge`, eligibility, polling, ancestry-before-merge | nothing — **the agent never merges** |
+
+## The one road
+
+1. **Steps 0–2.5 unchanged** — preflight · the lane's gate · flight event. Reads and local writes,
+   already run on every platform.
+2. **Step 3 — hand back the link.** The branch is already on `origin` (preflight required it).
+
+   ```bash
+   gh pr create --base main --head "$BRANCH" --fill      # the last line it prints IS the URL
+   ```
+
+   No `gh` on this machine? The branch is pushed, so print the form URL instead —
+   `https://github.com/<owner>/<repo>/compare/main...<branch>?expand=1` — one extra click for the
+   operator, zero extra tools. Print the URL. **STOP.** No merge, no token, no mint, no offer.
+3. **The operator clicks *Merge pull request*** — after `main-write-gate` is green, which GitHub
+   enforces on every PR regardless of who opened it or from where.
+4. **`--after-merge <KEY>`** — pure git verifies it (`git fetch` · `merge-base --is-ancestor <tip>
+   origin/main`; a squash would fail this, which is one more reason C-1 matters), the PR number is
+   read from `origin/main`'s merge subject (`Merge pull request #N …`), then Dev Record · ticket →
+   Done · prune, as before. STOP if not merged.
+
+Every command on that road is one that **already passed** the permission layer, as-is, on this
+machine, today. No new tool except `gh`, and `gh` is optional. Nothing under `.claude/`. Same body on
+all five surfaces. Nothing to arm on a fresh clone.
+
+## Deleted — the proof it got smaller
+
+- `land_pr.py` (470 lines) · `test_land_pr.py` (69 cases) · `mutation-sweep.json` / `-result.txt` · the `scripts/INDEX.md` row
+- both doors: `## Break-glass` (~60 lines each) · the "what prose-only means" paragraphs · the two-outcome table → one outcome
+- `test_door_preflight_order.py`: the break-glass assertions. **Kept:** the default road has no `mint-push-token`, no `git push origin main`, no `gate/main-`; the `PROJECT_DOOR` case; every negative control
+- `git-policy.md`: "three roads" → the road; the `merge_eligible` and narrowing paragraphs
+- SOP + `jira_manual.md`: "what the agent may merge without you" · the break-glass `<details>` blocks
+- Part C-2 · the split (recorded as superseded by the operator's constraint, on the ticket)
+
+## Not touched, and why
+
+- **The local main-push token gate** (`.githooks/pre-push`, the minter, `MAIN-PUSH-ENFORCE`). No smh door uses it now. In the lobby the server ruleset already refuses an unchecked push to `main`, so it is a second refusal on the same act — redundant, harmless. Retiring it is a **follow-on** (blast radius: `hooks_armed.py`, `task_preflight.py`, four test files, and `/cicd-push-e2e` still names it for project repos).
+- The commit-msg hooks (Jira key, SOP currency, merge target) — orthogonal to landing; unchanged.
+
+## The operator's acts — two, both server-side, both one line, neither per machine
+
+1. `gh repo edit --enable-squash-merge=false --enable-rebase-merge=false`
+2. `strict_required_status_checks_policy: true` on ruleset `20756052` — **a yes/no**; it can block a stale PR, so it needs the operator's words.
+
+Both apply to both machines and all four platforms at once. Neither touches any agent's permissions. The agent can run both on the operator's word.
+
+## Acceptance (R4)
+
+| # | Criterion | Assertion |
+|---|---|---|
+| AC-1 | both doors' default road contains **no** `mint-push-token`, `git push origin main`, or `gate/main-` | `test_door_preflight_order.py` (existing negatives, kept) |
+| AC-2 | Step 3 ends in the URL and STOPS; `--after-merge` refuses when the tip is not an ancestor of `origin/main` | wiring assertion on the body; a scratch-repo case |
+| AC-3 | **zero** files under `.claude/` in the diff; **zero** allow-list requirements anywhere in the docs | `git diff --stat origin/main -- .claude` = 0; `git grep -c 'settings.local\|allow-list' -- .agents docs` = 0 |
+| AC-4 | the deletions are complete | `git grep -c 'land_pr\|Break-glass\|merge_eligible\|is_prose' -- .agents docs` = 0 |
+| AC-5 | suite green, lint 0/0, maps clean; `sop_currency` **without** `[sop-ok]` on the door commit | bare runs |
+| AC-6 | this lane lands **through the road it describes** | the PR link, the click, `--after-merge` — the first real test |
+
+**Everything below this line is R3 and earlier, kept as history.**
+
+---
+
+# (superseded) Implementation Plan — SCC-183 · Revision 3: the PR door
 
 **R3 (2026-08-16), THIRD cut — rewritten against two NO-GO audits.** Supersedes R1 (a `--direct`
 token push straight to `main` — built, reviewed **FAIL** @ `3e4d4f5`) and R2 (a prose-only PR lane
