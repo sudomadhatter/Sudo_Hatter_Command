@@ -1,0 +1,56 @@
+{
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_cwd_escape_hook.py"
+  ],
+  "mutants": [
+    {
+      "id": "N1",
+      "file": ".agents/hooks/guard-cwd-escape.py",
+      "original": "        if depth > 0:\n            continue                                   # inside ( \u2026 ): the sanctioned form",
+      "mutated": "        if False:\n            continue                                   # inside ( \u2026 ): the sanctioned form",
+      "case": "M2 allowed: ( cd /tmp && ls )",
+      "block": "M2 \u00b7"
+    },
+    {
+      "id": "N2",
+      "file": ".agents/hooks/guard-cwd-escape.py",
+      "original": "    if arg == \"\" or arg == \"-\" or arg == \"~\" or arg.startswith(\"~/\"):",
+      "mutated": "    if False:",
+      "case": "M4 refused",
+      "block": "M4 \u00b7"
+    },
+    {
+      "id": "N3",
+      "file": ".agents/hooks/guard-cwd-escape.py",
+      "original": "        if ch == \"#\" and (not buf or buf[-1].isspace()):",
+      "mutated": "        if False:",
+      "case": "M5 not a cd: a comment",
+      "block": "M5 \u00b7"
+    },
+    {
+      "id": "N4",
+      "file": ".agents/hooks/guard-cwd-escape.py",
+      "original": "        if cmd.startswith(\"<<\", i):",
+      "mutated": "        if False:",
+      "case": "M5 not a cd: a heredoc body",
+      "block": "M5 \u00b7"
+    },
+    {
+      "id": "N5",
+      "file": ".agents/hooks/guard-cwd-escape.py",
+      "original": "    except Exception:\n        allow()\n    if not isinstance(data, dict)",
+      "mutated": "    except Exception:\n        raise\n    if not isinstance(data, dict)",
+      "case": "M6 allowed on unparseable stdin",
+      "block": "M6 \u00b7"
+    },
+    {
+      "id": "N6",
+      "file": ".agents/hooks/guard-cwd-escape.py",
+      "original": "        if target == r or target.startswith(r.rstrip(\"/\") + \"/\"):",
+      "mutated": "        if target.startswith(r.rstrip(\"/\")):",
+      "case": "M4 refused",
+      "block": "M4 \u00b7"
+    }
+  ]
+}
