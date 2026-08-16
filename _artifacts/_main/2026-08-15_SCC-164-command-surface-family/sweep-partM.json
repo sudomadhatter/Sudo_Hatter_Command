@@ -73,7 +73,7 @@
       "file": ".agents/hooks/guard-cwd-escape.py",
       "original": "        arg = os.path.expanduser(arg)",
       "mutated": "        arg = arg",
-      "case": "M3 allowed (tilde spelling",
+      "case": "M3 control: a tilde path OUTSIDE",
       "block": "M3 ·"
     },
     {
