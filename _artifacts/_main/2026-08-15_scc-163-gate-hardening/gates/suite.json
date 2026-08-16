@@ -3,18 +3,16 @@
   "story": "scc-163",
   "result": "pass",
   "exit_code": 0,
-  "sha": "59053e7ea007a26a3f72d1a7c575cb11dc689393",
-  "dirty_tree": true,
-  "dirty_paths": [
-    "_artifacts/_main/2026-08-15_scc-163-gate-hardening/gates/"
-  ],
+  "sha": "bbbf7d58e14457a8237261c768efa9970094808b",
+  "dirty_tree": false,
+  "dirty_paths": [],
   "totals": null,
   "command": [
     "python3",
     ".agents/scripts/tests/run_all.py"
   ],
   "cwd": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/SCC-163-gate-hardening",
-  "duration_s": 97.0,
-  "recorded_at": "2026-08-16T00:18:11+00:00",
+  "duration_s": 97.2,
+  "recorded_at": "2026-08-16T00:20:15+00:00",
   "output_tail": "face - route it to the `code-review-engine` skill instead (SCC-128) .\n[PASS] SCC-128 D2 a nested skill file fires, and the message LOCATES it: .agents/commands/stale-cmd.md: references the RETIRED vendor review surface - route it to the `code-review-engine` skill instead (SCC-128) .agents/rules/INDEX.m\n[PASS] SCC-128 D3 a differently-cased spelling still fires: .agents/commands/shouty.md: references the RETIRED vendor review surface - route it to the `code-review-engine` skill instead (SCC-128) .agents/commands/stale-c\n[PASS] SCC-128 D4 every offender is reported, across all scanned surfaces: ['.agents/commands/shouty.md', '.agents/commands/stale-cmd.md', '.agents/rules/INDEX.md', '.agents/rules/stale-rule.md', '.agents/skills/some-skill/SKILL.md']\n[PASS] SCC-128 D5 positive control: ALL five populated surfaces, clean, silent\n[PASS] SCC-128 E the error names the replacement engine: .agents/commands/shouty.md: references the RETIRED vendor review surface - route it to the `code-review-engine` skill instead (SCC-128) .age\n[PASS] SCC-128 F the live tree has NO retired-surface offender: []\n[PASS] SCC-128 G the check is WIRED into --toolkit-only (exit 2 + names it): exit=2 == workflow_lint - toolkit-only ==\n[WARN ] commands-index: commands/INDEX.md missing or empty\n[ERROR] naming-law: resurrect-me.md: must star\n[PASS] SCC-128 G control: with the offender gone the CLI is clean again\n-- 49/49 passed --\n\n============================================================\n29/29 files passed\n"
 }
