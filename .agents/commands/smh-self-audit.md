@@ -13,6 +13,8 @@ while fixing it still costs nothing. Assume the plan is wrong somewhere, then tr
 >   standalone file; a Task's artifacts live in `_artifacts/_main/<YYYY-MM-DD>_<slug>/`
 > - `.agents/rules/000-PLAN-FIRST-GATE.md` — this audit runs BEFORE the literal `approved`, not after
 > - `.agents/rules/constitution.md` — the Ask-First and surgical-change obligations it audits against
+> - `.agents/rules/port-checklist.md` — the six checks Phase 1's cross-repo row demands; the plan
+>   answering them is what the row audits for, and its absence on differing copies is a NO-GO
 > - `.agents/rules/worktree-per-story.md` §"cwd is not intent" — why Step 0 pins the repo from command
 >   output, and why Phase 1 reads the sibling lanes instead of assuming this tree is the whole picture
 > - `.agents/rules/tests-must-gate-for-real.md` — the plan's **test strategy** is audited against it.
@@ -110,6 +112,7 @@ that carry risk; state the ones you cleared in one line each.
 | a **file path** (move / rename / delete) | every Markdown link and `#L` anchor pointing at it, repo-wide | a relocated doc's links are mis-pathed, not dead — they resolve to nothing and look fine |
 | the **SOP doc** or a usage surface | that both halves land in the SAME commit | the armed `sop_currency.py` gate rejects the commit otherwise |
 | anything under `_artifacts/_memory/` | whether this is the memory write flow at all | the store is READ-ONLY outside its own flows; another session's dirty memory is never swept under your task |
+| a file that **exists in more than one repo** (a lobby↔project port, either direction) | that the plan carries a section answering all six port checks, with the command output for each — `git diff --no-index -- <lobby>/<path> <project>/<path>` proves the trigger | three of AVCH-59's four divergences were answerable at plan time and surfaced at review instead; a plan that skips the section is a NO-GO, not a note (SCC-176) |
 
 ```bash
 # The two sweeps worth running on almost every Task plan:

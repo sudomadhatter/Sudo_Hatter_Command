@@ -25,7 +25,10 @@ import re
 import subprocess
 from pathlib import Path
 
-from _harness import Cases
+from _harness import Cases, TempDir
+
+import wf_common as wf          # noqa: E402  (_harness put SCRIPTS on sys.path)
+import workflow_lint as lint    # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[3]
 ALL = ("claude", "opencode", "antigravity", "codex")
@@ -1012,6 +1015,120 @@ def main() -> int:
         c.check("CONTROL: the personal-name rule does not fire on a clean file",
                 name_hits("Invoking this command IS the operator's sign-off\n") == [],
                 "NEGATIVE CONTROL - a rule that fires on everything is not a rule")
+
+    # ── CS-12: the port checklist - the rule, its trigger, and the row that makes it stick ───
+    if c.block("CS-12 · the port checklist: the rule carries six answerable checks, the "
+               "plan/audit commands trigger on it, and the lint row makes the citation "
+               "mechanical"):
+        # Every lobby<->project port so far (AVCH-54, AVCH-59) cost an afternoon and found the
+        # SAME class of defect: the centre's copy is subtly wrong once it runs in a SUBMODULE, on
+        # WINDOWS, in a WORKTREE, in a THIN repo. Nothing asked those questions at PLAN time, so
+        # they surfaced at review or on the other machine. H answers that with a rule plus prose
+        # in three commands - an agent executes both, and neither is machine-checkable. What IS
+        # machine-checkable is pinned here: the rule's SHAPE (six items, each ANSWERED BY A
+        # COMMAND rather than a reminder) and the `_RULE_POINTERS` row's WIRING, exercised by
+        # calling the real `check_rule_pointers` over fixture trees.
+        def safe(rel: str) -> str:
+            p = ROOT / rel
+            return read(p) if p.exists() else ""
+
+        checklist = safe(".agents/rules/port-checklist.md")
+        rules_idx = safe(".agents/rules/INDEX.md")
+        PORT_CMDS = ("smh-plan-task.md", "smh-self-audit.md", "cicd-self-audit.md")
+        # The phrase step (2) writes into all three, and the command that answers "do the two
+        # copies differ?". Both are the ROW's key - see the row's own comment for why the
+        # concept-keyed sketch ("port" as a step verb) was thrown out.
+        TRIGGER = "exists in more than one repo"
+        CITE = ".agents/rules/port-checklist.md"
+
+        def checklist_items(body: str) -> list[tuple[str, str]]:
+            """The `### ` items, each bounded by the next - title and its own text."""
+            parts = re.split(r"^###\s+", body, flags=re.M)[1:]
+            return [(s.splitlines()[0].strip(), s) for s in parts]
+
+        def unanswered(body: str) -> list[str]:
+            """Items with no fenced command block - a REMINDER, which H1 forbids."""
+            return [title for title, text in checklist_items(body) if "```" not in text]
+
+        def preamble(body: str) -> str:
+            """Everything above the first item - WITHOUT the frontmatter.
+
+            The `description:` restates the whole rule, "both directions" included, so a preamble
+            that kept it would stay green with the header sentence deleted: a mutant aimed at the
+            body would survive on the strength of the metadata. Frontmatter is the router's copy,
+            never the reader's.
+            """
+            body = re.sub(r"\A---\n.*?\n---\n", "", body, count=1, flags=re.S)
+            return re.split(r"^###\s+", body, flags=re.M)[0]
+
+        def pointer_warns(cmd_body: str) -> list[str]:
+            """Run the REAL `check_rule_pointers` over a one-command fixture tree.
+
+            Not a re-implementation of the row's regex: the fixture goes through the same
+            function `workflow_lint --toolkit-only` calls, so deleting the row from the table
+            takes these controls down with it. A control that restated the pattern would keep
+            passing with the row gone - the exact vacuity this lane keeps finding.
+            """
+            with TempDir() as t:
+                d = t / ".agents" / "commands"
+                d.mkdir(parents=True)
+                (d / "fixture-port.md").write_text(cmd_body, encoding="utf-8")
+                rep = wf.Report()
+                lint.check_rule_pointers(t, rep)
+                return [i["msg"] for i in rep.items if i["sev"] == "WARN"]
+
+        items = checklist_items(checklist)
+        c.check("the port checklist exists and carries its six checks",
+                len(items) == 6,
+                f"got {len(items)} `### ` items in .agents/rules/port-checklist.md - the six "
+                f"AVCH-59 divergence classes, no more and no fewer")
+        c.check("every checklist item is ANSWERED BY A COMMAND, not phrased as a reminder",
+                checklist and unanswered(checklist) == [],
+                f"items with no fenced command: {unanswered(checklist)} - H1 requires each item "
+                f"be a CHECK with the command that answers it; a reminder is what already failed")
+        c.check("items 4 and 6 CITE project-law.md instead of restating the thin-repo law",
+                sum(1 for _, text in items if "project-law.md" in text) >= 2,
+                "the thin-repo and repo-local-enforcement items already live in "
+                "`project-law.md`; a second copy is the drift this rule set exists to avoid")
+        c.check("the header says the checklist runs in BOTH directions (H5)",
+                "both directions" in preamble(checklist).lower(),
+                "the AVCH-59 -> lobby port is a port too; a checklist that reads one-way is "
+                "skipped on exactly the half this ticket is")
+        c.check("the rules INDEX routes to the checklist",
+                "port-checklist.md" in rules_idx,
+                "a rule with no INDEX row is unreachable by the router every session scans")
+
+        for name in PORT_CMDS:
+            body = safe(f".agents/commands/{name}")
+            c.check(f"{name} carries the port trigger and cites the checklist",
+                    TRIGGER in body and CITE in body,
+                    f"trigger={TRIGGER in body} cite={CITE in body} - the trigger without the "
+                    f"citation is what the lint row is keyed to catch")
+
+        planted = f"Step 9 - when the file {TRIGGER}, stop and diff the copies.\n"
+        c.check("WIRING: the live row fires on a porting command that cites nothing",
+                any("port-checklist" in m for m in pointer_warns(planted)),
+                f"check_rule_pointers said {pointer_warns(planted)} - with no row in "
+                f"`_RULE_POINTERS` a command can describe a port and point at nothing")
+        c.check("WIRING: the second arm - a command that diffs the two copies also fires",
+                any("port-checklist" in m
+                    for m in pointer_warns("Run `git diff --no-index` over both copies.\n")),
+                "the row keys on the trigger PHRASE and on the command that answers it; one arm "
+                "alone goes blind the moment a command words the trigger differently")
+        c.check("CONTROL: the same command WITH the citation is silent",
+                pointer_warns(planted + f"See `{CITE}`.\n") == [],
+                "NEGATIVE CONTROL - a row that warns even after the citation lands can never "
+                "reach the tip's 0/0, so it would be disarmed rather than satisfied")
+        c.check("CONTROL: a command that says nothing about porting is silent",
+                pointer_warns("Step 1 - read the ticket. Step 2 - write the plan.\n") == [],
+                "NEGATIVE CONTROL - the sketched `\\bport\\b` key matched seven unrelated "
+                "command bodies (audit F26); a row that fires on everything is not a row")
+
+        live = wf.Report()
+        lint.check_rule_pointers(ROOT, live)
+        c.check("the live toolkit has no un-cited porting command",
+                [i for i in live.items if "port-checklist" in i["msg"]] == [],
+                f"{[i['msg'] for i in live.items if 'port-checklist' in i['msg']]}")
 
     return c.finish()
 

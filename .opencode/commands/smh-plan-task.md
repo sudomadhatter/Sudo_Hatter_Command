@@ -16,6 +16,8 @@ platforms: [opencode, antigravity, claude, codex]
 > - `.agents/rules/artifacts-always-first.md` — each lane's plan lives in **that lane's tree**, at
 >   `_artifacts/_main/<YYYY-MM-DD>_<slug>/implementation_plan.md`
 > - `.agents/rules/git-policy.md` — explicit paths only, never push `main`
+> - `.agents/rules/port-checklist.md` — MANDATORY RULE 5's six checks, and the diff that proves the
+>   trigger; it runs in **both** directions, so the port BACK to the centre is a port too
 
 **The Task lane's version of "write all the stories first."** BMAD's parallel lever needs every
 story on disk before the set can be compared; the Task lane had no equivalent, so subtasks were
@@ -38,6 +40,15 @@ step: it plans the **whole** Task at once and leaves every lane grounded, cut, p
 4. **No deployable paths.** If a subtask's plan reaches `backend/`, `frontend/`, `firebase/`,
    `functions/`, `mobile/` or `.github/`, that lane is not Task work — say so and route it to
    `/cicd-push-e2e`. There is no override.
+5. **A port gets its own plan section.** When a file in SCOPE **exists in more than one repo** — a
+   lobby↔project port, in **either** direction — the plan carries a section answering all six port
+   checks, each with the command output that answered it. Prove the trigger rather than asserting
+   it, before the breakdown is proposed:
+   ```bash
+   git diff --no-index -- <lobby>/<path> <project>/<path> ; echo "differ=$?"   # 1 = they differ
+   ```
+   Both copies differing is the whole trigger: three of AVCH-59's four divergences were answerable
+   at plan time and surfaced at review instead (SCC-176).
 
 ## Step 0 — Resolve the repo and the parent (FIRST) — from command output, never belief
 

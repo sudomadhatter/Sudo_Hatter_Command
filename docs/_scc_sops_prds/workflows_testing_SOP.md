@@ -54,6 +54,7 @@ file is now the only thing that tells you what's local to it.
 | What runs next | the [SCC Jira board](https://sudo-command.atlassian.net/jira/software/projects/SCC/boards/2) — sprint view ([§12](#12-the-board--what-runs-next)) |
 | The shared toolkit — the only copy | [`.agents/`](../../.agents/) — commands, rules, skills, workflows, scripts |
 | What a project owns vs. what it reads from here | [`project-law.md`](../../.agents/rules/project-law.md) |
+| Changing a file that exists in **both** the centre and a project | [`port-checklist.md`](../../.agents/rules/port-checklist.md) — six checks answered at PLAN time, in either direction |
 | Long-form depth | [`INDEX.md`](INDEX.md) |
 | Projects this **lints** | the [maintained list](../../.agents/maintained-projects.txt) — AGY_AVIATIONCHAT · NEXgen-VR-Director. It is a lint worklist, **not** a sync target: nothing is pushed into a project. |
 
@@ -1114,6 +1115,22 @@ queue grew faster than it drained — *"we are not developing 3 task for every 1
 **The rule is `.agents/rules/work-consolidation.md`**, and it is **judgment, not a gate**. Six rules:
 look for a home before you mint · when able, one worktree for the whole Task · verify the batch in one
 block · artifact-first · two stops only · verify the outcome of a board write, never its exit code.
+
+**Porting a file between the centre and a project — the plan answers six questions first (SCC-176).**
+Every port so far (AVCH-54, AVCH-59) cost an afternoon and found the same class of defect: the
+centre's copy is subtly wrong the moment it runs in a **submodule**, on **Windows**, in a
+**worktree**, in a **thin** repo. `.agents/rules/port-checklist.md` turns that list into six checks,
+each with the command that answers it — a git-given path used exactly as git gave it · `printf` not
+`echo` · verify the FILE, not `$?` · no `.agents/rules/` path a thin repo lacks · `python3`-vs-`python`
+and per-machine `core.hooksPath` · hooks stay repo-local and the port needs the target's **own** Jira
+key. It runs in **both directions**: the port BACK to the centre is a port too.
+
+The trigger is mechanical, never self-reported — `git diff --no-index -- <a>/<path> <b>/<path>`. 
+`/smh-plan-task` MANDATORY RULE 5 makes the plan carry the section; `/smh-self-audit` Phase 1 and
+`/cicd-self-audit` Phase 1 make its absence a **NO-GO** on differing copies. The one mechanical piece
+is a `workflow_lint._RULE_POINTERS` row, which **warns** (exit 1) when a command describes a port and
+cites nothing — the rest is prose an agent executes, and this page says so rather than implying a
+gate that does not exist.
 
 **What changes when you run a Task as ONE lane:**
 

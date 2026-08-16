@@ -81,6 +81,16 @@ _RULE_POINTERS = (
     # bodies and none of the three that matter (audit F26).
     ("work-consolidation", "consolidating",
      re.compile(r"^\s*riders\s*:|`riders:|landing\s*:\s*partial", re.M)),
+    # SCC-176. Two arms, both zero-hit on the tree before this part landed: the trigger
+    # CONDITION as the three plan/audit commands state it, and the command that answers it.
+    # ⛔ "port" as a step verb was the first sketch and was thrown out by audit F26 - it matched
+    # SEVEN unrelated bodies (`port 3100`, `--port`, "Port the rule verbatim", two AP twins) and
+    # NONE of the three commands the rule is for, so RED would have named the wrong files and the
+    # tip could never reach 0/0. Same lesson as the row above: key on the machinery, never the
+    # concept. The second arm exists so a command that words the trigger differently but still
+    # tells an agent to diff two copies is not silently exempt.
+    ("port-checklist", "porting",
+     re.compile(r"exists in more than one repo|git diff --no-index", re.I)),
 )
 
 
