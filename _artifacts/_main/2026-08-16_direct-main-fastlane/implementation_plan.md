@@ -23,6 +23,43 @@ and every one of them must kill a mutant.**
 
 ---
 
+## ✅ BUILT (2026-08-16) — approved after the third cut
+
+| Part | State | Commit |
+|---|---|---|
+| **A** `land_pr.py` + 69-case test | ✅ | `05161be` |
+| **B** both doors: PR-default + `## Break-glass`, five surfaces each | ✅ | `f0c9e48` |
+| **C** the operator's one-time acts | ⏸ **owed** — see the walkthrough |
+| **D** `git-policy.md` · SOP · `jira_manual.md` · the ticket description (N9) | ✅ | `05161be` · `f0c9e48` · Jira |
+| **E** retire R1 | ✅ | `7858710` · `a280117` |
+
+**Verification:** suite **33/33** (bare), `test_land_pr.py` **69/69** RED-first,
+`test_door_preflight_order.py` **22/22** RED-first (13 failures against the un-edited door),
+mutation sweep **15/15 killed** with restore verified, lint 0/0, maps clean.
+
+**Three plan-level corrections the BUILD forced** — all found by running, not reading:
+
+1. **`R7` must precede `P`.** The plan ordered `P` first (correct, relative to `R5`), but `P` is the
+   first check that calls `gh`, so a missing `gh` produced a raw subprocess error instead of `R7`'s
+   install/login hint. Order is now `R1–R4 → R7 → P → R5 → R6 → freshness → R8`.
+2. **The `"/" not in p` root guard is DEAD CODE and was cut.** The sweep proved it: deleting it
+   killed nothing, because no root path can start with `docs/`, `_artifacts/` or `_my_resources/`,
+   so the allow arm already refuses `router.md`. The real N16 fix was deleting `router.md`'s
+   *explicit allow arm*. The plan asserted a guard that could never fire — the same tripwire that
+   cut the `..`-segment and absolute-path arms. `prose/no-root-file-is-prose` stays as a property
+   test over the real repo.
+3. **The gitlink case does not prove the mode check.** `Projects/AGY` is not `.md`, so `is_prose`
+   refuses it whatever its mode. The mode check's only unique coverage is a **symlink at a prose
+   path** (`docs/link.md`, which could point at `.claude/settings.json`). AC-4's rows now say which
+   case proves which guard.
+
+**And one defect the audits did not catch — N16, the fourth appearance.** Root `router.md`, the
+MASTER ROUTER, sat in an allow arm through three cuts and survived the audit that killed the third,
+because that audit was hunting the prefix arm. It was found by *running the predicate over
+`git ls-files`*. That technique is now AC-4 itself.
+
+---
+
 ## The one-line thesis
 
 **The gates are not what blocks us. The landing ceremony is.** Every gate passed on SCC-184 and it
