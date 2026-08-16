@@ -17,7 +17,7 @@
       "file": ".agents/scripts/tests/test_stale_base_refs.py",
       "original": "return [h for h in hits if (h[0], h[2]) not in ALLOWED]",
       "mutated": "return [h for h in hits if h[0] not in {k[0] for k in ALLOWED}]",
-      "case": "nor does the same text in a DIFFERENT file",
+      "case": "one changed character in that line does NOT inherit the exemption",
       "block": "A4 \u00b7"
     },
     {
