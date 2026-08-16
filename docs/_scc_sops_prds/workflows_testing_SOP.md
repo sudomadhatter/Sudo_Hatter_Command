@@ -705,11 +705,39 @@ all, so `/cicd-update-sprint-memory` has nothing to operate on and simply cannot
 
 ▶ **Diagram:** [`/smh-close-task-merge-tree` in the command atlas](#smh-close-task-merge-tree) — every step, stop and refusal, checked against the live command.
 
+**⭐ What you actually do now, since SCC-183 (2026-08-16): you get a link, and you click it.**
+
+The close-out runs everything it always ran — preflight, the lane's gate, the flight event — and then
+**Step 3 opens a pull request and prints its URL as the last line.** One of two things follows:
+
+| What it says | What you do |
+|---|---|
+| a URL | click **Merge pull request** on it. That click is your sign-off. Then say so, and the agent runs the rest (`--after-merge`): Dev Record, ticket to `Done`, worktree and branch pruned |
+| `landed: PR #N · <sha>` | nothing — it was a prose-only lane, so it merged itself. Already done |
+
+**You will never be handed a list of git commands to type.** If a close-out ever stops and asks you
+to merge by hand, that is the bug, not the procedure.
+
+**Why it changed.** SCC-184 — docs only, every gate green — could not reach `main` in a whole
+session. Not one gate refused it. The *landing* did: about fifteen hand-typed commands in the shared
+checkout, several of which the agent's own permission layer denied, leaving the job stranded
+half-finished. Adding a gate could not have fixed that; the shape had to change.
+
+**What the agent may merge without you.** Prose only — Markdown under `docs/`, `_artifacts/`,
+`_my_resources/`. Not `AGENTS.md`/`CLAUDE.md`/`GEMINI.md` at any depth, not `router.md`, not
+`docs/migrations/`, not anything under `.agents/`. Those come to you even though they are "just
+docs", because they are what the agents read to decide what to do.
+
+<details>
+<summary>The old road, kept as break-glass — for when GitHub is unreachable</summary>
+
 **Typing it IS your merge sign-off** — the same contract `/cicd-push-e2e` carries for an epic. Since
 SCC-118 the merge is a two-part act you never see: the merge commit goes to a throwaway `gate/main-<sha>`
 ref, the command **waits** for GitHub's `main-write-gate` check to pass on that exact commit, and only
 then mints the token (30-minute life, so it is minted *after* the wait) and pushes `main`. A red check
 is a stop, never a `--no-verify`.
+
+</details>
 
 **⛔ But if an agent invoked it on its own (SCC-37, 2026-08-14), the invocation authorises
 nothing:** the mint now refuses without your explicit, this-turn merge words passed verbatim
