@@ -284,7 +284,7 @@ structural check (`EP6`) pins the `case` arm's ref list, not the sentence explai
 | Phase | Walked — what was checked and cleared |
 |---|---|
 | **0** Scope + checkable list | Change set named (4 files + 2 doc/index surfaces). Acceptance list taken from the ticket's **ACCEPTANCE A/B** blocks (authority 1). Traceability run **both ways**: every A1–A5 and B1–B6 maps to a step; **one step traced to no acceptance item → cut (B-F1)**. Lane check: no deployable path (`backend/ frontend/ firebase/ functions/ mobile/ .github/`) — matches `lane_qualify` → `TASK`. |
-| **1** Blast radius | `hooks_armed.py:102` maps `MERGE-TARGET-ENFORCE` → `merge-target-guard.sh`/`commit-msg`; Part A adds **no flag** → unaffected. `flight_recorder.py:69` imports only `_SCRAPE_HEADS, scrape_bucket` → unaffected. `task_preflight.py:922` is a **third reader** of `## Your Actions` (presence only, never row content) → no edit required. `.agents/scripts/INDEX.md:17` enumerates jira_feed's subcommands → **edit required (B-F2)**. **Sibling lanes: none** — `git worktree list` shows only `main` and this tree, so no landing-order dependency exists. |
+| **1** Blast radius | `hooks_armed.py:102` maps `MERGE-TARGET-ENFORCE` → `merge-target-guard.sh`/`commit-msg`; Part A adds **no flag** → unaffected. `flight_recorder.py:69` imports only `_SCRAPE_HEADS, scrape_bucket` → unaffected. `task_preflight.py:922` is a **third reader** of `## Your Actions` (presence only, never row content) → no edit required. `.agents/scripts/INDEX.md:17` enumerates jira_feed's subcommands → **edit required (B-F2)**. **Sibling lanes: none** *(SUPERSEDED — see below)* — `git worktree list` shows only `main` and this tree, so no landing-order dependency exists. |
 | **2** Over-engineering (STRICT) | Tripwires walked. **"New script where an existing script grows a subcommand"** → satisfied: subcommand, not a new script. **"Generalizing for N when the work is N=1"** → **FIRED on the two-call-site design → CUT (B-F1)**. **"A gate that cannot fail"** → warn-only is a live risk, answered by pinning the banner in `B7` rather than by intent. No new command, no new rule file, no clone-and-tweak. |
 | **3** Pre-mortem | **Other machine** — every command is `python3`/`sh`; tests inherit the harness's interpreter handling. **Fresh clone** — Part A ships no new arming marker; `MERGE-TARGET-ENFORCE` already exists, so nothing is silently OFF. **Fires on someone else's commit** — Part A reuses the existing banner, which already names the remedy. **Escape hatch** — `git push --no-verify`, already documented in the file header. **Empty input** — a walkthrough with zero banned rows yields an empty list and no banner; non-vacuous because `B1`/`B4` prove a positive fires. **Four platform caches** — not reached, once B-F1 is cut. **Rollback** — Part A is one `case` arm, Part B is warn-only; both revert cleanly, nothing irreversible. |
 
@@ -330,3 +330,15 @@ permission is the failure mode the rule was written for.
 clean, and no sibling lane is live. On the word, the build order is: Part A (`EP1` RED → arm →
 `EP2`–`EP6` → sweep), then Part B (`B1` RED on the vendored fixture → detector → `B2`–`B8` → sweep),
 then the SOP and `scripts/INDEX.md` in the same commit as their surfaces.
+
+> ⚠️ **SUPERSEDED, 2026-08-15 — this line went stale during the lane.** Phase 1 recorded *"Sibling
+> lanes: none — `git worktree list` shows only `main` and this tree, so no landing-order dependency
+> exists."* That was true when written and **false hours later**:
+> `chore/SCC-169-keyway-quickstart` appeared mid-lane, merged into **local** `main` (`7dcf558`)
+> without being pushed, and `git merge-tree` finds a real **CONFLICT** on `_artifacts/_main/INDEX.md`.
+> Comparing against `origin/main` alone reported zero overlap and missed it.
+>
+> The live re-derivation is in the walkthrough's `## Code Review` § Step 0.7 and on the SCC-163
+> ticket. **A point-in-time claim committed as a durable fact is worse than no claim** — it reads as
+> a checked result. This is why Step 0.7 exists, and why SCC-164 **E7** now requires the
+> re-derivation to be present in the review section rather than merely mandated by prose.

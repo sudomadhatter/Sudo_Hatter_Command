@@ -150,6 +150,101 @@ Declared in the plan **before code existed**, drawn from the fix's own lines, ru
 > bare-key object never reaches those rows. The only cases that catch it are the **real corpus rows**
 > pinned in `B5`. Without the corpus work, that mutation would have shipped undetected.
 
+## Code Review (2026-08-15)
+
+Verdict: CONCERNS @ eb9030b
+Suite evidence measured on: eb9030b — `run_all.py` **PASS exit 0, 92.4s**, receipt `gates/suite.json` stamped CLEAN
+
+**Scope** — the 12-file `main...HEAD` diff: the backstop hook, `jira_feed.py`, their two test files, a
+vendored fixture, `scripts/INDEX.md`, the SOP, and this lane's artifacts.
+**Method** — Step 0.7 re-derivation against current `main`; adversarial pass; acceptance audit against
+SCC-163's own ACCEPTANCE A/B blocks; the command-centre gate; `/smh-clean-code-audit`'s machine floor;
+a 9-mutant sweep.
+
+### ⛔ Why this is CONCERNS and not PASS — the blind pass did not run
+
+`lenses_run: 0/4 — Blind Hunter dead · Edge Case Hunter dead · Acceptance Auditor dead · Test-Adequacy dead`
+
+Four clean-context lenses were dispatched on the diff at `8681d83`. **All four returned empty; none
+executed.** This is the same failure SCC-162's merge commit records ("the code-review-engine lens
+fan-out could not spawn clean-context agents in this session"), making it the **second confirmed
+instance**.
+
+Per `code-review-engine/steps/step-01-review.md:398`, a lens still dead after the retry and the
+inline rerun **raises `severity_floor` to CONCERNS**, and the caller may escalate but never soften.
+So this verdict is the floor, not a judgement call.
+
+An inline adversarial pass **was** run and it found three real defects (below, all fixed). It is
+recorded as an inline pass and **not** as the blind one: `step-01-review.md:372` — *"Reporting a
+fully-informed lens as the blind one is a false record."* I wrote this code; reviewing it with full
+context is exactly the bias the Blind Hunter exists to remove.
+
+⭐ **Nothing in this repo would have caught that.** `closeout_preflight.py` reads the `Verdict:` line
+and nothing about lenses; the only thing touching `lenses_run` is a prose pin on the skill document.
+A `Verdict: PASS @ <sha>` with zero lenses run merges cleanly today. Recorded as **SCC-164 Part E**
+(E1–E7) on the operator's ruling, *"yes we need to fix it… this is not the first time you have done
+this."*
+
+### Findings
+
+| # | file:line | sev | failure scenario | disposition |
+|---|---|---|---|---|
+| 1 | `jira_feed.py` `_BANNED_VERB`/`_TICKET_OBJECT` | **FAIL-class** | Verb and object were searched **independently**, so `open`/`file` matched as NOUNS. Four honest rows flagged: *"The SCC-99 ticket is still open"*, *"Ticket SCC-12 remains open"*, *"Open the ticket and read the Dev Record"*, *"The task file is in `_artifacts/`"*. A false red here teaches agents to stop writing honest rows — the precise cost B3 warns about. | **applied @ 8681d83** — bound into one phrase; `open` dropped from the creation verbs; pinned as `B10.1–B10.4` |
+| 2 | `test_jira_feed.py` (coverage) | **FAIL-class** | Deleting the `fold … into <KEY>` pattern left the suite **green** — the only row exercising it also said *"board placement"* and kept flagging through a different pattern. A shape acceptance **B2 names by name** was invisible to deletion. Found by a surviving mutant, not by reading. | **applied @ 8681d83** — `B11` pins all six shapes individually |
+| 3 | `jira_feed.py` `_BANNED_PATTERNS[0]` | **FAIL-class** | `B11` then went red on the real thing: **`"mint its own AVCH key"`** — the exact AVCH-58 phrase this ticket exists to catch — never matched the creation pattern. The project token `AVCH` sat between the article and the noun. Row 1 still flagged via `board placement`, which is *why it went unnoticed*: the known-positive passed while the shape it was meant to prove did not. | **applied @ 8681d83** — `(?:[A-Z]{2,10}\s+)?`, all-caps only; *"file the report about the ticket"* probed and still allowed |
+| 4 | `test_jira_feed.py` `B8` | **CONCERNS** | `B8` passed **before `--strict-actions` existed**: argparse exits 2 on an unrecognized argument, the same 2 a real refusal returns, so the assertion was satisfied by the feature being **absent**. | **applied @ 918f15f** — exit code paired with the banner, plus a clean-input half proving it discriminates |
+| 5 | mutation harness (scratchpad) | **CONCERNS** | The sweep counted `[FAIL]` lines and ignored the exit code, so two mutants that **crashed** the suite emitted zero `[FAIL]` lines and scored as **survivors**. A vacuous green in the tool brought to prevent vacuous greens (`piping-a-gate-hides-its-exit-code`). | **applied** — kill signal is now the exit code |
+| 6 | `test_git_hooks.py` `EP2` | **CONCERNS** | `EP2` was first written with the epic **pushed**. A blanket widening still scores `landed=1` through the `claude/*` arm of the `BASES` switch, so the control would have passed against **the exact mutant it exists to kill** (A-M2). | **applied @ 918f15f** — re-fixtured to a local epic; `EP2b` keeps the pushed shape |
+| 8 | `jira_feed.py:1408` | **FAIL-class — shipped** | ⛔ **A mutation-sweep mutant (B-M5) was COMMITTED AND PUSHED into the gate** at `8681d83`. The sweep applies a mutant, runs the suite, and restores in a `finally`; that restore did not hold. B-M5 strips the ticket-noun clause from pattern 5, so the detector fires on a bare *"rule on"* / *"decide"* — the exact false-positive class findings 1–3 were spent killing. It would have flagged every honest acceptance dispute. **Caught only by the full suite**; every scoped run I used while iterating skipped the `B5` corpus block. This is the live instance of `tests-must-gate-for-real`'s written warning that *"a mutated gate is committable."* | **applied @ eb9030b** — restored, 231/231, and the rest of the diff swept by signature for other stranded mutants (none) |
+| 7 | `pre-push-merge-backstop.sh` `$SCOPES` | **noise — dismissed** | Unquoted `$SCOPES` relies on word-splitting. Considered and cleared: the enclosing `for other in $(git for-each-ref …)` already depends on the identical sh semantics, so this adds no new dialect risk; the hook is `#!/bin/sh`. | dismissed — no new exposure |
+
+**Changes applied: 7 of 8 findings fixed in thread** (finding 7 dismissed with reason). Nothing left this lane as future work.
+
+### Acceptance matrix
+
+| item | delivered by | proving assertion |
+|---|---|---|
+| A1 RED first | `EP1` | seen RED: push exit 0, `chore/SCC-163-lane` on the remote — the ticket's reproduction |
+| A2 refused + banner | `EP1` ×3 | REFUSED, names `epic/SCC-163-thing`, prints the standard banner |
+| A3 epic covered; `:105` ruled | `SCOPES` chore arm + the `:105` comment | `EP6` ×3 — wiring read from **executable lines only** |
+| A4 no regression, 4 ALLOW arms | `EP2`, `EP2b`, `EP3`, `EP4`, `EP5` | green before **and** after; A-M2 kills them |
+| A5 sweep from code | A-M1…A-M4 | declared in the plan pre-code; 4/4 killed |
+| B1 RED, real corpus | `B1` ×3 | AVCH-58 vendored from `9674880d` (AGY repo); row 1 flagged, rows 2–3 not |
+| B2 flags create/place/rule | `B4`, `B5.1x–B5.3x`, `B11` ×6 | each of six shapes pinned **alone** |
+| B3 the three allowed classes | `B2`, `B3`, `B5.1–B5.7`, `B10.1–B10.4` | 7 live-corpus rows + 4 probe rows unflagged |
+| B4 fenced ≠ rows | `B6` | reuses `_unfenced`; B-M1 kills it |
+| B5 status notes out of scope | code comment + `B1` rows 2–3 | stated in the code, proved by the fixture |
+| B6 sweep from code | B-M1…B-M5 | 5/5 killed |
+
+**Reverse direction — scope creep:** none. The one step that traced to no acceptance item (an
+authoring-time call site in `/smh-code-review` Step 5) was cut at plan time as audit finding B-F1.
+
+### Gates
+
+| gate | result |
+|---|---|
+| Enforcement suite | `run_all.py` → **29/29 files, exit 0, 92.4s @ eb9030b**. ⚠ It went **RED at `8681d83`** and that red is what surfaced finding 8 — the receipt doing its job |
+| Toolkit lint | `workflow_lint.py --toolkit-only` → **0 errors, 0 warnings**, 8 info (pre-existing BOMs) |
+| Assertion evidence | `EP1–EP6` 12/12 · `test_jira_feed.py` 231/231 (197 baseline → +34) · `test_git_hooks.py` 141/141 (129 baseline → +12) |
+| SOP currency | landed with its surfaces at `918f15f`, **no `[sop-ok]`**; later commits are artifacts-only |
+| Link + anchor | `check_maps.py --depth3-only --strict` → exit 0 |
+| Door parity | n/a — no command added, renamed or deleted |
+| Mutation sweep | **9/9 killed, 0 survivors, 0 defective**; tree CLEAN after restore |
+
+### Step 0.7 — re-derivation against current `main`
+
+1. **What moved:** `origin/main` is unchanged at `8ae2e25`; this lane is 7 ahead / 0 behind. But
+   **local `main` = `7dcf558`, ahead of origin and unpushed** — `chore/SCC-169-keyway-quickstart`
+   merged into it mid-lane. ⛔ This **supersedes this lane's own committed audit line** *"Sibling
+   lanes: none"*, which was true when written and false hours later.
+2. **True overlap + merge-tree:** `_artifacts/_main/INDEX.md`, and `git merge-tree` confirms a real
+   **CONFLICT** — both lanes add a ledger row at the top of the same table. Resolve by keeping both.
+   ⚠ Comparing against `origin/main` alone reported **zero** overlap and missed it entirely.
+3. **Landing order:** local `main` carries an unpushed SCC-169 merge. **Local `main` was deliberately
+   NOT absorbed** — doing so would pull that unlanded work into this chore lane, and *this ticket's
+   own Part A* would then correctly refuse the push. The gate would be right. The lane stays based on
+   `origin/main`; the `INDEX.md` conflict is resolved at close-out.
+
 ## Your Actions
 
 - [ ] **Merge and close out** — `/smh-close-task-merge-tree --expect-key SCC-163`. Invoking it is
