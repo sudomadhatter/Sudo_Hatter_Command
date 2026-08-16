@@ -3,4 +3,11 @@ primary_repo: Sudo_Hatter_Command
 branch: chore/SCC-164-command-surface-family
 close_command: smh-close-task-merge-tree
 secondary_repos: []
-riders: [SCC-170, SCC-178, SCC-179, SCC-165, SCC-166, SCC-176, SCC-174, SCC-171, SCC-175, SCC-172, SCC-173, SCC-177, SCC-180, SCC-182]
+landing_mode: partial
+# ⛔ PARTIAL LANDING at the plan's declared cut line (after Part 7 / F). `riders:` is TRIMMED to
+# the subset whose WORK is on this branch - never a ticket whose work is not real. SCC-173 and
+# SCC-180 each lead commits here, so the preflight's mechanical rider check would have accepted
+# them; both are plan/doc commits and neither part is BUILT, so they stay open. The remainder -
+# SCC-171, SCC-172, SCC-173, SCC-175, SCC-177, SCC-180 - is the main-write gate cluster and
+# becomes the next lane. SCC-164 STAYS OPEN and closes at that lane's ceremony.
+riders: [SCC-170, SCC-178, SCC-179, SCC-165, SCC-166, SCC-176, SCC-174, SCC-182]

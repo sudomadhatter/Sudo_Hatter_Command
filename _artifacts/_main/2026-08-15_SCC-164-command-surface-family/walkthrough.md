@@ -714,4 +714,32 @@ an id, and the failure is a warning naming both ids, not a silent wrong answer.
 
 ## Your Actions
 
-_Filled in at the end of the lane._
+**This lane lands PARTIALLY, at the plan's declared cut line (after Part 7 / F).** `task.yaml`
+carries `landing_mode: partial` and `riders:` is trimmed to the eight subtasks whose work is
+actually on this branch. **SCC-164 stays open** and closes at the next lane's ceremony.
+
+⚠ SCC-173 and SCC-180 each *lead commits here* — `f36245a`, `1e69af6`, `94e226c` — so the
+preflight's mechanical rider check would have accepted them. They are plan and residue-recovery
+commits; neither part is **built**. Declaring them would have flipped two subtasks to `Done` over
+work that does not exist, which is exactly what *"never declare a ticket whose work is not real"*
+forbids. They stay open.
+
+**Landed and declared (8):** SCC-170 · SCC-178 · SCC-179 · SCC-165 · SCC-182 · SCC-166 · SCC-176 ·
+SCC-174.
+
+**Carried to the next lane (6) — the main-write gate cluster:**
+
+| Part | Key | What is owed |
+|---|---|---|
+| 8 · C | SCC-171 | the PC token path as git gives it; mint that cannot lie. **Work list already measured** by Part 6's H4 retro run: `mint-push-token.sh:119-122` and `pre-push-main-approval.sh:44-47` (C1), `mint-push-token.sh:135-144` (C3 — redirect with no `\|\| exit`, banner at `:144` unconditional). AGY's copy at `:128-141` already carries the corrected form; the fix flows **project → lobby** |
+| 9 · G | SCC-175 | no post-merge write to `main` |
+| 12 · L | SCC-180 | the `--hard` remedy made safe — **and its `# Part 12` plan section still does not exist** (audit F1); write it first |
+| 10 · D | SCC-172 | three fail-opens in the main-write gate. **D3 (`.githooks/pre-push`) is the LAST edit of that lane** (F22) |
+| 11 · E | SCC-173 | the blind review recorded and enforced — E3 **BLOCKS** per § ARMING |
+| 11 · I | SCC-177 | the review sequenced |
+
+Next lane: `chore/SCC-164-main-write-gate` (or its own key), with those six as its `task.yaml`
+`riders:`. The § ARMING ruling already covers A4, E3 and `--strict-actions`, so **no new operator
+ruling is owed** to build them.
+
+- [ ] **The merge itself** — `/smh-close-task-merge-tree`, on the operator's invocation.
