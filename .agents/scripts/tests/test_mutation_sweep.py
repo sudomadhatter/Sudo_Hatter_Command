@@ -74,7 +74,7 @@ def table(repo: Path, mutants: list[dict], name: str = "sweep.json") -> Path:
 def killer(mid: str = "M1 break the pattern") -> dict:
     """A mutant that really does break CASE-A."""
     return {"id": mid, "file": SRC, "original": PATTERN,
-            "mutated": 'if flag != "on":', "kills": "CASE-A"}
+            "mutated": 'if flag != "on":', "case": "CASE-A"}
 
 
 def _run(repo: Path, args) -> tuple[int, str]:
@@ -110,7 +110,7 @@ def main() -> int:
             # A mutant no case notices: the test's verdict does not change, so exit 0.
             tab = table(repo, [{"id": "M9 cosmetic", "file": SRC,
                                 "original": "    return 0\n", "mutated": "    return 0  # x\n",
-                                "kills": "CASE-A"}])
+                                "case": "CASE-A"}])
             code, out = _run(repo, ["--table", str(tab)])
             c.check("K2b a mutant that survives fails the sweep, named",
                     code != 0 and "SURVIVED" in out and "M9 cosmetic" in out,
@@ -124,21 +124,22 @@ def main() -> int:
             repo = build(t)
             # A mutant killed by a case OTHER than the declared one. SCC-156 #1: a kill that
             # cannot be attributed to the named case is not evidence about that case.
-            tab = table(repo, [dict(killer(), kills="CASE-B unrelated")])
+            # `block: CASE` selects BOTH labels, so CASE-A really fails and the run really
+            # is non-zero. The declared case is CASE-B, which is NOT on the FAILED line.
+            tab = table(repo, [dict(killer(), case="CASE-B unrelated", block="CASE")])
             code, out = _run(repo, ["--table", str(tab)])
             c.check("K2c a kill attributed to the WRONG case is not a kill",
-                    code != 0 and "CASE-B" in out,
+                    code != 0 and "not `CASE-B unrelated`" in out and "CASE-A" in out,
                     f"exit={code} " + out[-500:])
 
         with TempDir() as t:
             repo = build(t)
             # A `kills` label no block matches -> the harness's exit 3. Reading that as a kill
             # is how a typo'd label launders a surviving mutant (the reason NO_MATCH exists).
-            tab = table(repo, [dict(killer(), kills="CASE-Z typo")])
+            tab = table(repo, [dict(killer(), case="CASE-Z typo")])
             code, out = _run(repo, ["--table", str(tab)])
             c.check("K2d exit 3 (filter matched nothing) is a SWEEP ERROR, never a kill",
-                    code != 0 and ("no case" in out.lower() or "matched nothing" in out.lower()
-                                   or "sweep error" in out.lower()),
+                    code != 0 and "exit 3" in out and "selected NO cases" in out,
                     f"exit={code} " + out[-500:])
 
         with TempDir() as t:
@@ -255,6 +256,20 @@ def main() -> int:
                     residue, "no residue: the case below would prove nothing")
             c.check("K3c2 ...and the NEXT sweep refuses to start on it, naming the file",
                     code == 2 and SRC in out, f"exit={code} " + out[-400:])
+
+        with TempDir() as t:
+            repo = build(t)
+            # Two mutants over the SAME line. Without a restore between them, mutant 2's
+            # anchor no longer exists, `.replace()` silently does nothing, and a mutant that
+            # would have been killed is reported as a survivor - a coverage hole invented by
+            # the sweep itself. One-mutant tables cannot see this.
+            tab = table(repo, [killer("M1 invert the test"),
+                               dict(killer("M2 delete the test"),
+                                    mutated='if True:')])
+            code, out = _run(repo, ["--table", str(tab)])
+            c.check("K3f each mutant starts from a RESTORED file, not the previous mutant's",
+                    code == 0 and out.count("KILLED") >= 2 and "SURVIVED" not in out,
+                    f"exit={code} " + out[-500:])
 
     # ── K4 · the FULL file runs once, unfiltered, after the sweep ──
     if c.block("K4 · the full test file runs once after the sweep, not the scoped subset"):

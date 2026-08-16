@@ -23,11 +23,17 @@ the sweep appends `--case <kills>` itself, and runs it bare once at the end:
          "file": ".agents/scripts/gate_receipt.py",
          "original": "<exact text, must occur EXACTLY once>",
          "mutated":  "<what to replace it with>",
-         "kills": "J3c"}
+         "case":  "J3c",
+         "block": "SCC-178"}
       ]
     }
 
-A mutant may carry its own `"test"` to override the table's.
+`case` is the label that must appear on the runner's `FAILED:` line — that is ATTRIBUTION.
+`block` is what gets passed to `--case`, and the harness filters by BLOCK label, not case label —
+that is SELECTION. They are different namespaces and conflating them is a sweep that cannot run:
+`--case "J3c"` matches no block, the harness exits 3, and the sweep correctly refuses to call that
+a kill. `block` defaults to `case` for a file whose blocks and cases share a prefix. A mutant may
+also carry its own `"test"` to override the table's.
 
 WHAT COUNTS AS A KILL, and why it is this strict. The harness protocol is: 0 = every selected
 case passed, non-zero = something failed, **3 = the filter selected NOTHING** (`_harness.NO_MATCH`,
@@ -36,7 +42,7 @@ a typo'd label into evidence. So a kill requires all three of:
 
   * a non-zero exit that is not 3, AND
   * a `FAILED:` line in the output, AND
-  * the declared `kills` label naming a case ON that line.
+  * the declared `case` label naming a case ON that line.
 
 Anything else is a SWEEP ERROR, reported as such and never as a result about the code. The
 attribution clause is SCC-156 review #1 made mechanical: `--case "E"` matched 40 blocks and the
@@ -105,7 +111,11 @@ def load_table(path: Path) -> tuple[dict, str | None]:
         return {}, (f"{path}: the mutant table is EMPTY. A sweep of nothing is not a clean "
                     "sweep - declare the mutants, drawn from the code, before mutating.")
     for i, m in enumerate(mutants):
-        missing = [k for k in ("id", "file", "original", "mutated", "kills") if not m.get(k)]
+        if m.get("kills") and not m.get("case"):
+            # `kills` was one field doing two jobs in two namespaces (SCC-179, found by this
+            # script's sweep of itself). Read it as `case` so an old table still runs.
+            m["case"] = m.pop("kills")
+        missing = [k for k in ("id", "file", "original", "mutated", "case") if not m.get(k)]
         if missing:
             return {}, f"{path}: mutant #{i + 1} is missing {', '.join(missing)}"
         if m["original"] == m["mutated"]:
@@ -122,21 +132,21 @@ def run_test(cmd: list[str], repo: Path, case: str | None) -> tuple[int, str]:
     return p.returncode, (p.stdout or "") + (p.stderr or "")
 
 
-def judge(code: int, out: str, kills: str) -> tuple[bool, str]:
+def judge(code: int, out: str, case: str) -> tuple[bool, str]:
     """Killed? — and the one-line reason. See the module docstring for why this is strict."""
     if code == 0:
         return False, "SURVIVED - the named case still passed with the mutant in place"
     if code == 3:
-        return False, ("SWEEP ERROR - the filter selected NO cases (harness exit 3). "
-                       f"`{kills}` matches no block: a lost label, not a result")
+        return False, ("SWEEP ERROR - exit 3: the --case filter selected NO cases "
+                       "(_harness.NO_MATCH). A lost label, not a result about the code")
     failed = [ln for ln in out.splitlines() if ln.startswith("FAILED:")]
     if not failed:
         return False, (f"SWEEP ERROR - exit {code} with no `FAILED:` line, so the kill cannot "
                        "be attributed to a named case")
-    if kills.lower() not in failed[0].lower():
-        return False, (f"SWEEP ERROR - something died, but not `{kills}`. The kill is not "
+    if case.lower() not in failed[0].lower():
+        return False, (f"SWEEP ERROR - something died, but not `{case}`. The kill is not "
                        f"evidence about the declared case. Got -> {failed[0][:160]}")
-    return True, f"KILLED by {kills}"
+    return True, f"KILLED by {case}"
 
 
 def main() -> int:
@@ -197,9 +207,9 @@ def main() -> int:
             src.write_text(src.read_text(encoding="utf-8")
                            .replace(m["original"], m["mutated"], 1), encoding="utf-8")
             cmd = m.get("test") or data["test"]
-            code, out = run_test(cmd, repo, m["kills"])
+            code, out = run_test(cmd, repo, m.get("block") or m["case"])
             restore()                      # immediately, so the next mutant starts clean
-            killed, why = judge(code, out, m["kills"])
+            killed, why = judge(code, out, m["case"])
             verdicts.append((m["id"], killed, why))
             print(f"{'KILLED   ' if killed else '⛔ NOT KILLED'} {m['id']}")
             print(f"            {why}")

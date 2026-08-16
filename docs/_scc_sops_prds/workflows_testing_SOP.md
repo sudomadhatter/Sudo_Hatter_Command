@@ -1241,6 +1241,16 @@ by hand is now the defect, not the procedure.
 python3 .agents/scripts/mutation_sweep.py --table _artifacts/_main/<folder>/sweep.json
 ```
 
+Each row in the table names the mutant, its file, the **exact** text to replace (it must occur
+exactly once — a non-unique anchor mutates a line you did not declare), the replacement, and **two
+different labels**: `case`, the name that must appear on the runner's `FAILED:` line, and `block`,
+the `c.block()` label passed to `--case`. Those are separate namespaces — the harness *selects* by
+block and the sweep *attributes* by case — and conflating them produces a sweep that selects
+nothing, exits 3, and correctly refuses to report a single kill. The script's own first sweep of
+itself did exactly that on all eight mutants, then found three more defects in its cases once the
+labels were right. It is worth reading that as the recommendation it is: **sweep the sweep's own
+target file the moment you have one, and expect the first run to be about your tests.**
+
 | The rule | Why it exists |
 |---|---|
 | A **surviving** mutant is a finding | the coverage hole you came to find |

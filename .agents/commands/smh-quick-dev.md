@@ -328,8 +328,16 @@ cut it or name why it stays.
   {"test": ["python3", ".agents/scripts/tests/test_thing.py"],
    "mutants": [{"id": "M1 what it does", "file": ".agents/scripts/thing.py",
                 "original": "<exact text, EXACTLY once in the file>",
-                "mutated": "<the mutation>", "kills": "<the named case>"}]}
+                "mutated": "<the mutation>",
+                "case":  "<the case that must appear on the FAILED: line>",
+                "block": "<the c.block() label --case selects; omit if it equals `case`>"}]}
   ```
+
+  ⛔ **`case` and `block` are different namespaces, and conflating them is a sweep that cannot
+  run.** The harness filters by **block** label; attribution reads the **case** name off the
+  `FAILED:` line. Declaring a case name as the filter matches no block, the harness exits 3, and
+  the sweep refuses to call that a kill — which is the correct answer and a wasted sweep. This
+  script's own first run got it wrong on all eight mutants.
 
   Paste its output into the walkthrough as the sweep record. Then:
   - A **surviving** mutant is a finding.
