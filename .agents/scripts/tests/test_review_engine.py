@@ -43,9 +43,13 @@ Stdlib only, no pytest — same constraint as every sibling here.
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 from _harness import Cases
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import walkthrough_roster as roster  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[3]
 MASTER = ROOT / ".agents" / "skills" / "code-review-engine"
@@ -136,9 +140,37 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     ("skill: the never-do list is a prohibition", SKILL,
      r"\*\*What the engine does NOT do, ever\*\*[^\n]*\n?[^\n]*issue the `Verdict:` line", 0,
      "What the engine does NOT do, ever", "What the engine also does when convenient"),
-    ("skill: return block counts applicable lenses", SKILL,
-     r"^lenses_run:\s+<n>/<applicable>", re.M,
-     "lenses_run:      <n>/<applicable>", "lenses_run:      <n>/<total>"),
+    # ⛔ This row USED to be `^lenses_run:\s+<n>/<applicable>` — a prose pin asserting the file
+    # contained a shape. It is replaced (SCC-177 step 9) by the round-trip in § 5 below, which feeds
+    # the contract's own fixture through the real parser. What stays here is the COUNT, which moved
+    # to its own line when the roster became a block: a count is a summary and the rows are the
+    # evidence, and the two must not share a line again.
+    ("skill: the applicable count is its own line, beside the roster", SKILL,
+     r"^lenses_counted:\s+<n>/<applicable>", re.M,
+     "lenses_counted:  <n>/<applicable>", "lenses_counted:  <n>/<total>"),
+    ("skill: review_runtime is a caller-resolved input", SKILL,
+     r"^\|\s*`review_runtime`\s*\|[^|]*`fan-out`[^|]*`inline`[^|]*\|", re.M,
+     "| `review_runtime` | `fan-out` or `inline`", "| `review_runtime` | whatever the engine finds"),
+    ("skill: the roster is evidence, not a summary of itself", SKILL,
+     r"`lenses_run:` is a BLOCK, and its rows are the evidence", 0,
+     "its rows are the evidence", "its count is the evidence"),
+
+    # ── step-01: `review_runtime` is READ, and `inline` runs the ladder exactly once ─────────
+    ("step-01: review_runtime is read before any lens launches", STEPS[0],
+     r"passes the answer down as\n`review_runtime: fan-out \| inline`\.\s*\*\*Read it before you launch anything\.\*\*", re.M,
+     "Read it before you launch anything", "Infer it from whether the first lens returns"),
+    ("step-01: inline runs the ladder ONCE", STEPS[0],
+     r"^\|\s*`inline`\s*\|\s*\*\*the ladder runs ONCE\*\*", re.M,
+     "| `inline` | **the ladder runs ONCE**", "| `inline` | try the fan-out first, then"),
+    ("step-01: inline never re-attempts the fan-out", STEPS[0],
+     r"never attempt the fan-out first[^\n]*\n?[^\n]*never re-attempt it after", 0,
+     "never attempt the fan-out first", "always attempt the fan-out first"),
+    ("step-01: under inline, `ok` is not a legal per-lens state", STEPS[0],
+     r"`recovered-inline` for every lens — `ok` is not a legal state here", 0,
+     "`ok` is not a legal state here", "`ok` is fine here too"),
+    ("step-01: the blind lens may run concurrently with the receipt, at ONE sha", STEPS[0],
+     r"the sha the lenses ran against and the sha on the receipt must be the same value", 0,
+     "must be the same value", "may differ by a commit or two"),
     ("skill: the spec-less count agrees with step-01 (4/4)", SKILL,
      r"reports `4/4`, never `4/5`", 0,
      "reports `4/4`, never `4/5`", "reports `4/5`, never `4/4`"),
@@ -930,6 +962,37 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      r"(?:(?!capped)[^|\n])*\|", re.M,
      "| `lens_budget` | `standard`", "| `lens_budget` | `capped`"),
 
+    # ── SCC-173 + SCC-177: the callers WRITE what the preflights read ───────────────────────
+    # Bound the same contiguous-table way as `lens_budget` above, for the same reason: a
+    # `review_runtime` row in some appendix satisfies a loose pattern while the invocation table
+    # passes nothing. Row-adjacency to a REQUIRED input is what makes it the real row.
+    ("caller /cicd-code-review: passes review_runtime in the invocation table", CICD_CMD,
+     r"^\|\s*`HEAD_SHA`[^\n]*\n(?:\|[^\n]*\n)*?\|\s*`review_runtime`\s*\|[^|\n]*PROBED", re.M,
+     "| `review_runtime` | `fan-out` or `inline` — **what you PROBED",
+     "| `review_runtime` | `fan-out`, which is the usual answer — **what you assume"),
+    ("caller /smh-code-review: passes review_runtime in the invocation table", SMH_CMD,
+     r"^\|\s*`HEAD_SHA`[^\n]*\n(?:\|[^\n]*\n)*?\|\s*`review_runtime`\s*\|[^|\n]*PROBED", re.M,
+     "| `review_runtime` | `fan-out` or `inline` — **what you PROBED",
+     "| `review_runtime` | `fan-out`, which is the usual answer — **what you assume"),
+    # ⛔ The probe is pinned to a step number BELOW Step 1's, not merely to existing. A probe
+    # recorded after the hunt is read off the roster it is supposed to check, and the
+    # contradiction rule (`inline` + `ok`) can then never fire — the header would be derived
+    # from the states it is meant to disagree with.
+    ("caller /cicd-code-review: probes the runtime BEFORE Step 1", CICD_CMD,
+     r"^## Step 0\.9 — .*Probe the review runtime and RECORD it[\s\S]*?^## Step 1 ", re.M,
+     "## Step 0.9 — ⭐ Probe the review runtime and RECORD it",
+     "## Step 4.9 — ⭐ Probe the review runtime and RECORD it"),
+    ("caller /smh-code-review: probes the runtime BEFORE Step 1", SMH_CMD,
+     r"^## Step 0\.9 — .*Probe the review runtime and RECORD it[\s\S]*?^## Step 1 ", re.M,
+     "## Step 0.9 — ⭐ Probe the review runtime and RECORD it",
+     "## Step 4.9 — ⭐ Probe the review runtime and RECORD it"),
+    ("caller /cicd-code-review: Step 4 writes the roster VERBATIM", CICD_CMD,
+     r"the engine's `lenses_run:` block, pasted VERBATIM", 0,
+     "pasted VERBATIM", "summarised in a sentence"),
+    ("caller /smh-code-review: Step 4 writes the roster VERBATIM", SMH_CMD,
+     r"the engine's `lenses_run:` block, pasted VERBATIM", 0,
+     "pasted VERBATIM", "summarised in a sentence"),
+
 
     # ── step-03: buckets, alias map, and the severity-to-verdict table ──────────────────────
     ("step-03: decision_needed bucket is defined", STEPS[2],
@@ -1216,6 +1279,87 @@ def main() -> int:
     drifted = sorted(f for f in set(m) & set(k) if m[f] != k[f])
     c.check("cache is byte-identical to master", bool(m) and m == k,
             "differs: " + ", ".join(drifted) if drifted else "")
+
+    # ── 5. SCC-177 step 9: the return shape ROUND-TRIPS through the parser that reads it ───
+    # ⛔ WHAT THIS REPLACES, AND WHY. The old check here was `^lenses_run:\s+<n>/<applicable>` —
+    # a source grep asserting SKILL.md contained a shape. It could not see whether anything
+    # downstream could READ that shape, which is the entire question: the engine publishes a
+    # return block, the callers paste it into the walkthrough, and `walkthrough_roster.py` gates
+    # the close-out on it. Three surfaces, one format, and until now nothing joined them — the
+    # engine could have gone on publishing a shape the parser was blind to, with every check on
+    # both sides green. So the contract's OWN block is now filled in and parsed for real.
+    contract = re.search(r"^```\n([\s\S]*?^lenses_run:[\s\S]*?)^```", texts[SKILL], re.M)
+    c.check("SKILL.md publishes a fenced return block containing the roster",
+            contract is not None,
+            "" if contract else "no fenced block with a `lenses_run:` line — nothing to round-trip")
+    if contract:
+        # Fill the placeholders WITHOUT hard-coding their wording: every `- ` row becomes a real
+        # roster row and the runtime line gets a real value; everything else is left exactly as
+        # the contract wrote it. Shape-driven, so re-wording a placeholder does not fake a pass —
+        # and collapsing the block back to one counted line leaves zero rows, which fails below.
+        rows = 0
+        filled = []
+        for ln in contract.group(1).splitlines():
+            if ln.startswith("- "):
+                rows += 1
+                filled.append(f"- lens-{rows} · recovered-inline — fan-out unavailable")
+            elif re.match(r"^review[-_]runtime\s*:", ln, re.I):
+                filled.append("review-runtime: inline")
+            else:
+                filled.append(ln)
+        c.check("the contract's roster carries per-lens ROWS, not just a count", rows >= 2,
+                "" if rows >= 2
+                else f"{rows} row(s) — fewer than two is a summary with extra steps")
+
+        # The walkthrough a caller would produce from this block, in the shape both preflights read.
+        page = ("# W\n\n" + "\n".join(filled) + "\n\n"
+                "## Step 0.7 — re-derivation\n\n"
+                "1. What moved: nothing.\n2. What that changes here: nothing.\n"
+                "3. What was re-measured: the anchors.\n\n"
+                "## Code Review\n\n" + "\n".join(filled) + "\n\nVerdict: PASS @ abc1234\n")
+        data = roster.parse(page)
+        read_n = len(data["lenses"])
+        c.check("round-trip: the parser reads every lens row the contract promises",
+                read_n == rows and rows > 0,
+                "" if read_n == rows and rows > 0
+                else f"contract wrote {rows} row(s), parser read {read_n} — the engine's format "
+                     f"and the close-out gate's format have drifted apart")
+        c.check("round-trip: the parser reads the runtime header the contract names",
+                data["runtime"] == "inline",
+                "" if data["runtime"] == "inline"
+                else f"parser read runtime={data['runtime']!r} — the header the engine publishes "
+                     f"is not the header `walkthrough_roster.py` looks for")
+        ok, why = roster.judge(page, "_artifacts/_main/2026-08-16_x/walkthrough.md", "PASS")
+        c.check("round-trip: a walkthrough built from the contract PASSES the close-out gate",
+                ok, "" if ok
+                else f"the engine's own published shape is refused by the gate that reads it: {why}")
+
+        # Anti-vacuity, both directions. The retired one-line form must be UNREADABLE here, or
+        # the round-trip above would pass on a contract that says nothing.
+        legacy = page.replace("\n".join(filled),
+                              "lenses_run:      5/5   (per-lens: ok | recovered-inline | dead)")
+        legacy_ok = roster.parse(legacy)["lenses"] == []
+        c.check("round-trip: the retired counted form reads as NO roster", legacy_ok,
+                "" if legacy_ok
+                else "the pre-SCC-173 shape still parses as a roster, so the round-trip is vacuous")
+
+    # ── 6. The dev-side recording point (SCC-177 step 6, F24) ─────────────────────────────
+    # `/smh-quick-dev` is NOT an engine caller — it never invokes the skill, so it is correctly
+    # absent from CALLER_FILES and from the discovery check above. It is pinned here anyway,
+    # because it owns the Task lane's walkthrough header: if it does not write `review-runtime:`
+    # at Step 0, the Task lane's review is judged against a header nobody recorded.
+    qd = ROOT / ".agents/commands/smh-quick-dev.md"
+    qd_txt = read(qd) if qd.is_file() else ""
+    c.check("/smh-quick-dev exists with a body", len(qd_txt.strip()) > 200,
+            "" if qd_txt else "absent")
+    step0 = re.search(r"^## Step 0 —[\s\S]*?^## Step 0\.5 ", qd_txt, re.M)
+    c.check("/smh-quick-dev records review-runtime inside Step 0, before the worktree exists",
+            step0 is not None and "review-runtime:" in step0.group(0),
+            "" if step0 else "Step 0 / Step 0.5 headings not found — the anchor moved")
+    named = re.search(r"`review-runtime:`[^\n]*header", qd_txt) is not None
+    c.check("/smh-quick-dev's walkthrough contents name the header it must carry", named,
+            "" if named else "Step 5 lists the walkthrough's sections; a header no section "
+                             "names is a header nobody writes")
 
     return c.finish()
 

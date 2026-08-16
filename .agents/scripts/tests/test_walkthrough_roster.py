@@ -15,7 +15,7 @@ import re
 import sys
 from pathlib import Path
 
-from _harness import Cases
+from _harness import Cases, TempDir
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import walkthrough_roster as roster  # noqa: E402
@@ -131,6 +131,25 @@ def main() -> int:
                 roster.parse(wt(runtime="inline"))["runtime"] == "inline"
                 and roster.parse(wt())["runtime"] is None,
                 "the header is a machine field; if the parser cannot read it, I3 is decoration")
+    # Its OWN block, not part of I3: the spelling tolerance is a separate claim from the
+    # contradiction rule, and a mutant that breaks one should not be attributable to the other.
+    if c.block("I3-S · both header spellings, because the contract and the header disagree"):
+        # ⛔ The caller contract spells the INPUT `review_runtime` (house style, beside
+        # `review_mode` and `lens_budget`); the walkthrough header is `review-runtime`. An agent
+        # reading one and writing the other produces a header this parser would not see - and an
+        # unread header is not an error anyone is told about: `runtime` comes back None, I3 never
+        # fires, and the gate reports clean. Reading both is the only version that fails closed.
+        c.check("I3e · BOTH spellings are read - an underscore header is not silently ignored",
+                roster.parse("review_runtime: inline\n")["runtime"] == "inline"
+                and roster.parse("review-runtime: inline\n")["runtime"] == "inline",
+                "the contract says `review_runtime`, the header says `review-runtime`; a parser "
+                "that reads only one turns the other into a silent no-op")
+        ok, why = roster.judge(
+            wt(roster_rows=ALL_OK).replace("# W\n", "# W\n\nreview_runtime: inline\n", 1),
+            POST, "PASS")
+        c.check("I3f · ...and the underscore header BLOCKS the same contradiction",
+                not ok and "inline" in " ".join(why),
+                f"I3e proves the parser reads it; this proves the block still fires on it: {why}")
 
     if c.block("P · the parser reads the shapes people actually write"):
         c.check("P1 · `·`, `:` and `|` all separate a lens from its state",
@@ -171,6 +190,73 @@ def main() -> int:
             c.check(f"W3 · {name} actually CALLS judge(), not merely imports it",
                     re.search(r"roster\.judge\s*\(", src) is not None,
                     "an import with no call is a gate that never runs")
+
+    if c.block("W-B · the gate BLOCKS - the routing, not just the call (behaviour)"):
+        # ⛔ W1-W3 prove the parser is reached. They cannot see WHERE ITS ANSWER GOES, and the
+        # call site routes on one word: `(rep.info if ok_roster else rep.err)`. Flip that to
+        # `rep.info` unconditionally and every check above stays green while the gate reports a
+        # rosterless PASS as clean - a warn-tier gate, which is the exact thing the operator's
+        # ruling forbids ("I dont see a case in enterprise dev where a warn should make it to
+        # prod"). Only running the real function and reading the SEVERITY closes that.
+        import closeout_preflight
+        import wf_common as wf
+
+        def sev(rep, section: str) -> list[str]:
+            return [i["sev"] for i in rep.items if i["section"] == section]
+
+        with TempDir() as tmp:
+            art = tmp / "_artifacts/_main/2026-08-16_lane/story-scc-999-x"
+            art.mkdir(parents=True)
+            page = art / "walkthrough.md"
+
+            page.write_text(wt(roster_rows=None), encoding="utf-8")
+            rep = wf.Report()
+            closeout_preflight.check_artifacts(tmp, "scc-999-x", rep)
+            c.check("W-B1 · a rosterless PASS is an ERROR out of closeout_preflight",
+                    "ERROR" in sev(rep, "artifacts"),
+                    f"the parser blocks but the gate does not: {sev(rep, 'artifacts')} - "
+                    f"{[i['msg'] for i in rep.items][:2]}")
+
+            page.write_text(wt(roster_rows=ALL_OK), encoding="utf-8")
+            rep = wf.Report()
+            closeout_preflight.check_artifacts(tmp, "scc-999-x", rep)
+            c.check("W-B2 · (control) the same lane WITH a roster is not an error",
+                    "ERROR" not in sev(rep, "artifacts"),
+                    f"a full roster must not block, or the gate is unusable: "
+                    f"{[i['msg'] for i in rep.items]}")
+
+            # ⛔ W-B3: the LATEST stamp governs, and this call site had it backwards. A re-review
+            # APPENDS - so FAIL-then-PASS is a lane that was FIXED. Judging the roster against
+            # `found[0]` handed the parser the superseded FAIL and blocked a lane the rest of
+            # check_gate had already cleared, re-planting the any(FAIL)-over-all-hits defect
+            # whose own remedy (re-run the review) could then never clear it. Held on the parser
+            # boundary because that is where the wrong verdict would arrive.
+            two = wt(verdict="FAIL", roster_rows=ALL_OK) + "\n\nVerdict: PASS @ def5678\n"
+            stamps = re.findall(r"Verdict:\s*(PASS|FAIL)", two)
+            c.check("W-B3 · (fixture) the re-review fixture really carries FAIL then PASS",
+                    stamps == ["FAIL", "PASS"], str(stamps))
+            c.check("W-B3b · the LAST stamp is what judge() must be handed",
+                    roster.judge(two, POST, stamps[-1])[0]
+                    and not roster.judge(two, POST, stamps[0])[0],
+                    "if both answers agreed, the first-vs-last choice would be untestable here")
+
+            # ...and W-B4 is the same claim against the REAL call site, which is the only place
+            # the first-vs-last choice is actually made. W-B3b proves the two verdicts disagree;
+            # only this proves task_preflight hands over the right one.
+            lane = tmp / "lane" / "_artifacts" / "_main" / "2026-08-16_re-review"
+            lane.mkdir(parents=True)
+            (lane / "task.yaml").write_text(
+                "task_key: SCC-999\nbranch: chore/SCC-999-x\n", encoding="utf-8")
+            (lane / "walkthrough.md").write_text(two, encoding="utf-8")
+            rep = wf.Report()
+            task_preflight.check_gate(tmp / "lane", [lane / "walkthrough.md"], "LOCAL",
+                                      "SCC-999", "chore/SCC-999-x", rep)
+            fails = [i["msg"] for i in rep.items
+                     if i["sev"] == "ERROR" and "Verdict FAIL" in i["msg"]]
+            c.check("W-B4 · a re-reviewed FAIL→PASS lane is NOT blocked by its cleared FAIL",
+                    not fails,
+                    f"the superseded stamp was handed to the parser and blocked a fixed lane: "
+                    f"{fails}")
 
     return c.finish()
 

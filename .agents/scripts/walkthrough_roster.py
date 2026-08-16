@@ -48,7 +48,13 @@ RUNTIMES = ("fan-out", "inline")
 _ROSTER_HEAD_RE = re.compile(r"^[>\-*#\s]*\**\s*lenses_run\s*:\**\s*$", re.I)
 _ROSTER_ROW_RE = re.compile(r"^\s*[-*]\s*`?([A-Za-z0-9][\w \-/]*?)`?\s*[·:|]\s*"
                             r"`?(ok|recovered-inline|dead)`?\s*(?:[—\-]\s*(.*))?$", re.I)
-_RUNTIME_RE = re.compile(r"^[>\-*#\s]*\**\s*review-runtime\s*:\**\s*\**(fan-out|inline)\**",
+# ⛔ BOTH SPELLINGS, DELIBERATELY. The caller contract names the input `review_runtime` (house
+# style, matching `review_mode` and `lens_budget`); the walkthrough header is written
+# `review-runtime:`. An agent reading the contract and writing the header will sometimes carry the
+# underscore across, and a header this regex cannot see is not an error anyone gets told about —
+# `runtime` comes back `None`, I3 never fires, and the gate reports clean. Reading both costs one
+# character class; refusing one costs a silent hole of exactly the kind this lane exists to close.
+_RUNTIME_RE = re.compile(r"^[>\-*#\s]*\**\s*review[-_]runtime\s*:\**\s*\**(fan-out|inline)\**",
                          re.I | re.M)
 _DATE_RE = re.compile(r"(\d{4}-\d{2}-\d{2})")
 

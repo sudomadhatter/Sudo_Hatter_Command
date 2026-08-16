@@ -347,6 +347,36 @@ it finds, so a noisy finding costs one triage decision while a missed one ships.
 bought *inside* each finding, by the three gates above, never by a filter over the set. If a future
 change proposes one "for free", this paragraph is the answer.
 
+## ⭐ `review_runtime` — the caller already answered "can this runtime fan out?", so do not re-ask
+
+The caller probes for subagent availability at its Step 0 and passes the answer down as
+`review_runtime: fan-out | inline`. **Read it before you launch anything.**
+
+| `review_runtime` | What you do | What the roster says |
+|---|---|---|
+| `fan-out` | the parallel fan-out above, and the failure ladder below when a lens dies | `ok`, or `recovered-inline` for a lens that took the ladder |
+| `inline` | **the ladder runs ONCE**: every lens executes inline and sequentially in this context, blind lens FIRST on the diff alone | `recovered-inline` for every lens — `ok` is not a legal state here |
+| absent | probe it yourself, act on what you find, and **report which one you got** in `notes` | as above, per what the probe returned |
+
+⛔ **Under `inline`, never attempt the fan-out first "just in case", and never re-attempt it after
+an inline run.** The sequence `fan-out → fail → inline → fan-out again` burns the budget twice,
+re-orders the blind lens behind whatever the first attempt loaded into context, and produces a
+roster whose states disagree with the declared runtime. A declared `inline` is not a fallback the
+caller expects you to try to escape — it is the caller telling you the escape does not exist.
+
+⛔ **`inline` + a lens reported `ok` is a contradiction, and it is checked downstream.**
+`walkthrough_roster.py` blocks a lane whose header says `inline` while any lens claims `ok`, because
+under a single-pass inline ladder `recovered-inline` is the only state a lens can reach. If you find
+yourself writing `ok` under `inline`, either the header is wrong or a fan-out happened against the
+declaration; say which in `notes` rather than smoothing the roster to match.
+
+⭐ **The blind lens may start at the frozen-diff commit, concurrently with the caller's suite run.**
+It reads `DIFF` and nothing else, so it has no dependency on a gate result and needs no tree — it
+can run while the receipt is still being produced. The only requirement is that the record says so:
+**the sha the lenses ran against and the sha on the receipt must be the same value**, and the
+caller's walkthrough states both. Different shas mean the review and the evidence describe different
+code, which is the one thing the concurrency must not buy.
+
 ## When a lens cannot be launched, or fails
 
 **If subagents are unavailable in this runtime**, write one prompt file per lens into `ARTIFACT_DIR`
