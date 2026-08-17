@@ -1,5 +1,5 @@
 ---
-description: Refresh the machine-global command caches (Antigravity global_workflows + opencode global commands) from the canonical master. Thin alias for `/smh-sync-agents -GlobalsOnly`; purges ghosts, preserves bmad-*.
+description: Refresh the machine-global command caches (Antigravity global_workflows + opencode global commands) from the canonical master. Thin...
 ---
 
 # /smh-slash-command-updating — refresh the global command caches

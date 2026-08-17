@@ -1,5 +1,5 @@
 ---
-description: Plan a WHOLE Task and all its subtasks in one shot — propose the breakdown, mint the Subtasks on the operator's go, then per subtask write an implementation plan, audit it, cut its worktree and push its branch, and update its ticket; finish by labelling the set with /smh-label-tasks so you can see which lanes run in parallel. The Task lane's answer to "write all the stories first". Ends at ONE approval stop for the whole set. Use when the user says "plan this task" / "smh plan task".
+description: Plan a WHOLE Task and all its subtasks in one shot — propose the breakdown, mint the Subtasks on the operator's go, then per...
 platforms: [opencode, antigravity]
 ---
 

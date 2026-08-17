@@ -217,97 +217,108 @@ def gate_rc(work: Path) -> int:
 def main() -> int:
     c = Cases("main write gate — server side (SCC-118)")
 
-    # ── tier 1: the workflow ───────────────────────────────────────────────────────────────
-    c.check("the workflow exists", WORKFLOW.is_file(), str(WORKFLOW))
-    c.check("the validator exists", SCRIPT.is_file(), str(SCRIPT))
+    # ⛔ EVERY `c.check` SITS UNDER A `c.block` GUARD (test_suite_runner's ORPHAN rule): an
+    # unguarded check runs under EVERY `--case` filter and counts toward every filtered tally,
+    # so a mutant it kills is attributed to whichever case was named. The blocks were added when
+    # SCC-192 wired the first one into this file. ⛔ Anything a LATER block reads stays OUTSIDE
+    # them (`text`, `live`, `keys`) - under a filter a sibling block simply does not run, and a
+    # fixture defined inside one is then not there at all (SCC-156 paid for that with five files).
+    if c.block("T1 · the workflow and the validator exist"):
+        c.check("the workflow exists", WORKFLOW.is_file(), str(WORKFLOW))
+        c.check("the validator exists", SCRIPT.is_file(), str(SCRIPT))
     if not WORKFLOW.is_file():
         return c.finish()
 
     text = WORKFLOW.read_text(encoding="utf-8")
     live = effective_lines(text)
-    for name, pred in CHECKS.items():
-        c.check(f"workflow · {name}", bool(pred(live)))
+    keys = ["SCC"]
+
+    if c.block("T1b · the CI job is shaped the way the gate needs"):
+        for name, pred in CHECKS.items():
+            c.check(f"workflow · {name}", bool(pred(live)))
 
     # ── tier 3: the mutation battery ───────────────────────────────────────────────────────
     # Each mutant must take at least one check down. A mutant that changes nothing means the
     # corresponding assertion is decorative.
-    for label, mutate in MUTANTS:
-        broken = effective_lines(mutate(text))
-        caught = [n for n, p in CHECKS.items() if not p(broken)]
-        c.check(f"mutant caught · {label}", bool(caught),
-                ", ".join(caught) if caught else "NO CHECK FIRED — the assertion is vacuous")
+    if c.block("T3 · the mutation battery over the workflow"):
+        for label, mutate in MUTANTS:
+            broken = effective_lines(mutate(text))
+            caught = [n for n, p in CHECKS.items() if not p(broken)]
+            c.check(f"mutant caught · {label}", bool(caught),
+                    ", ".join(caught) if caught else "NO CHECK FIRED — the assertion is vacuous")
 
-    reordered = effective_lines(mut_reorder(text))
-    c.check("mutant caught · arm step relocated AFTER the suite",
-            not CHECKS["arms hooks BEFORE running the suite"](reordered),
-            "a 'contains' check passes this identically — only the index comparison bites")
-    c.check("relocation left the arm step PRESENT (so only ordering is isolated)",
-            any("core.hooksPath .githooks" in l for l in reordered))
+        reordered = effective_lines(mut_reorder(text))
+        c.check("mutant caught · arm step relocated AFTER the suite",
+                not CHECKS["arms hooks BEFORE running the suite"](reordered),
+                "a 'contains' check passes this identically — only the index comparison bites")
+        c.check("relocation left the arm step PRESENT (so only ordering is isolated)",
+                any("core.hooksPath .githooks" in l for l in reordered))
 
-    comment_only = effective_lines(MUT_COMMENT_ONLY)
-    for banned in ("no continue-on-error", "no || true", "no if: always() on a gating step"):
-        c.check(f"comments do not trip · {banned}", bool(CHECKS[banned](comment_only)),
-                "comment stripping regressed — the guard now inverts on the live file")
+        comment_only = effective_lines(MUT_COMMENT_ONLY)
+        for banned in ("no continue-on-error", "no || true", "no if: always() on a gating step"):
+            c.check(f"comments do not trip · {banned}", bool(CHECKS[banned](comment_only)),
+                    "comment stripping regressed — the guard now inverts on the live file")
 
     # ── tier 2a: the validator, as a pure function ─────────────────────────────────────────
-    keys = ["SCC"]
-    for good in ("chore/SCC-118-server-side-main-gate", "epic/SCC-31-thin-toolkit",
-                 "chore/SCC-1-a"):
-        c.check(f"ALLOWS an authorised source · {good}", mwg.authorised_branch(good, keys)[0])
-    for bad, why in (
-        ("claude/fit-repo-workflow-integration-xzvg6q", "the branch PR #2 actually came from"),
-        ("main", "main itself"),
-        ("chore/SCC-118", "no slug — not a branch this system produces"),
-        ("chore/AVCH-1-x", "another repo's key"),
-        ("feature/SCC-1-x", "not one of the two roads"),
-        ("", "nothing at all"),
-    ):
-        c.check(f"REJECTS · {why}", not mwg.authorised_branch(bad, keys)[0], repr(bad))
+    if c.block("T2a · authorised_branch, as a pure function"):
+        for good in ("chore/SCC-118-server-side-main-gate", "epic/SCC-31-thin-toolkit",
+                     "chore/SCC-1-a"):
+            c.check(f"ALLOWS an authorised source · {good}", mwg.authorised_branch(good, keys)[0])
+        for bad, why in (
+            ("claude/fit-repo-workflow-integration-xzvg6q", "the branch PR #2 actually came from"),
+            ("main", "main itself"),
+            ("chore/SCC-118", "no slug — not a branch this system produces"),
+            ("chore/AVCH-1-x", "another repo's key"),
+            ("feature/SCC-1-x", "not one of the two roads"),
+            ("", "nothing at all"),
+        ):
+            c.check(f"REJECTS · {why}", not mwg.authorised_branch(bad, keys)[0], repr(bad))
 
-    c.check("the key set comes from .agents/jira.conf, not a hardcode",
-            mwg.read_jira_keys(REPO) == ["SCC"], str(mwg.read_jira_keys(REPO)))
+        c.check("the key set comes from .agents/jira.conf, not a hardcode",
+                mwg.read_jira_keys(REPO) == ["SCC"], str(mwg.read_jira_keys(REPO)))
 
     # ── tier 2b: the validator, through a real repo and a real merge ───────────────────────
-    with TempDir() as tmp:
-        work = make_pair(tmp)
-        land(work, "chore/SCC-1-first", "a.txt")
-        c.check("ALLOWS one merge of a pushed chore branch, sitting on origin/main",
-                gate_rc(work) == 0)
+    if c.block("T2b · the validator through a real repo and a real merge"):
+      with TempDir() as tmp:
+          work = make_pair(tmp)
+          land(work, "chore/SCC-1-first", "a.txt")
+          c.check("ALLOWS one merge of a pushed chore branch, sitting on origin/main",
+                  gate_rc(work) == 0)
 
-        # Batching: a second merge on top, pushed as one. `t_tip == local_sha` would hold the
-        # whole way — this is the exact SCC-71 failure the local hook's ^1 check exists for,
-        # reproduced on the server side.
-        land(work, "chore/SCC-2-second", "b.txt")
-        c.check("REJECTS two merges batched into one push",
-                gate_rc(work) != 0, "main must advance by exactly one merge commit")
+          # Batching: a second merge on top, pushed as one. `t_tip == local_sha` would hold the
+          # whole way — this is the exact SCC-71 failure the local hook's ^1 check exists for,
+          # reproduced on the server side.
+          land(work, "chore/SCC-2-second", "b.txt")
+          c.check("REJECTS two merges batched into one push",
+                  gate_rc(work) != 0, "main must advance by exactly one merge commit")
 
-    with TempDir() as tmp:
-        work = make_pair(tmp)
-        land(work, "claude/some-story-lane", "a.txt")
-        c.check("REJECTS a merge of a story lane (claude/*)", gate_rc(work) != 0)
+      with TempDir() as tmp:
+          work = make_pair(tmp)
+          land(work, "claude/some-story-lane", "a.txt")
+          c.check("REJECTS a merge of a story lane (claude/*)", gate_rc(work) != 0)
 
-    with TempDir() as tmp:
-        work = make_pair(tmp)
-        sh("git", "checkout", "-q", "-b", "chore/SCC-3-unpushed", "main", cwd=work)
-        (work / "a.txt").write_text("x\n", encoding="utf-8")
-        sh("git", "add", "a.txt", cwd=work)
-        sh("git", "commit", "-qm", "work", cwd=work)
-        sh("git", "checkout", "-q", "main", cwd=work)
-        sh("git", "merge", "-q", "--no-ff", "-m", "merge: chore/SCC-3-unpushed -> main",
-           "chore/SCC-3-unpushed", cwd=work)
-        c.check("REJECTS a merge of a branch that was never pushed to origin",
-                gate_rc(work) != 0, "nothing on the remote vouches for what was merged")
+      with TempDir() as tmp:
+          work = make_pair(tmp)
+          sh("git", "checkout", "-q", "-b", "chore/SCC-3-unpushed", "main", cwd=work)
+          (work / "a.txt").write_text("x\n", encoding="utf-8")
+          sh("git", "add", "a.txt", cwd=work)
+          sh("git", "commit", "-qm", "work", cwd=work)
+          sh("git", "checkout", "-q", "main", cwd=work)
+          sh("git", "merge", "-q", "--no-ff", "-m", "merge: chore/SCC-3-unpushed -> main",
+             "chore/SCC-3-unpushed", cwd=work)
+          c.check("REJECTS a merge of a branch that was never pushed to origin",
+                  gate_rc(work) != 0, "nothing on the remote vouches for what was merged")
 
-    with TempDir() as tmp:
-        work = make_pair(tmp)
-        sh("git", "checkout", "-q", "-b", "chore/SCC-4-ff", "main", cwd=work)
-        (work / "a.txt").write_text("x\n", encoding="utf-8")
-        sh("git", "add", "a.txt", cwd=work)
-        sh("git", "commit", "-qm", "work", cwd=work)
-        sh("git", "push", "-q", "origin", "chore/SCC-4-ff", cwd=work)
-        sh("git", "checkout", "-q", "main", cwd=work)
-        sh("git", "merge", "-q", "--ff-only", "chore/SCC-4-ff", cwd=work)
-        c.check("REJECTS a fast-forward (no merge commit at all)", gate_rc(work) != 0)
+      with TempDir() as tmp:
+          work = make_pair(tmp)
+          sh("git", "checkout", "-q", "-b", "chore/SCC-4-ff", "main", cwd=work)
+          (work / "a.txt").write_text("x\n", encoding="utf-8")
+          sh("git", "add", "a.txt", cwd=work)
+          sh("git", "commit", "-qm", "work", cwd=work)
+          sh("git", "push", "-q", "origin", "chore/SCC-4-ff", cwd=work)
+          sh("git", "checkout", "-q", "main", cwd=work)
+          sh("git", "merge", "-q", "--ff-only", "chore/SCC-4-ff", cwd=work)
+          c.check("REJECTS a fast-forward (no merge commit at all)", gate_rc(work) != 0)
 
 
     # ══ SCC-192 · tier 2c: a PR that IS a close-out must carry the ceremony's RECEIPTS ══════

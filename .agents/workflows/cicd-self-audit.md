@@ -1,5 +1,5 @@
 ---
-description: Pre-dev plan/story audit — run BEFORE coding. Pressure-tests an implementation_plan.md or story against the codebase and the ACs to catch gaps, over-engineering, and contract breaks before they're built. Auto-invoked by /cicd-dev-story-tests right after the plan is written.
+description: Pre-dev plan/story audit — run BEFORE coding. Pressure-tests an implementation_plan.md or story against the codebase and the ACs to...
 platforms: [opencode, antigravity]
 ---
 

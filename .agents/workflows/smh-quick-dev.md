@@ -1,5 +1,5 @@
 ---
-description: The TASK lane's dev cycle — assert-first development for command-centre work that has no story, no sprint board and no epic branch. Write the check that fails FIRST (a test for a script, a machine-verifiable assertion for a doc or a structure), then make it pass, then the review gate. Acts on the repo you are standing in. Hands off to /smh-close-task-merge-tree. Use when the user says "dev this task" / "smh quick dev".
+description: The TASK lane's dev cycle — assert-first development for command-centre work that has no story, no sprint board and no epic branch....
 platforms: [opencode, antigravity]
 ---
 

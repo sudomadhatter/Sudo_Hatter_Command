@@ -1,5 +1,5 @@
 ---
-description: Story prep — create the next BMAD story, then write its failing acceptance tests (ATDD red phase) before any code. Step ① of the sudo dev flow.
+description: Story prep — create the next BMAD story, then write its failing acceptance tests (ATDD red phase) before any code. Step ① of the...
 platforms: [opencode, antigravity]
 ---
 

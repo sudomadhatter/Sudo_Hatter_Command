@@ -1,5 +1,5 @@
 ---
-description: After a Task's subtasks are PLANNED, answer "which of these can I run side by side, and which are small enough for one light lane?" — one snapshot over ONE parent Task's Subtasks. Reads every lane's plan, extracts what each will actually modify, computes the largest set with no file overlap, and stamps `parallel-ok` + `quick-dev` on the winners. Stamps the set it was computed against so it can detect its own staleness. States, never starts.
+description: After a Task's subtasks are PLANNED, answer "which of these can I run side by side, and which are small enough for one light lane?"...
 platforms: [opencode, antigravity, claude, codex]
 ---
 

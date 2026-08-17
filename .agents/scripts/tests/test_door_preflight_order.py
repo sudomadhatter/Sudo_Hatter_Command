@@ -250,106 +250,114 @@ def without(text: str, title: str) -> str:
 def main() -> int:
     c = Cases("door landing road (SCC-118 ordering; ONE road since SCC-183)")
 
-    for label, path in DOORS.items():
-        if not path.is_file():
-            c.check(f"{label} · the door exists", False, str(path))
-            continue
-        text = path.read_text(encoding="utf-8")
-        lines = code_lines(text)
+    # ⛔ EVERY `c.check` HERE SITS UNDER A `c.block` GUARD (test_suite_runner's ORPHAN
+    # rule): an unguarded check runs under EVERY `--case` filter and counts toward every
+    # filtered tally, so a mutant it kills is attributed to whichever case was named. The
+    # guards arrived when SCC-193 wired the first block into this file. Fixtures the blocks
+    # share stay at module level, where a filtered run can still see them.
+    if c.block("LIVE · the live doors take the road the model says"):
+        for label, path in DOORS.items():
+            if not path.is_file():
+                c.check(f"{label} · the door exists", False, str(path))
+                continue
+            text = path.read_text(encoding="utf-8")
+            lines = code_lines(text)
 
-        # ── the DEFAULT road is the PR door ────────────────────────────────────────────────
-        default = code_lines(without(text, BREAK_GLASS))
-        c.check(f"{label} · the DEFAULT road invokes {DEFAULT_LANDER}",
-                idx(default, DEFAULT_LANDER) >= 0,
-                "one command that prints a link — the ceremony this replaced could not run "
-                "under the agent's permission layer at all (SCC-184)")
-        c.check(f"{label} · the DEFAULT road does NOT mint a token",
-                idx(default, "mint-push-token.sh") < 0,
-                "a GitHub merge never touches this machine, so there is no push to gate")
-        c.check(f"{label} · the DEFAULT road does NOT push main directly",
-                idx(default, "git push origin main") < 0)
-        c.check(f"{label} · the DEFAULT road does NOT push a gate/** ref",
-                idx(default, GATE_REF) < 0,
-                "the PR carries its own check run on GitHub; nothing is pre-flighted from here")
+            # ── the DEFAULT road is the PR door ────────────────────────────────────────────────
+            default = code_lines(without(text, BREAK_GLASS))
+            c.check(f"{label} · the DEFAULT road invokes {DEFAULT_LANDER}",
+                    idx(default, DEFAULT_LANDER) >= 0,
+                    "one command that prints a link — the ceremony this replaced could not run "
+                    "under the agent's permission layer at all (SCC-184)")
+            c.check(f"{label} · the DEFAULT road does NOT mint a token",
+                    idx(default, "mint-push-token.sh") < 0,
+                    "a GitHub merge never touches this machine, so there is no push to gate")
+            c.check(f"{label} · the DEFAULT road does NOT push main directly",
+                    idx(default, "git push origin main") < 0)
+            c.check(f"{label} · the DEFAULT road does NOT push a gate/** ref",
+                    idx(default, GATE_REF) < 0,
+                    "the PR carries its own check run on GitHub; nothing is pre-flighted from here")
 
-        # SCC-133: the flight event is recorded BEFORE the merge — after the merge the only tree
-        # holding it is main's, and a write there is a main write outside the token. Still true
-        # on the PR road: record it before anything lands.
-        ok, detail = order_ok(lines, "flight_recorder.py", DEFAULT_LANDER)
-        c.check(f"{label} · ORDER flight_recorder.py record → {DEFAULT_LANDER} (record is pre-merge)",
-                ok, detail)
+            # SCC-133: the flight event is recorded BEFORE the merge — after the merge the only tree
+            # holding it is main's, and a write there is a main write outside the token. Still true
+            # on the PR road: record it before anything lands.
+            ok, detail = order_ok(lines, "flight_recorder.py", DEFAULT_LANDER)
+            c.check(f"{label} · ORDER flight_recorder.py record → {DEFAULT_LANDER} (record is pre-merge)",
+                    ok, detail)
 
-    # ── the standing guard on the OTHER door ───────────────────────────────────────────────
-    # Not an oversight that this one has no pre-flight — a requirement. See the docstring.
-    if PROJECT_DOOR.is_file():
-        proj = code_lines(PROJECT_DOOR.read_text(encoding="utf-8"))
-        c.check("/cicd-push-e2e does NOT wait on a check its target repo cannot publish",
-                idx(proj, CHECK_NAME) < 0,
-                "cicd-* binds a PROJECT, never the lobby; a wait there polls forever")
-        c.check("/cicd-push-e2e still mints + pushes main unchanged",
-                idx(proj, "mint-push-token.sh") >= 0 and idx(proj, "git push origin main") >= 0)
+        # ── the standing guard on the OTHER door ───────────────────────────────────────────────
+        # Not an oversight that this one has no pre-flight — a requirement. See the docstring.
+        if PROJECT_DOOR.is_file():
+            proj = code_lines(PROJECT_DOOR.read_text(encoding="utf-8"))
+            c.check("/cicd-push-e2e does NOT wait on a check its target repo cannot publish",
+                    idx(proj, CHECK_NAME) < 0,
+                    "cicd-* binds a PROJECT, never the lobby; a wait there polls forever")
+            c.check("/cicd-push-e2e still mints + pushes main unchanged",
+                    idx(proj, "mint-push-token.sh") >= 0 and idx(proj, "git push origin main") >= 0)
 
-    # ── the controls ───────────────────────────────────────────────────────────────────────
-    prose = code_lines(PROSE_ONLY)
-    ok, _ = order_ok(prose, *REQUIRED_ORDER)
-    c.check("control · prose describing the steps does NOT satisfy the check", not ok,
-            "fence extraction regressed — these checks would match sentences, not commands")
+        # ── the controls ───────────────────────────────────────────────────────────────────────
+        prose = code_lines(PROSE_ONLY)
+        ok, _ = order_ok(prose, *REQUIRED_ORDER)
+    if c.block("CONTROLS · the fence/comment readers and the ordering mutants"):
+        c.check("control · prose describing the steps does NOT satisfy the check", not ok,
+                "fence extraction regressed — these checks would match sentences, not commands")
 
-    commented = code_lines(COMMENT_ONLY_FENCE)
-    ok, _ = order_ok(commented, *REQUIRED_ORDER)
-    c.check("control · shell comments naming the steps do NOT satisfy the check", not ok,
-            "comment stripping regressed — a commented-out door would read as implemented")
+        commented = code_lines(COMMENT_ONLY_FENCE)
+        ok, _ = order_ok(commented, *REQUIRED_ORDER)
+        c.check("control · shell comments naming the steps do NOT satisfy the check", not ok,
+                "comment stripping regressed — a commented-out door would read as implemented")
 
-    mutant = code_lines(MUTANT_WAIT_AFTER_MINT)
-    present = all(idx(mutant, n) >= 0 for n in REQUIRED_ORDER)
-    ok, detail = order_ok(mutant, *REQUIRED_ORDER)
-    c.check("control · every step PRESENT in the mutant (so only order is isolated)", present)
-    c.check("mutant caught · the wait moved after the mint (the TTL hazard)", not ok, detail)
+        mutant = code_lines(MUTANT_WAIT_AFTER_MINT)
+        present = all(idx(mutant, n) >= 0 for n in REQUIRED_ORDER)
+        ok, detail = order_ok(mutant, *REQUIRED_ORDER)
+        c.check("control · every step PRESENT in the mutant (so only order is isolated)", present)
+        c.check("mutant caught · the wait moved after the mint (the TTL hazard)", not ok, detail)
 
-    # ── SCC-183: controls for the SECTION mechanism ────────────────────────────────────────
-    # ⛔ The mutant that matters here is the one `REQUIRED_ORDER` cannot see. In it the whole
-    # ceremony is exactly as it always was — every needle present, perfect order — it is simply
-    # NOT under a break-glass heading, i.e. it is still the default road. The order check calls
-    # that green. Only the section split calls it what it is.
-    mut = code_lines(MUTANT_CEREMONY_IS_STILL_DEFAULT)
-    ok, _ = order_ok(mut, *REQUIRED_ORDER)
-    c.check("control · the un-split mutant PASSES the old order check "
-            "(so the new checks are the only thing catching it)", ok)
-    mut_default = code_lines(without(MUTANT_CEREMONY_IS_STILL_DEFAULT, BREAK_GLASS))
-    c.check("mutant caught · ceremony left on the DEFAULT road",
-            idx(mut_default, "mint-push-token.sh") >= 0
-            and idx(mut_default, DEFAULT_LANDER) < 0,
-            "the section split is what sees this; the order check never can")
+        # ── SCC-183: controls for the SECTION mechanism ────────────────────────────────────────
+        # ⛔ The mutant that matters here is the one `REQUIRED_ORDER` cannot see. In it the whole
+        # ceremony is exactly as it always was — every needle present, perfect order — it is simply
+        # NOT under a break-glass heading, i.e. it is still the default road. The order check calls
+        # that green. Only the section split calls it what it is.
+        mut = code_lines(MUTANT_CEREMONY_IS_STILL_DEFAULT)
+        ok, _ = order_ok(mut, *REQUIRED_ORDER)
+        c.check("control · the un-split mutant PASSES the old order check "
+                "(so the new checks are the only thing catching it)", ok)
+        mut_default = code_lines(without(MUTANT_CEREMONY_IS_STILL_DEFAULT, BREAK_GLASS))
+        c.check("mutant caught · ceremony left on the DEFAULT road",
+                idx(mut_default, "mint-push-token.sh") >= 0
+                and idx(mut_default, DEFAULT_LANDER) < 0,
+                "the section split is what sees this; the order check never can")
 
-    # And the reverse control: a correctly-split door must not trip it.
-    good_default = code_lines(without(SPLIT_REFERENCE, BREAK_GLASS))
-    c.check("control · a correct door passes: lander present, ceremony absent",
-            idx(good_default, DEFAULT_LANDER) >= 0
-            and idx(good_default, "mint-push-token.sh") < 0)
+        # And the reverse control: a correctly-split door must not trip it.
+        good_default = code_lines(without(SPLIT_REFERENCE, BREAK_GLASS))
+        c.check("control · a correct door passes: lander present, ceremony absent",
+                idx(good_default, DEFAULT_LANDER) >= 0
+                and idx(good_default, "mint-push-token.sh") < 0)
 
-    # ── AC-14b: the SEMANTIC check AC-14 structurally cannot make ──────────────────────────
-    # All four doors + both SKILL.md launchers agree by construction — they are generated from
-    # one source — so four consistent copies of a FALSE sentence agree perfectly. Part B makes
-    # "invoking this is the operator's per-merge sign-off" false: the sign-off is now the click.
-    stale = []
-    for p in sorted(REPO.glob(".claude/skills/smh-*/SKILL.md")) \
-            + sorted(REPO.glob(".agents/skills/smh-*/SKILL.md")) \
-            + [REPO / ".agents/commands/smh-close-task-merge-tree.md",
-               REPO / ".opencode/commands/smh-close-task-merge-tree.md",
-               REPO / ".agents/commands/smh-merge-multiple-workingtrees.md",
-               REPO / ".opencode/commands/smh-merge-multiple-workingtrees.md"]:
-        if not p.is_file():
-            continue
-        body = p.read_text(encoding="utf-8").lower()
-        if "merge-tree" not in p.name and "workingtrees" not in p.name and "smh-" not in str(p):
-            continue
-        # The false pairing: calling the LOCAL --no-ff merge the sign-off.
-        if "--no-ff" in body and "sign-off" in body:
-            for line in body.splitlines():
-                if "sign-off" in line and "--no-ff" in line:
-                    stale.append(f"{p.relative_to(REPO)}: {line.strip()[:80]}")
-    c.check("AC-14b · no door still calls the LOCAL --no-ff merge the operator's sign-off",
-            not stale, "; ".join(stale[:3]))
+    if c.block("AC-14b · no door calls the LOCAL --no-ff merge the sign-off"):
+        # ── AC-14b: the SEMANTIC check AC-14 structurally cannot make ──────────────────────────
+        # All four doors + both SKILL.md launchers agree by construction — they are generated from
+        # one source — so four consistent copies of a FALSE sentence agree perfectly. Part B makes
+        # "invoking this is the operator's per-merge sign-off" false: the sign-off is now the click.
+        stale = []
+        for p in sorted(REPO.glob(".claude/skills/smh-*/SKILL.md")) \
+                + sorted(REPO.glob(".agents/skills/smh-*/SKILL.md")) \
+                + [REPO / ".agents/commands/smh-close-task-merge-tree.md",
+                   REPO / ".opencode/commands/smh-close-task-merge-tree.md",
+                   REPO / ".agents/commands/smh-merge-multiple-workingtrees.md",
+                   REPO / ".opencode/commands/smh-merge-multiple-workingtrees.md"]:
+            if not p.is_file():
+                continue
+            body = p.read_text(encoding="utf-8").lower()
+            if "merge-tree" not in p.name and "workingtrees" not in p.name and "smh-" not in str(p):
+                continue
+            # The false pairing: calling the LOCAL --no-ff merge the sign-off.
+            if "--no-ff" in body and "sign-off" in body:
+                for line in body.splitlines():
+                    if "sign-off" in line and "--no-ff" in line:
+                        stale.append(f"{p.relative_to(REPO)}: {line.strip()[:80]}")
+        c.check("AC-14b · no door still calls the LOCAL --no-ff merge the operator's sign-off",
+                not stale, "; ".join(stale[:3]))
 
 
     # ══ SCC-193 · THE SIGN-OFF IS A DECISION, NOT A MERGE THE OPERATOR OWES ════════════════

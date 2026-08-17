@@ -128,7 +128,59 @@ def fm_field(text: str, key: str) -> str | None:
 LAUNCH_RE = re.compile(r"read\s+`\.agents/commands/([A-Za-z0-9._-]+\.md)`")
 
 
-def is_launcher_for(body: str, brain: str, cmd_name: str) -> bool:
+# ── SCC-195 · the Antigravity DESCRIPTION BUDGET ───────────────────────────────────────────
+#
+# Antigravity builds its slash-command menu from the `description:` frontmatter of every
+# `.agents/workflows/*.md`. This repo's descriptions run 400-950+ characters (they are written
+# for an agent reading the command, not for a menu), and the total blew the menu's context
+# budget: **15 workflows were dropped from the agent's command list outright.**
+#
+# ⛔ AND THE OBVIOUS FIX WAS ALREADY BLOCKED, WHICH IS THE ACTUAL TICKET. Shortening the
+# descriptions BY HAND in `.agents/workflows/` cannot work twice over: the files are GENERATED,
+# so the next `/smh-sync-agents` overwrites them; and this file's own door-parity check demands
+# the mirror be byte-identical to its brain (or a launcher whose description EQUALS the
+# brain's), so a hand-shortened door reads as `stale` and the main-write-gate goes red.
+# `origin/chore/SCC-194-workflow-titles` is exactly that attempt, 34 files, unlandable by
+# construction.
+#
+# So the shortening moves INTO the generator, and this check learns the same rule: the
+# Antigravity door carries a TRUNCATED description, and truncated-from-the-brain is parity.
+# Two implementations of one rule (PowerShell emits, Python verifies) - which is the shape this
+# file already has for `platforms:` (`Get-CommandPlatforms` vs `platforms_declared`), and the
+# reason the check is a REAL comparison rather than a length test: if the two ever disagree the
+# door reads `stale` and names the file.
+AG_DESC_MAX = 135
+AG_DESC_CUT = 132
+
+
+def ag_description(desc: str) -> str:
+    """The description as Antigravity's menu should carry it. Idempotent on a short one.
+
+    Word-boundary cut, then an ASCII ellipsis - never mid-word, and never a non-ASCII character
+    (the PowerShell side writes these literals from a BOM-less .ps1 that PS 5.1 parses as ANSI,
+    so a real `…` would ship as mojibake in every generated file)."""
+    if len(desc) <= AG_DESC_MAX:
+        return desc
+    cut = desc[:AG_DESC_CUT]
+    if " " in cut:
+        cut = cut[:cut.rindex(" ")]
+    return cut.rstrip(" ,;:-") + "..."
+
+
+def with_ag_description(brain: str) -> str:
+    """The brain with ONLY its `description:` line replaced by the budgeted one."""
+    out, done = [], False
+    for line in brain.splitlines(keepends=True):
+        if not done and line.startswith("description:"):
+            nl = "\n" if line.endswith("\n") else ""
+            out.append("description: " + ag_description(line[len("description:"):].strip()) + nl)
+            done = True
+        else:
+            out.append(line)
+    return "".join(out)
+
+
+def is_launcher_for(body: str, brain: str, cmd_name: str, budgeted: bool = False) -> bool:
     """Is `body` the generated thin launcher for THIS command, still current?
 
     ⭐ Four conditions, and the third and fourth are what make the exemption EARNED rather
@@ -142,9 +194,15 @@ def is_launcher_for(body: str, brain: str, cmd_name: str) -> bool:
     m = LAUNCH_RE.search(body)
     if not m or m.group(1) != cmd_name:
         return False
-    # The engine copies the brain's description into the stub verbatim, so a drifted
-    # description IS a drifted door - it is what the Antigravity menu actually displays.
-    return fm_field(body, "description") == fm_field(brain, "description")
+    # The engine copies the brain's description into the stub, so a drifted description IS a
+    # drifted door - it is what the Antigravity menu actually displays.
+    #
+    # ⛔ `budgeted` IS PER-SURFACE, and conflating the two surfaces is a real defect this check
+    # caught on itself: SCC-195's budget is ANTIGRAVITY's menu constraint. The Claude/Codex
+    # launcher skills (`New-LauncherSkillStub`) carry the brain's FULL description and must keep
+    # doing so - applying the cut to them turned 39 correct doors red in one edit.
+    want = fm_field(brain, "description") or ""
+    return fm_field(body, "description") == (ag_description(want) if budgeted else want)
 
 
 def platforms_declared(text: str) -> tuple[str, ...] | None:
@@ -466,7 +524,15 @@ def main() -> int:
         """
             if body == brain:
                 return "ok"
-            if launcher_ok and is_launcher_for(body, brain, cmd_name):
+            # SCC-195: on `.agents/workflows` (launcher_ok, i.e. the Antigravity surface) the
+            # legal full mirror is the brain with its description cut to the menu budget, and
+            # NOTHING else changed. On opencode there is no budget and no launcher: byte
+            # identity or it is stale.
+            if launcher_ok and body == with_ag_description(brain):
+                return "ok"
+            # `launcher_ok` is true only on `.agents/workflows`, which is exactly the surface
+            # the budget applies to - so it doubles as the budgeted flag here.
+            if launcher_ok and is_launcher_for(body, brain, cmd_name, budgeted=True):
                 return "ok"
             if GEN in body:
                 return "badlauncher"   # claims to be generated, but is not a current launcher
@@ -1204,6 +1270,48 @@ def main() -> int:
                 continue
             c.check(f"R2b the restatement in {rel.split('/')[-1]} names the rolling ticket",
                     "rolling" in body_, "a stale restatement is a second source of law")
+
+
+    # ══ SCC-195 · every Antigravity door fits the menu's budget ════════════════════════════
+    if c.block("SCC-195 · the Antigravity description budget"):
+        LONG = ("The TASK lane's dev cycle - assert-first development for command-centre work "
+                "that has no story, no sprint board and no epic branch. Write the check that "
+                "fails FIRST, then make it pass, then the review gate.")
+        SHORT = "Close out TASK work."
+        c.check("U1 a short description is returned unchanged (idempotent)",
+                ag_description(SHORT) == SHORT, ag_description(SHORT))
+        cut = ag_description(LONG)
+        c.check("U2 a long one is cut to the budget and marked", len(cut) <= AG_DESC_MAX
+                and cut.endswith("..."), f"{len(cut)}: {cut}")
+        c.check("U3 ...on a word boundary, never mid-word",
+                cut[:-3].rstrip() in LONG, cut)
+        c.check("U4 ...and re-cutting it changes nothing (the sync is idempotent)",
+                ag_description(cut) == cut, ag_description(cut))
+        c.check("U5 ...and it stays ASCII (PS 5.1 writes these literals from a BOM-less .ps1)",
+                cut.isascii(), cut)
+
+        # ⭐ THE MEASUREMENT THAT IS THE TICKET: every workflow door within budget.
+        # ⛔ HAND-OWNED DOORS ARE NOT EXEMPT. `smh-adviser-board.md` is authored rather than
+        # generated, and the sync never rewrites it - but Antigravity reads its description into
+        # the SAME menu, so exempting it would leave the biggest single row in place while the
+        # check reported the budget met. Hand-owned means "fix it by hand", not "skip it".
+        over = []
+        for wf_door in sorted((ROOT / ".agents/workflows").glob("*.md")):
+            d = fm_field(read(wf_door), "description")
+            if d and len(d) > AG_DESC_MAX:
+                over.append(f"{wf_door.name} ({len(d)})")
+        c.check("U6 every .agents/workflows door fits Antigravity's menu budget",
+                not over, f"{len(over)} over {AG_DESC_MAX}: {over[:8]}")
+
+        # And the control: the BRAINS are deliberately NOT shortened. The command is written for
+        # an agent that has already chosen it; only the menu has a budget. If this ever goes
+        # green-because-empty, the shortening leaked into the source of truth.
+        long_brains = [p.name for p in sorted((ROOT / ".agents/commands").glob("*.md"))
+                       if (fm_field(read(p), "description") or "") and
+                       len(fm_field(read(p), "description")) > AG_DESC_MAX]
+        c.check("U7 CONTROL: the BRAINS keep their full descriptions (the budget is the menu's)",
+                len(long_brains) >= 10, f"only {len(long_brains)} long brains - did the "
+                                        f"shortening leak into .agents/commands?")
 
     return c.finish()
 
