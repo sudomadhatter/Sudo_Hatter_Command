@@ -170,6 +170,65 @@ def main() -> int:
         c.check("P5 · no roster is an empty list, never an exception",
                 roster.parse("# nothing here\n")["lenses"] == [])
 
+    if c.block("P-F · a FENCED roster is an EXAMPLE, and the instructions teach it fenced"):
+        # ⛔ SELF-INFLICTED, AND FOUND BY THIS LANE'S OWN INLINE REVIEW. The Step 4 text this lane
+        # wrote shows the roster inside a ``` block, so copying the example was enough to satisfy
+        # the gate. `task_preflight` was safe (it strips fences first, SCC-154 finding 8);
+        # `closeout_preflight` passed RAW text, so the identical file passed the story-lane gate
+        # and was refused by the Task-lane one. The fence rule now lives in the PARSER, which is
+        # the only place two callers cannot disagree about it.
+        fenced = ("# W\n\n## Step 0.7\n\n1. a\n2. b\n3. c\n\n## Code Review\n\n"
+                  "Paste the block the engine returned:\n\n"
+                  "```\nlenses_run:\n- blind-hunter · ok\n- edge · ok\n```\n\n"
+                  "Verdict: PASS @ abc1234\n")
+        c.check("P-F1 · a roster that exists ONLY inside a fence is not a roster",
+                roster.parse(fenced)["lenses"] == [],
+                "the instruction's own example would otherwise close a lane that ran nothing")
+        ok, why = roster.judge(fenced, POST, "PASS")
+        c.check("P-F2 · ...so the lane BLOCKS, exactly as if it had none",
+                not ok and "NO `lenses_run:` roster" in " ".join(why), str(why))
+        c.check("P-F3 · (control) unfencing the same rows makes it a real roster",
+                len(roster.parse(fenced.replace("```\n", ""))["lenses"]) == 2,
+                "if this fails the stripper eats real content, which is the opposite failure")
+        # CommonMark closing rule: a ~~~ block whose body contains ``` must not leak (SCC-154's
+        # measured miss, ported with the logic rather than re-derived from the description).
+        nested = ("# W\n\n## Code Review\n\n~~~\nlenses_run:\n- a · ok\n```\n- b · ok\n~~~\n\n"
+                  "Verdict: PASS @ abc1234\n")
+        c.check("P-F4 · a ``` inside a ~~~ block does not re-open the scan",
+                roster.parse(nested)["lenses"] == [],
+                "the first cut of this walker toggled on ANY marker, leaking the inner lines")
+
+    if c.block("P-R · a RE-REVIEW appends, so the LAST roster governs"):
+        # ⛔ THE SAME FIRST-VS-LAST BUG THIS LANE ALREADY SHIPPED ONCE, one layer down. At
+        # `task_preflight`'s call site it was `found[0]` where the rest of the function reads
+        # `found[-1]`; here the parser returned the FIRST `lenses_run:` block. Consequence is
+        # identical and worse: a lane whose first pass had a dead lens, and which then did exactly
+        # what the refusal asked - re-run the review - is judged on the superseded roster. The
+        # remedy for a dead lens could never clear it, and the lane is wedged by the evidence of
+        # its own fix.
+        rr = ("# W\n\n## Step 0.7\n\n1. a\n2. b\n3. c\n\n"
+              "## Code Review (2026-08-16)\n\nlenses_run:\n- blind · dead — timed out\n\n"
+              "Verdict: FAIL @ aaa1111\n\n"
+              "## Code Review (2026-08-17)\n\nlenses_run:\n- blind · ok\n- edge · ok\n\n"
+              "Verdict: PASS @ bbb2222\n")
+        got = roster.parse(rr)["lenses"]
+        c.check("P-R1 · the LAST roster is the one read",
+                [l["state"] for l in got] == ["ok", "ok"],
+                f"read {got} - the first roster is the one the re-review replaced")
+        ok, why = roster.judge(rr, POST, "PASS")
+        c.check("P-R2 · ...so a re-reviewed lane is not blocked by its cleared dead lens",
+                ok, f"the re-review is the documented remedy; blocking on it makes the remedy "
+                    f"unreachable: {why}")
+        # And the direction that must still block: clean first, dead after.
+        pf = ("# W\n\n## Step 0.7\n\n1. a\n2. b\n3. c\n\n"
+              "## Code Review (2026-08-16)\n\nlenses_run:\n- blind · ok\n\nVerdict: PASS @ a\n\n"
+              "## Code Review (2026-08-17)\n\nlenses_run:\n- blind · dead — died\n\n"
+              "Verdict: PASS @ b\n")
+        ok, why = roster.judge(pf, POST, "PASS")
+        c.check("P-R3 · (control) clean-then-DEAD still blocks - last means last, not best",
+                not ok and "DEAD lens" in " ".join(why),
+                f"taking the last roster must not become taking the most favourable one: {why}")
+
     if c.block("W · BOTH preflights call the one parser - asserted by wiring, not by grep"):
         # ⛔ The retired shape is `assert "walkthrough_roster" in source` — a source grep that a
         # comment satisfies and that cannot see whether the call is reachable. These import the

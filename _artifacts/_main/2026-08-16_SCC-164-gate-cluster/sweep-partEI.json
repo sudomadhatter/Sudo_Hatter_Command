@@ -1,5 +1,8 @@
 {
-  "test": ["python3", ".agents/scripts/tests/test_walkthrough_roster.py"],
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_walkthrough_roster.py"
+  ],
   "note": "Part 11 (E = SCC-173, I = SCC-177). Every rule the roster gate blocks on, plus the two ROUTING mutants that no source grep can see. The engine/caller wiring is NOT swept here on purpose: test_review_engine.py's CHECKS loop already applies a counter-example to every row in-process and requires the check to go red, which is the same proof done inline - and that file declares no c.block(), so a --case filter against it would exit 3 (a sweep error, not a result).",
   "mutants": [
     {
@@ -82,6 +85,24 @@
       "mutated": "roster.judge(text, p, found[0][0])",
       "case": "W-B4",
       "block": "W-B"
+    },
+    {
+      "id": "EI-10",
+      "why": "the fence rule. Found by this lane's own inline review: closeout_preflight passed RAW text, so a roster existing only inside a ``` example satisfied the story-lane gate while task_preflight (which strips) refused the identical file - and the Step 4 instructions this lane wrote teach the roster fenced, so copying the example was enough to close a lane that ran nothing.",
+      "file": ".agents/scripts/walkthrough_roster.py",
+      "original": "    text = strip_fenced(text)",
+      "mutated": "    text = text",
+      "case": "P-F1",
+      "block": "P-F"
+    },
+    {
+      "id": "EI-11",
+      "why": "the LAST roster governs. Same first-vs-last defect this lane already shipped once at task_preflight's call site, one layer down: reading the FIRST roster judges a re-reviewed lane on the roster its re-review replaced, so the documented remedy for a dead lens can never clear it.",
+      "file": ".agents/scripts/walkthrough_roster.py",
+      "original": "        if found:\n            lenses = found",
+      "mutated": "        if found and not lenses:\n            lenses = found",
+      "case": "P-R1",
+      "block": "P-R"
     }
   ]
 }

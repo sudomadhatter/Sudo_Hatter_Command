@@ -74,15 +74,57 @@ def lane_date(path: Path | str) -> str | None:
     return None
 
 
+def strip_fenced(text: str) -> str:
+    """Markdown code fences removed before anything here reads the document.
+
+    ⛔ THIS LIVES IN THE PARSER, NOT IN THE CALLERS, AND THAT IS THE WHOLE POINT OF ONE PARSER.
+    `task_preflight` already stripped fences before calling (SCC-154 paid for that rule with a
+    live miss: a canonical stamp pasted AS EVIDENCE inside a fence became the governing verdict
+    and permanently blocked a lane). `closeout_preflight` passed raw text — so a walkthrough whose
+    only roster was a **fenced example** satisfied the story-lane gate while the Task-lane gate
+    refused the identical file. Found by this lane's own inline review, and it was self-inflicted:
+    the Step 4 instructions this lane wrote *teach* the roster inside a fence, so copying the
+    example was enough to pass. A rule two callers must each remember is a rule one of them forgets.
+
+    Fences close per CommonMark: the SAME marker kind, at least the opening length. A ```` or ~~~
+    block whose content holds a ``` pair must not leak its inner lines back into the scan. An
+    unclosed fence drops everything after it — no roster then, which BLOCKS, the safe direction.
+    """
+    out: list[str] = []
+    fence: tuple[str, int] | None = None
+    for line in text.splitlines():
+        m = re.match(r"^[ \t]{0,3}(`{3,}|~{3,})", line)
+        if m:
+            marker = m.group(1)
+            if fence is None:
+                fence = (marker[0], len(marker))
+            elif marker[0] == fence[0] and len(marker) >= fence[1]:
+                fence = None
+            continue
+        if fence is None:
+            out.append(line)
+    return "\n".join(out)
+
+
 def parse(text: str) -> dict:
     """Everything this module reads out of a walkthrough, in one pass.
 
     Deliberately total: it never raises and never decides. `judge()` decides."""
+    text = strip_fenced(text)
     lines = text.splitlines()
     lenses: list[dict] = []
     for i, ln in enumerate(lines):
         if not _ROSTER_HEAD_RE.match(ln):
             continue
+        # ⛔ THE LAST ROSTER GOVERNS, NEVER THE FIRST — the same rule the verdict readers apply
+        # (`verdicts[-1]` in check_gate), for the same reason: a RE-REVIEW APPENDS. A lane whose
+        # first pass had a dead lens, and which then did exactly what the refusal asked — re-run
+        # the review — ends up with two `## Code Review` sections. Reading the first one hands the
+        # gate the superseded roster, so the remedy for a dead lens can never clear it, and the
+        # lane is wedged by the evidence of its own fix. This lane shipped that defect once
+        # already at `task_preflight`'s call site (`found[0]` where the rest of the function reads
+        # `found[-1]`); this is the same bug one layer down, found by the same question.
+        found: list[dict] = []
         for row in lines[i + 1:]:
             if not row.strip():
                 break
@@ -93,11 +135,11 @@ def parse(text: str) -> dict:
                 # A non-matching line ends the roster. Anything else would let a stray bullet
                 # elsewhere in the document silently extend it.
                 break
-            lenses.append({"lens": m.group(1).strip(),
-                           "state": m.group(2).lower(),
-                           "notes": (m.group(3) or "").strip()})
-        if lenses:
-            break
+            found.append({"lens": m.group(1).strip(),
+                          "state": m.group(2).lower(),
+                          "notes": (m.group(3) or "").strip()})
+        if found:
+            lenses = found
 
     rt = _RUNTIME_RE.search(text)
 
