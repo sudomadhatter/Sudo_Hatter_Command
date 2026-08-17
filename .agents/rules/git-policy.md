@@ -327,6 +327,25 @@ message (`-> main`, because that is what was typed) were all indistinguishable f
   (`git log -1 --format='%p' <sha>`), then `git merge --ff-only <sha>` from the tree that holds
   `main`. The sibling branch keeps its uncommitted work untouched.
 
+- ⛔⛔ **And when a rewind genuinely is the answer, it is `--keep` or `--soft`. Never `--hard`.**
+  This is not a preference — it is the most expensive thing that has happened in this repo. On
+  2026-08-15 the merge backstop's refusal banner printed `git reset --hard origin/<branch>` as its
+  remedy; an agent ran it in the lobby's **main checkout** and destroyed three other sessions'
+  uncommitted work. The main checkout hosts `_artifacts/_memory/`, which every session on this
+  machine writes, so **it is never a clean tree**, and **there is no git hook for `reset`** — no
+  gate in this system can refuse it, before or after. The only defence is that nothing prints it.
+
+  | Situation | The move | Why |
+  |---|---|---|
+  | the lane was already pushed and you want the remote's version | `git reset --keep origin/<branch>` | **refuses** if a file it would touch has local changes, instead of discarding it |
+  | undo a local commit, keep the work | `git reset --soft HEAD~1` | moves the pointer only; the tree is not touched |
+  | you are merely behind | `git pull --ff-only` | no rewind at all |
+
+  `test_git_hooks.py` case **RH1** sweeps `.agents/` and `docs/` and fails on any line that prints
+  `git reset --hard` as a step. It reads *instructions*, not mentions: this paragraph names the
+  command in order to forbid it, and must keep passing (**RH3**). A guard that banned the string
+  would force whoever hit it to delete the explanation, which is how the lesson gets lost. *(SCC-180.)*
+
 See `_artifacts/_memory/nothing-guards-the-merge-target.md`.
 
 ### ⛔ A revert reads from a REF — `origin/main`, never a sha (SCC-184, measured 2026-08-16)

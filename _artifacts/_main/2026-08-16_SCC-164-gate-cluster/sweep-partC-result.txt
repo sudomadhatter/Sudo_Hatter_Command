@@ -1,0 +1,23 @@
+-- sweep: 4 mutant(s) over 3 file(s) @ b39bcffb --
+KILLED    M1
+            KILLED by C1 ·
+            -- filter 'C · the PC token path': matched 1/2 blocks --
+KILLED    M2
+            KILLED by C3 ·
+            -- filter 'C · the PC token path': matched 1/2 blocks --
+KILLED    M3
+            KILLED by C5 ·
+            -- filter 'C5': matched 1/2 blocks --
+KILLED    M4
+            KILLED by C5 ·
+            -- filter 'C5': matched 1/2 blocks --
+-- restore verified: bytes match, nothing was committed, and `git diff --quiet b39bcffb` is clean --
+-- full file, unfiltered: python3 .agents/scripts/tests/test_main_push_gate.py -> exit 0 --
+        | [PASS] PreToolUse STANDS DOWN when a valid token covers the push: otherwise ask->auto-deny strands a headless close-out mid-merge
+        | [PASS] PreToolUse ASKS when the token is for another sha
+        | [PASS] PreToolUse ASKS when the token is stale
+        | [PASS] PreToolUse ASKS when the timestamp is garbage: fails toward asking — any doubt and the prompt still fires
+        | [PASS] PreToolUse ignores a push to a non-protected branch
+        | -- 71/71 passed --
+
+-- sweep clean: 4/4 killed by their declared case --

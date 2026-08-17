@@ -1488,6 +1488,159 @@ def _collect(live: list[tuple[int, str]], start: int, items: list[str]) -> None:
     return items
 
 
+# ── SCC-175: the merge row is COMPUTED, never read off a tick ─────────────────
+#
+# ⛔ THE DEFECT THIS CLOSES, AND WHY A TICK CANNOT BE THE ANSWER.
+#
+# A walkthrough's `## Your Actions` almost always carries a row for the merge. Left open,
+# `finish` reads it as work still owed and HOLDS a ticket whose only outstanding item is the
+# merge that just landed. The old remedy was for the close-out to TICK it — after the merge,
+# on `main`, in a commit the main-write gate then refused. That refusal is what produced the
+# 2026-08-15 `reset --hard` incident (SCC-180 is its other half).
+#
+# SCC-183 removed the reason: the door now requires the tick committed on the lane BEFORE the
+# PR opens. But a tick is a CLAIM, and `finish --apply` is what writes `Done` to Jira on the
+# strength of it — so a box ticked without a merge closes the ticket over an unlanded lane.
+# That is self-certification, which house law bans outright.
+#
+# So the row is not read, it is CHECKED: is the lane's tip an ancestor of `origin/main`?
+#
+# ⭐ AND IT IS READ FROM `HEAD`, NOT THE WORKING TREE (F18). Reading the file on disk means an
+# UNCOMMITTED tick satisfies the check — the exact SCC-169 shape, where the tick was left
+# uncommitted in the main checkout and later wiped by a reset. The committed copy is the only
+# one that survives the session that wrote it.
+MERGE_DOORS = ("/smh-close-task-merge-tree", "/cicd-push-e2e")
+MERGE_PHRASE = "the merge itself"
+
+# ⛔ THE RECOGNISER IS DOOR-NAMED-OR-CANONICAL-PHRASE, AND THAT IS FROM THE CORPUS, NOT TASTE.
+# Measured over 145 tracked walkthroughs on 2026-08-16: 12 open rows name a door, 7 rows carry
+# the canonical phrase SCC-183 mandates — and 5 open rows say "merge" or "land" while naming no
+# door, every one of them a REAL operator decision this must never clear:
+#
+#     - [ ] **Rule the landing order.** Recommended: SCC-126 lands first …
+#     - [ ] **Decide whether the CONCERNS is worth clearing before the merge.**
+#     - [ ] **Follow-on ticket decision (C1/C3 + deferred tests)** …
+#
+# A bare merge/land keyword would clear all three. So the row must either invoke a DOOR — an
+# act only this ceremony performs — or use the one phrase the door itself now writes.
+_ANY_ROW_RE = re.compile(r"^\s*-\s*\[([ xX])\]\s*(.+?)\s*$")
+
+
+def is_merge_row(item: str) -> bool:
+    low = item.lower()
+    return any(d in low for d in MERGE_DOORS) or MERGE_PHRASE in low
+
+
+def committed_copy(wt: Path) -> tuple[str, str]:
+    """`HEAD`'s version of the walkthrough, and where it came from.
+
+    Falls back to the working tree ONLY when git cannot answer at all (the file is not
+    committed yet, or this is not a repo) — and says so, so a merge row judged against an
+    uncommitted file is never silently treated as equivalent."""
+    # ⛔ The cwd must EXIST or subprocess raises rather than returning non-zero. `finish`
+    # has already proved the file is there, but this is called directly by tests and by any
+    # later caller, and a crash is not a verdict.
+    if not wt.parent.is_dir():
+        return wf.read_text(wt), "working tree (no directory to ask git from)"
+    r = wf.git(["rev-parse", "--show-toplevel"], wt.parent)
+    if r.returncode != 0 or not (r.stdout or "").strip():
+        return wf.read_text(wt), "working tree (not a git repository)"
+    root = Path((r.stdout or "").strip())
+    try:
+        rel = wt.resolve().relative_to(root.resolve()).as_posix()
+    except ValueError:
+        return wf.read_text(wt), "working tree (walkthrough is outside the repo)"
+    show = wf.git(["show", f"HEAD:{rel}"], root)
+    if show.returncode != 0:
+        return wf.read_text(wt), "working tree (no committed copy at HEAD yet)"
+    return show.stdout or "", "HEAD"
+
+
+def lane_tip(wt: Path) -> tuple[str | None, list[str]]:
+    """The lane's tip sha, and the list of what was tried.
+
+    Order matters and every arm is load-bearing (F6a). A LANDED lane is pruned local and
+    remote within the day — `chore/SCC-162-lightweight-lane` and `chore/SCC-163-gate-hardening`
+    were both already gone when this was designed — so the manifest branch resolves to nothing
+    and only the walkthrough's own `Verdict: … @ <sha>` still names the tip. Both of those
+    lanes' verdict shas are ancestors of `origin/main`; verified 2026-08-16."""
+    tried: list[str] = []
+    if not wt.parent.is_dir():
+        return None, ["no directory to ask git from"]
+    r = wf.git(["rev-parse", "--show-toplevel"], wt.parent)
+    if r.returncode != 0:
+        return None, ["not a git repository"]
+    root = Path((r.stdout or "").strip())
+
+    manifest = wt.parent / "task.yaml"
+    branch = ""
+    if manifest.is_file():
+        m = _MANIFEST_BRANCH_RE.search(wf.read_text(manifest))
+        branch = m.group(1).strip() if m else ""
+    if branch:
+        for ref in (f"refs/heads/{branch}", f"refs/remotes/origin/{branch}"):
+            got = wf.git(["rev-parse", "--verify", "--quiet", ref], root)
+            tried.append(ref)
+            if got.returncode == 0 and (got.stdout or "").strip():
+                return (got.stdout or "").strip(), tried
+    else:
+        tried.append("task.yaml `branch:` (absent)")
+
+    # The pruned-lane fallback. Read from the COMMITTED copy for the same reason as the row.
+    text, _src = committed_copy(wt)
+    m = _VERDICT_RE.search(text)
+    tried.append("walkthrough `Verdict: … @ <sha>`")
+    if m and m.group(2):
+        got = wf.git(["rev-parse", "--verify", "--quiet", m.group(2)], root)
+        if got.returncode == 0 and (got.stdout or "").strip():
+            return (got.stdout or "").strip(), tried
+    return None, tried
+
+
+def merge_row_state(wt: Path) -> dict | None:
+    """None when the walkthrough has no merge row at all. Otherwise the verdict and why.
+
+    ⛔ Rows are taken from `HEAD`'s copy and BOTH `- [ ]` and `- [x]` count. A ticked row is
+    still a claim about a merge, and this is the thing that checks the claim."""
+    text, source = committed_copy(wt)
+    lines = list(_unfenced(text.splitlines()))
+    starts = [i for i, ln in lines if ln.strip().lower() == YOUR_ACTIONS.lower()]
+    row = None
+    for start in starts:
+        for i, ln in lines:
+            if i <= start:
+                continue
+            s = ln.strip()
+            if s.startswith("## ") or s.startswith("# "):
+                break
+            m = _ANY_ROW_RE.match(ln)
+            if m and is_merge_row(m.group(2)):
+                row = m.group(2)
+                break
+        if row:
+            break
+    if row is None:
+        return None
+
+    tip, tried = lane_tip(wt)
+    if tip is None:
+        return {"row": row, "satisfied": False, "source": source, "tip": None,
+                "why": f"the lane tip could not be resolved. Tried: {', '.join(tried)}. "
+                       f"An unresolvable tip is not evidence of a merge, so the row HOLDS."}
+
+    root = Path((wf.git(["rev-parse", "--show-toplevel"], wt.parent).stdout or "").strip())
+    # Best effort — a stale `origin/main` would answer "not merged" for a lane that IS merged,
+    # which holds a ticket that should close. Failure here is not fatal: the ancestry check
+    # below still runs against whatever ref this repo has.
+    wf.git(["fetch", "origin", "main"], root)
+    anc = wf.git(["merge-base", "--is-ancestor", tip, "origin/main"], root)
+    if anc.returncode == 0:
+        return {"row": row, "satisfied": True, "source": source, "tip": tip,
+                "why": f"{tip[:9]} is an ancestor of origin/main"}
+    return {"row": row, "satisfied": False, "source": source, "tip": tip,
+            "why": f"{tip[:9]} is NOT an ancestor of origin/main - the lane has not landed"}
+
+
 # ── SCC-163 Part B: what may go in `## Your Actions` ──────────────────────────
 #
 # Step 5 of /smh-code-review and /cicd-code-review permits the operator to be left exactly
@@ -1571,13 +1724,19 @@ def banned_action_rows(text: str) -> list[tuple[str, str]]:
     return out
 
 
-def render_banned_banner(rows: list[tuple[str, str]], walkthrough: str) -> str:
+def render_banned_banner(rows: list[tuple[str, str]], walkthrough: str,
+                         strict: bool = True) -> str:
     """The banner. ⛔ It is LOUD ON PURPOSE and it is pinned by a test.
 
-    The ruling (2026-08-15, "1. yes") is that this ships WARN: a block at `finish` fires AFTER
-    the merge, so it would trade a held ticket for an erroring close-out. But a warn nobody
-    reads is the `vscode-hides-git-hook-output` failure - a warn-only gate reads as clean
-    success - so the fix is volume and a named remedy, not a quieter conscience."""
+    It shipped WARN on 2026-08-15 ("1. yes") because a block at `finish` fires AFTER the merge
+    and would trade a held ticket for an erroring close-out. That was a MEASUREMENT WINDOW, and
+    SCC-164 § ARMING clause 3 closed it on 2026-08-16: the detector produced 0 hits across the
+    11 post-cutoff walkthroughs (0 false positives) while still firing correctly on 3 legacy
+    ones, so it now REFUSES by default. The `finish` refusal runs before the board is touched,
+    which is what makes the ordering objection above no longer apply — nothing is half-written.
+
+    `strict` only changes the closing sentence. A warn nobody reads is the
+    `vscode-hides-git-hook-output` failure, so the volume stays either way."""
     n = len(rows)
     lines = ["", "  " + "=" * 74,
              f"  ⛔ BANNED ACTION ROW{'' if n == 1 else 'S'} - {n} row{'' if n == 1 else 's'} "
@@ -1594,8 +1753,12 @@ def render_banned_banner(rows: list[tuple[str, str]], walkthrough: str) -> str:
         "    - the finding is evidenced and in YOUR lane -> file it yourself, or fix it here",
         "    - it is genuinely the operator's -> say which of the three classes it is",
         "",
-        "  This is a WARNING. The ticket's hold below is unchanged. `--strict-actions` makes",
-        "  it a refusal.", ""]
+        ("  This REFUSES the close-out (exit 2). Nothing has been written to the board - fix\n"
+         "  the walkthrough and re-run. `--warn-actions` restores the pre-2026-08-16 warn, and\n"
+         "  logs that you chose it.")
+        if strict else
+        ("  This is a WARNING - you passed `--warn-actions`. The ticket's hold below is\n"
+         "  unchanged, and the opt-out is recorded in this run's output."), ""]
     return "\n".join(lines)
 
 
@@ -1665,17 +1828,42 @@ def cmd_finish(args) -> int:
             f"empty) so the answer is recorded rather than assumed.")
         return 2
 
-    # SCC-163 Part B. Runs BEFORE the board is touched, so a refusal under `--strict-actions`
-    # writes nothing at all. Warn-only by the operator's ruling (2026-08-15, "1. yes"): the
-    # rows below still count as owed exactly as they did, and the hold is unchanged - what is
-    # added is that the close-out now SAYS the row should not have been handed over.
+    # ── SCC-175 · the merge row is computed, not read ─────────────────────────────────
+    # Runs before anything else looks at `items`, and it moves the count in BOTH directions:
+    # a merge that landed stops holding the ticket, and a merge row TICKED without a merge
+    # (in the working tree, or by hand) is put back on the list it was taken off.
+    merge = merge_row_state(wt)
+    if merge is not None:
+        was_open = [i for i in items if is_merge_row(i)]
+        if merge["satisfied"]:
+            items = [i for i in items if not is_merge_row(i)]
+            if was_open:
+                say(f"jira-feed: {args.key}: the merge row is SATISFIED by the repo, not by a "
+                    f"tick - {merge['why']} (row read from {merge['source']}). It no longer "
+                    f"holds the ticket; every other open row is untouched.")
+        else:
+            if not was_open:
+                items.append(merge["row"])
+                say(f"[WARN] {args.key}: the merge row is TICKED but the merge did not happen "
+                    f"- {merge['why']}. Re-opened: a tick is a claim, and this is the check. "
+                    f"(row read from {merge['source']})")
+            else:
+                say(f"jira-feed: {args.key}: the merge row still HOLDS - {merge['why']}.")
+
+    # SCC-163 Part B, ARMED 2026-08-16 by SCC-164 § ARMING clause 3 on a measured zero
+    # false-positive count. Runs BEFORE the board is touched, so the refusal writes nothing at
+    # all - the walkthrough is fixed and the close-out re-run, and no half-written board state
+    # exists in between.
     banned = banned_action_rows(text)
     if banned:
-        say(render_banned_banner(banned, str(wt)))
+        say(render_banned_banner(banned, str(wt), strict=args.strict_actions))
         if args.strict_actions:
-            say(f"[ERR] {args.key}: refusing on {len(banned)} banned action row(s) "
-                f"(--strict-actions). Nothing was written; fix the walkthrough.")
+            say(f"[ERR] {args.key}: refusing on {len(banned)} banned action row(s). "
+                f"Nothing was written; fix the walkthrough. (`--warn-actions` restores the "
+                f"pre-2026-08-16 warn behaviour, and says so in the output.)")
             return 2
+        say(f"jira-feed: {args.key}: --warn-actions given - {len(banned)} banned row(s) "
+            f"did NOT block this close-out. Logged opt-out, on the record.")
 
     fields = view_fields(binary, args.key, timeout=args.timeout, strict=False)
     if fields is None:
@@ -2227,13 +2415,30 @@ def main() -> int:
     p_fin.add_argument("--timeout", type=int, default=90, metavar="SEC")
     p_fin.add_argument("--date", default=date.today().isoformat())
     p_fin.add_argument("--apply", action="store_true", help="without this, renders only")
-    # ⛔ SHIPS DISARMED, and that is the operator's ruling (2026-08-15), not a default someone
-    # picked. Arming a gate that can block a shipping path is its own act of law and needs its
-    # own quoted words (`blocking-gates-need-a-quoted-ruling`); building the flag now means
-    # arming it later is one flag on one invocation rather than a code change and a release.
-    p_fin.add_argument("--strict-actions", action="store_true",
-                       help="REFUSE (exit 2) when `## Your Actions` carries a row handing the "
-                            "operator ticket work, instead of only warning about it")
+    # ⭐ ARMED 2026-08-16 (SCC-164 § ARMING clause 3), and the condition it waited on was
+    # MEASURED, not assumed. The operator's ruling of 2026-08-15 armed this "when the count is
+    # clean" — re-run the detector over the post-cutoff walkthrough corpus, record the
+    # false-positive count, flip the flag if it is zero. Measured on 2026-08-16 across all 145
+    # tracked walkthroughs: 11 are post-cutoff (folder date >= 2026-08-15) and they produce
+    # **0 hits, so 0 false positives**. Not vacuous either — the same detector fires on exactly
+    # 3 legacy walkthroughs (2026-08-12, -13, -14), and all 3 are true positives that really do
+    # hand ticket work over. Reproduce with `jira_feed.py check-actions --walkthrough <p>`.
+    #
+    # WARN was the measurement window and the ruling ended it: *"I dont see a case in enterprise
+    # dev where a warn should make it to prod ?"* A warn-only gate reads as clean success
+    # (`vscode-hides-git-hook-output`), which is how a wrong-key commit reached a project's main.
+    p_fin.add_argument("--strict-actions", dest="strict_actions", action="store_true",
+                       default=True,
+                       help="(default, armed 2026-08-16) REFUSE (exit 2) when `## Your Actions` "
+                            "carries a row handing the operator ticket work. Kept as an explicit "
+                            "flag so existing invocations and docs stay correct")
+    # The opt-out is NAMED and LOGGED rather than silent. `--force` was ruled out of scope, and
+    # this is not one: it restores the pre-arming behaviour for a lane that needs to close while
+    # the row is argued, and it says so in the output so the choice is on the record.
+    p_fin.add_argument("--warn-actions", dest="strict_actions", action="store_false",
+                       help="the retired pre-2026-08-16 behaviour: print the banner and carry on. "
+                            "The choice is echoed in the output — it is a logged opt-out, not a "
+                            "quiet one")
 
     # `check-actions` - the same detector, standalone. It is what makes the corpus run
     # reproducible ("run it over every walkthrough and show me the hits") without anyone

@@ -116,10 +116,29 @@ if [ -n "$REMOTE" ]; then
 fi
 
 GIT_COMMON=$(git rev-parse --git-common-dir 2>/dev/null) || exit 2
-case "$GIT_COMMON" in
-  /*) : ;;
-  *)  GIT_COMMON="$REPO_ROOT/$GIT_COMMON" ;;
-esac
+
+# ⛔⛔ THE ANSWER IS USED AS GIT GIVES IT, and the `cd "$REPO_ROOT"` above is what makes that safe.
+#
+# This used to normalise by hand:
+#
+#     case "$GIT_COMMON" in
+#       /*) : ;;
+#       *)  GIT_COMMON="$REPO_ROOT/$GIT_COMMON" ;;
+#     esac
+#
+# which is correct on POSIX and WRONG on the PC — the identical trap `.githooks/pre-push` already
+# documents for `--git-path`. `--git-common-dir` answers RELATIVE (`.git`) in a plain main checkout
+# and ABSOLUTE in a worktree, and git-for-windows spells the absolute one `C:/Users/...`, which
+# does NOT match `/*`. So the repo root got prepended to an already-absolute path:
+#
+#     in : C:/Users/dan/Sudo_Hatter_Command/.git/worktrees/<lane>
+#     out: <repo_root>/C:/Users/dan/.../main-push-approval        ← the parent cannot exist
+#
+# The write then fails, the gate looks in the same broken place, finds nothing, and REFUSES EVERY
+# PUSH TO main. On the PC that bricks the only road to main — and every lane here is a worktree.
+# A relative answer needs no fixing because we have already `cd`'d to the toplevel; an absolute
+# one needs no fixing either. So: no `case`. Pinned by `test_main_push_gate.py` case C1, which
+# drives a `git` shim answering the way the PC answers — a source grep could not see this.
 TOKEN="$GIT_COMMON/main-push-approval"
 
 # An unspent token already sitting there is a prior sign-off that never became a push. Overwriting
@@ -132,17 +151,47 @@ if [ -f "$TOKEN" ]; then
 fi
 
 umask 077
+
+# ⭐ printf, NOT echo. POSIX leaves backslash handling in `echo` implementation-defined, and
+# dash/ash/BusyBox expand `\n` and `\c` inside the operand. The approval line carries arbitrary
+# operator prose, so an `echo` here can split the record onto a second line the parser silently
+# drops — or truncate it outright at a `\c`. The whole mechanism is a claim about VERBATIM words;
+# it has to store them verbatim.
 {
-  echo "branch=$BRANCH"
-  echo "tip=$TIP"
-  echo "command=$CMD"
-  echo "key=$KEY"
-  echo "minted=$(date +%s)"
-  echo "approval=$APPROVAL"
-} > "$TOKEN"
+  printf '%s\n' "branch=$BRANCH"
+  printf '%s\n' "tip=$TIP"
+  printf '%s\n' "command=$CMD"
+  printf '%s\n' "key=$KEY"
+  printf '%s\n' "minted=$(date +%s)"
+  printf '%s\n' "approval=$APPROVAL"
+} > "$TOKEN" 2>/dev/null
+
+# ⛔⛔ THE OUTCOME IS VERIFIED, NOT INFERRED FROM AN EXIT CODE — and the obvious remedy is broken.
+#
+# This block used to end at the redirect and walk straight into the success banner. With an
+# unwritable path the shell printed "No such file or directory", the block never ran, and the
+# script still printed "🔑 main-push token minted" and exited 0 with nothing on disk. The close-out
+# then pushed and the gate refused for having no token: a success message and a refusal that
+# contradict each other, with the real reason two steps upstream.
+#
+# The natural fix — `if ! { … } > "$TOKEN"; then` — fires on dash and DOES NOTHING on bash or
+# macOS /bin/sh, because bash does not propagate a compound-command redirect failure through `!`
+# in an `if` condition. Measured on all three (AVCH-59). On the operator's Mac that "fix" printed
+# the banner and exited 0 — the exact defect, reproduced inside its own remedy.
+#
+# `[ -s ]` asks the only question that matters — IS THE TOKEN THERE — and asks it of the
+# filesystem rather than of a shell's error-propagation semantics. Same class of answer as the
+# gate's own `[ -f "$TOKEN" ]`, and portable by construction.
+if [ ! -s "$TOKEN" ]; then
+  echo "mint-push-token: FAILED to write the approval token." >&2
+  echo "  path: $TOKEN" >&2
+  echo "  No token was written, so the push would be refused for having none. Reported here," >&2
+  echo "  where the reason is still in scope, rather than as a contradictory refusal later." >&2
+  exit 2
+fi
 
 echo "  🔑 main-push token minted — $CMD · ${KEY:-<no key>} · $BRANCH @ $TIP"
-echo "     AUTHORIZED BY OPERATOR: \"$APPROVAL\""
+printf '     AUTHORIZED BY OPERATOR: "%s"\n' "$APPROVAL"
 echo "     Read that line back. If those words are not an unambiguous yes to THIS merge, delete"
 echo "     the token ($TOKEN) and ask."
 echo "     Single use, 30-minute limit, spent by the next push to main. Do not commit after this."

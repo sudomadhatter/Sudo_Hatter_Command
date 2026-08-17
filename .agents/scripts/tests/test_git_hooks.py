@@ -21,6 +21,7 @@ Stdlib only, no pytest, matching every other file here.
 """
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 import sys
@@ -36,6 +37,13 @@ HOOKDIR = REPO / ".agents/scripts/git-hooks"
 
 GUARD = HOOKDIR / "merge-target-guard.sh"
 BACKSTOP = HOOKDIR / "pre-push-merge-backstop.sh"
+# ⛔ PRESENT IN EVERY PUSH FIXTURE, AND DISARMED THERE. This file's subject is the BACKSTOP, so
+# the token gate must not interfere — but it must still EXIST, because `.githooks/pre-push`
+# refuses a push to `main` when it is missing (SCC-172 D3: "no gate ran" must not be quieter than
+# "the gate said no"). Omitting it modelled a stale worktree, which is not what any case here is
+# about, and three ALLOW controls (I, G6d, EP5) started reading D3's refusal as the backstop's.
+# It is installed WITHOUT `MAIN-PUSH-ENFORCE`, so it exits 0 immediately and changes nothing.
+APPROVAL = HOOKDIR / "pre-push-main-approval.sh"
 FLAG = HOOKDIR / "MERGE-TARGET-ENFORCE"
 MERGE_DISPATCH = REPO / ".githooks/commit-msg"
 PUSH_DISPATCH = REPO / ".githooks/pre-push"
@@ -87,7 +95,7 @@ def make_repo(tmp: Path, *, name: str = "work",
 
 
 def make_pushable(tmp: Path, *, push_main: bool = True,
-                  scripts=(GUARD, BACKSTOP), extra_flags=()) -> tuple[Path, Path]:
+                  scripts=(GUARD, BACKSTOP, APPROVAL), extra_flags=()) -> tuple[Path, Path]:
     """A repo with a REAL bare remote, so the push cases drive `git push` and not a stub.
 
     Everything the push gates need can be faked at the script level; whether git actually invokes
@@ -1177,7 +1185,6 @@ def main() -> int:
         # refused by the token gate, which is the gate that runs last.
         with TempDir() as tmp:
             d, bare = make_pushable(tmp, push_main=False,
-                                   scripts=(GUARD, BACKSTOP, HOOKDIR / "pre-push-main-approval.sh"),
                                    extra_flags=("MAIN-PUSH-ENFORCE",))
             rc, out = sh("git", "push", "origin", "main", cwd=d)
             c.check("P · the token gate STILL refuses an unapproved push to main", rc != 0,
@@ -1252,6 +1259,177 @@ def main() -> int:
         c.check("L · the live repo reports the new flag as tracked",
                 any(f["name"] == "MERGE-TARGET-ENFORCE" for f in live["flags"]),
                 f"flags={[f['name'] for f in live['flags']]}")
+
+    # ── RH (SCC-180) · `git reset --hard` is never printed as a remedy ────────────────────
+    #
+    # ⛔ THIS IS NOT A STYLE RULE. On 2026-08-15 this hook's own refusal banner printed
+    #
+    #     git reset --hard origin/$1     # ONLY if this lane was already pushed
+    #
+    # an agent read it as the instruction it looks like, ran it in the lobby's MAIN CHECKOUT,
+    # and destroyed three other sessions' uncommitted work. The main checkout hosts
+    # `_artifacts/_memory/`, which every session on this machine writes, so it is NEVER a clean
+    # tree — `--hard` there is not a reset, it is a delete of other people's work. There is no
+    # git hook for `reset`: nothing can refuse it after the fact. The only available fix is to
+    # stop printing it, everywhere, and to keep it stopped.
+    if c.block("RH · SCC-180: no instruction prints `git reset --hard` as a step"):
+
+        def payload(line: str) -> str:
+            """The line reduced to what a reader would TYPE, if anything.
+
+            ⭐ THE WHOLE CHECK IS THIS FUNCTION, and it exists because a flat grep is wrong in
+            BOTH directions here. The banner's occurrence is inside an `echo "…"` in a shell
+            script — a *printed* command line, which is the most dangerous form, because it
+            arrives looking like output from the tool itself. And the SOP's occurrence is prose
+            explaining why `reset --hard` is the WRONG move: flagging that would push someone to
+            delete the very sentence that teaches the lesson. Comment-literal blindness inverts
+            naive source greps (SCC-125), and this is the case where it inverts them twice.
+            """
+            s = line.strip()
+            for lead in ('echo "', "echo '", 'printf "', "printf '"):
+                if s.startswith(lead):
+                    s = s[len(lead):]
+                    break
+            s = s.lstrip("> \t")                       # markdown blockquote
+            s = re.sub(r"^([-*+]|\d+\.)\s+", "", s)    # list bullet
+            s = s.lstrip("$ \t")                       # shell prompt
+            # ⛔ A LEADING BACKTICK IS DELIBERATELY NOT STRIPPED, and that is the rule, not an
+            # omission. In markdown a backtick IS the signal "this is a name, not a step" — and
+            # the first cut stripped it, which flagged `git-policy.md`'s own SCC-180 paragraph:
+            # a line that names the command *in order to forbid it* was read as an instruction to
+            # run it. The guard would have demanded the deletion of the sentence that carries the
+            # lesson. Cost: a genuine instruction written as inline code (`` `git reset --hard x`
+            # — run this ``) is not caught. That trade is taken knowingly; the dangerous form is
+            # the bare, copy-pasteable one, and RH4 pins the mention side so it cannot drift back.
+            return s.strip()
+
+        NEEDLE = "reset --hard"
+        imperatives: list[str] = []
+        prose_hits = 0
+        scanned = 0
+        for rel in subprocess.run(
+                ["git", "ls-files", ".agents", "docs"], cwd=str(REPO),
+                capture_output=True, text=True).stdout.splitlines():
+            p = REPO / rel
+            try:
+                text = p.read_text(encoding="utf-8")
+            except (UnicodeDecodeError, OSError):
+                continue
+            scanned += 1
+            for n, line in enumerate(text.splitlines(), 1):
+                if NEEDLE not in line:
+                    continue
+                if payload(line).startswith("git " + NEEDLE):
+                    imperatives.append(f"{rel}:{n}")
+                else:
+                    prose_hits += 1
+
+        # ⛔ The floor. A wrong CWD, a renamed directory or a `git ls-files` that matched nothing
+        # makes every assertion below vacuously true — the SCC-165 lesson, applied here.
+        c.check("RH0 · the sweep actually read the toolkit", scanned >= 100,
+                f"only {scanned} tracked files scanned under .agents/ + docs/ — an empty glob "
+                f"scores this whole block green while checking nothing")
+        c.check("RH1 · nothing under .agents/ or docs/ prints `git reset --hard` as a step",
+                not imperatives,
+                f"found {imperatives} — the main checkout is never a clean tree; printing this "
+                f"as a remedy is how three sessions' uncommitted work was destroyed (SCC-180)")
+
+        # ⛔ RH1's ANTI-VACUITY TWIN, and the mutation sweep is what demanded it. RH1 asserts
+        # "no imperatives found" — which is exactly what a BLIND detector reports too. Break one
+        # line of `payload` (stop stripping `echo "`) and the guard stops seeing printed command
+        # lines altogether, RH1 goes green on an empty list, RH2/RH3/RH4 all still pass, and the
+        # whole block certifies a check that can no longer fail. RH0 is the floor for the SCAN
+        # (did we read any files?); this is the floor for the DETECTOR (can it still tell the two
+        # forms apart?). Both fixtures are synthetic on purpose: a control that reads the live
+        # tree would go vacuous again the moment the tree is clean, which is the state we want.
+        POSITIVE = '        echo "              git reset --hard origin/$1     # was the remedy"'
+        NEGATIVE = "> Never `git reset --hard` in a shared checkout — it eats other lanes' work."
+        c.check("RH1b · (control) the detector still SEES a printed `--hard` remedy",
+                payload(POSITIVE).startswith("git " + NEEDLE),
+                f"the shape the backstop shipped on 2026-08-15 is no longer recognised, so RH1 "
+                f"passes by blindness rather than by cleanliness. payload -> {payload(POSITIVE)!r}")
+        c.check("RH1c · (control) ...and still does NOT see the prose that forbids it",
+                NEEDLE in NEGATIVE and not payload(NEGATIVE).startswith("git " + NEEDLE),
+                f"a detector that flags the sentence teaching the lesson gets the lesson deleted. "
+                f"payload -> {payload(NEGATIVE)!r}")
+
+        # The two fixtures that keep RH1 honest, pinned by CONTENT rather than line number.
+        banner = BACKSTOP.read_text(encoding="utf-8")
+        # ⭐ ASSERTED THROUGH `payload`, NOT AS A FLAT SUBSTRING — and the first cut of this line
+        # was `"reset --hard" not in banner`, which went RED against the CORRECT fix. The file now
+        # explains why `--hard` was removed, and that explanation contains the string. A guard that
+        # forbids the string forbids the lesson: the next person deletes the comment to get green,
+        # and the reason is gone. Exactly the inversion SCC-125 records, reproduced inside the
+        # check written to prevent it.
+        banner_imperatives = [n for n, ln in enumerate(banner.splitlines(), 1)
+                              if NEEDLE in ln and payload(ln).startswith("git " + NEEDLE)]
+        c.check("RH2 · (fixture) the backstop's remedy is `--keep`, and says why",
+                "reset --keep" in banner and not banner_imperatives,
+                f"the banner is the FAIL fixture: if it ever prints `--hard` as a step again, RH1 "
+                f"must fire. Imperative lines here: {banner_imperatives}")
+        c.check("RH2b · ...and it names `--soft` for undoing a local commit",
+                "reset --soft" in banner,
+                "`--keep` refuses when the tree is dirty; the reader still needs the move that "
+                "undoes a commit without touching the tree, or they reach for `--hard` anyway")
+        sop = (REPO / "docs/_scc_sops_prds/workflows_testing_SOP.md").read_text(encoding="utf-8")
+        c.check("RH3 · (fixture) PROSE naming `reset --hard` as the wrong move still PASSES",
+                NEEDLE in sop and prose_hits >= 1,
+                "the SOP explains why `reset --hard` would be expensive. A check that cannot "
+                "tell that from an instruction would demand deleting the lesson")
+
+        # RH4 · the second mention fixture, and the one that caught the detector being wrong.
+        # `git-policy.md`'s SCC-180 paragraph names the command at the START of a line, inside
+        # backticks, in order to FORBID it. Stripping that backtick made it read as a step.
+        policy = (REPO / ".agents/rules/git-policy.md").read_text(encoding="utf-8")
+        c.check("RH4 · (fixture) the RULE that forbids `--hard` may name it, and still PASSES",
+                "reset --keep" in policy and "reset --soft" in policy
+                and not [n for n, ln in enumerate(policy.splitlines(), 1)
+                         if NEEDLE in ln and payload(ln).startswith("git " + NEEDLE)],
+                "the law names --keep and --soft as the replacements, and naming --hard to ban "
+                "it must not trip the ban — otherwise the only way to green is to delete the law")
+
+    # ── RH-B · and the remedy we now print does what the banner claims ────────────────────
+    # Prose in a banner is a promise. `--keep` is only the right advice if it genuinely refuses
+    # rather than discarding — asserted against real git, not assumed from the man page.
+    if c.block("RH-B · `git reset --keep` refuses on a dirty tree instead of discarding"):
+        with TempDir() as tmp:
+            r = tmp / "keep"
+            r.mkdir()
+            run = lambda *a: subprocess.run(["git", *a], cwd=str(r), capture_output=True,  # noqa: E731
+                                            text=True)
+            run("init", "-q", "-b", "main")
+            run("config", "user.email", "t@t.t")
+            run("config", "user.name", "t")
+            (r / "landed.txt").write_text("v1\n")
+            run("add", "-A"), run("commit", "-qm", "base")
+            base = run("rev-parse", "HEAD").stdout.strip()
+            (r / "landed.txt").write_text("v2\n")
+            run("add", "-A"), run("commit", "-qm", "second")
+            second = run("rev-parse", "HEAD").stdout.strip()
+
+            # CLEAN tree: the drill still works, or the new advice is useless.
+            got = run("reset", "--keep", base)
+            c.check("RH-B1 · on a CLEAN tree `--keep` rewinds exactly as `--hard` would",
+                    got.returncode == 0
+                    and run("rev-parse", "HEAD").stdout.strip() == base
+                    and (r / "landed.txt").read_text() == "v1\n",
+                    (got.stdout + got.stderr).strip()[:200])
+
+            # ⭐ DIRTY tree: THE POINT. This is the state the lobby's main checkout is always in.
+            # ⛔ Re-advance to `second` FIRST. RH-B1 has already rewound HEAD to `base`, so
+            # resetting to `base` again is a NO-OP that exits 0 — the assertion below went red on
+            # its own setup, not on git's behaviour, and a "refuses" check that can pass because
+            # nothing was asked of it is worthless in the other direction too.
+            run("reset", "-q", "--hard", second)
+            (r / "other-session.txt").write_text("another session's unsaved memory edit\n")
+            (r / "landed.txt").write_text("v1-edited-by-someone-else\n")
+            got = run("reset", "--keep", base)
+            c.check("RH-B2 · on a DIRTY tree `--keep` REFUSES and the other work survives",
+                    got.returncode != 0
+                    and (r / "other-session.txt").is_file()
+                    and (r / "landed.txt").read_text() == "v1-edited-by-someone-else\n",
+                    "this is the whole reason the banner changed — `--hard` here would have "
+                    "eaten both files without a word:\n" + (got.stdout + got.stderr).strip()[:200])
 
     return c.finish()
 
