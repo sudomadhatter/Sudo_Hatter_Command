@@ -102,7 +102,6 @@ def main() -> int:
                 "NO byte cap" in _rule and "Length is NEVER a reason to omit" in _rule,
                 "artifacts-always-first.md lost the 'dense, not short' standard")
 
-
         # ── Wave 4: the board note budget - the rule that keeps the split won ─
         proj4 = tmp / "proj4"
         (proj4 / wf.BOARD_REL).parent.mkdir(parents=True)

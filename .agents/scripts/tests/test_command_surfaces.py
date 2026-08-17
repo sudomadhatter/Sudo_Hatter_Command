@@ -1587,6 +1587,26 @@ def main() -> int:
             return (text[:i] + re.sub(MARK, "(removed)", seg, count=1, flags=re.I)
                     + text[nxt if nxt != -1 else len(text):])
 
+        def bare_paths_in(text, heading, boundary="\n### "):
+            """Demote every markdown link in ONE section to the bare path it points at.
+
+            ⛔ THIS IS NOT A SYNTHETIC MUTANT - it is verbatim what SCC-190 shipped. The
+            marker survives; only the clickable form dies, which is precisely a rule that
+            says `hand it back` beside a path the operator cannot open. Every control above
+            strips the MARKER, so `LINK` could be relaxed to `re.compile(r"")` - matching
+            everywhere, asserting nothing - and all four checks would stay green. Half the
+            predicate was unpinned, and it was the half that names the actual defect."""
+            i = text.index(heading)
+            nxt = text.find(boundary, i + 1)
+            j = nxt if nxt != -1 else len(text)
+            # `[-1]`, not `[1]`: identical on a real link, but it also keeps a DEGENERATE
+            # `LINK` (the `re.compile(r"")` mutant) from raising IndexError in here. A mutant
+            # that crashes the harness exits non-zero and scores as a kill while proving
+            # nothing about the control - `red-test-can-die-before-its-assertion`. This way
+            # the mutant reaches `c.check` and fails it honestly.
+            demoted = LINK.sub(lambda m: m.group(0).split("](", 1)[-1].rstrip(")"), text[i:j])
+            return text[:i] + demoted + text[j:]
+
         c.check("SCC-200 the rule carries the hand-back duty at ALL THREE seams",
                 not handback_gaps(hb), "; ".join(handback_gaps(hb)) or "?")
         # ⛔ NEGATIVE CONTROLS. Each removes the duty from ONE place; a predicate that stays
@@ -1604,6 +1624,13 @@ def main() -> int:
         mh = re.sub(r"(?im)^##\s*hand it back\s*$", "## Something Else", hb, count=1)
         c.check("SCC-200 CONTROL: losing the `## Hand It Back` home is caught",
                 any("Hand It Back" in g for g in handback_gaps(mh)), str(handback_gaps(mh)))
+        # ⛔ THE LINK HALF, pinned separately - the three controls above only prove MARK.
+        mw = bare_paths_in(hb, "### 5.")
+        c.check("SCC-200 CONTROL: a seam that says it but hands back a BARE PATH is caught",
+                any("### 5." in g for g in handback_gaps(mw)), str(handback_gaps(mw)))
+        mb = bare_paths_in(hb, "## Hand It Back", boundary="\n## ")
+        c.check("SCC-200 CONTROL: the `## Hand It Back` home losing its link FORM is caught",
+                any("markdown-link form" in g for g in handback_gaps(mb)), str(handback_gaps(mb)))
 
     return c.finish()
 

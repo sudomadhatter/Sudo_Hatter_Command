@@ -81,7 +81,7 @@ here, in this file, and still did not fire: SCC-190 ran an entire lane — plan,
 close-out, PR — handing back bare paths the whole way, and the operator had to ask for the links
 outright. A rule read at the top of a file is not read at the moment of the act, so it is repeated at
 each of the three seams where an artifact is produced. That repetition is deliberate: `SCC-200` in
-`test_workflow_lint.py` fails if any seam loses it.
+`test_command_surfaces.py` fails if any seam loses it.
 
 ## The Rule
 
