@@ -1,6 +1,6 @@
 == mutation_sweep @ SCC-190-bugs-and-updates [chore/SCC-190-bugs-and-updates-2026-08] - worktree ==
    /Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/SCC-190-bugs-and-updates
--- sweep: 16 mutant(s) over 1 file(s) @ aafe0d47 --
+-- sweep: 16 mutant(s) over 1 file(s) @ d7c33086 --
 KILLED    SB-M1 the flight-event demand is dropped
             KILLED by A1 RED: a reviewed close-out with NO flight event is refused, by name
             -- filter 'SCC-192 · a close-out PR must carry its receipts': matched 1/6 blocks --
@@ -40,8 +40,8 @@ KILLED    SB-M12 core.quotepath is dropped (a non-ASCII lane is silently never j
 KILLED    SB-M13 the manifest match goes back to endswith (subtask.yaml reds the PR)
             KILLED by A10 GREEN: subtask.yaml is not a manifest (basename, never endswith)
             -- filter 'SCC-192 · a close-out PR must carry its receipts': matched 1/6 blocks --
-⛔ NOT KILLED SB-M14 strip_fenced is dropped (a quoted FAIL governs)
-            SURVIVED - the named case still passed with the mutant in place
+KILLED    SB-M14 strip_fenced is dropped (a quoted FAIL governs)
+            KILLED by A11 GREEN: a fenced decoy does not govern, and the LATEST real stamp does
             -- filter 'SCC-192 · a close-out PR must carry its receipts': matched 1/6 blocks --
 KILLED    SB-M15 the FIRST stamp governs instead of the latest
             KILLED by A11 GREEN: a fenced decoy does not govern, and the LATEST real stamp does
@@ -49,7 +49,7 @@ KILLED    SB-M15 the FIRST stamp governs instead of the latest
 KILLED    SB-M16 the gate imports task_preflight again (F6's seven-module chain returns)
             KILLED by A12 the main-write gate imports LEAF modules only (wf_common, sop_currency)
             -- filter 'SCC-192 · a close-out PR must carry its receipts': matched 1/6 blocks --
--- restore verified: bytes match, nothing was committed, and `git diff --quiet aafe0d47` is clean --
+-- restore verified: bytes match, nothing was committed, and `git diff --quiet d7c33086` is clean --
 -- full file, unfiltered: python3 .agents/scripts/tests/test_main_write_gate_ci.py -> exit 0 --
         | [PASS] authorised source branch: 'chore/SCC-9-lane' is an authorised source branch
         | [PASS] close-out receipts
@@ -58,5 +58,4 @@ KILLED    SB-M16 the gate imports task_preflight again (F6's seven-module chain 
         | [PASS] A-mode GREEN: mode `gate` never asks for receipts (Road 2 untouched): the local door's road must not gain a second gate
         | -- 60/60 passed --
 
--- SWEEP FAILED --
-  * SB-M14 strip_fenced is dropped (a quoted FAIL governs): SURVIVED - the named case still passed with the mutant in place
+-- sweep clean: 16/16 killed by their declared case --

@@ -1,6 +1,6 @@
 == mutation_sweep @ SCC-190-bugs-and-updates [chore/SCC-190-bugs-and-updates-2026-08] - worktree ==
    /Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/SCC-190-bugs-and-updates
--- sweep: 6 mutant(s) over 1 file(s) @ aafe0d47 --
+-- sweep: 6 mutant(s) over 1 file(s) @ d7c33086 --
 KILLED    U-M1 the budget is raised past every real description
             KILLED by U2 a long one is cut to the budget and marked
             -- filter 'SCC-195': matched 1/14 blocks --
@@ -16,10 +16,10 @@ KILLED    U-M4 the budget rule stops cutting at all (the vacuous live sweep)
 KILLED    U-M5 door parity accepts ANY antigravity body (the check that blocked SCC-194)
             KILLED by door-parity CONTROL: a STALE mirror is caught
             -- filter 'CS-03': matched 1/14 blocks --
-⛔ NOT KILLED U-M6 the emulation counts CODE POINTS again (diverges from .NET on astral)
-            SURVIVED - the named case still passed with the mutant in place
+KILLED    U-M6 the emulation counts CODE POINTS again (diverges from .NET on astral)
+            KILLED by U7 the REAL PowerShell generator and this file's emulation agree, on every live description AND on an astral character
             -- filter 'SCC-195 · the Antigravity description budget': matched 1/14 blocks --
--- restore verified: bytes match, nothing was committed, and `git diff --quiet aafe0d47` is clean --
+-- restore verified: bytes match, nothing was committed, and `git diff --quiet d7c33086` is clean --
 -- full file, unfiltered: python3 .agents/scripts/tests/test_command_surfaces.py -> exit 0 --
         | [PASS] U8 CONTROL: a mirror carrying the CUT description is parity, not stale: the budgeted form must be the fixed point the mirror is compared against
         | [PASS] U8 CONTROL: ...and one changed body word is NOT: the comparison must still see everything below the description line
@@ -28,5 +28,4 @@ KILLED    U-M5 door parity accepts ANY antigravity body (the check that blocked 
         | [PASS] U7 CONTROL: the BRAINS keep their full descriptions (the budget is the menu's): only 41 long brains - did the shortening leak into .agents/commands?
         | -- 122/122 passed --
 
--- SWEEP FAILED --
-  * U-M6 the emulation counts CODE POINTS again (diverges from .NET on astral): SURVIVED - the named case still passed with the mutant in place
+-- sweep clean: 6/6 killed by their declared case --
