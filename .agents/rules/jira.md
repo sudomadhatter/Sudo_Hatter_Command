@@ -240,7 +240,8 @@ label is not cosmetic:**
 | `quick-dev` | ships via one light lane (`/cicd-quick-dev`, or `/smh-quick-dev` for Task work) instead of the full ①②③ loop | ① `/cicd-write-story-tests` at pickup, **and** the labelling pass — see below |
 | `blocked` | waiting on a linked blocker (the `Blocks` link names WHAT; pair with the `Blocking` status where the board has it) | ① `/cicd-write-story-tests`, at pickup |
 | **`parallel-ok`** | in the approved set the last check computed — safe to run beside **every other** 🟢 under that parent | ⭐ **the labelling pass, and nothing else** |
-| **`user-tasks`** | merged, but the walkthrough leaves something only the operator can do — read the "User tasks" comment | ⭐ **`jira_feed.py finish`, at close-out** (SCC-155) |
+| **`user-tasks`** | merged, but the walkthrough leaves something only the operator can decide — read the "User tasks" comment | ⭐ **`jira_feed.py finish`, at close-out** (SCC-155) |
+| **`bugs-and-updates`** | **the ROLLING ticket** — the one always-open `Bugs and Updates - <YYYY-MM>` Task that discovered work files under as a Subtask when no thematic parent fits (`work-consolidation.md` rule 1, rung 3). Exactly ONE open at a time; find it by this label before you mint anything | by hand, on the Task that opens the cycle (SCC-191) |
 
 **The labelling pass is one engine behind two commands**, and which one you run is decided by the
 parent, not by preference:

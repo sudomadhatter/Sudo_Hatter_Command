@@ -1236,6 +1236,22 @@ queue grew faster than it drained — *"we are not developing 3 task for every 1
 look for a home before you mint · when able, one worktree for the whole Task · verify the batch in one
 block · artifact-first · two stops only · verify the outcome of a board write, never its exit code.
 
+**⭐ Rule 1 now has FOUR rungs, and the third is a ROLLING TICKET (SCC-191).** Your ruling,
+2026-08-16: *"we should always have a New findings Ticket Open to put things like this in … once it
+get big enough we run it. or split it up into new tickets. close them all and create a new one thats
+the cycle."* So: **own ticket → open thematic parent → the OPEN ROLLING TICKET → mint.** The rolling
+ticket is one always-open Task called **`Bugs and Updates - <YYYY-MM>`**, labelled
+**`bugs-and-updates`** so the look-before-mint search finds whichever one is open, and discovered
+work files under it as a **Subtask** — the same shape as any lettered part. **The live one is
+`SCC-190`.** Minting a brand-new Task is now rung *four*, reserved for work that is a lane in its own
+right on day one.
+
+**What you will notice:** far fewer one-off tickets at close-out. When the rolling ticket is big
+enough — **your call, at the time** — it is either RUN as one lane (every subtask a rider) or SPLIT
+into real Tasks; then every subtask and the parent close, and the next one opens. What still does not
+go there: work an open lane's ticket already covers, work with a real thematic parent, and review
+findings that can be fixed in thread (which are fixed in thread).
+
 **Porting a file between the centre and a project — the plan answers six questions first (SCC-176).**
 Every port so far (AVCH-54, AVCH-59) cost an afternoon and found the same class of defect: the
 centre's copy is subtly wrong the moment it runs in a **submodule**, on **Windows**, in a

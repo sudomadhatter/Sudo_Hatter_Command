@@ -62,8 +62,10 @@ lane exists to remove. The operator's ask IS the decision; agents mint.
 > ⭐ **But look for a home first (`work-consolidation.md` rule 1).** Minting is the agent's call, not
 > the operator's — and the call starts by checking whether an **open parent** already covers this
 > surface, in which case this is its next lettered Subtask (add the index row with
-> `jira_feed.py index-row`, which proves the parent's other rows survived the write). Mint when
-> nothing fits, and say in one line what you looked at.
+> `jira_feed.py index-row`, which proves the parent's other rows survived the write). **No thematic
+> parent? It is a subtask on the OPEN ROLLING TICKET** (`Bugs and Updates - <YYYY-MM>`, label
+> `bugs-and-updates`; `SCC-190` today) — rung 3 since SCC-191. Mint only for work that is a lane in
+> its own right on day one, and say in one line what you looked at.
 
 ```bash
 acli jira workitem create --project SCC --type Task --summary "…" --description "…"

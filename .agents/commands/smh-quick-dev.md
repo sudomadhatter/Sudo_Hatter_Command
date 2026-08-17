@@ -217,8 +217,10 @@ a one-line doc tweak. Say which, then proceed. Anything above that gets the gate
 > automatically a new Task. In order: does this lane's own ticket cover it (a checklist line)? is
 > there an **open parent** whose surface this belongs to (then it is the next lettered
 > **Subtask** under it, with an index row added via `jira_feed.py index-row`, which reads the
-> parent's description back and refuses if a line went missing)? only then mint — and say in ONE
-> line what you looked at. Judgment, not a gate; the unstated choice is the thing that is banned.
+> parent's description back and refuses if a line went missing)? no thematic parent — then it is a
+> subtask on the **OPEN ROLLING TICKET** (`Bugs and Updates - <YYYY-MM>`, label `bugs-and-updates`; `SCC-190` today), which is rung 3 and the normal answer for a
+> finding a landing exposes; only then mint, for work that is a lane in its own right — and say in
+> ONE line what you looked at. Judgment, not a gate; the unstated choice is the thing that is banned.
 > *"we are not developing 3 task for every 1 we try to fix"* (operator, 2026-08-15).
 
 **Runs only after `approved`, and only on a `Task`** — never on a BMAD Story, whose story file already

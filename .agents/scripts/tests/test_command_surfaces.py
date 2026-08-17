@@ -1152,6 +1152,59 @@ def main() -> int:
                 [i for i in live.items if "port-checklist" in i["msg"]] == [],
                 f"{[i['msg'] for i in live.items if 'port-checklist' in i['msg']]}")
 
+
+    # ══ SCC-191 · RULE 1 HAS FOUR RUNGS, AND THE THIRD IS THE ROLLING TICKET ═══════════════
+    #
+    # OPERATOR RULING, 2026-08-16, VERBATIM: "we should always have a New findings Ticket Open
+    # to put things like this in. that way its one ticket that grows with sub task, we can add
+    # this to the same rule about looking for an open ticket, if there is not a good one make a
+    # 'Bugs and Updates Ticket' and add them as sub task to it. once it get big enough we run
+    # it. or split it up into new tickets. close them all and create a new one thats the cycle"
+    #
+    # WHAT WAS WRONG: Rule 1's rung 3 was "nothing fits -> MINT", and it fired on MOST findings
+    # that surface during a landing, because most have no thematic parent open. One new Task per
+    # close-out, each costing a plan, a review and a ceremony, and a board of singletons.
+    #
+    # ⛔ WHY THIS IS PINNED AT ALL, given it is filing law and not a gate: the rule's SEARCH is
+    # the enforcement ("say in ONE line what you looked at"), and a search that cannot surface
+    # the rolling ticket lets an agent say "nothing fits" while one is open. The pin is
+    # mechanical and narrow - the rungs exist, in order, and the search names the label - which
+    # is all a machine can honestly check about a judgment rule.
+    if c.block("SCC-191 · Rule 1's four rungs and the rolling ticket"):
+        rule = read(ROOT / ".agents/rules/work-consolidation.md")
+        body = rule.split("## Rule 2")[0]
+        rungs = re.findall(r"^\s{0,3}(\d)\.\s+\*\*(.+?)\*\*", body, re.M)
+        c.check("R1a Rule 1 has FOUR rungs", len(rungs) == 4,
+                f"{len(rungs)}: {[r[1][:40] for r in rungs]}")
+        c.check("R1b ...numbered 1-4 in order", [r[0] for r in rungs] == ["1", "2", "3", "4"],
+                str([r[0] for r in rungs]))
+        if len(rungs) == 4:
+            third, fourth = rungs[2][1].lower(), rungs[3][1].lower()
+            c.check("R1c rung 3 is the OPEN ROLLING TICKET", "rolling" in third, rungs[2][1][:80])
+            c.check("R1d rung 4 is the mint, and it is now the last resort",
+                    "mint" in fourth, rungs[3][1][:80])
+        c.check("R1e the cycle is named: run-or-split, close all, open the next",
+                all(w in body.lower() for w in ("run", "split", "close", "next")) and
+                "cycle" in body.lower(), "the rule must name the cycle, not a threshold")
+        c.check("R2 the look-before-mint search names the rolling ticket's label",
+                "bugs-and-updates" in body,
+                "an agent must be able to FIND the open one, or 'nothing fits' is unfalsifiable")
+        c.check("R3 the live instance is named, so nobody mints a second one",
+                "SCC-190" in body, "the rolling ticket that exists today")
+        c.check("R4 the worked example (SCC-192, re-filed from a fresh Task) is recorded",
+                "SCC-192" in body, "the re-filing IS the rule")
+
+        # The rule is restated in four places. A stale restatement is a second source of law,
+        # and this system has already paid for that once (the retired scrum board).
+        for rel in (".agents/skills/code-review-engine/steps/step-01-review.md",
+                    ".agents/commands/smh-quick-dev.md",
+                    ".agents/commands/smh-quick-fix.md"):
+            body_ = read(ROOT / rel).lower()
+            if "rule 1" not in body_ and "work-consolidation" not in body_:
+                continue
+            c.check(f"R2b the restatement in {rel.split('/')[-1]} names the rolling ticket",
+                    "rolling" in body_, "a stale restatement is a second source of law")
+
     return c.finish()
 
 
