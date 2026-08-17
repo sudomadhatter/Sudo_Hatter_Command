@@ -1283,7 +1283,19 @@ def main() -> int:
         # the thing an agent actually runs - changed nothing the check could see. The rule's
         # enforcement IS the search; a label named only in prose is a label nobody queries.
         fences = re.findall(r"```(?:bash)?\n(.*?)```", body, re.S)
-        searches = "\n".join(f for f in fences if "acli jira workitem search" in f)
+        # ⛔ COMMENT LINES ARE STRIPPED, and that is not tidying - without it these checks are
+        # VACUOUS. Measured on this lane: SCC-198 added explanatory `#` comments above the query
+        # that name BOTH labels, and with those present the query line itself could be deleted
+        # outright and R2/R2c still passed. Proven by mutation, not argued: delete the `--jql`
+        # line, keep the comments, both go green.
+        # ⭐ This is the SECOND time this exact hole has been closed one level down. R2 was
+        # already narrowed from the whole `body` to the fenced block because rung 3's PROSE
+        # satisfied it (R-M2). Comments inside the fence are prose that happens to live in a code
+        # block - the same defect wearing the fence as a disguise. Only a line an agent could RUN
+        # counts as the rule's enforcement.
+        runnable = "\n".join(ln for f in fences if "acli jira workitem search" in f
+                             for ln in f.splitlines() if not ln.lstrip().startswith("#"))
+        searches = runnable
         # ⛔ BOTH markers, and the second is not decoration (SCC-198 review finding). The label
         # split created a WINDOW: between a cycle closing and the next one starting, the only
         # open rolling ticket is the un-started successor, which carries `running-bug-list` and
