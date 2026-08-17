@@ -1242,15 +1242,35 @@ get big enough we run it. or split it up into new tickets. close them all and cr
 the cycle."* So: **own ticket → open thematic parent → the OPEN ROLLING TICKET → mint.** The rolling
 ticket is one always-open Task called **`Bugs and Updates - <YYYY-MM>`**, labelled
 **`bugs-and-updates`** so the look-before-mint search finds whichever one is open, and discovered
-work files under it as a **Subtask** — the same shape as any lettered part. **The live one is
-`SCC-190`.** Minting a brand-new Task is now rung *four*, reserved for work that is a lane in its own
-right on day one.
+work files under it as a **Subtask** — the same shape as any lettered part. Find it **by label, never
+by remembering a key** — the key changes every cycle. Minting a brand-new Task is now rung *four*,
+reserved for work that is a lane in its own right on day one.
 
 **What you will notice:** far fewer one-off tickets at close-out. When the rolling ticket is big
 enough — **your call, at the time** — it is either RUN as one lane (every subtask a rider) or SPLIT
-into real Tasks; then every subtask and the parent close, and the next one opens. What still does not
-go there: work an open lane's ticket already covers, work with a real thematic parent, and review
-findings that can be fixed in thread (which are fixed in thread).
+into real Tasks; then every subtask and the parent close. What still does not go there: work an open
+lane's ticket already covers, work with a real thematic parent, and review findings that can be fixed
+in thread (which are fixed in thread).
+
+**⭐ The next cycle now opens BY ITSELF, and you will see TWO labels (SCC-198).** Your ruling,
+2026-08-17: *"once you move it to In Progress we switch the tag … it now clones, it moves the
+original, and switches the tag to the bugs-and-updates."* That is built. The moment a rolling ticket
+moves to **In Progress**, `jira_feed.py start` clones its successor and hands a marker on:
+
+| Label | What it means | How many tickets have it |
+|---|---|---|
+| `running-bug-list` | next cycle, **not yet started** — this is the trigger | exactly one, always |
+| `bugs-and-updates` | a cycle that **has** started — **this is the one you file into** | every cycle ever run |
+
+**The one thing to know:** file discovered work into **`bugs-and-updates`**, not `running-bug-list`.
+The latter is next cycle's placeholder; putting today's work there buries it one cycle downstream.
+
+It works this way because a marker that *moves* can only fire once — after the hand-off there is no
+trigger left, so nothing can mint a duplicate, and no board lookup has to be right for that to hold.
+Cloning happens at **start** rather than close-out because running the rolling ticket is exactly the
+window in which nothing else is open to catch new findings. A failed clone is not a lost cycle: the
+marker stays put and the next start tries again. **If you ever see two open tickets carrying
+`running-bug-list`**, a hand-off failed — strip it from the older one.
 
 **Porting a file between the centre and a project — the plan answers six questions first (SCC-176).**
 Every port so far (AVCH-54, AVCH-59) cost an afternoon and found the same class of defect: the

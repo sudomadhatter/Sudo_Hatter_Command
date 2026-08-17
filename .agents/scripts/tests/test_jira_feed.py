@@ -222,6 +222,24 @@ elif head[:3] == ["jira", "workitem", "search"]:
         print("Error: the search failed", file=sys.stderr)
         sys.exit(1)
     print(json.dumps(state.get("search", [])))
+elif head[:3] == ["jira", "workitem", "clone"]:
+    # Modelled on the REAL behaviour, measured 2026-08-17 against the live board (test clone
+    # SCC-199, created + inspected + deleted): the clone carries summary, description and
+    # LABELS, lands in `To Do` regardless of the source's status, and carries NO SUBTASKS.
+    # That last one is the whole reason clone is the chosen mechanism, so the stub has to
+    # model it or the case proves nothing about the property it was picked for.
+    if state.get("clone_fail"):
+        print("Error: the clone failed", file=sys.stderr)
+        sys.exit(1)
+    src = val("--key")
+    new_key = state.get("clone_key", "TEST-CLONE")
+    state["clones"] = state.get("clones", []) + [src]
+    state.setdefault("labels", {})[new_key] = list(state.get("labels", {}).get(src, []))
+    state.setdefault("statuses", {})[new_key] = "To Do"
+    state.setdefault("summaries", {})[new_key] = state.get("summaries", {}).get(src, "")
+    save()
+    print("Work item " + str(src) + " has been successfully cloned as "
+          "https://example.atlassian.net/browse/" + new_key)
 elif head[:3] == ["jira", "workitem", "create"]:
     if not state.get("swallow_desc"):
         state["description"] = read("--description-file")
@@ -232,12 +250,31 @@ elif head[:3] == ["jira", "workitem", "edit"]:
     if "--type" in args:
         state.setdefault("types", {})[val("--key")] = val("--type")
         state.setdefault("retyped", []).append(val("--key"))
-    elif "--labels" in args:
-        # `--labels` REPLACES the whole set on the real acli, which is exactly why every
-        # writer has to read-modify-write. Modelled as a replace here or a test could not
-        # tell a preserving writer from a clobbering one.
-        state.setdefault("labels", {})[val("--key")] = [
-            x for x in (val("--labels") or "").split(",") if x]
+    elif "--labels" in args or "--remove-labels" in args:
+        # `label_edit_fail` is scoped to the LABEL form deliberately: a blanket `edit_fail`
+        # would also kill the DESCRIPTION writers, and a large share of this file's cases
+        # edit descriptions - the knob would break far more than the branch it aims at.
+        if state.get("label_edit_fail"):
+            print("Error: could not set labels", file=sys.stderr)
+            sys.exit(1)
+        # ⛔⛔ MEASURED 2026-08-17 against the LIVE board (SCC-197: probe label added, then
+        # removed, reading the field back at every step). `--labels` **ADDS**. It does NOT
+        # replace. `--remove-labels` is a separate flag, and acli honours BOTH in one call.
+        #
+        # ⭐ THIS STUB SAID "REPLACES" FOR MONTHS, AND THE LIE COST A SHIPPED DEFECT. Because
+        # a replace-modelled stub turns "send the set minus X" into a working strip,
+        # `cmd_finish`'s `user-tasks` strip passed its test while doing NOTHING on the real
+        # board: it built the reduced set, sent it via `--labels`, acli added labels that were
+        # already there, exited 0, and the label stayed on. A Done ticket kept the very signal
+        # the strip exists to clear. This file's own view-whitelist comment states the rule
+        # that was broken here: a stub more generous than the tool it stands in for cannot
+        # fail on the bug it exists to catch.
+        cur = list(state.get("labels", {}).get(val("--key"), []))
+        for x in (val("--labels") or "").split(","):
+            if x and x not in cur:
+                cur.append(x)
+        drop = {x for x in (val("--remove-labels") or "").split(",") if x}
+        state.setdefault("labels", {})[val("--key")] = [x for x in cur if x not in drop]
     else:
         body = read("--description-file")
         # SCC-170: the LOSSY WRITER. `lossy_drop` models the real failure this guard exists
@@ -2746,6 +2783,173 @@ Nothing is actually owed.
             c.check("B8 finish reports BOTH families in one run, then refuses once",
                     rc5 == 2 and "only the operator decides" in out5
                     and "BANNED ACTION ROW" in out5, f"exit={rc5}: " + out5.strip()[-600:])
+
+    # ══ SCC-198 · `start` clones the successor and HANDS THE BATON ON ══════════════════════
+    #
+    # ⛔ THE DEFECT THIS CLOSES, MEASURED. SCC-190's cycle instruction lived only in its own
+    # description - first line, capitals: "BEFORE CLOSING THIS OUT CLONE A NEW ONE WITH NO SUB
+    # TASKS". It did not fire. The operator had to say it out loud, and their words are the
+    # whole design brief: "its writen in the ticket I just dont know if you will read it."
+    #
+    # ⭐⛔ THE LABEL IS A BATON, NOT A PROPERTY - operator ruling 2026-08-17, which REPLACED an
+    # earlier two-tag design of mine where both markers sat on the ticket permanently:
+    #   "I dont like the two tags - once you move it to In Progress we switch the tag. this
+    #    avoids issues with the tag linked to the script cloning again too. this way it can
+    #    only [clone] one. it now clones, it moves the original, and switches the tag to the
+    #    bugs-and-updates."
+    # So exactly ONE ticket carries `running-bug-list` at any moment - the next cycle,
+    # un-started - and `bugs-and-updates` is what a cycle wears AFTER it has started.
+    #
+    # WHY THAT IS STRONGER, which is also why these cases are shaped the way they are. A
+    # PERMANENT trigger can fire twice, so every guard against a second clone has to ASK THE
+    # BOARD: a network call that can be wrong, slow or unavailable. A BATON is consumed by
+    # use - after the swap the trigger is gone, so a re-fire cannot clone, with nothing to
+    # query and nothing to get wrong. A2b is that guard, and it is the load-bearing case here.
+    #
+    # ⭐ THE INVARIANT EVERY BRANCH BELOW IS DERIVED FROM, rather than patched onto:
+    #      a rolling ticket holds `running-bug-list` until its successor EXISTS,
+    #      and not one moment longer.
+    # Hence clone BEFORE swapping (A1b - the clone inherits labels, and that IS the handoff);
+    # swap even when this run did not do the cloning (A4b); and WITHHOLD the swap when no
+    # successor was made (A5c, A7), which is what lets the next `start` retry.
+    #
+    # ⭐ AT START, NOT AT CLOSE-OUT. Running the rolling ticket is exactly the window in which
+    # the system has NO open home for discovered work - the only open one is the one being
+    # run. Cloning at start means cycle N+1 exists from the lane's first minute.
+    if c.block("SCC-198 · start clones the successor and hands the baton on"):
+        ROLL, TRIG = "bugs-and-updates", "running-bug-list"
+
+        def started(tmp, *, labels, statuses=None, search=None, **extra):
+            repo, acli, state = build(tmp)
+            set_state(state, types={"TEST-7": "Task"},
+                      statuses=statuses or {"TEST-7": "To Do"},
+                      labels={"TEST-7": labels}, search=search or [], **extra)
+            os.environ["STUB_STATE"] = str(state)
+            rc, out = run_script("jira_feed.py", "start", "--key", "TEST-7",
+                                 "--acli", str(acli), "--apply")
+            return rc, out, get_state(state)
+
+        with TempDir() as tmp:
+            rc, out, st = started(tmp, labels=[TRIG])
+            lab = st.get("labels", {})
+            c.check("A1 a ticket carrying the baton clones its successor on start",
+                    st.get("clones") == ["TEST-7"], f"clones={st.get('clones')} rc={rc}")
+            c.check("A1a ...and the run still reports the transition it was asked for",
+                    rc == 0 and st.get("statuses", {}).get("TEST-7") == "In Progress",
+                    f"rc={rc} {st.get('statuses')}")
+            # ⭐ BOTH ENDS OF THE HANDOFF. Asserting only that a clone happened would pass an
+            # implementation that swapped FIRST and handed on a dead marker - the cycle would
+            # end silently one ticket later, and every case above would still be green.
+            c.check("A1b the SUCCESSOR inherits the baton (clone carries labels)",
+                    TRIG in lab.get("TEST-CLONE", []),
+                    f"successor labels={lab.get('TEST-CLONE')}")
+            c.check("A1c the ORIGINAL gives the baton up and takes the identity label",
+                    lab.get("TEST-7") == [ROLL], f"TEST-7 labels={lab.get('TEST-7')}")
+
+        # ⛔ A1d · `--labels` REPLACES the whole set on the real acli (pinned independently at
+        # "finish: adding user-tasks PRESERVES the labels already there"). A swap that sends
+        # only its own two markers silently strips everything else the ticket carried.
+        with TempDir() as tmp:
+            _, _, st = started(tmp, labels=[TRIG, "user-tasks"])
+            c.check("A1d the swap PRESERVES every other label the ticket carried",
+                    set(st.get("labels", {}).get("TEST-7", [])) == {ROLL, "user-tasks"},
+                    f"TEST-7 labels={st.get('labels', {}).get('TEST-7')}")
+
+        # ⛔ A2 · THE CONTROL THAT IS THE WHOLE POINT. Every OTHER ticket in the system goes
+        # through this seam - `/smh-quick-fix`, `/smh-quick-dev`, `/smh-plan-task` and the
+        # post-commit recorder, which fires on EVERY commit. A trigger that leaked here would
+        # clone a rolling ticket on ordinary work.
+        with TempDir() as tmp:
+            rc, out, st = started(tmp, labels=[])
+            c.check("A2 CONTROL: an ordinary ticket clones NOTHING", not st.get("clones"),
+                    f"clones={st.get('clones')}")
+        # ⭐⛔ A2b · THE LOAD-BEARING CASE - the baton's entire payoff. A ticket whose trigger
+        # is already SPENT cannot clone, and no board query is consulted to decide it. Under
+        # the two-tag design this same ticket WOULD have cloned, and only a search standing
+        # between it and a duplicate would have stopped it.
+        with TempDir() as tmp:
+            rc, out, st = started(tmp, labels=[ROLL])
+            c.check("A2b CONTROL: a SPENT baton clones nothing, with nothing to query",
+                    not st.get("clones"),
+                    "bugs-and-updates says a cycle already STARTED; it must never say DO")
+
+        # ⭐ A3 · ZERO EXTRA BOARD READS on the normal path, COUNTED rather than assumed.
+        # `view_fields` already puts `labels` on its whitelist, so the trigger is a list
+        # membership test on data already in memory.
+        # ⛔ THE BASELINE IS **2**, AND THAT IS MEASURED, NOT GUESSED: `cmd_start` reads once
+        # to see the status and once AFTER the transition to verify it landed. The first cut
+        # of this case asserted 1 and went red against unmodified code - a number taken from
+        # the plan instead of from the program. Pinning the real baseline is what makes this a
+        # cost gate: an implementation that re-read the ticket to check the label shows up
+        # here as a THIRD call and reds this case.
+        with TempDir() as tmp:
+            _, _, st = started(tmp, labels=[])
+            c.check("A3 an ordinary start adds NO board read beyond its own baseline of 2",
+                    st.get("views") == 2, f"views={st.get('views')}")
+        with TempDir() as tmp:
+            _, _, st = started(tmp, labels=[TRIG])
+            c.check("A3b ...and a full cycle adds no READ either (it searches and writes)",
+                    st.get("views") == 2, f"views={st.get('views')}")
+
+        # ⛔ A4 · THE PROMPT AND THE TAG BOTH FIRE, BY DESIGN. The operator's prompt at the top
+        # of the ticket clones by hand, so two things race to do this. The first draft had the
+        # code RETURN here - wrong under the baton: the hand-made clone inherited the trigger
+        # too, so returning leaves TWO tickets holding a marker that must be unique. Skip the
+        # clone; still hand the baton on.
+        with TempDir() as tmp:
+            _, _, st = started(tmp, labels=[TRIG],
+                               search=[{"key": "TEST-88", "fields": {"summary": "successor"}}])
+            c.check("A4 an existing open successor means NO second clone",
+                    not st.get("clones"), f"clones={st.get('clones')}")
+            c.check("A4b ...but the baton is STILL handed on - one holder, never two",
+                    st.get("labels", {}).get("TEST-7") == [ROLL],
+                    f"TEST-7 labels={st.get('labels', {}).get('TEST-7')}")
+        with TempDir() as tmp:
+            _, _, st = started(tmp, labels=[TRIG], statuses={"TEST-7": "In Progress"})
+            c.check("A4c a ticket ALREADY In Progress does nothing at all",
+                    not st.get("clones") and not st.get("edit_args"),
+                    f"clones={st.get('clones')} edit={st.get('edit_args')}")
+
+        # ⛔ A5 · A CLONE FAILURE MUST NOT FAIL THE START. This seam sits on the path of every
+        # commit in the repo (`post-commit-jira-start.sh`), so work is never blocked because a
+        # successor could not be minted: it says so loudly and the lane proceeds.
+        with TempDir() as tmp:
+            rc, out, st = started(tmp, labels=[TRIG], clone_fail=True)
+            c.check("A5 a failed clone leaves start's own exit code intact", rc == 0,
+                    f"rc={rc}: " + out.strip()[-300:])
+            c.check("A5b ...and says so loudly rather than silently",
+                    "clone" in out.lower()
+                    and st.get("statuses", {}).get("TEST-7") == "In Progress",
+                    out.strip()[-300:])
+            # ⭐ THE SELF-HEAL, and the case most worth having. Swapping here would retire the
+            # trigger with NOBODY holding it: the cycle ends silently and forever, which is
+            # the exact failure this whole part exists to prevent, reintroduced by a
+            # mis-ordered fix. Leaving it put means the next `start` simply tries again.
+            c.check("A5c ...and the baton STAYS PUT, so the next start retries",
+                    st.get("labels", {}).get("TEST-7") == [TRIG],
+                    f"TEST-7 labels={st.get('labels', {}).get('TEST-7')}")
+
+        # ⛔ A6 · A FAILED HAND-OFF IS LOUD, and still not fatal - same reason as A5. The board
+        # is left with two trigger-holders until someone notices, which is the one gap this
+        # part does NOT close; it is recorded rather than hidden.
+        with TempDir() as tmp:
+            rc, out, st = started(tmp, labels=[TRIG], label_edit_fail=True)
+            c.check("A6 a failed baton hand-off neither fails the start nor goes quiet",
+                    rc == 0 and TRIG in out, f"rc={rc}: " + out.strip()[-300:])
+
+        # ⛔ A7 · A FAILED SEARCH IS NOT AN EMPTY ONE. `acli_json` returns None when the call
+        # fails and [] when it legitimately found nothing - byte-identical to a caller that
+        # only checks truthiness, and cloning on that mistake mints a duplicate every time the
+        # network hiccups. Refusing BOTH the clone and the swap is the self-healing direction:
+        # the trigger survives and the next start retries.
+        with TempDir() as tmp:
+            rc, out, st = started(tmp, labels=[TRIG], search_fail=True)
+            c.check("A7 a failed successor search clones nothing and keeps the baton",
+                    not st.get("clones")
+                    and st.get("labels", {}).get("TEST-7") == [TRIG],
+                    f"clones={st.get('clones')} labels={st.get('labels', {}).get('TEST-7')}")
+            c.check("A7b ...and start still succeeds, loudly", rc == 0 and TRIG in out,
+                    f"rc={rc}: " + out.strip()[-300:])
 
     # ══ SCC-193 Part D · the SCC-175 merge-row pin, run BOTH ways ══════════════════════════
     #

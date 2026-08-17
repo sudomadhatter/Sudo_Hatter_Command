@@ -36,12 +36,18 @@ Work discovered mid-lane (a review finding, a bug met while building, a defect a
 2. **Is there an OPEN parent whose surface this belongs to?** Then it becomes the next **lettered
    part** — a `Subtask` under that parent, with a row in the parent's index description. This is the
    normal answer.
-3. **Nothing thematic fits? Then it goes on the OPEN ROLLING TICKET** — the one always-open
-   `Bugs and Updates - <YYYY-MM>` Task, labelled **`bugs-and-updates`**, as the next **Subtask**
+3. **Nothing thematic fits? Then it goes on the OPEN ROLLING TICKET** — the `Bugs and Updates -
+   <YYYY-MM>` Task that is labelled **`bugs-and-updates` and not Done**, as the next **Subtask**
    under it. Same shape as rung 2, so there is nothing new to learn: title, the measured defect,
    `SCOPE`, `ACCEPTANCE`, and a row added to the parent's index with `jira_feed.py index-row`.
-   **The live instance today is `SCC-190`** — do not mint a second one; find whichever is open by
-   its label.
+   Do not mint a second one; **find whichever is open by its label**, never by remembering a key.
+
+   > ⛔ **TWO labels, and only one of them is a filing target (SCC-198).** `bugs-and-updates` marks
+   > a cycle that has **started** — that is the one you file into. **`running-bug-list` marks next
+   > cycle's placeholder**, which `cmd_start` clones automatically the moment the current one moves
+   > to In Progress. It is not a filing target; putting today's work in it buries the work one
+   > cycle downstream. If no `bugs-and-updates` ticket is open, starting the `running-bug-list` one
+   > produces one.
 4. **A lane in its own right on day one? MINT it — and only then.** Say in ONE line what you
    looked at. That sentence is the whole enforcement mechanism.
 
@@ -67,8 +73,26 @@ or split it up into new tickets. close them all and create a new one thats the c
 - **When it is big enough** — the operator's call at the time, deliberately not a threshold in this
   rule — it is either **RUN as one lane** (every subtask a `riders:` entry; rule 2's consolidated
   lane and SCC-170's partial-landing contract apply unchanged) or **SPLIT into real Tasks**.
-- **Then every subtask and the parent close, and the next one opens.** Nothing lingers, and no
-  finding waits on a thematic parent that may never exist.
+- **Then every subtask and the parent close.** Nothing lingers, and no finding waits on a thematic
+  parent that may never exist.
+
+⭐ **The next one opens BY ITSELF, at START (SCC-198).** `jira_feed.py start` clones the successor
+the moment a rolling ticket moves to In Progress — not at close-out, because *running* the rolling
+ticket is exactly the window in which the system has **no open home** for discovered work. Cloning
+at start means cycle N+1 exists from the lane's first minute.
+
+The mechanism is a **baton**, and it is worth knowing because it explains what you will see on the
+board: `running-bug-list` sits on exactly **one** ticket — the next cycle, un-started. Starting that
+ticket clones its successor (an acli clone carries labels, so the successor inherits the trigger)
+and swaps the original to `bugs-and-updates`. A ticket therefore holds the trigger *until its
+successor exists, and not one moment longer*. Two consequences you can rely on:
+
+- **A rolling ticket clones exactly once, ever** — after the swap there is no trigger left to fire,
+  so a re-run cannot mint a duplicate.
+- **A failed clone is not a lost cycle** — the trigger stays put and the next `start` tries again.
+
+You do not have to do any of this by hand. If you ever see **two** open tickets carrying
+`running-bug-list`, a hand-off failed: strip it from the older one so exactly one holds it.
 
 **The worked example is in the history:** `SCC-192` (the close-out-receipts finding) was minted as a
 fresh Task under the old rung 3 and **re-filed the same day as a subtask** of `SCC-190`. That
