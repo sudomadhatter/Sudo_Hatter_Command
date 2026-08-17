@@ -9,4 +9,8 @@ secondary_repos: []
 # SCC-202 was NOT planned: it is a shipped defect Part A uncovered (acli `--labels` adds rather
 # than replaces, so `finish`'s user-tasks strip has never worked). Fixing the stub to match the
 # measured behaviour turns that case red, so the fix is forced by this lane rather than optional.
-riders: [SCC-198, SCC-200, SCC-202]
+# SCC-203 was added mid-lane (the review that ran on THIS lane degraded silently, and the
+# operator caught it by reading the chat). SCC-205 is WAVE 2 - the /cicd-* parity audit -
+# and is deliberately NOT part of this landing: wave 1 lands first and SCC-197 stays open.
+riders: [SCC-198, SCC-200, SCC-202, SCC-203]
+landing_mode: partial   # wave 1 of 2; SCC-205 (wave 2) keeps the parent open

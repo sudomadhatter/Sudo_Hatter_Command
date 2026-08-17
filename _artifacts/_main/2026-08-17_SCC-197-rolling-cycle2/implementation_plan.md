@@ -1,7 +1,18 @@
-# SCC-197 — rolling ticket, cycle 2 (one lane, two parts)
+# SCC-197 — rolling ticket, cycle 2 (one lane, four parts)
 
 **Lane** `chore/SCC-197-rolling-cycle2` · worktree `.claude/worktrees/SCC-197-rolling-cycle2` ·
-base `origin/main` @ `5123e81` · riders **SCC-198 (Part A)** · **SCC-200 (Part B)**
+base `origin/main` @ `5123e81` · riders **SCC-198 (Part A)** · **SCC-200 (Part B)** ·
+**SCC-202 (Part C)** · **SCC-203 (Part D)**
+
+⭐ **It was planned as two parts and landed as four, and both additions were forced rather than
+chosen.** Part C is a shipped defect Part A uncovered (`--labels` ADDS, so the `user-tasks` strip
+had never worked); Part D is a defect found by running this lane's own code review. Neither is scope
+creep — a lane that measures its own tools and then declines to fix what it finds is the thing
+`work-consolidation` rule 1 exists to prevent.
+
+⛔ **`landing_mode: partial` — this is WAVE 1 of 2.** **SCC-205** (the `/cicd-*` family audited back
+to parity with its `/smh-*` twin) is a subtask of SCC-197 and is deliberately **not** a rider here.
+Wave 1 lands, riders A–D flip to Done, and **SCC-197 stays open** carrying wave 2.
 
 Consolidated per the operator, 2026-08-17: *"we need to run do this whole ticket with
 /smh-quick-dev in one working tree again"* — the SCC-190 shape, riders in `task.yaml`, one ceremony.
@@ -109,20 +120,50 @@ succeeds, and only then:
    said "bump the summary, rewrite the description from a file" — dropped, because it invents a
    cycle-numbering scheme nobody asked for and builds a `--description` string for no reason
    (backticks inside one execute). Not rewriting is both simpler and more correct.
-4. **Swap iff a successor exists** — found at step 2 or created at step 3. One `edit --labels` call
-   carrying every other label the ticket held, minus `running-bug-list`, plus `bugs-and-updates`.
+4. **Swap iff a successor exists** — found at step 2 or created at step 3. ~~One `edit --labels`
+   call carrying every other label the ticket held, minus `running-bug-list`, plus
+   `bugs-and-updates`.~~ ⛔ **SUPERSEDED BY PART C, and the correction is the reason Part C
+   exists.** That sentence assumed `--labels` REPLACES the set, so "the reduced set" was how you
+   removed a label. Measured against the live board 2026-08-17: **`--labels` ADDS.** Against an
+   adding API the read-modify-write re-adds every surviving label as a no-op and removes nothing,
+   exiting 0. What shipped is one call carrying **both** directions explicitly —
+   `--labels bugs-and-updates --remove-labels running-bug-list` — because acli honours both flags
+   together. The lesson generalises past this line: the *shape* of the write was derived from a
+   belief about the API that nobody had measured.
 5. ⛔ **Neither a clone failure nor a swap failure fails the start.** Work is never blocked because
    the successor could not be minted. Both report loudly and the lane proceeds — and a clone failure
    leaves the trigger in place so the next `start` retries.
+   ⛔ **"The next `start` retries" was FALSE AS PLANNED, and three review lenses proved it.** With
+   the roll bound to the transition edge, there was no reachable next attempt: the ticket is already
+   In Progress, so every later `start` returns from the already-at-target early return, *above* the
+   trigger check. Two more routes reached the same dead end with no failure at all — a blip on the
+   post-transition read-back, and an operator dragging the card on the Jira board, which never
+   invokes this code on the edge. What shipped binds the roll to the ticket's **STATE**: a ticket
+   still holding an un-honoured baton rolls whenever `start` is run on it. That is safe precisely
+   because the marker is a baton — a ticket that already handed off no longer carries it, so this is
+   a no-op for every started ticket (pinned by A2b), and the retry the message promises is now real.
 
 > **The invariant, stated once, because every branch above is a consequence of it:**
 > ***a rolling ticket holds `running-bug-list` until its successor exists, and not one moment
 > longer.*** That is why the swap is owed even when this run did not do the cloning, and why it is
 > withheld when the clone failed.
 
-**`.agents/rules/work-consolidation.md`** — rung 3 gains the `and not Done` qualifier and one line
-saying `running-bug-list` marks next cycle's placeholder, not a filing target. The label semantics
+**`.agents/rules/work-consolidation.md`** — ~~rung 3 gains the `and not Done` qualifier and one line
+saying `running-bug-list` marks next cycle's placeholder, not a filing target.~~ The label semantics
 change here, so the rule that names the label changes with it or it is stale law.
+
+⛔ **What shipped is larger than this, and the plan had it backwards.** Rung 3's query must name
+**BOTH** markers, not treat `running-bug-list` as a non-filing placeholder — because between a cycle
+closing and the next one starting, the un-started successor is the **only** open rolling ticket, and
+a query for `bugs-and-updates` alone returns nothing in exactly the window rung 3 exists to cover.
+"Nothing fits" then sends you to rung 4 to mint a duplicate. Filing into the un-started one is
+correct: starting it is what produces the next successor. Two further corrections came out of
+review: `labels` had to go onto `--fields` (from the first roll onward two rolling tickets are open
+and the clone copies the summary verbatim, so both rows read identically and the answer cannot tell
+them apart — `--fields` is a whitelist), and the rule now documents the **zero-holder** break as
+well as the two-holder one. Zero is the silent direction: the trigger is a label, so it dies with
+its ticket, and both queries filter `statusCategory != Done` — a baton on a closed ticket is not
+reported missing, it is simply absent, and absent reads exactly like "no rolling ticket is open".
 
 ## The assertions, written FIRST
 
@@ -275,6 +316,65 @@ SOP currency (a usage-surface change stages `docs/_scc_sops_prds/workflows_testi
 
 ---
 
+# Part D — SCC-203 · subagents are the DEFAULT for review, and a contaminated blind lens is DROPPED
+
+**Not planned. Found while running THIS lane's own code review**, which makes it the second
+discovered part after Part C — and the more serious of the two, because the thing that failed was
+the mechanism that was supposed to be checking everything else.
+
+## The problem, measured
+
+The review of Parts A–C was launched and reported `review-runtime: inline`, with the justification
+that *"a standing session directive forbids subagent fan-out unless the operator asks."* Every layer
+downstream accepted it: the walkthrough header was written, the roster recorded five lenses, and
+`walkthrough_roster.py` was satisfied. Nothing objected, because nothing could.
+
+Three things were wrong at once:
+
+1. **The runtime answer was a POLICY answer to a CAPABILITY question.** The subagent tool existed
+   and worked the entire time. *Does a subagent tool exist here?* and *am I permitted to use it?* are
+   different questions, and substituting the second for the first is invisible downstream — the
+   header records only the conclusion.
+2. **The directive was not the operator's.** Verified absent from `.agents/rules/`, every settings
+   file, and all 127 memory files; it comes from the session-init layer. The operator's reaction on
+   being shown it: *"i never made a rule not to spawn sub agents unless I ask ? this is something
+   that makes this dev faster why would I stop that ?"*
+3. **The Blind Hunter therefore ran inside the builder's own context** — holding the plan, the
+   walkthrough and every decision behind them. Its entire value is not knowing those things. The
+   operator named the threat exactly: *"the threat is the preconceived ideas, i need the code review
+   to run in a clean context window."*
+
+## What changes
+
+- **Both interactive callers** (`smh-code-review.md`, `cicd-code-review.md`) state the
+  capability-vs-policy split, and that **invoking the command IS the request** — so the workflow does
+  the asking and no one has to remember to. Where a directive gates subagent use on being asked,
+  this step is the asking.
+- **`step-01-review.md`**: the `ok (not blind — context held <what>)` state is **RETIRED**. Where the
+  order cannot protect the lens — you are the builder, your context is already contaminated — the
+  Blind Hunter is **DROPPED**, recorded on `lenses_na` with its reason and left out of the count.
+  Operator ruling: a roster carrying a lens that ran without its defining property reports a review
+  more independent than it was. **Dropping one lens is a smaller review; faking it is a false one.**
+- **`cicd-code-review-AP.md`** is deliberately exempt from "subagents are the default": it is
+  headless and genuinely cannot fan out. It protects the blind lens by ORDER instead. Its stale
+  instruction and `ap_reconciled` stamp were reconciled.
+
+## The assertions, written FIRST
+
+- `test_review_engine.py` gains CHECKS rows for both callers plus a **byte-identity drift check** on
+  the shared law — two pins are not a drift check, and this lane nearly shipped the smh fix without
+  the cicd twin. The check found real drift on its first run (`lane's` vs `story's`).
+- `walkthrough_roster.py` gains a reader for `lenses_na`. **This is the gap that mattered**: the
+  engine was told to record a dropped lens and nothing downstream could read it, so under a declared
+  `fan-out` a caller could drop the highest-value lens and gate green. A drop is now legal only
+  under `inline`, and only with a reason.
+
+## Scope — what this does NOT do
+
+- **No new rule file.** The operator ruled directly against one: *"no dont write a rule about it …
+  I dont want a bunch of added rules for something this obvious."* The correction went into the
+  wrong text, not into new law.
+- **No change to the lens set, the severity axis, or the triage contract.**
 
 ---
 

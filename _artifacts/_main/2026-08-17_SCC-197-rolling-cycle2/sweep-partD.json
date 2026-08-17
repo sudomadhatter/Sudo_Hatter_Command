@@ -1,0 +1,51 @@
+{
+  "_why": "Part D added two gates - a reader for the dropped-lens state, and a byte-identity drift check across the two review callers. Both are the kind of check that passes for the wrong reason if it is written wrong, so each is mutated here against the case that is supposed to catch it. The roster mutants run against test_walkthrough_roster.py; the drift mutant runs against test_review_engine.py, so this table is split by `test` per mutant.",
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_walkthrough_roster.py"
+  ],
+  "mutants": [
+    {
+      "id": "D-M1 the fan-out refusal is deleted - a review may drop its blind lens and still gate green",
+      "file": ".agents/scripts/walkthrough_roster.py",
+      "original": "    if na and data[\"runtime\"] == \"fan-out\":",
+      "mutated": "    if na and data[\"runtime\"] == \"never-a-runtime\":",
+      "case": "NA2 · a `fan-out` lane that drops a lens BLOCKS",
+      "block": "NA"
+    },
+    {
+      "id": "D-M2 the reason requirement never fires - bare `n/a` passes, which is indistinguishable from a lens nobody ran",
+      "file": ".agents/scripts/walkthrough_roster.py",
+      "original": "    unreasoned = [l[\"lens\"] for l in na if len(l[\"reason\"]) < 4]",
+      "mutated": "    unreasoned = [l[\"lens\"] for l in na if len(l[\"reason\"]) < 0]",
+      "case": "NA3 · an `n/a` with NO reason BLOCKS",
+      "block": "NA"
+    },
+    {
+      "id": "D-M3 the separator loses its spaces - a BARE `blind-hunter` splits into lens `blind` + reason `hunter`, so the reason requirement is satisfied by the lens's own name",
+      "_declared_case_note": "NA3, not NA5. Both cases genuinely die on this mutant, and the sweep is right to insist the kill come from the declared one: an unspaced separator corrupts the parse of a REASONLESS row first, manufacturing a four-character reason out of the second half of the lens name. That is the sharper consequence - it defeats the check that exists to stop an unexplained drop.",
+      "file": ".agents/scripts/walkthrough_roster.py",
+      "original": "                        r\"(?:\\s+[—–-]\\s+(.*))?\\s*$\", re.I)",
+      "mutated": "                        r\"(?:\\s*[—–-]\\s*(.*))?\\s*$\", re.I)",
+      "case": "NA3 · an `n/a` with NO reason BLOCKS",
+      "block": "NA"
+    },
+    {
+      "id": "D-M5 the lens NAME is truncated at its hyphen - isolates NA5, which is the only case that asserts the exact name",
+      "_declared_case_note": "Chosen so exactly one case dies. NA3 still passes (a truncated `blind` row carries no reason, so the block still fires) and NA2 still passes (there is still an n/a entry). Only NA5 compares the name, so only NA5 can catch a parser that reports a lens nobody has.",
+      "file": ".agents/scripts/walkthrough_roster.py",
+      "original": "            found_na.append({\"lens\": rm.group(1).strip(),",
+      "mutated": "            found_na.append({\"lens\": rm.group(1).strip().split(\"-\")[0],",
+      "case": "NA5 · (parser) the dropped lens NAME survives its own hyphen, with its reason",
+      "block": "NA"
+    },
+    {
+      "id": "D-M4 the `lenses_na:` field is never parsed at all - the state goes back to having no machine reader, which is the whole defect",
+      "file": ".agents/scripts/walkthrough_roster.py",
+      "original": "_NA_HEAD_RE = re.compile(r\"^[>\\-*#\\s]*\\**\\s*lenses_na\\s*:\\**\\s*(.*)$\", re.I)",
+      "mutated": "_NA_HEAD_RE = re.compile(r\"^ZZ_never_matches_ZZ(.*)$\", re.I)",
+      "case": "NA2 · a `fan-out` lane that drops a lens BLOCKS",
+      "block": "NA"
+    }
+  ]
+}
