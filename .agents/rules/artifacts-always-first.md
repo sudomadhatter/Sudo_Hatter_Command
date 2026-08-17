@@ -62,12 +62,26 @@ compress in place (pointers to git / the story file), **never a new file**.
 > `certification-*.json` under `_bmad-output/test-artifacts/`) are OUT of this set by design and stay
 > standalone. The rest of the flow is identical for normal dev and stories.
 
-> **🔗 Link every artifact — and every file — in the chat, always.** The moment you write or update ANY
-> artifact (plan, walkthrough, bug-list, code-review, self-audit) — or name / hand over ANY file or path —
-> post a **clickable Markdown link `[label](relative/path)`** in the chat that same turn, with a one-line
-> note of what it is. Daniel reviews from the conversation — a file he can't open from chat may as well not
-> exist. This is the always-on **"clickable links, never bare paths"** rule from `constitution.md`, applied
-> to the artifact set (and every file path alongside it).
+## Hand It Back
+
+**🔗 Every artifact — and every file — goes back as a clickable link, in the chat, that same turn.**
+The moment you write or update ANY artifact (plan, walkthrough, bug-list, code-review, self-audit) —
+or name / hand over ANY file or path — post a **Markdown link `[label](relative/path)`**, relative to
+the workspace root, with a one-line note of what it is. The operator reviews from the conversation: a
+file they cannot open from chat may as well not exist. This is the always-on **"clickable links,
+never bare paths"** rule from `constitution.md`, applied to the artifact set and to every file path
+alongside it.
+
+⛔ **The worktree path is the case that actually breaks.** Lane artifacts live under
+`.claude/worktrees/<slug>/_artifacts/_main/<date>_<slug>/` — not where the operator is standing, and
+not a path anyone reconstructs from memory. Naming that folder in prose hands over nothing.
+
+⭐ **This section is not where the rule does its work — §2, §3 and §5 are.** The duty was stated
+here, in this file, and still did not fire: SCC-190 ran an entire lane — plan, five review lenses,
+close-out, PR — handing back bare paths the whole way, and the operator had to ask for the links
+outright. A rule read at the top of a file is not read at the moment of the act, so it is repeated at
+each of the three seams where an artifact is produced. That repetition is deliberate: `SCC-200` in
+`test_workflow_lint.py` fails if any seam loses it.
 
 ## The Rule
 
@@ -183,9 +197,19 @@ exhaustive file-by-file appendix — the reasoning he must judge is never the pa
 judgement about what he needs in front of him, never a byte count. Same principle as
 `operator-profile.md`: narrative briefing first, compressed record second.
 
+**🔗 Hand it back.** Post the link in the same turn you write the file —
+`[implementation_plan.md](_artifacts/_main/<date>_<slug>/implementation_plan.md)`, relative to the
+workspace root. The paste and the link are not alternatives: the paste is what gets read now, the
+link is what gets re-opened, annotated and returned to later.
+
 ### 3. STOP — wait for the gate phrase
 Do nothing else. Do not "prepare" files, update story status, or touch `sprint-status.yaml`
 until you hear **"approved"**.
+
+⛔ **🔗 Hand it back — the approval request CARRIES the link.** Asking for sign-off on a document the
+operator was never handed is this rule's defect in one sentence, and it is a gate violation for the
+same reason a link-only plan is: they are being asked to approve something they cannot open. End the
+request with `[implementation_plan.md](<relative/path>)`.
 
 **Granularity:** every story AND every code-touch gets its own plan + sign-off. An
 epic-level plan is NOT a license to implement stories without per-story approval.
@@ -220,6 +244,11 @@ fought back. In this order:
 
 Do NOT split any section into a separate file — one doc holds the outline, the evidence, the review,
 and the actions.
+
+**🔗 Hand it back.** The walkthrough is the closing deliverable, so the close is not done until its
+link is in the chat: `[walkthrough.md](_artifacts/_main/<date>_<slug>/walkthrough.md)`, relative to
+the workspace root. Same at every later touch — §6's review section and §7's self-audit are edits to
+these files, and each one gets its link posted again.
 
 ### 6. Append `## Code Review (<date>)` to `walkthrough.md` (whenever a code review runs)
 **Any code review — `/cicd-code-review`, `/smh-code-review`, `/code-review`, or an ad-hoc review —

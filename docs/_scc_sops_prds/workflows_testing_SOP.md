@@ -202,6 +202,12 @@ Two more you'll see constantly:
   **plan** (`implementation_plan.md`) and the **walkthrough** (`walkthrough.md`). Audits get appended
   into the plan; reviews get appended into the walkthrough. If you're hunting for what an audit or a
   review said, it's inside one of those two, never a separate file.
+  **⭐ You should never have to ask for either of them (SCC-200).** Your ruling, 2026-08-17: *"I cant
+  see the artifacts unless you give me the hyper link in the chat."* Every artifact now comes back as
+  a **clickable link** the same turn it is written — and specifically **with the approval request**,
+  since being asked to approve a plan you were never handed is the whole defect. The duty was already
+  written down; it sat in one place at the top of the rule and did not fire, so it now sits at each of
+  the three moments an artifact is produced. If you get a bare path, that is a bug — say so.
 - **Preflight** — a script that answers, mechanically, every "is this actually safe?" question a
   close-out used to answer by hand. **Exit 2 means blocked.**
 
