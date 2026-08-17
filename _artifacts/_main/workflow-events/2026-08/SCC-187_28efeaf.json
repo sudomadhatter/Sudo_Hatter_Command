@@ -1,0 +1,39 @@
+{
+  "v": 1,
+  "task": "SCC-187",
+  "sha": "28efeaf283db30cfbf631c1cf3e4cf5c23c8ef5f",
+  "tip": "846f8390b4b343e2766924f6637694ffab77fd4e",
+  "trigger": "close-out",
+  "when": "2026-08-16T21:08:26-07:00",
+  "changes": [
+    ".agents/scripts/evidence_extract.py",
+    ".agents/scripts/tests/test_evidence_extract.py",
+    ".agents/scripts/tests/test_suite_runner.py",
+    "_artifacts/_main/2026-08-16_SCC-187-caller-ranking/gates/suite.json",
+    "_artifacts/_main/2026-08-16_SCC-187-caller-ranking/implementation_plan.md",
+    "_artifacts/_main/2026-08-16_SCC-187-caller-ranking/review-diff.patch",
+    "_artifacts/_main/2026-08-16_SCC-187-caller-ranking/sweep-result.txt",
+    "_artifacts/_main/2026-08-16_SCC-187-caller-ranking/sweep.json",
+    "_artifacts/_main/2026-08-16_SCC-187-caller-ranking/task.yaml",
+    "_artifacts/_main/2026-08-16_SCC-187-caller-ranking/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-16_SCC-187-caller-ranking/walkthrough.md",
+    "verdict": "PASS @ 28efeaf",
+    "gates": {
+      "suite": "pass@28efeaf"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}
