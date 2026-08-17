@@ -53,8 +53,14 @@ platforms: [claude, opencode]
 #   5. SCC-193's `## Your Actions` wording (the sign-off is the operator's DECISION; the
 #      ceremony's steps are never entries) IS PORTED — it is a machine contract `jira_feed.py`
 #      now enforces, so a twin that omitted it would write rows the close-out refuses.
+#   6. the primary states the subagent law subject-neutrally ("this lane's plan and
+#      walkthrough"); it read "this story's" until SCC-203's twin drift check flagged it
+#      against `/smh-code-review`. NOT PORTED, and nothing to port: that law is about
+#      choosing fan-out over inline, and this twin does not have the choice — it runs
+#      inline BY DESIGN and protects the blind lens by ORDER instead (divergence 3). Its
+#      own drop clause, below, is already the SCC-203 wording.
 # Re-diff and restamp when the linter says this sha is stale — do NOT just bump it.
-ap_reconciled: 76277d961b0407966dabadacf948862f8d7cefe5
+ap_reconciled: ce2fb28a4d1a904244efdba1e308abbe551579d6
 ---
 
 # /cicd-code-review-AP — Autopilot Review + Fix + Test Gate (Murat)
