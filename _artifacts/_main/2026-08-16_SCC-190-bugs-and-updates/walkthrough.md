@@ -216,7 +216,7 @@ Round 2 also produced four `SWEEP ERROR`s rather than kills, and that is the har
 - **U-M3** passed against a *lucky string*: `LONG`'s 132nd character lands just after a full stop, so `rstrip` leaves a clean word boundary even with the boundary search **deleted**. `U3b` now puts a 27-letter word across the cut, where only a real backward search can end cleanly.
 - **U-M4** exposed the shape of every live-tree sweep: a passing run is by definition a run with **nothing to report**, so a detector that stopped recording offenders reads exactly like a clean tree. `U6d` re-runs the predicate against a **fabricated** over-budget door, where it must fire. A live sweep plus a synthetic offender is what makes *"0 over budget"* mean anything.
 
-**THE RECORD THAT STANDS — 22 mutants, 22 killed:**
+**THE RECORD THAT STANDS — 52 mutants, 52 killed:**
 
 ```
 SWEEP S  7/7   S-M1 receipt keyed on HEAD · S-M2 fetch back to opt-in · S-M3 freshness off the
@@ -280,6 +280,110 @@ The wording ruling touches what four memories say. **None was changed by this la
 - `main-merge-needs-operator-verbatim-approval` — unchanged in force; `approved` is now explicitly one of the three forms.
 - `landing-ceremony-is-the-block-not-the-gates` — unchanged.
 - `git-branch-model-standard` — its "main reached only via …" line is unchanged; only the wording of *why* moved.
+
+---
+
+## Code Review (2026-08-17)
+
+**review-runtime: fan-out** — probed at Step 0: this runtime launches subagents, so all five lenses
+ran as genuine parallel fan-out. None recovered inline.
+
+Verdict: PASS @ 4d791e5e
+
+5-lens engine, `review_mode: full`, `lens_budget: standard`. **Every finding assessed as real was
+fixed in this lane before the verdict** — none deferred, none turned into a ticket.
+
+lenses_run:
+- Blind Hunter · ok — 13 findings; the two that mattered were the empty-`verdict_sha` fail-open and the ceremony pattern bound to nothing
+- Edge Case Hunter · ok — 15 findings, every one executed rather than inferred; found the whole-row ledger bypass and the non-object receipt
+- Literal-Correctness Hunter · ok — 11 findings; found three places the detector refused what its own documentation calls exempt
+- Acceptance Auditor · ok — 5 gaps; sharpest was the door claiming a `check-actions` call it never made
+- Test-Adequacy Auditor · ok — 17 findings, and the only lens that found a LIVE fail-open by asking what had no case
+
+### Step 0.7 — re-derivation against current `origin/main`
+
+- **What moved:** nothing. `origin/main` is `096f043` (PR #18, SCC-186) and is this lane's
+  merge-base, so there was nothing to absorb — `behind 0`, re-measured at the verdict sha.
+- **What it changes:** nothing in scope or content. No sibling lane landed during the review, so
+  the gates-not-files hazard has no other lane's blobs to run against.
+- **What was re-measured:** everything, at the verdict sha rather than carried forward — the full
+  suite (33/33, receipt re-stamped at `4d791e5e`), the lint and map gates, `py_compile` over all 15
+  changed `.py` files, the PowerShell parse, and all five mutation tables (52/52).
+
+### The findings that were real
+
+⭐ **The one that matters most is mine, and it was live.** Fixing an `UnboundLocalError` earlier in
+this lane re-opened the exact fail-open the code above it claimed in capitals to have closed: a
+`preflight-receipt.json` containing the four bytes `null` parses to `None`, the guard read
+`if r is not None`, and so **the gate that guards `main` recorded no failure and passed it**. No
+lens reading the code found it; the test-adequacy audit found it by asking which guards had no
+case. Now the binding happens on the PARSE — `r` exists only when the parse yielded a dict, and
+every other outcome appends a failure — so there is no path from "a receipt file exists" to silence.
+
+| # | Where | Failure | Fix |
+|---|---|---|---|
+| 1 | `main_write_gate.py` | a `null` receipt passed the entire gate; `[]`/`5`/`"x"` crashed it | branch on the parse, fail closed on both (`A7`) |
+| 2 | `main_write_gate.py` | an empty `verdict_sha` read as AGREEMENT — and `write_receipt` records `null` by design before a verdict exists, so a receipt taken *before* the review satisfied the check written to catch that | empty is a refusal (`A6`) |
+| 3 | `main_write_gate.py` | the sha comparison was case-sensitive while `VERDICT_RE` accepts `[A-F]` — an uppercase stamp produced a FALSE refusal | case-folded (`A6b`) |
+| 4 | `main_write_gate.py` | the other-lane skip was print-only, so a **mis-declared** `branch:` left the close-out entirely unjudged (`judged == 0`, `[PASS]`) | skipped only when the manifest is unchanged on the base; otherwise a refusal (`A8`) |
+| 5 | `task_preflight.py` | two live manifests for one key returned `None` SILENTLY — clear verdict, no receipt, and the PR gate then demanded a receipt nothing would write, with a remedy that could not work | an error naming both (`R7`) |
+| 6 | `task_preflight.py` | the verdict could read *clear* on a run whose receipt failed to write — certifying a merge it had already made impossible | verdict becomes BLOCKED |
+| 7 | `task_preflight.py` | `UnicodeDecodeError` escaped `except OSError`, so a corrupt receipt killed the run that would have replaced it | replaced, not raised (`R8`) |
+| 8 | `task_preflight.py` | the self-dirt exemption matched a basename ANYWHERE, waving through a sibling lane's uncommitted receipt — and was separately defeated by git's octal quoting on a non-ASCII lane path | lane-scoped by path, `core.quotepath=false` (`R9`) |
+| 9 | `jira_feed.py` | the ledger exemption was a whole-row substring: appending *"the merge itself"* to SCC-164's exact defect row cleared the check built to refuse that row | exemption keys on the row's SUBJECT (`B3c`) |
+| 10 | `jira_feed.py` | **four patterns refused genuine operator decisions with a hard exit 2** — *"…then run the campaign"*, *"Re-invoke `/cicd-push-e2e` once staging is verified"*, *"Decide whether to merge the PR before the launch"* (which the SOP names as exempt), and *"run the memory audit (`.agents/scripts/memory_audit.py`)"* (which `cmd_finish`'s own docstring names as the row that must HOLD a ticket) | one shared ceremony-object group, a decision-subject carve-out on the one pattern that names no act, and the machinery narrowed to this ceremony's own scripts (`B7`, `B11`) |
+| 11 | `jira_feed.py` | `finish` refused on the first row family without reading the second — two round trips for one file, and `check-actions` disagreed with it about the same file | both families reported, then one refusal (`B8`) |
+| 12 | `smh-close-task-merge-tree.md` | Step 2.5's `git add` exits **128 staging nothing** on a pathspec that matches nothing, so a missing receipt also lost the flight event; and `[ -f … ] && PATHS+=(…)` returns 1, aborting the snippet under `set -e` | both paths conditional, `if/fi` not `&&` |
+| 13 | `smh-merge-multiple-workingtrees.md` | the other door that runs `finish` had no pre-merge `check-actions`, so every lane closed through it met the new refusal *after* the merge — where the fix is a commit on `main` | the guard added there too |
+| 14 | `test_door_preflight_order.py` | `prose`/`ok` were computed in one block and read in the next: `--case CONTROLS` raised `UnboundLocalError`, **which a mutation sweep scores as a KILL** — a false kill for every mutant aimed there | hoisted into the block that reads them |
+| 15 | `sync-agents.ps1` + its Python twin | the description rewrite dropped the `\r` on a CRLF brain; and the two twins **diverge on any non-BMP character** (.NET counts UTF-16 units, Python counts code points), which would make a GENERATED door read `stale` — unfixable by hand, the SCC-194 wedge rebuilt | CR captured and restored; the twin emulates .NET, pinned against the real `pwsh` (`U6e`, `U7`) |
+| 16 | `main_write_gate.py` | importing `VERDICT_RE` from `task_preflight` pulled **seven** local modules into the gate that guards `main`, so an import-time break anywhere in that chain broke the gate | the three primitives moved to `wf_common` (stdlib-only leaf); `task_preflight` re-exports, so no caller changed. Pinned by `A12` |
+
+**Coverage gaps closed alongside them:** `A9`/`A10`/`A11` (the non-ASCII path, `subtask.yaml`, the
+fenced decoy), `B9` (three patterns that only ever matched behind a sibling), `S5`'s synthetic
+offender and its widened `SURFACES` glob, and `U8`/`U9`.
+
+⛔ **Seven of my own assertions were too weak to see the mutant aimed at them**, and the sweep is
+what said so — `A2` was satisfied by two different refusal messages, `A3b` by the gate's own PASS
+line containing the word *branch*, `R9` by git collapsing an untracked directory into one row, the
+astral fixture by a one-unit shift the word-boundary trim absorbed, and the fenced decoy by sitting
+where `stamps[-1]` could never let it win. Every hand-built receipt also carried `verdict_sha: None`,
+which is itself a refusal since finding #2 — two errors in fixtures written to isolate one.
+
+**The tail, in one line per the ruling below:** the five lenses returned ~61 findings; **16 were
+assessed as real and fixed**, the coverage gaps above were closed, and the remainder — suggestions
+that could not state a concrete failure, and nitpicks — were **dismissed**. Two findings were
+re-graded upward by assessment rather than by their label: the `null` receipt (reported as a
+coverage gap, actually a live fail-open) and the branch-mismatch skip (reported as a suggestion,
+actually a gate that stops gating).
+
+### The process change this produced (operator ruling, 2026-08-17)
+
+> *"The agent's job is to find things so it always will — this is how we end up in this loop. The
+> agent who assesses the finds has to decide what's real and what's just the agent finding
+> something to report. We fix actual issues."*
+
+That is now **repo law in the review engine**, on both sides of the fan-out:
+
+- **The hunter contract** tells every lens plainly that it **reports and does not dispose** — its
+  severity is an input, inflating costs its real findings their credibility, *"I found nothing in
+  area X"* is a genuine result, and every finding must carry a concrete failure or be left out.
+- **The disposition section** makes the orchestrator the assessor, with three questions every
+  finding must pass to be fixed (is it REAL — reproduced, not *"may be"*; does it change
+  BEHAVIOUR; is it in THIS diff), and states that a `critical` label neither promotes nor protects
+  a finding. The tail is recorded in one line, not one line each.
+
+### Gates
+
+| Gate | Result |
+|---|---|
+| Enforcement suite | `[PASS] suite exit=0 325.2s @ 4d791e5e` — 33/33 files, `dirty_tree: false`, receipt `gates/suite.json` |
+| `workflow_lint.py --toolkit-only` | 0 errors, 0 warnings |
+| `check_maps.py --depth3-only --strict` | exit 0 |
+| `py_compile` (15 changed `.py`) | OK |
+| PowerShell parse (`sync-agents.ps1`) | OK |
+| Mutation sweeps | **52/52 killed** across five tables — S 11 · R 4 · T 15 · U 6 · SB 16, each with whole-tree restore verified |
+| Secret / debug-output scan on added lines | clean |
 
 ---
 
