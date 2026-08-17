@@ -1,0 +1,33 @@
+-- sweep: 7 mutant(s) over 1 file(s) @ b27912ff --
+KILLED    S-M1 the receipt is keyed on HEAD instead of the verdict sha
+            KILLED by R1 ⛔ keyed on the VERDICT sha, never on HEAD
+            -- filter 'SCC-192/193': matched 1/24 blocks --
+KILLED    S-M2 fetch goes back to opt-in
+            KILLED by R1 a preflight with NO flag fetches
+            -- filter 'SCC-192/193': matched 1/24 blocks --
+KILLED    S-M3 the freshness comes back OFF the verdict line
+            KILLED by R2 ...the VERDICT line itself names the staleness
+            -- filter 'SCC-192/193': matched 1/24 blocks --
+KILLED    S-M4 an omitted fetch drops back to info (the severity inversion)
+            KILLED by R2 ...an omitted fetch is a WARN
+            -- filter 'SCC-192/193': matched 1/24 blocks --
+KILLED    S-M5 the self-dirt exemption widens to the whole _artifacts tree
+            KILLED by R4 CONTROL: a SIBLING dirty artifact still blocks
+            -- filter 'SCC-192/193': matched 1/24 blocks --
+KILLED    S-M6 the receipt is written even with no live manifest
+            KILLED by R5 no manifest -> no receipt
+            -- filter 'SCC-192/193': matched 1/24 blocks --
+⛔ NOT KILLED S-M7 the receipt is rewritten unconditionally (churn on every run)
+            SURVIVED - the named case still passed with the mutant in place
+            -- filter 'SCC-192/193': matched 1/24 blocks --
+-- restore verified: bytes match, nothing was committed, and `git diff --quiet b27912ff` is clean --
+-- full file, unfiltered: python3 .agents/scripts/tests/test_task_preflight.py -> exit 0 --
+        | -- 0 error(s), 1 warning(s), 13 info --
+        | LANE: LOCAL
+        | GATES: ARMED
+        |   gate: python3 .agents/scripts/tests/run_all.py
+        | VERDICT: clear to close out and merge
+        | -- 173/173 passed --
+
+-- SWEEP FAILED --
+  * S-M7 the receipt is rewritten unconditionally (churn on every run): SURVIVED - the named case still passed with the mutant in place

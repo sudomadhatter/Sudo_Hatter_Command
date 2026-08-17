@@ -1357,6 +1357,27 @@ def main() -> int:
             c.check("R4 ...and the uncommitted receipt does not make its own tree DIRTY",
                     code2 == 0 and "uncommitted change" not in out2,
                     f"exit {code2}: " + out2.strip()[-400:])
+            # ⭐ R6 · THE CASE A SURVIVING MUTANT PROVED WAS MISSING. R4 above re-runs with
+            # NOTHING else changed, so a receipt that embedded HEAD would still be byte-stable
+            # across those two runs and R4 passes - the mutant "rewrite unconditionally, padded
+            # by HEAD's length" survived exactly there. The real sequence is the one the door
+            # performs: the receipt is COMMITTED (which MOVES HEAD, the whole reason the
+            # SCC-192 design forbids keying on it) and a resumed close-out re-runs the
+            # preflight. If any field tracked HEAD, the bytes would move here and every
+            # resumed close-out would owe a churn commit.
+            git(repo, "add", RECEIPT)
+            commit(repo, "SCC-11 chore(recorder): flight event + receipt [sop-ok]")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            after_commit = raw(repo)
+            code4, out4 = preflight(repo)
+            c.check("R6 the receipt is byte-stable ACROSS the commit that lands it",
+                    bool(after_commit) and raw(repo) == after_commit,
+                    "committing the receipt moves HEAD - a receipt that tracked HEAD would "
+                    "move with it, and no close-out could ever converge")
+            c.check("R6 ...and the tree is clean afterwards, so the lane can merge",
+                    code4 == 0 and "uncommitted change" not in out4,
+                    f"exit {code4}: " + out4.strip()[-300:])
+
             # ...but the exemption is ONE file, not a licence for the folder.
             write(repo, f"{ADIR}/scratch.txt", "a sibling artifact nobody committed\n")
             code3, out3 = preflight(repo)
