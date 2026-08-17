@@ -2559,12 +2559,17 @@ Nothing is actually owed.
         # on its own merits, and is spared ONLY by the exemption. That is the wedge: SCC-183
         # mandates a ledger row, and refusing it post-merge leaves a fix that can only be
         # committed on `main`.
-        c.check("B3b CONTROL: the ledger row is spared even when it names the click",
+        # ⛔ AND THE BOX MUST BE OPEN. The first cut of this control used `- [x]`, and
+        # `open_actions` returns UNCHECKED rows only - so the row never reached a pattern at
+        # all, exemption or not, and T-M2 survived a second time against a control written
+        # specifically to kill it. A ticked row is not evidence about a rule that only ever
+        # sees open ones.
+        c.check("B3b CONTROL: an OPEN ledger row is spared even when it names the click",
                 not jira_feed.ceremony_rows(
                     "# W\n\n## Your Actions\n\n"
-                    "- [x] **The merge itself** - click **Merge** on the PR to land it\n"),
-                "without the MERGE_PHRASE exemption this row IS flagged - which is what makes "
-                "it the control that pins the exemption")
+                    "- [ ] **The merge itself** - click **Merge** on the PR to land it\n"),
+                "without the MERGE_PHRASE exemption this row IS flagged (`click **Merge`) - "
+                "which is what makes it the control that pins the exemption")
 
         c.check("B3 CONTROL: ...and an OPEN one is still SCC-175's business, not this check's",
                 not jira_feed.ceremony_rows(

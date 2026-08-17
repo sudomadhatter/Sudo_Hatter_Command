@@ -1,35 +1,48 @@
 {
-  "test": ["python3", ".agents/scripts/tests/test_command_surfaces.py"],
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_command_surfaces.py"
+  ],
   "mutants": [
-    {"id": "U-M1 the budget is raised past every real description",
-     "file": ".agents/scripts/tests/test_command_surfaces.py",
-     "original": "AG_DESC_MAX = 135",
-     "mutated": "AG_DESC_MAX = 9999",
-     "case": "U2 a long one is cut to the budget and marked",
-     "block": "SCC-195"},
-    {"id": "U-M2 the ellipsis marker is dropped",
-     "file": ".agents/scripts/tests/test_command_surfaces.py",
-     "original": "    return cut.rstrip(\" ,;:-\") + \"...\"",
-     "mutated": "    return cut.rstrip(\" ,;:-\")",
-     "case": "U2 a long one is cut to the budget and marked",
-     "block": "SCC-195"},
-    {"id": "U-M3 the cut ignores the word boundary",
-     "file": ".agents/scripts/tests/test_command_surfaces.py",
-     "original": "    cut = desc[:AG_DESC_CUT]\n    if \" \" in cut:\n        cut = cut[:cut.rindex(\" \")]",
-     "mutated": "    cut = desc[:AG_DESC_CUT]\n    if False:\n        cut = cut[:cut.rindex(\" \")]",
-     "case": "U3 ...on a word boundary, never mid-word",
-     "block": "SCC-195"},
-    {"id": "U-M4 the workflow-door budget check stops looking at the tree",
-     "file": ".agents/scripts/tests/test_command_surfaces.py",
-     "original": "            if d and len(d) > AG_DESC_MAX:\n                over.append(f\"{wf_door.name} ({len(d)})\")",
-     "mutated": "            if d and len(d) > AG_DESC_MAX and False:\n                over.append(f\"{wf_door.name} ({len(d)})\")",
-     "case": "U6 every .agents/workflows door fits Antigravity's menu budget",
-     "block": "SCC-195"},
-    {"id": "U-M5 door parity accepts ANY antigravity body (the check that blocked SCC-194)",
-     "file": ".agents/scripts/tests/test_command_surfaces.py",
-     "original": "            if launcher_ok and body == with_ag_description(brain):\n                return \"ok\"",
-     "mutated": "            if launcher_ok:\n                return \"ok\"",
-     "case": "door-parity CONTROL: a STALE mirror is caught",
-     "block": "CS-03"}
+    {
+      "id": "U-M1 the budget is raised past every real description",
+      "file": ".agents/scripts/tests/test_command_surfaces.py",
+      "original": "AG_DESC_MAX = 135",
+      "mutated": "AG_DESC_MAX = 9999",
+      "case": "U2 a long one is cut to the budget and marked",
+      "block": "SCC-195"
+    },
+    {
+      "id": "U-M2 the ellipsis marker is dropped",
+      "file": ".agents/scripts/tests/test_command_surfaces.py",
+      "original": "    return cut.rstrip(\" ,;:-\") + \"...\"",
+      "mutated": "    return cut.rstrip(\" ,;:-\")",
+      "case": "U2 a long one is cut to the budget and marked",
+      "block": "SCC-195"
+    },
+    {
+      "id": "U-M3 the cut ignores the word boundary",
+      "file": ".agents/scripts/tests/test_command_surfaces.py",
+      "original": "    cut = desc[:AG_DESC_CUT]\n    if \" \" in cut:\n        cut = cut[:cut.rindex(\" \")]",
+      "mutated": "    cut = desc[:AG_DESC_CUT]\n    if False:\n        cut = cut[:cut.rindex(\" \")]",
+      "case": "U3 ...on a word boundary, never mid-word",
+      "block": "SCC-195"
+    },
+    {
+      "id": "U-M4 the budget loop stops recording offenders (the vacuous sweep)",
+      "file": ".agents/scripts/tests/test_command_surfaces.py",
+      "original": "            if len(d) > AG_DESC_MAX:\n                over.append(f\"{wf_door.name} ({len(d)})\")",
+      "mutated": "            if len(d) > AG_DESC_MAX and False:\n                over.append(f\"{wf_door.name} ({len(d)})\")",
+      "case": "U6 every .agents/workflows door fits Antigravity's menu budget",
+      "block": "SCC-195"
+    },
+    {
+      "id": "U-M5 door parity accepts ANY antigravity body (the check that blocked SCC-194)",
+      "file": ".agents/scripts/tests/test_command_surfaces.py",
+      "original": "            if launcher_ok and body == with_ag_description(brain):\n                return \"ok\"",
+      "mutated": "            if launcher_ok:\n                return \"ok\"",
+      "case": "door-parity CONTROL: a STALE mirror is caught",
+      "block": "CS-03"
+    }
   ]
 }

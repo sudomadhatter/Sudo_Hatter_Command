@@ -1,25 +1,23 @@
--- sweep: 4 mutant(s) over 2 file(s) @ 5ad29f35 --
+-- sweep: 4 mutant(s) over 2 file(s) @ ea8d9578 --
 KILLED    R-M1 the rolling ticket is dropped back out of rung 3
             KILLED by R1c rung 3 is the OPEN ROLLING TICKET
             -- filter 'SCC-191': matched 1/14 blocks --
-⛔ NOT KILLED R-M2 the look-before-mint search stops naming the label
-            SURVIVED - the named case still passed with the mutant in place
+KILLED    R-M2 the look-before-mint search stops naming the label
+            KILLED by R2 the look-before-mint SEARCH BLOCK queries the rolling ticket's label
             -- filter 'SCC-191': matched 1/14 blocks --
-⛔ NOT KILLED R-M3 the cycle is stated as a threshold instead of a cycle
-            SURVIVED - the named case still passed with the mutant in place
+KILLED    R-M3 the cycle is stated as a threshold instead of a cycle
+            KILLED by R1e the cycle has its OWN heading, so it cannot decay into a footnote
             -- filter 'SCC-191': matched 1/14 blocks --
 KILLED    R-M4 the engine's restatement goes stale again
             KILLED by R2b the restatement in step-01-review.md names the rolling ticket
             -- filter 'SCC-191': matched 1/14 blocks --
--- restore verified: bytes match, nothing was committed, and `git diff --quiet 5ad29f35` is clean --
+-- restore verified: bytes match, nothing was committed, and `git diff --quiet ea8d9578` is clean --
 -- full file, unfiltered: python3 .agents/scripts/tests/test_command_surfaces.py -> exit 0 --
-        | [PASS] U3 ...on a word boundary, never mid-word: The TASK lane's dev cycle - assert-first development for command-centre work that has no story, no sprint board and no epic branch....
-        | [PASS] U4 ...and re-cutting it changes nothing (the sync is idempotent): The TASK lane's dev cycle - assert-first development for command-centre work that has no story, no sprint board and no epic branch....
         | [PASS] U5 ...and it stays ASCII (PS 5.1 writes these literals from a BOM-less .ps1): The TASK lane's dev cycle - assert-first development for command-centre work that has no story, no sprint board and no epic branch....
         | [PASS] U6 every .agents/workflows door fits Antigravity's menu budget: 0 over 135: []
+        | [PASS] U6b ...and it read a real number of doors (not a silent empty sweep): only 36 workflow descriptions read
+        | [PASS] U6c ...and the whole menu payload stays under the budget it was cut to: 36 descriptions, 4590 chars total (was 13,883 before SCC-195)
         | [PASS] U7 CONTROL: the BRAINS keep their full descriptions (the budget is the menu's): only 41 long brains - did the shortening leak into .agents/commands?
-        | -- 110/110 passed --
+        | -- 113/113 passed --
 
--- SWEEP FAILED --
-  * R-M2 the look-before-mint search stops naming the label: SURVIVED - the named case still passed with the mutant in place
-  * R-M3 the cycle is stated as a threshold instead of a cycle: SURVIVED - the named case still passed with the mutant in place
+-- sweep clean: 4/4 killed by their declared case --

@@ -17,7 +17,7 @@
       "file": ".agents/rules/work-consolidation.md",
       "original": "acli jira workitem search --jql \"project = SCC AND statusCategory != Done AND labels = bugs-and-updates\" \\\n     --fields key,summary --limit 5",
       "mutated": "# (the rolling ticket: ask around)",
-      "case": "R2 the look-before-mint search names the rolling ticket's label",
+      "case": "R2 the look-before-mint SEARCH BLOCK queries the rolling ticket's label",
       "block": "SCC-191"
     },
     {
@@ -25,7 +25,7 @@
       "file": ".agents/rules/work-consolidation.md",
       "original": "### The CYCLE \u2014 rung 3 is a rolling ticket, not a landfill",
       "mutated": "### Rung 3 notes",
-      "case": "R1e the cycle is named",
+      "case": "R1e the cycle has its OWN heading, so it cannot decay into a footnote",
       "block": "SCC-191"
     },
     {

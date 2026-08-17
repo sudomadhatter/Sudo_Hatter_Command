@@ -195,10 +195,14 @@ Four tables, one per part, declared **before** the sweep ran and drawn from the 
 | **U-M4** budget loop stops appending | "0 doors over budget" out of **0 doors read** is the vacuous green | `U6b` counts the doors; `U6c` asserts the whole menu payload (4,590 chars, was 13,883) |
 | **S-M7** rewrite the receipt unconditionally | the only badly-aimed **mutant**: padding by `len(HEAD)` is a constant, since a sha is always 40 chars — it modelled nothing | re-aimed at the defect it meant to describe (a receipt that **embeds** HEAD), which `R1` and `R6` both kill |
 
-**ROUND 2** — the same four tables, after the cases were added:
+**ROUND 2 — and it found one more of the same class, in the control written specifically to fix T-M2.** `B3b` used a **ticked** box (`- [x]`), and `open_actions` returns **unchecked** rows only — so the row never reached a pattern at all, exemption or not. A control that cannot fail is the thing this whole discipline exists to catch, and it appeared *inside the fix for a survivor*. The box is now open, and the row does match `click **Merge` without the exemption.
+
+Round 2 also produced four `SWEEP ERROR`s rather than kills, and that is the harness being right: renaming a case to strengthen it breaks the table's **attribution**, and `mutation_sweep.py` refuses to credit a kill to a case that did not fail. The tables were re-aimed at the new names — selection and attribution are different namespaces, which this lane got wrong twice.
+
+**ROUND 3 — the record that stands:**
 
 ```
-<PASTE: round 2>
+<PASTE: round 3>
 ```
 
 ---
