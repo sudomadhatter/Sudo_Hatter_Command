@@ -791,6 +791,47 @@ def main() -> int:
             c.check("late importer COUNTER-EXAMPLE: the cap still holds at 10",
                     len(late_files) == 10, f"{len(late_files)} snippets")
 
+    # ── 2e. the OUTER sort, across identifiers (SCC-187 A2, second half) ──────
+    with TempDir() as tmp:
+        if c.block("SCC-187-A2b · the outer sort"):
+            repo = Path(tmp)
+            # Found by a SURVIVING MUTANT, not by design: 2d proves the walk order (`prefer`)
+            # and nothing else. With one identifier the importer is collected first, so it is
+            # already at index 0 and moving the sort after the slice changes nothing — M2 sailed
+            # through. The outer sort only bites ACROSS identifiers: `_extract_one` concatenates
+            # one caller list per mentioned identifier and slices the CONCATENATION, so a noisy
+            # first identifier can fill all ten slots before a later identifier's importer hit
+            # is ever considered. That is what this case pins.
+            write(repo, "pkg/__init__.py", "")
+            write(repo, "pkg/target.py",
+                  "def aaa_fn(v):\n    return v\n\n\ndef zzz_fn(v):\n    return v\n")
+            for i in range(12):                       # 12 > the 10-snippet cap, none an importer
+                write(repo, f"pkg/n_{i:02d}.py", "x = aaa_fn(1)  # NOISE\n")
+            write(repo, "pkg/zimporter.py",
+                  "from pkg.target import zzz_fn\n\ny = zzz_fn(2)  # OUTER_SORT_IMPORTER\n")
+
+            # Both identifiers named, `aaa_fn` FIRST — so its 10 hits arrive before zzz_fn's one.
+            fpath = findings_file(repo, [{
+                "title": "outer",
+                "body": "`aaa_fn` is wrong, and so is `zzz_fn`",
+                "evidence": "",
+                "file_path": "pkg/target.py",
+                "line_start": 1,
+            }])
+            rc, out, err = run_ee("--repo", str(repo), "--findings", fpath)
+            outer_pkg = pkg_for(out, "outer")
+            outer_files = caller_files(outer_pkg)
+
+            c.check("outer sort: exits 0", rc == 0, f"exit {rc} err={err[:160]}")
+            c.check("outer sort: a LATER identifier's importer is not crowded out by an "
+                    "earlier identifier filling the cap",
+                    "pkg/zimporter.py" in outer_files,
+                    f"the importer was sliced away; got {outer_files}")
+            c.check("outer sort COUNTER-EXAMPLE: the noise really did overflow the cap",
+                    len(outer_files) == 10 and sum(1 for f in outer_files
+                                                   if f.startswith("pkg/n_")) >= 9,
+                    f"fixture did not overflow as intended; got {outer_files}")
+
     # ── 3. IMPORTED BY — the reason this subtask exists ───────────────────────
     with TempDir() as tmp:
         if c.block("3 · IMPORTED BY (python)"):
