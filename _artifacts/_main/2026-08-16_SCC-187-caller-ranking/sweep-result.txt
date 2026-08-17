@@ -1,4 +1,4 @@
--- sweep: 11 mutant(s) over 1 file(s) @ 89a67af1 --
+-- sweep: 11 mutant(s) over 1 file(s) @ 059eca26 --
 KILLED    M1 ranking becomes FILTERING — the one thing this lane forbids
             KILLED by ranking: BOTH classes survive
             -- filter 'SCC-187-A1': matched 5/23 blocks --
@@ -32,7 +32,7 @@ KILLED    M10 the snippet path is cut at the FIRST colon, corrupting colon-beari
 KILLED    M11 a truncated importer walk still ASSERTS [name-match]
             KILLED by truncated walk: the tag degrades to [unranked], never [name-match]
             -- filter '5d ·': matched 1/23 blocks --
--- restore verified: bytes match, nothing was committed, and `git diff --quiet 89a67af1` is clean --
+-- restore verified: bytes match, nothing was committed, and `git diff --quiet 059eca26` is clean --
 -- full file, unfiltered: python3 .agents/scripts/tests/test_evidence_extract.py -> exit 0 --
         | [PASS] deterministic: the same inputs give byte-identical output
         | [PASS] tripwire: imports no subprocess module
