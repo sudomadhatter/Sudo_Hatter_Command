@@ -1724,48 +1724,167 @@ def banned_action_rows(text: str) -> list[tuple[str, str]]:
     return out
 
 
+# ── SCC-193 Part B · the ceremony's own steps are not `Your Actions` entries ──────────────
+#
+# SLIP #4 OF SIX ON SCC-164'S LANDING (2026-08-16). The agent wrote the close-out's remaining
+# STEPS into `## Your Actions` as operator tasks - "Click **Merge** on the PR", "Then re-invoke
+# `/smh-close-task-merge-tree --after-merge SCC-164`" - and `finish` then correctly HELD the
+# ticket on work that was the agent's own. `## Your Actions` had no content rule: `open_actions`
+# is a `- [ ]` scanner, the door greps for the heading's PRESENCE, and nothing ever read what
+# was in it.
+#
+# ⭐ THE OPERATOR'S RULING, 2026-08-17, IS WHY THIS REFUSES RATHER THAN ADVISES: the sign-off is
+# the DECISION TO PROCEED - the word `approved`, or invoking one of the two doors. From that
+# word on every step is the ceremony's, and the agent runs it. "Click Merge" and "re-invoke the
+# door" are therefore not misfiled operator tasks; they are not operator tasks at all.
+#
+# ⛔ THE BOUNDARY, AND EVERY LINE OF IT IS A WEDGE THIS MUST NOT BUILD:
+#   * the canonical ledger row (`the merge itself`) is EXEMPT in both states. The door mandates
+#     it (SCC-183 Step 3) and SCC-175 computes whether it holds. Refusing it would make the door
+#     refuse its own required row - and post-merge the only fix is a commit on `main`, the write
+#     the gate refuses. That is the 2026-08-15 `reset --hard` incident, rebuilt.
+#   * a bare DOOR INVOCATION ("Land it - `/cicd-push-e2e`") is EXEMPT: under the ruling that is
+#     one of the three FORMS OF THE DECISION, not a chore. SCC-175 owns whether it still holds.
+#   * what is refused is the ceremony's CONTINUATION - the click, the re-invocation, the
+#     `--after-merge` half, running the machinery - because those are the agent's by the ruling.
+#
+# Same shape as `banned_action_rows` (verb x object, bound as one phrase, read through
+# `open_actions` so a fenced example stays documentation). Third family, same mechanism.
+_CEREMONY_PATTERNS = [
+    (re.compile(r"\b(?:click|hit|press)\b[^\n]{0,40}?\bmerge\b", re.I),
+     "asks the operator to CLICK the merge - the decision is the sign-off, not the click"),
+    (re.compile(r"\bmerge\b[^\n]{0,25}?\b(?:pull\s+request|the\s+PR)\b", re.I),
+     "asks the operator to perform the merge itself"),
+    (re.compile(r"\bre-?invoke\b", re.I),
+     "asks the operator to re-invoke the ceremony - the agent runs it from the sign-off on"),
+    (re.compile(r"--after-merge\b", re.I),
+     "names the close-out's own second half, which is the ceremony's step"),
+    (re.compile(r"\bthen\s+(?:invoke|run|call)\b", re.I),
+     "sequences the ceremony's own steps as operator work"),
+    (re.compile(r"\brun\b[^\n]{0,50}?(?:\.agents/scripts/|jira_feed\.py|task_preflight\.py"
+                r"|flight_recorder\.py|gate_receipt\.py)", re.I),
+     "asks the operator to run the machinery the ceremony runs"),
+]
+_CEREMONY_SENTENCE = ("this section holds what only the operator decides; the ceremony's "
+                      "steps are not entries")
+
+
+def ceremony_rows(text: str) -> list[tuple[str, str]]:
+    """The `## Your Actions` rows that hand the operator the CEREMONY's steps. `(row, reason)`.
+
+    Open rows only, through `open_actions`, for the same three reasons `banned_action_rows`
+    uses it: fenced examples stay documentation, `## Task Checklist` is not scanned, and a
+    settled `- [x]` is not an ask."""
+    rows = open_actions(text)
+    if not rows:
+        return []
+    out: list[tuple[str, str]] = []
+    for row in rows:
+        # The ledger row is SCC-175's, in both tick states. See the boundary note above.
+        if MERGE_PHRASE in row.lower():
+            continue
+        for pat, why in _CEREMONY_PATTERNS:
+            m = pat.search(row)
+            if m:
+                out.append((row, f"{why} - {_CEREMONY_SENTENCE} "
+                                 f"(matched: '{m.group(0).strip()[:40]}')"))
+                break
+    return out
+
+
+def _row_banner(rows: list[tuple[str, str]], walkthrough: str, strict: bool,
+                *, headline: str, guidance: list[str], flag: str) -> str:
+    """The frame both row detectors print. ⛔ LOUD ON PURPOSE, and pinned by a test.
+
+    One frame, two families (SCC-193 added the second). Cloning it would have been the third
+    place the closing sentences and the `--warn-actions` contract are spelled out, and they
+    have to say the same thing or the opt-out means something different depending on which
+    detector fired.
+
+    `strict` only changes the closing sentence. A warn nobody reads is the
+    `vscode-hides-git-hook-output` failure, so the volume stays either way."""
+    lines = ["", "  " + "=" * 74, "  " + headline, "  " + "=" * 74, ""]
+    for row, reason in rows:
+        lines += [f"    - {row[:160]}", f"      why: {reason}", ""]
+    lines += guidance + [
+        "",
+        (f"  This REFUSES the close-out (exit 2). Nothing has been written to the board - fix\n"
+         f"  the walkthrough and re-run. `{flag}` restores the pre-2026-08-16 warn, and\n"
+         f"  logs that you chose it.")
+        if strict else
+        (f"  This is a WARNING - you passed `{flag}`. The ticket's hold below is\n"
+         f"  unchanged, and the opt-out is recorded in this run's output."), ""]
+    return "\n".join(lines)
+
+
 def render_banned_banner(rows: list[tuple[str, str]], walkthrough: str,
                          strict: bool = True) -> str:
-    """The banner. ⛔ It is LOUD ON PURPOSE and it is pinned by a test.
+    """A row handing the operator TICKET work (SCC-163 Part B).
 
     It shipped WARN on 2026-08-15 ("1. yes") because a block at `finish` fires AFTER the merge
     and would trade a held ticket for an erroring close-out. That was a MEASUREMENT WINDOW, and
     SCC-164 § ARMING clause 3 closed it on 2026-08-16: the detector produced 0 hits across the
     11 post-cutoff walkthroughs (0 false positives) while still firing correctly on 3 legacy
     ones, so it now REFUSES by default. The `finish` refusal runs before the board is touched,
-    which is what makes the ordering objection above no longer apply — nothing is half-written.
-
-    `strict` only changes the closing sentence. A warn nobody reads is the
-    `vscode-hides-git-hook-output` failure, so the volume stays either way."""
+    which is what makes the ordering objection above no longer apply — nothing is half-written."""
     n = len(rows)
-    lines = ["", "  " + "=" * 74,
-             f"  ⛔ BANNED ACTION ROW{'' if n == 1 else 'S'} - {n} row{'' if n == 1 else 's'} "
-             f"in `{YOUR_ACTIONS}` hand{'s' if n == 1 else ''} the operator ticket work",
-             "  " + "=" * 74, ""]
-    for row, reason in rows:
-        lines += [f"    - {row[:160]}", f"      why: {reason}", ""]
-    lines += [
-        "  Step 5 leaves the operator THREE things: a product decision, a main merge, a",
-        "  ticket transition. A ticket born from review findings is not one of them - and an",
-        "  open box here holds this ticket on the review ladder until someone edits the file.",
-        "",
-        f"  Fix the walkthrough ({walkthrough}), do not hand the row over:",
-        "    - the finding is evidenced and in YOUR lane -> file it yourself, or fix it here",
-        "    - it is genuinely the operator's -> say which of the three classes it is",
-        "",
-        ("  This REFUSES the close-out (exit 2). Nothing has been written to the board - fix\n"
-         "  the walkthrough and re-run. `--warn-actions` restores the pre-2026-08-16 warn, and\n"
-         "  logs that you chose it.")
-        if strict else
-        ("  This is a WARNING - you passed `--warn-actions`. The ticket's hold below is\n"
-         "  unchanged, and the opt-out is recorded in this run's output."), ""]
-    return "\n".join(lines)
+    return _row_banner(
+        rows, walkthrough, strict,
+        headline=(f"⛔ BANNED ACTION ROW{'' if n == 1 else 'S'} - {n} row{'' if n == 1 else 's'} "
+                  f"in `{YOUR_ACTIONS}` hand{'s' if n == 1 else ''} the operator ticket work"),
+        # ⭐ SCC-193 · THE WORDING, and it is the operator's ruling rather than an edit.
+        # This said "Step 5 leaves the operator THREE things: a product decision, A MAIN MERGE,
+        # a ticket transition" - and naming the merge as a thing the operator is LEFT is what
+        # produced the slip this same lane fixes: the agent wrote the merge and the door's
+        # re-invocation into `## Your Actions` as owed work, and the machine contract read them
+        # as owed. The merge is not owed; the DECISION is given, and the ceremony runs.
+        guidance=[
+            "  The operator's DECISION TO PROCEED is the sign-off - the word `approved`, or",
+            "  invoking `/smh-close-task-merge-tree` or `/cicd-push-e2e`. What this section",
+            "  holds is what only they can DECIDE: a product decision, or a ticket transition",
+            "  they have reserved. A ticket born from review findings is not one of those - and",
+            "  an open box here holds this ticket on the review ladder until someone edits the",
+            "  file.",
+            "",
+            f"  Fix the walkthrough ({walkthrough}), do not hand the row over:",
+            "    - the finding is evidenced and in YOUR lane -> file it yourself, or fix it here",
+            "    - it is genuinely the operator's -> say which class of decision it is",
+        ],
+        flag="--warn-actions")
+
+
+def render_ceremony_banner(rows: list[tuple[str, str]], walkthrough: str,
+                           strict: bool = True) -> str:
+    """A row handing the operator the CEREMONY's own steps (SCC-193 Part B)."""
+    n = len(rows)
+    return _row_banner(
+        rows, walkthrough, strict,
+        headline=(f"⛔ CEREMONY STEP{'' if n == 1 else 'S'} IN `{YOUR_ACTIONS}` - "
+                  f"{n} row{'' if n == 1 else 's'} hand{'s' if n == 1 else ''} the operator "
+                  f"the close-out's own work"),
+        guidance=[
+            f"  {_CEREMONY_SENTENCE[0].upper()}{_CEREMONY_SENTENCE[1:]}.",
+            "",
+            "  The sign-off is the operator's DECISION TO PROCEED, given as the word `approved`",
+            "  or by invoking `/smh-close-task-merge-tree` or `/cicd-push-e2e`. FROM THAT WORD",
+            "  ON, EVERY STEP IS THE CEREMONY'S AND THE AGENT RUNS IT - the click, the",
+            "  re-invocation, the Dev Record, the transitions, the prune.",
+            "",
+            f"  Fix the walkthrough ({walkthrough}):",
+            "    - delete the row: it describes what YOU do next, and it is not owed to anyone",
+            "    - keep only what the operator DECIDES (a product call, a reserved transition)",
+            "    - the one merge-shaped row that belongs here is the door's ledger line,",
+            "      `- [x] The merge itself - lands via this branch's PR`, which SCC-175 checks",
+            "      against ancestry rather than against its tick.",
+        ],
+        flag="--warn-actions")
 
 
 def render_user_tasks(items: list[str], walkthrough: str, when: str) -> str:
     lines = [f"**User tasks** - {when}", "",
              f"This ticket's work is merged, but the walkthrough leaves "
-             f"**{len(items)}** thing{'' if len(items) == 1 else 's'} that only you can do. "
+             f"**{len(items)}** thing{'' if len(items) == 1 else 's'} that only you can "
+             f"DECIDE. "
              f"It is deliberately NOT `Done`:", ""]
     lines += [f"- [ ] {it}" for it in items]
     lines += ["", f"Source: `{walkthrough}` -> `{YOUR_ACTIONS}`.", "",
@@ -1786,11 +1905,18 @@ def cmd_check_actions(args) -> int:
     if not wt.is_file():
         say(f"[ERR] no walkthrough at `{wt}`")
         return 2
-    rows = banned_action_rows(wf.read_text(wt))
-    if not rows:
-        say(f"jira-feed: `{wt}` - no banned action rows.")
+    text = wf.read_text(wt)
+    rows = banned_action_rows(text)
+    # SCC-193 Part B: the second family, reported by the SAME command - the door's Step 3 runs
+    # this before the PR opens, which is the one place fixing either costs nothing.
+    ceremony = ceremony_rows(text)
+    if not rows and not ceremony:
+        say(f"jira-feed: `{wt}` - no banned action rows, no ceremony steps.")
         return 0
-    say(render_banned_banner(rows, str(wt)))
+    if rows:
+        say(render_banned_banner(rows, str(wt)))
+    if ceremony:
+        say(render_ceremony_banner(ceremony, str(wt)))
     return 1
 
 
@@ -1854,6 +1980,21 @@ def cmd_finish(args) -> int:
     # false-positive count. Runs BEFORE the board is touched, so the refusal writes nothing at
     # all - the walkthrough is fixed and the close-out re-run, and no half-written board state
     # exists in between.
+    # SCC-193 Part B. Runs in the same pre-board window as the banned-row check below: a
+    # refusal here writes NOTHING, so the walkthrough is fixed and `finish` re-run with no
+    # half-written board state in between. The `--warn-actions` opt-out covers both families -
+    # one flag, or the opt-out would mean something different depending on which fired.
+    ceremony = ceremony_rows(text)
+    if ceremony:
+        say(render_ceremony_banner(ceremony, str(wt), strict=args.strict_actions))
+        if args.strict_actions:
+            say(f"[ERR] {args.key}: refusing on {len(ceremony)} row(s) that hand over the "
+                f"ceremony's own steps. Nothing was written; fix the walkthrough. "
+                f"(`--warn-actions` restores the pre-2026-08-16 warn behaviour.)")
+            return 2
+        say(f"jira-feed: {args.key}: --warn-actions given - {len(ceremony)} ceremony row(s) "
+            f"did NOT block this close-out. Logged opt-out, on the record.")
+
     banned = banned_action_rows(text)
     if banned:
         say(render_banned_banner(banned, str(wt), strict=args.strict_actions))
