@@ -4,7 +4,8 @@ branch: chore/SCC-197-rolling-cycle2
 close_command: smh-close-task-merge-tree
 secondary_repos: []
 # Cycle 2 of the rolling ticket, RUN as one lane (operator, 2026-08-17: "we need to run do this
-# whole ticket with /smh-quick-dev in one working tree again"). Full landing: no landing_mode key.
+# whole ticket with /smh-quick-dev in one working tree again"). It was PLANNED as a full landing;
+# it ships as a PARTIAL one - see landing_mode at the foot of this file, which is what governs.
 # Each part's commits lead with the SUBTASK's key (work-consolidation.md rule 2).
 # SCC-202 was NOT planned: it is a shipped defect Part A uncovered (acli `--labels` adds rather
 # than replaces, so `finish`'s user-tasks strip has never worked). Fixing the stub to match the

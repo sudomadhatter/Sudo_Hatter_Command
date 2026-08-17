@@ -165,14 +165,27 @@ SCC-198, deliberately unbuilt.
 
 ## Your Actions
 
-- [ ] **Decide whether the redundant gate is worth changing.** Measured: `test_sops_prds_folder.py`
-      is listed as a separate gate by `/smh-quick-fix` and `/smh-quick-dev`, but it already runs
-      inside `run_all.py`. Removing it saves **0.27s** against a 128s full run — real redundancy,
-      negligible payoff. My recommendation is to leave it: the line also documents *when* it
-      matters. Your call, and it is the only thing here that is not already done.
+- [x] The merge itself — lands via this branch's PR
+- [ ] **Decide whether the suite is worth speeding up.** This started as "is
+      `test_sops_prds_folder.py` redundant?" — it is, and removing it saves **0.27s**, which is not
+      worth doing. Measuring properly found the real number instead: `run_all.py` is **already
+      parallel** (its files sum to 342s and finish in 139.7s), and **84% of that wall clock is ONE
+      file**, `test_task_preflight.py` at 117.2s, with `test_git_hooks.py` behind it at 96.2s. Both
+      build a real throwaway git repo per scenario. Rebuilding those two from a template clone reset
+      per block would take the suite to roughly **50s** — about 90s back on every full run, and both
+      must be done or the other becomes the new floor. ⛔ It must be reset-from-template, never a
+      shared mutable repo: cross-test coupling in the file that guards the merge gate is a bad
+      trade. Your call whether that becomes a subtask; nothing here is blocked on it.
 - [x] The live board was corrected to the baton state by hand, since SCC-201 was cloned before the
       code existed: **SCC-197 → `bugs-and-updates`**, **SCC-201 → `running-bug-list`**.
 - [x] Plan, walkthrough and manifest are linked at the top of this document and in chat.
+
+**⛔ PARTIAL LANDING — the child this lane deliberately leaves behind.** `landing_mode: partial` is
+declared in `task.yaml`. **SCC-205** — the `/cicd-*` family audited back to parity with its `/smh-*`
+twin — is a subtask of SCC-197 whose work is **not** on this branch, so it is not a rider and it does
+not flip. **SCC-197 therefore stays OPEN**, and closes at wave 2's ceremony when SCC-205 does. This
+is the designed state, not an unfinished job — and it is not an action for the operator: the audit
+runs when its own lane is invoked.
 
 ---
 
