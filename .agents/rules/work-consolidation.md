@@ -63,7 +63,11 @@ acli jira workitem search --jql "project = SCC AND statusCategory != Done AND ty
 # next one starting, the only open rolling ticket is the un-started successor, which carries
 # `running-bug-list` and NOT `bugs-and-updates`. Querying one label reports "nothing fits" in
 # exactly the window rung 3 exists to cover, and sends you to rung 4 to mint a duplicate.
-acli jira workitem search --limit 5 --fields key,summary \
+# ⛔ `labels` IS ON --fields ON PURPOSE. From the first roll onward TWO rolling tickets are open
+# and the clone copies the summary VERBATIM, so both rows read `Bugs and Updates - <YYYY-MM>`.
+# Without the label column the answer cannot tell the running cycle from the un-started
+# successor, and the rule below asks you to pick one of them. `--fields` is a WHITELIST.
+acli jira workitem search --limit 5 --fields key,summary,labels \
      --jql "project = SCC AND statusCategory != Done AND labels IN (bugs-and-updates, running-bug-list)"
 acli jira workitem view <the-parent-you-suspect>      # does its surface really cover this?
 ```
@@ -97,8 +101,24 @@ successor exists, and not one moment longer*. Two consequences you can rely on:
   so a re-run cannot mint a duplicate.
 - **A failed clone is not a lost cycle** — the trigger stays put and the next `start` tries again.
 
-You do not have to do any of this by hand. If you ever see **two** open tickets carrying
-`running-bug-list`, a hand-off failed: strip it from the older one so exactly one holds it.
+You do not have to do any of this by hand — but the count is worth a glance, because the baton can
+break in **both** directions and only one of them is loud.
+
+- **TWO open tickets carry `running-bug-list`** — a hand-off failed after its clone landed. Loud:
+  the rung-3 query returns two rows and you cannot tell which to file into. Strip the label from
+  the **older** one so exactly one holds it.
+- ⛔ **ZERO open tickets carry it — and this one is SILENT.** The trigger is a label on a ticket, so
+  it dies with the ticket: close the un-started successor (a duplicate cleanup, a "won't do", a
+  tidy-up sweep) and the marker goes with it. Both queries here filter `statusCategory != Done`, so
+  a baton on a closed ticket is not *reported* missing — it is simply **absent**, and absent reads
+  exactly like "no rolling ticket is open". That sends you to rung 4, and a ticket minted at rung 4
+  carries no trigger, so nothing ever clones again: **the chain is dead and every later cycle
+  re-mints by hand.** Recovery is one write — put `running-bug-list` back on exactly one open,
+  un-started rolling ticket (mint one first if none is open).
+
+⭐ **This is the second reason `labels` is on `--fields` above.** Zero-holder has no error message
+and no exit code; the only way to see it is to read the label column of the rows rung 3 already
+returns. Two rows with the trigger, or none, and you are looking at a broken baton.
 
 **The worked example is in the history:** `SCC-192` (the close-out-receipts finding) was minted as a
 fresh Task under the old rung 3 and **re-filed the same day as a subtask** of `SCC-190`. That

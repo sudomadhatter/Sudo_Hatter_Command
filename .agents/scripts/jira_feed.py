@@ -1321,10 +1321,33 @@ def roll_the_cycle(binary: str, key: str, timeout: int) -> None:
     # only checks truthiness cannot tell them apart, and cloning on that confusion mints a
     # duplicate every time the network hiccups. Refusing both the clone and the swap is the
     # self-healing direction - the trigger survives and the next `start` retries.
+    # ⛔⛔ "A SUCCESSOR IS AN **UN-STARTED** TICKET." Three review lenses killed the first version
+    # of this query independently, and all three failures were the same mistake: it asked "does any
+    # other open ticket carry the trigger?" when the invariant says "does MY SUCCESSOR exist?".
+    # Those are different questions, and every gap between them retires a baton nobody caught:
+    #
+    #   * `statusCategory != Done` matched the ticket ITSELF - it still carries the trigger and is
+    #     In Progress at this moment - so deleting `key != {key}` was silent and terminal: skip the
+    #     clone, swap anyway, and print "a successor already exists (SCC-197)", naming itself. The
+    #     test suite stayed 18/18 green on that mutant, because the stub ignores the JQL entirely.
+    #   * it also matched a STRANDED PREDECESSOR (a ticket left holding the trigger by a failed
+    #     swap). Starting the real successor then found its own predecessor, skipped its clone and
+    #     consumed its own baton - the two-holder state "repairing" itself into ZERO holders, with
+    #     "exactly one open ticket holds the baton" as the last line printed. Reproduced, not
+    #     theorised.
+    #   * and it was unscoped, while the clone on the next line is `--to-project`. A second project
+    #     adopting the label would answer this project's question.
+    #
+    # `statusCategory = "To Do"` is the whole fix, and it is the invariant stated in JQL: a
+    # successor is one that has NOT been started. A stranded predecessor is In Progress and cannot
+    # match; nor can this ticket, which makes the self-match structurally impossible rather than
+    # guarded. Measured live 2026-08-17: this query returns SCC-201 (To Do Next) and excludes
+    # SCC-197 (In Progress). `key != {key}` stays as a second, independent belt.
+    project = key.split("-")[0]
     found = acli_json(binary, ["jira", "workitem", "search", "--json", "--limit", "5",
                                "--fields", "key,summary",
-                               "--jql", f'labels = "{TRIGGER_LABEL}" AND '
-                                        f'statusCategory != Done AND key != {key}'],
+                               "--jql", f'project = {project} AND labels = "{TRIGGER_LABEL}" '
+                                        f'AND statusCategory = "To Do" AND key != {key}'],
                       timeout=timeout)
     if found is None:
         say(f"[WARN] {key} carries `{TRIGGER_LABEL}`, but the board could not be searched for "
@@ -1422,6 +1445,28 @@ def cmd_start(args) -> int:
 
     if status.lower() == target.lower():
         say(f"jira-feed: {args.key} is already {target} - nothing to do ({summary[:60]})")
+        # ⛔ THE ROLL IS BOUND TO THE TICKET'S **STATE**, NOT TO THE TRANSITION EDGE. It used to
+        # sit only after a successful transition, and three lenses independently proved what that
+        # cost: every failure path printed "the label was LEFT IN PLACE, so the next `start` tries
+        # again - the cycle is not lost", and there was NO reachable next attempt. The ticket was
+        # already In Progress, so every later `start` returned right here, above the trigger check.
+        # The promise in the message, in `work-consolidation.md` and in the SOP was simply false.
+        #
+        # Two more routes reached the same dead end with no roll failure at all: a blip on the
+        # post-transition read-back returns 4 after the write landed, and an operator dragging the
+        # card to In Progress on the Jira board never invokes this code on the edge at all. And
+        # nothing surfaced it - `roll_the_cycle` never changes the exit code, so the post-commit
+        # recorder wrote its once-per-branch marker on the 0 and stopped asking, with both streams
+        # redirected to /dev/null so the [WARN] reached no one either.
+        #
+        # Rolling from the settled state is safe precisely BECAUSE the marker is a baton: a ticket
+        # that already handed off no longer carries the trigger, so this is a no-op for every
+        # started ticket (pinned by A2b). Only a ticket still holding an un-honoured baton rolls,
+        # which is exactly the retry the messages promise.
+        if args.apply and TRIGGER_LABEL in [str(x) for x in (fields.get("labels") or [])]:
+            say(f"jira-feed: {args.key} still holds `{TRIGGER_LABEL}` - its successor was never "
+                f"minted, so this is the retry the earlier run promised.")
+            roll_the_cycle(binary, args.key, args.timeout)
         return 0
 
     if status.lower() == "done":
@@ -2270,7 +2315,6 @@ def cmd_finish(args) -> int:
         say(f"[WARN] {args.key}: the user-tasks comment did NOT land - "
             f"{(cm.stderr or cm.stdout).strip()[:160]}")
 
-    # `--labels` REPLACES the set, so read-modify-write or every other label is destroyed.
     if USER_TASKS_LABEL not in labels:
         # Send the ONE label, not the union. `--labels` adds (measured 2026-08-17), so the
         # read-modify-write this used to be was correct only by accident - re-adding labels
