@@ -1328,6 +1328,25 @@ def main() -> int:
                 f"found {imperatives} — the main checkout is never a clean tree; printing this "
                 f"as a remedy is how three sessions' uncommitted work was destroyed (SCC-180)")
 
+        # ⛔ RH1's ANTI-VACUITY TWIN, and the mutation sweep is what demanded it. RH1 asserts
+        # "no imperatives found" — which is exactly what a BLIND detector reports too. Break one
+        # line of `payload` (stop stripping `echo "`) and the guard stops seeing printed command
+        # lines altogether, RH1 goes green on an empty list, RH2/RH3/RH4 all still pass, and the
+        # whole block certifies a check that can no longer fail. RH0 is the floor for the SCAN
+        # (did we read any files?); this is the floor for the DETECTOR (can it still tell the two
+        # forms apart?). Both fixtures are synthetic on purpose: a control that reads the live
+        # tree would go vacuous again the moment the tree is clean, which is the state we want.
+        POSITIVE = '        echo "              git reset --hard origin/$1     # was the remedy"'
+        NEGATIVE = "> Never `git reset --hard` in a shared checkout — it eats other lanes' work."
+        c.check("RH1b · (control) the detector still SEES a printed `--hard` remedy",
+                payload(POSITIVE).startswith("git " + NEEDLE),
+                f"the shape the backstop shipped on 2026-08-15 is no longer recognised, so RH1 "
+                f"passes by blindness rather than by cleanliness. payload -> {payload(POSITIVE)!r}")
+        c.check("RH1c · (control) ...and still does NOT see the prose that forbids it",
+                NEEDLE in NEGATIVE and not payload(NEGATIVE).startswith("git " + NEEDLE),
+                f"a detector that flags the sentence teaching the lesson gets the lesson deleted. "
+                f"payload -> {payload(NEGATIVE)!r}")
+
         # The two fixtures that keep RH1 honest, pinned by CONTENT rather than line number.
         banner = BACKSTOP.read_text(encoding="utf-8")
         # ⭐ ASSERTED THROUGH `payload`, NOT AS A FLAT SUBSTRING — and the first cut of this line
