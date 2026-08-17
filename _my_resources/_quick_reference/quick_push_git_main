@@ -1,0 +1,6 @@
+The manual way to push to main:
+
+1. pull from - main to chore/SCC-186-standing-push
+    - keeps this clean with main, and you can use this branch forever
+2. write a commit message starting with SCC-186
+3. Create PR to main
