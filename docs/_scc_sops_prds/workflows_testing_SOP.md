@@ -727,7 +727,7 @@ The close-out runs everything it always ran — preflight, the lane's gate, the 
 
 | What it says | What you do |
 |---|---|
-| a URL | click **Merge pull request**. That click is your sign-off. Then say so, and the agent runs the rest (`--after-merge`): Dev Record, ticket to `Done`, worktree and branch pruned |
+| a URL | click **Merge pull request** — your **decision to proceed** is the sign-off, and the click is how it reaches GitHub. Then say so, and the agent runs the rest (`--after-merge`): Dev Record, ticket to `Done`, worktree and branch pruned |
 
 > ⓘ **One thing the close-out needs from the walkthrough BEFORE it opens the PR**, and it is worth
 > knowing because it is the difference between a clean close and a stuck one: the walkthrough must

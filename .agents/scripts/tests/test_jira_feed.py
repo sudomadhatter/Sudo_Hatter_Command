@@ -1945,7 +1945,9 @@ Nothing is actually owed.
             # Written RED first, against a REAL corpus (acceptance B1).
             #
             # Step 5 of both review commands permits exactly three things to be left for the
-            # operator: a product decision, a main merge, a ticket transition. A row assigning
+            # operator what only THEY can decide: a product decision, or a ticket transition
+            # they have reserved. (It named a third, the main merge, until the operator's
+            # 2026-08-17 ruling retired it - the sign-off is the DECISION.) A row assigning
             # them a ticket BORN FROM REVIEW FINDINGS - mint it, file it, rule on where it goes -
             # is the retired defect. It is prose, nothing checked it, and it was broken the same
             # day it was written: AVCH-58 shipped three unchecked rows, zero of them operator

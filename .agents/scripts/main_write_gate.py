@@ -279,7 +279,12 @@ def check_close_out_receipts(repo: Path, base: str, head: str) -> list[str]:
                         f"absorbed-main check and the stalled-landing check were all "
                         f"measured against a stale view. Re-run the preflight with the "
                         f"fetch and commit the new receipt.")
-                if not str(r.get("verdict") or "").lower().startswith("clear"):
+                # ⛔ `startswith("clear")` ALONE would accept the stale verdict, which reads
+                # "clear - but vs the LAST fetch (STALE)...". It is harmless only while the
+                # `fresh` check above rejects first, i.e. these two are one edit away from
+                # being one assertion wearing two names. Both halves, independently.
+                verdict = str(r.get("verdict") or "").lower()
+                if not verdict.startswith("clear") or "stale" in verdict:
                     fails.append(f"{key or rel}: the receipt records the verdict "
                                  f"`{str(r.get('verdict'))[:60]}` — only a clear preflight "
                                  f"is evidence that this lane may close")

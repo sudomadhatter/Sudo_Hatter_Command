@@ -387,6 +387,11 @@ def main() -> int:
                     + sorted(REPO.glob(".opencode/commands/*.md"))
                     + sorted(REPO.glob(".claude/skills/smh-*/SKILL.md"))
                     + sorted(REPO.glob(".agents/scripts/*.py"))
+                    # ⛔ tests/ TOO. The first cut globbed `scripts/*.py` only, and a retired
+                    # phrase sat in a test comment under `.agents/` for the whole lane - a
+                    # scope hole is indistinguishable from a clean sweep (acceptance audit,
+                    # gap 2).
+                    + sorted(REPO.glob(".agents/scripts/tests/*.py"))
                     + sorted(REPO.glob("docs/_scc_sops_prds/*.md"))
                     + [REPO / "AGENTS.md"])
 
@@ -395,7 +400,12 @@ def main() -> int:
             "the merge is the operator's",
             "the merge is yours",
             "the merge is mine",
+            # ⛔ NOT the literal "click is the sign-off": the SOP's own table row read "That
+            # click is YOUR sign-off" and slipped through the whole lane on one interposed
+            # word (acceptance audit, gap 1). The phrase is the CLAIM, not a fixed string.
             "click is the sign-off",
+            "click is your sign-off",
+            "that click is the",
             "a product decision, a main merge",
             "things that only you can do",
             "you merge it",
@@ -408,20 +418,28 @@ def main() -> int:
         # the operator's WORK, not the invocation described as their decision.
         # ⛔ THE ALLOW-LIST IS PAIRS, NAMED, WITH A REASON - never a whole file. A file-level
         # exemption is how a pin quietly stops covering the thing it was written for.
-        ALLOW = {
+        ALLOW_FILES = {
             # this file: it must quote the retired phrases in order to forbid them
             ".agents/scripts/tests/test_door_preflight_order.py",
+        }
+        # ⛔ PAIRS, NOT FILES. A whole-file exemption stops covering the thing the pin was
+        # written for; a (file, phrase) pair with a reason stays auditable. These are FIXTURE
+        # DATA - SCC-164's actual rows, quoted verbatim so `ceremony_rows` can be proved to
+        # REFUSE them. A test that cannot quote the defect cannot test the defect.
+        ALLOW_PAIRS = {
+            (".agents/scripts/tests/test_jira_feed.py", "that click is the"),
+            (".agents/scripts/tests/test_jira_feed.py", "click is the sign-off"),
         }
         hits = []
         for path in SURFACES:
             rel = str(path.relative_to(REPO)).replace("\\", "/")
-            if rel in ALLOW:
+            if rel in ALLOW_FILES:
                 continue
             for n, line in enumerate(path.read_text(encoding="utf-8", errors="replace")
                                      .splitlines(), 1):
                 low = line.lower()
                 for bad in FORBIDDEN:
-                    if bad in low:
+                    if bad in low and (rel, bad) not in ALLOW_PAIRS:
                         hits.append(f"{rel}:{n}: {bad!r} in {line.strip()[:70]}")
         c.check("S5 no surface still says the merge is the operator's to perform",
                 not hits, f"{len(hits)} hit(s): " + " | ".join(hits[:6]))

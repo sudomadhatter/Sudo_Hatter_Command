@@ -340,6 +340,14 @@ five minutes later. Check both **before** opening the PR:
 ```bash
 grep -q "The merge itself" <walkthrough> && grep -q "^## Your Actions" <walkthrough> \
   || { echo "walkthrough incomplete — fix it BEFORE the PR"; exit 1; }
+
+# ⭐ SCC-193 · the CONTENT of that section, not just its presence. Refuses a row handing the
+# operator ticket work (SCC-163) or the ceremony's own steps (SCC-193) - "click Merge",
+# "re-invoke the door", "run --after-merge". HERE, before the PR, is the only place fixing
+# either costs nothing: the same refusal fires again at Step 4's `finish`, which runs AFTER
+# the merge, when the walkthrough is on `main` and the fix is a commit the gate refuses.
+python3 .agents/scripts/jira_feed.py check-actions --walkthrough <walkthrough> \
+  || { echo "fix `## Your Actions` BEFORE the PR - it will refuse the close-out otherwise"; exit 1; }
 ```
 
 ⭐ **Both of these are measured failures, not hypotheticals.** On 2026-08-16 `jira_feed.py finish`

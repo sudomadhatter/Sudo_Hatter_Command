@@ -14,3 +14,14 @@ proceed is the sign-off** — the word `approved`, or invoking this command or `
 that word on every step is the ceremony's and you run it (their click on *Merge pull request* is how the
 decision reaches GitHub, never work they owe). If the command file is absent, STOP and report the missing
 canonical workflow; never reconstruct the close-out from memory.
+
+⛔ **On `--after-merge`, check that the door you are reading is CURRENT** (SCC-193 C). This command is
+the one most likely to be reading a file its own lane just rewrote:
+
+```bash
+BEHIND=$(git -C "$REPO" rev-list --count HEAD..origin/main)
+```
+
+If that is not `0`, this checkout is **behind origin/main by N** and the door text you are following
+may be the PRE-merge copy — read `git show origin/main:.agents/commands/smh-close-task-merge-tree.md`
+and follow that instead.
