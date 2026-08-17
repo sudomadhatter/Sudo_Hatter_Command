@@ -1,5 +1,5 @@
 ---
-description: Publish the home-base .agents command and skill masters to the lobby's local Claude/opencode surfaces plus the opencode, Antigravity, and Codex machine caches. Projects stay thin; one lobby sync serves all four platforms.
+description: Publish master `.agents` commands & skills to Claude, opencode, Antigravity, and Codex across lobby and machine caches.
 ---
 
 # /smh-sync-agents

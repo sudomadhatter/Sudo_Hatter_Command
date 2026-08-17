@@ -1,9 +1,9 @@
 ---
-description: The LIGHTWEIGHT lane — command-centre work that touches nothing which can break. Ticket, branch, do it, gates, push, hand back. No plan, no approval stop, no self-audit, no RED-first assertion, no review verdict. Qualification is a script, not a judgement, and the lane EJECTS to /smh-quick-dev the moment the real diff stops qualifying. Use when the operator names one specific thing — write me a guide, fix that reference, tidy this branch mess — or says "skip the plan, just do it".
+description: Lightweight lane for simple command-center tasks that touch nothing breakable — ticket, branch, edit, gate, push, no plan needed.
 platforms: [opencode, antigravity, claude, codex]
 ---
 
-# /smh-quick-fix — The Lightweight Lane (SCC-162)
+# /smh-quick-fix — The Lightweight Lane
 
 > **Rules in force for this command:**
 > - `.agents/rules/artifacts-always-first.md` § "When to Skip" — **the definition of this lane lives

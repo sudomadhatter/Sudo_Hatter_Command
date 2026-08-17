@@ -1,9 +1,9 @@
 ---
-description: Epic kickoff — write the epic + its stories, generate the sprint board, then interactively risk-score every story P0–P3 (test levels). Phase A of the sudo flow, before the per-story dev loop.
+description: Epic kickoff — create epic & stories, generate sprint board, and interactively risk-score stories P0–P3. Phase A.
 platforms: [opencode, antigravity]
 ---
 
-# /cicd-create-epic-sprint — Epic Kickoff: Stories + Sprint + Risk-Score (Phase A)
+# /cicd-create-epic-sprint — Epic Kickoff: Stories +...
 
 Thin orchestrator — calls three existing BMAD/TEA skills back-to-back so a batch of requirements arrives as
 an epic, a populated sprint board, AND a Daniel-confirmed P0–P3 risk map in ONE pass. Runs BEFORE the

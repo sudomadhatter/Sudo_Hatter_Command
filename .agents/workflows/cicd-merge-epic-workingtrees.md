@@ -1,9 +1,9 @@
 ---
-description: One-shot close-out for ALL of an epic's live story worktrees — read every tree, check each story, fix/merge in dependency order with per-lane test gates, land on the epic branch, flip each story to done, run the combined gate, then prune every tree and branch. Invoked directly or from /cicd-update-sprint-memory when several lanes are live.
+description: One-shot close-out for all story worktrees in an epic — dependency ordering, overlap checks, test gates, and epic landing.
 platforms: [opencode, antigravity]
 ---
 
-# /cicd-merge-epic-workingtrees — Close Out ALL Parallel Story Lanes in One Shot
+# /cicd-merge-epic-workingtrees — Close Out ALL Parallel...
 
 > **Rules in force for this command:**
 > - `.agents/rules/worktree-per-story.md` — one worktree per story, resolve-or-STOP, never delete through a junction

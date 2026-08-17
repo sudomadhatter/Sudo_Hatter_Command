@@ -1,5 +1,5 @@
 ---
-description: Session boot / BMAD story pick-up — reads active-context + sprint-status + the bound project's own memory index (SCC-73; project-scoped facts are relocated there and are NOT in the lobby index you loaded at session start), loads in-scope component specs, surfaces the next story and which cicd- command to run, confirms guardrails before work begins. Pairs with /cicd-update-sprint-memory (the close-out save).
+description: Session boot & BMAD story pick-up — reads active context, sprint status, and project memory; loads specs and next story.
 platforms: [opencode, antigravity]
 ---
 

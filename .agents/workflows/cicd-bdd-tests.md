@@ -1,9 +1,9 @@
 ---
-description: BDD Vision Lock — interactive session to hash out exact expected behaviors until 100% understood, then codify them as BDD-structured contracts INSIDE the story's ATDD red test files (standalone pytest-bdd .feature is opt-in only) — or record an explicit human-approved waiver. Mandatory phase of the sudo dev flow; ② hard-gates on its output.
+description: BDD Vision Lock — codify expected behaviors into ATDD red test files inside the story. Mandatory Phase ② gate.
 platforms: [opencode, antigravity, codex]
 ---
 
-# /cicd-bdd-tests — BDD Vision Lock (Step 1a)
+# /cicd-bdd-tests — BDD Vision Lock
 
 Thin orchestrator — initiates an interactive session to finalize the exact behaviors of a story before translating them into strict `pytest-bdd` contracts. This ensures 100% clarity and zero AI drift. Project-scoped (targets THIS repo).
 

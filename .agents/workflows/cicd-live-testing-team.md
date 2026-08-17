@@ -1,8 +1,8 @@
 ---
-description: Live Testing Team — the human flies the app while the agent boots the dev env, watches the backend logs live, coaches the frontend DevTools check, files researched bug docs that feed the sudo story flow, and traces each bug back to the ticket that shipped it (flagging it `Bug` only on the operator's word). Writes NO product code.
+description: Live Testing Team — agent monitors logs & DevTools while human flies the app. Files researched bug docs. Writes NO code.
 ---
 
-# /cicd-live-testing-team — Live Testing Team (co-pilot debugging loop)
+# /cicd-live-testing-team — Live Testing Team
 
 The human drives the running app; you are the flight engineer. Boot the stack, keep every instrument
 in view, and turn every symptom into a **researched bug document** that the sudo dev flow

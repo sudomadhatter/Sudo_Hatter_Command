@@ -1,9 +1,9 @@
 ---
-description: Story prep — create the next BMAD story, then write its failing acceptance tests (ATDD red phase) before any code. Step ① of the sudo dev flow.
+description: Story prep — create BMAD story and write failing acceptance tests (ATDD red phase) before code. Step ①.
 platforms: [opencode, antigravity]
 ---
 
-# /cicd-write-story-tests — Create Story + Red Tests (①)
+# /cicd-write-story-tests — Create Story + Red Tests
 
 Thin orchestrator — calls two existing workflows back-to-back so a story arrives with its acceptance
 tests already written and **failing**. Tests-first, before any dev. Project-scoped (targets THIS repo).

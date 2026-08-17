@@ -1,5 +1,5 @@
 ---
-description: AviationChat security/error team — DRILL the incident-triage runbook against a Sentry issue (interactive lane). Test harness for the 16.1 runbook only; the always-live pipeline is the GitHub Action (16.2), which never uses this command.
+description: AviationChat security/error team — quarterly drill harness for the incident-triage runbook against Sentry issues.
 platforms: [opencode, antigravity, codex]
 ---
 

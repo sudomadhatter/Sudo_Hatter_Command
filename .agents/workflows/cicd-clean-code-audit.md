@@ -1,9 +1,9 @@
 ---
-description: Audit a diff against the house code standard — machine checks (ruff/eslint/types) that can FAIL, plus a judgment pass for the comment contract and AI-drift bans that caps at CONCERNS. Runs standalone or as /cicd-code-review Step 3.5.
+description: Audit diff against house code standard — machine checks (ruff/eslint/types) plus comment & AI-drift review. Standalone or Step 3.5.
 platforms: [opencode, antigravity]
 ---
 
-# /cicd-clean-code-audit — Is this code clean, and can you prove it?
+# /cicd-clean-code-audit — Is this code clean, and can...
 
 > **Rules in force for this command:**
 > - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push

@@ -1,9 +1,9 @@
 ---
-description: After a Task's subtasks are PLANNED, answer "which of these can I run side by side, and which are small enough for one light lane?" — one snapshot over ONE parent Task's Subtasks. Reads every lane's plan, extracts what each will actually modify, computes the largest set with no file overlap, and stamps `parallel-ok` + `quick-dev` on the winners. Stamps the set it was computed against so it can detect its own staleness. States, never starts.
+description: Analyze planned subtasks under a Task to identify non-overlapping files and stamp `parallel-ok` and `quick-dev`.
 platforms: [opencode, antigravity, claude, codex]
 ---
 
-# /smh-label-tasks — Which of this Task's subtasks can run in parallel? (SCC-155)
+# /smh-label-tasks — Which of this Task's subtasks can...
 
 > **Rules in force for this command:**
 > - `.agents/rules/jira.md` — the `acli` reference, the label vocabulary, and guardrail 4
