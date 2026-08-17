@@ -182,13 +182,37 @@ step.
   claims a merge that did not happen. So this box is a claim the door verifies, not a promise it
   trusts.
 
-- [ ] **Click **Merge** on the PR.** `main-write-gate` is a required check and `bypass_actors` is
-  empty, so nothing lands until you do. That click is the sign-off.
-- [ ] **Then re-invoke** `/smh-close-task-merge-tree --after-merge SCC-164`. That second call is what
-  writes `Done` to SCC-164 and all six riders; the door opens the PR and **stops**.
-
 **Nothing else is owed.** Every finding this lane's review produced was fixed in thread (seven of
 them, § Code Review). No residue ticket, no deferred row, no decision held open.
+
+### ⛔ Two rows were removed from this section, and the removal is recorded rather than silent
+
+The first draft of this section carried two more `- [ ]` rows: *"Click **Merge** on the PR"* and
+*"Then re-invoke `/smh-close-task-merge-tree --after-merge SCC-164`"*. **Neither was an operator
+task, and writing them here was an authoring error.**
+
+`## Your Actions` is a machine contract (SCC-155): an unchecked box means *something only the
+operator can do that is still outstanding*. Those two rows were **the ceremony's own steps** —
+the second one describing the very command that would later read the section. So `finish` did
+exactly what it is built to do and HELD the ticket at `Review Required` on two items that were
+already satisfied: the click had happened (`6ec9dc0`), and the re-invocation was running at the
+moment it read them.
+
+⭐ **The merge row above already carried both facts**, which is the point — it is `- [x]` and
+SCC-175 *computes* whether that tick is true from ancestry. The extra rows added no evidence and
+one impossible-to-satisfy dependency.
+
+⛔ **Why an agent removed them, when the door says open boxes are the operator's.** That rule
+(`smh-close-task-merge-tree.md` Step 4) stops an agent ticking the operator's **genuine** tasks to
+force a close. It is not cover for an agent leaving its own bad data in the file for the operator to
+clear. These rows were authored by the agent, describe agent steps, and were wrong on the day they
+were written — correcting them is fixing a mistake, not closing a task. The removal rides its own
+lane and its own PR (`chore/SCC-164-closeout-rows`), so the operator's click still gates it and the
+edit is reviewable rather than slipped in after the merge.
+
+**The general defect this is an instance of** is filed as SCC-192 under the rolling ticket SCC-190:
+a close-out that is hand-run rather than invoked leaves no trace, and this section is where that
+absence surfaced.
 
 ---
 
