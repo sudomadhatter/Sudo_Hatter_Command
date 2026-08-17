@@ -96,6 +96,26 @@ the step:
 the epic (`git-policy`). Re-run Step 3's gate **after** absorbing; a verdict measured on a pre-merge
 sha is a verdict about code that will never exist.
 
+## Step 0.9 — ⭐ Probe the review runtime and RECORD it (before the engine, SCC-177)
+
+**Can this session fan out to subagents?** Answer it from this runtime, not from what usually
+happens: a standing operator directive, a headless pipeline or a platform without a subagent tool
+each make the answer `inline`, and each of them is invisible until a lens fails to launch. This is
+also the story lane's only recording point — the dev-side commands do not carry this header, so if
+this step skips it the story's walkthrough never gets one (F24).
+
+Write the answer into the story walkthrough's header, **above `## Code Review`**, exactly like this:
+
+```
+review-runtime: fan-out
+```
+
+⛔ **`inline` is a different review, not a slower one — which is why it is declared before the hunt
+rather than discovered during it.** Under `inline` the engine runs the ladder ONCE, blind lens first
+on the diff alone, and every lens comes back `recovered-inline`; a roster reporting `ok` under an
+`inline` header is a contradiction that `walkthrough_roster.py` blocks on. Declaring it afterwards,
+from the roster you already have, makes the check circular and buys nothing.
+
 ## Step 1 — Clean-Room Adversarial Code Review
 
 Invoke the **`code-review-engine`** skill on the story's diff — the house review engine (SCC-116). It
@@ -116,6 +136,7 @@ required input is a stop, not a guess:**
 | `ARTIFACT_DIR` | `_artifacts/epic_<E>/<story>/` **inside that worktree** |
 | `DEFERRED_WORK` | the project's `deferred-work.md`, when it has one |
 | `lens_budget` | `standard` — the interactive budget, because a human is sitting in front of this review. **This command does not define what the caps are; step-01 of the engine does, once** — a cap each caller repeats is a cap that drifts. Naming nothing is not neutral: it silently selects the autopilot's budget, which is why this row is explicit (SCC-147) |
+| `review_runtime` | `fan-out` or `inline` — **what you PROBED at Step 0.9, never what you expect.** Pass it down and write the same value into the walkthrough header, so the roster the engine returns can be checked against the runtime that produced it |
 
 **Ordering (deliberate): the engine hunts the DIFF first — open ②'s `walkthrough.md` and plan only
 AFTER its summary comes back**, for claimed evidence, plan-vs-built deviations, and the `## Your
@@ -269,6 +290,19 @@ new one. The section carries:
   `cicd-update-sprint-memory` reads before flipping the story to `done` — plus one line naming the SHA
   the full-suite evidence was measured on and whose run it was (②'s inherited certification or ③'s
   own). Any code/test diff between that SHA and HEAD invalidates the verdict.
+- ⛔ **the engine's `lenses_run:` block, pasted VERBATIM** — the header line, then one
+  `- <lens> · ok | recovered-inline | dead` row per lens, a `—` note on every row that is not `ok`:
+
+  ```
+  lenses_run:
+  - blind-hunter · ok
+  - edge-case-hunter · recovered-inline — fan-out returned nothing, rerun inline
+  ```
+
+  **A `Verdict:` is the review's conclusion; this block is what shows the review happened.** Without
+  it the verdict is the only record of itself, and a walkthrough with zero lenses run merges clean —
+  the defect SCC-173 was raised on. `walkthrough_roster.py` reads it here at close-out. Do not
+  summarise it, do not re-order the rows into prose, and never write a state a lens did not report.
 - scope + method, one line each; then ONE findings table (`file:line` · severity · failure scenario ·
   disposition applied @ sha / deferred — blocked by other live lane · other repo · open decision / dismissed — a relevance kill
   carries its one-line reason, pure noise is count-only) — **the authoritative copy**; the story file links here,

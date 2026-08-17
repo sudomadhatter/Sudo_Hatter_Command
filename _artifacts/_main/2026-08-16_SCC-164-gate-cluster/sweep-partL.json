@@ -1,0 +1,36 @@
+{
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_git_hooks.py"
+  ],
+  "note": "Part 12 (L = SCC-180). The banner printed `git reset --hard origin/$1` as its remedy and an agent ran it in the MAIN checkout, destroying three sessions' uncommitted work. There is no git hook for `reset`; the only fix is to stop printing it. The plan's third declared mutant - drop the DIRTY fixture - is not mutable as a one-string swap (it is a whole `with` block), so RH-B2's anti-vacuity is held by RH-B1 re-advancing HEAD before it, and by L-3 below which proves the two cases are not the same assertion.",
+  "mutants": [
+    {
+      "id": "L-1",
+      "why": "restore `--hard` in the banner - the shipped defect, exactly as it read on 2026-08-15",
+      "file": ".agents/scripts/git-hooks/pre-push-merge-backstop.sh",
+      "original": "              git reset --keep origin/$1            # ONLY if this lane was already pushed",
+      "mutated": "              git reset --hard origin/$1            # ONLY if this lane was already pushed",
+      "case": "RH1",
+      "block": "RH ·"
+    },
+    {
+      "id": "L-2",
+      "why": "delete the imperative-vs-prose distinction. `payload` stops stripping `echo \"`, so the detector goes BLIND to printed command lines - and RH1 (\"no imperatives found\") is exactly what a blind detector reports, so it stays green. This mutant is why RH1b exists: the sweep found the block certifying a check that could no longer fail.",
+      "file": ".agents/scripts/tests/test_git_hooks.py",
+      "original": "            for lead in ('echo \"', \"echo '\", 'printf \"', \"printf '\"):",
+      "mutated": "            for lead in ('ECHO \"', \"ECHO '\", 'PRINTF \"', \"PRINTF '\"):",
+      "case": "RH1b",
+      "block": "RH ·"
+    },
+    {
+      "id": "L-3",
+      "why": "the DIRTY case is not a restatement of the CLEAN one. Force `--keep` to `--hard` in the drill itself: the clean rewind is unchanged (RH-B1 still passes) and the dirty tree is silently destroyed, which is the whole incident.",
+      "file": ".agents/scripts/tests/test_git_hooks.py",
+      "original": "            got = run(\"reset\", \"--keep\", base)\n            c.check(\"RH-B2",
+      "mutated": "            got = run(\"reset\", \"--hard\", base)\n            c.check(\"RH-B2",
+      "case": "RH-B2",
+      "block": "RH-B"
+    }
+  ]
+}

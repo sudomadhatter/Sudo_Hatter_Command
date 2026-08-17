@@ -1,0 +1,14 @@
+== merge-target guard (SCC-144) ==
+[PASS] RH0 · the sweep actually read the toolkit: only 486 tracked files scanned under .agents/ + docs/ — an empty glob scores this whole block green while checking nothing
+[FAIL] RH1 · nothing under .agents/ or docs/ prints `git reset --hard` as a step: found ['.agents/scripts/git-hooks/pre-push-merge-backstop.sh:95'] — the main checkout is never a clean tree; printing this as a remedy is how three sessions' uncommitted work was destroyed (SCC-180)
+[FAIL] RH2 · (fixture) the backstop's remedy is `--keep`, and says why: the banner is the FAIL fixture: if it ever says `--hard` again, RH1 must fire
+[FAIL] RH2b · ...and it names `--soft` for undoing a local commit: `--keep` refuses when the tree is dirty; the reader still needs the move that undoes a commit without touching the tree, or they reach for `--hard` anyway
+[PASS] RH3 · (fixture) PROSE naming `reset --hard` as the wrong move still PASSES: the SOP explains why `reset --hard` would be expensive. A check that cannot tell that from an instruction would demand deleting the lesson
+[PASS] RH-B1 · on a CLEAN tree `--keep` rewinds exactly as `--hard` would
+[PASS] RH-B2 · on a DIRTY tree `--keep` REFUSES and the other work survives: this is the whole reason the banner changed — `--hard` here would have eaten both files without a word:
+error: Entry 'landed.txt' not uptodate. Cannot merge.
+fatal: Could not reset index file to revision '786872ad63e718eb63c0ef1a12ca3377219e7cdd'.
+-- 4/7 passed --
+FAILED: RH1 · nothing under .agents/ or docs/ prints `git reset --hard` as a step, RH2 · (fixture) the backstop's remedy is `--keep`, and says why, RH2b · ...and it names `--soft` for undoing a local commit
+-- filter 'RH': matched 2/43 blocks --
+-- matched blocks: RH · SCC-180: no instruction prints `git reset --hard` as a step | RH-B · `git reset --keep` refuses on a dirty tree instead of discarding --

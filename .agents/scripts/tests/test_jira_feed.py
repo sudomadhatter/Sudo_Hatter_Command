@@ -2086,10 +2086,14 @@ Nothing is actually owed.
                     flagged(FENCED) == [],
                     "counting a fenced template holds a ticket nobody can ever close")
 
-            # ── B7 · finish WARNS and does not change its verdict (the ruled arming) ─
-            # Operator ruling 2026-08-15 ("1. yes"): ship WARN. A block here fires AFTER the merge,
-            # trading a held ticket for an erroring close-out. But a warn nobody sees is the
-            # `vscode-hides-git-hook-output` failure, so the BANNER is pinned, not the intention.
+            # ── B7 · finish REFUSES by default (ARMED 2026-08-16, SCC-164 clause 3) ─
+            # ⭐ THIS CASE INVERTED, and the inversion is the point. It shipped WARN on
+            # 2026-08-15 ("1. yes") as a MEASUREMENT WINDOW; SCC-164 § ARMING clause 3 closed
+            # the window on a measured count — 0 hits across the 11 post-cutoff walkthroughs,
+            # while still firing on 3 legacy ones that really do hand ticket work over. The
+            # ordering objection that justified WARN ("a block fires AFTER the merge") does not
+            # survive the detail that this runs BEFORE the board is touched: a refusal writes
+            # nothing, so there is no half-written state to trade against.
             BANNED_WT = (
                 "# W\n\n## Your Actions\n\n"
             "- [ ] Rule on the symlink defect - fold the one-line fix into AVCH-54, or mint "
@@ -2102,26 +2106,41 @@ Nothing is actually owed.
                     out.strip()[-400:])
             c.check("B7 · ...and names the row it objects to", "AVCH-54" in out,
                     out.strip()[-400:])
-            c.check("B7 · ...and the ticket is still HELD exactly as before (warn, not block)",
-                    code == 3, f"exit={code} - warn must not change finish's verdict")
+            c.check("B7 · ...and REFUSES with no flag at all - armed is the DEFAULT now",
+                    code == 2,
+                    f"exit={code} - clause 3 flips the default; a flag-only block is the "
+                    f"disarmed state wearing an arming ticket")
+            c.check("B7b · ...and the refusal says the board was not touched",
+                    "Nothing was written" in out, out.strip()[-400:])
 
-            # ── B8 · the arming flag exists and is DISARMED by default ─────────────
-            # ⛔ THIS CASE PASSED VACUOUSLY IN THE RED RUN and the red is what exposed it. With no
-            # such flag defined, argparse exits 2 on "unrecognized arguments" - the same 2 a real
-            # refusal returns - so `code == 2` alone was satisfied by the flag NOT EXISTING. The
-            # exit code is now paired with the banner, and the clean-input half proves the flag is
-            # a real discriminator rather than a blanket refusal: a gate that refuses everything is
-            # as broken as one that refuses nothing.
+            # ── B8 · the opt-out is NAMED, LOGGED, and a real discriminator ─────────
+            # ⛔ THE VACUITY TRAP THAT CAUGHT THE FIRST VERSION: with no such flag defined,
+            # argparse exits 2 on "unrecognized arguments" - the same 2 a real refusal returns -
+            # so `code == 2` alone was satisfied by the flag NOT EXISTING. Every exit code here
+            # is therefore paired with output only the real path produces.
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(BANNED_WT),
+                           "--apply", "--warn-actions")
+            c.check("B8 · --warn-actions restores the warn and does NOT block",
+                    code == 3 and "BANNED ACTION ROW" in out,
+                    f"exit={code} - 3 is finish's own held verdict, unchanged by the warn: "
+                    f"{out.strip()[-300:]}")
+            c.check("B8b · ...and the opt-out is LOGGED, not silent",
+                    "--warn-actions given" in out and "on the record" in out,
+                    f"a bypass nobody can see in the transcript is the shape this whole gate "
+                    f"exists to refuse: {out.strip()[-300:]}")
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
+                           "--apply")
+            c.check("B8c · ...and a CLEAN walkthrough still closes, armed and all",
+                    code == 0,
+                    f"exit={code} - a gate that refuses everything is as broken as one that "
+                    f"refuses nothing: {out.strip()[-300:]}")
+            # The explicit flag stays accepted: docs, older invocations and the SOP all name it.
             code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(BANNED_WT),
                            "--apply", "--strict-actions")
-            c.check("B8 · --strict-actions REFUSES the banned row",
+            c.check("B8d · --strict-actions is still accepted and still refuses",
                     code == 2 and "BANNED ACTION ROW" in out,
-                    f"exit={code} - a bare exit 2 is also what argparse returns for an unknown "
-                f"flag: {out.strip()[-300:]}")
-            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
-                           "--apply", "--strict-actions")
-            c.check("B8 · ...and ALLOWS a clean walkthrough, so the flag is not a blanket refusal",
-                    code == 0, f"exit={code} {out.strip()[-300:]}")
+                    f"exit={code} - dropping the flag would break every doc that names it: "
+                    f"{out.strip()[-300:]}")
 
             # ── B9 · the standalone inspection entry point ─────────────────────────
             code, out = run_script("jira_feed.py", "check-actions", "--walkthrough",
@@ -2307,6 +2326,138 @@ Nothing is actually owed.
             c.check("F3 · a prefixed branch NO manifest declares is not a lane to default from",
                     code == 2 and "no task.yaml declares the branch" in out,
                     f"exit={code} {out.strip()[:300]}")
+
+    # ── G (SCC-175) · the merge row is COMPUTED, and a tick is only a claim ───────────────
+    with TempDir() as tmp:
+        if c.block("G · SCC-175: the merge row is computed from the repo, never from a tick"):
+            import jira_feed  # noqa: E402 — the tests run scripts/ on sys.path
+
+            def git(repo, *a):
+                return subprocess.run(["git", *a], cwd=str(repo), capture_output=True, text=True)
+
+            def lane(name: str, *, land: bool, row: str, tick: str = " ",
+                     prune: bool = False, verdict: bool = False, commit_wt: bool = True):
+                """A repo whose `main` has (or has not) absorbed a lane, plus its artifacts."""
+                repo = tmp / name
+                repo.mkdir()
+                bare = tmp / f"{name}.git"
+                git(repo, "init", "-q", "-b", "main")
+                git(repo, "config", "user.email", "t@t.t")
+                git(repo, "config", "user.name", "t")
+                (repo / "README").write_text("x\n")
+                git(repo, "add", "-A"), git(repo, "commit", "-qm", "base", "--no-verify")
+                git(repo, "init", "--bare", "-q", str(bare))
+                git(repo, "remote", "add", "origin", str(bare))
+                git(repo, "push", "-q", "--no-verify", "origin", "main")
+
+                branch = "chore/SCC-999-lane"
+                git(repo, "checkout", "-q", "-b", branch)
+                d = repo / "_artifacts/_main/2026-08-16_lane"
+                d.mkdir(parents=True)
+                (d / "task.yaml").write_text(f"task_key: SCC-999\nbranch: {branch}\n")
+                (d / "walkthrough.md").write_text(
+                    "# W\n\n" + ("Verdict: PASS @ HEADSHA\n\n" if verdict else "")
+                    + f"## Your Actions\n\n- [{tick}] {row}\n")
+                git(repo, "add", "-A")
+                if commit_wt:
+                    git(repo, "commit", "-qm", "lane work", "--no-verify")
+                tip = git(repo, "rev-parse", "HEAD").stdout.strip()
+                if verdict:  # rewrite the placeholder now that the sha exists, and re-commit
+                    wtp = d / "walkthrough.md"
+                    wtp.write_text(wtp.read_text().replace("HEADSHA", tip))
+                    git(repo, "add", "-A"), git(repo, "commit", "-qm", "verdict", "--no-verify")
+                    tip = git(repo, "rev-parse", "HEAD").stdout.strip()
+                # ⛔ Only go back to `main` when the lane LANDS. On an unlanded fixture the
+                # artifacts exist solely on the lane branch, so checking out main deletes the
+                # very walkthrough the case is about — the first cut did exactly that and died
+                # in `committed_copy` on a directory that no longer existed.
+                if land:
+                    git(repo, "checkout", "-q", "main")
+                    git(repo, "merge", "-q", "--no-ff", "--no-verify", branch, "-m", "merge")
+                    git(repo, "push", "-q", "--no-verify", "origin", "main")
+                git(repo, "fetch", "-q", "origin")
+                if prune:
+                    git(repo, "branch", "-q", "-D", branch)
+                return repo / "_artifacts/_main/2026-08-16_lane/walkthrough.md"
+
+            DOOR_ROW = "**Merge and close out** — `/smh-close-task-merge-tree --expect-key SCC-999`"
+
+            # G1 · the row that HELD every landed lane now clears — on evidence, not a tick.
+            st = jira_feed.merge_row_state(lane("g1", land=True, row=DOOR_ROW))
+            c.check("G1 · an OPEN merge row whose lane IS on origin/main is SATISFIED",
+                    st is not None and st["satisfied"] and st["source"] == "HEAD",
+                    str(st))
+
+            # G2 · ⭐ THE POINT. A tick is a claim; the claim is checked.
+            st = jira_feed.merge_row_state(lane("g2", land=False, row=DOOR_ROW, tick="x"))
+            c.check("G2 · a TICKED merge row on a lane that never landed is NOT satisfied",
+                    st is not None and not st["satisfied"] and "NOT an ancestor" in st["why"],
+                    "a `- [x]` closes the ticket on a claim nobody checked - this is the "
+                    f"self-certification house law bans: {st}")
+
+            # G3 · negative control: not landed, still open -> still holds, as it always did.
+            st = jira_feed.merge_row_state(lane("g3", land=False, row=DOOR_ROW))
+            c.check("G3 · (control) an open row on an unlanded lane still HOLDS",
+                    st is not None and not st["satisfied"], str(st))
+
+            # G4 · the pruned-lane fallback (F6a). SCC-162 and SCC-163 were BOTH already pruned
+            # local and remote when this was designed, so without this arm the recogniser could
+            # not compute an answer for either of the two live instances it exists to fix.
+            st = jira_feed.merge_row_state(
+                lane("g4", land=True, row=DOOR_ROW, prune=True, verdict=True))
+            c.check("G4 · a PRUNED lane resolves through the walkthrough's `Verdict: … @ sha`",
+                    st is not None and st["satisfied"], str(st))
+
+            # G5 · unresolvable -> HOLD, naming what it tried. Never a silent pass.
+            wt5 = lane("g5", land=True, row=DOOR_ROW, prune=True)
+            (wt5.parent / "task.yaml").write_text("task_key: SCC-999\n")   # no branch:
+            st = jira_feed.merge_row_state(wt5)
+            c.check("G5 · an UNRESOLVABLE tip HOLDS and says what it tried",
+                    st is not None and not st["satisfied"] and "could not be resolved" in st["why"]
+                    and "Verdict" in st["why"],
+                    "an unresolvable tip is not evidence of a merge: " + str(st))
+
+            # G6 · an uncommitted tick is still only a claim, and still gets checked.
+            wt6 = lane("g6", land=False, row=DOOR_ROW)
+            wt6.write_text(wt6.read_text().replace("- [ ]", "- [x]"))      # uncommitted tick
+            st = jira_feed.merge_row_state(wt6)
+            c.check("G6 · an UNCOMMITTED tick does not satisfy the row",
+                    st is not None and st["source"] == "HEAD" and not st["satisfied"],
+                    "SCC-169's tick was left uncommitted in the main checkout and later wiped "
+                    f"by a reset - the committed copy is the only one that survives: {st}")
+
+            # G6b · ⛔ THE CASE THAT ACTUALLY PINS `HEAD` (F18), AND G6 DOES NOT.
+            # The declared mutant M2 (read the working tree instead of HEAD) SURVIVED G6 — and it
+            # was right to. A ticked row still MATCHES the row regex, and the verdict comes from
+            # ancestry, which does not read the file at all, so both sources agree. The only
+            # divergence is a row that exists in the COMMITTED walkthrough and not on disk:
+            # deleting it locally is how an owed merge silently stops being checked. Working-tree
+            # read -> no row -> None -> no hold. HEAD read -> found -> held.
+            wt6b = lane("g6b", land=False, row=DOOR_ROW)
+            wt6b.write_text("# W\n\n## Your Actions\n\n- [ ] something else entirely\n")
+            st = jira_feed.merge_row_state(wt6b)
+            c.check("G6b · a merge row DELETED from the working tree is still found in HEAD",
+                    st is not None and not st["satisfied"] and st["source"] == "HEAD",
+                    "the committed walkthrough owes a merge; editing the local copy must not "
+                    f"be how that stops being checked: {st}")
+
+            # G7 · the recogniser itself, against the LIVE corpus classes measured 2026-08-16.
+            for row, want, why in (
+                    (DOOR_ROW, True, "names a door"),
+                    ("The merge itself — lands via this branch's PR", True, "canonical phrase"),
+                    ("**Land it** — `/cicd-push-e2e`", True, "the other door"),
+                    ("**Rule the landing order.** Recommended: SCC-126 lands first", False,
+                     "a real operator decision"),
+                    ("**Decide whether the CONCERNS is worth clearing before the merge.**", False,
+                     "a real operator decision"),
+                    ("Try the lane on something real", False, "SCC-162's genuinely open row")):
+                c.check(f"G7 · recogniser: {'MERGE' if want else 'not a merge row'} — {why}",
+                        jira_feed.is_merge_row(row) == want, repr(row))
+
+            # G8 · no merge row at all is not the same as a satisfied one.
+            st = jira_feed.merge_row_state(lane("g8", land=True, row="Install the board column"))
+            c.check("G8 · a walkthrough with no merge row returns None, not a verdict",
+                    st is None, str(st))
 
     return c.finish()
 

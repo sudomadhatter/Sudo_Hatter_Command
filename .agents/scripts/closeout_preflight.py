@@ -22,6 +22,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import gate_receipt as gr
+import walkthrough_roster as roster
 import wf_common as wf
 
 def integration_branch(project: Path) -> str:
@@ -219,6 +220,15 @@ def check_artifacts(project: Path, key: str, rep: wf.Report) -> None:
             continue
         rep.info("artifacts", f"{rel}: Verdict {verdict}"
                               f"{' @ ' + sha[:8] if sha else ''}")
+        # ⛔ SCC-173/SCC-177 — A VERDICT IS THE REVIEW'S CONCLUSION, NOT EVIDENCE IT RAN.
+        # `Verdict: PASS @ <sha>` with zero lenses run merged cleanly here until now: the only
+        # proof of a review was the line asserting its own result. ONE parser, shared with
+        # task_preflight, so the two gates cannot drift; it is handed the verdict THIS reader
+        # just resolved, so scoping is answered by the reader's own eyes. Ships ARMED and
+        # BLOCKING by operator ruling 2026-08-15; the dated cutoff is the scope limiter.
+        ok_roster, why = roster.judge(text, path, verdict)
+        for line in why:
+            (rep.info if ok_roster else rep.err)("artifacts", f"{rel}: {line}")
         if not sha:
             # Without a SHA the verdict floats free of any tree, so "has the code changed
             # since review?" is unanswerable - the exact question the flip depends on.

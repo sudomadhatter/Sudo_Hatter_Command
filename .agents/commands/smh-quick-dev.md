@@ -62,6 +62,22 @@ acli jira workitem view "$EXPECTED_KEY"      # read its ACCEPTANCE block — Ste
 No ticket at all → **STOP and ask.** Never invent a key; a keyless Task cannot be committed, closed,
 or found again.
 
+**⭐ Probe the review runtime here, at Step 0, and record it (SCC-177).** Ask this runtime whether it
+can fan out to subagents — do not answer from what usually happens, because a standing operator
+directive, a headless pipeline or a platform with no subagent tool each make the answer `inline`, and
+each is invisible until a lens fails to launch three steps later. The answer goes into the
+walkthrough header Step 5 writes, on its own line, above everything else:
+
+```
+review-runtime: fan-out
+```
+
+⛔ **Step 0, not Step 4 — the probe must precede the review it describes.** Recorded afterwards it is
+read off the roster that already exists, which makes the check circular: the header can only ever
+agree with the states it was derived from. Recorded here it is an independent claim, and
+`walkthrough_roster.py` blocks the close-out when the roster disagrees with it (`inline` + a lens
+reporting `ok` is the contradiction it catches).
+
 ## Step 0.5 — Worktree and branch (before the first edit)
 
 Per `worktree-per-story` + SCC-62, every commit-producing lane isolates — Task lanes included. The old
@@ -383,11 +399,12 @@ trivial patch fires Step 3.5.
 ## Step 5 — Artifacts, the manifest, and the Dev Record
 
 **The walkthrough** — `_artifacts/_main/<YYYY-MM-DD>_<slug>/walkthrough.md`, carrying, in order:
-`## Task Checklist` (the todo list's end state, findings indented under the task that fought back) →
+`review-runtime:` (the header from Step 0, one line) → `## Task Checklist` (the todo list's end
+state, findings indented under the task that fought back) →
 `## Evidence` (each acceptance item → the assertion that proves it, **RED output then GREEN output**,
-plus the HEAD sha) → `## Code Review (<date>)` (appended by Step 4, with the `Verdict:` line) →
-`## Your Actions` (what landed, and what is still the operator's). It is never skipped — the close-out
-preflight blocks without it.
+plus the HEAD sha) → `## Code Review (<date>)` (appended by Step 4, with the `Verdict:` line and the
+`lenses_run:` roster) → `## Your Actions` (what landed, and what is still the operator's). It is never
+skipped — the close-out preflight blocks without it.
 
 > **⭐ `## Your Actions` is a MACHINE CONTRACT now, not prose (SCC-155).** The close-out reads it
 > through `jira_feed.py finish`, and it decides whether the ticket may go `Done`:

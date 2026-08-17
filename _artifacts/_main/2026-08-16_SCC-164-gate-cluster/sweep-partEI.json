@@ -1,0 +1,108 @@
+{
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_walkthrough_roster.py"
+  ],
+  "note": "Part 11 (E = SCC-173, I = SCC-177). Every rule the roster gate blocks on, plus the two ROUTING mutants that no source grep can see. The engine/caller wiring is NOT swept here on purpose: test_review_engine.py's CHECKS loop already applies a counter-example to every row in-process and requires the check to go red, which is the same proof done inline - and that file declares no c.block(), so a --case filter against it would exit 3 (a sweep error, not a result).",
+  "mutants": [
+    {
+      "id": "EI-1",
+      "why": "the whole defect: a Verdict with no roster reads as clean",
+      "file": ".agents/scripts/walkthrough_roster.py",
+      "original": "    if not lenses:",
+      "mutated": "    if lenses and False:",
+      "case": "E1 ·",
+      "block": "E1"
+    },
+    {
+      "id": "EI-2",
+      "why": "PASS + a dead lens is the contradiction; a lens that saw nothing cannot support a pass",
+      "file": ".agents/scripts/walkthrough_roster.py",
+      "original": "    if v == \"PASS\" and dead:",
+      "mutated": "    if v == \"NEVER\" and dead:",
+      "case": "E2 ·",
+      "block": "E2"
+    },
+    {
+      "id": "EI-3",
+      "why": "FAIL must block on its own account, roster or no roster",
+      "file": ".agents/scripts/walkthrough_roster.py",
+      "original": "    if v == \"FAIL\":",
+      "mutated": "    if v == \"NEVER-FAIL\":",
+      "case": "E3 ·",
+      "block": "E3"
+    },
+    {
+      "id": "EI-4",
+      "why": "the dated cutoff is the SCOPE limiter; inverted, it blocks the 130 lanes it was built to leave alone",
+      "file": ".agents/scripts/walkthrough_roster.py",
+      "original": "    if date is not None and date < today_cutoff:",
+      "mutated": "    if date is not None and date > today_cutoff:",
+      "case": "E4 ·",
+      "block": "E4"
+    },
+    {
+      "id": "EI-5",
+      "why": "E7 - Step 0.7's re-derivation is three lines; a threshold of 0 accepts silence",
+      "file": ".agents/scripts/walkthrough_roster.py",
+      "original": "    if data[\"rederive_lines\"] < 3:",
+      "mutated": "    if data[\"rederive_lines\"] < 0:",
+      "case": "E7b",
+      "block": "E7"
+    },
+    {
+      "id": "EI-6",
+      "why": "I3 - a declared inline runtime and a lens reporting ok disagree, and the disagreement is the finding",
+      "file": ".agents/scripts/walkthrough_roster.py",
+      "original": "    if data[\"runtime\"] == \"inline\" and any(l[\"state\"] == \"ok\" for l in lenses):",
+      "mutated": "    if data[\"runtime\"] == \"never\" and any(l[\"state\"] == \"ok\" for l in lenses):",
+      "case": "I3 ·",
+      "block": "I3 ·"
+    },
+    {
+      "id": "EI-7",
+      "why": "the contract spells the input review_runtime and the header review-runtime; reading only one makes the other a silent no-op",
+      "file": ".agents/scripts/walkthrough_roster.py",
+      "original": "review[-_]runtime\\s*:",
+      "mutated": "review-runtime\\s*:",
+      "case": "I3f",
+      "block": "I3-S"
+    },
+    {
+      "id": "EI-8",
+      "why": "THE ROUTING. W1-W3 prove the parser is reached; only this proves its answer reaches rep.err. Flip one word and the gate becomes warn-tier with every other check green.",
+      "file": ".agents/scripts/closeout_preflight.py",
+      "original": "            (rep.info if ok_roster else rep.err)(\"artifacts\", f\"{rel}: {line}\")",
+      "mutated": "            rep.info(\"artifacts\", f\"{rel}: {line}\")",
+      "case": "W-B1",
+      "block": "W-B"
+    },
+    {
+      "id": "EI-9",
+      "why": "the LATEST stamp governs. Handing the parser found[0] re-plants the any(FAIL)-over-all-hits defect: a re-reviewed FAIL-then-PASS lane is blocked by the FAIL its own remedy already cleared.",
+      "file": ".agents/scripts/task_preflight.py",
+      "original": "roster.judge(text, p, found[-1][0])",
+      "mutated": "roster.judge(text, p, found[0][0])",
+      "case": "W-B4",
+      "block": "W-B"
+    },
+    {
+      "id": "EI-10",
+      "why": "the fence rule. Found by this lane's own inline review: closeout_preflight passed RAW text, so a roster existing only inside a ``` example satisfied the story-lane gate while task_preflight (which strips) refused the identical file - and the Step 4 instructions this lane wrote teach the roster fenced, so copying the example was enough to close a lane that ran nothing.",
+      "file": ".agents/scripts/walkthrough_roster.py",
+      "original": "    text = strip_fenced(text)",
+      "mutated": "    text = text",
+      "case": "P-F1",
+      "block": "P-F"
+    },
+    {
+      "id": "EI-11",
+      "why": "the LAST roster governs. Same first-vs-last defect this lane already shipped once at task_preflight's call site, one layer down: reading the FIRST roster judges a re-reviewed lane on the roster its re-review replaced, so the documented remedy for a dead lens can never clear it.",
+      "file": ".agents/scripts/walkthrough_roster.py",
+      "original": "        if found:\n            lenses = found",
+      "mutated": "        if found and not lenses:\n            lenses = found",
+      "case": "P-R1",
+      "block": "P-R"
+    }
+  ]
+}

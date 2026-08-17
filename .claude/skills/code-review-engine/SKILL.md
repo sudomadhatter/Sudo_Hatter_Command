@@ -30,6 +30,7 @@ runs only as a step of `/cicd-code-review`, `/smh-code-review` or `/cicd-code-re
 | `HEAD_SHA` | the sha the diff was taken at, for the record the caller writes | yes |
 | `review_mode` | `full` (a spec exists) or `no-spec` (none) | yes |
 | `lens_budget` | `standard` or `capped` — the literal lens's cost axis, **independent of `review_mode`**; absent defaults to `capped` (step-01 defines both) | optional |
+| `review_runtime` | `fan-out` or `inline` — whether subagents are available, **probed by the caller, never assumed**; absent means the engine probes and reports what it found (step-01 defines the consequence) | optional |
 | `STORY_FILE` | story or task acceptance source; present in `full` mode | optional |
 | `EVIDENCE_PACK` | pre-extracted evidence dossier; absent is normal today | optional |
 | `FINDINGS_SINK` | file the findings are written to | optional |
@@ -65,12 +66,24 @@ Read each step file fully and follow it. Start with `steps/step-01-review.md`.
 ## What the engine returns to its caller
 
 ```
-lenses_run:      <n>/<applicable>   (per-lens: ok | recovered-inline | dead)
+review-runtime:  fan-out | inline
+lenses_run:
+- <lens> · ok | recovered-inline | dead — <why, when it is not `ok`>
+- <one row per lens that was applicable — the ROSTER, not a summary of it>
+lenses_counted:  <n>/<applicable>
 lenses_na:       <lenses not applicable in this mode, or "none">
 findings:        <d> decision · <p> patch · <w> defer   (<n> noise-dismissed · <k> relevance kills)
 severity_floor:  none | CONCERNS | FAIL
 notes:           <degradations, absent optional inputs, verification state>
 ```
+
+⛔ **`lenses_run:` is a BLOCK, and its rows are the evidence the review happened.** It was one
+counted line until SCC-173: `lenses_run: 5/5` is the engine's *claim* about itself, in exactly the
+way `Verdict: PASS` is the caller's — and a walkthrough carrying only a verdict merged clean with
+zero lenses run, because nothing downstream could tell a review that ran from one that was narrated.
+The caller copies these two fields into the walkthrough's `## Code Review` **verbatim**, where
+`walkthrough_roster.py` reads them and both preflights block on what it finds. Keep the row shape
+(`- <lens> · <state>`), keep the header spelling, and do not summarise the block away.
 
 **The severity axis, stated once: severity order is `none` < `CONCERNS` < `FAIL`.** The caller may
 report the floor or anything MORE severe — its own gates can add their own reasons — and never

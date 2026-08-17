@@ -70,7 +70,39 @@ fi
 
 HOOK="$ROOT/.agents/scripts/git-hooks/pre-push-main-approval.sh"
 if [ ! -x "$HOOK" ]; then
-  echo "  ⚠ main-push gate not present in this worktree ($HOOK) — push allowed, UNCHECKED."
+  # ⛔⛔ D3 (SCC-172). THIS ARM USED TO `exit 0` FOR EVERY REF, INCLUDING `main`.
+  #
+  # The SCC-32 rule it implements is real and stays: a worktree cut from a commit before these
+  # scripts existed has no gate to run, and a hard door there strands the operator with no way to
+  # ship anything at all. But "allow a lane push" and "allow an UNGATED push to main" are not the
+  # same concession, and the old code made them one. Reproduced on AGY, same repo, same refs, same
+  # missing token: from the main checkout the push was REFUSED; from a stale worktree `main -> main`
+  # LANDED. The gate was not bypassed — it was never asked.
+  #
+  # So the allow is narrowed to the refs the SCC-32 rationale actually covers. `$3` is the REMOTE
+  # ref of each line pre-push feeds us (`<local ref> <local sha> <remote ref> <remote sha>`), and
+  # `refs/heads/main` is the same literal `PROTECTED_REF` the missing script would have guarded.
+  if awk '$3 == "refs/heads/main" { found = 1 } END { exit !found }' < "$REFS"; then
+    echo ""
+    echo "  ⛔ PUSH REFUSED — this push lands on 'refs/heads/main' and the approval gate is not"
+    echo "     present in this worktree."
+    echo "     Missing: $HOOK"
+    echo ""
+    echo "     A stale worktree is allowed to push its own lane without these scripts — that is"
+    echo "     deliberate, so a tree cut before they existed can still ship. It is NOT allowed to"
+    echo "     push main: there would be no token check at all, and 'no gate ran' must never be"
+    echo "     quieter than 'the gate said no'."
+    echo ""
+    echo "     Fix it in the tree, not around it:"
+    echo "       git merge origin/main                 # bring .agents/scripts/git-hooks/ in"
+    echo "       git push                              # the real gate now runs"
+    echo ""
+    echo "     Or push main from the MAIN checkout, which carries the scripts."
+    echo ""
+    exit 1
+  fi
+  echo "  ⚠ main-push gate not present in this worktree ($HOOK) — this push touches no"
+  echo "    protected ref, so it is allowed. A push to main from here would be REFUSED."
   echo "    Merge/rebase onto a commit that carries .agents/scripts/git-hooks/ to re-arm it."
   exit 0
 fi

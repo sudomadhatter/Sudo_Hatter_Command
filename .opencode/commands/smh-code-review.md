@@ -113,6 +113,24 @@ verdict about code that will never exist.
 > unused inside `/smh-update-maps-indexes` for exactly that reason. See that command's
 > **§ Running it after the work is built** for which phases go stale and which do not.
 
+## Step 0.9 — ⭐ Probe the review runtime and RECORD it (before the engine, SCC-177)
+
+**Can this session fan out to subagents?** Answer it from this runtime, not from what usually
+happens: a standing operator directive, a headless pipeline or a platform without a subagent tool
+each make the answer `inline`, and each of them is invisible until a lens fails to launch.
+
+Write the answer into the walkthrough header, **above `## Code Review`**, exactly like this:
+
+```
+review-runtime: fan-out
+```
+
+⛔ **`inline` is a different review, not a slower one — which is why it is declared before the hunt
+rather than discovered during it.** Under `inline` the engine runs the ladder ONCE, blind lens first
+on the diff alone, and every lens comes back `recovered-inline`; a roster reporting `ok` under an
+`inline` header is a contradiction that `walkthrough_roster.py` blocks on. Declaring it afterwards,
+from the roster you already have, makes the check circular and buys nothing.
+
 ---
 
 ## Step 1 — Clean-room adversarial review  *(the blind hunt — ORDERING IS DELIBERATE)*
@@ -136,6 +154,7 @@ stop, not a guess:**
 | `STORY_FILE` | that `implementation_plan.md` — on this lane the plan's acceptance list **is** the spec |
 | `ARTIFACT_DIR` | `_artifacts/_main/<YYYY-MM-DD>_<slug>/` inside this tree |
 | `lens_budget` | `standard` — the interactive budget; this lane is typed by hand. **This command does not define what the caps are; step-01 of the engine does, once** — a cap each caller repeats is a cap that drifts. Naming nothing is not neutral: it silently selects the autopilot's budget, which is why this row is explicit (SCC-147) |
+| `review_runtime` | `fan-out` or `inline` — **what you PROBED at Step 0.9, never what you expect.** Pass it down and write the same value into the walkthrough header, so the roster the engine returns can be checked against the runtime that produced it |
 
 ⚠ **Step 0 read `HEAD_SHA` before Step 0.7 absorbed `main`.** Re-read both it and the diff here, or
 the engine reviews a tree that no longer exists and your verdict cites a commit that is no longer the
@@ -171,6 +190,11 @@ re-run inline, and only a lens still dead after both raises the floor) and hands
 verdict as it came back:** "4 lenses ran" and "3 ran plus 1 rerun inline" are different evidence. A
 lens skipped by mode is not a degradation; a lens that never ran is an unexamined surface, and an
 unknown is not a pass.
+
+⛔ **Copy means COPY — the `lenses_run:` block goes into Step 4 verbatim, rows and all.** It is the
+only evidence that survives this chat, and `walkthrough_roster.py` reads it at close-out. Summarising
+it back to a sentence ("all lenses clean") deletes the evidence and leaves the `Verdict:` line
+asserting its own result, which is the defect SCC-173 exists to close.
 
 ## Step 2 — Acceptance audit  *(against the checkable list, not against the code)*
 
@@ -281,6 +305,20 @@ The section carries:
   ```
 
   plus one line naming the sha the suite evidence was measured on.
+- ⛔ **the engine's `lenses_run:` block, pasted VERBATIM** — the header line, then one
+  `- <lens> · ok | recovered-inline | dead` row per lens, a `—` note on every row that is not `ok`:
+
+  ```
+  lenses_run:
+  - blind-hunter · ok
+  - edge-case-hunter · recovered-inline — fan-out returned nothing, rerun inline
+  ```
+
+  **A `Verdict:` is the review's conclusion; this block is what shows the review happened.** Without
+  it the verdict is the only record of itself, and a walkthrough with zero lenses run merges clean —
+  the defect SCC-173 was raised on. `walkthrough_roster.py` reads it here and
+  `/smh-close-task-merge-tree` blocks a lane that does not carry it. Do not summarise it, do not
+  re-order the rows into prose, and never write a state a lens did not report.
 - scope + method, one line each;
 - **ONE findings table** — `file:line` · severity · failure scenario · disposition
   (`applied @ <sha>` / `deferred — blocked by <other live lane | other repo | open decision>` /

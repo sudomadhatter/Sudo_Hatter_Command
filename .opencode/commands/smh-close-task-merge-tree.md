@@ -490,12 +490,22 @@ exactly how AVCH-59 ended up with two. The slug now comes from **one** place, th
 on. If `check` reports a **FORKED Dev Record**, an id on the ticket is claimed by no manifest and no
 branch: delete that record and re-run this block — never `--append-new` your way past it.
 
-⛔ **Before `finish`: tick the merge row.** A walkthrough often carries `- [ ] **The merge itself**` —
-that box IS this ceremony, so this ceremony ticks it (with the merge sha and "signed off by the
-operator's invocation this turn") in the walkthrough commit that precedes `finish`. Left open it reads
-as an owed operator task and `finish` HOLDS a ticket whose only open item was the merge that just
-landed (SCC-160 follow-on review). Every other open box stays exactly as it is — those are the
-operator's.
+⛔ **Do NOT tick the merge row here, and do not commit anything after the merge.** This step used to
+say the opposite, and that instruction was the whole of SCC-175: it produced a non-merge commit on
+`main` that the write gate correctly refused, and the refusal banner's `reset --hard` remedy then
+destroyed three other sessions' uncommitted work (SCC-180). **Two changes removed the need entirely:**
+
+| Since | What handles it |
+|---|---|
+| **SCC-183** | Step 3 requires `- [x] The merge itself — lands via this branch's PR` committed **on the lane, before the PR opens**. By the time you are here it is already ticked, already on `main` |
+| **SCC-175** | `finish` no longer reads that box as prose. It **computes** the answer: is the lane's tip an ancestor of `origin/main`? A row naming a merge door (`/smh-close-task-merge-tree`, `/cicd-push-e2e`) or carrying the canonical phrase is satisfied **only** by that check |
+
+⭐ **So a tick can no longer close a ticket on its own** — which is the point, not a side effect. A
+`- [x]` is a claim, and `finish --apply` writes `Done` to Jira on the strength of it; unverified, that
+is the agent certifying its own merge. It now reads the row from **`HEAD`**, not the working tree, so
+an uncommitted tick satisfies nothing (SCC-169's tick was left uncommitted and later wiped by a
+reset). If the lane genuinely has not landed, `finish` re-opens the row and says so. **Every other
+open box stays exactly as it is — those are the operator's.**
 
 ⭐ **`finish` writes the `Done`, and it may refuse to (SCC-155).** It reads `## Your Actions` in the
 walkthrough you just filed and answers with its exit code — **read it, it is the report:**

@@ -51,7 +51,7 @@ platforms: [claude, opencode]
 #      REPO/WORKTREE in its launch context, so the variable is already bound here. Binding
 #      it again in the body would let a stale in-body value shadow what the caller passed.
 # Re-diff and restamp when the linter says this sha is stale — do NOT just bump it.
-ap_reconciled: 83ecdc781425e8404dcba0592c5073ccf22444cd
+ap_reconciled: c54f1b4141296632c35db1f060c75264a267bb04
 ---
 
 # /cicd-code-review-AP — Autopilot Review + Fix + Test Gate (Murat)
@@ -166,6 +166,20 @@ smaller one.
 The engine hands back `lenses_run` · `lenses_na` · the bucketed findings · `severity_floor` ·
 `notes`. **The floor is a floor:** your verdict may be that severe or worse, never better.
 
+⭐ **This lane is `review-runtime: inline`, and it says so rather than leaving it to be inferred
+(SCC-177).** Pass `review_runtime: inline` down with the other inputs, and write the header into the
+walkthrough above `## Code Review`:
+
+```
+review-runtime: inline
+```
+
+⛔ **Under `inline` the ladder runs ONCE and `recovered-inline` is the only legal per-lens state.**
+That is not a downgrade — it is what the ordering above already describes, recorded honestly. A
+roster reporting `ok` under this header means a fan-out was attempted against the declaration, or
+the header is wrong; `walkthrough_roster.py` blocks the close-out on that disagreement, so say which
+in `notes` instead of smoothing the roster to match.
+
 **Then: apply the actionable fixes yourself, in this lane** (you have full context). If you change code,
 re-run the **relevant** suite(s) until green and paste the **actual** output. If you change nothing, you
 do not need to run tests. Nothing that survived the engine's relevance gate leaves this lane as future
@@ -235,7 +249,9 @@ is written down.
   human close-out owns both.
 - **Append `## Code Review (<date>)` to `walkthrough.md`** (REQUIRED even if the review is clean — a
   Stage-4 no-op must still leave the section): the canonical `Verdict: … @ <sha>` first line, scope,
-  the engine's `lenses_run` / `lenses_na` line, ONE findings table (`file:line` + severity +
+  **the engine's `lenses_run:` block pasted VERBATIM** — one `- <lens> · recovered-inline` row per
+  lens, never summarised back to a sentence; it is the only evidence the review ran, and the
+  close-out reads it — plus `lenses_na`, ONE findings table (`file:line` + severity +
   disposition), your independent test
   output, the test gate's per-check results — and, if you changed nothing, an explicit "Changes
   applied: none — implementation is correct as-is." Do NOT write a standalone `code-review.md`
