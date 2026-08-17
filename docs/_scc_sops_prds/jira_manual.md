@@ -447,7 +447,8 @@ Green, then **open a pull request and click Merge** — that is the road, since 
 gh pr create --base main --head "$BRANCH" --fill    # opens the PR, prints the link
 ```
 
-Click *Merge pull request* on the link it prints. **Your click is the sign-off.** Then drag the
+Click *Merge pull request* on the link it prints. **Your decision to proceed is the sign-off** — the
+click is how it reaches GitHub, not work you owe (ruling 2026-08-17). Then drag the
 ticket to **Done** (or let `/smh-close-task-merge-tree --after-merge <KEY>` do the ticket, the Dev
 Record and the prune for you).
 

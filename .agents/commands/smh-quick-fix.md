@@ -136,7 +136,10 @@ close-out preflight blocks without it, and `## Your Actions` is a machine contra
 - **`## What changed`** — one line per file, and why.
 - **`## Evidence`** — the gate output you actually ran (totals lines), plus `git rev-parse HEAD`.
 - **`## Your Actions`** — **required even when empty.** An unchecked `- [ ]` is something only the
-  operator can do and holds the ticket out of `Done`; `- [x]` is settled; prose is context.
+  operator can **decide** and holds the ticket out of `Done`; `- [x]` is settled; prose is context.
+  ⛔ **Never the ceremony's own steps** (SCC-193) — "click Merge", "re-invoke the door",
+  "run `--after-merge`" are refused by `jira_feed.py`: the operator's decision to proceed is the
+  sign-off, and every step after it is yours to run.
 
 Write `task.yaml` beside it (`task_key`, `primary_repo`, `branch`, `close_command:
 smh-close-task-merge-tree`, `secondary_repos: []`), then file the Dev Record. ⛔ **The manifest

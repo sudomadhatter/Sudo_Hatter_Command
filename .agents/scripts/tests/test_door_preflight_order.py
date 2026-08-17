@@ -351,6 +351,109 @@ def main() -> int:
     c.check("AC-14b · no door still calls the LOCAL --no-ff merge the operator's sign-off",
             not stale, "; ".join(stale[:3]))
 
+
+    # ══ SCC-193 · THE SIGN-OFF IS A DECISION, NOT A MERGE THE OPERATOR OWES ════════════════
+    #
+    # OPERATOR RULING, 2026-08-17, VERBATIM: "we also need to change the wording for closing
+    # things out. right now it says the merge is mine. that is not correct, its my decisiton to
+    # move forward with the push, is the wording that will stop causing confusion. lets fix that
+    # too. the way I approve you to push or close is by saying approved or one of the 2 /
+    # commands."
+    #
+    # And the mechanism DOES NOT CHANGE - operator, same day, asked which of two readings:
+    # "i wording only". The click on *Merge pull request* stays a physical operator act; it is
+    # HOW the decision reaches GitHub, not a task owed. SCC-183's "one click, one merge, held by
+    # something that cannot be talked out of it" is untouched.
+    #
+    # ⛔ WHY THIS IS A GREP PIN AND NOT A NOTE. Slip #4 of six on SCC-164's landing was the
+    # agent writing "Click Merge" and "re-invoke the door" into `## Your Actions` as OPERATOR
+    # TASKS - and it wrote them because every surface it had read said the merge was the
+    # operator's. The wording produced the defect; a wording fix nothing pins rots back.
+    #
+    # BOTH DIRECTIONS, because a one-way pin is satisfied by deleting the sentence entirely.
+    if c.block("SCC-193 · the sign-off wording, pinned both directions"):
+        SURFACES = (sorted(REPO.glob(".agents/rules/*.md"))
+                    + sorted(REPO.glob(".agents/commands/*.md"))
+                    + sorted(REPO.glob(".agents/skills/*/SKILL.md"))
+                    + sorted(REPO.glob(".agents/workflows/*.md"))
+                    + sorted(REPO.glob(".opencode/commands/*.md"))
+                    + sorted(REPO.glob(".claude/skills/smh-*/SKILL.md"))
+                    + sorted(REPO.glob(".agents/scripts/*.py"))
+                    + sorted(REPO.glob("docs/_scc_sops_prds/*.md"))
+                    + [REPO / "AGENTS.md"])
+
+        # Each phrase makes the merge the operator's WORK. The ruling replaces every one.
+        FORBIDDEN = (
+            "the merge is the operator's",
+            "the merge is yours",
+            "the merge is mine",
+            "click is the sign-off",
+            "a product decision, a main merge",
+            "things that only you can do",
+            "you merge it",
+        )
+        # ⛔ NOT FORBIDDEN, AND THE REASON IS THE RULING ITSELF: "invoking it is the operator's
+        # PER-MERGE SIGN-OFF" stays true. The operator's decision is given in exactly three
+        # ways, and TWO OF THEM ARE INVOCATIONS - `/smh-close-task-merge-tree` and
+        # `/cicd-push-e2e`. Banning that phrase would delete a true sentence from five surfaces
+        # and leave the false ones standing. What the ruling retires is the merge described as
+        # the operator's WORK, not the invocation described as their decision.
+        # ⛔ THE ALLOW-LIST IS PAIRS, NAMED, WITH A REASON - never a whole file. A file-level
+        # exemption is how a pin quietly stops covering the thing it was written for.
+        ALLOW = {
+            # this file: it must quote the retired phrases in order to forbid them
+            ".agents/scripts/tests/test_door_preflight_order.py",
+        }
+        hits = []
+        for path in SURFACES:
+            rel = str(path.relative_to(REPO)).replace("\\", "/")
+            if rel in ALLOW:
+                continue
+            for n, line in enumerate(path.read_text(encoding="utf-8", errors="replace")
+                                     .splitlines(), 1):
+                low = line.lower()
+                for bad in FORBIDDEN:
+                    if bad in low:
+                        hits.append(f"{rel}:{n}: {bad!r} in {line.strip()[:70]}")
+        c.check("S5 no surface still says the merge is the operator's to perform",
+                not hits, f"{len(hits)} hit(s): " + " | ".join(hits[:6]))
+
+        # The positive half: the replacement sentence must actually BE somewhere, in the two
+        # places an agent reads before it acts. Deleting the wrong sentence is not the fix.
+        RULING = "decision to proceed is the sign-off"
+        for rel in (".agents/rules/git-policy.md",
+                    ".agents/commands/smh-close-task-merge-tree.md"):
+            body = (REPO / rel).read_text(encoding="utf-8", errors="replace").lower()
+            c.check(f"S5 ...and {rel} states the ruling positively",
+                    RULING in body, f"missing: {RULING!r}")
+
+        # And the three FORMS it takes, named where the door's Rule 1 is.
+        door = (REPO / ".agents/commands/smh-close-task-merge-tree.md").read_text(
+            encoding="utf-8", errors="replace")
+        for form in ("`approved`", "/smh-close-task-merge-tree", "/cicd-push-e2e"):
+            c.check(f"S5 ...and the door names the form: {form}", form in door)
+
+    # ══ SCC-193 C · the door reads ITSELF from origin/main on --after-merge ════════════════
+    #
+    # SLIP #5 OF SIX. The agent followed an instruction its own lane had DELETED: it read the
+    # door from a checkout that was behind `origin/main`, and the lane that had just merged had
+    # rewritten that very file. `git fetch` had been run; the working tree was never pulled.
+    # Nothing checks that the door text you are following is current - in the one command most
+    # likely to be reading a file its own lane just changed.
+    if c.block("SCC-193 C · --after-merge warns when the door text itself is stale"):
+        door = (REPO / ".agents/commands/smh-close-task-merge-tree.md").read_text(
+            encoding="utf-8", errors="replace")
+        after = section(door, "Resuming after the operator")
+        c.check("C1 the --after-merge road exists to check",
+                bool(after.strip()), "section 'Resuming after the operator' not found")
+        code = code_lines(after)
+        c.check("C2 it measures the checkout against origin/main",
+                any("rev-list" in ln and "HEAD..origin/main" in ln for ln in code),
+                "the count must be MEASURED, not asserted: " + " | ".join(code[:6]))
+        c.check("C3 ...and says the door text may be the PRE-merge copy",
+                "behind origin/main" in after and "git show origin/main:" in after,
+                "the remedy must name how to read the current door")
+
     return c.finish()
 
 

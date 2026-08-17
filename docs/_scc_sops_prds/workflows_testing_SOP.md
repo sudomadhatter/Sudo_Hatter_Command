@@ -771,8 +771,10 @@ re-run `finish`. There is deliberately no force flag — a gate with no legitima
 around, and this one's exit leaves a trail.
 
 **⭐ And it now tells you when a row should never have been handed to you (SCC-163).** The rule was
-already written: `## Your Actions` may leave you **three** things — a product decision, a main merge,
-a ticket transition. A row asking you to *mint / file / rule on where a ticket goes* is the retired
+already written: `## Your Actions` may leave you what only **you** can decide — a product decision,
+or a ticket transition you have reserved. (It used to name a third, *a main merge*; the operator's
+2026-08-17 ruling retired that — your **decision to proceed** is the sign-off, and every step after
+it is the ceremony's.) A row asking you to *mint / file / rule on where a ticket goes* is the retired
 defect, because an open box there holds the ticket on the review ladder forever. That was prose, and
 it was broken the same day it was written (AVCH-58 shipped three such rows, none of them operator
 calls). `finish` now prints a **⛔ BANNED ACTION ROW** banner naming the row and why.
@@ -906,10 +908,20 @@ things that keep a merge to it honest: **the road it travels** (below); one typi
 merge must land where you think; a single-use token carrying your words; and a server-side check for
 merges made on GitHub itself. Read it once; the machinery holds the line afterwards.*
 
-#### ⭐ The road to `main` is a pull request, and you merge it (SCC-183)
+#### ⭐ The road to `main` is a pull request, and your decision moves it (SCC-183 · wording SCC-193)
 
-**What you do:** the close-out hands you a **link**. You click *Merge pull request*. That click is
-your sign-off. Then tell the agent, and it finishes the paperwork.
+**What you do:** the close-out hands you a **link**. You click *Merge pull request*, and the agent
+finishes the rest.
+
+**⭐ What that click IS, in the operator's own words (ruling, 2026-08-17):** *"its my decisiton to
+move forward with the push … the way I approve you to push or close is by saying approved or one of
+the 2 / commands."* So **your decision to proceed is the sign-off** — given as the word `approved`,
+or by invoking `/smh-close-task-merge-tree`, or by invoking `/cicd-push-e2e`. The click is **how
+that decision reaches GitHub**, not a chore you owe: from your word on, every step belongs to the
+ceremony and the agent runs it. Nothing about the mechanism changed — the button is still yours, and
+an agent still cannot press it (*"i wording only"*, same day). What changed is that no surface now
+describes the merge as work assigned to you, which is what made an agent write *"Click Merge"* and
+*"re-invoke the door"* into your task list as though you owed them.
 
 **Why this changed.** On 2026-08-16 a docs-only Task (SCC-184 — 226 lines, no deletions, whole test
 suite green) could not reach `main` for an entire session. Every gate passed. What failed was the
@@ -1624,6 +1636,8 @@ flowchart LR
 > ⓘ **`merge-target-guard.sh` — the rest of the story.** ⭐ **It runs from `commit-msg`, not from `pre-merge-commit`**, and that is measured rather than chosen: `pre-merge-commit` fires *before* git writes `MERGE_HEAD`, so it cannot name what is being merged in, and it never fires at all when the merge conflicts — the path a multi-lane landing hits constantly. `commit-msg` sees both. The two older gates on that hook **exempt** merges; this one runs on nothing else. ⚠ **It refuses only topologies it can positively judge:** an incident lane (`claude/incident-*` — the incident pipeline's only real shape; it MATCHES the `claude/*` glob, so it is positively classified by a carve-out ABOVE the story arm) is deliberately unjudged **with main or an epic** — the emergency hotfix onto `main` must never eat a refusal mid-incident (SCC-149) — but its four pairings with story and chore lanes are **positively refused** since SCC-154 (they previously fell to the unjudged default, which is where the SCC-149 review measured them), and the allow-note names the pipeline INSTEAD of the "outside the branch model" line it once contradicted itself with. **SCC-159 adds a fifth: `incident:incident`.** Two concurrent incidents plus a `cd` slip cross-landed one incident's hotfix onto the other's lane and BOTH gates waved it through with a friendly note; a sibling incident lane is not "the pipeline's business" but the SCC-97 wrong-target shape wearing a second incident name, and the pair is refused in both directions. The `incident:main` / `incident:epic` absorbs stay ALLOWED outright — that arm is what keeps an emergency absorb off the refusal path. An unclassified branch, or a source no branch name points at, is still allowed **with a line saying it declined to judge** — a gate that false-reds on the shipping path is one you learn to route around, and this repo has already shipped four of those. `git merge --no-verify` is the auditable override, deliberately, the same posture as `[sop-ok]`. *(SCC-144, 2026-08-13; incident pairs SCC-154, 2026-08-14.)*
 >
 > ⓘ **`task_preflight.py` — the rest of the story.** ⚠ **`.github/` counts only where something actually ships (SCC-118).** It holds machinery *about* a repo — CI, the gates — not a product, so in a repo with a `backend/`, `frontend/`, `firebase/`, `functions/` or `mobile/` a workflow edit can change *what* ships and still hands off, unchanged; in a repo with none of those it can deploy nothing. That distinction was invisible while the command centre had no `.github/` at all, and SCC-118 gave it its first one — after which the next close-out here was refused as "NOT task-lane work" and routed to `/cicd-push-e2e`, a command that binds a *project*, refuses the lobby, and gates on an E2E suite this repo does not have. A verdict nobody could comply with, so the two questions are now two lists. ⓘ **Its VERDICT line has two states, not three (SCC-140).** A `NOT CLEAR` verdict used to sit between `BLOCKED` and `clear to close out and merge`, and it was **unreachable**: getting there needed the gates to be off in a repo that claims them, but `hooks_armed.check()` files exactly that case as a blocking error, so `BLOCKED` always won. It also disagreed with itself — the text refused the merge while the exit code said *warnings only*. Deleted rather than pinned with a test: an assertion over unreachable code buys nothing and makes a dead branch look load-bearing. **The rule it was trying to state is unchanged and still enforced** — a repo that claims gates and is not running them never sees the word *clear*.
+>
+> ⭐ **SCC-193 · `--after-merge` now checks that the door text YOU are following is current.** It counts `HEAD..origin/main`; if the checkout is behind, it says so and points at `git show origin/main:.agents/commands/smh-close-task-merge-tree.md`. This is the one command most likely to be reading a file its own lane just rewrote — on 2026-08-16 an agent followed an instruction its own lane had deleted, because `git fetch` had run and the tree was never pulled.
 >
 > ⭐ **SCC-193 · the fetch is now the DEFAULT, and the VERDICT line carries freshness.** You used to type `--fetch` to make the comparison real; leave it off and ahead/behind was measured against whatever your last fetch saw, with a one-line `INFO` saying so **underneath** a verdict that still read *clear to close out and merge*. On 2026-08-16 that is exactly what happened on SCC-164's landing. Now: **it fetches unless you say `--no-fetch`**, an omitted fetch and a **failed** one are the same severity (never trying does not outrank trying), and when the comparison is not fresh the verdict itself reads *`clear - but vs the LAST fetch (STALE) … re-run with the fetch`* with a non-zero exit. Offline on a plane: `--no-fetch` still works and says so on the record.
 >

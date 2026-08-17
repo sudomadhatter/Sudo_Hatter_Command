@@ -1643,8 +1643,11 @@ def merge_row_state(wt: Path) -> dict | None:
 
 # ── SCC-163 Part B: what may go in `## Your Actions` ──────────────────────────
 #
-# Step 5 of /smh-code-review and /cicd-code-review permits the operator to be left exactly
-# three things: A PRODUCT DECISION, A MAIN MERGE, A TICKET TRANSITION. A row handing them any
+# Step 5 of /smh-code-review and /cicd-code-review leaves the operator what only they can
+# DECIDE: A PRODUCT DECISION, or A TICKET TRANSITION they have reserved. (It used to name a
+# third, "a main merge" - retired by the operator's ruling of 2026-08-17: the sign-off is the
+# DECISION to proceed, given as `approved` or by invoking a door, and from that word on every
+# step is the ceremony's. The merge is not work the operator is left.) A row handing them any
 # ticket born from review findings - mint it, file it, "fold into <KEY>", rule on where it
 # goes - is the retired defect, and an open box here HOLDS the ticket on the review ladder
 # forever (see `finish` below). That was prose until now, and it was broken the same day it
@@ -1833,8 +1836,8 @@ def render_banned_banner(rows: list[tuple[str, str]], walkthrough: str,
         headline=(f"⛔ BANNED ACTION ROW{'' if n == 1 else 'S'} - {n} row{'' if n == 1 else 's'} "
                   f"in `{YOUR_ACTIONS}` hand{'s' if n == 1 else ''} the operator ticket work"),
         # ⭐ SCC-193 · THE WORDING, and it is the operator's ruling rather than an edit.
-        # This said "Step 5 leaves the operator THREE things: a product decision, A MAIN MERGE,
-        # a ticket transition" - and naming the merge as a thing the operator is LEFT is what
+        # This banner used to name three things the operator was "left", the middle one being
+        # the main merge - and naming the merge as a thing the operator is LEFT is what
         # produced the slip this same lane fixes: the agent wrote the merge and the door's
         # re-invocation into `## Your Actions` as owed work, and the machine contract read them
         # as owed. The merge is not owed; the DECISION is given, and the ceremony runs.

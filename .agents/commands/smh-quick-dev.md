@@ -417,6 +417,12 @@ skipped — the close-out preflight blocks without it.
 >   but a *missing* one is a hard refusal. An absent section is not evidence that nothing is owed,
 >   and `finish` will not guess.
 >
+> **⛔ And the CEREMONY's steps are not entries (SCC-193).** A row telling the operator to click
+> Merge, to re-invoke the close-out, or to run `--after-merge` is **refused** by `jira_feed.py`
+> (`check-actions`, and again at `finish`). Their **decision to proceed** is the sign-off — the word
+> `approved`, or invoking `/smh-close-task-merge-tree` or `/cicd-push-e2e` — and from that word on
+> every step is the ceremony's and you run it. What belongs here is what only they can DECIDE.
+>
 > So: everything genuinely owed to the operator goes in as a checkbox. Everything else — what
 > landed, what you decided — stays prose above them.
 
