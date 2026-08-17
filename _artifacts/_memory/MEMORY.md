@@ -33,7 +33,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 ## Sprint, stories & close-out
 - **Reading the board** — [it recommends stale work](sprint-dependency-map-recommends-stale-work.md) (check status first) · [⛔ scrum board RETIRED 08-07](sudo-update-scrum-board-five-zones.md) (SCC-13; parallel logic in /cicd-label-tasks).
 - [`parallel-ok` is a SET property](parallel-ok-is-a-set-property.md) — property of a set at a moment; stamped via /cicd-label-tasks and /smh-label-tasks (SCC-155).
-- **Multi-lane landing** — [lanes fix one finding](parallel-lanes-fix-the-same-finding.md) (re-diff epic branch on file overlap) · [close-out shape](multi-lane-closeout-board-merge-shape.md) (flip from story file) · [landing ≠ close-out](landing-is-not-closeout.md) (verify git before closing out).
+- **Multi-lane landing** — [⭐ collision is GATES, not files](lane-collision-is-gates-not-files.md) (zero file overlap still breaks; run each lane's gates on the other's blobs) · [lanes fix one finding](parallel-lanes-fix-the-same-finding.md) (re-diff epic branch on file overlap) · [close-out shape](multi-lane-closeout-board-merge-shape.md) (flip from story file) · [landing ≠ close-out](landing-is-not-closeout.md) (verify git before closing out).
 - [⭐⛔ Operator acts in WORDS; agent does EVERY board write](review-status-means-needs-operator.md) — operator speaks words, agent writes Jira statuses; review = blocked-on-operator only.
 - [Status-flip contract](story-status-flip-contract.md) — read as WHEN never WHO: done only inside operator-invoked close-out; bans self-certification.
 - [Follow-ons are NOT a new story](followon-fixes-are-not-a-new-story.md) — no new worktree/key; fix on epic branch or chore/* off main.
