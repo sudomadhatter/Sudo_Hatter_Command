@@ -736,6 +736,66 @@ def main() -> int:
                     "nine rungs print the same banner; pinning `REFUSED` would let any of them "
                     f"stand in for this one\n{out}")
 
+    # ── ⛔ D3 · THE STALE WORKTREE — the fail-open that is not in the gate at all ────────────
+    #
+    # The two rungs above are in `pre-push-main-approval.sh`. This one is in the DISPATCHER, and
+    # it is the only fail-open here that needs no token, no merge and no remote state to trigger:
+    # if `.agents/scripts/git-hooks/` is simply ABSENT from the tree, `.githooks/pre-push` used to
+    # print a warning and `exit 0` for every ref, `main` included. The gate was never bypassed —
+    # it was never asked. Reproduced on AGY: same repo, same refs, same missing token; from the
+    # main checkout REFUSED, from a stale worktree `main -> main` LANDED.
+    #
+    # ⭐ THE ALLOW IS NOT DELETED, IT IS NARROWED, and both halves are asserted below. A worktree
+    # cut before these scripts existed must still be able to push its own lane, or the remedy for
+    # being out of date is unreachable (SCC-32). What it must not do is push `main` with nothing
+    # checking anything: "no gate ran" must never be quieter than "the gate said no".
+    with TempDir() as tmp:
+        d, bare = make_repo(tmp)
+        if c.block("D3 · a stale worktree may push its LANE, never `main`"):
+            (d / ".githooks").mkdir()
+            shutil.copy2(DISPATCH, d / ".githooks/pre-push")
+            (d / ".githooks/pre-push").chmod(0o755)
+            sh("git", "config", "core.hooksPath", ".githooks", cwd=d)
+            # THE STALE STATE: the dispatcher is present (it is what git runs), the gate scripts
+            # it delegates to are not. That is exactly a tree cut from a commit before SCC-77.
+            shutil.rmtree(d / ".agents/scripts/git-hooks")
+            c.check("D3-pre · (control) the dispatcher is installed and the gate scripts are NOT",
+                    (d / ".githooks/pre-push").is_file()
+                    and not (d / ".agents/scripts/git-hooks").exists()
+                    and sh("git", "config", "--get", "core.hooksPath", cwd=d)[1].strip() == ".githooks",
+                    "if the dispatcher is missing too, git runs no hook at all and every "
+                    "assertion below passes for the wrong reason")
+
+            before = sh("git", "--git-dir", str(bare), "rev-parse", "main", cwd=d)[1].strip()
+            stage_one_merge(d, "chore/SCC-172-stale")
+            rc, out = sh("git", "push", "origin", "main", cwd=d)
+            c.check("D3 · pushing `main` from a tree with no gate scripts is REFUSED",
+                    rc != 0 and "REFUSED" in out,
+                    "this LANDED before the fix — an ungated push to main, printing a warning "
+                    f"that reads like success\n{out}")
+            c.check("D3b · ...and the refusal says WHY, so it is not read as the gate's own no",
+                    "approval gate is not" in out and "refs/heads/main" in out,
+                    "'no gate present' and 'the gate refused' need different remedies: one is "
+                    f"`git merge origin/main`, the other is a sign-off\n{out}")
+            after = sh("git", "--git-dir", str(bare), "rev-parse", "main", cwd=d)[1].strip()
+            c.check("D3c · nothing reached the remote", before == after,
+                    f"before={before[:9]} after={after[:9]}")
+
+            # ⭐ THE HALF THAT KEEPS THE FIX HONEST. A blanket refusal here would be simpler and
+            # would strand a stale worktree with no way to ship at all — including no way to pull
+            # the very scripts that would re-arm it.
+            sh("git", "checkout", "-q", "-b", "chore/SCC-172-lane", cwd=d)
+            (d / "lane.txt").write_text("work\n", encoding="utf-8")
+            sh("git", "add", "--", "lane.txt", cwd=d)
+            sh("git", "commit", "-qm", "SCC-172 lane work", cwd=d)
+            rc, out = sh("git", "push", "origin", "chore/SCC-172-lane", cwd=d)
+            c.check("D3d · (control) the same stale tree may still push its OWN lane",
+                    rc == 0,
+                    "narrowing the allow to non-main refs is the fix; refusing everything is a "
+                    f"different bug wearing the same commit\n{out}")
+            rc, out = sh("git", "ls-remote", "--heads", str(bare), "chore/SCC-172-lane", cwd=d)
+            c.check("D3e · ...and it really arrived", "chore/SCC-172-lane" in out, out)
+
     return c.finish()
 
 

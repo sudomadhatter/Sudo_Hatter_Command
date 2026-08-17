@@ -37,6 +37,13 @@ HOOKDIR = REPO / ".agents/scripts/git-hooks"
 
 GUARD = HOOKDIR / "merge-target-guard.sh"
 BACKSTOP = HOOKDIR / "pre-push-merge-backstop.sh"
+# ⛔ PRESENT IN EVERY PUSH FIXTURE, AND DISARMED THERE. This file's subject is the BACKSTOP, so
+# the token gate must not interfere — but it must still EXIST, because `.githooks/pre-push`
+# refuses a push to `main` when it is missing (SCC-172 D3: "no gate ran" must not be quieter than
+# "the gate said no"). Omitting it modelled a stale worktree, which is not what any case here is
+# about, and three ALLOW controls (I, G6d, EP5) started reading D3's refusal as the backstop's.
+# It is installed WITHOUT `MAIN-PUSH-ENFORCE`, so it exits 0 immediately and changes nothing.
+APPROVAL = HOOKDIR / "pre-push-main-approval.sh"
 FLAG = HOOKDIR / "MERGE-TARGET-ENFORCE"
 MERGE_DISPATCH = REPO / ".githooks/commit-msg"
 PUSH_DISPATCH = REPO / ".githooks/pre-push"
@@ -88,7 +95,7 @@ def make_repo(tmp: Path, *, name: str = "work",
 
 
 def make_pushable(tmp: Path, *, push_main: bool = True,
-                  scripts=(GUARD, BACKSTOP), extra_flags=()) -> tuple[Path, Path]:
+                  scripts=(GUARD, BACKSTOP, APPROVAL), extra_flags=()) -> tuple[Path, Path]:
     """A repo with a REAL bare remote, so the push cases drive `git push` and not a stub.
 
     Everything the push gates need can be faked at the script level; whether git actually invokes
@@ -1178,7 +1185,6 @@ def main() -> int:
         # refused by the token gate, which is the gate that runs last.
         with TempDir() as tmp:
             d, bare = make_pushable(tmp, push_main=False,
-                                   scripts=(GUARD, BACKSTOP, HOOKDIR / "pre-push-main-approval.sh"),
                                    extra_flags=("MAIN-PUSH-ENFORCE",))
             rc, out = sh("git", "push", "origin", "main", cwd=d)
             c.check("P · the token gate STILL refuses an unapproved push to main", rc != 0,

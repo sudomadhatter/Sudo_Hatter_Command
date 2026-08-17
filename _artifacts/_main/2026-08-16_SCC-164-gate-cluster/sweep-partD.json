@@ -1,6 +1,9 @@
 {
-  "test": ["python3", ".agents/scripts/tests/test_main_push_gate.py"],
-  "note": "Part 10 (D = SCC-172). Two fail-opens in the main-write gate, both back-ported from AGY-59 where each was reproduced live. D3 is NOT swept here: it edits `.githooks/pre-push`, which `core.hooksPath` makes LIVE for this worktree's own pushes the moment it is saved (F22), so it lands last and is proven in a scratch repo instead - a sweep that leaves a mutated pre-push hook on disk between runs is not a risk worth taking for a third data point.",
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_main_push_gate.py"
+  ],
+  "note": "Part 10 (D = SCC-172). Three fail-opens in the main-write path, all back-ported from AVCH-59 where each was reproduced live. D3 is swept LAST and its mutant is the only one that touches `.githooks/pre-push` - the file `core.hooksPath` makes LIVE for this worktree's own pushes (F22). It is safe here for a reason that is checked, not assumed: the mutant only removes the refusal on `refs/heads/main`, this lane pushes `chore/SCC-164-gate-cluster` and never main, and the sweep verifies byte-restore against the committed baseline before it exits. Proven first in a scratch repo with a real remote (see the walkthrough's D3 drill), then here.",
   "mutants": [
     {
       "id": "D-1",
@@ -46,6 +49,15 @@
       "mutated": "        sign-off could not be verified at all",
       "case": "D2c",
       "block": "D2 ·"
+    },
+    {
+      "id": "D-6",
+      "why": "D3 - the stale-worktree fail-open. Restore the blanket `exit 0` and a tree missing the gate scripts pushes main with nothing checking anything: on AGY the same repo REFUSED from the main checkout and LANDED `main -> main` from a worktree. The gate was not bypassed, it was never asked.",
+      "file": ".githooks/pre-push",
+      "original": "  if awk '$3 == \"refs/heads/main\" { found = 1 } END { exit !found }' < \"$REFS\"; then",
+      "mutated": "  if awk 'BEGIN { exit 1 }' < \"$REFS\"; then",
+      "case": "D3 ·",
+      "block": "D3"
     }
   ]
 }
