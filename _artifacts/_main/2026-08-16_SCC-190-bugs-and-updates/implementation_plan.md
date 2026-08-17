@@ -4,6 +4,7 @@
 **Riders (task.yaml):** SCC-191 (Part R) · SCC-192 (Part S) · SCC-193 (Part T) · SCC-195 (Part U)
 **Operator, 2026-08-16:** *"lets do SCC-190"* · *"this will be one tree and one branch for all of them, we will do them all then close it out"* · on SCC-194: *"yeah its stuck there and thats why SCC-195 fixes it"*
 **Landing:** full — every rider flips, then the parent; then a fresh rolling ticket is cloned with no subtasks (the description's own first line).
+**Approval (2026-08-16):** *"approved"* — recorded at `97f5a97` (plan unchanged since).
 **review-runtime:** fan-out (probed at Step 0 — this runtime has the Agent tool).
 
 ---

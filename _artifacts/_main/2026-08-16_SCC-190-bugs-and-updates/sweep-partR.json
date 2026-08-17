@@ -1,0 +1,29 @@
+{
+  "test": ["python3", ".agents/scripts/tests/test_command_surfaces.py"],
+  "mutants": [
+    {"id": "R-M1 the rolling ticket is dropped back out of rung 3",
+     "file": ".agents/rules/work-consolidation.md",
+     "original": "3. **Nothing thematic fits? Then it goes on the OPEN ROLLING TICKET**",
+     "mutated": "3. **Nothing fits? Then mint a new Task**",
+     "case": "R1c rung 3 is the OPEN ROLLING TICKET",
+     "block": "SCC-191"},
+    {"id": "R-M2 the look-before-mint search stops naming the label",
+     "file": ".agents/rules/work-consolidation.md",
+     "original": "acli jira workitem search --jql \"project = SCC AND statusCategory != Done AND labels = bugs-and-updates\" \\\n     --fields key,summary --limit 5",
+     "mutated": "# (the rolling ticket: ask around)",
+     "case": "R2 the look-before-mint search names the rolling ticket's label",
+     "block": "SCC-191"},
+    {"id": "R-M3 the cycle is stated as a threshold instead of a cycle",
+     "file": ".agents/rules/work-consolidation.md",
+     "original": "### The CYCLE — rung 3 is a rolling ticket, not a landfill",
+     "mutated": "### Rung 3 notes",
+     "case": "R1e the cycle is named",
+     "block": "SCC-191"},
+    {"id": "R-M4 the engine's restatement goes stale again",
+     "file": ".agents/skills/code-review-engine/steps/step-01-review.md",
+     "original": "> **And when no thematic parent fits, it goes on the **OPEN ROLLING TICKET** (`Bugs and Updates - <YYYY-MM>`, label `bugs-and-updates`; `SCC-190` today) as a subtask — rung 3\n> since SCC-191.**",
+     "mutated": "> (nothing here about where it goes.)",
+     "case": "R2b the restatement in step-01-review.md names the rolling ticket",
+     "block": "SCC-191"}
+  ]
+}
