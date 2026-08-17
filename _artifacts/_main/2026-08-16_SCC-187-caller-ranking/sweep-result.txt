@@ -1,0 +1,26 @@
+-- sweep: 5 mutant(s) over 1 file(s) @ 5bac95e8 --
+KILLED    M1 ranking becomes FILTERING — the one thing this lane forbids
+            KILLED by ranking: BOTH classes survive
+            -- filter 'SCC-187-A1': matched 1/17 blocks --
+KILLED    M2 the sort moves AFTER the cap, so it ranks what already lost the importer
+            KILLED by outer sort: a LATER identifier's importer is not crowded out
+            -- filter 'SCC-187-A2b': matched 1/17 blocks --
+KILLED    M3 the two tag literals are swapped
+            KILLED by ranking: a file that IMPORTS the subject is tagged [importer]
+            -- filter 'SCC-187-A1': matched 1/17 blocks --
+KILLED    M4 _importers_of goes blind on Python, so nothing is ever an importer
+            KILLED by ranking: the importer sorts ahead of every name-match
+            -- filter 'SCC-187-A1': matched 1/17 blocks --
+KILLED    M5 the caller walk ignores `prefer`, so a late importer is never COLLECTED
+            KILLED by late importer: it is COLLECTED despite sorting past the walk's own cap
+            -- filter 'SCC-187-A2': matched 2/17 blocks --
+-- restore verified: bytes match, nothing was committed, and `git diff --quiet 5bac95e8` is clean --
+-- full file, unfiltered: python3 .agents/scripts/tests/test_evidence_extract.py -> exit 0 --
+        | [PASS] deterministic: the same inputs give byte-identical output
+        | [PASS] tripwire: imports no subprocess module
+        | [PASS] tripwire: every import is stdlib (checked against sys.stdlib_module_names)
+        | [PASS] docstring records the GitNexus decision (plan D7)
+        | [PASS] docstring records the port source and SHA
+        | -- 127/127 passed --
+
+-- sweep clean: 5/5 killed by their declared case --

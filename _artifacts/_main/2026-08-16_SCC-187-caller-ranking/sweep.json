@@ -1,0 +1,45 @@
+{
+  "test": ["python3", ".agents/scripts/tests/test_evidence_extract.py"],
+  "mutants": [
+    {
+      "id": "M1 ranking becomes FILTERING — the one thing this lane forbids",
+      "file": ".agents/scripts/evidence_extract.py",
+      "original": "    tagged = [\"[importer] \" + snippet if snippet.split(\":\", 1)[0] in importer_set\n              else \"[name-match] \" + snippet\n              for ident in identifiers\n              for snippet in _find_function_callers(repo, ident, rel, importers)]",
+      "mutated": "    tagged = [\"[importer] \" + snippet\n              for ident in identifiers\n              for snippet in _find_function_callers(repo, ident, rel, importers)\n              if snippet.split(\":\", 1)[0] in importer_set]",
+      "case": "ranking: BOTH classes survive",
+      "block": "SCC-187-A1"
+    },
+    {
+      "id": "M2 the sort moves AFTER the cap, so it ranks what already lost the importer",
+      "file": ".agents/scripts/evidence_extract.py",
+      "original": "    tagged.sort(key=lambda snippet: 0 if snippet.startswith(\"[importer] \") else 1)\n    callers = _dedupe(tagged)[:_CALLER_SNIPPETS]",
+      "mutated": "    callers = _dedupe(tagged)[:_CALLER_SNIPPETS]\n    callers.sort(key=lambda snippet: 0 if snippet.startswith(\"[importer] \") else 1)",
+      "case": "outer sort: a LATER identifier's importer is not crowded out",
+      "block": "SCC-187-A2b"
+    },
+    {
+      "id": "M3 the two tag literals are swapped",
+      "file": ".agents/scripts/evidence_extract.py",
+      "original": "    tagged = [\"[importer] \" + snippet if snippet.split(\":\", 1)[0] in importer_set\n              else \"[name-match] \" + snippet",
+      "mutated": "    tagged = [\"[name-match] \" + snippet if snippet.split(\":\", 1)[0] in importer_set\n              else \"[importer] \" + snippet",
+      "case": "ranking: a file that IMPORTS the subject is tagged [importer]",
+      "block": "SCC-187-A1"
+    },
+    {
+      "id": "M4 _importers_of goes blind on Python, so nothing is ever an importer",
+      "file": ".agents/scripts/evidence_extract.py",
+      "original": "    ext = os.path.splitext(rel)[1].lower()\n    if ext == \".py\":\n        return _python_importers(repo, rel)",
+      "mutated": "    ext = os.path.splitext(rel)[1].lower()\n    if ext == \".py\":\n        return []",
+      "case": "ranking: the importer sorts ahead of every name-match",
+      "block": "SCC-187-A1"
+    },
+    {
+      "id": "M5 the caller walk ignores `prefer`, so a late importer is never COLLECTED",
+      "file": ".agents/scripts/evidence_extract.py",
+      "original": "    if prefer:\n        preferred = set(prefer)",
+      "mutated": "    if False:\n        preferred = set(prefer)",
+      "case": "late importer: it is COLLECTED despite sorting past the walk's own cap",
+      "block": "SCC-187-A2"
+    }
+  ]
+}
