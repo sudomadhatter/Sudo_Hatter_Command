@@ -109,7 +109,7 @@ Surfaces: door Rule 1 + Step 3 (table row WHY + the "click is the sign-off" para
 ### ⛔ S6 — the click decision, settled by the operator at THIS stop
 (i) **WORDING ONLY** — the click on *Merge pull request* stays a physical operator act; it is HOW the decision reaches GitHub, not a task owed. Nothing mechanical changes. **Recommended** — it keeps SCC-183's "one click, one merge, held by something that cannot be talked out of it".
 (ii) **MECHANISM** — after `approved` the agent may run `gh pr merge` (main-write-gate still gates server-side); the click is no longer the operator's.
-The plan builds (i) unless the approval says (ii). Either way the door's Rule 1 records which, with the operator's words.
+**SETTLED — operator, 2026-08-16, verbatim: *"i wording only"* → (i).** The click stays a physical operator act; it is HOW the decision reaches GitHub, never a task owed. The door's Rule 1 quotes these words.
 
 **Acceptance T:** S1–S9. Sweep table T: `--fetch` default flipped back · freshness off the verdict line · ceremony check disabled · stale-door line removed · a forbidden wording phrase re-added (must make the pin red).
 
