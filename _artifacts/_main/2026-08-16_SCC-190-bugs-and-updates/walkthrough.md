@@ -167,15 +167,27 @@ Per the ticket's own instruction — *"if green, the --apply-time hold was envir
 
 ### The lane's gates
 
-Run once, at the tip, through the receipt writer (`gates/suite.json` beside this file):
+Run **once**, at the tip, on a clean tree, through the receipt writer — the receipt run *is* the suite run, never a second opinion:
 
 ```
-<PASTE: gate_receipt run --gate suite -- run_all.py>
+python3 .agents/scripts/gate_receipt.py run --task SCC-190 --gate suite \
+    --root _artifacts/_main/2026-08-16_SCC-190-bugs-and-updates --cwd . \
+    -- python3 .agents/scripts/tests/run_all.py
+
+[PASS] suite exit=0 116.6s @ f9367660
+        receipt: gates/suite.json
+
+  (run_all's own last lines)
+  -- 49/49 passed --
+  ============================================================
+  33/33 files passed
 ```
 
+The receipt records `result: pass · exit_code: 0 · dirty_tree: false · sha f9367660 · 116.6s`, so the close-out and the review inherit this run instead of paying for it again.
+
 ```
-python3 .agents/scripts/workflow_lint.py --toolkit-only     -> -- 0 error(s), 0 warning(s), 8 info --
-python3 .agents/scripts/check_maps.py --depth3-only --strict -> clean
+python3 .agents/scripts/workflow_lint.py --toolkit-only      -> -- 0 error(s), 0 warning(s), 8 info --
+python3 .agents/scripts/check_maps.py --depth3-only --strict -> exit 0
 ```
 
 ### The mutation sweeps
