@@ -63,10 +63,18 @@ No ticket at all → **STOP and ask.** Never invent a key; a keyless Task cannot
 or found again.
 
 **⭐ Probe the review runtime here, at Step 0, and record it (SCC-177).** Ask this runtime whether it
-can fan out to subagents — do not answer from what usually happens, because a standing operator
-directive, a headless pipeline or a platform with no subagent tool each make the answer `inline`, and
+can fan out to subagents — do not answer from what usually happens, because a headless pipeline or
+a platform with no subagent tool makes the answer `inline`, and
 each is invisible until a lens fails to launch three steps later. The answer goes into the
 walkthrough header Step 5 writes, on its own line, above everything else:
+
+⛔ **The probe is a **capability**, never a **policy** (SCC-203).** *Does a subagent tool exist in
+this runtime?* is the whole question; *am I permitted to use it?* is a different one, and answering
+it here is how a session directive — *"do not spawn subagents unless the user asks"* — got read as
+*"this runtime is inline"*, ran an entire review inside the builder's own context, and had the flow
+record it as legitimate. ⭐ **Subagents are the DEFAULT, and invoking a review IS that request** —
+you never stop to ask for them, and never quietly downgrade to `inline` to avoid asking. Only a
+runtime with no subagent tool at all is `inline`.
 
 ```
 review-runtime: fan-out

@@ -54,7 +54,7 @@ platforms: [claude, opencode]
 #      ceremony's steps are never entries) IS PORTED — it is a machine contract `jira_feed.py`
 #      now enforces, so a twin that omitted it would write rows the close-out refuses.
 # Re-diff and restamp when the linter says this sha is stale — do NOT just bump it.
-ap_reconciled: d8b3d2040495ef90c222fbe43b341d23444edf0f
+ap_reconciled: 76277d961b0407966dabadacf948862f8d7cefe5
 ---
 
 # /cicd-code-review-AP — Autopilot Review + Fix + Test Gate (Murat)
@@ -161,10 +161,16 @@ above.** Running lenses in your own context means each one inherits whatever tha
 holds — so the Blind Hunter, defined as `DIFF`-only, is not blind if the plan, the walkthrough and
 the pack are already in front of you. **Therefore, inline: pull Ingest 1, run the Blind Hunter
 immediately on the diff alone, and only THEN pull Ingest 2 and run the remaining four.** That is
-the original ordering of this command, and it exists for exactly this reason. If for any reason the
-blind pass could not run first, it still runs — but you record it as `ok (not blind — context held
-<what>)`, because reporting a fully-informed lens as the blind one is a false record rather than a
-smaller one.
+the original ordering of this command, and it exists for exactly this reason.
+
+⛔ **If the blind pass could NOT run first, it does not run at all (SCC-203).** It used to run
+anyway, recorded as `ok (not blind — context held <what>)` — **that state is retired.** Operator
+ruling, 2026-08-17: *"drop the blind lens rather than fake it. Running it inline and counting it in
+the roster is the worst of the three — it costs tokens and produces a record that says the review
+was more independent than it was."* Record it on `lenses_na` as
+`blind-hunter · n/a — context contaminated (<what it held>)`, never inside the count. This lane
+keeps its blind pass by ORDERING, which is why the two-ingest split above is load-bearing; the drop
+is the fallback for when that ordering was impossible, not a routine outcome.
 
 The engine hands back `lenses_run` · `lenses_na` · the bucketed findings · `severity_floor` ·
 `notes`. **The floor is a floor:** your verdict may be that severe or worse, never better.
