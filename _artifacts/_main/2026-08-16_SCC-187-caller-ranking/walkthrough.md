@@ -270,11 +270,13 @@ reachable and `--case "0 ·"` selects whichever is live.
       re-resolve the two ledger files before closing out. — **done:** SCC-164 landed as PR #13
       (`origin/main` `6ec9dc0`), absorbed at `059eca2`, both ledgers resolved, every gate re-run
       afterwards. See *Post-absorb re-measurement*.
-- [x] The merge itself — lands via this branch's PR. ⛔ **Your click on *Merge pull request* is
-      the sign-off, not this lane's close-out invocation.** SCC-183 moved the authorisation to
-      GitHub, gated by the `main-write-gate` check; the line that used to sit here — *"invoking
-      it is your per-merge sign-off"* — described the model this repo has since replaced, and
-      was corrected at close-out rather than carried onto `main`.
+- [x] The merge itself — lands via this branch's PR (#15, `main-write-gate` green).
+      **Two sign-offs, at two different gates.** Invoking `/smh-close-task-merge-tree` is yours
+      and authorises the close-out — preflight, gates, flight event, open the PR, and afterwards
+      the ticket move and the prune. Clicking *Merge pull request* is the separate one, and it
+      covers only the thing this command deliberately cannot do: land on `main`. SCC-183 moved
+      **merge** authorisation to GitHub's `main-write-gate`; it did not replace the close-out
+      sign-off, and neither gate stands in for the other.
 
 Decided and recorded, nothing owed: the `--pack` wiring, spill-not-truncate and `ast` symbol
 definitions stay CLOSED on SCC-187 as measured (`nc_review_engine` scored 5/5 cold at `305e75d`).
