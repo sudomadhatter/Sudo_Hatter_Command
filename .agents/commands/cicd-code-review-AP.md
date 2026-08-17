@@ -50,8 +50,11 @@ platforms: [claude, opencode]
 #      NOT PORTED, and this is the same reason as (1): the orchestrator hands this twin
 #      REPO/WORKTREE in its launch context, so the variable is already bound here. Binding
 #      it again in the body would let a stale in-body value shadow what the caller passed.
+#   5. SCC-193's `## Your Actions` wording (the sign-off is the operator's DECISION; the
+#      ceremony's steps are never entries) IS PORTED — it is a machine contract `jira_feed.py`
+#      now enforces, so a twin that omitted it would write rows the close-out refuses.
 # Re-diff and restamp when the linter says this sha is stale — do NOT just bump it.
-ap_reconciled: c54f1b4141296632c35db1f060c75264a267bb04
+ap_reconciled: d8b3d2040495ef90c222fbe43b341d23444edf0f
 ---
 
 # /cicd-code-review-AP — Autopilot Review + Fix + Test Gate (Murat)
@@ -258,6 +261,10 @@ is written down.
   (retired 2026-08-02).
 - **Update `walkthrough.md`** so its `## Your Actions` records the worktree branch + commits; tick any
   agent-solvable rows you cleared, and refresh `## Evidence` if your fixes staled it.
+  ⛔ **Never leave the CEREMONY's own steps there** (SCC-193, ported from the primary): "click Merge",
+  "re-invoke the close-out", "run `--after-merge`". The operator's **decision to proceed** is the
+  sign-off — the word `approved`, or invoking one of the two doors — and from that word on every step
+  is the ceremony's and the agent runs it. `jira_feed.py` refuses a close-out on such a row.
 - Put these TWO sections at the **TOP** of `walkthrough.md` (you are the last agent before Daniel; mirror
   the detail in `decisions-log.md`):
   - `## OUT-OF-SPEC DECISIONS` — every call the team made that the story did not cover (what it was

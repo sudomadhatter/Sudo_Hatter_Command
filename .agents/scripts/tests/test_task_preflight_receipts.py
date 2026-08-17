@@ -346,9 +346,19 @@ def main() -> int:
             commit(repo, "SCC-11 chore: two stamped walkthroughs (artifacts only)")
             git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
             code, out = preflight(repo)
+            # ⭐ THE SCC-154 PROPERTY IS UNCHANGED — no SKIP, the full gate named — but the
+            # EXIT is now 2, and that is the SCC-190 change, not a regression here. This
+            # fixture's two `task.yaml` files (both declaring SCC-11 on this branch, and the
+            # second one is what makes the second walkthrough belong to this lane at all) are
+            # now an error in their own right: the receipt is written BESIDE the manifest, so
+            # two candidates means the evidence has no home and the PR gate would then demand
+            # a receipt nothing will write. The ambiguity is caught at both layers.
             c.check("SCC-154 two stamped walkthroughs under one key: ambiguous, no SKIP",
-                    code == 0 and "gate: SKIP" not in out and "run_all.py" in out,
+                    "gate: SKIP" not in out and "run_all.py" in out,
                     f"exit {code}: " + out.strip()[-300:])
+            c.check("SCC-154 ...and two live manifests for one key is itself an error (SCC-190)",
+                    code == 2 and "2 live task.yaml files declare SCC-11" in out
+                    and "2026-08-09_scc-11-more" in out, f"exit {code}: " + out.strip()[-400:])
 
         with TempDir() as t:   # a NEAR-MISS stamp is an error, never a silent demotion
             repo = make_repo(t, walkthrough=False)

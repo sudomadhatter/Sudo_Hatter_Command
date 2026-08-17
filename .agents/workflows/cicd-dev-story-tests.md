@@ -1,5 +1,5 @@
 ---
-description: Develop a story test-first — plan, then STOP at the self-audit gate (`continue` = audit here; `changed` = human switched the model, audit then stop to switch back; a pasted file path = another team's blind audit), implement, then auto-expand coverage. Step ② of the sudo dev flow.
+description: Develop a story test-first — plan, then STOP at the self-audit gate (`continue` = audit here; `changed` = human switched the model...
 platforms: [opencode, antigravity]
 ---
 

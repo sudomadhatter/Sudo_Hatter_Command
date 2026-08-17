@@ -1,5 +1,5 @@
 ---
-description: Adversarial audit for TASK work — pressure-tests an implementation_plan.md that has no story file and no story ACs against the repo it will actually modify. Two modes - PRE-WORK (the default; no plan means STOP) and POST-DEV/retroactive (audit the ticket's ACCEPTANCE block plus the change set, and label the run retroactive). Acts on the repo you are standing in, so the command centre is a valid subject. Auto-invoked by /smh-quick-dev; the stale half re-runs automatically as /smh-code-review Step 0.7. Use when the user says "audit the task plan" / "smh self audit".
+description: Adversarial audit for TASK work — pressure-tests an implementation_plan.md that has no story file and no story ACs against the repo...
 platforms: [opencode, antigravity]
 ---
 

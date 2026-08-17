@@ -727,7 +727,7 @@ The close-out runs everything it always ran — preflight, the lane's gate, the 
 
 | What it says | What you do |
 |---|---|
-| a URL | click **Merge pull request**. That click is your sign-off. Then say so, and the agent runs the rest (`--after-merge`): Dev Record, ticket to `Done`, worktree and branch pruned |
+| a URL | click **Merge pull request** — your **decision to proceed** is the sign-off, and the click is how it reaches GitHub. Then say so, and the agent runs the rest (`--after-merge`): Dev Record, ticket to `Done`, worktree and branch pruned |
 
 > ⓘ **One thing the close-out needs from the walkthrough BEFORE it opens the PR**, and it is worth
 > knowing because it is the difference between a clean close and a stuck one: the walkthrough must
@@ -771,8 +771,10 @@ re-run `finish`. There is deliberately no force flag — a gate with no legitima
 around, and this one's exit leaves a trail.
 
 **⭐ And it now tells you when a row should never have been handed to you (SCC-163).** The rule was
-already written: `## Your Actions` may leave you **three** things — a product decision, a main merge,
-a ticket transition. A row asking you to *mint / file / rule on where a ticket goes* is the retired
+already written: `## Your Actions` may leave you what only **you** can decide — a product decision,
+or a ticket transition you have reserved. (It used to name a third, *a main merge*; the operator's
+2026-08-17 ruling retired that — your **decision to proceed** is the sign-off, and every step after
+it is the ceremony's.) A row asking you to *mint / file / rule on where a ticket goes* is the retired
 defect, because an open box there holds the ticket on the review ladder forever. That was prose, and
 it was broken the same day it was written (AVCH-58 shipped three such rows, none of them operator
 calls). `finish` now prints a **⛔ BANNED ACTION ROW** banner naming the row and why.
@@ -831,6 +833,8 @@ merge. It reads the row from **`HEAD`**, never the working tree, so an uncommitt
 nothing — SCC-169's was left uncommitted and later wiped by a reset. If the lane has not landed, the
 row is put **back** on the owed list with the reason. Every other open box is untouched; those are
 yours.
+
+⭐ **SCC-193 · `## Your Actions` now has a CONTENT rule, and it refuses the ceremony's own steps.** On SCC-164's landing the agent wrote *"Click **Merge** on the PR"* and *"Then re-invoke `/smh-close-task-merge-tree --after-merge SCC-164`"* into that section as **your** tasks — and the machine contract dutifully held the ticket on work that was the agent's. Both are now refused, with the sentence *"this section holds what only the operator decides; the ceremony's steps are not entries."* **The rule, in one line:** your **decision to proceed** is the sign-off — the word `approved`, or invoking one of the two doors — and from that word on every step is the ceremony's and the agent runs it. What stays in the section is what only you can **decide**. Three things are deliberately NOT flagged: the door's own ledger row (`- [x] The merge itself — lands via this branch's PR`, which SCC-175 checks against ancestry), a bare door invocation (*"Land it — `/cicd-push-e2e`"*, which is one of the forms your decision takes), and any product decision that happens to mention a merge. It runs at `jira_feed.py check-actions` (the close-out's Step 3, **before** the PR opens, where fixing it costs nothing) and again at `finish`, before anything is written to the board. `--warn-actions` is the one logged opt-out for both row families.
 
 **⭐ The close-out now leaves a flight event behind (SCC-133, under SCC-38).** Between the gate and
 the merge, Step 2.5 runs `flight_recorder.py record`: one small file per lane under
@@ -904,10 +908,20 @@ things that keep a merge to it honest: **the road it travels** (below); one typi
 merge must land where you think; a single-use token carrying your words; and a server-side check for
 merges made on GitHub itself. Read it once; the machinery holds the line afterwards.*
 
-#### ⭐ The road to `main` is a pull request, and you merge it (SCC-183)
+#### ⭐ The road to `main` is a pull request, and your decision moves it (SCC-183 · wording SCC-193)
 
-**What you do:** the close-out hands you a **link**. You click *Merge pull request*. That click is
-your sign-off. Then tell the agent, and it finishes the paperwork.
+**What you do:** the close-out hands you a **link**. You click *Merge pull request*, and the agent
+finishes the rest.
+
+**⭐ What that click IS, in the operator's own words (ruling, 2026-08-17):** *"its my decisiton to
+move forward with the push … the way I approve you to push or close is by saying approved or one of
+the 2 / commands."* So **your decision to proceed is the sign-off** — given as the word `approved`,
+or by invoking `/smh-close-task-merge-tree`, or by invoking `/cicd-push-e2e`. The click is **how
+that decision reaches GitHub**, not a chore you owe: from your word on, every step belongs to the
+ceremony and the agent runs it. Nothing about the mechanism changed — the button is still yours, and
+an agent still cannot press it (*"i wording only"*, same day). What changed is that no surface now
+describes the merge as work assigned to you, which is what made an agent write *"Click Merge"* and
+*"re-invoke the door"* into your task list as though you owed them.
 
 **Why this changed.** On 2026-08-16 a docs-only Task (SCC-184 — 226 lines, no deletions, whole test
 suite green) could not reach `main` for an entire session. Every gate passed. What failed was the
@@ -1221,6 +1235,22 @@ queue grew faster than it drained — *"we are not developing 3 task for every 1
 **The rule is `.agents/rules/work-consolidation.md`**, and it is **judgment, not a gate**. Six rules:
 look for a home before you mint · when able, one worktree for the whole Task · verify the batch in one
 block · artifact-first · two stops only · verify the outcome of a board write, never its exit code.
+
+**⭐ Rule 1 now has FOUR rungs, and the third is a ROLLING TICKET (SCC-191).** Your ruling,
+2026-08-16: *"we should always have a New findings Ticket Open to put things like this in … once it
+get big enough we run it. or split it up into new tickets. close them all and create a new one thats
+the cycle."* So: **own ticket → open thematic parent → the OPEN ROLLING TICKET → mint.** The rolling
+ticket is one always-open Task called **`Bugs and Updates - <YYYY-MM>`**, labelled
+**`bugs-and-updates`** so the look-before-mint search finds whichever one is open, and discovered
+work files under it as a **Subtask** — the same shape as any lettered part. **The live one is
+`SCC-190`.** Minting a brand-new Task is now rung *four*, reserved for work that is a lane in its own
+right on day one.
+
+**What you will notice:** far fewer one-off tickets at close-out. When the rolling ticket is big
+enough — **your call, at the time** — it is either RUN as one lane (every subtask a rider) or SPLIT
+into real Tasks; then every subtask and the parent close, and the next one opens. What still does not
+go there: work an open lane's ticket already covers, work with a real thematic parent, and review
+findings that can be fixed in thread (which are fixed in thread).
 
 **Porting a file between the centre and a project — the plan answers six questions first (SCC-176).**
 Every port so far (AVCH-54, AVCH-59) cost an afternoon and found the same class of defect: the
@@ -1622,6 +1652,16 @@ flowchart LR
 > ⓘ **`merge-target-guard.sh` — the rest of the story.** ⭐ **It runs from `commit-msg`, not from `pre-merge-commit`**, and that is measured rather than chosen: `pre-merge-commit` fires *before* git writes `MERGE_HEAD`, so it cannot name what is being merged in, and it never fires at all when the merge conflicts — the path a multi-lane landing hits constantly. `commit-msg` sees both. The two older gates on that hook **exempt** merges; this one runs on nothing else. ⚠ **It refuses only topologies it can positively judge:** an incident lane (`claude/incident-*` — the incident pipeline's only real shape; it MATCHES the `claude/*` glob, so it is positively classified by a carve-out ABOVE the story arm) is deliberately unjudged **with main or an epic** — the emergency hotfix onto `main` must never eat a refusal mid-incident (SCC-149) — but its four pairings with story and chore lanes are **positively refused** since SCC-154 (they previously fell to the unjudged default, which is where the SCC-149 review measured them), and the allow-note names the pipeline INSTEAD of the "outside the branch model" line it once contradicted itself with. **SCC-159 adds a fifth: `incident:incident`.** Two concurrent incidents plus a `cd` slip cross-landed one incident's hotfix onto the other's lane and BOTH gates waved it through with a friendly note; a sibling incident lane is not "the pipeline's business" but the SCC-97 wrong-target shape wearing a second incident name, and the pair is refused in both directions. The `incident:main` / `incident:epic` absorbs stay ALLOWED outright — that arm is what keeps an emergency absorb off the refusal path. An unclassified branch, or a source no branch name points at, is still allowed **with a line saying it declined to judge** — a gate that false-reds on the shipping path is one you learn to route around, and this repo has already shipped four of those. `git merge --no-verify` is the auditable override, deliberately, the same posture as `[sop-ok]`. *(SCC-144, 2026-08-13; incident pairs SCC-154, 2026-08-14.)*
 >
 > ⓘ **`task_preflight.py` — the rest of the story.** ⚠ **`.github/` counts only where something actually ships (SCC-118).** It holds machinery *about* a repo — CI, the gates — not a product, so in a repo with a `backend/`, `frontend/`, `firebase/`, `functions/` or `mobile/` a workflow edit can change *what* ships and still hands off, unchanged; in a repo with none of those it can deploy nothing. That distinction was invisible while the command centre had no `.github/` at all, and SCC-118 gave it its first one — after which the next close-out here was refused as "NOT task-lane work" and routed to `/cicd-push-e2e`, a command that binds a *project*, refuses the lobby, and gates on an E2E suite this repo does not have. A verdict nobody could comply with, so the two questions are now two lists. ⓘ **Its VERDICT line has two states, not three (SCC-140).** A `NOT CLEAR` verdict used to sit between `BLOCKED` and `clear to close out and merge`, and it was **unreachable**: getting there needed the gates to be off in a repo that claims them, but `hooks_armed.check()` files exactly that case as a blocking error, so `BLOCKED` always won. It also disagreed with itself — the text refused the merge while the exit code said *warnings only*. Deleted rather than pinned with a test: an assertion over unreachable code buys nothing and makes a dead branch look load-bearing. **The rule it was trying to state is unchanged and still enforced** — a repo that claims gates and is not running them never sees the word *clear*.
+>
+> ⭐ **SCC-193 · `--after-merge` now checks that the door text YOU are following is current.** It counts `HEAD..origin/main`; if the checkout is behind, it says so and points at `git show origin/main:.agents/commands/smh-close-task-merge-tree.md`. This is the one command most likely to be reading a file its own lane just rewrote — on 2026-08-16 an agent followed an instruction its own lane had deleted, because `git fetch` had run and the tree was never pulled.
+>
+> ⭐ **SCC-193 · the fetch is now the DEFAULT, and the VERDICT line carries freshness.** You used to type `--fetch` to make the comparison real; leave it off and ahead/behind was measured against whatever your last fetch saw, with a one-line `INFO` saying so **underneath** a verdict that still read *clear to close out and merge*. On 2026-08-16 that is exactly what happened on SCC-164's landing. Now: **it fetches unless you say `--no-fetch`**, an omitted fetch and a **failed** one are the same severity (never trying does not outrank trying), and when the comparison is not fresh the verdict itself reads *`clear - but vs the LAST fetch (STALE) … re-run with the fetch`* with a non-zero exit. Offline on a plane: `--no-fetch` still works and says so on the record.
+>
+> ⭐ **SCC-192 · `main-write-gate --mode pr` now REFUSES a close-out PR whose receipts are missing.** When the PR's diff carries a `task.yaml` naming `close_command: smh-close-task-merge-tree`, the check requires — in the PR's own head tree — a **preflight receipt** for that key and branch, recording a *fresh* comparison and a *clear* verdict, and (only when the walkthrough carries a `Verdict:` stamp, i.e. the lane was reviewed) a **flight event** at that verdict sha. Missing either → the check is red and the merge button stays off. **What this does NOT gate:** a PR with no `task.yaml` (a lightweight docs fix owes nothing), a manifest naming another door, `gate/**` pushes, and the **lightweight lane** — `/smh-quick-fix` writes a manifest but no verdict, so it owes a receipt and never an event. Break-glass is unchanged: disable the ruleset. **What you will notice:** if you ever hand-run the close-out, the PR goes red and tells you which step you skipped.
+>
+> ⭐ **SCC-192 · it leaves a RECEIPT, and the PR gate requires it.** Every run writes `preflight-receipt.json` beside the lane's `task.yaml` — the key, the branch, **the flags it actually ran with**, the verdict and its exit. It is keyed on the walkthrough's `Verdict: … @ <sha>`, never on `HEAD` (a receipt that must equal HEAD can never pass, because committing it moves HEAD), and it is byte-identical on a re-run, so a resumed close-out makes no churn commit. The close-out commits it alongside the flight event at Step 2.5; **`main-write-gate --mode pr` refuses a PR whose `task.yaml` names this door and whose receipts are missing or stale.** That is the only thing in the system that can see a ceremony that was hand-run instead of invoked. `--no-receipt` exists for probes and harnesses; the close-out never passes it.
+>
+> ⭐ **SCC-190 · what this lane's own review changed, and you will see all four.** (1) **Two `task.yaml` files declaring one key on one branch is now an ERROR, not two INFO lines.** It used to pass with a *clear* verdict and write **no** receipt — and the PR gate then demanded a receipt beside each of them, printing a remedy that would again write nothing. A green preflight handing you an unmeetable demand is worse than a refusal, so it refuses and names both files. (2) **A receipt with no `verdict_sha` no longer vouches for a reviewed lane** — that field is `null` by design before a verdict exists, and empty was reading as agreement, so a receipt taken *before* the review satisfied the check written to catch exactly that. (3) **`finish` reports BOTH row families in one run** (ceremony steps *and* banned ticket work) before it refuses, instead of one per round trip. (4) **The ceremony detector stopped refusing genuine decisions**: *"…then run the campaign"*, *"…then call the account manager"* and *"…then invoke `/cicd-push-e2e` when the site is ready"* were all hard-refused with exit 2, and the last of those is one of the three **forms of your sign-off**. The pattern is now bound to the ceremony's own second half. Its ledger-row exemption also stopped being a substring: appending *"the merge itself"* to a *"click Merge"* row used to clear the check built to refuse that exact row.
 >
 > ⓘ **`check_maps.py` — the rest of the story.** ⭐ **Since SCC-138 the Task lane's close-out RUNS it** — `check_maps.py --depth3-only --strict` is now a third line in the gate `task_preflight.py` prints, and a drifted INDEX **blocks the merge**. It had to be added because the gate could not fail on a linter it never ran: twice in one day the suite and the linter disagreed and only the linter was right — SCC-124 landed a session folder with no `INDEX.md` row and SCC-119 nearly did, both while `run_all.py` reported 21/21 PASS. ⛔ **Why the subset and not the whole linter.** A close-out runs from a **worktree**, and bare `check_maps.py` there exits 1 on two *guaranteed* false positives — `AUTO block is STALE` and `on disk but not in map: <lane-name>/` — because the repo-map comparison labels the workspace from the directory basename, and **its printed remedy would write your lane's name into the map bound for `main`.** `--depth3-only` runs the depth-3 INDEX reconciliation alone, which reads only the workspace root and never the CWD, so it is free of both. `--strict` is what makes it a gate at all: the bare `--depth3-only` exits 0 even when drifted, because SessionStart runs it as a nag and a nag that blocks would gate your boot. **So this gates INDEX rows only** — the AUTO block, level-2 INDEX presence and structure conformance are still yours to run with a bare `check_maps.py`.
 >
@@ -3225,7 +3265,7 @@ flowchart TD
 |---|---|
 | `/smh-update-maps-indexes` | Reconciles the repo maps, every index, and every cross-reference across the lobby and the maintained projects. It **no longer touches the memory store** — that moved to `/smh-memory-audit` (SCC-68). ⚠ **Its Antigravity door was broken until SCC-135** and the failure was invisible: this was the one command whose body lived in `.agents/workflows/` instead of `.agents/commands/`, which exempted it from the thin-launcher rule, so Antigravity truncated it at 12,000 chars and the agent ran on the first 30% with no approval gate. If you ran it in Antigravity before 2026-08-12, **re-check what it edited** — a run could reconcile partially and never show you a findings report. It is a normal launcher now. |
 | `/smh-memory-audit` | Cleans up the shared memory store (`_artifacts/_memory/`) — the one document every model on every machine loads *before* doing any work, which is why letting it fill costs you on every session everywhere. It checks each memory's claim against the live repo, then shows you *retire · merge · compress · relocate* with the bytes each frees, and waits. **Nothing is deleted without your yes on that specific item**; git is the undo either way. See the box below. |
-| `/smh-sync-agents` | Publishes the toolkit to all four platforms — one door each. It reaches **the lobby and this machine's caches only**; projects read from the center, so there is nothing to push. It *generates* the Claude/Codex skill door for every command instead of publishing a second command copy beside it, and purges the two retired doors. Hand-written skills are never overwritten. What a command *declares* decides where it publishes — nothing is inferred from its filename any more (SCC-56 fixed five commands that were invisible in Antigravity). |
+| `/smh-sync-agents` | Publishes the toolkit to all four platforms — one door each. **⭐ It now SHORTENS the description it writes into `.agents/workflows/` (SCC-195):** Antigravity builds its slash-command menu from those descriptions, this repo's run 400–950+ characters, and the total blew the menu's context budget — **15 workflows were dropped from the agent's list outright**. The generator cuts each one to **135 characters** on a word boundary (13,883 → 4,590 chars total). ⛔ **Do not shorten them by hand in `.agents/workflows/`** — those files are generated, so the next sync overwrites you, *and* the door-parity check demands the mirror match its brain, so a hand-edit turns `main-write-gate` red (`chore/SCC-194-workflow-titles` is exactly that attempt, 34 files, unlandable). The COMMANDS keep their full descriptions; only the menu has a budget. The one hand-owned door, `smh-adviser-board.md`, is shortened in place because it sits in the same menu. It reaches **the lobby and this machine's caches only**; projects read from the center, so there is nothing to push. It *generates* the Claude/Codex skill door for every command instead of publishing a second command copy beside it, and purges the two retired doors. Hand-written skills are never overwritten. What a command *declares* decides where it publishes — nothing is inferred from its filename any more (SCC-56 fixed five commands that were invisible in Antigravity). |
 | `/smh-slash-command-updating` | A thin alias for the globals-only half of `/smh-sync-agents`. Plain `/smh-sync-agents` does this *and* the local dirs, so prefer it. |
 | `/smh-review` | Reviews the working diff outside the story loop — the quick read when there's no story to hang ③ on. |
 | `/smh-new-project` | Scaffold a new workspace. |

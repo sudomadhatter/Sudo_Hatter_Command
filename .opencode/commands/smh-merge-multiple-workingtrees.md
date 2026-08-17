@@ -331,6 +331,13 @@ URL, which is how you pick a lane back up.
 
 **4e — Dev Record, then the ticket — per lane, at ITS merge, never batched.**
 `jira_feed.py devrecord --key <KEY> … --closing --apply` (updates in place — never `--append-new`),
+# ⭐ SCC-193 · check `## Your Actions` BEFORE the merge, exactly as the single-lane door does.
+# `finish` REFUSES (exit 2) on a row handing the operator ticket work or the ceremony's own
+# steps - and it runs HERE, after the merge, when the walkthrough is on `main` and the only fix
+# is a commit the gate refuses. Every lane closed through this door met that refusal in the one
+# window the single-lane door was changed to avoid.
+python3 .agents/scripts/jira_feed.py check-actions --walkthrough <that lane's walkthrough> \
+  || { echo 'fix `## Your Actions` for this lane BEFORE merging it'; exit 1; }
 then **`jira_feed.py finish --key <KEY> --walkthrough <that lane's walkthrough> --apply`**, then
 `jira_feed.py check --key <KEY>` exit 0. **One Dev Record per ticket.** Close a parent ticket only
 once every sub-task and linked ticket has landed.

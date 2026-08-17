@@ -1,0 +1,11 @@
+task_key: SCC-190
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-190-bugs-and-updates-2026-08
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+# The rolling 'Bugs and Updates' ticket, RUN as one lane (its own description names the cycle:
+# run-or-split, close all, open the next). Operator, 2026-08-16: "this will be one tree and one
+# branch for all of them, we will do them all then close it out". Full landing: no landing_mode
+# key (a full landing is the ABSENCE of the key - SCC-164's manifest explains why).
+# Each part's commits lead with the SUBTASK's key (work-consolidation.md rule 2).
+riders: [SCC-191, SCC-192, SCC-193, SCC-195]

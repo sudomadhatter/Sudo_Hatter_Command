@@ -1,5 +1,5 @@
 ---
-description: Audit a diff against the house code standard — machine checks (ruff/eslint/types) that can FAIL, plus a judgment pass for the comment contract and AI-drift bans that caps at CONCERNS. Runs standalone or as /cicd-code-review Step 3.5.
+description: Audit a diff against the house code standard — machine checks (ruff/eslint/types) that can FAIL, plus a judgment pass for the...
 platforms: [opencode, antigravity]
 ---
 

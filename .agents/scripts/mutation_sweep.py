@@ -71,6 +71,15 @@ import subprocess
 import sys
 from pathlib import Path
 
+# SCC-190 · the tree banner. ⛔ OPTIONAL BY CONSTRUCTION: this file is copied into bare temp dirs
+# by its own tests, and a sweep that will not start is worse than the wrong-tree run the banner
+# exists to make obvious.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+try:
+    import wf_common as wf  # noqa: E402
+except Exception:           # noqa: BLE001
+    wf = None
+
 SWEEP_ERROR = 2
 """Exit 2 = the SWEEP is broken (bad table, dirty start, unattributable kill). Distinct from 1,
 which means the sweep ran and the CODE is what failed - a surviving mutant or a red full run."""
@@ -171,6 +180,11 @@ def main() -> int:
     ap.add_argument("--table", required=True, help="the mutant table (JSON)")
     ap.add_argument("--repo", default=".", help="repo root the paths are relative to")
     args = ap.parse_args()
+
+    # SCC-190: a sweep WRITES to the tree it measures. Saying which one first is
+    # the difference between a restore that verified and a restore in another repo.
+    if wf is not None:
+        wf.say_tree("mutation_sweep", args.repo)
 
     repo = Path(args.repo).resolve()
     data, err = load_table(Path(args.table))

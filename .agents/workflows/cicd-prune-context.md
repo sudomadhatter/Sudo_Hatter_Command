@@ -1,5 +1,5 @@
 ---
-description: Prune & budget a project's active-context + pitfalls — enforce the ≤20 KB (~5,000-token) context budget, compact still-live state to pointers, DELETE everything else (git is the undo), sweep stale pitfalls, and report `active-context: ~X / 5,000 tokens`. Invoked by /cicd-update-sprint-memory Step 5; also runnable standalone whenever boot feels heavy. Applies unconditionally — never asks.
+description: Prune & budget a project's active-context + pitfalls — enforce the ≤20 KB (~5,000-token) context budget, compact still-live state...
 ---
 
 # /cicd-prune-context — Prune & Budget the Active Context

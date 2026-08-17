@@ -22,7 +22,7 @@ and a second copy that can drift; the ledger is tiny and the ladder is recompute
 
 KEYING. `sha` is the walkthrough's `Verdict: ... @ <sha>` sha - the house's existing notion of
 "the code that landed" - NOT HEAD - read by the SAME reader the close-out preflight trusts
-(`task_preflight.strip_fenced` + `VERDICT_RE`, LATEST stamp governs; a re-review APPENDS). The
+(`wf_common.strip_fenced` + `VERDICT_RE`, LATEST stamp governs; a re-review APPENDS). The
 first cut used a first-match search on the raw text: on the landed SCC-83 walkthrough (stamps
 FAIL -> PASS -> PASS) it would have recorded FAIL, and a stamp quoted inside a code fence would
 have won over the real one. Two readers of one stamp is one reader too many.
@@ -67,7 +67,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import wf_common as wf                                     # noqa: E402
 from jira_feed import _SCRAPE_HEADS, scrape_bucket         # noqa: E402
-from task_preflight import VERDICT_RE, strip_fenced        # noqa: E402  (the governing reader)
+from wf_common import VERDICT_RE, strip_fenced             # noqa: E402  (the governing reader)
 
 SCHEMA_V = 1
 EVENTS_REL = Path("_artifacts/_main/workflow-events")

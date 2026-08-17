@@ -1,5 +1,5 @@
 ---
-description: Audit a TASK diff against the command centre's own standard — the lobby machine floor (run_all, workflow_lint, sop_currency, py_compile, link+anchor) that can FAIL, plus a judgment pass over the toolkit conventions in the SOP and .agents/rules/ that caps at CONCERNS. The smh- counterpart of /cicd-clean-code-audit, for a repo that has no venv, no ruff and no tsc. Runs standalone, and is Step 3.5 of /smh-code-review.
+description: Audit a TASK diff against the command centre's own standard — the lobby machine floor (run_all, workflow_lint, sop_currency...
 platforms: [opencode, antigravity]
 ---
 

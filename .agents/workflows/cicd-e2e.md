@@ -1,5 +1,5 @@
 ---
-description: Run the project's real end-to-end suite (Firebase-emulator-backed, seeded users, hermetic — no live backend needed) and report a clear GREEN/RED verdict. The gate /cicd-push-e2e requires before anything lands on main; also runnable solo any time.
+description: Run the project's real end-to-end suite (Firebase-emulator-backed, seeded users, hermetic — no live backend needed) and report a...
 ---
 
 # /cicd-e2e — End-to-End Test Gate

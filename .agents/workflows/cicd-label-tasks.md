@@ -1,5 +1,5 @@
 ---
-description: After an epic's stories are WRITTEN, answer "which of these can I run side by side, and which are small enough for the quick lane?" — one snapshot over one BMAD epic's children. Reads every story file, extracts what each will actually modify, computes the largest set with no file overlap, and tags the winners `parallel-ok` + `quick-dev` on the board. Stamps the set it was computed against so it can detect its own staleness. States, never starts.
+description: After an epic's stories are WRITTEN, answer "which of these can I run side by side, and which are small enough for the quick lane?"...
 platforms: [opencode, antigravity]
 ---
 

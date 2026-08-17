@@ -1,5 +1,5 @@
 ---
-description: Resume a sprint on a machine you just switched to — fetch both repos, find the live story branches on origin (NOT via git worktree list, which lies on a fresh machine), re-create the working surface, and hand off to /cicd-boot-sprint-memory. Run it as the FIRST thing after opening a lid. Pairs with /cicd-park.
+description: Resume a sprint on a machine you just switched to — fetch both repos, find the live story branches on origin (NOT via git worktree...
 ---
 
 # /cicd-resume — Pick The Sprint Back Up On This Machine

@@ -319,9 +319,15 @@ def main() -> int:
         # error path it did not mean to be on. `--expect-key` exists precisely because cwd
         # is not intent; hardcoding it re-introduces the guess it was built to remove.
         key = re.search(r"([A-Z][A-Z0-9]*-\d+)", branch)
+        # ⛔ `--no-fetch --no-receipt`: this case runs against the REAL repo, and since SCC-192
+        # the preflight both fetches (network in the suite, on every run) and WRITES a receipt
+        # beside the live lane's task.yaml. A test that dirties the tree it is testing makes
+        # the next gate_receipt run record DIRTY - the suite would be reporting its own
+        # footprint. Neither flag touches what this case asserts (the arm state in --json).
         rc, out = run_script("task_preflight.py",
                              "--expect-key", key.group(1) if key else "SCC-1",
-                             "--repo", str(REPO), "--branch", branch, "--json")
+                             "--repo", str(REPO), "--branch", branch, "--json",
+                             "--no-fetch", "--no-receipt")
         os.environ.pop("ACLI_BIN", None)
     c.check("Q · preflight's JSON carries the arm state", '"hooks_armed"' in out,
             "the check must run where the operator reads the verdict, not only in the suite")

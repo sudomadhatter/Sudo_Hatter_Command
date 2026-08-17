@@ -506,6 +506,49 @@ function Sync-CommandDir {
 # 39,594-char body and the agent received the header, the target list, Step 0 and half of Step 0.5 -- cut
 # mid-sentence -- then improvised the remaining 70%, including past the Step 4 approval gate it never saw.
 # That is the important distinction: a dropped workflow fails visibly, a truncated one runs and looks fine.
+# ── SCC-195 · THE ANTIGRAVITY DESCRIPTION BUDGET ───────────────────────────────────────────────
+# Antigravity builds its slash-command menu from the `description:` frontmatter of every
+# .agents/workflows/*.md. This repo's descriptions run 400-950+ chars (they are written for an agent
+# reading the command, not for a menu), and the TOTAL blew the menu's context budget: 15 workflows
+# were dropped from the agent's command list outright.
+#
+# ⛔ Shortening them BY HAND in workflows/ cannot work, twice over: these files are GENERATED, so the
+# next sync overwrites them; and test_command_surfaces.py's door-parity check demands a mirror be
+# byte-identical to its brain (or a launcher whose description EQUALS the brain's), so a hand-edited
+# door reads as `stale` and main-write-gate goes red. So the rule lives HERE, in the generator, and
+# the parity check learned the same rule: truncated-from-the-brain IS parity on this surface.
+#
+# ⚠ TWO IMPLEMENTATIONS OF ONE RULE (this, and `ag_description` in test_command_surfaces.py). That is
+# the same shape as Get-CommandPlatforms vs platforms_declared, and it is checked rather than
+# trusted: if the two ever disagree the door reads `stale` and the test names the file.
+# `-ge 0` on LastIndexOf, not `-gt 0`, so a leading-space description cuts identically on both sides.
+function Get-AgDescription {
+  param([string]$Desc)
+  if ($null -eq $Desc) { return '' }
+  if ($Desc.Length -le 135) { return $Desc }
+  $cut = $Desc.Substring(0, 132)
+  $i = $cut.LastIndexOf(' ')
+  if ($i -ge 0) { $cut = $cut.Substring(0, $i) }
+  return $cut.TrimEnd(' ', ',', ';', ':', '-') + '...'
+}
+
+# The brain with ONLY its description line replaced by the budgeted one, byte-for-byte otherwise.
+# Every command file under .agents/commands is LF and BOM-less except the eight testarch-* bridges,
+# which declare `platforms: [opencode]` and so never reach this surface (verified 2026-08-17).
+function Set-AgDescriptionLine {
+  param([string]$Raw)
+  # (\r?) is captured and PUT BACK. `.` matches CR in .NET, `$` in multiline matches before the
+  # LF, so on a CRLF brain the CR landed inside group 1, TrimEnd() ate it, and the rewritten
+  # line shipped LF-only among CRLF siblings -- a mixed-ending file from a pure text edit.
+  # No brain is CRLF today (all LF, BOM-less); this is the writer not being the thing that
+  # introduces one. The Python twin in test_command_surfaces.py does the same.
+  $m = [regex]::Match($Raw, '(?m)^description:[ \t]*(.*?)(\r?)$')
+  if (-not $m.Success) { return $Raw }
+  $short = Get-AgDescription $m.Groups[1].Value.TrimEnd()
+  if ($short -eq $m.Groups[1].Value) { return $Raw }
+  return $Raw.Remove($m.Index, $m.Length).Insert($m.Index, ('description: ' + $short + $m.Groups[2].Value))
+}
+
 function Sync-AntigravityWorkflowMirror {
   param([string]$MasterDir, [switch]$WhatIf)
   $cmdDir = Join-Path $MasterDir "commands"
@@ -541,7 +584,7 @@ function Sync-AntigravityWorkflowMirror {
         # mangle any non-ASCII literal here into mojibake in every generated file.
         $stub = @(
           '---',
-          ('description: ' + $desc),
+          ('description: ' + (Get-AgDescription $desc)),
           'platforms: [opencode, antigravity]',
           '---',
           '',
@@ -563,10 +606,19 @@ function Sync-AntigravityWorkflowMirror {
           Write-Host ("WHATIF: would emit LAUNCHER for '{0}' (command over 11.5 KB) -> workflows/" -f $f.Name)
         }
       } else {
+        # Under the size cap: a verbatim mirror, EXCEPT that the description is cut to the menu
+        # budget (SCC-195). Untouched when it already fits, so most files still copy byte-for-byte.
+        $raw = [IO.File]::ReadAllText($f.FullName)
+        $out = Set-AgDescriptionLine $raw
         if (-not $WhatIf) {
-          Copy-Item -Path $f.FullName -Destination $dest -Force
+          if ($out -eq $raw) {
+            Copy-Item -Path $f.FullName -Destination $dest -Force
+          } else {
+            [IO.File]::WriteAllText($dest, $out, (New-Object Text.UTF8Encoding($false)))
+          }
         } else {
-          Write-Host ("WHATIF: would mirror '{0}' -> workflows/' for antigravity" -f $f.FullName)
+          Write-Host ("WHATIF: would mirror '{0}' -> workflows/' for antigravity{1}" -f `
+                      $f.FullName, $(if ($out -ne $raw) { ' (description cut to the menu budget)' } else { '' }))
         }
       }
       $mirrored += $f.Name

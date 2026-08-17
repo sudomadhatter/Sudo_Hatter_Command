@@ -36,15 +36,48 @@ Work discovered mid-lane (a review finding, a bug met while building, a defect a
 2. **Is there an OPEN parent whose surface this belongs to?** Then it becomes the next **lettered
    part** — a `Subtask` under that parent, with a row in the parent's index description. This is the
    normal answer.
-3. **Nothing fits?** Mint — and say in ONE line what you looked at. That sentence is the whole
-   enforcement mechanism.
+3. **Nothing thematic fits? Then it goes on the OPEN ROLLING TICKET** — the one always-open
+   `Bugs and Updates - <YYYY-MM>` Task, labelled **`bugs-and-updates`**, as the next **Subtask**
+   under it. Same shape as rung 2, so there is nothing new to learn: title, the measured defect,
+   `SCOPE`, `ACCEPTANCE`, and a row added to the parent's index with `jira_feed.py index-row`.
+   **The live instance today is `SCC-190`** — do not mint a second one; find whichever is open by
+   its label.
+4. **A lane in its own right on day one? MINT it — and only then.** Say in ONE line what you
+   looked at. That sentence is the whole enforcement mechanism.
 
 ```bash
-# The look, before the mint. Both, and read them:
+# The look, before the mint. All three, and read them:
 acli jira workitem search --jql "project = SCC AND statusCategory != Done AND type = Task ORDER BY key DESC" \
      --fields key,summary --limit 50
+# ⭐ THE ROLLING TICKET, BY LABEL - rung 3. Without this line an agent can say "nothing fits"
+# while one is open, which is exactly the claim this rule exists to make falsifiable.
+acli jira workitem search --jql "project = SCC AND statusCategory != Done AND labels = bugs-and-updates" \
+     --fields key,summary --limit 5
 acli jira workitem view <the-parent-you-suspect>      # does its surface really cover this?
 ```
+
+### The CYCLE — rung 3 is a rolling ticket, not a landfill
+
+Operator ruling, 2026-08-16, verbatim: *"we should always have a New findings Ticket Open to put
+things like this in. that way its one ticket that grows with sub task … if there is not a good one
+make a 'Bugs and Updates Ticket' and add them as sub task to it. once it get big enough we run it.
+or split it up into new tickets. close them all and create a new one thats the cycle"*
+
+- **Exactly ONE is open at a time.** Its description is the INDEX, like any parent's.
+- **When it is big enough** — the operator's call at the time, deliberately not a threshold in this
+  rule — it is either **RUN as one lane** (every subtask a `riders:` entry; rule 2's consolidated
+  lane and SCC-170's partial-landing contract apply unchanged) or **SPLIT into real Tasks**.
+- **Then every subtask and the parent close, and the next one opens.** Nothing lingers, and no
+  finding waits on a thematic parent that may never exist.
+
+**The worked example is in the history:** `SCC-192` (the close-out-receipts finding) was minted as a
+fresh Task under the old rung 3 and **re-filed the same day as a subtask** of `SCC-190`. That
+re-filing *is* this rule.
+
+⛔ **What still does NOT come here.** Work an open lane's own ticket covers (rung 1). Work with a real
+thematic parent (rung 2). And **review findings that can be fixed in thread — fix them in thread**
+(operator ruling 2026-08-15): the rolling ticket is for work that genuinely leaves the lane, not a
+parking space for findings.
 
 ⛔ **The parent's description is an INDEX, and `acli edit --description` REPLACES the field.** Append a
 row by reading the description, adding the row, writing it back, and **reading it back again** to

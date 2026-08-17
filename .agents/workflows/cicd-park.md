@@ -1,5 +1,5 @@
 ---
-description: Park the session before switching machines — commit (explicit paths) + sync + push every story worktree branch, the epic branch, and both repos, then write a resume card. Run it as the LAST thing before closing a lid. Branches travel between machines, worktrees do not. Never lands a story on its epic branch, never touches main. Pairs with /cicd-resume.
+description: Park the session before switching machines — commit (explicit paths) + sync + push every story worktree branch, the epic branch...
 ---
 
 # /cicd-park — Park Before Switching Machines

@@ -652,6 +652,80 @@ def main() -> int:
             c.check("NESTED · control: two SIBLING blocks are not flagged",
                     nested_blocks(flat) == [], f"got {nested_blocks(flat)}")
 
+    # ── SCC-190 · WHICH TREE AM I IN? ─────────────────────────────────────────────────────
+    #
+    # ⛔ THE MOST EXPENSIVE RECURRING DEFECT IN THIS SYSTEM, and it is not a code defect. A
+    # shell's cwd resets to the MAIN checkout the moment a command cd's outside the workspace,
+    # silently - so `python3 .agents/scripts/tests/run_all.py` runs MAIN's suite against MAIN's
+    # tree while the work sits in a lane worktree. The result is green or red about the wrong
+    # code, and the whole cycle is repeated once the mistake surfaces. Operator ruling,
+    # 2026-08-17: *"we do all our work twice and it's killing productivity."*
+    if c.block("TREE · every runner says which tree it is about to act on"):
+        import wf_common as _wf   # noqa: E402  (_harness put SCRIPTS on sys.path)
+
+        def _sh(*a, cwd):
+            return subprocess.run(list(a), cwd=str(cwd), capture_output=True, text=True)
+
+        with TempDir() as t:
+            main_co = t / "repo"
+            main_co.mkdir(parents=True)
+            for a in (("init", "-q", "-b", "main"), ("config", "user.email", "t@example.com"),
+                      ("config", "user.name", "T"), ("config", "commit.gpgsign", "false")):
+                _sh("git", *a, cwd=main_co)
+            (main_co / "a.txt").write_text("x\n", encoding="utf-8")
+            _sh("git", "add", "a.txt", cwd=main_co)
+            _sh("git", "commit", "-qm", "init", cwd=main_co)
+
+            top, br, is_main = _wf.tree_tag(main_co)
+            c.check("TREE the main checkout reports itself as the main checkout",
+                    Path(top).resolve() == main_co.resolve() and br == "main" and is_main,
+                    f"{top} [{br}] is_main={is_main}")
+
+            # A LINKED worktree shares the same `.git` lineage, which is exactly why a path
+            # comparison cannot tell them apart and `--git-common-dir` can.
+            wt = t / "lane"
+            _sh("git", "worktree", "add", "-q", "-b", "chore/SCC-1-lane", str(wt), "main",
+                cwd=main_co)
+            top2, br2, is_main2 = _wf.tree_tag(wt)
+            c.check("TREE a linked worktree is NOT reported as the main checkout",
+                    Path(top2).resolve() == wt.resolve() and br2 == "chore/SCC-1-lane"
+                    and not is_main2, f"{top2} [{br2}] is_main={is_main2}")
+            c.check("TREE CONTROL: ...and the two answers actually differ",
+                    Path(top).resolve() != Path(top2).resolve() and is_main != is_main2,
+                    "a guard that cannot distinguish them is the defect, not the fix")
+
+            # ⛔ THE REFUSAL. Standing in the MAIN checkout, on the mainline, while a lane
+            # worktree exists is the exact shape that costs a whole cycle. Copy the real runner
+            # in (with its tests dir) so this drives the SHIPPING file, not a re-implementation.
+            dst = main_co / ".agents/scripts/tests"
+            dst.mkdir(parents=True)
+            for name in ("run_all.py", "_harness.py"):
+                shutil.copy2(HERE / name, dst / name)
+            shutil.copy2(HERE.parent / "wf_common.py", main_co / ".agents/scripts/wf_common.py")
+            # Deliberately harness-free: this fixture is about the RUNNER's tree guard, and
+            # borrowing the harness would couple it to a constructor signature it is not testing.
+            (dst / "test_ok.py").write_text(
+                "import sys\nprint('-- 1/1 passed --')\nsys.exit(0)\n", encoding="utf-8")
+            r = subprocess.run([sys.executable, str(dst / "run_all.py"), "--jobs", "1"],
+                               cwd=str(main_co), capture_output=True, text=True,
+                               errors="replace")
+            out = (r.stdout or "") + (r.stderr or "")
+            c.check("TREE run_all REFUSES a MAIN-checkout run while a lane worktree exists",
+                    r.returncode == 2 and "REFUSING" in out and "chore/SCC-1-lane" in out,
+                    f"exit {r.returncode}: " + out.strip()[-400:])
+            c.check("TREE ...and the banner names the tree and branch first",
+                    "== run_all @" in out and "MAIN CHECKOUT" in out, out.strip()[:300])
+
+            # ⛔ AND THE ESCAPE HATCH MUST WORK, or the guard is a wall. A mainline run IS
+            # legitimate before a merge; it just has to be said out loud.
+            r2 = subprocess.run([sys.executable, str(dst / "run_all.py"), "--jobs", "1",
+                                 "--on-main"], cwd=str(main_co), capture_output=True,
+                                text=True, errors="replace")
+            out2 = (r2.stdout or "") + (r2.stderr or "")
+            c.check("TREE CONTROL: --on-main runs it anyway, and still says which tree",
+                    r2.returncode == 0 and "REFUSING" not in out2 and "== run_all @" in out2,
+                    f"exit {r2.returncode}: " + out2.strip()[-300:])
+
     return c.finish()
 
 

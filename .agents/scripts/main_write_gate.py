@@ -62,6 +62,7 @@ Stdlib only, no pytest, no install step — matching every other script in this 
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import subprocess
 import sys
@@ -71,6 +72,17 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import sop_currency  # noqa: E402 — same directory; see module docstring
+# ⛔ ONE reader of the verdict stamp and ONE parser of the manifest, imported rather than
+# re-typed. A second spelling here would be a gate and a door disagreeing about what a verdict
+# IS — the class of defect this file exists for. (VERDICT_RE is the stricter, line-anchored
+# one, and `strip_fenced` is why a stamp quoted inside a code fence does not count.)
+#
+# ⭐ FROM THE LEAF, NOT FROM `task_preflight` (SCC-190 F6). Importing them from there pulled
+# SEVEN local modules into the gate that guards `main` — jira_feed, gate_receipt, hooks_armed,
+# walkthrough_roster and the rest — to buy one regex and two helpers, so an import-time break
+# anywhere in that chain became a break here. `wf_common` is stdlib-only.
+from wf_common import (VERDICT_RE, manifest_field,  # noqa: E402
+                       strip_fenced)
 
 # The two roads to `main` in the branch model (`.agents/rules/git-policy.md` § "Branch model").
 # `claude/*` is a STORY lane: it lands on its epic branch, never on main. PR #2 came from
@@ -174,6 +186,238 @@ def check_merge_shape(repo: Path, head: str, keys: list[str]) -> list[str]:
     return fails
 
 
+# ── SCC-192 · THE CEREMONY'S RECEIPTS ──────────────────────────────────────────────────────
+#
+# An agent can perform `/smh-close-task-merge-tree`'s steps BY HAND instead of invoking it, and
+# nothing in this system could tell the difference: every step it DOES run passes, so the
+# omission is silent. Measured live on SCC-164's landing (PR #13, 2026-08-16) — the agent had
+# read the command file and still hand-rolled Steps 0-3, skipping Step 2.5 (the flight recorder)
+# entirely and running the preflight without a fetch. Both invisible; the PR was green throughout.
+#
+# Rules and memory cannot fix that — the agent had already read the rule when it broke it, and a
+# warn-tier reminder is the exact class this repo has now armed twice. What CAN is an artifact:
+# the ceremony leaves receipts, and this refuses the merge when they are not there. Same move as
+# SCC-183 — take the thing an agent can reason around and put it where it cannot.
+#
+# ⛔ THE THREE WAYS THIS COULD BECOME A LOOP NOTHING CAN PUSH THROUGH, AND WHAT CLOSES EACH:
+#   1. Chicken-and-egg on the sha. A receipt commit MOVES HEAD, so a receipt required to equal
+#      HEAD could never pass. → keyed on the walkthrough's VERDICT sha, exactly as the flight
+#      recorder is, and artifacts-only commits after it are irrelevant by construction. Never
+#      HEAD, in either direction.
+#   2. Both roads gated. → `pr` mode only. Road 2 (`gate/**`) is the local door's road.
+#   3. Everything becomes a close-out. → it triggers ONLY on a `task.yaml` in the diff naming
+#      `close_command: smh-close-task-merge-tree`. A PR without one owes nothing.
+#
+# ⭐ AND THE FOURTH, WHICH THE TICKET DID NOT SEE. A `/smh-quick-fix` lane writes that same
+# manifest and has NO review verdict — the lightweight lane (SCC-162) has no review step, and
+# `flight_recorder record` REFUSES a walkthrough with no `Verdict:` stamp. Demanding an event
+# from every door-manifest would therefore make the entire lightweight lane unlandable. Measured
+# before writing this: 10 landed lobby lanes carry a door manifest and no stamp. So the receipt
+# is required of every close-out, and the event only of a lane that was REVIEWED — the lane that
+# can produce one. Coverage is not lost: a hand-run close-out of a reviewed lane is the case that
+# was actually observed, and it is caught.
+DOOR = "smh-close-task-merge-tree"
+RECEIPT_NAME = "preflight-receipt.json"
+EVENTS_DIR = "_artifacts/_main/workflow-events"
+
+
+def show(repo: Path, head: str, path: str) -> str | None:
+    """A file as it exists in the tree that wants to land, or None. ⛔ Never the working copy:
+    the checkout is a detail of the runner, the merge is what is judged."""
+    rc, out = git(repo, "show", f"{head}:{path}")
+    return out if rc == 0 else None
+
+
+def check_close_out_receipts(repo: Path, base: str, head: str,
+                             pr_branch: str = "") -> list[str]:
+    """pr mode: a PR that IS a close-out must carry what the close-out leaves behind."""
+    # `-c core.quotepath=false`: git octal-quotes any path holding a non-ASCII byte, `"` or
+    # `\`, and `git show` then fails on the quoted spelling, so the loop `continue`s and the
+    # lane is never judged at all - a BYPASS wearing the shape of a skip (edge-case lens,
+    # reproduced with `…_SCC-3-café/task.yaml`).
+    rc, out = git(repo, "-c", "core.quotepath=false", "diff", "--name-only", f"{base}..{head}")
+    if rc != 0:
+        return [f"cannot diff {base}..{head} — a shallow checkout cannot see it "
+                "(the workflow needs fetch-depth: 0)"]
+    # ⛔ BASENAME, not suffix: `endswith("task.yaml")` also matches `subtask.yaml` and
+    # `my-task.yaml`, which fails strict but names the wrong file to a reader.
+    manifests = [p for p in out.splitlines()
+                 if p.strip() and p.strip().rsplit("/", 1)[-1] == "task.yaml"]
+    # ⛔ THE MAINLINE, NOT `base`. What makes another lane's manifest legitimate is that it has
+    # LANDED - and `base` cannot answer that: GitHub's `pull_request.base.sha` is routinely a
+    # commit or two behind the merge-base (PR #12's was one past), which is the only reason a
+    # landed sibling shows up in `base..head` at all. Asking `base` therefore reds exactly the
+    # case the skip exists for. Asking the mainline is the real question. If no mainline ref
+    # resolves, `mainline` is empty and every declaring manifest is judged - the strict
+    # direction, since absence of evidence must never relax a gate.
+    mainline = ""
+    for cand in ("origin/main", "main", base):
+        rc_m, out_m = git(repo, "rev-parse", "--verify", "-q", cand + "^{commit}")
+        if rc_m == 0 and out_m.strip():
+            mainline = cand
+            break
+
+    fails: list[str] = []
+    judged = 0
+    for rel in manifests:
+        text = show(repo, head, rel)
+        if text is None:                       # deleted in this PR: there is no lane to gate
+            continue
+        if (manifest_field(text, "close_command") or "").strip() != DOOR:
+            continue
+        key = (manifest_field(text, "task_key") or "").strip()
+        branch = (manifest_field(text, "branch") or "").strip()
+        # ⛔ THE FOURTH LOOP, AND IT WAS LIVE (edge-case lens, measured on this repo).
+        # `git diff base..head` is a TREE diff, so a sibling lane's ALREADY-LANDED task.yaml
+        # reaches it whenever `base` is not the merge-base - which GitHub's
+        # `pull_request.base.sha` routinely is not (PR #12's was one commit past). There are
+        # **57** door-manifests on `origin/main` with no receipt, all of them closed lanes, and
+        # judging one turns a green PR red over someone else's history while the remediation
+        # text tells you to fabricate evidence for it.
+        #
+        # A manifest declares its own branch. This gate is about THIS lane's close-out, so a
+        # manifest naming a different branch is another lane's receipt - exactly the reading
+        # `task_preflight.check_manifest` already applies to settled manifests. Skipped, and
+        # SAID, so a genuine key/branch mismatch is never silent.
+        if pr_branch and branch and branch != pr_branch:
+            # ⛔ SKIPPED ONLY IF IT IS GENUINELY HISTORY. The skip is a `continue`, i.e. a bypass
+            # shape, and print-only: a manifest declaring the WRONG branch produced judged == 0,
+            # no fails, and `[PASS] close-out receipts` - a close-out reaching main with nothing
+            # looking at it, on a one-character typo. What makes the 57 landed manifests
+            # legitimate is that they are UNCHANGED on the base; a manifest this PR writes or
+            # edits is this PR's business whatever it declares. (`base` is often not the
+            # merge-base, which is why they show up in the tree diff at all.)
+            if mainline and show(repo, mainline, rel) == text:
+                print(f"       (skipping {rel}: declares `{branch}`, unchanged on {mainline} - "
+                      f"another lane's landed receipt)")
+                continue
+            fails.append(f"{key or rel}: this PR writes a close-out manifest declaring branch "
+                         f"`{branch}`, but the PR is from `{pr_branch}` - one of them is wrong, "
+                         f"and an unjudged close-out manifest is exactly how a hand-run ceremony "
+                         f"reaches main")
+            continue
+        judged += 1
+        art = rel.rsplit("/", 1)[0] if "/" in rel else ""
+        where = f"{art}/" if art else ""
+
+        # ── the preflight receipt: every close-out owes one ────────────────────────────
+        # ⛔ Bound BEFORE the branch: the verdict-sha cross-check below reads it, and when the
+        # receipt is missing entirely this name was never assigned - an UnboundLocalError in
+        # the gate's own failure path, i.e. the check crashes exactly when it should refuse.
+        r = None
+        raw = show(repo, head, f"{where}{RECEIPT_NAME}")
+        if raw is None:
+            fails.append(
+                f"{key or rel}: no {where}{RECEIPT_NAME} in this PR.\n"
+                f"        `/smh-close-task-merge-tree` Step 1 writes it; a close-out that "
+                f"skipped the preflight leaves nothing here.\n"
+                f"        Run: python3 .agents/scripts/task_preflight.py --expect-key {key} "
+                f"--repo . --branch {branch}\n"
+                f"        then commit the receipt with the flight event (Step 2.5).")
+        else:
+            try:
+                parsed = json.loads(raw)
+            except (ValueError, TypeError) as exc:
+                fails.append(f"{key or rel}: {where}{RECEIPT_NAME} is not readable JSON ({exc})")
+            else:
+                if isinstance(parsed, dict):
+                    r = parsed
+                else:
+                    fails.append(f"{key or rel}: {where}{RECEIPT_NAME} is "
+                                 f"{type(parsed).__name__}, not a receipt object - a file that "
+                                 f"parses is not evidence")
+            # ⛔ A RECEIPT THAT IS NOT AN OBJECT IS NOT A RECEIPT, and every branch of this was
+            # a live defect at some point in this lane's own history:
+            #   * `null` parses cleanly to None. The first cut skipped EVERY assertion below on
+            #     it - key, branch, fresh, verdict - so a file containing four bytes passed the
+            #     whole gate. The fix guarded on `r is not None`... which SILENTLY RE-OPENED it,
+            #     because `None` is exactly what `null` parses to. Two lenses and a coverage
+            #     audit later, the answer is to branch on the PARSE, not on the name: `r` is
+            #     bound only when the parse produced a dict, and every other outcome appends a
+            #     failure on the spot. There is no path from `raw is not None` to silence.
+            #   * `[]`, `"x"`, `5`, `true` all parse too and would reach `r.get(...)` ->
+            #     AttributeError. A traceback is not a verdict; the check that refuses a merge
+            #     must never be the thing that crashes.
+            if r is not None:
+                got_key = str(r.get("task_key") or "").strip()
+                got_branch = str(r.get("branch") or "").strip()
+                if key and got_key != key:
+                    fails.append(f"{key}: the receipt records task_key `{got_key}` — it "
+                                 f"belongs to another lane and vouches for nothing here")
+                if branch and got_branch != branch:
+                    fails.append(f"{key or rel}: the receipt records branch `{got_branch}` "
+                                 f"but the manifest declares `{branch}` — one of them is "
+                                 f"wrong, and neither is evidence about this merge")
+                if not r.get("fresh"):
+                    fails.append(
+                        f"{key or rel}: the receipt says fresh=false — the preflight ran "
+                        f"with --no-fetch (or the fetch failed), so ahead/behind, the "
+                        f"absorbed-main check and the stalled-landing check were all "
+                        f"measured against a stale view. Re-run the preflight with the "
+                        f"fetch and commit the new receipt.")
+                # ⛔ `startswith("clear")` ALONE would accept the stale verdict, which reads
+                # "clear - but vs the LAST fetch (STALE)...". It is harmless only while the
+                # `fresh` check above rejects first, i.e. these two are one edit away from
+                # being one assertion wearing two names. Both halves, independently.
+                verdict = str(r.get("verdict") or "").lower()
+                if not verdict.startswith("clear") or "stale" in verdict:
+                    fails.append(f"{key or rel}: the receipt records the verdict "
+                                 f"`{str(r.get('verdict'))[:60]}` — only a clear preflight "
+                                 f"is evidence that this lane may close")
+
+        # ── the flight event: only a REVIEWED lane can have one, and must ──────────────
+        wt = show(repo, head, f"{where}walkthrough.md")
+        stamps = VERDICT_RE.findall(strip_fenced(wt)) if wt else []
+        if not stamps:
+            continue                            # the lightweight lane — see the note above
+        sha7 = stamps[-1][1]
+        # ⭐ AND THE RECEIPT MUST BE ABOUT *THIS* VERDICT. `verdict_sha` was written by the
+        # preflight and read by nobody (edge-case lens): since the receipt is idempotent on
+        # content, one produced three commits ago is byte-identical and vouched for code it
+        # never saw. Binding it to the walkthrough's governing stamp is what makes it evidence
+        # rather than a file.
+        # ⛔ AND AN EMPTY `verdict_sha` IS NOT AGREEMENT. The first cut read
+        # `str(...) or "" not in ("", sha7)`, so a receipt recording `null` satisfied the very
+        # check written to catch a stale one - and `write_receipt` records `null` BY DESIGN
+        # when the lane has no stamp yet. A receipt taken before the review resolved, committed
+        # and never refreshed, therefore vouched for a verdict it predates. Empty input reading
+        # as pass is what `tests-must-gate-for-real` bans, and there is no legitimate consumer:
+        # the lightweight lane (no stamp at all) already `continue`d above.
+        #
+        # Case-folded on both sides: VERDICT_RE accepts `[0-9a-fA-F]`, `git rev-parse` emits
+        # lowercase, so an uppercase stamp made every clause true and produced a false refusal.
+        if r is not None:
+            got_v = str(r.get("verdict_sha") or "").strip().lower()
+            low = sha7.lower()
+            if not got_v:
+                fails.append(f"{key or rel}: the receipt records no verdict_sha, so it is not "
+                             f"evidence about the walkthrough's stamp {sha7[:9]} - it was "
+                             f"taken before the verdict resolved. Re-run the preflight now "
+                             f"that the verdict is written, and commit the new receipt.")
+            elif not (got_v.startswith(low) or low.startswith(got_v)):
+                fails.append(f"{key or rel}: the receipt was taken at verdict "
+                             f"{got_v[:9]} but the walkthrough's governing "
+                             f"stamp is {sha7[:9]} - re-run the preflight at the verdict that "
+                             f"is landing")
+        rc2, full = git(repo, "rev-parse", "--verify", "-q", sha7 + "^{commit}")
+        if rc2 != 0 or not full:
+            fails.append(f"{key or rel}: the walkthrough's verdict cites {sha7}, which is not "
+                         f"a commit in this checkout — the evidence cannot be located")
+            continue
+        rc3, tree = git(repo, "ls-tree", "-r", "--name-only", head, "--", EVENTS_DIR)
+        want = f"{key}_{full[:7]}.json"
+        if not any(line.strip().endswith("/" + want) for line in tree.splitlines()):
+            fails.append(
+                f"{key or rel}: no flight event for {key} @ {full[:7]} under {EVENTS_DIR}/.\n"
+                f"        That is close-out Step 2.5, and it is the step a hand-run ceremony "
+                f"drops.\n"
+                f"        Run: python3 .agents/scripts/flight_recorder.py record --task {key} "
+                f"--root {art} --repo . --apply")
+    if judged:
+        print(f"       ({judged} close-out manifest(s) in this PR)")
+    return fails
+
+
 def check_sop_currency(repo: Path, base: str, head: str) -> list[str]:
     """Re-check every non-merge commit in the landing set against the REAL sop_currency gate.
 
@@ -219,6 +463,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[{'PASS' if ok else 'FAIL'}] authorised source branch: {why}")
         if not ok:
             fails.append(why)
+        # SCC-192: only in `pr` mode, and only for a PR that IS a close-out (loops 2 and 3).
+        rec = check_close_out_receipts(repo, a.base, a.head, a.branch)
+        print(f"[{'PASS' if not rec else 'FAIL'}] close-out receipts"
+              + ("" if not rec else ": " + "\n        ".join(rec)))
+        fails += rec
     else:
         shape = check_merge_shape(repo, a.head, keys)
         print(f"[{'PASS' if not shape else 'FAIL'}] merge shape"

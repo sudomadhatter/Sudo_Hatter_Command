@@ -1945,7 +1945,9 @@ Nothing is actually owed.
             # Written RED first, against a REAL corpus (acceptance B1).
             #
             # Step 5 of both review commands permits exactly three things to be left for the
-            # operator: a product decision, a main merge, a ticket transition. A row assigning
+            # operator what only THEY can decide: a product decision, or a ticket transition
+            # they have reserved. (It named a third, the main merge, until the operator's
+            # 2026-08-17 ruling retired it - the sign-off is the DECISION.) A row assigning
             # them a ticket BORN FROM REVIEW FINDINGS - mint it, file it, rule on where it goes -
             # is the retired defect. It is prose, nothing checked it, and it was broken the same
             # day it was written: AVCH-58 shipped three unchecked rows, zero of them operator
@@ -2458,6 +2460,367 @@ Nothing is actually owed.
             st = jira_feed.merge_row_state(lane("g8", land=True, row="Install the board column"))
             c.check("G8 · a walkthrough with no merge row returns None, not a verdict",
                     st is None, str(st))
+
+
+    # ══ SCC-193 Part B · `## Your Actions` holds DECISIONS, never the ceremony's steps ══════
+    #
+    # SLIP #4 OF SIX, MEASURED ON SCC-164'S LANDING (walkthrough at 5dcc1b7, 2026-08-16). The
+    # agent wrote the close-out's OWN REMAINING STEPS into `## Your Actions` as operator tasks:
+    #
+    #     - [ ] **Click **Merge** on the PR.** ...
+    #     - [ ] **Then re-invoke** `/smh-close-task-merge-tree --after-merge SCC-164`. ...
+    #
+    # `finish` then correctly HELD the ticket — on work that was the AGENT's. The cause is that
+    # `## Your Actions` has no content schema: `open_actions()` is a `- [ ]` scanner, presence is
+    # grep-checked by the door, and content was never checked at all.
+    #
+    # ⭐ AND THE WORDING RULING (operator, 2026-08-17) IS WHY THIS IS A REFUSAL AND NOT A STYLE
+    # NOTE: the sign-off is the operator's DECISION TO PROCEED — the word `approved`, or invoking
+    # one of the two doors. From that word on, every step is the ceremony's and the agent runs
+    # it. So "click Merge" and "re-invoke the door" are not merely misfiled; under the ruling
+    # they are not operator tasks at all.
+    #
+    # ⛔ WHAT THIS MUST NOT FLAG, AND WHY EACH ONE WOULD WEDGE A LANDING:
+    #   * the canonical ledger row `- [x] The merge itself — lands via this branch's PR`. The
+    #     door MANDATES it (SCC-183 Step 3) and SCC-175 verifies it against ancestry. Flagging
+    #     it would make the door's own required row a refusal — and post-merge the only fix is
+    #     a commit on `main`, which is the write the gate refuses. That is the 2026-08-15
+    #     `reset --hard` incident, rebuilt.
+    #   * a real operator DECISION that happens to say "merge" — five such rows exist in the
+    #     145-walkthrough corpus (jira_feed.py:1519). Those are exactly what the section is for.
+    if c.block("SCC-193 B · the ceremony's own steps are not `Your Actions` entries"):
+        import jira_feed  # noqa: E402
+
+        # The two rows, verbatim from SCC-164's walkthrough at 5dcc1b7.
+        CLICK = ("**Click **Merge** on the PR.** `main-write-gate` is a required check and "
+                 "`bypass_actors` is empty, so nothing lands until you do. That click is the "
+                 "sign-off.")
+        REINVOKE = ("**Then re-invoke** `/smh-close-task-merge-tree --after-merge SCC-164`. "
+                    "That second call is what writes `Done` to SCC-164 and all six riders; the "
+                    "door opens the PR and **stops**.")
+
+        def wt(*rows: str) -> str:
+            body = "\n".join(f"- [ ] {r}" for r in rows)
+            return f"# W\n\n## Your Actions\n\n{body}\n"
+
+        # ⛔ Existence is its own case. While this block is RED the function does not exist,
+        # and an AttributeError kills the FILE - a crash reads nothing like a failed assertion
+        # (`red-test-can-die-before-its-assertion`). It also means a mutant that deletes the
+        # detector outright is killed here rather than sailing past a crashed suite.
+        have = hasattr(jira_feed, "ceremony_rows")
+        c.check("B0 the content check exists", have,
+                "jira_feed.ceremony_rows is missing - `## Your Actions` has no content rule")
+        if not have:
+            return c.finish()
+
+        rows = jira_feed.ceremony_rows(wt(CLICK, REINVOKE))
+        c.check("B1 RED: SCC-164's two rows are BOTH refused",
+                len(rows) == 2, f"{len(rows)} flagged: {rows}")
+        c.check("B1 ...and the refusal says what the section is for, in the ruling's words",
+                bool(rows) and all("only the operator decides" in r[1] for r in rows),
+                str(rows))
+
+        # B2 · the controls. Every one of these is a row the section EXISTS to carry.
+        for row, why in (
+                ("**Decide whether the CONCERNS is worth clearing before the merge.**",
+                 "a product decision that names the merge"),
+                ("**Rule the landing order.** Recommended: SCC-126 lands first, then SCC-129",
+                 "merge SEQUENCING is the operator's"),
+                ("Install the board column", "an ordinary operator task"),
+                ("Try the lane on something real", "SCC-162's genuinely open row"),
+                ("**Ship the copy change to the marketing site when you are ready**",
+                 "a product decision containing 'ship'"),
+                # ⛔ THE BOUNDARY THE RULING DRAWS. A bare door invocation is one of the three
+                # FORMS the operator's decision takes ("the way I approve you to push or close
+                # is by saying approved or one of the 2 / commands"), so it is a decision, not a
+                # chore - and SCC-175 already owns whether it still holds. What is refused is
+                # the ceremony's CONTINUATION after that word, which is the agent's.
+                ("**Merge and close out** - `/smh-close-task-merge-tree --expect-key SCC-999`",
+                 "a bare door invocation IS the decision's form"),
+                ("**Land it** - `/cicd-push-e2e`", "the other door, same reason")):
+            c.check(f"B2 CONTROL: not flagged — {why}",
+                    not jira_feed.ceremony_rows(wt(row)), repr(row))
+
+        # ⭐ B1b · THE CASE T-M4 PROVED WAS MISSING. SCC-164's re-invoke row ALSO carries
+        # `--after-merge`, so it matched two patterns at once and removing the re-invoke one
+        # changed nothing the suite could see. A row that trips exactly one pattern is what
+        # isolates it - otherwise the redundancy IS the test's blind spot.
+        c.check("B1b a re-invocation with no --after-merge is still refused",
+                len(jira_feed.ceremony_rows(wt("Then re-invoke the close-out when I have merged"))) == 1,
+                "the re-invoke pattern must stand on its own")
+
+        # B3 · ⛔ the ledger row, both ways. This is the wedge control.
+        c.check("B3 CONTROL: the canonical merge row is the door's LEDGER, never a ceremony step",
+                not jira_feed.ceremony_rows(
+                    "# W\n\n## Your Actions\n\n"
+                    "- [x] **The merge itself** — lands via this branch's PR\n"),
+                "SCC-183 mandates this row; flagging it makes the door refuse itself")
+        # ⭐ B3b · THE CASE T-M2 PROVED WAS MISSING. The two rows above do not trip ANY
+        # pattern even without the exemption, so dropping `if MERGE_PHRASE in row` was
+        # invisible - the control was passing for the wrong reason. This row would be refused
+        # on its own merits, and is spared ONLY by the exemption. That is the wedge: SCC-183
+        # mandates a ledger row, and refusing it post-merge leaves a fix that can only be
+        # committed on `main`.
+        # ⛔ AND THE BOX MUST BE OPEN. The first cut of this control used `- [x]`, and
+        # `open_actions` returns UNCHECKED rows only - so the row never reached a pattern at
+        # all, exemption or not, and T-M2 survived a second time against a control written
+        # specifically to kill it. A ticked row is not evidence about a rule that only ever
+        # sees open ones.
+        c.check("B3b CONTROL: an OPEN ledger row is spared even when it names the click",
+                not jira_feed.ceremony_rows(
+                    "# W\n\n## Your Actions\n\n"
+                    "- [ ] **The merge itself** - click **Merge** on the PR to land it\n"),
+                "without the MERGE_PHRASE exemption this row IS flagged (`click **Merge`) - "
+                "which is what makes it the control that pins the exemption")
+
+        c.check("B3 CONTROL: ...and an OPEN one is still SCC-175's business, not this check's",
+                not jira_feed.ceremony_rows(
+                    "# W\n\n## Your Actions\n\n"
+                    "- [ ] **The merge itself** — lands via this branch's PR\n"),
+                "post-merge the only fix would be a commit on main - the write the gate refuses")
+
+        # B4 · a fenced example is documentation, not an entry (the SCC-154 close-marker rule,
+        # reused through open_actions rather than re-derived).
+        c.check("B4 CONTROL: a row quoted inside a code fence is documentation",
+                not jira_feed.ceremony_rows(
+                    "# W\n\n## Your Actions\n\n```\n- [ ] " + CLICK + "\n```\n"),
+                "fenced rows are invisible to open_actions, and must stay so here")
+
+        # B5 · the check runs where it is cheap: `check-actions`, which the door's Step 3 calls
+        # BEFORE the PR opens. Post-merge is where fixing it costs a commit on main.
+        with TempDir() as tmp:
+            path = tmp / "walkthrough.md"
+            path.write_text(wt(CLICK, REINVOKE), encoding="utf-8")
+            rc, out = run_script("jira_feed.py", "check-actions", "--walkthrough", str(path))
+            c.check("B5 check-actions reports ceremony rows and exits non-zero",
+                    rc != 0 and "only the operator decides" in out, out.strip()[-500:])
+            clean = tmp / "clean.md"
+            clean.write_text(wt("**Decide whether to ship the copy change.**"), encoding="utf-8")
+            rc2, out2 = run_script("jira_feed.py", "check-actions", "--walkthrough", str(clean))
+            c.check("B5 CONTROL: a walkthrough of real decisions passes",
+                    rc2 == 0, out2.strip()[-300:])
+
+        # ⭐ B6 · THE CASE T-M5 PROVED WAS MISSING, and it is the acceptance criterion itself.
+        # B5 drives `check-actions`; SCC-193 S2 says `finish` must refuse "exit 2, nothing
+        # written". Nothing tested that, so deleting the refusal from `cmd_finish` outright
+        # left every case green - the detector existed and the close-out ignored it.
+        with TempDir() as tmp2:
+            repo2, acli2, state2 = build(tmp2)
+            wt2 = tmp2 / "wt.md"
+            wt2.write_text(wt(CLICK, REINVOKE), encoding="utf-8")
+            set_state(state2, types={"TEST-9": "Task"}, statuses={"TEST-9": "In Progress"})
+            os.environ["STUB_STATE"] = str(state2)
+            rc3, out3 = run_script("jira_feed.py", "finish", "--key", "TEST-9",
+                                   "--project", str(repo2), "--acli", str(acli2),
+                                   "--walkthrough", str(wt2), "--apply")
+            st3 = get_state(state2)
+            c.check("B6 finish REFUSES a walkthrough carrying the ceremony's steps",
+                    rc3 == 2 and "only the operator decides" in out3,
+                    f"exit={rc3}: " + out3.strip()[-300:])
+            c.check("B6 ...and NOTHING was written to the board",
+                    st3["statuses"].get("TEST-9") == "In Progress"
+                    and not st3.get("transitions") and not st3.get("comments"),
+                    f"{st3.get('statuses')} transitions={st3.get('transitions')} "
+                    f"comments={len(st3.get('comments') or [])}")
+
+            # The control: the same lane with an honest decision row closes as it always did.
+            wt3 = tmp2 / "wt3.md"
+            wt3.write_text(wt("**Decide whether to ship the copy change.**"), encoding="utf-8")
+            set_state(state2, types={"TEST-9": "Task"}, statuses={"TEST-9": "In Progress"})
+            rc4, out4 = run_script("jira_feed.py", "finish", "--key", "TEST-9",
+                                   "--project", str(repo2), "--acli", str(acli2),
+                                   "--walkthrough", str(wt3), "--apply")
+            c.check("B6 CONTROL: a real decision row HOLDS (3), it is not refused (2)",
+                    rc4 == 3, f"exit={rc4}: " + out4.strip()[-200:])
+
+        # ⭐ B3c · THE EXEMPTION IS A SHAPE, NOT A SUBSTRING - and this is the bypass the
+        # edge-case lens executed. `MERGE_PHRASE in row` waved through the WHOLE row, so
+        # appending five words to SCC-164's verbatim defect row cleared the check written to
+        # refuse that exact row. An exemption a defect can opt into is not an exemption.
+        # The ledger row's subject IS the phrase (all 11 in the live corpus begin with it);
+        # a row that merely MENTIONS it is some other row.
+        c.check("B3c RED: appending the ledger phrase does NOT excuse a ceremony row",
+                len(jira_feed.ceremony_rows(wt(CLICK + " That is the merge itself."))) == 1,
+                "the exemption must key on the row's SUBJECT, or any row can claim it")
+        c.check("B3c ...and mid-row is not the subject either",
+                len(jira_feed.ceremony_rows(
+                    wt("**Then re-invoke** the door once the merge itself has landed."))) == 1,
+                "trailing or mid-row: only the SUBJECT position is the ledger")
+        # ⛔ DECLARED DESIGN, stated so it is never mistaken for an oversight: a row that
+        # genuinely OPENS as the ledger row keeps the exemption for its WHOLE text. The door
+        # writes that row and its prose legitimately names the click (B3b), and a false refusal
+        # there is only fixable by a commit on `main` - the write the gate refuses. The bypass
+        # this closes is the one that was EXECUTED: a ceremony row claiming the exemption by
+        # mentioning the phrase. Narrowing further re-opens the wedge for no measured gain.
+
+        # ⭐ B7 · THE BLIND LENS'S F4. `\bthen\s+(?:invoke|run|call)\b` bound a verb to
+        # NOTHING - every sibling pattern names a ceremony-specific object. These three are
+        # plain operator decisions, and the third is the boundary note's own carve-out (a bare
+        # door invocation is one of the three FORMS of the decision). The refusal is default-on
+        # and hard, and `finish` runs AFTER the merge - when the fix is a commit on `main`,
+        # the write the gate refuses. A false positive here is unfixable by design.
+        for row, why in (
+                ("**Decide the pricing tier for the launch**, then run the campaign when "
+                 "you are happy.", "a product decision that happens to say 'then run'"),
+                ("**Rule on the vendor**: pick A or B, then call the account manager.",
+                 "'then call' about a person, not a script"),
+                ("**Approve the copy**, then invoke `/cicd-push-e2e` when the marketing "
+                 "site is ready.", "a door invocation IS the decision's form (the boundary note)")):
+            c.check(f"B7 CONTROL: not flagged — {why}",
+                    not jira_feed.ceremony_rows(wt(row)), repr(row))
+        c.check("B7 ...but the ceremony's own SECOND HALF still is",
+                len(jira_feed.ceremony_rows(wt("**Merge it**, then run the close-out's "
+                                               "second half for the riders."))) == 1,
+                "bound to the ceremony, the pattern must still catch the ceremony")
+
+        # ⭐ B9 · ONE ROW PER PATTERN, because `ceremony_rows` breaks on the FIRST match and
+        # every fixture above trips pattern 1 or 3 first. The test-adequacy audit measured
+        # patterns 2, 4 and 6 each SURVIVING deletion with the suite green - exactly the
+        # redundancy blind spot T-M4 caught once already, in this same table. A row that trips
+        # exactly one pattern is the only thing that isolates it.
+        for row, which in (
+                ("Merge the pull request when the demo is done", "2 · merge x pull request"),
+                ("Finish with --after-merge SCC-999", "4 · the ceremony's second half"),
+                ("run .agents/scripts/jira_feed.py finish", "6 · running the machinery")):
+            got = jira_feed.ceremony_rows(wt(row))
+            c.check(f"B9 pattern {which} stands on its own", len(got) == 1,
+                    f"{len(got)} flagged for {row!r}: {got}")
+
+        # ⭐ B11 · THE THREE ROWS THE LITERAL-CORRECTNESS LENS EXECUTED, each one a place the
+        # detector contradicted its own documentation. All were hard exit-2 refusals of an
+        # operator DECISION, fired by `finish` after the merge - when the fix is a commit on
+        # `main`, the write the gate refuses.
+        for row, why in (
+                ("Re-invoke `/cicd-push-e2e` once staging is verified.",
+                 "a bare door invocation, refused on the two characters `re-` while "
+                 "'Then invoke /cicd-push-e2e' passed"),
+                ("**Decide whether to merge the PR before the marketing launch.**",
+                 "the SOP names 'a product decision that happens to mention a merge' as exempt"),
+                ("Run the memory audit (`python3 .agents/scripts/memory_audit.py`) when you "
+                 "have a moment.",
+                 "cmd_finish's own docstring names this as the row that must HOLD a ticket")):
+            c.check(f"B11 CONTROL: not flagged — {why[:60]}",
+                    not jira_feed.ceremony_rows(wt(row)), repr(row))
+        # ⛔ AND THE TEETH SURVIVE ALL THREE NARROWINGS. Each of these is the same shape with
+        # the ceremony actually named, or with an ACT the decision carve-out must not excuse.
+        for row, why in (
+                ("Re-invoke the door once I have merged", "re-invoke bound to the ceremony"),
+                ("**Decide** to click **Merge** on the PR", "a decision prefix is not a way in"),
+                ("Run `python3 .agents/scripts/jira_feed.py finish --key SCC-9`",
+                 "this ceremony's own machinery, still refused")):
+            got = jira_feed.ceremony_rows(wt(row))
+            c.check(f"B11 ...still REFUSED — {why}", len(got) == 1, f"{len(got)}: {got}")
+
+        # ⭐ B10 · THE OPT-OUT IS LOGGED, and a warn nobody records is the
+        # `vscode-hides-git-hook-output` shape the banner's own comment names. Deleting the log
+        # line was measured as a survivor: the flag worked and the record of using it did not.
+        with TempDir() as tmp5:
+            repo5, acli5, state5 = build(tmp5)
+            wt5 = tmp5 / "wt.md"
+            wt5.write_text(wt(CLICK, REINVOKE), encoding="utf-8")
+            set_state(state5, types={"TEST-9": "Task"}, statuses={"TEST-9": "In Progress"})
+            os.environ["STUB_STATE"] = str(state5)
+            rc6, out6 = run_script("jira_feed.py", "finish", "--key", "TEST-9",
+                                   "--project", str(repo5), "--acli", str(acli5),
+                                   "--walkthrough", str(wt5), "--warn-actions", "--apply")
+            c.check("B10 --warn-actions does NOT refuse, and logs that it was chosen",
+                    rc6 != 2 and "Logged opt-out, on the record" in out6
+                    and "2 ceremony row(s)" in out6, f"exit={rc6}: " + out6.strip()[-400:])
+
+        # ⭐ B8 · BOTH FAMILIES IN ONE RUN. `cmd_finish` returned 2 on the ceremony rows before
+        # `banned_action_rows` was ever computed, so a walkthrough carrying both was reported
+        # one family at a time - two fix-and-re-run round trips for one file, and the second
+        # family only discovered after the first was fixed. `check-actions` already reported
+        # both; the two entry points have to agree about what is wrong with the file.
+        with TempDir() as tmp4:
+            repo4, acli4, state4 = build(tmp4)
+            wt4 = tmp4 / "wt.md"
+            wt4.write_text(wt(CLICK, "Rule on the symlink defect - fold the one-line fix into "
+                                     "AVCH-54, or mint its own AVCH key. Board placement is "
+                                     "the operator's."), encoding="utf-8")
+            set_state(state4, types={"TEST-9": "Task"}, statuses={"TEST-9": "In Progress"})
+            os.environ["STUB_STATE"] = str(state4)
+            rc5, out5 = run_script("jira_feed.py", "finish", "--key", "TEST-9",
+                                   "--project", str(repo4), "--acli", str(acli4),
+                                   "--walkthrough", str(wt4), "--apply")
+            c.check("B8 finish reports BOTH families in one run, then refuses once",
+                    rc5 == 2 and "only the operator decides" in out5
+                    and "BANNED ACTION ROW" in out5, f"exit={rc5}: " + out5.strip()[-600:])
+
+    # ══ SCC-193 Part D · the SCC-175 merge-row pin, run BOTH ways ══════════════════════════
+    #
+    # THE SUSPECTED DEFECT, RECORDED SO IT IS NEVER RE-DIAGNOSED FROM MEMORY. At SCC-164's
+    # `finish --apply` the ticket was HELD on 2 rows and NO "merge row SATISFIED/HOLDS" line was
+    # printed at all — meaning `merge_row_state` returned **None** (it prints on every other
+    # path). A dry run on the IDENTICAL committed file the next day printed SATISFIED and held
+    # 1. Never reproduced. The one environmental difference: `--apply` ran WITHOUT
+    # `env -u GITHUB_TOKEN`, which the door mandates.
+    #
+    # So this pins the SHAPE that was live — two merge-ish rows, the lane landed — with and
+    # without `GITHUB_TOKEN` in the environment. GREEN both ways says the --apply-time hold was
+    # environmental and says so forever; RED is the defect, and then it is a fix, not a mystery.
+    if c.block("SCC-193 D · two merge-shaped rows, lane landed - pinned with and without a token"):
+        import os as _os
+        import jira_feed  # noqa: E402
+
+        def git(repo, *a):
+            return subprocess.run(["git", *a], cwd=str(repo), capture_output=True, text=True)
+
+        def landed_lane(name: str):
+            """SCC-164's exact shape: a ticked ledger row, an OPEN click row, lane merged."""
+            repo = tmp / name
+            repo.mkdir()
+            bare = tmp / f"{name}.git"
+            git(repo, "init", "-q", "-b", "main")
+            git(repo, "config", "user.email", "t@t.t")
+            git(repo, "config", "user.name", "t")
+            (repo / "README").write_text("x\n")
+            git(repo, "add", "-A"), git(repo, "commit", "-qm", "base", "--no-verify")
+            git(repo, "init", "--bare", "-q", str(bare))
+            git(repo, "remote", "add", "origin", str(bare))
+            git(repo, "push", "-q", "--no-verify", "origin", "main")
+            branch = "chore/SCC-164-gate-cluster"
+            git(repo, "checkout", "-q", "-b", branch)
+            d = repo / "_artifacts/_main/2026-08-16_SCC-164-gate-cluster"
+            d.mkdir(parents=True)
+            (d / "task.yaml").write_text(f"task_key: SCC-164\nbranch: {branch}\n")
+            (d / "walkthrough.md").write_text(
+                "# W\n\n## Your Actions\n\n"
+                "- [x] **The merge itself** - lands via this branch's PR\n"
+                "- [ ] **Click **Merge** on the PR.** That click is the sign-off.\n")
+            git(repo, "add", "-A"), git(repo, "commit", "-qm", "lane", "--no-verify")
+            git(repo, "checkout", "-q", "main")
+            git(repo, "merge", "-q", "--no-ff", "--no-verify", branch, "-m", "merge")
+            git(repo, "push", "-q", "--no-verify", "origin", "main")
+            git(repo, "fetch", "-q", "origin")
+            return d / "walkthrough.md"
+
+        with TempDir() as tmp:
+            path = landed_lane("d1")
+            had = _os.environ.get("GITHUB_TOKEN")
+            try:
+                for label, token in (("without GITHUB_TOKEN", None),
+                                     ("with a stale GITHUB_TOKEN in env", "ghp_deadbeefdeadbeef")):
+                    if token is None:
+                        _os.environ.pop("GITHUB_TOKEN", None)
+                    else:
+                        _os.environ["GITHUB_TOKEN"] = token
+                    st = jira_feed.merge_row_state(path)
+                    c.check(f"D1 {label}: the merge row RESOLVES (never a silent None)",
+                            st is not None,
+                            "None is the state SCC-164's --apply run showed, and it prints "
+                            "nothing at all - a hold with no reason given")
+                    c.check(f"D1 {label}: ...and the landed lane SATISFIES it",
+                            bool(st) and st["satisfied"], str(st))
+                    rows = jira_feed.open_actions(path.read_text(encoding="utf-8"))
+                    held = [r for r in (rows or []) if not jira_feed.is_merge_row(r)]
+                    c.check(f"D1 {label}: the click row is NOT a merge row, so exactly 1 holds",
+                            len(held) == 1 and "Click" in held[0], str(rows))
+            finally:
+                if had is None:
+                    _os.environ.pop("GITHUB_TOKEN", None)
+                else:
+                    _os.environ["GITHUB_TOKEN"] = had
 
     return c.finish()
 

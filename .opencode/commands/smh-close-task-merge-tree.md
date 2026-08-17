@@ -1,5 +1,5 @@
 ---
-description: Close out TASK work — a `chore/<JIRA-KEY>-<slug>` branch that never got an epic and a story, so BMAD's `/cicd-update-sprint-memory` cannot close it. Preflights mechanically (branch shape, clean+pushed, main absorbed, and THE LANE — did anything deployable change?), runs the gate the lane selects, then OPENS A PULL REQUEST AND STOPS: it never merges, and the operator's click on Merge pull request is the sign-off, gated by GitHub's main-write-gate check. Re-invoked as `--after-merge <KEY>` it verifies the merge with plain git, files the Jira Dev Record, moves the Task to Done, and prunes the worktree AND the branch (SCC-62 — unlink assets before removing the tree; a recursive delete through a junction eats the shared targets). Refuses the moment a deployable path is in the diff and hands the work to `/cicd-push-e2e`.
+description: Close out TASK work — a `chore/<JIRA-KEY>-<slug>` branch that never got an epic and a story, so BMAD's `/cicd-update-sprint-memory` cannot close it. Preflights mechanically (branch shape, clean+pushed, main absorbed, and THE LANE — did anything deployable change?), runs the gate the lane selects, then OPENS A PULL REQUEST AND STOPS: it never merges. The operator's DECISION to proceed is the sign-off (the word approved, or invoking this command or /cicd-push-e2e); their click on Merge pull request is how that decision reaches GitHub, gated by the main-write-gate check. Re-invoked as `--after-merge <KEY>` it verifies the merge with plain git, files the Jira Dev Record, moves the Task to Done, and prunes the worktree AND the branch (SCC-62 — unlink assets before removing the tree; a recursive delete through a junction eats the shared targets). Refuses the moment a deployable path is in the diff and hands the work to `/cicd-push-e2e`.
 platforms: [opencode, antigravity]
 ---
 
@@ -36,22 +36,30 @@ is allowed to act on the repo you are standing in. The prefix is the permission;
 
 ## 🛑 MANDATORY RULES (before you start)
 
-1. **⛔ THIS COMMAND DOES NOT MERGE TO `main`. It opens a pull request and stops.** Since SCC-183
-   the sign-off is not this invocation and not a token — it is **the operator clicking *Merge pull
-   request*** on the link Step 3 hands back. That is the whole authorisation model now, and it is
-   the same on every machine and for every agent platform, because the button is on GitHub.
+1. **⛔ THIS COMMAND DOES NOT MERGE TO `main`. It opens a pull request and stops.**
 
-   This is *stronger* than what it replaced, not weaker. The old contract ("invoking it IS the
-   sign-off") is a **document**, and a document sitting in context still reads as valid on task six
-   — which is exactly how one invocation rode six merges (SCC-71), and how "you can move it to
-   done" was once read as merge permission (SCC-37; ticket-status permission is **never** merge
-   permission). A click cannot be inferred from context, cannot be stretched from an earlier turn,
-   and cannot be performed by an agent that has not been given that ability. **One click, one
-   merge**, held by something that cannot be talked out of it.
+   **⭐ THE SIGN-OFF IS THE OPERATOR'S DECISION TO PROCEED, and it is given in exactly one of three
+   ways: the word `approved`, or invoking `/smh-close-task-merge-tree`, or invoking
+   `/cicd-push-e2e`** (operator ruling, 2026-08-17, verbatim: *"its my decisiton to move forward
+   with the push, is the wording that will stop causing confusion. the way I approve you to push or
+   close is by saying approved or one of the 2 / commands."*). **From that word on, every step is
+   the ceremony's and the agent runs it** — this command, the click's paperwork, `--after-merge`,
+   the Dev Record, the transitions, the prune. ⛔ **The merge is never a task the operator owes, and
+   never an open box in `## Your Actions`.**
 
-   So: no merge words are needed to *run* this command, because running it merges nothing. If you
-   reach Step 3 and the operator has not clicked, the correct state is **waiting** — report the
-   link and stop. ⛔ Never offer a way to land it without the click.
+   **The mechanism is unchanged, and that is also the operator's word** (asked which of two
+   readings, 2026-08-17: *"i wording only"*). The **click** on *Merge pull request* stays a
+   physical operator act — it is **how the decision reaches GitHub**, not work assigned to them.
+   An agent still cannot press it, on any machine or platform, because the button is on GitHub.
+
+   That physical step is *stronger* than a sentence in a file, which is why it stays. A **document**
+   saying the sign-off happened sits in an agent's context and still reads as valid on task six —
+   exactly how one invocation rode six merges (SCC-71), and how "you can move it to done" was once
+   read as merge permission (SCC-37; ticket-status permission is **never** merge permission).
+   **One decision, one merge.**
+
+   So: if you reach Step 3 and the PR is not merged yet, the correct state is **waiting** — report
+   the link and stop. ⛔ Never offer a way to land it without going through that PR.
 2. **The preflight is not advisory.** Exit 2 STOPS the command. Report what failed; never "merge
    anyway", and never re-run it with the failing check worked around.
 3. **The lane is not yours to choose.** `LANE: HANDOFF` means a deployable path is in the diff.
@@ -139,6 +147,20 @@ sibling lane has moved the shared checkout.
 ```bash
 python3 .agents/scripts/task_preflight.py --fetch --repo "$REPO" --branch "$BRANCH" --expect-key "$EXPECTED_KEY"
 ```
+
+**⭐ It FETCHES by default now (SCC-193), and it LEAVES A RECEIPT (SCC-192).** Two things follow,
+and both are mechanical:
+
+- **`--fetch` is the default.** `--no-fetch` is the offline opt-out and the VERDICT line then says
+  the comparison is **stale**, with a non-zero exit — because on 2026-08-16 this ran without a
+  fetch, the note saying so was an `INFO` under a verdict reading *clear to close out and merge*,
+  and that verdict is the only line an agent acts on. A `stale` verdict is not a clear one.
+- **It writes `preflight-receipt.json`** beside this lane's `task.yaml` — the key, the branch, the
+  flags it actually ran with, the verdict and its exit, keyed on the walkthrough's verdict sha.
+  **Commit it with the flight event at Step 2.5** (the block there stages it). ⛔ **`main-write-gate
+  --mode pr` REFUSES the PR without it** — that receipt, plus the flight event, is the only way the
+  system can tell this ceremony was RUN rather than narrated. Do not pass `--no-receipt`; it exists
+  for probes and harnesses.
 
 🛑 **Read the header line before you read the verdict.** It echoes the branch the script actually
 resolved:
@@ -271,8 +293,26 @@ python3 "<worktree>/.agents/scripts/flight_recorder.py" record --task <JIRA-KEY>
         --root <task-artifacts folder> --repo "<worktree>" --apply      # PC: `python`
 # Commit ONLY when it wrote something: on "already recorded" (a resumed close-out) or a
 # refusal there is nothing staged, and a bare `git commit` would exit 1 for no reason.
-if git -C "<worktree>" status --porcelain _artifacts/_main/workflow-events/ | grep -q .; then
-  git -C "<worktree>" add _artifacts/_main/workflow-events/
+# The preflight receipt (SCC-192) rides the SAME commit - it is the other half of the
+# evidence main-write-gate --mode pr requires, and a second artifacts-only commit buys nothing.
+# ⛔ THE GUARD AND THE ADD MUST SEE THE SAME PATHS. `git status` tolerates a pathspec that
+# matches nothing (exit 0, empty); `git add` does NOT - it exits 128 and stages NOTHING, so the
+# flight event never gets committed either and the PR gate then refuses for a MISSING EVENT.
+# That is reachable whenever the receipt was not written: no live manifest, two manifests
+# (the preflight now errors on that), `--no-receipt`, or an unwritable tree. Build the list
+# from what exists, then guard and stage the SAME list.
+PATHS=()
+[ -d "<worktree>/_artifacts/_main/workflow-events" ] && PATHS+=(_artifacts/_main/workflow-events/)
+if [ -f "<worktree>/<task-artifacts folder>/preflight-receipt.json" ]; then
+  PATHS+=("<task-artifacts folder>/preflight-receipt.json")
+fi
+# ⛔ `[ -f … ] && PATHS+=(…)` returns 1 when the file is absent, which ABORTS the snippet under
+# `set -e` - so the guard meant to survive a missing path became the thing that killed the step.
+# The events dir is conditional too: it is tracked in this repo, but on first adoption of this
+# door (or a lightweight lane that recorded none) it does not exist, and `git add` 128s on a
+# pathspec that matches nothing - staging NOTHING, so the flight event is lost with it.
+if [ ${#PATHS[@]} -gt 0 ] && git -C "<worktree>" status --porcelain -- "${PATHS[@]}" | grep -q .; then
+  git -C "<worktree>" add -- "${PATHS[@]}"
   git -C "<worktree>" commit -F <msg>   # "<KEY> chore(recorder): flight event @ <sha7> [sop-ok]"
   git -C "<worktree>" push
 fi
@@ -314,6 +354,14 @@ five minutes later. Check both **before** opening the PR:
 ```bash
 grep -q "The merge itself" <walkthrough> && grep -q "^## Your Actions" <walkthrough> \
   || { echo "walkthrough incomplete — fix it BEFORE the PR"; exit 1; }
+
+# ⭐ SCC-193 · the CONTENT of that section, not just its presence. Refuses a row handing the
+# operator ticket work (SCC-163) or the ceremony's own steps (SCC-193) - "click Merge",
+# "re-invoke the door", "run --after-merge". HERE, before the PR, is the only place fixing
+# either costs nothing: the same refusal fires again at Step 4's `finish`, which runs AFTER
+# the merge, when the walkthrough is on `main` and the fix is a commit the gate refuses.
+python3 .agents/scripts/jira_feed.py check-actions --walkthrough <walkthrough> \
+  || { echo 'fix `## Your Actions` BEFORE the PR - it will refuse the close-out otherwise'; exit 1; }
 ```
 
 ⭐ **Both of these are measured failures, not hypotheticals.** On 2026-08-16 `jira_feed.py finish`
@@ -343,9 +391,9 @@ Print that instead. One extra click for the operator, and this door needs no too
 not have.
 
 ⛔ **STOP means stop.** Do not merge it another way, do not mint a token, do not offer to. **The
-operator clicks *Merge pull request*, and that click is the sign-off.** A link they have not clicked
-is not a merge running late — it is a merge that has not been authorised. Waiting is correct
-behaviour, on every platform, on either machine.
+operator's decision to proceed is the sign-off, and the click on *Merge pull request* is how it
+reaches GitHub.** A link nobody has merged is not a merge running late — it is a merge that has not
+been authorised. Waiting is correct behaviour, on every platform, on either machine.
 
 **What guards the merge is on GitHub, not here.** `main` requires a green **`main-write-gate`**
 check on the PR — the same enforcement suite, plus a check that the source is an `epic/*` or
@@ -383,6 +431,19 @@ git -C "$REPO" log -1 --format=%s origin/main        # -> "Merge pull request #N
 
 The PR number comes off that merge subject; the merge sha is `git -C "$REPO" rev-parse --short
 origin/main`. Both go in the Dev Record at Step 4.
+
+**⛔ AND CHECK THAT THE DOOR YOU ARE READING IS THE CURRENT ONE (SCC-193 C).** This is the one
+command most likely to be reading a file its own lane just changed — on 2026-08-16 an agent
+followed an instruction its lane had **deleted**, because `git fetch` had been run and the working
+tree never pulled:
+
+```bash
+BEHIND=$(git -C "$REPO" rev-list --count HEAD..origin/main)
+```
+
+If `BEHIND` is not `0`: ⛔ **this checkout is behind origin/main by N; the door text you are
+following may be the PRE-merge copy.** Read the current one before Step 4 —
+`git show origin/main:.agents/commands/smh-close-task-merge-tree.md` — and follow that.
 
 ⛔ If the ancestor check fails, **STOP** — the ticket does not move and no Dev Record is filed. A
 close-out that reports `Done` on an unmerged PR is the same lie as one that reports it on a failed
@@ -505,7 +566,10 @@ destroyed three other sessions' uncommitted work (SCC-180). **Two changes remove
 is the agent certifying its own merge. It now reads the row from **`HEAD`**, not the working tree, so
 an uncommitted tick satisfies nothing (SCC-169's tick was left uncommitted and later wiped by a
 reset). If the lane genuinely has not landed, `finish` re-opens the row and says so. **Every other
-open box stays exactly as it is — those are the operator's.**
+open box stays exactly as it is — those are the operator's to DECIDE.** ⛔ And since SCC-193 an open
+box that hands over *the ceremony's own steps* — "click Merge", "re-invoke the door",
+"run `--after-merge`" — is **refused** by `finish` and by `check-actions`: from the operator's word
+on, those are yours to run, not theirs to do.
 
 ⭐ **`finish` writes the `Done`, and it may refuse to (SCC-155).** It reads `## Your Actions` in the
 walkthrough you just filed and answers with its exit code — **read it, it is the report:**

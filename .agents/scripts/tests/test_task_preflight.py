@@ -22,14 +22,15 @@ itself. Commits use --no-verify: these fixtures must not inherit the machine's h
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
 
 from _harness import Cases, TempDir, run_script
-from _pf_fixtures import (MANIFEST, WALKTHROUGH, WALKTHROUGH_NO_ACTIONS, board,
-                          branch, commit, git, make_repo, preflight,
-                          with_secondary, write)
+from _pf_fixtures import (ADIR, MANIFEST, WALKTHROUGH, WALKTHROUGH_NO_ACTIONS,
+                          board, branch, commit, git, make_repo, preflight,
+                          stamp_and_verdict, with_secondary, write)
 
 
 def main() -> int:
@@ -274,12 +275,19 @@ def main() -> int:
             c.check("SCC-159 ...and the override is stated in the output, not silent",
                     "accepted by --accept-unpushed-main" in out, out.strip()[-400:])
 
-            # ⭐ THE SEVERITY SPLIT, and it had NO case until a width mutant survived: with no
-            # --fetch the comparison is only as good as the last one, which on a plane is
+            # ⭐ THE SEVERITY SPLIT, and it had NO case until a width mutant survived: without
+            # a fresh fetch the comparison is only as good as the last one, which on a plane is
             # nothing — so it may WARN and must not hard-refuse. Hardening this to an error
             # would brick every offline close-out for a question that was never asked freshly.
-            code, out = preflight(repo)
-            c.check("SCC-159 WITHOUT --fetch the stalled landing only WARNS",
+            #
+            # ⛔ SCC-193: THE FLAG MOVED, THE PROPERTY DID NOT. This said `preflight(repo)` and
+            # meant "no fetch happened" — true while --fetch was opt-in, and the exact opposite
+            # now that it is the default. Left as it was, the case would assert that a lane
+            # measured against a FRESH fetch only warns about a stalled main, which is the one
+            # reading SCC-159 rules out (fresh evidence is an ERROR). `--no-fetch` is how the
+            # not-fresh half is spelled now; the assertions below are untouched.
+            code, out = preflight(repo, "--no-fetch")
+            c.check("SCC-159 with --no-fetch the stalled landing only WARNS",
                     code != 2 and "main is 1 commit(s) ahead of origin/main" in out,
                     out.strip()[-400:])
             c.check("SCC-159 ...and says the comparison is against the last fetch",
@@ -1283,6 +1291,227 @@ def main() -> int:
                     code != 2 and "VERDICT: clear" in out, out.strip()[-600:])
             c.check("SCC-94 ...and says so, so the operator knows which checkout was verified",
                     "shared checkout" in out, out.strip()[-600:])
+
+
+    # ── SCC-192 + SCC-193 · THE RECEIPT, AND FETCH AS THE DEFAULT ───────────────────────
+    #
+    # ⛔ THE TWO MEASURED SLIPS THIS BLOCK EXISTS FOR (SCC-164's own landing, 2026-08-16):
+    #   * the preflight was run WITHOUT --fetch, so ahead/behind was measured against a stale
+    #     fetch — and the note saying so was an INFO under a VERDICT line that still read
+    #     "clear to close out and merge". The verdict line is the only line an agent acts on,
+    #     so the fact has to be ON it, and the exit has to be non-zero.
+    #   * the ceremony was hand-run and NOTHING could tell: the preflight wrote no trace at
+    #     all. It now leaves one receipt, which the PR gate (main_write_gate --mode pr)
+    #     REQUIRES — so a close-out that skipped this call produces a red check, server-side.
+    #
+    # ⛔ THE RECEIPT IS KEYED ON THE VERDICT SHA, NEVER HEAD. Committing the receipt MOVES
+    # HEAD, so a receipt carrying HEAD can never be byte-stable and the tree is dirty forever
+    # (SCC-192's own loop-1 constraint). The flight recorder solved this first; one rule, two
+    # writers.
+    if c.block("SCC-192/193 · the preflight leaves a RECEIPT, and fetch is the DEFAULT"):
+        RECEIPT = f"{ADIR}/preflight-receipt.json"
+
+        def receipt(repo) -> dict:
+            p = repo / RECEIPT
+            return json.loads(p.read_text(encoding="utf-8")) if p.is_file() else {}
+
+        # ⛔ Never `read_bytes()` straight: while this block is RED the file does not exist,
+        # and a test that dies in setup is indistinguishable from one that fails its
+        # assertion (`red-test-can-die-before-its-assertion`). Absent reads as b"".
+        def raw(repo) -> bytes:
+            p = repo / RECEIPT
+            return p.read_bytes() if p.is_file() else b""
+
+        with TempDir() as t:
+            # R1 · the ordinary lane: no flag at all, and the fetch happens anyway.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            sha = stamp_and_verdict(repo, "PASS")
+            code, out = preflight(repo)
+            r = receipt(repo)
+            c.check("R1 a preflight with NO flag fetches, and says the comparison is fresh",
+                    code == 0 and "clear to close out and merge" in out
+                    and "no --fetch" not in out, f"exit {code}: " + out.strip()[-400:])
+            c.check("R1 ...and leaves a receipt beside the lane's task.yaml",
+                    (repo / RECEIPT).is_file(), RECEIPT)
+            c.check("R1 the receipt records the key, the branch and the FLAGS IT RAN WITH",
+                    r.get("task_key") == "SCC-11"
+                    and r.get("branch") == "chore/SCC-11-thing"
+                    and r.get("fetch") is True and r.get("fresh") is True
+                    and r.get("accept_unpushed_main") is False,
+                    json.dumps(r))
+            c.check("R1 the receipt carries the VERDICT the agent acted on, and its exit",
+                    str(r.get("verdict", "")).startswith("clear") and r.get("exit") == 0,
+                    json.dumps(r))
+            c.check("R1 ⛔ keyed on the VERDICT sha, never on HEAD",
+                    r.get("verdict_sha") == sha
+                    and not any(k in r for k in ("head", "tip", "head_sha")),
+                    json.dumps(r))
+
+            # R4 · idempotent on CONTENT, and the writer's own file is not its own dirt.
+            before = raw(repo)
+            code2, out2 = preflight(repo)
+            c.check("R4 a re-run rewrites byte-identical content (no churn commit)",
+                    bool(before) and raw(repo) == before,
+                    "the receipt moved on a no-op run, or was never written")
+            c.check("R4 ...and the uncommitted receipt does not make its own tree DIRTY",
+                    code2 == 0 and "uncommitted change" not in out2,
+                    f"exit {code2}: " + out2.strip()[-400:])
+            # ⭐ R6 · THE CASE A SURVIVING MUTANT PROVED WAS MISSING. R4 above re-runs with
+            # NOTHING else changed, so a receipt that embedded HEAD would still be byte-stable
+            # across those two runs and R4 passes - the mutant "rewrite unconditionally, padded
+            # by HEAD's length" survived exactly there. The real sequence is the one the door
+            # performs: the receipt is COMMITTED (which MOVES HEAD, the whole reason the
+            # SCC-192 design forbids keying on it) and a resumed close-out re-runs the
+            # preflight. If any field tracked HEAD, the bytes would move here and every
+            # resumed close-out would owe a churn commit.
+            git(repo, "add", RECEIPT)
+            commit(repo, "SCC-11 chore(recorder): flight event + receipt [sop-ok]")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            after_commit = raw(repo)
+            code4, out4 = preflight(repo)
+            c.check("R6 the receipt is byte-stable ACROSS the commit that lands it",
+                    bool(after_commit) and raw(repo) == after_commit,
+                    "committing the receipt moves HEAD - a receipt that tracked HEAD would "
+                    "move with it, and no close-out could ever converge")
+            c.check("R6 ...and the tree is clean afterwards, so the lane can merge",
+                    code4 == 0 and "uncommitted change" not in out4,
+                    f"exit {code4}: " + out4.strip()[-300:])
+
+            # ...but the exemption is ONE file, not a licence for the folder.
+            write(repo, f"{ADIR}/scratch.txt", "a sibling artifact nobody committed\n")
+            code3, out3 = preflight(repo)
+            c.check("R4 CONTROL: a SIBLING dirty artifact still blocks (the exemption is one file)",
+                    code3 == 2 and "uncommitted change" in out3,
+                    f"exit {code3}: " + out3.strip()[-400:])
+
+        with TempDir() as t:
+            # R2 · the opt-out. `--no-fetch` is honest about what it cost.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            stamp_and_verdict(repo, "PASS")
+            code, out = preflight(repo, "--no-fetch")
+            r = receipt(repo)
+            c.check("R2 --no-fetch never prints the clear verdict",
+                    "clear to close out and merge" not in out, out.strip()[-400:])
+            c.check("R2 ...the VERDICT line itself names the staleness, and the exit is non-zero",
+                    code != 0 and "VERDICT:" in out
+                    and "stale" in out.split("VERDICT:")[-1].lower(),
+                    f"exit {code}: " + out.strip()[-400:])
+            c.check("R2 ...and the remedy fits the branch that produced it (--no-fetch)",
+                    "re-run WITHOUT --no-fetch" in out.split("VERDICT:")[-1],
+                    out.strip()[-400:])
+            c.check("R2 ...an omitted fetch is a WARN, not an info footnote",
+                    "[WARN ] sync" in out or "[WARN] sync" in out, out.strip()[-500:])
+            c.check("R2 ...and the receipt records that it ran without one",
+                    r.get("fetch") is False and r.get("fresh") is False
+                    and r.get("exit") == code, json.dumps(r))
+
+        with TempDir() as t:
+            # R3 · ⭐ SEVERITY PARITY. A fetch that FAILED and a fetch never ATTEMPTED are the
+            # same evidence — a comparison against the last fetch — so they are the same
+            # severity. Today the omitted one is `info` (:876) and the failed one is `warn`
+            # (:874): never trying outranks trying, which is backwards, and it is exactly how
+            # SCC-164's run was told it was clear.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            stamp_and_verdict(repo, "PASS")
+            git(repo, "remote", "set-url", "origin", str(t / "no-such-remote.git"))
+            code, out = preflight(repo)          # asks for the fetch; the uplink is dead
+            r = receipt(repo)
+            c.check("R3 a FAILED fetch reaches the same verdict as an omitted one",
+                    code != 0 and "clear to close out and merge" not in out
+                    and "stale" in out.split("VERDICT:")[-1].lower(),
+                    f"exit {code}: " + out.strip()[-400:])
+            # ⛔ AND THE REMEDY MUST FIT. This operator never passed --no-fetch: the uplink is
+            # dead. Printing "re-run WITHOUT --no-fetch" at them is a no-op instruction under a
+            # verdict they are supposed to act on, and the receipt distinguished the two cases
+            # long before the verdict line did.
+            c.check("R3 ...and the VERDICT's remedy names the FAILED fetch, not --no-fetch",
+                    "asked for and FAILED" in out.split("VERDICT:")[-1]
+                    and "WITHOUT --no-fetch" not in out.split("VERDICT:")[-1],
+                    out.strip()[-400:])
+            c.check("R3 ...and the receipt says the fetch was ASKED FOR but is not fresh",
+                    r.get("fetch") is True and r.get("fresh") is False, json.dumps(r))
+            c.check("R3 ...a failed fetch is still only a WARN — offline is not a defect",
+                    "[ERROR] sync" not in out and "fetch failed" in out,
+                    out.strip()[-500:])
+
+        with TempDir() as t:
+            # R5 · a lane with NO live manifest has nowhere to put a receipt, and inventing a
+            # location is worse than not writing one: the PR gate keys on the manifest.
+            repo = make_repo(t, manifest=False)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            code, out = preflight(repo)
+            c.check("R5 no manifest -> no receipt, and the run still reports normally",
+                    not (repo / RECEIPT).is_file() and "VERDICT:" in out,
+                    out.strip()[-300:])
+
+        with TempDir() as t:
+            # ⭐ R7 · THE AMBIGUITY LOOP THE EDGE-CASE LENS EXECUTED. `check_manifest` returns
+            # the ONE manifest that is this lane's contract, and deliberately returns None when
+            # two agree rather than coin-flipping a location. But it reported both as INFO, so
+            # the VERDICT still read "clear", no receipt was written — and `main_write_gate
+            # --mode pr` then DEMANDS a receipt beside each of those manifests. A green
+            # preflight handing the PR an unmeetable demand is the worst of the four loops:
+            # the operator is told to merge by the tool that guaranteed the merge is blocked.
+            # Ambiguity about WHERE the evidence goes is an error about the evidence.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            write(repo, "_artifacts/_main/2026-08-08_scc-11-second/task.yaml", MANIFEST)
+            commit(repo, "SCC-11 chore: a second manifest for the same lane")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            stamp_and_verdict(repo, "PASS")
+            code, out = preflight(repo)
+            c.check("R7 two manifests agreeing on ONE lane is an ERROR, not two infos",
+                    code == 2 and "VERDICT: BLOCKED" in out,
+                    f"exit {code}: " + out.strip()[-500:])
+            c.check("R7 ...and it names both, and says the receipt has nowhere to go",
+                    "2026-08-08_scc-11-second" in out and "scc-11-thing" in out
+                    and RECEIPT.rsplit("/", 1)[-1] in out,
+                    out.strip()[-600:])
+            c.check("R7 ...and no receipt is invented beside either of them",
+                    not (repo / RECEIPT).is_file(),
+                    "a coin-flip here puts the evidence next to the wrong walkthrough")
+
+        with TempDir() as t:
+            # R8 · a receipt that is not readable TEXT must not kill the preflight. The writer
+            # compares bytes to decide whether to rewrite, and `read_text` raises
+            # UnicodeDecodeError — a ValueError, which `except OSError` never caught. A truncated
+            # or half-written receipt (an interrupted close-out) is exactly how that file ends up
+            # non-UTF-8, and the crash lands on the run that would have REPLACED it.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            stamp_and_verdict(repo, "PASS")
+            (repo / RECEIPT).write_bytes(b"\xff\xfe not utf-8 at all")
+            code, out = preflight(repo)
+            c.check("R8 a corrupt receipt is REPLACED, not a traceback",
+                    "Traceback" not in out and raw(repo).startswith(b"{"),
+                    f"exit {code}: " + out.strip()[-500:])
+
+        with TempDir() as t:
+            # ⭐ R9 · THE EXEMPTION IS THIS LANE'S RECEIPT, and the comment above it already
+            # said so ("the ONE file the writer owns"). The test measured the NAME and the
+            # `_artifacts/` prefix, so ANY folder's `preflight-receipt.json` was waved through —
+            # including a sibling lane's uncommitted one, which is another session's work being
+            # silently dropped from the dirty-tree count that exists to catch exactly that.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            stamp_and_verdict(repo, "PASS")
+            # ⛔ THE SIBLING FOLDER MUST ALREADY BE TRACKED. git reports a wholly-untracked
+            # directory as ONE `?? <dir>/` row, and `Path("<dir>/").name` is the folder name
+            # under the fix AND under the mutant - so the first cut of this control passed
+            # either way and S-M9 survived it. With the folder tracked, the receipt appears as
+            # its own row and the path comparison is the only thing that can answer.
+            write(repo, "_artifacts/_main/2026-08-08_scc-99-other/notes.md", "another lane\n")
+            commit(repo, "SCC-11 chore: a sibling lane's folder (artifacts only)")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            write(repo, "_artifacts/_main/2026-08-08_scc-99-other/preflight-receipt.json",
+                  '{"task_key": "SCC-99"}\n')
+            code, out = preflight(repo)
+            c.check("R9 CONTROL: ANOTHER lane's uncommitted receipt is still dirt",
+                    code == 2 and "uncommitted change" in out,
+                    f"exit {code}: " + out.strip()[-400:])
 
     return c.finish()
 

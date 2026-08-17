@@ -1,5 +1,5 @@
 ---
-description: From the home base, fan out and reconcile the lobby + every conformant project against disk — repo-map (mode-preserving), every INDEX.md, every AGENTS.md + README's references (dead paths, renamed commands, stale contents-lists), the context-hygiene prune, and the open-tasks list (todo_list.md → ## Open Work). Reports for approval before editing; read-mostly, never commits. Inside a project it reconciles just that one workspace, unchanged.
+description: From the home base, fan out and reconcile the lobby + every conformant project against disk — repo-map (mode-preserving), every...
 platforms: [opencode, antigravity]
 ---
 

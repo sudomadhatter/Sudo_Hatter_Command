@@ -80,7 +80,7 @@ lands one story; the next needs its own.
 |---|---|---|
 | open the PR | the agent, inside `/smh-close-task-merge-tree` or `/smh-merge-multiple-workingtrees` | `gh pr create --base main --head <branch> --fill` — or, with no `gh`, print the `compare/main...<branch>` URL. Then **STOP** |
 | the gate | GitHub | **`main-write-gate`** must be green: the full enforcement suite plus a check that the source is `epic/*` or `chore/*` with a real ticket key |
-| the merge | **the operator** | clicking *Merge pull request*. **That click IS the sign-off** |
+| the merge | GitHub, on the operator's decision | the operator clicks *Merge pull request*. **Their decision to proceed is the sign-off**; the click is how it reaches GitHub, never work they owe |
 | after | the agent, on re-invocation | `--after-merge <KEY>` — verify with `git merge-base --is-ancestor`, then Dev Record, ticket, prune |
 
 Project repos (AviationChat, etc.) publish no `main-write-gate`, so their epics still ship through
@@ -95,8 +95,16 @@ not evaded (SCC-118's own finding, read forwards; it is why `main-write-gate` wa
 in the first place). The click is the intent half, `main-write-gate` is the fitness half. Both
 present, both required.
 
-⭐ **And a click is a STRONGER constraint on the agent than the contract it replaced.** "Invoking
-this command IS the sign-off" is a *document*, and a document sitting in an agent's context still
+⭐ **The sign-off is the operator's DECISION TO PROCEED, and it is given in exactly one of three
+ways: the word `approved`, or invoking `/smh-close-task-merge-tree`, or invoking
+`/cicd-push-e2e`** (operator ruling, 2026-08-17). **From that word on, every step is the
+ceremony's and the agent runs it** — the click, the `--after-merge` half, the Dev Record, the
+transitions, the prune. The **decision to proceed is the sign-off**; the click on *Merge pull
+request* is **how that decision reaches GitHub**, not a task the operator owes. So the merge is
+never an item in `## Your Actions`, and never an open box.
+
+⭐ **And the click is a STRONGER constraint on the agent than a sentence in a file.** A *document*
+saying the sign-off happened sits in an agent's context and still
 reads as valid on task six — which is precisely how one invocation rode six merges (SCC-71), and how
 "you can move it to done" was read as merge permission (SCC-37). A click cannot be inferred from
 context, stretched from an earlier turn, or performed by an agent that was never given the ability.

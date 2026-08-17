@@ -128,7 +128,78 @@ def fm_field(text: str, key: str) -> str | None:
 LAUNCH_RE = re.compile(r"read\s+`\.agents/commands/([A-Za-z0-9._-]+\.md)`")
 
 
-def is_launcher_for(body: str, brain: str, cmd_name: str) -> bool:
+# ── SCC-195 · the Antigravity DESCRIPTION BUDGET ───────────────────────────────────────────
+#
+# Antigravity builds its slash-command menu from the `description:` frontmatter of every
+# `.agents/workflows/*.md`. This repo's descriptions run 400-950+ characters (they are written
+# for an agent reading the command, not for a menu), and the total blew the menu's context
+# budget: **15 workflows were dropped from the agent's command list outright.**
+#
+# ⛔ AND THE OBVIOUS FIX WAS ALREADY BLOCKED, WHICH IS THE ACTUAL TICKET. Shortening the
+# descriptions BY HAND in `.agents/workflows/` cannot work twice over: the files are GENERATED,
+# so the next `/smh-sync-agents` overwrites them; and this file's own door-parity check demands
+# the mirror be byte-identical to its brain (or a launcher whose description EQUALS the
+# brain's), so a hand-shortened door reads as `stale` and the main-write-gate goes red.
+# `origin/chore/SCC-194-workflow-titles` is exactly that attempt, 34 files, unlandable by
+# construction.
+#
+# So the shortening moves INTO the generator, and this check learns the same rule: the
+# Antigravity door carries a TRUNCATED description, and truncated-from-the-brain is parity.
+# Two implementations of one rule (PowerShell emits, Python verifies) - which is the shape this
+# file already has for `platforms:` (`Get-CommandPlatforms` vs `platforms_declared`), and the
+# reason the check is a REAL comparison rather than a length test: if the two ever disagree the
+# door reads `stale` and names the file.
+AG_DESC_MAX = 135
+AG_DESC_CUT = 132
+
+
+def ag_description(desc: str) -> str:
+    """The description as Antigravity's menu should carry it. Idempotent on a short one.
+
+    Word-boundary cut, then an ASCII ellipsis - never mid-word, and never a non-ASCII character
+    (the PowerShell side writes these literals from a BOM-less .ps1 that PS 5.1 parses as ANSI,
+    so a real `…` would ship as mojibake in every generated file).
+
+    ⛔ UTF-16 UNITS, BECAUSE THE GENERATOR IS .NET. `$Desc.Length`, `.Substring` and
+    `.LastIndexOf` all index UTF-16 code units; Python's `len`/slicing index CODE POINTS, and
+    the two agree only while every character is in the BMP. A single astral character (an emoji
+    in a description) makes PowerShell cut at 90 code points where this cut at 132 - the door
+    then reads `stale`, and because the file is GENERATED the operator cannot fix it by hand.
+    That is the SCC-194 wedge rebuilt, so this emulates the generator rather than the language
+    it happens to be written in. (Measured by the test-adequacy audit: the two agree on all 55
+    live descriptions and diverge the moment one carries a non-BMP character.)"""
+    b = desc.encode("utf-16-le")
+    if len(b) // 2 <= AG_DESC_MAX:
+        return desc
+    # `errors="ignore"` covers the one shape .NET and Python genuinely cannot agree on: a cut
+    # landing INSIDE a surrogate pair. .NET keeps the orphan half (an invalid string); this
+    # drops it. The word-boundary trim below removes it in every realistic case anyway, and
+    # neither implementation should be shipping a lone surrogate into a menu.
+    cut = b[:AG_DESC_CUT * 2].decode("utf-16-le", errors="ignore")
+    if " " in cut:
+        cut = cut[:cut.rindex(" ")]
+    return cut.rstrip(" ,;:-") + "..."
+
+
+def with_ag_description(brain: str) -> str:
+    """The brain with ONLY its `description:` line replaced by the budgeted one."""
+    out, done = [], False
+    for line in brain.splitlines(keepends=True):
+        if not done and line.startswith("description:"):
+            # The line's OWN terminator, preserved: `.strip()` eats a CR, and re-appending a
+            # bare "\n" would turn one line of a CRLF brain into an LF line. Same fix, same
+            # reason, as `Set-AgDescriptionLine` in sync-agents.ps1 - these two are twins and
+            # a divergence here is a divergence in what the generator is claimed to do.
+            body = line[len("description:"):]
+            nl = body[len(body.rstrip("\r\n")):]
+            out.append("description: " + ag_description(body.strip()) + nl)
+            done = True
+        else:
+            out.append(line)
+    return "".join(out)
+
+
+def is_launcher_for(body: str, brain: str, cmd_name: str, budgeted: bool = False) -> bool:
     """Is `body` the generated thin launcher for THIS command, still current?
 
     ⭐ Four conditions, and the third and fourth are what make the exemption EARNED rather
@@ -142,9 +213,15 @@ def is_launcher_for(body: str, brain: str, cmd_name: str) -> bool:
     m = LAUNCH_RE.search(body)
     if not m or m.group(1) != cmd_name:
         return False
-    # The engine copies the brain's description into the stub verbatim, so a drifted
-    # description IS a drifted door - it is what the Antigravity menu actually displays.
-    return fm_field(body, "description") == fm_field(brain, "description")
+    # The engine copies the brain's description into the stub, so a drifted description IS a
+    # drifted door - it is what the Antigravity menu actually displays.
+    #
+    # ⛔ `budgeted` IS PER-SURFACE, and conflating the two surfaces is a real defect this check
+    # caught on itself: SCC-195's budget is ANTIGRAVITY's menu constraint. The Claude/Codex
+    # launcher skills (`New-LauncherSkillStub`) carry the brain's FULL description and must keep
+    # doing so - applying the cut to them turned 39 correct doors red in one edit.
+    want = fm_field(brain, "description") or ""
+    return fm_field(body, "description") == (ag_description(want) if budgeted else want)
 
 
 def platforms_declared(text: str) -> tuple[str, ...] | None:
@@ -466,7 +543,15 @@ def main() -> int:
         """
             if body == brain:
                 return "ok"
-            if launcher_ok and is_launcher_for(body, brain, cmd_name):
+            # SCC-195: on `.agents/workflows` (launcher_ok, i.e. the Antigravity surface) the
+            # legal full mirror is the brain with its description cut to the menu budget, and
+            # NOTHING else changed. On opencode there is no budget and no launcher: byte
+            # identity or it is stale.
+            if launcher_ok and body == with_ag_description(brain):
+                return "ok"
+            # `launcher_ok` is true only on `.agents/workflows`, which is exactly the surface
+            # the budget applies to - so it doubles as the budgeted flag here.
+            if launcher_ok and is_launcher_for(body, brain, cmd_name, budgeted=True):
                 return "ok"
             if GEN in body:
                 return "badlauncher"   # claims to be generated, but is not a current launcher
@@ -1151,6 +1236,259 @@ def main() -> int:
         c.check("the live toolkit has no un-cited porting command",
                 [i for i in live.items if "port-checklist" in i["msg"]] == [],
                 f"{[i['msg'] for i in live.items if 'port-checklist' in i['msg']]}")
+
+
+    # ══ SCC-191 · RULE 1 HAS FOUR RUNGS, AND THE THIRD IS THE ROLLING TICKET ═══════════════
+    #
+    # OPERATOR RULING, 2026-08-16, VERBATIM: "we should always have a New findings Ticket Open
+    # to put things like this in. that way its one ticket that grows with sub task, we can add
+    # this to the same rule about looking for an open ticket, if there is not a good one make a
+    # 'Bugs and Updates Ticket' and add them as sub task to it. once it get big enough we run
+    # it. or split it up into new tickets. close them all and create a new one thats the cycle"
+    #
+    # WHAT WAS WRONG: Rule 1's rung 3 was "nothing fits -> MINT", and it fired on MOST findings
+    # that surface during a landing, because most have no thematic parent open. One new Task per
+    # close-out, each costing a plan, a review and a ceremony, and a board of singletons.
+    #
+    # ⛔ WHY THIS IS PINNED AT ALL, given it is filing law and not a gate: the rule's SEARCH is
+    # the enforcement ("say in ONE line what you looked at"), and a search that cannot surface
+    # the rolling ticket lets an agent say "nothing fits" while one is open. The pin is
+    # mechanical and narrow - the rungs exist, in order, and the search names the label - which
+    # is all a machine can honestly check about a judgment rule.
+    if c.block("SCC-191 · Rule 1's four rungs and the rolling ticket"):
+        rule = read(ROOT / ".agents/rules/work-consolidation.md")
+        body = rule.split("## Rule 2")[0]
+        rungs = re.findall(r"^\s{0,3}(\d)\.\s+\*\*(.+?)\*\*", body, re.M)
+        c.check("R1a Rule 1 has FOUR rungs", len(rungs) == 4,
+                f"{len(rungs)}: {[r[1][:40] for r in rungs]}")
+        c.check("R1b ...numbered 1-4 in order", [r[0] for r in rungs] == ["1", "2", "3", "4"],
+                str([r[0] for r in rungs]))
+        if len(rungs) == 4:
+            third, fourth = rungs[2][1].lower(), rungs[3][1].lower()
+            c.check("R1c rung 3 is the OPEN ROLLING TICKET", "rolling" in third, rungs[2][1][:80])
+            c.check("R1d rung 4 is the mint, and it is now the last resort",
+                    "mint" in fourth, rungs[3][1][:80])
+        # ⭐ THE HEADING, not the word. `"cycle" in body` was satisfied by the operator's
+        # quoted ruling ("thats the cycle"), so retitling the section to "Rung 3 notes" - which
+        # is exactly how a cycle quietly becomes a footnote - left the check green (R-M3).
+        cyc = re.search(r"(?m)^###\s+.*\bCYCLE\b.*$", body)
+        c.check("R1e the cycle has its OWN heading, so it cannot decay into a footnote",
+                bool(cyc), "no `### ... CYCLE ...` heading under Rule 1")
+        c.check("R1e ...and it states run-or-split, close them all, open the next",
+                all(w in body.lower() for w in
+                    ("run", "split", "close", "next", "exactly one")),
+                "the rule must name the cycle, not a threshold")
+        # ⭐ SCOPED TO THE SEARCH BLOCK, and that is what R-M2 proved. `"bugs-and-updates" in
+        # body` was satisfied by rung 3's PROSE, so deleting the jql line - the executable half,
+        # the thing an agent actually runs - changed nothing the check could see. The rule's
+        # enforcement IS the search; a label named only in prose is a label nobody queries.
+        fences = re.findall(r"```(?:bash)?\n(.*?)```", body, re.S)
+        searches = "\n".join(f for f in fences if "acli jira workitem search" in f)
+        c.check("R2 the look-before-mint SEARCH BLOCK queries the rolling ticket's label",
+                "labels = bugs-and-updates" in searches,
+                "an agent must be able to FIND the open one from a command, or 'nothing fits' "
+                f"is unfalsifiable. Search block: {searches[:160]!r}")
+        c.check("R3 the live instance is named, so nobody mints a second one",
+                "SCC-190" in body, "the rolling ticket that exists today")
+        c.check("R4 the worked example (SCC-192, re-filed from a fresh Task) is recorded",
+                "SCC-192" in body, "the re-filing IS the rule")
+
+        # The rule is restated in four places. A stale restatement is a second source of law,
+        # and this system has already paid for that once (the retired scrum board).
+        for rel in (".agents/skills/code-review-engine/steps/step-01-review.md",
+                    ".agents/commands/smh-quick-dev.md",
+                    ".agents/commands/smh-quick-fix.md"):
+            body_ = read(ROOT / rel).lower()
+            if "rule 1" not in body_ and "work-consolidation" not in body_:
+                continue
+            c.check(f"R2b the restatement in {rel.split('/')[-1]} names the rolling ticket",
+                    "rolling" in body_, "a stale restatement is a second source of law")
+
+
+    # ══ SCC-195 · every Antigravity door fits the menu's budget ════════════════════════════
+    if c.block("SCC-195 · the Antigravity description budget"):
+        LONG = ("The TASK lane's dev cycle - assert-first development for command-centre work "
+                "that has no story, no sprint board and no epic branch. Write the check that "
+                "fails FIRST, then make it pass, then the review gate.")
+        SHORT = "Close out TASK work."
+        c.check("U1 a short description is returned unchanged (idempotent)",
+                ag_description(SHORT) == SHORT, ag_description(SHORT))
+        cut = ag_description(LONG)
+        c.check("U2 a long one is cut to the budget and marked", len(cut) <= AG_DESC_MAX
+                and cut.endswith("..."), f"{len(cut)}: {cut}")
+        # ⭐ THE ASSERTION U-M3 PROVED WAS VACUOUS. This read `cut[:-3] in LONG`, and a HARD
+        # cut at 132 is still a prefix of the original - so "ignore the word boundary" passed
+        # it unchanged. The property is not "the text came from LONG", it is "the character
+        # immediately after the kept text is a space", i.e. no word was split.
+        kept = cut[:-3]
+        c.check("U3 ...on a word boundary, never mid-word",
+                LONG.startswith(kept) and LONG[len(kept):len(kept) + 1] == " ",
+                f"kept={kept[-25:]!r} next={LONG[len(kept):len(kept) + 1]!r}")
+        # ⛔ U3b · AND A STRING THE HARD CUT ACTUALLY SPLITS. `LONG` above is a lucky one:
+        # its 132nd character lands just after a full stop, so `rstrip` leaves a clean word
+        # boundary even with the boundary search DELETED - the mutant survived twice against
+        # a case written to catch it. This string puts a long word ACROSS the cut, so only a
+        # real backward search can end cleanly. (25x "word " = 125 chars, then a 27-letter
+        # word, so index 132 is seven letters into it.)
+        SPLIT = ("word " * 25) + "antidisestablishmentarianism is the tail"
+        kept2 = ag_description(SPLIT)[:-3]
+        c.check("U3b ...even when a long word straddles the cut point",
+                SPLIT.startswith(kept2) and SPLIT[len(kept2):len(kept2) + 1] == " "
+                and "antidis" not in kept2,
+                f"kept={kept2[-30:]!r} next={SPLIT[len(kept2):len(kept2) + 1]!r}")
+        c.check("U4 ...and re-cutting it changes nothing (the sync is idempotent)",
+                ag_description(cut) == cut, ag_description(cut))
+        c.check("U5 ...and it stays ASCII (PS 5.1 writes these literals from a BOM-less .ps1)",
+                cut.isascii(), cut)
+
+        # ⭐ THE MEASUREMENT THAT IS THE TICKET: every workflow door within budget.
+        # ⛔ HAND-OWNED DOORS ARE NOT EXEMPT. `smh-adviser-board.md` is authored rather than
+        # generated, and the sync never rewrites it - but Antigravity reads its description into
+        # the SAME menu, so exempting it would leave the biggest single row in place while the
+        # check reported the budget met. Hand-owned means "fix it by hand", not "skip it".
+        # The BRAINS' descriptions - uncut, i.e. the actual input the generator is given. The
+        # workflow doors below carry the OUTPUT, so cutting those again would be idempotent and
+        # prove nothing about the cut.
+        AG_LIVE_DESCS = [d for d in
+                         (fm_field(read(b), "description")
+                          for b in sorted((ROOT / ".agents/commands").glob("*.md")))
+                         if d]
+
+        over, measured, total = [], 0, 0
+        for wf_door in sorted((ROOT / ".agents/workflows").glob("*.md")):
+            d = fm_field(read(wf_door), "description")
+            if not d:
+                continue
+            measured += 1
+            total += len(d)
+            if len(d) > AG_DESC_MAX:
+                over.append(f"{wf_door.name} ({len(d)})")
+        c.check("U6 every .agents/workflows door fits Antigravity's menu budget",
+                not over, f"{len(over)} over {AG_DESC_MAX}: {over[:8]}")
+        # ⭐ THE CONTROL U-M4 PROVED WAS MISSING. "0 doors over budget" out of 0 doors read is
+        # the vacuous green `tests-must-gate-for-real` names, and the mutant that stopped the
+        # loop appending survived precisely there. The count and the TOTAL are both asserted:
+        # the total is the number Antigravity's menu actually spends (13,883 -> 4,590 chars is
+        # what SCC-195 bought), so a regression shows as a number rather than as silence.
+        c.check("U6b ...and it read a real number of doors (not a silent empty sweep)",
+                measured >= 30, f"only {measured} workflow descriptions read")
+        # ⛔ U6d · THE TEETH CONTROL. U6 sweeps the LIVE tree, where a passing run is by
+        # definition a run with nothing to report - so a detector that stopped recording
+        # offenders entirely would read exactly like a clean tree, and did (U-M4 survived
+        # both earlier rounds). The predicate is re-run here against a fabricated over-budget
+        # door, where it MUST fire. A live sweep and a synthetic offender together are what
+        # make "0 over budget" mean something.
+        fake = "x" * (AG_DESC_MAX + 1)
+        c.check("U6d CONTROL: the same predicate FIRES on a fabricated over-budget door",
+                len(fake) > AG_DESC_MAX and ag_description(fake) != fake
+                and len(ag_description(fake)) <= AG_DESC_MAX,
+                f"a {len(fake)}-char description must not survive the budget")
+        # ⛔ U6e · THE REWRITE MUST NOT CHANGE THE LINE ENDINGS. `Set-AgDescriptionLine` matched
+        # `(.*)$`, and in .NET `.` matches CR while `$` sits before the LF - so on a CRLF brain
+        # the CR was captured, TrimEnd() removed it, and the rewritten line shipped LF-only
+        # among CRLF siblings: a mixed-ending file produced by a pure text edit. No brain is
+        # CRLF today, which is exactly why this is pinned rather than noticed later (blind
+        # lens, F14). The Python twin below is the one this suite can execute; both were fixed.
+        crlf = "---\r\nname: x\r\ndescription: " + ("y" * (AG_DESC_MAX + 40)) + "\r\n---\r\n"
+        outp = with_ag_description(crlf)
+        c.check("U6e the description rewrite preserves CRLF line endings",
+                outp.count("\r\n") == crlf.count("\r\n") and "\n" not in outp.replace("\r\n", ""),
+                repr(outp[:120]))
+        c.check("U6e CONTROL: ...and an LF brain gains no CR",
+                "\r" not in with_ag_description(crlf.replace("\r\n", "\n")),
+                repr(with_ag_description(crlf.replace("\r\n", "\n"))[:120]))
+
+        # ⭐ U7 · THE TWINS, RUN AGAINST EACH OTHER FOR REAL. Everything above tests the
+        # PYTHON emulation; the file that ships is `sync-agents.ps1`, and the claim "if the two
+        # ever disagree the door reads stale" only holds if they agree. Until now that coupling
+        # ran solely through committed artifacts - so an emulation drift showed up as an
+        # unfixable `stale` on a GENERATED file, which is the SCC-194 wedge. This extracts the
+        # real function and runs it under pwsh over every live description plus an astral
+        # fixture, which is the one input the test-adequacy audit measured them disagreeing on.
+        import shutil as _shutil
+        pwsh = _shutil.which("pwsh")
+        # ⛔ TWENTY, NOT ONE. A single astral character shifts the UTF-16 cut by one unit,
+        # and the word-boundary trim absorbs that - so the mutant that reverts to code
+        # points SURVIVED a fixture with one rocket in it. Twenty shifts the cut by twenty,
+        # which lands in a different word, which is the only thing the two can disagree on.
+        ASTRAL = "Ship " + "\U0001F680" * 20 + " the launch checklist " + ("word " * 40)
+        if not pwsh:
+            c.check("U7 SKIPPED: no pwsh on this machine - the twins are unverified here",
+                    True, "install PowerShell 7 to run the real generator against the emulation")
+        else:
+            src = (ROOT / ".agents/scripts/sync-agents.ps1").read_text(encoding="utf-8")
+            i = src.index("function Get-AgDescription")
+            fn = src[i:src.index("\n}", i) + 2]
+            probes = [d for d in AG_LIVE_DESCS] + [ASTRAL]
+            script = (fn + "\n$in = [Console]::In.ReadToEnd() -split \"\\u0000\"\n"
+                      + "$out = foreach ($d in $in) { Get-AgDescription $d }\n"
+                      + "[Console]::Out.Write(($out -join \"`u{0}\"))\n")
+            r = subprocess.run([pwsh, "-NoProfile", "-Command", "-"], input=script + "\n",
+                               capture_output=True, text=True, encoding="utf-8")
+            # the script is fed on stdin as the command; the probe payload goes via a temp file
+            with TempDir() as _t:
+                sp = _t / "probe.ps1"
+                dp = _t / "in.txt"
+                dp.write_text("\u0000".join(probes), encoding="utf-8")
+                sp.write_text(fn + "\n$in = [IO.File]::ReadAllText('" + str(dp).replace("\\", "\\\\")
+                              + "', [Text.Encoding]::UTF8) -split \"`u{0}\"\n"
+                              + "$out = foreach ($d in $in) { Get-AgDescription $d }\n"
+                              + "[IO.File]::WriteAllText('" + str(_t / "out.txt").replace("\\", "\\\\")
+                              + "', ($out -join \"`u{0}\"), (New-Object Text.UTF8Encoding $false))\n",
+                              encoding="utf-8")
+                r = subprocess.run([pwsh, "-NoProfile", "-File", str(sp)],
+                                   capture_output=True, text=True)
+                got = ((_t / "out.txt").read_text(encoding="utf-8").split("\u0000")
+                       if (_t / "out.txt").is_file() else [])
+            want = [ag_description(d) for d in probes]
+            c.check("U7 the REAL PowerShell generator and this file's emulation agree, "
+                    "on every live description AND on an astral character",
+                    got == want,
+                    f"pwsh rc={r.returncode} {r.stderr.strip()[:200]} | "
+                    + next((f"{i}: {g!r} != {w!r}"
+                            for i, (g, w) in enumerate(zip(got, want)) if g != w),
+                           f"lengths {len(got)} vs {len(want)}"))
+            c.check("U7 CONTROL: the astral fixture is genuinely over budget and non-BMP",
+                    len(ASTRAL) > AG_DESC_MAX and max(ord(ch) for ch in ASTRAL) > 0xFFFF,
+                    f"{len(ASTRAL)} chars, max ord {max(ord(ch) for ch in ASTRAL):#x}")
+
+        # U8 · the budgeted-mirror ARM of door_verdict, as pure strings. Every other shape it
+        # can return has a synthetic control; this one had only the live sweep, where a broken
+        # comparison and a clean tree read the same.
+        _brain = "---\nname: x\ndescription: " + ("z" * 300) + "\nplatforms: [antigravity]\n---\nbody\n"
+        c.check("U8 CONTROL: a mirror carrying the CUT description is parity, not stale",
+                with_ag_description(_brain) != _brain
+                and with_ag_description(with_ag_description(_brain)) == with_ag_description(_brain),
+                "the budgeted form must be the fixed point the mirror is compared against")
+        c.check("U8 CONTROL: ...and one changed body word is NOT",
+                with_ag_description(_brain).replace("body", "bodyy") != with_ag_description(_brain),
+                "the comparison must still see everything below the description line")
+
+        # U9 · green-first characterization, scoped to THE MENU. Most rows are now truncated,
+        # and what the menu is FOR is telling the commands apart - two rows that read the same
+        # for their first 60 characters are two commands the model cannot choose between.
+        # ⛔ SCOPED TO `.agents/workflows`, NOT to every brain: `qa.md` and `tea.md` share a
+        # 60-char prefix and are `platforms: [opencode]`, so they never reach this menu. A pin
+        # that reds on doors the surface does not carry would be measuring the wrong surface.
+        _menu = [d for d in (fm_field(read(w), "description")
+                             for w in sorted((ROOT / ".agents/workflows").glob("*.md"))) if d]
+        c.check("U9 the menu's descriptions stay pairwise distinct in their first 60 chars",
+                len({d[:60] for d in _menu}) == len(_menu) and len(_menu) >= 30,
+                f"{len(_menu)} menu rows, {len({d[:60] for d in _menu})} distinct 60-char prefixes")
+
+        c.check("U6c ...and the whole menu payload stays under the budget it was cut to",
+                total <= measured * AG_DESC_MAX and total < 6000,
+                f"{measured} descriptions, {total} chars total (was 13,883 before SCC-195)")
+
+        # And the control: the BRAINS are deliberately NOT shortened. The command is written for
+        # an agent that has already chosen it; only the menu has a budget. If this ever goes
+        # green-because-empty, the shortening leaked into the source of truth.
+        long_brains = [p.name for p in sorted((ROOT / ".agents/commands").glob("*.md"))
+                       if (fm_field(read(p), "description") or "") and
+                       len(fm_field(read(p), "description")) > AG_DESC_MAX]
+        c.check("U7 CONTROL: the BRAINS keep their full descriptions (the budget is the menu's)",
+                len(long_brains) >= 10, f"only {len(long_brains)} long brains - did the "
+                                        f"shortening leak into .agents/commands?")
 
     return c.finish()
 
