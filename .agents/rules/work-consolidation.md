@@ -36,12 +36,20 @@ Work discovered mid-lane (a review finding, a bug met while building, a defect a
 2. **Is there an OPEN parent whose surface this belongs to?** Then it becomes the next **lettered
    part** — a `Subtask` under that parent, with a row in the parent's index description. This is the
    normal answer.
-3. **Nothing thematic fits? Then it goes on the OPEN ROLLING TICKET** — the one always-open
-   `Bugs and Updates - <YYYY-MM>` Task, labelled **`bugs-and-updates`**, as the next **Subtask**
-   under it. Same shape as rung 2, so there is nothing new to learn: title, the measured defect,
-   `SCOPE`, `ACCEPTANCE`, and a row added to the parent's index with `jira_feed.py index-row`.
-   **The live instance today is `SCC-190`** — do not mint a second one; find whichever is open by
-   its label.
+3. **Nothing thematic fits? Then it goes on the OPEN ROLLING TICKET** — the `Bugs and Updates -
+   <YYYY-MM>` Task that is **not Done**, as the next **Subtask** under it. Same shape as rung 2, so
+   there is nothing new to learn: title, the measured defect, `SCOPE`, `ACCEPTANCE`, and a row added
+   to the parent's index with `jira_feed.py index-row`. Do not mint a second one; **find whichever
+   is open by its label**, never by remembering a key — the key changes every cycle.
+
+   > ⛔ **TWO labels mark it, and you must search for BOTH (SCC-198).** `bugs-and-updates` marks a
+   > cycle that has **started**; `running-bug-list` marks the successor `cmd_start` clones the
+   > moment a cycle begins. In steady state you file into the started one. **But between a cycle
+   > closing and the next one starting, the ONLY open rolling ticket is the un-started successor**,
+   > and a search for `bugs-and-updates` alone returns nothing there — which reads as "nothing
+   > fits" and sends you to rung 4 to mint a duplicate. That window is exactly what rung 3 exists
+   > to cover, so the query below names both markers. Filing into the un-started one is correct:
+   > starting it is what produces the next successor.
 4. **A lane in its own right on day one? MINT it — and only then.** Say in ONE line what you
    looked at. That sentence is the whole enforcement mechanism.
 
@@ -51,8 +59,16 @@ acli jira workitem search --jql "project = SCC AND statusCategory != Done AND ty
      --fields key,summary --limit 50
 # ⭐ THE ROLLING TICKET, BY LABEL - rung 3. Without this line an agent can say "nothing fits"
 # while one is open, which is exactly the claim this rule exists to make falsifiable.
-acli jira workitem search --jql "project = SCC AND statusCategory != Done AND labels = bugs-and-updates" \
-     --fields key,summary --limit 5
+# ⛔ BOTH markers, and the second one is not optional (SCC-198): between a cycle closing and the
+# next one starting, the only open rolling ticket is the un-started successor, which carries
+# `running-bug-list` and NOT `bugs-and-updates`. Querying one label reports "nothing fits" in
+# exactly the window rung 3 exists to cover, and sends you to rung 4 to mint a duplicate.
+# ⛔ `labels` IS ON --fields ON PURPOSE. From the first roll onward TWO rolling tickets are open
+# and the clone copies the summary VERBATIM, so both rows read `Bugs and Updates - <YYYY-MM>`.
+# Without the label column the answer cannot tell the running cycle from the un-started
+# successor, and the rule below asks you to pick one of them. `--fields` is a WHITELIST.
+acli jira workitem search --limit 5 --fields key,summary,labels \
+     --jql "project = SCC AND statusCategory != Done AND labels IN (bugs-and-updates, running-bug-list)"
 acli jira workitem view <the-parent-you-suspect>      # does its surface really cover this?
 ```
 
@@ -67,8 +83,42 @@ or split it up into new tickets. close them all and create a new one thats the c
 - **When it is big enough** — the operator's call at the time, deliberately not a threshold in this
   rule — it is either **RUN as one lane** (every subtask a `riders:` entry; rule 2's consolidated
   lane and SCC-170's partial-landing contract apply unchanged) or **SPLIT into real Tasks**.
-- **Then every subtask and the parent close, and the next one opens.** Nothing lingers, and no
-  finding waits on a thematic parent that may never exist.
+- **Then every subtask and the parent close.** Nothing lingers, and no finding waits on a thematic
+  parent that may never exist.
+
+⭐ **The next one opens BY ITSELF, at START (SCC-198).** `jira_feed.py start` clones the successor
+the moment a rolling ticket moves to In Progress — not at close-out, because *running* the rolling
+ticket is exactly the window in which the system has **no open home** for discovered work. Cloning
+at start means cycle N+1 exists from the lane's first minute.
+
+The mechanism is a **baton**, and it is worth knowing because it explains what you will see on the
+board: `running-bug-list` sits on exactly **one** ticket — the next cycle, un-started. Starting that
+ticket clones its successor (an acli clone carries labels, so the successor inherits the trigger)
+and swaps the original to `bugs-and-updates`. A ticket therefore holds the trigger *until its
+successor exists, and not one moment longer*. Two consequences you can rely on:
+
+- **A rolling ticket clones exactly once, ever** — after the swap there is no trigger left to fire,
+  so a re-run cannot mint a duplicate.
+- **A failed clone is not a lost cycle** — the trigger stays put and the next `start` tries again.
+
+You do not have to do any of this by hand — but the count is worth a glance, because the baton can
+break in **both** directions and only one of them is loud.
+
+- **TWO open tickets carry `running-bug-list`** — a hand-off failed after its clone landed. Loud:
+  the rung-3 query returns two rows and you cannot tell which to file into. Strip the label from
+  the **older** one so exactly one holds it.
+- ⛔ **ZERO open tickets carry it — and this one is SILENT.** The trigger is a label on a ticket, so
+  it dies with the ticket: close the un-started successor (a duplicate cleanup, a "won't do", a
+  tidy-up sweep) and the marker goes with it. Both queries here filter `statusCategory != Done`, so
+  a baton on a closed ticket is not *reported* missing — it is simply **absent**, and absent reads
+  exactly like "no rolling ticket is open". That sends you to rung 4, and a ticket minted at rung 4
+  carries no trigger, so nothing ever clones again: **the chain is dead and every later cycle
+  re-mints by hand.** Recovery is one write — put `running-bug-list` back on exactly one open,
+  un-started rolling ticket (mint one first if none is open).
+
+⭐ **This is the second reason `labels` is on `--fields` above.** Zero-holder has no error message
+and no exit code; the only way to see it is to read the label column of the rows rung 3 already
+returns. Two rows with the trigger, or none, and you are looking at a broken baton.
 
 **The worked example is in the history:** `SCC-192` (the close-out-receipts finding) was minted as a
 fresh Task under the old rung 3 and **re-filed the same day as a subtask** of `SCC-190`. That

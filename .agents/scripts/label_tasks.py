@@ -867,15 +867,35 @@ def label_plan(current: list[str],
 
 def set_labels(binary: str, key: str, current: list[str],
                wanted: dict[str, bool | None], apply: bool) -> str | None:
-    """`acli workitem edit --labels` REPLACES the set, so preserve everything else. The strip
-    is the point: a child that WAS approved and now overlaps must lose the label on re-run —
-    that is what makes a parent-scoped writer self-correcting where a per-story one rotted."""
+    """Add with `--labels`, strip with `--remove-labels`. The strip is the point: a child that
+    WAS approved and now overlaps must lose the label on re-run — that is what makes a
+    parent-scoped writer self-correcting where a per-story one rotted.
+
+    ⛔ THE STRIP HAD NEVER WORKED ON THE BOARD (SCC-202, found by a review lens on SCC-197).
+    This docstring used to open "`acli workitem edit --labels` REPLACES the set, so preserve
+    everything else", and the writer below sent the reduced set accordingly. Measured against
+    the live board 2026-08-17: **`--labels` ADDS.** Against an adding API, "send the set minus
+    X" re-adds every surviving label as a no-op and removes nothing — exit 0, and the label
+    stays on. `set_labels` then returned `-parallel-ok` as a completed action.
+
+    Not cosmetic: a story that WAS `parallel-ok` and now overlaps keeps the tag while
+    `/cicd-label-tasks` reports it removed, which is exactly how two colliding lanes get run
+    side by side (`lane-collision-is-gates-not-files`). Same false belief as `jira_feed.py`'s
+    `user-tasks` strip — this was the third site, and the only one on the command that does
+    real project work."""
     want, actions = label_plan(current, wanted)
     if not actions:
         return None
     if apply:
-        r = acli(binary, ["jira", "workitem", "edit", "--key", key,
-                          "--labels", ",".join(want)])
+        # Both directions derived from the plan, rather than trusting one flag to do both.
+        adds = [x for x in want if x not in current]
+        removes = [x for x in current if x not in want]
+        cmd = ["jira", "workitem", "edit", "--key", key, "--yes"]
+        if adds:
+            cmd += ["--labels", ",".join(adds)]
+        if removes:
+            cmd += ["--remove-labels", ",".join(removes)]
+        r = acli(binary, cmd)
         if r.returncode != 0:
             warn(f"{key}: label update failed — {(r.stderr or r.stdout).strip()[:160]}")
             return None

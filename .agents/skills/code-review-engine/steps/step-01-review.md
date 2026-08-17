@@ -454,7 +454,7 @@ The caller probes for subagent availability at its Step 0 and passes the answer 
 | `review_runtime` | What you do | What the roster says |
 |---|---|---|
 | `fan-out` | the parallel fan-out above, and the failure ladder below when a lens dies | `ok`, or `recovered-inline` for a lens that took the ladder |
-| `inline` | **the ladder runs ONCE**: every lens executes inline and sequentially in this context, blind lens FIRST on the diff alone | `recovered-inline` for every lens — `ok` is not a legal state here |
+| `inline` | **the ladder runs ONCE**: every lens executes inline and sequentially in this context, blind lens FIRST on the diff alone — and where this context is already contaminated, **the Blind Hunter is DROPPED** rather than faked (§ below) | `recovered-inline` for every lens that RAN — `ok` is not a legal state here |
 | absent | probe it yourself, act on what you find, and **report which one you got** in `notes` | as above, per what the probe returned |
 
 ⛔ **Under `inline`, never attempt the fan-out first "just in case", and never re-attempt it after
@@ -496,10 +496,35 @@ caveat, next).
 ⛔ **Inline execution costs the Blind Hunter its blindness unless the ORDER protects it.** That lens
 is defined as `DIFF`-only; run inline, it inherits whatever your context already holds. A caller
 mandating inline execution must therefore run the blind lens **first — on the diff alone, before
-any spec, plan, walkthrough or evidence pack is pulled into context.** If that ordering was not
-possible, the lens still runs, but it is recorded as `ok (not blind — context held <what>)` and the
-degradation goes in `notes`. Reporting a fully-informed lens as the blind one is a false record,
-not a smaller one.
+any spec, plan, walkthrough or evidence pack is pulled into context.** Done in that order the lens
+is genuinely blind and scores `recovered-inline` like any other — `/cicd-code-review-AP` is built
+exactly this way, splitting its ingests so the blind lens lands between them.
+
+### ⛔ When the order CANNOT protect it, the lens is DROPPED — not faked (SCC-203)
+
+**Operator ruling, 2026-08-17, after a review on this engine's own lane degraded silently:**
+
+> *"subagents as the default, and when they're genuinely unavailable, drop the blind lens rather
+> than fake it. Running it inline and counting it in the roster is the worst of the three — it
+> costs tokens and produces a record that says the review was **more independent than it was**."*
+
+**The condition is CONTEXT CONTAMINATION, not the runtime.** Inline is fine when the context is
+clean and the blind lens goes first. What is never fine is running that lens in a context that
+**already holds the plan, the walkthrough, or the builder's own reasoning** — which is the normal
+state of the agent that just built the diff. There the lens can only confirm what the builder
+already believes: real tokens, zero independent signal.
+
+So when you cannot get it a clean context — the order was impossible, or you ARE the builder and
+your context is already contaminated — **do not run it.** Record it on `lenses_na` as
+`blind-hunter · n/a — context contaminated (<what it held>)`, **never as `ok`, never as
+`recovered-inline`, and never inside the count.** The previous rule allowed
+`ok (not blind — context held <what>)`; that state is **retired**, because a roster carrying a lens
+that ran without its defining property reports a review that was more independent than it was.
+
+⭐ **And it costs less than it looks.** The Blind Hunter is the ONLY lens whose value depends on
+starvation. Edge-Case and Literal-Correctness are handed repo access on purpose, the Acceptance
+Auditor needs the spec, and Test-Adequacy needs the test files — being informed is their design.
+Dropping one lens is a smaller review; faking it is a false one.
 
 ⛔ **First, the distinction this whole section turns on: a lens that ran and found nothing is NOT
 a dead lens.** "Zero findings" is a valid, reportable result that every lens is explicitly allowed

@@ -59,13 +59,23 @@ if head == ["jira", "workitem", "view"]:
 elif head == ["jira", "workitem", "search"]:
     print(json.dumps(st.get("rows", [])))
 elif head == ["jira", "workitem", "edit"]:
-    # `--labels` REPLACES the whole set on the real acli - modelled as a replace or a test
-    # cannot tell a preserving writer from a clobbering one.
+    # ⛔⛔ MEASURED 2026-08-17 AGAINST THE LIVE BOARD (SCC-202): `--labels` **ADDS**. It does
+    # NOT replace, and `--remove-labels` is a separate flag; acli honours both in one call.
+    # This stub said "REPLACES" and that lie hid a live defect for as long as it stood -
+    # `set_labels` sent the reduced set to strip a label, which against an adding API re-adds
+    # everything surviving and removes nothing, then reported `-parallel-ok` as done. A story
+    # that WAS parallel-ok and now overlaps kept the tag while the tool said it was gone,
+    # which is how two colliding lanes get run side by side. A stub differently wrong from the
+    # tool it stands in for makes a broken writer look correct.
     if st.get("label_fail"):
         print("Error: labels rejected", file=sys.stderr)
         sys.exit(1)
-    st.setdefault("labels", {})[val("--key")] = [
-        x for x in (val("--labels") or "").split(",") if x]
+    cur = list(st.get("labels", {}).get(val("--key"), []))
+    for x in (val("--labels") or "").split(","):
+        if x and x not in cur:
+            cur.append(x)
+    drop = {x for x in (val("--remove-labels") or "").split(",") if x}
+    st.setdefault("labels", {})[val("--key")] = [x for x in cur if x not in drop]
     state.write_text(json.dumps(st))
     print("edited")
 elif head == ["jira", "workitem", "comment"] and args[3] == "create":

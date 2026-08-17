@@ -1283,13 +1283,43 @@ def main() -> int:
         # the thing an agent actually runs - changed nothing the check could see. The rule's
         # enforcement IS the search; a label named only in prose is a label nobody queries.
         fences = re.findall(r"```(?:bash)?\n(.*?)```", body, re.S)
-        searches = "\n".join(f for f in fences if "acli jira workitem search" in f)
+        # ⛔ COMMENT LINES ARE STRIPPED, and that is not tidying - without it these checks are
+        # VACUOUS. Measured on this lane: SCC-198 added explanatory `#` comments above the query
+        # that name BOTH labels, and with those present the query line itself could be deleted
+        # outright and R2/R2c still passed. Proven by mutation, not argued: delete the `--jql`
+        # line, keep the comments, both go green.
+        # ⭐ This is the SECOND time this exact hole has been closed one level down. R2 was
+        # already narrowed from the whole `body` to the fenced block because rung 3's PROSE
+        # satisfied it (R-M2). Comments inside the fence are prose that happens to live in a code
+        # block - the same defect wearing the fence as a disguise. Only a line an agent could RUN
+        # counts as the rule's enforcement.
+        runnable = "\n".join(ln for f in fences if "acli jira workitem search" in f
+                             for ln in f.splitlines() if not ln.lstrip().startswith("#"))
+        searches = runnable
+        # ⛔ BOTH markers, and the second is not decoration (SCC-198 review finding). The label
+        # split created a WINDOW: between a cycle closing and the next one starting, the only
+        # open rolling ticket is the un-started successor, which carries `running-bug-list` and
+        # NOT `bugs-and-updates`. A query naming one label returns nothing there, the agent reads
+        # "nothing fits", and rung 4 says MINT - the exact duplicate rung 3 exists to prevent,
+        # reintroduced by the change that was supposed to strengthen it.
         c.check("R2 the look-before-mint SEARCH BLOCK queries the rolling ticket's label",
-                "labels = bugs-and-updates" in searches,
+                "bugs-and-updates" in searches,
                 "an agent must be able to FIND the open one from a command, or 'nothing fits' "
                 f"is unfalsifiable. Search block: {searches[:160]!r}")
-        c.check("R3 the live instance is named, so nobody mints a second one",
-                "SCC-190" in body, "the rolling ticket that exists today")
+        c.check("R2c ...and the SUCCESSOR's marker too, or the between-cycles window is blind",
+                "running-bug-list" in searches,
+                "between cycles the only open rolling ticket carries `running-bug-list`; a "
+                f"one-label query mints a duplicate there. Search block: {searches[:200]!r}")
+        # ⭐ R3 WAS A GATE THAT COULD NO LONGER FAIL, and this lane is what broke it. It asserted
+        # `"SCC-190" in body` to pin "the live instance is named". Naming a key that changes every
+        # cycle is the anti-pattern - so that sentence was correctly deleted here, and the check
+        # kept passing on an unrelated HISTORICAL mention (the SCC-192 worked example, which cites
+        # SCC-190 as the parent it was re-filed under). The check's name and what it measured had
+        # come apart. It now pins the rule that replaced it: find it by LABEL, never by key.
+        c.check("R3 the rule sends you to the LABEL, not to a remembered key",
+                re.search(r"by\s+(its\s+)?label", body, re.I) is not None
+                and "never by remembering a key" in body,
+                "a key changes every cycle; a rule naming one goes stale the day it is written")
         c.check("R4 the worked example (SCC-192, re-filed from a fresh Task) is recorded",
                 "SCC-192" in body, "the re-filing IS the rule")
 
@@ -1489,6 +1519,118 @@ def main() -> int:
         c.check("U7 CONTROL: the BRAINS keep their full descriptions (the budget is the menu's)",
                 len(long_brains) >= 10, f"only {len(long_brains)} long brains - did the "
                                         f"shortening leak into .agents/commands?")
+
+    # ── SCC-200 · the hand-back duty sits WHERE the artifact is produced ─────────────────
+    #
+    # ⛔ THE RECON THAT REFRAMED THIS PART. The plan assumed `artifacts-always-first.md` was
+    # SILENT about handing artifacts back as clickable links. It was not - the duty had been
+    # in that file all along, as one blockquote in the artifact-set section. And it still did
+    # not fire: SCC-190 ran an entire lane (plan, five review lenses, close-out, PR) handing
+    # back bare paths the whole way, and the operator had to ask outright - "I cant see the
+    # artifacts unless you give me the hyper link in the chat."
+    #
+    # So the defect is not that the duty is unstated. It is WHERE it is stated. A rule read at
+    # the top of a file is not read at the moment of the act, and the act happens at three
+    # seams: the plan is written (§2), approval is REQUESTED on it (§3), and the walkthrough
+    # is written (§5). §3 is the sharp one - asking someone to approve a document they were
+    # never handed is the defect in one sentence.
+    #
+    # ⭐ PINNED AS WIRING, NOT PROSE (prose-pinning-guards-are-vacuous). A marker phrase alone
+    # can be pasted anywhere, so every seam must carry the marker AND a real markdown-link
+    # form. The controls below strip the duty from one place each and must catch it.
+    #
+    # ⛔ AND IT LIVES HERE, NOT IN test_workflow_lint.py, WHICH IS WHERE IT WAS WRITTEN. That
+    # file declares NO blocks, so the sweep could not address these cases: `--case` matches
+    # BLOCK labels only, every mutant scored exit 3 (_harness.NO_MATCH), and the sweep
+    # correctly refused to call any of them a kill. Adding one block there was worse - a file
+    # is "wired" the moment it contains any `c.block(`, and ORPHAN in test_suite_runner.py
+    # then requires ALL 46 of its checks to be guarded. This file is already fully blocked and
+    # already owns rules-content assertions (SCC-191, next door, on the sibling rule).
+    if c.block("SCC-200 · the hand-back duty sits where the artifact is produced"):
+        hb = read(ROOT / ".agents/rules/artifacts-always-first.md")
+        MARK = "hand it back"
+        LINK = re.compile(r"\[[^\]\n]+\]\([^)\n]+\)")
+
+        def sections(text):
+            out, cur = {}, None
+            for ln in text.splitlines():
+                if ln.startswith("#"):
+                    cur = ln.strip()
+                    out[cur] = []
+                elif cur is not None:
+                    out[cur].append(ln)
+            return {k: "\n".join(v) for k, v in out.items()}
+
+        def handback_gaps(text):
+            """Seams NOT carrying the hand-back duty. Empty list == compliant."""
+            body, gaps = sections(text), []
+            home = next((k for k in body if k.lower().lstrip("# ").startswith(MARK)), None)
+            if home is None:
+                gaps.append("no `## Hand It Back` section")
+            elif not LINK.search(body[home]):
+                gaps.append("`## Hand It Back` shows no markdown-link form")
+            for want, why in (("### 2.", "the plan is written"),
+                              ("### 3.", "approval is REQUESTED on it"),
+                              ("### 5.", "the walkthrough is written")):
+                k = next((k for k in body if k.startswith(want)), None)
+                if k is None:
+                    gaps.append(f"{want} ({why}) is missing entirely")
+                elif MARK not in body[k].lower() or not LINK.search(body[k]):
+                    gaps.append(f"{want} ({why}) does not carry the hand-back duty")
+            return gaps
+
+        def blank_marker_in(text, heading):
+            """Strip the marker from ONE section, leaving every other seam intact."""
+            i = text.index(heading)
+            nxt = text.find("\n### ", i + 1)
+            seg = text[i:nxt if nxt != -1 else len(text)]
+            return (text[:i] + re.sub(MARK, "(removed)", seg, count=1, flags=re.I)
+                    + text[nxt if nxt != -1 else len(text):])
+
+        def bare_paths_in(text, heading, boundary="\n### "):
+            """Demote every markdown link in ONE section to the bare path it points at.
+
+            ⛔ THIS IS NOT A SYNTHETIC MUTANT - it is verbatim what SCC-190 shipped. The
+            marker survives; only the clickable form dies, which is precisely a rule that
+            says `hand it back` beside a path the operator cannot open. Every control above
+            strips the MARKER, so `LINK` could be relaxed to `re.compile(r"")` - matching
+            everywhere, asserting nothing - and all four checks would stay green. Half the
+            predicate was unpinned, and it was the half that names the actual defect."""
+            i = text.index(heading)
+            nxt = text.find(boundary, i + 1)
+            j = nxt if nxt != -1 else len(text)
+            # `[-1]`, not `[1]`: identical on a real link, but it also keeps a DEGENERATE
+            # `LINK` (the `re.compile(r"")` mutant) from raising IndexError in here. A mutant
+            # that crashes the harness exits non-zero and scores as a kill while proving
+            # nothing about the control - `red-test-can-die-before-its-assertion`. This way
+            # the mutant reaches `c.check` and fails it honestly.
+            demoted = LINK.sub(lambda m: m.group(0).split("](", 1)[-1].rstrip(")"), text[i:j])
+            return text[:i] + demoted + text[j:]
+
+        c.check("SCC-200 the rule carries the hand-back duty at ALL THREE seams",
+                not handback_gaps(hb), "; ".join(handback_gaps(hb)) or "?")
+        # ⛔ NEGATIVE CONTROLS. Each removes the duty from ONE place; a predicate that stays
+        # green on any of them is reporting the tree's cleanliness rather than measuring it.
+        # ⭐ The PLAN control earned its keep the moment the base went green: a decorative
+        # "-> ## Hand It Back" pointer left a SECOND marker in that section, so stripping the
+        # duty did not strip the evidence and the control went red. The pointers are gone and
+        # each seam now carries exactly one load-bearing marker.
+        m3 = blank_marker_in(hb, "### 3.")
+        c.check("SCC-200 CONTROL: stripping the duty from the APPROVAL seam is caught",
+                any("### 3." in g for g in handback_gaps(m3)), str(handback_gaps(m3)))
+        m2 = blank_marker_in(hb, "### 2.")
+        c.check("SCC-200 CONTROL: stripping it from the PLAN seam is caught",
+                any("### 2." in g for g in handback_gaps(m2)), str(handback_gaps(m2)))
+        mh = re.sub(r"(?im)^##\s*hand it back\s*$", "## Something Else", hb, count=1)
+        c.check("SCC-200 CONTROL: losing the `## Hand It Back` home is caught",
+                any("Hand It Back" in g for g in handback_gaps(mh)), str(handback_gaps(mh)))
+        # ⛔ THE LINK HALF, pinned separately - the three controls above only prove MARK.
+        mw = bare_paths_in(hb, "### 5.")
+        c.check("SCC-200 CONTROL: a seam that says it but hands back a BARE PATH is caught",
+                any("### 5." in g for g in handback_gaps(mw)), str(handback_gaps(mw)))
+        mb = bare_paths_in(hb, "## Hand It Back", boundary="\n## ")
+        c.check("SCC-200 CONTROL: the `## Hand It Back` home losing its link FORM is caught",
+                any("markdown-link form" in g for g in handback_gaps(mb)), str(handback_gaps(mb)))
 
     return c.finish()
 

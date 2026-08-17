@@ -1271,6 +1271,129 @@ def cmd_trace(args) -> int:
 STARTABLE = ("to do", "to do next")
 
 
+# ── the rolling ticket's cycle: a baton that mints next month's ticket (SCC-198) ─────
+#
+# ⛔ THE DEFECT. The rolling `Bugs and Updates - <YYYY-MM>` ticket has to clone a fresh
+# successor once per cycle, and that instruction lived only in the ticket's own description -
+# first line, capitals. It did not fire. The operator's words are the design brief: "its
+# writen in the ticket I just dont know if you will read it."
+#
+# ⭐ ONE MARKER AT A TIME, AND IT MOVES - operator ruling 2026-08-17, replacing an earlier
+# two-tag design where both markers sat on the ticket permanently. `running-bug-list` sits on
+# exactly one ticket: the next cycle, not yet started. `bugs-and-updates` is what a cycle
+# wears AFTER it has started.
+#
+# THE INVARIANT, and every branch below is derived from it rather than patched onto it:
+#     a rolling ticket holds `running-bug-list` until its successor EXISTS,
+#     and not one moment longer.
+# So the clone comes FIRST (an acli clone carries labels, so the successor inherits the
+# trigger - that IS the handoff; swap first and it inherits a dead marker and the cycle ends
+# silently one ticket later). The swap happens even when someone ELSE did the cloning: the
+# operator's prompt at the top of the ticket clones by hand and its clone inherits the trigger
+# too, so returning early would leave TWO tickets holding a marker that must be unique. And
+# the swap is WITHHELD whenever no successor was made, which is what lets the next `start`
+# simply try again instead of retiring a baton nobody caught.
+#
+# WHY A BATON BEATS A FLAG, since this is the property the whole design rests on: a PERMANENT
+# trigger can fire twice, so every guard against a second clone has to ask the board - a
+# network call that can be wrong, slow or unavailable. A baton is consumed by use, so the
+# common re-fire (the post-commit recorder running `start` again on a ticket that already
+# started) cannot clone, with nothing to query and nothing to get wrong.
+#
+# ⛔ KNOWN AND ACCEPTED - the one race left. The "does a successor already exist" search is
+# check-then-act: two agents starting the SAME un-started ticket in the same instant both read
+# the trigger before either swaps, and both clone. Blast radius is one spare ticket, against a
+# lock this system has no way to hold. It is deliberately not solved, and it is strictly
+# narrower than the two-tag design it replaces, where EVERY re-fire depended on the board
+# answering correctly rather than only the simultaneous ones.
+TRIGGER_LABEL = "running-bug-list"
+ROLLING_LABEL = "bugs-and-updates"
+
+
+def roll_the_cycle(binary: str, key: str, timeout: int) -> None:
+    """Clone the next rolling ticket and hand `running-bug-list` on. Never fails the start.
+
+    Called from `cmd_start` only, and only after the transition has landed. Every exit is a
+    `say` and a return: this sits on the path of every commit in the repo via the post-commit
+    recorder, so a board hiccup here must never block work.
+    """
+    # ⛔ None means the SEARCH FAILED; [] means it legitimately found nothing. A caller that
+    # only checks truthiness cannot tell them apart, and cloning on that confusion mints a
+    # duplicate every time the network hiccups. Refusing both the clone and the swap is the
+    # self-healing direction - the trigger survives and the next `start` retries.
+    # ⛔⛔ "A SUCCESSOR IS AN **UN-STARTED** TICKET." Three review lenses killed the first version
+    # of this query independently, and all three failures were the same mistake: it asked "does any
+    # other open ticket carry the trigger?" when the invariant says "does MY SUCCESSOR exist?".
+    # Those are different questions, and every gap between them retires a baton nobody caught:
+    #
+    #   * `statusCategory != Done` matched the ticket ITSELF - it still carries the trigger and is
+    #     In Progress at this moment - so deleting `key != {key}` was silent and terminal: skip the
+    #     clone, swap anyway, and print "a successor already exists (SCC-197)", naming itself. The
+    #     test suite stayed 18/18 green on that mutant, because the stub ignores the JQL entirely.
+    #   * it also matched a STRANDED PREDECESSOR (a ticket left holding the trigger by a failed
+    #     swap). Starting the real successor then found its own predecessor, skipped its clone and
+    #     consumed its own baton - the two-holder state "repairing" itself into ZERO holders, with
+    #     "exactly one open ticket holds the baton" as the last line printed. Reproduced, not
+    #     theorised.
+    #   * and it was unscoped, while the clone on the next line is `--to-project`. A second project
+    #     adopting the label would answer this project's question.
+    #
+    # `statusCategory = "To Do"` is the whole fix, and it is the invariant stated in JQL: a
+    # successor is one that has NOT been started. A stranded predecessor is In Progress and cannot
+    # match; nor can this ticket, which makes the self-match structurally impossible rather than
+    # guarded. Measured live 2026-08-17: this query returns SCC-201 (To Do Next) and excludes
+    # SCC-197 (In Progress). `key != {key}` stays as a second, independent belt.
+    project = key.split("-")[0]
+    found = acli_json(binary, ["jira", "workitem", "search", "--json", "--limit", "5",
+                               "--fields", "key,summary",
+                               "--jql", f'project = {project} AND labels = "{TRIGGER_LABEL}" '
+                                        f'AND statusCategory = "To Do" AND key != {key}'],
+                      timeout=timeout)
+    if found is None:
+        say(f"[WARN] {key} carries `{TRIGGER_LABEL}`, but the board could not be searched for "
+            f"an existing successor. Nothing was cloned and the label was LEFT IN PLACE, so "
+            f"the next `start` tries again - the cycle is not lost.")
+        return
+
+    existing = as_items(found, "issues")
+    if existing:
+        # Not an error, and not a no-op either: the successor exists, so this ticket's baton
+        # is spent whoever caught it. Skip the clone; still hand it on.
+        say(f"jira-feed: {key} carries `{TRIGGER_LABEL}` and a successor already exists "
+            f"({', '.join(str(i.get('key')) for i in existing[:3])}) - no clone made.")
+    else:
+        # ⛔ Summary and description are copied VERBATIM, and both should be: the description
+        # carries the operator's own cycle prompt, which the successor must inherit word for
+        # word, and a rolling ticket's summary is the same by design. Nothing is rewritten
+        # here, which is also why no `--description` ever gets built (backticks inside one
+        # EXECUTE). `clone` carries no subtasks - the property it was chosen for.
+        r = acli(binary, ["jira", "workitem", "clone", "--key", key,
+                          "--to-project", key.split("-")[0], "--yes"], timeout=timeout)
+        if r.returncode != 0:
+            say(f"[WARN] {key} carries `{TRIGGER_LABEL}`, but the clone FAILED: "
+                f"{(r.stderr or r.stdout).strip()[:120]}. The label was LEFT IN PLACE, so the "
+                f"next `start` tries again - the cycle is not lost.")
+            return
+        say(f"jira-feed: {key} cloned the next rolling ticket - "
+            f"{(r.stdout or '').strip().splitlines()[-1][:120] if (r.stdout or '').strip() else 'created'}")
+
+    # ⛔ `--labels` ADDS and `--remove-labels` REMOVES - measured against the live board on
+    # 2026-08-17, and acli honours BOTH in one call. Writing this as a read-modify-write
+    # ("send the set minus the trigger", which is what a replace would need) silently does
+    # nothing: every add is a no-op and the trigger stays on. Two flags in one call, so no
+    # other label on the ticket is read, resent, or at risk.
+    lr = acli(binary, ["jira", "workitem", "edit", "--key", key, "--yes",
+                       "--labels", ROLLING_LABEL,
+                       "--remove-labels", TRIGGER_LABEL], timeout=timeout)
+    if lr.returncode != 0:
+        say(f"[WARN] {key}: a successor exists, but `{TRIGGER_LABEL}` could NOT be handed on: "
+            f"{(lr.stderr or lr.stdout).strip()[:120]}. Two tickets now carry it - strip it "
+            f"from {key} by hand so exactly one does.")
+        return
+    say(f"jira-feed: {key} handed `{TRIGGER_LABEL}` to its successor and now carries "
+        f"`{ROLLING_LABEL}` - exactly one open ticket holds the baton.")
+
+
 def cmd_start(args) -> int:
     """Work has started: move a ticket to `In Progress` (SCC-113).
 
@@ -1322,6 +1445,28 @@ def cmd_start(args) -> int:
 
     if status.lower() == target.lower():
         say(f"jira-feed: {args.key} is already {target} - nothing to do ({summary[:60]})")
+        # ⛔ THE ROLL IS BOUND TO THE TICKET'S **STATE**, NOT TO THE TRANSITION EDGE. It used to
+        # sit only after a successful transition, and three lenses independently proved what that
+        # cost: every failure path printed "the label was LEFT IN PLACE, so the next `start` tries
+        # again - the cycle is not lost", and there was NO reachable next attempt. The ticket was
+        # already In Progress, so every later `start` returned right here, above the trigger check.
+        # The promise in the message, in `work-consolidation.md` and in the SOP was simply false.
+        #
+        # Two more routes reached the same dead end with no roll failure at all: a blip on the
+        # post-transition read-back returns 4 after the write landed, and an operator dragging the
+        # card to In Progress on the Jira board never invokes this code on the edge at all. And
+        # nothing surfaced it - `roll_the_cycle` never changes the exit code, so the post-commit
+        # recorder wrote its once-per-branch marker on the 0 and stopped asking, with both streams
+        # redirected to /dev/null so the [WARN] reached no one either.
+        #
+        # Rolling from the settled state is safe precisely BECAUSE the marker is a baton: a ticket
+        # that already handed off no longer carries the trigger, so this is a no-op for every
+        # started ticket (pinned by A2b). Only a ticket still holding an un-honoured baton rolls,
+        # which is exactly the retry the messages promise.
+        if args.apply and TRIGGER_LABEL in [str(x) for x in (fields.get("labels") or [])]:
+            say(f"jira-feed: {args.key} still holds `{TRIGGER_LABEL}` - its successor was never "
+                f"minted, so this is the retry the earlier run promised.")
+            roll_the_cycle(binary, args.key, args.timeout)
         return 0
 
     if status.lower() == "done":
@@ -1364,6 +1509,15 @@ def cmd_start(args) -> int:
             f"{(t.stderr or t.stdout).strip()[:160]}")
         return 2
     say(f"jira-feed: {args.key} {status} -> {target}")
+
+    # ⭐ THE ROLLING CYCLE (SCC-198), and on the normal path it costs one `in` and nothing
+    # else. `labels` is already on view_fields' whitelist, so these are the labels read
+    # BEFORE the transition - no extra board call for the ordinary tickets that come through
+    # this seam on every commit. It sits strictly after the transition has been confirmed, so
+    # nothing on the existing path can be perturbed by it, and `roll_the_cycle` never raises
+    # and never changes this exit code.
+    if TRIGGER_LABEL in [str(x) for x in (fields.get("labels") or [])]:
+        roll_the_cycle(binary, args.key, args.timeout)
     return 0
 
 
@@ -2097,10 +2251,15 @@ def cmd_finish(args) -> int:
         # THE signal, so a Done ticket still carrying it poisons the filter it exists to
         # feed. The sibling half of this same change is built on "the strip is the point" -
         # this writer only ever added (SCC-155 review finding).
+        # ⛔ `--remove-labels`, NOT a reduced `--labels`. Measured 2026-08-17: `--labels` ADDS
+        # on the real acli, so the read-modify-write this used to be - send the set minus
+        # `user-tasks` - re-added every label that was already there, exited 0, and left
+        # `user-tasks` exactly where it was. The strip has never worked on the board. It
+        # passed its test because the stub modelled `--labels` as a replace; fixing the stub
+        # to match reality is what finally turned that case red.
         if USER_TASKS_LABEL in labels:
-            want = sorted(set(labels) - {USER_TASKS_LABEL})
             lr = acli(binary, ["jira", "workitem", "edit", "--key", args.key, "--yes",
-                               "--labels", ",".join(want)], timeout=args.timeout)
+                               "--remove-labels", USER_TASKS_LABEL], timeout=args.timeout)
             if lr.returncode != 0:
                 say(f"[WARN] {args.key}: closed, but `{USER_TASKS_LABEL}` could not be "
                     f"stripped - {(lr.stderr or lr.stdout).strip()[:120]}")
@@ -2156,11 +2315,14 @@ def cmd_finish(args) -> int:
         say(f"[WARN] {args.key}: the user-tasks comment did NOT land - "
             f"{(cm.stderr or cm.stdout).strip()[:160]}")
 
-    # `--labels` REPLACES the set, so read-modify-write or every other label is destroyed.
     if USER_TASKS_LABEL not in labels:
-        want = sorted(set(labels) | {USER_TASKS_LABEL})
+        # Send the ONE label, not the union. `--labels` adds (measured 2026-08-17), so the
+        # read-modify-write this used to be was correct only by accident - re-adding labels
+        # that were already there. Its sibling half, the STRIP above, was the same idiom on
+        # the same false belief and was a live no-op. Naming the label sent is what keeps the
+        # two halves from looking like they share a mechanism they do not.
         lr = acli(binary, ["jira", "workitem", "edit", "--key", args.key, "--yes",
-                           "--labels", ",".join(want)], timeout=args.timeout)
+                           "--labels", USER_TASKS_LABEL], timeout=args.timeout)
         if lr.returncode != 0:
             say(f"[WARN] {args.key}: could not add `{USER_TASKS_LABEL}` - "
                 f"{(lr.stderr or lr.stdout).strip()[:120]}")

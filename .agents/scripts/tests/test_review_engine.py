@@ -165,8 +165,61 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     ("step-01: inline never re-attempts the fan-out", STEPS[0],
      r"never attempt the fan-out first[^\n]*\n?[^\n]*never re-attempt it after", 0,
      "never attempt the fan-out first", "always attempt the fan-out first"),
+    # ── SCC-203 · under `inline` the blind lens is DROPPED, never faked ─────────────────────
+    #
+    # ⛔ THE DEFECT, MEASURED ON THE LANE THAT ADDED THIS. `/smh-code-review` Step 0.9 tells the
+    # agent to probe whether the runtime can fan out, and the probe conflated two different
+    # things: a CAPABILITY (does a subagent tool exist?) and a POLICY (is the agent permitted to
+    # use it right now?). A session directive saying "do not spawn subagents unless asked" was
+    # read as "this runtime is inline", the whole review ran in the BUILDER'S OWN CONTEXT, and
+    # the flow recorded that as a legitimate outcome. The operator caught it by reading the chat.
+    # Nothing in the system would have.
+    #
+    # ⭐ THE OPERATOR'S RULING, 2026-08-17: "subagents as the default, and when they're genuinely
+    # unavailable, drop the blind lens rather than fake it. Running it inline and counting it in
+    # the roster is the worst of the three - it costs tokens and produces a record that says the
+    # review was more independent than it was."
+    #
+    # The Blind Hunter's ENTIRE value is not knowing what the builder knows. Run inline in the
+    # builder's context it has already read the plan, the walkthrough and the reasoning, so it can
+    # only confirm what the builder already believes: real tokens, zero independent signal. And it
+    # is the ONLY lens that needs this - Edge-Case and Literal-Correctness get repo access on
+    # purpose, the Acceptance Auditor needs the spec, Test-Adequacy needs the test files. Being
+    # informed is their design, which is why isolating all five was always the slow way round.
+    ("step-01: under inline the blind lens is DROPPED, not run", STEPS[0],
+     r"^\|\s*`inline`\s*\|[^|]*\*\*the Blind Hunter is DROPPED\*\*", re.M,
+     "**the Blind Hunter is DROPPED**", "**the Blind Hunter runs first**"),
+    ("step-01: a dropped blind lens is recorded n/a, never `ok`", STEPS[0],
+     r"never as `ok`, never as\s+`recovered-inline`, and never inside the count", 0,
+     "never as `ok`, never as", "recorded however it turned out, and"),
+    # ⛔ ANCHORED ON THE PROSE, NOT THE QUOTE. The first cut pinned the bare phrase "more
+    # independent than it was", which now appears TWICE - in the operator's quoted ruling and in
+    # the rule's own closing sentence. `replace(old, new, 1)` mutated only the first, the second
+    # still matched, and the check survived its own counter-example. The harness caught it.
+    ("step-01: the reason a faked blind lens is worse than none is STATED", STEPS[0],
+     r"a roster carrying a lens\s+that ran without its defining property reports a review that "
+     r"was more independent", re.M,
+     "that ran without its defining property", "that ran in a warm context"),
+    # ── SCC-203 · the caller distinguishes CAPABILITY from PERMISSION ───────────────────────
+    ("smh: the runtime probe asks about capability, not permission", SMH_CMD,
+     r"\*\*capability\*\*[^\n]*\n?[^\n]*never a \*\*policy\*\*", re.M | re.I,
+     "never a **policy**", "and also a **policy**"),
+    ("smh: invoking the command IS the request for subagents", SMH_CMD,
+     r"invoking this command \*\*IS\*\* that request", 0,
+     "invoking this command **IS** that request",
+     "the operator must ask for subagents themselves"),
+    # ⛔ THE TWIN CARRIES IT TOO. `sudo-commands-have-ap-twins-that-drift`: fix one, diff the
+    # twin. The operator caught this omission the first time round - the smh caller was fixed
+    # and the cicd one was not, which is how the two lanes end up reviewing to different law.
+    ("cicd: the runtime probe asks about capability, not permission", CICD_CMD,
+     r"\*\*capability\*\*[^\n]*\n?[^\n]*never a \*\*policy\*\*", re.M | re.I,
+     "never a **policy**", "and also a **policy**"),
+    ("cicd: invoking the command IS the request for subagents", CICD_CMD,
+     r"invoking this command \*\*IS\*\* that request", 0,
+     "invoking this command **IS** that request",
+     "the operator must ask for subagents themselves"),
     ("step-01: under inline, `ok` is not a legal per-lens state", STEPS[0],
-     r"`recovered-inline` for every lens — `ok` is not a legal state here", 0,
+     r"`recovered-inline` for every lens that RAN — `ok` is not a legal state here", 0,
      "`ok` is not a legal state here", "`ok` is fine here too"),
     ("step-01: the blind lens may run concurrently with the receipt, at ONE sha", STEPS[0],
      r"the sha the lenses ran against and the sha on the receipt must be the same value", 0,
@@ -887,9 +940,17 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      r"run the blind lens \*\*first — on the diff alone, before\s*\nany spec, plan, walkthrough or evidence pack is pulled into context\.\*\*",
      re.M,
      "**first — on the diff alone, before", "**last — after everything else, including"),
-    ("step-01: a non-blind blind lens is recorded as such, never silently", STEPS[0],
-     r"`ok \(not blind — context held <what>\)`", 0,
-     "`ok (not blind — context held <what>)`", "`ok`"),
+    # ⛔ RETIRED BY SCC-203, and the retirement is the point. This used to pin
+    # `ok (not blind — context held <what>)` as the honest way to record a lens that ran without
+    # its defining property. The operator ruled that state out entirely: a roster carrying it
+    # reports a review that was more independent than it was, which is worse than a smaller
+    # review. The state a contaminated blind lens reaches is now `n/a`, and it is not counted.
+    ("step-01: a contaminated blind lens is DROPPED and recorded n/a", STEPS[0],
+     r"`blind-hunter · n/a — context contaminated \(<what it held>\)`", 0,
+     "`blind-hunter · n/a — context contaminated (<what it held>)`", "`ok`"),
+    ("step-01: the retired `ok (not blind ...)` state is gone from the engine", STEPS[0],
+     r"that state is \*\*retired\*\*", 0,
+     "that state is **retired**", "that state is still available"),
 
     # ── step-01 (SCC-126): the CALLER's wiring — pinned in the caller's own file ─────────────
     # F7 from this task's review: every check above lives in step-01, i.e. the engine's CLAIM
@@ -1192,6 +1253,67 @@ def main() -> int:
                 applies and rx.search(mutated) is None,
                 "" if applies and rx.search(mutated) is None
                 else "check survives its own counter-example — it cannot fail on content")
+
+    # ── 2a. SCC-203: the two interactive callers carry the SAME subagent law, byte for byte ──
+    #
+    # ⛔ TWO PINS ARE NOT A DRIFT CHECK. The rows above assert each caller carries the clause;
+    # they say nothing about the two clauses AGREEING. That is the gap `sudo-commands-have-ap-twins
+    # -that-drift` names, and it is how this very change nearly shipped: the smh caller was fixed
+    # and the cicd twin was not, so the story lane and the task lane would have reviewed to
+    # different law with every check green. The operator caught it by reading the diff.
+    #
+    # `cicd-code-review-AP` is deliberately EXCLUDED: it is headless, it genuinely cannot fan out,
+    # and it protects the blind lens by ORDER instead (splitting its ingests so the lens runs
+    # before any context lands). Holding it to "subagents are the default" would be law it cannot
+    # obey - a rule nobody can follow is a rule that teaches everyone to ignore rules.
+    # ⭐ THREE paragraphs, not two. The `rather than faking it` clause — where an `inline` caller
+    # holding the plan DROPS the Blind Hunter — was carried by both callers and pinned by nothing:
+    # no CHECKS row named it, and this extractor did not match it, so either caller could have
+    # lost the consequence while every check stayed green. It is part of the same law (what a
+    # runtime answer OBLIGES), so it belongs in the same byte-identity comparison.
+    def _law_of(txt: str) -> str:
+        out = []
+        for para in txt.split("\n\n"):
+            if ("**capability**" in para or "IS** that request" in para
+                    or "rather than faking it" in para):
+                out.append(" ".join(para.split()))
+        return "\n".join(out)
+
+    def subagent_law(rel: str) -> str:
+        """The capability-vs-policy paragraph, the request clause, and the drop clause,
+        whitespace-normalised."""
+        return _law_of(texts.get(rel, ""))
+
+    smh_law, cicd_law = subagent_law(SMH_CMD), subagent_law(CICD_CMD)
+    c.check("SCC-203 the smh caller states the subagent law at all",
+            bool(smh_law), f"{SMH_CMD}: no capability/request paragraph found")
+    c.check("SCC-203 ...and the cicd TWIN states it identically (no drift)",
+            bool(cicd_law) and smh_law == cicd_law,
+            "the two interactive callers disagree about when a review may run inline; "
+            f"smh={len(smh_law)}b cicd={len(cicd_law)}b")
+    # ⛔ ALL THREE CLAUSES, NAMED. Byte-identity is satisfied by two files that are equally
+    # WRONG — drop the drop-clause from both and this still passes. So assert each clause is
+    # actually in the extracted law, or the comparison above guards an empty agreement.
+    for clause, why in (("**capability**", "capability-vs-policy"),
+                        ("IS** that request", "invoking the command IS the request"),
+                        ("rather than faking it", "a contaminated Blind Hunter is DROPPED")):
+        c.check(f"  ^ the law includes the {why} clause",
+                clause in smh_law and clause in cicd_law,
+                f"missing from {'smh' if clause not in smh_law else 'cicd'} caller")
+    # ⛔ AND THE COMPARISON'S OWN COUNTER-EXAMPLE — same discipline as section 2's CHECKS rows.
+    # Two pins plus an equality still prove nothing about whether that equality can BREAK. A
+    # `_law_of` that matched nothing would return "" for both files and compare equal, and a
+    # `_law_of` that matched every paragraph would compare two whole files that legitimately
+    # differ. Perturbing one caller must make them disagree, and a law-less text must extract
+    # empty — together those bound the extractor from both sides.
+    drifted = _law_of(texts.get(CICD_CMD, "").replace(
+        "Subagents are the DEFAULT", "Subagents are optional", 1))
+    c.check("  ^ counter-example: a twin that drifts on the law is caught",
+            bool(drifted) and drifted != smh_law,
+            "perturbing the cicd law left it byte-identical — the drift check cannot fail")
+    c.check("  ^ counter-example: a caller with NO law extracts empty (not a false match)",
+            _law_of("# A command\n\nIt does a thing.\n\nThen another thing.") == "",
+            "the extractor matches arbitrary prose, so agreement means nothing")
 
     # ── 2b. SCC-147: CALLER_FILES is the COMPLETE set of engine callers ───────────────────
     # The checks above pin the three callers that exist today, one hand-written row each. That

@@ -31,7 +31,7 @@ STEP07 = ("## Step 0.7 — re-derivation\n\n"
 
 
 def wt(verdict: str = "PASS", sha: str = "abc1234", roster_rows: str | None = None,
-       runtime: str | None = None, step07: bool = True) -> str:
+       runtime: str | None = None, step07: bool = True, na: str | None = None) -> str:
     out = "# W\n\n"
     if runtime:
         out += f"review-runtime: {runtime}\n\n"
@@ -40,6 +40,8 @@ def wt(verdict: str = "PASS", sha: str = "abc1234", roster_rows: str | None = No
     out += "## Code Review\n\n"
     if roster_rows is not None:
         out += "lenses_run:\n" + roster_rows + "\n"
+    if na is not None:
+        out += f"lenses_na:       {na}\n"
     out += f"\nVerdict: {verdict} @ {sha}\n"
     return out
 
@@ -76,6 +78,42 @@ def main() -> int:
                 ok, f"this is the designed floor and the only exit that is not a bypass: {why}")
         ok, why = roster.judge(wt(roster_rows=ALL_OK), POST, "PASS")
         c.check("E2c · (control) PASS with every lens ok passes", ok, str(why))
+
+    if c.block("NA · a DROPPED lens is READABLE, and a fan-out cannot justify one (SCC-203)"):
+        # ⛔ THE STATE WITH NO MACHINE READER. step-01 retired `ok (not blind — context held
+        # <what>)` and records a dropped Blind Hunter on `lenses_na:` instead. That is the right
+        # record, and until now nothing downstream could read it - `lenses_na:` is a separate
+        # field, so the row never reached the roster regex and a dropped lens was invisible to
+        # both preflights.
+        DROP = "blind-hunter · n/a — context contaminated (held the plan and walkthrough)"
+        ok, why = roster.judge(wt(roster_rows=ALL_INLINE, runtime="inline", na=DROP), POST, "PASS")
+        c.check("NA1 · an `inline` lane may DROP the blind lens and still pass",
+                ok, f"this is the SCC-203 ruling's designed end state, not a degradation: {why}")
+        ok, why = roster.judge(wt(roster_rows=ALL_OK, runtime="fan-out", na=DROP), POST, "PASS")
+        c.check("NA2 · a `fan-out` lane that drops a lens BLOCKS",
+                not ok and "fan-out" in " ".join(why),
+                "a subagent starts clean BY CONSTRUCTION, so `context contaminated` is not a "
+                "statement this runtime can make; dropping the one lens whose value comes from "
+                f"starvation and then passing is the whole defect: {why}")
+        ok, why = roster.judge(wt(roster_rows=ALL_INLINE, runtime="inline",
+                                  na="blind-hunter"), POST, "PASS")
+        c.check("NA3 · an `n/a` with NO reason BLOCKS",
+                not ok and "no reason" in " ".join(why),
+                f"bare `n/a` is indistinguishable from a lens nobody bothered to run: {why}")
+        ok, why = roster.judge(wt(roster_rows=ALL_OK, runtime="fan-out", na="none"), POST, "PASS")
+        c.check("NA4 · (control) `lenses_na: none` is the normal answer and passes",
+                ok, f"the common case must not block or the field will be omitted: {why}")
+        got = roster.parse(wt(roster_rows=ALL_INLINE, runtime="inline", na=DROP))["lenses_na"]
+        # ⛔ THE HYPHEN CONTROL. `blind-hunter` carries a hyphen and so does the separator form,
+        # so a separator matched without surrounding whitespace splits the NAME: lens `blind`,
+        # reason `hunter · n/a — ...`. That parses, reads as reasoned, and names a lens that does
+        # not exist. Asserting the exact name is what catches it - a truthy check would not.
+        c.check("NA5 · (parser) the dropped lens NAME survives its own hyphen, with its reason",
+                [(l["lens"], bool(l["reason"])) for l in got] == [("blind-hunter", True)],
+                f"expected [('blind-hunter', True)], got {got}")
+        c.check("NA6 · (control) no `lenses_na:` field means zero dropped lenses",
+                roster.parse(wt(roster_rows=ALL_OK))["lenses_na"] == [],
+                "an absent field must not fabricate a dropped lens")
 
     if c.block("E3 · FAIL blocks on its own account"):
         ok, why = roster.judge(wt(verdict="FAIL", roster_rows=ALL_OK), POST, "FAIL")
