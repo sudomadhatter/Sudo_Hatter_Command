@@ -25,6 +25,8 @@ review-runtime: fan-out
   - [x] T-wording the sign-off is the operator's DECISION, on every surface, pinned both directions
   - [x] S6 settled by the operator: **(i) wording only** — the click stays physical
 - [x] **Part R (SCC-191)** — Rule 1's fourth rung and the run-or-split cycle
+  - [x] SCC-190 labelled `bugs-and-updates`, read back through the rule's own jql:
+    `acli ... --jql "project = SCC AND statusCategory != Done AND labels = bugs-and-updates"` returns SCC-190
 - [x] **Part U (SCC-195)** — the Antigravity menu budget moves into the generator
   - ⚠️ The first cut applied the budget to the Claude/Codex skill doors too and turned 39 correct doors red. See *What fought back* #2.
 - [x] Consequences of this lane's own edits: the AP twin, the ORPHAN block guards, the INDEX row, the hand-authored skill door
@@ -178,10 +180,25 @@ python3 .agents/scripts/check_maps.py --depth3-only --strict -> clean
 
 ### The mutation sweeps
 
-Four tables, one per part, declared **before** the sweep ran and drawn from the shipped code rather than from the cases (SCC-144: 14 case-derived mutants were all killed while a later set drawn from the code left 24 of 25 surviving). Records: `sweep-part{S,T,U,R}-result.txt`.
+Four tables, one per part, declared **before** the sweep ran and drawn from the shipped code rather than from the cases (SCC-144: 14 case-derived mutants were all killed while a later set drawn from the code left 24 of 25 surviving). Records: `sweep-part{S,R,T,U}-result.txt`.
+
+**⭐ ROUND 1: 13 killed, 8 SURVIVED — and eight of the eight were defects in this lane's own assertions.** That is the sweep working; a first sweep that kills everything is the result worth doubting. Each survivor is closed by a **case**, not by re-aiming the mutant — with one exception, named as such:
+
+| survivor | why it survived | what closed it |
+|---|---|---|
+| **R-M2** delete the label from the search block | `"bugs-and-updates" in body` matched rung 3's **prose** — so deleting the jql line, the executable half an agent actually runs, was invisible | the check now reads the **fenced search block** only |
+| **R-M3** retitle the cycle section | `"cycle" in body` matched the operator's quoted ruling (*"thats the cycle"*) | the cycle needs its own `###` **heading** — which is exactly how a cycle decays into a footnote |
+| **T-M2** drop the ledger-row exemption | the canonical row trips **no pattern even without it**, so the control was passing for the wrong reason | `B3b` uses a row that *is* flagged without the exemption (`The merge itself — click Merge on the PR`) — the wedge the exemption exists to prevent |
+| **T-M4** remove the re-invoke pattern | SCC-164's row also carries `--after-merge`, so it matched **two** patterns and removing one changed nothing | `B1b` trips exactly one |
+| **T-M5** `finish` stops refusing | ⛔ **the sharpest.** Only `check-actions` was tested, so deleting the refusal from `cmd_finish` left every case green — the detector existed and the close-out ignored it. That is acceptance **S2** itself | `B6`: `finish` exits 2 **and the board stub proves nothing was written**, plus a control that an honest decision row still HOLDS (3), not refuses (2) |
+| **U-M3** cut ignores the word boundary | "the cut is a prefix of the original" is true of a **hard** cut too | the character after the kept text must be a **space** |
+| **U-M4** budget loop stops appending | "0 doors over budget" out of **0 doors read** is the vacuous green | `U6b` counts the doors; `U6c` asserts the whole menu payload (4,590 chars, was 13,883) |
+| **S-M7** rewrite the receipt unconditionally | the only badly-aimed **mutant**: padding by `len(HEAD)` is a constant, since a sha is always 40 chars — it modelled nothing | re-aimed at the defect it meant to describe (a receipt that **embeds** HEAD), which `R1` and `R6` both kill |
+
+**ROUND 2** — the same four tables, after the cases were added:
 
 ```
-<PASTE: sweep records>
+<PASTE: round 2>
 ```
 
 ---
