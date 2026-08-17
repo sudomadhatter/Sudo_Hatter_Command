@@ -1,26 +1,44 @@
--- sweep: 5 mutant(s) over 1 file(s) @ 5bac95e8 --
+-- sweep: 11 mutant(s) over 1 file(s) @ cd9d4041 --
 KILLED    M1 ranking becomes FILTERING — the one thing this lane forbids
             KILLED by ranking: BOTH classes survive
-            -- filter 'SCC-187-A1': matched 1/17 blocks --
+            -- filter 'SCC-187-A1': matched 5/23 blocks --
 KILLED    M2 the sort moves AFTER the cap, so it ranks what already lost the importer
             KILLED by outer sort: a LATER identifier's importer is not crowded out
-            -- filter 'SCC-187-A2b': matched 1/17 blocks --
+            -- filter 'SCC-187-A2b': matched 1/23 blocks --
 KILLED    M3 the two tag literals are swapped
             KILLED by ranking: a file that IMPORTS the subject is tagged [importer]
-            -- filter 'SCC-187-A1': matched 1/17 blocks --
+            -- filter 'SCC-187-A1': matched 5/23 blocks --
 KILLED    M4 _importers_of goes blind on Python, so nothing is ever an importer
             KILLED by ranking: the importer sorts ahead of every name-match
-            -- filter 'SCC-187-A1': matched 1/17 blocks --
+            -- filter 'SCC-187-A1': matched 5/23 blocks --
 KILLED    M5 the caller walk ignores `prefer`, so a late importer is never COLLECTED
             KILLED by late importer: it is COLLECTED despite sorting past the walk's own cap
-            -- filter 'SCC-187-A2': matched 2/17 blocks --
--- restore verified: bytes match, nothing was committed, and `git diff --quiet 5bac95e8` is clean --
+            -- filter 'SCC-187-A2': matched 2/23 blocks --
+KILLED    M6 the reserve is removed, so importers can starve the name-match class
+            KILLED by reserve: the name-match class SURVIVES a cap-filling importer group
+            -- filter 'SCC-187-A1e': matched 1/23 blocks --
+KILLED    M7 membership becomes a SUBSTRING test, promoting sub/util.py over util.py
+            KILLED by membership is EXACT: a path CONTAINING an importer's path is not promoted
+            -- filter 'SCC-187-A1f': matched 1/23 blocks --
+KILLED    M8 tags vanish entirely when nothing imports the subject
+            KILLED by zero importers: snippets are STILL tagged, all [name-match]
+            -- filter 'SCC-187-A1f': matched 1/23 blocks --
+KILLED    M9 the precomputed importer list is accepted but not SPENT
+            KILLED by findings mode: IMPORTED BY carries the real importers
+            -- filter 'SCC-187-A1h': matched 1/23 blocks --
+KILLED    M10 the snippet path is cut at the FIRST colon, corrupting colon-bearing paths
+            KILLED by a colon in the path: the importer is still tagged [importer]
+            -- filter 'SCC-187-A1g': matched 1/23 blocks --
+KILLED    M11 a truncated importer walk still ASSERTS [name-match]
+            KILLED by truncated walk: the tag degrades to [unranked], never [name-match]
+            -- filter '5d ·': matched 1/23 blocks --
+-- restore verified: bytes match, nothing was committed, and `git diff --quiet cd9d4041` is clean --
 -- full file, unfiltered: python3 .agents/scripts/tests/test_evidence_extract.py -> exit 0 --
         | [PASS] deterministic: the same inputs give byte-identical output
         | [PASS] tripwire: imports no subprocess module
         | [PASS] tripwire: every import is stdlib (checked against sys.stdlib_module_names)
         | [PASS] docstring records the GitNexus decision (plan D7)
         | [PASS] docstring records the port source and SHA
-        | -- 127/127 passed --
+        | -- 144/144 passed --
 
--- sweep clean: 5/5 killed by their declared case --
+-- sweep clean: 11/11 killed by their declared case --

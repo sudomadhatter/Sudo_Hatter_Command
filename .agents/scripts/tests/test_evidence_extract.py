@@ -899,9 +899,15 @@ def main() -> int:
             # dropping the tag entirely when `importer_set` is empty (the common shape — a leaf
             # module nothing imports yet), and testing membership with a substring instead of an
             # exact path, which promotes `sub/util.py` over the real `util.py`.
-            write(repo, "util.py", "def util_fn(v):\n    return v\n")
+            # The substring trap needs a REAL importer whose path is a suffix of a non-importer's
+            # path: `util.py` imports the subject, `sub/util.py` only name-matches. A substring
+            # test asks `"util.py" in "sub/util.py:1 | ..."` and wrongly promotes the decoy.
+            write(repo, "pkg/__init__.py", "")
+            write(repo, "pkg/target.py", "def target_fn(v):\n    return v\n")
+            write(repo, "util.py",
+                  "from pkg.target import target_fn\n\ny = target_fn(1)  # TRUE_IMPORTER\n")
             write(repo, "sub/__init__.py", "")
-            write(repo, "sub/util.py", "z = util_fn(1)  # SUBSTRING_DECOY - imports nothing\n")
+            write(repo, "sub/util.py", "z = target_fn(2)  # SUBSTRING_DECOY - imports nothing\n")
             write(repo, "lonely.py", "def lonely_fn(v):\n    return v\n")
             write(repo, "calls_lonely.py", "w = lonely_fn(2)  # NAME_MATCH_ONLY\n")
 
@@ -918,8 +924,8 @@ def main() -> int:
                     "calls_lonely.py" in caller_files(zero_pkg),
                     str(caller_files(zero_pkg)))
 
-            spath = findings_file(repo, [{"title": "exact", "body": "`util_fn` is wrong",
-                                          "evidence": "", "file_path": "util.py",
+            spath = findings_file(repo, [{"title": "exact", "body": "`target_fn` is wrong",
+                                          "evidence": "", "file_path": "pkg/target.py",
                                           "line_start": 1}])
             rc, out, _ = run_ee("--repo", str(repo), "--findings", spath)
             sub_pkg = pkg_for(out, "exact")
@@ -928,6 +934,9 @@ def main() -> int:
             c.check("membership is EXACT: a path CONTAINING an importer's path is not promoted",
                     sub_tags.get("sub/util.py") == "[name-match]",
                     f"sub/util.py tagged {sub_tags.get('sub/util.py')!r} - substring match?")
+            c.check("exact membership COUNTER-EXAMPLE: the real importer IS promoted",
+                    sub_tags.get("util.py") == "[importer]",
+                    f"util.py tagged {sub_tags.get('util.py')!r}; files={list(sub_tags)}")
 
     # ── 2h. a colon in a caller's path must not corrupt its tag ───────────────
     with TempDir() as tmp:
