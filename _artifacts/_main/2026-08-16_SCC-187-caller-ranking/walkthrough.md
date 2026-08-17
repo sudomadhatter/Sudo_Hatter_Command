@@ -144,9 +144,29 @@ close-out, then re-run the suite (never before).
 
 ## Code Review (2026-08-16)
 
-**Verdict: PASS @ `76daa64f`** — 5-lens engine, `review_mode: full`, `lens_budget: standard`,
-`lenses_run: 5/5`. Every finding below was **fixed in this lane before the verdict**; nothing was
-deferred, and no finding was turned into a ticket.
+**review-runtime: fan-out** — probed at Step 0: this runtime launches subagents, so all five
+lenses ran as genuine parallel fan-out, none recovered inline.
+
+**Verdict: PASS @ `76daa64f`** — 5-lens engine, `review_mode: full`, `lens_budget: standard`.
+Every finding below was **fixed in this lane before the verdict**; nothing was deferred, and no
+finding was turned into a ticket.
+
+lenses_run:
+- Blind Hunter · ok — diff only, no repo access; found the `[name-match]` honesty defect (#2)
+- Edge Case Hunter · ok — found and reproduced the cap-starvation regression (#1) against `origin/main`
+- Literal-Correctness Hunter · ok — found the colon path split (#3) and the stale byte count (#6)
+- Acceptance Auditor · ok — audited A1–A4; raised that A1's "both classes survive" was false above 9 importers
+- Test-Adequacy Auditor · ok — found the nested block (#5) and the missing mutants that became M6–M11
+
+### Step 0.7 — re-derivation against current `origin/main`
+
+- **What moved:** nothing. `origin/main` is still `bc3a851`, and this lane's merge-base equals it,
+  so no absorb was required and the diff was re-taken at `HEAD` rather than rebased.
+- **What it changes for this lane:** nothing in the diff's content or scope. `chore/SCC-164-gate-cluster`
+  is now pushed at `b042b5d` but has **not** landed, so it is not yet in `origin/main`; its overlap
+  with this lane stays the two append-style ledgers, with zero code overlap (re-measured, below).
+- **What was re-measured:** the full changed-file set (12 files), the blast radius, and the suite —
+  receipt re-stamped at `76daa64f`, the sha the lenses reviewed.
 
 ### Findings
 
