@@ -377,12 +377,18 @@ def main() -> int:
                 + (f"\n## Code Review\n\nVerdict: PASS @ "
                    f"{code_sha.upper() if upper_stamp else code_sha}\n" if verdict else ""),
                 encoding="utf-8")
+            # "AUTO" resolves to the lane's real verdict sha, so a case aimed at ONE field can
+            # leave the others valid. Without it every hand-built receipt carried
+            # `verdict_sha: None`, which is itself a refusal now - two errors in a fixture
+            # written to isolate one.
             r = dict(receipt) if receipt is not None else {
                 "schema_v": 1, "task_key": "SCC-9", "branch": branch,
                 "verdict_sha": code_sha if verdict else None, "when": None,
                 "fetch": True, "fresh": True, "accept_unpushed_main": False,
                 "lane": "LOCAL", "verdict": "clear to close out and merge",
                 "errors": 0, "warnings": 0, "exit": 0}
+            if r.get("verdict_sha") == "AUTO":
+                r["verdict_sha"] = code_sha
             if r:
                 (d / "preflight-receipt.json").write_text(
                     _json.dumps(r, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -429,34 +435,38 @@ def main() -> int:
         with TempDir() as tmp:
             work, branch = close_out_pr(tmp, receipt={
                 "schema_v": 1, "task_key": "SCC-9", "branch": "chore/SCC-9-lane",
-                "verdict_sha": None, "when": None, "fetch": False, "fresh": False,
+                "verdict_sha": "AUTO", "when": None, "fetch": False, "fresh": False,
                 "accept_unpushed_main": False, "lane": "LOCAL",
                 "verdict": "clear - but vs the LAST fetch (STALE), not the remote",
                 "errors": 0, "warnings": 1, "exit": 1})
             rc, out = pr_rc(work, branch)
             c.check("A3 RED: a receipt whose comparison was NOT fresh is refused, naming the flag",
-                    rc != 0 and "fresh" in out.lower(), out.strip()[-600:])
+                    rc != 0 and "the receipt says fresh=false" in out, out.strip()[-600:])
 
         with TempDir() as tmp:
             work, branch = close_out_pr(tmp, receipt={
                 "schema_v": 1, "task_key": "SCC-9", "branch": "chore/SOMEONE-ELSE-1",
-                "verdict_sha": None, "when": None, "fetch": True, "fresh": True,
+                "verdict_sha": "AUTO", "when": None, "fetch": True, "fresh": True,
                 "accept_unpushed_main": False, "lane": "LOCAL",
                 "verdict": "clear to close out and merge", "errors": 0, "warnings": 0, "exit": 0})
             rc, out = pr_rc(work, branch)
+            # ⛔ NAME THE MESSAGE. `"branch" in out` was satisfied by the gate's own PASS line
+            # ("authorised source branch"), so this case scored a kill for ANY refusal at all -
+            # and once a second refusal path existed, SB-M6 sailed past it.
             c.check("A3b RED: a receipt from ANOTHER branch does not vouch for this lane",
-                    rc != 0 and "branch" in out.lower(), out.strip()[-600:])
+                    rc != 0 and "the receipt records branch `chore/SOMEONE-ELSE-1`" in out,
+                    out.strip()[-600:])
 
         with TempDir() as tmp:
             work, branch = close_out_pr(tmp, receipt={
                 "schema_v": 1, "task_key": "SCC-9", "branch": "chore/SCC-9-lane",
-                "verdict_sha": None, "when": None, "fetch": True, "fresh": True,
+                "verdict_sha": "AUTO", "when": None, "fetch": True, "fresh": True,
                 "accept_unpushed_main": False, "lane": "LOCAL",
                 "verdict": "BLOCKED - resolve the errors above",
                 "errors": 2, "warnings": 0, "exit": 2})
             rc, out = pr_rc(work, branch)
             c.check("A3c RED: a receipt recording a BLOCKED verdict is not a pass",
-                    rc != 0 and "verdict" in out.lower(), out.strip()[-600:])
+                    rc != 0 and "records the verdict `BLOCKED" in out, out.strip()[-600:])
 
         with TempDir() as tmp:
             # ⭐ A3d · THE CASE SB-M7 PROVED WAS MISSING. A3 above aims at `fresh`, so dropping
@@ -467,14 +477,14 @@ def main() -> int:
             # assume the two fields agree just because one writer makes them agree.
             work, branch = close_out_pr(tmp, receipt={
                 "schema_v": 1, "task_key": "SCC-9", "branch": "chore/SCC-9-lane",
-                "verdict_sha": None, "when": None, "fetch": True, "fresh": True,
+                "verdict_sha": "AUTO", "when": None, "fetch": True, "fresh": True,
                 "accept_unpushed_main": False, "lane": "LOCAL",
                 "verdict": "clear - but vs the LAST fetch (STALE), not the remote",
                 "errors": 0, "warnings": 1, "exit": 1})
             rc, out = pr_rc(work, branch)
             c.check("A3d RED: a 'clear' verdict that says STALE is not a clear preflight",
-                    rc != 0 and "verdict" in out.lower() and "stale" in out.lower(),
-                    out.strip()[-600:])
+                    rc != 0 and "records the verdict `clear - but" in out
+                    and "STALE" in out, out.strip()[-600:])
 
         with TempDir() as tmp:
             # ⭐ A6 · THE BLIND LENS'S F2, EXECUTED. `verdict_sha` empty read as AGREEMENT, and

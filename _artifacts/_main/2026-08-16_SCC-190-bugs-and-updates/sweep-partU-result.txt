@@ -1,4 +1,4 @@
--- sweep: 5 mutant(s) over 1 file(s) @ 02943e01 --
+-- sweep: 5 mutant(s) over 1 file(s) @ 923d6b43 --
 KILLED    U-M1 the budget is raised past every real description
             KILLED by U2 a long one is cut to the budget and marked
             -- filter 'SCC-195': matched 1/14 blocks --
@@ -14,13 +14,13 @@ KILLED    U-M4 the budget rule stops cutting at all (the vacuous live sweep)
 KILLED    U-M5 door parity accepts ANY antigravity body (the check that blocked SCC-194)
             KILLED by door-parity CONTROL: a STALE mirror is caught
             -- filter 'CS-03': matched 1/14 blocks --
--- restore verified: bytes match, nothing was committed, and `git diff --quiet 02943e01` is clean --
+-- restore verified: bytes match, nothing was committed, and `git diff --quiet 923d6b43` is clean --
 -- full file, unfiltered: python3 .agents/scripts/tests/test_command_surfaces.py -> exit 0 --
-        | [PASS] U6 every .agents/workflows door fits Antigravity's menu budget: 0 over 135: []
-        | [PASS] U6b ...and it read a real number of doors (not a silent empty sweep): only 36 workflow descriptions read
         | [PASS] U6d CONTROL: the same predicate FIRES on a fabricated over-budget door: a 136-char description must not survive the budget
+        | [PASS] U6e the description rewrite preserves CRLF line endings: '---\r\nname: x\r\ndescription: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy'
+        | [PASS] U6e CONTROL: ...and an LF brain gains no CR: '---\nname: x\ndescription: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy'
         | [PASS] U6c ...and the whole menu payload stays under the budget it was cut to: 36 descriptions, 4590 chars total (was 13,883 before SCC-195)
         | [PASS] U7 CONTROL: the BRAINS keep their full descriptions (the budget is the menu's): only 41 long brains - did the shortening leak into .agents/commands?
-        | -- 115/115 passed --
+        | -- 117/117 passed --
 
 -- sweep clean: 5/5 killed by their declared case --

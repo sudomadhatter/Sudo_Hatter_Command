@@ -1,4 +1,4 @@
--- sweep: 6 mutant(s) over 1 file(s) @ ea8d9578 --
+-- sweep: 9 mutant(s) over 1 file(s) @ 923d6b43 --
 KILLED    T-M1 the ceremony check is disabled outright
             KILLED by B1 RED: SCC-164's two rows are BOTH refused
             -- filter 'SCC-193 B': matched 1/7 blocks --
@@ -17,13 +17,22 @@ KILLED    T-M5 finish stops refusing on ceremony rows
 KILLED    T-M6 the merge row is read off the TICK again (SCC-175 undone)
             KILLED by D1 without GITHUB_TOKEN: ...and the landed lane SATISFIES it
             -- filter 'SCC-193 D': matched 1/7 blocks --
--- restore verified: bytes match, nothing was committed, and `git diff --quiet ea8d9578` is clean --
+KILLED    T-M7 the ledger exemption widens back to a substring (the executed bypass)
+            KILLED by B3c RED: appending the ledger phrase does NOT excuse a ceremony row
+            -- filter 'SCC-193 B': matched 1/7 blocks --
+KILLED    T-M8 the 'then run' pattern loses its ceremony object (the false-positive shape)
+            KILLED by B7 CONTROL: not flagged — a product decision that happens to say 'then run'
+            -- filter 'SCC-193 B': matched 1/7 blocks --
+KILLED    T-M9 finish refuses on the first family and never reads the second
+            KILLED by B8 finish reports BOTH families in one run, then refuses once
+            -- filter 'SCC-193 B': matched 1/7 blocks --
+-- restore verified: bytes match, nothing was committed, and `git diff --quiet 923d6b43` is clean --
 -- full file, unfiltered: python3 .agents/scripts/tests/test_jira_feed.py -> exit 0 --
-        | [PASS] D1 without GITHUB_TOKEN: ...and the landed lane SATISFIES it: {'row': "**The merge itself** - lands via this branch's PR", 'satisfied': True, 'source': 'HEAD', 'tip': 'c772aa62c535840ef418b015702d60b28c923f86', 'why': 'c772aa62c is an ancestor of origin/main'}
+        | [PASS] D1 without GITHUB_TOKEN: ...and the landed lane SATISFIES it: {'row': "**The merge itself** - lands via this branch's PR", 'satisfied': True, 'source': 'HEAD', 'tip': 'a6be7fb5b272d4061ee44d47b97ee740e77fe693', 'why': 'a6be7fb5b is an ancestor of origin/main'}
         | [PASS] D1 without GITHUB_TOKEN: the click row is NOT a merge row, so exactly 1 holds: ['**Click **Merge** on the PR.** That click is the sign-off.']
         | [PASS] D1 with a stale GITHUB_TOKEN in env: the merge row RESOLVES (never a silent None): None is the state SCC-164's --apply run showed, and it prints nothing at all - a hold with no reason given
-        | [PASS] D1 with a stale GITHUB_TOKEN in env: ...and the landed lane SATISFIES it: {'row': "**The merge itself** - lands via this branch's PR", 'satisfied': True, 'source': 'HEAD', 'tip': 'c772aa62c535840ef418b015702d60b28c923f86', 'why': 'c772aa62c is an ancestor of origin/main'}
+        | [PASS] D1 with a stale GITHUB_TOKEN in env: ...and the landed lane SATISFIES it: {'row': "**The merge itself** - lands via this branch's PR", 'satisfied': True, 'source': 'HEAD', 'tip': 'a6be7fb5b272d4061ee44d47b97ee740e77fe693', 'why': 'a6be7fb5b is an ancestor of origin/main'}
         | [PASS] D1 with a stale GITHUB_TOKEN in env: the click row is NOT a merge row, so exactly 1 holds: ['**Click **Merge** on the PR.** That click is the sign-off.']
-        | -- 300/300 passed --
+        | -- 307/307 passed --
 
--- sweep clean: 6/6 killed by their declared case --
+-- sweep clean: 9/9 killed by their declared case --

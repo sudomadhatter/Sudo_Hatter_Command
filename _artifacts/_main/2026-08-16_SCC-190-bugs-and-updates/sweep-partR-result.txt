@@ -1,4 +1,4 @@
--- sweep: 4 mutant(s) over 2 file(s) @ ea8d9578 --
+-- sweep: 4 mutant(s) over 2 file(s) @ 923d6b43 --
 KILLED    R-M1 the rolling ticket is dropped back out of rung 3
             KILLED by R1c rung 3 is the OPEN ROLLING TICKET
             -- filter 'SCC-191': matched 1/14 blocks --
@@ -11,13 +11,13 @@ KILLED    R-M3 the cycle is stated as a threshold instead of a cycle
 KILLED    R-M4 the engine's restatement goes stale again
             KILLED by R2b the restatement in step-01-review.md names the rolling ticket
             -- filter 'SCC-191': matched 1/14 blocks --
--- restore verified: bytes match, nothing was committed, and `git diff --quiet ea8d9578` is clean --
+-- restore verified: bytes match, nothing was committed, and `git diff --quiet 923d6b43` is clean --
 -- full file, unfiltered: python3 .agents/scripts/tests/test_command_surfaces.py -> exit 0 --
-        | [PASS] U5 ...and it stays ASCII (PS 5.1 writes these literals from a BOM-less .ps1): The TASK lane's dev cycle - assert-first development for command-centre work that has no story, no sprint board and no epic branch....
-        | [PASS] U6 every .agents/workflows door fits Antigravity's menu budget: 0 over 135: []
-        | [PASS] U6b ...and it read a real number of doors (not a silent empty sweep): only 36 workflow descriptions read
+        | [PASS] U6d CONTROL: the same predicate FIRES on a fabricated over-budget door: a 136-char description must not survive the budget
+        | [PASS] U6e the description rewrite preserves CRLF line endings: '---\r\nname: x\r\ndescription: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy'
+        | [PASS] U6e CONTROL: ...and an LF brain gains no CR: '---\nname: x\ndescription: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy'
         | [PASS] U6c ...and the whole menu payload stays under the budget it was cut to: 36 descriptions, 4590 chars total (was 13,883 before SCC-195)
         | [PASS] U7 CONTROL: the BRAINS keep their full descriptions (the budget is the menu's): only 41 long brains - did the shortening leak into .agents/commands?
-        | -- 113/113 passed --
+        | -- 117/117 passed --
 
 -- sweep clean: 4/4 killed by their declared case --

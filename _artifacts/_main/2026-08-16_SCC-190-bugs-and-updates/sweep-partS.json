@@ -90,7 +90,7 @@
       "block": "SCC-192/193 \u00b7 the preflight leaves a RECEIPT, and fetch is the DEFAULT",
       "original": "                   + (\"the fetch was asked for and FAILED - fix the uplink and re-run\"\n                      if args.fetch else\n                      \"re-run WITHOUT --no-fetch\")",
       "mutated": "                   + (\"re-run WITHOUT --no-fetch\"\n                      if args.fetch else\n                      \"re-run WITHOUT --no-fetch\")",
-      "case": "R3 ...and the receipt says the fetch was ASKED FOR but is not fresh"
+      "case": "R3 ...and the VERDICT's remedy names the FAILED fetch, not --no-fetch"
     }
   ]
 }

@@ -1398,6 +1398,9 @@ def main() -> int:
                     code != 0 and "VERDICT:" in out
                     and "stale" in out.split("VERDICT:")[-1].lower(),
                     f"exit {code}: " + out.strip()[-400:])
+            c.check("R2 ...and the remedy fits the branch that produced it (--no-fetch)",
+                    "re-run WITHOUT --no-fetch" in out.split("VERDICT:")[-1],
+                    out.strip()[-400:])
             c.check("R2 ...an omitted fetch is a WARN, not an info footnote",
                     "[WARN ] sync" in out or "[WARN] sync" in out, out.strip()[-500:])
             c.check("R2 ...and the receipt records that it ran without one",
@@ -1420,6 +1423,14 @@ def main() -> int:
                     code != 0 and "clear to close out and merge" not in out
                     and "stale" in out.split("VERDICT:")[-1].lower(),
                     f"exit {code}: " + out.strip()[-400:])
+            # ⛔ AND THE REMEDY MUST FIT. This operator never passed --no-fetch: the uplink is
+            # dead. Printing "re-run WITHOUT --no-fetch" at them is a no-op instruction under a
+            # verdict they are supposed to act on, and the receipt distinguished the two cases
+            # long before the verdict line did.
+            c.check("R3 ...and the VERDICT's remedy names the FAILED fetch, not --no-fetch",
+                    "asked for and FAILED" in out.split("VERDICT:")[-1]
+                    and "WITHOUT --no-fetch" not in out.split("VERDICT:")[-1],
+                    out.strip()[-400:])
             c.check("R3 ...and the receipt says the fetch was ASKED FOR but is not fresh",
                     r.get("fetch") is True and r.get("fresh") is False, json.dumps(r))
             c.check("R3 ...a failed fetch is still only a WARN — offline is not a defect",
@@ -1487,6 +1498,14 @@ def main() -> int:
             repo = make_repo(t)
             branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
             stamp_and_verdict(repo, "PASS")
+            # ⛔ THE SIBLING FOLDER MUST ALREADY BE TRACKED. git reports a wholly-untracked
+            # directory as ONE `?? <dir>/` row, and `Path("<dir>/").name` is the folder name
+            # under the fix AND under the mutant - so the first cut of this control passed
+            # either way and S-M9 survived it. With the folder tracked, the receipt appears as
+            # its own row and the path comparison is the only thing that can answer.
+            write(repo, "_artifacts/_main/2026-08-08_scc-99-other/notes.md", "another lane\n")
+            commit(repo, "SCC-11 chore: a sibling lane's folder (artifacts only)")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
             write(repo, "_artifacts/_main/2026-08-08_scc-99-other/preflight-receipt.json",
                   '{"task_key": "SCC-99"}\n')
             code, out = preflight(repo)
