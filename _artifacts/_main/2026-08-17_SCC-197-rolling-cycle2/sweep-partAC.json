@@ -1,0 +1,61 @@
+{
+  "test": ["python3", ".agents/scripts/tests/test_jira_feed.py"],
+  "mutants": [
+    {
+      "id": "A-M1 the trigger check is gone - every ticket rolls the cycle",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    if TRIGGER_LABEL in [str(x) for x in (fields.get(\"labels\") or [])]:",
+      "mutated": "    if True:",
+      "case": "A2 CONTROL: an ordinary ticket clones NOTHING",
+      "block": "SCC-198"
+    },
+    {
+      "id": "A-M2 identity is reused as the trigger - the two-tag design the operator rejected",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "TRIGGER_LABEL = \"running-bug-list\"",
+      "mutated": "TRIGGER_LABEL = \"bugs-and-updates\"",
+      "case": "A2b CONTROL: a SPENT baton clones nothing, with nothing to query",
+      "block": "SCC-198"
+    },
+    {
+      "id": "A-M3 the swap ADDS but never REMOVES - the read-modify-write regression",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "                       \"--labels\", ROLLING_LABEL,\n                       \"--remove-labels\", TRIGGER_LABEL], timeout=timeout)",
+      "mutated": "                       \"--labels\", ROLLING_LABEL], timeout=timeout)",
+      "case": "A1c the ORIGINAL gives the baton up and takes the identity label",
+      "block": "SCC-198"
+    },
+    {
+      "id": "A-M4 an existing successor RETURNS instead of handing the baton on",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    if existing:\n        # Not an error, and not a no-op either",
+      "mutated": "    if existing:\n        return\n        # Not an error, and not a no-op either",
+      "case": "A4b ...but the baton is STILL handed on - one holder, never two",
+      "block": "SCC-198"
+    },
+    {
+      "id": "A-M5 a failed clone still retires the baton - the cycle ends silently forever",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "                f\"next `start` tries again - the cycle is not lost.\")\n            return\n        say(f\"jira-feed: {key} cloned the next rolling ticket - \"",
+      "mutated": "                f\"next `start` tries again - the cycle is not lost.\")\n        say(f\"jira-feed: {key} cloned the next rolling ticket - \"",
+      "case": "A5c ...and the baton STAYS PUT, so the next start retries",
+      "block": "SCC-198"
+    },
+    {
+      "id": "A-M6 a FAILED search is read as an empty one - a hiccup mints a duplicate",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "    if found is None:",
+      "mutated": "    if found is None and False:",
+      "case": "A7 a failed successor search clones nothing and keeps the baton",
+      "block": "SCC-198"
+    },
+    {
+      "id": "C-M1 the user-tasks strip regresses to a reduced --labels - the shipped no-op",
+      "file": ".agents/scripts/jira_feed.py",
+      "original": "                               \"--remove-labels\", USER_TASKS_LABEL], timeout=args.timeout)",
+      "mutated": "                               \"--labels\", USER_TASKS_LABEL], timeout=args.timeout)",
+      "case": "finish: closing clean STRIPS user-tasks - the hold is over",
+      "block": "finish"
+    }
+  ]
+}
