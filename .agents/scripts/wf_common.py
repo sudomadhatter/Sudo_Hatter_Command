@@ -367,3 +367,55 @@ class Report:
         e, w = self.counts()
         print(f"-- {e} error(s), {w} warning(s), "
               f"{len(self.items) - e - w} info --")
+
+
+# ── What a VERDICT is, and how a manifest field is read (SCC-190 F6) ──────────────────
+#
+# These three lived in `task_preflight` because that is where they were first needed. But
+# `main_write_gate` - the gate that guards `main` - imported them from there and thereby
+# pulled in SEVEN local modules (jira_feed, gate_receipt, hooks_armed, walkthrough_roster,
+# task_preflight, wf_common, sop_currency; measured) to buy one regex and two small
+# helpers. An import-time break anywhere in that chain became a break in the gate itself.
+#
+# ⛔ RE-TYPING THEM IN THE GATE WAS NEVER THE ANSWER - a gate and a door disagreeing about
+# what a verdict IS is precisely the defect class main_write_gate exists to catch. So they
+# move DOWN instead, to the leaf every one of those modules already imports. Still one
+# definition; the readers just no longer drag a subsystem in to reach it.
+# `task_preflight` re-exports all three, so every existing importer is unaffected.
+
+# The canonical line /smh-code-review Step 4 writes as the review section's first line.
+# Anchored at line start: prose ABOUT a verdict does not match; the stamp does.
+VERDICT_RE = re.compile(r"^Verdict:\s*(PASS|CONCERNS|FAIL|WAIVED)\s*@\s*([0-9a-fA-F]{7,40})\b",
+                        re.MULTILINE)
+
+def manifest_field(text: str, field: str) -> str | None:
+    m = re.search(rf"^\s*{field}\s*:\s*[\"']?([^\"'\n#]+)", text, re.MULTILINE)
+    return m.group(1).strip() if m else None
+
+
+def strip_fenced(text: str) -> str:
+    """Markdown code fences removed before any verdict scan (SCC-154, finding 8).
+
+    A canonical stamp pasted AS EVIDENCE inside a fence sits at column 0 and matched
+    VERDICT_RE — a fenced FAIL was a permanent block. ⛔ Fences close per CommonMark: the
+    SAME marker kind, at least the opening length — the first cut toggled on ANY marker
+    line, so a ````-or-~~~-wrapped paste whose content held a ``` pair LEAKED its inner
+    lines back into the scan (measured by this lane's own review: a quoted FAIL became the
+    governing latest stamp, a permanent false block). Marker lines inside an open fence of
+    another kind are content and stay dropped. An UNCLOSED fence still drops everything
+    after it: no verdict then means the full gate runs, the safe direction — pinned as
+    declared design."""
+    out: list[str] = []
+    fence: tuple[str, int] | None = None      # (marker char, opening length) while inside
+    for line in text.splitlines():
+        m = re.match(r"^[ \t]{0,3}(`{3,}|~{3,})", line)
+        if m:
+            marker = m.group(1)
+            if fence is None:
+                fence = (marker[0], len(marker))
+            elif marker[0] == fence[0] and len(marker) >= fence[1]:
+                fence = None
+            continue
+        if fence is None:
+            out.append(line)
+    return "\n".join(out)

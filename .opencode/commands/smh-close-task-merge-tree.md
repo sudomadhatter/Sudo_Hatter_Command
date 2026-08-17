@@ -295,10 +295,17 @@ python3 "<worktree>/.agents/scripts/flight_recorder.py" record --task <JIRA-KEY>
 # refusal there is nothing staged, and a bare `git commit` would exit 1 for no reason.
 # The preflight receipt (SCC-192) rides the SAME commit - it is the other half of the
 # evidence main-write-gate --mode pr requires, and a second artifacts-only commit buys nothing.
-if git -C "<worktree>" status --porcelain _artifacts/_main/workflow-events/ \
-     "<task-artifacts folder>/preflight-receipt.json" | grep -q .; then
-  git -C "<worktree>" add _artifacts/_main/workflow-events/ \
-      "<task-artifacts folder>/preflight-receipt.json"
+# ⛔ THE GUARD AND THE ADD MUST SEE THE SAME PATHS. `git status` tolerates a pathspec that
+# matches nothing (exit 0, empty); `git add` does NOT - it exits 128 and stages NOTHING, so the
+# flight event never gets committed either and the PR gate then refuses for a MISSING EVENT.
+# That is reachable whenever the receipt was not written: no live manifest, two manifests
+# (the preflight now errors on that), `--no-receipt`, or an unwritable tree. Build the list
+# from what exists, then guard and stage the SAME list.
+PATHS=(_artifacts/_main/workflow-events/)
+[ -f "<worktree>/<task-artifacts folder>/preflight-receipt.json" ] \
+  && PATHS+=("<task-artifacts folder>/preflight-receipt.json")
+if git -C "<worktree>" status --porcelain -- "${PATHS[@]}" | grep -q .; then
+  git -C "<worktree>" add -- "${PATHS[@]}"
   git -C "<worktree>" commit -F <msg>   # "<KEY> chore(recorder): flight event @ <sha7> [sop-ok]"
   git -C "<worktree>" push
 fi
@@ -347,7 +354,7 @@ grep -q "The merge itself" <walkthrough> && grep -q "^## Your Actions" <walkthro
 # either costs nothing: the same refusal fires again at Step 4's `finish`, which runs AFTER
 # the merge, when the walkthrough is on `main` and the fix is a commit the gate refuses.
 python3 .agents/scripts/jira_feed.py check-actions --walkthrough <walkthrough> \
-  || { echo "fix `## Your Actions` BEFORE the PR - it will refuse the close-out otherwise"; exit 1; }
+  || { echo 'fix `## Your Actions` BEFORE the PR - it will refuse the close-out otherwise'; exit 1; }
 ```
 
 ⭐ **Both of these are measured failures, not hypotheticals.** On 2026-08-16 `jira_feed.py finish`

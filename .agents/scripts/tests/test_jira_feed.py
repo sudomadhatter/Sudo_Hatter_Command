@@ -2633,6 +2633,66 @@ Nothing is actually owed.
             c.check("B6 CONTROL: a real decision row HOLDS (3), it is not refused (2)",
                     rc4 == 3, f"exit={rc4}: " + out4.strip()[-200:])
 
+        # ⭐ B3c · THE EXEMPTION IS A SHAPE, NOT A SUBSTRING - and this is the bypass the
+        # edge-case lens executed. `MERGE_PHRASE in row` waved through the WHOLE row, so
+        # appending five words to SCC-164's verbatim defect row cleared the check written to
+        # refuse that exact row. An exemption a defect can opt into is not an exemption.
+        # The ledger row's subject IS the phrase (all 11 in the live corpus begin with it);
+        # a row that merely MENTIONS it is some other row.
+        c.check("B3c RED: appending the ledger phrase does NOT excuse a ceremony row",
+                len(jira_feed.ceremony_rows(wt(CLICK + " That is the merge itself."))) == 1,
+                "the exemption must key on the row's SUBJECT, or any row can claim it")
+        c.check("B3c ...and mid-row is not the subject either",
+                len(jira_feed.ceremony_rows(
+                    wt("**Then re-invoke** the door once the merge itself has landed."))) == 1,
+                "trailing or mid-row: only the SUBJECT position is the ledger")
+        # ⛔ DECLARED DESIGN, stated so it is never mistaken for an oversight: a row that
+        # genuinely OPENS as the ledger row keeps the exemption for its WHOLE text. The door
+        # writes that row and its prose legitimately names the click (B3b), and a false refusal
+        # there is only fixable by a commit on `main` - the write the gate refuses. The bypass
+        # this closes is the one that was EXECUTED: a ceremony row claiming the exemption by
+        # mentioning the phrase. Narrowing further re-opens the wedge for no measured gain.
+
+        # ⭐ B7 · THE BLIND LENS'S F4. `\bthen\s+(?:invoke|run|call)\b` bound a verb to
+        # NOTHING - every sibling pattern names a ceremony-specific object. These three are
+        # plain operator decisions, and the third is the boundary note's own carve-out (a bare
+        # door invocation is one of the three FORMS of the decision). The refusal is default-on
+        # and hard, and `finish` runs AFTER the merge - when the fix is a commit on `main`,
+        # the write the gate refuses. A false positive here is unfixable by design.
+        for row, why in (
+                ("**Decide the pricing tier for the launch**, then run the campaign when "
+                 "you are happy.", "a product decision that happens to say 'then run'"),
+                ("**Rule on the vendor**: pick A or B, then call the account manager.",
+                 "'then call' about a person, not a script"),
+                ("**Approve the copy**, then invoke `/cicd-push-e2e` when the marketing "
+                 "site is ready.", "a door invocation IS the decision's form (the boundary note)")):
+            c.check(f"B7 CONTROL: not flagged — {why}",
+                    not jira_feed.ceremony_rows(wt(row)), repr(row))
+        c.check("B7 ...but the ceremony's own SECOND HALF still is",
+                len(jira_feed.ceremony_rows(wt("**Merge it**, then run the close-out's "
+                                               "second half for the riders."))) == 1,
+                "bound to the ceremony, the pattern must still catch the ceremony")
+
+        # ⭐ B8 · BOTH FAMILIES IN ONE RUN. `cmd_finish` returned 2 on the ceremony rows before
+        # `banned_action_rows` was ever computed, so a walkthrough carrying both was reported
+        # one family at a time - two fix-and-re-run round trips for one file, and the second
+        # family only discovered after the first was fixed. `check-actions` already reported
+        # both; the two entry points have to agree about what is wrong with the file.
+        with TempDir() as tmp4:
+            repo4, acli4, state4 = build(tmp4)
+            wt4 = tmp4 / "wt.md"
+            wt4.write_text(wt(CLICK, "Rule on the symlink defect - fold the one-line fix into "
+                                     "AVCH-54, or mint its own AVCH key. Board placement is "
+                                     "the operator's."), encoding="utf-8")
+            set_state(state4, types={"TEST-9": "Task"}, statuses={"TEST-9": "In Progress"})
+            os.environ["STUB_STATE"] = str(state4)
+            rc5, out5 = run_script("jira_feed.py", "finish", "--key", "TEST-9",
+                                   "--project", str(repo4), "--acli", str(acli4),
+                                   "--walkthrough", str(wt4), "--apply")
+            c.check("B8 finish reports BOTH families in one run, then refuses once",
+                    rc5 == 2 and "only the operator decides" in out5
+                    and "BANNED ACTION ROW" in out5, f"exit={rc5}: " + out5.strip()[-600:])
+
     # ══ SCC-193 Part D · the SCC-175 merge-row pin, run BOTH ways ══════════════════════════
     #
     # THE SUSPECTED DEFECT, RECORDED SO IT IS NEVER RE-DIAGNOSED FROM MEMORY. At SCC-164's

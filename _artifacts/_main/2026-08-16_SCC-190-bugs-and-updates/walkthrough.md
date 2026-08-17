@@ -267,7 +267,7 @@ SWEEP U  5/5   U-M1 budget raised past every description · U-M2 ellipsis droppe
 ## Pitfalls
 
 - A red that dies in setup looks exactly like a red that fails its assertion (`task_preflight.py` receipt case, and again on `ceremony_rows`). Both were rewritten before they were believed.
-- `main_write_gate.py` had no artifact reader at all; it now imports `VERDICT_RE` / `strip_fenced` / `manifest_field` from `task_preflight` rather than re-typing them — a gate and a door disagreeing about what a verdict *is* is the defect class this file exists for.
+- `main_write_gate.py` had no artifact reader at all; it now imports `VERDICT_RE` / `strip_fenced` / `manifest_field` rather than re-typing them — a gate and a door disagreeing about what a verdict *is* is the defect class this file exists for. **Review moved where they live:** importing them from `task_preflight` pulled seven local modules into the gate that guards `main` (measured), so all three were relocated to `wf_common.py`, the stdlib-only leaf every one of those modules already imports. `task_preflight` re-exports them, so no existing caller changed.
 - The full enforcement suite takes ~2 minutes and a mutation sweep several; both were run to completion rather than sampled.
 
 ---

@@ -1,47 +1,80 @@
 {
-  "test": ["python3", ".agents/scripts/tests/test_main_write_gate_ci.py"],
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_main_write_gate_ci.py"
+  ],
   "mutants": [
-    {"id": "SB-M1 the flight-event demand is dropped",
-     "file": ".agents/scripts/main_write_gate.py",
-     "original": "        if not any(line.strip().endswith(\"/\" + want) for line in tree.splitlines()):",
-     "mutated": "        if False:",
-     "case": "A1 RED: a reviewed close-out with NO flight event is refused, by name",
-     "block": "SCC-192 · a close-out PR must carry its receipts"},
-    {"id": "SB-M2 the receipt demand is dropped",
-     "file": ".agents/scripts/main_write_gate.py",
-     "original": "        if raw is None:\n            fails.append(",
-     "mutated": "        if False:\n            fails.append(",
-     "case": "A2 RED: no preflight receipt is refused, by name",
-     "block": "SCC-192 · a close-out PR must carry its receipts"},
-    {"id": "SB-M3 the fresh=true check is dropped",
-     "file": ".agents/scripts/main_write_gate.py",
-     "original": "                if not r.get(\"fresh\"):",
-     "mutated": "                if False:",
-     "case": "A3 RED: a receipt whose comparison was NOT fresh is refused, naming the flag",
-     "block": "SCC-192 · a close-out PR must carry its receipts"},
-    {"id": "SB-M4 the event is keyed on HEAD instead of the verdict sha (loop 1)",
-     "file": ".agents/scripts/main_write_gate.py",
-     "original": "        rc2, full = git(repo, \"rev-parse\", \"--verify\", \"-q\", sha7 + \"^{commit}\")",
-     "mutated": "        rc2, full = git(repo, \"rev-parse\", \"--verify\", \"-q\", head + \"^{commit}\")",
-     "case": "A4 GREEN: both receipts present, keyed on the verdict sha, TWO artifacts-only commits after them",
-     "block": "SCC-192 · a close-out PR must carry its receipts"},
-    {"id": "SB-M5 the demand triggers on EVERY PR, not only a close-out (loop 3)",
-     "file": ".agents/scripts/main_write_gate.py",
-     "original": "        if (manifest_field(text, \"close_command\") or \"\").strip() != DOOR:\n            continue",
-     "mutated": "        if False:\n            continue",
-     "case": "A5c GREEN: a manifest naming another door owes this gate nothing",
-     "block": "SCC-192 · a close-out PR must carry its receipts"},
-    {"id": "SB-M6 the branch cross-check is dropped (another lane's receipt vouches)",
-     "file": ".agents/scripts/main_write_gate.py",
-     "original": "                if branch and got_branch != branch:",
-     "mutated": "                if False:",
-     "case": "A3b RED: a receipt from ANOTHER branch does not vouch for this lane",
-     "block": "SCC-192 · a close-out PR must carry its receipts"},
-    {"id": "SB-M7 the verdict check accepts a STALE 'clear' (the auditor's minor note)",
-     "file": ".agents/scripts/main_write_gate.py",
-     "original": "                if not verdict.startswith(\"clear\") or \"stale\" in verdict:",
-     "mutated": "                if not verdict.startswith(\"clear\"):",
-     "case": "A3 RED: a receipt whose comparison was NOT fresh is refused, naming the flag",
-     "block": "SCC-192 · a close-out PR must carry its receipts"}
+    {
+      "id": "SB-M1 the flight-event demand is dropped",
+      "file": ".agents/scripts/main_write_gate.py",
+      "original": "        if not any(line.strip().endswith(\"/\" + want) for line in tree.splitlines()):",
+      "mutated": "        if False:",
+      "case": "A1 RED: a reviewed close-out with NO flight event is refused, by name",
+      "block": "SCC-192 \u00b7 a close-out PR must carry its receipts"
+    },
+    {
+      "id": "SB-M2 the receipt demand is dropped",
+      "file": ".agents/scripts/main_write_gate.py",
+      "original": "        if raw is None:\n            fails.append(",
+      "mutated": "        if False:\n            fails.append(",
+      "case": "A2 RED: no preflight receipt is refused, by name",
+      "block": "SCC-192 \u00b7 a close-out PR must carry its receipts"
+    },
+    {
+      "id": "SB-M3 the fresh=true check is dropped",
+      "file": ".agents/scripts/main_write_gate.py",
+      "original": "                if not r.get(\"fresh\"):",
+      "mutated": "                if False:",
+      "case": "A3 RED: a receipt whose comparison was NOT fresh is refused, naming the flag",
+      "block": "SCC-192 \u00b7 a close-out PR must carry its receipts"
+    },
+    {
+      "id": "SB-M4 the event is keyed on HEAD instead of the verdict sha (loop 1)",
+      "file": ".agents/scripts/main_write_gate.py",
+      "original": "        rc2, full = git(repo, \"rev-parse\", \"--verify\", \"-q\", sha7 + \"^{commit}\")",
+      "mutated": "        rc2, full = git(repo, \"rev-parse\", \"--verify\", \"-q\", head + \"^{commit}\")",
+      "case": "A4 GREEN: both receipts present, keyed on the verdict sha, TWO artifacts-only commits after them",
+      "block": "SCC-192 \u00b7 a close-out PR must carry its receipts"
+    },
+    {
+      "id": "SB-M5 the demand triggers on EVERY PR, not only a close-out (loop 3)",
+      "file": ".agents/scripts/main_write_gate.py",
+      "original": "        if (manifest_field(text, \"close_command\") or \"\").strip() != DOOR:\n            continue",
+      "mutated": "        if False:\n            continue",
+      "case": "A5c GREEN: a manifest naming another door owes this gate nothing",
+      "block": "SCC-192 \u00b7 a close-out PR must carry its receipts"
+    },
+    {
+      "id": "SB-M6 the branch cross-check is dropped (another lane's receipt vouches)",
+      "file": ".agents/scripts/main_write_gate.py",
+      "original": "                if branch and got_branch != branch:",
+      "mutated": "                if False:",
+      "case": "A3b RED: a receipt from ANOTHER branch does not vouch for this lane",
+      "block": "SCC-192 \u00b7 a close-out PR must carry its receipts"
+    },
+    {
+      "id": "SB-M7 the verdict check accepts a STALE 'clear' (the auditor's minor note)",
+      "file": ".agents/scripts/main_write_gate.py",
+      "original": "                if not verdict.startswith(\"clear\") or \"stale\" in verdict:",
+      "mutated": "                if not verdict.startswith(\"clear\"):",
+      "case": "A3d RED: a 'clear' verdict that says STALE is not a clear preflight",
+      "block": "SCC-192 \u00b7 a close-out PR must carry its receipts"
+    },
+    {
+      "id": "SB-M8 an EMPTY verdict_sha reads as agreement (the blind lens's fail-open)",
+      "file": ".agents/scripts/main_write_gate.py",
+      "block": "SCC-192 \u00b7 a close-out PR must carry its receipts",
+      "original": "            if not got_v:",
+      "mutated": "            if False:",
+      "case": "A6 RED: a receipt with NO verdict_sha does not vouch for a reviewed lane"
+    },
+    {
+      "id": "SB-M9 the sha comparison goes back to case-SENSITIVE",
+      "file": ".agents/scripts/main_write_gate.py",
+      "block": "SCC-192 \u00b7 a close-out PR must carry its receipts",
+      "original": "            got_v = str(r.get(\"verdict_sha\") or \"\").strip().lower()\n            low = sha7.lower()",
+      "mutated": "            got_v = str(r.get(\"verdict_sha\") or \"\").strip()\n            low = sha7",
+      "case": "A6b CONTROL: an UPPERCASE verdict stamp still matches its own receipt"
+    }
   ]
 }

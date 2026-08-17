@@ -172,8 +172,13 @@ def with_ag_description(brain: str) -> str:
     out, done = [], False
     for line in brain.splitlines(keepends=True):
         if not done and line.startswith("description:"):
-            nl = "\n" if line.endswith("\n") else ""
-            out.append("description: " + ag_description(line[len("description:"):].strip()) + nl)
+            # The line's OWN terminator, preserved: `.strip()` eats a CR, and re-appending a
+            # bare "\n" would turn one line of a CRLF brain into an LF line. Same fix, same
+            # reason, as `Set-AgDescriptionLine` in sync-agents.ps1 - these two are twins and
+            # a divergence here is a divergence in what the generator is claimed to do.
+            body = line[len("description:"):]
+            nl = body[len(body.rstrip("\r\n")):]
+            out.append("description: " + ag_description(body.strip()) + nl)
             done = True
         else:
             out.append(line)
@@ -1356,6 +1361,21 @@ def main() -> int:
                 len(fake) > AG_DESC_MAX and ag_description(fake) != fake
                 and len(ag_description(fake)) <= AG_DESC_MAX,
                 f"a {len(fake)}-char description must not survive the budget")
+        # ⛔ U6e · THE REWRITE MUST NOT CHANGE THE LINE ENDINGS. `Set-AgDescriptionLine` matched
+        # `(.*)$`, and in .NET `.` matches CR while `$` sits before the LF - so on a CRLF brain
+        # the CR was captured, TrimEnd() removed it, and the rewritten line shipped LF-only
+        # among CRLF siblings: a mixed-ending file produced by a pure text edit. No brain is
+        # CRLF today, which is exactly why this is pinned rather than noticed later (blind
+        # lens, F14). The Python twin below is the one this suite can execute; both were fixed.
+        crlf = "---\r\nname: x\r\ndescription: " + ("y" * (AG_DESC_MAX + 40)) + "\r\n---\r\n"
+        outp = with_ag_description(crlf)
+        c.check("U6e the description rewrite preserves CRLF line endings",
+                outp.count("\r\n") == crlf.count("\r\n") and "\n" not in outp.replace("\r\n", ""),
+                repr(outp[:120]))
+        c.check("U6e CONTROL: ...and an LF brain gains no CR",
+                "\r" not in with_ag_description(crlf.replace("\r\n", "\n")),
+                repr(with_ag_description(crlf.replace("\r\n", "\n"))[:120]))
+
         c.check("U6c ...and the whole menu payload stays under the budget it was cut to",
                 total <= measured * AG_DESC_MAX and total < 6000,
                 f"{measured} descriptions, {total} chars total (was 13,883 before SCC-195)")

@@ -31,7 +31,7 @@
     {
       "id": "R-M4 the engine's restatement goes stale again",
       "file": ".agents/skills/code-review-engine/steps/step-01-review.md",
-      "original": "**And when no thematic parent fits, it goes on the **OPEN ROLLING TICKET**",
+      "original": "**And when no thematic parent fits, it goes on the OPEN ROLLING TICKET**",
       "mutated": "**And when nothing fits, mint a Task",
       "case": "R2b the restatement in step-01-review.md names the rolling ticket",
       "block": "SCC-191"

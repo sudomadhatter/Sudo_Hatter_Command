@@ -348,7 +348,8 @@ def main() -> int:
 
         def close_out_pr(tmp, *, receipt: dict | None = None, event: bool = True,
                          verdict: bool = True, manifest: bool = True,
-                         extra_artifact_commits: int = 0, close_command: str = "smh-close-task-merge-tree"):
+                         extra_artifact_commits: int = 0, upper_stamp: bool = False,
+                         close_command: str = "smh-close-task-merge-tree"):
             """A lane branch shaped exactly like a real close-out, returned as (work, branch).
 
             The verdict sha is a REAL commit on the lane, and the walkthrough citing it lands
@@ -373,7 +374,8 @@ def main() -> int:
                     f"close_command: {close_command}\nsecondary_repos: []\n", encoding="utf-8")
             (d / "walkthrough.md").write_text(
                 "# SCC-9\n\n## Your Actions\n\nNothing owed.\n"
-                + (f"\n## Code Review\n\nVerdict: PASS @ {code_sha}\n" if verdict else ""),
+                + (f"\n## Code Review\n\nVerdict: PASS @ "
+                   f"{code_sha.upper() if upper_stamp else code_sha}\n" if verdict else ""),
                 encoding="utf-8")
             r = dict(receipt) if receipt is not None else {
                 "schema_v": 1, "task_key": "SCC-9", "branch": branch,
@@ -421,7 +423,8 @@ def main() -> int:
             work, branch = close_out_pr(tmp, receipt={})
             rc, out = pr_rc(work, branch)
             c.check("A2 RED: no preflight receipt is refused, by name",
-                    rc != 0 and "preflight-receipt.json" in out, out.strip()[-600:])
+                    rc != 0 and "preflight-receipt.json in this PR" in out
+                    and "task_preflight.py --expect-key" in out, out.strip()[-600:])
 
         with TempDir() as tmp:
             work, branch = close_out_pr(tmp, receipt={
@@ -454,6 +457,49 @@ def main() -> int:
             rc, out = pr_rc(work, branch)
             c.check("A3c RED: a receipt recording a BLOCKED verdict is not a pass",
                     rc != 0 and "verdict" in out.lower(), out.strip()[-600:])
+
+        with TempDir() as tmp:
+            # ⭐ A3d · THE CASE SB-M7 PROVED WAS MISSING. A3 above aims at `fresh`, so dropping
+            # `or "stale" in verdict` from the verdict test changed nothing any case could see:
+            # the two reads were one assertion wearing two names. A receipt claiming fresh=true
+            # while carrying the STALE verdict string is the shape a hand-edited (or
+            # half-migrated) receipt takes, and the gate reads a FILE IN THE PR - it cannot
+            # assume the two fields agree just because one writer makes them agree.
+            work, branch = close_out_pr(tmp, receipt={
+                "schema_v": 1, "task_key": "SCC-9", "branch": "chore/SCC-9-lane",
+                "verdict_sha": None, "when": None, "fetch": True, "fresh": True,
+                "accept_unpushed_main": False, "lane": "LOCAL",
+                "verdict": "clear - but vs the LAST fetch (STALE), not the remote",
+                "errors": 0, "warnings": 1, "exit": 1})
+            rc, out = pr_rc(work, branch)
+            c.check("A3d RED: a 'clear' verdict that says STALE is not a clear preflight",
+                    rc != 0 and "verdict" in out.lower() and "stale" in out.lower(),
+                    out.strip()[-600:])
+
+        with TempDir() as tmp:
+            # ⭐ A6 · THE BLIND LENS'S F2, EXECUTED. `verdict_sha` empty read as AGREEMENT, and
+            # `write_receipt` records `null` by design on a lane with no stamp yet - so a
+            # receipt taken BEFORE the review resolved, committed once and never refreshed,
+            # satisfied the check written to catch exactly that. Empty-means-pass in a gate.
+            work, branch = close_out_pr(tmp, receipt={
+                "schema_v": 1, "task_key": "SCC-9", "branch": "chore/SCC-9-lane",
+                "verdict_sha": None, "when": None, "fetch": True, "fresh": True,
+                "accept_unpushed_main": False, "lane": "LOCAL",
+                "verdict": "clear to close out and merge", "errors": 0, "warnings": 0,
+                "exit": 0})
+            rc, out = pr_rc(work, branch)
+            c.check("A6 RED: a receipt with NO verdict_sha does not vouch for a reviewed lane",
+                    rc != 0 and "verdict_sha" in out, out.strip()[-600:])
+
+        with TempDir() as tmp:
+            # A6b CONTROL · VERDICT_RE accepts [0-9a-fA-F] and `git rev-parse` emits lowercase,
+            # so an uppercase stamp made all three prefix clauses true and refused a lane whose
+            # receipt was correct. The comparison is case-folded; this is the only shape that
+            # can tell.
+            work, branch = close_out_pr(tmp, upper_stamp=True)
+            rc, out = pr_rc(work, branch)
+            c.check("A6b CONTROL: an UPPERCASE verdict stamp still matches its own receipt",
+                    rc == 0, out.strip()[-600:])
 
         with TempDir() as tmp:
             # A5 · the control that keeps loop 3 shut: no manifest, no demand.

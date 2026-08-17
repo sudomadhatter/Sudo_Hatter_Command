@@ -15,7 +15,7 @@
     {
       "id": "T-M2 the ledger-row exemption is dropped (the wedge)",
       "file": ".agents/scripts/jira_feed.py",
-      "original": "        if MERGE_PHRASE in row.lower():\n            continue",
+      "original": "        if is_ledger_row(row):\n            continue",
       "mutated": "        if False:\n            continue",
       "case": "B3b CONTROL: an OPEN ledger row is spared even when it names the click",
       "block": "SCC-193 B"
@@ -39,8 +39,8 @@
     {
       "id": "T-M5 finish stops refusing on ceremony rows",
       "file": ".agents/scripts/jira_feed.py",
-      "original": "    ceremony = ceremony_rows(text)\n    if ceremony:\n        say(render_ceremony_banner(ceremony, str(wt), strict=args.strict_actions))",
-      "mutated": "    ceremony = []\n    if ceremony:\n        say(render_ceremony_banner(ceremony, str(wt), strict=args.strict_actions))",
+      "original": "    ceremony = ceremony_rows(text)\n    banned = banned_action_rows(text)\n    if ceremony:",
+      "mutated": "    ceremony = []\n    banned = banned_action_rows(text)\n    if ceremony:",
       "case": "B6 finish REFUSES a walkthrough carrying the ceremony's steps",
       "block": "SCC-193 B"
     },
@@ -51,6 +51,30 @@
       "mutated": "    anc = wf.git([\"merge-base\", \"--is-ancestor\", tip, \"origin/main\"], root)\n    if False:",
       "case": "D1 without GITHUB_TOKEN: ...and the landed lane SATISFIES it",
       "block": "SCC-193 D"
+    },
+    {
+      "id": "T-M7 the ledger exemption widens back to a substring (the executed bypass)",
+      "file": ".agents/scripts/jira_feed.py",
+      "block": "SCC-193 B",
+      "original": "        if is_ledger_row(row):\n            continue",
+      "mutated": "        if MERGE_PHRASE in row.lower():\n            continue",
+      "case": "B3c RED: appending the ledger phrase does NOT excuse a ceremony row"
+    },
+    {
+      "id": "T-M8 the 'then run' pattern loses its ceremony object (the false-positive shape)",
+      "file": ".agents/scripts/jira_feed.py",
+      "block": "SCC-193 B",
+      "original": "    (re.compile(r\"\\bthen\\s+(?:invoke|run|call)\\b[^\\n]{0,60}?\"\n                r\"(?:--after-merge\\b|\\.agents/scripts/|\\b\\w+\\.py\\b\"\n                r\"|\\bthe\\s+(?:door|ceremony|close-?out|second\\s+half)\\b)\", re.I),",
+      "mutated": "    (re.compile(r\"\\bthen\\s+(?:invoke|run|call)\\b\", re.I),",
+      "case": "B7 CONTROL: not flagged \u2014 a product decision that happens to say 'then run'"
+    },
+    {
+      "id": "T-M9 finish refuses on the first family and never reads the second",
+      "file": ".agents/scripts/jira_feed.py",
+      "block": "SCC-193 B",
+      "original": "    if ceremony:\n        say(render_ceremony_banner(ceremony, str(wt), strict=args.strict_actions))\n    if banned:",
+      "mutated": "    if ceremony:\n        say(render_ceremony_banner(ceremony, str(wt), strict=args.strict_actions))\n        return 2\n    if banned:",
+      "case": "B8 finish reports BOTH families in one run, then refuses once"
     }
   ]
 }

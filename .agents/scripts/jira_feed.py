@@ -1762,7 +1762,18 @@ _CEREMONY_PATTERNS = [
      "asks the operator to re-invoke the ceremony - the agent runs it from the sign-off on"),
     (re.compile(r"--after-merge\b", re.I),
      "names the close-out's own second half, which is the ceremony's step"),
-    (re.compile(r"\bthen\s+(?:invoke|run|call)\b", re.I),
+    # ⛔ BOUND TO THE CEREMONY, like every sibling above it. This pattern used to be a bare
+    # `then (invoke|run|call)` with no object at all, and it therefore refused genuine operator
+    # decisions - "…then run the campaign when you are happy", "…then call the account
+    # manager", and (flatly contradicting the boundary note above) "…then invoke
+    # `/cicd-push-e2e` when the marketing site is ready", which is one of the three FORMS of
+    # the decision. The refusal is default-on, hard (exit 2), and `finish` fires AFTER the
+    # merge - so a false positive lands where the only fix is a commit on `main`, the write the
+    # gate refuses. A DOOR NAME is deliberately NOT in the object list for that reason; what is
+    # refused is the ceremony's second half and its machinery.
+    (re.compile(r"\bthen\s+(?:invoke|run|call)\b[^\n]{0,60}?"
+                r"(?:--after-merge\b|\.agents/scripts/|\b\w+\.py\b"
+                r"|\bthe\s+(?:door|ceremony|close-?out|second\s+half)\b)", re.I),
      "sequences the ceremony's own steps as operator work"),
     (re.compile(r"\brun\b[^\n]{0,50}?(?:\.agents/scripts/|jira_feed\.py|task_preflight\.py"
                 r"|flight_recorder\.py|gate_receipt\.py)", re.I),
@@ -1770,6 +1781,22 @@ _CEREMONY_PATTERNS = [
 ]
 _CEREMONY_SENTENCE = ("this section holds what only the operator decides; the ceremony's "
                       "steps are not entries")
+
+
+# ⛔ THE LEDGER EXEMPTION IS A SHAPE, NOT A SUBSTRING. `MERGE_PHRASE in row` excused the
+# ENTIRE row wherever the phrase appeared, so appending five words to SCC-164's verbatim defect
+# row cleared the check written to refuse that exact row (edge-case lens, executed). An
+# exemption a defect can opt into is not an exemption.
+#
+# The canonical row's SUBJECT is the phrase - all eleven in the live corpus open with it, bare
+# or bolded ("**The merge itself** — lands via this branch's PR"). A row that merely mentions
+# the merge somewhere in its prose is a different row and is judged on its own words.
+_LEDGER_SUBJECT_RE = re.compile(r"^[\s*_`>#-]*the\s+merge\s+itself\b", re.I)
+
+
+def is_ledger_row(row: str) -> bool:
+    """The door's own mandated ledger row (SCC-183 Step 3), by subject position."""
+    return bool(_LEDGER_SUBJECT_RE.match(row))
 
 
 def ceremony_rows(text: str) -> list[tuple[str, str]]:
@@ -1784,7 +1811,7 @@ def ceremony_rows(text: str) -> list[tuple[str, str]]:
     out: list[tuple[str, str]] = []
     for row in rows:
         # The ledger row is SCC-175's, in both tick states. See the boundary note above.
-        if MERGE_PHRASE in row.lower():
+        if is_ledger_row(row):
             continue
         for pat, why in _CEREMONY_PATTERNS:
             m = pat.search(row)
@@ -1987,25 +2014,29 @@ def cmd_finish(args) -> int:
     # refusal here writes NOTHING, so the walkthrough is fixed and `finish` re-run with no
     # half-written board state in between. The `--warn-actions` opt-out covers both families -
     # one flag, or the opt-out would mean something different depending on which fired.
+    # ⛔ BOTH FAMILIES ARE REPORTED BEFORE EITHER REFUSES. The first cut returned 2 on the
+    # ceremony rows without ever computing `banned_action_rows`, so a walkthrough carrying both
+    # was reported one family at a time: fix, re-run, discover the second, fix, re-run. Same
+    # file, same read, two round trips - and `check-actions` (the cheap pre-PR entry point)
+    # already printed both, so the two readers disagreed about what was wrong with one file.
     ceremony = ceremony_rows(text)
+    banned = banned_action_rows(text)
     if ceremony:
         say(render_ceremony_banner(ceremony, str(wt), strict=args.strict_actions))
-        if args.strict_actions:
-            say(f"[ERR] {args.key}: refusing on {len(ceremony)} row(s) that hand over the "
-                f"ceremony's own steps. Nothing was written; fix the walkthrough. "
-                f"(`--warn-actions` restores the pre-2026-08-16 warn behaviour.)")
-            return 2
-        say(f"jira-feed: {args.key}: --warn-actions given - {len(ceremony)} ceremony row(s) "
-            f"did NOT block this close-out. Logged opt-out, on the record.")
-
-    banned = banned_action_rows(text)
     if banned:
         say(render_banned_banner(banned, str(wt), strict=args.strict_actions))
-        if args.strict_actions:
-            say(f"[ERR] {args.key}: refusing on {len(banned)} banned action row(s). "
-                f"Nothing was written; fix the walkthrough. (`--warn-actions` restores the "
-                f"pre-2026-08-16 warn behaviour, and says so in the output.)")
-            return 2
+    if (ceremony or banned) and args.strict_actions:
+        parts = ([f"{len(ceremony)} row(s) that hand over the ceremony's own steps"]
+                 if ceremony else []) + \
+                ([f"{len(banned)} banned action row(s)"] if banned else [])
+        say(f"[ERR] {args.key}: refusing on " + " and ".join(parts) +
+            f". Nothing was written; fix the walkthrough. (`--warn-actions` restores "
+            f"the pre-2026-08-16 warn behaviour, and says so in the output.)")
+        return 2
+    if ceremony and not args.strict_actions:
+        say(f"jira-feed: {args.key}: --warn-actions given - {len(ceremony)} ceremony row(s) "
+            f"did NOT block this close-out. Logged opt-out, on the record.")
+    if banned and not args.strict_actions:
         say(f"jira-feed: {args.key}: --warn-actions given - {len(banned)} banned row(s) "
             f"did NOT block this close-out. Logged opt-out, on the record.")
 

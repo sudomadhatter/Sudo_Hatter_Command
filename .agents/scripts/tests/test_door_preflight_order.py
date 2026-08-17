@@ -295,10 +295,16 @@ def main() -> int:
             c.check("/cicd-push-e2e still mints + pushes main unchanged",
                     idx(proj, "mint-push-token.sh") >= 0 and idx(proj, "git push origin main") >= 0)
 
-        # ── the controls ───────────────────────────────────────────────────────────────────────
+    if c.block("CONTROLS · the fence/comment readers and the ordering mutants"):
+        # ⛔ COMPUTED HERE, NOT IN THE BLOCK ABOVE. `prose`/`ok` used to be assigned at the tail
+        # of the LIVE block and read here, which is fine unfiltered and an UnboundLocalError
+        # under `--case CONTROLS` - a sibling block simply does not run. That crash reads as a
+        # non-zero exit, which a mutation sweep scores as KILLED: a false kill for every mutant
+        # aimed at this block, i.e. the guards here would have looked pinned while proving
+        # nothing. (SCC-156 paid for that lesson with five files; the LIVE block's own comment
+        # states the rule this violated.)
         prose = code_lines(PROSE_ONLY)
         ok, _ = order_ok(prose, *REQUIRED_ORDER)
-    if c.block("CONTROLS · the fence/comment readers and the ordering mutants"):
         c.check("control · prose describing the steps does NOT satisfy the check", not ok,
                 "fence extraction regressed — these checks would match sentences, not commands")
 
@@ -383,6 +389,12 @@ def main() -> int:
         SURFACES = (sorted(REPO.glob(".agents/rules/*.md"))
                     + sorted(REPO.glob(".agents/commands/*.md"))
                     + sorted(REPO.glob(".agents/skills/*/SKILL.md"))
+                    # ⛔ AND THE NESTED STEP FILES. `*/SKILL.md` misses
+                    # `code-review-engine/steps/*.md`, which this very lane edited - the
+                    # engine's step bodies are read by an agent about to act, so a retired
+                    # sentence there is exactly as live as one in a command (blind lens, F8).
+                    + sorted(REPO.glob(".agents/skills/*/steps/*.md"))
+                    + sorted(REPO.glob(".claude/skills/*/steps/*.md"))
                     + sorted(REPO.glob(".agents/workflows/*.md"))
                     + sorted(REPO.glob(".opencode/commands/*.md"))
                     + sorted(REPO.glob(".claude/skills/smh-*/SKILL.md"))
@@ -443,6 +455,19 @@ def main() -> int:
                         hits.append(f"{rel}:{n}: {bad!r} in {line.strip()[:70]}")
         c.check("S5 no surface still says the merge is the operator's to perform",
                 not hits, f"{len(hits)} hit(s): " + " | ".join(hits[:6]))
+
+        # ⛔ THE NEGATIVE CONTROL A LIVE SWEEP CANNOT DO WITHOUT. `hits` is built by scanning
+        # the real tree, so a PASS is by definition a run that found nothing - and a broken
+        # predicate, an empty SURFACES list or a typo'd phrase reads exactly the same as a
+        # clean tree. The sibling block written in this same lane already carries this control
+        # (`U6d`); the blind lens found this one without it. Fabricate an offender and require
+        # the same predicate to fire on it.
+        FAKE = ("Step 9: the operator performs the merge, so click **Merge** on the PR "
+                "and that click is the sign-off.\n")
+        fired = [bad for bad in FORBIDDEN if bad in FAKE.lower()]
+        c.check("S5 CONTROL: the same predicate FIRES on a fabricated offending line",
+                bool(fired) and bool(FORBIDDEN) and bool(SURFACES),
+                f"FORBIDDEN={len(FORBIDDEN)} SURFACES={len(SURFACES)} fired={fired}")
 
         # The positive half: the replacement sentence must actually BE somewhere, in the two
         # places an agent reads before it acts. Deleting the wrong sentence is not the fix.

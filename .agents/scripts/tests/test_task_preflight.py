@@ -1436,6 +1436,64 @@ def main() -> int:
                     not (repo / RECEIPT).is_file() and "VERDICT:" in out,
                     out.strip()[-300:])
 
+        with TempDir() as t:
+            # ⭐ R7 · THE AMBIGUITY LOOP THE EDGE-CASE LENS EXECUTED. `check_manifest` returns
+            # the ONE manifest that is this lane's contract, and deliberately returns None when
+            # two agree rather than coin-flipping a location. But it reported both as INFO, so
+            # the VERDICT still read "clear", no receipt was written — and `main_write_gate
+            # --mode pr` then DEMANDS a receipt beside each of those manifests. A green
+            # preflight handing the PR an unmeetable demand is the worst of the four loops:
+            # the operator is told to merge by the tool that guaranteed the merge is blocked.
+            # Ambiguity about WHERE the evidence goes is an error about the evidence.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            write(repo, "_artifacts/_main/2026-08-08_scc-11-second/task.yaml", MANIFEST)
+            commit(repo, "SCC-11 chore: a second manifest for the same lane")
+            git(repo, "push", "-q", "origin", "chore/SCC-11-thing")
+            stamp_and_verdict(repo, "PASS")
+            code, out = preflight(repo)
+            c.check("R7 two manifests agreeing on ONE lane is an ERROR, not two infos",
+                    code == 2 and "VERDICT: BLOCKED" in out,
+                    f"exit {code}: " + out.strip()[-500:])
+            c.check("R7 ...and it names both, and says the receipt has nowhere to go",
+                    "2026-08-08_scc-11-second" in out and "scc-11-thing" in out
+                    and RECEIPT.rsplit("/", 1)[-1] in out,
+                    out.strip()[-600:])
+            c.check("R7 ...and no receipt is invented beside either of them",
+                    not (repo / RECEIPT).is_file(),
+                    "a coin-flip here puts the evidence next to the wrong walkthrough")
+
+        with TempDir() as t:
+            # R8 · a receipt that is not readable TEXT must not kill the preflight. The writer
+            # compares bytes to decide whether to rewrite, and `read_text` raises
+            # UnicodeDecodeError — a ValueError, which `except OSError` never caught. A truncated
+            # or half-written receipt (an interrupted close-out) is exactly how that file ends up
+            # non-UTF-8, and the crash lands on the run that would have REPLACED it.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            stamp_and_verdict(repo, "PASS")
+            (repo / RECEIPT).write_bytes(b"\xff\xfe not utf-8 at all")
+            code, out = preflight(repo)
+            c.check("R8 a corrupt receipt is REPLACED, not a traceback",
+                    "Traceback" not in out and raw(repo).startswith(b"{"),
+                    f"exit {code}: " + out.strip()[-500:])
+
+        with TempDir() as t:
+            # ⭐ R9 · THE EXEMPTION IS THIS LANE'S RECEIPT, and the comment above it already
+            # said so ("the ONE file the writer owns"). The test measured the NAME and the
+            # `_artifacts/` prefix, so ANY folder's `preflight-receipt.json` was waved through —
+            # including a sibling lane's uncommitted one, which is another session's work being
+            # silently dropped from the dirty-tree count that exists to catch exactly that.
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            stamp_and_verdict(repo, "PASS")
+            write(repo, "_artifacts/_main/2026-08-08_scc-99-other/preflight-receipt.json",
+                  '{"task_key": "SCC-99"}\n')
+            code, out = preflight(repo)
+            c.check("R9 CONTROL: ANOTHER lane's uncommitted receipt is still dirt",
+                    code == 2 and "uncommitted change" in out,
+                    f"exit {code}: " + out.strip()[-400:])
+
     return c.finish()
 
 

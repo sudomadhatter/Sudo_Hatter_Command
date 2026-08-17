@@ -448,7 +448,7 @@ forever, and how a real dead lens gets waved through as "just the mode".
 > When a survivor is real but out of this lane's scope, it is a lettered **Subtask under an open
 > parent** whose surface it belongs to before it is ever a new Task — the parent's index row goes on
 > with `jira_feed.py index-row` (it reads the description back and refuses if a prior row went
-> missing). **And when no thematic parent fits, it goes on the **OPEN ROLLING TICKET** (`Bugs and Updates - <YYYY-MM>`, label `bugs-and-updates`; `SCC-190` today) as a subtask — rung 3
+> missing). **And when no thematic parent fits, it goes on the OPEN ROLLING TICKET** (`Bugs and Updates - <YYYY-MM>`, label `bugs-and-updates`; `SCC-190` today) as a subtask — rung 3
 > since SCC-191.** Mint only for work that is a lane in its own right on day one, and name what you
 > looked at. Judgment, not a gate.
 

@@ -39,8 +39,8 @@
     {
       "id": "S-M5 the self-dirt exemption widens to the whole _artifacts tree",
       "file": ".agents/scripts/task_preflight.py",
-      "original": "                if Path(ln[3:].split(\" -> \")[-1].strip()).name == RECEIPT_NAME",
-      "mutated": "                if True",
+      "original": "        mine = [ln for ln in lines\n                if own and ln[3:].split(\" -> \")[-1].strip() == own]",
+      "mutated": "        mine = [ln for ln in lines\n                if ln[3:].strip().startswith(\"_artifacts/\")]",
       "case": "R4 CONTROL: a SIBLING dirty artifact still blocks",
       "block": "SCC-192/193"
     },
@@ -59,6 +59,38 @@
       "mutated": "        \"verdict_sha\": sha,\n        \"head\": wf.git_head(repo),",
       "case": "R6 the receipt is byte-stable ACROSS the commit that lands it",
       "block": "SCC-192/193"
+    },
+    {
+      "id": "S-M8 check_manifest goes back to SILENT on two agreeing manifests",
+      "file": ".agents/scripts/task_preflight.py",
+      "block": "SCC-192/193 \u00b7 the preflight leaves a RECEIPT, and fetch is the DEFAULT",
+      "original": "    if len(agreed) > 1:\n        rep.err(\"manifest\",",
+      "mutated": "    if False:\n        rep.err(\"manifest\",",
+      "case": "R7 two manifests agreeing on ONE lane is an ERROR, not two infos"
+    },
+    {
+      "id": "S-M9 the self-dirt exemption goes back to matching by NAME anywhere",
+      "file": ".agents/scripts/task_preflight.py",
+      "block": "SCC-192/193 \u00b7 the preflight leaves a RECEIPT, and fetch is the DEFAULT",
+      "original": "        mine = [ln for ln in lines\n                if own and ln[3:].split(\" -> \")[-1].strip() == own]",
+      "mutated": "        mine = [ln for ln in lines\n                if Path(ln[3:].split(\" -> \")[-1].strip()).name == RECEIPT_NAME]",
+      "case": "R9 CONTROL: ANOTHER lane's uncommitted receipt is still dirt"
+    },
+    {
+      "id": "S-M10 an unreadable receipt escapes the writer again (the UnicodeDecodeError)",
+      "file": ".agents/scripts/task_preflight.py",
+      "block": "SCC-192/193 \u00b7 the preflight leaves a RECEIPT, and fetch is the DEFAULT",
+      "original": "        except (UnicodeError, ValueError):\n            same = False",
+      "mutated": "        except OSError:\n            same = False",
+      "case": "R8 a corrupt receipt is REPLACED, not a traceback"
+    },
+    {
+      "id": "S-M11 the stale remedy stops distinguishing a failed fetch from --no-fetch",
+      "file": ".agents/scripts/task_preflight.py",
+      "block": "SCC-192/193 \u00b7 the preflight leaves a RECEIPT, and fetch is the DEFAULT",
+      "original": "                   + (\"the fetch was asked for and FAILED - fix the uplink and re-run\"\n                      if args.fetch else\n                      \"re-run WITHOUT --no-fetch\")",
+      "mutated": "                   + (\"re-run WITHOUT --no-fetch\"\n                      if args.fetch else\n                      \"re-run WITHOUT --no-fetch\")",
+      "case": "R3 ...and the receipt says the fetch was ASKED FOR but is not fresh"
     }
   ]
 }

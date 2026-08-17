@@ -43,6 +43,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import walkthrough_roster as roster
 import wf_common as wf
+
+# ⭐ Re-exported from `wf_common`, which is where they live now (SCC-190 F6): the
+# main-write gate needs `VERDICT_RE`/`strip_fenced`/`manifest_field` and was
+# importing this whole module - and its six transitive dependencies - to get them.
+# Same single definition, read off the leaf. Every existing importer still works.
+VERDICT_RE = wf.VERDICT_RE
+manifest_field = wf.manifest_field
+strip_fenced = wf.strip_fenced
 import hooks_armed
 # SCC-146: the close-out reads the review's receipts. Imported the way closeout_preflight
 # imports it, and for the same reason — two tools reading one receipt format must share one
@@ -213,9 +221,6 @@ MANIFEST_SCHEMA = ("task_key: SCC-00 | primary_repo: <name> | branch: chore/SCC-
                    "not read)")
 
 
-def manifest_field(text: str, field: str) -> str | None:
-    m = re.search(rf"^\s*{field}\s*:\s*[\"']?([^\"'\n#]+)", text, re.MULTILINE)
-    return m.group(1).strip() if m else None
 
 
 def task_manifests(repo: Path, expect: str) -> list[tuple[Path, str]]:
@@ -334,7 +339,8 @@ def lane_commit_keys(repo: Path, branch: str) -> frozenset[str]:
     return frozenset(keys)
 
 
-def check_manifest(repo: Path, branch: str, expect: str, rep: wf.Report) -> None:
+def check_manifest(repo: Path, branch: str, expect: str,
+                   rep: wf.Report) -> Path | None:
     """`task.yaml` is intent written down at task START - authored on the lane's own
     branch, it reaches the mainline only WHEN that lane lands. So multi-lane tickets
     leave one receipt PER landed lane in the tree, and re-litigating those would block
@@ -346,7 +352,7 @@ def check_manifest(repo: Path, branch: str, expect: str, rep: wf.Report) -> None
         rep.warn("manifest", f"no task.yaml declares task_key: {expect} - intent rests on "
                              f"--expect-key alone. Author one in the task's _artifacts "
                              f"folder ({MANIFEST_SCHEMA})")
-        return
+        return None
     ref = base_ref(repo)
     live: list[tuple[Path, str | None]] = []
     for p, text in mine:
@@ -380,7 +386,23 @@ def check_manifest(repo: Path, branch: str, expect: str, rep: wf.Report) -> None
     # Exactly one, or none. Two manifests agreeing on one branch is an ambiguity the receipt
     # must not resolve by picking - the PR gate reads the receipt BESIDE a manifest, so a
     # coin-flip here writes the evidence next to the wrong walkthrough.
-    return agreed[0] if len(agreed) == 1 else None
+    #
+    # ⛔ AND IT HAS TO SAY SO. Returning None SILENTLY was the fourth loop, executed by two
+    # review lenses independently: both manifests reported as INFO, the VERDICT still read
+    # "clear to close out and merge", no receipt was written - and `main_write_gate --mode pr`
+    # then DEMANDS a receipt beside EACH of them and prints a remedy (`re-run the preflight`)
+    # that will again write nothing. A preflight that certifies a merge it has already made
+    # unmergeable is worse than one that refuses: the operator is sent to a dead end by the
+    # tool whose whole job is to keep them out of one.
+    if len(agreed) > 1:
+        rep.err("manifest",
+                f"{len(agreed)} live task.yaml files declare {expect} on `{branch}`: "
+                + ", ".join(rel_or_abs(q, repo) for q in agreed)
+                + f" - {RECEIPT_NAME} is written BESIDE the lane's manifest and the PR gate "
+                  f"reads it there, so two candidates means the evidence has no home. Keep "
+                  f"the one that is THIS lane's contract; settle or remove the other.")
+        return None
+    return agreed[0] if agreed else None
 
 
 # ── 1d. The cross-repo half this repo's `git status` CANNOT see ────────────────
@@ -865,7 +887,8 @@ def check_stalled_landing(repo: Path, fetch: bool, accept: bool, rep: wf.Report)
                             f"anyway]")
 
 
-def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report) -> bool:
+def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report,
+               manifest: Path | None = None) -> bool:
     """`commit-and-push-are-one-action`: clean + 0/0, or the work is not finished. Merging
     an unpushed branch to main puts commits on production that exist on one disk.
 
@@ -902,9 +925,21 @@ def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report) -> bool:
         # first and answered it the same way: the ONE file the writer owns is excluded from
         # the measurement, and nothing else is - a sibling artifact, another lane's file or any
         # code path still counts (the R4 control pins exactly that).
+        # ⛔ THIS LANE'S receipt, by PATH - not "any file with that name". The first cut
+        # matched the basename anywhere under `_artifacts/`, so a SIBLING lane's uncommitted
+        # receipt was waved through too: another session's work dropped from the very count
+        # that exists to notice it, and permissive in the direction that lets a close-out
+        # look clean over someone else's unfinished writes. `check_manifest` has already
+        # resolved which manifest is this lane's contract, so the owned path is known here.
+        own = ""
+        if manifest is not None:
+            try:
+                own = (manifest.parent / RECEIPT_NAME).resolve().relative_to(
+                    repo.resolve()).as_posix()
+            except (ValueError, OSError):
+                own = ""
         mine = [ln for ln in lines
-                if Path(ln[3:].split(" -> ")[-1].strip()).name == RECEIPT_NAME
-                and ln[3:].split(" -> ")[-1].strip().startswith("_artifacts/")]
+                if own and ln[3:].split(" -> ")[-1].strip() == own]
         rest = [ln for ln in lines if ln not in mem and ln not in mine]
         if rest:
             rep.err("sync", f"{len(rest)} uncommitted change(s) - commit "
@@ -1066,10 +1101,6 @@ def check_artifacts(repo: Path, key: str | None, rep: wf.Report) -> list[Path]:
 
 # ── 4.5. What did the REVIEW say, and can its evidence spare the gate? (SCC-146) ──────
 
-# The canonical line /smh-code-review Step 4 writes as the review section's first line.
-# Anchored at line start: prose ABOUT a verdict does not match; the stamp does.
-VERDICT_RE = re.compile(r"^Verdict:\s*(PASS|CONCERNS|FAIL|WAIVED)\s*@\s*([0-9a-fA-F]{7,40})\b",
-                        re.MULTILINE)
 
 # A line that LOOKS like a verdict stamp but fails the canonical regex — bolded, lowercased,
 # or heading-prefixed (the three real-world shapes the SCC-146 review named). Requiring a
@@ -1086,32 +1117,6 @@ NEAR_MISS_LINE = re.compile(r"^[#*_]{0,4} ?verdict\b[^\n]*?\b(?:pass|concerns|fa
                             r"\b[^\n]*@", re.IGNORECASE)
 
 
-def strip_fenced(text: str) -> str:
-    """Markdown code fences removed before any verdict scan (SCC-154, finding 8).
-
-    A canonical stamp pasted AS EVIDENCE inside a fence sits at column 0 and matched
-    VERDICT_RE — a fenced FAIL was a permanent block. ⛔ Fences close per CommonMark: the
-    SAME marker kind, at least the opening length — the first cut toggled on ANY marker
-    line, so a ````-or-~~~-wrapped paste whose content held a ``` pair LEAKED its inner
-    lines back into the scan (measured by this lane's own review: a quoted FAIL became the
-    governing latest stamp, a permanent false block). Marker lines inside an open fence of
-    another kind are content and stay dropped. An UNCLOSED fence still drops everything
-    after it: no verdict then means the full gate runs, the safe direction — pinned as
-    declared design."""
-    out: list[str] = []
-    fence: tuple[str, int] | None = None      # (marker char, opening length) while inside
-    for line in text.splitlines():
-        m = re.match(r"^[ \t]{0,3}(`{3,}|~{3,})", line)
-        if m:
-            marker = m.group(1)
-            if fence is None:
-                fence = (marker[0], len(marker))
-            elif marker[0] == fence[0] and len(marker) >= fence[1]:
-                fence = None
-            continue
-        if fence is None:
-            out.append(line)
-    return "\n".join(out)
 
 
 def nonartifact_moved(repo: Path, sha: str) -> list[str] | None:
@@ -1418,7 +1423,15 @@ def write_receipt(manifest: Path | None, repo: Path, *, key: str, branch: str, l
     body = json.dumps(payload, indent=2, sort_keys=True) + "\n"
     path = art / RECEIPT_NAME
     try:
-        if not path.is_file() or path.read_text(encoding="utf-8") != body:
+        # ⛔ `read_text` raises UnicodeDecodeError - a ValueError, which `except OSError`
+        # never caught - on a receipt whose bytes are not UTF-8. That is exactly what an
+        # INTERRUPTED close-out leaves behind, so the crash landed on the run that would
+        # have replaced the corruption. Unreadable bytes are not evidence: rewrite them.
+        try:
+            same = path.is_file() and path.read_text(encoding="utf-8") == body
+        except (UnicodeError, ValueError):
+            same = False
+        if not same:
             path.write_text(body, encoding="utf-8")
     except OSError as exc:
         # A receipt that cannot be written is worth saying out loud and is never fatal here:
@@ -1472,7 +1485,7 @@ def main() -> int:
     check_secondary(repo, expect, rep)
     # ⭐ `fresh`, not `args.fetch`. check_sync ran the fetch and knows whether it WORKED;
     # passing the flag instead made a dead uplink produce a hard exit 2 on a stale answer.
-    fresh = check_sync(repo, branch, args.fetch, rep)
+    fresh = check_sync(repo, branch, args.fetch, rep, manifest)
     check_stalled_landing(repo, fresh, args.accept_unpushed_main, rep)
     check_base(repo, branch, rep)
     lane, touched = check_scope(repo, branch, rep)
@@ -1506,8 +1519,15 @@ def main() -> int:
         # above a verdict that read "clear to close out and merge", and the verdict line is the
         # only line an agent acts on. Exit is already non-zero here (check_sync warns), so this
         # is a stop, not a footnote: re-run without --no-fetch, or say why offline was chosen.
-        verdict = ("clear - but vs the LAST fetch (STALE), not the remote; re-run with the "
-                   "fetch (drop --no-fetch) before you merge")
+        # The two ways `fresh` goes false need DIFFERENT remedies, and printing the
+        # --no-fetch one at an operator who never passed it (R3: the uplink was dead) is a
+        # no-op instruction under a verdict they are supposed to act on. The receipt already
+        # distinguishes them (`fetch: true, fresh: false`); the verdict line now does too.
+        verdict = ("clear - but vs the LAST fetch (STALE), not the remote; "
+                   + ("the fetch was asked for and FAILED - fix the uplink and re-run"
+                      if args.fetch else
+                      "re-run WITHOUT --no-fetch")
+                   + " before you merge")
     else:
         verdict = "clear to close out and merge"
 

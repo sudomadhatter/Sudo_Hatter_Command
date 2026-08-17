@@ -537,11 +537,16 @@ function Get-AgDescription {
 # which declare `platforms: [opencode]` and so never reach this surface (verified 2026-08-17).
 function Set-AgDescriptionLine {
   param([string]$Raw)
-  $m = [regex]::Match($Raw, '(?m)^description:[ \t]*(.*)$')
+  # (\r?) is captured and PUT BACK. `.` matches CR in .NET, `$` in multiline matches before the
+  # LF, so on a CRLF brain the CR landed inside group 1, TrimEnd() ate it, and the rewritten
+  # line shipped LF-only among CRLF siblings -- a mixed-ending file from a pure text edit.
+  # No brain is CRLF today (all LF, BOM-less); this is the writer not being the thing that
+  # introduces one. The Python twin in test_command_surfaces.py does the same.
+  $m = [regex]::Match($Raw, '(?m)^description:[ \t]*(.*?)(\r?)$')
   if (-not $m.Success) { return $Raw }
   $short = Get-AgDescription $m.Groups[1].Value.TrimEnd()
   if ($short -eq $m.Groups[1].Value) { return $Raw }
-  return $Raw.Remove($m.Index, $m.Length).Insert($m.Index, ('description: ' + $short))
+  return $Raw.Remove($m.Index, $m.Length).Insert($m.Index, ('description: ' + $short + $m.Groups[2].Value))
 }
 
 function Sync-AntigravityWorkflowMirror {

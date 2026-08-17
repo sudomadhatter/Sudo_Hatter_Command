@@ -67,7 +67,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import wf_common as wf                                     # noqa: E402
 from jira_feed import _SCRAPE_HEADS, scrape_bucket         # noqa: E402
-from task_preflight import VERDICT_RE, strip_fenced        # noqa: E402  (the governing reader)
+from wf_common import VERDICT_RE, strip_fenced             # noqa: E402  (the governing reader)
 
 SCHEMA_V = 1
 EVENTS_REL = Path("_artifacts/_main/workflow-events")

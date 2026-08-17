@@ -73,12 +73,16 @@ sys.path.insert(0, str(HERE))
 
 import sop_currency  # noqa: E402 — same directory; see module docstring
 # ⛔ ONE reader of the verdict stamp and ONE parser of the manifest, imported rather than
-# re-typed. `task_preflight` owns both (its VERDICT_RE is the stricter, line-anchored one, and
-# `strip_fenced` is why a stamp quoted inside a code fence does not count); `flight_recorder`
-# already imports them for exactly this reason. A second spelling here would be a gate and a
-# door disagreeing about what a verdict IS — which is the class of defect this file exists for.
-from task_preflight import (VERDICT_RE, manifest_field,  # noqa: E402
-                            strip_fenced)
+# re-typed. A second spelling here would be a gate and a door disagreeing about what a verdict
+# IS — the class of defect this file exists for. (VERDICT_RE is the stricter, line-anchored
+# one, and `strip_fenced` is why a stamp quoted inside a code fence does not count.)
+#
+# ⭐ FROM THE LEAF, NOT FROM `task_preflight` (SCC-190 F6). Importing them from there pulled
+# SEVEN local modules into the gate that guards `main` — jira_feed, gate_receipt, hooks_armed,
+# walkthrough_roster and the rest — to buy one regex and two helpers, so an import-time break
+# anywhere in that chain became a break here. `wf_common` is stdlib-only.
+from wf_common import (VERDICT_RE, manifest_field,  # noqa: E402
+                       strip_fenced)
 
 # The two roads to `main` in the branch model (`.agents/rules/git-policy.md` § "Branch model").
 # `claude/*` is a STORY lane: it lands on its epic branch, never on main. PR #2 came from
@@ -340,13 +344,29 @@ def check_close_out_receipts(repo: Path, base: str, head: str,
         # content, one produced three commits ago is byte-identical and vouched for code it
         # never saw. Binding it to the walkthrough's governing stamp is what makes it evidence
         # rather than a file.
-        if r is not None and str(r.get("verdict_sha") or "") not in ("", sha7) \
-                and not str(sha7).startswith(str(r.get("verdict_sha"))) \
-                and not str(r.get("verdict_sha")).startswith(str(sha7)):
-            fails.append(f"{key or rel}: the receipt was taken at verdict "
-                         f"{str(r.get('verdict_sha'))[:9]} but the walkthrough's governing "
-                         f"stamp is {sha7[:9]} - re-run the preflight at the verdict that "
-                         f"is landing")
+        # ⛔ AND AN EMPTY `verdict_sha` IS NOT AGREEMENT. The first cut read
+        # `str(...) or "" not in ("", sha7)`, so a receipt recording `null` satisfied the very
+        # check written to catch a stale one - and `write_receipt` records `null` BY DESIGN
+        # when the lane has no stamp yet. A receipt taken before the review resolved, committed
+        # and never refreshed, therefore vouched for a verdict it predates. Empty input reading
+        # as pass is what `tests-must-gate-for-real` bans, and there is no legitimate consumer:
+        # the lightweight lane (no stamp at all) already `continue`d above.
+        #
+        # Case-folded on both sides: VERDICT_RE accepts `[0-9a-fA-F]`, `git rev-parse` emits
+        # lowercase, so an uppercase stamp made every clause true and produced a false refusal.
+        if r is not None:
+            got_v = str(r.get("verdict_sha") or "").strip().lower()
+            low = sha7.lower()
+            if not got_v:
+                fails.append(f"{key or rel}: the receipt records no verdict_sha, so it is not "
+                             f"evidence about the walkthrough's stamp {sha7[:9]} - it was "
+                             f"taken before the verdict resolved. Re-run the preflight now "
+                             f"that the verdict is written, and commit the new receipt.")
+            elif not (got_v.startswith(low) or low.startswith(got_v)):
+                fails.append(f"{key or rel}: the receipt was taken at verdict "
+                             f"{got_v[:9]} but the walkthrough's governing "
+                             f"stamp is {sha7[:9]} - re-run the preflight at the verdict that "
+                             f"is landing")
         rc2, full = git(repo, "rev-parse", "--verify", "-q", sha7 + "^{commit}")
         if rc2 != 0 or not full:
             fails.append(f"{key or rel}: the walkthrough's verdict cites {sha7}, which is not "
