@@ -409,15 +409,17 @@ def main() -> int:
                     f"close_command: {close_command}\nsecondary_repos: []\n", encoding="utf-8")
             (d / "walkthrough.md").write_text(
                 "# SCC-9\n\n## Your Actions\n\nNothing owed.\n"
-                # A stamp pasted AS EVIDENCE inside a fence sits at column 0 and matches
-                # VERDICT_RE. `strip_fenced` is the only reason it does not govern, and a
-                # fenced FAIL here would demand a flight event that cannot exist.
-                + ("\n```\nVerdict: FAIL @ 0000000\n```\n" if fenced_decoy else "")
                 # An earlier review, superseded. `stamps[-1]` is what makes the LATEST one
                 # govern; `stamps[0]` would key the event demand on a dead sha.
                 + ("\n## Earlier review\n\nVerdict: CONCERNS @ 1111111\n" if second_stamp else "")
                 + (f"\n## Code Review\n\nVerdict: PASS @ "
-                   f"{code_sha.upper() if upper_stamp else code_sha}\n" if verdict else ""),
+                   f"{code_sha.upper() if upper_stamp else code_sha}\n" if verdict else "")
+                # ⛔ LAST, DELIBERATELY. A stamp pasted AS EVIDENCE inside a fence sits at
+                # column 0 and matches VERDICT_RE; `strip_fenced` is the only reason it does
+                # not govern. Placed BEFORE the real stamp it proves nothing, because
+                # `stamps[-1]` keeps the real one governing either way - which is exactly how
+                # the mutant that drops strip_fenced survived this case once already.
+                + ("\n```\nVerdict: FAIL @ 0000000\n```\n" if fenced_decoy else ""),
                 encoding="utf-8")
             # "AUTO" resolves to the lane's real verdict sha, so a case aimed at ONE field can
             # leave the others valid. Without it every hand-built receipt carried

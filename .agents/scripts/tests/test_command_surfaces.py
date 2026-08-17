@@ -1407,7 +1407,11 @@ def main() -> int:
         # fixture, which is the one input the test-adequacy audit measured them disagreeing on.
         import shutil as _shutil
         pwsh = _shutil.which("pwsh")
-        ASTRAL = "Ship the \U0001F680 launch checklist " + ("word " * 40)
+        # ⛔ TWENTY, NOT ONE. A single astral character shifts the UTF-16 cut by one unit,
+        # and the word-boundary trim absorbs that - so the mutant that reverts to code
+        # points SURVIVED a fixture with one rocket in it. Twenty shifts the cut by twenty,
+        # which lands in a different word, which is the only thing the two can disagree on.
+        ASTRAL = "Ship " + "\U0001F680" * 20 + " the launch checklist " + ("word " * 40)
         if not pwsh:
             c.check("U7 SKIPPED: no pwsh on this machine - the twins are unverified here",
                     True, "install PowerShell 7 to run the real generator against the emulation")

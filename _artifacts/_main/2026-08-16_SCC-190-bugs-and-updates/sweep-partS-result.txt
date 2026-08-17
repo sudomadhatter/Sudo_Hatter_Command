@@ -1,4 +1,6 @@
--- sweep: 11 mutant(s) over 1 file(s) @ e1d1c927 --
+== mutation_sweep @ SCC-190-bugs-and-updates [chore/SCC-190-bugs-and-updates-2026-08] - worktree ==
+   /Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/SCC-190-bugs-and-updates
+-- sweep: 11 mutant(s) over 1 file(s) @ aafe0d47 --
 KILLED    S-M1 the receipt is keyed on HEAD instead of the verdict sha
             KILLED by R1 ⛔ keyed on the VERDICT sha, never on HEAD
             -- filter 'SCC-192/193': matched 1/24 blocks --
@@ -32,7 +34,7 @@ KILLED    S-M10 an unreadable receipt escapes the writer again (the UnicodeDecod
 KILLED    S-M11 the stale remedy stops distinguishing a failed fetch from --no-fetch
             KILLED by R3 ...and the VERDICT's remedy names the FAILED fetch, not --no-fetch
             -- filter 'SCC-192/193 · the preflight leaves a RECEIPT, and fetch is the DEFAULT': matched 1/24 blocks --
--- restore verified: bytes match, nothing was committed, and `git diff --quiet e1d1c927` is clean --
+-- restore verified: bytes match, nothing was committed, and `git diff --quiet aafe0d47` is clean --
 -- full file, unfiltered: python3 .agents/scripts/tests/test_task_preflight.py -> exit 0 --
         | -- 1 error(s), 0 warning(s), 14 info --
         | LANE: LOCAL
