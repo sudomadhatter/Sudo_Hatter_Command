@@ -199,11 +199,32 @@ Four tables, one per part, declared **before** the sweep ran and drawn from the 
 
 Round 2 also produced four `SWEEP ERROR`s rather than kills, and that is the harness being right: renaming a case to strengthen it breaks the table's **attribution**, and `mutation_sweep.py` refuses to credit a kill to a case that did not fail. The tables were re-aimed at the new names — selection and attribution are different namespaces, which this lane got wrong twice.
 
-**ROUND 3 — the record that stands:**
+**ROUND 3 found two more of the same class in Part U**, and neither was a false alarm:
+
+- **U-M3** passed against a *lucky string*: `LONG`'s 132nd character lands just after a full stop, so `rstrip` leaves a clean word boundary even with the boundary search **deleted**. `U3b` now puts a 27-letter word across the cut, where only a real backward search can end cleanly.
+- **U-M4** exposed the shape of every live-tree sweep: a passing run is by definition a run with **nothing to report**, so a detector that stopped recording offenders reads exactly like a clean tree. `U6d` re-runs the predicate against a **fabricated** over-budget door, where it must fire. A live sweep plus a synthetic offender is what makes *"0 over budget"* mean anything.
+
+**THE RECORD THAT STANDS — 22 mutants, 22 killed:**
 
 ```
-<PASTE: round 3>
+SWEEP S  7/7   S-M1 receipt keyed on HEAD · S-M2 fetch back to opt-in · S-M3 freshness off the
+               verdict line · S-M4 omitted fetch back to info · S-M5 self-dirt exemption widened
+               to all of _artifacts/ · S-M6 receipt written with no live manifest · S-M7 the
+               receipt embeds HEAD
+SWEEP R  4/4   R-M1 rolling ticket dropped from rung 3 · R-M2 label dropped from the search block
+               · R-M3 the cycle retitled to a footnote · R-M4 the engine's restatement goes stale
+SWEEP T  6/6   T-M1 ceremony check disabled · T-M2 ledger-row exemption dropped (the wedge) ·
+               T-M3 click pattern loses its verb binding · T-M4 re-invoke pattern removed ·
+               T-M5 finish stops refusing · T-M6 the merge row read off the tick again
+SWEEP U  5/5   U-M1 budget raised past every description · U-M2 ellipsis dropped · U-M3 cut
+               ignores the word boundary · U-M4 the budget rule stops cutting · U-M5 door parity
+               accepts any antigravity body (the check that made SCC-194 unlandable)
+
+-- restore verified after every sweep: bytes match, nothing committed, `git diff --quiet` clean --
+-- each sweep ends with the FULL file unfiltered: exit 0 --
 ```
+
+**Three rounds, ten findings, and every one was an assertion of mine rather than a defect in the code.** That is the honest summary: the code the sweeps attacked held up; the checks guarding it did not, until they were made to.
 
 ---
 
