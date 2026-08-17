@@ -1,0 +1,96 @@
+{
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_evidence_extract.py"
+  ],
+  "mutants": [
+    {
+      "id": "M1 ranking becomes FILTERING \u2014 the one thing this lane forbids",
+      "file": ".agents/scripts/evidence_extract.py",
+      "original": "    tagged = [\"[importer] \" + snippet if _snippet_file(snippet) in importer_set\n              else unknown + snippet\n              for ident in identifiers\n              for snippet in _find_function_callers(repo, ident, rel, importers)]",
+      "mutated": "    tagged = [\"[importer] \" + snippet\n              for ident in identifiers\n              for snippet in _find_function_callers(repo, ident, rel, importers)\n              if _snippet_file(snippet) in importer_set]",
+      "case": "ranking: BOTH classes survive",
+      "block": "SCC-187-A1"
+    },
+    {
+      "id": "M2 the sort moves AFTER the cap, so it ranks what already lost the importer",
+      "file": ".agents/scripts/evidence_extract.py",
+      "original": "    tagged.sort(key=lambda snippet: 0 if snippet.startswith(\"[importer] \") else 1)\n    callers = _dedupe(tagged)[:_CALLER_SNIPPETS]",
+      "mutated": "    callers = _dedupe(tagged)[:_CALLER_SNIPPETS]\n    callers.sort(key=lambda snippet: 0 if snippet.startswith(\"[importer] \") else 1)",
+      "case": "outer sort: a LATER identifier's importer is not crowded out",
+      "block": "SCC-187-A2b"
+    },
+    {
+      "id": "M3 the two tag literals are swapped",
+      "file": ".agents/scripts/evidence_extract.py",
+      "original": "    tagged = [\"[importer] \" + snippet if _snippet_file(snippet) in importer_set\n              else unknown + snippet",
+      "mutated": "    tagged = [unknown + snippet if _snippet_file(snippet) in importer_set\n              else \"[importer] \" + snippet",
+      "case": "ranking: a file that IMPORTS the subject is tagged [importer]",
+      "block": "SCC-187-A1"
+    },
+    {
+      "id": "M4 _importers_of goes blind on Python, so nothing is ever an importer",
+      "file": ".agents/scripts/evidence_extract.py",
+      "original": "    ext = os.path.splitext(rel)[1].lower()\n    if ext == \".py\":\n        return _python_importers(repo, rel)",
+      "mutated": "    ext = os.path.splitext(rel)[1].lower()\n    if ext == \".py\":\n        return []",
+      "case": "ranking: the importer sorts ahead of every name-match",
+      "block": "SCC-187-A1"
+    },
+    {
+      "id": "M5 the caller walk ignores `prefer`, so a late importer is never COLLECTED",
+      "file": ".agents/scripts/evidence_extract.py",
+      "original": "    preferred = set(prefer)\n    head = scan(",
+      "mutated": "    preferred = set()\n    head = scan(",
+      "case": "late importer: it is COLLECTED despite sorting past the walk's own cap",
+      "block": "SCC-187-A2"
+    },
+    {
+      "id": "M6 the reserve is removed, so importers can starve the name-match class",
+      "file": ".agents/scripts/evidence_extract.py",
+      "original": "    reserve = 1 if tail else 0",
+      "mutated": "    reserve = 0",
+      "case": "reserve: the name-match class SURVIVES a cap-filling importer group",
+      "block": "SCC-187-A1e"
+    },
+    {
+      "id": "M7 membership becomes a SUBSTRING test, promoting sub/util.py over util.py",
+      "file": ".agents/scripts/evidence_extract.py",
+      "original": "    tagged = [\"[importer] \" + snippet if _snippet_file(snippet) in importer_set",
+      "mutated": "    tagged = [\"[importer] \" + snippet if any(i in snippet for i in importer_set)",
+      "case": "membership is EXACT: a path CONTAINING an importer's path is not promoted",
+      "block": "SCC-187-A1f"
+    },
+    {
+      "id": "M8 tags vanish entirely when nothing imports the subject",
+      "file": ".agents/scripts/evidence_extract.py",
+      "original": "    unknown = \"[name-match] \" if importers_complete else \"[unranked] \"",
+      "mutated": "    unknown = (\"[name-match] \" if importers_complete else \"[unranked] \") if importer_set else \"\"",
+      "case": "zero importers: snippets are STILL tagged, all [name-match]",
+      "block": "SCC-187-A1f"
+    },
+    {
+      "id": "M9 the precomputed importer list is accepted but not SPENT",
+      "file": ".agents/scripts/evidence_extract.py",
+      "original": "        \"import_context\": _build_import_context(repo, rel, importers),",
+      "mutated": "        \"import_context\": _build_import_context(repo, rel, []),",
+      "case": "findings mode: IMPORTED BY carries the real importers",
+      "block": "SCC-187-A1h"
+    },
+    {
+      "id": "M10 the snippet path is cut at the FIRST colon, corrupting colon-bearing paths",
+      "file": ".agents/scripts/evidence_extract.py",
+      "original": "    return snippet.split(\"\\n\", 1)[0].rsplit(\":\", 1)[0]",
+      "mutated": "    return snippet.split(\":\", 1)[0]",
+      "case": "a colon in the path: the importer is still tagged [importer]",
+      "block": "SCC-187-A1g"
+    },
+    {
+      "id": "M11 a truncated importer walk still ASSERTS [name-match]",
+      "file": ".agents/scripts/evidence_extract.py",
+      "original": "    unknown = \"[name-match] \" if importers_complete else \"[unranked] \"\n",
+      "mutated": "    unknown = \"[name-match] \"\n",
+      "case": "truncated walk: the tag degrades to [unranked], never [name-match]",
+      "block": "5d \u00b7"
+    }
+  ]
+}

@@ -592,6 +592,66 @@ def main() -> int:
             c.check("ORPHAN · control: a c.check in the ELSE of a block guard is an orphan",
                     orphans(bad2) == [6], f"got {orphans(bad2)}")
 
+    # ── NESTED · a block inside another block is UNSELECTABLE (SCC-187) ──────────────────
+    if c.block("NESTED · no c.block is declared inside another c.block's body"):
+        # ORPHAN's sibling, and the defect it cannot see: every `c.check` may sit correctly
+        # inside a block while a whole BLOCK sits inside another one. The inner label is then
+        # only ever REACHED when the outer one matches, so `--case "<inner>"` matches nothing,
+        # `finish()` returns NO_MATCH, and `mutation_sweep` records SWEEP ERROR instead of a
+        # kill — permanently, for every mutant aimed at it. Found in review on SCC-187, where a
+        # mechanical re-indent buried the spawn-block section inside the diff-splitter section
+        # and the file's own block COUNT (17, not 18) was being cited as proof it was wired.
+        def nested_blocks(path: Path) -> list[int]:
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for parent in ast.walk(tree):
+                for field, value in ast.iter_fields(parent):
+                    kids = value if isinstance(value, list) else [value]
+                    for child in kids:
+                        if isinstance(child, ast.AST):
+                            child._parent = parent   # type: ignore[attr-defined]
+                            child._field = field     # type: ignore[attr-defined]
+
+            def is_block_test(node: ast.AST) -> bool:
+                return (isinstance(node, ast.If) and isinstance(node.test, ast.Call)
+                        and isinstance(node.test.func, ast.Attribute)
+                        and node.test.func.attr == "block")
+
+            found: list[int] = []
+            for n in ast.walk(tree):
+                if not is_block_test(n):
+                    continue
+                a: ast.AST = n
+                while hasattr(a, "_parent"):
+                    a = a._parent                    # type: ignore[attr-defined]
+                    if is_block_test(a):
+                        found.append(n.lineno)
+                        break
+            return found
+
+        wired2 = [p for p in sorted(HERE.glob("test_*.py"))
+                  if "c.block(" in p.read_text(encoding="utf-8")]
+        c.check("NESTED · at least one wired file was found to inspect (not vacuous)",
+                len(wired2) >= 1, f"wired={[p.name for p in wired2]}")
+        for p in wired2:
+            n = nested_blocks(p)
+            c.check(f"NESTED · {p.name} declares no block inside another block",
+                    n == [], f"c.block(...) nested inside another block's body at lines {n} - "
+                             f"those labels can never be selected by --case")
+        # The walker must be able to SEE a nested block, or the loop above proves nothing.
+        with TempDir() as t:
+            nest = t / "test_nested.py"
+            nest.write_text("def main():\n    c = None\n    if c.block('OUTER'):\n"
+                            "        if c.block('INNER'):\n            c.check('x', True)\n",
+                            encoding="utf-8")
+            c.check("NESTED · control: the walker flags a planted nested block at its line",
+                    nested_blocks(nest) == [4], f"got {nested_blocks(nest)}")
+            flat = t / "test_flat.py"
+            flat.write_text("def main():\n    c = None\n    if c.block('A'):\n"
+                            "        c.check('a', True)\n    if c.block('B'):\n"
+                            "        c.check('b', True)\n", encoding="utf-8")
+            c.check("NESTED · control: two SIBLING blocks are not flagged",
+                    nested_blocks(flat) == [], f"got {nested_blocks(flat)}")
+
     return c.finish()
 
 
