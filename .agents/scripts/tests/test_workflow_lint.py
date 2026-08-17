@@ -10,7 +10,6 @@ history nobody will touch) that the one actionable line is never read.
 """
 from __future__ import annotations
 
-import re
 import sys
 from pathlib import Path
 
@@ -103,84 +102,6 @@ def main() -> int:
                 "NO byte cap" in _rule and "Length is NEVER a reason to omit" in _rule,
                 "artifacts-always-first.md lost the 'dense, not short' standard")
 
-        # ⭐ In a BLOCK so the mutation sweep can address these cases: the harness's
-        # `--case` filter matches BLOCK labels only, and this file declared none - so a
-        # mutant naming any case here scored exit 3 (_harness.NO_MATCH) and the sweep
-        # correctly refused to call it a kill. An unaddressable case cannot be swept.
-        if c.block("SCC-200 the hand-back duty sits where the artifact is produced"):
-            # ── SCC-200: the hand-back obligation, pinned by PLACEMENT ───────────
-            #
-            # ⛔ THE RECON THAT REFRAMED THIS PART. The plan assumed the rule was SILENT about
-            # handing artifacts back as clickable links. It is not - the duty has been in
-            # artifacts-always-first.md all along, as one blockquote up in the artifact-set
-            # section. And it still did not fire: on SCC-190 the agent wrote the plan, asked for
-            # approval ON that plan, ran five review lenses and a whole close-out, and handed
-            # back bare paths the entire way. The operator had to ask for it outright - "I cant
-            # see the artifacts unless you give me the hyper link in the chat."
-            #
-            # So the defect is not that the duty is unstated. It is WHERE it is stated. A rule
-            # read at the top of a file is not read at the moment of the act, and the act happens
-            # at exactly three seams: the plan is written (§2), approval is REQUESTED on it (§3),
-            # and the walkthrough is written (§5). §3 is the sharp one - asking someone to
-            # approve a document they were never handed is the defect in one sentence.
-            #
-            # ⭐ PINNED AS WIRING, NOT PROSE (prose-pinning-guards-are-vacuous). A marker phrase
-            # alone can be pasted anywhere, so every seam must carry the marker AND a real
-            # markdown-link form. The three mutants below prove the predicate can actually fail;
-            # a placement check that cannot go red would read a bare-path rule as compliant.
-            _MARK = "hand it back"
-            _LINK = re.compile(r"\[[^\]\n]+\]\([^)\n]+\)")
-
-            def _sections(text: str) -> dict[str, str]:
-                out, cur = {}, None
-                for ln in text.splitlines():
-                    if ln.startswith("#"):
-                        cur = ln.strip()
-                        out[cur] = []
-                    elif cur is not None:
-                        out[cur].append(ln)
-                return {k: "\n".join(v) for k, v in out.items()}
-
-            def handback_gaps(text: str) -> list[str]:
-                """Seams NOT carrying the hand-back duty. Empty list == compliant."""
-                body = _sections(text)
-                gaps = []
-                home = next((k for k in body if k.lower().lstrip("# ").startswith(_MARK)), None)
-                if home is None:
-                    gaps.append("no `## Hand It Back` section")
-                elif not _LINK.search(body[home]):
-                    gaps.append("`## Hand It Back` shows no markdown-link form")
-                for want, why in (("### 2.", "the plan is written"),
-                                  ("### 3.", "approval is REQUESTED on it"),
-                                  ("### 5.", "the walkthrough is written")):
-                    k = next((k for k in body if k.startswith(want)), None)
-                    if k is None:
-                        gaps.append(f"{want} ({why}) is missing entirely")
-                    elif _MARK not in body[k].lower() or not _LINK.search(body[k]):
-                        gaps.append(f"{want} ({why}) does not carry the hand-back duty")
-                return gaps
-
-            def _blank_marker_in(text: str, heading: str) -> str:
-                """Strip the marker from ONE section, leaving every other seam intact."""
-                i = text.index(heading)
-                nxt = text.find("\n### ", i + 1)
-                j = nxt if nxt != -1 else len(text)
-                seg = re.sub(_MARK, "(removed)", text[i:j], count=1, flags=re.I)
-                return text[:i] + seg + text[j:]
-
-            c.check("SCC-200 the rule carries the hand-back duty at ALL THREE seams",
-                    not handback_gaps(_rule), "; ".join(handback_gaps(_rule)) or "?")
-            # ⛔ NEGATIVE CONTROLS. Each removes the duty from ONE place; a predicate that stays
-            # green on any of them is reporting the tree's cleanliness rather than measuring it.
-            _m3 = _blank_marker_in(_rule, "### 3.")
-            c.check("SCC-200 CONTROL: stripping the duty from the APPROVAL seam is caught",
-                    any("### 3." in g for g in handback_gaps(_m3)), str(handback_gaps(_m3)))
-            _m2 = _blank_marker_in(_rule, "### 2.")
-            c.check("SCC-200 CONTROL: stripping it from the PLAN seam is caught",
-                    any("### 2." in g for g in handback_gaps(_m2)), str(handback_gaps(_m2)))
-            _mh = re.sub(r"(?im)^##\s*hand it back\s*$", "## Something Else", _rule, count=1)
-            c.check("SCC-200 CONTROL: losing the `## Hand It Back` home is caught",
-                    any("Hand It Back" in g for g in handback_gaps(_mh)), str(handback_gaps(_mh)))
 
         # ── Wave 4: the board note budget - the rule that keeps the split won ─
         proj4 = tmp / "proj4"

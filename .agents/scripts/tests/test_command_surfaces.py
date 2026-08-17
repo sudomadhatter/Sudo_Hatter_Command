@@ -1490,6 +1490,91 @@ def main() -> int:
                 len(long_brains) >= 10, f"only {len(long_brains)} long brains - did the "
                                         f"shortening leak into .agents/commands?")
 
+    # ── SCC-200 · the hand-back duty sits WHERE the artifact is produced ─────────────────
+    #
+    # ⛔ THE RECON THAT REFRAMED THIS PART. The plan assumed `artifacts-always-first.md` was
+    # SILENT about handing artifacts back as clickable links. It was not - the duty had been
+    # in that file all along, as one blockquote in the artifact-set section. And it still did
+    # not fire: SCC-190 ran an entire lane (plan, five review lenses, close-out, PR) handing
+    # back bare paths the whole way, and the operator had to ask outright - "I cant see the
+    # artifacts unless you give me the hyper link in the chat."
+    #
+    # So the defect is not that the duty is unstated. It is WHERE it is stated. A rule read at
+    # the top of a file is not read at the moment of the act, and the act happens at three
+    # seams: the plan is written (§2), approval is REQUESTED on it (§3), and the walkthrough
+    # is written (§5). §3 is the sharp one - asking someone to approve a document they were
+    # never handed is the defect in one sentence.
+    #
+    # ⭐ PINNED AS WIRING, NOT PROSE (prose-pinning-guards-are-vacuous). A marker phrase alone
+    # can be pasted anywhere, so every seam must carry the marker AND a real markdown-link
+    # form. The controls below strip the duty from one place each and must catch it.
+    #
+    # ⛔ AND IT LIVES HERE, NOT IN test_workflow_lint.py, WHICH IS WHERE IT WAS WRITTEN. That
+    # file declares NO blocks, so the sweep could not address these cases: `--case` matches
+    # BLOCK labels only, every mutant scored exit 3 (_harness.NO_MATCH), and the sweep
+    # correctly refused to call any of them a kill. Adding one block there was worse - a file
+    # is "wired" the moment it contains any `c.block(`, and ORPHAN in test_suite_runner.py
+    # then requires ALL 46 of its checks to be guarded. This file is already fully blocked and
+    # already owns rules-content assertions (SCC-191, next door, on the sibling rule).
+    if c.block("SCC-200 · the hand-back duty sits where the artifact is produced"):
+        hb = read(ROOT / ".agents/rules/artifacts-always-first.md")
+        MARK = "hand it back"
+        LINK = re.compile(r"\[[^\]\n]+\]\([^)\n]+\)")
+
+        def sections(text):
+            out, cur = {}, None
+            for ln in text.splitlines():
+                if ln.startswith("#"):
+                    cur = ln.strip()
+                    out[cur] = []
+                elif cur is not None:
+                    out[cur].append(ln)
+            return {k: "\n".join(v) for k, v in out.items()}
+
+        def handback_gaps(text):
+            """Seams NOT carrying the hand-back duty. Empty list == compliant."""
+            body, gaps = sections(text), []
+            home = next((k for k in body if k.lower().lstrip("# ").startswith(MARK)), None)
+            if home is None:
+                gaps.append("no `## Hand It Back` section")
+            elif not LINK.search(body[home]):
+                gaps.append("`## Hand It Back` shows no markdown-link form")
+            for want, why in (("### 2.", "the plan is written"),
+                              ("### 3.", "approval is REQUESTED on it"),
+                              ("### 5.", "the walkthrough is written")):
+                k = next((k for k in body if k.startswith(want)), None)
+                if k is None:
+                    gaps.append(f"{want} ({why}) is missing entirely")
+                elif MARK not in body[k].lower() or not LINK.search(body[k]):
+                    gaps.append(f"{want} ({why}) does not carry the hand-back duty")
+            return gaps
+
+        def blank_marker_in(text, heading):
+            """Strip the marker from ONE section, leaving every other seam intact."""
+            i = text.index(heading)
+            nxt = text.find("\n### ", i + 1)
+            seg = text[i:nxt if nxt != -1 else len(text)]
+            return (text[:i] + re.sub(MARK, "(removed)", seg, count=1, flags=re.I)
+                    + text[nxt if nxt != -1 else len(text):])
+
+        c.check("SCC-200 the rule carries the hand-back duty at ALL THREE seams",
+                not handback_gaps(hb), "; ".join(handback_gaps(hb)) or "?")
+        # ⛔ NEGATIVE CONTROLS. Each removes the duty from ONE place; a predicate that stays
+        # green on any of them is reporting the tree's cleanliness rather than measuring it.
+        # ⭐ The PLAN control earned its keep the moment the base went green: a decorative
+        # "-> ## Hand It Back" pointer left a SECOND marker in that section, so stripping the
+        # duty did not strip the evidence and the control went red. The pointers are gone and
+        # each seam now carries exactly one load-bearing marker.
+        m3 = blank_marker_in(hb, "### 3.")
+        c.check("SCC-200 CONTROL: stripping the duty from the APPROVAL seam is caught",
+                any("### 3." in g for g in handback_gaps(m3)), str(handback_gaps(m3)))
+        m2 = blank_marker_in(hb, "### 2.")
+        c.check("SCC-200 CONTROL: stripping it from the PLAN seam is caught",
+                any("### 2." in g for g in handback_gaps(m2)), str(handback_gaps(m2)))
+        mh = re.sub(r"(?im)^##\s*hand it back\s*$", "## Something Else", hb, count=1)
+        c.check("SCC-200 CONTROL: losing the `## Hand It Back` home is caught",
+                any("Hand It Back" in g for g in handback_gaps(mh)), str(handback_gaps(mh)))
+
     return c.finish()
 
 
