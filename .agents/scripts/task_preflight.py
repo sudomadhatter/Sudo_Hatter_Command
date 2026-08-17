@@ -362,7 +362,12 @@ def check_manifest(repo: Path, branch: str, expect: str, rep: wf.Report) -> None
                              f"THIS lane has no manifest, so intent rests on --expect-key "
                              f"alone. Author one in the task's _artifacts folder "
                              f"({MANIFEST_SCHEMA})")
-        return
+        return None
+
+    # ⭐ SCC-192: this function already decides which manifest is THIS lane's contract, so it
+    # is the one place that may say where the receipt goes. Deriving that a second time in the
+    # writer is how two readers of one artifact drift apart about what the artifact even is.
+    agreed: list[Path] = []
     for p, declared in live:
         if declared and declared != branch:
             rep.err("manifest", f"{rel_or_abs(p, repo)} declares branch `{declared}` but "
@@ -371,6 +376,11 @@ def check_manifest(repo: Path, branch: str, expect: str, rep: wf.Report) -> None
         else:
             rep.info("manifest", f"{rel_or_abs(p, repo)} agrees: {expect} on "
                                  f"{declared or branch}")
+            agreed.append(p)
+    # Exactly one, or none. Two manifests agreeing on one branch is an ambiguity the receipt
+    # must not resolve by picking - the PR gate reads the receipt BESIDE a manifest, so a
+    # coin-flip here writes the evidence next to the wrong walkthrough.
+    return agreed[0] if len(agreed) == 1 else None
 
 
 # ── 1d. The cross-repo half this repo's `git status` CANNOT see ────────────────
@@ -873,13 +883,29 @@ def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report) -> bool:
         else:
             fresh = True
     else:
-        rep.info("sync", "no --fetch, ahead/behind is vs the LAST fetch")
+        # ⭐ SCC-193 A · SEVERITY PARITY, and it is a fix, not a tidy-up. This was `info`
+        # while a FAILED fetch was `warn` - so NEVER TRYING outranked TRYING AND FAILING, on
+        # identical evidence (both compare against whatever the last fetch saw). It is also
+        # the exact line SCC-164's close-out was told, underneath a VERDICT that still read
+        # "clear to close out and merge": the agent grepped the report to ERROR|VERDICT and
+        # the one fact that mattered was in neither. Same evidence, same severity, and the
+        # verdict line below now carries it too.
+        rep.warn("sync", "--no-fetch: ahead/behind is vs the LAST fetch, not the remote")
 
     dirty = wf.git(["status", "--porcelain"], repo).stdout.strip()
     if dirty:
         lines = dirty.splitlines()
         mem = [ln for ln in lines if ln[3:].startswith("_artifacts/_memory/")]
-        rest = [ln for ln in lines if ln not in mem]
+        # ⭐ SCC-192/SCC-178 · THE WRITER IS NOT ITS OWN DIRT. This script now writes a receipt
+        # under `_artifacts/`, and on the very next run that file would read as an uncommitted
+        # change and block the close-out it exists to evidence. `gate_receipt.py` met this
+        # first and answered it the same way: the ONE file the writer owns is excluded from
+        # the measurement, and nothing else is - a sibling artifact, another lane's file or any
+        # code path still counts (the R4 control pins exactly that).
+        mine = [ln for ln in lines
+                if Path(ln[3:].split(" -> ")[-1].strip()).name == RECEIPT_NAME
+                and ln[3:].split(" -> ")[-1].strip().startswith("_artifacts/")]
+        rest = [ln for ln in lines if ln not in mem and ln not in mine]
         if rest:
             rep.err("sync", f"{len(rest)} uncommitted change(s) - commit "
                             f"(explicit paths) and push before merging")
@@ -892,6 +918,10 @@ def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report) -> bool:
                             f"sweep, delete, or commit them under this task); if THIS "
                             f"session wrote them, commit them with explicit paths under "
                             f"this task's key first")
+        if mine and not rest and not mem:
+            rep.info("sync", f"working tree clean ({len(mine)} uncommitted "
+                             f"{RECEIPT_NAME} - this script's own receipt, not the lane's "
+                             f"dirt; the close-out commits it with the flight event)")
     else:
         rep.info("sync", "working tree clean")
 
@@ -1311,6 +1341,94 @@ def gate_plan(repo: Path, lane: str) -> list[str]:
     return plan
 
 
+# ── SCC-192 · THE PREFLIGHT RECEIPT ────────────────────────────────────────────────────
+#
+# THE DEFECT IT CLOSES. An agent can perform this ceremony's steps BY HAND instead of invoking
+# `/smh-close-task-merge-tree`, and until now nothing in the system could tell: the steps it
+# does run all pass, so the omission is silent. Measured live on SCC-164's own landing (PR #13,
+# 2026-08-16) - Step 2.5 skipped entirely, this preflight run without a fetch, both invisible
+# until the operator asked what the workflow was. The PR was green the whole time.
+#
+# Rules and memory are not the fix: the agent had READ the rule when it broke it. What detects
+# the ABSENCE of a ceremony is an artifact the ceremony leaves behind, so this writes one and
+# `main_write_gate.py --mode pr` REQUIRES it. Both measured deviations produce a red check.
+#
+# ⛔ KEYED ON THE VERDICT SHA, NEVER ON HEAD - the constraint that makes it usable at all.
+# Committing the receipt MOVES HEAD, so a receipt that must equal HEAD can never pass and the
+# tree is dirty forever. The flight recorder solved this first (its docstring, § KEYING) and
+# this reuses that answer: the walkthrough's governing `Verdict: ... @ <sha>`, read with the
+# same two helpers, latest stamp governing. A lane with no stamp yet records `null` and says so.
+RECEIPT_NAME = "preflight-receipt.json"
+RECEIPT_SCHEMA_V = 1
+
+
+def verdict_stamp(art_dir: Path, repo: Path) -> tuple[str | None, str | None]:
+    """The governing verdict sha beside a manifest, and that commit's own date.
+
+    `strip_fenced` + `VERDICT_RE` + `[-1]` - the same reader `check_gate` and the flight
+    recorder use. Three readers of one stamp would be two too many."""
+    wt = art_dir / "walkthrough.md"
+    if not wt.is_file():
+        return None, None
+    found = VERDICT_RE.findall(strip_fenced(wf.read_text(wt)))
+    if not found:
+        return None, None
+    sha7 = found[-1][1]
+    r = wf.git(["rev-parse", "--verify", "-q", sha7 + "^{commit}"], repo)
+    if r.returncode != 0 or not r.stdout.strip():
+        return None, None
+    sha = r.stdout.strip()
+    when = wf.git(["show", "-s", "--format=%cI", sha], repo).stdout.strip() or None
+    return sha, when
+
+
+def write_receipt(manifest: Path | None, repo: Path, *, key: str, branch: str, lane: str,
+                  fetch: bool, fresh: bool, accept: bool, verdict: str,
+                  rep: wf.Report) -> Path | None:
+    """One small JSON beside the lane's `task.yaml`. Returns the path, or None.
+
+    No manifest = no receipt, deliberately: the PR gate finds receipts BY the manifest in the
+    diff, so a receipt written anywhere else is evidence nothing will ever read, and inventing
+    a location is worse than the absence the gate can at least report.
+
+    ⭐ IDEMPOTENT ON CONTENT (A7). Every field is derived from the lane's state, never from the
+    clock or from HEAD, so a re-run on an unchanged lane rewrites the same bytes - and the
+    write is skipped entirely when they match, so a resumed close-out produces no churn commit.
+    """
+    if manifest is None:
+        return None
+    art = manifest.parent
+    sha, when = verdict_stamp(art, repo)
+    e, w = rep.counts()
+    payload = {
+        "schema_v": RECEIPT_SCHEMA_V,
+        "task_key": key,
+        "branch": branch,
+        "verdict_sha": sha,
+        "when": when,
+        "fetch": bool(fetch),
+        "fresh": bool(fresh),
+        "accept_unpushed_main": bool(accept),
+        "lane": lane,
+        "verdict": verdict,
+        "errors": e,
+        "warnings": w,
+        "exit": rep.exit_code(),
+    }
+    body = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+    path = art / RECEIPT_NAME
+    try:
+        if not path.is_file() or path.read_text(encoding="utf-8") != body:
+            path.write_text(body, encoding="utf-8")
+    except OSError as exc:
+        # A receipt that cannot be written is worth saying out loud and is never fatal here:
+        # the PR gate is the thing that refuses, and it refuses on the ABSENCE. Failing the
+        # preflight on a read-only checkout would block a close-out over a filesystem.
+        rep.warn("receipt", f"could not write {rel_or_abs(path, repo)}: {exc}")
+        return None
+    return path
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Task close-out preflight (SCC-49)")
     ap.add_argument("--expect-key", required=True,
@@ -1318,7 +1436,19 @@ def main() -> int:
                          "branch must carry it; cwd is not intent (SCC-64)")
     ap.add_argument("--repo", help="repo root; default: walk up from cwd")
     ap.add_argument("--branch", help="branch to close; default: current HEAD")
-    ap.add_argument("--fetch", action="store_true", help="fetch first (network)")
+    # ⭐ SCC-193 A · DEFAULT-ON. `--fetch` was opt-in, so the close-out's freshness rested on
+    # an agent remembering a flag - and on 2026-08-16 one typed the invocation from memory of
+    # the signature rather than from the door's line, and measured ahead/behind against a
+    # fetch from the day before. `--fetch` still parses (every existing caller keeps working);
+    # `--no-fetch` is the explicit offline opt-out, and a FAILED fetch only warns, so
+    # default-on is safe on a plane.
+    ap.add_argument("--fetch", action=argparse.BooleanOptionalAction, default=True,
+                    help="fetch before comparing (default: on). --no-fetch is the offline "
+                         "opt-out and makes the VERDICT say the comparison is stale")
+    ap.add_argument("--no-receipt", action="store_true",
+                    help="do not write the preflight receipt. For probes and harnesses that "
+                         "want the verdict without touching the tree; the close-out never "
+                         "passes it, and the PR gate refuses a lane that has no receipt")
     ap.add_argument("--accept-unpushed-main", action="store_true",
                     help="proceed with a local main ahead of origin/main (SCC-159). "
                          "The auditable offline exit: reads succeed while pushes die "
@@ -1338,7 +1468,7 @@ def main() -> int:
     check_children(key, rep, riders=manifest_riders(repo, expect, branch),
                    landing=manifest_landing(repo, expect, branch),
                    lane_keys=lane_commit_keys(repo, branch))
-    check_manifest(repo, branch, expect, rep)
+    manifest = check_manifest(repo, branch, expect, rep)
     check_secondary(repo, expect, rep)
     # ⭐ `fresh`, not `args.fetch`. check_sync ran the fetch and knows whether it WORKED;
     # passing the flag instead made a dead uplink produce a hard exit 2 on a stale answer.
@@ -1365,10 +1495,35 @@ def main() -> int:
         # therefore still print; only the run the receipts actually prove is replaced.
         plan = [skip if "run_all.py" in cmd else cmd for cmd in plan]
 
+    # ⭐ THE VERDICT IS COMPUTED ONCE, ABOVE BOTH OUTPUT PATHS, AND THE RECEIPT RECORDS IT.
+    # It used to be built inline in the human branch, so `--json` callers and the receipt could
+    # only ever re-derive it - two spellings of one answer is how they drift.
+    e, _w = rep.counts()
+    if e:
+        verdict = "BLOCKED - resolve the errors above"
+    elif not fresh:
+        # ⭐ SCC-193 A · THE FRESHNESS GOES ON THE VERDICT LINE. It was an INFO three lines
+        # above a verdict that read "clear to close out and merge", and the verdict line is the
+        # only line an agent acts on. Exit is already non-zero here (check_sync warns), so this
+        # is a stop, not a footnote: re-run without --no-fetch, or say why offline was chosen.
+        verdict = ("clear - but vs the LAST fetch (STALE), not the remote; re-run with the "
+                   "fetch (drop --no-fetch) before you merge")
+    else:
+        verdict = "clear to close out and merge"
+
+    if not args.no_receipt:
+        got = write_receipt(manifest, repo, key=expect, branch=branch, lane=lane,
+                            fetch=args.fetch, fresh=fresh,
+                            accept=args.accept_unpushed_main, verdict=verdict, rep=rep)
+        if got is not None:
+            rep.info("receipt", f"{rel_or_abs(got, repo)} - the PR gate requires it; commit "
+                                f"it with the flight event (close-out Step 2.5)")
+
     if args.json:
         print(json.dumps({"repo": str(repo), "branch": branch, "key": key,
                           "expect_key": expect, "lane": lane,
                           "deployable_touched": touched, "gate": plan,
+                          "verdict": verdict, "fetch": args.fetch, "fresh": fresh,
                           "hooks_armed": armed["armed"], "hooks": armed,
                           "findings": rep.items, "exit": rep.exit_code()}, indent=2))
     else:
@@ -1382,7 +1537,6 @@ def main() -> int:
         print(f"GATES: {gates}")
         for cmd in plan:
             print(f"  gate: {cmd}")
-        e, _ = rep.counts()
         # A repo that CLAIMS gates and is not running them must never see the word "clear":
         # every check above it inferred something from commits that nothing actually checked.
         # A repo that never claimed gates is a different animal - it gets the normal line, with
@@ -1396,7 +1550,6 @@ def main() -> int:
         # while `rep.exit_code()` returned 1, which callers read as "warnings only". Deleted
         # rather than pinned with a test: a test over unreachable code buys nothing and makes
         # the dead branch look load-bearing to the next reader.
-        verdict = "BLOCKED - resolve the errors above" if e else "clear to close out and merge"
         print("VERDICT: " + verdict)
     return rep.exit_code()
 
