@@ -421,7 +421,7 @@ def _find_function_callers(repo: str, function_name: str, exclude_rel: str = "",
 
     preferred = set(prefer)
     head = scan([rel for rel in candidates if rel in preferred], _CALLER_SNIPPETS)
-    # Always look for at least one non-preferred hit, even when the preferred group already filled
+    # SCC-187: always look for at least one non-preferred hit, even when the preferred group filled
     # the cap: that single scan is what keeps the other class representable.
     tail = scan([rel for rel in candidates if rel not in preferred],
                 max(1, _CALLER_SNIPPETS - len(head)))
@@ -987,11 +987,12 @@ def _extract_one(repo: str, finding: dict, patches: dict[str, str],
     importers, importers_complete = _importers_of(repo, rel)
     importer_set = set(importers)
 
-    # ⛔ TAG AND ORDER, NEVER FILTER. A name-match hit is weaker evidence, not absent evidence:
+    # ⛔ SCC-187 — TAG AND ORDER, NEVER FILTER. A name-match hit is weaker evidence, not absent:
     # dropping it would take attribute-dispatch call sites (`self.<attr>.<method>()`) with it,
     # and that is precisely the shape this file exists to surface. The tag lets the reader
     # discount a hit; a filter would decide for them, invisibly.
-    # ⚠ `[name-match]` is a CLAIM THAT THIS FILE DOES NOT IMPORT THE SUBJECT, and a truncated
+    # ⚠ SCC-187 review finding — `[name-match]` is a CLAIM THAT THIS FILE DOES NOT IMPORT THE
+    # SUBJECT, which the code asserted unconditionally. A truncated
     # importer walk cannot support it: the file may simply sit past where the walk stopped. A
     # deadline must degrade the label to an honest unknown rather than assert the negative — the
     # note that says the walk was partial goes to stderr, which no consumer of stdout ever reads.
@@ -1000,7 +1001,8 @@ def _extract_one(repo: str, finding: dict, patches: dict[str, str],
               else unknown + snippet
               for ident in identifiers
               for snippet in _find_function_callers(repo, ident, rel, importers)]
-    # Stable, and BEFORE the cap: this slice runs across up to `_MAX_IDENTIFIERS_PER_FINDING`
+    # SCC-187: stable, and BEFORE the cap — this slice runs across up to
+    # `_MAX_IDENTIFIERS_PER_FINDING`
     # identifiers, so one noisy identifier can fill all ten slots on its own. Sorting after the
     # slice would rank ten snippets that had already lost the importer.
     tagged.sort(key=lambda snippet: 0 if snippet.startswith("[importer] ") else 1)
