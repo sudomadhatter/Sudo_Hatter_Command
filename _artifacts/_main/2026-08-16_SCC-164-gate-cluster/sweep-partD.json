@@ -1,0 +1,51 @@
+{
+  "test": ["python3", ".agents/scripts/tests/test_main_push_gate.py"],
+  "note": "Part 10 (D = SCC-172). Two fail-opens in the main-write gate, both back-ported from AGY-59 where each was reproduced live. D3 is NOT swept here: it edits `.githooks/pre-push`, which `core.hooksPath` makes LIVE for this worktree's own pushes the moment it is saved (F22), so it lands last and is proven in a scratch repo instead - a sweep that leaves a mutated pre-push hook on disk between runs is not a risk worth taking for a third data point.",
+  "mutants": [
+    {
+      "id": "D-1",
+      "why": "C1 - the hand-rolled --git-common-dir normalisation. git-for-windows answers `C:/...`, which does not match `/*`, so the repo root is prepended to an already-absolute path and the token is written nowhere: every push to main refused, on the PC only.",
+      "file": ".agents/scripts/git-hooks/pre-push-main-approval.sh",
+      "original": "GIT_COMMON=$(git rev-parse --git-common-dir 2>/dev/null)",
+      "mutated": "GIT_COMMON=$(git rev-parse --git-common-dir 2>/dev/null); case \"$GIT_COMMON\" in /*) : ;; *) GIT_COMMON=\"$REPO_ROOT/$GIT_COMMON\" ;; esac",
+      "case": "C5 ·",
+      "block": "C5"
+    },
+    {
+      "id": "D-2",
+      "why": "D1a - a push carrying no MERGE commit at all. Reproduced on AGY: a plain non-merge commit plus a token naming a never-existed branch came back APPROVED.",
+      "file": ".agents/scripts/git-hooks/pre-push-main-approval.sh",
+      "original": "      if [ -z \"$merged\" ]; then",
+      "mutated": "      if [ -z \"$merged\" ] && [ -n \"$claimed\" ]; then",
+      "case": "D1 ·",
+      "block": "D1"
+    },
+    {
+      "id": "D-3",
+      "why": "D1b - the token names a branch that does not resolve here. The original guard was `[ -n \"$claimed\" ] && [ \"$merged\" != \"$claimed\" ]`, so an EMPTY claimed skipped the comparison entirely and the gate approved a merge it could not identify.",
+      "file": ".agents/scripts/git-hooks/pre-push-main-approval.sh",
+      "original": "      if [ -z \"$claimed\" ]; then",
+      "mutated": "      if [ -z \"$claimed\" ] && [ -z \"$merged\" ]; then",
+      "case": "D1c",
+      "block": "D1"
+    },
+    {
+      "id": "D-4",
+      "why": "D2 - the ZERO arm. Every check in this gate lived inside `remote_sha != ZERO` with no else, so a push CREATING main on a bare remote fell straight through to approved. AGY reproduced it with 3 stacked merges and 1 token.",
+      "file": ".agents/scripts/git-hooks/pre-push-main-approval.sh",
+      "original": "    refuse \"this push would CREATE '$PROTECTED_REF' on the remote, which has no main yet.",
+      "mutated": "    : \"this push would CREATE '$PROTECTED_REF' on the remote, which has no main yet.",
+      "case": "D2 ·",
+      "block": "D2 ·"
+    },
+    {
+      "id": "D-5",
+      "why": "the ZERO arm must refuse ON ITS OWN REASON. A shared banner would tell the operator to re-mint a token, which is not the problem and cannot fix it.",
+      "file": ".agents/scripts/git-hooks/pre-push-main-approval.sh",
+      "original": "        one-sign-off-one-merge invariant cannot be evaluated at all",
+      "mutated": "        sign-off could not be verified at all",
+      "case": "D2c",
+      "block": "D2 ·"
+    }
+  ]
+}

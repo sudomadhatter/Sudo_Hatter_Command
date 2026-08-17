@@ -2086,10 +2086,14 @@ Nothing is actually owed.
                     flagged(FENCED) == [],
                     "counting a fenced template holds a ticket nobody can ever close")
 
-            # ── B7 · finish WARNS and does not change its verdict (the ruled arming) ─
-            # Operator ruling 2026-08-15 ("1. yes"): ship WARN. A block here fires AFTER the merge,
-            # trading a held ticket for an erroring close-out. But a warn nobody sees is the
-            # `vscode-hides-git-hook-output` failure, so the BANNER is pinned, not the intention.
+            # ── B7 · finish REFUSES by default (ARMED 2026-08-16, SCC-164 clause 3) ─
+            # ⭐ THIS CASE INVERTED, and the inversion is the point. It shipped WARN on
+            # 2026-08-15 ("1. yes") as a MEASUREMENT WINDOW; SCC-164 § ARMING clause 3 closed
+            # the window on a measured count — 0 hits across the 11 post-cutoff walkthroughs,
+            # while still firing on 3 legacy ones that really do hand ticket work over. The
+            # ordering objection that justified WARN ("a block fires AFTER the merge") does not
+            # survive the detail that this runs BEFORE the board is touched: a refusal writes
+            # nothing, so there is no half-written state to trade against.
             BANNED_WT = (
                 "# W\n\n## Your Actions\n\n"
             "- [ ] Rule on the symlink defect - fold the one-line fix into AVCH-54, or mint "
@@ -2102,26 +2106,41 @@ Nothing is actually owed.
                     out.strip()[-400:])
             c.check("B7 · ...and names the row it objects to", "AVCH-54" in out,
                     out.strip()[-400:])
-            c.check("B7 · ...and the ticket is still HELD exactly as before (warn, not block)",
-                    code == 3, f"exit={code} - warn must not change finish's verdict")
+            c.check("B7 · ...and REFUSES with no flag at all - armed is the DEFAULT now",
+                    code == 2,
+                    f"exit={code} - clause 3 flips the default; a flag-only block is the "
+                    f"disarmed state wearing an arming ticket")
+            c.check("B7b · ...and the refusal says the board was not touched",
+                    "Nothing was written" in out, out.strip()[-400:])
 
-            # ── B8 · the arming flag exists and is DISARMED by default ─────────────
-            # ⛔ THIS CASE PASSED VACUOUSLY IN THE RED RUN and the red is what exposed it. With no
-            # such flag defined, argparse exits 2 on "unrecognized arguments" - the same 2 a real
-            # refusal returns - so `code == 2` alone was satisfied by the flag NOT EXISTING. The
-            # exit code is now paired with the banner, and the clean-input half proves the flag is
-            # a real discriminator rather than a blanket refusal: a gate that refuses everything is
-            # as broken as one that refuses nothing.
+            # ── B8 · the opt-out is NAMED, LOGGED, and a real discriminator ─────────
+            # ⛔ THE VACUITY TRAP THAT CAUGHT THE FIRST VERSION: with no such flag defined,
+            # argparse exits 2 on "unrecognized arguments" - the same 2 a real refusal returns -
+            # so `code == 2` alone was satisfied by the flag NOT EXISTING. Every exit code here
+            # is therefore paired with output only the real path produces.
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(BANNED_WT),
+                           "--apply", "--warn-actions")
+            c.check("B8 · --warn-actions restores the warn and does NOT block",
+                    code == 3 and "BANNED ACTION ROW" in out,
+                    f"exit={code} - 3 is finish's own held verdict, unchanged by the warn: "
+                    f"{out.strip()[-300:]}")
+            c.check("B8b · ...and the opt-out is LOGGED, not silent",
+                    "--warn-actions given" in out and "on the record" in out,
+                    f"a bypass nobody can see in the transcript is the shape this whole gate "
+                    f"exists to refuse: {out.strip()[-300:]}")
+            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
+                           "--apply")
+            c.check("B8c · ...and a CLEAN walkthrough still closes, armed and all",
+                    code == 0,
+                    f"exit={code} - a gate that refuses everything is as broken as one that "
+                    f"refuses nothing: {out.strip()[-300:]}")
+            # The explicit flag stays accepted: docs, older invocations and the SOP all name it.
             code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(BANNED_WT),
                            "--apply", "--strict-actions")
-            c.check("B8 · --strict-actions REFUSES the banned row",
+            c.check("B8d · --strict-actions is still accepted and still refuses",
                     code == 2 and "BANNED ACTION ROW" in out,
-                    f"exit={code} - a bare exit 2 is also what argparse returns for an unknown "
-                f"flag: {out.strip()[-300:]}")
-            code, out = jf("finish", "--key", "TEST-7", "--walkthrough", walkthrough(CLEAR),
-                           "--apply", "--strict-actions")
-            c.check("B8 · ...and ALLOWS a clean walkthrough, so the flag is not a blanket refusal",
-                    code == 0, f"exit={code} {out.strip()[-300:]}")
+                    f"exit={code} - dropping the flag would break every doc that names it: "
+                    f"{out.strip()[-300:]}")
 
             # ── B9 · the standalone inspection entry point ─────────────────────────
             code, out = run_script("jira_feed.py", "check-actions", "--walkthrough",

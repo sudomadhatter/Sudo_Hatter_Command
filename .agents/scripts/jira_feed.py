@@ -1724,13 +1724,19 @@ def banned_action_rows(text: str) -> list[tuple[str, str]]:
     return out
 
 
-def render_banned_banner(rows: list[tuple[str, str]], walkthrough: str) -> str:
+def render_banned_banner(rows: list[tuple[str, str]], walkthrough: str,
+                         strict: bool = True) -> str:
     """The banner. ⛔ It is LOUD ON PURPOSE and it is pinned by a test.
 
-    The ruling (2026-08-15, "1. yes") is that this ships WARN: a block at `finish` fires AFTER
-    the merge, so it would trade a held ticket for an erroring close-out. But a warn nobody
-    reads is the `vscode-hides-git-hook-output` failure - a warn-only gate reads as clean
-    success - so the fix is volume and a named remedy, not a quieter conscience."""
+    It shipped WARN on 2026-08-15 ("1. yes") because a block at `finish` fires AFTER the merge
+    and would trade a held ticket for an erroring close-out. That was a MEASUREMENT WINDOW, and
+    SCC-164 § ARMING clause 3 closed it on 2026-08-16: the detector produced 0 hits across the
+    11 post-cutoff walkthroughs (0 false positives) while still firing correctly on 3 legacy
+    ones, so it now REFUSES by default. The `finish` refusal runs before the board is touched,
+    which is what makes the ordering objection above no longer apply — nothing is half-written.
+
+    `strict` only changes the closing sentence. A warn nobody reads is the
+    `vscode-hides-git-hook-output` failure, so the volume stays either way."""
     n = len(rows)
     lines = ["", "  " + "=" * 74,
              f"  ⛔ BANNED ACTION ROW{'' if n == 1 else 'S'} - {n} row{'' if n == 1 else 's'} "
@@ -1747,8 +1753,12 @@ def render_banned_banner(rows: list[tuple[str, str]], walkthrough: str) -> str:
         "    - the finding is evidenced and in YOUR lane -> file it yourself, or fix it here",
         "    - it is genuinely the operator's -> say which of the three classes it is",
         "",
-        "  This is a WARNING. The ticket's hold below is unchanged. `--strict-actions` makes",
-        "  it a refusal.", ""]
+        ("  This REFUSES the close-out (exit 2). Nothing has been written to the board - fix\n"
+         "  the walkthrough and re-run. `--warn-actions` restores the pre-2026-08-16 warn, and\n"
+         "  logs that you chose it.")
+        if strict else
+        ("  This is a WARNING - you passed `--warn-actions`. The ticket's hold below is\n"
+         "  unchanged, and the opt-out is recorded in this run's output."), ""]
     return "\n".join(lines)
 
 
@@ -1840,17 +1850,20 @@ def cmd_finish(args) -> int:
             else:
                 say(f"jira-feed: {args.key}: the merge row still HOLDS - {merge['why']}.")
 
-    # SCC-163 Part B. Runs BEFORE the board is touched, so a refusal under `--strict-actions`
-    # writes nothing at all. Warn-only by the operator's ruling (2026-08-15, "1. yes"): the
-    # rows below still count as owed exactly as they did, and the hold is unchanged - what is
-    # added is that the close-out now SAYS the row should not have been handed over.
+    # SCC-163 Part B, ARMED 2026-08-16 by SCC-164 § ARMING clause 3 on a measured zero
+    # false-positive count. Runs BEFORE the board is touched, so the refusal writes nothing at
+    # all - the walkthrough is fixed and the close-out re-run, and no half-written board state
+    # exists in between.
     banned = banned_action_rows(text)
     if banned:
-        say(render_banned_banner(banned, str(wt)))
+        say(render_banned_banner(banned, str(wt), strict=args.strict_actions))
         if args.strict_actions:
-            say(f"[ERR] {args.key}: refusing on {len(banned)} banned action row(s) "
-                f"(--strict-actions). Nothing was written; fix the walkthrough.")
+            say(f"[ERR] {args.key}: refusing on {len(banned)} banned action row(s). "
+                f"Nothing was written; fix the walkthrough. (`--warn-actions` restores the "
+                f"pre-2026-08-16 warn behaviour, and says so in the output.)")
             return 2
+        say(f"jira-feed: {args.key}: --warn-actions given - {len(banned)} banned row(s) "
+            f"did NOT block this close-out. Logged opt-out, on the record.")
 
     fields = view_fields(binary, args.key, timeout=args.timeout, strict=False)
     if fields is None:
@@ -2402,13 +2415,30 @@ def main() -> int:
     p_fin.add_argument("--timeout", type=int, default=90, metavar="SEC")
     p_fin.add_argument("--date", default=date.today().isoformat())
     p_fin.add_argument("--apply", action="store_true", help="without this, renders only")
-    # ⛔ SHIPS DISARMED, and that is the operator's ruling (2026-08-15), not a default someone
-    # picked. Arming a gate that can block a shipping path is its own act of law and needs its
-    # own quoted words (`blocking-gates-need-a-quoted-ruling`); building the flag now means
-    # arming it later is one flag on one invocation rather than a code change and a release.
-    p_fin.add_argument("--strict-actions", action="store_true",
-                       help="REFUSE (exit 2) when `## Your Actions` carries a row handing the "
-                            "operator ticket work, instead of only warning about it")
+    # ⭐ ARMED 2026-08-16 (SCC-164 § ARMING clause 3), and the condition it waited on was
+    # MEASURED, not assumed. The operator's ruling of 2026-08-15 armed this "when the count is
+    # clean" — re-run the detector over the post-cutoff walkthrough corpus, record the
+    # false-positive count, flip the flag if it is zero. Measured on 2026-08-16 across all 145
+    # tracked walkthroughs: 11 are post-cutoff (folder date >= 2026-08-15) and they produce
+    # **0 hits, so 0 false positives**. Not vacuous either — the same detector fires on exactly
+    # 3 legacy walkthroughs (2026-08-12, -13, -14), and all 3 are true positives that really do
+    # hand ticket work over. Reproduce with `jira_feed.py check-actions --walkthrough <p>`.
+    #
+    # WARN was the measurement window and the ruling ended it: *"I dont see a case in enterprise
+    # dev where a warn should make it to prod ?"* A warn-only gate reads as clean success
+    # (`vscode-hides-git-hook-output`), which is how a wrong-key commit reached a project's main.
+    p_fin.add_argument("--strict-actions", dest="strict_actions", action="store_true",
+                       default=True,
+                       help="(default, armed 2026-08-16) REFUSE (exit 2) when `## Your Actions` "
+                            "carries a row handing the operator ticket work. Kept as an explicit "
+                            "flag so existing invocations and docs stay correct")
+    # The opt-out is NAMED and LOGGED rather than silent. `--force` was ruled out of scope, and
+    # this is not one: it restores the pre-arming behaviour for a lane that needs to close while
+    # the row is argued, and it says so in the output so the choice is on the record.
+    p_fin.add_argument("--warn-actions", dest="strict_actions", action="store_false",
+                       help="the retired pre-2026-08-16 behaviour: print the banner and carry on. "
+                            "The choice is echoed in the output — it is a logged opt-out, not a "
+                            "quiet one")
 
     # `check-actions` - the same detector, standalone. It is what makes the corpus run
     # reproducible ("run it over every walkthrough and show me the hits") without anyone

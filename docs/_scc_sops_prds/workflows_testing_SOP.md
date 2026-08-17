@@ -762,10 +762,23 @@ defect, because an open box there holds the ticket on the review ladder forever.
 it was broken the same day it was written (AVCH-58 shipped three such rows, none of them operator
 calls). `finish` now prints a **⛔ BANNED ACTION ROW** banner naming the row and why.
 
-**It is a WARNING, deliberately.** The hold is unchanged and the ticket still stops where it stopped;
-what is new is that the close-out says the row should have been the agent's. A block here would fire
-*after* the merge — trading a held ticket for an erroring close-out. `--strict-actions` turns it into
-a refusal and **ships disarmed**; arming it is a separate decision. Two things you can run yourself:
+**⛔ It REFUSES now — armed 2026-08-16, and the count it waited on was measured.** It shipped as a
+warning on 2026-08-15 on the reasoning that a block would fire *after* the merge, trading a held
+ticket for an erroring close-out. That window is closed. Two things ended it. First, the objection
+does not survive the detail: this check runs **before the board is touched**, so a refusal writes
+nothing at all — there is no half-written state to trade against, you fix the walkthrough and re-run.
+Second, the operator's arming ruling made it conditional on a clean false-positive count, and the
+count came back clean: across all 145 tracked walkthroughs, the **11 post-cutoff** ones produce
+**zero hits**, while the same detector still fires correctly on **3 legacy** ones that really do hand
+ticket work over. Zero false positives, and not vacuous.
+
+**What that means at your desk:** a close-out with a *"mint a ticket / rule on where this goes"* row
+in `## Your Actions` now **exits 2 and writes nothing**. Fix the row — file it yourself if it is
+evidenced and in the lane, or say which of the three classes it is if it is genuinely yours — and run
+the close-out again. `--warn-actions` restores the old warn-and-continue behaviour for a lane that
+must close while the row is argued; it is a **logged** opt-out, printed in the run's output, never a
+silent one. `--strict-actions` is still accepted and is now the default. Two things you can run
+yourself:
 
 ```bash
 python3 .agents/scripts/jira_feed.py check-actions --walkthrough <path>   # PC: `python`
