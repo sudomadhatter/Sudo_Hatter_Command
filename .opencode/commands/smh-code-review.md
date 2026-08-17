@@ -361,7 +361,14 @@ The walkthrough is the living source of truth, and the body around your section 
   correct as-is."*
 - **`## Your Actions` triage:** attempt every agent-solvable row yourself — a deferred check, a missing
   artifact link, a doc fix — and tick it with a one-line note. Leave ONLY genuine operator calls (a
-  product decision, a `main` merge, a ticket transition).
+  product decision, or a ticket transition they have reserved).
+  ⛔ **And NEVER the ceremony's own steps** (SCC-193). "Click Merge on the PR", "then re-invoke
+  `/smh-close-task-merge-tree --after-merge <KEY>`", "run the preflight" — the operator's
+  **decision to proceed** is the sign-off (the word `approved`, or invoking one of the two doors),
+  and from that word on every step is the ceremony's and the agent runs it. `jira_feed.py`
+  **refuses** a close-out on such a row, at `check-actions` and again at `finish`. The one
+  merge-shaped row that belongs is the door's ledger line, `- [x] The merge itself — lands via
+  this branch's PR`, which SCC-175 checks against ancestry rather than against its tick.
   ⛔ A row assigning the operator ANY ticket born from review findings — a residue ticket ("One
   follow-on ticket for the N deferred items"), a "proposed" ticket, a "decided" ticket to rule on —
   is the retired defect (operator rulings 2026-08-15, both), never a valid action row: the
