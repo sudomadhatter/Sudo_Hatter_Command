@@ -155,18 +155,47 @@ reaching across lanes — one of this lane's reaching forward into theirs, one o
 backward into this one. A file-overlap check would have reported "zero code overlap" and missed
 both.
 
-At close-out: absorb `origin/main`, keep both INDEX rows, take the SOP's clean merge, then re-run
-the suite (never before).
+### Post-absorb re-measurement — SCC-164 has LANDED
+
+`origin/main` moved `bc3a851` → **`6ec9dc0`** (PR #13, SCC-164) and was absorbed at `059eca2`.
+The absorb ran **exactly as measured** — the SOP auto-merged, `INDEX.md` was the single conflict,
+both rows kept.
+
+⛔ **Nothing green from before the absorb was carried forward**, because SCC-164 rewrote the gate
+scripts themselves — `task_preflight.py`, `closeout_preflight.py`, `jira_feed.py`, the three
+git-hooks — so the gates that judge this lane are not the gates that passed it:
+
+| Re-run after the absorb | Result |
+|---|---|
+| Enforcement suite | **33/33 files**, exit 0 — one file more than before; SCC-164 added `test_walkthrough_roster.py` |
+| `test_evidence_extract.py` | **144/144** |
+| Mutation sweep | **11/11 still killed**, restore verified |
+| `workflow_lint --toolkit-only` | exit 0 — 0 errors, 0 warnings |
+| `check_maps --depth3-only --strict` | exit 0 |
+| Suite receipt | `[PASS] suite exit=0 114.7s @ 28efeaf2`, clean tree |
+| ⭐ This lane's `NESTED` walker over SCC-164's now-merged test files | `ORPHAN []` · `NESTED []` — the forward collision, re-measured against the real merged tree rather than their blobs |
+| ⭐ SCC-164's `walkthrough_roster.py` over this lane's verdict | `Verdict PASS with 5 lens/lenses recorded` — the backward collision, now judged by the gate as actually shipped |
+
+**What did not need re-running, and why it is stated rather than assumed:** the reviewed code is
+byte-identical across the absorb, so the lenses' conclusions still describe the shipping bytes.
+That is a measurement (`git diff 76daa64f HEAD` over the three code files is empty), not a
+judgement call.
 
 ## Code Review (2026-08-16)
 
 **review-runtime: fan-out** — probed at Step 0: this runtime launches subagents, so all five
 lenses ran as genuine parallel fan-out, none recovered inline.
 
-Verdict: PASS @ 76daa64f
+Verdict: PASS @ 28efeaf2
 
 5-lens engine, `review_mode: full`, `lens_budget: standard`. Every finding below was **fixed in
 this lane before the verdict**; nothing was deferred, and no finding was turned into a ticket.
+
+The lenses reviewed `76daa64f`. The stamp above is the **shipping** sha, after `origin/main`
+`6ec9dc0` (SCC-164) was absorbed — carried forward only because the absorb changed **no reviewed
+code**: `git diff 76daa64f HEAD` over `evidence_extract.py`, `test_evidence_extract.py` and
+`test_suite_runner.py` is **empty**. Had one byte moved, this would be a re-review, not a
+re-stamp. See *Post-absorb re-measurement* below for what was re-run rather than assumed.
 
 lenses_run:
 - Blind Hunter · ok — diff only, no repo access; found the `[name-match]` honesty defect (#2)
