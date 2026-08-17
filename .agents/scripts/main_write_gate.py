@@ -224,14 +224,21 @@ def show(repo: Path, head: str, path: str) -> str | None:
     return out if rc == 0 else None
 
 
-def check_close_out_receipts(repo: Path, base: str, head: str) -> list[str]:
+def check_close_out_receipts(repo: Path, base: str, head: str,
+                             pr_branch: str = "") -> list[str]:
     """pr mode: a PR that IS a close-out must carry what the close-out leaves behind."""
-    rc, out = git(repo, "diff", "--name-only", f"{base}..{head}")
+    # `-c core.quotepath=false`: git octal-quotes any path holding a non-ASCII byte, `"` or
+    # `\`, and `git show` then fails on the quoted spelling, so the loop `continue`s and the
+    # lane is never judged at all - a BYPASS wearing the shape of a skip (edge-case lens,
+    # reproduced with `…_SCC-3-café/task.yaml`).
+    rc, out = git(repo, "-c", "core.quotepath=false", "diff", "--name-only", f"{base}..{head}")
     if rc != 0:
         return [f"cannot diff {base}..{head} — a shallow checkout cannot see it "
                 "(the workflow needs fetch-depth: 0)"]
+    # ⛔ BASENAME, not suffix: `endswith("task.yaml")` also matches `subtask.yaml` and
+    # `my-task.yaml`, which fails strict but names the wrong file to a reader.
     manifests = [p for p in out.splitlines()
-                 if p.strip().endswith("task.yaml") and p.strip()]
+                 if p.strip() and p.strip().rsplit("/", 1)[-1] == "task.yaml"]
     fails: list[str] = []
     judged = 0
     for rel in manifests:
@@ -240,13 +247,33 @@ def check_close_out_receipts(repo: Path, base: str, head: str) -> list[str]:
             continue
         if (manifest_field(text, "close_command") or "").strip() != DOOR:
             continue
-        judged += 1
         key = (manifest_field(text, "task_key") or "").strip()
         branch = (manifest_field(text, "branch") or "").strip()
+        # ⛔ THE FOURTH LOOP, AND IT WAS LIVE (edge-case lens, measured on this repo).
+        # `git diff base..head` is a TREE diff, so a sibling lane's ALREADY-LANDED task.yaml
+        # reaches it whenever `base` is not the merge-base - which GitHub's
+        # `pull_request.base.sha` routinely is not (PR #12's was one commit past). There are
+        # **57** door-manifests on `origin/main` with no receipt, all of them closed lanes, and
+        # judging one turns a green PR red over someone else's history while the remediation
+        # text tells you to fabricate evidence for it.
+        #
+        # A manifest declares its own branch. This gate is about THIS lane's close-out, so a
+        # manifest naming a different branch is another lane's receipt - exactly the reading
+        # `task_preflight.check_manifest` already applies to settled manifests. Skipped, and
+        # SAID, so a genuine key/branch mismatch is never silent.
+        if pr_branch and branch and branch != pr_branch:
+            print(f"       (skipping {rel}: declares `{branch}`, this PR is `{pr_branch}` - "
+                  f"another lane's landed receipt)")
+            continue
+        judged += 1
         art = rel.rsplit("/", 1)[0] if "/" in rel else ""
         where = f"{art}/" if art else ""
 
         # ── the preflight receipt: every close-out owes one ────────────────────────────
+        # ⛔ Bound BEFORE the branch: the verdict-sha cross-check below reads it, and when the
+        # receipt is missing entirely this name was never assigned - an UnboundLocalError in
+        # the gate's own failure path, i.e. the check crashes exactly when it should refuse.
+        r = None
         raw = show(repo, head, f"{where}{RECEIPT_NAME}")
         if raw is None:
             fails.append(
@@ -262,6 +289,19 @@ def check_close_out_receipts(repo: Path, base: str, head: str) -> list[str]:
             except (ValueError, TypeError) as exc:
                 r = None
                 fails.append(f"{key or rel}: {where}{RECEIPT_NAME} is not readable JSON ({exc})")
+            # ⛔ A RECEIPT THAT IS NOT AN OBJECT IS NOT A RECEIPT, and both halves of this were
+            # live defects (edge-case lens, executed):
+            #   * `null` parses cleanly to None, and `if r is not None` then skipped EVERY
+            #     assertion below - key, branch, fresh, verdict. A file containing four bytes
+            #     passed the whole gate.
+            #   * `[]`, `"x"`, `5`, `true` all parse too, escape the except above, and reach
+            #     `r.get(...)` -> AttributeError. A traceback is not a verdict; the check that
+            #     refuses a merge must never be the thing that crashes.
+            # Fail CLOSED on both, and say which file.
+            if r is not None and not isinstance(r, dict):
+                fails.append(f"{key or rel}: {where}{RECEIPT_NAME} is {type(r).__name__}, not a "
+                             f"receipt object - a file that parses is not evidence")
+                r = None
             if r is not None:
                 got_key = str(r.get("task_key") or "").strip()
                 got_branch = str(r.get("branch") or "").strip()
@@ -295,6 +335,18 @@ def check_close_out_receipts(repo: Path, base: str, head: str) -> list[str]:
         if not stamps:
             continue                            # the lightweight lane — see the note above
         sha7 = stamps[-1][1]
+        # ⭐ AND THE RECEIPT MUST BE ABOUT *THIS* VERDICT. `verdict_sha` was written by the
+        # preflight and read by nobody (edge-case lens): since the receipt is idempotent on
+        # content, one produced three commits ago is byte-identical and vouched for code it
+        # never saw. Binding it to the walkthrough's governing stamp is what makes it evidence
+        # rather than a file.
+        if r is not None and str(r.get("verdict_sha") or "") not in ("", sha7) \
+                and not str(sha7).startswith(str(r.get("verdict_sha"))) \
+                and not str(r.get("verdict_sha")).startswith(str(sha7)):
+            fails.append(f"{key or rel}: the receipt was taken at verdict "
+                         f"{str(r.get('verdict_sha'))[:9]} but the walkthrough's governing "
+                         f"stamp is {sha7[:9]} - re-run the preflight at the verdict that "
+                         f"is landing")
         rc2, full = git(repo, "rev-parse", "--verify", "-q", sha7 + "^{commit}")
         if rc2 != 0 or not full:
             fails.append(f"{key or rel}: the walkthrough's verdict cites {sha7}, which is not "
@@ -360,7 +412,7 @@ def main(argv: list[str] | None = None) -> int:
         if not ok:
             fails.append(why)
         # SCC-192: only in `pr` mode, and only for a PR that IS a close-out (loops 2 and 3).
-        rec = check_close_out_receipts(repo, a.base, a.head)
+        rec = check_close_out_receipts(repo, a.base, a.head, a.branch)
         print(f"[{'PASS' if not rec else 'FAIL'}] close-out receipts"
               + ("" if not rec else ": " + "\n        ".join(rec)))
         fails += rec

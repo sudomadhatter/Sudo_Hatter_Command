@@ -40,6 +40,43 @@ Three review lenses were running in the background against the diff at `154d3e2`
 roster — `walkthrough_roster.py` blocks the close-out on a `Verdict:` with no `lenses_run:` block,
 and correctly so.
 
+## ⚠ MID-REVIEW STATE (updated 2026-08-17, second compaction)
+
+**Two of three lenses have REPORTED and their findings are FIXED IN THREAD:**
+
+- **Acceptance auditor** — five gaps, all fixed at `4ae4cf5`: the SOP's own table row kept the
+  retired wording; the S5 pin never globbed `.agents/scripts/tests/`; `main_write_gate.py` had zero
+  declared mutation coverage (now `sweep-partSB.json`, 7 mutants); **the door never invoked
+  `check-actions` at Step 3 although the SOP claims it does** (fixed — that claim was the sharpest
+  find); the stale-door line was missing from the hand-authored `SKILL.md`.
+- **Edge-case hunter** — 15 findings, every one executed rather than inferred. **Fixed so far
+  (uncommitted at the time of writing, verified 48/48):** a `null` receipt passed the ENTIRE gate
+  (`json.loads("null")` is `None`, and the guard skipped every assertion); any non-object JSON
+  crashed it with `AttributeError`; the gate judged OTHER lanes' landed manifests (57 of them on
+  `main` have no receipt — now skipped by branch, with the reason printed); `verdict_sha` was
+  written and never read, so a stale receipt vouched for code it never saw; a quoted (non-ASCII)
+  path silently skipped a lane — a BYPASS, now `-c core.quotepath=false`; `subtask.yaml` matched
+  as `task.yaml`; and an `UnboundLocalError` in the gate's own failure path.
+
+**⛔ STILL TO FIX from the edge-case lens (all proven, none started):**
+  - **#5** two agreeing manifests ⇒ no receipt written AND the preflight says nothing (VERDICT
+    still reads "clear") ⇒ the PR then demands a receipt nothing will write. `check_manifest`
+    must ERROR on ambiguity instead of reporting both as INFO.
+  - **#6** the `MERGE_PHRASE` exemption is a WHOLE-ROW bypass: appending "the merge itself" to
+    SCC-164's exact defect row clears it. Tighten to the ledger SHAPE, and **flip `B3b`** — that
+    control currently asserts the bypass is correct.
+  - **#7** `\bthen\s+(?:invoke|run|call)\b` refuses genuine operator decisions ("Rule the landing
+    order, then run the campaign") with exit 2, armed. Bind it to a ceremony object.
+  - **#8** `UnicodeDecodeError` escapes `except OSError` in `write_receipt` (a corrupt receipt
+    kills the whole preflight).
+  - **#9** the self-dirt exemption is not lane-scoped, contradicting its own comment.
+  - **#14** a CRLF brain loses its `\r` on the description rewrite; **#15** `cmd_finish` returns on
+    the first family so banned rows are never reported in the same run.
+  - **#11/#13** latent/cosmetic: astral-character length divergence PS vs Python (0 divergences
+    measured today); a stale `-> None` annotation.
+
+**Blind Hunter has NOT reported.** Its findings are still owed before any verdict.
+
 ## What REMAINS, in order
 
 1. **Finish `/smh-code-review`** — lens findings fixed *in thread* (never a new ticket: operator

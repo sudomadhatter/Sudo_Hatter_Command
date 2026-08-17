@@ -1,0 +1,34 @@
+-- sweep: 7 mutant(s) over 1 file(s) @ 4ae4cf56 --
+KILLED    SB-M1 the flight-event demand is dropped
+            KILLED by A1 RED: a reviewed close-out with NO flight event is refused, by name
+            -- filter 'SCC-192 · a close-out PR must carry its receipts': matched 1/6 blocks --
+⛔ NOT KILLED SB-M2 the receipt demand is dropped
+            SURVIVED - the named case still passed with the mutant in place
+            -- filter 'SCC-192 · a close-out PR must carry its receipts': matched 1/6 blocks --
+KILLED    SB-M3 the fresh=true check is dropped
+            KILLED by A3 RED: a receipt whose comparison was NOT fresh is refused, naming the flag
+            -- filter 'SCC-192 · a close-out PR must carry its receipts': matched 1/6 blocks --
+KILLED    SB-M4 the event is keyed on HEAD instead of the verdict sha (loop 1)
+            KILLED by A4 GREEN: both receipts present, keyed on the verdict sha, TWO artifacts-only commits after them
+            -- filter 'SCC-192 · a close-out PR must carry its receipts': matched 1/6 blocks --
+KILLED    SB-M5 the demand triggers on EVERY PR, not only a close-out (loop 3)
+            KILLED by A5c GREEN: a manifest naming another door owes this gate nothing
+            -- filter 'SCC-192 · a close-out PR must carry its receipts': matched 1/6 blocks --
+KILLED    SB-M6 the branch cross-check is dropped (another lane's receipt vouches)
+            KILLED by A3b RED: a receipt from ANOTHER branch does not vouch for this lane
+            -- filter 'SCC-192 · a close-out PR must carry its receipts': matched 1/6 blocks --
+⛔ NOT KILLED SB-M7 the verdict check accepts a STALE 'clear' (the auditor's minor note)
+            SURVIVED - the named case still passed with the mutant in place
+            -- filter 'SCC-192 · a close-out PR must carry its receipts': matched 1/6 blocks --
+-- restore verified: bytes match, nothing was committed, and `git diff --quiet 4ae4cf56` is clean --
+-- full file, unfiltered: python3 .agents/scripts/tests/test_main_write_gate_ci.py -> exit 0 --
+        | [PASS] authorised source branch: 'chore/SCC-9-lane' is an authorised source branch
+        | [PASS] close-out receipts
+        | [PASS] SOP currency across the landing commits
+        | -- main-write-gate: pass --
+        | [PASS] A-mode GREEN: mode `gate` never asks for receipts (Road 2 untouched): the local door's road must not gain a second gate
+        | -- 48/48 passed --
+
+-- SWEEP FAILED --
+  * SB-M2 the receipt demand is dropped: SURVIVED - the named case still passed with the mutant in place
+  * SB-M7 the verdict check accepts a STALE 'clear' (the auditor's minor note): SURVIVED - the named case still passed with the mutant in place
