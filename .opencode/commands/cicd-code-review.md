@@ -99,10 +99,27 @@ sha is a verdict about code that will never exist.
 ## Step 0.9 — ⭐ Probe the review runtime and RECORD it (before the engine, SCC-177)
 
 **Can this session fan out to subagents?** Answer it from this runtime, not from what usually
-happens: a standing operator directive, a headless pipeline or a platform without a subagent tool
-each make the answer `inline`, and each of them is invisible until a lens fails to launch. This is
-also the story lane's only recording point — the dev-side commands do not carry this header, so if
-this step skips it the story's walkthrough never gets one (F24).
+happens: a headless pipeline or a platform without a subagent tool makes the answer `inline`, and
+both are invisible until a lens fails to launch. This is also the story lane's only recording
+point — the dev-side commands do not carry this header, so if this step skips it the story's
+walkthrough never gets one (F24).
+
+⛔ **The question is a **capability**, never a **policy** — and conflating the two silently gutted a
+review on SCC-197 (SCC-203).** *Does a subagent tool exist in this runtime?* is the whole question.
+*Am I permitted to use it right now?* is a different one, and answering it here is how a session
+directive — *"do not spawn subagents unless the user asks"* — got read as *"this runtime is
+inline"*. The entire review then ran in the builder's own context and the flow recorded it as a
+legitimate outcome. The operator caught it by reading the chat; nothing in the system would have.
+
+⭐ **Subagents are the DEFAULT, and invoking this command **IS** that request.** A review needs
+clean-context lenses to be worth running, so the ask is built into the workflow rather than left to
+the operator to remember. Where a directive gates subagent use on being asked, this step is the
+asking — you do not stop and put the question to the operator, and you never quietly downgrade to
+`inline` to avoid it. **Only a runtime with no subagent tool at all is `inline`.**
+
+And if you are `inline` while holding this story's plan and walkthrough, the engine **drops** the
+Blind Hunter rather than faking it — see step-01 § *When the order CANNOT protect it*. A roster is
+not allowed to claim a review was more independent than it was.
 
 Write the answer into the story walkthrough's header, **above `## Code Review`**, exactly like this:
 
