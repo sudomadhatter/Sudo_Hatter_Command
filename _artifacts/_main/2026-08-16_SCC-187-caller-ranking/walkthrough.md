@@ -147,9 +147,10 @@ close-out, then re-run the suite (never before).
 **review-runtime: fan-out** — probed at Step 0: this runtime launches subagents, so all five
 lenses ran as genuine parallel fan-out, none recovered inline.
 
-**Verdict: PASS @ `76daa64f`** — 5-lens engine, `review_mode: full`, `lens_budget: standard`.
-Every finding below was **fixed in this lane before the verdict**; nothing was deferred, and no
-finding was turned into a ticket.
+Verdict: PASS @ 76daa64f
+
+5-lens engine, `review_mode: full`, `lens_budget: standard`. Every finding below was **fixed in
+this lane before the verdict**; nothing was deferred, and no finding was turned into a ticket.
 
 lenses_run:
 - Blind Hunter · ok — diff only, no repo access; found the `[name-match]` honesty defect (#2)
