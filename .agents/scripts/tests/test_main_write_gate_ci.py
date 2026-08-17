@@ -309,6 +309,180 @@ def main() -> int:
         sh("git", "merge", "-q", "--ff-only", "chore/SCC-4-ff", cwd=work)
         c.check("REJECTS a fast-forward (no merge commit at all)", gate_rc(work) != 0)
 
+
+    # ══ SCC-192 · tier 2c: a PR that IS a close-out must carry the ceremony's RECEIPTS ══════
+    #
+    # THE DEFECT. An agent can run this ceremony's steps BY HAND instead of invoking
+    # `/smh-close-task-merge-tree`, and nothing could tell: the steps it does run all pass.
+    # Measured on SCC-164's own landing (PR #13, 2026-08-16) — Step 2.5 (the flight recorder)
+    # skipped outright, the preflight run without a fetch. The PR was green throughout.
+    #
+    # So the gate stops asking whether the ceremony was INTENDED and asks what it LEAVES:
+    #   * a preflight receipt for this key + branch, with a fresh comparison and a clear verdict
+    #   * a flight event at the walkthrough's governing verdict sha
+    #
+    # ⛔ THREE CONSTRAINTS, EACH CLOSING A WAY THIS BECOMES A LOOP NOTHING CAN PUSH THROUGH
+    # (the operator asked this question before a line was written, and the answers are cases):
+    #   1. never key on HEAD — a receipt commit MOVES head, so artifacts-only commits after the
+    #      verdict sha must not invalidate anything (A4).
+    #   2. `--mode pr` only. Road 2 (`gate/**`) is the local door's road and is untouched.
+    #   3. it triggers ONLY on a `task.yaml` naming this door. A PR without one owes nothing
+    #      (A5) — and a LIGHTWEIGHT lane, which has a manifest but no review verdict, owes a
+    #      receipt and NOT an event (A5b): `/smh-quick-fix` writes no `Verdict:` line, and
+    #      `flight_recorder record` REFUSES without one, so demanding it would make the
+    #      lightweight lane unlandable. Measured: 10 landed lobby lanes have a door manifest
+    #      and no stamp.
+    if c.block("SCC-192 · a close-out PR must carry its receipts"):
+        import json as _json
+
+        def close_out_pr(tmp, *, receipt: dict | None = None, event: bool = True,
+                         verdict: bool = True, manifest: bool = True,
+                         extra_artifact_commits: int = 0, close_command: str = "smh-close-task-merge-tree"):
+            """A lane branch shaped exactly like a real close-out, returned as (work, branch).
+
+            The verdict sha is a REAL commit on the lane, and the walkthrough citing it lands
+            afterwards — which is the true shape (the stamp can never cite the commit it rides
+            in) and the reason a HEAD-keyed rule could never pass.
+            """
+            work = make_pair(tmp)
+            branch = "chore/SCC-9-lane"
+            art = "_artifacts/_main/2026-08-17_scc-9-lane"
+            sh("git", "checkout", "-q", "-b", branch, "main", cwd=work)
+            (work / "docs").mkdir(exist_ok=True)
+            (work / "docs/x.md").write_text("the work\n", encoding="utf-8")
+            sh("git", "add", "docs/x.md", cwd=work)
+            sh("git", "commit", "-qm", "SCC-9 docs: the work", cwd=work)
+            code_sha = sh("git", "rev-parse", "HEAD", cwd=work)[1].strip()
+
+            d = work / art
+            d.mkdir(parents=True)
+            if manifest:
+                (d / "task.yaml").write_text(
+                    f"task_key: SCC-9\nprimary_repo: work\nbranch: {branch}\n"
+                    f"close_command: {close_command}\nsecondary_repos: []\n", encoding="utf-8")
+            (d / "walkthrough.md").write_text(
+                "# SCC-9\n\n## Your Actions\n\nNothing owed.\n"
+                + (f"\n## Code Review\n\nVerdict: PASS @ {code_sha}\n" if verdict else ""),
+                encoding="utf-8")
+            r = dict(receipt) if receipt is not None else {
+                "schema_v": 1, "task_key": "SCC-9", "branch": branch,
+                "verdict_sha": code_sha if verdict else None, "when": None,
+                "fetch": True, "fresh": True, "accept_unpushed_main": False,
+                "lane": "LOCAL", "verdict": "clear to close out and merge",
+                "errors": 0, "warnings": 0, "exit": 0}
+            if r:
+                (d / "preflight-receipt.json").write_text(
+                    _json.dumps(r, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            if event and verdict:
+                ev = work / f"_artifacts/_main/workflow-events/2026-08/SCC-9_{code_sha[:7]}.json"
+                ev.parent.mkdir(parents=True, exist_ok=True)
+                ev.write_text(_json.dumps({"v": 1, "task": "SCC-9", "sha": code_sha}) + "\n",
+                              encoding="utf-8")
+            sh("git", "add", "_artifacts", cwd=work)
+            sh("git", "commit", "-qm", "SCC-9 docs: walkthrough + receipts [sop-ok]", cwd=work)
+            for i in range(extra_artifact_commits):
+                (d / f"note{i}.md").write_text("an artifacts-only commit after the verdict\n",
+                                               encoding="utf-8")
+                sh("git", "add", str(d / f"note{i}.md"), cwd=work)
+                sh("git", "commit", "-qm", f"SCC-9 chore(recorder): flight event [sop-ok]", cwd=work)
+            sh("git", "push", "-q", "origin", branch, cwd=work)
+            return work, branch
+
+        def pr_rc(work: Path, branch: str) -> tuple[int, str]:
+            r = subprocess.run([sys.executable, str(SCRIPT), "--mode", "pr", "--repo", str(work),
+                                "--branch", branch, "--base", "origin/main", "--head", "HEAD"],
+                               cwd=str(work), capture_output=True, text=True, errors="replace")
+            return r.returncode, (r.stdout or "") + (r.stderr or "")
+
+        with TempDir() as tmp:
+            work, branch = close_out_pr(tmp, extra_artifact_commits=2)
+            rc, out = pr_rc(work, branch)
+            c.check("A4 GREEN: both receipts present, keyed on the verdict sha, TWO "
+                    "artifacts-only commits after them", rc == 0, out.strip()[-600:])
+
+        with TempDir() as tmp:
+            work, branch = close_out_pr(tmp, event=False)
+            rc, out = pr_rc(work, branch)
+            c.check("A1 RED: a reviewed close-out with NO flight event is refused, by name",
+                    rc != 0 and "flight event" in out.lower(), out.strip()[-600:])
+
+        with TempDir() as tmp:
+            work, branch = close_out_pr(tmp, receipt={})
+            rc, out = pr_rc(work, branch)
+            c.check("A2 RED: no preflight receipt is refused, by name",
+                    rc != 0 and "preflight-receipt.json" in out, out.strip()[-600:])
+
+        with TempDir() as tmp:
+            work, branch = close_out_pr(tmp, receipt={
+                "schema_v": 1, "task_key": "SCC-9", "branch": "chore/SCC-9-lane",
+                "verdict_sha": None, "when": None, "fetch": False, "fresh": False,
+                "accept_unpushed_main": False, "lane": "LOCAL",
+                "verdict": "clear - but vs the LAST fetch (STALE), not the remote",
+                "errors": 0, "warnings": 1, "exit": 1})
+            rc, out = pr_rc(work, branch)
+            c.check("A3 RED: a receipt whose comparison was NOT fresh is refused, naming the flag",
+                    rc != 0 and "fresh" in out.lower(), out.strip()[-600:])
+
+        with TempDir() as tmp:
+            work, branch = close_out_pr(tmp, receipt={
+                "schema_v": 1, "task_key": "SCC-9", "branch": "chore/SOMEONE-ELSE-1",
+                "verdict_sha": None, "when": None, "fetch": True, "fresh": True,
+                "accept_unpushed_main": False, "lane": "LOCAL",
+                "verdict": "clear to close out and merge", "errors": 0, "warnings": 0, "exit": 0})
+            rc, out = pr_rc(work, branch)
+            c.check("A3b RED: a receipt from ANOTHER branch does not vouch for this lane",
+                    rc != 0 and "branch" in out.lower(), out.strip()[-600:])
+
+        with TempDir() as tmp:
+            work, branch = close_out_pr(tmp, receipt={
+                "schema_v": 1, "task_key": "SCC-9", "branch": "chore/SCC-9-lane",
+                "verdict_sha": None, "when": None, "fetch": True, "fresh": True,
+                "accept_unpushed_main": False, "lane": "LOCAL",
+                "verdict": "BLOCKED - resolve the errors above",
+                "errors": 2, "warnings": 0, "exit": 2})
+            rc, out = pr_rc(work, branch)
+            c.check("A3c RED: a receipt recording a BLOCKED verdict is not a pass",
+                    rc != 0 and "verdict" in out.lower(), out.strip()[-600:])
+
+        with TempDir() as tmp:
+            # A5 · the control that keeps loop 3 shut: no manifest, no demand.
+            work = make_pair(tmp)
+            sh("git", "checkout", "-q", "-b", "chore/SCC-8-plain", "main", cwd=work)
+            (work / "docs").mkdir(exist_ok=True)
+            (work / "docs/y.md").write_text("a lightweight docs fix\n", encoding="utf-8")
+            sh("git", "add", "docs/y.md", cwd=work)
+            sh("git", "commit", "-qm", "SCC-8 docs: a fix with no ceremony", cwd=work)
+            sh("git", "push", "-q", "origin", "chore/SCC-8-plain", cwd=work)
+            rc, out = pr_rc(work, "chore/SCC-8-plain")
+            c.check("A5 GREEN: a PR with no task.yaml is not a close-out and owes nothing",
+                    rc == 0, out.strip()[-600:])
+
+        with TempDir() as tmp:
+            # A5b · ⭐ THE LIGHTWEIGHT LANE. A manifest, a receipt, and NO review verdict —
+            # `/smh-quick-fix`'s exact shape. It must pass: the recorder cannot record a lane
+            # that has no stamp, so demanding an event here would make the lane unlandable.
+            work, branch = close_out_pr(tmp, verdict=False, event=False)
+            rc, out = pr_rc(work, branch)
+            c.check("A5b GREEN: a lightweight lane (manifest + receipt, no verdict stamp) lands",
+                    rc == 0, out.strip()[-600:])
+
+        with TempDir() as tmp:
+            # A5c · a manifest naming ANOTHER door is not this ceremony.
+            work, branch = close_out_pr(tmp, close_command="cicd-push-e2e", event=False,
+                                        receipt={})
+            rc, out = pr_rc(work, branch)
+            c.check("A5c GREEN: a manifest naming another door owes this gate nothing",
+                    rc == 0, out.strip()[-600:])
+
+        with TempDir() as tmp:
+            # ⛔ MODE SCOPE (loop 2). The same repo state, driven through `gate` mode, must be
+            # judged on merge shape alone — the local door's road is untouched by this.
+            work, branch = close_out_pr(tmp, receipt={}, event=False)
+            sh("git", "checkout", "-q", "main", cwd=work)
+            sh("git", "merge", "-q", "--no-ff", "-m", f"merge: {branch} -> main", branch, cwd=work)
+            c.check("A-mode GREEN: mode `gate` never asks for receipts (Road 2 untouched)",
+                    gate_rc(work) == 0, "the local door's road must not gain a second gate")
+
     return c.finish()
 
 
