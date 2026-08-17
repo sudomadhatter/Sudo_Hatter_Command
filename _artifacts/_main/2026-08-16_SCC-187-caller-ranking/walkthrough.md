@@ -139,8 +139,24 @@ sweepable now, and `--case "SCC-187-A1"` matches 5/23 blocks instead of running 
 `chore/SCC-164-gate-cluster` lands **first** — 7+ commits across six subtasks against this lane's
 one pass. Overlap is exactly two append-style ledgers, `docs/_scc_sops_prds/workflows_testing_SOP.md`
 and `_artifacts/_main/INDEX.md`; **zero code overlap**. That lane was unpushed at the time of
-writing, so it could not be absorbed here — absorb `origin/main` and re-resolve both ledgers at
-close-out, then re-run the suite (never before).
+writing. **It is now pushed at `b042b5d`, and the absorb has been measured rather than predicted** —
+`git merge-tree` against this lane, and both of that lane's gates run against this one:
+
+| Collision | Measured result |
+|---|---|
+| Code overlap | **none** — SCC-164 touches gate scripts, hooks, commands and five other test files; it does not touch `evidence_extract.py`, `test_evidence_extract.py` or `test_suite_runner.py` |
+| `docs/_scc_sops_prds/workflows_testing_SOP.md` | **auto-merges clean, and semantically so.** SCC-164's last hunk (`-1548,9`) abuts this lane's (`-1553,7`) but edits different rows — it adds `walkthrough_roster.py` and `code-review-engine` and rewrites `pre-push-main-approval.sh`, leaving the `evidence_extract.py` row untouched. Merged blob verified to contain both lanes' text and zero conflict markers |
+| `_artifacts/_main/INDEX.md` | **the only conflict, and it is trivial** — both lanes append one row at line 7 (`6a7` against the same base). Resolution is *keep both rows*; there is nothing to reconcile |
+| ⛔ **This lane's new `NESTED` gate judging SCC-164's files** | **clean.** The wired set is dynamic (`test_*.py` containing `c.block(`), so it reaches their four wired files. Both walkers were run against SCC-164's actual blobs: `ORPHAN []` and `NESTED []` on all four |
+| ⛔ **SCC-164's new `walkthrough_roster.py` judging THIS lane** | **was a real block, now fixed.** That gate refuses any lane dated ≥ `2026-08-15` whose verdict carries no per-lens roster — this lane is `2026-08-16`, so a gate that did not exist when the review ran would have refused it. Roster, `review-runtime: fan-out` and Step 0.7's three lines added; verified by running their `judge()` directly |
+
+**The lesson worth keeping: the dangerous collision was not a diff overlap.** It was two gates
+reaching across lanes — one of this lane's reaching forward into theirs, one of theirs reaching
+backward into this one. A file-overlap check would have reported "zero code overlap" and missed
+both.
+
+At close-out: absorb `origin/main`, keep both INDEX rows, take the SOP's clean merge, then re-run
+the suite (never before).
 
 ## Code Review (2026-08-16)
 
