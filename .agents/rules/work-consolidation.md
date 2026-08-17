@@ -37,17 +37,19 @@ Work discovered mid-lane (a review finding, a bug met while building, a defect a
    part** — a `Subtask` under that parent, with a row in the parent's index description. This is the
    normal answer.
 3. **Nothing thematic fits? Then it goes on the OPEN ROLLING TICKET** — the `Bugs and Updates -
-   <YYYY-MM>` Task that is labelled **`bugs-and-updates` and not Done**, as the next **Subtask**
-   under it. Same shape as rung 2, so there is nothing new to learn: title, the measured defect,
-   `SCOPE`, `ACCEPTANCE`, and a row added to the parent's index with `jira_feed.py index-row`.
-   Do not mint a second one; **find whichever is open by its label**, never by remembering a key.
+   <YYYY-MM>` Task that is **not Done**, as the next **Subtask** under it. Same shape as rung 2, so
+   there is nothing new to learn: title, the measured defect, `SCOPE`, `ACCEPTANCE`, and a row added
+   to the parent's index with `jira_feed.py index-row`. Do not mint a second one; **find whichever
+   is open by its label**, never by remembering a key — the key changes every cycle.
 
-   > ⛔ **TWO labels, and only one of them is a filing target (SCC-198).** `bugs-and-updates` marks
-   > a cycle that has **started** — that is the one you file into. **`running-bug-list` marks next
-   > cycle's placeholder**, which `cmd_start` clones automatically the moment the current one moves
-   > to In Progress. It is not a filing target; putting today's work in it buries the work one
-   > cycle downstream. If no `bugs-and-updates` ticket is open, starting the `running-bug-list` one
-   > produces one.
+   > ⛔ **TWO labels mark it, and you must search for BOTH (SCC-198).** `bugs-and-updates` marks a
+   > cycle that has **started**; `running-bug-list` marks the successor `cmd_start` clones the
+   > moment a cycle begins. In steady state you file into the started one. **But between a cycle
+   > closing and the next one starting, the ONLY open rolling ticket is the un-started successor**,
+   > and a search for `bugs-and-updates` alone returns nothing there — which reads as "nothing
+   > fits" and sends you to rung 4 to mint a duplicate. That window is exactly what rung 3 exists
+   > to cover, so the query below names both markers. Filing into the un-started one is correct:
+   > starting it is what produces the next successor.
 4. **A lane in its own right on day one? MINT it — and only then.** Say in ONE line what you
    looked at. That sentence is the whole enforcement mechanism.
 
@@ -57,8 +59,12 @@ acli jira workitem search --jql "project = SCC AND statusCategory != Done AND ty
      --fields key,summary --limit 50
 # ⭐ THE ROLLING TICKET, BY LABEL - rung 3. Without this line an agent can say "nothing fits"
 # while one is open, which is exactly the claim this rule exists to make falsifiable.
-acli jira workitem search --jql "project = SCC AND statusCategory != Done AND labels = bugs-and-updates" \
-     --fields key,summary --limit 5
+# ⛔ BOTH markers, and the second one is not optional (SCC-198): between a cycle closing and the
+# next one starting, the only open rolling ticket is the un-started successor, which carries
+# `running-bug-list` and NOT `bugs-and-updates`. Querying one label reports "nothing fits" in
+# exactly the window rung 3 exists to cover, and sends you to rung 4 to mint a duplicate.
+acli jira workitem search --limit 5 --fields key,summary \
+     --jql "project = SCC AND statusCategory != Done AND labels IN (bugs-and-updates, running-bug-list)"
 acli jira workitem view <the-parent-you-suspect>      # does its surface really cover this?
 ```
 

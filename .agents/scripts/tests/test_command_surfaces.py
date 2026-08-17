@@ -1284,12 +1284,30 @@ def main() -> int:
         # enforcement IS the search; a label named only in prose is a label nobody queries.
         fences = re.findall(r"```(?:bash)?\n(.*?)```", body, re.S)
         searches = "\n".join(f for f in fences if "acli jira workitem search" in f)
+        # ⛔ BOTH markers, and the second is not decoration (SCC-198 review finding). The label
+        # split created a WINDOW: between a cycle closing and the next one starting, the only
+        # open rolling ticket is the un-started successor, which carries `running-bug-list` and
+        # NOT `bugs-and-updates`. A query naming one label returns nothing there, the agent reads
+        # "nothing fits", and rung 4 says MINT - the exact duplicate rung 3 exists to prevent,
+        # reintroduced by the change that was supposed to strengthen it.
         c.check("R2 the look-before-mint SEARCH BLOCK queries the rolling ticket's label",
-                "labels = bugs-and-updates" in searches,
+                "bugs-and-updates" in searches,
                 "an agent must be able to FIND the open one from a command, or 'nothing fits' "
                 f"is unfalsifiable. Search block: {searches[:160]!r}")
-        c.check("R3 the live instance is named, so nobody mints a second one",
-                "SCC-190" in body, "the rolling ticket that exists today")
+        c.check("R2c ...and the SUCCESSOR's marker too, or the between-cycles window is blind",
+                "running-bug-list" in searches,
+                "between cycles the only open rolling ticket carries `running-bug-list`; a "
+                f"one-label query mints a duplicate there. Search block: {searches[:200]!r}")
+        # ⭐ R3 WAS A GATE THAT COULD NO LONGER FAIL, and this lane is what broke it. It asserted
+        # `"SCC-190" in body` to pin "the live instance is named". Naming a key that changes every
+        # cycle is the anti-pattern - so that sentence was correctly deleted here, and the check
+        # kept passing on an unrelated HISTORICAL mention (the SCC-192 worked example, which cites
+        # SCC-190 as the parent it was re-filed under). The check's name and what it measured had
+        # come apart. It now pins the rule that replaced it: find it by LABEL, never by key.
+        c.check("R3 the rule sends you to the LABEL, not to a remembered key",
+                re.search(r"by\s+(its\s+)?label", body, re.I) is not None
+                and "never by remembering a key" in body,
+                "a key changes every cycle; a rule naming one goes stale the day it is written")
         c.check("R4 the worked example (SCC-192, re-filed from a fresh Task) is recorded",
                 "SCC-192" in body, "the re-filing IS the rule")
 

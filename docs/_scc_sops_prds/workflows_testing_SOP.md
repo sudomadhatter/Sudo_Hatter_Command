@@ -1268,8 +1268,12 @@ moves to **In Progress**, `jira_feed.py start` clones its successor and hands a 
 | `running-bug-list` | next cycle, **not yet started** — this is the trigger | exactly one, always |
 | `bugs-and-updates` | a cycle that **has** started — **this is the one you file into** | every cycle ever run |
 
-**The one thing to know:** file discovered work into **`bugs-and-updates`**, not `running-bug-list`.
-The latter is next cycle's placeholder; putting today's work there buries it one cycle downstream.
+**The one thing to know:** in normal running, file discovered work into the **`bugs-and-updates`**
+one — that is the cycle actually in flight. ⛔ **But search for BOTH markers, always.** Between a
+cycle closing and the next one starting, the only open rolling ticket is the un-started successor,
+which carries `running-bug-list` and nothing else — and a one-label search reports "nothing fits"
+in exactly the window rung 3 exists to cover, which sends the agent off to mint a duplicate. Caught
+by this lane's own review, after the split created the window.
 
 It works this way because a marker that *moves* can only fire once — after the hand-off there is no
 trigger left, so nothing can mint a duplicate, and no board lookup has to be right for that to hold.
