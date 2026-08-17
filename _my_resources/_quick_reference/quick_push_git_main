@@ -1,6 +1,21 @@
-The manual way to push to main:
+Standing Branch: chore/SCC-186-standing-push
 
-1. pull from - main to chore/SCC-186-standing-push
-    - keeps this clean with main, and you can use this branch forever
-2. write a commit message starting with SCC-186
-3. Create PR to main
+── METHOD 1: TELL THE AGENT (RECOMMENDED) ──
+Simply instruct: "Commit and push my recent file changes to main under SCC-186."
+The agent syncs latest main into chore/SCC-186-standing-push, stages changed files, commits with "SCC-186 ...", pushes, opens the PR, and verifies the merge.
+
+── METHOD 2: TERMINAL ONE-LINER ──
+git checkout chore/SCC-186-standing-push && git pull origin main
+git add <files>
+git commit -m "SCC-186 <summary>"
+git push origin chore/SCC-186-standing-push
+gh pr create --base main --head chore/SCC-186-standing-push --title "SCC-186 <summary>" --body "SCC-186"
+gh pr merge --auto --merge
+
+── METHOD 3: SOURCE CONTROL UI ──
+
+1. Bottom status bar: switch branch to chore/SCC-186-standing-push.
+2. Source Control panel: click ... -> Pull, Push -> Pull from... -> origin/main.
+3. Stage files with '+', enter commit message starting with SCC-186, click Commit.
+4. Click 'Sync Changes' / Push.
+5. Create PR on GitHub, wait for main-write-gate check (green checkmark), then click Merge pull request.
