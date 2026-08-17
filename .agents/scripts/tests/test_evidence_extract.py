@@ -277,7 +277,11 @@ def imported_by(blob: str) -> str:
     return ""
 
 
-_CALLER_TAGS = ("[importer] ", "[name-match] ")
+# Every rank tag the subject can emit. `[unranked]` is the honest third state: the importer walk
+# blew its deadline, so "does not import the subject" is unknown rather than false. A helper that
+# does not know a tag silently reports it as untagged AND mis-parses the path out of the snippet,
+# so this tuple and `evidence_extract`'s tag literals must stay in step.
+_CALLER_TAGS = ("[importer] ", "[name-match] ", "[unranked] ")
 
 
 def caller_tag(snippet: str) -> str:
@@ -292,6 +296,10 @@ def caller_files(pkg: dict) -> list[str]:
     lead with a tag, a bare `startswith` on the path is False for EVERY snippet whether or not the
     thing it guards against happened — a negative assertion written that way passes vacuously and
     stops being evidence. That is exactly what the self-reference counter-example below was.
+
+    ⚠ The path is recovered as `header.rsplit(":", 1)[0]`, never `split(":", 1)[0]`. A POSIX path
+    may legally contain a colon, and a first-colon split turns `pkg/a:b.py:4` into `pkg/a` — the
+    subject's own bug, mirrored here, would make this helper blind to it.
     """
     files = []
     for snippet in pkg.get("caller_snippets", []):
@@ -299,7 +307,7 @@ def caller_files(pkg: dict) -> list[str]:
             if snippet.startswith(tag):
                 snippet = snippet[len(tag):]
                 break
-        files.append(snippet.split(":", 1)[0])
+        files.append(snippet.split("\n", 1)[0].rsplit(":", 1)[0])
     return files
 
 
@@ -729,15 +737,29 @@ def main() -> int:
             rank_pkg = pkg_for(out, "ranking")
             snippets = rank_pkg.get("caller_snippets", [])
             files = caller_files(rank_pkg)
-            tags = {f: caller_tag(s) for f, s in zip(files, snippets)}
+            # Keyed to a SET, not last-write-wins: with one file contributing two snippets a
+            # plain dict silently hides a mis-tag on the second one.
+            tags: dict[str, set[str]] = {}
+            for f, s in zip(files, snippets):
+                tags.setdefault(f, set()).add(caller_tag(s))
+            tag_of = {f: (next(iter(v)) if len(v) == 1 else f"MIXED{sorted(v)}")
+                      for f, v in tags.items()}
 
             c.check("ranking: exits 0", rc == 0, f"exit {rc} err={err[:160]}")
+            c.check("ranking: no file carries two different tags",
+                    all(len(v) == 1 for v in tags.values()),
+                    f"a file was tagged inconsistently: {tag_of}")
+            # Ranking must not INVENT callers either. other_root.py imports target_fn and never
+            # calls it, so it belongs in IMPORTED BY and nowhere in the caller list.
+            c.check("ranking COUNTER-EXAMPLE: an importer that never CALLS is not a caller",
+                    "src/pkg/other_root.py" not in files,
+                    f"a non-calling importer leaked into the callers: {files}")
             c.check("ranking: a file that IMPORTS the subject is tagged [importer]",
-                    tags.get("src/pkg/user_chain.py") == "[importer]",
-                    f"user_chain tagged {tags.get('src/pkg/user_chain.py')!r}")
+                    tag_of.get("src/pkg/user_chain.py") == "[importer]",
+                    f"user_chain tagged {tag_of.get('src/pkg/user_chain.py')!r}")
             c.check("ranking: a file that only NAME-MATCHES is tagged [name-match]",
-                    tags.get("src/pkg/caller_visible.py") == "[name-match]",
-                    f"caller_visible tagged {tags.get('src/pkg/caller_visible.py')!r}")
+                    tag_of.get("src/pkg/caller_visible.py") == "[name-match]",
+                    f"caller_visible tagged {tag_of.get('src/pkg/caller_visible.py')!r}")
             # ⛔ The load-bearing row. Ranking must never become filtering: a hard import filter
             # would drop attribute-dispatch call sites, which the module docstring names as
             # exactly the shape a review needs to see. M1 is the mutant that proves this row.
@@ -749,7 +771,7 @@ def main() -> int:
             # A red that raises is indistinguishable from a red that asserts, and only one of
             # those is evidence.
             imp_at = files.index("src/pkg/user_chain.py") if "src/pkg/user_chain.py" in files else -1
-            nm_at = [i for i, f in enumerate(files) if tags.get(f) == "[name-match]"]
+            nm_at = [i for i, f in enumerate(files) if tag_of.get(f) == "[name-match]"]
             c.check("ranking: the importer sorts ahead of every name-match",
                     imp_at >= 0 and bool(nm_at) and imp_at < min(nm_at),
                     f"importer at {imp_at}, name-matches at {nm_at}, order is {files}")
@@ -831,6 +853,125 @@ def main() -> int:
                     len(outer_files) == 10 and sum(1 for f in outer_files
                                                    if f.startswith("pkg/n_")) >= 9,
                     f"fixture did not overflow as intended; got {outer_files}")
+
+    # ── 2f. the RESERVE: importers may never starve the name-match class ──────
+    with TempDir() as tmp:
+        if c.block("SCC-187-A1e · the reserve"):
+            repo = Path(tmp)
+            # Found by the review fan-out, and it was a REGRESSION: with enough importer call
+            # sites to fill the walk's own cap, the pre-reserve code returned ten `[importer]`
+            # snippets and ZERO name-matches — so attribute dispatch, the shape this module
+            # exists to surface, vanished. Measured against origin/main, which returned the
+            # opposite. Ordering may decide which evidence leads; never that a class is absent.
+            write(repo, "pkg/__init__.py", "")
+            write(repo, "pkg/target.py", "def target_fn(v):\n    return v\n")
+            for i in range(12):                       # 12 importers that all CALL it
+                write(repo, f"pkg/imp_{i:02d}.py",
+                      "from pkg.target import target_fn\n\nx = target_fn(1)  # IMPORTER\n")
+            # sorts FIRST, imports nothing, and is the attribute-dispatch shape
+            write(repo, "pkg/aa_attr.py", "y = obj.target_fn(9)  # ATTR_DISPATCH\n")
+
+            fpath = findings_file(repo, [{"title": "reserve", "body": "`target_fn` is wrong",
+                                          "evidence": "", "file_path": "pkg/target.py",
+                                          "line_start": 1}])
+            rc, out, err = run_ee("--repo", str(repo), "--findings", fpath)
+            res = pkg_for(out, "reserve")
+            res_files = caller_files(res)
+            res_tags = [caller_tag(s) for s in res.get("caller_snippets", [])]
+
+            c.check("reserve: exits 0", rc == 0, f"exit {rc} err={err[:160]}")
+            c.check("reserve: the name-match class SURVIVES a cap-filling importer group",
+                    "pkg/aa_attr.py" in res_files,
+                    f"attribute-dispatch caller starved out; got {res_files}")
+            c.check("reserve: importers still lead", res_tags[:1] == ["[importer]"],
+                    f"first tag is {res_tags[:1]}")
+            c.check("reserve COUNTER-EXAMPLE: the cap still holds at 10",
+                    len(res_files) == 10, f"{len(res_files)} snippets")
+            c.check("reserve COUNTER-EXAMPLE: the fixture really did overfill with importers",
+                    sum(1 for t in res_tags if t == "[importer]") == 9,
+                    f"tags were {res_tags}")
+
+    # ── 2g. tags on a subject NOTHING imports, and exact-not-substring ────────
+    with TempDir() as tmp:
+        if c.block("SCC-187-A1f · zero importers and exact membership"):
+            repo = Path(tmp)
+            # Both rows here killed a mutant that SURVIVED the whole suite before this block:
+            # dropping the tag entirely when `importer_set` is empty (the common shape — a leaf
+            # module nothing imports yet), and testing membership with a substring instead of an
+            # exact path, which promotes `sub/util.py` over the real `util.py`.
+            write(repo, "util.py", "def util_fn(v):\n    return v\n")
+            write(repo, "sub/__init__.py", "")
+            write(repo, "sub/util.py", "z = util_fn(1)  # SUBSTRING_DECOY - imports nothing\n")
+            write(repo, "lonely.py", "def lonely_fn(v):\n    return v\n")
+            write(repo, "calls_lonely.py", "w = lonely_fn(2)  # NAME_MATCH_ONLY\n")
+
+            zpath = findings_file(repo, [{"title": "zero", "body": "`lonely_fn` is wrong",
+                                          "evidence": "", "file_path": "lonely.py",
+                                          "line_start": 1}])
+            rc, out, _ = run_ee("--repo", str(repo), "--findings", zpath)
+            zero_pkg = pkg_for(out, "zero")
+            zero_tags = [caller_tag(s) for s in zero_pkg.get("caller_snippets", [])]
+            c.check("zero importers: snippets are STILL tagged, all [name-match]",
+                    bool(zero_tags) and set(zero_tags) == {"[name-match]"},
+                    f"tags were {zero_tags}")
+            c.check("zero importers COUNTER-EXAMPLE: the caller really was found",
+                    "calls_lonely.py" in caller_files(zero_pkg),
+                    str(caller_files(zero_pkg)))
+
+            spath = findings_file(repo, [{"title": "exact", "body": "`util_fn` is wrong",
+                                          "evidence": "", "file_path": "util.py",
+                                          "line_start": 1}])
+            rc, out, _ = run_ee("--repo", str(repo), "--findings", spath)
+            sub_pkg = pkg_for(out, "exact")
+            sub_tags = dict(zip(caller_files(sub_pkg),
+                                [caller_tag(s) for s in sub_pkg.get("caller_snippets", [])]))
+            c.check("membership is EXACT: a path CONTAINING an importer's path is not promoted",
+                    sub_tags.get("sub/util.py") == "[name-match]",
+                    f"sub/util.py tagged {sub_tags.get('sub/util.py')!r} - substring match?")
+
+    # ── 2h. a colon in a caller's path must not corrupt its tag ───────────────
+    with TempDir() as tmp:
+        if c.block("SCC-187-A1g · a colon in the path"):
+            repo = Path(tmp)
+            # `<rel>:<line>` is the snippet header, and a POSIX path may hold a colon, so the file
+            # must be recovered from the header's LAST colon. Splitting on the first one cut
+            # `pkg/a:b.py:3` to `pkg/a`, which is in no importer set — so a genuine importer was
+            # labelled [name-match] while IMPORTED BY listed it, in the same JSON object.
+            write(repo, "pkg/__init__.py", "")
+            write(repo, "pkg/target.py", "def target_fn(v):\n    return v\n")
+            write(repo, "pkg/a:b.py",
+                  "from pkg.target import target_fn\n\nq = target_fn(1)  # COLON_IMPORTER\n")
+            cpath = findings_file(repo, [{"title": "colon", "body": "`target_fn` is wrong",
+                                          "evidence": "", "file_path": "pkg/target.py",
+                                          "line_start": 1}])
+            rc, out, _ = run_ee("--repo", str(repo), "--findings", cpath)
+            colon_pkg = pkg_for(out, "colon")
+            colon_tags = dict(zip(caller_files(colon_pkg),
+                                  [caller_tag(s) for s in colon_pkg.get("caller_snippets", [])]))
+            c.check("a colon in the path: the importer is still tagged [importer]",
+                    colon_tags.get("pkg/a:b.py") == "[importer]",
+                    f"tagged {colon_tags.get('pkg/a:b.py')!r}; files={list(colon_tags)}")
+            c.check("a colon in the path COUNTER-EXAMPLE: the package does not contradict itself",
+                    "pkg/a:b.py" in imported_by(colon_pkg.get("import_context", "")),
+                    imported_by(colon_pkg.get("import_context", ""))[:120])
+
+    # ── 2i. the precomputed importer list is really SPENT, not just accepted ──
+    with TempDir() as tmp:
+        if c.block("SCC-187-A1h · import_context in findings mode"):
+            repo = Path(tmp)
+            build_python_repo(repo)
+            # Every IMPORTED BY *content* row in this file runs through --pack, which recomputes
+            # internally; nothing proved the list `_extract_one` threads in is spent correctly.
+            # A mutant passing `[]` here survived the entire suite before this row existed.
+            ipath = findings_file(repo, [{"title": "ctx", "body": "`target_fn` is wrong",
+                                          "evidence": "", "file_path": "src/pkg/target.py",
+                                          "line_start": 41}])
+            rc, out, _ = run_ee("--repo", str(repo), "--findings", ipath)
+            ctx = imported_by(pkg_for(out, "ctx").get("import_context", ""))
+            c.check("findings mode: IMPORTED BY carries the real importers",
+                    "src/pkg/user_chain.py" in ctx, ctx[:160] or "empty")
+            c.check("findings mode COUNTER-EXAMPLE: a same-package non-importer is absent",
+                    "src/pkg/unrelated.py" not in ctx, ctx[:160])
 
     # ── 3. IMPORTED BY — the reason this subtask exists ───────────────────────
     with TempDir() as tmp:
@@ -1085,6 +1226,37 @@ def main() -> int:
     import evidence_extract as ee
 
     with TempDir() as tmp:
+        if c.block("5d · a truncated importer walk must not ASSERT [name-match]"):
+            # `[name-match]` is a claim that this file does NOT import the subject. A walk that
+            # died on its deadline cannot support that claim — the file may simply sit past where
+            # it stopped — and the only disclosure is a stderr note no consumer of stdout reads.
+            # So a partial walk degrades the label to [unranked] rather than asserting a negative.
+            trepo = tmp / "trunc"
+            trepo.mkdir()
+            write(trepo, "pkg/__init__.py", "")
+            write(trepo, "pkg/target.py", "def target_fn(v):\n    return v\n")
+            write(trepo, "pkg/caller.py", "u = target_fn(1)  # SOME_CALLER\n")
+
+            real = ee._python_importers
+            ee._python_importers = lambda repo, rel: ([], False)   # a walk that ran out of time
+            try:
+                trunc_pkg = ee._extract_one(str(trepo), {
+                    "title": "t", "body": "`target_fn` is wrong", "evidence": "",
+                    "file_path": "pkg/target.py", "line_start": 1}, {}, [])
+            finally:
+                ee._python_importers = real
+
+            ttags = [caller_tag(s) for s in trunc_pkg.get("caller_snippets", [])]
+            c.check("truncated walk: the tag degrades to [unranked], never [name-match]",
+                    bool(ttags) and set(ttags) == {"[unranked]"},
+                    f"tags were {ttags} - a partial walk asserted a negative")
+            c.check("truncated walk COUNTER-EXAMPLE: a COMPLETE walk still says [name-match]",
+                    {caller_tag(s) for s in ee._extract_one(str(trepo), {
+                        "title": "t", "body": "`target_fn` is wrong", "evidence": "",
+                        "file_path": "pkg/target.py", "line_start": 1}, {}, []
+                    ).get("caller_snippets", [])} == {"[name-match]"},
+                    "the control did not produce [name-match] - the row above proves nothing")
+
         if c.block("5b · isolation, in process"):
             repo = tmp / "repoA"
             repo.mkdir()
@@ -1145,64 +1317,64 @@ def main() -> int:
         c.check("diff split: a removed `-- ...` body line stays IN the patch as content",
                 "-- this REMOVED line" in split.get("real.py", ""), split.get("real.py", "")[:120])
 
-        # ── 6. no grep subprocess — proven by behaviour, not by grepping source ───
-        with TempDir() as tmp:
-            if c.block("6 · no grep subprocess"):
-                repo = tmp / "repoA"
-                repo.mkdir()
-                build_python_repo(repo)
+    # ── 6. no grep subprocess — proven by behaviour, not by grepping source ───
+    with TempDir() as tmp:
+        if c.block("6 · no grep subprocess"):
+            repo = tmp / "repoA"
+            repo.mkdir()
+            build_python_repo(repo)
 
-                blocker = tmp / "blocker"
-                blocker.mkdir()
+            blocker = tmp / "blocker"
+            blocker.mkdir()
 
-                rc_a, out_a, _ = run_ee("--repo", str(repo), "--pack", "scripts/flat_tool.py")
-                rc_b, out_b, err_b = run_ee("--repo", str(repo), "--pack", "scripts/flat_tool.py",
-                                            env=env_no_subprocess(blocker))
-                c.check("pack runs with process-spawning disabled and still exits 0",
-                        rc_b == 0, f"exit {rc_b} err={err_b[:200]}")
-                c.check("no grep subprocess in pack mode: byte-identical with spawning disabled",
-                        out_a == out_b and out_a != "", "output differed or was empty")
-                c.check("spawn-blocked COUNTER-EXAMPLE: that output is real work, not silence",
-                        "scripts/flat_user.py" in imported_by(out_b), imported_by(out_b) or "empty")
+            rc_a, out_a, _ = run_ee("--repo", str(repo), "--pack", "scripts/flat_tool.py")
+            rc_b, out_b, err_b = run_ee("--repo", str(repo), "--pack", "scripts/flat_tool.py",
+                                        env=env_no_subprocess(blocker))
+            c.check("pack runs with process-spawning disabled and still exits 0",
+                    rc_b == 0, f"exit {rc_b} err={err_b[:200]}")
+            c.check("no grep subprocess in pack mode: byte-identical with spawning disabled",
+                    out_a == out_b and out_a != "", "output differed or was empty")
+            c.check("spawn-blocked COUNTER-EXAMPLE: that output is real work, not silence",
+                    "scripts/flat_user.py" in imported_by(out_b), imported_by(out_b) or "empty")
 
-                # ⚠ Pack mode alone does NOT reach the caller search, the cross-ref reads or the
-                # blast-radius walk -- the three places pr-af shells out or would. A proof that only
-                # ran --pack left the busiest search path untested, and the author's mutation run
-                # caught exactly that. Findings mode is where those code paths live, so it is proven
-                # under the same block.
-                fpath = findings_file(repo, [{
-                    "title": "spawn-blocked path coverage",
-                    "body": "The function `target_fn` is called from src/pkg/caller_visible.py.",
-                    "evidence": "see src/pkg/sibling.py",
-                    "file_path": "src/pkg/target.py", "line_start": 41,
-                }])
-                rc_c, out_c, _ = run_ee("--repo", str(repo), "--findings", fpath,
-                                        "--blast-radius", "src/pkg/sibling.py")
-                rc_d, out_d, err_d = run_ee("--repo", str(repo), "--findings", fpath,
-                                            "--blast-radius", "src/pkg/sibling.py",
-                                            env=env_no_subprocess(blocker))
-                c.check("findings runs with process-spawning disabled and still exits 0",
-                        rc_d == 0, f"exit {rc_d} err={err_d[:200]}")
-                c.check("no grep subprocess in findings mode: byte-identical with spawning disabled",
-                        out_c == out_d and out_c != "", "output differed or was empty")
-                blocked_pkg = pkg_for(out_d, "spawn-blocked path coverage")
-                c.check("spawn-blocked COUNTER-EXAMPLE: the caller search really ran under the block",
-                        "CALLER_VISIBLE_MARKER" in "\n".join(blocked_pkg.get("caller_snippets", [])),
-                        "no caller found - the two rows above would compare two empty results")
-                # The blocker itself must be provably live, or the three rows above are vacuous: a
-                # sitecustomize that failed to load would let ANY implementation pass them.
-                probe = tmp / "probe.py"
-                probe.write_text("import subprocess\n"
-                                 "subprocess.run(['echo', 'hi'])\n", encoding="utf-8")
-                proc = subprocess.run([sys.executable, str(probe)], capture_output=True, text=True,
-                                      env=env_no_subprocess(blocker), errors="replace")
-                c.check("spawn-blocker is genuinely installed (a control shell-out dies under it)",
-                        proc.returncode != 0 and "disabled by the SCC-123 guard" in (proc.stderr or ""),
-                        f"exit {proc.returncode} stderr={(proc.stderr or '')[:160]}")
+            # ⚠ Pack mode alone does NOT reach the caller search, the cross-ref reads or the
+            # blast-radius walk -- the three places pr-af shells out or would. A proof that only
+            # ran --pack left the busiest search path untested, and the author's mutation run
+            # caught exactly that. Findings mode is where those code paths live, so it is proven
+            # under the same block.
+            fpath = findings_file(repo, [{
+                "title": "spawn-blocked path coverage",
+                "body": "The function `target_fn` is called from src/pkg/caller_visible.py.",
+                "evidence": "see src/pkg/sibling.py",
+                "file_path": "src/pkg/target.py", "line_start": 41,
+            }])
+            rc_c, out_c, _ = run_ee("--repo", str(repo), "--findings", fpath,
+                                    "--blast-radius", "src/pkg/sibling.py")
+            rc_d, out_d, err_d = run_ee("--repo", str(repo), "--findings", fpath,
+                                        "--blast-radius", "src/pkg/sibling.py",
+                                        env=env_no_subprocess(blocker))
+            c.check("findings runs with process-spawning disabled and still exits 0",
+                    rc_d == 0, f"exit {rc_d} err={err_d[:200]}")
+            c.check("no grep subprocess in findings mode: byte-identical with spawning disabled",
+                    out_c == out_d and out_c != "", "output differed or was empty")
+            blocked_pkg = pkg_for(out_d, "spawn-blocked path coverage")
+            c.check("spawn-blocked COUNTER-EXAMPLE: the caller search really ran under the block",
+                    "CALLER_VISIBLE_MARKER" in "\n".join(blocked_pkg.get("caller_snippets", [])),
+                    "no caller found - the two rows above would compare two empty results")
+            # The blocker itself must be provably live, or the three rows above are vacuous: a
+            # sitecustomize that failed to load would let ANY implementation pass them.
+            probe = tmp / "probe.py"
+            probe.write_text("import subprocess\n"
+                             "subprocess.run(['echo', 'hi'])\n", encoding="utf-8")
+            proc = subprocess.run([sys.executable, str(probe)], capture_output=True, text=True,
+                                  env=env_no_subprocess(blocker), errors="replace")
+            c.check("spawn-blocker is genuinely installed (a control shell-out dies under it)",
+                    proc.returncode != 0 and "disabled by the SCC-123 guard" in (proc.stderr or ""),
+                    f"exit {proc.returncode} stderr={(proc.stderr or '')[:160]}")
 
-                rc_c, out_c, _ = run_ee("--repo", str(repo), "--pack", "scripts/flat_tool.py")
-                c.check("deterministic: the same inputs give byte-identical output",
-                    out_a == out_c, "two runs differed")
+            rc_c, out_c, _ = run_ee("--repo", str(repo), "--pack", "scripts/flat_tool.py")
+            c.check("deterministic: the same inputs give byte-identical output",
+                out_a == out_c, "two runs differed")
 
     # ── 7. source-level tripwires (cheap, NOT the evidence above) ─────────────
     if c.block("7 · source-level tripwires"):

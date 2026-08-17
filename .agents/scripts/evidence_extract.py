@@ -71,14 +71,18 @@ Every number below the fold was **transcribed** from pr-af `evidence.py` @ `8593
 transcription was careful — each one carries the line it came from, and the docstring above says
 why they are not in that project's `config.py`. ⚠ Transcribing a number is not deriving one, and
 nothing here was ever re-derived against THIS repo's files. `_PACK_MAX_CHARS = 16000` is the one
-where that shows: `evidence_extract.py` is ~48,800 bytes, and its first 400 lines — the separate
-`_PACK_MAX_LINES` cap — are already ~20,300, so **the engine cannot pack its own main script**.
-`build_pack`'s own comment concedes the shape of it: a six-file change leaves each file "a
-preamble rather than a readable extent... a trade, not a win."
+where that shows: this file alone is well over 50 KB, and its first 400 lines — the separate
+`_PACK_MAX_LINES` cap — are already over 22 KB, so **the engine cannot pack its own main script**.
+(Deliberately stated as bounds rather than exact byte counts: an exact figure for the file that
+CONTAINS it is stale the moment anyone edits the file, and this docstring shipped with one that
+was already 4.8 KB wrong on the very commit that introduced it. Measure it when you need it:
+`wc -c` and `awk 'NR<=400'`.) `build_pack`'s own comment concedes the shape of it: a six-file
+change leaves each file "a preamble rather than a readable extent... a trade, not a win."
 
-Only ONE number here was derived rather than inherited: `_CALLER_SNIPPETS` still caps the caller
-search at 10, but *which* 10 is now a ranking (see `_find_function_callers`' `prefer`), because
-measurement showed the walk's own cap silently deciding it.
+⭐ **No cap NUMBER here has been re-derived — one cap's SELECTION POLICY has.** `_CALLER_SNIPPETS`
+is still the transcribed 10; what SCC-187 derived is *which* 10, because measurement showed the
+walk's own cap silently deciding it by file order (see `_find_function_callers`' `prefer` and its
+reserve). Do not read the paragraph above as "10 was measured against this repo" — it was not.
 
   ⛔ IF YOU WIRE `--pack` INTO A CALLER, FIX THIS FIRST. When the pack overruns its budget it
   DROPS whole files (`build_pack`, "pack: <rel> dropped") and trims bodies — and it says so via
@@ -361,7 +365,7 @@ def _extract_mentioned_file_paths(text: str, repo: str) -> list[str]:
 # ── Caller search (pure Python; replaces `grep -RInE`) ────────────────────────
 def _find_function_callers(repo: str, function_name: str, exclude_rel: str = "",
                            prefer: "list[str] | tuple[str, ...]" = ()) -> list[str]:
-    """Call sites for `ident`, capped at `_CALLER_SNIPPETS`, `prefer`-ed files scanned FIRST.
+    """Call sites for `function_name`, capped at `_CALLER_SNIPPETS`, `prefer`-ed files FIRST.
 
     ⭐ `prefer` is not a nicety and it is not a filter — it is what makes ranking possible at all.
     This walk stops the moment it has `_CALLER_SNIPPETS` hits, so on a repo where enough
@@ -370,8 +374,18 @@ def _find_function_callers(repo: str, function_name: str, exclude_rel: str = "",
     while planning SCC-187: with 12 name-match callers sorting ahead of the importer, the
     importer resolved correctly and was absent from the output entirely.
 
-    Both groups keep `_repo_files`' sorted order, so the result stays deterministic, and every
-    file is still eligible — a non-preferred file is scanned second, never skipped.
+    ⛔ THE RESERVE IS WHY THIS IS RANKING AND NOT FILTERING, AND IT IS NOT OPTIONAL. Scanning the
+    preferred group first with ONE shared cap has the same bug pointed the other way: on a
+    well-imported module, ten importer call sites fill the cap and the walk never opens a
+    non-preferred file, so the whole `[name-match]` class — attribute dispatch
+    (`self.<attr>.<method>()`), the shape this module exists to surface — disappears with no note
+    on either stream. Measured on this repo at review time: a finding on `wf_common.py` naming
+    `read_text` returned 10 importer snippets and ZERO name-matches, where the pre-SCC-187 code
+    returned the opposite. So the groups are scanned with SEPARATE budgets and the merge reserves
+    a slot for the non-preferred class whenever one has a hit at all. Ordering may decide which
+    evidence leads; it may never decide that a whole class of evidence is absent.
+
+    Both groups keep `_repo_files`' sorted order, so the result stays deterministic.
     """
     ident = function_name.strip()
     if not ident or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", ident):
@@ -379,31 +393,40 @@ def _find_function_callers(repo: str, function_name: str, exclude_rel: str = "",
     pattern = re.compile(r"\b" + re.escape(ident) + r"\s*\(")
     deadline = time.monotonic() + _SEARCH_SECONDS
 
-    candidates = _repo_files(repo)
-    if prefer:
-        preferred = set(prefer)
-        candidates = ([rel for rel in candidates if rel in preferred]
-                      + [rel for rel in candidates if rel not in preferred])
-
-    snippets: list[str] = []
-    for rel in candidates:
-        if len(snippets) >= _CALLER_SNIPPETS:
-            break
-        if time.monotonic() > deadline:
-            _note(f"caller search for '{ident}' hit its {_SEARCH_SECONDS}s deadline; "
-                  "the list is partial")
-            break
-        if rel == exclude_rel:
-            continue
-        for idx, text in enumerate(_read_file_lines(os.path.join(repo, rel))):
-            if not pattern.search(text):
-                continue
-            snippet = _read_code_snippet(repo, rel, idx + 1, _CALLER_CONTEXT)
-            if snippet:
-                snippets.append(f"{rel}:{idx + 1}\n{snippet}")
-            if len(snippets) >= _CALLER_SNIPPETS:
+    def scan(group: list[str], budget: int) -> list[str]:
+        """Up to `budget` call-site snippets from `group`, sharing the one outer deadline."""
+        found: list[str] = []
+        for rel in group:
+            if len(found) >= budget:
                 break
-    return _dedupe(snippets)
+            if time.monotonic() > deadline:
+                _note(f"caller search for '{ident}' hit its {_SEARCH_SECONDS}s deadline; "
+                      "the list is partial")
+                break
+            if rel == exclude_rel:
+                continue
+            for idx, text in enumerate(_read_file_lines(os.path.join(repo, rel))):
+                if not pattern.search(text):
+                    continue
+                snippet = _read_code_snippet(repo, rel, idx + 1, _CALLER_CONTEXT)
+                if snippet:
+                    found.append(f"{rel}:{idx + 1}\n{snippet}")
+                if len(found) >= budget:
+                    break
+        return found
+
+    candidates = _repo_files(repo)
+    if not prefer:
+        return _dedupe(scan(candidates, _CALLER_SNIPPETS))
+
+    preferred = set(prefer)
+    head = scan([rel for rel in candidates if rel in preferred], _CALLER_SNIPPETS)
+    # Always look for at least one non-preferred hit, even when the preferred group already filled
+    # the cap: that single scan is what keeps the other class representable.
+    tail = scan([rel for rel in candidates if rel not in preferred],
+                max(1, _CALLER_SNIPPETS - len(head)))
+    reserve = 1 if tail else 0
+    return _dedupe(head[:max(0, _CALLER_SNIPPETS - reserve)] + tail)[:_CALLER_SNIPPETS]
 
 
 # ── Import context ────────────────────────────────────────────────────────────
@@ -447,10 +470,17 @@ def _imported_names_at(lines: list[str], start: int, head: str) -> str:
     return text
 
 
-def _python_importers(repo: str, rel: str) -> list[str]:
+def _python_importers(repo: str, rel: str) -> "tuple[list[str], bool]":
+    """(files importing `rel`, walk-completed?). The flag is a CLAIM ABOUT ABSENCE.
+
+    A partial walk can only say which files it DID see importing `rel`; it cannot say the rest
+    do not. Callers that turn "absent from this list" into a positive statement — SCC-187's
+    `[name-match]` tag does exactly that — must read the flag, or a deadline silently converts an
+    unknown into an assertion.
+    """
     names = _python_module_names(repo, rel)
     if not names:
-        return []
+        return [], True
 
     direct: list[re.Pattern[str]] = []
     parent_forms: list[tuple[re.Pattern[str], str]] = []
@@ -470,10 +500,12 @@ def _python_importers(repo: str, rel: str) -> list[str]:
 
     deadline = time.monotonic() + _SEARCH_SECONDS
     importers: list[str] = []
+    complete = True
     for cand in _repo_files(repo):
         if time.monotonic() > deadline:
             _note(f"importer search for '{rel}' hit its {_SEARCH_SECONDS}s deadline; "
                   "IMPORTED BY is partial")
+            complete = False
             break
         if cand == rel or not cand.endswith(".py"):
             continue
@@ -493,7 +525,7 @@ def _python_importers(repo: str, rel: str) -> list[str]:
                 break
         if hit:
             importers.append(cand)
-    return importers
+    return importers, complete
 
 
 def _alias_roots(repo: str) -> list[tuple[str, str]]:
@@ -569,7 +601,7 @@ def _resolve_specifier(repo: str, importer_rel: str, spec: str,
     return ""
 
 
-def _ts_importers(repo: str, rel: str) -> list[str]:
+def _ts_importers(repo: str, rel: str) -> "tuple[list[str], bool]":
     """Files that import `rel`, for TS/JS, resolved per importer rather than by name.
 
     A JS specifier means different things depending on who wrote it, so every candidate's
@@ -581,10 +613,12 @@ def _ts_importers(repo: str, rel: str) -> list[str]:
     aliases = _alias_roots(repo)
     deadline = time.monotonic() + _SEARCH_SECONDS
     importers: list[str] = []
+    complete = True
     for cand in _repo_files(repo):
         if time.monotonic() > deadline:
             _note(f"importer search for '{rel}' hit its {_SEARCH_SECONDS}s deadline; "
                   "IMPORTED BY is partial")
+            complete = False
             break
         if cand == rel or os.path.splitext(cand)[1].lower() not in _TS_EXTS:
             continue
@@ -593,10 +627,21 @@ def _ts_importers(repo: str, rel: str) -> list[str]:
                    for spec in _JS_SPEC_RE.findall(text)):
                 importers.append(cand)
                 break
-    return importers
+    return importers, complete
 
 
-def _importers_of(repo: str, rel: str) -> list[str]:
+def _snippet_file(snippet: str) -> str:
+    """The repo-relative path out of a `<rel>:<line>\n<code>` caller snippet.
+
+    ⚠ NOT `snippet.split(":", 1)[0]`. A snippet is multi-line and a POSIX path may legally hold a
+    colon, so a first-colon split cuts `pkg/a:b.py:4` down to `pkg/a` — which is in no importer
+    set, so a genuine importer gets labelled `[name-match]` while `IMPORTED BY` lists it, and the
+    one package contradicts itself. Take the header LINE, then its LAST colon.
+    """
+    return snippet.split("\n", 1)[0].rsplit(":", 1)[0]
+
+
+def _importers_of(repo: str, rel: str) -> "tuple[list[str], bool]":
     """Every file that imports `rel`, dispatched on its extension. `[]` for anything else.
 
     Split out of `_build_import_context`, which computed this list and kept only the formatted
@@ -604,12 +649,18 @@ def _importers_of(repo: str, rel: str) -> list[str]:
     a full repo walk under its own deadline, so recomputing it would cost a second walk per
     finding. One walk, two consumers.
     """
+    # The skip-dir guard lives HERE, not only in `_build_import_context`. Before SCC-187 the walk
+    # sat below that function's `if not rel or _under_skip_dir(rel): return ""`, so a finding on a
+    # `node_modules/` path never triggered it; hoisting the call into `_extract_one` lost that and
+    # bought a full 10s repo walk per skip-dir finding whose result is then discarded.
+    if not rel or _under_skip_dir(rel):
+        return [], True
     ext = os.path.splitext(rel)[1].lower()
     if ext == ".py":
         return _python_importers(repo, rel)
     if ext in _TS_EXTS:
         return _ts_importers(repo, rel)
-    return []
+    return [], True
 
 
 def _build_import_context(repo: str, rel: str, importers: "list[str] | None" = None) -> str:
@@ -628,7 +679,7 @@ def _build_import_context(repo: str, rel: str, importers: "list[str] | None" = N
                 imports.append(stripped)
 
     if importers is None:
-        importers = _importers_of(repo, rel)
+        importers, _complete = _importers_of(repo, rel)
 
     shown_imports = ", ".join(imports[:_IMPORT_LIST]) if imports else "none"
     shown_by = ", ".join(sorted(set(importers))[:_IMPORT_LIST]) if importers else "none"
@@ -933,15 +984,20 @@ def _extract_one(repo: str, finding: dict, patches: dict[str, str],
     # Who imports the finding's file, computed ONCE and spent twice: as the caller search's scan
     # order, and as the rank tag below. `_build_import_context` takes it too, so the walk that
     # produces it happens once per finding rather than once per consumer.
-    importers = _importers_of(repo, rel)
+    importers, importers_complete = _importers_of(repo, rel)
     importer_set = set(importers)
 
     # ⛔ TAG AND ORDER, NEVER FILTER. A name-match hit is weaker evidence, not absent evidence:
     # dropping it would take attribute-dispatch call sites (`self.<attr>.<method>()`) with it,
     # and that is precisely the shape this file exists to surface. The tag lets the reader
     # discount a hit; a filter would decide for them, invisibly.
-    tagged = ["[importer] " + snippet if snippet.split(":", 1)[0] in importer_set
-              else "[name-match] " + snippet
+    # ⚠ `[name-match]` is a CLAIM THAT THIS FILE DOES NOT IMPORT THE SUBJECT, and a truncated
+    # importer walk cannot support it: the file may simply sit past where the walk stopped. A
+    # deadline must degrade the label to an honest unknown rather than assert the negative — the
+    # note that says the walk was partial goes to stderr, which no consumer of stdout ever reads.
+    unknown = "[name-match] " if importers_complete else "[unranked] "
+    tagged = ["[importer] " + snippet if _snippet_file(snippet) in importer_set
+              else unknown + snippet
               for ident in identifiers
               for snippet in _find_function_callers(repo, ident, rel, importers)]
     # Stable, and BEFORE the cap: this slice runs across up to `_MAX_IDENTIFIERS_PER_FINDING`
