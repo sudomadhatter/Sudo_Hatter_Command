@@ -1,0 +1,28 @@
+-- sweep: 5 mutant(s) over 1 file(s) @ 5ad29f35 --
+KILLED    U-M1 the budget is raised past every real description
+            KILLED by U2 a long one is cut to the budget and marked
+            -- filter 'SCC-195': matched 1/14 blocks --
+KILLED    U-M2 the ellipsis marker is dropped
+            KILLED by U2 a long one is cut to the budget and marked
+            -- filter 'SCC-195': matched 1/14 blocks --
+⛔ NOT KILLED U-M3 the cut ignores the word boundary
+            SURVIVED - the named case still passed with the mutant in place
+            -- filter 'SCC-195': matched 1/14 blocks --
+⛔ NOT KILLED U-M4 the workflow-door budget check stops looking at the tree
+            SURVIVED - the named case still passed with the mutant in place
+            -- filter 'SCC-195': matched 1/14 blocks --
+KILLED    U-M5 door parity accepts ANY antigravity body (the check that blocked SCC-194)
+            KILLED by door-parity CONTROL: a STALE mirror is caught
+            -- filter 'CS-03': matched 1/14 blocks --
+-- restore verified: bytes match, nothing was committed, and `git diff --quiet 5ad29f35` is clean --
+-- full file, unfiltered: python3 .agents/scripts/tests/test_command_surfaces.py -> exit 0 --
+        | [PASS] U3 ...on a word boundary, never mid-word: The TASK lane's dev cycle - assert-first development for command-centre work that has no story, no sprint board and no epic branch....
+        | [PASS] U4 ...and re-cutting it changes nothing (the sync is idempotent): The TASK lane's dev cycle - assert-first development for command-centre work that has no story, no sprint board and no epic branch....
+        | [PASS] U5 ...and it stays ASCII (PS 5.1 writes these literals from a BOM-less .ps1): The TASK lane's dev cycle - assert-first development for command-centre work that has no story, no sprint board and no epic branch....
+        | [PASS] U6 every .agents/workflows door fits Antigravity's menu budget: 0 over 135: []
+        | [PASS] U7 CONTROL: the BRAINS keep their full descriptions (the budget is the menu's): only 41 long brains - did the shortening leak into .agents/commands?
+        | -- 110/110 passed --
+
+-- SWEEP FAILED --
+  * U-M3 the cut ignores the word boundary: SURVIVED - the named case still passed with the mutant in place
+  * U-M4 the workflow-door budget check stops looking at the tree: SURVIVED - the named case still passed with the mutant in place

@@ -1249,12 +1249,26 @@ def main() -> int:
             c.check("R1c rung 3 is the OPEN ROLLING TICKET", "rolling" in third, rungs[2][1][:80])
             c.check("R1d rung 4 is the mint, and it is now the last resort",
                     "mint" in fourth, rungs[3][1][:80])
-        c.check("R1e the cycle is named: run-or-split, close all, open the next",
-                all(w in body.lower() for w in ("run", "split", "close", "next")) and
-                "cycle" in body.lower(), "the rule must name the cycle, not a threshold")
-        c.check("R2 the look-before-mint search names the rolling ticket's label",
-                "bugs-and-updates" in body,
-                "an agent must be able to FIND the open one, or 'nothing fits' is unfalsifiable")
+        # ⭐ THE HEADING, not the word. `"cycle" in body` was satisfied by the operator's
+        # quoted ruling ("thats the cycle"), so retitling the section to "Rung 3 notes" - which
+        # is exactly how a cycle quietly becomes a footnote - left the check green (R-M3).
+        cyc = re.search(r"(?m)^###\s+.*\bCYCLE\b.*$", body)
+        c.check("R1e the cycle has its OWN heading, so it cannot decay into a footnote",
+                bool(cyc), "no `### ... CYCLE ...` heading under Rule 1")
+        c.check("R1e ...and it states run-or-split, close them all, open the next",
+                all(w in body.lower() for w in
+                    ("run", "split", "close", "next", "exactly one")),
+                "the rule must name the cycle, not a threshold")
+        # ⭐ SCOPED TO THE SEARCH BLOCK, and that is what R-M2 proved. `"bugs-and-updates" in
+        # body` was satisfied by rung 3's PROSE, so deleting the jql line - the executable half,
+        # the thing an agent actually runs - changed nothing the check could see. The rule's
+        # enforcement IS the search; a label named only in prose is a label nobody queries.
+        fences = re.findall(r"```(?:bash)?\n(.*?)```", body, re.S)
+        searches = "\n".join(f for f in fences if "acli jira workitem search" in f)
+        c.check("R2 the look-before-mint SEARCH BLOCK queries the rolling ticket's label",
+                "labels = bugs-and-updates" in searches,
+                "an agent must be able to FIND the open one from a command, or 'nothing fits' "
+                f"is unfalsifiable. Search block: {searches[:160]!r}")
         c.check("R3 the live instance is named, so nobody mints a second one",
                 "SCC-190" in body, "the rolling ticket that exists today")
         c.check("R4 the worked example (SCC-192, re-filed from a fresh Task) is recorded",
@@ -1283,8 +1297,14 @@ def main() -> int:
         cut = ag_description(LONG)
         c.check("U2 a long one is cut to the budget and marked", len(cut) <= AG_DESC_MAX
                 and cut.endswith("..."), f"{len(cut)}: {cut}")
+        # ⭐ THE ASSERTION U-M3 PROVED WAS VACUOUS. This read `cut[:-3] in LONG`, and a HARD
+        # cut at 132 is still a prefix of the original - so "ignore the word boundary" passed
+        # it unchanged. The property is not "the text came from LONG", it is "the character
+        # immediately after the kept text is a space", i.e. no word was split.
+        kept = cut[:-3]
         c.check("U3 ...on a word boundary, never mid-word",
-                cut[:-3].rstrip() in LONG, cut)
+                LONG.startswith(kept) and LONG[len(kept):len(kept) + 1] == " ",
+                f"kept={kept[-25:]!r} next={LONG[len(kept):len(kept) + 1]!r}")
         c.check("U4 ...and re-cutting it changes nothing (the sync is idempotent)",
                 ag_description(cut) == cut, ag_description(cut))
         c.check("U5 ...and it stays ASCII (PS 5.1 writes these literals from a BOM-less .ps1)",
@@ -1295,13 +1315,27 @@ def main() -> int:
         # generated, and the sync never rewrites it - but Antigravity reads its description into
         # the SAME menu, so exempting it would leave the biggest single row in place while the
         # check reported the budget met. Hand-owned means "fix it by hand", not "skip it".
-        over = []
+        over, measured, total = [], 0, 0
         for wf_door in sorted((ROOT / ".agents/workflows").glob("*.md")):
             d = fm_field(read(wf_door), "description")
-            if d and len(d) > AG_DESC_MAX:
+            if not d:
+                continue
+            measured += 1
+            total += len(d)
+            if len(d) > AG_DESC_MAX:
                 over.append(f"{wf_door.name} ({len(d)})")
         c.check("U6 every .agents/workflows door fits Antigravity's menu budget",
                 not over, f"{len(over)} over {AG_DESC_MAX}: {over[:8]}")
+        # ⭐ THE CONTROL U-M4 PROVED WAS MISSING. "0 doors over budget" out of 0 doors read is
+        # the vacuous green `tests-must-gate-for-real` names, and the mutant that stopped the
+        # loop appending survived precisely there. The count and the TOTAL are both asserted:
+        # the total is the number Antigravity's menu actually spends (13,883 -> 4,590 chars is
+        # what SCC-195 bought), so a regression shows as a number rather than as silence.
+        c.check("U6b ...and it read a real number of doors (not a silent empty sweep)",
+                measured >= 30, f"only {measured} workflow descriptions read")
+        c.check("U6c ...and the whole menu payload stays under the budget it was cut to",
+                total <= measured * AG_DESC_MAX and total < 6000,
+                f"{measured} descriptions, {total} chars total (was 13,883 before SCC-195)")
 
         # And the control: the BRAINS are deliberately NOT shortened. The command is written for
         # an agent that has already chosen it; only the menu has a budget. If this ever goes

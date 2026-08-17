@@ -53,10 +53,10 @@
       "block": "SCC-192/193"
     },
     {
-      "id": "S-M7 the receipt is rewritten unconditionally (churn on every run)",
+      "id": "S-M7 the receipt embeds HEAD (the chicken-and-egg the design forbids)",
       "file": ".agents/scripts/task_preflight.py",
-      "original": "        if not path.is_file() or path.read_text(encoding=\"utf-8\") != body:\n            path.write_text(body, encoding=\"utf-8\")",
-      "mutated": "        path.write_text(body + \" \" * len(str(wf.git_head(repo) or \"\")), encoding=\"utf-8\")",
+      "original": "        \"verdict_sha\": sha,",
+      "mutated": "        \"verdict_sha\": sha,\n        \"head\": wf.git_head(repo),",
       "case": "R6 the receipt is byte-stable ACROSS the commit that lands it",
       "block": "SCC-192/193"
     }

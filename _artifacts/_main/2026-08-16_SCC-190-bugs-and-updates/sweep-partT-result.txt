@@ -1,0 +1,32 @@
+-- sweep: 6 mutant(s) over 1 file(s) @ 5ad29f35 --
+KILLED    T-M1 the ceremony check is disabled outright
+            KILLED by B1 RED: SCC-164's two rows are BOTH refused
+            -- filter 'SCC-193 B': matched 1/7 blocks --
+⛔ NOT KILLED T-M2 the ledger-row exemption is dropped (the wedge)
+            SURVIVED - the named case still passed with the mutant in place
+            -- filter 'SCC-193 B': matched 1/7 blocks --
+KILLED    T-M3 the click pattern loses its verb binding (bare 'merge')
+            KILLED by B2 CONTROL: not flagged — a product decision that names the merge
+            -- filter 'SCC-193 B': matched 1/7 blocks --
+⛔ NOT KILLED T-M4 the re-invoke pattern is removed
+            SURVIVED - the named case still passed with the mutant in place
+            -- filter 'SCC-193 B': matched 1/7 blocks --
+⛔ NOT KILLED T-M5 finish stops refusing on ceremony rows
+            SURVIVED - the named case still passed with the mutant in place
+            -- filter 'SCC-193 B': matched 1/7 blocks --
+KILLED    T-M6 the merge row is read off the TICK again (SCC-175 undone)
+            KILLED by D1 without GITHUB_TOKEN: ...and the landed lane SATISFIES it
+            -- filter 'SCC-193 D': matched 1/7 blocks --
+-- restore verified: bytes match, nothing was committed, and `git diff --quiet 5ad29f35` is clean --
+-- full file, unfiltered: python3 .agents/scripts/tests/test_jira_feed.py -> exit 0 --
+        | [PASS] D1 without GITHUB_TOKEN: ...and the landed lane SATISFIES it: {'row': "**The merge itself** - lands via this branch's PR", 'satisfied': True, 'source': 'HEAD', 'tip': '761f5995d14a62bf28cef6108e7637027dc5ef7d', 'why': '761f5995d is an ancestor of origin/main'}
+        | [PASS] D1 without GITHUB_TOKEN: the click row is NOT a merge row, so exactly 1 holds: ['**Click **Merge** on the PR.** That click is the sign-off.']
+        | [PASS] D1 with a stale GITHUB_TOKEN in env: the merge row RESOLVES (never a silent None): None is the state SCC-164's --apply run showed, and it prints nothing at all - a hold with no reason given
+        | [PASS] D1 with a stale GITHUB_TOKEN in env: ...and the landed lane SATISFIES it: {'row': "**The merge itself** - lands via this branch's PR", 'satisfied': True, 'source': 'HEAD', 'tip': '761f5995d14a62bf28cef6108e7637027dc5ef7d', 'why': '761f5995d is an ancestor of origin/main'}
+        | [PASS] D1 with a stale GITHUB_TOKEN in env: the click row is NOT a merge row, so exactly 1 holds: ['**Click **Merge** on the PR.** That click is the sign-off.']
+        | -- 295/295 passed --
+
+-- SWEEP FAILED --
+  * T-M2 the ledger-row exemption is dropped (the wedge): SURVIVED - the named case still passed with the mutant in place
+  * T-M4 the re-invoke pattern is removed: SURVIVED - the named case still passed with the mutant in place
+  * T-M5 finish stops refusing on ceremony rows: SURVIVED - the named case still passed with the mutant in place

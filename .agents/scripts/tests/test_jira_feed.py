@@ -2539,12 +2539,33 @@ Nothing is actually owed.
             c.check(f"B2 CONTROL: not flagged — {why}",
                     not jira_feed.ceremony_rows(wt(row)), repr(row))
 
+        # ⭐ B1b · THE CASE T-M4 PROVED WAS MISSING. SCC-164's re-invoke row ALSO carries
+        # `--after-merge`, so it matched two patterns at once and removing the re-invoke one
+        # changed nothing the suite could see. A row that trips exactly one pattern is what
+        # isolates it - otherwise the redundancy IS the test's blind spot.
+        c.check("B1b a re-invocation with no --after-merge is still refused",
+                len(jira_feed.ceremony_rows(wt("Then re-invoke the close-out when I have merged"))) == 1,
+                "the re-invoke pattern must stand on its own")
+
         # B3 · ⛔ the ledger row, both ways. This is the wedge control.
         c.check("B3 CONTROL: the canonical merge row is the door's LEDGER, never a ceremony step",
                 not jira_feed.ceremony_rows(
                     "# W\n\n## Your Actions\n\n"
                     "- [x] **The merge itself** — lands via this branch's PR\n"),
                 "SCC-183 mandates this row; flagging it makes the door refuse itself")
+        # ⭐ B3b · THE CASE T-M2 PROVED WAS MISSING. The two rows above do not trip ANY
+        # pattern even without the exemption, so dropping `if MERGE_PHRASE in row` was
+        # invisible - the control was passing for the wrong reason. This row would be refused
+        # on its own merits, and is spared ONLY by the exemption. That is the wedge: SCC-183
+        # mandates a ledger row, and refusing it post-merge leaves a fix that can only be
+        # committed on `main`.
+        c.check("B3b CONTROL: the ledger row is spared even when it names the click",
+                not jira_feed.ceremony_rows(
+                    "# W\n\n## Your Actions\n\n"
+                    "- [x] **The merge itself** - click **Merge** on the PR to land it\n"),
+                "without the MERGE_PHRASE exemption this row IS flagged - which is what makes "
+                "it the control that pins the exemption")
+
         c.check("B3 CONTROL: ...and an OPEN one is still SCC-175's business, not this check's",
                 not jira_feed.ceremony_rows(
                     "# W\n\n## Your Actions\n\n"
@@ -2571,6 +2592,39 @@ Nothing is actually owed.
             rc2, out2 = run_script("jira_feed.py", "check-actions", "--walkthrough", str(clean))
             c.check("B5 CONTROL: a walkthrough of real decisions passes",
                     rc2 == 0, out2.strip()[-300:])
+
+        # ⭐ B6 · THE CASE T-M5 PROVED WAS MISSING, and it is the acceptance criterion itself.
+        # B5 drives `check-actions`; SCC-193 S2 says `finish` must refuse "exit 2, nothing
+        # written". Nothing tested that, so deleting the refusal from `cmd_finish` outright
+        # left every case green - the detector existed and the close-out ignored it.
+        with TempDir() as tmp2:
+            repo2, acli2, state2 = build(tmp2)
+            wt2 = tmp2 / "wt.md"
+            wt2.write_text(wt(CLICK, REINVOKE), encoding="utf-8")
+            set_state(state2, types={"TEST-9": "Task"}, statuses={"TEST-9": "In Progress"})
+            os.environ["STUB_STATE"] = str(state2)
+            rc3, out3 = run_script("jira_feed.py", "finish", "--key", "TEST-9",
+                                   "--project", str(repo2), "--acli", str(acli2),
+                                   "--walkthrough", str(wt2), "--apply")
+            st3 = get_state(state2)
+            c.check("B6 finish REFUSES a walkthrough carrying the ceremony's steps",
+                    rc3 == 2 and "only the operator decides" in out3,
+                    f"exit={rc3}: " + out3.strip()[-300:])
+            c.check("B6 ...and NOTHING was written to the board",
+                    st3["statuses"].get("TEST-9") == "In Progress"
+                    and not st3.get("transitions") and not st3.get("comments"),
+                    f"{st3.get('statuses')} transitions={st3.get('transitions')} "
+                    f"comments={len(st3.get('comments') or [])}")
+
+            # The control: the same lane with an honest decision row closes as it always did.
+            wt3 = tmp2 / "wt3.md"
+            wt3.write_text(wt("**Decide whether to ship the copy change.**"), encoding="utf-8")
+            set_state(state2, types={"TEST-9": "Task"}, statuses={"TEST-9": "In Progress"})
+            rc4, out4 = run_script("jira_feed.py", "finish", "--key", "TEST-9",
+                                   "--project", str(repo2), "--acli", str(acli2),
+                                   "--walkthrough", str(wt3), "--apply")
+            c.check("B6 CONTROL: a real decision row HOLDS (3), it is not refused (2)",
+                    rc4 == 3, f"exit={rc4}: " + out4.strip()[-200:])
 
     # ══ SCC-193 Part D · the SCC-175 merge-row pin, run BOTH ways ══════════════════════════
     #
