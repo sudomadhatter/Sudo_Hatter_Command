@@ -471,8 +471,13 @@ def main() -> int:
 
         # The positive half: the replacement sentence must actually BE somewhere, in the two
         # places an agent reads before it acts. Deleting the wrong sentence is not the fix.
+        # ⛔ AND THE HAND-AUTHORED SKILL. `.claude/skills/smh-close-task-merge-tree/SKILL.md`
+        # is exempt from door parity because the sync never rewrites it - which is exactly why
+        # it is the surface most likely to keep a retired sentence, and it did (this lane's own
+        # finding #3). Exempt from parity is not exempt from being current.
         RULING = "decision to proceed is the sign-off"
-        for rel in (".agents/rules/git-policy.md",
+        for rel in (".claude/skills/smh-close-task-merge-tree/SKILL.md",
+                    ".agents/rules/git-policy.md",
                     ".agents/commands/smh-close-task-merge-tree.md"):
             body = (REPO / rel).read_text(encoding="utf-8", errors="replace").lower()
             c.check(f"S5 ...and {rel} states the ruling positively",

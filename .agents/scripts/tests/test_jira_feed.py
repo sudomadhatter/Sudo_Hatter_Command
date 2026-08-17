@@ -2673,6 +2673,60 @@ Nothing is actually owed.
                                                "second half for the riders."))) == 1,
                 "bound to the ceremony, the pattern must still catch the ceremony")
 
+        # ⭐ B9 · ONE ROW PER PATTERN, because `ceremony_rows` breaks on the FIRST match and
+        # every fixture above trips pattern 1 or 3 first. The test-adequacy audit measured
+        # patterns 2, 4 and 6 each SURVIVING deletion with the suite green - exactly the
+        # redundancy blind spot T-M4 caught once already, in this same table. A row that trips
+        # exactly one pattern is the only thing that isolates it.
+        for row, which in (
+                ("Merge the pull request when the demo is done", "2 · merge x pull request"),
+                ("Finish with --after-merge SCC-999", "4 · the ceremony's second half"),
+                ("run .agents/scripts/jira_feed.py finish", "6 · running the machinery")):
+            got = jira_feed.ceremony_rows(wt(row))
+            c.check(f"B9 pattern {which} stands on its own", len(got) == 1,
+                    f"{len(got)} flagged for {row!r}: {got}")
+
+        # ⭐ B11 · THE THREE ROWS THE LITERAL-CORRECTNESS LENS EXECUTED, each one a place the
+        # detector contradicted its own documentation. All were hard exit-2 refusals of an
+        # operator DECISION, fired by `finish` after the merge - when the fix is a commit on
+        # `main`, the write the gate refuses.
+        for row, why in (
+                ("Re-invoke `/cicd-push-e2e` once staging is verified.",
+                 "a bare door invocation, refused on the two characters `re-` while "
+                 "'Then invoke /cicd-push-e2e' passed"),
+                ("**Decide whether to merge the PR before the marketing launch.**",
+                 "the SOP names 'a product decision that happens to mention a merge' as exempt"),
+                ("Run the memory audit (`python3 .agents/scripts/memory_audit.py`) when you "
+                 "have a moment.",
+                 "cmd_finish's own docstring names this as the row that must HOLD a ticket")):
+            c.check(f"B11 CONTROL: not flagged — {why[:60]}",
+                    not jira_feed.ceremony_rows(wt(row)), repr(row))
+        # ⛔ AND THE TEETH SURVIVE ALL THREE NARROWINGS. Each of these is the same shape with
+        # the ceremony actually named, or with an ACT the decision carve-out must not excuse.
+        for row, why in (
+                ("Re-invoke the door once I have merged", "re-invoke bound to the ceremony"),
+                ("**Decide** to click **Merge** on the PR", "a decision prefix is not a way in"),
+                ("Run `python3 .agents/scripts/jira_feed.py finish --key SCC-9`",
+                 "this ceremony's own machinery, still refused")):
+            got = jira_feed.ceremony_rows(wt(row))
+            c.check(f"B11 ...still REFUSED — {why}", len(got) == 1, f"{len(got)}: {got}")
+
+        # ⭐ B10 · THE OPT-OUT IS LOGGED, and a warn nobody records is the
+        # `vscode-hides-git-hook-output` shape the banner's own comment names. Deleting the log
+        # line was measured as a survivor: the flag worked and the record of using it did not.
+        with TempDir() as tmp5:
+            repo5, acli5, state5 = build(tmp5)
+            wt5 = tmp5 / "wt.md"
+            wt5.write_text(wt(CLICK, REINVOKE), encoding="utf-8")
+            set_state(state5, types={"TEST-9": "Task"}, statuses={"TEST-9": "In Progress"})
+            os.environ["STUB_STATE"] = str(state5)
+            rc6, out6 = run_script("jira_feed.py", "finish", "--key", "TEST-9",
+                                   "--project", str(repo5), "--acli", str(acli5),
+                                   "--walkthrough", str(wt5), "--warn-actions", "--apply")
+            c.check("B10 --warn-actions does NOT refuse, and logs that it was chosen",
+                    rc6 != 2 and "Logged opt-out, on the record" in out6
+                    and "2 ceremony row(s)" in out6, f"exit={rc6}: " + out6.strip()[-400:])
+
         # ⭐ B8 · BOTH FAMILIES IN ONE RUN. `cmd_finish` returned 2 on the ceremony rows before
         # `banned_action_rows` was ever computed, so a walkthrough carrying both was reported
         # one family at a time - two fix-and-re-run round trips for one file, and the second

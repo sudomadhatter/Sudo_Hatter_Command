@@ -158,10 +158,24 @@ def ag_description(desc: str) -> str:
 
     Word-boundary cut, then an ASCII ellipsis - never mid-word, and never a non-ASCII character
     (the PowerShell side writes these literals from a BOM-less .ps1 that PS 5.1 parses as ANSI,
-    so a real `…` would ship as mojibake in every generated file)."""
-    if len(desc) <= AG_DESC_MAX:
+    so a real `…` would ship as mojibake in every generated file).
+
+    ⛔ UTF-16 UNITS, BECAUSE THE GENERATOR IS .NET. `$Desc.Length`, `.Substring` and
+    `.LastIndexOf` all index UTF-16 code units; Python's `len`/slicing index CODE POINTS, and
+    the two agree only while every character is in the BMP. A single astral character (an emoji
+    in a description) makes PowerShell cut at 90 code points where this cut at 132 - the door
+    then reads `stale`, and because the file is GENERATED the operator cannot fix it by hand.
+    That is the SCC-194 wedge rebuilt, so this emulates the generator rather than the language
+    it happens to be written in. (Measured by the test-adequacy audit: the two agree on all 55
+    live descriptions and diverge the moment one carries a non-BMP character.)"""
+    b = desc.encode("utf-16-le")
+    if len(b) // 2 <= AG_DESC_MAX:
         return desc
-    cut = desc[:AG_DESC_CUT]
+    # `errors="ignore"` covers the one shape .NET and Python genuinely cannot agree on: a cut
+    # landing INSIDE a surrogate pair. .NET keeps the orphan half (an invalid string); this
+    # drops it. The word-boundary trim below removes it in every realistic case anyway, and
+    # neither implementation should be shipping a lone surrogate into a menu.
+    cut = b[:AG_DESC_CUT * 2].decode("utf-16-le", errors="ignore")
     if " " in cut:
         cut = cut[:cut.rindex(" ")]
     return cut.rstrip(" ,;:-") + "..."
@@ -1332,6 +1346,14 @@ def main() -> int:
         # generated, and the sync never rewrites it - but Antigravity reads its description into
         # the SAME menu, so exempting it would leave the biggest single row in place while the
         # check reported the budget met. Hand-owned means "fix it by hand", not "skip it".
+        # The BRAINS' descriptions - uncut, i.e. the actual input the generator is given. The
+        # workflow doors below carry the OUTPUT, so cutting those again would be idempotent and
+        # prove nothing about the cut.
+        AG_LIVE_DESCS = [d for d in
+                         (fm_field(read(b), "description")
+                          for b in sorted((ROOT / ".agents/commands").glob("*.md")))
+                         if d]
+
         over, measured, total = [], 0, 0
         for wf_door in sorted((ROOT / ".agents/workflows").glob("*.md")):
             d = fm_field(read(wf_door), "description")
@@ -1375,6 +1397,80 @@ def main() -> int:
         c.check("U6e CONTROL: ...and an LF brain gains no CR",
                 "\r" not in with_ag_description(crlf.replace("\r\n", "\n")),
                 repr(with_ag_description(crlf.replace("\r\n", "\n"))[:120]))
+
+        # ⭐ U7 · THE TWINS, RUN AGAINST EACH OTHER FOR REAL. Everything above tests the
+        # PYTHON emulation; the file that ships is `sync-agents.ps1`, and the claim "if the two
+        # ever disagree the door reads stale" only holds if they agree. Until now that coupling
+        # ran solely through committed artifacts - so an emulation drift showed up as an
+        # unfixable `stale` on a GENERATED file, which is the SCC-194 wedge. This extracts the
+        # real function and runs it under pwsh over every live description plus an astral
+        # fixture, which is the one input the test-adequacy audit measured them disagreeing on.
+        import shutil as _shutil
+        pwsh = _shutil.which("pwsh")
+        ASTRAL = "Ship the \U0001F680 launch checklist " + ("word " * 40)
+        if not pwsh:
+            c.check("U7 SKIPPED: no pwsh on this machine - the twins are unverified here",
+                    True, "install PowerShell 7 to run the real generator against the emulation")
+        else:
+            src = (ROOT / ".agents/scripts/sync-agents.ps1").read_text(encoding="utf-8")
+            i = src.index("function Get-AgDescription")
+            fn = src[i:src.index("\n}", i) + 2]
+            probes = [d for d in AG_LIVE_DESCS] + [ASTRAL]
+            script = (fn + "\n$in = [Console]::In.ReadToEnd() -split \"\\u0000\"\n"
+                      + "$out = foreach ($d in $in) { Get-AgDescription $d }\n"
+                      + "[Console]::Out.Write(($out -join \"`u{0}\"))\n")
+            r = subprocess.run([pwsh, "-NoProfile", "-Command", "-"], input=script + "\n",
+                               capture_output=True, text=True, encoding="utf-8")
+            # the script is fed on stdin as the command; the probe payload goes via a temp file
+            with TempDir() as _t:
+                sp = _t / "probe.ps1"
+                dp = _t / "in.txt"
+                dp.write_text("\u0000".join(probes), encoding="utf-8")
+                sp.write_text(fn + "\n$in = [IO.File]::ReadAllText('" + str(dp).replace("\\", "\\\\")
+                              + "', [Text.Encoding]::UTF8) -split \"`u{0}\"\n"
+                              + "$out = foreach ($d in $in) { Get-AgDescription $d }\n"
+                              + "[IO.File]::WriteAllText('" + str(_t / "out.txt").replace("\\", "\\\\")
+                              + "', ($out -join \"`u{0}\"), (New-Object Text.UTF8Encoding $false))\n",
+                              encoding="utf-8")
+                r = subprocess.run([pwsh, "-NoProfile", "-File", str(sp)],
+                                   capture_output=True, text=True)
+                got = ((_t / "out.txt").read_text(encoding="utf-8").split("\u0000")
+                       if (_t / "out.txt").is_file() else [])
+            want = [ag_description(d) for d in probes]
+            c.check("U7 the REAL PowerShell generator and this file's emulation agree, "
+                    "on every live description AND on an astral character",
+                    got == want,
+                    f"pwsh rc={r.returncode} {r.stderr.strip()[:200]} | "
+                    + next((f"{i}: {g!r} != {w!r}"
+                            for i, (g, w) in enumerate(zip(got, want)) if g != w),
+                           f"lengths {len(got)} vs {len(want)}"))
+            c.check("U7 CONTROL: the astral fixture is genuinely over budget and non-BMP",
+                    len(ASTRAL) > AG_DESC_MAX and max(ord(ch) for ch in ASTRAL) > 0xFFFF,
+                    f"{len(ASTRAL)} chars, max ord {max(ord(ch) for ch in ASTRAL):#x}")
+
+        # U8 · the budgeted-mirror ARM of door_verdict, as pure strings. Every other shape it
+        # can return has a synthetic control; this one had only the live sweep, where a broken
+        # comparison and a clean tree read the same.
+        _brain = "---\nname: x\ndescription: " + ("z" * 300) + "\nplatforms: [antigravity]\n---\nbody\n"
+        c.check("U8 CONTROL: a mirror carrying the CUT description is parity, not stale",
+                with_ag_description(_brain) != _brain
+                and with_ag_description(with_ag_description(_brain)) == with_ag_description(_brain),
+                "the budgeted form must be the fixed point the mirror is compared against")
+        c.check("U8 CONTROL: ...and one changed body word is NOT",
+                with_ag_description(_brain).replace("body", "bodyy") != with_ag_description(_brain),
+                "the comparison must still see everything below the description line")
+
+        # U9 · green-first characterization, scoped to THE MENU. Most rows are now truncated,
+        # and what the menu is FOR is telling the commands apart - two rows that read the same
+        # for their first 60 characters are two commands the model cannot choose between.
+        # ⛔ SCOPED TO `.agents/workflows`, NOT to every brain: `qa.md` and `tea.md` share a
+        # 60-char prefix and are `platforms: [opencode]`, so they never reach this menu. A pin
+        # that reds on doors the surface does not carry would be measuring the wrong surface.
+        _menu = [d for d in (fm_field(read(w), "description")
+                             for w in sorted((ROOT / ".agents/workflows").glob("*.md"))) if d]
+        c.check("U9 the menu's descriptions stay pairwise distinct in their first 60 chars",
+                len({d[:60] for d in _menu}) == len(_menu) and len(_menu) >= 30,
+                f"{len(_menu)} menu rows, {len({d[:60] for d in _menu})} distinct 60-char prefixes")
 
         c.check("U6c ...and the whole menu payload stays under the budget it was cut to",
                 total <= measured * AG_DESC_MAX and total < 6000,

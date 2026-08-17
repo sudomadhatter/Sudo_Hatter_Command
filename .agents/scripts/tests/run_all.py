@@ -39,6 +39,16 @@ from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FuturesTimeout
 from pathlib import Path
 
+# SCC-190 · the tree guard. ⛔ OPTIONAL BY CONSTRUCTION: this runner is copied into bare temp
+# dirs by its own tests and by anything probing it, and a guard that cannot find its helper must
+# degrade to silence, never take the suite down with it. A runner that refuses to start is a
+# worse defect than the one the guard exists to prevent.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+try:
+    import wf_common as wf  # noqa: E402
+except Exception:           # noqa: BLE001 - any import failure means "no guard", not "no suite"
+    wf = None
+
 HERE = Path(__file__).resolve().parent
 FILES = sorted(p.name for p in HERE.glob("test_*.py"))
 
@@ -172,7 +182,33 @@ def main() -> int:
                     help="how many test files to run at once (default: CPU count)")
     ap.add_argument("--serial", action="store_true",
                     help="one file at a time — the escape hatch, equivalent to --jobs 1")
+    ap.add_argument("--on-main", action="store_true",
+                    help="allow the run even though this is the MAIN checkout and lane "
+                         "worktrees exist (SCC-190: the wrong-tree guard)")
     args = ap.parse_args()
+
+    # ⛔ WHICH TREE IS THIS? Printed FIRST, every run, because the cheapest possible fix for
+    # "I ran the suite in the wrong tree" is being told which tree before the suite starts.
+    _top, _br, _is_main = (wf.say_tree("run_all", HERE) if wf is not None
+                           else (str(HERE), "", False))
+    # And a refusal for the one shape that is almost never intentional: standing in the MAIN
+    # checkout, on the mainline, while lane worktrees are checked out on chore/* or epic/*.
+    # That is lane work being measured against a tree that does not contain it. `--on-main` is
+    # the deliberate spelling for the times it IS what you meant (a pre-merge sanity run).
+    if _is_main and _br in ("main", "master") and not args.on_main:
+        _wt = wf.git(["worktree", "list", "--porcelain"], Path(_top)).stdout or ""
+        _lanes = [ln.split("/", 2)[-1] for ln in _wt.splitlines()
+                  if ln.startswith("branch refs/heads/")
+                  and ln.split("refs/heads/")[-1].split("/", 1)[0] in ("chore", "epic")]
+        if _lanes:
+            print(f"run_all: REFUSING - this is the MAIN checkout on `{_br}`, but "
+                  f"{len(_lanes)} lane worktree(s) are checked out: {', '.join(_lanes[:4])}.\n"
+                  f"         A suite run here says nothing about that lane's work, and it is\n"
+                  f"         how the same work gets done twice (SCC-190).\n"
+                  f"         Run it in the lane:  cd <worktree> && python3 "
+                  f".agents/scripts/tests/run_all.py\n"
+                  f"         Or say you meant this tree:  --on-main", file=sys.stderr)
+            return 2
 
     jobs = 1 if args.serial else (args.jobs if args.jobs is not None
                                   else (os.cpu_count() or 1))

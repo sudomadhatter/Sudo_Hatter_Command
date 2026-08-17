@@ -23,15 +23,15 @@
     {
       "id": "U-M3 the cut ignores the word boundary",
       "file": ".agents/scripts/tests/test_command_surfaces.py",
-      "original": "    cut = desc[:AG_DESC_CUT]\n    if \" \" in cut:\n        cut = cut[:cut.rindex(\" \")]",
-      "mutated": "    cut = desc[:AG_DESC_CUT]\n    if False:\n        cut = cut[:cut.rindex(\" \")]",
+      "original": "    cut = b[:AG_DESC_CUT * 2].decode(\"utf-16-le\", errors=\"ignore\")\n    if \" \" in cut:\n        cut = cut[:cut.rindex(\" \")]",
+      "mutated": "    cut = b[:AG_DESC_CUT * 2].decode(\"utf-16-le\", errors=\"ignore\")\n    if False:\n        cut = cut[:cut.rindex(\" \")]",
       "case": "U3b ...even when a long word straddles the cut point",
       "block": "SCC-195"
     },
     {
       "id": "U-M4 the budget rule stops cutting at all (the vacuous live sweep)",
       "file": ".agents/scripts/tests/test_command_surfaces.py",
-      "original": "    if len(desc) <= AG_DESC_MAX:\n        return desc",
+      "original": "    if len(b) // 2 <= AG_DESC_MAX:\n        return desc",
       "mutated": "    if True:\n        return desc",
       "case": "U6d CONTROL: the same predicate FIRES on a fabricated over-budget door",
       "block": "SCC-195"
@@ -43,6 +43,14 @@
       "mutated": "            if launcher_ok:\n                return \"ok\"",
       "case": "door-parity CONTROL: a STALE mirror is caught",
       "block": "CS-03"
+    },
+    {
+      "id": "U-M6 the emulation counts CODE POINTS again (diverges from .NET on astral)",
+      "file": ".agents/scripts/tests/test_command_surfaces.py",
+      "original": "    cut = b[:AG_DESC_CUT * 2].decode(\"utf-16-le\", errors=\"ignore\")",
+      "mutated": "    cut = desc[:AG_DESC_CUT]",
+      "case": "U7 the REAL PowerShell generator and this file's emulation agree, on every live description AND on an astral character",
+      "block": "SCC-195 \u00b7 the Antigravity description budget"
     }
   ]
 }

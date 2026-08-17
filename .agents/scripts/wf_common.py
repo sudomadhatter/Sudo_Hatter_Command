@@ -419,3 +419,50 @@ def strip_fenced(text: str) -> str:
         if fence is None:
             out.append(line)
     return "\n".join(out)
+
+
+# ── WHICH TREE AM I IN? (SCC-190 · operator ruling 2026-08-17) ────────────────────────
+#
+# ⛔ THE MEASURED COST, AND IT IS THE BIGGEST ONE IN THIS SYSTEM. A shell's cwd resets to the
+# MAIN checkout the moment a command cd's outside the workspace, and nothing says so. The next
+# `python3 .agents/scripts/tests/run_all.py` then runs MAIN's copy of the suite against MAIN's
+# tree - green or red about work that is not the work - and the whole cycle is repeated once the
+# mistake surfaces. Operator, 2026-08-17: *"we do all our work twice and it's killing
+# productivity."*
+#
+# The fix is not a memory, because a memory does not run. Every gate and runner PRINTS the tree
+# and branch it is about to act on, unmissably, at the top - so a wrong-tree run is obvious in
+# the first line of output rather than three minutes later in a confusing failure.
+
+def tree_tag(start: Path | str = ".") -> tuple[str, str, bool]:
+    """`(repo path, branch, is_the_main_checkout)` for the tree that CONTAINS `start`.
+
+    Resolved from git, never from the cwd string: a worktree and its main checkout share a
+    `.git` lineage but are different trees, and `git rev-parse --git-common-dir` is what tells
+    them apart (a linked worktree's `--git-dir` sits under the main one's `worktrees/`)."""
+    p = Path(start).resolve()
+    root = git(["rev-parse", "--show-toplevel"], p)
+    if root.returncode != 0 or not (root.stdout or "").strip():
+        return str(p), "", True
+    top = (root.stdout or "").strip()
+    br = (git(["rev-parse", "--abbrev-ref", "HEAD"], Path(top)).stdout or "").strip()
+    gd = (git(["rev-parse", "--absolute-git-dir"], Path(top)).stdout or "").strip()
+    cd = (git(["rev-parse", "--git-common-dir"], Path(top)).stdout or "").strip()
+    # ⛔ `--git-common-dir` comes back RELATIVE (`.git`) in the main checkout and ABSOLUTE in a
+    # linked worktree. Resolving the relative one against the PROCESS cwd - which is the whole
+    # hazard this function exists for - made every main checkout report as a worktree. Resolve
+    # it against the repo top, which is the only frame it was ever relative to.
+    cdp = Path(cd) if cd else None
+    if cdp is not None and not cdp.is_absolute():
+        cdp = Path(top) / cdp
+    is_main = not gd or cdp is None or Path(gd).resolve() == cdp.resolve()
+    return top, br, is_main
+
+
+def say_tree(what: str, start: Path | str = ".") -> tuple[str, str, bool]:
+    """Print the tree banner and return what `tree_tag` found. Called by every runner."""
+    top, br, is_main = tree_tag(start)
+    where = "MAIN CHECKOUT" if is_main else "worktree"
+    print(f"== {what} @ {Path(top).name} [{br or 'DETACHED'}] - {where} ==")
+    print(f"   {top}")
+    return top, br, is_main

@@ -243,6 +243,20 @@ def check_close_out_receipts(repo: Path, base: str, head: str,
     # `my-task.yaml`, which fails strict but names the wrong file to a reader.
     manifests = [p for p in out.splitlines()
                  if p.strip() and p.strip().rsplit("/", 1)[-1] == "task.yaml"]
+    # ⛔ THE MAINLINE, NOT `base`. What makes another lane's manifest legitimate is that it has
+    # LANDED - and `base` cannot answer that: GitHub's `pull_request.base.sha` is routinely a
+    # commit or two behind the merge-base (PR #12's was one past), which is the only reason a
+    # landed sibling shows up in `base..head` at all. Asking `base` therefore reds exactly the
+    # case the skip exists for. Asking the mainline is the real question. If no mainline ref
+    # resolves, `mainline` is empty and every declaring manifest is judged - the strict
+    # direction, since absence of evidence must never relax a gate.
+    mainline = ""
+    for cand in ("origin/main", "main", base):
+        rc_m, out_m = git(repo, "rev-parse", "--verify", "-q", cand + "^{commit}")
+        if rc_m == 0 and out_m.strip():
+            mainline = cand
+            break
+
     fails: list[str] = []
     judged = 0
     for rel in manifests:
@@ -266,8 +280,21 @@ def check_close_out_receipts(repo: Path, base: str, head: str,
         # `task_preflight.check_manifest` already applies to settled manifests. Skipped, and
         # SAID, so a genuine key/branch mismatch is never silent.
         if pr_branch and branch and branch != pr_branch:
-            print(f"       (skipping {rel}: declares `{branch}`, this PR is `{pr_branch}` - "
-                  f"another lane's landed receipt)")
+            # ⛔ SKIPPED ONLY IF IT IS GENUINELY HISTORY. The skip is a `continue`, i.e. a bypass
+            # shape, and print-only: a manifest declaring the WRONG branch produced judged == 0,
+            # no fails, and `[PASS] close-out receipts` - a close-out reaching main with nothing
+            # looking at it, on a one-character typo. What makes the 57 landed manifests
+            # legitimate is that they are UNCHANGED on the base; a manifest this PR writes or
+            # edits is this PR's business whatever it declares. (`base` is often not the
+            # merge-base, which is why they show up in the tree diff at all.)
+            if mainline and show(repo, mainline, rel) == text:
+                print(f"       (skipping {rel}: declares `{branch}`, unchanged on {mainline} - "
+                      f"another lane's landed receipt)")
+                continue
+            fails.append(f"{key or rel}: this PR writes a close-out manifest declaring branch "
+                         f"`{branch}`, but the PR is from `{pr_branch}` - one of them is wrong, "
+                         f"and an unjudged close-out manifest is exactly how a hand-run ceremony "
+                         f"reaches main")
             continue
         judged += 1
         art = rel.rsplit("/", 1)[0] if "/" in rel else ""
@@ -289,23 +316,28 @@ def check_close_out_receipts(repo: Path, base: str, head: str,
                 f"        then commit the receipt with the flight event (Step 2.5).")
         else:
             try:
-                r = json.loads(raw)
+                parsed = json.loads(raw)
             except (ValueError, TypeError) as exc:
-                r = None
                 fails.append(f"{key or rel}: {where}{RECEIPT_NAME} is not readable JSON ({exc})")
-            # ⛔ A RECEIPT THAT IS NOT AN OBJECT IS NOT A RECEIPT, and both halves of this were
-            # live defects (edge-case lens, executed):
-            #   * `null` parses cleanly to None, and `if r is not None` then skipped EVERY
-            #     assertion below - key, branch, fresh, verdict. A file containing four bytes
-            #     passed the whole gate.
-            #   * `[]`, `"x"`, `5`, `true` all parse too, escape the except above, and reach
-            #     `r.get(...)` -> AttributeError. A traceback is not a verdict; the check that
-            #     refuses a merge must never be the thing that crashes.
-            # Fail CLOSED on both, and say which file.
-            if r is not None and not isinstance(r, dict):
-                fails.append(f"{key or rel}: {where}{RECEIPT_NAME} is {type(r).__name__}, not a "
-                             f"receipt object - a file that parses is not evidence")
-                r = None
+            else:
+                if isinstance(parsed, dict):
+                    r = parsed
+                else:
+                    fails.append(f"{key or rel}: {where}{RECEIPT_NAME} is "
+                                 f"{type(parsed).__name__}, not a receipt object - a file that "
+                                 f"parses is not evidence")
+            # ⛔ A RECEIPT THAT IS NOT AN OBJECT IS NOT A RECEIPT, and every branch of this was
+            # a live defect at some point in this lane's own history:
+            #   * `null` parses cleanly to None. The first cut skipped EVERY assertion below on
+            #     it - key, branch, fresh, verdict - so a file containing four bytes passed the
+            #     whole gate. The fix guarded on `r is not None`... which SILENTLY RE-OPENED it,
+            #     because `None` is exactly what `null` parses to. Two lenses and a coverage
+            #     audit later, the answer is to branch on the PARSE, not on the name: `r` is
+            #     bound only when the parse produced a dict, and every other outcome appends a
+            #     failure on the spot. There is no path from `raw is not None` to silence.
+            #   * `[]`, `"x"`, `5`, `true` all parse too and would reach `r.get(...)` ->
+            #     AttributeError. A traceback is not a verdict; the check that refuses a merge
+            #     must never be the thing that crashes.
             if r is not None:
                 got_key = str(r.get("task_key") or "").strip()
                 got_branch = str(r.get("branch") or "").strip()

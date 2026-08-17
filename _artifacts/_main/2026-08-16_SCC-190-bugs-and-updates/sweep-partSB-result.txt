@@ -1,4 +1,4 @@
--- sweep: 9 mutant(s) over 1 file(s) @ 923d6b43 --
+-- sweep: 9 mutant(s) over 1 file(s) @ e1d1c927 --
 KILLED    SB-M1 the flight-event demand is dropped
             KILLED by A1 RED: a reviewed close-out with NO flight event is refused, by name
             -- filter 'SCC-192 · a close-out PR must carry its receipts': matched 1/6 blocks --
@@ -14,8 +14,8 @@ KILLED    SB-M4 the event is keyed on HEAD instead of the verdict sha (loop 1)
 KILLED    SB-M5 the demand triggers on EVERY PR, not only a close-out (loop 3)
             KILLED by A5c GREEN: a manifest naming another door owes this gate nothing
             -- filter 'SCC-192 · a close-out PR must carry its receipts': matched 1/6 blocks --
-⛔ NOT KILLED SB-M6 the branch cross-check is dropped (another lane's receipt vouches)
-            SURVIVED - the named case still passed with the mutant in place
+KILLED    SB-M6 the branch cross-check is dropped (another lane's receipt vouches)
+            KILLED by A3b RED: a receipt from ANOTHER branch does not vouch for this lane
             -- filter 'SCC-192 · a close-out PR must carry its receipts': matched 1/6 blocks --
 KILLED    SB-M7 the verdict check accepts a STALE 'clear' (the auditor's minor note)
             KILLED by A3d RED: a 'clear' verdict that says STALE is not a clear preflight
@@ -26,7 +26,7 @@ KILLED    SB-M8 an EMPTY verdict_sha reads as agreement (the blind lens's fail-o
 KILLED    SB-M9 the sha comparison goes back to case-SENSITIVE
             KILLED by A6b CONTROL: an UPPERCASE verdict stamp still matches its own receipt
             -- filter 'SCC-192 · a close-out PR must carry its receipts': matched 1/6 blocks --
--- restore verified: bytes match, nothing was committed, and `git diff --quiet 923d6b43` is clean --
+-- restore verified: bytes match, nothing was committed, and `git diff --quiet e1d1c927` is clean --
 -- full file, unfiltered: python3 .agents/scripts/tests/test_main_write_gate_ci.py -> exit 0 --
         | [PASS] authorised source branch: 'chore/SCC-9-lane' is an authorised source branch
         | [PASS] close-out receipts
@@ -35,5 +35,4 @@ KILLED    SB-M9 the sha comparison goes back to case-SENSITIVE
         | [PASS] A-mode GREEN: mode `gate` never asks for receipts (Road 2 untouched): the local door's road must not gain a second gate
         | -- 51/51 passed --
 
--- SWEEP FAILED --
-  * SB-M6 the branch cross-check is dropped (another lane's receipt vouches): SURVIVED - the named case still passed with the mutant in place
+-- sweep clean: 9/9 killed by their declared case --

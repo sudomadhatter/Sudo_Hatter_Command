@@ -1,4 +1,4 @@
--- sweep: 11 mutant(s) over 1 file(s) @ 923d6b43 --
+-- sweep: 11 mutant(s) over 1 file(s) @ e1d1c927 --
 KILLED    S-M1 the receipt is keyed on HEAD instead of the verdict sha
             KILLED by R1 ⛔ keyed on the VERDICT sha, never on HEAD
             -- filter 'SCC-192/193': matched 1/24 blocks --
@@ -23,24 +23,22 @@ KILLED    S-M7 the receipt embeds HEAD (the chicken-and-egg the design forbids)
 KILLED    S-M8 check_manifest goes back to SILENT on two agreeing manifests
             KILLED by R7 two manifests agreeing on ONE lane is an ERROR, not two infos
             -- filter 'SCC-192/193 · the preflight leaves a RECEIPT, and fetch is the DEFAULT': matched 1/24 blocks --
-⛔ NOT KILLED S-M9 the self-dirt exemption goes back to matching by NAME anywhere
-            SURVIVED - the named case still passed with the mutant in place
+KILLED    S-M9 the self-dirt exemption goes back to matching by NAME anywhere
+            KILLED by R9 CONTROL: ANOTHER lane's uncommitted receipt is still dirt
             -- filter 'SCC-192/193 · the preflight leaves a RECEIPT, and fetch is the DEFAULT': matched 1/24 blocks --
 KILLED    S-M10 an unreadable receipt escapes the writer again (the UnicodeDecodeError)
             KILLED by R8 a corrupt receipt is REPLACED, not a traceback
             -- filter 'SCC-192/193 · the preflight leaves a RECEIPT, and fetch is the DEFAULT': matched 1/24 blocks --
-⛔ NOT KILLED S-M11 the stale remedy stops distinguishing a failed fetch from --no-fetch
-            SURVIVED - the named case still passed with the mutant in place
+KILLED    S-M11 the stale remedy stops distinguishing a failed fetch from --no-fetch
+            KILLED by R3 ...and the VERDICT's remedy names the FAILED fetch, not --no-fetch
             -- filter 'SCC-192/193 · the preflight leaves a RECEIPT, and fetch is the DEFAULT': matched 1/24 blocks --
--- restore verified: bytes match, nothing was committed, and `git diff --quiet 923d6b43` is clean --
+-- restore verified: bytes match, nothing was committed, and `git diff --quiet e1d1c927` is clean --
 -- full file, unfiltered: python3 .agents/scripts/tests/test_task_preflight.py -> exit 0 --
         | -- 1 error(s), 0 warning(s), 14 info --
         | LANE: LOCAL
         | GATES: ARMED
         |   gate: python3 .agents/scripts/tests/run_all.py
         | VERDICT: BLOCKED - resolve the errors above
-        | -- 180/180 passed --
+        | -- 182/182 passed --
 
--- SWEEP FAILED --
-  * S-M9 the self-dirt exemption goes back to matching by NAME anywhere: SURVIVED - the named case still passed with the mutant in place
-  * S-M11 the stale remedy stops distinguishing a failed fetch from --no-fetch: SURVIVED - the named case still passed with the mutant in place
+-- sweep clean: 11/11 killed by their declared case --

@@ -915,7 +915,12 @@ def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report,
         # verdict line below now carries it too.
         rep.warn("sync", "--no-fetch: ahead/behind is vs the LAST fetch, not the remote")
 
-    dirty = wf.git(["status", "--porcelain"], repo).stdout.strip()
+    # `-c core.quotepath=false`: git octal-quotes any path holding a non-ASCII byte, `"` or
+    # `\`, and `own` below is built unquoted - so on a lane whose artifact folder carries one
+    # (`…_SCC-3-café/`) the comparison never matched and the preflight counted its OWN
+    # receipt as dirt, exit 2 on every re-run. `main_write_gate` met this first and passes
+    # the same flag; one repo, one spelling of a path.
+    dirty = wf.git(["-c", "core.quotepath=false", "status", "--porcelain"], repo).stdout.strip()
     if dirty:
         lines = dirty.splitlines()
         mem = [ln for ln in lines if ln[3:].startswith("_artifacts/_memory/")]
@@ -1538,6 +1543,17 @@ def main() -> int:
         if got is not None:
             rep.info("receipt", f"{rel_or_abs(got, repo)} - the PR gate requires it; commit "
                                 f"it with the flight event (close-out Step 2.5)")
+        elif manifest is not None:
+            # ⛔ THE VERDICT CANNOT SAY "clear" WHEN THE EVIDENCE WAS NOT WRITTEN. `write_receipt`
+            # warns and returns None on an OSError (an unwritable tree), and
+            # `main_write_gate --mode pr` refuses on the receipt's ABSENCE - so the run would
+            # certify a merge it has already made impossible. That is the exact shape this lane
+            # upgraded the two-manifest case to an error for, and the same answer applies: a
+            # preflight that sends the operator to a dead end is worse than one that refuses.
+            # (`manifest is None` is a different thing entirely - no lane owes a receipt then,
+            # and R5 pins that.)
+            verdict = ("BLOCKED - the receipt could not be written, and the PR gate refuses a "
+                       "close-out PR without one")
 
     if args.json:
         print(json.dumps({"repo": str(repo), "branch": branch, "key": key,

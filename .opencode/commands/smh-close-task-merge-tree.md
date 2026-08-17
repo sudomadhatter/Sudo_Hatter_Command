@@ -301,10 +301,17 @@ python3 "<worktree>/.agents/scripts/flight_recorder.py" record --task <JIRA-KEY>
 # That is reachable whenever the receipt was not written: no live manifest, two manifests
 # (the preflight now errors on that), `--no-receipt`, or an unwritable tree. Build the list
 # from what exists, then guard and stage the SAME list.
-PATHS=(_artifacts/_main/workflow-events/)
-[ -f "<worktree>/<task-artifacts folder>/preflight-receipt.json" ] \
-  && PATHS+=("<task-artifacts folder>/preflight-receipt.json")
-if git -C "<worktree>" status --porcelain -- "${PATHS[@]}" | grep -q .; then
+PATHS=()
+[ -d "<worktree>/_artifacts/_main/workflow-events" ] && PATHS+=(_artifacts/_main/workflow-events/)
+if [ -f "<worktree>/<task-artifacts folder>/preflight-receipt.json" ]; then
+  PATHS+=("<task-artifacts folder>/preflight-receipt.json")
+fi
+# ⛔ `[ -f … ] && PATHS+=(…)` returns 1 when the file is absent, which ABORTS the snippet under
+# `set -e` - so the guard meant to survive a missing path became the thing that killed the step.
+# The events dir is conditional too: it is tracked in this repo, but on first adoption of this
+# door (or a lightweight lane that recorded none) it does not exist, and `git add` 128s on a
+# pathspec that matches nothing - staging NOTHING, so the flight event is lost with it.
+if [ ${#PATHS[@]} -gt 0 ] && git -C "<worktree>" status --porcelain -- "${PATHS[@]}" | grep -q .; then
   git -C "<worktree>" add -- "${PATHS[@]}"
   git -C "<worktree>" commit -F <msg>   # "<KEY> chore(recorder): flight event @ <sha7> [sop-ok]"
   git -C "<worktree>" push

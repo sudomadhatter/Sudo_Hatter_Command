@@ -1753,12 +1753,31 @@ def banned_action_rows(text: str) -> list[tuple[str, str]]:
 #
 # Same shape as `banned_action_rows` (verb x object, bound as one phrase, read through
 # `open_actions` so a fenced example stays documentation). Third family, same mechanism.
+# ⛔ ONE OBJECT GROUP, WRITTEN ONCE. Every pattern that refuses a CONTINUATION binds to this,
+# and a door NAME is deliberately absent from it: under the ruling a bare door invocation is one
+# of the three FORMS of the decision. Three patterns used to spell their own binding (or have
+# none), and the literal-correctness lens executed the consequence - the same operator decision
+# passed or was hard-refused on the two characters `re-`.
+_CEREMONY_OBJECT = (r"(?:--after-merge\b|\.agents/scripts/|\b(?:jira_feed|task_preflight"
+                    r"|flight_recorder|gate_receipt|main_write_gate)\.py\b"
+                    r"|\bthe\s+(?:door|ceremony|close-?out|second\s+half)\b)")
+
+# ⛔ A DECISION VERB IN SUBJECT POSITION IS A DECISION, and the SOP says so in as many words
+# ("any product decision that happens to mention a merge"). It was not true: "Decide whether to
+# merge the PR before the marketing launch" was hard-refused (literal-correctness lens). This
+# carve-out is DELIBERATELY narrow - it applies to the merge-x-PR pattern ALONE, which names no
+# act. Every other pattern names one (click, re-invoke, --after-merge, running the machinery),
+# and those keep their teeth regardless of how the row opens: "Decide to click Merge on the PR"
+# is still refused, so the carve-out is not a way back in for SCC-164's own defect.
+_DECISION_SUBJECT_RE = re.compile(
+    r"^[\s*_`>#-]*(?:decide|rule|choose|approve|judge|weigh|pick|confirm)\b", re.I)
+
 _CEREMONY_PATTERNS = [
     (re.compile(r"\b(?:click|hit|press)\b[^\n]{0,40}?\bmerge\b", re.I),
      "asks the operator to CLICK the merge - the decision is the sign-off, not the click"),
     (re.compile(r"\bmerge\b[^\n]{0,25}?\b(?:pull\s+request|the\s+PR)\b", re.I),
      "asks the operator to perform the merge itself"),
-    (re.compile(r"\bre-?invoke\b", re.I),
+    (re.compile(r"\bre-?invoke\b[^\n]{0,60}?" + _CEREMONY_OBJECT, re.I),
      "asks the operator to re-invoke the ceremony - the agent runs it from the sign-off on"),
     (re.compile(r"--after-merge\b", re.I),
      "names the close-out's own second half, which is the ceremony's step"),
@@ -1771,12 +1790,14 @@ _CEREMONY_PATTERNS = [
     # merge - so a false positive lands where the only fix is a commit on `main`, the write the
     # gate refuses. A DOOR NAME is deliberately NOT in the object list for that reason; what is
     # refused is the ceremony's second half and its machinery.
-    (re.compile(r"\bthen\s+(?:invoke|run|call)\b[^\n]{0,60}?"
-                r"(?:--after-merge\b|\.agents/scripts/|\b\w+\.py\b"
-                r"|\bthe\s+(?:door|ceremony|close-?out|second\s+half)\b)", re.I),
+    (re.compile(r"\bthen\s+(?:invoke|run|call)\b[^\n]{0,60}?" + _CEREMONY_OBJECT, re.I),
      "sequences the ceremony's own steps as operator work"),
-    (re.compile(r"\brun\b[^\n]{0,50}?(?:\.agents/scripts/|jira_feed\.py|task_preflight\.py"
-                r"|flight_recorder\.py|gate_receipt\.py)", re.I),
+    # ⛔ THIS CEREMONY'S scripts, named. A bare `.agents/scripts/` alternative matched every
+    # script in the repo, and so refused the archetype legitimate row `cmd_finish`'s own
+    # docstring names - "run the memory audit (.agents/scripts/memory_audit.py)". The whole
+    # point of SCC-155 is that such a row HOLDS the ticket; refusing it inverts the feature.
+    (re.compile(r"\brun\b[^\n]{0,50}?\b(?:jira_feed|task_preflight|flight_recorder"
+                r"|gate_receipt|main_write_gate)\.py\b", re.I),
      "asks the operator to run the machinery the ceremony runs"),
 ]
 _CEREMONY_SENTENCE = ("this section holds what only the operator decides; the ceremony's "
@@ -1813,7 +1834,13 @@ def ceremony_rows(text: str) -> list[tuple[str, str]]:
         # The ledger row is SCC-175's, in both tick states. See the boundary note above.
         if is_ledger_row(row):
             continue
-        for pat, why in _CEREMONY_PATTERNS:
+        decision = bool(_DECISION_SUBJECT_RE.match(row))
+        for i, (pat, why) in enumerate(_CEREMONY_PATTERNS):
+            # Pattern 1 (merge x pull request) names no ACT, so a row whose subject is a
+            # decision verb is a decision about the merge, not an assignment of it. Every other
+            # pattern names an act and is judged regardless of how the row opens.
+            if i == 1 and decision:
+                continue
             m = pat.search(row)
             if m:
                 out.append((row, f"{why} - {_CEREMONY_SENTENCE} "

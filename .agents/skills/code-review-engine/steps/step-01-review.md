@@ -1,6 +1,32 @@
 # Step 1 — The lens fan-out
 
+## ⛔ WHO YOU ARE IN THIS STEP: THE ASSESSOR (operator ruling, 2026-08-17)
+
+**Read this before you launch anything.** You are not a reader of reports. You are the one person
+in this process whose job is to decide **what is real**.
+
+> *"The agent's job is to find things, so it always will — this is how we end up in this loop. The
+> agent who assesses the finds has to decide what's real and what's just the agent looking for a
+> flaw to report. We fix actual issues."* — the operator, 2026-08-17
+
+Every lens below is **instructed to be exhaustive** and is judged by what it returns. A lens that
+finds nothing looks like a lens that failed. So **a lens will always return findings, and it will
+always grade its own findings**, and neither of those facts is evidence that anything is broken.
+That is not a flaw in the lenses — it is what makes them useful. It is also why their output is
+**raw material, not a work queue.**
+
+**The failure mode this ruling exists to stop:** the orchestrator treats every returned finding as
+work, fixes them all, and each fix is a new unreviewed edit that the next pass then finds more in.
+Four lenses become an unbounded queue and the lane never closes. Measured on this lane: three
+review passes returned **39 findings**; the ones that changed behaviour were a minority, and the
+rest were lenses doing exactly what they were told to do.
+
+**So: assess, then act. Never act, then assess.** The disposition rule below is binding and it is
+yours alone — no lens, and no severity label a lens assigned, decides it for you.
+
 Launch every lens **in parallel, each in its own clean context.** They do not see this
+conversation, they do not see each other, and none of them sees the builder's reasoning — that
+independence is the entire value of the fan-out. Wall-clock is the slowest lens, not their sum. **in parallel, each in its own clean context.** They do not see this
 conversation, they do not see each other, and none of them sees the builder's reasoning — that
 independence is the entire value of the fan-out. Wall-clock is the slowest lens, not their sum.
 
@@ -28,6 +54,26 @@ literally: an unquoted paragraph pasted into a prompt makes the lens read third-
 about itself, and a blockquote left out drops a rule the lens was supposed to be bound by.
 
 ## The hunter contract — binding on every hunter lens, now and later
+
+> ### Your role, stated plainly — you REPORT, you do not dispose
+>
+> You are one of several independent lenses. **Your job is to find and to report; it is not to
+> decide what gets fixed.** A separate assessor reads every lens's output and rules on what is
+> real. That division is deliberate, and knowing it changes what a good report looks like:
+>
+> - **Do not inflate to be heard.** Your severity is an input to the assessment, not a verdict.
+>   Calling a cosmetic issue `critical` does not get it fixed — it costs your *real* findings
+>   their credibility, because the assessor now has to re-grade everything you sent.
+> - **Do not pad to look thorough.** A report of three reproduced defects is worth more than
+>   thirty observations. "I found nothing in area X" is a genuine, useful result — say it.
+> - **Every finding must carry a concrete failure**: *this input, this state, this wrong output.*
+>   If you cannot state one, you have found a smell, not a defect — label it `nitpick` or leave it
+>   out. Phrases like *"may be"*, *"could lead to"*, *"consider"* and *"is not covered"* mark a
+>   finding the assessor will drop, so spend the effort proving it instead.
+> - **Prefer executing to reasoning.** A finding you reproduced outranks one you inferred, and
+>   saying which you did is part of the finding.
+
+
 
 Append to the prompt of every lens whose `How` cell names this contract — today the Blind Hunter,
 the Edge Case Hunter and the Literal-Correctness Hunter. **The table is the authority, not this
@@ -197,6 +243,26 @@ The prompt text that carries the adaptation:
 
 ## The auditor rubric — Acceptance Auditor and Test-Adequacy Auditor
 
+> ### Your role, stated plainly — you REPORT, you do not dispose
+>
+> You are one of several independent lenses. **Your job is to find and to report; it is not to
+> decide what gets fixed.** A separate assessor reads every lens's output and rules on what is
+> real. That division is deliberate, and knowing it changes what a good report looks like:
+>
+> - **Do not inflate to be heard.** Your severity is an input to the assessment, not a verdict.
+>   Calling a cosmetic issue `critical` does not get it fixed — it costs your *real* findings
+>   their credibility, because the assessor now has to re-grade everything you sent.
+> - **Do not pad to look thorough.** A report of three reproduced defects is worth more than
+>   thirty observations. "I found nothing in area X" is a genuine, useful result — say it.
+> - **Every finding must carry a concrete failure**: *this input, this state, this wrong output.*
+>   If you cannot state one, you have found a smell, not a defect — label it `nitpick` or leave it
+>   out. Phrases like *"may be"*, *"could lead to"*, *"consider"* and *"is not covered"* mark a
+>   finding the assessor will drop, so spend the effort proving it instead.
+> - **Prefer executing to reasoning.** A finding you reproduced outranks one you inferred, and
+>   saying which you did is part of the finding.
+
+
+
 **Both auditors are EXEMPT from Gate 1 and Gate 3, and the exemption is deliberate.** A
 reachability proof is unwritable for a finding whose subject is *absent*: there is no call path to
 a test nobody wrote, and no runtime trace to an acceptance criterion nobody implemented. Demanding
@@ -266,6 +332,39 @@ lens, hunter and auditor alike, after its own contract.
 > severity field, put `severity: <level>` as the first characters of the finding's text. A finding
 > that reaches triage with no severity is read as `suggestion`, which never gates — so an unlabelled
 > `critical` is a `critical` you threw away.
+
+### ⛔ Disposition — the ASSESSOR decides what is real, not the lens (operator ruling, 2026-08-17)
+
+**The ruling, in the operator's words: *"the agent's job is to find things so it always will — this
+is how we end up in this loop. The agent who assesses the finds has to decide what's real and
+what's just the agent finding something to report. We fix actual issues."***
+
+⛔ **A lens's severity label is an INPUT, not a verdict.** Every hunter is told to be exhaustive and
+is measured by what it returns, so it will always return something, and it grades its own work.
+Treating `critical` as an instruction to fix is how a four-lens review becomes an unbounded queue:
+each pass finds more, each fix is a new unreviewed edit, and the lane never closes. **The
+orchestrator running the review is the assessor. Nobody else is.**
+
+**Assess every finding against three questions, in order. All three must be YES to fix.**
+
+1. **Is it REAL?** Can you state the concrete failure — *this input, this state, this wrong
+   output*? A finding phrased as *"may be"*, *"could lead to"*, *"consider"* or *"is not covered"*
+   has not established that anything is broken. **Reproduce it, or drop it.**
+2. **Does it change BEHAVIOUR?** A gate that fails open, a wrong answer, a crash, a refusal of
+   something legitimate, lost data. Naming, structure, wording, a missing test for a branch that
+   is already correct — these do not.
+3. **Is it in THIS lane's diff?** Pre-existing debt in an untouched file is not this task's work.
+
+**Fix what passes all three. Dismiss the rest — including anything a lens called `critical`.** The
+label neither promotes nor protects a finding; the assessment does.
+
+⛔ **"It's cheap" is not a reason.** Twenty cheap fixes is not cheap — it is the review that never
+ends, and every one of them lands *after* the lenses ran, unreviewed.
+
+⛔ **Record the tail in ONE line** in the walkthrough: how many findings came back, how many were
+assessed real and fixed, and that the rest were dismissed under this ruling. Not one line each.
+Name individually only a finding whose ASSESSMENT disagreed with its label, in either direction —
+that is the calibration signal worth carrying forward.
 
 ### How to review — the five moves
 
@@ -449,7 +548,7 @@ forever, and how a real dead lens gets waved through as "just the mode".
 > parent** whose surface it belongs to before it is ever a new Task — the parent's index row goes on
 > with `jira_feed.py index-row` (it reads the description back and refuses if a prior row went
 > missing). **And when no thematic parent fits, it goes on the OPEN ROLLING TICKET** (`Bugs and Updates - <YYYY-MM>`, label `bugs-and-updates`; `SCC-190` today) as a subtask — rung 3
-> since SCC-191.** Mint only for work that is a lane in its own right on day one, and name what you
+> since SCC-191. Mint only for work that is a lane in its own right on day one, and name what you
 > looked at. Judgment, not a gate.
 
 Gather the raw output of every lens that produced one, tagged with which lens said it. Do not

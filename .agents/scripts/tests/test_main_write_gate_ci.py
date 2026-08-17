@@ -349,6 +349,10 @@ def main() -> int:
         def close_out_pr(tmp, *, receipt: dict | None = None, event: bool = True,
                          verdict: bool = True, manifest: bool = True,
                          extra_artifact_commits: int = 0, upper_stamp: bool = False,
+                         raw_receipt: str | None = None, art: str = "",
+                         sibling_branch: str = "", foreign_branch: str = "",
+                         subtask: bool = False,
+                         fenced_decoy: bool = False, second_stamp: bool = False,
                          close_command: str = "smh-close-task-merge-tree"):
             """A lane branch shaped exactly like a real close-out, returned as (work, branch).
 
@@ -358,7 +362,22 @@ def main() -> int:
             """
             work = make_pair(tmp)
             branch = "chore/SCC-9-lane"
-            art = "_artifacts/_main/2026-08-17_scc-9-lane"
+            art = art or "_artifacts/_main/2026-08-17_scc-9-lane"
+            if sibling_branch:
+                # ⛔ ON `main`, BEFORE THE LANE FORKS. What makes the 57 landed manifests
+                # legitimate is that they are UNCHANGED on the base - they only reach the tree
+                # diff because `base` is routinely not the merge-base. A fixture that WRITES
+                # this file on the lane is modelling a mis-declared branch, not landed history,
+                # which is the RED case below.
+                sib = work / "_artifacts/_main/2026-08-17_scc-7-other"
+                sib.mkdir(parents=True, exist_ok=True)
+                (sib / "task.yaml").write_text(
+                    f"task_key: SCC-7\nprimary_repo: work\nbranch: {sibling_branch}\n"
+                    f"close_command: {close_command}\nsecondary_repos: []\n", encoding="utf-8")
+                sh("git", "add", "_artifacts", cwd=work)
+                sh("git", "commit", "-qm", "SCC-7 chore: a lane that already landed [sop-ok]",
+                   cwd=work)
+                sh("git", "push", "-q", "origin", "main", cwd=work)
             sh("git", "checkout", "-q", "-b", branch, "main", cwd=work)
             (work / "docs").mkdir(exist_ok=True)
             (work / "docs/x.md").write_text("the work\n", encoding="utf-8")
@@ -372,8 +391,31 @@ def main() -> int:
                 (d / "task.yaml").write_text(
                     f"task_key: SCC-9\nprimary_repo: work\nbranch: {branch}\n"
                     f"close_command: {close_command}\nsecondary_repos: []\n", encoding="utf-8")
+            if subtask:
+                # ⛔ NOT a manifest. `endswith("task.yaml")` matches this too, and it carries a
+                # door name and no receipt - so a suffix match refuses the PR over a file that
+                # is not the thing being checked.
+                (d / "subtask.yaml").write_text(
+                    f"task_key: SCC-9b\nprimary_repo: work\nbranch: {branch}\n"
+                    f"close_command: {close_command}\nsecondary_repos: []\n", encoding="utf-8")
+            if foreign_branch:
+                # The other half: a manifest THIS PR writes, declaring a branch that is not the
+                # PR's. Nothing landed it; it is a typo or a copied folder, and the old
+                # print-only skip left the close-out entirely ungated on one wrong character.
+                fo = work / "_artifacts/_main/2026-08-17_scc-6-typo"
+                fo.mkdir(parents=True, exist_ok=True)
+                (fo / "task.yaml").write_text(
+                    f"task_key: SCC-6\nprimary_repo: work\nbranch: {foreign_branch}\n"
+                    f"close_command: {close_command}\nsecondary_repos: []\n", encoding="utf-8")
             (d / "walkthrough.md").write_text(
                 "# SCC-9\n\n## Your Actions\n\nNothing owed.\n"
+                # A stamp pasted AS EVIDENCE inside a fence sits at column 0 and matches
+                # VERDICT_RE. `strip_fenced` is the only reason it does not govern, and a
+                # fenced FAIL here would demand a flight event that cannot exist.
+                + ("\n```\nVerdict: FAIL @ 0000000\n```\n" if fenced_decoy else "")
+                # An earlier review, superseded. `stamps[-1]` is what makes the LATEST one
+                # govern; `stamps[0]` would key the event demand on a dead sha.
+                + ("\n## Earlier review\n\nVerdict: CONCERNS @ 1111111\n" if second_stamp else "")
                 + (f"\n## Code Review\n\nVerdict: PASS @ "
                    f"{code_sha.upper() if upper_stamp else code_sha}\n" if verdict else ""),
                 encoding="utf-8")
@@ -389,7 +431,11 @@ def main() -> int:
                 "errors": 0, "warnings": 0, "exit": 0}
             if r.get("verdict_sha") == "AUTO":
                 r["verdict_sha"] = code_sha
-            if r:
+            if raw_receipt is not None:
+                # BYTES, not a dict: `null`, `[1,2]` and `not json at all` are the shapes a
+                # dict fixture structurally cannot produce.
+                (d / "preflight-receipt.json").write_text(raw_receipt, encoding="utf-8")
+            elif r:
                 (d / "preflight-receipt.json").write_text(
                     _json.dumps(r, indent=2, sort_keys=True) + "\n", encoding="utf-8")
             if event and verdict:
@@ -407,9 +453,9 @@ def main() -> int:
             sh("git", "push", "-q", "origin", branch, cwd=work)
             return work, branch
 
-        def pr_rc(work: Path, branch: str) -> tuple[int, str]:
+        def pr_rc(work: Path, branch: str, base: str = "origin/main") -> tuple[int, str]:
             r = subprocess.run([sys.executable, str(SCRIPT), "--mode", "pr", "--repo", str(work),
-                                "--branch", branch, "--base", "origin/main", "--head", "HEAD"],
+                                "--branch", branch, "--base", base, "--head", "HEAD"],
                                cwd=str(work), capture_output=True, text=True, errors="replace")
             return r.returncode, (r.stdout or "") + (r.stderr or "")
 
@@ -510,6 +556,100 @@ def main() -> int:
             rc, out = pr_rc(work, branch)
             c.check("A6b CONTROL: an UPPERCASE verdict stamp still matches its own receipt",
                     rc == 0, out.strip()[-600:])
+
+        # ⛔⛔ A7 · A RECEIPT THAT IS NOT AN OBJECT, IN THE THREE SHAPES A DICT FIXTURE CANNOT
+        # PRODUCE - and `null` was a LIVE FAIL-OPEN when the test-adequacy audit measured it.
+        # `json.loads("null")` is `None`, the guard read `if r is not None`, and so a file of
+        # four bytes recorded no failure at all and satisfied the entire gate. The code above it
+        # said in capitals that this had been fixed; the fix for a different defect
+        # (UnboundLocalError) had silently re-opened it, and no case could tell because every
+        # fixture wrote a real dict or no file. This is the whole reason a guard needs a case.
+        for label, raw, want in (
+                ("null", "null\n", "NoneType, not a receipt object"),
+                ("a JSON array", "[1, 2]\n", "list, not a receipt object"),
+                ("not JSON at all", "clear to merge, trust me\n", "not readable JSON")):
+            with TempDir() as tmp:
+                work, branch = close_out_pr(tmp, raw_receipt=raw)
+                rc, out = pr_rc(work, branch)
+                c.check(f"A7 RED: a receipt containing {label} is refused, and named",
+                        rc != 0 and want in out, out.strip()[-600:])
+
+        with TempDir() as tmp:
+            # ⭐ A8 · THE pr_branch SKIP, WHICH IS A `continue` - i.e. a BYPASS shape. Widening
+            # it turns this gate into a no-op for the lane it exists to judge, and nothing
+            # measured it. Both halves matter: the sibling is spared, AND the reason is printed
+            # so a genuine key/branch mismatch is never silent.
+            # ⛔ `--base origin/main~1`, and that is the REAL shape, not a contrivance: GitHub's
+            # `pull_request.base.sha` is routinely a commit or two behind the merge-base (PR #12's
+            # was one past), which is the ONLY reason a sibling's landed manifest appears in
+            # `base..head` at all. With base == the true merge-base it never reaches the loop,
+            # so a fixture that uses it cannot exercise the skip it is written for.
+            work, branch = close_out_pr(tmp, sibling_branch="chore/SCC-7-other")
+            rc, out = pr_rc(work, branch, base="origin/main~1")
+            c.check("A8 GREEN: another lane's LANDED manifest is skipped, and the skip is SAID",
+                    rc == 0 and "declares `chore/SCC-7-other`" in out and "skipping" in out,
+                    out.strip()[-600:])
+
+        with TempDir() as tmp:
+            # ⛔ A8b · AND THE OTHER HALF, WHICH WAS THE HOLE. The skip is print-only, so a
+            # manifest declaring the WRONG branch produced judged == 0, no fails, and
+            # `[PASS] close-out receipts` - a close-out reaching main with nothing looking at
+            # it, on a one-character typo. "Landed" is what earns the skip, not "declares
+            # something else".
+            work, branch = close_out_pr(tmp, foreign_branch="chore/SCC-6-typo")
+            rc, out = pr_rc(work, branch)
+            c.check("A8b RED: a manifest this PR WRITES for another branch is refused, not skipped",
+                    rc != 0 and "declaring branch `chore/SCC-6-typo`" in out,
+                    out.strip()[-600:])
+
+        with TempDir() as tmp:
+            # A9 · a non-ASCII lane path. git octal-quotes it, `git show` then fails on the
+            # quoted spelling, and the loop `continue`s - the lane is never judged at all. The
+            # lens reproduced that with `_SCC-3-café`; `-c core.quotepath=false` is the fix and
+            # this is the only shape that can see whether it is still there.
+            work, branch = close_out_pr(tmp, art="_artifacts/_main/2026-08-17_scc-9-café",
+                                        event=False)
+            rc, out = pr_rc(work, branch)
+            c.check("A9 RED: a non-ASCII artifacts path is still JUDGED, not silently skipped",
+                    rc != 0 and "flight event" in out.lower(), out.strip()[-600:])
+
+        with TempDir() as tmp:
+            # A10 · `subtask.yaml` ends with "task.yaml". A suffix match makes this PR red over
+            # a file that is not a manifest, and names the wrong file to whoever reads it.
+            work, branch = close_out_pr(tmp, subtask=True)
+            rc, out = pr_rc(work, branch)
+            c.check("A10 GREEN: subtask.yaml is not a manifest (basename, never endswith)",
+                    rc == 0, out.strip()[-600:])
+
+        with TempDir() as tmp:
+            # A11 · the gate's own verdict reader. A FENCED stamp is evidence quoted in prose,
+            # not a verdict; without `strip_fenced` this fenced FAIL @ 0000000 would govern and
+            # demand a flight event at a sha that is not a commit - an unlandable lane, fixable
+            # only by editing a walkthrough that is already on main.
+            work, branch = close_out_pr(tmp, fenced_decoy=True, second_stamp=True)
+            rc, out = pr_rc(work, branch)
+            c.check("A11 GREEN: a fenced decoy does not govern, and the LATEST real stamp does",
+                    rc == 0, out.strip()[-600:])
+
+        # ⭐ A12 · WHAT F6 WAS FOR, PINNED. The blind lens measured this file importing SEVEN
+        # local modules - jira_feed, gate_receipt, hooks_armed, walkthrough_roster and the rest -
+        # to buy one regex and two helpers, so an import-time break anywhere in that chain
+        # became a break in the gate that guards `main`. The primitives moved to `wf_common`
+        # (stdlib-only leaf). Nothing else would notice them moving back: re-adding
+        # `from task_preflight import ...` passes every case in this file.
+        import ast as _ast
+        _tree = _ast.parse((SCRIPT).read_text(encoding="utf-8"))
+        _names = set()
+        for _n in _ast.walk(_tree):
+            if isinstance(_n, _ast.ImportFrom) and _n.level == 0 and _n.module:
+                _names.add(_n.module.split(".")[0])
+            elif isinstance(_n, _ast.Import):
+                _names.update(a.name.split(".")[0] for a in _n.names)
+        _local = {m for m in _names if (SCRIPT.parent / f"{m}.py").is_file()}
+        c.check("A12 the main-write gate imports LEAF modules only (wf_common, sop_currency)",
+                _local == {"wf_common", "sop_currency"},
+                f"local imports: {sorted(_local)} - a heavier chain puts someone else's "
+                f"import-time break in the gate that guards main")
 
         with TempDir() as tmp:
             # A5 · the control that keeps loop 3 shut: no manifest, no demand.
