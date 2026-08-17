@@ -329,7 +329,17 @@ The section carries:
   lenses_run:
   - blind-hunter · ok
   - edge-case-hunter · recovered-inline — fan-out returned nothing, rerun inline
+  lenses_counted:  2/2
+  lenses_na:
+  - <lens> · n/a — <why it was not applicable in this review_mode>
   ```
+
+  ⛔ **`lenses_na` and `lenses_counted` are part of the block, not optional trimmings (SCC-203).**
+  The engine returns four roster fields and this step used to demand one. Since a contaminated
+  Blind Hunter is **DROPPED** rather than faked, `lenses_na` is now the ONLY legal record that it
+  was dropped — `blind-hunter · n/a — context contaminated (<what it held>)` — and `lenses_counted`
+  is what keeps the drop out of the total. Omitting them is how a dropped lens becomes invisible,
+  which is the exact failure the drop rule exists to make visible.
 
   **A `Verdict:` is the review's conclusion; this block is what shows the review happened.** Without
   it the verdict is the only record of itself, and a walkthrough with zero lenses run merges clean —

@@ -48,6 +48,26 @@ RUNTIMES = ("fan-out", "inline")
 _ROSTER_HEAD_RE = re.compile(r"^[>\-*#\s]*\**\s*lenses_run\s*:\**\s*$", re.I)
 _ROSTER_ROW_RE = re.compile(r"^\s*[-*]\s*`?([A-Za-z0-9][\w \-/]*?)`?\s*[·:|]\s*"
                             r"`?(ok|recovered-inline|dead)`?\s*(?:[—\-]\s*(.*))?$", re.I)
+
+# ⛔ THE DROPPED LENS — the one roster state with NO machine reader until now (SCC-203).
+# `step-01-review.md` retired `ok (not blind — context held <what>)` and put a dropped Blind
+# Hunter on `lenses_na:` instead, as `blind-hunter · n/a — context contaminated (<what>)`. That
+# was the right record to write and nothing downstream could read it: `lenses_na:` is a separate
+# field, so the row never reaches `_ROSTER_ROW_RE`, and a lens declared not-applicable was
+# invisible to both preflights. The hole that opens is exact — under `review-runtime: fan-out` a
+# clean subagent context exists BY CONSTRUCTION, so "my context is contaminated" cannot be true;
+# a caller that writes it anyway skips the highest-value lens in the set and gates green. The
+# whole SCC-203 ruling is that a roster may not claim more independence than the review had, and
+# an unread `n/a` claims exactly that.
+_NA_HEAD_RE = re.compile(r"^[>\-*#\s]*\**\s*lenses_na\s*:\**\s*(.*)$", re.I)
+# ⛔ THE SEPARATOR NEEDS ITS SPACES. A lens name legitimately contains a hyphen (`blind-hunter`),
+# and the reason separator may be written as one, so an unspaced `[—-]` lets the engine split the
+# NAME: non-greedy group 1 settles on `blind`, and `hunter · n/a — ...` becomes the reason. That
+# parses, reports a lens nobody has, and still looks reasoned. Requiring whitespace on BOTH sides
+# makes the internal hyphen unmatchable and the real separator unambiguous.
+_NA_ROW_RE = re.compile(r"^\s*(?:[-*]\s+)?`?([A-Za-z0-9][\w /-]*?)`?"
+                        r"(?:\s*[·:|]\s*`?n/a`?)?"
+                        r"(?:\s+[—–-]\s+(.*))?\s*$", re.I)
 # ⛔ BOTH SPELLINGS, DELIBERATELY. The caller contract names the input `review_runtime` (house
 # style, matching `review_mode` and `lens_budget`); the walkthrough header is written
 # `review-runtime:`. An agent reading the contract and writing the header will sometimes carry the
@@ -141,6 +161,33 @@ def parse(text: str) -> dict:
         if found:
             lenses = found
 
+    # `lenses_na:` in either shape the contract permits: inline on the header line
+    # (`lenses_na: none`, `lenses_na: blind-hunter · n/a — ...`) or a block of rows beneath it.
+    # "none" is the normal answer and means exactly zero dropped lenses.
+    na: list[dict] = []
+    for i, ln in enumerate(lines):
+        m = _NA_HEAD_RE.match(ln)
+        if not m:
+            continue
+        found_na: list[dict] = []
+        inline_val = (m.group(1) or "").strip()
+        rows = ([inline_val] if inline_val else []) + list(lines[i + 1:])
+        for row in rows:
+            if not row.strip() or row.lstrip().startswith("#"):
+                break
+            if row is not inline_val and not row.lstrip().startswith(("-", "*")):
+                break
+            if row.strip().lower().strip("`*") in ("none", "n/a", "-"):
+                continue
+            rm = _NA_ROW_RE.match(row)
+            if not rm:
+                break
+            found_na.append({"lens": rm.group(1).strip(),
+                             "reason": (rm.group(2) or "").strip()})
+        if found_na:
+            na = found_na
+        break
+
     rt = _RUNTIME_RE.search(text)
 
     rederived = 0
@@ -155,6 +202,7 @@ def parse(text: str) -> dict:
         break
 
     return {"lenses": lenses,
+            "lenses_na": na,
             "runtime": rt.group(1).lower() if rt else None,
             "rederive_lines": rederived}
 
@@ -205,6 +253,30 @@ def judge(text: str, path: Path | str, verdict: str | None,
             f"Verdict PASS with {len(dead)} DEAD lens/lenses ({', '.join(dead)}). A dead lens "
             f"saw nothing, so it cannot support a PASS. The engine's floor for a still-dead "
             f"lens is CONCERNS - record that instead; CONCERNS + dead is consistent and passes.")
+        return False, reasons
+
+    na = data["lenses_na"]
+    if na and data["runtime"] == "fan-out":
+        # ⛔ SCC-203. A lens may be DROPPED only when the order cannot protect it, and under a
+        # declared fan-out it always can: a subagent starts with a clean context by construction,
+        # so "my context is contaminated" is not a statement this runtime can make. Dropping the
+        # Blind Hunter here removes the only lens whose value comes from starvation and reports
+        # the result as a full review - the exact claim the ruling forbids.
+        reasons.append(
+            f"header says `review-runtime: fan-out` but {len(na)} lens/lenses are recorded "
+            f"`n/a` ({', '.join(l['lens'] for l in na)}). A dropped lens is legal only under "
+            f"`inline`, where the builder's own context is the reason; a fan-out gives every "
+            f"lens a clean context, so run it or declare the runtime honestly.")
+        return False, reasons
+
+    unreasoned = [l["lens"] for l in na if len(l["reason"]) < 4]
+    if unreasoned:
+        # The reason IS the evidence. `blind-hunter · n/a` alone is indistinguishable from a lens
+        # nobody bothered to run, which is what step-01 requires the `(<what it held>)` clause for.
+        reasons.append(
+            f"{len(unreasoned)} lens/lenses recorded `n/a` with no reason "
+            f"({', '.join(unreasoned)}). Record why the order could not protect it - "
+            f"`<lens> · n/a - context contaminated (<what it held>)`.")
         return False, reasons
 
     if data["runtime"] == "inline" and any(l["state"] == "ok" for l in lenses):

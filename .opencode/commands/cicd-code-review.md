@@ -117,7 +117,7 @@ the operator to remember. Where a directive gates subagent use on being asked, t
 asking — you do not stop and put the question to the operator, and you never quietly downgrade to
 `inline` to avoid it. **Only a runtime with no subagent tool at all is `inline`.**
 
-And if you are `inline` while holding this story's plan and walkthrough, the engine **drops** the
+And if you are `inline` while holding this lane's plan and walkthrough, the engine **drops** the
 Blind Hunter rather than faking it — see step-01 § *When the order CANNOT protect it*. A roster is
 not allowed to claim a review was more independent than it was.
 
@@ -314,7 +314,17 @@ new one. The section carries:
   lenses_run:
   - blind-hunter · ok
   - edge-case-hunter · recovered-inline — fan-out returned nothing, rerun inline
+  lenses_counted:  2/2
+  lenses_na:
+  - <lens> · n/a — <why it was not applicable in this review_mode>
   ```
+
+  ⛔ **`lenses_na` and `lenses_counted` are part of the block, not optional trimmings (SCC-203).**
+  The engine returns four roster fields and this step used to demand one. Since a contaminated
+  Blind Hunter is **DROPPED** rather than faked, `lenses_na` is now the ONLY legal record that it
+  was dropped — `blind-hunter · n/a — context contaminated (<what it held>)` — and `lenses_counted`
+  is what keeps the drop out of the total. Omitting them is how a dropped lens becomes invisible,
+  which is the exact failure the drop rule exists to make visible.
 
   **A `Verdict:` is the review's conclusion; this block is what shows the review happened.** Without
   it the verdict is the only record of itself, and a walkthrough with zero lenses run merges clean —

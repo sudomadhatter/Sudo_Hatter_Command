@@ -1266,14 +1266,23 @@ def main() -> int:
     # and it protects the blind lens by ORDER instead (splitting its ingests so the lens runs
     # before any context lands). Holding it to "subagents are the default" would be law it cannot
     # obey - a rule nobody can follow is a rule that teaches everyone to ignore rules.
-    def subagent_law(rel: str) -> str:
-        """The capability-vs-policy paragraph and the request clause, whitespace-normalised."""
-        txt = texts.get(rel, "")
+    # ⭐ THREE paragraphs, not two. The `rather than faking it` clause — where an `inline` caller
+    # holding the plan DROPS the Blind Hunter — was carried by both callers and pinned by nothing:
+    # no CHECKS row named it, and this extractor did not match it, so either caller could have
+    # lost the consequence while every check stayed green. It is part of the same law (what a
+    # runtime answer OBLIGES), so it belongs in the same byte-identity comparison.
+    def _law_of(txt: str) -> str:
         out = []
         for para in txt.split("\n\n"):
-            if "**capability**" in para or "IS** that request" in para:
+            if ("**capability**" in para or "IS** that request" in para
+                    or "rather than faking it" in para):
                 out.append(" ".join(para.split()))
         return "\n".join(out)
+
+    def subagent_law(rel: str) -> str:
+        """The capability-vs-policy paragraph, the request clause, and the drop clause,
+        whitespace-normalised."""
+        return _law_of(texts.get(rel, ""))
 
     smh_law, cicd_law = subagent_law(SMH_CMD), subagent_law(CICD_CMD)
     c.check("SCC-203 the smh caller states the subagent law at all",
@@ -1282,6 +1291,29 @@ def main() -> int:
             bool(cicd_law) and smh_law == cicd_law,
             "the two interactive callers disagree about when a review may run inline; "
             f"smh={len(smh_law)}b cicd={len(cicd_law)}b")
+    # ⛔ ALL THREE CLAUSES, NAMED. Byte-identity is satisfied by two files that are equally
+    # WRONG — drop the drop-clause from both and this still passes. So assert each clause is
+    # actually in the extracted law, or the comparison above guards an empty agreement.
+    for clause, why in (("**capability**", "capability-vs-policy"),
+                        ("IS** that request", "invoking the command IS the request"),
+                        ("rather than faking it", "a contaminated Blind Hunter is DROPPED")):
+        c.check(f"  ^ the law includes the {why} clause",
+                clause in smh_law and clause in cicd_law,
+                f"missing from {'smh' if clause not in smh_law else 'cicd'} caller")
+    # ⛔ AND THE COMPARISON'S OWN COUNTER-EXAMPLE — same discipline as section 2's CHECKS rows.
+    # Two pins plus an equality still prove nothing about whether that equality can BREAK. A
+    # `_law_of` that matched nothing would return "" for both files and compare equal, and a
+    # `_law_of` that matched every paragraph would compare two whole files that legitimately
+    # differ. Perturbing one caller must make them disagree, and a law-less text must extract
+    # empty — together those bound the extractor from both sides.
+    drifted = _law_of(texts.get(CICD_CMD, "").replace(
+        "Subagents are the DEFAULT", "Subagents are optional", 1))
+    c.check("  ^ counter-example: a twin that drifts on the law is caught",
+            bool(drifted) and drifted != smh_law,
+            "perturbing the cicd law left it byte-identical — the drift check cannot fail")
+    c.check("  ^ counter-example: a caller with NO law extracts empty (not a false match)",
+            _law_of("# A command\n\nIt does a thing.\n\nThen another thing.") == "",
+            "the extractor matches arbitrary prose, so agreement means nothing")
 
     # ── 2b. SCC-147: CALLER_FILES is the COMPLETE set of engine callers ───────────────────
     # The checks above pin the three callers that exist today, one hand-written row each. That

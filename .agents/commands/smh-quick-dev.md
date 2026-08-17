@@ -64,8 +64,8 @@ or found again.
 
 **⭐ Probe the review runtime here, at Step 0, and record it (SCC-177).** Ask this runtime whether it
 can fan out to subagents — do not answer from what usually happens, because a headless pipeline or
-a platform with no subagent tool makes the answer `inline`, and
-each is invisible until a lens fails to launch three steps later. The answer goes into the
+a platform with no subagent tool makes the answer `inline`, and both are invisible until a lens
+fails to launch three steps later. The answer goes into the
 walkthrough header Step 5 writes, on its own line, above everything else:
 
 ⛔ **The probe is a **capability**, never a **policy** (SCC-203).** *Does a subagent tool exist in
