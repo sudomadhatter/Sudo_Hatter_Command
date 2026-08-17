@@ -1305,6 +1305,18 @@ def main() -> int:
         c.check("U3 ...on a word boundary, never mid-word",
                 LONG.startswith(kept) and LONG[len(kept):len(kept) + 1] == " ",
                 f"kept={kept[-25:]!r} next={LONG[len(kept):len(kept) + 1]!r}")
+        # ⛔ U3b · AND A STRING THE HARD CUT ACTUALLY SPLITS. `LONG` above is a lucky one:
+        # its 132nd character lands just after a full stop, so `rstrip` leaves a clean word
+        # boundary even with the boundary search DELETED - the mutant survived twice against
+        # a case written to catch it. This string puts a long word ACROSS the cut, so only a
+        # real backward search can end cleanly. (25x "word " = 125 chars, then a 27-letter
+        # word, so index 132 is seven letters into it.)
+        SPLIT = ("word " * 25) + "antidisestablishmentarianism is the tail"
+        kept2 = ag_description(SPLIT)[:-3]
+        c.check("U3b ...even when a long word straddles the cut point",
+                SPLIT.startswith(kept2) and SPLIT[len(kept2):len(kept2) + 1] == " "
+                and "antidis" not in kept2,
+                f"kept={kept2[-30:]!r} next={SPLIT[len(kept2):len(kept2) + 1]!r}")
         c.check("U4 ...and re-cutting it changes nothing (the sync is idempotent)",
                 ag_description(cut) == cut, ag_description(cut))
         c.check("U5 ...and it stays ASCII (PS 5.1 writes these literals from a BOM-less .ps1)",
@@ -1333,6 +1345,17 @@ def main() -> int:
         # what SCC-195 bought), so a regression shows as a number rather than as silence.
         c.check("U6b ...and it read a real number of doors (not a silent empty sweep)",
                 measured >= 30, f"only {measured} workflow descriptions read")
+        # ⛔ U6d · THE TEETH CONTROL. U6 sweeps the LIVE tree, where a passing run is by
+        # definition a run with nothing to report - so a detector that stopped recording
+        # offenders entirely would read exactly like a clean tree, and did (U-M4 survived
+        # both earlier rounds). The predicate is re-run here against a fabricated over-budget
+        # door, where it MUST fire. A live sweep and a synthetic offender together are what
+        # make "0 over budget" mean something.
+        fake = "x" * (AG_DESC_MAX + 1)
+        c.check("U6d CONTROL: the same predicate FIRES on a fabricated over-budget door",
+                len(fake) > AG_DESC_MAX and ag_description(fake) != fake
+                and len(ag_description(fake)) <= AG_DESC_MAX,
+                f"a {len(fake)}-char description must not survive the budget")
         c.check("U6c ...and the whole menu payload stays under the budget it was cut to",
                 total <= measured * AG_DESC_MAX and total < 6000,
                 f"{measured} descriptions, {total} chars total (was 13,883 before SCC-195)")

@@ -25,15 +25,15 @@
       "file": ".agents/scripts/tests/test_command_surfaces.py",
       "original": "    cut = desc[:AG_DESC_CUT]\n    if \" \" in cut:\n        cut = cut[:cut.rindex(\" \")]",
       "mutated": "    cut = desc[:AG_DESC_CUT]\n    if False:\n        cut = cut[:cut.rindex(\" \")]",
-      "case": "U3 ...on a word boundary, never mid-word",
+      "case": "U3b ...even when a long word straddles the cut point",
       "block": "SCC-195"
     },
     {
-      "id": "U-M4 the budget loop stops recording offenders (the vacuous sweep)",
+      "id": "U-M4 the budget rule stops cutting at all (the vacuous live sweep)",
       "file": ".agents/scripts/tests/test_command_surfaces.py",
-      "original": "            if len(d) > AG_DESC_MAX:\n                over.append(f\"{wf_door.name} ({len(d)})\")",
-      "mutated": "            if len(d) > AG_DESC_MAX and False:\n                over.append(f\"{wf_door.name} ({len(d)})\")",
-      "case": "U6 every .agents/workflows door fits Antigravity's menu budget",
+      "original": "    if len(desc) <= AG_DESC_MAX:\n        return desc",
+      "mutated": "    if True:\n        return desc",
+      "case": "U6d CONTROL: the same predicate FIRES on a fabricated over-budget door",
       "block": "SCC-195"
     },
     {
