@@ -92,7 +92,9 @@ For each eligible lane, in the Step 3 order:
 2. **Post-merge gate, still inside the worktree:** this story's red file(s) (now green), the
    touched-surface tier for its stack, and already-landed siblings' red files on shared surfaces
    (their tripwires stay green). Project's canonical runners (testing-standards / pitfalls — e.g.
-   AGY: `backend\.venv\Scripts\python.exe -m pytest` scoped · `npx vitest run <paths>`), suites
+   AGY: `"$VENV"/python -m pytest` scoped, where `VENV=backend/.venv/bin` on this Mac and
+   `backend/.venv/Scripts` on the PC — **resolve it, never hardcode either** (`code-standards` §6) ·
+   `npx vitest run <paths>`), suites
    **sequentially, never several lanes' at once** (concurrent runs starve each other and fake
    failures). **Red → fix in THIS worktree** (explicit paths), commit, re-run; a lane that cannot
    go green is skipped per Step 2 and the set continues.

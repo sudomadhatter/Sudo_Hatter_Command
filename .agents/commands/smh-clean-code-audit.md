@@ -27,7 +27,7 @@ Checks a **Task diff** against the two documents that define clean *here*:
 if a standard moved, the audit moves with it.
 
 > **Why this is not `/cicd-clean-code-audit`.** That command's machine floor is
-> `backend/.venv/Scripts/python.exe -m ruff`, `npm run lint`, `pyrefly`, `tsc` — **none of which exist
+> the project venv's `ruff`, `npm run lint`, `pyrefly`, `tsc` — **none of which exist
 > in the command centre.** There is no venv, no `backend/`, no `frontend/`, no `package.json`. Run it
 > here and every check reports SKIPPED, which under its own rules is *"a check that did not run is not
 > a check that passed"* — a floor made entirely of holes. The lobby has a real machine floor; it is

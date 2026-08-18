@@ -56,7 +56,9 @@ gcloud logging read "resource.type=cloud_run_revision AND resource.labels.servic
 If the logs show a code error, Google Cloud is protecting the live environment from a bad push.
 1. **Replicate Locally**: Run the local test suite to catch the exact error.
    ```powershell
-   .venv\Scripts\python.exe -m pytest backend/tests/ -v
+   # the venv bin dir is per-machine - bin/ on POSIX, Scripts/ on Windows (code-standards §6)
+   VENV=.venv/bin; [ -d "$VENV" ] || VENV=.venv/Scripts
+   "$VENV"/python -m pytest backend/tests/ -v
    ```
 2. **Fix the Code**: Address the syntax error, missing dependency, or logic bug locally.
 3. **Push to Main**: Commit and push the fix to `main` to trigger the CI/CD pipeline again.

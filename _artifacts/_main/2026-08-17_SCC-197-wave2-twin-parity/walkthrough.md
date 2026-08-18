@@ -225,3 +225,54 @@ it returned exit **0**.
 
 ⛔ Every gate was run **bare**, exit code read immediately — the rule this lane just wrote. The first
 run of the lint in this session was piped through `tail` and lost its exit code entirely.
+
+---
+
+## SCC-205 follow-on — the both-machines class, swept and guarded
+
+**Operator, 2026-08-18:** *"yeah we are on a mac now so thats not good."*
+
+The Part E hoist fixed the venv path in **two** places (`code-standards.md` §6 and
+`cicd-clean-code-audit.md` Step 1). A sweep of every authored surface found **five more live
+invocations** — the fix was right and the scope was not.
+
+| Surface | What it was, and why it mattered |
+|---|---|
+| ⛔⛔ `cicd-close-workingtree.md` Step 4 | `backend/.venv/Scripts/python.exe --version` — the probe that verifies shared assets **survived**, sitting on the **destructive** path. The very next line says *"Any failure here → STOP and report immediately. A destroyed shared asset breaks every other lane."* On the Mac the path does not exist, so **every Mac close-out would report a destroyed venv that was never touched.** A probe that cries wolf on the one step guarding an irreversible delete is a probe people learn to skip. |
+| `cicd-merge-epic-workingtrees.md` | the per-lane post-merge test gate, `Scripts\python.exe -m pytest` — the gate that decides whether a lane lands. |
+| `cicd-live-testing-team.md` | `Scripts\uvicorn` — the backend never starts. |
+| `cicd-mobile-error-team.md` | `Scripts\python.exe -m pytest`. |
+| `troubleshoot-cloudrun-deployment/SKILL.md` | `.venv\Scripts\python.exe -m pytest`. |
+| `smh-clean-code-audit.md` | descriptive only (it names the cicd floor to say the lobby has none of it) — corrected for accuracy. |
+
+**11 hardcoded occurrences before, 0 after** (measured by the `E6` assertion against `49153af`).
+
+### The guard, because a fix with no guard is what let this rot
+
+`workflow_lint.check_both_machines()` warns on a hardcoded `.venv/Scripts` with **no POSIX arm on the
+line beside it**, over `.agents/{commands,rules,skills}`.
+
+⛔ **The line-pair off-switch is the whole design.** A file may legitimately name the Windows path
+three ways — as the Windows **arm of a conditional**, as **prose explaining the rule**, or as a **test
+fixture** — and all three carry the POSIX spelling within a line of the hit, while a hardcoded
+invocation does not. Keying on the *file* would exempt whole documents; keying on the *line pair* asks
+the question the rule actually cares about: *did the author think about the other machine HERE.*
+Getting this wrong is the `comment-literals-invert-source-grep-tests` disease, where the guard fires on
+the document that states the law correctly.
+
+**Seven cases, and the three look-alikes are each a negative control** — plus `G`, which runs the
+detector over the **live tree**, because all six fixture rows could be green with the whole class back
+on `main`.
+
+**Mutation proof:** deleting the two-line off-switch turns **B, C, D, E and G** red at once — the
+controls are not vacuous agreement, and `G` catches the real regression. Restored: 47/47.
+
+### Gates
+
+| Gate | Result |
+|---|---|
+| `run_all.py` | **34/34 files passed, exit 0** (`test_workflow_lint.py` 40 → 47 cases) |
+| `workflow_lint.py --toolkit-only` | **0 errors, 0 warnings, exit 0** — silent on the fixed tree |
+| `assert-scc205.sh` | **18/18 PASS**; E6 was `11` and E7 was `0` against `49153af` |
+| mutation on `check_both_machines` | off-switch removed → 5 rows red, restored → 47/47 |
+| `/smh-sync-agents` | exit 0 |

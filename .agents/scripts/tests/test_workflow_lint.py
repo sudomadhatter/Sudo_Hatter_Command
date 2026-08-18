@@ -280,6 +280,67 @@ def main() -> int:
                 len(ap_files) == 3 and not unmarked,
                 f"found={[f.name for f in ap_files]} unmarked={unmarked}")
 
+        # ── SCC-205: the WINDOWS-ONLY invocation ─────────────────────────────
+        # The venv bin dir is the one path that differs on every tool call between the two
+        # machines this system runs on. Five authored surfaces hardcoded `Scripts/`, and the
+        # worst of them was `cicd-close-workingtree`'s Step 4 probe: it guards an
+        # IRREVERSIBLE delete, and on the Mac it reported a destroyed shared venv that was
+        # never touched. A probe that cries wolf on the destructive step is one people learn
+        # to skip.
+        #
+        # ⛔ THE THREE LOOK-ALIKES ARE THE WHOLE DIFFICULTY, and each gets a control below.
+        # A file may legitimately name the Windows path as the Windows ARM of a conditional,
+        # as PROSE explaining the rule, or as a test FIXTURE. Without those controls the
+        # check fires on the documents that state the law correctly - the same disease as
+        # `comment-literals-invert-source-grep-tests`, where the guard punishes the author
+        # who wrote it down.
+        bm = tmp / "bothmachines"
+        cmds = bm / ".agents/commands"
+        cmds.mkdir(parents=True)
+        (cmds / "hardcoded.md").write_text(
+            "---\ndescription: x\n---\n"
+            "Run `backend/.venv/Scripts/python.exe -m pytest`.\n", encoding="utf-8")
+        (cmds / "conditional.md").write_text(
+            "---\ndescription: x\n---\n"
+            "```bash\nVENV=backend/.venv/bin; [ -d \"$VENV\" ] || VENV=backend/.venv/Scripts\n```\n",
+            encoding="utf-8")
+        (cmds / "prose.md").write_text(
+            "---\ndescription: x\n---\n"
+            "A venv puts its executables in `.venv/Scripts/` on Windows and `.venv/bin/` on POSIX.\n",
+            encoding="utf-8")
+        (cmds / "adjacent.md").write_text(
+            "---\ndescription: x\n---\n"
+            "# the venv bin dir differs per machine - POSIX first\n"
+            "$PY = \"$ROOT/backend/.venv/bin/python3\"\n"
+            "if (-not (Test-Path $PY)) { $PY = \"$ROOT/backend/.venv/Scripts/python.exe\" }\n",
+            encoding="utf-8")
+        rep = wf.Report()
+        lint.check_both_machines(bm, rep)
+        bmsg = " ".join(i["msg"] for i in rep.items if i["section"] == "both-machines")
+        c.check("SCC-205 A a hardcoded Windows venv path is reported",
+                "hardcoded.md" in bmsg, bmsg[:160])
+        c.check("SCC-205 B the Windows ARM of a conditional is NOT reported",
+                "conditional.md" not in bmsg,
+                "" if "conditional.md" not in bmsg else bmsg[:200])
+        c.check("SCC-205 C prose stating the rule is NOT reported",
+                "prose.md" not in bmsg,
+                "" if "prose.md" not in bmsg else bmsg[:200])
+        c.check("SCC-205 D a POSIX arm on the LINE ABOVE silences it",
+                "adjacent.md" not in bmsg,
+                "" if "adjacent.md" not in bmsg else bmsg[:200])
+        c.check("SCC-205 E exactly ONE offender - the check is not firing on everything",
+                len([i for i in rep.items if i["section"] == "both-machines"]) == 1,
+                bmsg[:200])
+        c.check("SCC-205 F the message names the fix, not just the sin",
+                "code-standards" in bmsg and "VENV=" in bmsg, bmsg[:200])
+        # G. THE LIVE TREE. Every case above runs on fixtures, so the whole class could be
+        #    back on `main` with all six green. `real` is the lobby root, bound above.
+        rep = wf.Report()
+        lint.check_both_machines(real, rep)
+        c.check("SCC-205 G the live tree hardcodes the Windows venv path NOWHERE",
+                not [i for i in rep.items if i["section"] == "both-machines"],
+                str([i["msg"] for i in rep.items])[:300])
+
         # ── SCC-128: the resurrection lint ───────────────────────────────────
         # The vendor `bmad-code-review` skill is RETIRED in favour of the house
         # `code-review-engine`, but BMAD's installer re-emits the vendor skill on every

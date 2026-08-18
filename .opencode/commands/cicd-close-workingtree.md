@@ -272,10 +272,19 @@ Run this before touching any branch. The unlink in 3a and a destructive follow-t
 bare existence check for the moment between them, so **probe, don't just `Test-Path`**:
 
 ```powershell
-PROJECT_ROOT/backend/.venv/Scripts/python.exe --version              # must print a version
-@(Get-ChildItem PROJECT_ROOT/frontend/node_modules -Force).Count     # must be non-zero
-@(Get-ChildItem PROJECT_ROOT/firebase/tests/node_modules -Force).Count
+# ⛔ The venv bin dir is PER-MACHINE - POSIX puts it in bin/, Windows in Scripts/ (code-standards §6).
+$PY = "$PROJECT_ROOT/backend/.venv/bin/python3"
+if (-not (Test-Path $PY)) { $PY = "$PROJECT_ROOT/backend/.venv/Scripts/python.exe" }
+& $PY --version                                                      # must print a version
+@(Get-ChildItem $PROJECT_ROOT/frontend/node_modules -Force).Count     # must be non-zero
+@(Get-ChildItem $PROJECT_ROOT/firebase/tests/node_modules -Force).Count
 ```
+
+⛔ **This probe hardcoded the WINDOWS path until SCC-205, and it sits on the DESTRUCTIVE path.** On the
+Mac `Scripts/python.exe` does not exist, so the probe failed, and the very next line says *"Any failure
+here → STOP and report immediately... A destroyed shared asset breaks every other lane."* Every Mac
+close-out would have reported a destroyed venv that was never touched — and a probe that cries wolf on
+the one step guarding an irreversible delete is a probe people learn to skip.
 
 Any failure here → **STOP and report immediately.** A destroyed shared asset breaks every other lane on the
 machine, and it is recoverable only if someone knows it happened.

@@ -191,6 +191,45 @@ def check_retired_review_surface(lobby: Path, rep: wf.Report) -> None:
                         f"(SCC-128)")
 
 
+# SCC-205 - the WINDOWS-ONLY invocation. This system is driven from two machines and the
+# venv bin dir is the one path that differs on every single tool call: `Scripts/` on Windows,
+# `bin/` on POSIX. Five authored surfaces hardcoded the Windows form, including
+# `cicd-close-workingtree`'s Step 4 probe - which sits on the DESTRUCTIVE path and, on the
+# Mac, reported a destroyed shared venv that was never touched.
+#
+# ⛔ THE OFF-SWITCH IS ON THE SAME LINE OR THE ONE BESIDE IT, and that is deliberate. Files
+# legitimately NAME the Windows path in three ways: as the Windows arm of a conditional
+# (`|| VENV=backend/.venv/Scripts`), as prose explaining the rule (`Scripts/ on Windows,
+# bin/ on POSIX`), and as a fixture in a test. All three carry the POSIX spelling within a
+# line of the hit, and an invocation that has simply hardcoded Windows does not. Keying on
+# the file would exempt whole documents; keying on the line pair is what makes the
+# distinction the rule actually cares about - "did the author think about the other machine
+# HERE" - rather than "does this file mention POSIX anywhere".
+_WINDOWS_VENV = re.compile(r"\.venv[\\/]Scripts\b")
+_POSIX_AWARE = re.compile(r"\.venv[\\/]bin\b|POSIX|\bbin/\b")
+
+
+def check_both_machines(lobby: Path, rep: wf.Report) -> None:
+    """A hardcoded Windows venv path with no POSIX arm beside it (`code-standards` §5/§6)."""
+    for sub in ("commands", "rules", "skills"):
+        root = lobby / ".agents" / sub
+        if not root.is_dir():
+            continue
+        for f in sorted(root.rglob("*.md")):
+            lines = wf.read_text(f).split("\n")
+            for i, line in enumerate(lines):
+                if not _WINDOWS_VENV.search(line):
+                    continue
+                window = "\n".join(lines[max(0, i - 1):i + 2])
+                if _POSIX_AWARE.search(window):
+                    continue
+                rep.warn("both-machines",
+                         f"{f.relative_to(lobby)}:{i + 1}: hardcodes the WINDOWS venv path "
+                         f"(`.venv/Scripts`) with no POSIX arm beside it - it dies on the "
+                         f"Mac. Resolve it: `VENV=backend/.venv/bin; [ -d \"$VENV\" ] || "
+                         f"VENV=backend/.venv/Scripts` (code-standards §6)")
+
+
 # Vendor BMAD bridges keep their upstream names and take no prefix. This list is
 # CLOSED: widening it is how the convention dies one exception at a time. A new
 # command belongs to cicd- (one project, never the lobby) or smh- (may act on the
@@ -459,6 +498,7 @@ def main() -> int:
     if lobby:
         check_commands(lobby, rep)
         check_rule_pointers(lobby, rep)
+        check_both_machines(lobby, rep)
         check_naming_law(lobby, rep)
         check_retired_review_surface(lobby, rep)
         scan += [(f"commands/{f.name}", f)

@@ -68,4 +68,14 @@ for r in artifacts-always-first code-standards tests-must-gate-for-real constitu
 done
 atleast "E5 more than one rule names the memory store" "$n" "2"
 
+# ── The both-machines class (operator, 2026-08-18: "we are on a mac now so thats not good") ──
+chk "E6 no authored surface hardcodes the Windows venv path" \
+    "$(for f in $(git -C "$LOBBY" ls-files '.agents/commands/*.md' '.agents/rules/*.md' '.agents/skills/**/*.md'); do
+         src "$f" | grep -n '\.venv[\\/]Scripts' | while IFS=: read -r n _; do
+           src "$f" | sed -n "$((n>1?n-1:1)),$((n+1))p" | grep -q 'bin\|POSIX' || echo "$f:$n"
+         done
+       done | wc -l | tr -d ' ')" "0"
+chk "E7 the lint carries the guard that keeps it that way" \
+    "$(src .agents/scripts/workflow_lint.py | grep -c 'def check_both_machines')" "1"
+
 exit $fail
