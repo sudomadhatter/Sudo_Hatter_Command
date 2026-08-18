@@ -58,6 +58,20 @@ step with a "flip to hard gate later" comment READS as a temporary measure. All 
      *relocate, never delete* technique now lives, alongside the shape it does not transfer to and the
      two rules that bind every mutant whatever its shape.
 
+5. **A gate that cannot fail is a finding — and shipping one is a FAIL, not a note.** Report-only
+   jobs, `|| true`, `continue-on-error`, a check whose EMPTY input reads as a pass, a `grep` guard that
+   matches its own explanatory comment: each of these reports green having verified nothing, which is
+   strictly worse than no gate, because the green is read as evidence. **Prove a new check both
+   REJECTS and ALLOWS** — one half is not a gate. A check seen passing but never seen failing is a
+   description of intent, not a gate. (House incident: a fiction spec rode to production behind a
+   report-only E2E job that had never once been red.)
+6. **Run gates BARE — a pipe returns the PIPE's exit code, not the gate's.** `run_all.py | tail -5`
+   exits 0 when `tail` succeeds, however red the suite was, and `set -o pipefail` is not on by default
+   in the shell an agent spawns. Run the gate on its own line, read `$?` immediately, and redirect to a
+   file if you need to trim the output: `gate > out.txt 2>&1; echo "EXIT=$?"`. The same trap wears two
+   other hats — `cmd && other` loses the code the same way, and `zsh` does not word-split an unquoted
+   argument string, so a gate invoked through a variable can silently receive one long argument.
+
 ## Mutation Testing — proving a check can actually fail
 
 A test you have never seen fail is a claim, not a check. **Mutation is how the claim gets tested:**

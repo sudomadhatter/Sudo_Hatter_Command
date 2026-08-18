@@ -82,3 +82,146 @@ Two more files went red for real reasons and both were expected consequences, no
 | `python3 .agents/scripts/workflow_lint.py --toolkit-only` | **0 errors, 0 warnings, exit 0** |
 | `assert-partA.sh` | 6/6 PASS, exit 0 |
 | `/smh-sync-agents` | exit 0 — 21 launcher skills, 56 opencode commands, 35 antigravity workflows |
+
+---
+
+## SCC-205 — Parts B–E · the vehicle, the safety defects, the guard, the hoists
+
+**Scope, per the plan:** this lane builds the **mechanism** that keeps the two families aligned. It
+does not port command content — that is SCC-212's 84-item backlog, which lands *after* Part E because
+a hoisted rule plus a pointer replaces N copies and shrinks it.
+
+### Part B — the vehicle
+
+`cicd-code-review.md` and `cicd-self-audit.md` carried **no "Rules in force for this command" block at
+all**, which is the mechanism by which a rule reaches a command — so nothing hoisted in Part E could
+have reached them. Both now carry one, mirroring their smh twins minus subject-forced entries, plus
+`smh-target-resolution.md`, the cicd-only pointer.
+
+⚠ **A plan claim corrected by measurement.** The plan said these were "the only 2 of 26 commands
+without one". Re-measured at `86daaaf`: **12 cicd and 5 smh commands** lack it. The two named are
+still the two Part E needs, so the fix stands unchanged — but the class is larger than the plan said,
+and the rest belongs to SCC-212 rather than being quietly swept in here.
+
+### Part C — the safety defects in `cicd-quick-dev` (the command doing real project work)
+
+| # | Was | Now |
+|---|---|---|
+| **C1** | Step 0.5 authorised a chore branch *"merged back to `main` in the same session with Daniel's sign-off"*, naming **no door** — while the file's own Done section says "never touch `main`". An agent reading it literally merges to production. | The same-session merge language is gone. A door table names what actually exists per lane, and the paragraph states plainly that this lane never merges. |
+| **C1b** | — | ⚠ **The gap is stated, not filled.** `/cicd-push-e2e` ships an `epic/*` branch and `/smh-close-task-merge-tree` refuses a deployable diff — so a **project repo's ad-hoc `chore/*` lane has no close-out door**. Recorded; no command invented to fill it. |
+| **C2** | `no worktree`. | Gone. `worktree-per-story` has required one for every commit-producing lane since SCC-62 — and this command's plan-skip exemption is *conditional on the worktree existing*, so the line voided its own carve-out. |
+| **C3** | A fired eject left the plan-first exemption open. | It **re-arms** the gate, stated in the step and in the rules-in-force block. |
+| **C4** | Called `bmad-review-adversarial-general` **bare** — one lens, no roster, no verification, no triage — and gated on "the diff since the skill's `baseline_commit`", which `step-oneshot.md` never writes. | Routed through the house `code-review-engine` with the full input table and `lens_budget: standard` named explicitly. The diff is pinned from command output first, and an empty set is a STOP. |
+| **C5** | `--story <id-or-slug>` — a free-text slug, while `/cicd-update-sprint-memory` passes `--story <id>`. Two spellings of one lane give one ticket two records, and `check` blesses the pair as "two lanes" (AVCH-59, measured 2026-08-15). | One named source per lane, identical at every later surface. ⚠ The durable fix — reading it from a `task.yaml` as the smh side does — is **recorded, not built**: no `cicd-*` command writes a `task.yaml` at all, so `devrecord`'s anti-fork default cannot fire on this side. That belongs with the close-out rebalance (SCC-210). |
+
+⛔ **C4 is MORE BMAD, not less.** The engine *runs* the BMAD lenses — the adversarial reviewer under a
+hunter contract deliberately starved of context, beside `bmad-review-edge-case-hunter` — with a
+roster, a verification pass and triage that a bare call has none of.
+
+⭐ **Wiring it caught its own omission.** `test_review_engine.py` derives the engine's caller set from
+the tree and compares it to a pinned list; making `cicd-quick-dev` a caller turned that row **red**
+(`unpinned: ['.agents/commands/cicd-quick-dev.md']`). Without it the new caller would have named no
+budget and silently inherited the autopilot's `capped` — the exact SCC-147 defect. Pinned as
+`QUICK_CMD`, and the roster/budget rows now cover it.
+
+### Part D — the guard, and the zero that was the bug
+
+`workflow_lint --toolkit-only` exited **0** with 172 confirmed drift findings live in the tree.
+Nothing in the repo compared the two families. That is the root cause — structural, not careless.
+
+`.agents/scripts/tests/test_twin_parity.py` (auto-discovered by `run_all.py`) asserts **two** things
+over six declared pairs, not one:
+
+- **SYMMETRY** — a law marked in one twin has a counterpart in the other. This is the layer that
+  catches the failure that caused the ticket. **Identity alone sits green through that entire
+  failure**, because when law is written into one family and absent from the other, no counterpart
+  region exists to compare.
+- **IDENTITY** — where both mark it, the regions are byte-identical after whitespace normalisation.
+
+A shared region is fenced by a literal (`<!-- twin-law: <id> -->` … `<!-- /twin-law -->`), which keeps
+the comparand **narrow on purpose**: widening it to whole files would force subject-specific law to
+match and break both commands. The escape hatch is auditable rather than silent —
+`<!-- twin-divergence: <id> — <reason> -->` is honoured, **counted and printed**, so an intentional
+asymmetry is a recorded decision. Two laws are fenced today: `disposition` across the clean-code pair
+and `roster` across the code-review pair.
+
+The pair list is **pinned**, because names differ where the subject does
+(`cicd-merge-epic-workingtrees` ↔ `smh-merge-multiple-workingtrees`) — and a completeness row derives
+the counterpart set **from the tree** so the list cannot silently go stale. `smh-quick-fix` is
+recorded in `NOT_PAIRED` with its reason rather than faked into a pair.
+
+**Mutation sweep — 7/7 killed** (`sweep-partD.sh`, one scripted pass, every mutant drawn from the
+code):
+
+```
+M1  one twin's shared law edited (identity)                KILLED
+M2  new law in smh only (symmetry)                         KILLED
+M2b new law in cicd only (symmetry, other direction)       KILLED
+M3  one twin's fence removed (symmetry)                    KILLED
+M4  unpinned name-counterpart (completeness)               KILLED
+M5  extractor gutted to return {} (anti-vacuity)           KILLED
+M6  PAIRS emptied (anti-vacuity)                           KILLED
+```
+
+M2b exists because **the direction of drift is about to invert.** Operator, 2026-08-17: *"we will
+usually be working with cicd since the goal is to use the command center for projects."* A guard that
+only catches smh-ahead-of-cicd would go blind exactly when it starts to matter. The file's header
+carries that warning in full, so whoever reads it in 2027 measures which half carries the law rather
+than inferring it from which half was ahead in 2026.
+
+⛔ **Not the retired `ap_reconciled` stamp re-aimed at these pairs.** It derived the primary from the
+twin and scanned only the twin's text — one-directional, so the cicd file could drift under a green
+stamp — and its comparand was whole-file, so every subject-specific edit invalidated it and produced
+reflexive restamping. Part A deleted it anyway.
+
+### Part E — the hoists
+
+Four laws hoisted into rules that already exist. **No new rule files**, and every one is a rule **plus**
+a pointer **plus** an inline restatement — a pointer that replaces the restatement is itself a finding,
+because agents follow the literal step list.
+
+| Law | Was | Now |
+|---|---|---|
+| **The three-question disposition test** (REAL? · changes BEHAVIOUR? · in THIS diff? · "it's cheap" is not a reason) | Lived **only** in `code-review-engine/steps/step-01-review.md`, owned by no rule, carried by none of the audit commands — while both clean-code audits described an unbounded fix queue. | `code-standards.md` **§6.5**, which already owns the FAIL-vs-CONCERNS split. Restated identically in both clean-code audits (fenced as the `disposition` twin law), pointed at from both self-audits. |
+| **A gate that cannot fail is a finding** | Absent from `tests-must-gate-for-real.md`; a FAIL trigger on smh and absent from the cicd ladder entirely, so a report-only job shipped at worst CONCERNS. | Rule 5, plus the cicd FAIL-ladder row and a judgment-pass scan line. |
+| **Run gates bare** | Nowhere in the rule. | Rule 6 — a pipe returns the *pipe's* exit code, and `set -o pipefail` is not on by default. |
+| **Both machines** | `code-standards.md` §5 stated the underlying rule nowhere; the cicd clean-code audit had no `C:/` check and no bare-`python` check. | §5 row + a judgment-pass scan line. |
+| **The memory store** | `grep -rln "_artifacts/_memory" .agents/rules/` returned **1**. | A full clause in `artifacts-always-first.md`: the store is **recall, not law** — prunable, unenforced, advisory, and it creates false coverage. With the test *"if this memory vanished, would something BREAK or would someone look it up?"* and the never-sweep-another-lane's-memory rule. |
+
+⛔⛔ **And one measured defect the hoist exposed: the cicd machine floor could not run on this
+machine.** `code-standards.md` §6 and `cicd-clean-code-audit.md` Step 1 both hardcoded
+`backend/.venv/Scripts/python.exe` and `Scripts/pyrefly.exe` — the **Windows** layout. Verified on
+disk: AGY's `backend/.venv` has `bin/`, not `Scripts/`. Under the audit's own rule a missing tool *"is
+a finding, not a skip"*, so **every Mac run of the most-used audit reported its own floor unrunnable**
+— or the agent substituted bare `python`, which the same command forbids. Either way the objective
+half did nothing while the run looked normal. Both now resolve `<VENV>` per machine, POSIX first.
+
+**The lint row that makes it stick.** `workflow_lint`'s rule-pointer check gained a row: a command
+that produces findings and cites no disposition rule goes **red**. Keyed on the **machinery** (the
+`applied / deferred / dismissed` triage vocabulary and the FAIL ladder), never on the concept — a
+concept-keyed row previously matched six unrelated bodies and none of the three that mattered.
+**Proven to reject and allow**: dropping the pointer from `cicd-clean-code-audit.md` produced
+`rule-pointers: ... producing findings but never points at code-standards.md`, exit **1**; restoring
+it returned exit **0**.
+
+### Re-measured and NOT acted on
+
+- **C6 (`lenses_na` in neither caller) is already fixed.** The ticket lists it as ⛔ "THIS ONE IS
+  OURS, from SCC-203". Measured at `86daaaf`: **both** `cicd-code-review.md` and `smh-code-review.md`
+  carry `lenses_na` and `lenses_counted` three times each, with the 4/4-never-4/5 rule stated. It was
+  closed during SCC-203's own landing, after the audit was written. No edit made.
+- The three findings the plan's §7 rejected during verification stay rejected; the bounded-queue
+  sentence in both clean-code audits was **not** edited — the disposition text was added **above** it.
+
+### Gates
+
+| Gate | Result |
+|---|---|
+| `python3 .agents/scripts/tests/run_all.py` | **34/34 files passed, exit 0** (33 before — `test_twin_parity.py` is the new file) |
+| `python3 .agents/scripts/workflow_lint.py --toolkit-only` | **0 errors, 0 warnings, exit 0** |
+| `assert-scc205.sh` | 16/16 PASS, exit 0 — and **16/16 FAIL** against the pre-edit commit `49153af` |
+| `sweep-partD.sh` | **7/7 mutants killed**, tree restored, baseline and final both exit 0 |
+| `/smh-sync-agents` | exit 0 |
+
+⛔ Every gate was run **bare**, exit code read immediately — the rule this lane just wrote. The first
+run of the lint in this session was piped through `tail` and lost its exit code entirely.

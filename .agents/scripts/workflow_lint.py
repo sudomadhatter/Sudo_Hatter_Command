@@ -96,6 +96,20 @@ _RULE_POINTERS = (
     # tells an agent to diff two copies is not silently exempt.
     ("port-checklist", "porting",
      re.compile(r"exists in more than one repo|git diff --no-index", re.I)),
+    # SCC-205. A command that PRODUCES findings must point at the rule that says how to
+    # dispose of them - the three-question test (`code-standards.md` 6.5). Before this row
+    # the ruling lived in ONE review-engine step, owned by no rule, cited by none of the
+    # four audit commands, and every one of them still described an unbounded fix queue.
+    # ⛔ Keyed on the MACHINERY, never the concept. `disposition` / `finding` as words match
+    # half the tree; what actually marks a finding-producer is the shape it emits - the
+    # applied/deferred/dismissed triage vocabulary, or the FAIL/CONCERNS/PASS verdict ladder
+    # it grades findings onto. That is the same lesson as the two rows above, learned twice:
+    # a concept-keyed row names the wrong files, so RED can never reach 0/0 and the whole
+    # check gets ignored.
+    ("code-standards", "producing findings",
+     re.compile(r"`applied`\s*/\s*`deferred`\s*/\s*`dismissed`"
+                r"|applied / deferred / dismissed"
+                r"|^\s*-\s*\*\*FAIL\*\*\s+—", re.M)),
 )
 
 

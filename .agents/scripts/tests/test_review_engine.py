@@ -74,7 +74,16 @@ AP_CMD = ".agents/commands/cicd-code-review-AP.md"
 # rule lived only in step-01, which is a claim about a caller, not a check on one.
 CICD_CMD = ".agents/commands/cicd-code-review.md"
 SMH_CMD = ".agents/commands/smh-code-review.md"
-CALLER_FILES = (AP_CMD, CICD_CMD, SMH_CMD)
+# SCC-205: the FAST lane became a caller. `/cicd-quick-dev` used to invoke
+# `bmad-review-adversarial-general` bare - one lens, no roster, no verification, no triage - so it
+# was the only dev lane in either family whose review produced no `lenses_run` block, which is
+# exactly the evidence `walkthrough_roster.py` reads at close-out. Routing it through the engine is
+# MORE BMAD, not less: the engine runs those lenses under a hunter contract with triage on top.
+# ⭐ This line was added because the completeness row below CAUGHT the omission - the caller set is
+# derived from the tree, so wiring a new caller and forgetting to pin it goes red rather than
+# silently inheriting the autopilot's `capped` budget (SCC-147).
+QUICK_CMD = ".agents/commands/cicd-quick-dev.md"
+CALLER_FILES = (AP_CMD, CICD_CMD, SMH_CMD, QUICK_CMD)
 
 # Vendor identifiers that must appear NOWHERE in the engine. `HALT` is deliberately the only
 # case-SENSITIVE one: lower-case "halt" is ordinary English and banning it generates false reds.

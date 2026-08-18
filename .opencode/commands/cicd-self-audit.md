@@ -5,6 +5,28 @@ platforms: [opencode, antigravity]
 
 # /cicd-self-audit — Pre-Dev Adversarial Audit
 
+> **Rules in force for this command:**
+> - `.agents/rules/smh-target-resolution.md` §STD + §BIND — bind exactly ONE project and **never the
+>   lobby**; every path below resolves under `PROJECT_ROOT`
+> - `.agents/rules/artifacts-always-first.md` §7 — the audit is **appended into the plan it audited**
+>   as a `## Self-Audit (<date>)` section, never delivered inline-only and never a standalone file
+> - `.agents/rules/000-PLAN-FIRST-GATE.md` — this audit runs BEFORE the literal `approved`, not after;
+>   an audit that runs on already-written code is a review, and belongs in `/cicd-code-review`
+> - `.agents/rules/constitution.md` — the Ask-First and surgical-change obligations Phase 1 audits
+>   the plan against
+> - `.agents/rules/port-checklist.md` — the six checks Phase 1's cross-repo row demands; the plan
+>   answering them is what the row audits for, and its absence on differing copies is a NO-GO
+> - `.agents/rules/worktree-per-story.md` §"cwd is not intent" — why Step 0 pins the repo from command
+>   output, and why the blast radius reads the sibling lanes instead of assuming this tree is the
+>   whole picture
+> - `.agents/rules/code-standards.md` §6.5 — **disposition**: you are the assessor, not the
+>   lens. Three questions, all three YES to act — is it REAL (a concrete failure, not a *"may
+>   be"*) · does it change BEHAVIOUR · is it in THIS plan's scope. "It's cheap" is not a reason;
+>   an audit that reports everything it noticed is the loop this test exists to break
+> - `.agents/rules/tests-must-gate-for-real.md` — the plan's **test strategy** is audited against it: a
+>   plan naming no way to prove its checks non-vacuous is missing that step
+
+
 Adversarial review of an `implementation_plan.md` or story **before any code is written.** The goal:
 catch flaws while fixing them still costs nothing. Assume the plan is wrong somewhere, then try to
 prove it. **Default to the leanest pass that covers the real risk** — the Phase 0 right-size gate is

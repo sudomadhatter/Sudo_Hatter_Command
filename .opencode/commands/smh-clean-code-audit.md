@@ -11,7 +11,10 @@ platforms: [opencode, antigravity, claude, codex]
 > - `.agents/rules/worktree-per-story.md` §"cwd is not intent" — the diff is resolved from command
 >   output, because sibling `chore/*` lanes make cwd a bad witness
 > - `.agents/rules/code-standards.md` — still the standard for real code (`.py`, `.ps1`, `.sh`): the
->   comment contract and the AI-drift bans below are **its** §1 and §2
+>   comment contract and the AI-drift bans below are **its** §1 and §2, and §6.5 is the **disposition**
+>   test this command's fix step applies
+> - `.agents/rules/tests-must-gate-for-real.md` §5 — a gate that cannot fail is a finding (the FAIL
+>   ladder row below); §6 — run gates bare
 
 Checks a **Task diff** against the two documents that define clean *here*:
 
@@ -190,6 +193,17 @@ Emit findings in this exact shape so `/smh-code-review` can fold them into its v
 - **CONCERNS** — `workflow_lint` **warnings** · comment-contract gaps · every judgment finding in
   Step 2B and 2C that is not listed above.
 - **PASS** — floor green on the changed set, nothing above noise.
+
+<!-- twin-law: disposition -->
+⛔ **Decide what is REAL before you fix anything** (`code-standards` §6.5 — the operator's ruling,
+2026-08-17: *"the agent's job is to find things so it always will ... we fix actual issues"*). You are
+the assessor; a lens's severity label is an INPUT, not a verdict. Three questions, all three YES to fix:
+**is it REAL** (state the concrete failure — *this input, this wrong output* — or drop it) · **does it
+change BEHAVIOUR** (naming, structure and wording do not) · **is it in THIS diff** (pre-existing debt in
+an untouched file is not this lane's work). ⛔ **"It's cheap" is not a reason** — twenty cheap fixes is
+the audit that never ends, each one landing after the checks ran, unreviewed. Record the tail in ONE
+line: how many came back, how many were real and fixed, the rest dismissed under this ruling.
+<!-- /twin-law -->
 
 Apply the fixes you can make safely, then **re-run the affected check and paste the new output**. Mark
 each finding `applied` / `deferred` / `dismissed` — a dismissal needs a reason, and a deferral
