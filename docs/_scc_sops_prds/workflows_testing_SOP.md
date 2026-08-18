@@ -777,10 +777,13 @@ re-run `finish`. There is deliberately no force flag — a gate with no legitima
 around, and this one's exit leaves a trail.
 
 **⭐ And it now tells you when a row should never have been handed to you (SCC-163).** The rule was
-already written: `## Your Actions` may leave you what only **you** can decide — a product decision,
-or a ticket transition you have reserved. (It used to name a third, *a main merge*; the operator's
-2026-08-17 ruling retired that — your **decision to proceed** is the sign-off, and every step after
-it is the ceremony's.) A row asking you to *mint / file / rule on where a ticket goes* is the retired
+already written: `## Your Actions` is **errands only** — what you must go and *do* outside the chat
+(live-test a P0 feature, exercise an agent we built, create an account on an external service,
+promote an epic to `main`), plus a ticket transition you have reserved. (It used to name two more.
+*A main merge* went in the operator's 2026-08-17 ruling — your **decision to proceed** is the
+sign-off, and every step after it is the ceremony's. *A decision* went the same day, SCC-215: a
+decision is a question, and an agent in a live session asks you rather than parking it on your
+board. If you would not have to leave this chat to do it, it is not a row.) A row asking you to *mint / file / rule on where a ticket goes* is the retired
 defect, because an open box there holds the ticket on the review ladder forever. That was prose, and
 it was broken the same day it was written (AVCH-58 shipped three such rows, none of them operator
 calls). `finish` now prints a **⛔ BANNED ACTION ROW** banner naming the row and why.

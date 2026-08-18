@@ -411,8 +411,10 @@ then merges to `main` — so `main` never receives an unresolved conflict.
 - **Clear the Dummy GitHub Token:** The Antigravity IDE automatically injects a dummy `GITHUB_TOKEN` into the agent's environment as a sandbox security measure. Because Git and the `gh` CLI prioritize this environment variable over the Windows Credential Manager, it causes authentication failures. **Before running any `git` or `gh` commands, you MUST clear this variable** by prefixing the command or running: `Remove-Item Env:\GITHUB_TOKEN -ErrorAction Ignore; <command>`.
 - **Validate CI/CD credentials**: Before landing on a deployment-triggering branch (`main`), verify that the target repository's required secrets and variables are set up on GitHub using `gh secret list` and `gh variable list` (WIF-based workflows need neither — check what the workflow actually references). If credentials are missing, STOP and notify Daniel before proceeding.
 - The `walkthrough.md` **"Your Actions"** section records what landed — the branch, the commit range,
-  and anything Daniel still has to do (an epic promotion via `/cicd-push-e2e`, a live check). It is no
-  longer a `git add` command block, because the agent already ran it.
+  and **errands only**: what the operator must go and DO outside the chat (an epic promotion via
+  `/cicd-push-e2e`, a live test). **Never a decision or a question** — ask those in the session
+  (→ `artifacts-always-first` §6). It is no longer a `git add` command block, because the agent
+  already ran it.
 
 > **Web/mobile sessions** follow the same model with lighter mechanics — see `mobile-mode.md`
 > → Override 1. It shares this rule's safe-commit mechanics and Sync-first.
