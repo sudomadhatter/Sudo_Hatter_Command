@@ -82,7 +82,7 @@ output** — a summarized result is not evidence.
 | Check | Command | Runs when |
 |---|---|---|
 | **Enforcement suite** | `python3 .agents/scripts/tests/run_all.py` | **always.** Must be N/N files passed, exit 0 |
-| **Toolkit self-consistency** | `python3 .agents/scripts/workflow_lint.py --toolkit-only` | **always.** Naming law, frontmatter, `platforms: []`, INDEX coverage + dead links, rule pointers, `-AP` twin drift, encoding |
+| **Toolkit self-consistency** | `python3 .agents/scripts/workflow_lint.py --toolkit-only` | **always.** Naming law, frontmatter, `platforms: []`, INDEX coverage + dead links, rule pointers, encoding |
 | **SOP currency** | `python3 .agents/scripts/sop_currency.py --paths <changed files> --message "<the commit message>"` | a usage surface changed — `.agents/commands/`, `.agents/rules/`, `.agents/scripts/*.py|.ps1`, git hooks, root `AGENTS.md` |
 | **Python compiles** | `python3 -m py_compile <changed .py files>` | any `.py` in the diff |
 | **Shell parses** | `bash -n <changed .sh files>` | any `.sh` in the diff |

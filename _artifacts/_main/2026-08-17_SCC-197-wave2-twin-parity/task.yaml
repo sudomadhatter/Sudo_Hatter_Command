@@ -1,0 +1,20 @@
+task_key: SCC-197
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-197-wave2-twin-parity
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+# WAVE 2 of the rolling ticket, run as ONE lane (operator, 2026-08-17: "no all this lane. this is a
+# one task fix. now I just added the second but its all wave 2").
+# Wave 1 (riders SCC-198/200/202/203) landed via PR #20 as merge commit 5987b49 and shipped
+# landing_mode: partial, which is what kept SCC-197 open to carry this wave.
+# Each part's commits lead with the SUBTASK's key (work-consolidation.md rule 2).
+# ORDER IS AN OPERATOR RULING, not a convenience: SCC-209 runs FIRST - "I want to do it first" -
+# because it DELETES obligation surface, and doing it first means Part B never ports anything into
+# a file we are about to abandon.
+riders: [SCC-209, SCC-205]
+landing_mode: full      # wave 2 of 2 - this landing closes SCC-197
+# BLOCKER ON THE PARENT, carried from wave 1 and NOT resolved by this lane's code:
+# SCC-197 is `Review Required` because wave 1's walkthrough left ONE unchecked `- [ ]` - the
+# operator's call on full-suite runtime. `jira_feed.py start` returned exit 3 on it (correct: it
+# refuses to overwrite a status carrying real state). landing_mode: full means that box MUST be
+# settled before close-out, or `finish` will hold SCC-197 out of Done exactly as designed.

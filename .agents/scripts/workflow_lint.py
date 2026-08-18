@@ -177,81 +177,6 @@ def check_retired_review_surface(lobby: Path, rep: wf.Report) -> None:
                         f"(SCC-128)")
 
 
-def _last_commit_ts(path: Path, cwd: Path) -> int | None:
-    r = wf.git(["log", "-1", "--format=%ct", "--", str(path)], cwd)
-    out = r.stdout.strip()
-    return int(out) if r.returncode == 0 and out.isdigit() else None
-
-
-def _last_commit_sha(path: Path, cwd: Path) -> str | None:
-    r = wf.git(["log", "-1", "--format=%H", "--", str(path)], cwd)
-    out = r.stdout.strip()
-    return out if r.returncode == 0 and out else None
-
-
-# The twin's claim, in its frontmatter: `ap_reconciled: <sha of the primary I read>`.
-AP_RECONCILED = re.compile(r"^ap_reconciled:\s*([0-9a-f]{7,40})\s*$", re.M)
-
-
-def check_ap_twins(lobby: Path, rep: wf.Report) -> None:
-    """_AP twins drift from their primaries (memory: sudo-commands-have-ap-twins-that-drift).
-
-    A twin is NOT a step-for-step mirror — it is a single-pass headless adaptation with its
-    own prose headings, so comparing step sequences only ever produces noise. The signals
-    that actually mean drift: the twin stopped pointing at its primary, or the primary was
-    committed AFTER the twin (someone fixed one side only).
-
-    ── SCC-82: the timestamp alone made this UNSATISFIABLE ──────────────────────────
-    "Primary is newer" is a prompt to go and diff, not a defect in itself, and often the
-    honest answer is *nothing to port* — the SCC-63 fix that made `cicd-code-review.md`
-    newer restored a historic artifact filename its twin does not contain and does not
-    need. There was no way to say so. The warning stood on `main` for weeks, every
-    close-out report carried "2 pre-existing warnings" as an excuse, and the only way to
-    clear it was to TOUCH the twin — which resets the clock while asserting nothing, and
-    is indistinguishable from actually having done the work.
-
-    `ap_reconciled: <sha>` is the twin's auditable claim: *I read the primary at this sha
-    and there is nothing to port.* It is deliberately NOT a mute switch:
-
-      - stamp present and current  → silent, and the twin's own mtime is irrelevant
-      - stamp present but stale    → WARN, **even when the twin is the newer file** —
-                                     which is precisely the touch-it-to-shut-it-up cheat
-                                     the timestamp check could never see
-      - no stamp at all            → the original timestamp signal, unchanged
-
-    So the check gained teeth rather than losing them: silence now requires someone to
-    have written down which version of the primary they read."""
-    cmd_dir = lobby / ".agents" / "commands"
-    # Suffix is `-AP` since SCC-63 (hyphens only; it was `_AP` before the rename).
-    for ap in sorted(cmd_dir.glob("*-AP.md")):
-        primary = cmd_dir / (ap.stem[:-3] + ".md")
-        if not primary.is_file():
-            rep.err("ap-twins", f"{ap.name}: primary {primary.name} missing")
-            continue
-        text = wf.read_text(ap)
-        # Match the STEM: twins name the primary bare in their title/description
-        # (`# /cicd-code-review-AP - ...`); only some use the `@.../<name>.md` path form.
-        # This fires when the primary is RENAMED out from under the twin.
-        if primary.stem not in text:
-            rep.warn("ap-twins", f"{ap.name} no longer references {primary.stem}")
-        claim = AP_RECONCILED.search(text)
-        if claim:
-            claimed, pr_sha = claim.group(1), _last_commit_sha(primary, lobby)
-            # Abbreviated shas are accepted by prefix; a sha that is not a prefix of the
-            # primary's current commit is not a claim about the file in front of you.
-            if pr_sha and pr_sha.startswith(claimed):
-                continue
-            rep.warn("ap-twins",
-                     f"{ap.name}: ap_reconciled names {claimed[:7]}, but {primary.name} "
-                     f"is now at {(pr_sha or '?')[:7]} - diff the twin and restamp")
-            continue
-        ap_ts, pr_ts = _last_commit_ts(ap, lobby), _last_commit_ts(primary, lobby)
-        if ap_ts and pr_ts and pr_ts > ap_ts:
-            days = round((pr_ts - ap_ts) / 86400, 1)
-            rep.warn("ap-twins",
-                     f"{primary.name} committed {days}d AFTER {ap.name} - diff the twin")
-
-
 # Vendor BMAD bridges keep their upstream names and take no prefix. This list is
 # CLOSED: widening it is how the convention dies one exception at a time. A new
 # command belongs to cicd- (one project, never the lobby) or smh- (may act on the
@@ -520,7 +445,6 @@ def main() -> int:
     if lobby:
         check_commands(lobby, rep)
         check_rule_pointers(lobby, rep)
-        check_ap_twins(lobby, rep)
         check_naming_law(lobby, rep)
         check_retired_review_surface(lobby, rep)
         scan += [(f"commands/{f.name}", f)
