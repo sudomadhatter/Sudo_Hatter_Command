@@ -236,10 +236,12 @@ fought back. In this order:
    result · why this run`. The certification row carries the SHA; the review step appends its rows.
 5. **`## Code Review (<date>)`** — appended by the review step (§6), never pre-written by the dev.
 6. **`## Your Actions`** (LAST) — what landed (the `claude/*` branch, the commit range, whether it
-   reached the epic branch) plus anything still on Daniel: an epic promotion to `main` via
-   `/cicd-push-e2e`, a live check, a decision.
-   Also posted in chat. The review step attempts any agent-solvable row here and ticks it; only
-   genuine human calls survive. Not a `git add` block — the agent commits its own work in the
+   reached the epic branch) plus **errands only**: what the operator must go and DO outside this
+   chat — promote an epic to `main` via `/cicd-push-e2e`, live-test a P0 feature, exercise an agent
+   we built, create an account on an external service we need.
+   ⛔ **Never a decision or a question.** The operator is in the session — ask, and tick the row with
+   the answer. A row survives only if they would have to leave the chat to do it.
+   Also posted in chat. Not a `git add` block — the agent commits its own work in the
    worktree and lands it at close-out (→ `git-policy` · `worktree-per-story`).
 
 Do NOT split any section into a separate file — one doc holds the outline, the evidence, the review,
