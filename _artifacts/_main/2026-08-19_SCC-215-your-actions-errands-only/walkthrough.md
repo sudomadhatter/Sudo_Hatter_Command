@@ -55,7 +55,7 @@ moved, the filter did not.
 - `python3 .agents/scripts/check_maps.py --depth3-only --strict` → see below
 - `python3 .agents/scripts/lane_qualify.py` on the real diff → **LIGHT**
 
-`git rev-parse HEAD` → recorded at commit time; see the ticket's Dev Record.
+`git rev-parse HEAD` → `c6f5e54` (the record commit, pushed to `origin/chore/SCC-215-your-actions-errands-only`). The law itself is `11c5b7d`, already an ancestor of `origin/main` — this branch fast-forwarded onto `2c435ea` before the record was written, so the gate totals above were measured on a tree identical to `main` plus this file.
 
 ## Your Actions
 
