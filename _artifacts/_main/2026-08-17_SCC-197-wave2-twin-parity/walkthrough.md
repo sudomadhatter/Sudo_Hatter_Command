@@ -287,18 +287,21 @@ is the reviewed sha; every finding below was fixed in-thread after it.
 
 review-runtime: fan-out
 
-```
 lenses_run:
 - blind-hunter · ok
 - edge-case-hunter · ok
-- literal-correctness-hunter · recovered-inline — first attempt stalled >600s on a foreground
-  full-suite run and was killed; retried with a no-full-suite constraint and returned
+- literal-correctness-hunter · recovered-inline — first attempt stalled >600s on a foreground full-suite run and was killed; retried with a no-full-suite constraint and returned
 - acceptance-auditor · recovered-inline — same stall, same cause, same retry
 - test-adequacy-auditor · ok
 lenses_counted:  5/5
 lenses_na:
 - none — review_mode: full, so every lens was applicable
-```
+
+⛔ **That roster is deliberately NOT fenced, and the close-out taught me why.** I wrote it inside a
+` ``` ` block and the Task-lane gate reported *"Verdict CONCERNS with NO `lenses_run:` roster"* —
+correctly. `walkthrough_roster.parse` runs `strip_fenced()` first, so a fenced roster is not a
+badly-formatted roster, it is **no roster at all**: the fence is how a pasted *example* is stopped
+from posing as evidence (SCC-154). Live evidence goes in live prose.
 
 **Why CONCERNS and not PASS.** The gate the lane shipped to stop silent drift was itself
 substantially unguarded, and review measured it rather than arguing it. **Every finding below was
@@ -386,3 +389,41 @@ When the rewrite lands, the new file earns its own rows like any other caller. L
 | `sweep-twin-parity.py` | **8/10 killed**; the two survivors rejected with reasons above |
 | `sweep-partD.sh` | 7/7 killed |
 | `/smh-sync-agents` | exit 0 — every door re-synced |
+
+## Close-out (2026-08-18) — three preflight errors, all real
+
+`task_preflight --expect-key SCC-197` came back **BLOCKED, exit 2**. None of the three was noise.
+
+**1. The roster was inside a code fence — so the gate correctly read it as NO roster.**
+`walkthrough_roster.parse` runs `strip_fenced()` before anything else, because a fence is how a
+pasted *example* is stopped from posing as evidence (SCC-154 paid for that rule with a live miss).
+A fenced roster is not a badly-formatted roster; it is no roster at all. Unfenced above.
+
+**2. `landing_mode: full` was an INVENTED value.** `partial` is the only value anything reads, and
+the preflight errors on any other because an unread declaration fails CLOSED. A full landing is the
+*absence* of the key. ⛔ **This one propagated into my reporting**: the "blocker on SCC-197" this
+lane carried in `task.yaml` and that I reported to the operator twice rested entirely on that
+invented value. Wave 1's unchecked box lives in the **landed** wave-1 walkthrough, which the
+preflight classifies as *"settled on origin/main — history, neither governing nor ambiguous"*, and
+`jira_feed.py finish` reads THIS lane's `## Your Actions`, never that one. There was no blocker.
+
+**3. No `## Your Actions` section** — the section below.
+
+## Your Actions
+
+- [x] The merge itself — lands via this branch's PR
+- [x] **Suite speed-up: ruled NOT worth doing** (operator, 2026-08-18: *"not worth it move on"*).
+      Wave 1 left this open with a ~50s projection. Measured before deciding, and the measurement
+      killed the premise: wave 1 assumed `test_task_preflight.py`'s 117.2s was repo-building. It is
+      not. Fixtures are **18.0s** of it (73 × 247 ms); running `task_preflight.py` itself is 33.3s;
+      the rest is elsewhere. A template *is* 90% faster at the part it touches (**247 ms → 25 ms**,
+      verified working: clean tree, correct ahead-count, `hooksPath` intact) — but 90% of 18s floors
+      the file at **~101s** and the suite at **~125s**, i.e. **~10% off wall clock, not 64%**.
+      Against that: `make_repo` has six independent flags, so one template cannot serve 73 call
+      sites; the origin must be a *relative* path or every copy pushes into the template's bare repo
+      (hit live while benchmarking); and the file being optimised is the guard on the merge gate,
+      where wave 1 itself ruled cross-test coupling a bad trade. Not a good ratio.
+- [x] Plan, walkthrough, manifest and `deferred-work.md` are linked at the top of this document.
+
+**Nothing is owed.** Both riders (SCC-209, SCC-205) land with this lane and the close ceremony
+transitions them, parent last — agent steps inside the operator-invoked close, never operator edits.
