@@ -1,0 +1,5 @@
+task_key: SCC-222
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-222-non-crit-pr-push
+close_command: smh-close-task-merge-tree
+secondary_repos: []

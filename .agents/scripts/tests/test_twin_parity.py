@@ -92,6 +92,7 @@ PAIRS = [
     ("cicd-clean-code-audit.md", "smh-clean-code-audit.md"),
     ("cicd-label-tasks.md", "smh-label-tasks.md"),
     ("cicd-merge-epic-workingtrees.md", "smh-merge-multiple-workingtrees.md"),
+    ("cicd-non-crit-pr-push.md", "smh-non-crit-pr-push.md"),
 ]
 
 # Every `cicd-*` / `smh-*` name-counterpart that is NOT in PAIRS, each with the reason. A new
