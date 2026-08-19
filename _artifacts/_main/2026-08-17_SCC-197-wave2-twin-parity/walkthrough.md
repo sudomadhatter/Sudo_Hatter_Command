@@ -358,13 +358,21 @@ nothing is DEFECTIVE, not a coverage gap.*
 
 ### Deferred against a named structural blocker
 
-**The `-AP` law assertions in `test_review_engine.py`.** Part A removed the AP obligation from
-`workflow_lint`, but eight live law assertions against `cicd-code-review-AP.md` remain there, and the
-tree-derived `CALLER_FILES` row *requires* it to stay pinned — so when engine law next changes, the
-suite reds until someone edits a file this lane declared frozen. **The trap was relocated, not
-removed.** It cannot be closed here: the plan's Part A explicitly forbids deleting the `-AP` files,
-and un-pinning them breaks the completeness row that exists to stop a silent caller. It needs the
-operator's decision on the `_AP` rewrite. Blocker: *an open decision.* → `deferred-work.md`.
+**The `-AP` law assertions in `test_review_engine.py` — deferred, then CLOSED the same day.**
+Part A removed the AP obligation from `workflow_lint`, but eight live law assertions against
+`cicd-code-review-AP.md` remained in the engine suite, so the next change to engine law would red
+it until someone edited a file this lane had declared frozen — **the trap relocated, not removed.**
+I logged it as blocked on the `_AP` rewrite decision. The operator ruled immediately: the `_AP`
+commands are being rewritten from scratch and survive only as reference, so their contents are
+disposable.
+
+That ruling exposed the deferral as my error, not a real blocker. I had framed it as delete-vs-unpin
+and deferred on the dilemma; **neither horn had to be taken.** `CALLER_FILES` and the eight law rows
+were never coupled — nothing in the suite requires a caller to carry a CHECKS row. So the file stays
+pinned as a *caller* (it is still live: three autopilot engines invoke it by name), keeping the
+existence row, the completeness row, and the `lens_budget` row over `discovered`; only its *content*
+is no longer asserted. Removal measured, not assumed: **873 → 849 cases, exactly 8 rows × 3 checks.**
+When the rewrite lands, the new file earns its own rows like any other caller. Ledger back to empty.
 
 ### Gates (all run bare, exit read immediately)
 
