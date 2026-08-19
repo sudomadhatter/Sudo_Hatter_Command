@@ -84,6 +84,7 @@ re-syncing the twin is an AVCH ticket of its own, not something a lobby lane may
 | **plan** a big Task — subtasks, lanes, the parallel table | `/smh-plan-task <TASK-KEY>`, then `/smh-label-tasks <TASK-KEY>` ([§9](#9-the-task-lane--work-on-the-system-itself)) |
 | **build** a Task — a command, a rule, a gate, the docs | `/smh-quick-dev <KEY>` → `/smh-code-review` → `/smh-close-task-merge-tree` ([§9](#9-the-task-lane--work-on-the-system-itself)) |
 | ⭐ **just get one specific thing done** — write me a guide, fix a reference, tidy a branch mess | `/smh-quick-fix "<the ask>"` — **no plan, no `approved`, no review**; it does not stop to ask whether to start ([§9a](#the-lightweight-lane--smh-quick-fix)) |
+| ⭐ **push routine docs/notes to PR** — standing push under SCC-186 | `/smh-non-crit-pr-push` — **qualifies `LIGHT`, stages, commits `SCC-186`, pushes, opens PR** ([§9a](#the-lightweight-lane--smh-quick-fix)) |
 | land **several** finished Tasks at once | `/smh-merge-multiple-workingtrees` — one sign-off per lane ([§7](#7-landing-and-shipping--the-close-out-family)) |
 | see what a command will do before typing it | [Part VI — the command atlas](#18-every-command-one-diagram) |
 | know whether a review still counts | [§11 — the decision tree](#11-is-this-review-still-valid) |
@@ -1404,6 +1405,18 @@ close-out runs the whole gate itself instead of inheriting a green, which is the
 before the walkthrough is written. Anything but `LIGHT` and the work stops being lightweight then and
 there: it continues on `/smh-quick-dev`, with a plan and your `approved`, keeping every commit
 already made.
+
+#### The standing push lane — /smh-non-crit-pr-push (SCC-186)
+
+**Standing lane for routine upkeep.** For changes that need no ticket of their own — docs, memory files,
+notes, quick reference updates. Operates under standing ticket `SCC-186` and standing branch
+`chore/SCC-186-standing-push`.
+
+- **Qualifies `LIGHT`** — refuses any toolkit (`.agents/**`) or deployable code changes.
+- **Syncs `chore/SCC-186-standing-push`** with latest `origin/main`.
+- **Stages explicit paths**, commits with `SCC-186 <summary> [sop-ok]`.
+- **Pushes to origin** and opens PR via `gh pr create`.
+- **Verifies `main-write-gate`** passes on GitHub.
 
 ### ⭐ `/smh-plan-task <TASK-KEY>` — plan the whole Task, subtasks and all
 
@@ -3296,6 +3309,7 @@ flowchart TD
 | ⭐ `/smh-label-tasks <TASK-KEY>` | The Task-lane twin of `/cicd-label-tasks`: which **Subtasks** of one Task can run side by side (`parallel-ok`) and which are quick-lane sized (`quick-dev`). States, never starts; a stale answer says "re-run me". |
 | `/smh-quick-dev` | The Task lane's build step. Fixes a checkable acceptance list before anything is written, plans, audits, waits for `approved`, then builds — with something failing first, always. Ends at the review gate and **stops**; it never merges. |
 | ⭐ `/smh-quick-fix` | **The lightweight lane** ([§9a](#the-lightweight-lane--smh-quick-fix)). One specific thing that touches nothing which can break — a guide, a reference fix, a source-control tidy. Mints the ticket, cuts the lane, does it, runs the gates, pushes, hands back. No plan, no `approved`, no self-audit, no failing-check-first, no review verdict — and it **does not ask whether to start**. Qualification is `lane_qualify.py`, not a judgement, and it runs again on the real diff at the end: stop qualifying and the lane ejects to `/smh-quick-dev` with the plan gate re-armed. Lands through `/smh-close-task-merge-tree` like everything else. |
+| ⭐ `/smh-non-crit-pr-push` | **The standing push lane** ([§9a](#the-standing-push-lane--smh-non-crit-pr-push-scc-186)). Routine non-critical command center changes (docs, memory, notes, quick references). Operates on standing ticket `SCC-186` + standing branch `chore/SCC-186-standing-push` directly to PR with `main-write-gate` check. |
 | `/smh-self-audit` | Pressure-tests the plan before anyone writes anything, pointed at the blast radius toolkit work actually has. Also **reads the other live lanes** and tells you which should land first. Ends in `GO` or `NO-GO`. Has a **retroactive mode** for when the work already exists and no plan was written — it audits the ticket's ACCEPTANCE block instead and stamps the result `retroactive`, so the record never reads as though a gate ran in time when it did not. |
 | `/smh-code-review` | The Task lane's verdict. Re-checks `main` (Step 0.7), hunts the diff cold, audits against the acceptance list, runs the command-centre gate, folds in the clean-code gate, and writes the one `Verdict:` line `/smh-close-task-merge-tree` reads before it will merge. |
 | `/smh-clean-code-audit` | The command centre's machine floor — the enforcement suite, toolkit lint, SOP currency, py_compile, links, door parity. |
