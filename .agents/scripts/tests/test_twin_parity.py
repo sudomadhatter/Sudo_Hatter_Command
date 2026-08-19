@@ -139,6 +139,7 @@ NOT_PAIRED = {
     "smh-slash-command-updating.md": _ONE_SUBJECT + " (authoring the command surface itself)",
     "smh-adviser-board.md": _ONE_SUBJECT + " (multi-voice advisory board)",
     "smh-review.md": _ONE_SUBJECT + " (ad-hoc read-only review)",
+    "smh-non-crit-pr-push.md": _ONE_SUBJECT + " (standing push lane for routine command center upkeep under SCC-186)",
 }
 
 # The pairs that carry a fenced shared law TODAY. Four of the six carry none - a real and
