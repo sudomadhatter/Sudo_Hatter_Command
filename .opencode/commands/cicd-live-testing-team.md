@@ -21,8 +21,9 @@ before any work.
    intentional; confirm each kill. Sleep ~5s after killing so ports leave `TIME_WAIT`.
 3. Start BOTH servers as **background processes** (the log stream must stay readable across turns —
    a foreground uvicorn blocks and defeats the whole command):
-   - Backend, from `PROJECT_ROOT`: `"$VENV"/uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload`
-     — resolve `VENV` first, it differs per machine: `VENV=backend/.venv/bin; [ -d "$VENV" ] || VENV=backend/.venv/Scripts`
+   - Backend, from `PROJECT_ROOT`: `<VENV>/uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload`
+     — substitute `<VENV>` with whichever of `backend/.venv/bin` (POSIX) or `backend/.venv/Scripts`
+     (Windows) exists on this machine (`code-standards` §6)
      (`--reload` = temporary debug logs apply without a restart)
    - Frontend, from `PROJECT_ROOT/frontend`: `npm run dev`
 4. Health-check both (backend `/health`, frontend root), then hand over the URL: **you fly, I watch.**

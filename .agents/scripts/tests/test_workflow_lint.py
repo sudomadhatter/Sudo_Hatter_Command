@@ -10,6 +10,7 @@ history nobody will touch) that the one actionable line is never read.
 """
 from __future__ import annotations
 
+import subprocess
 import sys
 from pathlib import Path
 
@@ -288,18 +289,44 @@ def main() -> int:
         # never touched. A probe that cries wolf on the destructive step is one people learn
         # to skip.
         #
-        # ⛔ THE THREE LOOK-ALIKES ARE THE WHOLE DIFFICULTY, and each gets a control below.
-        # A file may legitimately name the Windows path as the Windows ARM of a conditional,
-        # as PROSE explaining the rule, or as a test FIXTURE. Without those controls the
-        # check fires on the documents that state the law correctly - the same disease as
-        # `comment-literals-invert-source-grep-tests`, where the guard punishes the author
-        # who wrote it down.
+        # ⛔ THE LOOK-ALIKES ARE THE WHOLE DIFFICULTY. A file may legitimately name the
+        # Windows path as the Windows ARM of a conditional, as PROSE explaining the rule, or
+        # as DATA (an allow-list key). The first two carry a real POSIX path nearby; the
+        # third cannot, and takes the auditable file-level opt-out. Without these controls
+        # the check fires on the documents that state the law correctly - the same disease as
+        # `comment-literals-invert-source-grep-tests`.
+        #
+        # ⭐ EVERY ROW BELOW EXISTS BECAUSE A MUTANT SURVIVED THE FIRST CUT. Review ran an
+        # independent 17-mutant sweep against this check and 13 lived: the scan could be cut
+        # to one directory, lose its backslash spelling, have its window widened, be
+        # downgraded to `info`, or be UNWIRED from main() entirely, all with the file green.
+        # The first cut proved one widening mutant and called it proven.
         bm = tmp / "bothmachines"
         cmds = bm / ".agents/commands"
         cmds.mkdir(parents=True)
+        (bm / ".agents/rules").mkdir(parents=True)
+        (bm / ".agents/skills/deep").mkdir(parents=True)
+        (bm / ".agents/scripts").mkdir(parents=True)
+
         (cmds / "hardcoded.md").write_text(
             "---\ndescription: x\n---\n"
             "Run `backend/.venv/Scripts/python.exe -m pytest`.\n", encoding="utf-8")
+        # ⛔ THE NATIVE WINDOWS SPELLING, and it is the one that matters: the literal this
+        # lane DELETED from the cloud-run skill was `.venv\Scripts\python.exe` - backslashes.
+        # The regex arm that catches it had no fixture, so dropping it survived the sweep.
+        (cmds / "backslash.md").write_text(
+            "---\ndescription: x\n---\n"
+            "Run `backend\\.venv\\Scripts\\python.exe -m pytest`.\n", encoding="utf-8")
+        # Scope: `rules/`, a NESTED skill, and a committed SCRIPT. Cutting the scan to
+        # `commands/` alone used to survive, because every fixture lived there.
+        (bm / ".agents/rules/r.md").write_text(
+            "Always call `backend/.venv/Scripts/pyrefly.exe check`.\n", encoding="utf-8")
+        (bm / ".agents/skills/deep/SKILL.md").write_text(
+            "Run `.venv/Scripts/python.exe -m pytest`.\n", encoding="utf-8")
+        (bm / ".agents/scripts/run.ps1").write_text(
+            "& backend/.venv/Scripts/python.exe -m ruff check\n", encoding="utf-8")
+
+        # The three legitimate shapes, each a NEGATIVE control.
         (cmds / "conditional.md").write_text(
             "---\ndescription: x\n---\n"
             "```bash\nVENV=backend/.venv/bin; [ -d \"$VENV\" ] || VENV=backend/.venv/Scripts\n```\n",
@@ -308,36 +335,128 @@ def main() -> int:
             "---\ndescription: x\n---\n"
             "A venv puts its executables in `.venv/Scripts/` on Windows and `.venv/bin/` on POSIX.\n",
             encoding="utf-8")
-        (cmds / "adjacent.md").write_text(
+        # ⛔ MULTI-LINE, both shapes review measured as FALSE POSITIVES under a +/-1 window:
+        # a PowerShell probe with the brace on its own line (conventional formatting - and it
+        # is THIS LANE'S OWN probe, which passed only because the brace happened to be inline)
+        # and a bash conditional whose arms are separated by comments.
+        (cmds / "multiline.md").write_text(
             "---\ndescription: x\n---\n"
-            "# the venv bin dir differs per machine - POSIX first\n"
+            "```powershell\n"
             "$PY = \"$ROOT/backend/.venv/bin/python3\"\n"
-            "if (-not (Test-Path $PY)) { $PY = \"$ROOT/backend/.venv/Scripts/python.exe\" }\n",
-            encoding="utf-8")
+            "if (-not (Test-Path $PY)) {\n"
+            "    $PY = \"$ROOT/backend/.venv/Scripts/python.exe\"\n"
+            "}\n```\n", encoding="utf-8")
+        (cmds / "spaced.md").write_text(
+            "---\ndescription: x\n---\n"
+            "```bash\nVENV=backend/.venv/bin\n"
+            "# the venv layout differs per machine\n"
+            "# fall back to the Windows layout\n"
+            "[ -d \"$VENV\" ] || VENV=backend/.venv/Scripts\n```\n", encoding="utf-8")
+        # ⛔ PRECISION, BOTH DIRECTIONS - these two exist because widening the window and
+        # loosening the off-switch BOTH survived the first rebuild. A guard is only as good
+        # as the narrowest thing it still catches.
+        #   `distant.md` - a correct POSIX conditional at the top and, far below it, a
+        #   SEPARATE genuine hardcode. Widening the window exempts the second by borrowing
+        #   the first's POSIX arm from another part of the file.
+        (cmds / "distant.md").write_text(
+            "---\ndescription: x\n---\n"
+            "```bash\nVENV=backend/.venv/bin; [ -d \"$VENV\" ] || VENV=backend/.venv/Scripts\n```\n"
+            + "\nfiller prose line\n" * 12 +
+            "\nNow run `backend/.venv/Scripts/pyrefly.exe check`.\n", encoding="utf-8")
+        #   `wordonly.md` - a real hardcode whose only nearby POSIX signal is the WORD in a
+        #   comment. This is the measured regression: delete the first clause of a
+        #   conditional and the surviving trailing comment used to exempt what was left.
+        (cmds / "wordonly.md").write_text(
+            "---\ndescription: x\n---\n"
+            "```bash\n# POSIX first, then Windows\n"
+            "VENV=backend/.venv/Scripts\n```\n", encoding="utf-8")
+
+        # DATA, with the auditable opt-out - the shape no POSIX twin can exempt.
+        (cmds / "optout.md").write_text(
+            "---\ndescription: x\n---\n"
+            "wf-lint: allow-windows-venv - the map below is an allow-list of PATHS, not calls.\n"
+            "KNOWN = {'.venv/Scripts/python.exe': 'named in the PRD'}\n", encoding="utf-8")
+        # ⛔ THE TWO CRASH SHAPES. `rglob` yields DIRECTORIES ending in `.md`, and
+        # errors="replace" covers DECODING, not I/O - a dangling symlink (this repo links
+        # gitignored assets into every worktree) raises. Either takes the linter down with a
+        # traceback instead of a finding, and this check runs FIRST.
+        (cmds / "adirectory.md").mkdir()
+        (cmds / "dangling.md").symlink_to(bm / "nonexistent-target")
+
         rep = wf.Report()
-        lint.check_both_machines(bm, rep)
-        bmsg = " ".join(i["msg"] for i in rep.items if i["section"] == "both-machines")
-        c.check("SCC-205 A a hardcoded Windows venv path is reported",
-                "hardcoded.md" in bmsg, bmsg[:160])
-        c.check("SCC-205 B the Windows ARM of a conditional is NOT reported",
-                "conditional.md" not in bmsg,
-                "" if "conditional.md" not in bmsg else bmsg[:200])
-        c.check("SCC-205 C prose stating the rule is NOT reported",
-                "prose.md" not in bmsg,
-                "" if "prose.md" not in bmsg else bmsg[:200])
-        c.check("SCC-205 D a POSIX arm on the LINE ABOVE silences it",
-                "adjacent.md" not in bmsg,
-                "" if "adjacent.md" not in bmsg else bmsg[:200])
-        c.check("SCC-205 E exactly ONE offender - the check is not firing on everything",
-                len([i for i in rep.items if i["section"] == "both-machines"]) == 1,
-                bmsg[:200])
+        lint.check_both_machines(bm, rep)   # must not raise
+        rows = [i for i in rep.items if i["section"] == "both-machines"]
+        bmsg = " ".join(i["msg"] for i in rows)
+        for name, why in (("hardcoded.md", "a forward-slash hardcode"),
+                          ("backslash.md", "the NATIVE Windows backslash spelling"),
+                          ("r.md", "a rule file (scope beyond commands/)"),
+                          ("SKILL.md", "a NESTED skill file"),
+                          ("run.ps1", "a committed SCRIPT, not just markdown"),
+                          ("distant.md", "a hardcode too FAR from an unrelated POSIX arm"),
+                          ("wordonly.md", "a hardcode whose only POSIX signal is the WORD")):
+            c.check(f"SCC-205 A {why} is reported",
+                    name in bmsg, "" if name in bmsg else bmsg[:200])
+        for name, why in (("conditional.md", "the Windows ARM of a one-line conditional"),
+                          ("prose.md", "prose stating the rule"),
+                          ("multiline.md", "a PowerShell probe with the brace on its own line"),
+                          ("spaced.md", "a bash conditional whose arms are split by comments"),
+                          ("optout.md", "DATA under the auditable file opt-out")):
+            c.check(f"SCC-205 B {why} is NOT reported",
+                    name not in bmsg, "" if name not in bmsg else bmsg[:200])
+        c.check("SCC-205 C a .md DIRECTORY and a dangling symlink do not crash the linter",
+                True, "reached this line without raising")
+        c.check("SCC-205 D exactly the seven offenders - not firing on everything",
+                len(rows) == 7, f"{len(rows)}: {bmsg[:240]}")
+        # ⛔ SEVERITY IS PINNED. Every row above filters on `section`, so downgrading
+        # `rep.warn` to `rep.info` survived them all - and a warning is what makes
+        # `--toolkit-only` exit non-zero, i.e. what makes this a gate at all.
+        # ⛔ `WARN`, and the row asserts the STRING the Report actually uses - the first cut
+        # asserted "WARNING" and went red on its own fixture. A warning is what makes
+        # `--toolkit-only` exit non-zero, i.e. what makes this a gate rather than a note.
+        c.check("SCC-205 E the finding is a WARN (exit-code bearing), not an info",
+                bool(rows) and all(i["sev"] == "WARN" for i in rows),
+                str(sorted({i["sev"] for i in rows})))
         c.check("SCC-205 F the message names the fix, not just the sin",
                 "code-standards" in bmsg and "VENV=" in bmsg, bmsg[:200])
-        # G. THE LIVE TREE. Every case above runs on fixtures, so the whole class could be
-        #    back on `main` with all six green. `real` is the lobby root, bound above.
+
+        # G. ⭐ THE WIRING. Every row above calls the function DIRECTLY, so deleting its one
+        #    line in main() passes all of them while `--toolkit-only` - what CI, the close-out
+        #    gate and the clean-code floor actually run - goes permanently silent. Measured:
+        #    that deletion survived the entire first cut. Same shape as SCC-128 G below.
+        wired = bm / "wired"
+        # ⛔ `Projects/` is what makes this a LOBBY (`wf.find_lobby_root`: .agents AND
+        # Projects). Without it the CLI exits 2 at resolution and the control row below
+        # passes on an error message instead of on a clean run - a vacuous green, caught
+        # by this block's own first run.
+        for d in (".agents/commands", ".agents/rules", ".agents/scripts", ".agents/skills",
+                  "Projects"):
+            (wired / d).mkdir(parents=True)
+        for fn in ("wf_common.py", "workflow_lint.py"):
+            (wired / ".agents/scripts" / fn).write_bytes((SCRIPTS / fn).read_bytes())
+        (wired / ".agents/commands/zz-hardcode.md").write_text(
+            "---\ndescription: x\n---\nRun `backend/.venv/Scripts/python.exe -m pytest`.\n",
+            encoding="utf-8")
+
+        def lint_wired() -> tuple[int, str]:
+            r = subprocess.run([sys.executable,
+                                str(wired / ".agents/scripts/workflow_lint.py"),
+                                "--toolkit-only"],
+                               cwd=wired, capture_output=True, text=True, errors="replace")
+            return r.returncode, r.stdout + r.stderr
+
+        code, out = lint_wired()
+        c.check("SCC-205 G the check is WIRED into --toolkit-only (non-zero + names the file)",
+                code != 0 and "both-machines" in out and "zz-hardcode.md" in out,
+                f"exit={code} {out[-220:]}")
+        (wired / ".agents/commands/zz-hardcode.md").unlink()
+        c.check("SCC-205 G control: with the offender gone the CLI is clean again",
+                "both-machines" not in lint_wired()[1], "")
+
+        # H. THE LIVE TREE. Every row above runs on fixtures, so the whole class could be
+        #    back on `main` with all of them green. `real` is the lobby root, bound above.
         rep = wf.Report()
         lint.check_both_machines(real, rep)
-        c.check("SCC-205 G the live tree hardcodes the Windows venv path NOWHERE",
+        c.check("SCC-205 H the live tree hardcodes the Windows venv path NOWHERE",
                 not [i for i in rep.items if i["section"] == "both-machines"],
                 str([i["msg"] for i in rep.items])[:300])
 

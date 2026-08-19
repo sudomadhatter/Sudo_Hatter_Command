@@ -7,7 +7,7 @@ platforms: [opencode, antigravity, claude, codex]
 
 > **Rules in force for this command:**
 > - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
-> - `.agents/rules/artifacts-always-first.md` — **§ When to Skip case 4 covers this lane: invoking this
+> - `.agents/rules/artifacts-always-first.md` — **§ When to Skip, the `/cicd-quick-dev` bullet, covers this lane: invoking this
 >   command IS the "skip the plan" instruction.** The closing `walkthrough.md` is NOT skipped.
 > - `.agents/rules/000-PLAN-FIRST-GATE.md` — the gate this command is exempt from **only while the
 >   work stays in this lane**; a fired EJECT (Step 1.5) re-arms it in full
@@ -17,6 +17,9 @@ platforms: [opencode, antigravity, claude, codex]
 >   empty diff, a missing tool reported as a skip, and a piped exit code
 > - `.agents/rules/work-consolidation.md` — where a finding too big for this lane GOES: its own
 >   ticket → an open thematic parent → the open rolling ticket → mint. Never a pile in the walkthrough
+> - `.agents/rules/code-standards.md` §6.5 — **disposition**: you are the assessor, not the
+>   lens. All three YES to act — is it REAL (a concrete failure, not a *"may be"*) · does it
+>   change BEHAVIOUR · is it in THIS diff. "It's cheap" is not a reason
 > - `.agents/rules/reproduce-before-you-fix.md` — **when the quick fix is a BUG fix**: the five gates
 >   (reproduce → minimize → pin a test seen red → falsify one hypothesis at a time → minimal fix → prove
 >   by reverting). Its G3 stop conditions fire the EJECT tripwire below.
@@ -49,7 +52,7 @@ through the normal close-out.
 ⛔ **A worktree is not optional on either case, and this line used to say `no worktree`.**
 `worktree-per-story` has required one for **every commit-producing lane** since SCC-62, and its lane
 table names `chore/<JIRA-KEY>-<slug>` explicitly. Worse, the exemption that lets this command skip the
-plan at all — `artifacts-always-first` § When to Skip case 4 — is **conditional on the worktree/chore
+plan at all — `artifacts-always-first` § When to Skip, the `/cicd-quick-dev` bullet — is **conditional on the worktree/chore
 branch existing**, so working without one voids this lane's own carve-out. Link the gitignored assets
 into a fresh tree (`node_modules`, `.env`, `auth_keys`), or Step 3's scoped tests cannot run.
 
@@ -61,8 +64,13 @@ the sign-off; a spoken "looks good" is not, and no agent merges to `main` on its
 | Lane | Door |
 |---|---|
 | story lane on `claude/*` | the epic branch, at close-out — `/cicd-update-sprint-memory`, then the epic ships via `/cicd-push-e2e` |
-| chore lane in **this command centre** | `/smh-close-task-merge-tree` — it opens the PR and STOPS; the operator clicks Merge |
 | chore lane in a **project repo** | ⚠ **there is none — state that and hand back** |
+
+⛔ **There is no command-centre row, and that is not an omission.** This command binds
+`smh-target-resolution.md` — exactly ONE project, **never the lobby** — so command-centre chore work
+is unreachable from here by construction. It belongs to `/smh-quick-dev` or `/smh-quick-fix`, whose
+door is `/smh-close-task-merge-tree`. Naming that door in a routing table an agent reads from a
+`cicd-*` lane is an invitation to bind the lobby, which is the one thing target resolution forbids.
 
 ⚠ **The gap, recorded rather than filled:** `/cicd-push-e2e` ships an `epic/*` branch, and
 `/smh-close-task-merge-tree` refuses a diff touching `backend/`, `frontend/`, `firebase/`,
@@ -95,7 +103,8 @@ bucket) — hanging one off a finished epic silently reopens it.
 
 Report the one-line reason; keep the worktree and everything written, discard nothing.
 
-⛔ **A fired eject RE-ARMS the plan-first gate** (`000-PLAN-FIRST-GATE.md` § When to Skip, case 4).
+⛔ **A fired eject RE-ARMS the plan-first gate** (`artifacts-always-first.md` § When to Skip, the `/cicd-quick-dev` bullet — the one
+`000-PLAN-FIRST-GATE.md` defers to rather than restating).
 Invoking this command IS the "skip the plan" instruction — but only for as long as the work stays in
 this lane. The moment the tripwire fires, the exemption is spent: the full lane needs an
 `implementation_plan.md` and the operator's literal `approved` before another project file is
@@ -112,8 +121,19 @@ Runs **after** the work. **Pin the diff first, from command output** — `step-o
 `baseline_commit`, so "the diff since the baseline" names a scope nothing defines:
 
 ```bash
+WORKTREE=<the tree Step 0.5 opened, or "$PROJECT_ROOT" when this lane reuses the checkout>
+# ⛔ BIND IT. `git -C ""` does NOT error - it silently resolves against the cwd, and cwd
+# resets to the shared main checkout between tool calls, so an unbound WORKTREE pins the
+# diff of a tree that is not this lane's and reports normally (`worktree-per-story`
+# §"cwd is not intent").
+BASE_REF=origin/main                                  # ad-hoc chore lane
+# ⛔ A STORY LANE FORKS FROM THE EPIC, NOT FROM main. `merge-base HEAD origin/main` on a
+# `claude/*` branch returns where the EPIC left main, so the diff carries every sibling
+# story already landed on the epic branch - other lanes' work, reviewed and reported as
+# this one's. Name the epic the tree was cut from:
+#   BASE_REF=origin/epic/<JIRA-KEY>-<slug>            # story lane
 git -C "$WORKTREE" fetch origin --quiet
-BASE=$(git -C "$WORKTREE" merge-base HEAD origin/main)   # the epic branch on a story lane
+BASE=$(git -C "$WORKTREE" merge-base HEAD "$BASE_REF")
 git -C "$WORKTREE" diff --name-only "$BASE"...HEAD       # committed
 git -C "$WORKTREE" diff --name-only                      # plus uncommitted
 git -C "$WORKTREE" diff --name-only --cached             # plus staged
@@ -133,11 +153,21 @@ an agent reviewing its own reasoning anchors on it), verifies what they find, th
 | `WORKTREE` | the tree Step 0.5 opened |
 | `DIFF` | the set pinned above, taken in that worktree |
 | `HEAD_SHA` | `git -C "$WORKTREE" rev-parse HEAD`, taken **now** |
-| `review_mode` | `no-spec` — this lane mints no story file; the **Step 1 ACs** are the spec the Acceptance Auditor reads |
+| `review_mode` | `full` **when you wrote the Step 1 ACs to a file** (below); `no-spec` only when you genuinely have no acceptance list |
+| `STORY_FILE` | that AC file — required for `full`, and the thing the Acceptance Auditor reads |
 | `ARTIFACT_DIR` | the Step 4 walkthrough's folder |
 | `DEFERRED_WORK` | the project's `deferred-work.md`, when it has one |
 | `lens_budget` | `standard` — the interactive budget; a human is sitting in front of this lane. **This command does not define the caps; step-01 of the engine does, once.** Naming nothing is not neutral: it silently selects the autopilot's budget (SCC-147) |
 | `review_runtime` | `fan-out` or `inline` — **what you PROBED, never what you expect.** Try one throwaway subagent; if subagents are unavailable the engine runs inline and DROPS the Blind Hunter rather than faking it |
+
+⛔ **`no-spec` DOES NOT AUDIT YOUR ACs — it drops that lens entirely.** step-01 § *Skipped-by-mode
+is not the same as dead*: the Acceptance Auditor runs in `review_mode: full` **only**, and a
+spec-less review correctly reports `4/4` with `acceptance-auditor` on `lenses_na`. So passing
+`no-spec` and expecting the Step 1 ACs to be checked gets a walkthrough that records an acceptance
+audit which never happened. **Write the Step 1 AC list to a file in `ARTIFACT_DIR` and pass it as
+`STORY_FILE` with `review_mode: full`** — on this lane that list IS the spec, exactly as the plan is
+the spec on the Task lane. With no list, `no-spec` is honest and the acceptance check is yours by
+hand, below.
 
 **Record the roster the engine returns, all four fields** — `review-runtime`, `lenses_run`,
 `lenses_counted: <n>/<applicable>`, `lenses_na`. A dropped Blind Hunter is legal and a silent one is
@@ -167,8 +197,13 @@ indistinguishable from it in the artifact.
   `docs/_scc_sops_prds/workflows_testing_SOP.md` in the same commit, or the armed gate
   rejects the commit.
 
-Classify findings **patch / defer / reject**; auto-fix patches NOW, in this lane; drop noise with a
-one-line reason. **`defer` is not a parking lot** (operator rulings 2026-08-15): a finding may be
+⛔ **You are the ASSESSOR, not the lens** (`code-standards` §6.5). Every lens is told to be
+exhaustive and grades its own work, so it will always return something — that is raw material, not a
+work queue. Three questions, all three YES to fix: **is it REAL** (a concrete failure, not a *"may
+be"*) · **does it change BEHAVIOUR** · **is it in THIS diff**. "It's cheap" is not a reason.
+
+Classify what survives **patch / defer / reject**; auto-fix patches NOW, in this lane; drop noise
+with a one-line reason. **`defer` is not a parking lot** (operator rulings 2026-08-15): a finding may be
 deferred ONLY against a named structural blocker — another live lane owns the file, the fix lives in
 another repo, or it waits on a decision the operator has not taken — and the deferred-work entry names
 that blocker; "pre-existing" or "bigger than this lane" is not one. A finding worth fixing with no
@@ -217,8 +252,9 @@ free-text description. On the ad-hoc lane there is no story id: pass the **branc
 ⚠ **The durable fix is not here.** On the `smh-` side the slug is read from the lane's `task.yaml`
 so no one types it twice, and **no `cicd-*` command writes a `task.yaml` at all** (grep: zero hits) —
 so `devrecord`'s anti-fork default cannot fire on this side and the guard is inert. Recorded, not
-fixed here: it is a change to the story lane's manifest, and it belongs with the close-out rebalance. It reads the ticket back and exits 2 if the
-comment is not there; a non-zero exit means the record did NOT land, so report that rather than
+fixed here: it is a change to the story lane's manifest, and it belongs with the close-out rebalance.
+
+**`jira_feed.py devrecord` reads the ticket back** and exits 2 if the comment is not there; a non-zero exit means the record did NOT land, so report that rather than
 success. No ticket key at all (a fix outside any ticket) → say so in the Done report and skip;
 **never invent a key.** Full acli reference: `.agents/rules/jira.md`.
 

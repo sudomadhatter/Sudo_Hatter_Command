@@ -97,19 +97,29 @@ _RULE_POINTERS = (
     ("port-checklist", "porting",
      re.compile(r"exists in more than one repo|git diff --no-index", re.I)),
     # SCC-205. A command that PRODUCES findings must point at the rule that says how to
-    # dispose of them - the three-question test (`code-standards.md` 6.5). Before this row
+    # dispose of them - the three-question test (`code-standards.md` §6.5). Before this row
     # the ruling lived in ONE review-engine step, owned by no rule, cited by none of the
-    # four audit commands, and every one of them still described an unbounded fix queue.
+    # audit commands, and every one of them still described an unbounded fix queue.
+    #
     # ⛔ Keyed on the MACHINERY, never the concept. `disposition` / `finding` as words match
-    # half the tree; what actually marks a finding-producer is the shape it emits - the
-    # applied/deferred/dismissed triage vocabulary, or the FAIL/CONCERNS/PASS verdict ladder
-    # it grades findings onto. That is the same lesson as the two rows above, learned twice:
-    # a concept-keyed row names the wrong files, so RED can never reach 0/0 and the whole
-    # check gets ignored.
-    ("code-standards", "producing findings",
-     re.compile(r"`applied`\s*/\s*`deferred`\s*/\s*`dismissed`"
-                r"|applied / deferred / dismissed"
-                r"|^\s*-\s*\*\*FAIL\*\*\s+—", re.M)),
+    # half the tree; what marks a finding-producer is the shape it EMITS - the triage
+    # vocabulary it classifies into, or the verdict ladder it grades findings onto.
+    #
+    # ⛔ FOUR ARMS, one per vocabulary actually in use, each measured against the tree before
+    # it was added. The first cut shipped TWO arms and review measured one of them DEAD (zero
+    # hits tree-wide) and the other keyed on an EM-DASH - so `cicd-code-review.md`, which
+    # writes `- **FAIL** = ...`, was exempt on punctuation alone. That is the defect this very
+    # row's comment cites from `work-consolidation`: a dead arm inside a live row is a check
+    # that cannot fail, and on a ticket about twin PARITY it held one twin and freed the other.
+    ("code-standards", "producing findings", re.compile(
+        # the clean-code audits' triage vocabulary (backticks optional)
+        r"`?applied`?\s*/\s*`?deferred`?\s*/\s*`?dismissed`?"
+        # a verdict ladder row - ANY punctuation after the label, never just an em-dash
+        r"|^\s*-\s*\*\*FAIL\*\*\s*[-—–=:]"
+        # the fast lane's triage vocabulary
+        r"|patch\s*/\s*defer\s*/\s*reject"
+        # the pre-dev audits' verdict
+        r"|\bNO-GO\b", re.M)),
 )
 
 
@@ -119,7 +129,11 @@ def check_rule_pointers(lobby: Path, rep: wf.Report) -> None:
     mojibake case, where the backticks mean "this is what NOT to write"."""
     cmd_dir = lobby / ".agents" / "commands"
     for f in sorted(cmd_dir.glob("*.md")):
-        if f.name == "INDEX.md":
+        # ⛔ `-AP` twins are ABANDONED and FROZEN (SCC-209) - their own marker says "do not
+        # port law into it". Demanding a NEW pointer from them would force an edit to a file
+        # this repo has declared unmaintained, which is the trap SCC-209 removed from the
+        # twin-freshness check; re-creating it here would just move it.
+        if f.name == "INDEX.md" or f.stem.endswith("-AP"):
             continue
         text = wf.read_text(f)
         for rule, label, pattern in _RULE_POINTERS:
@@ -191,41 +205,82 @@ def check_retired_review_surface(lobby: Path, rep: wf.Report) -> None:
                         f"(SCC-128)")
 
 
-# SCC-205 - the WINDOWS-ONLY invocation. This system is driven from two machines and the
-# venv bin dir is the one path that differs on every single tool call: `Scripts/` on Windows,
-# `bin/` on POSIX. Five authored surfaces hardcoded the Windows form, including
-# `cicd-close-workingtree`'s Step 4 probe - which sits on the DESTRUCTIVE path and, on the
-# Mac, reported a destroyed shared venv that was never touched.
+# SCC-205 - the WINDOWS-ONLY invocation. This system is driven from two machines and the venv
+# bin dir is the one path that differs on every single tool call. Five authored surfaces
+# hardcoded the Windows spelling, the worst being a close-out probe on the DESTRUCTIVE path
+# which, on the Mac, reported a destroyed shared venv that was never touched.
 #
-# ⛔ THE OFF-SWITCH IS ON THE SAME LINE OR THE ONE BESIDE IT, and that is deliberate. Files
-# legitimately NAME the Windows path in three ways: as the Windows arm of a conditional
-# (`|| VENV=backend/.venv/Scripts`), as prose explaining the rule (`Scripts/ on Windows,
-# bin/ on POSIX`), and as a fixture in a test. All three carry the POSIX spelling within a
-# line of the hit, and an invocation that has simply hardcoded Windows does not. Keying on
-# the file would exempt whole documents; keying on the line pair is what makes the
-# distinction the rule actually cares about - "did the author think about the other machine
-# HERE" - rather than "does this file mention POSIX anywhere".
-_WINDOWS_VENV = re.compile(r"\.venv[\\/]Scripts\b")
-_POSIX_AWARE = re.compile(r"\.venv[\\/]bin\b|POSIX|\bbin/\b")
+# ⛔ FILES LEGITIMATELY NAME THE WINDOWS PATH THREE WAYS, and telling them apart is the whole
+# difficulty: as the Windows ARM of a conditional, as PROSE explaining the rule, and as DATA
+# (an allow-list key, a fixture). The first two carry a real POSIX path nearby and are
+# exempted by that. The third cannot be - a path in a data structure has no POSIX twin - so it
+# takes the file-level opt-out below, which is auditable and carries its reason in the file.
+# ⛔ The off-switch is a real `.venv/bin` path, NEVER the bare word "POSIX": review measured
+# that a surviving trailing comment (`# POSIX first, then Windows`) exempted a pure Windows
+# hardcode after its conditional's first clause was deleted. A guard whose off-switch is a word
+# in prose is switched off by prose - and this comment block itself proved it, by tripping the
+# check on its own explanatory text.
+BOTH_MACHINES_OPT_OUT = "wf-lint: allow-windows-venv"
+_WINDOWS_VENV = re.compile(r"\.venv[\\/]+Scripts\b")
+# ⛔ THE OFF-SWITCH IS A REAL POSIX PATH, NEVER THE WORD "POSIX". The first cut also accepted
+# the bare word and any `bin/`, which review measured as a hole: delete the first clause of
+# `VENV=.venv/bin; [ -d "$VENV" ] || VENV=.venv/Scripts   # POSIX first, then Windows` and the
+# surviving trailing COMMENT still exempted a pure Windows hardcode. A guard whose off-switch is
+# a word in prose is switched off by prose.
+_POSIX_AWARE = re.compile(r"\.venv[\\/]+bin\b")
+# How far to look for the POSIX arm. ±1 line was measured too narrow: it misses a PowerShell
+# probe whose brace sits on its own line and a bash conditional whose arms are split by comments
+# - both CORRECT code, both flagged. Widening trades a little precision for not punishing the
+# author who did the right thing, which is the failure mode that gets a guard disarmed.
+_WINDOW = 4
 
 
 def check_both_machines(lobby: Path, rep: wf.Report) -> None:
-    """A hardcoded Windows venv path with no POSIX arm beside it (`code-standards` §5/§6)."""
-    for sub in ("commands", "rules", "skills"):
-        root = lobby / ".agents" / sub
+    """A hardcoded Windows venv path with no POSIX arm near it (`code-standards` §5/§6).
+
+    This system is driven from a Mac AND a PC, and the venv bin dir is the one path that
+    differs on every single tool call: `Scripts/` on Windows, `bin/` on POSIX. Five authored
+    surfaces hardcoded the Windows form (SCC-205), the worst being a close-out probe that
+    guards an irreversible delete and, on the Mac, reported a destroyed shared venv that was
+    never touched.
+
+    ⛔ Scans the AUTHORED masters only. Generated mirrors (`.claude/skills`, `.opencode`,
+    `.agents/workflows`) are byte copies whose fix is a re-sync, never an edit - flagging them
+    would ask the reader to edit a file the next sync overwrites. Door parity is what keeps
+    those honest, and it is a different check.
+    """
+    roots = [lobby / ".agents" / sub for sub in ("commands", "rules", "skills", "scripts")]
+    for root in roots:
         if not root.is_dir():
             continue
-        for f in sorted(root.rglob("*.md")):
-            lines = wf.read_text(f).split("\n")
+        # ⛔ `*` not `*.md`: "a bare `python` in a committed script" is the same rule, and
+        # `.agents/scripts` is where a committed script lives. Suffix-filtered below.
+        for f in sorted(root.rglob("*")):
+            # ⛔ BOTH GUARDS ARE LOAD-BEARING, and the sibling check 30 lines below carries
+            # them with the same comment. `rglob` yields DIRECTORIES whose name ends in `.md`,
+            # and `read_text`'s errors="replace" covers DECODING, not I/O - a dangling symlink
+            # (this repo links gitignored assets into every worktree) raises. Either would take
+            # the whole linter down with a traceback instead of a finding, and this check runs
+            # FIRST, so it would take the defensively-written ones with it.
+            if not f.is_file() or f.suffix.lower() not in (".md", ".py", ".ps1", ".sh"):
+                continue
+            try:
+                text = wf.read_text(f)
+            except OSError as exc:
+                rep.warn("both-machines", f"{f.relative_to(lobby)}: unreadable ({exc})")
+                continue
+            if BOTH_MACHINES_OPT_OUT in text:
+                continue
+            lines = text.split("\n")
             for i, line in enumerate(lines):
                 if not _WINDOWS_VENV.search(line):
                     continue
-                window = "\n".join(lines[max(0, i - 1):i + 2])
+                window = "\n".join(lines[max(0, i - _WINDOW):i + _WINDOW + 1])
                 if _POSIX_AWARE.search(window):
                     continue
                 rep.warn("both-machines",
                          f"{f.relative_to(lobby)}:{i + 1}: hardcodes the WINDOWS venv path "
-                         f"(`.venv/Scripts`) with no POSIX arm beside it - it dies on the "
+                         f"(`.venv/Scripts`) with no POSIX arm near it - it dies on the "
                          f"Mac. Resolve it: `VENV=backend/.venv/bin; [ -d \"$VENV\" ] || "
                          f"VENV=backend/.venv/Scripts` (code-standards §6)")
 

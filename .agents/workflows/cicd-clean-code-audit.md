@@ -76,14 +76,19 @@ outright until SCC-205: on the Mac every one of these commands missed, the floor
 unrunnable, and the objective half of the most-used audit did nothing while the run looked normal.
 
 ```bash
-VENV=backend/.venv/bin; [ -d "$VENV" ] || VENV=backend/.venv/Scripts   # POSIX first, then Windows
+ls backend/.venv/bin/ruff 2>/dev/null || ls backend/.venv/Scripts/ruff.exe   # which layout is this machine?
 ```
+
+⛔ **`<VENV>` below is a placeholder you SUBSTITUTE, not a shell variable.** An earlier cut wrote
+`"$VENV"` and assigned it in a separate block — but shell state does not survive between tool calls,
+so each row run on its own expanded to `/ruff check`, exit 127, and the floor reported itself
+unrunnable. That is the very failure this section exists to fix, reintroduced by its own fix.
 
 | Check | Scoping |
 |---|---|
-| `"$VENV"/ruff check <changed .py files>` | pass the changed paths directly |
+| `<VENV>/ruff check <changed .py files>` | pass the changed paths directly |
 | `npm run lint -- <changed .ts/.tsx files>` (in `frontend/`) | pass the changed paths directly |
-| `"$VENV"/pyrefly check` | whole-program — **count only errors whose file is in the changed set** |
+| `<VENV>/pyrefly check` | whole-program — **count only errors whose file is in the changed set** |
 | `npx tsc --noEmit` (in `frontend/`) | whole-program — **count only errors whose file is in the changed set** |
 
 ⛔ **Run each one BARE** (`tests-must-gate-for-real` §6): `<check> | tail -5` exits 0 whenever `tail`

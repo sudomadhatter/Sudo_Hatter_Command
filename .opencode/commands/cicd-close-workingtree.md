@@ -273,11 +273,15 @@ bare existence check for the moment between them, so **probe, don't just `Test-P
 
 ```powershell
 # ⛔ The venv bin dir is PER-MACHINE - POSIX puts it in bin/, Windows in Scripts/ (code-standards §6).
-$PY = "$PROJECT_ROOT/backend/.venv/bin/python3"
-if (-not (Test-Path $PY)) { $PY = "$PROJECT_ROOT/backend/.venv/Scripts/python.exe" }
+# ⛔ PROJECT_ROOT is a PLACEHOLDER you substitute, exactly as everywhere else in this file -
+# NOT a PowerShell variable. Nothing binds one, and pwsh expands an undefined variable inside
+# a double-quoted string to EMPTY, so `$PROJECT_ROOT/...` would probe `/backend/...`, fail on
+# both machines, and trip the STOP below on the one step guarding an irreversible delete.
+$PY = "PROJECT_ROOT/backend/.venv/bin/python3"
+if (-not (Test-Path $PY)) { $PY = "PROJECT_ROOT/backend/.venv/Scripts/python.exe" }
 & $PY --version                                                      # must print a version
-@(Get-ChildItem $PROJECT_ROOT/frontend/node_modules -Force).Count     # must be non-zero
-@(Get-ChildItem $PROJECT_ROOT/firebase/tests/node_modules -Force).Count
+@(Get-ChildItem PROJECT_ROOT/frontend/node_modules -Force).Count     # must be non-zero
+@(Get-ChildItem PROJECT_ROOT/firebase/tests/node_modules -Force).Count
 ```
 
 ⛔ **This probe hardcoded the WINDOWS path until SCC-205, and it sits on the DESTRUCTIVE path.** On the

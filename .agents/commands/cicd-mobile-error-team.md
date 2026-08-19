@@ -251,7 +251,7 @@ gh pr checks <n> --watch
 > **The zero-checks trap.** `pr-check.yml` has `paths: backend/**, frontend/**`. A hotfix touching
 > only config, `relay/`, scripts or workflows gets **no checks at all** — and an empty check list
 > reads as "nothing failed." It is **UNVERIFIED**. State it, and on desktop run the suite locally
-> instead (`"$VENV"/python -m pytest`, resolving `VENV=backend/.venv/bin` on POSIX or
+> instead (`<VENV>/python -m pytest`, substituting `<VENV>` with `backend/.venv/bin` on POSIX or
 > `backend/.venv/Scripts` on Windows — **never bare `python`**, that's the
 > drifted global 3.14 and produces false failures).
 

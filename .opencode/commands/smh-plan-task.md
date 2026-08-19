@@ -6,6 +6,9 @@ platforms: [opencode, antigravity, claude, codex]
 # /smh-plan-task — Plan the whole Task, subtasks and all (SCC-155)
 
 > **Rules in force for this command:**
+> - `.agents/rules/code-standards.md` §6.5 — **disposition**: you are the assessor, not the
+>   lens. All three YES to act — is it REAL (a concrete failure, not a *"may be"*) · does it
+>   change BEHAVIOUR · is it in THIS diff. "It's cheap" is not a reason
 > - `.agents/rules/000-PLAN-FIRST-GATE.md` — including its **batch clause**, which this command
 >   is the only writer of: one recorded approval covers the plans it lists, and nothing else
 > - `.agents/rules/jira.md` §Subtasks — the SCC-119 hierarchy, and guardrail 2 (placement is the

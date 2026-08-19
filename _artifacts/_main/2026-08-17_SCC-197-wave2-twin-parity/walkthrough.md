@@ -276,3 +276,105 @@ controls are not vacuous agreement, and `G` catches the real regression. Restore
 | `assert-scc205.sh` | **18/18 PASS**; E6 was `11` and E7 was `0` against `49153af` |
 | mutation on `check_both_machines` | off-switch removed → 5 rows red, restored → 47/47 |
 | `/smh-sync-agents` | exit 0 |
+
+---
+
+## Code Review (2026-08-18)
+
+Verdict: CONCERNS @ 531047f
+Suite evidence measured at the post-fix HEAD (see the Evidence row below) — the `Verdict:` sha above
+is the reviewed sha; every finding below was fixed in-thread after it.
+
+review-runtime: fan-out
+
+```
+lenses_run:
+- blind-hunter · ok
+- edge-case-hunter · ok
+- literal-correctness-hunter · recovered-inline — first attempt stalled >600s on a foreground
+  full-suite run and was killed; retried with a no-full-suite constraint and returned
+- acceptance-auditor · recovered-inline — same stall, same cause, same retry
+- test-adequacy-auditor · ok
+lenses_counted:  5/5
+lenses_na:
+- none — review_mode: full, so every lens was applicable
+```
+
+**Why CONCERNS and not PASS.** The gate the lane shipped to stop silent drift was itself
+substantially unguarded, and review measured it rather than arguing it. **Every finding below was
+real, changed behaviour, and was in this diff** — the three-question disposition test admitted them
+all, which is the point of running it rather than a reason to be lenient. They are fixed; CONCERNS
+stands because the volume in one lane's own safety machinery is itself the signal.
+
+### The one that mattered most: 13 of 17 mutants survived
+
+The Test-Adequacy Auditor did not read my mutation proof — it wrote its own 17-mutant sweep and ran
+it. My proof was **one mutant, and it was a widening**. Every *narrowing* survived: `check_both_machines`
+could be cut to one directory, lose its Windows-backslash spelling, have its window widened, be
+downgraded to `info`, or be **unwired from `main()` entirely**, all with the file green.
+
+⭐ That is the difference between "I proved my check can fail" and "I proved my check can fail **the
+way it will actually break**." A widening mutant only ever tests the off-switch.
+
+| Finding | Now |
+|---|---|
+| ⛔ `check_both_machines` **crashed the linter** on a `.md` directory or dangling symlink — reproduced twice. The sibling check 30 lines below carries both guards *with a comment saying why*; I copied its `rglob` and dropped them, and mine runs FIRST, so it took down the defensively-written ones | both guards restored, two crash fixtures |
+| The off-switch accepted the bare **word** `POSIX`, so deleting a conditional's first clause left a trailing comment that exempted the hardcode | off-switch is a real `.venv/bin` path; `wordonly.md` fixture |
+| The ±1-line window **false-positived on correct code** — a PowerShell probe with the brace on its own line (this lane's own probe, reformatted) and a bash conditional split by comments | window ±4; both shapes are negative controls |
+| Scope was markdown in 3 dirs, while the rule it cites names committed **scripts** | `.py/.ps1/.sh` + `scripts/`; fixtures for each |
+| The new rule-pointer row had **zero tests, a DEAD arm** (0 hits tree-wide) and keyed on an **em-dash**, so `cicd-code-review.md` (`- **FAIL** =`) was exempt on punctuation — 3 of 6 files covered, asymmetrically, on a parity ticket | 4 measured arms, punctuation-agnostic; **all 8 twins fire** when the pointer is dropped |
+| `assert-partA.sh` **ignored `--red` and returned green against every ref** — Part A's RED claim was not reproducible by the artifact left to reproduce it | real `--red`, unknown flags refused (exit 2); 5/6 red at `86daaaf` |
+| `test_twin_parity` E6 was a **tautology** (set arithmetic on a literal); gutting A1 left it green | drives the real predicate against a fixture tree |
+| A1 was **blind to differently-named twins** — the shape `PAIRS` documents as normal. `cicd-zzprobe`+`smh-yyprobe` joined the tree green. `NOT_PAIRED` was **dead code** | every family command is pinned or recorded with a reason; both shapes caught |
+| A **duplicate `twin-law` id masked real drift**; an **empty fence** passed identity *and* the anti-vacuity count; an **unclosed fence swallowed the next region** | all three refused and reported |
+| E1 was **hash-seed flaky** (2 reds in 6 runs once a second law is fenced) | pinned; stable across 6 seeds |
+| Symmetry and identity **could be hard-wired true** — the counter-examples tested a *copy* of the predicates | one shared implementation, called by both; loop directionality pinned |
+| `B*` anti-vacuity was **aggregate**, hiding that 8 of 12 symmetry rows compare `{}` to `{}` | the fenced set is declared; scope is a decision |
+| ⛔ **`review_mode: no-spec` promises a lens the engine does not run** — the Acceptance Auditor is `full`-only, so the walkthrough would record an acceptance audit that never happened | `full` + the AC list as `STORY_FILE`, with the trap stated |
+| `$WORKTREE` unbound — and `git -C ""` **does not error**, it silently uses cwd | bound, with the reason |
+| The diff base was `origin/main` while its own comment said "the epic branch" — a story lane would review every sibling's work | `BASE_REF`, epic on a story lane |
+| `$PROJECT_ROOT` broke `cicd-close-workingtree`'s own placeholder convention, re-arming the false alarm on the destructive path | reverted to the placeholder |
+| `"$VENV"` was assigned in one block and used in another — shell state does not survive tool calls, so each row expanded to `/ruff check` → 127 | `<VENV>` substitute-me placeholder |
+| The both-machines fix wrote **POSIX shell into a ```powershell fence** | real PowerShell probe |
+| `.claude/skills/…` door stayed **stale at HEAD** carrying the exact literal this lane removes — and *nothing in the suite compares an authored skill to its door* | fixed, and **CS-04** added: proven to reject and allow |
+| Part E added two scan rows to the cicd audit and **none to its twin** — drift created by the lane building the drift guard | ported back |
+| The SOP row described the ±1-line design the rewrite replaced | rewritten to the shipped design |
+| A door-table row named an `smh-` door from a `cicd-` command that binds "never the lobby" | removed, with the reason |
+| "§ When to Skip case 4" — the section has **no numbered cases** | cited by bullet name |
+
+### Rejected after measurement — two mutants left alive, deliberately
+
+- **A row's assertion replaced by `True`.** Drawn from the guard's own assertion expression, not from
+  the code under test. Every check in this repo "survives" that, and no test can catch it; chasing it
+  is turtles. Recorded, not chased.
+- **Reverting E1's pin.** The defect is *latent* — it needs a second law fenced into that pair before
+  it flakes — so it correctly does not red today. The pin is still right.
+
+⭐ **The sweep also caught a fix that never applied.** One `replace()` silently no-oped after an
+earlier rename, so E1 stayed flaky while I believed it was pinned — surfaced only because the sweep
+reported the mutant `DEFECTIVE` ("removed nothing") rather than `KILLED`. **Every edit script in this
+lane now asserts its anchor.** That is the repo's own rule earning its keep: *a mutant that removes
+nothing is DEFECTIVE, not a coverage gap.*
+
+### Deferred against a named structural blocker
+
+**The `-AP` law assertions in `test_review_engine.py`.** Part A removed the AP obligation from
+`workflow_lint`, but eight live law assertions against `cicd-code-review-AP.md` remain there, and the
+tree-derived `CALLER_FILES` row *requires* it to stay pinned — so when engine law next changes, the
+suite reds until someone edits a file this lane declared frozen. **The trap was relocated, not
+removed.** It cannot be closed here: the plan's Part A explicitly forbids deleting the `-AP` files,
+and un-pinning them breaks the completeness row that exists to stop a silent caller. It needs the
+operator's decision on the `_AP` rewrite. Blocker: *an open decision.* → `deferred-work.md`.
+
+### Gates (all run bare, exit read immediately)
+
+| Gate | Result |
+|---|---|
+| `python3 .agents/scripts/tests/run_all.py` | **34/34 files, exit 0** — `test_workflow_lint` 40 → 59 cases, `test_twin_parity` 27 → 48, `test_command_surfaces` +CS-04 |
+| `python3 .agents/scripts/workflow_lint.py --toolkit-only` | **0 errors, 0 warnings, exit 0** |
+| `assert-partA.sh` | 6/6 green · **5/6 RED at `86daaaf`** (A4 asserts preservation, correctly green in both states) · unknown flag → exit 2 |
+| `assert-scc205.sh` | 18/18 green · 18/18 RED at `49153af` |
+| `sweep-both-machines.py` | **9/9 killed**, each by a named case |
+| `sweep-twin-parity.py` | **8/10 killed**; the two survivors rejected with reasons above |
+| `sweep-partD.sh` | 7/7 killed |
+| `/smh-sync-agents` | exit 0 — every door re-synced |

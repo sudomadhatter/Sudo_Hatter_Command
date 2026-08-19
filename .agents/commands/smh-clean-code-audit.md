@@ -85,7 +85,7 @@ output** — a summarized result is not evidence.
 | Check | Command | Runs when |
 |---|---|---|
 | **Enforcement suite** | `python3 .agents/scripts/tests/run_all.py` | **always.** Must be N/N files passed, exit 0 |
-| **Toolkit self-consistency** | `python3 .agents/scripts/workflow_lint.py --toolkit-only` | **always.** Naming law, frontmatter, `platforms: []`, INDEX coverage + dead links, rule pointers, encoding |
+| **Toolkit self-consistency** | `python3 .agents/scripts/workflow_lint.py --toolkit-only` | **always.** Naming law, frontmatter, `platforms: []`, INDEX coverage + dead links, rule pointers (incl. **disposition**), **both-machines** (a Windows-only venv path), encoding |
 | **SOP currency** | `python3 .agents/scripts/sop_currency.py --paths <changed files> --message "<the commit message>"` | a usage surface changed — `.agents/commands/`, `.agents/rules/`, `.agents/scripts/*.py|.ps1`, git hooks, root `AGENTS.md` |
 | **Python compiles** | `python3 -m py_compile <changed .py files>` | any `.py` in the diff |
 | **Shell parses** | `bash -n <changed .sh files>` | any `.sh` in the diff |
@@ -114,6 +114,12 @@ what fixes it.
 - commented-out code
 - bare `except:` / `except Exception` with no re-raise and no logged reason (`code-standards` §2)
 - a hardcoded absolute path or a `C:/` path where `Path(__file__).parent` belongs
+- **A gate that cannot fail?** A report-only job, `|| true`, `continue-on-error`, or a check
+  whose EMPTY input reads as a pass — `tests-must-gate-for-real` §5. Not a judgment call: it is
+  the FAIL row below.
+- **A `.venv/Scripts` path with no `.venv/bin` arm near it?** `workflow_lint` catches this one
+  mechanically now (`both-machines`), so read its output rather than re-deriving it — but a
+  bare `python`, a `;` path separator or `robocopy` is still yours to spot (`code-standards` §5).
 - **bare `python`** in anything an operator will type or a script will run — the Mac has only `python3`
 
 ---
