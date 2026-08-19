@@ -294,8 +294,9 @@ lenses_run:
 - acceptance-auditor · recovered-inline — same stall, same cause, same retry
 - test-adequacy-auditor · ok
 lenses_counted:  5/5
-lenses_na:
-- none — review_mode: full, so every lens was applicable
+lenses_na: none
+
+No lens was dropped: `review_mode: full`, so all five were applicable and all five ran.
 
 ⛔ **That roster is deliberately NOT fenced, and the close-out taught me why.** I wrote it inside a
 ` ``` ` block and the Task-lane gate reported *"Verdict CONCERNS with NO `lenses_run:` roster"* —
@@ -389,6 +390,19 @@ When the rewrite lands, the new file earns its own rows like any other caller. L
 | `sweep-twin-parity.py` | **8/10 killed**; the two survivors rejected with reasons above |
 | `sweep-partD.sh` | 7/7 killed |
 | `/smh-sync-agents` | exit 0 — every door re-synced |
+
+### Step 0.7 — re-derivation against current `origin/main`
+
+- **What moved:** nothing. `origin/main` is `86daaaf`, which is also this lane's merge-base, so
+  `git rev-list --count HEAD..origin/main` is **0** — there is nothing to absorb. Measured at
+  close-out against the real ref, not carried forward from the plan.
+- **What it changes:** nothing in scope or content. No sibling lane landed while this one ran, so
+  the gates-not-files hazard (`lane-collision-is-gates-not-files`) has no other lane's blobs to run
+  this lane's gates against. The lane is 6 commits ahead of `86daaaf` and 60 files changed.
+- **What was re-measured:** the full suite (**34/34 files, exit 0**), the toolkit lint (**0 errors,
+  0 warnings, exit 0**), and the case count either side of the `-AP` removal (**873 → 849**, exactly
+  8 rows × 3 checks). The map gate `--depth3-only --strict` runs at Step 2 below. The two mutation
+  sweeps and both assertion scripts were re-run at review time and are tabled above.
 
 ## Close-out (2026-08-18) — three preflight errors, all real
 
