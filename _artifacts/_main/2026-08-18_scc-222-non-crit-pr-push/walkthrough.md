@@ -1,4 +1,4 @@
-# Walkthrough — SCC-222: Create /smh-non-crit-pr-push & /cicd-non-crit-pr-push Twin Commands
+# Walkthrough — SCC-222: Create /smh-non-crit-pr-push & /cicd-non-crit-pr-push Twin Commands + Memory Sync
 
 ## What changed
 - `.agents/commands/smh-non-crit-pr-push.md`: Added and updated slash command for fast-tracking non-critical command center changes under standing ticket `SCC-186` (or auto-provisioned standing ticket) and standing branch `chore/<KEY>-standing-push` directly to PR.
@@ -6,9 +6,12 @@
 - `.agents/commands/INDEX.md`: Registered both `/cicd-non-crit-pr-push` and `/smh-non-crit-pr-push` in their respective command catalogs.
 - `.agents/scripts/tests/test_twin_parity.py`: Pinned `("cicd-non-crit-pr-push.md", "smh-non-crit-pr-push.md")` in `PAIRS`.
 - `docs/_scc_sops_prds/workflows_testing_SOP.md`: Documented `/cicd-non-crit-pr-push` in Section 8a & quick table, and updated Section 9a for `/smh-non-crit-pr-push` with dynamic ticket provisioning.
+- `_artifacts/_memory/audit-findings-need-a-file-anchor.md`: Recorded memory document regarding file-anchored audit findings (from SCC-225).
+- `_artifacts/_memory/MEMORY.md`: Added index link for `audit-findings-need-a-file-anchor.md`.
 - Ran `sync-agents.ps1` to mirror commands to `.agents/workflows/`, `.agents/skills/`, `.claude/skills/`, and `.opencode/commands/`.
 
 ## Evidence
+- `test_memory_store.py`: 46/46 passed (PASS)
 - `workflow_lint.py --toolkit-only`: 0 error(s), 0 warning(s), 8 info (PASS)
 - `test_twin_parity.py`: 51/51 passed (PASS)
 - `test_sops_prds_folder.py`: 61/61 passed (PASS)

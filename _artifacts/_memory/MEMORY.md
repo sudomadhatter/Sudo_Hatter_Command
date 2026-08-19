@@ -104,6 +104,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [Takeover: check liveness](autopilot-manual-takeover-check-liveness.md) — verify no orchestrator is alive before manual takeover.
 
 ## Working style
+- [⭐⛔ Audit findings need a FILE anchor](audit-findings-need-a-file-anchor.md) — fan-outs manufacture findings; no anchor = delete; never build an audit-of-the-audit (SCC-225).
 - [⭐ Lightweight lane for specific, can't-break work](lightweight-lane-for-specific-no-break-work.md) — doc-only / operator-directed ask is ticket -> edit -> push (SCC-162).
 - [Own it plainly](own-it-plainly-dont-make-excuses.md) — own issues in one line, then act.
 - [Writes for a big-picture operator](writes-for-big-picture-operator.md) — consequence before mechanism; explain terms clearly.
