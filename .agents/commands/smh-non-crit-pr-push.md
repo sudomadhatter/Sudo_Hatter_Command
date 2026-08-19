@@ -137,4 +137,25 @@ Print the PR link and status back to the operator:
 - **Status:** `main-write-gate passed` (🟢)
 - **Standing Ticket:** `<KEY>`
 
+---
+
+## Step 9 — Return checkout to main
+
+Immediately switch the working checkout back to `main` so the workspace is not left on the standing branch:
+
+```bash
+git checkout main
+```
+
+---
+
+## Step 10 — Pull landed changes after operator merge
+
+Once the operator merges the PR on GitHub, pull the merge commit into local `main`:
+
+```bash
+git pull origin main
+```
+
 Optional additional input (summary or specific file paths): $ARGUMENTS
+
