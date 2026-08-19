@@ -1,0 +1,5 @@
+task_key: SCC-238
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-238-non-crit-push-restore-main
+close_command: smh-close-task-merge-tree
+secondary_repos: []
