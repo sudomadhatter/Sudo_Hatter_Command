@@ -1223,6 +1223,7 @@ doc and index edits, memory files, `_artifacts` INDEX rows, notes, and quick ref
 - **Qualifies `LIGHT`** — refuses product code or deployable paths.
 - **Stages explicitly**, commits with `<KEY> <summary> [sop-ok]`, pushes, and opens the PR via `gh pr create`.
 - **Verifies `main-write-gate`** passes before handing back the PR link.
+- **Restores checkout to `main`** (`git -C "$REPO" checkout main`) and pulls latest `main` once merged on GitHub (`git -C "$REPO" pull origin main`).
 
 ---
 
@@ -1431,6 +1432,7 @@ notes, quick reference updates. Operates under standing ticket `SCC-186` and sta
 - **Stages explicit paths**, commits with `SCC-186 <summary> [sop-ok]`.
 - **Pushes to origin** and opens PR via `gh pr create`.
 - **Verifies `main-write-gate`** passes on GitHub.
+- **Restores checkout to `main`** (`git checkout main`) and pulls latest `main` once merged on GitHub (`git pull origin main`).
 
 ### ⭐ `/smh-plan-task <TASK-KEY>` — plan the whole Task, subtasks and all
 

@@ -148,4 +148,25 @@ Print the PR link and status back to the operator:
 - **PR URL:** `https://github.com/<owner>/<repo>/pull/<number>`
 - **Status:** `main-write-gate passed` (🟢)
 
+---
+
+## Step 9 — Return checkout to main
+
+Immediately switch the child project's checkout back to `main` so the workspace is not left on the standing branch:
+
+```bash
+git -C "$REPO" checkout main
+```
+
+---
+
+## Step 10 — Pull landed changes after operator merge
+
+Once the operator merges the PR on GitHub, pull the merge commit into local `main`:
+
+```bash
+git -C "$REPO" pull origin main
+```
+
 Optional additional input (target project, summary, or file paths): $ARGUMENTS
+
