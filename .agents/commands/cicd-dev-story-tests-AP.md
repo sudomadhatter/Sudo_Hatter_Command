@@ -1,6 +1,14 @@
 ---
 description: Autopilot (headless) test-first Dev command — PLAN or IMPLEMENT a story test-first inside the shared autopilot run folder. Modeled off /cicd-dev-story-tests-AP but weaves the atdd (red) → implement (green) → automate (expand) flow from /cicd-dev-story-tests. NOT for interactive use; the autopilot orchestrator invokes it.
 platforms: [claude, opencode]
+# ⛔ UNMAINTAINED (SCC-209, operator ruling 2026-08-18): the `_AP` autopilot lane does not
+# work and will be REDONE from scratch. Until then this file is FROZEN - do not diff it against
+# its interactive primary, do not port law into it, and do not restamp it. The twin-freshness
+# gate that used to demand that was deleted in the same ruling; keeping it armed only bought
+# restamps of a file nobody maintains.
+# It is KEPT rather than deleted because three autopilot engines still invoke it BY NAME - a
+# missing command makes a headless stage improvise silently instead of failing.
+# The twin relationship that IS maintained is `cicd-*` <-> `smh-*`.
 ---
 
 # /cicd-dev-story-tests-AP — Autopilot Test-First Dev (Amelia)

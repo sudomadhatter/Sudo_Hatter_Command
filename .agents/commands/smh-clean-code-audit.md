@@ -11,7 +11,10 @@ platforms: [opencode, antigravity, claude, codex]
 > - `.agents/rules/worktree-per-story.md` §"cwd is not intent" — the diff is resolved from command
 >   output, because sibling `chore/*` lanes make cwd a bad witness
 > - `.agents/rules/code-standards.md` — still the standard for real code (`.py`, `.ps1`, `.sh`): the
->   comment contract and the AI-drift bans below are **its** §1 and §2
+>   comment contract and the AI-drift bans below are **its** §1 and §2, and §6.5 is the **disposition**
+>   test this command's fix step applies
+> - `.agents/rules/tests-must-gate-for-real.md` §5 — a gate that cannot fail is a finding (the FAIL
+>   ladder row below); §6 — run gates bare
 
 Checks a **Task diff** against the two documents that define clean *here*:
 
@@ -24,7 +27,7 @@ Checks a **Task diff** against the two documents that define clean *here*:
 if a standard moved, the audit moves with it.
 
 > **Why this is not `/cicd-clean-code-audit`.** That command's machine floor is
-> `backend/.venv/Scripts/python.exe -m ruff`, `npm run lint`, `pyrefly`, `tsc` — **none of which exist
+> the project venv's `ruff`, `npm run lint`, `pyrefly`, `tsc` — **none of which exist
 > in the command centre.** There is no venv, no `backend/`, no `frontend/`, no `package.json`. Run it
 > here and every check reports SKIPPED, which under its own rules is *"a check that did not run is not
 > a check that passed"* — a floor made entirely of holes. The lobby has a real machine floor; it is
@@ -82,7 +85,7 @@ output** — a summarized result is not evidence.
 | Check | Command | Runs when |
 |---|---|---|
 | **Enforcement suite** | `python3 .agents/scripts/tests/run_all.py` | **always.** Must be N/N files passed, exit 0 |
-| **Toolkit self-consistency** | `python3 .agents/scripts/workflow_lint.py --toolkit-only` | **always.** Naming law, frontmatter, `platforms: []`, INDEX coverage + dead links, rule pointers, `-AP` twin drift, encoding |
+| **Toolkit self-consistency** | `python3 .agents/scripts/workflow_lint.py --toolkit-only` | **always.** Naming law, frontmatter, `platforms: []`, INDEX coverage + dead links, rule pointers (incl. **disposition**), **both-machines** (a Windows-only venv path), encoding |
 | **SOP currency** | `python3 .agents/scripts/sop_currency.py --paths <changed files> --message "<the commit message>"` | a usage surface changed — `.agents/commands/`, `.agents/rules/`, `.agents/scripts/*.py|.ps1`, git hooks, root `AGENTS.md` |
 | **Python compiles** | `python3 -m py_compile <changed .py files>` | any `.py` in the diff |
 | **Shell parses** | `bash -n <changed .sh files>` | any `.sh` in the diff |
@@ -111,6 +114,12 @@ what fixes it.
 - commented-out code
 - bare `except:` / `except Exception` with no re-raise and no logged reason (`code-standards` §2)
 - a hardcoded absolute path or a `C:/` path where `Path(__file__).parent` belongs
+- **A gate that cannot fail?** A report-only job, `|| true`, `continue-on-error`, or a check
+  whose EMPTY input reads as a pass — `tests-must-gate-for-real` §5. Not a judgment call: it is
+  the FAIL row below.
+- **A `.venv/Scripts` path with no `.venv/bin` arm near it?** `workflow_lint` catches this one
+  mechanically now (`both-machines`), so read its output rather than re-deriving it — but a
+  bare `python`, a `;` path separator or `robocopy` is still yours to spot (`code-standards` §5).
 - **bare `python`** in anything an operator will type or a script will run — the Mac has only `python3`
 
 ---
@@ -190,6 +199,17 @@ Emit findings in this exact shape so `/smh-code-review` can fold them into its v
 - **CONCERNS** — `workflow_lint` **warnings** · comment-contract gaps · every judgment finding in
   Step 2B and 2C that is not listed above.
 - **PASS** — floor green on the changed set, nothing above noise.
+
+<!-- twin-law: disposition -->
+⛔ **Decide what is REAL before you fix anything** (`code-standards` §6.5 — the operator's ruling,
+2026-08-17: *"the agent's job is to find things so it always will ... we fix actual issues"*). You are
+the assessor; a lens's severity label is an INPUT, not a verdict. Three questions, all three YES to fix:
+**is it REAL** (state the concrete failure — *this input, this wrong output* — or drop it) · **does it
+change BEHAVIOUR** (naming, structure and wording do not) · **is it in THIS diff** (pre-existing debt in
+an untouched file is not this lane's work). ⛔ **"It's cheap" is not a reason** — twenty cheap fixes is
+the audit that never ends, each one landing after the checks ran, unreviewed. Record the tail in ONE
+line: how many came back, how many were real and fixed, the rest dismissed under this ruling.
+<!-- /twin-law -->
 
 Apply the fixes you can make safely, then **re-run the affected check and paste the new output**. Mark
 each finding `applied` / `deferred` / `dismissed` — a dismissal needs a reason, and a deferral

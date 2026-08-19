@@ -10,6 +10,7 @@ history nobody will touch) that the one actionable line is never read.
 """
 from __future__ import annotations
 
+import subprocess
 import sys
 from pathlib import Path
 
@@ -263,170 +264,201 @@ def main() -> int:
         c.check("SCC-63 the vendor allowlist stays CLOSED (20 names)",
                 len(lint.VENDOR_COMMANDS) == 20, str(len(lint.VENDOR_COMMANDS)))
 
-        # ── SCC-82: the AP-twin check must be SATISFIABLE ────────────────────
-        # It compared commit timestamps and nothing else, so a pair that had been
-        # diffed and needed no port warned forever. The only way to clear it was to
-        # touch the twin - a false claim encoded in a timestamp, and exactly the
-        # "accepted noise" that makes a non-zero baseline useless.
-        #
-        # `ap_reconciled: <primary-sha>` is the twin's auditable claim: "I read the
-        # primary at this sha and there is nothing to port." The danger is obvious -
-        # a claim mechanism is one bad line away from being an off-switch - so the
-        # cases below assert BOTH directions, and the one that matters is case D:
-        # the moment the primary genuinely moves, the stamp must go stale and the
-        # warning must come back on its own.
-        tw = tmp / "twinrepo"
-        (tw / ".agents/commands").mkdir(parents=True)
-        tcmds = tw / ".agents/commands"
-
-        def tgit(*args: str) -> str:
-            r = subprocess.run(["git", *args], cwd=tw, capture_output=True,
-                               text=True, errors="replace")
-            return r.stdout.strip()
-
-        # ⛔ Commit dates are PINNED, and the first RED run is why. Git timestamps
-        # have 1-second resolution, so fixture commits made back-to-back land on the
-        # same second and `pr_ts > ap_ts` is false - case B did not fire, and case C
-        # then "passed" while proving nothing at all, because the check was silent
-        # for a reason that had nothing to do with the stamp. A vacuous green that
-        # looks identical to a real one is the failure this whole file guards.
-        import os
-        _clock = [0]
-
-        def tcommit(msg: str) -> None:
-            _clock[0] += 86400
-            stamp = f"{1780000000 + _clock[0]} +0000"
-            env = {**os.environ, "GIT_AUTHOR_DATE": stamp, "GIT_COMMITTER_DATE": stamp}
-            subprocess.run(["git", "add", "-A"], cwd=tw, capture_output=True)
-            subprocess.run(["git", "commit", "-qm", msg], cwd=tw,
-                           capture_output=True, env=env)
-
-        tgit("init", "-q")
-        tgit("config", "user.email", "t@t.t")
-        tgit("config", "user.name", "t")
-
-        def twin_report() -> wf.Report:
-            r = wf.Report()
-            lint.check_ap_twins(tw, r)
-            return r
-
-        def ap_msgs(r: wf.Report) -> str:
-            return " ".join(i["msg"] for i in r.items if i["section"] == "ap-twins")
-
-        prim, twin = tcmds / "thing.md", tcmds / "thing-AP.md"
-        # The twin names its primary's stem - that is the OTHER drift signal, and
-        # leaving it out here would make every case below fire for the wrong reason.
-        twin.write_text("---\ndescription: x\n---\n# /thing-AP - modeled off thing\n",
-                        encoding="utf-8")
-        prim.write_text("---\ndescription: x\n---\n# /thing\nv1\n", encoding="utf-8")
-        tcommit("both together")
-
-        # A. Committed together -> nothing to report. If this fires, every later
-        #    case is meaningless because the detector is simply always-on.
-        c.check("SCC-82 A twins committed together are silent",
-                not ap_msgs(twin_report()), ap_msgs(twin_report())[:140])
-
-        # B. POSITIVE CONTROL: primary moves alone -> the check must fire. This is
-        #    the behaviour being preserved, not replaced.
-        prim.write_text("---\ndescription: x\n---\n# /thing\nv2 changed\n",
-                        encoding="utf-8")
-        tcommit("primary only")
-        c.check("SCC-82 B primary committed after the twin still fires",
-                "diff the twin" in ap_msgs(twin_report()), ap_msgs(twin_report())[:140])
-
-        # C. The stamp alone must satisfy it. ⛔ The twin is deliberately NOT
-        #    committed here. Committing it would make the twin newer than the
-        #    primary, the timestamp path would go quiet by itself, and this case
-        #    would pass identically with the feature unbuilt - which is exactly what
-        #    the first draft did. Left uncommitted, silence can ONLY come from the
-        #    stamp being read.
-        prim_sha = tgit("log", "-1", "--format=%H", "--", str(prim))
-        stamped_twin = (f"---\ndescription: x\nap_reconciled: {prim_sha}\n---\n"
-                        "# /thing-AP - modeled off thing\n")
-        twin.write_text(stamped_twin, encoding="utf-8")
-        c.check("SCC-82 C ap_reconciled alone silences it, twin history untouched",
-                not ap_msgs(twin_report()), ap_msgs(twin_report())[:140])
-        tcommit("stamp the twin")
-
-        # D. ⭐ THE CASE THE TICKET EXISTS FOR, and it is built so the OLD check
-        #    would call it clean. The primary moves, then the twin is committed
-        #    AFTER it while still carrying the old sha - i.e. someone touched the
-        #    twin and reset the clock without diffing anything. Timestamps say
-        #    "fine"; the stamp says "you reconciled against a primary that no longer
-        #    exists". If the stamp were a mute button rather than a claim, this is
-        #    where it would show, and it must WARN.
-        prim.write_text("---\ndescription: x\n---\n# /thing\nv3 changed again\n",
-                        encoding="utf-8")
-        tcommit("primary moves again")
-        twin.write_text(stamped_twin + "\na cosmetic edit\n", encoding="utf-8")
-        tcommit("touch the twin WITHOUT diffing - the cheat this must block")
-        ap_ts = tgit("log", "-1", "--format=%ct", "--", str(twin))
-        pr_ts = tgit("log", "-1", "--format=%ct", "--", str(prim))
-        c.check("SCC-82 D the twin is genuinely NEWER here (the old check saw clean)",
-                int(ap_ts) > int(pr_ts), f"twin={ap_ts} primary={pr_ts}")
-        c.check("SCC-82 D a stale stamp warns even when the twin is newer",
-                "diff the twin" in ap_msgs(twin_report()), ap_msgs(twin_report())[:140])
-
-        # E. A sha that is not the primary's current one is not a claim about
-        #    anything - garbage must not buy silence. Twin is newest here too, so
-        #    again only the stamp check can produce the warning.
-        twin.write_text("---\ndescription: x\nap_reconciled: 0000000000000000000"
-                        "000000000000000000000\n---\n# /thing-AP - modeled off thing\n",
-                        encoding="utf-8")
-        tcommit("bogus stamp")
-        c.check("SCC-82 E a bogus ap_reconciled sha does not silence it",
-                "diff the twin" in ap_msgs(twin_report()), ap_msgs(twin_report())[:140])
-
-        # F. The pre-existing signals are untouched: a twin that stopped naming its
-        #    primary, and a twin with no primary at all.
-        # `thing` is a SUBSTRING of `thing-AP`, so a twin that still says its own
-        # name trivially contains its primary's stem - the first draft of this case
-        # could not fail. The text below names neither.
-        twin.write_text(f"---\ndescription: x\nap_reconciled: {prim_sha}\n---\n"
-                        "# /renamed-AP - points at nobody\n", encoding="utf-8")
-        c.check("SCC-82 F a twin that stopped naming its primary still warns",
-                "no longer references" in ap_msgs(twin_report()),
-                ap_msgs(twin_report())[:140])
-        orphan = tcmds / "orphan-AP.md"
-        orphan.write_text("---\ndescription: x\n---\n# /orphan-AP\n", encoding="utf-8")
-        r = twin_report()
-        c.check("SCC-82 F a twin with no primary is still an ERROR",
-                any(i["sev"] == "ERROR" for i in r.items if i["section"] == "ap-twins"),
-                ap_msgs(r)[:140])
-        orphan.unlink()
-
-        # G. The real repo is the point of the ticket: zero warnings, and the twins
-        #    that were never stale must not have been stamped to make that true.
+        # ── SCC-209: the `-AP` twin freshness check is GONE ─────────────────
+        # The `_AP` autopilot lane is abandoned pending a rewrite (operator ruling,
+        # 2026-08-18), so the twin-freshness check and its frontmatter stamp were
+        # deleted rather than left armed - an armed gate on an abandoned file only buys
+        # restamps of a file nobody maintains. What survives is the one fact a reader
+        # of those files still needs: they are UNMAINTAINED, and three autopilot
+        # engines still invoke them by name, which is why they were kept, not deleted.
+        # ⛔ This assertion is what stops the marker being quietly dropped, and it is
+        #    the ONLY mechanical statement left about the trio.
+        # `real` is the live lobby root - the SCC-128 block below reuses it.
         real = Path(__file__).resolve().parents[3]
-        rep = wf.Report()
-        lint.check_ap_twins(real, rep)
-        c.check("SCC-82 G the live repo's AP twins report nothing",
-                not [i for i in rep.items if i["section"] == "ap-twins"],
-                str([i["msg"] for i in rep.items])[:200])
-        # ⛔ SCC-128 rewrote this assertion, and said so rather than quietly widening a list.
-        # It used to be `stamped == ["cicd-code-review-AP.md"]` — a hard-coded snapshot of
-        # which twins happened to be stamped that week. SCC-128 edited `cicd-self-audit.md`,
-        # which correctly woke this check on ITS twin; that twin was then genuinely diffed
-        # (nothing to port) and stamped — the exact behaviour the mechanism exists to
-        # reward — and the snapshot failed. A test that reds when someone does the right
-        # thing teaches people to stop doing it.
+        ap_files = sorted((real / ".agents/commands").glob("*-AP.md"))
+        unmarked = [f.name for f in ap_files if "UNMAINTAINED" not in wf.read_text(f)]
+        c.check("SCC-209 every -AP command is marked UNMAINTAINED",
+                len(ap_files) == 3 and not unmarked,
+                f"found={[f.name for f in ap_files]} unmarked={unmarked}")
+
+        # ── SCC-205: the WINDOWS-ONLY invocation ─────────────────────────────
+        # The venv bin dir is the one path that differs on every tool call between the two
+        # machines this system runs on. Five authored surfaces hardcoded `Scripts/`, and the
+        # worst of them was `cicd-close-workingtree`'s Step 4 probe: it guards an
+        # IRREVERSIBLE delete, and on the Mac it reported a destroyed shared venv that was
+        # never touched. A probe that cries wolf on the destructive step is one people learn
+        # to skip.
         #
-        # What the assertion was actually defending is unchanged and is now stated
-        # directly: nobody may buy silence with a bare stamp. Every stamp must be
-        # accompanied by a written reason in the same frontmatter — that is what
-        # distinguishes "I read the primary and there is nothing to port" from
-        # "I pasted a sha to make the linter shut up", and it is the one part a
-        # touch-to-silence sweep will not bother to forge. Staleness itself is already
-        # covered by the assertion above, which reads every stamp against its primary's
-        # current sha.
-        stamped = {p.name: wf.read_text(p)
-                   for p in sorted((real / ".agents/commands").glob("*-AP.md"))
-                   if "ap_reconciled" in wf.read_text(p)}
-        unexplained = [n for n, t in stamped.items()
-                       if "Diffed against" not in t or "nothing to port" not in t]
-        c.check("SCC-82 G every stamped twin records WHY it was reconciled",
-                stamped and not unexplained,
-                f"stamped={sorted(stamped)} unexplained={unexplained}")
+        # ⛔ THE LOOK-ALIKES ARE THE WHOLE DIFFICULTY. A file may legitimately name the
+        # Windows path as the Windows ARM of a conditional, as PROSE explaining the rule, or
+        # as DATA (an allow-list key). The first two carry a real POSIX path nearby; the
+        # third cannot, and takes the auditable file-level opt-out. Without these controls
+        # the check fires on the documents that state the law correctly - the same disease as
+        # `comment-literals-invert-source-grep-tests`.
+        #
+        # ⭐ EVERY ROW BELOW EXISTS BECAUSE A MUTANT SURVIVED THE FIRST CUT. Review ran an
+        # independent 17-mutant sweep against this check and 13 lived: the scan could be cut
+        # to one directory, lose its backslash spelling, have its window widened, be
+        # downgraded to `info`, or be UNWIRED from main() entirely, all with the file green.
+        # The first cut proved one widening mutant and called it proven.
+        bm = tmp / "bothmachines"
+        cmds = bm / ".agents/commands"
+        cmds.mkdir(parents=True)
+        (bm / ".agents/rules").mkdir(parents=True)
+        (bm / ".agents/skills/deep").mkdir(parents=True)
+        (bm / ".agents/scripts").mkdir(parents=True)
+
+        (cmds / "hardcoded.md").write_text(
+            "---\ndescription: x\n---\n"
+            "Run `backend/.venv/Scripts/python.exe -m pytest`.\n", encoding="utf-8")
+        # ⛔ THE NATIVE WINDOWS SPELLING, and it is the one that matters: the literal this
+        # lane DELETED from the cloud-run skill was `.venv\Scripts\python.exe` - backslashes.
+        # The regex arm that catches it had no fixture, so dropping it survived the sweep.
+        (cmds / "backslash.md").write_text(
+            "---\ndescription: x\n---\n"
+            "Run `backend\\.venv\\Scripts\\python.exe -m pytest`.\n", encoding="utf-8")
+        # Scope: `rules/`, a NESTED skill, and a committed SCRIPT. Cutting the scan to
+        # `commands/` alone used to survive, because every fixture lived there.
+        (bm / ".agents/rules/r.md").write_text(
+            "Always call `backend/.venv/Scripts/pyrefly.exe check`.\n", encoding="utf-8")
+        (bm / ".agents/skills/deep/SKILL.md").write_text(
+            "Run `.venv/Scripts/python.exe -m pytest`.\n", encoding="utf-8")
+        (bm / ".agents/scripts/run.ps1").write_text(
+            "& backend/.venv/Scripts/python.exe -m ruff check\n", encoding="utf-8")
+
+        # The three legitimate shapes, each a NEGATIVE control.
+        (cmds / "conditional.md").write_text(
+            "---\ndescription: x\n---\n"
+            "```bash\nVENV=backend/.venv/bin; [ -d \"$VENV\" ] || VENV=backend/.venv/Scripts\n```\n",
+            encoding="utf-8")
+        (cmds / "prose.md").write_text(
+            "---\ndescription: x\n---\n"
+            "A venv puts its executables in `.venv/Scripts/` on Windows and `.venv/bin/` on POSIX.\n",
+            encoding="utf-8")
+        # ⛔ MULTI-LINE, both shapes review measured as FALSE POSITIVES under a +/-1 window:
+        # a PowerShell probe with the brace on its own line (conventional formatting - and it
+        # is THIS LANE'S OWN probe, which passed only because the brace happened to be inline)
+        # and a bash conditional whose arms are separated by comments.
+        (cmds / "multiline.md").write_text(
+            "---\ndescription: x\n---\n"
+            "```powershell\n"
+            "$PY = \"$ROOT/backend/.venv/bin/python3\"\n"
+            "if (-not (Test-Path $PY)) {\n"
+            "    $PY = \"$ROOT/backend/.venv/Scripts/python.exe\"\n"
+            "}\n```\n", encoding="utf-8")
+        (cmds / "spaced.md").write_text(
+            "---\ndescription: x\n---\n"
+            "```bash\nVENV=backend/.venv/bin\n"
+            "# the venv layout differs per machine\n"
+            "# fall back to the Windows layout\n"
+            "[ -d \"$VENV\" ] || VENV=backend/.venv/Scripts\n```\n", encoding="utf-8")
+        # ⛔ PRECISION, BOTH DIRECTIONS - these two exist because widening the window and
+        # loosening the off-switch BOTH survived the first rebuild. A guard is only as good
+        # as the narrowest thing it still catches.
+        #   `distant.md` - a correct POSIX conditional at the top and, far below it, a
+        #   SEPARATE genuine hardcode. Widening the window exempts the second by borrowing
+        #   the first's POSIX arm from another part of the file.
+        (cmds / "distant.md").write_text(
+            "---\ndescription: x\n---\n"
+            "```bash\nVENV=backend/.venv/bin; [ -d \"$VENV\" ] || VENV=backend/.venv/Scripts\n```\n"
+            + "\nfiller prose line\n" * 12 +
+            "\nNow run `backend/.venv/Scripts/pyrefly.exe check`.\n", encoding="utf-8")
+        #   `wordonly.md` - a real hardcode whose only nearby POSIX signal is the WORD in a
+        #   comment. This is the measured regression: delete the first clause of a
+        #   conditional and the surviving trailing comment used to exempt what was left.
+        (cmds / "wordonly.md").write_text(
+            "---\ndescription: x\n---\n"
+            "```bash\n# POSIX first, then Windows\n"
+            "VENV=backend/.venv/Scripts\n```\n", encoding="utf-8")
+
+        # DATA, with the auditable opt-out - the shape no POSIX twin can exempt.
+        (cmds / "optout.md").write_text(
+            "---\ndescription: x\n---\n"
+            "wf-lint: allow-windows-venv - the map below is an allow-list of PATHS, not calls.\n"
+            "KNOWN = {'.venv/Scripts/python.exe': 'named in the PRD'}\n", encoding="utf-8")
+        # ⛔ THE TWO CRASH SHAPES. `rglob` yields DIRECTORIES ending in `.md`, and
+        # errors="replace" covers DECODING, not I/O - a dangling symlink (this repo links
+        # gitignored assets into every worktree) raises. Either takes the linter down with a
+        # traceback instead of a finding, and this check runs FIRST.
+        (cmds / "adirectory.md").mkdir()
+        (cmds / "dangling.md").symlink_to(bm / "nonexistent-target")
+
+        rep = wf.Report()
+        lint.check_both_machines(bm, rep)   # must not raise
+        rows = [i for i in rep.items if i["section"] == "both-machines"]
+        bmsg = " ".join(i["msg"] for i in rows)
+        for name, why in (("hardcoded.md", "a forward-slash hardcode"),
+                          ("backslash.md", "the NATIVE Windows backslash spelling"),
+                          ("r.md", "a rule file (scope beyond commands/)"),
+                          ("SKILL.md", "a NESTED skill file"),
+                          ("run.ps1", "a committed SCRIPT, not just markdown"),
+                          ("distant.md", "a hardcode too FAR from an unrelated POSIX arm"),
+                          ("wordonly.md", "a hardcode whose only POSIX signal is the WORD")):
+            c.check(f"SCC-205 A {why} is reported",
+                    name in bmsg, "" if name in bmsg else bmsg[:200])
+        for name, why in (("conditional.md", "the Windows ARM of a one-line conditional"),
+                          ("prose.md", "prose stating the rule"),
+                          ("multiline.md", "a PowerShell probe with the brace on its own line"),
+                          ("spaced.md", "a bash conditional whose arms are split by comments"),
+                          ("optout.md", "DATA under the auditable file opt-out")):
+            c.check(f"SCC-205 B {why} is NOT reported",
+                    name not in bmsg, "" if name not in bmsg else bmsg[:200])
+        c.check("SCC-205 C a .md DIRECTORY and a dangling symlink do not crash the linter",
+                True, "reached this line without raising")
+        c.check("SCC-205 D exactly the seven offenders - not firing on everything",
+                len(rows) == 7, f"{len(rows)}: {bmsg[:240]}")
+        # ⛔ SEVERITY IS PINNED. Every row above filters on `section`, so downgrading
+        # `rep.warn` to `rep.info` survived them all - and a warning is what makes
+        # `--toolkit-only` exit non-zero, i.e. what makes this a gate at all.
+        # ⛔ `WARN`, and the row asserts the STRING the Report actually uses - the first cut
+        # asserted "WARNING" and went red on its own fixture. A warning is what makes
+        # `--toolkit-only` exit non-zero, i.e. what makes this a gate rather than a note.
+        c.check("SCC-205 E the finding is a WARN (exit-code bearing), not an info",
+                bool(rows) and all(i["sev"] == "WARN" for i in rows),
+                str(sorted({i["sev"] for i in rows})))
+        c.check("SCC-205 F the message names the fix, not just the sin",
+                "code-standards" in bmsg and "VENV=" in bmsg, bmsg[:200])
+
+        # G. ⭐ THE WIRING. Every row above calls the function DIRECTLY, so deleting its one
+        #    line in main() passes all of them while `--toolkit-only` - what CI, the close-out
+        #    gate and the clean-code floor actually run - goes permanently silent. Measured:
+        #    that deletion survived the entire first cut. Same shape as SCC-128 G below.
+        wired = bm / "wired"
+        # ⛔ `Projects/` is what makes this a LOBBY (`wf.find_lobby_root`: .agents AND
+        # Projects). Without it the CLI exits 2 at resolution and the control row below
+        # passes on an error message instead of on a clean run - a vacuous green, caught
+        # by this block's own first run.
+        for d in (".agents/commands", ".agents/rules", ".agents/scripts", ".agents/skills",
+                  "Projects"):
+            (wired / d).mkdir(parents=True)
+        for fn in ("wf_common.py", "workflow_lint.py"):
+            (wired / ".agents/scripts" / fn).write_bytes((SCRIPTS / fn).read_bytes())
+        (wired / ".agents/commands/zz-hardcode.md").write_text(
+            "---\ndescription: x\n---\nRun `backend/.venv/Scripts/python.exe -m pytest`.\n",
+            encoding="utf-8")
+
+        def lint_wired() -> tuple[int, str]:
+            r = subprocess.run([sys.executable,
+                                str(wired / ".agents/scripts/workflow_lint.py"),
+                                "--toolkit-only"],
+                               cwd=wired, capture_output=True, text=True, errors="replace")
+            return r.returncode, r.stdout + r.stderr
+
+        code, out = lint_wired()
+        c.check("SCC-205 G the check is WIRED into --toolkit-only (non-zero + names the file)",
+                code != 0 and "both-machines" in out and "zz-hardcode.md" in out,
+                f"exit={code} {out[-220:]}")
+        (wired / ".agents/commands/zz-hardcode.md").unlink()
+        c.check("SCC-205 G control: with the offender gone the CLI is clean again",
+                "both-machines" not in lint_wired()[1], "")
+
+        # H. THE LIVE TREE. Every row above runs on fixtures, so the whole class could be
+        #    back on `main` with all of them green. `real` is the lobby root, bound above.
+        rep = wf.Report()
+        lint.check_both_machines(real, rep)
+        c.check("SCC-205 H the live tree hardcodes the Windows venv path NOWHERE",
+                not [i for i in rep.items if i["section"] == "both-machines"],
+                str([i["msg"] for i in rep.items])[:300])
 
         # ── SCC-128: the resurrection lint ───────────────────────────────────
         # The vendor `bmad-code-review` skill is RETIRED in favour of the house

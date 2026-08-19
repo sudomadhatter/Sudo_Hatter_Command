@@ -1,20 +1,14 @@
 ---
 description: Autopilot (headless) pre-dev Audit command — stress-test the plan inside the shared autopilot run folder. Modeled off /cicd-self-audit but tuned for agent-to-agent handoff. NOT for interactive use; the autopilot orchestrator invokes it.
 platforms: [claude, opencode]
-# Diffed against /cicd-self-audit at this sha; nothing to port (SCC-176, 2026-08-16).
-# That commit added ONE thing to the primary: a closing paragraph of Phase 1 making a
-# cross-repo port its own blast radius (`.agents/rules/port-checklist.md`, six checks, a
-# NO-GO when the copies differ and the plan carries no section). It does NOT port as text.
-# This twin names no phases of its own — its body says it runs "the pre-dev adversarial
-# audit defined in @.agents/commands/cicd-self-audit.md", overriding only I/O, lane
-# boundaries and the blocker token — so the new paragraph already reaches the autopilot
-# lane through the reference this file carries. A second copy here is exactly the drift
-# this stamp exists to prevent.
-# Prior reconciliation (SCC-128, 2026-08-13, 024f58a): the primary retargeted its "for
-# shipped code, use ..." pointer off the retired vendor review skill; this twin carries no
-# such pointer, because the orchestrator routes the review stage itself.
-# Re-diff and restamp when the linter says this sha is stale — do NOT just bump it.
-ap_reconciled: 6dbd8ae
+# ⛔ UNMAINTAINED (SCC-209, operator ruling 2026-08-18): the `_AP` autopilot lane does not
+# work and will be REDONE from scratch. Until then this file is FROZEN - do not diff it against
+# its interactive primary, do not port law into it, and do not restamp it. The twin-freshness
+# gate that used to demand that was deleted in the same ruling; keeping it armed only bought
+# restamps of a file nobody maintains.
+# It is KEPT rather than deleted because three autopilot engines still invoke it BY NAME - a
+# missing command makes a headless stage improvise silently instead of failing.
+# The twin relationship that IS maintained is `cicd-*` <-> `smh-*`.
 ---
 
 # /cicd-self-audit-AP — Autopilot Audit (Murat)

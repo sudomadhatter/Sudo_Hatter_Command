@@ -79,6 +79,11 @@ rotate-after-revoke rule. Those are things you do DURING the work and repeatedly
 machine. Install lives in machine_setup_card.md; the procedure lives here.
 
 Stdlib only, plain ASCII output -- same constraints as its siblings (Windows consoles are cp1252).
+
+This file declares `wf-lint: allow-windows-venv` - the KNOWN_ABSENT map below carries
+`.venv/Scripts/python.exe` as a DATA key (a path named in the autopilot PRD, allow-listed
+with its reason). It is not an invocation and has no POSIX twin to sit beside it, so the
+both-machines check cannot tell it from a hardcode by context alone.
 """
 from __future__ import annotations
 

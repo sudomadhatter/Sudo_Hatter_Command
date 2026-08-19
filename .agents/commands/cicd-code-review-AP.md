@@ -1,66 +1,14 @@
 ---
 description: Autopilot (headless) Review+Fix+Gate command — review the implementation in the shared autopilot run folder, apply fixes, run the TEA test gate, and hand to Daniel. Modeled off /cicd-code-review but tuned for agent-to-agent handoff. NOT for interactive use; the autopilot orchestrator invokes it.
 platforms: [claude, opencode]
-# Diffed against /cicd-code-review at this sha; THREE things read, TWO ported (SCC-166, 2026-08-16).
-# The primary gained Step 0.7 (blast radius vs origin/$EPIC), Step 1.5 (acceptance audit) and a
-# rev-parse echo in Step 0.
-#   - Step 0.7 PORTS, compressed: the hazard is worse here, not smaller - sibling stories land on
-#     the epic branch and nobody is watching this run. It is git output, so it costs no read budget,
-#     and the ban above is on a full-repo READ sweep, which this is not.
-#   - Step 0's echo PORTS as two lines. The orchestrator hands this twin REPO/WORKTREE; echoing what
-#     rev-parse returned is what makes a wrong tree visible instead of assumed.
-#   - Step 1.5 does NOT port as a section. This twin already runs the acceptance pass through the
-#     engine's Acceptance Auditor in review_mode: full. What ported is the two clauses that BIND THE
-#     VERDICT - no evidence is not satisfied (CONCERNS floor), and diff-beyond-the-list is drift -
-#     because those are law, not habit text. Same reading as the SCC-160 stamp below.
-#   - the primary's frontmatter description does not port; this twin has its own.
-# NOT in scope and deliberately left: line 41 still names one human. The generic-referent sweep was
-# SCOPED by plan ruling F7 to the two files SCC-166 edits; the toolkit-wide pass (220 hits / 64 files
-# at this sha) is a separate confirm-scope task, because rules/operator-profile.md is a file where
-# the name IS the subject.
-# Previous stamp (SCC-160 follow-on, 2026-08-15): ONE sentence ported.
-# The primary's Step 1 became "fix in thread": every patch applied in-lane before any gate, and
-# nothing that survived the relevance gate leaves the lane as a ticket (residue, proposed, or
-# decided). This twin already applied fixes in-lane; the "never produces a ticket" sentence is
-# ported into its fix paragraph because it is law, not habit text. The disposition wording and
-# the ⛔ Your-Actions ban still do not port (this body carries neither surface).
-# Previous stamp (SCC-160 first landing, 2026-08-15): nothing to port - the law lives in the
-# shared engine's step-03 relevance gate + step-04 record rules, which THIS twin already invokes.
-# Previous stamp (SCC-147, 2026-08-14):
-# TWO diffs were read at this stamp, both ONE hunk on the same row, and neither ports:
-#   - the primary gained an explicit `lens_budget: standard` row. This twin already named
-#     `capped` in its own contract block, so the change only made the primary say out loud
-#     what it had been inheriting silently; the divergence it creates is #1 below.
-#   - the review then reworded that row to drop a restatement of step-01's caps. It now
-#     carries THIS twin's own phrasing — "does not define what the caps are; step-01 of the
-#     engine does, once" — so the two commands have converged on the wording, not diverged.
-# Both commands were rewired onto `code-review-engine` in the same landing set — the primary
-# by SCC-128, this twin by SCC-126 — so they agree on the thing that matters: the caller
-# resolves every input, the engine resolves none, and `severity_floor` binds the verdict.
-# THREE divergences remain, all deliberate and all autopilot-only:
-#   1. this twin passes `lens_budget: capped`; the primary passes `standard`. Both now name
-#      their budget EXPLICITLY (SCC-147) — the primary used to name none and silently take
-#      the `capped` default, which is the autopilot's budget applied to a watched review.
-#   2. this twin passes `EVIDENCE_PACK` (its Ingest-2 batched pull); the primary does not
-#      pull one, so its repo-access lenses read the tree directly.
-#   3. this twin overrides the engine's no-subagent fallback to run lenses INLINE, and
-#      fixes the blind-lens-first ordering that override requires. The primary is
-#      interactive, so handing prompts back is a real option there and it keeps that path.
-#   4. the primary's Step 0.7 now BINDS `WORKTREE=` in its own bash block (SCC-164 review).
-#      NOT PORTED, and this is the same reason as (1): the orchestrator hands this twin
-#      REPO/WORKTREE in its launch context, so the variable is already bound here. Binding
-#      it again in the body would let a stale in-body value shadow what the caller passed.
-#   5. SCC-193's `## Your Actions` wording (the sign-off is the operator's DECISION; the
-#      ceremony's steps are never entries) IS PORTED — it is a machine contract `jira_feed.py`
-#      now enforces, so a twin that omitted it would write rows the close-out refuses.
-#   6. the primary states the subagent law subject-neutrally ("this lane's plan and
-#      walkthrough"); it read "this story's" until SCC-203's twin drift check flagged it
-#      against `/smh-code-review`. NOT PORTED, and nothing to port: that law is about
-#      choosing fan-out over inline, and this twin does not have the choice — it runs
-#      inline BY DESIGN and protects the blind lens by ORDER instead (divergence 3). Its
-#      own drop clause, below, is already the SCC-203 wording.
-# Re-diff and restamp when the linter says this sha is stale — do NOT just bump it.
-ap_reconciled: ce2fb28a4d1a904244efdba1e308abbe551579d6
+# ⛔ UNMAINTAINED (SCC-209, operator ruling 2026-08-18): the `_AP` autopilot lane does not
+# work and will be REDONE from scratch. Until then this file is FROZEN - do not diff it against
+# its interactive primary, do not port law into it, and do not restamp it. The twin-freshness
+# gate that used to demand that was deleted in the same ruling; keeping it armed only bought
+# restamps of a file nobody maintains.
+# It is KEPT rather than deleted because three autopilot engines still invoke it BY NAME - a
+# missing command makes a headless stage improvise silently instead of failing.
+# The twin relationship that IS maintained is `cicd-*` <-> `smh-*`.
 ---
 
 # /cicd-code-review-AP — Autopilot Review + Fix + Test Gate (Murat)

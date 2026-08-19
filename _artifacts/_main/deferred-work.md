@@ -20,3 +20,21 @@ insufficient and replaced); a zero-file suite is exit 2; `dirty_paths` reads `po
 records both sides of a rename (direction measured: the old parse would have exempted moved
 code). None of them had a structural blocker — under the recut `defer` definition they should
 never have been here. The ledger is empty; that is its correct resting state.
+
+## SCC-205 · the `-AP` law assertions — RESOLVED the same day, not carried (2026-08-18)
+
+Opened and closed within the hour. The entry claimed a blocker of "an open decision — the `_AP`
+rewrite"; the operator ruled on it directly: the `_AP` commands are being **rewritten from
+scratch**, they will not resemble what is there now, and they survive only as reference while
+the rebuild happens. That killed the blocker, and the fix landed in this lane where it belonged.
+
+Worth recording, because the entry should not have been written in the first place: it framed the
+problem as a binary — delete the `-AP` files (forbidden: three autopilot engines invoke them by
+name) or un-pin them from `CALLER_FILES` (breaks the completeness row that caught this lane's own
+`cicd-quick-dev` omission) — and deferred on the strength of that. **Both horns were real and the
+dilemma was false.** The third door was to keep the file pinned as a CALLER and stop pinning its
+CONTENT: `CALLER_FILES` never required a law row: nothing in the suite ties the two together. The
+eight rows came out, the completeness row stands, and the case count fell 873 → 849 exactly as
+8 rows × 3 checks predicts.
+
+The ledger is empty again; that is its correct resting state.

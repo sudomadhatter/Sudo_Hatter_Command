@@ -1,0 +1,23 @@
+task_key: SCC-197
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-197-wave2-twin-parity
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+# WAVE 2 of the rolling ticket, run as ONE lane (operator, 2026-08-17: "no all this lane. this is a
+# one task fix. now I just added the second but its all wave 2").
+# Wave 1 (riders SCC-198/200/202/203) landed via PR #20 as merge commit 5987b49 and shipped
+# landing_mode: partial, which is what kept SCC-197 open to carry this wave.
+# Each part's commits lead with the SUBTASK's key (work-consolidation.md rule 2).
+# ORDER IS AN OPERATOR RULING, not a convenience: SCC-209 runs FIRST - "I want to do it first" -
+# because it DELETES obligation surface, and doing it first means Part B never ports anything into
+# a file we are about to abandon.
+riders: [SCC-209, SCC-205]
+# NO `landing_mode:` line, deliberately - wave 2 of 2, and this landing closes SCC-197.
+# ⛔ This file used to say `landing_mode: full`, and task_preflight errored on it: `partial` is the
+# ONLY value anything reads, so `full` was an INVENTED value and an unread declaration fails CLOSED.
+# A full landing is simply the ABSENCE of the key. Recorded because the invented value also misled
+# this lane's own reporting - the "blocker" the comment below used to assert rested on it.
+# WAVE 1's unchecked `- [ ]` (the operator's call on full-suite runtime) lives in the LANDED
+# wave-1 walkthrough, which the preflight classifies as history - "settled on origin/main, neither
+# governing nor ambiguous". `jira_feed.py finish` reads THIS lane's `## Your Actions`, not that one,
+# so what holds SCC-197 open is whatever this lane's section leaves unticked - nothing else.

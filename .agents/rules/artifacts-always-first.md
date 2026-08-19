@@ -347,6 +347,40 @@ When Daniel says **"review"** (or asks to review a document/plan), EVERY agent m
     it, and still carries `## Task Checklist` → `## Evidence` → `## Code Review (<date>)` (with the
     canonical `Verdict:` line) → `## Your Actions`. The walkthrough is never skipped.
 
+## The memory store — what it is for, and what it must never carry
+
+`_artifacts/_memory/` is **recall, not law.** Every platform reads its index at session start, on both
+machines — that reach is why misusing it is dangerous rather than merely untidy. It lives under
+`_artifacts/`, which this rule owns, and its `protocol` load class fires on any session that may modify
+files: exactly the agent about to write a memory.
+
+**A memory has four properties that make it unable to hold an obligation.** It is **prunable** — the
+memory audit retires, merges and compresses entries against a 25 KB index cap, so an obligation stored
+here is one compaction from gone. It is **unenforced** — no gate reads it, so ignoring it is silent. It
+is **advisory by contract** — recalled entries arrive as background context describing what was true
+when written. And it **creates false coverage**: the dangerous case is not a missing memory, it is a
+present one that makes an unfixed problem look handled.
+
+**DO record** context (how the system is used, what was decided, why a shape is what it is) · gotchas
+(a trap that cost real time and is invisible from the code — `echo` truncates at `\c`; one machine has
+no `python3`, the other no bare `python`) · pointers (where a thing lives, which ticket settled it) ·
+**a pointer to a rule** — *"this law lives in `<rule>`"* is correct and encouraged.
+
+⛔ **DO NOT put an obligation in a memory.** If a thing must be *followed* — a gate, a test, a required
+step, a discipline — it is a **rule**, with a pointer a linter can check. **Do not write a memory
+instead of a fix**: "remember to do X" is not doing X. **Do not treat an existing memory as proof
+something is handled** — a memory that reads like law is a signal the law has no rule yet.
+
+**The test, before writing one:** *if this memory disappeared tomorrow, would something BREAK, or would
+someone merely have to look it up again?* **Break → it is a rule**, and writing a memory instead is the
+failure this clause exists to stop. **Look it up → a memory is correct.**
+
+⛔ **Never sweep another session's memory into your diff.** The store is shared and two-tier since
+SCC-73 — the lobby's index plus each project's own — so a `git add` over `_artifacts/_memory/` picks up
+whatever a sibling lane left uncommitted. Explicit paths, the entries YOU wrote, nothing else.
+
+---
+
 ## Hard Stops
 - NEVER modify any project file before `implementation_plan.md` is approved.
 - NEVER manually edit MD Feedback HTML blocks (`<!-- USER_MEMO -->`, `<!-- PLAN_CURSOR -->`, `<!-- CHECKPOINT -->`). You MUST use the `md-feedback` MCP tools to resolve feedback to avoid breaking document hashes.

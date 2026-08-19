@@ -74,7 +74,16 @@ AP_CMD = ".agents/commands/cicd-code-review-AP.md"
 # rule lived only in step-01, which is a claim about a caller, not a check on one.
 CICD_CMD = ".agents/commands/cicd-code-review.md"
 SMH_CMD = ".agents/commands/smh-code-review.md"
-CALLER_FILES = (AP_CMD, CICD_CMD, SMH_CMD)
+# SCC-205: the FAST lane became a caller. `/cicd-quick-dev` used to invoke
+# `bmad-review-adversarial-general` bare - one lens, no roster, no verification, no triage - so it
+# was the only dev lane in either family whose review produced no `lenses_run` block, which is
+# exactly the evidence `walkthrough_roster.py` reads at close-out. Routing it through the engine is
+# MORE BMAD, not less: the engine runs those lenses under a hunter contract with triage on top.
+# ⭐ This line was added because the completeness row below CAUGHT the omission - the caller set is
+# derived from the tree, so wiring a new caller and forgetting to pin it goes red rather than
+# silently inheriting the autopilot's `capped` budget (SCC-147).
+QUICK_CMD = ".agents/commands/cicd-quick-dev.md"
+CALLER_FILES = (AP_CMD, CICD_CMD, SMH_CMD, QUICK_CMD)
 
 # Vendor identifiers that must appear NOWHERE in the engine. `HALT` is deliberately the only
 # case-SENSITIVE one: lower-case "halt" is ordinary English and banning it generates false reds.
@@ -952,43 +961,24 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      r"that state is \*\*retired\*\*", 0,
      "that state is **retired**", "that state is still available"),
 
-    # ── step-01 (SCC-126): the CALLER's wiring — pinned in the caller's own file ─────────────
-    # F7 from this task's review: every check above lives in step-01, i.e. the engine's CLAIM
-    # about its caller. Reverting cicd-code-review-AP.md to its pre-change solo three-lens review
-    # left all 440 cases green and workflow_lint clean, while the literal lens never ran in the
-    # autopilot at all — the exact behavior this ticket is named for. A guard in the wrong file
-    # is not a guard. These read the caller's body directly.
-    ("AP caller: invokes the engine, not a review of its own", AP_CMD,
-     r"The review is `\.agents/skills/code-review-engine/`", 0,
-     "The review is `.agents/skills/code-review-engine/`",
-     "The review is yours to run solo, sequentially, no subagents"),
-    ("AP caller: passes lens_budget capped in the contract block", AP_CMD,
-     r"^DEFERRED_WORK: [^\n]*· lens_budget: capped$", re.M,
-     "· lens_budget: capped", "· lens_budget: standard"),
-    ("AP caller: says capped is not optional and not review_mode", AP_CMD,
-     r"⛔ \*\*`lens_budget: capped` is not optional here, and it is NOT the same field as `review_mode`\.\*\*",
-     0,
-     "**`lens_budget: capped` is not optional here, and it is NOT the same field as `review_mode`.**",
-     "**`lens_budget: capped` is a synonym for `review_mode: full`.**"),
-    ("AP caller: does not re-define the caps it names", AP_CMD,
-     r"This command does not define what the caps\s*\nare; step-01 of the engine does, once", re.M,
-     "This command does not define what the caps", "This command overrides what the caps"),
-    ("AP caller: mandates inline lenses when subagents are unavailable", AP_CMD,
-     r"⛔ \*\*If subagents are unavailable in this runtime, run every lens INLINE, sequentially, yourself\.\*\*",
-     0,
-     "run every lens INLINE, sequentially, yourself",
-     "hand the prompt files back and return"),
-    ("AP caller: inline runs the blind lens before Ingest 2", AP_CMD,
-     r"pull Ingest 1, run the Blind Hunter\s*\nimmediately on the diff alone, and only THEN pull Ingest 2", re.M,
-     "immediately on the diff alone, and only THEN pull Ingest 2",
-     "after Ingest 2 has landed, alongside the other four"),
-    ("AP caller: warns that step-02 severities are unverified today", AP_CMD,
-     r"\*\*hunter-asserted and unverified\*\*", 0,
-     "**hunter-asserted and unverified**", "**verified against the evidence**"),
-    ("AP caller: treats the engine's floor as a floor", AP_CMD,
-     r"\*\*The floor is a floor:\*\* your verdict may be that severe or worse, never better", 0,
-     "your verdict may be that severe or worse, never better",
-     "your verdict may be softened if the findings look minor"),
+    # ── step-01 (SCC-126 → SCC-209): the CALLER's wiring, pinned in the caller's own file ──
+    # F7 from the SCC-126 review: a rule about a caller that lives only in step-01 is the engine's
+    # CLAIM about its caller, not a check on one — reverting a caller left every case green while
+    # the wiring was gone. The two INTERACTIVE callers are pinned below for exactly that reason.
+    #
+    # ⛔ `cicd-code-review-AP.md` USED to carry eight such rows here (`lens_budget: capped`, the
+    # inline-lens mandate, the blind-lens ordering, the floor clause). They are gone, on the
+    # operator's ruling of 2026-08-18: the `_AP` lane is being REWRITTEN from scratch — the files
+    # survive only as reference while it is rebuilt, and their contents are explicitly disposable.
+    # Pinning the prose of a file whose prose is declared disposable is a TRAP, not a guard: it
+    # reds this suite on the day of the rewrite and sends the fixer to edit a file `workflow_lint`
+    # marks UNMAINTAINED. That is the SCC-209 trap relocated into another check, not removed.
+    #
+    # What still holds AP, deliberately: it stays in `CALLER_FILES`, because three autopilot
+    # engines invoke it by name and it is therefore still a LIVE caller. So the existence row in
+    # section 1, the completeness row in 2b, and the "names a `lens_budget`" row over `discovered`
+    # all still cover it. What is no longer asserted is the CONTENT of a frozen file. When the
+    # rewrite lands, the new file earns its own rows here, the same as any other caller.
 
     # ── SCC-147: the INTERACTIVE callers name their budget, in their own invocation tables ────
     # The counter-example here is `capped` — not a nonsense string — because `capped` is the

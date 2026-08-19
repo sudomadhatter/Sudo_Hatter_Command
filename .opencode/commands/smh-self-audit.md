@@ -17,6 +17,10 @@ while fixing it still costs nothing. Assume the plan is wrong somewhere, then tr
 >   answering them is what the row audits for, and its absence on differing copies is a NO-GO
 > - `.agents/rules/worktree-per-story.md` §"cwd is not intent" — why Step 0 pins the repo from command
 >   output, and why Phase 1 reads the sibling lanes instead of assuming this tree is the whole picture
+> - `.agents/rules/code-standards.md` §6.5 — **disposition**: you are the assessor, not the
+>   lens. Three questions, all three YES to act — is it REAL (a concrete failure, not a *"may
+>   be"*) · does it change BEHAVIOUR · is it in THIS plan's scope. "It's cheap" is not a reason;
+>   an audit that reports everything it noticed is the loop this test exists to break
 > - `.agents/rules/tests-must-gate-for-real.md` — the plan's **test strategy** is audited against it.
 >   Phase 2's "a gate that cannot fail" tripwire spans both halves of that rule: a *soft* gate is its
 >   Rule 3, and *a check whose empty input reads as a pass* is its Rule 1 plus **§ Mutation Testing**.

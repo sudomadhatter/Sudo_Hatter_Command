@@ -1632,6 +1632,44 @@ def main() -> int:
         c.check("SCC-200 CONTROL: the `## Hand It Back` home losing its link FORM is caught",
                 any("markdown-link form" in g for g in handback_gaps(mb)), str(handback_gaps(mb)))
 
+    if c.block("CS-04 · an AUTHORED skill and its .claude door say the same thing"):
+        # ⛔ THE GAP THIS BLOCK CLOSES, and it shipped live inside SCC-205 itself.
+        # CS-02/CS-03 iterate `.agents/commands/*.md` and compare command mirrors and generated
+        # launchers. NOTHING compared an AUTHORED skill body - `.agents/skills/<n>/SKILL.md` -
+        # against the copy the sync writes to `.claude/skills/<n>/SKILL.md`, which is Claude's
+        # actual door. So when SCC-205 rewrote the cloud-run skill's venv path in the master and
+        # the mirror was not re-synced, the door still carried the exact Windows-only literal the
+        # ticket exists to remove, and the whole floor was green: `check_both_machines` scans the
+        # masters by design, and every parity row here was looking at commands.
+        #
+        # ⭐ Authored, NOT generated: a generated launcher is a thin pointer that reads its brain
+        # live, so drift there is harmless and CS-03 already rules on it. An authored skill body
+        # IS the instructions, so a stale copy is a door telling an agent to do the old thing.
+        authored = [d for d in sorted((ROOT / ".agents/skills").glob("*/SKILL.md"))
+                    if GEN not in read(d)]
+        c.check("CS-04 authored skills were discovered at all (anti-vacuity)",
+                len(authored) >= 3, f"{len(authored)} authored skill(s)")
+        stale = []
+        for master in authored:
+            door = ROOT / ".claude/skills" / master.parent.name / "SKILL.md"
+            if not door.is_file():
+                stale.append(f"{master.parent.name} (no .claude door)")
+            elif read(door) != read(master):
+                stale.append(master.parent.name)
+        c.check("CS-04 every authored skill's .claude door is byte-identical to its master",
+                not stale, f"{stale} - run /smh-sync-agents")
+        # ⛔ THE CONTROL, because "they all match" is what a broken comparison also reports.
+        # It runs the SAME predicate the loop runs, over a synthetic master/door pair - not a
+        # tautology like `x != x + "y"`, which is true however broken the loop above is.
+        def door_drifted(master_text: str, door_text: str | None) -> bool:
+            return door_text is None or door_text != master_text
+        c.check("CS-04 CONTROL: a byte-differing door is detected",
+                door_drifted("body\n", "body with an edit\n"), "")
+        c.check("CS-04 CONTROL: a MISSING door is detected",
+                door_drifted("body\n", None), "")
+        c.check("CS-04 CONTROL: an identical door is NOT reported",
+                not door_drifted("body\n", "body\n"), "")
+
     return c.finish()
 
 

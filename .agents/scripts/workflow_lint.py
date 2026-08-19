@@ -96,6 +96,30 @@ _RULE_POINTERS = (
     # tells an agent to diff two copies is not silently exempt.
     ("port-checklist", "porting",
      re.compile(r"exists in more than one repo|git diff --no-index", re.I)),
+    # SCC-205. A command that PRODUCES findings must point at the rule that says how to
+    # dispose of them - the three-question test (`code-standards.md` §6.5). Before this row
+    # the ruling lived in ONE review-engine step, owned by no rule, cited by none of the
+    # audit commands, and every one of them still described an unbounded fix queue.
+    #
+    # ⛔ Keyed on the MACHINERY, never the concept. `disposition` / `finding` as words match
+    # half the tree; what marks a finding-producer is the shape it EMITS - the triage
+    # vocabulary it classifies into, or the verdict ladder it grades findings onto.
+    #
+    # ⛔ FOUR ARMS, one per vocabulary actually in use, each measured against the tree before
+    # it was added. The first cut shipped TWO arms and review measured one of them DEAD (zero
+    # hits tree-wide) and the other keyed on an EM-DASH - so `cicd-code-review.md`, which
+    # writes `- **FAIL** = ...`, was exempt on punctuation alone. That is the defect this very
+    # row's comment cites from `work-consolidation`: a dead arm inside a live row is a check
+    # that cannot fail, and on a ticket about twin PARITY it held one twin and freed the other.
+    ("code-standards", "producing findings", re.compile(
+        # the clean-code audits' triage vocabulary (backticks optional)
+        r"`?applied`?\s*/\s*`?deferred`?\s*/\s*`?dismissed`?"
+        # a verdict ladder row - ANY punctuation after the label, never just an em-dash
+        r"|^\s*-\s*\*\*FAIL\*\*\s*[-—–=:]"
+        # the fast lane's triage vocabulary
+        r"|patch\s*/\s*defer\s*/\s*reject"
+        # the pre-dev audits' verdict
+        r"|\bNO-GO\b", re.M)),
 )
 
 
@@ -105,7 +129,11 @@ def check_rule_pointers(lobby: Path, rep: wf.Report) -> None:
     mojibake case, where the backticks mean "this is what NOT to write"."""
     cmd_dir = lobby / ".agents" / "commands"
     for f in sorted(cmd_dir.glob("*.md")):
-        if f.name == "INDEX.md":
+        # ⛔ `-AP` twins are ABANDONED and FROZEN (SCC-209) - their own marker says "do not
+        # port law into it". Demanding a NEW pointer from them would force an edit to a file
+        # this repo has declared unmaintained, which is the trap SCC-209 removed from the
+        # twin-freshness check; re-creating it here would just move it.
+        if f.name == "INDEX.md" or f.stem.endswith("-AP"):
             continue
         text = wf.read_text(f)
         for rule, label, pattern in _RULE_POINTERS:
@@ -177,79 +205,84 @@ def check_retired_review_surface(lobby: Path, rep: wf.Report) -> None:
                         f"(SCC-128)")
 
 
-def _last_commit_ts(path: Path, cwd: Path) -> int | None:
-    r = wf.git(["log", "-1", "--format=%ct", "--", str(path)], cwd)
-    out = r.stdout.strip()
-    return int(out) if r.returncode == 0 and out.isdigit() else None
+# SCC-205 - the WINDOWS-ONLY invocation. This system is driven from two machines and the venv
+# bin dir is the one path that differs on every single tool call. Five authored surfaces
+# hardcoded the Windows spelling, the worst being a close-out probe on the DESTRUCTIVE path
+# which, on the Mac, reported a destroyed shared venv that was never touched.
+#
+# ⛔ FILES LEGITIMATELY NAME THE WINDOWS PATH THREE WAYS, and telling them apart is the whole
+# difficulty: as the Windows ARM of a conditional, as PROSE explaining the rule, and as DATA
+# (an allow-list key, a fixture). The first two carry a real POSIX path nearby and are
+# exempted by that. The third cannot be - a path in a data structure has no POSIX twin - so it
+# takes the file-level opt-out below, which is auditable and carries its reason in the file.
+# ⛔ The off-switch is a real `.venv/bin` path, NEVER the bare word "POSIX": review measured
+# that a surviving trailing comment (`# POSIX first, then Windows`) exempted a pure Windows
+# hardcode after its conditional's first clause was deleted. A guard whose off-switch is a word
+# in prose is switched off by prose - and this comment block itself proved it, by tripping the
+# check on its own explanatory text.
+BOTH_MACHINES_OPT_OUT = "wf-lint: allow-windows-venv"
+_WINDOWS_VENV = re.compile(r"\.venv[\\/]+Scripts\b")
+# ⛔ THE OFF-SWITCH IS A REAL POSIX PATH, NEVER THE WORD "POSIX". The first cut also accepted
+# the bare word and any `bin/`, which review measured as a hole: delete the first clause of
+# `VENV=.venv/bin; [ -d "$VENV" ] || VENV=.venv/Scripts   # POSIX first, then Windows` and the
+# surviving trailing COMMENT still exempted a pure Windows hardcode. A guard whose off-switch is
+# a word in prose is switched off by prose.
+_POSIX_AWARE = re.compile(r"\.venv[\\/]+bin\b")
+# How far to look for the POSIX arm. ±1 line was measured too narrow: it misses a PowerShell
+# probe whose brace sits on its own line and a bash conditional whose arms are split by comments
+# - both CORRECT code, both flagged. Widening trades a little precision for not punishing the
+# author who did the right thing, which is the failure mode that gets a guard disarmed.
+_WINDOW = 4
 
 
-def _last_commit_sha(path: Path, cwd: Path) -> str | None:
-    r = wf.git(["log", "-1", "--format=%H", "--", str(path)], cwd)
-    out = r.stdout.strip()
-    return out if r.returncode == 0 and out else None
+def check_both_machines(lobby: Path, rep: wf.Report) -> None:
+    """A hardcoded Windows venv path with no POSIX arm near it (`code-standards` §5/§6).
 
+    This system is driven from a Mac AND a PC, and the venv bin dir is the one path that
+    differs on every single tool call: `Scripts/` on Windows, `bin/` on POSIX. Five authored
+    surfaces hardcoded the Windows form (SCC-205), the worst being a close-out probe that
+    guards an irreversible delete and, on the Mac, reported a destroyed shared venv that was
+    never touched.
 
-# The twin's claim, in its frontmatter: `ap_reconciled: <sha of the primary I read>`.
-AP_RECONCILED = re.compile(r"^ap_reconciled:\s*([0-9a-f]{7,40})\s*$", re.M)
-
-
-def check_ap_twins(lobby: Path, rep: wf.Report) -> None:
-    """_AP twins drift from their primaries (memory: sudo-commands-have-ap-twins-that-drift).
-
-    A twin is NOT a step-for-step mirror — it is a single-pass headless adaptation with its
-    own prose headings, so comparing step sequences only ever produces noise. The signals
-    that actually mean drift: the twin stopped pointing at its primary, or the primary was
-    committed AFTER the twin (someone fixed one side only).
-
-    ── SCC-82: the timestamp alone made this UNSATISFIABLE ──────────────────────────
-    "Primary is newer" is a prompt to go and diff, not a defect in itself, and often the
-    honest answer is *nothing to port* — the SCC-63 fix that made `cicd-code-review.md`
-    newer restored a historic artifact filename its twin does not contain and does not
-    need. There was no way to say so. The warning stood on `main` for weeks, every
-    close-out report carried "2 pre-existing warnings" as an excuse, and the only way to
-    clear it was to TOUCH the twin — which resets the clock while asserting nothing, and
-    is indistinguishable from actually having done the work.
-
-    `ap_reconciled: <sha>` is the twin's auditable claim: *I read the primary at this sha
-    and there is nothing to port.* It is deliberately NOT a mute switch:
-
-      - stamp present and current  → silent, and the twin's own mtime is irrelevant
-      - stamp present but stale    → WARN, **even when the twin is the newer file** —
-                                     which is precisely the touch-it-to-shut-it-up cheat
-                                     the timestamp check could never see
-      - no stamp at all            → the original timestamp signal, unchanged
-
-    So the check gained teeth rather than losing them: silence now requires someone to
-    have written down which version of the primary they read."""
-    cmd_dir = lobby / ".agents" / "commands"
-    # Suffix is `-AP` since SCC-63 (hyphens only; it was `_AP` before the rename).
-    for ap in sorted(cmd_dir.glob("*-AP.md")):
-        primary = cmd_dir / (ap.stem[:-3] + ".md")
-        if not primary.is_file():
-            rep.err("ap-twins", f"{ap.name}: primary {primary.name} missing")
+    ⛔ Scans the AUTHORED masters only. Generated mirrors (`.claude/skills`, `.opencode`,
+    `.agents/workflows`) are byte copies whose fix is a re-sync, never an edit - flagging them
+    would ask the reader to edit a file the next sync overwrites. Door parity is what keeps
+    those honest, and it is a different check.
+    """
+    roots = [lobby / ".agents" / sub for sub in ("commands", "rules", "skills", "scripts")]
+    for root in roots:
+        if not root.is_dir():
             continue
-        text = wf.read_text(ap)
-        # Match the STEM: twins name the primary bare in their title/description
-        # (`# /cicd-code-review-AP - ...`); only some use the `@.../<name>.md` path form.
-        # This fires when the primary is RENAMED out from under the twin.
-        if primary.stem not in text:
-            rep.warn("ap-twins", f"{ap.name} no longer references {primary.stem}")
-        claim = AP_RECONCILED.search(text)
-        if claim:
-            claimed, pr_sha = claim.group(1), _last_commit_sha(primary, lobby)
-            # Abbreviated shas are accepted by prefix; a sha that is not a prefix of the
-            # primary's current commit is not a claim about the file in front of you.
-            if pr_sha and pr_sha.startswith(claimed):
+        # ⛔ `*` not `*.md`: "a bare `python` in a committed script" is the same rule, and
+        # `.agents/scripts` is where a committed script lives. Suffix-filtered below.
+        for f in sorted(root.rglob("*")):
+            # ⛔ BOTH GUARDS ARE LOAD-BEARING, and the sibling check 30 lines below carries
+            # them with the same comment. `rglob` yields DIRECTORIES whose name ends in `.md`,
+            # and `read_text`'s errors="replace" covers DECODING, not I/O - a dangling symlink
+            # (this repo links gitignored assets into every worktree) raises. Either would take
+            # the whole linter down with a traceback instead of a finding, and this check runs
+            # FIRST, so it would take the defensively-written ones with it.
+            if not f.is_file() or f.suffix.lower() not in (".md", ".py", ".ps1", ".sh"):
                 continue
-            rep.warn("ap-twins",
-                     f"{ap.name}: ap_reconciled names {claimed[:7]}, but {primary.name} "
-                     f"is now at {(pr_sha or '?')[:7]} - diff the twin and restamp")
-            continue
-        ap_ts, pr_ts = _last_commit_ts(ap, lobby), _last_commit_ts(primary, lobby)
-        if ap_ts and pr_ts and pr_ts > ap_ts:
-            days = round((pr_ts - ap_ts) / 86400, 1)
-            rep.warn("ap-twins",
-                     f"{primary.name} committed {days}d AFTER {ap.name} - diff the twin")
+            try:
+                text = wf.read_text(f)
+            except OSError as exc:
+                rep.warn("both-machines", f"{f.relative_to(lobby)}: unreadable ({exc})")
+                continue
+            if BOTH_MACHINES_OPT_OUT in text:
+                continue
+            lines = text.split("\n")
+            for i, line in enumerate(lines):
+                if not _WINDOWS_VENV.search(line):
+                    continue
+                window = "\n".join(lines[max(0, i - _WINDOW):i + _WINDOW + 1])
+                if _POSIX_AWARE.search(window):
+                    continue
+                rep.warn("both-machines",
+                         f"{f.relative_to(lobby)}:{i + 1}: hardcodes the WINDOWS venv path "
+                         f"(`.venv/Scripts`) with no POSIX arm near it - it dies on the "
+                         f"Mac. Resolve it: `VENV=backend/.venv/bin; [ -d \"$VENV\" ] || "
+                         f"VENV=backend/.venv/Scripts` (code-standards §6)")
 
 
 # Vendor BMAD bridges keep their upstream names and take no prefix. This list is
@@ -520,7 +553,7 @@ def main() -> int:
     if lobby:
         check_commands(lobby, rep)
         check_rule_pointers(lobby, rep)
-        check_ap_twins(lobby, rep)
+        check_both_machines(lobby, rep)
         check_naming_law(lobby, rep)
         check_retired_review_surface(lobby, rep)
         scan += [(f"commands/{f.name}", f)

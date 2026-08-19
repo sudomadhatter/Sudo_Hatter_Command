@@ -6,6 +6,9 @@ platforms: [opencode, antigravity, claude, codex]
 # /smh-quick-dev — The Task Lane's Dev Cycle (assert-first)
 
 > **Rules in force for this command:**
+> - `.agents/rules/code-standards.md` §6.5 — **disposition**: you are the assessor, not the
+>   lens. All three YES to act — is it REAL (a concrete failure, not a *"may be"*) · does it
+>   change BEHAVIOUR · is it in THIS diff. "It's cheap" is not a reason
 > - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push
 >   `main`, never force-push; every branch and every commit carries the repo's Jira key
 > - `.agents/rules/worktree-per-story.md` — every commit-producing lane opens a worktree, Task lanes

@@ -5,6 +5,23 @@ platforms: [opencode, antigravity]
 
 # /cicd-code-review — Review + Test Gate + Clean-Code Gate (③)
 
+> **Rules in force for this command:**
+> - `.agents/rules/smh-target-resolution.md` §STD + §BIND — bind exactly ONE project and **never the
+>   lobby**; this is the pointer the `smh-` twin does not carry, and it is why that twin cannot do
+>   this work
+> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push
+>   `main`, never force-push
+> - `.agents/rules/worktree-per-story.md` §"cwd is not intent" — the diff and the artifacts are pinned
+>   from command output; with sibling STORY lanes landing on the shared epic branch while you review, a
+>   lookalike file in the shared checkout is another lane's, not evidence
+> - `.agents/rules/artifacts-always-first.md` §6 — the verdict is a **section appended to the story's
+>   `walkthrough.md`**, never a standalone review file
+> - `.agents/rules/tests-must-gate-for-real.md` — an empty diff, a missing tool and a piped exit code
+>   are the three ways this gate goes vacuously green
+> - `.agents/rules/code-standards.md` — the standard the clean-code gate at Step 3.5 judges against,
+>   and the owner of the FAIL-vs-CONCERNS split
+
+
 Thin orchestrator — runs your adversarial review, then the test gate, then the clean-code gate, and
 appends ONE `## Code Review (<date>)` verdict section to the story's `walkthrough.md` — the section
 `cicd-update-sprint-memory` reads before flipping the story to `done` (no separate verdict file —
@@ -319,12 +336,14 @@ new one. The section carries:
   - <lens> · n/a — <why it was not applicable in this review_mode>
   ```
 
+<!-- twin-law: roster -->
   ⛔ **`lenses_na` and `lenses_counted` are part of the block, not optional trimmings (SCC-203).**
   The engine returns four roster fields and this step used to demand one. Since a contaminated
   Blind Hunter is **DROPPED** rather than faked, `lenses_na` is now the ONLY legal record that it
   was dropped — `blind-hunter · n/a — context contaminated (<what it held>)` — and `lenses_counted`
   is what keeps the drop out of the total. Omitting them is how a dropped lens becomes invisible,
   which is the exact failure the drop rule exists to make visible.
+<!-- /twin-law -->
 
   **A `Verdict:` is the review's conclusion; this block is what shows the review happened.** Without
   it the verdict is the only record of itself, and a walkthrough with zero lenses run merges clean —

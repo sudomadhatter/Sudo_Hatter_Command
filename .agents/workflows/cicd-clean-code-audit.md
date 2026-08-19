@@ -8,6 +8,10 @@ platforms: [opencode, antigravity]
 > **Rules in force for this command:**
 > - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never push `main`, never force-push
 > - `.agents/rules/smh-target-resolution.md` — bind ONE target, never operate on the lobby
+> - `.agents/rules/code-standards.md` §6.5 — **disposition**: the assessor decides what is real, not
+>   the lens; §5 — both machines; §6 — the machine floor, resolved per machine
+> - `.agents/rules/tests-must-gate-for-real.md` §5 — a gate that cannot fail is a finding; §6 — run
+>   gates bare, because a pipe returns the pipe's exit code
 
 Checks a **diff** against `.agents/rules/code-standards.md` — the one house definition of clean. Two
 halves: the **machine floor** (objective, can FAIL) and the **judgment pass** (taste, caps at CONCERNS).
@@ -63,15 +67,32 @@ prevent (`tests-must-gate-for-real` §2).
 
 ## Step 1 — The Machine Floor  *(objective — these can FAIL)*
 
-Run the §6 commands from `code-standards.md`, scoped to the changed set. Use the venv interpreter, never
-bare `python`. **Paste actual output** — a summarized result is not evidence.
+Run the §6 commands from `code-standards.md`, scoped to the changed set. Use the venv's own
+executables, never a bare global tool. **Paste actual output** — a summarized result is not evidence.
+
+⛔ **Resolve the venv bin dir FIRST — this system runs on both machines** (`code-standards` §5). A venv
+puts its executables in `bin/` on POSIX and `Scripts/` on Windows, and this table named `Scripts/…exe`
+outright until SCC-205: on the Mac every one of these commands missed, the floor reported itself
+unrunnable, and the objective half of the most-used audit did nothing while the run looked normal.
+
+```bash
+ls backend/.venv/bin/ruff 2>/dev/null || ls backend/.venv/Scripts/ruff.exe   # which layout is this machine?
+```
+
+⛔ **`<VENV>` below is a placeholder you SUBSTITUTE, not a shell variable.** An earlier cut wrote
+`"$VENV"` and assigned it in a separate block — but shell state does not survive between tool calls,
+so each row run on its own expanded to `/ruff check`, exit 127, and the floor reported itself
+unrunnable. That is the very failure this section exists to fix, reintroduced by its own fix.
 
 | Check | Scoping |
 |---|---|
-| `backend/.venv/Scripts/python.exe -m ruff check <changed .py files>` | pass the changed paths directly |
+| `<VENV>/ruff check <changed .py files>` | pass the changed paths directly |
 | `npm run lint -- <changed .ts/.tsx files>` (in `frontend/`) | pass the changed paths directly |
-| `backend/.venv/Scripts/pyrefly.exe check` | whole-program — **count only errors whose file is in the changed set** |
+| `<VENV>/pyrefly check` | whole-program — **count only errors whose file is in the changed set** |
 | `npx tsc --noEmit` (in `frontend/`) | whole-program — **count only errors whose file is in the changed set** |
+
+⛔ **Run each one BARE** (`tests-must-gate-for-real` §6): `<check> | tail -5` exits 0 whenever `tail`
+succeeds, however red the check was. Redirect if you need to trim — `<check> > out.txt 2>&1; echo "EXIT=$?"`.
 
 Skip a check whose language the diff never touched, and **say which you skipped and why**. A check that
 did not run is not a check that passed.
@@ -106,6 +127,11 @@ Step 3.5 this part is satisfied by importing the Step-1 adversarial review's dri
   most common real finding. Grep the obvious neighbours; use GitNexus `context({name})` if the repo is
   indexed.
 - Defensive `try`/`except` around code that cannot fail?
+- **Does it run on both machines?** (`code-standards` §5) A `C:/…` path, a `;` path separator,
+  `robocopy`, `chmod` assumed present, or a bare `python`/`python3` hardcoded in a committed script —
+  each works where it was written and dies on the other machine. This is a finding, not a nitpick.
+- **A gate that cannot fail?** A report-only job, `|| true`, `continue-on-error`, or a check whose
+  EMPTY input reads as a pass. See the FAIL ladder below — this one is not a judgment call.
 - Unused params, dead branches, a new file where an existing module was the home?
 - Scope creep — changes outside what the story required?
 
@@ -132,9 +158,22 @@ Emit findings in this exact shape so `/cicd-code-review` can fold them into its 
 ```
 
 **Verdict rules** (from `code-standards` §7 — do not invent your own):
-- **FAIL** — a machine check errors on a changed line, or a §2 banned pattern shipped, or a secret.
+- **FAIL** — a machine check errors on a changed line, or a §2 banned pattern shipped, or a secret, or
+  **a new gate that cannot fail** shipped in this diff (`tests-must-gate-for-real` §5 — a green that
+  verified nothing is worse than no gate, because it is read as evidence).
 - **CONCERNS** — comment-contract gaps and judgment findings only.
 - **PASS** — floor green on changed lines, nothing above noise.
+
+<!-- twin-law: disposition -->
+⛔ **Decide what is REAL before you fix anything** (`code-standards` §6.5 — the operator's ruling,
+2026-08-17: *"the agent's job is to find things so it always will ... we fix actual issues"*). You are
+the assessor; a lens's severity label is an INPUT, not a verdict. Three questions, all three YES to fix:
+**is it REAL** (state the concrete failure — *this input, this wrong output* — or drop it) · **does it
+change BEHAVIOUR** (naming, structure and wording do not) · **is it in THIS diff** (pre-existing debt in
+an untouched file is not this lane's work). ⛔ **"It's cheap" is not a reason** — twenty cheap fixes is
+the audit that never ends, each one landing after the checks ran, unreviewed. Record the tail in ONE
+line: how many came back, how many were real and fixed, the rest dismissed under this ruling.
+<!-- /twin-law -->
 
 Apply the fixes you can make safely, then **re-run the affected check and paste the new output**. Mark
 each finding `applied` / `deferred` / `dismissed` — a dismissal needs a reason, and a deferral
