@@ -33,3 +33,4 @@ git checkout main && git pull origin main
 3. Stage files with '+', enter commit message starting with SCC-186, click Commit.
 4. Click 'Sync Changes' / Push.
 5. Create PR on GitHub, wait for main-write-gate check (green checkmark), then click Merge pull request.
+6. Switch back to main and Sync to pull the changes 
