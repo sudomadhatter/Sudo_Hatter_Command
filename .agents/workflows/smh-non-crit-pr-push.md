@@ -1,12 +1,12 @@
 ---
-description: Fast-track non-critical command center changes (docs, memory files, notes, quick references) using standing ticket SCC-186 and...
+description: Fast-track non-critical command center changes (docs, memory files, notes, quick references) using standing ticket SCC-186 (or...
 platforms: [opencode, antigravity, claude, codex]
 ---
 
 # /smh-non-crit-pr-push — Standing Non-Critical PR Push (SCC-186)
 
 > **Rules in force for this command:**
-> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), every commit carries Jira key `SCC-186`
+> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), every commit carries Jira key `SCC-186` (or the project's standing key)
 > - `.agents/rules/jira.md` — standing ticket `SCC-186` stays open forever; its Dev Record is the running log
 > - `.agents/rules/000-PLAN-FIRST-GATE.md` — non-critical documentation and note updates are exempt from implementation plans
 > - `_my_resources/_quick_reference/quick_push_git_main` — reference procedure for standing pushes
@@ -31,25 +31,53 @@ python3 .agents/scripts/lane_qualify.py --repo "$REPO" --paths <every path you w
 | `LIGHT` | carry on |
 | `TASK` | **stop.** This touches toolkit/code paths (`.agents/**`, `tests/**`) — use `/smh-quick-dev` or standard task lane |
 | `HANDOFF` | **stop.** Deployable code — route to product lane (`/cicd-push-e2e`) |
-| `NOT-COMMAND-CENTRE` | **stop.** Standing ticket SCC-186 is for the command centre only |
+| `NOT-COMMAND-CENTRE` | **stop.** You are in a child project — use `/cicd-non-crit-pr-push` |
 
 ---
 
-## Step 1 — Sync standing branch with latest main
+## Step 1 — Resolve or auto-provision the Standing Push Ticket
 
-Switch to or reset the standing branch `chore/SCC-186-standing-push` based on latest `origin/main`:
+Read the primary Jira prefix from `.agents/jira.conf` (e.g. `SCC`):
 
 ```bash
-git fetch origin main
-# If switching branches with uncommitted work, stash first or checkout:
-git checkout chore/SCC-186-standing-push && git pull origin main
-# Or create/reset if starting fresh:
-git checkout -B chore/SCC-186-standing-push origin/main
+PROJ=$(grep -E '^JIRA_KEYS=' .agents/jira.conf | cut -d'"' -f2 | awk '{print $1}')
+echo "Project Key Prefix: $PROJ"
+```
+
+Search for an existing open Standing Push Ticket (default `SCC-186` in lobby):
+```bash
+KEY=$(acli jira workitem search --jql "project = $PROJ AND summary ~ 'Standing Push' AND status != Done" --fields "key" --limit 1 | grep -oE "$PROJ-[0-9]+" | head -n 1)
+```
+
+If no ticket is found, **auto-mint it immediately**:
+```bash
+if [ -z "$KEY" ]; then
+  echo "No Standing Push Ticket found for $PROJ. Minting one now..."
+  CREATE_OUT=$(acli jira workitem create --project "$PROJ" --type Task \
+    --summary "Standing Push Ticket" \
+    --description "STANDING LANE. Never closed. This is the Jira key for routine command-centre upkeep that has no risk and needs no ticket of its own: doc and index edits, memory files, _artifacts INDEX rows, quick references, typo and link fixes." \
+    --label "standing-push")
+  KEY=$(echo "$CREATE_OUT" | grep -oE "$PROJ-[0-9]+" | head -n 1)
+fi
+echo "Using Standing Ticket: $KEY"
 ```
 
 ---
 
-## Step 2 — Stage files explicitly
+## Step 2 — Sync standing branch with latest main
+
+Switch to or reset the standing branch `chore/<KEY>-standing-push` based on latest `origin/main`:
+
+```bash
+git fetch origin main
+# If switching branches with uncommitted work, stash first or checkout:
+git checkout "chore/${KEY}-standing-push" 2>/dev/null && git pull origin main || \
+git checkout -B "chore/${KEY}-standing-push" origin/main
+```
+
+---
+
+## Step 3 — Stage files explicitly
 
 ⛔ **Never use wildcard staging (`git add .`, `git add -A`, `git add -u`).**
 
@@ -60,37 +88,37 @@ git diff --cached --stat
 
 ---
 
-## Step 3 — Commit with SCC-186 prefix
+## Step 4 — Commit with Jira prefix
 
-Commit the staged changes with the standing key `SCC-186` and `[sop-ok]` (since non-critical changes don't alter usage surfaces):
+Commit the staged changes with the standing key `<KEY>` and `[sop-ok]` (since non-critical changes don't alter usage surfaces):
 
 ```bash
-git commit -m "SCC-186 <summary of changes> [sop-ok]"
+git commit -m "${KEY} <summary of changes> [sop-ok]"
 ```
 
 ---
 
-## Step 4 — Push to GitHub
+## Step 5 — Push to GitHub
 
-Push to `origin/chore/SCC-186-standing-push`:
+Push to `origin/chore/<KEY>-standing-push`:
 
 ```bash
-env -u GITHUB_TOKEN git push origin chore/SCC-186-standing-push --force-with-lease
+env -u GITHUB_TOKEN git push origin "chore/${KEY}-standing-push" --force-with-lease
 ```
 
 ---
 
-## Step 5 — Open the Pull Request
+## Step 6 — Open the Pull Request
 
 Open the Pull Request targeting `main`:
 
 ```bash
-gh pr create --base main --head chore/SCC-186-standing-push --title "SCC-186 <summary of changes>" --body "SCC-186: Routine non-critical update."
+gh pr create --base main --head "chore/${KEY}-standing-push" --title "${KEY} <summary of changes>" --body "${KEY}: Routine non-critical update."
 ```
 
 ---
 
-## Step 6 — Verify main-write-gate Check
+## Step 7 — Verify main-write-gate Check
 
 Check GitHub Actions CI status for the PR:
 
@@ -102,11 +130,11 @@ Wait until `main-write-gate` reports `pass` (🟢).
 
 ---
 
-## Step 7 — Report PR Link
+## Step 8 — Report PR Link
 
 Print the PR link and status back to the operator:
 - **PR URL:** `https://github.com/<owner>/<repo>/pull/<number>`
 - **Status:** `main-write-gate passed` (🟢)
-- **Standing Ticket:** `SCC-186`
+- **Standing Ticket:** `<KEY>`
 
 Optional additional input (summary or specific file paths): $ARGUMENTS

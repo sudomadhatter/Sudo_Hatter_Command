@@ -92,6 +92,7 @@ PAIRS = [
     ("cicd-clean-code-audit.md", "smh-clean-code-audit.md"),
     ("cicd-label-tasks.md", "smh-label-tasks.md"),
     ("cicd-merge-epic-workingtrees.md", "smh-merge-multiple-workingtrees.md"),
+    ("cicd-non-crit-pr-push.md", "smh-non-crit-pr-push.md"),
 ]
 
 # Every `cicd-*` / `smh-*` name-counterpart that is NOT in PAIRS, each with the reason. A new
@@ -139,7 +140,6 @@ NOT_PAIRED = {
     "smh-slash-command-updating.md": _ONE_SUBJECT + " (authoring the command surface itself)",
     "smh-adviser-board.md": _ONE_SUBJECT + " (multi-voice advisory board)",
     "smh-review.md": _ONE_SUBJECT + " (ad-hoc read-only review)",
-    "smh-non-crit-pr-push.md": _ONE_SUBJECT + " (standing push lane for routine command center upkeep under SCC-186)",
 }
 
 # The pairs that carry a fenced shared law TODAY. Four of the six carry none - a real and

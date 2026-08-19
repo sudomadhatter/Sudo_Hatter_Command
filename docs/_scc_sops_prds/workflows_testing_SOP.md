@@ -81,6 +81,7 @@ re-syncing the twin is an AVCH ticket of its own, not something a lobby lane may
 | land a story that passed review | `/cicd-update-sprint-memory` ([§7](#7-landing-and-shipping--the-close-out-family)) |
 | land every lane of one epic at once | `/cicd-merge-epic-workingtrees <epic>` ([§7](#7-landing-and-shipping--the-close-out-family)) |
 | fix something small in a project | `/cicd-quick-dev <slug>` — **low-risk work only** ([§8](#8-the-fast-lane--cicd-quick-dev)) |
+| ⭐ **push routine project docs/notes to PR** | `/cicd-non-crit-pr-push` — **standing ticket & branch directly to PR** ([§8a](#8a-the-project-standing-push-lane--cicd-non-crit-pr-push)) |
 | **plan** a big Task — subtasks, lanes, the parallel table | `/smh-plan-task <TASK-KEY>`, then `/smh-label-tasks <TASK-KEY>` ([§9](#9-the-task-lane--work-on-the-system-itself)) |
 | **build** a Task — a command, a rule, a gate, the docs | `/smh-quick-dev <KEY>` → `/smh-code-review` → `/smh-close-task-merge-tree` ([§9](#9-the-task-lane--work-on-the-system-itself)) |
 | ⭐ **just get one specific thing done** — write me a guide, fix a reference, tidy a branch mess | `/smh-quick-fix "<the ask>"` — **no plan, no `approved`, no review**; it does not stop to ask whether to start ([§9a](#the-lightweight-lane--smh-quick-fix)) |
@@ -1209,6 +1210,19 @@ three-reviewer panel. It does **not** drop the rigour.
 On ad-hoc work with no epic it takes a `chore/<KEY>-<slug>` branch off `main` and **never creates a
 story file** — hanging one off a finished epic silently reopens it. ① and `/cicd-label-tasks` mark
 eligible stories with the `quick-dev` label, so the fast-lane pile is one board filter away.
+
+### 8a. The project standing push lane — `/cicd-non-crit-pr-push`
+
+**Standing push lane for routine child project upkeep.** For non-critical changes in child projects
+(`Projects/<name>` such as `Projects/AGY_AVIATIONCHAT`) that need no individual ticket or sprint story —
+doc and index edits, memory files, `_artifacts` INDEX rows, notes, and quick references.
+
+- **Auto-provisions the Standing Push Ticket** — if the project does not have an open `"Standing Push Ticket"`
+  (e.g. `AVCH-XX`), it auto-mints it via `acli` and keeps it open permanently.
+- **Maintains a persistent branch** — uses `chore/<KEY>-standing-push` synced from `origin/main`.
+- **Qualifies `LIGHT`** — refuses product code or deployable paths.
+- **Stages explicitly**, commits with `<KEY> <summary> [sop-ok]`, pushes, and opens the PR via `gh pr create`.
+- **Verifies `main-write-gate`** passes before handing back the PR link.
 
 ---
 
@@ -3300,6 +3314,7 @@ flowchart TD
 | Command | What it does for you |
 |---|---|
 | `/cicd-quick-dev` | Fast lane for genuinely small project work. Drops the *pipeline*, never the rigour: a worktree, ACs fixed before any code, an eject tripwire, and a mandatory review gate. **Low-risk only.** On a story it advances the row to `review` and **stops there — it never closes out**. |
+| ⭐ `/cicd-non-crit-pr-push` | **Standing push lane for child projects** ([§8a](#8a-the-project-standing-push-lane--cicd-non-crit-pr-push)). Routine non-critical project changes (docs, memory, notes, quick references). Operates on the project's Standing Push Ticket + persistent `chore/<KEY>-standing-push` branch directly to PR with `main-write-gate` check. |
 
 **The Task lane** — [§9](#9-the-task-lane--work-on-the-system-itself)
 
