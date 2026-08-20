@@ -1,216 +1,182 @@
 ---
-description: Pre-dev plan/story audit — run BEFORE coding. Pressure-tests an implementation_plan.md or story against the codebase and the ACs to catch gaps, over-engineering, and contract breaks before they're built. Auto-invoked by /cicd-dev-story-tests right after the plan is written.
+description: Pre-dev plan/story audit — three lenses (Repo Reality + Scope Ledger, Parity + Blast, Pre-Mortem), the anchor rule (no anchor, no finding), coverage-not-findings reporting, and an amendment rule that forbids ever adding a fourth lens. Runs BEFORE coding: verifies the plan is on track against the codebase and the story's ACs — NOT a code audit (that is /cicd-code-review, later, on a real diff). Auto-invoked by /cicd-dev-story-tests right after the plan is written.
 platforms: [opencode, antigravity]
 ---
 
-# /cicd-self-audit — Pre-Dev Adversarial Audit
+# /cicd-self-audit — Pre-Dev Plan Audit (three lenses, anchored)
+
+**The `cicd-` twin of `/smh-self-audit` — same contract, product mechanics.** Deliberate
+divergences, stated as such: Step 0 **binds exactly one project, never the lobby**
+(`smh-target-resolution`); the acceptance list is the **story's ACs**, not a ticket block; Lens 1
+may use the GitNexus graph when fresh; Lens 3's failure narratives are product-shaped (state,
+contracts, auth). Fix a shared idea in one twin, diff the other.
+
+## ⛔ THE AMENDMENT RULE — carved here, above the lenses, on purpose
+
+When a plan this audit cleared later breaks something, the fix is an amendment to a
+**deterministic list** — the marker vocabulary, the anchor definitions, or the Scope Ledger
+rules. **Adding a fourth lens is not a permitted response to a miss, ever. Delete instead.**
+Months of lens accretion produced the 2026-08-18 failure this rebuild answers (8 lenses, 44
+findings, ~half manufactured, the refutation pass killed unfinished — nothing delivered).
+Production of findings is cheap and front-loaded; filtering is back-loaded and O(n) over an n the
+production stage inflates. The anchor rule is the only filter that survived measurement, and it
+runs at the source.
+
+**Scope (operator, 2026-08-19):** a quick brainstorm to gate known agent issues **before wasting
+time developing something that was never going to work**. It verifies the plan is on track. NOT a
+full code audit — that is `/cicd-code-review`, later, on a real diff with real gates.
 
 > **Rules in force for this command:**
-> - `.agents/rules/smh-target-resolution.md` §STD + §BIND — bind exactly ONE project and **never the
+> - `.agents/rules/smh-target-resolution.md` §STD + §BIND — bind exactly ONE project, **never the
 >   lobby**; every path below resolves under `PROJECT_ROOT`
-> - `.agents/rules/artifacts-always-first.md` §7 — the audit is **appended into the plan it audited**
->   as a `## Self-Audit (<date>)` section, never delivered inline-only and never a standalone file
-> - `.agents/rules/000-PLAN-FIRST-GATE.md` — this audit runs BEFORE the literal `approved`, not after;
->   an audit that runs on already-written code is a review, and belongs in `/cicd-code-review`
-> - `.agents/rules/constitution.md` — the Ask-First and surgical-change obligations Phase 1 audits
->   the plan against
-> - `.agents/rules/port-checklist.md` — the six checks Phase 1's cross-repo row demands; the plan
->   answering them is what the row audits for, and its absence on differing copies is a NO-GO
-> - `.agents/rules/worktree-per-story.md` §"cwd is not intent" — why Step 0 pins the repo from command
->   output, and why the blast radius reads the sibling lanes instead of assuming this tree is the
->   whole picture
-> - `.agents/rules/code-standards.md` §6.5 — **disposition**: you are the assessor, not the
->   lens. Three questions, all three YES to act — is it REAL (a concrete failure, not a *"may
->   be"*) · does it change BEHAVIOUR · is it in THIS plan's scope. "It's cheap" is not a reason;
->   an audit that reports everything it noticed is the loop this test exists to break
-> - `.agents/rules/tests-must-gate-for-real.md` — the plan's **test strategy** is audited against it: a
->   plan naming no way to prove its checks non-vacuous is missing that step
+> - `.agents/rules/artifacts-always-first.md` §7 — the audit is **appended into the plan it
+>   audited**, never standalone; §plan contents defines the `## Declared Change Set` block Lens 1
+>   parses
+> - `.agents/rules/000-PLAN-FIRST-GATE.md` — this audit runs BEFORE the literal `approved`
+> - `.agents/rules/constitution.md` — Ask-First and surgical-change, audited in Lens 1
+> - `.agents/rules/port-checklist.md` — the six checks Lens 2's cross-repo row demands; absence on
+>   differing copies is a NO-GO (SCC-176)
+> - `.agents/rules/worktree-per-story.md` §"cwd is not intent" — why Step 0 pins the target from
+>   command output and Lens 2 reads the sibling lanes
+> - `.agents/rules/code-standards.md` §6.5 — disposition: REAL · changes BEHAVIOUR · in THIS
+>   plan's scope, all three YES before a finding stands
+> - `.agents/rules/tests-must-gate-for-real.md` — the plan's test strategy is audited against it:
+>   a plan naming no way to prove its checks non-vacuous is missing that step
 
+## Step 0 — Resolve the target project (FIRST — before any lens)
 
-Adversarial review of an `implementation_plan.md` or story **before any code is written.** The goal:
-catch flaws while fixing them still costs nothing. Assume the plan is wrong somewhere, then try to
-prove it. **Default to the leanest pass that covers the real risk** — the Phase 0 right-size gate is
-the point; brute-forcing every phase on a trivial plan is the slow, expensive path this exists to avoid.
+Bind per `smh-target-resolution` §STD + §BIND: self fast-path → `$ARGUMENTS` override (remainder =
+focus area) → `.agents/active-project.txt` → else **STOP and ask** — never guess, never the lobby.
+(Auto-invoked from `/cicd-dev-story-tests`, the pointer is already set.) Set `PROJECT_ROOT`, echo
+exactly `Target: Projects/<name>`, and resolve every bare path under it. Then pick, out loud:
 
-Target the plan or story just produced in this chat — a **pre-dev gate**, run BEFORE any code. Honor the
-Phase 0 right-size gate (a Light plan does not get the Full pass) and the Phase 2 over-engineering gate
-(strict — default NO-GO).
+- **Skip** — a one-line copy/doc/config tweak. Say so and stop.
+- **PRE-DEV (the default).** No plan/story → **STOP**; auditing an invented plan is the failure
+  this command exists to catch.
+- **POST-DEV (retroactive).** Code already exists: audit the story's ACs + the actual change set,
+  label the section `retroactive`.
 
-> No build commands here — there is no code yet. This audits the *plan*, not a diff. For shipped code,
-> use `/cicd-code-review`.
+## THE CONTRACT — anchor or it does not exist
 
----
+An unanchored finding compares the plan to a counterfactual. An anchored one compares it to a file.
 
-## Step 0 — Resolve the target project (FIRST — before any phase)
-Bind the target per `.agents/rules/smh-target-resolution.md` §STD + §BIND: self fast-path → `$ARGUMENTS`
-override (remainder = the focus area) → `.agents/active-project.txt` → else **STOP and ask** — never
-guess, never operate on the lobby. (When `/cicd-dev-story-tests` auto-invokes this audit, the pointer is
-already set — it inherits the same target.) Set `PROJECT_ROOT` and **echo exactly**
-`Target: Projects/<name>` before any work; the plan/story under audit, the codebase you trace it against,
-and every bare path resolve under `PROJECT_ROOT`, never the lobby.
+- **Every finding names an anchor with the literal text it read.** The grammar
+  (machine-checked by `test_self_audit_contract.py`):
+  anchor = `<path>:<line>` | `<path>` | `step <N>` — with the literal text read, quoted.
+  The path must exist under `PROJECT_ROOT`; the step/AC number must exist in the plan or story.
+  **No anchor, no finding — deleted, not demoted.**
+- **The schema demands COVERAGE, not findings.** Each lens returns the fixed block:
 
----
+  ```
+  lens:        <1|2|3> <name>
+  checks_run:  <the checks this lens executed, one line each>
+  read:        <files/commands actually read, with paths>
+  verdict:     clean | findings below
+  ```
 
-## Phase 0 — Scope, Right-Size & AC Coverage
+  **Full coverage with zero findings is a complete, successful run** — no lens here is handed a
+  `findings[]` array to fill.
+- **Judgment is denied a severity:** beliefs with no check → `### Observations`, uncounted.
+- **Corroboration promotes, never demotes.** Anchor filter FIRST; agreement is salience, not
+  truth. **Corroboration affects SORT ORDER only** (`x2`, top of its severity band); severity is
+  set by consequence alone; dedupe key is the **shared anchor**, never the topic; lenses run
+  **blind** to each other.
 
-1. **Name the target** — which plan/story file, and list each change it proposes (file/component,
-   old → new, the state/logic it touches).
-2. **Right-size the audit:**
-   - **Skip** — a one-line copy/doc/config tweak. Stop; it doesn't need an audit.
-   - **Light** — contained change (one function, a prompt string, an isolated component): Phases 1–3.
-   - **Full** — touches a state machine, SSE/WebSocket contract, auth, a shared schema, or a symbol
-     with many consumers: all phases.
-3. **AC ↔ Plan traceability** (the #1 pre-dev catch): map every acceptance criterion to a concrete
-   plan step, and every step back to an AC.
-   - AC with no step → the plan will silently under-deliver. **Flag.**
-   - Step with no AC → scope creep. **Flag for cut** (see Phase 2).
-4. **Decomposition flag** — does this story modify **both backend AND frontend** (e.g. Python AND
-   TypeScript)? If so, recommend splitting it (per constitution Ask-First).
+## The two levels — scope of inquiry, never a verdict
 
----
+| Level | Runs | Derived from the plan's `## Declared Change Set` — never a caller flag |
+|---|---|---|
+| **LEDGER** | Lens 1 only | docs/config-only, or ≤2 `EDIT` files touching no state machine, contract, auth, schema, or multi-consumer symbol |
+| **LEDGER+BLAST** | all three | a state machine, an SSE/WebSocket or API contract, auth, a shared schema, a symbol with many consumers, both backend AND frontend, a file in more than one repo — or any `DELETE` |
 
-## Phase 1 — Blast-Radius Trace
+No minute budgets, no finding caps (parent ruling 5). State the level in the output header.
 
-For each thing the plan proposes to change, trace it against the **current** codebase. Fill only the
-rows that carry real risk:
+## Lens 1 — Repo Reality (every level)
 
-| Symbol / Change | Existing setters (upstream) | Existing readers (downstream) | Breaks if… |
-|-----------------|-----------------------------|-------------------------------|------------|
+**Does the plan's world exist?** Under `PROJECT_ROOT`, quoting what you read:
 
-**Graph-first when available.** Decide from the TOOL, never from a doc: call `list_repos` and look for
-this project's path. If it is listed and the MCP tools are present, use the code graph for the blast
-radius instead of grepping blind: `impact({ repo, target, direction: "upstream", summaryOnly: true })` —
-who breaks if this changes; `context({ repo, name })` — callers/callees + flows (full tool tour → the
-`gitnexus-impact-analysis` skill). **Never infer "indexed" from a `docs/gitnexus.md` file or an
-`AGENTS.md` mention** — the skeleton ships that doc while having no index at all, so prose gives you
-both false negatives and false positives. `list_repos` is the only ground truth.
+1. Every path, symbol, endpoint, schema, and command the plan names → exists (graph or grep,
+   quoted). Every AC maps to a plan step and every step back to an AC — an AC with no step
+   under-delivers silently; a step with no AC feeds the Scope Ledger.
+2. The `## Declared Change Set` block parses:
+   `python3 .agents/scripts/declared_change_set.py parse <plan>` *(PC: `python`)*.
+   Absent block or `incomplete` bullets **IS a finding** — `/cicd-code-review` Step 1.5's drift
+   check depends on absence being loud.
+3. Both-stacks flag: the plan modifies backend AND frontend → recommend the split (constitution
+   Ask-First), anchored to the two file lists.
+4. Reuse check: a helper/pattern the plan is about to build already exists → finding, anchored to
+   the existing symbol's path.
 
-**Always pass `repo:`** — several repos are indexed, and an unscoped call silently answers about the
-wrong one.
+### The Scope Ledger (inside Lens 1) — over-engineering as a ledger, never an opinion
 
-**Freshness gate — run it BEFORE you trust an answer.** The index is a machine-local cache that does
-not travel with git and goes stale on every pull, merge, or branch switch. Compare the repo's
-`lastCommit`/`branch` from `list_repos` against the working tree's `git rev-parse HEAD` and current
-branch. If they differ, say so in the audit and **treat the graph as a lead, not authority** — re-run
-`detect_changes`/re-index if cheap, otherwise cross-check every finding with grep. A stale index
-returns a confident blast radius for code that no longer exists, which reads exactly like a clean audit.
+**Precondition:** the story carries ≥2 ACs and each names a concrete observable — fewer, or an AC
+with no observable, **is itself the finding** (a vague list makes the ledger match everything).
 
-**A `0` or LOW verdict is the one you must not believe on sight.** `impact()` misses
-attribute-dispatch calls (`self.<attr>.<method>()`), so a genuinely hot symbol can come back 0/LOW —
-i.e. "safe to change." Grep-verify every 0/LOW before acting on it. Non-zero results are trustworthy;
-it is the *absence* of edges that is unreliable.
+Every artefact the plan **CREATES** (op `NEW`; wholesale rewrites count) × the AC that requires
+it. A finding exists **only when a row's acceptance cell is empty**, written exactly:
+"`<path>` is created by plan step `<N>`; **no acceptance row requires it**" — never "`<path>` is
+unnecessary"; the fix is delete-or-add-the-row and the audit does not pick. **Caller count** by
+grep, printed, falsifiable. `EDIT` rows are in scope by definition. Elegance, abstraction level,
+premature generality: not findings, no severity, not logged.
 
-**Read the confidence column** — code edges ≈ 1.0; doc/story-file mentions ≈ 0.8. **Caveat:** GitNexus
-links repos only via HTTP contracts — it will NOT surface coupling through a shared DB / data store; the
-Contract two-sidedness bullet below still needs manual reasoning.
+## Lens 2 — Parity + Blast (LEDGER+BLAST)
 
-**Fall back to grep** when the tools aren't available (headless autopilot runs, or a non-indexed repo) —
-and keep grep as a cross-check for dynamic / string references the AST graph can miss:
+For each declared change, trace against the **current** codebase — graph-first when fresh, grep
+as the normal fallback:
+
+- **GitNexus, gated:** `list_repos` is the only ground truth of "indexed" (never a doc mention).
+  Compare its `lastCommit` to `git rev-parse HEAD` — stale index = **lead, not authority**;
+  grep-verify every `0`/LOW `impact()` (it misses attribute-dispatch). The pure-grep path is the
+  NORMAL path (operator, 2026-08-19), not the degraded one.
+- changed return / props / schema → every existing caller, consumer, query accounted for.
+- **Contract two-sidedness:** one side of a paired contract (SSE event, API schema, DB shape,
+  signature) changed → the plan names the other side, or that is the finding. GitNexus cannot see
+  shared-DB coupling — this row is manual.
+- **Cross-repo port (SCC-176):** the file exists in more than one repo and the copies differ
+  (`git diff --no-index`, exit 1 proves it) → the plan carries the six-check port section with
+  command output, or **NO-GO**.
+- **Twins and doors:** a paired surface (cicd/smh command, generated door) → divergence stated or
+  ported.
+- **Sibling lanes:** `git worktree list` + per-tree `diff --name-only` — a file in both sets is a
+  landing-order dependency: name the order and the cost of violating it.
+- **Risk context (SCC-228 seam):** `python3 .agents/scripts/risk_seam.py classify <declared
+  paths>` *(PC: `python`)* informs this lens's depth. **Informs, never gates** — `gates_audit()`
+  is False for every return by pinned contract, so audit semantics are identical under the
+  placeholder and under SCC-223/224.
+
+## Lens 3 — Pre-Mortem (LEDGER+BLAST) — bounded, and the bound is the point
+
+Shipped, and it silently corrupted user state — why? **It CANNOT originate a finding.** It
+attaches a product-shaped failure narrative — rehydration, the error/timeout path, concurrent
+events, expired auth, the type-union edge, the hallucinated requirement — to a finding an
+anchored lens already raised. Unattached output is **discarded**.
+
+## Output — appended into the plan, never a standalone file
+
+Append `## Self-Audit (<date>)`: level and mode (`retroactive` when POST-DEV) · one coverage
+block per lens (fixed schema) · findings table `| anchor | literal text read | consequence |
+severity |` sorted by severity then corroboration · `### Observations` (uncounted) · sibling
+landing-order dependencies · the canonical line:
 
 ```
-grep -rn "symbolName" --include="*.ts" --include="*.tsx" --include="*.py"
+Audit verdict: GO | NO-GO
 ```
 
-- changed return value → does the plan account for every existing caller?
-- changed props / API / DB schema → every existing consumer & query?
-- renamed or removed → any dangling references the plan missed?
-- **Contract two-sidedness** — if the change touches **one side** of a paired contract (SSE/WebSocket
-  event, API schema, DB doc/row shape, function signature), does the plan name the **other side**?
-  A backend event change that never mentions the frontend consumer is a guaranteed break.
-- **Reinvention check** — does a helper / util / pattern the plan is about to build **already exist**?
-  If yes, reuse it (also a Phase 2 tripwire).
-- **Constitution + assumptions scan** (one line each, if relevant): does the *plan* propose a full-file
-  rewrite where a surgical edit would do? a new DB client instead of the shared singleton (e.g.
-  `get_db()`)? a hardcoded secret? a contract change touching only one side? an untested assumption
-  about external state (DB docs/rows, cloud IAM, env vars)?
+**NO-GO on exactly two grounds:** an anchored finding whose consequence breaks an AC or a hard
+gate (constitution, port rule, tests-must-gate), or the Scope Ledger precondition failing. All
+else is findings on a GO. Bake fixes inline (`⚠️ AUDIT FINDING`) so the dev reads them in context.
+(The standalone `self-audit-stress-test.md` stays retired, 2026-08-02.)
 
----
+## After the work is built
 
-**Cross-repo ports are a blast radius of their own — `.agents/rules/port-checklist.md` (SCC-176).**
-When a file the plan changes
-**exists in more than one repo** — the centre and a project, in either direction — the audit is not
-finished until the plan carries a section answering all six port checks, each with the command output
-that answered it. The trigger is mechanical, never self-reported:
+Lens 2 is the half that expires — traced against the epic branch of plan time while sibling
+stories land. It re-runs automatically as `/cicd-code-review` Step 0.7; invoke this command
+directly post-dev only when that is not enough (a lane resumed after days, the AC list itself in
+doubt) — POST-DEV mode, Lens 2 + Lens 3's external rows, section labelled `retroactive`.
 
-```bash
-git diff --no-index -- <centre>/<path> <project>/<path> ; echo "differ=$?"   # 1 = they differ
-```
+## Stay in lane
 
-Differing copies with no such section is a **NO-GO**, not a note: the centre's copy is subtly wrong
-the moment it runs in a submodule, on Windows, in a worktree, or in a thin repo, and every AVCH-59
-divergence came from that one short list.
+Audit and annotate the plan; write no implementation, touch no code the plan is about, transition
+nothing. One product: a `## Self-Audit` section and a verdict.
 
-## Phase 2 — AI Drift & Over-Engineering Gate  *(STRICT — default NO-GO)*
-
-> The simplest implementation that satisfies the story's ACs **wins.** Complexity is guilty until
-> proven innocent: every abstraction, layer, option, or dependency must trace to a **current AC** —
-> never a hypothetical future. **AI Drift is the primary enemy here.** "might need," "for flexibility," "extensible," "future-proof," and
-> "reusable later" are **red flags, not justifications.** The burden of proof is on complexity. If the plan dictates building five layers of abstraction for a simple `if` statement, **hard-stop the dev flow.**
-
-**Tripwires — if any fires, the plan is `NEEDS-REVISION` until that step is justified against a
-current AC or cut:**
-- [ ] New abstraction (base class / interface / factory / manager / wrapper) for a **single** use
-- [ ] Config option, feature flag, or parameter **no AC requires**
-- [ ] Generalizing for N cases when the story is **N=1** (registry / plugin / strategy for one item)
-- [ ] New dependency where stdlib or an existing util already covers it
-- [ ] Error handling / retries / fallbacks for states that **cannot occur** in this flow
-- [ ] A new pattern or layer when an **existing project pattern** already does the job
-- [ ] Plan size wildly out of proportion to the ACs (e.g. 1 AC → 200-line plan)
-- [ ] Rebuilding something that **already exists** (Phase 1 reinvention check)
-- [ ] Clone-and-tweak — the plan duplicates an existing block/component/test ("copy X and adjust")
-  where reusing or extending X would do
-
-For each tripwire that fires, name the **simpler alternative** and the lines/steps it saves. **Default
-disposition for an unjustified tripwire is CUT IT.**
-
----
-
-## Phase 3 — Adversarial Scenarios / Pre-Mortem  *(Full audits; Light only when state is involved)*
-
-Pre-mortem framing: assume the plan shipped and **silently corrupted user state** — what was the
-cause? Ask whether the **plan accounts for** each scenario that can actually occur; skip the rest with
-a one-line why:
-
-| Scenario | Does the plan handle it? | ✅/❌ |
-|----------|--------------------------|-------|
-| Happy path / first use | | |
-| Rehydration / DB or history load | | |
-| Error / timeout path | | |
-| Concurrent events (double-click, simultaneous SSE) | | |
-| Missing / invalid auth (expired token, unauthenticated route) | | |
-| Type-union / exhaustiveness edge (new value missing from a `Record`/switch → `undefined`/`KeyError`) | | |
-| AI Hallucinated Edge Case (Did the AI invent a requirement or state that cannot actually exist?) | | |
-
-Then name the failure modes that survived the walk: the forgotten edge case, the unintended
-consequence via a shared dependency, the silent killer (corrupts vs. throws), the concurrency trap.
-
----
-
-## Phase 4 — Verdict
-
-1. **Per-item:** SAFE / NEEDS REVISION / UNSAFE
-2. **Persist (ALWAYS — per `artifacts-always-first` §7):** append the audit INTO the plan/story you
-   audited as a **`## Self-Audit (<date>)`** section — right-size level, ONE line per phase walked
-   (what was checked and cleared), the findings table (`file:line` · severity · failure scenario ·
-   disposition), and the canonical **`Audit verdict: GO | NO-GO`** line. Do NOT write a standalone
-   `self-audit-stress-test.md` — retired 2026-08-02 (older stories keep theirs as read-only history).
-3. **Four quick gates** (one line each):
-   - **Verification strategy present?** Does the plan say how it'll be proven (tests / manual)? No → flag.
-   - **Anything irreversible / destructive?** Migrations, DB schema/rules, data deletes → flag + gate.
-   - **Any step vague enough the dev will guess?** Ambiguity → the dev fills the gap wrong. Tighten it.
-   - **Quality fit?** Does the plan anchor the dev to the existing conventions it should match (naming,
-     error style, module placement, test patterns) — or leave style to improvisation? A plan silent on
-     "where this lives and what it looks like" invites slop.
-4. **Final Go / No-Go** for proceeding to dev.
-
-If NEEDS-REVISION or UNSAFE → **bake the fix into the plan/story itself** (inline `⚠️ AUDIT FINDING`
-in the affected section, plus the findings table in `## Self-Audit`) so the dev agent reads it in
-context — then re-run only the phases the change touched.
-
----
-
-## Notes
-- Guilty until proven innocent — but right-sized. A prompt tweak gets a Light pass; an SSE state
-  machine gets the Full pass.
-- This is a **pre-dev gate** — it audits the plan/story, never a code diff.
-- Optional focus area: $ARGUMENTS
+Optional focus area: $ARGUMENTS

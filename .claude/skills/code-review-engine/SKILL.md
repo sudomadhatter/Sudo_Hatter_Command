@@ -73,6 +73,7 @@ lenses_run:
 lenses_counted:  <n>/<applicable>
 lenses_na:       <lenses not applicable in this mode, or "none">
 findings:        <d> decision · <p> patch · <w> defer   (<n> noise-dismissed · <k> relevance kills)
+dispositions:    per-lens: <lens>=<survived>/<dismissed>/<relevance-killed> · … (SCC-233; a multi-lens finding counts once per contributing lens)
 severity_floor:  none | CONCERNS | FAIL
 notes:           <degradations, absent optional inputs, verification state>
 ```

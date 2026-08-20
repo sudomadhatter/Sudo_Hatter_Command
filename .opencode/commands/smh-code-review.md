@@ -104,6 +104,16 @@ Then answer these three, in writing:
 3. **Which sibling lanes are still live, and does one of them need to land first?** Name the
    landing-order dependency and what happens to this work if the order is reversed.
 
+
+**Derive `review_level` HERE, from the radius you just measured (SCC-232) — derived, never
+chosen.** The rule is fixed and defined once, in the engine's lens-roster contract (step-01 § The
+two levels): **quick** when every answer above came back contained (nothing referenced moved · no
+gate, hook, rule, or contract surface in the radius · ≤3 source files in the re-taken diff);
+**standard** otherwise. Hand the engine `review_level` WITH the three written answers as its
+grounding — a level without its radius evidence is a flag, and no caller gets one; the engine
+defaults such a call to `standard`. (`lens_budget` is a different axis and neither re-declares
+the other.)
+
 **Absorb `main` now, before the verdict** — conflicts belong on this branch, never on `main`
 (`git-policy`). Re-run Step 3's floor **after** absorbing; a verdict measured on a pre-merge sha is a
 verdict about code that will never exist.
@@ -111,7 +121,7 @@ verdict about code that will never exist.
 > This step is the post-dev half of `/smh-self-audit`, deliberately placed **here** rather than offered
 > as a second invocation of that command. An opt-in re-audit is one nobody runs — the memory audit sat
 > unused inside `/smh-update-maps-indexes` for exactly that reason. See that command's
-> **§ Running it after the work is built** for which phases go stale and which do not.
+> **§ After the work is built** for which lenses go stale and which do not.
 
 ## Step 0.9 — ⭐ Probe the review runtime and RECORD it (before the engine, SCC-177)
 
@@ -225,6 +235,26 @@ proves it, which is a claim about evidence a lens cannot make for you.
 
 For **each item**: name where the diff satisfies it, and **the assertion that proves it**. Then the
 other direction — **anything in the diff beyond the list is drift**: cut it, or name why it stays.
+
+**Then the SECOND left-hand side (SCC-231) — the declared set.** The acceptance list says what
+must be TRUE; the plan's `## Declared Change Set` block says which files were meant to MOVE — a
+file edited that satisfies an acceptance row but was never declared is invisible to the
+reconciliation above. Diff the block against the real diff:
+
+```bash
+python3 .agents/scripts/declared_change_set.py diff <the plan> \
+        --changed $(git -C "$REPO" diff --name-only <the same base this review resolved>)   # PC: `python`
+```
+
+- **`drift.undeclared`** = files(diff) − files(declared): a file the plan never named was edited.
+  One finding per file, severity **important**.
+- **`drift.unimplemented`** = files(declared) − files(diff): declared and untouched — plan
+  overreach, or dropped scope. One finding per file, severity **suggestion**.
+- An absent plan or absent block returns `present: false` — that is itself ONE finding at
+  **important**: "no declared set to reconcile against". Never a silent skip; the vacuous green
+  is the exact case this side exists to catch.
+- **Neither difference auto-fails the verdict.** Each drift finding takes the same contract as
+  the first side: cut it, or name why it stays.
 
 - An item with **no evidence** is not satisfied, however obviously true it looks. **CONCERNS floor.**
 - An item whose evidence is *"I read it and it looks right"* is not evidence. Run something.

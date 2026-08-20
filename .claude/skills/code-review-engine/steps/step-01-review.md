@@ -124,7 +124,15 @@ for: it has no repo access by design, so its trace runs on the diff text, and
 this lens exists to find what a fully-informed reader rationalizes away — so do not "help" it by
 handing it the repo or the pack.
 
-## The literal-correctness lens — the one lens with a real token cost
+## The literal-correctness lens — deliberately line-level
+
+**What per-lens cost is actually MEASURED (Arm A means, 3 runs/arm —
+`_artifacts/_main/2026-08-12_scc-124-baseline-trial/scoring.md`):** Edge Case Hunter 220.5 s (the
+slowest lens in 5 of 6 runs) · Blind Hunter 180.9 s · Acceptance Auditor 127.4 s · Test-Adequacy
+75.3 s. **This lens is unmeasured — it postdates that trial (SCC-126)**, so no cost claim about it
+is funded until the SCC-232 measurement runs. And cost is not the whole ledger: the Edge Case
+Hunter is the most expensive lens measured AND produced the SCC-129 trial's one unseeded true
+positive (NaN/Infinity bypassing an `amount < 0` guard, because `nan < 0` is False).
 
 The other four lenses are high-altitude: topology, lifecycle, acceptance criteria, test tiers.
 This one is deliberately not, and the gap it closes is one the harness this discipline is ported
@@ -189,37 +197,9 @@ would report a fully-run review as partially skipped.
 > your output**, naming what you got and what you did not. A reader must never mistake a truncated
 > pass for a clean one, and you are the only one in a position to say which this was.
 
-### `lens_budget` — this lens's cost axis, defined here, once
-
-⛔ **`lens_budget` is NOT `review_mode`, and the two are independent.** `review_mode`
-(`full` | `no-spec`) says whether a spec exists, and gates the Acceptance Auditor. `lens_budget`
-(`standard` | `capped`) governs only this lens's cost. **A review is routinely `review_mode: full`
-and `lens_budget: capped` at the same time** — that is the autopilot's normal state, and reading
-`review_mode: full` as permission to relax these caps is the expensive mistake this paragraph
-exists to prevent.
-
-A caller **names** its `lens_budget`; it never re-defines the caps. Cost governance lives with the
-lens that incurs the cost, because a cap each caller restates is a cap that drifts per caller.
-**A caller that names none gets `capped`** — the safe default, because the cost of guessing wrong
-in the other direction is an unbounded overnight spend nobody is watching.
-
-| `lens_budget` | Used by | The caps |
-|---|---|---|
-| `standard` | interactive callers | MANDATORY as written above; the lens may additionally **earn** ONE top-up past the file cap by naming the specific file and what it is looking for — never a sweep, and never "to be thorough" |
-| `capped` | `/cicd-code-review-AP` (autopilot), and any caller that names nothing | the same caps, MANDATORY, and **no top-up** — an overnight loop multiplies every token it spends, and nobody is watching it spend them |
-
-**The top-up must REACH the lens, and it must reach ONLY the `standard` lens.** The table above is
-the definition, and a table cell is unquoted — orchestrator text, which the assembly convention
-says never enters a prompt. Left at that, `standard` and `capped` are behaviourally identical
-(SCC-147). So the clause is blockquoted below, and you append
-it **only when the caller passed `lens_budget: standard`**. Under `capped` you append nothing —
-the same convention that caused the defect is the enforcement, because a lens that was never handed
-the clause has no top-up to spend.
-
-> **You may earn ONE top-up past the file cap.** If a withheld file becomes necessary — you can
-> name the file and the specific symbol or assumption you must verify inside it — open that one
-> file from the repo, and say in your output that you did, naming the file and why. ONE means one:
-> never a second file, never a sweep, and never "to be thorough".
+**Its cost axis `lens_budget` is defined ONCE, inside THE LENS-ROSTER CONTRACT below**
+(SCC-229 moved it there with the other lens-state law; the caps above are what that axis
+governs, and nothing about them changed).
 
 ### Gate 1, adapted for this lens — and the adaptation is load-bearing
 
@@ -440,13 +420,90 @@ which is the pair of documents it can actually hold to account.
 ## No noise filter — at this layer or any other
 
 ⛔ **Never gate findings on "worthiness", and never add a filter that drops low-value findings
-before they are recorded.** This is a measured decision, not a taste: pr-af ships exactly such a
-gate and publishes what it costs — recall falls from 0.69 to 0.52. Our reviewer applies the fixes
-it finds, so a noisy finding costs one triage decision while a missed one ships. Precision is
-bought *inside* each finding, by the three gates above, never by a filter over the set. If a future
-change proposes one "for free", this paragraph is the answer.
+before they are recorded.** Our reviewer applies the fixes it finds, so a noisy finding costs one
+triage decision while a missed one ships. Precision is bought *inside* each finding, by the three
+gates above, never by a filter over the set.
 
-## ⭐ `review_runtime` — the caller already answered "can this runtime fan out?", so do not re-ask
+**The fence (SCC-230):** this ruling applies where findings are anchored to a diff. Where there
+is no diff — plan and story audits — the anchor rule of SCC-225 governs instead: no anchor,
+delete. External benchmarks are cited with source and version, or they are not cited — the recall
+figure that used to sit here carried neither and is gone.
+
+## ⭐ THE LENS-ROSTER CONTRACT — five scars, one section, one invariant (SCC-229)
+
+**Every lens in the roster ends the run in exactly one declared state — `ok` ·
+`recovered-inline` · skipped-by-mode (on `lenses_na`, with its reason) · `dead` — and never in no
+state at all.** Everything below is that sentence applied: the budget axis says what a lens may
+spend, the runtime says how lenses launch, the failure ladder says what a death becomes, the drop
+rule says when the Blind Hunter's only honest state is `n/a`, and the mode-skip rule says which
+absences are health, not damage. Each subsection carries the ticket that paid for it. A future
+miss **amends one of these lists — it never adds a section**: five separate sections bolted on by
+five separate tickets is exactly the accretion SCC-229 collapsed.
+
+**The measured runtime expectation (SCC-177 · scoring.md, 2026-08-12, 6 runs):** orchestration is
+at parity everywhere — pack build 0.19–0.36 s, lens-wave overhead 35–65 s, triage+record 22–44 s.
+**A slow run means a lens, never the harness** — the slowest measured lenses were Edge Case at
+220.5 s and the Blind Hunter at 180.9 s (Arm A means), an order of magnitude past everything the
+orchestration does. Investigate the lens before touching the harness.
+
+### The two levels — `quick` and `standard`, derived from the caller's measured radius (SCC-232)
+
+The roster is not flat-rate. The caller's Step 0.7 re-derives the diff's blast radius against the
+current integration ref, and the LEVEL is a fixed reading of that measurement — **derived there,
+never a flag the caller chooses**: a caller-chosen level would be a hard-coded budget wearing a
+different hat. The engine therefore requires the level to arrive WITH the three written Step 0.7
+answers that ground it.
+
+| `review_level` | Lens set | The fixed rule, applied by the caller at its Step 0.7 |
+|---|---|---|
+| `quick` | **Test-Adequacy + Acceptance** Auditor | every 0.7 answer came back contained: nothing this diff references moved · no gate, hook, rule, or contract surface in the radius · ≤3 source files in the re-taken diff |
+| `standard` | the full roster — adds Edge Case, the Blind Hunter, and Literal-Correctness | anything else, and the default whenever the level did not arrive with its radius evidence |
+
+**Membership is data-gated, not preference (the pre-registered SCC-232 rule):** quick keeps the
+two cheapest measured lenses — Acceptance 127.4 s, Test-Adequacy 75.3 s (scoring.md, Arm A means)
+— and standard carries the expensive three. Literal-Correctness measured **1,082.0 s** on the same
+fixture (2026-08-20, Arm A, n=1; the 3-round mean is lower-bounded at 360.7 s —
+`_artifacts/_main/2026-08-20_scc-225-review-surface/lc-cost-measurement.md`), 8.5× the 127.4 s
+threshold, so it sits in standard.
+
+A lens excluded by level ends the run **skipped-by-mode**: recorded on `lenses_na` as
+`<lens> · n/a — skipped-by-mode (level: quick)`, never `dead`, never inside the
+`<n>/<applicable>` count — a quick review reports `2/2`, exactly the mode-skip contract below.
+No minute budget and no finding cap exists on either level, and `lens_budget` (below) stays the
+independent cost axis it is — neither re-declares the other.
+
+### `lens_budget` — the literal-correctness lens's cost axis, defined here, once (SCC-147)
+
+⛔ **`lens_budget` is NOT `review_mode`, and the two are independent.** `review_mode`
+(`full` | `no-spec`) says whether a spec exists, and gates the Acceptance Auditor. `lens_budget`
+(`standard` | `capped`) governs only the literal-correctness lens's cost. **A review is routinely `review_mode: full`
+and `lens_budget: capped` at the same time** — that is the autopilot's normal state, and reading
+`review_mode: full` as permission to relax these caps is the expensive mistake this paragraph
+exists to prevent.
+
+A caller **names** its `lens_budget`; it never re-defines the caps. Cost governance lives in ONE place, because a cap each caller restates is a cap that drifts per caller.
+**A caller that names none gets `capped`** — the safe default, because the cost of guessing wrong
+in the other direction is an unbounded overnight spend nobody is watching.
+
+| `lens_budget` | Used by | The caps |
+|---|---|---|
+| `standard` | interactive callers | MANDATORY as written in that lens's Scope section; the lens may additionally **earn** ONE top-up past the file cap by naming the specific file and what it is looking for — never a sweep, and never "to be thorough" |
+| `capped` | `/cicd-code-review-AP` (autopilot), and any caller that names nothing | the same caps, MANDATORY, and **no top-up** — an overnight loop multiplies every token it spends, and nobody is watching it spend them |
+
+**The top-up must REACH the lens, and it must reach ONLY the `standard` lens.** The table above is
+the definition, and a table cell is unquoted — orchestrator text, which the assembly convention
+says never enters a prompt. Left at that, `standard` and `capped` are behaviourally identical
+(SCC-147). So the clause is blockquoted below, and you append
+it **only when the caller passed `lens_budget: standard`**. Under `capped` you append nothing —
+the same convention that caused the defect is the enforcement, because a lens that was never handed
+the clause has no top-up to spend.
+
+> **You may earn ONE top-up past the file cap.** If a withheld file becomes necessary — you can
+> name the file and the specific symbol or assumption you must verify inside it — open that one
+> file from the repo, and say in your output that you did, naming the file and why. ONE means one:
+> never a second file, never a sweep, and never "to be thorough".
+
+### `review_runtime` — the caller already answered "can this runtime fan out?", so do not re-ask (SCC-177)
 
 The caller probes for subagent availability at its Step 0 and passes the answer down as
 `review_runtime: fan-out | inline`. **Read it before you launch anything.**
@@ -476,7 +533,7 @@ can run while the receipt is still being produced. The only requirement is that 
 caller's walkthrough states both. Different shas mean the review and the evidence describe different
 code, which is the one thing the concurrency must not buy.
 
-## When a lens cannot be launched, or fails
+### A lens that cannot launch, or dies (SCC-173)
 
 **If subagents are unavailable in this runtime**, write one prompt file per lens into `ARTIFACT_DIR`
 (or, when the caller gave none, return the prompts in the summary and say they were not written),
@@ -500,7 +557,7 @@ any spec, plan, walkthrough or evidence pack is pulled into context.** Done in t
 is genuinely blind and scores `recovered-inline` like any other — `/cicd-code-review-AP` is built
 exactly this way, splitting its ingests so the blind lens lands between them.
 
-### ⛔ When the order CANNOT protect it, the lens is DROPPED — not faked (SCC-203)
+### ⛔ When the order cannot protect the Blind Hunter, the lens is DROPPED — not faked (SCC-203)
 
 **Operator ruling, 2026-08-17, after a review on this engine's own lane degraded silently:**
 
@@ -554,7 +611,7 @@ The three end states, and the one that costs you:
 A lens recovered inline cost time, not coverage, so it must never be scored as a gap. A lens that
 never produced findings at all leaves a surface unexamined, and an unknown is never a pass.
 
-## Skipped-by-mode is not the same as dead — and the difference is load-bearing
+### Skipped-by-mode is not the same as dead — and the difference is load-bearing
 
 The Acceptance Auditor **does not run** in `review_mode: no-spec`, because there is nothing for it
 to audit against. That is the mode working correctly, not a lens dying.
