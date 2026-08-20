@@ -222,6 +222,26 @@ def main() -> int:
         c.check("declared blocked_by locks regardless of files",
                 len(r["approved"]) == 1, str(r["approved"]))
 
+    # ── blocked_by is DIRECTIONAL (SCC-226 ride-along, 2026-08-20) ────────────
+    # Stored symmetric, the solver maximized set size by seating the DECLARERS and
+    # locking their prerequisite behind them - measured on SCC-225's own set:
+    # SCC-227 (declares blocked_by: SCC-226) came back approved, with SCC-226
+    # printed "after SCC-227". Two declarers on one blocker is the minimal repro;
+    # at two nodes the sort order happens to pick the blocker and hides it.
+    with TempDir() as tmp:
+        r = run_resolve(tmp, [child("A-1", "1.1"), child("A-2", "1.2"),
+                              child("A-3", "1.3")],
+                        {"A-1": {"paths": ["backend/a.py"]},
+                         "A-2": {"paths": ["backend/b.py"], "blocked_by": ["A-1"]},
+                         "A-3": {"paths": ["backend/c.py"], "blocked_by": ["A-1"]}})
+        c.check("the BLOCKER is approved, never displaced by its dependents",
+                "A-1" in r["approved"], str(r["approved"]))
+        c.check("a declarer reads 'after <its blocker>' - direction preserved",
+                r["_by"]["A-2"]["verdict"] == "after"
+                and r["_by"]["A-2"]["detail"] == "after A-1", str(r["_by"]["A-2"]))
+        c.check("both declarers wait on the same blocker",
+                r["_by"]["A-3"].get("detail") == "after A-1", str(r["_by"]["A-3"]))
+
     # ── fails toward locked ────────────────────────────────────────────────────
     with TempDir() as tmp:
         r = run_resolve(tmp, [child("A-1", "1.1"), child("A-2", "1.2"),

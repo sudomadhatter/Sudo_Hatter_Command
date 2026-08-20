@@ -736,7 +736,18 @@ def cmd_resolve(args) -> int:
 
     candidates = sorted(c["key"] for c in grounded)
     g = conflict_graph(candidates, touch)
-    approved = largest_disjoint(candidates, g)
+    # blocked_by is DIRECTIONAL: a declarer never enters the approved set while its
+    # blocker is a live sibling in this run - dependents follow, they never displace.
+    # Stored symmetric alone, the edge let the solver maximize set size by seating
+    # the declarers and locking the prerequisite behind them (measured 2026-08-20:
+    # SCC-227, declaring blocked_by SCC-226, came back approved with SCC-226 "after
+    # SCC-227"). The edge stays in g so the lock row can name the blocker; candidacy
+    # is what direction removes. A blocker OUTSIDE the run (landed or foreign) keeps
+    # its declarer free - conflict_graph already ignores those, and so does this.
+    followers = {k for k in candidates
+                 if any(str(d).strip() in g
+                        for d in (touch.get(k) or {}).get("blocked_by") or [])}
+    approved = largest_disjoint([k for k in candidates if k not in followers], g)
 
     # An ungrounded IN-FLIGHT sibling has unknown surfaces. Nothing can be proved disjoint
     # from unknown ground, and this fails toward locked: a false green puts two lanes on the
