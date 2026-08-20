@@ -6,7 +6,7 @@ agree, is the context inside budget, did the gates actually run, can the epic cl
 the story's verdict recorded. Each is a git or filesystem question with an exact answer, and
 each has failed silently at least once (see the memory index). This answers all of them.
 
-    closeout_preflight.py --story 21.8b --expect-key SCC-64 [--project P]
+    closeout_preflight.py --story 21.8b --expect-key AVCH-91 [--project P]
                           [--worktree PATH] [--branch B] [--require-gates ruff,pytest]
                           [--sha X] [--no-fetch] [--json]
 
@@ -47,6 +47,20 @@ def integration_branch(project: Path) -> str:
 # match nothing here and the intent check would be dead code that always passes.
 BRANCH_KEY_RE = re.compile(r"^[a-z]+/([A-Z][A-Z0-9]*-\d+)-")
 
+# `find_branches` runs `git branch --list --all`, which returns remote-tracking branches as
+# `origin/claude/SCC-99-slug`. Left alone, `^[a-z]+/` eats the `origin/` and the key group then
+# fails on `claude` — so a WRONG-lane remote ref classified as "carries no key segment" and
+# warned (exit 1, non-blocking) instead of erroring. That is the 2026-08-09 failure downgraded
+# to a shrug, on the one path where it is hardest to notice: a sibling lane parked with its
+# local branch already deleted, resolvable only through its remote ref.
+REMOTE_PREFIX_RE = re.compile(r"^[^/]+/(?=[a-z]+/[A-Z])")
+
+
+def branch_key(branch: str) -> str | None:
+    """The Jira key a branch NAME carries, local or remote-tracking, or None."""
+    m = BRANCH_KEY_RE.match(REMOTE_PREFIX_RE.sub("", branch))
+    return m.group(1) if m else None
+
 
 def check_intent(branches: list[str], expect: str, rep: wf.Report) -> None:
     """cwd is not intent — does the branch we resolved carry the key the caller MEANT?
@@ -69,7 +83,7 @@ def check_intent(branches: list[str], expect: str, rep: wf.Report) -> None:
     """
     if not branches:
         return                       # check_landed already warned; a second row buries it
-    keyed = {b: (m.group(1) if (m := BRANCH_KEY_RE.match(b)) else None) for b in branches}
+    keyed = {b: branch_key(b) for b in branches}
     right = sorted(b for b, k in keyed.items() if k == expect)
     wrong = sorted(b for b, k in keyed.items() if k and k != expect)
     bare = sorted(b for b, k in keyed.items() if k is None)
@@ -186,9 +200,21 @@ def check_sync(label: str, repo: Path, fetch: bool, rep: wf.Report) -> bool:
     else:
         rep.warn("sync", f"{label} [{branch}]: no upstream to compare against")
 
-    dirty = wf.git(["status", "--porcelain"], repo).stdout.strip()
-    if dirty:
-        lines = dirty.splitlines()
+    # ⛔ `-c core.quotepath=false`, and `.splitlines()` on the RAW stdout — both are load-bearing
+    # for the split below, and both were missing in the first cut of it.
+    #   · quotepath: git octal-quotes any path holding a non-ASCII byte, `"` or `\`, so
+    #     `_artifacts/_memory/café.md` arrives as `"_artifacts/_memory/caf\303\251.md"` and the
+    #     `ln[3:]` test below never matches (`task_preflight.py` ~923 carries the same flag and
+    #     the incident that forced it).
+    #   · no `.strip()`: porcelain codes are TWO columns, so an unstaged modification is
+    #     `" M path"` with a LEADING SPACE. Stripping the whole blob eats that space off the
+    #     FIRST line only, shifting `ln[3:]` by one and turning `_artifacts/_memory/x.md` into
+    #     `artifacts/_memory/x.md`. The memory class then misses and the generic class hands out
+    #     "commit before closing out" — the exact instruction this split exists to prevent, on
+    #     the single most common shape (one modified memory file, listed first).
+    dirty = wf.git(["-c", "core.quotepath=false", "status", "--porcelain"], repo).stdout
+    if dirty.strip():
+        lines = [ln for ln in dirty.splitlines() if ln.strip()]
         # ⛔ ANOTHER SESSION'S MEMORY IS NOT THIS LANE'S DIRT, and folding the two together
         # does not merely under-report - it hands out the wrong instruction. Every session on
         # this machine writes `_artifacts/_memory/`, so a lane closing out routinely finds

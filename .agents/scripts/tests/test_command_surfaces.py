@@ -1947,6 +1947,7 @@ def main() -> int:
         sm_lines = (sm_text or "").splitlines()
 
         NEGATED = ("⛔", "do not", "does not", "never", " no ", "not run", "no push")
+        CLAUSE_END = ",;:.—–()[]"
 
         def instructs(line: str, banned: str) -> bool:
             """Does this line TELL the agent to do the banned thing, or forbid it?
@@ -1956,11 +1957,22 @@ def main() -> int:
             this command at all" would trip a naive ban and force the next author to delete the
             very sentence that carries the law. Same lesson as `test_git_hooks.py`'s RH1/RH3 pair,
             which reads instructions rather than mentions for exactly this reason.
+
+            ⛔ THE CUE MUST GOVERN THE NEEDLE, which is why the search is CLAUSE-scoped and not
+            line-scoped. Scanning the whole line was reproduced defeating this gate outright: a
+            real landing instruction reading *"When there is no conflict, run `git push
+            origin HEAD:epic/…`"* was exempted by the stray " no " four words earlier, and all
+            five E rows printed `clean`. A cue in a neighbouring clause says nothing about the
+            needle, so only the text from the last clause boundary up to the needle counts — the
+            words that could actually be negating it.
             """
             if banned not in line:
                 return False
             low = line.lower()
-            return not any(cue in low for cue in NEGATED)
+            head = low[:low.index(banned.lower())]
+            cut = max((head.rfind(ch) for ch in CLAUSE_END), default=-1)
+            clause = head[cut + 1:]
+            return not any(cue in clause for cue in NEGATED)
 
         for banned, why in (("git push", "it lands nothing — the door does the landing"),
                             ("workitem transition", "it moves no ticket — the door does, after "
@@ -1981,6 +1993,15 @@ def main() -> int:
         c.check("CS-13 E CONTROL: a line FORBIDDING it is not",
                 not instructs("⛔ no push lives in this command at all — the landing is the "
                               "door's", "push"), "")
+        # ⛔ The shape that DEFEATED the line-scoped version: a real instruction whose line
+        # happens to carry a negation cue in another clause. Line-scoped, this returned False
+        # and every E row printed `clean` with the landing sitting in the file (SCC-210 review).
+        c.check("CS-13 E CONTROL: a cue in ANOTHER clause does not exempt the instruction",
+                instructs("When there is no conflict, run `git push origin HEAD:epic/"
+                          "<KEY>-<slug>` to land the save.", "git push"), "")
+        c.check("CS-13 E CONTROL: a cue governing the needle still exempts it",
+                not instructs("Then, if no STOP fired, do not run `acli jira workitem "
+                              "transition` here.", "workitem transition"), "")
 
         # ── F · every door resolves on every platform ─────────────────────────────
         # SCC-66's contract, applied to the renamed family: one command body, one launcher skill
@@ -2001,13 +2022,36 @@ def main() -> int:
 
         # ── G · the SOP tells the truth ───────────────────────────────────────────
         sop = read(SOP_PATH) if SOP_PATH.is_file() else None
-        c.check("CS-13 G1 the SOP names `/cicd-prune-worktree`",
-                sop is not None and "/cicd-prune-worktree" in sop,
-                "the SOP is ABSENT" if sop is None else "§7 is the close-out family's written map")
-        c.check("CS-13 G2 the SOP names `/cicd-close-story-merge-tree`",
-                sop is not None and "/cicd-close-story-merge-tree" in sop,
-                "the SOP is ABSENT" if sop is None
-                else "the door an operator types has to be findable in the SOP")
+        # ⛔ ANCHORED, not present. A bare `"<name>" in sop` was reproduced surviving the SOP being
+        # scrubbed of all 53 live references and given ONE html comment naming both commands —
+        # the recorded prose-pinning blind spot (`prose-pinning-guards-are-vacuous`). What makes
+        # the SOP true about this family is that each command OWNS a section an operator can land
+        # on, so the row reads the heading, and a floor keeps one surviving mention from passing
+        # for a described command.
+        def sop_documents(name: str) -> tuple[bool, str]:
+            if sop is None:
+                return False, "the SOP is ABSENT"
+            heads = [i + 1 for i, ln in enumerate(sop.splitlines())
+                     if ln.startswith("#") and f"/{name}" in ln]
+            uses = sop.count(f"/{name}")
+            return (bool(heads) and uses >= 3,
+                    f"heading(s) at {heads}, {uses} reference(s) — need a heading and ≥3")
+
+        for name, why in (("cicd-prune-worktree", "§7 is the close-out family's written map"),
+                          ("cicd-close-story-merge-tree",
+                           "the door an operator types has to be findable in the SOP")):
+            ok, detail = sop_documents(name)
+            c.check(f"CS-13 G{'1' if name.endswith('worktree') else '2'} the SOP DOCUMENTS "
+                    f"`/{name}`", ok, detail if not ok else f"{detail} — {why}")
+        # ⛔ CONTROL, both directions: a mention with no section of its own must NOT satisfy it.
+        _real = sop
+        sop = "# SOP\n<!-- /cicd-prune-worktree -->\nsee /cicd-prune-worktree and /cicd-prune-worktree\n"
+        c.check("CS-13 G1 CONTROL: mentions without a heading do not count as documented",
+                not sop_documents("cicd-prune-worktree")[0], "")
+        sop = "# SOP\n### `/cicd-prune-worktree` — x\n/cicd-prune-worktree /cicd-prune-worktree\n"
+        c.check("CS-13 G1 CONTROL: a heading plus the floor does count",
+                sop_documents("cicd-prune-worktree")[0], "")
+        sop = _real
         # ⛔ THE DESIGN CLAIM THIS TICKET FALSIFIES, at SOP:601 today: the janitor is described as
         # something you almost never type because both story close-outs call it themselves. That
         # is precisely the arrangement being unwound — the utility becomes a thing you DO type,
@@ -2105,12 +2149,26 @@ def main() -> int:
         # from the landing step: the frontmatter `description:` still said "spent by it", and a
         # description is a menu blurb, not an instruction the agent follows at the moment it
         # lands. The clause has to be where the push is.
+        # ⛔ And WHERE in the step body, not merely present in it. Presence alone was reproduced
+        # passing on a door whose spend clause had been cut from the landing step and left as a
+        # note ~120 lines later, in Step 6 — after the push it is supposed to govern. A rule an
+        # agent reads only once the act is done is a rule that did not govern the act, so the
+        # clause is pinned to the SAME `## Step` section as the landing push (SCC-210 review).
         steps_text = "\n".join(door_steps)
-        c.check("CS-13 K3 the door's sign-off is spent by ONE close-out",
-                "spent by" in steps_text and "SCC-71" in steps_text,
-                f"in {door.name} STEP BODY: 'spent by' "
-                f"{'present' if 'spent by' in steps_text else 'ABSENT'}; 'SCC-71' "
-                f"{'present' if 'SCC-71' in steps_text else 'ABSENT'}")
+        spend_at = [i + 1 for i, ln in enumerate(door_steps) if "spent by" in ln]
+        head = [i + 1 for i, ln in enumerate(door_steps) if ln.startswith("## Step")]
+
+        def section_of(n: int) -> int:
+            return max((h for h in head if h <= n), default=0)
+
+        landing_sec = section_of(min(push_at)) if push_at else -1
+        in_landing = [n for n in spend_at if section_of(n) == landing_sec]
+        c.check("CS-13 K3 the door's sign-off is spent by ONE close-out, IN the landing step",
+                bool(in_landing) and "SCC-71" in steps_text,
+                f"in {door.name} STEP BODY: 'spent by' at {spend_at or 'ABSENT'}, landing push at "
+                f"{push_at or 'ABSENT'} (step opening line {landing_sec}); 'SCC-71' "
+                f"{'present' if 'SCC-71' in steps_text else 'ABSENT'}"
+                + ("" if in_landing else " — the clause has to be where the push is"))
 
     return c.finish()
 

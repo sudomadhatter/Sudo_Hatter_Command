@@ -1,0 +1,65 @@
+{
+ "test": [
+  "python3",
+  ".agents/scripts/tests/test_closeout_preflight.py"
+ ],
+ "_note": "SCC-210 code review. Every mutant below is the code EXACTLY AS IT SHIPPED before the review, so a survivor would mean the review's own fix is unpinned. R1-R3 are the two reproduced defects; R4-R7 are the gates a review mutation proved could not fail.",
+ "mutants": [
+  {
+   "id": "R1 the porcelain blob is stripped again, shifting ln[3:] by one on the FIRST line",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "dirty = wf.git([\"-c\", \"core.quotepath=false\", \"status\", \"--porcelain\"], repo).stdout\n    if dirty.strip():\n        lines = [ln for ln in dirty.splitlines() if ln.strip()]",
+   "mutated": "dirty = wf.git([\"-c\", \"core.quotepath=false\", \"status\", \"--porcelain\"], repo).stdout.strip()\n    if dirty:\n        lines = dirty.splitlines()",
+   "case": "MEM5 a TRACKED-modified memory file, listed FIRST, still reaches the memory class - never the generic 'commit' instruction",
+   "block": "CP-MEM"
+  },
+  {
+   "id": "R2 core.quotepath=false is dropped, so a non-ASCII memory path is octal-quoted",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "wf.git([\"-c\", \"core.quotepath=false\", \"status\", \"--porcelain\"], repo).stdout",
+   "mutated": "wf.git([\"status\", \"--porcelain\"], repo).stdout",
+   "case": "MEM6 a memory path git QUOTES (non-ASCII) is counted in the memory class",
+   "block": "CP-MEM"
+  },
+  {
+   "id": "R3 the remote prefix is not stripped, so origin/claude/KEY-x reads as keyless",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "    m = BRANCH_KEY_RE.match(REMOTE_PREFIX_RE.sub(\"\", branch))",
+   "mutated": "    m = BRANCH_KEY_RE.match(branch)",
+   "case": "EK4 a REMOTE-tracking wrong-lane branch ERRORs like its local twin",
+   "block": "CP-EK"
+  },
+  {
+   "id": "R4 --expect-key becomes optional (the one-token edit the whole suite survived)",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "ap.add_argument(\"--expect-key\", required=True,",
+   "mutated": "ap.add_argument(\"--expect-key\", required=False, default=None,",
+   "case": "EK0 a bare run with NO --expect-key is REFUSED, not quietly allowed",
+   "block": "CP-EK"
+  },
+  {
+   "id": "R5 the worktree term drops out of the freshness fold",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "fresh = check_sync(\"worktree\", Path(args.worktree).resolve(), args.fetch, rep) and fresh",
+   "mutated": "check_sync(\"worktree\", Path(args.worktree).resolve(), args.fetch, rep)",
+   "case": "FR6 a stale --worktree alone makes the VERDICT stale - the fold is real",
+   "block": "CP-FR"
+  },
+  {
+   "id": "R6 both STALE arms print the same remedy (drop a flag nobody passed)",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "\"the fetch was asked for and FAILED - fix the uplink and re-run\"",
+   "mutated": "\"re-run WITHOUT --no-fetch\"",
+   "case": "FR5 a FAILED fetch names the uplink, never 'drop --no-fetch'",
+   "block": "CP-FR"
+  },
+  {
+   "id": "R7 the memory-only run emits a generic row for ZERO ordinary files",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "        if rest:\n            rep.err(\"sync\", f\"{label}: {len(rest)} uncommitted change(s) - commit \"",
+   "mutated": "        if True:\n            rep.err(\"sync\", f\"{label}: {len(rest)} uncommitted change(s) - commit \"",
+   "case": "MEM4 a memory-ONLY lane gets NO generic 'commit before closing out' row",
+   "block": "CP-MEM"
+  }
+ ]
+}

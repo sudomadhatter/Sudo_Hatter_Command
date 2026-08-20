@@ -432,6 +432,31 @@ def main() -> int:
                     (not gone) and not errs and bool(warns),
                     MISSING if gone else f"rc={rc} errors={errs} warns={warns}")
 
+            # ⛔ EK0 · REQUIREDNESS IS THE GUARD. Every row above PASSES the flag, so all of
+            # them stay green when `required=True` becomes `required=False` - measured: the
+            # whole 39-file suite survives that one-token edit, and the mutant then prints
+            # `VERDICT: clear to close out` for a run aimed at a sibling lane, which is the
+            # 2026-08-09 failure restored. `_spawn` and not `run_cp`, deliberately: run_cp's
+            # retry exists to re-supply this exact flag, so asking it would soften the one
+            # signal being asserted. `test_task_preflight.py` carries the sibling row.
+            rc, out = _spawn(repo, *base, "--branch", "claude/SCC-22-sibling")
+            c.check("EK0 a bare run with NO --expect-key is REFUSED, not quietly allowed",
+                    rc == 2 and "--expect-key" in out
+                    and "the following arguments are required" in out,
+                    f"rc={rc} out={out.strip()[-200:]}")
+
+            # ⛔ EK4 · `find_branches` runs `git branch --list --all`, so a branch that exists
+            # only as a remote ref arrives as `origin/claude/SCC-22-sibling`. Anchored at
+            # `^[a-z]+/`, the key regex ate `origin/` and read the key as ABSENT - downgrading
+            # a wrong-lane ERROR (exit 2) to a pre-Jira WARN (exit 1, non-blocking) on the one
+            # path where it is hardest to spot: a parked sibling whose local branch is gone.
+            rc, out = run_cp(repo, *base, "--branch", "origin/claude/SCC-22-sibling",
+                             "--expect-key", "SCC-11")
+            errs = findings(out, "ERROR", "expect-key")
+            c.check("EK4 a REMOTE-tracking wrong-lane branch ERRORs like its local twin",
+                    rc == 2 and any("SCC-11" in m and "SCC-22" in m for m in errs),
+                    f"rc={rc} intent errors={errs} warns={findings(out, 'WARN', 'expect-key')}")
+
     # ── CP-FR · the freshness state has to reach the line an agent acts on (SCC-210) ───
     # `--fetch` is opt-in here, and the unfetched path emits an INFO - exit-code-neutral,
     # three lines above a VERDICT that still reads "clear to close out". SCC-193 A already
@@ -491,6 +516,46 @@ def main() -> int:
                     v_def.startswith("VERDICT:") and "STALE" not in v_def,
                     v_def or "(no VERDICT line printed)")
 
+            # ⛔ FR5 · THE TWO REMEDIES MUST DIFFER, because the fixes are different acts. A
+            # failed fetch is an uplink to repair; `--no-fetch` is a flag to drop. Collapsing
+            # the ternary so both arms print "re-run WITHOUT --no-fetch" survived the whole
+            # suite - and every shipped invocation passes the DEFAULT, so that arm is the one
+            # an agent actually meets, being told to remove a flag it never typed.
+            dead = repo / "no-such-remote.git"
+            git(repo, "remote", "set-url", "origin", str(dead))
+            rc_bad, out_bad = run_cp(repo, *base)
+            v_bad = verdict_line(out_bad)
+            c.check("FR5 a FAILED fetch names the uplink, never 'drop --no-fetch'",
+                    "STALE" in v_bad and "FAILED" in v_bad and "--no-fetch" not in v_bad,
+                    v_bad or "(no VERDICT line printed)")
+
+        # ⛔ FR6 · the fold ACROSS repos. `main()` computes freshness as
+        # `check_sync(project) and check_sync(lobby) and check_sync(worktree)`; the door
+        # ALWAYS passes `--worktree`, and no row above ever did - the string did not appear in
+        # this file at all. Dropping `and fresh` from the worktree term turned STALE back into
+        # "clear to close out", with the whole suite green.
+        #
+        # ⛔ ONLY THE WORKTREE MAY BE STALE, and the first cut of this row got that wrong:
+        # pointing `--worktree` at the SAME repo as `--project` under `--no-fetch` makes the
+        # PROJECT term false too, so the verdict still said STALE with the mutant in place and
+        # the mutant SURVIVED. The row read the WARN rows, not the fold. So: two independent
+        # repos, the DEFAULT fetch, and a dead remote on the worktree alone - the project term
+        # stays fresh, and only the fold can carry the staleness to the verdict.
+        with TempDir() as tmp2:
+            repo2 = lane_repo(tmp2)
+            wtree = lane_repo(tmp2 / "second")
+            git(wtree, "remote", "set-url", "origin", str(tmp2 / "no-such-remote.git"))
+            base2 = ("--story", "30-1", "--project", str(repo2),
+                     "--branch", "claude/SCC-11-mine")
+            rc_w, out_w = run_cp(repo2, *base2, "--worktree", str(wtree))
+            v_w = verdict_line(out_w)
+            proj_fresh = findings(out_w, "INFO", "0/0 with origin")
+            wt_failed = findings(out_w, "WARN", "worktree: fetch FAILED")
+            c.check("FR6 a stale --worktree alone makes the VERDICT stale - the fold is real",
+                    "STALE" in v_w and bool(proj_fresh) and bool(wt_failed),
+                    f"rc={rc_w} verdict={v_w!r} project-fresh={proj_fresh} "
+                    f"worktree-failed={wt_failed}")
+
     # ── CP-MEM · another session's memory is not this lane's dirt (SCC-210) ────────────
     # `check_sync` folds every dirty path into one "N uncommitted change(s) - commit before
     # closing out". `task_preflight` (~926, ~952-960) splits `_artifacts/_memory/` into its
@@ -507,7 +572,7 @@ def main() -> int:
             rc_clean, _ = run_cp(repo, *base)
             (repo / "_artifacts/_memory/x.md").write_text(
                 "# written by ANOTHER session\n", encoding="utf-8")
-            rc_mem, _out_mem = run_cp(repo, *base)
+            rc_mem, out_mem = run_cp(repo, *base)
             (repo / "notes/ordinary.md").write_text("two\n", encoding="utf-8")
             rc_both, out_both = run_cp(repo, *base)
             dirty = git(repo, "status", "--porcelain").stdout.strip().splitlines()
@@ -540,6 +605,48 @@ def main() -> int:
             c.check("MEM3 control · both classes still BLOCK; the exit code does not move",
                     rc_clean == 1 and rc_mem == 2 and rc_both == 2,
                     f"clean={rc_clean} memory-only={rc_mem} both={rc_both}")
+
+            # ⛔ MEM4 · READ the memory-only run, do not merely count its exit code. MEM1 and
+            # MEM2 both look at `out_both`, so a split that emits a generic row for ZERO
+            # ordinary files - "project: 0 uncommitted change(s) - commit before closing out",
+            # a fabricated instruction about nothing - survived all three rows. Measured.
+            gen_mem = [m for m in findings(out_mem, "ERROR", "uncommitted change(s)")
+                       if "_artifacts/_memory/" not in m]
+            c.check("MEM4 a memory-ONLY lane gets NO generic 'commit before closing out' row",
+                    not gen_mem, f"generic rows on a lane whose only dirt is memory: {gen_mem}")
+
+            # ⛔ MEM5 · THE SHAPE CO-07 WAS WRITTEN FOR, which the rows above cannot express.
+            # They dirty memory as an UNTRACKED file (`?? `, no leading space) alongside a
+            # tracked one, and git lists tracked entries first - so the memory line is never
+            # line 0 and never in the ` M ` form. A tracked, MODIFIED memory file listed FIRST
+            # is the ordinary shape (someone edited MEMORY.md), and against it a `.strip()`
+            # over the whole porcelain blob ate the leading space, shifted `ln[3:]` by one,
+            # and dropped the file into the generic class - handing out the one instruction
+            # the ruling forbids. Reproduced against the shipping script before the fix.
+            git(repo, "add", "-A")
+            git(repo, "commit", "-m", "SCC-11 seed memory + notes")
+            (repo / "_artifacts/_memory/x.md").write_text("edited\n", encoding="utf-8")
+            rc_tracked, out_tracked = run_cp(repo, *base)
+            porcelain = git(repo, "status", "--porcelain").stdout
+            mem_rows = [m for m in findings(out_tracked) if "_artifacts/_memory/" in m]
+            gen_rows = [m for m in findings(out_tracked, "ERROR", "uncommitted change(s)")
+                        if "_artifacts/_memory/" not in m]
+            c.check("MEM5 a TRACKED-modified memory file, listed FIRST, still reaches the "
+                    "memory class - never the generic 'commit' instruction",
+                    bool(mem_rows) and not gen_rows,
+                    f"porcelain={porcelain!r} memory rows={mem_rows} generic={gen_rows}")
+
+            # ⛔ MEM6 · a memory path git has to QUOTE. `status --porcelain` octal-quotes any
+            # path holding a non-ASCII byte, so `café.md` arrives as `"_artifacts/_memory/
+            # caf\303\251.md"`, `ln[3:]` starts with `"`, and the class test misses again -
+            # the same misroute by a second route. `task_preflight` passes
+            # `-c core.quotepath=false` and records the incident that forced it.
+            (repo / "_artifacts/_memory/café-lesson.md").write_text("x\n", encoding="utf-8")
+            _, out_utf8 = run_cp(repo, *base)
+            mem_utf8 = [m for m in findings(out_utf8) if "_artifacts/_memory/" in m]
+            c.check("MEM6 a memory path git QUOTES (non-ASCII) is counted in the memory class",
+                    any("2 dirty file(s)" in m for m in mem_utf8),
+                    f"memory rows={mem_utf8}")
 
     return c.finish()
 
