@@ -12,6 +12,7 @@ Maintenance scripts (MASTER here): `check_maps.py` (drift linter), `generate_rep
 | `gate_receipt.py` | did this gate actually run, at this commit? | `gate_receipt.py run --story 21.8b --gate ruff -- ruff check backend/` |
 | `flight_recorder.py` | what keeps recurring across closed Task lanes? one event file per close-out (verdict-sha keyed, idempotent) → evidence/candidate/action-required ladder, surfaced as PROPOSALS at SessionStart (SCC-133) | `flight_recorder.py record --task SCC-160 --root _artifacts/_main/<folder> --apply` · `flight_recorder.py surface` |
 | `closeout_preflight.py` | is this story safe to close out? | `closeout_preflight.py --story 21.8b --project AGY_AVIATIONCHAT` |
+| `risk_seam.py` | risk classification for a path set, behind the stable seam the self-audit calls — placeholder returns `unclassified`; SCC-223/224 swap in behind it; `gates_audit` is False by contract (SCC-228) | `risk_seam.py classify <paths…>` |
 | `declared_change_set.py` | which files did the plan DECLARE it would touch — parsed from the `## Declared Change Set` block, plus the two-sided drift diff (SCC-226) | `declared_change_set.py diff <plan.md> --changed $(git diff --name-only main...)` |
 | `split_sprint_status.py` | move board narrative to history, provably losslessly (Wave 4) | `split_sprint_status.py verify --sha <src> --project P` |
 | `sop_currency.py` | did a **usage** change leave the operator's SOP page behind? (SCC-31) | `sop_currency.py --message-file .git/COMMIT_EDITMSG` |
