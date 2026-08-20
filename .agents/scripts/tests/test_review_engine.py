@@ -868,8 +868,8 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     # lens_budget: defined once, HERE, and NOT the same axis as review_mode. A caller that
     # re-defines a cap — or conflates the two axes — is how cost governance rots overnight.
     ("step-01: the cost axis is named lens_budget and defined once", STEPS[0],
-     r"^### `lens_budget` — this lens's cost axis, defined here, once$", re.M,
-     "### `lens_budget` — this lens's cost axis, defined here, once",
+     r"^### `lens_budget` — the literal-correctness lens's cost axis, defined here, once \(SCC-147\)$", re.M,
+     "### `lens_budget` — the literal-correctness lens's cost axis, defined here, once (SCC-147)",
      "### `lens_budget` — each caller sets its own"),
     ("step-01: lens_budget is explicitly NOT review_mode", STEPS[0],
      r"⛔ \*\*`lens_budget` is NOT `review_mode`, and the two are independent\.\*\*", 0,
@@ -891,9 +891,9 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      re.M,
      "the same caps, MANDATORY, and **no top-up**", "the caps are advisory"),
     ("step-01: standard budget still binds the caps, and its top-up is earned", STEPS[0],
-     r"^\|\s*`standard`\s*\|\s*interactive callers\s*\|\s*MANDATORY as written above;[^|]*\*\*earn\*\*",
+     r"^\|\s*`standard`\s*\|\s*interactive callers\s*\|\s*MANDATORY as written in that lens's Scope section;[^|]*\*\*earn\*\*",
      re.M,
-     "| `standard` | interactive callers | MANDATORY as written above;",
+     "| `standard` | interactive callers | MANDATORY as written in that lens's Scope section;",
      "| `standard` | interactive callers | caps are optional;"),
 
     # SCC-147, second half (rolled in on the operator's ruling): the top-up ROW is definition
