@@ -105,6 +105,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 
 ## Working style
 - [⭐ Lightweight lane for specific, can't-break work](lightweight-lane-for-specific-no-break-work.md) — doc-only / operator-directed ask is ticket -> edit -> push (SCC-162).
+- [Naming a ticket ≠ mint order](naming-a-ticket-is-not-a-mint-order.md) — "fix it now with ticket X" = file under the CURRENT lane; mint only on the explicit word.
 - [Own it plainly](own-it-plainly-dont-make-excuses.md) — own issues in one line, then act.
 - [Writes for a big-picture operator](writes-for-big-picture-operator.md) — consequence before mechanism; explain terms clearly.
 - [Daniel sells Hormozi-style](daniel-sells-hormozi-style.md) — direct, prove-it, value-first copy.
