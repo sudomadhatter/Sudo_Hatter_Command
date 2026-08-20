@@ -142,12 +142,18 @@ NOT_PAIRED = {
     "smh-review.md": _ONE_SUBJECT + " (ad-hoc read-only review)",
 }
 
-# The pairs that carry a fenced shared law TODAY. Four of the six carry none - a real and
-# defensible starting scope, but it must be STATED: an aggregate "at least one law exists"
-# row is green while eight of the twelve symmetry rows compare nothing at all.
+# The pairs that carry a fenced shared law TODAY. Three of the seven still carry none - a
+# real and defensible starting scope, but it must be STATED: an aggregate "at least one law
+# exists" row is green while the unfenced pairs' symmetry rows compare nothing at all.
+# SCC-225 review wave: the self-audit pair was rewritten with ZERO fences while parity sat
+# green - the structural zero this file's docstring calls "the bug" - so its shared law
+# (amendment rule, coverage schema, corroboration, levels shape) is now fenced, and the
+# code-review pair's NEW shared law (review_level derivation, declared-set drift) joined
+# the roster fence it already carried.
 FENCED_TODAY = (
     "cicd-clean-code-audit.md", "smh-clean-code-audit.md",   # twin-law: disposition
-    "cicd-code-review.md", "smh-code-review.md",             # twin-law: roster
+    "cicd-code-review.md", "smh-code-review.md",             # twin-law: roster, review-level, declared-drift
+    "cicd-self-audit.md", "smh-self-audit.md",               # twin-law: audit-* (amendment, coverage, corroboration, levels-shape)
 )
 
 LAW_OPEN = re.compile(r"^<!-- twin-law:\s*([a-z0-9-]+)\s*-->$", re.M)

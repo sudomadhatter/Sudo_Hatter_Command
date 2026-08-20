@@ -184,6 +184,9 @@ done — verify the box's four conditions and go straight to Step 2.**
 
 1. **Write `implementation_plan.md`** *(skip if this lane arrived with an approved plan — see the box)* into `_artifacts/_main/<YYYY-MM-DD>_<slug>/`, right-sized to the
    work. Each acceptance item maps to a step, and each step names **the assertion that will prove it**.
+   Carry the **`## Declared Change Set` block** (`artifacts-always-first.md` §2 Create the artifact folder + plan, SCC-226):
+   one path per bullet, `NEW`/`EDIT`/`DELETE`, `→ <acceptance row>` — `/smh-code-review` Step 2 diffs
+   the real diff against exactly this list.
 2. **Invoke `/smh-self-audit`** on that plan. It appends its `## Self-Audit (<date>)` section and a
    canonical `Audit verdict: GO | NO-GO`. A **NO-GO stops the lane** — fix the plan and re-audit; do not
    proceed on a NO-GO and do not re-run it hoping for a different answer.
@@ -216,7 +219,7 @@ clarifying question · the operator **correcting** the plan — a correction nar
 and wait **again**. You are forbidden from putting the word "approved" in a button label; writing the
 word yourself and reading it back is how this gate actually gets bypassed.
 
-**The one exemption**, and it is narrow: the self-audit's Phase 0 returned **Skip** — a typo, a comment,
+**The one exemption**, and it is narrow: the self-audit's Step 0 returned **Skip** — a typo, a comment,
 a one-line doc tweak. Say which, then proceed. Anything above that gets the gate.
 
 ---

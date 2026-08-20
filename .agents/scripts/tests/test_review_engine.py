@@ -238,12 +238,17 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      "reports `4/4`, never `4/5`", "reports `4/5`, never `4/4`"),
 
     # ── step-01: the fan-out table, the failure contract, NA-vs-dead ────────────────────────
-    ("step-01: Blind Hunter is a lens row that always runs", STEPS[0],
-     r"^\|\s*\*\*Blind Hunter\*\*\s*\|[^|]*\|\s*always\s*\|", re.M,
-     "| **Blind Hunter** | `DIFF` only", "| ~~Blind Hunter~~ | not run,"),
-    ("step-01: Edge Case Hunter is a lens row that always runs", STEPS[0],
-     r"^\|\s*\*\*Edge Case Hunter\*\*\s*\|[^|]*\|\s*always\s*\|", re.M,
-     "| **Edge Case Hunter** | `DIFF` + read access", "| ~~Edge Case Hunter~~ | skipped,"),
+    # SCC-232 made the routing cells level-aware. Each cell is pinned to the CURRENT truth
+    # with the OBSOLETE flat-rate "always" as its mutant - the asymmetric pinning that steered
+    # maintainers back toward "always" (executed, SCC-225 review wave) is retired with it.
+    ("step-01: Blind Hunter routes standard-only (quick skips it)", STEPS[0],
+     r"^\|\s*\*\*Blind Hunter\*\*\s*\|[^|]*\|\s*standard level \(quick skips it\)\s*\|", re.M,
+     "| **Blind Hunter** | `DIFF` only — no spec, no repo access, no context docs | standard level (quick skips it) |",
+     "| **Blind Hunter** | `DIFF` only — no spec, no repo access, no context docs | always |"),
+    ("step-01: Edge Case Hunter routes standard-only (quick skips it)", STEPS[0],
+     r"^\|\s*\*\*Edge Case Hunter\*\*\s*\|[^|]*\|\s*standard level \(quick skips it\)\s*\|", re.M,
+     "| **Edge Case Hunter** | `DIFF` + read access to `REPO` | standard level (quick skips it) |",
+     "| **Edge Case Hunter** | `DIFF` + read access to `REPO` | always |"),
     ("step-01: Acceptance Auditor is a lens row gated to full mode", STEPS[0],
      r"^\|\s*\*\*Acceptance Auditor\*\*\s*\|[^|]*\|\s*`review_mode: full` only\s*\|", re.M,
      "| **Acceptance Auditor** | `DIFF` + `STORY_FILE`", "| ~~Acceptance Auditor~~ | dropped,"),
@@ -457,7 +462,7 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      "## The evidence pack — repo-access lenses only",
      "## The evidence pack — every lens is primed"),
     ("step-01: the Blind Hunter's row is marked never-primed", STEPS[0],
-     r"^\|\s*\*\*Blind Hunter\*\*\s*\|[^|]*\|\s*always\s*\|[^|]*\|\s*\*\*never\*\* — starved by design\s*\|$",
+     r"^\|\s*\*\*Blind Hunter\*\*\s*\|[^|]*\|\s*standard level \(quick skips it\)\s*\|[^|]*\|\s*\*\*never\*\* — starved by design\s*\|$",
      re.M, "| **never** — starved by design |", "| yes |"),
     ("step-01: the Acceptance Auditor is not primed either", STEPS[0],
      r"^\|\s*\*\*Acceptance Auditor\*\*\s*\|[^|]*\|[^|]*\|[^|]*\|\s*\*\*never\*\* — cannot verify it\s*\|$",
@@ -484,9 +489,15 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     ("step-01: worthiness gating is banned outright", STEPS[0],
      r"Never gate findings on .worthiness.", 0,
      "Never gate findings on", "Gate findings on"),
-    ("step-01: the recall cost of a worthiness gate is recorded", STEPS[0],
-     r"recall falls from 0\.69 to 0\.52", 0,
-     "recall falls from 0.69 to 0.52", "recall is unaffected"),
+    # SCC-230 replaced the uncited pr-af recall figure with the fence: the ruling binds
+    # diff-anchored review; plan/story audits answer to SCC-225's anchor rule instead, and
+    # external benchmarks are cited with source and version or not at all.
+    ("step-01: the no-filter ruling is scope-fenced to diff-anchored review", STEPS[0],
+     r"applies where findings are anchored to a diff", 0,
+     "applies where findings are anchored to a diff", "applies to every audit, diff or not"),
+    ("step-01: external benchmarks require source and version", STEPS[0],
+     r"cited with source and version", 0,
+     "cited with source and version", "cited freely"),
 
     # ── step-02 (SCC-127): the two roles run as ONE self-gating wave ────────────────────────
     ("step-02: both roles run concurrently in one wave", STEPS[1],
@@ -778,13 +789,19 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      "is **not** a dead role and never raises the floor",
      "is a dead role and raises the floor"),
     # ── step-01 (SCC-126): the literal-correctness lens, and the caps that make it affordable ─
-    # This lens is the epic's only real token cost, so every check below binds either its WIRING
+    # This lens is the most instrumented one, so every check below binds either its WIRING
     # (the table cells that route it) or a cap that bounds it. Prose about the lens is not pinned;
     # a description cannot route a lens and cannot bound a cost.
-    ("step-01: Literal-Correctness Hunter is a lens row that always runs", STEPS[0],
-     r"^\|\s*\*\*Literal-Correctness Hunter\*\*\s*\|[^|]*\|\s*always\s*\|", re.M,
-     "| **Literal-Correctness Hunter** | `DIFF` + read access to `REPO` | always |",
-     "| **Literal-Correctness Hunter** | `DIFF` + read access to `REPO` | interactive only |"),
+    ("step-01: Literal-Correctness Hunter routes standard-only (quick skips it)", STEPS[0],
+     r"^\|\s*\*\*Literal-Correctness Hunter\*\*\s*\|[^|]*\|\s*standard level \(quick skips it\)\s*\|",
+     re.M,
+     "| **Literal-Correctness Hunter** | `DIFF` + read access to `REPO` | standard level (quick skips it) |",
+     "| **Literal-Correctness Hunter** | `DIFF` + read access to `REPO` | always |"),
+    ("step-01: the quick level is EXACTLY Test-Adequacy + Acceptance (SCC-232's "
+     "pre-registered membership - an inversion re-seats the 1,082 s lens)", STEPS[0],
+     r"^\|\s*`quick`\s*\|\s*\*\*Test-Adequacy \+ Acceptance\*\* Auditor\s*\|", re.M,
+     "| `quick` | **Test-Adequacy + Acceptance** Auditor |",
+     "| `quick` | the full roster |"),
     ("step-01: the literal lens's row wires in the hunter contract", STEPS[0],
      r"^\|\s*\*\*Literal-Correctness Hunter\*\*\s*\|[^|]*\|[^|]*\|[^|]*\+ the hunter contract\s*\|",
      re.M,
@@ -868,8 +885,8 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     # lens_budget: defined once, HERE, and NOT the same axis as review_mode. A caller that
     # re-defines a cap — or conflates the two axes — is how cost governance rots overnight.
     ("step-01: the cost axis is named lens_budget and defined once", STEPS[0],
-     r"^### `lens_budget` — this lens's cost axis, defined here, once$", re.M,
-     "### `lens_budget` — this lens's cost axis, defined here, once",
+     r"^### `lens_budget` — the literal-correctness lens's cost axis, defined here, once \(SCC-147\)$", re.M,
+     "### `lens_budget` — the literal-correctness lens's cost axis, defined here, once (SCC-147)",
      "### `lens_budget` — each caller sets its own"),
     ("step-01: lens_budget is explicitly NOT review_mode", STEPS[0],
      r"⛔ \*\*`lens_budget` is NOT `review_mode`, and the two are independent\.\*\*", 0,
@@ -891,9 +908,9 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      re.M,
      "the same caps, MANDATORY, and **no top-up**", "the caps are advisory"),
     ("step-01: standard budget still binds the caps, and its top-up is earned", STEPS[0],
-     r"^\|\s*`standard`\s*\|\s*interactive callers\s*\|\s*MANDATORY as written above;[^|]*\*\*earn\*\*",
+     r"^\|\s*`standard`\s*\|\s*interactive callers\s*\|\s*MANDATORY as written in that lens's Scope section;[^|]*\*\*earn\*\*",
      re.M,
-     "| `standard` | interactive callers | MANDATORY as written above;",
+     "| `standard` | interactive callers | MANDATORY as written in that lens's Scope section;",
      "| `standard` | interactive callers | caps are optional;"),
 
     # SCC-147, second half (rolled in on the operator's ruling): the top-up ROW is definition

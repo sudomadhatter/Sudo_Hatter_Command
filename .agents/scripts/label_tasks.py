@@ -645,6 +645,34 @@ def source_paths(entry: dict) -> set[str]:
     return out
 
 
+def blocked_by_of(entry: dict) -> list[str]:
+    """The declared blockers, shape-normalised: a scalar wraps into a one-item list.
+
+    Touch-sets are agent-authored JSON. Executed 2026-08-20 (SCC-225 review wave): a
+    string `"blocked_by": "A-1"` iterated CHARACTERS, a case-slipped `["a-1"]` matched
+    nothing - both silently degraded to no-dependency and both lanes came back approved,
+    indistinguishable from a legitimately-landed blocker. That silently resurrects the
+    exact inversion class the directional fix (SCC-226) closed, so shape is normalised
+    here, once, for every consumer of the field."""
+    raw = (entry or {}).get("blocked_by")
+    if raw is None:
+        return []
+    if isinstance(raw, (str, int)):
+        raw = [raw]
+    return [s for s in (str(d).strip() for d in raw) if s]
+
+
+def match_key(dep: str, keys) -> str | None:
+    """`dep` resolved against `keys`, exact first, case-insensitively second.
+
+    Jira keys are canonically upper-case; a lower-cased slip in an authored touch-set
+    must lock its declarer like the real key would, never free it."""
+    d = str(dep).strip()
+    if d in keys:
+        return d
+    return {k.upper(): k for k in keys}.get(d.upper())
+
+
 def conflict_graph(candidates: list[str], touch: dict) -> dict[str, dict[str, str]]:
     """key -> {other_key: the reason they collide}. Reasons are kept because a verdict without
     its evidence is an assertion, and extraction from a story file is a judgment."""
@@ -675,10 +703,18 @@ def conflict_graph(candidates: list[str], touch: dict) -> dict[str, dict[str, st
                 g[a][b] = g[b][a] = f"{b} imports `{hit[0]}`, which {a} creates"
     # declared dependencies are conflicts regardless of files
     for a in candidates:
-        for dep in (touch.get(a) or {}).get("blocked_by") or []:
-            dep = str(dep).strip()
-            if dep in g:
-                g[a][dep] = g[dep][a] = f"{a} declares blocked_by: {dep}"
+        for dep in blocked_by_of(touch.get(a)):
+            hit = match_key(dep, g)
+            if hit == a:
+                # executed: a self-reference wedged the lane behind itself, printing
+                # "after <itself>" forever in the normal lock format. Dropped LOUDLY -
+                # a lane cannot wait on itself, and silence is how the wedge shipped.
+                print(ascii_out(f"[WARN] {a} declares blocked_by itself — dropped "
+                                f"(a lane cannot wait on itself; fix the touch-set)"),
+                      file=sys.stderr)
+                continue
+            if hit:
+                g[a][hit] = g[hit][a] = f"{a} declares blocked_by: {hit}"
     return g
 
 
@@ -736,7 +772,23 @@ def cmd_resolve(args) -> int:
 
     candidates = sorted(c["key"] for c in grounded)
     g = conflict_graph(candidates, touch)
-    approved = largest_disjoint(candidates, g)
+    # blocked_by is DIRECTIONAL: a declarer never enters the approved set while its
+    # blocker is a live sibling in this run - dependents follow, they never displace.
+    # Stored symmetric alone, the edge let the solver maximize set size by seating
+    # the declarers and locking the prerequisite behind them (measured 2026-08-20:
+    # SCC-227, declaring blocked_by SCC-226, came back approved with SCC-226 "after
+    # SCC-227"). The edge stays in g so the lock row can name the blocker; candidacy
+    # is what direction removes. A blocker OUTSIDE the run keeps its declarer free -
+    # and "outside" has THREE states, not two: landed, foreign, or planned-but-
+    # unstarted. The last is deliberate: an unstarted blocker has no lane to collide
+    # with, so the declarer running first is a sequencing call for the operator, not
+    # a collision this solver may manufacture. conflict_graph ignores all three, and
+    # so does this. Shapes arrive through blocked_by_of/match_key - a scalar or a
+    # case slip locks like the real key, never frees (see blocked_by_of).
+    followers = {k for k in candidates
+                 if any(match_key(d, g) not in (None, k)
+                        for d in blocked_by_of(touch.get(k)))}
+    approved = largest_disjoint([k for k in candidates if k not in followers], g)
 
     # An ungrounded IN-FLIGHT sibling has unknown surfaces. Nothing can be proved disjoint
     # from unknown ground, and this fails toward locked: a false green puts two lanes on the
@@ -768,9 +820,13 @@ def cmd_resolve(args) -> int:
                              "evidence": ", ".join(sorted(source_paths(touch[k]))) or
                                          "no source paths declared"})
         else:
-            # A grounded candidate outside the approved set always collides with something in
-            # it - otherwise approved + {k} would be a larger disjoint set. The fallbacks are
-            # belt-and-braces: an unverdicted row is banned, so there is always an answer.
+            # A NON-follower outside the approved set always collides with something in it -
+            # otherwise approved + {k} would be a larger disjoint set. A FOLLOWER was removed
+            # from candidacy BEFORE largest_disjoint ran, so its blocker may miss the approved
+            # set entirely: for followers the `or sorted(g[k])` arm is the LOAD-BEARING path
+            # (it names the declared blocker), not belt-and-braces - and the approve arm below
+            # stays unreachable for them, because a follower always carries at least its
+            # blocked_by edge in g. An unverdicted row is banned, so there is always an answer.
             blockers = sorted(b for b in g[k] if b in approved) or sorted(g[k])
             if not blockers:
                 verdicts.append({"key": k, "verdict": "approved", "mark": "🟢", "detail": "",

@@ -1,5 +1,5 @@
 ---
-description: Pre-dev plan/story audit — run BEFORE coding. Pressure-tests an implementation_plan.md or story against the codebase and the ACs to...
+description: Pre-dev plan/story audit — three lenses (Repo Reality + Scope Ledger, Parity + Blast, Pre-Mortem), the anchor rule (no anchor, no...
 platforms: [opencode, antigravity]
 ---
 

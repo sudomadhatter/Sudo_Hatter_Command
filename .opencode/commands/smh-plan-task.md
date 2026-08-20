@@ -140,7 +140,9 @@ echo "Lane: $BRANCH"
 upstream to `main` itself, so a later bare `git push` targets **main** and a bare `git status` reports
 "ahead of main" — this lane hit exactly that.
 
-Then write ONE plan with a part section per subtask, and ONE `task.yaml` declaring them all:
+Then write ONE plan with a part section per subtask — carrying ONE combined
+`## Declared Change Set` block (SCC-226), each bullet mapped to its part — and ONE `task.yaml`
+declaring them all:
 
 ```yaml
 task_key: <PARENT-KEY>
@@ -181,7 +183,9 @@ Then, in that tree:
 
 1. **Write `implementation_plan.md`** into `_artifacts/_main/<YYYY-MM-DD>_<slug>/`, right-sized.
    Each acceptance item maps to a step, and **each step names the assertion that will prove it** —
-   `/smh-quick-dev` Step 2 turns those into the checks it writes RED.
+   `/smh-quick-dev` Step 2 turns those into the checks it writes RED. Include the
+   **`## Declared Change Set` block** (SCC-226: `NEW`/`EDIT`/`DELETE` + path + `→ <acceptance row>`
+   per bullet) — the review's drift check reconciles the diff against it.
 2. **Write `task.yaml` beside it** — this is what grounds the lane for the labeller, so it is not
    optional:
    ```yaml

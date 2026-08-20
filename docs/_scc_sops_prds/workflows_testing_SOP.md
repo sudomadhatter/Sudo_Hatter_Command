@@ -501,8 +501,29 @@ then read the story.*
 > out from under you. Step 0.7 re-derives it and makes you answer three questions in writing
 > (*did anything this diff references move · what is the true overlap and does `merge-tree` conflict ·
 > which sibling lanes must land first*); **"nothing moved" is a reportable result**, not a reason to
-> skip it. Step 1.5 audits the diff against the story's checkable list — an item with no evidence is
-> **not satisfied**, and anything in the diff *beyond* the list is **drift**.
+> skip it. Since SCC-232, Step 0.7's measured radius also RESOLVES the review level — `quick`
+> (Test-Adequacy + Acceptance only, when nothing referenced moved, no gate/hook/rule/contract
+> surface is in the radius, and the re-taken diff stays ≤3 source files) or `standard` (the full
+> roster) — derived from the measurement, never a flag you or the agent chooses; a level arriving
+> without its radius evidence defaults to `standard`, and level-excluded lenses report
+> `skipped-by-mode (level: quick)`, never dead. Membership was data-gated by the 2026-08-20
+> Literal-Correctness measurement (1,082 s on the SCC-124 fixture — 8.5× the Acceptance Auditor).
+> Step 1.5 audits the diff against the story's checkable list — an item with no evidence is
+> **not satisfied**, and anything in the diff *beyond* the list is **drift**. Since SCC-231 the same
+> step reconciles a SECOND left-hand side: the plan's `## Declared Change Set` block against the
+> real diff (taken `--no-renames`, so a renamed file cannot fake an unimplemented row) — a file
+> edited but never declared is `undeclared` (*important*), a file declared but untouched is
+> `unimplemented` (*suggestion*), a declaration bullet the grammar rejected is `incomplete`
+> (*important* — the diff verb carries these through so a bad bullet stays distinguishable from
+> real drift), and a plan with no block at all is itself an *important* finding ("no declared set
+> to reconcile against"), never a silent pass. Planning dirs (`_artifacts/`, `_bmad/`,
+> `_bmad-output/`, `_my_resources/`) are carved out on both sides. Promised checks reconcile the
+> same way as files: an assertion the plan promised that shipped weaker is drift too. No drift row
+> auto-fails; each takes the same cut-it-or-name-why-it-stays disposition. **And the record is
+> machine-read (2026-08-20 law):** the walkthrough's `## Code Review` section must carry the
+> engine's `dispositions:` line (per-lens survived/dismissed/relevance-killed — the SCC-233 data)
+> and a one-line `drift:` result; `walkthrough_roster.py` blocks a lane dated 2026-08-20 or later
+> that is missing either.
 >
 > ⛔ **The steps were adapted, not copied, and the difference is one ref.** A Task lane merges into
 > `main`, so smh re-derives against `origin/main`. A story lane merges into `epic/<JIRA-KEY>-<slug>`.
@@ -1331,8 +1352,8 @@ and per-machine `core.hooksPath` · hooks stay repo-local and the port needs the
 key. It runs in **both directions**: the port BACK to the centre is a port too.
 
 The trigger is mechanical, never self-reported — `git diff --no-index -- <a>/<path> <b>/<path>`. 
-`/smh-plan-task` MANDATORY RULE 5 makes the plan carry the section; `/smh-self-audit` Phase 1 and
-`/cicd-self-audit` Phase 1 make its absence a **NO-GO** on differing copies. The one mechanical piece
+`/smh-plan-task` MANDATORY RULE 5 makes the plan carry the section; `/smh-self-audit` Lens 2 and
+`/cicd-self-audit` Lens 2 (Parity + Blast) make its absence a **NO-GO** on differing copies. The one mechanical piece
 is a `workflow_lint._RULE_POINTERS` row, which **warns** (exit 1) when a command describes a port and
 cites nothing — the rest is prose an agent executes, and this page says so rather than implying a
 gate that does not exist.
@@ -2580,19 +2601,22 @@ flowchart TD
 
 #### /cicd-self-audit
 
-*The pre-build stress test of a plan against the real code — blast radius, over-engineering,
-pre-mortem — ending in `GO` or `NO-GO` written **into** the plan. Explained in
-[§6](#6-the-story-lane). Called by: ② Step 2 (automatically), or you.*
+*The pre-dev plan audit, rebuilt under SCC-225: THREE lenses, an anchor rule (a finding names a
+file or a plan step with the literal text read, or it is deleted), coverage-not-findings
+reporting (full coverage with zero findings is a successful run), and over-engineering as a
+LEDGER (created artefact × the AC requiring it), never an opinion. An amendment rule at the top
+forbids ever adding a fourth lens. Ends in `GO` or `NO-GO` written **into** the plan. Explained
+in [§6](#6-the-story-lane). Called by: ② Step 2 (automatically), or you.*
 
 ```mermaid
 flowchart TD
-    S0["Step 0 — resolve the project"] --> P0["Phase 0 — scope, right-size, AC coverage\nthe right-size gate is the point:\na trivial plan does not earn every phase"]
-    P0 --> P1["Phase 1 — blast-radius trace\nwho else breaks if we change this?\nasks the code graph — stale-checked —\nand hand-checks a 'nothing breaks' answer"]
-    P1 --> P2["Phase 2 — AI-drift and over-engineering gate\nSTRICT — default NO-GO"]
-    P2 --> P3["Phase 3 — pre-mortem\nfull audits; light only when state is involved"]
-    P3 --> P4{"Phase 4 — verdict"}
-    P4 -- "GO" --> GO["append ## Self-Audit + Audit verdict: GO\nINTO the plan · findings baked inline"]
-    P4 -- "NO-GO" --> NOGO["append the verdict and the fixes\nthe builder must not proceed until re-audited"]
+    S0["Step 0 — bind the project · Skip / PRE-DEV / POST-DEV"] --> LVL{"level, from the Declared Change Set\nLEDGER — Lens 1 only\nLEDGER+BLAST — all three"}
+    LVL --> L1["Lens 1 — Repo Reality\ndoes the plan's world exist? paths, ACs, block parses\n+ the Scope Ledger: created artefact × the AC requiring it"]
+    L1 --> L2["Lens 2 — Parity + Blast\ngraph when fresh, grep as the NORMAL path\ncontracts two-sided · ports · twins · sibling lanes\nrisk seam informs, never gates"]
+    L2 --> L3["Lens 3 — Pre-Mortem\nBOUNDED: attaches failure narratives to anchored findings\nunattached output is DISCARDED"]
+    L3 --> V{"verdict"}
+    V -- "GO" --> GO["append ## Self-Audit + Audit verdict: GO\ncoverage blocks per lens · findings anchored · Observations uncounted"]
+    V -- "NO-GO" --> NOGO["only two grounds: an anchored finding breaking\nan AC or a hard gate · the Ledger precondition failing"]
 ```
 
 #### /cicd-code-review
@@ -2797,25 +2821,31 @@ flowchart TD
 
 #### /smh-self-audit
 
-*The Task lane's plan audit, in two modes: PRE-WORK (the default — no plan means STOP, never invent
-one) and POST-DEV / retroactive (audit the ticket's ACCEPTANCE block and the change set, and label
-the run so it never reads as if a gate ran in time). Explained in
+*The Task lane's plan audit, rebuilt under SCC-225: THREE lenses behind an anchor rule — a
+finding names an existing file or plan step with the literal text read, or it is deleted, not
+demoted. Lenses return COVERAGE (checks run, what was read, verdict): full coverage with zero
+findings is a successful run, so "I found nothing" is a valid deliverable. Over-engineering ships
+only as the Scope Ledger (created artefact × the acceptance row requiring it). The amendment rule
+at the top of the file forbids ever adding a fourth lens — a miss amends the marker lists, the
+anchor definitions, or the Ledger rules instead. Two modes: PRE-WORK (default — no plan means
+STOP) and POST-DEV / retroactive. Explained in
 [§9](#9-the-task-lane--work-on-the-system-itself). Called by: `/smh-quick-dev` Step 1.5,
-`/smh-plan-task` Step 3, or you. Its stale half re-runs by itself as `/smh-code-review` Step 0.7.*
+`/smh-plan-task` Step 3, or you. Its stale half (Lens 2) re-runs by itself as `/smh-code-review`
+Step 0.7.*
 
 ```mermaid
 flowchart TD
-    S0["Step 0 — resolve the repo from git output\nthe lobby is a valid subject · name the plan and the key"] --> MODE{"declare the MODE out loud"}
+    S0["Step 0 — resolve the repo from git output\nthe lobby is a valid subject · name the plan and the key"] --> MODE{"Skip / PRE-WORK / POST-DEV, out loud"}
     MODE -- "PRE-WORK, no plan file" --> X["⛔ STOP and say so\ninventing a plan to audit is the failure this catches"]
-    MODE -- "PRE-WORK" --> P0["Phase 0 — scope, right-size, the checkable list"]
     MODE -- "POST-DEV" --> RETRO["audit the ticket's ACCEPTANCE + the change set\nlabel the run RETROACTIVE"]
-    P0 --> P1["Phase 1 — blast-radius trace\nreads the SIBLING lanes, not just this tree\nnames what should land first"]
-    RETRO --> P1
-    P1 --> P2["Phase 2 — over-engineering and drift gate\nSTRICT, default NO-GO\n(skipped post-dev, with a one-line why)"]
-    P2 --> P3["Phase 3 — pre-mortem\npost-dev: only external-state rows"]
-    P3 --> P4{"Phase 4 — verdict"}
-    P4 -- "GO" --> GO["## Self-Audit appended INTO the plan\nAudit verdict: GO"]
-    P4 -- "NO-GO" --> NOGO["Audit verdict: NO-GO\nfixes baked inline · re-run only touched phases"]
+    MODE -- "PRE-WORK" --> LVL{"level, from the Declared Change Set\nLEDGER — Lens 1 only\nLEDGER+BLAST — all three"}
+    LVL --> L1["Lens 1 — Repo Reality\npaths and commands exist · block parses · both machines\n+ Scope Ledger: created artefact × the acceptance row requiring it"]
+    RETRO --> L2
+    L1 --> L2["Lens 2 — Parity + Blast\nscar table: doors, rules, scripts, gates, links, SOP, ports\ntwins diffed · sibling lanes read · risk seam informs, never gates"]
+    L2 --> L3["Lens 3 — Pre-Mortem\nBOUNDED: cannot originate — attaches failure narratives\nto anchored findings · unattached output DISCARDED"]
+    L3 --> V{"verdict"}
+    V -- "GO" --> GO["## Self-Audit appended INTO the plan\ncoverage per lens · anchored findings · Audit verdict: GO"]
+    V -- "NO-GO" --> NOGO["only two grounds: anchored finding breaking an\nacceptance row or a hard gate · Ledger precondition failing"]
     GO -.-> NOTOUCH["writes no implementation\ntransitions no ticket"]
     NOGO -.-> NOTOUCH
 ```

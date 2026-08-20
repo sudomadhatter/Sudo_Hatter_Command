@@ -104,6 +104,18 @@ Then answer these three, in writing:
 3. **Which sibling lanes are still live, and does one of them need to land first?** Name the
    landing-order dependency and what happens to this work if the order is reversed.
 
+
+<!-- twin-law: review-level -->
+**Derive `review_level` HERE, from the radius you just measured (SCC-232) — derived, never
+chosen.** The rule is fixed and defined once, in the engine's lens-roster contract (step-01 § The
+two levels): **quick** when every answer above came back contained (nothing referenced moved · no
+gate, hook, rule, or contract surface in the radius · ≤3 source files in the re-taken diff);
+**standard** otherwise. Hand the engine `review_level` WITH the three written answers as its
+grounding — a level without its radius evidence is a flag, and no caller gets one; the engine
+defaults such a call to `standard`. (`lens_budget` is a different axis and neither re-declares
+the other.)
+<!-- /twin-law -->
+
 **Absorb `main` now, before the verdict** — conflicts belong on this branch, never on `main`
 (`git-policy`). Re-run Step 3's floor **after** absorbing; a verdict measured on a pre-merge sha is a
 verdict about code that will never exist.
@@ -111,7 +123,7 @@ verdict about code that will never exist.
 > This step is the post-dev half of `/smh-self-audit`, deliberately placed **here** rather than offered
 > as a second invocation of that command. An opt-in re-audit is one nobody runs — the memory audit sat
 > unused inside `/smh-update-maps-indexes` for exactly that reason. See that command's
-> **§ Running it after the work is built** for which phases go stale and which do not.
+> **§ After the work is built** for which lenses go stale and which do not.
 
 ## Step 0.9 — ⭐ Probe the review runtime and RECORD it (before the engine, SCC-177)
 
@@ -225,6 +237,43 @@ proves it, which is a claim about evidence a lens cannot make for you.
 
 For **each item**: name where the diff satisfies it, and **the assertion that proves it**. Then the
 other direction — **anything in the diff beyond the list is drift**: cut it, or name why it stays.
+
+**Then the SECOND left-hand side (SCC-231) — the declared set.** The acceptance list says what
+must be TRUE; the plan's `## Declared Change Set` block says which files were meant to MOVE — a
+file edited that satisfies an acceptance row but was never declared is invisible to the
+reconciliation above. Diff the block against the real diff:
+
+```bash
+python3 .agents/scripts/declared_change_set.py diff <the plan> \
+        --changed $(git -C "$REPO" diff --name-only --no-renames <the same base this review resolved>)   # PC: `python`
+```
+
+(`--no-renames` matters: with rename detection on, a renamed file surfaces only under its NEW
+path, so the declared `DELETE` of its old path reads as a false `unimplemented` row — and the
+answer would depend on the machine's git config.)
+
+<!-- twin-law: declared-drift -->
+- **`undeclared`** = files(diff) − files(declared): a file the plan never named was edited.
+  One finding per file, severity **important**.
+- **`unimplemented`** = files(declared) − files(diff): declared and untouched — plan
+  overreach, or dropped scope. One finding per file, severity **suggestion**.
+- **`incomplete`** = declaration attempts the grammar rejected (a star bullet, a glob path, a
+  missing row mapping) — the diff verb carries them through. One finding per bullet, severity
+  **important**: a rejected declaration means the block cannot be trusted as the declared set,
+  and its paths will read as `undeclared` noise until the bullets are repaired.
+- An absent BLOCK returns `present: false` — that is itself ONE finding at **important**:
+  "no declared set to reconcile against". Never a silent skip; the vacuous green is the exact case
+  this side exists to catch. (An absent plan FILE is a loud exit-2 error — a broken invocation,
+  never a state to reconcile.)
+- Paths under `_artifacts/`, `_bmad/`, `_bmad-output/`, `_my_resources/` are carved out on BOTH
+  sides — planning surfaces never count as drift (Step 1's raw diff still shows them).
+- **Declared checks reconcile like declared files.** The plan's promised assertions and recorded
+  evidence are part of the declared set: a promised check that shipped weaker — a presence pin
+  where a mutation was promised, a recorded number that never landed — is drift — cut it, or
+  name why it stays.
+- **No drift row auto-fails the verdict.** Every drift row takes the same contract as the first
+  side: cut it, or name why it stays.
+<!-- /twin-law -->
 
 - An item with **no evidence** is not satisfied, however obviously true it looks. **CONCERNS floor.**
 - An item whose evidence is *"I read it and it looks right"* is not evidence. Run something.
@@ -341,6 +390,22 @@ The section carries:
   was dropped — `blind-hunter · n/a — context contaminated (<what it held>)` — and `lenses_counted`
   is what keeps the drop out of the total. Omitting them is how a dropped lens becomes invisible,
   which is the exact failure the drop rule exists to make visible.
+<!-- /twin-law -->
+
+<!-- twin-law: record-lines -->
+- ⛔ **two more machine-read lines, in the same section (SCC-231/233, law since 2026-08-20):**
+
+  ```
+  dispositions:    per-lens: <lens>=<survived>/<dismissed>/<relevance-killed> · …
+  drift:           undeclared=<n> · unimplemented=<n> · incomplete=<n> — <dispositions live in the findings table, or name why there was no block to reconcile>
+  ```
+
+  `dispositions:` is pasted from the engine summary VERBATIM — the per-lens death counts are the
+  SCC-233 record, and which lens's findings die at triage is computable only if they land here.
+  `drift:` is the declared-set reconciliation result from this command's own step, in one line.
+  `walkthrough_roster.py` reads both and the close-out preflights BLOCK a lane missing either —
+  the measured base rate for prose-only record obligations is 12 of 142, so neither line is left
+  to memory.
 <!-- /twin-law -->
 
   **A `Verdict:` is the review's conclusion; this block is what shows the review happened.** Without

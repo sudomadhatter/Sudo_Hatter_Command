@@ -1,5 +1,5 @@
 ---
-description: Adversarial audit for TASK work — pressure-tests an implementation_plan.md that has no story file and no story ACs against the repo...
+description: Pre-work plan audit for TASK work — three lenses (Repo Reality + Scope Ledger, Parity + Blast, Pre-Mortem), the anchor rule (no...
 platforms: [opencode, antigravity]
 ---
 

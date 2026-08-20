@@ -170,7 +170,10 @@ the spec on the Task lane. With no list, `no-spec` is honest and the acceptance 
 hand, below.
 
 **Record the roster the engine returns, all four fields** — `review-runtime`, `lenses_run`,
-`lenses_counted: <n>/<applicable>`, `lenses_na`. A dropped Blind Hunter is legal and a silent one is
+`lenses_counted: <n>/<applicable>`, `lenses_na` — **plus the two record lines (SCC-231/233):**
+the engine's `dispositions:` line verbatim, and a `drift:` line reading
+`drift: no Declared Change Set — plan-exempt lane (the eject re-arms the plan gate)` — this lane
+has no plan to reconcile BY DESIGN, and `walkthrough_roster.py` blocks a lane that says nothing. A dropped Blind Hunter is legal and a silent one is
 not: `lenses_na` is the only place a drop can land, so a review that omits it is indistinguishable
 from one where every lens ran. **`4/4` is never written `4/5`** — the denominator is what was
 *applicable*, not the roster's length.
