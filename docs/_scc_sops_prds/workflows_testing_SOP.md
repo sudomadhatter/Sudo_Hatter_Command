@@ -78,7 +78,7 @@ re-syncing the twin is an AVCH ticket of its own, not something a lobby lane may
 | start the next story | ① `/cicd-write-story-tests <id>` |
 | build a story that has failing tests waiting | ② `/cicd-dev-story-tests <id>` |
 | review code that's written | ③ `/cicd-code-review <id>` |
-| land a story that passed review | `/cicd-update-sprint-memory` ([§7](#7-landing-and-shipping--the-close-out-family)) |
+| land a story that passed review | `/cicd-close-story-merge-tree` — the door; it runs the save for you ([§7](#7-landing-and-shipping--the-close-out-family)) |
 | land every lane of one epic at once | `/cicd-merge-epic-workingtrees <epic>` ([§7](#7-landing-and-shipping--the-close-out-family)) |
 | fix something small in a project | `/cicd-quick-dev <slug>` — **low-risk work only** ([§8](#8-the-fast-lane--cicd-quick-dev)) |
 | ⭐ **push routine project docs/notes to PR** | `/cicd-non-crit-pr-push` — **standing ticket & branch directly to PR** ([§8a](#8a-the-project-standing-push-lane--cicd-non-crit-pr-push)) |
@@ -270,9 +270,10 @@ flowchart TD
     ONE --> TWO["② /cicd-dev-story-tests\nplan → STOP for you → build\n→ widen coverage → certify the suite"]
     TWO --> THREE["③ /cicd-code-review\nhunt the diff blind → the shared review engine\n→ test gate → PASS/CONCERNS/FAIL/WAIVED"]
     THREE -.->|"Step 3.5"| CLEAN["/cicd-clean-code-audit\nmachine checks plus a taste pass"]
-    THREE --> CLOSE["/cicd-update-sprint-memory\nclose out ONE story\nlands on the EPIC branch"]
+    THREE --> CLOSE["/cicd-close-story-merge-tree\nclose out ONE story\nlands on the EPIC branch"]
     THREE --> MERGE["/cicd-merge-epic-workingtrees\n2+ passed lanes of ONE epic\nlands them all on the EPIC branch"]
-    CLOSE --> CLOSEWT["/cicd-close-workingtree\nverify it merged, then clean up\ncalled AUTOMATICALLY by both"]
+    CLOSE --> SAVE["/cicd-update-sprint-memory\nits Step 1: the session SAVE\nlearnings routed · story flipped done"]
+    CLOSE --> CLOSEWT["/cicd-prune-worktree\nverify it merged, then clean up\ncalled AUTOMATICALLY by both"]
     MERGE --> CLOSEWT
     CLOSEWT -.->|"next story"| ONE
     CLOSEWT --> SHIP["/cicd-push-e2e\nend-to-end suite must be green\nEPIC branch → main"]
@@ -349,7 +350,7 @@ that fire mid-build and send the work back to the full loop. You do not get to a
 | **Review with** | ③ `/cicd-code-review` | built into `/cicd-quick-dev` Step 3 | `/smh-code-review` | **none** — the gates run, no verdict |
 | **Plan + `approved`?** | yes | no — invoking it IS the skip | yes | **no** — invoking it IS the skip |
 | **Branch** | `claude/<KEY>-<slug>`, off the epic branch | same, or `chore/<KEY>-<slug>` off `main` if ad-hoc | `chore/<KEY>-<slug>`, off `main` | `chore/<KEY>-<slug>`, off `main` |
-| **Close with** | `/cicd-update-sprint-memory` (or `/cicd-merge-epic-workingtrees`) | **it does not close** — hands back to you | `/smh-close-task-merge-tree` | `/smh-close-task-merge-tree` — the same door, unchanged |
+| **Close with** | `/cicd-close-story-merge-tree` (or `/cicd-merge-epic-workingtrees`) | **it does not close** — hands back to you | `/smh-close-task-merge-tree` | `/smh-close-task-merge-tree` — the same door, unchanged |
 | **Code lands on** | the epic branch → `main` via `/cicd-push-e2e` | epic branch, via close-out | `main`, directly | `main`, directly |
 | **Story file?** | yes | only on the story lane; never on the ad-hoc lane | no | no |
 
@@ -410,7 +411,7 @@ flowchart TD
     end
     A2 --> B0
     B5 --> C1
-    C4 --> D["/cicd-update-sprint-memory\nyour sign-off\nmoves the story Jira ticket"]
+    C4 --> D["/cicd-close-story-merge-tree\nyour sign-off\nlands it, THEN moves the ticket"]
     S1 -.->|"writes"| F1["story file with jira_key\nplus failing tests"]
     S2 -.->|"writes"| F2["implementation_plan.md\nthe audit is appended INTO it"]
     S2 -.->|"writes"| F3["walkthrough.md\nplus a certified test snapshot"]
@@ -587,9 +588,9 @@ Each command below operates on a different thing. None can substitute for anothe
 
 | Altitude | The move | The command |
 |---|---|---|
-| **1. Lane → epic branch** | one finished story lands | `/cicd-update-sprint-memory` |
+| **1. Lane → epic branch** | one finished story lands | `/cicd-close-story-merge-tree` |
 | **1. Lane → epic branch** | *several* finished stories of one epic land together | `/cicd-merge-epic-workingtrees` |
-| **2. Disk cleanup** | verify merged, remove the worktree, delete the branch | `/cicd-close-workingtree` |
+| **2. Disk cleanup** | verify merged, remove the worktree, delete the branch | `/cicd-prune-worktree` |
 | **3. Epic branch → `main`** | the epic ships to production | `/cicd-push-e2e` |
 | **3. Chore branch → `main`** | a Task ships | `/smh-close-task-merge-tree` |
 | **3. Chore branch → `main`** | *several* finished Tasks land together | `/smh-merge-multiple-workingtrees` |
@@ -598,8 +599,12 @@ Each command below operates on a different thing. None can substitute for anothe
 
 1. **Neither story close-out touches `main`.** They land on the **epic branch** and stop. Production
    is a separate, later, explicitly-gated act.
-2. **You almost never type `/cicd-close-workingtree`.** Both story close-outs call it as their own
-   last step. You type it by hand only when a cleanup was skipped or failed.
+2. **The command you type is named for the job you asked for (SCC-210).** To close one story out you
+   type `/cicd-close-story-merge-tree`, and it lands that story on the epic branch. The two commands
+   underneath it are **steps it runs**, not doors: `/cicd-update-sprint-memory` — the save: learnings
+   routed, board and story file flipped — is its Step 1, and `/cicd-prune-worktree` — the disk
+   cleanup — is its Step 5. You type the save by hand when you want a session saved without closing
+   anything, and the prune by hand only when a cleanup was skipped or failed.
 
 ### Which close-out do I run?
 
@@ -611,11 +616,11 @@ flowchart TD
     Q0 -- "two or more" --> TASKS["/smh-merge-multiple-workingtrees\nmeasured order · a STOP before every merge\nprunes its own trees"]
     Q1 -- "yes — BMAD sprint work" --> Q2{"how many finished lanes\nof this epic are live\nRIGHT NOW?"}
     Q1 -- "it is a claude/incident-* branch" --> INC["/cicd-mobile-error-team\nthe incident lane — no close-out touches it"]
-    Q2 -- "one" --> ONE["/cicd-update-sprint-memory\ncloses THIS story"]
+    Q2 -- "one" --> ONE["/cicd-close-story-merge-tree\ncloses THIS story\nits Step 1 is the save"]
     Q2 -- "two or more" --> MANY["/cicd-merge-epic-workingtrees\ncloses the whole SET in one pass"]
-    ONE -.->|"Step 7 detects siblings\nand hands over — nothing returns"| MANY
-    ONE --> WT["/cicd-close-workingtree\nAUTOMATIC — Step 8"]
-    MANY --> WT2["/cicd-close-workingtree\nAUTOMATIC — once per lane"]
+    ONE -.->|"Step 3 detects siblings\nand hands over — nothing returns"| MANY
+    ONE --> WT["/cicd-prune-worktree\nAUTOMATIC — its Step 5"]
+    MANY --> WT2["/cicd-prune-worktree\nAUTOMATIC — once per lane"]
     WT --> EPIC["the EPIC branch\nstill NOT production"]
     WT2 --> EPIC
     EPIC --> Q3{"is every story\nin the epic done?"}
@@ -630,27 +635,42 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    UM["/cicd-update-sprint-memory"] --> PC["/cicd-prune-context"]
-    UM --> CW["/cicd-close-workingtree"]
+    CS["/cicd-close-story-merge-tree\nthe door you type"] --> UM["/cicd-update-sprint-memory\nthe save — Step 1"]
+    UM --> PC["/cicd-prune-context"]
+    CS --> CW["/cicd-prune-worktree\nStep 5"]
     ME["/cicd-merge-epic-workingtrees"] --> PC
     ME --> CW
     ME -.->|"only if the set is being promoted"| E2E["/cicd-e2e"]
     PE["/cicd-push-e2e"] --> E2E
     TM["/smh-close-task-merge-tree"] --> OWN["prunes its OWN tree\ndoes NOT call the janitor\ndoes NOT prune context"]
     MM["/smh-merge-multiple-workingtrees"] --> OWN
-    UM -.->|"2+ live lanes: hands over"| ME
+    CS -.->|"2+ live lanes: hands over"| ME
 ```
 
 `/cicd-merge-epic-workingtrees` is **not a different close-out** — it *contains*
 `/cicd-update-sprint-memory`'s per-story steps, wrapped in an overlap map and a combined gate the
-solo version cannot do. The same holds on the Task side: `/smh-merge-multiple-workingtrees` runs
+solo door cannot do. The same holds on the Task side: `/smh-merge-multiple-workingtrees` runs
 `/smh-close-task-merge-tree`'s ceremony once per lane, in a measured order, with a stop before each
 merge and one combined gate on `main` at the end. Both Task doors prune their own worktrees and
 deliberately do **not** call the janitor, which owns `claude/*` story trees only.
 
-### `/cicd-update-sprint-memory` — close out ONE story
+### `/cicd-close-story-merge-tree` — close out ONE story
 
-▶ **Diagram:** [`/cicd-update-sprint-memory` in the command atlas](#cicd-update-sprint-memory) — every step, stop and refusal, checked against the live command.
+**This is the one you type**, and since SCC-210 it is named for what you asked for. It owns the part
+only a door can do — the preflight, the commit, the **landing on the epic branch**, the Dev Record,
+the ticket, the prune — and delegates the rest: the *save* is `/cicd-update-sprint-memory`, invoked
+as its **Step 1**, and the disk cleanup is `/cicd-prune-worktree`, at **Step 5**.
+
+⭐ **The order it runs them in is the point.** The Jira transition is the one write in the whole
+close-out that is **remote**: it rides no branch, so nothing undoes it if a later step stops. Every
+write the save makes — the board, the story frontmatter, `active-context.md` — is a **file** write
+that rides the story branch, so a landing that stops publishes none of them. That is why the ticket
+moves at Step 4, *after* the push returns 0. It used to move about a hundred lines and three STOPs
+**before** the landing, which is how a stopped landing left the code on one disk under a ticket that
+read `Done`.
+
+▶ **Diagram:** [`/cicd-close-story-merge-tree` in the command atlas](#cicd-close-story-merge-tree) — every step, stop and refusal, checked against the live command.
+▶ **Diagram:** [`/cicd-update-sprint-memory` in the command atlas](#cicd-update-sprint-memory) — the save it runs at Step 1, which is also runnable on its own when a session needs saving and nothing is being closed.
 
 **Three things worth knowing before you run it:**
 
@@ -659,10 +679,11 @@ deliberately do **not** call the janitor, which owns `claude/*` story trees only
   note. There is deliberately **no "leave it at review and ask" branch**; punting the flip back to you
   is the failure this rule removes.
 - **"Commit owed" is not a blocker either.** The agent commits its own work in the worktree, and
-  Step 7 lands it.
-- **It asks you for learnings only when it routed none itself (SCC-133).** If Step 3 found and filed
-  the session's decisions and pitfalls, Step 6 prints the routed list and moves on; the "anything I
-  missed?" question is reserved for a session that produced nothing to route.
+  Step 3 lands it.
+- **The save asks you for learnings only when it routed none itself (SCC-133).** If
+  `/cicd-update-sprint-memory` Step 3 found and filed the session's decisions and pitfalls, its
+  Step 6 prints the routed list and moves on; the "anything I missed?" question is reserved for a
+  session that produced nothing to route.
 - **A `claude/incident-*` branch is a STOP, not a landing (SCC-149).** That is the incident
   pipeline's lane; it lands through `/cicd-mobile-error-team`, never through a story close-out.
 - **⛔ Do not push the `claude/*` branch to origin.** The landing pushes `HEAD:epic/...` only. A
@@ -684,19 +705,23 @@ deliberately do **not** call the janitor, which owns `claude/*` story trees only
 > judgment: keep the trunk's lines for already-landed siblings (their `done` is newer) plus this
 > lane's own line.
 
-**Invoking it — directly, or via `/cicd-update-sprint-memory` on the multiple-worktrees signal — IS
+**Invoking it — directly, or via `/cicd-close-story-merge-tree` on the multiple-worktrees signal — IS
 your sign-off** for landing AND flipping every story confirmed in Step 1. When it finishes there is
 nothing left owed on the set: boards updated, stories `done`, trees and branches pruned.
 
-### `/cicd-close-workingtree` — the janitor
+### `/cicd-prune-worktree` — the janitor
 
-**It moves no code.** It verifies a landing already happened, then cleans up. Both story close-outs
-call it automatically; you type it only when cleanup was skipped or failed.
+**It moves no code, and that is the whole of the job.** Nothing here lands, flips, transitions or
+pushes: it verifies a landing that already happened, then cleans the disk up behind it. Both story
+close-outs call it automatically — `/cicd-close-story-merge-tree` at its Step 5,
+`/cicd-merge-epic-workingtrees` once per lane — and you type it only when cleanup was skipped or
+failed. Its old name read like a close-out, which is exactly how it kept being mistaken for one;
+the name now says which of the two it is (SCC-210).
 
 **Order is load-bearing and the numbering enforces it: SWEEP → PRESERVE → UNLINK → REMOVE → DELETE
 BRANCH.** Every out-of-order variant of this command has destroyed something.
 
-▶ **Diagram:** [`/cicd-close-workingtree` in the command atlas](#cicd-close-workingtree) — every step, stop and refusal, checked against the live command.
+▶ **Diagram:** [`/cicd-prune-worktree` in the command atlas](#cicd-prune-worktree) — every step, stop and refusal, checked against the live command.
 
 **Step 1.7 is the gate that stops the worst failure.** Step 1 proves the *code* landed; that is a
 different question from whether *you finished the story*. Step 1.7 answers the second by reading the
@@ -745,7 +770,7 @@ Or push `main` from the main checkout, which always carries the scripts.
 ### `/smh-close-task-merge-tree` — the Task lane's close-out
 
 **The half BMAD has no answer for.** A Task has no epic, no story file and often no sprint board at
-all, so `/cicd-update-sprint-memory` has nothing to operate on and simply cannot close it.
+all, so `/cicd-close-story-merge-tree` has nothing to operate on and simply cannot close it.
 
 ▶ **Diagram:** [`/smh-close-task-merge-tree` in the command atlas](#smh-close-task-merge-tree) — every step, stop and refusal, checked against the live command.
 
@@ -987,8 +1012,9 @@ not: the old one also pushed to GitHub and also waited on the same check.
 #### ⛔ One typing = ONE merge
 
 Typing `/smh-close-task-merge-tree` authorises **the one task you typed it for**. It does not
-authorise the next one, no matter how soon it follows. Same for `/cicd-update-sprint-memory`. Every
-other merge to `main` needs you to say so directly.
+authorise the next one, no matter how soon it follows. Same for `/cicd-close-story-merge-tree`: one
+typing is one story's landing, and the sign-off is spent by it. Every other merge to `main` needs you
+to say so directly.
 
 #### ⛔ And the merge has to land where you think it does (SCC-97)
 
@@ -1173,7 +1199,7 @@ Two things deliberately did **not** change:
 
 - **Where a lane branches FROM is untouched** — a story still branches from its epic branch (never
   `main`), Task work still branches from `main`.
-- **Each close-out still cleans up its own** — `/cicd-close-workingtree` for stories,
+- **Each close-out still cleans up its own** — `/cicd-prune-worktree` for stories,
   `/smh-close-task-merge-tree` for Tasks.
 
 > ⓘ **Why the old rule was backwards.** It decided who got an isolated workspace by asking *what kind
@@ -1664,8 +1690,9 @@ flowchart LR
         S["① /cicd-write-story-tests"]
         R["③ /cicd-code-review\n/smh-code-review"]
         Q["/cicd-quick-dev · /smh-quick-dev"]
-        M["/cicd-update-sprint-memory"]
-        W["/cicd-close-workingtree"]
+        M["/cicd-close-story-merge-tree"]
+        MS["/cicd-update-sprint-memory"]
+        W["/cicd-prune-worktree"]
         T["/smh-close-task-merge-tree\n/smh-merge-multiple-workingtrees"]
         L["/cicd-live-testing-team"]
         LB["/cicd-label-tasks · /smh-label-tasks"]
@@ -1696,8 +1723,8 @@ flowchart LR
     Q --> JF
     Q --> GR
     M --> CP
-    M --> SS
     M --> JF
+    MS --> SS
     W --> CP
     T --> TP
     T --> FR
@@ -1726,7 +1753,7 @@ flowchart LR
 | `story_status.py` | **A story marked done in one place and not the other.** Status lives in two files; this flips both together or neither. It refuses a downgrade, refuses an unknown status, and refuses outright if the two surfaces already disagree — that case needs `--reconcile`, which is a decision, not a default. |
 | `workflow_lint.py` | **Broken characters quietly entering a document** — the `—` that turns into `â€"`. Runs on every commit, staged files only, so it stays fast enough that nobody disables it. Its `--toolkit-only` half also checks the toolkit against its own conventions, and **since 2026-08-11 (SCC-82) a clean run is `0 errors, 0 warnings` — exit 0.** |
 | ⤷ `ap_reconciled:` | **RETIRED (SCC-209, 2026-08-18).** The `*-AP.md` robot-lane commands are abandoned pending a rewrite, so the linter no longer compares them to their primaries and the frontmatter stamp is gone. Each `*-AP.md` now carries an `UNMAINTAINED` marker instead — do not diff, port to, or restamp them. The twin relationship the toolkit still maintains is `cicd-*` ↔ `smh-*`. |
-| ⤷ `check_both_machines` | **A tool invocation that works where it was written and dies on the other machine.** This system runs on a Mac AND a PC, and the venv bin dir is the one path that differs on every single tool call — `Scripts/` on Windows, `bin/` on POSIX. Since SCC-205 the lint warns on a hardcoded `.venv/Scripts` with **no real POSIX path within four lines**, across `.agents/{commands,rules,skills,scripts}` (markdown *and* committed `.py`/`.ps1`/`.sh`). ⛔ The off-switch is a genuine `.venv/bin` path and **never the bare word “POSIX”** — measured: delete the first clause of a two-arm conditional and the surviving trailing comment (`# POSIX first, then Windows`) used to exempt what was left. Files that name the Windows path as **data** (an allow-list key, a fixture) have no POSIX twin to sit beside them and take the auditable file-level opt-out `wf-lint: allow-windows-venv`, which carries its reason in the file — the same shape as `allow-encoding-literals`. **Generated mirrors are deliberately out of scope**: their fix is a re-sync, never an edit, and door parity is what keeps them honest. Five authored surfaces carried the defect, the worst being `cicd-close-workingtree` Step 4, whose probe guards an irreversible delete and on the Mac reported a destroyed shared venv that was never touched. |
+| ⤷ `check_both_machines` | **A tool invocation that works where it was written and dies on the other machine.** This system runs on a Mac AND a PC, and the venv bin dir is the one path that differs on every single tool call — `Scripts/` on Windows, `bin/` on POSIX. Since SCC-205 the lint warns on a hardcoded `.venv/Scripts` with **no real POSIX path within four lines**, across `.agents/{commands,rules,skills,scripts}` (markdown *and* committed `.py`/`.ps1`/`.sh`). ⛔ The off-switch is a genuine `.venv/bin` path and **never the bare word “POSIX”** — measured: delete the first clause of a two-arm conditional and the surviving trailing comment (`# POSIX first, then Windows`) used to exempt what was left. Files that name the Windows path as **data** (an allow-list key, a fixture) have no POSIX twin to sit beside them and take the auditable file-level opt-out `wf-lint: allow-windows-venv`, which carries its reason in the file — the same shape as `allow-encoding-literals`. **Generated mirrors are deliberately out of scope**: their fix is a re-sync, never an edit, and door parity is what keeps them honest. Five authored surfaces carried the defect, the worst being the story janitor's Step 4 — now `cicd-prune-worktree` — whose probe guards an irreversible delete and on the Mac reported a destroyed shared venv that was never touched. |
 | ⤷ the rule-pointer rows | **A command that produces findings with no rule saying how to DISPOSE of them.** Since SCC-205 the pointer check carries a row for `code-standards.md` §6.5 — the three-question test — keyed on the machinery a finding-producer actually emits (the `applied / deferred / dismissed` triage vocabulary, the FAIL/CONCERNS ladder), never on the word "disposition". A concept-keyed row matches half the tree, names the wrong files, and gets ignored. |
 | `tests/test_twin_parity.py` | **The `/cicd-*` and `/smh-*` families drifting apart in silence** — the failure that produced SCC-205, where 172 confirmed findings sat in the tree with the lint at exit 0 because *nothing in the repo compared the two families*. A command fences a region of SHARED law with `<!-- twin-law: <id> -->` … `<!-- /twin-law -->`, and this asserts **symmetry** (a law marked in one twin has a counterpart in the other — the layer that catches one-sided law, which byte-identity cannot see) **and identity** (where both mark it, the regions match after whitespace normalisation). ⛔ Deliberately NARROW: never widened to whole files, which would force subject-specific law to match and break both commands. The escape hatch is auditable — `<!-- twin-divergence: <id> — <reason> -->` is honoured, counted and printed. **The guard is SYMMETRIC on purpose**: the law was ahead on the smh side in 2026 only because that is where the operator was working, and the direction is inverting toward cicd. |
 | `commit-msg-jira.sh` | **A commit with no ticket.** Each repo declares its Jira project in `.agents/jira.conf`; a commit whose message carries no valid key for *that* repo — or the wrong project's key — is refused outright. A rejected commit is a no-op: your staged files are untouched, nothing to undo. Merges, reverts, and rebases are exempt (the branch name carries the key for them). ⛔ **That exemption was blind inside a worktree until SCC-144** — it probed for a MERGE_HEAD file under a hardcoded .git *directory*, and inside a worktree .git is a **file** pointing elsewhere — so that probe was always false there, and every lane in this system is a worktree. It asks git where its git dir actually is now. |
@@ -1867,7 +1894,7 @@ flowchart TD
     Q2 -- "FAIL or CONCERNS" --> RUN
     Q2 -- "PASS or WAIVED" --> Q3{"Was the code changed\nafter the review?"}
     Q3 -- "Yes" --> RUN2["/cicd-code-review\nThe review describes older code.\nIt is not a pass anymore."]
-    Q3 -- "No" --> CLOSE["/cicd-update-sprint-memory\nGenuinely ready. Your call."]
+    Q3 -- "No" --> CLOSE["/cicd-close-story-merge-tree\nGenuinely ready. Your call."]
 ```
 
 > ⓘ **Why this exists.** For a while the boot command answered "is this ready?" from the status file
@@ -1916,7 +1943,7 @@ that meant work in this command center was *never* visible as in flight: a `chor
 | **your first commit on a `chore/ · claude/ · epic/` branch** | the `post-commit` hook | **`In Progress`** |
 | you run `/smh-quick-dev` (Task lane) | its Step 0.5, at worktree-open | `In Progress` |
 | you run `/cicd-write-story-tests` ① (story lane) | its Step 1.6 | `In Progress` |
-| you close a story / task / epic out | `/cicd-update-sprint-memory` · `/smh-close-task-merge-tree` · `/cicd-push-e2e` | `Done` |
+| you close a story / task / epic out | `/cicd-close-story-merge-tree` · `/smh-close-task-merge-tree` · `/cicd-push-e2e` | `Done` |
 
 **The commit is the trigger, and that is the point.** You don't always run `/smh-quick-dev`, so
 hanging it on the command would have meant the board is only honest when you remember. Commit on a
@@ -1984,14 +2011,14 @@ command is able to close it.**
 |---|---|---|
 | What it is | sprint work: a number (`19.2`), a story file, a BMAD epic, a `sprint-status.yaml` row | the toolkit, rules, `/` commands, IDE and skills work. No story file, no BMAD epic, in the command centre no sprint board at all |
 | Branch | `claude/<KEY>-<slug>`, off the epic branch | `chore/<KEY>-<slug>`, off `main` |
-| Closes with | `/cicd-update-sprint-memory` | **`/smh-close-task-merge-tree`** |
+| Closes with | `/cicd-close-story-merge-tree` | **`/smh-close-task-merge-tree`** |
 | The code lands on | the epic branch (then `main` via `/cicd-push-e2e`) | `main`, directly |
 | Your sign-off | invoking the close-out | invoking the command |
 
 A Task hangs under one of your grouping epics (`CI/CD Improvment`, `New Epic Feature or Fix`,
 `Thin toolkit`) only because Jira offers no other container for it.
 
-**The consequence worth knowing: `/cicd-update-sprint-memory` cannot close a Task, and never could.**
+**The consequence worth knowing: `/cicd-close-story-merge-tree` cannot close a Task, and never could.**
 It reads a sprint board, flips a story status and lands on an epic branch — a Task has none of the
 three. So Task work was being closed by hand, which is exactly why the tickets stayed empty.
 
@@ -2191,7 +2218,7 @@ has checked out, and that has to be the epic branch — so switch to it first, o
 with an explicit list of files and a Jira-keyed message, moves the ticket to **In Review**, and writes
 the Dev Record onto it. It still **never pushes**, never touches `main`, and never marks anything
 `done`. Your end of it: read the walkthrough, the plan, and the ticket — then run
-`/cicd-update-sprint-memory`.
+`/cicd-close-story-merge-tree`.
 
 > ✅ **Proven end to end.** The v2 engine has run a full four-stage pass on Story 14.2 (clean
 > APPROVE, backend 1723 / frontend 270 passed, about $9). It is still Windows-hosted; on a new
@@ -2302,9 +2329,10 @@ flowchart LR
         SCR["/smh-code-review"]
     end
     subgraph LAND ["landing and shipping"]
+        CSM["/cicd-close-story-merge-tree"]
         USM["/cicd-update-sprint-memory"]
         MEW["/cicd-merge-epic-workingtrees"]
-        CWT["/cicd-close-workingtree"]
+        CWT["/cicd-prune-worktree"]
         PE["/cicd-push-e2e"]
         TM["/smh-close-task-merge-tree"]
         MM["/smh-merge-multiple-workingtrees"]
@@ -2330,9 +2358,10 @@ flowchart LR
     PT --> LT
     SCR --> CRE
     SCR --> SCCA
+    CSM --> USM
     USM --> PC
-    USM --> CWT
-    USM -.->|"2+ live lanes"| MEW
+    CSM --> CWT
+    CSM -.->|"2+ live lanes"| MEW
     MEW --> PC
     MEW --> CWT
     MEW -.->|"if promoting"| E2E
@@ -2357,7 +2386,7 @@ flowchart LR
         A["first commit on a keyed branch\npost-commit hook"] -->|"In Progress"| B["the ticket"]
         C["/smh-quick-dev Step 0.5\n/smh-plan-task Step 0"] -->|"In Progress"| B
         D["① Step 1.6"] -->|"In Progress, or Blocking"| B
-        E["/cicd-update-sprint-memory\n/smh-close-task-merge-tree\n/smh-merge-multiple-workingtrees\n/cicd-push-e2e"] -->|"Done — or HELD by open user tasks"| B
+        E["/cicd-close-story-merge-tree\n/smh-close-task-merge-tree\n/smh-merge-multiple-workingtrees\n/cicd-push-e2e"] -->|"Done — or HELD by open user tasks"| B
         F["/cicd-live-testing-team\nonly on your word"] -->|"Story or Task → Bug, out of Done"| B
     end
     subgraph LABEL ["labels"]
@@ -2390,9 +2419,10 @@ speak; "refuses" means it will not proceed at all and names the fix.*
 | `/smh-quick-dev` | Step 1 (the checkable list), Step 1.5 (`approved`), Step 1.6 (proposed subtasks), the end | a NO-GO audit; the eject tripwire (a deployable path) |
 | ⭐ `/smh-quick-fix` | **the end only** — and never to ask whether to mint a ticket or open a lane; a `LIGHT-VCS` tidy still shows you what it will delete first | Step 0 qualification is not `LIGHT`: a project repo, a deployable path, a toolkit path, **or no paths declared at all**; Step 3.5 re-checks the real diff and ejects to `/smh-quick-dev` |
 | `/smh-code-review` | never — it verdicts | an empty diff |
-| `/cicd-update-sprint-memory` | Step 6 for learnings, only if none were auto-routed | preflight exit 2; a `FAIL` verdict; a red suite after absorbing the epic; an incident branch |
+| `/cicd-close-story-merge-tree` | never — typing it *is* the sign-off; Step 3 hands the set over to `/cicd-merge-epic-workingtrees` when siblings are live | preflight exit 2; a `FAIL` verdict; a red merge gate after absorbing the epic; an incident branch; a HEAD that is not `claude/*` |
+| `/cicd-update-sprint-memory` | Step 6 for learnings, only if none were auto-routed | a `FAIL` verdict blocks the flip; run standalone, a preflight exit 2 |
 | `/cicd-merge-epic-workingtrees` | Step 1 to confirm the set; Step 5 learnings if none routed | a `FAIL` lane (skipped, the rest proceed); a red combined gate |
-| `/cicd-close-workingtree` | never | branch not merged; story not finished (Step 1.7); a LOST tree |
+| `/cicd-prune-worktree` | never | branch not merged; story not finished (Step 1.7); a LOST tree |
 | `/cicd-push-e2e` | Step 4 to summarize before the push | any gate red, `/cicd-e2e` included; stories still open |
 | `/smh-close-task-merge-tree` | never — typing it *is* the sign-off | preflight exit 2; wrong `--expect-key`; a deployable path; the GitHub check red; an open child that is not a rider |
 | `/smh-merge-multiple-workingtrees` | **before every merge**, once per lane | a stale lane (filtered); a conflict outside the overlap map; a red combined gate |
@@ -2435,7 +2465,7 @@ flowchart TD
     S4 -.-> ONE["①"]
     S4 -.-> TWO["②"]
     S4 -.-> THREE["③"]
-    S4 -.-> CLOSE["/cicd-update-sprint-memory\nor /cicd-merge-epic-workingtrees\nwhen 2+ lanes passed"]
+    S4 -.-> CLOSE["/cicd-close-story-merge-tree\nor /cicd-merge-epic-workingtrees\nwhen 2+ lanes passed"]
 ```
 
 #### /cicd-create-epic-sprint
@@ -2748,7 +2778,7 @@ flowchart TD
     F -- "yes" --> EJ
     F -- "no — patches applied NOW; a defer names\nONE structural blocker, never a parking lot" --> S4["Step 4 — thin walkthrough with the Verdict line\nstory: advance the row to 'review'"]
     S4 --> S45["Step 4.5 — file the Dev Record now\nthis lane may END here"]
-    S45 --> STOP2["⛔ STOP. No close-out. Never land on the epic\nbranch. 'done' is yours — /cicd-update-sprint-memory"]
+    S45 --> STOP2["⛔ STOP. No close-out. Never land on the epic\nbranch. 'done' is yours — /cicd-close-story-merge-tree"]
 ```
 
 ### The Task lane
@@ -2889,43 +2919,73 @@ flowchart TD
 
 ### Landing and shipping
 
-#### /cicd-update-sprint-memory
+#### /cicd-close-story-merge-tree
 
-*Close out ONE story: preflight mechanically, verify the work on disk, route the learnings, flip the
-story to `done` on your word, move the ticket, prune the context, land on the **epic branch**, clean
-up. Explained in [§7](#7-landing-and-shipping--the-close-out-family). Calls: `closeout_preflight.py`,
-`story_status.py`, `jira_feed.py`, `/cicd-prune-context`, `/cicd-close-workingtree`. Hands over to:
-`/cicd-merge-epic-workingtrees` when siblings are live.*
+*THE DOOR — the command you type to close ONE story out: preflight, run the save, commit the close-out
+edits, LAND the story on its **epic branch**, and only THEN file the Dev Record and move the ticket,
+then prune. Invoking it IS your sign-off for THAT landing, and the sign-off is spent by it. It never
+touches `main`. Explained in [§7](#7-landing-and-shipping--the-close-out-family). Calls:
+`closeout_preflight.py`, `jira_feed.py`, `/cicd-update-sprint-memory` (Step 1), `/cicd-prune-worktree`
+(Step 5). Hands over to: `/cicd-merge-epic-workingtrees` when siblings are live.*
 
 ```mermaid
 flowchart TD
-    S0["Step 0 — resolve the project\nStep 0.5 — absorb the EPIC branch FIRST\nconflict → STOP and report"] --> S06["Step 0.6 — closeout_preflight.py\nAUTOMATIC, never ask"]
+    S0["Step 0 — resolve the project\necho the story, the KEY and the BRANCH you MEAN"] --> S05["Step 0.5 — absorb the EPIC branch FIRST\nthe save is about to rewrite the two hottest files\nconflict → STOP and report, never force"]
+    S05 --> S06["Step 0.6 — closeout_preflight.py\n--expect-key + --branch + --worktree, NOT optional\ncheck the target it ECHOES before its verdict"]
     S06 --> PF{"exit code?"}
-    PF -- "2 — BLOCKED" --> STOP1["resolve it before flipping anything\n'landing was NOT verified' is not a pass"]
-    PF -- "0 or 1" --> S1["Steps 1–2 — read state, then\nCODE-VERIFY the claimed work on disk"]
-    S1 --> S3["Step 3 — route each learning to its home\nrule · component pitfall · open bug · memory"]
-    S3 --> S4{"Step 4 — flip to done?\nread the Verdict line + gate receipts"}
-    S4 -- "FAIL" --> NOFLIP["do NOT flip\nfix via ③, re-run"]
-    S4 -- "PASS · CONCERNS · WAIVED\nmissing · stale" --> FLIP["story_status.py set id done\nBOTH surfaces or NEITHER"]
-    FLIP --> EPICCLOSE["same pass: every child terminal?\n→ flip the EPIC too"]
-    EPICCLOSE --> S45["Step 4.5 — ticket → Done · Dev Record filed\na Bug flag is cleared · READ IT BACK"]
-    S45 --> S5["Step 5 — /cicd-prune-context\nAUTOMATIC, applies unconditionally"]
-    S5 --> S6{"Step 6 — did Step 3\nroute any learnings?"}
-    S6 -- "none" --> ASKL["ask you for manual learnings"]
-    S6 -- "some" --> S7
-    ASKL --> S7{"Step 7 — LAND IT\nsibling worktrees live?"}
-    S7 -- "yes" --> HANDOVER["STOP this solo flow\nfollow /cicd-merge-epic-workingtrees\nnothing returns here"]
-    S7 -- "no" --> PRE{"HEAD is on…"}
+    PF -- "2 — BLOCKED" --> STOP1["⛔ resolve it before anything flips\n'landing was NOT verified' is not a pass"]
+    PF -- "0 or 1" --> S1["Step 1 — the SAVE: /cicd-update-sprint-memory\nAUTOMATIC · hand it the preflight block\nit flips the story to done — every write a FILE write"]
+    S1 --> S2["Step 2 — jira_feed.py check-actions\n## Your Actions may hand you no ticket work\nand none of the ceremony's own steps"]
+    S2 --> CA{"does it refuse?"}
+    CA -- "yes" --> FIXA["fix it HERE — this is the only place it is free\nafter the landing the walkthrough is on the\nepic branch and the fix costs another commit"]
+    CA -- "no" --> CM["commit the close-out edits\nEXPLICIT PATHS ONLY — git add -A / . / -u are banned"]
+    FIXA --> CM
+    CM --> S3{"Step 3 — sibling worktrees live?"}
+    S3 -- "yes" --> HANDOVER["STOP this solo flow\nfollow /cicd-merge-epic-workingtrees\nnothing returns here"]
+    S3 -- "no" --> PRE{"HEAD is on…"}
     PRE -- "claude/incident-*" --> INC["⛔ STOP — that is the incident lane\n/cicd-mobile-error-team"]
-    PRE -- "not a claude/* branch" --> NOLAND["not worked in a worktree\ndo NOT land it — report and stop"]
+    PRE -- "not a claude/* branch" --> NOLAND["⛔ not worked in a worktree\ndo NOT land it — report and stop"]
     PRE -- "claude/KEY-slug" --> MG{"⭐ MERGE GATE — did the epic branch\nmove CODE since ③'s verdict sha?"}
     MG -- "no" --> INH["inherit ③'s green"]
     MG -- "yes" --> RERUN["the merged tree has NEVER been tested\nrun the full suite NOW"]
     RERUN --> RED{"green?"}
-    RED -- "no" --> STOPALL["STOP — no push, nothing lands\nthe board flips ride this branch"]
+    RED -- "no" --> STOPALL["⛔ STOP — no push, nothing lands\nthe board flips ride this branch, and Step 4\nnever runs, so the ticket never moves"]
     RED -- "yes" --> INH
     INH --> PUSH["git push origin HEAD:epic/KEY-slug\nTHE landing · main untouched"]
-    PUSH --> S8["Step 8 — /cicd-close-workingtree\nAUTOMATIC"]
+    PUSH --> P0{"did the push return 0?"}
+    P0 -- "no — the remote moved" --> REJ["⛔ STOP and report · re-sync and re-land, never force\nthe ticket does NOT move"]
+    P0 -- "yes" --> S4["⭐ Step 4, and only now — the one REMOTE write\na. Dev Record filed, then READ BACK\nb. ticket → Done · a Bug flag is cleared\nc. check scoped AND unscoped — the fork arm"]
+    S4 --> S5["Step 5 — /cicd-prune-worktree\nAUTOMATIC · --repo and --branch passed through"]
+    S5 --> S6["Step 6 — VERIFY, then report\nevery line from a command you actually ran"]
+```
+
+#### /cicd-update-sprint-memory
+
+*The SAVE, and since SCC-210 nothing else: read this session's artifacts, code-verify the claimed work
+on disk, route every learning to its home, apply the board / story / `active-context` updates, flip the
+story to `done`, prune the context budget. Every write it makes is a FILE write that rides the story
+branch — no landing, no ticket, no Dev Record, no worktree prune. Explained in
+[§7](#7-landing-and-shipping--the-close-out-family). Calls: `story_status.py`, `/cicd-prune-context`.
+Invoked by: `/cicd-close-story-merge-tree` at its Step 1, or by you, standalone, any time a session
+needs saving and nothing is being closed.*
+
+```mermaid
+flowchart TD
+    S0["Step 0 — resolve the project"] --> WHO{"who invoked this?"}
+    WHO -- "the door" --> SKIP["Steps 0.5 / 0.6 are already done\nread the preflight block it hands you\ndo NOT re-run either — it answers nothing new"]
+    WHO -- "you, standalone" --> OWNPF["absorb the EPIC branch, then run\ncloseout_preflight.py yourself\nexit 2 — BLOCKED"]
+    SKIP --> S1
+    OWNPF --> S1["Steps 1–2 — read state and this session's\nplan + walkthrough, then CODE-VERIFY\nthe claimed work on disk"]
+    S1 --> S3["Step 3 — route each learning to its home\nrule · component pitfall · open bug · memory\na ## Close-Out Handoff block is LIFTED, never re-derived"]
+    S3 --> S4{"Step 4 — flip to done?\nread the Verdict line + gate receipts"}
+    S4 -- "FAIL" --> NOFLIP["do NOT flip\nfix via ③, re-run"]
+    S4 -- "PASS · CONCERNS · WAIVED\nmissing · stale" --> FLIP["story_status.py set id done\nBOTH surfaces or NEITHER"]
+    FLIP --> EPICCLOSE["same pass: every child terminal?\n→ flip the EPIC too"]
+    EPICCLOSE --> S5["Step 5 — /cicd-prune-context\nAUTOMATIC, applies unconditionally"]
+    S5 --> S6{"Step 6 — did Step 3\nroute any learnings?"}
+    S6 -- "none" --> ASKL["ask you for manual learnings"]
+    S6 -- "some" --> ENDS
+    ASKL --> ENDS["⛔ the save ENDS here\nno landing, no ticket, no Dev Record, no prune —\nthose four are the door's, in that order"]
 ```
 
 #### /cicd-merge-epic-workingtrees
@@ -2934,8 +2994,8 @@ flowchart TD
 overlap map, land in dependency order with a gate per lane, a combined gate on the epic branch, then
 prune. Ends at the epic branch; it does not touch `main`. Explained in
 [§7](#7-landing-and-shipping--the-close-out-family). Calls: `closeout_preflight.py`,
-`/cicd-prune-context` (once), `/cicd-close-workingtree` (per lane), `/cicd-e2e` (only if promoting).
-Invoked by: you, or `/cicd-update-sprint-memory` Step 7's hand-over.*
+`/cicd-prune-context` (once), `/cicd-prune-worktree` (per lane), `/cicd-e2e` (only if promoting).
+Invoked by: you, or `/cicd-close-story-merge-tree` Step 3's hand-over.*
 
 ```mermaid
 flowchart TD
@@ -2963,15 +3023,16 @@ flowchart TD
     INT -- "yes" --> FIXHERE["fix it HERE on the epic branch\nno new story, no new worktree"]
     INT -- "no" --> S52["/cicd-prune-context ONCE for the set\nlearnings question only if none were routed"]
     FIXHERE --> S52
-    S52 --> S6["Step 6 — /cicd-close-workingtree per lane\n--repo + --branch named, slug echoed back\nprune NOTHING before the combined gate is green"]
+    S52 --> S6["Step 6 — /cicd-prune-worktree per lane\n--repo + --branch named, slug echoed back\nprune NOTHING before the combined gate is green"]
     S6 --> END["ENDS AT THE EPIC BRANCH\nit does NOT merge to main"]
 ```
 
-#### /cicd-close-workingtree
+#### /cicd-prune-worktree
 
 *The janitor. Moves no code: verifies a landing already happened AND the story was finished, then
 sweeps the disk, preserves anything unsaved, unlinks, removes, deletes branches, verifies. Both story
-close-outs call it; you type it only when a cleanup was skipped or failed. Explained in
+close-outs call it — `/cicd-close-story-merge-tree` at its Step 5, `/cicd-merge-epic-workingtrees`
+once per lane — and you type it only when a cleanup was skipped or failed. Explained in
 [§7](#7-landing-and-shipping--the-close-out-family). Calls: `closeout_preflight.py`,
 `link-worktree-assets.py --unlink`.*
 
@@ -3146,8 +3207,8 @@ flowchart TD
 becomes a ≤3-line pointer, everything else is DELETED (git is the undo), stale pitfalls are swept, and
 it reports `active-context: ~X / 5,000 tokens`. No stops, no board writes, never touches story
 status. Explained in [§7](#7-landing-and-shipping--the-close-out-family). Called by:
-`/cicd-update-sprint-memory` Step 5 and `/cicd-merge-epic-workingtrees` Step 5 (automatically), or
-you.*
+`/cicd-update-sprint-memory` Step 5 — and so by `/cicd-close-story-merge-tree`, which runs that save —
+and by `/cicd-merge-epic-workingtrees` Step 5 (automatically), or you.*
 
 ```mermaid
 flowchart LR
@@ -3190,7 +3251,7 @@ flowchart TD
     GATE -- "regression this run introduced" --> RED["TESTS RED — parks with a receipt\nno auto-fix loop, by design"]
     GATE -- "green, but no ## Code Review written" --> INC["REVIEW INCOMPLETE — story NOT flipped"]
     GATE -- "green + review present" --> OK["commit its own branch, explicit paths\nstory → review · ticket → In Review · Dev Record"]
-    OK --> YOU(["you: read the plan, the walkthrough, the ticket\nthen /cicd-update-sprint-memory"])
+    OK --> YOU(["you: read the plan, the walkthrough, the ticket\nthen /cicd-close-story-merge-tree"])
     STOPS["parks for you on:\nPAUSED · CRASHED · COST CEILING · COMMIT REJECTED\nretries engine-owned, bounded · resume by (stage, sha)"] -.-> S1
 ```
 
@@ -3333,10 +3394,11 @@ flowchart TD
 
 | Command | What it does for you |
 |---|---|
-| `/cicd-update-sprint-memory` | Close-out for **one story**. Pre-flights everything mechanically, marks the story done on **your** word, saves what was learned, lands the code on the **epic branch** — and moves the story's Jira ticket to match, with the evidence attached. |
+| `/cicd-close-story-merge-tree` | **The door.** Close-out for **one story**: pre-flights everything mechanically, runs the save below, commits, lands the code on the **epic branch** — and only then files the Dev Record and moves the story's Jira ticket to match, with the evidence attached. Typing it IS your sign-off for that one landing. |
+| `/cicd-update-sprint-memory` | **The save inside it**, runnable on its own. Marks the story done on **your** word and saves what was learned: the learnings routed to their homes, the board and story file flipped, the context budget trimmed. It lands nothing and moves no ticket. |
 | `/cicd-merge-epic-workingtrees` | Lands **all** of one epic's finished lanes in a single reviewed pass. Ends at the epic branch. |
 | `/smh-merge-multiple-workingtrees` | The Task-lane sibling: lands **several** finished `chore/*` lanes on `main`, one merge at a time. Derives the order from measured overlap, classifies every shared file (ledger · rewrite-vs-edit · modify-delete · gate-or-script), forces lanes that change commit or push machinery LAST, honours cross-repo dependencies, and ends with a **combined gate on `main`** — the only run that sees the whole set together. **Stops before every merge:** a Task lane lands on production directly, so N lanes are N sign-offs. |
-| `/cicd-close-workingtree` | The janitor. Confirms the branch really merged, then removes the workspace and deletes the branch. Both close-outs call it automatically. |
+| `/cicd-prune-worktree` | The janitor. Confirms the branch really merged, then removes the workspace and deletes the branch. It moves no code; both close-outs call it automatically. |
 | `/cicd-e2e` | Runs the real end-to-end suite — a complete stand-in for the live app, with test users. Green means safe to ship. |
 | `/cicd-push-e2e` | The one shipping command — the only road an epic takes to `main`. **Refuses to run** until the end-to-end suite is green. After the merge it comments the evidence on the epic's Jira ticket and moves it to **Done**. |
 | `/smh-close-task-merge-tree` | **The Task lane's close-out.** Gate, merge to `main` with `--no-ff`, one Dev Record, ticket → Done, prune. **Typing it IS your merge sign-off.** Refuses the moment a deployable path is in the diff and hands the work to `/cicd-push-e2e`, with no override flag. Since SCC-94 it also refuses on a **secondary repo's** state — unreachable, dirty, unpushed, wrong ticket project, or a rotted memory store — and warns when the other half has not landed yet ([§7](#7-landing-and-shipping--the-close-out-family)). |

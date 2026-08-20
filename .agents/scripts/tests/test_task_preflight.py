@@ -124,7 +124,7 @@ def main() -> int:
     # ── Wrong lane: each refusal must name the command that IS right ──
     if c.block("Wrong lane: each refusal must name the command that IS right"):
         for name, expect in (("epic/SCC-11-thing", "/cicd-push-e2e"),
-                             ("claude/SCC-11-thing", "/cicd-update-sprint-memory")):
+                             ("claude/SCC-11-thing", "/cicd-close-story-merge-tree")):
             with TempDir() as t:
                 repo = make_repo(t)
                 branch(repo, name, {"docs/x.md": "x\n"})
@@ -145,7 +145,8 @@ def main() -> int:
             c.check("SCC-148 claude/incident-* (the real shape) is refused", code == 2,
                     f"exit {code}")
             c.check("SCC-148 ...naming /cicd-mobile-error-team, never the story close-out",
-                    "/cicd-mobile-error-team" in out and "/cicd-update-sprint-memory" not in out,
+                    "/cicd-mobile-error-team" in out
+                    and "/cicd-close-story-merge-tree" not in out,
                     out.strip()[-300:])
 
         # ── SCC-148: WRONG_LANE table integrity. An entry can die two ways, and each gets its

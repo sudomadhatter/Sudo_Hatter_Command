@@ -63,7 +63,7 @@ the sign-off; a spoken "looks good" is not, and no agent merges to `main` on its
 
 | Lane | Door |
 |---|---|
-| story lane on `claude/*` | the epic branch, at close-out — `/cicd-update-sprint-memory`, then the epic ships via `/cicd-push-e2e` |
+| story lane on `claude/*` | the epic branch, at close-out — `/cicd-close-story-merge-tree`, then the epic ships via `/cicd-push-e2e` |
 | chore lane in a **project repo** | ⚠ **there is none — state that and hand back** |
 
 ⛔ **There is no command-centre row, and that is not an omission.** This command binds
@@ -228,7 +228,7 @@ patch → HALT** (and see Step 1.5). Re-run the affected check after applying fi
 
 ## Step 4.5 — File the Dev Record on the ticket (AUTOMATIC, never ask)
 This lane **closes its own branch**, and the ad-hoc chore lane never reaches
-`/cicd-update-sprint-memory` at all — so this is the only place its knowledge gets recorded. Before
+`/cicd-close-story-merge-tree` at all — so this is the only place its knowledge gets recorded. Before
 SCC-49 it died in the walkthrough. Runs AFTER Step 4 so the walkthrough it points at exists. The key is
 already in hand: the story's `jira_key:` frontmatter on the story lane, or the `<JIRA-KEY>` in the
 `chore/<JIRA-KEY>-<slug>` branch name on the ad-hoc lane.
@@ -242,13 +242,13 @@ python3 .agents/scripts/jira_feed.py devrecord --key <JIRA-KEY> --story <THE ONE
 ```
 
 **Exactly one Dev Record per ticket.** The script finds an existing record and UPDATES it in place, so
-a story that later goes through `/cicd-update-sprint-memory` ends with one current record instead of
+a story that later goes through `/cicd-close-story-merge-tree` ends with one current record instead of
 two partial ones — **never pass `--append-new` here.**
 
 ⛔ **`--story` is the fork risk, and `<id-or-slug>` was the fork.** `devrecord` decides
 update-vs-create from the **slug**, never from `--key`, so two surfaces spelling one lane two ways
 give one ticket two records — and `check` then blesses the pair as "two lanes". That is AVCH-59,
-measured 2026-08-15. `/cicd-update-sprint-memory` passes `--story <id>`, meaning the **BMAD story id**,
+measured 2026-08-15. `/cicd-close-story-merge-tree` passes `--story <id>`, meaning the **BMAD story id**,
 so this step must pass **the same story id, character for character** — never the branch slug, never a
 free-text description. On the ad-hoc lane there is no story id: pass the **branch slug** from
 `chore/<JIRA-KEY>-<slug>`, and pass that identical string at every later surface.
@@ -262,6 +262,6 @@ success. No ticket key at all (a fix outside any ticket) → say so in the Done 
 **never invent a key.** Full acli reference: `.agents/rules/jira.md`.
 
 ## Done
-Stop here. Do **NOT** run `/cicd-update-sprint-memory`, never land on the epic branch (close-out's job),
+Stop here. Do **NOT** run `/cicd-close-story-merge-tree`, never land on the epic branch (close-out's job),
 never touch `main`. Display the spec path, the walkthrough link, the key changes, and the review-gate
-output, then invite Daniel to review and run `/cicd-update-sprint-memory` himself when satisfied.
+output, then invite Daniel to review and run `/cicd-close-story-merge-tree` himself when satisfied.

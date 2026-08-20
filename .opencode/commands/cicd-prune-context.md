@@ -18,8 +18,8 @@ re-resolve.) Set `PROJECT_ROOT` and **echo exactly** `Target: Projects/<name>` b
 ## The budget
 - **`active-context.md` has a hard CONTEXT budget: ≤ 20 KB ≈ 5,000 tokens.** Lines are NOT the metric —
   context is. **Measure: file size in bytes ÷ 4**; report **`active-context: ~X / 5,000 tokens`** every
-  run (the close-out carries this line into its Step 6 summary). Over budget → prune **in this same
-  pass**, one-in-one-out: adding an entry means compacting/archiving another.
+  run (the save carries this line into its Step 6 summary, and the door into its own). Over budget →
+  prune **in this same pass**, one-in-one-out: adding an entry means compacting/archiving another.
 
 ## Prune = two moves — deletion is the normal outcome, not a failure
 1. **Still-live state** → compact to a ≤3-line pointer (outcome · STILL-OWED · pointer), keep.
@@ -55,7 +55,7 @@ mandatory copy step; checked (with git history) only when something feels previo
 
 ## Done
 Report: the **`active-context: ~X / 5,000 tokens`** line, what was compacted vs deleted vs archived
-(counts + one-liners), and any STILL-OWED pointers that survived a cut. Nothing else — status flips,
-learnings routing, and git belong to `/cicd-update-sprint-memory`.
+(counts + one-liners), and any STILL-OWED pointers that survived a cut. Nothing else — status flips and
+learnings routing belong to `/cicd-update-sprint-memory`, and git to `/cicd-close-story-merge-tree`.
 
 Optional additional input: $ARGUMENTS

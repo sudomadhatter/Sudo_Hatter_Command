@@ -141,7 +141,7 @@ acli jira workitem transition --key <JIRA-KEY> --status "Done" --yes
 positionally. **`--yes` is not optional**: without it acli stops on an interactive confirm no
 agent shell can answer, and this line shipped without it until SCC-113.) Full acli reference:
 `.agents/rules/jira.md`. Transition the EPIC ticket only — child stories were already moved one-by-one at their
-close-outs by `/cicd-update-sprint-memory`. If Step 1's sanity check was honest, they are all `Done`
+close-outs by `/cicd-close-story-merge-tree`. If Step 1's sanity check was honest, they are all `Done`
 before this runs; if the transition fails because children are open, that is the sanity check telling
 you it was skipped — go run the close-outs, do not force the epic.
 

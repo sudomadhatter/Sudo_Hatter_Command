@@ -72,6 +72,7 @@ on_complete = """STOP. Do not write your final chat message yet — two things m
    written with IsArtifact=true, linking the spec, and carrying its `Verdict:` line. If it is missing or
    in the wrong store, create/move it now.
 
-Then STOP for human review. Do NOT run /cicd-update-sprint-memory, do NOT flip a story to `done`, do NOT
-land on the epic branch, do NOT touch `main` — those are the human's. Close by displaying the spec path,
-a clickable link to the walkthrough, the key changes, and the actual review-gate output."""
+Then STOP for human review. Do NOT run /cicd-close-story-merge-tree, do NOT run /cicd-update-sprint-memory
+or flip a story to `done`, do NOT land on the epic branch, do NOT touch `main` — those are the human's.
+Close by displaying the spec path, a clickable link to the walkthrough, the key changes, and the actual
+review-gate output."""

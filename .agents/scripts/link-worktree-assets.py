@@ -30,7 +30,7 @@ Two things worth holding, both reported at runtime:
 
 ⛔ --unlink MUST run before the worktree is removed. A recursive delete THROUGH a junction walks into
 the real directory and destroys the shared target, not just the link. `git worktree remove` does a
-recursive delete. This is why /smh-close-task-merge-tree Step 5 and /cicd-close-workingtree Step 3 unlink
+recursive delete. This is why /smh-close-task-merge-tree Step 5 and /cicd-prune-worktree Step 3 unlink
 first, every time.
 """
 
@@ -198,7 +198,7 @@ def do_unlink(worktree: Path) -> int:
     """⛔ ENUMERATE, never assume.
 
     Working from a list of "the assets I linked" is wrong for two independent reasons, both learned
-    the hard way (see /cicd-close-workingtree Step 3): lanes link more than this script knows about,
+    the hard way (see /cicd-prune-worktree Step 3): lanes link more than this script knows about,
     and TOOLS plant their own — Next.js/Turbopack creates junctions under frontend/.next/ just by
     running the dev server. A missed reparse point is not a cosmetic leak: the recursive delete that
     follows walks through it and destroys the shared target.

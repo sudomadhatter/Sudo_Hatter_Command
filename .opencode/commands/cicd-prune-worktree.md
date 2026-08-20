@@ -1,8 +1,12 @@
 ---
-description: Safely verify a story branch has been merged into its epic branch, preserve any uncommitted work, then prune EVERY stale worktree on disk and delete both local and remote (GitHub) branches. Sweeps all trees, not just the named slug.
+description: The story lane's disk utility — it MOVES NO CODE. Verify a story branch has already been merged into its epic branch, preserve any uncommitted work, then prune EVERY stale worktree on disk and delete both local and remote (GitHub) branches. Sweeps all trees, not just the named slug. Called by /cicd-close-story-merge-tree and by /cicd-merge-epic-workingtrees; type it yourself only when a cleanup was skipped or failed.
 ---
 
-# /cicd-close-workingtree — Close & Prune Merged Worktree & Branches
+# /cicd-prune-worktree — Prune a Merged Worktree & Its Branches
+
+> **Named for its job (SCC-210).** Its old name read like a close-out; this is not one. It verifies a landing that
+> has already happened and then cleans up. The command that closes a story out is
+> **`/cicd-close-story-merge-tree`**, and this is its last step.
 
 Safely clean up story worktrees and their git branches (`claude/<JIRA-KEY>-<story-slug>`) after a story has landed on
 its epic branch (`epic/<JIRA-KEY>-<slug>`).
@@ -24,10 +28,14 @@ Echo `Target: Projects/<name> | Story: <story-slug>` before proceeding.
 ## Step 0.6 — Preflight first (fast pre-check — it does NOT replace the gates below)
 
 ```bash
-python3 .agents/scripts/closeout_preflight.py --story <id> --project <PROJECT> --fetch --branch <name>
+python3 .agents/scripts/closeout_preflight.py --story <id> --project <PROJECT> \
+       --expect-key <JIRA-KEY> --branch <name>
 ```
 
-**Pass `--branch` explicitly, and check the target it echoes before reading its result.** This command
+**Pass `--expect-key` and `--branch` explicitly, and check the target it echoes before reading its result.**
+Since SCC-210 the key check is mechanical rather than a habit: the resolved branch must carry the key you named,
+or the preflight errors — the same guard `task_preflight.py` has required since the 2026-08-09 failure. A verdict
+carrying **STALE** was computed against the last fetch, not the remote; re-run without `--no-fetch` before removing anything. This command
 runs when worktrees are open by definition, and that is exactly when `cwd` stops matching intent — the
 script walks up from `cwd` for `.git` and defaults to that repo's `HEAD`, so a sibling lane that moved the
 shared checkout silently becomes the target, with every check reported honestly about the wrong branch
@@ -61,7 +69,7 @@ git merge-base --is-ancestor claude/<JIRA-KEY>-<story-slug> origin/epic/<JIRA-KE
 - **Exit code 0**: the branch is fully merged into `origin/epic/<JIRA-KEY>-<slug>`. Proceed to Step 1.6.
 - **Non-zero**: **STOP IMMEDIATELY!**
   Print: `❌ Refusing to delete: claude/<JIRA-KEY>-<story-slug> is NOT fully merged into origin/epic/<JIRA-KEY>-<slug>.`
-  Instruct: `Land the story first using /cicd-update-sprint-memory or git merge to origin/epic/<JIRA-KEY>-<slug>.`
+  Instruct: `Land the story first using /cicd-close-story-merge-tree or git merge to origin/epic/<JIRA-KEY>-<slug>.`
 
 **Record this result per branch.** Step 5 deletes branches, and it may ONLY delete a branch that passed this
 check. A tree can be safe to remove while its branch is not safe to delete — those are different questions.
@@ -145,7 +153,7 @@ Per tree, in order — first match wins:
      drift check anywhere. Naming it is the only thing that surfaces it.
    - Not found → **STOP** (below).
 4. **Status is `review` / `in-progress` / `backlog`, or nothing corroborates** → **STOP.** Print:
-   `❌ <slug> is merged but not closed out (status: <x>). Run /cicd-update-sprint-memory first, then re-run.`
+   `❌ <slug> is merged but not closed out (status: <x>). Run /cicd-close-story-merge-tree first, then re-run.`
    Leave the tree and the branch exactly as they are.
 
 ⛔ **This gate has exactly two outcomes: AUTHORIZED, or a STOP with a named reason and the fix.** There is
@@ -153,8 +161,8 @@ no third "the board looks ambiguous, checking with you" branch — that is the p
 remove, and re-introducing it recreates the very problem it was written for. Ambiguity resolves to the STOP
 in (4), stated as a refusal, never as a question.
 
-**Normal path cost: zero.** `/cicd-update-sprint-memory` Steps 1–7 flip the status, write the board and
-land the code before Step 8 ever calls this command — so the gate is satisfied by construction. It only
+**Normal path cost: zero.** `/cicd-close-story-merge-tree` Steps 1–3 flip the status, write the board and
+land the code before its Step 5 ever calls this command — so the gate is satisfied by construction. It only
 bites when the prune is run standalone against something that was never actually closed out. Which is
 exactly when it should.
 

@@ -284,7 +284,7 @@ def main() -> int:
         # ── SCC-205: the WINDOWS-ONLY invocation ─────────────────────────────
         # The venv bin dir is the one path that differs on every tool call between the two
         # machines this system runs on. Five authored surfaces hardcoded `Scripts/`, and the
-        # worst of them was `cicd-close-workingtree`'s Step 4 probe: it guards an
+        # worst of them was `cicd-prune-worktree`'s Step 4 probe: it guards an
         # IRREVERSIBLE delete, and on the Mac it reported a destroyed shared venv that was
         # never touched. A probe that cries wolf on the destructive step is one people learn
         # to skip.

@@ -30,7 +30,7 @@ The full sudo loop is **not** wrong — it's the deluxe path. The insight from 8
 
 | Story type | Minimum flow | What you skip | Never skip |
 |---|---|---|---|
-| **Test-only gap story** (tea-12, 13, 14, 15, 17, 18) | `/bmad-testarch-automate` → `/bmad-testarch-test-review` | Full 3-layer `/bmad-code-review` (no production diff to hunt); per-story trace + nfr | Keyless full-suite run (`GEMINI_API_KEY="" pytest backend/tests/`) as the zero-new-regression proof; `/cicd-update-sprint-memory` close-out |
+| **Test-only gap story** (tea-12, 13, 14, 15, 17, 18) | `/bmad-testarch-automate` → `/bmad-testarch-test-review` | Full 3-layer `/bmad-code-review` (no production diff to hunt); per-story trace + nfr | Keyless full-suite run (`GEMINI_API_KEY="" pytest backend/tests/`) as the zero-new-regression proof; `/cicd-close-story-merge-tree` close-out |
 | **E2E new-dev** (tea-16) | `/bmad-testarch-automate` (it levels tests: E2E/API/component/unit) → `/bmad-testarch-test-review` | `bmad-testarch-framework` — **do NOT re-run it**: Playwright config + CI job exist since 11.16; framework would re-scaffold, not audit | Same as above + the specs must run green in the blocking `frontend-e2e` CI job |
 | **Normal feature story** (product code changes) | `/bmad-testarch-atdd` (red) → `/bmad-dev-story` (green) → `/bmad-code-review` | The sudo wrappers' plan/self-audit ceremony — *if* the story is small and off the P0 surface | An implement step in the middle — atdd→review alone builds nothing |
 | **P0-surface feature story** (touches A1–A9 areas) | The **full sudo loop** (bdd → write → audit → dev → review) | Nothing | The armed gate (`sudo-tests.yaml`) exists precisely for these |
@@ -65,7 +65,7 @@ One caveat carried from the TEA stories: if a test-only story turns out to need 
 There are **two layers** with **two cadences** — don't confuse them.
 
 1. **Test *design* — the planning layer (runs once per scope).** `bmad-testarch-test-design`, driven by Murat (the Master Test Architect), ranks what can hurt you (P0–P3) and emits scoped stories with acceptance criteria. You run it **once per body of work**, up front — not per story.
-2. **The `cicd-` story loop — the execution layer (runs once per story).** `/cicd-write-story-tests` (① create story → **BDD Vision Lock, mandatory** — `/cicd-bdd-tests` fires inside it; contract or *recorded* waiver stamped in story frontmatter → red ATDD) → `/cicd-self-audit` (plan pressure-test) → `/cicd-dev-story-tests` (② **hard-gates on the BDD record**, then green — executed inside the OpenHands Docker sandbox) → `/cicd-code-review` (gate) → `/cicd-update-sprint-memory` (your sign-off). `/cicd-bdd-tests` is also runnable standalone to lock/waive a story whose file already exists.
+2. **The `cicd-` story loop — the execution layer (runs once per story).** `/cicd-write-story-tests` (① create story → **BDD Vision Lock, mandatory** — `/cicd-bdd-tests` fires inside it; contract or *recorded* waiver stamped in story frontmatter → red ATDD) → `/cicd-self-audit` (plan pressure-test) → `/cicd-dev-story-tests` (② **hard-gates on the BDD record**, then green — executed inside the OpenHands Docker sandbox) → `/cicd-code-review` (gate) → `/cicd-close-story-merge-tree` (your sign-off — it runs the `/cicd-update-sprint-memory` save). `/cicd-bdd-tests` is also runnable standalone to lock/waive a story whose file already exists.
 
 ### Do I re-run all of this for a new epic?
 
@@ -77,7 +77,7 @@ A **new epic** going forward is much lighter:
 New epic
   └─ bmad-testarch-test-design   (scoped to THAT epic's handful of stories — fast)
        └─ for each story:  /cicd-write-story-tests (create → BDD Vision Lock → red) → /cicd-self-audit
-                            → /cicd-dev-story-tests (BDD gate → green) → /cicd-code-review → /cicd-update-sprint-memory
+                            → /cicd-dev-story-tests (BDD gate → green) → /cicd-code-review → /cicd-close-story-merge-tree
 ```
 
 Test design is **risk-proportional**, not mandatory ceremony. A high-stakes epic (FAA accuracy, Sully safety, auth) earns the full design pass; a low-risk epic (a settings page, a copy change) can skip straight to the sudo loop with a one-line risk note. The design skill has **Create / Resume / Validate / Edit** modes so you can revise an old plan instead of starting cold — and each epic gets cheaper as this retrofit hardens the foundation (armed gate, coverage floor, schema-contract pattern).
@@ -687,7 +687,7 @@ The retrofit is a two-lane operation. The agents do the mechanical, repeatable w
 - **Set the coverage number.** The mentor said 85%; today it is unmeasured and `l1_coverage_min` is `0.0`. After Step 1 wires coverage, *you* pick the first floor at the measured baseline (it must only ratchet up).
 - **Curate the FAA adversarial fixtures and judge rubrics (P6/P8).** Wrong-FAA-query cases and LLM-judge rubrics need aviation-regulatory judgment; the agents run them, *you* author what counts as wrong. The empty `evals/` dir is your fill.
 - **Decide ruleset sync scope (P9/P10).** Project-local `sudo-tests.yaml`/`testing-standards.md`, or propagate to master `.agents/` for all projects. Editing master `.agents/` auto-syncs everywhere; default project-local and ask first.
-- **Do the L4 review.** `/cicd-update-sprint-memory` treats *your invocation* as the sign-off that flips a story `review → done`; only objectively-red gate tests block you.
+- **Do the L4 review.** `/cicd-close-story-merge-tree` treats *your invocation* as the sign-off, and the `/cicd-update-sprint-memory` save it runs flips the story `review → done`; only objectively-red gate tests block you.
 
 **The agents' lane (the mechanical work):**
 
@@ -748,9 +748,9 @@ The pure layer reviewed clean. The adversarial pass on the impure runner found *
 
 All four gate checks PASS (suite baseline-diff-aware · trace · nfr · test-review). **Verdict: PASS** (artifact: `_bmad-output/implementation-artifacts/sudo-code-review-tea-9-tia-ci.md`, HEAD `9825e91`). Evidence recorded: 28/28 TIA tests green post-fix (0.17s); a live `--dry-run` still failed safe (`RUN_ALL` / `STALE_INDEX`, indexed `1fc85d1` ≠ head `9825e91`); the ② full-suite baseline was **2316 passed / 2 skipped / 0 failed** — and since the edit is confined to the untested-but-reviewed `gate.py` (imported by nothing; `select.py` untouched), that's **0 new regressions**.
 
-### Close-out — `/cicd-update-sprint-memory`
+### Close-out — `/cicd-close-story-merge-tree`
 
-Daniel's invocation **is** the sign-off. Because the verdict wasn't FAIL, the story flipped `review → done` in **both** the story frontmatter and `sprint-status.yaml`; learnings routed to memory; active-context pruned. TEA-9 was the last story, so **this close-out closed the entire retrofit.**
+Daniel's invocation **is** the sign-off. Its Step 1 is the `/cicd-update-sprint-memory` save: because the verdict wasn't FAIL, the story flipped `review → done` in **both** the story frontmatter and `sprint-status.yaml`; learnings routed to memory; active-context pruned. TEA-9 was the last story, so **this close-out closed the entire retrofit.**
 
 ### What TEA-9 teaches (the transferable lessons)
 
@@ -780,7 +780,8 @@ Daniel's invocation **is** the sign-off. Because the verdict wasn't FAIL, the st
 | `/cicd-write-story-tests` | ① Create story + write failing acceptance tests | After boot picks a not-started story |
 | `/cicd-dev-story-tests` | ② Plan → self-audit → implement → automate | After ① |
 | `/cicd-code-review` | ③ Review + the test gate → one verdict artifact | After ② |
-| `/cicd-update-sprint-memory` | Close-out: flip story → done, route learnings, prune | Last step closing a story/session |
+| `/cicd-close-story-merge-tree` | Close-out door: runs the save, commits it, lands the story on its epic branch, files the Dev Record, moves the ticket → Done, prunes the tree | Last step closing a story |
+| `/cicd-update-sprint-memory` | The save the door runs — also standalone: flip story → done, route learnings, prune context | When you want the session save without a landing |
 | `regulatory-verification-protocol` | Citation-accuracy doctrine for FAA fixtures (P6) | Before authoring adversarial fixtures |
 
 ### The `sudo-tests.yaml` dial

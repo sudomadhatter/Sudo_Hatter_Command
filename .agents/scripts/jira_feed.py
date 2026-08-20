@@ -29,7 +29,7 @@ Two invariants this file exists to hold, because prose could not:
    in ...)" line and warns; it never gets filled in with something plausible.
 2. **One Dev Record per ticket, always current.** `devrecord` looks for an existing record
    first and UPDATES it rather than stacking a second one. Both `/cicd-quick-dev` (which
-   closes its own branch) and `/cicd-update-sprint-memory` (which closes the story) post
+   closes its own branch) and `/cicd-close-story-merge-tree` (which closes the story) post
    through here, and before this they would have produced two records of the same work.
    ⛔ It finds that record by the **slug**, never by `--key` - so on a Task lane the slug comes
    from ONE place, the lane's `task.yaml branch:`, and `--story` is left off. Two spellings of
@@ -574,7 +574,7 @@ def record_story_id(comment: dict) -> str:
     Two records on one ticket is TWO different situations and only one of them is a defect
     (SCC-113):
 
-      * one id, two records - /cicd-quick-dev closed the branch and /cicd-update-sprint-memory
+      * one id, two records - /cicd-quick-dev closed the branch and /cicd-close-story-merge-tree
         closed the story and both posted. That is the failure SCC-49 wrote `check` for.
       * two ids, one record each - two LANES on one ticket. `find_devrecord` filters by id on
         purpose, exactly "so a ticket that legitimately carries records for two ids does not

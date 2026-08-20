@@ -1,0 +1,64 @@
+{
+ "test": [
+  "python3",
+  ".agents/scripts/tests/test_closeout_preflight.py"
+ ],
+ "mutants": [
+  {
+   "id": "M1 a branch carrying the WRONG key only warns",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "rep.err(\"intent\", f\"--expect-key {expect} but the resolved branch(es) carry \"",
+   "mutated": "rep.warn(\"intent\", f\"--expect-key {expect} but the resolved branch(es) carry \"",
+   "case": "EK1 --expect-key SCC-11 aimed at claude/SCC-22-sibling ERRORs, naming the key MEANT and the key FOUND",
+   "block": "CP-EK"
+  },
+  {
+   "id": "M2 a branch with NO key segment goes quiet (info, not warn)",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "rep.warn(\"intent\", f\"--expect-key {expect}: {', '.join(bare)} carries no key \"",
+   "mutated": "rep.info(\"intent\", f\"--expect-key {expect}: {', '.join(bare)} carries no key \"",
+   "case": "EK3 a pre-Jira branch with NO key segment WARNs - never errors, and never goes quiet",
+   "block": "CP-EK"
+  },
+  {
+   "id": "M3 the unfetched path is a FOOTNOTE (info) again",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "rep.warn(\"sync\", f\"{label}: --no-fetch, so ahead/behind is vs the LAST fetch, \"",
+   "mutated": "rep.info(\"sync\", f\"{label}: --no-fetch, so ahead/behind is vs the LAST fetch, \"",
+   "case": "FR3 the unfetched path WARNs rather than INFOs - a stop, not a footnote",
+   "block": "CP-FR"
+  },
+  {
+   "id": "M4 --no-fetch no longer costs freshness",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "                         f\"not the remote\")\n        fresh = False",
+   "mutated": "                         f\"not the remote\")\n        fresh = True",
+   "case": "FR2 with --no-fetch the VERDICT line ITSELF carries STALE",
+   "block": "CP-FR"
+  },
+  {
+   "id": "M5 the verdict line stops reading freshness",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "    elif not fresh:",
+   "mutated": "    elif False:",
+   "case": "FR2 with --no-fetch the VERDICT line ITSELF carries STALE",
+   "block": "CP-FR"
+  },
+  {
+   "id": "M6 memory dirt folded back into the generic count",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "        rest = [ln for ln in lines if ln not in mem]",
+   "mutated": "        rest = lines",
+   "case": "MEM1 the generic uncommitted count EXCLUDES the memory file (1, not 2)",
+   "block": "CP-MEM"
+  },
+  {
+   "id": "M7 the memory row splits but LOSES the park-or-leave ruling",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "f\"if ANOTHER session wrote them, park or leave them: never sweep, \"",
+   "mutated": "f\"if ANOTHER session wrote them, handle with care: consider whether to \"",
+   "case": "MEM2 the memory file gets its OWN finding, carrying the park-or-leave ruling",
+   "block": "CP-MEM"
+  }
+ ]
+}

@@ -144,7 +144,7 @@ files, per §3); full model →
   chore lane beside a story lane collides exactly as hard). What differs by lane is the **branch and its
   base, never whether you isolate**: a story lane takes `claude/<KEY>-<slug>` off **the story's epic
   branch** (`epic/<KEY>-<slug>`, never `main`), ad-hoc/Task work takes `chore/<KEY>-<slug>` off `main`.
-  Each is pruned by its own close-out — `/cicd-close-workingtree` for a story, `/smh-close-task-merge-tree`
+  Each is pruned by its own close-out — `/cicd-close-story-merge-tree` for a story, `/smh-close-task-merge-tree`
   Step 5 for a Task. Commits stay explicit-path (`git add -A`/`.`/`-u` banned). Read-only sessions and a
   single trivial edit the operator is watching are exempt. A fresh tree does not inherit gitignored
   assets (`.env`, `auth_keys/`, `.venv`, `node_modules`) — run `.agents/scripts/link-worktree-assets.py`,
@@ -157,7 +157,7 @@ files, per §3); full model →
   `.agents/rules/worktree-per-story.md`.
 - **GIT WRITE APPROVAL — the gate is WHERE a write lands.** FREE: your own `claude/*` or `chore/*`
   branch — commits **and** pushes. SIGN-OFF (per-action, never carries): landing on **the epic branch** —
-  Daniel's in-the-moment "approved", or invoking `/cicd-update-sprint-memory` (its Step 7 does the
+  Daniel's in-the-moment "approved", or invoking `/cicd-close-story-merge-tree` (its Step 3 does the
   landing; invoking it IS the sign-off). OWNER-ONLY: **`main`** — only via `/cicd-push-e2e` (epic merge,
   full gate) or Daniel's direct ask. Full branch model + enforcement → `.agents/rules/git-policy.md`
   (web/mobile → `mobile-mode.md`).

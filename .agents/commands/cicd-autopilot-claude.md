@@ -221,9 +221,9 @@ Thinking is always-on, so `--effort` (not "think hard" keywords) is the depth co
   the whole run folder live under it. Two things this buys, and they are the point:
   **isolation** (concurrent stories can no longer see — or red-test against — each other's half-finished
   edits; before this the only guard was a prompt line asking agents to ignore files they did not
-  recognise), and **a landable result** (`/cicd-update-sprint-memory` Step 7 requires a `claude/*` HEAD,
+  recognise), and **a landable result** (`/cicd-close-story-merge-tree` Step 3 requires a `claude/*` HEAD,
   so before this it would refuse to close an autopilot story at all). A resume re-binds to the SAME tree,
-  matched on the story slug — it never cuts a second one. Pruning stays `/cicd-close-workingtree`'s job.
+  matched on the story slug — it never cuts a second one. Pruning stays `/cicd-prune-worktree`'s job.
 - **Gitignored assets do not travel into a worktree**, so the engine bootstraps them: `auth_keys/` and
   the `.env` files are copied in, `frontend/node_modules` is junctioned at the shared checkout's copy,
   and the test gate falls back to the shared checkout's `backend/.venv` interpreter. A venv and
@@ -239,7 +239,7 @@ Thinking is always-on, so `--effort` (not "think hard" keywords) is the depth co
 - **The orchestrator commits; the agents never touch git.** On a clean COMPLETE the script stages
   **explicit paths** (enumerated and printed — never `git add -A`/`.`/`-u`) and commits inside the
   worktree with a Jira-keyed subject, so the armed `commit-msg` gate passes. It **never pushes**, never
-  touches `main`, and never marks a story `done` — landing and closing are `/cicd-update-sprint-memory`'s.
+  touches `main`, and never marks a story `done` — landing and closing are `/cicd-close-story-merge-tree`'s.
   A hook that rejects the commit leaves the work **staged**, and the hook's own message is printed.
   `-NoCommit` skips it.
 - **The ticket moves too.** On green the orchestrator files the Dev Record through the command center's
@@ -254,8 +254,9 @@ Thinking is always-on, so `--effort` (not "think hard" keywords) is the depth co
    the top - AND `decisions-log.md` (every choice the team made on your behalf). Both are in the run
    folder **inside the story worktree**; so is the code. The ticket is at **In Review** with its Dev Record.
 2. Answer any open questions. The story is already at **`review`** and the work is already **committed**
-   on its `claude/*` branch. Run `/cicd-update-sprint-memory` — it lands the branch on the epic branch,
-   flips `review -> done`, and prunes the tree via `/cicd-close-workingtree`.
+   on its `claude/*` branch. Run `/cicd-close-story-merge-tree` — it runs the `/cicd-update-sprint-memory`
+   save (which flips `review -> done`), lands the branch on the epic branch, and prunes the tree via
+   `/cicd-prune-worktree`.
 3. Nothing to commit by hand. If the run reported `COMMIT REJECTED`, the work is staged in the tree —
    read the hook message, fix it, and commit there.
 

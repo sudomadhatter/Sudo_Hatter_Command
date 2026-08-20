@@ -1,5 +1,5 @@
 ---
-description: Close out TASK work — a `chore/<JIRA-KEY>-<slug>` branch that never got an epic and a story, so BMAD's `/cicd-update-sprint-memory` cannot close it. Preflights mechanically (branch shape, clean+pushed, main absorbed, and THE LANE — did anything deployable change?), runs the gate the lane selects, then OPENS A PULL REQUEST AND STOPS: it never merges. The operator's DECISION to proceed is the sign-off (the word approved, or invoking this command or /cicd-push-e2e); their click on Merge pull request is how that decision reaches GitHub, gated by the main-write-gate check. Re-invoked as `--after-merge <KEY>` it verifies the merge with plain git, files the Jira Dev Record, moves the Task to Done, and prunes the worktree AND the branch (SCC-62 — unlink assets before removing the tree; a recursive delete through a junction eats the shared targets). Refuses the moment a deployable path is in the diff and hands the work to `/cicd-push-e2e`.
+description: Close out TASK work — a `chore/<JIRA-KEY>-<slug>` branch that never got an epic and a story, so BMAD's `/cicd-close-story-merge-tree` cannot close it. Preflights mechanically (branch shape, clean+pushed, main absorbed, and THE LANE — did anything deployable change?), runs the gate the lane selects, then OPENS A PULL REQUEST AND STOPS: it never merges. The operator's DECISION to proceed is the sign-off (the word approved, or invoking this command or /cicd-push-e2e); their click on Merge pull request is how that decision reaches GitHub, gated by the main-write-gate check. Re-invoked as `--after-merge <KEY>` it verifies the merge with plain git, files the Jira Dev Record, moves the Task to Done, and prunes the worktree AND the branch (SCC-62 — unlink assets before removing the tree; a recursive delete through a junction eats the shared targets). Refuses the moment a deployable path is in the diff and hands the work to `/cicd-push-e2e`.
 platforms: [opencode, antigravity]
 ---
 
@@ -17,11 +17,12 @@ platforms: [opencode, antigravity]
 > - `.agents/rules/artifacts-always-first.md` — the plan is skippable on this lane; the closing
 >   `walkthrough.md` is **not**, and the preflight blocks without it
 
-**The Task lane's close-out.** The story lane ends at `/cicd-update-sprint-memory`, which reads a
-sprint board, flips a story status and lands on an epic branch. **Task** work has none of those —
-no epic, no story file, no board row, often no board at all — so that command has nothing to
-operate on. This is the missing half: the same close-out obligations (record what was learned,
-move the ticket, land the code, prune the branch) for work organised as a Task.
+**The Task lane's close-out.** The story lane ends at `/cicd-close-story-merge-tree`, whose save
+(`/cicd-update-sprint-memory`) reads a sprint board and flips a story status before the door lands
+the work on an epic branch. **Task** work has none of those — no epic, no story file, no board row,
+often no board at all — so that command has nothing to operate on. This is the missing half: the
+same close-out obligations (record what was learned, move the ticket, land the code, prune the
+branch) for work organised as a Task.
 
 > **Story or Task?** One rule, one implementation — `jira_feed.py work_type()`, documented in
 > `.agents/rules/jira.md` §Work-item types. **Story** = BMAD sprint work (a dotted number, a
@@ -645,7 +646,7 @@ worktree still holds the branch, which is why the tree goes first.
 `git worktree add` at the same path; only a PowerShell delete clears it.
 
 If the tree belongs to a **story** lane (`claude/*`) rather than this Task, it is not yours to prune —
-`/cicd-close-workingtree` owns that one. Leave it and say so.
+`/cicd-prune-worktree` owns that one. Leave it and say so.
 
 ## Step 6 — Verify, THEN report
 

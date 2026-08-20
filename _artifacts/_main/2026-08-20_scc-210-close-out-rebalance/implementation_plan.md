@@ -282,8 +282,15 @@ interpreter-neutral by construction (`run_all.py` already runs on both machines)
 - EDIT `.agents/workflows/smh-merge-multiple-workingtrees.md` — regenerated mirror → B
 - EDIT `.opencode/agent/bmad-sm.md` — regenerated mirror → A
 - EDIT `.opencode/agent/opus-reviewer.md` — regenerated mirror → A
+- EDIT `_artifacts/_main/INDEX.md` — ⚠️ AMENDMENT (2026-08-20, during build): this lane's own session row. `test_check_maps.py`
+  F2 fails without it (`missing row for 2026-08-20_scc-210-close-out-rebalance/ - add the INDEX row before closing out`),
+  so the batch-reconcile note in `artifacts-always-first` does not cover a lane's own folder — the gate is the authority → A
 - NEW `_artifacts/_main/2026-08-20_scc-210-close-out-rebalance/walkthrough.md` — the closing doc → A
-- NEW `_artifacts/_main/2026-08-20_scc-210-close-out-rebalance/sweep.json` — the mutant table → C
+- NEW `_artifacts/_main/2026-08-20_scc-210-close-out-rebalance/sweep-preflight.json` — ⚠️ AMENDMENT: the mutant
+  table is TWO files, not one — `mutation_sweep.py` takes a single `test` per table, and this ticket has two
+  test files. 7 mutants against `closeout_preflight.py` → H, I, J
+- NEW `_artifacts/_main/2026-08-20_scc-210-close-out-rebalance/sweep-doors.json` — ⚠️ AMENDMENT: 8 mutants against
+  the three command bodies and the preflight's argparse → A, B, C, E, K
 
 > ⚠️ AUDIT FINDING F1 (applied): every regenerated mirror is declared **by path** — `declared_change_set.py diff`
 > is per-file (`undeclared = changed − declared`, [:135](.agents/scripts/declared_change_set.py#L135)), so a

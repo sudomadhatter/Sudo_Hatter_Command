@@ -9,7 +9,7 @@ Thin orchestrator — calls two existing workflows back-to-back so a story arriv
 tests already written and **failing**. Tests-first, before any dev. Project-scoped (targets THIS repo).
 
 > Flow position: `cicd-boot-sprint-memory` → **`cicd-write-story-tests`** → `cicd-dev-story-tests` →
-> `cicd-code-review` → `cicd-update-sprint-memory`.
+> `cicd-code-review` → `cicd-close-story-merge-tree`.
 
 ## Step 0 — Resolve the target project (FIRST — before any other step)
 Bind the target per `.agents/rules/smh-target-resolution.md` §STD + §BIND: self fast-path → `$ARGUMENTS`
@@ -81,7 +81,7 @@ repo's project from `.agents/jira.conf` and the EPIC's ticket key (it's in the e
    and fix; do not carry on with an unkeyed or hollow ticket. Full acli reference:
    `.agents/rules/jira.md`.
 3. **Stamp the story file frontmatter** — the file is the machine truth, the board only mirrors it:
-   `jira_key: <KEY>` (Step 4.5 of `/cicd-update-sprint-memory` moves the ticket by reading exactly
+   `jira_key: <KEY>` (Step 4 of `/cicd-close-story-merge-tree` moves the ticket by reading exactly
    this field), plus the rulings: `lane: quick-dev|full`, `blocked_by: [<keys>]` (omit when empty).
    ⛔ No `parallel_ok:` — same reason as above; `/cicd-label-tasks` owns that field.
 4. **Set its state:** blocked → `acli jira workitem link create --out <BLOCKER-KEY> --in <KEY> --type
@@ -134,7 +134,7 @@ expected — plus the `Worktree: <path> (<branch>)` line from Step 0.5, so ② k
 **Do NOT start implementing.** `cicd-dev-story-tests` turns the reds green next.
 
 **Git:** commit ①'s output **inside the worktree** with explicit paths (`git add -A` / `.` / `-u` are
-banned — they sweep other teams' work in). Do NOT push the epic branch mid-story; Step 7 of
-`/cicd-update-sprint-memory` owns that landing (→ `worktree-per-story`, `git-policy`).
+banned — they sweep other teams' work in). Do NOT push the epic branch mid-story; Step 3 of
+`/cicd-close-story-merge-tree` owns that landing (→ `worktree-per-story`, `git-policy`).
 
 Optional additional input: $ARGUMENTS

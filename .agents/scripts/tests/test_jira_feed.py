@@ -6,7 +6,7 @@ step reintroduces every time:
   * a ticket that reports success while carrying nothing (acli exits 0, the comment is not
     there) - covered by the `swallow` stub mode, the load-bearing negative here;
   * two Dev Records for one story, because /cicd-quick-dev closed the branch and then
-    /cicd-update-sprint-memory closed the story and both posted.
+    /cicd-close-story-merge-tree closed the story and both posted.
 
 Plus the positive control: a fully-fed ticket must report clean, or `check` is dead weight
 that nobody will trust.
@@ -790,7 +790,7 @@ def main() -> int:
                     code == 1 and "not a git checkout" in out, out.strip()[:280])
 
             # `--story` is documented on THREE surfaces (jira_feed.py:15 usage, jira.md:302 a RULE,
-            # cicd-update-sprint-memory.md:191 a command) and read by none of them. Story-awareness
+            # cicd-close-story-merge-tree.md the command) and read by none of them. Story-awareness
             # gives it the meaning a close-out actually needs: did THIS lane file its record?
             # It delegates to find_devrecord, so it answers exactly "would devrecord update this
             # one?" - one rule, one implementation.

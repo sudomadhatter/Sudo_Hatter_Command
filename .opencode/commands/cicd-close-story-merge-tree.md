@@ -1,0 +1,303 @@
+---
+description: Close out ONE story — THE DOOR. Preflight, run the sprint-memory save, commit the close-out edits, LAND the story on its EPIC branch, and only THEN file the Dev Record and move the Jira ticket, then prune the worktree. Invoking it IS Daniel's sign-off for THIS story's landing, and that sign-off is spent by it. Run LAST when closing a story.
+platforms: [opencode, antigravity]
+---
+
+# /cicd-close-story-merge-tree — Story Close-Out (the door)
+
+> **Rules in force for this command:**
+> - `.agents/rules/worktree-per-story.md` — one worktree per story, resolve-or-STOP, never delete through a junction
+> - `.agents/rules/git-policy.md` — explicit paths only (never `git add -A`/`.`/`-u`), never force-push, never `main`;
+>   the sign-off is **per-action and never carries forward**
+> - `.agents/rules/jira.md` — the board is `acli`; the agent performs every board write, inside the ceremony the
+>   operator's words triggered
+> - `.agents/rules/artifacts-always-first.md` — the walkthrough is the closing doc; `## Your Actions` is a machine contract
+
+**This is the command you type to close a story out.** It is named for its job: it merges the story's tree into
+the epic branch and closes the story. Self-contained, project-scoped — targets THIS repo's `_bmad-output/`.
+
+**What it owns, and what it delegates.** The *save* — routing learnings, updating the board and the story file,
+pruning active-context — is `/cicd-update-sprint-memory`'s job, and this command invokes it at Step 1 rather than
+restating it. What is left here is the part that only a door can do, in the only order that is safe:
+
+```
+preflight → SAVE (/cicd-update-sprint-memory) → commit → LAND on the epic branch → ticket + Dev Record → prune
+```
+
+⭐ **The order is the point (SCC-210).** The ticket write is a **remote** write: it rides no branch, so nothing
+undoes it if a later step stops. The board flips, the story file and `active-context.md` are **file** writes that
+ride this branch, so a stopped landing publishes none of them. That asymmetry is why the Jira transition sits at
+**Step 4, after the push returns 0** — and why it used to sit ~100 lines and three STOPs before it, leaving code
+on one disk under a ticket that read `Done`.
+
+⛔ **This command does not touch `main`.** It lands on the **epic branch** and stops. The epic reaches production
+exactly one way: `/cicd-push-e2e`.
+
+## Step 0 — Resolve the target project (FIRST — before any other step)
+Bind the target per `.agents/rules/smh-target-resolution.md` §STD + §BIND: self fast-path → `$ARGUMENTS`
+override → `.agents/active-project.txt` → else **STOP and ask** *"Which project are we closing out?"* —
+never guess, never operate on the lobby. Set `PROJECT_ROOT` and **echo exactly** `Target: Projects/<name>`
+before any work; every bare path below resolves under `PROJECT_ROOT`, and a needed project path missing
+there → STOP and say so. ONE exception to §BIND: Step 1's Claude auto-memory write always targets Daniel's
+global memory dir.
+
+**Echo the story and the branch you MEAN, before any script has answered anything.** Everything below binds to
+these two strings, and Step 0.6 checks the preflight resolved the same ones:
+
+```bash
+STORY=<id>            # the story you are closing
+KEY=<JIRA-KEY>        # its ticket, from the story frontmatter's `jira_key:`
+BRANCH=$(git -C "<the story worktree>" rev-parse --abbrev-ref HEAD)   # from command output, never memory
+echo "Closing: $STORY | $KEY | $BRANCH"
+```
+
+## Step 0.5 — Sync the branch BEFORE the save reads or edits the board (parallel-lane safety)
+Step 1 reads **and rewrites** `sprint-status.yaml` + `active-context.md`. Do that on a stale base and you
+author every board edit against an old file, then discover it at Step 3's merge — on the two hottest files
+in the repo. So absorb the story's EPIC branch FIRST, inside the worktree (`epic/<JIRA-KEY>-<slug>` —
+exactly one live `epic/*` branch is the normal case):
+
+```bash
+git fetch origin epic/<JIRA-KEY>-<slug>
+git rev-list --count HEAD..origin/epic/<JIRA-KEY>-<slug>    # >0 → behind
+git merge origin/epic/<JIRA-KEY>-<slug>                     # CONFLICT → STOP and report, never force
+```
+
+Echo `Base: current with origin/epic/<JIRA-KEY>-<slug> @ <sha>`. Step 3 re-merges as a cheap safety net; this one is
+what makes the board edits land clean. If another lane closed out while you worked, its board line is now
+in front of you — **read it before you write yours**, and never delete a line you did not add.
+
+## Step 0.6 — Preflight: one call instead of ten (AUTOMATIC, never ask)
+
+Run it before reading anything. It answers, mechanically, every question Steps 1–5 used to
+answer by hand — and each of those has been silently wrong at least once:
+
+```bash
+python3 .agents/scripts/closeout_preflight.py --story <id> --project <PROJECT> \
+       --expect-key <JIRA-KEY> --branch <name> --worktree <path> \
+       [--require-gates suite,ruff,pyrefly]
+```
+
+⛔ **`--expect-key`, `--branch` and `--worktree` are NOT optional, and the brackets used to say otherwise.**
+This command runs when worktrees are open by definition, and that is exactly when `cwd` stops matching intent —
+the script walks up from `cwd` for `.git` and guesses branches from ids and worktrees, so a sibling lane that
+moved the shared checkout silently becomes the target, with every check reported honestly about the **wrong**
+branch (`worktree-per-story.md` → *"`cwd` is not intent"*). Prose cannot catch that, which is why `--expect-key`
+is now mechanical: the resolved branch must carry the key you named, or the preflight errors. It is the same
+check `task_preflight.py` has required since the 2026-08-09 failure.
+
+**Check the target the script echoes BEFORE you read its verdict.** Resolved story/branch ≠ the one Step 0
+echoed → **STOP**, and say which it resolved versus which you meant.
+
+It reports: did the code land on the epic branch · is every repo `0/0` and clean · are the registered
+worktrees LIVE/LOST/HUSK · do both status surfaces agree · does the walkthrough carry a `Verdict:`
+(with the pre-2026-08-02 standalone-file fallback) · is that verdict stale against HEAD · does the
+story's **File List** still exist in the tree · is `active-context` inside budget · did the required
+gates actually run at this commit · can the epic close.
+
+**Exit 2 = BLOCKED — resolve before flipping anything. Exit 1 = warnings: read them, they do not
+block.** A warning that says *"landing was NOT verified"* means exactly that — it is not a pass.
+A verdict line carrying **STALE** means the comparison was made against the last fetch, not the remote:
+re-run without `--no-fetch` before you land anything. Paste the block into the close-out summary; it IS the
+evidence for Steps 1, 3 and 5.
+
+## Step 1 — The SAVE: invoke `/cicd-update-sprint-memory` (AUTOMATIC, never ask)
+
+Invoke **`/cicd-update-sprint-memory`** against the same `PROJECT_ROOT` (it inherits the binding — no
+re-resolution) and hand it the Step 0.6 block, which is its evidence too: it must not re-run the preflight.
+
+It does the whole save, and it is the ONLY thing that does: read this session's state and artifacts ·
+code-verify the claimed work on disk · route every learning to its home · apply the updates · **flip the
+story to `done`** (and close the epic if every child is terminal) · prune and budget active-context via
+`/cicd-prune-context` · write the memory files · print the `Session save applied:` summary.
+
+**Your invocation of THIS command is the sign-off it acts on.** Only an objectively-red `FAIL` verdict blocks
+the flip; a pending live-test or "stays review until X" note does not, and neither does a commit owed.
+
+⛔ **Everything it writes is a FILE write, and that is what makes this order safe.** The board, the story
+frontmatter and `active-context.md` all ride this branch, so if Step 3 stops, none of them is published. Nothing
+in Step 1 reaches the remote. The one write that *would* — the Jira ticket — is deliberately not here.
+
+Carry its report lines (the routed learnings, `active-context: ~X / 5,000 tokens`, the story flip
+`Closing <story>: review → done`) into this command's own summary at Step 6.
+
+## Step 2 — Fix `## Your Actions`, then commit the close-out edits
+
+**First the refusal, because here is the only place fixing it is free.**
+
+```bash
+python3 .agents/scripts/jira_feed.py check-actions --walkthrough <the story walkthrough> \
+  || { echo 'fix `## Your Actions` BEFORE the landing'; exit 1; }
+```
+
+It refuses a row that hands the operator **ticket work** (SCC-163) or **the ceremony's own steps** (SCC-193) —
+"click Merge", "re-invoke the close-out", "run `--after-merge`". From the operator's word on, those are yours to
+run, not theirs to do. The same refusal fires again at Step 4, which runs **after** the landing, when the
+walkthrough is already on the epic branch and the fix is another commit. `/cicd-code-review` promises this
+refusal happens on the close-out path; until SCC-210 no step on that path performed it.
+
+Then commit — **EXPLICIT PATHS ONLY** (board, story file, active-context, artifacts). `git diff --cached --stat`
+must show ONLY this story's files; `git add -A` / `.` / `-u` are banned, and the worktree does not repeal that.
+
+## Step 3 — Land the story on the EPIC branch (the one sanctioned push)
+<!-- JIRA-HOOK: ticket-moved check runs here BEFORE the landing push — the story's Jira ticket must be in the required status or the landing stops. Separate story; not built yet. -->
+
+**Daniel invoking this command IS the sign-off for this push.** ⛔ **And it is spent by it.** This sign-off
+covers **THIS story's landing** only: a second story needs its own invocation, and a landing offered on the
+strength of an earlier one is refused. The invocation stays in your context and will still *read* as valid on the
+next story in the same session — that is exactly how one sign-off once rode six merges (`git-policy.md`
+§"per-action and never carries forward", SCC-71).
+
+Run it LAST, after Steps 1–2 wrote the board, story file, and `active-context.md` — so those edits ride the story
+branch and land with it.
+
+⚠️ **Several sibling worktrees live** (operator says so, `git worktree list` shows sibling story lanes, or
+a LANDING RULE is posted on the board): STOP this solo flow — read `.agents/commands/cicd-merge-epic-workingtrees.md`
+and follow IT end to end: it runs this command's close-out per story itself (fix → merge → land → flip
+`done` → combined gate → prune ALL trees) in one shot; nothing returns here.
+
+**Precondition — check FIRST.** `git rev-parse --abbrev-ref HEAD` must be a **`claude/*`** branch (inside the
+story worktree) — **and never `claude/incident-*`**, which satisfies the glob but is the incident
+pipeline's lane (`/cicd-mobile-error-team`), not story work (SCC-149): an incident HEAD is a **STOP** —
+report it and hand off to `/cicd-mobile-error-team`; nothing below runs. If HEAD is the epic branch or `main`,
+this story wasn't worked in a worktree — **do NOT land
+it.** Report it and stop — never rescue it by committing in the shared checkout.
+
+Then execute `git-policy.md` → **"The landing"**, inside the worktree: merge
+`origin/epic/<JIRA-KEY>-<slug>` (CONFLICT → **STOP and report**; never force-push,
+never blind-rebase), **then the MERGE GATE — prove the tree that ships, not the one ③ reviewed** (the solo
+counterpart of `/cicd-merge-epic-workingtrees` Step 5's combined gate): run
+`git diff --name-only <③-verdict suite SHA>..HEAD -- backend/ frontend/`.
+- **Empty** → the merge changed no code under you (fast-forward / doc-only drift): ③'s green already
+  describes this exact tree — inherit it, say `Merge gate: inherited ③ green @ <sha>`, and push.
+- **Non-empty** → the epic branch moved code since ③'s run, so the merged tree has NEVER been tested: run the
+  full suite of the touched stacks on it NOW (parallel flags; the conftest suite lock serializes the box) and
+  paste totals into the walkthrough. **Red → STOP: no push, nothing lands** — the board/status flips from
+  Steps 1–2 ride this branch, so a stopped landing publishes nothing, **and Step 4 never runs, so the ticket
+  never moves.** Report the failing tests + which epic-branch commits collided
+  (`git log <suite-SHA>..origin/epic/<JIRA-KEY>-<slug> --oneline`); the fix is a follow-on
+  on the branch, then re-gate.
+Then `git push origin HEAD:epic/<JIRA-KEY>-<slug>` — THE landing.
+
+⛔ **Do NOT push `claude/<JIRA-KEY>-<story-slug>` to origin.** The local branch is the rollback point and survives a
+failed landing push intact. A story branch reaches origin **only** via `/cicd-park` — that is park's whole
+purpose, and `/cicd-resume` reads the origin `claude/*` list to find in-flight work on a cold machine.
+Pushing here made park redundant and filled that listing with landed-and-dead branches. If this story WAS
+parked, its branch is already on origin and Step 5 deletes it there.
+
+- **`main` is untouched.** Only Daniel, directly or via `/cicd-push-e2e`.
+- **Report** the branch, the commit range that landed, and the epic-branch sha — same into the walkthrough's
+  `## Your Actions` (Step 1 wrote the section; this is the line it was waiting for).
+- Landing push rejected (remote moved) → **STOP and report.** Re-sync and re-land, never force. ⛔ **The ticket
+  does not move** — Step 4 runs only after a push that returned 0.
+- **No shared-checkout reconcile is owed.** It stands on `main`, which moves only when the epic merges via
+  `/cicd-push-e2e`. (The old reconcile died with `main_debug` on 2026-08-07.)
+
+## Step 4 — File the Dev Record, THEN move the ticket (AUTOMATIC, never ask)
+
+**After the landing, never before.** A ticket that reads `Done` while the landing stopped is a lie on the board;
+a landing that succeeded while the record lags is one command away from correct. Take the recoverable failure.
+This is the same order `/smh-close-task-merge-tree` Step 4 uses on the Task lane, and the whole reason the two
+families now have one shape.
+
+Read `jira_key:` from the story's frontmatter, then do all three halves:
+
+**a. File the Dev Record** — SCC-49. A verdict line is a receipt, not a record: the decisions, the
+pitfalls and what is still owed lived only in the walkthrough, so Jira could say a story shipped but
+never what building it taught. **Step 1's routing produced those buckets — carry them here.** Pass
+them in; the walkthrough scrape underneath is a safety net, never the source:
+
+```bash
+python3 .agents/scripts/jira_feed.py devrecord --key <KEY> --story <id> --project <PROJECT> \
+       --outcome "review -> done, landed on epic/<JIRA-KEY>-<slug> @ <sha>" \
+       --decision "<a ruling made while building, and why>" \
+       --pitfall  "<a failure mode the next agent would hit>" \
+       --followon "<what is still owed, or the deferral>" \
+       --evidence "<suite totals @ sha>" --closing --apply
+```
+
+`--closing` also **clears a `Bug` flag**. A ticket arrives here typed `Bug` when something found it
+broken and pulled it back out of `Done` — an audit that traced a live bug to it, or the operator by
+hand. Either way that means the fix you just landed IS that bug, so the type goes back to what the
+rule says it is (`Story` here, `Task` on the other lane — **never always `Story`**). Close-out is the
+only moment anything can know the fix landed, which is why the bulk `audit` leaves Bugs alone and why
+nothing else clears one.
+
+Repeat a flag per item. It lifts the `Verdict:` line and the walkthrough path itself, then **reads the
+ticket back and exits 2 if the comment is not there** — an acli call that silently no-ops is
+indistinguishable from one that worked. **One Dev Record per ticket:** if `/cicd-quick-dev` already
+filed one for this story, this UPDATES it in place rather than stacking a second. A bucket you leave
+empty renders `(none recorded)` and warns — that is honest, but on a story that fought back it means
+Step 1's routing was thin, so go back and read the walkthrough before accepting it.
+
+**b. Move the ticket** to match the flip — `Done` for a close-out, `In Review` for a story left at `review`:
+
+```bash
+acli jira workitem transition --key <KEY> --status "<Status>" --yes
+```
+
+⛔ **`--yes` or acli stops on an interactive confirm no agent shell can answer.** Three shipped call sites
+omitted it and `Done` was landing on luck until SCC-113; `tests/test_jira_feed.py` fails if any
+`workitem transition` under `.agents/` is missing it.
+
+⛔ **And it happens HERE, after Step 3's push returned 0 — never earlier.** This transition is the one write in
+the whole close-out that rides no branch, so it is the one write a later STOP cannot undo.
+
+⛔ **Do NOT use `jira_feed.py finish` here.** It is the Task lane's closer and its merge check is hardcoded to
+`origin/main`: it fetches `origin main` and asks whether the lane's tip is an ancestor of it. A story lands on
+`epic/<KEY>-<slug>`, so the tip is **not** an ancestor until the epic ships — the call would return "held"
+forever while the story status file already read `done`, which is a two-surface divergence dressed as a gate.
+Teaching that script a landing-target argument is a separate follow-on; until it exists, this door transitions
+with `acli` and the `## Your Actions` refusal it would have given you is Step 2's `check-actions`.
+
+**c. Verify — twice, and the second one is not redundant:**
+
+```bash
+python3 .agents/scripts/jira_feed.py check --key <KEY> --story <id>
+python3 .agents/scripts/jira_feed.py check --key <KEY> --project <PROJECT>
+```
+
+The **scoped** run (`--story`) answers "does this lane's record exist". The **unscoped** run is the one that can
+see a **FORKED Dev Record** (SCC-174): the scoped branch returns before the duplicate and FORK arms ever run, so
+a ticket carrying one lane's record filed under two slugs reads as "one Dev Record" and the fork ships. If the
+unscoped run reports a fork, an id on the ticket is claimed by no manifest and no branch: **delete the record
+filed under the slug that is not a lane and re-post with the branch's slug** — never `--append-new` past it.
+Paste both lines into the Step 6 summary; that is the evidence the ticket carries every half.
+
+If the story has no `jira_key` yet (pre-Jira story) or the project has no Jira project, note that in
+the Step 6 summary and continue — never invent a key. Full acli reference: `.agents/rules/jira.md`.
+
+## Step 5 — Prune the merged worktree & branches (AUTOMATIC)
+
+Immediately after Step 3's landing succeeded and Step 4 recorded it:
+1. Invoke `/cicd-prune-worktree <story-slug>` to verify the merge, remove the local worktree
+   (`.claude/worktrees/<story-slug>`), and delete both the local and remote GitHub branches
+   (`claude/<JIRA-KEY>-<story-slug>`). Pass `--repo`/`--branch` through to it explicitly — it prunes, and a
+   default resolved from `cwd` is not what you want aimed at a guess.
+2. Confirm both local disk and remote origin are clean.
+
+Its Step 1.7 authorization gate is satisfied by construction on this path: Step 1 already flipped the story to
+`done`. It only bites when the prune is run standalone against something that was never actually closed out.
+
+## Step 6 — Verify, THEN report (never report an unverified success)
+
+Every ✅ below must come from a command you actually ran in this step, not from intent:
+
+```bash
+git rev-parse --abbrev-ref HEAD                                   # still the story branch, or gone with its tree
+git log --oneline -1 origin/epic/<JIRA-KEY>-<slug>                # the landing is on the remote
+git worktree list                                                 # the story tree is gone
+```
+
+Print:
+
+`✅ Story <id> closed:`
+- `Saved: <the /cicd-update-sprint-memory summary — learnings routed, active-context ~X / 5,000>`
+- `Flip: <story> review → done` *(both surfaces, or neither)*
+- `Merge gate: <inherited ③ green @ sha | re-run totals>`
+- `Landed: <commit range> → epic/<JIRA-KEY>-<slug> @ <sha>` *(`main` untouched)*
+- `Jira: Dev Record filed (one record) · <KEY> → Done · check scoped + unscoped, exit 0`
+- `Pruned: claude/<JIRA-KEY>-<story-slug> local + remote · tree removed` *(or why it was retained)*
+- `Still owed: <the --followon items, or "nothing">`
+
+Optional additional input: $ARGUMENTS

@@ -28,7 +28,7 @@ appends ONE `## Code Review (<date>)` verdict section to the story's `walkthroug
 `artifacts-always-first` §6). Project-scoped (targets THIS repo). Both gates live HERE; there is no
 separate `/test-gate`, `/qa-gate`, or `/lint-gate`.
 
-> Flow position: `cicd-dev-story-tests` → **`cicd-code-review`** → `cicd-update-sprint-memory`.
+> Flow position: `cicd-dev-story-tests` → **`cicd-code-review`** → `cicd-close-story-merge-tree`.
 
 ## Step 0 — Resolve the target project (FIRST) — from command output, never from belief
 Bind the target per `.agents/rules/smh-target-resolution.md` §STD + §BIND: self fast-path → `$ARGUMENTS`
@@ -465,7 +465,7 @@ of truth** — your Step 4 section is part of it, and the body around it must no
 ## Stay in lane
 Commit your review fixes inside the story worktree (explicit paths) — but **never land on the epic
 branch** (close-out's job), and never flip the story status or edit `sprint-status.yaml`; that is `cicd-update-sprint-memory`'s job
-(it reads the walkthrough's `Verdict:` line first, then lands the branch in its Step 7). Updating
+(it reads the walkthrough's `Verdict:` line first), and `cicd-close-story-merge-tree` lands the branch in its Step 3. Updating
 `walkthrough.md` (Steps 4–5) is IN lane — that is documenting the review, not flipping status.
 
 Optional additional input: $ARGUMENTS

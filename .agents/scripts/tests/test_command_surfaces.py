@@ -661,8 +661,9 @@ def main() -> int:
     if c.block("CS-05 · hand-authored skills survive a sync untouched"):
         # ── Hand-authored skills are never overwritten by the generator ───────────
         # These carry real content (boundaries, routing notes) a stub would destroy.
-        hand = ["cicd-park", "cicd-resume", "cicd-close-workingtree", "smh-close-task-merge-tree",
-                "cicd-update-sprint-memory", "smh-update-maps-indexes"]
+        hand = ["cicd-park", "cicd-resume", "cicd-prune-worktree", "smh-close-task-merge-tree",
+                "cicd-close-story-merge-tree", "cicd-update-sprint-memory",
+                "smh-update-maps-indexes"]
         clobbered = [n for n in hand
                      if (master_skills / n / "SKILL.md").is_file()
                      and GEN in read(master_skills / n / "SKILL.md")]
@@ -1669,6 +1670,429 @@ def main() -> int:
                 door_drifted("body\n", None), "")
         c.check("CS-04 CONTROL: an identical door is NOT reported",
                 not door_drifted("body\n", "body\n"), "")
+
+    if c.block("CS-13 · SCC-210 · the close-out family: three doors, and the board cannot lie"):
+        # ⛔ THE DEFECT THIS BLOCK EXISTS TO KILL, measured on the tree as it stands today: the
+        # story door writes the Jira ticket to Done at line 161 and pushes the code to the epic
+        # branch at line 258 — about a hundred lines and THREE STOPs later. Every one of those
+        # STOPs is reachable (merge conflict, merge gate red, landing push rejected), and each
+        # one leaves the work sitting on a single disk under a ticket that reads Done. The board
+        # lies, and the board is what the next agent reads.
+        #
+        # SCC-210 splits today's one overloaded command into the three doors its names promise:
+        #   * `cicd-close-story-merge-tree` — THE door an operator types to close a story out;
+        #   * `cicd-update-sprint-memory`   — KEEPS its name, slimmed to memory/board/context;
+        #   * `cicd-prune-worktree`         — the disk utility, renamed from the janitor.
+        #
+        # ⛔ THE RETIRED JANITOR NAME IS BUILT AT RUNTIME AND NEVER WRITTEN DOWN. This file lives
+        # under `.agents/`, which the B sweep below reads. A literal anywhere in here — a string,
+        # a check name, a comment — makes the sweep find its OWN source, and B1 could then never
+        # go green however clean the tree got. So every reference below calls it "the retired
+        # janitor name" and every string carrying it is assembled from `RETIRED`.
+        RETIRED = "cicd-close-" + "workingtree"
+        CMDS = ROOT / ".agents/commands"
+        SOP_PATH = ROOT / "docs/_scc_sops_prds/workflows_testing_SOP.md"
+        PUSH = "git push origin HEAD:epic/"
+        TRANS = "acli jira workitem transition"
+
+        def story_door() -> Path:
+            """The command an operator types to close ONE story out, whatever it is called today.
+
+            ⭐ RESOLVED, NEVER HARDCODED, and this is the crux of writing this red honestly.
+            Today that door is `cicd-update-sprint-memory.md`; after this ticket it is
+            `cicd-close-story-merge-tree.md`. Hardcoding the NEW name makes every ordering check
+            below fail today with "file not found" — which is a red for A2, but a VACUOUS red for
+            C3: it dies in SETUP, before its assertion, and a check that crashes looks exactly
+            like one that failed (`red-test-can-die-before-its-assertion`). Resolving instead
+            makes C3 read TODAY's door today (transition at 161, push at 258 → red for the right
+            reason) and the NEW door after the rename (→ green). The invariant it pins is
+            durable, not transitional: the story door must never write Done before it pushes.
+            """
+            for name in ("cicd-close-story-merge-tree.md", "cicd-update-sprint-memory.md"):
+                p = ROOT / ".agents/commands" / name
+                if p.is_file():
+                    return p
+            return ROOT / ".agents/commands/cicd-close-story-merge-tree.md"
+
+        def calls(lines: list[str], needle: str) -> list[tuple[int, str]]:
+            r"""Every invocation carrying `needle`, as (1-based line, text with continuations folded).
+
+            ⛔ Folded, because a shell invocation in these commands is routinely wrapped across
+            lines with a trailing `\` — `closeout_preflight.py` already is, at :46-47. A flag test
+            that reads only the line the script name sits on would report `--expect-key` missing
+            on an invocation that passes it on its second line: a false red the implementer cannot
+            fix except by un-wrapping a command block, which is not what this ticket asks for.
+            """
+            out = []
+            for i, ln in enumerate(lines):
+                if needle in ln:
+                    call, j = [ln], i
+                    while call[-1].rstrip().endswith("\\") and j + 1 < len(lines):
+                        j += 1
+                        call.append(lines[j])
+                    out.append((i + 1, "\n".join(call)))
+            return out
+
+        door = story_door()
+        door_text = read(door) if door.is_file() else ""
+        door_lines = door_text.splitlines()
+
+        def step_body(lines: list[str]) -> list[str]:
+            """The lines from the first `## Step` heading on, with earlier lines BLANKED.
+
+            ⛔ ORDER IS DEFINED BY THE STEPS, NEVER BY THE OVERVIEW. C3 and K1 compare line
+            numbers as a proxy for execution order, and that proxy breaks on prose: a summary
+            near the top naming the Jira transition ("...and only THEN move the ticket") would
+            sit above the landing push and red a door that behaves correctly. Blanking rather
+            than slicing keeps every surviving line at its ORIGINAL number, so the detail
+            strings still name a line a reader can open.
+
+            No `## Step` heading at all → the whole body, unchanged. That is what lets the
+            synthetic two-line controls below run the very same predicate as the live check.
+            """
+            first = next((i for i, ln in enumerate(lines)
+                          if ln.startswith("## Step")), None)
+            if first is None:
+                return lines
+            return ["" for _ in lines[:first]] + lines[first:]
+
+        door_steps = step_body(door_lines)
+
+        # ── A · the three names ───────────────────────────────────────────────────
+        # Names ARE the contract here: the whole ticket is that a command should do the job its
+        # name says. Four rows, because "the new ones exist" and "the old one is gone" are two
+        # different facts and a rename that only does the first leaves two doors to one job.
+        c.check("CS-13 A1 the disk utility exists as `/cicd-prune-worktree`",
+                (CMDS / "cicd-prune-worktree.md").is_file(),
+                "the janitor renamed to what it actually does: prune a worktree, move no code")
+        c.check("CS-13 A2 the story door exists as `/cicd-close-story-merge-tree`",
+                (CMDS / "cicd-close-story-merge-tree.md").is_file(),
+                "THE door you type to close a story: preflight → sprint memory → commit → land "
+                "→ Dev Record → ticket → prune")
+        c.check("CS-13 A3 `/cicd-update-sprint-memory` KEEPS its name",
+                (CMDS / "cicd-update-sprint-memory.md").is_file(),
+                "still invocable standalone; the door invokes it as a step")
+        c.check("CS-13 A4 the retired janitor command file is GONE",
+                not (CMDS / (RETIRED + ".md")).is_file(),
+                "a rename that leaves the old file behind is two doors to one job")
+
+        # ── B · the retired janitor name cannot come back ─────────────────────────
+        # A rename is only finished when the OLD name is unreachable from anything an agent
+        # reads: commands, rules, scripts, docs, and all four platform door caches.
+        SWEEP_ROOTS = (".agents", "docs", ".opencode", ".claude/skills", ".claude/hooks",
+                       ".githooks", "_bmad/custom")
+        # ⛔ `.claude/worktrees` IS EXCLUDED BY DIRECTORY NAME, and that exclusion is the
+        # difference between a check that measures THIS lane and one that measures whoever else
+        # happens to have a tree open. Sibling lanes are FULL checkouts living under there, every
+        # one of them still carrying the old name — a sweep that reads them goes red on another
+        # lane's files, and goes green only on the days nobody else is working. `_artifacts` and
+        # `_my_resources` are the two places the old name is allowed to survive forever: they are
+        # the written record of what happened, and rewriting history is not a rename.
+        SWEEP_SKIP = {"worktrees", "_artifacts", "_my_resources", "Projects",
+                      "node_modules", ".git", ".gitnexus"}
+        TEXTY = {".md", ".py", ".ps1", ".sh", ".json", ".toml", ".txt", ".yaml", ".yml"}
+
+        def is_text(p: Path) -> bool:
+            """Readable-by-an-agent, including the EXTENSIONLESS git hooks.
+
+            ⛔ `.githooks/` was a declared root reading ZERO files, because git requires bare
+            names (`commit-msg`, `pre-push`) and no bare name has a suffix. So the root was
+            decorative: the retired name could be reintroduced into a hook and B1 would stay
+            green while B2 advertised coverage the sweep did not have. The same hole covers
+            `.agents/scripts/git-hooks/`'s four arming stamps (SOP-ENFORCE, JIRA-ENFORCE,
+            MAIN-PUSH-ENFORCE, MERGE-TARGET-ENFORCE), which are extensionless for the same reason.
+            """
+            if not p.is_file():
+                return False
+            if p.suffix.lower() in TEXTY:
+                return True
+            return p.suffix == "" and any("hooks" in part
+                                          for part in p.relative_to(ROOT).parts[:-1])
+
+        def carries_retired(text: str) -> bool:
+            """THE predicate — one implementation, shared by the live sweep and its control."""
+            return RETIRED in text
+
+        swept, hits = 0, []
+        per_root: dict[str, int] = {}
+        for rel in SWEEP_ROOTS:
+            base = ROOT / rel
+            if not base.is_dir():
+                continue
+            for p in sorted(base.rglob("*")):
+                if not is_text(p):
+                    continue
+                if any(part in SWEEP_SKIP for part in p.relative_to(ROOT).parts):
+                    continue
+                swept += 1
+                per_root[rel] = per_root.get(rel, 0) + 1
+                # `read()` is utf-8-sig + errors="replace": a BOM'd command body or an odd byte
+                # in a generated cache must never crash the sweep into a fake green.
+                if carries_retired(read(p)):
+                    hits.append(str(p.relative_to(ROOT)))
+        agents_md = ROOT / "AGENTS.md"
+        if agents_md.is_file():
+            swept += 1
+            if carries_retired(read(agents_md)):
+                hits.append("AGENTS.md")
+
+        c.check("CS-13 B1 the retired janitor name survives nowhere an agent reads",
+                not hits, f"{len(hits)} file(s) still carry it: {sorted(hits)[:6]}")
+        # ⛔ ANTI-VACUITY, PER ROOT — and a global floor is not enough, which was measured.
+        # A sweep that read NOTHING reports zero hits exactly like a clean tree does. But the
+        # realistic failure is not total collapse, it is ONE root quietly dropped, renamed or
+        # typo'd: against ~1600 files actually read, a floor of 150 survives losing SIX of the
+        # seven roots. Proven: delete `.opencode` from SWEEP_ROOTS and B1 reports zero hits while
+        # five agent-read door mirrors still carry the retired name — and a global floor still
+        # passes at 1525. So every declared root that EXISTS must have contributed a file.
+        empty_roots = [r for r in SWEEP_ROOTS if (ROOT / r).is_dir() and not per_root.get(r)]
+        c.check("CS-13 B2 ANTI-VACUITY: the sweep actually read the tree, root by root",
+                swept >= 150 and not empty_roots,
+                f"{swept} files across {len(SWEEP_ROOTS)} roots + AGENTS.md; "
+                f"roots reading NOTHING: {empty_roots or 'none'}")
+        # ⛔ CONTROL, on synthetic text built FROM `RETIRED` — never a literal, for the same
+        # self-match reason the whole block is written this way.
+        c.check("CS-13 B3 CONTROL: the sweep's own predicate detects the retired janitor name",
+                carries_retired("Invoke `/" + RETIRED + " <story-slug>` to prune the tree.\n")
+                and not carries_retired("Invoke `/cicd-prune-worktree <story-slug>`.\n"),
+                "both directions: it fires on the old name and stays quiet on the new one")
+
+        # ── C · THE DEFECT — the board cannot lie ─────────────────────────────────
+        def board_lies(lines: list[str]) -> list[int]:
+            """Transition lines that sit BEFORE the landing push. Empty list == the board is honest.
+
+            ⛔ ORDER ONLY. Anti-vacuity is C1/C2's job, and it has to be, because this predicate
+            must return "no violation" for a body with no push and no transition or the controls
+            below cannot be read — which is exactly why an EMPTY answer here is not evidence on
+            its own and never gets asserted alone.
+
+            The reference point is the FIRST landing push. A door that says `git push` once and
+            then names it again in a retry note ("landing push rejected → STOP and report") would
+            fail against the LAST occurrence for prose, not for behaviour; against the first, the
+            only way to fail is the real defect — a Done written before any push was attempted.
+            """
+            lines = step_body(lines)
+            push = [i + 1 for i, ln in enumerate(lines) if PUSH in ln]
+            trans = [i + 1 for i, ln in enumerate(lines) if TRANS in ln]
+            if not push or not trans:
+                return []
+            return [n for n in trans if n < min(push)]
+
+        push_at = [i + 1 for i, ln in enumerate(door_steps) if PUSH in ln]
+        trans_at = [i + 1 for i, ln in enumerate(door_steps) if TRANS in ln]
+        where = f"door={door.name} push@{push_at} transitions@{trans_at}"
+
+        c.check("CS-13 C1 the story door actually contains the landing push",
+                bool(push_at), where + " — without a push line, C3 passes on a door that "
+                "lands nothing at all")
+        c.check("CS-13 C2 the story door actually moves the Jira ticket",
+                bool(trans_at), where + " — without a transition line, C3 passes on a door that "
+                "never touches the board")
+        c.check("CS-13 C3 the ticket moves ONLY AFTER the landing push",
+                not board_lies(door_lines),
+                where + f" — transitions before the push: {board_lies(door_lines)}; a stopped "
+                "landing must never leave the code on one disk under a ticket that reads Done")
+        # ⛔ CONTROLS, over synthetic bodies, running the SAME predicate the live check runs.
+        # "No violations found" is what a broken predicate reports too.
+        BAD_ORDER = [f"`{TRANS} --key <KEY> --status \"Done\" --yes`.",
+                     f"Then `{PUSH}<JIRA-KEY>-<slug>` — THE landing."]
+        c.check("CS-13 C4 CONTROL: a transition BEFORE the push is caught",
+                board_lies(BAD_ORDER) == [1], str(board_lies(BAD_ORDER)))
+        c.check("CS-13 C5 CONTROL: a transition AFTER the push is not reported",
+                not board_lies(list(reversed(BAD_ORDER))),
+                "the condition is not inverted — the fixed order must read clean")
+
+        # ── D · the multi-lane landing still prunes ───────────────────────────────
+        # `/cicd-merge-epic-workingtrees` closes N lanes at once and calls the janitor per lane.
+        # A rename that misses it leaves that command pointing at a door that no longer exists.
+        # ⛔ EVERY read() IN THIS BLOCK IS GUARDED, and that is not defensive padding — it was
+        # measured. This ticket's own execution order renames `cicd-update-sprint-memory.md` away
+        # and re-creates it a step later, and during that window an unguarded read raised
+        # FileNotFoundError, took SIXTEEN sibling rows down with it and never reached finish() —
+        # so the runner saw a traceback where a red row belonged. A missing file is another row's
+        # failure; here it must fail HONESTLY, by name.
+        me_path = CMDS / "cicd-merge-epic-workingtrees.md"
+        merge_epic = read(me_path) if me_path.is_file() else None
+        c.check("CS-13 D1 the multi-lane close-out calls `/cicd-prune-worktree`",
+                merge_epic is not None and "/cicd-prune-worktree" in merge_epic,
+                "cicd-merge-epic-workingtrees.md is ABSENT" if merge_epic is None
+                else ("clean — it points at the renamed utility"
+                      if "/cicd-prune-worktree" in merge_epic
+                      else "it must point at the renamed utility"))
+        prune_cmd = CMDS / "cicd-prune-worktree.md"
+        prune_text = read(prune_cmd) if prune_cmd.is_file() else None
+        # ⛔ EXISTENCE IS GUARDED AND REPORTED, never assumed: a missing file is A1's failure, and
+        # this row has to fail HONESTLY on it rather than crash on a read that cannot happen.
+        # ⛔ THE DETAIL FOLLOWS THE VERDICT. Three-way, never two: a row whose evidence line
+        # states the failure rationale while printing PASS makes the transcript contradict
+        # itself, and the transcript is what a reviewer, a gate log and a mutation sweep read.
+        c.check("CS-13 D2 the prune utility moves NO code — no landing push in it",
+                prune_text is not None and PUSH not in prune_text,
+                "file does not exist yet (see A1)" if prune_text is None
+                else ("clean — no landing push; the utility is a disk operation, not a lane"
+                      if PUSH not in prune_text
+                      else "it carries the landing push; the utility is a disk operation, not a lane"))
+
+        # ── E · sprint-memory is genuinely slimmed ────────────────────────────────
+        # The point of the split is that the memory command stops owning the acts that can fail.
+        # One row per banned string so the red output NAMES which one is still there, and where.
+        sm_path = CMDS / "cicd-update-sprint-memory.md"
+        sm_text = read(sm_path) if sm_path.is_file() else None
+        sm_lines = (sm_text or "").splitlines()
+
+        NEGATED = ("⛔", "do not", "does not", "never", " no ", "not run", "no push")
+
+        def instructs(line: str, banned: str) -> bool:
+            """Does this line TELL the agent to do the banned thing, or forbid it?
+
+            ⛔ A whole-file substring ban cannot tell an instruction from its prohibition, and the
+            slimmed command's whole job is to SAY what it no longer does — "⛔ no push lives in
+            this command at all" would trip a naive ban and force the next author to delete the
+            very sentence that carries the law. Same lesson as `test_git_hooks.py`'s RH1/RH3 pair,
+            which reads instructions rather than mentions for exactly this reason.
+            """
+            if banned not in line:
+                return False
+            low = line.lower()
+            return not any(cue in low for cue in NEGATED)
+
+        for banned, why in (("git push", "it lands nothing — the door does the landing"),
+                            ("workitem transition", "it moves no ticket — the door does, after "
+                                                    "the push returns 0"),
+                            ("jira_feed.py devrecord", "it files no Dev Record — the door does"),
+                            ("/cicd-prune-worktree", "it prunes nothing — the door does"),
+                            ("worktree remove", "it touches no disk — the door does")):
+            found = [i + 1 for i, ln in enumerate(sm_lines) if instructs(ln, banned)]
+            c.check(f"CS-13 E `/cicd-update-sprint-memory` no longer carries `{banned}`",
+                    sm_text is not None and not found,
+                    "cicd-update-sprint-memory.md is ABSENT (see A3)" if sm_text is None
+                    else (f"still at line(s) {found} — {why}" if found else f"clean — {why}"))
+        # ⛔ CONTROLS for `instructs`, both directions — a predicate that reads negations must be
+        # shown to still catch the real thing, or it is just a way of never failing.
+        c.check("CS-13 E CONTROL: a bare invocation line IS an instruction",
+                instructs("Then `git push origin HEAD:epic/<KEY>-<slug>` — THE landing.", "git push"),
+                "")
+        c.check("CS-13 E CONTROL: a line FORBIDDING it is not",
+                not instructs("⛔ no push lives in this command at all — the landing is the "
+                              "door's", "push"), "")
+
+        # ── F · every door resolves on every platform ─────────────────────────────
+        # SCC-66's contract, applied to the renamed family: one command body, one launcher skill
+        # in the master (Codex) and in the cache (Claude), one opencode mirror, one Antigravity
+        # workflow. A rename that stops at `.agents/commands` leaves three menus pointing at a
+        # command that no longer exists — the SCC-77 shape, where the doors drift and the only
+        # symptom is an agent following instructions that are gone.
+        for name in ("cicd-close-story-merge-tree", "cicd-update-sprint-memory",
+                     "cicd-prune-worktree"):
+            surfaces = (f".agents/commands/{name}.md",
+                        f".agents/skills/{name}/SKILL.md",
+                        f".claude/skills/{name}/SKILL.md",
+                        f".agents/workflows/{name}.md",
+                        f".opencode/commands/{name}.md")
+            gone = [s for s in surfaces if not (ROOT / s).is_file()]
+            c.check(f"CS-13 F `/{name}` has all five doors",
+                    not gone, f"missing {len(gone)}/5: {gone}")
+
+        # ── G · the SOP tells the truth ───────────────────────────────────────────
+        sop = read(SOP_PATH) if SOP_PATH.is_file() else None
+        c.check("CS-13 G1 the SOP names `/cicd-prune-worktree`",
+                sop is not None and "/cicd-prune-worktree" in sop,
+                "the SOP is ABSENT" if sop is None else "§7 is the close-out family's written map")
+        c.check("CS-13 G2 the SOP names `/cicd-close-story-merge-tree`",
+                sop is not None and "/cicd-close-story-merge-tree" in sop,
+                "the SOP is ABSENT" if sop is None
+                else "the door an operator types has to be findable in the SOP")
+        # ⛔ THE DESIGN CLAIM THIS TICKET FALSIFIES, at SOP:601 today: the janitor is described as
+        # something you almost never type because both story close-outs call it themselves. That
+        # is precisely the arrangement being unwound — the utility becomes a thing you DO type,
+        # and the door that calls it is a different command with a different name.
+        # ⛔ ANCHORED TO THE FAMILY, not to a bare phrase. Banning "You almost never type"
+        # globally would red on some unrelated future sentence about some unrelated command;
+        # anchoring it to the RETIRED name alone would let the same falsified claim be re-stated
+        # under the NEW name, which is the thing that actually matters. So: the phrase is a
+        # violation when the close-out family is what it is talking about.
+        FAMILY = ("/cicd-prune-worktree", "/cicd-close-story-merge-tree",
+                  "/cicd-update-sprint-memory", "/" + RETIRED)
+
+        def never_typed_claims(text: str) -> list[int]:
+            out, phrase = [], "You almost never type"
+            for i, ln in enumerate(text.splitlines()):
+                if phrase not in ln:
+                    continue
+                near = "\n".join(text.splitlines()[max(0, i - 1):i + 3])
+                if any(f in near for f in FAMILY):
+                    out.append(i + 1)
+            return out
+
+        claims = never_typed_claims(sop or "")
+        c.check("CS-13 G3 the SOP no longer claims a close-out command is almost never typed",
+                sop is not None and not claims,
+                "the SOP is ABSENT" if sop is None
+                else (f"still at line(s) {claims}; that sentence is the design this ticket "
+                      "unwinds — it cannot survive the split" if claims
+                      else "clean — the claim is gone"))
+        c.check("CS-13 G3 CONTROL: the claim is caught when it names the family",
+                never_typed_claims("You almost never type `/cicd-prune-worktree`.\n") == [1]
+                and not never_typed_claims("You almost never type `/bmad-shard-doc`.\n"),
+                "both directions: it fires on the family and stays quiet on anything else")
+
+        # ── H · the callers pin the lane (CO-04 / CO-05) ──────────────────────────
+        # SCC-64's lesson on the Task lane: a preflight run from the wrong cwd checked ANOTHER
+        # lane's branch and reported it clean. `--expect-key` is how an invocation states which
+        # ticket it believes it is closing, so a mismatch is a mechanical exit instead of a
+        # prose warning nobody reads.
+        door_pf = calls(door_steps, "closeout_preflight.py")
+        c.check("CS-13 H1 the story door's preflight pins the lane with `--expect-key`",
+                bool(door_pf) and any("--expect-key" in t for _, t in door_pf),
+                f"{[n for n, _ in door_pf]} in {door.name}" if door_pf
+                else f"no closeout_preflight.py invocation found in {door.name}")
+        prune_pf = calls((prune_text or "").splitlines(), "closeout_preflight.py")
+        c.check("CS-13 H2 the prune utility's preflight pins the lane with `--expect-key`",
+                bool(prune_pf) and any("--expect-key" in t for _, t in prune_pf),
+                "file does not exist yet (see A1)" if prune_text is None
+                else (f"pinned at line(s) {[n for n, _ in prune_pf]}"
+                      if any("--expect-key" in t for _, t in prune_pf)
+                      else f"invocation(s) at {[n for n, _ in prune_pf] or 'none'} carry no --expect-key"))
+        # ⛔ H1/H2 READ THE DOCS. THIS ROW READS THE SCRIPT — and without it both can go green on
+        # a flag that does not exist, blessing an invocation that dies with "unrecognized
+        # arguments". Measured: they DID, for exactly as long as the two surfaces were out of
+        # step. The sibling red in `test_closeout_preflight.py` owns the flag's BEHAVIOUR
+        # (mismatch errors, no-key warns); this row owns only that the two surfaces agree.
+        pf_src_path = ROOT / ".agents/scripts/closeout_preflight.py"
+        pf_src = read(pf_src_path) if pf_src_path.is_file() else None
+        c.check("CS-13 H3 `closeout_preflight.py` actually ACCEPTS `--expect-key`",
+                pf_src is not None and "--expect-key" in pf_src,
+                "closeout_preflight.py is ABSENT" if pf_src is None
+                else ("the script declares it — docs and script agree"
+                      if "--expect-key" in pf_src
+                      else "the doors document a flag the script rejects: "
+                           "`unrecognized arguments: --expect-key`"))
+
+        # ── K · the three findings folded into the door (CO-02 / CO-08 / CO-09) ───
+        # K1 · `## Your Actions` is fixed BEFORE the landing or it is fixed on `main`.
+        # Running `check-actions` ahead of the push costs one command; running it after means the
+        # correction is a commit on a branch that has already landed.
+        ca_at = [n for n, _ in calls(door_steps, "jira_feed.py check-actions")]
+        c.check("CS-13 K1 the door runs `check-actions` BEFORE the landing push",
+                bool(ca_at) and bool(push_at) and min(ca_at) < min(push_at),
+                f"check-actions@{ca_at or 'absent'} push@{push_at or 'absent'} in {door.name}")
+        # K2 · SCC-174: the SCOPED form (`--story`) returns before the FORK arm ever runs, so a
+        # forked Dev Record — the same story filed twice under two slugs — is invisible to it.
+        # The verification the door owes is the UNSCOPED one: key + project, no story.
+        chk = calls(door_steps, "jira_feed.py check --key")
+        unscoped = [n for n, t in chk if "--project" in t and "--story" not in t]
+        c.check("CS-13 K2 the door's Dev Record check is the UNSCOPED form (key + project)",
+                bool(unscoped),
+                f"unscoped check at line(s) {unscoped}" if unscoped
+                else f"invocation(s) at {[n for n, _ in chk] or 'none'} — the `--story` form "
+                     "returns before the FORK arm runs (SCC-174)")
+        # K3 · SCC-71: one invocation rode six merges, because a document saying the sign-off
+        # happened still reads as valid on task six. The door's sign-off sentence has to say the
+        # operator's word is SPENT by this one close-out.
+        c.check("CS-13 K3 the door's sign-off is spent by ONE close-out",
+                "spent by" in door_text and "SCC-71" in door_text,
+                f"'spent by' {'present' if 'spent by' in door_text else 'ABSENT'}; "
+                f"'SCC-71' {'present' if 'SCC-71' in door_text else 'ABSENT'} in {door.name}")
 
     return c.finish()
 

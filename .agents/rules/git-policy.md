@@ -1,6 +1,6 @@
 ---
 name: git-policy
-description: "Git policy: main is the ONLY long-lived branch. Each epic gets a short-lived `epic/<JIRA-KEY>-<slug>` branch off main; story/dev work happens in its own git worktree on a `claude/*` branch off the epic branch, where the agent commits FREELY (explicit paths — never `git add -A`). The story lands on its epic branch on Daniel's in-the-moment 'approved' or via /cicd-update-sprint-memory. The epic reaches `main` only through /cicd-push-e2e — full gate + E2E green + Daniel's sign-off."
+description: "Git policy: main is the ONLY long-lived branch. Each epic gets a short-lived `epic/<JIRA-KEY>-<slug>` branch off main; story/dev work happens in its own git worktree on a `claude/*` branch off the epic branch, where the agent commits FREELY (explicit paths — never `git add -A`). The story lands on its epic branch on Daniel's in-the-moment 'approved' or via /cicd-close-story-merge-tree. The epic reaches `main` only through /cicd-push-e2e — full gate + E2E green + Daniel's sign-off."
 ---
 
 # Git Policy
@@ -65,7 +65,7 @@ description: "Git policy: main is the ONLY long-lived branch. Each epic gets a s
 | Destination | Permission |
 |---|---|
 | Your own `claude/*` story branch (commits **and** pushes) | **FREE** — no approval, loops/retries fine |
-| The epic branch (`epic/*`) — a story landing | **Daniel's sign-off** — his in-the-moment "approved", or invoking `/cicd-update-sprint-memory` (which IS the sign-off) |
+| The epic branch (`epic/*`) — a story landing | **Daniel's sign-off** — his in-the-moment "approved", or invoking `/cicd-close-story-merge-tree` (which IS the sign-off) |
 | A `chore/*` branch (commits and pushes) | **FREE** — the merge back to `main` is what's gated |
 | `main` | **In this repo: a pull request the operator merges.** In project repos: `/cicd-push-e2e`. See below. Never on an agent's own initiative. |
 
@@ -253,7 +253,7 @@ a licence to leave work uncommitted or a landing unpushed.
 
 ## The landing — one story, one clean push
 
-The story lands on its **epic branch** at close-out (`/cicd-update-sprint-memory` Step 7) or on
+The story lands on its **epic branch** at close-out (`/cicd-close-story-merge-tree` Step 3) or on
 Daniel's in-the-moment "approved". It merges **from inside the worktree**, never by checking out the
 epic branch in the shared checkout:
 

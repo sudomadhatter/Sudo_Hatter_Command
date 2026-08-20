@@ -162,7 +162,7 @@ needs. Any other audit can call the same two verbs; nothing about them is that c
 ⛔ **Nothing else may retype a `Bug`.** It carries the same number and the same story file it always
 did, so every rule here reads it as a mistype — and "correcting" it mid-flight **erases the only
 signal that the work is broken.** Exactly one thing clears it: `jira_feed.py devrecord --closing`,
-run by whichever close-out owns the ticket (`/cicd-update-sprint-memory` Step 4.5 for a Story,
+run by whichever close-out owns the ticket (`/cicd-close-story-merge-tree` Step 4 for a Story,
 `/smh-close-task-merge-tree` Step 4 for a Task), because close-out is the one moment anything can know
 the fix landed. The bulk `audit` **cannot** tell "still broken" from "fixed", so it reports Bugs and
 moves on.
@@ -208,7 +208,7 @@ above, and the reason `Task` needed a command of its own:
 
 | Type | Branch | Closes out with | Why the other one cannot |
 |---|---|---|---|
-| **`Story`** | `claude/<KEY>-<slug>` off the epic branch | `/cicd-update-sprint-memory` | it lands on the **epic** branch, never `main` |
+| **`Story`** | `claude/<KEY>-<slug>` off the epic branch | `/cicd-close-story-merge-tree` | it lands on the **epic** branch, never `main` |
 | **`Task`** | `chore/<KEY>-<slug>` off `main` | **`/smh-close-task-merge-tree`** (SCC-49) | close-out reads a sprint board, flips a story status and lands on an epic branch — a Task has **none of the three**, so the command has nothing to operate on |
 | **`Subtask`** | `chore/<KEY>-<slug>` off `main` — **its own**, exactly like a Task | **`/smh-close-task-merge-tree`** | nothing else: a subtask is a leaf that ships code, so it lands its own branch as it finishes. Its **parent** closes LAST, and `task_preflight.py` refuses the parent while any child is still open (SCC-119). ⭐ **Riders — the DEFAULT when able (SCC-170, was the SCC-156 exception):** a subtask whose work rides the parent's consolidated lane ships **no branch of its own** — declare it under `riders:` in the parent lane's `task.yaml`, and the parent's close ceremony transitions it to `Done` first, parent last, as an agent write. **Who decides: the agent, and it says why** — `work-consolidation.md` rule 2, one lane when the subtasks share a repo and a lane class, separate lanes when they genuinely run in parallel. It is no longer "when the operator orders it" |
 | **`Epic`** | `epic/<KEY>-<slug>` off `main` | `/cicd-push-e2e` | — |
@@ -438,7 +438,7 @@ python3 .agents/scripts/jira_feed.py finish    --key SCC-155 --walkthrough <path
 - **`mint`** (① Step 1.6) dedupes on the BMAD number, renders the **description from the story file**
   (statement + ACs + lane rulings + file path), creates it bare and parented, then re-reads the ticket
   and exits 2 if the description did not land. Prints `JIRA_KEY=<KEY>`.
-- **`devrecord`** (close-out Step 4.5, `/cicd-quick-dev` Step 3.5) files THE Dev Record — decisions,
+- **`devrecord`** (close-out Step 4, `/cicd-quick-dev` Step 3.5) files THE Dev Record — decisions,
   pitfalls, follow-ons, outcome, evidence. **Exactly one per ticket:** an existing record is updated in
   place, never stacked, so the branch-closer and the story-closer cannot leave two partial records.
 - **`check`** answers "does this ticket carry both halves?" — exit 2 if not.
@@ -558,7 +558,7 @@ ticket made every story thats an endless loop that never finishes").
    | **first commit on `chore/ · claude/ · epic/`** | **the `post-commit` recorder** → `jira_feed.py start` | **`In Progress`** |
    | worktree-open, Task lane | `/smh-quick-dev` Step 0.5 → `jira_feed.py start` | `In Progress` |
    | story pickup, ① | `/cicd-write-story-tests` Step 1.6.4 → `jira_feed.py start` | `In Progress` |
-   | story close-out | `/cicd-update-sprint-memory` Step 4.5 | `Done` |
+   | story close-out | `/cicd-close-story-merge-tree` Step 4 | `Done` |
    | task close-out | `/smh-close-task-merge-tree` Step 4 | `Done` |
    | epic merge | `/cicd-push-e2e` Step 6.5 | `Done` |
    | found broken | `jira_feed.py flag` | **out of** `Done` |

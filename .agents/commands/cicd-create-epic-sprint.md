@@ -10,7 +10,7 @@ an epic, a populated sprint board, AND a Daniel-confirmed P0–P3 risk map in ON
 per-story dev loop. Project-scoped (targets THIS repo).
 
 > Flow position: `cicd-boot-sprint-memory` → **`cicd-create-epic-sprint`** →
-> `cicd-write-story-tests` → `cicd-dev-story-tests` → `cicd-code-review` → `cicd-update-sprint-memory`.
+> `cicd-write-story-tests` → `cicd-dev-story-tests` → `cicd-code-review` → `cicd-close-story-merge-tree`.
 
 ## Step 0 — Resolve the target project (FIRST — before any other step)
 Bind the target per `.agents/rules/smh-target-resolution.md` §STD + §BIND: self fast-path → `$ARGUMENTS`

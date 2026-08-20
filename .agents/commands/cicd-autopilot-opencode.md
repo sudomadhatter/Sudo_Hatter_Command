@@ -173,7 +173,7 @@ Also the same as `/cicd-autopilot-claude`, and new here (read that command's Gua
 - **One story, one worktree** — `.claude/worktrees/<story-slug>/` on `claude/<JIRA-KEY>-<story-slug>`,
   cut from the epic branch, opened before Stage 1 and re-bound on resume. Every stage cwd, both suites,
   the story file, `sprint-status.yaml` and the run folder live under it. It is what makes the result
-  landable at all: `/cicd-update-sprint-memory` Step 7 requires a `claude/*` HEAD.
+  landable at all: `/cicd-close-story-merge-tree` Step 3 requires a `claude/*` HEAD.
 - **Gitignored assets are bootstrapped in** (`auth_keys/`, the `.env` files, a `node_modules` junction),
   because they do not travel with a worktree.
 - **The orchestrator commits** inside the tree on its green gate — explicit enumerated paths, Jira-keyed
@@ -230,6 +230,6 @@ Or trigger via the slash command: **`/cicd-autopilot-opencode 13.4`**.
    the top - AND `decisions-log.md` (every choice the team made on your behalf). Both are in the run
    folder **inside the story worktree**; so is the code. The ticket is at **In Review** with its Dev Record.
 2. Answer any open questions. The story is already at **`review`** and the work is already **committed**
-   on its `claude/*` branch. Run `/cicd-update-sprint-memory` — it lands the branch on the epic branch,
-   flips `review -> done`, and prunes the tree.
+   on its `claude/*` branch. Run `/cicd-close-story-merge-tree` — it runs the `/cicd-update-sprint-memory`
+   save (which flips `review -> done`), lands the branch on the epic branch, and prunes the tree.
 3. Nothing to commit by hand. If the run reported `COMMIT REJECTED`, the work is staged in the tree.

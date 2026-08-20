@@ -115,10 +115,23 @@ NOT_PAIRED = {
     # ── cicd-only: BMAD story/epic/sprint machinery, deploys, and project-runtime teams ──
     "cicd-write-story-tests.md": _ONE_SUBJECT + " (story ① - there are no stories in the lobby)",
     "cicd-dev-story-tests.md": _ONE_SUBJECT + " (story ② - ditto)",
-    "cicd-update-sprint-memory.md": _ONE_SUBJECT + " (story close-out + board flip)",
+    # ⛔ NOT `_ONE_SUBJECT`: the smh side DOES have a door, and the two LOOK like a pair
+    # until you read where each one lands. A story lands on its EPIC branch - one
+    # sanctioned push, main untouched; a Task opens a PULL REQUEST against main and stops
+    # for the operator's click. Different target, different law - and today the two bodies
+    # share no fenced region at all. Promoting them to PAIRS is a design of its own (fence
+    # the preflight, the sign-off and the prune, then hold each identical), and SCC-210
+    # deliberately did not do it: it only rebalanced which cicd command owns which step.
+    "cicd-close-story-merge-tree.md": "the story DOOR - it lands on the EPIC branch "
+                                      "while smh-close-task-merge-tree opens a PR "
+                                      "against main, so their bodies share no law "
+                                      "fence today; pairing them would mean "
+                                      "fence-by-fence law parity (SCC-210)",
+    "cicd-update-sprint-memory.md": _ONE_SUBJECT + " (the story SAVE - board flip, "
+                                    "learning routing, context budget; no sprint board here)",
     "cicd-create-epic-sprint.md": _ONE_SUBJECT + " (epic kickoff + sprint board)",
     "cicd-boot-sprint-memory.md": _ONE_SUBJECT + " (sprint pick-up)",
-    "cicd-close-workingtree.md": _ONE_SUBJECT + " (prunes a story tree; smh prunes in its door)",
+    "cicd-prune-worktree.md": _ONE_SUBJECT + " (prunes a story tree; smh prunes in its door)",
     "cicd-push-e2e.md": _ONE_SUBJECT + " (ships an epic to production; the lobby has no deploy)",
     "cicd-e2e.md": _ONE_SUBJECT + " (Firebase-emulator E2E; the lobby has no frontend)",
     "cicd-bdd-tests.md": _ONE_SUBJECT + " (BDD feature suite)",
@@ -131,7 +144,9 @@ NOT_PAIRED = {
     "cicd-resume.md": _ONE_SUBJECT + " (resumes a parked story)",
     "cicd-prune-context.md": _ONE_SUBJECT + " (trims a long story session)",
     # ── smh-only: the command centre's own doors, board and toolkit plumbing ──
-    "smh-close-task-merge-tree.md": _ONE_SUBJECT + " (the PR door; cicd ships via push-e2e)",
+    "smh-close-task-merge-tree.md": "the Task DOOR - it opens a PR against main and stops "
+                                    "for the click; the story door above lands on an epic "
+                                    "branch, and cicd reaches main only via push-e2e",
     "smh-plan-task.md": _ONE_SUBJECT + " (plans a Task's whole subtask set)",
     "smh-sync-agents.md": _ONE_SUBJECT + " (publishes the toolkit; projects are thin)",
     "smh-update-maps-indexes.md": _ONE_SUBJECT + " (repo maps + INDEX reconciliation)",
