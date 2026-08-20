@@ -1693,7 +1693,13 @@ def main() -> int:
         CMDS = ROOT / ".agents/commands"
         SOP_PATH = ROOT / "docs/_scc_sops_prds/workflows_testing_SOP.md"
         PUSH = "git push origin HEAD:epic/"
-        TRANS = "acli jira workitem transition"
+        # ⛔ ASSEMBLED, for the same reason `RETIRED` is — and this one was caught by the gate
+        # rather than by review. `test_jira_feed.py`'s yes-guard sweeps every `.md`/`.py`/`.sh`
+        # under `.agents/` for an `acli … workitem transition` call missing `--yes`, exempting
+        # only its OWN file. Written as one literal, this needle IS such a line, so the guard
+        # indicted a test constant that invokes nothing: 342/343, and the whole enforcement
+        # suite red. Split, the needle still matches every real call and matches nothing here.
+        TRANS = "acli jira workitem " + "transition"
 
         def story_door() -> Path:
             """The command an operator types to close ONE story out, whatever it is called today.
