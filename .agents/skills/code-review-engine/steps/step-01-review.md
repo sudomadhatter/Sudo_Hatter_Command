@@ -124,7 +124,15 @@ for: it has no repo access by design, so its trace runs on the diff text, and
 this lens exists to find what a fully-informed reader rationalizes away — so do not "help" it by
 handing it the repo or the pack.
 
-## The literal-correctness lens — the one lens with a real token cost
+## The literal-correctness lens — deliberately line-level
+
+**What per-lens cost is actually MEASURED (Arm A means, 3 runs/arm —
+`_artifacts/_main/2026-08-12_scc-124-baseline-trial/scoring.md`):** Edge Case Hunter 220.5 s (the
+slowest lens in 5 of 6 runs) · Blind Hunter 180.9 s · Acceptance Auditor 127.4 s · Test-Adequacy
+75.3 s. **This lens is unmeasured — it postdates that trial (SCC-126)**, so no cost claim about it
+is funded until the SCC-232 measurement runs. And cost is not the whole ledger: the Edge Case
+Hunter is the most expensive lens measured AND produced the SCC-129 trial's one unseeded true
+positive (NaN/Infinity bypassing an `amount < 0` guard, because `nan < 0` is False).
 
 The other four lenses are high-altitude: topology, lifecycle, acceptance criteria, test tiers.
 This one is deliberately not, and the gap it closes is one the harness this discipline is ported
@@ -412,11 +420,14 @@ which is the pair of documents it can actually hold to account.
 ## No noise filter — at this layer or any other
 
 ⛔ **Never gate findings on "worthiness", and never add a filter that drops low-value findings
-before they are recorded.** This is a measured decision, not a taste: pr-af ships exactly such a
-gate and publishes what it costs — recall falls from 0.69 to 0.52. Our reviewer applies the fixes
-it finds, so a noisy finding costs one triage decision while a missed one ships. Precision is
-bought *inside* each finding, by the three gates above, never by a filter over the set. If a future
-change proposes one "for free", this paragraph is the answer.
+before they are recorded.** Our reviewer applies the fixes it finds, so a noisy finding costs one
+triage decision while a missed one ships. Precision is bought *inside* each finding, by the three
+gates above, never by a filter over the set.
+
+**The fence (SCC-230):** this ruling applies where findings are anchored to a diff. Where there
+is no diff — plan and story audits — the anchor rule of SCC-225 governs instead: no anchor,
+delete. External benchmarks are cited with source and version, or they are not cited — the recall
+figure that used to sit here carried neither and is gone.
 
 ## ⭐ THE LENS-ROSTER CONTRACT — five scars, one section, one invariant (SCC-229)
 

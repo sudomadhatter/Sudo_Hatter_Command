@@ -484,9 +484,15 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     ("step-01: worthiness gating is banned outright", STEPS[0],
      r"Never gate findings on .worthiness.", 0,
      "Never gate findings on", "Gate findings on"),
-    ("step-01: the recall cost of a worthiness gate is recorded", STEPS[0],
-     r"recall falls from 0\.69 to 0\.52", 0,
-     "recall falls from 0.69 to 0.52", "recall is unaffected"),
+    # SCC-230 replaced the uncited pr-af recall figure with the fence: the ruling binds
+    # diff-anchored review; plan/story audits answer to SCC-225's anchor rule instead, and
+    # external benchmarks are cited with source and version or not at all.
+    ("step-01: the no-filter ruling is scope-fenced to diff-anchored review", STEPS[0],
+     r"applies where findings are anchored to a diff", 0,
+     "applies where findings are anchored to a diff", "applies to every audit, diff or not"),
+    ("step-01: external benchmarks require source and version", STEPS[0],
+     r"cited with source and version", 0,
+     "cited with source and version", "cited freely"),
 
     # ── step-02 (SCC-127): the two roles run as ONE self-gating wave ────────────────────────
     ("step-02: both roles run concurrently in one wave", STEPS[1],
@@ -778,7 +784,7 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      "is **not** a dead role and never raises the floor",
      "is a dead role and raises the floor"),
     # ── step-01 (SCC-126): the literal-correctness lens, and the caps that make it affordable ─
-    # This lens is the epic's only real token cost, so every check below binds either its WIRING
+    # This lens is the most instrumented one, so every check below binds either its WIRING
     # (the table cells that route it) or a cap that bounds it. Prose about the lens is not pinned;
     # a description cannot route a lens and cannot bound a cost.
     ("step-01: Literal-Correctness Hunter is a lens row that always runs", STEPS[0],

@@ -75,6 +75,29 @@ def main() -> int:
             "lenses_na" in t and "never raises `severity_floor`" in t
             and "`4/4`, never `4/5`" in t, "distinction lost")
 
+    # ── SCC-230: doc-truth — no unfunded cost claim, the fence on :440 ────────
+    c.check("SCC-230: the unfunded cost headline is struck",
+            "the one lens with a real token cost" not in t, "claim survives")
+    c.check("SCC-230: per-lens cost speaks only from the measured table, cited",
+            "scoring.md" in t and "220.5" in t and "180.9" in t and "127.4" in t
+            and "75.3" in t, "measured table absent")
+    c.check("SCC-230: Literal-Correctness is labelled unmeasured",
+            "unmeasured" in t, "label absent")
+    c.check("SCC-230: the note for the record - most expensive AND the one unseeded "
+            "true positive",
+            "unseeded true" in t, "cost-is-not-the-whole-ledger note absent")
+    c.check("SCC-230: the noise-filter ruling still binds diff-anchored review",
+            'Never gate findings on "worthiness"' in t, "the ruling was repealed")
+    c.check("SCC-230: the ruling is scope-fenced to diff-anchored review",
+            "applies where findings are anchored to a diff" in t
+            and "anchor rule of SCC-225 governs" in t, "fence absent")
+    c.check("SCC-230: external benchmarks need source and version, and the uncited "
+            "one is gone",
+            "source and version" in t and "0.69" not in t and "0.52" not in t,
+            "pr-af number still cited without a source")
+    c.check("SCC-230: the paragraph no longer forbids its own revision",
+            "this paragraph is the answer" not in t, "self-sealing clause survives")
+
     # ── the return shape is unchanged (walkthrough_roster.py reads it) ────────
     c.check("step-04 still emits the lenses_run roster line",
             "lenses_run:" in STEP04, "roster line renamed or dropped")
