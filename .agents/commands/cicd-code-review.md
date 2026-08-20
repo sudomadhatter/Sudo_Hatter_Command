@@ -109,6 +109,16 @@ the step:
 3. **Which sibling story lanes are still live, and does one of them need to land first?** Name the
    landing-order dependency and what happens to this story if the order is reversed.
 
+
+**Derive `review_level` HERE, from the radius you just measured (SCC-232) — derived, never
+chosen.** The rule is fixed and defined once, in the engine's lens-roster contract (step-01 § The
+two levels): **quick** when every answer above came back contained (nothing referenced moved · no
+gate, hook, rule, or contract surface in the radius · ≤3 source files in the re-taken diff);
+**standard** otherwise. Hand the engine `review_level` WITH the three written answers as its
+grounding — a level without its radius evidence is a flag, and no caller gets one; the engine
+defaults such a call to `standard`. (`lens_budget` is a different axis and neither re-declares
+the other.)
+
 **Absorb the epic branch now, before the verdict** — conflicts belong on this story branch, never on
 the epic (`git-policy`). Re-run Step 3's gate **after** absorbing; a verdict measured on a pre-merge
 sha is a verdict about code that will never exist.

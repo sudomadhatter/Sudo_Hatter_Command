@@ -446,6 +446,32 @@ at parity everywhere — pack build 0.19–0.36 s, lens-wave overhead 35–65 s,
 220.5 s and the Blind Hunter at 180.9 s (Arm A means), an order of magnitude past everything the
 orchestration does. Investigate the lens before touching the harness.
 
+### The two levels — `quick` and `standard`, derived from the caller's measured radius (SCC-232)
+
+The roster is not flat-rate. The caller's Step 0.7 re-derives the diff's blast radius against the
+current integration ref, and the LEVEL is a fixed reading of that measurement — **derived there,
+never a flag the caller chooses**: a caller-chosen level would be a hard-coded budget wearing a
+different hat. The engine therefore requires the level to arrive WITH the three written Step 0.7
+answers that ground it.
+
+| `review_level` | Lens set | The fixed rule, applied by the caller at its Step 0.7 |
+|---|---|---|
+| `quick` | **Test-Adequacy + Acceptance** Auditor | every 0.7 answer came back contained: nothing this diff references moved · no gate, hook, rule, or contract surface in the radius · ≤3 source files in the re-taken diff |
+| `standard` | the full roster — adds Edge Case, the Blind Hunter, and Literal-Correctness | anything else, and the default whenever the level did not arrive with its radius evidence |
+
+**Membership is data-gated, not preference (the pre-registered SCC-232 rule):** quick keeps the
+two cheapest measured lenses — Acceptance 127.4 s, Test-Adequacy 75.3 s (scoring.md, Arm A means)
+— and standard carries the expensive three. Literal-Correctness measured **1,082.0 s** on the same
+fixture (2026-08-20, Arm A, n=1; the 3-round mean is lower-bounded at 360.7 s —
+`_artifacts/_main/2026-08-20_scc-225-review-surface/lc-cost-measurement.md`), 8.5× the 127.4 s
+threshold, so it sits in standard.
+
+A lens excluded by level ends the run **skipped-by-mode**: recorded on `lenses_na` as
+`<lens> · n/a — skipped-by-mode (level: quick)`, never `dead`, never inside the
+`<n>/<applicable>` count — a quick review reports `2/2`, exactly the mode-skip contract below.
+No minute budget and no finding cap exists on either level, and `lens_budget` (below) stays the
+independent cost axis it is — neither re-declares the other.
+
 ### `lens_budget` — the literal-correctness lens's cost axis, defined here, once (SCC-147)
 
 ⛔ **`lens_budget` is NOT `review_mode`, and the two are independent.** `review_mode`

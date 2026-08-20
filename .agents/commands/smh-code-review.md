@@ -104,6 +104,16 @@ Then answer these three, in writing:
 3. **Which sibling lanes are still live, and does one of them need to land first?** Name the
    landing-order dependency and what happens to this work if the order is reversed.
 
+
+**Derive `review_level` HERE, from the radius you just measured (SCC-232) — derived, never
+chosen.** The rule is fixed and defined once, in the engine's lens-roster contract (step-01 § The
+two levels): **quick** when every answer above came back contained (nothing referenced moved · no
+gate, hook, rule, or contract surface in the radius · ≤3 source files in the re-taken diff);
+**standard** otherwise. Hand the engine `review_level` WITH the three written answers as its
+grounding — a level without its radius evidence is a flag, and no caller gets one; the engine
+defaults such a call to `standard`. (`lens_budget` is a different axis and neither re-declares
+the other.)
+
 **Absorb `main` now, before the verdict** — conflicts belong on this branch, never on `main`
 (`git-policy`). Re-run Step 3's floor **after** absorbing; a verdict measured on a pre-merge sha is a
 verdict about code that will never exist.
@@ -111,7 +121,7 @@ verdict about code that will never exist.
 > This step is the post-dev half of `/smh-self-audit`, deliberately placed **here** rather than offered
 > as a second invocation of that command. An opt-in re-audit is one nobody runs — the memory audit sat
 > unused inside `/smh-update-maps-indexes` for exactly that reason. See that command's
-> **§ Running it after the work is built** for which phases go stale and which do not.
+> **§ After the work is built** for which lenses go stale and which do not.
 
 ## Step 0.9 — ⭐ Probe the review runtime and RECORD it (before the engine, SCC-177)
 

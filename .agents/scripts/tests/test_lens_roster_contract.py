@@ -98,6 +98,25 @@ def main() -> int:
     c.check("SCC-230: the paragraph no longer forbids its own revision",
             "this paragraph is the answer" not in t, "self-sealing clause survives")
 
+    # ── SCC-232: two levels, derived from measured radius, membership data-gated ─
+    c.check("SCC-232: quick and standard are defined as lens SETS in the contract",
+            "### The two levels" in t and "quick" in t and "standard" in t,
+            "level section absent")
+    c.check("SCC-232: quick = Test-Adequacy + Acceptance (the measured split)",
+            "Test-Adequacy + Acceptance" in t, "membership not the measured one")
+    c.check("SCC-232: the measurement that decided membership is cited with its number",
+            "1,082" in t and "lc-cost-measurement.md" in t, "datum uncited")
+    c.check("SCC-232: the level is DERIVED from Step 0.7, never a caller flag",
+            "never a flag the caller" in t, "derivation rule absent")
+    c.check("SCC-232: a lens excluded by level reports skipped-by-mode, never dead",
+            "level: quick" in t, "exclusion state absent")
+    for name, cmd_path in (("smh", ".agents/commands/smh-code-review.md"),
+                           ("cicd", ".agents/commands/cicd-code-review.md")):
+        cmd = (ROOT / cmd_path).read_text(encoding="utf-8")
+        c.check(f"SCC-232: {name} Step 0.7 derives the level from its own measured "
+                f"radius",
+                "review_level" in cmd and "derived" in cmd.lower(), "derivation absent")
+
     # ── the return shape is unchanged (walkthrough_roster.py reads it) ────────
     c.check("step-04 still emits the lenses_run roster line",
             "lenses_run:" in STEP04, "roster line renamed or dropped")

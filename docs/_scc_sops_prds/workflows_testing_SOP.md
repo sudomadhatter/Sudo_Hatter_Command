@@ -501,7 +501,14 @@ then read the story.*
 > out from under you. Step 0.7 re-derives it and makes you answer three questions in writing
 > (*did anything this diff references move · what is the true overlap and does `merge-tree` conflict ·
 > which sibling lanes must land first*); **"nothing moved" is a reportable result**, not a reason to
-> skip it. Step 1.5 audits the diff against the story's checkable list — an item with no evidence is
+> skip it. Since SCC-232, Step 0.7's measured radius also RESOLVES the review level — `quick`
+> (Test-Adequacy + Acceptance only, when nothing referenced moved, no gate/hook/rule/contract
+> surface is in the radius, and the re-taken diff stays ≤3 source files) or `standard` (the full
+> roster) — derived from the measurement, never a flag you or the agent chooses; a level arriving
+> without its radius evidence defaults to `standard`, and level-excluded lenses report
+> `skipped-by-mode (level: quick)`, never dead. Membership was data-gated by the 2026-08-20
+> Literal-Correctness measurement (1,082 s on the SCC-124 fixture — 8.5× the Acceptance Auditor).
+> Step 1.5 audits the diff against the story's checkable list — an item with no evidence is
 > **not satisfied**, and anything in the diff *beyond* the list is **drift**. Since SCC-231 the same
 > step reconciles a SECOND left-hand side: the plan's `## Declared Change Set` block against the
 > real diff — a file edited but never declared is `drift.undeclared` (*important*), a file declared
