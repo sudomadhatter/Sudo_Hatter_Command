@@ -171,7 +171,12 @@ Read, grep, run non-mutating commands. Understand the problem. Write to NO proje
 
 Start the **TodoWrite task list** (this is the task tracker — no `task.md` file), then write
 `implementation_plan.md` (goal, every file touched with links, execution order, open questions,
-verification plan). Use the `Write` tool. Frontmatter on every artifact file:
+verification plan). **The touch-list half of that takes ONE fixed form (SCC-226): a
+`## Declared Change Set` section** — one repo-relative path per bullet, op marker `NEW` / `EDIT` /
+`DELETE`, and `→ <the acceptance row it serves>` — parsed by `.agents/scripts/declared_change_set.py`
+(the self-audit's Scope Ledger and the review drift check both read it; a bullet that fails the
+grammar is reported `incomplete`, and an absent block is the reviewer's *important* finding). The
+block **satisfies** this paragraph's requirement; it does not replace it. Use the `Write` tool. Frontmatter on every artifact file:
 
 ```markdown
 ---
