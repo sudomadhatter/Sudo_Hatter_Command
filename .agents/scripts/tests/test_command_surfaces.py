@@ -2022,7 +2022,7 @@ def main() -> int:
 
         # ── G · the SOP tells the truth ───────────────────────────────────────────
         sop = read(SOP_PATH) if SOP_PATH.is_file() else None
-        # ⛔ ANCHORED, not present. A bare `"<name>" in sop` was reproduced surviving the SOP being
+        # ⛔ ANCHORED, not present (SCC-210 review). A bare `"<name>" in sop` was reproduced surviving the SOP being
         # scrubbed of all 53 live references and given ONE html comment naming both commands —
         # the recorded prose-pinning blind spot (`prose-pinning-guards-are-vacuous`). What makes
         # the SOP true about this family is that each command OWNS a section an operator can land

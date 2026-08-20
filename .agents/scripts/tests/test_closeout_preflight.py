@@ -432,7 +432,7 @@ def main() -> int:
                     (not gone) and not errs and bool(warns),
                     MISSING if gone else f"rc={rc} errors={errs} warns={warns}")
 
-            # ⛔ EK0 · REQUIREDNESS IS THE GUARD. Every row above PASSES the flag, so all of
+            # ⛔ EK0 · REQUIREDNESS IS THE GUARD (SCC-210 review). Every row above PASSES the flag, so all of
             # them stay green when `required=True` becomes `required=False` - measured: the
             # whole 39-file suite survives that one-token edit, and the mutant then prints
             # `VERDICT: clear to close out` for a run aimed at a sibling lane, which is the
@@ -516,7 +516,7 @@ def main() -> int:
                     v_def.startswith("VERDICT:") and "STALE" not in v_def,
                     v_def or "(no VERDICT line printed)")
 
-            # ⛔ FR5 · THE TWO REMEDIES MUST DIFFER, because the fixes are different acts. A
+            # ⛔ FR5 · SCC-210 review · THE TWO REMEDIES MUST DIFFER, because the fixes are different acts. A
             # failed fetch is an uplink to repair; `--no-fetch` is a flag to drop. Collapsing
             # the ternary so both arms print "re-run WITHOUT --no-fetch" survived the whole
             # suite - and every shipped invocation passes the DEFAULT, so that arm is the one
@@ -529,7 +529,7 @@ def main() -> int:
                     "STALE" in v_bad and "FAILED" in v_bad and "--no-fetch" not in v_bad,
                     v_bad or "(no VERDICT line printed)")
 
-        # ⛔ FR6 · the fold ACROSS repos. `main()` computes freshness as
+        # ⛔ FR6 · SCC-210 review · the fold ACROSS repos. `main()` computes freshness as
         # `check_sync(project) and check_sync(lobby) and check_sync(worktree)`; the door
         # ALWAYS passes `--worktree`, and no row above ever did - the string did not appear in
         # this file at all. Dropping `and fresh` from the worktree term turned STALE back into
@@ -606,7 +606,7 @@ def main() -> int:
                     rc_clean == 1 and rc_mem == 2 and rc_both == 2,
                     f"clean={rc_clean} memory-only={rc_mem} both={rc_both}")
 
-            # ⛔ MEM4 · READ the memory-only run, do not merely count its exit code. MEM1 and
+            # ⛔ MEM4 · SCC-210 review · READ the memory-only run, do not merely count its exit code. MEM1 and
             # MEM2 both look at `out_both`, so a split that emits a generic row for ZERO
             # ordinary files - "project: 0 uncommitted change(s) - commit before closing out",
             # a fabricated instruction about nothing - survived all three rows. Measured.
@@ -615,7 +615,7 @@ def main() -> int:
             c.check("MEM4 a memory-ONLY lane gets NO generic 'commit before closing out' row",
                     not gen_mem, f"generic rows on a lane whose only dirt is memory: {gen_mem}")
 
-            # ⛔ MEM5 · THE SHAPE CO-07 WAS WRITTEN FOR, which the rows above cannot express.
+            # ⛔ MEM5 · SCC-210 review · THE SHAPE CO-07 WAS WRITTEN FOR, which the rows above cannot express.
             # They dirty memory as an UNTRACKED file (`?? `, no leading space) alongside a
             # tracked one, and git lists tracked entries first - so the memory line is never
             # line 0 and never in the ` M ` form. A tracked, MODIFIED memory file listed FIRST
@@ -636,7 +636,7 @@ def main() -> int:
                     bool(mem_rows) and not gen_rows,
                     f"porcelain={porcelain!r} memory rows={mem_rows} generic={gen_rows}")
 
-            # ⛔ MEM6 · a memory path git has to QUOTE. `status --porcelain` octal-quotes any
+            # ⛔ MEM6 · SCC-210 review · a memory path git has to QUOTE. `status --porcelain` octal-quotes any
             # path holding a non-ASCII byte, so `café.md` arrives as `"_artifacts/_memory/
             # caf\303\251.md"`, `ln[3:]` starts with `"`, and the class test misses again -
             # the same misroute by a second route. `task_preflight` passes

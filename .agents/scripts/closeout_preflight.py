@@ -200,7 +200,8 @@ def check_sync(label: str, repo: Path, fetch: bool, rep: wf.Report) -> bool:
     else:
         rep.warn("sync", f"{label} [{branch}]: no upstream to compare against")
 
-    # ⛔ `-c core.quotepath=false`, and `.splitlines()` on the RAW stdout — both are load-bearing
+    # ⛔ SCC-210 review · `-c core.quotepath=false`, and `.splitlines()` on the RAW stdout — both
+    # are load-bearing
     # for the split below, and both were missing in the first cut of it.
     #   · quotepath: git octal-quotes any path holding a non-ASCII byte, `"` or `\`, so
     #     `_artifacts/_memory/café.md` arrives as `"_artifacts/_memory/caf\303\251.md"` and the
