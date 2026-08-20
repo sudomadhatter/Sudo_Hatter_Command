@@ -201,4 +201,11 @@ run. Named per the assertion-drift law: cut-or-name-why — named, stays.
 
 ## Your Actions
 
-- [ ] none — board writes and the merge run through `/smh-close-task-merge-tree` on your word.
+- [x] The merge itself — lands via this branch's PR
+- [ ] DECISION — the SCC-234 dead pointer (review deviation, recorded above): the parent ticket's
+      index row I names SCC-234, a deleted key Jira cannot reissue, for the close-out-audit
+      surface (surface 3) whose scope was deliberately left unspecified. Two clean resolutions —
+      say which and the agent applies it as a board edit: **(a)** reword the parent's row to drop
+      the dead key and mark surface 3 as future work with no number, or **(b)** keep surface 3
+      live by rewording the row to "surface 3: unscheduled" and it gets planned as its own lane
+      when you next call for it. (No new ticket is minted either way unless you say the word.)
