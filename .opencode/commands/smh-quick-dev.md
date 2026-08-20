@@ -184,7 +184,7 @@ done — verify the box's four conditions and go straight to Step 2.**
 
 1. **Write `implementation_plan.md`** *(skip if this lane arrived with an approved plan — see the box)* into `_artifacts/_main/<YYYY-MM-DD>_<slug>/`, right-sized to the
    work. Each acceptance item maps to a step, and each step names **the assertion that will prove it**.
-   Carry the **`## Declared Change Set` block** (`artifacts-always-first.md` §plan contents, SCC-226):
+   Carry the **`## Declared Change Set` block** (`artifacts-always-first.md` §2 Create the artifact folder + plan, SCC-226):
    one path per bullet, `NEW`/`EDIT`/`DELETE`, `→ <acceptance row>` — `/smh-code-review` Step 2 diffs
    the real diff against exactly this list.
 2. **Invoke `/smh-self-audit`** on that plan. It appends its `## Self-Audit (<date>)` section and a

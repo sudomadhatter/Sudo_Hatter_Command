@@ -53,7 +53,7 @@ flag with no file behind it fails the gate):
 ## Step 1 — Plan
 Invoke **`bmad-dev-story`** in PLAN mode for the story in `$ARGUMENTS`. Produce its `implementation_plan.md`
 **into `ARTIFACT_DIR`** — not the BMAD stories dir, not the `_artifacts/` root. The plan carries the
-**`## Declared Change Set` block** (`artifacts-always-first.md` §plan contents, SCC-226): one path per
+**`## Declared Change Set` block** (`artifacts-always-first.md` §2 Create the artifact folder + plan, SCC-226): one path per
 bullet, `NEW`/`EDIT`/`DELETE`, `→ <the AC it serves>` — Step 1.5's drift check reconciles the real
 diff against exactly this list.
 

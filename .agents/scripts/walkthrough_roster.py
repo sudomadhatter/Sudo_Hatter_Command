@@ -78,6 +78,14 @@ _RUNTIME_RE = re.compile(r"^[>\-*#\s]*\**\s*review[-_]runtime\s*:\**\s*\**(fan-o
                          re.I | re.M)
 _DATE_RE = re.compile(r"(\d{4}-\d{2}-\d{2})")
 
+# SCC-231/233 record lines (this parser is their ONLY machine tier — measured base rate for
+# prose-only obligations: 12 of 142 walkthroughs complied, this module's own docstring). The
+# LAST occurrence governs, same rule as the roster: a re-review appends.
+_DISPO_RE = re.compile(r"^[>\-*#\s]*\**\s*dispositions\s*:\**\s*(.+)$", re.I | re.M)
+_DRIFT_RE = re.compile(r"^[>\-*#\s]*\**\s*drift\s*:\**\s*(.+)$", re.I | re.M)
+# Lanes dated before the lines became law are exempt, same mechanism as CUTOFF.
+DISPO_CUTOFF = "2026-08-20"
+
 # E7 — Step 0.7's re-derivation. The heading is matched loosely because it is prose written by
 # hand; what is COUNTED is the three numbered lines under it. "nothing moved" is a valid line.
 _REDERIVE_HEAD_RE = re.compile(r"^#{1,6}\s.*(0\.7|re-?deriv)", re.I)
@@ -201,10 +209,15 @@ def parse(text: str) -> dict:
                 rederived += 1
         break
 
+    dispo = _DISPO_RE.findall(text)
+    drift = _DRIFT_RE.findall(text)
+
     return {"lenses": lenses,
             "lenses_na": na,
             "runtime": rt.group(1).lower() if rt else None,
-            "rederive_lines": rederived}
+            "rederive_lines": rederived,
+            "dispositions": dispo[-1].strip() if dispo else None,
+            "drift": drift[-1].strip() if drift else None}
 
 
 def judge(text: str, path: Path | str, verdict: str | None,
@@ -290,6 +303,28 @@ def judge(text: str, path: Path | str, verdict: str | None,
             f"({', '.join(oks)}). Under `inline` the ladder runs once and every lens is "
             f"`recovered-inline`; an `ok` means the header and the roster disagree.")
         return False, reasons
+
+    if date is None or date >= DISPO_CUTOFF:
+        # ⛔ SCC-231/233 (2026-08-20). Both lines exist so their data is READ by a machine, not
+        # remembered by an agent: `dispositions:` is the per-lens death-count record (the SCC-233
+        # enabler — after N runs the Blind Hunter question is answerable from data), `drift:` is
+        # the declared-set reconciliation result (SCC-231 — a drift check that ran and was never
+        # recorded is indistinguishable from one that never ran). Presence is what this tier
+        # gates; the shape is the twins' law.
+        if data["dispositions"] is None:
+            reasons.append(
+                "the `## Code Review` section has no `dispositions:` line. Paste the engine "
+                "summary's line verbatim - `dispositions: per-lens: "
+                "<lens>=<survived>/<dismissed>/<relevance-killed> · ...` - the per-lens death "
+                "counts are the SCC-233 record and nothing else carries them.")
+            return False, reasons
+        if data["drift"] is None:
+            reasons.append(
+                "the `## Code Review` section has no `drift:` line. Record Step 2's declared-set "
+                "reconciliation in one line - `drift: undeclared=<n> · unimplemented=<n> · "
+                "incomplete=<n> - dispositions in the findings table` (or name why there was no "
+                "block to reconcile).")
+            return False, reasons
 
     if data["rederive_lines"] < 3:
         # E7. Step 0.7 is three lines: what moved, what it changes for this lane, what was

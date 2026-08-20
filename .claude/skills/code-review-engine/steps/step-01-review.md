@@ -34,11 +34,14 @@ independence is the entire value of the fan-out. Wall-clock is the slowest lens,
 
 | Lens | Gets | Runs when | How | Primed with `EVIDENCE_PACK` |
 |---|---|---|---|---|
-| **Blind Hunter** | `DIFF` only — no spec, no repo access, no context docs | always | the `bmad-review-adversarial-general` skill + the hunter contract | **never** — starved by design |
-| **Edge Case Hunter** | `DIFF` + read access to `REPO` | always | the `bmad-review-edge-case-hunter` skill + the hunter contract | yes |
-| **Literal-Correctness Hunter** | `DIFF` + read access to `REPO` | always | the literal-correctness discipline + the hunter contract | yes |
+| **Blind Hunter** | `DIFF` only — no spec, no repo access, no context docs | standard level (quick skips it) | the `bmad-review-adversarial-general` skill + the hunter contract | **never** — starved by design |
+| **Edge Case Hunter** | `DIFF` + read access to `REPO` | standard level (quick skips it) | the `bmad-review-edge-case-hunter` skill + the hunter contract | yes |
+| **Literal-Correctness Hunter** | `DIFF` + read access to `REPO` | standard level (quick skips it) | the literal-correctness discipline + the hunter contract | yes |
 | **Acceptance Auditor** | `DIFF` + `STORY_FILE` + any context docs | `review_mode: full` only | the auditor rubric | **never** — cannot verify it |
 | **Test-Adequacy Auditor** | `DIFF` + read access to `REPO` | always | the auditor rubric | yes |
+
+**The `Runs when` column defers to § The two levels (SCC-232)** — `standard level` cells are
+skipped-by-mode at `quick` and recorded on `lenses_na`, never dead; `always` means both levels.
 
 **How to read the `How` column: every lens gets the block it names, and no lens gets the other's.**
 A hunter lens is assembled as its skill plus the hunter contract; an auditor as the auditor rubric.
@@ -129,8 +132,9 @@ handing it the repo or the pack.
 **What per-lens cost is actually MEASURED (Arm A means, 3 runs/arm —
 `_artifacts/_main/2026-08-12_scc-124-baseline-trial/scoring.md`):** Edge Case Hunter 220.5 s (the
 slowest lens in 5 of 6 runs) · Blind Hunter 180.9 s · Acceptance Auditor 127.4 s · Test-Adequacy
-75.3 s. **This lens is unmeasured — it postdates that trial (SCC-126)**, so no cost claim about it
-is funded until the SCC-232 measurement runs. And cost is not the whole ledger: the Edge Case
+75.3 s. **This lens is unmeasured by that trial — it postdates it (SCC-126)**; its own measurement ran
+later under SCC-232 (Arm A, n=1: 1,082.0 s — § The two levels), which is what routes it to
+`standard`. And cost is not the whole ledger: the Edge Case
 Hunter is the most expensive lens measured AND produced the SCC-129 trial's one unseeded true
 positive (NaN/Infinity bypassing an `amount < 0` guard, because `nan < 0` is False).
 

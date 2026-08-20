@@ -30,8 +30,14 @@ STEP07 = ("## Step 0.7 — re-derivation\n\n"
           "3. What was re-measured: the three anchors.\n\n")
 
 
+RECENT = "_artifacts/_main/2026-08-20_lane/walkthrough.md"     # dispositions/drift era
+DISPO = "dispositions:    per-lens: blind=1/2/0 · edge=2/0/1"
+DRIFT = "drift:           undeclared=0 · unimplemented=0 · incomplete=0 — clean"
+
+
 def wt(verdict: str = "PASS", sha: str = "abc1234", roster_rows: str | None = None,
-       runtime: str | None = None, step07: bool = True, na: str | None = None) -> str:
+       runtime: str | None = None, step07: bool = True, na: str | None = None,
+       dispo: str | None = None, drift: str | None = None) -> str:
     out = "# W\n\n"
     if runtime:
         out += f"review-runtime: {runtime}\n\n"
@@ -42,6 +48,10 @@ def wt(verdict: str = "PASS", sha: str = "abc1234", roster_rows: str | None = No
         out += "lenses_run:\n" + roster_rows + "\n"
     if na is not None:
         out += f"lenses_na:       {na}\n"
+    if dispo is not None:
+        out += dispo + "\n"
+    if drift is not None:
+        out += drift + "\n"
     out += f"\nVerdict: {verdict} @ {sha}\n"
     return out
 
@@ -360,6 +370,41 @@ def main() -> int:
                     not fails,
                     f"the superseded stamp was handed to the parser and blocked a fixed lane: "
                     f"{fails}")
+
+    # ── SCC-231/233 · the record lines have a MACHINE tier (2026-08-20) ───────────────────
+    # This lane's own review found both obligations prose-only against a measured 12/142
+    # compliance base rate for prose law - so presence is gated HERE, in the one parser both
+    # preflights already read, with the same date-scoping mechanism as CUTOFF.
+    if c.block("H · dispositions: and drift: are required in the dispo era"):
+        full = wt(roster_rows=ALL_OK, dispo=DISPO, drift=DRIFT)
+        d = roster.parse(full)
+        c.check("H1 · parse reads the dispositions payload",
+                d["dispositions"] == "per-lens: blind=1/2/0 · edge=2/0/1",
+                repr(d["dispositions"]))
+        c.check("H2 · parse reads the drift payload",
+                d["drift"] is not None and d["drift"].startswith("undeclared=0"),
+                repr(d["drift"]))
+        c.check("H3 · both read None when absent",
+                roster.parse(wt(roster_rows=ALL_OK))["dispositions"] is None
+                and roster.parse(wt(roster_rows=ALL_OK))["drift"] is None, "")
+        two = full + "\n## Code Review (re-run)\n\nlenses_run:\n" + ALL_OK + \
+              "dispositions:    per-lens: blind=9/9/9\n" + DRIFT + "\nVerdict: PASS @ beef123\n"
+        c.check("H4 · the LAST dispositions line governs (a re-review appends)",
+                roster.parse(two)["dispositions"] == "per-lens: blind=9/9/9",
+                repr(roster.parse(two)["dispositions"]))
+
+        ok, why = roster.judge(wt(roster_rows=ALL_OK, drift=DRIFT), RECENT, "PASS")
+        c.check("H5 · a dispo-era lane with NO dispositions line BLOCKS",
+                not ok and any("dispositions" in w for w in why), str(why))
+        ok, why = roster.judge(wt(roster_rows=ALL_OK, dispo=DISPO), RECENT, "PASS")
+        c.check("H6 · a dispo-era lane with NO drift line BLOCKS",
+                not ok and any("drift" in w for w in why), str(why))
+        ok, why = roster.judge(wt(roster_rows=ALL_OK, dispo=DISPO, drift=DRIFT),
+                               RECENT, "PASS")
+        c.check("H7 · both lines present passes clean", ok, str(why))
+        ok, why = roster.judge(wt(roster_rows=ALL_OK), POST, "PASS")
+        c.check("H8 · a pre-2026-08-20 lane is EXEMPT from both (not retroactive law)",
+                ok, str(why))
 
     return c.finish()
 

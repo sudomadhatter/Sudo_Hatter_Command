@@ -31,32 +31,55 @@ two-level lens scoping, and per-lens disposition attribution.
 ## Declared Change Set
 
 *(This block is the form part A formalizes — the plan practices it. Op markers: NEW / EDIT / DELETE
-(the ticket's fixed three — audit finding F3). Each maps to the acceptance row it serves, by part letter.)*
+(the ticket's fixed three — audit finding F3). Each maps to the acceptance row(s) it serves, by
+part letter. The review wave (2026-08-20) rewrote this block to per-file ground truth: the glob
+door bullet the shipped grammar rejected became the per-file entries below, the two test files the
+drift check caught undeclared were added, and the review-wave fix surface was declared — recorded
+under Amendments.)*
 
-- EDIT `.agents/rules/artifacts-always-first.md` — §plan contents (~:173): name the block as the form the touch-list requirement takes → A
+- EDIT `.agents/rules/artifacts-always-first.md` — §2 Create the artifact folder + plan (~:173): name the block as the form the touch-list requirement takes → A
 - EDIT `.agents/commands/smh-quick-dev.md` — plan template emits the block → A
 - EDIT `.agents/commands/smh-plan-task.md` — plan template emits the block → A
-- EDIT `.agents/commands/cicd-quick-dev.md` — plan template emits the block → A
+- EDIT `.agents/commands/cicd-quick-dev.md` — NON-emitter, ground-truthed (plan-exempt by design); its record instruction gains the dispositions/drift lines → A, F
 - EDIT `.agents/commands/cicd-dev-story-tests.md` — plan template emits the block → A
-- NEW `.agents/scripts/declared_change_set.py` — stdlib parser + two-sided diff; absence = defined result → A, F
-- NEW `.agents/scripts/tests/test_declared_change_set.py` — shape, markers, absence, drift fixtures → A, F
+- NEW `.agents/scripts/declared_change_set.py` — stdlib parser + two-sided diff; fences stripped, bullet attempts reported, incomplete carried through the diff verb → A, F
+- NEW `.agents/scripts/tests/test_declared_change_set.py` — shape, markers, absence, drift, fence, attempt, CLI-tier and emitter-structure fixtures → A, F
 - NEW `.agents/scripts/risk_seam.py` — seam call + placeholder returning `unclassified` → C
 - NEW `.agents/scripts/tests/test_risk_seam.py` — pins identical audit semantics placeholder vs populated → C
-- EDIT (wholesale rewrite) `.agents/commands/smh-self-audit.md` — three lenses, anchor rule, Scope Ledger, amendment rule at top → B
-- EDIT (wholesale rewrite) `.agents/commands/cicd-self-audit.md` — same contract, twin-diffed, divergences stated → B
-- NEW `.agents/scripts/tests/test_self_audit_contract.py` — structural mutations: 3 lenses only, amendment-rule-above-lenses, deleted lenses absent, unanchored-finding fixture rejected → B
-- EDIT `.agents/skills/code-review-engine/steps/step-01-review.md` — five lens-state sections (§`lens_budget` ~:192, §`review_runtime` ~:449, §cannot-launch ~:479, §SCC-203 drop ~:503, §skipped-vs-dead ~:557) → ONE lens-roster contract → D; strike unfunded cost claim (~:127), scope-fence no-noise-filter (~:440) → E; two-level lens sets from Step 0.7 radius → G
-- NEW `.agents/scripts/tests/test_lens_roster_contract.py` — mutation per scar (SCC-147/173/177/203), skipped≠dead, noise-filter guard, level semantics → D, E, G
-- EDIT `.agents/commands/smh-code-review.md` — Step 2 gains declared-set reconciliation → F; Step 0.7 radius resolves the level → G
-- EDIT `.agents/commands/cicd-code-review.md` — Step 1.5 same wording → F; Step 0.7 same → G
-- EDIT `.agents/skills/code-review-engine/steps/step-04-record.md` — finding shape gains `src` lens field; per-lens disposition counts in summary; dead boxes stay out of builder worklist → H
-- EDIT `.agents/skills/code-review-engine/SKILL.md` — returned-summary contract gains per-lens disposition counts (only if the shape is named there; verified at part H) → H
+- EDIT (wholesale rewrite) `.agents/commands/smh-self-audit.md` — three lenses, anchor rule, Scope Ledger, amendment rule at top; review wave restored the constitution citation, fetch guard and lane-fit check, added the levels else-row and the twin-law fences → B
+- EDIT (wholesale rewrite) `.agents/commands/cicd-self-audit.md` — same contract, twin-diffed; review wave aligned and fenced the shared law → B
+- NEW `.agents/scripts/tests/test_self_audit_contract.py` — structural mutations; review wave: both-direction lens count, new CANON rows, restoration pins → B
+- EDIT `.agents/skills/code-review-engine/steps/step-01-review.md` — ONE lens-roster contract → D; doc-truth → E; two levels from Step 0.7 radius, roster table made level-aware by the review wave → G
+- NEW `.agents/scripts/tests/test_lens_roster_contract.py` — mutation per scar, level semantics; review wave: h2 anchor, addendum cross-check, threshold pins, step-04 round-trip → D, E, G
+- EDIT `.agents/commands/smh-code-review.md` — Step 2 declared-set reconciliation + the two record lines → F; Step 0.7 resolves the level, fenced → G
+- EDIT `.agents/commands/cicd-code-review.md` — Step 1.5 same wording, snippet bound to `PROJECT_ROOT` → F; Step 0.7 same, fenced → G
+- EDIT `.agents/skills/code-review-engine/steps/step-04-record.md` — finding shape gains `src` lens field; per-lens disposition counts; §2 aligned to the SKILL.md block form by the review wave → H
+- EDIT `.agents/skills/code-review-engine/SKILL.md` — returned-summary contract gains per-lens disposition counts → H
 - EDIT `.agents/scripts/INDEX.md` — rows for the two new scripts → A, C
-- EDIT `.agents/commands/INDEX.md` — Task-dev-lane and Sudo-dev-flow rows where they describe the self-audit's phases/verdict, if the rewrite changes what they name → B
-- EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — self-audit usage (levels, verdict shape) + review-level surface → B, G (SOP-currency gate)
-- EDIT (generated) door caches — `.agents/skills/*` launchers, `.claude/`, `.opencode/`, `.agents/workflows/` — regenerated by one `/smh-sync-agents` run after all command edits; declared here so the part-F drift check sees them as declared → all
-- EDIT `.agents/scripts/label_tasks.py` — blocked_by made directional in resolve → I
-- EDIT `.agents/scripts/tests/test_label_tasks.py` — direction fixture, RED first → I
+- EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — self-audit usage (levels, verdict shape) + review-level + drift + record-lines surfaces → B, F, G (SOP-currency gate)
+- EDIT `.agents/scripts/label_tasks.py` — blocked_by made directional in resolve; review wave: shape normalisation, case-insensitive key match, loud self-reference drop → I
+- EDIT `.agents/scripts/tests/test_label_tasks.py` — direction fixture RED first; review wave: outside-run, scalar, case-slip and self-reference fixtures → I
+- EDIT `.agents/scripts/walkthrough_roster.py` — machine consumer for the `dispositions:` and `drift:` record lines, gated for lanes dated 2026-08-20+ → F, H
+- EDIT `.agents/scripts/tests/test_walkthrough_roster.py` — parse + judge fixtures for the two record lines, both directions → F, H
+- EDIT `.agents/scripts/tests/test_twin_parity.py` — FENCED_TODAY gains the self-audit pair → B
+- NEW `.agents/scripts/tests/test_finding_record.py` — step-04 attribution checks; review wave: template-line pins replace countable prose → H
+- EDIT `.agents/scripts/tests/test_review_engine.py` — roster pins track the consolidated step-01; review wave: level-aware routing cells + the quick-membership pin → D, G
+- EDIT (generated) `.agents/.sync-manifest.json` — sync bookkeeping → A
+- EDIT (generated) `.agents/skills/smh-self-audit/SKILL.md` — regenerated launcher → B
+- EDIT (generated) `.agents/workflows/cicd-self-audit.md` — regenerated workflow door → B
+- EDIT (generated) `.agents/workflows/smh-self-audit.md` — regenerated workflow door → B
+- EDIT (generated) `.claude/skills/code-review-engine/SKILL.md` — engine cache mirror → H
+- EDIT (generated) `.claude/skills/code-review-engine/steps/step-01-review.md` — engine cache mirror → D
+- EDIT (generated) `.claude/skills/code-review-engine/steps/step-04-record.md` — engine cache mirror → H
+- EDIT (generated) `.claude/skills/smh-self-audit/SKILL.md` — launcher cache mirror → B
+- EDIT (generated) `.opencode/commands/cicd-code-review.md` — opencode door → F
+- EDIT (generated) `.opencode/commands/cicd-dev-story-tests.md` — opencode door → A
+- EDIT (generated) `.opencode/commands/cicd-quick-dev.md` — opencode door → A
+- EDIT (generated) `.opencode/commands/cicd-self-audit.md` — opencode door → B
+- EDIT (generated) `.opencode/commands/smh-code-review.md` — opencode door → F
+- EDIT (generated) `.opencode/commands/smh-plan-task.md` — opencode door → A
+- EDIT (generated) `.opencode/commands/smh-quick-dev.md` — opencode door → A
+- EDIT (generated) `.opencode/commands/smh-self-audit.md` — opencode door → B
 - NEW `_artifacts/_main/2026-08-20_scc-225-review-surface/walkthrough.md` — at close → all
 
 **Port check (Rule 5): NOT triggered.** No file in scope exists in more than one repo — verified:
@@ -244,12 +267,26 @@ re-arms the gate per `000-PLAN-FIRST-GATE` clause 3).
 
 **Amendment (2026-08-20), operator verbatim:** "just fix it now with this ticket scc-234" →
 "noooo i do not want now task just fix it in this one" → "i can do this forever running of new
-tasks" — the `label_tasks.py` resolver direction fix rides THIS lane keyed to the parent
-**SCC-225** (Part I below); **no new ticket** (a mistakenly minted SCC-239 was deleted the same
-minute). Level naming for part B stays scope-named (LEDGER / LEDGER+BLAST) — flagged at the stop,
-no override given.
+tasks" → **"this is an easy fix so just fix it with the very first sub task, I dont need a new
+ticket or plan or anothing just do it"** — the `label_tasks.py` resolver direction fix rides THIS
+lane **keyed to SCC-226, the first subtask** (Part I below); **no new ticket** (a mistakenly
+minted SCC-239 was deleted the same minute). *Record correction (review wave):* an earlier
+version of this paragraph wrote "keyed to the parent SCC-225" — a recording error; the shipped
+commits, test banner and walkthrough row were SCC-226-keyed throughout, matching the operator's
+final instruction quoted above. Level naming for part B stays scope-named (LEDGER / LEDGER+BLAST)
+— flagged at the stop, no override given.
 
-## Part I — SCC-225 (parent-keyed) · label_tasks.py: `blocked_by` is directional
+**Amendment (review wave, 2026-08-20):** the `/smh-code-review` ceremony on this lane returned 42
+verified findings + 9 compounds; every surviving patch was fixed in-thread per the review
+contract (step-03: fixes land before the verdict — not new scope, the ceremony's own required
+step). The Declared Change Set above was rewritten to per-file ground truth in the same wave: the
+glob door bullet (grammar-rejected by the shipped parser) became per-file entries, the two
+undeclared test files were declared, `commands/INDEX.md`'s conditional entry was CUT (rows 47/51
+re-read: they describe the dev flow's phases, not the audit's internal model — accurate as-is),
+and the review-fix surface (walkthrough_roster.py + three test files) was declared. Dispositions
+for every finding live in the walkthrough's `## Code Review (2026-08-20)` section.
+
+## Part I — SCC-226 ride-along · label_tasks.py: `blocked_by` is directional
 
 Discovered running this lane's own labelling ceremony (work-consolidation rung 1 — the lane's
 ticket covers it; operator placed it here, quoted above).

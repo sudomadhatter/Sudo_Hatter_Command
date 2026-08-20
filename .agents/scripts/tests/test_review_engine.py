@@ -238,12 +238,17 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      "reports `4/4`, never `4/5`", "reports `4/5`, never `4/4`"),
 
     # ── step-01: the fan-out table, the failure contract, NA-vs-dead ────────────────────────
-    ("step-01: Blind Hunter is a lens row that always runs", STEPS[0],
-     r"^\|\s*\*\*Blind Hunter\*\*\s*\|[^|]*\|\s*always\s*\|", re.M,
-     "| **Blind Hunter** | `DIFF` only", "| ~~Blind Hunter~~ | not run,"),
-    ("step-01: Edge Case Hunter is a lens row that always runs", STEPS[0],
-     r"^\|\s*\*\*Edge Case Hunter\*\*\s*\|[^|]*\|\s*always\s*\|", re.M,
-     "| **Edge Case Hunter** | `DIFF` + read access", "| ~~Edge Case Hunter~~ | skipped,"),
+    # SCC-232 made the routing cells level-aware. Each cell is pinned to the CURRENT truth
+    # with the OBSOLETE flat-rate "always" as its mutant - the asymmetric pinning that steered
+    # maintainers back toward "always" (executed, SCC-225 review wave) is retired with it.
+    ("step-01: Blind Hunter routes standard-only (quick skips it)", STEPS[0],
+     r"^\|\s*\*\*Blind Hunter\*\*\s*\|[^|]*\|\s*standard level \(quick skips it\)\s*\|", re.M,
+     "| **Blind Hunter** | `DIFF` only — no spec, no repo access, no context docs | standard level (quick skips it) |",
+     "| **Blind Hunter** | `DIFF` only — no spec, no repo access, no context docs | always |"),
+    ("step-01: Edge Case Hunter routes standard-only (quick skips it)", STEPS[0],
+     r"^\|\s*\*\*Edge Case Hunter\*\*\s*\|[^|]*\|\s*standard level \(quick skips it\)\s*\|", re.M,
+     "| **Edge Case Hunter** | `DIFF` + read access to `REPO` | standard level (quick skips it) |",
+     "| **Edge Case Hunter** | `DIFF` + read access to `REPO` | always |"),
     ("step-01: Acceptance Auditor is a lens row gated to full mode", STEPS[0],
      r"^\|\s*\*\*Acceptance Auditor\*\*\s*\|[^|]*\|\s*`review_mode: full` only\s*\|", re.M,
      "| **Acceptance Auditor** | `DIFF` + `STORY_FILE`", "| ~~Acceptance Auditor~~ | dropped,"),
@@ -457,7 +462,7 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
      "## The evidence pack — repo-access lenses only",
      "## The evidence pack — every lens is primed"),
     ("step-01: the Blind Hunter's row is marked never-primed", STEPS[0],
-     r"^\|\s*\*\*Blind Hunter\*\*\s*\|[^|]*\|\s*always\s*\|[^|]*\|\s*\*\*never\*\* — starved by design\s*\|$",
+     r"^\|\s*\*\*Blind Hunter\*\*\s*\|[^|]*\|\s*standard level \(quick skips it\)\s*\|[^|]*\|\s*\*\*never\*\* — starved by design\s*\|$",
      re.M, "| **never** — starved by design |", "| yes |"),
     ("step-01: the Acceptance Auditor is not primed either", STEPS[0],
      r"^\|\s*\*\*Acceptance Auditor\*\*\s*\|[^|]*\|[^|]*\|[^|]*\|\s*\*\*never\*\* — cannot verify it\s*\|$",
@@ -787,10 +792,16 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     # This lens is the most instrumented one, so every check below binds either its WIRING
     # (the table cells that route it) or a cap that bounds it. Prose about the lens is not pinned;
     # a description cannot route a lens and cannot bound a cost.
-    ("step-01: Literal-Correctness Hunter is a lens row that always runs", STEPS[0],
-     r"^\|\s*\*\*Literal-Correctness Hunter\*\*\s*\|[^|]*\|\s*always\s*\|", re.M,
-     "| **Literal-Correctness Hunter** | `DIFF` + read access to `REPO` | always |",
-     "| **Literal-Correctness Hunter** | `DIFF` + read access to `REPO` | interactive only |"),
+    ("step-01: Literal-Correctness Hunter routes standard-only (quick skips it)", STEPS[0],
+     r"^\|\s*\*\*Literal-Correctness Hunter\*\*\s*\|[^|]*\|\s*standard level \(quick skips it\)\s*\|",
+     re.M,
+     "| **Literal-Correctness Hunter** | `DIFF` + read access to `REPO` | standard level (quick skips it) |",
+     "| **Literal-Correctness Hunter** | `DIFF` + read access to `REPO` | always |"),
+    ("step-01: the quick level is EXACTLY Test-Adequacy + Acceptance (SCC-232's "
+     "pre-registered membership - an inversion re-seats the 1,082 s lens)", STEPS[0],
+     r"^\|\s*`quick`\s*\|\s*\*\*Test-Adequacy \+ Acceptance\*\* Auditor\s*\|", re.M,
+     "| `quick` | **Test-Adequacy + Acceptance** Auditor |",
+     "| `quick` | the full roster |"),
     ("step-01: the literal lens's row wires in the hunter contract", STEPS[0],
      r"^\|\s*\*\*Literal-Correctness Hunter\*\*\s*\|[^|]*\|[^|]*\|[^|]*\+ the hunter contract\s*\|",
      re.M,

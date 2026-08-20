@@ -7,9 +7,11 @@ platforms: [opencode, antigravity, claude, codex]
 
 ## ⛔ THE AMENDMENT RULE — carved here, above the lenses, on purpose
 
+<!-- twin-law: audit-amendment -->
 When a plan this audit cleared later breaks something, the fix is an amendment to a
 **deterministic list** — the marker vocabulary, the anchor definitions, or the Scope Ledger
 rules. **Adding a fourth lens is not a permitted response to a miss, ever. Delete instead.**
+<!-- /twin-law -->
 Months of exactly that accretion produced the 2026-08-18 failure this rebuild answers: 8 lenses,
 each handed a `findings[]` schema, returned 44 findings (~half manufactured to succeed at the
 assigned task); the back-loaded per-finding refutation pass was the slowest phase, unfinished at
@@ -26,8 +28,11 @@ gates.
 
 > **Rules in force for this command:**
 > - `.agents/rules/artifacts-always-first.md` — the audit is **appended into the plan**, never a
->   standalone file; §plan contents also defines the `## Declared Change Set` block Lens 1 parses
+>   standalone file; §2 (Create the artifact folder + plan) also defines the `## Declared Change
+>   Set` block Lens 1 parses
 > - `.agents/rules/000-PLAN-FIRST-GATE.md` — this audit runs BEFORE the literal `approved`
+> - `.agents/rules/constitution.md` — Ask-First and surgical-change; one of the hard gates the
+>   NO-GO grounds name
 > - `.agents/rules/worktree-per-story.md` §"cwd is not intent" — why Step 0 pins the repo from
 >   command output, and why Lens 2 reads the sibling worktrees instead of trusting this tree
 > - `.agents/rules/port-checklist.md` — the six checks Lens 2's cross-repo row demands; a plan
@@ -63,11 +68,13 @@ Name the plan you are auditing (its path) and the ticket key it belongs to. Then
 An unanchored finding compares the plan to a counterfactual. An anchored finding compares the
 plan to a file.
 
-- **Every finding names an anchor with the literal text it read.** The grammar, and it is
-  machine-checked (`test_self_audit_contract.py`):
+- **Every finding names an anchor with the literal text it read.** The grammar (its shape is
+  spot-checked by `test_self_audit_contract.py`; the exist-conditions below are applied law at
+  run time, not machine-enforced):
   anchor = `<path>:<line>` | `<path>` | `step <N>` — with the literal text read, quoted.
   The path must exist on disk; the step number must exist in the plan.
   **No anchor, no finding — deleted, not demoted.**
+<!-- twin-law: audit-coverage -->
 - **The schema demands COVERAGE, not findings.** Each lens returns the fixed block:
 
   ```
@@ -80,8 +87,10 @@ plan to a file.
   **Full coverage with zero findings is a complete, successful run** — that sentence is what
   makes "I found nothing" a valid deliverable, and it is why no lens here is handed a
   `findings[]` array to fill.
+<!-- /twin-law -->
 - **Judgment is not banned — it is denied a severity.** A belief with no check behind it goes in
   a non-blocking `### Observations` list, never counted, never in the findings table.
+<!-- twin-law: audit-corroboration -->
 - **Corroboration promotes, never demotes.** The anchor filter runs FIRST; corroboration runs on
   survivors only. Agreement between lenses is *salience, not truth* — correlated lenses sharing a
   model and a prompt frame are not independent samples. **Corroboration affects SORT ORDER only**:
@@ -89,17 +98,21 @@ plan to a file.
   consequence alone — a single lens finding a structural blocker is top severity. Dedupe key is
   the **shared anchor**, never the same topic (topic-merging manufactures fake corroboration), and
   the lenses run **blind** to each other's output.
+<!-- /twin-law -->
 
 ## The two levels — scope of inquiry, never a verdict
 
 | Level | Runs | When — derived from the plan's `## Declared Change Set`, never a caller flag |
 |---|---|---|
-| **LEDGER** | Lens 1 only | every path is docs/artifacts, or ≤2 files with op `EDIT`, no rule / gate / hook / script / door surface |
+| **LEDGER** | Lens 1 only | every path is docs/artifacts, or ≤2 files with op `EDIT`, no rule / gate / hook / script / door surface, no deployable path |
 | **LEDGER+BLAST** | all three | anything touching a rule, a gate or hook, a script others import, a command/door surface, more than one platform, a file that exists in more than one repo — or any `DELETE` |
+| **anything else** | all three | the plan matches neither row cleanly, or the block is absent or unparseable — the default is the HEAVIER level, never agent preference (mirrors the engine's own default: step-01 § The two levels, standard is "the default whenever the level did not arrive") |
 
+<!-- twin-law: audit-levels-shape -->
 No minute budgets and no finding caps — both rejected as unscalable (parent ruling 5). The roster
 of three plus the anchor rule is what replaced them: there is nothing left to run long on. State
 the level in the output header.
+<!-- /twin-law -->
 
 ## Lens 1 — Repo Reality (every level)
 
@@ -113,6 +126,12 @@ the level in the output header.
    consumers (`/smh-code-review` drift check) depend on absence being loud.
 3. Commands the plan intends to run exist on **both machines** — Mac has no bare `python`, the PC
    has no `python3`; stdlib only, no venv.
+4. **Lane fit (wrong door) — at plan time, not at close-out:** the Declared Change Set touches a
+   deployable product path (`backend/` `frontend/` `firebase/` `functions/` `mobile/` `.github/`)
+   → say NOW which door ships it. Task lanes here land via `/smh-close-task-merge-tree`;
+   deployable product work belongs in a project lane behind `/cicd-push-e2e`. The close-out
+   preflight only discovers a wrong door after the work is built — this check is the plan-time
+   tripwire.
 
 ### The Scope Ledger (inside Lens 1) — over-engineering as a ledger, never an opinion
 
@@ -150,7 +169,9 @@ rows the Declared Change Set makes relevant, clear the rest in one line each:
 | a file existing in >1 repo | the plan's port section answers all six checks with command output — else **NO-GO** | SCC-176: three of four divergences were answerable at plan time |
 
 **Twins:** a `cicd-*`/`smh-*` sibling exists → the plan says which diverges and why, or ports the
-change to both. **Sibling worktrees:** `git worktree list`, then per tree
+change to both. **Sibling worktrees:** `env -u GITHUB_TOKEN git fetch origin main` first — a bare `origin/main`
+is this checkout's LAST PULL, and an unfetched base inflates every sibling's apparent change
+set. Then `git worktree list`, then per tree
 `git -C <tree> diff --name-only origin/main...HEAD` + `status --short` — any file in both their
 set and this plan's declared set is a **landing-order dependency**: name which lane lands first
 and what happens if it does not.

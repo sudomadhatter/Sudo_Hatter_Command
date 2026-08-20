@@ -32,6 +32,10 @@ CANON = {
     "corroboration": "Corroboration affects SORT ORDER only",
     "pre-mortem bound": "It CANNOT originate a finding",
     "ledger finding shape": "no acceptance row requires it",
+    "amendment rule": "Adding a fourth lens is not a permitted response to a miss, ever",
+    "no budgets or caps": "No minute budgets and no finding caps",
+    "levels else-row": "matches neither row cleanly",
+    "blocker beats corroboration": "a single lens finding a structural blocker is top severity",
 }
 # the anchor grammar, compiled: a finding row's anchor cell must carry one of the
 # three forms plus a quoted literal somewhere in the row
@@ -42,9 +46,14 @@ def main() -> int:
     c = Cases("self_audit_contract")
 
     for name, t in (("smh", SMH), ("cicd", CICD)):
+        # BOTH counts, deliberately: [123] catches a RENAME (count drops), the unnumbered
+        # form catches an ADDITION ("## Lens 4" left the [123] count at 3 - executed mutant,
+        # this review wave). Either alone is one-directional.
         lenses = re.findall(r"^## Lens [123]\b.*$", t, re.MULTILINE)
-        c.check(f"{name}: exactly three lenses, no more ever",
-                len(lenses) == 3, str(lenses))
+        all_lenses = re.findall(r"^## Lens .*$", t, re.MULTILINE)
+        c.check(f"{name}: exactly three lenses, no more ever - in BOTH directions",
+                len(lenses) == 3 and len(all_lenses) == 3,
+                f"[123]={len(lenses)} any={len(all_lenses)}: {all_lenses}")
         c.check(f"{name}: the amendment rule sits ABOVE the lens definitions",
                 "AMENDMENT RULE" in t and "## Lens 1" in t
                 and t.index("AMENDMENT RULE") < t.index("## Lens 1"),
@@ -70,6 +79,20 @@ def main() -> int:
                 "level naming wrong")
         for label, sentence in CANON.items():
             c.check(f"{name}: canon [{label}]", sentence in t, sentence[:60])
+
+    # ── restorations: the rewrite's deletion list was falsified three times ───
+    c.check("smh: rules-in-force cites constitution.md (its NO-GO text names it)",
+            ".agents/rules/constitution.md" in SMH, "citation dropped again")
+    c.check("smh: sibling comparison keeps its fetch guard (stale origin/main inflates "
+            "every sibling's set)",
+            "fetch origin main" in SMH, "fetch guard dropped again")
+    c.check("smh: the wrong-door lane check runs at plan time (deployable path -> name "
+            "the door NOW)",
+            "deployable product path" in SMH and "/cicd-push-e2e" in SMH,
+            "lane check dropped again")
+    c.check("both: LEDGER cannot capture a deployable-path plan (smh) and neither twin "
+            "leaves the derivation partial",
+            "no deployable path" in SMH, "LEDGER row lost its exclusion")
 
     # ── the anchor grammar does real work on real rows ────────────────────────
     anchored = '| `.agents/scripts/foo.py:42` | "def classify(paths)" | breaks the seam | important |'

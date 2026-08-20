@@ -49,13 +49,23 @@ answerable from data; N is not fixed here — fixing it would be a hard-coded ca
 ## 2. What the engine hands back
 
 ```
-lenses_run:      <n>/<applicable>   (per-lens: ok | recovered-inline | dead)
+review-runtime:  fan-out | inline
+lenses_run:
+- <lens> · ok | recovered-inline | dead — <why, when it is not `ok`>
+- <one row per lens that was applicable — the ROSTER, not a summary of it>
+lenses_counted:  <n>/<applicable>
 lenses_na:       <lenses not applicable in this mode, or "none">
 findings:        <d> decision · <p> patch · <w> defer   (<n> noise-dismissed · <k> relevance kills)
 dispositions:    per-lens: <lens>=<survived>/<dismissed>/<relevance-killed> · … (a multi-lens finding counts once per contributing lens)
 severity_floor:  none | CONCERNS | FAIL
 notes:           <degradations, absent optional inputs, verification state>
 ```
+
+⛔ This block and SKILL.md's "What the engine returns" are the SAME contract — `lenses_run:` is a
+BLOCK of per-lens rows (SCC-173), never the retired counted line, because the caller pastes it
+verbatim into the walkthrough where `walkthrough_roster.py` reads it. Until this review wave the
+two blocks disagreed: this one still showed `lenses_run: <n>/<applicable>`, the exact shape the
+parser deliberately reads as NO roster.
 
 Then stop. The caller composes its verdict line from this summary plus its own gates.
 

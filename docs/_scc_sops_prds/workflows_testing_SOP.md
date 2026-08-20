@@ -511,10 +511,19 @@ then read the story.*
 > Step 1.5 audits the diff against the story's checkable list — an item with no evidence is
 > **not satisfied**, and anything in the diff *beyond* the list is **drift**. Since SCC-231 the same
 > step reconciles a SECOND left-hand side: the plan's `## Declared Change Set` block against the
-> real diff — a file edited but never declared is `drift.undeclared` (*important*), a file declared
-> but untouched is `drift.unimplemented` (*suggestion*), and a plan with no block at all is itself
-> an *important* finding ("no declared set to reconcile against"), never a silent pass. Neither
-> difference auto-fails; each takes the same cut-it-or-name-why-it-stays disposition.
+> real diff (taken `--no-renames`, so a renamed file cannot fake an unimplemented row) — a file
+> edited but never declared is `undeclared` (*important*), a file declared but untouched is
+> `unimplemented` (*suggestion*), a declaration bullet the grammar rejected is `incomplete`
+> (*important* — the diff verb carries these through so a bad bullet stays distinguishable from
+> real drift), and a plan with no block at all is itself an *important* finding ("no declared set
+> to reconcile against"), never a silent pass. Planning dirs (`_artifacts/`, `_bmad/`,
+> `_bmad-output/`, `_my_resources/`) are carved out on both sides. Promised checks reconcile the
+> same way as files: an assertion the plan promised that shipped weaker is drift too. No drift row
+> auto-fails; each takes the same cut-it-or-name-why-it-stays disposition. **And the record is
+> machine-read (2026-08-20 law):** the walkthrough's `## Code Review` section must carry the
+> engine's `dispositions:` line (per-lens survived/dismissed/relevance-killed — the SCC-233 data)
+> and a one-line `drift:` result; `walkthrough_roster.py` blocks a lane dated 2026-08-20 or later
+> that is missing either.
 >
 > ⛔ **The steps were adapted, not copied, and the difference is one ref.** A Task lane merges into
 > `main`, so smh re-derives against `origin/main`. A story lane merges into `epic/<JIRA-KEY>-<slug>`.

@@ -13,9 +13,11 @@ contracts, auth). Fix a shared idea in one twin, diff the other.
 
 ## ⛔ THE AMENDMENT RULE — carved here, above the lenses, on purpose
 
+<!-- twin-law: audit-amendment -->
 When a plan this audit cleared later breaks something, the fix is an amendment to a
 **deterministic list** — the marker vocabulary, the anchor definitions, or the Scope Ledger
 rules. **Adding a fourth lens is not a permitted response to a miss, ever. Delete instead.**
+<!-- /twin-law -->
 Months of lens accretion produced the 2026-08-18 failure this rebuild answers (8 lenses, 44
 findings, ~half manufactured, the refutation pass killed unfinished — nothing delivered).
 Production of findings is cheap and front-loaded; filtering is back-loaded and O(n) over an n the
@@ -30,8 +32,8 @@ full code audit — that is `/cicd-code-review`, later, on a real diff with real
 > - `.agents/rules/smh-target-resolution.md` §STD + §BIND — bind exactly ONE project, **never the
 >   lobby**; every path below resolves under `PROJECT_ROOT`
 > - `.agents/rules/artifacts-always-first.md` §7 — the audit is **appended into the plan it
->   audited**, never standalone; §plan contents defines the `## Declared Change Set` block Lens 1
->   parses
+>   audited**, never standalone; §2 (Create the artifact folder + plan) defines the `## Declared
+>   Change Set` block Lens 1 parses
 > - `.agents/rules/000-PLAN-FIRST-GATE.md` — this audit runs BEFORE the literal `approved`
 > - `.agents/rules/constitution.md` — Ask-First and surgical-change, audited in Lens 1
 > - `.agents/rules/port-checklist.md` — the six checks Lens 2's cross-repo row demands; absence on
@@ -60,11 +62,13 @@ exactly `Target: Projects/<name>`, and resolve every bare path under it. Then pi
 
 An unanchored finding compares the plan to a counterfactual. An anchored one compares it to a file.
 
-- **Every finding names an anchor with the literal text it read.** The grammar
-  (machine-checked by `test_self_audit_contract.py`):
+- **Every finding names an anchor with the literal text it read.** The grammar (its shape is
+  spot-checked by `test_self_audit_contract.py`; the exist-conditions below are applied law at
+  run time, not machine-enforced):
   anchor = `<path>:<line>` | `<path>` | `step <N>` — with the literal text read, quoted.
   The path must exist under `PROJECT_ROOT`; the step/AC number must exist in the plan or story.
   **No anchor, no finding — deleted, not demoted.**
+<!-- twin-law: audit-coverage -->
 - **The schema demands COVERAGE, not findings.** Each lens returns the fixed block:
 
   ```
@@ -74,13 +78,20 @@ An unanchored finding compares the plan to a counterfactual. An anchored one com
   verdict:     clean | findings below
   ```
 
-  **Full coverage with zero findings is a complete, successful run** — no lens here is handed a
+  **Full coverage with zero findings is a complete, successful run** — that sentence is what
+  makes "I found nothing" a valid deliverable, and it is why no lens here is handed a
   `findings[]` array to fill.
+<!-- /twin-law -->
 - **Judgment is denied a severity:** beliefs with no check → `### Observations`, uncounted.
-- **Corroboration promotes, never demotes.** Anchor filter FIRST; agreement is salience, not
-  truth. **Corroboration affects SORT ORDER only** (`x2`, top of its severity band); severity is
-  set by consequence alone; dedupe key is the **shared anchor**, never the topic; lenses run
-  **blind** to each other.
+<!-- twin-law: audit-corroboration -->
+- **Corroboration promotes, never demotes.** The anchor filter runs FIRST; corroboration runs on
+  survivors only. Agreement between lenses is *salience, not truth* — correlated lenses sharing a
+  model and a prompt frame are not independent samples. **Corroboration affects SORT ORDER only**:
+  two lenses on one anchor sorts to the top of its severity band, flagged `x2`. Severity is set by
+  consequence alone — a single lens finding a structural blocker is top severity. Dedupe key is
+  the **shared anchor**, never the same topic (topic-merging manufactures fake corroboration), and
+  the lenses run **blind** to each other's output.
+<!-- /twin-law -->
 
 ## The two levels — scope of inquiry, never a verdict
 
@@ -88,8 +99,13 @@ An unanchored finding compares the plan to a counterfactual. An anchored one com
 |---|---|---|
 | **LEDGER** | Lens 1 only | docs/config-only, or ≤2 `EDIT` files touching no state machine, contract, auth, schema, or multi-consumer symbol |
 | **LEDGER+BLAST** | all three | a state machine, an SSE/WebSocket or API contract, auth, a shared schema, a symbol with many consumers, both backend AND frontend, a file in more than one repo — or any `DELETE` |
+| **anything else** | all three | the plan matches neither row cleanly, or the block is absent or unparseable — the default is the HEAVIER level, never agent preference (mirrors the engine's own default: step-01 § The two levels, standard is "the default whenever the level did not arrive") |
 
-No minute budgets, no finding caps (parent ruling 5). State the level in the output header.
+<!-- twin-law: audit-levels-shape -->
+No minute budgets and no finding caps — both rejected as unscalable (parent ruling 5). The roster
+of three plus the anchor rule is what replaced them: there is nothing left to run long on. State
+the level in the output header.
+<!-- /twin-law -->
 
 ## Lens 1 — Repo Reality (every level)
 
@@ -137,7 +153,8 @@ as the normal fallback:
   command output, or **NO-GO**.
 - **Twins and doors:** a paired surface (cicd/smh command, generated door) → divergence stated or
   ported.
-- **Sibling lanes:** `git worktree list` + per-tree `diff --name-only` — a file in both sets is a
+- **Sibling lanes:** fetch the base first (a stale remote ref inflates every sibling's apparent
+  set), then `git worktree list` + per-tree `diff --name-only` — a file in both sets is a
   landing-order dependency: name the order and the cost of violating it.
 - **Risk context (SCC-228 seam):** `python3 .agents/scripts/risk_seam.py classify <declared
   paths>` *(PC: `python`)* informs this lens's depth. **Informs, never gates** — `gates_audit()`

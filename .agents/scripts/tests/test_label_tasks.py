@@ -242,6 +242,46 @@ def main() -> int:
         c.check("both declarers wait on the same blocker",
                 r["_by"]["A-3"].get("detail") == "after A-1", str(r["_by"]["A-3"]))
 
+    # ── a blocker OUTSIDE the run keeps its declarer free (SCC-225 review wave) ──
+    # The directional fix's own comment promised this and no fixture covered it -
+    # executed mutant: dropping the membership test (any blocked_by = follower) ran
+    # 104/104 green while silently stripping candidacy from every lane blocked by a
+    # LANDED ticket. This is that missing fixture: A-9 is terminal (landed), so A-2's
+    # declared dependency on it is satisfied history, not a live collision.
+    with TempDir() as tmp:
+        r = run_resolve(tmp, [child("A-1", "1.1"), child("A-2", "1.2"),
+                              child("A-9", "1.9", terminal=True)],
+                        {"A-1": {"paths": ["backend/a.py"]},
+                         "A-2": {"paths": ["backend/b.py"], "blocked_by": ["A-9"]}})
+        c.check("a LANDED (terminal) blocker frees its declarer - approved, not follower",
+                sorted(r["approved"]) == ["A-1", "A-2"], str(r["approved"]))
+
+    # ── blocked_by SHAPE cannot silently free a declarer (SCC-225 review wave) ──
+    # Executed: a scalar string iterated characters; a case-slipped key matched
+    # nothing - both approved BOTH lanes, indistinguishable from a landed blocker.
+    with TempDir() as tmp:
+        r = run_resolve(tmp, [child("A-1", "1.1"), child("A-2", "1.2")],
+                        {"A-1": {"paths": ["backend/a.py"]},
+                         "A-2": {"paths": ["backend/b.py"], "blocked_by": "A-1"}})
+        c.check("a SCALAR blocked_by locks like the list form - never char-iterated",
+                r["approved"] == ["A-1"] and r["_by"]["A-2"]["verdict"] == "after",
+                str(r["_by"]["A-2"]))
+    with TempDir() as tmp:
+        r = run_resolve(tmp, [child("A-1", "1.1"), child("A-2", "1.2")],
+                        {"A-1": {"paths": ["backend/a.py"]},
+                         "A-2": {"paths": ["backend/b.py"], "blocked_by": ["a-1"]}})
+        c.check("a case-slipped blocker key still locks its declarer",
+                r["approved"] == ["A-1"] and r["_by"]["A-2"]["detail"] == "after A-1",
+                str(r["_by"]["A-2"]))
+    # a self-reference is dropped LOUDLY, never a permanent self-wedge
+    with TempDir() as tmp:
+        r = run_resolve(tmp, [child("A-1", "1.1"), child("A-2", "1.2")],
+                        {"A-1": {"paths": ["backend/a.py"]},
+                         "A-2": {"paths": ["backend/b.py"], "blocked_by": ["A-2"]}})
+        c.check("blocked_by SELF is dropped (warned), not an unsatisfiable 'after itself'",
+                sorted(r["approved"]) == ["A-1", "A-2"]
+                and r["_by"]["A-2"]["verdict"] == "approved", str(r["_by"]["A-2"]))
+
     # ── fails toward locked ────────────────────────────────────────────────────
     with TempDir() as tmp:
         r = run_resolve(tmp, [child("A-1", "1.1"), child("A-2", "1.2"),
