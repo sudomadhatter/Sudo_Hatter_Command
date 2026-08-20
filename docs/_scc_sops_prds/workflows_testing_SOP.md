@@ -642,7 +642,7 @@ flowchart LR
     ME --> CW
     ME -.->|"only if the set is being promoted"| E2E["/cicd-e2e"]
     PE["/cicd-push-e2e"] --> E2E
-    TM["/smh-close-task-merge-tree"] --> OWN["prunes its OWN tree\ndoes NOT call the janitor\ndoes NOT prune context"]
+    TM["/smh-close-task-merge-tree"] --> OWN["prunes its OWN tree\ndoes NOT call /cicd-prune-worktree\ndoes NOT prune context"]
     MM["/smh-merge-multiple-workingtrees"] --> OWN
     CS -.->|"2+ live lanes: hands over"| ME
 ```
@@ -652,7 +652,7 @@ flowchart LR
 solo door cannot do. The same holds on the Task side: `/smh-merge-multiple-workingtrees` runs
 `/smh-close-task-merge-tree`'s ceremony once per lane, in a measured order, with a stop before each
 merge and one combined gate on `main` at the end. Both Task doors prune their own worktrees and
-deliberately do **not** call the janitor, which owns `claude/*` story trees only.
+deliberately do **not** call `/cicd-prune-worktree`, which owns `claude/*` story trees only.
 
 ### `/cicd-close-story-merge-tree` — close out ONE story
 
@@ -709,7 +709,7 @@ read `Done`.
 your sign-off** for landing AND flipping every story confirmed in Step 1. When it finishes there is
 nothing left owed on the set: boards updated, stories `done`, trees and branches pruned.
 
-### `/cicd-prune-worktree` — the janitor
+### `/cicd-prune-worktree` — the disk utility
 
 **It moves no code, and that is the whole of the job.** Nothing here lands, flips, transitions or
 pushes: it verifies a landing that already happened, then cleans the disk up behind it. Both story
