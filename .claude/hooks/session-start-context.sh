@@ -23,14 +23,14 @@ GIT: every commit-producing lane opens its own git worktree BEFORE editing files
 resuming in-flight work RE-ENTERS the existing worktree (git worktree list) — never a second one and
 never the shared checkout. Commit freely inside it: explicit paths, never `git add -A`.
 
-  claude/<KEY>-<slug>   story  -> lands on its epic branch via /cicd-update-sprint-memory
+  claude/<KEY>-<slug>   story  -> lands on its epic branch via /cicd-close-story-merge-tree
   chore/<KEY>-<slug>    task   -> lands on main via /smh-close-task-merge-tree
   epic/<KEY>-<slug>     epic   -> lands on main via /cicd-push-e2e
 
 MAIN IS GATED, MECHANICALLY (SCC-77). `.githooks/pre-push` refuses any push landing on `main`
 without a single-use approval token. Only /cicd-push-e2e and /smh-close-task-merge-tree mint one,
 at their sign-off step; the operator's direct in-the-moment "approved" is the third door.
-/cicd-update-sprint-memory is NOT a main door — it lands on the epic branch.
+/cicd-close-story-merge-tree is NOT a main door — it lands on the epic branch.
 One invocation authorises ONE merge and never carries forward (SCC-71). Merge-ready means STOP and
 hand it back. Canonical table: .agents/rules/git-policy.md § "The write gate".
 EOF

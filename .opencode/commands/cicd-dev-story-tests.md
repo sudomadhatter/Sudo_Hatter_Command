@@ -181,8 +181,8 @@ Post a clickable Markdown link to every artifact in the chat that same turn — 
 Report: plan-vs-built deltas, audit findings applied, tests now green (paste output), coverage added, and
 the two Step-5 artifact links. Hand to `cicd-code-review`. The dev step **may advance the story to
 `review`** — bmad-dev-story's Step 9 does this and we let it. **Never flip to `done`** — Daniel's call at
-close-out via `/cicd-update-sprint-memory`. **Git:** commit freely inside the story worktree (explicit paths,
-never `git add -A`); do NOT land it on the epic branch — Step 7 of `/cicd-update-sprint-memory` owns that push
-(→ `worktree-per-story`).
+close-out via `/cicd-close-story-merge-tree`, whose `/cicd-update-sprint-memory` save owns the flip.
+**Git:** commit freely inside the story worktree (explicit paths, never `git add -A`); do NOT land it on
+the epic branch — Step 3 of `/cicd-close-story-merge-tree` owns that push (→ `worktree-per-story`).
 
 Optional additional input: $ARGUMENTS

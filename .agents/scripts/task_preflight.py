@@ -1,7 +1,7 @@
 """task_preflight.py — is this TASK branch safe to merge to main, and by WHICH gate? (SCC-49)
 
 `/smh-close-task-merge-tree` closes **Task** work — workflow / IDE / rules / skills changes that
-never got an epic and a story, and so can never reach `/cicd-update-sprint-memory`. It merges
+never got an epic and a story, and so can never reach `/cicd-close-story-merge-tree`. It merges
 to `main`, which makes it the second command in the system allowed anywhere near production,
 and that is exactly why its preconditions are a script rather than a checklist.
 
@@ -83,7 +83,7 @@ BRANCH_RE = re.compile(r"^chore/([A-Z][A-Z0-9]*)-(\d+)-(.+)$")
 WRONG_LANE = {
     "epic/": ("/cicd-push-e2e", "an epic branch ships through the full gate, not this one"),
     "claude/incident-": ("/cicd-mobile-error-team", "incident branches have their own lane"),
-    "claude/": ("/cicd-update-sprint-memory",
+    "claude/": ("/cicd-close-story-merge-tree",
                 "a story branch lands on its EPIC branch at close-out, never on main"),
 }
 
@@ -1301,7 +1301,7 @@ def check_gate(repo: Path, hits: list[Path], lane: str, expect: str, branch: str
 def check_worktree(repo: Path, branch: str, rep: wf.Report) -> None:
     """A worktree checked out on this branch blocks `git branch -d` after the merge, and
     deleting through one destroys the shared assets it junctions to
-    (`/cicd-close-workingtree` Step 3a)."""
+    (`/cicd-prune-worktree` Step 3a)."""
     out = wf.git(["worktree", "list", "--porcelain"], repo).stdout
     # [0] is the MAIN checkout, which is standing on this branch by definition when the
     # command runs from it - reporting that as "a worktree holds your branch" is a warning
@@ -1311,7 +1311,7 @@ def check_worktree(repo: Path, branch: str, rep: wf.Report) -> None:
         br = re.search(r"^branch refs/heads/(.+)$", block, re.MULTILINE)
         if wt and br and br.group(1).strip() == branch:
             rep.warn("worktree", f"{Path(wt.group(1)).name} is checked out on {branch} - "
-                                 f"remove it with /cicd-close-workingtree before deleting "
+                                 f"remove it with /cicd-prune-worktree before deleting "
                                  f"the branch (never delete through its junctions)")
 
 

@@ -148,8 +148,8 @@ If any are missing, HALT and report which.
 8. **DO NOT flip sprint-status to done.** Leave the story file Status at `review`
    and DO NOT touch `sprint-status.yaml`. (This is the engine's own boundary —
    `SKILL.md` § "What the engine does NOT do": it never advances a story's state and never
-   writes a board file.) The human sign-off gate (Stage 5 of the loop) +
-   `/cicd-update-sprint-memory` owns the final `done` flip.
+   writes a board file.) The human sign-off gate (Stage 5 of the loop) + the
+   `/cicd-update-sprint-memory` save own the final `done` flip — never you.
 
 9. **Patch findings:** leave patches as action items in the story file — you review, you
    do not fix. Do NOT auto-apply code fixes.

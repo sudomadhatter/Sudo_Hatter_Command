@@ -1,5 +1,5 @@
 ---
-description: End-of-session / story close-out save — advance the closed story to done (running this command IS Daniel's sign-off; only...
+description: The story SAVE — read the session's artifacts, code-verify the claimed work, route every learning to its home, apply the board /...
 platforms: [opencode, antigravity]
 ---
 

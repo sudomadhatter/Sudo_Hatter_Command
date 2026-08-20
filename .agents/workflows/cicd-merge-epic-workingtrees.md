@@ -19,9 +19,10 @@ git cannot see** — each lane green alone, red combined (a renamed fixture, a m
 contract a sibling's test pins). This command is the whole close-out for the SET: reconcile → land
 in order → flip each story `done` → combined gate → prune everything.
 
-**Invoking it — directly, or via `/cicd-update-sprint-memory` on the multiple-worktrees signal — IS
+**Invoking it — directly, or via `/cicd-close-story-merge-tree` on the multiple-worktrees signal — IS
 the operator's sign-off** for landing AND flipping every story confirmed in Step 1 (the per-set form
-of close-out's Step 4/7 contract). Per story, **only an objectively-red test gate blocks**: a lane
+of the flip-and-land contract the solo path splits across two commands — the save's Step 4 flip, the
+door's Step 3 landing). Per story, **only an objectively-red test gate blocks**: a lane
 that cannot go green is surfaced and skipped, never landed around silently — every other lane still
 completes. When this command finishes there is NOTHING left owed on the set: boards updated, stories
 `done`, trees and branches pruned.
@@ -133,7 +134,7 @@ likely to land on the wrong lane — and it prunes, which is not what you want a
 (`worktree-per-story.md` → *"`cwd` is not intent"*). Confirm each invocation echoed the slug you meant
 before it removes anything.
 
-For each landed lane: `/cicd-close-workingtree <story-slug>` — verify merged, remove
+For each landed lane: `/cicd-prune-worktree <story-slug>` — verify merged, remove
 `.claude/worktrees/<slug>`, delete local + remote `claude/<JIRA-KEY>-<slug>`. ⛔ Prune NOTHING before the
 combined gate is green — the worktrees are the rollback points. Blocked/skipped lanes keep their
 trees and are reported, not pruned.

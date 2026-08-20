@@ -342,7 +342,7 @@ When Daniel says **"review"** (or asks to review a document/plan), EVERY agent m
     re-run `lane_qualify.py` against the **real** diff (`git diff --name-only main...HEAD`); anything
     but `LIGHT` and the work continues on `/smh-quick-dev` with a plan and an `approved`.
 - **`/cicd-quick-dev`** — **invoking that command IS the "skip the plan" instruction above**, the same way
-  invoking `/cicd-update-sprint-memory` IS the close-out sign-off. It runs no `implementation_plan.md` and
+  invoking `/cicd-close-story-merge-tree` IS the close-out sign-off. It runs no `implementation_plan.md` and
   waits for no "approved"; its gate is the human review at the end. The exemption is conditional on its
   guards staying intact — the worktree/chore branch, the acceptance criteria fixed in Step 1, the EJECT
   tripwire, and the mandatory review gate. **A fired tripwire re-arms this gate:** the moment the work

@@ -1,0 +1,7 @@
+task_key: SCC-210
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-210-close-out-rebalance
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+# Standalone Task (no subtasks, no riders). The ticket description IS the spec; this lane's
+# implementation_plan.md is that spec re-measured against origin/main @ fe0f211.

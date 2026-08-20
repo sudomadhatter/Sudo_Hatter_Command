@@ -16,7 +16,7 @@ This command makes the work portable. It moves **branches** — the `claude/*` s
 branch, and `main` only when it carries sanctioned unpushed work.
 
 **⛔ Hard boundary:** never land a story on its epic branch — that is close-out's job
-(`/cicd-update-sprint-memory` Step 7, and only after ③ turns it green) — and never touch `main`. A
+(`/cicd-close-story-merge-tree` Step 3, and only after ③ turns it green) — and never touch `main`. A
 story at ① / ② carries **deliberately RED tests** — landing those on the epic branch poisons every
 sibling story's regression baseline and reds the `/cicd-e2e` gate that guards the epic's merge to `main`.
 

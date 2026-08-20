@@ -1,6 +1,6 @@
 ---
 name: worktree-per-story
-description: "Fires when ANY lane starts work that will produce commits — the trigger is concurrency, not work type (SCC-62, 2026-08-09). One lane, one worktree, opened BEFORE the first edit, committed freely inside, landed and pruned by its own close-out. The BASE still differs by lane: a sudo story lane takes `claude/<KEY>-<slug>` off the story's EPIC branch (never main) and is pruned by /cicd-close-workingtree; ad-hoc/Task work takes `chore/<KEY>-<slug>` off main and is pruned by /smh-close-task-merge-tree Step 5. Carries the `⛔ Your tree is your world` hard stop (never touch or report another lane's files) and `⛔ cwd is not intent`. Read-only sessions and a single watched trivial edit are exempt. Pairs with git-policy.md."
+description: "Fires when ANY lane starts work that will produce commits — the trigger is concurrency, not work type (SCC-62, 2026-08-09). One lane, one worktree, opened BEFORE the first edit, committed freely inside, landed and pruned by its own close-out. The BASE still differs by lane: a sudo story lane takes `claude/<KEY>-<slug>` off the story's EPIC branch (never main) and is pruned by /cicd-close-story-merge-tree Step 5 (which calls /cicd-prune-worktree); ad-hoc/Task work takes `chore/<KEY>-<slug>` off main and is pruned by /smh-close-task-merge-tree Step 5. Carries the `⛔ Your tree is your world` hard stop (never touch or report another lane's files) and `⛔ cwd is not intent`. Read-only sessions and a single watched trivial edit are exempt. Pairs with git-policy.md."
 ---
 
 # Worktree Per Story
@@ -47,7 +47,7 @@ project file is edited.** Automatic; the agent does not ask each time, and does 
 > story lane?") and ended with *"unsure? you're not"* — which routed every ambiguous case into the
 > shared checkout, the one place it must not go. **Removing the classification removes the failure.**
 > The old ban existed to prevent orphan trees that no close-out would prune; that is now handled —
-> `/smh-close-task-merge-tree` Step 5 prunes its own tree, exactly as `/cicd-close-workingtree` Step 3 does.
+> `/smh-close-task-merge-tree` Step 5 prunes its own tree, exactly as `/cicd-prune-worktree` Step 3 does.
 > (2026-08-09, SCC-62. Twice in one day this went wrong: SCC-61 exists because a close-out preflight
 > resolved a sibling lane's branch; SCC-58 then opened onto a checkout standing on SCC-61's branch with
 > 11 dirty files.)
@@ -56,7 +56,7 @@ project file is edited.** Automatic; the agent does not ask each time, and does 
 
 | Lane | Branch | Base — this does NOT change | Closed + pruned by |
 |---|---|---|---|
-| Sudo story lane (① · ② · `/cicd-quick-dev` · autopilot) | `claude/<JIRA-KEY>-<story-slug>` | the story's **epic branch** (`epic/<JIRA-KEY>-<slug>`) — **never `main`** | `/cicd-update-sprint-memory` Step 7 lands; its Step 8 auto-invokes `/cicd-close-workingtree` |
+| Sudo story lane (① · ② · `/cicd-quick-dev` · autopilot) | `claude/<JIRA-KEY>-<story-slug>` | the story's **epic branch** (`epic/<JIRA-KEY>-<slug>`) — **never `main`** | `/cicd-close-story-merge-tree` (Step 1 runs `/cicd-update-sprint-memory`'s save → Step 3 lands → Step 5 prunes via `/cicd-prune-worktree`) |
 | Ad-hoc / Task work (toolkit, rules, docs, config) | `chore/<JIRA-KEY>-<slug>` | `main` | `/smh-close-task-merge-tree` (merge → Step 5 prunes branch **and** tree) |
 
 ```
@@ -203,7 +203,7 @@ checkout read as "this story's review is done", and the confusion cost the actua
 
 The story lands on its **epic branch** as **one clean push**, triggered by either:
 
-- **`/cicd-update-sprint-memory`** — invoking it IS Daniel's sign-off (Step 7 does the landing), or
+- **`/cicd-close-story-merge-tree`** — invoking it IS Daniel's sign-off (its Step 3 does the landing), or
 - **Daniel's in-the-moment "approved"** — per-action, never carries to the next story.
 
 **Several sibling lanes live at close-out time** (the standing multi-team case, or a LANDING RULE posted
@@ -224,15 +224,15 @@ story behind per landing and needed a mandatory fast-forward; that whole failure
 long-lived integration branch.)
 
 Afterwards, once the landing on the epic branch is verified, the worktree and git branch
-(`claude/<JIRA-KEY>-<story-slug>`) are pruned via `/cicd-close-workingtree` (auto-invoked by
-`/cicd-update-sprint-memory` Step 8) to keep local disk and remote GitHub clean. The epic branch itself
+(`claude/<JIRA-KEY>-<story-slug>`) are pruned via `/cicd-prune-worktree` (auto-invoked by
+`/cicd-close-story-merge-tree` Step 5) to keep local disk and remote GitHub clean. The epic branch itself
 is pruned later, by `/cicd-push-e2e`, after the epic merges to `main`.
 
 ## Hard stops
 
 - NEVER edit a project file for a commit-producing lane before its worktree is open — story and Task
-  lanes alike (SCC-62). Every tree is pruned by the close-out that owns it (`/cicd-close-workingtree`
-  Step 3 for a story, `/smh-close-task-merge-tree` Step 5 for a Task); an unpruned tree means a close-out
+  lanes alike (SCC-62). Every tree is pruned by the close-out that owns it (`/cicd-close-story-merge-tree`
+  Step 5 for a story, `/smh-close-task-merge-tree` Step 5 for a Task); an unpruned tree means a close-out
   was skipped, not that the tree was illegal to open.
 - NEVER branch a story worktree from `main` — stories branch from the epic branch.
 - NEVER `git add -A` / `.` / `-u`, inside a worktree or out.

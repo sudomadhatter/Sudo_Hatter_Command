@@ -360,7 +360,7 @@ env -u GITHUB_TOKEN git -C "$REPO" push origin --delete "chore/<KEY>-<slug>"
 ```
 
 ⛔ A recursive delete through a junction eats the shared `.venv`/`node_modules` **targets** — unlink
-before remove, every time. ⛔ **Never a `claude/*` tree** — those are `/cicd-close-workingtree`'s.
+before remove, every time. ⛔ **Never a `claude/*` tree** — those are `/cicd-prune-worktree`'s.
 
 Then return to 4a with the NEXT lane, against the `main` that now exists.
 

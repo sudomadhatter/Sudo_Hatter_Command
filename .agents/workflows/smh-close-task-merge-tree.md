@@ -1,5 +1,5 @@
 ---
-description: Close out TASK work — a `chore/<JIRA-KEY>-<slug>` branch that never got an epic and a story, so BMAD's `/cicd-update-sprint-memory`...
+description: Close out TASK work — a `chore/<JIRA-KEY>-<slug>` branch that never got an epic and a story, so BMAD's...
 platforms: [opencode, antigravity]
 ---
 

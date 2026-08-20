@@ -31,7 +31,7 @@ root and concurrent stories cannot see each other's edits. After its own indepen
 green, the script flips the story to `review`, **commits the tree** with explicit paths and a
 Jira-keyed subject, and moves the work item to In Review. It **never pushes, never touches `main`, and
 never marks the story `done`** — landing the branch on the epic branch and closing the story are
-`/cicd-update-sprint-memory`'s, and that last mile is always human.
+`/cicd-close-story-merge-tree`'s, and that last mile is always human.
 
 ---
 
@@ -86,7 +86,7 @@ flowchart TD
     RV --> CM["orchestrator COMMITS the worktree<br/>explicit paths, Jira-keyed subject, NO push"]
     CM --> JR["ticket -> In Review + Dev Record<br/>(jira_feed.py)"]
     JR --> DONE["PIPELINE COMPLETE<br/>committed on claude/*, not pushed, not 'done'"]
-    DONE --> D2(["Daniel: ratify decisions, /cicd-update-sprint-memory<br/>lands the branch, flips review -> done, prunes the tree"])
+    DONE --> D2(["Daniel: ratify decisions, /cicd-close-story-merge-tree<br/>lands the branch, flips review -> done, prunes the tree"])
 ```
 
 **What each stage may and may not do:**
@@ -556,11 +556,12 @@ Jira-keyed subject, files the Dev Record, and moves the work item. But it delibe
 
 Daniel's close-out: read the **QA CLOSE-OUT** + **OUT-OF-SPEC DECISIONS** + **OPEN QUESTIONS FOR
 DANIEL** at the top of `walkthrough.md`, ratify (or reverse) the team's story-silent calls, then run
-`/cicd-update-sprint-memory` — it lands the `claude/*` branch on the epic branch, flips `review → done`,
-and prunes the tree. That last mile is the point: the autopilot does the labor and parks the story at
-`review` with the work already committed; the human owns the judgment, the landing, and the `done` flip.
+`/cicd-close-story-merge-tree` — it runs `/cicd-update-sprint-memory`'s save (which is what flips
+`review → done`), lands the `claude/*` branch on the epic branch, and prunes the tree. That last mile is
+the point: the autopilot does the labor and parks the story at `review` with the work already committed;
+the human owns the judgment, the landing, and the `done` flip.
 
-**Why the worktree is what unblocked this.** `/cicd-update-sprint-memory` Step 7 refuses to land a story
+**Why the worktree is what unblocked this.** `/cicd-close-story-merge-tree` Step 3 refuses to land a story
 whose HEAD is not a `claude/*` branch inside a worktree. Until the engines opened one, the autopilot's
 output could not be closed out by the normal flow at all — the close-out was not "not automated", it was
 *impossible*. The tree, not tidiness, is the payoff.
@@ -576,7 +577,7 @@ output could not be closed out by the normal flow at all — the close-out was n
   What a first real run has to show, per engine: two concurrent stories cannot see each other's files ·
   the gate runs green inside the tree and finds the right interpreter · `-ResumeFrom` re-binds to the
   SAME tree instead of cutting a second one · the orchestrator's commit passes the armed `commit-msg`
-  hook · `/cicd-update-sprint-memory` accepts the result and lands it. Start with `-DryRun` (it creates
+  hook · `/cicd-close-story-merge-tree` accepts the result and lands it. Start with `-DryRun` (it creates
   nothing and prints the tree, branch and base it *would* use), then a small story with `-MaxStage 2`.
 - **The retry *loop* firing live.** The backoff path is verified by code inspection + a regex
   classification test, but no real transient failure has been forced on demand (a bad model id is

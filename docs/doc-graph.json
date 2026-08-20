@@ -1,20 +1,20 @@
 {
-  "root": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/scc-128-rewire-callers/.agents",
+  "root": "/Users/sudohatter/Sudo_Hatter_Command/.claude/worktrees/SCC-210-close-out-rebalance/.agents",
   "counts": {
-    "files": 284,
+    "files": 309,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 440,
-    "external": 36,
-    "ambiguous": 50,
-    "dangling": 205,
-    "broken_paths": 53,
-    "unresolved_names": 152
+    "edges": 522,
+    "external": 40,
+    "ambiguous": 52,
+    "dangling": 214,
+    "broken_paths": 55,
+    "unresolved_names": 159
   },
   "nodes": [
     {
       "path": "AGENTS.md",
-      "in": 42,
+      "in": 39,
       "out": 9
     },
     {
@@ -35,7 +35,7 @@
     {
       "path": "commands/INDEX.md",
       "in": 7,
-      "out": 3
+      "out": 5
     },
     {
       "path": "commands/analyst.md",
@@ -85,12 +85,12 @@
     {
       "path": "commands/cicd-clean-code-audit.md",
       "in": 1,
-      "out": 4
+      "out": 5
     },
     {
-      "path": "commands/cicd-close-workingtree.md",
+      "path": "commands/cicd-close-story-merge-tree.md",
       "in": 2,
-      "out": 3
+      "out": 8
     },
     {
       "path": "commands/cicd-code-review-AP.md",
@@ -100,7 +100,7 @@
     {
       "path": "commands/cicd-code-review.md",
       "in": 2,
-      "out": 2
+      "out": 6
     },
     {
       "path": "commands/cicd-create-epic-sprint.md",
@@ -115,12 +115,17 @@
     {
       "path": "commands/cicd-dev-story-tests.md",
       "in": 2,
-      "out": 2
+      "out": 3
     },
     {
       "path": "commands/cicd-e2e.md",
       "in": 1,
       "out": 1
+    },
+    {
+      "path": "commands/cicd-label-tasks.md",
+      "in": 3,
+      "out": 5
     },
     {
       "path": "commands/cicd-live-testing-team.md",
@@ -138,9 +143,9 @@
       "out": 5
     },
     {
-      "path": "commands/cicd-parallel-check.md",
-      "in": 2,
-      "out": 5
+      "path": "commands/cicd-non-crit-pr-push.md",
+      "in": 1,
+      "out": 4
     },
     {
       "path": "commands/cicd-park.md",
@@ -153,14 +158,19 @@
       "out": 1
     },
     {
+      "path": "commands/cicd-prune-worktree.md",
+      "in": 2,
+      "out": 3
+    },
+    {
       "path": "commands/cicd-push-e2e.md",
       "in": 1,
       "out": 4
     },
     {
       "path": "commands/cicd-quick-dev.md",
-      "in": 1,
-      "out": 8
+      "in": 2,
+      "out": 16
     },
     {
       "path": "commands/cicd-resume.md",
@@ -174,13 +184,13 @@
     },
     {
       "path": "commands/cicd-self-audit.md",
-      "in": 3,
-      "out": 2
+      "in": 4,
+      "out": 8
     },
     {
       "path": "commands/cicd-update-sprint-memory.md",
       "in": 2,
-      "out": 5
+      "out": 4
     },
     {
       "path": "commands/cicd-write-story-tests.md",
@@ -220,17 +230,22 @@
     {
       "path": "commands/smh-clean-code-audit.md",
       "in": 2,
-      "out": 5
+      "out": 6
     },
     {
       "path": "commands/smh-close-task-merge-tree.md",
       "in": 2,
-      "out": 7
+      "out": 9
     },
     {
       "path": "commands/smh-code-review.md",
       "in": 2,
       "out": 6
+    },
+    {
+      "path": "commands/smh-label-tasks.md",
+      "in": 2,
+      "out": 5
     },
     {
       "path": "commands/smh-memory-audit.md",
@@ -240,7 +255,7 @@
     {
       "path": "commands/smh-merge-multiple-workingtrees.md",
       "in": 2,
-      "out": 4
+      "out": 5
     },
     {
       "path": "commands/smh-new-project.md",
@@ -248,9 +263,24 @@
       "out": 5
     },
     {
+      "path": "commands/smh-non-crit-pr-push.md",
+      "in": 1,
+      "out": 3
+    },
+    {
+      "path": "commands/smh-plan-task.md",
+      "in": 2,
+      "out": 9
+    },
+    {
       "path": "commands/smh-quick-dev.md",
       "in": 2,
-      "out": 7
+      "out": 12
+    },
+    {
+      "path": "commands/smh-quick-fix.md",
+      "in": 1,
+      "out": 5
     },
     {
       "path": "commands/smh-review.md",
@@ -260,7 +290,7 @@
     {
       "path": "commands/smh-self-audit.md",
       "in": 2,
-      "out": 8
+      "out": 10
     },
     {
       "path": "commands/smh-slash-command-updating.md",
@@ -404,23 +434,23 @@
     },
     {
       "path": "rules/000-PLAN-FIRST-GATE.md",
-      "in": 3,
+      "in": 15,
       "out": 1
     },
     {
       "path": "rules/INDEX.md",
       "in": 6,
-      "out": 25
+      "out": 27
     },
     {
       "path": "rules/artifacts-always-first.md",
-      "in": 15,
+      "in": 26,
       "out": 5
     },
     {
       "path": "rules/code-standards.md",
-      "in": 10,
-      "out": 1
+      "in": 15,
+      "out": 2
     },
     {
       "path": "rules/collaborative-debug-first.md",
@@ -434,7 +464,7 @@
     },
     {
       "path": "rules/constitution.md",
-      "in": 17,
+      "in": 18,
       "out": 1
     },
     {
@@ -444,13 +474,13 @@
     },
     {
       "path": "rules/git-policy.md",
-      "in": 45,
+      "in": 53,
       "out": 3
     },
     {
       "path": "rules/jira.md",
-      "in": 25,
-      "out": 0
+      "in": 34,
+      "out": 1
     },
     {
       "path": "rules/karpathy-guidelines.md",
@@ -483,13 +513,18 @@
       "out": 0
     },
     {
+      "path": "rules/port-checklist.md",
+      "in": 4,
+      "out": 1
+    },
+    {
       "path": "rules/powershell-encoding-safety.md",
       "in": 1,
       "out": 0
     },
     {
       "path": "rules/project-law.md",
-      "in": 8,
+      "in": 9,
       "out": 5
     },
     {
@@ -499,12 +534,12 @@
     },
     {
       "path": "rules/reproduce-before-you-fix.md",
-      "in": 7,
+      "in": 6,
       "out": 0
     },
     {
       "path": "rules/smh-target-resolution.md",
-      "in": 49,
+      "in": 52,
       "out": 3
     },
     {
@@ -514,18 +549,43 @@
     },
     {
       "path": "rules/tests-must-gate-for-real.md",
-      "in": 2,
+      "in": 10,
       "out": 0
     },
     {
+      "path": "rules/work-consolidation.md",
+      "in": 10,
+      "out": 2
+    },
+    {
       "path": "rules/worktree-per-story.md",
-      "in": 24,
+      "in": 33,
       "out": 1
     },
     {
       "path": "scripts/INDEX.md",
       "in": 1,
       "out": 4
+    },
+    {
+      "path": "scripts/tests/fixtures/avch58_your_actions.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": "scripts/tests/fixtures/nc_review_engine/README.md",
+      "in": 0,
+      "out": 3
+    },
+    {
+      "path": "scripts/tests/fixtures/nc_review_engine/spec-refunds.md",
+      "in": 2,
+      "out": 1
+    },
+    {
+      "path": "scripts/tests/fixtures/nc_review_engine/spec.md",
+      "in": 3,
+      "out": 1
     },
     {
       "path": "skills/INDEX.md",
@@ -608,7 +668,7 @@
       "out": 2
     },
     {
-      "path": "skills/cicd-close-workingtree/SKILL.md",
+      "path": "skills/cicd-close-story-merge-tree/SKILL.md",
       "in": 0,
       "out": 1
     },
@@ -638,6 +698,11 @@
       "out": 1
     },
     {
+      "path": "skills/cicd-label-tasks/SKILL.md",
+      "in": 0,
+      "out": 1
+    },
+    {
       "path": "skills/cicd-live-testing-team/SKILL.md",
       "in": 0,
       "out": 1
@@ -648,7 +713,7 @@
       "out": 1
     },
     {
-      "path": "skills/cicd-parallel-check/SKILL.md",
+      "path": "skills/cicd-non-crit-pr-push/SKILL.md",
       "in": 0,
       "out": 1
     },
@@ -659,6 +724,11 @@
     },
     {
       "path": "skills/cicd-prune-context/SKILL.md",
+      "in": 0,
+      "out": 1
+    },
+    {
+      "path": "skills/cicd-prune-worktree/SKILL.md",
       "in": 0,
       "out": 1
     },
@@ -699,8 +769,8 @@
     },
     {
       "path": "skills/code-review-engine/steps/step-01-review.md",
-      "in": 2,
-      "out": 1
+      "in": 3,
+      "out": 2
     },
     {
       "path": "skills/code-review-engine/steps/step-02-verify.md",
@@ -710,7 +780,7 @@
     {
       "path": "skills/code-review-engine/steps/step-03-triage.md",
       "in": 3,
-      "out": 1
+      "out": 2
     },
     {
       "path": "skills/code-review-engine/steps/step-04-record.md",
@@ -855,6 +925,11 @@
     {
       "path": "skills/firebase-hosting-basics/references/deploying.md",
       "in": 2,
+      "out": 0
+    },
+    {
+      "path": "skills/keyway-secrets/SKILL.md",
+      "in": 0,
       "out": 0
     },
     {
@@ -1148,6 +1223,11 @@
       "out": 1
     },
     {
+      "path": "skills/smh-label-tasks/SKILL.md",
+      "in": 0,
+      "out": 1
+    },
+    {
       "path": "skills/smh-memory-audit/SKILL.md",
       "in": 0,
       "out": 1
@@ -1163,7 +1243,22 @@
       "out": 1
     },
     {
+      "path": "skills/smh-non-crit-pr-push/SKILL.md",
+      "in": 0,
+      "out": 1
+    },
+    {
+      "path": "skills/smh-plan-task/SKILL.md",
+      "in": 0,
+      "out": 1
+    },
+    {
       "path": "skills/smh-quick-dev/SKILL.md",
+      "in": 0,
+      "out": 1
+    },
+    {
+      "path": "skills/smh-quick-fix/SKILL.md",
       "in": 0,
       "out": 1
     },
@@ -1264,7 +1359,7 @@
     },
     {
       "path": "workflows/INDEX.md",
-      "in": 4,
+      "in": 2,
       "out": 9
     },
     {
@@ -1280,10 +1375,10 @@
     {
       "path": "workflows/cicd-clean-code-audit.md",
       "in": 0,
-      "out": 4
+      "out": 5
     },
     {
-      "path": "workflows/cicd-close-workingtree.md",
+      "path": "workflows/cicd-close-story-merge-tree.md",
       "in": 0,
       "out": 1
     },
@@ -1308,6 +1403,11 @@
       "out": 1
     },
     {
+      "path": "workflows/cicd-label-tasks.md",
+      "in": 0,
+      "out": 1
+    },
+    {
       "path": "workflows/cicd-live-testing-team.md",
       "in": 0,
       "out": 2
@@ -1318,9 +1418,9 @@
       "out": 4
     },
     {
-      "path": "workflows/cicd-parallel-check.md",
+      "path": "workflows/cicd-non-crit-pr-push.md",
       "in": 0,
-      "out": 5
+      "out": 4
     },
     {
       "path": "workflows/cicd-park.md",
@@ -1333,6 +1433,11 @@
       "out": 1
     },
     {
+      "path": "workflows/cicd-prune-worktree.md",
+      "in": 0,
+      "out": 1
+    },
+    {
       "path": "workflows/cicd-push-e2e.md",
       "in": 0,
       "out": 4
@@ -1340,7 +1445,7 @@
     {
       "path": "workflows/cicd-quick-dev.md",
       "in": 0,
-      "out": 8
+      "out": 1
     },
     {
       "path": "workflows/cicd-resume.md",
@@ -1350,7 +1455,7 @@
     {
       "path": "workflows/cicd-self-audit.md",
       "in": 2,
-      "out": 2
+      "out": 1
     },
     {
       "path": "workflows/cicd-update-sprint-memory.md",
@@ -1388,6 +1493,11 @@
       "out": 1
     },
     {
+      "path": "workflows/smh-label-tasks.md",
+      "in": 0,
+      "out": 6
+    },
+    {
       "path": "workflows/smh-memory-audit.md",
       "in": 0,
       "out": 1
@@ -1403,9 +1513,24 @@
       "out": 5
     },
     {
+      "path": "workflows/smh-non-crit-pr-push.md",
+      "in": 0,
+      "out": 3
+    },
+    {
+      "path": "workflows/smh-plan-task.md",
+      "in": 0,
+      "out": 1
+    },
+    {
       "path": "workflows/smh-quick-dev.md",
       "in": 0,
       "out": 1
+    },
+    {
+      "path": "workflows/smh-quick-fix.md",
+      "in": 0,
+      "out": 5
     },
     {
       "path": "workflows/smh-review.md",
@@ -1430,7 +1555,7 @@
     {
       "path": "workflows/smh-update-maps-indexes.md",
       "in": 1,
-      "out": 3
+      "out": 1
     },
     {
       "path": "bmad",
@@ -1548,6 +1673,16 @@
     },
     {
       "from": "commands/INDEX.md",
+      "to": "rules/000-PLAN-FIRST-GATE.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/INDEX.md",
+      "to": "rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/INDEX.md",
       "to": "rules/git-policy.md",
       "kind": "ref"
     },
@@ -1622,17 +1757,37 @@
       "kind": "ref"
     },
     {
-      "from": "commands/cicd-close-workingtree.md",
-      "to": "rules/smh-target-resolution.md",
+      "from": "commands/cicd-clean-code-audit.md",
+      "to": "rules/tests-must-gate-for-real.md",
       "kind": "ref"
     },
     {
-      "from": "commands/cicd-close-workingtree.md",
+      "from": "commands/cicd-close-story-merge-tree.md",
+      "to": "commands/cicd-merge-epic-workingtrees.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-close-story-merge-tree.md",
+      "to": "rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-close-story-merge-tree.md",
       "to": "rules/git-policy.md",
       "kind": "ref"
     },
     {
-      "from": "commands/cicd-close-workingtree.md",
+      "from": "commands/cicd-close-story-merge-tree.md",
+      "to": "rules/jira.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-close-story-merge-tree.md",
+      "to": "rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-close-story-merge-tree.md",
       "to": "rules/worktree-per-story.md",
       "kind": "ref"
     },
@@ -1643,12 +1798,32 @@
     },
     {
       "from": "commands/cicd-code-review.md",
+      "to": "rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-code-review.md",
       "to": "rules/code-standards.md",
       "kind": "ref"
     },
     {
       "from": "commands/cicd-code-review.md",
+      "to": "rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-code-review.md",
       "to": "rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-code-review.md",
+      "to": "rules/tests-must-gate-for-real.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-code-review.md",
+      "to": "rules/worktree-per-story.md",
       "kind": "ref"
     },
     {
@@ -1687,7 +1862,27 @@
       "kind": "ref"
     },
     {
+      "from": "commands/cicd-dev-story-tests.md",
+      "to": "rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
       "from": "commands/cicd-e2e.md",
+      "to": "rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-label-tasks.md",
+      "to": "rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-label-tasks.md",
+      "to": "rules/jira.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-label-tasks.md",
       "to": "rules/smh-target-resolution.md",
       "kind": "ref"
     },
@@ -1737,17 +1932,22 @@
       "kind": "ref"
     },
     {
-      "from": "commands/cicd-parallel-check.md",
-      "to": "rules/artifacts-always-first.md",
+      "from": "commands/cicd-non-crit-pr-push.md",
+      "to": "rules/000-PLAN-FIRST-GATE.md",
       "kind": "ref"
     },
     {
-      "from": "commands/cicd-parallel-check.md",
+      "from": "commands/cicd-non-crit-pr-push.md",
+      "to": "rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-non-crit-pr-push.md",
       "to": "rules/jira.md",
       "kind": "ref"
     },
     {
-      "from": "commands/cicd-parallel-check.md",
+      "from": "commands/cicd-non-crit-pr-push.md",
       "to": "rules/smh-target-resolution.md",
       "kind": "ref"
     },
@@ -1772,6 +1972,21 @@
       "kind": "ref"
     },
     {
+      "from": "commands/cicd-prune-worktree.md",
+      "to": "rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-prune-worktree.md",
+      "to": "rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-prune-worktree.md",
+      "to": "rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
       "from": "commands/cicd-push-e2e.md",
       "to": "rules/git-policy.md",
       "kind": "ref"
@@ -1788,7 +2003,17 @@
     },
     {
       "from": "commands/cicd-quick-dev.md",
+      "to": "rules/000-PLAN-FIRST-GATE.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-quick-dev.md",
       "to": "rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-quick-dev.md",
+      "to": "rules/code-standards.md",
       "kind": "ref"
     },
     {
@@ -1809,6 +2034,21 @@
     {
       "from": "commands/cicd-quick-dev.md",
       "to": "rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-quick-dev.md",
+      "to": "rules/tests-must-gate-for-real.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-quick-dev.md",
+      "to": "rules/work-consolidation.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-quick-dev.md",
+      "to": "rules/worktree-per-story.md",
       "kind": "ref"
     },
     {
@@ -1838,22 +2078,52 @@
     },
     {
       "from": "commands/cicd-self-audit.md",
+      "to": "rules/000-PLAN-FIRST-GATE.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-self-audit.md",
+      "to": "rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-self-audit.md",
+      "to": "rules/code-standards.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-self-audit.md",
+      "to": "rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-self-audit.md",
+      "to": "rules/port-checklist.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-self-audit.md",
       "to": "rules/smh-target-resolution.md",
       "kind": "ref"
     },
     {
       "from": "commands/cicd-self-audit.md",
-      "to": "AGENTS.md",
+      "to": "rules/tests-must-gate-for-real.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/cicd-self-audit.md",
+      "to": "rules/worktree-per-story.md",
       "kind": "ref"
     },
     {
       "from": "commands/cicd-update-sprint-memory.md",
-      "to": "commands/cicd-merge-epic-workingtrees.md",
+      "to": "rules/artifacts-always-first.md",
       "kind": "ref"
     },
     {
       "from": "commands/cicd-update-sprint-memory.md",
-      "to": "rules/jira.md",
+      "to": "rules/git-policy.md",
       "kind": "ref"
     },
     {
@@ -1864,11 +2134,6 @@
     {
       "from": "commands/cicd-update-sprint-memory.md",
       "to": "rules/worktree-per-story.md",
-      "kind": "ref"
-    },
-    {
-      "from": "commands/cicd-update-sprint-memory.md",
-      "to": "rules/git-policy.md",
       "kind": "ref"
     },
     {
@@ -1903,6 +2168,11 @@
     },
     {
       "from": "commands/smh-clean-code-audit.md",
+      "to": "rules/tests-must-gate-for-real.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-clean-code-audit.md",
       "to": "rules/worktree-per-story.md",
       "kind": "ref"
     },
@@ -1929,6 +2199,11 @@
     {
       "from": "commands/smh-close-task-merge-tree.md",
       "to": "rules/jira.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-close-task-merge-tree.md",
+      "to": "rules/work-consolidation.md",
       "kind": "ref"
     },
     {
@@ -1977,6 +2252,21 @@
       "kind": "ref"
     },
     {
+      "from": "commands/smh-label-tasks.md",
+      "to": "rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-label-tasks.md",
+      "to": "rules/jira.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-label-tasks.md",
+      "to": "rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
       "from": "commands/smh-memory-audit.md",
       "to": "rules/artifacts-always-first.md",
       "kind": "ref"
@@ -2014,6 +2304,11 @@
     {
       "from": "commands/smh-merge-multiple-workingtrees.md",
       "to": "rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-merge-multiple-workingtrees.md",
+      "to": "AGENTS.md",
       "kind": "ref"
     },
     {
@@ -2042,6 +2337,61 @@
       "kind": "ref"
     },
     {
+      "from": "commands/smh-non-crit-pr-push.md",
+      "to": "rules/000-PLAN-FIRST-GATE.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-non-crit-pr-push.md",
+      "to": "rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-non-crit-pr-push.md",
+      "to": "rules/jira.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-plan-task.md",
+      "to": "rules/000-PLAN-FIRST-GATE.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-plan-task.md",
+      "to": "rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-plan-task.md",
+      "to": "rules/code-standards.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-plan-task.md",
+      "to": "rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-plan-task.md",
+      "to": "rules/jira.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-plan-task.md",
+      "to": "rules/port-checklist.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-plan-task.md",
+      "to": "rules/work-consolidation.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-plan-task.md",
+      "to": "rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
       "from": "commands/smh-quick-dev.md",
       "to": "rules/000-PLAN-FIRST-GATE.md",
       "kind": "ref"
@@ -2053,12 +2403,22 @@
     },
     {
       "from": "commands/smh-quick-dev.md",
+      "to": "rules/code-standards.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-quick-dev.md",
       "to": "rules/git-policy.md",
       "kind": "ref"
     },
     {
       "from": "commands/smh-quick-dev.md",
       "to": "rules/reproduce-before-you-fix.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-quick-dev.md",
+      "to": "rules/tests-must-gate-for-real.md",
       "kind": "ref"
     },
     {
@@ -2077,6 +2437,36 @@
       "kind": "ref"
     },
     {
+      "from": "commands/smh-quick-dev.md",
+      "to": "rules/work-consolidation.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-quick-fix.md",
+      "to": "rules/000-PLAN-FIRST-GATE.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-quick-fix.md",
+      "to": "rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-quick-fix.md",
+      "to": "rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-quick-fix.md",
+      "to": "rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-quick-fix.md",
+      "to": "rules/work-consolidation.md",
+      "kind": "ref"
+    },
+    {
       "from": "commands/smh-self-audit.md",
       "to": "rules/000-PLAN-FIRST-GATE.md",
       "kind": "ref"
@@ -2088,12 +2478,22 @@
     },
     {
       "from": "commands/smh-self-audit.md",
+      "to": "rules/code-standards.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-self-audit.md",
       "to": "rules/constitution.md",
       "kind": "ref"
     },
     {
       "from": "commands/smh-self-audit.md",
-      "to": "rules/smh-target-resolution.md",
+      "to": "rules/port-checklist.md",
+      "kind": "ref"
+    },
+    {
+      "from": "commands/smh-self-audit.md",
+      "to": "rules/tests-must-gate-for-real.md",
       "kind": "ref"
     },
     {
@@ -2493,6 +2893,11 @@
     },
     {
       "from": "rules/INDEX.md",
+      "to": "rules/port-checklist.md",
+      "kind": "ref"
+    },
+    {
+      "from": "rules/INDEX.md",
       "to": "rules/powershell-encoding-safety.md",
       "kind": "ref"
     },
@@ -2524,6 +2929,11 @@
     {
       "from": "rules/INDEX.md",
       "to": "rules/tests-must-gate-for-real.md",
+      "kind": "ref"
+    },
+    {
+      "from": "rules/INDEX.md",
+      "to": "rules/work-consolidation.md",
       "kind": "ref"
     },
     {
@@ -2562,6 +2972,11 @@
       "kind": "ref"
     },
     {
+      "from": "rules/code-standards.md",
+      "to": "skills/code-review-engine/steps/step-01-review.md",
+      "kind": "ref"
+    },
+    {
       "from": "rules/collaborative-debug-first.md",
       "to": "rules/reproduce-before-you-fix.md",
       "kind": "ref"
@@ -2584,6 +2999,11 @@
     {
       "from": "rules/git-policy.md",
       "to": "rules/mobile-mode.md",
+      "kind": "ref"
+    },
+    {
+      "from": "rules/jira.md",
+      "to": "rules/work-consolidation.md",
       "kind": "ref"
     },
     {
@@ -2652,6 +3072,11 @@
       "kind": "ref"
     },
     {
+      "from": "rules/port-checklist.md",
+      "to": "rules/project-law.md",
+      "kind": "link"
+    },
+    {
       "from": "rules/project-law.md",
       "to": "INDEX.md",
       "kind": "ref"
@@ -2683,7 +3108,7 @@
     },
     {
       "from": "rules/smh-target-resolution.md",
-      "to": "commands/cicd-parallel-check.md",
+      "to": "commands/cicd-label-tasks.md",
       "kind": "ref"
     },
     {
@@ -2712,6 +3137,16 @@
       "kind": "link"
     },
     {
+      "from": "rules/work-consolidation.md",
+      "to": "rules/jira.md",
+      "kind": "ref"
+    },
+    {
+      "from": "rules/work-consolidation.md",
+      "to": "rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
       "from": "rules/worktree-per-story.md",
       "to": "rules/git-policy.md",
       "kind": "ref"
@@ -2734,6 +3169,26 @@
     {
       "from": "scripts/INDEX.md",
       "to": "rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "scripts/tests/fixtures/nc_review_engine/README.md",
+      "to": "scripts/tests/fixtures/nc_review_engine/spec-refunds.md",
+      "kind": "ref"
+    },
+    {
+      "from": "scripts/tests/fixtures/nc_review_engine/README.md",
+      "to": "scripts/tests/fixtures/nc_review_engine/spec.md",
+      "kind": "ref"
+    },
+    {
+      "from": "scripts/tests/fixtures/nc_review_engine/spec-refunds.md",
+      "to": "scripts/tests/fixtures/nc_review_engine/spec.md",
+      "kind": "ref"
+    },
+    {
+      "from": "scripts/tests/fixtures/nc_review_engine/spec.md",
+      "to": "scripts/tests/fixtures/nc_review_engine/spec-refunds.md",
       "kind": "ref"
     },
     {
@@ -2887,8 +3342,8 @@
       "kind": "ref"
     },
     {
-      "from": "skills/cicd-close-workingtree/SKILL.md",
-      "to": "commands/cicd-close-workingtree.md",
+      "from": "skills/cicd-close-story-merge-tree/SKILL.md",
+      "to": "commands/cicd-close-story-merge-tree.md",
       "kind": "ref"
     },
     {
@@ -2917,6 +3372,11 @@
       "kind": "ref"
     },
     {
+      "from": "skills/cicd-label-tasks/SKILL.md",
+      "to": "commands/cicd-label-tasks.md",
+      "kind": "ref"
+    },
+    {
       "from": "skills/cicd-live-testing-team/SKILL.md",
       "to": "commands/cicd-live-testing-team.md",
       "kind": "ref"
@@ -2927,8 +3387,8 @@
       "kind": "ref"
     },
     {
-      "from": "skills/cicd-parallel-check/SKILL.md",
-      "to": "commands/cicd-parallel-check.md",
+      "from": "skills/cicd-non-crit-pr-push/SKILL.md",
+      "to": "commands/cicd-non-crit-pr-push.md",
       "kind": "ref"
     },
     {
@@ -2939,6 +3399,11 @@
     {
       "from": "skills/cicd-prune-context/SKILL.md",
       "to": "commands/cicd-prune-context.md",
+      "kind": "ref"
+    },
+    {
+      "from": "skills/cicd-prune-worktree/SKILL.md",
+      "to": "commands/cicd-prune-worktree.md",
       "kind": "ref"
     },
     {
@@ -2997,8 +3462,18 @@
       "kind": "ref"
     },
     {
+      "from": "skills/code-review-engine/steps/step-01-review.md",
+      "to": "rules/work-consolidation.md",
+      "kind": "ref"
+    },
+    {
       "from": "skills/code-review-engine/steps/step-02-verify.md",
       "to": "skills/code-review-engine/steps/step-03-triage.md",
+      "kind": "ref"
+    },
+    {
+      "from": "skills/code-review-engine/steps/step-03-triage.md",
+      "to": "rules/jira.md",
       "kind": "ref"
     },
     {
@@ -3187,6 +3662,11 @@
       "kind": "ref"
     },
     {
+      "from": "skills/smh-label-tasks/SKILL.md",
+      "to": "commands/smh-label-tasks.md",
+      "kind": "ref"
+    },
+    {
       "from": "skills/smh-memory-audit/SKILL.md",
       "to": "commands/smh-memory-audit.md",
       "kind": "ref"
@@ -3202,8 +3682,23 @@
       "kind": "ref"
     },
     {
+      "from": "skills/smh-non-crit-pr-push/SKILL.md",
+      "to": "commands/smh-non-crit-pr-push.md",
+      "kind": "ref"
+    },
+    {
+      "from": "skills/smh-plan-task/SKILL.md",
+      "to": "commands/smh-plan-task.md",
+      "kind": "ref"
+    },
+    {
       "from": "skills/smh-quick-dev/SKILL.md",
       "to": "commands/smh-quick-dev.md",
+      "kind": "ref"
+    },
+    {
+      "from": "skills/smh-quick-fix/SKILL.md",
+      "to": "commands/smh-quick-fix.md",
       "kind": "ref"
     },
     {
@@ -3362,8 +3857,13 @@
       "kind": "ref"
     },
     {
-      "from": "workflows/cicd-close-workingtree.md",
-      "to": "commands/cicd-close-workingtree.md",
+      "from": "workflows/cicd-clean-code-audit.md",
+      "to": "rules/tests-must-gate-for-real.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/cicd-close-story-merge-tree.md",
+      "to": "commands/cicd-close-story-merge-tree.md",
       "kind": "ref"
     },
     {
@@ -3397,6 +3897,11 @@
       "kind": "ref"
     },
     {
+      "from": "workflows/cicd-label-tasks.md",
+      "to": "commands/cicd-label-tasks.md",
+      "kind": "ref"
+    },
+    {
       "from": "workflows/cicd-live-testing-team.md",
       "to": "rules/jira.md",
       "kind": "ref"
@@ -3422,17 +3927,22 @@
       "kind": "ref"
     },
     {
-      "from": "workflows/cicd-parallel-check.md",
-      "to": "rules/artifacts-always-first.md",
+      "from": "workflows/cicd-non-crit-pr-push.md",
+      "to": "rules/000-PLAN-FIRST-GATE.md",
       "kind": "ref"
     },
     {
-      "from": "workflows/cicd-parallel-check.md",
+      "from": "workflows/cicd-non-crit-pr-push.md",
+      "to": "rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/cicd-non-crit-pr-push.md",
       "to": "rules/jira.md",
       "kind": "ref"
     },
     {
-      "from": "workflows/cicd-parallel-check.md",
+      "from": "workflows/cicd-non-crit-pr-push.md",
       "to": "rules/smh-target-resolution.md",
       "kind": "ref"
     },
@@ -3457,6 +3967,11 @@
       "kind": "ref"
     },
     {
+      "from": "workflows/cicd-prune-worktree.md",
+      "to": "commands/cicd-prune-worktree.md",
+      "kind": "ref"
+    },
+    {
       "from": "workflows/cicd-push-e2e.md",
       "to": "rules/git-policy.md",
       "kind": "ref"
@@ -3473,37 +3988,7 @@
     },
     {
       "from": "workflows/cicd-quick-dev.md",
-      "to": "rules/artifacts-always-first.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/cicd-quick-dev.md",
-      "to": "rules/git-policy.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/cicd-quick-dev.md",
-      "to": "rules/jira.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/cicd-quick-dev.md",
-      "to": "rules/reproduce-before-you-fix.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/cicd-quick-dev.md",
-      "to": "rules/smh-target-resolution.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/cicd-quick-dev.md",
-      "to": "AGENTS.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/cicd-quick-dev.md",
-      "to": "workflows/INDEX.md",
+      "to": "commands/cicd-quick-dev.md",
       "kind": "ref"
     },
     {
@@ -3518,12 +4003,7 @@
     },
     {
       "from": "workflows/cicd-self-audit.md",
-      "to": "rules/smh-target-resolution.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/cicd-self-audit.md",
-      "to": "AGENTS.md",
+      "to": "commands/cicd-self-audit.md",
       "kind": "ref"
     },
     {
@@ -3567,6 +4047,26 @@
       "kind": "ref"
     },
     {
+      "from": "workflows/smh-label-tasks.md",
+      "to": "commands/smh-label-tasks.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/smh-label-tasks.md",
+      "to": "rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/smh-label-tasks.md",
+      "to": "rules/jira.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/smh-label-tasks.md",
+      "to": "rules/smh-target-resolution.md",
+      "kind": "ref"
+    },
+    {
       "from": "workflows/smh-memory-audit.md",
       "to": "commands/smh-memory-audit.md",
       "kind": "ref"
@@ -3602,8 +4102,53 @@
       "kind": "ref"
     },
     {
+      "from": "workflows/smh-non-crit-pr-push.md",
+      "to": "rules/000-PLAN-FIRST-GATE.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/smh-non-crit-pr-push.md",
+      "to": "rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/smh-non-crit-pr-push.md",
+      "to": "rules/jira.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/smh-plan-task.md",
+      "to": "commands/smh-plan-task.md",
+      "kind": "ref"
+    },
+    {
       "from": "workflows/smh-quick-dev.md",
       "to": "commands/smh-quick-dev.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/smh-quick-fix.md",
+      "to": "rules/000-PLAN-FIRST-GATE.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/smh-quick-fix.md",
+      "to": "rules/artifacts-always-first.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/smh-quick-fix.md",
+      "to": "rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/smh-quick-fix.md",
+      "to": "rules/worktree-per-story.md",
+      "kind": "ref"
+    },
+    {
+      "from": "workflows/smh-quick-fix.md",
+      "to": "rules/work-consolidation.md",
       "kind": "ref"
     },
     {
@@ -3630,16 +4175,6 @@
       "from": "workflows/smh-update-maps-indexes.md",
       "to": "commands/smh-update-maps-indexes.md",
       "kind": "ref"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "to": "AGENTS.md",
-      "kind": "ref"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "to": "workflows/INDEX.md",
-      "kind": "ref"
     }
   ],
   "dangling": [
@@ -3649,11 +4184,19 @@
     },
     {
       "from": "commands/INDEX.md",
+      "target": "implementation_plan.md"
+    },
+    {
+      "from": "commands/INDEX.md",
       "target": "sprint-dependency-map.md"
     },
     {
       "from": "commands/INDEX.md",
       "target": "sprint_scrum_board_map.md"
+    },
+    {
+      "from": "commands/INDEX.md",
+      "target": "walkthrough.md"
     },
     {
       "from": "commands/cicd-autopilot-claude.md",
@@ -3712,8 +4255,8 @@
       "target": "code-review.md"
     },
     {
-      "from": "commands/cicd-code-review-AP.md",
-      "target": ".agents/rules/bmad_code_review_sudo_fix.md"
+      "from": "commands/cicd-close-story-merge-tree.md",
+      "target": "active-context.md"
     },
     {
       "from": "commands/cicd-code-review-AP.md",
@@ -3726,6 +4269,10 @@
     {
       "from": "commands/cicd-code-review-AP.md",
       "target": "decisions-log.md"
+    },
+    {
+      "from": "commands/cicd-code-review-AP.md",
+      "target": "deferred-work.md"
     },
     {
       "from": "commands/cicd-code-review-AP.md",
@@ -3784,6 +4331,10 @@
       "target": "walkthrough.md"
     },
     {
+      "from": "commands/cicd-label-tasks.md",
+      "target": "implementation_plan.md"
+    },
+    {
       "from": "commands/cicd-live-testing-team.md",
       "target": "PROJECT_ROOT/_bmad-output/active-context/active-context.md"
     },
@@ -3816,10 +4367,6 @@
       "target": "PROJECT_ROOT/.github/claude/incident-triage.md"
     },
     {
-      "from": "commands/cicd-parallel-check.md",
-      "target": "implementation_plan.md"
-    },
-    {
       "from": "commands/cicd-park.md",
       "target": "_bmad-output/active-context/active-context.md"
     },
@@ -3846,6 +4393,14 @@
     {
       "from": "commands/cicd-push-e2e.md",
       "target": "active-context.md"
+    },
+    {
+      "from": "commands/cicd-quick-dev.md",
+      "target": "deferred-work.md"
+    },
+    {
+      "from": "commands/cicd-quick-dev.md",
+      "target": "implementation_plan.md"
     },
     {
       "from": "commands/cicd-quick-dev.md",
@@ -3878,10 +4433,6 @@
     {
       "from": "commands/cicd-self-audit-AP.md",
       "target": "walkthrough.md"
-    },
-    {
-      "from": "commands/cicd-self-audit.md",
-      "target": "implementation_plan.md"
     },
     {
       "from": "commands/cicd-self-audit.md",
@@ -3945,6 +4496,10 @@
     },
     {
       "from": "commands/smh-close-task-merge-tree.md",
+      "target": ".agents/rules/nothing-guards-the-merge-target.md"
+    },
+    {
+      "from": "commands/smh-close-task-merge-tree.md",
       "target": "walkthrough.md"
     },
     {
@@ -3958,6 +4513,10 @@
     {
       "from": "commands/smh-code-review.md",
       "target": "walkthrough.md"
+    },
+    {
+      "from": "commands/smh-label-tasks.md",
+      "target": "implementation_plan.md"
     },
     {
       "from": "commands/smh-memory-audit.md",
@@ -3980,6 +4539,14 @@
       "target": "_bmad-output/project-context.md"
     },
     {
+      "from": "commands/smh-plan-task.md",
+      "target": "/implementation_plan.md"
+    },
+    {
+      "from": "commands/smh-plan-task.md",
+      "target": "implementation_plan.md"
+    },
+    {
       "from": "commands/smh-quick-dev.md",
       "target": "/walkthrough.md"
     },
@@ -3996,8 +4563,8 @@
       "target": "walkthrough.md"
     },
     {
-      "from": "commands/smh-self-audit.md",
-      "target": "implementation_plan.md"
+      "from": "commands/smh-quick-fix.md",
+      "target": "/walkthrough.md"
     },
     {
       "from": "commands/smh-update-maps-indexes.md",
@@ -4133,6 +4700,14 @@
     },
     {
       "from": "rules/artifacts-always-first.md",
+      "target": "/implementation_plan.md"
+    },
+    {
+      "from": "rules/artifacts-always-first.md",
+      "target": "/walkthrough.md"
+    },
+    {
+      "from": "rules/artifacts-always-first.md",
       "target": "00_artifacts-list.md"
     },
     {
@@ -4260,12 +4835,28 @@
       "target": "Projects/AGY_AVIATIONCHAT/_my_resources/_quick_reference/sudo_workflows_testing.md"
     },
     {
+      "from": "rules/work-consolidation.md",
+      "target": "implementation_plan.md"
+    },
+    {
       "from": "rules/worktree-per-story.md",
       "target": "active-context.md"
     },
     {
       "from": "scripts/INDEX.md",
       "target": "CHANGELOG.md"
+    },
+    {
+      "from": "scripts/INDEX.md",
+      "target": "docs/guide.md"
+    },
+    {
+      "from": "scripts/INDEX.md",
+      "target": "plan.md"
+    },
+    {
+      "from": "scripts/tests/fixtures/avch58_your_actions.md",
+      "target": "_artifacts/_main/2026-08-15_avch-58-migrations-refs/walkthrough.md"
     },
     {
       "from": "skills/INDEX.md",
@@ -4284,6 +4875,10 @@
       "target": "deferred-work.md"
     },
     {
+      "from": "skills/code-review-engine/steps/step-01-review.md",
+      "target": "scoring.md"
+    },
+    {
       "from": "skills/react-best-practices/README.md",
       "target": "area-description.md"
     },
@@ -4294,10 +4889,6 @@
     {
       "from": "skills/skills_explained.md",
       "target": "react-patterns.md"
-    },
-    {
-      "from": "skills/smh-self-audit/SKILL.md",
-      "target": "implementation_plan.md"
     },
     {
       "from": "skills/ui-ux-pro-max/SKILL.md",
@@ -4384,10 +4975,6 @@
       "target": "active-context.md"
     },
     {
-      "from": "workflows/cicd-parallel-check.md",
-      "target": "implementation_plan.md"
-    },
-    {
       "from": "workflows/cicd-park.md",
       "target": "_bmad-output/active-context/active-context.md"
     },
@@ -4416,28 +5003,12 @@
       "target": "active-context.md"
     },
     {
-      "from": "workflows/cicd-quick-dev.md",
-      "target": "step-oneshot.md"
-    },
-    {
-      "from": "workflows/cicd-quick-dev.md",
-      "target": "walkthrough.md"
-    },
-    {
       "from": "workflows/cicd-resume.md",
       "target": "_bmad-output/active-context/active-context.md"
     },
     {
       "from": "workflows/cicd-resume.md",
       "target": "walkthrough.md"
-    },
-    {
-      "from": "workflows/cicd-self-audit.md",
-      "target": "implementation_plan.md"
-    },
-    {
-      "from": "workflows/cicd-self-audit.md",
-      "target": "self-audit-stress-test.md"
     },
     {
       "from": "workflows/sentry-security-team-avch.md",
@@ -4452,16 +5023,16 @@
       "target": "PROJECT_ROOT/.github/claude/incident-triage.md"
     },
     {
+      "from": "workflows/smh-label-tasks.md",
+      "target": "implementation_plan.md"
+    },
+    {
       "from": "workflows/smh-new-project.md",
       "target": "_bmad-output/project-context.md"
     },
     {
-      "from": "workflows/smh-self-audit.md",
-      "target": "implementation_plan.md"
-    },
-    {
-      "from": "workflows/smh-update-maps-indexes.md",
-      "target": "todo_list.md"
+      "from": "workflows/smh-quick-fix.md",
+      "target": "/walkthrough.md"
     }
   ],
   "external": [
@@ -4486,10 +5057,6 @@
       "target": "docs/_scc_sops_prds/workflows_testing_SOP.md"
     },
     {
-      "from": "commands/cicd-self-audit.md",
-      "target": "docs/gitnexus.md"
-    },
-    {
       "from": "commands/smh-adviser-board.md",
       "target": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md"
     },
@@ -4503,11 +5070,23 @@
     },
     {
       "from": "commands/smh-code-review.md",
+      "target": "_artifacts/_main/deferred-work.md"
+    },
+    {
+      "from": "commands/smh-code-review.md",
       "target": "docs/_scc_sops_prds/workflows_testing_SOP.md"
     },
     {
       "from": "commands/smh-memory-audit.md",
       "target": "_artifacts/_memory/MEMORY.md"
+    },
+    {
+      "from": "commands/smh-merge-multiple-workingtrees.md",
+      "target": "_artifacts/_main/2026-08-13_scc-127-verify-wave/walkthrough.md"
+    },
+    {
+      "from": "commands/smh-merge-multiple-workingtrees.md",
+      "target": "docs/_scc_sops_prds/workflows_testing_SOP.md"
     },
     {
       "from": "commands/smh-new-project.md",
@@ -4550,6 +5129,10 @@
       "target": "_artifacts/_memory/nothing-guards-the-merge-target.md"
     },
     {
+      "from": "rules/git-policy.md",
+      "target": "_artifacts/_memory/revert-target-must-be-a-ref.md"
+    },
+    {
       "from": "rules/jira.md",
       "target": "_my_resources/open_tasks/todo_list.md"
     },
@@ -4578,6 +5161,18 @@
       "target": "docs/workspace-standard.md"
     },
     {
+      "from": "skills/code-review-engine/steps/step-01-review.md",
+      "target": "_artifacts/_main/2026-08-12_scc-124-baseline-trial/scoring.md"
+    },
+    {
+      "from": "skills/code-review-engine/steps/step-01-review.md",
+      "target": "_artifacts/_main/2026-08-20_scc-225-review-surface/lc-cost-measurement.md"
+    },
+    {
+      "from": "skills/keyway-secrets/SKILL.md",
+      "target": "docs/_scc_sops_prds/sharing_keys_secrets_secure.md"
+    },
+    {
       "from": "skills/workspace-structure/SKILL.md",
       "target": "docs/gitnexus.md"
     },
@@ -4588,14 +5183,6 @@
     {
       "from": "workflows/cicd-boot-sprint-memory.md",
       "target": "router.md"
-    },
-    {
-      "from": "workflows/cicd-quick-dev.md",
-      "target": "docs/_scc_sops_prds/workflows_testing_SOP.md"
-    },
-    {
-      "from": "workflows/cicd-self-audit.md",
-      "target": "docs/gitnexus.md"
     },
     {
       "from": "workflows/smh-new-project.md",
@@ -4687,17 +5274,19 @@
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
         "skills/cicd-clean-code-audit/SKILL.md",
-        "skills/cicd-close-workingtree/SKILL.md",
+        "skills/cicd-close-story-merge-tree/SKILL.md",
         "skills/cicd-code-review/SKILL.md",
         "skills/cicd-create-epic-sprint/SKILL.md",
         "skills/cicd-deploy-backend/SKILL.md",
         "skills/cicd-dev-story-tests/SKILL.md",
         "skills/cicd-e2e/SKILL.md",
+        "skills/cicd-label-tasks/SKILL.md",
         "skills/cicd-live-testing-team/SKILL.md",
         "skills/cicd-merge-epic-workingtrees/SKILL.md",
-        "skills/cicd-parallel-check/SKILL.md",
+        "skills/cicd-non-crit-pr-push/SKILL.md",
         "skills/cicd-park/SKILL.md",
         "skills/cicd-prune-context/SKILL.md",
+        "skills/cicd-prune-worktree/SKILL.md",
         "skills/cicd-push-e2e/SKILL.md",
         "skills/cicd-quick-dev/SKILL.md",
         "skills/cicd-resume/SKILL.md",
@@ -4712,6 +5301,7 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
@@ -4720,10 +5310,14 @@
         "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
         "skills/smh-code-review/SKILL.md",
+        "skills/smh-label-tasks/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
         "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-non-crit-pr-push/SKILL.md",
+        "skills/smh-plan-task/SKILL.md",
         "skills/smh-quick-dev/SKILL.md",
+        "skills/smh-quick-fix/SKILL.md",
         "skills/smh-review/SKILL.md",
         "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
@@ -4742,6 +5336,7 @@
       "target": ".agents/scripts/README.md",
       "candidates": [
         "bmad",
+        "scripts/tests/fixtures/nc_review_engine/README.md",
         "skills/react-best-practices/README.md"
       ]
     },
@@ -4773,6 +5368,7 @@
       "target": "README.md",
       "candidates": [
         "bmad",
+        "scripts/tests/fixtures/nc_review_engine/README.md",
         "skills/react-best-practices/README.md"
       ]
     },
@@ -4857,6 +5453,7 @@
       "target": "_my_resources/README.md",
       "candidates": [
         "bmad",
+        "scripts/tests/fixtures/nc_review_engine/README.md",
         "skills/react-best-practices/README.md"
       ]
     },
@@ -4884,17 +5481,19 @@
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
         "skills/cicd-clean-code-audit/SKILL.md",
-        "skills/cicd-close-workingtree/SKILL.md",
+        "skills/cicd-close-story-merge-tree/SKILL.md",
         "skills/cicd-code-review/SKILL.md",
         "skills/cicd-create-epic-sprint/SKILL.md",
         "skills/cicd-deploy-backend/SKILL.md",
         "skills/cicd-dev-story-tests/SKILL.md",
         "skills/cicd-e2e/SKILL.md",
+        "skills/cicd-label-tasks/SKILL.md",
         "skills/cicd-live-testing-team/SKILL.md",
         "skills/cicd-merge-epic-workingtrees/SKILL.md",
-        "skills/cicd-parallel-check/SKILL.md",
+        "skills/cicd-non-crit-pr-push/SKILL.md",
         "skills/cicd-park/SKILL.md",
         "skills/cicd-prune-context/SKILL.md",
+        "skills/cicd-prune-worktree/SKILL.md",
         "skills/cicd-push-e2e/SKILL.md",
         "skills/cicd-quick-dev/SKILL.md",
         "skills/cicd-resume/SKILL.md",
@@ -4909,6 +5508,7 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
@@ -4917,10 +5517,14 @@
         "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
         "skills/smh-code-review/SKILL.md",
+        "skills/smh-label-tasks/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
         "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-non-crit-pr-push/SKILL.md",
+        "skills/smh-plan-task/SKILL.md",
         "skills/smh-quick-dev/SKILL.md",
+        "skills/smh-quick-fix/SKILL.md",
         "skills/smh-review/SKILL.md",
         "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
@@ -4939,6 +5543,7 @@
       "target": "_opencode_artifacts/README.md",
       "candidates": [
         "bmad",
+        "scripts/tests/fixtures/nc_review_engine/README.md",
         "skills/react-best-practices/README.md"
       ]
     },
@@ -5008,6 +5613,7 @@
       "target": "README.md",
       "candidates": [
         "bmad",
+        "scripts/tests/fixtures/nc_review_engine/README.md",
         "skills/react-best-practices/README.md"
       ]
     },
@@ -5057,24 +5663,26 @@
       ]
     },
     {
-      "from": "skills/INDEX.md",
-      "target": "/SKILL.md",
+      "from": "scripts/tests/fixtures/nc_review_engine/README.md",
+      "target": "SKILL.md",
       "candidates": [
         "skills/backend-dev-guidelines/SKILL.md",
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
         "skills/cicd-clean-code-audit/SKILL.md",
-        "skills/cicd-close-workingtree/SKILL.md",
+        "skills/cicd-close-story-merge-tree/SKILL.md",
         "skills/cicd-code-review/SKILL.md",
         "skills/cicd-create-epic-sprint/SKILL.md",
         "skills/cicd-deploy-backend/SKILL.md",
         "skills/cicd-dev-story-tests/SKILL.md",
         "skills/cicd-e2e/SKILL.md",
+        "skills/cicd-label-tasks/SKILL.md",
         "skills/cicd-live-testing-team/SKILL.md",
         "skills/cicd-merge-epic-workingtrees/SKILL.md",
-        "skills/cicd-parallel-check/SKILL.md",
+        "skills/cicd-non-crit-pr-push/SKILL.md",
         "skills/cicd-park/SKILL.md",
         "skills/cicd-prune-context/SKILL.md",
+        "skills/cicd-prune-worktree/SKILL.md",
         "skills/cicd-push-e2e/SKILL.md",
         "skills/cicd-quick-dev/SKILL.md",
         "skills/cicd-resume/SKILL.md",
@@ -5089,6 +5697,7 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
@@ -5097,10 +5706,79 @@
         "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
         "skills/smh-code-review/SKILL.md",
+        "skills/smh-label-tasks/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
         "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-non-crit-pr-push/SKILL.md",
+        "skills/smh-plan-task/SKILL.md",
         "skills/smh-quick-dev/SKILL.md",
+        "skills/smh-quick-fix/SKILL.md",
+        "skills/smh-review/SKILL.md",
+        "skills/smh-self-audit/SKILL.md",
+        "skills/smh-slash-command-updating/SKILL.md",
+        "skills/smh-sync-agents/SKILL.md",
+        "skills/smh-update-maps-indexes/SKILL.md",
+        "skills/systematic-debugging/SKILL.md",
+        "skills/troubleshoot-cloudrun-deployment/SKILL.md",
+        "skills/ui-ux-pro-max/SKILL.md",
+        "skills/v3-prompt-architecture/SKILL.md",
+        "skills/webm-alpha-video/SKILL.md",
+        "skills/workspace-structure/SKILL.md"
+      ]
+    },
+    {
+      "from": "skills/INDEX.md",
+      "target": "/SKILL.md",
+      "candidates": [
+        "skills/backend-dev-guidelines/SKILL.md",
+        "skills/cicd-bdd-tests/SKILL.md",
+        "skills/cicd-boot-sprint-memory/SKILL.md",
+        "skills/cicd-clean-code-audit/SKILL.md",
+        "skills/cicd-close-story-merge-tree/SKILL.md",
+        "skills/cicd-code-review/SKILL.md",
+        "skills/cicd-create-epic-sprint/SKILL.md",
+        "skills/cicd-deploy-backend/SKILL.md",
+        "skills/cicd-dev-story-tests/SKILL.md",
+        "skills/cicd-e2e/SKILL.md",
+        "skills/cicd-label-tasks/SKILL.md",
+        "skills/cicd-live-testing-team/SKILL.md",
+        "skills/cicd-merge-epic-workingtrees/SKILL.md",
+        "skills/cicd-non-crit-pr-push/SKILL.md",
+        "skills/cicd-park/SKILL.md",
+        "skills/cicd-prune-context/SKILL.md",
+        "skills/cicd-prune-worktree/SKILL.md",
+        "skills/cicd-push-e2e/SKILL.md",
+        "skills/cicd-quick-dev/SKILL.md",
+        "skills/cicd-resume/SKILL.md",
+        "skills/cicd-self-audit/SKILL.md",
+        "skills/cicd-update-sprint-memory/SKILL.md",
+        "skills/cicd-write-story-tests/SKILL.md",
+        "skills/code-review-engine/SKILL.md",
+        "skills/firebase-ai-logic-basics/SKILL.md",
+        "skills/firebase-app-hosting-basics/SKILL.md",
+        "skills/firebase-auth-basics/SKILL.md",
+        "skills/firebase-basics/SKILL.md",
+        "skills/firebase-data-connect-basics/SKILL.md",
+        "skills/firebase-firestore-basics/SKILL.md",
+        "skills/firebase-hosting-basics/SKILL.md",
+        "skills/keyway-secrets/SKILL.md",
+        "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/python-patterns/SKILL.md",
+        "skills/react-best-practices/SKILL.md",
+        "skills/sentry-security-team-avch/SKILL.md",
+        "skills/smh-adviser-board/SKILL.md",
+        "skills/smh-clean-code-audit/SKILL.md",
+        "skills/smh-close-task-merge-tree/SKILL.md",
+        "skills/smh-code-review/SKILL.md",
+        "skills/smh-label-tasks/SKILL.md",
+        "skills/smh-memory-audit/SKILL.md",
+        "skills/smh-merge-multiple-workingtrees/SKILL.md",
+        "skills/smh-new-project/SKILL.md",
+        "skills/smh-non-crit-pr-push/SKILL.md",
+        "skills/smh-plan-task/SKILL.md",
+        "skills/smh-quick-dev/SKILL.md",
+        "skills/smh-quick-fix/SKILL.md",
         "skills/smh-review/SKILL.md",
         "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
@@ -5122,17 +5800,19 @@
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
         "skills/cicd-clean-code-audit/SKILL.md",
-        "skills/cicd-close-workingtree/SKILL.md",
+        "skills/cicd-close-story-merge-tree/SKILL.md",
         "skills/cicd-code-review/SKILL.md",
         "skills/cicd-create-epic-sprint/SKILL.md",
         "skills/cicd-deploy-backend/SKILL.md",
         "skills/cicd-dev-story-tests/SKILL.md",
         "skills/cicd-e2e/SKILL.md",
+        "skills/cicd-label-tasks/SKILL.md",
         "skills/cicd-live-testing-team/SKILL.md",
         "skills/cicd-merge-epic-workingtrees/SKILL.md",
-        "skills/cicd-parallel-check/SKILL.md",
+        "skills/cicd-non-crit-pr-push/SKILL.md",
         "skills/cicd-park/SKILL.md",
         "skills/cicd-prune-context/SKILL.md",
+        "skills/cicd-prune-worktree/SKILL.md",
         "skills/cicd-push-e2e/SKILL.md",
         "skills/cicd-quick-dev/SKILL.md",
         "skills/cicd-resume/SKILL.md",
@@ -5147,6 +5827,7 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
@@ -5155,10 +5836,14 @@
         "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
         "skills/smh-code-review/SKILL.md",
+        "skills/smh-label-tasks/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
         "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-non-crit-pr-push/SKILL.md",
+        "skills/smh-plan-task/SKILL.md",
         "skills/smh-quick-dev/SKILL.md",
+        "skills/smh-quick-fix/SKILL.md",
         "skills/smh-review/SKILL.md",
         "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
@@ -5180,17 +5865,19 @@
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
         "skills/cicd-clean-code-audit/SKILL.md",
-        "skills/cicd-close-workingtree/SKILL.md",
+        "skills/cicd-close-story-merge-tree/SKILL.md",
         "skills/cicd-code-review/SKILL.md",
         "skills/cicd-create-epic-sprint/SKILL.md",
         "skills/cicd-deploy-backend/SKILL.md",
         "skills/cicd-dev-story-tests/SKILL.md",
         "skills/cicd-e2e/SKILL.md",
+        "skills/cicd-label-tasks/SKILL.md",
         "skills/cicd-live-testing-team/SKILL.md",
         "skills/cicd-merge-epic-workingtrees/SKILL.md",
-        "skills/cicd-parallel-check/SKILL.md",
+        "skills/cicd-non-crit-pr-push/SKILL.md",
         "skills/cicd-park/SKILL.md",
         "skills/cicd-prune-context/SKILL.md",
+        "skills/cicd-prune-worktree/SKILL.md",
         "skills/cicd-push-e2e/SKILL.md",
         "skills/cicd-quick-dev/SKILL.md",
         "skills/cicd-resume/SKILL.md",
@@ -5205,6 +5892,7 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
@@ -5213,10 +5901,14 @@
         "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
         "skills/smh-code-review/SKILL.md",
+        "skills/smh-label-tasks/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
         "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-non-crit-pr-push/SKILL.md",
+        "skills/smh-plan-task/SKILL.md",
         "skills/smh-quick-dev/SKILL.md",
+        "skills/smh-quick-fix/SKILL.md",
         "skills/smh-review/SKILL.md",
         "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
@@ -5238,17 +5930,19 @@
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
         "skills/cicd-clean-code-audit/SKILL.md",
-        "skills/cicd-close-workingtree/SKILL.md",
+        "skills/cicd-close-story-merge-tree/SKILL.md",
         "skills/cicd-code-review/SKILL.md",
         "skills/cicd-create-epic-sprint/SKILL.md",
         "skills/cicd-deploy-backend/SKILL.md",
         "skills/cicd-dev-story-tests/SKILL.md",
         "skills/cicd-e2e/SKILL.md",
+        "skills/cicd-label-tasks/SKILL.md",
         "skills/cicd-live-testing-team/SKILL.md",
         "skills/cicd-merge-epic-workingtrees/SKILL.md",
-        "skills/cicd-parallel-check/SKILL.md",
+        "skills/cicd-non-crit-pr-push/SKILL.md",
         "skills/cicd-park/SKILL.md",
         "skills/cicd-prune-context/SKILL.md",
+        "skills/cicd-prune-worktree/SKILL.md",
         "skills/cicd-push-e2e/SKILL.md",
         "skills/cicd-quick-dev/SKILL.md",
         "skills/cicd-resume/SKILL.md",
@@ -5263,6 +5957,7 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
@@ -5271,10 +5966,14 @@
         "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
         "skills/smh-code-review/SKILL.md",
+        "skills/smh-label-tasks/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
         "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-non-crit-pr-push/SKILL.md",
+        "skills/smh-plan-task/SKILL.md",
         "skills/smh-quick-dev/SKILL.md",
+        "skills/smh-quick-fix/SKILL.md",
         "skills/smh-review/SKILL.md",
         "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
@@ -5296,17 +5995,19 @@
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
         "skills/cicd-clean-code-audit/SKILL.md",
-        "skills/cicd-close-workingtree/SKILL.md",
+        "skills/cicd-close-story-merge-tree/SKILL.md",
         "skills/cicd-code-review/SKILL.md",
         "skills/cicd-create-epic-sprint/SKILL.md",
         "skills/cicd-deploy-backend/SKILL.md",
         "skills/cicd-dev-story-tests/SKILL.md",
         "skills/cicd-e2e/SKILL.md",
+        "skills/cicd-label-tasks/SKILL.md",
         "skills/cicd-live-testing-team/SKILL.md",
         "skills/cicd-merge-epic-workingtrees/SKILL.md",
-        "skills/cicd-parallel-check/SKILL.md",
+        "skills/cicd-non-crit-pr-push/SKILL.md",
         "skills/cicd-park/SKILL.md",
         "skills/cicd-prune-context/SKILL.md",
+        "skills/cicd-prune-worktree/SKILL.md",
         "skills/cicd-push-e2e/SKILL.md",
         "skills/cicd-quick-dev/SKILL.md",
         "skills/cicd-resume/SKILL.md",
@@ -5321,6 +6022,7 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
@@ -5329,10 +6031,14 @@
         "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
         "skills/smh-code-review/SKILL.md",
+        "skills/smh-label-tasks/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
         "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-non-crit-pr-push/SKILL.md",
+        "skills/smh-plan-task/SKILL.md",
         "skills/smh-quick-dev/SKILL.md",
+        "skills/smh-quick-fix/SKILL.md",
         "skills/smh-review/SKILL.md",
         "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
@@ -5354,17 +6060,19 @@
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
         "skills/cicd-clean-code-audit/SKILL.md",
-        "skills/cicd-close-workingtree/SKILL.md",
+        "skills/cicd-close-story-merge-tree/SKILL.md",
         "skills/cicd-code-review/SKILL.md",
         "skills/cicd-create-epic-sprint/SKILL.md",
         "skills/cicd-deploy-backend/SKILL.md",
         "skills/cicd-dev-story-tests/SKILL.md",
         "skills/cicd-e2e/SKILL.md",
+        "skills/cicd-label-tasks/SKILL.md",
         "skills/cicd-live-testing-team/SKILL.md",
         "skills/cicd-merge-epic-workingtrees/SKILL.md",
-        "skills/cicd-parallel-check/SKILL.md",
+        "skills/cicd-non-crit-pr-push/SKILL.md",
         "skills/cicd-park/SKILL.md",
         "skills/cicd-prune-context/SKILL.md",
+        "skills/cicd-prune-worktree/SKILL.md",
         "skills/cicd-push-e2e/SKILL.md",
         "skills/cicd-quick-dev/SKILL.md",
         "skills/cicd-resume/SKILL.md",
@@ -5379,6 +6087,7 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
@@ -5387,10 +6096,14 @@
         "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
         "skills/smh-code-review/SKILL.md",
+        "skills/smh-label-tasks/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
         "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-non-crit-pr-push/SKILL.md",
+        "skills/smh-plan-task/SKILL.md",
         "skills/smh-quick-dev/SKILL.md",
+        "skills/smh-quick-fix/SKILL.md",
         "skills/smh-review/SKILL.md",
         "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
@@ -5412,17 +6125,19 @@
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
         "skills/cicd-clean-code-audit/SKILL.md",
-        "skills/cicd-close-workingtree/SKILL.md",
+        "skills/cicd-close-story-merge-tree/SKILL.md",
         "skills/cicd-code-review/SKILL.md",
         "skills/cicd-create-epic-sprint/SKILL.md",
         "skills/cicd-deploy-backend/SKILL.md",
         "skills/cicd-dev-story-tests/SKILL.md",
         "skills/cicd-e2e/SKILL.md",
+        "skills/cicd-label-tasks/SKILL.md",
         "skills/cicd-live-testing-team/SKILL.md",
         "skills/cicd-merge-epic-workingtrees/SKILL.md",
-        "skills/cicd-parallel-check/SKILL.md",
+        "skills/cicd-non-crit-pr-push/SKILL.md",
         "skills/cicd-park/SKILL.md",
         "skills/cicd-prune-context/SKILL.md",
+        "skills/cicd-prune-worktree/SKILL.md",
         "skills/cicd-push-e2e/SKILL.md",
         "skills/cicd-quick-dev/SKILL.md",
         "skills/cicd-resume/SKILL.md",
@@ -5437,6 +6152,7 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
@@ -5445,10 +6161,14 @@
         "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
         "skills/smh-code-review/SKILL.md",
+        "skills/smh-label-tasks/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
         "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-non-crit-pr-push/SKILL.md",
+        "skills/smh-plan-task/SKILL.md",
         "skills/smh-quick-dev/SKILL.md",
+        "skills/smh-quick-fix/SKILL.md",
         "skills/smh-review/SKILL.md",
         "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
@@ -5470,17 +6190,19 @@
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
         "skills/cicd-clean-code-audit/SKILL.md",
-        "skills/cicd-close-workingtree/SKILL.md",
+        "skills/cicd-close-story-merge-tree/SKILL.md",
         "skills/cicd-code-review/SKILL.md",
         "skills/cicd-create-epic-sprint/SKILL.md",
         "skills/cicd-deploy-backend/SKILL.md",
         "skills/cicd-dev-story-tests/SKILL.md",
         "skills/cicd-e2e/SKILL.md",
+        "skills/cicd-label-tasks/SKILL.md",
         "skills/cicd-live-testing-team/SKILL.md",
         "skills/cicd-merge-epic-workingtrees/SKILL.md",
-        "skills/cicd-parallel-check/SKILL.md",
+        "skills/cicd-non-crit-pr-push/SKILL.md",
         "skills/cicd-park/SKILL.md",
         "skills/cicd-prune-context/SKILL.md",
+        "skills/cicd-prune-worktree/SKILL.md",
         "skills/cicd-push-e2e/SKILL.md",
         "skills/cicd-quick-dev/SKILL.md",
         "skills/cicd-resume/SKILL.md",
@@ -5495,6 +6217,7 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
@@ -5503,10 +6226,14 @@
         "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
         "skills/smh-code-review/SKILL.md",
+        "skills/smh-label-tasks/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
         "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-non-crit-pr-push/SKILL.md",
+        "skills/smh-plan-task/SKILL.md",
         "skills/smh-quick-dev/SKILL.md",
+        "skills/smh-quick-fix/SKILL.md",
         "skills/smh-review/SKILL.md",
         "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
@@ -5528,17 +6255,19 @@
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
         "skills/cicd-clean-code-audit/SKILL.md",
-        "skills/cicd-close-workingtree/SKILL.md",
+        "skills/cicd-close-story-merge-tree/SKILL.md",
         "skills/cicd-code-review/SKILL.md",
         "skills/cicd-create-epic-sprint/SKILL.md",
         "skills/cicd-deploy-backend/SKILL.md",
         "skills/cicd-dev-story-tests/SKILL.md",
         "skills/cicd-e2e/SKILL.md",
+        "skills/cicd-label-tasks/SKILL.md",
         "skills/cicd-live-testing-team/SKILL.md",
         "skills/cicd-merge-epic-workingtrees/SKILL.md",
-        "skills/cicd-parallel-check/SKILL.md",
+        "skills/cicd-non-crit-pr-push/SKILL.md",
         "skills/cicd-park/SKILL.md",
         "skills/cicd-prune-context/SKILL.md",
+        "skills/cicd-prune-worktree/SKILL.md",
         "skills/cicd-push-e2e/SKILL.md",
         "skills/cicd-quick-dev/SKILL.md",
         "skills/cicd-resume/SKILL.md",
@@ -5553,6 +6282,7 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
@@ -5561,10 +6291,14 @@
         "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
         "skills/smh-code-review/SKILL.md",
+        "skills/smh-label-tasks/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
         "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-non-crit-pr-push/SKILL.md",
+        "skills/smh-plan-task/SKILL.md",
         "skills/smh-quick-dev/SKILL.md",
+        "skills/smh-quick-fix/SKILL.md",
         "skills/smh-review/SKILL.md",
         "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
@@ -5586,17 +6320,19 @@
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
         "skills/cicd-clean-code-audit/SKILL.md",
-        "skills/cicd-close-workingtree/SKILL.md",
+        "skills/cicd-close-story-merge-tree/SKILL.md",
         "skills/cicd-code-review/SKILL.md",
         "skills/cicd-create-epic-sprint/SKILL.md",
         "skills/cicd-deploy-backend/SKILL.md",
         "skills/cicd-dev-story-tests/SKILL.md",
         "skills/cicd-e2e/SKILL.md",
+        "skills/cicd-label-tasks/SKILL.md",
         "skills/cicd-live-testing-team/SKILL.md",
         "skills/cicd-merge-epic-workingtrees/SKILL.md",
-        "skills/cicd-parallel-check/SKILL.md",
+        "skills/cicd-non-crit-pr-push/SKILL.md",
         "skills/cicd-park/SKILL.md",
         "skills/cicd-prune-context/SKILL.md",
+        "skills/cicd-prune-worktree/SKILL.md",
         "skills/cicd-push-e2e/SKILL.md",
         "skills/cicd-quick-dev/SKILL.md",
         "skills/cicd-resume/SKILL.md",
@@ -5611,6 +6347,7 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
@@ -5619,10 +6356,14 @@
         "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
         "skills/smh-code-review/SKILL.md",
+        "skills/smh-label-tasks/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
         "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-non-crit-pr-push/SKILL.md",
+        "skills/smh-plan-task/SKILL.md",
         "skills/smh-quick-dev/SKILL.md",
+        "skills/smh-quick-fix/SKILL.md",
         "skills/smh-review/SKILL.md",
         "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
@@ -5644,17 +6385,19 @@
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
         "skills/cicd-clean-code-audit/SKILL.md",
-        "skills/cicd-close-workingtree/SKILL.md",
+        "skills/cicd-close-story-merge-tree/SKILL.md",
         "skills/cicd-code-review/SKILL.md",
         "skills/cicd-create-epic-sprint/SKILL.md",
         "skills/cicd-deploy-backend/SKILL.md",
         "skills/cicd-dev-story-tests/SKILL.md",
         "skills/cicd-e2e/SKILL.md",
+        "skills/cicd-label-tasks/SKILL.md",
         "skills/cicd-live-testing-team/SKILL.md",
         "skills/cicd-merge-epic-workingtrees/SKILL.md",
-        "skills/cicd-parallel-check/SKILL.md",
+        "skills/cicd-non-crit-pr-push/SKILL.md",
         "skills/cicd-park/SKILL.md",
         "skills/cicd-prune-context/SKILL.md",
+        "skills/cicd-prune-worktree/SKILL.md",
         "skills/cicd-push-e2e/SKILL.md",
         "skills/cicd-quick-dev/SKILL.md",
         "skills/cicd-resume/SKILL.md",
@@ -5669,6 +6412,7 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
@@ -5677,10 +6421,14 @@
         "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
         "skills/smh-code-review/SKILL.md",
+        "skills/smh-label-tasks/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
         "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-non-crit-pr-push/SKILL.md",
+        "skills/smh-plan-task/SKILL.md",
         "skills/smh-quick-dev/SKILL.md",
+        "skills/smh-quick-fix/SKILL.md",
         "skills/smh-review/SKILL.md",
         "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
@@ -5702,17 +6450,19 @@
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
         "skills/cicd-clean-code-audit/SKILL.md",
-        "skills/cicd-close-workingtree/SKILL.md",
+        "skills/cicd-close-story-merge-tree/SKILL.md",
         "skills/cicd-code-review/SKILL.md",
         "skills/cicd-create-epic-sprint/SKILL.md",
         "skills/cicd-deploy-backend/SKILL.md",
         "skills/cicd-dev-story-tests/SKILL.md",
         "skills/cicd-e2e/SKILL.md",
+        "skills/cicd-label-tasks/SKILL.md",
         "skills/cicd-live-testing-team/SKILL.md",
         "skills/cicd-merge-epic-workingtrees/SKILL.md",
-        "skills/cicd-parallel-check/SKILL.md",
+        "skills/cicd-non-crit-pr-push/SKILL.md",
         "skills/cicd-park/SKILL.md",
         "skills/cicd-prune-context/SKILL.md",
+        "skills/cicd-prune-worktree/SKILL.md",
         "skills/cicd-push-e2e/SKILL.md",
         "skills/cicd-quick-dev/SKILL.md",
         "skills/cicd-resume/SKILL.md",
@@ -5727,6 +6477,7 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
@@ -5735,10 +6486,14 @@
         "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
         "skills/smh-code-review/SKILL.md",
+        "skills/smh-label-tasks/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
         "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-non-crit-pr-push/SKILL.md",
+        "skills/smh-plan-task/SKILL.md",
         "skills/smh-quick-dev/SKILL.md",
+        "skills/smh-quick-fix/SKILL.md",
         "skills/smh-review/SKILL.md",
         "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
@@ -5760,17 +6515,19 @@
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
         "skills/cicd-clean-code-audit/SKILL.md",
-        "skills/cicd-close-workingtree/SKILL.md",
+        "skills/cicd-close-story-merge-tree/SKILL.md",
         "skills/cicd-code-review/SKILL.md",
         "skills/cicd-create-epic-sprint/SKILL.md",
         "skills/cicd-deploy-backend/SKILL.md",
         "skills/cicd-dev-story-tests/SKILL.md",
         "skills/cicd-e2e/SKILL.md",
+        "skills/cicd-label-tasks/SKILL.md",
         "skills/cicd-live-testing-team/SKILL.md",
         "skills/cicd-merge-epic-workingtrees/SKILL.md",
-        "skills/cicd-parallel-check/SKILL.md",
+        "skills/cicd-non-crit-pr-push/SKILL.md",
         "skills/cicd-park/SKILL.md",
         "skills/cicd-prune-context/SKILL.md",
+        "skills/cicd-prune-worktree/SKILL.md",
         "skills/cicd-push-e2e/SKILL.md",
         "skills/cicd-quick-dev/SKILL.md",
         "skills/cicd-resume/SKILL.md",
@@ -5785,6 +6542,7 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
@@ -5793,10 +6551,79 @@
         "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
         "skills/smh-code-review/SKILL.md",
+        "skills/smh-label-tasks/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
         "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-non-crit-pr-push/SKILL.md",
+        "skills/smh-plan-task/SKILL.md",
         "skills/smh-quick-dev/SKILL.md",
+        "skills/smh-quick-fix/SKILL.md",
+        "skills/smh-review/SKILL.md",
+        "skills/smh-self-audit/SKILL.md",
+        "skills/smh-slash-command-updating/SKILL.md",
+        "skills/smh-sync-agents/SKILL.md",
+        "skills/smh-update-maps-indexes/SKILL.md",
+        "skills/systematic-debugging/SKILL.md",
+        "skills/troubleshoot-cloudrun-deployment/SKILL.md",
+        "skills/ui-ux-pro-max/SKILL.md",
+        "skills/v3-prompt-architecture/SKILL.md",
+        "skills/webm-alpha-video/SKILL.md",
+        "skills/workspace-structure/SKILL.md"
+      ]
+    },
+    {
+      "from": "skills/code-review-engine/steps/step-04-record.md",
+      "target": "SKILL.md",
+      "candidates": [
+        "skills/backend-dev-guidelines/SKILL.md",
+        "skills/cicd-bdd-tests/SKILL.md",
+        "skills/cicd-boot-sprint-memory/SKILL.md",
+        "skills/cicd-clean-code-audit/SKILL.md",
+        "skills/cicd-close-story-merge-tree/SKILL.md",
+        "skills/cicd-code-review/SKILL.md",
+        "skills/cicd-create-epic-sprint/SKILL.md",
+        "skills/cicd-deploy-backend/SKILL.md",
+        "skills/cicd-dev-story-tests/SKILL.md",
+        "skills/cicd-e2e/SKILL.md",
+        "skills/cicd-label-tasks/SKILL.md",
+        "skills/cicd-live-testing-team/SKILL.md",
+        "skills/cicd-merge-epic-workingtrees/SKILL.md",
+        "skills/cicd-non-crit-pr-push/SKILL.md",
+        "skills/cicd-park/SKILL.md",
+        "skills/cicd-prune-context/SKILL.md",
+        "skills/cicd-prune-worktree/SKILL.md",
+        "skills/cicd-push-e2e/SKILL.md",
+        "skills/cicd-quick-dev/SKILL.md",
+        "skills/cicd-resume/SKILL.md",
+        "skills/cicd-self-audit/SKILL.md",
+        "skills/cicd-update-sprint-memory/SKILL.md",
+        "skills/cicd-write-story-tests/SKILL.md",
+        "skills/code-review-engine/SKILL.md",
+        "skills/firebase-ai-logic-basics/SKILL.md",
+        "skills/firebase-app-hosting-basics/SKILL.md",
+        "skills/firebase-auth-basics/SKILL.md",
+        "skills/firebase-basics/SKILL.md",
+        "skills/firebase-data-connect-basics/SKILL.md",
+        "skills/firebase-firestore-basics/SKILL.md",
+        "skills/firebase-hosting-basics/SKILL.md",
+        "skills/keyway-secrets/SKILL.md",
+        "skills/mermaid-diagram-standards/SKILL.md",
+        "skills/python-patterns/SKILL.md",
+        "skills/react-best-practices/SKILL.md",
+        "skills/sentry-security-team-avch/SKILL.md",
+        "skills/smh-adviser-board/SKILL.md",
+        "skills/smh-clean-code-audit/SKILL.md",
+        "skills/smh-close-task-merge-tree/SKILL.md",
+        "skills/smh-code-review/SKILL.md",
+        "skills/smh-label-tasks/SKILL.md",
+        "skills/smh-memory-audit/SKILL.md",
+        "skills/smh-merge-multiple-workingtrees/SKILL.md",
+        "skills/smh-new-project/SKILL.md",
+        "skills/smh-non-crit-pr-push/SKILL.md",
+        "skills/smh-plan-task/SKILL.md",
+        "skills/smh-quick-dev/SKILL.md",
+        "skills/smh-quick-fix/SKILL.md",
         "skills/smh-review/SKILL.md",
         "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
@@ -5835,17 +6662,19 @@
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
         "skills/cicd-clean-code-audit/SKILL.md",
-        "skills/cicd-close-workingtree/SKILL.md",
+        "skills/cicd-close-story-merge-tree/SKILL.md",
         "skills/cicd-code-review/SKILL.md",
         "skills/cicd-create-epic-sprint/SKILL.md",
         "skills/cicd-deploy-backend/SKILL.md",
         "skills/cicd-dev-story-tests/SKILL.md",
         "skills/cicd-e2e/SKILL.md",
+        "skills/cicd-label-tasks/SKILL.md",
         "skills/cicd-live-testing-team/SKILL.md",
         "skills/cicd-merge-epic-workingtrees/SKILL.md",
-        "skills/cicd-parallel-check/SKILL.md",
+        "skills/cicd-non-crit-pr-push/SKILL.md",
         "skills/cicd-park/SKILL.md",
         "skills/cicd-prune-context/SKILL.md",
+        "skills/cicd-prune-worktree/SKILL.md",
         "skills/cicd-push-e2e/SKILL.md",
         "skills/cicd-quick-dev/SKILL.md",
         "skills/cicd-resume/SKILL.md",
@@ -5860,6 +6689,7 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
@@ -5868,10 +6698,14 @@
         "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
         "skills/smh-code-review/SKILL.md",
+        "skills/smh-label-tasks/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
         "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-non-crit-pr-push/SKILL.md",
+        "skills/smh-plan-task/SKILL.md",
         "skills/smh-quick-dev/SKILL.md",
+        "skills/smh-quick-fix/SKILL.md",
         "skills/smh-review/SKILL.md",
         "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",
@@ -5890,6 +6724,7 @@
       "target": "README.md",
       "candidates": [
         "bmad",
+        "scripts/tests/fixtures/nc_review_engine/README.md",
         "skills/react-best-practices/README.md"
       ]
     },
@@ -5931,17 +6766,19 @@
         "skills/cicd-bdd-tests/SKILL.md",
         "skills/cicd-boot-sprint-memory/SKILL.md",
         "skills/cicd-clean-code-audit/SKILL.md",
-        "skills/cicd-close-workingtree/SKILL.md",
+        "skills/cicd-close-story-merge-tree/SKILL.md",
         "skills/cicd-code-review/SKILL.md",
         "skills/cicd-create-epic-sprint/SKILL.md",
         "skills/cicd-deploy-backend/SKILL.md",
         "skills/cicd-dev-story-tests/SKILL.md",
         "skills/cicd-e2e/SKILL.md",
+        "skills/cicd-label-tasks/SKILL.md",
         "skills/cicd-live-testing-team/SKILL.md",
         "skills/cicd-merge-epic-workingtrees/SKILL.md",
-        "skills/cicd-parallel-check/SKILL.md",
+        "skills/cicd-non-crit-pr-push/SKILL.md",
         "skills/cicd-park/SKILL.md",
         "skills/cicd-prune-context/SKILL.md",
+        "skills/cicd-prune-worktree/SKILL.md",
         "skills/cicd-push-e2e/SKILL.md",
         "skills/cicd-quick-dev/SKILL.md",
         "skills/cicd-resume/SKILL.md",
@@ -5956,6 +6793,7 @@
         "skills/firebase-data-connect-basics/SKILL.md",
         "skills/firebase-firestore-basics/SKILL.md",
         "skills/firebase-hosting-basics/SKILL.md",
+        "skills/keyway-secrets/SKILL.md",
         "skills/mermaid-diagram-standards/SKILL.md",
         "skills/python-patterns/SKILL.md",
         "skills/react-best-practices/SKILL.md",
@@ -5964,10 +6802,14 @@
         "skills/smh-clean-code-audit/SKILL.md",
         "skills/smh-close-task-merge-tree/SKILL.md",
         "skills/smh-code-review/SKILL.md",
+        "skills/smh-label-tasks/SKILL.md",
         "skills/smh-memory-audit/SKILL.md",
         "skills/smh-merge-multiple-workingtrees/SKILL.md",
         "skills/smh-new-project/SKILL.md",
+        "skills/smh-non-crit-pr-push/SKILL.md",
+        "skills/smh-plan-task/SKILL.md",
         "skills/smh-quick-dev/SKILL.md",
+        "skills/smh-quick-fix/SKILL.md",
         "skills/smh-review/SKILL.md",
         "skills/smh-self-audit/SKILL.md",
         "skills/smh-slash-command-updating/SKILL.md",

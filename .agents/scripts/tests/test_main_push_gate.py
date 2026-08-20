@@ -304,8 +304,8 @@ def main() -> int:
             c.check("main with NO token is refused", rc != 0 and "REFUSED" in out)
             c.check("the refusal names both doors",
                     "/cicd-push-e2e" in out and "/smh-close-task-merge-tree" in out)
-            c.check("the refusal does NOT name update-sprint-memory as a door",
-                    "/cicd-update-sprint-memory" not in out,
+            c.check("the refusal does NOT name the STORY door as a main door",
+                    "/cicd-close-story-merge-tree" not in out,
                     "it lands on the epic branch; listing it here is the SCC-77 misreading")
 
             write_token(d, sha)

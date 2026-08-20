@@ -1,0 +1,72 @@
+{
+ "test": [
+  "python3",
+  ".agents/scripts/tests/test_command_surfaces.py"
+ ],
+ "mutants": [
+  {
+   "id": "N1 the ticket moves BEFORE the landing push (the original defect, restored)",
+   "file": ".agents/commands/cicd-close-story-merge-tree.md",
+   "original": "## Step 2 — Fix `## Your Actions`, then commit the close-out edits",
+   "mutated": "## Step 2 — Fix `## Your Actions`, then commit the close-out edits\n\nFirst move the ticket: `acli jira workitem transition --key <KEY> --status \"Done\" --yes`.",
+   "case": "CS-13 C3 the ticket moves ONLY AFTER the landing push",
+   "block": "CS-13"
+  },
+  {
+   "id": "N2 the door's preflight stops pinning the lane",
+   "file": ".agents/commands/cicd-close-story-merge-tree.md",
+   "original": "       --expect-key <JIRA-KEY> --branch <name> --worktree <path> \\",
+   "mutated": "       --branch <name> --worktree <path> \\",
+   "case": "CS-13 H1 the story door's preflight pins the lane with `--expect-key`",
+   "block": "CS-13"
+  },
+  {
+   "id": "N3 the door stops refusing a bad `## Your Actions` before the landing",
+   "file": ".agents/commands/cicd-close-story-merge-tree.md",
+   "original": "python3 .agents/scripts/jira_feed.py check-actions --walkthrough <the story walkthrough> \\",
+   "mutated": "echo 'skipping the actions check' \\",
+   "case": "CS-13 K1 the door runs `check-actions` BEFORE the landing push",
+   "block": "CS-13"
+  },
+  {
+   "id": "N4 the Dev Record check reverts to the SCOPED form (blind to a fork)",
+   "file": ".agents/commands/cicd-close-story-merge-tree.md",
+   "original": "python3 .agents/scripts/jira_feed.py check --key <KEY> --project <PROJECT>",
+   "mutated": "python3 .agents/scripts/jira_feed.py check --key <KEY> --story <id> --project <PROJECT>",
+   "case": "CS-13 K2 the door's Dev Record check is the UNSCOPED form (key + project)",
+   "block": "CS-13"
+  },
+  {
+   "id": "N5 the sign-off stops being spent by one close-out (SCC-71)",
+   "file": ".agents/commands/cicd-close-story-merge-tree.md",
+   "original": "**Daniel invoking this command IS the sign-off for this push.** ⛔ **And it is spent by it.**",
+   "mutated": "**Daniel invoking this command IS the sign-off for this push.**",
+   "case": "CS-13 K3 the door's sign-off is spent by ONE close-out",
+   "block": "CS-13"
+  },
+  {
+   "id": "N6 the landing creeps back into the SAVE",
+   "file": ".agents/commands/cicd-update-sprint-memory.md",
+   "original": "## Step 5 — Prune & budget → run `/cicd-prune-context` (AUTOMATIC, never ask)",
+   "mutated": "## Step 5 — Prune & budget → run `/cicd-prune-context` (AUTOMATIC, never ask)\n\nThen `git push origin HEAD:epic/<JIRA-KEY>-<slug>` — THE landing.",
+   "case": "CS-13 E `/cicd-update-sprint-memory` no longer carries `git push`",
+   "block": "CS-13"
+  },
+  {
+   "id": "N7 the doors document a flag the SCRIPT does not accept",
+   "file": ".agents/scripts/closeout_preflight.py",
+   "original": "ap.add_argument(\"--expect-key\", required=True,",
+   "mutated": "ap.add_argument(\"--expectkey\", required=False,",
+   "case": "CS-13 H3 `closeout_preflight.py` actually ACCEPTS `--expect-key`",
+   "block": "CS-13"
+  },
+  {
+   "id": "N8 the retired janitor name comes back into an authored command",
+   "file": ".agents/commands/cicd-prune-worktree.md",
+   "original": "# /cicd-prune-worktree — Prune a Merged Worktree & Its Branches",
+   "mutated": "# /cicd-close-workingtree — Prune a Merged Worktree & Its Branches",
+   "case": "CS-13 B1 the retired janitor name survives nowhere an agent reads",
+   "block": "CS-13"
+  }
+ ]
+}

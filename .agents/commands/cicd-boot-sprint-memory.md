@@ -1,5 +1,5 @@
 ---
-description: Session boot / BMAD story pick-up — reads active-context + sprint-status + the bound project's own memory index (SCC-73; project-scoped facts are relocated there and are NOT in the lobby index you loaded at session start), loads in-scope component specs, surfaces the next story and which cicd- command to run, confirms guardrails before work begins. Pairs with /cicd-update-sprint-memory (the close-out save).
+description: Session boot / BMAD story pick-up — reads active-context + sprint-status + the bound project's own memory index (SCC-73; project-scoped facts are relocated there and are NOT in the lobby index you loaded at session start), loads in-scope component specs, surfaces the next story and which cicd- command to run, confirms guardrails before work begins. Pairs with the close-out door /cicd-close-story-merge-tree and the /cicd-update-sprint-memory save it runs.
 platforms: [opencode, antigravity]
 ---
 
@@ -82,10 +82,10 @@ happened on a story lives in `_bmad-output/history/<epic>/<key>.md` (and the cha
     never write a new one. No `## Code Review` section and no legacy file = the review never ran,
     whatever the YAML says → `/cicd-code-review <id>`.
   - Then check the SHA. `PASS`/`WAIVED` whose `@ <sha>` **is** that branch's current HEAD →
-    `/cicd-update-sprint-memory`. `@ <sha>` that is **not** HEAD → code landed after the review →
+    `/cicd-close-story-merge-tree`. `@ <sha>` that is **not** HEAD → code landed after the review →
     `/cicd-code-review <id>`, **never** close-out. `FAIL`/`CONCERNS` → `/cicd-code-review <id>`.
   - ⛔ Two or more lanes of the same epic sitting at a fresh pass are **ONE** recommendation —
-    `/cicd-merge-epic-workingtrees <epic>` — not N× `/cicd-update-sprint-memory`.
+    `/cicd-merge-epic-workingtrees <epic>` — not N× `/cicd-close-story-merge-tree`.
 - ⛔ **A story with a LIVE WORKTREE is in flight — the YAML does not get a vote.** The YAML lags by
   design: ② and ③ never write it, only close-out does. Map the story file's `Status:` straight to the
   recommendation; never send a story whose tree already exists back to ① `/cicd-write-story-tests`.
@@ -127,6 +127,7 @@ Read-only — cross-check against live files; never edit anything.
 ## Step 4 — Ready
 Say:
 > "Context loaded. [Sprint objective]. [N in review / all clear]. Next: [story id] → run [cicd- command]. Ready — what's the plan?"
-Then stop and wait. (Close the session later with `/cicd-update-sprint-memory`.)
+Then stop and wait. (Save the session later with `/cicd-update-sprint-memory`; a story that is finished
+closes out through `/cicd-close-story-merge-tree`, which runs that save itself.)
 
 Optional additional input: $ARGUMENTS

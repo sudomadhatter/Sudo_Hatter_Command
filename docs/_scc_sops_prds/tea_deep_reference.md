@@ -32,7 +32,7 @@ The exact sequence, top to bottom, from a fresh epic to a shipped story. Run it 
 /cicd-write-story-tests    <story>   # ① BDD Vision Lock (MANDATORY, waiver-recorded) + ATDD red tests (must fail now; lock scenarios live IN the red files)
 /cicd-dev-story-tests      <story>   # ② BDD gate → plan → ⛔ SELF-AUDIT STOP (you pick: model / fresh team / continue) → build to green → automate
 /cicd-code-review          <story>   # ③ adversarial review + TEST GATE → PASS/CONCERNS/FAIL
-/cicd-update-sprint-memory <story>   # close-out = your sign-off → flip to done → you git commit
+/cicd-close-story-merge-tree <story> # close-out DOOR = your sign-off → runs the save (flip to done) → commits + lands on the epic branch
 ```
 
 | # | Agile step | Command |
@@ -42,9 +42,9 @@ The exact sequence, top to bottom, from a fresh epic to a shipped story. Run it 
 | **3** | Write the failing test | `/cicd-write-story-tests` |
 | **4–6** | Dev plan → self-audit → code the story | `/cicd-dev-story-tests` |
 | **7** | Code review + run tests | `/cicd-code-review` |
-| **8** | Close out + git push + log learnings | `/cicd-update-sprint-memory` |
+| **8** | Close out + land on the epic branch + log learnings | `/cicd-close-story-merge-tree` |
 
-> **P0 first.** The kickoff's Step 3 risk-scores every story with you; work the P0s through Phase B before P1/P2. Nothing is committed by an agent — you run `git commit` after each close-out.
+> **P0 first.** The kickoff's Step 3 risk-scores every story with you; work the P0s through Phase B before P1/P2. Work commits freely inside the story worktree (explicit paths, never `git add -A`); nothing reaches a **remote** mid-story — the close-out door commits the close-out edits, then lands the story on its epic branch.
 
 ---
 
@@ -143,8 +143,25 @@ Phase 4  Verdict                       → SAFE / NEEDS-REVISION / UNSAFE + Go/N
                                     → NEVER commits, NEVER flips story status.
 ```
 
-### `/cicd-update-sprint-memory` — close-out / sign-off (no sub-skills, 6 steps)
-Running this **IS your sign-off.** Only objectively-red tests can block the flip.
+### `/cicd-close-story-merge-tree` — the close-out DOOR / sign-off (calls the save below)
+Running this **IS your sign-off** for THIS story's landing — and it is spent by it; the next story needs its own
+invocation. It never touches `main` (that stays `/cicd-push-e2e`'s).
+```
+0.  resolve project · sync the branch · preflight → one call, before the save reads the board
+1.  /cicd-update-sprint-memory        → THE SAVE (below) — the board, the story file, the learnings
+2.  commit the close-out edits        → explicit paths, on the story branch, so they ride the landing
+3.  LAND: git push origin HEAD:epic/<KEY>-<slug>
+                                      → the one sanctioned push. HEAD must be a claude/* branch inside the
+                                        worktree, else STOP; a red merge gate lands nothing.
+4.  Jira: Dev Record, THEN ticket → Done (+ clears any Bug flag)
+                                      → only AFTER the push returns 0. The ticket write is REMOTE — it rides no
+                                        branch, so nothing undoes it if a later step stops (SCC-210).
+5.  /cicd-prune-worktree              → verify the landing, preserve stray work, unlink assets, remove tree + branches
+```
+
+### `/cicd-update-sprint-memory` — the session / story SAVE (no sub-skills, 6 steps)
+The door's Step 1, still runnable standalone when all you want is the save. It lands nothing, moves no ticket and
+prunes no worktree. Only objectively-red tests can block the flip.
 ```
 1. read state + this session's artifacts (plan + walkthrough; lift ## Close-Out Handoff if present)
 2. code-verify the work you just closed (grep the fix in the files it touched)
@@ -154,7 +171,7 @@ Running this **IS your sign-off.** Only objectively-red tests can block the flip
      → ONLY a FAIL verdict (new red regression) blocks. PASS/CONCERNS/WAIVED/stale/missing all close it.
 5. prune active-context.md (≈250-line cap; drop stale pitfalls & old completed tasks) — automatic, never asks
 6. write validated Claude memories + ask you for any manual learnings
-                                    → then YOU run `git commit`.
+                                    → all FILE writes: they ride the story branch and land at the door's Step 3.
 ```
 
 ---
@@ -583,7 +600,8 @@ flowchart TD
 | `/cicd-dev-story-tests` | ② **BDD contract gate (hard)** → plan → **⛔ self-audit STOP gate** (you pick: run here w/ chosen model · fresh team · continue) → build → drive tests green → automate. |
 | `/cicd-self-audit` | Adversarial pre-dev audit of the plan (fires inside ② at the STOP gate — or standalone by a fresh team on the plan doc). |
 | `/cicd-code-review` | ③ Review the diff + run the **TEST GATE** → PASS/CONCERNS/FAIL/WAIVED. |
-| `/cicd-update-sprint-memory` | Close-out: verify verdict, flip story → `done`, route learnings, prune. |
+| `/cicd-close-story-merge-tree` | **The close-out door** — preflight → the save below → commit → **land the story on its epic branch** → Dev Record + ticket → `Done` → prune the tree. Typing it IS the sign-off for that landing, and it never touches `main`. |
+| `/cicd-update-sprint-memory` | The save the door runs at its Step 1 (standalone too): verify verdict, flip story → `done`, route learnings, prune context. |
 | `*_AP` variants | Autopilot lanes (`cicd-dev-story-tests-AP`, `cicd-code-review-AP`, `cicd-self-audit-AP`) — same ideas, different engine. `dev_AP` plan-stage enforces the BDD gate too: contract-or-waiver missing → `PIPELINE_BLOCKER` (headless lanes never author the lock themselves). |
 
 ### Supporting test commands
@@ -653,7 +671,7 @@ The `cicd-` commands are **thin orchestrators** — they don't reimplement anyth
 | **5** | ⛔ STOP → self-audit stress test | `/cicd-dev-story-tests` → you pick lane/model (or fresh team), then audit |
 | **6** | Code the story (on "continue") | `/cicd-dev-story-tests` → build + automate |
 | **7** | Code review + run tests | `/cicd-code-review` |
-| **8** | Close out + git push + log learnings | `/cicd-update-sprint-memory` + commit |
+| **8** | Close out + land on the epic branch + log learnings | `/cicd-close-story-merge-tree` |
 
 Steps 1–2 are the once-per-epic kickoff; 3–8 repeat per story.
 
@@ -664,9 +682,9 @@ flowchart TD
     W --> DEV["② /cicd-dev-story-tests<br/>plan → ⛔ audit STOP (pick model / fresh team) → build → automate"]
     DEV --> CR["③ /cicd-code-review<br/>review + TEST GATE → verdict"]
     CR --> GATE{"verdict?"}
-    GATE -->|"PASS / CONCERNS / WAIVED"| UPD["/cicd-update-sprint-memory<br/>flip story → done, save learnings, prune"]
+    GATE -->|"PASS / CONCERNS / WAIVED"| UPD["/cicd-close-story-merge-tree<br/>runs the save: flip story → done, save learnings, prune"]
     GATE -.->|"FAIL — fix & re-review"| DEV
-    UPD --> COMMIT["git commit (Daniel)"]
+    UPD --> COMMIT["then, inside the same door:<br/>commit → land on the epic branch → ticket → Done → prune the tree"]
     UPD -.->|"next story"| W
 ```
 
@@ -677,7 +695,7 @@ flowchart TD
 | ① | `cicd-write-story-tests` | `bmad-create-story` → `/cicd-bdd-tests` (BDD Vision Lock, **mandatory** — contract or recorded waiver) → `testarch-atdd` |
 | ② | `cicd-dev-story-tests` | **BDD contract gate** → `bmad-dev-story` (plan) → **⛔ STOP** → `cicd-self-audit` (chosen lane/model, or fresh team) → `bmad-dev-story` (implement) → `testarch-automate` |
 | ③ | `cicd-code-review` | `code-review-engine` → `/1_run-all-tests-back_front` → `testarch-trace` → `testarch-nfr` → `testarch-test-review` |
-| close | `cicd-update-sprint-memory` | — (reads ③'s verdict; only command that flips a story to `done`) |
+| close | `cicd-update-sprint-memory` | — (reads ③'s verdict; still the only command that flips a story to `done` — you reach it by typing `cicd-close-story-merge-tree`, which runs it as its Step 1, then lands the story) |
 
 > **Epic kickoff (once per epic):** `/cicd-create-epic-sprint` bundles this — it ends with an interactive `testarch-test-design` pass where you risk-score every story P0–P3 one at a time. Same first move to retrofit an untested codebase.
 
@@ -700,7 +718,7 @@ waive: false                   # hard override (force WAIVED)
 | **FAIL** | NEW regression OR a required tier missing |
 | **WAIVED** | no baseline (gate off) |
 
-> Close-out (`cicd-update-sprint-memory`) only *reads* the verdict — it never re-runs tests. ③ is the only place a ship/no-ship decision is made.
+> Close-out (`cicd-close-story-merge-tree` and the `cicd-update-sprint-memory` save it runs) only *reads* the verdict — it never re-runs tests. ③ is the only place a ship/no-ship decision is made.
 
 ---
 
@@ -730,7 +748,7 @@ flowchart TD
 | L1 deterministic | `testarch-atdd` (①) + `testarch-automate` (②); run by `/1_run-all-tests-back_front` (③) | every story |
 | L2 constrained | `testarch-automate` (②); checked in the gate (③) | every story |
 | L3 judge | authored via `atdd`/`automate`; scored in `testarch-trace` / `nfr` (③) | agent-bearing stories |
-| L4 human | `cicd-update-sprint-memory` close-out + live-test gate | close-out |
+| L4 human | `cicd-close-story-merge-tree` close-out + live-test gate | close-out |
 
 ---
 

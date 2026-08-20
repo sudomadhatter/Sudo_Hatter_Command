@@ -61,7 +61,7 @@ but only at four named seams, and every one of them is a moment you started:
 |---|---|
 | `/cicd-create-epic-sprint` at kickoff | mints the **epic** ticket |
 | `/cicd-write-story-tests` at story pickup | mints the **story** ticket and stamps `jira_key:` into the story file |
-| `/cicd-push-e2e` at the epic merge · `/cicd-update-sprint-memory` and `/smh-close-task-merge-tree` at close-out | move the ticket to `Done` and file the Dev Record |
+| `/cicd-push-e2e` at the epic merge · `/cicd-close-story-merge-tree` and `/smh-close-task-merge-tree` at close-out | move the ticket to `Done` and file the Dev Record |
 | `jira_feed.py flag` | moves a ticket **out of `Done`** when it's found broken (§2.6) |
 
 Outside those four: status and comments only, and only when you ask. **Nothing ever decides placement,
@@ -127,7 +127,7 @@ flowchart TD
     C{"Is it a CONTAINER for other work?"}
     C -->|"yes"| E["EPIC"]
     C -->|"no"| Q{"Does it have a dotted BMAD number (19.2, 12.3.4),\na debug- id, or a story file in _bmad/bmm/stories/ ?"}
-    Q -->|"yes — any ONE is enough"| S["STORY\nbranch claude/KEY-slug off the epic branch\ncloses with /cicd-update-sprint-memory"]
+    Q -->|"yes — any ONE is enough"| S["STORY\nbranch claude/KEY-slug off the epic branch\ncloses with /cicd-close-story-merge-tree"]
     Q -->|"no"| T["TASK\nworkflow · IDE · rules · skills · toolkit\nbranch chore/KEY-slug off main\ncloses with /smh-close-task-merge-tree"]
 
     classDef good fill:#d4f7d4,stroke:#2e7d32,color:#000
@@ -578,7 +578,7 @@ JIRA
   Completing a sprint never changes a status.
 
 WORK TYPE — a rule, not a preference
-  dotted number / debug- id / story file?  -> STORY  -> /cicd-update-sprint-memory
+  dotted number / debug- id / story file?  -> STORY  -> /cicd-close-story-merge-tree
   none of those?                           -> TASK   -> /smh-close-task-merge-tree
   a container?                             -> EPIC   -> /cicd-push-e2e
   In the lobby the answer is always TASK.

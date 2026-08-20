@@ -1,0 +1,33 @@
+{
+ "test": [
+  "python3",
+  ".agents/scripts/tests/test_command_surfaces.py"
+ ],
+ "_note": "SCC-210 code review. S1 and S3 are the two document gates whose NEW strength is isolatable by a single edit - each mutant is GREEN under the predicate as it shipped and RED under the fixed one. G1/G2's new anchoring is not single-edit isolatable (a command owns two SOP headings, and killing one leaves the other), so its two-direction proof rides the CS-13 G1 CONTROL rows, which run on every invocation.",
+ "mutants": [
+  {
+   "id": "S1 the landing creeps back into the SAVE, on a line carrying a negation cue in ANOTHER clause",
+   "file": ".agents/commands/cicd-update-sprint-memory.md",
+   "original": "## Done — the save is complete; the landing is somebody else's step",
+   "mutated": "When there is no conflict, run `git push origin HEAD:epic/<JIRA-KEY>-<slug>` to land the save.\n\n## Done — the save is complete; the landing is somebody else's step",
+   "case": "CS-13 E `/cicd-update-sprint-memory` no longer carries `git push`",
+   "block": "CS-13"
+  },
+  {
+   "id": "S3 the sign-off's spend clause is separated from the push by a step boundary",
+   "file": ".agents/commands/cicd-close-story-merge-tree.md",
+   "original": "Then `git push origin HEAD:epic/<JIRA-KEY>-<slug>` — THE landing.",
+   "mutated": "## Step 3.9 — a boundary between the sign-off and the act it authorises\n\nThen `git push origin HEAD:epic/<JIRA-KEY>-<slug>` — THE landing.",
+   "case": "CS-13 K3 the door's sign-off is spent by ONE close-out, IN the landing step",
+   "block": "CS-13"
+  },
+  {
+   "id": "S4 regression · the spend clause is deleted from the door outright",
+   "file": ".agents/commands/cicd-close-story-merge-tree.md",
+   "original": "**Daniel invoking this command IS the sign-off for this push.** ⛔ **And it is spent by it.**",
+   "mutated": "**Daniel invoking this command IS the sign-off for this push.**",
+   "case": "CS-13 K3 the door's sign-off is spent by ONE close-out, IN the landing step",
+   "block": "CS-13"
+  }
+ ]
+}

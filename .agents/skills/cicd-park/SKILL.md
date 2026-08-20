@@ -15,7 +15,7 @@ Operates on BOTH the lobby and the active child project under `Projects/`.
 Its **Step 0** resolves the child project from `.agents/active-project.txt`.
 
 **Boundary:** this never lands a story on its epic branch — that stays close-out's job
-(`/cicd-update-sprint-memory` Step 7, after `/cicd-code-review` turns it green) — and never touches
+(`/cicd-close-story-merge-tree` Step 3, after `/cicd-code-review` turns it green) — and never touches
 `main`. A story mid-flight carries deliberately RED tests.
 
 Pick the work back up on the other machine with `/cicd-resume`.

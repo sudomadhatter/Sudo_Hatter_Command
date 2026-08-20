@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-210-close-out-rebalance",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-210",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "50961bed12d8832f71536bc9e27073dde5104b61",
+  "warnings": 1,
+  "when": "2026-08-20T19:22:20-04:00"
+}

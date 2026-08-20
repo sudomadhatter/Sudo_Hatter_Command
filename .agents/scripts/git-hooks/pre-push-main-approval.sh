@@ -7,7 +7,7 @@
 #   /cicd-push-e2e              epic/<KEY>-<slug>  -> main   (full gate + e2e)
 #   /smh-close-task-merge-tree  chore/<KEY>-<slug> -> main   (preflight + the lane's gate)
 #
-# /cicd-update-sprint-memory is the EPIC-BRANCH key and is deliberately NOT here. Its own body
+# /cicd-close-story-merge-tree is the EPIC-BRANCH door and is deliberately NOT here. Its own body
 # says "main is untouched" — see git-policy.md's permission table.
 #
 # ─── Why this is a git hook and not a Claude hook ──────────────────────────────────────────

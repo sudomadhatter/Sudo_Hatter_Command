@@ -15,7 +15,7 @@ Load and fully embody the BMAD agent persona defined in @_bmad/bmm/agents/sm.md.
 
 Honor @AGENTS.md and @.agents/rules/constitution.md.
 
-Story lifecycle is `ready-for-dev` → `in-progress` → `review` → `done`. Dev sets the story to `review` (never `done`). QA / Code Review reviews but does **not** flip status. Only the human close-out — `/cicd-update-sprint-memory`, after Daniel's sign-off — advances `review → done` (an atomic dual-write to both the story file and `sprint-status.yaml`).
+Story lifecycle is `ready-for-dev` → `in-progress` → `review` → `done`. Dev sets the story to `review` (never `done`). QA / Code Review reviews but does **not** flip status. Only the human close-out — `/cicd-close-story-merge-tree`, after Daniel's sign-off — advances `review → done`; the flip itself happens inside the `/cicd-update-sprint-memory` save it runs first (an atomic dual-write to both the story file and `sprint-status.yaml`).
 
 Constitution rule: NEVER scope a story with more than 3 tasks across more than 2 files (prevents review fatigue).
 
