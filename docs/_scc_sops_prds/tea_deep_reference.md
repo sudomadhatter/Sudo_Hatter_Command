@@ -44,7 +44,7 @@ The exact sequence, top to bottom, from a fresh epic to a shipped story. Run it 
 | **7** | Code review + run tests | `/cicd-code-review` |
 | **8** | Close out + land on the epic branch + log learnings | `/cicd-close-story-merge-tree` |
 
-> **P0 first.** The kickoff's Step 3 risk-scores every story with you; work the P0s through Phase B before P1/P2. Nothing is committed mid-story — the close-out door makes the one commit, then lands the story on its epic branch.
+> **P0 first.** The kickoff's Step 3 risk-scores every story with you; work the P0s through Phase B before P1/P2. Work commits freely inside the story worktree (explicit paths, never `git add -A`); nothing reaches a **remote** mid-story — the close-out door commits the close-out edits, then lands the story on its epic branch.
 
 ---
 

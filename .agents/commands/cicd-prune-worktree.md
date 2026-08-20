@@ -23,7 +23,19 @@ because the tree "looks empty" — every incident below started with a tree that
    - Otherwise, if standing inside a worktree `.claude/worktrees/<story-slug>`, extract `<story-slug>` from current working directory.
    - Otherwise, read the active story slug from `PROJECT_ROOT/_bmad-output/implementation-artifacts/sprint-status.yaml`.
 
-Echo `Target: Projects/<name> | Story: <story-slug>` before proceeding.
+3. **Story id and Jira key** — Step 0.6's preflight **requires** `--story` and `--expect-key`, and neither
+   falls out of a slug: `21-12-fail-closed-admin-roles` carries an id but no key, and the `claude/` strip in
+   step 2 above discards the only place a key would have been. Resolve both, in this order:
+   - **Handed to you by the caller** (`/cicd-close-story-merge-tree` Step 5 and
+     `/cicd-merge-epic-workingtrees` both bind them) → use those, and echo that you did.
+   - **Standalone** → read `jira_key:` from the story file's frontmatter, and the id from the same file
+     (`_bmad/bmm/stories/story-<id>-*.md` under `PROJECT_ROOT`).
+   - **Neither resolves** → **STOP and ask** which story this is. Do **not** invent a key and do **not** drop
+     the flag: an invented key makes the intent check answer about a lane that does not exist, and a dropped
+     one is `error: the following arguments are required: --expect-key`, exit 2 — which is also this script's
+     BLOCKED code, so a usage mistake reads as a blocked lane.
+
+Echo `Target: Projects/<name> | Story: <story-slug> | <id> | <JIRA-KEY>` before proceeding.
 
 ## Step 0.6 — Preflight first (fast pre-check — it does NOT replace the gates below)
 
@@ -35,7 +47,9 @@ python3 .agents/scripts/closeout_preflight.py --story <id> --project <PROJECT> \
 **Pass `--expect-key` and `--branch` explicitly, and check the target it echoes before reading its result.**
 Since SCC-210 the key check is mechanical rather than a habit: the resolved branch must carry the key you named,
 or the preflight errors — the same guard `task_preflight.py` has required since the 2026-08-09 failure. A verdict
-carrying **STALE** was computed against the last fetch, not the remote; re-run without `--no-fetch` before removing anything. This command
+carrying **STALE** was computed against the last fetch, not the remote — the line names which remedy applies
+(a failed fetch is an uplink to fix; `--no-fetch` is a flag to drop, and only if you passed it), so fix what it
+names before removing anything. This command
 runs when worktrees are open by definition, and that is exactly when `cwd` stops matching intent — the
 script walks up from `cwd` for `.git` and defaults to that repo's `HEAD`, so a sibling lane that moved the
 shared checkout silently becomes the target, with every check reported honestly about the wrong branch
@@ -143,8 +157,16 @@ have been pruned, erasing the last on-disk hint that the close-out never ran.
 Per tree, in order — first match wins:
 
 1. **Story file frontmatter reads `Status: done`** (`_bmad/bmm/stories/<story>.md`; grep BOTH dot and dash
-   forms of the id) → **AUTHORIZED.** This is the authority — only a human close-out writes `done`
-   (`story-status-flip-contract`: dev sets `review`).
+   forms of the id) → **AUTHORIZED.** A human's word is behind that write — dev only ever sets `review`
+   (`story-status-flip-contract`).
+   ⛔ **But `done` no longer implies the code LANDED, and this gate cannot see the difference (SCC-210).**
+   The flip is written by `/cicd-update-sprint-memory`, which is invocable on its own and performs no
+   landing, no ticket write and no prune — so a lane can legitimately read `done` with its code still only
+   on the local `claude/*` branch. Before this rebalance the same command also landed and moved the ticket,
+   which is what made `done` a proxy for "closed out"; it is not one now. So when this gate authorises on
+   `Status: done` **alone**, confirm the landing yourself before removing anything — the branch is an
+   ancestor of its epic branch (`git merge-base --is-ancestor`), which is exactly what Step 2's merge check
+   below asks. Authorisation says a human meant to close this; the merge check says the code survived it.
 2. **Board key exists in `sprint-status.yaml` and reads `done`** → corroborated. Say so.
 3. **Board key ABSENT** → check the CHANGE LOG for the slug.
    - Found → **AUTHORIZED**, and **state in the report that no board key exists.** Standalone quick-dev

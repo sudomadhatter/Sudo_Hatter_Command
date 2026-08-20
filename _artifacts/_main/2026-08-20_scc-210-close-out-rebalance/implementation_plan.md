@@ -43,6 +43,16 @@ ticket that reads Done. After this, the ticket moves only after the push returns
    `check-actions` refusal (CO-02) — it reads only the walkthrough, no merge check, so it is safe in the
    door. The follow-on (teach `finish` a `--landing-target`) is recorded in the Dev Record, **not minted**
    (review findings are not a work queue).
+1b. **§5 DO 5 — "give the utility a prune-only entry point" — is NOT built, because its premise is false.**
+   The DO-NOT beside it explains the fear: *"Without a prune-only path it [the multi-lane command] will
+   either double-land or fail."* Re-measured against the utility: it has **no landing push at all**, and
+   never had one — pinned now by CS-13 D2, which fails if `git push origin HEAD:epic/` ever appears in it.
+   `/cicd-merge-epic-workingtrees` already calls it once per lane and gets exactly pruning, so there is no
+   second mode to carve out and nothing for a flag to switch off. Building one would add an argument whose
+   only effect is to disable behaviour that does not exist. **Decision:** treat DO 5 as satisfied by the
+   utility already being prune-only, and prove *that* instead (D1: merge-epic names it; D2: it contains no
+   landing push). Recorded here rather than left silent, because an unbuilt DO with no note reads as dropped
+   scope — the review flagged exactly that gap in this plan (source: acceptance-auditor, SCC-210 review).
 2. **Only ONE name retires: `cicd-close-workingtree`.** `cicd-update-sprint-memory` keeps its name. So
    "no file outside `_artifacts/` references a retired name" is a grep for one string. The 116 files that
    name `cicd-update-sprint-memory` are a **semantic re-point, hand-checked per hit**: every place that
@@ -282,15 +292,31 @@ interpreter-neutral by construction (`run_all.py` already runs on both machines)
 - EDIT `.agents/workflows/smh-merge-multiple-workingtrees.md` — regenerated mirror → B
 - EDIT `.opencode/agent/bmad-sm.md` — regenerated mirror → A
 - EDIT `.opencode/agent/opus-reviewer.md` — regenerated mirror → A
-- EDIT `_artifacts/_main/INDEX.md` — ⚠️ AMENDMENT (2026-08-20, during build): this lane's own session row. `test_check_maps.py`
-  F2 fails without it (`missing row for 2026-08-20_scc-210-close-out-rebalance/ - add the INDEX row before closing out`),
-  so the batch-reconcile note in `artifacts-always-first` does not cover a lane's own folder — the gate is the authority → A
+- EDIT `_artifacts/_main/INDEX.md` — ⚠️ AMENDMENT: this lane's own session row → A
+  `test_check_maps.py` F2 fails without it (`missing row for 2026-08-20_scc-210-close-out-rebalance/ - add the
+  INDEX row before closing out`), so the batch-reconcile note in `artifacts-always-first` does not cover a
+  lane's own folder — the gate is the authority.
 - NEW `_artifacts/_main/2026-08-20_scc-210-close-out-rebalance/walkthrough.md` — the closing doc → A
-- NEW `_artifacts/_main/2026-08-20_scc-210-close-out-rebalance/sweep-preflight.json` — ⚠️ AMENDMENT: the mutant
-  table is TWO files, not one — `mutation_sweep.py` takes a single `test` per table, and this ticket has two
-  test files. 7 mutants against `closeout_preflight.py` → H, I, J
-- NEW `_artifacts/_main/2026-08-20_scc-210-close-out-rebalance/sweep-doors.json` — ⚠️ AMENDMENT: 8 mutants against
-  the three command bodies and the preflight's argparse → A, B, C, E, K
+- NEW `_artifacts/_main/2026-08-20_scc-210-close-out-rebalance/sweep-preflight.json` — ⚠️ AMENDMENT: 7 mutants against `closeout_preflight.py` → H, I, J
+  The mutant table is TWO files, not one — `mutation_sweep.py` takes a single `test` per table and this
+  ticket has two test files.
+- NEW `_artifacts/_main/2026-08-20_scc-210-close-out-rebalance/sweep-doors.json` — ⚠️ AMENDMENT: 8 mutants against the three command bodies and the preflight's argparse → A, B, C, E, K
+- NEW `_artifacts/_main/2026-08-20_scc-210-close-out-rebalance/sweep-review-preflight.json` — ⚠️ AMENDMENT (review): 7 mutants pinning the review's own preflight fixes → H, I, J
+- NEW `_artifacts/_main/2026-08-20_scc-210-close-out-rebalance/sweep-review-doors.json` — ⚠️ AMENDMENT (review): 3 mutants pinning the review's CS-13 predicate fixes → E, K
+- EDIT `.agents/skills/cicd-merge-epic-workingtrees/SKILL.md` — regenerated launcher (description re-point) → F
+- EDIT `.agents/skills/cicd-park/SKILL.md` — regenerated launcher → F
+- EDIT `.agents/skills/smh-close-task-merge-tree/SKILL.md` — regenerated launcher → F
+- EDIT `.claude/skills/cicd-merge-epic-workingtrees/SKILL.md` — tree copy of the above → F
+- EDIT `.claude/skills/cicd-park/SKILL.md` — tree copy → F
+- EDIT `.claude/skills/smh-close-task-merge-tree/SKILL.md` — tree copy → F
+
+> ⚠️ **Declared but NOT touched, and each re-checked rather than dropped silently (review, 2026-08-20).**
+> `declared_change_set.py diff` reports five `unimplemented` rows. All five are plan overreach, not dropped
+> scope: `.agents/rules/project-law.md` names `/cicd-update-sprint-memory` once (`:68`) and it correctly means
+> **the save** — a session routing project law is Steps 3–4 — so re-pointing it would have been wrong; and
+> `.agents/workflows/{cicd-code-review, cicd-dev-story-tests, cicd-quick-dev, smh-merge-multiple-workingtrees}.md`
+> each carry **zero** occurrences of the retired name, so the sync had nothing to regenerate in them. The rows
+> stay, with this note, because deleting them would erase the fact that they were checked.
 
 > ⚠️ AUDIT FINDING F1 (applied): every regenerated mirror is declared **by path** — `declared_change_set.py diff`
 > is per-file (`undeclared = changed − declared`, [:135](.agents/scripts/declared_change_set.py#L135)), so a

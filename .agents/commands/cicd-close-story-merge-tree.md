@@ -47,9 +47,17 @@ these two strings, and Step 0.6 checks the preflight resolved the same ones:
 ```bash
 STORY=<id>            # the story you are closing
 KEY=<JIRA-KEY>        # its ticket, from the story frontmatter's `jira_key:`
+EPIC=<epic-branch>    # `epic/<EPIC-KEY>-<slug>`, from `git branch --list 'epic/*'` — see below
 BRANCH=$(git -C "<the story worktree>" rev-parse --abbrev-ref HEAD)   # from command output, never memory
-echo "Closing: $STORY | $KEY | $BRANCH"
+echo "Closing: $STORY | $KEY | $EPIC | $BRANCH"
 ```
+
+⛔ **`$KEY` is the STORY's ticket; the epic branch carries the EPIC's.** `git-policy` spells both branch
+templates with the same `<JIRA-KEY>` placeholder, and they do not mean the same key: `claude/<JIRA-KEY>-<slug>`
+is this story's, `epic/<JIRA-KEY>-<slug>` is its parent epic's. Resolve `$EPIC` from
+`git branch --list 'epic/*'` (exactly one live epic branch is the normal case) — never by substituting `$KEY`
+into the template. Getting that wrong does not fail loudly at the push: it CREATES a new remote
+`epic/<story-key>-<slug>`, returns 0, and Step 4 then moves the ticket to `Done` on the strength of it.
 
 ## Step 0.5 — Sync the branch BEFORE the save reads or edits the board (parallel-lane safety)
 Step 1 reads **and rewrites** `sprint-status.yaml` + `active-context.md`. Do that on a stale base and you
@@ -97,8 +105,21 @@ gates actually run at this commit · can the epic close.
 
 **Exit 2 = BLOCKED — resolve before flipping anything. Exit 1 = warnings: read them, they do not
 block.** A warning that says *"landing was NOT verified"* means exactly that — it is not a pass.
-A verdict line carrying **STALE** means the comparison was made against the last fetch, not the remote:
-re-run without `--no-fetch` before you land anything. Paste the block into the close-out summary; it IS the
+
+⛔ **ONE exit-2 row is EXPECTED here, and reading it as a block stops the door on every normal close-out.**
+The `landed` check asks whether the story branch is already an ancestor of the epic branch. At Step 0.6 it is
+not — **Step 3 is what lands it** — so a healthy lane reports
+`[ERROR] landed: claude/<KEY>-<slug> has N commit(s) NOT on epic/… - closing out now would strand them`
+and the run exits 2. That row is this command's *reason to exist*, not its refusal. **Every OTHER error blocks
+and this one does not**, so read the rows, never the exit code alone: an `intent` error means you are aimed at
+another lane, a `sync` error means uncommitted or unpushed work, a `worktrees`/`status`/`gates` error means the
+evidence is not there. If the ONLY error is `landed` naming the branch Step 0 echoed, proceed. If `landed`
+names a **different** branch, STOP — that is the wrong-lane case.
+
+A verdict line carrying **STALE** means the comparison was made against the last fetch, not the remote. It says
+which remedy applies, and they are different acts: *"the fetch was asked for and FAILED"* is an uplink to fix
+(the default, since fetching is on), while *"re-run WITHOUT `--no-fetch`"* only appears if you passed that flag.
+Fix what the line names before you land anything. Paste the block into the close-out summary; it IS the
 evidence for Steps 1, 3 and 5.
 
 ## Step 1 — The SAVE: invoke `/cicd-update-sprint-memory` (AUTOMATIC, never ask)
@@ -132,9 +153,33 @@ python3 .agents/scripts/jira_feed.py check-actions --walkthrough <the story walk
 
 It refuses a row that hands the operator **ticket work** (SCC-163) or **the ceremony's own steps** (SCC-193) —
 "click Merge", "re-invoke the close-out", "run `--after-merge`". From the operator's word on, those are yours to
-run, not theirs to do. The same refusal fires again at Step 4, which runs **after** the landing, when the
-walkthrough is already on the epic branch and the fix is another commit. `/cicd-code-review` promises this
-refusal happens on the close-out path; until SCC-210 no step on that path performed it.
+run, not theirs to do. `/cicd-code-review` promises this refusal happens on the close-out path; until SCC-210
+no step on that path performed it.
+
+⛔ **This is the ONLY place it fires — there is no second pass, so do not treat this one as optional.** Step 4's
+three commands (`devrecord`, the `acli` transition, `check`) read the ticket and the Dev Record; **none of them
+reads `## Your Actions`**, and the one verb that would — `jira_feed.py finish` — is banned on this lane at
+Step 4 for the reason recorded there. On the Task lane a second refusal genuinely does fire at close-out, which
+is where the expectation comes from; porting the sentence without porting the mechanism would tell you a net
+exists under a wire that has none. After this point a bad row costs a commit on a landed branch.
+
+**Then the branch precondition, BEFORE the commit — because a commit is the thing you cannot take back.**
+
+```bash
+git -C "<the story worktree>" rev-parse --abbrev-ref HEAD    # must be claude/<KEY>-<slug>
+```
+
+HEAD must be a **`claude/*`** branch inside the story worktree — **and never `claude/incident-*`**, which
+satisfies the glob but is the incident pipeline's lane (`/cicd-mobile-error-team`), not story work (SCC-149):
+an incident HEAD is a **STOP** — report it and hand off; nothing below runs. If HEAD is the epic branch or
+`main`, this story was not worked in a worktree — **do NOT land it.** Report it and stop.
+
+⛔ **This check sits HERE, ahead of the commit, and not at Step 3 where the push is.** Step 1 rewrote
+`sprint-status.yaml`, the story file and `active-context.md`; committing those and *then* discovering HEAD is
+`main` has already written this story's close-out onto the shared checkout — the exact act the STOP's own
+sentence forbids (*"never rescue it by committing in the shared checkout"*). The preflight does not catch it
+either: a bare `main` carries no key segment, so `--expect-key` WARNs rather than errors, and exit 1 does not
+block. Order is the guard.
 
 Then commit — **EXPLICIT PATHS ONLY** (board, story file, active-context, artifacts). `git diff --cached --stat`
 must show ONLY this story's files; `git add -A` / `.` / `-u` are banned, and the worktree does not repeal that.
@@ -156,12 +201,10 @@ a LANDING RULE is posted on the board): STOP this solo flow — read `.agents/co
 and follow IT end to end: it runs this command's close-out per story itself (fix → merge → land → flip
 `done` → combined gate → prune ALL trees) in one shot; nothing returns here.
 
-**Precondition — check FIRST.** `git rev-parse --abbrev-ref HEAD` must be a **`claude/*`** branch (inside the
-story worktree) — **and never `claude/incident-*`**, which satisfies the glob but is the incident
-pipeline's lane (`/cicd-mobile-error-team`), not story work (SCC-149): an incident HEAD is a **STOP** —
-report it and hand off to `/cicd-mobile-error-team`; nothing below runs. If HEAD is the epic branch or `main`,
-this story wasn't worked in a worktree — **do NOT land
-it.** Report it and stop — never rescue it by committing in the shared checkout.
+**Precondition — re-read HEAD.** Step 2 checked it before committing anything, which is where the guard has
+to live; re-read it here because the push is the irreversible half and a step boundary is not a lock:
+`git -C "<the story worktree>" rev-parse --abbrev-ref HEAD` must still be the `claude/*` branch Step 0 echoed.
+Anything else → **STOP**, per Step 2's rules.
 
 Then execute `git-policy.md` → **"The landing"**, inside the worktree: merge
 `origin/epic/<JIRA-KEY>-<slug>` (CONFLICT → **STOP and report**; never force-push,
@@ -188,6 +231,22 @@ parked, its branch is already on origin and Step 5 deletes it there.
 - **`main` is untouched.** Only Daniel, directly or via `/cicd-push-e2e`.
 - **Report** the branch, the commit range that landed, and the epic-branch sha — same into the walkthrough's
   `## Your Actions` (Step 1 wrote the section; this is the line it was waiting for).
+- ⛔ **Then COMMIT that write, and push it to the epic branch too — a second, tiny landing.** Everything Step 3
+  puts in the walkthrough (the merge-gate totals above, this landing line) is written **after** Step 2's
+  commit, so without this the walkthrough that actually lands carries neither, and the tree is left dirty:
+
+  ```bash
+  git -C "<the story worktree>" add <the story walkthrough>
+  git -C "<the story worktree>" commit -m "<KEY> docs(walkthrough): record the landing"
+  git -C "<the story worktree>" push origin HEAD:epic/<EPIC-KEY>-<slug>
+  ```
+
+  **A dirty tree here is not cosmetic — it reverses two of this command's own rules.** Step 5's
+  `/cicd-prune-worktree` treats uncommitted work as data to preserve: it commits the tree and runs
+  `git push -u origin claude/<KEY>-<slug>`, which is the push the paragraph above forbids, and then declares
+  that branch **not deletable** — so the prune cannot finish, a landed-and-dead `claude/*` branch sits on
+  origin, and `/cicd-resume` later offers a story the board already reads `done`. Leave the tree clean and
+  none of that fires.
 - Landing push rejected (remote moved) → **STOP and report.** Re-sync and re-land, never force. ⛔ **The ticket
   does not move** — Step 4 runs only after a push that returned 0.
 - **No shared-checkout reconcile is owed.** It stands on `main`, which moves only when the epic merges via
@@ -233,12 +292,27 @@ Step 1's routing was thin, so go back and read the walkthrough before accepting 
 **b. Move the ticket** to match the flip — `Done` for a close-out, `In Review` for a story left at `review`:
 
 ```bash
-acli jira workitem transition --key <KEY> --status "<Status>" --yes
+acli jira workitem transition --key <KEY> --status "<Status>" --yes \
+  || { echo "STOP: the transition FAILED — the code has landed and the ticket has not moved"; exit 1; }
+acli jira workitem view <KEY> --fields status      # READ IT BACK — the write is not the proof
 ```
 
 ⛔ **`--yes` or acli stops on an interactive confirm no agent shell can answer.** Three shipped call sites
 omitted it and `Done` was landing on luck until SCC-113; `tests/test_jira_feed.py` fails if any
 `workitem transition` under `.agents/` is missing it.
+
+⛔ **Check the exit code, then read the status back — because nothing downstream does.** This command exists
+so the board cannot read `Done` over unlanded code; the mirror failure is just as real and, until this line,
+just as unguarded. A transition can fail for ordinary reasons — no workflow path from the current status, an
+expired credential, a sandboxed shell that cannot reach the OS keychain. Step 4c's `jira_feed.py check` does
+**not** close the gap: it reads the description and the Dev Record comments and never looks at `status`. So a
+failed transition would sail past it, Step 5 would prune the tree and the branch, and Step 6 would print
+`<KEY> → Done` — with the ticket still at `In Review` and the rollback point deleted. This is the same
+doctrine the Dev Record above already states for itself (*"an acli call that silently no-ops is
+indistinguishable from one that worked"*), applied to the write this whole rebalance was built to protect.
+
+If the transition fails, **stop with the code landed and say so plainly.** That state is one command from
+correct and is recoverable; a pruned worktree over a wrong board is not.
 
 ⛔ **And it happens HERE, after Step 3's push returned 0 — never earlier.** This transition is the one write in
 the whole close-out that rides no branch, so it is the one write a later STOP cannot undo.
@@ -272,12 +346,17 @@ the Step 6 summary and continue — never invent a key. Full acli reference: `.a
 Immediately after Step 3's landing succeeded and Step 4 recorded it:
 1. Invoke `/cicd-prune-worktree <story-slug>` to verify the merge, remove the local worktree
    (`.claude/worktrees/<story-slug>`), and delete both the local and remote GitHub branches
-   (`claude/<JIRA-KEY>-<story-slug>`). Pass `--repo`/`--branch` through to it explicitly — it prunes, and a
-   default resolved from `cwd` is not what you want aimed at a guess.
+   (`claude/<JIRA-KEY>-<story-slug>`). **Hand it `$STORY`, `$KEY` and `$BRANCH` — the three strings Step 0
+   bound** — so its own Step 0.6 preflight can run `--expect-key <KEY> --branch <BRANCH>` instead of
+   resolving a default from `cwd`, which is a guess. (`--repo` is **not** one of them: `closeout_preflight.py`
+   takes `--project`, and `--repo` belongs to the Task lane's `task_preflight.py`.)
 2. Confirm both local disk and remote origin are clean.
 
-Its Step 1.7 authorization gate is satisfied by construction on this path: Step 1 already flipped the story to
-`done`. It only bites when the prune is run standalone against something that was never actually closed out.
+⛔ **Its Step 1.7 authorization gate reads `Status: done`, and on this path Step 1 wrote that before anything
+landed — so on this path the gate is satisfied by construction and proves nothing.** What actually authorises
+the prune here is Step 3's push returning 0 and Step 4b's read-back, which you have just done. Do not skip
+either on the strength of the gate: since the save can write `done` on its own, `done` no longer implies a
+close-out ran. The gate still earns its place standalone, against a tree nobody closed out at all.
 
 ## Step 6 — Verify, THEN report (never report an unverified success)
 

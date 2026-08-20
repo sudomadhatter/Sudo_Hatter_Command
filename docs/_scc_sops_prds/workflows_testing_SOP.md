@@ -1749,7 +1749,7 @@ flowchart LR
 | The check | What it refuses to let happen |
 |---|---|
 | `gate_receipt.py` | **A claimed test result that never ran.** It *executes* the gate and writes down the real exit code. There is deliberately **no way to hand it a verdict** — a receipt existing means the thing actually ran. It also separates *"the tool is missing"* from *"the tests failed"*, because a missing tool is a finding, not a free pass. It records whether the tree was **dirty** at the time, and **since SCC-178 it no longer counts its own receipt as that dirt** — the `<root>/gates/` directory it writes into is excluded from the measurement, so the second gate of a lane stops reading DIRTY off the first one's receipt and no lane pays a second full suite run to clear it. The exemption is that one directory: a sibling file, another lane's artifacts, and any code path all still record DIRTY. |
-| `closeout_preflight.py` | **Closing out a story that didn't really land.** One command answers: did the code merge · is every repo clean and in sync · does the review verdict exist and does it still apply · do the files the story claims it changed actually exist. **Exit 2 means blocked.** A warning that says *"landing was NOT verified"* means exactly that — it is not a pass. |
+| `closeout_preflight.py` | **Closing out a story that didn't really land.** One command answers: did the code merge · is every repo clean and in sync · does the review verdict exist and does it still apply · do the files the story claims it changed actually exist. **`--expect-key` is required** — the resolved branch must carry the key you named, or it errors (`cwd` is not intent). Fetching is **on by default**; a verdict carrying **STALE** was computed against the last fetch and names its own remedy. **Exit 2 means blocked — except the `landed` row, which is expected before the landing** (the door's Step 3 is what lands it), so read the rows rather than the exit code. A warning that says *"landing was NOT verified"* means exactly that — it is not a pass. |
 | `story_status.py` | **A story marked done in one place and not the other.** Status lives in two files; this flips both together or neither. It refuses a downgrade, refuses an unknown status, and refuses outright if the two surfaces already disagree — that case needs `--reconcile`, which is a decision, not a default. |
 | `workflow_lint.py` | **Broken characters quietly entering a document** — the `—` that turns into `â€"`. Runs on every commit, staged files only, so it stays fast enough that nobody disables it. Its `--toolkit-only` half also checks the toolkit against its own conventions, and **since 2026-08-11 (SCC-82) a clean run is `0 errors, 0 warnings` — exit 0.** |
 | ⤷ `ap_reconciled:` | **RETIRED (SCC-209, 2026-08-18).** The `*-AP.md` robot-lane commands are abandoned pending a rewrite, so the linter no longer compares them to their primaries and the frontmatter stamp is gone. Each `*-AP.md` now carries an `UNMAINTAINED` marker instead — do not diff, port to, or restamp them. The twin relationship the toolkit still maintains is `cicd-*` ↔ `smh-*`. |
@@ -2419,7 +2419,7 @@ speak; "refuses" means it will not proceed at all and names the fix.*
 | `/smh-quick-dev` | Step 1 (the checkable list), Step 1.5 (`approved`), Step 1.6 (proposed subtasks), the end | a NO-GO audit; the eject tripwire (a deployable path) |
 | ⭐ `/smh-quick-fix` | **the end only** — and never to ask whether to mint a ticket or open a lane; a `LIGHT-VCS` tidy still shows you what it will delete first | Step 0 qualification is not `LIGHT`: a project repo, a deployable path, a toolkit path, **or no paths declared at all**; Step 3.5 re-checks the real diff and ejects to `/smh-quick-dev` |
 | `/smh-code-review` | never — it verdicts | an empty diff |
-| `/cicd-close-story-merge-tree` | never — typing it *is* the sign-off; Step 3 hands the set over to `/cicd-merge-epic-workingtrees` when siblings are live | preflight exit 2; a `FAIL` verdict; a red merge gate after absorbing the epic; an incident branch; a HEAD that is not `claude/*` |
+| `/cicd-close-story-merge-tree` | never — typing it *is* the sign-off; Step 3 hands the set over to `/cicd-merge-epic-workingtrees` when siblings are live | preflight exit 2 on anything but the expected `landed` row; a `## Your Actions` row `check-actions` refuses; a `FAIL` verdict (via the save it invokes, which refuses the flip); a red merge gate after absorbing the epic; an incident branch; a HEAD that is not `claude/*`; a failed ticket transition |
 | `/cicd-update-sprint-memory` | Step 6 for learnings, only if none were auto-routed | a `FAIL` verdict blocks the flip; run standalone, a preflight exit 2 |
 | `/cicd-merge-epic-workingtrees` | Step 1 to confirm the set; Step 5 learnings if none routed | a `FAIL` lane (skipped, the rest proceed); a red combined gate |
 | `/cicd-prune-worktree` | never | branch not merged; story not finished (Step 1.7); a LOST tree |
@@ -2993,8 +2993,11 @@ flowchart TD
 *Close out ALL of an epic's finished lanes in one reviewed pass — inventory, per-lane preflight, the
 overlap map, land in dependency order with a gate per lane, a combined gate on the epic branch, then
 prune. Ends at the epic branch; it does not touch `main`. Explained in
-[§7](#7-landing-and-shipping--the-close-out-family). Calls: `closeout_preflight.py`,
+[§7](#7-landing-and-shipping--the-close-out-family). Calls:
 `/cicd-prune-context` (once), `/cicd-prune-worktree` (per lane), `/cicd-e2e` (only if promoting).
+⚠ It does **not** call `closeout_preflight.py` (this row said it did), and it files no Dev Record and moves no
+ticket — it borrows `/cicd-update-sprint-memory` Steps 1–4 + 6, and the ticket write is outside that range.
+Close a set through it and each story's ticket is still owed.
 Invoked by: you, or `/cicd-close-story-merge-tree` Step 3's hand-over.*
 
 ```mermaid
@@ -3038,7 +3041,7 @@ once per lane — and you type it only when a cleanup was skipped or failed. Exp
 
 ```mermaid
 flowchart TD
-    S0["Step 0 — resolve project + slug\nStep 0.6 — closeout_preflight.py --branch name\ncheck the target it ECHOES before reading the result"] --> S1{"Step 1 — SAFETY GATE\nis the branch an ancestor of the epic branch?"}
+    S0["Step 0 — resolve project + slug + id + JIRA-KEY\nStep 0.6 — closeout_preflight.py --expect-key + --branch, NOT optional\ncheck the target it ECHOES before reading the result"] --> S1{"Step 1 — SAFETY GATE\nis the branch an ancestor of the epic branch?"}
     S1 -- "no" --> REFUSE["⛔ REFUSE to delete\nland the story first"]
     S1 -- "yes" --> S17{"Step 1.7 — was the STORY finished?\nfrontmatter done → board key → CHANGE LOG"}
     S17 -- "no match" --> STOP17["⛔ STOP with the reason and the fix\nno 'looks ambiguous, checking' branch"]

@@ -36,6 +36,23 @@ landing stops, none of them is published. Nothing here reaches a remote — deli
 | **`/cicd-close-story-merge-tree`** (the normal path) | the target is bound, the epic branch is absorbed, and the preflight has run — its block is your evidence | skip Step 0.5/0.6's work, read the block it hands you, start at Step 1 |
 | **you, directly** | nothing | run Step 0.5 and Step 0.6 yourself, then Step 1. The save is complete on its own; the landing is simply not part of it |
 
+⛔ **On the standalone path, Step 4's `done` flip leaves THREE things owed, and you must say so.** The flip
+writes two files; it does not land the branch, file the Dev Record, or move the Jira ticket — and since
+SCC-210 no step in this command does. So a story saved this way reads `done` on the board and in its
+frontmatter while its ticket still reads `In Review` and its code sits on one disk. That is the same
+two-surface divergence the rebalance exists to remove, pointing the other way, and the honest answer is not to
+withhold the flip — the operator's invocation IS the sign-off for it — but to **print what is still owed and
+name the door that settles it**:
+
+```
+Session save applied · <story> review → done (files only)
+STILL OWED: the landing on epic/<EPIC-KEY>-<slug> · the Dev Record · the ticket move
+→ run /cicd-close-story-merge-tree <story> to settle all three (it re-runs this save first; idempotent)
+```
+
+Print those two lines whenever this command was **not** invoked by the door. Invoked by the door, they are
+its Steps 3–4 and it will do them, so say nothing.
+
 **Your invocation — of this command, or of the door — IS the sign-off for the story flip in Step 4.** Only an
 objectively-red `FAIL` verdict blocks it.
 
@@ -69,7 +86,12 @@ python3 .agents/scripts/closeout_preflight.py --story <id> --project <PROJECT> \
 ⛔ **`--expect-key`, `--branch` and `--worktree` are not optional.** `cwd` is not intent: the script walks up from
 `cwd` and guesses branches, so a sibling lane that moved the shared checkout becomes the target and every check is
 reported honestly about the **wrong** branch. **Check the target it echoes before you read its verdict.**
-**Exit 2 = BLOCKED.** A verdict carrying **STALE** was computed against the last fetch, not the remote.
+**Exit 2 = BLOCKED — with ONE expected exception.** The `landed` check asks whether the story branch is already
+an ancestor of its epic branch, and this command runs **before** any landing (its own or the door's), so a
+healthy lane reports `[ERROR] landed: … has N commit(s) NOT on epic/…` and exits 2. That row is expected here;
+every other error is not. **Read the rows, never the exit code alone** — an `intent` error means the wrong
+lane, and that one always blocks. A verdict carrying **STALE** was computed against the last fetch, not the
+remote; the line names which remedy applies (a failed fetch is an uplink to fix, `--no-fetch` a flag to drop).
 
 ## Step 1 — Read current state & this session's artifacts (scoped — no needless whole-file reads)
 1. `_bmad-output/active-context/active-context.md` — full (about to prune it).
@@ -201,9 +223,10 @@ check; everything else, incl. Step 6's memory write, just applies. Carry its rep
 ## Done — the save is complete; the landing is somebody else's step
 
 Print the `Session save applied:` summary and stop. ⛔ **Do NOT land the branch, do NOT move the Jira ticket, do
-NOT file a Dev Record, and do NOT prune a tree.** Those four are `/cicd-close-story-merge-tree`'s, in that order,
-and the order is the safety property: everything written here rides the story branch, so a landing that stops
-publishes nothing — while a remote board write cannot be taken back.
+NOT file a Dev Record, and do NOT prune a tree.** Those four are `/cicd-close-story-merge-tree`'s, and it runs
+them **land → Dev Record → ticket → prune** — that order being the safety property: everything written here
+rides the story branch, so a landing that stops publishes nothing, and the ticket moves only after the push
+returned 0, because a remote board write cannot be taken back.
 
 **Invoked BY the door?** Hand your summary lines back to it: the routed learnings, the story flip line
 (`Closing <story>: review → done`), and `active-context: ~X / 5,000 tokens`. It prints them in its own report.
