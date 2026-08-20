@@ -2066,11 +2066,16 @@ def main() -> int:
         # (mismatch errors, no-key warns); this row owns only that the two surfaces agree.
         pf_src_path = ROOT / ".agents/scripts/closeout_preflight.py"
         pf_src = read(pf_src_path) if pf_src_path.is_file() else None
+        # ⛔ THE DECLARATION, never the mention. A mutation sweep caught this row passing on a
+        # script whose argparse said `--expectkey`: the module's own usage docstring still spelled
+        # `--expect-key`, and a bare substring cannot tell documentation from the thing it
+        # documents — which is the exact drift H3 exists to detect, reproduced inside H3.
+        DECL = 'add_argument("--expect-key"'
         c.check("CS-13 H3 `closeout_preflight.py` actually ACCEPTS `--expect-key`",
-                pf_src is not None and "--expect-key" in pf_src,
+                pf_src is not None and DECL in pf_src,
                 "closeout_preflight.py is ABSENT" if pf_src is None
-                else ("the script declares it — docs and script agree"
-                      if "--expect-key" in pf_src
+                else ("the script DECLARES it — docs and script agree"
+                      if DECL in pf_src
                       else "the doors document a flag the script rejects: "
                            "`unrecognized arguments: --expect-key`"))
 
@@ -2095,10 +2100,17 @@ def main() -> int:
         # K3 · SCC-71: one invocation rode six merges, because a document saying the sign-off
         # happened still reads as valid on task six. The door's sign-off sentence has to say the
         # operator's word is SPENT by this one close-out.
+        # ⛔ THE STEP BODY, not the whole file — for the same reason C3 and K1 read it. A
+        # mutation sweep caught this row passing on a door whose spend clause had been deleted
+        # from the landing step: the frontmatter `description:` still said "spent by it", and a
+        # description is a menu blurb, not an instruction the agent follows at the moment it
+        # lands. The clause has to be where the push is.
+        steps_text = "\n".join(door_steps)
         c.check("CS-13 K3 the door's sign-off is spent by ONE close-out",
-                "spent by" in door_text and "SCC-71" in door_text,
-                f"'spent by' {'present' if 'spent by' in door_text else 'ABSENT'}; "
-                f"'SCC-71' {'present' if 'SCC-71' in door_text else 'ABSENT'} in {door.name}")
+                "spent by" in steps_text and "SCC-71" in steps_text,
+                f"in {door.name} STEP BODY: 'spent by' "
+                f"{'present' if 'spent by' in steps_text else 'ABSENT'}; 'SCC-71' "
+                f"{'present' if 'SCC-71' in steps_text else 'ABSENT'}")
 
     return c.finish()
 
