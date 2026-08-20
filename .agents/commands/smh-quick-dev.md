@@ -219,7 +219,7 @@ clarifying question · the operator **correcting** the plan — a correction nar
 and wait **again**. You are forbidden from putting the word "approved" in a button label; writing the
 word yourself and reading it back is how this gate actually gets bypassed.
 
-**The one exemption**, and it is narrow: the self-audit's Phase 0 returned **Skip** — a typo, a comment,
+**The one exemption**, and it is narrow: the self-audit's Step 0 returned **Skip** — a typo, a comment,
 a one-line doc tweak. Say which, then proceed. Anything above that gets the gate.
 
 ---
