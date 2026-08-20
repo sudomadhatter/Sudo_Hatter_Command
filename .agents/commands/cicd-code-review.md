@@ -215,6 +215,26 @@ proves it, which is a claim about evidence a lens cannot make for you.
 For **each item**: name where the diff satisfies it, and **the assertion that proves it**. Then the
 other direction — **anything in the diff beyond the list is drift**: cut it, or name why it stays.
 
+**Then the SECOND left-hand side (SCC-231) — the declared set.** The acceptance list says what
+must be TRUE; the plan's `## Declared Change Set` block says which files were meant to MOVE — a
+file edited that satisfies an acceptance row but was never declared is invisible to the
+reconciliation above. Diff the block against the real diff:
+
+```bash
+python3 .agents/scripts/declared_change_set.py diff <the plan> \
+        --changed $(git -C "$REPO" diff --name-only <the same base this review resolved>)   # PC: `python`
+```
+
+- **`drift.undeclared`** = files(diff) − files(declared): a file the plan never named was edited.
+  One finding per file, severity **important**.
+- **`drift.unimplemented`** = files(declared) − files(diff): declared and untouched — plan
+  overreach, or dropped scope. One finding per file, severity **suggestion**.
+- An absent plan or absent block returns `present: false` — that is itself ONE finding at
+  **important**: "no declared set to reconcile against". Never a silent skip; the vacuous green
+  is the exact case this side exists to catch.
+- **Neither difference auto-fails the verdict.** Each drift finding takes the same contract as
+  the first side: cut it, or name why it stays.
+
 - An item with **no evidence** is not satisfied, however obviously true it looks. **CONCERNS floor.**
 - An item whose evidence is *"I read it and it looks right"* is not evidence. Run something.
 - No acceptance list recoverable anywhere → say so and cap the verdict at **CONCERNS**; a review with

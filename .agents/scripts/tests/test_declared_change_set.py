@@ -99,6 +99,25 @@ def main() -> int:
                           "_bmad-output/y.md"])["undeclared"] == [],
             str(dcs.diff([], ["_artifacts/_main/x/implementation_plan.md"])))
 
+    # ── SCC-231: both review twins carry the SECOND left-hand side ────────────
+    root = Path(__file__).resolve().parents[3]
+    smh = (root / ".agents/commands/smh-code-review.md").read_text(encoding="utf-8")
+    cicd = (root / ".agents/commands/cicd-code-review.md").read_text(encoding="utf-8")
+    for name, cmd in (("smh Step 2", smh), ("cicd Step 1.5", cicd)):
+        c.check(f"{name}: keeps the acceptance reconciliation it always had",
+                "anything in the diff beyond the list is drift" in cmd, "first side lost")
+        c.check(f"{name}: adds the declared-set reconciliation, both directions",
+                "drift.undeclared" in cmd and "drift.unimplemented" in cmd,
+                "second side absent")
+        c.check(f"{name}: names the parser as the source of truth",
+                "declared_change_set.py" in cmd, "parser not wired")
+        c.check(f"{name}: a missing block is an *important* finding, never a silent "
+                f"skip",
+                "no declared set to reconcile against" in cmd, "vacuous-green case open")
+        c.check(f"{name}: neither difference auto-fails - both take a named "
+                f"disposition",
+                "cut it, or name why it stays" in cmd, "disposition contract lost")
+
     return c.finish()
 
 

@@ -502,7 +502,12 @@ then read the story.*
 > (*did anything this diff references move · what is the true overlap and does `merge-tree` conflict ·
 > which sibling lanes must land first*); **"nothing moved" is a reportable result**, not a reason to
 > skip it. Step 1.5 audits the diff against the story's checkable list — an item with no evidence is
-> **not satisfied**, and anything in the diff *beyond* the list is **drift**.
+> **not satisfied**, and anything in the diff *beyond* the list is **drift**. Since SCC-231 the same
+> step reconciles a SECOND left-hand side: the plan's `## Declared Change Set` block against the
+> real diff — a file edited but never declared is `drift.undeclared` (*important*), a file declared
+> but untouched is `drift.unimplemented` (*suggestion*), and a plan with no block at all is itself
+> an *important* finding ("no declared set to reconcile against"), never a silent pass. Neither
+> difference auto-fails; each takes the same cut-it-or-name-why-it-stays disposition.
 >
 > ⛔ **The steps were adapted, not copied, and the difference is one ref.** A Task lane merges into
 > `main`, so smh re-derives against `origin/main`. A story lane merges into `epic/<JIRA-KEY>-<slug>`.
