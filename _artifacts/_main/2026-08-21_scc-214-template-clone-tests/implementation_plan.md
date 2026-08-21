@@ -69,6 +69,13 @@ Same machine as the ticket's measurement (this Mac, 10 CPUs), same run mode (`py
 - EDIT `.agents/scripts/tests/test_git_hooks.py` — builders only (`make_repo`, `make_pushable`, `make_carveout_repo` → `_build_*` + clone); zero edits below `def main()` → 1, 2, 3
 - EDIT `.agents/scripts/INDEX.md` — the run_all paragraph: template lever landed, new measured numbers → 1
 
+### Amendment — Part B (2026-08-21), inside this one block on purpose
+
+- EDIT `.agents/scripts/tests/test_task_preflight.py` — keeps blocks 1–13, the REFUSALS; imports pruned → B1, B2
+- NEW `.agents/scripts/tests/test_task_preflight_contract.py` — blocks 14–25, the CONTRACT half → B1, B2
+- NEW `_artifacts/_main/2026-08-21_scc-214-template-clone-tests/measure/floor.py` — the per-file contended profiler that chose and proved the seam → B1
+- NEW `_artifacts/_main/2026-08-21_scc-214-template-clone-tests/measure/blocktime.py` — the per-block timer the seam came from → B1
+
 ## Execution order
 
 1. **RED** — write `test_repo_template.py` first, against today's builders, with `import _repo_template` guarded so a missing module is a failing *row*, not a setup death. Rows that fail today for the right reason: `builds == 1` per key (today every call builds), one launcher per process (today one per `board()` call), hook inode shared across two `make_pushable` scenarios (today two inodes), in-place write through an executable raises (today it succeeds). Rows that pass today are **characterization** and are labelled so in the walkthrough — they exist to be the cases M1–M11 must kill.
@@ -178,3 +185,43 @@ verdict:     findings below (attachment only)
 None. SCC-213's set and this set share no file; their memory edits are not on this suite's hot path; this lane's new test reads nothing of theirs. Either lane may land first; the later one absorbs `main` and re-stamps.
 
 Audit verdict: GO
+
+---
+
+## Part B (amendment, 2026-08-21) — split `test_task_preflight.py`, and close acceptance row 1
+
+**Operator ruling, verbatim, in two messages:** *"Explain this 45 seconds what's the value to work here? We are not opening a new ticket it's add it to this one or we scrape it"* → then, after the value was measured and put to them: *"Nope fix that here, test it then we will close this ticket out"* → and the gate word: *"Approved"*. So this is scope added to SCC-214, not a new ticket, and Part A's `## Your Actions` decision row is answered by doing it.
+
+### Why, measured before deciding
+
+Part A left the suite at 94.8 s against the ticket's ~50 s. The open question was whether a split would actually move it, because `_repo_template` caches **per process** and `run_all.py` gives each file its own — so splitting a file DUPLICATES its template builds and could eat the gain.
+
+Measured with `measure/floor.py` (mimics `run_all`'s pool exactly, but records each file's wall):
+
+| | Before the split | After the split |
+|---|---|---|
+| **suite wall** | **94.0 s** | **61.7 s** |
+| slowest file | `test_task_preflight.py` **81.8 s** | `test_task_preflight.py` 49.5 s |
+| runner-up | `test_jira_feed.py` 45.1 s | `test_task_preflight_contract.py` 46.1 s |
+| sum of files | 370.3 s | 390.3 s |
+| perfect-packing floor (work ÷ 10) | 37.0 s | **39.0 s** |
+
+The duplicated-template cost is real and visible — sum-of-files rose 370.3 → 390.3 s — and it did not matter, because the wall was floor-bound, not work-bound. It is now nearly work-bound: five files sit between 41 s and 50 s against a 39.0 s packing limit, so **splitting further buys almost nothing**. The next real lever would be reducing total work, and the biggest single remaining file is `test_jira_feed.py` — a file this ticket never touched.
+
+### The seam was chosen by measurement
+
+`measure/blocktime.py` timed all 25 blocks in one process (73.9 s of block time) and the cut is the balance point: **38.8 s stays, 35.1 s moves**. It also falls on a real thematic boundary — refusals stay, contract moves.
+
+**Declared Change Set:** the Part B rows are folded into the single `## Declared Change Set` block above, where `declared_change_set.py` reads them — a second heading is not a second block.
+
+### Acceptance (Part B) → the assertion
+
+| # | Acceptance | Assertion | 
+|---|---|---|
+| B1 | The suite wall drops materially and the ~50 s target is addressed with a measured number, not a projection | `measure/floor.py` before/after, same instrument, minutes apart: **94.0 s → 61.7 s**; plus the gate receipt at the shipping sha |
+| B2 | **Case count unchanged** — the split loses nothing | `106 + 80 = 186`, exactly the count the single file carried. This is the only way a split can go wrong, and it is countable |
+| B3 | Every other consumer of `_pf_fixtures` still green | `test_task_preflight_receipts.py` 39/39 · `test_ship_preflight.py` 102/102 · `test_repo_template.py` 46/46 |
+
+**No mutant is owed for Part B.** A file split changes no decision in any swept file — `_repo_template.py`, `_pf_fixtures.py` and `test_git_hooks.py` are byte-identical across it — so the 22-mutant table stands unchanged, and it is re-run at the shipping sha to prove exactly that.
+
+**Part B self-audit (Lens 1 + 2, anchored).** Lens 1: every path exists; the block boundary was read from the file (`test_task_preflight.py:895` `# ── SCC-110 · the whole point`), not guessed — the first two attempts asserted the wrong offset and *failed loudly* rather than splitting in the wrong place, which is the guard working. Lens 2: `run_all.py:57` `FILES = sorted(p.name for p in HERE.glob("test_*.py"))` — the new file auto-joins with no wiring, confirmed by the 43-file count in the measurement; `.agents/scripts/INDEX.md:61` is the one doc naming these files and it is in the change set; `sop_currency._EXEMPT_PREFIXES` covers `.agents/scripts/tests/`, so no SOP staging is owed. No sibling lane is live. **Audit verdict: GO**
