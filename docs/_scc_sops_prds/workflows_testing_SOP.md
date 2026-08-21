@@ -805,10 +805,9 @@ story file's `Status:` — only a human close-out writes `done`.
   which owns the Task ceremony this door does not have. One that legitimately stays is told exactly
   which lines to substitute.
 
-**And the sign-off no longer contradicts itself.** The file said invoking it IS your sign-off, then
-its mint step demanded separate verbatim merge words and said *"No such words this turn → STOP and
-ask"* — so the one command the three-form ruling names by name was the one surface that asked you to
-say it twice. Your **invocation this turn** is the evidence the mint records.
+**And the sign-off does not contradict itself.** Invoking it IS your sign-off, and your
+**invocation this turn** is the evidence the mint records — it never demands separate verbatim
+merge words on top of the invocation the three-form ruling already names.
 
 **Invoking it IS your per-merge sign-off for the one epic it ships.** That sign-off is also
 mechanical: the command mints a **single-use approval token** immediately before the final
@@ -972,8 +971,8 @@ read-back** are the script's rather than yours, the four exit codes distinguish 
 (`2`, nothing written — fix and re-run) from a broken **board** (`4`, transport — retry), and the
 `## Your Actions` refusal fires a **second** time, on the walkthrough as it landed. ⛔ **Pass the
 epic ref.** Its default is `origin/main`, and a bare `finish` on a story lane holds a finished story
-forever. ⛔ **What Step 2 says has changed with it:** its `check-actions` used to be the *only* pass
-on this lane and its text said so. Fix rows there anyway — that refusal costs an edit to an
+forever. ⛔ **Step 2's `check-actions` is the first of TWO passes on this lane.** Fix rows there
+anyway — that refusal costs an edit to an
 uncommitted file, and the one at Step 4b costs a commit on a branch that has already landed.
 
 **The section also refuses the ceremony's own steps.** *"Click **Merge** on the PR"* or *"re-invoke
@@ -2860,7 +2859,7 @@ findings can FAIL; the judgment pass caps at CONCERNS. Explained in
 > last pull, and sibling stories land on the epic branch while the audit runs — falling back to
 > `origin/main`, never a bare `main`. The line had been carrying `BASE=${BASE:-main}`, invisible to
 > the stale-ref scan because its `(?<![\w/.-])` lookbehind rejects the `-` of the shell
-> default-value operator; the scan now carries `ref-default` and `ref-assign` patterns for that.
+> default-value operator; the scan carries `ref-default` and `ref-assign` patterns for that.
 
 ```mermaid
 flowchart TD
@@ -3488,7 +3487,7 @@ flowchart TD
 #### /smh-update-maps-indexes
 
 *Reconciles the repo maps, every `INDEX.md`, and the cross-references across the lobby and the
-maintained projects; it no longer touches the memory store (that is `/smh-memory-audit`). Runs the
+maintained projects; it does not touch the memory store (that is `/smh-memory-audit`'s job). Runs the
 linter first, shows you the findings, and waits at its approval gate before editing. Explained in
 [§19](#19-where-the-depth-lives).*
 
@@ -3525,7 +3524,7 @@ flowchart TD
 | ③ `/cicd-code-review` | Hunts the diff cold, runs an adversarial review, audits code quality, runs the test gate, issues a verdict into the walkthrough. |
 | `/cicd-clean-code-audit` | Dead code, duplication, drift. Runs inside ③; also runs solo across a whole area. |
 | `/cicd-bdd-tests` | Locks behavior in plain language, standalone (① does this for you). |
-| `/cicd-self-audit` | Pressure-tests a plan against the real code before anyone writes anything (② does this for you). **Fixed 2026-08-09 (SCC-58):** the step where it asks the code graph "who else breaks if we change this?" had never once run — it decided whether the graph was available by looking for a section title inside `AGENTS.md`, and that title lives in `docs/gitnexus.md`, so the answer was always "not available". It now asks the tool itself which projects are indexed. Three guards came with it: it names the project on every question, it **checks the map is not stale before trusting it**, and it treats a **"nothing breaks" answer as the one to double-check by hand** — the graph is blind to one common calling style. |
+| `/cicd-self-audit` | Pressure-tests a plan against the real code before anyone writes anything (② does this for you). The step where it asks the code graph "who else breaks if we change this?" asks the tool itself which projects are indexed — availability is never inferred from a doc title. Three guards: it names the project on every question, it **checks the map is not stale before trusting it**, and it treats a **"nothing breaks" answer as the one to double-check by hand** — the graph is blind to one common calling style. |
 | `/cicd-prune-context` | Trims the running session notes back under budget so sessions start fast. |
 
 **Landing and shipping** — [§7](#7-landing-and-shipping--the-close-out-family)
@@ -3539,7 +3538,7 @@ flowchart TD
 | `/cicd-prune-worktree` | The janitor. Confirms the branch really merged, then removes the workspace and deletes the branch. It moves no code; both close-outs call it automatically. |
 | `/cicd-e2e` | Runs the real end-to-end suite — a complete stand-in for the live app, with test users. Green means safe to ship. |
 | `/cicd-push-e2e` | The one shipping command — the only road an epic takes to `main`. **Refuses to run** until the end-to-end suite is green. After the merge it comments the evidence on the epic's Jira ticket and moves it to **Done**. |
-| `/smh-close-task-merge-tree` | **The Task lane's close-out.** Gate, merge to `main` with `--no-ff`, one Dev Record, ticket → Done, prune. **Typing it IS your merge sign-off.** Refuses the moment a deployable path is in the diff and hands the work to `/cicd-push-e2e`, with no override flag. Since SCC-94 it also refuses on a **secondary repo's** state — unreachable, dirty, unpushed, wrong ticket project, or a rotted memory store — and warns when the other half has not landed yet ([§7](#7-landing-and-shipping--the-close-out-family)). |
+| `/smh-close-task-merge-tree` | **The Task lane's close-out.** Gate, merge to `main` with `--no-ff`, one Dev Record, ticket → Done, prune. **Typing it IS your merge sign-off.** Refuses the moment a deployable path is in the diff and hands the work to `/cicd-push-e2e`, with no override flag. It also refuses on a **secondary repo's** state — unreachable, dirty, unpushed, wrong ticket project, or a rotted memory store — and warns when the other half has not landed yet ([§7](#7-landing-and-shipping--the-close-out-family)). |
 
 **The fast lane** — [§8](#8-the-fast-lane--cicd-quick-dev)
 
@@ -3580,13 +3579,13 @@ flowchart TD
 
 | Command | What it does for you |
 |---|---|
-| `/smh-update-maps-indexes` | Reconciles the repo maps, every index, and every cross-reference across the lobby and the maintained projects. It **no longer touches the memory store** — that moved to `/smh-memory-audit` (SCC-68). ⚠ **Its Antigravity door was broken until SCC-135** and the failure was invisible: this was the one command whose body lived in `.agents/workflows/` instead of `.agents/commands/`, which exempted it from the thin-launcher rule, so Antigravity truncated it at 12,000 chars and the agent ran on the first 30% with no approval gate. If you ran it in Antigravity before 2026-08-12, **re-check what it edited** — a run could reconcile partially and never show you a findings report. It is a normal launcher now. |
+| `/smh-update-maps-indexes` | Reconciles the repo maps, every index, and every cross-reference across the lobby and the maintained projects. It **does not touch the memory store** — that is `/smh-memory-audit`'s job. ⚠ **If you ran it in Antigravity before 2026-08-12, re-check what it edited** — its door was then a full body that Antigravity truncated at 12,000 chars, so a run could reconcile partially, with no approval gate and no findings report. It is a normal thin launcher. |
 | `/smh-memory-audit` | Cleans up the shared memory store (`_artifacts/_memory/`) — the one document every model on every machine loads *before* doing any work, which is why letting it fill costs you on every session everywhere. It checks each memory's claim against the live repo, then shows you *retire · merge · compress · relocate* with the bytes each frees, and waits. **Nothing is deleted without your yes on that specific item**; git is the undo either way. See the box below. |
 | `/smh-sync-agents` | Publishes the toolkit to all four platforms — one door each. **It SHORTENS the description it writes into `.agents/workflows/`:** Antigravity builds its slash-command menu from those descriptions, and full-length ones blow the menu's context budget (workflows get dropped from the agent's list outright) — so the generator cuts each one to **135 characters** on a word boundary. ⛔ **Do not shorten them by hand in `.agents/workflows/`** — those files are generated, so the next sync overwrites you, *and* the door-parity check demands the mirror match its brain, so a hand-edit turns `main-write-gate` red (`chore/SCC-194-workflow-titles` is exactly that attempt, 34 files, unlandable). The COMMANDS keep their full descriptions; only the menu has a budget. The one hand-owned door, `smh-adviser-board.md`, is shortened in place because it sits in the same menu. It reaches **the lobby and this machine's caches only**; projects read from the center, so there is nothing to push. It *generates* the Claude/Codex skill door for every command instead of publishing a second command copy beside it, and purges the two retired doors. Hand-written skills are never overwritten. What a command *declares* decides where it publishes — nothing is inferred from its filename. |
 | `/smh-slash-command-updating` | A thin alias for the globals-only half of `/smh-sync-agents`. Plain `/smh-sync-agents` does this *and* the local dirs, so prefer it. |
 | `/smh-review` | Reviews the working diff outside the story loop — the quick read when there's no story to hang ③ on. |
 | `/smh-new-project` | Scaffold a new workspace. |
-| `webm-alpha-video` | **Skill only — not a slash command (retired SCC-63).** Green-screen video to transparent WebM; load it by intent. |
+| `webm-alpha-video` | **Skill only — not a slash command.** Green-screen video to transparent WebM; load it by intent. |
 
 > ⓘ **The memory store is two-tier, and `/smh-memory-audit` is what moves things between tiers
 > (SCC-73).** The lobby store is the **inbox**: every model still writes there, always, and *nothing
