@@ -30,6 +30,7 @@ escape hatch is not a bypass — it is the inline ladder: run the lenses inline,
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 # ⛔ A LITERAL DATE, NOT "the day E lands" (F28). The plan first wrote the cutoff as the day
@@ -137,7 +138,17 @@ def strip_fenced(text: str) -> str:
 def parse(text: str) -> dict:
     """Everything this module reads out of a walkthrough, in one pass.
 
-    Deliberately total: it never raises and never decides. `judge()` decides."""
+    Deliberately total: it never raises and never decides. `judge()` decides.
+
+    ⛔ TWO OF THE RETURNED FIELDS ARE DIAGNOSTICS, NOT DATA ABOUT THE REVIEW (SCC-240).
+    `roster_header_fenced` and `roster_header_empty` record HOW a roster went missing, so
+    `judge` can say which of three things happened instead of reporting all three as "no
+    roster". They are computed here, beside the parse that loses the information, because a
+    caller re-deriving them would have to re-implement `strip_fenced` to do it - which is the
+    two-callers-one-rule problem this module exists to end. They stay FLAGS: `parse` still
+    never decides.
+    """
+    raw_lines = text.splitlines()
     text = strip_fenced(text)
     lines = text.splitlines()
     lenses: list[dict] = []
@@ -212,12 +223,22 @@ def parse(text: str) -> dict:
     dispo = _DISPO_RE.findall(text)
     drift = _DRIFT_RE.findall(text)
 
+    # ⛔ THE TWO WAYS A ROSTER GOES MISSING WHILE BEING VISIBLY PRESENT (SCC-240).
+    # They are mutually exclusive BY CONSTRUCTION, and the construction is the point: a header
+    # that survives stripping is not a fenced one, so a document carrying both a fenced example
+    # AND a real-but-empty header reports `empty` - which is the header its author must fix.
+    # Fixing the example would leave the lane refused for the same reason twice.
+    head_raw = any(_ROSTER_HEAD_RE.match(ln) for ln in raw_lines)
+    head_kept = any(_ROSTER_HEAD_RE.match(ln) for ln in lines)
+
     return {"lenses": lenses,
             "lenses_na": na,
             "runtime": rt.group(1).lower() if rt else None,
             "rederive_lines": rederived,
             "dispositions": dispo[-1].strip() if dispo else None,
-            "drift": drift[-1].strip() if drift else None}
+            "drift": drift[-1].strip() if drift else None,
+            "roster_header_fenced": head_raw and not head_kept,
+            "roster_header_empty": head_kept and not lenses}
 
 
 def judge(text: str, path: Path | str, verdict: str | None,
@@ -251,10 +272,35 @@ def judge(text: str, path: Path | str, verdict: str | None,
     if not lenses:
         # ⛔ UNKNOWN, NOT CLEAN. This is the whole defect: a PASS with no roster is not evidence
         # that the review ran, it is the absence of evidence either way.
-        reasons.append(
-            f"Verdict {v} with NO `lenses_run:` roster. A verdict is the review's conclusion; "
-            f"the roster is what shows it happened. Record it in `## Code Review` as "
-            f"`lenses_run:` followed by one `- <lens> · ok|recovered-inline|dead` row per lens.")
+        #
+        # ⭐ THREE CAUSES, THREE ANSWERS (SCC-240). Until now all three arrived as the message
+        # at the bottom, which describes the roster's format - useless advice to an author
+        # whose roster is already in the file and correctly formatted. On SCC-210 the fenced
+        # case and the blank-line case were hit in that order, each costing a full preflight
+        # round trip plus a read of this module to work out what it had actually seen.
+        # ⛔ Neither rule is relaxed to make this nicer: `strip_fenced` stays (SCC-154 paid for
+        # it with a live miss) and contiguity stays (it is what stops a stray bullet elsewhere
+        # silently extending the roster). Only the diagnosis changes.
+        if data["roster_header_empty"]:
+            reasons.append(
+                f"Verdict {v}: a `lenses_run:` header is here but NO rows were collected under "
+                f"it. The rows must be CONTIGUOUS with the header - a blank line, or any line "
+                f"that is not a `- <lens> · <state>` row, ends the roster, because one that ran "
+                f"past a blank would swallow every bullet later in the document. Put the rows "
+                f"directly under the header with no blank line between.")
+        elif data["roster_header_fenced"]:
+            reasons.append(
+                f"Verdict {v}: your `lenses_run:` roster is INSIDE A CODE FENCE, and fences are "
+                f"stripped before this is read (SCC-154 - a canonical verdict pasted as evidence "
+                f"inside a fence once became the governing verdict). Paste the block WITHOUT the "
+                f"``` fence: the header line, then one `- <lens> · ok|recovered-inline|dead` row "
+                f"per lens, as plain lines in `## Code Review`.")
+        else:
+            reasons.append(
+                f"Verdict {v} with NO `lenses_run:` roster. A verdict is the review's "
+                f"conclusion; the roster is what shows it happened. Record it in `## Code "
+                f"Review` as `lenses_run:` followed by one "
+                f"`- <lens> · ok|recovered-inline|dead` row per lens.")
         return False, reasons
 
     if v == "PASS" and dead:
@@ -339,3 +385,63 @@ def judge(text: str, path: Path | str, verdict: str | None,
     reasons.append(f"Verdict {v} with {len(lenses)} lens/lenses recorded"
                    + (f", {len(dead)} dead (consistent with {v})" if dead else ""))
     return True, reasons
+
+
+# ⛔ WHY THIS MODULE HAS A CLI AT ALL (SCC-240). It was library-only - no `main()`, no
+# `if __name__` - and every caller reached it through a preflight. So the ONLY way to find out
+# what it had seen in a walkthrough was to run a close-out and read the refusal, or to write a
+# throwaway script against these internals. That is the defect under the other two: there was
+# no way to check a block until the gate refused it, which is the most expensive moment to find
+# out. Both review commands now run this at Step 4, right after pasting the roster.
+#
+# ⛔ IT IS A SELF-CHECK, NOT A SECOND GATE. `closeout_preflight` and `task_preflight` keep their
+# own verdict readers (one lenient, one strict) and go on calling `judge` with the verdict THEY
+# resolved - that is the SCC-173 contract and this must not become a third opinion. The reader
+# below is deliberately the lenient one, and `--verdict` exists for the moment that matters
+# most: checking a `## Code Review` section BEFORE its stamp is written.
+_CLI_VERDICT_RE = re.compile(r"^[>\-*#\s]*\**\s*Verdict\s*:\**\s*\**"
+                             r"(PASS|CONCERNS|FAIL|WAIVED)\b", re.I | re.M)
+
+
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+    import json
+
+    ap = argparse.ArgumentParser(
+        prog="walkthrough_roster.py",
+        description="Print what this parser reads out of a walkthrough, and whether the "
+                    "close-out gate would accept it. Run it at review time, not at merge "
+                    "time. (SCC-240)")
+    ap.add_argument("walkthrough", help="path to the walkthrough .md")
+    ap.add_argument("--verdict", choices=[*("PASS", "CONCERNS", "FAIL", "WAIVED")],
+                    help="judge against THIS verdict instead of the last `Verdict:` line - "
+                         "use it to check a `## Code Review` section before its stamp exists")
+    a = ap.parse_args(argv)
+
+    path = Path(a.walkthrough)
+    if not path.is_file():
+        # A wrong path is a broken invocation, not a statement about a roster. Exit 2 keeps it
+        # distinguishable from "this walkthrough would be refused", which is exit 1.
+        print(f"walkthrough_roster: no such walkthrough: {path}", file=sys.stderr)
+        return 2
+    text = path.read_text(encoding="utf-8")
+
+    data = parse(text)
+    stamps = _CLI_VERDICT_RE.findall(text)
+    # The LAST stamp governs - a re-review APPENDS, same rule the roster itself follows.
+    verdict = a.verdict or (stamps[-1].upper() if stamps else None)
+
+    print(json.dumps({**data, "verdict": verdict, "lane_date": lane_date(path),
+                      "lenses_counted": len(data["lenses"])}, indent=1, ensure_ascii=False))
+
+    ok, why = judge(text, path, verdict)
+    for line in why:
+        print(("ok:  " if ok else "REFUSED: ") + line, file=sys.stderr)
+    if verdict is None:
+        print("note: no `Verdict:` line found, so this lane is OUT OF SCOPE for the roster "
+              "gate entirely - pass --verdict to check the section anyway.", file=sys.stderr)
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

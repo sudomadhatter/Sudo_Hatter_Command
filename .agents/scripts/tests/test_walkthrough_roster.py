@@ -233,8 +233,15 @@ def main() -> int:
                 roster.parse(fenced)["lenses"] == [],
                 "the instruction's own example would otherwise close a lane that ran nothing")
         ok, why = roster.judge(fenced, POST, "PASS")
-        c.check("P-F2 · ...so the lane BLOCKS, exactly as if it had none",
-                not ok and "NO `lenses_run:` roster" in " ".join(why), str(why))
+        # ⛔ AMENDED BY SCC-240, and the amendment is the point. This case used to assert the
+        # refusal was the WORD-FOR-WORD "NO `lenses_run:` roster" message - "exactly as if it
+        # had none". The blocking half was always right and is unchanged; the message half was
+        # the defect: a lane whose roster is visibly in the file, correctly formatted, told
+        # only that it has no roster. It cost two preflight round trips on SCC-210. What is
+        # pinned now is that it still BLOCKS *and* that it says which of the three things
+        # happened - block F owns the full three-way contract.
+        c.check("P-F2 · ...so the lane BLOCKS - and since SCC-240 it says the fence is why",
+                not ok and "fence" in " ".join(why).lower(), str(why))
         c.check("P-F3 · (control) unfencing the same rows makes it a real roster",
                 len(roster.parse(fenced.replace("```\n", ""))["lenses"]) == 2,
                 "if this fails the stripper eats real content, which is the opposite failure")

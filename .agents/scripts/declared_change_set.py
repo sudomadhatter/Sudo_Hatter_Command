@@ -64,6 +64,12 @@ LEFT = re.compile(
 
 FENCE = re.compile(r"^(\s{0,3})(`{3,}|~{3,})(.*)$")
 
+# The left-half rejection, named once so the reason and the grammar cannot drift apart. It
+# spells the op vocabulary out because "did not match `<OP> <path>`" is only useful to someone
+# who already knows what the three ops are - which is exactly the reader who did not need it.
+_LEFT_WHY = ("the left side is not `<OP> <path>` - the op marker is NEW, EDIT or DELETE, "
+             "then ONE repo-relative path (backticked or bare)")
+
 
 def strip_fenced(text: str) -> str:
     """Code fences removed before the scan - fenced EXAMPLE bullets are not entries.
@@ -116,7 +122,22 @@ def parse(text: str) -> dict:
                 entries.append({"path": (b["qp"] or b["bp"] or "").strip(),
                                 "op": b["op"], "row": row.strip()})
                 continue
-        incomplete.append(s)
+            # ⛔ WHICH HALF FAILED (SCC-240). This used to be a bare `incomplete.append(s)`,
+            # so the author was handed back the bullet they had already read and had to
+            # re-derive this grammar from the module to find out what it wanted. Measured on
+            # SCC-210: three rejected bullets, one grammar read, one repair.
+            # ⛔ PRECEDENCE IS DECLARED, NOT INCIDENTAL. A bullet can fail BOTH halves at once
+            # (`- foo → ` has no op AND no row text); the LEFT side wins, because the arrow is
+            # already there and the op marker is the edit that has to happen first. Unstated,
+            # this reads differently to every author who meets it.
+            why = _LEFT_WHY if not b else "the row text after the last `→` is empty"
+        else:
+            why = ("no `→` row separator - every bullet ends `→ <the acceptance row it "
+                   "serves>`")
+        # The RAW BULLET STAYS, with the reason appended. Every consumer reads these rows as
+        # strings - this file's own tests, the self-audit's Lens 1, and both review twins'
+        # drift step, which grades `incomplete` *important* per bullet.
+        incomplete.append(f"{s}  ← {why}")
     return {"present": True, "entries": entries, "incomplete": incomplete}
 
 
