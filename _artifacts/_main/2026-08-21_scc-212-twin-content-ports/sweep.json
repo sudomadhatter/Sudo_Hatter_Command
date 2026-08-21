@@ -82,9 +82,9 @@
       ]
     },
     {
-      "id": "M10 revert the unstaged `git diff --name-only` line in the clean-code audit",
+      "id": "M10 revert the unstaged `git diff --name-only` line in the clean-code audit (re-anchored after the B6 fix re-worded the same line)",
       "file": ".agents/commands/cicd-clean-code-audit.md",
-      "original": "git diff --name-only                            # plus uncommitted - saved edits nobody staged yet\n",
+      "original": "git diff --name-only                            # STANDALONE ONLY - saved edits nobody staged yet\n",
       "mutated": "# the uncommitted sweep used to be here\n",
       "case": "QD-C5",
       "block": "CC ·",
