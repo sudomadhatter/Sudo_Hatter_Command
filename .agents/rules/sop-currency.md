@@ -61,6 +61,15 @@ plumbing. Three habits keep it honest:
    `python` is wrong" — equally false, because a python.org PC has only `python`. **A doc command is
    a call site no test ever executes:** paste it into a shell before writing it down, and name the
    machine when the two disagree. Scripts and hooks must probe (`python3 → python → py`), never assume.
+4. **The page states the present; the changelog records the change.** Write the current rule in
+   timeless present tense, as if it had always been so. No "⭐ new", no "since SCC-x", no dates, no
+   renamed-from / no-longer / before-and-after narration in the page body — the operator reading
+   *what to type* should never have to diff against a version they never saw. The change story goes
+   to [`workflows_testing_SOP_changelog.md`](../../docs/_scc_sops_prds/workflows_testing_SOP_changelog.md)
+   as **one line** (`date · ticket · what changed for the operator`), in the same commit. An incident
+   lesson that explains *why* a rule exists may live in a `ⓘ Why it works this way` aside — one
+   paragraph, no more. This is habit 2 ("retire, don't accrete") with teeth: the 2026-08-21 cleanup
+   removed a changelog's worth of narration that had accreted in exactly this gate's edits.
 
 ## The sibling rules
 
