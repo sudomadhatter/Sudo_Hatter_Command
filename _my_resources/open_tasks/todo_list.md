@@ -32,5 +32,6 @@ These are folder paths to see the open todo list in the sub projects:
 ## Notes
 
 1. We switched the /config Output Styles to BLUF, change back in the terminal.
+2. ⌘ + ⌥ + R for the source control panel view toggle
 
 <!-- CHECKPOINT id="ckpt_mrk3jkm0_qa7nw6" time="2026-07-14T03:33:28.728Z" note="auto" fixes=0 questions=0 highlights=0 sections="" -->
