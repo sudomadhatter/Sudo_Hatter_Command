@@ -1,0 +1,63 @@
+tree=scc-214-template-clone-tests HEAD=f25d7cb cpus=10 load_at_start=(3.39013671875, 5.01171875, 4.3916015625)
+full_run_all: 135.6s rc=0 load=(4.64697265625, 5.45361328125, 4.69970703125)
+      gate: python3 .agents/scripts/tests/run_all.py
+      gate: python3 .agents/scripts/tests/run_all.py
+      gate: python3 .agents/scripts/tests/run_all.py
+      gate: SKIP - verdict PASS @ 587f5176, receipts valid (suite)
+      gate: python3 .agents/scripts/tests/run_all.py
+      gate: SKIP - verdict PASS @ 025924f0, receipts valid (suite)
+      gate: python3 .agents/scripts/workflow_lint.py --toolkit-only
+      gate: python3 .agents/scripts/check_maps.py --depth3-only --strict
+      gate: SKIP - verdict PASS @ 385455b9, receipts valid (suite)
+    -- 39/39 passed --
+    -- 64/64 passed --
+    -- 75/75 passed --
+    -- 59/59 passed --
+    41/41 files passed
+pf_profile: 113.8s rc=0 load=(3.0361328125, 4.65478515625, 4.48095703125)
+    pf: rc=0 total=113.7s  -- 186/186 passed --
+      pf.make_repo                         n= 90    21.4s  (18.8% of wall)
+      pf.branch                            n= 87    10.5s  ( 9.2% of wall)
+      pf.secondary                         n= 13     2.4s  ( 2.1% of wall)
+      pf.stamp_and_verdict                 n=  6     1.6s  ( 1.4% of wall)
+      pf.board (fresh acli launcher)       n= 92     0.0s  ( 0.0% of wall)
+      run_script: n=105 total=70.3s | FIRST call per fresh launcher n=88 avg=0.73s total=64.6s | later n=17 avg=0.34s
+gh_profile: 77.8s rc=0 load=(3.1552734375, 4.26220703125, 4.3408203125)
+      sh calls: n=1148 total=76.7s
+        git commit             scenario   n=124   36.5s
+        git push               scenario   n= 34   17.1s
+        git merge              scenario   n= 68    4.7s
+        git checkout           scenario   n=185    3.6s
+        git config             in-builder n=207    3.1s
+        git add                scenario   n=122    2.0s
+        git init               in-builder n= 94    1.9s
+        git commit             in-builder n= 69    1.8s
+        git push               in-builder n= 23    1.7s
+        git rev-parse          scenario   n= 91    1.4s
+        git add                in-builder n= 69    1.3s
+        git fetch              in-builder n= 23    0.8s
+      first hook-running op per repo: n=72 avg=0.48s total=34.6s | later: n=154 avg=0.15s total=23.8s
+receipts_solo: 49.0s rc=0 load=(2.4443359375, 3.91357421875, 4.20703125)
+      gate: SKIP - verdict PASS @ 44460b6b, receipts valid (suite)
+      gate: python3 .agents/scripts/tests/run_all.py
+      gate: SKIP - verdict PASS @ 35d5412f, receipts valid (suite)
+      gate: python3 .agents/scripts/tests/run_all.py
+      gate: python3 .agents/scripts/tests/run_all.py
+      gate: python3 .agents/scripts/tests/run_all.py
+      gate: python3 .agents/scripts/tests/run_all.py
+      gate: SKIP - verdict PASS @ f08ecf6c, receipts valid (suite)
+      gate: python3 .agents/scripts/tests/run_all.py
+      gate: SKIP - verdict PASS @ 395ec718, receipts valid (suite)
+      gate: python3 .agents/scripts/workflow_lint.py --toolkit-only
+      gate: python3 .agents/scripts/check_maps.py --depth3-only --strict
+      gate: SKIP - verdict PASS @ e84cb044, receipts valid (suite)
+    -- 39/39 passed --
+stall_probe_idle: 1.7s rc=0 load=(2.32861328125, 3.86474609375, 4.18798828125)
+    fresh board stub #0: first 0.279s  second 0.032s
+    fresh board stub #1: first 0.240s  second 0.030s
+    fresh board stub #2: first 0.247s  second 0.030s
+    reused launcher, new state #0: 0.252s
+    reused launcher, new state #1: 0.034s
+    reused launcher, new state #2: 0.029s
+    fresh sh stub #0: first 0.225s second 0.004s
+    fresh sh stub #1: first 0.193s second 0.008s
