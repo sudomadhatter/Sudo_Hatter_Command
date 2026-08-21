@@ -37,7 +37,9 @@ Run from the **command center** (the lobby), this command operates on exactly ON
 3. **Ask** — else STOP and ask Daniel *"Which project are we working in? (e.g. AGY_AVIATIONCHAT)"*.
 
 Set `PROJECT_ROOT = Projects/<name>` and **echo exactly** `Target: Projects/<name>` before any work.
-Every bare path and every command below resolves **under `PROJECT_ROOT`**.
+Every bare path and every command below resolves **under `PROJECT_ROOT`** (per
+`.agents/rules/smh-target-resolution.md` §STD + §BIND); a needed path missing under `PROJECT_ROOT` →
+STOP, never fall back to the lobby.
 
 ## Step 0.5 — Resolve the diff (worktree-aware)
 
@@ -56,12 +58,21 @@ env -u GITHUB_TOKEN git -C "$PROJECT_ROOT" fetch origin   # a bare ref is this c
 BASE=$(git for-each-ref --format='%(refname:short)' \
          refs/remotes/origin/epic/* refs/heads/epic/* | head -1); BASE=${BASE:-origin/main}
 git diff --name-only "${BASE}...HEAD"           # story branch vs the branch it forked from
+git diff --name-only                            # plus uncommitted - saved edits nobody staged yet
 git diff --name-only --cached                   # plus staged, if mid-work
 ```
 
 If `$ARGUMENTS` names an explicit base ref, use it instead. Echo the file count. **An empty set is a
 STOP, not a pass** — say so and stop; a vacuous green here is the exact failure this gate exists to
 prevent (`tests-must-gate-for-real` §2).
+
+<!-- twin-law: memory-sweep -->
+⛔ **Never sweep another session's memory into this diff** (`artifacts-always-first` §"The memory
+store"). Dirty files under `_artifacts/_memory/` belong to whatever wrote them — the store is shared
+and two-tier since SCC-73, the lobby's index plus each project's own, so a sibling lane's uncommitted
+entry shows up in a `git status` here. Report them as present and out of scope; they are parked or
+left, never committed under this lane's key.
+<!-- /twin-law -->
 
 ---
 
@@ -100,12 +111,23 @@ did not run is not a check that passed.
 If a tool is missing (e.g. `No module named ruff`), that is a **finding, not a skip** — the floor is
 unrunnable and the project violates `tests-must-gate-for-real` §2. Report it and say what installs it.
 
-**Also scan the changed lines for the §2 banned patterns that linters miss:**
+**Also scan the changed lines for what no linter catches:**
 - bare `except:` / `except Exception` with no re-raise and no logged reason
 - `any` in TypeScript
 - a committed secret, key, or token
 - leftover debug prints / `console.log`
 - commented-out code
+- **Does it run on both machines?** (`code-standards` §5) A hardcoded absolute or `C:/…` path where
+  `Path(__file__).parent` belongs, a `;` path separator, `robocopy`, `chmod` assumed present, or a
+  bare `python`/`python3` hardcoded in a committed script — each works where it was written and dies
+  on the other machine. This is a finding, not a nitpick.
+- **A gate that cannot fail?** A report-only job, `|| true`, `continue-on-error`, or a check whose
+  EMPTY input reads as a pass. See the FAIL ladder below — this one is not a judgment call.
+
+⛔ **These two rows live HERE, in the always-run floor, and not in Step 2's judgment pass** — Step 2B
+is skipped wholesale when this audit runs embedded as `/cicd-code-review` Step 3.5, and a
+both-machines break or a vacuous gate is exactly as real on an embedded run as on a standalone one
+(SCC-212).
 
 ## Step 2 — The Judgment Pass  *(taste — caps at CONCERNS)*
 
@@ -127,11 +149,6 @@ Step 3.5 this part is satisfied by importing the Step-1 adversarial review's dri
   most common real finding. Grep the obvious neighbours; use GitNexus `context({name})` if the repo is
   indexed.
 - Defensive `try`/`except` around code that cannot fail?
-- **Does it run on both machines?** (`code-standards` §5) A `C:/…` path, a `;` path separator,
-  `robocopy`, `chmod` assumed present, or a bare `python`/`python3` hardcoded in a committed script —
-  each works where it was written and dies on the other machine. This is a finding, not a nitpick.
-- **A gate that cannot fail?** A report-only job, `|| true`, `continue-on-error`, or a check whose
-  EMPTY input reads as a pass. See the FAIL ladder below — this one is not a judgment call.
 - Unused params, dead branches, a new file where an existing module was the home?
 - Scope creep — changes outside what the story required?
 

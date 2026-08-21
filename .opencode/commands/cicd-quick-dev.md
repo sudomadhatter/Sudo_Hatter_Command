@@ -41,20 +41,94 @@ override → `.agents/active-project.txt` → else **STOP and ask** — never gu
 lobby. Set `PROJECT_ROOT` and **echo exactly** `Target: Projects/<name>` before any work; every path and
 child tool call resolves under `PROJECT_ROOT`.
 
-## Step 0.5 — Worktree (before the first edit)
-Per `worktree-per-story`: run `git worktree list` under `PROJECT_ROOT`; reuse an existing
-`claude/<JIRA-KEY>-<slug>` tree for this fix, else open one off the story's EPIC branch (`epic/<JIRA-KEY>-<slug>`).
-No epic applies — a truly ad-hoc fix outside any sprint — then mirror `git-policy.md`'s chore lane
-instead: a short-lived `chore/<JIRA-KEY>-<slug>` branch off `main`, **in its own worktree**. Echo the
-case. Quick fixes are NOT exempt — this is what keeps them tangle-free, rollbackable, and landable
-through the normal close-out.
+## Step 0.5 — Key, worktree, branch, ticket (before the first edit)
+
+**Pin the ticket key you are working, before any tool has answered anything.** Every branch and every
+commit must carry the repo's key (`.agents/jira.conf`), or the armed `commit-msg` hook refuses the
+commit. Story lane: the story's `jira_key:` frontmatter. Ad-hoc lane: the ticket you were handed —
+read its `ACCEPTANCE` block, it is Step 1's first AC source there:
+
+```bash
+EXPECTED_KEY="AVCH-00"     # the ticket you MEAN
+acli jira workitem view "$EXPECTED_KEY"
+```
+
+No ticket at all → **STOP and ask.** Never invent a key; a keyless branch cannot be committed, closed,
+or found again.
+
+Per `worktree-per-story`: reuse an existing `claude/<JIRA-KEY>-<slug>` tree for this fix, else open
+one. The base is a **remote-tracking ref after a fetch, never a bare local `main` or epic ref** — a
+local ref is a cache a sibling lane has already moved past:
+
+```bash
+git -C "$PROJECT_ROOT" worktree list                      # reuse this fix's tree if it exists
+git -C "$PROJECT_ROOT" fetch origin                       # ⛔ the base is origin/…, never a bare local ref
+# story lane — off the story's EPIC branch:
+git -C "$PROJECT_ROOT" worktree add .claude/worktrees/<slug> -b claude/<KEY>-<slug> origin/epic/<KEY>-<epic-slug>
+# ad-hoc lane — no epic applies (a truly ad-hoc fix outside any sprint): git-policy.md's chore lane, off main:
+git -C "$PROJECT_ROOT" worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> origin/main
+git -C "<the new tree>" branch --unset-upstream           # an origin/… start-point sets upstream to the BASE branch
+python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>   # PC: `python`
+BRANCH=$(git -C "<the new tree>" rev-parse --abbrev-ref HEAD)
+echo "Lane: $BRANCH"
+```
+
+Echo the case and the branch **from `rev-parse`, never from memory.** Every path and command from here
+binds to that tree. Quick fixes are NOT exempt — this is what keeps them tangle-free, rollbackable,
+and landable through a door.
+
+`link-worktree-assets.py` links `node_modules`, `auth_keys/`, `.venv`, `.env` — at the repo root and
+one level down (`backend/.env`, `frontend/node_modules`) — into the tree. Without them pytest,
+uvicorn, `next dev` and the emulators fail on cwd-relative lookups, and Step 3 reports an
+environmental red as a real one. A linked `.env` is **shared state**: re-run with `--copy-env` if this
+lane will change it. ⛔ `--unlink` runs BEFORE any `git worktree remove` — a recursive delete through a
+junction eats the shared targets (`/cicd-prune-worktree` does this).
+
+**Write the lane's manifest — `task.yaml` beside the walkthrough folder, on the AD-HOC lane** (the
+story lane's spec is its story file). It is what makes Step 4.5's slug a read rather than a retype,
+and the door reads the same file:
+
+```yaml
+task_key: <KEY>
+primary_repo: Projects/<name>
+branch: chore/<KEY>-<slug>
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+```
+
+**Move the ticket to `In Progress` — now, at the tree, not at the merge (SCC-113):**
+
+```bash
+python3 .agents/scripts/jira_feed.py start --key <KEY> --apply    # PC: `python`
+```
+
+Idempotent, so a re-run or a resumed lane is a no-op. **Read its exit code — four outcomes:**
+
+| Exit | Means | What you do |
+|---|---|---|
+| `0` | moved, or already `In Progress` | carry on |
+| `3` | **left alone** — the ticket is `Blocking` / `In Review` / `Deferred` | **stop and ask.** You are opening a lane on a ticket that is waiting on something; say which and confirm that is intended |
+| `2` | **the board refused it** — a `Done` key (so the key is wrong), or a move that did not land | **stop.** Never work a closed ticket's key; mint one at the `jira.md` §Who-mints-tickets seam |
+| `4` | **the board was unreachable** — transport, not a verdict | **carry on and retry later.** ⛔ Do *not* mint a ticket: nothing here says your key is wrong. Sandboxed shells cannot reach the credential store (`jira.md` top), and the operator commits from planes |
+
+**⭐ Read the sibling lanes now, not at merge time.** Several lanes run at once and their uncommitted
+work is invisible to `grep`:
+
+```bash
+git -C "$PROJECT_ROOT" worktree list
+git -C <each-other-tree> diff --name-only <that lane's base>...HEAD   # origin/epic/<…> for a story tree, origin/main for a chore tree
+git -C <each-other-tree> status --short
+```
+
+Any file in both their set and your intended set is a **landing-order dependency**. Say which lane
+should land first and what happens to your work if it does not. Carry it into the walkthrough's
+`## Evidence`.
 
 ⛔ **A worktree is not optional on either case, and this line used to say `no worktree`.**
 `worktree-per-story` has required one for **every commit-producing lane** since SCC-62, and its lane
 table names `chore/<JIRA-KEY>-<slug>` explicitly. Worse, the exemption that lets this command skip the
 plan at all — `artifacts-always-first` § When to Skip, the `/cicd-quick-dev` bullet — is **conditional on the worktree/chore
-branch existing**, so working without one voids this lane's own carve-out. Link the gitignored assets
-into a fresh tree (`node_modules`, `.env`, `auth_keys`), or Step 3's scoped tests cannot run.
+branch existing**, so working without one voids this lane's own carve-out.
 
 ⛔ **This lane does not merge, and it never touches `main`.** Step 4 is the end: branch pushed, work
 reported, and the landing is a **separate, operator-invoked act through a door**. Invoking a door IS
@@ -64,20 +138,54 @@ the sign-off; a spoken "looks good" is not, and no agent merges to `main` on its
 | Lane | Door |
 |---|---|
 | story lane on `claude/*` | the epic branch, at close-out — `/cicd-close-story-merge-tree`, then the epic ships via `/cicd-push-e2e` |
-| chore lane in a **project repo** | ⚠ **there is none — state that and hand back** |
+| chore lane in a **project repo**, diff reaches a deployable path (`backend/ frontend/ firebase/ functions/ mobile/ .github/`) | `/cicd-push-e2e` — `ship_preflight.py` admits the `chore/*` under the **light gate** (SCC-211); nothing deployable → it refuses and names the PR door |
+| chore lane in a **project repo**, nothing deployable in the diff | `/smh-close-task-merge-tree Projects/<name>` — the PR door, with the project named in `$ARGUMENTS`. `task_preflight.py` derives `LANE: LOCAL`, and it opens the PR and STOPS (`git-policy.md` § The write gate, `main` row) |
 
-⛔ **There is no command-centre row, and that is not an omission.** This command binds
+⚠ **Which door is derived from the DIFF, not chosen:** both doors read the same deployable-path list
+and refuse each other's lane, so the branch decides. Project repos publish no `main-write-gate`, so
+the PR merge there is the operator's click with no server-side gate — still the operator's, still
+never yours.
+
+⛔ **There is still no command-centre row, and that is not an omission.** This command binds
 `smh-target-resolution.md` — exactly ONE project, **never the lobby** — so command-centre chore work
-is unreachable from here by construction. It belongs to `/smh-quick-dev` or `/smh-quick-fix`, whose
-door is `/smh-close-task-merge-tree`. Naming that door in a routing table an agent reads from a
-`cicd-*` lane is an invitation to bind the lobby, which is the one thing target resolution forbids.
+is unreachable from here by construction; it belongs to `/smh-quick-dev` or `/smh-quick-fix`. The
+`smh-` door appears above **only with `Projects/<name>` as its argument** (its Step 0 takes a
+`Projects/` path and the subject stays `PROJECT_ROOT`): a bare invocation binds the lobby, which is
+the one thing target resolution forbids.
 
-⚠ **The gap, recorded rather than filled:** `/cicd-push-e2e` ships an `epic/*` branch, and
-`/smh-close-task-merge-tree` refuses a diff touching `backend/`, `frontend/`, `firebase/`,
-`functions/`, `mobile/` or `.github/` and hands it to `/cicd-push-e2e` — so a project repo's ad-hoc
-`chore/*` lane has **no close-out door of its own**. Report the pushed branch and the gap; **do not
-invent a command to fill it, and do not merge by hand.** Closing it is its own decision, and its own
-ticket.
+⭐ **The gap SCC-205 recorded here is CLOSED (SCC-211).** This paragraph used to say a project repo's
+ad-hoc `chore/*` lane had no door of its own. `ship_preflight.py` now admits a deployable `chore/*`
+under the light gate and refuses the rest by name, and `task_preflight.py` takes the non-deployable
+half as `LANE: LOCAL` — two doors, selected by the diff. Report the pushed branch and the door its
+diff selects; **still never merge by hand.**
+
+## Step 0.7 — Probe the review runtime, and record it (SCC-177)
+
+Ask this runtime whether it can fan out to subagents — do not answer from what usually happens,
+because a headless pipeline or a platform with no subagent tool makes the answer `inline`, and both
+are invisible until a lens fails to launch three steps later. The answer goes into the walkthrough
+header Step 4 writes, on its own line, above everything else, and into the engine's `review_runtime`
+input in Step 3:
+
+<!-- twin-law: review-runtime-probe -->
+⛔ **The probe is a **capability**, never a **policy** (SCC-203).** *Does a subagent tool exist in
+this runtime?* is the whole question; *am I permitted to use it?* is a different one, and answering
+it here is how a session directive — *"do not spawn subagents unless the user asks"* — got read as
+*"this runtime is inline"*, ran an entire review inside the builder's own context, and had the flow
+record it as legitimate. ⭐ **Subagents are the DEFAULT, and invoking a review IS that request** —
+you never stop to ask for them, and never quietly downgrade to `inline` to avoid asking. Only a
+runtime with no subagent tool at all is `inline`.
+<!-- /twin-law -->
+
+```
+review-runtime: fan-out
+```
+
+⛔ **Here, not at Step 4 — the probe must precede the review it describes.** Recorded afterwards it is
+read off the roster that already exists, which makes the check circular: the header can only ever
+agree with the states it was derived from. Recorded here it is an independent claim, and
+`walkthrough_roster.py` blocks the close-out when the roster disagrees with it (`inline` + a lens
+reporting `ok` is the contradiction it catches).
 
 ## Step 1 — Clarify, fix the ACs, and route
 Invoke the **`bmad-quick-dev`** skill with `$ARGUMENTS`. Its `step-01-clarify-and-route` does the
@@ -114,7 +222,8 @@ modified. Ejecting is not a licence to keep editing under the fast lane's carve-
 Let the skill's `step-oneshot.md` run: implement the clarified intent directly, then its own review and
 spec trace. Commits happen **inside the worktree, explicit paths only** — never `git add -A` — and every
 commit subject leads with the repo's Jira key from `.agents/jira.conf`, or the armed `commit-msg` hook
-refuses it. Never push `main`.
+refuses it. ⛔ **Backticks in `-m "…"` EXECUTE.** A message quoting a shell command runs it. Use
+`git commit -F <file>` whenever the message contains a backtick. Never push `main`.
 
 ## Step 3 — ⭐ Review gate (mandatory — never skipped, never "assumed clean")
 Runs **after** the work. **Pin the diff first, from command output** — `step-oneshot.md` writes no
@@ -158,7 +267,7 @@ an agent reviewing its own reasoning anchors on it), verifies what they find, th
 | `ARTIFACT_DIR` | the Step 4 walkthrough's folder |
 | `DEFERRED_WORK` | the project's `deferred-work.md`, when it has one |
 | `lens_budget` | `standard` — the interactive budget; a human is sitting in front of this lane. **This command does not define the caps; step-01 of the engine does, once.** Naming nothing is not neutral: it silently selects the autopilot's budget (SCC-147) |
-| `review_runtime` | `fan-out` or `inline` — **what you PROBED, never what you expect.** Try one throwaway subagent; if subagents are unavailable the engine runs inline and DROPS the Blind Hunter rather than faking it |
+| `review_runtime` | `fan-out` or `inline` — **the Step 0.7 answer, never what you expect.** If subagents are unavailable the engine runs inline and DROPS the Blind Hunter rather than faking it |
 
 ⛔ **`no-spec` DOES NOT AUDIT YOUR ACs — it drops that lens entirely.** step-01 § *Skipped-by-mode
 is not the same as dead*: the Acceptance Auditor runs in `review_mode: full` **only**, and a
@@ -222,16 +331,17 @@ patch → HALT** (and see Step 1.5). Re-run the affected check after applying fi
   `epic_<E>/<story>/`; ad-hoc → `quick_fixes/quick-fix-<track>.<n>-<slug>/` (read that folder's
   `INDEX.md` for the next free number and append the row by hand; **create the folder + its `INDEX.md`
   if this is the repo's first quick fix** — the lobby has none yet, AviationChat does). It **links** the spec rather than
-  restating it, and carries `## Task Checklist` → `## Evidence` (AC→evidence + pasted totals + SHA) →
+  restating it, and carries `review-runtime:` (the header from Step 0.7, one line) →
+  `## Task Checklist` → `## Evidence` (AC→evidence + pasted totals + SHA) →
   `## Code Review (<date>)` with the canonical **`Verdict: PASS|CONCERNS|FAIL|WAIVED @ <sha>`** line →
   `## Your Actions`. Post clickable Markdown links to every artifact in the chat.
 
 ## Step 4.5 — File the Dev Record on the ticket (AUTOMATIC, never ask)
 This lane **closes its own branch**, and the ad-hoc chore lane never reaches
 `/cicd-close-story-merge-tree` at all — so this is the only place its knowledge gets recorded. Before
-SCC-49 it died in the walkthrough. Runs AFTER Step 4 so the walkthrough it points at exists. The key is
-already in hand: the story's `jira_key:` frontmatter on the story lane, or the `<JIRA-KEY>` in the
-`chore/<JIRA-KEY>-<slug>` branch name on the ad-hoc lane.
+SCC-49 it died in the walkthrough. Runs AFTER Step 4 so the walkthrough it points at exists. The key
+was **pinned at Step 0.5 as `EXPECTED_KEY`** and is read back from there — the story's `jira_key:`
+frontmatter on the story lane, the ad-hoc lane's `task.yaml` on the other. Never re-derive it here.
 
 ```bash
 python3 .agents/scripts/jira_feed.py devrecord --key <JIRA-KEY> --story <THE ONE SLUG> \
@@ -252,16 +362,21 @@ measured 2026-08-15. `/cicd-close-story-merge-tree` passes `--story <id>`, meani
 so this step must pass **the same story id, character for character** — never the branch slug, never a
 free-text description. On the ad-hoc lane there is no story id: pass the **branch slug** from
 `chore/<JIRA-KEY>-<slug>`, and pass that identical string at every later surface.
-⚠ **The durable fix is not here.** On the `smh-` side the slug is read from the lane's `task.yaml`
-so no one types it twice, and **no `cicd-*` command writes a `task.yaml` at all** (grep: zero hits) —
-so `devrecord`'s anti-fork default cannot fire on this side and the guard is inert. Recorded, not
-fixed here: it is a change to the story lane's manifest, and it belongs with the close-out rebalance.
+⭐ **On the ad-hoc lane, READ it — do not retype it.** Step 0.5 writes that lane a `task.yaml`
+carrying `branch: chore/<KEY>-<slug>`, which is the same file `/smh-close-task-merge-tree` reads and
+the same source `devrecord` defaults from — so the slug is typed once, at the tree, and every later
+surface reads it. That is what makes the anti-fork guard live on this side (AVCH-59 was one ticket
+with two records because two surfaces spelled one lane differently). The story lane has no
+`task.yaml` and needs none: its story id IS the shared identifier.
 
 **`jira_feed.py devrecord` reads the ticket back** and exits 2 if the comment is not there; a non-zero exit means the record did NOT land, so report that rather than
 success. No ticket key at all (a fix outside any ticket) → say so in the Done report and skip;
 **never invent a key.** Full acli reference: `.agents/rules/jira.md`.
 
 ## Done
-Stop here. Do **NOT** run `/cicd-close-story-merge-tree`, never land on the epic branch (close-out's job),
-never touch `main`. Display the spec path, the walkthrough link, the key changes, and the review-gate
-output, then invite Daniel to review and run `/cicd-close-story-merge-tree` himself when satisfied.
+Stop here. Never land on the epic branch (close-out's job), never touch `main`, never transition the
+ticket. Display the spec path, the walkthrough link, the key changes, the review-gate output, and the
+branch + its push state. Then invite the operator to review and invoke **the door Step 0.5's table
+names for this lane** — `/cicd-close-story-merge-tree` on the story lane; `/cicd-push-e2e` or
+`/smh-close-task-merge-tree Projects/<name>` on the ad-hoc lane, by what the diff touched. Invoking it
+IS the sign-off.

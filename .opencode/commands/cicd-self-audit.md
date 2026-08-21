@@ -153,9 +153,15 @@ as the normal fallback:
   command output, or **NO-GO**.
 - **Twins and doors:** a paired surface (cicd/smh command, generated door) → divergence stated or
   ported.
-- **Sibling lanes:** fetch the base first (a stale remote ref inflates every sibling's apparent
-  set), then `git worktree list` + per-tree `diff --name-only` — a file in both sets is a
-  landing-order dependency: name the order and the cost of violating it.
+- **Sibling lanes** (`worktree-per-story` §"Am I alone in this repo?"): story lanes are `claude/*`
+  worktrees off ONE epic branch, several at a time, and a sibling's uncommitted tree is invisible to
+  grep from here. **Bind every call — a bare `git` here reads the lobby, not the project:**
+  `env -u GITHUB_TOKEN git -C "$PROJECT_ROOT" fetch origin <epic-branch>` first (a stale remote ref
+  inflates every sibling's apparent set), then `git -C "$PROJECT_ROOT" worktree list`, then per tree
+  `git -C <tree> status --short` + `git -C <tree> diff --name-only origin/<epic-branch>...HEAD`. The
+  ref is the story's EPIC branch (`epic/<KEY>-<slug>`), never `origin/main` (SCC-165). A file in both
+  their set and this plan's declared set is a **landing-order dependency**: name which lane lands
+  first and what happens to this work if it does not.
 - **Risk context (SCC-228 seam):** `python3 .agents/scripts/risk_seam.py classify <declared
   paths>` *(PC: `python`)* informs this lens's depth. **Informs, never gates** — `gates_audit()`
   is False for every return by pinned contract, so audit semantics are identical under the

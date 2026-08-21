@@ -182,6 +182,7 @@ stop, not a guess:**
 | `review_mode` | `full` when the task's `implementation_plan.md` exists; `no-spec` when it does not |
 | `STORY_FILE` | that `implementation_plan.md` — on this lane the plan's acceptance list **is** the spec |
 | `ARTIFACT_DIR` | `_artifacts/_main/<YYYY-MM-DD>_<slug>/` inside this tree |
+| `DEFERRED_WORK` | `_artifacts/_main/deferred-work.md` — the same file Step 1 names as the only legal sink for a `defer` |
 | `lens_budget` | `standard` — the interactive budget; this lane is typed by hand. **This command does not define what the caps are; step-01 of the engine does, once** — a cap each caller repeats is a cap that drifts. Naming nothing is not neutral: it silently selects the autopilot's budget, which is why this row is explicit (SCC-147) |
 | `review_runtime` | `fan-out` or `inline` — **what you PROBED at Step 0.9, never what you expect.** Pass it down and write the same value into the walkthrough header, so the roster the engine returns can be checked against the runtime that produced it |
 
@@ -437,9 +438,13 @@ The section carries:
 - each gate's result in one line with its **actual** output;
 - the acceptance matrix from Step 2 — every item → its proving assertion;
 - a `### Clean-Code Gate` subsection carrying Step 3.5's table and pasted output;
-- **Step 0.7's re-derivation**, in three lines — what `main` moved under this diff, the true overlap +
-  `merge-tree` result, and any **sibling-lane landing-order dependency**. "Nothing moved" is a
-  reportable result; silence is not.
+<!-- twin-law: rederive-record -->
+- **Step 0.7's re-derivation**, under its own `### Step 0.7 — re-derivation` sub-heading as three
+  numbered lines — what the landing ref moved under this diff, the true overlap + `merge-tree` result,
+  and any sibling-lane landing-order dependency. "Nothing moved" is a reportable result; silence is
+  not — `walkthrough_roster.py --gate` counts list rows under a heading matching `0.7`/`re-deriv`
+  (E7) and refuses fewer than three.
+<!-- /twin-law -->
 
 **Verdict rules:**
 
