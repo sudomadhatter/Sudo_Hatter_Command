@@ -184,11 +184,15 @@ and the fix rather than hiding it:
 
 - [x] The merge itself — lands via this branch's PR
 - [x] Plan approved 2026-08-21; the three audit findings were baked into the plan before any code
-- [x] All 14 review findings fixed in this lane — none deferred, no ticket minted, nothing carried
-      out of the lane as future work
+- [x] All **18** review findings fixed in this lane — 14 in the first pass, 4 more in the
+      operator-directed second pass over the sibling doors — none deferred, no ticket minted,
+      nothing carried out of the lane as future work
+- [x] Scope widened to the other two close-out doors on the operator's direction (2026-08-21),
+      filed on this ticket rather than a new one, and re-gated at the widened sha
 
-Nothing is owed. The lane is review-complete, `PASS`, and pushed; `/smh-close-task-merge-tree` is
-the next door, and invoking it is the decision to proceed.
+Nothing is owed. The lane closed out through this door on 2026-08-21: preflight clear
+(`LANE: LOCAL`, 0 errors), the printed gates green, the flight event and preflight receipt
+committed pre-merge, and the PR opened for the operator's click.
 
 ---
 
