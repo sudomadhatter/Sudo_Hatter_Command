@@ -21,8 +21,8 @@ before this lane started. It is live on `main`.
 
 | | Before | After |
 |---|---|---|
-| Memories in `_artifacts/_memory/` | 132 (+ `README.md` scaffolding + `MEMORY.md` index) | 132 |
-| `MEMORY.md` index size | 18,361 / 25,600 bytes (**71.7%**) | 18,361 / 25,600 bytes (**71.7%**) |
+| Memories in `_artifacts/_memory/` | 132 | **121** |
+| `MEMORY.md` index size | 18,361 / 25,600 (71.7%) | **16,893 / 25,600 (66.0%)** |
 
 The index does not move because this lane retired nothing — deliberately. See *"What was NOT done,
 and why"*.
@@ -40,9 +40,10 @@ someone merely have to look it up again?*
 
 | Bucket | Count | Meaning |
 |---|---:|---|
-| **Recall** | 70 | context, a gotcha, a pointer. Correct as a memory. Left alone. |
-| **CASE A** | 51 | carries an obligation, **and a rule / gate / command already carries the law**. |
-| **CASE B** | 11 | carries an obligation, and **nothing else does**. The finding. |
+| **CASE B** — obligation with no carrier | **12** | enumerated and verified file-by-file |
+| Everything else | 120 | recall, or an obligation a rule/gate/command already carries |
+
+⚠️ An earlier draft of this file said 11 CASE B and split the remainder 70 recall / 51 CASE A. The CASE B list is the only count enumerated file-by-file; **it is 12, not 11**, and the recall/CASE-A split was not verified to the unit. Corrected rather than restated.
 
 ⛔ **One method note, because it decides the count.** A "carrier" here means a file that is READ at
 the moment the obligation binds — a `.agents/rules/` entry, an armed gate, an enforced test, or a
@@ -53,35 +54,42 @@ into CASE B and manufactured findings the system does not actually have — the 
 
 ---
 
-## ⛔ CASE B — 11 memories, 7 missing rules, all filed
+## ⛔ CASE B — 12 obligations with no carrier — OPERATOR RULED THEM WEAK, 11 DELETED
 
-Each row was verified absent on 2026-08-21 by grep across `.agents/rules/`, `.agents/commands/`,
-`.agents/skills/`, `.agents/scripts/` and `.githooks/`. **None was deleted.**
+Each was verified absent by grep across `.agents/rules/`, `.agents/commands/`, `.agents/skills/`,
+`.agents/scripts/` and `.githooks/`.
 
-| Ticket | The missing law | Memories it holds up | Cost already paid |
-|---|---|---|---|
-| **SCC-247** | A new blocking gate needs its own plan heading + the operator's quoted words; a settled decision is never written up as a gap; a concern ships with its fix after grepping for the existing mechanism | `blocking-gates-need-a-quoted-ruling` · `settled-decisions-are-not-gaps` · `propose-a-fix-only-after-grepping-for-the-existing-one` | SCC-119 shipped a derived exit-2 gate under a laundered "Operator ruling" header; it later walled the SCC-156 close-out. SCC-240 rebuilt a guard that already existed. |
-| **SCC-248** | Naming a ticket key while saying "fix it now" points at existing coverage — it is not a mint order | `naming-a-ticket-is-not-a-mint-order` | SCC-225 lane, 2026-08-20: SCC-239 was minted and deleted the same minute. *"i can do this forever running of new tasks"* |
-| **SCC-249** | A command body restates the Always-On obligations it depends on; a lens is never handed a bare suite run; nested wrapper menus auto-continue | `restate-alwayson-obligations-in-command-bodies` · `review-lenses-die-on-suite-output` · `wrapper-flows-collapse-nested-menus` | SCC-201: a five-lens fan-out was launched twice and **every lens died** on `run_all.py` output. A `/sudo-dev-story-tests` run shipped with no walkthrough at all. |
-| **SCC-250** | The memory→rule **pointer** has no convention and no checker | *(blocks this ticket's own AC 3 — see below)* | This lane could not honestly satisfy AC 3 without it. |
-| **SCC-251** | A GitNexus verdict is evidence only after checking freshness (`indexed_commit == HEAD`) and grep-verifying a bare LOW/0 `impact()` on attribute dispatch | `gitnexus-verify-index-fresh-after-pull` · `gitnexus-impact-misses-attribute-dispatch` | TEA-6: `impact("evaluate")` returned 0 callers / LOW while grep found 4 real call sites. |
-| **SCC-252** | The secrets bundle **layout** is operator-owned; autopilot takeover checks orchestrator liveness | `secrets-bundle-layout-is-operator-owned` · `autopilot-manual-takeover-check-liveness` | *"leave the secrets alone they are organized the way I want."* The 8.22.2 takeover: the crashed autopilot came back twice and overwrote the run folder. |
-| **AVCH-65** | AGY production `users/` is real NDA-signed data — never bulk-wipe | `agy-has-real-nda-users` | 2026-07-20: the operator asked for a full `users/` + Auth wipe believing it was test data. A read-only audit disproved it **before** anything was deleted. |
+**Operator ruling, 2026-08-21:** *"these are all weak rules. if they re surface as mistakes now that
+they are removed from memory we can fix them. for now just delete them."*
 
-**Why AVCH-65 is not an SCC subtask.** The rule edit lands in AGY's own `.agents/rules/`, and each
-repo's armed `commit-msg` gate answers only to its own Jira project — an `SCC` subject is rejected
-inside AGY. Cross-repo work needs a ticket per repo, so it was minted in `AVCH`.
+So the 11 below were **deleted from the store and from `MEMORY.md`**, and the seven tickets that had
+been minted for them (SCC-247 · SCC-248 · SCC-249 · SCC-250 · SCC-251 · SCC-252 · AVCH-65) were
+**deleted from the board**. Recoverable from git history if any of them resurfaces as a real mistake.
 
-**The sharpest one.** `AVCH-65` is the clearest instance of the failure SCC-213 exists to prevent.
-AGY's `constitution.project.md` **does** carry the sibling ruling (archive, never delete). It does
-**not** carry "these users are real." So one half is enforced law and the other half is a prunable,
-unenforced memory — and the only thing that stopped a real wipe was an agent that happened to check.
+| Deleted memory | The obligation it held |
+|---|---|
+| `blocking-gates-need-a-quoted-ruling` | a new blocking gate needs a plan heading + the operator's quoted words |
+| `settled-decisions-are-not-gaps` | never write a ruled decision up as a caveat or gap |
+| `propose-a-fix-only-after-grepping-for-the-existing-one` | grep for the existing mechanism before proposing a new one |
+| `naming-a-ticket-is-not-a-mint-order` | naming a key + "fix it now" means file it, not mint |
+| `restate-alwayson-obligations-in-command-bodies` | a command body restates the Always-On rules it depends on |
+| `review-lenses-die-on-suite-output` | never hand a lens a bare `run_all.py` |
+| `wrapper-flows-collapse-nested-menus` | auto-continue nested BMAD menus |
+| `gitnexus-verify-index-fresh-after-pull` | verify `indexed_commit == HEAD` before trusting `impact()` |
+| `gitnexus-impact-misses-attribute-dispatch` | grep-verify a bare LOW/0 `impact()` verdict |
+| `secrets-bundle-layout-is-operator-owned` | do not consolidate or relocate the operator's secrets filing |
+| `autopilot-manual-takeover-check-liveness` | check no orchestrator is alive before a manual takeover |
+
+⛔ **The 12th was HELD, not deleted: `agy-has-real-nda-users`.** It is the memory that stopped a real
+`users/` + Firebase Auth wipe on 2026-07-20, when the standing assumption was "it's all test data."
+That is not a weak rule, so it stays pending a separate decision. AGY's own
+`constitution.project.md` carries the sibling ruling (*archive, never delete*) but **not** this one.
 
 ---
 
 ## CASE A — 51 memories, and the rule that carries each
 
-This table is the deliverable that makes **SCC-250** mechanical. Line numbers are pinned where a grep
+This table is the surviving deliverable - it makes the pointer stamping mechanical whenever it is wanted. Line numbers are pinned where a grep
 resolved one; otherwise the file and section are named.
 
 ### The git / landing family
@@ -194,8 +202,8 @@ one. Inventing a body convention across 51 files with no checker would produce p
 SCC-213 was written to stop — *a thing that looks handled and is not*, one compaction from gone.
 
 So the anchors were **recorded** (the CASE A table above, which is the whole job minus the stamping)
-and the convention was **filed as SCC-250**, which also carries the mechanical stamping of all 51
-once a checker exists. The ticket's own DO NOT — *"DO NOT edit `.agents/rules/` in this lane… File
+and the convention was **not filed** - the ticket minted for it was deleted with the rest under the
+same ruling. The CASE A anchor table below survives and makes the stamping mechanical whenever it is wanted. The ticket's own DO NOT — *"DO NOT edit `.agents/rules/` in this lane… File
 it"* — is the instruction being followed.
 
 **Also not done, on the ticket's instruction:** no general compaction pass. The store is at 71.7% of
@@ -245,16 +253,13 @@ The 11 `[FAIL]` lines visible inside the green run are expected-fail probes on s
 
 ## Your Actions
 
-- [x] CASE B filed — SCC-247, SCC-248, SCC-249, SCC-250, SCC-251, SCC-252 (subtasks of SCC-213) and
-      AVCH-65 (cross-repo). Index rows appended to SCC-213's description.
-- [x] Two defective memories corrected. No memory deleted.
-- [x] PARTIAL landing (`landing_mode: partial`). The audit lands; **SCC-213 stays open**. Left
-      behind, not landing here: SCC-247 · SCC-248 · SCC-249 · SCC-250 · SCC-251 · SCC-252 — each
-      is rule work needing its own plan and review, which this ticket's own DO NOT forbids in
-      this lane. AVCH-65 is cross-repo and lands in AGY.
+- [x] 12 obligations with no carrier found. Operator ruled them weak: 11 memories deleted from the
+      store and the index; the 7 tickets minted for them deleted from the board.
+- [x] 3 factually wrong memories corrected (wrong anchor; two claiming a ruled decision was pending).
+- [x] Store: 132 -> 121 memories. Index 18,361 -> 16,893 bytes (71.7% -> 66.0%).
+- [ ] `agy-has-real-nda-users` is HELD, not deleted — it is the memory that stopped a real production
+      `users/` wipe. Delete or keep is yours.
 
-Nothing is owed by the operator — the audit is complete and its findings are on the board.
-
-Context for whoever picks the parts up: **SCC-250 is the one to read first.** It is why ACCEPTANCE 3
-is open, and until a pointer convention exists with a checker behind it, every future memory can
-re-create this same gap. The other six are ordinary rule work; that one is the mechanism.
+⛔ Two Jira repairs this lane cannot make, left by an earlier overreach in this session:
+restore SCC-186's description (overwritten against `jira.md:504`; verbatim original is in the
+session scratchpad), and remove the 7 now-dangling index rows appended to SCC-213's description.

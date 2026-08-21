@@ -39,12 +39,12 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [Follow-ons are NOT a new story](followon-fixes-are-not-a-new-story.md) — no new worktree/key; fix on epic branch or chore/* off main.
 - [Close-out is the sign-off](close-out-command-is-daniels-signoff.md) — operator-invoked command IS the sign-off; never punt back.
 - [active-context budget](active-context-pointer-budget.md) — ≤20 KB budget; entries born as ≤3-line pointers; stale text deleted.
-- **Scoping discipline** — [settled decisions are not gaps](settled-decisions-are-not-gaps.md) (quote rulings, don't re-litigate) · [recon reframes scope](recon-reframes-story-scope.md) (ground-truth by behavior) · [test-debt = characterization](test-debt-stories-are-characterization.md) (retrofit tests pass green-first) · [⭐ review findings are not a work queue](review-findings-are-not-a-work-queue.md) (fix in thread, don't mint tickets) · [⭐⛔ discovered work = lettered subtask](discovered-work-becomes-a-lettered-part.md) (subtask under owning parent on one branch). · [⛔ a defer needs a STRUCTURAL blocker](a-defer-needs-a-structural-blocker.md) (no blocker on editing files; find the third door).
+- **Scoping discipline** — [recon reframes scope](recon-reframes-story-scope.md) (ground-truth by behavior) · [test-debt = characterization](test-debt-stories-are-characterization.md) (retrofit tests pass green-first) · [⭐ review findings are not a work queue](review-findings-are-not-a-work-queue.md) (fix in thread, don't mint tickets) · [⭐⛔ discovered work = lettered subtask](discovered-work-becomes-a-lettered-part.md) (subtask under owning parent on one branch). · [⛔ a defer needs a STRUCTURAL blocker](a-defer-needs-a-structural-blocker.md) (no blocker on editing files; find the third door).
 - [TEA retrofit (CLOSED)](tea-retrofit-active-initiative.md) — hub node only; lessons live in linked memories.
 
 ## Git, machines & worktrees
 - [git merge wedges Next dev](git-merge-wedges-next-dev-tailwind.md) — merge under npm run dev wedges Tailwind.
-- **Per-machine, never travels** — [env migration kit](env-migration-kit.md) (clone first, restore second) · [secrets layout is operator-owned](secrets-bundle-layout-is-operator-owned.md) (never reorganize) · [`.zshrc` invisible to automation](zshrc-is-invisible-to-automation.md) (shared env in ~/.zshenv) · [gitconfig didn't travel](gitconfig-never-migrated-to-the-mac.md) (set autoSetupRemote).
+- **Per-machine, never travels** — [env migration kit](env-migration-kit.md) (clone first, restore second) · [`.zshrc` invisible to automation](zshrc-is-invisible-to-automation.md) (shared env in ~/.zshenv) · [gitconfig didn't travel](gitconfig-never-migrated-to-the-mac.md) (set autoSetupRemote).
 - [Commit and push are ONE action](commit-and-push-are-one-action.md) — never end step unpushed; verify 0 0 + clean per repo.
 - [⛔ Backticks in `-m "…"` EXECUTE](commit-message-backticks-execute.md) — message quoting git commands runs them; use -F <file>.
 - [⭐ Git branch model + the main gate](git-branch-model-standard.md) — prefix names work; main reached only via /cicd-push-e2e or /smh-close-task-merge-tree with single-use token.
@@ -54,7 +54,6 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [⛔ One invocation = ONE merge](one-shot-permission-persists-in-context.md) — command stays in context; merge-ready -> STOP and hand back.
 - [⭐⛔ The LANDING is the block, not the gates](landing-ceremony-is-the-block-not-the-gates.md) — permission layer blocks bare shared merges; PR door works via /smh-close-task-merge-tree.
 - [⭐ Main merge needs the operator's VERBATIM words](main-merge-needs-operator-verbatim-approval.md) — minter requires verbatim approval quote; stage, CI green, then park.
-- [⭐ Blocking gates need a QUOTED ruling](blocking-gates-need-a-quoted-ruling.md) — shipping blockers need plan heading + operator quoted words.
 - [Hook `ask` = DENY in auto mode](hook-ask-becomes-autodeny-in-auto-mode.md) — gates main only; reads pass, mutations die in non-interactive shells.
 - [Pruned worktree blocks re-add](pruned-worktree-leaves-a-blocking-shell.md) — empty dir shell blocks worktree add; delete before re-adding.
 - [Worktrees skip gitignored assets](worktrees-do-not-inherit-gitignored-assets.md) — link auth_keys, .env, and node_modules into new worktree.
@@ -68,7 +67,6 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [coverage `source` ignores paths](coverage-source-silently-ignores-file-paths.md) — use source_pkgs, never file paths.
 - **Risk + certification** — [priorities matrix](test-priorities-matrix.md) (P0 100% / P1 80% / P2 50% / P3 20%; P0+P1 need E2E) · [certification at shipping SHA](test-certification-at-shipping-sha.md) (②→③ certification-<story>.json).
 - **Secrets in tests** — lesson from closed Gemini-key leak: **`setdefault` is wrong idiom for secrets** — assign unconditionally in conftest.
-- [⛔ Review lenses die on suite output](review-lenses-die-on-suite-output.md) — never hand a subagent a bare `run_all.py`; filter it, and hand a code-only diff.
 - [full-suite contention](vitest-full-suite-contends-across-lanes.md) — locks per-stack; bg shells die on chat close.
 - **Spec + fixture conventions** — [eval negative controls](eval-harness-negative-control-convention.md) (_negative_control:true + NC_ id) · [E2E gate fiction](e2e-gate-fiction-test-guardrails.md) (report-only gate hid fiction spec) · [ATDD mocks match contract](atdd-mock-shape-must-match-backend-contract.md) · [domain-gated fixtures](domain-gated-fixtures-web-verify.md) (verify against primary sources).
 - [Windows-authored code hides POSIX bugs](windows-authored-code-hides-posix-bugs.md) — chmod, C:/ paths, ;, robocopy, bare python fail on POSIX.
@@ -80,7 +78,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [Destructive re-verify reads FRESH](destructive-reverify-must-read-fresh.md) — cached re-check no-ops delete and looks green.
 
 ## GitNexus
-- **The index is a stale cache** — [machine-local](gitnexus-index-not-actually-live.md) (pass repo: explicitly) · [verify after pull](gitnexus-verify-index-fresh-after-pull.md) (indexed_commit == HEAD) · [impact() misses attr-dispatch](gitnexus-impact-misses-attribute-dispatch.md) (grep-verify LOW impact).
+- **The index is a stale cache** — [machine-local](gitnexus-index-not-actually-live.md) (pass repo: explicitly).
 - **Search blind spots** — [grep skips gitignored projects](grep-skips-gitignored-projects.md) (blind to Projects/ from lobby) · [⭐ grep reads parked branch](grep-reads-the-branch-you-are-parked-on.md) (stale checkout fakes scope) · [relocated links are mis-pathed](relocated-doc-links-are-mispathed-not-dead.md) (target moved).
 
 ## Toolkit & sync
@@ -102,20 +100,17 @@ this section is the signpost. Working in one? Read its store too; it is not load
 ## Autopilot
 - [Autopilot engines are project-local](autopilot-engine-is-project-local.md) — 4 diverged copies in Projects/ (Claude + Opencode .ps1); lobby holds spec only.
 - [glm hybrid lane](autopilot-glm-hybrid-lane.md) — Dev on GLM via Z.ai, QA stays Claude.
-- [Takeover: check liveness](autopilot-manual-takeover-check-liveness.md) — verify no orchestrator is alive before manual takeover.
 
 ## Working style
 - [⭐⛔ Audit findings need a FILE anchor](audit-findings-need-a-file-anchor.md) — fan-outs manufacture findings; no anchor = delete; never build an audit-of-the-audit (SCC-225).
 - [⭐ Lightweight lane for specific, can't-break work](lightweight-lane-for-specific-no-break-work.md) — doc-only / operator-directed ask is ticket -> edit -> push (SCC-162).
-- [Naming a ticket ≠ mint order](naming-a-ticket-is-not-a-mint-order.md) — "fix it now with ticket X" = file under the CURRENT lane; mint only on the explicit word.
 - [⭐⛔ Close the loop; don't hand back decisions](close-the-loop-dont-hand-back-decisions.md) — no new-concern tails, no menus; pick the default, say it, keep going (SCC-201).
 - [Own it plainly](own-it-plainly-dont-make-excuses.md) — own issues in one line, then act.
-- [⛔ Grep for the existing mechanism BEFORE proposing a fix](propose-a-fix-only-after-grepping-for-the-existing-one.md) — SCC-190 guard already existed; every concern ships with its solution in the same plan.
 - [Writes for a big-picture operator](writes-for-big-picture-operator.md) — consequence before mechanism; explain terms clearly.
 - [Daniel sells Hormozi-style](daniel-sells-hormozi-style.md) — direct, prove-it, value-first copy.
 - [Operator chairs the board](operator-chairs-the-board.md) — multi-voice boards advance on operator word; voices ask.
 - [Caucus-card contract](adviser-board-caucus-card-contract.md) — silent caucuses -> one-speaker Team Cards with originator credit.
 - **Story artifacts** — [two-doc close](story-artifacts-two-doc-close.md) (audit -> plan, review -> walkthrough) · [artifacts live in tree](story-artifacts-live-in-the-tree.md) (absence = step never ran) · [limits relocate, never truncate](limits-relocate-content-never-truncate.md) (caps removed under SCC-51).
-- **How the flows stop** — [wrappers collapse nested menus](wrapper-flows-collapse-nested-menus.md) (auto-continue BMAD menus; stop on decisions) · [model-switch stops](dev-flow-model-switch-stops.md) (continue = audit, changed = audit and stop) · [dev-story gate conditional](dev-story-gate-is-conditional.md) (stops only on real questions).
-- **Writing directives** — [restate Always-On obligations](restate-alwayson-obligations-in-command-bodies.md) (bake into literal steps) · [no personal name](no-personal-name-in-directives.md) (generic referents in .agents/).
+- **How the flows stop** — [model-switch stops](dev-flow-model-switch-stops.md) (continue = audit, changed = audit and stop) · [dev-story gate conditional](dev-story-gate-is-conditional.md) (stops only on real questions).
+- **Writing directives** — [no personal name](no-personal-name-in-directives.md) (generic referents in .agents/).
 - [Plan reviews ride md-feedback memos](plan-reviews-ride-md-feedback-memos.md) — list_annotations first; edit directly and respond in-thread.
