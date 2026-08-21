@@ -1,0 +1,7 @@
+task_key: SCC-211
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-211-push-e2e-precheck
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+# Standalone Task (no subtasks). The ticket's four findings + ACCEPTANCE block are the spec;
+# implementation_plan.md re-measures them against origin/main @ fb5fb95.
