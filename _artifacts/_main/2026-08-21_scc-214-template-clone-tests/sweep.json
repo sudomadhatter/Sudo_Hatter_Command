@@ -32,7 +32,7 @@
    "id": "M4 copy executables instead of linking them (the speed property)",
    "file": ".agents/scripts/tests/_repo_template.py",
    "block": "T3",
-   "case": "a hook shares the template inode",
+   "case": "a hook shares the template inode exactly when linking is possible",
    "original": "            os.link(src, dst)",
    "mutated": "            shutil.copy2(src, dst)"
   },
@@ -91,6 +91,94 @@
    "case": "no clone carries a path into the template root (git_hooks)",
    "original": "        fetch_head.unlink()",
    "mutated": "        pass"
+  },
+  {
+   "id": "M12 the chmod escape is unwatched - _verify_sealed never runs on a cached template",
+   "file": ".agents/scripts/tests/_repo_template.py",
+   "block": "T1",
+   "case": "a template whose executable was chmod'd is REFUSED (the REFUSE half)",
+   "original": "        _verify_sealed(cached)\n        return cached",
+   "mutated": "        return cached"
+  },
+  {
+   "id": "M13 _seal leaves the template's own path in .git/config",
+   "file": ".agents/scripts/tests/_repo_template.py",
+   "block": "T2",
+   "case": "the sealed TEMPLATE itself carries no path into its own root",
+   "original": "            cfg.write_text(text.replace(str(root), SEALED_URL), encoding=\"utf-8\")",
+   "mutated": "            pass"
+  },
+  {
+   "id": "M14 the shared acli launcher is left owner-writable",
+   "file": ".agents/scripts/tests/_pf_fixtures.py",
+   "block": "T2",
+   "case": "the shared acli launcher is FROZEN, like every shared executable",
+   "original": "            launcher.chmod(0o555)",
+   "mutated": "            launcher.chmod(0o755)"
+  },
+  {
+   "id": "M15 NARROWING: the occupied-root check scans only the FIRST template entry",
+   "file": ".agents/scripts/tests/_repo_template.py",
+   "block": "T1",
+   "case": "the occupied check scans EVERY template entry, not just the first",
+   "original": "        clash = [e.name for e in sorted(tpl.iterdir()) if (dest / e.name).exists()]",
+   "mutated": "        clash = [e.name for e in sorted(tpl.iterdir())[:1] if (dest / e.name).exists()]"
+  },
+  {
+   "id": "M16 the os.link failure fallback raises instead of copying",
+   "file": ".agents/scripts/tests/_repo_template.py",
+   "block": "T5",
+   "case": "a clone is correct when os.link FAILS (the copy2 fallback)",
+   "original": "        except OSError:\n            shutil.copy2(src, dst)",
+   "mutated": "        except OSError:\n            raise"
+  },
+  {
+   "id": "M17 _copy_entry's symlink branch is neutered",
+   "file": ".agents/scripts/tests/_repo_template.py",
+   "block": "T5",
+   "case": "a symlink survives the clone AS a symlink, target intact",
+   "original": "    if src.is_symlink():\n        os.symlink(os.readlink(src), dst)",
+   "mutated": "    if src.is_symlink() and False:\n        os.symlink(os.readlink(src), dst)"
+  },
+  {
+   "id": "M18 shared_root() rebuilds on every call, leaking every root but the last",
+   "file": ".agents/scripts/tests/_repo_template.py",
+   "block": "T5",
+   "case": "shared_root() is memoised — one root per process",
+   "original": "    global _ROOT\n    if _ROOT is None:",
+   "mutated": "    global _ROOT\n    if True:"
+  },
+  {
+   "id": "M19 a failed build's directory is left on disk",
+   "file": ".agents/scripts/tests/_repo_template.py",
+   "block": "T5",
+   "case": "a failed build leaves NO template directory behind",
+   "original": "        shutil.rmtree(root, onerror=_force)\n        raise",
+   "mutated": "        raise"
+  },
+  {
+   "id": "M20 the unknown-keyword TypeError is gone",
+   "file": ".agents/scripts/tests/_pf_fixtures.py",
+   "block": "T2",
+   "case": "a typo'd keyword still raises TypeError, as it did before the wrapper",
+   "original": "    if unknown:",
+   "mutated": "    if False:"
+  },
+  {
+   "id": "M21 NARROWING: _key() throws away everything but the first path",
+   "file": ".agents/scripts/tests/test_git_hooks.py",
+   "block": "T3",
+   "case": "_key() distinguishes a DIFFERENT scripts= tuple",
+   "original": "    return tuple(str(p) for p in paths)",
+   "mutated": "    return tuple(str(p) for p in paths[:0])"
+  },
+  {
+   "id": "M22 leaks() follows symlinks instead of reading their target",
+   "file": ".agents/scripts/tests/test_repo_template.py",
+   "block": "T5",
+   "case": "...and leaks() SEES a symlink whose target points into the template",
+   "original": "        if p.is_symlink():\n            if TEMPLATE_PREFIX in os.readlink(p):",
+   "mutated": "        if p.is_symlink() and False:\n            if TEMPLATE_PREFIX in os.readlink(p):"
   }
  ]
 }
