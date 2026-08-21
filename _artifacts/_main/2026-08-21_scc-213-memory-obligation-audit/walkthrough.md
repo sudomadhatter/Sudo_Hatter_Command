@@ -214,7 +214,32 @@ carrier search                                .agents/rules/ .agents/commands/ .
 MEMORY.md index                               18,361 / 25,600 bytes (71.7%) — unchanged
 ```
 
-Gate output and `git rev-parse HEAD` are appended below at the end of the run.
+**Gate output, run bare (never piped — a pipe reports its own exit code):**
+
+```
+python3 .agents/scripts/tests/run_all.py              exit 0   -- 41/41 files passed --
+python3 .agents/scripts/workflow_lint.py --toolkit-only
+                                                      exit 0   0 error(s), 0 warning(s), 8 info
+python3 .agents/scripts/check_maps.py --depth3-only --strict
+                                                      exit 0
+python3 .agents/scripts/sop_currency.py --repo . --paths <staged>
+                                                      exit 0   no usage surface in the diff
+link + anchor over the 4 changed docs                 exit 0   all relative links resolve
+lane_qualify.py --paths $(git diff --name-only origin/main...HEAD)
+                                                      LIGHT    [Step 3.5 EJECT — lane holds]
+
+git rev-parse HEAD   4d84e2506fb04799f655bde570ec347d7f4608ff
+branch               chore/SCC-213-memory-obligation-audit, clean, 0/0 with origin
+```
+
+⚠️ **The suite caught a real miss on its first run** and is the reason there was a second: F2 failed
+with *"missing row for `2026-08-21_scc-213-memory-obligation-audit/`"* — the `_artifacts/_main/INDEX.md`
+row for this session's own folder. Added, then green. Worth recording because the gate that caught it
+is the one an artifacts-only lane is most tempted to assume it does not need.
+
+The 11 `[FAIL]` lines visible inside the green run are expected-fail probes on synthetic fixtures
+(the `SCC-9` / `SCC-6` receipt lanes and `BETA · one: on purpose`), not lane failures — the run exits
+0 with 41/41 files passed.
 
 ---
 
