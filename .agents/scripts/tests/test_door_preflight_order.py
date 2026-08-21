@@ -109,6 +109,36 @@ def idx(lines: list[str], needle: str) -> int:
     return -1
 
 
+def fold_continuations(lines: list[str]) -> list[str]:
+    """Fenced lines joined across trailing `\\` — one shell command, one string.
+
+    ⛔ WRITTEN BECAUSE THE FIRST CUT OF THE SCC-211 CHECK WAS BRITTLE (caught by its own red).
+    "the door invokes X with flag F" was asserted as *one line containing both*, and a legal
+    continuation — the way every multi-flag call in these doors is actually formatted — put
+    the command and the flag on different lines. The predicate failed a door that was
+    correct.
+
+    That is worse than a gap: a guard a legitimate formatting choice breaks is a guard the
+    next author reformats around, and this file already carries two lessons of the same
+    family (a comment matching first, a `contains` that cannot see order). The question the
+    check MEANS to ask is about the logical command, so the reader is made to see logical
+    commands. `NO_FLAG` below is the control proving it did not become "the flag appears
+    somewhere".
+    """
+    out: list[str] = []
+    pending = ""
+    for line in lines:
+        stripped = line.rstrip()
+        if stripped.endswith("\\"):
+            pending += stripped[:-1].rstrip() + " "
+            continue
+        out.append((pending + stripped.strip()) if pending else line)
+        pending = ""
+    if pending:
+        out.append(pending.strip())
+    return out
+
+
 def order_ok(lines: list[str], *needles: str) -> tuple[bool, str]:
     """Every needle present, and appearing in the given order."""
     seen = [(n, idx(lines, n)) for n in needles]
@@ -475,19 +505,30 @@ def main() -> int:
         # is exempt from door parity because the sync never rewrites it - which is exactly why
         # it is the surface most likely to keep a retired sentence, and it did (this lane's own
         # finding #3). Exempt from parity is not exempt from being current.
+        # ⛔ AND THE PRODUCTION DOOR (SCC-211). The ruling names three forms and TWO OF THEM
+        # ARE INVOCATIONS, one of which is `/cicd-push-e2e` - so the one command the ruling
+        # names by name was the one surface that never carried it, and contradicted it
+        # instead: its Step 4 mint comment demanded the operator's verbatim this-turn merge
+        # words and said "No such words this turn -> STOP and ask". An operator who typed
+        # only `/cicd-push-e2e` had given the sign-off in one of its three legal forms and
+        # was asked for it again - or the agent invented a quote for `--operator-approval`,
+        # since `mint-push-token.sh` REFUSES non-interactively without one.
         RULING = "decision to proceed is the sign-off"
         for rel in (".claude/skills/smh-close-task-merge-tree/SKILL.md",
                     ".agents/rules/git-policy.md",
-                    ".agents/commands/smh-close-task-merge-tree.md"):
+                    ".agents/commands/smh-close-task-merge-tree.md",
+                    ".agents/commands/cicd-push-e2e.md"):
             body = (REPO / rel).read_text(encoding="utf-8", errors="replace").lower()
             c.check(f"S5 ...and {rel} states the ruling positively",
                     RULING in body, f"missing: {RULING!r}")
 
-        # And the three FORMS it takes, named where the door's Rule 1 is.
-        door = (REPO / ".agents/commands/smh-close-task-merge-tree.md").read_text(
-            encoding="utf-8", errors="replace")
-        for form in ("`approved`", "/smh-close-task-merge-tree", "/cicd-push-e2e"):
-            c.check(f"S5 ...and the door names the form: {form}", form in door)
+        # And the three FORMS it takes, named where each door's Rule 1 is. BOTH doors: a
+        # ruling stated in one door and contradicted in the other is not stated.
+        for rel in (".agents/commands/smh-close-task-merge-tree.md",
+                    ".agents/commands/cicd-push-e2e.md"):
+            door = (REPO / rel).read_text(encoding="utf-8", errors="replace")
+            for form in ("`approved`", "/smh-close-task-merge-tree", "/cicd-push-e2e"):
+                c.check(f"S5 ...and {rel} names the form: {form}", form in door)
 
     # ══ SCC-193 C · the door reads ITSELF from origin/main on --after-merge ════════════════
     #
@@ -509,6 +550,123 @@ def main() -> int:
         c.check("C3 ...and says the door text may be the PRE-merge copy",
                 "behind origin/main" in after and "git show origin/main:" in after,
                 "the remedy must name how to read the current door")
+
+    # ══ SCC-211 · THE PRODUCTION DOOR PRE-FLIGHTS BEFORE IT WRITES OR GATES ═══════════════
+    #
+    # `/cicd-push-e2e` is the only command that writes production `main`, and it was the only
+    # door that ran NO mechanical precheck: both siblings call one first
+    # (`cicd-close-story-merge-tree.md` Step 0.6, `smh-close-task-merge-tree.md` Step 1),
+    # while this one resolved a branch from `git branch -a`, asked the operator to "confirm
+    # it by name", and started merging.
+    #
+    # THE DEFECT, STATED AS A SEQUENCE: uncommitted changes sit in the epic checkout; Step 3
+    # gates that dirty tree GREEN; Step 4 merges the BRANCH, which does not contain them.
+    # What shipped to production was never gated, and the door could not say so.
+    #
+    # ⛔ WHY ORDER, NOT PRESENCE. A precheck placed after `git merge origin/main` is not a
+    # precheck - the first write has already happened, on the tree the gate is about to
+    # measure. Presence-only would be GREEN on exactly the arrangement that fails, which is
+    # this file's founding lesson ([[source-grep-guards-cannot-see-order]]); the CONTROLS
+    # below are the mutants that prove the comparison bites.
+    if c.block("SCC-211 · /cicd-push-e2e pre-flights BEFORE it writes or gates"):
+        text = PROJECT_DOOR.read_text(encoding="utf-8", errors="replace")
+        lines = code_lines(text)
+        logical = fold_continuations(lines)
+
+        # P1 · the precheck is a COMMAND the door runs, not a paragraph about prechecks.
+        c.check("P1 the door RUNS ship_preflight.py (fenced, not prose)",
+                idx(lines, "ship_preflight.py") >= 0,
+                "prose describing a check is not a check: " + " | ".join(lines[:4]))
+        c.check("P1 ...and passes --expect-key, so a wrong lane fails the key match",
+                any("ship_preflight.py" in ln and "--expect-key" in ln for ln in logical),
+                "cwd is not intent - without the pinned key the script can only ever return "
+                "an honest verdict about the WRONG branch")
+
+        # P2 · the ordering claim, the whole reason this is a preflight.
+        ok, detail = order_ok(lines, "ship_preflight.py", "git merge origin/main",
+                              "mint-push-token.sh", "git push origin main")
+        c.check("P2 ORDER preflight -> absorb main -> mint -> push main", ok, detail)
+
+        # P6 · the key is PINNED before any tool has answered anything. A key read off the
+        # branch the door just resolved cannot disagree with it - the check would compare a
+        # value with itself, which is the circularity this whole file exists to refuse.
+        ok, detail = order_ok(lines, "EXPECTED_KEY=", "ship_preflight.py")
+        c.check("P6 ORDER EXPECTED_KEY pinned -> then the preflight reads it", ok, detail)
+
+        # P3/P4 · the chore branch: admitted at Step 1 and then named nowhere after it.
+        step1 = section(text, "Step 1 ")
+        c.check("P3 Step 1 conditions the chore admission on the DIFF",
+                "deployable" in step1.lower(),
+                "git-policy.md routes only the deployable-touching chore diff here")
+        c.check("P3 ...and hands the rest to the Task door",
+                "/smh-close-task-merge-tree" in step1,
+                "a docs-only chore lane landing here skips the whole Task ceremony - "
+                "manifest, `## Your Actions`, Dev Record, ticket move, prune")
+        c.check("P4 ...and a chore lane that legitimately stays has a written procedure",
+                "substitutes" in step1 and "chore/<JIRA-KEY>-<slug>" in step1,
+                "every operative line after the admission names only epic/*, including the "
+                "mint's --branch - which is what the token records as WHAT is being landed")
+
+        # P5 · the sign-off contradiction, both directions.
+        step4 = section(text, "Step 4")
+        c.check("P5 Step 4 treats THIS TURN's invocation as the approval evidence",
+                "invocation this turn" in step4.lower(), step4.strip()[:200])
+        c.check("P5 ...and the door no longer demands words the ruling says were given",
+                "No such words this turn" not in text,
+                "the operator typed one of the ruling's three forms; asking again is the "
+                "contradiction, and inventing a quote for --operator-approval is worse")
+
+        # ── CONTROLS · each predicate above, fired at a door built to fail it ──────────────
+        # A live sweep can only prove the tree is currently clean. These are the mutants.
+        GOOD = ("# /d\n\n```bash\nEXPECTED_KEY=SCC-00\n"
+                "python3 .agents/scripts/ship_preflight.py --expect-key \"$EXPECTED_KEY\"\n"
+                "git merge origin/main\nmint-push-token.sh\ngit push origin main\n```\n")
+        good = code_lines(GOOD)
+        c.check("CONTROL: the reference door passes P2 and P6",
+                order_ok(good, "ship_preflight.py", "git merge origin/main",
+                         "mint-push-token.sh", "git push origin main")[0]
+                and order_ok(good, "EXPECTED_KEY=", "ship_preflight.py")[0])
+
+        RELOCATED = ("# /d\n\n```bash\nEXPECTED_KEY=SCC-00\ngit merge origin/main\n"
+                     "python3 .agents/scripts/ship_preflight.py --expect-key \"$EXPECTED_KEY\"\n"
+                     "mint-push-token.sh\ngit push origin main\n```\n")
+        c.check("CONTROL: a preflight RELOCATED below the first write is caught",
+                not order_ok(code_lines(RELOCATED), "ship_preflight.py",
+                             "git merge origin/main")[0],
+                "presence is unchanged and every needle is still there - only ORDER moved, "
+                "which is exactly the mutation a `contains` check cannot see")
+
+        PROSE = ("# /d\n\nRun `ship_preflight.py` first, then absorb main.\n\n"
+                 "```bash\ngit merge origin/main\nmint-push-token.sh\n"
+                 "git push origin main\n```\n")
+        c.check("CONTROL: a door that only TALKS about the preflight is caught",
+                idx(code_lines(PROSE), "ship_preflight.py") < 0,
+                "the sentence is true and the door still never runs it")
+
+        PINNED_LATE = ("# /d\n\n```bash\n"
+                       "python3 .agents/scripts/ship_preflight.py --expect-key \"$EXPECTED_KEY\"\n"
+                       "EXPECTED_KEY=SCC-00\n```\n")
+        c.check("CONTROL: a key pinned AFTER the preflight reads it is caught",
+                not order_ok(code_lines(PINNED_LATE), "EXPECTED_KEY=",
+                             "ship_preflight.py")[0],
+                "an unset variable is an empty --expect-key, and an empty operand is never "
+                "a pass")
+
+        # ── CONTROLS for `fold_continuations` · both directions ────────────────────────────
+        # It exists so a legal `\` continuation does not fail a correct door. The risk in
+        # that fix is the opposite error: folding everything into one blob until "the flag
+        # appears somewhere in the fence" reads as "the command was passed the flag".
+        SPLIT = ("# /d\n\n```bash\npython3 .agents/scripts/ship_preflight.py --repo \"$R\" \\\n"
+                 "        --expect-key \"$EXPECTED_KEY\"\n```\n")
+        c.check("CONTROL: a call split across a `\\` continuation still reads as ONE command",
+                any("ship_preflight.py" in ln and "--expect-key" in ln
+                    for ln in fold_continuations(code_lines(SPLIT))))
+        NO_FLAG = ("# /d\n\n```bash\npython3 .agents/scripts/ship_preflight.py --repo \"$R\"\n"
+                   "echo --expect-key is documented below\n```\n")
+        c.check("CONTROL: the flag on a SEPARATE command is NOT credited to the preflight",
+                not any("ship_preflight.py" in ln and "--expect-key" in ln
+                        for ln in fold_continuations(code_lines(NO_FLAG))),
+                "no trailing backslash, so these are two commands and must stay two")
 
     return c.finish()
 

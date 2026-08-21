@@ -795,6 +795,27 @@ story file's `Status:` — only a human close-out writes `done`.
 
 ▶ **Diagram:** [`/cicd-push-e2e` in the command atlas](#cicd-push-e2e) — every step, stop and refusal, checked against the live command.
 
+⭐ **SCC-211 · it PRE-FLIGHTS now, and it finally says what a `chore/*` branch may do here.** This
+is the only command that writes production `main`, and it was the only door that checked nothing
+mechanically before it started — both siblings call a script first. So one thing changed in how you
+use it and one thing got an answer:
+
+- **You pin the ticket first (Step 0.6), and Step 1.5 runs `ship_preflight.py`** — shape, that pinned
+  key against the branch's, a clean checkout, `0 0` with the remote, and the lane. **Exit 2 stops the
+  command.** The check that earns the step is the clean one: uncommitted work in the epic checkout
+  meant Step 3 gated *that tree* while Step 4 merged *the branch*, so what reached production was
+  never what went green — and nothing in the file would have told you.
+- **A `chore/*` branch is admitted here only when its diff reaches deployable code.** It used to be
+  admitted on your ask alone and then had no written procedure at all: every operative line after the
+  admission named only `epic/*`, including the token's `--branch`. Now the diff decides, and a
+  docs-only chore lane is sent to `/smh-close-task-merge-tree`, which owns the Task ceremony this
+  door does not have. One that legitimately stays is told exactly which lines to substitute.
+
+**And the sign-off no longer contradicts itself.** The file said invoking it IS your sign-off, then
+its mint step demanded separate verbatim merge words and said *"No such words this turn → STOP and
+ask"* — so the one command the three-form ruling names by name was the one surface that asked you to
+say it twice. Your **invocation this turn** is the evidence the mint records.
+
 **Invoking it IS your per-merge sign-off for the one epic it ships.** Since SCC-77 that sign-off is
 also mechanical: the command mints a **single-use approval token** immediately before the final
 push, and `.githooks/pre-push` refuses any push landing on `main` without one. The token is spent on
@@ -1278,7 +1299,7 @@ flowchart TD
     MAIN --> DEL["epic branch deleted\nnothing accumulates"]
     CHORE["chore/KEY-slug\nTask work, each with its own ticket"] -.->|"/smh-close-task-merge-tree\nor /smh-merge-multiple-workingtrees"| LANE{"anything deployable\nin the diff?"}
     LANE -- "no — the GitHub check + the token" --> MAIN
-    LANE -- "yes — handed to /cicd-push-e2e\nlight gate, your direct ask" --> MAIN
+    LANE -- "yes — handed to /cicd-push-e2e\nlight gate; ship_preflight.py confirms\nthe diff really does deploy" --> MAIN
     INCID["claude/incident-*\nthe incident pipeline's hotfix lane"] -.->|"/cicd-mobile-error-team\nyour merge decision, real CI"| MAIN
 ```
 
@@ -1909,6 +1930,7 @@ flowchart LR
 | `merge-target-guard.sh` | **A merge landing on a branch you did not mean.** Every other check on this page guards the branch you merge *from*; this is the only one that guards the branch you merge *into*. It refuses a merge whose target is not a legal destination for its source under the branch model — a `chore/*` lane landing on **another** `chore/*` lane is the SCC-97 signature and is named as such in the refusal, which also prints the target, the source, the rule and `git merge --abort`. — *and the history behind it, below.* |
 | `jira_feed.py` | **A Jira ticket that is only a title.** ① mints the ticket with an outline rendered *from the story file*, and the close-out files a **Dev Record**: the decisions, the pitfalls, and what is still owed. Both write paths **read the ticket back** and fail if what they claimed to write is not there. **Exactly one Dev Record per ticket.** It also picks the ticket **type** for you ([§12](#12-the-board--what-runs-next)). Its `start` verb moves a ticket to `In Progress` and is **idempotent**, which is what lets three different seams call it without any of them double-moving a card. |
 | `post-commit-jira-start.sh` | **A ticket that never shows as in flight.** Your first commit on a `chore/ · claude/ · epic/` branch moves that ticket to `In Progress` — see [§12](#12-the-board--what-runs-next). It reads the key from the **branch name** and never invents one; `main` and unkeyed branches are silent. It costs **one exchange per branch** on the normal path (a marker short-circuits the rest before any network call), it **can never block or fail a commit**, and an offline commit simply retries on the next one. A ticket that is not startable yet (`Blocking`, `In Review`, `Deferred`) deliberately writes no marker, so that branch re-reads once per commit until it is — the price of never silencing a ticket that might still start. |
+| `ship_preflight.py` | **Production shipping something that was never gated.** `/cicd-push-e2e` is the only command that writes production `main` and, until SCC-211, the only door that asserted nothing before it started: uncommitted work in the epic checkout meant Step 3 gated that *tree* while Step 4 merged the *branch*. It answers four questions the door used to take on trust — the branch SHAPE (`epic/*`, or a `chore/*` the lane check admits), the pinned `--expect-key` against the key the branch carries, a **clean** checkout that is `0 0` with its remote, and **the LANE**: a `chore/*` belongs here only when its diff reaches `backend/ frontend/ firebase/ functions/ mobile/ .github/`, which it derives by importing `task_preflight.PRODUCT_DIRS` rather than re-typing it, so the two doors cannot drift about what "deployable" means. Reads and prints; the merge, the mint and the push stay in the command where a human is watching. Exit 0/1/2, and the staleness of an unfetched comparison rides the VERDICT line itself — SCC-193's lesson, one door over, where a stale note sat under a verdict reading *clear*. |
 | `task_preflight.py` | **A change to the product sneaking onto `main` labelled a "task".** It derives the lane from the repo rather than asking: does this repo **have** anything that deploys, and did **this diff** touch it? Touch one and it **stops dead and sends the work to `/cicd-push-e2e`. There is no override flag, on purpose.** It also checks the branch shape, the `--expect-key` match, the `task.yaml` manifest (a receipt already recorded blob-for-blob on `origin/main` is a **landed** lane's and no longer blocks follow-on lanes of the same ticket — SCC-113; an unlanded or edited-since-landing receipt still blocks hard), that the tree is clean and pushed, and that `origin/main` was absorbed. — *and the history behind it, below.* |
 | `check_maps.py` | **The maps and INDEXes drifting from what is actually on disk.** Every level-2 folder must carry an `INDEX.md`, every backticked path in a **map's** table row must resolve, and the repo-map must still name every top-level folder. Ledgers under `_artifacts/` are exempt on purpose — their rows are history, and a row describing work that *deleted* something has to be able to name it. **That exemption is why a session-folder row is matched on its FIRST cell written with a trailing `/` (SCC-96):** anything else in the row is prose, and prose is where a ledger explains *why* — including by naming the memory a decision rests on. Matching prose instead made every memory slugged `story-`/`tea-`/`epic-`/`autopilot-` read as a folder gone missing, so the gate fired on exactly the behaviour the convention asks for. — *and the history behind it, below.* |
 | `tests/test_command_surfaces.py` | **A `/` menu that lies — including a door that still reads last month's steps.** It holds the one-door-per-platform contract: every command has exactly one door on each platform its `platforms:` claims, none on a platform it doesn't, no ghosts, and the retired doors stay retired. Since SCC-166 it also holds the **review-twin contract** (`CS-11`): `/smh-code-review` and `/cicd-code-review` must each carry a blast-radius re-derivation *with all three written answers* and an acceptance audit *with its CONCERNS floor and the drift direction*, each Step 0 must echo `rev-parse` output rather than belief, and each twin must name **its own** integration ref — smh `origin/main`, cicd `origin/$EPIC` and never `origin/main`. The two files that part edited are also swept for a personal name (→ 0); the toolkit-wide sweep is a separate, confirm-scope task, because `rules/operator-profile.md` is a file where the name IS the subject. — *and the history behind it, below.* |
@@ -3233,17 +3255,22 @@ flowchart TD
 
 #### /cicd-push-e2e
 
-*The one shipping command: absorb `origin/main` into the epic branch, run the full gate on it,
-merge to `main` with `--no-ff`, mint the single-use approval token with your words, push, watch the
-deploy, verify live, prune the epic branch, close the epic ticket. Explained in
+*The one shipping command: pin the ticket, pre-flight it mechanically (`ship_preflight.py` — exit 2 stops the command), absorb `origin/main`
+into the epic branch, run the full gate on it, merge to `main` with `--no-ff`, mint the single-use
+approval token with your words — your invocation this turn IS those words — push, watch the deploy,
+verify live, prune the epic branch, close the epic ticket. Explained in
 [§7](#7-landing-and-shipping--the-close-out-family). Calls: `/cicd-e2e`, `mint-push-token.sh`,
 `jira_feed.py`.*
 
 ```mermaid
 flowchart TD
-    S0["Step 0 — resolve the project"] --> S1{"Step 1 — what branch?"}
-    S1 -- "epic/KEY-slug\nstories still open → STOP and name them" --> S2["Step 2 — ⭐ ABSORB origin/main INTO the epic\nBEFORE gating — conflicts surface HERE, never on production"]
-    S1 -- "chore/KEY-slug handed off\nby the Task lane" --> LIGHT["light gate only\nyour direct ask IS the approval"]
+    S0["Step 0 — resolve the project"] --> S06["Step 0.6 — PIN the ticket you mean\nbefore any tool has answered anything"]
+    S06 --> S1{"Step 1 — what branch?"}
+    S1 --> S15["Step 1.5 — ⭐ ship_preflight.py, from the LOBBY\nshape · pinned key · CLEAN · 0 0 · the lane"]
+    S15 -- "exit 2" --> PFSTOP["⛔ STOP — nothing is gated or merged\na dirty checkout means the gate would test\na tree the merge will not carry"]
+    S15 -- "epic/KEY-slug — clear\nstories still open → STOP and name them" --> S2["Step 2 — ⭐ ABSORB origin/main INTO the epic\nBEFORE gating — conflicts surface HERE, never on production"]
+    S15 -- "chore/KEY-slug whose diff\nREACHES deployable code" --> LIGHT["light gate only\nyour invocation IS the approval"]
+    S15 -- "chore/KEY-slug, nothing deployable" --> HANDOFF["⛔ STOP — Task work\n/smh-close-task-merge-tree owns its ceremony"]
     S2 --> S3["Step 3 — the gate, on the epic branch"]
     S3 --> G1["backend pytest via the canonical venv"]
     S3 --> G2["frontend production build, zero errors"]

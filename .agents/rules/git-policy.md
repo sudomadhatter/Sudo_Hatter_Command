@@ -67,7 +67,7 @@ description: "Git policy: main is the ONLY long-lived branch. Each epic gets a s
 | Your own `claude/*` story branch (commits **and** pushes) | **FREE** — no approval, loops/retries fine |
 | The epic branch (`epic/*`) — a story landing | **Daniel's sign-off** — his in-the-moment "approved", or invoking `/cicd-close-story-merge-tree` (which IS the sign-off) |
 | A `chore/*` branch (commits and pushes) | **FREE** — the merge back to `main` is what's gated |
-| `main` | **In this repo: a pull request the operator merges.** In project repos: `/cicd-push-e2e`. See below. Never on an agent's own initiative. |
+| `main` | **In this repo: a pull request the operator merges.** In project repos: `/cicd-push-e2e` — the epic, or a `chore/*` whose diff **reaches a deployable path** (`ship_preflight.py` derives which; a project `chore/*` touching nothing deployable takes the PR door instead). See below. Never on an agent's own initiative. |
 
 Approval for an epic-branch landing is **per-action and never carries forward**. One "approved"
 lands one story; the next needs its own.

@@ -13,13 +13,19 @@ The one shipping command. It merges a finished **epic branch** (`epic/<JIRA-KEY>
 Invoking this command IS the operator's per-merge sign-off for the one epic it ships; the push-approval hook
 still prompts on the final push, and that prompt is expected, not an error.
 
+⭐ **That sign-off is a DECISION, given in exactly one of three forms: the word `approved`, invoking
+`/smh-close-task-merge-tree`, or invoking `/cicd-push-e2e`** (operator ruling, 2026-08-17). The
+**decision to proceed is the sign-off**, and from that word on every step below is the ceremony's
+and you run it — including Step 4's mint, which reads that same invocation as its evidence.
+
 **Branch model (never violate):** `main` is the only long-lived branch. Epics integrate on short-lived
 `epic/<JIRA-KEY>-<slug>` branches and reach `main` only through this command. The key sits immediately
 after the prefix and must be one of the repo's keys in `.agents/jira.conf` — the armed commit-msg hook
 rejects commits carrying the wrong project's key. After the merge, the epic branch is **deleted** —
 nothing accumulates. (The old `main_debug` integration branch was retired 2026-08-07; any doc still
 describing "promotion from main_debug" predates that. Pre-Jira branches named plain `epic/<slug>` may
-still exist — ship them as-is; never invent a key.)
+still exist — **rename one to carry its real key before it ships** (Step 1.5 refuses a keyless
+branch: production would otherwise carry a merge no ticket joins to); never invent a key.)
 
 ## 🛑 MANDATORY RULES (Before You Start)
 1. **The gate is not optional**: a red gate STOPS the command. Report what failed; do not "push anyway".
@@ -34,23 +40,51 @@ override → `.agents/active-project.txt` → else **STOP and ask** — never gu
 lobby. Set `PROJECT_ROOT` and **echo exactly** `Target: Projects/<name>`. All git/test commands below run
 inside `PROJECT_ROOT`.
 
+## Step 0.6 — Pin the ticket you MEAN (before any tool has answered anything)
+```bash
+EXPECTED_KEY=<the epic's Jira key>     # the ticket you MEAN, never one read back off a branch
+```
+A key derived from the branch you are about to resolve cannot disagree with it — pinning it here
+is what makes Step 1.5's match a real comparison. No ticket → **STOP and ask.**
+
 ## Step 1 — Resolve the epic branch
 From `$ARGUMENTS` (an `epic/<JIRA-KEY>-<slug>` name) or by discovery:
 ```bash
 git fetch origin
 git branch -a --list '*epic/*'          # live epic branches, local + origin
 ```
-- **Exactly one live epic branch** → that's the candidate; confirm it with the operator by name.
+- **Exactly one live epic branch** → that's the candidate; Step 1.5 confirms it mechanically.
 - **Several** → show them with `git log --oneline origin/main..<branch> | head` each and decide together.
-- **None** → nothing to ship; if the operator is pointing at a `chore/<JIRA-KEY>-<slug>` branch, this
-  command can merge it with the **light gate** only (their direct ask IS that approval) — otherwise stop.
-  (Ruling 2026-08-07: chore branches carry their own ticket key too.)
+- **None** → nothing to ship; if the operator is pointing at a `chore/<JIRA-KEY>-<slug>` branch, **the
+  diff decides, not the ask**: Step 1.5 admits it here under the **light gate** only when it touches a
+  **deployable** path (`backend/ frontend/ firebase/ functions/ mobile/ .github/`). Nothing deployable →
+  it refuses, and that lane closes out through `/smh-close-task-merge-tree`, which owns the Task ceremony
+  this door does not have. (Ruling 2026-08-07: chore branches carry their own ticket key too.)
 
 Extract the epic's Jira key from the branch name — it drives Step 6.5. A branch with no key is a
-pre-Jira epic: note that, skip Step 6.5, and never invent a key.
+pre-Jira epic: rename it first (see the branch model above), and never invent a key.
+
+A chore lane that legitimately stays here **substitutes `chore/<JIRA-KEY>-<slug>` for
+`epic/<JIRA-KEY>-<slug>`** in Step 2's checkout, Step 4's merge message and mint `--branch`, and both
+Step 6 prune lines; Step 6.5 moves the chore ticket and the child-story sanity check does not apply.
 
 Sanity: every story on the board for this epic should be `done`. If stories are still open, STOP and
 name them — `/cicd-merge-epic-workingtrees` or the story close-outs come first.
+
+## Step 1.5 — Pre-flight (mechanical — from the LOBBY, before anything is written)
+```bash
+BRANCH=<the branch Step 1 resolved>
+python3 .agents/scripts/ship_preflight.py --repo "$PROJECT_ROOT" --branch "$BRANCH" \
+        --expect-key "$EXPECTED_KEY"                                    # PC: `python`
+```
+⛔ **Standing in the lobby, not in `PROJECT_ROOT`** — a thin project carries no
+`.agents/scripts/*.py`, so the same line run there is *No such file*, which reads as "no pre-flight
+here". **Read the header before the verdict**: it echoes the branch the script actually resolved, and
+a key that is not `$EXPECTED_KEY` means you are pointed at another lane. **Exit 2 → STOP.**
+
+It answers shape · intent · clean-and-`0 0` · the lane. The clean check is the one that earns the
+step: uncommitted work in the checkout makes Step 3 gate a tree Step 4's merge will not carry, so
+what ships was never gated — and nothing else in this file would say so.
 
 ## Step 2 — Sync the epic branch with main (BEFORE gating)
 Hotfixes can land on `main` mid-epic (incident lane). Absorb them first so the gate tests what will
@@ -87,9 +121,12 @@ git merge epic/<JIRA-KEY>-<slug> --no-ff -m "merge: epic/<JIRA-KEY>-<slug> -> ma
 # 🛑 summarize the commits + changed files for the operator before pushing
 
 # Mint the single-use approval token — AFTER the merge, IMMEDIATELY before the push (SCC-77).
-# ⛔ SCC-37: the mint requires operator-approval evidence — the operator's verbatim, this-turn
-# merge yes. Ticket-status permission is never merge permission. At a terminal the operator types
-# the key instead. No such words this turn → STOP and ask; do not paraphrase or infer.
+# ⛔ SCC-37: the mint requires operator-approval evidence, and the operator's INVOCATION THIS TURN
+# is that evidence — one of the ruling's three forms. Pass it verbatim (e.g. `/cicd-push-e2e
+# epic/AVCH-23-thin-toolkit`), or their `approved` where that was the form used. Ticket-status
+# permission is never merge permission: STOP and ask only when NO form was given this turn — a
+# paraphrase ("ship it"), or an earlier turn. Never infer it, and never quote yourself back. At a
+# terminal the operator types the key instead.
 sh .agents/scripts/git-hooks/mint-push-token.sh \
    --command /cicd-push-e2e --branch epic/<JIRA-KEY>-<slug> --key <JIRA-KEY> \
    --operator-approval '<the operator words that approved THIS merge, verbatim>'
