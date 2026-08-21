@@ -1,0 +1,9 @@
+pf: rc=0 total=79.6s  -- 186/186 passed --
+  pf.branch                            n= 87    10.6s  (13.3% of wall)
+  pf.make_repo                         n= 90     6.5s  ( 8.2% of wall)
+  pf.secondary                         n= 13     2.4s  ( 3.1% of wall)
+  pf.stamp_and_verdict                 n=  6     1.5s  ( 1.9% of wall)
+  pf.board (fresh acli launcher)       n= 92     0.0s  ( 0.0% of wall)
+  run_script: n=105 total=51.3s | FIRST call per fresh launcher n=88 avg=0.52s total=45.5s | later n=17 avg=0.34s
+
+--- stderr ---

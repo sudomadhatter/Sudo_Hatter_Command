@@ -1,0 +1,10 @@
+fresh board stub #0: first 0.343s  second 0.029s
+fresh board stub #1: first 0.029s  second 0.030s
+fresh board stub #2: first 0.031s  second 0.030s
+reused launcher, new state #0: 0.029s
+reused launcher, new state #1: 0.029s
+reused launcher, new state #2: 0.030s
+fresh sh stub #0: first 0.195s second 0.005s
+fresh sh stub #1: first 0.344s second 0.005s
+
+--- stderr ---

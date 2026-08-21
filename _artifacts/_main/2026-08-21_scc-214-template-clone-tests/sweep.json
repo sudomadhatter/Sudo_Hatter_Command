@@ -1,0 +1,96 @@
+{
+ "test": [
+  "python3",
+  ".agents/scripts/tests/test_repo_template.py"
+ ],
+ "mutants": [
+  {
+   "id": "M1 clone caches the DESTINATION, so every later scenario copies the previous one",
+   "file": ".agents/scripts/tests/_repo_template.py",
+   "block": "T1",
+   "case": "a clone does not see its predecessor's commit",
+   "original": "    for entry in sorted(tpl.iterdir()):\n        _copy_entry(entry, dest / entry.name)\n    return dest",
+   "mutated": "    for entry in sorted(tpl.iterdir()):\n        _copy_entry(entry, dest / entry.name)\n    _CACHE[key] = dest\n    return dest"
+  },
+  {
+   "id": "M2 the template's executables are never frozen",
+   "file": ".agents/scripts/tests/_repo_template.py",
+   "block": "T1",
+   "case": "an in-place write through a shared executable raises",
+   "original": "            p.chmod(0o555)",
+   "mutated": "            pass"
+  },
+  {
+   "id": "M3 link EVERY file, not only executables",
+   "file": ".agents/scripts/tests/_repo_template.py",
+   "block": "T1",
+   "case": "editing a regular file in one clone leaves the other untouched",
+   "original": "    elif HARD_LINKS and (src.stat().st_mode & 0o111):",
+   "mutated": "    elif HARD_LINKS:"
+  },
+  {
+   "id": "M4 copy executables instead of linking them (the speed property)",
+   "file": ".agents/scripts/tests/_repo_template.py",
+   "block": "T3",
+   "case": "a hook shares the template inode",
+   "original": "            os.link(src, dst)",
+   "mutated": "            shutil.copy2(src, dst)"
+  },
+  {
+   "id": "M5 the clone keeps the template's absolute origin URL",
+   "file": ".agents/scripts/tests/_pf_fixtures.py",
+   "block": "T2",
+   "case": "a push from one scenario is invisible to the next scenario's origin",
+   "original": "    if opts[\"remote\"]:\n        git(repo, \"remote\", \"set-url\", \"origin\", str(root / \"origin.git\"))",
+   "mutated": "    if False:\n        git(repo, \"remote\", \"set-url\", \"origin\", str(root / \"origin.git\"))"
+  },
+  {
+   "id": "M6 the launcher memo is gone - board() rewrites it every call",
+   "file": ".agents/scripts/tests/_pf_fixtures.py",
+   "block": "T2",
+   "case": "one launcher per process",
+   "original": "    if _LAUNCHER is None:",
+   "mutated": "    if True:"
+  },
+  {
+   "id": "M7 the template is cached BEFORE its build is known to have finished",
+   "file": ".agents/scripts/tests/_repo_template.py",
+   "block": "T4",
+   "case": "a failed build caches nothing",
+   "original": "    try:\n        build(root)",
+   "mutated": "    _CACHE[key] = root\n    try:\n        build(root)"
+  },
+  {
+   "id": "M8 the occupied-destination refusal is gone",
+   "file": ".agents/scripts/tests/_repo_template.py",
+   "block": "T1",
+   "case": "a second clone into an occupied root refuses",
+   "original": "        clash = [e.name for e in sorted(tpl.iterdir()) if (dest / e.name).exists()]",
+   "mutated": "        clash = []"
+  },
+  {
+   "id": "M9 NARROWING: the preflight key ignores `ci`",
+   "file": ".agents/scripts/tests/_pf_fixtures.py",
+   "block": "T2",
+   "case": "make_repo(ci=True) after make_repo() carries the workflow file",
+   "original": "    _repo_template.clone((\"pf.make_repo\", tuple(sorted(opts.items()))),",
+   "mutated": "    _repo_template.clone((\"pf.make_repo\", tuple(sorted((k, v) for k, v in opts.items() if k != \"ci\"))),"
+  },
+  {
+   "id": "M10 NARROWING: the git_hooks key ignores `arm`",
+   "file": ".agents/scripts/tests/test_git_hooks.py",
+   "block": "T3",
+   "case": "make_repo(arm=False) after make_repo() carries no flag",
+   "original": "        (\"gh.make_repo\", name, _key(scripts), _key(hooks), arm),",
+   "mutated": "        (\"gh.make_repo\", name, _key(scripts), _key(hooks)),"
+  },
+  {
+   "id": "M11 FETCH_HEAD stays in the template, carrying its path into every clone",
+   "file": ".agents/scripts/tests/_repo_template.py",
+   "block": "T3",
+   "case": "no clone carries a path into the template root (git_hooks)",
+   "original": "        fetch_head.unlink()",
+   "mutated": "        pass"
+  }
+ ]
+}

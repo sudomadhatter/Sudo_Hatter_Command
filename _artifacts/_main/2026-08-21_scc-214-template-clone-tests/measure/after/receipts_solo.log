@@ -1,0 +1,235 @@
+== task_preflight — verdict + receipts ==
+-- tree: scc-214-template-clone-tests [chore/SCC-214-template-clone-tests] - worktree --
+[PASS] SCC-146 PASS + code-fresh + receipt + clean -> gate: SKIP, exit 0: exit 0: gacy lane (2026-08-08 < 2026-08-15) - roster not required, not backfilled
+[INFO ] receipt: _artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 15 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: SKIP - verdict PASS @ b7408ee2, receipts valid (suite)
+VERDICT: clear to close out and merge
+[PASS] SCC-146 the SKIP names the verdict and its sha: s/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 15 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: SKIP - verdict PASS @ b7408ee2, receipts valid (suite)
+VERDICT: clear to close out and merge
+[PASS] SCC-146 artifacts-only commits since the verdict do not invalidate it: fixture must move HEAD past the verdict sha
+[PASS] SCC-146 code moved since the verdict -> commands print, never SKIP: exit 0: ipt: _artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 16 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: clear to close out and merge
+[PASS] SCC-146 a dirty tree never SKIPs (sync blocks AND the commands print): exit 2: artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 1 error(s), 0 warning(s), 14 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: BLOCKED - resolve the errors above
+[PASS] SCC-146 verdict PASS but NO receipt -> commands print (fail toward running): exit 0: ipt: _artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 16 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: clear to close out and merge
+[PASS] SCC-146 a STALE verdict cannot ride a FRESH receipt - verdict freshness is checked independently: exit 0: ipt: _artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 16 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: clear to close out and merge
+[PASS] SCC-146 receipts WITHOUT a `suite` receipt never SKIP - the one that matters must have run: exit 0: ipt: _artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 16 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: clear to close out and merge
+[PASS] SCC-146 a FAIL verdict BLOCKS the merge (exit 2), and says why: exit 2: artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 1 error(s), 0 warning(s), 15 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: BLOCKED - resolve the errors above
+[PASS] SCC-154 a FAILING receipt never SKIPs (bad-existing-receipt conjunct): exit 0: ipt: _artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 16 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: clear to close out and merge
+[PASS] SCC-154 a receipt stamped over NON-artifacts dirt never SKIPs: exit 0: ipt: _artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 16 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: clear to close out and merge
+[PASS] SCC-154 an UNREADABLE receipt never SKIPs: exit 0: ipt: _artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 16 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: clear to close out and merge
+[PASS] SCC-154 a FRESH verdict cannot ride a STALE receipt (M4's mirror): exit 0: ipt: _artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 16 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: clear to close out and merge
+[PASS] SCC-154 an UNKNOWN verdict sha warns and the full gate runs (never fail-open): exit 1: ipt: _artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 1 warning(s), 15 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: clear to close out and merge
+[PASS] SCC-154 CONCERNS is the allow-half: SKIP with valid receipts: exit 0: ain/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 15 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: SKIP - verdict CONCERNS @ 2a8ea832, receipts valid (suite)
+VERDICT: clear to close out and merge
+[PASS] SCC-154 WAIVED never SKIPs - the printed gate plan stands: exit 0: ipt: _artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 16 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: clear to close out and merge
+[PASS] SCC-154 --json carries the SKIP in its gate field: exit 0: gate=['SKIP - verdict PASS @ 94c419ad, receipts valid (suite)']
+[PASS] SCC-154 FAIL-then-PASS: the re-review's LATEST stamp governs (un-wedges): exit 0: s/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 15 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: SKIP - verdict PASS @ 7342402e, receipts valid (suite)
+VERDICT: clear to close out and merge
+[PASS] SCC-154 PASS-then-FAIL: the latest stamp blocks (exit 2): exit 2: artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 1 error(s), 0 warning(s), 15 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: BLOCKED - resolve the errors above
+[PASS] SCC-154 a FOREIGN stamped walkthrough (task.yaml elsewhere) never grants SKIP: exit 0: ipt: _artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 15 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: clear to close out and merge
+[PASS] SCC-154 a FOREIGN FAIL never blocks this lane (foreign evidence gates nothing): exit 0: ipt: _artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 15 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: clear to close out and merge
+[PASS] SCC-154 substring pooling: SCC-1 never SKIPs on SCC-11's stamped evidence: exit 1:  verdict stamp(s) exist only in 1 walkthrough(s) whose task.yaml does not declare SCC-1 - foreign evidence never gates this lane; the full gate runs
+-- 0 error(s), 1 warning(s), 13 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: clear to close out and merge
+[PASS] SCC-154 two stamped walkthroughs under one key: ambiguous, no SKIP: exit 2: t required, not backfilled
+[INFO ] gate: 2 walkthroughs under SCC-11 carry verdict stamps - which one governs is ambiguous; the full gate runs
+-- 1 error(s), 0 warning(s), 18 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: BLOCKED - resolve the errors above
+[PASS] SCC-154 ...and two live manifests for one key is itself an error (SCC-190): exit 2: facts/_main/2026-08-09_scc-11-more/walkthrough.md: legacy lane (2026-08-09 < 2026-08-15) - roster not required, not backfilled
+[INFO ] gate: 2 walkthroughs under SCC-11 carry verdict stamps - which one governs is ambiguous; the full gate runs
+-- 1 error(s), 0 warning(s), 18 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: BLOCKED - resolve the errors above
+[PASS] SCC-154 a bolded FAIL stamp is an ERROR, never a demotion to a clean run: exit 2: artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 1 error(s), 0 warning(s), 15 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: BLOCKED - resolve the errors above
+[PASS] SCC-154 a governing latest-FAIL blocks even when a second stamped walkthrough makes the SKIP ambiguous: exit 2: er not required, not backfilled
+[ERROR] gate: the review verdict is FAIL - fix on the branch and re-run the review; a FAIL lane does not merge
+-- 2 error(s), 0 warning(s), 17 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: BLOCKED - resolve the errors above
+[PASS] SCC-154 a landed lane's stamped dir does not wedge the follow-on (settled = history, not ambiguity): exit 0: s/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 18 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: SKIP - verdict PASS @ 6e235e6e, receipts valid (suite)
+VERDICT: clear to close out and merge
+[PASS] SCC-154 a 4-backtick-wrapped inner fence never leaks its stamp (the real PASS still SKIPs): exit 0: s/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 15 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: SKIP - verdict PASS @ e1d639e4, receipts valid (suite)
+VERDICT: clear to close out and merge
+[PASS] SCC-154 a tilde-wrapped inner fence never leaks its stamp (the real PASS still SKIPs): exit 0: s/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 15 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: SKIP - verdict PASS @ d7529c50, receipts valid (suite)
+VERDICT: clear to close out and merge
+[PASS] SCC-154 an UNCLOSED fence drops the tail: full gate, no block, no SKIP: exit 0: ipt: _artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 15 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: clear to close out and merge
+[PASS] SCC-154 an INDENTED quoted stamp never false-reds (the real PASS SKIPs): exit 0: s/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 15 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: SKIP - verdict PASS @ 6aead196, receipts valid (suite)
+VERDICT: clear to close out and merge
+[PASS] SCC-154 a lowercase FAIL stamp is an ERROR (detector width): exit 2: artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 1 error(s), 0 warning(s), 15 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: BLOCKED - resolve the errors above
+[PASS] SCC-154 a heading FAIL stamp is an ERROR (detector width): exit 2: artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 1 error(s), 0 warning(s), 15 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: BLOCKED - resolve the errors above
+[PASS] SCC-154 a canonical PASS cannot ride past a malformed FAIL beside it: exit 2: artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 1 error(s), 0 warning(s), 15 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: BLOCKED - resolve the errors above
+[PASS] SCC-154 PASS-then-WAIVED: WAIVED governs, the plan stands (no SKIP): exit 0: ipt: _artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 16 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: clear to close out and merge
+[PASS] SCC-154 a WARN receipt (advisory findings) is SKIP-eligible: exit 0: s/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 15 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: SKIP - verdict PASS @ a8042609, receipts valid (suite)
+VERDICT: clear to close out and merge
+[PASS] SCC-154 a FENCED stamp is evidence, not a verdict (no block, full gate runs): exit 0: ipt: _artifacts/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 15 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: python3 .agents/scripts/tests/run_all.py
+VERDICT: clear to close out and merge
+[PASS] SCC-154 SKIP spares the SUITE only - artifact-scoped checks still print: exit 0: reflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 15 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: SKIP - verdict PASS @ f222a7a3, receipts valid (suite)
+  gate: python3 .agents/scripts/workflow_lint.py --toolkit-only
+  gate: python3 .agents/scripts/check_maps.py --depth3-only --strict
+VERDICT: clear to close out and merge
+[PASS] SCC-154 a receipt whose only dirt was _artifacts/ may still SKIP (the recorder stays strict; the READER exempts): exit 0: s/_main/2026-08-08_scc-11-thing/preflight-receipt.json - the PR gate requires it; commit it with the flight event (close-out Step 2.5)
+-- 0 error(s), 0 warning(s), 15 info --
+LANE: LOCAL
+GATES: ARMED
+  gate: SKIP - verdict PASS @ 0e8d6ba0, receipts valid (suite)
+VERDICT: clear to close out and merge
+-- 39/39 passed --
+
+--- stderr ---
