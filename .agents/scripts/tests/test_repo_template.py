@@ -105,7 +105,25 @@ def leaks(clone: Path) -> list[str]:
 
 
 def main() -> int:
+    """Run every block, and make sure an ESCAPED exception is still a reported row.
+
+    ⛔ A file that dies mid-run prints no `-- n/m passed --` and no `FAILED:` line, and
+    `mutation_sweep.judge()` refuses to score that shape — so a mutant that CRASHES this file
+    is recorded as `SWEEP ERROR`, indistinguishable from a survivor. Three mutants in this
+    lane's own table landed there. Catching here turns any escape into a named row that a
+    sweep can attribute, and `finish()` always runs.
+    """
     c = Cases("repo template clones (SCC-214)")
+    try:
+        _run(c)
+    except Exception as exc:                       # noqa: BLE001 — a crash must be a ROW
+        c.check("no unexpected error escaped a block", False,
+                f"{exc!r} — a defect has to become a red ROW; a file that dies prints no "
+                f"FAILED: line, and a sweep cannot tell that from a survivor")
+    return c.finish()
+
+
+def _run(c: Cases) -> None:
 
     if c.block("T1 · the helper contract — build once, clone clean, freeze what is shared"):
         c.check("the module imports", rt is not None, RT_ERR)
@@ -217,7 +235,10 @@ def main() -> int:
                 key = ("t1", "occupied-width")
                 rt.clone(key, two_entries, t / "first")
                 dest = t / "second"
-                (dest / "origin.git").mkdir(parents=True)      # only the SECOND entry clashes
+                # ⛔ THE SECOND ENTRY BY SORT ORDER — `sorted()` puts `origin.git` before
+                # `repo`, so clashing on `origin.git` is still caught by a first-entry-only
+                # scan and proves nothing. Clashing on `repo` is what separates the two.
+                (dest / "repo").mkdir(parents=True)
                 err = None
                 try:
                     rt.clone(key, two_entries, dest)
@@ -242,6 +263,12 @@ def main() -> int:
                 # sits at base whatever the remote holds, so reading it without fetching passes
                 # even when `origin` still points at the TEMPLATE's bare — the exact leak this
                 # row exists to catch. Found by aiming a mutant at it (SCC-214 sweep, M5).
+                url = pf.git(r2, "config", "remote.origin.url").stdout.strip()
+                c.check("the clone's origin is re-pointed at ITS OWN bare",
+                        url == str(t / "s2" / "origin.git"),
+                        f"origin is {url!r} — not this scenario's bare. Asserting only that "
+                        f"the predecessor's commit is invisible passes when origin is merely "
+                        f"BROKEN, which is how a dropped set-url survived the first sweep")
                 pf.git(r2, "fetch", "-q", "origin")
                 remote = pf.git(r2, "log", "--format=%s", "origin/main").stdout
                 c.check("a push from one scenario is invisible to the next scenario's origin",
@@ -268,9 +295,15 @@ def main() -> int:
                     pf.make_repo(t / "typo", deployble=True)    # the typo IS the case
                 except Exception as exc:                        # noqa: BLE001
                     err = exc
-                c.check("a typo'd keyword still raises TypeError, as it did before the wrapper",
-                        isinstance(err, TypeError) and "deployble" in str(err),
-                        f"raised {err!r} — the **kw wrapper swallowed a bad keyword")
+                # ⛔ `make_repo()`, not `_build_repo()`. Python raises its own TypeError from
+                # `_build_repo(**opts)` and that message also carries the bad keyword — so a
+                # case checking only the keyword passes with the explicit guard REMOVED. What
+                # the guard actually buys is an error naming the function the caller typed.
+                c.check("a typo'd keyword raises TypeError naming make_repo(), not the builder",
+                        isinstance(err, TypeError) and "deployble" in str(err)
+                        and "make_repo()" in str(err),
+                        f"raised {err!r} — the caller is told about a private function they "
+                        f"never called, or the wrapper swallowed a bad keyword entirely")
                 good = pf.make_repo(t / "control", deployable=True)
                 c.check("...and the REAL keyword is still accepted (the allow half)",
                         (good / "backend/app.py").is_file(), "a valid keyword was refused")
@@ -443,7 +476,8 @@ def main() -> int:
             with TempDir() as t:
                 real_link = rt.os.link
                 rt.os.link = lambda *a, **k: (_ for _ in ()).throw(OSError("no links here"))
-                try:
+                a = b = None      # bound FIRST: a raising clone must fail this row, not
+                try:                  # NameError its way out of the block
                     a = rt.clone(("t5", "fallback"), build_repo, t / "a") / "repo"
                     b = rt.clone(("t5", "fallback"), build_repo, t / "b") / "repo"
                     ok, why = True, ""
@@ -452,11 +486,12 @@ def main() -> int:
                 finally:
                     rt.os.link = real_link
                 c.check("a clone is correct when os.link FAILS (the copy2 fallback)",
-                        ok and (a / "hook.sh").read_text(encoding="utf-8")
+                        ok and a is not None and (a / "hook.sh").read_text(encoding="utf-8")
                         == "#!/bin/sh\nexit 0\n", why or "the fallback clone is wrong")
                 c.check("...and with linking unavailable the executables are NOT shared",
-                        (a / "hook.sh").stat().st_ino != (b / "hook.sh").stat().st_ino,
-                        "an inode was shared despite os.link raising")
+                        a is not None and b is not None
+                        and (a / "hook.sh").stat().st_ino != (b / "hook.sh").stat().st_ino,
+                        why or "an inode was shared despite os.link raising")
 
             # `_copy_entry`'s symlink branch and `_seal`'s `not p.is_symlink()` guard: no
             # fixture contains a symlink, so both survived being neutered to `pass`.
@@ -520,8 +555,6 @@ def main() -> int:
                 except Exception as exc:                           # noqa: BLE001
                     later, why = False, f"raised {exc!r}"
                 c.check("a key whose build failed can still be built later", later, why)
-
-    return c.finish()
 
 
 if __name__ == "__main__":

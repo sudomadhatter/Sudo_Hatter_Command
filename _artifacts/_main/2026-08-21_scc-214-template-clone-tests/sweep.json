@@ -13,10 +13,10 @@
    "mutated": "    for entry in sorted(tpl.iterdir()):\n        _copy_entry(entry, dest / entry.name)\n    _CACHE[key] = dest\n    return dest"
   },
   {
-   "id": "M2 the template's executables are never frozen",
+   "id": "M2 the template's executables are never frozen (kills via the block-escape row: the mutant CRASHES the file)",
    "file": ".agents/scripts/tests/_repo_template.py",
    "block": "T1",
-   "case": "an in-place write through a shared executable raises",
+   "case": "no unexpected error escaped a block",
    "original": "            p.chmod(0o555)",
    "mutated": "            pass"
   },
@@ -40,15 +40,15 @@
    "id": "M5 the clone keeps the template's absolute origin URL",
    "file": ".agents/scripts/tests/_pf_fixtures.py",
    "block": "T2",
-   "case": "a push from one scenario is invisible to the next scenario's origin",
+   "case": "the clone's origin is re-pointed at ITS OWN bare",
    "original": "    if opts[\"remote\"]:\n        git(repo, \"remote\", \"set-url\", \"origin\", str(root / \"origin.git\"))",
    "mutated": "    if False:\n        git(repo, \"remote\", \"set-url\", \"origin\", str(root / \"origin.git\"))"
   },
   {
-   "id": "M6 the launcher memo is gone - board() rewrites it every call",
+   "id": "M6 the launcher memo is gone - board() rewrites it every call (kills via the block-escape row: the mutant CRASHES the file)",
    "file": ".agents/scripts/tests/_pf_fixtures.py",
    "block": "T2",
-   "case": "one launcher per process",
+   "case": "no unexpected error escaped a block",
    "original": "    if _LAUNCHER is None:",
    "mutated": "    if True:"
   },
@@ -125,10 +125,10 @@
    "mutated": "        clash = [e.name for e in sorted(tpl.iterdir())[:1] if (dest / e.name).exists()]"
   },
   {
-   "id": "M16 the os.link failure fallback raises instead of copying",
+   "id": "M16 the os.link failure fallback raises instead of copying (kills via the block-escape row: the mutant CRASHES the file)",
    "file": ".agents/scripts/tests/_repo_template.py",
    "block": "T5",
-   "case": "a clone is correct when os.link FAILS (the copy2 fallback)",
+   "case": "no unexpected error escaped a block",
    "original": "        except OSError:\n            shutil.copy2(src, dst)",
    "mutated": "        except OSError:\n            raise"
   },
@@ -160,7 +160,7 @@
    "id": "M20 the unknown-keyword TypeError is gone",
    "file": ".agents/scripts/tests/_pf_fixtures.py",
    "block": "T2",
-   "case": "a typo'd keyword still raises TypeError, as it did before the wrapper",
+   "case": "a typo'd keyword raises TypeError naming make_repo(), not the builder",
    "original": "    if unknown:",
    "mutated": "    if False:"
   },
