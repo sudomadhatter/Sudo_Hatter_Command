@@ -438,6 +438,19 @@ def main() -> int:
                     "/cicd-mobile-error-team" in out
                     and "/cicd-close-story-merge-tree" not in out, out.strip()[-300:])
 
+        # (1b) `origin/main` is a THIRD spelling of the target branch, and the remote-prefix
+        # normaliser deliberately does not touch it (its lookahead only fires before a lane
+        # prefix). So the standing-on-main guard has to name it itself — and it did, with no
+        # case saying so: dropping that one member left the whole suite green while
+        # `--branch origin/main` fell through to the keyless-epic refusal, which advises a
+        # RENAME of production's own branch.
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            code, out = ship(repo, "origin/main")
+            c.check("SP-M origin/main is refused as the TARGET, not as a keyless epic",
+                    code == 2 and "into" in out.lower() and "never invent" not in out.lower(),
+                    out.strip()[-300:])
+
         # (2b) the scan must be ANCHORED at position 0, not a substring search. `BRANCH_RE`'s
         # slug group is `.+`, which matches slashes, so a chore branch embedding a lane word
         # mid-name is both git-legal and shape-legal — and a `prefix in branch` scan would

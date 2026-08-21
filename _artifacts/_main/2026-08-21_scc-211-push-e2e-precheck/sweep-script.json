@@ -233,8 +233,8 @@
    "file": ".agents/scripts/ship_preflight.py",
    "original": "if branch in (\"main\", \"HEAD\", \"origin/main\"):",
    "mutated": "if branch in (\"main\", \"HEAD\"):",
-   "case": "SP-L remote prefix: origin/main -> origin/main",
-   "block": "SP-L · WRONG_LANE and BRANCH_RE, pinned structurally"
+   "case": "SP-M origin/main is refused as the TARGET, not as a keyless epic",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
   }
  ]
 }
