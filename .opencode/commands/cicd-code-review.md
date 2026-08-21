@@ -102,10 +102,16 @@ swept out of this command family — do not re-plant it here.
 ```bash
 env -u GITHUB_TOKEN git -C "$PROJECT_ROOT" fetch origin
 git -C "$PROJECT_ROOT" branch -a --list '*epic/*'        # normally exactly one live epic branch
-# $WORKTREE and $EPIC — bound in Step 0.6 from command output; reuse them, never re-derive from cwd
+# ⛔ RE-BIND $WORKTREE and $EPIC here, to the SAME strings Step 0.6 echoed. Each ```bash block is
+# its own shell: a variable set in Step 0.6 is GONE by the time this one runs, and `git -C ""` does
+# not error — it silently reads whatever tree the shell is standing in.
+WORKTREE=<the same path Step 0.6 echoed>
+EPIC=<the same epic/JIRA-KEY-slug Step 0.6 echoed>
+test -n "$WORKTREE" && test -n "$EPIC" || { echo 'UNBOUND — STOP'; exit 1; }
 BASE=$(git -C "$WORKTREE" merge-base HEAD "origin/$EPIC")
 git -C "$WORKTREE" diff --name-only "$BASE".."origin/$EPIC" | sort > /tmp/theirs.txt  # landed while you built
 git -C "$WORKTREE" diff --name-only "origin/$EPIC"...HEAD | sort > /tmp/mine.txt      # what you changed
+test -s /tmp/mine.txt || { echo 'EMPTY DIFF — STOP (Step 0.6 said so)'; exit 1; }     # empty file = clean sweep
 grep -Fxf /tmp/mine.txt /tmp/theirs.txt                                               # the TRUE overlap
 git -C "$WORKTREE" merge-tree --write-tree --messages HEAD "origin/$EPIC" | head -40  # conflicts, before they are real
 git -C "$PROJECT_ROOT" worktree list                                                  # sibling story lanes still live

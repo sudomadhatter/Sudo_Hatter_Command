@@ -50,11 +50,19 @@ read its `ACCEPTANCE` block, it is Step 1's first AC source there:
 
 ```bash
 EXPECTED_KEY="AVCH-00"     # the ticket you MEAN
-acli jira workitem view "$EXPECTED_KEY"
+acli jira workitem view "$EXPECTED_KEY"; echo "acli exit: $?"
 ```
 
-No ticket at all → **STOP and ask.** Never invent a key; a keyless branch cannot be committed, closed,
-or found again.
+**Read that exit code — a non-zero is TWO different things, and only one of them is a stop.** The key
+was refused (wrong project prefix, a key that does not exist) → **STOP and ask**; the board was
+unreachable (no credential store in a sandboxed shell, no network) → **carry on with the key you were
+handed**, and say in the walkthrough that the ticket was never read back. This is the same distinction
+the `jira_feed.py start` table below draws between exit `2` and exit `4`, and it has to be drawn here
+too: `acli` returns non-zero for both, and treating a dead uplink as a bad key sends you to mint a
+duplicate ticket for work that already has one.
+
+No ticket **handed to you at all** → **STOP and ask.** Never invent a key; a keyless branch cannot be
+committed, closed, or found again.
 
 Per `worktree-per-story`: reuse an existing `claude/<JIRA-KEY>-<slug>` tree for this fix, else open
 one. The base is a **remote-tracking ref after a fetch, never a bare local `main` or epic ref** — a
@@ -68,7 +76,7 @@ git -C "$PROJECT_ROOT" worktree add .claude/worktrees/<slug> -b claude/<KEY>-<sl
 # ad-hoc lane — no epic applies (a truly ad-hoc fix outside any sprint): git-policy.md's chore lane, off main:
 git -C "$PROJECT_ROOT" worktree add .claude/worktrees/<slug> -b chore/<KEY>-<slug> origin/main
 git -C "<the new tree>" branch --unset-upstream           # an origin/… start-point sets upstream to the BASE branch
-python3 .agents/scripts/link-worktree-assets.py .claude/worktrees/<slug>   # PC: `python`
+python3 .agents/scripts/link-worktree-assets.py "$PROJECT_ROOT"/.claude/worktrees/<slug>   # PC: `python`  ⛔ BIND it — the arg is read from YOUR cwd (the lobby), not from PROJECT_ROOT
 BRANCH=$(git -C "<the new tree>" rev-parse --abbrev-ref HEAD)
 echo "Lane: $BRANCH"
 ```
@@ -92,9 +100,15 @@ and the door reads the same file:
 task_key: <KEY>
 primary_repo: Projects/<name>
 branch: chore/<KEY>-<slug>
-close_command: smh-close-task-merge-tree
+close_command: TBD          # ⛔ see below — settled at Step 4, not here
 secondary_repos: []
 ```
+
+⛔ **`close_command` is the one field you cannot know yet.** The door is *derived from the diff*
+(the door table below), and at the moment you write this file there is no diff — a `chore/*` lane that turns out to touch
+`backend/` ships through `/cicd-push-e2e`, and one that does not goes through
+`/smh-close-task-merge-tree`. Writing either one now is a guess that the close-out then reads as a
+decision. Leave it `TBD` and **rewrite the line at Step 4**, once `git diff --name-only` has answered.
 
 **Move the ticket to `In Progress` — now, at the tree, not at the merge (SCC-113):**
 
@@ -323,6 +337,11 @@ blocker is a patch, or it is the EJECT tripwire (Step 1.5) firing. **Anything bi
 patch → HALT** (and see Step 1.5). Re-run the affected check after applying fixes and paste the output.
 
 ## Step 4 — Artifacts, then stop
+- **Ad-hoc lane, FIRST: settle `close_command` in `task.yaml`.** The diff exists now, so the door is
+  a read rather than a guess. Run `git -C "<the tree>" diff --name-only origin/main...HEAD`, match it
+  against the deployable-path list in Step 0.5's door table, and **rewrite the `TBD`** —
+  `cicd-push-e2e` if anything deployable is in the set, `smh-close-task-merge-tree` if not. The
+  close-out reads that field; leaving it `TBD` sends the operator to a door the preflight will refuse.
 - The **spec** the skill wrote is the working doc (it carries the Suggested Review Order).
 - **Story lane only:** the skill syncs `sprint-status.yaml` and advances the story to **`review`** on its
   way out. That is the normal dev→review flip (`story-status-flip-contract`) — `done` stays yours. On the

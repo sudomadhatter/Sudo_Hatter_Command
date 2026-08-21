@@ -255,9 +255,17 @@ before this step counts. In order:
    run of the landing code goes through `gate_receipt.py`; ⛔ do **not** run the runner bare "to check"
    and then again through the writer — one suite paid for twice, and only the second run is evidence.
    ```bash
-   python3 .agents/scripts/gate_receipt.py run --story <id> --gate suite --cwd <worktree> \
+   python3 .agents/scripts/gate_receipt.py run --story <id> --gate suite \
+          --project "$PROJECT_ROOT" --cwd <worktree> \
           -- <the canonical runner>     # EVERY flag precedes `--`; after it is the command verbatim
    ```
+   ⛔ **`--cwd` and `--project` are different questions, and only one of them is answered by
+   `--cwd`.** `--cwd` says *where the runner executes*; `--project` says *where the receipt is
+   written*. Left unbound, the project resolves from the shell's cwd — the shared checkout — so the
+   receipt lands in a tree that does not contain the sha it just recorded. "Commit it with the story"
+   is then impossible, and ③'s `gate_receipt.py list --story <id>` prints `(no receipts)` from the
+   worktree, which that step reads as a finding against a run that actually happened. (The Task lane
+   uses `--root <the task's _artifacts dir>` instead; the two are mutually exclusive.)
    backend: `backend/.venv` pytest with the project's canonical runner flags (the runner AIDEV-NOTE in
    `backend/requirements.txt` is the ONE source of truth). E2E tier touched → the **FULL-TREE** emulator
    run; `-k`/single-file emulator runs are debug-only and **never citable**. The receipt records the

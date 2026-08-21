@@ -77,10 +77,34 @@ minted here: ① `/cicd-write-story-tests` mints each story's ticket at pickup (
 is bound to the repo Step 0 resolved — a bare `git checkout -b` acts on whatever tree the shell is
 standing in, which is the lobby checkout (`worktree-per-story.md` § "cwd is not intent"):
 
+⛔ **Look for the branch by KEY, not by slug, and look in BOTH places.** This command has two human
+stops, so a re-run is the normal case — and a re-run arrives in one of three states, only one of
+which a slug-shaped check can see. On the **reuse** path 1a hands you an existing Epic key whose
+branch someone else cut with someone else's slug, so `origin/epic/<KEY>-<my-slug>` is legitimately
+absent and cutting it gives **one key two epic branches**. On a **half-finished** re-run the local
+branch exists because the cut succeeded and the push did not, and `checkout -b` dies with
+`fatal: a branch named 'epic/…' already exists`. The key is the only stable half of the name:
+
 ```bash
 git -C "$PROJECT_ROOT" fetch origin
-git -C "$PROJECT_ROOT" checkout -b epic/<JIRA-KEY>-<slug> origin/main   # re-run and origin/epic/<JIRA-KEY>-<slug> exists? `checkout epic/<JIRA-KEY>-<slug>` instead — never a second cut
+git -C "$PROJECT_ROOT" ls-remote --heads origin 'epic/<JIRA-KEY>-*'   # ⛔ by KEY — a reuse-path slug will not match
+git -C "$PROJECT_ROOT" branch --list 'epic/<JIRA-KEY>-*'              # and locally: a cut whose push failed
+```
+
+Then take exactly one arm, and say in one line which and why:
+- **a remote branch for this key exists** → `git -C "$PROJECT_ROOT" checkout <that exact branch name>`
+  then `git -C "$PROJECT_ROOT" pull --ff-only`. Adopt its slug for every later `push origin
+  HEAD:epic/…` in this run — never a second cut, never your own slug over theirs.
+- **only a local branch exists** → `git -C "$PROJECT_ROOT" checkout epic/<JIRA-KEY>-<slug>` and push
+  it; the cut already happened and the push is what is owed.
+- **neither** → cut it:
+
+```bash
+git -C "$PROJECT_ROOT" checkout -b epic/<JIRA-KEY>-<slug> origin/main
 git -C "$PROJECT_ROOT" push -u origin epic/<JIRA-KEY>-<slug>
+```
+
+```bash
 BRANCH=$(git -C "$PROJECT_ROOT" rev-parse --abbrev-ref HEAD); echo "Epic branch: $BRANCH"
 ```
 
@@ -119,19 +143,34 @@ leads the subject, `-F` never `-m` — backticks in `-m "…"` EXECUTE):
 
 ```bash
 python3 .agents/scripts/jira_feed.py outline --epic <N> --project <PROJECT> --out epic-outline.txt   # PC: `python`
+# ⛔ REPLACES the description — read the ticket back FIRST, and only overwrite what 1a's mint wrote
+acli jira workitem view <JIRA-KEY> --fields description
 acli jira workitem edit --key <JIRA-KEY> --yes --description-file epic-outline.txt
+acli jira workitem view <JIRA-KEY> --fields description    # prove the outline is what is on the ticket now
 rm epic-outline.txt
-printf '%s\n' "<JIRA-KEY> docs(epic): Epic <N> — <title>: epic + stories" > epic-commit-msg.txt
+MSG=$(mktemp)   # ⛔ OUTSIDE both trees: `git -C <dir> -F <relative>` resolves under <dir>, not your cwd — and a message file inside the repo dirties the `status` the Done block requires to be empty
+printf '%s\n' "<JIRA-KEY> docs(epic): Epic <N> — <title>: epic + stories" > "$MSG"
 git -C "$PROJECT_ROOT" add _bmad-output/planning-artifacts/epics.md
 git -C "$PROJECT_ROOT" diff --cached --stat                       # ONLY epics.md; anything else → unstage it
-git -C "$PROJECT_ROOT" commit -F epic-commit-msg.txt
+git -C "$PROJECT_ROOT" commit -F "$MSG"
 git -C "$PROJECT_ROOT" push origin HEAD:epic/<JIRA-KEY>-<slug>
+rm "$MSG"
 ```
 
 `outline --epic` renders the goal and the story list straight out of `epics.md` — nothing invented, and
 it **requires the `## Epic <N>` heading to exist**, which is why the mint at Step 1a is bare and the
-outline lands here. ⛔ Never `git add -A` / `.` / `-u` — the shared checkout may carry the operator's
-own uncommitted work.
+outline lands here.
+
+⛔ **`edit --description-file` REPLACES the description; it does not append.** On the mint path that is
+exactly right — 1a wrote a one-line placeholder that says *"Outline follows at Step 2"*, and this is
+that outline. On **1a's reuse path** it is destructive: the Epic you adopted was written by someone
+else and its description is the requirements source nothing else holds. So: read it back first (above),
+and if what comes back is anything other than the placeholder 1a writes, **STOP and ask** — paste the
+generated outline in the report and let the operator merge the two. The repo already draws this line
+for the Dev Record (`jira_feed.py index-row` reads back and exits 2 rather than overwrite); the Epic
+description deserves the same. An overwritten Jira description has no undo. ⛔ Never `git add -A` / `.` / `-u` — the shared checkout may carry the operator's
+own uncommitted work, which is also why the Done block reads `status --short` for **this command's
+files** rather than for emptiness.
 
 ## Step 3 — Generate the sprint board — then commit and push it
 Land the new epic + story keys in `_bmad-output/implementation-artifacts/sprint-status.yaml` as **`backlog`**
@@ -144,11 +183,13 @@ line. For a single-epic append, edit the YAML directly per house style — invok
 then:
 
 ```bash
-printf '%s\n' "<JIRA-KEY> chore(board): Epic <N> rows on sprint-status.yaml (backlog)" > epic-commit-msg.txt
+MSG=$(mktemp)   # outside both trees — see Step 2
+printf '%s\n' "<JIRA-KEY> chore(board): Epic <N> rows on sprint-status.yaml (backlog)" > "$MSG"
 git -C "$PROJECT_ROOT" add _bmad-output/implementation-artifacts/sprint-status.yaml
 git -C "$PROJECT_ROOT" diff --cached --stat                       # ONLY the board
-git -C "$PROJECT_ROOT" commit -F epic-commit-msg.txt
+git -C "$PROJECT_ROOT" commit -F "$MSG"
 git -C "$PROJECT_ROOT" push origin HEAD:epic/<JIRA-KEY>-<slug>
+rm "$MSG"
 ```
 
 ## Step 4 — Risk-score the backlog (test levels) — INTERACTIVE HARD STOP
@@ -174,14 +215,15 @@ This is the final step and a **hard stop** — you WORK WITH Daniel to label eve
    the P-level onto each story in `epics.md` and onto its board line. Then commit and push all three:
 
    ```bash
-   printf '%s\n' "<JIRA-KEY> docs(tea): Epic <N> risk-scored - P-levels on test design, epics and board" > epic-commit-msg.txt
+   MSG=$(mktemp)   # outside both trees — see Step 2
+   printf '%s\n' "<JIRA-KEY> docs(tea): Epic <N> risk-scored - P-levels on test design, epics and board" > "$MSG"
    git -C "$PROJECT_ROOT" add _bmad-output/test-artifacts/test-design-epic-<N>.md \
                              _bmad-output/planning-artifacts/epics.md \
                              _bmad-output/implementation-artifacts/sprint-status.yaml
    git -C "$PROJECT_ROOT" diff --cached --stat                    # ONLY those three
-   git -C "$PROJECT_ROOT" commit -F epic-commit-msg.txt
+   git -C "$PROJECT_ROOT" commit -F "$MSG"
    git -C "$PROJECT_ROOT" push origin HEAD:epic/<JIRA-KEY>-<slug>
-   rm epic-commit-msg.txt
+   rm "$MSG"
    ```
 
 ## Done
@@ -194,10 +236,32 @@ Before the report, prove the kickoff is on origin (`git-policy.md` — `0 0` + c
 finished; an unverified "pushed" is how this hides):
 
 ```bash
-git -C "$PROJECT_ROOT" status --short                                              # must be empty
+git -C "$PROJECT_ROOT" status --short                                              # must carry NO kickoff file
 git -C "$PROJECT_ROOT" rev-list --left-right --count epic/<JIRA-KEY>-<slug>...origin/epic/<JIRA-KEY>-<slug>   # must be "0 0"
 ```
 
-State both results in the report, with `Epic branch: <from rev-parse>` and the commit range landed.
+⚠ **Read `status --short` for THIS command's files, not for emptiness.** The shared checkout is the
+operator's working copy and may legitimately carry their own uncommitted work — which is why Steps 2–4
+stage explicit paths and never `git add -A`. What must not appear is anything the kickoff produced:
+`epics.md`, `sprint-status.yaml`, `test-design-epic-<N>.md`, or a stray message file. A non-empty
+`status` naming only files this command never touched is a **report line, not a stop**.
+
+⛔ **Then put the shared checkout back on `main` — the kickoff is the only thing that ever leaves it
+elsewhere.** 1b runs `checkout -b` in the shared checkout, so at this point it is standing on
+`epic/<JIRA-KEY>-<slug>` — and `/cicd-merge-epic-workingtrees` Step 7 states as contract that this
+checkout *"holds no local `epic/*` branch"*, while its Step 4 hazard analysis assumes *"that checkout
+stands on `main`"*. Every bare-`git` scar that step guards against is armed by leaving it here:
+
+```bash
+git -C "$PROJECT_ROOT" checkout main && git -C "$PROJECT_ROOT" branch -D epic/<JIRA-KEY>-<slug>
+git -C "$PROJECT_ROOT" rev-parse --abbrev-ref HEAD                                 # must read `main`
+```
+
+Deleting the local branch is safe and deliberate: `0 0` above proved every commit is on origin, and
+story worktrees branch from `origin/epic/…`, never from the local ref. If the operator's own
+uncommitted work blocks the checkout, **say so and leave it** — name the branch the checkout is
+parked on in the report, so the merge door is not surprised by it.
+
+State every result in the report, with `Epic branch: <from rev-parse>` and the commit range landed.
 
 Optional additional input: $ARGUMENTS

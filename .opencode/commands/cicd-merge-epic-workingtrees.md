@@ -69,18 +69,36 @@ Inside each worktree, `TREE` pinned from Step 1's `git worktree list` output:
 
   ```bash
   python3 .agents/scripts/closeout_preflight.py --story <id> --project <PROJECT> \
-         --expect-key <JIRA-KEY> --branch claude/<JIRA-KEY>-<slug> --worktree "$TREE"
+         --expect-key <JIRA-KEY> --branch claude/<JIRA-KEY>-<slug> --worktree "$TREE" \
+         --require-gates suite,ruff,pyrefly
   ```
+
+  ⛔ **`--require-gates` is what makes the `gates` class exist.** Without it `check_gates` returns at
+  its first line and emits **no row at all** — so a stale or missing receipt produces silence, and the
+  `gates` error named as blocking below can never fire. The solo door passes the flag; this one must
+  too, or its strictest-sounding row is structurally inert. Name the gates this project actually
+  stamps.
 
   `--expect-key` is required — the resolved branch must carry the key you named, because with N trees
   open `cwd` is not intent — and `--branch`/`--worktree` are not optional here either. **Check the
   target line it echoes against the lane you meant BEFORE reading its verdict**; a mismatch is a STOP,
   not a lane to skip. **Exit 2 = BLOCKED — that lane leaves the landing order. Exit 1 = warnings: read
   them, they do not block.**
-  ⛔ **ONE exit-2 row is EXPECTED at this step and is NOT a block: `landed`.** It asks whether the lane
-  is already an ancestor of the epic branch, and it is not — Step 4 is what lands it. If the ONLY error
-  is `landed` naming the branch you pinned, the lane proceeds. `landed` naming a **different** branch is
-  the wrong-lane case; an `intent`, `sync`, `worktrees`, `artifacts`, `status` or `gates` error blocks.
+  ⛔ **ONE exit-2 row is EXPECTED at this step and is NOT a block — and it is a ROW, not a section.**
+  The expected one reads `<branch> has N commit(s) NOT on <target> - closing out now would strand
+  them`: it asks whether the lane is already an ancestor of the landing target, and it is not, because
+  Step 4 is what lands it. If that row names the branch you pinned, the lane proceeds.
+  ⛔ **Do NOT wave through the whole `landed` section.** `check_landed` files a *second* error under
+  the same name — `N file(s) changed on BOTH sides` — which is the epic branch having moved under this
+  lane, exactly what Step 3's map exists to catch. Carve out the ancestor row **by its message**; every
+  other `landed` row blocks. A row naming a **different** branch is the wrong-lane case; an `intent`,
+  `sync`, `worktrees`, `artifacts`, `surfaces`, `file-list`, `budget`, `epic` or `gates` error blocks.
+  ⚠ `status` is not a section this script emits — do not wait for one.
+  ⚠ **The target it compares against is a LOCAL `epic/*` ref**, resolved by `integration_branch()`
+  from `git branch --list`, and it falls back to `main` when the project holds zero or several. The
+  shared checkout holds no local `epic/*` by contract (Step 7), so left alone this compares your lane
+  against `main` and reports the whole epic as unlanded. **Pass `--branch` and read the target line it
+  echoes** before you read any verdict.
 - **Close-out eligibility, per the close-out contract:** story at `ready-for-dev`/`in-progress`/
   `review` advances; `done` lanes are prune-only. Verdict **FAIL** (objectively red) → that lane is
   BLOCKED: report it, keep it out of the landing order, close out the rest. PASS / CONCERNS /
@@ -208,7 +226,14 @@ branch, and the output is indistinguishable from a correct one.
    test "$(git -C "$TREE" rev-parse --abbrev-ref HEAD)" = "claude/<JIRA-KEY>-<slug>" || { echo 'WRONG TREE — STOP'; exit 1; }
    git -C "$TREE" push origin HEAD:epic/<JIRA-KEY>-<slug>
    git -C "$TREE" log --oneline -1 origin/epic/<JIRA-KEY>-<slug>     # must be THIS lane's merge sha
+   git -C "$TREE" rev-parse HEAD                                     # ⛔ RECORD this sha — Step 7 verifies it
    ```
+
+   ⛔ **Write that sha down, per lane, now.** Step 6 deletes `claude/<JIRA-KEY>-<slug>` local **and**
+   remote, so by the time Step 7 runs the branch NAME resolves to nothing: `merge-base --is-ancestor
+   claude/<…>` returns `fatal: Not a valid object name`, the `&&` short-circuits, no `landed` prints,
+   and the report reads as though the lane never landed. A sha captured here still resolves after the
+   branch is gone, because the epic branch contains it.
 
    Rejected (remote moved again) → re-merge, re-gate, re-land — never force. ⛔ Do NOT push the
    `claude/*` branch itself; it is the rollback point until Step 6 deletes it. ⛔ A push that did not
@@ -277,7 +302,9 @@ checkout; it holds no local `epic/*` branch by contract, so compare against the 
 ```bash
 git -C <project> fetch origin
 git -C <project> log --oneline -1 origin/epic/<JIRA-KEY>-<slug>          # the LAST lane's merge sha, by name
-git -C <project> merge-base --is-ancestor <each landed lane's tip> origin/epic/<JIRA-KEY>-<slug> && echo landed
+git -C <project> merge-base --is-ancestor <each lane's 4.4 SHA> origin/epic/<JIRA-KEY>-<slug> && echo landed
+# ⛔ the SHA recorded at 4.4, never `claude/<KEY>-<slug>` — Step 6 deleted that name; a dead ref
+# short-circuits the `&&`, prints nothing, and reads exactly like a lane that failed to land
 git -C <project> status --short                                          # empty — nothing rode into the shared checkout
 git -C <project> worktree list                                           # only expected trees; a HUSK here blocks the next `worktree add`
 git -C <project> branch -a --list 'claude/*'                             # only deliberately-retained lanes (`claude/incident-*` excluded)

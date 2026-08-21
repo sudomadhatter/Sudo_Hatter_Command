@@ -174,8 +174,8 @@
         "python3",
         ".agents/scripts/tests/test_twin_parity.py"
       ],
-      "block": "F · the guard's own counter-examples",
-      "case": "F11 the fenced-set row is computed"
+      "block": "the GATE's own counter-examples",
+      "case": "F11 the fenced-set row is computed, not asserted true"
     },
     {
       "id": "M18 delete the empty-diff STOP from the review command (the gate-that-cannot-fail class this ticket exists to close)",
