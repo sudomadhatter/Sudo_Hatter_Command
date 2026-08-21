@@ -639,7 +639,7 @@ Each command below operates on a different thing. None can substitute for anothe
 
 1. **Neither story close-out touches `main`.** They land on the **epic branch** and stop. Production
    is a separate, later, explicitly-gated act.
-2. **The command you type is named for the job you asked for (SCC-210).** To close one story out you
+2. **The command you type is named for the job you asked for.** To close one story out you
    type `/cicd-close-story-merge-tree`, and it lands that story on the epic branch. The two commands
    underneath it are **steps it runs**, not doors: `/cicd-update-sprint-memory` — the save: learnings
    routed, board and story file flipped — is its Step 1, and `/cicd-prune-worktree` — the disk
@@ -1700,7 +1700,7 @@ target file the moment you have one, and expect the first run to be about your t
 **Which technique fits which shape.** *RELOCATE the guard* (never
 delete it) is for a structural guard and a behavioral test in the same file. *INVERT the decision* is
 for gates, hooks and shell checks, where there is nothing to relocate. *WIDTH* mutants — narrowings
-rather than deletions — are what certifies a boundary; SCC-154 killed 17/17 existence mutants and its
+rather than deletions — are what certifies a boundary; one lane killed 17/17 existence mutants and its
 review still found width unproven, so a second sweep of 7 narrowings had to run.
 
 **How long a sweep takes.** A mutant is a claim about
