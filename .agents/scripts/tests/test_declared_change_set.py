@@ -240,6 +240,74 @@ def main() -> int:
                 ab.returncode == 2 and "no such plan" in ab.stderr and not ab.stdout.strip(),
                 f"rc={ab.returncode} err={ab.stderr[:100]}")
 
+    # ── SCC-240 · a rejected bullet says WHICH HALF of the grammar it failed ──────────────
+    # ⛔ THE DEFECT. `incomplete` reported the bullet back verbatim and nothing else, so the
+    # author saw the line they had already looked at and had to re-derive the grammar from
+    # this module to find out what it wanted. Measured on SCC-210: three rejected bullets,
+    # all three the same silent shape (the `→` mapping wrapped onto a continuation line), a
+    # grammar read plus a repair to clear. The diff verb already carries `incomplete` through
+    # to the reviewer, so the reason travels with it at no extra wiring.
+    #
+    # ⛔ THE ROW STAYS A STRING, and that is a compatibility decision, not laziness: every
+    # consumer reads these as raw bullets - the checks above (`any("INDEX.md" in raw ...)`),
+    # `/smh-self-audit` Lens 1, and both review twins' drift step, which grades `incomplete`
+    # *important* per bullet. A dict row would break all three for no reader gain.
+    if c.block("R · every incomplete row carries a reason"):
+        FIX = ("## Declared Change Set\n\n"
+               "- EDIT `ok/clean.md` — a good bullet → A\n"
+               "- EDIT `no/arrow.md` — never mapped to a row\n"
+               "- `no/op.md` — forgot the op marker → B\n"
+               "- EDIT `empty/row.md` — mapped to nothing → \n"
+               "- both/broken.md → \n")
+        r = dcs.parse(FIX)
+        rows = {re.split(r"\s*←\s*", raw, 1)[0].strip():
+                (re.split(r"\s*←\s*", raw, 1) + [""])[1].strip()
+                for raw in r["incomplete"]}
+        reasons = {k: v for k, v in rows.items() if v}
+
+        c.check("R0 · (fixture) the four broken bullets are rejected and the clean one is "
+                "an entry",
+                len(r["entries"]) == 1 and len(r["incomplete"]) == 4,
+                f"entries={[e['path'] for e in r['entries']]} incomplete={r['incomplete']}")
+        c.check("R1 · every rejected bullet carries a reason, and the reasons DISTINGUISH "
+                "the failure modes",
+                len(reasons) == 4 and len(set(reasons.values())) == 3,
+                f"{len(reasons)}/4 reasoned, {len(set(reasons.values()))} distinct: {rows} - "
+                f"one reason for every rejection diagnoses nothing, and a bare bullet is what "
+                f"cost SCC-210 a grammar read")
+        c.check("R2 · a bullet with no `→` is told the ROW SEPARATOR is what is missing",
+                any("arrow.md" in k and "row separator" in v.lower()
+                    for k, v in rows.items()),
+                f"{rows}")
+        c.check("R3 · a bullet whose LEFT side is not `<OP> <path>` is told so, with the "
+                "vocabulary it needed",
+                any("no/op.md" in k and "NEW" in v and "EDIT" in v and "DELETE" in v
+                    for k, v in rows.items()),
+                f"the author is looking for the word that was missing: {rows}")
+        c.check("R4 · a bullet mapped to an EMPTY row is told the row text is empty",
+                any("empty/row.md" in k and "empty" in v.lower() for k, v in rows.items()),
+                f"{rows}")
+        # ⛔ PRECEDENCE, and it is a decision rather than an accident: `- both/broken.md → `
+        # fails BOTH halves. The left-side reason wins, because the arrow is already there
+        # and the op marker is the edit the author has to make first. Unpinned, two builders
+        # produce two different reasons for one bullet and neither is wrong.
+        c.check("R5 · a bullet failing BOTH halves names the LEFT side - the fix that comes "
+                "first",
+                any("both/broken.md" in k and "NEW" in v and "empty" not in v.lower()
+                    for k, v in rows.items()),
+                f"an unstated precedence is a reason that changes between runs: {rows}")
+        c.check("R6 · the RAW bullet survives inside the row - every consumer reads these "
+                "as strings",
+                all(k.startswith(("-", "*", "`")) or "/" in k for k in rows),
+                f"the reason must be appended to the bullet, never replace it: {rows}")
+        c.check("R7 · (control) the second-heading notice keeps its own wording and is not "
+                "re-reasoned",
+                any("second" in raw for raw in dcs.parse(
+                    "## Declared Change Set\n\n- EDIT `one.md` → A\n\n"
+                    "## Declared Change Set\n\n- EDIT `two.md` → B\n")["incomplete"]),
+                "the parenthetical already carries its reason; appending a second one "
+                "would read as a grammar failure it is not")
+
     return c.finish()
 
 

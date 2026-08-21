@@ -406,6 +406,145 @@ def main() -> int:
         c.check("H8 · a pre-2026-08-20 lane is EXEMPT from both (not retroactive law)",
                 ok, str(why))
 
+    # ── SCC-240 · the refusal names WHICH way the roster was lost, and the reader RUNS ────
+    # ⛔ THE COST THIS BUYS BACK, measured on SCC-210 (2026-08-20). Three rejections presented
+    # as one sentence - "Verdict PASS with NO `lenses_run:` roster" - while the roster was
+    # visibly in the file. The first was a roster inside a fence (stripped before reading,
+    # SCC-154); the second a blank line after the header (the contiguity rule, `parse` above);
+    # each cost a full preflight round trip plus a read of this parser's internals to diagnose,
+    # because there was no way to ASK this module what it saw. ~12 minutes on one lane, and it
+    # recurs on every lane that writes a roster, which is every reviewed lane.
+    #
+    # ⛔ NEITHER RULE IS RELAXED HERE, and that is the ticket's own DO NOT list: `strip_fenced`
+    # exists because a canonical verdict pasted as evidence inside a fence once became the
+    # governing verdict, and contiguity is what stops a stray bullet elsewhere in the document
+    # silently extending the roster. What changes is that the refusal EXPLAINS itself.
+    if c.block("F · the refusal says WHY, and the reader can be RUN"):
+        import json
+        import subprocess
+
+        MOD = Path(__file__).resolve().parents[1] / "walkthrough_roster.py"
+
+        fenced = ("# W\n\n## Step 0.7\n\n1. a\n2. b\n3. c\n\n## Code Review\n\n"
+                  "```\nlenses_run:\n- blind-hunter · ok\n- edge · ok\n```\n\n"
+                  + DISPO + "\n" + DRIFT + "\n\nVerdict: PASS @ abc1234\n")
+        gap = ("# W\n\n## Step 0.7\n\n1. a\n2. b\n3. c\n\n## Code Review\n\n"
+               "lenses_run:\n\n- blind-hunter · ok\n- edge · ok\n\n"
+               + DISPO + "\n" + DRIFT + "\n\nVerdict: PASS @ abc1234\n")
+        absent = wt(roster_rows=None, dispo=DISPO, drift=DRIFT)
+        good = wt(roster_rows=ALL_OK, runtime="fan-out", dispo=DISPO, drift=DRIFT)
+
+        # F1-F1c · the CLI. It is a library today - no `main()`, no `if __name__` - so the
+        # only way to learn what it saw was to write a throwaway script against its internals,
+        # which is the defect underneath the other two: nothing could be CHECKED until the
+        # close-out refused it.
+        r = subprocess.run([sys.executable, str(MOD), "--help"],
+                           capture_output=True, text=True)
+        c.check("F1 · the module runs as a command at all",
+                r.returncode == 0 and "usage" in (r.stdout + r.stderr).lower(),
+                f"rc={r.returncode} out={(r.stdout + r.stderr)[:120]!r} - a library-only "
+                f"reader can only be interrogated by writing a script against its internals")
+
+        with TempDir() as tmp:
+            page = tmp / "_artifacts/_main/2026-08-16_lane/walkthrough.md"
+            page.parent.mkdir(parents=True)
+
+            page.write_text(good, encoding="utf-8")
+            r = subprocess.run([sys.executable, str(MOD), str(page)],
+                               capture_output=True, text=True)
+            payload = {}
+            for blob in (r.stdout, r.stdout[r.stdout.find("{"):]):
+                try:
+                    payload = json.loads(blob)
+                    break
+                except Exception:
+                    continue
+            c.check("F1b · on a good walkthrough it PRINTS what it parsed and exits 0",
+                    r.returncode == 0
+                    and len(payload.get("lenses", [])) == 3
+                    and payload.get("runtime") == "fan-out"
+                    and payload.get("dispositions") and payload.get("drift")
+                    and payload.get("rederive_lines") == 3,
+                    f"rc={r.returncode} stdout={r.stdout[:200]!r} err={r.stderr[:120]!r}")
+
+            page.write_text(fenced, encoding="utf-8")
+            r = subprocess.run([sys.executable, str(MOD), str(page)],
+                               capture_output=True, text=True)
+            c.check("F1c · on a REFUSED walkthrough it exits non-zero and prints the reason",
+                    r.returncode == 1 and "fence" in (r.stdout + r.stderr).lower(),
+                    f"rc={r.returncode} out={(r.stdout + r.stderr)[:200]!r} - a self-check "
+                    f"that exits 0 on a block the gate will refuse is worse than none")
+
+            r = subprocess.run([sys.executable, str(MOD), str(tmp / "nope.md")],
+                               capture_output=True, text=True)
+            c.check("F1d · a missing file is a loud exit 2, never a verdict about content",
+                    r.returncode == 2 and not r.stdout.strip(),
+                    f"rc={r.returncode} out={r.stdout[:100]!r} err={r.stderr[:100]!r}")
+
+        # F2 · the fenced case, named as fenced.
+        ok, why = roster.judge(fenced, POST, "PASS")
+        blob = " ".join(why)
+        c.check("F2 · a roster lost to a code FENCE is named as fenced, with the reason "
+                "the fence rule exists",
+                not ok and "fence" in blob.lower() and "SCC-154" in blob,
+                f"the roster is visibly in the file and the refusal says it is absent: {why}")
+
+        # F3 · the contiguity case. SCC-210 hit this SECOND, after fixing the fence, and got
+        # the identical sentence - which is why "it says nothing useful" is the defect rather
+        # than "it says the wrong thing".
+        ok, why = roster.judge(gap, POST, "PASS")
+        blob = " ".join(why)
+        c.check("F3 · a roster ended by a BLANK LINE after its header is named as "
+                "non-contiguous",
+                not ok and "contiguous" in blob.lower(),
+                f"the second rejection must not present as the first: {why}")
+
+        # F4 · the control that keeps the other two honest. A genuinely absent roster must
+        # still read exactly as it did - if the new branches leak into this message the
+        # refusal starts blaming a fence that was never there.
+        ok, why = roster.judge(absent, POST, "PASS")
+        blob = " ".join(why)
+        c.check("F4 · a genuinely ABSENT roster keeps today's message, unchanged",
+                not ok and "NO `lenses_run:` roster" in blob
+                and "recovered-inline" in blob and "## Code Review" in blob,
+                f"the existing refusal is load-bearing and was not the defect: {why}")
+        c.check("F4b · ...and it does NOT blame a fence or contiguity that was never there",
+                "fence" not in blob.lower() and "contiguous" not in blob.lower(),
+                f"a diagnosis that fires on every case diagnoses nothing: {why}")
+
+        # F5 · the same three states, readable off `parse` - so the CLI above and `judge`
+        # are reading data rather than each re-deciding. `parse` stays total: flags, not
+        # verdicts.
+        # ⛔ `.get`, never `[...]`. A missing key raises, and a traceback AFTER the first
+        # case is what a mutation sweep reads as "exit 1 with no FAILED: line" and refuses to
+        # score - so the block that proves the flags exist could not itself be swept.
+        c.check("F5 · parse reports the fenced-header state as data",
+                roster.parse(fenced).get("roster_header_fenced") is True
+                and roster.parse(gap).get("roster_header_fenced") is False
+                and roster.parse(absent).get("roster_header_fenced") is False,
+                f"fenced={roster.parse(fenced).get('roster_header_fenced')} "
+                f"gap={roster.parse(gap).get('roster_header_fenced')} "
+                f"absent={roster.parse(absent).get('roster_header_fenced')}")
+        c.check("F5b · parse reports the empty-header state as data",
+                roster.parse(gap).get("roster_header_empty") is True
+                and roster.parse(absent).get("roster_header_empty") is False
+                and roster.parse(good).get("roster_header_empty") is False,
+                f"gap={roster.parse(gap).get('roster_header_empty')} "
+                f"absent={roster.parse(absent).get('roster_header_empty')} "
+                f"good={roster.parse(good).get('roster_header_empty')}")
+
+        # F6 · precedence. A roster that is BOTH fenced and (inside the fence) blank-separated
+        # must name the fence - it is the outer cause, and unfencing is the whole remedy.
+        both = ("# W\n\n## Step 0.7\n\n1. a\n2. b\n3. c\n\n## Code Review\n\n"
+                "```\nlenses_run:\n\n- blind-hunter · ok\n```\n\n"
+                + DISPO + "\n" + DRIFT + "\n\nVerdict: PASS @ abc1234\n")
+        ok, why = roster.judge(both, POST, "PASS")
+        c.check("F6 · fenced AND gapped names the FENCE - the outer cause, and the one "
+                "whose fix subsumes the other",
+                not ok and "fence" in " ".join(why).lower(),
+                f"sending the author to fix the blank line inside a block that is stripped "
+                f"whole is a second wasted round trip: {why}")
+
     return c.finish()
 
 
