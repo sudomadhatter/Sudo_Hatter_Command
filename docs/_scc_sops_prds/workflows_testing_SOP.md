@@ -373,7 +373,7 @@ that fire mid-build and send the work back to the full loop. You do not get to a
 
 ### The four lanes side by side
 
-| | Story lane | Fast lane | Task lane | ⭐ Lightweight lane |
+| | Story lane | Fast lane | Task lane | Lightweight lane |
 |---|---|---|---|---|
 | **For** | sprint features, bug stories | a small project fix, a docs/config change | the toolkit, rules, `/` commands, gates, docs | a guide, a reference fix, tidying source control — **nothing that can break** |
 | **Build with** | ① `/cicd-write-story-tests` → ② `/cicd-dev-story-tests` | `/cicd-quick-dev` | `/smh-quick-dev` | `/smh-quick-fix` |
@@ -384,30 +384,23 @@ that fire mid-build and send the work back to the full loop. You do not get to a
 | **Code lands on** | the epic branch → `main` via `/cicd-push-e2e` | epic branch, via close-out | `main`, directly | `main`, directly |
 | **Story file?** | yes | only on the story lane; never on the ad-hoc lane | no | no |
 
-> ⓘ **Why the lightweight lane exists (2026-08-15, SCC-162).** Your ruling, during SCC-161: *"not
-> everything is a full quick dev. sometimes I just want an agent to do something specific… this does
-> not touch anything that can break. so we don't need to over engineer it."* SCC-161 was the proof — a
-> doc-only edit that got a plan-first stop, a worktree, a self-audit and a failing assertion before you
-> said *"we are editing a doc thats all."*
->
-> The scope is yours too: *"only for the smh / commands, we need this for the command center not
-> normal cicd work."* **No `cicd-*` flow gains a light mode**, and the check refuses outright in a
-> project repo before it even reads the paths. The test is your sentence — ***things that do not
-> affect our development system*** — and it is a script rather than a paragraph because the previous
-> version of this rule was prose and agents talked themselves past it.
+> ⓘ **Why the lightweight lane exists (SCC-162).** Your ruling: *"not everything is a full quick
+> dev. sometimes I just want an agent to do something specific… this does not touch anything that can
+> break. so we don't need to over engineer it."* The proof was a doc-only edit that got a plan-first
+> stop, a worktree, a self-audit and a failing assertion before you said *"we are editing a doc thats
+> all."* The scope is yours too — *"only for the smh / commands… not normal cicd work"*: **no
+> `cicd-*` flow gains a light mode**, and the check refuses outright in a project repo before it even
+> reads the paths. The test is a script rather than a paragraph because the prose version of this
+> rule let agents talk themselves past it.
 
-> ⓘ **Why the Task lane exists at all (2026-08-10, SCC-78).** Everything in the story lane is
-> *BMAD-paired*: it needs a story file, a sprint board, an epic branch and a `review`→`done` flip,
-> and it is barred from acting on the command centre at all. But a lot of real work is exactly that —
-> move thirteen documents and rewrite thirty-two references, extend a commit gate, add a command to
-> four platform menus. That work had **no story and no ceremony to hang it on**, and until SCC-78 the
-> only thing it had was a close-out. You could *land* a Task properly; there was no defined way to
-> *build* one. On SCC-74 that showed: the audit command had to be invoked knowing it did not apply.
->
-> The prefix carries the permission and it is not cosmetic. Every `/cicd-*` command binds a rule
-> saying *"operate on exactly one project — never the command centre."* Toolkit work lives **in** the
-> command centre, so it needs the `smh-*` family, which is the one allowed to act on the repo you are
-> standing in.
+> ⓘ **Why the Task lane exists at all (SCC-78).** Everything in the story lane is *BMAD-paired*: it
+> needs a story file, a sprint board, an epic branch and a `review`→`done` flip, and it is barred
+> from acting on the command centre at all. But a lot of real work is exactly that — move thirteen
+> documents, extend a commit gate, add a command to four platform menus. That work had **no story
+> and no ceremony to hang it on**: you could *land* a Task properly; there was no defined way to
+> *build* one. And the prefix carries the permission — every `/cicd-*` command binds *"operate on
+> exactly one project, never the command centre,"* so toolkit work needs the `smh-*` family, the one
+> allowed to act on the repo you are standing in.
 
 ---
 ---
@@ -451,14 +444,13 @@ flowchart TD
 **Two documents, not ten.** Everything a story produces lives in exactly two files: the **plan** (the
 pre-build audit gets appended into it) and the **walkthrough** (the review gets appended into it).
 
-> ⓘ **Dense, not short — and no size limit (changed 2026-08-08, SCC-51).** Those two docs used to
-> carry hard byte caps (8 KB / 10 KB). They are gone. The caps were set the same day the **audit**
-> began appending into the plan, which quietly made it a two-author document — so the only way to
-> stay under the cap was for the second author, the auditor, to cut findings. A plan that grew
-> because the audit found eight real things is working correctly. **Length is never a reason to drop
-> a finding, an acceptance criterion, or evidence.** What survives is the reason the caps existed:
-> these files are re-read on every pass of the loop, so every line has to earn it — cut restatement
-> and filler, never substance, and never split into a third file.
+> ⓘ **Dense, not short — and no size limit (SCC-51).** The two docs carry no byte caps. Caps were
+> tried and removed: the audit appends into the plan, which makes it a two-author document — under a
+> cap, the only way to stay legal was for the second author, the auditor, to cut findings. A plan
+> that grew because the audit found eight real things is working correctly. **Length is never a
+> reason to drop a finding, an acceptance criterion, or evidence.** What survives is the reason caps
+> were tried: these files are re-read on every pass of the loop, so every line has to earn it — cut
+> restatement and filler, never substance, and never split into a third file.
 
 ### Before the loop: `/cicd-create-epic-sprint` (once per epic)
 
@@ -478,16 +470,14 @@ by proving it: `git status` empty and `0 0` against origin.
 **It stops once before it writes the board.** The consolidated epic + story digest is a hard stop,
 and only your word opens the next step — a correction re-presents the set and stops again.
 
-### ⭐ `/cicd-label-tasks <EPIC-KEY>` — run it once the stories are written
+### `/cicd-label-tasks <EPIC-KEY>` — run it once the stories are written
 
 Tells you which stories you can run **side by side**, and which are small enough for the quick lane.
 It reads every story file, works out what each will actually *change* (as opposed to merely
 mention), and hands you the biggest group that touches no file in common — tagged `parallel-ok` on
 the board so the group is one filter away, and `quick-dev` on the ones that do not need the full
-loop. A story it could not assess keeps whatever labels it already had.
-
-> **Renamed 2026-08-14 (SCC-155).** This was `/cicd-parallel-check`; that name is retired. It now
-> has a twin for Task work — `/smh-label-tasks`, below in this section's Task-lane half.
+loop. A story it could not assess keeps whatever labels it already had. Its twin for Task work is
+`/smh-label-tasks` ([§9](#9-the-task-lane--work-on-the-system-itself)).
 
 **It never guesses.** A story with no file written yet gets "write the story first", not an opinion.
 When two stories are ambiguous it locks them rather than approving — a wrong green puts two lanes on
@@ -496,7 +486,7 @@ life and says so:** it stamps which stories it compared, so if you write another
 old answer reads *"re-run me"* instead of quietly lying. **It only ever tells you — it never starts
 anything.**
 
-> ⓘ **Why it is its own command (2026-08-09, SCC-56).** ① used to decide this when it minted each
+> ⓘ **Why it is its own command (SCC-56).** ① used to decide this when it minted each
 > ticket, and it could never have been right — it rules story 19.1 before 19.2 has even been written,
 > so there is nothing to compare against, and it never looks again. Parallel-safety is a fact about a
 > **group at a moment**, not about one story. A boolean also cannot express *"safe after AVCH-34"*.
@@ -509,7 +499,7 @@ anything.**
 **What it leaves you:** a story file carrying `jira_key:`, a locked behavior contract, and tests that
 fail. Failing is the point — a test that has never failed proves nothing.
 
-**⛔ It does not rule `parallel-ok`** — that moved to `/cicd-label-tasks` for the reason above.
+**⛔ It does not rule `parallel-ok`** — that is `/cicd-label-tasks`' job, for the reason above.
 
 ### ② `/cicd-dev-story-tests` — plan, stop, build, widen, certify
 
@@ -522,7 +512,7 @@ the model before the audit, or hand the plan to another team blind. **The agent 
 model itself and must never offer to.** Step 0.7 refuses to plan at all without a BDD lock (with its
 contract files actually on disk) or a recorded waiver.
 
-**Two more things now stop this command.** It **reads the audit's verdict** rather than merely
+**Two more things stop this command.** It **reads the audit's verdict** rather than merely
 filing it — a `NO-GO` halts the lane until the plan is fixed — and it carries an **eject tripwire**
 (Step 3.5): work that turns out to be Task-shaped, a story whose ACs no longer describe what can be
 built, or a finding bigger than a trivial patch gets handed to the right door instead of quietly
@@ -530,7 +520,7 @@ re-scoped inside the story. Nothing is discarded when it fires.
 
 **Step 4.5 is why ③ is fast.** The certification file records the exact SHA the full suite was green
 on. If ③ finds that SHA still matches HEAD, it inherits the green instead of paying for the suite
-again. Any code or test change after it voids the pair. That one full-suite run now goes **through
+again. Any code or test change after it voids the pair. That one full-suite run goes **through
 `gate_receipt.py`**, so the totals in the certification file are copied from a receipt rather than
 typed — and the suite is paid for once, not once to check and again to record.
 
@@ -538,66 +528,57 @@ typed — and the suite is paid for once, not once to check and again to record.
 
 ▶ **Diagram:** [`/cicd-code-review` in the command atlas](#cicd-code-review) — every step, stop and refusal, checked against the live command.
 
-> ⭐ **What changed at Step 4 (SCC-240): the roster example is no longer shown in a code box, and
-> you check the paste on the spot.** Both review commands used to print the `lenses_run:` block
-> inside a fenced code block and tell you to paste it VERBATIM — and `walkthrough_roster.py`
-> strips code fences before it reads anything, so doing exactly what the instruction said produced
-> a roster the close-out could not see, then refused the lane saying there was no roster. The
-> example is now plain lines, because the bytes you are shown have to be the bytes that work.
-> Right after pasting, run `python3 .agents/scripts/walkthrough_roster.py <the walkthrough>`
-> *(PC: `python`)*: it prints the rows it actually read and answers ONE question — can the roster
-> be READ? — exiting 0, or 1 naming which of three things went wrong. **That narrowness is the
-> whole point.** At this moment `dispositions:`, `drift:`, Step 0.7 and the `Verdict:` line are
-> still unwritten, so the full close-out judgement is not answerable yet: run bare here, and add
-> `--gate` (with `--verdict <V>` before the stamp exists) once the section is complete. Measured on SCC-210,
-> before this existed: two preflight round trips, about 12 minutes, on one lane that had done
-> nothing wrong.
-
 **Why ③ hunts the diff before reading ②'s notes:** opening the builder's write-up first imports the
 builder's framing — the exact blind spot the review exists to remove. Order is always *hunt cold,
 then read the story.*
 
-> ⓘ **Two steps the story lane was missing until SCC-166, and the one word that had to change
-> when they were ported.** `/smh-code-review` had carried a **Step 0.7 blast-radius re-derivation**
-> and a **Step 1.5 acceptance audit** since the Task lane was built; `/cicd-code-review` had neither.
-> The hazard is not smaller here, it is the same hazard one branch further in: sibling **stories**
-> land on the epic branch while you build, so the blast radius `/cicd-self-audit` traced that morning
-> can describe a tree that no longer exists — every gate green, and a reference an epic-mate moved
-> out from under you. Step 0.7 re-derives it and makes you answer three questions in writing
-> (*did anything this diff references move · what is the true overlap and does `merge-tree` conflict ·
-> which sibling lanes must land first*); **"nothing moved" is a reportable result**, not a reason to
-> skip it. Since SCC-232, Step 0.7's measured radius also RESOLVES the review level — `quick`
-> (Test-Adequacy + Acceptance only, when nothing referenced moved, no gate/hook/rule/contract
-> surface is in the radius, and the re-taken diff stays ≤3 source files) or `standard` (the full
-> roster) — derived from the measurement, never a flag you or the agent chooses; a level arriving
-> without its radius evidence defaults to `standard`, and level-excluded lenses report
-> `skipped-by-mode (level: quick)`, never dead. Membership was data-gated by the 2026-08-20
-> Literal-Correctness measurement (1,082 s on the SCC-124 fixture — 8.5× the Acceptance Auditor).
-> Step 1.5 audits the diff against the story's checkable list — an item with no evidence is
-> **not satisfied**, and anything in the diff *beyond* the list is **drift**. Since SCC-231 the same
-> step reconciles a SECOND left-hand side: the plan's `## Declared Change Set` block against the
-> real diff (taken `--no-renames`, so a renamed file cannot fake an unimplemented row) — a file
-> edited but never declared is `undeclared` (*important*), a file declared but untouched is
-> `unimplemented` (*suggestion*), a declaration bullet the grammar rejected is `incomplete`
-> (*important* — the diff verb carries these through so a bad bullet stays distinguishable from
-> real drift), and a plan with no block at all is itself an *important* finding ("no declared set
-> to reconcile against"), never a silent pass. Planning dirs (`_artifacts/`, `_bmad/`,
-> `_bmad-output/`, `_my_resources/`) are carved out on both sides. Promised checks reconcile the
-> same way as files: an assertion the plan promised that shipped weaker is drift too. No drift row
-> auto-fails; each takes the same cut-it-or-name-why-it-stays disposition. **And the record is
-> machine-read (2026-08-20 law):** the walkthrough's `## Code Review` section must carry the
-> engine's `dispositions:` line (per-lens survived/dismissed/relevance-killed — the SCC-233 data)
-> and a one-line `drift:` result; `walkthrough_roster.py` blocks a lane dated 2026-08-20 or later
-> that is missing either. ⭐ **And since SCC-240 a bullet the grammar rejects says WHY** — `declared_change_set.py` appends the reason to every `incomplete` row (no `→` row separator · the left side is not `<OP> <path>` · the row text after the arrow is empty), so the `incomplete=<n>` you record is a list of repairs rather than a list of lines you have already read.
->
-> ⛔ **The steps were adapted, not copied, and the difference is one ref.** A Task lane merges into
-> `main`, so smh re-derives against `origin/main`. A story lane merges into `epic/<JIRA-KEY>-<slug>`.
-> Pasting smh's step verbatim would have re-derived against a branch the story never meets — it
-> reports "nothing moved" while the epic-mate that *did* move the file lands anyway, which is the
-> exact stale-ref defect SCC-165 had just swept out of this command family. `tests/test_command_surfaces.py`
-> now pins it both ways: cicd's step must name `origin/$EPIC` **and must not name `origin/main`**.
-> *(SCC-166. Also on that ticket: `/cicd-push-e2e` stopped addressing one named human — six lines
-> now read "the operator", so the instruction applies to whoever is actually reading it.)*
+**Paste the lens roster as plain lines, and check the paste on the spot.** `walkthrough_roster.py`
+strips code fences before it reads anything, so a `lenses_run:` block pasted inside a fenced code
+box is invisible to the close-out — the bytes you paste have to be the bytes that work. Right after
+pasting, run `python3 .agents/scripts/walkthrough_roster.py <the walkthrough>` *(PC: `python`)*: it
+prints the rows it actually read and answers ONE question — can the roster be READ? — exiting 0, or
+1 naming which of three things went wrong. **That narrowness is the whole point.** At this moment
+`dispositions:`, `drift:`, Step 0.7 and the `Verdict:` line are still unwritten, so the full
+close-out judgement is not answerable yet: run bare here, and add `--gate` (with `--verdict <V>`
+before the stamp exists) once the section is complete.
+
+**Step 0.7 — blast-radius re-derivation.** Sibling stories land on the epic branch while you build,
+so the blast radius `/cicd-self-audit` traced that morning can describe a tree that no longer
+exists — every gate green, and a reference an epic-mate moved out from under you. Step 0.7
+re-derives the radius and makes the reviewer answer three questions in writing (*did anything this
+diff references move · what is the true overlap and does `merge-tree` conflict · which sibling
+lanes must land first*); **"nothing moved" is a reportable result**, not a reason to skip it. The
+measured radius also **resolves the review level** — `quick` (Test-Adequacy + Acceptance only, when
+nothing referenced moved, no gate/hook/rule/contract surface is in the radius, and the re-taken
+diff stays ≤3 source files) or `standard` (the full roster) — derived from the measurement, never a
+flag you or the agent chooses. A level arriving without its radius evidence defaults to `standard`,
+and level-excluded lenses report `skipped-by-mode (level: quick)`, never dead.
+
+**Step 1.5 — the acceptance audit.** The diff is audited against the story's checkable list — an
+item with no evidence is **not satisfied**, and anything in the diff *beyond* the list is
+**drift**. The same step reconciles a second left-hand side: the plan's `## Declared Change Set`
+block against the real diff (taken `--no-renames`, so a renamed file cannot fake an unimplemented
+row) — a file edited but never declared is `undeclared` (*important*), a file declared but
+untouched is `unimplemented` (*suggestion*), a declaration bullet the grammar rejects is
+`incomplete` (*important* — `declared_change_set.py` appends the reason to every such row, so the
+`incomplete=<n>` you record is a list of repairs, not of lines you have already read), and a plan
+with no block at all is itself an *important* finding, never a silent pass. Planning dirs
+(`_artifacts/`, `_bmad/`, `_bmad-output/`, `_my_resources/`) are carved out on both sides. Promised
+checks reconcile the same way as files: an assertion the plan promised that shipped weaker is drift
+too. No drift row auto-fails; each takes the same cut-it-or-name-why-it-stays disposition.
+
+**The record is machine-read.** The walkthrough's `## Code Review` section must carry the engine's
+`dispositions:` line (per-lens survived/dismissed/relevance-killed) and a one-line `drift:` result;
+`walkthrough_roster.py` blocks a lane dated 2026-08-20 or later that is missing either.
+
+> ⓘ **Why 0.7 re-derives against the epic, not `main` (SCC-166).** These steps were ported from
+> `/smh-code-review`, where a Task lane merges into `main` and so re-derives against `origin/main`.
+> A story lane merges into `epic/<JIRA-KEY>-<slug>` — pasting the Task step verbatim would re-derive
+> against a branch the story never meets, reporting "nothing moved" while the epic-mate that *did*
+> move the file lands anyway. `tests/test_command_surfaces.py` pins it both ways: the cicd step must
+> name `origin/$EPIC` **and must not name `origin/main`**. The `quick` level's lens membership was
+> data-gated by measurement, not taste (the Literal-Correctness lens cost 8.5× the Acceptance
+> Auditor on the same fixture).
 
 **The four verdicts, and what each one means for you:**
 
@@ -611,29 +592,24 @@ then read the story.*
 > ⓘ **The split is deliberate: objective checks block a story, taste does not.** Taste gets recorded,
 > argued, and fixed on its merits — never used to stall a story on a reviewer's preference.
 
-> ⓘ **Where to read the findings, now that the engine runs the review (SCC-128).** The
+> ⓘ **Where to read the findings — the engine runs the review (SCC-128).** The
 > `## Code Review` table in the **walkthrough** is authoritative — it is the one with dispositions
 > (`applied` / `deferred` / `dismissed`), and it is what close-out reads. The engine may *also* leave
 > `[ ] [Review]…` checkboxes in the story file (or, on a Task, the plan) so the builder sees open work
 > where they are already looking. That is a **worklist, not a second record**: it carries no
 > dispositions, and where the two disagree the walkthrough table is right.
 
-> ⓘ **Found ≠ owed — the triage decides what is actually worth implementing (SCC-160, your
-> 2026-08-15 ruling).** The review's hunter agents are *pointed* at finding; volume is their
-> success metric. For two landings running, every verified-true-but-unfixed finding was banked
-> as a "deferred residue owed to ONE follow-on ticket" — 16 items and 9 items you were being
-> asked to commission as tickets. That practice is retired. The triage step now owns a
-> **relevance gate**: a true finding must show a realistic path to real damage, or undermine
-> evidence the house cites as proof, or be something you asked for — otherwise it dies with a
-> one-line reason in the findings table. **What survives is fixed in the lane, right there, before
-> the verdict.** The first cut of this rule still allowed "rarely — proposed to you as one *decided*
-> ticket", and SCC-160's own close-out handed you a "rule on Ticket A / Ticket B" row; you ruled
-> that the same loop under a new name ("we need the fixes made in thread not a ticket made every
-> story thats an endless loop that never finishes"). So: **a review never produces a ticket** —
-> not residue, not proposed, not decided. The only thing that may leave a lane unfixed is a
-> `defer` that names a structural blocker (another live lane owns the file · another repo · a
-> decision only you can take), and it lives in `deferred-work.md`, not on the board. You should
-> never again see a ticket-ruling row born from a review.
+> ⓘ **Found ≠ owed — the triage decides what is actually worth implementing (SCC-160).** The
+> review's hunter agents are *pointed* at finding; volume is their success metric — left alone,
+> every verified-true-but-unfixed finding became a "deferred residue" ticket you were asked to
+> commission. So the triage step owns a **relevance gate**: a true finding must show a realistic
+> path to real damage, or undermine evidence the house cites as proof, or be something you asked
+> for — otherwise it dies with a one-line reason in the findings table. **What survives is fixed in
+> the lane, right there, before the verdict.** A review **never produces a ticket** — not residue,
+> not proposed, not decided; your ruling: *"we need the fixes made in thread not a ticket made every
+> story thats an endless loop that never finishes."* The only thing that may leave a lane unfixed is
+> a `defer` that names a structural blocker (another live lane owns the file · another repo · a
+> decision only you can take), and it lives in `deferred-work.md`, not on the board.
 
 **Where the verdict lives:** a `## Code Review` section in the story's `walkthrough.md`. Stories
 closed before 2026-08-02 keep it in the old standalone `sudo-code-review-<story>.md` file instead,
@@ -720,18 +696,19 @@ deliberately do **not** call `/cicd-prune-worktree`, which owns `claude/*` story
 
 ### `/cicd-close-story-merge-tree` — close out ONE story
 
-**This is the one you type**, and since SCC-210 it is named for what you asked for. It owns the part
+**This is the one you type** — named for what you asked for. It owns the part
 only a door can do — the preflight, the commit, the **landing on the epic branch**, the Dev Record,
 the ticket, the prune — and delegates the rest: the *save* is `/cicd-update-sprint-memory`, invoked
 as its **Step 1**, and the disk cleanup is `/cicd-prune-worktree`, at **Step 5**.
 
-⭐ **The order it runs them in is the point.** The Jira transition is the one write in the whole
+**The order it runs them in is the point.** The Jira transition is the one write in the whole
 close-out that is **remote**: it rides no branch, so nothing undoes it if a later step stops. Every
 write the save makes — the board, the story frontmatter, `active-context.md` — is a **file** write
 that rides the story branch, so a landing that stops publishes none of them. That is why the ticket
-moves at Step 4, *after* the push returns 0. It used to move about a hundred lines and three STOPs
-**before** the landing, which is how a stopped landing left the code on one disk under a ticket that
-read `Done`.
+moves at Step 4, *after* the push returns 0.
+
+> ⓘ **Why the ticket moves last.** It once moved about a hundred lines and three STOPs *before* the
+> landing — so a stopped landing left the code on one disk under a ticket that read `Done`.
 
 ▶ **Diagram:** [`/cicd-close-story-merge-tree` in the command atlas](#cicd-close-story-merge-tree) — every step, stop and refusal, checked against the live command.
 ▶ **Diagram:** [`/cicd-update-sprint-memory` in the command atlas](#cicd-update-sprint-memory) — the save it runs at Step 1, which is also runnable on its own when a session needs saving and nothing is being closed.
@@ -744,11 +721,11 @@ read `Done`.
   is the failure this rule removes.
 - **"Commit owed" is not a blocker either.** The agent commits its own work in the worktree, and
   Step 3 lands it.
-- **The save asks you for learnings only when it routed none itself (SCC-133).** If
+- **The save asks you for learnings only when it routed none itself.** If
   `/cicd-update-sprint-memory` Step 3 found and filed the session's decisions and pitfalls, its
   Step 6 prints the routed list and moves on; the "anything I missed?" question is reserved for a
   session that produced nothing to route.
-- **A `claude/incident-*` branch is a STOP, not a landing (SCC-149).** That is the incident
+- **A `claude/incident-*` branch is a STOP, not a landing.** That is the incident
   pipeline's lane; it lands through `/cicd-mobile-error-team`, never through a story close-out.
 - **⛔ Do not push the `claude/*` branch to origin.** The landing pushes `HEAD:epic/...` only. A
   story branch reaches origin **only** via `/cicd-park` — that is park's whole purpose, and
@@ -779,8 +756,7 @@ nothing left owed on the set: boards updated, stories `done`, trees and branches
 pushes: it verifies a landing that already happened, then cleans the disk up behind it. Both story
 close-outs call it automatically — `/cicd-close-story-merge-tree` at its Step 5,
 `/cicd-merge-epic-workingtrees` once per lane — and you type it only when cleanup was skipped or
-failed. Its old name read like a close-out, which is exactly how it kept being mistaken for one;
-the name now says which of the two it is (SCC-210).
+failed.
 
 **Order is load-bearing and the numbering enforces it: SWEEP → PRESERVE → UNLINK → REMOVE → DELETE
 BRANCH.** Every out-of-order variant of this command has destroyed something.
@@ -808,48 +784,43 @@ story file's `Status:` — only a human close-out writes `done`.
 
 ▶ **Diagram:** [`/cicd-push-e2e` in the command atlas](#cicd-push-e2e) — every step, stop and refusal, checked against the live command.
 
-⭐ **SCC-211 · it PRE-FLIGHTS now, and it finally says what a `chore/*` branch may do here.** This
-is the only command that writes production `main`, and it was the only door that checked nothing
-mechanically before it started — both siblings call a script first. So one thing changed in how you
-use it and one thing got an answer:
+**It pre-flights before it writes or gates.** This is the only command that writes production
+`main`, so nothing runs until the mechanics are proven:
 
 - **You pin the ticket first (Step 0.6), and Step 1.5 runs `ship_preflight.py`** — shape, that pinned
   key against the branch's, a clean checkout, `0 0` with the remote, and the lane. **Exit 2 stops the
   command.** The check that earns the step is the clean one: uncommitted work in the epic checkout
-  meant Step 3 gated *that tree* while Step 4 merged *the branch*, so what reached production was
-  never what went green — and nothing in the file would have told you.
+  means the gate would run on *that tree* while the merge ships *the branch* — what reached
+  production would never be what went green, and nothing in the file would tell you.
   **You can paste the branch name exactly as Step 1 printed it.** `git branch -a` spells a remote
   branch `remotes/origin/epic/KEY-slug`, and that is the only spelling available for an epic pushed
   from your other machine; the pre-flight reads it as the lane name and says so on its own line. An
   epic that lives only on `origin` is fine here — Step 2's checkout is what creates it locally.
-  ⭐ **And it checks the tree the branch is actually IN, not just the one you are standing in.**
-  With the epic checked out in a worktree — the normal shape here — the project root stands on
-  `main` and is spotless while the lane is dirty, so the old question answered *"working tree
-  clean"* and cleared a ship whose gate would run on uncommitted work the merge never carries.
-  If it refuses, it names the tree: commit and push there, or stash, then re-run.
-- **A `chore/*` branch is admitted here only when its diff reaches deployable code.** It used to be
-  admitted on your ask alone and then had no written procedure at all: every operative line after the
-  admission named only `epic/*`, including the token's `--branch`. Now the diff decides, and a
-  docs-only chore lane is sent to `/smh-close-task-merge-tree`, which owns the Task ceremony this
-  door does not have. One that legitimately stays is told exactly which lines to substitute.
+  **And it checks the tree the branch is actually IN, not just the one you are standing in** — with
+  the epic checked out in a worktree (the normal shape here) the project root stands on `main` and
+  is spotless while the lane is dirty. If it refuses, it names the tree: commit and push there, or
+  stash, then re-run.
+- **A `chore/*` branch is admitted here only when its diff reaches deployable code.** The diff
+  decides, never the ask alone: a docs-only chore lane is sent to `/smh-close-task-merge-tree`,
+  which owns the Task ceremony this door does not have. One that legitimately stays is told exactly
+  which lines to substitute.
 
 **And the sign-off no longer contradicts itself.** The file said invoking it IS your sign-off, then
 its mint step demanded separate verbatim merge words and said *"No such words this turn → STOP and
 ask"* — so the one command the three-form ruling names by name was the one surface that asked you to
 say it twice. Your **invocation this turn** is the evidence the mint records.
 
-**Invoking it IS your per-merge sign-off for the one epic it ships.** Since SCC-77 that sign-off is
-also mechanical: the command mints a **single-use approval token** immediately before the final
+**Invoking it IS your per-merge sign-off for the one epic it ships.** That sign-off is also
+mechanical: the command mints a **single-use approval token** immediately before the final
 push, and `.githooks/pre-push` refuses any push landing on `main` without one. The token is spent on
 the way through, so one invocation ships exactly one epic. See the ⛔ block on the one-invocation
 rule later in this section for what the gate checks and how to get past it when you need to.
 
-**⛔ One refusal you may actually meet, and it is not about your sign-off (SCC-172 D3).** If you are
-standing in a worktree that was cut *before* these gate scripts existed, the push hook has nothing to
-delegate to. It used to print a warning and let the push through anyway — which meant whether a
-landing on `main` was gated at all depended on which directory you happened to be standing in. It now
-**refuses any push to `main` from such a tree**, and the banner says so in those words rather than
-asking you for a token you already have. **A push of your own lane branch from the same tree is still
+**⛔ One refusal you may actually meet, and it is not about your sign-off.** If you are
+standing in a worktree that was cut *before* these gate scripts existed, the push hook has nothing
+to delegate to, and it **refuses any push to `main` from such a tree** — the banner says so in
+those words rather than asking you for a token you already have. (A warn-and-continue here would
+mean whether a landing on `main` is gated at all depends on which directory you are standing in.) **A push of your own lane branch from the same tree is still
 allowed**, deliberately: otherwise the fix for being out of date would itself be unreachable. The fix
 is one line, and it is in the tree rather than around it:
 
@@ -868,9 +839,9 @@ all, so `/cicd-close-story-merge-tree` has nothing to operate on and simply cann
 
 ▶ **Diagram:** [`/smh-close-task-merge-tree` in the command atlas](#smh-close-task-merge-tree) — every step, stop and refusal, checked against the live command.
 
-**⭐ What you actually do now, since SCC-183 (2026-08-16): you get a link, and you click it.**
+**What you actually do: you get a link, and you click it.**
 
-The close-out runs everything it always ran — preflight, the lane's gate, the flight event — and then
+The close-out runs the preflight, the lane's gate and the flight event, and then
 **Step 3 opens a pull request and prints its URL as the last line.** One of two things follows:
 
 | What it says | What you do |
@@ -890,14 +861,14 @@ The close-out runs everything it always ran — preflight, the lane's gate, the 
 to merge by hand, that is the bug, not the procedure. And it never merges for you — there is no lane
 class that self-merges.
 
-**⛔ But if an agent invoked it on its own (SCC-37, 2026-08-14), the invocation authorises
-nothing:** the mint now refuses without your explicit, this-turn merge words passed verbatim
+**⛔ If an agent invoked it on its own, the invocation authorises
+nothing:** the mint refuses without your explicit, this-turn merge words passed verbatim
 (`--operator-approval '…'`), or you typing the ticket key at a terminal. "You can move it to done"
 is ticket permission, not merge permission — that exact misreading is what this closes. The words
 you said are recorded in the token and printed back at mint and at push, so you can always see
 what an agent claimed authorised a merge.
 
-**⭐ You act in words; the agent does every board write (SCC-156, 2026-08-14).** `approved`, "its
+**You act in words; the agent does every board write.** `approved`, "its
 done", or typing a command — that is your entire interface. Every Jira transition inside this
 ceremony, riders included, is the agent's to run. **If a flow ever leaves you a ticket edit to do by
 hand, the flow is broken** — the agent is required to stop and say so rather than hand it back. A
@@ -905,48 +876,43 @@ subtask whose work you ordered into the parent's lane is declared under `riders:
 `task.yaml`; the preflight then warns (with the exact transition queued for the ceremony) instead
 of blocking on it.
 
-**⭐ A ticket can be merged and still not `Done` (SCC-155).** Step 4 no longer writes `Done`
-unconditionally — it runs `jira_feed.py finish`, which reads the `## Your Actions` section of the
-walkthrough it just filed. Anything left as an unchecked `- [ ]` there is something only **you** can
-do, so the ticket is **HELD**: those items are posted to it as a *User tasks* comment, it gains the
-`user-tasks` label, and it stops short of `Done`. The merge still landed — this is not a failure,
-it is the board finally telling the truth about what is outstanding.
-
-Before this, an operator action recorded in a walkthrough ("install the board column", "run the
-memory audit") went `Done` along with everything else, and the record of what was owed died with
-the lane. **Your exit is the checkbox:** finish the item, tick it to `- [x]`, commit that, and
+**A ticket can be merged and still not `Done`.** Step 4 runs `jira_feed.py finish`, which reads
+the `## Your Actions` section of the walkthrough it just filed. Anything left as an unchecked
+`- [ ]` there is something only **you** can do, so the ticket is **HELD**: those items are posted
+to it as a *User tasks* comment, it gains the `user-tasks` label, and it stops short of `Done`.
+The merge still landed — this is not a failure, it is the board telling the truth about what is
+outstanding. **Your exit is the checkbox:** finish the item, tick it to `- [x]`, commit that, and
 re-run `finish`. There is deliberately no force flag — a gate with no legitimate exit gets worked
 around, and this one's exit leaves a trail.
 
-**⭐ And it now tells you when a row should never have been handed to you (SCC-163).** The rule was
-already written: `## Your Actions` is **errands only** — what you must go and *do* outside the chat
-(live-test a P0 feature, exercise an agent we built, create an account on an external service,
-promote an epic to `main`), plus a ticket transition you have reserved. (It used to name two more.
-*A main merge* went in the operator's 2026-08-17 ruling — your **decision to proceed** is the
-sign-off, and every step after it is the ceremony's. *A decision* went the same day, SCC-215: a
-decision is a question, and an agent in a live session asks you rather than parking it on your
-board. If you would not have to leave this chat to do it, it is not a row.) A row asking you to *mint / file / rule on where a ticket goes* is the retired
-defect, because an open box there holds the ticket on the review ladder forever. That was prose, and
-it was broken the same day it was written (AVCH-58 shipped three such rows, none of them operator
-calls). `finish` now prints a **⛔ BANNED ACTION ROW** banner naming the row and why.
+> ⓘ **Why the hold exists.** Without it, an operator action recorded in a walkthrough ("install the
+> board column", "run the memory audit") went `Done` along with everything else, and the record of
+> what was owed died with the lane.
 
-**⛔ It REFUSES now — armed 2026-08-16, and the count it waited on was measured.** It shipped as a
-warning on 2026-08-15 on the reasoning that a block would fire *after* the merge, trading a held
-ticket for an erroring close-out. That window is closed. Two things ended it. First, the objection
-does not survive the detail: this check runs **before the board is touched**, so a refusal writes
-nothing at all — there is no half-written state to trade against, you fix the walkthrough and re-run.
-Second, the operator's arming ruling made it conditional on a clean false-positive count, and the
-count came back clean: across all 145 tracked walkthroughs, the **11 post-cutoff** ones produce
-**zero hits**, while the same detector still fires correctly on **3 legacy** ones that really do hand
-ticket work over. Zero false positives, and not vacuous.
+**`## Your Actions` is errands only — and the reader enforces it.** The section holds what you must
+go and *do* outside the chat (live-test a P0 feature, exercise an agent we built, create an account
+on an external service, promote an epic to `main`), plus a ticket transition you have reserved.
+Three things are **not** rows: *a main merge* (your **decision to proceed** is the sign-off, and
+every step after it is the ceremony's), *a decision* (a decision is a question — an agent in a live
+session asks you rather than parking it on your board), and *mint / file / rule on where a ticket
+goes* (an open box there holds the ticket on the review ladder forever). If you would not have to
+leave this chat to do it, it is not a row. `finish` prints a **⛔ BANNED ACTION ROW** banner naming
+the offending row and why.
 
-**What that means at your desk:** a close-out with a *"mint a ticket / rule on where this goes"* row
-in `## Your Actions` now **exits 2 and writes nothing**. Fix the row — file it yourself if it is
-evidenced and in the lane, or say which of the three classes it is if it is genuinely yours — and run
-the close-out again. `--warn-actions` restores the old warn-and-continue behaviour for a lane that
-must close while the row is argued; it is a **logged** opt-out, printed in the run's output, never a
-silent one. `--strict-actions` is still accepted and is now the default. Two things you can run
-yourself:
+**⛔ And it refuses, before the board is touched:** a close-out with a banned row in
+`## Your Actions` **exits 2 and writes nothing** — there is no half-written state to trade against;
+fix the row (file it yourself if it is evidenced and in the lane, or say which class it is if it is
+genuinely yours) and run the close-out again. `--warn-actions` restores warn-and-continue for a
+lane that must close while the row is argued; it is a **logged** opt-out, printed in the run's
+output, never a silent one. `--strict-actions` is accepted and is the default.
+
+> ⓘ **Why a refusal, and why it was safe to arm.** The prose version of this rule was broken the
+> same day it was written — one landing shipped three ticket-ruling rows, none of them operator
+> calls. Arming the refusal was made conditional on a measured false-positive count, which came
+> back clean: across 145 tracked walkthroughs, the 11 post-cutoff ones produced zero hits while the
+> detector still fired on 3 legacy ones that really do hand ticket work over.
+
+One check you can run yourself:
 
 ```bash
 python3 .agents/scripts/jira_feed.py check-actions --walkthrough <path>   # PC: `python`
@@ -968,40 +934,33 @@ the section even when it is empty. `finish` walks a ladder of holding statuses �
 none of the three, so on SCC the `user-tasks` label is the at-a-glance signal. Adding a column in the
 Jira UI is the whole install, and no code changes when you do.
 
-**⭐ The merge row is the one item `finish` decides for itself (SCC-175).** Almost every walkthrough
-carries a row for the merge, and left open it used to HOLD a ticket whose only outstanding item was
-*the merge that had just landed*. The old remedy was for the close-out to tick it — **after** the
-merge, on `main`, in a commit the write gate then refused, and that refusal is what put `git reset
---hard` in front of the agent that destroyed three sessions' work. Two changes retired it: the door
-now requires the tick committed **on the lane before the PR opens** (SCC-183), and `finish` no longer
-reads the box at all. It **computes**: is the lane's tip an ancestor of **where the lane was supposed
-to land**? A row counts as the merge row only if it names a door (`/smh-close-task-merge-tree`,
-`/cicd-push-e2e`, `/cicd-close-story-merge-tree`) or carries the canonical phrase *"the merge itself"*
-— measured against 145 walkthroughs, because five open rows say
-*merge* or *land* while being real operator decisions (*"Rule the landing order"*), and a bare keyword
-would have cleared all of them. ⛔ **A tick therefore no longer closes a ticket on its own**, which is
-the point: `finish --apply` writes `Done`, and an unverified `- [x]` is the agent certifying its own
-merge. It reads the row from **`HEAD`**, never the working tree, so an uncommitted tick satisfies
-nothing — SCC-169's was left uncommitted and later wiped by a reset. If the lane has not landed, the
-row is put **back** on the owed list with the reason. Every other open box is untouched; those are
-yours.
+**The merge row is the one item `finish` decides for itself.** Almost every walkthrough carries a
+row for the merge; left open it would hold a ticket whose only outstanding item is *the merge that
+just landed*. So the door requires the tick committed **on the lane before the PR opens**, and
+`finish` does not read the box at all. It **computes**: is the lane's tip an ancestor of **where
+the lane was supposed to land**? A row counts as the merge row only if it names a door
+(`/smh-close-task-merge-tree`, `/cicd-push-e2e`, `/cicd-close-story-merge-tree`) or carries the
+canonical phrase *"the merge itself"* — a bare *merge*/*land* keyword is not enough, because real
+operator decisions say those words too (*"Rule the landing order"*). ⛔ **A tick therefore never
+closes a ticket on its own**, which is the point: `finish --apply` writes `Done`, and an unverified
+`- [x]` is the agent certifying its own merge. It reads the row from **`HEAD`**, never the working
+tree, so an uncommitted tick satisfies nothing. If the lane has not landed, the row is put **back**
+on the owed list with the reason. Every other open box is untouched; those are yours.
 
-**⭐ The landing target is resolved, not assumed (SCC-242).** It was hardcoded to `origin/main`, which
-is right for a **Task** — a Task lands on `main` — and wrong for a **story**, which lands on
-`epic/<KEY>-<slug>` and is not an ancestor of `main` until the epic itself ships. `finish` would have
-answered *"held"* forever while the story file already read `done`, so `/cicd-close-story-merge-tree`
-banned this reader outright and moved its ticket with raw `acli` — getting none of the `## Your
-Actions` refusal `finish` exists to give. The target now resolves **explicit flag → the lane's
-`task.yaml` `landing_ref:` → `origin/main`**, so every lane that says nothing behaves exactly as
-before. ⛔ **A landing ref that does not resolve HOLDS the row and names itself** — `merge-base
---is-ancestor` exits non-zero for *"not an ancestor"* and for *"no such ref"* alike, and reading a
-typo'd target as *"simply has not landed"* is a hold nobody can act on. ⛔ And the ref fix alone was
-a **no-op**: `/cicd-close-story-merge-tree` was missing from the door list above, so a story's merge
-row was not recognised as a merge row at all and the comparison was never reached. Both halves, or
-neither does anything.
+> ⓘ **Why the tick moved before the PR.** The old remedy had the close-out tick the row *after*
+> the merge, on `main`, in a commit the write gate then refused — and that refusal is what put
+> `git reset --hard` in front of the agent that destroyed three sessions' work.
 
-**⭐ …and the story door calls the closer again (SCC-242, same lane).** `/cicd-close-story-merge-tree`
-Step 4b no longer transitions with raw `acli`. It runs:
+**The landing target is resolved, not assumed.** A Task lands on `main`; a **story** lands on
+`epic/<KEY>-<slug>`, which is not an ancestor of `main` until the epic itself ships — so a
+hardcoded `origin/main` would answer *"held"* forever on a finished story. The target resolves
+**explicit flag → the lane's `task.yaml` `landing_ref:` → `origin/main`**, so a lane that says
+nothing lands where a Task lands. ⛔ **A landing ref that does not resolve HOLDS the row and names
+itself** — `merge-base --is-ancestor` exits non-zero for *"not an ancestor"* and for *"no such
+ref"* alike, and reading a typo'd target as *"simply has not landed"* is a hold nobody can act on.
+
+**The story door calls the closer too.** `/cicd-close-story-merge-tree`
+Step 4b transitions its ticket by running:
 
 ```bash
 python3 .agents/scripts/jira_feed.py finish --key <KEY> --apply \
@@ -1017,18 +976,27 @@ forever. ⛔ **What Step 2 says has changed with it:** its `check-actions` used 
 on this lane and its text said so. Fix rows there anyway — that refusal costs an edit to an
 uncommitted file, and the one at Step 4b costs a commit on a branch that has already landed.
 
-⭐ **SCC-193 · `## Your Actions` now has a CONTENT rule, and it refuses the ceremony's own steps.** On SCC-164's landing the agent wrote *"Click **Merge** on the PR"* and *"Then re-invoke `/smh-close-task-merge-tree --after-merge SCC-164`"* into that section as **your** tasks — and the machine contract dutifully held the ticket on work that was the agent's. Both are now refused, with the sentence *"this section holds what only the operator decides; the ceremony's steps are not entries."* **The rule, in one line:** your **decision to proceed** is the sign-off — the word `approved`, or invoking one of the two doors — and from that word on every step is the ceremony's and the agent runs it. What stays in the section is what only you can **decide**. Three things are deliberately NOT flagged: the door's own ledger row (`- [x] The merge itself — lands via this branch's PR`, which SCC-175 checks against ancestry), a bare door invocation (*"Land it — `/cicd-push-e2e`"*, which is one of the forms your decision takes), and any product decision that happens to mention a merge. It runs at `jira_feed.py check-actions` (the close-out's Step 3, **before** the PR opens, where fixing it costs nothing) and again at `finish`, before anything is written to the board. `--warn-actions` is the one logged opt-out for both row families.
+**The section also refuses the ceremony's own steps.** *"Click **Merge** on the PR"* or *"re-invoke
+the door with `--after-merge`"* written into `## Your Actions` as **your** tasks are refused, with
+the sentence *"this section holds what only the operator decides; the ceremony's steps are not
+entries."* **The rule, in one line:** your **decision to proceed** is the sign-off — the word
+`approved`, or invoking one of the two doors — and from that word on every step is the ceremony's
+and the agent runs it. What stays in the section is what only you can **decide**. Three things are
+deliberately NOT flagged: the door's own ledger row (`- [x] The merge itself — lands via this
+branch's PR`, checked against ancestry as above), a bare door invocation (*"Land it —
+`/cicd-push-e2e`"*, which is one of the forms your decision takes), and any product decision that
+happens to mention a merge. It runs at `jira_feed.py check-actions` (the close-out's Step 3,
+**before** the PR opens, where fixing it costs nothing) and again at `finish`, before anything is
+written to the board. `--warn-actions` is the one logged opt-out for both row families.
 
-**⭐ …and what the reader shows you is now only what you wrote (SCC-206).** A `- [ ]` item takes the
+**And what the reader shows you is only what you wrote.** A `- [ ]` item takes the
 indented lines under it — that ride-along is a machine contract, and it is how an instruction keeps
-the half that says *why*. What it never did was **stop**: a `- [x]` row appends nothing itself, but
-its own wrapped lines matched no pattern, so they folded onto the last **open** row above. The board
-was then posted a row that read half one instruction and half another, and every word of it was real.
-The window now closes on any list item and reopens on the next open one, and **HTML comments are
-invisible** — `<!-- … -->`, single or multi-line, indented under an item, was previously read out to
-you as work you owed.
+the half that says *why*. The window closes on any list item and reopens on the next open one, so a
+`- [x]` row's wrapped lines can never fold onto the open row above it and reach the board as half
+one instruction, half another. **HTML comments are invisible** — `<!-- … -->`, single or
+multi-line, indented under an item, is never read out to you as work you owed.
 
-**⭐ The close-out now leaves a flight event behind (SCC-133, under SCC-38).** Between the gate and
+**The close-out leaves a flight event behind.** Between the gate and
 the merge, Step 2.5 runs `flight_recorder.py record`: one small file per lane under
 `_artifacts/_main/workflow-events/<YYYY-MM>/`, keyed on the walkthrough's verdict sha, carrying the
 changed files, the receipts, the walkthrough's decisions / pitfalls / follow-ons and three mechanical
@@ -1036,7 +1004,7 @@ fingerprints (a rules file rewritten · a receipt that **failed** — `warn` is 
 count · a script, command or rule that really exists, named in a pitfall). There is deliberately no
 "verdict" fingerprint: CONCERNS merges and FAIL never reaches this step, so it could only propose
 noise. The multi-lane door (`/smh-merge-multiple-workingtrees`, its 4b½) records the same event per
-lane. Nothing reads across lanes today except this. When the same fingerprint shows up in
+lane. Nothing reads across lanes except this. When the same fingerprint shows up in
 **three different lanes**, your next session start prints one `FLIGHT-RECORDER PROPOSAL` line for it —
 phrased "this prose rule was rewritten in 3 lanes — commission the script that enforces it" — with
 the tickets and shas as evidence. **What you should never see:** a ticket minted from it, a
@@ -1044,7 +1012,7 @@ walkthrough action row citing it, or a rule rewritten because of it. It is evide
 the review's relevance triage); the operator's word decides. `flight_recorder.py candidates` shows
 the whole ladder; a `record` failure never blocks a merge.
 
-**⛔ The close-out never re-runs the LLM review (SCC-147).** One review per lane: the walkthrough's
+**⛔ The close-out never re-runs the LLM review.** One review per lane: the walkthrough's
 `Verdict: … @ <sha>` stands, and Step 2's gate is the *mechanical* suite only. The review engine is
 recall-first with no noise filter by design, so re-running it — on anything, including its own
 fixes — always surfaces new findings, and "review until zero findings" is a loop that never ends.
@@ -1052,8 +1020,8 @@ New findings at close-out anyway? Triage by severity: `suggestion`/`nitpick` →
 (a `defer` still names its blocker); only a `critical`/`important` in `decision_needed` or `patch`
 stops it — and it gets fixed right there, never carried out of the lane.
 
-**⭐ A cross-repo task can be blocked by the *other* repo's state (SCC-94).** If your `task.yaml`
-declares `secondary_repos`, the preflight no longer treats it as a note — it goes and looks. It
+**A cross-repo task can be blocked by the *other* repo's state.** If your `task.yaml`
+declares `secondary_repos`, the preflight does not treat it as a note — it goes and looks. It
 refuses to clear unless that repo is reachable, its declared ticket key is one that repo's own
 `jira.conf` answers to, it is clean and `0/0` with its origin, and its memory store passes the same
 integrity contract the lobby's does. It also **warns when the other half has not landed yet**,
@@ -1087,10 +1055,10 @@ secondary_repos:
 > that deploys changed.* That is precisely the claim an agent is worst at auditing about its own work,
 > so the script derives it from the repo instead of asking.
 >
-> **And why `--expect-key` is required (SCC-64).** On 2026-08-09 the preflight resolved a sibling's
-> `chore/*` branch mid-close-out and returned a clean verdict. Merging on it would have put another
-> lane's in-flight work on `main` under the wrong ticket. The script cannot catch that by itself — it
-> has no way to know which ticket you meant. So now you have to tell it, and a mismatch is a hard
+> **And why `--expect-key` is required (SCC-64).** On one close-out the preflight resolved a
+> sibling's `chore/*` branch and returned a clean verdict — merging on it would have put another
+> lane's in-flight work on `main` under the wrong ticket. The script cannot catch that by itself; it
+> has no way to know which ticket you meant. So you have to tell it, and a mismatch is a hard
 > exit 2 instead of a prose warning.
 
 ### The gate under all of it — how `main` is protected
@@ -1100,27 +1068,26 @@ things that keep a merge to it honest: **the road it travels** (below); one typi
 merge must land where you think; a single-use token carrying your words; and a server-side check for
 merges made on GitHub itself. Read it once; the machinery holds the line afterwards.*
 
-#### ⭐ The road to `main` is a pull request, and your decision moves it (SCC-183 · wording SCC-193)
+#### The road to `main` is a pull request, and your decision moves it
 
 **What you do:** the close-out hands you a **link**. You click *Merge pull request*, and the agent
 finishes the rest.
 
-**⭐ What that click IS, in the operator's own words (ruling, 2026-08-17):** *"its my decisiton to
+**What that click IS, in the operator's own words:** *"its my decisiton to
 move forward with the push … the way I approve you to push or close is by saying approved or one of
 the 2 / commands."* So **your decision to proceed is the sign-off** — given as the word `approved`,
 or by invoking `/smh-close-task-merge-tree`, or by invoking `/cicd-push-e2e`. The click is **how
 that decision reaches GitHub**, not a chore you owe: from your word on, every step belongs to the
-ceremony and the agent runs it. Nothing about the mechanism changed — the button is still yours, and
-an agent still cannot press it (*"i wording only"*, same day). What changed is that no surface now
-describes the merge as work assigned to you, which is what made an agent write *"Click Merge"* and
-*"re-invoke the door"* into your task list as though you owed them.
+ceremony and the agent runs it. The button is still yours, and an agent cannot press it
+(*"i wording only"*). No surface describes the merge as work assigned to you — that framing is what
+once made an agent write *"Click Merge"* into your task list as though you owed it.
 
-**Why this changed.** On 2026-08-16 a docs-only Task (SCC-184 — 226 lines, no deletions, whole test
-suite green) could not reach `main` for an entire session. Every gate passed. What failed was the
-*landing*: about fifteen hand-typed `git`/`gh` commands run in the shared checkout, each judged
-separately by the agent's permission layer, several denied, and the state left stranded halfway
-through. No gate could fix that, because no gate was the problem — the **shape** was. So the local
-ceremony was **deleted**, not supplemented.
+> ⓘ **Why the road is a PR.** A docs-only Task (226 lines, no deletions, whole test suite green)
+> once could not reach `main` for an entire session. Every gate passed. What failed was the
+> *landing*: about fifteen hand-typed `git`/`gh` commands run in the shared checkout, each judged
+> separately by the agent's permission layer, several denied, and the state left stranded halfway
+> through. No gate was the problem — the **shape** was. So the local ceremony was **deleted**, not
+> supplemented.
 
 | Where | How it lands | Your sign-off |
 |---|---|---|
@@ -1134,7 +1101,7 @@ agent's own rules, and it only worked on one of the four platforms. Nothing land
 **Why the PR needs no token.** The token exists to prove *you said yes* before something on **your
 machine** pushes to `main`. A merge performed on GitHub happens on GitHub's servers and never
 touches your machine — so there is nothing there for a local hook to guard. It is *structurally
-absent*, not bypassed. (SCC-118's own finding, which is why `main-write-gate` is server-side.)
+absent*, not bypassed — which is why `main-write-gate` is server-side.
 
 **And a click is harder to fake than the old contract.** "Typing the command IS the sign-off" is a
 document, and a document sitting in an agent's context still looks valid six tasks later — which is
@@ -1151,15 +1118,15 @@ authorise the next one, no matter how soon it follows. Same for `/cicd-close-sto
 typing is one story's landing, and the sign-off is spent by it. Every other merge to `main` needs you
 to say so directly.
 
-#### ⛔ And the merge has to land where you think it does (SCC-97)
+#### ⛔ And the merge has to land where you think it does
 
 Two different things can go wrong with a merge, and the section above only covers the first:
 **right branch, wrong authority** — and **right authority, wrong branch.**
 
 Every guard in this system protects the branch you merge **from**: `--expect-key`, the preflight's
 header line, and the "cwd is not intent" rule, which is written about which *tree you review*.
-**Nothing checks the branch you merge onto.** On 2026-08-11 a `cd` in one step and a bare
-`git merge` in a later one put a production merge commit on a **sibling lane's branch**, and
+**Nothing checks the branch you merge onto.** A `cd` in one step and a bare
+`git merge` in a later one once put a production merge commit on a **sibling lane's branch**, and
 reported success — the output, the file list and the message all read correctly, because the message
 says `-> main` only because someone typed that.
 
@@ -1170,9 +1137,9 @@ before merging**, so it stops you rather than informs you:
 test "$(git -C "$REPO" rev-parse --abbrev-ref HEAD)" = "main" || { echo "NOT ON main — STOP"; exit 1; }
 ```
 
-⭐ **Since SCC-144 a machine holds this line too, so you are no longer the only thing standing on
+**A machine holds this line too, so you are not the only thing standing on
 it.** The `commit-msg` hook refuses a merge whose target is not a legal destination for its source,
-names the SCC-97 signature when it sees it, and prints `git merge --abort`. Two things worth knowing
+names the wrong-target signature when it sees it, and prints `git merge --abort`. Two things worth knowing
 before you rely on it: a **fast-forward** merge creates no commit, so no commit-time hook can see it
 at all — that gap is covered separately at push time — and `git merge --no-verify` still goes
 through, on purpose. The discipline above is what you type; the gate is what catches the day you
@@ -1196,7 +1163,7 @@ don't.
 > paragraphs that name the command in order to forbid it — this one and `git-policy.md`'s — keep
 > passing, and are pinned as fixtures. *(SCC-180.)*
 
-> ⓘ **This got broken, and it is worth knowing how (2026-08-09, SCC-71).** In one long session the
+> ⓘ **This got broken once, and it is worth knowing how (SCC-71).** In one long session the
 > command was invoked **once** and then rode **six** merges (SCC-64 → SCC-69). Not defiance — the
 > command's whole body stays sitting in the agent's context after you type it, and on task six it
 > still looks exactly as valid as on task one. **A permission that arrives as a *document* doesn't
@@ -1208,7 +1175,7 @@ don't.
 > did not authorise for *that* task, that is the bug, and the merge SHA's timestamp against your
 > message is how you prove it.
 >
-> ⭐ **Now fixed mechanically (2026-08-10, SCC-77).** `.githooks/pre-push` refuses any push landing
+> **The hold is mechanical (SCC-77).** `.githooks/pre-push` refuses any push landing
 > on `main` without a **single-use approval token**, and spends it on the way through. The two door
 > commands — `/cicd-push-e2e` and `/smh-close-task-merge-tree` — mint it at their sign-off step,
 > immediately before the push. One invocation, one merge, enforced by the machine rather than by
@@ -1221,19 +1188,18 @@ don't.
 > | armed | `MAIN-PUSH-ENFORCE` deleted or `DISABLE` present → passes through, deliberately |
 > | destination | only `refs/heads/main`, whole-ref — so `epic/main-fix` never trips it |
 > | exists | no token at all |
-> | **⭐ approved** | **the token carries no operator-approval record (SCC-37)** — the mint refuses to write one without your verbatim words (non-interactive) or the key typed at a terminal, and the push prints the words back |
+> | **approved** | **the token carries no operator-approval record** — the mint refuses to write one without your verbatim words (non-interactive) or the key typed at a terminal, and the push prints the words back |
 > | fresh | minted more than **30 minutes** ago |
 > | same commit | the token names one sha and the push carries another |
-> | **⭐ one merge** | **the push does not advance `main` by exactly one merge sitting on the remote tip** |
-> | **⭐ named branch** | **the merge's second parent is not the branch the token authorised** |
+> | **one merge** | **the push does not advance `main` by exactly one merge sitting on the remote tip** |
+> | **named branch** | **the merge's second parent is not the branch the token authorised** |
 > | delete / rewind | anything that would delete `main`, or force-push it backwards |
 >
-> ⭐ **The "one merge" check is the one that catches the six merges above — and the first cut of
-> this gate did not have it.** Worth knowing, because the reasoning error is easy to repeat: a token
-> authorises a **push**, and what needs authorising is a **merge**. Merge six branches into `main`
-> locally, mint once, push once — the sha matches the whole way, and six merges land on one
-> approval. That was reproduced during SCC-77's own review, against a real remote: one token, six
-> merges, and the approval line cheerfully naming one of them.
+> **The "one merge" check is the one that catches the six merges above.** The reasoning error is
+> easy to repeat: a token authorises a **push**, and what needs authorising is a **merge**. Merge
+> six branches into `main` locally, mint once, push once — the sha matches the whole way, and six
+> merges land on one approval. (Reproduced against a real remote during the gate's own review: one
+> token, six merges, and the approval line cheerfully naming one of them.)
 >
 > What actually holds the line is the shape of the history: `main` must advance by **exactly one
 > merge commit sitting directly on top of what the remote already has**. Batching breaks it — the
@@ -1256,13 +1222,13 @@ don't.
 > one. It converts a *silent* violation into a *deliberate, traceable* one, and it closes the drift
 > failure described above.
 >
-> ⭐ **The second half — merges made on GitHub itself (2026-08-12, SCC-118).** Everything above runs
+> **The second half — merges made on GitHub itself (SCC-118).** Everything above runs
 > on a computer, at `git push`. A merge you perform in the **browser** — the green *Merge pull
 > request* button — or that a web/mobile agent performs through the API happens on GitHub's servers
-> and never touches your machine. The hook is not skipped there; it does not exist. That is how
-> PR #2 landed on `main` on 2026-08-12: authorised, nothing bad in it, and no gate able to look.
+> and never touches your machine. The hook is not skipped there; it does not exist — which a PR
+> merged from the browser proved: authorised, nothing bad in it, and no gate able to look.
 >
-> `main` now also requires a green GitHub check called **`main-write-gate`**, which runs the same
+> `main` therefore also requires a green GitHub check called **`main-write-gate`**, which runs the same
 > enforcement suite plus a check that the merge came from an `epic/*` or `chore/*` branch with a
 > real ticket key. **It is not a copy of the token gate.** The token proves *you said yes, once*;
 > the check proves *the change is fit to land*. The token half genuinely cannot be moved to a
@@ -1270,7 +1236,7 @@ don't.
 > agent merges **as you**, on your own GitHub account. So the two halves guard different things and
 > neither replaces the other.
 >
-> **What changes for you when you ship:** `/smh-close-task-merge-tree` now waits a couple of minutes
+> **When you ship:** `/smh-close-task-merge-tree` waits a couple of minutes
 > for that check before it pushes `main`. It handles this itself — it sends the merge commit to a
 > throwaway `gate/main-<sha>` branch, waits, then mints the token and pushes. Nothing new to type.
 > If the check is red, **stop**; do not disable the ruleset to get past it.
@@ -1325,12 +1291,12 @@ flowchart TD
     INCID["claude/incident-*\nthe incident pipeline's hotfix lane"] -.->|"/cicd-mobile-error-team\nyour merge decision, real CI"| MAIN
 ```
 
-### ⭐ Every lane gets its own workspace — not just story lanes
+### Every lane gets its own workspace — not just story lanes
 
-**Changed 2026-08-09 (SCC-62). If a lane is going to commit anything, it gets its own worktree. No
+**If a lane is going to commit anything, it gets its own worktree. No
 classification, nothing to get wrong.**
 
-Two things deliberately did **not** change:
+Two things this deliberately does **not** change:
 
 - **Where a lane branches FROM is untouched** — a story still branches from its epic branch (never
   `main`), Task work still branches from `main`.
@@ -1345,7 +1311,7 @@ Two things deliberately did **not** change:
 > and ended with *"unsure? you're not"*, which sent every ambiguous case into the shared checkout —
 > the one place it must not go.
 >
-> On 2026-08-09 it went wrong twice in one afternoon: a close-out inspected a *different* lane's
+> It went wrong twice in one afternoon: a close-out inspected a *different* lane's
 > branch and reported it clear to merge (SCC-61), and the next Task opened onto a checkout still
 > holding 11 of that lane's half-finished files (SCC-58).
 
@@ -1434,7 +1400,7 @@ flowchart LR
     STOP -.->|"your sign-off, SEVERAL lanes"| MULTI["/smh-merge-multiple-workingtrees"]
 ```
 
-### One lane for a whole Task — the consolidated mode (SCC-164 · SCC-170)
+### One lane for a whole Task — the consolidated mode
 
 **The problem it fixes:** every lane found real defects, every defect became its own Task, and the
 queue grew faster than it drained — *"we are not developing 3 task for every 1 we try to fix."*
@@ -1443,14 +1409,14 @@ queue grew faster than it drained — *"we are not developing 3 task for every 1
 look for a home before you mint · when able, one worktree for the whole Task · verify the batch in one
 block · artifact-first · two stops only · verify the outcome of a board write, never its exit code.
 
-**⭐ Rule 1 now has FOUR rungs, and the third is a ROLLING TICKET (SCC-191).** Your ruling,
-2026-08-16: *"we should always have a New findings Ticket Open to put things like this in … once it
+**Rule 1 has FOUR rungs, and the third is a ROLLING TICKET.** Your ruling:
+*"we should always have a New findings Ticket Open to put things like this in … once it
 get big enough we run it. or split it up into new tickets. close them all and create a new one thats
 the cycle."* So: **own ticket → open thematic parent → the OPEN ROLLING TICKET → mint.** The rolling
 ticket is one always-open Task called **`Bugs and Updates - <YYYY-MM>`**, labelled
 **`bugs-and-updates`** so the look-before-mint search finds whichever one is open, and discovered
 work files under it as a **Subtask** — the same shape as any lettered part. Find it **by label, never
-by remembering a key** — the key changes every cycle. Minting a brand-new Task is now rung *four*,
+by remembering a key** — the key changes every cycle. Minting a brand-new Task is rung *four*,
 reserved for work that is a lane in its own right on day one.
 
 **What you will notice:** far fewer one-off tickets at close-out. When the rolling ticket is big
@@ -1459,9 +1425,7 @@ into real Tasks; then every subtask and the parent close. What still does not go
 lane's ticket already covers, work with a real thematic parent, and review findings that can be fixed
 in thread (which are fixed in thread).
 
-**⭐ The next cycle now opens BY ITSELF, and you will see TWO labels (SCC-198).** Your ruling,
-2026-08-17: *"once you move it to In Progress we switch the tag … it now clones, it moves the
-original, and switches the tag to the bugs-and-updates."* That is built. The moment a rolling ticket
+**The next cycle opens BY ITSELF, and you will see TWO labels.** The moment a rolling ticket
 moves to **In Progress**, `jira_feed.py start` clones its successor and hands a marker on:
 
 | Label | What it means | How many tickets have it |
@@ -1473,8 +1437,7 @@ moves to **In Progress**, `jira_feed.py start` clones its successor and hands a 
 one — that is the cycle actually in flight. ⛔ **But search for BOTH markers, always.** Between a
 cycle closing and the next one starting, the only open rolling ticket is the un-started successor,
 which carries `running-bug-list` and nothing else — and a one-label search reports "nothing fits"
-in exactly the window rung 3 exists to cover, which sends the agent off to mint a duplicate. Caught
-by this lane's own review, after the split created the window.
+in exactly the window rung 3 exists to cover, which sends the agent off to mint a duplicate.
 
 ⛔ **And ask for the label column, because from the first roll onward the two rows look IDENTICAL.**
 The clone copies the summary verbatim — that is deliberate, a rolling ticket's summary is the same
@@ -1483,24 +1446,21 @@ by design and the description carries the operator's own cycle prompt — so bot
 cycle from the un-started successor, which is the one thing you came to the query to find out.
 `--fields` is a whitelist: what you do not name, you do not get.
 
-**⭐ The clone now tells you the three edits it did NOT make (SCC-242).** The copy is verbatim on
+**The clone tells you the three edits it did NOT make.** The copy is verbatim on
 purpose and stays that way — the description carries the operator's own cycle prompt, and building a
 `--description` is how backticks execute. But a word-for-word copy is wrong in three specific places
-the instant it exists, and the run used to announce the clone and stop: **the summary still names the
+the instant it exists: **the summary still names the
 old cycle**, **the `INDEX` still lists the predecessor's subtasks**, and **`PREDECESSOR` still names
-the cycle before it**. `start` now prints all three, names the ticket that owes them, and says to
-write the description with `--description-file`. This is not hypothetical — SCC-244 was corrected by
-hand on 2026-08-20 because nothing said those edits were owed.
+the cycle before it**. `start` prints all three, names the ticket that owes them, and says to
+write the description with `--description-file`.
 
 It works this way because a marker that *moves* can only fire once — after the hand-off there is no
 trigger left, so nothing can mint a duplicate, and no board lookup has to be right for that to hold.
 Cloning happens at **start** rather than close-out because running the rolling ticket is exactly the
 window in which nothing else is open to catch new findings. A failed clone is not a lost cycle: the
-marker stays put and the next start tries again — **and that retry is real only because the roll is
-bound to the ticket's STATE rather than to the moment it changed.** Bound to the edge, as it first
-shipped, there was no second attempt at all: the ticket is already In Progress, so every later start
-returned before it ever looked at the marker, and the promise printed in the message, in the rule
-and on this page was simply false. Three review lenses found it independently.
+marker stays put and the next start tries again — a retry that is real only because the roll is
+bound to the ticket's **state** rather than to the moment it changed, so a later start still looks
+at the marker even though the ticket is already In Progress.
 
 **The count is the health check, and it breaks in both directions.** **Two** open tickets carrying
 `running-bug-list` means a hand-off failed after its clone landed — loud, since the query returns
@@ -1512,8 +1472,8 @@ simply **absent**, and absent looks exactly like "no rolling ticket is open". Th
 fresh one at rung 4, that ticket carries no trigger, and **nothing ever clones again**. One write
 fixes it: put `running-bug-list` back on exactly one open, un-started rolling ticket.
 
-**Porting a file between the centre and a project — the plan answers six questions first (SCC-176).**
-Every port so far (AVCH-54, AVCH-59) cost an afternoon and found the same class of defect: the
+**Porting a file between the centre and a project — the plan answers six questions first.**
+Every port keeps finding the same class of defect: the
 centre's copy is subtly wrong the moment it runs in a **submodule**, on **Windows**, in a
 **worktree**, in a **thin** repo. `.agents/rules/port-checklist.md` turns that list into six checks,
 each with the command that answers it — a git-given path used exactly as git gave it · `printf` not
@@ -1554,7 +1514,7 @@ at column 0 is not recognised at all: it fails **silently**, not closed — noth
 unknown-value error fires, and the lane is gated exactly as if you had declared nothing.
 
 **Adding a discovered part to the parent's index.** `acli edit --description` **replaces** the field,
-and one such write silently deleted a part row from SCC-164 on 2026-08-15. Use:
+and one such write once silently deleted a part row. Use:
 
 ```bash
 python3 .agents/scripts/jira_feed.py index-row --key <PARENT> --line "  Part M  SCC-000  one line" --apply
@@ -1562,12 +1522,12 @@ python3 .agents/scripts/jira_feed.py index-row --key <PARENT> --line "  Part M  
 
 It appends the row, reads the description back, and exits 2 naming any prior line that went missing.
 
-**⭐ …and it now files the row INSIDE the `INDEX` section (SCC-242).** It used to append at the end
-of the *field*, which landed in `INDEX` only because `INDEX` happens to be the last section — put one
-after it and every row filed under the wrong heading, silently, exit 0. The read-back guard could not
-see it: it watches for a line going **missing**, and none does. Measured on SCC-201 itself on
-2026-08-20, where the section read `INDEX / (empty - this ticket is fresh)` followed by two rows.
-The first append now **replaces that placeholder** and indents to the section. ⛔ **A description with
+**And it files the row INSIDE the `INDEX` section.** Appending at the end
+of the *field* lands in `INDEX` only when `INDEX` happens to be the last section — put one
+after it and every row files under the wrong heading, silently, exit 0, and the read-back guard
+cannot see it (it watches for a line going **missing**, and none does).
+The first append **replaces the `(empty - this ticket is fresh)` placeholder** and indents to the
+section. ⛔ **A description with
 no `INDEX` section is left exactly as before** — most tickets are not rolling tickets, and a command
 whose job is to file one row must not reshape a description it does not understand.
 
@@ -1575,12 +1535,12 @@ whose job is to file one row must not reshape a description it does not understa
 
 **Not everything on this side of the fence is a full Task.** Sometimes you want one specific thing
 done — write me a guide, fix that reference, tidy this branch mess — and it touches nothing that can
-break. Before SCC-162 an agent had two settings for that: the whole ceremony above, or improvisation.
+break. Without this lane an agent has two settings for that: the whole ceremony above, or improvisation.
 
 ▶ **Diagram:** [`/smh-quick-fix` in the command atlas](#smh-quick-fix) — every step, refusal and eject.
 
 **What you type.** Either the command, or just say it — *"skip the plan, just do it"* names the same
-lane, and the rule now points both at one definition instead of leaving the phrase dead-ending.
+lane, and the rule points both at one definition.
 
 **What it does:** mints the ticket, cuts the `chore/<KEY>-<slug>` worktree, does the work, runs the
 gates, pushes, writes a short walkthrough, hands back. **What it skips:** the plan, your `approved`,
@@ -1588,7 +1548,7 @@ the self-audit, the RED-first assertion, and the review verdict.
 
 **What it will not do is ask your permission to start.** *"Shall I mint a ticket? Shall I open a
 lane? Shall I write a plan?"* — that questioning is the over-engineering the ruling was against, and
-it is now banned in the command body itself.
+it is banned in the command body itself.
 
 **The one thing it checks first is not a judgement.**
 
@@ -1612,12 +1572,11 @@ commit gate exempts the test suite (correctly — editing a test changes nothing
 "needs a doc update" and "can break something" are different questions, and reusing one for the
 other would have let this lane rewrite the enforcement suite.
 
-**⭐ Every command that runs this script now lists every answer it can give (SCC-243).** Three
-commands call it — `/smh-quick-fix`, `/smh-non-crit-pr-push`, `/cicd-non-crit-pr-push` — and two of
-their tables were short: `LIGHT-VCS` was missing from both non-crit lanes, and `NOT-COMMAND-CENTRE`
-from the `cicd-` one. A verdict a command does not list is a verdict it has no instruction for, so
+**Every command that runs this script lists every answer it can give.** Three
+commands call it — `/smh-quick-fix`, `/smh-non-crit-pr-push`, `/cicd-non-crit-pr-push`. A verdict a
+command does not list is a verdict it has no instruction for, so
 the agent answers by judgement — the exact thing putting the question in a script prevents.
-`tests/test_lane_qualify.py` now **discovers the callers by invocation** and fails if any table is
+`tests/test_lane_qualify.py` **discovers the callers by invocation** and fails if any table is
 missing a verdict, so a sixth verdict cannot be added without every caller learning it.
 
 ⛔ **And `NOT-COMMAND-CENTRE` means opposite things in the two non-crit twins, on purpose.** In
@@ -1628,10 +1587,10 @@ repo's own auditable marker (`<!-- twin-divergence: … -->`), which `test_twin_
 prints. ⛔ **The centre-only scope is a settled operator ruling** (`.agents/scripts/INDEX.md:57`) —
 the qualifier is not given a project arm.
 
-⛔ **What that costs, measured 2026-08-20:** `NOT-COMMAND-CENTRE` is returned *before any path is
+⛔ **What the centre-only scope costs:** `NOT-COMMAND-CENTRE` is returned *before any path is
 read*, so inside a child project `--paths backend/api.py` and `--paths docs/notes.md` produce the
-**identical** answer. The `TASK` and `HANDOFF` rows in `/cicd-non-crit-pr-push` could never fire in
-the repo that command runs in — its Step 0.5 qualified nothing. It now carries its own deployable-
+**identical** answer — the `TASK` and `HANDOFF` rows can never fire in
+the repo `/cicd-non-crit-pr-push` runs in. That lane therefore carries its own deployable-
 path check immediately after, importing `PRODUCT_DIRS` and `CI_DIR` from `task_preflight` rather
 than re-typing them, and the test fails if the body stops naming any member.
 
@@ -1657,7 +1616,7 @@ notes, quick reference updates. Operates under standing ticket `SCC-186` and sta
 - **Verifies `main-write-gate`** passes on GitHub.
 - **Restores checkout to `main`** (`git checkout main`) and pulls latest `main` once merged on GitHub (`git pull origin main`).
 
-### ⭐ `/smh-plan-task <TASK-KEY>` — plan the whole Task, subtasks and all
+### `/smh-plan-task <TASK-KEY>` — plan the whole Task, subtasks and all
 
 **The Task lane's version of "write all the stories first."** The parallel question can only be
 answered once every lane's plan exists — that is why the story side writes all the stories before
@@ -1675,7 +1634,7 @@ is the approval. That batch is deliberately narrow: it covers exactly the plans 
 and if any plan is edited afterwards that lane stops for its own approval again. A lane that came
 through a batch skips straight to writing its first failing check.
 
-### ⭐ `/smh-label-tasks <TASK-KEY>` — which subtasks run side by side
+### `/smh-label-tasks <TASK-KEY>` — which subtasks run side by side
 
 The Task-lane twin of `/cicd-label-tasks`, and the same engine underneath. The difference is the
 unit: it assesses the **Subtasks under one Task** rather than the stories under an epic. A subtask
@@ -1700,25 +1659,21 @@ the difference between "I moved the files" and "I can prove nothing broke."
 ### Mutation — how you prove the check you just wrote can actually fail
 
 **A test you have never seen fail is a claim, not a check.** Step 2 gets you one honest RED; mutation
-is what keeps it honest afterwards, and until SCC-145 the practice was **not named anywhere an
-operator or an agent would look** — not in this page, and not in any command. It was one sub-bullet
-under a rule headlined about certification SHAs, and the two Task-lane commands that *write* the
-assertions never loaded that rule at all, so the doctrine arrived at review, one step after the
-mutants had already been designed.
+is what keeps it honest afterwards.
 
-**The procedure, now a Step 3 obligation rather than advice.** Declare the table *before* you mutate
+**The procedure — a Step 3 obligation, not advice.** Declare the table *before* you mutate
 — each mutant, its file, and **the named case it must kill** — and run them as **one sweep**. A sweep
 improvised one mutant at a time cannot check itself; a declared one can.
 
-⭐ **And since SCC-179 you do not run it by hand — `.agents/scripts/mutation_sweep.py` does.** Every
-rule in the table below used to be self-reported, and twice it was reported wrong: SCC-144's
-timeout-killed sweep left a mutated gate on disk, and `8681d83` **committed and pushed a live mutant
+**You do not run it by hand — `.agents/scripts/mutation_sweep.py` does.** A self-reported sweep
+was twice reported wrong: a
+timeout-killed sweep left a mutated gate on disk, and one lane **committed and pushed a live mutant
 into the gate** because the scoped `--case` re-runs never touched the mutated line. The script takes
 the declared table as JSON and makes each rule mechanical — it refuses to start when a table file is
 already dirty, restores in a `finally` and on SIGTERM, proves the end state twice (the pre-sweep bytes
 *and* `git diff --quiet` against the pinned pre-sweep sha, never a moving HEAD), demands that a kill be
 attributable to the **declared** case, and runs the full file unfiltered at the end. Running the sweep
-by hand is now the defect, not the procedure.
+by hand is the defect, not the procedure.
 
 ```bash
 python3 .agents/scripts/mutation_sweep.py --table _artifacts/_main/<folder>/sweep.json
@@ -1739,39 +1694,39 @@ target file the moment you have one, and expect the first run to be about your t
 | A **surviving** mutant is a finding | the coverage hole you came to find |
 | A mutant that **removes nothing** is **DEFECTIVE** — a SKIP that **counts as a survivor** | SCC-144's `M3` commented out one `echo` of a two-line message; the second line still printed the asserted word, so the case passed **correctly**. Read as a coverage gap it buys a test for a hole that does not exist |
 | Mutants are **CODE-DERIVED**, never drawn from your own cases | case-derived mutants are circular — they prove only that the suite agrees with itself. Measured in SCC-144: its 14 case-derived mutants were all killed, and a later set drawn from the code left **24 of 25 surviving** — every survivor a hole the first sweep had reported as covered |
-| **RESTORE** in a `finally`/trap; never start dirty; re-check `git status` after | a `timeout`-killed sweep left a **mutated gate on disk, uncommitted** — and a mutated gate is committable. **Enforced by `mutation_sweep.py` since SCC-179**, which also names the file it refuses to start on |
+| **RESTORE** in a `finally`/trap; never start dirty; re-check `git status` after | a `timeout`-killed sweep left a **mutated gate on disk, uncommitted** — and a mutated gate is committable. **Enforced by `mutation_sweep.py`**, which also names the file it refuses to start on |
 | A kill must be attributable to the **DECLARED** case | a non-zero exit only says *something* died. `--case "E"` once matched 40 blocks and the sweep recorded "killed by case E" for a case that never ran alone (SCC-156 #1), so a kill needs the declared label on the `FAILED:` line |
 | The **FULL file runs unfiltered** before the next commit | `8681d83`: every scoped case green, the mutant still in the tree, and the bill was a red receipt, a diagnosis, a fix commit and another full suite run |
 
-**Which technique fits which shape** — the part that used to be missing. *RELOCATE the guard* (never
+**Which technique fits which shape.** *RELOCATE the guard* (never
 delete it) is for a structural guard and a behavioral test in the same file. *INVERT the decision* is
 for gates, hooks and shell checks, where there is nothing to relocate. *WIDTH* mutants — narrowings
 rather than deletions — are what certifies a boundary; SCC-154 killed 17/17 existence mutants and its
 review still found width unproven, so a second sweep of 7 narrowings had to run.
 
-**How long a sweep takes, and why it no longer takes 21 minutes (SCC-156).** A mutant is a claim about
+**How long a sweep takes.** A mutant is a claim about
 ONE case, so the sweep runs that case alone — `python3 <suite> --case "<block label>"` — instead of the
 whole file. Read the three outcomes as distinct: **non-zero = killed**; **0 = re-run against the whole
 file before calling it a survivor** (a mis-aimed label looks identical to a real hole); **3 = the filter
 matched nothing, which is a sweep error, never a kill.** The mutant loop stays strictly sequential —
-mutants edit shared files on disk. ⭐ **And the closing run is still the whole affected FILES, bare and
+mutants edit shared files on disk. **And the closing run is still the whole affected FILES, bare and
 green**, after every restore is verified byte-identical: targeted kills prove each mutant died, only
 that closing green proves the tree you hand back is the one you started with. Full doctrine:
 `.agents/rules/tests-must-gate-for-real.md` **§ Mutation Testing**.
 
-> ⓘ **Three sweep truths that landed with SCC-160 (fixed in-thread from the SCC-156 review).**
-> A short `--case` label is a substring and can match many blocks — the transcript now prints
+> ⓘ **Three sweep truths (SCC-160).**
+> A short `--case` label is a substring and can match many blocks — the transcript prints
 > `-- matched blocks: A | B | C --` whenever more than one ran, so a kill record reads the NAMES,
-> never "killed by case P" when 22 blocks ran. **Ctrl-C now stops the suite** — queued files are
-> cancelled and the children already running are terminated (before, an 88 s run could not be
-> interrupted). And **an empty tests dir is exit 2, never `0/0 files passed`** — a checkout that
+> never "killed by case P" when 22 blocks ran. **Ctrl-C stops the suite** — queued files are
+> cancelled and the children already running are terminated. And **an empty tests dir is exit 2,
+> never `0/0 files passed`** — a checkout that
 > lost its files cannot mint a PASS receipt.
 
 ### Subtasks — the ticket you were handed is the top-level one
 
 **The rule, in one line: work your agent breaks out of a ticket goes UNDERNEATH it, not beside it.**
 Flatten the pieces into more `Task`s under the grouping epic and you destroy the one fact that
-mattered — *these are all one job*. Full law: `.agents/rules/jira.md` §Subtasks (SCC-119).
+mattered — *these are all one job*. Full law: `.agents/rules/jira.md` §Subtasks.
 
 **What earns a subtask ticket: its own branch AND its own worktree.** Nothing smaller. A ticket with
 no branch is a row nothing will ever write to — no commits, no Dev Record, no transitions — and that
@@ -1790,7 +1745,7 @@ tree?**
 - **The agent proposes and stops.** It prints the set with the branch each would get, and writes
   nothing to the board until you say go. Placement stays yours.
 - **Each subtask is its own lane** — own worktree, own branch, own review, own
-  `/smh-close-task-merge-tree`. They land as they finish. **Unless you order otherwise (SCC-156):**
+  `/smh-close-task-merge-tree`. They land as they finish. **Unless you order otherwise:**
   say "do them in one working tree, one push" and the subtask becomes a **rider** — the parent
   lane's `task.yaml` declares it (`riders: [SCC-00]`), it ships no branch of its own, and the
   parent's close ceremony transitions it to `Done` first, parent last. You never touch the board
@@ -1810,22 +1765,13 @@ tree?**
 
 ▶ **Diagram:** [`/smh-code-review` in the command atlas](#smh-code-review) — every step, stop and refusal, checked against the live command.
 
-> ⭐ **What changed at Step 4 (SCC-240): the roster example is no longer shown in a code box, and
-> you check the paste on the spot.** Both review commands used to print the `lenses_run:` block
-> inside a fenced code block and tell you to paste it VERBATIM — and `walkthrough_roster.py`
-> strips code fences before it reads anything, so doing exactly what the instruction said produced
-> a roster the close-out could not see, then refused the lane saying there was no roster. The
-> example is now plain lines, because the bytes you are shown have to be the bytes that work.
-> Right after pasting, run `python3 .agents/scripts/walkthrough_roster.py <the walkthrough>`
-> *(PC: `python`)*: it prints the rows it actually read and answers ONE question — can the roster
-> be READ? — exiting 0, or 1 naming which of three things went wrong. **That narrowness is the
-> whole point.** At this moment `dispositions:`, `drift:`, Step 0.7 and the `Verdict:` line are
-> still unwritten, so the full close-out judgement is not answerable yet: run bare here, and add
-> `--gate` (with `--verdict <V>` before the stamp exists) once the section is complete. Measured on SCC-210,
-> before this existed: two preflight round trips, about 12 minutes, on one lane that had done
-> nothing wrong.
+**Paste the lens roster as plain lines, and check the paste on the spot** — the same contract as
+the story lane's ③ ([§6](#6-the-story-lane)): `walkthrough_roster.py` strips code fences before it
+reads anything, so the roster goes in unfenced, and right after pasting you run
+`python3 .agents/scripts/walkthrough_roster.py <the walkthrough>` *(PC: `python`)* — bare here, and
+with `--gate` (plus `--verdict <V>` before the stamp exists) once the section is complete.
 
-> ⓘ **Why the review re-checks `main` before it reviews anything (2026-08-10).** The audit you run
+> ⓘ **Why the review re-checks `main` before it reviews anything.** The audit you run
 > *before* building traces its blast radius against the repo as it was that morning. Task lanes run
 > several at a time, so by the time you finish, another lane may have landed and **moved a file your
 > work points at.** Every test still passes — your code runs fine; it is the *references* that broke.
