@@ -111,6 +111,12 @@ severity_floor:  CONCERNS
 notes:           fan-out unavailable — two launch attempts died on lens-side context exhaustion,
                  caused by caller instructions that flooded them. Recorded as a caller defect.
 
+### Step 0.7 — the blast radius, re-derived against current `main`
+
+- **What moved:** SCC-240 landed as PR #33 (`9350374`) while this lane was built, changing 30 files. Four of them overlap this diff: `docs/_scc_sops_prds/workflows_testing_SOP.md`, `_artifacts/_main/INDEX.md`, `.agents/scripts/INDEX.md` and the generated `.agents/.sync-manifest.json`. Nothing this diff *references* moved — every repo path and `#L` anchor it names was re-resolved and all resolve.
+- **What it changes here:** three overlaps merged additively and both lanes' content is present; the fourth conflicted and is GENERATED, so it was resolved by re-running `/smh-sync-agents`, never hand-merged. SCC-240 also replaced `_harness.py`, `run_all.py` and `wf_common.py`, which this lane's tests import — and it added a new gate (`walkthrough_roster.py`) that this very walkthrough now has to satisfy.
+- **What was re-measured after absorbing:** the full suite re-run bare on the merged tree — **40/40, exit 0** (39 before; SCC-240 brought `test_doc_examples_parse.py`). Merge-tree against `origin/main` is clean. Sibling lane `SCC-235` remains live and shares zero files.
+
 ### What the hunt found
 
 **1 finding fixed — and it was a fail-open in this lane's own fix.** `_collect`'s new HTML-comment
