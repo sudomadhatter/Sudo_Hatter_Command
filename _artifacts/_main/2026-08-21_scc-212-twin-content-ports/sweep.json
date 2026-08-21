@@ -1,0 +1,157 @@
+{
+  "_comment": "SCC-212 declared mutant table — written BEFORE the sweep ran. Every mutant is drawn from the SHIPPED text or the guard's own predicates, never from the cases. M1-M8 attack the parity guard (identity, symmetry, the declared set); M9-M14 revert a ported obligation; M15 deletes the loaded rule from the block the LOADERS row iterates. ⛔ mutation_sweep validates with `not m.get(k)`, so an EMPTY `mutated` reads as MISSING and the table is refused: a pure deletion is inexpressible. Deletions are spelled as a replacement with a neutral line that carries none of the law.",
+  "test": [
+    "python3",
+    ".agents/scripts/tests/test_twin_parity.py"
+  ],
+  "mutants": [
+    {
+      "id": "M1 drift one word inside memory-sweep on the cicd side (identity)",
+      "file": ".agents/commands/cicd-clean-code-audit.md",
+      "original": "belong to whatever wrote them — the store is shared",
+      "mutated": "belong to whoever wrote them — the store is shared",
+      "case": "C `memory-sweep` is identical",
+      "block": "C · IDENTITY"
+    },
+    {
+      "id": "M2 remove the memory-sweep opener on the smh side (symmetry, cicd orphaned)",
+      "file": ".agents/commands/smh-clean-code-audit.md",
+      "original": "<!-- twin-law: memory-sweep -->\n",
+      "mutated": "<!-- the fence that was here is gone -->\n",
+      "case": "B cicd-clean-code-audit.md marks no law the twin lacks",
+      "block": "B · SYMMETRY"
+    },
+    {
+      "id": "M3 drift review-runtime-probe on the smh side (identity)",
+      "file": ".agents/commands/smh-quick-dev.md",
+      "original": "Only a\nruntime with no subagent tool at all is `inline`.",
+      "mutated": "Only a\nruntime with no subagent tool at all counts as `inline`.",
+      "case": "C `review-runtime-probe` is identical",
+      "block": "C · IDENTITY"
+    },
+    {
+      "id": "M4 remove the review-runtime-probe fence from cicd (symmetry, smh orphaned)",
+      "file": ".agents/commands/cicd-quick-dev.md",
+      "original": "<!-- twin-law: review-runtime-probe -->\n",
+      "mutated": "<!-- the fence that was here is gone -->\n",
+      "case": "B smh-quick-dev.md marks no law the twin lacks",
+      "block": "B · SYMMETRY"
+    },
+    {
+      "id": "M5 drift merge-machinery-last on the cicd side (identity)",
+      "file": ".agents/commands/cicd-merge-epic-workingtrees.md",
+      "original": "**⭐ A lane that changes commit or push machinery lands LAST.**",
+      "mutated": "**⭐ A lane that changes commit or push machinery lands last.**",
+      "case": "C `merge-machinery-last` is identical",
+      "block": "C · IDENTITY"
+    },
+    {
+      "id": "M6 remove merge-empty-set-stop from smh (symmetry, cicd orphaned)",
+      "file": ".agents/commands/smh-merge-multiple-workingtrees.md",
+      "original": "<!-- twin-law: merge-empty-set-stop -->\n",
+      "mutated": "<!-- the fence that was here is gone -->\n",
+      "case": "B cicd-merge-epic-workingtrees.md marks no law the twin lacks",
+      "block": "B · SYMMETRY"
+    },
+    {
+      "id": "M7 drift rederive-record on the smh side (identity)",
+      "file": ".agents/commands/smh-code-review.md",
+      "original": "\"Nothing moved\" is a reportable result; silence is\n  not — `walkthrough_roster.py --gate`",
+      "mutated": "\"Nothing moved\" is a reportable result; silence is\n  not — `walkthrough_roster.py`",
+      "case": "C `rederive-record` is identical",
+      "block": "C · IDENTITY"
+    },
+    {
+      "id": "M8 drop the quick-dev pair from FENCED_TODAY (the declared scope row)",
+      "file": ".agents/scripts/tests/test_twin_parity.py",
+      "original": "    \"cicd-quick-dev.md\", \"smh-quick-dev.md\",                 # twin-law: review-runtime-probe\n",
+      "mutated": "    # the quick-dev pair used to be declared here\n",
+      "case": "B* the fenced set is exactly what is declared",
+      "block": "B · SYMMETRY"
+    },
+    {
+      "id": "M9 revert --expect-key out of the merge door's preflight call",
+      "file": ".agents/commands/cicd-merge-epic-workingtrees.md",
+      "original": "         --expect-key <JIRA-KEY> --branch claude/<JIRA-KEY>-<slug> --worktree \"$TREE\"",
+      "mutated": "         --branch claude/<JIRA-KEY>-<slug> --worktree \"$TREE\"",
+      "case": "MERGE-03b",
+      "block": "MERGE ·",
+      "test": [
+        "python3",
+        "_artifacts/_main/2026-08-21_scc-212-twin-content-ports/assert-scc212.py"
+      ]
+    },
+    {
+      "id": "M10 revert the unstaged `git diff --name-only` line in the clean-code audit",
+      "file": ".agents/commands/cicd-clean-code-audit.md",
+      "original": "git diff --name-only                            # plus uncommitted - saved edits nobody staged yet\n",
+      "mutated": "# the uncommitted sweep used to be here\n",
+      "case": "QD-C5",
+      "block": "CC ·",
+      "test": [
+        "python3",
+        "_artifacts/_main/2026-08-21_scc-212-twin-content-ports/assert-scc212.py"
+      ]
+    },
+    {
+      "id": "M11 revert the NO-GO read in the story lane's Step 2",
+      "file": ".agents/commands/cicd-dev-story-tests.md",
+      "original": "A `NO-GO`\n  stops the lane**",
+      "mutated": "A `NO-GO`\n  is noted**",
+      "case": "DEV-06",
+      "block": "DEV ·",
+      "test": [
+        "python3",
+        "_artifacts/_main/2026-08-21_scc-212-twin-content-ports/assert-scc212.py"
+      ]
+    },
+    {
+      "id": "M12 revert the -C binding on the epic branch cut",
+      "file": ".agents/commands/cicd-create-epic-sprint.md",
+      "original": "git -C \"$PROJECT_ROOT\" checkout -b epic/<JIRA-KEY>-<slug> origin/main",
+      "mutated": "git checkout -b epic/<JIRA-KEY>-<slug> origin/main",
+      "case": "PAIR-07",
+      "block": "PAIR ·",
+      "test": [
+        "python3",
+        "_artifacts/_main/2026-08-21_scc-212-twin-content-ports/assert-scc212.py"
+      ]
+    },
+    {
+      "id": "M13 revert Step 0.6's uncommitted sweep in the review command",
+      "file": ".agents/commands/cicd-code-review.md",
+      "original": "git -C \"$WORKTREE\" status --short                                  # anything uncommitted (report it; it is not reviewed)\n",
+      "mutated": "   # the uncommitted sweep used to be here\n",
+      "case": "QD-C3-cr-b",
+      "block": "CR ·",
+      "test": [
+        "python3",
+        "_artifacts/_main/2026-08-21_scc-212-twin-content-ports/assert-scc212.py"
+      ]
+    },
+    {
+      "id": "M14 revert the backtick clause in the RULE (the durable half of DEV-01)",
+      "file": ".agents/rules/git-policy.md",
+      "original": "- ⛔ **Backticks in `-m \"…\"` EXECUTE.** The shell expands",
+      "mutated": "- **Quoting note.** The shell expands",
+      "case": "DEV-01-rule",
+      "block": "DEV ·",
+      "test": [
+        "python3",
+        "_artifacts/_main/2026-08-21_scc-212-twin-content-ports/assert-scc212.py"
+      ]
+    },
+    {
+      "id": "M15 delete the loaded mutation rule from the story lane's rules-in-force block",
+      "file": ".agents/commands/cicd-dev-story-tests.md",
+      "original": "> - `.agents/rules/tests-must-gate-for-real.md` — ①'s reds must fail for the RIGHT reason (Rule 1), Step 4.5\n",
+      "mutated": "> - (the mutation rule used to be loaded here)\n",
+      "case": "the mutation rule is LOADED",
+      "block": "CS-10 ·",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_command_surfaces.py"
+      ]
+    }
+  ]
+}

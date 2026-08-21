@@ -154,7 +154,11 @@ def main() -> int:
         has("MERGE-01b", ME, "WRONG TREE")
         has("MERGE-02", ME, "modify / delete")
         has("MERGE-03a", ME, "closeout_preflight.py")
-        has("MERGE-03b", ME, "--expect-key")
+        # ⛔ PIN THE FLAG TO THE CALL, not to the file. `--expect-key` is also named in the prose
+        # that explains why it is required, so a file-wide row stayed GREEN when the sweep struck
+        # it out of the invocation itself (M9 SURVIVED on the first run). The call is what an
+        # agent copies; the prose is what it skims.
+        has("MERGE-03b", ME, "--expect-key <JIRA-KEY> --branch claude/<JIRA-KEY>-<slug> --worktree")
         has("MERGE-04a", ME, "VOIDS it")
         has("MERGE-04b", ME, "Post-absorb re-measurement")
         has("MERGE-05", ME, "lands LAST")
@@ -232,6 +236,11 @@ def main() -> int:
     # ── 6 · cicd-code-review + smh-code-review ────────────────────────────────────────
     if c.block("CR · the review command"):
         has("QD-C3-cr", CR, "Step 0.6 — Resolve the diff")
+        # ⛔ The HEADING is not the finding. QD-C3 is that uncommitted work is never swept into a
+        # review silently — so the row must pin the `status --short` line, not the section that
+        # contains it: the sweep deleted the line and the heading-keyed row stayed green
+        # (M13 SURVIVED on the first run).
+        has("QD-C3-cr-b", CR, 'git -C "$WORKTREE" status --short')
         has("QD-C7-cr", CR, "_artifacts/_memory/")
         has("QD-C6-cr", CR, "re-taken in that worktree")
         has("QD-C5-cr", CR, "cannot fail is a finding")
