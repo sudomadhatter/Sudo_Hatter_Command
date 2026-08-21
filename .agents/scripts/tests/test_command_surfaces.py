@@ -2241,6 +2241,73 @@ def main() -> int:
                 f"{'present' if 'SCC-71' in steps_text else 'ABSENT'}"
                 + ("" if in_landing else " — the clause has to be where the push is"))
 
+    if c.block("CS-14 · SCC-212 · the twin content ports: the obligations that must OUTLIVE "
+               "the lane that added them"):
+        # ⛔ WHY THIS BLOCK EXISTS. SCC-212 ported 55 findings into the `cicd-*` bodies and held
+        # each one with a case in `_artifacts/…/assert-scc212.py`. Those ~115 rows are LANE-LOCAL:
+        # they live in a dated artifacts folder, nothing in `run_all.py` calls them, and when the
+        # folder is archived the ports are protected by six twin-law fences and one `LOADERS`
+        # entry. Everything else could be silently reverted with every gate green — which is the
+        # exact drift the ticket was raised to close, re-created one level up.
+        #
+        # Not every row belongs here; a durable pin has a cost. These are the ones whose loss is a
+        # LIVE HAZARD rather than a wording regression: a gate that would then run on nothing, a
+        # command that would run against the wrong tree, or a call that writes to the wrong place.
+        CMDS14 = ROOT / ".agents/commands"
+
+        def body(name: str) -> str:
+            return (CMDS14 / name).read_text(encoding="utf-8")
+
+        # 1. THE GATE THAT CANNOT FAIL. With this STOP gone, the engine, the acceptance audit and
+        #    the whole test gate run on an empty diff and still emit a verdict. Both twins.
+        for name in ("cicd-code-review.md", "smh-code-review.md"):
+            c.check(f"CS-14 A {name} STOPS on an empty diff",
+                    "empty set is a STOP" in body(name) or "empty diff" in body(name).lower(),
+                    "a review that measures nothing must refuse, not verdict")
+
+        # 2. THE PATHS THAT MUST BE BOUND. A `cicd-*` command's shell stands in the LOBBY while
+        #    its subject is `Projects/<name>`, so an unbound relative path silently reads the
+        #    wrong tree — `link-worktree-assets` died with `error: not a directory`, and
+        #    `gate_receipt` wrote a receipt into a checkout that did not contain the sha.
+        c.check("CS-14 B1 cicd-quick-dev binds PROJECT_ROOT on link-worktree-assets",
+                'link-worktree-assets.py "$PROJECT_ROOT"' in body("cicd-quick-dev.md"),
+                "an unbound worktree path resolves against the lobby cwd")
+        c.check("CS-14 B2 cicd-dev-story-tests binds PROJECT_ROOT on link-worktree-assets",
+                'link-worktree-assets.py "$PROJECT_ROOT"' in body("cicd-dev-story-tests.md"),
+                "an unbound worktree path resolves against the lobby cwd")
+        c.check("CS-14 B3 the receipt is written where the sha lives (`--project`, not just `--cwd`)",
+                "--project" in body("cicd-dev-story-tests.md").split(
+                    "gate_receipt.py run", 1)[-1][:400],
+                "--cwd says where the runner RUNS; --project says where the receipt LANDS. "
+                "Without it ③'s `list` prints (no receipts) over a run that happened")
+
+        # 3. THE FLAG THAT MAKES A BLOCKING CLASS EXIST. `check_gates` returns at its first line
+        #    without `--require-gates`, emitting NO row — so the merge door's strictest-sounding
+        #    error can never fire. Structurally inert, and invisible in a green transcript.
+        c.check("CS-14 C the multi-lane door passes --require-gates to the preflight",
+                "--require-gates" in body("cicd-merge-epic-workingtrees.md"),
+                "without the flag `check_gates` returns immediately and files no row at all")
+
+        # 4. THE MESSAGE FILE THAT MUST LIVE OUTSIDE BOTH TREES. `printf … > f` writes to the
+        #    shell's cwd; `git -C <dir> commit -F f` reads it under <dir>. Every kickoff commit
+        #    block died `fatal: could not read log file`, exit 128 — and the push on the next
+        #    line then reported success over a commit that never happened.
+        kickoff = body("cicd-create-epic-sprint.md")
+        c.check("CS-14 D the kickoff's commit messages go through mktemp, never a relative file",
+                kickoff.count("MSG=$(mktemp)") >= 3
+                and kickoff.count('commit -F "$MSG"') >= 3
+                and "-F epic-commit-msg.txt" not in kickoff,
+                f"mktemp x{kickoff.count('MSG=$(mktemp)')}, "
+                f"commit -F \"$MSG\" x{kickoff.count('commit -F ' + chr(34) + '$MSG' + chr(34))} "
+                "— `git -C <dir> -F <relative>` resolves under <dir>, not your cwd")
+
+        # 5. THE REF THAT OUTLIVES ITS BRANCH. Step 6 deletes every `claude/*` branch; Step 7 then
+        #    verified them by NAME, so `merge-base --is-ancestor` died on a dead ref, the `&&`
+        #    short-circuited, and a landed lane reported as unlanded.
+        c.check("CS-14 E the multi-lane door verifies landing by SHA, not by a deleted branch name",
+                "4.4 SHA" in body("cicd-merge-epic-workingtrees.md"),
+                "Step 6 deletes the branch Step 7 would name; capture the tip sha at 4.4")
+
     return c.finish()
 
 

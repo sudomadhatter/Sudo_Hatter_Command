@@ -188,6 +188,42 @@
       ],
       "block": "CR · the review command",
       "case": "CR-emptydiff-a"
+    },
+    {
+      "id": "M19 unbind PROJECT_ROOT on the fast lane's link-worktree-assets call (CS-14 B1)",
+      "file": ".agents/commands/cicd-quick-dev.md",
+      "original": "link-worktree-assets.py \"$PROJECT_ROOT\"/.claude/worktrees/<slug>",
+      "mutated": "link-worktree-assets.py .claude/worktrees/<slug>",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_command_surfaces.py"
+      ],
+      "block": "CS-14",
+      "case": "CS-14 B1"
+    },
+    {
+      "id": "M20 strike --require-gates out of the multi-lane door's preflight call (CS-14 C)",
+      "file": ".agents/commands/cicd-merge-epic-workingtrees.md",
+      "original": "--require-gates suite,ruff,pyrefly",
+      "mutated": "--fetch",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_command_surfaces.py"
+      ],
+      "block": "CS-14",
+      "case": "CS-14 C"
+    },
+    {
+      "id": "M21 send Step 7 back to verifying landing by BRANCH NAME (CS-14 E)",
+      "file": ".agents/commands/cicd-merge-epic-workingtrees.md",
+      "original": "<each lane's 4.4 SHA>",
+      "mutated": "<each landed lane's branch>",
+      "test": [
+        "python3",
+        ".agents/scripts/tests/test_command_surfaces.py"
+      ],
+      "block": "CS-14",
+      "case": "CS-14 E"
     }
   ]
 }
