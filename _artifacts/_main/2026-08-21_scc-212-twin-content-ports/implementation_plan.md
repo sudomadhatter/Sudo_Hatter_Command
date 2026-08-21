@@ -102,8 +102,21 @@ edit the current tree actually needs, and the walkthrough's ledger says which.
 - EDIT `.agents/workflows/cicd-merge-epic-workingtrees.md` — generated; FLIPS to a thin launcher (>11,500 B) → 5
 - EDIT `.agents/workflows/cicd-create-epic-sprint.md` — generated; FLIPS to a thin launcher (>11,500 B) → 5
 - EDIT `.agents/workflows/cicd-clean-code-audit.md` — generated; FLIPS to a thin launcher (>11,500 B) → 5
+- EDIT `.agents/rules/jira.md` — the §Who-mints-tickets seam pointed at `/cicd-create-epic-sprint` Step 1.5, a step the kickoff renumbering deleted (added at the review, finding A4) → 1, 2
+- NEW `_artifacts/_main/2026-08-21_scc-212-twin-content-ports/review-findings.md` — the five-lens triage → 1
 - EDIT `.agents/.sync-manifest.json` — the sync engine's own record of what it wrote → 5
 - EDIT `_artifacts/_main/INDEX.md` — one row for this folder → 1
+
+### Amendment 2 (2026-08-21, at the review gate)
+
+**The roster's count was wrong by one, in the direction that hides work.** `QD-C12` is filed
+SETTLED in the roster table below, and it is not settled: its case is RED at `origin/main` and the
+edit landed. **The correct counts are 56 live and 10 settled**, and the walkthrough's
+`## Disposition ledger` — which acceptance row 1 names as its own checker, and which was missing
+until the review found it — carries all 66 IDs with the corrected split.
+
+**`.agents/rules/jira.md` was edited and never declared.** The kickoff renumbering left the
+§Who-mints-tickets seam pointing at a `Step 1.5` that no longer exists. Declared above.
 
 ### Amendment (2026-08-21, at the review's declared-set reconciliation)
 
@@ -141,7 +154,7 @@ rewrites nothing there; if it does, the diff is reported, not hidden.)
 | `cicd-code-review.md` / `smh-code-review.md` | QD-C1(+C2 folded) C3 C4 C5(partial) C6 C7 · C9 (smh) (7) | **C2 as a separate edit** — premise inverted by SCC-210/242; its truth is folded into C1's replacement |
 | `cicd-self-audit.md` / `smh-self-audit.md` | QD-C2(partial: binding + ref + status) (1) | **C1 C3a C4 C5** — SCC-225 rewrite: tripwire list + Light/Full ladder deleted on BOTH twins by an approved plan; STOP-on-no-plan exists at `:56-57`; constitution scan deleted on both sides by name — settled decisions, not gaps |
 
-Settled = 11 · Live = 55. Every settled ID appears in the walkthrough ledger with the sha or plan that settled it.
+⚠ **Corrected at the review: Settled = 10 · Live = 56.** `QD-C12` is listed SETTLED in the `cicd-quick-dev.md` row above and is not — see Amendment 2. Every settled ID appears in the walkthrough's `## Disposition ledger` with the sha or plan that settled it.
 
 ## Steps (each maps to acceptance rows; the assertion that proves it is named)
 

@@ -18,7 +18,7 @@ review-runtime: fan-out
 
 SCC-205 built the twin-parity **mechanism**; this lane applies the **content**. The ticket's 84
 findings deduplicate to **66**. Seven read-only passes re-measured every one against `295abe5`:
-**55 were live and 11 were already settled** — by SCC-205 Part C, SCC-211, or SCC-225's approved
+**56 were live and 10 were already settled** — by SCC-205 Part C, SCC-211, or SCC-225's approved
 self-audit rewrite. **Twelve backlog edits were wrong at HEAD** and were replaced by what the tree
 actually needs. Six laws that both families genuinely share are now **fenced** as `twin-law` rather
 than copied once and left to drift again, which is the failure the whole ticket exists to close.
@@ -38,7 +38,128 @@ than copied once and left to drift again, which is the failure the whole ticket 
 - [x] SOP updated in the same commit as the commands (currency gate armed, no `[sop-ok]`)
 - [x] One `/smh-sync-agents` run; three Antigravity mirrors flip to thin launchers as predicted
 - [x] Suite through the receipt writer — **red first, then green** (below)
-- [x] Mutation sweep — **two survivors were real**, fixed, re-swept to 15/15
+- [x] Mutation sweep — **two survivors were real**, fixed, re-swept to 15/15; the review pass took it to **21/21**
+
+
+## Disposition ledger — all 66 findings, by ID
+
+⛔ **Acceptance row 1 says "applied, or explicitly dismissed here with a reason — no silent drops."
+This is the "here."** Every ID the ticket carries appears below exactly once. `APPLIED` names the case
+in [assert-scc212.py](assert-scc212.py) that holds it (RED at `origin/main`, GREEN at HEAD);
+`SETTLED` names what landed it and why no edit was owed.
+
+**56 live and applied · 10 settled.** (The plan's roster said 55/11; the re-measurement had
+`QD-C12` filed SETTLED, and it is not — its case is RED at `origin/main` and the edit landed. Counted
+correctly here.)
+
+### `cicd-dev-story-tests.md` — 14 live, 0 settled
+
+| ID | Disposition | Case |
+|---|---|---|
+| DEV-01 | APPLIED — backtick-in-`-m` hazard, command half **and** rule half | `DEV-01`, `DEV-01-rule` |
+| DEV-02 | APPLIED — the full suite goes through the receipt writer, stamp-first | `DEV-02` |
+| DEV-03 | APPLIED — the mutation doctrine replaces one RELOCATE sentence | `DEV-03a` `DEV-03b` `DEV-03c` `DEV-03d` |
+| DEV-04 | APPLIED — new Step 0.8, the runtime probe **before** the plan | `DEV-04a` `DEV-04b` |
+| DEV-05 | APPLIED — the RED paste must name WHICH LINE RAISED | `DEV-05a` `DEV-05b` |
+| DEV-06 | APPLIED — a `NO-GO` stops the lane | `DEV-06` |
+| DEV-09 | APPLIED — the eject tripwire as its own Step 3.5 | `DEV-09` |
+| DEV-10 | APPLIED — sibling lanes read at 0.6, not at review | `DEV-10` |
+| DEV-11 | APPLIED — absorb the epic branch before the first edit | `DEV-11` |
+| DEV-12 | APPLIED — link the gitignored assets, here and in ① | `DEV-12`, `DEV-12b` |
+| DEV-14 | APPLIED — `reproduce-before-you-fix` loaded in the rules block | `DEV-14` |
+| DEV-15 | APPLIED — `work-consolidation` loaded in the rules block | `DEV-15` |
+| DEV-16 | APPLIED — five rules the block never loaded | `DEV-16a`–`DEV-16e` |
+| DEV-17 | APPLIED — a characterization check is labelled, never presented as a red | `DEV-17` |
+
+### `git-policy.md` — 2 live, 1 settled
+
+| ID | Disposition | Case |
+|---|---|---|
+| DEV-01 (rule half) | APPLIED — the rule now carries the law the pointer points at | `DEV-01-rule` |
+| QD-C1 (rule residue) | APPLIED — found by re-measurement, not by the backlog: `:30-32` still said a `chore/*` lane merges back to `main` in the same session | `QD-C1-rule` (an absence row) |
+| **D7** | **SETTLED** — landed by SCC-211 @ `73c6f9c`; the `:70` write-gate row already says it | — |
+
+### `cicd-merge-epic-workingtrees.md` — 14 live, 0 settled
+
+| ID | Disposition | Case |
+|---|---|---|
+| MERGE-01 | APPLIED — `git -C "$TREE"` on every call; assert the tree before the push | `MERGE-01a` `MERGE-01b` |
+| MERGE-02 | APPLIED — modify/delete joins the overlap classes | `MERGE-02` |
+| MERGE-03 ⚠ | APPLIED — **backlog edit was wrong at HEAD**: its preflight call omits `--expect-key` (required since SCC-210, argparse exits 2), `--fetch` is now default, and its "exit 2 = BLOCKED" reading blocks every healthy lane. Replaced by the solo door's `landed`-row carve-out, plus `--require-gates` (review finding E4) | `MERGE-03a` `MERGE-03b` |
+| MERGE-04 | APPLIED — an absorb that touches code, script **or doc** VOIDS the verdict | `MERGE-04a` `MERGE-04b` |
+| MERGE-05 | APPLIED — a machinery lane lands LAST | `MERGE-05` |
+| MERGE-06 ⚠ | APPLIED — **backlog edit was wrong at HEAD**: it names `/cicd-close-workingtree`, a door SCC-210 deleted, and compares against a local `epic/*` ref the shared checkout never holds. Replaced by verify-then-report against the REMOTE ref | `MERGE-06` |
+| MERGE-07 | APPLIED — rewrite vs edit; gate-or-script; regenerate, never hand-merge | `MERGE-07a` `MERGE-07b` `MERGE-07c` |
+| MERGE-08 ⚠ | APPLIED — **backlog edit was wrong at HEAD**: it points at `/cicd-update-sprint-memory` Step 4.5, deleted by SCC-210. Replaced by `jira_feed.py devrecord` + `finish --landing-ref` (SCC-242), never raw `acli … transition` | `MERGE-08a` `MERGE-08b` |
+| MERGE-09 | APPLIED — an empty eligible set is a STOP ⛔ **fenced** `merge-empty-set-stop` | `MERGE-09` `MERGE-09b` `MERGE-09c` |
+| MERGE-11 | APPLIED — the case totals must be additive | `MERGE-11` |
+| MERGE-12 | APPLIED — run every gate BARE | `MERGE-12` |
+| MERGE-14 | APPLIED — an unclassified conflict is a finding, not a judgement call | `MERGE-14` |
+| MERGE-15 | APPLIED — the commits-ahead column; a 0-ahead lane was never built | `MERGE-15` |
+| MERGE-16 | APPLIED — an unmerged branch in another repo ⛔ **fenced** `merge-cross-repo-order` | `MERGE-16` |
+
+### `cicd-quick-dev.md` — 9 live, 4 settled
+
+| ID | Disposition | Case |
+|---|---|---|
+| QD-C1 ⚠ | APPLIED (partial) — **backlog edit was wrong at HEAD**: SCC-205 wrote *"there is none"* for the project-repo chore door; SCC-211 @ `73c6f9c` then created **two**. Replaced by the door table the diff selects from | `QD-C1a`, `QD-C1b` (absence) |
+| QD-C4 ⚠ | APPLIED (partial) — the header slot moved; the probe must precede Step 3 ⛔ **fenced** `review-runtime-probe` | `QD-C4a` `QD-C4b` |
+| QD-C7 | APPLIED — fetch before the cut; `--unset-upstream` after it | `QD-C7a` `QD-C7b` |
+| QD-C8 | APPLIED — sibling lanes are a landing-order dependency | `QD-C8` |
+| QD-C9 | APPLIED — pin the key before any tool answers; move the ticket at the tree | `QD-C9a` `QD-C9b` |
+| QD-C10 | APPLIED — the backtick hazard | `QD-C10` |
+| QD-C11 | APPLIED (partial) — link the gitignored assets | `QD-C11` |
+| QD-C12 | **APPLIED** — the `task.yaml` manifest on the ad-hoc lane. ⚠ **The plan filed this SETTLED and was wrong**; its case is RED at `origin/main` | `QD-C12` |
+| QD-C14 ⚠ | APPLIED — **backlog edit was wrong at HEAD**: the story half must name `/cicd-close-story-merge-tree` (SCC-210), not the save | `QD-C14` |
+| **C2 C3 C5 C6** | **SETTLED** — landed by SCC-205 Part C, verified line-by-line at `295abe5` | — |
+
+### `cicd-create-epic-sprint.md` — 6 live, 0 settled
+
+| ID | Disposition | Case |
+|---|---|---|
+| PAIR-01 | APPLIED — the rules-in-force block, and the operator's word opens **Step 3** after the reorder | `PAIR-01a` `PAIR-01b` `PAIR-01c` |
+| PAIR-02 ⚠ | APPLIED — **source moved**: the not-approval list now lives in `smh-plan-task.md:234-236` | `PAIR-02` |
+| PAIR-05 ⚠ | APPLIED — **backlog path was wrong at HEAD**: the epic-level test-design output is `_bmad-output/test-artifacts/test-design-epic-<N>.md`, not `test-design/…` | `PAIR-05a`–`PAIR-05d` |
+| PAIR-06 ⚠ | APPLIED — **backlog edit was wrong at HEAD**: its wholesale step move breaks the mint, because `jira_feed.py outline --epic N` dies without the `## Epic N` heading the moved step writes. Replaced by dedupe → bare mint (1a) → keyed cut (1b) → `epics.md` (2) → outline backfill | `PAIR-06` |
+| PAIR-07 | APPLIED — `-C "$PROJECT_ROOT"` on the epic cut | `PAIR-07` |
+| PAIR-08 | APPLIED — look before you mint | `PAIR-08` |
+
+### `cicd-clean-code-audit.md` — 5 live, 0 settled
+
+| ID | Disposition | Case |
+|---|---|---|
+| QD-C1 ⚠ | APPLIED (placement) — **backlog edit was wrong at HEAD**: "append at `:87`" would DUPLICATE what Part E added. The live defect is that the two scan rows sit in Step 2B, which an embedded run skips | `QD-C1/C2-cc` |
+| QD-C2 ⚠ | APPLIED (placement + `Path(__file__)`) — same duplication; same relocation | `QD-C1/C2-cc`, `QD-C2-cc` |
+| QD-C3 ⚠ | APPLIED — **backlog's `PROJECT_ROOT/` prefix dropped**: redundant under `:40`, and it would break fence identity ⛔ **fenced** `memory-sweep` | `QD-C3-cc`, `QD-C3-sc` |
+| QD-C4b | APPLIED — never fall back to the lobby | `QD-C4b-cc` |
+| QD-C5 (HIGH) | APPLIED — unstaged edits join the set on a standalone run (review finding B6 scoped it) | `QD-C5` |
+
+### `cicd-code-review.md` / `smh-code-review.md` — 7 live, 1 settled
+
+| ID | Disposition | Case |
+|---|---|---|
+| QD-C1 ⚠ | APPLIED — **backlog said DELETE a sentence that is TRUE** (`MERGE_DOORS` includes the story door). Replaced, not deleted; C2 folded in | `QD-C1-cr` (absence), `QD-C2-cr` |
+| QD-C3 ⚠ | APPLIED — **worse at HEAD than the backlog knew**: `$WORKTREE`/`$EPIC` are bound later, so the bindings move up (review finding B8 then re-bound them per shell block) | `QD-C3-cr`, `QD-C3-cr-b` |
+| QD-C4 ⚠ | APPLIED — **"in three lines" does not match `walkthrough_roster.py` E7**, which counts rows under a heading matching `0.7|re-deriv`; the port mandates the sub-heading ⛔ **fenced** `rederive-record` | `QD-C4-cr-a` `QD-C4-cr-b` `QD-C4-sr` |
+| QD-C5 ⚠ | APPLIED (partial) — the guard list is inline `(a)/(b)` prose at HEAD, so this lands as `(c)` | `QD-C5-cr` |
+| QD-C6 ⚠ | APPLIED — **worse at HEAD**: `HEAD_SHA` was read from `$PROJECT_ROOT`, not the worktree | `QD-C6-cr` |
+| QD-C7 | APPLIED — the memory store is named and left alone | `QD-C7-cr` |
+| QD-C9 (smh) | APPLIED — the `DEFERRED_WORK` row the smh twin lacked | `QD-C9-sr` |
+| **C2 as a separate edit** | **SETTLED** — its premise was inverted by SCC-210/242: the story door now runs `check-actions` and `finish --landing-ref`, so the refusal claim is TRUE. Only the "nothing BEFORE the door checks it" half survived, and it is folded into C1's replacement | — |
+
+### `cicd-self-audit.md` / `smh-self-audit.md` — 1 live, 4 settled
+
+| ID | Disposition | Case |
+|---|---|---|
+| QD-C2 | APPLIED (partial: the sibling-lane binding, the epic ref, the `status` read) | `QD-C2-sa-a`–`QD-C2-sa-c` |
+| **C1 C3a C4 C5** | **SETTLED** — SCC-225's approved rewrite deleted the Phase-2 tripwire list and the Light/Full ladder on **both** twins, the STOP-on-no-plan already exists at `:56-57`, and the constitution scan was deleted on both sides by name. Settled decisions, not gaps — re-adding them would reverse an approved plan | — |
+
+### Rows that assert something must NOT change
+
+`QD-pin1`, `QD-pin2` and `CR-pin` are preservation pins, correctly green in **both** states — the
+`assert-partA.sh` A4 precedent. (`CR-pin` was re-aimed during the review: keyed on the bare word
+`merge-tree` it also matched five command *names*, and deleting the whole of Step 0.7 left it PASS.)
+
 
 ## Evidence
 
@@ -47,9 +168,15 @@ than copied once and left to drift again, which is the failure the whole ticket 
 `assert-scc212.py` carries one case per live finding, named by its backlog ID.
 
 ```
-RED  @ origin/main : -- 3/102 passed --      (99 red; the 3 greens are preservation pins)
-GREEN @ HEAD       : -- 109/109 passed --
+RED  @ origin/main : -- 3/115 passed --      (112 red; the 3 greens are preservation pins)
+GREEN @ HEAD       : -- 115/115 passed --
 ```
+
+⛔ **The two runs report the SAME number of rows, and that is a fix, not a coincidence.** Before the
+review the six `FENCE … byte-identical` rows were guarded by `if both:` — so under `--red`, where no
+fence exists yet, they did not fail: they **vanished**. The RED transcript read `3/103` while the
+green one read `109/109`, and nothing said six checks had disappeared. A check that is absent looks
+exactly like a check that passed. They now emit a failing row in the `else` arm (finding T5).
 
 The three greens at `origin/main` are `QD-pin1`, `QD-pin2` and `CR-pin` — rows that assert something
 must **not** change. They are correctly green in both states, the `assert-partA.sh` A4 precedent.
@@ -118,11 +245,11 @@ After porting to both sides: **64/64, exit 0.** Six new ids across four pairs �
 |---|---|
 | `gate_receipt.py run --task SCC-212 --gate suite` | **exit 0, 129.2s @ `6341cf79`** — receipt at `gates/suite.json` |
 | `workflow_lint.py --toolkit-only` | **0 errors, 0 warnings, 8 info**, exit 0 |
-| `test_command_surfaces.py` | **177/177**, exit 0 (after the sync — red before it, by construction) |
+| `test_command_surfaces.py` | **185/185**, exit 0 (after the sync — red before it, by construction; `CS-14` adds 8 durable rows) |
 | `test_twin_parity.py` | **64/64**, exit 0 |
 | `check_maps.py --depth3-only --strict` | exit 0 |
-| `assert-scc212.py` | **109/109** at HEAD · **99 RED** at `origin/main` |
-| `mutation_sweep.py --table sweep.json` | **15/15 killed**, each by its declared case; restore verified against the pinned sha |
+| `assert-scc212.py` | **115/115** at HEAD · **112 RED** at `origin/main`, same row count in both states |
+| `mutation_sweep.py --table sweep.json` | **21/21 killed**, each by its declared case; restore verified against the pinned sha |
 | `pwsh sync-agents.ps1` | exit 0 — 38 workflows, 23 launcher skills, 59 opencode commands |
 
 **The suite's first stamp was RED, and that is the mechanism working.** `run_all.py` exit 1 @
