@@ -104,7 +104,7 @@ epic is never subjected to the question), P3, P4; mutants M9, M10, M16, M17.
 
 ### AC5 · mutation-proven — 18 mutants, every one drawn from the code
 
-**45 declared · 45 killed** — 29 against `ship_preflight.py` (`sweep-script.json`) and 10 against
+**50 declared · 50 killed** — 29 against `ship_preflight.py` (`sweep-script.json`) and 10 against
 the door (`sweep-door.json`). The full table lives in those two files; grouped by what they attack:
 
 | group | mutants | killed by |
@@ -119,6 +119,8 @@ the door (`sweep-door.json`). The full table lives in those two files; grouped b
 | the door: order, teeth, and the operands of its fenced call | M12–M18 · M37 · M38 · M39 | P1–P7 · S5 |
 | **the tree that is actually gated** — the review's own finding | M41 · M42 | SP-N |
 | the uncertified fixes: token-free fetch, conf states, foreign prefix | M43 · M44 · M45 | SP-O · SP-M |
+| **the story door** deriving its lane tree, and the explicit tree still counting | M46 · M47 | `test_closeout_preflight` SCC-211 |
+| **the task door** deriving its lane tree, and the memory ruling surviving it | M48 · M49 · M50 | `test_task_preflight` SCC-211 |
 
 ```
 -- restore verified: bytes match, nothing was committed, and `git diff --quiet` is clean --
@@ -192,8 +194,8 @@ the next door, and invoking it is the decision to proceed.
 
 ## Code Review (2026-08-21)
 
-Verdict: PASS @ 50e3958
-Suite evidence measured at the same sha — `gates/suite.json`, 41/41 files, exit 0, 127.3 s.
+Verdict: PASS @ 1c2ee57
+Suite evidence measured at the same sha — `gates/suite.json`, 41/41 files, exit 0, 124.9 s.
 
 lenses_run:
 - blind-hunter · ok
@@ -210,7 +212,13 @@ radius below, so every lens in the roster applied and none was skipped by mode.)
 dispositions:    per-lens: blind-hunter=5/1/0 · edge-case-hunter=2/0/0 · literal-correctness-hunter=0/0/0 · acceptance-auditor=2/3/0 · test-adequacy-auditor=11/1/0
 drift:           undeclared=2 · unimplemented=0 · incomplete=0 — both named in the findings table and kept, with reasons
 
-**Scope.** The committed diff `origin/main...HEAD`: 17 files — one new script, two test files, the
+⭐ **SCOPE WIDENED AFTER THE FIRST PASS, on the operator's direction (2026-08-21), filed on this
+ticket rather than a new one.** The first verdict covered `/cicd-push-e2e` alone. Asked whether the
+sibling doors should verify the same way, I measured them — the answer was no, and one of the two
+holes is not theoretical. All three now derive the gated tree from one shared body; see § *The other
+two doors* below.
+
+**Scope.** The committed diff `origin/main...HEAD`: 22 files — one new script, two test files, the
 door and its two generated mirrors, `git-policy.md`, `scripts/INDEX.md`, the SOP, and the lane's
 artifacts. **Method.** Five lenses in parallel, each in its own clean context (`review_runtime:
 fan-out`, probed at Step 0 before any of this), then an acceptance audit against the plan's five
@@ -299,3 +307,48 @@ distinction §6.5 exists for.
 
 Legacy debt in untouched files: noted, not gated on. **Changes applied during review: 14** — see the
 table; the walkthrough body above was refreshed to match.
+
+
+---
+
+## The other two doors (SCC-211, second pass — operator-directed)
+
+**The question:** all three close-out doors ask whether the working tree is clean, because a dirty
+tree means the gate measures content the merge does not carry. Should they verify it the same way?
+
+**Measured answer: yes — and two of the three were wrong.**
+
+| door | how it used to ask | the hole |
+|---|---|---|
+| `/cicd-push-e2e` | `status` in `PROJECT_ROOT` | with the epic in a worktree — the norm — that root stands on `main`, spotless, while the lane is dirty. **Reproduced**; fixed earlier in this lane |
+| `/cicd-close-story-merge-tree` | the lane, but only `if args.worktree:` | the door says the flag is mandatory; **argparse did not**, and `/cicd-prune-worktree` calls the same script without it |
+| `/smh-close-task-merge-tree` | whatever `--repo` names | correct by construction for its own door — and **`/smh-merge-multiple-workingtrees` is the shape where it is not**: it sets `REPO` to the tree you are *standing in*, then preflights each lane's branch in turn, so a set landing run from the main checkout saw none of the lanes' dirt. The worst place to be blind: N production merges at once |
+
+⛔ **Making `--worktree` required — the literal ask — is the weaker fix, and I did not do it.** A
+required flag can still be aimed at the wrong tree, which is *"cwd is not intent"* wearing a flag,
+and it would have broken `/cicd-prune-worktree` and ten fixtures outright.
+`wf_common.trees_to_measure` asks `git worktree list` which tree **holds** the branch — that can be
+neither forgotten nor aimed wrong — and `--worktree` survives as an *additional* tree rather than
+the only one. One body in the leaf module all three already import: the same move SCC-190 F6 made
+for `VERDICT_RE`, for the same reason — **a gate and a door disagreeing about what they measured is
+the defect class.**
+
+Each door has a RED-first case and a **positive control** — worktrees are the norm here, so a check
+that refused every lane holding one would false-red the shipping path, which is how a gate stops
+being used. The task door's memory ruling is pinned to survive the second tree: `_artifacts/_memory/`
+dirt keeps its own class wherever it is found, never folded into *"commit before merging"*, which is
+the one instruction that ruling forbids.
+
+**A third genuine survivor came out of this pass.** M48 lived because my own assertion
+(`"lane-tree" in out`) was satisfied by `check_worktree`'s unrelated prune warning, which names the
+same tree — so the sync check could regress to measuring only the checkout with the case still
+green. It now requires the tree name **on the uncommitted line**, the finding it is actually about.
+One knock-on: `FR6` keyed on the literal label `"worktree: fetch FAILED"`, and the label now names
+*which* tree, so it went red on a better message while the behaviour it guards was untouched —
+re-keyed to its intent.
+
+**Final gates at `1c2ee57`:** enforcement suite **41/41 files, exit 0** (124.9 s, receipt stamped) ·
+`test_task_preflight` 186/186 · `test_task_preflight_receipts` 39/39 · `test_closeout_preflight`
+52/52 · `test_ship_preflight` 102/102 · door parity 177/177 · `workflow_lint` 0 errors 0 warnings ·
+SOP currency 0 · roster gate 0 · **50 declared mutants, 50 killed** across five tables, every
+restore verified byte-for-byte.
