@@ -125,10 +125,10 @@
    "mutated": "        clash = [e.name for e in sorted(tpl.iterdir())[:1] if (dest / e.name).exists()]"
   },
   {
-   "id": "M16 the os.link failure fallback raises instead of copying (kills via the block-escape row: the mutant CRASHES the file)",
+   "id": "M16 the os.link failure fallback raises instead of copying",
    "file": ".agents/scripts/tests/_repo_template.py",
    "block": "T5",
-   "case": "no unexpected error escaped a block",
+   "case": "a clone is correct when os.link FAILS (the copy2 fallback)",
    "original": "        except OSError:\n            shutil.copy2(src, dst)",
    "mutated": "        except OSError:\n            raise"
   },
