@@ -1540,8 +1540,15 @@ def main() -> int:
             code, out = preflight(repo, "--branch", "chore/SCC-11-thing")
             c.check("SCC-211 the lane's dirt is found from the main checkout", code == 2,
                     out.strip()[-400:])
+            # ⛔ THE NAME MUST APPEAR ON THE *UNCOMMITTED* LINE, not anywhere in the output.
+            # A MUTANT SURVIVED on the looser form: `check_worktree` already warns
+            # "lane-tree is checked out on chore/… - remove it with /cicd-prune-worktree",
+            # so `"lane-tree" in out` was satisfied by an unrelated pre-existing warning
+            # while the sync check had gone back to measuring only the checkout. The
+            # assertion has to name the finding it is about.
             c.check("SCC-211 ...and the message names the LANE's tree, not the checkout",
-                    "lane-tree" in out, out.strip()[-400:])
+                    any("lane-tree" in ln and "uncommitted" in ln
+                        for ln in out.splitlines()), out.strip()[-400:])
 
         # ⛔ THE POSITIVE CONTROL. Worktrees are the norm here, so a check that refused every
         # lane holding one would false-red every close-out — the way a gate stops being used.
