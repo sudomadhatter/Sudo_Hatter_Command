@@ -389,10 +389,19 @@ new one. The section carries:
   - <lens> · n/a — <why it was not applicable in this review_mode>
 
   ⭐ **Check the paste HERE, not at close-out** — `python3 .agents/scripts/walkthrough_roster.py
-  <the walkthrough>` *(PC: `python`)*. It prints the rows it actually read and exits 0; exit 1
-  names which of the three things went wrong — a fenced roster, a header whose rows are not
-  contiguous with it, or no roster at all. The close-out preflights read this file with the
-  SAME parser, so a clean run here is the answer to the question they will ask.
+  <the walkthrough>` *(PC: `python`)*. It prints the rows it actually read and answers **one**
+  question: can this roster be READ? Exit 0 yes; exit 1 names which of three things went wrong —
+  a fenced roster, a header whose rows are not contiguous with it, or no roster at all; exit 2
+  is a bad path, never a verdict about content.
+  ⛔ **Bare, it is deliberately NOT the whole close-out gate**, and that is what makes it usable
+  here: at this moment `dispositions:`, `drift:`, Step 0.7 and the `Verdict:` line are still
+  unwritten, so a full-gate run would refuse on a missing `dispositions:` line and send you to
+  hunt a fence that is not there. Once the section is complete, `--gate` asks the fuller
+  question — and before the stamp exists it needs `--verdict PASS|CONCERNS|FAIL|WAIVED`.
+  ⛔ **A re-reviewed STORY lane must pass `--verdict`**: `--gate` judges the LAST `Verdict:`
+  stamp (the re-review rule), while `closeout_preflight` reads the FIRST, so a FAIL-then-PASS
+  file resolves differently in the two. Task lanes go through `task_preflight`, which reads the
+  last and agrees.
 
 <!-- twin-law: roster -->
   ⛔ **`lenses_na` and `lenses_counted` are part of the block, not optional trimmings (SCC-203).**

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import ast
 import importlib.util
+import os
 import shutil
 import subprocess
 import sys
@@ -725,6 +726,99 @@ def main() -> int:
             c.check("TREE CONTROL: --on-main runs it anyway, and still says which tree",
                     r2.returncode == 0 and "REFUSING" not in out2 and "== run_all @" in out2,
                     f"exit {r2.returncode}: " + out2.strip()[-300:])
+
+            # ── SCC-240 · THE GUARD REACHES SINGLE-FILE RUNS ─────────────────────────────
+            # ⛔ The guard above protected the once-per-lane ceremony and left the
+            # dozens-per-lane loop open: every `python3 tests/test_x.py [--case …]` - the
+            # review loop, and the ONLY way mutation_sweep.py runs a test - bypassed it.
+            # Measured in the lane that closed this: `47/47 passed` recorded against main from
+            # a reset cwd, the only tell an unrelated `matched 0/0 blocks` line. The fixture
+            # above is deliberately harness-free, which is exactly why this gap was invisible
+            # to it; these cases use a HARNESS-based file and drive the shipping `_harness.py`.
+            HFILE = ("import sys\nfrom pathlib import Path\n"
+                     "sys.path.insert(0, str(Path(__file__).resolve().parent))\n"
+                     "from _harness import Cases\n\n"
+                     "def main():\n    c = Cases('h')\n    c.check('h · one', True)\n"
+                     "    return c.finish()\n\n"
+                     "if __name__ == '__main__':\n    sys.exit(main())\n")
+            (dst / "test_h.py").write_text(HFILE, encoding="utf-8")
+            # ⛔ Strip the override from THIS process's env: when the whole suite runs under
+            # `run_all --on-main` the parent exports WF_ON_MAIN and T-H1 would inherit it,
+            # turning the refusal it exists to prove into a pass.
+            clean_env = {k: v for k, v in os.environ.items() if k != "WF_ON_MAIN"}
+
+            h1 = subprocess.run([sys.executable, str(dst / "test_h.py")], cwd=str(main_co),
+                                capture_output=True, text=True, errors="replace", env=clean_env)
+            c.check("T-H1 · a single HARNESS-based file REFUSES in the main checkout while a "
+                    "lane exists - exit 2, REFUSING named, and NO `FAILED:` line",
+                    h1.returncode == 2 and "REFUSING" in h1.stderr
+                    and not any(ln.startswith("FAILED:")
+                                for ln in (h1.stdout + h1.stderr).splitlines()),
+                    f"exit {h1.returncode}: {(h1.stdout + h1.stderr).strip()[-300:]} - exit 2 "
+                    f"with no FAILED: line is what mutation_sweep.judge() refuses to score, "
+                    f"so a wrong-tree refusal can never read as a kill")
+
+            h2 = subprocess.run([sys.executable, str(dst / "test_h.py"), "--on-main"],
+                                cwd=str(main_co), capture_output=True, text=True,
+                                errors="replace", env=clean_env)
+            c.check("T-H2 · `--on-main` on the single file runs it (the hand-typed door, "
+                    "identical on zsh and PowerShell)",
+                    h2.returncode == 0 and "REFUSING" not in h2.stderr
+                    and "-- 1/1 passed --" in h2.stdout,
+                    f"exit {h2.returncode}: {(h2.stdout + h2.stderr).strip()[-200:]}")
+
+            h3 = subprocess.run([sys.executable, str(dst / "test_h.py")], cwd=str(main_co),
+                                capture_output=True, text=True, errors="replace",
+                                env={**clean_env, "WF_ON_MAIN": "1"})
+            c.check("T-H3 · `WF_ON_MAIN=1` in the environment runs it (the parent's "
+                    "propagation door)",
+                    h3.returncode == 0 and "REFUSING" not in h3.stderr,
+                    f"exit {h3.returncode}: {(h3.stdout + h3.stderr).strip()[-200:]}")
+
+            # T-H4 · CONTROL - the guard never fires where the work belongs. The lane
+            # worktree was cut before `.agents/` existed in the fixture, so copy the same
+            # three files in.
+            ldst = wt / ".agents/scripts/tests"
+            ldst.mkdir(parents=True)
+            shutil.copy2(HERE / "_harness.py", ldst / "_harness.py")
+            shutil.copy2(HERE.parent / "wf_common.py", wt / ".agents/scripts/wf_common.py")
+            (ldst / "test_h.py").write_text(HFILE, encoding="utf-8")
+            h4 = subprocess.run([sys.executable, str(ldst / "test_h.py")], cwd=str(wt),
+                                capture_output=True, text=True, errors="replace", env=clean_env)
+            c.check("T-H4 · CONTROL: the same file in the LANE worktree runs unflagged",
+                    h4.returncode == 0 and "REFUSING" not in h4.stderr
+                    and "-- 1/1 passed --" in h4.stdout,
+                    f"exit {h4.returncode}: {(h4.stdout + h4.stderr).strip()[-200:]} - a guard "
+                    f"that fires in the lane is a wall, not a guard")
+
+            # T-H5 · the propagation. `run_all --on-main` spawns harness-based children; if
+            # the override does not reach them they refuse one by one and the deliberate
+            # mainline run fails through its own children. The harness-free `test_ok.py`
+            # above could never see this.
+            h5 = subprocess.run([sys.executable, str(dst / "run_all.py"), "--jobs", "1",
+                                 "--on-main"], cwd=str(main_co), capture_output=True,
+                                text=True, errors="replace", env=clean_env)
+            out5 = (h5.stdout or "") + (h5.stderr or "")
+            # `2/2 files passed` is the anti-vacuity half: it proves BOTH children (the
+            # harness-free test_ok.py and the harness-based test_h.py) actually ran.
+            c.check("T-H5 · `run_all --on-main` propagates the override to its HARNESS-based "
+                    "children - the run passes, no child refuses",
+                    h5.returncode == 0 and "REFUSING" not in out5
+                    and "2/2 files passed" in out5,
+                    f"exit {h5.returncode}: {out5.strip()[-400:]}")
+
+        # T-H6 · degrade to silence: no git, no wf_common -> the harness still runs. The
+        # same constraint run_all.py documents for itself at its import guard.
+        with TempDir() as bare:
+            (bare / "_harness.py").write_bytes((HERE / "_harness.py").read_bytes())
+            (bare / "test_h.py").write_text(HFILE, encoding="utf-8")
+            h6 = subprocess.run([sys.executable, str(bare / "test_h.py")], cwd=str(bare),
+                                capture_output=True, text=True, errors="replace",
+                                env={k: v for k, v in os.environ.items() if k != "WF_ON_MAIN"})
+            c.check("T-H6 · a bare dir with no git and no wf_common still RUNS the file - "
+                    "the guard degrades to silence, never takes a suite down",
+                    h6.returncode == 0 and "-- 1/1 passed --" in h6.stdout,
+                    f"exit {h6.returncode}: {(h6.stdout + h6.stderr).strip()[-300:]}")
 
     return c.finish()
 

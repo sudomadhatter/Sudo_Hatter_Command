@@ -466,3 +466,50 @@ def say_tree(what: str, start: Path | str = ".") -> tuple[str, str, bool]:
     print(f"== {what} @ {Path(top).name} [{br or 'DETACHED'}] - {where} ==")
     print(f"   {top}")
     return top, br, is_main
+
+
+# The branch prefixes that mark a LANE worktree. A worktree on anything else (a detached
+# probe, a scratch branch) is not lane work and does not make a mainline run suspicious.
+LANE_PREFIXES = ("chore", "epic")
+
+
+def tree_guard(start: Path | str, who: str = "run_all.py", allow_main: bool = False,
+               tag: tuple[str, str, bool] | None = None) -> str | None:
+    """SCC-190's wrong-tree refusal - the text to print, or None when the run is fine.
+
+    ⛔ ONE BODY, TWO CALLERS (SCC-240). This lived inline in `run_all.py` and guarded the
+    once-per-lane suite run only; every single-file run - the review loop, and the ONLY way
+    `mutation_sweep.py` runs a test - bypassed it, and a lane recorded `47/47 passed` against
+    `main` from a reset cwd with nothing to say so. The harness now asks the same question at
+    the chokepoint every test file passes through. Lifting the body here, rather than copying
+    it, is what keeps the two answers identical: the condition, the lane list and the wording
+    cannot drift apart when there is only one of each.
+
+    The refusing shape, all three at once: the MAIN checkout, on the mainline, while lane
+    worktrees are checked out on `chore/*` or `epic/*`. That is lane work being measured
+    against a tree that does not contain it. `allow_main` is the deliberate spelling for the
+    times it IS what you meant (a pre-merge sanity run) - `--on-main` on either runner.
+
+    `who` is the script name, for the first word of the refusal and the "run it in the lane"
+    hint. `tag` lets a caller that already ran `tree_tag` (or `say_tree`) hand it over instead
+    of paying the git round trips twice.
+    """
+    if allow_main:
+        return None
+    top, br, is_main = tag if tag is not None else tree_tag(start)
+    if not is_main or br not in ("main", "master"):
+        return None
+    wt = git(["worktree", "list", "--porcelain"], Path(top)).stdout or ""
+    lanes = [ln.split("/", 2)[-1] for ln in wt.splitlines()
+             if ln.startswith("branch refs/heads/")
+             and ln.split("refs/heads/")[-1].split("/", 1)[0] in LANE_PREFIXES]
+    if not lanes:
+        return None
+    name = who[:-3] if who.endswith(".py") else who
+    return (f"{name}: REFUSING - this is the MAIN checkout on `{br}`, but "
+            f"{len(lanes)} lane worktree(s) are checked out: {', '.join(lanes[:4])}.\n"
+            f"         A suite run here says nothing about that lane's work, and it is\n"
+            f"         how the same work gets done twice (SCC-190).\n"
+            f"         Run it in the lane:  cd <worktree> && python3 "
+            f".agents/scripts/tests/{who}\n"
+            f"         Or say you meant this tree:  --on-main")

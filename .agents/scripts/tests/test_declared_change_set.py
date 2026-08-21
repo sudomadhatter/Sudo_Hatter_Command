@@ -311,10 +311,46 @@ def main() -> int:
                 any("both/broken.md" in k and "NEW" in v and "empty" not in v.lower()
                     for k, v in rows.items()),
                 f"an unstated precedence is a reason that changes between runs: {rows}")
-        c.check("R6 · the RAW bullet survives inside the row - every consumer reads these "
-                "as strings",
-                all(k.startswith(("-", "*", "`")) or "/" in k for k in rows),
-                f"the reason must be appended to the bullet, never replace it: {rows}")
+        # ⛔ COMPARE THE ROW TO THE BULLET THAT PRODUCED IT (SCC-240 review - the Blind
+        # Hunter, the Test-Adequacy Auditor and Literal-Correctness all landed on this one,
+        # and I reproduced it). The first cut asserted
+        # `all(k.startswith(("-","*","`")) or "/" in k ...)`, and every fixture path contains
+        # a `/`, so the second disjunct was TRUE FOR EVERY ROW no matter what the parser
+        # emitted. Replacing the whole bullet with just the path - the exact mutation this
+        # case's own failure message names - left it green. Reconstructing the expected row
+        # from the source bullet is the only form that can fail.
+        FIX_BULLETS = [ln.strip() for ln in FIX.splitlines()
+                       if ln.strip().startswith(("-", "*", "+"))]
+        rejected = [b for b in FIX_BULLETS if not b.startswith("- EDIT `ok/clean.md`")]
+        c.check("R6 · the row IS the bullet with a reason appended - not a summary of it, "
+                "and not the path alone",
+                all(any(raw.startswith(b + "  ← ") for raw in r["incomplete"])
+                    for b in rejected),
+                f"every consumer reads these as strings (this file's own S-cases, the "
+                f"self-audit's Lens 1, both review twins' drift step). "
+                f"bullets={rejected} rows={r['incomplete']}")
+
+        # ⛔ R8 · A REJECTION THAT NAMES THE WRONG HALF IS WORSE THAN A BARE ONE (SCC-240
+        # review, Test-Adequacy - a CODE finding, not only a coverage gap). `LEFT` anchors on
+        # `^-`, so a `*`/`+` bullet or a bare `NEW ...` line fails it for a reason that has
+        # nothing to do with the op vocabulary - and the author was handed `_LEFT_WHY`, which
+        # told them to write an op marker they had ALREADY written. That is the SCC-210 defect
+        # this whole lane exists to end, surviving inside its own fix.
+        MARKERS = ("## Declared Change Set\n\n"
+                   "* NEW `star.md` — a star marker → A\n"
+                   "+ EDIT `plus.md` — a plus marker → B\n"
+                   "NEW `nodash.md` — no marker at all → C\n")
+        marker_rows = dcs.parse(MARKERS)["incomplete"]
+        c.check("R8 · a wrong/absent LIST MARKER is named as the marker, and does not tell "
+                "the author to add an op they already wrote",
+                len(marker_rows) == 3
+                and all("- `" in w or "start with `- `" in w for w in marker_rows)
+                and not any("op marker is NEW, EDIT or DELETE" in w for w in marker_rows),
+                f"{marker_rows}")
+        c.check("R8b · (control) the op vocabulary is STILL the reason when the op really "
+                "is the missing half",
+                any("op marker is NEW, EDIT or DELETE" in raw for raw in r["incomplete"]),
+                f"the two repairs must stay distinguishable: {r['incomplete']}")
         c.check("R7 · (control) the second-heading notice keeps its own wording and is not "
                 "re-reasoned",
                 any("second" in raw for raw in dcs.parse(

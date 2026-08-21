@@ -241,6 +241,61 @@ def parse(text: str) -> dict:
             "roster_header_empty": head_kept and not lenses}
 
 
+def roster_defect(data: dict, verdict: str | None = None) -> str | None:
+    """Why the roster cannot be READ, or None if it can. (SCC-240)
+
+    ⭐ THREE CAUSES, THREE ANSWERS. Until now all three arrived as one message describing the
+    roster's FORMAT - useless advice to an author whose roster is in the file and correctly
+    formatted. On SCC-210 the fenced case and the blank-line case were hit in that order, each
+    costing a full preflight round trip plus a read of this module to work out what it had
+    actually seen.
+
+    ⛔ ONE COPY, TWO CALLERS, and that is the point. `judge` asks this as part of a gate
+    decision; the CLI asks it ALONE, because at review time the stamp, `dispositions:`,
+    `drift:` and Step 0.7 do not exist yet and the only answerable question is "can this
+    roster be read?". A second copy would drift exactly the way the two verdict readers this
+    module was built to unify did.
+
+    ⛔ Neither rule is relaxed to make the message nicer: `strip_fenced` stays (SCC-154 paid for
+    it with a live miss) and contiguity stays (it is what stops a stray bullet elsewhere in the
+    document silently extending the roster). Only the diagnosis changes.
+
+    `verdict` is cosmetic here - it only leads the sentence, so the CLI can ask the same
+    question with no stamp in hand and get the same three answers.
+    """
+    if data["lenses"]:
+        return None
+    lead = f"Verdict {verdict}" if verdict else "This walkthrough"
+    if data["roster_header_empty"]:
+        # ⛔ NAME THE ROW GRAMMAR, NOT ONLY THE BLANK LINE (SCC-240 review, Edge-Case + Blind
+        # Hunter). Zero rows is produced by a blank line AND by a contiguous row the regex does
+        # not match - a state word outside `ok|recovered-inline|dead`, a lens name starting
+        # with punctuation. An imperative that says only "no blank line between" sends an author
+        # whose rows ARE contiguous back to look for whitespace that was never there, which is
+        # the same wasted round trip in a new coat.
+        return (f"{lead}: a `lenses_run:` header is here but NO rows were collected under it. "
+                f"The rows must be CONTIGUOUS with the header - a blank line, or any line that "
+                f"is not a `- <lens> · <state>` row, ends the roster, because one that ran past "
+                f"a blank would swallow every bullet later in the document. Check BOTH: no "
+                f"blank line between the header and the first row, AND every row shaped "
+                f"`- <lens> · ok|recovered-inline|dead` (the state word is one of those three, "
+                f"exactly).")
+    if data["roster_header_fenced"]:
+        return (f"{lead}: your `lenses_run:` roster is INSIDE A CODE FENCE, and fences are "
+                f"stripped before this is read (SCC-154 - a canonical verdict pasted as evidence "
+                f"inside a fence once became the governing verdict). Paste the block WITHOUT the "
+                f"``` fence: the header line, then one `- <lens> · ok|recovered-inline|dead` row "
+                f"per lens, as plain lines in `## Code Review`. An UNCLOSED fence earlier in the "
+                f"document does this too - everything after it is dropped.")
+    # ⛔ UNKNOWN, NOT CLEAN, and this message is the one that must NOT change (SCC-173). It is
+    # the original refusal, kept byte-identical when a verdict leads it: a PASS with no roster
+    # is not evidence that the review ran, it is the absence of evidence either way.
+    absent_lead = f"Verdict {verdict} with NO" if verdict else "NO"
+    return (f"{absent_lead} `lenses_run:` roster. A verdict is the review's conclusion; "
+            f"the roster is what shows it happened. Record it in `## Code Review` as "
+            f"`lenses_run:` followed by one `- <lens> · ok|recovered-inline|dead` row per lens.")
+
+
 def judge(text: str, path: Path | str, verdict: str | None,
           today_cutoff: str = CUTOFF) -> tuple[bool, list[str]]:
     """(ok, reasons). `verdict` is what THE CALLER's own regex read — None means it found none.
@@ -270,37 +325,7 @@ def judge(text: str, path: Path | str, verdict: str | None,
         return False, reasons
 
     if not lenses:
-        # ⛔ UNKNOWN, NOT CLEAN. This is the whole defect: a PASS with no roster is not evidence
-        # that the review ran, it is the absence of evidence either way.
-        #
-        # ⭐ THREE CAUSES, THREE ANSWERS (SCC-240). Until now all three arrived as the message
-        # at the bottom, which describes the roster's format - useless advice to an author
-        # whose roster is already in the file and correctly formatted. On SCC-210 the fenced
-        # case and the blank-line case were hit in that order, each costing a full preflight
-        # round trip plus a read of this module to work out what it had actually seen.
-        # ⛔ Neither rule is relaxed to make this nicer: `strip_fenced` stays (SCC-154 paid for
-        # it with a live miss) and contiguity stays (it is what stops a stray bullet elsewhere
-        # silently extending the roster). Only the diagnosis changes.
-        if data["roster_header_empty"]:
-            reasons.append(
-                f"Verdict {v}: a `lenses_run:` header is here but NO rows were collected under "
-                f"it. The rows must be CONTIGUOUS with the header - a blank line, or any line "
-                f"that is not a `- <lens> · <state>` row, ends the roster, because one that ran "
-                f"past a blank would swallow every bullet later in the document. Put the rows "
-                f"directly under the header with no blank line between.")
-        elif data["roster_header_fenced"]:
-            reasons.append(
-                f"Verdict {v}: your `lenses_run:` roster is INSIDE A CODE FENCE, and fences are "
-                f"stripped before this is read (SCC-154 - a canonical verdict pasted as evidence "
-                f"inside a fence once became the governing verdict). Paste the block WITHOUT the "
-                f"``` fence: the header line, then one `- <lens> · ok|recovered-inline|dead` row "
-                f"per lens, as plain lines in `## Code Review`.")
-        else:
-            reasons.append(
-                f"Verdict {v} with NO `lenses_run:` roster. A verdict is the review's "
-                f"conclusion; the roster is what shows it happened. Record it in `## Code "
-                f"Review` as `lenses_run:` followed by one "
-                f"`- <lens> · ok|recovered-inline|dead` row per lens.")
+        reasons.append(roster_defect(data, v) or "")
         return False, reasons
 
     if v == "PASS" and dead:
@@ -409,37 +434,91 @@ def main(argv: list[str] | None = None) -> int:
 
     ap = argparse.ArgumentParser(
         prog="walkthrough_roster.py",
-        description="Print what this parser reads out of a walkthrough, and whether the "
-                    "close-out gate would accept it. Run it at review time, not at merge "
-                    "time. (SCC-240)")
+        description="Print what this parser reads out of a walkthrough. By DEFAULT it answers "
+                    "one question - can the `lenses_run:` roster be READ? - which is the only "
+                    "question answerable at review time, when the verdict stamp and the "
+                    "record lines do not exist yet. Use --gate for the full close-out "
+                    "judgement. (SCC-240)")
     ap.add_argument("walkthrough", help="path to the walkthrough .md")
-    ap.add_argument("--verdict", choices=[*("PASS", "CONCERNS", "FAIL", "WAIVED")],
+    ap.add_argument("--gate", action="store_true",
+                    help="run the FULL close-out judgement, not just the roster read: the "
+                         "dead-lens contradiction, `lenses_na` legality, `dispositions:` and "
+                         "`drift:` presence, and Step 0.7's three lines. Needs a verdict - "
+                         "the last `Verdict:` line, or --verdict")
+    ap.add_argument("--verdict", choices=("PASS", "CONCERNS", "FAIL", "WAIVED"),
                     help="judge against THIS verdict instead of the last `Verdict:` line - "
-                         "use it to check a `## Code Review` section before its stamp exists")
+                         "use it with --gate to check a `## Code Review` section before its "
+                         "stamp exists")
     a = ap.parse_args(argv)
 
     path = Path(a.walkthrough)
-    if not path.is_file():
-        # A wrong path is a broken invocation, not a statement about a roster. Exit 2 keeps it
-        # distinguishable from "this walkthrough would be refused", which is exit 1.
-        print(f"walkthrough_roster: no such walkthrough: {path}", file=sys.stderr)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        # ⛔ EXIT 2, NOT 1, AND NAME THE REAL CAUSE (SCC-240 review, Edge-Case + Literal-
+        # Correctness). A path that is missing, a DIRECTORY, or a file this decoder cannot read
+        # is a broken invocation, not a statement about a roster - and exit 1 means REFUSED, so
+        # letting an unreadable file take that code reports a plumbing failure as a roster
+        # defect. The old text said "no such walkthrough" for a directory sitting right there,
+        # and a latin-1 byte raised a traceback under exit 1 - real on a repo whose files are
+        # authored on two machines.
+        print(f"walkthrough_roster: cannot read {path}: "
+              f"{type(exc).__name__} - {exc}", file=sys.stderr)
         return 2
-    text = path.read_text(encoding="utf-8")
 
     data = parse(text)
-    stamps = _CLI_VERDICT_RE.findall(text)
-    # The LAST stamp governs - a re-review APPENDS, same rule the roster itself follows.
+    # ⛔ STAMPS COME FROM THE STRIPPED TEXT, like everything else this module reads (SCC-240
+    # review, Blind Hunter). Reading them RAW made one invocation disagree with itself: a
+    # walkthrough quoting a canonical verdict inside a fence AS EVIDENCE - the literal SCC-154
+    # scar - handed the CLI a verdict `parse` and `judge` could not see.
+    stamps = _CLI_VERDICT_RE.findall(strip_fenced(text))
+    # The LAST stamp governs - a re-review APPENDS, same rule the roster itself follows, and
+    # the same rule `task_preflight` was corrected to at `found[-1]`.
     verdict = a.verdict or (stamps[-1].upper() if stamps else None)
 
     print(json.dumps({**data, "verdict": verdict, "lane_date": lane_date(path),
                       "lenses_counted": len(data["lenses"])}, indent=1, ensure_ascii=False))
 
+    # ⭐ THE DEFAULT IS THE ROSTER READ, AND THAT IS WHAT MAKES THE STEP-4 INSTRUCTION TRUE
+    # (SCC-240 review, Literal-Correctness + Blind Hunter + Test-Adequacy + Acceptance - four
+    # lenses, one defect). The commands tell an author to run this the moment the roster is
+    # pasted. At that moment `dispositions:`, `drift:`, Step 0.7 and the `Verdict:` line are
+    # still unwritten, so the full gate answers a question nobody asked: it refused on a
+    # missing `dispositions:` line and the doc told the author it must be a fence problem.
+    # Worse, with no stamp `judge` returns (True, []) - so the check exited 0 on the fenced
+    # roster it exists to catch. The roster read needs no stamp and no record lines, so it is
+    # answerable exactly when it is asked.
+    defect = roster_defect(data, verdict)
+    if defect:
+        print("REFUSED: " + defect, file=sys.stderr)
+        return 1
+    print(f"ok:  roster reads - {len(data['lenses'])} lens/lenses"
+          + (f", {len(data['lenses_na'])} n/a" if data["lenses_na"] else ""), file=sys.stderr)
+
+    if not a.gate:
+        if verdict is None:
+            print("note: no `Verdict:` line yet, which is NORMAL at Step 4. The roster above "
+                  "is readable; the record lines and the stamp are checked by --gate, or at "
+                  "close-out.", file=sys.stderr)
+        return 0
+
+    if verdict is None:
+        print("--gate needs a verdict and this walkthrough has no `Verdict:` line - "
+              "pass --verdict PASS|CONCERNS|FAIL|WAIVED to judge the section anyway.",
+              file=sys.stderr)
+        return 2
     ok, why = judge(text, path, verdict)
     for line in why:
         print(("ok:  " if ok else "REFUSED: ") + line, file=sys.stderr)
-    if verdict is None:
-        print("note: no `Verdict:` line found, so this lane is OUT OF SCOPE for the roster "
-              "gate entirely - pass --verdict to check the section anyway.", file=sys.stderr)
+    # ⛔ SAME PARSER, DIFFERENT QUESTION - say so rather than imply agreement (SCC-240 review,
+    # Literal-Correctness). This reads the LAST stamp; `closeout_preflight` reads the FIRST
+    # (`_VERDICT_RE.search`), so on a re-reviewed STORY lane whose stamps run FAIL-then-PASS
+    # the two resolve different verdicts from one file. Task lanes go through
+    # `task_preflight`, which reads the last and agrees with this. Pass --verdict to pin it.
+    if len(stamps) > 1:
+        print(f"note: {len(stamps)} `Verdict:` stamps - judged the LAST ({verdict}). A story "
+              f"lane's `closeout_preflight` reads the FIRST ({stamps[0].upper()}); pass "
+              f"--verdict to remove the ambiguity.", file=sys.stderr)
     return 0 if ok else 1
 
 

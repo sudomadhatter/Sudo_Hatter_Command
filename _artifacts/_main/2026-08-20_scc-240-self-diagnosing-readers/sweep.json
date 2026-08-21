@@ -44,6 +44,38 @@
      "mutated":  "⭐ **The grouping happens somewhere and this",
      "case":  "G1",
      "block": "G · the verify wave names ONE grouping owner, in ONE place",
-     "test": ["python3", ".agents/scripts/tests/test_doc_examples_parse.py"]}
+     "test": ["python3", ".agents/scripts/tests/test_doc_examples_parse.py"]},
+
+    {"id": "M7 the shared guard never refuses",
+     "file": ".agents/scripts/wf_common.py",
+     "original": "    if allow_main:\n        return None\n    top, br, is_main = tag if tag is not None else tree_tag(start)",
+     "mutated":  "    if True:\n        return None\n    top, br, is_main = tag if tag is not None else tree_tag(start)",
+     "case":  "T-H1",
+     "block": "TREE · every runner says which tree it is about to act on",
+     "test": ["python3", ".agents/scripts/tests/test_suite_runner.py"]},
+
+    {"id": "M8 run_all --on-main stops propagating the override to its children",
+     "file": ".agents/scripts/tests/run_all.py",
+     "original": "        os.environ[\"WF_ON_MAIN\"] = \"1\"",
+     "mutated":  "        pass",
+     "case":  "T-H5",
+     "block": "TREE · every runner says which tree it is about to act on",
+     "test": ["python3", ".agents/scripts/tests/test_suite_runner.py"]},
+
+    {"id": "M9 the harness refuses with exit 1, which a sweep would score as a kill",
+     "file": ".agents/scripts/tests/_harness.py",
+     "original": "        print(refusal, file=sys.stderr)\n        sys.exit(2)",
+     "mutated":  "        print(refusal, file=sys.stderr)\n        sys.exit(1)",
+     "case":  "T-H1",
+     "block": "TREE · every runner says which tree it is about to act on",
+     "test": ["python3", ".agents/scripts/tests/test_suite_runner.py"]},
+
+    {"id": "M10 the harness ignores the hand-typed --on-main door",
+     "file": ".agents/scripts/tests/_harness.py",
+     "original": "    if \"--on-main\" in sys.argv[1:] or os.environ.get(\"WF_ON_MAIN\"):",
+     "mutated":  "    if os.environ.get(\"WF_ON_MAIN\"):",
+     "case":  "T-H2",
+     "block": "TREE · every runner says which tree it is about to act on",
+     "test": ["python3", ".agents/scripts/tests/test_suite_runner.py"]}
   ]
 }

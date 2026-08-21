@@ -34,11 +34,11 @@ Measured line numbers below were re-grepped on this lane's base (`db253fc`) — 
 
 ## Design decisions (each one is a ruling the builder follows, not an option)
 
-1. **Commands UNFENCE their roster example; engine docs KEEP the fence and add the instruction.** The two review commands show a **paste-ready** example with concrete lens names — the taught bytes must be the accepted bytes, so the fence goes. `SKILL.md` and `step-04-record.md` show the engine's **return template** with `<placeholders>`; two existing tests (`test_review_engine.py:1416` "SKILL.md publishes a fenced return block", `test_lens_roster_contract.py:167` "step-04 publishes the SAME fenced return block") extract it *by its fence* and round-trip it filled — so the fence stays there and a ⛔ line is added: *return these as plain lines, never inside a code fence; the caller pastes your return verbatim and `walkthrough_roster.py` strips fences before it reads (SCC-154) — a fenced roster is an absent roster.* The ticket offers exactly these two remedies; this plan picks one per site and says why.
-   ⚠️ **AUDIT FINDING (Lens 1, anchored `test_review_engine.py:1416` + `test_lens_roster_contract.py:167`):** both extractors take the block *by its fence* — `^```\n([\s\S]*?^lenses_run:` and `^```\n(review-runtime:[\s\S]*?^lenses_run:` — so the ⛔ line goes **after the closing fence**, never inside it, and **no new fenced block** is introduced anywhere above line 68 of `SKILL.md` or above line 51 of `step-04-record.md`. Violating either turns two green pins red (and, through the byte-identical cache comparison, red twice).
+1. **Commands UNFENCE their roster example; engine docs KEEP the fence and add the instruction.** The two review commands show a **paste-ready** example with concrete lens names — the taught bytes must be the accepted bytes, so the fence goes. `SKILL.md` and `step-04-record.md` show the engine's **return template** with `<placeholders>`; two existing tests (`test_review_engine.py:1420` "SKILL.md publishes a fenced return block", `test_lens_roster_contract.py:167` "step-04 publishes the SAME fenced return block") extract it *by its fence* and round-trip it filled — so the fence stays there and a ⛔ line is added: *return these as plain lines, never inside a code fence; the caller pastes your return verbatim and `walkthrough_roster.py` strips fences before it reads (SCC-154) — a fenced roster is an absent roster.* The ticket offers exactly these two remedies; this plan picks one per site and says why.
+   ⚠️ **AUDIT FINDING (Lens 1, anchored `test_review_engine.py:1420` + `test_lens_roster_contract.py:167`):** both extractors take the block *by its fence* — `^```\n([\s\S]*?^lenses_run:` and `^```\n(review-runtime:[\s\S]*?^lenses_run:` — so the ⛔ line goes **after the closing fence**, never inside it, and **no new fenced block** is introduced anywhere above line 68 of `SKILL.md` or above line 51 of `step-04-record.md`. Violating either turns two green pins red (and, through the byte-identical cache comparison, red twice).
 2. **The review commands' Step 4 gains the self-check.** One line after the paste instruction in both twins: `python3 .agents/scripts/walkthrough_roster.py <walkthrough>` *(PC: `python`)* — *it must print the rows you just pasted and exit 0; if it names a fence or a blank line, fix the paste now, not at close-out.* This is the mechanism the ticket's item 1 exists for ("there is no way to check a block until the close-out refuses it"); a doc that teaches the right form is the one-time repair, the self-check is what catches the next wrong paste. ⛔ The line sits OUTSIDE every `<!-- twin-law -->` fence (the fenced example sits above `<!-- twin-law: roster -->`), so `test_twin_parity.py` is unaffected — and the change is ported to both twins anyway (Lens 2 twin rule). `cicd-code-review-AP.md` is FROZEN (SCC-209) and carries no header line — it is not a teaching site and is not edited.
 3. **`incomplete` rows stay strings; the reason is appended.** Every consumer reads `incomplete` as a list of raw-bullet strings: `test_declared_change_set.py` (`any("INDEX.md" in raw ...)`), `/smh-self-audit` Lens 1 ("incomplete bullets IS a finding"), both review twins' drift step (`incomplete` severity *important* per bullet). A dict row would break all of them for no reader gain. Shape: `f"{bullet}  ← {reason}"`, reasons: `no → row separator`, `left side is not <OP> <path> (op NEW|EDIT|DELETE, ONE path)`, `empty row text after the arrow`. The second-heading parenthetical already carries its own reason and is unchanged.
-   ⚠️ **AUDIT FINDING (Lens 1, anchored `declared_change_set.py:110-119`):** the loop has **four** rejection paths, not three — `arrows` empty · `b` is None · `b` matched but `row.strip()` empty · **`b` is None AND the row is empty**. Precedence, stated so the reason is deterministic: **left-side failure wins** over an empty row (the author fixes the left first; the arrow is there). Case `R4` pins that fourth shape (`- foo → ` with no op) to the left-side reason.
+   ⚠️ **AUDIT FINDING (Lens 1, anchored `declared_change_set.py:110-119`):** the loop has **four** rejection paths, not three — `arrows` empty · `b` is None · `b` matched but `row.strip()` empty · **`b` is None AND the row is empty**. Precedence, stated so the reason is deterministic: **left-side failure wins** over an empty row (the author fixes the left first; the arrow is there). Case `R5` pins that fourth shape (`- foo → ` with no op) to the left-side reason.
 4. **`parse()` grows two diagnostic flags; `judge()` branches on them.** `roster_header_fenced: bool` (a `lenses_run:` header matches in the RAW text and none survives `strip_fenced`) and `roster_header_empty: bool` (a header survives stripping and collects zero rows). `parse` stays total — flags are data, `judge` decides — so the CLI prints them too. Precedence in `judge` when `lenses == []`: empty-header (the more specific: a real header was found) → fenced → absent (today's message, byte-identical). `strip_fenced` and the contiguity rule are **not touched** (ticket DO NOT).
 5. **The CLI.** `walkthrough_roster.py <walkthrough> [--verdict PASS|CONCERNS|FAIL|WAIVED]`: reads the file, takes the LAST `Verdict:` stamp with a lenient regex (this is a self-check, not a gate — both preflights keep their own strict/lenient readers and call `judge` as before), prints the parse as JSON plus each reason line, exits 0 when `judge` says ok, 1 when it refuses, 2 when the file is missing. `--verdict` lets a caller check a section before the stamp is written. Stdlib only, `argparse`, no new imports beyond `argparse`/`json`/`sys`.
 6. **step-02 says it once.** The "You prepare the inputs" bullet becomes: *group first — apply the SCC-156 claim-grouping below AFTER the self-gate has read the raw count and BEFORE you serialise; then serialise the step-1 findings as a JSON list, **in step-1 order**, one object per finding, carrying the keys the extractor reads: `title` · `file_path` · `line_start` · `body` · `evidence`; the PROMPT names the groups (which indices share one question).* The SCC-156 paragraph's lead sentence gains *"— the orchestrator does this, at the point the dossier bullet above names; the roles receive groups, they never form them."* Every pinned phrase in `test_review_engine.py:569-625` is preserved verbatim (`as a JSON list, **in step-1 order**`, `carrying the keys the extractor reads: \`title\` · \`file_path\` ·\n\`line_start\` · \`body\` · \`evidence\``, the dossier-block heading, the extractor line).
@@ -71,7 +71,14 @@ timestamp) and which the plan did not anticipate.)*
 - EDIT (generated) `.claude/skills/code-review-engine/steps/step-04-record.md` — sync output → 6
 - EDIT (generated) `.claude/skills/code-review-engine/steps/step-02-verify.md` — sync output → 7
 - EDIT `.agents/scripts/INDEX.md` — row for `walkthrough_roster.py` (CLI) → 1
-- EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — SOP currency: the CLI, the three-way refusal, the `incomplete` reasons → 1, 2, 5
+- EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — SOP currency: the CLI, the three-way refusal, the `incomplete` reasons; Part B adds one sentence to the SCC-190 row → 1, 2, 5, B
+
+*(Amendment 2, 2026-08-20, Part B — review-discovered, operator's word "fix it in this ticket".
+**Added**, all inside this one block:)*
+- EDIT `.agents/scripts/wf_common.py` — `tree_guard()` beside `tree_tag()`: the ONE guard body both runners ask → B
+- EDIT `.agents/scripts/tests/run_all.py` — call `tree_guard`; `--on-main` exports `WF_ON_MAIN=1` to its children → B
+- EDIT `.agents/scripts/tests/_harness.py` — `Cases.__init__` asks the guard, refuses exit 2; the interim `REPO`/`tree_label()` reverted → B
+- EDIT `.agents/scripts/tests/test_suite_runner.py` — T-H1..T-H6 in the existing `TREE` block → B
 
 *(Planning-dir files — this plan, `walkthrough.md`, `task.yaml`, `gates/suite.json`, `sweep.json` — are carved out of the drift diff by `declared_change_set.PLANNING` and are not declared here.)*
 
@@ -91,10 +98,10 @@ timestamp) and which the plan did not anticipate.)*
 
 | id | file | original (exactly once) | mutated | must be killed by (case / block) |
 |---|---|---|---|---|
-| M1 fence case never fires | `walkthrough_roster.py` | the `roster_header_fenced` computation (`head_raw and not head_stripped`) | `False` | `F2` / `F · the refusal says WHY` |
+| M1 fence case never fires | `walkthrough_roster.py` | the `roster_header_fenced` computation (`head_raw and not head_kept`) | `False` | `F2` / `F · the refusal says WHY` |
 | M2 the two new messages swapped | `walkthrough_roster.py` | the `contiguous` reason string | the fence reason string | `F3` / `F · the refusal says WHY` |
 | M3 CLI always exits 0 | `walkthrough_roster.py` | `return 0 if ok else 1` | `return 0` | `F1c` / `F · the refusal says WHY` |
-| M4 one reason for every rejection | `declared_change_set.py` | the `no → row separator` reason | the `empty row text` reason | `R1` / `R · every incomplete row carries a reason` |
+| M4 one reason for every rejection | `declared_change_set.py` | the `no → row separator` reason | the `empty row text` reason | `R2` / `R · every incomplete row carries a reason` |
 | M5 the smh example re-fenced | `.agents/commands/smh-code-review.md` | the unfenced `  lenses_run:` example's first line (with its new preceding line) | the same lines wrapped back in ```` ``` ```` | `D1` / `D · taught roster parses as taught` |
 | M6 grouping owner deleted | `step-02-verify.md` | `group first` sentence | the pre-fix sentence | `G1` / `G · one grouping owner` |
 
@@ -153,7 +160,7 @@ verdict:     narratives attached below; nothing originated here
 
 | anchor | literal text read | consequence | severity |
 |---|---|---|---|
-| `.agents/scripts/tests/test_review_engine.py:1416` | `contract = re.search(r"^```\n([\s\S]*?^lenses_run:[\s\S]*?)^```", texts[SKILL], re.M)` | the SKILL.md return block is located BY ITS FENCE; a ⛔ line placed inside the fence, or any new fence introduced above `SKILL.md:68`, changes what the round-trip reads — a green pin goes red (and again in the cache-identity check). **Baked into decision 1** (⚠️ AUDIT FINDING). Pre-mortem: the failure is LOUD (two reds), not silent — safe direction; the fresh-clone and other-machine variants are identical because the pin reads the file, not the environment | suggestion |
+| `.agents/scripts/tests/test_review_engine.py:1420` | `contract = re.search(r"^```\n([\s\S]*?^lenses_run:[\s\S]*?)^```", texts[SKILL], re.M)` | the SKILL.md return block is located BY ITS FENCE; a ⛔ line placed inside the fence, or any new fence introduced above `SKILL.md:68`, changes what the round-trip reads — a green pin goes red (and again in the cache-identity check). **Baked into decision 1** (⚠️ AUDIT FINDING). Pre-mortem: the failure is LOUD (two reds), not silent — safe direction; the fresh-clone and other-machine variants are identical because the pin reads the file, not the environment | suggestion |
 | `.agents/scripts/tests/test_lens_roster_contract.py:167` | `m = re.search(r"^```\n(review-runtime:[\s\S]*?^lenses_run:[\s\S]*?)^```", STEP04, re.M)` | same mechanism for step-04: the fenced block must still OPEN with `review-runtime:` — the ⛔ line goes after the closing fence. **Baked into decision 1.** | suggestion |
 | `.agents/scripts/declared_change_set.py:110-119` | `arrows = list(ARROW.finditer(s))` … `if b and row.strip(): … continue` … `incomplete.append(s)` | the plan named THREE reasons for what is FOUR rejection paths (`b` None AND row empty is the fourth); without a stated precedence two builders produce two different reasons for one bullet. **Baked into decision 3**: left-side failure wins; case `R4` pins it. Pre-mortem: this one IS the silent kind — a wrong-but-present reason reads as diagnosed — which is why R4 exists rather than a comment | suggestion |
 
@@ -169,3 +176,89 @@ verdict:     narratives attached below; nothing originated here
 None. SCC-235's change set and this plan's declared set share no file.
 
 Audit verdict: GO
+
+## Part B (review-discovered, 2026-08-20) — the wrong-tree guard reaches single-file runs
+
+**Operator's words:** *"yes fix it in this ticket then keep going."* Owning mechanism: SCC-190.
+
+### What is wrong, measured in this lane
+
+SCC-190's guard lives in `run_all.py:194-211` and nowhere else. It refuses when all three hold —
+main checkout, mainline branch, lane worktrees on `chore/*`/`epic/*` — and `--on-main` is the
+escape. Every **single-file** run (`python3 .agents/scripts/tests/test_x.py [--case …]`) bypasses
+it, and that is the review loop *and* the only way `mutation_sweep.py` runs a test. This lane
+ran `test_declared_change_set.py --case "R · every incomplete"` from a reset cwd and recorded
+`47/47 passed` against `main`; the only tell was an unrelated `matched 0/0 blocks` line. The
+guard protects the once-per-lane ceremony and leaves the dozens-per-lane loop open.
+
+### Decisions
+
+1. **ONE guard body.** `wf_common.tree_guard(start, who) -> str | None` — the condition and
+   wording lifted from `run_all.py:198-211`, sitting beside `tree_tag()` (`wf_common.py:437`),
+   which already answers "which tree". Returns the refusal text or `None`. No second vocabulary.
+2. **`run_all.py` calls it**; message and `--on-main` unchanged. **`--on-main` additionally sets
+   `os.environ["WF_ON_MAIN"] = "1"` before the pool spawns** — the `Popen` at `run_all.py:74`
+   passes no `env=`, so every child inherits it. That is how one typed override reaches 40
+   harness-based children; without it `--on-main` would refuse itself through its own children.
+3. **`_harness.Cases.__init__` asks the same guard.** Override = `--on-main` in argv (hand-typed
+   single-file runs; identical on zsh and PowerShell, which an env var is not — two machines)
+   **or** `WF_ON_MAIN` in the environment (the parent's propagation). On refusal: print to stderr,
+   `sys.exit(2)`.
+4. **Exit 2 is sweep-safe by the sweep's existing law**, no sweep change: `mutation_sweep.judge()`
+   (`mutation_sweep.py:144-160`) scores `0` survived, `3` sweep error, and any other non-zero
+   **without a `FAILED:` line** as `SWEEP ERROR` — so a wrong-tree refusal can never read as a
+   kill. T-H1 pins the absence of that line.
+5. **Degrade to silence, never take a suite down** — the constraint `run_all.py:42-50` already
+   documents for itself, same `try: import wf_common / except: None` shape. `test_suite_runner.py`
+   copies `_harness.py` bare into temp dirs; with no `wf_common` or no git, `tree_tag` returns
+   `br=""`, the condition is false, nothing fires.
+6. **Runs in `Cases.__init__`, not at import.** `_pf_fixtures.py:20` imports only `run_script`
+   from the harness; nothing at module level changes.
+7. **One tree line on allowed runs**: `-- tree: <name> [<branch>] - MAIN CHECKOUT|worktree --`,
+   printed by the harness when the guard resolves, so even a permitted single-file run states its
+   tree. Replaces the interim `REPO`/`tree_label()` this lane added on belief — **reverted**.
+
+### Acceptance row B → the assertion
+
+| # | Acceptance | Assertion (RED first) | Lives in |
+|---|---|---|---|
+| B | A single test file run from the main checkout while a lane worktree exists **refuses**; the same file runs in the lane unflagged | T-H1..T-H6 below, `test_suite_runner.py` `TREE` block (reuses its `main_co` + `lane` fixture at `:668-690`, which already copies `_harness.py` and `wf_common.py` in) | `test_suite_runner.py` |
+
+- **T-H1** — a HARNESS-based `test_h.py` run bare from `main_co` → exit **2**, `REFUSING` on stderr, **no `FAILED:` line**.
+- **T-H2** — same, `--on-main` → exit 0.
+- **T-H3** — same, `WF_ON_MAIN=1` in env → exit 0.
+- **T-H4** — (control) the same file in the **lane** worktree, no flag → exit 0. The guard never fires where the work belongs.
+- **T-H5** — `run_all.py --on-main` whose child is the harness-based file → exit 0. Today the fixture's child is deliberately harness-free (`test_ok.py`), which is exactly why the propagation gap was invisible.
+- **T-H6** — a bare temp dir, no git → harness runs, exit 0 (degrade-to-silence).
+
+### Mutants (code-drawn, appended to `sweep.json`)
+
+| id | file | mutant | killed by |
+|---|---|---|---|
+| M7 | `wf_common.py` | `tree_guard` returns `None` unconditionally | T-H1 |
+| M8 | `run_all.py` | `--on-main` path no longer sets `WF_ON_MAIN` | T-H5 |
+| M9 | `_harness.py` | refusal exits `1` instead of `2` | T-H1 (exit-code half) |
+| M10 | `_harness.py` | argv `--on-main` ignored | T-H2 |
+
+### Execution order
+
+`wf_common` → `run_all` → `_harness` → T-H1..T-H6 **RED** → green → sweep M7–M10 → SOP sentence
+(same commit as the surfaces, `sop_currency`) → resume Part A's remaining remediation (doc
+re-verification, full gate through the receipt writer, re-stamped verdict).
+
+### Part B self-audit (Lens 1 + 2 + 3, anchored)
+
+- **Lens 1 — repo reality.** Every anchor above re-grepped this session: `run_all.py:42-50`,
+  `:74`, `:185-187`, `:194-211`; `wf_common.py:437-468`; `mutation_sweep.py:144-160`;
+  `_pf_fixtures.py:20`; `test_suite_runner.py:655-730`. The amended Declared Change Set parses
+  (`declared_change_set.py parse` → `incomplete: []`). Scope Ledger: no `NEW` artefact.
+- **Lens 2 — parity + blast.** `run_all.py` and `_harness.py` are usage surfaces → SOP in the
+  same commit. No twin. Sibling lane SCC-235 touches none of these four files. No `.githooks/`
+  caller of either. `run_all` has a test (`test_suite_runner.py`); `_harness` is tested by the
+  same file.
+- **Lens 3 — pre-mortem, attached.** *The sibling-lands-first one:* SCC-235 is untouched here.
+  *The other-machine one:* an env var is the wrong hand-typed door on PowerShell → the argv flag
+  in decision 3. *The silent one:* the guard that refuses inside `run_all --on-main`'s children →
+  decision 2 + T-H5. *The fresh-clone one:* no worktrees → condition false → silent, correct.
+
+**Audit verdict: GO**

@@ -477,16 +477,110 @@ def main() -> int:
             page.write_text(fenced, encoding="utf-8")
             r = subprocess.run([sys.executable, str(MOD), str(page)],
                                capture_output=True, text=True)
-            c.check("F1c · on a REFUSED walkthrough it exits non-zero and prints the reason",
-                    r.returncode == 1 and "fence" in (r.stdout + r.stderr).lower(),
-                    f"rc={r.returncode} out={(r.stdout + r.stderr)[:200]!r} - a self-check "
-                    f"that exits 0 on a block the gate will refuse is worse than none")
+            # ⛔ ASSERT ON stderr ALONE, AND ON A PHRASE ONLY THE MESSAGE CARRIES (SCC-240
+            # review - found independently by the Blind Hunter and the Test-Adequacy Auditor,
+            # both reproduced). The first cut asserted `"fence" in (stdout + stderr)` - and
+            # stdout is the JSON dump, which since this same lane always contains the KEY
+            # `roster_header_fenced`. The substring was therefore unconditional: mutating the
+            # refusal to a constant string, or deleting the reason lines entirely, both left
+            # this case green, so only `returncode == 1` was ever load-bearing while the case
+            # NAME promised the reason was checked.
+            c.check("F1c · on a REFUSED walkthrough it exits 1 and stderr NAMES the cause",
+                    r.returncode == 1 and "REFUSED:" in r.stderr and "SCC-154" in r.stderr
+                    and "CODE FENCE" in r.stderr,
+                    f"rc={r.returncode} err={r.stderr[:200]!r} - a self-check that exits 0 on "
+                    f"a block the gate will refuse is worse than none, and one whose reason is "
+                    f"unasserted is a promise the file does not keep")
 
             r = subprocess.run([sys.executable, str(MOD), str(tmp / "nope.md")],
                                capture_output=True, text=True)
             c.check("F1d · a missing file is a loud exit 2, never a verdict about content",
                     r.returncode == 2 and not r.stdout.strip(),
                     f"rc={r.returncode} out={r.stdout[:100]!r} err={r.stderr[:100]!r}")
+
+            # ⛔ EXIT 2 IS FOR EVERY PATH IT CANNOT READ, not only a missing one (SCC-240
+            # review, Edge-Case + Literal-Correctness). A DIRECTORY was reported as "no such
+            # walkthrough" while sitting right there, and a latin-1 byte raised a TRACEBACK
+            # under exit 1 - and exit 1 means REFUSED, so an unreadable file was reported as a
+            # roster defect. This repo is authored on two machines; the byte case is real.
+            r = subprocess.run([sys.executable, str(MOD), str(page.parent)],
+                               capture_output=True, text=True)
+            c.check("F1e · a DIRECTORY is exit 2, and the message does not claim it is missing",
+                    r.returncode == 2 and "no such" not in r.stderr.lower(),
+                    f"rc={r.returncode} err={r.stderr[:160]!r} - a folder that exists must "
+                    f"not be reported as absent")
+            bad = page.parent / "latin.md"
+            bad.write_bytes("lenses_run:\n- caf\xe9 \xb7 ok\n".encode("latin-1"))
+            r = subprocess.run([sys.executable, str(MOD), str(bad)],
+                               capture_output=True, text=True)
+            c.check("F1f · an undecodable file is exit 2 with a named cause, NOT a traceback",
+                    r.returncode == 2 and "Traceback" not in r.stderr
+                    and "UnicodeDecodeError" in r.stderr,
+                    f"rc={r.returncode} err={r.stderr[:200]!r}")
+
+            # ── the VERDICT-RESOLUTION half, which had no case and no mutant at all ────────
+            # ⛔ FOUR MUTANTS SURVIVED THE WHOLE 65-CASE FILE HERE (SCC-240 review,
+            # Test-Adequacy, reproduced): deleting `a.verdict or`, flipping `stamps[-1]` to
+            # `stamps[0]`, gutting the note, and dropping keys from the JSON. Acceptance row 1
+            # says the reader is runnable; the half that decides WHAT it judges against was
+            # unasserted, and this lane's own rewrite of `main()` left every case green.
+            nostamp = page.parent / "nostamp.md"
+            nostamp.write_text(wt(roster_rows=ALL_OK, dispo=DISPO, drift=DRIFT
+                                  ).replace("\nVerdict: PASS @ abc1234\n", ""), encoding="utf-8")
+            r = subprocess.run([sys.executable, str(MOD), str(nostamp)],
+                               capture_output=True, text=True)
+            c.check("F1g · with NO stamp the bare run still reads the roster and says the "
+                    "stamp is normally absent here",
+                    r.returncode == 0 and json.loads(r.stdout)["verdict"] is None
+                    and "note:" in r.stderr,
+                    f"rc={r.returncode} err={r.stderr[:160]!r}")
+            r = subprocess.run([sys.executable, str(MOD), str(nostamp), "--gate"],
+                               capture_output=True, text=True)
+            c.check("F1h · `--gate` with no stamp REFUSES to guess - exit 2, not a verdict",
+                    r.returncode == 2 and "--verdict" in r.stderr,
+                    f"rc={r.returncode} err={r.stderr[:160]!r}")
+            r = subprocess.run([sys.executable, str(MOD), str(nostamp),
+                                "--gate", "--verdict", "PASS"],
+                               capture_output=True, text=True)
+            c.check("F1i · `--verdict` supplies the missing stamp and IS the judged value",
+                    r.returncode == 0 and json.loads(r.stdout)["verdict"] == "PASS",
+                    f"rc={r.returncode} out={r.stdout[:120]!r} err={r.stderr[:160]!r}")
+
+            # ⛔ THE LAST STAMP GOVERNS - a re-review APPENDS. Flipping `[-1]` to `[0]` inverts
+            # the documented rule and nothing saw it.
+            two = page.parent / "two.md"
+            two.write_text(wt(verdict="PASS", roster_rows=ALL_OK, dispo=DISPO, drift=DRIFT)
+                           + "\nVerdict: FAIL @ def5678\n", encoding="utf-8")
+            r = subprocess.run([sys.executable, str(MOD), str(two), "--gate"],
+                               capture_output=True, text=True)
+            c.check("F1j · two stamps: `--gate` judges the LAST, and SAYS the story-lane "
+                    "gate reads the first",
+                    r.returncode == 1 and json.loads(r.stdout)["verdict"] == "FAIL"
+                    and "closeout_preflight" in r.stderr,
+                    f"rc={r.returncode} verdict={json.loads(r.stdout).get('verdict')!r} "
+                    f"err={r.stderr[:200]!r}")
+            r = subprocess.run([sys.executable, str(MOD), str(two),
+                                "--gate", "--verdict", "PASS"],
+                               capture_output=True, text=True)
+            c.check("F1k · ...and `--verdict` overrides both stamps",
+                    r.returncode == 0 and json.loads(r.stdout)["verdict"] == "PASS",
+                    f"rc={r.returncode} err={r.stderr[:160]!r}")
+
+            # WIDTH, not existence (the repo's own mutation law): `_CLI_VERDICT_RE` is
+            # deliberately the LENIENT reader, so narrowing it must go red. Both narrowings
+            # the auditor tried - dropping the decorated prefix, and cutting the alternation
+            # to PASS only - survived the file as shipped.
+            wide = page.parent / "wide.md"
+            wide.write_text(wt(roster_rows=ALL_OK, dispo=DISPO, drift=DRIFT).replace(
+                "Verdict: PASS @ abc1234", "> **Verdict:** **WAIVED** @ abc1234"),
+                encoding="utf-8")
+            r = subprocess.run([sys.executable, str(MOD), str(wide)],
+                               capture_output=True, text=True)
+            c.check("F1l · the stamp reader is LENIENT - a blockquoted, bolded, WAIVED stamp "
+                    "still resolves",
+                    json.loads(r.stdout)["verdict"] == "WAIVED",
+                    f"got {json.loads(r.stdout).get('verdict')!r} - narrowing this regex is "
+                    f"what the case exists to catch, and it is documented as the lenient one")
 
         # F2 · the fenced case, named as fenced.
         ok, why = roster.judge(fenced, POST, "PASS")
@@ -551,6 +645,30 @@ def main() -> int:
                 not ok and "fence" in " ".join(why).lower(),
                 f"sending the author to fix the blank line inside a block that is stripped "
                 f"whole is a second wasted round trip: {why}")
+
+        # ⛔ F7 · THE SHAPE THE PARSER'S OWN DOCSTRING PROMISES AND NOTHING PINNED (SCC-240
+        # review, Test-Adequacy). F6 is a roster fenced and gapped INSIDE ONE FENCE. This is
+        # the different, and now COMMON, document: a fenced EXAMPLE block sitting above a
+        # real unfenced header - which is exactly what a walkthrough looks like now that both
+        # review commands teach an unfenced example beside other fenced evidence. The two
+        # flags are mutually exclusive by construction, so `empty` must win and the author
+        # must be sent to their own header, never to the example they were copying.
+        mixed = ("# W\n\n" + STEP07 + "## Code Review\n\n"
+                 "For reference, the engine returns:\n\n"
+                 "```\nlenses_run:\n- example · ok\n```\n\n"
+                 "lenses_run:\n\n- blind-hunter · ok\n\n"
+                 + DISPO + "\n" + DRIFT + "\n\nVerdict: PASS @ abc1234\n")
+        d = roster.parse(mixed)
+        c.check("F7 · a fenced EXAMPLE above a real empty header reports `empty`, not "
+                "`fenced` - the flags stay mutually exclusive",
+                d["roster_header_fenced"] is False and d["roster_header_empty"] is True,
+                f"fenced={d['roster_header_fenced']} empty={d['roster_header_empty']}")
+        ok, why = roster.judge(mixed, POST, "PASS")
+        blob = " ".join(why)
+        c.check("F7b · ...so the refusal sends the author to their OWN header, not to the "
+                "example they copied",
+                not ok and "contiguous" in blob.lower() and "fence" not in blob.lower(),
+                f"blaming the fenced example here is a diagnosis of the wrong block: {why}")
 
     return c.finish()
 

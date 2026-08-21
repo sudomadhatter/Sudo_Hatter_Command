@@ -77,6 +77,13 @@ TEMPLATE_WARNING_RE = re.compile(
     r"fence[^.\n]*\bstrip|strip[^.\n]*\bfence|never (?:paste|copy|inside)[^.\n]*fence",
     re.I)
 
+# How far below a fenced template the instruction may sit and still count as attached to it.
+# ⛔ A WINDOW, NOT THE WHOLE FILE (SCC-240 review). Searched file-wide, one warning anywhere
+# exempts every fenced template in the document for good - so the next fenced roster added
+# 300 lines away inherits a sentence written about something else and is never checked.
+# 25 lines is "the paragraph under the block", which is where both real instructions sit.
+WARNING_WINDOW = 25
+
 
 def teaching_files() -> list[Path]:
     out: list[Path] = []
@@ -175,7 +182,15 @@ def declared_examples(text: str) -> list[dict]:
                 if not re.match(r"^[-*+]\s", s):
                     break
                 region.append(ln2)
-        out.append({"line": i + 1, "region": "\n".join(region)})
+        # ⛔ THE SAME TEMPLATE CARVE-OUT THE ROSTER HALF HAS (SCC-240 review, Blind Hunter).
+        # Without it, the first plan TEMPLATE added to a plan-emitting command - and
+        # `smh-plan-task.md` / `smh-quick-dev.md` / `cicd-dev-story-tests.md` are pinned
+        # elsewhere as exactly the files that teach this block - goes RED on a document that
+        # is correct by this file's own stated taxonomy: `- <OP> \`<path>\` — <why> → <row>`
+        # cannot parse, and is not meant to.
+        rows = [r for r in region if re.match(r"^\s*[-*+]\s", r)]
+        template = bool(rows) and all(PLACEHOLDER_RE.search(r) for r in rows)
+        out.append({"line": i + 1, "region": "\n".join(region), "template": template})
     return out
 
 
@@ -216,16 +231,36 @@ def main() -> int:
         # The other half of the same claim: a template may keep its fence, but only if the
         # document TELLS the reader the fence is illustration. Silence there is the same
         # defect wearing a different hat - the reader copies what they see either way.
+        # ⛔ SCOPED TO THE EXAMPLE, NOT THE FILE (SCC-240 review - the Blind Hunter, the
+        # Test-Adequacy Auditor and Literal-Correctness each raised this). A whole-file
+        # `search` means ONE warning anywhere permanently exempts EVERY fenced template in
+        # that document: add a new fenced roster 300 lines away and it inherits a sentence
+        # written about a different block. The case NAME asserts adjacency, so the assertion
+        # has to measure adjacency.
         unwarned = []
         for p, ex in found:
             if not ex["template"] or not ex["fenced"]:
                 continue
-            if not TEMPLATE_WARNING_RE.search(p.read_text(encoding="utf-8")):
+            lines = p.read_text(encoding="utf-8").splitlines()
+            window = "\n".join(lines[max(0, ex["line"] - 2): ex["line"] + WARNING_WINDOW])
+            if not TEMPLATE_WARNING_RE.search(window):
                 unwarned.append(f"{p.relative_to(ROOT)}:{ex['line']}")
         c.check("D2 · a fenced TEMPLATE says the fence is illustration and must not be "
-                "pasted",
+                "pasted, WITHIN sight of the fence",
                 not unwarned,
-                f"{len(unwarned)} fenced template(s) with no such instruction: {unwarned}")
+                f"{len(unwarned)} fenced template(s) with no instruction inside "
+                f"{WARNING_WINDOW} lines: {unwarned}")
+        # The control for D2's own scoping: a warning far away must NOT satisfy it.
+        far = "```\nlenses_run:\n- <lens> · ok\n```\n" + ("\nfiller\n" * 60) + \
+              "\nfences are stripped before this is read\n"
+        far_lines = far.splitlines()
+        far_ex = roster_examples(far)[0]
+        far_window = "\n".join(far_lines[max(0, far_ex["line"] - 2):
+                                         far_ex["line"] + WARNING_WINDOW])
+        c.check("D2b · (control) a warning far from the fence does NOT satisfy D2",
+                TEMPLATE_WARNING_RE.search(far) is not None
+                and TEMPLATE_WARNING_RE.search(far_window) is None,
+                "if the window matched here, D2 would be the whole-file search again")
 
         # ⛔ NEGATIVE CONTROL, and it is not decoration: D1 loops over documents, so if the
         # extractor silently returned a region the parser happens to like, D1 would be green
@@ -239,21 +274,32 @@ def main() -> int:
                 "if this ever passes trivially the whole file is measuring nothing")
 
     if c.block("C · every taught Declared Change Set block parses AS TAUGHT"):
-        # ⛔ WRITTEN GREEN, AND SAYING SO IS THE POINT (SCC-240 walkthrough). The roster half
-        # above is red today; this half is not - the only taught declared-set example lives in
-        # `declared_change_set.py`'s own docstring and already parses. It is pinned anyway
-        # because the ticket's acceptance row 6 covers both blocks, and because the NEXT
+        # ⛔ WRITTEN GREEN, AND SAYING SO IS THE POINT. When this block was written the roster
+        # half above was RED and this half was not: the only taught declared-set example lives
+        # in `declared_change_set.py`'s own docstring and already parsed. Both halves are green
+        # in the landed commit - so do NOT read a green `D` as a broken test (SCC-240 review,
+        # Blind Hunter: the original wording said "is red today", which stops being true the
+        # moment the lane lands and turns the next reader into an archaeologist). It is pinned
+        # anyway because the ticket's acceptance row 6 covers both blocks, and because the NEXT
         # example somebody adds to a command file is the one that will be wrong.
         sources = [ROOT / ".agents/scripts/declared_change_set.py"] + files
         found = []
         for p in sources:
             for ex in declared_examples(p.read_text(encoding="utf-8")):
                 found.append((p, ex))
-        c.check("C0 · the scan found a taught declared-set example (anti-vacuity)",
-                bool(found), "no `## Declared Change Set` example anywhere - either the "
-                             "teaching surface moved or the extractor is blind")
+        # ⭐ NAME THE SOURCE, do not just count it (SCC-240 review, Test-Adequacy +
+        # Acceptance). `bool(found)` is satisfied forever by the single docstring example, so
+        # it sat one deletion away from vacuous while the roster half carried real thresholds
+        # (>=20 files, >=4 examples, >=2 paste-ready). Pinning WHICH file supplies it means
+        # losing that example is a red, not a silent shrug.
+        c.check("C0 · the scan found the parser's own taught example (anti-vacuity, by name)",
+                any(p.name == "declared_change_set.py" for p, _ in found),
+                f"no `## Declared Change Set` example in the parser's docstring - either the "
+                f"teaching surface moved or the extractor is blind. found={[str(p.name) for p, _ in found]}")
         broken = []
         for p, ex in found:
+            if ex["template"]:
+                continue
             # A docstring example is indented by Python, not by its author; a reader copying
             # it dedents without thinking. Dedent is applied HERE and nowhere else, and only
             # by the region's own common indent - never to a markdown example.
@@ -312,6 +358,60 @@ def main() -> int:
                 0 <= i_group < i_ser,
                 f"group@{i_group} serialise@{i_ser} - stated after, it is a correction "
                 f"nobody reads in time")
+        # ⛔ G5 · THE TWO AXES G1-G4 WERE BLIND ON (SCC-240 review, Test-Adequacy - both
+        # reproduced). (a) A comment satisfies a grep: wrapping the whole bullet in
+        # `<!-- … -->` left all four green, which is the literal comment-literals-invert
+        # failure this repo bans. (b) The CLAIM was unpinned: "the grouping is YOURS" flipped
+        # to "THE VERIFIER'S" - the exact SCC-210 ambiguity - and all four stayed green.
+        # This is also the block's only negative control; D has D3, C has C2, F has F4.
+        raw = (ROOT / ".agents/skills/code-review-engine/steps/step-02-verify.md"
+               ).read_text(encoding="utf-8")
+        at = raw.find("Group first, then serialise")
+        before = raw[:at] if at >= 0 else ""
+        in_comment = before.rfind("<!--") > before.rfind("-->")
+        owner_near = "YOURS" in raw[at: at + 160] if at >= 0 else False
+        c.check("G5 · (control) the owner line is NOT inside an HTML comment, and the "
+                "owner word sits beside it",
+                at >= 0 and not in_comment and owner_near,
+                f"at={at} in_comment={in_comment} owner_near={owner_near} - a commented-out "
+                f"instruction or a reassigned owner must go red here")
+
+    if c.block("X · the extractors this file stands on can themselves fail"):
+        # ⛔ These decide whether D1/C1 see anything at all, so a silent bug in them reads as
+        # "all documents clean" - the empty-input vacuity the repo bans (SCC-240 review,
+        # Test-Adequacy: two extractor mutants SURVIVED the real corpus because no teaching
+        # file exercises the CommonMark closing rule or an unclosed fence). Synthetic strings,
+        # asserted directly.
+        spans = fence_spans("~~~\nlenses_run:\n- a · ok\n```\n- b · ok\n~~~\nafter".splitlines())
+        c.check("X1 · a ``` inside a ~~~ block does not close it (CommonMark: same kind, "
+                ">= opening length)",
+                spans == [(0, 5)], f"{spans}")
+        spans = fence_spans("```\nlenses_run:\n- a · ok\nnever closed".splitlines())
+        c.check("X2 · an unclosed fence runs to end-of-file, exactly as the stripper drops it",
+                spans == [(0, 3)], f"{spans}")
+        ex = roster_examples("```\nlenses_run:\n- a · ok\nnever closed")
+        c.check("X3 · ...so a roster under an unclosed fence is extracted AS fenced",
+                len(ex) == 1 and ex[0]["fenced"] is True, f"{ex}")
+        dex = declared_examples("```markdown\n## Declared Change Set\n\n- EDIT `a.md` → A\n```\n")
+        c.check("X4 · a FENCED declared-set block is extracted by its fence (the branch no "
+                "teaching file reaches today)",
+                len(dex) == 1 and "- EDIT `a.md` → A" in dex[0]["region"]
+                and dex[0]["template"] is False, f"{dex}")
+        tex = declared_examples("## Declared Change Set\n\n- <OP> `<path>` — <why> → <row>\n")
+        c.check("X5 · a placeholder-only declared block is a TEMPLATE, so C1 skips it "
+                "instead of failing a correct document",
+                len(tex) == 1 and tex[0]["template"] is True, f"{tex}")
+
+    if c.block("T · both review twins teach the Step-4 self-check"):
+        # The instruction the CLI exists for sits OUTSIDE every twin-law fence, so
+        # test_twin_parity.py cannot see one twin losing it (SCC-240 review, Test-Adequacy).
+        for name in ("smh-code-review.md", "cicd-code-review.md"):
+            cmd = (ROOT / ".agents/commands" / name).read_text(encoding="utf-8")
+            c.check(f"T · {name} runs walkthrough_roster.py at Step 4 and says the bare "
+                    f"run is the roster READ, not the whole gate",
+                    "walkthrough_roster.py" in cmd and "--gate" in cmd
+                    and "NOT the whole close-out gate" in cmd,
+                    "the self-check line, or its scope statement, left one twin")
 
     return c.finish()
 

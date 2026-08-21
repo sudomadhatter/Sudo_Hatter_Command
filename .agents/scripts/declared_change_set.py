@@ -69,6 +69,15 @@ FENCE = re.compile(r"^(\s{0,3})(`{3,}|~{3,})(.*)$")
 # who already knows what the three ops are - which is exactly the reader who did not need it.
 _LEFT_WHY = ("the left side is not `<OP> <path>` - the op marker is NEW, EDIT or DELETE, "
              "then ONE repo-relative path (backticked or bare)")
+# ⛔ THE LIST MARKER IS A SEPARATE REPAIR FROM THE OP VOCABULARY (SCC-240 review). `LEFT`
+# anchors on `^-`, so a `*`/`+` bullet or a bare `NEW ...` line fails it for a reason that has
+# nothing to do with the op - and handing those authors `_LEFT_WHY` told them to write a marker
+# they had already written. A rejection that names the wrong half is worse than a bare one: it
+# is confidently wrong, and it costs the round trip this lane exists to remove.
+_MARKER_WHY = ("the bullet must start with `- ` - a `*` or `+` marker, or a line with no list "
+               "marker at all, is not read as a declaration (the op and the path here are "
+               "fine; only the marker is wrong)")
+_DASH_MARKER = re.compile(r"^-\s")
 
 
 def strip_fenced(text: str) -> str:
@@ -130,13 +139,20 @@ def parse(text: str) -> dict:
             # (`- foo → ` has no op AND no row text); the LEFT side wins, because the arrow is
             # already there and the op marker is the edit that has to happen first. Unstated,
             # this reads differently to every author who meets it.
-            why = _LEFT_WHY if not b else "the row text after the last `→` is empty"
+            # ⛔ AND NAME THE LIST MARKER WHEN THAT IS WHAT FAILED (SCC-240 review,
+            # Test-Adequacy). `LEFT` anchors on `^-`, so `* NEW \`x.md\` → A` and a bullet with
+            # no marker at all fail it too - and `_LEFT_WHY` then told the author to write an op
+            # marker they had ALREADY written. That is not a bare rejection, it is a WRONG one:
+            # it sends them to edit the half that was right. The op vocabulary and the marker
+            # are different repairs, so they get different sentences.
+            why = ("the row text after the last `→` is empty" if b
+                   else _MARKER_WHY if not _DASH_MARKER.match(s) else _LEFT_WHY)
         else:
             why = ("no `→` row separator - every bullet ends `→ <the acceptance row it "
                    "serves>`")
-        # The RAW BULLET STAYS, with the reason appended. Every consumer reads these rows as
-        # strings - this file's own tests, the self-audit's Lens 1, and both review twins'
-        # drift step, which grades `incomplete` *important* per bullet.
+        # The bullet STAYS (whitespace-stripped), with the reason appended. Every consumer reads
+        # these rows as strings - this file's own tests, the self-audit's Lens 1, and both review
+        # twins' drift step, which grades `incomplete` *important* per bullet.
         incomplete.append(f"{s}  ← {why}")
     return {"present": True, "entries": entries, "incomplete": incomplete}
 

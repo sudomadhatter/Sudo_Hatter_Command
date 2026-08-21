@@ -5,6 +5,7 @@ machine before anything is installed, which is exactly when the workflow scripts
 """
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import sys
@@ -13,6 +14,49 @@ from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS))
+
+
+def _tree_guard() -> None:
+    """SCC-190's wrong-tree refusal, at the one chokepoint every test file passes through.
+
+    ⛔ WHY HERE AND NOT ONLY IN `run_all.py` (SCC-240). Sibling lanes live in
+    `.claude/worktrees/<slug>/`, each a full checkout with its own copy of these files, and a
+    shell's cwd silently resets to the MAIN checkout. `run_all.py` refused that shape since
+    SCC-190 - and every SINGLE-FILE run (`python3 tests/test_x.py --case …`, which is the
+    review loop and the only way `mutation_sweep.py` runs a test) walked straight past it.
+    Measured in the lane that closed this: a block edited in the worktree, `47/47 passed`
+    recorded against `main`, and the only tell an unrelated `matched 0/0 blocks` line. A
+    wrong-tree pass is byte-identical to a right-tree pass in every transcript.
+
+    Refuses with EXIT 2 - not 1 (a real failure) and not 3 (an empty filter) - and prints no
+    `FAILED:` line, which is exactly the shape `mutation_sweep.judge()` refuses to score, so a
+    wrong-tree refusal can never be recorded as a kill.
+
+    Two overrides, both meaning "I know this is main": `--on-main` on the command line (the
+    hand-typed door - identical on zsh and PowerShell, which an env var is not), and
+    `WF_ON_MAIN` in the environment (how `run_all --on-main` reaches its children).
+
+    ⛔ DEGRADES TO SILENCE, never takes a suite down - the constraint `run_all.py` documents
+    for itself: this file is copied bare into temp dirs by its own tests, where `wf_common`
+    and git are both absent. A harness that refuses to start is a worse defect than the one
+    this guard exists to prevent. On an allowed run it prints ONE line naming the tree, so
+    even a permitted single-file run states what it measured.
+    """
+    if "--on-main" in sys.argv[1:] or os.environ.get("WF_ON_MAIN"):
+        return
+    try:
+        import wf_common as wf
+        tag = wf.tree_tag(SCRIPTS)
+        refusal = wf.tree_guard(SCRIPTS, who=Path(sys.argv[0]).name or "test", tag=tag)
+    except Exception:   # noqa: BLE001 - no helper, no git, no guard; never "no suite"
+        return
+    if refusal:
+        print(refusal, file=sys.stderr)
+        sys.exit(2)
+    top, br, is_main = tag
+    print(f"-- tree: {Path(top).name} [{br or 'DETACHED'}] - "
+          f"{'MAIN CHECKOUT' if is_main else 'worktree'} --")
+
 
 NO_MATCH = 3
 """Exit code for a filter that selected NOTHING to run (SCC-156).
@@ -62,7 +106,11 @@ class Cases:
         # Every label that MATCHED, in file order — the transcript names them all, so a
         # mutation record can never say "killed by case P" when 22 blocks ran (SCC-156 #1).
         self.blocks_matched: list[str] = []
+        # ⛔ TITLE FIRST, GUARD SECOND. `mutation_sweep.py` and `run_all.py` read the
+        # `FAILED:` and `-- n/m passed --` lines; the title line is matched by eye, and a
+        # reader scanning for `== <name> ==` must still find it unchanged and first.
         print(f"== {title} ==")
+        _tree_guard()
 
     def block(self, label: str) -> bool:
         """Guard for one named block of cases: `if c.block("B · the target"): ...`
