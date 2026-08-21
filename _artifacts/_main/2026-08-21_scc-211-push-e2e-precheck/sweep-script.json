@@ -235,6 +235,14 @@
    "mutated": "if branch in (\"main\", \"HEAD\"):",
    "case": "SP-M origin/main is refused as the TARGET, not as a keyless epic",
    "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M40 the ref-state check stops declining after the shape check ruled",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    if not shaped:\n        rep.info(\"sync\", \"ref state not checked",
+   "mutated": "    if not shaped and False:\n        rep.info(\"sync\", \"ref state not checked",
+   "case": "SP-M ...and it does not then claim the ref does not exist",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
   }
  ]
 }

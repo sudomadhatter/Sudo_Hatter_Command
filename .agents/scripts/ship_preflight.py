@@ -163,7 +163,8 @@ def _fetch(repo: Path) -> bool:
         return False
 
 
-def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report) -> bool:
+def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report,
+               shaped: bool = True) -> bool:
     """-> whether the remote comparison is FRESH (asked for AND succeeded).
 
     ⭐ THE OUTCOME, NEVER THE FLAG. `task_preflight` carries the same distinction for the same
@@ -216,6 +217,18 @@ def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report) -> bool:
     # this repo treats as worst, because a gate that false-reds gets routed around.
     def _has(ref: str) -> bool:
         return wf.git(["rev-parse", "--verify", "--quiet", ref], repo).returncode == 0
+
+    # ⛔ DECLINE WHEN THE SHAPE CHECK ALREADY RULED. `check_intent` declines the same way and
+    # for the same reason: a second message under the first buries it, and here it was worse
+    # than noise — it was FALSE. A live run on a real project repo answered `--branch
+    # origin/main` with `origin/main: no such branch, local or remote`, because the probe had
+    # gone looking for `refs/heads/origin/main`. The ref plainly exists; the question was
+    # simply meaningless once the branch had been ruled to be the merge TARGET. *"A gate that
+    # states something plainly untrue teaches the reader to stop believing its output"*
+    # (`task_preflight.check_scope`, paid for once already).
+    if not shaped:
+        rep.info("sync", "ref state not checked - the branch was already ruled out above")
+        return fresh
 
     local, remote = _has(f"refs/heads/{branch}"), _has(f"refs/remotes/origin/{branch}")
     if local and remote:
@@ -354,7 +367,7 @@ def main() -> int:
 
     prefix, key = check_shape(branch, rep)
     check_intent(repo, branch, key, expect, rep)
-    fresh = check_sync(repo, branch, not args.no_fetch, rep)
+    fresh = check_sync(repo, branch, not args.no_fetch, rep, shaped=prefix is not None)
     lane = check_lane(repo, branch, prefix, rep)
 
     code = rep.exit_code()

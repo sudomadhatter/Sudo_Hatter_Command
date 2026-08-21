@@ -450,6 +450,16 @@ def main() -> int:
             c.check("SP-M origin/main is refused as the TARGET, not as a keyless epic",
                     code == 2 and "into" in out.lower() and "never invent" not in out.lower(),
                     out.strip()[-300:])
+            # ⛔ AND IT IS REFUSED ONCE. A live run against a real project repo printed a
+            # SECOND error underneath — `origin/main: no such branch, local or remote` —
+            # about a ref that plainly exists, because the ref probe had gone looking for
+            # `refs/heads/origin/main`. The verdict was right and the sentence was false, and
+            # this repo has already paid for that distinction once: *"a gate that states
+            # something plainly untrue teaches the reader to stop believing its output"*
+            # (`task_preflight.check_scope`). Once the shape check has ruled, the ref-state
+            # question is meaningless and must decline rather than pile on.
+            c.check("SP-M ...and it does not then claim the ref does not exist",
+                    "no such branch" not in out.lower(), out.strip()[-300:])
 
         # (2b) the scan must be ANCHORED at position 0, not a substring search. `BRANCH_RE`'s
         # slug group is `.+`, which matches slashes, so a chore branch embedding a lane word
