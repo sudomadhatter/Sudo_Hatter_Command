@@ -117,9 +117,16 @@ def main() -> int:
     try:
         _run(c)
     except Exception as exc:                       # noqa: BLE001 — a crash must be a ROW
-        c.check("no unexpected error escaped a block", False,
-                f"{exc!r} — a defect has to become a red ROW; a file that dies prints no "
-                f"FAILED: line, and a sweep cannot tell that from a survivor")
+        # ⛔ THE ROW GOES UNDER A BLOCK, and the block is named for the filter that was
+        # running. `test_suite_runner.py`'s ORPHAN guard requires every `c.check` to sit
+        # inside an `if c.block(...)` body, so `--case` governs it — and it is right: a row
+        # outside every block runs under every filter and cannot be attributed. Leading the
+        # label with the active filter makes the substring match certain, so a crash under
+        # `--case T1` is reported and scoreable rather than vanishing into a traceback.
+        if c.block(f"{c.filter or 'T0'} · a block escaped with an unexpected error"):
+            c.check("no unexpected error escaped a block", False,
+                    f"{exc!r} — a defect has to become a red ROW; a file that dies prints no "
+                    f"FAILED: line, and a sweep cannot tell that from a survivor")
     return c.finish()
 
 
@@ -525,8 +532,9 @@ def _run(c: Cases) -> None:
                     raise RuntimeError("SCC-214 build failed on purpose")
                 try:
                     rt.clone(("t5", "cleanup"), boom2, t / "s")
-                except Exception:                              # noqa: BLE001, S110
-                    pass
+                except Exception:                              # noqa: BLE001, S110 — the raise
+                    pass                                       # IS the case; the assertion is
+                                                               # about what it left on disk
                 after = {q.name for q in rt.shared_root().iterdir()}
                 c.check("a failed build leaves NO template directory behind",
                         after == before, f"leaked: {sorted(after - before)}")
