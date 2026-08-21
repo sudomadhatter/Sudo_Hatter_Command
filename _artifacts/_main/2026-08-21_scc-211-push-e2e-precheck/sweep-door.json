@@ -59,6 +59,30 @@
    "mutated": "**call to proceed is what matters**, and from that word on",
    "case": "S5 ...and .agents/commands/cicd-push-e2e.md states the ruling positively",
    "block": "SCC-193 · the sign-off wording, pinned both directions"
+  },
+  {
+   "id": "M37 the refusal is downgraded from a STOP to a note",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "**Exit 2 → STOP.**",
+   "mutated": "It is informational.",
+   "case": "P7 Step 1.5 says a refusal STOPS the command",
+   "block": "SCC-211 · /cicd-push-e2e pre-flights BEFORE it writes or gates"
+  },
+  {
+   "id": "M38 the fenced call loses --branch, so it dies on argparse",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "--repo \"$PROJECT_ROOT\" --branch \"$BRANCH\" \\",
+   "mutated": "--repo \"$PROJECT_ROOT\" \\",
+   "case": "P1 ...and passes --branch",
+   "block": "SCC-211 · /cicd-push-e2e pre-flights BEFORE it writes or gates"
+  },
+  {
+   "id": "M39 the fenced call aims at cwd instead of PROJECT_ROOT",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "--repo \"$PROJECT_ROOT\" --branch \"$BRANCH\" \\",
+   "mutated": "--repo . --branch \"$BRANCH\" \\",
+   "case": "P1 ...and it is PROJECT_ROOT that is passed, never a bare cwd",
+   "block": "SCC-211 · /cicd-push-e2e pre-flights BEFORE it writes or gates"
   }
  ]
 }
