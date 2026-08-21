@@ -121,11 +121,13 @@ leads the subject, `-F` never `-m` — backticks in `-m "…"` EXECUTE):
 python3 .agents/scripts/jira_feed.py outline --epic <N> --project <PROJECT> --out epic-outline.txt   # PC: `python`
 acli jira workitem edit --key <JIRA-KEY> --yes --description-file epic-outline.txt
 rm epic-outline.txt
-printf '%s\n' "<JIRA-KEY> docs(epic): Epic <N> — <title>: epic + stories" > epic-commit-msg.txt
+MSG=$(mktemp)   # ⛔ OUTSIDE both trees: `git -C <dir> -F <relative>` resolves under <dir>, not your cwd — and a message file inside the repo dirties the `status` the Done block requires to be empty
+printf '%s\n' "<JIRA-KEY> docs(epic): Epic <N> — <title>: epic + stories" > "$MSG"
 git -C "$PROJECT_ROOT" add _bmad-output/planning-artifacts/epics.md
 git -C "$PROJECT_ROOT" diff --cached --stat                       # ONLY epics.md; anything else → unstage it
-git -C "$PROJECT_ROOT" commit -F epic-commit-msg.txt
+git -C "$PROJECT_ROOT" commit -F "$MSG"
 git -C "$PROJECT_ROOT" push origin HEAD:epic/<JIRA-KEY>-<slug>
+rm "$MSG"
 ```
 
 `outline --epic` renders the goal and the story list straight out of `epics.md` — nothing invented, and
@@ -144,11 +146,13 @@ line. For a single-epic append, edit the YAML directly per house style — invok
 then:
 
 ```bash
-printf '%s\n' "<JIRA-KEY> chore(board): Epic <N> rows on sprint-status.yaml (backlog)" > epic-commit-msg.txt
+MSG=$(mktemp)   # outside both trees — see Step 2
+printf '%s\n' "<JIRA-KEY> chore(board): Epic <N> rows on sprint-status.yaml (backlog)" > "$MSG"
 git -C "$PROJECT_ROOT" add _bmad-output/implementation-artifacts/sprint-status.yaml
 git -C "$PROJECT_ROOT" diff --cached --stat                       # ONLY the board
-git -C "$PROJECT_ROOT" commit -F epic-commit-msg.txt
+git -C "$PROJECT_ROOT" commit -F "$MSG"
 git -C "$PROJECT_ROOT" push origin HEAD:epic/<JIRA-KEY>-<slug>
+rm "$MSG"
 ```
 
 ## Step 4 — Risk-score the backlog (test levels) — INTERACTIVE HARD STOP
@@ -174,14 +178,15 @@ This is the final step and a **hard stop** — you WORK WITH Daniel to label eve
    the P-level onto each story in `epics.md` and onto its board line. Then commit and push all three:
 
    ```bash
-   printf '%s\n' "<JIRA-KEY> docs(tea): Epic <N> risk-scored - P-levels on test design, epics and board" > epic-commit-msg.txt
+   MSG=$(mktemp)   # outside both trees — see Step 2
+   printf '%s\n' "<JIRA-KEY> docs(tea): Epic <N> risk-scored - P-levels on test design, epics and board" > "$MSG"
    git -C "$PROJECT_ROOT" add _bmad-output/test-artifacts/test-design-epic-<N>.md \
                              _bmad-output/planning-artifacts/epics.md \
                              _bmad-output/implementation-artifacts/sprint-status.yaml
    git -C "$PROJECT_ROOT" diff --cached --stat                    # ONLY those three
-   git -C "$PROJECT_ROOT" commit -F epic-commit-msg.txt
+   git -C "$PROJECT_ROOT" commit -F "$MSG"
    git -C "$PROJECT_ROOT" push origin HEAD:epic/<JIRA-KEY>-<slug>
-   rm epic-commit-msg.txt
+   rm "$MSG"
    ```
 
 ## Done
