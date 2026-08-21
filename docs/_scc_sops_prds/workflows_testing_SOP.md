@@ -2074,10 +2074,7 @@ that rule to be corrected under its own ticket.
 
 ### The board moves itself — at both ends
 
-**You do not have to drag cards.** Until 2026-08-11 only *one* seam ever wrote `In Progress` (the
-BMAD story lane, at ① pickup) while four wrote `Done`. Since every non-epic SCC ticket is a **Task**,
-that meant work in this command center was *never* visible as in flight: a `chore/*` ticket sat in
-`To Do` while you built it, then jumped to `Done` at the merge. Now:
+**You do not have to drag cards.**
 
 | When | What moves it | To |
 |---|---|---|
@@ -2090,6 +2087,10 @@ that meant work in this command center was *never* visible as in flight: a `chor
 hanging it on the command would have meant the board is only honest when you remember. Commit on a
 keyed branch by any route — the command, a bare `git commit`, another agent — and the ticket moves.
 
+> ⓘ **Why the start seam exists.** When only close-out wrote status, a `chore/*` ticket sat in
+> `To Do` while you built it, then jumped to `Done` at the merge — work in this command centre was
+> never visible as in flight.
+
 **It costs one exchange per branch, ever.** A marker file short-circuits every later commit before
 any network call, so this never slows your commits down. If you're offline the move is skipped
 **silently** and retried on your next commit — same if the ticket isn't startable yet (it's sitting in
@@ -2101,8 +2102,8 @@ commit, not a hang.
 > — the same one-time arming every other hook here needs. That is exactly why `/smh-quick-dev` moves
 > the ticket too: when the hook is dead, the command still works.
 
-> ⛔ **If an agent tells you the board is unreachable, ask it to re-run outside its sandbox
-> (2026-08-09).** A sandboxed tool call can't reach the OS credential store, so `acli` fails there
+> ⛔ **If an agent tells you the board is unreachable, ask it to re-run outside its
+> sandbox.** A sandboxed tool call can't reach the OS credential store, so `acli` fails there
 > while working perfectly in the same repo unsandboxed. Two agents hit this on one day and both read
 > a fact about *their own shell* as a fact about *the board* — one reported a ticket didn't exist, the
 > other declared the CLI "no longer authenticated" and proposed committing new work under **SCC-54**,
@@ -2125,19 +2126,15 @@ re-rules `quick-dev` for every story it assesses.
 with the evidence commented. Sprint and backlog *placement* stays yours; outside the two minting
 seams, machinery only ever touches status.
 
-**⛔ On a Task lane you never type the Dev Record's slug (SCC-174).** `jira_feed.py devrecord`
-decides *update this record* vs *post a new one* from the **slug**, not from `--key`. So two
-spellings of one lane are two records — and that is not hypothetical: on 2026-08-15 `/smh-quick-dev`
-filed AVCH-59 under `main-write-gate`, the close-out passed `avch-59-main-write-gate` (the branch
-slug, which is exactly what the ceremony's own text asked for), and the ticket carried two. The three
-Task surfaces — `/smh-quick-dev`, `/smh-quick-fix`, `/smh-close-task-merge-tree` — now omit `--story`
+**⛔ On a Task lane you never type the Dev Record's slug.** `jira_feed.py devrecord`
+decides *update this record* vs *post a new one* from the **slug**, not from `--key` — so two
+spellings of one lane are two records on one ticket. The three
+Task surfaces — `/smh-quick-dev`, `/smh-quick-fix`, `/smh-close-task-merge-tree` — omit `--story`
 entirely and the script reads the `branch:` out of the lane's `task.yaml`. One source, so there is
 nothing left to disagree about. Pass `--story` only to file under a lane you are *not* standing on;
 a BMAD story lane still passes its story id, which is its own single source.
 
-**And `check` stopped taking the ids at their word.** Two Dev Record ids on one ticket used to exit 0
-as *"one per lane — the designed state"*, which had the check blind precisely when the bug happens
-(the slugs differ) and loud only once it had been fixed (the slugs match). An id is now a lane only
+**And `check` does not take the ids at their word.** An id is a lane only
 if the repo can **prove** it: a tracked `task.yaml branch:` anywhere in the committed tree, or a
 prefixed branch ref — local **or** `origin/`, because a landed lane's local branch is pruned the same
 day and its manifest is not. An id nothing claims is a **FORKED Dev Record**: exit 1, naming the
@@ -2198,13 +2195,6 @@ the fix lands, close-out        ->  back to Story or Task. The bug is gone.
 **One override worth knowing:** if a story has a live working folder on disk, it is in flight no
 matter what the status file says. The status file lags by design — only close-out writes it.
 
-> ⓘ **The scrum-board map is retired (2026-08-07, SCC-13 / AVCH-10).** `sprint_scrum_board_map.md` and
-> its command are gone. **The command menu kept advertising it for two days after it was deleted** —
-> the `/` index still listed `/sudo-update-scrum-board` under session ops with a full description,
-> which is what sent you looking for a command that wasn't there. Removed 2026-08-09. The lesson is
-> cheap and worth keeping: **deleting a command is only half of retiring it — the index that
-> dispatches to it is the half people actually read.**
-
 ---
 ---
 
@@ -2246,9 +2236,9 @@ and every item below has already cost a debug cycle.
 
 | | What breaks if it's missing | Fix — **once per machine** |
 |---|---|---|
-| **The commit gates** | `core.hooksPath` is *local* config and does **not** travel with a clone. Without it git reads `.git/hooks`, which is empty — so the Jira gate, the encoding gate, and the SOP gate are all **silently off** while the repo looks identical. | `bash docs/migrations/scripts/install-git-hooks.sh` (PC: `Install-GitHooks.ps1`) — arms the lobby and every project and **verifies** each gate (SCC-115). Or by hand: `git config --global core.hooksPath .githooks` — a **relative** value resolves against each repo's own root, so this one command arms every clone you have and every one you make later. |
+| **The commit gates** | `core.hooksPath` is *local* config and does **not** travel with a clone. Without it git reads `.git/hooks`, which is empty — so the Jira gate, the encoding gate, and the SOP gate are all **silently off** while the repo looks identical. | `bash docs/migrations/scripts/install-git-hooks.sh` (PC: `Install-GitHooks.ps1`) — arms the lobby and every project and **verifies** each gate. Or by hand: `git config --global core.hooksPath .githooks` — a **relative** value resolves against each repo's own root, so this one command arms every clone you have and every one you make later. |
 | **Python's name** | The Mac has only `python3`; a python.org PC has only `python`. Typed commands differ; the gates don't (they probe). | Nothing to install — just use the name your box answers to. |
-| **Secrets / `.env` / `auth_keys/`** | All gitignored, so a fresh clone has none of them and things fail in confusing ways rather than obviously. | Restore from the master bundle with `python3 docs/migrations/scripts/env_master.py --restore` (SCC-39; PC: `Restore-EnvMaster.ps1`) — start at the [migrations kit](../migrations/INDEX.md). Team-shared keys travel by **Keyway** (`keyway login` + `keyway init` per repo), never by chat: [sharing_keys_secrets_secure.md](sharing_keys_secrets_secure.md). |
+| **Secrets / `.env` / `auth_keys/`** | All gitignored, so a fresh clone has none of them and things fail in confusing ways rather than obviously. | Restore from the master bundle with `python3 docs/migrations/scripts/env_master.py --restore` (PC: `Restore-EnvMaster.ps1`) — start at the [migrations kit](../migrations/INDEX.md). Team-shared keys travel by **Keyway** (`keyway login` + `keyway init` per repo), never by chat: [sharing_keys_secrets_secure.md](sharing_keys_secrets_secure.md). |
 | **Shell environment** | On the Mac, `.zshrc` is read **only** by interactive shells — anything an agent or script runs can't see it. | Put anything scripts need (e.g. `JAVA_HOME`) in `~/.zshenv`, not `.zshrc`. |
 | **The Jira login** | `acli`'s API token lives in your **OS credential store**, not in the repo — and the binary isn't at the same path on both boxes either. An agent that trips over this concludes *"I have no Jira integration"* and starts improvising: inventing a key, or borrowing a closed ticket's. | `acli jira auth login`, once per machine. Then **any** agent can confirm it with `acli jira auth status`. Never hardcode the binary's path into a doc. |
 | **The memory link** | The agent memory store lives **in the repo** (`_artifacts/_memory/`) — that part travels, and every model on every machine reads it at session start. What does **not** travel is the link that lets Claude's harness write into it: without it, Claude quietly writes memory to a machine-local folder and the shared store **stops growing** — no error, just lessons that never reach the other box or the other models. | `link-memory.ps1` (Windows) / `link-memory.sh` (Mac) — migrations kit §1, step 8. `/smh-memory-audit` checks the link on whatever machine it runs on and flags a missing one. |
@@ -2310,10 +2300,10 @@ reason ③ hunts blind in the human lane; the audit stage keeps the Dev model (a
 different model), and Build resumes the Dev chat so the plan is still in its head. **Done means
 green (SCC-134, the spec's §6a):** a stage's gate is a script's exit code, never the agent's own
 say-so; retries are engine-owned and bounded; a red gate parks with a receipt for you rather than
-spawning a fix loop — that loop was *dropped, not deferred* on 2026-08-15, and reviving it would be a
+spawning a fix loop — that loop was *dropped, not deferred*, and reviving it would be a
 design reversal, not a tuning knob.
 
-**Stage 4 runs the house review engine (SCC-126).** The robot's reviewer no longer carries a review
+**Stage 4 runs the house review engine (SCC-126).** The robot's reviewer carries no review
 of its own: `/cicd-code-review-AP` resolves the inputs — the diff alone first, then one batched
 grounding pull — and hands them to `.agents/skills/code-review-engine/`, which runs its lenses in
 parallel. **It also re-derives the blast radius against `origin/$EPIC`
@@ -2322,13 +2312,12 @@ launch context implied — the same two additions the human lane got, ported bec
 *worse* unattended, not smaller: a sibling story lands on the epic branch and nobody is watching.
 It costs no read budget (git output is not an ingest), and the twin's ban on a full-repo sweep is
 about **reads**. The acceptance audit did **not** port as a step — the twin already runs that pass
-through the engine's Acceptance Auditor — only its two verdict-binding clauses did. Nothing changes about what you type. Three things change underneath, and the first is the
+through the engine's Acceptance Auditor — only its two verdict-binding clauses did. Underneath, three things are worth knowing, and the first is the
 one that actually moves the bill:
 
-- **Stage 4 goes from one agent to an orchestrator plus five lenses.** It used to be a single
-  reviewer asking three questions of context it already held. It is now five independent lenses,
+- **Stage 4 is an orchestrator plus five lenses.** Five independent lenses,
   three of which are primed with the grounding pull — so the grounding material is read several
-  times over rather than once. That is the real cost increase, and it is the price of the
+  times over rather than once. That is the real cost, and it is the price of the
   independence: lenses that cannot see each other cannot inherit each other's blind spots.
 - **A fifth lens hunts literal correctness** — for every changed line it opens the real definition of
   each symbol that line leans on and checks the assumption actually holds. The other four lenses are
@@ -2370,12 +2359,12 @@ each one. The claude and opencode engines are **twins by contract**: the worktre
 blocks are kept identical on purpose, so a `diff` shows drift straight away.
 
 > The launchers are `/cicd-autopilot-claude`, `/cicd-autopilot-opencode` and
-> `/cicd-autopilot-deepseek4` — hyphens, like every command since the SCC-63 naming law. **There is no
-> separate mobile engine** (`/autopilot_mobile` was deleted 2026-08-07): from your phone you drive the
+> `/cicd-autopilot-deepseek4` — hyphens, per the command naming law. **There is no
+> separate mobile engine**: from your phone you drive the
 > desktop engines through Remote Control, which is strictly better — same code, same gates, one thing
 > to fix when the loop changes.
 
-> ⓘ **⛔ A green check can be telling you the truth about the wrong branch (2026-08-09).** When
+> ⓘ **⛔ A green check can be telling you the truth about the wrong branch.** When
 > several lanes run at once, the checking scripts work out *which* repo and branch to look at by
 > starting from wherever the agent happens to be standing and searching upward for the repo. **That
 > starting point silently resets** — a `/compact`, a new slash command, a fresh tool call — back to
@@ -2383,20 +2372,20 @@ blocks are kept identical on purpose, so a `diff` shows drift straight away.
 > quietly points there instead.
 >
 > Nothing errors. The script has no way of knowing which ticket the agent meant, so it runs every
-> check properly and reports a clean result — **about the wrong branch.** On 2026-08-09 a Task
-> close-out printed *"clear to close out and merge"* for a different lane's unfinished branch.
+> check properly and reports a clean result — **about the wrong branch.** A Task
+> close-out once printed *"clear to close out and merge"* for a different lane's unfinished branch.
 >
-> **What changed, so you can hold the agent to it:** every close-out command must say **which repo and
+> **The rule, so you can hold the agent to it:** every close-out command must say **which repo and
 > which branch** it resolved — read out of `git`, not from memory — and **name the ticket it means to
 > close** *before* it runs the check. If the check comes back pointing at a different ticket, it must
 > **stop and tell you**, not retry. The same trap in miniature: piping a check into `tail` makes the
 > computer report *`tail`'s* success instead of the check's, so a failed gate prints "passed". Gates
-> now run unpiped.
+> run unpiped.
 >
 > **The one thing to ask for:** if an agent reports a gate as green, ask which branch the gate named.
 > A report that can't answer that hasn't been verified — it's been assumed.
 >
-> **Update (SCC-64): the machine now enforces this.** The Task-close-out check refuses to run at all
+> **The machine enforces this (SCC-64).** The Task-close-out check refuses to run at all
 > unless told which ticket is meant (`--expect-key`), and blocks hard when the branch it resolved
 > carries a different key. Each task can also carry a small `task.yaml` in its artifacts folder — the
 > ticket, repo, and branch written down at task *start*, before anything can drift. Landed lanes leave
@@ -2404,7 +2393,7 @@ blocks are kept identical on purpose, so a `diff` shows drift straight away.
 > not drift — a multi-lane ticket's next lane is not blocked by its finished siblings (SCC-113).
 > Anything short of that positive evidence (unlanded, or edited since landing) still blocks hard. And toolkit
 > close-outs run the lint scoped (`--toolkit-only`), so a red or green about some *product project's*
-> sprint state can no longer leak into a decision about toolkit work. If an agent explains away a red
+> sprint state cannot leak into a decision about toolkit work. If an agent explains away a red
 > gate as "pre-existing, different project", it is using the wrong flag.
 
 ## 16. Incidents
