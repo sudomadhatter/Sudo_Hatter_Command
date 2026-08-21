@@ -906,6 +906,23 @@ a **no-op**: `/cicd-close-story-merge-tree` was missing from the door list above
 row was not recognised as a merge row at all and the comparison was never reached. Both halves, or
 neither does anything.
 
+**⭐ …and the story door calls the closer again (SCC-242, same lane).** `/cicd-close-story-merge-tree`
+Step 4b no longer transitions with raw `acli`. It runs:
+
+```bash
+python3 .agents/scripts/jira_feed.py finish --key <KEY> --apply \
+  --walkthrough "<the story walkthrough>" --landing-ref "origin/epic/<JIRA-KEY>-<slug>"
+```
+
+Three things you get back by typing that instead of `acli`: the `--yes` flag and the **status
+read-back** are the script's rather than yours, the four exit codes distinguish a broken **artifact**
+(`2`, nothing written — fix and re-run) from a broken **board** (`4`, transport — retry), and the
+`## Your Actions` refusal fires a **second** time, on the walkthrough as it landed. ⛔ **Pass the
+epic ref.** Its default is `origin/main`, and a bare `finish` on a story lane holds a finished story
+forever. ⛔ **What Step 2 says has changed with it:** its `check-actions` used to be the *only* pass
+on this lane and its text said so. Fix rows there anyway — that refusal costs an edit to an
+uncommitted file, and the one at Step 4b costs a commit on a branch that has already landed.
+
 ⭐ **SCC-193 · `## Your Actions` now has a CONTENT rule, and it refuses the ceremony's own steps.** On SCC-164's landing the agent wrote *"Click **Merge** on the PR"* and *"Then re-invoke `/smh-close-task-merge-tree --after-merge SCC-164`"* into that section as **your** tasks — and the machine contract dutifully held the ticket on work that was the agent's. Both are now refused, with the sentence *"this section holds what only the operator decides; the ceremony's steps are not entries."* **The rule, in one line:** your **decision to proceed** is the sign-off — the word `approved`, or invoking one of the two doors — and from that word on every step is the ceremony's and the agent runs it. What stays in the section is what only you can **decide**. Three things are deliberately NOT flagged: the door's own ledger row (`- [x] The merge itself — lands via this branch's PR`, which SCC-175 checks against ancestry), a bare door invocation (*"Land it — `/cicd-push-e2e`"*, which is one of the forms your decision takes), and any product decision that happens to mention a merge. It runs at `jira_feed.py check-actions` (the close-out's Step 3, **before** the PR opens, where fixing it costs nothing) and again at `finish`, before anything is written to the board. `--warn-actions` is the one logged opt-out for both row families.
 
 **⭐ The close-out now leaves a flight event behind (SCC-133, under SCC-38).** Between the gate and

@@ -1700,6 +1700,34 @@ def main() -> int:
         # indicted a test constant that invokes nothing: 342/343, and the whole enforcement
         # suite red. Split, the needle still matches every real call and matches nothing here.
         TRANS = "acli jira workitem " + "transition"
+        # ⭐ SCC-242 · A DOOR MOVES THE TICKET TWO WAYS NOW, and a one-needle guard is blind to
+        # the second. `cicd-close-story-merge-tree` used to transition with raw `acli` because
+        # `jira_feed.py finish` was banned on it (its merge check was hardcoded to `origin/main`);
+        # with `--landing-ref` the ban is lifted and the door calls the closer, which transitions
+        # and reads the status back. Left as one literal, C2 went red on a door that moves the
+        # ticket MORE safely than before — the classic source-grep blind spot: the guard pins the
+        # MECHANISM it was written against, not the behaviour it names.
+        FINISH = "jira_feed.py " + "finish"
+
+        def moves_ticket(ln: str) -> bool:
+            """Does this line WRITE the ticket's status? An invocation counts; a mention does not.
+
+            ⛔ THE NAME OF THE VERB IS NOT THE VERB, and this predicate learned that the hard
+            way. The first cut matched the bare needle, and the door's own prose - the paragraph
+            explaining that Step 4b runs the closer, and the note recording that the old ban is
+            lifted - both read as transitions. One of them sits in Step 2, ahead of the landing
+            push, so C3 reported the door writing `Done` before it lands: a source-grep guard
+            inverted by the sentence describing it (`comment-literals-invert-source-grep-tests`).
+
+            An invocation carries an argument. Prose says `jira_feed.py finish`; a call says
+            `--key`. That single requirement is what separates the two, and it is applied to
+            BOTH verbs rather than only the new one - the acli needle has always had the same
+            blind spot, and leaving it there would mean the next door that explains itself in
+            prose trips a gate about its behaviour.
+            """
+            if not (TRANS in ln or FINISH in ln):
+                return False
+            return "--key" in ln
 
         def story_door() -> Path:
             """The command an operator types to close ONE story out, whatever it is called today.
@@ -1879,13 +1907,13 @@ def main() -> int:
             """
             lines = step_body(lines)
             push = [i + 1 for i, ln in enumerate(lines) if PUSH in ln]
-            trans = [i + 1 for i, ln in enumerate(lines) if TRANS in ln]
+            trans = [i + 1 for i, ln in enumerate(lines) if moves_ticket(ln)]
             if not push or not trans:
                 return []
             return [n for n in trans if n < min(push)]
 
         push_at = [i + 1 for i, ln in enumerate(door_steps) if PUSH in ln]
-        trans_at = [i + 1 for i, ln in enumerate(door_steps) if TRANS in ln]
+        trans_at = [i + 1 for i, ln in enumerate(door_steps) if moves_ticket(ln)]
         where = f"door={door.name} push@{push_at} transitions@{trans_at}"
 
         c.check("CS-13 C1 the story door actually contains the landing push",
@@ -1894,6 +1922,16 @@ def main() -> int:
         c.check("CS-13 C2 the story door actually moves the Jira ticket",
                 bool(trans_at), where + " — without a transition line, C3 passes on a door that "
                 "never touches the board")
+        # ⛔ SCC-242 · `finish` WITHOUT `--apply` RENDERS ONLY. Recognising the verb in C2 is
+        # what makes this necessary: a door could satisfy C2 with a dry run that writes nothing,
+        # which is precisely the "half a mechanism reporting success" shape this lane exists for.
+        fin_at = [i + 1 for i, ln in enumerate(door_steps)
+                  if FINISH in ln and moves_ticket(ln)]
+        c.check("CS-13 C2b ...and if it moves it with the closer, the call APPLIES",
+                not fin_at or any("--apply" in ln for ln in door_steps
+                                  if FINISH in ln and moves_ticket(ln)),
+                f"door={door.name} finish@{fin_at} — a `finish` with no `--apply` renders the "
+                f"close-out and leaves the ticket exactly where it was")
         c.check("CS-13 C3 the ticket moves ONLY AFTER the landing push",
                 not board_lies(door_lines),
                 where + f" — transitions before the push: {board_lies(door_lines)}; a stopped "
@@ -1907,6 +1945,35 @@ def main() -> int:
         c.check("CS-13 C5 CONTROL: a transition AFTER the push is not reported",
                 not board_lies(list(reversed(BAD_ORDER))),
                 "the condition is not inverted — the fixed order must read clean")
+        # ⛔ C6 · THE CONTROL THAT PINS THE SECOND NEEDLE. Without it, `moves_ticket` could be
+        # widened for C2's benefit and never consulted by the ORDER check — the door would be
+        # free to close the ticket before the landing push, through the new verb, unseen.
+        BAD_FINISH = [f"`python3 .agents/scripts/{FINISH} --key <KEY> --apply`.",
+                      f"Then `{PUSH}<JIRA-KEY>-<slug>` — THE landing."]
+        c.check("CS-13 C6 CONTROL: a CLOSER call before the push is caught too",
+                board_lies(BAD_FINISH) == [1],
+                f"the order guard must read both verbs, not just acli: {board_lies(BAD_FINISH)}")
+        c.check("CS-13 C6 CONTROL: ...and the same call after the push reads clean",
+                not board_lies(list(reversed(BAD_FINISH))),
+                "not inverted")
+        # ⛔ C7 · THE MUTANT THIS BLOCK EXISTS TO KILL. Drop the `--key` requirement from
+        # `moves_ticket` and this control is the ONLY case that goes red: a door is allowed to
+        # NAME the verb while explaining itself, and both of these are real sentences lifted
+        # from the story door. Without them, documenting the mechanism indicts the door.
+        MENTIONS = ["Step 4b runs `jira_feed.py finish`, which reads `## Your Actions` again.",
+                    f"Once, `{TRANS}` was called here by hand; it no longer is.",
+                    f"Then `{PUSH}<JIRA-KEY>-<slug>` — THE landing."]
+        c.check("CS-13 C7 CONTROL: PROSE naming either verb is not a transition",
+                not board_lies(MENTIONS)
+                and not [ln for ln in MENTIONS if moves_ticket(ln)],
+                f"a mention is not a call: {[ln[:40] for ln in MENTIONS if moves_ticket(ln)]}")
+        # ...and the positive half, so C7 cannot be satisfied by a predicate that says NO to
+        # everything. Same two verbs, written as calls.
+        CALLS = [f"`{TRANS} --key <KEY> --status \"Done\" --yes`",
+                 f"`python3 .agents/scripts/{FINISH} --key <KEY> --apply`"]
+        c.check("CS-13 C7 CONTROL: ...and a real CALL to either verb still counts",
+                all(moves_ticket(ln) for ln in CALLS),
+                f"both verbs must still be seen: {[ln for ln in CALLS if not moves_ticket(ln)]}")
 
         # ── D · the multi-lane landing still prunes ───────────────────────────────
         # `/cicd-merge-epic-workingtrees` closes N lanes at once and calls the janitor per lane.

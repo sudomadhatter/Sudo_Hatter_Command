@@ -80,8 +80,9 @@ verbatim *because building a `--description` is how backticks execute*. The fix 
 ## Declared Change Set
 
 - EDIT `.agents/scripts/jira_feed.py` — landing ref + MERGE_DOORS + _collect ownership + HTML comments + index-row append + roll_the_cycle say() → A, B, C, D, E, G, H, I, J, K, L
-- EDIT `.agents/scripts/tests/test_jira_feed.py` — new blocks for the closer, the reader, the index and the cycle → A, B, C, D, E, G, H, I, J, K, L, Q
+- EDIT `.agents/scripts/tests/test_jira_feed.py` — new blocks for the closer, the reader, the index and the cycle → A, B, C, D, E, F, G, H, I, J, K, L, Q
 - EDIT `.agents/commands/cicd-close-story-merge-tree.md` — Step 4 calls finish; the ban block and the no-second-refusal sentence are corrected → F
+- EDIT `.agents/scripts/tests/test_command_surfaces.py` — CS-13's transition guard learns the second verb, and learns that a MENTION is not a call → F, Q
 - EDIT `.agents/scripts/tests/test_lane_qualify.py` — the caller/verdict parity block + the PRODUCT_DIRS naming assertion → M, N, O, P, Q
 - EDIT `.agents/commands/cicd-non-crit-pr-push.md` — NOT-COMMAND-CENTRE + LIGHT-VCS rows, and the PRODUCT_DIRS refusal list → M, N, O, P, R
 - EDIT `.agents/commands/smh-non-crit-pr-push.md` — LIGHT-VCS row → O, P, R
@@ -95,6 +96,25 @@ Measured: `.opencode/commands/*` is a byte copy of the command. `.agents/workflo
 short body (5631 vs 5794 bytes for non-crit) but is a thin launcher for a long one (868 bytes for
 the 26 KB story door), so the story door's workflow does NOT change. `SKILL.md` doors are ~1 KB
 launchers and change only if frontmatter does — none here.
+
+## Amendment 1 — discovered while building row F (2026-08-20)
+
+⭐ **Row F could not land without a second file, and the reason is the finding itself.**
+`test_command_surfaces.py`'s CS-13 C2 asserts *"the story door actually moves the Jira ticket"* by
+grepping for one needle — `acli jira workitem transition`. Replacing that call with
+`jira_feed.py finish --apply` (which transitions AND reads the status back, so it is strictly the
+safer mechanism) turned C2 red. The guard pins the **mechanism** it was written against, not the
+**behaviour** it names — the same shape as every other defect on this lane.
+
+Widening the needle then exposed the second half: the door's own prose explains that Step 4b runs
+`finish`, and that sentence lives in Step 2, **ahead of the landing push**. C3 promptly reported the
+door writing `Done` before it lands — a guard inverted by the sentence describing it
+(`comment-literals-invert-source-grep-tests`). The fix is that an invocation carries an argument:
+`--key` is required, and required of **both** verbs, since the acli needle always had the same blind
+spot. Four new cases (C2b, C6 ×2, C7 ×2) pin it, and C7 is the one the mutant kills.
+
+⛔ **No new ticket.** This is row F's own surface, discovered by building row F, so it rides row F —
+per the operator's standing ruling that discovered work folds into the lane it was found in.
 
 ## DO NOT
 

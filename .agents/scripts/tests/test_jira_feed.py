@@ -3286,6 +3286,39 @@ Nothing is actually owed.
                     and "SCC-00-does-not-exist" in st5["why"],
                     err5 or f"a ref git cannot resolve must never pass: {st5}")
 
+            # ── row F · THE FLAG THE STORY DOOR WILL ACTUALLY CALL ────────────────────
+            # A1-A5 exercise `merge_row_state` directly. That is not what
+            # `cicd-close-story-merge-tree.md` runs - it runs the CLI, and a parameter that
+            # exists on the function but is unreachable from `finish` leaves the door with
+            # nothing to call and the ban block correct as written. A7/A8 run the real verb.
+            #
+            # DRY RUN on purpose: the merge check happens before the board write, so the exit
+            # code alone answers the question (0 = the section is clear, 3 = HELD) and no
+            # transition has to be stubbed to read it.
+            cli_repo, cli_acli, cli_state = build(tmp / "cli")
+            set_state(cli_state, types={"SCC-77": "Story"},
+                      statuses={"SCC-77": "In Progress"})
+            os.environ["STUB_STATE"] = str(cli_state)
+            story_wt = story_lane("s5")
+
+            def finish_on(wt, *extra):
+                return run_script("jira_feed.py", "finish", "--key", "SCC-77",
+                                  "--project", str(cli_repo), "--acli", str(cli_acli),
+                                  "--walkthrough", str(wt), *extra)
+
+            rc7, out7 = finish_on(story_wt, "--landing-ref", f"origin/{EPIC}")
+            c.check("A7 (row F) · `finish --landing-ref` answers for the story lane",
+                    rc7 == 0 and "SATISFIED" in out7 and EPIC in out7,
+                    f"exit={rc7} (2 = argparse rejected the flag; 3 = it never reached the "
+                    f"comparison): " + out7.strip()[-400:])
+
+            # A8 · CONTROL, GREEN TODAY. The same walkthrough with NO flag must still HOLD.
+            # Without this, A7 could be made green by making `finish` stop checking at all.
+            rc8, out8 = finish_on(story_wt)
+            c.check("A8 · (control, green today) with NO flag that same lane still HOLDS",
+                    rc8 == 3 and "origin/main" in out8,
+                    f"exit={rc8}: " + out8.strip()[-400:])
+
     return c.finish()
 
 

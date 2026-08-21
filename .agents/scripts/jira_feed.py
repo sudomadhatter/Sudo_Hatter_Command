@@ -2213,7 +2213,7 @@ def cmd_finish(args) -> int:
     # Runs before anything else looks at `items`, and it moves the count in BOTH directions:
     # a merge that landed stops holding the ticket, and a merge row TICKED without a merge
     # (in the working tree, or by hand) is put back on the list it was taken off.
-    merge = merge_row_state(wt)
+    merge = merge_row_state(wt, getattr(args, "landing_ref", None))
     if merge is not None:
         was_open = [i for i in items if is_merge_row(i)]
         if merge["satisfied"]:
@@ -2823,6 +2823,14 @@ def main() -> int:
     p_fin.add_argument("--timeout", type=int, default=90, metavar="SEC")
     p_fin.add_argument("--date", default=date.today().isoformat())
     p_fin.add_argument("--apply", action="store_true", help="without this, renders only")
+    # SCC-242 · WHERE THIS LANE WAS SUPPOSED TO LAND. Omit it and the answer is `origin/main`,
+    # which is right for every Task lane and wrong for exactly one caller: a STORY lands on
+    # `epic/<KEY>-<slug>`. `/cicd-close-story-merge-tree` had to ban this verb outright and
+    # transition with raw `acli` because the target was hardcoded; this flag is what lets that
+    # door call the closer again, and get the `## Your Actions` refusal that came with it.
+    p_fin.add_argument("--landing-ref", metavar="REF",
+                       help="the ref this lane was supposed to land on (default: the "
+                            "manifest's `landing_ref:`, else origin/main)")
     # ⭐ ARMED 2026-08-16 (SCC-164 § ARMING clause 3), and the condition it waited on was
     # MEASURED, not assumed. The operator's ruling of 2026-08-15 armed this "when the count is
     # clean" — re-run the detector over the post-cutoff walkthrough corpus, record the
