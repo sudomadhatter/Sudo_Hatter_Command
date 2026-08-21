@@ -195,19 +195,18 @@ def main() -> int:
     # checkout, on the mainline, while lane worktrees are checked out on chore/* or epic/*.
     # That is lane work being measured against a tree that does not contain it. `--on-main` is
     # the deliberate spelling for the times it IS what you meant (a pre-merge sanity run).
-    if _is_main and _br in ("main", "master") and not args.on_main:
-        _wt = wf.git(["worktree", "list", "--porcelain"], Path(_top)).stdout or ""
-        _lanes = [ln.split("/", 2)[-1] for ln in _wt.splitlines()
-                  if ln.startswith("branch refs/heads/")
-                  and ln.split("refs/heads/")[-1].split("/", 1)[0] in ("chore", "epic")]
-        if _lanes:
-            print(f"run_all: REFUSING - this is the MAIN checkout on `{_br}`, but "
-                  f"{len(_lanes)} lane worktree(s) are checked out: {', '.join(_lanes[:4])}.\n"
-                  f"         A suite run here says nothing about that lane's work, and it is\n"
-                  f"         how the same work gets done twice (SCC-190).\n"
-                  f"         Run it in the lane:  cd <worktree> && python3 "
-                  f".agents/scripts/tests/run_all.py\n"
-                  f"         Or say you meant this tree:  --on-main", file=sys.stderr)
+    # ⛔ The body lives in `wf_common.tree_guard` since SCC-240, because the HARNESS asks the
+    # same question for every single-file run - one body, so the two answers cannot drift.
+    if args.on_main:
+        # ⛔ PROPAGATE THE OVERRIDE, or `--on-main` refuses itself through its own children:
+        # every test file is harness-based and the harness guards too. `Popen` below passes no
+        # `env=`, so the children inherit this process's environment as-is.
+        os.environ["WF_ON_MAIN"] = "1"
+    if wf is not None:
+        _refusal = wf.tree_guard(HERE, who="run_all.py", allow_main=args.on_main,
+                                 tag=(_top, _br, _is_main))
+        if _refusal:
+            print(_refusal, file=sys.stderr)
             return 2
 
     jobs = 1 if args.serial else (args.jobs if args.jobs is not None
