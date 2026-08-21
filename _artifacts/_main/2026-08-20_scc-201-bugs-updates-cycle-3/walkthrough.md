@@ -80,6 +80,63 @@ bae11fa  feat(lane-qualify): every caller lists every verdict                   
 3b992bb  docs(plan): the lane plan + two self-audit passes (NO-GO then GO)
 ```
 
+review-runtime: inline
+
+## Code Review (2026-08-20)
+
+⛔ **`inline`, and that is a WEAKER review than the fan-out — recorded, not disguised.** Five
+clean-context lenses were launched twice and died both times without returning, having filled their
+own context. **The cause was the caller's, not the lenses':** three of them were told to run the
+house suite, and `run_all.py` prints every passing case across 40 files — that output lands in the
+lens's context. The second attempt trimmed the diff from 143 KB to 66 KB and banned bare suite runs;
+it was killed on the operator's instruction rather than run to completion, with the lane a week
+behind schedule.
+
+Per the engine's own law, an `inline` review **drops the Blind Hunter rather than fake it** — the
+assessor is holding this lane's plan and walkthrough, so no lens here was context-starved and none
+may claim to have been.
+
+lenses_run:
+- Blind Hunter · dead — cannot run inline; the assessor holds the plan, so independence is unavailable
+- Edge Case Hunter · recovered-inline — boundary sweep run by hand over `index_append` and `_collect`
+- Literal-Correctness Hunter · recovered-inline — changed symbols checked against their definitions
+- Acceptance Auditor · recovered-inline — 17 rows, Declared Change Set and DO NOTs re-checked
+- Test-Adequacy Auditor · recovered-inline — mutation sweep re-run, 40/40 suite
+lenses_counted:  4/5
+lenses_na:       none
+findings:        1 patch · 0 decision · 0 defer   (2 relevance kills)
+severity_floor:  CONCERNS
+notes:           fan-out unavailable — two launch attempts died on lens-side context exhaustion,
+                 caused by caller instructions that flooded them. Recorded as a caller defect.
+
+### What the hunt found
+
+**1 finding fixed — and it was a fail-open in this lane's own fix.** `_collect`'s new HTML-comment
+skip had no exit for an **unterminated** comment: `<!-- note` with no `-->` swallowed every item
+below it. A typo in a walkthrough would silently drop owed operator work and `finish` would close
+the ticket over it — **the exact shape SCC-206 exists to close, reintroduced by SCC-206's fix.** An
+item line now ends the comment: over-reporting holds a ticket, under-reporting closes one that
+should have held. Case **J3** pins it.
+
+**2 dismissed under the assessor ruling** (real, stated, but they change no reachable behaviour):
+`index_append` normalises CRLF to LF across the whole field — **measured: the live board returns
+zero CR bytes**, so the input is unreachable; and the function alone is not idempotent, but
+`cmd_index_row` dedupes before calling it.
+
+### Evidence
+
+| Gate | Result |
+|---|---|
+| `run_all.py` (40 files, bare, exit code read) | **40/40, exit 0** |
+| mutation sweep | 10 mutants, each killed by its declared case |
+| blast radius vs current `main` | re-derived after absorbing SCC-240 — three additive overlaps, one generated file regenerated |
+| every repo path and anchor the diff names | resolves |
+
+**Verdict: CONCERNS @ 5f6dd912e**
+
+The floor is `CONCERNS` because the review ran `inline` with one lens dead — not because anything in
+the diff is unresolved. Every finding raised was fixed or dismissed with a measured reason.
+
 ## Your Actions
 
 - [ ] **The merge itself** — lands via this branch's PR
