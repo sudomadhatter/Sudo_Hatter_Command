@@ -3319,6 +3319,90 @@ Nothing is actually owed.
                     rc8 == 3 and "origin/main" in out8,
                     f"exit={rc8}: " + out8.strip()[-400:])
 
+
+    # ── SCC-206 · the continuation window has to CLOSE ───────────────────────────────────
+    # ⛔ THE DEFECT, IN ONE LINE: `_collect` folds an indented line into `items[-1]` without
+    # ever asking whether the item above it is still open. A `- [x]` is skipped (it matches
+    # `_ANY_ITEM_RE`, so it appends nothing) - but its own WRAPPED LINES do not match, so they
+    # land on the last OPEN item. The operator is then shown work they already did, glued onto
+    # a row that says something else, and `finish` posts that to the board as owed.
+    if c.block("SCC-206 · a ticked item ENDS the continuation window"):
+        import jira_feed  # noqa: E402
+
+        def sect(*rows: str) -> str:
+            return "# W\n\n## Your Actions\n\n" + "\n".join(rows) + "\n"
+
+        # I · the reproduction. A wrapped `- [x]` under a `- [ ]`.
+        BLED = sect(
+            "- [ ] **Install the board column** - the `user-tasks` filter needs it",
+            "- [x] **Run the memory audit** - the index passed 90% of the 25 KB cap",
+            "      and was compacted on 2026-08-19, so this one is genuinely done",
+        )
+        got = jira_feed.open_actions(BLED)
+        c.check("I a ticked item's wrapped prose does NOT land on the open item above it",
+                got == ["**Install the board column** - the `user-tasks` filter needs it"],
+                f"the open row was contaminated by the DONE row's second line: {got}")
+
+        # J · an HTML comment is invisible. Authors leave them in walkthroughs constantly;
+        # indented under an item, every one of them is currently owed work.
+        COMMENTED = sect(
+            "- [ ] **Decide the landing order**",
+            "  <!-- agent note: SCC-240 lands first per the operator, 2026-08-20 -->",
+        )
+        got_j = jira_feed.open_actions(COMMENTED)
+        c.check("J an indented HTML comment folds into NO item",
+                got_j == ["**Decide the landing order**"],
+                f"a comment is not the operator's instruction: {got_j}")
+
+        # J2 · ...including a comment that spans lines, which is how the long ones are written.
+        MULTI = sect(
+            "- [ ] **Decide the landing order**",
+            "  <!-- agent note:",
+            "       SCC-240 lands first per the operator -->",
+        )
+        got_j2 = jira_feed.open_actions(MULTI)
+        c.check("J2 ...and a MULTI-LINE comment folds in no part of itself",
+                got_j2 == ["**Decide the landing order**"], str(got_j2))
+
+        # ⛔ K · THE CONTROL THAT FORBIDS THE LAZY FIX. Deleting the fold entirely makes I, J
+        # and J2 green in one edit - and truncates every genuine multi-line instruction to its
+        # first line, which is the half that never says WHY. `smh-quick-dev.md` publishes
+        # ride-along as a MACHINE CONTRACT. This row is green today and must stay green.
+        RIDES = sect(
+            "- [ ] **Install the board column**",
+            "      because the `user-tasks` filter has nowhere to render without it",
+        )
+        got_k = jira_feed.open_actions(RIDES)
+        c.check("K (control, green today) a real continuation still rides along",
+                got_k == ["**Install the board column** because the `user-tasks` filter "
+                          "has nowhere to render without it"], str(got_k))
+
+        # K2 · and the window REOPENS on the next open item - a ticked row must end the
+        # window, not disable folding for the rest of the section.
+        REOPEN = sect(
+            "- [ ] **First**",
+            "- [x] **Done** - with a wrapped line",
+            "      that must vanish",
+            "- [ ] **Second**",
+            "      and its own continuation, which must survive",
+        )
+        got_k2 = jira_feed.open_actions(REOPEN)
+        c.check("K2 the window REOPENS on the next open item",
+                got_k2 == ["**First**",
+                           "**Second** and its own continuation, which must survive"],
+                str(got_k2))
+
+        # ⛔ L · THE REFUSAL PATH MUST NOT SHIFT. `None` (no section) and `[]` (a section with
+        # nothing open) mean different things upstream - one refuses, one closes the ticket.
+        c.check("L (control) no section at all is still None, never []",
+                jira_feed.open_actions("# W\n\nnothing here\n") is None,
+                "an absent section is a REFUSAL, and collapsing it into 'nothing owed' "
+                "closes a ticket over work the operator was promised")
+        c.check("L (control) a section with only TICKED items is still []",
+                jira_feed.open_actions(sect("- [x] **Done**", "      wrapped")) == [],
+                "nothing open means nothing owed - and the wrapped line has no item to "
+                "attach to, so it must not resurrect one")
+
     return c.finish()
 
 

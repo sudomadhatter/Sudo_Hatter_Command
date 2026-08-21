@@ -1622,6 +1622,20 @@ def open_actions(text: str) -> list[str] | None:
 
 
 def _collect(live: list[tuple[int, str]], start: int, items: list[str]) -> None:
+    """Append this section's OPEN items to `items`, continuations folded in.
+
+    ⛔ SCC-206 · THE CONTINUATION WINDOW IS STATE, AND IT HAS TO CLOSE. The first version
+    folded any indented line into `items[-1]` without asking whether the item above it was
+    still open. A `- [x]` appends nothing (it matches `_ANY_ITEM_RE`), but its own WRAPPED
+    lines match neither pattern - so the DONE row's prose landed on the last OPEN row, and
+    `finish` posted the result to the board as work the operator still owed. The list looked
+    right, every row was real, and one of them said something nobody wrote.
+
+    So `open_window` tracks whether the most recent item can still take continuations. An
+    open item opens it; ANY other list item closes it; the next open item opens it again.
+    """
+    open_window = False
+    in_comment = False
     for i, ln in live:
         if i <= start:
             continue
@@ -1632,10 +1646,26 @@ def _collect(live: list[tuple[int, str]], start: int, items: list[str]) -> None:
         s = ln.strip()
         if s.startswith("## ") or s.startswith("# "):
             break
+        # ⛔ SCC-206 · AN HTML COMMENT IS NOT AN INSTRUCTION. Walkthroughs carry them by the
+        # dozen (`<!-- JIRA-HOOK: ... -->`, agent notes), and indented under an item every
+        # one of them was being read out to the operator as part of what they owed. Tracked
+        # across lines because the long ones are written that way; a comment that opens and
+        # closes on one line never sets the flag.
+        if in_comment:
+            in_comment = "-->" not in s
+            continue
+        if s.startswith("<!--"):
+            in_comment = "-->" not in s
+            continue
         m = _OPEN_ITEM_RE.match(ln)
         if m:
             items.append(m.group(1).strip())
-        elif items and s and not _ANY_ITEM_RE.match(ln) and ln[:1].isspace():
+            open_window = True
+        elif _ANY_ITEM_RE.match(ln):
+            # A ticked item, or any other list row. It owns nothing here, and it ENDS the
+            # previous item's window - that is the whole of SCC-206.
+            open_window = False
+        elif open_window and items and s and ln[:1].isspace():
             # A continuation line indented under the item it belongs to. `smh-quick-dev.md`
             # publishes this as a MACHINE CONTRACT ("Continuation lines indented under it
             # ride along"), and dropping them truncated the operator's own instructions to

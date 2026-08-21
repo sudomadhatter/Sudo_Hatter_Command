@@ -925,6 +925,15 @@ uncommitted file, and the one at Step 4b costs a commit on a branch that has alr
 
 ⭐ **SCC-193 · `## Your Actions` now has a CONTENT rule, and it refuses the ceremony's own steps.** On SCC-164's landing the agent wrote *"Click **Merge** on the PR"* and *"Then re-invoke `/smh-close-task-merge-tree --after-merge SCC-164`"* into that section as **your** tasks — and the machine contract dutifully held the ticket on work that was the agent's. Both are now refused, with the sentence *"this section holds what only the operator decides; the ceremony's steps are not entries."* **The rule, in one line:** your **decision to proceed** is the sign-off — the word `approved`, or invoking one of the two doors — and from that word on every step is the ceremony's and the agent runs it. What stays in the section is what only you can **decide**. Three things are deliberately NOT flagged: the door's own ledger row (`- [x] The merge itself — lands via this branch's PR`, which SCC-175 checks against ancestry), a bare door invocation (*"Land it — `/cicd-push-e2e`"*, which is one of the forms your decision takes), and any product decision that happens to mention a merge. It runs at `jira_feed.py check-actions` (the close-out's Step 3, **before** the PR opens, where fixing it costs nothing) and again at `finish`, before anything is written to the board. `--warn-actions` is the one logged opt-out for both row families.
 
+**⭐ …and what the reader shows you is now only what you wrote (SCC-206).** A `- [ ]` item takes the
+indented lines under it — that ride-along is a machine contract, and it is how an instruction keeps
+the half that says *why*. What it never did was **stop**: a `- [x]` row appends nothing itself, but
+its own wrapped lines matched no pattern, so they folded onto the last **open** row above. The board
+was then posted a row that read half one instruction and half another, and every word of it was real.
+The window now closes on any list item and reopens on the next open one, and **HTML comments are
+invisible** — `<!-- … -->`, single or multi-line, indented under an item, was previously read out to
+you as work you owed.
+
 **⭐ The close-out now leaves a flight event behind (SCC-133, under SCC-38).** Between the gate and
 the merge, Step 2.5 runs `flight_recorder.py record`: one small file per lane under
 `_artifacts/_main/workflow-events/<YYYY-MM>/`, keyed on the walkthrough's verdict sha, carrying the
