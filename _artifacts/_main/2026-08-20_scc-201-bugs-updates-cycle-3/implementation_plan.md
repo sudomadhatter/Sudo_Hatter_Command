@@ -180,7 +180,9 @@ identical to one that fails its assertion, and only one of those is a real failu
 three of the same generated directories from a different base. Whichever lands second gets a red on
 files neither lane hand-edited.
 
-**Operator ruling (2026-08-20): SCC-240 lands FIRST.** This lane then absorbs `origin/main`,
+⛔ **SUPERSEDED — operator ruling, 2026-08-20 (later): THIS LANE LANDS FIRST.** *"I will make 240 to that since you are done first"* — SCC-201 finished first, so SCC-240 rebases onto it and absorbs the regenerated mirrors. The collision is unchanged in kind; only which lane pays it moves. Nothing in the build changes — the mirrors in this lane are `/smh-sync-agents` output from this lane's own bodies.
+
+~~**Operator ruling (2026-08-20): SCC-240 lands FIRST.**~~ This lane then absorbs `origin/main`,
 re-runs the sync, and re-gates before its own PR. That absorb happens before the review, never at
 the merge.
 
