@@ -2608,7 +2608,7 @@ speak; "refuses" means it will not proceed at all and names the fix.*
 | Command | Stops for you at | Refuses when |
 |---|---|---|
 | `/cicd-boot-sprint-memory` | Step 0 if no project is named; Step 4 always (discovery only) | — |
-| `/cicd-create-epic-sprint` | Step 3, **once per story**, for its P-level | never cuts an unkeyed epic branch |
+| `/cicd-create-epic-sprint` | **two** stops: Step 2, once, for the whole epic + story set; then Step 4, **once per story**, for its P-level | never cuts an unkeyed epic branch; an Epic whose description is not the Step 1a placeholder (it would be overwritten) |
 | `/cicd-label-tasks` · `/smh-label-tasks` | never — it states and stops | pointed at the wrong unit (epic ↔ Task); a story with no file |
 | `/smh-plan-task` | Step 2 (the breakdown) and Step 5 (**one** approval for every plan) | parent is an Epic or a Subtask; a NO-GO audit on any lane |
 | ① `/cicd-write-story-tests` | Step 2 until the behavior contract is locked or waived | a "red" that is fiction (asserts something that does not exist) |

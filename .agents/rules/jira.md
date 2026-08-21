@@ -493,7 +493,8 @@ session's learnings, so pass them with `--decision` / `--pitfall` / `--followon`
 Agents MAY mint (operator ruling 2026-08-07): every ticket carries its provenance — the BMAD number
 in the summary, the board row / spec pointer in the description — so nothing lands untraceable.
 
-- **Epics** → `/cicd-create-epic-sprint` Step 1.5, at kickoff (the operator is in the room).
+- **Epics** → `/cicd-create-epic-sprint` **Step 1a**, at kickoff (the operator is in the room) — and
+  the look-before-you-mint search is part of that step, not a separate one.
 - **Stories** → `/cicd-write-story-tests` ① Step 1.6, at pickup: child of the epic ticket, bare,
   labels from ①'s lane/parallel/blocked ruling, `jira_key:` stamped into the story frontmatter.
 - **Toolkit/chore work** → mint the repo's chore ticket before cutting `chore/<KEY>-<slug>`.

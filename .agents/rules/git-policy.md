@@ -34,12 +34,12 @@ description: "Git policy: main is the ONLY long-lived branch. Each epic gets a s
   and SCC-211 for which diff selects which). The gate is per-repo: the lobby runs
   `python3 .agents/scripts/tests/run_all.py` (it has **no E2E suite and never will** — no
   `frontend/`); deploying repos run the light gate (tests + build), and epic merges add `/cicd-e2e`.
-  **The command that does this is `/smh-close-task-merge-tree`** (SCC-49) — invoking it IS the
-  sign-off, the same contract `/cicd-push-e2e` carries for an epic. It will not decide the gate
-  from prose: `task_preflight.py` derives the lane from the repo and the diff, and a `chore/*`
-  branch that touches `backend/`, `frontend/`, `firebase/`, `functions/`, `mobile/` or `.github/`
-  is refused outright and handed to `/cicd-push-e2e` — a change that reaches deployable code is a
-  product change no matter what its ticket is called.
+  **Neither door decides the gate from prose, and neither is chosen — the DIFF selects it.**
+  `task_preflight.py` derives the lane from the repo and the diff, and a `chore/*` branch that
+  touches `backend/`, `frontend/`, `firebase/`, `functions/`, `mobile/` or `.github/` is refused
+  outright and handed to `/cicd-push-e2e` (SCC-49, SCC-211) — a change that reaches deployable code
+  is a product change no matter what its ticket is called. `ship_preflight.py` refuses the mirror
+  case from the other side, so a lane cannot slip through both.
 
 ### Every branch and every commit carries a Jira key (armed 2026-08-07)
 

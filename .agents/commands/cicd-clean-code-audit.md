@@ -58,9 +58,16 @@ env -u GITHUB_TOKEN git -C "$PROJECT_ROOT" fetch origin   # a bare ref is this c
 BASE=$(git for-each-ref --format='%(refname:short)' \
          refs/remotes/origin/epic/* refs/heads/epic/* | head -1); BASE=${BASE:-origin/main}
 git diff --name-only "${BASE}...HEAD"           # story branch vs the branch it forked from
-git diff --name-only                            # plus uncommitted - saved edits nobody staged yet
-git diff --name-only --cached                   # plus staged, if mid-work
+git diff --name-only                            # STANDALONE ONLY - saved edits nobody staged yet
+git diff --name-only --cached                   # STANDALONE ONLY - staged, if mid-work
 ```
+
+⛔ **Those last two lines are for a STANDALONE run only. Embedded as `/cicd-code-review` Step 3.5,
+drop them and audit the committed diff alone.** That command's Step 0.6 resolves *committed work
+only* and reports uncommitted files as present-and-not-reviewed. Sweeping them in here re-scopes the
+review from underneath itself: an `any` in a file the reviewer never saw becomes a FAIL on this
+lane, and the lane cannot fix what it did not write. Whether the two commands review the same set is
+not a detail — it is the difference between one verdict and two.
 
 If `$ARGUMENTS` names an explicit base ref, use it instead. Echo the file count. **An empty set is a
 STOP, not a pass** — say so and stop; a vacuous green here is the exact failure this gate exists to
