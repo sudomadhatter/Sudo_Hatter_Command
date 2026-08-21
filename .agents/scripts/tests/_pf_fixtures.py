@@ -71,7 +71,7 @@ MANIFEST = ("task_key: SCC-11\nprimary_repo: repo\nbranch: chore/SCC-11-thing\n"
 
 def make_repo(root: Path, *, deployable: bool = False, remote: bool = True,
               walkthrough: bool = True, manifest: bool = True, hooks: bool = True,
-              ci: bool = False) -> Path:
+              ci: bool = False, jira_conf: bool = True) -> Path:
     """A repo standing on `main`, optionally with a bare origin it is in sync with."""
     repo = root / "repo"
     repo.mkdir(parents=True)
@@ -79,7 +79,12 @@ def make_repo(root: Path, *, deployable: bool = False, remote: bool = True,
     git(repo, "config", "user.email", "t@example.com")
     git(repo, "config", "user.name", "T")
     git(repo, "config", "commit.gpgsign", "false")
-    write(repo, ".agents/jira.conf", JIRA_CONF)
+    # `jira_conf=False` models a repo that declares no Jira project. Additive with a `True`
+    # default, so every existing caller is byte-identical; it exists because the readers under
+    # test have a WARN arm for exactly that repo and no fixture could reach it (SCC-211
+    # review, Test-Adequacy finding 7).
+    if jira_conf:
+        write(repo, ".agents/jira.conf", JIRA_CONF)
     write(repo, ".agents/scripts/tests/run_all.py", "# fixture\n")
     # SCC-110: a repo carrying `.agents/jira.conf` is CLAIMING a commit gate, so the fixture
     # has to carry the hook that enforces it and the per-machine switch that runs it. Without

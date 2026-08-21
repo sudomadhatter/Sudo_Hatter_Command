@@ -1,0 +1,54 @@
+{
+  "v": 1,
+  "task": "SCC-211",
+  "sha": "1c2ee578fe31d735fb49a80f75702e6bbcf5f061",
+  "tip": "03cc6673a841d461d8e181cfec8164c7532d5ebf",
+  "trigger": "close-out",
+  "when": "2026-08-21T07:54:54-04:00",
+  "changes": [
+    ".agents/.sync-manifest.json",
+    ".agents/commands/cicd-push-e2e.md",
+    ".agents/rules/git-policy.md",
+    ".agents/scripts/INDEX.md",
+    ".agents/scripts/closeout_preflight.py",
+    ".agents/scripts/ship_preflight.py",
+    ".agents/scripts/task_preflight.py",
+    ".agents/scripts/tests/_pf_fixtures.py",
+    ".agents/scripts/tests/test_closeout_preflight.py",
+    ".agents/scripts/tests/test_door_preflight_order.py",
+    ".agents/scripts/tests/test_ship_preflight.py",
+    ".agents/scripts/tests/test_task_preflight.py",
+    ".agents/scripts/wf_common.py",
+    ".agents/workflows/cicd-push-e2e.md",
+    ".opencode/commands/cicd-push-e2e.md",
+    "_artifacts/_main/2026-08-21_scc-211-push-e2e-precheck/gates/suite.json",
+    "_artifacts/_main/2026-08-21_scc-211-push-e2e-precheck/implementation_plan.md",
+    "_artifacts/_main/2026-08-21_scc-211-push-e2e-precheck/sweep-closeout.json",
+    "_artifacts/_main/2026-08-21_scc-211-push-e2e-precheck/sweep-door.json",
+    "_artifacts/_main/2026-08-21_scc-211-push-e2e-precheck/sweep-script.json",
+    "_artifacts/_main/2026-08-21_scc-211-push-e2e-precheck/sweep-task.json",
+    "_artifacts/_main/2026-08-21_scc-211-push-e2e-precheck/task.yaml",
+    "_artifacts/_main/2026-08-21_scc-211-push-e2e-precheck/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-21_scc-211-push-e2e-precheck/walkthrough.md",
+    "verdict": "PASS @ 1c2ee57",
+    "gates": {
+      "suite": "pass@1c2ee57"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": [
+    "rule-edited:.agents/rules/git-policy.md"
+  ]
+}

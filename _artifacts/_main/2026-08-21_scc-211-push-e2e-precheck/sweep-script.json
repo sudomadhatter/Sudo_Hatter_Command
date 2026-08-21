@@ -1,0 +1,288 @@
+{
+ "test": [
+  "python3",
+  ".agents/scripts/tests/test_ship_preflight.py"
+ ],
+ "mutants": [
+  {
+   "id": "M1 the dirty-checkout refusal is inverted",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "        if dirty:\n            n = len(dirty.splitlines())",
+   "mutated": "        if not dirty:\n            n = len(dirty.splitlines())",
+   "case": "SP-B ...and it says UNCOMMITTED",
+   "block": "SP-B · a dirty epic checkout REFUSES before the gate runs"
+  },
+  {
+   "id": "M2 the 0/0 test narrowed from OR to AND (a width mutant)",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "if ahead != \"0\" or behind != \"0\":",
+   "mutated": "if ahead != \"0\" and behind != \"0\":",
+   "case": "SP-C ...and it names ahead/behind",
+   "block": "SP-C · unsynced: a commit on one disk cannot be what production runs"
+  },
+  {
+   "id": "M3 the never-pushed ERROR demoted to an INFO",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "rep.err(\"sync\", f\"{branch}: never pushed",
+   "mutated": "rep.info(\"sync\", f\"{branch}: never pushed",
+   "case": "SP-C never pushed -> exit 2",
+   "block": "SP-C · unsynced: a commit on one disk cannot be what production runs"
+  },
+  {
+   "id": "M4 the pinned-key comparison is inverted",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    if key != expect:\n",
+   "mutated": "    if key == expect:\n",
+   "case": "SP-D wrong --expect-key -> exit 2",
+   "block": "SP-D · intent: the resolved branch must carry the key that was PINNED"
+  },
+  {
+   "id": "M5 the repo-project membership arm never fires",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    elif project not in allowed:",
+   "mutated": "    elif project in allowed and False:",
+   "case": "SP-D ...and it names the repo's own project(s)",
+   "block": "SP-D · intent: the resolved branch must carry the key that was PINNED"
+  },
+  {
+   "id": "M6 WRONG_LANE loses its story-branch row",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    \"claude/\": (\"/cicd-close-story-merge-tree\",\n                \"a story branch lands on its EPIC branch at close-out, never on main\"),\n",
+   "mutated": "    # the story-branch row, removed by the sweep\n",
+   "case": "SP-E a story branch -> exit 2 naming the story close-out",
+   "block": "SP-E · shape: every refusal names the command that IS right"
+  },
+  {
+   "id": "M7 the standing-on-main refusal narrowed to HEAD alone (a width mutant)",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "if branch in (\"main\", \"HEAD\", \"origin/main\"):",
+   "mutated": "if branch in (\"HEAD\",):",
+   "case": "SP-E ...and it says this door merges INTO main",
+   "block": "SP-E · shape: every refusal names the command that IS right"
+  },
+  {
+   "id": "M8 the epic lane is never recognised, so an epic takes the chore road",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    if prefix == \"epic\":",
+   "mutated": "    if prefix == \"no-such-lane\":",
+   "case": "SP-A an epic branch takes the FULL gate",
+   "block": "SP-A · the positive control: a clean, pushed epic branch is CLEAR"
+  },
+  {
+   "id": "M9 the deployable-diff decision is inverted",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    if touched:",
+   "mutated": "    if not touched:",
+   "case": "SP-F a deployable chore diff is ADMITTED -> exit 0",
+   "block": "SP-F · the lane: a chore branch is admitted only when its diff DEPLOYS"
+  },
+  {
+   "id": "M10 a repo with no deployable surface stops being refused",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    if not surface:",
+   "mutated": "    if surface and False:",
+   "case": "SP-F ...naming the REASON: the repo has no deployable surface at all",
+   "block": "SP-F · the lane: a chore branch is admitted only when its diff DEPLOYS"
+  },
+  {
+   "id": "M11 the staleness stops riding the VERDICT line",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    if not fresh and code < 2:",
+   "mutated": "    if fresh and code < 2:",
+   "case": "SP-G ...and the word stale is ON it",
+   "block": "SP-G · --no-fetch: the VERDICT itself carries the staleness"
+  },
+  {
+   "id": "M19 the remote-only arm is removed, so a pushed branch reads as unpushed",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    elif remote:\n        rep.info(\"sync\", f\"{branch}: on origin, not checked out here",
+   "mutated": "    elif remote and False:\n        rep.info(\"sync\", f\"{branch}: on origin, not checked out here",
+   "case": "SP-C remote-only (pushed, not checked out here) is CLEAR -> exit 0",
+   "block": "SP-C · unsynced: a commit on one disk cannot be what production runs"
+  },
+  {
+   "id": "M20 a branch that exists nowhere is reported as unpushed instead of absent",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "        rep.err(\"sync\", f\"{branch}: no such branch, local or remote",
+   "mutated": "        rep.err(\"sync\", f\"{branch}: never pushed, local or remote",
+   "case": "SP-C ...named as absent, not as unpushed",
+   "block": "SP-C · unsynced: a commit on one disk cannot be what production runs"
+  },
+  {
+   "id": "M21 the lane diff stops checking whether it actually ran",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    if diff.returncode != 0:",
+   "mutated": "    if diff.returncode != 0 and False:",
+   "case": "SP-K a diff that CANNOT run is named unanswerable, not empty",
+   "block": "SP-K · a chore lane on a remote-only branch still reads its real diff"
+  },
+  {
+   "id": "M22 the lane diff stops falling back to the origin ref",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "        ref = f\"origin/{branch}\"",
+   "mutated": "        ref = branch",
+   "case": "SP-K the deployable diff is still SEEN -> exit 0",
+   "block": "SP-K · a chore lane on a remote-only branch still reads its real diff"
+  },
+  {
+   "id": "M23 the empty-operand guard never fires",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "        if not value.strip():",
+   "mutated": "        if not value.strip() and False:",
+   "case": "SP-I ...named as the PIN that never arrived",
+   "block": "SP-I · an empty operand is named as missing, never blamed on the branch"
+  },
+  {
+   "id": "M24 the resolved repo stops being echoed on the human path",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    rep.info(\"repo\", str(repo))",
+   "mutated": "    rep.info(\"repo\", \"(not shown)\")",
+   "case": "SP-J the human output names the resolved repo PATH",
+   "block": "SP-J · the resolved repo is echoed on the human path too"
+  },
+  {
+   "id": "M25 the remote-ref prefix is no longer normalised",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    local_name = REMOTE_PREFIX_RE.sub(\"\", branch)",
+   "mutated": "    local_name = branch",
+   "case": "SP-M `git branch -a`'s own spelling is understood, not refused",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M26 WRONG_LANE's two rows are swapped (the literal SCC-148 shape)",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    \"claude/incident-\": (\"/cicd-mobile-error-team\",\n                         \"an incident branch has its own lane and its own pipeline\"),\n    \"claude/\": (\"/cicd-close-story-merge-tree\",\n                \"a story branch lands on its EPIC branch at close-out, never on main\"),\n",
+   "mutated": "    \"claude/\": (\"/cicd-close-story-merge-tree\",\n                \"a story branch lands on its EPIC branch at close-out, never on main\"),\n    \"claude/incident-\": (\"/cicd-mobile-error-team\",\n                         \"an incident branch has its own lane and its own pipeline\"),\n",
+   "case": "SP-L no WRONG_LANE entry is shadowed by an earlier prefix",
+   "block": "SP-L · WRONG_LANE and BRANCH_RE, pinned structurally"
+  },
+  {
+   "id": "M27 the lane scan becomes a substring search instead of anchored",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "        if branch.startswith(prefix):",
+   "mutated": "        if prefix in branch:",
+   "case": "SP-M a lane word INSIDE a slug is not a lane match (anchored scan)",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M28 BRANCH_RE allows a segment before the key (epic/thin-KEY-x)",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "BRANCH_RE = re.compile(r\"^(epic|chore)/([A-Z][A-Z0-9]*)-(\\d+)-(.+)$\")",
+   "mutated": "BRANCH_RE = re.compile(r\"^(epic|chore)/(?:[a-z-]+-)?([A-Z][A-Z0-9]*)-(\\d+)-(.+)$\")",
+   "case": "SP-L BRANCH_RE refuses epic/thin-SCC-11-toolkit",
+   "block": "SP-L · WRONG_LANE and BRANCH_RE, pinned structurally"
+  },
+  {
+   "id": "M29 the fetch OUTCOME is ignored; asking is treated as succeeding",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "        if _fetch(repo):\n            fresh = True",
+   "mutated": "        _fetch(repo)\n        fresh = True",
+   "case": "SP-M ...and the staleness rides the VERDICT line",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M30 the 0/0 read drops its BEHIND half",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "if ahead != \"0\" or behind != \"0\":",
+   "mutated": "if ahead != \"0\":",
+   "case": "SP-M a branch BEHIND origin -> exit 2",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M31 the --left-right columns are swapped",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "        behind, ahead = (counts.stdout.split() + [\"?\", \"?\"])[:2]",
+   "mutated": "        ahead, behind = (counts.stdout.split() + [\"?\", \"?\"])[:2]",
+   "case": "SP-M ...with the counts the right way round: `0 ahead / 1 behind`",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M32 the no-jira.conf WARN arm never fires",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    if not allowed:",
+   "mutated": "    if allowed and False:",
+   "case": "SP-M no .agents/jira.conf WARNS, never blocks",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M33 --expect-key stops being normalised to upper case",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    expect = args.expect_key.strip().upper()",
+   "mutated": "    expect = args.expect_key.strip()",
+   "case": "SP-M a lowercase --expect-key still matches",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M34 the standing-on-another-branch notice is dropped",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    if standing and standing != branch:",
+   "mutated": "    if standing and standing != branch and False:",
+   "case": "SP-M it says which branch the checkout is STANDING on",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M35 the --json exit is hardcoded to 0",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "                          \"exit\": code,",
+   "mutated": "                          \"exit\": 0,",
+   "case": "SP-M --json carries the REAL exit, lane and verdict on a refusal",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M36 origin/main drops out of the standing-on-main guard",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "if branch in (\"main\", \"HEAD\", \"origin/main\"):",
+   "mutated": "if branch in (\"main\", \"HEAD\"):",
+   "case": "SP-M origin/main is refused as the TARGET, not as a keyless epic",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M40 the ref-state check stops declining after the shape check ruled",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    if not shaped:\n        rep.info(\"sync\", \"ref state not checked",
+   "mutated": "    if not shaped and False:\n        rep.info(\"sync\", \"ref state not checked",
+   "case": "SP-M ...and it does not then claim the ref does not exist",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M41 worktree_holding never resolves a tree",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "        if wt and br and br.group(1).strip() == branch:\n            return Path(wt.group(1).strip())",
+   "mutated": "        if wt and br and br.group(1).strip() == branch and False:\n            return Path(wt.group(1).strip())",
+   "case": "SP-N a dirty linked worktree BLOCKS the ship",
+   "block": "SP-N · dirt in the worktree that HOLDS the branch is not invisible"
+  },
+  {
+   "id": "M42 only --repo is ever measured for dirt",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    if held is not None and held.resolve() != repo.resolve():",
+   "mutated": "    if held is not None and held.resolve() != repo.resolve() and False:",
+   "case": "SP-N ...naming the tree that is actually dirty",
+   "block": "SP-N · dirt in the worktree that HOLDS the branch is not invisible"
+  },
+  {
+   "id": "M43 a present-but-empty jira.conf is called absent again",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "        where = (f\"{conf} declares no JIRA_KEYS (empty, commented out, or renamed)\"\n                 if conf.is_file() else \"there is no .agents/jira.conf in this repo\")",
+   "mutated": "        where = \"there is no .agents/jira.conf in this repo\"",
+   "case": "SP-M a PRESENT but empty jira.conf is not called absent",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M44 the fetch child inherits the session environment",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "                           env=env)",
+   "mutated": "                           env=None)",
+   "case": "SP-O ...and GITHUB_TOKEN was NOT in the fetch's environment",
+   "block": "SP-O · the fetch child never inherits GITHUB_TOKEN"
+  },
+  {
+   "id": "M45 the shape alternation admits a foreign prefix",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "BRANCH_RE = re.compile(r\"^(epic|chore)/([A-Z][A-Z0-9]*)-(\\d+)-(.+)$\")",
+   "mutated": "BRANCH_RE = re.compile(r\"^(epic|chore|feature)/([A-Z][A-Z0-9]*)-(\\d+)-(.+)$\")",
+   "case": "SP-M a keyed branch with a FOREIGN prefix is refused",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  }
+ ]
+}

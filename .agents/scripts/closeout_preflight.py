@@ -496,7 +496,24 @@ def main() -> int:
     lobby = wf.find_lobby_root(Path.cwd())
     if lobby and lobby != project:
         fresh = check_sync("lobby", lobby, args.fetch, rep) and fresh
-    if args.worktree:
+    # ⭐ SCC-211 · THE LANE'S TREE IS DERIVED, NOT TAKEN ON TRUST. This used to be
+    # `if args.worktree:` and nothing else, so the one tree whose dirt actually matters was
+    # measured only when the caller remembered to name it. The door's prose said the flag was
+    # mandatory; argparse did not, and `/cicd-prune-worktree` calls this script without it —
+    # so in that shape the project root (standing on `main`, spotless) was the whole answer
+    # while the lane's tree was dirty, and the run cleared the close-out.
+    #
+    # Making the flag `required=True` was the obvious fix and it is the weaker one: a required
+    # flag can still be aimed at the wrong tree, and it breaks every caller that has none.
+    # `wf.trees_to_measure` asks git which tree holds the branch — that cannot be forgotten and
+    # cannot be aimed wrong — and keeps `--worktree` as an ADDITIONAL tree. One body, shared
+    # with `/cicd-push-e2e` and `/smh-close-task-merge-tree`, so the three doors cannot drift
+    # apart about what they are measuring.
+    if args.branch:
+        explicit = Path(args.worktree).resolve() if args.worktree else None
+        for label, tree in wf.trees_to_measure(project, args.branch, explicit)[1:]:
+            fresh = check_sync(label, tree, args.fetch, rep) and fresh
+    elif args.worktree:
         fresh = check_sync("worktree", Path(args.worktree).resolve(), args.fetch, rep) and fresh
     check_worktrees(project, rep)
     check_surfaces(project, key, rep)

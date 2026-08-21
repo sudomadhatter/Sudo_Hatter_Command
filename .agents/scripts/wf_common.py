@@ -421,6 +421,66 @@ def strip_fenced(text: str) -> str:
     return "\n".join(out)
 
 
+# ── WHICH TREE HOLDS THE BRANCH? — one definition, read by every door (SCC-211) ───────
+#
+# ⛔ THE QUESTION IS "WHICH TREE WILL BE GATED?", AND EVERY DOOR HAS TO ANSWER IT THE SAME WAY.
+# All three close-out doors ask whether the working tree is clean, because a dirty tree means
+# the gate measures content the merge does not carry — what ships was never gated. Before this
+# they answered it three different ways, and each way had a different hole:
+#
+#   * `/cicd-push-e2e`  measured `PROJECT_ROOT` only. With the epic in a linked worktree — the
+#     NORM under `worktree-per-story` — that root stands on `main`, spotless, while the lane's
+#     tree is dirty. It reported "working tree clean" and cleared the ship. Reproduced.
+#   * `/cicd-close-story-merge-tree` measured the worktree only when the CALLER passed
+#     `--worktree`. Prose in the door said the flag was mandatory; argparse did not, and
+#     `/cicd-prune-worktree` calls the same script without it.
+#   * `/smh-close-task-merge-tree` measures whatever `--repo` names, which its own door happens
+#     to set to the lane's worktree — correct by construction, and only for that door.
+#
+# A guard that depends on the caller passing the right path is "cwd is not intent" wearing a
+# flag: it can be forgotten, and it can be pointed at the wrong tree. Asking git cannot be
+# either. So the answer is DERIVED, once, here — the leaf every one of those modules already
+# imports (the same move SCC-190 F6 made for `VERDICT_RE`, and for the same reason: a gate and
+# a door disagreeing about what they are measuring is the defect class, not a style question).
+
+
+def worktree_holding(repo: Path, branch: str) -> "Path | None":
+    """The working tree `branch` is checked out in, or None if no tree has it.
+
+    Parsed from `git worktree list --porcelain`, which is authoritative and machine-readable.
+    ⛔ Unlike `task_preflight.check_worktree` this does NOT skip the first block: there the
+    main checkout is the caller's own tree by definition, so naming it would fire on every
+    clean run; here the whole question is *which* tree holds the branch, and the main checkout
+    is a perfectly good answer.
+    """
+    out = git(["worktree", "list", "--porcelain"], repo).stdout
+    for block in out.split("\n\n"):
+        wt = re.search(r"^worktree (.+)$", block, re.MULTILINE)
+        br = re.search(r"^branch refs/heads/(.+)$", block, re.MULTILINE)
+        if wt and br and br.group(1).strip() == branch:
+            return Path(wt.group(1).strip())
+    return None
+
+
+def trees_to_measure(repo: Path, branch: str,
+                     explicit: "Path | None" = None) -> list[tuple[str, Path]]:
+    """Every distinct tree whose dirt could reach this landing: (label, path).
+
+    Always the repo the caller named; plus the tree that actually holds `branch`; plus an
+    explicit path a caller supplied, when it is a third thing. Deduped by resolved path so a
+    door that names the same tree twice reports it once.
+    """
+    out: list[tuple[str, Path]] = [("the checkout", repo)]
+    seen = {repo.resolve()}
+    held = worktree_holding(repo, branch)
+    if held is not None and held.resolve() not in seen:
+        out.append((f"the worktree holding {branch} ({held.name})", held))
+        seen.add(held.resolve())
+    if explicit is not None and explicit.resolve() not in seen:
+        out.append((f"the worktree you named ({explicit.name})", explicit))
+    return out
+
+
 # ── WHICH TREE AM I IN? (SCC-190 · operator ruling 2026-08-17) ────────────────────────
 #
 # ⛔ THE MEASURED COST, AND IT IS THE BIGGEST ONE IN THIS SYSTEM. A shell's cwd resets to the

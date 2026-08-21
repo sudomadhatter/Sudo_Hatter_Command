@@ -1514,6 +1514,69 @@ def main() -> int:
                     code == 2 and "uncommitted change" in out,
                     f"exit {code}: " + out.strip()[-400:])
 
+    # ══ SCC-211 · THE TREE MEASURED MUST BE THE TREE THAT HOLDS THE BRANCH ════════════════
+    #
+    # `check_sync` asked `git status --porcelain` in whatever `--repo` named. For
+    # `/smh-close-task-merge-tree` that is the lane's own worktree, so the question was right
+    # by construction — and **`/smh-merge-multiple-workingtrees` is the shape where it is
+    # not.** That command sets `REPO=$(git rev-parse --show-toplevel)` — the tree you are
+    # STANDING in — and then preflights each lane's branch in turn (its Step, line 119).
+    # Orchestrating a multi-lane landing from the main checkout is the natural way to run it,
+    # and in that shape `--repo` is `main` (spotless) while every lane's dirt sits in its own
+    # worktree, unseen. A set-landing is the worst place to be blind: it is N production
+    # merges, and the combined gate at the end is the only run that sees the set together.
+    #
+    # The answer is the one all three doors now share — `wf_common.trees_to_measure` derives
+    # the tree from `git worktree list` rather than trusting the path the caller happened to
+    # pass. Same body, so the doors cannot drift about what they are measuring.
+    if c.block("SCC-211 · a dirty LANE worktree is seen from the main checkout"):
+        with TempDir() as t:
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            git(repo, "checkout", "-q", "main")
+            wt = t / "lane-tree"
+            git(repo, "worktree", "add", "-q", str(wt), "chore/SCC-11-thing")
+            (wt / "docs" / "x.md").write_text("uncommitted, in the lane\n", encoding="utf-8")
+            code, out = preflight(repo, "--branch", "chore/SCC-11-thing")
+            c.check("SCC-211 the lane's dirt is found from the main checkout", code == 2,
+                    out.strip()[-400:])
+            # ⛔ THE NAME MUST APPEAR ON THE *UNCOMMITTED* LINE, not anywhere in the output.
+            # A MUTANT SURVIVED on the looser form: `check_worktree` already warns
+            # "lane-tree is checked out on chore/… - remove it with /cicd-prune-worktree",
+            # so `"lane-tree" in out` was satisfied by an unrelated pre-existing warning
+            # while the sync check had gone back to measuring only the checkout. The
+            # assertion has to name the finding it is about.
+            c.check("SCC-211 ...and the message names the LANE's tree, not the checkout",
+                    any("lane-tree" in ln and "uncommitted" in ln
+                        for ln in out.splitlines()), out.strip()[-400:])
+
+        # ⛔ THE POSITIVE CONTROL. Worktrees are the norm here, so a check that refused every
+        # lane holding one would false-red every close-out — the way a gate stops being used.
+        with TempDir() as t:
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            git(repo, "checkout", "-q", "main")
+            git(repo, "worktree", "add", "-q", str(t / "lane-tree"), "chore/SCC-11-thing")
+            code, out = preflight(repo, "--branch", "chore/SCC-11-thing")
+            c.check("SCC-211 CONTROL: a CLEAN lane worktree raises no uncommitted error",
+                    "uncommitted change(s)" not in out, out.strip()[-400:])
+
+        # ⛔ AND THE MEMORY RULING SURVIVES THE SECOND TREE. Two lanes share one memory store,
+        # so `_artifacts/_memory/` dirt is named as its own class wherever it is found — never
+        # folded into "commit before merging", which is the one instruction the ruling forbids
+        # when another session wrote those files.
+        with TempDir() as t:
+            repo = make_repo(t)
+            branch(repo, "chore/SCC-11-thing", {"docs/x.md": "x\n"})
+            git(repo, "checkout", "-q", "main")
+            wt = t / "lane-tree"
+            git(repo, "worktree", "add", "-q", str(wt), "chore/SCC-11-thing")
+            (wt / "_artifacts" / "_memory").mkdir(parents=True, exist_ok=True)
+            (wt / "_artifacts" / "_memory" / "note.md").write_text("m\n", encoding="utf-8")
+            code, out = preflight(repo, "--branch", "chore/SCC-11-thing")
+            c.check("SCC-211 memory dirt in the LANE tree keeps its own ruling",
+                    "memory file(s) dirty" in out, out.strip()[-400:])
+
     return c.finish()
 
 
