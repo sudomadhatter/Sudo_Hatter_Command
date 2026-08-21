@@ -7,8 +7,8 @@
   {
    "id": "M1 the dirty-checkout refusal is inverted",
    "file": ".agents/scripts/ship_preflight.py",
-   "original": "    if dirty:\n        n = len(dirty.splitlines())",
-   "mutated": "    if not dirty:\n        n = len(dirty.splitlines())",
+   "original": "        if dirty:\n            n = len(dirty.splitlines())",
+   "mutated": "        if not dirty:\n            n = len(dirty.splitlines())",
    "case": "SP-B ...and it says UNCOMMITTED",
    "block": "SP-B · a dirty epic checkout REFUSES before the gate runs"
   },
@@ -242,6 +242,46 @@
    "original": "    if not shaped:\n        rep.info(\"sync\", \"ref state not checked",
    "mutated": "    if not shaped and False:\n        rep.info(\"sync\", \"ref state not checked",
    "case": "SP-M ...and it does not then claim the ref does not exist",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M41 worktree_holding never resolves a tree",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "        if wt and br and br.group(1).strip() == branch:\n            return Path(wt.group(1).strip())",
+   "mutated": "        if wt and br and br.group(1).strip() == branch and False:\n            return Path(wt.group(1).strip())",
+   "case": "SP-N a dirty linked worktree BLOCKS the ship",
+   "block": "SP-N · dirt in the worktree that HOLDS the branch is not invisible"
+  },
+  {
+   "id": "M42 only --repo is ever measured for dirt",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    if held is not None and held.resolve() != repo.resolve():",
+   "mutated": "    if held is not None and held.resolve() != repo.resolve() and False:",
+   "case": "SP-N ...naming the tree that is actually dirty",
+   "block": "SP-N · dirt in the worktree that HOLDS the branch is not invisible"
+  },
+  {
+   "id": "M43 a present-but-empty jira.conf is called absent again",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "        where = (f\"{conf} declares no JIRA_KEYS (empty, commented out, or renamed)\"\n                 if conf.is_file() else \"there is no .agents/jira.conf in this repo\")",
+   "mutated": "        where = \"there is no .agents/jira.conf in this repo\"",
+   "case": "SP-M a PRESENT but empty jira.conf is not called absent",
+   "block": "SP-M · gaps a surviving mutant proved were uncovered"
+  },
+  {
+   "id": "M44 the fetch child inherits the session environment",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "                           env=env)",
+   "mutated": "                           env=None)",
+   "case": "SP-O ...and GITHUB_TOKEN was NOT in the fetch's environment",
+   "block": "SP-O · the fetch child never inherits GITHUB_TOKEN"
+  },
+  {
+   "id": "M45 the shape alternation admits a foreign prefix",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "BRANCH_RE = re.compile(r\"^(epic|chore)/([A-Z][A-Z0-9]*)-(\\d+)-(.+)$\")",
+   "mutated": "BRANCH_RE = re.compile(r\"^(epic|chore|feature)/([A-Z][A-Z0-9]*)-(\\d+)-(.+)$\")",
+   "case": "SP-M a keyed branch with a FOREIGN prefix is refused",
    "block": "SP-M · gaps a surviving mutant proved were uncovered"
   }
  ]

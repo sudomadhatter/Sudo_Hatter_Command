@@ -130,8 +130,17 @@ def check_intent(repo: Path, branch: str, key: str | None, expect: str,
     project = key.split("-")[0]
     allowed = tp.repo_keys(repo)
     if not allowed:
-        rep.warn("intent", f"{key}: no .agents/jira.conf in this repo - the key cannot be "
-                           f"checked against the repo's project")
+        # ⛔ `repo_keys` RETURNS [] FOR TWO DIFFERENT STATES, and saying only one of them is
+        # how a reader is sent hunting for a file that is sitting right there: the conf is
+        # absent, OR it is present and its `JIRA_KEYS` line is empty/commented/renamed. Both
+        # skip the wrong-project check — the arm that catches a bypassed or unarmed
+        # commit-msg hook — so the operator needs to know WHICH, and the remedy differs.
+        # Same rule as everywhere else here: never state something the tree contradicts.
+        conf = repo / ".agents" / "jira.conf"
+        where = (f"{conf} declares no JIRA_KEYS (empty, commented out, or renamed)"
+                 if conf.is_file() else "there is no .agents/jira.conf in this repo")
+        rep.warn("intent", f"{key}: {where} - the key cannot be checked against the repo's "
+                           f"project, so a wrong-project branch would NOT be caught here")
     elif project not in allowed:
         # The same rule the armed commit-msg hook enforces, so reaching here means it did
         # not run: bypassed with --no-verify, or never armed on this machine
@@ -141,6 +150,24 @@ def check_intent(repo: Path, branch: str, key: str | None, expect: str,
                           f"commit-msg gate: it was either bypassed, or never armed here")
     else:
         rep.info("intent", f"project {project} matches this repo")
+
+
+def worktree_holding(repo: Path, branch: str) -> Path | None:
+    """The tree `branch` is checked out in, or None.
+
+    Parsed from `git worktree list --porcelain`, which is authoritative and machine-readable
+    — the same source `task_preflight.check_worktree` reads. ⛔ Unlike that function this one
+    does NOT skip the first block: there the main checkout is the caller's own tree by
+    definition, so reporting it would fire on every clean run; here the whole question is
+    *which* tree holds the branch, and the main checkout is a legitimate answer.
+    """
+    out = wf.git(["worktree", "list", "--porcelain"], repo).stdout
+    for block in out.split("\n\n"):
+        wt = re.search(r"^worktree (.+)$", block, re.MULTILINE)
+        br = re.search(r"^branch refs/heads/(.+)$", block, re.MULTILINE)
+        if wt and br and br.group(1).strip() == branch:
+            return Path(wt.group(1).strip())
+    return None
 
 
 def _fetch(repo: Path) -> bool:
@@ -189,15 +216,31 @@ def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report,
     # `-c core.quotepath=false`: git octal-quotes any path holding a non-ASCII byte, and a
     # quoted path compares equal to nothing (`main_write_gate` and `task_preflight` both pass
     # the same flag — one repo, one spelling of a path).
-    dirty = wf.git(["-c", "core.quotepath=false", "status", "--porcelain"],
-                   repo).stdout.strip()
-    if dirty:
-        n = len(dirty.splitlines())
-        rep.err("sync", f"{n} uncommitted change(s) in the checkout - the gate would run on "
-                        f"THIS tree while the merge would not carry them, so what ships was "
-                        f"never gated. Commit (explicit paths) and push, or stash, first")
-    else:
-        rep.info("sync", "working tree clean")
+    # ⛔ MEASURE EVERY TREE THAT COULD BE GATED, NOT JUST `--repo`. A linked worktree is the
+    # NORM in this system, not an exotic case (`worktree-per-story`: "the standing
+    # environment — parallel teams are the NORM"), and in that shape `PROJECT_ROOT` stands on
+    # `main` and is spotless while the tree HOLDING the epic branch is dirty. Asking only
+    # `--repo` answered "working tree clean" and the verdict read "clear to gate and ship" —
+    # which is not a near-miss of the defect this script exists for, it IS that defect: the
+    # gate runs where the work is (`wf_common.tree_guard` sends the operator there by name),
+    # the merge ships the branch, and the uncommitted delta between them is what never gets
+    # gated. Reproduced in a real linked worktree before this was written.
+    trees = [("the checkout", repo)]
+    held = worktree_holding(repo, branch)
+    if held is not None and held.resolve() != repo.resolve():
+        trees.append((f"the worktree holding {branch} ({held.name})", held))
+
+    for label, tree in trees:
+        dirty = wf.git(["-c", "core.quotepath=false", "status", "--porcelain"],
+                       tree).stdout.strip()
+        if dirty:
+            n = len(dirty.splitlines())
+            rep.err("sync", f"{n} uncommitted change(s) in {label} [{tree}] - the gate would "
+                            f"run on THAT tree while the merge carries only the branch, so "
+                            f"what ships was never gated. Commit (explicit paths) and push, "
+                            f"or stash, first")
+        else:
+            rep.info("sync", f"{label} is clean")
 
     standing = wf.git(["rev-parse", "--abbrev-ref", "HEAD"], repo).stdout.strip()
     if standing and standing != branch:

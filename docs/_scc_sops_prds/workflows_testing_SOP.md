@@ -809,6 +809,11 @@ use it and one thing got an answer:
   branch `remotes/origin/epic/KEY-slug`, and that is the only spelling available for an epic pushed
   from your other machine; the pre-flight reads it as the lane name and says so on its own line. An
   epic that lives only on `origin` is fine here — Step 2's checkout is what creates it locally.
+  ⭐ **And it checks the tree the branch is actually IN, not just the one you are standing in.**
+  With the epic checked out in a worktree — the normal shape here — the project root stands on
+  `main` and is spotless while the lane is dirty, so the old question answered *"working tree
+  clean"* and cleared a ship whose gate would run on uncommitted work the merge never carries.
+  If it refuses, it names the tree: commit and push there, or stash, then re-run.
 - **A `chore/*` branch is admitted here only when its diff reaches deployable code.** It used to be
   admitted on your ask alone and then had no written procedure at all: every operative line after the
   admission named only `epic/*`, including the token's `--branch`. Now the diff decides, and a

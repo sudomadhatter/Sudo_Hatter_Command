@@ -30,6 +30,9 @@ Stdlib only, no pytest.
 from __future__ import annotations
 
 import json
+import os
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -103,10 +106,13 @@ def main() -> int:
             c.check("SP-B dirty tree -> exit 2", code == 2, out.strip()[-300:])
             c.check("SP-B ...and it says UNCOMMITTED", "uncommitted" in out.lower(),
                     out.strip()[-300:])
-            c.check("SP-B ...and it says the merge would not carry them",
-                    "the merge" in out.lower() and "not carry" in out.lower(),
+            c.check("SP-B ...and it says WHY: what ships was never gated",
+                    "what ships was never gated" in out.lower(),
                     "the reason is the whole finding: the gate runs on this tree, the merge "
-                    "ships the branch, and they are not the same content")
+                    "carries only the branch, and they are not the same content. Pinned on "
+                    "that clause because it is the sentence that survives rewording — an "
+                    "earlier pin on 'not carry' broke when the worktree fix improved the "
+                    "message, which is a guard keying on prose rather than on meaning")
             c.check("SP-B the VERDICT is BLOCKED, not a warning under a clear line",
                     "VERDICT: BLOCKED" in out, out.strip()[-200:])
 
@@ -364,6 +370,47 @@ def main() -> int:
                     "file(s) changed, none of them deployable" not in out,
                     out.strip()[-400:])
 
+    # ── SP-N · THE DEFECT, SURVIVING IN THIS SYSTEM'S DEFAULT SHAPE ───────────────────────
+    # `worktree-per-story` makes a linked worktree the NORM here, not an exotic case — "the
+    # standing environment: parallel teams are the NORM". In that shape `PROJECT_ROOT` stands
+    # on `main` and is spotless while the tree actually holding the epic branch is dirty, so
+    # a `status --porcelain` in `PROJECT_ROOT` alone answered `working tree clean` and the
+    # verdict read `clear to gate and ship`.
+    #
+    # That is not a near-miss of the SCC-211 defect — it IS the SCC-211 defect: the gate runs
+    # where the work is (`wf_common.tree_guard` actively sends the operator there: "Run it in
+    # the lane: cd <worktree>"), the merge ships the branch, and the uncommitted delta between
+    # them is exactly what never gets gated. Reproduced before it was fixed.
+    if c.block("SP-N · dirt in the worktree that HOLDS the branch is not invisible"):
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, "epic/SCC-11-thing", {"backend/app.py": "x = 2\n"})
+            git(repo, "checkout", "-q", "main")
+            wt = t / "epic-tree"
+            git(repo, "worktree", "add", "-q", str(wt), "epic/SCC-11-thing")
+            (wt / "backend" / "app.py").write_text("x = 999   # uncommitted, in the worktree\n",
+                                                   encoding="utf-8")
+            code, out = ship(repo, "epic/SCC-11-thing")
+            c.check("SP-N a dirty linked worktree BLOCKS the ship", code == 2,
+                    out.strip()[-500:])
+            c.check("SP-N ...naming the tree that is actually dirty",
+                    "epic-tree" in out, out.strip()[-500:])
+            c.check("SP-N ...and never reports the lane as clean",
+                    "working tree clean" not in out or "epic-tree" in out,
+                    out.strip()[-500:])
+
+        # The positive control: the same shape, CLEAN. A check that refuses every worktree
+        # would be as broken as one that sees none — and worktrees are the normal shape here,
+        # so a false red would fire on almost every ship.
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, "epic/SCC-11-thing", {"backend/app.py": "x = 2\n"})
+            git(repo, "checkout", "-q", "main")
+            git(repo, "worktree", "add", "-q", str(t / "epic-tree"), "epic/SCC-11-thing")
+            code, out = ship(repo, "epic/SCC-11-thing")
+            c.check("SP-N CONTROL: a CLEAN linked worktree still ships", code == 0,
+                    out.strip()[-400:])
+
     # ── SP-L · the TABLE and the REGEX, read directly — the fast tier ─────────────────────
     # Everything else here costs a subprocess, a temp repo and a real git round trip, which is
     # why the branch-shape gaps clustered: each extra shape cost a repo. These are the two
@@ -520,6 +567,31 @@ def main() -> int:
             c.check("SP-M no .agents/jira.conf WARNS, never blocks",
                     code == 1 and "no .agents/jira.conf" in out, out.strip()[-300:])
 
+        # (5b) ...and the OTHER state that reaches the same arm. `repo_keys` returns [] both
+        # when the file is missing and when it is present but declares nothing, and saying
+        # "no .agents/jira.conf" in the second case sends the reader hunting for a file that
+        # is sitting right there. The remedies differ, so the sentences must.
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            write(repo, ".agents/jira.conf", "# JIRA_KEYS was commented out\n")
+            branch(repo, "epic/SCC-11-thing", {"backend/app.py": "x = 2\n"})
+            code, out = ship(repo, "epic/SCC-11-thing")
+            c.check("SP-M a PRESENT but empty jira.conf is not called absent",
+                    "no .agents/jira.conf" not in out and "declares no JIRA_KEYS" in out,
+                    out.strip()[-300:])
+            c.check("SP-M ...and it says what the gap COSTS",
+                    "would NOT be caught" in out, out.strip()[-300:])
+
+        # (5c) a keyed branch with a prefix this door does not ship. `WRONG_LANE` names the
+        # three it knows; anything else must still be refused by shape rather than waved
+        # through, and nothing asserted that.
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, "feature/SCC-11-thing", {"backend/app.py": "x = 2\n"})
+            code, out = ship(repo, "feature/SCC-11-thing")
+            c.check("SP-M a keyed branch with a FOREIGN prefix is refused",
+                    code == 2 and "immediately after" in out.lower(), out.strip()[-300:])
+
         # (6) the key is normalised, so the operator's lowercase is not an accusation
         with TempDir() as t:
             repo = make_repo(t, deployable=True)
@@ -560,6 +632,40 @@ def main() -> int:
             c.check("SP-M --json carries the REAL exit, lane and verdict on a refusal",
                     doc.get("exit") == 2 and doc.get("lane") == "full"
                     and "BLOCKED" in str(doc.get("verdict")), json.dumps(doc)[:220])
+
+    # ── SP-O · the fetch runs WITHOUT the session's GITHUB_TOKEN ──────────────────────────
+    # The door's own Rule 2 names a stale session token as a known pull/push failure and tells
+    # the operator to clear it. `_fetch` therefore builds its child env by hand — and nothing
+    # asserted it, so deleting `env=env` would have failed no test at all. A stale token there
+    # fails the fetch, the comparison silently degrades to "vs the LAST fetch", and the door
+    # proceeds on a stale answer that reads exactly like a fresh one.
+    #
+    # Observed rather than reasoned about: a `git` shim first on PATH records the environment
+    # it was actually handed. That is the only way to see a child's env from outside it.
+    if c.block("SP-O · the fetch child never inherits GITHUB_TOKEN"):
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, "epic/SCC-11-thing", {"backend/app.py": "x = 2\n"})
+            shim, seen = t / "bin", t / "fetch-env.txt"
+            shim.mkdir()
+            real = shutil.which("git") or "/usr/bin/git"
+            (shim / "git").write_text(
+                "#!/bin/sh\n"
+                'for a in "$@"; do [ "$a" = "fetch" ] && '
+                f'printf "%s" "${{GITHUB_TOKEN-<unset>}}" > "{seen}"; done\n'
+                f'exec "{real}" "$@"\n', encoding="utf-8")
+            (shim / "git").chmod(0o755)
+            env = dict(os.environ, PATH=f"{shim}{os.pathsep}{os.environ['PATH']}",
+                       GITHUB_TOKEN="stale-token-that-must-not-travel")
+            subprocess.run([sys.executable, str(SCRIPTS / SCRIPT), "--repo", str(repo),
+                            "--branch", "epic/SCC-11-thing", "--expect-key", "SCC-11"],
+                           capture_output=True, text=True, env=env)
+            c.check("SP-O the shim saw the fetch at all (the case is not vacuous)",
+                    seen.is_file(), f"{seen} never written - PATH shim did not run")
+            if seen.is_file():
+                c.check("SP-O ...and GITHUB_TOKEN was NOT in the fetch's environment",
+                        seen.read_text(encoding="utf-8") == "<unset>",
+                        f"child saw GITHUB_TOKEN={seen.read_text(encoding='utf-8')!r}")
 
     # ── SP-G · an unfetched comparison is not a fresh one ──────────────────────────────────
     # SCC-193's finding, one door over: a note saying the comparison was stale sat under a
