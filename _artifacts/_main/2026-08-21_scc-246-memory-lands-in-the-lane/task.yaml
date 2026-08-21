@@ -1,0 +1,6 @@
+task_key: SCC-246
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-246-memory-lands-in-the-lane
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+riders: []
