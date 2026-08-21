@@ -105,6 +105,7 @@ this section is the signpost. Working in one? Read its store too; it is not load
 - [Takeover: check liveness](autopilot-manual-takeover-check-liveness.md) — verify no orchestrator is alive before manual takeover.
 
 ## Working style
+- [⭐⛔ Audit findings need a FILE anchor](audit-findings-need-a-file-anchor.md) — fan-outs manufacture findings; no anchor = delete; never build an audit-of-the-audit (SCC-225).
 - [⭐ Lightweight lane for specific, can't-break work](lightweight-lane-for-specific-no-break-work.md) — doc-only / operator-directed ask is ticket -> edit -> push (SCC-162).
 - [Naming a ticket ≠ mint order](naming-a-ticket-is-not-a-mint-order.md) — "fix it now with ticket X" = file under the CURRENT lane; mint only on the explicit word.
 - [⭐⛔ Close the loop; don't hand back decisions](close-the-loop-dont-hand-back-decisions.md) — no new-concern tails, no menus; pick the default, say it, keep going (SCC-201).
