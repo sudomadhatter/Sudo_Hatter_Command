@@ -550,7 +550,15 @@ def main() -> int:
             rc_w, out_w = run_cp(repo2, *base2, "--worktree", str(wtree))
             v_w = verdict_line(out_w)
             proj_fresh = findings(out_w, "INFO", "0/0 with origin")
-            wt_failed = findings(out_w, "WARN", "worktree: fetch FAILED")
+            # ⛔ KEYED ON THE INTENT, NOT ON THE LABEL TEXT. This read
+            # `"worktree: fetch FAILED"` — the literal label — and SCC-211 changed that label
+            # to name WHICH tree ("the worktree you named (lane)"), so the needle stopped
+            # matching while the behaviour it guards was untouched: the verdict still said
+            # STALE and the fold still worked. A row that goes red on a better message is a
+            # row coupled to prose rather than to meaning. What FR6 must prove is that the
+            # failing fetch was the WORKTREE's and not the project's; that is what this asks.
+            wt_failed = [f for f in findings(out_w, "WARN", "fetch FAILED")
+                         if "worktree" in f.lower()]
             c.check("FR6 a stale --worktree alone makes the VERDICT stale - the fold is real",
                     "STALE" in v_w and bool(proj_fresh) and bool(wt_failed),
                     f"rc={rc_w} verdict={v_w!r} project-fresh={proj_fresh} "
@@ -647,6 +655,63 @@ def main() -> int:
             c.check("MEM6 a memory path git QUOTES (non-ASCII) is counted in the memory class",
                     any("2 dirty file(s)" in m for m in mem_utf8),
                     f"memory rows={mem_utf8}")
+
+    # ══ SCC-211 · THE TREE THAT GETS GATED IS DERIVED, NOT TAKEN ON TRUST ═════════════════
+    #
+    # This door checked the lane's worktree only `if args.worktree:`. The command body says in
+    # bold that the flag is not optional — but argparse did not, and `/cicd-prune-worktree`
+    # calls this same script WITHOUT it. In that shape the project root stands on `main`,
+    # spotless, while the lane's tree is dirty, and the run answered "clean" and cleared the
+    # close-out.
+    #
+    # ⛔ MAKING THE FLAG REQUIRED WAS THE OBVIOUS FIX AND IT IS THE WEAKER ONE. A required flag
+    # can still be pointed at the wrong tree — that is "cwd is not intent" wearing a flag — and
+    # it breaks every existing caller that does not pass one. Asking git which tree holds the
+    # branch cannot be forgotten and cannot be aimed wrong, so the tree is DERIVED, and
+    # `--worktree` survives as an additional explicit tree rather than as the only one.
+    if c.block("SCC-211 · a dirty LANE worktree is caught with no --worktree flag"):
+        with TempDir() as tmp:
+            repo = lane_repo(tmp)
+            wt = tmp / "lane-tree"
+            git(repo, "worktree", "add", "-q", str(wt), "claude/SCC-11-mine")
+            (wt / "backend" / "real.py").write_text("x = 999  # uncommitted, in the lane\n",
+                                                    encoding="utf-8")
+            rc, out = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                             "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11",
+                             "--no-fetch")
+            dirt = findings(out, "ERROR", "uncommitted")
+            c.check("SCC-211 the lane's dirt is found without being told where to look",
+                    bool(dirt), f"rc={rc} " + out.strip()[-400:])
+            c.check("SCC-211 ...and the tree it names is the LANE's, not the project root",
+                    any("lane-tree" in d for d in dirt), " | ".join(dirt) or out.strip()[-400:])
+            c.check("SCC-211 ...so the verdict cannot read clear",
+                    "clear to close out" not in verdict_line(out).lower(), verdict_line(out))
+
+        # ⛔ THE POSITIVE CONTROL. Worktrees are the NORM in this system, so a check that
+        # refused every lane with one would false-red the shipping path on almost every
+        # close-out — which is how a gate gets routed around instead of used.
+        with TempDir() as tmp:
+            repo = lane_repo(tmp)
+            git(repo, "worktree", "add", "-q", str(tmp / "lane-tree"), "claude/SCC-11-mine")
+            rc, out = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                             "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11",
+                             "--no-fetch")
+            c.check("SCC-211 CONTROL: a CLEAN lane worktree raises no sync error",
+                    not findings(out, "ERROR", "uncommitted"), out.strip()[-300:])
+
+        # And `--worktree` still means something: an explicit third tree is measured too, so
+        # the flag is an ADDITION to the derived answer rather than the only source of it.
+        with TempDir() as tmp:
+            repo = lane_repo(tmp)
+            other = tmp / "some-other-tree"
+            git(repo, "worktree", "add", "-q", str(other), "claude/SCC-22-sibling")
+            (other / "notes" / "ordinary.md").write_text("dirty\n", encoding="utf-8")
+            rc, out = run_cp(repo, "--story", "30-1", "--project", str(repo),
+                             "--branch", "claude/SCC-11-mine", "--expect-key", "SCC-11",
+                             "--worktree", str(other), "--no-fetch")
+            c.check("SCC-211 an explicitly named tree is still measured",
+                    any("some-other-tree" in d for d in findings(out, "ERROR", "uncommitted")),
+                    out.strip()[-400:])
 
     return c.finish()
 

@@ -152,24 +152,6 @@ def check_intent(repo: Path, branch: str, key: str | None, expect: str,
         rep.info("intent", f"project {project} matches this repo")
 
 
-def worktree_holding(repo: Path, branch: str) -> Path | None:
-    """The tree `branch` is checked out in, or None.
-
-    Parsed from `git worktree list --porcelain`, which is authoritative and machine-readable
-    — the same source `task_preflight.check_worktree` reads. ⛔ Unlike that function this one
-    does NOT skip the first block: there the main checkout is the caller's own tree by
-    definition, so reporting it would fire on every clean run; here the whole question is
-    *which* tree holds the branch, and the main checkout is a legitimate answer.
-    """
-    out = wf.git(["worktree", "list", "--porcelain"], repo).stdout
-    for block in out.split("\n\n"):
-        wt = re.search(r"^worktree (.+)$", block, re.MULTILINE)
-        br = re.search(r"^branch refs/heads/(.+)$", block, re.MULTILINE)
-        if wt and br and br.group(1).strip() == branch:
-            return Path(wt.group(1).strip())
-    return None
-
-
 def _fetch(repo: Path) -> bool:
     """`git fetch`, with GITHUB_TOKEN removed from the CHILD environment.
 
@@ -225,12 +207,7 @@ def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report,
     # gate runs where the work is (`wf_common.tree_guard` sends the operator there by name),
     # the merge ships the branch, and the uncommitted delta between them is what never gets
     # gated. Reproduced in a real linked worktree before this was written.
-    trees = [("the checkout", repo)]
-    held = worktree_holding(repo, branch)
-    if held is not None and held.resolve() != repo.resolve():
-        trees.append((f"the worktree holding {branch} ({held.name})", held))
-
-    for label, tree in trees:
+    for label, tree in wf.trees_to_measure(repo, branch):
         dirty = wf.git(["-c", "core.quotepath=false", "status", "--porcelain"],
                        tree).stdout.strip()
         if dirty:

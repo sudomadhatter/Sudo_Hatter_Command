@@ -920,6 +920,35 @@ def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report,
     # (`…_SCC-3-café/`) the comparison never matched and the preflight counted its OWN
     # receipt as dirt, exit 2 on every re-run. `main_write_gate` met this first and passes
     # the same flag; one repo, one spelling of a path.
+    # ⭐ SCC-211 · EVERY TREE THAT COULD BE GATED, not just the path `--repo` happened to name.
+    # For `/smh-close-task-merge-tree` those are the same thing — its door stands in the lane —
+    # but `/smh-merge-multiple-workingtrees` sets `REPO` to the tree you are STANDING in and
+    # then preflights each lane's branch in turn. Orchestrating a set landing from the main
+    # checkout is the natural way to run it, and there `--repo` is `main` (spotless) while
+    # every lane's dirt sits in its own worktree, unseen — on the one path that is N
+    # production merges at once. `wf.trees_to_measure` derives the tree from
+    # `git worktree list`, and the same body backs `/cicd-push-e2e` and
+    # `/cicd-close-story-merge-tree`, so the three doors cannot disagree about what they
+    # measured.
+    for tree_label, tree in wf.trees_to_measure(repo, branch):
+        _check_tree_dirt(tree, tree_label, manifest, rep)
+
+    counts = wf.git(["rev-list", "--left-right", "--count",
+                     f"origin/{branch}...{branch}"], repo)
+    if counts.returncode == 0 and counts.stdout.strip():
+        behind, ahead = (counts.stdout.split() + ["?", "?"])[:2]
+        if ahead != "0" or behind != "0":
+            rep.err("sync", f"{branch}: {ahead} ahead / {behind} behind origin")
+        else:
+            rep.info("sync", f"{branch}: 0/0 with origin")
+    else:
+        rep.warn("sync", f"{branch}: never pushed - the branch exists on this disk only")
+    return fresh
+
+
+def _check_tree_dirt(repo: Path, label: str, manifest: Path | None, rep: wf.Report) -> None:
+    """The dirty-tree classification for ONE tree. Body unchanged since SCC-192; it moved out
+    of `check_sync` only so it can be applied to every tree that could be gated (SCC-211)."""
     dirty = wf.git(["-c", "core.quotepath=false", "status", "--porcelain"], repo).stdout.strip()
     if dirty:
         lines = dirty.splitlines()
@@ -947,35 +976,24 @@ def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report,
                 if own and ln[3:].split(" -> ")[-1].strip() == own]
         rest = [ln for ln in lines if ln not in mem and ln not in mine]
         if rest:
-            rep.err("sync", f"{len(rest)} uncommitted change(s) - commit "
+            rep.err("sync", f"{label}: {len(rest)} uncommitted change(s) - commit "
                             f"(explicit paths) and push before merging")
         if mem:
             # Memory files are session output, and the session that wrote them may not be
             # this one - two lanes share one store. Naming them separately is what stops a
             # close-out from sweeping (or deleting) another session's memory to get green.
-            rep.err("sync", f"{len(mem)} memory file(s) dirty under _artifacts/_memory/ - "
+            rep.err("sync", f"{label}: {len(mem)} memory file(s) dirty under "
+                            f"_artifacts/_memory/ - "
                             f"if ANOTHER session wrote them, park or leave them (never "
                             f"sweep, delete, or commit them under this task); if THIS "
                             f"session wrote them, commit them with explicit paths under "
                             f"this task's key first")
         if mine and not rest and not mem:
-            rep.info("sync", f"working tree clean ({len(mine)} uncommitted "
+            rep.info("sync", f"{label} is clean ({len(mine)} uncommitted "
                              f"{RECEIPT_NAME} - this script's own receipt, not the lane's "
                              f"dirt; the close-out commits it with the flight event)")
     else:
-        rep.info("sync", "working tree clean")
-
-    counts = wf.git(["rev-list", "--left-right", "--count",
-                     f"origin/{branch}...{branch}"], repo)
-    if counts.returncode == 0 and counts.stdout.strip():
-        behind, ahead = (counts.stdout.split() + ["?", "?"])[:2]
-        if ahead != "0" or behind != "0":
-            rep.err("sync", f"{branch}: {ahead} ahead / {behind} behind origin")
-        else:
-            rep.info("sync", f"{branch}: 0/0 with origin")
-    else:
-        rep.warn("sync", f"{branch}: never pushed - the branch exists on this disk only")
-    return fresh
+        rep.info("sync", f"{label} is clean")
 
 
 def check_base(repo: Path, branch: str, rep: wf.Report) -> None:
