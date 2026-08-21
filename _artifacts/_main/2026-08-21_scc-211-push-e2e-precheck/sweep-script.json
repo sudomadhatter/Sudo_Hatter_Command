@@ -1,0 +1,96 @@
+{
+ "test": [
+  "python3",
+  ".agents/scripts/tests/test_ship_preflight.py"
+ ],
+ "mutants": [
+  {
+   "id": "M1 the dirty-checkout refusal is inverted",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    if dirty:\n        n = len(dirty.splitlines())",
+   "mutated": "    if not dirty:\n        n = len(dirty.splitlines())",
+   "case": "SP-B ...and it says UNCOMMITTED",
+   "block": "SP-B · a dirty epic checkout REFUSES before the gate runs"
+  },
+  {
+   "id": "M2 the 0/0 test narrowed from OR to AND (a width mutant)",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "if ahead != \"0\" or behind != \"0\":",
+   "mutated": "if ahead != \"0\" and behind != \"0\":",
+   "case": "SP-C ...and it names ahead/behind",
+   "block": "SP-C · unsynced: a commit on one disk cannot be what production runs"
+  },
+  {
+   "id": "M3 the never-pushed ERROR demoted to an INFO",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "rep.err(\"sync\", f\"{branch}: never pushed",
+   "mutated": "rep.info(\"sync\", f\"{branch}: never pushed",
+   "case": "SP-C never pushed -> exit 2",
+   "block": "SP-C · unsynced: a commit on one disk cannot be what production runs"
+  },
+  {
+   "id": "M4 the pinned-key comparison is inverted",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    if key != expect:\n",
+   "mutated": "    if key == expect:\n",
+   "case": "SP-D wrong --expect-key -> exit 2",
+   "block": "SP-D · intent: the resolved branch must carry the key that was PINNED"
+  },
+  {
+   "id": "M5 the repo-project membership arm never fires",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    elif project not in allowed:",
+   "mutated": "    elif project in allowed and False:",
+   "case": "SP-D ...and it names the repo's own project(s)",
+   "block": "SP-D · intent: the resolved branch must carry the key that was PINNED"
+  },
+  {
+   "id": "M6 WRONG_LANE loses its story-branch row",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    \"claude/\": (\"/cicd-close-story-merge-tree\",\n                \"a story branch lands on its EPIC branch at close-out, never on main\"),\n",
+   "mutated": "    # the story-branch row, removed by the sweep\n",
+   "case": "SP-E a story branch -> exit 2 naming the story close-out",
+   "block": "SP-E · shape: every refusal names the command that IS right"
+  },
+  {
+   "id": "M7 the standing-on-main refusal narrowed to HEAD alone (a width mutant)",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "if branch in (\"main\", \"HEAD\", \"origin/main\"):",
+   "mutated": "if branch in (\"HEAD\",):",
+   "case": "SP-E ...and it says this door merges INTO main",
+   "block": "SP-E · shape: every refusal names the command that IS right"
+  },
+  {
+   "id": "M8 the epic lane is never recognised, so an epic takes the chore road",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    if prefix == \"epic\":",
+   "mutated": "    if prefix == \"no-such-lane\":",
+   "case": "SP-A an epic branch takes the FULL gate",
+   "block": "SP-A · the positive control: a clean, pushed epic branch is CLEAR"
+  },
+  {
+   "id": "M9 the deployable-diff decision is inverted",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    if touched:",
+   "mutated": "    if not touched:",
+   "case": "SP-F a deployable chore diff is ADMITTED -> exit 0",
+   "block": "SP-F · the lane: a chore branch is admitted only when its diff DEPLOYS"
+  },
+  {
+   "id": "M10 a repo with no deployable surface stops being refused",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    if not surface:",
+   "mutated": "    if surface and False:",
+   "case": "SP-F ...naming the REASON: the repo has no deployable surface at all",
+   "block": "SP-F · the lane: a chore branch is admitted only when its diff DEPLOYS"
+  },
+  {
+   "id": "M11 the staleness stops riding the VERDICT line",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    if not fresh and code < 2:",
+   "mutated": "    if fresh and code < 2:",
+   "case": "SP-G ...and the word stale is ON it",
+   "block": "SP-G · --no-fetch: the VERDICT itself carries the staleness"
+  }
+ ]
+}

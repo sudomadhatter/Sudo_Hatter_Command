@@ -1,0 +1,64 @@
+{
+ "test": [
+  "python3",
+  ".agents/scripts/tests/test_door_preflight_order.py"
+ ],
+ "mutants": [
+  {
+   "id": "M12 RELOCATE: a write lands ABOVE the pre-flight (presence unchanged, ORDER moved)",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "BRANCH=<the branch Step 1 resolved>\npython3 .agents/scripts/ship_preflight.py",
+   "mutated": "BRANCH=<the branch Step 1 resolved>\ngit merge origin/main\npython3 .agents/scripts/ship_preflight.py",
+   "case": "P2 ORDER preflight -> absorb main -> mint -> push main",
+   "block": "SCC-211 · /cicd-push-e2e pre-flights BEFORE it writes or gates"
+  },
+  {
+   "id": "M13 the pre-flight becomes a COMMENT inside its own fence",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "python3 .agents/scripts/ship_preflight.py --repo \"$PROJECT_ROOT\"",
+   "mutated": "# python3 .agents/scripts/ship_preflight.py --repo \"$PROJECT_ROOT\"",
+   "case": "P1 the door RUNS ship_preflight.py (fenced, not prose)",
+   "block": "SCC-211 · /cicd-push-e2e pre-flights BEFORE it writes or gates"
+  },
+  {
+   "id": "M14 the pinned key is commented out, so --expect-key reads an unset variable",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "EXPECTED_KEY=<the epic's Jira key>",
+   "mutated": "# EXPECTED_KEY=<the epic's Jira key>",
+   "case": "P6 ORDER EXPECTED_KEY pinned -> then the preflight reads it",
+   "block": "SCC-211 · /cicd-push-e2e pre-flights BEFORE it writes or gates"
+  },
+  {
+   "id": "M15 the sign-off contradiction is restored at the mint",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "# permission is never merge permission: STOP and ask only when NO form was given this turn",
+   "mutated": "# permission is never merge permission. No such words this turn -> STOP and ask, only when",
+   "case": "P5 ...and the door no longer demands words the ruling says were given",
+   "block": "SCC-211 · /cicd-push-e2e pre-flights BEFORE it writes or gates"
+  },
+  {
+   "id": "M16 Step 1's chore admission loses the Task-door hand-off",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "it refuses, and that lane closes out through `/smh-close-task-merge-tree`, which owns the Task ceremony",
+   "mutated": "it refuses, and that lane closes out somewhere else, under whatever ceremony",
+   "case": "P3 ...and hands the rest to the Task door",
+   "block": "SCC-211 · /cicd-push-e2e pre-flights BEFORE it writes or gates"
+  },
+  {
+   "id": "M17 the admitted chore shape loses its written procedure",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "A chore lane that legitimately stays here **substitutes `chore/<JIRA-KEY>-<slug>` for",
+   "mutated": "A chore lane that legitimately stays here just carries on, reading `epic` as",
+   "case": "P4 ...and a chore lane that legitimately stays has a written procedure",
+   "block": "SCC-211 · /cicd-push-e2e pre-flights BEFORE it writes or gates"
+  },
+  {
+   "id": "M18 the ruling is deleted from the production door",
+   "file": ".agents/commands/cicd-push-e2e.md",
+   "original": "**decision to proceed is the sign-off**, and from that word on",
+   "mutated": "**call to proceed is what matters**, and from that word on",
+   "case": "S5 ...and .agents/commands/cicd-push-e2e.md states the ruling positively",
+   "block": "SCC-193 · the sign-off wording, pinned both directions"
+  }
+ ]
+}

@@ -224,6 +224,14 @@ def main() -> int:
             code, out = ship(repo, "chore/SCC-11-thing")
             c.check("SP-F a repo that deploys NOTHING refuses the chore lane -> exit 2",
                     code == 2 and "/smh-close-task-merge-tree" in out, out.strip()[-300:])
+            # ⛔ AND IT MUST SAY *WHY*, which is a different sentence from the one the
+            # missed-the-diff arm prints. A SURVIVING MUTANT FOUND THIS: deleting the
+            # `not surface` arm entirely left this case green, because the diff arm below
+            # also refuses and also names the Task door. Same verdict, different fact — and
+            # the fact is the whole value of the arm: "your diff happened to miss" is
+            # actionable, "this repo can never qualify" ends the question.
+            c.check("SP-F ...naming the REASON: the repo has no deployable surface at all",
+                    "no deployable surface" in out.lower(), out.strip()[-300:])
 
         # ⛔ AND THE CONTROL THAT KEEPS THE LANE HONEST IN THE OTHER DIRECTION: an epic
         # branch is never subjected to the deployable-diff question. An epic ships whatever
