@@ -248,6 +248,10 @@ The 11 `[FAIL]` lines visible inside the green run are expected-fail probes on s
 - [x] CASE B filed — SCC-247, SCC-248, SCC-249, SCC-250, SCC-251, SCC-252 (subtasks of SCC-213) and
       AVCH-65 (cross-repo). Index rows appended to SCC-213's description.
 - [x] Two defective memories corrected. No memory deleted.
+- [x] PARTIAL landing (`landing_mode: partial`). The audit lands; **SCC-213 stays open**. Left
+      behind, not landing here: SCC-247 · SCC-248 · SCC-249 · SCC-250 · SCC-251 · SCC-252 — each
+      is rule work needing its own plan and review, which this ticket's own DO NOT forbids in
+      this lane. AVCH-65 is cross-repo and lands in AGY.
 
 Nothing is owed by the operator — the audit is complete and its findings are on the board.
 

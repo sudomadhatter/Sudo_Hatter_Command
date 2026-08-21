@@ -2,4 +2,5 @@ task_key: SCC-213
 primary_repo: Sudo_Hatter_Command
 branch: chore/SCC-213-memory-obligation-audit
 close_command: smh-close-task-merge-tree
+landing_mode: partial
 secondary_repos: []
