@@ -1,0 +1,49 @@
+{
+  "test": ["python3", ".agents/scripts/tests/test_walkthrough_roster.py"],
+  "mutants": [
+    {"id": "M1 the fenced-header flag can never be true",
+     "file": ".agents/scripts/walkthrough_roster.py",
+     "original": "    head_raw = any(_ROSTER_HEAD_RE.match(ln) for ln in raw_lines)",
+     "mutated":  "    head_raw = False",
+     "case":  "F2",
+     "block": "F · the refusal says WHY"},
+
+    {"id": "M2 the two diagnostic branches swap, so each case gets the other's answer",
+     "file": ".agents/scripts/walkthrough_roster.py",
+     "original": "        if data[\"roster_header_empty\"]:",
+     "mutated":  "        if data[\"roster_header_fenced\"]:",
+     "case":  "F3",
+     "block": "F · the refusal says WHY"},
+
+    {"id": "M3 the CLI always exits 0, so a self-check can never fail",
+     "file": ".agents/scripts/walkthrough_roster.py",
+     "original": "    return 0 if ok else 1",
+     "mutated":  "    return 0",
+     "case":  "F1c",
+     "block": "F · the refusal says WHY"},
+
+    {"id": "M4 the missing-arrow bullet is told the left side failed instead",
+     "file": ".agents/scripts/declared_change_set.py",
+     "original": "            why = (\"no `→` row separator - every bullet ends `→ <the acceptance row it \"\n                   \"serves>`\")",
+     "mutated":  "            why = _LEFT_WHY",
+     "case":  "R2",
+     "block": "R · every incomplete row carries a reason",
+     "test": ["python3", ".agents/scripts/tests/test_declared_change_set.py"]},
+
+    {"id": "M5 the taught roster example goes back inside a code fence",
+     "file": ".agents/commands/smh-code-review.md",
+     "original": "  lenses_run:\n  - blind-hunter · ok",
+     "mutated":  "  ```\n  lenses_run:\n  - blind-hunter · ok",
+     "case":  "D1",
+     "block": "D · every taught roster parses AS TAUGHT",
+     "test": ["python3", ".agents/scripts/tests/test_doc_examples_parse.py"]},
+
+    {"id": "M6 the verify wave stops naming who groups and when",
+     "file": ".agents/skills/code-review-engine/steps/step-02-verify.md",
+     "original": "⭐ **Group first, then serialise — the grouping is YOURS and this",
+     "mutated":  "⭐ **The grouping happens somewhere and this",
+     "case":  "G1",
+     "block": "G · the verify wave names ONE grouping owner, in ONE place",
+     "test": ["python3", ".agents/scripts/tests/test_doc_examples_parse.py"]}
+  ]
+}

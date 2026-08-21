@@ -273,8 +273,10 @@ def main() -> int:
                "- EDIT `empty/row.md` — mapped to nothing → \n"
                "- both/broken.md → \n")
         r = dcs.parse(FIX)
-        rows = {re.split(r"\s*←\s*", raw, 1)[0].strip():
-                (re.split(r"\s*←\s*", raw, 1) + [""])[1].strip()
+        # `maxsplit=` by KEYWORD: positional maxsplit is deprecated in 3.13 and the warning
+        # is printed by the sweep, where a stream of noise is how a real message gets missed.
+        rows = {re.split(r"\s*←\s*", raw, maxsplit=1)[0].strip():
+                (re.split(r"\s*←\s*", raw, maxsplit=1) + [""])[1].strip()
                 for raw in r["incomplete"]}
         reasons = {k: v for k, v in rows.items() if v}
 
