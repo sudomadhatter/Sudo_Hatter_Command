@@ -39,6 +39,11 @@ than copied once and left to drift again, which is the failure the whole ticket 
 - [x] One `/smh-sync-agents` run; three Antigravity mirrors flip to thin launchers as predicted
 - [x] Suite through the receipt writer — **red first, then green** (below)
 - [x] Mutation sweep — **two survivors were real**, fixed, re-swept to 15/15; the review pass took it to **21/21**
+- [x] Review gate — five lenses, all as subagents in clean contexts, **all findings reproduced by
+      execution** ([review-findings.md](review-findings.md))
+  - ⚠ **25 confirmed defects, all fixed in thread before the verdict**; 4 relevance-killed with reasons
+  - ⚠ **The defects clustered in the machinery this lane wrote to prove the ports, not the ports** —
+    see `## Code Review` for the three that would each have reported success
 
 
 ## Disposition ledger — all 66 findings, by ID
@@ -294,6 +299,90 @@ spelled as a replacement with a neutral line that carries none of the law (`<!--
 here is gone -->`). Worth knowing before writing a table full of deletions; recorded rather than
 changed, because the validation is also what catches a genuinely malformed row.
 
+
+## Code Review (2026-08-21)
+
+**Verdict: CONCERNS @ `448ba5cf`**
+
+review-runtime: fan-out
+lenses_run:
+- blind-hunter · ok
+- edge-case-hunter · ok
+- literal-correctness-hunter · ok — truncated pass, declared: received 4 of ~35 files (the 20-file cap); named every withheld file
+- acceptance-auditor · ok
+- test-adequacy-auditor · ok
+lenses_counted:  5/5
+lenses_na:       none
+findings:        0 decision · 25 patch · 0 defer   (0 noise-dismissed · 4 relevance kills)
+dispositions:    per-lens: blind-hunter=7/0/1 · edge-case-hunter=8/0/1 · literal-correctness-hunter=3/0/0 · acceptance-auditor=5/0/1 · test-adequacy-auditor=6/0/1
+severity_floor:  CONCERNS
+drift:           undeclared=0 · unimplemented=0 · incomplete=0 — two rows reconciled mid-lane (Amendment 1) and two more at the gate (Amendment 2: `jira.md` + `review-findings.md`)
+notes:           `FINDINGS_SINK` was absent, so the full triage was written to [review-findings.md](review-findings.md) rather than returned inline; every finding was reproduced by execution, not inferred.
+
+### Step 0.7 — re-derivation
+
+1. **What moved:** nothing. `origin/main` **is** the merge-base at `295abe5` — no sibling lane has
+   landed since this branch was cut, so the diff is `295abe5...HEAD` with nothing to absorb, and
+   every path and `#L` anchor this diff names still resolves.
+2. **What that changes for this lane:** nothing has to be re-measured, so the gates below stand at
+   the shipping sha rather than at a pre-merge one; the verdict is about code that will exist.
+3. **Sibling lanes live:** none. `git worktree list` shows this tree alone, so there is no
+   landing-order dependency to declare.
+
+### The verdict, and why it is CONCERNS and not PASS
+
+**Every confirmed finding was fixed in this lane, before this line was written** — that is the
+`/smh-code-review` contract, and 25 of 25 are applied. What CONCERNS records is not unfinished work;
+it is that a review this size *found* 25 real defects in work that had already passed a self-audit,
+a RED→GREEN pass and a clean mutation sweep. The number is the signal.
+
+**The distribution is the finding worth carrying forward.** The lenses found almost nothing wrong
+with the 55 ports themselves: the Acceptance Auditor confirmed every claimed-applied ID is present
+in the diff, and all six fences are byte-identical on both sides. **The defects clustered in the
+machinery this lane wrote *to prove* the ports** — my new bash blocks, my assertion script, and my
+own fix to the parity guard. The ported content was held to the bar; the scaffolding was not.
+
+Three of them are worth naming here, because each is a gate that would have reported success:
+
+- **The kickoff's three new commit blocks could not run.** `printf … > epic-commit-msg.txt` writes
+  to the shell's cwd; `git -C "$PROJECT_ROOT" commit -F <relative>` reads it under `PROJECT_ROOT`.
+  `fatal: could not read log file`, exit 128 — and the push on the very next line then reported
+  success over a commit that never happened. Reproduced three times independently, in a scratch
+  repo. Now `mktemp`, outside both trees.
+- **My own fix to `test_twin_parity` F11 was vacuous by construction.** F11 must prove that
+  un-fencing a file changes the computed set. My fix stripped *every* opener with `LAW_OPEN.sub("",
+  t)` — the same regex `law_map()` iterates — so the map is empty for **any** input, including a
+  file that never carried a fence. The row re-asserted the bare truthiness its own comment condemns,
+  and would have stayed green if `laws()` stopped working entirely. It now removes ONE opener and
+  asserts a strict subset: sensitivity that holds at one law and at ten.
+- **Six of my assertion rows were ABSENT under `--red`, not red.** The `FENCE … byte-identical`
+  rows sat behind `if both:`, so in the pre-edit state — where no fence exists — they simply did
+  not run. The RED transcript read `3/103` against a green `109/109` and nothing said six checks had
+  disappeared. A check that vanishes is indistinguishable from a check that passed.
+
+**Four findings were relevance-killed, with the reason recorded** in
+[review-findings.md](review-findings.md): two pointers that displaced no obligation (acceptance row
+2's trigger is a Part E *hoist*, and neither is one), one true-but-duplicated sentence subsumed by
+the fix beside it, and one pre-existing hardcode that is not in this diff. `code-standards` §6.5:
+all three questions YES, or it is not acted on.
+
+### What the fix pass cost, measured
+
+| | Before the review | After |
+|---|---|---|
+| `assert-scc212.py` | 109 rows · **103** under `--red` | **115** rows in **both** states |
+| `mutation_sweep.py` | 15 declared, 15 killed | **21** declared, **21** killed (M20 SURVIVED once — see below) |
+| `test_command_surfaces.py` | 177 | **185** — `CS-14` promotes 8 lane-local pins into the durable suite |
+| Durable protection when this folder is archived | 6 fences + 1 `LOADERS` entry | 6 fences + 1 `LOADERS` entry + **8 `CS-14` rows** |
+
+⛔ **M20 SURVIVED the first re-sweep, and it is the same lesson a third time.** `CS-14 C` asserted
+`--require-gates` was somewhere in the merge door's file — and the paragraph explaining *why the flag
+is required* contains the flag, so striking it out of the invocation left the row green. It now
+resolves the `closeout_preflight.py` call across its `\` continuations and looks only there.
+`MERGE-03b`, `QD-C3-cr` and now `CS-14 C`: **the call is what an agent copies; the prose is what it
+skims**, and only a mutant drawn from the code ever finds the difference.
+
+
 ## Your Actions
 
 - [x] Plan, edit-spec, walkthrough, manifest, receipt and sweep table are linked at the top of this
@@ -302,6 +391,10 @@ changed, because the validation is also what catches a genuinely malformed row.
       (`cicd-merge-epic-workingtrees`, `cicd-clean-code-audit`, `cicd-create-epic-sprint`) are the
       designed mechanism at the 11,500-byte threshold, not a regression — the command file is still
       the brain and the launcher points at it.
+
+- [x] The review gate ran and its 25 findings were fixed **in this lane, before the verdict** — the
+      `/smh-code-review` contract. Nothing was minted, nothing was deferred, nothing was left as a
+      note for later. `## Code Review` says why the verdict is CONCERNS with every finding closed.
 
 **Nothing is owed.** The lane is committed and pushed; the door is `/smh-close-task-merge-tree`, and
 invoking it is the sign-off.

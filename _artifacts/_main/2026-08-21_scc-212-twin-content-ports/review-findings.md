@@ -6,7 +6,7 @@ ArtifactMetadata:
   date: 2026-08-21
 ---
 
-# SCC-212 — review findings (WORK IN PROGRESS — the fix pass is mid-flight)
+# SCC-212 — review findings (CLOSED — every confirmed finding is fixed in this lane)
 
 **Engine run:** `review_mode: full` · `review_level: standard` · `lens_budget: standard` ·
 `review_runtime: fan-out` · diff `origin/main...HEAD` (41 files) @ `a37b0338`.
@@ -26,10 +26,27 @@ lenses_counted:  5/5
 lenses_na: none
 ```
 
-## STATUS OF THE FIX PASS
+## STATUS OF THE FIX PASS — ✅ COMPLETE
 
-- [x] **B1** applied — the three broken commit blocks in `cicd-create-epic-sprint.md`
-- [ ] everything below still owed
+**25 of 25 confirmed findings applied**, in three commits, before the verdict was written:
+
+| Batch | Commit | Findings |
+|---|---|---|
+| the top defect, alone | `3b451aa` | **B1** |
+| the command bodies | `491d707` | **B2 B3 B4 B6 B7 B8 B9 E2 E4 E5 E6 E7 E8 A4** |
+| the instruments | `83001d9` | **L1 L2 L3 L4 L5 L6 L7 T1 T2 T3 T5** (+ A3, the missing mutants) |
+| the documents | `7bdbf73` | **A1 A2 A6 B5/T6** |
+| a survivor the re-sweep found | `448ba5c` | **T4's `CS-14 C`** — re-aimed at the call; see below |
+
+⛔ **The re-sweep found one more, and it is the third instance of the same shape.** `CS-14 C`
+asserted `--require-gates` was *somewhere in the file*, and the paragraph explaining why the flag is
+required contains the flag — so M20 SURVIVED with the flag struck out of the invocation. Re-aimed at
+the resolved `closeout_preflight.py` call. `MERGE-03b`, `QD-C3-cr`, `CS-14 C`: the call is what an
+agent copies; the prose is what it skims.
+
+**Gates at the shipping sha `448ba5cf`:** suite exit 0 (131.5s, receipt stamped) · lint 0/0 ·
+surfaces 185/185 · parity 64/64 · `check_maps` exit 0 · `assert-scc212` **115/115** at HEAD and
+**3/115** at `origin/main` (same row count in both states) · mutation sweep **21/21 killed**.
 
 ---
 
