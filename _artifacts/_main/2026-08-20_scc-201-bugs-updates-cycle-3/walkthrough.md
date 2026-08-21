@@ -132,7 +132,7 @@ zero CR bytes**, so the input is unreachable; and the function alone is not idem
 | blast radius vs current `main` | re-derived after absorbing SCC-240 — three additive overlaps, one generated file regenerated |
 | every repo path and anchor the diff names | resolves |
 
-**Verdict: CONCERNS @ 5f6dd912e**
+Verdict: CONCERNS @ 5f6dd912e
 
 The floor is `CONCERNS` because the review ran `inline` with one lens dead — not because anything in
 the diff is unresolved. Every finding raised was fixed or dismissed with a measured reason.
