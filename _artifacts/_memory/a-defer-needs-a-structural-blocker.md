@@ -5,8 +5,10 @@ metadata:
   type: feedback
 ---
 
-**The rule:** `deferred-work.md` defines exactly three blockers — another live lane owns the file,
-the fix lives in another repo, or it waits on an open operator decision. Nothing else parks work.
+**The rule lives in `.agents/rules/jira.md`** (§Review findings, the `defer` clause) — exactly
+three blockers: another live lane owns the file, the fix lives in another repo, or it waits on an
+open operator decision. Nothing else parks work. `_artifacts/_main/deferred-work.md` is the LEDGER
+a legal defer is written INTO, not the rule that authorises one — do not cite it as the law.
 There is no such thing as a blocker on *editing a file*: frozen / `UNMAINTAINED` / "don't restamp"
 markers govern maintenance obligations, not write access.
 
