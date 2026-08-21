@@ -2284,9 +2284,30 @@ def main() -> int:
         # 3. THE FLAG THAT MAKES A BLOCKING CLASS EXIST. `check_gates` returns at its first line
         #    without `--require-gates`, emitting NO row — so the merge door's strictest-sounding
         #    error can never fire. Structurally inert, and invisible in a green transcript.
-        c.check("CS-14 C the multi-lane door passes --require-gates to the preflight",
-                "--require-gates" in body("cicd-merge-epic-workingtrees.md"),
-                "without the flag `check_gates` returns immediately and files no row at all")
+        #    ⛔ PIN THE FLAG TO THE CALL, NOT TO THE FILE — M20 SURVIVED the first sweep exactly
+        #    here. The paragraph explaining WHY the flag is required also contains the flag, so
+        #    striking it out of the invocation left a file-wide row green. The call is what an
+        #    agent copies; the prose is what it skims. (Same shape as `MERGE-03b` and `QD-C3-cr`,
+        #    caught the same way: by a mutant drawn from the code rather than from the cases.)
+        merge_body = body("cicd-merge-epic-workingtrees.md").splitlines()
+
+        def joined_invocation(lines: list[str], script: str) -> str:
+            """The whole shell command, following `\\` continuations - never the whole file."""
+            for i, ln in enumerate(lines):
+                if script not in ln:
+                    continue
+                cmd, j = ln, i
+                while cmd.rstrip().endswith("\\") and j + 1 < len(lines):
+                    j += 1
+                    cmd += " " + lines[j]
+                return cmd
+            return ""
+
+        call = joined_invocation(merge_body, "closeout_preflight.py")
+        c.check("CS-14 C the multi-lane door passes --require-gates in the preflight INVOCATION",
+                bool(call) and "--require-gates" in call,
+                f"the resolved call was {call!r} — without the flag ON THE CALL, `check_gates` "
+                "returns immediately and files no row at all; prose naming the flag is not the flag")
 
         # 4. THE MESSAGE FILE THAT MUST LIVE OUTSIDE BOTH TREES. `printf … > f` writes to the
         #    shell's cwd; `git -C <dir> commit -F f` reads it under <dir>. Every kickoff commit
