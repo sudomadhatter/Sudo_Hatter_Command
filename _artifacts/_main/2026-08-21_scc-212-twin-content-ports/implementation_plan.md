@@ -98,19 +98,26 @@ edit the current tree actually needs, and the walkthrough's ledger says which.
 - EDIT `.opencode/commands/cicd-code-review.md` — generated mirror → 5
 - EDIT `.opencode/commands/smh-code-review.md` — generated mirror → 5
 - EDIT `.opencode/commands/cicd-self-audit.md` — generated mirror → 5
-- EDIT `.agents/workflows/cicd-dev-story-tests.md` — generated launcher (description only) → 5
 - EDIT `.agents/workflows/cicd-write-story-tests.md` — generated mirror → 5
 - EDIT `.agents/workflows/cicd-merge-epic-workingtrees.md` — generated; FLIPS to a thin launcher (>11,500 B) → 5
-- EDIT `.agents/workflows/smh-merge-multiple-workingtrees.md` — generated launcher → 5
-- EDIT `.agents/workflows/cicd-quick-dev.md` — generated launcher → 5
-- EDIT `.agents/workflows/smh-quick-dev.md` — generated launcher → 5
 - EDIT `.agents/workflows/cicd-create-epic-sprint.md` — generated; FLIPS to a thin launcher (>11,500 B) → 5
 - EDIT `.agents/workflows/cicd-clean-code-audit.md` — generated; FLIPS to a thin launcher (>11,500 B) → 5
-- EDIT `.agents/workflows/smh-clean-code-audit.md` — generated launcher → 5
-- EDIT `.agents/workflows/cicd-code-review.md` — generated launcher → 5
-- EDIT `.agents/workflows/smh-code-review.md` — generated launcher → 5
-- EDIT `.agents/workflows/cicd-self-audit.md` — generated launcher → 5
+- EDIT `.agents/.sync-manifest.json` — the sync engine's own record of what it wrote → 5
 - EDIT `_artifacts/_main/INDEX.md` — one row for this folder → 1
+
+### Amendment (2026-08-21, at the review's declared-set reconciliation)
+
+Two drift rows, both mine, both corrected above rather than argued away:
+
+**`undeclared`: `.agents/.sync-manifest.json`.** The sync writes it alongside the mirrors and
+the first draft declared the mirrors but not the manifest. Declared now.
+**`unimplemented`: eight `.agents/workflows/*` bullets, removed.** The plan declared a mirror
+for every edited command; only **four** actually change. An Antigravity workflow that is
+already a thin launcher carries the command's DESCRIPTION and nothing else, so it regenerates
+byte-identically unless that description moves — and no description moved in this lane. The
+four that changed are the three that crossed 11,500 B and became launchers, plus
+`cicd-write-story-tests`, whose body is still mirrored verbatim. Over-declaring is not
+harmless: it is the same class of claim as under-declaring, and the reconciliation caught it.
 - NEW `_artifacts/_main/2026-08-21_scc-212-twin-content-ports/implementation_plan.md` — this plan → 1
 - NEW `_artifacts/_main/2026-08-21_scc-212-twin-content-ports/edit-spec.md` — the per-finding build spec → 1
 - NEW `_artifacts/_main/2026-08-21_scc-212-twin-content-ports/task.yaml` — the close-out manifest → 1
