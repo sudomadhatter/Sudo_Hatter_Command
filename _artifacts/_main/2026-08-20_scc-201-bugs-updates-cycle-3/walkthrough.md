@@ -105,6 +105,7 @@ lenses_run:
 lenses_counted:  4/5
 lenses_na:       none
 findings:        1 patch · 0 decision · 0 defer   (2 relevance kills)
+dispositions:    per-lens: blind-hunter=0/0/0 (dead) · edge-case=1/2/0 · literal-correctness=0/0/0 · acceptance=0/0/0 · test-adequacy=0/0/0
 severity_floor:  CONCERNS
 notes:           fan-out unavailable — two launch attempts died on lens-side context exhaustion,
                  caused by caller instructions that flooded them. Recorded as a caller defect.
