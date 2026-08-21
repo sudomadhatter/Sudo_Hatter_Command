@@ -20,11 +20,17 @@ file each pay in full. Both suites create fresh executables per scenario (a fres
 per preflight block, two to five hook scripts per git_hooks repo) — 88 + 72 first launches, about
 58 s of the two files' 191 s. Linking pays it once per shape.
 
-A shared inode is only safe because the template's executables are frozen `0o555`: an in-place
-write raises `PermissionError` instead of reaching every other scenario. Git never writes a file
-in place (it writes a temp file and renames), so checkouts, merges and branch switches over a
-linked hook are isolated by construction — the rename replaces the directory entry and leaves the
-template's inode untouched.
+A shared inode is safe because of TWO things, not one. The template's executables are frozen
+`0o555`, so an in-place write raises `PermissionError` instead of reaching every other scenario
+— but `0o555` only stops a write, and a scenario that `chmod`s the file first writes straight
+through. So `_verify_sealed` re-checks every cached template's executable modes on EVERY reuse
+and raises `TemplateCorrupted` naming the file. A write cannot happen without the chmod, so
+catching the chmod catches the write. Git never writes a file
+in place — it REPLACES it, unlinking and re-creating (checkout) or writing a temp file and
+renaming — so checkouts, merges and branch switches over a linked hook are isolated by
+construction: the new file takes the directory entry and the template's inode is left untouched.
+Verified directly rather than assumed: `git checkout` and `git merge` across a differing linked
+hook both leave the template byte- and mode-identical.
 
 ⛔ `HARD_LINKS` IS FALSE ON WINDOWS, DELIBERATELY. `_harness.TempDir.__exit__` cleans up with an
 `rmtree` handler that chmods read-only files (`0o700`) so Windows can delete them — and a chmod
@@ -48,6 +54,9 @@ from typing import Callable, Hashable
 TEMPLATE_PREFIX = "wfscripts-tpl-"
 """Marks every template directory. `test_repo_template.py` greps a clone for it: a clone carrying
 an absolute path back into a template is a leak, however clean its `git status` reads."""
+
+SEALED_URL = "SCC-214-SEALED-TEMPLATE-REPOINT-THIS-REMOTE"
+"""What a template path becomes inside a sealed `.git/config`. Unresolvable on purpose."""
 
 _ROOT: Path | None = None
 _CACHE: dict[Hashable, Path] = {}
@@ -102,17 +111,55 @@ def _cleanup() -> None:
 def _seal(root: Path) -> None:
     """Make a finished template safe to share: no path back to itself, no writable executable."""
     for fetch_head in root.rglob("FETCH_HEAD"):
-        # Written by `git fetch`, and it records the ABSOLUTE URL it fetched from - the one file
-        # in these fixtures that would carry the template's path into every clone.
+        # Written by `git fetch`, and it records the ABSOLUTE URL it fetched from.
         fetch_head.unlink()
+    # ⛔ AND THE SECOND CARRIER: `git remote add origin <abs>` writes the template's own path
+    # into `.git/config`, which `clone()` then copies verbatim. Callers re-point `origin` after
+    # cloning, but a leak closed only by caller discipline is one the next builder forgets - and
+    # a stale URL does not fail, it silently points a scenario's pushes at the SHARED template's
+    # bare. Neutralised here at the source: the placeholder is unresolvable, so a caller that
+    # forgets to re-point gets a loud git error instead of quiet shared state.
+    for cfg in root.rglob("config"):
+        if cfg.parent.name != ".git" and not cfg.parent.name.endswith(".git"):
+            continue
+        text = cfg.read_text(encoding="utf-8", errors="replace")
+        if str(root) in text:
+            cfg.write_text(text.replace(str(root), SEALED_URL), encoding="utf-8")
     for p in root.rglob("*"):
         if p.is_file() and not p.is_symlink() and (p.stat().st_mode & 0o111):
             p.chmod(0o555)
 
 
+def _verify_sealed(root: Path) -> None:
+    """Every executable in a cached template is still frozen — checked on EVERY reuse.
+
+    ⛔ THE FREEZE ALONE IS NOT THE GUARANTEE, and believing it was is how this module first
+    shipped. `0o555` stops a WRITE, but a scenario that `chmod`s the file first writes straight
+    through the shared inode into every other clone — measured: clone A `chmod(0o755)` then
+    `write_text(...)` changes clone B's mode AND its bytes. Nothing in the two converted suites
+    does that today, so this is a latch on a door nobody currently opens; the ticket's
+    constraint is "never a shared mutable repo", and an invariant with an unwatched escape is
+    not an invariant. One `stat()` per executable per clone, and a write is impossible without
+    the chmod this catches — so catching the chmod catches the write.
+    """
+    for p in sorted(root.rglob("*")):
+        if p.is_file() and not p.is_symlink() and (p.stat().st_mode & 0o111):
+            mode = p.stat().st_mode & 0o777
+            if mode != 0o555:
+                raise TemplateCorrupted(
+                    f"{p} is {oct(mode)}, not 0o555 - a scenario chmod'd a SHARED template "
+                    f"inode, so every clone of this shape may carry its edits. This is the "
+                    f"'shared mutable repo' the fixture design forbids (SCC-214).")
+
+
+class TemplateCorrupted(RuntimeError):
+    """A cached template was mutated by a scenario. Never recoverable by retrying."""
+
+
 def _template(key: Hashable, build: Callable[[Path], object]) -> Path:
     cached = _CACHE.get(key)
     if cached is not None:
+        _verify_sealed(cached)
         return cached
     root = Path(tempfile.mkdtemp(prefix=TEMPLATE_PREFIX, dir=shared_root()))
     try:

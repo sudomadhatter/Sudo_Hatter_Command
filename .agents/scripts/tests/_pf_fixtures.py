@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import json
 import os
-import stat
 import subprocess
 import sys
 from pathlib import Path
@@ -221,7 +220,15 @@ def _launcher() -> Path:
             launcher = shared / "acli"
             launcher.write_text(f'#!/bin/sh\nexec "{sys.executable}" "{stub_py}" "$@"\n',
                                 encoding="utf-8")
-            launcher.chmod(launcher.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+            launcher.chmod(0o555)
+        # ⛔ FROZEN, like every other shared executable (`_repo_template._seal`). This is the
+        # most widely shared object here - one file, one fixed path, `ACLI_BIN` for ~88 blocks -
+        # and unlike a scenario repo it does NOT die with its TempDir. Left owner-writable
+        # (`0o644 | S_IXUSR | S_IXGRP` = `0o754`, which is what this line used to compute)
+        # anything opening `$ACLI_BIN` for writing would poison every later block in the
+        # process, N cases downstream of the writer. `stub_py` is frozen for the same reason:
+        # the launcher only execs it, so a rewrite of the stub is the same blast radius.
+        stub_py.chmod(0o555)
         _LAUNCHER = launcher
     return _LAUNCHER
 

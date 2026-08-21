@@ -63,13 +63,17 @@ def head(d: Path) -> str:
 
 
 def _key(paths) -> tuple:
-    """The cache half of a builder's file arguments — names, never Path objects.
+    """The cache half of a builder's file arguments — the FULL path of each.
 
-    ⛔ Paths are absolute and this process's own, so they key correctly here; NAMES are what make
-    the key readable in a failure and stable across worktrees. Both halves of a template's
-    identity must be in its key or two different fixtures share one template.
+    ⛔ FULL PATHS, not basenames. Both halves of a template's identity must be in its key or two
+    different fixtures share one template, and basenames throw half of it away: two entries of
+    `scripts` or `hooks` sharing a name in different directories would collapse to one key and
+    be served one template, silently. Today's five constants have distinct basenames so nothing
+    is currently mis-keyed — which is exactly why the narrowing would have shipped unnoticed.
+    `_CACHE` never leaves this process (`run_all.py` gives each test file its own), so an
+    absolute path is a correct key; readability belongs in the failure message, not the key.
     """
-    return tuple(p.name for p in paths)
+    return tuple(str(p) for p in paths)
 
 
 def make_repo(tmp: Path, *, name: str = "work",
