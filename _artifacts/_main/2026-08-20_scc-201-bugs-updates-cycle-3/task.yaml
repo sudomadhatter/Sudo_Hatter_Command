@@ -1,0 +1,10 @@
+task_key: SCC-201
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-201-bugs-updates-cycle-3
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+riders: [SCC-206, SCC-242, SCC-243]
+# Cycle 3 of the rolling "Bugs and Updates" ticket, run as ONE consolidated lane.
+# All three open subtasks ride this branch; the parent closes with them, and cycle 4
+# (SCC-244) already holds the `running-bug-list` baton as the open home for new findings.
+# Operator ruling 2026-08-20: "run them all in one ticket though" + "and one working tree".
