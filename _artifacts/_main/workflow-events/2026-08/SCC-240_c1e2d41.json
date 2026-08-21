@@ -1,0 +1,55 @@
+{
+  "v": 1,
+  "task": "SCC-240",
+  "sha": "c1e2d414cefefb6164cc0f322aa50e96d7ad5e29",
+  "tip": "057847023736aefa38e5ddcc1ac624cb7ba08972",
+  "trigger": "close-out",
+  "when": "2026-08-20T22:28:59-04:00",
+  "changes": [
+    ".agents/.sync-manifest.json",
+    ".agents/commands/cicd-code-review.md",
+    ".agents/commands/smh-code-review.md",
+    ".agents/scripts/INDEX.md",
+    ".agents/scripts/declared_change_set.py",
+    ".agents/scripts/tests/_harness.py",
+    ".agents/scripts/tests/run_all.py",
+    ".agents/scripts/tests/test_declared_change_set.py",
+    ".agents/scripts/tests/test_doc_examples_parse.py",
+    ".agents/scripts/tests/test_suite_runner.py",
+    ".agents/scripts/tests/test_walkthrough_roster.py",
+    ".agents/scripts/walkthrough_roster.py",
+    ".agents/scripts/wf_common.py",
+    ".agents/skills/code-review-engine/SKILL.md",
+    ".agents/skills/code-review-engine/steps/step-02-verify.md",
+    ".agents/skills/code-review-engine/steps/step-04-record.md",
+    ".claude/skills/code-review-engine/SKILL.md",
+    ".claude/skills/code-review-engine/steps/step-02-verify.md",
+    ".claude/skills/code-review-engine/steps/step-04-record.md",
+    ".opencode/commands/cicd-code-review.md",
+    ".opencode/commands/smh-code-review.md",
+    "_artifacts/_main/2026-08-20_scc-240-self-diagnosing-readers/gates/suite.json",
+    "_artifacts/_main/2026-08-20_scc-240-self-diagnosing-readers/implementation_plan.md",
+    "_artifacts/_main/2026-08-20_scc-240-self-diagnosing-readers/sweep.json",
+    "_artifacts/_main/2026-08-20_scc-240-self-diagnosing-readers/task.yaml",
+    "_artifacts/_main/2026-08-20_scc-240-self-diagnosing-readers/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-20_scc-240-self-diagnosing-readers/walkthrough.md",
+    "verdict": "PASS @ c1e2d41",
+    "gates": {
+      "suite": "pass@c1e2d41"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}
