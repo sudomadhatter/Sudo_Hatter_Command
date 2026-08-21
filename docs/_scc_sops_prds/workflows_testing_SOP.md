@@ -1491,6 +1491,29 @@ commit gate exempts the test suite (correctly — editing a test changes nothing
 "needs a doc update" and "can break something" are different questions, and reusing one for the
 other would have let this lane rewrite the enforcement suite.
 
+**⭐ Every command that runs this script now lists every answer it can give (SCC-243).** Three
+commands call it — `/smh-quick-fix`, `/smh-non-crit-pr-push`, `/cicd-non-crit-pr-push` — and two of
+their tables were short: `LIGHT-VCS` was missing from both non-crit lanes, and `NOT-COMMAND-CENTRE`
+from the `cicd-` one. A verdict a command does not list is a verdict it has no instruction for, so
+the agent answers by judgement — the exact thing putting the question in a script prevents.
+`tests/test_lane_qualify.py` now **discovers the callers by invocation** and fails if any table is
+missing a verdict, so a sixth verdict cannot be added without every caller learning it.
+
+⛔ **And `NOT-COMMAND-CENTRE` means opposite things in the two non-crit twins, on purpose.** In
+`/smh-non-crit-pr-push` it is a STOP — you are in a child project, use the other lane. In
+`/cicd-non-crit-pr-push` it is the **EXPECTED** answer, because a child project is exactly where that
+lane runs and a thin project carries no `.agents/commands/`. The asymmetry is declared with the
+repo's own auditable marker (`<!-- twin-divergence: … -->`), which `test_twin_parity.py` counts and
+prints. ⛔ **The centre-only scope is a settled operator ruling** (`.agents/scripts/INDEX.md:57`) —
+the qualifier is not given a project arm.
+
+⛔ **What that costs, measured 2026-08-20:** `NOT-COMMAND-CENTRE` is returned *before any path is
+read*, so inside a child project `--paths backend/api.py` and `--paths docs/notes.md` produce the
+**identical** answer. The `TASK` and `HANDOFF` rows in `/cicd-non-crit-pr-push` could never fire in
+the repo that command runs in — its Step 0.5 qualified nothing. It now carries its own deployable-
+path check immediately after, importing `PRODUCT_DIRS` and `CI_DIR` from `task_preflight` rather
+than re-typing them, and the test fails if the body stops naming any member.
+
 **It still lands the normal way.** `/smh-close-task-merge-tree`, unchanged — there is no lighter door
 to `main`, and there was never going to be one. A lane with no review verdict simply means that
 close-out runs the whole gate itself instead of inheriting a green, which is the safe direction.

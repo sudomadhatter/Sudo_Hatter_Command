@@ -116,6 +116,29 @@ spot. Four new cases (C2b, C6 ×2, C7 ×2) pin it, and C7 is the one the mutant 
 ⛔ **No new ticket.** This is row F's own surface, discovered by building row F, so it rides row F —
 per the operator's standing ruling that discovered work folds into the lane it was found in.
 
+## Amendment 2 — two corrections from building rows M–R (2026-08-20)
+
+⭐ **The gap is 1 on `smh-`, 2 on `cicd-` — not 2 and 2.** Re-measured against
+`lane_qualify.VERDICTS` by the row-P parser itself: `smh-quick-fix.md` already lists all five;
+`smh-non-crit-pr-push.md` was missing `LIGHT-VCS` only; `cicd-non-crit-pr-push.md` was missing
+`LIGHT-VCS` **and** `NOT-COMMAND-CENTRE`. The plan's *"2 on smh- and 2 on cicd-"* was wrong.
+Row P's assertion is unchanged; only the expected diff is.
+
+⛔ **Row N named the wrong authority, and the correction matters.** The plan said the body must name
+`PRODUCT_DIRS` *"plus firestore rules and `.github/`"* as **disqualifying**. Measured: there is no
+firestore-rules constant — `firebase/` in `PRODUCT_DIRS` already covers it — and `.github/` is
+**deliberately NOT deployable** in `lane_qualify` (SCC-118: it is a `TOOLKIT_PREFIXES` member, so it
+routes to `TASK`, not `HANDOFF`). What shipped names `task_preflight.PRODUCT_DIRS` + `CI_DIR` for the
+command's own deployable check, imported and never re-typed.
+
+⭐ **And the defect is bigger than SCC-243 as filed.** `NOT-COMMAND-CENTRE` is returned at
+`lane_qualify.py:107-112`, **before a single path is read** — so in a child project, which is the only
+place `/cicd-non-crit-pr-push` runs, `--paths backend/api.py` and `--paths docs/notes.md` return the
+identical answer (measured against `Projects/AGY_AVIATIONCHAT`). Its `TASK` and `HANDOFF` rows could
+never fire. Documenting the verdict alone would have left Step 0.5 qualifying **nothing**, so the
+command gained the deployable-path check that actually runs there. ⛔ **`lane_qualify.py` is still not
+edited** — the ruling stands; the missing work was always the caller's.
+
 ## DO NOT
 
 - **Do not change the default landing target.** No flag and no manifest key must behave exactly as today (row B is that control).
