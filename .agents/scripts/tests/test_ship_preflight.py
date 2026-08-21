@@ -345,6 +345,25 @@ def main() -> int:
             c.check("SP-K ...never '0 file(s) changed' about a diff it did not get",
                     "0 file(s) changed" not in out, out.strip()[-400:])
 
+        # ⛔ AND THE CASE THAT ACTUALLY FAILS THE DIFF — added because a MUTANT SURVIVED.
+        # Disabling the `diff.returncode` check left the block above green: the ref fallback
+        # fixed alongside it means the diff now succeeds here, so the returncode arm had no
+        # covering case at all and read as defensive code nobody had exercised. The arm is
+        # right (a repo with neither `main` nor `origin/main` cannot resolve a base), so the
+        # answer is a case, not a deletion: with no base to diff against, the script must say
+        # the lane question is UNANSWERABLE rather than assert an empty diff as a fact.
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, "chore/SCC-11-thing", {"backend/app.py": "x = 2\n"}, push=False)
+            git(repo, "remote", "remove", "origin")     # no origin/main
+            git(repo, "branch", "-D", "main")           # and no local main either
+            code, out = ship(repo, "chore/SCC-11-thing")
+            c.check("SP-K a diff that CANNOT run is named unanswerable, not empty",
+                    "unanswerable" in out.lower(), out.strip()[-400:])
+            c.check("SP-K ...and it never states a file count it did not measure",
+                    "file(s) changed, none of them deployable" not in out,
+                    out.strip()[-400:])
+
     # ── SP-G · an unfetched comparison is not a fresh one ──────────────────────────────────
     # SCC-193's finding, one door over: a note saying the comparison was stale sat under a
     # VERDICT reading "clear to close out and merge", and the verdict line is the only line

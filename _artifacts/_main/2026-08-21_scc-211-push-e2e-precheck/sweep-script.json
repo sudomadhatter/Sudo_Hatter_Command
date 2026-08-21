@@ -113,7 +113,7 @@
    "file": ".agents/scripts/ship_preflight.py",
    "original": "    if diff.returncode != 0:",
    "mutated": "    if diff.returncode != 0 and False:",
-   "case": "SP-K ...never '0 file(s) changed' about a diff it did not get",
+   "case": "SP-K a diff that CANNOT run is named unanswerable, not empty",
    "block": "SP-K · a chore lane on a remote-only branch still reads its real diff"
   },
   {
@@ -129,7 +129,7 @@
    "file": ".agents/scripts/ship_preflight.py",
    "original": "        if not value.strip():",
    "mutated": "        if not value.strip() and False:",
-   "case": "SP-I an empty --expect-key -> exit 2",
+   "case": "SP-I ...named as the PIN that never arrived",
    "block": "SP-I · an empty operand is named as missing, never blamed on the branch"
   },
   {
