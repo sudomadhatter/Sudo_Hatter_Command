@@ -233,6 +233,22 @@ pass: it used to check only a reply's **opening**, and this obligation is broken
 
 ⛔ **If an agent hands you a tail of new concerns, that is now a rule violation — say so.**
 
+⭐ **And the reason `main` kept coming back dirty with memory files (SCC-246).** Claude's memory
+path — `~/.claude/projects/<slug>/memory` — is a per-machine symlink to `_artifacts/_memory` in the
+**main working tree**, hardcoded. An agent working in a lane worktree therefore writes its memory
+into `main`'s tree: it never rides that lane's PR, and it sits uncommitted until a later session
+finds it and cleans it up as a separate chore. Measured 2026-08-21: after one lane closed, `main`
+carried three untracked memory files and a modified index from two different sessions.
+
+**What changes:** a memory written during a lane now goes **on the lane** — copied into the
+worktree's own `_artifacts/_memory/`, the shared checkout restored, and committed with explicit
+paths so it lands with the PR (`AGENTS.md` §7 carries the four steps; the close-out door's `sync`
+row enforces the split).
+
+⛔ **The split is by AUTHORSHIP, never tidiness.** *Your* memory has a home — this lane. *Another
+session's* uncommitted memory is work in flight and is still **never swept, deleted, or committed
+under your task.** That protection did not move.
+
 ## 3. The two laws above every command
 
 Everything else is downstream of these.

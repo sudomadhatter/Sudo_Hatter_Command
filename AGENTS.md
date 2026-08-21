@@ -188,6 +188,23 @@ files, per §3); full model →
   closed-but-instructive → compress to a one-line lesson. (Claude's `~/.claude/...` harness path is a
   per-machine symlink into this store — a convenience, never the mechanism; fresh machine →
   migrations kit §1 step 8.)
+  ⛔ **THAT SYMLINK POINTS AT THE SHARED CHECKOUT, AND IT IS WHY `main` KEEPS COMING BACK DIRTY
+  (SCC-246).** `~/.claude/projects/<slug>/memory` resolves to `<repo>/_artifacts/_memory` in the
+  **main** working tree — hardcoded, per machine. So an agent working in
+  `.claude/worktrees/<lane>/` still writes its memory into `main`'s tree: the memory never rides that
+  lane's PR, and it sits uncommitted in the shared checkout until a later session finds it and cleans
+  it up as a chore. Measured 2026-08-21: after one lane closed, `main` carried three untracked memory
+  files and a modified `MEMORY.md` from two different sessions.
+  **A memory you write during a lane goes ON THE LANE, in four steps:**
+  1. Write it — the harness writes through the symlink into the shared checkout. Unavoidable.
+  2. **Copy it into your worktree's own `_artifacts/_memory/`** — the file *and* the `MEMORY.md` line.
+  3. **Restore the shared checkout** — `git checkout -- _artifacts/_memory/MEMORY.md`, then remove the
+     new files you wrote there. ⛔ **Only the ones YOU wrote this session**: `cmp` each against your
+     worktree copy first, and never `git clean` that directory.
+  4. Commit on the lane with explicit paths, so the memory lands with the PR.
+  **Another session's uncommitted memory is untouched by every step above** — that protection is the
+  rule stated just before this one and it does not move. The distinction is **authorship**, not
+  tidiness: your own memory has a home (this lane); theirs is work in flight.
   **That read-only rule governs memory CONTENT.** A **structural** change is a different act —
   and "structural" means exactly three things, by enumeration, because an undefined word here is a
   self-authorizing exemption to the one rule protecting memory: (1) the index's **section layout**,
