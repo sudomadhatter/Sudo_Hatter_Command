@@ -106,6 +106,7 @@ lenses_counted:  4/5
 lenses_na:       none
 findings:        1 patch · 0 decision · 0 defer   (2 relevance kills)
 dispositions:    per-lens: blind-hunter=0/0/0 (dead) · edge-case=1/2/0 · literal-correctness=0/0/0 · acceptance=0/0/0 · test-adequacy=0/0/0
+drift:           undeclared=2 · unimplemented=0 · incomplete=0 - both undeclared files were real work found mid-lane and are now DECLARED: `.agents/scripts/INDEX.md` (the router described SCC-118's trap backwards) and the generated `.agents/.sync-manifest.json` (regenerated to resolve the SCC-240 absorb). Nothing was declared and left unbuilt.
 severity_floor:  CONCERNS
 notes:           fan-out unavailable — two launch attempts died on lens-side context exhaustion,
                  caused by caller instructions that flooded them. Recorded as a caller defect.

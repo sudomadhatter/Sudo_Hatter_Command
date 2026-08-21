@@ -83,6 +83,8 @@ verbatim *because building a `--description` is how backticks execute*. The fix 
 - EDIT `.agents/scripts/tests/test_jira_feed.py` — new blocks for the closer, the reader, the index and the cycle → A, B, C, D, E, F, G, H, I, J, K, L, Q
 - EDIT `.agents/commands/cicd-close-story-merge-tree.md` — Step 4 calls finish; the ban block and the no-second-refusal sentence are corrected → F
 - EDIT `.agents/scripts/tests/test_command_surfaces.py` — CS-13's transition guard learns the second verb, and learns that a MENTION is not a call → F, Q
+- EDIT `.agents/scripts/INDEX.md` — the router said `DEPLOY_DIRS` where `lane_qualify` imports `PRODUCT_DIRS`; SCC-118's trap described backwards → N
+- EDIT (generated) `.agents/.sync-manifest.json` — sync output; conflicted on the SCC-240 absorb and was resolved by regenerating → M, P
 - EDIT `.agents/scripts/tests/test_lane_qualify.py` — the caller/verdict parity block + the PRODUCT_DIRS naming assertion → M, N, O, P, Q
 - EDIT `.agents/commands/cicd-non-crit-pr-push.md` — NOT-COMMAND-CENTRE + LIGHT-VCS rows, and the PRODUCT_DIRS refusal list → M, N, O, P, R
 - EDIT `.agents/commands/smh-non-crit-pr-push.md` — LIGHT-VCS row → O, P, R
