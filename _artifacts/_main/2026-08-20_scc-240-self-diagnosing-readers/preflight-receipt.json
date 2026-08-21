@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-240-self-diagnosing-readers",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-240",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "c1e2d414cefefb6164cc0f322aa50e96d7ad5e29",
+  "warnings": 1,
+  "when": "2026-08-20T22:28:59-04:00"
+}

@@ -63,182 +63,301 @@ Ship it.
 def main() -> int:
     c = Cases("declared_change_set")
 
-    # ── the fixed shape parses ────────────────────────────────────────────────
-    r = dcs.parse(BLOCK)
-    c.check("block found", r["present"] is True, str(r["present"]))
-    by = {e["path"]: e for e in r["entries"]}
-    c.check("EDIT bullet: path + op + row",
-            by.get(".agents/rules/artifacts-always-first.md", {}).get("op") == "EDIT"
-            and by[".agents/rules/artifacts-always-first.md"]["row"] == "A",
-            str(by.get(".agents/rules/artifacts-always-first.md")))
-    c.check("NEW bullet carries a multi-row mapping verbatim",
-            by.get(".agents/scripts/declared_change_set.py", {}).get("row") == "A, F",
-            str(by.get(".agents/scripts/declared_change_set.py")))
-    c.check("a parenthetical qualifier after the op is accepted",
-            by.get(".agents/commands/smh-self-audit.md", {}).get("op") == "EDIT",
-            str(by.get(".agents/commands/smh-self-audit.md")))
-    c.check("DELETE with no prose still maps its row",
-            by.get(".agents/old/dead.md", {}).get("op") == "DELETE"
-            and by[".agents/old/dead.md"]["row"] == "C",
-            str(by.get(".agents/old/dead.md")))
-    c.check("a bare (unbackticked) path parses too",
-            by.get(".agents/rules/bare-path.md", {}).get("row") == "D",
-            str(by.get(".agents/rules/bare-path.md")))
-    c.check("an arrow inside the why-prose does not corrupt the row - the LAST arrow "
-            "is the separator",
-            by.get(".agents/docs/renames.md", {}).get("row") == "E",
-            str(by.get(".agents/docs/renames.md")))
-    c.check("a fenced example bullet is NOT an entry (SCC-154's scar, inherited)",
-            "example/fenced-fake.py" not in by
-            and not any("fenced-fake" in raw for raw in r["incomplete"]),
-            str(sorted(by)))
-    c.check("a bullet after the terminating heading is NOT an entry - the section "
-            "boundary is real",
-            ".agents/after/terminator.md" not in by, str(sorted(by)))
+    if c.block("S1 · the fixed shape parses"):
+        # ── the fixed shape parses ────────────────────────────────────────────────
+        r = dcs.parse(BLOCK)
+        c.check("block found", r["present"] is True, str(r["present"]))
+        by = {e["path"]: e for e in r["entries"]}
+        c.check("EDIT bullet: path + op + row",
+                by.get(".agents/rules/artifacts-always-first.md", {}).get("op") == "EDIT"
+                and by[".agents/rules/artifacts-always-first.md"]["row"] == "A",
+                str(by.get(".agents/rules/artifacts-always-first.md")))
+        c.check("NEW bullet carries a multi-row mapping verbatim",
+                by.get(".agents/scripts/declared_change_set.py", {}).get("row") == "A, F",
+                str(by.get(".agents/scripts/declared_change_set.py")))
+        c.check("a parenthetical qualifier after the op is accepted",
+                by.get(".agents/commands/smh-self-audit.md", {}).get("op") == "EDIT",
+                str(by.get(".agents/commands/smh-self-audit.md")))
+        c.check("DELETE with no prose still maps its row",
+                by.get(".agents/old/dead.md", {}).get("op") == "DELETE"
+                and by[".agents/old/dead.md"]["row"] == "C",
+                str(by.get(".agents/old/dead.md")))
+        c.check("a bare (unbackticked) path parses too",
+                by.get(".agents/rules/bare-path.md", {}).get("row") == "D",
+                str(by.get(".agents/rules/bare-path.md")))
+        c.check("an arrow inside the why-prose does not corrupt the row - the LAST arrow "
+                "is the separator",
+                by.get(".agents/docs/renames.md", {}).get("row") == "E",
+                str(by.get(".agents/docs/renames.md")))
+        c.check("a fenced example bullet is NOT an entry (SCC-154's scar, inherited)",
+                "example/fenced-fake.py" not in by
+                and not any("fenced-fake" in raw for raw in r["incomplete"]),
+                str(sorted(by)))
+        c.check("a bullet after the terminating heading is NOT an entry - the section "
+                "boundary is real",
+                ".agents/after/terminator.md" not in by, str(sorted(by)))
 
-    # ── incomplete is REPORTED, never guessed ─────────────────────────────────
-    c.check("a bullet missing its row mapping lands in incomplete",
-            any("INDEX.md" in raw for raw in r["incomplete"]), str(r["incomplete"]))
-    c.check("a bullet missing its op marker lands in incomplete",
-            any("risk_seam" in raw for raw in r["incomplete"]), str(r["incomplete"]))
-    c.check("a star-marker bullet is an ATTEMPT: reported in incomplete, never "
-            "silently skipped (the prefilter hole, executed this review wave)",
-            any("star/bullet.py" in raw for raw in r["incomplete"])
-            and ".agents/star/bullet.py" not in by, str(r["incomplete"]))
-    c.check("an *(italic)* prose line is NOT an attempt - markdown list markers "
-            "need a following space",
-            not any("italic parenthetical" in raw for raw in r["incomplete"]),
-            str(r["incomplete"]))
-    c.check("incomplete bullets are NOT entries",
-            ".agents/scripts/risk_seam.py" not in by and
-            ".agents/scripts/INDEX.md" not in by, str(sorted(by)))
+    if c.block("S2 · incomplete is REPORTED, never guessed"):
+        # Re-derived HERE, not borrowed from S1: `--case S2` skips S1 entirely.
+        r = dcs.parse(BLOCK)
+        by = {e["path"]: e for e in r["entries"]}
+        # ── incomplete is REPORTED, never guessed ─────────────────────────────────
+        c.check("a bullet missing its row mapping lands in incomplete",
+                any("INDEX.md" in raw for raw in r["incomplete"]), str(r["incomplete"]))
+        c.check("a bullet missing its op marker lands in incomplete",
+                any("risk_seam" in raw for raw in r["incomplete"]), str(r["incomplete"]))
+        c.check("a star-marker bullet is an ATTEMPT: reported in incomplete, never "
+                "silently skipped (the prefilter hole, executed this review wave)",
+                any("star/bullet.py" in raw for raw in r["incomplete"])
+                and ".agents/star/bullet.py" not in by, str(r["incomplete"]))
+        c.check("an *(italic)* prose line is NOT an attempt - markdown list markers "
+                "need a following space",
+                not any("italic parenthetical" in raw for raw in r["incomplete"]),
+                str(r["incomplete"]))
+        c.check("incomplete bullets are NOT entries",
+                ".agents/scripts/risk_seam.py" not in by and
+                ".agents/scripts/INDEX.md" not in by, str(sorted(by)))
 
-    # ── a SECOND block is loud, not silently discarded ────────────────────────
-    r3 = dcs.parse("## Declared Change Set\n\n- EDIT `one.md` → A\n\n"
-                   "## Declared Change Set\n\n- EDIT `two.md` → B\n")
-    c.check("a second '## Declared Change Set' heading is REPORTED in incomplete "
-            "(amendments go inside the one block)",
-            len(r3["entries"]) == 1 and r3["entries"][0]["path"] == "one.md"
-            and any("second" in raw for raw in r3["incomplete"]), str(r3))
+    if c.block("S3 · a SECOND block is loud, not silently discarded"):
+        # ── a SECOND block is loud, not silently discarded ────────────────────────
+        r3 = dcs.parse("## Declared Change Set\n\n- EDIT `one.md` → A\n\n"
+                       "## Declared Change Set\n\n- EDIT `two.md` → B\n")
+        c.check("a second '## Declared Change Set' heading is REPORTED in incomplete "
+                "(amendments go inside the one block)",
+                len(r3["entries"]) == 1 and r3["entries"][0]["path"] == "one.md"
+                and any("second" in raw for raw in r3["incomplete"]), str(r3))
 
-    # ── absence is a defined case ─────────────────────────────────────────────
-    r2 = dcs.parse(NO_BLOCK)
-    c.check("no block parses to present=False with empty sets",
-            r2["present"] is False and r2["entries"] == [] and r2["incomplete"] == [],
-            str(r2))
+    if c.block("S4 · absence is a defined case"):
+        # ── absence is a defined case ─────────────────────────────────────────────
+        r2 = dcs.parse(NO_BLOCK)
+        c.check("no block parses to present=False with empty sets",
+                r2["present"] is False and r2["entries"] == [] and r2["incomplete"] == [],
+                str(r2))
 
-    # ── the two-sided diff (SCC-231's left-hand side) ─────────────────────────
-    d = dcs.diff([e["path"] for e in r["entries"]],
-                 [".agents/rules/artifacts-always-first.md",
-                  ".agents/scripts/declared_change_set.py",
-                  ".agents/commands/cicd-quick-dev.md"])
-    c.check("edited-but-never-declared is drift.undeclared",
-            d["undeclared"] == [".agents/commands/cicd-quick-dev.md"], str(d))
-    c.check("declared-but-untouched is drift.unimplemented",
-            sorted(d["unimplemented"]) == [".agents/commands/smh-self-audit.md",
-                                           ".agents/docs/renames.md",
-                                           ".agents/old/dead.md",
-                                           ".agents/rules/bare-path.md"], str(d))
-    c.check("planning dirs never count as drift",
-            dcs.diff([], ["_artifacts/_main/x/implementation_plan.md",
-                          "_bmad-output/y.md"])["undeclared"] == [],
-            str(dcs.diff([], ["_artifacts/_main/x/implementation_plan.md"])))
+    if c.block("S5 · the two-sided diff (SCC-231's left-hand side)"):
+        r = dcs.parse(BLOCK)          # re-derived, not borrowed from S1
+        # ── the two-sided diff (SCC-231's left-hand side) ─────────────────────────
+        d = dcs.diff([e["path"] for e in r["entries"]],
+                     [".agents/rules/artifacts-always-first.md",
+                      ".agents/scripts/declared_change_set.py",
+                      ".agents/commands/cicd-quick-dev.md"])
+        c.check("edited-but-never-declared is drift.undeclared",
+                d["undeclared"] == [".agents/commands/cicd-quick-dev.md"], str(d))
+        c.check("declared-but-untouched is drift.unimplemented",
+                sorted(d["unimplemented"]) == [".agents/commands/smh-self-audit.md",
+                                               ".agents/docs/renames.md",
+                                               ".agents/old/dead.md",
+                                               ".agents/rules/bare-path.md"], str(d))
+        c.check("planning dirs never count as drift",
+                dcs.diff([], ["_artifacts/_main/x/implementation_plan.md",
+                              "_bmad-output/y.md"])["undeclared"] == [],
+                str(dcs.diff([], ["_artifacts/_main/x/implementation_plan.md"])))
 
-    # ── SCC-231: both review twins carry the SECOND left-hand side ────────────
-    root = Path(__file__).resolve().parents[3]
-    smh = (root / ".agents/commands/smh-code-review.md").read_text(encoding="utf-8")
-    cicd = (root / ".agents/commands/cicd-code-review.md").read_text(encoding="utf-8")
-    for name, cmd in (("smh Step 2", smh), ("cicd Step 1.5", cicd)):
-        c.check(f"{name}: keeps the acceptance reconciliation it always had",
-                "anything in the diff beyond the list is drift" in cmd, "first side lost")
-        c.check(f"{name}: adds the declared-set reconciliation, both directions, "
-                f"under the tool's ACTUAL key names",
-                "**`undeclared`**" in cmd and "**`unimplemented`**" in cmd
-                and "drift.undeclared" not in cmd,
-                "second side absent, or the dead drift.* spelling is back")
-        c.check(f"{name}: severity mapping is pinned PER BULLET - undeclared=important, "
-                f"unimplemented=suggestion, incomplete=important",
-                bool(re.search(r"\*\*`undeclared`\*\*.{0,200}?\*\*important\*\*", cmd, re.S))
-                and bool(re.search(r"\*\*`unimplemented`\*\*.{0,200}?\*\*suggestion\*\*", cmd, re.S))
-                and bool(re.search(r"\*\*`incomplete`\*\*.{0,300}?\*\*important\*\*", cmd, re.S)),
-                "a severity swap in the mapping would go unnoticed")
-        c.check(f"{name}: the diff verb's incomplete carry-through is law (grammar "
-                f"rejections must stay visible at review time)",
-                "carries them through" in cmd, "incomplete invisible at review")
-        c.check(f"{name}: names the parser as the source of truth",
-                "declared_change_set.py" in cmd, "parser not wired")
-        c.check(f"{name}: a missing BLOCK is an *important* finding, an absent plan "
-                f"FILE is a loud error - both stated",
-                "no declared set to reconcile against" in cmd
-                and "loud exit-2 error" in cmd, "vacuous-green case open")
-        c.check(f"{name}: the planning-dir carve-out is DOCUMENTED where the reviewer "
-                f"reads, not only in the module",
-                "carved out on BOTH" in cmd, "silent blind spot")
-        c.check(f"{name}: promised checks reconcile like files (assertion-level drift "
-                f"is drift)",
-                "Declared checks reconcile like declared files" in cmd,
-                "assertion tier unlegislated")
-        c.check(f"{name}: no drift row auto-fails - the disposition bullet stands AND "
-                f"the contract phrase appears at least twice",
-                "Every drift row takes the same contract" in cmd
-                and cmd.count("cut it, or name why it stays") >= 2,
-                "disposition contract lost or diluted")
-        c.check(f"{name}: the re-taken diff is rename-stable (--no-renames in the "
-                f"documented one-liner)",
-                "--no-renames" in cmd, "rename lanes yield config-dependent drift")
+    if c.block("S6 · both review twins carry the SECOND left-hand side"):
+        # ── SCC-231: both review twins carry the SECOND left-hand side ────────────
+        root = Path(__file__).resolve().parents[3]
+        smh = (root / ".agents/commands/smh-code-review.md").read_text(encoding="utf-8")
+        cicd = (root / ".agents/commands/cicd-code-review.md").read_text(encoding="utf-8")
+        for name, cmd in (("smh Step 2", smh), ("cicd Step 1.5", cicd)):
+            c.check(f"{name}: keeps the acceptance reconciliation it always had",
+                    "anything in the diff beyond the list is drift" in cmd, "first side lost")
+            c.check(f"{name}: adds the declared-set reconciliation, both directions, "
+                    f"under the tool's ACTUAL key names",
+                    "**`undeclared`**" in cmd and "**`unimplemented`**" in cmd
+                    and "drift.undeclared" not in cmd,
+                    "second side absent, or the dead drift.* spelling is back")
+            c.check(f"{name}: severity mapping is pinned PER BULLET - undeclared=important, "
+                    f"unimplemented=suggestion, incomplete=important",
+                    bool(re.search(r"\*\*`undeclared`\*\*.{0,200}?\*\*important\*\*", cmd, re.S))
+                    and bool(re.search(r"\*\*`unimplemented`\*\*.{0,200}?\*\*suggestion\*\*", cmd, re.S))
+                    and bool(re.search(r"\*\*`incomplete`\*\*.{0,300}?\*\*important\*\*", cmd, re.S)),
+                    "a severity swap in the mapping would go unnoticed")
+            c.check(f"{name}: the diff verb's incomplete carry-through is law (grammar "
+                    f"rejections must stay visible at review time)",
+                    "carries them through" in cmd, "incomplete invisible at review")
+            c.check(f"{name}: names the parser as the source of truth",
+                    "declared_change_set.py" in cmd, "parser not wired")
+            c.check(f"{name}: a missing BLOCK is an *important* finding, an absent plan "
+                    f"FILE is a loud error - both stated",
+                    "no declared set to reconcile against" in cmd
+                    and "loud exit-2 error" in cmd, "vacuous-green case open")
+            c.check(f"{name}: the planning-dir carve-out is DOCUMENTED where the reviewer "
+                    f"reads, not only in the module",
+                    "carved out on BOTH" in cmd, "silent blind spot")
+            c.check(f"{name}: promised checks reconcile like files (assertion-level drift "
+                    f"is drift)",
+                    "Declared checks reconcile like declared files" in cmd,
+                    "assertion tier unlegislated")
+            c.check(f"{name}: no drift row auto-fails - the disposition bullet stands AND "
+                    f"the contract phrase appears at least twice",
+                    "Every drift row takes the same contract" in cmd
+                    and cmd.count("cut it, or name why it stays") >= 2,
+                    "disposition contract lost or diluted")
+            c.check(f"{name}: the re-taken diff is rename-stable (--no-renames in the "
+                    f"documented one-liner)",
+                    "--no-renames" in cmd, "rename lanes yield config-dependent drift")
 
-    # ── the PRODUCER side: every plan-emitting command teaches the block ──────
-    # Part A's promised structure check, landed by the review wave. cicd-quick-dev is
-    # a NON-emitter by design (the fast lane skips plans; its eject defers to the full
-    # lane's plan machinery) - that ground truth is PINNED here so the next reader gets
-    # a red, not an archaeology project, if the lane ever grows a plan template.
-    EMITTERS = ("smh-quick-dev.md", "smh-plan-task.md", "cicd-dev-story-tests.md")
-    for fname in EMITTERS:
-        body = (root / ".agents/commands" / fname).read_text(encoding="utf-8")
-        c.check(f"emitter {fname}: its plan template names the `## Declared Change "
-                f"Set` block",
-                "Declared Change Set" in body, "block not taught at the source")
-    quick = (root / ".agents/commands/cicd-quick-dev.md").read_text(encoding="utf-8")
-    c.check("cicd-quick-dev stays a NON-emitter: it never teaches the `## Declared "
-            "Change Set` template, and its eject re-arms the plan-first gate (where "
-            "the block then applies); its drift line says plan-exempt, not silence",
-            "## Declared Change Set" not in quick
-            and "RE-ARMS the plan-first gate" in quick
-            and "no Declared Change Set — plan-exempt lane" in quick,
-            "the fast lane grew plan machinery, or its drift-line answer went silent - "
-            "either teach the block or re-ground this pin")
+    if c.block("S7 · the PRODUCER side: every plan-emitting command teaches the block"):
+        root = Path(__file__).resolve().parents[3]   # re-derived, not borrowed from S6
+        # ── the PRODUCER side: every plan-emitting command teaches the block ──────
+        # Part A's promised structure check, landed by the review wave. cicd-quick-dev is
+        # a NON-emitter by design (the fast lane skips plans; its eject defers to the full
+        # lane's plan machinery) - that ground truth is PINNED here so the next reader gets
+        # a red, not an archaeology project, if the lane ever grows a plan template.
+        EMITTERS = ("smh-quick-dev.md", "smh-plan-task.md", "cicd-dev-story-tests.md")
+        for fname in EMITTERS:
+            body = (root / ".agents/commands" / fname).read_text(encoding="utf-8")
+            c.check(f"emitter {fname}: its plan template names the `## Declared Change "
+                    f"Set` block",
+                    "Declared Change Set" in body, "block not taught at the source")
+        quick = (root / ".agents/commands/cicd-quick-dev.md").read_text(encoding="utf-8")
+        c.check("cicd-quick-dev stays a NON-emitter: it never teaches the `## Declared "
+                "Change Set` template, and its eject re-arms the plan-first gate (where "
+                "the block then applies); its drift line says plan-exempt, not silence",
+                "## Declared Change Set" not in quick
+                and "RE-ARMS the plan-first gate" in quick
+                and "no Declared Change Set — plan-exempt lane" in quick,
+                "the fast lane grew plan machinery, or its drift-line answer went silent - "
+                "either teach the block or re-ground this pin")
 
-    # ── the CLI itself, subprocess tier - verbs, exit codes, the carry ────────
-    import json as _json
-    import subprocess
-    import tempfile
-    mod = Path(__file__).resolve().parents[1] / "declared_change_set.py"
-    with tempfile.TemporaryDirectory() as td:
-        plan = Path(td) / "plan.md"
-        plan.write_text(BLOCK, encoding="utf-8")
-        pr = subprocess.run([sys.executable, str(mod), "parse", str(plan)],
-                            capture_output=True, text=True)
-        c.check("CLI parse: exit 0 + JSON with entries and incomplete",
-                pr.returncode == 0 and _json.loads(pr.stdout)["present"] is True,
-                f"rc={pr.returncode} out={pr.stdout[:120]}")
-        dr = subprocess.run([sys.executable, str(mod), "diff", str(plan), "--changed"],
-                            capture_output=True, text=True)
-        dj = _json.loads(dr.stdout) if dr.returncode == 0 else {}
-        c.check("CLI diff: an EMPTY re-taken diff is a legitimate boundary (exit 0, "
-                "everything declared reads unimplemented)",
-                dr.returncode == 0 and dj.get("undeclared") == []
-                and len(dj.get("unimplemented", [])) > 0,
-                f"rc={dr.returncode} out={dr.stdout[:120]} err={dr.stderr[:120]}")
-        c.check("CLI diff: carries incomplete through - grammar rejections stay "
-                "visible at review time",
-                "incomplete" in dj and any("star/bullet.py" in raw
-                                           for raw in dj["incomplete"]),
-                str(dj.get("incomplete"))[:150])
-        ab = subprocess.run([sys.executable, str(mod), "parse", str(Path(td) / "no.md")],
-                            capture_output=True, text=True)
-        c.check("CLI: an absent plan FILE is a loud exit-2 error, never present:false",
-                ab.returncode == 2 and "no such plan" in ab.stderr and not ab.stdout.strip(),
-                f"rc={ab.returncode} err={ab.stderr[:100]}")
+    if c.block("S8 · the CLI itself, subprocess tier - verbs, exit codes, the carry"):
+        # ── the CLI itself, subprocess tier - verbs, exit codes, the carry ────────
+        import json as _json
+        import subprocess
+        import tempfile
+        mod = Path(__file__).resolve().parents[1] / "declared_change_set.py"
+        with tempfile.TemporaryDirectory() as td:
+            plan = Path(td) / "plan.md"
+            plan.write_text(BLOCK, encoding="utf-8")
+            pr = subprocess.run([sys.executable, str(mod), "parse", str(plan)],
+                                capture_output=True, text=True)
+            c.check("CLI parse: exit 0 + JSON with entries and incomplete",
+                    pr.returncode == 0 and _json.loads(pr.stdout)["present"] is True,
+                    f"rc={pr.returncode} out={pr.stdout[:120]}")
+            dr = subprocess.run([sys.executable, str(mod), "diff", str(plan), "--changed"],
+                                capture_output=True, text=True)
+            dj = _json.loads(dr.stdout) if dr.returncode == 0 else {}
+            c.check("CLI diff: an EMPTY re-taken diff is a legitimate boundary (exit 0, "
+                    "everything declared reads unimplemented)",
+                    dr.returncode == 0 and dj.get("undeclared") == []
+                    and len(dj.get("unimplemented", [])) > 0,
+                    f"rc={dr.returncode} out={dr.stdout[:120]} err={dr.stderr[:120]}")
+            c.check("CLI diff: carries incomplete through - grammar rejections stay "
+                    "visible at review time",
+                    "incomplete" in dj and any("star/bullet.py" in raw
+                                               for raw in dj["incomplete"]),
+                    str(dj.get("incomplete"))[:150])
+            ab = subprocess.run([sys.executable, str(mod), "parse", str(Path(td) / "no.md")],
+                                capture_output=True, text=True)
+            c.check("CLI: an absent plan FILE is a loud exit-2 error, never present:false",
+                    ab.returncode == 2 and "no such plan" in ab.stderr and not ab.stdout.strip(),
+                    f"rc={ab.returncode} err={ab.stderr[:100]}")
+
+    # ── SCC-240 · a rejected bullet says WHICH HALF of the grammar it failed ──────────────
+    # ⛔ THE DEFECT. `incomplete` reported the bullet back verbatim and nothing else, so the
+    # author saw the line they had already looked at and had to re-derive the grammar from
+    # this module to find out what it wanted. Measured on SCC-210: three rejected bullets,
+    # all three the same silent shape (the `→` mapping wrapped onto a continuation line), a
+    # grammar read plus a repair to clear. The diff verb already carries `incomplete` through
+    # to the reviewer, so the reason travels with it at no extra wiring.
+    #
+    # ⛔ THE ROW STAYS A STRING, and that is a compatibility decision, not laziness: every
+    # consumer reads these as raw bullets - the checks above (`any("INDEX.md" in raw ...)`),
+    # `/smh-self-audit` Lens 1, and both review twins' drift step, which grades `incomplete`
+    # *important* per bullet. A dict row would break all three for no reader gain.
+    if c.block("R · every incomplete row carries a reason"):
+        FIX = ("## Declared Change Set\n\n"
+               "- EDIT `ok/clean.md` — a good bullet → A\n"
+               "- EDIT `no/arrow.md` — never mapped to a row\n"
+               "- `no/op.md` — forgot the op marker → B\n"
+               "- EDIT `empty/row.md` — mapped to nothing → \n"
+               "- both/broken.md → \n")
+        r = dcs.parse(FIX)
+        # `maxsplit=` by KEYWORD: positional maxsplit is deprecated in 3.13 and the warning
+        # is printed by the sweep, where a stream of noise is how a real message gets missed.
+        rows = {re.split(r"\s*←\s*", raw, maxsplit=1)[0].strip():
+                (re.split(r"\s*←\s*", raw, maxsplit=1) + [""])[1].strip()
+                for raw in r["incomplete"]}
+        reasons = {k: v for k, v in rows.items() if v}
+
+        c.check("R0 · (fixture) the four broken bullets are rejected and the clean one is "
+                "an entry",
+                len(r["entries"]) == 1 and len(r["incomplete"]) == 4,
+                f"entries={[e['path'] for e in r['entries']]} incomplete={r['incomplete']}")
+        c.check("R1 · every rejected bullet carries a reason, and the reasons DISTINGUISH "
+                "the failure modes",
+                len(reasons) == 4 and len(set(reasons.values())) == 3,
+                f"{len(reasons)}/4 reasoned, {len(set(reasons.values()))} distinct: {rows} - "
+                f"one reason for every rejection diagnoses nothing, and a bare bullet is what "
+                f"cost SCC-210 a grammar read")
+        c.check("R2 · a bullet with no `→` is told the ROW SEPARATOR is what is missing",
+                any("arrow.md" in k and "row separator" in v.lower()
+                    for k, v in rows.items()),
+                f"{rows}")
+        c.check("R3 · a bullet whose LEFT side is not `<OP> <path>` is told so, with the "
+                "vocabulary it needed",
+                any("no/op.md" in k and "NEW" in v and "EDIT" in v and "DELETE" in v
+                    for k, v in rows.items()),
+                f"the author is looking for the word that was missing: {rows}")
+        c.check("R4 · a bullet mapped to an EMPTY row is told the row text is empty",
+                any("empty/row.md" in k and "empty" in v.lower() for k, v in rows.items()),
+                f"{rows}")
+        # ⛔ PRECEDENCE, and it is a decision rather than an accident: `- both/broken.md → `
+        # fails BOTH halves. The left-side reason wins, because the arrow is already there
+        # and the op marker is the edit the author has to make first. Unpinned, two builders
+        # produce two different reasons for one bullet and neither is wrong.
+        c.check("R5 · a bullet failing BOTH halves names the LEFT side - the fix that comes "
+                "first",
+                any("both/broken.md" in k and "NEW" in v and "empty" not in v.lower()
+                    for k, v in rows.items()),
+                f"an unstated precedence is a reason that changes between runs: {rows}")
+        # ⛔ COMPARE THE ROW TO THE BULLET THAT PRODUCED IT (SCC-240 review - the Blind
+        # Hunter, the Test-Adequacy Auditor and Literal-Correctness all landed on this one,
+        # and I reproduced it). The first cut asserted
+        # `all(k.startswith(("-","*","`")) or "/" in k ...)`, and every fixture path contains
+        # a `/`, so the second disjunct was TRUE FOR EVERY ROW no matter what the parser
+        # emitted. Replacing the whole bullet with just the path - the exact mutation this
+        # case's own failure message names - left it green. Reconstructing the expected row
+        # from the source bullet is the only form that can fail.
+        FIX_BULLETS = [ln.strip() for ln in FIX.splitlines()
+                       if ln.strip().startswith(("-", "*", "+"))]
+        rejected = [b for b in FIX_BULLETS if not b.startswith("- EDIT `ok/clean.md`")]
+        c.check("R6 · the row IS the bullet with a reason appended - not a summary of it, "
+                "and not the path alone",
+                all(any(raw.startswith(b + "  ← ") for raw in r["incomplete"])
+                    for b in rejected),
+                f"every consumer reads these as strings (this file's own S-cases, the "
+                f"self-audit's Lens 1, both review twins' drift step). "
+                f"bullets={rejected} rows={r['incomplete']}")
+
+        # ⛔ R8 · A REJECTION THAT NAMES THE WRONG HALF IS WORSE THAN A BARE ONE (SCC-240
+        # review, Test-Adequacy - a CODE finding, not only a coverage gap). `LEFT` anchors on
+        # `^-`, so a `*`/`+` bullet or a bare `NEW ...` line fails it for a reason that has
+        # nothing to do with the op vocabulary - and the author was handed `_LEFT_WHY`, which
+        # told them to write an op marker they had ALREADY written. That is the SCC-210 defect
+        # this whole lane exists to end, surviving inside its own fix.
+        MARKERS = ("## Declared Change Set\n\n"
+                   "* NEW `star.md` — a star marker → A\n"
+                   "+ EDIT `plus.md` — a plus marker → B\n"
+                   "NEW `nodash.md` — no marker at all → C\n")
+        marker_rows = dcs.parse(MARKERS)["incomplete"]
+        c.check("R8 · a wrong/absent LIST MARKER is named as the marker, and does not tell "
+                "the author to add an op they already wrote",
+                len(marker_rows) == 3
+                and all("- `" in w or "start with `- `" in w for w in marker_rows)
+                and not any("op marker is NEW, EDIT or DELETE" in w for w in marker_rows),
+                f"{marker_rows}")
+        c.check("R8b · (control) the op vocabulary is STILL the reason when the op really "
+                "is the missing half",
+                any("op marker is NEW, EDIT or DELETE" in raw for raw in r["incomplete"]),
+                f"the two repairs must stay distinguishable: {r['incomplete']}")
+        c.check("R7 · (control) the second-heading notice keeps its own wording and is not "
+                "re-reasoned",
+                any("second" in raw for raw in dcs.parse(
+                    "## Declared Change Set\n\n- EDIT `one.md` → A\n\n"
+                    "## Declared Change Set\n\n- EDIT `two.md` → B\n")["incomplete"]),
+                "the parenthetical already carries its reason; appending a second one "
+                "would read as a grammar failure it is not")
 
     return c.finish()
 

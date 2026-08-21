@@ -374,14 +374,28 @@ The section carries:
 - ⛔ **the engine's `lenses_run:` block, pasted VERBATIM** — the header line, then one
   `- <lens> · ok | recovered-inline | dead` row per lens, a `—` note on every row that is not `ok`:
 
-  ```
+  ⛔ **Shown UNFENCED because that is how it must land (SCC-240).** `walkthrough_roster.py`
+  strips code fences before it reads anything (SCC-154 — a canonical verdict pasted as evidence
+  inside a fence once became the governing verdict), so a roster inside a code fence is a roster
+  the gate cannot see. Copy these as PLAIN LINES.
+
   lenses_run:
   - blind-hunter · ok
   - edge-case-hunter · recovered-inline — fan-out returned nothing, rerun inline
   lenses_counted:  2/2
   lenses_na:
   - <lens> · n/a — <why it was not applicable in this review_mode>
-  ```
+
+  ⭐ **Check the paste HERE, not at close-out** — `python3 .agents/scripts/walkthrough_roster.py
+  <the walkthrough>` *(PC: `python`)*. It prints the rows it actually read and answers **one**
+  question: can this roster be READ? Exit 0 yes; exit 1 names which of three things went wrong —
+  a fenced roster, a header whose rows are not contiguous with it, or no roster at all; exit 2
+  is a bad path, never a verdict about content.
+  ⛔ **Bare, it is deliberately NOT the whole close-out gate**, and that is what makes it usable
+  here: at this moment `dispositions:`, `drift:`, Step 0.7 and the `Verdict:` line are still
+  unwritten, so a full-gate run would refuse on a missing `dispositions:` line and send you to
+  hunt a fence that is not there. Once the section is complete, `--gate` asks the fuller
+  question — and before the stamp exists it needs `--verdict PASS|CONCERNS|FAIL|WAIVED`.
 
 <!-- twin-law: roster -->
   ⛔ **`lenses_na` and `lenses_counted` are part of the block, not optional trimmings (SCC-203).**

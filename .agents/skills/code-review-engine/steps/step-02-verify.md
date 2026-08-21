@@ -45,9 +45,15 @@ repository and prints facts, and nothing in it is anybody's judgment.
 **The engine's tool grant excludes Bash on purpose, so the orchestrator never runs the extractor
 itself.** You can WRITE the inputs and you cannot RUN anything, so the work splits in two:
 
-- **You prepare the inputs.** Serialize the step-1 findings as a JSON list, **in step-1 order**,
+- **You prepare the inputs.** ⭐ **Group first, then serialise — the grouping is YOURS and this
+  is when it happens:** apply the claim-grouping rule below **AFTER the self-gate has read the raw
+  count and BEFORE you
+  serialise**. Then serialize the step-1 findings as a JSON list, **in step-1 order**,
   one object per finding, carrying the keys the extractor reads: `title` · `file_path` ·
-  `line_start` · `body` · `evidence`. The diff is `DIFF`, as the caller resolved it.
+  `line_start` · `body` · `evidence`. The JSON always carries
+  **one object per finding — grouping never collapses it**; what grouping changes is the
+  PROMPT, which names which indices share a single question. The diff is `DIFF`, as the caller
+  resolved it.
 - **Each role runs the extractor itself**, as its own first action, because a role is a subagent
   with its own shell. That instruction lives in the dossier block below and is appended to both
   prompts. It is not decoration: a role merely *told* a dossier exists, and never told to build
@@ -71,6 +77,10 @@ produces duplicate titles as the expected case. Reconcile every result to its fi
 out.** Where two or more findings name the **same `file:line`** *and* assert the **same behavior**,
 ask about it **once**: the code's behavior at one location does not change per duplicate, and a
 findings-heavy lane otherwise pays a full verification round trip for the same question three times.
+⛔ **This is the rule the dossier bullet above sends you to, not a second one — the orchestrator
+does the grouping, at the point that bullet names, and the roles receive groups and never form
+them.** Read as an instruction to the verifier, it becomes "send everything and let the role sort
+it out", which is how SCC-210 sent 46 findings where there were 29 unique claims.
 
 This is a **query** economy, and it changes nothing else about the step:
 
