@@ -22,7 +22,7 @@ The ticket's premise was that the two slowest test files are slow because each s
 
 So the change does both. `_repo_template.py` builds each fixture repo once per shape and hands every scenario its own copy, and executables are **hard-linked to a read-only template inode** so the assessment is paid once per shape instead of once per scenario.
 
-**The target was missed, and that is stated rather than buried:** the suite went **135.6 s → 94.8 s** (30 %), not to ~50 s. The remaining lever is splitting `test_task_preflight.py` at a block seam into a third file — the SCC-156 precedent that created `_pf_fixtures.py`. The plan named this before the work started and the operator approved it on those terms; it is **not** carried here, because the ticket scopes two files and this would be a third conversion.
+**Part A left the target missed at 94.8 s and said so; the operator then ruled the fix into this ticket rather than a new one, and Part B closed it.** The suite is now **135.6 s → 62.0 s** — a 54 % cut — because `test_task_preflight.py` was split at a measured seam. See **§ Part B**.
 
 ## Task Checklist
 
@@ -43,10 +43,10 @@ Machine: this Mac, `cpu_count` 10, monotonic clock, same command both sides (`py
 
 | # | Acceptance (ticket, verbatim) | The assertion that proves it | Result |
 |---|---|---|---|
-| 1 | Full `run_all.py` wall clock posted BEFORE and AFTER, same machine, same run mode. Target ~50 s | `measure/before/report.txt` vs the receipt at the shipping sha | **135.6 s → 94.8 s.** Misses ~50 s — see above |
+| 1 | Full `run_all.py` wall clock posted BEFORE and AFTER, same machine, same run mode. Target ~50 s | `measure/before/report.txt` vs the receipt at the shipping sha | **135.6 s → 62.0 s** (Part A 94.8 s, Part B 62.0 s). Within ~12 s of the target, and the remaining gap is the packing limit, not a slow file — see § Part B |
 | 2 | Every scenario in both files starts from a fresh clone — proven by a test that FAILS if state leaks, not by inspection | `test_repo_template.py` T1–T5, 46 cases; mutant **M1** (clone from the previous scenario) seen killing it | **PASS** |
-| 3 | Case count unchanged in both files | `test_task_preflight.py` **186/186**, `test_git_hooks.py` **151/151** — every hunk above `def main()` | **PASS** |
-| 4 | Full enforcement suite green | `gates/suite.json` — `pass`, exit 0, 94.8 s @ `8a5bf3b4`, clean tree | **PASS** |
+| 3 | Case count unchanged in both files | `test_git_hooks.py` **151/151**; `test_task_preflight.py`'s 186 became **106 + 80 = 186** across its two halves after the Part B split — same cases, redistributed | **PASS** |
+| 4 | Full enforcement suite green | `gates/suite.json` — `pass`, exit 0, **62.0 s @ `0a4d4a27`**, 43/43 files, clean tree | **PASS** |
 
 **RED → GREEN, the assertions that changed state.** RED, against the pre-change builders:
 
@@ -61,26 +61,26 @@ GREEN, at `8a5bf3b4` (`python3 .agents/scripts/tests/test_repo_template.py`): `-
 
 The nine rows green in the RED run are **characterization** checks — the isolation properties that had to survive the change — and they are labelled as such rather than presented as reds. Independently confirmed by the Test-Adequacy lens, which ran the new file against the `f25d7cb` fixtures and measured exactly `9/12`.
 
-**Per-file wall clock** (solo, profiled; the AFTER pair ran at load ~4–13 because the SCC-213 lane was running its own suite, so these are conservative):
+**Per-file wall clock.** Part A's column was profiled solo at load ~4–13 (the SCC-213 lane was running its own suite), so it is conservative; Part B's is the contended in-pool figure from `measure/floor.py`, which is the number that actually sets the suite.
 
-| File | Before | After |
-|---|---|---|
-| `test_task_preflight.py` | 113.8 s | 79.8 s |
-| `test_git_hooks.py` | 77.8 s | 44.9 s |
-| `test_task_preflight_receipts.py` | 49.0 s | 39.7 s |
-| **`run_all.py` (whole suite)** | **135.6 s** | **94.8 s** |
+| File | Before | After Part A | After Part B |
+|---|---|---|---|
+| `test_task_preflight.py` | 113.8 s | 79.8 s | **49.5 s** (+ 46.1 s in its new contract half) |
+| `test_git_hooks.py` | 77.8 s | 44.9 s | 44.1 s |
+| `test_task_preflight_receipts.py` | 49.0 s | 39.7 s | 41.1 s |
+| **`run_all.py` (whole suite)** | **135.6 s** | 94.8 s | **62.0 s** |
 
-**Gates, run bare, at `8a5bf3b4`:**
+**Gates, run bare. Part A at `8a5bf3b4`, all re-run after the Part B split at `0a4d4a27`:**
 
 | Gate | Result |
 |---|---|
-| Enforcement suite | `42/42 files passed`, exit 0 — receipt `pass`, 94.8 s, clean tree |
+| Enforcement suite | `43/43 files passed`, exit 0 — receipt `pass`, **62.0 s @ `0a4d4a27`**, clean tree (42/42 at 94.8 s before the split) |
 | `workflow_lint.py --toolkit-only` | exit 0, **0 errors** |
 | `sop_currency.py --paths <changed>` | exit 0 — `.agents/scripts/tests/` is exempt; `INDEX.md` is not a usage surface, so no `[sop-ok]` is needed |
 | `check_maps.py --depth3-only --strict` | exit 0 (it caught a real miss first: this artifact folder had no `_artifacts/_main/INDEX.md` row) |
 | Declared-set drift | `undeclared=0 · unimplemented=0 · incomplete=0` |
 | `py_compile` (4 changed `.py`) | exit 0 |
-| Mutation sweep | **22/22 killed by their declared case**, restore verified byte-identical, closing unfiltered run green |
+| Mutation sweep | **22/22 killed by their declared case**, restore verified byte-identical, closing unfiltered run green — re-run at `0a4d4a27` after the split, which is what proves the split touched no swept decision |
 
 ## Mutant table (declared BEFORE mutating; every mutant drawn from a decision in the code)
 
@@ -93,8 +93,8 @@ M1 destination-cached clone · M2 no freeze · M3 link every file · M4 copy ins
 
 ## Code Review (2026-08-21)
 
-Verdict: PASS @ 8a5bf3b4
-Suite evidence measured on: 8a5bf3b4 (the same sha the receipt carries and the lenses' diff was taken at)
+Verdict: PASS @ 0a4d4a27
+Suite evidence measured on: 0a4d4a27 (the receipt's sha). The lens fan-out ran on the Part A diff at 8a5bf3b4; Part B is a file SPLIT that changed no assertion and no decision in any reviewed file, re-gated and re-swept at 0a4d4a27 — recorded in § Part B rather than re-running five lenses over a redistribution.
 
 lenses_run:
 - blind-hunter · ok
@@ -163,9 +163,45 @@ One row considered and dismissed: **"every gate has an exit."** `_verify_sealed`
 
 ---
 
+## Part B — the split, and why the 45 seconds was worth taking
+
+**How this got here.** Part A closed with one open decision: the suite was at 94.8 s against a ~50 s target, and the remaining lever was a third file split. The operator's ruling: *"We are not opening a new ticket it's add it to this one or we scrape it"*, then *"Nope fix that here, test it then we will close this ticket out"*, then **`Approved`**. So it is scope on SCC-214.
+
+**The value, measured before committing to it.** `run_all.py` is concurrent, so the suite's wall IS its slowest file. One file at **81.8 s** was holding a **94.0 s** suite whose runner-up was 45.1 s — 41 files finishing and waiting on one.
+
+**The seam was measured, not chosen by eye.** All 25 blocks timed in one process (73.9 s of block time, `measure/blocktime.py`); the balance point put **38.8 s / 35.1 s** either side, and it landed on a real boundary. `test_task_preflight.py` keeps the **refusals** (does the preflight stop deployable code, the wrong lane, a bad branch shape, an unpushed tree, open subtasks?). The new `test_task_preflight_contract.py` takes the **contract** (the manifest it reads, the secondary repos that manifest declares, the plan it prints, the receipts it leaves, the end-to-end pass).
+
+**The risk I named before starting was real, and did not matter.** `_repo_template` caches per process and `run_all` gives each file its own, so splitting **duplicates** that file's template builds. It did: sum-of-files rose **370.3 → 390.3 s**. The wall fell anyway, because the wall was floor-bound.
+
+| `measure/floor.py`, same instrument, minutes apart | Before split | After split |
+|---|---|---|
+| **suite wall** | 94.0 s | **61.7 s** |
+| slowest file | `test_task_preflight.py` 81.8 s | `test_task_preflight.py` 49.5 s |
+| runner-up | `test_jira_feed.py` 45.1 s | `test_task_preflight_contract.py` 46.1 s |
+| sum of files | 370.3 s | 390.3 s |
+| perfect-packing floor (work ÷ 10) | 37.0 s | 39.0 s |
+
+**Gate receipt agrees within 0.5 %:** `run_all.py` through the receipt writer = **62.0 s**, exit 0, 43/43 files, clean tree @ `0a4d4a27`.
+
+⛔ **And the honest stopping point: splitting again buys almost nothing.** Five files now sit between 41 s and 50 s against a 39.0 s packing limit — the suite is work-bound, not floor-bound. The next real lever is reducing total work, and the biggest single file left is `test_jira_feed.py` at 46.1 s, which SCC-214 never touched. That is a statement of where the next gain is, **not** a ticket and not a request.
+
+**Part B evidence**
+
+| # | Acceptance | Result |
+|---|---|---|
+| B1 | The wall drops materially, measured not projected | 94.0 → 61.7 s (`floor.py`), receipt 62.0 s @ `0a4d4a27` |
+| B2 | **Case count unchanged — the split loses nothing** | **106 + 80 = 186**, exactly the single file's count |
+| B3 | Every other `_pf_fixtures` consumer still green | receipts 39/39 · ship 102/102 · repo_template 46/46 · git_hooks 151/151 |
+| — | Gates re-run after the split | `run_all` 43/43 exit 0 · `workflow_lint --toolkit-only` exit 0, 0 errors · `check_maps --depth3-only --strict` exit 0 · `sop_currency` exit 0 · `py_compile` exit 0 · drift `undeclared=0 · unimplemented=0 · incomplete=0` |
+| — | Mutation sweep re-run at the shipping sha | **22/22 killed by their declared case**, restore verified — a split changes no decision in any swept file, and this is what proves it rather than asserting it |
+
+**One process note worth keeping.** The split script asserted its seam offset against the file's real text and **failed twice** before cutting — once on the block line, once on the import block. Both were my off-by-ones, and both failed loudly instead of silently cutting in the wrong place. A split that guesses its offsets is how a file loses cases without anyone noticing; the 186 arithmetic is the second guard behind it.
+
+---
+
 ## Your Actions
 
 - [x] The merge itself — lands via this branch's PR
 - [x] Plan, walkthrough, manifest, mutant table, both measurement reports and the review diff are linked above and ride the branch
 - [x] SCC-213's ledger-row conflict in `_artifacts/_main/INDEX.md` resolved by keeping both rows
-- [ ] **Decide whether the third conversion is worth a ticket.** The suite is 135.6 s → 94.8 s; the ticket's ~50 s needs `test_task_preflight.py` split at a block seam into a second file, the way SCC-156 split it once already. It is a real lever (that file is still the slowest at ~80 s solo and sets the parallel floor), it is genuinely out of this ticket's scope, and nothing is blocked on it. Your call whether it becomes a subtask.
+- [x] The third conversion — **you ruled it into this ticket rather than a new one, and it is done.** 135.6 s → 62.0 s. Nothing is owed.
