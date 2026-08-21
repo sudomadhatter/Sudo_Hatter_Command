@@ -217,3 +217,4 @@ Nothing is owed. The lane is review-complete at `c1e2d41` and pushed; the close-
 - [x] Suite, lint, maps, SOP-folder and qualify gates green at the shipping sha, with a receipt.
 - [x] Mutation sweep 10/10, restore verified.
 - [x] Review: five lenses, every `important` finding reproduced before it was fixed, re-gated after.
+- [x] The merge itself — lands via this branch's PR.
