@@ -91,6 +91,54 @@
    "mutated": "    if fresh and code < 2:",
    "case": "SP-G ...and the word stale is ON it",
    "block": "SP-G · --no-fetch: the VERDICT itself carries the staleness"
+  },
+  {
+   "id": "M19 the remote-only arm is removed, so a pushed branch reads as unpushed",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    elif remote:\n        rep.info(\"sync\", f\"{branch}: on origin, not checked out here",
+   "mutated": "    elif remote and False:\n        rep.info(\"sync\", f\"{branch}: on origin, not checked out here",
+   "case": "SP-C remote-only (pushed, not checked out here) is CLEAR -> exit 0",
+   "block": "SP-C · unsynced: a commit on one disk cannot be what production runs"
+  },
+  {
+   "id": "M20 a branch that exists nowhere is reported as unpushed instead of absent",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "        rep.err(\"sync\", f\"{branch}: no such branch, local or remote",
+   "mutated": "        rep.err(\"sync\", f\"{branch}: never pushed, local or remote",
+   "case": "SP-C ...named as absent, not as unpushed",
+   "block": "SP-C · unsynced: a commit on one disk cannot be what production runs"
+  },
+  {
+   "id": "M21 the lane diff stops checking whether it actually ran",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    if diff.returncode != 0:",
+   "mutated": "    if diff.returncode != 0 and False:",
+   "case": "SP-K ...never '0 file(s) changed' about a diff it did not get",
+   "block": "SP-K · a chore lane on a remote-only branch still reads its real diff"
+  },
+  {
+   "id": "M22 the lane diff stops falling back to the origin ref",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "        ref = f\"origin/{branch}\"",
+   "mutated": "        ref = branch",
+   "case": "SP-K the deployable diff is still SEEN -> exit 0",
+   "block": "SP-K · a chore lane on a remote-only branch still reads its real diff"
+  },
+  {
+   "id": "M23 the empty-operand guard never fires",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "        if not value.strip():",
+   "mutated": "        if not value.strip() and False:",
+   "case": "SP-I an empty --expect-key -> exit 2",
+   "block": "SP-I · an empty operand is named as missing, never blamed on the branch"
+  },
+  {
+   "id": "M24 the resolved repo stops being echoed on the human path",
+   "file": ".agents/scripts/ship_preflight.py",
+   "original": "    rep.info(\"repo\", str(repo))",
+   "mutated": "    rep.info(\"repo\", \"(not shown)\")",
+   "case": "SP-J the human output names the resolved repo PATH",
+   "block": "SP-J · the resolved repo is echoed on the human path too"
   }
  ]
 }

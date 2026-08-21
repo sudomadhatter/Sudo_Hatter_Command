@@ -193,9 +193,22 @@ def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report) -> bool:
         rep.info("sync", f"the checkout is standing on '{standing}'; this preflight is "
                          f"about '{branch}'")
 
-    counts = wf.git(["rev-list", "--left-right", "--count",
-                     f"origin/{branch}...{branch}"], repo)
-    if counts.returncode == 0 and counts.stdout.strip():
+    # ⛔ THREE REF STATES, NOT TWO — and collapsing them inverts the message on a real shape.
+    # The first cut asked only "did `rev-list origin/B...B` succeed?" and called every failure
+    # "never pushed: the branch exists on this disk only". For a branch that exists ONLY on
+    # `origin` that sentence is the exact opposite of the truth, and that shape is ordinary:
+    # `/cicd-push-e2e` Step 1 resolves branches with `git branch -a`, which lists
+    # remote-tracking refs, so a fresh clone or an epic pushed from the OTHER machine (this
+    # system is two machines by design) arrives here with no local ref — and the door's own
+    # Step 2 checkout is what creates it. A false BLOCKED on the shipping path is the failure
+    # this repo treats as worst, because a gate that false-reds gets routed around.
+    def _has(ref: str) -> bool:
+        return wf.git(["rev-parse", "--verify", "--quiet", ref], repo).returncode == 0
+
+    local, remote = _has(f"refs/heads/{branch}"), _has(f"refs/remotes/origin/{branch}")
+    if local and remote:
+        counts = wf.git(["rev-list", "--left-right", "--count",
+                         f"origin/{branch}...{branch}"], repo)
         behind, ahead = (counts.stdout.split() + ["?", "?"])[:2]
         if ahead != "0" or behind != "0":
             rep.err("sync", f"{branch}: {ahead} ahead / {behind} behind origin - merging an "
@@ -203,9 +216,15 @@ def check_sync(repo: Path, branch: str, fetch: bool, rep: wf.Report) -> bool:
                             f"disk")
         else:
             rep.info("sync", f"{branch}: 0/0 with origin")
-    else:
+    elif remote:
+        rep.info("sync", f"{branch}: on origin, not checked out here - Step 2's checkout "
+                         f"creates the local ref from origin, so there is nothing unpushed")
+    elif local:
         rep.err("sync", f"{branch}: never pushed - the branch exists on this disk only, so "
                         f"nothing but this machine has ever seen what would ship")
+    else:
+        rep.err("sync", f"{branch}: no such branch, local or remote - nothing to ship. "
+                        f"Check the name against `git branch -a --list '*epic/*'`")
     return fresh
 
 
@@ -240,7 +259,22 @@ def check_lane(repo: Path, branch: str, prefix: str | None, rep: wf.Report) -> s
         return "handoff"
 
     base = tp.base_ref(repo)
-    diff = wf.git(["diff", "--name-only", f"{base}...{branch}"], repo)
+    # ⛔ NAME A REF THAT RESOLVES, AND READ THE EXIT CODE. Both halves were missing, and
+    # together they printed a fact about a diff that never ran: `0 file(s) changed, none of
+    # them deployable` — then routed the lane to `/smh-close-task-merge-tree` on it, a door
+    # that refuses deployable diffs and hands the work straight back, each naming the other.
+    # The trigger is ordinary: on a branch with no local ref (fetched from the other machine,
+    # or a fresh clone) `base...<branch>` cannot resolve, so the ref is chosen the same way
+    # `check_sync` chooses it.
+    ref = branch
+    if wf.git(["rev-parse", "--verify", "--quiet", f"refs/heads/{branch}"], repo).returncode:
+        ref = f"origin/{branch}"
+    diff = wf.git(["diff", "--name-only", f"{base}...{ref}"], repo)
+    if diff.returncode != 0:
+        rep.err("lane", f"cannot read the diff for {ref} against {base} - the lane question "
+                        f"is unanswerable, so this is not a refusal about your work: "
+                        f"{(diff.stderr or '').strip()[:160]}")
+        return "unknown"
     changed = [ln.strip() for ln in diff.stdout.splitlines() if ln.strip()]
     touched = sorted({d for d in surface for p in changed if p.startswith(d)})
     if touched:
@@ -275,10 +309,28 @@ def main() -> int:
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
 
+    # ⛔ `required=True` IS SATISFIED BY THE EMPTY STRING, and an empty operand is exactly
+    # what an unset shell variable becomes — the door pins `EXPECTED_KEY` in one fenced block
+    # and consumes it in another, two steps later. Unchecked, an empty pin produced the worst
+    # available message: `--expect-key  but epic/X carries SCC-11 … aimed at ANOTHER lane's
+    # branch`, blaming a branch that was correct. Name the operand that never arrived instead.
+    # (`_harness._case_filter` carries the same lesson for `--case`: a missing value and a
+    # wrong value are different errors and must read differently.)
+    for flag, value in (("--repo", args.repo), ("--branch", args.branch),
+                        ("--expect-key", args.expect_key)):
+        if not value.strip():
+            ap.error(f"{flag} is empty - the operand never arrived (an unset shell variable "
+                     f"becomes an empty string). This is not a verdict about your branch; "
+                     f"re-run with {flag} set.")
+
     repo = tp.git_root(args.repo)
     branch = args.branch.strip()
     expect = args.expect_key.strip().upper()
     rep = wf.Report()
+    # The door says "read the header before the verdict" because a verdict about another lane
+    # reads exactly like a verdict about yours. That is just as true of the REPO — `--repo`
+    # exists because cwd is not intent — and it used to appear only under `--json`.
+    rep.info("repo", str(repo))
 
     prefix, key = check_shape(branch, rep)
     check_intent(repo, branch, key, expect, rep)
@@ -301,7 +353,12 @@ def main() -> int:
                           "items": rep.items}, indent=1))
         return code
 
-    print(f"== ship preflight - {branch} ==")
+    # ⛔ ONE header, printed by `print_human` — it emits `== <title> ==` itself
+    # (`wf_common.Report.print_human`). An explicit print here as well doubled the line, and
+    # the door's Step 1.5 tells the reader "read the header before the verdict": two headers
+    # on a door whose whole job is telling you which branch it resolved is the one place
+    # noise is least affordable. Found by running the script against a real project repo —
+    # the fixture assertion pinned that the header was PRESENT, which two of them satisfy.
     rep.print_human(f"ship preflight - {branch}")
     print(f"VERDICT: {verdict}")
     return code

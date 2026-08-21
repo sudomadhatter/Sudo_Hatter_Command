@@ -3265,7 +3265,7 @@ verify live, prune the epic branch, close the epic ticket. Explained in
 ```mermaid
 flowchart TD
     S0["Step 0 — resolve the project"] --> S06["Step 0.6 — PIN the ticket you mean\nbefore any tool has answered anything"]
-    S06 --> S1{"Step 1 — what branch?"}
+    S06 --> S1["Step 1 — resolve the branch"]
     S1 --> S15["Step 1.5 — ⭐ ship_preflight.py, from the LOBBY\nshape · pinned key · CLEAN · 0 0 · the lane"]
     S15 -- "exit 2" --> PFSTOP["⛔ STOP — nothing is gated or merged\na dirty checkout means the gate would test\na tree the merge will not carry"]
     S15 -- "epic/KEY-slug — clear\nstories still open → STOP and name them" --> S2["Step 2 — ⭐ ABSORB origin/main INTO the epic\nBEFORE gating — conflicts surface HERE, never on production"]

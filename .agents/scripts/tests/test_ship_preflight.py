@@ -34,7 +34,7 @@ import sys
 from pathlib import Path
 
 from _harness import SCRIPTS, Cases, TempDir, run_script
-from _pf_fixtures import branch, commit, make_repo, write
+from _pf_fixtures import branch, commit, git, make_repo, write
 
 SCRIPT = "ship_preflight.py"
 
@@ -78,9 +78,15 @@ def main() -> int:
             branch(repo, "epic/SCC-11-thing", {"backend/app.py": "x = 2\n"})
             code, out = ship(repo, "epic/SCC-11-thing")
             c.check("SP-A clean epic -> exit 0", code == 0, out.strip()[-300:])
-            c.check("SP-A the header echoes the branch it RESOLVED",
-                    "== ship preflight - epic/SCC-11-thing ==" in out,
-                    "the header is the only thing that can catch a wrong branch: a verdict "
+            # ⛔ COUNTED, not just present — and the count is the assertion that matters.
+            # `in out` was true while the line printed TWICE (an explicit print plus the one
+            # `Report.print_human` emits), and a review smoke-run against a real project
+            # repo is what surfaced it. The door's Step 1.5 says "read the header before the
+            # verdict"; a doubled header is noise in the one line that catches a wrong lane.
+            c.check("SP-A the header echoes the branch it RESOLVED, EXACTLY once",
+                    out.count("== ship preflight - epic/SCC-11-thing ==") == 1,
+                    f"seen {out.count('== ship preflight - epic/SCC-11-thing ==')}x - the "
+                    "header is the only thing that can catch a wrong branch: a verdict "
                     "about another lane reads exactly like a verdict about yours")
             c.check("SP-A the verdict says clear", "VERDICT: clear" in out,
                     out.strip()[-200:])
@@ -135,6 +141,38 @@ def main() -> int:
             c.check("SP-C never pushed -> exit 2", code == 2, out.strip()[-300:])
             c.check("SP-C ...and it says so in those words",
                     "never pushed" in out.lower(), out.strip()[-300:])
+
+        # ⛔ THE MIRROR CASE, AND THE FIRST CUT GOT IT EXACTLY BACKWARDS. A branch that
+        # exists ONLY on `origin` — no local ref — was reported as "never pushed: the branch
+        # exists on this disk only", which is the precise opposite of the truth. It is not a
+        # rare shape: `/cicd-push-e2e` Step 1 resolves branches with `git branch -a`, which
+        # lists remote-tracking refs, so a fresh clone or an epic pushed from the OTHER
+        # machine (this system is two machines by design) lands here — and the door's own
+        # Step 2 then does `git checkout epic/...`, which creates the local ref from origin.
+        # A false BLOCKED on the shipping path is the failure mode this repo treats as worst:
+        # a gate that false-reds is a gate that gets routed around.
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, "epic/SCC-11-thing", {"backend/app.py": "x = 2\n"})   # pushed
+            git(repo, "checkout", "-q", "main")
+            git(repo, "branch", "-D", "epic/SCC-11-thing")                     # local ref gone
+            code, out = ship(repo, "epic/SCC-11-thing")
+            c.check("SP-C remote-only (pushed, not checked out here) is CLEAR -> exit 0",
+                    code == 0, out.strip()[-400:])
+            c.check("SP-C ...and it never claims the branch is unpushed",
+                    "never pushed" not in out.lower(), out.strip()[-400:])
+            c.check("SP-C ...and it says the checkout will create it from origin",
+                    "origin" in out.lower() and "not checked out" in out.lower(),
+                    out.strip()[-400:])
+
+        # And the shape where neither ref exists is its own answer, not either of the above.
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            code, out = ship(repo, "epic/SCC-11-nonexistent", expect="SCC-11")
+            c.check("SP-C a branch that exists NOWHERE -> exit 2", code == 2,
+                    out.strip()[-300:])
+            c.check("SP-C ...named as absent, not as unpushed",
+                    "no such branch" in out.lower(), out.strip()[-300:])
 
     # ── SP-D · the branch the OPERATOR meant ──────────────────────────────────────────────
     if c.block("SP-D · intent: the resolved branch must carry the key that was PINNED"):
@@ -242,6 +280,70 @@ def main() -> int:
             code, out = ship(repo, "epic/SCC-11-thing")
             c.check("SP-F CONTROL: a docs-only EPIC is still clear (the lane question is "
                     "the chore lane's alone)", code == 0, out.strip()[-300:])
+
+    # ── SP-I · the operands this script REFUSES to guess at ───────────────────────────────
+    # `argparse`'s `required=True` is satisfied by the empty string, and an empty operand is
+    # exactly what an unset shell variable becomes. The door pins `EXPECTED_KEY` in one fenced
+    # block and consumes it in another two steps later, so the empty case is not exotic — and
+    # left unchecked it produced the WORST possible message: `--expect-key  but epic/X carries
+    # SCC-11 … aimed at ANOTHER lane's branch`, blaming a branch that was right all along.
+    # `_harness._case_filter` carries this same lesson for `--case`.
+    if c.block("SP-I · an empty operand is named as missing, never blamed on the branch"):
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, "epic/SCC-11-thing", {"backend/app.py": "x = 2\n"})
+            code, out = ship(repo, "epic/SCC-11-thing", expect="")
+            c.check("SP-I an empty --expect-key -> exit 2", code == 2, out.strip()[-300:])
+            c.check("SP-I ...named as the PIN that never arrived",
+                    "expect-key" in out.lower()
+                    and ("empty" in out.lower() or "never arrived" in out.lower()),
+                    out.strip()[-300:])
+            c.check("SP-I ...and it does NOT accuse the branch of being another lane's",
+                    "another lane" not in out.lower(), out.strip()[-300:])
+
+            code, out = run_script(SCRIPT, "--repo", "", "--branch", "epic/SCC-11-thing",
+                                   "--expect-key", "SCC-11")
+            c.check("SP-I an empty --repo -> exit 2, never a silent fall back to cwd",
+                    code == 2 and "repo" in out.lower(), out.strip()[-300:])
+
+    # ── SP-J · the human run names the REPO it resolved, not only the branch ───────────────
+    # The door tells the reader "read the header before the verdict" because a verdict about
+    # another lane reads exactly like a verdict about yours. That argument is just as true of
+    # the repo — `--repo` exists precisely because cwd is not intent — and until this case the
+    # resolved repo appeared only in `--json`. A run aimed at the wrong project printed a
+    # verdict a reader could not tell from the right one.
+    if c.block("SP-J · the resolved repo is echoed on the human path too"):
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, "epic/SCC-11-thing", {"backend/app.py": "x = 2\n"})
+            code, out = ship(repo, "epic/SCC-11-thing")
+            # ⛔ THE FULL PATH, not `repo.name`. The fixture directory is literally called
+            # `repo`, so `repo.name in out` matched the word "repo" already present in the
+            # output and the case passed against a script that echoed nothing — a vacuous
+            # green caught by running this very block red.
+            c.check("SP-J the human output names the resolved repo PATH",
+                    str(repo.resolve()) in out, out.strip()[:300])
+
+    # ── SP-K · the LANE question needs a diff it actually GOT ─────────────────────────────
+    # `check_lane` read `diff.stdout` without reading `diff.returncode`, so a diff that never
+    # ran produced `0 file(s) changed, none of them deployable` — a stated FACT about a diff
+    # the script did not obtain — and routed the lane to the Task door on it. The reachable
+    # trigger is the same remote-only shape SP-C covers: no local ref, so `base...branch`
+    # cannot resolve. A deployable chore lane would be sent to `/smh-close-task-merge-tree`,
+    # which refuses deployable diffs and hands it straight back — each door naming the other.
+    if c.block("SP-K · a chore lane on a remote-only branch still reads its real diff"):
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, "chore/SCC-11-thing", {"backend/app.py": "x = 2\n"})
+            git(repo, "checkout", "-q", "main")
+            git(repo, "branch", "-D", "chore/SCC-11-thing")     # pushed, local ref gone
+            code, out = ship(repo, "chore/SCC-11-thing")
+            c.check("SP-K the deployable diff is still SEEN -> exit 0", code == 0,
+                    out.strip()[-400:])
+            c.check("SP-K ...and the light gate is named", "light gate" in out.lower(),
+                    out.strip()[-400:])
+            c.check("SP-K ...never '0 file(s) changed' about a diff it did not get",
+                    "0 file(s) changed" not in out, out.strip()[-400:])
 
     # ── SP-G · an unfetched comparison is not a fresh one ──────────────────────────────────
     # SCC-193's finding, one door over: a note saying the comparison was stale sat under a
