@@ -1,11 +1,17 @@
 # The Sudo Dev System
 
-> **How we build software here, and what you type to do it.** Current as of **2026-08-15**.
+> **How we build software here, and what you type to do it.** Current as of **2026-08-21**.
 >
 > This page is kept current by a gate, not by good intentions. Change a `/` command, a rule, a
 > safety-net script, or a commit hook, and the commit is **rejected** unless this file moves with it
 > (`[sop-ok]` in the message opts out and is logged). The law:
 > [`sop-currency.md`](../../.agents/rules/sop-currency.md).
+>
+> **This page states the current system only — its change history lives in
+> [the changelog](workflows_testing_SOP_changelog.md).** When a gate-driven update lands here, the
+> edit rewrites the rule in present tense and the delta description goes to the changelog as one
+> line. No "⭐ new", no "since SCC-x", no renamed-from narration in this page's body — that is the
+> writing contract (`sop-currency.md` §Writing the update, habit 4).
 
 ---
 
