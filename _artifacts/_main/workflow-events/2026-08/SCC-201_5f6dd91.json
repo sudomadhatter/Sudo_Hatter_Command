@@ -1,0 +1,45 @@
+{
+  "v": 1,
+  "task": "SCC-201",
+  "sha": "5f6dd912e0fc0b5786b75c49c723e65b296126b6",
+  "tip": "e80f905bee4c5a4dc1634a7111064651fbb343db",
+  "trigger": "close-out",
+  "when": "2026-08-20T23:14:47-04:00",
+  "changes": [
+    ".agents/.sync-manifest.json",
+    ".agents/commands/cicd-close-story-merge-tree.md",
+    ".agents/commands/cicd-non-crit-pr-push.md",
+    ".agents/commands/smh-non-crit-pr-push.md",
+    ".agents/scripts/INDEX.md",
+    ".agents/scripts/jira_feed.py",
+    ".agents/scripts/tests/test_command_surfaces.py",
+    ".agents/scripts/tests/test_jira_feed.py",
+    ".agents/scripts/tests/test_lane_qualify.py",
+    ".agents/workflows/cicd-non-crit-pr-push.md",
+    ".agents/workflows/smh-non-crit-pr-push.md",
+    ".opencode/commands/cicd-close-story-merge-tree.md",
+    ".opencode/commands/cicd-non-crit-pr-push.md",
+    ".opencode/commands/smh-non-crit-pr-push.md",
+    "_artifacts/_main/2026-08-20_scc-201-bugs-updates-cycle-3/implementation_plan.md",
+    "_artifacts/_main/2026-08-20_scc-201-bugs-updates-cycle-3/mutation-sweep.md",
+    "_artifacts/_main/2026-08-20_scc-201-bugs-updates-cycle-3/task.yaml",
+    "_artifacts/_main/2026-08-20_scc-201-bugs-updates-cycle-3/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-08-20_scc-201-bugs-updates-cycle-3/walkthrough.md",
+    "verdict": "CONCERNS @ 5f6dd91",
+    "gates": {}
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "CONCERNS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}
