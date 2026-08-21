@@ -25,7 +25,7 @@ this folder, and they cover **different things** — neither is a substitute for
 
 | Mechanism | What it actually catches | Blind to |
 |---|---|---|
-| `.agents/scripts/tests/test_sops_prds_folder.py` (in `run_all`) | this INDEX vs the directory **both ways**, every **markdown link** target, every `/command` reference resolving to a real master, the 12-doc manifest, and the SOP gate's two paths agreeing | prose that names no link |
+| `.agents/scripts/tests/test_sops_prds_folder.py` (in `run_all`) | this INDEX vs the directory **both ways**, every **markdown link** target, every `/command` reference resolving to a real master, the 13-doc manifest, and the SOP gate's two paths agreeing | prose that names no link |
 | `check_maps.py` | **backticked multi-segment paths inside table rows**, plus level-2 INDEX presence and repo-map coverage | markdown links, and anything outside a table row |
 | T9 in that same test (SCC-83) | **backticked paths in PROSE** — sentences and bullets: the gap between the two rows above | paths written *without* backticks, and the interior of a project this machine has not checked out |
 
@@ -73,6 +73,7 @@ boundary being drawn is "SOP vs setup," never "watched vs unwatched."
 
 | Doc | What it is |
 |---|---|
+| [workflows_testing_SOP_changelog.md](workflows_testing_SOP_changelog.md) | **The SOP's change history** — one line per change: date · ticket · what changed for the operator, newest first. Exists so the SOP itself can state the *current* system with no change-narration (the writing contract: `sop-currency.md` §Writing the update, habit 4). A gate-driven SOP update puts its delta description here, in the same commit. |
 | [workflows_testing_SOP.md](workflows_testing_SOP.md) | **THE quick reference — start here.** The whole dev system on one page: the lifecycle map, every `/` command by lane (story loop ①②③, shipping, autopilot, toolkit upkeep), the test gate + verdicts, the P0–P3 risk matrix, the TEA cheat-sheet — and, since SCC-161, **the command atlas** (Part VI): the call graph, who writes the board, where each command stops for you, and one mermaid diagram per critical command, each checked against the live command body. The one page that answers *what do I type*, and the only one an operator reads start to finish. Protected by an armed commit-msg gate (`sop_currency.py`): change how the system is USED and this page moves in the same commit, or the commit is rejected. Was the `sudo_workflows_testing.md` quick-reference in Daniel's personal area; renamed here because SCC-63 retired the `sudo-` prefix. |
 
 ## Jira & git — the manual half

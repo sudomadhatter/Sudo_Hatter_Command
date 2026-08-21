@@ -59,7 +59,7 @@ explaining the change. What T4 really guards is "no doc tells you to RUN somethi
 exist," and a fixture proves the exemption stays narrow rather than becoming an off-switch.
 
   -- THE MANIFEST IS A CONTRACT, NOT AN INVENTORY ------------------------------------------
-T1/T6 pin an explicit 12-doc list. That is deliberate: a 13th doc must be a conscious edit
+T1/T6 pin an explicit 13-doc list. That is deliberate: a 14th doc must be a conscious edit
 here. A doc appearing or vanishing without a test change is exactly the drift being guarded
 against, and an auto-discovered manifest would rubber-stamp it.
 
@@ -102,6 +102,7 @@ FOLDER = ROOT / FOLDER_REL
 # The contract. Renames land here in the same commit that performs them.
 EXPECTED = {
     "workflows_testing_SOP.md",          # was _quick_reference/sudo_workflows_testing.md
+    "workflows_testing_SOP_changelog.md",  # SCC change history, one line per change (2026-08-21 cleanup)
     "jira_manual.md",
     "jira_integration_guide.md",
     "git_walkthrough_settings.md",
