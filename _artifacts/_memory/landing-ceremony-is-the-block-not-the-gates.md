@@ -29,8 +29,12 @@ themselves reviewed FAIL/parked because their landing needed the broken step.
 `main-write-gate` SUCCESS as a merge commit; the ruleset requires that check on `pull_request`;
 `main_write_gate.py --mode pr` passed both live lanes. Push the chore branch (free), `gh pr create`,
 the operator merges (their click IS the sign-off; no token because a GitHub merge never touches a
-machine — SCC-118's own words). SCC-183 R3 makes that ONE command (`land_pr.py`) + a two-half
-close-out; ruled decision pending: (b1) operator clicks vs (b2) agent merges on the words. Order:
-SCC-184 → SCC-183 → SCC-164 second half (re-derived; Part G closes by design). Related:
+machine — SCC-118's own words). ⛔ **RULED, not pending — SCC-183 shipped R4, a DELETION** (2026-08-16).
+The old open question — operator clicks vs agent merges on the words — is closed in favour of **(b1) the operator clicks**, and R3's
+machinery went with it: `land_pr.py` (470 lines), `test_land_pr.py`, and the self-merge split with
+its `merge_eligible` / `is_prose` predicate are all deleted. There is no eligibility test and no
+"small enough" class — `git-policy.md:125` carries the law. The sign-off is the click: *"not a
+token, not 'invoking the command', not an inferred approval."* Order ran SCC-184 → SCC-183 →
+SCC-164 second half (re-derived; Part G closed by design). Related:
 [[main-merge-needs-operator-verbatim-approval]], [[hook-ask-becomes-autodeny-in-auto-mode]],
 [[lightweight-lane-for-specific-no-break-work]].
